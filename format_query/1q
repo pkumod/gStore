@@ -1,0 +1,4 @@
+select ?x1 where
+{
+?x1	y:hasSuccessor	<Under_the_Influence_(Overkill_album)>.
+}

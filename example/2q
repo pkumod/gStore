@@ -1,0 +1,4 @@
+select ?x1 where
+{
+?x1	rdf:type	<wikicategory_2003_albums>.
+}

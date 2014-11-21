@@ -1,0 +1,5 @@
+select ?x where
+{
+?x	y:bornIn	<New_York_City>.
+?x	y:diedIn	<Canada>.
+}

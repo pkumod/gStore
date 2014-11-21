@@ -1,0 +1,7 @@
+select ?x1 ?x2 where
+{
+?x1	y:created	?x2.
+?x1	y:created	<Louden_Up_Now>.
+?x2	y:hasSuccessor	<Louden_Up_Now>.
+?x2	rdf:type	<wordnet_album_106591815>.
+}
