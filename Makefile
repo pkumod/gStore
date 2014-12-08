@@ -36,7 +36,7 @@ $(objdir)gclient.o: main/gclient.cpp
 $(objdir)Bstr.o: Bstr/Bstr.cpp Bstr/Bstr.h
 	g++ -c  Bstr/Bstr.cpp $(inc) -o $(objdir)Bstr.o
 	
-$(objdir)Database.o: Database/Database.cpp $(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
+$(objdir)Database.o: Database/Database.cpp Database/Database.h $(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
 $(objdir)BasicQuery.o \
  $(objdir)Triple.o $(objdir)SigEntry.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Parser.o $(objdir)util.o
 	g++ -c Database/Database.cpp $(inc) -o $(objdir)Database.o
