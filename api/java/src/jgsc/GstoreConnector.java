@@ -207,7 +207,7 @@ public class GstoreConnector
 			int context_len = GstoreConnector.byte4ToInt(head);
 			
 			// in Java String, there is no need for terminator '\0' in C. so we should omit '\0' at the end of receiving message.
-			byte[] data_context = new byte[context_len];
+			byte[] data_context = new byte[context_len - 1];
 			int recv_len = 0;
 			do
 			{
@@ -293,7 +293,8 @@ public class GstoreConnector
 				+ "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/ÍõÉº>. "
 				+ "}";	
 		
-	    gc.load("db_cdblp");
+	    boolean flag = gc.load("db_cdblp");
+	    System.out.println(flag);
 	    String answer = gc.query(sparql);	    
 		System.out.println(answer);
 		
