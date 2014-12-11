@@ -207,8 +207,14 @@ public class GstoreConnector
 			int context_len = GstoreConnector.byte4ToInt(head);
 			
 			// in Java String, there is no need for terminator '\0' in C. so we should omit '\0' at the end of receiving message.
-			byte[] data_context = new byte[context_len-1];
-			dis.read(data_context);			
+			byte[] data_context = new byte[context_len];
+			int recv_len = 0;
+			do
+			{
+				int cur_len = dis.read(data_context, recv_len, data_context.length-recv_len);
+				recv_len += cur_len;
+			}while (recv_len < data_context.length); 
+				
 			String ret = new String(data_context,"utf-8");
 			
 			return ret;
@@ -283,11 +289,22 @@ public class GstoreConnector
 		//gc.build("db_LUBM10", "example/rdf_triple/LUBM_10_GStore.n3");
 
 		String sparql = "select ?x where {"
-				+ "<cdblp.cn/namedisambiguation/ÓÚ¸ê/Unknown/2857.html>	<cdblp.cn/schema/property/hasPaper>	?x. "
+				+ "?x	<rdf:type>	<cdblp.cn/class/Paper>. "
+				+ "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/ÍõÉº>. "
 				+ "}";	
 		
 	    gc.load("db_cdblp");
 	    String answer = gc.query(sparql);	    
 		System.out.println(answer);
+		
+	    answer = gc.query(sparql);	    
+		System.out.println(answer);	
+		
+		sparql = "select ?x where {"
+				+ "?x	<rdf:type>	<cdblp.cn/class/Paper>. "
+				+ "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/ÓÚ¸ê>. "
+				+ "}";	
+	    answer = gc.query(sparql);	    
+		System.out.println(answer);	
 	}
 }
