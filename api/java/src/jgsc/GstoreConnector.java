@@ -121,7 +121,7 @@ public class GstoreConnector
 		boolean connect_return = this.connect();
 		if (!connect_return)
 		{
-			System.err.println("connect to server error. @GstoreConnector.query");
+			System.err.println("connect to server error. @GstoreConnector.build");
 			return "connect to server error.";
 		}
 		
@@ -129,7 +129,7 @@ public class GstoreConnector
 		boolean send_return = this.send(cmd);
 		if (!send_return)
 		{
-			System.err.println("send query command error. @GstoreConnector.query");
+			System.err.println("send query command error. @GstoreConnector.build");
 			return "send query command error.";
 		}		
 		String recv_msg = this.recv();
@@ -209,7 +209,7 @@ public class GstoreConnector
 			// in Java String, there is no need for terminator '\0' in C. so we should omit '\0' at the end of receiving message.
 			byte[] data_context = new byte[context_len-1];
 			dis.read(data_context);			
-			String ret = new String(data_context);
+			String ret = new String(data_context,"utf-8");
 			
 			return ret;
 		}
@@ -224,7 +224,16 @@ public class GstoreConnector
 	
 	private static byte[] packageMsgData(String _msg)
 	{
-		byte[] data_context = _msg.getBytes();
+		//byte[] data_context = _msg.getBytes();
+		byte[] data_context = null;
+		try {
+			data_context = _msg.getBytes("utf-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.err.println("utf-8 charset is unsupported.");
+			data_context = _msg.getBytes();
+		}
 		int context_len = data_context.length + 1; // 1 byte for '\0' at the end of the context.
 		int data_len = context_len + 4; // 4 byte for one int(data_len at the data's head).
 		byte[] data = new byte[data_len];
@@ -258,20 +267,27 @@ public class GstoreConnector
 	
 	private static int byte4ToInt(byte[] _b) // with Little Endian format.
 	{
-		int byte0 = _b[0], byte1 = _b[1], byte2 = _b[2], byte3 = _b[3];
+		int byte0 = _b[0]&0xFF, byte1 = _b[1]&0xFF, byte2 = _b[2]&0xFF, byte3 = _b[3]&0xFF;		
 		int ret = (byte0) | (byte1 << 8) | (byte2 << 16) | (byte3 << 24);
 		
 		return ret;
 	}
 	
 	public static void main(String[] args)
-	{		
+	{
+		// initialize the GStore server's IP address and port.
 		GstoreConnector gc = new GstoreConnector("172.31.19.15", 3305);
 		
-		boolean load_return = gc.load("db_LUBM10");
-		System.out.println(load_return);		
+	    // build a new database by a RDF file.
+	    // note that the relative path is related to gserver.
+		//gc.build("db_LUBM10", "example/rdf_triple/LUBM_10_GStore.n3");
+
+		String sparql = "select ?x where {"
+				+ "<cdblp.cn/namedisambiguation/ÓÚ¸ê/Unknown/2857.html>	<cdblp.cn/schema/property/hasPaper>	?x. "
+				+ "}";	
 		
-		load_return = gc.unload("db_LUBM10");
-		System.out.println(load_return);
+	    gc.load("db_cdblp");
+	    String answer = gc.query(sparql);	    
+		System.out.println(answer);
 	}
 }
