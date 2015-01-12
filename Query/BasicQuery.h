@@ -71,6 +71,7 @@ private:
 	void findVarNotInSelect();
 	void buildTuple2Freq();
 	void initial();
+	void null_initial();
 
 public:
 	static const char EDGE_IN = 'i';

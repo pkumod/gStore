@@ -178,22 +178,25 @@ int Socket::recv(std::string& _msg)const
     }
 
     char* buf = new char[msg_len];
-    recv_return = ::recv(this->sock, buf, msg_len, 0);
-
-    if (recv_return == -1)
+    int recv_len = 0;
+    do
     {
-        std::cerr << "receive message context error, errno=" << errno << ".@Socket::recv" << std::endl;
-        delete[] buf;
+        int cur_len = ::recv(this->sock, buf + recv_len, msg_len - recv_len, 0);
 
-        return 0;
-    }
-    else
-    {
-        _msg = buf;
-        delete[] buf;
+        if (cur_len == -1)
+        {
+            std::cerr << "receive message context error, errno=" << errno << ".@Socket::recv" << std::endl;
+            delete[] buf;
 
-        return recv_return;
-    }
+            return 0;
+        }
+        recv_len += cur_len;
+    }while (recv_len < msg_len);
+
+    _msg = buf;
+    delete[] buf;
+
+    return msg_len;
 }
 
 bool Socket::connect(const std::string _hostname, const unsigned short _port)

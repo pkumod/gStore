@@ -11,22 +11,7 @@
 /* _query is a SPARQL query string */
 BasicQuery::BasicQuery(const string _query)
 {
-    this->option_vs.clear();
-    this->triple_vt.clear();
-    this->var_str2id.clear();
-    this->var_degree = NULL;
-    this->is_literal_candidate_added = NULL;
-    this->edge_id = NULL;
-    this->edge_nei_id = NULL;
-    this->edge_pre_id = NULL;
-    this->edge_type = NULL;
-    this->var_sig = NULL;
-    this->edge_sig = NULL;
-    this->encode_method = BasicQuery::NOT_JUST_SELECT;
-    this->candidate_list = NULL;
-    this->graph_var_num = 0;
-    this->select_var_num = 0;
-    this->var_name = 0;
+	this->initial();
 }
 
 BasicQuery::~BasicQuery()
@@ -410,6 +395,25 @@ const Triple& BasicQuery::getTriple(int _i_th_triple)
 }
 
 /* private methods */
+void BasicQuery::null_initial()
+{
+    this->option_vs.clear();
+    this->triple_vt.clear();
+    this->var_str2id.clear();
+    this->var_degree = NULL;
+    this->is_literal_candidate_added = NULL;
+    this->edge_id = NULL;
+    this->edge_nei_id = NULL;
+    this->edge_pre_id = NULL;
+    this->edge_type = NULL;
+    this->var_sig = NULL;
+    this->edge_sig = NULL;
+    this->encode_method = BasicQuery::NOT_JUST_SELECT;
+    this->candidate_list = NULL;
+    this->graph_var_num = 0;
+    this->select_var_num = 0;
+    this->var_name = 0;
+}
 
 void BasicQuery::initial()
 {
