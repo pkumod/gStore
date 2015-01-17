@@ -12,7 +12,15 @@
 
 Server::Server()
 {
-    this->connectionPort = 3305; // default communication port is 3305.
+    this->connectionPort = Socket::DEFAULT_CONNECT_PORT; // default communication port is 3305.
+    this->connectionMaxNum = Socket::MAX_CONNECTIONS;
+    this->databaseMaxNum = 1; // will be updated when supporting multiple databases.
+    this->database = NULL;
+}
+
+Server::Server(unsigned short _port)
+{
+    this->connectionPort = _port;
     this->connectionMaxNum = Socket::MAX_CONNECTIONS;
     this->databaseMaxNum = 1; // will be updated when supporting multiple databases.
     this->database = NULL;

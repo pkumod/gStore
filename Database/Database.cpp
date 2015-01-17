@@ -654,16 +654,6 @@ bool Database::literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_t
 
 	}/* end for while(true) */
 
-	//debug
-	{
-	    string debug_entity_name = "<http://www.Department6.University184.edu/Course43>";
-	    int debug_entity_id = (this->kvstore)->getIDByEntity(debug_entity_name);
-	    stringstream _ss;
-	    _ss << "display [" << debug_entity_name << ":" << debug_entity_id << "] bitset:" <<endl;
-	    _ss << Signature::BitSet2str(_entity_bitset[debug_entity_id]) << endl;
-	    Database::log(_ss.str());
-	}
-
 	cout << "end for while" << endl;
 	delete[] triple_array;
 	_six_tuples_fout.close();

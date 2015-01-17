@@ -36,6 +36,8 @@ public:
     bool isValid()const;
 
     static const int MAX_CONNECTIONS = 20;
+    static const unsigned short DEFAULT_CONNECT_PORT = 3305;
+    static const std::string DEFAULT_SERVER_IP;
 
 private:
     int sock;

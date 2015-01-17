@@ -31,6 +31,7 @@ class Server
 {
 public:
     Server();
+    Server(unsigned short _port);
     ~Server();
 
     bool createConnection();
@@ -49,7 +50,7 @@ public:
 
 
 private:
-    int connectionPort;
+    unsigned short connectionPort;
     int connectionMaxNum;
     int databaseMaxNum;
     Socket socket;

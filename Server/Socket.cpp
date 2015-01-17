@@ -14,6 +14,8 @@
 #include <cstdlib>
 #include <cstring>
 
+const std::string Socket::DEFAULT_SERVER_IP = "127.0.0.1";
+
 Socket::Socket()
 {
     this->sock = -1;
@@ -192,6 +194,8 @@ int Socket::recv(std::string& _msg)const
         }
         recv_len += cur_len;
     }while (recv_len < msg_len);
+
+//    std::cout << "recv_len=" << recv_len << std::endl; //debug
 
     _msg = buf;
     delete[] buf;

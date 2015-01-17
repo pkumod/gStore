@@ -8,6 +8,28 @@
 #include"Client.h"
 #include<iostream>
 
+Client::Client()
+{
+    this->ip = Socket::DEFAULT_SERVER_IP;
+    this->port = Socket::DEFAULT_CONNECT_PORT;
+}
+
+Client::Client(std::string _ip, unsigned short _port)
+{
+    this->ip = _ip;
+    this->port = _port;
+}
+
+Client::Client(unsigned short _port)
+{
+    this->ip = Socket::DEFAULT_SERVER_IP;
+    this->port = _port;
+}
+
+Client::~Client()
+{
+}
+
 bool Client::connectServer()
 {
     bool flag = this->socket.create();
@@ -17,8 +39,7 @@ bool Client::connectServer()
         return false;
     }
 
-    flag = this->socket.connect("127.0.0.1", 3305);
-//    flag = this->socket.connect("172.31.19.15", 3305);
+    flag = this->socket.connect(this->ip, this->port);
 
     if (!flag)
     {

@@ -14,6 +14,11 @@
 class Client
 {
 public:
+    Client();
+    Client(std::string _ip, unsigned short _port);
+    Client(unsigned short _port);
+    ~Client();
+
     bool connectServer();
     bool disconnectServer();
     bool send(const std::string& _msg);

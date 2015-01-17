@@ -88,6 +88,8 @@ private:
 	int pre_num;
 	int literal_num;
 
+	string rdf_prefix;
+
 	int encode_mode;
 
 	VSTree* vstree;
