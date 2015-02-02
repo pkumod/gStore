@@ -2,9 +2,11 @@ objdir=objs/
 objfile= $(objdir)Bstr.o $(objdir)Database.o $(objdir)KVstore.o $(objdir)Btree.o \
      $(objdir)CBtreeFunc.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o \
      $(objdir)SigEntry.o $(objdir)Signature.o $(objdir)Triple.o  $(objdir)util.o $(objdir)VSTree.o \
-	 $(objdir)IDList.o $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdir)VNode.o $(objdir)Parser.o \
+	 $(objdir)IDList.o $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdir)VNode.o $(objdir)DBparser.o \
 	 $(objdir)SparqlParser.o $(objdir)SparqlLexer.o  $(objdir)Operation.o $(objdir)Socket.o \
-	 $(objdir)Server.o $(objdir)Client.o
+	 $(objdir)Server.o $(objdir)Client.o \
+	 $(objdir)TurtleParser.o $(objdir)RDFParser.o
+	 
 inc=-I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
 all: gload gquery gserver gclient
@@ -20,7 +22,7 @@ gserver: $(objdir)gserver.o $(objfile)
 
 gclient: $(objdir)gclient.o $(objfile)
 	g++ -o gclient $(objdir)gclient.o $(objfile)  lib/libantlr.a 
-	
+		
 $(objdir)gload.o: main/gload.cpp 
 	g++ -c main/gload.cpp $(inc) -L./lib lib/libantlr.a -o $(objdir)gload.o 
 	
@@ -32,13 +34,14 @@ $(objdir)gserver.o: main/gserver.cpp
 
 $(objdir)gclient.o: main/gclient.cpp
 	g++ -c main/gclient.cpp $(inc) -o $(objdir)gclient.o
-	
+		
 $(objdir)Bstr.o: Bstr/Bstr.cpp Bstr/Bstr.h
 	g++ -c  Bstr/Bstr.cpp $(inc) -o $(objdir)Bstr.o
 	
 $(objdir)Database.o: Database/Database.cpp Database/Database.h $(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
 $(objdir)BasicQuery.o \
- $(objdir)Triple.o $(objdir)SigEntry.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Parser.o $(objdir)util.o
+ $(objdir)Triple.o $(objdir)SigEntry.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)DBparser.o $(objdir)util.o \
+ $(objdir)RDFParser.o
 	g++ -c Database/Database.cpp $(inc) -o $(objdir)Database.o
 	
 $(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h $(objdir)Btree.o
@@ -75,12 +78,17 @@ $(objdir)LRUCache.o: VSTree/LRUCache.cpp  VSTree/LRUCache.h VSTree/VNode.h
 	g++ -c VSTree/LRUCache.cpp $(inc) -o $(objdir)LRUCache.o
 $(objdir)VNode.o: VSTree/VNode.cpp VSTree/VNode.h
 	g++ -c VSTree/VNode.cpp $(inc) -o $(objdir)VNode.o
-$(objdir)Parser.o: Parser/DBparser.cpp Parser/DBparser.h $(objdir)SparqlParser.o $(objdir)SparqlLexer.o 
-	g++ -c Parser/DBparser.cpp $(inc) -o $(objdir)Parser.o
+$(objdir)DBparser.o: Parser/DBparser.cpp Parser/DBparser.h $(objdir)SparqlParser.o $(objdir)SparqlLexer.o $(objdir)Triple.o
+	g++ -c Parser/DBparser.cpp $(inc) -o $(objdir)DBparser.o
 $(objdir)SparqlParser.o: Parser/SparqlParser.c Parser/SparqlParser.h
 	gcc  -c Parser/SparqlParser.c $(inc) -o $(objdir)SparqlParser.o
 $(objdir)SparqlLexer.o: Parser/SparqlLexer.c Parser/SparqlLexer.h
 	gcc  -c Parser/SparqlLexer.c $(inc) -o $(objdir)SparqlLexer.o
+
+$(objdir)TurtleParser.o: Parser/TurtleParser.cpp Parser/TurtleParser.h Parser/Type.h
+	gcc  -c Parser/TurtleParser.cpp $(inc) -o $(objdir)TurtleParser.o
+$(objdir)RDFParser.o: Parser/RDFParser.cpp Parser/RDFParser.h $(objdir)TurtleParser.o $(objdir)Triple.o
+	gcc  -c Parser/RDFParser.cpp $(inc) -o $(objdir)RDFParser.o
 
 $(objdir)Operation.o: Server/Operation.cpp Server/Operation.h
 	g++ -c Server/Operation.cpp $(inc) -o $(objdir)Operation.o

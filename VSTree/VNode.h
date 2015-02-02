@@ -54,6 +54,9 @@ public:
 	/* only used by leaf Node */
 	bool retrieveEntry(std::vector<SigEntry>& _entry_vec, const EntitySig _filter_sig, LRUCache& _nodeBuffer);
 
+	/* for debug */
+	bool checkState();
+
 	std::string to_str();
 
 private:

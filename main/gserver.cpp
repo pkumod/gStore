@@ -16,11 +16,11 @@ int main(int argc, char * argv[])
     {
         std::stringstream ss(argv[1]);
         ss >> port;
-
-        std::cout << "port=" << port << std::endl; //debug
     }
 
     Server server(port);
+
+    std::cout << "port=" << port << std::endl; //debug
 
     server.createConnection();
     server.listen();

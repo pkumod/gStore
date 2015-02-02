@@ -20,6 +20,7 @@ using namespace std;
 #include "../KVstore/KVstore.h"
 #include "../VSTree/VSTree.h"
 #include "../Parser/DBparser.h"
+#include "../Parser/RDFParser.h"
 #include "../util/util.h"
 #include<stdio.h>
 #include<sys/time.h>
@@ -67,9 +68,10 @@ public:
 	 * 3. if subject exist, update SigEntry, and update spo, ops... etc. if needed
 	 * 4.
 	 *  */
-	bool insert(const Triple& _triple);
-	bool remove(const Triple& _triple);
-	bool build(const string& _rdf_file);
+
+    bool insert(const string& _insert_rdf_file);
+    bool remove(const string& _rdf_file);
+    bool build(const string& _rdf_file);
 
 	/* name of this DB*/
 	string getName();
@@ -78,6 +80,9 @@ public:
 
 	/* root Path of this DB + signatureBFile */
 	string getSignatureBFile();
+
+    /* root Path of this DB + DBInfoFile */
+    string getDBInfoFile();
 
 private:
 	string name;
@@ -88,25 +93,31 @@ private:
 	int pre_num;
 	int literal_num;
 
-	string rdf_prefix;
-
 	int encode_mode;
 
 	VSTree* vstree;
 	KVstore* kvstore;
+
+    /* metadata of this database: sub_num, pre_num, obj_num, literal_num, etc. */
+    string db_info_file;
 
 	/* six tuples: <sub pre obj sid pid oid> */
 	string six_tuples_file;
 	/* B means binary */
 	string signature_binary_file;
 
+    bool saveDBInfoFile();
+    bool loadDBInfoFile();
+
 	string getStorePath();
 
 	/* encode relative signature data of all Basic Graph Query, who union together into SPARQLquery */
 	void buildSparqlSignature(SPARQLquery & _sparql_q);
 
-	/* encode Triple into EntityBitSet */
-	bool encodeTriple2EntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
+    /* encode Triple into Subject EntityBitSet */
+    bool encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
+    /* encode Triple into Object EntityBitSet */
+    bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
 
 	bool calculateEntityBitSet(int _sub_id, EntityBitSet & _bitset);
 
@@ -124,10 +135,17 @@ private:
 	 * 3. build: subID2objIDlist, <subIDpreID>2objIDlist subID2<preIDobjID>list
 	 * 4. build: objID2subIDlist, <objIDpreID>2subIDlist objID2<preIDsubID>list
 	 *  */
+	//encodeRDF_new invoke new rdfParser to solve task 1 & 2 in one time scan.
 	bool encodeRDF(const string _rdf_file);
+	bool encodeRDF_new(const string _rdf_file);
 
+    int insertTriple(const TripleWithObjType& _triple);
+    bool removeTriple(const TripleWithObjType& _triple);
+
+	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _p_id_tuples, int & _id_tuples_max);
 	bool sub2id_pre2id(const string _rdf_file, int**& _p_id_tuples, int & _id_tuples_max);
 	bool literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, int _id_tuples_max);
+	
 	bool s2o_sp2o_s2po(int** _p_id_tuples, int _id_tuples_max);
 	bool o2s_op2s_o2ps(int** _p_id_tuples, int _id_tuples_max);
 	static int _spo_cmp(const void* _a, const void* _b);

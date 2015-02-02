@@ -29,7 +29,7 @@ public:
 	 * 1. insert triple
 	 * 2. remove triple
 	 */
-	void updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id);
+	int updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id);
 	void updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id);
 private:
 

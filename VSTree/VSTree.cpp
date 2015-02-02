@@ -66,6 +66,34 @@ VNode* VSTree::getNode(int _line)
 void VSTree::retrieve(SPARQLquery& _query)
 {
 	Database::log("IN retrieve");
+
+	//debug
+//	{
+//	    VNode* temp_ptr = this->getLeafNodeByEntityID(473738);
+//	    stringstream _ss;
+//
+//	    for (int i=0;i<temp_ptr->getChildNum();i++)
+//	        if (temp_ptr->getChildEntry(i).getEntityId() == 473738)
+//	        {
+//	            _ss << "entity id=473738 entry sig:" << endl;
+//	            _ss << "entity id=473738 leaf node line: " << temp_ptr->getFileLine() << endl;
+//	            _ss << Signature::BitSet2str(temp_ptr->getChildEntry(i).getEntitySig().entityBitSet) << endl;
+//	            break;
+//	        }
+//
+//	    _ss << "leaf node sig:" << endl;
+//	    _ss << Signature::BitSet2str(temp_ptr->getEntry().getEntitySig().entityBitSet) << endl;
+//
+//	    temp_ptr = temp_ptr->getFather(*(this->node_buffer));
+//	    while (temp_ptr != NULL)
+//	    {
+//	        _ss << "line=" << temp_ptr->getFileLine() << endl;
+//	        _ss << Signature::BitSet2str(temp_ptr->getEntry().getEntitySig().entityBitSet) << endl;
+//	        temp_ptr = temp_ptr->getFather(*(this->node_buffer));
+//	    }
+//	    Database::log(_ss.str());
+//	}
+
     vector<BasicQuery*>& queryList = _query.getBasicQueryVec();
     // enumerate each BasicQuery and retrieve their variables' mapping entity in the VSTree.
     vector<BasicQuery*>::iterator iter=queryList.begin();
@@ -88,7 +116,15 @@ void VSTree::retrieve(SPARQLquery& _query)
             {
                 std::stringstream _ss;
                 _ss << "candidate num: " << idListPtr->size() << endl;
-                //_ss << (idListPtr->isExistID(4000001)?"true":"false") <<endl;
+//                if (i == 0)
+//                {
+//                    for (int j=0;j<idListPtr->size();j++)
+//                        _ss << idListPtr->getID(j) << " ";
+//                }
+                _ss << endl;
+                _ss << "isExist 473738: " << (idListPtr->isExistID(473738)?"true":"false") <<endl;
+                _ss << "isExist 473472: " << (idListPtr->isExistID(473472)?"true":"false") <<endl;
+                _ss << "isExist 473473: " << (idListPtr->isExistID(473473)?"true":"false") <<endl;
                 Database::log(_ss.str());
             }
 
@@ -156,6 +192,7 @@ bool VSTree::buildTree(std::string _entry_file_path)
     {
         stringstream _ss;
         _ss << "tree height: " << this->getHeight() << endl;
+        _ss << "node num: " << this->node_num << endl;
         Database::log(_ss.str());
     }
 
@@ -205,13 +242,28 @@ bool VSTree::updateEntry(int _entity_id, const EntityBitSet& _bitset)
     for (int i=0;i<childNum;i++)
     {
         const SigEntry& entry = leafNodePtr->getChildEntry(i);
+
         if (entry.getEntityId() == _entity_id)
         {
             SigEntry newEntry = entry;
             newEntry |= SigEntry(EntitySig(_bitset), _entity_id);
+
+            //debug
+//            {
+//                if (_entity_id == 10)
+//                {
+//                    stringstream _ss;
+//                    _ss << "lead node line: " << leafNodePtr->getFileLine() << endl;
+//                    _ss << "old entry:\n " << Signature::BitSet2str(entry.getEntitySig().entityBitSet) << endl;
+//                    _ss << "new entry:\n " << Signature::BitSet2str(newEntry.getEntitySig().entityBitSet) << endl;
+//                    Database::log(_ss.str());
+//                }
+//            }
+
             leafNodePtr->setChildEntry(i, newEntry);
             leafNodePtr->refreshAncestorSignature(*(this->node_buffer));
             findFlag = true;
+
             break;
         }
     }
@@ -298,11 +350,29 @@ bool VSTree::insertEntry(const SigEntry& _entry)
     {
         /* if the choosed leaf node to insert is full, the node should be split.*/
         this->split(choosedNodePtr, _entry, NULL);
+
+        //debug
+//        if (!choosedNodePtr->checkState())
+//        {
+//            stringstream _ss;
+//            _ss << "node " << choosedNodePtr->getFileLine() << " childFileLine error. after split" << endl;
+//            Database::log(_ss.str());
+//        }
     }
     else
     {
         choosedNodePtr->addChildEntry(_entry, false);
         choosedNodePtr->refreshAncestorSignature(*(this->node_buffer));
+
+        //debug
+//        if (!choosedNodePtr->checkState())
+//        {
+//            stringstream _ss;
+//            _ss << "node " << choosedNodePtr->getFileLine() << " childFileLine error. after addChildEntry" << endl;
+//            _ss <<"child num=" << choosedNodePtr->getChildNum() << endl;
+//            _ss <<"node num=" << this->node_num << " entry num=" << this->entry_num << endl;
+//            Database::log(_ss.str());
+//        }
 
         // update the entityID2FileLineMap.
         this->entityID2FileLineMap[_entry.getEntityId()] = choosedNodePtr->getFileLine();
@@ -377,6 +447,12 @@ bool VSTree::loadTree()
 
     bool flag = this->loadTreeInfo();
 
+    //debug
+    {
+        stringstream _ss;
+        _ss << "tree node num: " << this->node_num << endl;
+        Database::log(_ss.str());
+    }
     if (flag)
     {
         this->node_buffer->loadCache(VSTree::tree_node_file_path);
@@ -689,6 +765,20 @@ void VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VN
         	oldNodeFatherPtr->refreshAncestorSignature(*(this->node_buffer));
         }
     }
+
+    //debug
+//    if (!oldNodePtr->checkState())
+//    {
+//        stringstream _ss;
+//        _ss << "node " << oldNodePtr->getFileLine() << " childFileLine error. oldNode when split" << endl;
+//        Database::log(_ss.str());
+//    }
+//    if (!newNodePtr->checkState())
+//    {
+//        stringstream _ss;
+//        _ss << "node " << newNodePtr->getFileLine() << " childFileLine error. newNode when split" << endl;
+//        Database::log(_ss.str());
+//    }
 
     // update the entityID2FileLineMap by these two nodes.
     this->updateEntityID2FileLineMap(oldNodePtr);

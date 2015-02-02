@@ -254,17 +254,6 @@ void VNode::refreshAncestorSignature(LRUCache& _nodeBuffer)
     int rank = this->getIndexInFatherNode(_nodeBuffer);
     if (fatherNodePtr->getChildEntry(rank).getEntitySig() != this->entry.getEntitySig())
     {
-        //debug
-//        {
-//            if (fatherNodePtr->getFileLine()==0 && fatherNodePtr->getChildFileLine(rank)==153)
-//            {
-//                Database::log("0->153 refreshAncestorSignature");
-//                stringstream _ss;
-//                _ss << "node " << this->getFileLine() << " entry:" << endl;
-//                _ss << Signature::BitSet2str(this->entry.getEntitySig().entityBitSet) << endl;
-//                Database::log(_ss.str());
-//            }
-//        }
         fatherNodePtr->setChildEntry(rank, this->entry);
         fatherNodePtr->refreshAncestorSignature(_nodeBuffer);
     }
@@ -308,6 +297,19 @@ bool VNode::retrieveEntry(vector<SigEntry>& _entry_vec, const EntitySig _filter_
     return false;
 }
 
+bool VNode::checkState()
+{
+    if (this->getFileLine() < 0)
+        return false;
+
+    for (int i=0;i<this->child_num;i++)
+        if (!this->isLeaf() && this->getChildFileLine(i) < 0)
+        {
+            return false;
+        }
+
+    return true;
+}
 std::string VNode::to_str()
 {
 	std::stringstream _ss;

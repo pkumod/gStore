@@ -493,9 +493,14 @@ bool BPlusTree::Insert(const mleafdata & _leafdata)
 	int _ikey = _pOldLeaf ->iExist(data);
 	if(_ikey > 0)
 	{
-		_pOldLeaf ->dupInsert(_leafdata, _ikey);
-		return false;
+        if(! _pOldLeaf ->getModify())
+        {
+            DelDisk(mfp, _pOldLeaf ->getAddrFB(), mblockQueue);
+        }
+        //      set modified in dupInsert
+		return _pOldLeaf ->dupInsert(_leafdata, _ikey);
 	}
+
 	{
 		this ->insert_count ++;
 	}
@@ -505,7 +510,7 @@ bool BPlusTree::Insert(const mleafdata & _leafdata)
 		{
 			DelDisk(mfp, _pOldLeaf ->getAddrFB(), mblockQueue);
 		}
-//		setmodified in insert
+//		set modified in insert
 		return _pOldLeaf ->Insert(_leafdata);
 	}
 	else
@@ -517,7 +522,7 @@ bool BPlusTree::Insert(const mleafdata & _leafdata)
 		_pNewLeaf ->setAddrFB(_addr_newleaf);
 
 //		_key_tmp 也就将是_pnewleaf的第一个元素的key
-//		setmodified in split;
+//		set modified in split;
 		if(! _pOldLeaf ->getModify())
 		{
 			DelDisk(mfp, _pOldLeaf ->getAddrFB(), mblockQueue);
@@ -577,6 +582,7 @@ bool mLeafNode :: dupInsert(const mleafdata & _mleafdata, int _index_insert)
 	mleafdata & _tmp_leafdata = (this ->getElement(_index_insert));
 
 	_tmp_leafdata = _mleafdata;
+	this ->setModify();
 
 	return true;
 }
@@ -993,16 +999,16 @@ void BPlusTree :: StoreTree()
 	mNode * pNode;
 	int _i_ord = 0;
 	bool any = false;
-	//cout << "in store " << endl;
+
 	while(!pQueue.empty())
 	{
 		pNode = pQueue.front();
 		pQueue.pop();
 //		内有unmodify
-		WriteNode(pNode, fp, this ->mblockQueue);
 		if(pNode->getModify()){
 			any = true;
 		}
+		WriteNode(pNode, fp, this ->mblockQueue);
 		_i_ord ++;
 		if(_i_ord % 1600 == 0)
 			cout << " - _i_ord= " << _i_ord;

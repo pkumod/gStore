@@ -5,6 +5,7 @@
  *      Author: liyouhuan
  */
 #include"KVstore.h"
+#include"../Database/Database.h"
 /* public methods: */
 
 int KVstore::getEntityDegree(int _entity_id)
@@ -35,101 +36,163 @@ int KVstore::getEntityOutDegree(int _entity_id)
  * 2. remove triple
  * before call this function, we were sure that this triple did not exist
  */
-void KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
+int KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
 {
-	/* update sp2o */
-	{
-		int* _sp2olist = NULL;
-		int _sp2o_len = 0;
-		this->getobjIDlistBysubIDpreID(_sub_id, _pre_id, _sp2olist, _sp2o_len);
-		/* if no duplication, _insert will be true
-		 * this->setXXX function will override the previous value */
-		bool _insert = this->insert_x(_sp2olist, _sp2o_len, _obj_id);
-		if(_insert){
-			this->setobjIDlistBysubIDpreID(_sub_id, _pre_id, _sp2olist, _sp2o_len);
-		}
-	}
+    //debug
+//    {
+//        stringstream _ss;
+//        _ss << "updateTupleslist_insert: " << _sub_id << " " << _pre_id << " " << _obj_id << endl;
+//        Database::log(_ss.str());
+//    }
 
-	/* update op2s */
-	{
-		int* _op2slist = NULL;
-		int _op2s_len = 0;
-		this->getsubIDlistByobjIDpreID(_obj_id, _pre_id, _op2slist, _op2s_len);
-		/* if no duplication, _insert will be true
-		 * this->setXXX function will override the previous value */
-		bool _insert = this->insert_x(_op2slist, _op2s_len, _sub_id);
-		if(_insert){
-			this->setsubIDlistByobjIDpreID(_obj_id, _pre_id, _op2slist, _op2s_len);
-		}
-	}
+    //debug
+    int updateListLen = 0;
 
-	/* update s2po */
-	{
-		int* _s2polist = NULL;
-		int _s2po_len = 0;
-		this->getpreIDobjIDlistBysubID(_sub_id, _s2polist, _s2po_len);
-		/* if no duplication, _insert will be true
-		 * this->setXXX function will override the previous value */
-		bool _insert = this->insert_xy(_s2polist, _s2po_len, _pre_id, _obj_id);
-		if(_insert){
-			this->setpreIDobjIDlistBysubID(_sub_id, _s2polist, _s2po_len);
-		}
-	}
+    /* update sp2o */
+    {
+        int* _sp2olist = NULL;
+        int _sp2o_len = 0;
+        this->getobjIDlistBysubIDpreID(_sub_id, _pre_id, _sp2olist, _sp2o_len);
 
-	/* update o2ps */
-	{
-		int* _o2pslist = NULL;
-		int _o2ps_len = 0;
-		this->getpreIDsubIDlistByobjID(_obj_id, _o2pslist, _o2ps_len);
-		/* if no duplication, _insert will be true
-		 * this->setXXX function will override the previous value */
-		bool _insert = this->insert_xy(_o2pslist, _o2ps_len, _pre_id, _sub_id);
-		if(_insert){
-			this->setpreIDsubIDlistByobjID(_obj_id, _o2pslist, _o2ps_len);
-		}
-	}
+        /* if no duplication, _insert will be true
+         * this->setXXX function will override the previous value */
+        bool _insert = this->insert_x(_sp2olist, _sp2o_len, _obj_id);
+        if(_insert){
+            this->setobjIDlistBysubIDpreID(_sub_id, _pre_id, _sp2olist, _sp2o_len);
+        }
 
-	/* update s2o */
-	{
-		int* _s2olist = NULL;
-		int _s2o_len = 0;
-		this->getobjIDlistBysubID(_sub_id, _s2olist, _s2o_len);
-		/* if no duplication, _insert will be true
-		 * this->setXXX function will override the previous value */
-		bool _insert = this->insert_x(_s2olist, _s2o_len, _obj_id);
-		if(_insert){
-			this->setobjIDlistBysubID(_sub_id, _s2olist, _s2o_len);
-		}
-	}
+        updateListLen += _sp2o_len;
 
-	/* update o2s */
-	{
-		int* _o2slist = NULL;
-		int _o2s_len = 0;
-		this->getsubIDlistByobjID(_obj_id, _o2slist, _o2s_len);
-		/* if no duplication, _insert will be true
-		 * this->setXXX function will override the previous value */
-		bool _insert = this->insert_x(_o2slist, _o2s_len, _sub_id);
-		if(_insert){
-			this->setsubIDlistByobjID(_obj_id, _o2slist, _o2s_len);
-		}
-	}
+        delete[] _sp2olist;
+        _sp2olist = NULL;
+        _sp2o_len = 0;
 
+    }
+
+    //debug
+//  Database::log("update sp2o done.");
+
+    /* update op2s */
+    {
+        int* _op2slist = NULL;
+        int _op2s_len = 0;
+        this->getsubIDlistByobjIDpreID(_obj_id, _pre_id, _op2slist, _op2s_len);
+
+        /* if no duplication, _insert will be true
+         * this->setXXX function will override the previous value */
+        bool _insert = this->insert_x(_op2slist, _op2s_len, _sub_id);
+        if(_insert){
+            this->setsubIDlistByobjIDpreID(_obj_id, _pre_id, _op2slist, _op2s_len);
+        }
+
+        updateListLen += _op2s_len;
+
+        delete[] _op2slist;
+        _op2slist = NULL;
+        _op2s_len = 0;
+    }
+
+    //debug
+//  Database::log("update op2s done.");
+
+    /* update s2po */
+    {
+        int* _s2polist = NULL;
+        int _s2po_len = 0;
+        this->getpreIDobjIDlistBysubID(_sub_id, _s2polist, _s2po_len);
+
+        /* if no duplication, _insert will be true
+         * this->setXXX function will override the previous value */
+        bool _insert = this->insert_xy(_s2polist, _s2po_len, _pre_id, _obj_id);
+        if(_insert){
+            this->setpreIDobjIDlistBysubID(_sub_id, _s2polist, _s2po_len);
+        }
+
+        updateListLen += _s2po_len;
+
+        delete[] _s2polist;
+        _s2polist = NULL;
+        _s2po_len = 0;
+    }
+
+    //debug
+//  Database::log("update s2po done.");
+
+    /* update o2ps */
+    {
+        int* _o2pslist = NULL;
+        int _o2ps_len = 0;
+        this->getpreIDsubIDlistByobjID(_obj_id, _o2pslist, _o2ps_len);
+
+        /* if no duplication, _insert will be true
+         * this->setXXX function will override the previous value */
+        bool _insert = this->insert_xy(_o2pslist, _o2ps_len, _pre_id, _sub_id);
+        if(_insert){
+            this->setpreIDsubIDlistByobjID(_obj_id, _o2pslist, _o2ps_len);
+        }
+
+        updateListLen += _o2ps_len;
+
+        delete[] _o2pslist;
+        _o2pslist = NULL;
+        _o2ps_len = 0;
+    }
+
+    //debug
+//  Database::log("update o2ps done.");
+
+    /* update s2o */
+    {
+        int* _s2olist = NULL;
+        int _s2o_len = 0;
+        this->getobjIDlistBysubID(_sub_id, _s2olist, _s2o_len);
+        /* if no duplication, _insert will be true
+         * this->setXXX function will override the previous value */
+        bool _insert = this->insert_x(_s2olist, _s2o_len, _obj_id);
+        if(_insert){
+            this->setobjIDlistBysubID(_sub_id, _s2olist, _s2o_len);
+        }
+
+        updateListLen += _s2o_len;
+
+        delete[] _s2olist;
+        _s2olist = NULL;
+        _s2o_len = 0;
+    }
+
+    //debug
+//    Database::log("update s2o done.");
+
+    /* update o2s */
+    {
+        int* _o2slist = NULL;
+        int _o2s_len = 0;
+        this->getsubIDlistByobjID(_obj_id, _o2slist, _o2s_len);
+
+        /* if no duplication, _insert will be true
+         * this->setXXX function will override the previous value */
+        bool _insert = this->insert_x(_o2slist, _o2s_len, _sub_id);
+        if(_insert){
+            this->setsubIDlistByobjID(_obj_id, _o2slist, _o2s_len);
+        }
+
+        updateListLen += _o2s_len;
+
+        delete[] _o2slist;
+        _o2slist = NULL;
+        _o2s_len = 0;
+    }
+
+    //debug
+    return updateListLen;
+
+    //debug
+//   Database::log("update o2s done.");
 }
 
 /* insert <_x_id, _y_id> into _xylist(keep _xylist(<x,y>) in ascending order) */
 bool KVstore::insert_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
 {
-	int _new_list_len = _list_len + 2;
-	int* _new_xylist = new int[_new_list_len];
-
-	/* if _xylist does not exist */
-	if(_xylist == NULL){
-		_new_xylist[0] = _x_id;
-		_new_xylist[1] = _y_id;
-		_list_len = _new_list_len;
-		return true;
-	}
 
 	/* check duplication */
 	for(int i = 0; i < _list_len; i += 2)
@@ -141,12 +204,24 @@ bool KVstore::insert_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
 		}
 	}
 
+	int _new_list_len = _list_len + 2;
+	int* _new_xylist = new int[_new_list_len];
+
+	/* if _xylist does not exist */
+	if(_xylist == NULL){
+		_new_xylist[0] = _x_id;
+		_new_xylist[1] = _y_id;
+		_xylist = _new_xylist;
+		_list_len = _new_list_len;
+		return true;
+	}
+
 	bool _insert_head = (_xylist[0] > _x_id) || (_xylist[0] == _x_id && _xylist[1] > _y_id);
 	if(_insert_head)
 	{
 		_new_xylist[0] = _x_id;
 		_new_xylist[1] = _y_id;
-		memcpy(_new_xylist, _xylist, _list_len*(sizeof(int)));
+		memcpy(_new_xylist + 2, _xylist, _list_len*(sizeof(int)));
 		delete[] _xylist;
 		_xylist = _new_xylist;
 		_list_len = _new_list_len;
@@ -169,17 +244,17 @@ bool KVstore::insert_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
 			_insert_xyid = _gt_previous && _lt_current;
 			if(_insert_xyid)
 			{
+			    //insert the new pair.
 				_new_xylist[j] = _x_id;
 				_new_xylist[j+1] = _y_id;
 				j += 2;
 			}
-			else
-			{
-				_new_xylist[j] = _xylist[i];
-				_new_xylist[j+1] = _xylist[i+1];
-				j += 2;
-				i += 2;
-			}
+
+			//copy the ith old pair to the new list.
+			_new_xylist[j] = _xylist[i];
+			_new_xylist[j+1] = _xylist[i+1];
+			j += 2;
+			i += 2;
 		}
 
 		bool _insert_tail = (j == _list_len);
@@ -201,6 +276,16 @@ bool KVstore::insert_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
 /* insert _x_id into _xlist(keep _xlist in ascending order) */
 bool KVstore::insert_x(int*& _xlist, int& _list_len, int _x_id)
 {
+
+
+	/* check duplication */
+	for(int i = 0; i < _list_len; i ++)
+	{
+		if(_xlist[i] == _x_id){
+			return false;
+		}
+	}
+
 	int _new_list_len = _list_len + 1;
 	int* _new_xlist = new int[_new_list_len];
 
@@ -210,14 +295,6 @@ bool KVstore::insert_x(int*& _xlist, int& _list_len, int _x_id)
 		_xlist = _new_xlist;
 		_list_len = _new_list_len;
 		return true;
-	}
-
-	/* check duplication */
-	for(int i = 0; i < _list_len; i ++)
-	{
-		if(_xlist[i] == _x_id){
-			return false;
-		}
 	}
 
 	bool _insert_head = _x_id < _xlist[0];
@@ -238,18 +315,19 @@ bool KVstore::insert_x(int*& _xlist, int& _list_len, int _x_id)
 		while(i < _list_len)
 		{
 			_insert_xid = (_xlist[i-1] < _x_id) && (_x_id < _xlist[i]);
+
+			//insert the new element.
 			if(_insert_xid)
 			{
 				_new_xlist[j] = _x_id;
-				j++;
-				continue;
+				j ++;
 			}
-			else
-			{
-				_new_xlist[j] = _xlist[i];
-				j++;
-				i++;
-			}
+
+			//copy the ith old element to the new list.
+			_new_xlist[j] = _xlist[i];
+			j ++;
+			i ++;
+
 		}
 		bool _insert_tail = (j == _list_len);
 		if(_insert_tail)

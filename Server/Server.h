@@ -46,6 +46,7 @@ public:
     bool unloadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg);
     bool showDatabases(std::string _ac_name, std::string& _ret_msg);
     bool importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg);
+    bool insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg);
     bool query(const std::string _query, std::string& _ret_msg);
 
 

@@ -80,6 +80,16 @@ bool LRUCache::loadCache(string _filePath)
         int pos = LRUCache::DEFAULT_NUM + this->size;
         this->setElem(pos, nodePtr->getFileLine(), nodePtr);
 
+        //debug
+        {
+            if (_tmp_cycle_count != nodePtr->getFileLine())
+            {
+                stringstream _ss;
+                _ss << "error file line: " << _tmp_cycle_count << " " << nodePtr->getFileLine() << " " << nodePtr->getChildNum() << endl;
+                Database::log(_ss.str());
+            }
+        }
+
         _tmp_cycle_count ++;
     }
 
@@ -256,13 +266,6 @@ void LRUCache:: freeElem(int _pos)
 /* set the memory of the _pos element in cache */
 void LRUCache:: setElem(int _pos, int _key, VNode* _value)
 {
-    //debug
-    {
-        if (_pos < 2 || _pos >= this->capacity)
-        {
-            cout << "!!! _pos=" << _pos << endl;
-        }
-    }
     this->key2pos[_key] = _pos;
     this->keys[_pos] = _key;
     this->values[_pos] = _value;
@@ -282,7 +285,7 @@ void LRUCache:: setElem(int _pos, int _key, VNode* _value)
 bool LRUCache::writeOut(int _pos, int _fileLine)
 {
     VNode* nodePtr = this->values[_pos];
-    FILE* filePtr = fopen(this->dataFilePath.c_str(),"a+b");
+    FILE* filePtr = fopen(this->dataFilePath.c_str(),"r+b");
 
     if (nodePtr == NULL)
     {
@@ -368,7 +371,7 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 /* write out all the elements to hard disk. */
 bool LRUCache::flush()
 {
-    FILE* filePtr = fopen(this->dataFilePath.c_str(),"a+b");
+    FILE* filePtr = fopen(this->dataFilePath.c_str(),"r+b");
 
     if (filePtr == NULL)
     {
@@ -386,19 +389,14 @@ bool LRUCache::flush()
         int line = this->keys[i];
 
         //debug
-//        {
-//            stringstream _ss;
-//            if (nodePtr->getFileLine() != line)
-//            {
-//                _ss << "line error!!!" << endl;
-//            }
-//            if (line == 0)
-//            {
-//                _ss << "at save tree, node 0 bitset:" << endl;
-//                _ss << nodePtr->to_str() << endl;
-//                Database::log(_ss.str());
-//            }
-//        }
+        {
+            if (nodePtr->getFileLine() != line)
+            {
+                stringstream _ss;
+                _ss << "line error at !!!" << line << " " << nodePtr->getFileLine() << endl;
+                Database::log(_ss.str());
+            }
+        }
 
         if (nodePtr == NULL)
         {

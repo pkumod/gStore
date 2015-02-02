@@ -7,7 +7,7 @@
 
 #include "Triple.h"
 
-Triple::Triple(const string _s, const string _p, const string _o)
+Triple::Triple(const string& _s, const string& _p, const string& _o)
 {
 	this->subject = _s;
 	this->predicate = _p;
@@ -91,3 +91,51 @@ const string Triple::toString()const{
 			this->predicate+"\t"+
 			this->object+".";
 }
+
+/* for TripleWithObjType */
+TripleWithObjType::TripleWithObjType():Triple()
+{
+    this->object_type = ' ';
+}
+
+TripleWithObjType::TripleWithObjType(const string& _s, const string& _p, const string& _o, const char& _o_type):Triple(_s, _p, _o)
+{
+    this->object_type = _o_type;
+}
+
+TripleWithObjType::TripleWithObjType(const TripleWithObjType& _triple_with_objtype):Triple(_triple_with_objtype)
+{
+    this->object_type = _triple_with_objtype.object_type;
+}
+
+TripleWithObjType& TripleWithObjType::operator=(const TripleWithObjType& _triple_with_objtype)
+{
+    Triple::operator=(_triple_with_objtype);
+    this->object_type = _triple_with_objtype.object_type;
+    return *this;
+}
+
+void TripleWithObjType::setObjType(const char &_o_type)
+{
+    this->object_type = _o_type;
+}
+
+bool TripleWithObjType::isObjEntity()const
+{
+    return this->object_type == TripleWithObjType::ENTITY;
+}
+
+bool TripleWithObjType::isObjLiteral()const
+{
+    return this->object_type == TripleWithObjType::LITERA;
+}
+
+const string TripleWithObjType::toString()const
+{
+    return this->subject+"\t"+
+            this->predicate+"\t"+
+            this->object+"\t"+
+            this->object_type + ".";
+}
+
+

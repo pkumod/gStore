@@ -119,6 +119,10 @@ int main(int argc, char * argv[])
 		ResultSet _rs;
 
 		_db.query(query, _rs);
+
+		//test...
+//		std::string answer_file = query_file+".out";
+//		util::save_to_file(answer_file.c_str(), _rs.to_str());
 	}
 
 	return 0;

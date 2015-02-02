@@ -53,21 +53,21 @@ string ResultSet::to_str()
 	std::stringstream _buf;
 
 	//debug
-	_buf << "There has answer: " << this->ansNum << endl;
-	_buf << this->var_name[0];
-	for(int i = 1; i < this->select_var_num; i ++)
-	{
-		_buf << "\t" << this->var_name[i];
-	}
-	_buf << "\n";
+//	_buf << "There has answer: " << this->ansNum << endl;
+//	_buf << this->var_name[0];
+//	for(int i = 1; i < this->select_var_num; i ++)
+//	{
+//		_buf << "\t" << this->var_name[i];
+//	}
+//	_buf << "\n";
 
 	for(int i = 0; i < this->ansNum; i ++)
 	{
 		_buf << this->answer[i][0];
 		for(int j = 1; j < this->select_var_num; j ++)
 		{
-			_buf << "\t" << this->answer[i][j];
-		    //_buf << " " << this->answer[i][j];
+			//_buf << "\t" << this->answer[i][j];
+		    _buf << " " << this->answer[i][j];
 		}
 		_buf << "\n";
 	}

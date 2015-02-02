@@ -13,7 +13,7 @@
 #include"../Bstr/Bstr.h"
 
 enum CommandType {CMD_CONNECT, CMD_EXIT, CMD_LOAD, CMD_UNLOAD, CMD_CREATE_DB, CMD_DELETE_DB,
-                  CMD_IMPORT, CMD_QUERY, CMD_SHOW, CMD_OTHER}; // extend the operation command type here.
+                  CMD_IMPORT, CMD_QUERY, CMD_SHOW, CMD_INSERT, CMD_OTHER}; // extend the operation command type here.
 
 class Operation
 {

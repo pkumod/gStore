@@ -149,6 +149,13 @@ void Server::listen()
                 }
                 break;
             }
+            case CMD_INSERT:
+            {
+                string db_name = operation.getParameter(0);
+                string rdf_path = operation.getParameter(1);
+                this->insertTriple(db_name, "", rdf_path, ret_msg);
+                break;
+            }
             default:
                 cerr << "this command is not supported by now. @Server::listen" << endl;
         }
@@ -218,6 +225,11 @@ bool Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
     {
         _ret_oprt.setCommand(CMD_SHOW);
         para_cnt = 1;
+    }
+    else if (cmd == "insert")
+    {
+        _ret_oprt.setCommand(CMD_INSERT);
+        para_cnt = 2;
     }
     else
     {
@@ -334,6 +346,29 @@ bool Server::importRDF(std::string _db_name, std::string _ac_name, std::string _
     else
     {
         _ret_msg = "import RDF file to database failed.";
+    }
+
+    return flag;
+}
+
+bool Server::insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
+{
+    if (this->database != NULL)
+    {
+        this->database->unload();
+        delete this->database;
+    }
+
+    this->database = new Database(_db_name);
+    bool flag = this->database->insert(_rdf_path);
+
+    if (flag)
+    {
+        _ret_msg = "insert triple file to database done.";
+    }
+    else
+    {
+        _ret_msg = "import triple file to database failed.";
     }
 
     return flag;

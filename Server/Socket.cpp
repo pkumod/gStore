@@ -37,25 +37,26 @@ bool Socket::create()
 
     if (!this->isValid())
     {
+        std::cerr << "create socket failed. @Socket::create" << std::endl;
         return false;
     }
 
     // TIME_WAIT - arg
     int on = 1;
     int setsockopt_REUSEADDR_return = setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on));
-    if (setsockopt_REUSEADDR_return == -1)
+
+    // BUFFER_SIZE - arg
+    int bufferSize = 128 * 1024;
+    int setsockopt_RCVBUF_return = setsockopt(this->sock, SOL_SOCKET, SO_RCVBUF,(const char*)&bufferSize, sizeof(bufferSize));
+    int setsockopt_SNDBUF_return = setsockopt(this->sock, SOL_SOCKET, SO_SNDBUF,(const char*)&bufferSize, sizeof(bufferSize));
+
+    if (setsockopt_REUSEADDR_return == -1 ||
+        setsockopt_RCVBUF_return == -1 ||
+        setsockopt_SNDBUF_return == -1)
     {
+        std::cerr << "set socket options failed. @Socket::create" << std::endl;
         return false;
     }
-
-    // send and recv TIME_OUT -arg
-//    struct timeval timeout = {3,0};
-//    int setsockopt_SNDTIMEO_return = setsockopt(this->sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(struct timeval));
-//    int setsockopt_RCVTIMEO_return = setsockopt(this->sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(struct timeval));
-//    if (setsockopt_SNDTIMEO_return == -1 || setsockopt_RCVTIMEO_return == -1)
-//    {
-//      return false;
-//    }
 
     return true;
 }

@@ -123,9 +123,5 @@ void Client::run()
             std::cerr << "disconnect server error. @Client::run" << std::endl;
             continue;
         }
-
-
     }
 }
-
-
