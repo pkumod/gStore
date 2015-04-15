@@ -1630,19 +1630,22 @@ bool Database::join
 
 		}
 		else
-		{
-			if (_edge_type == BasicQuery::EDGE_IN)
-			{
-//				std::cout << "\t\to2s" << std::endl;
-				kvstore->getsubIDlistByobjID(itr_result[_var_id],
-						id_list, id_list_len);
-			}
-			else
-			{
-				kvstore->getobjIDlistBysubID(itr_result[_var_id],
-						id_list, id_list_len);
-			}
-		}
+	    /* pre_id == -1 means we cannot find such predicate in rdf file, so the result set of this sparql should be empty.
+	     * note that we cannot support to query sparqls with predicate variables ?p.
+	     */
+        {
+		    id_list_len = 0;
+//          if (_edge_type == BasicQuery::EDGE_IN)
+//          {
+//              kvstore->getsubIDlistByobjID(itr_result[_var_id],
+//                      id_list, id_list_len);
+//          }
+//          else
+//          {
+//              kvstore->getobjIDlistBysubID(itr_result[_var_id],
+//                      id_list, id_list_len);
+//          }
+        }
 
 		if (id_list_len == 0)
 		{
@@ -1779,17 +1782,21 @@ bool Database::select(vector<int*>& _result_list,int _var_id,int _pre_id,int _va
 			}
 		}
 		else
+	    /* pre_id == -1 means we cannot find such predicate in rdf file, so the result set of this sparql should be empty.
+	     * note that we cannot support to query sparqls with predicate variables ?p.
+	     */
 		{
-			if (_edge_type == BasicQuery::EDGE_IN)
-			{
-				kvstore->getsubIDlistByobjID(itr_result[_var_id],
-						id_list, id_list_len);
-			}
-			else
-			{
-				kvstore->getobjIDlistBysubID(itr_result[_var_id],
-						id_list, id_list_len);
-			}
+		    id_list_len = 0;
+//			if (_edge_type == BasicQuery::EDGE_IN)
+//			{
+//				kvstore->getsubIDlistByobjID(itr_result[_var_id],
+//						id_list, id_list_len);
+//			}
+//			else
+//			{
+//				kvstore->getobjIDlistBysubID(itr_result[_var_id],
+//						id_list, id_list_len);
+//			}
 		}
 
 		if (id_list_len == 0)
@@ -1849,6 +1856,10 @@ bool Database::join(SPARQLquery& _sparql_query)
 		this->only_pre_filter_after_join(basic_query);
 		long after_pre_filter_after_join = util::get_cur_time();
 		cout << "after only_pre_filter_after_join : used " << (after_pre_filter_after_join-after_joinbasic) << " ms" << endl;
+
+		// remove invalid and duplicate result at the end.
+	    basic_query->dupRemoval_invalidRemoval();
+	    std::cout << "Final result:" << (basic_query->getResultList()).size() << std::endl;
 	}
 	return true;
 }
@@ -1945,12 +1956,6 @@ bool Database::join_basic(BasicQuery* basic_query)
 			dealed_triple[edge_id] = true;
 		}
 	}
-
-	basic_query->dupRemoval_invalidRemoval();
-
-	vector<int*> &result = basic_query->getResultList();
-	int result_size = result.size();
-	std::cout << "\t\tFinal result:" << result_size << std::endl;
 
 	cout << "OOOOOUT join basic" << endl;
 	return true;
@@ -2050,13 +2055,13 @@ void Database::literal_edge_filter(BasicQuery* basic_query, int _var_i)
 	//			std::cout << "\t\tedge[" << j << "] "<< lit_string << " has id " << lit_id << "";
 	//			std::cout << " preid:" << pre_id << " type:" << edge_type
 	//					<< std::endl;
-		{
-	//				stringstream _ss;
-	//				_ss << "\t\tedge[" << j << "] "<< lit_string << " has id " << lit_id << "";
-	//				_ss << " preid:" << pre_id << " type:" << edge_type
-	//						<< std::endl;
-	//				Database::log(_ss.str());
-		}
+//		{
+//					stringstream _ss;
+//					_ss << "\t\tedge[" << j << "] "<< lit_string << " has id " << lit_id << "";
+//					_ss << " preid:" << pre_id << " type:" << edge_type
+//							<< std::endl;
+//					Database::log(_ss.str());
+//		}
 
 		int id_list_len = 0;
 		int* id_list = NULL;
@@ -2088,16 +2093,16 @@ void Database::literal_edge_filter(BasicQuery* basic_query, int _var_i)
 		}
 
 		//debug
-//		{
-//		    stringstream _ss;
-//		    _ss << "id_list: ";
-//		    for (int i=0;i<id_list_len;i++)
-//		    {
-//		        _ss << "[" << id_list[i] << "]\t";
-//		    }
-//		    _ss<<endl;
-//		    Database::log(_ss.str());
-//		}
+		//      {
+		//          stringstream _ss;
+		//          _ss << "id_list: ";
+		//          for (int i=0;i<id_list_len;i++)
+		//          {
+		//              _ss << "[" << id_list[i] << "]\t";
+		//          }
+		//          _ss<<endl;
+		//          Database::log(_ss.str());
+		//      }
 
 		if(id_list_len == 0)
 		{
@@ -2286,7 +2291,7 @@ void Database::only_pre_filter_after_join(BasicQuery* basic_query)
                 for (vector<int>::iterator itr_pre = in_edge_pre_id.begin(); itr_pre != in_edge_pre_id.end(); itr_pre++)
                 {
                     int pre_id = (*itr_pre);
-                    bool exist_preid = util::bsearch_preid_uporder(pre_id, pair_list, pair_len);
+                    exist_preid = util::bsearch_preid_uporder(pre_id, pair_list, pair_len);
                     if (!exist_preid)
                     {
                         break;
@@ -2300,12 +2305,13 @@ void Database::only_pre_filter_after_join(BasicQuery* basic_query)
                 for (vector<int>::iterator itr_pre = out_edge_pre_id.begin(); itr_pre != out_edge_pre_id.end(); itr_pre++)
                 {
                     int pre_id = (*itr_pre);
-                    bool exist_preid = util::bsearch_preid_uporder(pre_id, pair_list, pair_len);
+                    exist_preid = util::bsearch_preid_uporder(pre_id, pair_list, pair_len);
                     if (!exist_preid)
                     {
                         break;
                     }
                 }
+
             }
             delete []pair_list;
 

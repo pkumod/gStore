@@ -113,20 +113,15 @@ void VSTree::retrieve(SPARQLquery& _query)
             this->retrieveEntity(entityBitSet, idListPtr);
 
             //debug
-            {
-                std::stringstream _ss;
-                _ss << "candidate num: " << idListPtr->size() << endl;
-//                if (i == 0)
-//                {
-//                    for (int j=0;j<idListPtr->size();j++)
-//                        _ss << idListPtr->getID(j) << " ";
-//                }
-                _ss << endl;
-                _ss << "isExist 473738: " << (idListPtr->isExistID(473738)?"true":"false") <<endl;
-                _ss << "isExist 473472: " << (idListPtr->isExistID(473472)?"true":"false") <<endl;
-                _ss << "isExist 473473: " << (idListPtr->isExistID(473473)?"true":"false") <<endl;
-                Database::log(_ss.str());
-            }
+//            {
+//                std::stringstream _ss;
+//                _ss << "candidate num: " << idListPtr->size() << endl;
+//                _ss << endl;
+//                _ss << "isExist 473738: " << (idListPtr->isExistID(473738)?"true":"false") <<endl;
+//                _ss << "isExist 473472: " << (idListPtr->isExistID(473472)?"true":"false") <<endl;
+//                _ss << "isExist 473473: " << (idListPtr->isExistID(473473)?"true":"false") <<endl;
+//                Database::log(_ss.str());
+//            }
 
         }
     }

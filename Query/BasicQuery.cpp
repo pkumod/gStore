@@ -462,7 +462,6 @@ void BasicQuery::initial()
 void BasicQuery::addInVarNotInSelect()
 {
     /* all vars in this set is met before at least once */
-
     int _v_n_i_s_next_id = this->var_str2id.size() + 0;
     for(int i = 0; i < this->triple_vt.size(); i ++)
     {
@@ -671,6 +670,9 @@ int BasicQuery::cmp_result(const void* _a, const void* _b)
     return 0;
 }
 
+/*
+ * I think this function is inefficient and inferior, we should re-write it later. by hanshuo
+ */
 bool BasicQuery::dupRemoval_invalidRemoval()
 {
     int result_size = this->result_list.size();
