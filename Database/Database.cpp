@@ -2297,6 +2297,7 @@ void Database::only_pre_filter_after_join(BasicQuery* basic_query)
                         break;
                     }
                 }
+                delete []pair_list;
             }
             if (exist_preid && !out_edge_pre_id.empty())
             {
@@ -2311,9 +2312,8 @@ void Database::only_pre_filter_after_join(BasicQuery* basic_query)
                         break;
                     }
                 }
-
-            }
-            delete []pair_list;
+                delete []pair_list;
+            }            
 
             // result sequence is illegal when there exists any missing filter predicate id.
             if (!exist_preid)
