@@ -15,6 +15,7 @@
 #include<map>
 #include<set>
 #include<vector>
+#include<algorithm>
 #include "../Triple/Triple.h"
 #include "../Signature/Signature.h"
 #include "../KVstore/KVstore.h"
@@ -153,6 +154,9 @@ private:
 	void updateSubSig(int _sub_id, int _pre_id, int _obj_id, std::string _obj, int _line_id);
 	void updateObjSig(int _obj_id, int _pre_id, int _sub_id, std::string _sub, int _line_id);
 
+	struct ResultCmp;
+	struct ResultEqual;
+
 public:
 
 	/* encode relative signature data of the query graph */
@@ -168,9 +172,9 @@ public:
 	int getVarID_MaxCandidateList();
 	int getVarID_FirstProcessWhenJoin();
 
-	static int cmp_result(const void* _a, const void* _b);
+	// deprecated.
+	// static int cmp_result(const void* _a, const void* _b);
 	bool dupRemoval_invalidRemoval();
-
 
 	std::string candidate_str();
 	std::string result_str();

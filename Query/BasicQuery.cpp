@@ -50,6 +50,16 @@ void BasicQuery::clear()
     this->edge_nei_id = NULL;
     this->edge_pre_id = NULL;
     this->edge_type = NULL;
+
+    delete[] this->candidate_list;
+    this->candidate_list = NULL;
+    delete[] this->is_literal_candidate_added;
+    this->is_literal_candidate_added = NULL;
+    for (int i=0;i<this->result_list.size();++i)
+    {
+        delete[] this->result_list[i];
+        this->result_list[i] = NULL;
+    }    
 }
 
 /* get the number of variables */
@@ -656,94 +666,167 @@ int BasicQuery::getVarID_FirstProcessWhenJoin()
         return min_var;
     }
 }
-int BasicQuery::cmp_result(const void* _a, const void* _b)
+
+struct BasicQuery::ResultEqual
 {
-    int** pa = (int**)_a;
-    int** pb = (int**)_b;
-    for(int i = 0; i < BasicQuery::MAX_VAR_NUM; i ++)
+    int result_len;
+    ResultEqual(int _l):result_len(_l){}
+    bool operator() (int* const& a, int* const& b)
     {
-        if((*pa)[i] != (*pb)[i])
+        for (int i=0;i<result_len;++i)
         {
-            return (*pa)[i] - (*pb)[i];
+            if (a[i] != b[i]) return false;
+        }
+        return true;
+    }
+};
+
+struct BasicQuery::ResultCmp
+{
+    int result_len;
+    ResultCmp(int _l):result_len(_l){}
+    bool operator() (int* const& a, int* const& b)
+    {
+        if (a[result_len] != b[result_len]) return (a[result_len] > b[result_len]);
+        for (int i=0;i<result_len;++i)
+        {
+            if (a[i] != b[i]) return (a[i] < b[i]);
+        }
+        return true;
+    }
+};
+
+bool BasicQuery::dupRemoval_invalidRemoval()
+{
+    std::cout << "IN dupRemoval_invalidRemoval" << std::endl;
+
+    ResultCmp resCmp(this->graph_var_num);
+    ResultEqual resEqual(this->select_var_num);
+
+    sort(this->result_list.begin(), this->result_list.end(), resCmp);
+    
+    int dup_num = 0, valid_num = 0;
+    int result_size = this->result_list.size();
+
+    for (int i=0;i<result_size;++i)
+    {
+        if (this->result_list[i][this->graph_var_num] == -1)
+        {
+            delete[] this->result_list[i];
+            this->result_list[i] = NULL;
+            continue;
+        }
+
+        if (i+1==result_size || !resEqual(this->result_list[i], this->result_list[i+1])) // valid result
+        {
+            this->result_list[valid_num++] = this->result_list[i];
+        }
+        else
+        {
+            delete[] this->result_list[i];
+            this->result_list[i] = NULL;
+            dup_num++;
         }
     }
-    return 0;
+    this->result_list.resize(valid_num);
+    
+    std::cout << "dup_num: " << dup_num << std::endl;
+    std::cout << "invalid_num: " << result_size - valid_num << std::endl;
+
+    std::cout << "OUT dupRemoval_invalidRemoval" << std::endl;
+    return true;
 }
+
+// deprecated.
+// int BasicQuery::cmp_result(const void* _a, const void* _b)
+// {
+//     int** pa = (int**)_a;
+//     int** pb = (int**)_b;
+//     for(int i = 0; i < BasicQuery::MAX_VAR_NUM; i ++)
+//     {
+//         if((*pa)[i] != (*pb)[i])
+//         {
+//             return (*pa)[i] - (*pb)[i];
+//         }
+//     }
+//     return 0;
+// }
 
 /*
  * I think this function is inefficient and inferior, we should re-write it later. by hanshuo
  */
-bool BasicQuery::dupRemoval_invalidRemoval()
-{
-    int result_size = this->result_list.size();
-    int ** p_tmp = new int*[result_size];
-    for(int i = 0; i < result_size; i ++)
-    {
-        p_tmp[i] = new int[BasicQuery::MAX_VAR_NUM+1];
-        memset(p_tmp[i], 0, sizeof(int)*(BasicQuery::MAX_VAR_NUM+1));
-    }
+// this function is deprecated.
+// bool BasicQuery::dupRemoval_invalidRemoval()
+// {
+//     int result_size = this->result_list.size();
+//     int ** p_tmp = new int*[result_size];
+//     for(int i = 0; i < result_size; i ++)
+//     {
+//         p_tmp[i] = new int[BasicQuery::MAX_VAR_NUM+1];
+//         memset(p_tmp[i], 0, sizeof(int)*(BasicQuery::MAX_VAR_NUM+1));
+//     }
 
 
-    cout << "before copy" << endl;
-    std::vector<int*>::iterator tmp_itr1 = this->result_list.begin();
-    int p_tmp_count = 0;
-    /* copy valid result into p_tmp */
-    while(tmp_itr1 != this->result_list.end())
-    {
-        /* invalidRemoval */
-        if((*tmp_itr1)[this->graph_var_num] != -1)
-        {
-            /* the invalid tagging bit is at [this->graph_var_num]
-             * while, the last result id is at [this->select_var_num-1]
-             * before where(included) we should delete duplication
-             *  */
-            memcpy(p_tmp[p_tmp_count], (*tmp_itr1), sizeof(int)*(this->select_var_num));
-            p_tmp_count ++;
-        }
-        tmp_itr1 ++;
-    }
+//     cout << "before copy" << endl;
+//     std::vector<int*>::iterator tmp_itr1 = this->result_list.begin();
+//     int p_tmp_count = 0;
+//     /* copy valid result into p_tmp */
+//     while(tmp_itr1 != this->result_list.end())
+//     {
+//         /* invalidRemoval */
+//         if((*tmp_itr1)[this->graph_var_num] != -1)
+//         {
+//             /* the invalid tagging bit is at [this->graph_var_num]
+//              * while, the last result id is at [this->select_var_num-1]
+//              * before where(included) we should delete duplication
+//              *  */
+//             memcpy(p_tmp[p_tmp_count], (*tmp_itr1), sizeof(int)*(this->select_var_num));
+//             p_tmp_count ++;
+//         }
+//         tmp_itr1 ++;
+//     }
 
-    cout << "before qsort" << endl;
-    /* sort p_tmp for future duplication removal */
-    qsort(p_tmp, p_tmp_count, sizeof(int**), BasicQuery::cmp_result);
-    cout << "before label" << endl;
-    int _cmp = -1;
-    int dup_num = 0;
-    for(int i = 1; i < p_tmp_count; i ++)
-    {
-        _cmp = BasicQuery::cmp_result( (void*)(p_tmp+(i-1)), (void*)(p_tmp+i) );
-        if(_cmp == 0)
-        {
-            /* set invalid */
-            p_tmp[i][BasicQuery::MAX_VAR_NUM] = -1;
-            dup_num ++;
-        }
-    }
+//     cout << "before qsort" << endl;
+//     /* sort p_tmp for future duplication removal */
+//     qsort(p_tmp, p_tmp_count, sizeof(int**), BasicQuery::cmp_result);
+//     cout << "before label" << endl;
+//     int _cmp = -1;
+//     int dup_num = 0;
+//     for(int i = 1; i < p_tmp_count; i ++)
+//     {
+//         _cmp = BasicQuery::cmp_result( (void*)(p_tmp+(i-1)), (void*)(p_tmp+i) );
+//         if(_cmp == 0)
+//         {
+//             /* set invalid */
+//             p_tmp[i][BasicQuery::MAX_VAR_NUM] = -1;
+//             dup_num ++;
+//         }
+//     }
 
-    std::vector<int*>::iterator tmp_itr2 = this->result_list.begin();
+//     std::vector<int*>::iterator tmp_itr2 = this->result_list.begin();
 
-    cout << "dup_num: " << dup_num << endl;
-    /* dupRemoval when re-assign valid ones back to result_list */
-    for(int i = 0; i < p_tmp_count; i ++)
-    {
-        if(p_tmp[i][BasicQuery::MAX_VAR_NUM] != -1)
-        {
-            memcpy(*tmp_itr2, p_tmp[i], sizeof(int)*this->graph_var_num);
-            tmp_itr2 ++;
-        }
-    }
-    this->result_list.erase(tmp_itr2, this->result_list.end());
+//     cout << "dup_num: " << dup_num << endl;
+//     /* dupRemoval when re-assign valid ones back to result_list */
+//     for(int i = 0; i < p_tmp_count; i ++)
+//     {
+//         if(p_tmp[i][BasicQuery::MAX_VAR_NUM] != -1)
+//         {
+//             memcpy(*tmp_itr2, p_tmp[i], sizeof(int)*this->graph_var_num);
+//             tmp_itr2 ++;
+//         }
+//     }
+//     this->result_list.erase(tmp_itr2, this->result_list.end());
 
-    cout << "before delete" << endl;
-    for(int i = 0; i < result_size; i ++)
-    {
-        delete[] (p_tmp[i]);
-    }
-    cout << "delete[] p_tmp" << endl;
-    delete[] p_tmp;
+//     cout << "before delete" << endl;
+//     for(int i = 0; i < result_size; i ++)
+//     {
+//         delete[] (p_tmp[i]);
+//     }
+//     cout << "delete[] p_tmp" << endl;
+//     delete[] p_tmp;
 
-    return true;
-}
+//     return true;
+// }
 
 std::string BasicQuery::candidate_str()
 {
