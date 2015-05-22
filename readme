@@ -1,4 +1,0 @@
-<0>./gload <1>db_folder_path <2>rdf_file_path
-
-<0>./gquery <1>db_folder_path [<2>query_file_path] [<3>output_file_path] 
-
