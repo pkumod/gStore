@@ -221,6 +221,7 @@ bool Database::remove(const string& _rdf_file)
 bool Database::build(const string& _rdf_file)
 {
     long tv_build_begin = util::get_cur_time();
+    bool flag = true;
 
     std::string store_path = this->name;
     util::create_dir(store_path);
@@ -233,8 +234,14 @@ bool Database::build(const string& _rdf_file)
 
     cout << "begin encode RDF from : " << _rdf_file << " ..." << endl;
     // to be switched to new encodeRDF method.
-//    this->encodeRDF(_rdf_file);
-    this->encodeRDF_new(_rdf_file);
+//    flag = this->encodeRDF(_rdf_file);
+    flag = this->encodeRDF_new(_rdf_file);
+    if (!flag)
+    {
+        std::cout << "encode RDF failed."<< std::endl;
+        return false;
+    }
+
     cout << "finish encode." << endl;
     std::string _entry_file = this->getSignatureBFile();
     (this->kvstore)->open();
@@ -474,27 +481,27 @@ bool Database::encodeRDF(const string _rdf_file)
 bool Database::encodeRDF_new(const string _rdf_file)
 {
 	Database::log("In encodeRDF_new");
+	bool flag = true;
+
 	int ** _p_id_tuples = NULL;
 	int _id_tuples_max = 0;
 
 	/* map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature */	
-	this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _p_id_tuples, _id_tuples_max);
-
+	flag = this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _p_id_tuples, _id_tuples_max);
+	if (!flag) return false;
 	/* map subid 2 objid_list  &
 	 * subIDpreID 2 objid_list &
 	 * subID 2 <preIDobjID>_list */
-	this->s2o_sp2o_s2po(_p_id_tuples, _id_tuples_max);
-
+	flag = this->s2o_sp2o_s2po(_p_id_tuples, _id_tuples_max);
+	if (!flag) return false;
 	/* map objid 2 subid_list  &
 	 * objIDpreID 2 subid_list &
 	 * objID 2 <preIDsubID>_list */
-	this->o2s_op2s_o2ps(_p_id_tuples, _id_tuples_max);
+	flag = this->o2s_op2s_o2ps(_p_id_tuples, _id_tuples_max);
+	if (!flag) return false;
 
-    bool flag = this->saveDBInfoFile();
-    if (!flag)
-    {
-        return false;
-    }
+    flag = this->saveDBInfoFile();
+    if (!flag) return false;
 
 	Database::log("finish encodeRDF_new");
 
@@ -527,14 +534,14 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int
 	ifstream _fin(_rdf_file.c_str());
 	if(!_fin){
 		cerr << "sub2id&pre2id&obj2id: Fail to open : " << _rdf_file << endl;
-		exit(0);
+		return false;
 	}
 		
 	std::string _six_tuples_file = this->getSixTuplesFile();
 	std::ofstream _six_tuples_fout(_six_tuples_file.c_str());
 	if(! _six_tuples_fout){
 		cerr << "sub2id&pre2id&obj2id: Fail to open: " << _six_tuples_file << endl;
-		exit(0);
+		return false;
 	}
 
 	TripleWithObjType* triple_array = new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP];
@@ -665,17 +672,18 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int
 			//_entity_bitset is used up, double the space
 			if (this->entity_num >= entitybitset_max)
 			{
-				entitybitset_max *= 2;
-				EntityBitSet** _new_entity_bitset = new EntityBitSet* [entitybitset_max];
-				memcpy(_new_entity_bitset, _entity_bitset, sizeof(EntityBitSet*) * this->entity_num);
+				EntityBitSet** _new_entity_bitset = new EntityBitSet* [entitybitset_max * 2];
+				memcpy(_new_entity_bitset, _entity_bitset, sizeof(EntityBitSet*) * entitybitset_max);
 				delete[] _entity_bitset;					
 				_entity_bitset = _new_entity_bitset;
 				
-				for(int i = this->entity_num; i < entitybitset_max; i ++)
+				for(int i = entitybitset_max; i < entitybitset_max * 2; i ++)
 				{
 					_entity_bitset[i] = new EntityBitSet();			
 					_entity_bitset[i] -> reset();
 				}
+
+				entitybitset_max *= 2;
 			}
 			
 			{

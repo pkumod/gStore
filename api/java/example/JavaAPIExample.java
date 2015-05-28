@@ -17,18 +17,18 @@ public class JavaAPIExample
 		
 	    // build a new database by a RDF file.
 	    // note that the relative path is related to gserver.
-		gc.build("db_LUBM10", "example/rdf_triple/LUBM_10_GStore.n3");
+		gc.build("db_LUBM10", "example/LUBM_10.n3");
 		
 		// then you can execute SPARQL query on this database.
 		String sparql = "select ?x where "
 				+ "{"
-				+ "?x    rdf:type    <ub:UndergraduateStudent>. "
-				+ "?y    ub:name <Course1>. "
-				+ "?x    ub:takesCourse  ?y. "
-				+ "?z    ub:teacherOf    ?y. "
-				+ "?z    ub:name <FullProfessor1>. "
-				+ "?z    ub:worksFor    ?w. "
-				+ "?w    ub:name    <Department0>. "
+				+ "?x    <rdf:type>    <ub:UndergraduateStudent>. "
+				+ "?y    <ub:name> <Course1>. "
+				+ "?x    <ub:takesCourse>  ?y. "
+				+ "?z    <ub:teacherOf>    ?y. "
+				+ "?z    <ub:name> <FullProfessor1>. "
+				+ "?z    <ub:worksFor>    ?w. "
+				+ "?w    <ub:name>    <Department0>. "
 				+ "}";				
 		String answer = gc.query(sparql);
 		System.out.println(answer);

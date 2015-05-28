@@ -25,7 +25,15 @@ int main(int argc, char * argv[])
 	string _db_path = string(argv[1]);
 	string _rdf = string(argv[2]);
 	Database _db(_db_path);
-	_db.build(_rdf);
+	bool flag = _db.build(_rdf);
+    if (flag)
+    {
+        cout << "import RDF file to database done." << endl;
+    }
+    else
+    {
+        cout << "import RDF file to database failed." << endl;
+    }
 	system("clock");
 	return 0;
 }

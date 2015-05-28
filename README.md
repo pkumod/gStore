@@ -103,6 +103,13 @@ gclient is designed as a client to send commands and receive feedbacks.
     ip=127.0.0.1 port=3305
     ->
 
+You can also assign gserver's ip and port.
+
+    [root@centos74 Gstore]# ./gclient 172.31.19.15 3307
+    ip=172.31.19.15 port=3307
+    ->
+
+
 We can use these following commands now:
 
 `->import db_name rdf_triple_file_name;`
