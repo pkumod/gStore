@@ -121,10 +121,10 @@ load an exsisting database.
 `->unload db_name;`
 unload database, but will not delete it on disk, you can load it next time.
 
-`->query query_file_name;`
-query the current database with a SPARQL query file.
+`->query SPARQL;`
+query the current database with a SPARQL query.
 
-`->show datbases;`
+`->show databases;`
 show the current database's name.
 
 `->insert db_name rdf_triple_file_name;`
