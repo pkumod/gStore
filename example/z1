@@ -1,4 +1,0 @@
-select ?x where
-{
-?x	dbo:coach	<Wes_Fesler>.
-}

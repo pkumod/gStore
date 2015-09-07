@@ -1,8 +1,0 @@
-select ?x1 ?x2 where
-{
-?x1	rdfs:label	?x3.
-?x1	y:isMarriedTo	?x2.
-?x1	y:bornIn	?x5.
-?x2	y:bornIn	?x5.
-?x2	rdfs:label	?x4.
-}
