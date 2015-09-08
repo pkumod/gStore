@@ -25,10 +25,10 @@
 #include<set>
 
 #define BLOCKSIZE		(1 << 14)/* 16K */
-#define ORDER_V 		128    					/* Îª¼òµ¥Æğ¼û£¬°Ñv¹Ì¶¨Îª2£¬Êµ¼ÊµÄB+Ê÷vÖµÓ¦¸ÃÊÇ¿ÉÅäµÄ */
-#define MAXNUM_KEY 		(ORDER_V * 2)    	/* ÄÚ²¿½áµãÖĞ×î¶à¼ü¸öÊı£¬Îª2v ( 1~2v )*/
-#define MAXNUM_POINTER 	(ORDER_V * 2 + 1)    	/* ÄÚ²¿½áµãÖĞ×î¶àÖ¸Ïò×ÓÊ÷µÄÖ¸Õë¸öÊı£¬Îª2v ( 1~2v )*/
-#define MAXNUM_DATA 	(ORDER_V * 2 + 1)    	/* ½áµãÖĞÓÃ×÷¶¨Òå£¬Îª2v ( 1~2v )*/
+#define ORDER_V         128                     /* ä¸ºç®€å•èµ·è§ï¼ŒæŠŠvå›ºå®šä¸º2ï¼Œå®é™…çš„B+æ ‘vå€¼åº”è¯¥æ˜¯å¯é…çš„ */
+#define MAXNUM_KEY      (ORDER_V * 2)       /* å†…éƒ¨ç»“ç‚¹ä¸­æœ€å¤šé”®ä¸ªæ•°ï¼Œä¸º2v ( 1~2v )*/
+#define MAXNUM_POINTER  (ORDER_V * 2 + 1)       /* å†…éƒ¨ç»“ç‚¹ä¸­æœ€å¤šæŒ‡å‘å­æ ‘çš„æŒ‡é’ˆä¸ªæ•°ï¼Œä¸º2v ( 1~2v )*/
+#define MAXNUM_DATA     (ORDER_V * 2 + 1)       /* ç»“ç‚¹ä¸­ç”¨ä½œå®šä¹‰ï¼Œä¸º2v ( 1~2v )*/
 #define TERM_NUMBER		1
 
 #define FLAG_LEFT		5
@@ -49,8 +49,8 @@ using namespace std;
 
 enum NODE_TYPE
 {
-	NODE_TYPE_INTERNAL = 2,    // ÄÚ²¿½áµã
-	NODE_TYPE_LEAF     = 3,    // Ò¶×Ó½áµã
+    NODE_TYPE_INTERNAL = 2,    // å†…éƒ¨ç»“ç‚¹
+    NODE_TYPE_LEAF     = 3,    // å¶å­ç»“ç‚¹
 };
 enum eletype
 {
@@ -73,7 +73,7 @@ public:
 	bool 	is_AtMem;
 	char*	sKey;
 	int 	iKey;
-	int		mLenKey;    //¹ØÓÚÊÇ·ñ¶ÁÈë\nµÄÊÔÑé
+	int		mLenKey;    //å…³äºæ˜¯å¦è¯»å…¥\nçš„è¯•éªŒ
 	KeyType()
 	{
 		KeyType_Initial();
@@ -179,9 +179,9 @@ public:
 	void ReadKey(FILE * fp);
 
 	void WriteKey(FILE * fp);
-	/*
-	 * ºÏÊÊµÄ¹¦ÄÜº¯Êı
-	 */
+    /*
+     * åˆé€‚çš„åŠŸèƒ½å‡½æ•°
+     */
 	int WriteSize()
 	{
 		int size_mLenKey = sizeof(mLenKey);
@@ -524,7 +524,7 @@ public:
 		{
 			Term[0][_tag] = '\0';
 			lenTerm[0] -= sizeof(int) + sizeof(char);
-			//Ö»ÓĞÒ»¸öÔªËØÊ±ºÜÌØÊâ£¬ ³¤¶ÈÊÇ¼õÉÙ4£¬ ÆäÓà¼õÉÙ5
+			//åªæœ‰ä¸€ä¸ªå…ƒç´ æ—¶å¾ˆç‰¹æ®Šï¼Œ é•¿åº¦æ˜¯å‡å°‘4ï¼Œ å…¶ä½™å‡å°‘5
 			if(lenTerm[0] <= 0) flag = FLAG_ZERO;
 			else				flag = FLAG_NO_ZERO;
 			return true;
@@ -630,9 +630,10 @@ public:
 class mQueue
 {
 public:
-	static const int qLenth = 5243005;
+//	static const int qLenth = 5243005; /* 5*1024*1024 */
+    static const int qLenth = 20971520; /* 20*1024*1024 */
 	int qUsed;
-	bool qAvailable[mQueue::qLenth];/* 5*1024*1024 */
+	bool qAvailable[mQueue::qLenth];
 
 public:
 	mQueue()
@@ -787,7 +788,7 @@ public:
 		mNode * _pBrother = NULL;
 		for(int i = 1; i <= _pFather ->getCount(); i ++)
 		{
-			//Ö¸ÕëÆ¥Åä
+			//Ö¸ï¿½ï¿½Æ¥ï¿½ï¿½
 			if(_pFather ->getPointer(i) == this)
 			{
 				if(i == (_pFather ->getCount()) + 1)
@@ -973,7 +974,7 @@ public:
 		}
 	}
 
-	//´Ëº¯ÊıĞè×ĞÏ¸¿¼ÂÇ~~£¡£¡
+	//æ­¤å‡½æ•°éœ€ä»”ç»†è€ƒè™‘~~ï¼ï¼
 	int iExist(const KeyType &_keytype)
 	{
 		int _ibegin = 1, _iend = getCount();
@@ -991,7 +992,7 @@ public:
 			}
 
 			if(_ibegin == _iend - 1) return -1;
-			// ºó¼Ó¿ÉÄÜÓĞ·çÏÕ
+			// ååŠ å¯èƒ½æœ‰é£é™©
 
 			if(ItnlData[_imiddle].mKey > _keytype)
 			{
@@ -1129,17 +1130,17 @@ public:
 		printf("  ==  ");
 	}
 
-	// ²åÈë¼ü
-//	×î×ó¶Ëµİ¹éÏòÉÏ
-	bool Insert(mNode* _pmnode);
-	// É¾³ı¼ü
-	int Delete(const KeyType & _keytype);
-	// ·ÖÁÑ½áµã
-	KeyType & Split(mItnlNode* _mitnlnode);
-	// ½áºÏ½áµã
-	bool Combine(mItnlNode * _pmnode);
-	// ´ÓÁíÒ»½áµãÒÆÒ»¸öÔªËØµ½±¾½áµã
-	bool MoveOneElement(mNode * _pmnode);
+    // æ’å…¥é”®
+//  æœ€å·¦ç«¯é€’å½’å‘ä¸Š
+    bool Insert(mNode* _pmnode);
+    // åˆ é™¤é”®
+    int Delete(const KeyType & _keytype);
+    // åˆ†è£‚ç»“ç‚¹
+    KeyType & Split(mItnlNode* _mitnlnode);
+    // ç»“åˆç»“ç‚¹
+    bool Combine(mItnlNode * _pmnode);
+    // ä»å¦ä¸€ç»“ç‚¹ç§»ä¸€ä¸ªå…ƒç´ åˆ°æœ¬ç»“ç‚¹
+    bool MoveOneElement(mNode * _pmnode);
 
 };
 
@@ -1433,7 +1434,7 @@ public:
 		}
 	}
 
-//	´ËÁ½¸öº¯Êı¶ÔÒ¶½ÚµãÎŞÒâÒå
+	//  æ­¤ä¸¤ä¸ªå‡½æ•°å¯¹å¶èŠ‚ç‚¹æ— æ„ä¹‰
 	mNode * getPointer(int _i)
 	{
 		return NULL;
@@ -1479,7 +1480,7 @@ public:
 		}
 		return -1;
 	}
-//	¿¼ÂÇcout = 0µÄÇé¿ö
+	//  è€ƒè™‘cout = 0çš„æƒ…å†µ
 	int iInsert(const KeyType & _keytype)
 	{
 		int _ibegin = 1, _iend = getCount();
@@ -1554,19 +1555,19 @@ public:
 
 
 
-	// ²åÈëÊı¾İ
-//	×î×ó¶Ëµİ¹éÏòÉÏ
-	bool Insert(const mleafdata & _leafdata);
-	// É¾³ıÊı¾İ
-	int Delete(KeyType & _keytype);
-	//ÖØÔØdelete partval
-	int Delete(KeyType & _keytype, char partval[], int & pvFlag);
-	// ·ÖÁÑ½áµã
-	KeyType & Split(mLeafNode* _mpnode);
-	// ½áºÏ½áµã
-	bool Combine(mLeafNode* _mpnode);
-	// ÖØ¸´²åÈë
-	bool dupInsert(const mleafdata & _leafdata, int _index_insert);
+    // æ’å…¥æ•°æ®
+//  æœ€å·¦ç«¯é€’å½’å‘ä¸Š
+    bool Insert(const mleafdata & _leafdata);
+    // åˆ é™¤æ•°æ®
+    int Delete(KeyType & _keytype);
+    //é‡è½½delete partval
+    int Delete(KeyType & _keytype, char partval[], int & pvFlag);
+    // åˆ†è£‚ç»“ç‚¹
+    KeyType & Split(mLeafNode* _mpnode);
+    // ç»“åˆç»“ç‚¹
+    bool Combine(mLeafNode* _mpnode);
+    // é‡å¤æ’å…¥
+    bool dupInsert(const mleafdata & _leafdata, int _index_insert);
 };
 
 extern mNode* ReadNode(FILE * fp, long long int _addr);
@@ -1583,19 +1584,19 @@ extern bool Delete_obj2sID(char _obj_str[], int _del_sID, BPlusTree * _p_obj2sID
 extern bool Delete_objpID2sID(char _obj_str[], int _pID, int _del_sID, BPlusTree * _p_objpID2sID);
 
 
-/* B+Ê÷Êı¾İ½á¹¹ */
+/* B+æ ‘æ•°æ®ç»“æ„ */
 class BPlusTree
 {
 public:
 
-	// ÒÔÏÂÁ½¸ö±äÁ¿ÓÃÓÚÊµÏÖË«ÏòÁ´±í
-	mLeafNode* pmLeafHead;                   // Í·½áµã
-	mLeafNode* pmLeafTail;                   // Î²½áµã
-	mNode * mRoot;   						 // ¸ù½áµã
+    // ä»¥ä¸‹ä¸¤ä¸ªå˜é‡ç”¨äºå®ç°åŒå‘é“¾è¡¨
+	mLeafNode* pmLeafHead;                   // å¤´ç»“ç‚¹
+	mLeafNode* pmLeafTail;                    // å°¾ç»“ç‚¹
+	mNode * mRoot;   						 // æ ¹ç»“ç‚¹
 	mQueue mblockQueue;
 	FILE * mfp;
-	char mTreeName[55];
-	int mDepth;       						 // Ê÷µÄÉî¶È
+	char mTreeName[1024];
+	int mDepth;       						 // æ ‘çš„æ·±åº¦
 	int insert_count;
 
 	void Initial();
@@ -1605,33 +1606,33 @@ public:
 	void log(const char* _log)const;
 	void forcheck();
 
-	// »ñÈ¡ºÍÉèÖÃ¸ù½áµã
-	mNode * getRoot()				{		return mRoot;	}
+    // è·å–å’Œè®¾ç½®æ ¹ç»“ç‚¹
+    mNode * getRoot()               {       return mRoot;   }
 
-	void setRoot(mNode * root)		{		mRoot = root;	}
-	void Flush();
-	// Îª²åÈë¶ø²éÕÒÒ¶×Ó½áµã
-	mLeafNode * SearchLeafNode(const KeyType & data)const;
-	//²åÈë¼üµ½ÖĞ¼ä½áµã
-	bool InsertItnlNode(mItnlNode * pNode, mNode * pSon);
-	// ÔÚÖĞ¼ä½áµãÖĞÉ¾³ı¼ü
-	bool DeleteItnlNode(mItnlNode * pNode, KeyType & key);
-	// ²éÕÒÖ¸¶¨µÄÊı¾İ
-	bool Search(KeyType & data, mleafdata & _ret);
-	// ²åÈëÖ¸¶¨µÄÊı¾İ
-	bool Insert(const mleafdata & _mleafdata);
-	// É¾³ıÖ¸¶¨µÄÊı¾İ
-	bool Delete(KeyType & data);
-	// ÖØÔØÉ¾³ıº¯Êı
-	bool Delete(KeyType & data, char PartVal[]);
-	// Çå³ıÊ÷
-	void ClearTree();
-	// ´òÓ¡Ê÷
-	void PrintTree();
-	//¶Á³ö¸ù½Úµã
-	void ReadRoot();
-	//±£´æÊ÷½á¹¹
-	void StoreTree();
+    void setRoot(mNode * root)      {       mRoot = root;   }
+    void Flush();
+    // ä¸ºæ’å…¥è€ŒæŸ¥æ‰¾å¶å­ç»“ç‚¹
+    mLeafNode * SearchLeafNode(const KeyType & data)const;
+    //æ’å…¥é”®åˆ°ä¸­é—´ç»“ç‚¹
+    bool InsertItnlNode(mItnlNode * pNode, mNode * pSon);
+    // åœ¨ä¸­é—´ç»“ç‚¹ä¸­åˆ é™¤é”®
+    bool DeleteItnlNode(mItnlNode * pNode, KeyType & key);
+    // æŸ¥æ‰¾æŒ‡å®šçš„æ•°æ®
+    bool Search(KeyType & data, mleafdata & _ret);
+    // æ’å…¥æŒ‡å®šçš„æ•°æ®
+    bool Insert(const mleafdata & _mleafdata);
+    // åˆ é™¤æŒ‡å®šçš„æ•°æ®
+    bool Delete(KeyType & data);
+    // é‡è½½åˆ é™¤å‡½æ•°
+    bool Delete(KeyType & data, char PartVal[]);
+    // æ¸…é™¤æ ‘
+    void ClearTree();
+    // æ‰“å°æ ‘
+    void PrintTree();
+    //è¯»å‡ºæ ¹èŠ‚ç‚¹
+    void ReadRoot();
+    //ä¿å­˜æ ‘ç»“æ„
+    void StoreTree();
 
 };
 #endif /* CBTREE_H_ */

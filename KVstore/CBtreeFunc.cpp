@@ -15,7 +15,7 @@ string filePath_sID2s;
 string filePath_o2sID;
 string filePath_opID2sID;
 FILE * _log_btree;
-// ÔÚÖĞ¼ä½áµãÖĞ²åÈë¼ü
+// åœ¨ä¸­é—´ç»“ç‚¹ä¸­æ’å…¥é”®
 bool mItnlNode::Insert( mNode * pNode)
 {
 	if(getCount() >= MAXNUM_KEY)
@@ -32,7 +32,7 @@ bool mItnlNode::Insert( mNode * pNode)
 		printf("err in insert itnl\n");
 		system("pause"); exit(0);
 	}
-//	ÔÚÒª²åÈëµÄµãÊÇÔÚ×îÓÒ¶ËÊ±ÒªÌØÊâ´¦Àí, solved
+	//  åœ¨è¦æ’å…¥çš„ç‚¹æ˜¯åœ¨æœ€å³ç«¯æ—¶è¦ç‰¹æ®Šå¤„ç†, solved
 	for(int i = getCount() + 1; i > _ikey; i --)
 	{
 		this ->setElement(i,  this ->getElement(i - 1) );
@@ -50,13 +50,13 @@ bool mItnlNode::Insert( mNode * pNode)
 	return true;
 }
 
-// ÔÚÖĞ¼ä½áµãÖĞÉ¾³ı¼ü£¬ÒÔ¼°¸Ã¼üºóµÄÖ¸Õë
+// åœ¨ä¸­é—´ç»“ç‚¹ä¸­åˆ é™¤é”®ï¼Œä»¥åŠè¯¥é”®åçš„æŒ‡é’ˆ
 int mItnlNode::Delete(const KeyType & _keytype)
 {
 	int _index = -1;
 	int _ibegin = 1, _iend = getCount();
 	int _imiddle;
-	// ¶ş·Ö²éÕÒindex
+	// äºŒåˆ†æŸ¥æ‰¾index
 	while(_ibegin < _iend)
 	{
 		_imiddle = (_ibegin + _iend) / 2;
@@ -81,9 +81,9 @@ int mItnlNode::Delete(const KeyType & _keytype)
 		}
 	}
 
-	//ÈÎºÎÒ»¸ö²»ÊÇ¸ù½Úµã»ò²»ÊÇÒ¶×Ó½ÚµãµÄ½Úµã±ØĞë±£Ö¤°üº¬ÖÁÉÙÁ½¸öÔªËØ
-	// ¶ÔÓÚinsert£¬ index = 1 µÄÊ±ºòÒ»¶¨ÊÇÕû¿ÃÊ÷µÄ×îÓÒ±ß£¡£¡£¡
-	// deleteÔò²»Í¬
+    //ä»»ä½•ä¸€ä¸ªä¸æ˜¯æ ¹èŠ‚ç‚¹æˆ–ä¸æ˜¯å¶å­èŠ‚ç‚¹çš„èŠ‚ç‚¹å¿…é¡»ä¿è¯åŒ…å«è‡³å°‘ä¸¤ä¸ªå…ƒç´ 
+    // å¯¹äºinsertï¼Œ index = 1 çš„æ—¶å€™ä¸€å®šæ˜¯æ•´æ£µæ ‘çš„æœ€å³è¾¹ï¼ï¼ï¼
+    // deleteåˆ™ä¸åŒ
 	if(_index == 1 && this ->getFather() != NULL)
 	{
 		mItnlNode * itnl_father = (mItnlNode *)(this ->getFather() );
@@ -91,7 +91,7 @@ int mItnlNode::Delete(const KeyType & _keytype)
 		KeyType & i_data = this ->getKey(2);
 		while(itnl_father != NULL)
 		{
-			// ´Ë´¦Í¬insert²»Í¬£¬ÉóÉ÷Æä²»Í¬Ö®´¦
+            // æ­¤å¤„åŒinsertä¸åŒï¼Œå®¡æ…å…¶ä¸åŒä¹‹å¤„
 			int tmp_key = itnl_father ->iExist(f_data);
 			if(tmp_key < 1)
 			{
@@ -142,7 +142,7 @@ KeyType & mItnlNode::Split(mItnlNode* pNode)
 	return (pNode ->getElement(1)).mKey;
 }
 
-// ½áºÏ½áµã£¬°ÑÖ¸¶¨ÖĞ¼ä½áµãµÄÊı¾İÈ«²¿¼ôÇĞµ½±¾ÖĞ¼ä½áµã
+// ç»“åˆç»“ç‚¹ï¼ŒæŠŠæŒ‡å®šä¸­é—´ç»“ç‚¹çš„æ•°æ®å…¨éƒ¨å‰ªåˆ‡åˆ°æœ¬ä¸­é—´ç»“ç‚¹
 bool mItnlNode::Combine(mItnlNode * pNode)
 {
 	if(this ->getCount() + pNode ->getCount() > MAXNUM_KEY)
@@ -156,7 +156,7 @@ bool mItnlNode::Combine(mItnlNode * pNode)
 	return true;
 }
 
-// ´ÓÁíÒ»½áµãÒÆÒ»¸öÔªËØµ½±¾½áµã
+// ä»å¦ä¸€ç»“ç‚¹ç§»ä¸€ä¸ªå…ƒç´ åˆ°æœ¬ç»“ç‚¹
 bool mItnlNode::MoveOneElement(mNode* pNode)
 {
 
@@ -164,9 +164,9 @@ bool mItnlNode::MoveOneElement(mNode* pNode)
 	return false;
 }
 
-// Çå³ıÒ¶×Ó½áµãÖĞµÄÊı¾İ
+// æ¸…é™¤å¶å­ç»“ç‚¹ä¸­çš„æ•°æ®
 
-// ÔÚÒ¶×Ó½áµãÖĞ²åÈëÊı¾İ
+// åœ¨å¶å­ç»“ç‚¹ä¸­æ’å…¥æ•°æ®
 bool mLeafNode::Insert(const mleafdata & _leafdata)
 {
 	const KeyType & data = _leafdata.mData;
@@ -179,9 +179,9 @@ bool mLeafNode::Insert(const mleafdata & _leafdata)
 		printf("err count too large\n");
 		return false;
 	}
-//	·µ»Øi£¬ data ½éÓÚi - 1 Óë i Ö®¼ä, Òª·ÅÔÚi ÉÏ
+	//  è¿”å›iï¼Œ data ä»‹äºi - 1 ä¸ i ä¹‹é—´, è¦æ”¾åœ¨i ä¸Š
 	int _i_insert = this ->iInsert(data);
-//	»¹Òª¿¼ÂÇ½ö¸ù½ÚµãÊÇÒ¶×Ó½ÚµãµÄÇé¿ö£¬ ĞèÒªÔÙ¼Ó¸öÌõ¼ş
+	//  è¿˜è¦è€ƒè™‘ä»…æ ¹èŠ‚ç‚¹æ˜¯å¶å­èŠ‚ç‚¹çš„æƒ…å†µï¼Œ éœ€è¦å†åŠ ä¸ªæ¡ä»¶
 	if(_i_insert == 1 && this ->getFather() != NULL)
 	{
 		mItnlNode * _pFather = (mItnlNode *)(this ->getFather());
@@ -196,7 +196,7 @@ bool mLeafNode::Insert(const mleafdata & _leafdata)
 				system("pause");
 				exit(0);
 			}
-			//Í¬²½Ê¹µÃÄÚ´æÎ»µÈÆäËüÎ»Ê§Ğ§£¬ ²ßÂÔÊ§²ß£¬ ÃÖ²¹Ö®¡£¡£
+			//åŒæ­¥ä½¿å¾—å†…å­˜ä½ç­‰å…¶å®ƒä½å¤±æ•ˆï¼Œ ç­–ç•¥å¤±ç­–ï¼Œ å¼¥è¡¥ä¹‹ã€‚ã€‚
 			_pFather ->setKey(_ikey, _leafdata.mData);
 			_pFather ->setMemory(_ikey);
 			_pFather ->setModify();
@@ -216,10 +216,10 @@ bool mLeafNode::Insert(const mleafdata & _leafdata)
 }
 
 /*
- * É¾³ı³É¹¦·µ»ØÉ¾³ıµÄkeyµÄÏÂ±ê£¬ Ê§°ÜÔò·µ»Ø-1
- * ÉèÖÃĞŞ¸ÄÎ»
- * ÈôÊÇ×î×ó¶ËµÄÔªËØÔòÏòÉÏĞŞ¸Ä¶ÔÓ¦ĞèÒªĞŞ¸ÄµÄ¸¸½Úµã£¬ ´Ë´¦Óëinsert²»Í¬
- * insertÈô³öÏÖ×î×ó¶Ë±ØÈ»ÊÇÕû¿ÃÊ÷µÄ×î×ó¶Ë
+ * åˆ é™¤æˆåŠŸè¿”å›åˆ é™¤çš„keyçš„ä¸‹æ ‡ï¼Œ å¤±è´¥åˆ™è¿”å›-1
+ * è®¾ç½®ä¿®æ”¹ä½
+ * è‹¥æ˜¯æœ€å·¦ç«¯çš„å…ƒç´ åˆ™å‘ä¸Šä¿®æ”¹å¯¹åº”éœ€è¦ä¿®æ”¹çš„çˆ¶èŠ‚ç‚¹ï¼Œ æ­¤å¤„ä¸insertä¸åŒ
+ * insertè‹¥å‡ºç°æœ€å·¦ç«¯å¿…ç„¶æ˜¯æ•´æ£µæ ‘çš„æœ€å·¦ç«¯
  */
 int mLeafNode::Delete(KeyType & _keytype)
 {
@@ -249,9 +249,9 @@ int mLeafNode::Delete(KeyType & _keytype)
 			_ibegin = _imiddle;
 		}
 	}
-	//ÈÎºÎÒ»¸ö²»ÊÇ¸ù½Úµã»ò²»ÊÇÒ¶×Ó½ÚµãµÄ½Úµã±ØĞë±£Ö¤°üº¬ÖÁÉÙÁ½¸öÔªËØ
-	// ¶ÔÓÚinsert£¬ index = 1 µÄÊ±ºòÒ»¶¨ÊÇÕû¿ÃÊ÷µÄ×îÓÒ±ß£¡£¡£¡
-	// deleteÔò²»Í¬
+    //ä»»ä½•ä¸€ä¸ªä¸æ˜¯æ ¹èŠ‚ç‚¹æˆ–ä¸æ˜¯å¶å­èŠ‚ç‚¹çš„èŠ‚ç‚¹å¿…é¡»ä¿è¯åŒ…å«è‡³å°‘ä¸¤ä¸ªå…ƒç´ 
+    // å¯¹äºinsertï¼Œ index = 1 çš„æ—¶å€™ä¸€å®šæ˜¯æ•´æ£µæ ‘çš„æœ€å³è¾¹ï¼ï¼ï¼
+    // deleteåˆ™ä¸åŒ
 	if(_index == 1 && this ->getFather() != NULL)
 	{
 		mItnlNode * itnl_father = (mItnlNode *)(this ->getFather() );
@@ -259,7 +259,7 @@ int mLeafNode::Delete(KeyType & _keytype)
 		KeyType & i_data = this ->getKey(2);
 		while(itnl_father != NULL)
 		{
-			// ´Ë´¦Í¬insert²»Í¬£¬ÉóÉ÷Æä²»Í¬Ö®´¦
+		    // æ­¤å¤„åŒinsertä¸åŒï¼Œå®¡æ…å…¶ä¸åŒä¹‹å¤„
 			int tmp_key = itnl_father ->iExist(f_data);
 			if(tmp_key < 1)
 			{
@@ -292,7 +292,7 @@ int mLeafNode::Delete(KeyType & _keytype)
 	}
 	return -1;
 }
-//ÖØÔØdelete of leaf
+//é‡è½½delete of leaf
 int mLeafNode::Delete(KeyType & _keytype, char partval[], int & pvFlag)
 {
 	int _index = -1;
@@ -334,12 +334,12 @@ int mLeafNode::Delete(KeyType & _keytype, char partval[], int & pvFlag)
 	if(pvFlag == FLAG_NO_ZERO)
 		return _index;
 
-	//Èç¹ûÉ¾³ı³É¹¦²¢ÇÒÔªËØ±äÎª¿Õ£¬ Ôò¼ÌĞøÉ¾³ı¶ÔÓ¦µÄkey
+    //å¦‚æœåˆ é™¤æˆåŠŸå¹¶ä¸”å…ƒç´ å˜ä¸ºç©ºï¼Œ åˆ™ç»§ç»­åˆ é™¤å¯¹åº”çš„key
 
 
-	//ÈÎºÎÒ»¸ö²»ÊÇ¸ù½Úµã»ò²»ÊÇÒ¶×Ó½ÚµãµÄ½Úµã±ØĞë±£Ö¤°üº¬ÖÁÉÙÁ½¸öÔªËØ
-	// ¶ÔÓÚinsert£¬ index = 1 µÄÊ±ºòÒ»¶¨ÊÇÕû¿ÃÊ÷µÄ×îÓÒ±ß£¡£¡£¡
-	// deleteÔò²»Í¬
+    //ä»»ä½•ä¸€ä¸ªä¸æ˜¯æ ¹èŠ‚ç‚¹æˆ–ä¸æ˜¯å¶å­èŠ‚ç‚¹çš„èŠ‚ç‚¹å¿…é¡»ä¿è¯åŒ…å«è‡³å°‘ä¸¤ä¸ªå…ƒç´ 
+    // å¯¹äºinsertï¼Œ index = 1 çš„æ—¶å€™ä¸€å®šæ˜¯æ•´æ£µæ ‘çš„æœ€å³è¾¹ï¼ï¼ï¼
+    // deleteåˆ™ä¸åŒ
 	if(_index == 1 && this ->getFather() != NULL)
 	{
 		mItnlNode * itnl_father = (mItnlNode *)(this ->getFather() );
@@ -347,7 +347,7 @@ int mLeafNode::Delete(KeyType & _keytype, char partval[], int & pvFlag)
 		KeyType & i_data = this ->getKey(2);
 		while(itnl_father != NULL)
 		{
-			// ´Ë´¦Í¬insert²»Í¬£¬ÉóÉ÷Æä²»Í¬Ö®´¦
+		    // æ­¤å¤„åŒinsertä¸åŒï¼Œå®¡æ…å…¶ä¸åŒä¹‹å¤„
 			int tmp_key = itnl_father ->iExist(f_data);
 			if(tmp_key < 1)
 			{
@@ -379,7 +379,7 @@ int mLeafNode::Delete(KeyType & _keytype, char partval[], int & pvFlag)
 
 
 
-// ·ÖÁÑÒ¶×Ó½áµã£¬°Ñ±¾Ò¶×Ó½áµãµÄºóÒ»°ëÊı¾İ¼ôÇĞµ½Ö¸¶¨µÄÒ¶×Ó½áµãÖĞ
+// åˆ†è£‚å¶å­ç»“ç‚¹ï¼ŒæŠŠæœ¬å¶å­ç»“ç‚¹çš„åä¸€åŠæ•°æ®å‰ªåˆ‡åˆ°æŒ‡å®šçš„å¶å­ç»“ç‚¹ä¸­
 KeyType & mLeafNode::Split(mLeafNode * pNode)
 {
 	for(int i = ORDER_V + 1; i <= MAXNUM_KEY; i ++)
@@ -393,7 +393,7 @@ KeyType & mLeafNode::Split(mLeafNode * pNode)
 	return (pNode ->getElement(1)).mData;
 }
 
-// ½áºÏ½áµã£¬°ÑÖ¸¶¨Ò¶×Ó½áµãµÄÊı¾İÈ«²¿¼ôÇĞµ½±¾Ò¶×Ó½áµã
+// ç»“åˆç»“ç‚¹ï¼ŒæŠŠæŒ‡å®šå¶å­ç»“ç‚¹çš„æ•°æ®å…¨éƒ¨å‰ªåˆ‡åˆ°æœ¬å¶å­ç»“ç‚¹
 bool mLeafNode::Combine(mLeafNode * pNode)
 {
 	int this_count = this ->getCount();
@@ -405,7 +405,7 @@ bool mLeafNode::Combine(mLeafNode * pNode)
 	}
 	return false;
 }
-// ²éÕÒ¶ÔÓ¦µÄÒ¶×Ó½áµã
+// æŸ¥æ‰¾å¯¹åº”çš„å¶å­ç»“ç‚¹
 mLeafNode* BPlusTree::SearchLeafNode(const KeyType & data)const
 {
 	mNode * pNode = mRoot;
@@ -415,15 +415,15 @@ mLeafNode* BPlusTree::SearchLeafNode(const KeyType & data)const
 	}
 	else// no check
 	{
-		/*
-		 * while Ñ­»·
-		 * µ±Ç°»¹ÊÇÖĞ¼ä½Úµã
-		 * ÕÒµ½ÏÂ²ãÈë¿ÚÏÂ±ê
-		 * ÅĞ¶ÏÊÇ·ñ³¬³ö×ó±ß½ç£¬ ÊÇµÄ»°Ö±½Óµ½µ×£¬ pNode Ö¸ÏòÒ¶×Ó½Úµã£¬ break
-		 * ×ÜÖ®£¬ ×îºó¿Ï¶¨ÊÇpNodeÖ¸ÏòÒ¶×Ó½Úµã
-		 * ËùÒÔ£¬ ²åÈëÊ±»¹ÒªÅĞ¶ÏÊÇ·ñ³¬¹ı×ó±ß½ç£¬ ÊÇµÄ»°ÒªĞŞ¸ÄÉÏ²ã¸¸½ÚµãµÄ×ó±ß½ç
-		 * Search µÄÊ±ºò¶¼Òª×¢Òâ±ß½çµÄÂÊÏÈÅĞ¶Ï, »¹ÓĞµ±Ç°Ò¶½Úµã¿ÉÄÜÊÇ¸ù½Úµã
-		 */
+        /*
+         * while å¾ªç¯
+         * å½“å‰è¿˜æ˜¯ä¸­é—´èŠ‚ç‚¹
+         * æ‰¾åˆ°ä¸‹å±‚å…¥å£ä¸‹æ ‡
+         * åˆ¤æ–­æ˜¯å¦è¶…å‡ºå·¦è¾¹ç•Œï¼Œ æ˜¯çš„è¯ç›´æ¥åˆ°åº•ï¼Œ pNode æŒ‡å‘å¶å­èŠ‚ç‚¹ï¼Œ break
+         * æ€»ä¹‹ï¼Œ æœ€åè‚¯å®šæ˜¯pNodeæŒ‡å‘å¶å­èŠ‚ç‚¹
+         * æ‰€ä»¥ï¼Œ æ’å…¥æ—¶è¿˜è¦åˆ¤æ–­æ˜¯å¦è¶…è¿‡å·¦è¾¹ç•Œï¼Œ æ˜¯çš„è¯è¦ä¿®æ”¹ä¸Šå±‚çˆ¶èŠ‚ç‚¹çš„å·¦è¾¹ç•Œ
+         * Search çš„æ—¶å€™éƒ½è¦æ³¨æ„è¾¹ç•Œçš„ç‡å…ˆåˆ¤æ–­, è¿˜æœ‰å½“å‰å¶èŠ‚ç‚¹å¯èƒ½æ˜¯æ ¹èŠ‚ç‚¹
+         */
 //	    int _floor = 1;
 		while(pNode ->getType() == NODE_TYPE_INTERNAL)
 		{
@@ -461,8 +461,8 @@ mLeafNode* BPlusTree::SearchLeafNode(const KeyType & data)const
 	}
 	return NULL;
 }
-// ÔÚÊ÷ÖĞ²éÕÒÊı¾İ
-bool BPlusTree::Search(KeyType & data, mleafdata & _ret)//Ôö¼ÓÒ»²ÎÊı£¬ ÓÃÓÚ½ÓÊÕ²éÕÒ¹ı³ÌÖĞ½øÈëµÄÒ¶×Ó½Úµã
+// åœ¨æ ‘ä¸­æŸ¥æ‰¾æ•°æ®
+bool BPlusTree::Search(KeyType & data, mleafdata & _ret)//å¢åŠ ä¸€å‚æ•°ï¼Œ ç”¨äºæ¥æ”¶æŸ¥æ‰¾è¿‡ç¨‹ä¸­è¿›å…¥çš„å¶å­èŠ‚ç‚¹
 {
 	mLeafNode * _pLeaf = SearchLeafNode(data);
 	int _ikey = _pLeaf ->iExist(data);
@@ -521,7 +521,7 @@ bool BPlusTree::Insert(const mleafdata & _leafdata)
 		long long int _addr_newleaf = mblockQueue.Pop();
 		_pNewLeaf ->setAddrFB(_addr_newleaf);
 
-//		_key_tmp Ò²¾Í½«ÊÇ_pnewleafµÄµÚÒ»¸öÔªËØµÄkey
+//      _key_tmp ä¹Ÿå°±å°†æ˜¯_pnewleafçš„ç¬¬ä¸€ä¸ªå…ƒç´ çš„key
 //		set modified in split;
 		if(! _pOldLeaf ->getModify())
 		{
@@ -535,8 +535,8 @@ bool BPlusTree::Insert(const mleafdata & _leafdata)
 
 		if(_pFather == NULL)
 		{
-//			_pOldLeafÒÔÇ°ÊÇ¸ù½Úµã£¬Òª°Ñoffset = 0 ÈÃ³öÀ´
-//			»¹´æÔÚÕ¼ÓÃÍâ´æÁ´µÄÇé¿öÏÂÔòĞèÒªÊÍ·ÅÍâ´æÁ´
+//          _pOldLeafä»¥å‰æ˜¯æ ¹èŠ‚ç‚¹ï¼Œè¦æŠŠoffset = 0 è®©å‡ºæ¥
+//          è¿˜å­˜åœ¨å ç”¨å¤–å­˜é“¾çš„æƒ…å†µä¸‹åˆ™éœ€è¦é‡Šæ”¾å¤–å­˜é“¾
 //			if(!preModified)
 //			{
 //				DelDisk(mfp, 0l, mblockQueue);
@@ -545,7 +545,7 @@ bool BPlusTree::Insert(const mleafdata & _leafdata)
 			_pOldLeaf ->setAddrFB(_addr_new);
 //			setmodified in initial;
 			mItnlNode * _pItnl = new mItnlNode;
-	//		·ÖÅäĞÂµÄÊ×µØÖ·
+			//      åˆ†é…æ–°çš„é¦–åœ°å€Ö·
 			long long int _addr_root = 0;
 			long long int _addr_2 = _pNewLeaf ->getAddrFB();
 			long long int _addr_1 = _pOldLeaf ->getAddrFB();
@@ -587,15 +587,15 @@ bool mLeafNode :: dupInsert(const mleafdata & _mleafdata, int _index_insert)
 	return true;
 }
 
-/* É¾³ıÄ³Êı¾İ
- * Éæ¼°É¾³ı½ÚµãÊ±×¢Òâ»ØÊÕÍâ´æ~~
+/* åˆ é™¤æŸæ•°æ®
+ * æ¶‰åŠåˆ é™¤èŠ‚ç‚¹æ—¶æ³¨æ„å›æ”¶å¤–å­˜~~
 */
 bool BPlusTree::Delete(KeyType & data)
 {
 	mLeafNode * _pOldLeaf = SearchLeafNode(data);
 	// for when _ikey = 1
 	//if ok , return the index of the deleted
-	//Èç¹ûideleteÊÇ1µÄ»°Ôòº¯ÊıÀï»áÊÇ·ñ½øĞĞÏòÉÏÉ¾³ı  ¿¼ÂÇ
+	//å¦‚æœideleteæ˜¯1çš„è¯åˆ™å‡½æ•°é‡Œä¼šæ˜¯å¦è¿›è¡Œå‘ä¸Šåˆ é™¤  è€ƒè™‘
 	int _idelete = _pOldLeaf ->Delete(data);
 	if(_idelete < 0)	return false;
 
@@ -607,13 +607,13 @@ bool BPlusTree::Delete(KeyType & data)
 
 	if(_pOldLeaf ->getCount() >= ORDER_V)
 	{
-		//Èç¹ûidelete = 1 ÏòÉÏÉ¾³ı  ²»ĞèÒª
+	    //å¦‚æœidelete = 1 å‘ä¸Šåˆ é™¤  ä¸éœ€è¦
 		return true;
 	}
 
 	// count < 50%
 	int flag = FLAG_LEFT;
-	// ÓÒĞÖµÜÓÅÏÈ
+	// å³å…„å¼Ÿä¼˜å…ˆ
 	mLeafNode * _pBrother = (mLeafNode*)(_pOldLeaf ->getBrother(flag));
 
 	//brother > 50%
@@ -661,13 +661,13 @@ bool BPlusTree::Delete(KeyType & data)
 	cout << "bug run" << endl;
 	return false;
 }
-//ÖØÔØÉ¾³ıº¯Êı
+//é‡è½½åˆ é™¤å‡½æ•°
 bool BPlusTree :: Delete(KeyType & data, char PartVal[])
 {
 	mLeafNode * _pOldLeaf = SearchLeafNode(data);
-	// for when _ikey = 1
-	//if ok , return the index of the deleted
-	//Èç¹ûideleteÊÇ1µÄ»°Ôòº¯ÊıÀï»áÊÇ·ñ½øĞĞÏòÉÏÉ¾³ı  ¿¼ÂÇ
+    // for when _ikey = 1
+    //if ok , return the index of the deleted
+    //å¦‚æœideleteæ˜¯1çš„è¯åˆ™å‡½æ•°é‡Œä¼šæ˜¯å¦è¿›è¡Œå‘ä¸Šåˆ é™¤  è€ƒè™‘
 	int pvFlag = FLAG_ZERO;
 	int _idelete = _pOldLeaf ->Delete(data, PartVal, pvFlag);
 	if(_idelete < 0)	return false;
@@ -681,13 +681,13 @@ bool BPlusTree :: Delete(KeyType & data, char PartVal[])
 
 	if(_pOldLeaf ->getCount() >= ORDER_V)
 	{
-		//Èç¹ûidelete = 1 ÏòÉÏÉ¾³ı  ²»ĞèÒª
+	    //å¦‚æœidelete = 1 å‘ä¸Šåˆ é™¤  ä¸éœ€è¦
 		return true;
 	}
 
 	// count < 50%
 	int flag = FLAG_LEFT;
-	// ÓÒĞÖµÜÓÅÏÈ
+	// ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½
 	mLeafNode * _pBrother = (mLeafNode*)(_pOldLeaf ->getBrother(flag));
 
 	//brother > 50%
@@ -740,7 +740,7 @@ void BPlusTree::Flush(){
 	this ->StoreTree();
 	this ->ClearTree();
 }
-// Çå³ıÕû¸öÊ÷£¬É¾³ıËùÓĞ½áµã
+// æ¸…é™¤æ•´ä¸ªæ ‘ï¼Œåˆ é™¤æ‰€æœ‰ç»“ç‚¹
 void BPlusTree :: ClearTree()
 {
 	queue<mNode *> pQueue[100];
@@ -799,26 +799,26 @@ void BPlusTree :: ClearTree()
 	return;
 }
 
-// ¼ì²éÊ÷ÊÇ·ñÂú×ãB+Ê÷µÄ¶¨Òå
+// æ£€æŸ¥æ ‘æ˜¯å¦æ»¡è¶³B+æ ‘çš„å®šä¹‰
 //bool BPlusTree::CheckTree()
 //{}
 
-// µİ¹é¼ì²é½áµã¼°Æä×ÓÊ÷ÊÇ·ñÂú×ãB+Ê÷µÄ¶¨Òå
+// é€’å½’æ£€æŸ¥ç»“ç‚¹åŠå…¶å­æ ‘æ˜¯å¦æ»¡è¶³B+æ ‘çš„å®šä¹‰
 //bool BPlusTree::CheckNode(mNode* pNode)
 //{}
 
-// ´òÓ¡Õû¸öÊ÷
+// æ‰“å°æ•´ä¸ªæ ‘
 //void BPlusTree::PrintTree(FILE * ifp)
 //{}
 
-// ´òÓ¡Ä³½áµã
+// æ‰“å°æŸç»“ç‚¹
 //void BPlusTree::PrintNode(mNode* pNode, FILE * ifp)
 //{}
 
 
 
-//µİ¹éº¯Êı£º²åÈë¼üµ½ÖĞ¼ä½áµã
-//key¼´ÎªpNodeÖĞµÄÊ×¸ökey
+//é€’å½’å‡½æ•°ï¼šæ’å…¥é”®åˆ°ä¸­é—´ç»“ç‚¹
+//keyå³ä¸ºpNodeä¸­çš„é¦–ä¸ªkey
 bool BPlusTree::InsertItnlNode(mItnlNode* pNode, mNode* pSon)
 {
 	if(pNode == NULL || pNode ->getType() == NODE_TYPE_LEAF)
@@ -878,8 +878,8 @@ bool BPlusTree::InsertItnlNode(mItnlNode* pNode, mNode* pSon)
 
 		if(_pFather == NULL)
 		{
-//			Ô­offset = 0´¦¿éÒÔ¼°ÏàÓ¦ºóĞøÁ´½Ó¿éÏÈÇå³ı
-//			ÅĞ¶ÏÊÇ·ñĞèÒªÉ¾³ıµÄÍâ´æÁ´
+//          åŸoffset = 0å¤„å—ä»¥åŠç›¸åº”åç»­é“¾æ¥å—å…ˆæ¸…é™¤
+//          åˆ¤æ–­æ˜¯å¦éœ€è¦åˆ é™¤çš„å¤–å­˜é“¾
 //			if(!preModified)
 //			{
 //				DelDisk(mfp, 0l, mblockQueue);
@@ -890,7 +890,7 @@ bool BPlusTree::InsertItnlNode(mItnlNode* pNode, mNode* pSon)
 			_pOldItnl ->setAddrFB(_addr_new);
 //			setmodified in mnode_initial;
 			mItnlNode * _pItnl = new mItnlNode;
-	//		·ÖÅäĞÂµÄÊ×µØÖ·
+			//åˆ†é…æ–°çš„é¦–åœ°å€
 			long long int _addr_root = 0l;
 			long long int _addr_1 = _pOldItnl ->getAddrFB();
 			long long int _addr_2 = _pNewItnl ->getAddrFB();
@@ -921,11 +921,11 @@ bool BPlusTree::InsertItnlNode(mItnlNode* pNode, mNode* pSon)
 	return false;
 }
 /*
- * É¾³ıkey¶ÔÓ¦µÄÔªËØ²¢ÔÚdeleteº¯ÊıÖĞÍê³É¶Ô¸¸½ÚµãµÄĞŞ¸Ä£¬ ×¢ÒâÄÚ´æÎ»µÄÍ¬²½ĞŞ¸Ä
- * Èô½Úµã > 50% »òÎª¸ù½Úµã£¬ Ôò½áÊø
+ * åˆ é™¤keyå¯¹åº”çš„å…ƒç´ å¹¶åœ¨deleteå‡½æ•°ä¸­å®Œæˆå¯¹çˆ¶èŠ‚ç‚¹çš„ä¿®æ”¹ï¼Œ æ³¨æ„å†…å­˜ä½çš„åŒæ­¥ä¿®æ”¹
+ * è‹¥èŠ‚ç‚¹ > 50% æˆ–ä¸ºæ ¹èŠ‚ç‚¹ï¼Œ åˆ™ç»“æŸ
  *
  */
-// µİ¹éº¯Êı£ºÔÚÖĞ¼ä½áµãÖĞÉ¾³ı¼ü
+// é€’å½’å‡½æ•°ï¼šåœ¨ä¸­é—´ç»“ç‚¹ä¸­åˆ é™¤é”®
 bool BPlusTree::DeleteItnlNode(mItnlNode* pItnl, KeyType & key)
 {
 	int _idelete = pItnl ->Delete(key);
@@ -984,11 +984,11 @@ bool BPlusTree::DeleteItnlNode(mItnlNode* pItnl, KeyType & key)
 	cout << "run bug" << endl;
 	return false;
 }
-//±£´æÊ÷½á¹¹
+//ä¿å­˜æ ‘ç»“æ„
 /*
- * ±£Ö¤Á½µã£º
- * 1¡¢ÄÚ´æÎ»±ê¼Ç¶¼ÕıÈ·
- * 2¡¢ĞŞ¸ÄÎ»±ê¼Ç¶¼ÕıÈ·
+ * ä¿è¯ä¸¤ç‚¹ï¼š
+ * 1ã€å†…å­˜ä½æ ‡è®°éƒ½æ­£ç¡®
+ * 2ã€ä¿®æ”¹ä½æ ‡è®°éƒ½æ­£ç¡®
  */
 void BPlusTree :: StoreTree()
 {
@@ -1004,7 +1004,7 @@ void BPlusTree :: StoreTree()
 	{
 		pNode = pQueue.front();
 		pQueue.pop();
-//		ÄÚÓĞunmodify
+//      å†…æœ‰unmodify
 		if(pNode->getModify()){
 			any = true;
 		}
@@ -1026,7 +1026,7 @@ void BPlusTree :: StoreTree()
 		}
 	}
 	cout << endl;
-	char _queuefile[50];
+	char _queuefile[1024];
 	strcpy(_queuefile, mTreeName);
 	strcat(_queuefile, "_queue.btree");
 	this ->mblockQueue.WriteQueue(_queuefile);
@@ -1039,7 +1039,7 @@ void BPlusTree :: StoreTree()
 }
 
 //
-//´òÓ¡Ê÷
+//æ‰“å°æ ‘
 void BPlusTree :: PrintTree()
 {
 	queue<mNode *> pQueue[100];
@@ -1083,18 +1083,18 @@ void BPlusTree :: PrintTree()
 }
 
 /*
- * ĞÂ½¨½ÚµãĞèÒªÌá¹©µÄĞÅÏ¢£º
- *     ½ÚµãµÄÊ×¿éµØÖ·
- *     ¶Á³ötype int
- *     ¶Á³öcount int
- *     ¶Á³öcount_block int
- *     ¶Á³öblocklink mBlockLink
+ * æ–°å»ºèŠ‚ç‚¹éœ€è¦æä¾›çš„ä¿¡æ¯ï¼š
+ *     èŠ‚ç‚¹çš„é¦–å—åœ°å€
+ *     è¯»å‡ºtype int
+ *     è¯»å‡ºcount int
+ *     è¯»å‡ºcount_block int
+ *     è¯»å‡ºblocklink mBlockLink
  *
- *     ¶Á³ö¸÷ÔªËØºó£¬ Í¨¹ıÏÂ¿éµØÖ·×ªÒÆ£¬ ×ªÒÔºó¶ÁÈë¿éÔªËØ¸öÊı£¬ ÔÙ¶ÁÈë¿éÁ´½Ó
+ *     è¯»å‡ºå„å…ƒç´ åï¼Œ é€šè¿‡ä¸‹å—åœ°å€è½¬ç§»ï¼Œ è½¬ä»¥åè¯»å…¥å—å…ƒç´ ä¸ªæ•°ï¼Œ å†è¯»å…¥å—é“¾æ¥
  *
  */
 
-mNode * ReadNode(FILE * fp, long long _addrfb)//Ã¿¸öĞÂ½¨µÄ½Úµã¶¼ÓĞ·ÖÅäµÄ»òÉÏ²ã½Úµã¸øÓèµÄÊ×¿é´æ´¢ÇøµØÖ·
+mNode * ReadNode(FILE * fp, long long _addrfb)//æ¯ä¸ªæ–°å»ºçš„èŠ‚ç‚¹éƒ½æœ‰åˆ†é…çš„æˆ–ä¸Šå±‚èŠ‚ç‚¹ç»™äºˆçš„é¦–å—å­˜å‚¨åŒºåœ°å€
 {
 	fseek(fp, _addrfb, SEEK_SET);
 	int _type_tmp;
@@ -1118,25 +1118,25 @@ mNode * ReadNode(FILE * fp, long long _addrfb)//Ã¿¸öĞÂ½¨µÄ½Úµã¶¼ÓĞ·ÖÅäµÄ»òÉÏ²ã½Ú
 		_pLeaf ->unModify();
 		_pLeaf ->setAddrFB(_addrfb);
 		fread(&(_pLeaf ->leafLink), sizeof(_pLeaf ->leafLink), 1, fp);
-		/*
-		 * while cycleÀï
-		 *  for cycle
-		 *  Í¨¹ı¿éÄÚÔªËØ¸öÊı¶ÁÈë
-		 */
+        /*
+         * while cycleé‡Œ
+         *  for cycle
+         *  é€šè¿‡å—å†…å…ƒç´ ä¸ªæ•°è¯»å…¥
+         */
 
-		/*
-		 * ¶ÁÍêºó£¬ ÏÈ¼ÇÂ¼µ±Ç°¶Àµ½½ÚµãµÄµÚ¼¸¸öÔªËØ
-		 * ÎÄ¼şÖ¸ÕëÆ«ÒÆÖÁÖ¸Ê¾µÄÏÂÒ»¿é
-		 * ÔÙ¶ÁÈë¿éÄÚÔªËØ¸öÊı¼°ÉÏÏÂ¿é½á¹¹Ìå±äÁ¿
-		 * ¼ÌĞø¶ÁÈë£¬ Ö±µ½ÔªËØ¸öÊı´ïµ½countÖµ
-		 */
-		/*
-		 * ÏÈ°Ñ¿éµÄÊ£Óà¿Õ¼äĞ´Èë -1£¬ ÔÙĞ´Èëlen£¨±ãÓÚ×¼È·ÉêÇë¿Õ¼ä£©£¬ sizeleft ¼õÈ¥Èı¸ö4£¨12×Ö½Ú£¬ ¡°-1¡±¡°len¡±¡°sizeleft×ÔÉí¡±£©£¬
-		 * Ğ´Èësizeleft£º¡¡µ½Ê±ĞèÒª·Ö¶Î¶ÁÈë¡¡¡¡È»ºóÉêÇë¿é£¬¡¡ÔÚ½«¿éÁ´½ÓĞ´ÈëÖ®Ç°Î»ÖÃ
-		 * Ğ´ÍêÊ£ÓàµÄ¿Õ¼äºó£¬ µ÷Õûbuffer¼°Æäsize
-		 * È»ºóÃ¿¶àÉêÇëÒ»¿éÔòÏÈÌø¹ıÒ»¸öÕûĞÍÒÔ¼°¿ìÁ´½Ó½á¹¹ÌåµÄ´óĞ¡£¬¡¡ÒÔ±¸Ğ´Èëµ±Ç°¿é´æ·ÅµÄ³¤¶Èbuffer(¿¼ÂÇ×îºóÒ»¿éºÃ´¦Àí)£¬ÒÔ¼°¿éÁ´½Ó
-		 * Ğ´ÈëÊ£ÓàµÄbufferºó»ØĞ´³¤¶È¼°¿éÁ´½Ó£¬ ÈôÊÇ×îºóÒ»¿é£¬ Òª×¢ÒâÕûÀí£º fpÖ¸Õë & sizeleft£»
-		 */
+        /*
+         * è¯»å®Œåï¼Œ å…ˆè®°å½•å½“å‰ç‹¬åˆ°èŠ‚ç‚¹çš„ç¬¬å‡ ä¸ªå…ƒç´ 
+         * æ–‡ä»¶æŒ‡é’ˆåç§»è‡³æŒ‡ç¤ºçš„ä¸‹ä¸€å—
+         * å†è¯»å…¥å—å†…å…ƒç´ ä¸ªæ•°åŠä¸Šä¸‹å—ç»“æ„ä½“å˜é‡
+         * ç»§ç»­è¯»å…¥ï¼Œ ç›´åˆ°å…ƒç´ ä¸ªæ•°è¾¾åˆ°countå€¼
+         */
+        /*
+         * å…ˆæŠŠå—çš„å‰©ä½™ç©ºé—´å†™å…¥ -1ï¼Œ å†å†™å…¥lenï¼ˆä¾¿äºå‡†ç¡®ç”³è¯·ç©ºé—´ï¼‰ï¼Œ sizeleft å‡å»ä¸‰ä¸ª4ï¼ˆ12å­—èŠ‚ï¼Œ â€œ-1â€â€œlenâ€â€œsizeleftè‡ªèº«â€ï¼‰ï¼Œ
+         * å†™å…¥sizeleftï¼šã€€åˆ°æ—¶éœ€è¦åˆ†æ®µè¯»å…¥ã€€ã€€ç„¶åç”³è¯·å—ï¼Œã€€åœ¨å°†å—é“¾æ¥å†™å…¥ä¹‹å‰ä½ç½®
+         * å†™å®Œå‰©ä½™çš„ç©ºé—´åï¼Œ è°ƒæ•´bufferåŠå…¶size
+         * ç„¶åæ¯å¤šç”³è¯·ä¸€å—åˆ™å…ˆè·³è¿‡ä¸€ä¸ªæ•´å‹ä»¥åŠå¿«é“¾æ¥ç»“æ„ä½“çš„å¤§å°ï¼Œã€€ä»¥å¤‡å†™å…¥å½“å‰å—å­˜æ”¾çš„é•¿åº¦buffer(è€ƒè™‘æœ€åä¸€å—å¥½å¤„ç†)ï¼Œä»¥åŠå—é“¾æ¥
+         * å†™å…¥å‰©ä½™çš„bufferåå›å†™é•¿åº¦åŠå—é“¾æ¥ï¼Œ è‹¥æ˜¯æœ€åä¸€å—ï¼Œ è¦æ³¨æ„æ•´ç†ï¼š fpæŒ‡é’ˆ & sizeleftï¼›
+         */
 		bool ReadIn = true;
 		while(_i_tmp <= _count_tmp)
 		{
@@ -1199,7 +1199,7 @@ mNode * ReadNode(FILE * fp, long long _addrfb)//Ã¿¸öĞÂ½¨µÄ½Úµã¶¼ÓĞ·ÖÅäµÄ»òÉÏ²ã½Ú
 		mItnlNode * _pItnl = new mItnlNode;
 		_pItnl ->setCount(_count_tmp);
 		_pItnl ->unModify();
-//		ºó¼Ó£¬ Î´ÖªÖ®Ç°Ã»ÓĞÉèµØÖ·µÄÔ­Òò
+//		ï¿½ï¿½Ó£ï¿½ Î´ÖªÖ®Ç°Ã»ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½Ô­ï¿½ï¿½
 		_pItnl ->setAddrFB(_addrfb);
 		while(_i_tmp <= _count_tmp)
 		{
@@ -1262,7 +1262,7 @@ void WriteNode(mNode * pNode, FILE * fp, mQueue & _mqueue)
 	fwrite(&(_count_tmp), size_count, 1, fp);
 	_size_left -= size_count;//--------------------------------int
 
-	long long int _addr_blocklink = ftell(fp);   // ¿ÉÄÜ²úÉúÎÊÌâ
+	long long int _addr_blocklink = ftell(fp);   // å¯èƒ½äº§ç”Ÿé—®é¢˜
 	fseek(fp, size_int + size_blocklink, SEEK_CUR);
 	_size_left -= size_int + size_blocklink;//------------------int + long_long_int*2
 
@@ -1284,20 +1284,20 @@ void WriteNode(mNode * pNode, FILE * fp, mQueue & _mqueue)
 		mBlockLink _blocklink;
 		for(; _i_tmp <= _count; _i_tmp ++)
 		{
-			/*
-			 * ´«ÈëÊ£Óà¿é´óĞ¡£¬ Èôµ±Ç°ÔªËØÄÜ¹»¼ÌĞøĞ´ÈëÔòĞ´Èë²¢·µ»Øtrue£¬ ·ñÔò²»Ğ´Èë²¢·µ»Øfalse;
-			 * Èç¹û·µ»ØfalseÔòÏÈ·µĞ´¿éÈİÔªËØ¸öÊı ¼°ÉÏÏÂ¿éµÄÁªÏµ_  _addr_blocklink£¬
-			 * ÔÙÉêÇëĞÂ¿é²¢¼ÌĞøĞ´Èë£º »Ö¸´_size_left, Ğ´Èëmblocklink
-			 * ĞŞ¸ÄÉÏÏÂ¿éÁ´½Ó
-			 * ¸Ä³É¿éÄÚÔªËØ¸öÊı¸üºÃ
-			 * µ÷ÕûÎÄ¼şÖ¸Õë, ¿éÄÚÔªËØ¹éÁã
-			 */
+            /*
+             * ä¼ å…¥å‰©ä½™å—å¤§å°ï¼Œ è‹¥å½“å‰å…ƒç´ èƒ½å¤Ÿç»§ç»­å†™å…¥åˆ™å†™å…¥å¹¶è¿”å›trueï¼Œ å¦åˆ™ä¸å†™å…¥å¹¶è¿”å›false;
+             * å¦‚æœè¿”å›falseåˆ™å…ˆè¿”å†™å—å®¹å…ƒç´ ä¸ªæ•° åŠä¸Šä¸‹å—çš„è”ç³»_  _addr_blocklinkï¼Œ
+             * å†ç”³è¯·æ–°å—å¹¶ç»§ç»­å†™å…¥ï¼š æ¢å¤_size_left, å†™å…¥mblocklink
+             * ä¿®æ”¹ä¸Šä¸‹å—é“¾æ¥
+             * æ”¹æˆå—å†…å…ƒç´ ä¸ªæ•°æ›´å¥½
+             * è°ƒæ•´æ–‡ä»¶æŒ‡é’ˆ, å—å†…å…ƒç´ å½’é›¶
+             */
 			int size_key = -1;
 			int size_val = -1;
 			int _tmp_i   = -1;
 
 			bool_WriteIn = _pLeaf ->LeafData[_i_tmp].Write_mleafdata(fp, _size_left, size_key, size_val);
-			if(!bool_WriteIn)   //È·¶¨²»¿ÉÄÜÓĞµ¥Ò»ÔªËØ³¬¹ı4K£¬ ¿ÉÄÜ²úÉúÎÊÌâ
+			if(!bool_WriteIn)   //ç¡®å®šä¸å¯èƒ½æœ‰å•ä¸€å…ƒç´ è¶…è¿‡4Kï¼Œ å¯èƒ½äº§ç”Ÿé—®é¢˜
 			{
 				if(size_key + size_val > BLOCKSIZE - size_int*3 - size_lli*4
 				   && _size_left > size_key + size_int * 3 + 1)
@@ -1324,9 +1324,9 @@ void WriteNode(mNode * pNode, FILE * fp, mQueue & _mqueue)
 //					_curblockaddr = _mqueue.Pop();
 					_blocklink.mBlockLink_Initial();
 					_blocklink.preBlockAddr = _preblockaddr;
-					_preblockaddr = _curblockaddr;   // ĞÂ¿éµÄÉÏÒ»¿é¾ÍÊÇµ±Ç°¿é£¨Ê×¿éÖ¸Ïò-1£©
-					_curblockaddr = _mqueue.Pop();    //µ±Ç°¿é±äÁ¿ÔÙµ÷ÕûÎªÖ¸ÏòĞÂ¿é
-					_blocklink.nextBlockAddr = _curblockaddr;  // ÉÏÒ»¿éµÄÏÂÒ»¿é¼´ÎªĞÂ¿é
+                    _preblockaddr = _curblockaddr;   // æ–°å—çš„ä¸Šä¸€å—å°±æ˜¯å½“å‰å—ï¼ˆé¦–å—æŒ‡å‘-1ï¼‰
+                    _curblockaddr = _mqueue.Pop();    //å½“å‰å—å˜é‡å†è°ƒæ•´ä¸ºæŒ‡å‘æ–°å—
+                    _blocklink.nextBlockAddr = _curblockaddr;  // ä¸Šä¸€å—çš„ä¸‹ä¸€å—å³ä¸ºæ–°å—
 
 					fseek(fp, _addr_blocklink, SEEK_SET);
 					nEle_inBlock ++;
@@ -1335,7 +1335,7 @@ void WriteNode(mNode * pNode, FILE * fp, mQueue & _mqueue)
 					fwrite(&_blocklink, size_blocklink, 1, fp);
 
 					fseek(fp, _curblockaddr, SEEK_SET);
-					_addr_blocklink = _curblockaddr;//µ÷Õû»ØĞ´Æ«ÒÆ
+					_addr_blocklink = _curblockaddr;//è°ƒæ•´å›å†™åç§»
 					fseek(fp, size_blocklink + size_int, SEEK_CUR);
 
 					//write back blocklink
@@ -1349,16 +1349,16 @@ void WriteNode(mNode * pNode, FILE * fp, mQueue & _mqueue)
 
 						_blocklink.mBlockLink_Initial();
 						_blocklink.preBlockAddr = _preblockaddr;
-						_preblockaddr = _curblockaddr;   // ĞÂ¿éµÄÉÏÒ»¿é¾ÍÊÇµ±Ç°¿é£¨Ê×¿éÖ¸Ïò-1£©
-						_curblockaddr = _mqueue.Pop();    //µ±Ç°¿é±äÁ¿ÔÙµ÷ÕûÎªÖ¸ÏòĞÂ¿é
-						_blocklink.nextBlockAddr = _curblockaddr;  // ÉÏÒ»¿éµÄÏÂÒ»¿é¼´ÎªĞÂ¿é
+                        _preblockaddr = _curblockaddr;   // æ–°å—çš„ä¸Šä¸€å—å°±æ˜¯å½“å‰å—ï¼ˆé¦–å—æŒ‡å‘-1ï¼‰
+                        _curblockaddr = _mqueue.Pop();    //å½“å‰å—å˜é‡å†è°ƒæ•´ä¸ºæŒ‡å‘æ–°å—
+                        _blocklink.nextBlockAddr = _curblockaddr;  // ä¸Šä¸€å—çš„ä¸‹ä¸€å—å³ä¸ºæ–°å—
 
 						fseek(fp, _addr_blocklink, SEEK_SET);
 						fwrite(&_block_hold, size_int, 1, fp);
 						fwrite(&_blocklink, size_blocklink, 1, fp);
 
 						fseek(fp, _curblockaddr, SEEK_SET);
-						_addr_blocklink = _curblockaddr;//µ÷Õû»ØĞ´Æ«ÒÆ
+						_addr_blocklink = _curblockaddr;//è°ƒæ•´å›å†™åç§»
 						fseek(fp, size_blocklink + size_int, SEEK_CUR);
 					}
 
@@ -1372,36 +1372,36 @@ void WriteNode(mNode * pNode, FILE * fp, mQueue & _mqueue)
 //					_size_left = BLOCKSIZE - _size_buffer - size_int - size_blocklink;
 					_size_left = -1;
 					first_int = _size_buffer;
-					/*
-					 * ÏÈ°Ñ¿éµÄÊ£Óà¿Õ¼äĞ´Èë -1£¬ ÔÙĞ´Èëlen£¨±ãÓÚ×¼È·ÉêÇë¿Õ¼ä£©£¬ sizeleft ¼õÈ¥Èı¸ö4£¨12×Ö½Ú£¬ ¡°-1¡±¡°len¡±¡°sizeleft×ÔÉí¡±£©£¬
-					 * Ğ´Èësizeleft£º¡¡µ½Ê±ĞèÒª·Ö¶Î¶ÁÈë¡¡¡¡È»ºóÉêÇë¿é£¬¡¡ÔÚ½«¿éÁ´½ÓĞ´ÈëÖ®Ç°Î»ÖÃ
-					 * Ğ´ÍêÊ£ÓàµÄ¿Õ¼äºó£¬ µ÷Õûbuffer¼°Æäsize
-					 * È»ºóÃ¿¶àÉêÇëÒ»¿éÔòÏÈÌø¹ıÒ»¸öÕûĞÍÒÔ¼°¿ìÁ´½Ó½á¹¹ÌåµÄ´óĞ¡£¬¡¡ÒÔ±¸Ğ´Èëµ±Ç°¿é´æ·ÅµÄ³¤¶Èbuffer(¿¼ÂÇ×îºóÒ»¿éºÃ´¦Àí)£¬ÒÔ¼°¿éÁ´½Ó
-					 * Ğ´ÈëÊ£ÓàµÄbufferºó»ØĞ´³¤¶È¼°¿éÁ´½Ó£¬ ÈôÊÇ×îºóÒ»¿é£¬ Òª×¢ÒâÕûÀí£º fpÖ¸Õë & sizeleft£»
-					 */
+                    /*
+                     * å…ˆæŠŠå—çš„å‰©ä½™ç©ºé—´å†™å…¥ -1ï¼Œ å†å†™å…¥lenï¼ˆä¾¿äºå‡†ç¡®ç”³è¯·ç©ºé—´ï¼‰ï¼Œ sizeleft å‡å»ä¸‰ä¸ª4ï¼ˆ12å­—èŠ‚ï¼Œ â€œ-1â€â€œlenâ€â€œsizeleftè‡ªèº«â€ï¼‰ï¼Œ
+                     * å†™å…¥sizeleftï¼šã€€åˆ°æ—¶éœ€è¦åˆ†æ®µè¯»å…¥ã€€ã€€ç„¶åç”³è¯·å—ï¼Œã€€åœ¨å°†å—é“¾æ¥å†™å…¥ä¹‹å‰ä½ç½®
+                     * å†™å®Œå‰©ä½™çš„ç©ºé—´åï¼Œ è°ƒæ•´bufferåŠå…¶size
+                     * ç„¶åæ¯å¤šç”³è¯·ä¸€å—åˆ™å…ˆè·³è¿‡ä¸€ä¸ªæ•´å‹ä»¥åŠå¿«é“¾æ¥ç»“æ„ä½“çš„å¤§å°ï¼Œã€€ä»¥å¤‡å†™å…¥å½“å‰å—å­˜æ”¾çš„é•¿åº¦buffer(è€ƒè™‘æœ€åä¸€å—å¥½å¤„ç†)ï¼Œä»¥åŠå—é“¾æ¥
+                     * å†™å…¥å‰©ä½™çš„bufferåå›å†™é•¿åº¦åŠå—é“¾æ¥ï¼Œ è‹¥æ˜¯æœ€åä¸€å—ï¼Œ è¦æ³¨æ„æ•´ç†ï¼š fpæŒ‡é’ˆ & sizeleftï¼›
+                     */
 				}
 				else
 				{
 				_i_tmp --;
-				_size_left = BLOCKSIZE;			//»Ø¸´¿éÄÚÈİÁ¿
+				_size_left = BLOCKSIZE;			//ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 
 
 				_blocklink.mBlockLink_Initial();
 				_blocklink.preBlockAddr = _preblockaddr;
-				_preblockaddr = _curblockaddr;   // ĞÂ¿éµÄÉÏÒ»¿é¾ÍÊÇµ±Ç°¿é£¨Ê×¿éÖ¸Ïò-1£©
-				_curblockaddr = _mqueue.Pop();    //µ±Ç°¿é±äÁ¿ÔÙµ÷ÕûÎªÖ¸ÏòĞÂ¿é
-				_blocklink.nextBlockAddr = _curblockaddr;  // ÉÏÒ»¿éµÄÏÂÒ»¿é¼´ÎªĞÂ¿é
-				/*
-				 * Ğ´»Ø¿éÄÚÔªËØ¸öÊıÒÔ¼°¿ìÁ´½Ó
-				 */
+                _preblockaddr = _curblockaddr;   // æ–°å—çš„ä¸Šä¸€å—å°±æ˜¯å½“å‰å—ï¼ˆé¦–å—æŒ‡å‘-1ï¼‰
+                _curblockaddr = _mqueue.Pop();    //å½“å‰å—å˜é‡å†è°ƒæ•´ä¸ºæŒ‡å‘æ–°å—
+                _blocklink.nextBlockAddr = _curblockaddr;  // ä¸Šä¸€å—çš„ä¸‹ä¸€å—å³ä¸ºæ–°å—
+                /*
+                 * å†™å›å—å†…å…ƒç´ ä¸ªæ•°ä»¥åŠå¿«é“¾æ¥
+                 */
 				fseek(fp, _addr_blocklink, SEEK_SET);
 				int size_ele_inblock = sizeof(nEle_inBlock);
 				fwrite(&first_int, size_ele_inblock, 1, fp);
 				fwrite(&_blocklink, size_blocklink, 1, fp);
 
 				fseek(fp, _curblockaddr, SEEK_SET);
-				_addr_blocklink = _curblockaddr;//µ÷Õû»ØĞ´Æ«ÒÆ
+				_addr_blocklink = _curblockaddr;//è°ƒæ•´å›å†™åç§»
 				fseek(fp, size_ele_inblock + size_blocklink, SEEK_CUR);
 				_size_left -= size_ele_inblock + size_blocklink;//===========int + lli * 2
 
@@ -1415,13 +1415,13 @@ void WriteNode(mNode * pNode, FILE * fp, mQueue & _mqueue)
 			}// if write_in
 
 		}// for count
-		/*
-		 * ×îºóÒ»¿éµÄ´¦Àí
-		 */
+        /*
+         * æœ€åä¸€å—çš„å¤„ç†
+         */
 
 		_blocklink.mBlockLink_Initial();
 		_blocklink.preBlockAddr = _preblockaddr;
-		_blocklink.nextBlockAddr = -1;  // ÉÏÒ»¿éµÄÏÂÒ»¿é¼´ÎªĞÂ¿é
+		_blocklink.nextBlockAddr = -1;  // ä¸Šä¸€å—çš„ä¸‹ä¸€å—å³ä¸ºæ–°å—
 		fseek(fp, _addr_blocklink, SEEK_SET);
 		fwrite(&first_int, size_int, 1, fp);
 		fwrite(&_blocklink, size_blocklink, 1, fp);
@@ -1440,37 +1440,37 @@ void WriteNode(mNode * pNode, FILE * fp, mQueue & _mqueue)
 		mBlockLink _blocklink;
 		for(; _i_tmp <= _count; _i_tmp ++)
 		{
-			/*
-			 * ´«ÈëÊ£Óà¿é´óĞ¡£¬ Èôµ±Ç°ÔªËØÄÜ¹»¼ÌĞøĞ´ÈëÔòĞ´Èë²¢·µ»Øtrue£¬ ·ñÔò²»Ğ´Èë²¢·µ»Øfalse;
-			 * Èç¹û·µ»ØfalseÔòÏÈ·µĞ´¿éÈİÔªËØ¸öÊı ¼°ÉÏÏÂ¿éµÄÁªÏµ_  _addr_blocklink£¬
-			 * ÔÙÉêÇëĞÂ¿é²¢¼ÌĞøĞ´Èë£º »Ö¸´_size_left, Ğ´Èëmblocklink
-			 * ĞŞ¸ÄÉÏÏÂ¿éÁ´½Ó
-			 * ¸Ä³É¿éÄÚÔªËØ¸öÊı¸üºÃ
-			 * µ÷ÕûÎÄ¼şÖ¸Õë, ¿éÄÚÔªËØ¹éÁã
-			 */
+            /*
+             * ä¼ å…¥å‰©ä½™å—å¤§å°ï¼Œ è‹¥å½“å‰å…ƒç´ èƒ½å¤Ÿç»§ç»­å†™å…¥åˆ™å†™å…¥å¹¶è¿”å›trueï¼Œ å¦åˆ™ä¸å†™å…¥å¹¶è¿”å›false;
+             * å¦‚æœè¿”å›falseåˆ™å…ˆè¿”å†™å—å®¹å…ƒç´ ä¸ªæ•° åŠä¸Šä¸‹å—çš„è”ç³»_  _addr_blocklinkï¼Œ
+             * å†ç”³è¯·æ–°å—å¹¶ç»§ç»­å†™å…¥ï¼š æ¢å¤_size_left, å†™å…¥mblocklink
+             * ä¿®æ”¹ä¸Šä¸‹å—é“¾æ¥
+             * æ”¹æˆå—å†…å…ƒç´ ä¸ªæ•°æ›´å¥½
+             * è°ƒæ•´æ–‡ä»¶æŒ‡é’ˆ, å—å†…å…ƒç´ å½’é›¶
+             */
 			bool_WriteIn = _pItnl ->ItnlData[_i_tmp].Write_mitnldata(fp, _size_left);
-			if(!bool_WriteIn)   //È·¶¨²»¿ÉÄÜÓĞµ¥Ò»ÔªËØ³¬¹ı4K£¬ ¿ÉÄÜ²úÉúÎÊÌâ
+			if(!bool_WriteIn)   //ç¡®å®šä¸å¯èƒ½æœ‰å•ä¸€å…ƒç´ è¶…è¿‡4Kï¼Œ å¯èƒ½äº§ç”Ÿé—®é¢˜
 			{
 				_i_tmp --;
-				_size_left = BLOCKSIZE;			//»Ø¸´¿éÄÚÈİÁ¿
+				_size_left = BLOCKSIZE;			//å›å¤å—å†…å®¹é‡
 
 
 
 				_blocklink.mBlockLink_Initial();
 				_blocklink.preBlockAddr = _preblockaddr;
-				_preblockaddr = _curblockaddr;   // ĞÂ¿éµÄÉÏÒ»¿é¾ÍÊÇµ±Ç°¿é£¨Ê×¿éÖ¸Ïò-1£©
-				_curblockaddr = _mqueue.Pop();    //µ±Ç°¿é±äÁ¿ÔÙµ÷ÕûÎªÖ¸ÏòĞÂ¿é
-				_blocklink.nextBlockAddr = _curblockaddr;  // ÉÏÒ»¿éµÄÏÂÒ»¿é¼´ÎªĞÂ¿é
-				/*
-				 * Ğ´»Ø¿éÄÚÔªËØ¸öÊıÒÔ¼°¿éÁ´½Ó
-				 */
+                _preblockaddr = _curblockaddr;   // æ–°å—çš„ä¸Šä¸€å—å°±æ˜¯å½“å‰å—ï¼ˆé¦–å—æŒ‡å‘-1ï¼‰
+                _curblockaddr = _mqueue.Pop();    //å½“å‰å—å˜é‡å†è°ƒæ•´ä¸ºæŒ‡å‘æ–°å—
+                _blocklink.nextBlockAddr = _curblockaddr;  // ä¸Šä¸€å—çš„ä¸‹ä¸€å—å³ä¸ºæ–°å—
+                /*
+                 * å†™å›å—å†…å…ƒç´ ä¸ªæ•°ä»¥åŠå—é“¾æ¥
+                 */
 				fseek(fp, _addr_blocklink, SEEK_SET);
 				int size_ele_inblock = sizeof(nEle_inBlock);
 				fwrite(&nEle_inBlock, size_ele_inblock, 1, fp);
 				fwrite(&_blocklink, size_blocklink, 1, fp);
 
 				fseek(fp, _curblockaddr, SEEK_SET);
-				_addr_blocklink = _curblockaddr;//µ÷Õû»ØĞ´Æ«ÒÆ
+				_addr_blocklink = _curblockaddr;//è°ƒæ•´å›å†™åç§»
 				fseek(fp, size_ele_inblock + size_blocklink, SEEK_CUR);
 				_size_left -= size_ele_inblock + size_blocklink;
 
@@ -1481,13 +1481,13 @@ void WriteNode(mNode * pNode, FILE * fp, mQueue & _mqueue)
 				nEle_inBlock ++;
 			}
 		}
-		/*
-		 * ×îºóÒ»¿éµÄ´¦Àí
-		 */
+        /*
+         * æœ€åä¸€å—çš„å¤„ç†
+         */
 
 		_blocklink.mBlockLink_Initial();
 		_blocklink.preBlockAddr = _preblockaddr;
-		_blocklink.nextBlockAddr = -1;  // ÉÏÒ»¿éµÄÏÂÒ»¿é¼´ÎªĞÂ¿é
+		_blocklink.nextBlockAddr = -1;  // ä¸Šä¸€å—çš„ä¸‹ä¸€å—å³ä¸ºæ–°å—
 		fseek(fp, _addr_blocklink, SEEK_SET);
 		int size_ele_inblock = sizeof(nEle_inBlock);
 		fwrite(&nEle_inBlock, size_ele_inblock, 1, fp);
@@ -1517,7 +1517,7 @@ void DelDisk(FILE * fp, long long int _addrfb, mQueue & _mqueue)
 	long long int BackAddr[1000] = {};
 	vector<long long int> BackVec;
 //	BackAddr[_i_tmp] = _addrfb;
-//	_i_tmp ++;				Ê×¿éµØÖ·¾ø·ÇÒªÒ»Æğ»ØÊÕ£¬ ÔÚdeleteÊµÏÖÖ®ºóÊ×¿éµØÖ·ÔÚÊÊÊ±pushµÄ£¡£¡
+	//  _i_tmp ++;              é¦–å—åœ°å€ç»éè¦ä¸€èµ·å›æ”¶ï¼Œ åœ¨deleteå®ç°ä¹‹åé¦–å—åœ°å€åœ¨é€‚æ—¶pushçš„ï¼ï¼
 	while(_curblocklink.nextBlockAddr != -1)
 	{
 		{
@@ -1582,7 +1582,7 @@ bool Delete_Key_PartVal(char keyStr[], int keyLen, char partVal[], BPlusTree * _
 	return dRet;
 }
 
-// ÒÔÏÂÎªËÄ¸ö¶ÔÓ¦µÄÉ¾³ıÊµÏÖ£¬ µ÷ÓÃÁËÉÏÃæÁ½¸öº¯Êı£»
+// ä»¥ä¸‹ä¸ºå››ä¸ªå¯¹åº”çš„åˆ é™¤å®ç°ï¼Œ è°ƒç”¨äº†ä¸Šé¢ä¸¤ä¸ªå‡½æ•°ï¼›
 bool Delete_sID2sub(int _sID, BPlusTree * _p_sID2sub)
 {
 	char * sid2str = new char[5];
@@ -1741,9 +1741,9 @@ void mitnldata::Read_mitnldata(FILE * fp)
 }
 bool mitnldata::Write_mitnldata( FILE * fp, int & _size_left )
 {
-	/*
-	 * KeyType ĞèÒªÓÉº¯Êı·µ»ØĞ´ÈëµÄ¿Õ¼ä´óĞ¡
-	 */
+    /*
+     * KeyType éœ€è¦ç”±å‡½æ•°è¿”å›å†™å…¥çš„ç©ºé—´å¤§å°
+     */
 	int size_lli = sizeof(long long int);
 	int size_mKey = mKey.WriteSize();
 	if(_size_left < size_lli + size_mKey)		return false;
@@ -1815,7 +1815,7 @@ BPlusTree::BPlusTree(const char * const_tree_name, const char * _build_or_open)
 	}
 	this ->Initial();
 	insert_count = 0;
-	char _tree_name[1000];
+	char _tree_name[1024];
 	memcpy(_tree_name, const_tree_name, (int)strlen(const_tree_name));
 	_tree_name[(int)strlen(const_tree_name)] = '\0';
 	int _key_chose;
@@ -1843,7 +1843,7 @@ BPlusTree::BPlusTree(const char * const_tree_name, const char * _build_or_open)
 		mRoot = new mLeafNode;
 		mRoot ->setAddrFB( 0 );
 		printf("the tree called: %s\n", mTreeName);
-		char _treefile[500];
+		char _treefile[1024];
 		strcpy(_treefile, mTreeName);
 		strcat(_treefile, ".btree");
 		if((mfp = fopen(_treefile, "wb+")) == NULL)
@@ -1874,7 +1874,7 @@ BPlusTree::BPlusTree(const char * const_tree_name, const char * _build_or_open)
 				break;
 			}
 		}
-		char _queuefile[500];
+		char _queuefile[1024];
 		strcpy(_queuefile, mTreeName);
 		strcat(_queuefile, "_queue.btree");
 		mblockQueue.ReadQueue(_queuefile);
