@@ -306,7 +306,7 @@ bool LRUCache::writeOut(int _pos, int _fileLine)
     int line = _fileLine == -1 ? nodePtr->getFileLine() : _fileLine;
     size_t vNodeSize = sizeof(VNode);
     int flag = 0;
-    int seekPos = (long long)line * vNodeSize;
+    long long seekPos = (long long)line * vNodeSize;
 
     flag = fseek(filePtr, seekPos, SEEK_SET);
 
