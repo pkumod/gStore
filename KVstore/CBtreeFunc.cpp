@@ -1199,7 +1199,7 @@ mNode * ReadNode(FILE * fp, long long _addrfb)//每个新建的节点都有分�
 		mItnlNode * _pItnl = new mItnlNode;
 		_pItnl ->setCount(_count_tmp);
 		_pItnl ->unModify();
-//		��ӣ� δ֪֮ǰû�����ַ��ԭ��
+//		后加， 未知之前没有设地址的原因
 		_pItnl ->setAddrFB(_addrfb);
 		while(_i_tmp <= _count_tmp)
 		{
