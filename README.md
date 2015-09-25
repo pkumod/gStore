@@ -148,7 +148,7 @@ Besides, the new version can handle the long literal objects ocasion efficiently
 
 ####Feb 2, 2015
 
-We modified the RDF parser and SPARQL parser.
+We modify the RDF parser and SPARQL parser.
 
 Under the new RDF parser, we also redesign the encode strategy, which reduces RDF file scanning times.
 
