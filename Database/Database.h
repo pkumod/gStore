@@ -9,6 +9,7 @@
 #define DATABASE_H_
 #include<iostream>
 #include<string.h>
+#include <stack>
 using namespace std;
 
 #include "../Query/IDList.h"

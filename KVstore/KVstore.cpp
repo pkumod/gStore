@@ -553,7 +553,7 @@ string KVstore::getEntityByID(int _id){
 		}
 	}
 	string _ret = string(_tmp);
-	delete[] _tmp;
+	//delete[] _tmp;	DEBUG
 
 	return _ret;
 }
@@ -602,7 +602,7 @@ bool KVstore::open_id2predicate(const int _mode){
 string KVstore::getPredicateByID(int _id){
 	char* _tmp = NULL;
 	int _len = 0;
-	bool _get = this->getValueByKey(this->id2predicate, (char*)&_id, sizeof(int), _tmp, _len);
+	bool _get = this->getValueByKey(this->id2predicate, (const char*)&_id, sizeof(int), _tmp, _len);
 	{
 		if(!_get)
 		{
@@ -610,7 +610,7 @@ string KVstore::getPredicateByID(int _id){
 		}
 	}
 	string _ret = string(_tmp);
-	delete[] _tmp;
+	//delete[] _tmp;
 
 	return _ret;
 }
@@ -667,7 +667,7 @@ string KVstore::getLiteralByID(int _id){
 		}
 	}
 	string _ret = string(_tmp);
-	delete[] _tmp;
+//	delete[] _tmp;
 
 	return _ret;
 }
@@ -707,7 +707,7 @@ bool KVstore::getobjIDlistBysubID(int _subid, int*& _objidlist, int& _list_len){
 		_objidlist = new int[_list_len];
 		memcpy((char*)_objidlist, _tmp, sizeof(int)*_list_len);
 	}
-	delete[] _tmp;
+//	delete[] _tmp;
 
 	return true;
 }
@@ -739,7 +739,7 @@ bool KVstore::getsubIDlistByobjID(int _objid, int*& _subidlist, int& _list_len){
 		_subidlist = new int[_list_len];
 		memcpy((char*)_subidlist, _tmp, sizeof(int)*_list_len);
 	}
-	delete[] _tmp;
+	//delete[] _tmp;
 
 	return true;
 }
@@ -776,7 +776,7 @@ bool KVstore::getobjIDlistBysubIDpreID(int _subid, int _preid, int*& _objidlist,
 		_objidlist = new int[_list_len];
 		memcpy((char*)_objidlist, _tmp, sizeof(int)*_list_len);
 	}
-	delete[] _tmp;
+	//delete[] _tmp;
 
 	return true;
 }
@@ -825,7 +825,7 @@ bool KVstore::getsubIDlistByobjIDpreID(int _objid, int _preid, int*& _subidlist,
 		_subidlist = new int[_list_len];
 		memcpy((char*)_subidlist, _tmp, sizeof(int)*_list_len);
 	}
-	delete[] _tmp;
+	//delete[] _tmp;
 
 	return true;
 }
@@ -865,7 +865,7 @@ bool KVstore::getpreIDobjIDlistBysubID(int _subid, int*& _preid_objidlist, int& 
 		_preid_objidlist = new int[_list_len];
 		memcpy((char*)_preid_objidlist, _tmp, sizeof(int)*_list_len);
 	}
-	delete[] _tmp;
+	//delete[] _tmp;
 
 	return true;
 }
@@ -898,7 +898,7 @@ bool KVstore::getpreIDsubIDlistByobjID(int _objid, int*& _preid_subidlist, int& 
 		_preid_subidlist = new int[_list_len];
 		memcpy((char*)_preid_subidlist, _tmp, sizeof(int)*_list_len);
 	}
-	delete[] _tmp;
+	//delete[] _tmp;
 
 	return true;
 }
@@ -909,7 +909,7 @@ bool KVstore::setpreIDsubIDlistByobjID(int _objid, const int* _preid_subidlist, 
 }
 
 /* set the store_path as the root dir of this KVstore
- * initial all Btree pointer as NULL
+ * initial all Tree pointer as NULL
  *  */
 KVstore::KVstore(const string _store_path){
 	this->store_path = _store_path;
@@ -938,7 +938,8 @@ KVstore::KVstore(const string _store_path){
  * before destruction
  *  */
 KVstore::~KVstore(){
-	this->release();
+	//this->release();
+	this->flush();
 
 	delete this->entity2id;
 	delete this->id2entity;
@@ -962,7 +963,7 @@ KVstore::~KVstore(){
 /*
  * just flush all modified part into disk
  * will not release any memory at all
- * any Btree pointer that is null or
+ * any Tree pointer that is null or
  * has not been modified will do nothing
  *  */
 void KVstore::flush(){
@@ -985,8 +986,8 @@ void KVstore::flush(){
 	this->flush(this->objID2preIDsubIDlist);
 }
 /* Release all the memory used in this KVstore,
- * following an flush() for each Btree pointer
- * any Btree pointer that is null or
+ * following an flush() for each Tree pointer
+ * any Tree pointer that is null or
  * has not been modified will do nothing
  *  */
 void KVstore::release(){
@@ -1035,23 +1036,26 @@ void KVstore::open()
 /*
  * private methods:
  */
-void KVstore::flush(Btree* _p_btree){
+void KVstore::flush(Tree* _p_btree){
 	if(_p_btree != NULL)
 	{
-		_p_btree->flush();
+		_p_btree->save();
 	}
 }
-void KVstore::release(Btree* _p_btree){
+
+void KVstore::release(Tree* _p_btree){
+	/*
 	if(_p_btree != NULL)
 	{
-		_p_btree->release();
+		_p_btree->save();
 	}
+	*/
 }
 
 /* Open a btree according the mode */
 /* CREATE_MODE: 		build a new btree and delete if exist 	*/
 /* READ_WRITE_MODE: 	open a btree, btree must exist  		*/
-bool KVstore::open(Btree* & _p_btree, const string _tree_name, const int _mode){
+bool KVstore::open(Tree* & _p_btree, const string _tree_name, const int _mode){
 	if(_p_btree != NULL)
 	{
 		return false;
@@ -1059,13 +1063,13 @@ bool KVstore::open(Btree* & _p_btree, const string _tree_name, const int _mode){
 
 	if(_mode == KVstore::CREATE_MODE)
 	{
-		_p_btree = new Btree(this->store_path, _tree_name, "w");
+		_p_btree = new Tree(this->store_path, _tree_name, "build");
 		return true;
 	}
 	else
 	if(_mode == KVstore::READ_WRITE_MODE)
 	{
-		_p_btree = new Btree(this->store_path, _tree_name, "rw");
+		_p_btree = new Tree(this->store_path, _tree_name, "open");
 		return true;
 	}
 	else
@@ -1076,26 +1080,32 @@ bool KVstore::open(Btree* & _p_btree, const string _tree_name, const int _mode){
 	return false;
 }
 
-bool KVstore::setValueByKey(Btree* _p_btree, const char* _key, int _klen, const char* _val, int _vlen){
+//DEBUG:not achieve multiple-type functions, may have to organize in Bstr, or add functions in btree
+
+bool KVstore::setValueByKey(Tree* _p_btree, const char* _key, int _klen, const char* _val, int _vlen){
 	return _p_btree->insert(_key, _klen, _val, _vlen);
 }
 
-bool KVstore::getValueByKey(Btree* _p_btree, const char* _key, int _klen, char*& _val, int& _vlen){
+bool KVstore::getValueByKey(Tree* _p_btree, const char* _key, int _klen, char*& _val, int& _vlen){
 	return _p_btree->search(_key, _klen, _val, _vlen);
 }
 
-int KVstore::getIDByStr(Btree* _p_btree, const char* _key, int _klen)
+int KVstore::getIDByStr(Tree* _p_btree, const char* _key, int _klen)
 {
-	bool _ret = _p_btree->search(_key, _klen);
-	if(!_ret){
+	char* val = NULL;
+	int vlen = 0;
+	bool ret = _p_btree->search(_key, _klen, val, vlen);
+	if(!ret)	//QUERY: if need to check vlen?
+	{
 		return -1;
 	}
 	/* int is stored in str
 	 * forcely change str into int* and, get the int value with '*' */
-	return *( (int*)( (_p_btree->getValueTransfer())->str ) );
+	//return *( (int*)( (_p_btree->getValueTransfer())->str ) );
+	return *((int*)val);
 }
 
-bool KVstore::removeKey(Btree* _p_btree, const char* _key, int _klen)
+bool KVstore::removeKey(Tree* _p_btree, const char* _key, int _klen)
 {
 	return _p_btree->remove(_key, _klen);
 }

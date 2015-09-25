@@ -7,12 +7,13 @@
 
 #ifndef KVSTORE_H_
 #define KVSTORE_H_
-#include<iostream>
-#include<string.h>
-#include<sys/stat.h>
-#include<dirent.h>
-#include"Btree.h"
+#include <iostream>
+#include <string.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include "tree/Tree.h"
 using namespace std;
+
 class KVstore{
 public:
 	static const bool debug_mode = false;
@@ -126,50 +127,50 @@ private:
 	 * map entity to its id, and id to the entity
 	 * s_entity2id is relative store file name
 	 */
-	Btree* entity2id;
-	Btree* id2entity;
+	Tree* entity2id;
+	Tree* id2entity;
 	static string s_entity2id;
 	static string s_id2entity;
 
-	Btree* predicate2id;
-	Btree* id2predicate;
+	Tree* predicate2id;
+	Tree* id2predicate;
 	static string s_predicate2id;
 	static string s_id2predicate;
 
-	Btree* literal2id;
-	Btree* id2literal;
+	Tree* literal2id;
+	Tree* id2literal;
 	static string s_literal2id;
 	static string s_id2literal;
 
 
-	Btree* subID2objIDlist;
-	Btree* objID2subIDlist;
+	Tree* subID2objIDlist;
+	Tree* objID2subIDlist;
 	static string s_sID2oIDlist;
 	static string s_oID2sIDlist;
 
 	/* lack exist in update tuple */
-	Btree* subIDpreID2objIDlist;
-	Btree* objIDpreID2subIDlist;
+	Tree* subIDpreID2objIDlist;
+	Tree* objIDpreID2subIDlist;
 	static string s_sIDpID2oIDlist;
 	static string s_oIDpID2sIDlist;
 
-	Btree* subID2preIDobjIDlist;
-	Btree* objID2preIDsubIDlist;
+	Tree* subID2preIDobjIDlist;
+	Tree* objID2preIDsubIDlist;
 	static string s_sID2pIDoIDlist;
 	static string s_oID2pIDsIDlist;
 
 
-	void flush(Btree* _p_btree);
-	void release(Btree* _p_btree);
-	bool setValueByKey(Btree* _p_btree, const char* _key, int _klen, const char* _val, int _vlen);
-	bool getValueByKey(Btree* _p_btree, const char* _key, int _klen, char*& _val, int& _vlen);
-	int getIDByStr(Btree* _p_btree, const char* _key, int _klen);
-	bool removeKey(Btree* _p_btree, const char* _key, int _klen);
+	void flush(Tree* _p_btree);
+	void release(Tree* _p_btree);
+	bool setValueByKey(Tree* _p_btree, const char* _key, int _klen, const char* _val, int _vlen);
+	bool getValueByKey(Tree* _p_btree, const char* _key, int _klen, char*& _val, int& _vlen);
+	int getIDByStr(Tree* _p_btree, const char* _key, int _klen);
+	bool removeKey(Tree* _p_btree, const char* _key, int _klen);
 
 	/* Open a btree according the mode */
 	/* CREATE_MODE: 		build a new btree and delete if exist 	*/
 	/* READ_WRITE_MODE: 	open a btree, btree must exist  		*/
-	bool open(Btree* & _p_btree, const string _tree_name, const int _mode);
+	bool open(Tree* & _p_btree, const string _tree_name, const int _mode);
 };
 
 
