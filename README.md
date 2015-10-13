@@ -137,6 +137,9 @@ We provide JAVA and C++ API for accessing gStore now. Please refer to example co
 
 ### System Update Log
 
+####Oct 15, 2015.
+waiting to add
+
 ####Sep 25, 2015. 
 
 We implement the version of BTree, and replace the old one.
