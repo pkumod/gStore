@@ -46,7 +46,7 @@ string ResultSet::to_str()
 {
 	if(this->ansNum == 0)
 	{
-		return "[empty result]";
+		return "[empty result]\n";
 	}
 
 
@@ -63,15 +63,17 @@ string ResultSet::to_str()
 
 	for(int i = 0; i < this->ansNum; i ++)
 	{
+		//printf("to_str: well!\n");	//just for debug!
 		_buf << this->answer[i][0];
 		for(int j = 1; j < this->select_var_num; j ++)
 		{
-			//_buf << "\t" << this->answer[i][j];
-		    _buf << " " << this->answer[i][j];
+			//there may be ' ' in spo, but no '\t'
+			_buf << "\t" << this->answer[i][j];
+			//_buf << " " << this->answer[i][j];
 		}
 		_buf << "\n";
 	}
-
+	//printf("to_str: ends!\n");		//just for debug!
 	return _buf.str();
 }
 

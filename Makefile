@@ -14,7 +14,7 @@ objfile=$(objdir)Bstr.o $(objdir)Database.o $(objdir)KVstore.o $(objdir)SPARQLqu
 	 
 inc=-I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
-all: lib_antlr btree gload gquery gserver gclient 
+all: lib_antlr btree gload gquery gserver gclient gtest
 btree:
 	$(MAKE) -C KVstore
 
@@ -22,13 +22,15 @@ gload: $(objdir)gload.o $(objfile)
 	$(CC) -g -o gload $(objdir)gload.o $(objfile) lib/libantlr.a 
 
 gquery: $(objdir)gquery.o $(objfile)
-	$(CC) -g -o gquery $(objdir)gquery.o $(objfile) lib/libantlr.a 
+	$(CC) -lreadline -ltermcap -g -o gquery $(objdir)gquery.o $(objfile) lib/libantlr.a 
 
 gserver: $(objdir)gserver.o $(objfile)
 	$(CC) -g -o gserver $(objdir)gserver.o $(objfile)  lib/libantlr.a 
 
 gclient: $(objdir)gclient.o $(objfile)
 	$(CC) -g -o gclient $(objdir)gclient.o $(objfile)  lib/libantlr.a 
+gtest: $(objdir)gtest.o $(objfile)
+	$(CC) -g -o gtest $(objdir)gtest.o $(objfile) lib/libantlr.a
 		
 $(objdir)gload.o: main/gload.cpp 
 	$(CC) $(CFLAGS) main/gload.cpp $(inc) -L./lib lib/libantlr.a -o $(objdir)gload.o 
@@ -41,6 +43,8 @@ $(objdir)gserver.o: main/gserver.cpp
 
 $(objdir)gclient.o: main/gclient.cpp
 	$(CC) $(CFLAGS) main/gclient.cpp $(inc) -o $(objdir)gclient.o
+$(objdir)gtest.o: main/gtest.cpp
+	$(CC) $(CFLAGS) main/gtest.cpp $(inc) -o $(objdir)gtest.o
 		
 $(objdir)Bstr.o: Bstr/Bstr.cpp Bstr/Bstr.h
 	$(CC) $(CFLAGS)  Bstr/Bstr.cpp $(inc) -o $(objdir)Bstr.o
@@ -109,5 +113,6 @@ lib_antlr:
 
 clean:
 	$(MAKE) -C KVstore clean
-	rm -rf gload gquery gserver gclient $(objdir)/*.o 
+	rm -rf gload gquery gtest gserver gclient $(objdir)/*.o lib/libantlr.a
+	rm -rf *.log *.nt tools/libantlr3c-3.4
 

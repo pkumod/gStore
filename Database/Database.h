@@ -32,10 +32,10 @@ class Database{
 
 public:
 
-	static const bool debug_1 = false;
-	static const bool debug_2 = false;
+	static const bool debug_1 = true;
+	static const bool debug_2 = true;
 	static const bool only_sub2idpre2id = true;
-	static const bool debug_vstree = false;
+	static const bool debug_vstree = true;
 	static const int internal = 100*1000;
 	static FILE* fp_debug;
 	static void log(std::string _str);
@@ -56,6 +56,7 @@ public:
 	static const int STRING_MODE = 1;
 	static const int ID_MODE = 2;
 	Database(std::string _name);
+	void release(FILE* fp0);
 	~Database();
 
 	bool load();

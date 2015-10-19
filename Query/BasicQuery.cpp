@@ -314,6 +314,7 @@ void BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const std::vector<std::st
         cout << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
     }
     cout << endl;
+	cout << "before new IDList!" << endl;	//just for debug
 
     this->candidate_list = new IDList[this->graph_var_num];
 

@@ -8,7 +8,7 @@ all: $(obj)
 $(objdir)Tree.o: tree/Tree.cpp
 	$(CC) $(CFLAGS) tree/Tree.cpp -o $(objdir)Tree.o
 $(objdir)Storage.o: storage/Storage.cpp
-	$(CC) $(CFLAGS) storage/Storage.cpp -o $(objdir)Storage.o
+	$(CC) $(CFLAGS) storage/Storage.cpp -o $(objdir)Storage.o -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 $(objdir)Node.o: node/Node.cpp 
 	$(CC) $(CFLAGS) node/Node.cpp -o $(objdir)Node.o
 $(objdir)IntlNode.o: node/IntlNode.cpp 
@@ -24,7 +24,7 @@ $(objdir)Hash.o: hash/Hash.cpp
 $(objdir)Heap.o: heap/Heap.cpp 
 	$(CC) $(CFLAGS) heap/Heap.cpp -o $(objdir)Heap.o
 $(objdir)RangeValue.o: rangevalue/RangeValue.cpp
-	$(CC) $(CFLAGS) rangevalue/RangeValue.cpp -o $(objdir)RangeValue.o
+	$(CC) $(CFLAGS) rangevalue/RangeValue.cpp -o $(objdir)RangeValue.o -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 .PHONY: clean  
 clean:
 	#nothing to do now

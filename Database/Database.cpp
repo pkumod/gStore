@@ -36,11 +36,28 @@ Database::Database(std::string _name){
 	}
 }
 
+void Database::release(FILE* fp0)
+{
+	fprintf(fp0, "begin to delete DB!\n");
+	fflush(fp0);
+    delete this->vstree;
+	fprintf(fp0, "ok to delete vstree!\n");
+	fflush(fp0);
+    delete this->kvstore;
+	fprintf(fp0, "ok to delete kvstore!\n");
+	fflush(fp0);
+	fclose(fp_debug);
+	fp_debug = NULL;	//debug: when multiple databases
+	fprintf(fp0, "ok to delete DB!\n");
+	fflush(fp0);
+}
+
 Database::~Database()
 {
     delete this->vstree;
     delete this->kvstore;
 	fclose(fp_debug);
+	fp_debug = NULL;	//debug: when multiple databases
 }
 
 bool Database::load()
