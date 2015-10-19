@@ -86,14 +86,14 @@ vector<BasicQuery*>& SPARQLquery::getBasicQueryVec()
 
 void SPARQLquery::print(ostream& _out_stream){
 	int k=getQueryVarNum();
-	std::cout<<"QueryVar "<<k<<":"<<std::endl;
+	//std::cout<<"QueryVar "<<k<<":"<<std::endl;
 	for (int i=0;i<k;i++){
-		std::cout<<getQueryVar(i)<<std::endl;
+		//std::cout<<getQueryVar(i)<<std::endl;
 	}
 	k=getBasicQueryNum();
-	std::cout<<"Block "<<k<<" in total."<<std::endl;
+	//std::cout<<"Block "<<k<<" in total."<<std::endl;
 	for (int i=0;i<k;i++){
-		std::cout<<"Block "<<i<<std::endl;
+		//std::cout<<"Block "<<i<<std::endl;
 		getBasicQuery(i).print(_out_stream);
 	}
 }

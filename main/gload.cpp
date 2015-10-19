@@ -14,12 +14,12 @@ using namespace std;
 int main(int argc, char * argv[])
 {
 	system("clock");
-	cout << "gload..." << endl;
+	//cout << "gload..." << endl;
 	{
-		cout << "argc: " << argc << "\t";
-		cout << "DB_store:" << argv[1] << "\t";
-		cout << "RDF_data: " << argv[2] << "\t";
-		cout << endl;
+		//cout << "argc: " << argc << "\t";
+		//cout << "DB_store:" << argv[1] << "\t";
+		//cout << "RDF_data: " << argv[2] << "\t";
+		//cout << endl;
 	}
 
 	string _db_path = string(argv[1]);
@@ -28,11 +28,11 @@ int main(int argc, char * argv[])
 	bool flag = _db.build(_rdf);
     if (flag)
     {
-        cout << "import RDF file to database done." << endl;
+        //cout << "import RDF file to database done." << endl;
     }
     else
     {
-        cout << "import RDF file to database failed." << endl;
+        //cout << "import RDF file to database failed." << endl;
     }
 	system("clock");
 	return 0;

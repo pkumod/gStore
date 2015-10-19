@@ -46,23 +46,23 @@ getQueryFromFile(const char* _file_path)
 int 
 main(int argc, char * argv[])
 {
-	cout << "gquery..." << endl;
+	//cout << "gquery..." << endl;
 	if(argc < 2)
 	{
 		cerr << "error: lack of DB_store to be queried" << endl;
 		return 0;
 	}
 	{
-		cout << "argc: " << argc << "\t";
-		cout << "DB_store:" << argv[1] << "\t";
-		cout << endl;
+		//cout << "argc: " << argc << "\t";
+		//cout << "DB_store:" << argv[1] << "\t";
+		//cout << endl;
 	}
 
 	string db_folder = string(argv[1]);
 	Database _db(db_folder);
 
 	_db.load();
-	cout << "finish loading" << endl;
+	//cout << "finish loading" << endl;
 
     // read query from file.
     if (argc >= 3)
@@ -91,8 +91,8 @@ main(int argc, char * argv[])
             return 0;
         }
 
-        cout << "query is:" << endl;
-        cout << query << endl << endl;
+        //cout << "query is:" << endl;
+        //cout << query << endl << endl;
 
         ResultSet _rs;
 
@@ -157,8 +157,8 @@ main(int argc, char * argv[])
             continue;
         }
 
-		cout << "query is:" << endl;
-		cout << query << endl << endl;
+		//cout << "query is:" << endl;
+		//cout << query << endl << endl;
 
 		ResultSet _rs;
 

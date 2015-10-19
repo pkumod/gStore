@@ -495,7 +495,7 @@ Tree::range_query(const TBstr* _key1, const TBstr* _key2)
 bool 
 Tree::save()	//save the whole tree to disk
 {
-	printf("now to save tree!\n");
+	//printf("now to save tree!\n");
 	if(TSM->writeTree(this->root))
 		return true;
 	else
@@ -521,7 +521,7 @@ Tree::~Tree()
 {
 	//delete VALUES;
 	delete TSM;
-	printf("already empty the buffer, now to delete all nodes in tree!\n");
+	//printf("already empty the buffer, now to delete all nodes in tree!\n");
 	//recursively delete each Node
 	release(root);
 }

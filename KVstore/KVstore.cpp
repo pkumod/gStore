@@ -991,7 +991,7 @@ void KVstore::flush(){
  * has not been modified will do nothing
  *  */
 void KVstore::release(){
-	cout << "release of KVstore..." << endl;
+	//cout << "release of KVstore..." << endl;
 	this->release(this->entity2id);
 	this->release(this->id2entity);
 
@@ -1013,7 +1013,7 @@ void KVstore::release(){
 
 void KVstore::open()
 {
-	cout << "open KVstore" << endl;
+	//cout << "open KVstore" << endl;
 
 	this->open(this->entity2id, KVstore::s_entity2id, KVstore::READ_WRITE_MODE);
 	this->open(this->id2entity, KVstore::s_id2entity, KVstore::READ_WRITE_MODE);
@@ -1074,7 +1074,7 @@ bool KVstore::open(Tree* & _p_btree, const string _tree_name, const int _mode){
 	}
 	else
 	{
-		cout << "bug in open mode of : " << _tree_name << " with mode=" << _mode << endl;
+		//cout << "bug in open mode of : " << _tree_name << " with mode=" << _mode << endl;
 	}
 
 	return false;

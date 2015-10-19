@@ -610,7 +610,7 @@ Storage::handler(unsigned _needmem)	//>0
 Storage::~Storage()
 {
 	//release heap and freelist...
-	printf("now to release the knstore!\n");
+	//printf("now to release the knstore!\n");
 	BlockInfo* bp = this->freelist;
 	BlockInfo* next;
 	while(bp != NULL)
@@ -619,9 +619,9 @@ Storage::~Storage()
 		delete bp;
 		bp = next;
 	}
-	printf("already empty the freelist!\n");
+	//printf("already empty the freelist!\n");
 	delete this->minheap;
-	printf("already empty the buffer heap!\n");
+	//printf("already empty the buffer heap!\n");
 	fclose(this->treefp);
 #ifdef DEBUG
 	fclose(Util::logsfp);
