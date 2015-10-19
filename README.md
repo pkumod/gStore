@@ -135,4 +135,29 @@ Note that each command ends with ";".
 ####5. API
 We provide JAVA and C++ API for accessing gStore now. Please refer to example codes in `api/cpp/example` and `api/java/example`.
 
+### System Update Log
 
+####Sep 25, 2015. 
+
+We implement the version of BTree, and replace the old one.
+
+After testing on DBpedia, LUBM, and WatDiv benchmark, we conclude that the new BTree performs more efficient than
+the old version. For the same triple file, the new version spends shorter time on executing gload command.
+
+Besides, the new version can handle the long literal objects ocasion efficiently, while triples whose object's length exceeds 4096 bytes result in frequent inefficent split operations on the old version BTree. 
+
+####Feb 2, 2015
+
+We modify the RDF parser and SPARQL parser.
+
+Under the new RDF parser, we also redesign the encode strategy, which reduces RDF file scanning times.
+
+Now we can parse the standard SPARQL v1.1 grammar correctly, and can support basic graph pattern(BGP) SPARQL queries written by this standard grammar.
+
+####Dec 11, 2014.
+
+We add API for C/CPP and JAVA.
+
+####Nov 20, 2014.
+
+We share our gStore2.0 code as an open-source project under BSD license on github.
