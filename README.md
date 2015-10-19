@@ -43,11 +43,14 @@ For example, we build a database from LUBM_10.n3 which can be found in example f
 ####2. gquery
 gquery is used to query an exsisting database with SPARQL files.
 
-`./gquery db_name` (use `./gquery --help` for detail)
+`./gquery db_name`  (use `./gquery --help` for detail)
 
 The program shows a command prompt("gsql>"): you can type in a command here, use `help` to see information of all commands.
+
 For `sparql` command, input a file name which can be interpreted as a single SPARQL query. 
+
 When the program finish answering the query, it shows the command prompt again. 
+
 *gStore2.0 only support simple “select” queries now.*
 
 We also take lubm_10.nt as an example.
@@ -85,8 +88,11 @@ We also take lubm_10.nt as an example.
     <http://www.Department14.University0.edu/FullProfessor0>
 
 Notice: 
+
 "[empty result]" will be printed if no answer, and there is an empty line after all results.
-Readline lib is used, so you can use 'UP' arrow key to see command history, and use 'LEFT' arrow key to move and modify your entire command.
+
+Readline lib is used, so you can use <UP> arrow key to see command history, and use <LEFT> arrow key to move and modify your entire command.
+
 What is more, path completion is supported for utility. (not built-in command completion)
 
 ####3. gserver
@@ -143,11 +149,17 @@ We provide JAVA and C++ API for accessing gStore now. Please refer to example co
 
 ####6. gtest
 We provide a test tool to generate structural logs for datasets. Please type `./gtest --help` in the working directory for detail.
+
 (change paths in the main/gtest.cpp if needed)
+
 You should place the datasets and queries this way: 
-DIR/WatDiv/database/*.nt
-DIR/WatDiv/query/*.sql
+
+DIR/WatDiv/database/*.nt 
+
+DIR/WatDiv/query/*.sql 
+
 And the output will be sorted into there logs: load.log/(for database loading time and size), time.log/(for query time) and result.log/(for all query results).
+
 All logs produced by this program are in TSV format, you can load them into Calc/Excel directly.
 
 ### System Update Log
@@ -155,7 +167,9 @@ All logs produced by this program are in TSV format, you can load them into Calc
 ####Oct 20, 2015.
 
 We add a gtest tool for utility, you can use it to query several datasets with their own queries.
+
 In addition, gquery console is improved. Readline lib is used for input instead of fgets, and the gquery console can support commands history, modifying command and commands completion now.
+
 What is more, we found and fix a bug in Database/(a pointer for debugging log is not set to NULL after fclose operation, so if you close one databse and open another, the system will fail entirely because the system think that the debugging log is still open)
 
 ####Sep 25, 2015. 
