@@ -152,7 +152,7 @@ All logs produced by this program are in TSV format, you can load them into Calc
 
 ### System Update Log
 
-####Oct 19, 2015.
+####Oct 20, 2015.
 
 We add a gtest tool for utility, you can use it to query several datasets with their own queries.
 In addition, gquery console is improved. Readline lib is used for input instead of fgets, and the gquery console can support commands history, modifying command and commands completion now.
@@ -167,7 +167,7 @@ the old version. For the same triple file, the new version spends shorter time o
 
 Besides, the new version can handle the long literal objects ocasion efficiently, while triples whose object's length exceeds 4096 bytes result in frequent inefficent split operations on the old version BTree. 
 
-####Feb 2, 2015.
+####Feb 2, 2015
 
 We modify the RDF parser and SPARQL parser.
 
