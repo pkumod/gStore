@@ -53,11 +53,11 @@ When the program finish answering the query, it shows the command prompt again.
 
 *gStore2.0 only support simple “select” queries now.*
 
-We also take lubm_10.nt as an example.
+We also take LUBM_10.n3 as an example.
 
-    [root@master Gstore]# ./gquery lubm_10.nt/
+    [root@master Gstore]# ./gquery db_LUBM10/
     gquery...
-    argc: 2 DB_store:lubm_10.nt/
+    argc: 2 DB_store:db_LUBM10/
     loadTree...
     LRUCache initial...
     LRUCache initial finish
@@ -67,7 +67,7 @@ We also take lubm_10.nt as an example.
     finish load
     finish loading
 	Type `help` for information of all commands
-    gsql>sparql /media/wip/common/data/LUBM/query/q0.sql
+    gsql>sparql ./example/LUBM_q0.txt
     ... ...
     Total time used: 4ms.
     final result is : 
