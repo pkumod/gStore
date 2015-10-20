@@ -77,7 +77,7 @@ bool Database::load()
     }
 
     (this->kvstore)->open();
-    //cout << "finish load" << endl;
+    cout << "finish load" << endl;
 
     return true;
 }
@@ -103,37 +103,37 @@ bool Database::query(const string _query, ResultSet& _result_set)
 	_parser.sparqlParser(_query, _sparql_q);
 
 	long tv_parse = util::get_cur_time();
-	//cout << "after Parsing, used " << (tv_parse - tv_begin) << endl;
-	//cout << "after Parsing..." << endl << _sparql_q.triple_str() << endl;
+	cout << "after Parsing, used " << (tv_parse - tv_begin) << endl;
+	cout << "after Parsing..." << endl << _sparql_q.triple_str() << endl;
 
 	_sparql_q.encodeQuery(this->kvstore);
 
-	//cout << "sparqlSTR:\t" << _sparql_q.to_str() << endl;
+	cout << "sparqlSTR:\t" << _sparql_q.to_str() << endl;
 
 	long tv_encode = util::get_cur_time();
-	//cout << "after Encode, used " << (tv_encode - tv_parse) << "ms." << endl;
+	cout << "after Encode, used " << (tv_encode - tv_parse) << "ms." << endl;
 
 	_result_set.select_var_num = _sparql_q.getQueryVarNum();
 
 	(this->vstree)->retrieve(_sparql_q);
 
 	long tv_retrieve = util::get_cur_time();
-	//cout << "after Retrieve, used " << (tv_retrieve - tv_encode) << "ms." << endl;
+	cout << "after Retrieve, used " << (tv_retrieve - tv_encode) << "ms." << endl;
 
 	this->join(_sparql_q);
 
 	long tv_join = util::get_cur_time();
-	//cout << "after Join, used " << (tv_join - tv_retrieve) << "ms." << endl;
+	cout << "after Join, used " << (tv_join - tv_retrieve) << "ms." << endl;
 
 	this->getFinalResult(_sparql_q, _result_set);
 
 	long tv_final = util::get_cur_time();
-	//cout << "after finalResult, used " << (tv_final - tv_join) << "ms." << endl;
+	cout << "after finalResult, used " << (tv_final - tv_join) << "ms." << endl;
 
-	//cout << "Total time used: " << (tv_final - tv_begin) << "ms." << endl;
+	cout << "Total time used: " << (tv_final - tv_begin) << "ms." << endl;
 
 	//testing...
-	//cout << "final result is : " << endl;
+	cout << "final result is : " << endl;
 	cout << _result_set.to_str() << endl;
 
 
@@ -148,7 +148,7 @@ bool Database::insert(const string& _insert_rdf_file)
     {
         return false;
     }
-    //cout << "finish loading" << endl;
+    cout << "finish loading" << endl;
 
     long tv_load = util::get_cur_time();
 
@@ -174,7 +174,7 @@ bool Database::insert(const string& _insert_rdf_file)
             stringstream _ss;
             _ss << "finish rdfparser" << insert_triple_num << endl;
             Database::log(_ss.str());
-            //cout << _ss.str() << endl;
+            cout << _ss.str() << endl;
         }
 
         if(parse_triple_num == 0)
@@ -208,7 +208,7 @@ bool Database::insert(const string& _insert_rdf_file)
     }
 
     long tv_insert = util::get_cur_time();
-    //cout << "after insert, used " << (tv_insert - tv_load) << "ms." << endl;
+    cout << "after insert, used " << (tv_insert - tv_load) << "ms." << endl;
 
     flag = this->vstree->saveTree();
     if (!flag)
@@ -223,7 +223,7 @@ bool Database::insert(const string& _insert_rdf_file)
         return false;
     }
 
-    //cout << "insert rdf triples done." << endl;
+    cout << "insert rdf triples done." << endl;
 
     return true;
 }
@@ -247,20 +247,20 @@ bool Database::build(const string& _rdf_file)
     std::string vstree_store_path = store_path + "/vs_store";
     util::create_dir(vstree_store_path);
 
-    //cout << "begin encode RDF from : " << _rdf_file << " ..." << endl;
+    cout << "begin encode RDF from : " << _rdf_file << " ..." << endl;
     // to be switched to new encodeRDF method.
 //    this->encodeRDF(_rdf_file);
     this->encodeRDF_new(_rdf_file);
-    //cout << "finish encode." << endl;
+    cout << "finish encode." << endl;
     std::string _entry_file = this->getSignatureBFile();
     (this->kvstore)->open();
 
-    //cout << "begin build VS-Tree on " << _rdf_file << "..." << endl;
+    cout << "begin build VS-Tree on " << _rdf_file << "..." << endl;
     (this->vstree)->buildTree(_entry_file);
 
     long tv_build_end = util::get_cur_time();
-     //cout << "after build, used " << (tv_build_end - tv_build_begin) << "ms." << endl;
-    //cout << "finish build VS-Tree." << endl;
+     cout << "after build, used " << (tv_build_end - tv_build_begin) << "ms." << endl;
+    cout << "finish build VS-Tree." << endl;
 
     return true;
 }
@@ -582,7 +582,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int
 			stringstream _ss;
 			_ss << "finish rdfparser" << this->triples_num << endl;
 			Database::log(_ss.str());
-			//cout << _ss.str() << endl;
+			cout << _ss.str() << endl;
 		}
 		if(parse_triple_num == 0){
 			break;
@@ -753,7 +753,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int
 		_ss << "preNum is " << this->pre_num << endl;		
 		_ss << "literalNum is " << this->literal_num << endl;
 		Database::log(_ss.str());
-		//cout << _ss.str() << endl;
+		cout << _ss.str() << endl;
 	}
 
 	return true;
@@ -809,7 +809,7 @@ bool Database::sub2id_pre2id(const string _rdf_file, int**& _p_id_tuples, int & 
 				stringstream _ss;
 				_ss << "finish rdfparser" << this->triples_num << endl;
 				Database::log(_ss.str());
-				//cout << _ss.str() << endl;
+				cout << _ss.str() << endl;
 			}
 			if(parse_triple_num == 0){
 				break;
@@ -880,7 +880,7 @@ bool Database::sub2id_pre2id(const string _rdf_file, int**& _p_id_tuples, int & 
 		_ss << "subNum is " << this->sub_num << endl;
 		_ss << "preNum is " << this->pre_num << endl;
 		Database::log(_ss.str());
-		//cout << _ss.str() << endl;
+		cout << _ss.str() << endl;
 	}
 
 	return true;
@@ -937,7 +937,7 @@ bool Database::literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_t
 			stringstream _ss;
 			_ss << "finish rdfparser" << _i_tuples << endl;
 			Database::log(_ss.str());
-			//cout << _ss.str() << endl;
+			cout << _ss.str() << endl;
 		}
 		if(parse_triple_num == 0){
 			break;
@@ -1021,7 +1021,7 @@ bool Database::literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_t
 
 	}/* end for while(true) */
 
-	//cout << "end for while" << endl;
+	cout << "end for while" << endl;
 	delete[] triple_array;
 	_six_tuples_fout.close();
 	_fin.close();
@@ -1764,13 +1764,13 @@ bool Database::join
 //		Database::log(_ss.str());
 	}
 //	cout << _result_list[0][0] << " & " << _result_list[0][1] << endl;
-	//std::cout << "*****Join done" << std::endl;
+	std::cout << "*****Join done" << std::endl;
 	return true;
 }
 
 bool Database::select(vector<int*>& _result_list,int _var_id,int _pre_id,int _var_id2,const char _edge_type,int _var_num)
 {
-	//cout << "*****In select" << endl;
+	cout << "*****In select" << endl;
 
 	int* id_list;
 	int id_list_len;
@@ -1840,9 +1840,9 @@ bool Database::select(vector<int*>& _result_list,int _var_id,int _pre_id,int _va
 		}
 	}
 
-	//cout << "\t\tresult size: " << _result_list.size() << " invalid:" << invalid_num << endl;
+	cout << "\t\tresult size: " << _result_list.size() << " invalid:" << invalid_num << endl;
 //
-	//cout << "*****Select done" << endl;
+	cout << "*****Select done" << endl;
 	return true;
 }
 
@@ -1857,33 +1857,33 @@ bool Database::join(SPARQLquery& _sparql_query)
 
 	//join each basic query
 	for (int i=0; i< basic_query_num; i++){
-		//cout<<"Basic query "<<i<<endl;
+		cout<<"Basic query "<<i<<endl;
 		BasicQuery* basic_query;
 		basic_query=&(_sparql_query.getBasicQuery(i));
 		long begin = util::get_cur_time();
 		this->filter_before_join(basic_query);
 		long after_filter = util::get_cur_time();
-		//cout << "after filter_before_join: used " << (after_filter-begin) << " ms" << endl;
+		cout << "after filter_before_join: used " << (after_filter-begin) << " ms" << endl;
 		this->add_literal_candidate(basic_query);
 		long after_add_literal = util::get_cur_time();
-		//cout << "after add_literal_candidate: used " << (after_add_literal-after_filter) << " ms" << endl;
+		cout << "after add_literal_candidate: used " << (after_add_literal-after_filter) << " ms" << endl;
 		this->join_basic(basic_query);
 		long after_joinbasic = util::get_cur_time();
-		//cout << "after join_basic : used " << (after_joinbasic-after_add_literal) << " ms" << endl;
+		cout << "after join_basic : used " << (after_joinbasic-after_add_literal) << " ms" << endl;
 		this->only_pre_filter_after_join(basic_query);
 		long after_pre_filter_after_join = util::get_cur_time();
-		//cout << "after only_pre_filter_after_join : used " << (after_pre_filter_after_join-after_joinbasic) << " ms" << endl;
+		cout << "after only_pre_filter_after_join : used " << (after_pre_filter_after_join-after_joinbasic) << " ms" << endl;
 
 		// remove invalid and duplicate result at the end.
 	    basic_query->dupRemoval_invalidRemoval();
-	    //std::cout << "Final result:" << (basic_query->getResultList()).size() << std::endl;
+	    std::cout << "Final result:" << (basic_query->getResultList()).size() << std::endl;
 	}
 	return true;
 }
 
 bool Database::join_basic(BasicQuery* basic_query)
 {
-	//cout << "IIIIIIN join basic" << endl;
+	cout << "IIIIIIN join basic" << endl;
 
 	int var_num = basic_query->getVarNum();
 	int triple_num = basic_query->getTripleNum();
@@ -1974,34 +1974,34 @@ bool Database::join_basic(BasicQuery* basic_query)
 		}
 	}
 
-	//cout << "OOOOOUT join basic" << endl;
+	cout << "OOOOOUT join basic" << endl;
 	return true;
 }
 
 void Database::filter_before_join(BasicQuery* basic_query)
 {
 
-	//cout << "*****IIIIIIN filter_before_join" << endl;
+	cout << "*****IIIIIIN filter_before_join" << endl;
 
 	int var_num = 0;
 	var_num = basic_query->getVarNum();
 
 	for (int i = 0; i < var_num; i++)
 	{
-		//std::cout << "\tVar" << i << " " << basic_query->getVarName(i) << std::endl;
+		std::cout << "\tVar" << i << " " << basic_query->getVarName(i) << std::endl;
 		IDList &can_list = basic_query->getCandidateList(i);
-		//cout << "\t\tsize of canlist before filter: " << can_list.size() << endl;
+		cout << "\t\tsize of canlist before filter: " << can_list.size() << endl;
 		// must sort before using binary search.
 		can_list.sort();
 
 		long begin = util::get_cur_time();
 		this->literal_edge_filter(basic_query, i);
 		long after_literal_edge_filter = util::get_cur_time();
-		//cout << "\t\tliteral_edge_filter: used " << (after_literal_edge_filter-begin) << " ms" << endl;
+		cout << "\t\tliteral_edge_filter: used " << (after_literal_edge_filter-begin) << " ms" << endl;
 //		this->preid_filter(basic_query, i);
 //		long after_preid_filter = util::get_cur_time();
 //		cout << "\t\tafter_preid_filter: used " << (after_preid_filter-after_literal_edge_filter) << " ms" << endl;
-		//cout << "\t\t[" << i << "] after filter, candidate size = " << can_list.size() << endl << endl << endl;
+		cout << "\t\t[" << i << "] after filter, candidate size = " << can_list.size() << endl << endl << endl;
 
 		//debug
 //		{
@@ -2017,7 +2017,7 @@ void Database::filter_before_join(BasicQuery* basic_query)
 //		}
 	}
 
-	//cout << "OOOOOOUT filter_before_join" << endl;
+	cout << "OOOOOOUT filter_before_join" << endl;
 }
 
 void Database::literal_edge_filter(BasicQuery* basic_query, int _var_i)
@@ -2029,7 +2029,7 @@ void Database::literal_edge_filter(BasicQuery* basic_query, int _var_i)
 	{
 		int neighbor_id = basic_query->getEdgeNeighborID(_var_i, j);
 		//	continue;
-		//cout << "\t\t\tneighbor_id=" << neighbor_id << endl;
+		cout << "\t\t\tneighbor_id=" << neighbor_id << endl;
 		if (neighbor_id != -1)
 		{
 			continue;
@@ -2164,7 +2164,7 @@ void Database::preid_filter(BasicQuery* basic_query, int _var_i)
 	{
 		int neighbor_id = basic_query->getEdgeNeighborID(_var_i, j);
 		//	continue;
-		//cout << "\t\t\tneighbor_id=" << neighbor_id << endl;
+		cout << "\t\t\tneighbor_id=" << neighbor_id << endl;
 		if (neighbor_id != -1)
 		{
 			continue;
@@ -2783,5 +2783,5 @@ void Database::test_join()
 	this->join(_q);
 	ResultSet _rs;
 	this->getFinalResult(_q, _rs);
-	//cout << _rs.to_str() << endl;
+	cout << _rs.to_str() << endl;
 }
