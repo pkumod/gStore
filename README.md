@@ -9,23 +9,14 @@ gStore is a graph-based RDF data management system (or what is commonly called a
 System Requirement: 64-bit linux server with GCC, make, readline installed.
 *We have tested on linux server with CentOS 6.2 x86_64 and CentOS 6.6 x86_64. The version of GCC should be 4.4.7 or later.*
 
-You can install gStore2.0 in two commands. 
-
-1) run
-
-`# make lib_antlr`
-
-to compile and link the library we need.
-
-2) run
+You can install gStore2.0 in one command. run
 
 `# make` 
 
 to compile the gStore code and build executable "gload", "gquery", "gserver", "gclient".
 
-
 ### Usage
-gStore2.0 currently includes four executables.
+gStore2.0 currently includes four executables and others.
 
 ####1. gload
 gload is used to build a new database from a RDF triple format file.
@@ -66,7 +57,7 @@ We also take LUBM_10.n3 as an example.
     open KVstore
     finish load
     finish loading
-	Type `help` for information of all commands
+    Type `help` for information of all commands
     gsql>sparql ./example/LUBM_q0.txt
     ... ...
     Total time used: 4ms.
@@ -163,6 +154,16 @@ And the output will be sorted into there logs: load.log/(for database loading ti
 All logs produced by this program are in TSV format, you can load them into Calc/Excel directly.
 
 ### System Update Log
+
+####Nov 06, 2015.
+
+We merge several classes(like Bstr) and adjust the project structure, as well as the debug system. 
+
+In addition, most warnnings are removed, except for warnnings in Parser module, which is due to the use of ANTLR.
+
+What is more, we change RangeValue module to Stream, and add Stream for ResultSet. We also better the gquery console, so now you can redirect query results to a specified file in the gsql console.
+
+Unable to add Stream for IDlist due to complex operations, but this is not necessary. Realpath is used to supported soft links in the gquery console, but it not works in Gstore.(though works if not in Gtsore)
 
 ####Oct 20, 2015.
 
