@@ -175,7 +175,7 @@ What is more, we found and fix a bug in Database/(a pointer for debugging log is
 
 ####Sep 25, 2015. 
 
-We implement the version of BTree, and replace the old one.
+We implement the version of B+Tree, and replace the old one.
 
 After testing on DBpedia, LUBM, and WatDiv benchmark, we conclude that the new BTree performs more efficient than
 the old version. For the same triple file, the new version spends shorter time on executing gload command.
