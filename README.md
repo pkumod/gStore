@@ -9,7 +9,7 @@ gStore is a graph-based RDF data management system (or what is commonly called a
 System Requirement: 64-bit linux server with GCC, make, readline installed.
 *We have tested on linux server with CentOS 6.2 x86_64 and CentOS 6.6 x86_64. The version of GCC should be 4.4.7 or later.*
 
-You can install gStore2.0 in one command. run
+You can install gStore2.0 in one command. Just run
 
 `# make` 
 
