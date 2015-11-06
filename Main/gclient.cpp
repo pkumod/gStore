@@ -5,10 +5,10 @@
  *      Author: hanshuo
  */
 
-#include"../Server/Client.h"
-#include<string>
-#include<sstream>
-#include<iostream>
+#include "../Server/Client.h"
+#include <string>
+#include <sstream>
+#include <iostream>
 
 int main(int argc, char * argv[])
 {
@@ -35,3 +35,4 @@ int main(int argc, char * argv[])
 
     return 0;
 }
+

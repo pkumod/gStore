@@ -1,30 +1,22 @@
-/*
- * basicQuery.h
- *
- *  Created on: 2014-6-20
- *      Author: liyouhuan
- */
+/*=============================================================================
+# Filename: BasicQuery.h
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2015-10-31 19:18
+# Description: originally written by liyouhuan, modified by zengli
+=============================================================================*/
 
-#ifndef BASICQUERY_H_
-#define BASICQUERY_H_
+#ifndef _QUERY_BASICQUERY_H
+#define _QUERY_BASICQUERY_H
 
-#include<iostream>
-#include<string.h>
-#include<stdio.h>
-#include<stdlib.h>
-#include<map>
-#include<set>
-#include<vector>
-#include<algorithm>
+#include "../Util/Util.h"
 #include "../Triple/Triple.h"
 #include "../Signature/Signature.h"
 #include "../KVstore/KVstore.h"
 #include "IDList.h"
-#include<sstream>
 
-using namespace std;
-
-class BasicQuery{
+class BasicQuery
+{
 private:
 	vector<string> option_vs;
 	vector<Triple> triple_vt;
@@ -181,5 +173,5 @@ public:
 	std::string triple_str();
 };
 
+#endif //_QUERY_BASICQUERY_H
 
-#endif /* BASICQUERY_H_ */

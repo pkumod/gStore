@@ -7,6 +7,7 @@
 =============================================================================*/
 
 #include "IntlNode.h"
+
 using namespace std;
 
 /*
@@ -131,7 +132,7 @@ IntlNode::split(Node* _father, int _index)
 		p->addNum();
 	}
 	p->addChild(this->childs[i], k);
-	const TBstr* tp = this->keys + MIN_KEY_NUM;
+	const Bstr* tp = this->keys + MIN_KEY_NUM;
 	this->setNum(MIN_KEY_NUM);
 	_father->addKey(tp, _index); 
 	_father->addChild(p, _index+1);	//DEBUG(check the index)
@@ -149,7 +150,7 @@ IntlNode::coalesce(Node* _father, int _index)
 	int i, j = _father->getNum(), k;	//BETTER: unsigned?
 	Node* p;
 	int ccase = 0;
-	const TBstr* bstr;
+	const Bstr* bstr;
 	if(_index < j)	//the right neighbor
 	{
 		p = _father->getChild(_index+1);
@@ -264,16 +265,16 @@ IntlNode::~IntlNode()
 void
 IntlNode::print(string s)
 {
-#ifdef DEBUG
+#ifdef DEBUG_KVSTORE
 	int num = this->getNum();
-	Util::showtime();
-	fputs("Class IntlNode\n", Util::logsfp);
-	fputs("Message: ", Util::logsfp);
-	fputs(s.c_str(), Util::logsfp);
-	fputs("\n", Util::logsfp);
+	fputs(Util::showtime().c_str(), Util::debug_kvstore);
+	fputs("Class IntlNode\n", Util::debug_kvstore);
+	fputs("Message: ", Util::debug_kvstore);
+	fputs(s.c_str(), Util::debug_kvstore);
+	fputs("\n", Util::debug_kvstore);
 	if(s == "node" || s == "NODE")
 	{
-		fprintf(Util::logsfp, "store: %u\tnum: %u\tflag: %u\n", this->store, num, this->flag);
+		fprintf(Util::debug_kvstore, "store: %u\tnum: %u\tflag: %u\n", this->store, num, this->flag);
 		int i;
 		for(i = 0; i < num; ++i)
 		{

@@ -1,9 +1,10 @@
-/*
- * Server.h
- *
- *  Created on: 2014-10-14
- *      Author: hanshuo
- */
+/*=============================================================================
+# Filename: Server.h
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2015-10-25 13:49
+# Description: originally written by hanshuo, modified by zengli
+=============================================================================*/
 
 #ifndef SERVER_H_
 #define SERVER_H_

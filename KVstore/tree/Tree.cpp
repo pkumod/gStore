@@ -7,6 +7,7 @@
 =============================================================================*/
 
 #include "Tree.h"
+
 using namespace std;
 
 //tree's operations should be atom(if read nodes)
@@ -39,10 +40,10 @@ Tree::Tree(const string& _storepath, const string& _filename, const char* _mode)
 		this->TSM->preRead(this->root, this->leaves_head, this->leaves_tail);
 	else
 		this->root = NULL;
-	this->transfer[0].setStr((char*)malloc(1 << 20));
-	this->transfer[1].setStr((char*)malloc(1 << 20));
-	this->transfer[2].setStr((char*)malloc(1 << 20));
-	this->transfer_size[0] = this->transfer_size[1] = this->transfer_size[2] = 1 << 20;	//initialied to 1M
+	this->transfer[0].setStr((char*)malloc(Util::TRANSFER_SIZE));
+	this->transfer[1].setStr((char*)malloc(Util::TRANSFER_SIZE));
+	this->transfer[2].setStr((char*)malloc(Util::TRANSFER_SIZE));
+	this->transfer_size[0] = this->transfer_size[1] = this->transfer_size[2] = Util::TRANSFER_SIZE;		//initialied to 1M
 }
 
 string
@@ -105,7 +106,7 @@ Tree::prepare(Node* _np) const
 bool
 Tree::search(const char* _str1, unsigned _len1, char*& _str2, int& _len2)
 {
-	const TBstr* value = NULL;
+	const Bstr* value = NULL;
 	if(_str1 == NULL || _len1 == 0)
 	{
 		printf("error in Tree-search: empty string\n");
@@ -122,10 +123,10 @@ Tree::search(const char* _str1, unsigned _len1, char*& _str2, int& _len2)
 }
 
 bool
-Tree::search(const TBstr* _key, const TBstr*& _value)
+Tree::search(const Bstr* _key, const Bstr*& _value)
 {
 	request = 0;
-	TBstr bstr = *_key;	//not to modify its memory
+	Bstr bstr = *_key;	//not to modify its memory
 	int store;	
 	Node* ret = this->find(_key, &store, false);
 	if(ret == NULL || store == -1 || bstr != *(ret->getKey(store)))	//tree is empty or not found
@@ -133,7 +134,7 @@ Tree::search(const TBstr* _key, const TBstr*& _value)
 		bstr.clear();
 		return false;
 	}
-	const TBstr* val = ret->getValue(store);
+	const Bstr* val = ret->getValue(store);
 	this->CopyToTransfer(val->getStr(), val->getLen(), 0);		//not sum to request
 	_value = &transfer[0];
 	this->TSM->request(request);
@@ -156,7 +157,7 @@ Tree::insert(const char* _str1, unsigned _len1, const char* _str2, unsigned _len
 }
 
 bool
-Tree::insert(const TBstr* _key, const TBstr* _value)
+Tree::insert(const Bstr* _key, const Bstr* _value)
 {
 	request = 0;
 	Node* ret;
@@ -189,7 +190,7 @@ Tree::insert(const TBstr* _key, const TBstr* _value)
 	Node* p = this->root;
 	Node* q;
 	int i, j;
-	TBstr bstr = *_key;
+	Bstr bstr = *_key;
 	while(!p->isLeaf())
 	{
 		j = p->getNum();
@@ -263,10 +264,10 @@ Tree::modify(const char* _str1, unsigned _len1, const char* _str2, unsigned _len
 }
 
 bool
-Tree::modify(const TBstr* _key, const TBstr* _value)
+Tree::modify(const Bstr* _key, const Bstr* _value)
 {					
 	request = 0;
-	TBstr bstr = *_key;
+	Bstr bstr = *_key;
 	int store;
 	Node* ret = this->find(_key, &store, true);
 	if(ret == NULL || store == -1 || bstr != *(ret->getKey(store)))	//tree is empty or not found
@@ -286,13 +287,13 @@ Tree::modify(const TBstr* _key, const TBstr* _value)
 
 /* this function is useful for search and modify, and range-query */
 Node*		//return the first key's position that >= *_key
-Tree::find(const TBstr* _key, int* _store, bool ifmodify) const
+Tree::find(const Bstr* _key, int* _store, bool ifmodify) const
 {											//to assign value for this->bstr, function shouldn't be const!
 	if(this->root == NULL)
 		return NULL;						//Tree Is Empty
 	Node* p = root;
 	int i, j;
-	TBstr bstr = *_key;					//local Bstr: multiple delete
+	Bstr bstr = *_key;					//local Bstr: multiple delete
 	while(!p->isLeaf())
 	{
 		if(ifmodify)
@@ -337,7 +338,7 @@ Tree::remove(const char* _str, unsigned _len)
 }
 
 bool	//BETTER: if not found, the road are also dirty! find first?
-Tree::remove(const TBstr* _key)
+Tree::remove(const Bstr* _key)
 {
 	request = 0;
 	Node* ret;
@@ -346,7 +347,7 @@ Tree::remove(const TBstr* _key)
 	Node* p = this->root;
 	Node* q;
 	int i, j;
-	TBstr bstr = *_key;
+	Bstr bstr = *_key;
 	while(!p->isLeaf())
 	{
 		j = p->getNum();
@@ -412,21 +413,21 @@ Tree::remove(const TBstr* _key)
 	return flag;		//i == j, not found		
 }
 
-const TBstr*
+const Bstr*
 Tree::getRangeValue()
 {
-	return this->VALUES.read();
+	return this->stream.read();
 }
 
 bool	//special case: not exist, one-edge-case
-Tree::range_query(const TBstr* _key1, const TBstr* _key2)
+Tree::range_query(const Bstr* _key1, const Bstr* _key2)
 {		//the range is: *_key1 <= x < *_key2 	
 	/*
 	if(_key1 == NULL && _key2 == NULL)
 		return false;
 		*/
 	//ok to search one-edge, requiring only one be NULL
-	this->VALUES.open();
+	this->stream.open();
 	/* find and write value */
 	int store1, store2;
 	Node *p1, *p2;
@@ -481,21 +482,23 @@ Tree::range_query(const TBstr* _key1, const TBstr* _key2)
 		else
 			r = p->getNum();
 		for(i = l; i < r; ++i)
-			this->VALUES.write(p->getValue(i));
+			this->stream.write(p->getValue(i));
 		this->TSM->request(request);
 		if(p != p2)
 			p = p->getNext();
 		else
 			break;
 	}
-	this->VALUES.reset();
+	this->stream.reset();
 	return true;
 }
 
 bool 
 Tree::save()	//save the whole tree to disk
 {
+#ifdef DEBUG_PRECISE
 	//printf("now to save tree!\n");
+#endif
 	if(TSM->writeTree(this->root))
 		return true;
 	else
@@ -519,9 +522,11 @@ Tree::release(Node* _np) const
 
 Tree::~Tree()
 {
-	//delete VALUES;
+	//delete stream;
 	delete TSM;
+#ifdef DEBUG_PRECISE
 	//printf("already empty the buffer, now to delete all nodes in tree!\n");
+#endif
 	//recursively delete each Node
 	release(root);
 }
@@ -529,18 +534,18 @@ Tree::~Tree()
 void
 Tree::print(string s)
 {
-#ifdef DEBUG
-	Util::showtime();
-	fputs("Class Tree\n", Util::logsfp);
-	fputs("Message: ", Util::logsfp);
-	fputs(s.c_str(), Util::logsfp);
-	fputs("\n", Util::logsfp);
-	fprintf(Util::logsfp, "Height: %d\n", this->height);
+#ifdef DEBUG_KVSTORE
+	fputs(Util::showtime().c_str(), Util::debug_kvstore);
+	fputs("Class Tree\n", Util::debug_kvstore);
+	fputs("Message: ", Util::debug_kvstore);
+	fputs(s.c_str(), Util::debug_kvstore);
+	fputs("\n", Util::debug_kvstore);
+	fprintf(Util::debug_kvstore, "Height: %d\n", this->height);
 	if(s == "tree" || s == "TREE")
 	{
 		if(this->root == NULL)
 		{
-			fputs("Null Tree\n", Util::logsfp);
+			fputs("Null Tree\n", Util::debug_kvstore);
 			return;
 		}
 		Node** ns = new Node*[this->height];

@@ -7,13 +7,13 @@
 =============================================================================*/
 
 #include "Heap.h"
+
 using namespace std;
 
 Heap::Heap()
 {
 	this->length = this->size = 0;
 	this->heap = NULL;
-	this->hash = NULL;
 }
 
 Heap::Heap(unsigned _size)
@@ -180,7 +180,7 @@ Heap::~Heap()
 void
 Heap::print(string s)
 {
-#ifdef DEBUG
+#ifdef DEBUG_KVSTORE
 #endif
 }
 

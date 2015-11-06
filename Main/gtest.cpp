@@ -11,15 +11,13 @@
 5.  ./gtest -q DB_PATH q1 q2...			test a loaded database with given queries(no limit to db and query)
 =============================================================================*/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <dirent.h>
+//#include <stdio.h>
+//#include <string.h>
+//#include <stdlib.h>
+//#include <dirent.h>
 //#include <unistd.h>
-#include <string>
-#include <sys/time.h>
 #include "../Database/Database.h"
-#include "../util/util.h"
+#include "../Util/Util.h"
 
 using namespace std;
 
@@ -120,12 +118,12 @@ runSS(Database* _db, string qf)		//given a query file
 	//getchar();getchar();
 	ResultSet _rs;
 	long tv_begin, tv_final;
-	tv_begin = util::get_cur_time();
+	tv_begin = Util::get_cur_time();
 	//fprintf(fp0, "begin to query!\n");
 	//fflush(fp0);
-	_db->query(query, _rs);
+	_db->query(query, _rs, stdout);
 	//fprintf(fp0, "finish this query!\n");
-	tv_final = util::get_cur_time();
+	tv_final = Util::get_cur_time();
 	//print to logs
 	fprintf(fp1, "%s\n%ld\n%s\n", qf.c_str(), tv_final - tv_begin, line1);//time is standarded as ms
 	fprintf(fp2, "%s\n%s%s\n", qf.c_str(), _rs.to_str().c_str(), line1);
@@ -235,6 +233,9 @@ EXIT(int ret)
 int			
 main(int argc, const char* argv[])
 {
+#ifdef DEBUG
+	Util util;
+#endif
 	//BETTER: enable user to assign the files for log
 	int i, j;
 	fp0 = fopen("run.log", "w+");

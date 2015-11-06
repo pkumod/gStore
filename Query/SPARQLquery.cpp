@@ -1,9 +1,10 @@
-/*
- * SPARQLquery.cpp
- *
- *  Created on: 2014-6-20
- *      Author: liyouhuan
- */
+/*=============================================================================
+# Filename: SPARQLquery.cpp
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2015-10-31 19:15
+# Description: 
+=============================================================================*/
 
 #include "SPARQLquery.h"
 #include "../Parser/DBparser.h"
@@ -21,7 +22,7 @@ SPARQLquery::SPARQLquery()
 
 SPARQLquery::~SPARQLquery()
 {
-	for(int i = 0; i < this->query_union.size(); i ++)
+	for(unsigned i = 0; i < this->query_union.size(); i ++)
 	{
 		delete this->query_union[i];
 	}
@@ -59,7 +60,7 @@ const int SPARQLquery::getBasicQueryNum()
 
 void SPARQLquery::encodeQuery(KVstore* _p_kv_store)
 {
-	for(int i = 0; i < this->query_union.size(); i ++)
+	for(unsigned i = 0; i < this->query_union.size(); i ++)
 	{
 		(this->query_union[i])->encodeBasicQuery(_p_kv_store, this->query_var);
 	}
@@ -103,13 +104,13 @@ std::string SPARQLquery::triple_str()
 	std::stringstream _ss;
 
 	_ss << "varNum:" << this->query_var.size() << endl;
-	for(int i = 0; i < this->query_var.size(); i ++)
+	for(unsigned i = 0; i < this->query_var.size(); i ++)
 	{
 		_ss << this->query_var[i] << "\t";
 	}
 	_ss << endl;
 
-	for(int i = 0; i < this->query_union.size(); i ++)
+	for(unsigned i = 0; i < this->query_union.size(); i ++)
 	{
 		_ss << "bq" << i << " :" << this->query_union[i]->triple_str() << endl;
 	}
@@ -121,7 +122,7 @@ std::string SPARQLquery::candidate_str()
 {
 	std::stringstream _ss;
 
-	for(int i = 0; i < this->query_union.size(); i ++)
+	for(unsigned i = 0; i < this->query_union.size(); i ++)
 	{
 		_ss << "bq" << i << " :" << this->query_union[i]->candidate_str() << endl;
 	}
@@ -133,7 +134,7 @@ std::string SPARQLquery::result_str()
 {
 	std::stringstream _ss;
 
-	for(int i = 0; i < this->query_union.size(); i ++)
+	for(unsigned i = 0; i < this->query_union.size(); i ++)
 	{
 		_ss << "bq" << i << " :" << this->query_union[i]->result_str() << endl;
 	}
@@ -146,16 +147,17 @@ std::string SPARQLquery::to_str()
 	std::stringstream _ss;
 
 	_ss << "varNum:" << this->query_var.size() << endl;
-	for(int i = 0; i < this->query_var.size(); i ++)
+	for(unsigned i = 0; i < this->query_var.size(); i ++)
 	{
 		_ss << this->query_var[i] << "\t";
 	}
 	_ss << endl;
 
-	for(int i = 0; i < this->query_union.size(); i ++)
+	for(unsigned i = 0; i < this->query_union.size(); i ++)
 	{
 		_ss << "bq" << i << " :\n" << this->query_union[i]->to_str() << endl;
 	}
 
 	return _ss.str();
 }
+

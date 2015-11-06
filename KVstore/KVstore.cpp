@@ -1,28 +1,36 @@
-/*
- * KVstore.cpp
- *
- *  Created on: 2014-5-20
- *      Author: liyouhuan
- */
-#include"KVstore.h"
-#include"../Database/Database.h"
+/*=============================================================================
+# Filename: KVstore.cpp
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2015-10-23 14:25
+# Description: 
+=============================================================================*/
+
+#include "KVstore.h"
+#include "../Database/Database.h"
+
+using namespace std;
+
 /* public methods: */
 
-int KVstore::getEntityDegree(int _entity_id)
+int 
+KVstore::getEntityDegree(int _entity_id)
 {
 	int _in_degree = this->getEntityInDegree(_entity_id);
 	int _out_degree = this->getEntityOutDegree(_entity_id);
 	return _in_degree + _out_degree;
 }
 
-int KVstore::getEntityInDegree(int _entity_id)
+int 
+KVstore::getEntityInDegree(int _entity_id)
 {
 	int* _olist = NULL;
 	int _list_len = 0;
 	this->getobjIDlistBysubID(_entity_id, _olist, _list_len);
 	return _list_len;
 }
-int KVstore::getEntityOutDegree(int _entity_id)
+int 
+KVstore::getEntityOutDegree(int _entity_id)
 {
 	int* _slist = NULL;
 	int _list_len = 0;
@@ -36,7 +44,8 @@ int KVstore::getEntityOutDegree(int _entity_id)
  * 2. remove triple
  * before call this function, we were sure that this triple did not exist
  */
-int KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
+int 
+KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
 {
     //debug
 //    {
@@ -191,7 +200,8 @@ int KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
 }
 
 /* insert <_x_id, _y_id> into _xylist(keep _xylist(<x,y>) in ascending order) */
-bool KVstore::insert_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
+bool 
+KVstore::insert_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
 {
 
 	/* check duplication */
@@ -274,7 +284,8 @@ bool KVstore::insert_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
 }
 
 /* insert _x_id into _xlist(keep _xlist in ascending order) */
-bool KVstore::insert_x(int*& _xlist, int& _list_len, int _x_id)
+bool 
+KVstore::insert_x(int*& _xlist, int& _list_len, int _x_id)
 {
 
 
@@ -347,7 +358,8 @@ bool KVstore::insert_x(int*& _xlist, int& _list_len, int _x_id)
  * 2. remove triple(finished in this function)
  * before call this function, we were sure that this triple did not exist
  */
-void KVstore::updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id)
+void 
+KVstore::updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id)
 {
 	/* update sp2o */
 	{
@@ -473,7 +485,8 @@ void KVstore::updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id)
 
 }
 
-bool KVstore::remove_x(int*& _xlist, int& _list_len, int _x_id)
+bool 
+KVstore::remove_x(int*& _xlist, int& _list_len, int _x_id)
 {
 	for(int i = 0; i < _list_len; i ++)
 	{
@@ -492,7 +505,8 @@ bool KVstore::remove_x(int*& _xlist, int& _list_len, int _x_id)
 
 	return false;
 }
-bool KVstore::remove_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
+bool 
+KVstore::remove_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
 {
 	for(int i = 0; i < _list_len; i += 2)
 	{
@@ -517,13 +531,21 @@ bool KVstore::remove_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
 /*** for entity2id
  * _mode is either KVstore::CREATE_MODE or KVstore::READ_WRITE_MODE
  * ***/
-bool KVstore::open_entity2id(const int _mode){
+bool 
+KVstore::open_entity2id(const int _mode)
+{
 	return this->open(this->entity2id, KVstore::s_entity2id, _mode);
 }
-int KVstore::getIDByEntity(const string _entity){
+
+int 
+KVstore::getIDByEntity(const string _entity)
+{
 	return this->getIDByStr(this->entity2id, _entity.c_str(), _entity.length());
 }
-bool KVstore::setIDByEntity(const string _entity, int _id){
+
+bool 
+KVstore::setIDByEntity(const string _entity, int _id)
+{
 	bool _set = this->setValueByKey(this->entity2id,
 			_entity.c_str(), _entity.length(), (char*)&_id, sizeof(int));
 	{
@@ -539,10 +561,15 @@ bool KVstore::setIDByEntity(const string _entity, int _id){
 /*** for id2entity
  * _mode is either KVstore::CREATE_MODE or KVstore::READ_WRITE_MODE
  * ***/
-bool KVstore::open_id2entity(const int _mode){
+bool 
+KVstore::open_id2entity(const int _mode)
+{
 	return this->open(this->id2entity, KVstore::s_id2entity, _mode);
 }
-string KVstore::getEntityByID(int _id){
+
+string 
+KVstore::getEntityByID(int _id)
+{
 	char* _tmp = NULL;
 	int _len = 0;
 	bool _get = this->getValueByKey(this->id2entity, (char*)&_id, sizeof(int), _tmp, _len);
@@ -557,7 +584,9 @@ string KVstore::getEntityByID(int _id){
 
 	return _ret;
 }
-bool KVstore::setEntityByID(int _id, string _entity){
+
+bool 
+KVstore::setEntityByID(int _id, string _entity){
 	bool _set = this->setValueByKey(this->id2entity,
 			(char*)&_id, sizeof(int), _entity.c_str(), _entity.length());
 	{
@@ -574,13 +603,16 @@ bool KVstore::setEntityByID(int _id, string _entity){
 /*** for predicate2id
  * _mode is either KVstore::CREATE_MODE or KVstore::READ_WRITE_MODE
  * ***/
-bool KVstore::open_predicate2id(const int _mode){
+bool 
+KVstore::open_predicate2id(const int _mode){
 	return this->open(this->predicate2id, KVstore::s_predicate2id, _mode);
 }
-int KVstore::getIDByPredicate(const string _predicate){
+int 
+KVstore::getIDByPredicate(const string _predicate){
 	return this->getIDByStr(this->predicate2id, _predicate.c_str(), _predicate.length());
 }
-bool KVstore::setIDByPredicate(const string _predicate, int _id){
+bool 
+KVstore::setIDByPredicate(const string _predicate, int _id){
 	bool _set = this->setValueByKey(this->predicate2id,
 			_predicate.c_str(), _predicate.length(), (char*)&_id, sizeof(int));
 	{
@@ -596,10 +628,12 @@ bool KVstore::setIDByPredicate(const string _predicate, int _id){
 /*** for id2predicate
  * _mode is either KVstore::CREATE_MODE or KVstore::READ_WRITE_MODE
  * ***/
-bool KVstore::open_id2predicate(const int _mode){
+bool 
+KVstore::open_id2predicate(const int _mode){
 	return this->open(this->id2predicate, KVstore::s_id2predicate, _mode);
 }
-string KVstore::getPredicateByID(int _id){
+string 
+KVstore::getPredicateByID(int _id){
 	char* _tmp = NULL;
 	int _len = 0;
 	bool _get = this->getValueByKey(this->id2predicate, (const char*)&_id, sizeof(int), _tmp, _len);
@@ -614,7 +648,8 @@ string KVstore::getPredicateByID(int _id){
 
 	return _ret;
 }
-bool KVstore::setPredicateByID(const int _id, string _predicate){
+bool 
+KVstore::setPredicateByID(const int _id, string _predicate){
 	bool _set = this->setValueByKey(this->id2predicate,
 			(char*)&_id, sizeof(int), _predicate.c_str(), _predicate.length());
 	{
@@ -631,13 +666,16 @@ bool KVstore::setPredicateByID(const int _id, string _predicate){
 /*** for literal2id
  * _mode is either KVstore::CREATE_MODE or KVstore::READ_WRITE_MODE
  * ***/
-bool KVstore::open_literal2id(const int _mode){
+bool 
+KVstore::open_literal2id(const int _mode){
 	return this->open(this->literal2id, KVstore::s_literal2id, _mode);
 }
-int KVstore::getIDByLiteral(const string _literal){
+int 
+KVstore::getIDByLiteral(const string _literal){
 	return this->getIDByStr(this->literal2id, _literal.c_str(), _literal.length());
 }
-bool KVstore::setIDByLiteral(const string _literal, int _id){
+bool 
+KVstore::setIDByLiteral(const string _literal, int _id){
 	bool _set = this->setValueByKey(this->literal2id,
 			_literal.c_str(), _literal.length(), (char*)&_id, sizeof(int));
 	{
@@ -653,7 +691,8 @@ bool KVstore::setIDByLiteral(const string _literal, int _id){
 /*** for id2literal
  * _mode is either KVstore::CREATE_MODE or KVstore::READ_WRITE_MODE
  * ***/
-bool KVstore::open_id2literal(const int _mode){
+bool 
+KVstore::open_id2literal(const int _mode){
 	return this->open(this->id2literal, KVstore::s_id2literal, _mode);
 }
 string KVstore::getLiteralByID(int _id){
@@ -1128,3 +1167,4 @@ string KVstore::s_oIDpID2sIDlist="s_oIDpID2sIDlist";
 
 string KVstore::s_sID2pIDoIDlist="s_sID2pIDoIDlist";
 string KVstore::s_oID2pIDsIDlist="s_oID2pIDsIDlist";
+

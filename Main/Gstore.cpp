@@ -1,33 +1,29 @@
 /*
- * build_signature.cpp
+ * Gstore.cpp
  *
- *  Created on: 2014-7-23
+ *  Created on: 2014-7-1
  *      Author: liyouhuan
  */
 
-#include<iostream>
+#include "../Util/Util.h"
 #include "../Database/Database.h"
 
 using namespace std;
+
 int main()
 {
-	cout << "build signature" << endl;
+#ifdef DEBUG
+	Util util;
+#endif
 	string _yago2_triple = "/media/wip/common/data/yago2_triple";
 	string _yago = "/media/wip/common/data/yago_triple";
 	string _yago_1000000 = "/media/wip/common/data/yago_1000000";
-	string _yago_10000 = "/media/wip/common/data/yago_10000";
 	string _yago_example = "/media/wip/common/data/yago_example";
-	string _rdf = _yago_10000;
+	string _rdf = _yago_1000000;
 	Database _db("db_test");
-	Database::log("RDF:"+_rdf);
 	_db.build(_rdf);
-	Database::log("finish build");
-	_db.test_build_sig();
-
 
 
 	return 0;
 }
-
-
 

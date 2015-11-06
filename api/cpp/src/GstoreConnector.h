@@ -8,8 +8,8 @@
 #ifndef GSTORECONNECTOR_H_
 #define GSTORECONNECTOR_H_
 
-#include"../../../Server/Socket.h"
-#include<cstring>
+#include "../../../Server/Socket.h"
+#include <cstring>
 
 class GstoreConnector
 {

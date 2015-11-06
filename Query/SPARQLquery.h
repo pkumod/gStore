@@ -1,17 +1,18 @@
-/*
- * SPARQLquery.h
- *
- *  Created on: 2014-6-20
- *      Author: liyouhuan
- */
+/*=============================================================================
+# Filename: SPARQLquery.h
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2015-10-31 19:13
+# Description: originally written by liyouhuan, modified by zengli
+=============================================================================*/
 
-#ifndef SPARQLQUERY_H_
-#define SPARQLQUERY_H_
+#ifndef _QUERY_SPARQLQUERY_H
+#define _QUERY_SPARQLQUERY_H
 
 #include "BasicQuery.h"
 
-
-class SPARQLquery{
+class SPARQLquery
+{
 private:
 	vector<BasicQuery*> query_union;
 	vector<string>	query_var;
@@ -50,5 +51,5 @@ public:
 	std::string to_str();
 };
 
+#endif //_QUERY_SPARQLQUERY_H
 
-#endif /* SPARQLQUERY_H_ */

@@ -1,23 +1,20 @@
-/*
- * KVstore.h
- *
- *  Created on: 2014-5-8
- *      Author: liyouhuan
- */
+/*=============================================================================
+# Filename:		KVstore.h
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified:	2015-10-23 14:23
+# Description: 
+=============================================================================*/
 
-#ifndef KVSTORE_H_
-#define KVSTORE_H_
-#include <iostream>
-#include <string.h>
-#include <sys/stat.h>
-#include <dirent.h>
+#ifndef _KVSTORE_KVSTORE_H
+#define _KVSTORE_KVSTORE_H
+
+#include "../Util/Util.h"
 #include "tree/Tree.h"
-using namespace std;
 
-class KVstore{
+class KVstore
+{
 public:
-	static const bool debug_mode = false;
-	static const bool test = false;
 	static const int READ_WRITE_MODE = 1;
 	static const int CREATE_MODE = 2;
 
@@ -50,35 +47,35 @@ public:
 
 	/* for entity2id */
 	bool open_entity2id(const int _mode);
-	int getIDByEntity(const string _entity);
-	bool setIDByEntity(const string _entity, int _id);
+	int getIDByEntity(const std::string _entity);
+	bool setIDByEntity(const std::string _entity, int _id);
 
 
 	/* for id2entity */
 	bool open_id2entity(const int _mode);
-	string getEntityByID(int _id);
-	bool setEntityByID(int _id, string _entity);
+	std::string getEntityByID(int _id);
+	bool setEntityByID(int _id, std::string _entity);
 
 	/* for predicate2id */
 	bool open_predicate2id(const int _mode);
-	int getIDByPredicate(const string _predicate);
-	bool setIDByPredicate(const string _predicate, int _id);
+	int getIDByPredicate(const std::string _predicate);
+	bool setIDByPredicate(const std::string _predicate, int _id);
 
 	/* for id2predicate */
 	bool open_id2predicate(const int _mode);
-	string getPredicateByID(int _id);
-	bool setPredicateByID(const int _id, string _predicate);
+	std::string getPredicateByID(int _id);
+	bool setPredicateByID(const int _id, std::string _predicate);
 
 	/* for id2literal */
 	bool open_id2literal(const int _mode);
-	string getLiteralByID(int _id);
-	bool setLiteralByID(const int _id, string _literal);
+	std::string getLiteralByID(int _id);
+	bool setLiteralByID(const int _id, std::string _literal);
 
 
 	/* for literal2id */
 	bool open_literal2id(const int _mode);
-	int getIDByLiteral(string _literal);
-	bool setIDByLiteral(const string _literal, int _id);
+	int getIDByLiteral(std::string _literal);
+	bool setIDByLiteral(const std::string _literal, int _id);
 
 	/* for subID 2 objIDlist */
 	bool open_subid2objidlist(const int _mode);
@@ -113,7 +110,7 @@ public:
 	/*
 	 * _store_path denotes where to store the data
 	 */
-	KVstore(string _store_path = ".");
+	KVstore(std::string _store_path = ".");
 	~KVstore();
 	void flush();
 	void release();
@@ -121,7 +118,7 @@ public:
 
 private:
 
-	string store_path;
+	std::string store_path;
 	/*
 	 *
 	 * map entity to its id, and id to the entity
@@ -129,35 +126,35 @@ private:
 	 */
 	Tree* entity2id;
 	Tree* id2entity;
-	static string s_entity2id;
-	static string s_id2entity;
+	static std::string s_entity2id;
+	static std::string s_id2entity;
 
 	Tree* predicate2id;
 	Tree* id2predicate;
-	static string s_predicate2id;
-	static string s_id2predicate;
+	static std::string s_predicate2id;
+	static std::string s_id2predicate;
 
 	Tree* literal2id;
 	Tree* id2literal;
-	static string s_literal2id;
-	static string s_id2literal;
+	static std::string s_literal2id;
+	static std::string s_id2literal;
 
 
 	Tree* subID2objIDlist;
 	Tree* objID2subIDlist;
-	static string s_sID2oIDlist;
-	static string s_oID2sIDlist;
+	static std::string s_sID2oIDlist;
+	static std::string s_oID2sIDlist;
 
 	/* lack exist in update tuple */
 	Tree* subIDpreID2objIDlist;
 	Tree* objIDpreID2subIDlist;
-	static string s_sIDpID2oIDlist;
-	static string s_oIDpID2sIDlist;
+	static std::string s_sIDpID2oIDlist;
+	static std::string s_oIDpID2sIDlist;
 
 	Tree* subID2preIDobjIDlist;
 	Tree* objID2preIDsubIDlist;
-	static string s_sID2pIDoIDlist;
-	static string s_oID2pIDsIDlist;
+	static std::string s_sID2pIDoIDlist;
+	static std::string s_oID2pIDsIDlist;
 
 
 	void flush(Tree* _p_btree);
@@ -170,8 +167,8 @@ private:
 	/* Open a btree according the mode */
 	/* CREATE_MODE: 		build a new btree and delete if exist 	*/
 	/* READ_WRITE_MODE: 	open a btree, btree must exist  		*/
-	bool open(Tree* & _p_btree, const string _tree_name, const int _mode);
+	bool open(Tree* & _p_btree, const std::string _tree_name, const int _mode);
 };
 
+#endif //_KVSTORE_KVSTORE_H
 
-#endif /* KVSTORE_H_ */

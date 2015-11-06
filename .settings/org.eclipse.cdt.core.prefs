@@ -1,0 +1,14 @@
+eclipse.preferences.version=1
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.976786886/CPLUS_INCLUDE_PATH/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.976786886/CPLUS_INCLUDE_PATH/operation=append
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.976786886/CPLUS_INCLUDE_PATH/value=D\:/libantlr3c-3.4/include
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.976786886/append=true
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.976786886/appendContributed=true
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.release.1562611585/CPLUS_INCLUDE_PATH/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.release.1562611585/CPLUS_INCLUDE_PATH/operation=replace
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.release.1562611585/CPLUS_INCLUDE_PATH/value=D\:\\libantlr3c-3.4\\include
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.release.1562611585/C_INCLUDE_PATH/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.release.1562611585/C_INCLUDE_PATH/operation=append
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.release.1562611585/C_INCLUDE_PATH/value=D\:\\libantlr3c-3.4\\include
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.release.1562611585/append=true
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.release.1562611585/appendContributed=true

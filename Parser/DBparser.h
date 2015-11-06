@@ -21,14 +21,14 @@ using namespace std;
 class DBparser{
 private:
 
-	int printNode(pANTLR3_BASE_TREE node,int depth=0);
+	void printNode(pANTLR3_BASE_TREE node,int depth=0);
 	int parseNode(pANTLR3_BASE_TREE node, SPARQLquery& query,int depth=0);
 	int parsePrefix(pANTLR3_BASE_TREE node,std::pair<std::string,std::string>& prefixPair);
 	int parseString(pANTLR3_BASE_TREE node,std::string& str,int depth=0);
 	int parseTriple(pANTLR3_BASE_TREE node,Triple& triple);
 	int parseBasicQuery(pANTLR3_BASE_TREE node,BasicQuery& basicQuery);
 	int parseVar(pANTLR3_BASE_TREE node,SPARQLquery& query);
-	int replacePrefix(string& str);
+	void replacePrefix(string& str);
 
 	std::map<std::string,std::string> _prefix_map;
 

@@ -97,7 +97,7 @@ void VSTree::retrieve(SPARQLquery& _query)
     vector<BasicQuery*>& queryList = _query.getBasicQueryVec();
     // enumerate each BasicQuery and retrieve their variables' mapping entity in the VSTree.
     vector<BasicQuery*>::iterator iter=queryList.begin();
-    for ( ;iter!=queryList.end();iter++)
+    for(; iter != queryList.end(); iter++)
     {
         int varNum = (*iter)->getVarNum();
         for (int i=0;i<varNum;i++)
@@ -437,7 +437,7 @@ bool VSTree::saveTree()
 
 bool VSTree::loadTree()
 {
-	//cout << "loadTree..." << endl;
+	cout << "loadTree..." << endl;
 	(this->node_buffer) = new LRUCache(LRUCache::DEFAULT_CAPACITY);
 
     bool flag = this->loadTreeInfo();
@@ -451,13 +451,13 @@ bool VSTree::loadTree()
     if (flag)
     {
         this->node_buffer->loadCache(VSTree::tree_node_file_path);
-        //cout << "finish loadCache" << endl;
+        cout << "finish loadCache" << endl;
     }
 
     if (flag)
     {
         flag = loadEntityID2FileLineMap();
-        //cout << "finish loadEntityID2FileLineMap" << endl;
+        cout << "finish loadEntityID2FileLineMap" << endl;
     }
 
     return flag;
@@ -650,7 +650,7 @@ void VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VN
 
     /* add all the entries in BEntryIndex into the new node child entry array,
     and calculate the new node's entry.*/
-    for (int i=0;i<entryIndex_nearB.size();i++)
+    for (unsigned i=0;i<entryIndex_nearB.size();i++)
     {
         if (oldNodePtr->isLeaf())
         {
@@ -690,7 +690,7 @@ void VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VN
 //    	Database::log(_ss.str());
 //    }
 
-    for (int i=0;i<entryIndex_nearA.size();i++)
+    for (unsigned i=0;i<entryIndex_nearA.size();i++)
     {
         oldNodePtr->setChildEntry(i, oldNodePtr->getChildEntry(entryIndex_nearA[i]));
         oldNodePtr->setChildFileLine(i, oldNodePtr->getChildFileLine(entryIndex_nearA[i]));

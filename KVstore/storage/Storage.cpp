@@ -7,17 +7,11 @@
 =============================================================================*/
 
 #include "Storage.h"
+
 using namespace std;
 
 Storage::Storage()
 {							//not use ../logs/, notice the location of program
-#ifdef DEBUG
-	if((Util::logsfp = fopen("logs/default.log", "w+")) == NULL) 
-	{
-		printf("Open error: logs/default.log\n");
-		Util::logsfp = stdout;
-	}
-#endif
 	cur_block_num = SET_BLOCK_NUM;
 	filepath = "";
 	freelist = NULL;
@@ -28,13 +22,6 @@ Storage::Storage()
 
 Storage::Storage(string& _filepath, string& _mode, unsigned* _height)
 {
-#ifdef DEBUG
-	if((Util::logsfp = fopen("logs/default.log", "w+")) == NULL)
-	{
-		printf("Open error: logs/default.log\n");
-		Util::logsfp = stdout;
-	}
-#endif
 	cur_block_num = SET_BLOCK_NUM;		//initialize
 	this->filepath = _filepath;
 	if(_mode == string("build"))
@@ -268,10 +255,10 @@ Storage::readNode(Node* _np, int* _request)
 	bool flag = _np->isLeaf();
 	unsigned next;
 	unsigned i, num = _np->getNum();
-	TBstr bstr;
+	Bstr bstr;
 	fseek(treefp, 4, SEEK_CUR);
 	fread(&next, sizeof(unsigned), 1, treefp);
-	//read data, use readTBstr...
+	//read data, use readBstr...
 	//fread(treefp, "%u", &num);
 	//_np->setNum(num);
 	if(flag)
@@ -283,14 +270,14 @@ Storage::readNode(Node* _np, int* _request)
 		fseek(treefp, 4 * (num + 1), SEEK_CUR);
 	for(i = 0; i < num; ++i)
 	{
-		this->readTBstr(&bstr, &next);
+		this->readBstr(&bstr, &next);
 		_np->setKey(&bstr, i);
 	}
 	if(flag)
 	{
 		for(i = 0; i < num; ++i)
 		{
-			this->readTBstr(&bstr, &next);
+			this->readBstr(&bstr, &next);
 			*_request += bstr.getLen();
 			_np->setValue(&bstr, i);
 		}
@@ -387,11 +374,11 @@ Storage::writeNode(Node* _np)
 		}
 	}
 	for(i = 0; i < num; ++i)
-		this->writeTBstr(_np->getKey(i), &blocknum, SpecialBlock);
+		this->writeBstr(_np->getKey(i), &blocknum, SpecialBlock);
 	if(flag)
 	{
 		for(i = 0; i < num; ++i)
-			this->writeTBstr(_np->getValue(i), &blocknum, SpecialBlock);
+			this->writeBstr(_np->getValue(i), &blocknum, SpecialBlock);
 	}
 	fseek(treefp, Address(blocknum), SEEK_SET);
 	if(SpecialBlock)
@@ -404,7 +391,7 @@ Storage::writeNode(Node* _np)
 }
 
 bool
-Storage::readTBstr(TBstr* _bp, unsigned* _next)
+Storage::readBstr(Bstr* _bp, unsigned* _next)
 {
 	//long address;
 	unsigned len, i, j;
@@ -433,7 +420,7 @@ Storage::readTBstr(TBstr* _bp, unsigned* _next)
 }
 
 bool
-Storage::writeTBstr(const TBstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
+Storage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
 {
 	unsigned i, j, len = _bp->getLen();
 	fwrite(&len, sizeof(unsigned), 1, treefp);
@@ -527,7 +514,7 @@ Storage::writeTree(Node* _root)	//write the whole tree back and close treefp
 	while(bp != NULL)
 	{
 		//if not-use then set 0, aligned to byte!
-#ifdef DEBUG
+#ifdef DEBUG_KVSTORE
 		if(bp->num > cur_block_num)
 		{
 			printf("blocks num exceed, cur_block_num: %u\n", cur_block_num);
@@ -610,7 +597,9 @@ Storage::handler(unsigned _needmem)	//>0
 Storage::~Storage()
 {
 	//release heap and freelist...
-	//printf("now to release the knstore!\n");
+#ifdef DEBUG_PRECISE
+	//printf("now to release the kvstore!\n");
+#endif
 	BlockInfo* bp = this->freelist;
 	BlockInfo* next;
 	while(bp != NULL)
@@ -619,24 +608,30 @@ Storage::~Storage()
 		delete bp;
 		bp = next;
 	}
+#ifdef DEBUG_PRECISE
 	//printf("already empty the freelist!\n");
-	delete this->minheap;
-	//printf("already empty the buffer heap!\n");
-	fclose(this->treefp);
-#ifdef DEBUG
-	fclose(Util::logsfp);
 #endif
+	delete this->minheap;
+#ifdef DEBUG_PRECISE
+	//printf("already empty the buffer heap!\n");
+#endif
+	fclose(this->treefp);
+//#ifdef DEBUG_KVSTORE
+//	//NOTICE:there is more than one tree
+//	fclose(Util::debug_kvstore);	//NULL is ok!
+//	Util::debug_kvstore = NULL;
+//#endif
 }
 
 void
 Storage::print(string s)
 {
-#ifdef DEBUG
-	Util::showtime();
-	fputs("Class Storage\n", Util::logsfp);
-	fputs("Message: ", Util::logsfp);
-	fputs(s.c_str(), Util::logsfp);
-	fputs("\n", Util::logsfp);
+#ifdef DEBUG_KVSTORE
+	fputs(Util::showtime().c_str(), Util::debug_kvstore);
+	fputs("Class Storage\n", Util::debug_kvstore);
+	fputs("Message: ", Util::debug_kvstore);
+	fputs(s.c_str(), Util::debug_kvstore);
+	fputs("\n", Util::debug_kvstore);
 #endif
 }
 

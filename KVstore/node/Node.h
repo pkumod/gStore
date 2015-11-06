@@ -6,11 +6,11 @@
 # Description: basic Node class, father of IntlNode and LeafNode
 =============================================================================*/
 
-#ifndef _NODE_H
-#define _NODE_H
+#ifndef _KVSTORE_NODE_H
+#define _KVSTORE_NODE_H
 
-#include "../util/Util.h"
-#include "../bstr/TBstr.h"
+#include "../../Util/Util.h"
+#include "../../Bstr/Bstr.h"
 
 class Node       				//abstract basic class 
 {
@@ -28,14 +28,14 @@ public:
 	static const unsigned NF_RK = 0x00ffffff;	//select-rank, in Storage
 	static const unsigned NF_HT = 0xf00000;		//height area in rank
 	static const unsigned NF_KN = 0x07f000;		//NOTICE: decided by DEGREE
-	static const unsigned INTL_SIZE = sizeof(TBstr) * MAX_KEY_NUM;
+	static const unsigned INTL_SIZE = sizeof(Bstr) * MAX_KEY_NUM;
 	static const unsigned LEAF_SIZE = 2 * INTL_SIZE;
 protected:
 	unsigned store;			//store address, the BLock index
 	unsigned flag;			//NF_RK, NF_IL,NF_ID, NF_IV, propety
 	//int num; 			//totle keys num
 	//Node* father;		//point to father-node, which must be IntlNode
-	TBstr* keys; 
+	Bstr* keys; 
 	void AllocKeys();
 	//void FreeKeys();
 public:
@@ -63,9 +63,9 @@ public:
 	void setStore(unsigned _store);
 	unsigned getFlag() const;
 	void setFlag(unsigned _flag);
-	const TBstr* getKey(int _index) const;	//need to check the index
-	bool setKey(const TBstr* _key, int _index, bool ifcopy = false);
-	bool addKey(const TBstr* _key, int _index, bool ifcopy = false);
+	const Bstr* getKey(int _index) const;	//need to check the index
+	bool setKey(const Bstr* _key, int _index, bool ifcopy = false);
+	bool addKey(const Bstr* _key, int _index, bool ifcopy = false);
 	bool subKey(int _index, bool ifdel = false);
 	//virtual functions: polymorphic
 	virtual Node* getChild(int _index) const { return NULL; };
@@ -74,9 +74,9 @@ public:
 	virtual bool subChild(int _index) { return true; };
 	virtual Node* getPrev() const { return NULL; };
 	virtual Node* getNext() const { return NULL; };
-	virtual const TBstr* getValue(int _index) const { return NULL; };
-	virtual bool setValue(const TBstr* _value, int _index, bool ifcopy = false) { return true; };
-	virtual bool addValue(const TBstr* _value, int _index, bool ifcopy = false) { return true; };
+	virtual const Bstr* getValue(int _index) const { return NULL; };
+	virtual bool setValue(const Bstr* _value, int _index, bool ifcopy = false) { return true; };
+	virtual bool addValue(const Bstr* _value, int _index, bool ifcopy = false) { return true; };
 	virtual bool subValue(int _index, bool ifdel = false) { return true;};
 	virtual void setPrev(Node* _prev) {};
 	virtual void setNext(Node* _next) {};
@@ -94,13 +94,13 @@ public:
  *To save memory, we can only remain store and flag(childs added for Leaf).
  *However, in this way childs'pointers is ok to change, use Node** or Node*& is also nonsense
  *because the pointer variable may die. 
- *Another way is only to release dynamic memory, and store thw whole, read the TBstr only to 
+ *Another way is only to release dynamic memory, and store thw whole, read the Bstr only to 
  *build. In this way nodes'pointer doesn't change, and operation is simplified, while memory
- *is consumed a bit more. Because TBstrs consume the most memory, and memory-disk swapping is
+ *is consumed a bit more. Because Bstrs consume the most memory, and memory-disk swapping is
  *the most time-consuming thing, it seems to be a better way.
  *WARN:when a node is in memory and not deleted, its basic content is always being! If nodes are 
  *really too many, this will cause disaster because we can't swap them out until tree is closed!
- *To solve this problem, there should be two types of release-function: one to release TBstr, one 
+ *To solve this problem, there should be two types of release-function: one to release Bstr, one 
  *to release the whole(pointer is invalid and rebuild problem)
  */
 

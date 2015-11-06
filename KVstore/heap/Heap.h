@@ -6,12 +6,11 @@
 # Description: set and deal of Node*s in memory
 =============================================================================*/
 
-#ifndef _HEAP_H
-#define _HEAP_H
+#ifndef _KVSTORE_HEAP_HEAP_H
+#define _KVSTORE_HEAP_HEAP_H
 
-#include "../util/Util.h"
+#include "../../Util/Util.h"
 #include "../node/Node.h"
-#include "../hash/Hash.h"
 
 /* add, sub, modify: all can be done within O(logn) using adjust-function */
 //QUERY: when modified, finding right position consumes O(n). How about keeping smallest?
@@ -23,7 +22,6 @@ class Heap
 {
 private:
 	Node** heap;			//dynamic array
-	Hash* hash;		//vary according to heap
 	unsigned length;			//valid elements num
 	unsigned size;			//max-size of heap
 public:

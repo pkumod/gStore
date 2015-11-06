@@ -1,21 +1,22 @@
-/*
- * VSTREE.h
- *
- *  Created on: 2014-6-20
- *      Author: liyouhuan
- */
+/*=============================================================================
+# Filename: VSTree.h
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2015-11-01 13:02
+# Description: 
+=============================================================================*/
 
-#ifndef VSTREE_H_
-#define VSTREE_H_
+#ifndef _VSTREE_VSTREE_H
+#define _VSTREE_VSTREE_H
 
-#include<string>
-#include<map>
+#include "../Util/Util.h"
+#include"../Query/SPARQLquery.h"
 #include"VNode.h"
 #include"LRUCache.h"
 #include"EntryBuffer.h"
-#include"../Query/SPARQLquery.h"
 
-class VSTree{
+class VSTree
+{
     friend class VNode;
 public:
     VSTree(std::string _store_path);

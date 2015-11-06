@@ -5,11 +5,14 @@
  *      Author: hanshuo
  */
 
-#include"../Server/Server.h"
-#include<sstream>
+#include "../Server/Server.h"
+#include "../Util/Util.h"
 
 int main(int argc, char * argv[])
 {
+#ifdef DEBUG
+	Util util;
+#endif
     unsigned short port = Socket::DEFAULT_CONNECT_PORT;
 
     if (argc > 1)

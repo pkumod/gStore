@@ -1,8 +1,20 @@
-#include <string>
+/*=============================================================================
+# Filename: testParser.cpp
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2015-10-24 19:57
+# Description: 
+=============================================================================*/
+
+#include "../Util/Util.h"
 #include "../Parser/DBparser.h"
 #include "../Query/SPARQLquery.h"
 
-int main(){
+int main()
+{
+#ifdef DEBUG
+	Util util;
+#endif
 	std::cout<<"start"<<std::endl;
 	DBparser db_parser;
 	SPARQLquery sparql_query;
@@ -29,5 +41,4 @@ int main(){
 	
 	return 0;
 }
-
 

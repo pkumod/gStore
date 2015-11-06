@@ -6,25 +6,26 @@
 # Description: set and deal of ranging values
 =============================================================================*/
 
-#ifndef _RANGE_VALUE_H
-#define _RANGE_VALUE_H
-#endif
+#ifndef _KVSTORE_RANGEVALUE_RANGEVALUE_H
+#define _KVSTORE_RANGEVALUE_RANGEVALUE_H
 
-#include "../util/Util.h"
-#include "../bstr/TBstr.h"
+#include "../../Util/Util.h"
+#include "../../Bstr/Bstr.h"
 
 class RangeValue
 {
 private:
 	FILE* fp;
-	TBstr transfer;
+	Bstr transfer;
 	unsigned transfer_size;
 public:
 	RangeValue();
 	void reset();
 	bool open();
-	bool write(const TBstr* _bp);
-	const TBstr* read();
+	bool write(const Bstr* _bp);
+	const Bstr* read();
 	~RangeValue();
 };
+
+#endif
 

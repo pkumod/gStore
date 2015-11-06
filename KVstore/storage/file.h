@@ -6,10 +6,10 @@
 # Description: disk file memlayout
 =============================================================================*/
 
-#ifndef _FILE_H
-#define _FILE_H
+#ifndef _KVSTORE_STORAGE_FILE_H
+#define _KVSTORE_STORAGE_FILE_H
 
-#include "../util/Util.h"
+#include "../../Util/Util.h"
 
 /******** manage the disk-file as Blocks-list ********/
 /* All blocks of given file are viewed as an array, extended dynamicly
@@ -87,3 +87,4 @@ public:
 };
 
 #endif
+

@@ -6,11 +6,11 @@
 # Description: the leaf-node of a B+ tree
 =============================================================================*/
 
-#ifndef _LEAF_NODE_H
-#define _LEAF_NODE_H
+#ifndef _KVSTORE_NODE_LEAFNODE_H
+#define _KVSTORE_NODE_LEAFNODE_H
 
-#include "../util/Util.h"
-#include "../bstr/TBstr.h"
+#include "../../Util/Util.h"
+#include "../../Bstr/Bstr.h"
 #include "Node.h"
 
 class LeafNode: public Node    
@@ -18,7 +18,7 @@ class LeafNode: public Node
 protected:
 	Node* prev;	//LeafNode
 	Node* next;
-	TBstr* values;
+	Bstr* values;
 	void AllocValues();
 	//void FreeValues();
 public:
@@ -29,9 +29,9 @@ public:
 	void Normal();
 	Node* getPrev() const;
 	Node* getNext() const;
-	const TBstr* getValue(int _index) const;	
-	bool setValue(const TBstr* _value, int _index, bool ifcopy = false);
-	bool addValue(const TBstr* _value, int _index, bool ifcopy = false);
+	const Bstr* getValue(int _index) const;	
+	bool setValue(const Bstr* _value, int _index, bool ifcopy = false);
+	bool addValue(const Bstr* _value, int _index, bool ifcopy = false);
 	bool subValue(int _index, bool ifdel = false);
 	void setPrev(Node* _prev);
 	void setNext(Node* _next);

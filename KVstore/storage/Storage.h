@@ -6,15 +6,15 @@
 # Description: swap between memory and disk, achieving system-like method
 =============================================================================*/
 
-#ifndef _STORAGE_H
-#define _STORAGE_H
+#ifndef _KVSTORE_STORAGE_STORAGE_H
+#define _KVSTORE_STORAGE_STORAGE_H
 
-#include "../util/Util.h"
+#include "../../Util/Util.h"
 #include "../node/Node.h"
 #include "../node/IntlNode.h"
 #include "../node/LeafNode.h"
 #include "../heap/Heap.h"
-#include "../bstr/TBstr.h"
+#include "../../Bstr/Bstr.h"
 #include "file.h"
 
 //It controls read, write, swap
@@ -59,8 +59,8 @@ public:
 	bool createNode(Node*& _np);		//use fp to create a new node
 	//NOTICE(if children and child not exist, build children's Nodes)
 	bool writeNode(Node* _np);
-	bool readTBstr(TBstr* _bp, unsigned* _next);
-	bool writeTBstr(const TBstr* _bp, unsigned* _curnum, bool& _SpecialBlock);
+	bool readBstr(Bstr* _bp, unsigned* _next);
+	bool writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock);
 	bool writeTree(Node* _np);
 	void updateHeap(Node* _np, unsigned _rank, bool _inheap) const;
 	void request(int _needmem);			//deal with memory request
@@ -71,3 +71,4 @@ public:
 };
 
 #endif
+

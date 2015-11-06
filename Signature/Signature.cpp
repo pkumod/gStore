@@ -15,7 +15,7 @@ std::string Signature::BitSet2str(const EntityBitSet& _bitset)
 {
 	std::stringstream _ss;
 	bool any = false;
-	for(int i = 0; i < _bitset.size(); i ++)
+	for(unsigned i = 0; i < _bitset.size(); i ++)
 	{
 		if(_bitset.test(i))
 		{

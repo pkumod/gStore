@@ -7,6 +7,7 @@
 =============================================================================*/
 
 #include "RangeValue.h"
+
 using namespace std;
 
 RangeValue::RangeValue()
@@ -34,7 +35,7 @@ RangeValue::open()
 }
 
 bool
-RangeValue::write(const TBstr* _bp)
+RangeValue::write(const Bstr* _bp)
 {
 	if(this->fp == NULL)
 		return false;
@@ -44,7 +45,7 @@ RangeValue::write(const TBstr* _bp)
 	return true;
 }
 
-const TBstr* 
+const Bstr* 
 RangeValue::read()
 {
 	if(this->fp == NULL)
@@ -69,6 +70,6 @@ RangeValue::~RangeValue()
 {
 	if(this->fp != NULL)
 		fclose(this->fp);
-	//transfer will de deleted as TBstr
+	//transfer will de deleted as Bstr
 }
 

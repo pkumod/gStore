@@ -6,10 +6,10 @@
 # Description: the internal-node of a B+ tree
 =============================================================================*/
 
-#ifndef _INTL_NODE_H
-#define _INTL_NODE_H
+#ifndef _KVSTORE_NODE_INTLNODE_H
+#define _KVSTORE_NODE_INTLNODE_H
 
-#include "../util/Util.h"
+#include "../../Util/Util.h"
 #include "Node.h"
 
 class IntlNode: public Node
@@ -37,9 +37,9 @@ public:
 	/*non-sense functions: polymorphic
 	Node* getPrev() const;
 	Node* getNext() const;
-	const TBstr* getValue(int _index) const;
-	bool setValue(const TBstr* _value, int _index);
-	bool addValue(const TBstr* _value, int _index);
+	const Bstr* getValue(int _index) const;
+	bool setValue(const Bstr* _value, int _index);
+	bool addValue(const Bstr* _value, int _index);
 	bool subValue(int _index);
 	void setPrev(Node* _prev);
 	void setNext(Node* _next);

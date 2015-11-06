@@ -6,9 +6,7 @@
  */
 
 #include "IDList.h"
-#include<sstream>
-#include "../util/util.h"
-#include <algorithm>
+
 using namespace std;
 
 IDList::IDList()
@@ -44,7 +42,7 @@ bool IDList::isExistID(int _id)const
 {
     // naive implementation of searching(linear search).
     // you can use binary search when the id list is sorted, if necessary.
-    for (int i=0;i<this->id_list.size();i++)
+    for(unsigned i = 0; i < this->id_list.size(); i++)
     {
         if (this->id_list[i] == _id)
         {
@@ -74,7 +72,7 @@ std::string IDList::to_str()
 {
 	std::stringstream _ss;
 	_ss << "size=" << this->id_list.size() << "";
-	for(int i = 0; i < this->id_list.size(); i ++)
+	for(unsigned i = 0; i < this->id_list.size(); i ++)
 	{
 		_ss << "\t[" << this->id_list[i] << "]";
 	}
@@ -254,5 +252,5 @@ int IDList::erase(int i)
 
 int IDList::bsearch_uporder(int _key)
 {
-	return util::bsearch_vec_uporder(_key, this->id_list);
+	return Util::bsearch_vec_uporder(_key, this->id_list);
 }

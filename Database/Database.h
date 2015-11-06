@@ -1,16 +1,13 @@
-/*
- * database.h
- *
- *  Created on: 2014-6-20
- *      Author: liyouhuan
- */
+/*=============================================================================
+# Filename: Database.h
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2015-10-23 14:20
+# Description: 
+=============================================================================*/
 
-#ifndef DATABASE_H_
-#define DATABASE_H_
-#include<iostream>
-#include<string.h>
-#include <stack>
-using namespace std;
+#ifndef _DATABASE_DATABASE_H
+#define _DATABASE_DATABASE_H 
 
 #include "../Query/IDList.h"
 #include "../Query/ResultSet.h"
@@ -22,22 +19,16 @@ using namespace std;
 #include "../VSTree/VSTree.h"
 #include "../Parser/DBparser.h"
 #include "../Parser/RDFParser.h"
-#include "../util/util.h"
-#include<stdio.h>
-#include<sys/time.h>
-#include "fstream"
+#include "../Util/Util.h"
 
+using namespace std;
 
-class Database{
-
+class Database
+{
 public:
-
-	static const bool debug_1 = false;
-	static const bool debug_2 = false;
 	static const bool only_sub2idpre2id = true;
-	static const bool debug_vstree = false;
 	static const int internal = 100*1000;
-	static FILE* fp_debug;
+	//static FILE* fp_debug;
 	static void log(std::string _str);
 	void test();
 	void test_build_sig();
@@ -61,7 +52,7 @@ public:
 
 	bool load();
 	bool unload();
-	bool query(const string _query, ResultSet& _result_set);
+	bool query(const string _query, ResultSet& _result_set, FILE* _fp);
 
 	/*
 	 * 1. if subject of _triple doesn't exist,
@@ -174,6 +165,5 @@ private:
 	bool getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set);
 };
 
+#endif //_DATABASE_DATABASE_H
 
-
-#endif /* DATABASE_H_ */

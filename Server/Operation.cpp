@@ -34,13 +34,13 @@ Operation::~Operation()
 
 Bstr Operation::encrypt()
 {
-    // to be implemented...
+    //TODO
     return Bstr(NULL, 0);
 }
 
 Bstr Operation::deencrypt()
 {
-    // to be implemented...
+    //TODO
     return Bstr(NULL, 0);
 }
 
@@ -51,7 +51,7 @@ CommandType Operation::getCommand()
 
 std::string Operation::getParameter(int _idx)
 {
-    if (_idx < this->parameters.size())
+    if ((unsigned)_idx < this->parameters.size())
     {
         return this->parameters[_idx];
     }

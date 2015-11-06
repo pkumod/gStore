@@ -5,8 +5,8 @@
  *      Author: hanshuo
  */
 
-#include"GstoreConnector.h"
-#include<iostream>
+#include "GstoreConnector.h"
+#include <iostream>
 
 std::string GstoreConnector::defaultServerIP = "127.0.0.1";
 unsigned short GstoreConnector::defaultServerPort = 3305;

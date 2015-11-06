@@ -7,12 +7,13 @@
 =============================================================================*/
 
 #include "LeafNode.h"
+
 using namespace std;
 
 void
 LeafNode::AllocValues()
 {
-	values = new TBstr[MAX_KEY_NUM];
+	values = new Bstr[MAX_KEY_NUM];
 }
 
 /*
@@ -75,7 +76,7 @@ LeafNode::getNext() const
 	return next;
 }
 
-const TBstr* 
+const Bstr* 
 LeafNode::getValue(int _index) const
 {
 	int num = this->getNum();
@@ -89,7 +90,7 @@ LeafNode::getValue(int _index) const
 }
 
 bool
-LeafNode::setValue(const TBstr* _value, int _index, bool ifcopy)
+LeafNode::setValue(const Bstr* _value, int _index, bool ifcopy)
 {
 	int num = this->getNum();
 	if(_index < 0 || _index >= num)
@@ -106,7 +107,7 @@ LeafNode::setValue(const TBstr* _value, int _index, bool ifcopy)
 }
 
 bool 
-LeafNode::addValue(const TBstr* _value, int _index, bool ifcopy)
+LeafNode::addValue(const Bstr* _value, int _index, bool ifcopy)
 {
 	int num = this->getNum();
 	if(_index < 0 || _index > num)
@@ -181,7 +182,7 @@ LeafNode::split(Node* _father, int _index)
 		p->addValue(this->values+i, k);
 		p->addNum();
 	}
-	const TBstr* tp = this->keys + MIN_KEY_NUM;
+	const Bstr* tp = this->keys + MIN_KEY_NUM;
 	this->setNum(MIN_KEY_NUM);
 	_father->addKey(tp, _index, true);
 	_father->addChild(p, _index+1);	//DEBUG(check the index)
@@ -198,7 +199,7 @@ LeafNode::coalesce(Node* _father, int _index)
 	int i, j = _father->getNum(), k;	//BETTER: unsigned?
 	Node* p = NULL;
 	int ccase = 0;
-	const TBstr* bstr;
+	const Bstr* bstr;
 	if(_index < j)	//the right neighbor
 	{
 		p = _father->getChild(_index+1);
@@ -323,18 +324,18 @@ LeafNode::~LeafNode()
 void
 LeafNode::print(string s)
 {
-#ifdef DEBUG
+#ifdef DEBUG_KVSTORE
 	unsigned num = this->getNum();
-	Util::showtime();
-	fputs("Class LeafNode\n", Util::logsfp);
-	fputs("Message: ", Util::logsfp);
-	fputs(s.c_str(), Util::logsfp);
-	fputs("\n", Util::logsfp);
+	fputs(Util::showtime().c_str(), Util::debug_kvstore);
+	fputs("Class LeafNode\n", Util::debug_kvstore);
+	fputs("Message: ", Util::debug_kvstore);
+	fputs(s.c_str(), Util::debug_kvstore);
+	fputs("\n", Util::debug_kvstore);
 	unsigned i;
 	if(s == "NODE")
 	{
-		fprintf(Util::logsfp, "store: %u\tnum: %u\tflag: %u\n", this->store, num, this->flag);
-		fprintf(Util::logsfp, "prev: %p\tnext: %p\n", this->prev, this->next);
+		fprintf(Util::debug_kvstore, "store: %u\tnum: %u\tflag: %u\n", this->store, num, this->flag);
+		fprintf(Util::debug_kvstore, "prev: %p\tnext: %p\n", this->prev, this->next);
 		for(i = 0; i < num; ++i)
 		{
 			this->keys[i].print("BSTR");
@@ -343,8 +344,8 @@ LeafNode::print(string s)
 	}
 	else if(s == "node")
 	{
-		fprintf(Util::logsfp, "store: %u\tnum: %u\tflag: %u\n", this->store, num, this->flag);
-		fprintf(Util::logsfp, "prev: %p\tnext: %p\n", this->prev, this->next);
+		fprintf(Util::debug_kvstore, "store: %u\tnum: %u\tflag: %u\n", this->store, num, this->flag);
+		fprintf(Util::debug_kvstore, "prev: %p\tnext: %p\n", this->prev, this->next);
 	}
 	else if(s == "check node")
 	{
@@ -366,9 +367,9 @@ LeafNode::print(string s)
 		}
 		this->print("node");
 		if(flag)
-			fprintf(Util::logsfp, "This node is good\n");
+			fprintf(Util::debug_kvstore, "This node is good\n");
 		else
-			fprintf(Util::logsfp, "This node is bad\n");
+			fprintf(Util::debug_kvstore, "This node is bad\n");
 	}
 	else;
 #endif

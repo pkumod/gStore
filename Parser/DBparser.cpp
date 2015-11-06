@@ -32,7 +32,7 @@ string DBparser::sparqlParser(const string& _sparql, SPARQLquery& _sparql_query)
 
 	SparqlParser_workload_return r = parser->workload(parser);
 	pANTLR3_BASE_TREE root = r.tree;
-	pANTLR3_BASE_TREE treeNode;
+	//pANTLR3_BASE_TREE treeNode;
 
 	printNode(root);
 	parseNode(root,_sparql_query,0);
@@ -165,7 +165,7 @@ int DBparser::parseString(pANTLR3_BASE_TREE node,std::string& str,int depth){
 }
 
 int DBparser::parsePrefix(pANTLR3_BASE_TREE node,std::pair<std::string,std::string>& prefixPair){
-	const char* s =(const char*) node->getText(node)->chars;
+	//const char* s =(const char*) node->getText(node)->chars;
 	std::string key;
 	std::string value;
 	for (unsigned int j=0;j<node->getChildCount(node);j++){
@@ -183,7 +183,7 @@ int DBparser::parsePrefix(pANTLR3_BASE_TREE node,std::pair<std::string,std::stri
 	return 0;
 }
 
-int DBparser::replacePrefix(string& str){
+void DBparser::replacePrefix(string& str){
 	if (str[0]!='<'){
 		int sep=str.find(":");
 		std::string prefix=str.substr(0,sep+1);
@@ -199,7 +199,7 @@ int DBparser::replacePrefix(string& str){
 }
 
 int DBparser::parseTriple(pANTLR3_BASE_TREE node,Triple& triple){
-	const char* s =(const char*) node->getText(node)->chars;
+	//const char* s =(const char*) node->getText(node)->chars;
 	std::string subject="";
 	std::string predicate="";
 	std::string object="";
@@ -227,7 +227,7 @@ int DBparser::parseTriple(pANTLR3_BASE_TREE node,Triple& triple){
 }
 
 int DBparser::parseBasicQuery(pANTLR3_BASE_TREE node,BasicQuery& basicQuery){
-	const char* s =(const char*) node->getText(node)->chars;
+	//const char* s =(const char*) node->getText(node)->chars;
 	Triple triple;
 	for (unsigned int j=0;j<node->getChildCount(node);j++){
 		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
@@ -247,7 +247,7 @@ int DBparser::parseBasicQuery(pANTLR3_BASE_TREE node,BasicQuery& basicQuery){
 }
 
 int DBparser::parseVar(pANTLR3_BASE_TREE node,SPARQLquery& query){
-	const char* s =(const char*) node->getText(node)->chars;
+	//const char* s =(const char*) node->getText(node)->chars;
 	std::string var="";
 	for (unsigned int j=0;j<node->getChildCount(node);j++){
 		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
@@ -300,7 +300,7 @@ int DBparser::parseNode(pANTLR3_BASE_TREE node, SPARQLquery& query,int depth){
 	return 0;
 }
 
-int DBparser::printNode(pANTLR3_BASE_TREE node, int depth){
+void DBparser::printNode(pANTLR3_BASE_TREE node, int depth){
 	const char* s =(const char*) node->getText(node)->chars;
 	ANTLR3_UINT32 treeType = node->getType(node);
 
@@ -310,7 +310,7 @@ int DBparser::printNode(pANTLR3_BASE_TREE node, int depth){
 	printf("%d: %s\n",treeType,s);
 	for (unsigned int j=0;j<node->getChildCount(node);j++){
 		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
-		int childNodeType = childNode->getType(childNode);
+		//int childNodeType = childNode->getType(childNode);
 		printNode(childNode,depth+1);
 	}
 }

@@ -1,15 +1,20 @@
 /*
- * join_test.cpp
+ * build_signature.cpp
  *
- *  Created on: 2014-7-30
+ *  Created on: 2014-7-23
  *      Author: liyouhuan
  */
-#include<iostream>
+
+#include "../Util/Util.h"
 #include "../Database/Database.h"
 
 using namespace std;
+
 int main()
 {
+#ifdef DEBUG
+	Util util;
+#endif
 	cout << "build signature" << endl;
 	string _yago2_triple = "/media/wip/common/data/yago2_triple";
 	string _yago = "/media/wip/common/data/yago_triple";
@@ -20,12 +25,11 @@ int main()
 	Database _db("db_test");
 	Database::log("RDF:"+_rdf);
 	_db.build(_rdf);
-	_db.test();
 	Database::log("finish build");
-	_db.test_join();
+	_db.test_build_sig();
+
+
 
 	return 0;
 }
-
-
 

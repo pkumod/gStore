@@ -1,12 +1,15 @@
-/*
- * basicQuery.cpp
- *
- *  Created on: 2014-6-20
- *      Author: liyouhuan
- */
+/*=============================================================================
+# Filename: BasicQuery.cpp
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2015-10-31 19:21
+# Description: 
+=============================================================================*/
 
 #include "BasicQuery.h"
 #include "../Database/Database.h"
+
+using namespace std;
 
 /* _query is a SPARQL query string */
 BasicQuery::BasicQuery(const string _query)
@@ -55,7 +58,7 @@ void BasicQuery::clear()
     this->candidate_list = NULL;
     delete[] this->is_literal_candidate_added;
     this->is_literal_candidate_added = NULL;
-    for (int i=0;i<this->result_list.size();++i)
+    for (unsigned i=0;i<this->result_list.size();++i)
     {
         delete[] this->result_list[i];
         this->result_list[i] = NULL;
@@ -69,7 +72,7 @@ int BasicQuery::getVarNum()
 }
 
 /* get the name of _var in the query graph */
-std::string BasicQuery::getVarName(int _var)
+string BasicQuery::getVarName(int _var)
 {
     return this->var_name[_var];
 }
@@ -97,8 +100,6 @@ int BasicQuery::getEdgePreID(int _var, int _i_th_edge)
 {
     return this->edge_pre_id[_var][_i_th_edge];
 }
-
-
 
 /* get the ID of the i-th edge of _var */
 char BasicQuery::getEdgeType(int _var, int _i_th_edge)
@@ -148,7 +149,7 @@ bool BasicQuery::isOutEdge(int _var, int _i_th_edge)const
     return this->edge_type[_var][_i_th_edge] == BasicQuery::EDGE_OUT;
 }
 
-bool BasicQuery::isOneDegreeNotSelectVar(std::string& _no_sense_var)
+bool BasicQuery::isOneDegreeNotSelectVar(string& _no_sense_var)
 {
     /* begin with ? */
     if(_no_sense_var.at(0) != '?')
@@ -209,7 +210,7 @@ void BasicQuery::setAddedLiteralCandidate(int _var)
     this->is_literal_candidate_added[_var] = true;
 }
 
-void BasicQuery::updateSubSig(int _sub_id, int _pre_id, int _obj_id, std::string _obj,int _line_id)
+void BasicQuery::updateSubSig(int _sub_id, int _pre_id, int _obj_id, string _obj,int _line_id)
 {
     /* update var(sub)_signature according this triple */
     bool obj_is_str = (_obj_id == -1) && (_obj.at(0) != '?');
@@ -233,7 +234,7 @@ void BasicQuery::updateSubSig(int _sub_id, int _pre_id, int _obj_id, std::string
     this->var_degree[_sub_id] ++;
 }
 
-void BasicQuery::updateObjSig(int _obj_id, int _pre_id, int _sub_id, std::string _sub,int _line_id)
+void BasicQuery::updateObjSig(int _obj_id, int _pre_id, int _sub_id, string _sub,int _line_id)
 {
     /* update var(obj)_signature */
     bool sub_is_str = (_sub_id == -1) && (_sub.at(0) != '?');
@@ -260,7 +261,7 @@ void BasicQuery::updateObjSig(int _obj_id, int _pre_id, int _sub_id, std::string
 }
 
 /* encode relative signature data of the query graph */
-void BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const std::vector<std::string>& _query_var)
+void BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_var)
 {
     cout << "IN buildBasicSignature" << endl;
     /* initial */
@@ -279,19 +280,19 @@ void BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const std::vector<std::st
     this->select_var_num = _query_var.size();
 
     //debug
-    std::stringstream _ss;
+    stringstream _ss;
     _ss << "select_var_num=" << this->select_var_num << endl;
     Database::log(_ss.str());
 
     for(int i = 0; i < (this->select_var_num); i ++)
     {
-        std::string _var = _query_var[i];
+        string _var = _query_var[i];
         this->var_str2id[_var] = i;
         this->var_name[i] = _var;
     }
 
     cout << "select variables: ";
-    for(int i = 0; i < this->var_str2id.size(); i ++)
+    for(unsigned i = 0; i < this->var_str2id.size(); i ++)
     {
         cout << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
     }
@@ -309,7 +310,7 @@ void BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const std::vector<std::st
     this->graph_var_num = this->var_str2id.size();
 
     cout<< "graph variables: ";
-    for(int i = 0; i < this->var_str2id.size(); i ++)
+    for(unsigned i = 0; i < this->var_str2id.size(); i ++)
     {
         cout << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
     }
@@ -318,14 +319,14 @@ void BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const std::vector<std::st
 
     this->candidate_list = new IDList[this->graph_var_num];
 
-    for(int i = 0; i < this->triple_vt.size(); i ++)
+    for(unsigned i = 0; i < this->triple_vt.size(); i ++)
     {
         string& sub = this->triple_vt[i].subject;
         string& pre = this->triple_vt[i].predicate;
         string& obj = this->triple_vt[i].object;
         int pre_id = _p_kvstore->getIDByPredicate(pre);
         {
-            std::stringstream _ss;
+            stringstream _ss;
             _ss << "pre2id: " << pre << "=>" << pre_id << endl;
             Database::log(_ss.str());
         }
@@ -432,7 +433,7 @@ void BasicQuery::initial()
     this->graph_var_num = 0;
     this->var_degree = new int[BasicQuery::MAX_VAR_NUM];
     this->var_sig = new EntityBitSet[BasicQuery::MAX_VAR_NUM];
-    this->var_name = new std::string[BasicQuery::MAX_VAR_NUM];
+    this->var_name = new string[BasicQuery::MAX_VAR_NUM];
 
     this->edge_sig = new EdgeBitSet*[BasicQuery::MAX_VAR_NUM];
     this->edge_id = new int*[BasicQuery::MAX_VAR_NUM];
@@ -474,7 +475,7 @@ void BasicQuery::addInVarNotInSelect()
 {
     /* all vars in this set is met before at least once */
     int _v_n_i_s_next_id = this->var_str2id.size() + 0;
-    for(int i = 0; i < this->triple_vt.size(); i ++)
+    for(unsigned i = 0; i < this->triple_vt.size(); i ++)
     {
         string& sub = this->triple_vt[i].subject;
         if(sub.at(0) == '?')
@@ -522,7 +523,7 @@ void BasicQuery::addInVarNotInSelect()
 void BasicQuery::findVarNotInSelect()
 {
     int _v_n_i_s_next_id = this->var_str2id.size() + 0;
-    for(int i = 0; i < this->triple_vt.size(); i ++)
+    for(unsigned i = 0; i < this->triple_vt.size(); i ++)
     {
         string& sub = this->triple_vt[i].subject;
         if(sub.at(0) == '?')
@@ -552,7 +553,7 @@ void BasicQuery::findVarNotInSelect()
 
 void BasicQuery::buildTuple2Freq()
 {
-    std::vector<Triple>::iterator itr = this->triple_vt.begin();
+    vector<Triple>::iterator itr = this->triple_vt.begin();
     bool not_found = false;
     int _freq = 0;
     while(itr != this->triple_vt.end())
@@ -699,7 +700,7 @@ struct BasicQuery::ResultCmp
 
 bool BasicQuery::dupRemoval_invalidRemoval()
 {
-    std::cout << "IN dupRemoval_invalidRemoval" << std::endl;
+    cout << "IN dupRemoval_invalidRemoval" << endl;
 
     ResultCmp resCmp(this->graph_var_num);
     ResultEqual resEqual(this->select_var_num);
@@ -731,10 +732,10 @@ bool BasicQuery::dupRemoval_invalidRemoval()
     }
     this->result_list.resize(valid_num);
     
-    std::cout << "dup_num: " << dup_num << std::endl;
-    std::cout << "invalid_num: " << result_size - valid_num << std::endl;
+    cout << "dup_num: " << dup_num << endl;
+    cout << "invalid_num: " << result_size - valid_num << endl;
 
-    std::cout << "OUT dupRemoval_invalidRemoval" << std::endl;
+    cout << "OUT dupRemoval_invalidRemoval" << endl;
     return true;
 }
 
@@ -769,7 +770,7 @@ bool BasicQuery::dupRemoval_invalidRemoval()
 
 
 //     cout << "before copy" << endl;
-//     std::vector<int*>::iterator tmp_itr1 = this->result_list.begin();
+//     vector<int*>::iterator tmp_itr1 = this->result_list.begin();
 //     int p_tmp_count = 0;
 //     /* copy valid result into p_tmp */
 //     while(tmp_itr1 != this->result_list.end())
@@ -804,7 +805,7 @@ bool BasicQuery::dupRemoval_invalidRemoval()
 //         }
 //     }
 
-//     std::vector<int*>::iterator tmp_itr2 = this->result_list.begin();
+//     vector<int*>::iterator tmp_itr2 = this->result_list.begin();
 
 //     cout << "dup_num: " << dup_num << endl;
 //     /* dupRemoval when re-assign valid ones back to result_list */
@@ -829,9 +830,9 @@ bool BasicQuery::dupRemoval_invalidRemoval()
 //     return true;
 // }
 
-std::string BasicQuery::candidate_str()
+string BasicQuery::candidate_str()
 {
-    std::stringstream _ss;
+    stringstream _ss;
 
     _ss << "varNum: " << this->getVarNum() << endl;
     for(int i = 0; i < this->getVarNum(); i ++)
@@ -842,36 +843,36 @@ std::string BasicQuery::candidate_str()
     return _ss.str();
 }
 
-std::string BasicQuery::result_str()
+string BasicQuery::result_str()
 {
-    std::stringstream _ss;
+    stringstream _ss;
 
     _ss << "resultNum: " << this->result_list.size() << endl;
-    _ss << util::result_id_str(this->result_list, this->graph_var_num) << endl;
+    _ss << Util::result_id_str(this->result_list, this->graph_var_num) << endl;
 
     return _ss.str();
 }
 
-std::string BasicQuery::triple_str()
+string BasicQuery::triple_str()
 {
-    std::stringstream _ss;
+    stringstream _ss;
 
-    _ss<<"Triple num:"<<this->getTripleNum()<<std::endl;
+    _ss<<"Triple num:"<<this->getTripleNum()<<endl;
     for (int i=0;i<getTripleNum();i++)
     {
-        _ss<<(this->getTriple(i).toString())<<std::endl;
+        _ss<<(this->getTriple(i).toString())<<endl;
     }
     return _ss.str();
 }
 
 
-std::string BasicQuery::to_str()
+string BasicQuery::to_str()
 {
     Database::log("IN BasicQuery::to_str");
-    std::stringstream _ss;
+    stringstream _ss;
 
     _ss << "Triples: " << endl;
-    for(int i = 0; i < this->triple_vt.size(); i ++)
+    for(unsigned i = 0; i < this->triple_vt.size(); i ++)
     {
         _ss << "\t" << this->triple_vt[i].toString() << endl;
     }
@@ -922,3 +923,4 @@ std::string BasicQuery::to_str()
 
     return _ss.str();
 }
+

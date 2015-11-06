@@ -15,7 +15,7 @@ int LRUCache::DEFAULT_CAPACITY = 1*1000*1000;
 
 LRUCache::LRUCache(int _capacity)
 {
-	//cout << "LRUCache initial..." << endl;
+	cout << "LRUCache initial..." << endl;
     this->capacity = _capacity > 0 ? _capacity : LRUCache::DEFAULT_CAPACITY;
     // we should guarantee the cache is big enough.
     this->capacity = std::max(this->capacity, VNode::MAX_CHILD_NUM * 2000);
@@ -29,7 +29,7 @@ LRUCache::LRUCache(int _capacity)
     this->prev[LRUCache::START_INDEX] = LRUCache::NULL_INDEX;
     this->prev[LRUCache::END_INDEX] = LRUCache::START_INDEX;
     this->size = 0;
-    //cout << "LRUCache initial finish" << endl;
+    cout << "LRUCache initial finish" << endl;
 }
 
 LRUCache::~LRUCache()
@@ -355,7 +355,7 @@ bool LRUCache::readIn(int _pos, int _fileLine)
         return false;
     }
 
-    bool is_node_read = (fread((char *)nodePtr,vNodeSize,1,filePtr) == 1);
+    //bool is_node_read = (fread((char *)nodePtr,vNodeSize,1,filePtr) == 1);
     fclose(filePtr);
 
     if (nodePtr == NULL || nodePtr->getFileLine() != _fileLine)
