@@ -1707,6 +1707,9 @@ Database::join(vector<int*>& _result_list, int _var_id, int _pre_id, \
             itr_result[_var_num] = -1;
             continue;
         }
+#ifdef DEBUG
+		printf("id_list size and can_list size: %d\t%d\n", id_list_len, _can_list.size());
+#endif
 //		cout << "\t\tid_list_len: " << id_list_len << endl << "\t\t";
 //		for(int i = 0; i < id_list_len; i ++){
 //			cout << "[" << id_list[i] << "] ";
@@ -1724,7 +1727,7 @@ Database::join(vector<int*>& _result_list, int _var_id, int _pre_id, \
 
         bool no_any_match_yet = true;
         stringstream _tmp_ss;
-        for (int i = 0; i < id_list_len; i++)
+        for(int i = 0; i < id_list_len; i++)
         {
             bool found_in_id_list = _can_list.bsearch_uporder(id_list[i]) >= 0;
             bool should_add_this_literal = shouldAddLiteral && !this->objIDIsEntityID(id_list[i]);

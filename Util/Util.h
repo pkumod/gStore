@@ -38,7 +38,7 @@
 #define STREAM_ON 1			
 #define READLINE_ON	1
 //indicate that in debug mode
-//#define DEBUG 1				//set this if any debug, except DEBUG_PRECISE
+#define DEBUG 1				//set this if any debug, except DEBUG_PRECISE
 //#define DEBUG_PRECISE 1		//all information
 //#define DEBUG_KVSTORE 1		//in KVstore
 //#define DEBUG_DATABASE 1	//in Database
