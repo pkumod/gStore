@@ -1708,7 +1708,7 @@ Database::join(vector<int*>& _result_list, int _var_id, int _pre_id, \
             continue;
         }
 #ifdef DEBUG
-		printf("id_list size and can_list size: %d\t%d\n", id_list_len, _can_list.size());
+		//printf("id_list size and can_list size: %d\t%d\n", id_list_len, _can_list.size());
 #endif
 //		cout << "\t\tid_list_len: " << id_list_len << endl << "\t\t";
 //		for(int i = 0; i < id_list_len; i ++){
@@ -2574,9 +2574,8 @@ Database::getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set)
     for(unsigned i = 0; i < query_vec.size(); i++)
     {
         vector<int*>& tmp_vec = query_vec[i]->getResultList();
-        vector<int*>::iterator itr = tmp_vec.begin();
         //for every result group in resultlist
-        for(; itr != tmp_vec.end(); itr++)
+        for(vector<int*>::reverse_iterator it = tmp_vec.rbegin(); it != tmp_vec.rend(); ++it)
         {
 #ifndef STREAM_ON
             _result_set.answer[tmp_ans_count] = new string[_var_num];
@@ -2585,9 +2584,9 @@ Database::getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set)
 	printf("getFinalResult:before map loop\n");
 #endif
             //map every ans_id into ans_str
-            for(int v = 0; v < _var_num; v++)
+            for(int v = _var_num - 1; v >= 0; --v)
             {
-                int ans_id = (*itr)[v];
+                int ans_id = (*it)[v];
                 string ans_str;
                 if (this->objIDIsEntityID(ans_id))
                 {
