@@ -1,7 +1,16 @@
-/.svn/
-/.svn
-*/.svn
-*/.svn/
-*.svn
-test/
-/Debug
+#compiled objects
+.objs/*.o
+#debug logs
+.debug/*.log
+#temp files
+.tmp/*.dat
+#answers
+*.txt
+#dbs
+*.nt
+#executables
+gload gquery gserver gclient gtest
+g*
+#libs and tools
+lib/*
+tools/*
