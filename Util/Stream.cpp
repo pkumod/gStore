@@ -50,8 +50,15 @@ Stream::open(bool _isBstr)
 #ifdef DEBUG_PRECISE
 	//printf("Stream:this is for Bstr\n");
 #endif
-	if(Util::memUsedPercentage() > 85)
+	if(Util::memUsedPercentage() > 90)
+	{
 		this->inMem = false;
+		printf("Stream: memory is not enough!\n");
+	}
+	else
+	{
+		printf("Stream: memory is enough!\n");
+	}
 #ifdef DEBUG_PRECISE
 	//printf("Stream:after memUsedPercentage\n");
 #endif
