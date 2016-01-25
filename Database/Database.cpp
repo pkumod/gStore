@@ -1708,7 +1708,7 @@ Database::join(vector<int*>& _result_list, int _var_id, int _pre_id, \
             continue;
         }
 #ifdef DEBUG
-		printf("id_list size and can_list size: %d\t%d\n", id_list_len, _can_list.size());
+		//printf("id_list size and can_list size: %d\t%d\n", id_list_len, _can_list.size());
 #endif
 //		cout << "\t\tid_list_len: " << id_list_len << endl << "\t\t";
 //		for(int i = 0; i < id_list_len; i ++){

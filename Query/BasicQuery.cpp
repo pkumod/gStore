@@ -736,6 +736,18 @@ bool BasicQuery::dupRemoval_invalidRemoval()
     cout << "invalid_num: " << result_size - valid_num << endl;
 
     cout << "OUT dupRemoval_invalidRemoval" << endl;
+
+	//DEBUG
+	printf("the results represented by id\n");
+	for(int i = 0; i < valid_num; ++i)
+	{
+		for(int j = 0; j < this->graph_var_num; ++j)		
+		{
+			printf("%d ",this->result_list[i][j]);	
+		}
+		printf("\n");
+	}
+
     return true;
 }
 

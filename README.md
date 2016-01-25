@@ -135,10 +135,7 @@ insert a handful of new RDF triples to the orginal database.
 
 Note that each command ends with ";".
 
-####5. API
-We provide JAVA and C++ API for accessing gStore now. Please refer to example codes in `api/cpp/example` and `api/java/example`.
-
-####6. gtest
+####5. gtest
 We provide a test tool to generate structural logs for datasets. Please type `./gtest --help` in the working directory for detail.
 
 (change paths in the main/gtest.cpp if needed)
@@ -153,6 +150,9 @@ And the output will be sorted into there logs: load.log/(for database loading ti
 
 All logs produced by this program are in TSV format, you can load them into Calc/Excel directly.
 
+####6. API
+We provide JAVA and C++ API for accessing gStore now. Please refer to example codes in `api/cpp/example` and `api/java/example`.
+
 ### System Update Log
 
 ####Nov 06, 2015.
@@ -163,7 +163,7 @@ In addition, most warnnings are removed, except for warnnings in Parser module, 
 
 What is more, we change RangeValue module to Stream, and add Stream for ResultSet. We also better the gquery console, so now you can redirect query results to a specified file in the gsql console.
 
-Unable to add Stream for IDlist due to complex operations, but this is not necessary. Realpath is used to supported soft links in the gquery console, but it not works in Gstore.(though works if not in Gtsore)
+Unable to add Stream for IDlist due to complex operations, but this is not necessary. Realpath is used to supported soft links in the gquery console, but it not works in Gstore.(though works if not in Gstore)
 
 ####Oct 20, 2015.
 
