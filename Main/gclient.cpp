@@ -1,17 +1,19 @@
-/*
- * gclient.cpp
- *
- *  Created on: 2014-10-19
- *      Author: hanshuo
- */
+/*=============================================================================
+# Filename: gclient.cpp
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2016-02-26 19:14
+# Description: first written by hanshuo, modified by zengli
+=============================================================================*/
 
 #include "../Server/Client.h"
-#include <string>
-#include <sstream>
-#include <iostream>
+#include "../Util/Util.h"
 
 int main(int argc, char * argv[])
 {
+#ifdef DEBUG
+    Util util;
+#endif
     std::string ip = Socket::DEFAULT_SERVER_IP;
     unsigned short port = Socket::DEFAULT_CONNECT_PORT;
 

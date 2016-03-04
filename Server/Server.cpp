@@ -7,8 +7,6 @@
 =============================================================================*/
 
 #include "Server.h"
-#include "../Database/Database.h"
-#include "../Util/Util.h"
 
 Server::Server()
 {
@@ -340,9 +338,9 @@ Server::unloadDatabase(std::string _db_name, std::string _ac_name, std::string& 
 bool 
 Server::importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
 {
-    if (this->database != NULL && this->database->getName() != _db_name)
+    //if (this->database != NULL && this->database->getName() != _db_name)
+    if (this->database != NULL)
     {
-        this->database->unload();
         delete this->database;
     }
 
@@ -388,7 +386,7 @@ Server::insertTriple(std::string _db_name, std::string _ac_name, std::string _rd
 bool 
 Server::query(const std::string _query, std::string& _ret_msg)
 {
-    if (this->database == NULL)
+    if(this->database == NULL)
     {
         _ret_msg = "database has not been loaded.";
         return false;
@@ -396,14 +394,11 @@ Server::query(const std::string _query, std::string& _ret_msg)
 
     ResultSet res_set;
     bool flag = this->database->query(_query, res_set, stdout);
-    if (flag)
+    if(flag)
     {
-#ifndef STREAM_ON
+		//_ret_msg = "results are too large!";
+		//TODO: divide and transfer if too large to be placed in memory, using Stream
         _ret_msg = res_set.to_str();
-#else
-		_ret_msg = "results are too large!";
-		//TODO: divide and transfer
-#endif
     }
     else
     {

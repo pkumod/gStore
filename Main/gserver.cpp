@@ -1,9 +1,10 @@
-/*
- * gserver.cpp
- *
- *  Created on: 2014-10-19
- *      Author: hanshuo
- */
+/*=============================================================================
+# Filename: gserver.cpp
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2016-02-26 19:15
+# Description: first written by hanshuo, modified by zengli
+=============================================================================*/
 
 #include "../Server/Server.h"
 #include "../Util/Util.h"

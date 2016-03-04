@@ -10,45 +10,12 @@
 4. ./gquery db_folder                              load the given database and open console
 =============================================================================*/
 
-//#include <iostream>
-#include <stdio.h>
-//#include <stdlib.h>
-//#include <string.h>
-#include <readline/readline.h>
-#include <readline/history.h>
 #include "../Database/Database.h"
 #include "../Util/Util.h"
 
 using namespace std;
 
 //WARN:cannot support soft links!
-string
-getQueryFromFile(const char* _file_path)
-{
-#ifdef DEBUG_PRECISE
-    printf("file to open: %s\n", _file_path);
-#endif
-    char buf[10000];
-    std::string query_file;
-
-    ifstream fin(_file_path);
-    if(!fin)
-    {
-        printf("can not open: %s\n", _file_path);
-        return "";
-    }
-
-    memset(buf, 0, sizeof(buf));
-    stringstream _ss;
-    while(!fin.eof())
-    {
-        fin.getline(buf, 9999);
-        _ss << buf << "\n";
-    }
-    fin.close();
-
-    return _ss.str();
-}
 
 void
 help()
@@ -115,7 +82,7 @@ main(int argc, char * argv[])
         //
         //        string query = _ss.str();
 
-        string query = getQueryFromFile(argv[2]);
+        string query = Util::getQueryFromFile(argv[2]);
         if (query.empty())
         {
             return 0;
@@ -159,7 +126,7 @@ main(int argc, char * argv[])
 			}
 			else
 			{
-				//TODO: sparql path > file	
+				//TODO: help for a given command
 			}
             continue;
         }
@@ -170,19 +137,24 @@ main(int argc, char * argv[])
             printf("unknown commands\n");
             continue;
         }
-        std::string query_file;
+		//TODO: sparql + string, not only path
+        string query_file;
         //BETTER:build a parser for this console
 		bool ifredirect = false;
+
 		char* rp = buf;
-		while(*rp != '\0')
+		int pos = strlen(buf) - 1;
+		while(pos > -1)
 		{
-			if(*rp == '>')
+			if(*(rp+pos) == '>')
 			{
 				ifredirect = true;
 				break;
 			}
-			rp++;
+			pos--;
 		}
+		rp += pos;
+
         char* p = buf + strlen(buf) - 1;
 		FILE* fp = stdout;      ///default to output on screen
 		if(ifredirect)
@@ -191,11 +163,11 @@ main(int argc, char * argv[])
 			while(*tp == ' ' || *tp == '\t')
 				tp--;
 			*(tp+1) = '\0';
-			tp = rp + 2;
+			tp = rp + 1;
 			while(*tp == ' ' || *tp == '\t')
 				tp++;
 			fp = fopen(tp, "w");	//NOTICE:not judge here!
-			p = rp - 2;					//NOTICE: all separated with ' ' or '\t'
+			p = rp - 1;					//NOTICE: all separated with ' ' or '\t'
 		}
         while(*p == ' ' || *p == '\t')	//set the end of path
             p--;
@@ -224,7 +196,7 @@ main(int argc, char * argv[])
         else
 			printf("%s\n", q);
         //query = getQueryFromFile(p);
-        query = getQueryFromFile(q);
+        query = Util::getQueryFromFile(q);
         if(query.empty())
         {
 			free(q);
@@ -234,12 +206,12 @@ main(int argc, char * argv[])
 				fclose(fp);
             continue;
         }
-        cout << "query is:" << endl;
-        cout << query << endl << endl;
+        printf("query is:\n");
+        printf("%s\n\n", query.c_str());
         ResultSet _rs;
         _db.query(query, _rs, fp);
         //test...
-        //std::string answer_file = query_file+".out";
+        //string answer_file = query_file+".out";
         //Util::save_to_file(answer_file.c_str(), _rs.to_str());
 		free(q);
         //free(resolved_path);
@@ -247,29 +219,29 @@ main(int argc, char * argv[])
 		if(ifredirect)
 			fclose(fp);
 #ifdef DEBUG_PRECISE
-        //printf("after buf freed!\n");
+        printf("after buf freed!\n");
 #endif
     }
-#else					//DEBUG:this not work!
-    while(true)
-    {
-        cout << "please input query file path:" << endl;
-        std::string query_file;
-        cin >> query_file;
-        //char* q = realpath(query_file.c_str(), NULL);
-        string query = getQueryFromFile(query_file.c_str());
-        if(query.empty())
-        {
-            //free(resolved_path);
-            continue;
-        }
-        cout << "query is:" << endl;
-        cout << query << endl << endl;
-        ResultSet _rs;
-        _db.query(query, _rs, stdout);
-        //free(resolved_path);
-    }
-#endif
+//#else					//DEBUG:this not work!
+//    while(true)
+//    {
+//        cout << "please input query file path:" << endl;
+//        string query_file;
+//        cin >> query_file;
+//        //char* q = realpath(query_file.c_str(), NULL);
+//        string query = getQueryFromFile(query_file.c_str());
+//        if(query.empty())
+//        {
+//            //free(resolved_path);
+//            continue;
+//        }
+//        cout << "query is:" << endl;
+//        cout << query << endl << endl;
+//        ResultSet _rs;
+//        _db.query(query, _rs, stdout);
+//        //free(resolved_path);
+//    }
+#endif // READLINE_ON
 
     return 0;
 }

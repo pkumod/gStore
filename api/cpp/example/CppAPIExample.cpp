@@ -1,13 +1,14 @@
-/*
- * CppAPIExample.cpp
- *
- *  Created on: 2014-11-4
- *      Author: hanshuo
- */
+/*=============================================================================
+# Filename: CppAPIExample.cpp
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2016-02-21 21:32
+# Description: originally written by hanshuo, modified by zengli
+=============================================================================*/
 
-#include"GstoreConnector.h"
-#include<string>
-#include<iostream>
+#include "GstoreConnector.h"
+#include <string>
+#include <iostream>
 
 // before run this example, you must start up the GStore server at first (use command ./gserver).
 int main(int argc, char * argv[])
@@ -17,7 +18,7 @@ int main(int argc, char * argv[])
 
     // build a new database by a RDF file.
     // note that the relative path is related to gserver.
-    gc.build("db_LUBM10", "example/LUBM_10.n3");
+    gc.build("LUBM10.db", "data/LUBM_10.n3");
 
     // then you can execute SPARQL query on this database.
     std::string sparql = "select ?x where \
@@ -34,14 +35,13 @@ int main(int argc, char * argv[])
     std::cout << answer << std::endl;
 
     // unload this database.
-    gc.unload("db_LUBM10");
+    gc.unload("LUBM10.db");
 
     // also, you can load some exist database directly and then query.
-    gc.load("db_LUBM10");
+    gc.load("LUBM10.db");
     answer = gc.query(sparql);
     std::cout << answer << std::endl;
 
     return 0;
 }
-
 

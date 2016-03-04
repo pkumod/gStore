@@ -3,6 +3,8 @@ CFLAGS = -c -g -Wall
 
 objdir = .objs/
 
+exedir = ./
+
 kvstoreobj = $(objdir)KVstore.o $(objdir)Tree.o $(objdir)Storage.o $(objdir)Node.o \
 		$(objdir)IntlNode.o $(objdir)LeafNode.o $(objdir)Heap.o 
 	#$(objdir)RangeValue.o #$(objdir)Util.o $(objdir)TBstr.o $(objdir)Hash.o 
@@ -22,12 +24,15 @@ tripleobj = $(objdir)Triple.o
 
 objfile = $(kvstoreobj) $(vstreeobj) $(parserobj) $(serverobj) \
 		  $(bstrobj) $(databaseobj) $(tripleobj) $(utilobj) \
-		  $(signatureobj) $(queryobj)
+		  $(signatureobj) $(queryobj) $(joinobj)
 	 
-inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
+inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include 
 
-#gquery 
-all: lib_antlr gload gserver gclient gtest gquery
+#add -lreadline -ltermcap if using readline or objs contain readline
+library = -ltermcap -lreadline -L./lib -lantlr 
+
+#gtest
+all: lib_antlr gload gserver gclient gquery API
 
 #init: lib_antlr kvstore vstree parser server bstr database triple \
 #		util signature query
@@ -48,19 +53,16 @@ all: lib_antlr gload gserver gclient gtest gquery
 #executables begin
 
 gload: $(objdir)gload.o $(objfile)
-	$(CC) -g -o gload $(objdir)gload.o $(objfile) lib/libantlr.a 
+	$(CC) -g -o $(exedir)gload $(objdir)gload.o $(objfile) $(library)
 
 gquery: $(objdir)gquery.o $(objfile)
-	$(CC) -ltermcap -lreadline -g -o gquery $(objdir)gquery.o $(objfile) lib/libantlr.a 
-	#add -lreadline -ltermcap if using readline
+	$(CC) -g -o $(exedir)gquery $(objdir)gquery.o $(objfile) $(library)
 
 gserver: $(objdir)gserver.o $(objfile)
-	$(CC) -g -o gserver $(objdir)gserver.o $(objfile)  lib/libantlr.a 
+	$(CC) -g -o $(exedir)gserver $(objdir)gserver.o $(objfile) $(library)
 
 gclient: $(objdir)gclient.o $(objfile)
-	$(CC) -g -o gclient $(objdir)gclient.o $(objfile)  lib/libantlr.a 
-gtest: $(objdir)gtest.o $(objfile)
-	$(CC) -g -o gtest $(objdir)gtest.o $(objfile) lib/libantlr.a
+	$(CC) -g -o $(exedir)gclient $(objdir)gclient.o $(objfile) $(library)
 
 #executables end
 
@@ -68,21 +70,18 @@ gtest: $(objdir)gtest.o $(objfile)
 #objects in Main/ begin
 
 $(objdir)gload.o: Main/gload.cpp 
-	$(CC) $(CFLAGS) Main/gload.cpp $(inc) -L./lib lib/libantlr.a -o $(objdir)gload.o 
+	$(CC) $(CFLAGS) Main/gload.cpp $(inc) -o $(objdir)gload.o 
 	
 $(objdir)gquery.o: Main/gquery.cpp
-	$(CC) $(CFLAGS) Main/gquery.cpp $(inc) -o $(objdir)gquery.o -DREADLINE_ON
+	$(CC) $(CFLAGS) Main/gquery.cpp $(inc) -o $(objdir)gquery.o  #-DREADLINE_ON
 	#add -DREADLINE_ON if using readline
 
 $(objdir)gserver.o: Main/gserver.cpp
 	$(CC) $(CFLAGS) Main/gserver.cpp $(inc) -o $(objdir)gserver.o
 
 $(objdir)gclient.o: Main/gclient.cpp
-	$(CC) $(CFLAGS) Main/gclient.cpp $(inc) -o $(objdir)gclient.o
+	$(CC) $(CFLAGS) Main/gclient.cpp $(inc) -o $(objdir)gclient.o #-DREADLINE_ON
 
-$(objdir)gtest.o: Main/gtest.cpp
-	$(CC) $(CFLAGS) Main/gtest.cpp $(inc) -o $(objdir)gtest.o
-	
 #objects in Main/ end
 
 
@@ -129,7 +128,7 @@ $(objdir)Database.o: Database/Database.cpp Database/Database.h \
 	$(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
 	$(objdir)BasicQuery.o $(objdir)Triple.o $(objdir)SigEntry.o \
 	$(objdir)KVstore.o $(objdir)VSTree.o $(objdir)DBparser.o \
-	$(objdir)Util.o $(objdir)RDFParser.o
+	$(objdir)Util.o $(objdir)RDFParser.o 
 	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o
 
 #objects in Database/ end
@@ -229,7 +228,7 @@ $(objdir)Socket.o: Server/Socket.cpp Server/Socket.h
 $(objdir)Server.o: Server/Server.cpp Server/Server.h $(objdir)Socket.o $(objdir)Database.o $(objdir)Operation.o
 	$(CC) $(CFLAGS) Server/Server.cpp $(inc) -o $(objdir)Server.o
 
-$(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o
+$(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)Util.o
 	$(CC) $(CFLAGS) Server/Client.cpp $(inc) -o $(objdir)Client.o
 
 #objects in Server/ end
@@ -242,18 +241,42 @@ lib_antlr:
 	rm -rf lib/libantlr.a
 	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
 
-.PHONY: clean dist tarball
+API: 
+	$(MAKE) -C api/cpp/src 
+	#$(MAKE) -C api/cpp/example
+	$(MAKE) -C api/java/src
+	#$(MAKE) -C api/java/example
+
+.PHONY: clean dist tarball api_example gtest sumlines
 
 clean:
+	$(MAKE) -C api/cpp/src clean
+	$(MAKE) -C api/cpp/example clean
+	$(MAKE) -C api/java/src clean
+	$(MAKE) -C api/java/example clean
 	#$(MAKE) -C KVstore clean
-	rm -rf gtest gload gquery gserver gclient $(objdir)*.o 
-	rm -rf .project .cproject
+	rm -rf $(exedir)g* $(objdir)*.o
+	#rm -rf .project .cproject .settings   just for eclipse
+	#rm -rf cscope* just for vim
 
 dist: clean
-	rm -rf *.nt .debug/*.log .tmp/*.dat *.txt
+	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db *.tar.gz
 	rm -rf tools/libantlr3c-3.4 lib/libantlr.a 
 
 tarball:
-	tar -czvf devGstore.tar.gz Main Bstr lib tools .settings .debug .tmp .objs Server Triple\
-		Database KVstore Util Query Signature VSTree Parser makefile example api README.md
+	tar -czvf devGstore.tar.gz Main Bstr lib tools .debug .tmp .objs Server Triple test docs bin data\
+		Database KVstore Util Query Signature VSTree Parser makefile example api README.md LICENSE
+
+api_example: API
+	$(MAKE) -C api/cpp/example
+	$(MAKE) -C api/java/example
+
+gtest: $(objdir)gtest.o $(objfile)
+	$(CC) -g -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr.a $(library)
+
+$(objdir)gtest.o: test/gtest.cpp
+	$(CC) $(CFLAGS) test/gtest.cpp $(inc) -o $(objdir)gtest.o
+	
+sumlines:
+	bash test/sumline.sh
 

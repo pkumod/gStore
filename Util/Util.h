@@ -12,37 +12,49 @@
 #define _UTIL_UTIL_H
 
 /* basic macros and types are defined here, including common headers */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
 #include <dirent.h>
 #include <string.h>
+#include <unistd.h>
 #include <ctype.h>
 #include <time.h>
-#include <string>
-#include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
+
 #include <sys/time.h>
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+
+//NOTICE:below are restricted to C++, C files should not include(maybe nested) this header!
+#include <string>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+
 #include <map>
 #include <set>
 #include <stack>
 #include <vector>
+#include <list>
+#include <iterator>
 #include <algorithm>
 #include <functional>
+
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #define STREAM_ON 1			
 #define READLINE_ON	1
 //indicate that in debug mode
 #define DEBUG 1				//set this if any debug, except DEBUG_PRECISE
 //#define DEBUG_PRECISE 1		//all information
-//#define DEBUG_KVSTORE 1		//in KVstore
-//#define DEBUG_DATABASE 1	//in Database
+#define DEBUG_KVSTORE 1		//in KVstore
 //#define DEBUG_VSTREE 1	//in Database 
+#define DEBUG_DATABASE 1	//in Database
 
 //NOTICE:include Util.h and below in each main function
 //(the beginning position)
@@ -54,6 +66,10 @@
 class Util
 {
 public:
+	//In order to differentiate the sub-part and literal-part of object
+	//let subid begin with 0, while literalid begins with LITERAL_FIRST_ID 
+	//used in Database and Join
+	static const int LITERAL_FIRST_ID = 1000*1000*1000;
 	//initial transfer buffer size in Tree/ and Stream/
 	static const unsigned TRANSFER_SIZE = 1 << 20;	//1M
 
@@ -81,6 +97,11 @@ public:
 	static bool create_dir(const std:: string _dir);
 	static long get_cur_time();
 	static bool save_to_file(const char*, const std::string _content);
+
+	static std::string getQueryFromFile(const char* _file_path); 
+	static std::string getSystemOutput(std::string cmd);
+	static std::string getExactPath(const char* path);
+	static void log(std::string _str);
 
 	Util();
 	~Util();

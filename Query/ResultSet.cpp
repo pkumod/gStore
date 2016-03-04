@@ -53,7 +53,7 @@ ResultSet::to_str()
 
 	stringstream _buf;
 
-#ifdef DEBUG_PRECISE
+//#ifdef DEBUG_PRECISE
 	_buf << "There has answer: " << this->ansNum << endl;
 	_buf << this->var_name[0];
 	for(int i = 1; i < this->select_var_num; i ++)
@@ -61,7 +61,7 @@ ResultSet::to_str()
 		_buf << "\t" << this->var_name[i];
 	}
 	_buf << "\n";
-#endif
+//#endif
 #ifndef STREAM_ON
 	for(int i = 0; i < this->ansNum; i++)
 	{
@@ -80,6 +80,10 @@ ResultSet::to_str()
 #ifdef DEBUG_PRECISE
 	printf("to_str: ends!\n");		//just for debug!
 #endif	//DEBUG_PRECISE
+
+#else	//STREAM_ON
+	printf("using stream to produce to_str()!\n");
+	_buf << this->readFromStream();
 #endif	//STREAM_ON
 	return _buf.str();
 }
@@ -155,6 +159,7 @@ ResultSet::readFromStream()
 {
 	stringstream buf;
 #ifdef STREAM_ON
+	this->resetStream();
 	const Bstr* bp;
 	for(int i = 0; i < this->ansNum; i++)
 	{

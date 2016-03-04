@@ -12,6 +12,8 @@
 
 using namespace std;
 
+//NOTICE:relative to the position of you when executing
+//cd bin;./gconsole and bin/gconsole are different
 string Util::tmp_path = ".tmp/";
 string Util::debug_path = ".debug/";
 //QUERY: assign all in Util()?
@@ -377,5 +379,102 @@ Util::showtime()
 	time(&now);
 //	fputs(ctime(&now), logsfp);
 	return string("\n\n") + ctime(&now);
+}
+
+string
+Util::getQueryFromFile(const char* _file_path)
+{
+#ifdef DEBUG_PRECISE
+    printf("file to open: %s\n", _file_path);
+#endif
+    char buf[10000];
+    std::string query_file;
+
+    ifstream fin(_file_path);
+    if(!fin)
+    {
+        printf("can not open: %s\n", _file_path);
+        return "";
+    }
+
+    memset(buf, 0, sizeof(buf));
+    stringstream _ss;
+    while(!fin.eof())
+    {
+        fin.getline(buf, 9999);
+        _ss << buf << "\n";
+    }
+    fin.close();
+
+    return _ss.str();
+}
+
+string
+Util::getSystemOutput(string cmd)
+{
+	string ans = "";
+	string file = Util::tmp_path;
+	file += "ans.txt";
+	cmd += " > ";
+	cmd += file;
+	cerr << cmd << endl;
+	int ret = system(cmd.c_str());
+	cmd = "rm -rf " + file;
+	if(ret < 0)
+	{
+		fprintf(stderr, "system call failed!\n");
+		system(cmd.c_str());
+		return NULL;
+	}
+
+	ifstream fin(file.c_str());
+	if(!fin) 
+	{
+		cerr << "getSystemOutput: Fail to open : " << file << endl;
+		return NULL;
+	}
+	getline(fin, ans);
+	fin.close();
+	//FILE *fp = NULL;
+	//if((fp = fopen(file.c_str(), "r")) == NULL)
+	//{
+		//fprintf(stderr, "unbale to open file: %s\n", file.c_str());
+	//}
+	//else
+	//{
+		//char *ans = (char *)malloc(100);
+		//fgets(path, 100, fp);
+		//char *find = strchr(path, '\n');
+		//if(find != NULL)
+			//*find = '\0';
+		//fclose(fp);
+	//}
+	system(cmd.c_str());
+	return ans;
+}
+
+// Get the exact file path from given string: ~, ., symbol links
+string
+Util::getExactPath(const char *str)
+{
+	string cmd = "realpath ";
+	cmd += string(str);
+
+	return getSystemOutput(cmd);
+}
+
+void
+Util::log(string _str)
+{
+    _str += "\n";
+#ifdef DEBUG_DATABASE
+    fputs(_str.c_str(), Util::debug_database);
+    fflush(Util::debug_database);
+#endif
+
+#ifdef DEBUG_VSTREE
+    fputs(_str.c_str(), Util::debug_database);
+    fflush(Util::debug_database);
+#endif
 }
 

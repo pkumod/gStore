@@ -1,199 +1,62 @@
-#gStore
+# Gstore System
 
-## gStore2.0
+Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, and we try our best to avoid using STL. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
 
-### Overview
-gStore is a graph-based RDF data management system (or what is commonly called a “triple store”) that maintains the graph structure of the original [RDF](http://www.w3.org/TR/rdf11-concepts/) data. Its data model is a labeled, directed multiedge graph, where each vertex corresponds to a subject or an object. We also represent a given [SPARQL](http://www.w3.org/TR/sparql11-overview/) query by a query graph Q. Query processing involves finding subgraph matches of Q over the RDF graph G. gStore incorporates an index over the RDF graph (called VS-tree) to speed up query processing. VS-tree is a heightbalanced tree with a number of associated pruning techniques to speed up subgraph matching.
+## Getting Started
 
-### Install Steps
-System Requirement: 64-bit linux server with GCC, make, readline installed.
-*We have tested on linux server with CentOS 6.2 x86_64 and CentOS 6.6 x86_64. The version of GCC should be 4.4.7 or later.*
+This system is really user-friendly and you can pick it up in several minutes. Remember to check your platform where you want to run this system by viewing [System Requirements](docs/DEMAND.md). After all are verified, please get this project's source code. There are several ways to do this:
 
-You can install gStore2.0 in one command. Just run
+- download the zip from this repository and extract it
 
-`# make` 
+- fork this repository in your github account
 
-to compile the gStore code and build executable "gload", "gquery", "gserver", "gclient".
+- type `git clone git@github.com:Caesar11/gStore.git` in your terminal or use git GUI to acquire it
 
-### Usage
-gStore2.0 currently includes four executables and others.
+Then you need to compile the project, just type `make` in the gStore root directory, and all executables will be ok. To run gStore, please type `./gload database_name dataset_path` to build a database named by yourself. And you can use `./gquery database_name` command to query a existing database.
 
-####1. gload
-gload is used to build a new database from a RDF triple format file.
+- - -
 
-`# ./gload db_name rdf_triple_file_name`
+## Advanced Help
 
-For example, we build a database from LUBM_10.n3 which can be found in example folder.
+If you want to understand the details of the gStore system, or you want to try some advanced operations(for example, using the API, server/client), please see the chapters below.
 
-    [root@master Gstore]# ./gload db_LUBM10 ./example/LUBM_10.n3 
-    2015年05月21日 星期四 20时58分21秒  -0.484698 seconds
-    gload...
-    argc: 3 DB_store:db_LUBM10      RDF_data: ./example/LUBM_10.n3  
-    begin encode RDF from : ./example/LUBM_10.n3 ...
+- [Basic Introduction](docs/INTRO.md): introduce the theory and features of gStore
 
-####2. gquery
-gquery is used to query an exsisting database with SPARQL files.
+- [Install Guide](docs/INSTALL.md): instructions on how to install this system
 
-`./gquery db_name`  (use `./gquery --help` for detail)
+- [How To Use](docs/USAGE.md): detailed information about using the gStore system
 
-The program shows a command prompt("gsql>"): you can type in a command here, use `help` to see information of all commands.
+- [API Explanation](docs/API.md): guide you to develop applications based on our API
 
-For `sparql` command, input a file name which can be interpreted as a single SPARQL query. 
+- [Project Structure](docs/STRUCT.md): show the whole structure and sequence of this project
 
-When the program finish answering the query, it shows the command prompt again. 
+- [Related Essays](docs/ESSAY.md): contain essays and publications related with gStore
 
-*gStore2.0 only support simple “select” queries now.*
+- [Update Logs](docs/CHANGELOG.md): keep the logs of the system updates
 
-We also take LUBM_10.n3 as an example.
+- [Test Results](docs/TEST.md): present the test results of a series of experiments
 
-    [root@master Gstore]# ./gquery db_LUBM10/
-    gquery...
-    argc: 2 DB_store:db_LUBM10/
-    loadTree...
-    LRUCache initial...
-    LRUCache initial finish
-    finish loadCache
-    finish loadEntityID2FileLineMap
-    open KVstore
-    finish load
-    finish loading
-    Type `help` for information of all commands
-    gsql>sparql ./example/LUBM_q0.txt
-    ... ...
-    Total time used: 4ms.
-    final result is : 
-    <http://www.Department0.University0.edu/FullProfessor0>
-    <http://www.Department1.University0.edu/FullProfessor0>
-    <http://www.Department2.University0.edu/FullProfessor0>
-    <http://www.Department3.University0.edu/FullProfessor0>
-    <http://www.Department4.University0.edu/FullProfessor0>
-    <http://www.Department5.University0.edu/FullProfessor0>
-    <http://www.Department6.University0.edu/FullProfessor0>
-    <http://www.Department7.University0.edu/FullProfessor0>
-    <http://www.Department8.University0.edu/FullProfessor0>
-    <http://www.Department9.University0.edu/FullProfessor0>
-    <http://www.Department10.University0.edu/FullProfessor0>
-    <http://www.Department11.University0.edu/FullProfessor0>
-    <http://www.Department12.University0.edu/FullProfessor0>
-    <http://www.Department13.University0.edu/FullProfessor0>
-    <http://www.Department14.University0.edu/FullProfessor0>
+- - -
 
-Notice: 
+## Other Business
 
-"[empty result]" will be printed if no answer, and there is an empty line after all results.
+We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in [Recipe Book](docs/TIPS.md).
 
-Readline lib is used, so you can use <UP> arrow key to see command history, and use <LEFT> arrow key to move and modify your entire command.
+You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <chenjiaqi93@163.com> to submit your suggestions and report bugs to us by emailing to <zengli-syzz@pku.edu.cn>. A full list of our whole team is in [Mailing List](docs/MAIL.md).
 
-What is more, path completion is supported for utility. (not built-in command completion)
+There are some restrictions when you use the current gStore project, you can see them on [Limit Description](docs/LIMIT.md).
 
-####3. gserver
-gserver is a daemon. It should be launched first when accessing gStore by gclient or API. It communicates with client through socket. 
+Sometimes you may find some strange phenomena(but not wrong case), or something hard to understand/solve(don't know how to do next), then go to the [Frequently Asked Questions](docs/FAQ.md) page.
 
-    [root@master Gstore]# ./gserver 
-    port=3305
-    Wait for input...
+Graph database engine is a new area and we are still trying to go further. Things we plan to do next is in [Future Plan](docs/PLAN.md) chapter, and we hope more and more people will support or even join us. You can support in many ways:
 
-You can also assign a custom port for listening.
+- watch/star our project
 
-    [root@master Gstore]# ./gserver 3307
-    port=3307
-    Wait for input...
+- fork this repository and submit pull requests to us
 
-####4. gclient
-gclient is designed as a client to send commands and receive feedbacks.
+- download and use this system, report bugs or suggestions
 
-    [root@master Gstore]# ./gclient 
-    ip=127.0.0.1 port=3305
-    ->
+- ...
 
-You can also assign gserver's ip and port.
+People who inspire us or contribute to this project will be listed in the [Thanks List](docs/THANK.md) chapter.
 
-    [root@centos74 Gstore]# ./gclient 172.31.19.15 3307
-    ip=172.31.19.15 port=3307
-    ->
-
-
-We can use these following commands now:
-
-`->import db_name rdf_triple_file_name;`
-build a database from RDF triple file.
-
-`->load db_name;`
-load an exsisting database.
-
-`->unload db_name;`
-unload database, but will not delete it on disk, you can load it next time.
-
-`->query SPARQL;`
-query the current database with a SPARQL query.
-
-`->show databases;`
-show the current database's name.
-
-`->insert db_name rdf_triple_file_name;`
-insert a handful of new RDF triples to the orginal database.
-
-Note that each command ends with ";".
-
-####5. gtest
-We provide a test tool to generate structural logs for datasets. Please type `./gtest --help` in the working directory for detail.
-
-(change paths in the main/gtest.cpp if needed)
-
-You should place the datasets and queries this way: 
-
-DIR/WatDiv/database/*.nt 
-
-DIR/WatDiv/query/*.sql 
-
-And the output will be sorted into there logs: load.log/(for database loading time and size), time.log/(for query time) and result.log/(for all query results).
-
-All logs produced by this program are in TSV format, you can load them into Calc/Excel directly.
-
-####6. API
-We provide JAVA and C++ API for accessing gStore now. Please refer to example codes in `api/cpp/example` and `api/java/example`.
-
-### System Update Log
-
-####Nov 06, 2015.
-
-We merge several classes(like Bstr) and adjust the project structure, as well as the debug system. 
-
-In addition, most warnnings are removed, except for warnnings in Parser module, which is due to the use of ANTLR.
-
-What is more, we change RangeValue module to Stream, and add Stream for ResultSet. We also better the gquery console, so now you can redirect query results to a specified file in the gsql console.
-
-Unable to add Stream for IDlist due to complex operations, but this is not necessary. Realpath is used to supported soft links in the gquery console, but it not works in Gstore.(though works if not in Gstore)
-
-####Oct 20, 2015.
-
-We add a gtest tool for utility, you can use it to query several datasets with their own queries.
-
-In addition, gquery console is improved. Readline lib is used for input instead of fgets, and the gquery console can support commands history, modifying command and commands completion now.
-
-What is more, we found and fix a bug in Database/(a pointer for debugging log is not set to NULL after fclose operation, so if you close one databse and open another, the system will fail entirely because the system think that the debugging log is still open)
-
-####Sep 25, 2015. 
-
-We implement the version of B+Tree, and replace the old one.
-
-After testing on DBpedia, LUBM, and WatDiv benchmark, we conclude that the new BTree performs more efficient than
-the old version. For the same triple file, the new version spends shorter time on executing gload command.
-
-Besides, the new version can handle the long literal objects ocasion efficiently, while triples whose object's length exceeds 4096 bytes result in frequent inefficent split operations on the old version BTree. 
-
-####Feb 2, 2015
-
-We modify the RDF parser and SPARQL parser.
-
-Under the new RDF parser, we also redesign the encode strategy, which reduces RDF file scanning times.
-
-Now we can parse the standard SPARQL v1.1 grammar correctly, and can support basic graph pattern(BGP) SPARQL queries written by this standard grammar.
-
-####Dec 11, 2014.
-
-We add API for C/CPP and JAVA.
-
-####Nov 20, 2014.
-
-We share our gStore2.0 code as an open-source project under BSD license on github.

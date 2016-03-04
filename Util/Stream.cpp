@@ -43,12 +43,12 @@ bool
 Stream::open(bool _isBstr)
 {
 #ifdef DEBUG_PRECISE
-	//printf("Stream:now to open stream\n");
+	printf("Stream:now to open stream\n");
 #endif
 	if(!isBstr)
 		this->isBstr = _isBstr;
 #ifdef DEBUG_PRECISE
-	//printf("Stream:this is for Bstr\n");
+	printf("Stream:this is for Bstr\n");
 #endif
 	if(Util::memUsedPercentage() > 90)
 	{
@@ -60,7 +60,7 @@ Stream::open(bool _isBstr)
 		printf("Stream: memory is enough!\n");
 	}
 #ifdef DEBUG_PRECISE
-	//printf("Stream:after memUsedPercentage\n");
+	printf("Stream:after memUsedPercentage\n");
 #endif
 	if(this->inMem)
 		return true;
@@ -140,8 +140,6 @@ Stream::write(unsigned _id)
 	return true;
 }
 
-//BETTER:also use transfer?
-
 const Bstr*		
 Stream::read()		//default: false, ie. Bstr
 {
@@ -216,7 +214,7 @@ Stream::~Stream()
 		this->fp = NULL;
 	}
 #ifdef DEBUG_PRECISE
-	//printf("file is closed in Stream!\n");
+	printf("file is closed in Stream!\n");
 #endif
 	//transfer will de deleted as Bstr
 	if(!this->file_name.empty())
@@ -224,7 +222,7 @@ Stream::~Stream()
 		int status = remove(this->file_name.c_str());
 		if(status == 0)
 		{
-			//printf("Ok to delete the file: %s\n", this->file_name.c_str());
+			printf("Ok to delete the file: %s\n", this->file_name.c_str());
 		}
 		else
 		{
