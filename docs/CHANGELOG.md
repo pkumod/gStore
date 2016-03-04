@@ -2,6 +2,8 @@
 
 We finish all documents for gStore, which makes it easy for you to use and contribute. There seems to be some problems with the api and server/client before, but we fix these bugs now.
 
+- - -
+
 ## Nov 06, 2015
 
 We merge several classes(like Bstr) and adjust the project structure, as well as the debug system. 
