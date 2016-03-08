@@ -125,6 +125,8 @@ We can use these following commands now:
 
 - `show` displays the name of the current loaded database
 
+- `quit` exits the gclient console
+
 Notice:
 
 - at most one database can be loaded in the gclient console
