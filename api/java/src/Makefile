@@ -1,10 +1,12 @@
 lib_dir=../lib/
 socket_obj_dir=../../../.objs/
 
-GstoreJavaAPI.jar: JGSC
+all: $(lib_dir)GstoreJavaAPI.jar
+
+$(lib_dir)GstoreJavaAPI.jar: jgsc/GstoreConnector.class
 	jar -cvf $(lib_dir)GstoreJavaAPI.jar jgsc/GstoreConnector.java jgsc/GstoreConnector.class
 
-JGSC:
+jgsc/GstoreConnector.class:
 	javac jgsc/GstoreConnector.java 
 
 clean:

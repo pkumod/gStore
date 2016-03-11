@@ -5,6 +5,8 @@ objdir = .objs/
 
 exedir = ./
 
+lib_antlr = lib/libantlr.a
+
 kvstoreobj = $(objdir)KVstore.o $(objdir)Tree.o $(objdir)Storage.o $(objdir)Node.o \
 		$(objdir)IntlNode.o $(objdir)LeafNode.o $(objdir)Heap.o 
 	#$(objdir)RangeValue.o #$(objdir)Util.o $(objdir)TBstr.o $(objdir)Hash.o 
@@ -32,7 +34,7 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 library = -ltermcap -lreadline -L./lib -lantlr 
 
 #gtest
-all: lib_antlr gload gserver gclient gquery API
+all: $(lib_antlr) gload gserver gclient gquery API
 
 #init: lib_antlr kvstore vstree parser server bstr database triple \
 #		util signature query
@@ -234,7 +236,7 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 #objects in Server/ end
 
 
-lib_antlr: 
+$(lib_antlr): 
 	rm -rf tools/libantlr3c-3.4/
 	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
 	cd tools/libantlr3c-3.4/; ./configure -enable-64bit; make;
