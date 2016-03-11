@@ -1,7 +1,6 @@
 *
 
 !.gitignore
-!.gitattributes
 
 !makefile
 !README.md

@@ -7,6 +7,8 @@ exedir = ./
 
 lib_antlr = lib/libantlr.a
 
+sparql = Parser/SparqlParser.c
+
 kvstoreobj = $(objdir)KVstore.o $(objdir)Tree.o $(objdir)Storage.o $(objdir)Node.o \
 		$(objdir)IntlNode.o $(objdir)LeafNode.o $(objdir)Heap.o 
 	#$(objdir)RangeValue.o #$(objdir)Util.o $(objdir)TBstr.o $(objdir)Hash.o 
@@ -34,7 +36,7 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 library = -ltermcap -lreadline -L./lib -lantlr 
 
 #gtest
-all: $(lib_antlr) gload gserver gclient gquery API
+all: $(sparql) $(lib_antlr) gload gserver gclient gquery API
 
 #init: lib_antlr kvstore vstree parser server bstr database triple \
 #		util signature query
@@ -236,6 +238,10 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 #objects in Server/ end
 
 
+$(sparql):
+	rm -rf Parser/Sparql*
+	cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
+
 $(lib_antlr): 
 	rm -rf tools/libantlr3c-3.4/
 	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
@@ -263,7 +269,7 @@ clean:
 
 dist: clean
 	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db *.tar.gz
-	rm -rf lib/libantlr.a tools/libantlr3c-3.4/
+	rm -rf lib/libantlr.a tools/libantlr3c-3.4/ Parser/Sparql*
 
 tarball:
 	tar -czvf devGstore.tar.gz Main Bstr lib tools .debug .tmp .objs Server Triple test docs bin data\
