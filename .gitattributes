@@ -12,5 +12,3 @@
 *.wav filter=lfs diff=lfs merge=lfs -text
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 *.rmvb filter=lfs diff=lfs merge=lfs -text
-*.nt filter=lfs diff=lfs merge=lfs -text
-*.n3 filter=lfs diff=lfs merge=lfs -text
