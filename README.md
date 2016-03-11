@@ -14,8 +14,6 @@ This system is really user-friendly and you can pick it up in several minutes. R
 
 Then you need to compile the project, just type `make` in the gStore root directory, and all executables will be ok. To run gStore, please type `./gload database_name dataset_path` to build a database named by yourself. And you can use `./gquery database_name` command to query a existing database.
 
-**Notice: Some files(*.jpg, *.docx, *.pdf) in the docs/ folder, and files of *.zip type in the test/ folder are stored using Git Large File Storage, you need to install [git-lfs](https://git-lfs.github.com/) to clone/download if you want to include them in the project. Do not care it if you do not want to see them.**
-
 - - -
 
 ## Advanced Help
