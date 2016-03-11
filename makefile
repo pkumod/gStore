@@ -238,6 +238,7 @@ lib_antlr:
 	cd tools/libantlr3c-3.4/; ./configure -enable-64bit; make;
 	rm -rf lib/libantlr.a
 	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
+	cd tools/libantlr3c-3.4/; make clean;
 
 API: 
 	$(MAKE) -C api/cpp/src 
