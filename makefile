@@ -235,9 +235,7 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 
 
 lib_antlr:
-	rm -rf tools/libantlr3c-3.4/
-	cd tools; tar -zxvf libantlr3c-3.4.tar.gz;
-	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
+	cd tools/libantlr3c-3.4/; ./configure -enable-64bit; make;
 	rm -rf lib/libantlr.a
 	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
 
@@ -261,7 +259,7 @@ clean:
 
 dist: clean
 	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db *.tar.gz
-	rm -rf tools/libantlr3c-3.4 lib/libantlr.a 
+	rm -rf lib/libantlr.a #tools/libantlr3c-3.4  
 
 tarball:
 	tar -czvf devGstore.tar.gz Main Bstr lib tools .debug .tmp .objs Server Triple test docs bin data\

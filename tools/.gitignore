@@ -1,4 +1,5 @@
 *
 !.gitignore
-!libantlr3c-3.4.tar.gz
+#!libantlr3c-3.4.tar.gz
+#!libantlr3c-3.4/*
 
