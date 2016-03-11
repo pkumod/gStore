@@ -234,11 +234,12 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 #objects in Server/ end
 
 
-lib_antlr:
+lib_antlr: 
+	rm -rf tools/libantlr3c-3.4/
+	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
 	cd tools/libantlr3c-3.4/; ./configure -enable-64bit; make;
 	rm -rf lib/libantlr.a
 	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
-	cd tools/libantlr3c-3.4/; make clean;
 
 API: 
 	$(MAKE) -C api/cpp/src 
@@ -260,7 +261,7 @@ clean:
 
 dist: clean
 	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db *.tar.gz
-	rm -rf lib/libantlr.a #tools/libantlr3c-3.4  
+	rm -rf lib/libantlr.a tools/libantlr3c-3.4/
 
 tarball:
 	tar -czvf devGstore.tar.gz Main Bstr lib tools .debug .tmp .objs Server Triple test docs bin data\
