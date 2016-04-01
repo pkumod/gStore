@@ -1,34 +1,58 @@
+#help for make
+#http://www.cnblogs.com/wang_yb/p/3990952.html
+#https://segmentfault.com/a/1190000000349917
+#http://blog.csdn.net/cuiyifang/article/details/7910268
+
+#TODO:the dependences are not complete!
+
+#compile parameters
+
 CC = g++
-CFLAGS = -c -g -Wall
+
+#the optimazition level of gcc/g++
+#http://blog.csdn.net/hit_090420216/article/details/44900215
+#NOTICE: -O2 is recommended, while -O3 is dangerous
+#when developing, not use -O because it will disturb the normal 
+#routine. use it for test and release.
+CFLAGS = -c -g -Wall -O2
+EXEFLAG = -g -O2
+
+# paths
 
 objdir = .objs/
 
-exedir = ./
+exedir = bin/
 
 lib_antlr = lib/libantlr.a
 
-sparql = Parser/SparqlParser.c
+api_cpp = api/cpp/lib/libgstoreconnector.a
+
+api_java = api/java/lib/GstoreJavaAPI.jar
+
+# objects
 
 kvstoreobj = $(objdir)KVstore.o $(objdir)Tree.o $(objdir)Storage.o $(objdir)Node.o \
 		$(objdir)IntlNode.o $(objdir)LeafNode.o $(objdir)Heap.o 
-	#$(objdir)RangeValue.o #$(objdir)Util.o $(objdir)TBstr.o $(objdir)Hash.o 
-utilobj = $(objdir)Util.o $(objdir)Stream.o
-queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o \
-		$(objdir)IDList.o 
-signatureobj = $(objdir)SigEntry.o $(objdir)Signature.o
-vstreeobj = $(objdir)VSTree.o $(objdir)EntryBuffer.o $(objdir)LRUCache.o \
-		$(objdir)VNode.o
-parserobj = $(objdir)RDFParser.o $(objdir)DBparser.o $(objdir)SparqlParser.o \
-			$(objdir)SparqlLexer.o $(objdir)TurtleParser.o
-serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o \
-			$(objdir)Socket.o 
-bstrobj = $(objdir)Bstr.o
-databaseobj = $(objdir)Database.o
-tripleobj = $(objdir)Triple.o
 
-objfile = $(kvstoreobj) $(vstreeobj) $(parserobj) $(serverobj) \
-		  $(bstrobj) $(databaseobj) $(tripleobj) $(utilobj) \
-		  $(signatureobj) $(queryobj) $(joinobj)
+utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o
+
+queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o \
+		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)GeneralEvaluation.o
+
+signatureobj = $(objdir)SigEntry.o $(objdir)Signature.o
+
+vstreeobj = $(objdir)VSTree.o $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdir)VNode.o
+
+parserobj = $(objdir)RDFParser.o $(objdir)DBparser.o $(objdir)SparqlParser.o \
+			$(objdir)SparqlLexer.o $(objdir)TurtleParser.o $(objdir)QueryParser.o
+
+serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)Socket.o 
+
+databaseobj = $(objdir)Database.o $(objdir)Join.o
+
+
+objfile = $(kvstoreobj) $(vstreeobj) $(parserobj) $(serverobj) $(databaseobj) \
+		  $(utilobj) $(signatureobj) $(queryobj)
 	 
 inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include 
 
@@ -36,68 +60,59 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 library = -ltermcap -lreadline -L./lib -lantlr 
 
 #gtest
-all: $(sparql) $(lib_antlr) gload gserver gclient gquery API
-
-#init: lib_antlr kvstore vstree parser server bstr database triple \
-#		util signature query
-#kvstore:
-#	#$(MAKE) -C KVstore
-#	$(CC) $(CFLAGS) KVstore/tree/Tree.cpp -o $(objdir)Tree.o
-#	$(CC) $(CFLAGS) KVstore/storage/Storage.cpp -o $(objdir)Storage.o -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
-#	$(CC) $(CFLAGS) KVstore/node/Node.cpp -o $(objdir)Node.o
-#	$(CC) $(CFLAGS) KVstore/node/IntlNode.cpp -o $(objdir)IntlNode.o
-#	$(CC) $(CFLAGS) KVstore/node/LeafNode.cpp -o $(objdir)LeafNode.o
-#	#$(CC) $(CFLAGS) KVstore/bstr/TBstr.cpp -o $(objdir)TBstr.o
-#	#$(CC) $(CFLAGS) KVstore/hash/Hash.cpp -o $(objdir)Hash.o
-#	$(CC) $(CFLAGS) KVstore/heap/Heap.cpp -o $(objdir)Heap.o
-#	#$(CC) $(CFLAGS) KVstore/rangevalue/RangeValue.cpp -o $(objdir)RangeValue.o -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
-#	$(CC) $(CFLAGS) KVstore/KVstore.cpp -o $(objdir)KVstore.o
-
+all: $(exedir)gload $(exedir)gserver $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java)
 
 #executables begin
 
-gload: $(objdir)gload.o $(objfile)
-	$(CC) -g -o $(exedir)gload $(objdir)gload.o $(objfile) $(library)
+#NOTICE:not include g*.o in objfile due to multiple definitions of main()
+$(exedir)gload: $(lib_antlr) $(objdir)gload.o $(objfile) 
+	$(CC) $(EXEFLAG) -o $(exedir)gload $(objdir)gload.o $(objfile) $(library)
 
-gquery: $(objdir)gquery.o $(objfile)
-	$(CC) -g -o $(exedir)gquery $(objdir)gquery.o $(objfile) $(library)
+$(exedir)gquery: $(lib_antlr) $(objdir)gquery.o $(objfile) 
+	$(CC) $(EXEFLAG) -o $(exedir)gquery $(objdir)gquery.o $(objfile) $(library)
 
-gserver: $(objdir)gserver.o $(objfile)
-	$(CC) -g -o $(exedir)gserver $(objdir)gserver.o $(objfile) $(library)
+$(exedir)gserver: $(lib_antlr) $(objdir)gserver.o $(objfile) 
+	$(CC) $(EXEFLAG) -o $(exedir)gserver $(objdir)gserver.o $(objfile) $(library)
 
-gclient: $(objdir)gclient.o $(objfile)
-	$(CC) -g -o $(exedir)gclient $(objdir)gclient.o $(objfile) $(library)
+$(exedir)gclient: $(lib_antlr) $(objdir)gclient.o $(objfile) 
+	$(CC) $(EXEFLAG) -o $(exedir)gclient $(objdir)gclient.o $(objfile) $(library)
+
+$(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
+	$(CC) $(EXEFLAG) -o $(exedir)gconsole $(objdir)gconsole.o $(objfile) $(library) -L./api/cpp/lib -lgstoreconnector
 
 #executables end
 
 
 #objects in Main/ begin
 
-$(objdir)gload.o: Main/gload.cpp 
+$(objdir)gload.o: Main/gload.cpp Database/Database.h Util/Util.h
 	$(CC) $(CFLAGS) Main/gload.cpp $(inc) -o $(objdir)gload.o 
 	
-$(objdir)gquery.o: Main/gquery.cpp
+$(objdir)gquery.o: Main/gquery.cpp Database/Database.h Util/Util.h
 	$(CC) $(CFLAGS) Main/gquery.cpp $(inc) -o $(objdir)gquery.o  #-DREADLINE_ON
 	#add -DREADLINE_ON if using readline
 
-$(objdir)gserver.o: Main/gserver.cpp
+$(objdir)gserver.o: Main/gserver.cpp Server/Server.h Util/Util.h
 	$(CC) $(CFLAGS) Main/gserver.cpp $(inc) -o $(objdir)gserver.o
 
-$(objdir)gclient.o: Main/gclient.cpp
+$(objdir)gclient.o: Main/gclient.cpp Server/Client.h Util/Util.h
 	$(CC) $(CFLAGS) Main/gclient.cpp $(inc) -o $(objdir)gclient.o #-DREADLINE_ON
+
+$(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/cpp/src/GstoreConnector.h
+	$(CC) $(CFLAGS) Main/gconsole.cpp $(inc) -o $(objdir)gconsole.o -I./api/cpp/src/ #-DREADLINE_ON
 
 #objects in Main/ end
 
 
 #objects in kvstore/ begin
 
-$(objdir)Tree.o: KVstore/tree/Tree.cpp KVstore/tree/Tree.h
+$(objdir)Tree.o: KVstore/tree/Tree.cpp KVstore/tree/Tree.h $(objdir)Stream.o
 	$(CC) $(CFLAGS) KVstore/tree/Tree.cpp -o $(objdir)Tree.o
 
-$(objdir)Storage.o: KVstore/storage/Storage.cpp KVstore/storage/Storage.h
+$(objdir)Storage.o: KVstore/storage/Storage.cpp KVstore/storage/Storage.h $(objdir)Util.o
 	$(CC) $(CFLAGS) KVstore/storage/Storage.cpp -o $(objdir)Storage.o -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 
-$(objdir)Node.o: KVstore/node/Node.cpp KVstore/node/Node.h
+$(objdir)Node.o: KVstore/node/Node.cpp KVstore/node/Node.h $(objdir)Util.o
 	$(CC) $(CFLAGS) KVstore/node/Node.cpp -o $(objdir)Node.o
 
 $(objdir)IntlNode.o: KVstore/node/IntlNode.cpp KVstore/node/IntlNode.h
@@ -106,24 +121,13 @@ $(objdir)IntlNode.o: KVstore/node/IntlNode.cpp KVstore/node/IntlNode.h
 $(objdir)LeafNode.o: KVstore/node/LeafNode.cpp KVstore/node/LeafNode.h
 	$(CC) $(CFLAGS) KVstore/node/LeafNode.cpp -o $(objdir)LeafNode.o
 
-$(objdir)Heap.o: KVstore/heap/Heap.cpp KVstore/heap/Heap.h
+$(objdir)Heap.o: KVstore/heap/Heap.cpp KVstore/heap/Heap.h $(objdir)Util.o
 	$(CC) $(CFLAGS) KVstore/heap/Heap.cpp -o $(objdir)Heap.o
-
-#$(objdir)RangeValue.o: KVstore/rangevalue/RangeValue.cpp KVstore/rangevalue/RangeValue.h
-#	$(CC) $(CFLAGS) KVstore/rangevalue/RangeValue.cpp -o $(objdir)RangeValue.o
 
 $(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h
 	$(CC) $(CFLAGS) KVstore/KVstore.cpp $(inc) -o $(objdir)KVstore.o
 
 #objects in kvstore/ end
-
-
-#objects in Bstr/ begin
-
-$(objdir)Bstr.o: Bstr/Bstr.cpp Bstr/Bstr.h
-	$(CC) $(CFLAGS)  Bstr/Bstr.cpp -o $(objdir)Bstr.o
-	
-#objects in bstr/ end
 
 
 #objects in Database/ begin
@@ -132,8 +136,12 @@ $(objdir)Database.o: Database/Database.cpp Database/Database.h \
 	$(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
 	$(objdir)BasicQuery.o $(objdir)Triple.o $(objdir)SigEntry.o \
 	$(objdir)KVstore.o $(objdir)VSTree.o $(objdir)DBparser.o \
-	$(objdir)Util.o $(objdir)RDFParser.o 
+	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o
 	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o
+
+$(objdir)Join.o: $(objdir)IDList.o $(objdir)BasicQuery.o $(objdir)Util.o\
+	$(objdir)KVstore.o $(objdir)Util.o $(objdir)SPARQLquery.o
+	$(CC) $(CFLAGS) Database/Join.cpp $(inc) -o $(objdir)Join.o
 
 #objects in Database/ end
 
@@ -148,8 +156,18 @@ $(objdir)SPARQLquery.o: Query/SPARQLquery.cpp Query/SPARQLquery.h $(objdir)Basic
 
 $(objdir)BasicQuery.o: Query/BasicQuery.cpp Query/BasicQuery.h $(objdir)Signature.o
 	$(CC) $(CFLAGS) Query/BasicQuery.cpp $(inc) -o $(objdir)BasicQuery.o
-$(objdir)ResultSet.o: Query/ResultSet.cpp Query/ResultSet.h
+
+$(objdir)ResultSet.o: Query/ResultSet.cpp Query/ResultSet.h $(objdir)Stream.o
 	$(CC) $(CFLAGS) Query/ResultSet.cpp $(inc) -o $(objdir)ResultSet.o
+
+$(objdir)Varset.o: Query/Varset.cpp Query/Varset.h
+	$(CC) $(CFLAGS) Query/Varset.cpp $(inc) -o $(objdir)Varset.o
+
+$(objdir)QueryTree.o: Query/QueryTree.cpp Query/QueryTree.h $(objdir)Varset.o
+	$(CC) $(CFLAGS) Query/QueryTree.cpp $(inc) -o $(objdir)QueryTree.o
+
+$(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h $(objdir)QueryParser.o $(objdir)QueryTree.o $(objdir)SPARQLquery.o $(objdir)Varset.o $(objdir)Database.o $(objdir)KVstore.o
+	$(CC) $(CFLAGS) Query/GeneralEvaluation.cpp $(inc) -o $(objdir)GeneralEvaluation.o
 
 #objects in Query/ end
 
@@ -165,21 +183,22 @@ $(objdir)Signature.o: Signature/Signature.cpp Signature/Signature.h
 #objects in Signature/ end
 
 
-#objects in Triple begin
-
-$(objdir)Triple.o: Triple/Triple.cpp Triple/Triple.h
-	$(CC) $(CFLAGS) Triple/Triple.cpp -o $(objdir)Triple.o
-
-#objects in Triple end
-
-
 #objects in Util/ begin
 
 $(objdir)Util.o:  Util/Util.cpp Util/Util.h
 	$(CC) $(CFLAGS) Util/Util.cpp -o $(objdir)Util.o
 
-$(objdir)Stream.o:  Util/Stream.cpp Util/Stream.h
+$(objdir)Stream.o:  Util/Stream.cpp Util/Stream.h $(objdir)Util.o $(objdir)Bstr.o
 	$(CC) $(CFLAGS) Util/Stream.cpp -o $(objdir)Stream.o -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURC
+
+$(objdir)Bstr.o: Util/Bstr.cpp Util/Bstr.h $(objdir)Util.o
+	$(CC) $(CFLAGS)  Util/Bstr.cpp -o $(objdir)Bstr.o
+
+$(objdir)Triple.o: Util/Triple.cpp Util/Triple.h $(objdir)Util.o
+	$(CC) $(CFLAGS) Util/Triple.cpp -o $(objdir)Triple.o
+
+$(objdir)BloomFilter.o:  Util/BloomFilter.cpp Util/BloomFilter.h $(objdir)Util.o
+	$(CC) $(CFLAGS) Util/BloomFilter.cpp -o $(objdir)BloomFilter.o 
 
 #objects in util/ end
 
@@ -218,6 +237,9 @@ $(objdir)TurtleParser.o: Parser/TurtleParser.cpp Parser/TurtleParser.h Parser/Ty
 $(objdir)RDFParser.o: Parser/RDFParser.cpp Parser/RDFParser.h $(objdir)TurtleParser.o $(objdir)Triple.o
 	gcc  $(CFLAGS) Parser/RDFParser.cpp $(inc) -o $(objdir)RDFParser.o
 
+$(objdir)QueryParser.o: Parser/QueryParser.cpp Parser/QueryParser.h $(objdir)SparqlParser.o $(objdir)SparqlLexer.o $(objdir)QueryTree.o
+	$(CC) $(CFLAGS) Parser/QueryParser.cpp $(inc) -o $(objdir)QueryParser.o
+
 #objects in Parser/ end
 
 
@@ -238,22 +260,21 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 #objects in Server/ end
 
 
-$(sparql):
+$(lib_antlr):
+	rm -rf tools/libantlr3c-3.4/
+	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
+	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
+	rm -rf lib/libantlr.a
+	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
+	#NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
 	rm -rf Parser/Sparql*
 	cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
 
-$(lib_antlr): 
-	rm -rf tools/libantlr3c-3.4/
-	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
-	cd tools/libantlr3c-3.4/; ./configure -enable-64bit; make;
-	rm -rf lib/libantlr.a
-	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
-
-API: 
+$(api_cpp): $(objdir)Socket.o
 	$(MAKE) -C api/cpp/src 
-	#$(MAKE) -C api/cpp/example
+
+$(api_java):
 	$(MAKE) -C api/java/src
-	#$(MAKE) -C api/java/example
 
 .PHONY: clean dist tarball api_example gtest sumlines
 
@@ -268,14 +289,14 @@ clean:
 	#rm -rf cscope* just for vim
 
 dist: clean
-	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db *.tar.gz
-	rm -rf lib/libantlr.a tools/libantlr3c-3.4/ Parser/Sparql*
+	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db
+	rm -rf tools/libantlr3c-3.4 lib/libantlr.a Parser/Sparql*
 
 tarball:
-	tar -czvf devGstore.tar.gz Main Bstr lib tools .debug .tmp .objs Server Triple test docs bin data\
-		Database KVstore Util Query Signature VSTree Parser makefile example api README.md LICENSE
+	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs test docs data makefile \
+		Main Database KVstore Util Query Signature VSTree Parser Server LICENSE README.md
 
-api_example: API
+APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/cpp/example
 	$(MAKE) -C api/java/example
 

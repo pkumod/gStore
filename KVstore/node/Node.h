@@ -10,7 +10,7 @@
 #define _KVSTORE_NODE_H
 
 #include "../../Util/Util.h"
-#include "../../Bstr/Bstr.h"
+#include "../../Util/Bstr.h"
 
 class Node       				//abstract basic class 
 {

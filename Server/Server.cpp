@@ -393,7 +393,7 @@ Server::query(const std::string _query, std::string& _ret_msg)
     }
 
     ResultSet res_set;
-    bool flag = this->database->query(_query, res_set, stdout);
+    bool flag = this->database->query(_query, res_set);
     if(flag)
     {
 		//_ret_msg = "results are too large!";

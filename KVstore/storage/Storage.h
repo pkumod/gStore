@@ -9,12 +9,9 @@
 #ifndef _KVSTORE_STORAGE_STORAGE_H
 #define _KVSTORE_STORAGE_STORAGE_H
 
-#include "../../Util/Util.h"
-#include "../node/Node.h"
 #include "../node/IntlNode.h"
 #include "../node/LeafNode.h"
 #include "../heap/Heap.h"
-#include "../../Bstr/Bstr.h"
 #include "file.h"
 
 //It controls read, write, swap

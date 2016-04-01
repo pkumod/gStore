@@ -1,6 +1,6 @@
 # Gstore System
 
-Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, and we try our best to avoid using STL. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
+Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
 
 ## Getting Started
 
@@ -12,7 +12,7 @@ This system is really user-friendly and you can pick it up in several minutes. R
 
 - type `git clone git@github.com:Caesar11/gStore.git` in your terminal or use git GUI to acquire it
 
-Then you need to compile the project, just type `make` in the gStore root directory, and all executables will be ok. To run gStore, please type `./gload database_name dataset_path` to build a database named by yourself. And you can use `./gquery database_name` command to query a existing database.
+Then you need to compile the project, just type `make` in the gStore root directory, and all executables will be ok. To run gStore, please type `bin/gload database_name dataset_path` to build a database named by yourself. And you can use `bin/gquery database_name` command to query a existing database. What is more, `bin/gconsole` is a wonderful tool designed for you, providing all operations you need to use gStore. Notice that all commands should be typed in the root directory of gStore.
 
 - - -
 

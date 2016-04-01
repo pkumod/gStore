@@ -12,10 +12,7 @@
 #ifndef SIGNATURE_H_
 #define SIGNATURE_H_
 
-#include<iostream>
-#include<string.h>
-#include<bitset>
-#include<sstream>
+#include "../Util/Util.h"
 using namespace std;
 
 class Signature{

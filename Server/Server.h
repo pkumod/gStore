@@ -6,12 +6,13 @@
 # Description: originally written by hanshuo, modified by zengli
 =============================================================================*/
 
-#ifndef SERVER_H_
-#define SERVER_H_
+#ifndef _SERVER_SERVER_H
+#define _SERVER_SERVER_H
 
-#include"Socket.h"
-#include"Operation.h"
-#include"../Database/Database.h"
+#include "../Util/Util.h"
+#include "../Database/Database.h"
+#include "Socket.h"
+#include "Operation.h"
 
 /*
  * the Server is only at a original and simple version.
@@ -59,6 +60,5 @@ private:
     Database* database;
 };
 
+#endif // _SERVER_SERVER_H
 
-
-#endif /* SERVER_H_ */

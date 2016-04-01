@@ -6,10 +6,7 @@
 # Description: implement functions in Client.h
 =============================================================================*/
 
-#include <stdio.h>
-#include <readline/readline.h>
-#include <readline/history.h>
-#include "Client.h"
+#include"Client.h"
 
 using namespace std;
 

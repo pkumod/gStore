@@ -9,20 +9,22 @@
 #ifndef _QUERY_RESULTSET_H
 #define _QUERY_RESULTSET_H
 
-#include "../Bstr/Bstr.h"
 #include "../Util/Util.h"
+#include "../Util/Bstr.h"
 #include "../Util/Stream.h"
 
 class ResultSet
 {
 private:
 #ifdef STREAM_ON
-	Stream stream;
+	Stream* stream;
 #endif
 public:
 	int select_var_num;
 	int ansNum;
 	std::string*  var_name;
+	int output_offset, output_limit;
+
 #ifndef STREAM_ON
 	std::string** answer;
 #endif
@@ -40,10 +42,11 @@ public:
 	void setVar(const std::vector<std::string> & _var_names);
 
 	//operations on private stream from caller
-	void openStream();
+	void openStream(std::vector<int> &_keys, std::vector<bool> &_desc, int _output_offset, int _output_limit);
 	void resetStream();
 	void writeToStream(std::string& _s);
-	std::string readFromStream();
+	std::string readAllFromStream();
+	const Bstr* getOneRecord();
 };
 
 #endif //_QUERY_RESULTSET_H

@@ -5,10 +5,11 @@
  *      Author: liyouhuan
  */
 
-#ifndef TRIPLE_H_
-#define TRIPLE_H_
-#include<iostream>
-#include<string.h>
+#ifndef _UTIL_TRIPLE_H
+#define _UTIL_TRIPLE_H
+
+#include "Util.h"
+
 using namespace std;
 
 class Triple{
@@ -61,4 +62,5 @@ public:
     const string toString()const;
 };
 
-#endif /* TRIPLE_H_ */
+#endif //_UTIL_TRIPLE_H
+

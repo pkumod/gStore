@@ -12,6 +12,7 @@
 
 using namespace std;
 
+//TODO:add config and use absolute path here
 //NOTICE:relative to the position of you when executing
 //cd bin;./gconsole and bin/gconsole are different
 string Util::tmp_path = ".tmp/";
@@ -74,7 +75,8 @@ Util::memUsedPercentage()
 	fscanf(fp, "%s%u%s", str, &t, tail);
 	if(strcmp(str, "MemAvailable") == 0)
 	{
-		used += t;
+		//QUERY:what is the relation between MemFree and MemAvailable?
+		used = t;
 		//scanf("%s%u%s", str, &t, tail);		//Buffers
 		//used += t;
 		//scanf("%s%u%s", str, &t, tail);		//Cached
@@ -88,6 +90,25 @@ Util::memUsedPercentage()
 	used = sum - used;
 	fclose(fp);
 	return (int)(used * 100.0 / sum);
+}
+
+int
+Util::memoryLeft()
+{
+	FILE* fp = fopen("/proc/meminfo", "r");
+	if(fp == NULL)
+		return -1;
+	char str[20], tail[3];
+	unsigned t, sum, unuse = 0;		//WARN:unsigned,memory cant be too large!
+	fscanf(fp, "%s%u%s", str, &sum, tail);       //MemTotal, KB
+	fscanf(fp, "%s%u%s", str, &unuse, tail);		//MemFree
+	fscanf(fp, "%s%u%s", str, &t, tail);
+	if(strcmp(str, "MemAvailable") == 0)
+	{
+		unuse = t;
+	}
+	fclose(fp);
+	return unuse / Util::MB;
 }
 
 int 
@@ -464,7 +485,7 @@ Util::getExactPath(const char *str)
 }
 
 void
-Util::log(string _str)
+Util::logging(string _str)
 {
     _str += "\n";
 #ifdef DEBUG_DATABASE
@@ -476,5 +497,281 @@ Util::log(string _str)
     fputs(_str.c_str(), Util::debug_database);
     fflush(Util::debug_database);
 #endif
+}
+
+unsigned
+Util::BKDRHash(const char *_str, unsigned _len)
+{
+    unsigned int seed = 131; // 31 131 1313 13131 131313 etc..
+    unsigned int key = 0;
+
+	for(unsigned i = 0; i < _len; ++i)
+    {
+        key = key * seed + _str[i];
+    }
+
+    return (key & 0x7FFFFFFF);
+}
+
+unsigned 
+Util::simpleHash(const char *_str, unsigned _len)
+{
+    unsigned int key;
+    unsigned char *p;
+
+    for(key = 0, p = (unsigned char *)_str; *p; p++)
+        key = 31 * key + *p;
+
+    return (key & 0x7FFFFFFF);
+}
+
+unsigned 
+Util::RSHash(const char *_str, unsigned _len)
+{
+    unsigned int b = 378551;
+    unsigned int a = 63689;
+    unsigned int key = 0;
+
+    while (*_str)
+    {
+        key = key * a + (*_str++);
+        a *= b;
+    }
+
+    return (key & 0x7FFFFFFF);
+}
+
+unsigned
+Util::JSHash(const char *_str, unsigned _len)
+{
+    unsigned int key = 1315423911;
+
+    while (*_str)
+    {
+        key ^= ((key << 5) + (*_str++) + (key >> 2));
+    }
+
+    return (key & 0x7FFFFFFF);
+}
+
+unsigned 
+Util::PJWHash(const char *_str, unsigned _len)
+{
+    unsigned int bits_in_unsigned_int = (unsigned int)(sizeof(unsigned int) * 8);
+    unsigned int three_quarters = (unsigned int)((bits_in_unsigned_int * 3) / 4);
+    unsigned int one_eighth = (unsigned int)(bits_in_unsigned_int / 8);
+
+    unsigned int high_bits = (unsigned int)(0xFFFFFFFF) << (bits_in_unsigned_int - one_eighth);
+    unsigned int key = 0;
+    unsigned int test = 0;
+
+    while (*_str)
+    {
+        key = (key << one_eighth) + (*_str++);
+        if ((test = key & high_bits) != 0)
+        {
+            key = ((key ^ (test >> three_quarters)) & (~high_bits));
+        }
+    }
+
+    return (key & 0x7FFFFFFF);
+}
+
+unsigned 
+Util::ELFHash(const char *_str, unsigned _len)
+{
+    unsigned int key = 0;
+    unsigned int x  = 0;
+
+    while (*_str)
+    {
+        key = (key << 4) + (*_str++);
+        if ((x = key & 0xF0000000L) != 0)
+        {
+            key ^= (x >> 24);
+            key &= ~x;
+        }
+    }
+
+    return (key & 0x7FFFFFFF);
+}
+
+unsigned
+Util::SDBMHash(const char *_str, unsigned _len)
+{
+    unsigned int key = 0;
+
+    while (*_str)
+    {
+        key = (*_str++) + (key << 6) + (key << 16) - key;
+    }
+
+    return (key & 0x7FFFFFFF);
+}
+
+unsigned 
+Util::DJBHash(const char *_str, unsigned _len)
+{
+    unsigned int key = 5381;
+    while (*_str) {
+        key += (key << 5) + (*_str++);
+    }
+    return (key & 0x7FFFFFFF);
+}
+
+unsigned 
+Util::APHash(const char *_str, unsigned _len)
+{
+    unsigned int key = 0;
+    int i;
+
+    for (i=0; *_str; i++)
+    {
+        if ((i & 1) == 0)
+        {
+            key ^= ((key << 7) ^ (*_str++) ^ (key >> 3));
+        }
+        else
+        {
+            key ^= (~((key << 11) ^ (*_str++) ^ (key >> 5)));
+        }
+    }
+
+    return (key & 0x7FFFFFFF);
+}
+
+unsigned 
+Util::DEKHash(const char* _str, unsigned _len)
+{
+    unsigned int hash = strlen(_str);
+    unsigned int i    = 0;
+
+    for(i = 0; _str[i] != '\0'; _str++, i++) {
+        hash = ((hash << 5) ^ (hash >> 27)) ^ (*_str);
+    }
+    return hash;
+}
+
+unsigned 
+Util::BPHash(const char* _str, unsigned _len)
+{
+    unsigned int hash = 0;
+    unsigned int i    = 0;
+    for(i = 0; _str[i] != '\0'; _str++, i++) {
+        hash = hash << 7 ^ (*_str);
+    }
+
+    return hash;
+}
+
+unsigned 
+Util::FNVHash(const char* _str, unsigned _len)
+{
+    const unsigned int fnv_prime = 0x811C9DC5;
+    unsigned int hash      = 0;
+    unsigned int i         = 0;
+
+    for(i = 0; _str[i] != '\0'; _str++, i++) {
+        hash *= fnv_prime;
+        hash ^= (*_str);
+    }
+
+    return hash;
+}
+
+unsigned 
+Util::HFLPHash(const char* _str, unsigned _len)
+{
+    unsigned int n=0;
+    char* b=(char*)&n;
+	unsigned int len = strlen(_str);
+    for(unsigned i=0; i < len; ++i) 
+	{
+        b[i%4]^=_str[i];
+    }
+    return n%len;
+}
+
+unsigned 
+Util::HFHash(const char* _str, unsigned _len)
+{
+    int result=0;
+    const char* ptr = _str;
+    int c;
+	unsigned int len = strlen(_str);
+    for(int i=1; (c=*ptr++); i++)
+        result += c*3*i;
+    if (result<0)
+        result = -result;
+    return result%len;
+}
+
+unsigned 
+Util::StrHash(const char* _str, unsigned _len)
+{
+    register unsigned int   h;
+    register unsigned char *p;
+    for(h=0,p=(unsigned char *)_str; *p; p++) {
+        h=31*h+*p;
+    }
+
+    return h;
+
+}
+
+unsigned 
+Util::TianlHash(const char* _str, unsigned _len)
+{
+    unsigned long urlHashValue=0;
+    int ilength=strlen(_str);
+    int i;
+    unsigned char ucChar;
+    if(!ilength)  {
+        return 0;
+    }
+    if(ilength<=256)  {
+        urlHashValue=16777216*(ilength-1);
+    } else {
+        urlHashValue = 42781900080;
+    }
+    if(ilength<=96) {
+        for(i=1; i<=ilength; i++) {
+            ucChar = _str[i-1];
+            if(ucChar<='Z'&&ucChar>='A')  {
+                ucChar=ucChar+32;
+            }
+            urlHashValue+=(3*i*ucChar*ucChar+5*i*ucChar+7*i+11*ucChar)%1677216;
+        }
+    } else  {
+        for(i=1; i<=96; i++)
+        {
+            ucChar = _str[i+ilength-96-1];
+            if(ucChar<='Z'&&ucChar>='A')
+            {
+                ucChar=ucChar+32;
+            }
+            urlHashValue+=(3*i*ucChar*ucChar+5*i*ucChar+7*i+11*ucChar)%1677216;
+        }
+    }
+
+    return urlHashValue;
+}
+
+//NOTICE:_b must >= 1
+double
+Util::logarithm(double _a, double _b)
+{
+	//REFRENCE: http://blog.csdn.net/liyuanbhu/article/details/8997850
+	//a>0 != 1; b>0 (b>=2 using log/log10/change, 1<b<2 using log1p, b<=1?)
+	if(_a <= 1 || _b < 1)
+		return -1.0;
+	double under = log(_a);
+	if(_b == 1)
+		return 0.0;
+	else if(_b < 2)
+		return log1p(_b - 1) / under;
+	else //_b >= 2
+		return log(_b) / under;
+	return -1.0;
 }
 

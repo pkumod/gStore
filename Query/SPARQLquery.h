@@ -3,7 +3,7 @@
 # Author: Bookug Lobert 
 # Mail: 1181955272@qq.com
 # Last Modified: 2015-10-31 19:13
-# Description: originally written by liyouhuan, modified by zengli
+# Description: originally written by liyouhuan, modified by chenjiaqi and zengli
 =============================================================================*/
 
 #ifndef _QUERY_SPARQLQUERY_H
@@ -41,6 +41,7 @@ public:
 	const string& getQueryVar(int _id);
 
 	void encodeQuery(KVstore* _p_kv_store);
+	void encodeQuery(KVstore* _p_kv_store, vector< vector<string> > sparql_query_varset);
 
 	vector<BasicQuery*>& getBasicQueryVec();
 

@@ -8,3 +8,5 @@
 
 5. the cost of disk and memory is still very large
 
+6. the VStree index consumes too much time and memory, and the filter effects are not good(less than 25%). 
+

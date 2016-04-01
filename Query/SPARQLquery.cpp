@@ -3,12 +3,14 @@
 # Author: Bookug Lobert 
 # Mail: 1181955272@qq.com
 # Last Modified: 2015-10-31 19:15
-# Description: 
+# Description: implement functions in SPARQLquery.h
 =============================================================================*/
 
 #include "SPARQLquery.h"
 #include "../Parser/DBparser.h"
 #include "../Database/Database.h"
+
+using namespace std;
 
 SPARQLquery::SPARQLquery(const string& _query)
 {
@@ -28,37 +30,44 @@ SPARQLquery::~SPARQLquery()
 	}
 }
 
-void SPARQLquery::addQueryVar(const string& _var)
+void 
+SPARQLquery::addQueryVar(const string& _var)
 {
 	query_var.push_back(_var);
 }
 
-const int SPARQLquery::getQueryVarNum()
+const int 
+SPARQLquery::getQueryVarNum()
 {
 	return query_var.size();
 }
 
-const vector<string>& SPARQLquery::getQueryVar()const
+const vector<string>& 
+SPARQLquery::getQueryVar()const
 {
 	return this->query_var;
 }
 
-const string& SPARQLquery::getQueryVar(int _id)
+const string& 
+SPARQLquery::getQueryVar(int _id)
 {
 	return this->query_var.at(_id);
 }
 
-void SPARQLquery::addTriple(const Triple& _triple){
+void 
+SPARQLquery::addTriple(const Triple& _triple){
 	int last_i = query_union.size()-1;
 	query_union[last_i]->addTriple(_triple);
 }
 
-const int SPARQLquery::getBasicQueryNum()
+const int 
+SPARQLquery::getBasicQueryNum()
 {
 	return this->query_union.size();
 }
 
-void SPARQLquery::encodeQuery(KVstore* _p_kv_store)
+void 
+SPARQLquery::encodeQuery(KVstore* _p_kv_store)
 {
 	for(unsigned i = 0; i < this->query_union.size(); i ++)
 	{
@@ -66,42 +75,57 @@ void SPARQLquery::encodeQuery(KVstore* _p_kv_store)
 	}
 }
 
-BasicQuery& SPARQLquery::getBasicQuery(int basic_query_id)
+void 
+SPARQLquery::encodeQuery(KVstore* _p_kv_store, vector< vector<string> > sparql_query_varset)
+{
+	for(unsigned i = 0; i < this->query_union.size(); i ++)
+	{
+		(this->query_union[i])->encodeBasicQuery(_p_kv_store, sparql_query_varset[i]);
+	}
+}
+
+BasicQuery& 
+SPARQLquery::getBasicQuery(int basic_query_id)
 {
 	return *(query_union[basic_query_id]);
 }
 
-void SPARQLquery::addBasicQuery(){
+void 
+SPARQLquery::addBasicQuery(){
 	query_union.push_back(new BasicQuery(""));
 }
 
-void SPARQLquery::addBasicQuery(BasicQuery* _basic_q)
+void 
+SPARQLquery::addBasicQuery(BasicQuery* _basic_q)
 {
 	this->query_union.push_back(_basic_q);
 }
 
-vector<BasicQuery*>& SPARQLquery::getBasicQueryVec()
+vector<BasicQuery*>& 
+SPARQLquery::getBasicQueryVec()
 {
 	return this->query_union;
 }
 
-void SPARQLquery::print(ostream& _out_stream){
+void 
+SPARQLquery::print(ostream& _out_stream){
 	int k=getQueryVarNum();
-	std::cout<<"QueryVar "<<k<<":"<<std::endl;
+	cout<<"QueryVar "<<k<<":"<<endl;
 	for (int i=0;i<k;i++){
-		std::cout<<getQueryVar(i)<<std::endl;
+		cout<<getQueryVar(i)<<endl;
 	}
 	k=getBasicQueryNum();
-	std::cout<<"Block "<<k<<" in total."<<std::endl;
+	cout<<"Block "<<k<<" in total."<<endl;
 	for (int i=0;i<k;i++){
-		std::cout<<"Block "<<i<<std::endl;
+		cout<<"Block "<<i<<endl;
 		getBasicQuery(i).print(_out_stream);
 	}
 }
 
-std::string SPARQLquery::triple_str()
+string 
+SPARQLquery::triple_str()
 {
-	std::stringstream _ss;
+	stringstream _ss;
 
 	_ss << "varNum:" << this->query_var.size() << endl;
 	for(unsigned i = 0; i < this->query_var.size(); i ++)
@@ -118,9 +142,10 @@ std::string SPARQLquery::triple_str()
 	return _ss.str();
 }
 
-std::string SPARQLquery::candidate_str()
+string 
+SPARQLquery::candidate_str()
 {
-	std::stringstream _ss;
+	stringstream _ss;
 
 	for(unsigned i = 0; i < this->query_union.size(); i ++)
 	{
@@ -130,9 +155,10 @@ std::string SPARQLquery::candidate_str()
 	return _ss.str();
 }
 
-std::string SPARQLquery::result_str()
+string 
+SPARQLquery::result_str()
 {
-	std::stringstream _ss;
+	stringstream _ss;
 
 	for(unsigned i = 0; i < this->query_union.size(); i ++)
 	{
@@ -142,9 +168,10 @@ std::string SPARQLquery::result_str()
 	return _ss.str();
 }
 
-std::string SPARQLquery::to_str()
+string 
+SPARQLquery::to_str()
 {
-	std::stringstream _ss;
+	stringstream _ss;
 
 	_ss << "varNum:" << this->query_var.size() << endl;
 	for(unsigned i = 0; i < this->query_var.size(); i ++)

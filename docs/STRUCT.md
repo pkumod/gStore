@@ -2,21 +2,13 @@
 
 #### The core source codes are listed below:
 
-- Bstr/ (represent strings of arbitrary length)
-
-	- Bstr.cpp (achieve functions)
-	
-	- Bstr.h (class, members and functions definitions)
-
 - Database/ (calling other core parts to deal with requests from interface part)
 	
 	- Database.cpp (achieve functions)
 
 	- Database.h (class, members and functions definitions)
-
-- Join/ (join the node candidates to get results)
 	
-	- Join.cpp (achieve functions)
+	- Join.cpp (join the node candidates to get results)
 
 	- Join.h (class, members,, and functions definitions)
 
@@ -78,11 +70,19 @@
 
 	- SPARQLquery.h
 
-- Triple/ (deal with triples, a triple can be divided as subject(entity), predicate(entity), object(entity or literal))
+	- Varset.cpp
 
-	- Triple.cpp
+	- Varset.h
 
-	- Triple.h
+	- QueryTree.cpp
+
+	- QueryTree.h
+
+	- GeneralEvaluation.cpp
+
+	- GeneralEvaluation.h
+
+	- RegexExpression.h
 
 - Signature/ (assign signatures for nodes and edges, but not for literals)
 
@@ -126,19 +126,23 @@
 
 	- RDFParser.h
 
-	- SparqlParser.c
+	- SparqlParser.c (auto-generated, subtle modified manually, compressed)
 
-	- SparqlParser.h
+	- SparqlParser.h (auto-generated, subtle modified manually, compressed)
 
-	- SparqlLexer.c
+	- SparqlLexer.c (auto-generated, subtle modified manually, compressed)
 
-	- SparqlLexer.h
+	- SparqlLexer.h (auto-generated, subtle modified manually, compressed)
 
 	- TurtleParser.cpp
 
 	- TurtleParser.h
 
 	- Type.h
+
+	- QueryParser.cpp
+
+	- QueryParser.h
 
 - - -
 
@@ -149,10 +153,22 @@
 	- Util.cpp (headers, macros, typedefs, functions...)
 	
 	- Util.h
+
+	- Bstr.cpp (represent strings of arbitrary length)
+	
+	- Bstr.h (class, members and functions definitions)
 	
 	- Stream.cpp (store and use temp results, which may be very large)
 	
 	- Stream.h
+
+	- Triple.cpp (deal with triples, a triple can be divided as subject(entity), predicate(entity), object(entity or literal))
+
+	- Triple.h
+
+	- BloomFilter.cpp
+
+	- BloomFilter.h
 
 - - -
 

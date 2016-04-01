@@ -26,6 +26,7 @@ Tree::Tree()
 	storepath = "";
 	filename = "";
 	transfer_size[0] = transfer_size[1] = transfer_size[2] = 0;
+	this->stream = NULL;
 }
 
 Tree::Tree(const string& _storepath, const string& _filename, const char* _mode)
@@ -44,6 +45,7 @@ Tree::Tree(const string& _storepath, const string& _filename, const char* _mode)
 	this->transfer[1].setStr((char*)malloc(Util::TRANSFER_SIZE));
 	this->transfer[2].setStr((char*)malloc(Util::TRANSFER_SIZE));
 	this->transfer_size[0] = this->transfer_size[1] = this->transfer_size[2] = Util::TRANSFER_SIZE;		//initialied to 1M
+	this->stream = NULL;
 }
 
 string
@@ -416,19 +418,39 @@ Tree::remove(const Bstr* _key)
 const Bstr*
 Tree::getRangeValue()
 {
-	return this->stream.read();
+	if(this->stream == NULL)
+	{
+		fprintf(stderr, "Tree::getRangeValue(): no results now!\n");
+		return NULL;
+	}
+	if(this->stream->isEnd())
+	{
+		fprintf(stderr, "Tree::getRangeValue(): read till end now!\n");
+		return NULL;
+	}
+	//NOTICE:this is one record, and donot free the memory!
+	//NOTICE:Bstr[] but only one element, used as Bstr*
+	return this->stream->read();
+}
+
+void
+Tree::resetStream()
+{
+	if(this->stream == NULL)
+	{
+		fprintf(stderr, "no results now!\n");
+		return;
+	}
+	this->stream->setEnd();
 }
 
 bool	//special case: not exist, one-edge-case
 Tree::range_query(const Bstr* _key1, const Bstr* _key2)
 {		//the range is: *_key1 <= x < *_key2 	
-	/*
-	if(_key1 == NULL && _key2 == NULL)
-		return false;
-		*/
+	//if(_key1 == NULL && _key2 == NULL)
+		//return false;
 	//ok to search one-edge, requiring only one be NULL
-	this->stream.open();
-	/* find and write value */
+	//find and write value
 	int store1, store2;
 	Node *p1, *p2;
 	if(_key1 != NULL)
@@ -469,6 +491,38 @@ Tree::range_query(const Bstr* _key1, const Bstr* _key2)
 
 	Node* p = p1;
 	unsigned i, l, r;
+	//get the num of answers first, not need to prepare the node
+	unsigned ansNum = 0;
+	while(true)
+	{
+		//request = 0;
+		//this->prepare(p);
+		if(p == p1)
+			l = store1;
+		else
+			l = 0;
+		if(p == p2)
+			r = store2;
+		else
+			r = p->getNum();
+		ansNum += (r - l);
+		//this->TSM->request(request);
+		if(p != p2)
+			p = p->getNext();
+		else
+			break;
+	}
+	
+	if(this->stream != NULL)
+	{
+		delete this->stream;
+		this->stream = NULL;
+	}
+	vector<int> keys;
+	vector<bool> desc;
+	this->stream = new Stream(keys, desc, ansNum, 1, false);
+
+	p = p1;
 	while(1)
 	{
 		request = 0;
@@ -482,22 +536,25 @@ Tree::range_query(const Bstr* _key1, const Bstr* _key2)
 		else
 			r = p->getNum();
 		for(i = l; i < r; ++i)
-			this->stream.write(p->getValue(i));
+		{
+			//NOTICE:Bstr* in an array, used as Bstr[]
+			this->stream->write(p->getValue(i));
+		}
 		this->TSM->request(request);
 		if(p != p2)
 			p = p->getNext();
 		else
 			break;
 	}
-	this->stream.reset();
+	this->stream->setEnd();
 	return true;
 }
 
 bool 
 Tree::save()	//save the whole tree to disk
 {
-#ifdef DEBUG_PRECISE
-	//printf("now to save tree!\n");
+#ifdef DEBUG_KVSTORE
+	printf("now to save tree!\n");
 #endif
 	if(TSM->writeTree(this->root))
 		return true;
@@ -522,10 +579,10 @@ Tree::release(Node* _np) const
 
 Tree::~Tree()
 {
-	//delete stream;
+	delete this->stream;   //maybe NULL
 	delete TSM;
-#ifdef DEBUG_PRECISE
-	//printf("already empty the buffer, now to delete all nodes in tree!\n");
+#ifdef DEBUG_KVSTORE
+	printf("already empty the buffer, now to delete all nodes in tree!\n");
 #endif
 	//recursively delete each Node
 	release(root);

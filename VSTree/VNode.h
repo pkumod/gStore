@@ -8,10 +8,9 @@
 #ifndef VNODE_H_
 #define VNODE_H_
 
-#include <vector>
+#include "../Util/Util.h"
 #include "../Signature/SigEntry.h"
 #include"LRUCache.h"
-#include<sstream>
 
 class VNode{
 public:

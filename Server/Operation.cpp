@@ -5,8 +5,7 @@
  *      Author: hanshuo
  */
 
-#include"Operation.h"
-#include<iostream>
+#include "Operation.h"
 
 Operation::Operation()
 {

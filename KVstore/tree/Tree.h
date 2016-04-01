@@ -26,7 +26,7 @@ private:
 	std::string mode;           //BETTER(to use enum)
 	Storage* TSM;           	//Tree-Storage-Manage
 	//BETTER:multiple stream maybe needed:)
-	Stream stream;
+	Stream* stream;
 
 	//always alloc one more byte than length, then user can add a '\0'
 	//to get a real string, instead of new and copy
@@ -45,6 +45,7 @@ private:
 	void CopyToTransfer(const char* _str, unsigned _len, unsigned _index);
 	void release(Node* _np) const;
 	void prepare(Node* _np) const;
+
 public:
 	Tree();				//always need to initial transfer
 	Tree(const std::string& _storepath, const std::string& _filename, const char* _mode);
@@ -64,6 +65,7 @@ public:
 	bool remove(const Bstr* _key);
 	bool remove(const char* _str, unsigned _len);
 	const Bstr* getRangeValue();
+	void resetStream();
 	bool range_query(const Bstr* _key1, const Bstr* _key2);
 	bool save(); 			
 	~Tree();

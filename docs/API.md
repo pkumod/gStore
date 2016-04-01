@@ -2,9 +2,9 @@
 
 ## Easy Examples
 
-We provide JAVA and C++ API for gStore now. Please refer to example codes in `api/cpp/example` and `api/java/example`. To use the two examples to have a try, please ensure that executables have already been generated. Otherwise, just type `make` in the root directory of gStore to compile the codes, as well as API. 
+We provide JAVA and C++ API for gStore now. Please refer to example codes in `api/cpp/example` and `api/java/example`. To use the two examples to have a try, please ensure that executables have already been generated. Otherwise, just type `make APIexample` in the root directory of gStore to compile the codes, as well as API. 
 
-Next, **start up a gStore server by using `./gserver` command.** It is ok if you know a running usable gStore server and try to connect to it, but notice that **the server ip and port of server and client must be matched.**(you don't need to change any thing if using examples, just by default) Then, you need to compile the example codes in the directory gStore/api/. We provide a utility to do this, and you just need to type `make api_example` in the root directory of gStore. Or you can compile the codes by yourself, in this case please go to gStore/api/cpp/example/ and gStore/api/java/example/, respectively.
+Next, **start up a gStore server by using `./gserver` command.** It is ok if you know a running usable gStore server and try to connect to it, but notice that **the server ip and port of server and client must be matched.**(you don't need to change any thing if using examples, just by default) Then, you need to compile the example codes in the directory gStore/api/. We provide a utility to do this, and you just need to type `make APIexample` in the root directory of gStore. Or you can compile the codes by yourself, in this case please go to gStore/api/cpp/example/ and gStore/api/java/example/, respectively.
 
 Finally, go to the example directory and run the corresponding executables. For C++, just use `./example` command to run it. And for Java, use `make run` command or `java -cp ../lib/GstoreJavaAPI.jar:. JavaAPIExample` to run it. Both the two executables will connect to a specified gStore server and do some load or query operations. Be sure that you see the query results in the terminal where you run the examples, otherwise please go to [Frequently Asked Questions](FAQ.md) for help or report it to us.(the report approach is described in [README](../README.md))
 
@@ -30,7 +30,7 @@ The API of gStore is placed in api/ directory in the root directory of gStore, w
 		
 		- lib/ (where the static lib lies in)
 
-			- readme.txt
+			- .gitignore
 
 			- libgstoreconnector.a (only exist after compiled, you need to link this lib when you use the C++ API)
 
@@ -52,7 +52,7 @@ The API of gStore is placed in api/ directory in the root directory of gStore, w
 
 		- lib/
 
-			- readme.txt
+			- .gitignore
 
 			- GstoreJavaAPI.jar (only exist after compiled, you need to include this JAR in your class path)
 

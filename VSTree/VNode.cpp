@@ -116,8 +116,8 @@ void VNode::setChildEntry(int _i, const SigEntry _entry)
 //    {
 //        if (this->getFileLine() == 0 && this->getChildFileLine(_i) == 153)
 //        {
-//            Database::log("set node 0's child node 153's entry:");
-//            Database::log(Signature::BitSet2str(this->child_entries[_i].getEntitySig().entityBitSet));
+//            Util::logging("set node 0's child node 153's entry:");
+//            Util::logging(Signature::BitSet2str(this->child_entries[_i].getEntitySig().entityBitSet));
 //        }
 //    }
 }

@@ -113,7 +113,7 @@ public:
 	KVstore(std::string _store_path = ".");
 	~KVstore();
 	void flush();
-	void release();
+	//void release();
 	void open();
 
 private:
@@ -158,7 +158,6 @@ private:
 
 
 	void flush(Tree* _p_btree);
-	void release(Tree* _p_btree);
 	bool setValueByKey(Tree* _p_btree, const char* _key, int _klen, const char* _val, int _vlen);
 	bool getValueByKey(Tree* _p_btree, const char* _key, int _klen, char*& _val, int& _vlen);
 	int getIDByStr(Tree* _p_btree, const char* _key, int _klen);

@@ -2,11 +2,11 @@
 
 #in some system, maybe /usr/bin/ instead of /bin/
 #according executables to deal with dbms
-#NOTICE: require that virtuoso/sesame/jena is installed and gstore is maked!
+#NOTICE: require that virtuoso/sesame/jena is installed and gstore is compiled!
 
 line1=--------------------------------------------------
 line2=##################################################
-path=/media/wip/common/data/
+path=/media/data/
 #db0=${path}WatDiv/
 #db1=${path}LUBM/
 #db2=${path}DBpedia/
@@ -17,16 +17,20 @@ db=(WatDiv/ LUBM/ BSBM/ DBpedia/)
 length1=${#db[*]}		#or @ instead of *
 
 #BETTER: let user indicate the executable directory
-gstore=/home/zengli/zengli/Gstore/
-virtuoso=/home/zengli/virtuoso/bin/
-sesame=/home/zengli/sesame/bin/
-jena=/home/zengli/jena/bin/
+gstore=/home/zengli/devGstore/
+virtuoso=/media/wip/zengli/virtuoso/bin/
+sesame=/media/wip/zengli/sesame/bin/
+jena=/media/wip/zengli/jena/bin/
 #NOTICE: maybe oldGstore and newGstore
 #dbms_path=($gstore $jena $sesame $virtuoso)
 dbms_path=($gstore $jena)
 dbms_name=(gstore jena)
 #dbms_name=(gstore jena sesame virtuoso)
 length2=${#dbms_path[*]}		#or @ instead of *
+
+#the language of the current operation system
+Chinese=zh_CN.utf8
+English=en_US.utf8
 
 #for each db, compare, pass db and query as parameter 
 #firstly load database, then query with unique program
@@ -103,7 +107,7 @@ do
 		if [ $dsnum -ne 1 ]
 		then
 			sleep 60	#for other processes
-			echo 3 > /proc/sys/vm/drop_caches
+			#sudo echo 3 > /proc/sys/vm/drop_caches
 		fi
 		cntdb="${tmpdb##*/}"
 		echo "$tmpdb"	#in case of special characters like &
@@ -128,7 +132,7 @@ do
 			if [ ${j} -eq 0 ]	#otherwise will unary error
 			then
 				echo "this is for gstore!"
-				./gload $cntdb $tmpdb > load.txt
+				bin/gload $cntdb $tmpdb > load.txt
 				#awk '{if($1=="after" && $2=="build," && $3=="used"){split($4, a,"m");print "time:\t"a[1]}}'  load.txt > load_${cntdb}.log
 				awk '{if($1=="after" && $2=="build," && $3=="used"){split($4, a,"m");print "'$cntdb'""\t"a[1]}}'  load.txt >> ${log3}/time.log
 				#elif [ ${dbms[j]}x = ${virtuoso}x ]
@@ -153,7 +157,16 @@ do
 			#ls -l sums the actual size, unit is k
 			echo "now to sum the database size!"
 			#ls -lR "$cntdb" | awk 'BEGIN{sum=0}{if($1=="total"){sum=sum+$2}}END{print "size:\t"sum}' >> load_${cntdb}.log
-			ls -lR "$cntdb" | awk 'BEGIN{sum=0}{if($1=="total"){sum=sum+$2}}END{print "'$cntdb'""\t"sum}' >> ${log3}/size.log
+			lang=`echo $LANG`
+			if [ $lang = $English ]
+			then
+				ls -lR "$cntdb" | awk 'BEGIN{sum=0}{if($1=="total"){sum=sum+$2}}END{print "'$cntdb'""\t"sum}' >> ${log3}/size.log
+			elif [ $lang = $Chinese ]
+			then
+				ls -lR "$cntdb" | awk 'BEGIN{sum=0}{if($1=="总用量"){sum=sum+$2}}END{print "'$cntdb'""\t"sum}' >> ${log3}/size.log
+			else
+				echo "the language of the operation system is not supported!"
+			fi
 
 			timelog=${log2}/${cntdb}.log
 			touch $timelog
@@ -166,10 +179,10 @@ do
 				if [ ${j} -eq 0 ]	#add a x in case of empty 
 				then
 					echo "this is for gstore!"
-					./gquery "$cntdb" $query > ans.txt
+					bin/gquery "$cntdb" $query > ans.txt
 					awk -F ':' 'BEGIN{query="'$query'"}{if($1=="Total time used"){split($2, a, "m");split(a[1],b," ");}}END{print query"\t"b[1]}' ans.txt >> $timelog
 					#grep "Total time used:" ans.txt | grep -o "[0-9]*ms" >> ${log2}/${cntdb}.log
-					awk -F ':' 'BEGIN{flag=0}{if(flag==1 && $0 ~/^$/){flag=2}if(flag==1 && !($0 ~/[empty result]/)){print $0}if($1=="final result is "){flag=1}}' ans.txt > $anslog
+					awk -F ':' 'BEGIN{flag=0;old=""}{if(flag==1 && $0 ~/^$/){flag=2}if(flag==1 && !($0 ~/[empty result]/) && $0 != old){print $0;old=$0}if($1=="final result is"){flag=1}}' ans.txt > $anslog
 					#awk 'BEGIN{flag=0}{if(flag==1){print $0}if($1 ~/^final$/){flag=1}}' ans.txt > ${log1}/${cntdb}/${query}.log
 				elif [ ${j} -eq 1 ]
 				then
@@ -188,6 +201,7 @@ do
 					echo "this is for virtuoso!"
 					#TODO
 				fi
+				#NOTICE:the same record should be placed together before sorting!
 				#sort according to the path order
 				echo "now to sort anslog!"
 				mv $anslog ${anslog}.bak

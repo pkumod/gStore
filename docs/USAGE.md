@@ -1,14 +1,28 @@
-## gStore currently includes four executables and others.
+## gStore currently includes five executables and others.
+
+**All the commands of gStore should be used in the root directory of gStore like bin/gconsole, because executables are placed in bin/, and they may use some files whose paths are indicated in the code, not absolute paths. We will ensure that all paths are absolute later by asking users to give the absolute path in their own systems to really install/configure the gStore. However, you must do as we told now to avoid errors.**
+
+#### 0. gconsole
+
+gconsole is the main console of gStore, which integrates with all functions to operate on gStore, as well as some system commands. Completion of commands name, line editing features and access to the history list are all provided. Feel free to try it, and you may have a wonderful tour!(spaces or tabs at the beginning or end is ok, and no need to type any special characters as separators)
+
+Just type `bin/gconsole` in the root directory of gStore to use this console, and you will find a `gstore>` prompt, which indicates that you are in native mode and can type in native commands now. There are another mode of this console, which is called remote mode. Just type `connect` in the native mode to enter the remote mode, and type `disconnect` to exit to native mode.(the console connect to a gStore server whose ip is '127.0.0.1' and port is 3305, you can specify them by type `connect gStore_server_ip gStore_server_port`)
+
+You can use `help` or `?` either in native mode or remote mode to see the help information, or you can type `help command_name` or `? command_name` to see the information of a given command. Notice that there are some differences between the commands in native mode and commands in remote mode. For example, system commands like `ls`, `cd` and `pwd` are provided in native mode, but not in remote mode. Also take care that not all commands contained in the help page are totally achieved, and we may change some functions of the console in the future.
+
+What we have done is enough to bring you much convenience to use gStore, just enjoy it!
+
+- - -
 
 #### 1. gload
 
 gload is used to build a new database from a RDF triple format file.
 
-`# ./gload db_name rdf_triple_file_path`
+`# bin/gload db_name rdf_triple_file_path`
 
 For example, we build a database from LUBM_10.n3 which can be found in example folder.
 
-    [bookug@localhost gStore]$ ./gload LUBM10.db ./data/LUBM_10.n3 
+    [bookug@localhost gStore]$ bin/gload LUBM10.db ./data/LUBM_10.n3 
     2015年05月21日 星期四 20时58分21秒  -0.484698 seconds
     gload...
     argc: 3 DB_store:db_LUBM10      RDF_data: ./data/LUBM_10.n3  
@@ -20,11 +34,11 @@ For example, we build a database from LUBM_10.n3 which can be found in example f
 
 gquery is used to query an existing database with files containing SPARQL queries.(each file contains exact one SPARQL query)
 
-Type `./gquery db_name query_file` to execute the SPARQL query retrieved from query_file in the database named db_name.
+Type `bin/gquery db_name query_file` to execute the SPARQL query retrieved from query_file in the database named db_name.
 
-Use `./gquery --help` for detail information of gquery usage.
+Use `bin/gquery --help` for detail information of gquery usage.
 
-To enter the gquery console, type `./gquery db_name`. The program shows a command prompt("gsql>"), and you can type in a command here. Use `help` to see basic information of all commands, while `help command_t` shows details of a specified command.
+To enter the gquery console, type `bin/gquery db_name`. The program shows a command prompt("gsql>"), and you can type in a command here. Use `help` to see basic information of all commands, while `help command_t` shows details of a specified command.
 
 Type `quit` to leave the gquery console.
 
@@ -36,7 +50,7 @@ When the program finish answering the query, it shows the command prompt again.
 
 We also take LUBM_10.n3 as an example.
 
-    [bookug@localhost gStore]$ ./gquery LUBM10.db
+    [bookug@localhost gStore]$ bin/gquery LUBM10.db
     gquery...
     argc: 2 DB_store:db_LUBM10/
     loadTree...
@@ -83,13 +97,13 @@ Notice:
 
 gserver is a daemon. It should be launched first when accessing gStore by gclient or API. It communicates with client through socket. 
 
-    [bookug@localhost gStore]$ ./gserver 
+    [bookug@localhost gStore]$ bin/gserver 
     port=3305
     Wait for input...
 
 You can also assign a custom port for listening.
 
-    [bookug@localhost gStore]$ ./gserver 3307
+    [bookug@localhost gStore]$ bin/gserver 3307
     port=3307
     Wait for input...
 
@@ -101,13 +115,13 @@ Notice: Multiple threads are not supported by gserver. If you start up gclient i
 
 gclient is designed as a client to send commands and receive feedbacks.
 
-    [bookug@localhost gStore]$ ./gclient 
+    [bookug@localhost gStore]$ bin/gclient 
     ip=127.0.0.1 port=3305
     gsql>
 
 You can also assign gserver's ip and port.
 
-    [bookug@localhost gStore]$ ./gclient 172.31.19.15 3307
+    [bookug@localhost gStore]$ bin/gclient 172.31.19.15 3307
     ip=172.31.19.15 port=3307
 	gsql>
 

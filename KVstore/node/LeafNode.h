@@ -9,8 +9,6 @@
 #ifndef _KVSTORE_NODE_LEAFNODE_H
 #define _KVSTORE_NODE_LEAFNODE_H
 
-#include "../../Util/Util.h"
-#include "../../Bstr/Bstr.h"
 #include "Node.h"
 
 class LeafNode: public Node    

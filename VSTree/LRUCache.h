@@ -8,8 +8,7 @@
 #ifndef LRUCACHE_H_
 #define LRUCACHE_H_
 
-#include<map>
-#include<string>
+#include "../Util/Util.h"
 class VNode;
 
 // before using the cache, you must loadCache or createCache.

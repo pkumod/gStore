@@ -1,4 +1,4 @@
-select ?x where
+select distinct ?x where
 {
 ?x	<rdf:type>	<ub:GraduateStudent>.
 ?y	<rdf:type>	<ub:University>.

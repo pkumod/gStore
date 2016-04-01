@@ -9,7 +9,7 @@
 #define ENTRYBUFFER_H_
 
 class SigEntry;
-#include<stdio.h>
+#include "../Util/Util.h"
 
 /* EntryBuffer is used to loading entries from hard disk when building VSTree. */
 class EntryBuffer

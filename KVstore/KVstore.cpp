@@ -51,7 +51,7 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
 //    {
 //        stringstream _ss;
 //        _ss << "updateTupleslist_insert: " << _sub_id << " " << _pre_id << " " << _obj_id << endl;
-//        Database::log(_ss.str());
+//        Util::logging(_ss.str());
 //    }
 
     //debug
@@ -79,7 +79,7 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
     }
 
     //debug
-//  Database::log("update sp2o done.");
+//  Util::logging("update sp2o done.");
 
     /* update op2s */
     {
@@ -102,7 +102,7 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
     }
 
     //debug
-//  Database::log("update op2s done.");
+//  Util::logging("update op2s done.");
 
     /* update s2po */
     {
@@ -125,7 +125,7 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
     }
 
     //debug
-//  Database::log("update s2po done.");
+//  Util::logging("update s2po done.");
 
     /* update o2ps */
     {
@@ -148,7 +148,7 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
     }
 
     //debug
-//  Database::log("update o2ps done.");
+//  Util::logging("update o2ps done.");
 
     /* update s2o */
     {
@@ -170,7 +170,7 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
     }
 
     //debug
-//    Database::log("update s2o done.");
+//    Util::logging("update s2o done.");
 
     /* update o2s */
     {
@@ -196,7 +196,7 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
     return updateListLen;
 
     //debug
-//   Database::log("update o2s done.");
+//   Util::logging("update o2s done.");
 }
 
 /* insert <_x_id, _y_id> into _xylist(keep _xylist(<x,y>) in ascending order) */
@@ -794,7 +794,8 @@ bool KVstore::open_subIDpreID2objIDlist(const int _mode){
 	return this->open(this->subIDpreID2objIDlist, KVstore::s_sIDpID2oIDlist, _mode);
 }
 
-bool KVstore::getobjIDlistBysubIDpreID(int _subid, int _preid, int*& _objidlist, int& _list_len){
+bool KVstore::getobjIDlistBysubIDpreID(int _subid, int _preid, int*& _objidlist, int& _list_len)
+{
 	char* _tmp = NULL;
 	int _len = 0;
 	int* _sp = new int[2];
@@ -1029,26 +1030,26 @@ void KVstore::flush(){
  * any Tree pointer that is null or
  * has not been modified will do nothing
  *  */
-void KVstore::release(){
-	cout << "release of KVstore..." << endl;
-	this->release(this->entity2id);
-	this->release(this->id2entity);
-
-	this->release(this->literal2id);
-	this->release(this->id2literal);
-
-	this->release(this->predicate2id);
-	this->release(this->id2predicate);
-
-	this->release(this->objID2subIDlist);
-	this->release(this->subID2objIDlist);
-
-	this->release(this->objIDpreID2subIDlist);
-	this->release(this->subIDpreID2objIDlist);
-
-	this->release(this->subID2preIDobjIDlist);
-	this->release(this->objID2preIDsubIDlist);
-}
+//void KVstore::release(){
+//	cout << "release of KVstore..." << endl;
+//	this->release(this->entity2id);
+//	this->release(this->id2entity);
+//
+//	this->release(this->literal2id);
+//	this->release(this->id2literal);
+//
+//	this->release(this->predicate2id);
+//	this->release(this->id2predicate);
+//
+//	this->release(this->objID2subIDlist);
+//	this->release(this->subID2objIDlist);
+//
+//	this->release(this->objIDpreID2subIDlist);
+//	this->release(this->subIDpreID2objIDlist);
+//
+//	this->release(this->subID2preIDobjIDlist);
+//	this->release(this->objID2preIDsubIDlist);
+//}
 
 void KVstore::open()
 {
@@ -1080,15 +1081,6 @@ void KVstore::flush(Tree* _p_btree){
 	{
 		_p_btree->save();
 	}
-}
-
-void KVstore::release(Tree* _p_btree){
-	/*
-	if(_p_btree != NULL)
-	{
-		_p_btree->save();
-	}
-	*/
 }
 
 /* Open a btree according the mode */

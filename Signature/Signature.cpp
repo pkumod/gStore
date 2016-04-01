@@ -9,7 +9,6 @@
 
 #include "Signature.h"
 #include "../Query/BasicQuery.h"
-#include "../Database/Database.h"
 
 std::string Signature::BitSet2str(const EntityBitSet& _bitset)
 {
@@ -158,7 +157,7 @@ void Signature::encodeStr2Entity(const char* _str, EntityBitSet& _entity_bs) //_
     {
         std::stringstream _ss;
         _ss << "encodeStr2Entity:" << str2 << endl;
-        Database::log(_ss.str());
+        Util::logging(_ss.str());
     }
     */
 

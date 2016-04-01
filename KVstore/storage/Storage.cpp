@@ -597,8 +597,8 @@ Storage::handler(unsigned _needmem)	//>0
 Storage::~Storage()
 {
 	//release heap and freelist...
-#ifdef DEBUG_PRECISE
-	//printf("now to release the kvstore!\n");
+#ifdef DEBUG_KVSTORE
+	printf("now to release the kvstore!\n");
 #endif
 	BlockInfo* bp = this->freelist;
 	BlockInfo* next;
@@ -608,12 +608,12 @@ Storage::~Storage()
 		delete bp;
 		bp = next;
 	}
-#ifdef DEBUG_PRECISE
-	//printf("already empty the freelist!\n");
+#ifdef DEBUG_KVSTORE
+	printf("already empty the freelist!\n");
 #endif
 	delete this->minheap;
-#ifdef DEBUG_PRECISE
-	//printf("already empty the buffer heap!\n");
+#ifdef DEBUG_KVSTORE
+	printf("already empty the buffer heap!\n");
 #endif
 	fclose(this->treefp);
 //#ifdef DEBUG_KVSTORE

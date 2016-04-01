@@ -21,7 +21,7 @@ main(int argc, char * argv[])
 #ifdef DEBUG
 	Util util;
 #endif
-	system("clock");
+	//system("clock");
 	cout << "gload..." << endl;
 	{
 		cout << "argc: " << argc << "\t";
@@ -42,7 +42,7 @@ main(int argc, char * argv[])
 	{
 		cout << "import RDF file to database failed." << endl;
 	}
-	system("clock");
+	//system("clock");
 	return 0;
 }
 

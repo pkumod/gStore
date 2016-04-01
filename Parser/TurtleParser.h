@@ -11,10 +11,7 @@
 // San Francisco, California, 94105, USA.
 //---------------------------------------------------------------------------
 #include "Type.h"
-#include <istream>
-#include <string>
-#include <map>
-#include <vector>
+#include "../Util/Util.h"
 //---------------------------------------------------------------------------
 /// Parse a turtle file
 class TurtleParser

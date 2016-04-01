@@ -9,14 +9,10 @@
 =============================================================================*/
 
 
-#ifndef _BSTR_BSTR_H
-#define _BSTR_BSTR_H
+#ifndef _UTIL_BSTR_H
+#define _UTIL_BSTR_H
 
-#include "../Util/Util.h"
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "Util.h"
 
 class Bstr
 {
@@ -53,5 +49,5 @@ public:
 	void print(std::string s) const;		//DEBUG
 };
 
-#endif // _BSTR_BSTR_H
+#endif // _UTIL_BSTR_H
 

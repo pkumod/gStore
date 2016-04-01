@@ -5,11 +5,8 @@
  *      Author: hanshuo
  */
 
-#include"LRUCache.h"
-#include"VNode.h"
-#include"../Database/Database.h"
-#include<stdio.h>
-#include<algorithm>
+#include "LRUCache.h"
+#include "VNode.h"
 
 int LRUCache::DEFAULT_CAPACITY = 1*1000*1000;
 
@@ -24,6 +21,12 @@ LRUCache::LRUCache(int _capacity)
     this->prev = new int[this->capacity + 2];
     this->keys = new int[this->capacity + 2];
     this->values = new VNode*[this->capacity + 2];
+
+	for(int i = 0; i < this->capacity + 2; ++i)
+	{
+		this->values[i] = NULL;
+	}
+
     this->next[LRUCache::START_INDEX] = LRUCache::END_INDEX;
     this->next[LRUCache::END_INDEX] = LRUCache::NULL_INDEX;
     this->prev[LRUCache::START_INDEX] = LRUCache::NULL_INDEX;
@@ -37,6 +40,10 @@ LRUCache::~LRUCache()
     delete []this->next;
     delete []this->prev;
     delete []this->keys;
+	for(int i = 0; i < this->size; ++i)
+	{
+		delete this->values[i];
+	}
     delete []this->values;
 }
 
@@ -86,7 +93,7 @@ bool LRUCache::loadCache(string _filePath)
             {
                 stringstream _ss;
                 _ss << "error file line: " << _tmp_cycle_count << " " << nodePtr->getFileLine() << " " << nodePtr->getChildNum() << endl;
-                Database::log(_ss.str());
+                Util::logging(_ss.str());
             }
         }
 
@@ -264,7 +271,7 @@ void LRUCache:: freeElem(int _pos)
 }
 
 /* set the memory of the _pos element in cache */
-void LRUCache:: setElem(int _pos, int _key, VNode* _value)
+void LRUCache::setElem(int _pos, int _key, VNode* _value)
 {
     this->key2pos[_key] = _pos;
     this->keys[_pos] = _key;
@@ -277,8 +284,8 @@ void LRUCache:: setElem(int _pos, int _key, VNode* _value)
     this->prev[nextPos] = _pos;
     this->next[_pos] = LRUCache::END_INDEX;
     this->prev[_pos] = prevPos;
-
-    this->size ++;
+	//NOTICE: this cannot be placed in loadCache() because this may be called by other functions
+	this->size++;
 }
 
 /* just write the values[_pos] to the hard disk, the VNode in memory will not be free. */
@@ -394,7 +401,7 @@ bool LRUCache::flush()
             {
                 stringstream _ss;
                 _ss << "line error at !!!" << line << " " << nodePtr->getFileLine() << endl;
-                Database::log(_ss.str());
+                Util::logging(_ss.str());
             }
         }
 

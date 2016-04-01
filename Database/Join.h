@@ -51,6 +51,7 @@ private:
 	int* id2pos; 
 	int id_pos;   //the num of id put into id2pos currently
 	int* pos2id; 
+	bool* dealed_triple;
 	stack<int> mystack;
 
 	void init(BasicQuery* _basic_query);
@@ -94,13 +95,14 @@ private:
 
 	void index_join();
 
-	bool join_basic();
+	//NOTICE:this is only used to join a BasicQuery
+	bool join();
 
 public:
 	Join();
 	Join(KVstore* _kvstore);
 	//this function can be called by Database
-	bool join(SPARQLquery& _sparql_query);
+	bool join_sparql(SPARQLquery& _sparql_query);
 	~Join();
 };
 

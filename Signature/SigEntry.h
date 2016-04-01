@@ -10,9 +10,9 @@
 #ifndef SIGENTRY_H_
 #define SIGENTRY_H_
 
-#include<iostream>
+#include "../Util/Util.h"
 #include "Signature.h"
-#include<sstream>
+
 using namespace std;
 
 class SigEntry{

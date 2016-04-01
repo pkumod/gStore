@@ -1,69 +1,84 @@
-*
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+bin/g*
+api/cpp/example/example
 
-!.gitignore
+Parser/Sparql*
 
-!makefile
-!README.md
-!LICENSE
+#result logs
+*.txt
+*.log
 
-!/.debug/
-!/.debug/**/
+#download files
+*.torrent
+*.iso 
+#compressed files
+*.tar.bz2
+*.zip
+*.tar.gz 
+*.tar.bz2
+*.7z 
+*.rar 
+#compiled objects
+*.o
+*.class
+#debug logs
+*.log
+#temp files
+*.dat
+#datasets
+*.nt
+*.n3
+#databases
+*.db
+#libs
+*.a
+*.so
+*.jar
+#pictures
+*.jpg
+*.jpeg
+*.png
+*.pdf
+#music and movie
+*.mp3
+*.wav
+*.mp4
+*.rmvb
 
-!/.tmp/
-!/.tmp/**/
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
 
-!/.objs/
-!/.objs/**/
+# Precompiled Headers
+*.gch
+*.pch
 
-!/.github/
-!/.github/**/
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
 
-!/api/
-!/api/**/
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
 
-!/data/
-!/data/**/
+# Debug files
+*.dSYM/
 
-!/docs/
-!/docs/**/
-
-!/lib/
-
-!/test/
-!/test/**/
-
-!/tools/
-
-!/Bstr/
-!/Bstr/**/
-
-!/Database/
-!/Database/**/
-
-!/KVstore/
-!/KVstore/**/
-
-!/Main/
-!/Main/**/
-
-!/Parser/
-!/Parser/**/
-
-!/Query/
-!/Query/**/
-
-!/Server/
-!/Server/**/
-
-!/Signature/
-!/Signature/**/
-
-!/Triple/
-!/Triple/**/
-
-!/Util/
-!/Util/**/
-
-!/VSTree/
-!/VSTree/**/
+# IDE files
+cscope*
+.cproject
+.project
+tags
 

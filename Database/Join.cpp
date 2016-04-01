@@ -36,13 +36,19 @@ Join::init(BasicQuery* _basic_query)
     memset(pos2id, -1, sizeof(int) * this->var_num);
 	this->id_pos = 0;
 	this->start_id = -1;
+    int triple_num = this->basic_query->getTripleNum();
+	this->dealed_triple = (bool*)calloc(triple_num, sizeof(bool));
 }
 
 void
 Join::clear()
 {
-	delete this->id2pos;
-	delete this->pos2id;
+	free(this->id2pos);
+	free(this->pos2id);
+	//NOTICE:maybe many BasicQuery
+	this->current_table.clear();
+	while(this->mystack.empty() == false) this->mystack.pop();
+	free(this->dealed_triple);
 }
 
 double 
@@ -110,7 +116,7 @@ Join::select()
 //join on the vector of CandidateList, available after 
 //retrieved from the VSTREE and store the resut in _result_set
 bool
-Join::join(SPARQLquery& _sparql_query)
+Join::join_sparql(SPARQLquery& _sparql_query)
 {
     int basic_query_num = _sparql_query.getBasicQueryNum();
     //join each basic query
@@ -125,17 +131,14 @@ Join::join(SPARQLquery& _sparql_query)
         this->add_literal_candidate();
         long after_add_literal = Util::get_cur_time();
         printf("after add_literal_candidate: used %ld ms\n", after_add_literal-after_filter);
-        this->join_basic();
+        this->join();
         long after_joinbasic = Util::get_cur_time();
         printf("after join_basic : used %ld ms\n", after_joinbasic-after_add_literal);
         //this->only_pre_filter_after_join(this->basic_query);
         //long after_pre_filter_after_join = Util::get_cur_time();
         //printf("after only_pre_filter_after_join : used %ld ms\n", after_pre_filter_after_join-after_joinbasic);
 
-		//BETTER?:remove duplicates only when using distinct in query
-        //remove duplicate result at the end
-        //this->basic_query->dupRemoval();
-        printf("Final result size: %u\n", this->basic_query->getResultList().size());
+        printf("Final result size: %lu\n", this->basic_query->getResultList().size());
 		this->clear();
     }
 
@@ -144,7 +147,7 @@ Join::join(SPARQLquery& _sparql_query)
 
 // use the appropriate method to join candidates
 bool
-Join::join_basic()
+Join::join()
 {
 	//TODO:compute the time cost of different parts
 	//the smallest candidate list size of the not-literal vars
@@ -552,11 +555,10 @@ void
 Join::multi_join()
 {
 	this->select();
-    int triple_num = this->basic_query->getTripleNum();
 	//bool* dealed_id_list = (bool*)malloc(sizeof(bool) * var_num);
     //memset(dealed_id_list, 0, sizeof(bool) * var_num);
-	bool* dealed_triple = (bool*)malloc(sizeof(bool) * triple_num);
-    memset(dealed_triple, 0, sizeof(bool) * triple_num);
+	//bool* dealed_triple = (bool*)malloc(sizeof(bool) * triple_num);
+    //memset(dealed_triple, 0, sizeof(bool) * triple_num);
 	
 	//keep an increasing vector for temp results, not in id order
 	//vals num generally < 10, so just enum them and check if conncted
@@ -710,7 +712,8 @@ Join::multi_join()
 	int select_var_num = this->basic_query->getSelectVarNum();
 	for(it0 = this->current_table.begin(); it0 != this->current_table.end(); ++it0)
 	{
-        int* record = (int*)malloc(sizeof(int) * select_var_num);
+        //int* record = (int*)malloc(sizeof(int) * select_var_num);
+        int* record = new int[select_var_num];
 		for(int i = 0; i < this->id_pos; ++i)
 		{
 			if(this->pos2id[i] < select_var_num)
@@ -797,7 +800,7 @@ Join::filter_before_join()
 //				_ss << "[" << _can << ", " << can_list[i] << "]\t";
 //			}
 //			_ss << endl;
-//			Database::log(_ss.str());
+//			Util::logging(_ss.str());
 //			cout << can_list.to_str() << endl;
 //		}
     }
@@ -808,7 +811,7 @@ Join::filter_before_join()
 void
 Join::literal_edge_filter(int _var_i)
 {
-    //Database::log("IN literal_edge_filter"); //debug
+    //Util::logging("IN literal_edge_filter"); //debug
 
     int var_degree = this->basic_query->getVarDegree(_var_i);
     for(int j = 0; j < var_degree; j ++)
@@ -857,7 +860,7 @@ Join::literal_edge_filter(int _var_i)
 //					_ss << "\t\tedge[" << j << "] "<< lit_string << " has id " << lit_id << "";
 //					_ss << " preid:" << pre_id << " type:" << edge_type
 //							<< endl;
-//					Database::log(_ss.str());
+//					Util::logging(_ss.str());
 //		}
 
         int id_list_len = 0;
@@ -897,7 +900,7 @@ Join::literal_edge_filter(int _var_i)
         //              _ss << "[" << id_list[i] << "]\t";
         //          }
         //          _ss<<endl;
-        //          Database::log(_ss.str());
+        //          Util::logging(_ss.str());
         //      }
 
         if(id_list_len == 0)
@@ -918,7 +921,7 @@ Join::literal_edge_filter(int _var_i)
         delete []id_list;
     }
 
-    //Database::log("OUT literal_edge_filter"); //debug
+    //Util::logging("OUT literal_edge_filter"); //debug
 }
 
 // this part can be omited or improved if the encode way of predicate
@@ -1138,7 +1141,7 @@ Join::only_pre_filter_after_join()
 void
 Join::add_literal_candidate()
 {
-    //Database::log("IN add_literal_candidate");
+    //Util::logging("IN add_literal_candidate");
 	//
     // deal with literal variable candidate list.
     // because we do not insert any literal elements into VSTree, we can not retrieve them from VSTree.
@@ -1158,7 +1161,7 @@ Join::add_literal_candidate()
         //        _ss << "do not have literal result.";
         //    }
         //    _ss << endl;
-        //    //Database::log(_ss.str());
+        //    //Util::logging(_ss.str());
         //}
 
         if(!this->basic_query->isLiteralVariable(i))
@@ -1266,9 +1269,9 @@ Join::add_literal_candidate()
                 _ss << candidate_name << "(" << candidate_id << ")\t";
             }
             */
-            //Database::log(_ss.str());
+            //Util::logging(_ss.str());
         }
     }
-    //Database::log("OUT add_literal_candidate");
+    //Util::logging("OUT add_literal_candidate");
 }
 

@@ -9,7 +9,6 @@
 #ifndef _KVSTORE_NODE_INTLNODE_H
 #define _KVSTORE_NODE_INTLNODE_H
 
-#include "../../Util/Util.h"
 #include "Node.h"
 
 class IntlNode: public Node

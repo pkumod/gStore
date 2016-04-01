@@ -20,7 +20,8 @@ Heap::Heap(unsigned _size)
 {
 	this->length = 0;
 	this->size = _size;
-	this->heap = (Node**)malloc(this->size * sizeof(Node*));	//not use 4 or 8
+	//this->heap = (Node**)malloc(this->size * sizeof(Node*));	//not use 4 or 8
+	this->heap = new Node*[this->size];
 	if(this->heap == NULL)
 	{
 		this->print("error in Heap: Allocation fail!");

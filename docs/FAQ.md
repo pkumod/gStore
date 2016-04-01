@@ -1,3 +1,15 @@
+#### Why does gStore report "garbage collection failed" error when I use teh Java API?
+
+You need to adjust the parameters of jvm, see [url1](http://www.cnblogs.com/edwardlauxh/archive/2010/04/25/1918603.html) and [url2](http://www.cnblogs.com/redcreen/archive/2011/05/04/2037057.html) for details.
+
+- - -
+
+#### When I compile the code in ArchLinux, why the error that "no -ltermcap" is reported?
+
+In ArchLinux, you only need to use `-lreadline` to link the readline library. Please remove the `-ltermcap` in the makefile which is located in the root of the gStore project if you would like to use ArchLinux.
+
+- - -
+
 #### Why does gStore report errors that the format of some RDF datasets are not supported?
 
 gStore does not support all RDF formats currently, please see [formats](../test/format_question.txt) for details.
