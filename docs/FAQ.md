@@ -1,3 +1,19 @@
+#### When I use the newer gStore system to query the original database, why error?
+
+The database produced by gStore contains several indexes, whose structures may have been chnaged in the new gStore version. So, please rebuild your dataset just in case.
+
+- - -
+
+#### Why error when I try to write programs based on gStore, just like the Main/gconsole.cpp?
+
+You need to add these phrases at the beginning of your main program, otherwise gStore will not run correctly:
+	//NOTICE:this is needed to ensure the file path is the work path
+	chdir(dirname(argv[0]));
+	//NOTICE:this is needed to set several debug files
+    Util util;
+
+- - -
+
 #### Why does gStore report "garbage collection failed" error when I use teh Java API?
 
 You need to adjust the parameters of jvm, see [url1](http://www.cnblogs.com/edwardlauxh/archive/2010/04/25/1918603.html) and [url2](http://www.cnblogs.com/redcreen/archive/2011/05/04/2037057.html) for details.

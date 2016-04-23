@@ -1079,12 +1079,14 @@ void VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_l
 //        	Util::logging(_ss.str());
 //        }
 
+		int valid = 0;
         for (int i=0;i<childNum;i++)
         {
             const SigEntry& entry = currentNodePtr->getChildEntry(i);
 
             if (entry.cover(filterSig))
             {
+				valid++;
                 if (currentNodePtr->isLeaf())
                 {
                     // if leaf node, add the satisfying entries' entity id to result list.
@@ -1115,6 +1117,7 @@ void VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_l
                 }
             }
         }
+		cerr << "child num: " << childNum << "   valid num: " << valid << endl;
     }
     Util::logging("OUT retrieveEntity");
 }

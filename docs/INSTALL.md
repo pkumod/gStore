@@ -1,6 +1,6 @@
 gStore is a green software, and you just need to compile it with one command. Please run
 
-`# make` 
+`make` 
 
 in the gStore root directory to compile the gStore code, link the ANTLR lib, and build executable "gload", "gquery", "gserver", "gclient", "gconsole". What is more, the api of gStore is also built now.
 

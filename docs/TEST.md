@@ -16,5 +16,5 @@ Through analysing time.log/, we can find that gStore behave better than others o
 
 Generally speaking, the memory cost of gStore when answering queries is higher than others. More complicated the query is and more large the dataset is, more apparent the phenomenon is.
 
-You can find more detailed information in [test report](pdf/gstore测试报告.pdf). Notice that some questions in the test report have already be solved now.
+You can find more detailed information in [test report](pdf/gstore_test_report.pdf). Notice that some questions in the test report have already be solved now.
 

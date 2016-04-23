@@ -210,41 +210,41 @@ To acquire a deep understanding of gStore codes, please go to [Code Detail](pdf/
 
 If you want to know the sequence of a running gStore, please view the list below:
 
-- [connect to server](jpg/A01-连接Server.jpg)
+- [connect to server](jpg/A01-connectServer.jpg)
 
-- [disconnect server](jpg/A02-断开与Server的连接.jpg)
+- [disconnect server](jpg/A02-disconnectServer.jpg)
 
-- [load database](jpg/A03-加载数据库实例.jpg)
+- [load database](jpg/A03-loadDatabase.jpg)
 
-- [unload database](jpg/A04-卸载数据库实例.jpg)
+- [unload database](jpg/A04-unloadDatabase.jpg)
 
-- [create database](jpg/A05-创建数据库实例.jpg)
+- [create database](jpg/A05-buildDatabase.jpg)
 
-- [delete database](jpg/A06-删除数据库实例.jpg)
+- [delete database](jpg/A06-deleteDatabase.jpg)
 
-- [connect to database](jpg/A07-连接数据库实例.jpg)
+- [connect to database](jpg/A07-connectDatabase.jpg)
 
-- [disconnect database](jpg/A08-断开与数据库实例的连接.jpg)
+- [disconnect database](jpg/A08-disconnectDatabase.jpg)
 
-- [show databases](jpg/A09-查看数据库实例列表.jpg)
+- [show databases](jpg/A09-showDatabase.jpg)
 
-- [SPARQL query](jpg/A10-查询SPARQL.jpg)
+- [SPARQL query](jpg/A10-querySPARQL.jpg)
 
-- [import RDF dataset](jpg/A11-导入RDF数据集.jpg)
+- [import RDF dataset](jpg/A11-loadRDF.jpg)
 
-- [insert a triple](jpg/A12-插入一条RDF三元组数据.jpg)
+- [insert a triple](jpg/A12-insertRDF.jpg)
 
-- [delete a triple](jpg/A13-删除一条RDF三元组数据.jpg)
+- [delete a triple](jpg/A13-deleteRDF.jpg)
 
-- [create account](jpg/B01-创建账户.jpg)
+- [create account](jpg/B01-createAccount.jpg)
 
-- [delete account](jpg/B02-删除账户.jpg)
+- [delete account](jpg/B02-deleteAccount.jpg)
 
-- [modify account authority](jpg/B03-修改账户权限.jpg)
+- [modify account authority](jpg/B03-changeAccount.jpg)
 
-- [compulsively unload database](jpg/B04-强制卸载数据库实例.jpg)
+- [compulsively unload database](jpg/B04-removeDatabase.jpg)
 
-- [see account authority](jpg/B05-查看账户权限信息.jpg)
+- [see account authority](jpg/B05-showAccount.jpg)
 
 It is really not strange to see something different with the original design in the source code. And some designed functions may have not be achieved so far.
 
