@@ -59,14 +59,14 @@ COMMAND native_commands[] = {
     { "unload", unload_handler, "Unload the current used database" },
     { "query", query_handler, "Answer a SPARQL query" },
 
-    { "cd", cd_handler, "Change to directory DIR" },
-    { "delete", delete_handler, "Delete FILE" },
-    { "list", list_handler, "List files in DIR" },
-    { "ls", list_handler, "Synonym for `list'" },
-    { "pwd", pwd_handler, "Print the current working directory" },
-    { "rename", rename_handler, "Rename FILE to NEWNAME" },
-    { "stat", stat_handler, "Print out statistics on FILE" },
-    { "view", view_handler, "View the contents of FILE" },
+    //{ "cd", cd_handler, "Change to directory DIR" },
+    //{ "delete", delete_handler, "Delete FILE" },
+    //{ "list", list_handler, "List files in DIR" },
+    //{ "ls", list_handler, "Synonym for `list'" },
+    //{ "pwd", pwd_handler, "Print the current working directory" },
+    //{ "rename", rename_handler, "Rename FILE to NEWNAME" },
+    //{ "stat", stat_handler, "Print out statistics on FILE" },
+    //{ "view", view_handler, "View the contents of FILE" },
 
     {NULL, NULL, NULL }
     //char* rl_icpfunc_t*, char*
