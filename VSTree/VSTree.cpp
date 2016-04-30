@@ -1117,7 +1117,7 @@ void VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_l
                 }
             }
         }
-		cerr << "child num: " << childNum << "   valid num: " << valid << endl;
+		//cerr << "child num: " << childNum << "   valid num: " << valid << endl;
     }
     Util::logging("OUT retrieveEntity");
 }

@@ -14,8 +14,8 @@ CC = g++
 #NOTICE: -O2 is recommended, while -O3 is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -g -Wall -O2
-EXEFLAG = -g -O2
+CFLAGS = -c -Wall -O2
+EXEFLAG = -O2
 
 # paths
 
@@ -61,6 +61,9 @@ library = -ltermcap -lreadline -L./lib -lantlr
 
 #gtest
 all: $(exedir)gload $(exedir)gserver $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java)
+
+test_index:
+	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library)
 
 #executables begin
 
