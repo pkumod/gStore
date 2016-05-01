@@ -1,29 +1,31 @@
 # People
 
-**Li Zeng and Jiaqi Chen are responsible for the gStore now.**
+**Please contact with Lei Zou(zoulei@pku.edu.cn), Li Zeng(zengli-bookug@pku.edu.cn), Jiaqi Chen(chenjiaqi93@pku.edu.cn) and Peng Peng(pku09pp@pku.edu.cn) if you have suggestions or comments about gStore or you need help when using gStore.**
 
 ## Faculty
 
-- Lei Zou (Peking University) email:zoulei@pku.edu.cn
+- Lei Zou (Peking University) 
 
 - M. Tamer Özsu (University of Waterloo) 
 
 - Lei Chen (Hong Kong University of Science and Technology)
 
-- Dongyan Zhao (Peking Univeristy) email:zhaodongyan@pku.edu.cn
+- Dongyan Zhao (Peking Univeristy) 
 	
 - - -
 
 ## Students
+
+- Peng Peng (Peking Univeristy) (PhD student)
 	
-- Youhuan Li (Peking University) (PhD student) email:liyouhuan@pku.edu.cn
+- Youhuan Li (Peking University) (PhD student)
 
-- Shuo Han (Peking University) (PhD student) email:hanshuo@pku.edu.cn
+- Shuo Han (Peking University) (PhD student) 
 
-- Xuchuan Shen (Peking University) (Master's student, graduated) email:shenxuchuan@pku.edu.cn
+- Li Zeng (Peking University) (Master student) 
 
-- Dong Wang (Peking University) (PhD student, graduated) email:wangdong@pku.edu.cn
-	
+- Jiaqi Chen (Peking University) (Master student)
+
 - - -
 
 ## Alumni
@@ -32,7 +34,7 @@
 
 - Jinhui Mo (Peking University) (Master's, graduated)
 
-- Li Zeng (Peking University) (Undergraudate intern) email:zengli-bookug@pku.edu.cn
+- Xuchuan Shen (Peking University) (Master's student, graduated) 
 
-- Jiaqi Chen (Peking University) (Undergraudate intern) email:chenjiaqi93@163.com
-
+- Dong Wang (Peking University) (PhD student, graduated) 
+	
