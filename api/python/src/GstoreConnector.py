@@ -13,7 +13,7 @@ class GstoreConnector:
             self._sock.connect((self.ip, self.port))  
             return True
         except Exception, e:
-            print 'socket disconnection error. @GstoreConnector.disconnect'
+            print 'socket connection error. @GstoreConnector.connect'
             traceback.print_exc()
         return False
 
