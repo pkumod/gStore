@@ -104,7 +104,6 @@ Database::load()
     }
 
     (this->kvstore)->open();
-    cout << "finish load" << endl;
 
     return true;
 }
@@ -142,17 +141,17 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
     //_parser.sparqlParser(_query, _sparql_q);
 
     long tv_parse = Util::get_cur_time();
-    cout << "after Parsing, used " << (tv_parse - tv_begin) << endl;
+    //cout << "after Parsing, used " << (tv_parse - tv_begin) << endl;
     //cout << "after Parsing..." << endl << _sparql_q.triple_str() << endl;
 
 	general_evaluation.getSPARQLQuery().encodeQuery(this->kvstore, general_evaluation.getSPARQLQueryVarset());
     //_sparql_q.encodeQuery(this->kvstore);
 
     //cout << "sparqlSTR:\t" << _sparql_q.to_str() << endl;
-	cout << "sparqlSTR:\t" << general_evaluation.getSPARQLQuery().to_str() << endl;
+	//cout << "sparqlSTR:\t" << general_evaluation.getSPARQLQuery().to_str() << endl;
 
     long tv_encode = Util::get_cur_time();
-    cout << "after Encode, used " << (tv_encode - tv_parse) << "ms." << endl;
+    //cout << "after Encode, used " << (tv_encode - tv_parse) << "ms." << endl;
 
     //_result_set.select_var_num = _sparql_q.getQueryVarNum();
 
@@ -160,7 +159,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	(this->vstree)->retrieve(general_evaluation.getSPARQLQuery());
 
     long tv_retrieve = Util::get_cur_time();
-    cout << "after Retrieve, used " << (tv_retrieve - tv_encode) << "ms." << endl;
+    //cout << "after Retrieve, used " << (tv_retrieve - tv_encode) << "ms." << endl;
 
 	this->join = new Join(kvstore);
     //this->join->join(_sparql_q);
@@ -168,7 +167,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	delete this->join;
 
     long tv_join = Util::get_cur_time();
-    cout << "after Join, used " << (tv_join - tv_retrieve) << "ms." << endl;
+    //cout << "after Join, used " << (tv_join - tv_retrieve) << "ms." << endl;
 
 	general_evaluation.generateEvaluationPlan(general_evaluation.getQueryTree().getPatternGroup());
 	general_evaluation.doEvaluationPlan();
@@ -176,9 +175,8 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
     //this->getFinalResult(_sparql_q, _result_set);
 
     long tv_final = Util::get_cur_time();
-    cout << "after finalResult, used " << (tv_final - tv_join) << "ms." << endl;
+    //cout << "after finalResult, used " << (tv_final - tv_join) << "ms." << endl;
 
-    cout << "Total time used: " << (tv_final - tv_begin) << "ms." << endl;
 
     //testing...
     cout << "final result is : " << endl;
@@ -194,6 +192,14 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 #ifdef DEBUG_PRECISE
 	fprintf(stderr, "the query function exits!\n");
 #endif
+    cout << "Total time used: " << (tv_final - tv_begin) << "ms." << endl;
+	SPARQLquery& _sparql_query = general_evaluation.getSPARQLQuery();
+    int basic_query_num = _sparql_query.getBasicQueryNum();
+    //join each basic query
+    for(int i=0; i < basic_query_num; i++)
+    {
+        cout<<"Final result size: "<<_sparql_query.getBasicQuery(i).getResultList().size()<<endl;
+    }
     return true;
 }
 
@@ -207,7 +213,6 @@ Database::insert(const string& _insert_rdf_file)
     {
         return false;
     }
-    cout << "finish loading" << endl;
 
     long tv_load = Util::get_cur_time();
 

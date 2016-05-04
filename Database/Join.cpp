@@ -122,23 +122,23 @@ Join::join_sparql(SPARQLquery& _sparql_query)
     //join each basic query
     for(int i=0; i < basic_query_num; i++)
     {
-        printf("Basic query %d\n", i);
+        //printf("Basic query %d\n", i);
         this->init(&(_sparql_query.getBasicQuery(i)));
         long begin = Util::get_cur_time();
         this->filter_before_join();
         long after_filter = Util::get_cur_time();
-        printf("after filter_before_join: used %ld ms\n", after_filter-begin);
+        //printf("after filter_before_join: used %ld ms\n", after_filter-begin);
         this->add_literal_candidate();
         long after_add_literal = Util::get_cur_time();
-        printf("after add_literal_candidate: used %ld ms\n", after_add_literal-after_filter);
+        //printf("after add_literal_candidate: used %ld ms\n", after_add_literal-after_filter);
         this->join();
         long after_joinbasic = Util::get_cur_time();
-        printf("after join_basic : used %ld ms\n", after_joinbasic-after_add_literal);
+        //printf("after join_basic : used %ld ms\n", after_joinbasic-after_add_literal);
         //this->only_pre_filter_after_join(this->basic_query);
         //long after_pre_filter_after_join = Util::get_cur_time();
         //printf("after only_pre_filter_after_join : used %ld ms\n", after_pre_filter_after_join-after_joinbasic);
 
-        printf("Final result size: %lu\n", this->basic_query->getResultList().size());
+        //printf("Final result size: %lu\n", this->basic_query->getResultList().size());
 		this->clear();
     }
 
@@ -160,15 +160,12 @@ Join::join()
 	switch(method)
 	{
 	case 0:
-		printf("use multi-join here!\n");
 		this->multi_join();
 		break;
 	case 1:
-		printf("use index-join here!\n");
 		this->index_join();
 		break;
 	default:
-		printf("ERROR: no method found!\n");
 		break;
 	}
 
@@ -591,22 +588,18 @@ Join::multi_join()
 	//and then visit eles below top in stack is not ok, 
 	//so choose STL stack
 	this->mystack.push(this->start_id);
-	printf("now to start the stack loop\n");
 	while(!this->mystack.empty())
 	{
 		int id = this->mystack.top();
-		printf("the current id: %d\n", id);
 		//int id = mystack[top];
 		int maxi = this->choose_next_node(dealed_triple, id);
 		if(maxi == -1) //all edges of this node are dealed
 		{
-			printf("the node is totally dealed: %d\n", id);
 			//top--;
 			this->mystack.pop();
 			continue;	
 		}
 		int id2 = this->basic_query->getEdgeNeighborID(id, maxi);
-		printf("the next node id to join: %d\n", id2);
 
 		//pre_id == -1 means we cannot find such predicate in rdf file, so the result set of this sparql should be empty.
 		//note that we cannot support to query sparqls with predicate variables ?p.
@@ -648,10 +641,6 @@ Join::multi_join()
 		//the can_list of var representing literals is not valid,
 		//must use kvstore->get...() to join
 		bool is_literal = this->is_literal_var(id2);
-		if(is_literal)
-			printf("this var may contain literals: %d\n", id2);
-		else
-			printf("this var not contain literals: %d\n", id2);
 
 		bool flag = false;
 		bool if_prepare = this->if_prepare_idlist(can_list_size, is_literal);
@@ -661,7 +650,6 @@ Join::multi_join()
 		//needed if place can_list in the outer loop to join
 		if(if_prepare)
 		{
-			printf("this edge uses prepared-join way\n");
 			this->acquire_all_id_lists(id_lists, id_lists_len, can_list, edges, dealed_triple, id2, can_list_size);
 			flag = this->new_join_with_multi_vars_prepared(id_lists, id_lists_len, edges, can_list, can_list_size);
 			//need to release id_lists if using acquire_all_id_lists() firstly
@@ -675,14 +663,12 @@ Join::multi_join()
 		}
 		else
 		{
-			printf("this edge uses not-prepared-join way\n");
 			flag = this->new_join_with_multi_vars_not_prepared(edges, can_list, can_list_size, id2, is_literal);
 		}
 
 		//if current_table is empty, ends directly
 		if(!flag)
 		{
-			printf("the result is already empty!!\n");
 			//break;
 			return; //to avoid later invalid copy 
 		}
@@ -701,9 +687,7 @@ Join::multi_join()
 		this->add_id_pos_mapping(id2);
 		this->mystack.push(id2);
 	}	
-	printf("now end the stack loop\n");
 
-	printf("now to filter through only_pre_filter_after_join\n");
 	this->only_pre_filter_after_join();
 
 	//copy to result list, adjust the vars order
@@ -772,24 +756,24 @@ Join::index_join()
 void
 Join::filter_before_join()
 {
-    printf("*****IIIIIIN filter_before_join\n");
+    //printf("*****IIIIIIN filter_before_join\n");
 
     for(int i = 0; i < this->var_num; i++)
     {
-        printf("\tVar%d %s\n", i, this->basic_query->getVarName(i).c_str());
+        //printf("\tVar%d %s\n", i, this->basic_query->getVarName(i).c_str());
         IDList &can_list = this->basic_query->getCandidateList(i);
-        printf("\t\tsize of canlist before filter: %d\n", can_list.size());
+        //printf("\t\tsize of canlist before filter: %d\n", can_list.size());
         //NOTICE:must sort before using binary search.
         can_list.sort();
 
         long begin = Util::get_cur_time();
         this->literal_edge_filter(i);
         long after_literal_edge_filter = Util::get_cur_time();
-        printf("\t\tliteral_edge_filter: used %ld ms\n", after_literal_edge_filter-begin);
+        //printf("\t\tliteral_edge_filter: used %ld ms\n", after_literal_edge_filter-begin);
 //		this->preid_filter(this->basic_query, i);
 //		long after_preid_filter = Util::get_cur_time();
 //		cout << "\t\tafter_preid_filter: used " << (after_preid_filter-after_literal_edge_filter) << " ms" << endl;
-        printf("\t\t[%d] after filter, candidate size = %d\n\n\n", i, can_list.size());
+        //printf("\t\t[%d] after filter, candidate size = %d\n\n\n", i, can_list.size());
 
         //debug
 //		{
@@ -804,7 +788,7 @@ Join::filter_before_join()
 //			cout << can_list.to_str() << endl;
 //		}
     }
-    printf("OOOOOOUT filter_before_join\n");
+    //printf("OOOOOOUT filter_before_join\n");
 }
 
 //decrease the candidates of _var_i using its constant neighbors
@@ -817,7 +801,6 @@ Join::literal_edge_filter(int _var_i)
     for(int j = 0; j < var_degree; j ++)
     {
         int neighbor_id = this->basic_query->getEdgeNeighborID(_var_i, j);
-        printf("\t\t\tneighbor_id=%d\n", neighbor_id);
         if(neighbor_id != -1)   //variables in join not considered here
         {
             continue;
@@ -945,7 +928,6 @@ Join::preid_filter(int _var_i)
     {
         int neighbor_id = this->basic_query->getEdgeNeighborID(_var_i, j);
         //	continue;
-        cout << "\t\t\tneighbor_id=" << neighbor_id << endl;
         if (neighbor_id != -1)
         {
             continue;

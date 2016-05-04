@@ -53,8 +53,6 @@ int QueryParser::printNode(pANTLR3_BASE_TREE node, int dep)
 	int hasErrorNode = 0;
 	if (treeType == 0)	hasErrorNode = 1;
 
-	for (int i=0; i < dep; i++)		printf("    ");
-	printf("%d: %s\n",treeType,s);
 
 	for (unsigned int i = 0; i < node->getChildCount(node); i++)
 	{
@@ -67,7 +65,6 @@ int QueryParser::printNode(pANTLR3_BASE_TREE node, int dep)
 
 void QueryParser::parseTree(pANTLR3_BASE_TREE node, QueryTree& querytree)
 {
-	printf("parseTree\n");
 
 	for (unsigned int i = 0; i < node->getChildCount(node); i++)
 	{
@@ -140,7 +137,6 @@ void QueryParser::parseTree(pANTLR3_BASE_TREE node, QueryTree& querytree)
 }
 void QueryParser::parsePrologue(pANTLR3_BASE_TREE node)
 {
-	printf("parsePrologue\n");
 
 	for (unsigned int i = 0; i < node->getChildCount(node); i++)
 	{
@@ -153,7 +149,6 @@ void QueryParser::parsePrologue(pANTLR3_BASE_TREE node)
 }
 void QueryParser::parsePrefix(pANTLR3_BASE_TREE node)
 {
-	printf("parsePrefix\n");
 
 	string key;
 	string value;
@@ -183,11 +178,9 @@ void QueryParser::replacePrefix(string& str)
 		//blank node
 		if (prefix == "_:")	return;
 
-		cout << "prefix: " << prefix << endl;
 		if (_prefix_map.find(prefix) != _prefix_map.end())
 		{
 			str=_prefix_map[prefix].substr(0, _prefix_map[prefix].length() - 1) + str.substr(sep + 1 ,str.length() - sep - 1) + ">";
-			cout << "str: " << str << endl;
 		}
 		else
 		{
@@ -199,7 +192,6 @@ void QueryParser::replacePrefix(string& str)
 
 void QueryParser::parseSelectClause(pANTLR3_BASE_TREE node, QueryTree& querytree)
 {
-	printf("parseSelectClause\n");
 
 	for (unsigned int i = 0; i < node->getChildCount(node); i++)
 	{
@@ -221,7 +213,6 @@ void QueryParser::parseSelectClause(pANTLR3_BASE_TREE node, QueryTree& querytree
 
 void QueryParser::parseSelectVar(pANTLR3_BASE_TREE node, QueryTree& querytree)
 {
-	printf("parseSelectVar\n");
 
 	string var = "";
 	for (unsigned int i = 0; i < node->getChildCount(node); i++)
@@ -238,7 +229,6 @@ void QueryParser::parseSelectVar(pANTLR3_BASE_TREE node, QueryTree& querytree)
 
 void QueryParser::parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::PatternGroup& patterngroup)
 {
-	printf("parseGroupPattern\n");
 
 	for (unsigned int i = 0; i < node->getChildCount(node); i++)
 	{
@@ -280,7 +270,6 @@ void QueryParser::parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::PatternGr
 
 void QueryParser::parsePattern(pANTLR3_BASE_TREE node, QueryTree::PatternGroup& patterngroup)
 {
-	printf("parsePattern\n");
 
 	string subject = "";
 	string predicate = "";
@@ -516,7 +505,6 @@ void QueryParser::parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::PatternGrou
 
 void QueryParser::parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::FilterTree& filter, unsigned int begin)
 {
-	printf("parseVarInExpressionList\n");
 
 	for (unsigned int i = begin; i < node->getChildCount(node); i++)
 	{
@@ -551,7 +539,6 @@ void QueryParser::parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::Fi
 
 void QueryParser::parseExistsGroupPattern(pANTLR3_BASE_TREE node, QueryTree::PatternGroup& patterngroup, QueryTree::FilterTree& filter)
 {
-	printf("parseExistsGroupPattern\n");
 
 	pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node, 0);
 
@@ -653,86 +640,10 @@ void QueryParser::parseString(pANTLR3_BASE_TREE node, string& str, int dep)
 
 void QueryParser::printQuery(QueryTree& querytree)
 {
-	printf("===========================================================================\n");
-
-	if (querytree.getQueryForm() == QueryTree::Select_Query)
-	{
-		printf("select");
-		if (querytree.getProjectionModifier() == QueryTree::Modifier_Distinct)
-			printf(" distinct");
-		printf("\n");
-
-		printf("var is : \t");
-		vector <string> &varvec = querytree.getProjection().varset;
-		for (int i = 0; i < (int)varvec.size(); i++)
-			printf("%s\t", varvec[i].c_str());
-		if (querytree.checkProjectionAsterisk())
-			printf("*");
-		printf("\n");
-	}
-	else printf("ask\n");
-
-	printPatternGroup(querytree.getPatternGroup(), 0);
-
-	if ((int)querytree.getOrder().size() > 0)
-	{
-		printf("order by : \t");
-
-		vector<QueryTree::Order>&order = querytree.getOrder();
-		for (int i = 0; i < (int)order.size(); i++)
-		{
-			if (!order[i].descending)	printf("ASC(");
-			else printf("DESC(");
-			printf("%s)  ", order[i].var.c_str());
-		}
-		printf("\n");
-	}
-	if (querytree.getOffset() != 0)
-		printf("offset : %d\n", querytree.getOffset());
-	if (querytree.getLimit() != -1)
-		printf("limit : %d\n", querytree.getLimit());
-	printf("===========================================================================\n");
 }
 
 void QueryParser::printPatternGroup(QueryTree::PatternGroup &patterngroup, int dep)
 {
-	for (int j = 0; j < dep; j++)	printf("\t");	printf("{\n");
-	for (int j = 0; j < dep; j++)	printf("\t");	printf("pattern:\n");
-	for(int i = 0; i < (int)patterngroup.patterns.size(); i++)
-	{
-		for (int j = 0; j < dep; j++)	printf("\t");
-		printf("\t%s\t%s\t%s\n", patterngroup.patterns[i].subject.value.c_str(), patterngroup.patterns[i].predicate.value.c_str(), patterngroup.patterns[i].object.value.c_str());
-	}
-
-	for (int i = 0; i < (int)patterngroup.unions.size(); i++)
-	{
-		for (int j = 0; j < dep; j++)	printf("\t");	printf("union %d:\n", i);
-		for (int j = 0; j < (int)patterngroup.unions[i].size(); j++)
-			printPatternGroup(patterngroup.unions[i][j], dep + 1);
-	}
-
-	if ((int)patterngroup.optionals.size() > 0)
-	{
-		for (int j = 0; j < dep; j++)	printf("\t");		printf("optional:\n");
-		for (int i = 0; i < (int)patterngroup.optionals.size(); i++)
-		{
-			printf("\tlast pattern id = %d\tlast union id = %d\n", patterngroup.optionals[i].lastpattern, patterngroup.optionals[i].lastunions);
-			printPatternGroup(patterngroup.optionals[i].patterngroup, dep + 1);
-		}
-	}
-
-	if ((int)patterngroup.filters.size() > 0)
-	{
-		for (int j = 0; j < dep; j++)	printf("\t");		printf("filter:\n");
-		for (int i = 0; i < (int)patterngroup.filters.size(); i++)
-		{
-			for (int j = 0; j <= dep; j++)	printf("\t");
-			printFilter(patterngroup.filter_exists_patterngroups[i], patterngroup.filters[i], dep + 1);
-			printf("\n");
-		}
-	}
-
-	for (int j = 0; j < dep; j++)	printf("\t");		printf("}\n");
 }
 
 void QueryParser::printFilter(std::vector<QueryTree::PatternGroup> &exist_patterngroups, QueryTree::FilterTree &filter, int dep)

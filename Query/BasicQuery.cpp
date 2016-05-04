@@ -283,13 +283,13 @@ BasicQuery::updateObjSig(int _obj_id, int _pre_id, int _sub_id, string _sub,int 
     bool sub_is_str = (_sub_id == -1) && (_sub.at(0) != '?');
     if(sub_is_str)
     {
-        cout << "str2entity" << endl;
+        //////cout << "str2entity" << endl;
         Signature::encodeStr2Entity(_sub.c_str(), this->var_sig[_obj_id]);
     }
 
     if(_pre_id != -1)
     {
-        cout << "pre2entity" << endl;
+        //////cout << "pre2entity" << endl;
         Signature::encodePredicate2Entity(_pre_id, this->var_sig[_obj_id], BasicQuery::EDGE_IN);
     }
 
@@ -307,9 +307,9 @@ BasicQuery::updateObjSig(int _obj_id, int _pre_id, int _sub_id, string _sub,int 
 void 
 BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_var)
 {
-    cout << "IN buildBasicSignature" << endl;
+    //////cout << "IN buildBasicSignature" << endl;
     this->initial();
-    cout << "after init" << endl;
+    //////cout << "after init" << endl;
 
     this->buildTuple2Freq();
 
@@ -330,12 +330,12 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         this->var_name[i] = _var;
     }
 
-    cout << "select variables: ";
+    //////cout << "select variables: ";
     for(unsigned i = 0; i < this->var_str2id.size(); ++i)
     {
-        cout << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
+        //////cout << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
     }
-    cout << endl;
+    //////cout << endl;
 
     if(this->encode_method == BasicQuery::SELECT_VAR)
     {
@@ -348,13 +348,13 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
     // assign the this->var_num, all need to join
     this->graph_var_num = this->var_str2id.size();
 
-    cout<< "graph variables: ";
+    ////cout<< "graph variables: ";
     for(unsigned i = 0; i < this->var_str2id.size(); i ++)
     {
-        cout << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
+        ////cout << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
     }
-    cout << endl;
-	cout << "before new IDList!" << endl;	//just for debug
+    ////cout << endl;
+	////cout << "before new IDList!" << endl;	//just for debug
 
     this->candidate_list = new IDList[this->graph_var_num];
 
@@ -423,14 +423,14 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         {
             if(pre_id != -1)
             {
-                cout << "pre2edge" << endl;
+                ////cout << "pre2edge" << endl;
                 Signature::encodePredicate2Edge(pre_id, this->edge_sig[sub_id][obj_id]);
 //              this->edge_pre_id[sub_id][obj_id] = pre_id;
             }
         }
 
     }
-    cout << "OUT encodeBasicQuery" << endl;
+    ////cout << "OUT encodeBasicQuery" << endl;
 }
 
 

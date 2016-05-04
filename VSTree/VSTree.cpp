@@ -438,7 +438,6 @@ bool VSTree::saveTree()
 
 bool VSTree::loadTree()
 {
-	cout << "loadTree..." << endl;
 	(this->node_buffer) = new LRUCache(LRUCache::DEFAULT_CAPACITY);
 
     bool flag = this->loadTreeInfo();
@@ -452,13 +451,11 @@ bool VSTree::loadTree()
     if (flag)
     {
         this->node_buffer->loadCache(VSTree::tree_node_file_path);
-        cout << "finish loadCache" << endl;
     }
 
     if (flag)
     {
         flag = loadEntityID2FileLineMap();
-        cout << "finish loadEntityID2FileLineMap" << endl;
     }
 
     return flag;

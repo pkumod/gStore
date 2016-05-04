@@ -632,12 +632,12 @@ void GeneralEvaluation::TempResult::print()
 
 	this->var.print();
 
-	printf("temp result:\n");
+	//printf("temp result:\n");
 	for (int i = 0; i < (int)this->res.size(); i++)
 	{
 		for (int j = 0; j < varnum; j++)
 			printf("%d ", this->res[i][j]);
-		printf("\n");
+		//printf("\n");
 	}
 }
 
@@ -802,10 +802,10 @@ void GeneralEvaluation::TempResultSet::doFilter(QueryTree::FilterTree& filter, F
 
 void GeneralEvaluation::TempResultSet::print()
 {
-	printf("total temp result : %d\n", (int)this->results.size());
+	//printf("total temp result : %d\n", (int)this->results.size());
 	for (int i = 0; i < (int)this->results.size(); i++)
 	{
-		printf("temp result no.%d\n", i);
+		//printf("temp result no.%d\n", i);
 		this->results[i].print();
 	}
 }

@@ -1053,7 +1053,6 @@ void KVstore::flush(){
 
 void KVstore::open()
 {
-	cout << "open KVstore" << endl;
 
 	this->open(this->entity2id, KVstore::s_entity2id, KVstore::READ_WRITE_MODE);
 	this->open(this->id2entity, KVstore::s_id2entity, KVstore::READ_WRITE_MODE);

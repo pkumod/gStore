@@ -23,12 +23,6 @@ main(int argc, char * argv[])
 #endif
 	//system("clock");
 	cout << "gload..." << endl;
-	{
-		cout << "argc: " << argc << "\t";
-		cout << "DB_store:" << argv[1] << "\t";
-		cout << "RDF_data: " << argv[2] << "\t";
-		cout << endl;
-	}
 
 	string _db_path = string(argv[1]);
 	string _rdf = string(argv[2]);
