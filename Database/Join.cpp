@@ -1164,6 +1164,7 @@ Join::add_literal_candidate()
         int var_degree = this->basic_query->getVarDegree(var_id);
         IDList literal_candidate_list;
 
+		bool flag = false;
         // intersect each edge's literal candidate.
         for(int j = 0; j < var_degree; j ++)
         {
@@ -1193,7 +1194,7 @@ Join::add_literal_candidate()
             // which has one corresponding predicate edge linking to this variable.
             else
             {
-
+				continue;
                 /*
                 IDList& neighbor_candidate_list = this->basic_query->getCandidateList(neighbor_id);
                 int neighbor_candidate_list_size = neighbor_candidate_list.size();
@@ -1211,8 +1212,9 @@ Join::add_literal_candidate()
             }
 
 
-            if(j == 0)
+            if(!flag)
             {
+				flag = true;
                 literal_candidate_list.unionList(this_edge_literal_list);
             }
             else
@@ -1231,10 +1233,10 @@ Join::add_literal_candidate()
         this->basic_query->setAddedLiteralCandidate(var_id);
 
         //debug
-        {
-            stringstream _ss;
-            _ss << "var[" << var_id << "] candidate list after add literal:\t"
-                << origin_candidate_list_len << "-->" << after_add_literal_candidate_list_len << endl;
+        //{
+            //stringstream _ss;
+            //_ss << "var[" << var_id << "] candidate list after add literal:\t"
+                //<< origin_candidate_list_len << "-->" << after_add_literal_candidate_list_len << endl;
             /*
             for (int i = 0; i < after_add_literal_candidate_list_len; i ++)
             {
@@ -1252,7 +1254,7 @@ Join::add_literal_candidate()
             }
             */
             //Util::logging(_ss.str());
-        }
+        //}
     }
     //Util::logging("OUT add_literal_candidate");
 }
