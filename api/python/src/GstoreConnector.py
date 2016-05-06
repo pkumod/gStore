@@ -35,15 +35,15 @@ class GstoreConnector:
         head = self._sock.recv(4)
         context_len = 0
         for i in range(4):
-            context_len |= (ord(head[i]) << i * 8)
+            context_len |= (ord(head[i]) & 0xFF) << i * 8
 
-        data = bytearray(context_len)
+        data = bytearray()
         recv_len = 0
         while recv_len < context_len:
-            chunk = self._sock.recv(1024)
+            chunk = self._sock.recv(context_len - recv_len)
             data.extend(chunk)
             recv_len += len(chunk)
-        return str(data)
+        return data.rstrip('\x00').decode('utf-8')
 
     def _pack(self, msg):
         data_context = bytearray()
