@@ -40,7 +40,7 @@ class GstoreConnector:
         data = bytearray()
         recv_len = 0
         while recv_len < context_len:
-            chunk = self._sock.recv(1024)
+            chunk = self._sock.recv(context_len - recv_len)
             data.extend(chunk)
             recv_len += len(chunk)
         return data.rstrip('\x00').decode('utf-8')
