@@ -7,7 +7,6 @@
 =============================================================================*/
 
 #include "KVstore.h"
-#include "../Database/Database.h"
 
 using namespace std;
 
@@ -39,7 +38,7 @@ KVstore::getEntityOutDegree(int _entity_id)
 }
 
 
-/* there are two situation when we need to update tuples list: s2o o2s sp2o op2s s2po o2ps
+/* there are two situation when we need to update tuples list: s2o o2s sp2o op2s s2po o2ps s2p p2s o2p p2o so2p p2so
  * 1. insert triple(finished in this function)
  * 2. remove triple
  * before call this function, we were sure that this triple did not exist
@@ -47,26 +46,25 @@ KVstore::getEntityOutDegree(int _entity_id)
 int 
 KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
 {
-    //debug
-//    {
-//        stringstream _ss;
-//        _ss << "updateTupleslist_insert: " << _sub_id << " " << _pre_id << " " << _obj_id << endl;
-//        Util::logging(_ss.str());
-//    }
+#ifdef DEBUG_PRECISE
+		stringstream _ss;
+		_ss << "updateTupleslist_insert: " << _sub_id << " " << _pre_id << " " << _obj_id << endl;
+		Util::logging(_ss.str());
+#endif
 
-    //debug
     int updateListLen = 0;
 
-    /* update sp2o */
+	 //update sp2o 
     {
         int* _sp2olist = NULL;
         int _sp2o_len = 0;
         this->getobjIDlistBysubIDpreID(_sub_id, _pre_id, _sp2olist, _sp2o_len);
 
-        /* if no duplication, _insert will be true
-         * this->setXXX function will override the previous value */
+         //if no duplication, _insert will be true
+         //this->setXXX function will override the previous value 
         bool _insert = this->insert_x(_sp2olist, _sp2o_len, _obj_id);
-        if(_insert){
+        if(_insert)
+		{
             this->setobjIDlistBysubIDpreID(_sub_id, _pre_id, _sp2olist, _sp2o_len);
         }
 
@@ -78,17 +76,16 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
 
     }
 
-    //debug
 //  Util::logging("update sp2o done.");
 
-    /* update op2s */
+	 //update op2s 
     {
         int* _op2slist = NULL;
         int _op2s_len = 0;
         this->getsubIDlistByobjIDpreID(_obj_id, _pre_id, _op2slist, _op2s_len);
 
-        /* if no duplication, _insert will be true
-         * this->setXXX function will override the previous value */
+         //if no duplication, _insert will be true
+         //this->setXXX function will override the previous value 
         bool _insert = this->insert_x(_op2slist, _op2s_len, _sub_id);
         if(_insert){
             this->setsubIDlistByobjIDpreID(_obj_id, _pre_id, _op2slist, _op2s_len);
@@ -101,17 +98,16 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
         _op2s_len = 0;
     }
 
-    //debug
 //  Util::logging("update op2s done.");
 
-    /* update s2po */
+	 //update s2po 
     {
         int* _s2polist = NULL;
         int _s2po_len = 0;
         this->getpreIDobjIDlistBysubID(_sub_id, _s2polist, _s2po_len);
 
-        /* if no duplication, _insert will be true
-         * this->setXXX function will override the previous value */
+         //if no duplication, _insert will be true
+         //this->setXXX function will override the previous value 
         bool _insert = this->insert_xy(_s2polist, _s2po_len, _pre_id, _obj_id);
         if(_insert){
             this->setpreIDobjIDlistBysubID(_sub_id, _s2polist, _s2po_len);
@@ -124,19 +120,19 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
         _s2po_len = 0;
     }
 
-    //debug
 //  Util::logging("update s2po done.");
 
-    /* update o2ps */
+	 //update o2ps 
     {
         int* _o2pslist = NULL;
         int _o2ps_len = 0;
         this->getpreIDsubIDlistByobjID(_obj_id, _o2pslist, _o2ps_len);
 
-        /* if no duplication, _insert will be true
-         * this->setXXX function will override the previous value */
+         //if no duplication, _insert will be true
+         //this->setXXX function will override the previous value 
         bool _insert = this->insert_xy(_o2pslist, _o2ps_len, _pre_id, _sub_id);
-        if(_insert){
+        if(_insert)
+		{
             this->setpreIDsubIDlistByobjID(_obj_id, _o2pslist, _o2ps_len);
         }
 
@@ -147,18 +143,18 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
         _o2ps_len = 0;
     }
 
-    //debug
 //  Util::logging("update o2ps done.");
 
-    /* update s2o */
+	 //update s2o 
     {
         int* _s2olist = NULL;
         int _s2o_len = 0;
         this->getobjIDlistBysubID(_sub_id, _s2olist, _s2o_len);
-        /* if no duplication, _insert will be true
-         * this->setXXX function will override the previous value */
+         //if no duplication, _insert will be true
+         //this->setXXX function will override the previous value 
         bool _insert = this->insert_x(_s2olist, _s2o_len, _obj_id);
-        if(_insert){
+        if(_insert)
+		{
             this->setobjIDlistBysubID(_sub_id, _s2olist, _s2o_len);
         }
 
@@ -169,17 +165,16 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
         _s2o_len = 0;
     }
 
-    //debug
 //    Util::logging("update s2o done.");
 
-    /* update o2s */
+	 //update o2s 
     {
         int* _o2slist = NULL;
         int _o2s_len = 0;
         this->getsubIDlistByobjID(_obj_id, _o2slist, _o2s_len);
 
-        /* if no duplication, _insert will be true
-         * this->setXXX function will override the previous value */
+         //if no duplication, _insert will be true
+         //this->setXXX function will override the previous value 
         bool _insert = this->insert_x(_o2slist, _o2s_len, _sub_id);
         if(_insert){
             this->setsubIDlistByobjID(_obj_id, _o2slist, _o2s_len);
@@ -192,19 +187,112 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
         _o2s_len = 0;
     }
 
-    //debug
+	//update s2p
+	{
+        int* _s2plist = NULL;
+        int _s2p_len = 0;
+        this->getpreIDlistBysubID(_sub_id, _s2plist, _s2p_len);
+        bool _insert = this->insert_x(_s2plist, _s2p_len, _pre_id);
+        if(_insert)
+		{
+            this->setpreIDlistBysubID(_sub_id, _s2plist, _s2p_len);
+        }
+        updateListLen += _s2p_len;
+        delete[] _s2plist;
+        _s2plist = NULL;
+        _s2p_len = 0;
+	}
+
+	//update p2s
+	{
+		int* _p2slist = NULL;
+		int _p2s_len = 0;
+		this->getsubIDlistBypreID(_pre_id, _p2slist, _p2s_len);
+		bool _insert = this->insert_x(_p2slist, _p2s_len, _sub_id);
+		if(_insert)
+		{
+			this->setsubIDlistBypreID(_pre_id, _p2slist, _p2s_len);
+		}
+		updateListLen += _p2s_len;
+		delete[] _p2slist;
+		_p2slist = NULL;
+		_p2s_len = 0;
+	}
+
+	//update o2p
+	{
+        int* _o2plist = NULL;
+        int _o2p_len = 0;
+        this->getpreIDlistByobjID(_obj_id, _o2plist, _o2p_len);
+        bool _insert = this->insert_x(_o2plist, _o2p_len, _pre_id);
+        if(_insert)
+		{
+            this->setpreIDlistByobjID(_obj_id, _o2plist, _o2p_len);
+        }
+        updateListLen += _o2p_len;
+        delete[] _o2plist;
+        _o2plist = NULL;
+        _o2p_len = 0;
+	}
+
+	//update p2o
+	{
+		int* _p2olist = NULL;
+		int _p2o_len = 0;
+		this->getobjIDlistBypreID(_pre_id, _p2olist, _p2o_len);
+		bool _insert = this->insert_x(_p2olist, _p2o_len, _obj_id);
+		if(_insert)
+		{
+			this->setobjIDlistBypreID(_pre_id, _p2olist, _p2o_len);
+		}
+		updateListLen += _p2o_len;
+		delete[] _p2olist;
+		_p2olist = NULL;
+		_p2o_len = 0;
+	}
+
+	//update so2p
+	{
+		int* _so2plist = NULL;
+		int _so2p_len = 0;
+		this->getpreIDlistBysubIDobjID(_sub_id, _obj_id, _so2plist, _so2p_len);
+		bool _insert = this->insert_x(_so2plist, _so2p_len, _pre_id);
+		if(_insert)
+		{
+			this->setpreIDlistBysubIDobjID(_sub_id, _obj_id, _so2plist, _so2p_len);
+		}
+		updateListLen += _so2p_len;
+		delete[] _so2plist;
+		_so2plist = NULL;
+		_so2p_len = 0;
+	}
+
+	//update p2so
+	{
+        int* _p2solist = NULL;
+        int _p2so_len = 0;
+        this->getsubIDobjIDlistBypreID(_pre_id, _p2solist, _p2so_len);
+        bool _insert = this->insert_xy(_p2solist, _p2so_len, _sub_id, _obj_id);
+        if(_insert)
+		{
+            this->setsubIDobjIDlistBypreID(_pre_id, _p2solist, _p2so_len);
+        }
+        updateListLen += _p2so_len;
+        delete[] _p2solist;
+        _p2solist = NULL;
+        _p2so_len = 0;
+	}
+
     return updateListLen;
 
-    //debug
 //   Util::logging("update o2s done.");
 }
 
-/* insert <_x_id, _y_id> into _xylist(keep _xylist(<x,y>) in ascending order) */
+ //insert <_x_id, _y_id> into _xylist(keep _xylist(<x,y>) in ascending order) 
 bool 
-KVstore::insert_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
+KVstore::insert_xy(int*& _xylist, int& _list_len, int _x_id, int _y_id)
 {
-
-	/* check duplication */
+	//check duplication 
 	for(int i = 0; i < _list_len; i += 2)
 	{
 		if(_xylist[i] == _x_id &&
@@ -283,12 +371,10 @@ KVstore::insert_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
 	return true;
 }
 
-/* insert _x_id into _xlist(keep _xlist in ascending order) */
+//insert _x_id into _xlist(keep _xlist in ascending order) 
 bool 
 KVstore::insert_x(int*& _xlist, int& _list_len, int _x_id)
 {
-
-
 	/* check duplication */
 	for(int i = 0; i < _list_len; i ++)
 	{
@@ -353,15 +439,15 @@ KVstore::insert_x(int*& _xlist, int& _list_len, int _x_id)
 	}
 	return true;
 }
-/* there are two situation when we need to update tuples list: s2o o2s sp2o op2s s2po o2ps
+/* there are two situation when we need to update tuples list: s2o o2s sp2o op2s s2po o2ps s2p p2s o2p p2o so2p p2so
  * 1. insert triple
  * 2. remove triple(finished in this function)
- * before call this function, we were sure that this triple did not exist
+ * before call this function, we were sure that this triple did exist
  */
 void 
 KVstore::updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id)
 {
-	/* update sp2o */
+	 //update sp2o 
 	{
 		int* _sp2olist = NULL;
 		int _sp2o_len = 0;
@@ -372,7 +458,7 @@ KVstore::updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id)
 			int* _sp = new int[2];
 			_sp[0] = _sub_id;
 			_sp[1] = _pre_id;
-			(this->removeKey(this->subID2preIDobjIDlist, (char*)_sp, sizeof(int)*2 ));
+			this->removeKey(this->subIDpreID2objIDlist, (char*)_sp, sizeof(int)*2 );
 			delete[] _sp;
 		}
 		else
@@ -384,7 +470,7 @@ KVstore::updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id)
 		delete[] _sp2olist;
 	}
 
-	/* update op2s */
+	 //update op2s 
 	{
 		int* _op2slist = NULL;
 		int _op2s_len = 0;
@@ -407,7 +493,7 @@ KVstore::updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id)
 		delete[] _op2slist;
 	}
 
-	/* update s2po */
+	 //update s2po 
 	{
 		int* _s2polist = NULL;
 		int _s2po_len = 0;
@@ -426,7 +512,7 @@ KVstore::updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id)
 		delete[] _s2polist;
 	}
 
-	/* update o2ps */
+	 //update o2ps 
 	{
 		int* _o2pslist = NULL;
 		int _o2ps_len = 0;
@@ -445,7 +531,7 @@ KVstore::updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id)
 		delete[] _o2pslist;
 	}
 
-	/* update s2o */
+	 //update s2o 
 	{
 		int* _s2olist = NULL;
 		int _s2o_len = 0;
@@ -464,7 +550,7 @@ KVstore::updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id)
 		delete[] _s2olist;
 	}
 
-	/* update o2s */
+	 //update o2s 
 	{
 		int* _o2slist = NULL;
 		int _o2s_len = 0;
@@ -483,6 +569,112 @@ KVstore::updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id)
 		delete[] _o2slist;
 	}
 
+	//update s2p
+	{
+		int* _s2plist = NULL;
+		int _s2p_len = 0;
+		this->getpreIDlistBysubID(_sub_id, _s2plist, _s2p_len);
+		bool _remove = this->remove_x(_s2plist, _s2p_len, _pre_id);
+		if(_s2p_len == 0)
+		{
+			this->removeKey(this->subID2preIDlist, (char*)&_sub_id, sizeof(int));
+		}
+		else if(_remove)
+		{
+			this->setpreIDlistBysubID(_sub_id, _s2plist, _s2p_len);
+		}
+		delete[] _s2plist;
+	}
+
+	//update p2s
+	{
+		int* _p2slist = NULL;
+		int _p2s_len = 0;
+		this->getsubIDlistBypreID(_pre_id, _p2slist, _p2s_len);
+		bool _remove = this->remove_x(_p2slist, _p2s_len, _sub_id);
+		if(_p2s_len == 0)
+		{
+			this->removeKey(this->preID2subIDlist, (char*)&_pre_id, sizeof(int));
+		}
+		else if(_remove)
+		{
+			this->setsubIDlistBypreID(_pre_id, _p2slist, _p2s_len);
+		}
+		delete[] _p2slist;
+	}
+
+	//update o2p
+	{
+		int* _o2plist = NULL;
+		int _o2p_len = 0;
+		this->getpreIDlistByobjID(_obj_id, _o2plist, _o2p_len);
+		bool _remove = this->remove_x(_o2plist, _o2p_len, _pre_id);
+		if(_o2p_len == 0)
+		{
+			this->removeKey(this->objID2preIDlist, (char*)&_obj_id, sizeof(int));
+		}
+		else if(_remove)
+		{
+			this->setpreIDlistByobjID(_obj_id, _o2plist, _o2p_len);
+		}
+		delete[] _o2plist;
+	}
+
+	//update p2o
+	{
+		int* _p2olist = NULL;
+		int _p2o_len = 0;
+		this->getobjIDlistBypreID(_pre_id, _p2olist, _p2o_len);
+		bool _remove = this->remove_x(_p2olist, _p2o_len, _obj_id);
+		if(_p2o_len == 0)
+		{
+			this->removeKey(this->preID2objIDlist, (char*)&_pre_id, sizeof(int));
+		}
+		else if(_remove)
+		{
+			this->setobjIDlistBypreID(_pre_id, _p2olist, _p2o_len);
+		}
+		delete[] _p2olist;
+	}
+
+	//update so2p
+	{
+		int* _so2plist = NULL;
+		int _so2p_len = 0;
+		this->getpreIDlistBysubIDobjID(_sub_id, _obj_id, _so2plist, _so2p_len);
+		bool _remove = this->remove_x(_so2plist, _so2p_len, _pre_id);
+		if(_so2p_len == 0)
+		{
+			int* _so = new int[2];
+			_so[0] = _sub_id;
+			_so[1] = _obj_id;
+			this->removeKey(this->subIDobjID2preIDlist, (char*)_so, sizeof(int)*2 );
+			delete[] _so;
+		}
+		else if(_remove)
+		{
+			this->setpreIDlistBysubIDobjID(_sub_id, _obj_id, _so2plist, _so2p_len);
+		}
+		delete[] _so2plist;
+	}
+
+	//update p2so
+	{
+		int* _p2solist = NULL;
+		int _p2so_len = 0;
+		this->getsubIDobjIDlistBypreID(_pre_id, _p2solist, _p2so_len);
+		bool _remove = this->remove_xy(_p2solist, _p2so_len, _sub_id, _obj_id);
+		if(_p2so_len == 0)
+		{
+			this->removeKey(this->preID2subIDobjIDlist, (char*)&_pre_id, sizeof(int));
+		}
+		else if(_remove)
+		{
+			this->setsubIDobjIDlistBypreID(_pre_id, _p2solist, _p2so_len);
+		}
+
+		delete[] _p2solist;
+	}
 }
 
 bool 
@@ -492,7 +684,7 @@ KVstore::remove_x(int*& _xlist, int& _list_len, int _x_id)
 	{
 		if(_xlist[i] == _x_id)
 		{
-			/* move the latter ones backward */
+			 //move the latter ones backward 
 			for(int j = i+1; j < _list_len; j ++)
 			{
 				_xlist[j-1] = _xlist[j];
@@ -513,7 +705,7 @@ KVstore::remove_xy(int*& _xylist, int& _list_len,int _x_id, int _y_id)
 		bool _remove = (_xylist[i] == _x_id) && (_xylist[i+1] == _y_id);
 		if(_remove)
 		{
-			/* move the latter pairs backward */
+			 //move the latter pairs backward 
 			for(int j = i+2; j < _list_len; j += 2)
 			{
 				_xylist[j-2] = _xylist[j];
@@ -726,7 +918,7 @@ bool KVstore::setLiteralByID(const int _id, string _literal){
 /* for subID2objIDlist
  * _mode is either KVstore::CREATE_MODE or KVstore::READ_WRITE_MODE
  * ***/
-bool KVstore::open_subid2objidlist(const int _mode){
+bool KVstore::open_subID2objIDlist(const int _mode){
 	return this->open(this->subID2objIDlist, KVstore::s_sID2oIDlist, _mode);
 }
 bool KVstore::getobjIDlistBysubID(int _subid, int*& _objidlist, int& _list_len){
@@ -758,9 +950,11 @@ bool KVstore::setobjIDlistBysubID(int _subid, const int* _objidlist, int _list_l
 /* for objID2subIDlist
  * _mode is either KVstore::CREATE_MODE or KVstore::READ_WRITE_MODE
  * ***/
-bool KVstore::open_objid2subidlist(const int _mode){
+bool KVstore::open_objID2subIDlist(const int _mode)
+{
 	return this->open(this->objID2subIDlist, KVstore::s_oID2sIDlist, _mode);
 }
+
 bool KVstore::getsubIDlistByobjID(int _objid, int*& _subidlist, int& _list_len){
 	char* _tmp = NULL;
 	int _len = 0;
@@ -782,7 +976,9 @@ bool KVstore::getsubIDlistByobjID(int _objid, int*& _subidlist, int& _list_len){
 
 	return true;
 }
-bool KVstore::setsubIDlistByobjID(int _objid, const int* _subidlist, int _list_len){
+
+bool KVstore::setsubIDlistByobjID(int _objid, const int* _subidlist, int _list_len)
+{
 	return this->setValueByKey
 		(this->objID2subIDlist, (char*)&_objid, sizeof(int),(char*)_subidlist, _list_len * sizeof(int));
 }
@@ -790,7 +986,8 @@ bool KVstore::setsubIDlistByobjID(int _objid, const int* _subidlist, int _list_l
 /* for subID&preID2objIDlist
  * _mode is either KVstore::CREATE_MODE or KVstore::READ_WRITE_MODE
  * ***/
-bool KVstore::open_subIDpreID2objIDlist(const int _mode){
+bool KVstore::open_subIDpreID2objIDlist(const int _mode)
+{
 	return this->open(this->subIDpreID2objIDlist, KVstore::s_sIDpID2oIDlist, _mode);
 }
 
@@ -821,7 +1018,8 @@ bool KVstore::getobjIDlistBysubIDpreID(int _subid, int _preid, int*& _objidlist,
 	return true;
 }
 
-bool KVstore::setobjIDlistBysubIDpreID(int _subid, int _preid, const int* _objidlist, int _list_len){
+bool KVstore::setobjIDlistBysubIDpreID(int _subid, int _preid, const int* _objidlist, int _list_len)
+{
 	int* _sp = new int[2];
 	_sp[0] = _subid;
 	_sp[1] = _preid;
@@ -834,15 +1032,16 @@ bool KVstore::setobjIDlistBysubIDpreID(int _subid, int _preid, const int* _objid
 	return _set;
 }
 
-
 /* for objID&preID2subIDlist
  * _mode is either KVstore::CREATE_MODE or KVstore::READ_WRITE_MODE
  * ***/
-bool KVstore::open_objIDpreID2subIDlist(const int _mode){
+bool KVstore::open_objIDpreID2subIDlist(const int _mode)
+{
 	return this->open(this->objIDpreID2subIDlist, KVstore::s_oIDpID2sIDlist, _mode);
 }
 
-bool KVstore::getsubIDlistByobjIDpreID(int _objid, int _preid, int*& _subidlist, int& _list_len){
+bool KVstore::getsubIDlistByobjIDpreID(int _objid, int _preid, int*& _subidlist, int& _list_len)
+{
 	char* _tmp = NULL;
 	int _len = 0;
 	int* _sp = new int[2];
@@ -870,7 +1069,8 @@ bool KVstore::getsubIDlistByobjIDpreID(int _objid, int _preid, int*& _subidlist,
 	return true;
 }
 
-bool KVstore::setsubIDlistByobjIDpreID(int _objid, int _preid, const int* _subidlist, int _list_len){
+bool KVstore::setsubIDlistByobjIDpreID(int _objid, int _preid, const int* _subidlist, int _list_len)
+{
 	int* _sp=new int[2];
 	_sp[0] = _objid;
 	_sp[1] = _preid;
@@ -882,11 +1082,13 @@ bool KVstore::setsubIDlistByobjIDpreID(int _objid, int _preid, const int* _subid
 
 	return _set;
 }
+
 /* for subID 2 preID&objIDlist */
 bool KVstore::open_subID2preIDobjIDlist(const int _mode)
 {
 	return this->open(this->subID2preIDobjIDlist, KVstore::s_sID2pIDoIDlist, _mode);
 }
+
 bool KVstore::getpreIDobjIDlistBysubID(int _subid, int*& _preid_objidlist, int& _list_len)
 {
 	char* _tmp = NULL;
@@ -909,6 +1111,8 @@ bool KVstore::getpreIDobjIDlistBysubID(int _subid, int*& _preid_objidlist, int& 
 
 	return true;
 }
+
+//NOTICE: the list is ordered by each two (pre, sub), and the whole is viewed as a string
 bool KVstore::setpreIDobjIDlistBysubID(int _subid, const int* _preid_objidlist, int _list_len)
 {
 	return this->setValueByKey
@@ -920,6 +1124,7 @@ bool KVstore::open_objID2preIDsubIDlist(const int _mode)
 {
 	return this->open(this->objID2preIDsubIDlist, KVstore::s_oID2pIDsIDlist, _mode);
 }
+
 bool KVstore::getpreIDsubIDlistByobjID(int _objid, int*& _preid_subidlist, int& _list_len)
 {
 	char* _tmp = NULL;
@@ -942,18 +1147,239 @@ bool KVstore::getpreIDsubIDlistByobjID(int _objid, int*& _preid_subidlist, int& 
 
 	return true;
 }
+
 bool KVstore::setpreIDsubIDlistByobjID(int _objid, const int* _preid_subidlist, int _list_len)
 {
 	return this->setValueByKey
 			(this->objID2preIDsubIDlist, (char*)&_objid, sizeof(int),(char*)_preid_subidlist, _list_len * sizeof(int));
 }
 
-/* set the store_path as the root dir of this KVstore
- * initial all Tree pointer as NULL
- *  */
+//for subID 2 preIDlist 
+bool KVstore::open_subID2preIDlist(const int _mode)
+{
+	return this->open(this->subID2preIDlist, KVstore::s_sID2pIDlist, _mode);
+}
+
+bool KVstore::getpreIDlistBysubID(int _subid, int*& _preidlist, int& _list_len)
+{
+	char* _tmp = NULL;
+	int _len = 0;
+	bool _get = this->getValueByKey(this->subID2preIDlist, (char*)&_subid, sizeof(int), _tmp, _len);
+	{
+		if(!_get)
+		{
+			_preidlist = NULL;
+			_list_len = 0;
+			return false;
+		}
+	}
+	{
+		_list_len = _len / sizeof(int);
+		_preidlist = new int[_list_len];
+		memcpy((char*)_preidlist, _tmp, sizeof(int)*_list_len);
+	}
+	//delete[] _tmp;
+
+	return true;
+}
+
+bool KVstore::setpreIDlistBysubID(int _subid, const int* _preidlist, int _list_len)
+{
+	return this->setValueByKey
+			(this->subID2preIDlist, (char*)&_subid, sizeof(int),(char*)_preidlist, _list_len * sizeof(int));
+}
+
+//for preID 2 subIDlist 
+bool KVstore::open_preID2subIDlist(const int _mode)
+{
+	return this->open(this->preID2subIDlist, KVstore::s_pID2sIDlist, _mode);
+}
+
+bool KVstore::getsubIDlistBypreID(int _preid, int*& _subidlist, int& _list_len)
+{
+	char* _tmp = NULL;
+	int _len = 0;
+	bool _get = this->getValueByKey(this->preID2subIDlist, (char*)&_preid, sizeof(int), _tmp, _len);
+	{
+		if(!_get)
+		{
+			_subidlist = NULL;
+			_list_len = 0;
+			return false;
+		}
+	}
+	{
+		_list_len = _len / sizeof(int);
+		_subidlist = new int[_list_len];
+		memcpy((char*)_subidlist, _tmp, sizeof(int)*_list_len);
+	}
+	//delete[] _tmp;
+
+	return true;
+}
+
+bool KVstore::setsubIDlistBypreID(int _preid, const int* _subidlist, int _list_len)
+{
+	return this->setValueByKey
+			(this->preID2subIDlist, (char*)&_preid, sizeof(int),(char*)_subidlist, _list_len * sizeof(int));
+}
+
+//for objID 2 preIDlist 
+bool KVstore::open_objID2preIDlist(const int _mode)
+{
+	return this->open(this->objID2preIDlist, KVstore::s_oID2pIDlist, _mode);
+}
+
+bool KVstore::getpreIDlistByobjID(int _objid, int*& _preidlist, int& _list_len)
+{
+	char* _tmp = NULL;
+	int _len = 0;
+	bool _get = this->getValueByKey(this->objID2preIDlist, (char*)&_objid, sizeof(int), _tmp, _len);
+	{
+		if(!_get)
+		{
+			_preidlist = NULL;
+			_list_len = 0;
+			return false;
+		}
+	}
+	{
+		_list_len = _len / sizeof(int);
+		_preidlist = new int[_list_len];
+		memcpy((char*)_preidlist, _tmp, sizeof(int)*_list_len);
+	}
+	//delete[] _tmp;
+
+	return true;
+}
+
+bool KVstore::setpreIDlistByobjID(int _objid, const int* _preidlist, int _list_len)
+{
+	return this->setValueByKey
+			(this->objID2preIDlist, (char*)&_objid, sizeof(int),(char*)_preidlist, _list_len * sizeof(int));
+}
+
+//for preID 2 objIDlist 
+bool KVstore::open_preID2objIDlist(const int _mode)
+{
+	return this->open(this->preID2objIDlist, KVstore::s_pID2oIDlist, _mode);
+}
+
+bool KVstore::getobjIDlistBypreID(int _preid, int*& _objidlist, int& _list_len)
+{
+	char* _tmp = NULL;
+	int _len = 0;
+	bool _get = this->getValueByKey(this->preID2objIDlist, (char*)&_preid, sizeof(int), _tmp, _len);
+	{
+		if(!_get)
+		{
+			_objidlist = NULL;
+			_list_len = 0;
+			return false;
+		}
+	}
+	{
+		_list_len = _len / sizeof(int);
+		_objidlist = new int[_list_len];
+		memcpy((char*)_objidlist, _tmp, sizeof(int)*_list_len);
+	}
+	//delete[] _tmp;
+
+	return true;
+}
+
+bool KVstore::setobjIDlistBypreID(int _preid, const int* _objidlist, int _list_len)
+{
+	return this->setValueByKey
+			(this->preID2objIDlist, (char*)&_preid, sizeof(int), (char*)_objidlist, _list_len * sizeof(int));
+}
+
+//for subID&objID2preIDlist  _mode is either KVstore::CREATE_MODE or KVstore::READ_WRITE_MODE
+bool KVstore::open_subIDobjID2preIDlist(const int _mode)
+{
+	return this->open(this->subIDobjID2preIDlist, KVstore::s_sIDoID2pIDlist, _mode);
+}
+
+bool KVstore::getpreIDlistBysubIDobjID(int _subid, int _objid, int*& _preidlist, int& _list_len)
+{
+	char* _tmp = NULL;
+	int _len = 0;
+	int* _sp = new int[2];
+	_sp[0] = _subid;
+	_sp[1] = _objid;
+	bool _get = this->getValueByKey(this->subIDobjID2preIDlist, (char*)_sp, sizeof(int)*2, _tmp, _len);
+	delete[] _sp;
+	{
+		if(!_get)
+		{
+			_preidlist = NULL;
+			_list_len = 0;
+			return false;
+		}
+	}
+	{
+		_list_len = _len / sizeof(int);
+		_preidlist = new int[_list_len];
+		memcpy((char*)_preidlist, _tmp, sizeof(int)*_list_len);
+	}
+	//delete[] _tmp;
+
+	return true;
+}
+
+bool KVstore::setpreIDlistBysubIDobjID(int _subid, int _objid, const int* _preidlist, int _list_len)
+{
+	int* _sp = new int[2];
+	_sp[0] = _subid;
+	_sp[1] = _objid;
+
+	bool _set =  this->setValueByKey
+		(this->subIDobjID2preIDlist, (char*)_sp, sizeof(int)*2,(char*)_preidlist, _list_len * sizeof(int));
+
+	delete[] _sp;
+
+	return _set;
+}
+
+//preID2subID&objIDlist
+bool KVstore::open_preID2subIDobjIDlist(const int _mode)
+{
+	return this->open(this->preID2subIDobjIDlist, KVstore::s_pID2sIDoIDlist, _mode);
+}
+
+bool KVstore::getsubIDobjIDlistBypreID(int _preid, int*& _subid_objidlist, int& _list_len)
+{
+	char* _tmp = NULL;
+	int _len = 0;
+	bool _get = this->getValueByKey(this->preID2subIDobjIDlist, (char*)&_preid, sizeof(int), _tmp, _len);
+	{
+		if(!_get)
+		{
+			_subid_objidlist = NULL;
+			_list_len = 0;
+			return false;
+		}
+	}
+	{
+		_list_len = _len / sizeof(int);
+		_subid_objidlist = new int[_list_len];
+		memcpy((char*)_subid_objidlist, _tmp, sizeof(int)*_list_len);
+	}
+	//delete[] _tmp;
+
+	return true;
+}
+
+bool KVstore::setsubIDobjIDlistBypreID(int _preid, const int* _subid_objidlist, int _list_len)
+{
+	return this->setValueByKey
+			(this->preID2subIDobjIDlist, (char*)&_preid, sizeof(int),(char*)_subid_objidlist, _list_len * sizeof(int));
+}
+
+//set the store_path as the root dir of this KVstore
+//initial all Tree pointer as NULL
 KVstore::KVstore(const string _store_path){
 	this->store_path = _store_path;
-
 
 	this->entity2id = NULL;
 	this->id2entity = NULL;
@@ -972,12 +1398,21 @@ KVstore::KVstore(const string _store_path){
 
 	this->subID2preIDobjIDlist = NULL;
 	this->objID2preIDsubIDlist = NULL;
+
+	this->subID2preIDlist = NULL;
+	this->preID2subIDlist = NULL;
+
+	this->objID2preIDlist = NULL;
+	this->preID2objIDlist = NULL;
+
+	this->subIDobjID2preIDlist = NULL;
+	this->preID2subIDobjIDlist = NULL;
 }
 
-/* release all the memory used in this KVstore
- * before destruction
- *  */
-KVstore::~KVstore(){
+//release all the memory used in this KVstore
+//before destruction
+KVstore::~KVstore()
+{
 	//this->release();
 	this->flush();
 
@@ -998,6 +1433,13 @@ KVstore::~KVstore(){
 
 	delete this->subID2preIDobjIDlist;
 	delete this->objID2preIDsubIDlist;
+
+	delete this->subID2preIDlist;
+	delete this->preID2subIDlist;
+	delete this->objID2preIDlist;
+	delete this->preID2objIDlist;
+	delete this->subIDobjID2preIDlist;
+	delete this->preID2subIDobjIDlist;
 }
 
 /*
@@ -1024,7 +1466,15 @@ void KVstore::flush(){
 
 	this->flush(this->subID2preIDobjIDlist);
 	this->flush(this->objID2preIDsubIDlist);
+
+	this->flush(this->subID2preIDlist);
+	this->flush(this->preID2subIDlist);
+	this->flush(this->objID2preIDlist);
+	this->flush(this->preID2objIDlist);
+	this->flush(this->subIDobjID2preIDlist);
+	this->flush(preID2subIDobjIDlist);
 }
+
 /* Release all the memory used in this KVstore,
  * following an flush() for each Tree pointer
  * any Tree pointer that is null or
@@ -1053,6 +1503,7 @@ void KVstore::flush(){
 
 void KVstore::open()
 {
+	cout << "open KVstore" << endl;
 
 	this->open(this->entity2id, KVstore::s_entity2id, KVstore::READ_WRITE_MODE);
 	this->open(this->id2entity, KVstore::s_id2entity, KVstore::READ_WRITE_MODE);
@@ -1071,11 +1522,17 @@ void KVstore::open()
 
 	this->open(this->subID2preIDobjIDlist, KVstore::s_sID2pIDoIDlist, KVstore::READ_WRITE_MODE);
 	this->open(this->objID2preIDsubIDlist, KVstore::s_oID2pIDsIDlist, KVstore::READ_WRITE_MODE);
+
+	this->open(this->subID2preIDlist, KVstore::s_sID2pIDlist, KVstore::READ_WRITE_MODE);
+	this->open(this->preID2subIDlist, KVstore::s_pID2sIDlist, KVstore::READ_WRITE_MODE);
+	this->open(this->objID2preIDlist, KVstore::s_oID2pIDlist, KVstore::READ_WRITE_MODE);
+	this->open(this->preID2objIDlist, KVstore::s_pID2oIDlist, KVstore::READ_WRITE_MODE);
+	this->open(this->subIDobjID2preIDlist, KVstore::s_sIDoID2pIDlist, KVstore::READ_WRITE_MODE);
+	this->open(this->preID2subIDobjIDlist, KVstore::s_pID2sIDoIDlist, KVstore::READ_WRITE_MODE);
 }
-/*
- * private methods:
- */
-void KVstore::flush(Tree* _p_btree){
+
+void KVstore::flush(Tree* _p_btree)
+{
 	if(_p_btree != NULL)
 	{
 		_p_btree->save();
@@ -1096,8 +1553,7 @@ bool KVstore::open(Tree* & _p_btree, const string _tree_name, const int _mode){
 		_p_btree = new Tree(this->store_path, _tree_name, "build");
 		return true;
 	}
-	else
-	if(_mode == KVstore::READ_WRITE_MODE)
+	else if(_mode == KVstore::READ_WRITE_MODE)
 	{
 		_p_btree = new Tree(this->store_path, _tree_name, "open");
 		return true;
@@ -1110,13 +1566,13 @@ bool KVstore::open(Tree* & _p_btree, const string _tree_name, const int _mode){
 	return false;
 }
 
-//DEBUG:not achieve multiple-type functions, may have to organize in Bstr, or add functions in btree
-
-bool KVstore::setValueByKey(Tree* _p_btree, const char* _key, int _klen, const char* _val, int _vlen){
+bool KVstore::setValueByKey(Tree* _p_btree, const char* _key, int _klen, const char* _val, int _vlen)
+{
 	return _p_btree->insert(_key, _klen, _val, _vlen);
 }
 
-bool KVstore::getValueByKey(Tree* _p_btree, const char* _key, int _klen, char*& _val, int& _vlen){
+bool KVstore::getValueByKey(Tree* _p_btree, const char* _key, int _klen, char*& _val, int& _vlen)
+{
 	return _p_btree->search(_key, _klen, _val, _vlen);
 }
 
@@ -1158,4 +1614,13 @@ string KVstore::s_oIDpID2sIDlist="s_oIDpID2sIDlist";
 
 string KVstore::s_sID2pIDoIDlist="s_sID2pIDoIDlist";
 string KVstore::s_oID2pIDsIDlist="s_oID2pIDsIDlist";
+
+string KVstore::s_sID2pIDlist="s_sID2pIDlist";
+string KVstore::s_pID2sIDlist="s_pID2sIDlist";
+
+string KVstore::s_oID2pIDlist="s_oID2pIDlist";
+string KVstore::s_pID2oIDlist="s_pID2oIDlist";
+
+string KVstore::s_sIDoID2pIDlist="s_sIDoID2pIDlist";
+string KVstore::s_pID2sIDoIDlist="s_pID2sIDoIDlist";
 

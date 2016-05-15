@@ -168,7 +168,7 @@ for different systems.
 	\begin{threeparttable}
 		\begin{tabular}{|c||c|c|c||c|c|c|}
 			\hline
-			& \multicolumn{3}{c||}{Index Size(KB)}& \multicolumn{3}{c|}{Loading Time(second)}\\
+			& \multicolumn{3}{c||}{Index Size(KB)}& \multicolumn{3}{c|}{Loading Time(ms)}\\
 			\hline
 			\hline
 			Datasets & gStore & Jena& Virtuoso& gStore & Jena& Virtuoso\\
@@ -176,6 +176,8 @@ for different systems.
 			DBpedia 2014 & 42,415,852&	23,151,272 &	-\tnote{$1$} & 8,639,666	&15,555,000	& -	\\
 			\hline
 			Bsbm 10000 & 1,814,480 & 718,024 & 2,080,000 & 244,153 & 76,000 & 59999  \\
+			\hline
+			Bsbm 100000 & 12,369,232 & 7,007,988 & 4,390,000 & 2,259,036 & 681,000 & 507,647 \\
 			\hline
 			LUBM 500  &2,171,084 &1,022,528	&	38,000,000 &	291,382&	94,000 &100,532	 \\
 			\hline
@@ -190,14 +192,14 @@ for different systems.
 		\end{tabular}
 		\begin{tablenotes}
 			\small
-		\item[$1$] ``-'' means that loading does not terminate in 10 hour
+		\item[$1$] ``-'' means that loading does not terminate in 20 hour
 		\end{tablenotes}
 	\end{threeparttable}
 	\caption{Offline Performance}
 	\label{table:loading}
 \end{table}
 
-The performance of different database management systems is shown in Figures \ref{fig:dbpedia2014Performance}, \ref{fig:BsbmPerformance}, \ref{fig:LUBMPerformance} and \ref{fig:WatDivPerformance}.
+The performance of different database management systems is shown in Figures \ref{fig:dbpedia2014Performance}, \ref{fig:Bsbm10000Performance}, \ref{fig:LUBMPerformance} and \ref{fig:WatDivPerformance}.
 
 \begin{figure}[b]%
 	\resizebox{0.48\columnwidth}{!}{
@@ -208,11 +210,21 @@ The performance of different database management systems is shown in Figures \re
 \end{figure}
 
 \begin{figure}%
-	\resizebox{0.8\columnwidth}{!}{
-		\input{bsbm_comparison}
+	\subfigure[BSBM 10000]{%
+		\resizebox{0.8\columnwidth}{!}{
+			\input{bsbm10000_comparison}
+		}	
+		\label{fig:Bsbm10000Performance}%
 	}
-	\caption{Query Performance over Bsbm 10000}%
-	\label{fig:BsbmPerformance}
+	\\
+	\subfigure[BSBM 100000]{%
+		\resizebox{0.8\columnwidth}{!}{
+			\input{bsbm100000_comparison}
+		}
+		\label{fig:BSBM100000Performance}%
+	}
+	\caption{Query Performance over Bsbm}%
+	\label{fig:BSBMPerformance}
 \end{figure}
 
 %\clearpage

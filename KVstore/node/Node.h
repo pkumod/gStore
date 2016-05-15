@@ -67,6 +67,12 @@ public:
 	bool setKey(const Bstr* _key, int _index, bool ifcopy = false);
 	bool addKey(const Bstr* _key, int _index, bool ifcopy = false);
 	bool subKey(int _index, bool ifdel = false);
+	
+	//several binary key search utilities
+	int searchKey_less(const Bstr& _bstr) const;
+	int searchKey_equal(const Bstr& _bstr) const;
+	int searchKey_lessEqual(const Bstr& _bstr) const;
+
 	//virtual functions: polymorphic
 	virtual Node* getChild(int _index) const { return NULL; };
 	virtual bool setChild(Node* _child, int _index) { return true; };

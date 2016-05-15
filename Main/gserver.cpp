@@ -11,9 +11,8 @@
 
 int main(int argc, char * argv[])
 {
-#ifdef DEBUG
+	//chdir(dirname(argv[0]));
 	Util util;
-#endif
     unsigned short port = Socket::DEFAULT_CONNECT_PORT;
 
     if (argc > 1)

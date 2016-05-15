@@ -2,30 +2,44 @@
 
 #in some system, maybe /usr/bin/ instead of /bin/
 #according executables to deal with dbms
-#NOTICE: require that virtuoso/sesame/jena is installed and gstore is compiled!
+#NOTICE: require that virtuoso-openlink/openrdf-sesame/apache-jena is installed and gstore(single mode) is compiled!
+
+#WARN:test gstore, jena, virtuoso with lubm, bsbm, watdiv, dbpedia
+#when testing sesame and others, just use bsbm and watdiv because format in lubm
+#i snot supported by sesame(invalid IRI), and dbpedia may be too large
 
 line1=--------------------------------------------------
 line2=##################################################
 path=/media/data/
+
 #db0=${path}WatDiv/
 #db1=${path}LUBM/
 #db2=${path}DBpedia/
 #db3=${path}BSBM/
+
 #db=($db0 $db1 $db2 $db3)	#db[4]=db4
-db=(WatDiv/ LUBM/ BSBM/ DBpedia/)
+#db=(WatDiv/ LUBM/ BSBM/ DBpedia/)
+db=(TEST/)
+
 #BETTER: add yago2/yago3, dblp...add more queries
+
 length1=${#db[*]}		#or @ instead of *
 
 #BETTER: let user indicate the executable directory
-gstore=/home/zengli/devGstore/
-virtuoso=/media/wip/zengli/virtuoso/bin/
-sesame=/media/wip/zengli/sesame/bin/
-jena=/media/wip/zengli/jena/bin/
+gstore=~/project/devGstore/
+virtuoso=~/OpenRdf/Virtuoso/virtuoso-server/
+sesame=~/OpenRdf/Sesame/openrdf-sesame-4.1.1/
+jena=~/OpenRdf/Jena/jena/
+
 #NOTICE: maybe oldGstore and newGstore
-#dbms_path=($gstore $jena $sesame $virtuoso)
-dbms_path=($gstore $jena)
-dbms_name=(gstore jena)
-#dbms_name=(gstore jena sesame virtuoso)
+
+#NOTICE:remove debug and use -o2 not -g when testing gStore
+
+dbms_path=($gstore $jena $sesame $virtuoso)
+dbms_name=(gstore jena sesame virtuoso)
+#dbms_path=($gstore $virtuoso)
+#dbms_name=(gstore virtuoso)
+
 length2=${#dbms_path[*]}		#or @ instead of *
 
 #the language of the current operation system
@@ -97,10 +111,13 @@ function initial()
 #size.tsv:the size after loaded		time.tsv:time used to load
 tsv3=${home}/${log3}time.tsv
 tsv4=${home}/${log3}size.tsv
+
 dsnum=0
+
 for i in `seq $length1`
 do
 	i=`expr $i - 1`
+
 	for tmpdb in `ls ${path}/${db[i]}/database/*.nt`
 	do
 		dsnum=`expr $dsnum + 1`
@@ -109,27 +126,34 @@ do
 			sleep 60	#for other processes
 			#sudo echo 3 > /proc/sys/vm/drop_caches
 		fi
+
 		cntdb="${tmpdb##*/}"
 		echo "$tmpdb"	#in case of special characters like &
 		tsv1=${home}/${log1}/${cntdb}.tsv	#compare result
 		tsv2=${home}/${log2}/${cntdb}.tsv	#compare time
 		echo $tsv1
 		echo $tsv2
+
 		#load this database into each dbms
 		for j in `seq $length2`
 		do
 			j=`expr $j - 1`
 			cd ${dbms_path[j]}
+			name=${dbms_name[j]}
+			echo $name
+
 			#build logs structure
 			echo "build logs structure!"
 			if [ $dsnum -eq 1 ]
 			then
 				initial
 			fi
+
 			mkdir ${log1}/${cntdb}	#pass the cntdb if using function
 			#touch ${log2}/${cntdb}.log
-			#if [ ${dbms_name[j]}x = ${gstore}x ]	#add a x in case of empty 
-			if [ ${j} -eq 0 ]	#otherwise will unary error
+
+			if [ ${name}x = gstorex ]	#add a x in case of empty, otherwise will unary error
+			#if [ ${j} -eq 0 ]	
 			then
 				echo "this is for gstore!"
 				bin/gload $cntdb $tmpdb > load.txt
@@ -138,68 +162,161 @@ do
 				#elif [ ${dbms[j]}x = ${virtuoso}x ]
 				#elif [ ${dbms[j]}x = ${sesame}x ]
 				#elif [ ${dbms[j]}x = ${jena}x ]
-			elif [ ${j} -eq 1 ]
+			elif [ ${name}x = jenax ]
+			#elif [ ${j} -eq 1 ]
 			then
 				echo "this is for jena!"
-				./tdbloader --loc "$cntdb" "$tmpdb" > load.txt 2>&1
+				bin/tdbloader --loc "$cntdb" "$tmpdb" > load.txt 2>&1
 				#awk '{if(NR==1){s=$1}else{t=$1}}END{split(s,a,":");split(t,b,":");ans=0+(b[1]-a[1])*3600+(b[2]-a[2])*60+(b[3]-a[3]);printf("%s\t%d\n", "time:", ans*1000);}' load.txt > load_${cntdb}.log
+				#NOTICE:if use more than one day, the time computed maybe <0
 				awk '{if(NR==1){s=$1}else{t=$1}}END{split(s,a,":");split(t,b,":");ans=0+(b[1]-a[1])*3600+(b[2]-a[2])*60+(b[3]-a[3]);printf("%s\t%d\n", "'$cntdb'", ans*1000);}' load.txt >> ${log3}/time.log
 				#cat load.txt >> "load_${cntdb}.log"
-			elif [ ${j} -eq 2 ]
+			elif [ ${name}x = sesamex ]
+			#elif [ ${j} -eq 2 ]
 			then
+				#NOTICE+WARN:not suitable to lubm(format: not valid IRI)
 				echo "this is for sesame!"
-				#TODO
-			elif [ ${j} -eq 3 ]
+				#write instructions into run.sql
+				>run.sql
+				echo -e "create native\n${cntdb}\n${cntdb}\n\n\nopen ${cntdb}" >> run.sql
+				echo "load ${tmpdb}" >> run.sql
+				echo -e "close\nquit" >> run.sql
+				bin/console.sh < run.sql > load.txt
+				awk '{if($1=="Data" && $2 == "has" && $3 == "been"){split($8, a, "(");printf("%s\t%d\n", "'$cntdb'", a[2]);}}' load.txt >> ${log3}/time.log
+			elif [ ${name}x = virtuosox ]
+			#elif [ ${j} -eq 3 ]
 			then
 				echo "this is for virtuoso!"
-				#TODO
+				#maybe write instructions into run.sql
+				#>run.sql
+				#echo "ld_dir('${path}/${db[i]}/database/', '${cntdb}', '${cntdb}');" >> run.sql
+				#echo "rdf_loader_run();" >> run.sql
+				#echo "checkpoint;" >> run.sql
+				>load.txt
+				bin/isql 1111 dba dba exec="ld_dir('${path}/${db[i]}/database/', '${cntdb}', '${cntdb}');" | awk '{if($1=="Done."){print $3}}' >> load.txt
+				bin/isql 1111 dba dba exec="rdf_loader_run();" | awk '{if($1=="Done."){print $3}}' >> load.txt
+				bin/isql 1111 dba dba exec="checkpoint;" | awk '{if($1=="Done."){print $3}}' >> load.txt
+				awk 'BEGIN{sum=0}{sum+=$0}END{printf("%s\t%d\n", "'$cntdb'", sum);}' load.txt >> ${log3}/time.log
 			fi
+
 			#ls -l sums the actual size, unit is k
 			echo "now to sum the database size!"
+			#NOTICE:the unit is KB
 			#ls -lR "$cntdb" | awk 'BEGIN{sum=0}{if($1=="total"){sum=sum+$2}}END{print "size:\t"sum}' >> load_${cntdb}.log
-			lang=`echo $LANG`
-			if [ $lang = $English ]
+			#if [ ${j} -eq 3 ] #virtuoso
+			if [ ${name}x = virtuosox ]
 			then
-				ls -lR "$cntdb" | awk 'BEGIN{sum=0}{if($1=="total"){sum=sum+$2}}END{print "'$cntdb'""\t"sum}' >> ${log3}/size.log
-			elif [ $lang = $Chinese ]
-			then
-				ls -lR "$cntdb" | awk 'BEGIN{sum=0}{if($1=="总用量"){sum=sum+$2}}END{print "'$cntdb'""\t"sum}' >> ${log3}/size.log
+				#NOTICE:this db also includes the initial data
+				#realDB="../database/virtuoso.db"
+				realDB="database/virtuoso.db"
+				#the original size of virtuoso db is 39845888B, not so accurate
+				ls -l "$realDB" | awk '{sum=$5/1000-39846;print "'$cntdb'""\t"sum}' >> ${log3}/size.log
 			else
-				echo "the language of the operation system is not supported!"
+				if [ ${name}x = gstorex -o ${name}x = jenax ]
+				#if [ ${j} -lt 2 ]
+				then
+					realDB="$cntdb"
+				elif [ ${name}x = sesamex ]
+				#elif [ ${j} -eq 2 ]
+				then
+					#NOTICE:not quoted the string!
+					realDB=~/.aduna/openrdf-sesame-console/repositories/
+					realDB=${realDB}${cntdb}
+				fi
+				lang=`echo $LANG`
+				if [ $lang = $English ]
+				then
+					ls -lR "$realDB" | awk 'BEGIN{sum=0}{if($1=="total"){sum=sum+$2}}END{print "'$cntdb'""\t"sum}' >> ${log3}/size.log
+				elif [ $lang = $Chinese ]
+				then
+					ls -lR "$realDB" | awk 'BEGIN{sum=0}{if($1=="总用量"){sum=sum+$2}}END{print "'$cntdb'""\t"sum}' >> ${log3}/size.log
+				else
+					echo "the language of the operation system is not supported!"
+				fi
 			fi
 
 			timelog=${log2}/${cntdb}.log
 			touch $timelog
+			#NOTICE:we remove all duplicates to compare, due to different dbms preferences
+			#For example, sesame and virtuoso will not include any duplicates
 			for query in `ls ${path}/${db[i]}/query/*.sql`
 			do
+				#NOTICE:we expect there are no duplicates in sesame and virtuoso
 				echo $query
 				#build logs structure
 				anslog=${log1}/${cntdb}/${query##*/}.log
-				touch $anslog	#needed because the result maybe empty
-				if [ ${j} -eq 0 ]	#add a x in case of empty 
+				#touch $anslog	#needed because the result maybe empty
+				>${anslog}
+				if [ ${name}x = gstorex ]    #add a x in case of empty (need a space from ])
+				#if [ ${j} -eq 0 ]	
 				then
 					echo "this is for gstore!"
+					#NOTICE:we do not add the start time in gquery.cpp, and we expect other dbms will also deal it this way.
 					bin/gquery "$cntdb" $query > ans.txt
 					awk -F ':' 'BEGIN{query="'$query'"}{if($1=="Total time used"){split($2, a, "m");split(a[1],b," ");}}END{print query"\t"b[1]}' ans.txt >> $timelog
 					#grep "Total time used:" ans.txt | grep -o "[0-9]*ms" >> ${log2}/${cntdb}.log
-					awk -F ':' 'BEGIN{flag=0;old=""}{if(flag==1 && $0 ~/^$/){flag=2}if(flag==1 && !($0 ~/[empty result]/) && $0 != old){print $0;old=$0}if($1=="final result is"){flag=1}}' ans.txt > $anslog
+					awk -F ':' 'BEGIN{flag=0;old="[empty result]"}{if(flag==1 && $0 ~/^?/){flag=2}else if(flag==2){if($0 ~/^$/){flag=3}else if($0 != old){print $0;old=$0}}else if(flag == 0 && $1 ~/^final result/){flag=1}}' ans.txt > $anslog
 					#awk 'BEGIN{flag=0}{if(flag==1){print $0}if($1 ~/^final$/){flag=1}}' ans.txt > ${log1}/${cntdb}/${query}.log
-				elif [ ${j} -eq 1 ]
+				elif [ ${name}x = jenax ]
+				#elif [ ${j} -eq 1 ]
 				then
 					echo "this is for jena!"
 					#NOTICE: for program output in stderr(no cache), deal like this
-					./tdbquery --repeat 2,1 --time --results TSV --loc "$cntdb" --query $query > ans.txt 2>&1 
+					#./tdbquery --repeat 1,1 --time --results TSV --loc "$cntdb" --query $query > ans.txt 2>&1 
+					bin/tdbquery --time --results TSV --loc "$cntdb" --query $query > ans.txt 2>&1 
 					#NOTICE: redirect in awk, and jena 
-					#use old var to remove duplicates
-					awk 'BEGIN{old=""}{if(NR>1){if($1 ~/Time:/ && $3 ~/sec/){time=$2*1000;print "'$query'""\t"time >> "'$timelog'"}else if(!($0 ~/^$/) && $0 != old){print $0 >> "'$anslog'";old=$0}}}'	ans.txt
-				elif [ ${j} -eq 2 ]
+					#use old var to remove duplicates(expect duplicates to be all together)
+					#awk 'BEGIN{old=""}{if(NR>1){if($1 ~/Time:/ && $3 ~/sec/){time=$2*1000;print "'$query'""\t"time >> "'$timelog'"}else if(!($0 ~/^$/) && $0 != old){print $0 >> "'$anslog'";old=$0}}}' ans.txt
+					awk 'BEGIN{old=""}{if(NR>1){if($1 ~/Time:/ && $3 ~/sec/){time=$2*1000;print "'$query'""\t"time >> "'$timelog'"}else if(!($0 ~/^?/) && $0 != old){print $0 >> "'$anslog'";old=$0}}}' ans.txt
+				elif [ ${name}x = sesamex ]
+				#elif [ ${j} -eq 2 ]
 				then
 					echo "this is for sesame!"
-					#TODO
-				elif [ ${j} -eq 3 ]
+					#write instructions into run.sql
+					>run.sql
+					echo "open ${cntdb}" >> run.sql
+					#pre="sparql "
+					str=`cat ${query}`
+					ins="sparql "${str}
+					#echo "${pre}${str}" >> run.sql
+					echo ${ins} >> run.sql
+					echo -e "close\nquit" >> run.sql
+					bin/console.sh < run.sql > ans.txt
+					#awk 'BEGIN{flag=0;}{
+					#if($0 ~/^+/){flag++}
+					#else if(flag==2){
+						#if($NF=="|"){end=NF-1}else{end=NF}
+							#for(i=2;i<=end;++i){split($i, s, "|");printf("%s", s[1]) >> "'$anslog'";
+								#if(i<end){printf("\t") >> "'$anslog'";}}
+									#printf("\n") >> "'$anslog'";}
+								#else if(flag==3){flag++;split($3, s, "(");
+									#print "'$query'""\t"s[2] >> "'$timelog'"}}' ans.txt
+					awk -F '|' 'BEGIN{flag=0;}{
+					if($0 ~/^+/){flag++;}
+					else if(flag==2){
+						for(i=2;i<NF;++i){
+							num=split($i, s, " ");
+							for(j=1;j<num;++j){printf("%s ", s[j]) >> "'$anslog'";}
+							printf("%s", s[j]) >> "'$anslog'";
+							if(i<NF-1){printf("\t") >> "'$anslog'";}
+						}
+						printf("\n") >> "'$anslog'";
+					}
+					else if(flag==3){flag++;split($0, a, " ");split(a[3], b, "(");print "'$query'""\t"b[2] >> "'$timelog'"}
+					}' ans.txt
+					#cat > wcgdscdc.txt
+				elif [ ${name}x = virtuosox ]
+				#elif [ ${j} -eq 3 ]
 				then
 					echo "this is for virtuoso!"
-					#TODO
+					ins=`cat ${query}`
+					ins="sparql "${ins}
+					echo $ins > tmp.txt
+					str=`awk '{for(i=1;i<=NF;++i){if($i=="WHERE" || $i=="where"){printf("from <%s> %s ", "'$cntdb'", $i)}else{printf("%s ", $i)}}}' tmp.txt`
+					rm -f tmp.txt
+					bin/isql 1111 dba dba exec="${str};" > ans.txt
+					#awk 'BEGIN{flag=0}{if($0 ~/^____/){flag=1}else if(flag==1 && $0 ~/^$/){flag=2}else if(flag==2){if($0 ~/^$/){flag=3}else{for(i=1;i<=NF;++i){if($i ~/^http:/){str="<"$i">";}else{str="\""$i"\"";}printf("%s", str) >> "'$anslog'";if(i<NF)printf("\t") >> "'$anslog'";}printf("\n") >> "'$anslog'";}}else if(flag==3){split($0, s, " ");print "'$query'""\t"s[4] >> "'$timelog'";}}' ans.txt
+					awk -F ' [ \t]+' 'BEGIN{flag=0}{if($0 ~/^____/){flag=1}else if(flag==1 && $0 ~/^$/){flag=2}else if(flag==2){if($0 ~/^$/){flag=3}else{for(i=1;i<=NF;++i){printf("%s", $i) >> "'$anslog'";if(i<NF)printf("\t") >> "'$anslog'";}printf("\n") >> "'$anslog'";}}else if(flag==3){split($0, s, " ");print "'$query'""\t"s[4] >> "'$timelog'";}}' ans.txt
 				fi
 				#NOTICE:the same record should be placed together before sorting!
 				#sort according to the path order
@@ -241,7 +358,44 @@ do
 			rm -f ${timelog}.bak
 			#remove the db when finished
 			echo "now to remove the cntdb!"
-			rm -rf "$cntdb"
+			if [ ${name}x = gstorex -o ${name}x = jenax ]
+			#if [ ${j} -lt 2 ]
+			then
+				rm -rf "$cntdb"
+			elif [ ${name}x = sesamex ]
+			#elif [ ${j} -eq 2 ]
+			then
+				>run.sql
+				echo "drop ${cntdb}" >> run.sql
+				echo "yes" >> run.sql
+				echo "quit" >> run.sql
+				bin/console.sh < run.sql
+				rm -f run.sql
+			elif [ ${name}x = virtuosox ]
+			#elif [ ${j} -eq 3 ]
+			then
+				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				bin/isql 1111 dba dba exec="checkpoint;"
+				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				bin/isql 1111 dba dba exec="checkpoint;"
+				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				bin/isql 1111 dba dba exec="checkpoint;"
+				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				bin/isql 1111 dba dba exec="checkpoint;"
+				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				bin/isql 1111 dba dba exec="checkpoint;"
+				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				bin/isql 1111 dba dba exec="checkpoint;"
+				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				bin/isql 1111 dba dba exec="checkpoint;"
+				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				bin/isql 1111 dba dba exec="checkpoint;"
+				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				bin/isql 1111 dba dba exec="checkpoint;"
+				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				bin/isql 1111 dba dba exec="checkpoint;"
+				bin/isql 1111 dba dba exec="delete from db.dba.load_list;"
+			fi
 			#BETTER:remove *.txt in each dbms path
 			#rm -f *.txt
 			#compare time and construct the TSV table
@@ -281,24 +435,69 @@ do
 				do
 					echo "compare: " $query
 					tmplog=${log1}/${cntdb}/${query##*/}.log
-					awk -F '\t' 'BEGIN{flag=0}{
-					if(NR==FNR){map[NR]=$0}
-					else if(flag==0){
-						num=split(map[FNR],str1,"\t");
-						split($0,str2,"\t");
-						for(i=1;i<=num;++i){
-							if(str1[i]!=str2[i]){
-								flag=1;break}}}}
-								END{
-								if(flag==0){print "'${query##*/}'""\tY"}
-								else{print "'${query##*/}'""\tN"}}' ${dbms_path[p]}/${tmplog} ${dbms_path[q]}/${tmplog} >> compare.txt
-					#diff ${dbms_path[p]}/${tmplog} ${dbms_path[q]}/${tmplog}
-					#if [ $? -ne 0 ]
-					#then
-					#	echo -e ${query##*/}"\tN" >> compare.txt
-					#else
-					#	echo -e ${query##*/}"\tY" >> compare.txt
-					#fi
+					if [ ${dbms_name[p]}x = virtuosox -o ${dbms_name[q]}x = virtuosox ]
+					#if [ $p -eq 3 -o $q -eq 3 ]
+					then
+					#WARN+NOTICE:the output in virtuoso is without '<>' or '""', so it is hard to compare!
+					#url begins with "http://" is entities, but some others may also be, even like "FullProfessor0" in LUBM
+					#So we print all 'Y' when encounter results from virtuoso
+					#Another way is that we can remove all <> or "" and sort again, when comparing virtuoso and others
+					#WARN:there seems to be other questions with the query result of virtuoso!
+						if [ ${dbms_name[p]}x = virtuosox ]
+						then
+							x=$p
+							y=$q
+						else
+							x=$q
+							y=$p
+						fi
+						awk -F '\t' '{
+						for(i=1; i<=NF; ++i){
+							sub("^[<\"]", "", $i); sub("[>\"]$", "", $i); printf("%s", $i); 
+							if(i<NF)printf("\t");}printf("\n");}' ${dbms_path[y]}/${tmplog} > change.txt.bak
+						sort -t $'\t' -u change.txt.bak > change.txt
+						diff ${dbms_path[x]}/${tmplog} change.txt
+						#cat > tmp.txt
+						#awk -F '\t' 'BEGIN{flag=0}{
+						#if(NR==FNR){map[NR]=$0}
+						#else if(flag==0){
+						#	num1=split(map[FNR],str1,"\t");
+						#	num2=split($0,str2,"\t");
+						#	if(num1 != num2){
+						#		flag=1;
+						#	}
+						#	else{
+						#		for(i=1;i<=num;++i){
+						#			if(str1[i]!=str2[i]){
+						#				flag=1;break}}}}}
+						#			END{print "'${query##*/}'""\tY"}' ${dbms_path[p]}/${tmplog} ${dbms_path[q]}/${tmplog} >> compare.txt
+					else
+						diff ${dbms_path[p]}/${tmplog} ${dbms_path[q]}/${tmplog}
+						#NOTICE:the col num is almost all ok for query results
+						#WARN:what if row num is different?
+						#awk -F '\t' 'BEGIN{flag=0}{
+						#if(NR==FNR){map[NR]=$0}
+						#else if(flag==0){
+						#	num1=split(map[FNR],str1,"\t");
+						#	num2=split($0,str2,"\t");
+						#	if(num1 != num2){
+						#		flag=1;
+						#	}
+						#	else{
+						#		for(i=1;i<=num1;++i){
+						#			if(str1[i]!=str2[i]){
+						#				flag=1;break}}}}}
+						#			END{
+						#				if(flag==0){print "'${query##*/}'""\tY"}
+						#				else{print "'${query##*/}'""\tN"}}' ${dbms_path[p]}/${tmplog} ${dbms_path[q]}/${tmplog} >> compare.txt
+					fi
+
+					if [ $? -ne 0 ]
+					then
+						echo -e ${query##*/}"\tN" >> compare.txt
+					else
+						echo -e ${query##*/}"\tY" >> compare.txt
+					fi
 				done
 				echo "all queries done!"
 				name=${dbms_name[p]}_${dbms_name[q]}
@@ -319,6 +518,8 @@ do
 		done
 	done
 done
+
+
 
 #build the load.log/ in home(this script)
 echo "now to build the load.log!"
@@ -347,10 +548,12 @@ do
 		else {
 			if(FNR==1) { print $0"\t""'${dbms_name[j]}'" }
 			else { print $0"\t"map[$1] }
-			}}' ${log3}/time.log ${tsv4}.bak > ${tsv4}
+			}}' ${log3}/size.log ${tsv4}.bak > ${tsv4}
 		rm -f ${tsv4}.bak
 	fi
 done
+
+
 
 echo "this is the end of full test!"
 echo "please visit the result.log/, time.log/ and load.log/"

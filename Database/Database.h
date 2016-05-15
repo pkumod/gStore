@@ -129,10 +129,18 @@ private:
 	bool sub2id_pre2id(const string _rdf_file, int**& _p_id_tuples, int & _id_tuples_max);
 	bool literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, int _id_tuples_max);
 	
-	bool s2o_sp2o_s2po(int** _p_id_tuples, int _id_tuples_max);
-	bool o2s_op2s_o2ps(int** _p_id_tuples, int _id_tuples_max);
+	bool s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max);
+	bool o2s_o2ps_op2s(int** _p_id_tuples, int _id_tuples_max);
+	//NOTICE: below is the new one
+	bool s2p_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max);
+	bool o2p_o2s_o2ps_op2s(int** _p_id_tuples, int _id_tuples_max);
+	bool p2s_p2o_p2so(int** _p_id_tuples, int _id_tuples_max);
+	bool so2p_s2o(int** _p_id_tuples, int _id_tuples_max);
+
 	static int _spo_cmp(const void* _a, const void* _b);
 	static int _ops_cmp(const void* _a, const void* _b);
+	static int _pso_cmp(const void* _a, const void* _b);
+	static int _sop_cmp(const void* _a, const void* _b);
 	bool objIDIsEntityID(int _id);
 
 	 //* join on the vector of CandidateList, available after retrieve from the VSTREE

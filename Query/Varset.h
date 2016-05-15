@@ -1,7 +1,7 @@
 /*=============================================================================
-# Filename: GeneralEvaluation.cpp
+# Filename: Varset.h
 # Author: Jiaqi, Chen
-# Mail: 1181955272@qq.com
+# Mail: chenjiaqi93@163.com
 # Last Modified: 2016-03-02 20:35
 # Description:
 =============================================================================*/
@@ -27,6 +27,8 @@ class Varset
 		Varset operator * (Varset& x);
 		Varset operator - (Varset& x);
 		bool operator ==(Varset &x);
+		bool hasCommonVar(Varset &x);
+		bool belongTo(Varset &x);
 
 		std::vector <int> mapTo(Varset& x);
 

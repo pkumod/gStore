@@ -1,21 +1,20 @@
-/*
- * VNode.cpp
- *
- *  Created on: 2014-6-20
- *      Author: liyouhuan
- *  Implement on: 2014-7-2
- *      Author: hanshuo
- */
+/*=============================================================================
+# Filename: VNode.cpp
+# Author: Bookug Lobert 
+# Mail: zengli-bookug@pku.edu.cn
+# Last Modified: 2016-04-11 14:08
+# Description: by liyouhuan and hanshuo
+=============================================================================*/
 
-#include"VNode.h"
-#include<iostream>
+#include "VNode.h"
+
+using namespace std;
 
 VNode::VNode()
 {
     this->is_leaf = false;
     this->is_root = false;
     this->child_num = 0;
-    // the following three lines are unnecessary.
     this->self_file_line = -1;
     this->father_file_line = -1;
     for(int i = 0; i < VNode::MAX_CHILD_NUM; i ++)

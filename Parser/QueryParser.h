@@ -25,20 +25,17 @@ private:
 	void replacePrefix(std::string& str);
 	void parseSelectClause(pANTLR3_BASE_TREE node, QueryTree& querytree);
 	void parseSelectVar(pANTLR3_BASE_TREE node, QueryTree& querytree);
-	void parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::PatternGroup& patterngroup);
-	void parsePattern(pANTLR3_BASE_TREE node, QueryTree::PatternGroup& patterngroup);
-	void parseOptionalOrMinus(pANTLR3_BASE_TREE node, QueryTree::PatternGroup& patterngroup);
-	void parseUnion(pANTLR3_BASE_TREE node, QueryTree::PatternGroup& patterngroup);
-	void parseFilter(pANTLR3_BASE_TREE node, QueryTree::PatternGroup& patterngroup);
-	void parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::PatternGroup& patterngroup, QueryTree::FilterTree& filter);
-	void parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::FilterTree& filter, unsigned int begin);
-	void parseExistsGroupPattern(pANTLR3_BASE_TREE node, QueryTree::PatternGroup& patterngroup, QueryTree::FilterTree& filter);
+	void parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern& grouppattern);
+	void parsePattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern& grouppattern);
+	void parseOptionalOrMinus(pANTLR3_BASE_TREE node, QueryTree::GroupPattern& grouppattern);
+	void parseUnion(pANTLR3_BASE_TREE node, QueryTree::GroupPattern& grouppattern);
+	void parseFilter(pANTLR3_BASE_TREE node, QueryTree::GroupPattern& grouppattern);
+	void parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::GroupPattern& grouppattern, QueryTree::GroupPattern::FilterTreeNode& filter);
+	void parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::GroupPattern::FilterTreeNode& filter, unsigned int begin);
+	void parseExistsGroupPattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern& grouppattern, QueryTree::GroupPattern::FilterTreeNode& filter);
 	void parseOrderBy(pANTLR3_BASE_TREE node, QueryTree& querytree);
 	void parseString(pANTLR3_BASE_TREE node, std::string& str, int dep);
 
-	void printQuery(QueryTree& querytree);
-	void printPatternGroup(QueryTree::PatternGroup &patterngroup, int dep = 0);
-	void printFilter(std::vector<QueryTree::PatternGroup> &exist_patterngroups, QueryTree::FilterTree &filter, int dep);
 
 public:
 	QueryParser();

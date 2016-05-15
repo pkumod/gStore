@@ -14,8 +14,8 @@ CC = g++
 #NOTICE: -O2 is recommended, while -O3 is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -O2
-EXEFLAG = -O2
+CFLAGS = -c -Wall -g #-O2
+EXEFLAG = -g #-O2
 
 # paths
 
@@ -37,18 +37,18 @@ kvstoreobj = $(objdir)KVstore.o $(objdir)Tree.o $(objdir)Storage.o $(objdir)Node
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o \
-		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)GeneralEvaluation.o
+		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)ResultFilter.o $(objdir)GeneralEvaluation.o
 
 signatureobj = $(objdir)SigEntry.o $(objdir)Signature.o
 
 vstreeobj = $(objdir)VSTree.o $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdir)VNode.o
 
-parserobj = $(objdir)RDFParser.o $(objdir)DBparser.o $(objdir)SparqlParser.o \
+parserobj = $(objdir)RDFParser.o $(objdir)SparqlParser.o $(objdir)DBparser.o \
 			$(objdir)SparqlLexer.o $(objdir)TurtleParser.o $(objdir)QueryParser.o
 
 serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)Socket.o 
 
-databaseobj = $(objdir)Database.o $(objdir)Join.o
+databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o
 
 
 objfile = $(kvstoreobj) $(vstreeobj) $(parserobj) $(serverobj) $(databaseobj) \
@@ -60,9 +60,9 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 library = -ltermcap -lreadline -L./lib -lantlr 
 
 #gtest
-all: $(exedir)gload $(exedir)gserver $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java)
+all: $(exedir)gload $(exedir)gserver $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) 
 
-test_index:
+test_index: test_index.cpp
 	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library)
 
 #executables begin
@@ -142,9 +142,13 @@ $(objdir)Database.o: Database/Database.cpp Database/Database.h \
 	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o
 	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o
 
-$(objdir)Join.o: $(objdir)IDList.o $(objdir)BasicQuery.o $(objdir)Util.o\
+$(objdir)Join.o: Database/Join.cpp Database/Join.h $(objdir)IDList.o $(objdir)BasicQuery.o $(objdir)Util.o\
 	$(objdir)KVstore.o $(objdir)Util.o $(objdir)SPARQLquery.o
 	$(CC) $(CFLAGS) Database/Join.cpp $(inc) -o $(objdir)Join.o
+
+$(objdir)Strategy.o: Database/Strategy.cpp Database/Strategy.h $(objdir)SPARQLquery.o $(objdir)BasicQuery.o \
+	$(objdir)Triple.o $(objdir)IDList.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Util.o $(objdir)Join.o
+	$(CC) $(CFLAGS) Database/Strategy.cpp $(inc) -o $(objdir)Strategy.o
 
 #objects in Database/ end
 
@@ -169,7 +173,11 @@ $(objdir)Varset.o: Query/Varset.cpp Query/Varset.h
 $(objdir)QueryTree.o: Query/QueryTree.cpp Query/QueryTree.h $(objdir)Varset.o
 	$(CC) $(CFLAGS) Query/QueryTree.cpp $(inc) -o $(objdir)QueryTree.o
 
-$(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h $(objdir)QueryParser.o $(objdir)QueryTree.o $(objdir)SPARQLquery.o $(objdir)Varset.o $(objdir)Database.o $(objdir)KVstore.o
+$(objdir)ResultFilter.o: Query/ResultFilter.cpp Query/ResultFilter.h $(objdir)SPARQLquery.o
+	$(CC) $(CFLAGS) Query/ResultFilter.cpp $(inc) -o $(objdir)ResultFilter.o
+
+$(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h $(objdir)QueryParser.o $(objdir)QueryTree.o \
+	$(objdir)SPARQLquery.o $(objdir)Varset.o $(objdir)Database.o $(objdir)KVstore.o $(objdir)ResultFilter.o $(objdir)Strategy.o
 	$(CC) $(CFLAGS) Query/GeneralEvaluation.cpp $(inc) -o $(objdir)GeneralEvaluation.o
 
 #objects in Query/ end
@@ -294,10 +302,11 @@ clean:
 dist: clean
 	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db
 	rm -rf tools/libantlr3c-3.4 lib/libantlr.a Parser/Sparql*
+	rm -rf cscope* .cproject .settings tags
 
 tarball:
 	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs test docs data makefile \
-		Main Database KVstore Util Query Signature VSTree Parser Server LICENSE README.md
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf
 
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/cpp/example
@@ -311,4 +320,11 @@ $(objdir)gtest.o: test/gtest.cpp
 	
 sumlines:
 	bash test/sumline.sh
+
+tag:
+	ctags -R
+
+idx:
+	find `realpath .` -name "*.h" -o -name "*.c" -o -name "*.cpp" > cscope.files
+	cscope -bkq #-i cscope.files
 

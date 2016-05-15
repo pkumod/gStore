@@ -6,7 +6,10 @@
 # Description:
 This is a console integrating all commands in Gstore System and others. It
 provides completion of command names, line editing features, and access to the
-history list.
+history list. 
+NOTICE: no separators required in the end of your commands, and please just type
+one command at a time. If there are many instructions to execute, please write 
+them in a file like test.sql, and tell the gconsole to use this file
 =============================================================================*/
 
 #include "../Database/Database.h"
@@ -15,11 +18,15 @@ history list.
 
 using namespace std;
 
+//NOTICE: not imitate the usage of gload/gquery/gclient/gserver in command line
+//but need to support the query scripts(so support parameters indirectly)
+
 //extern char *xmalloc PARAMS((size_t));
 
 //The names of functions that actually do the manipulation.
 //common commands
 int help_handler PARAMS((char *));
+int source_handler PARAMS((char *));
 int quit_handler PARAMS((char *));
 //C/S commands
 int connect_handler PARAMS((char *));
@@ -43,13 +50,14 @@ int show_handler PARAMS((char *));
 //A structure which contains information on the commands this program can understand.
 typedef struct {
     const char *name;			// User printable name of the function
-    rl_icpfunc_t *func;		// Function to call to do the job
+    rl_icpfunc_t *func;			// Function to call to do the job
     const char *doc;			// Documentation for this function
 } COMMAND;
 //
 COMMAND native_commands[] = {
     { "help", help_handler, "Display this text" },
-    { "?", help_handler, "Synonym for `help'" },
+    { "?", help_handler, "Synonym for `help`" },
+	{ "source", source_handler, "use a file containing SPARQL queries" },
     { "quit", quit_handler, "Quit this console" },
     { "connect", connect_handler, "Connect to a server running Gstore" },
     { "show", show_handler, "Show the database name which is used now" },
@@ -59,14 +67,14 @@ COMMAND native_commands[] = {
     { "unload", unload_handler, "Unload the current used database" },
     { "query", query_handler, "Answer a SPARQL query" },
 
-    //{ "cd", cd_handler, "Change to directory DIR" },
-    //{ "delete", delete_handler, "Delete FILE" },
-    //{ "list", list_handler, "List files in DIR" },
-    //{ "ls", list_handler, "Synonym for `list'" },
-    //{ "pwd", pwd_handler, "Print the current working directory" },
-    //{ "rename", rename_handler, "Rename FILE to NEWNAME" },
-    //{ "stat", stat_handler, "Print out statistics on FILE" },
-    //{ "view", view_handler, "View the contents of FILE" },
+    { "cd", cd_handler, "Change to directory DIR" },
+    { "delete", delete_handler, "Delete FILE" },
+    { "list", list_handler, "List files in DIR" },
+    { "ls", list_handler, "Synonym for `list'" },
+    { "pwd", pwd_handler, "Print the current working directory" },
+    { "rename", rename_handler, "Rename FILE to NEWNAME" },
+    { "stat", stat_handler, "Print out statistics on FILE" },
+    { "view", view_handler, "View the contents of FILE" },
 
     {NULL, NULL, NULL }
     //char* rl_icpfunc_t*, char*
@@ -75,6 +83,7 @@ COMMAND native_commands[] = {
 COMMAND remote_commands[] = {
     { "help", help_handler, "Display this text" },
     { "?", help_handler, "Synonym for `help'" },
+	{ "source", source_handler, "use a file containing SPARQL queries" },
     { "show", show_handler, "Show the database name which is used now" },
     { "build", build_handler, "Build a database from a dataset" },
     { "drop", drop_handler, "Drop a database according to the given path" },
@@ -105,6 +114,8 @@ int execute_line(char *);
 int valid_argument(char *, char *);
 //
 int too_dangerous(char *);
+//
+int deal_with_script(char *);
 
 
 
@@ -122,17 +133,64 @@ FILE *output = stdout;
 //current using database in local
 Database *current_database = NULL;
 
-//TODO:how to support commands scripts out or in console
+//TODO:to start/close the server(using this machine)
+//TODO:history in file, not only in memory
+//TODO:redirect 2>&1 or adjust theh fprintf->stderr to file pointer
 int
 main(int argc, char **argv)
 {
-#ifdef DEBUG
+	//NOTICE:this is needed to ensure the file path is the work path
+	//chdir(dirname(argv[0]));
+	//NOTICE:this is needed to set several debug files
     Util util;
-#endif
     char *line, *s;
     progname = argv[0];
 
+	cout<<Util::logarithm(3,2)<<endl;
+	cout<<Util::logarithm(100,2)<<endl;
+	int n = 10000;
+	cout<<Util::logarithm(n,2)<<endl;
+
+	//the info to be printed
+	fprintf(stderr, "\n\n\n");
+	fprintf(stderr, "Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories.\n");
+	fprintf(stderr, "usage: start-gconsole [OPTION]\n");
+	fprintf(stderr, " -h,--help              print this help\n");
+	fprintf(stderr, " -s,--source            source the SPARQL script\n");
+	//fprintf(stderr, "-q,--quiet              suppresses prompts, useful for scripting\n");
+	//fprintf(stderr, "-v,--version            print version information\n");
+	fprintf(stderr, "For bug reports and suggestions, see https://github.com/Caesar11/gStore\n");
+	fprintf(stderr, "\n\n");
+
+	if(argc > 1)
+	{
+		if(strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
+		{
+			fprintf(stderr, "type `?` or `help` in the console to see info of all commands\n");
+			if(argc > 2)
+				fprintf(stderr, "nonsense to add more parameters!\n");
+			exit(0);
+		}
+		else if(strcmp(argv[1], "-s") == 0 || strcmp(argv[1], "--source") == 0)
+		{
+			if(argc != 3)
+			{
+				fprintf(stderr, "you should just add one script file to be sourced!\n");
+				exit(1);
+			}
+			return deal_with_script(argv[2]);
+		}
+		else
+		{
+			fprintf(stderr, "wrong option used, please see the help info first!\n");
+			exit(1);
+		}
+	}
+
 	fprintf(stderr, "notice that commands are a little different between native mode and remote mode!\n");
+	fprintf(stderr, "now is in native mode, please type your commands.\n");
+	fprintf(stderr, "please do not use any separators in the end.\n");
+	fprintf(stderr, "\n");
 
     initialize_readline();	//Bind our completer
 
@@ -145,6 +203,7 @@ main(int argc, char **argv)
             line = readline("server>");
 
         //BETTER:multi lines input in alignment?need separators like ';' in gclient.cpp
+		//For simplicity, we do not use this feature here.
 
         if(line == NULL) //EOF or Ctrl-D
         {
@@ -266,7 +325,7 @@ execute_line(char *line)
     word = line + i;
 
     int ret = cmd->func(word);
-#ifdef DEBUG
+#ifdef DEBUG_PRECISE
 	fprintf(stderr, "all done, now to close the file!\n");
 #endif
     if(output != stdout)
@@ -333,6 +392,48 @@ valid_argument(char *caller, char *arg)
     }
 
     return(1);
+}
+
+//support commands scripts
+//QUERY:source another file again(how about exactly this script twice or more)
+int
+deal_with_script(char* file)
+{
+	FILE* fp = NULL;
+	if((fp = fopen(file, "r")) == NULL)
+	{
+		fprintf(stderr, "open error: %s\n", file);
+		return -1;
+	}
+
+	//WARN:the length of each line in the script should <= 500
+	char line[505], *s = NULL;
+
+	while((fgets(line, 501, fp)) != NULL)
+	{
+		//NOTICE:empty line here also contains '\n'
+		if(strlen(line) == 1)
+			continue;
+		s = stripwhite(line);
+		if(*s)
+		{
+			execute_line(s);
+		}
+	}
+	
+	//end of file
+	if(current_database != NULL)
+	{
+		fprintf(stderr, "\nplease unload your database before quiting!\n\n");
+		//TODO
+	}
+	if(gc != NULL)
+	{
+		fprintf(stderr, "\nplease return to native mode before quiting!\n\n");
+		//TODO
+	}
+
+	return 0;
 }
 
 
@@ -464,6 +565,13 @@ help_handler(char *args)
     return(0);
 }
 
+//NOTICE:the SPARQL file to be used should be placed in the local machine even when in remote mode
+int 
+source_handler(char *args)
+{
+	return deal_with_script(args);
+}
+
 int
 quit_handler(char *args)
 {
@@ -526,6 +634,7 @@ connect_handler(char *args)
 		//return -1;
 	//}
     current_commands = remote_commands;
+	fprintf(stderr, "now is in remote mode, please type your commands.\n");
 
     return 0;
 }
@@ -547,6 +656,7 @@ disconnect_handler(char *args)
     delete gc;
     gc = NULL;
     current_commands = native_commands;
+	fprintf(stderr, "now is in native mode, please type your commands.\n");
 
     return 0;
 }
@@ -554,15 +664,24 @@ disconnect_handler(char *args)
 int
 show_handler(char *args)
 {
-	//BETTER:show all or inuse, ls|grep "\.db" > ans.txt, as well as server
+	bool flag = false;
+	if(strcmp(args, "all") == 0)
+		flag = true;
     if(gc != NULL)
     {
-        string database = gc->show();
+        string database = gc->show(flag);
         fprintf(stderr, "%s", database.c_str());
         return 0;
     }
 
     //native mode
+	if(flag)
+	{
+		string database = Util::getItemsFromDir(Util::db_home);
+        fprintf(stderr, "%s", database.c_str());
+		return 0;
+	}
+
     if(current_database == NULL)
     {
         fprintf(stderr, "no database used now!\n");
@@ -574,6 +693,8 @@ show_handler(char *args)
     return 0;
 }
 
+//NOTICE: for build() and load(), always keep database in the root of gStore
+
 int
 build_handler(char *args)
 {
@@ -583,9 +704,22 @@ build_handler(char *args)
         i++;
     }
     args[i++] = '\0';
+
 	//BETTER:the position is the root of Gstore by default
 	//(or change to a specified folder later)
-    string database = string(args) + string(".db");
+	
+	string database = string(args);
+	//WARN:user better not end with ".db" by themselves!!!
+	if(database.substr(database.length()-3, 3) == ".db")
+	{
+		fprintf(stderr, "your db name to be built should not ends with '.db')\n");
+		return -1;
+	}
+    database += string(".db");
+	//if(database[0] != '/' && database[0] != '~')  //using relative path
+	//{
+		//database = string("../") + database;
+	//}
 	string dataset = string(args + i);
     while(args[i] && whitespace(args[i]))
     {
@@ -638,6 +772,8 @@ build_handler(char *args)
     else
     {
         fprintf(stderr, "import RDF file to database fail.\n");
+		delete current_database;
+		current_database = NULL;
         return -1;
     }
 }
@@ -645,8 +781,7 @@ build_handler(char *args)
 int
 drop_handler(char *args)
 {
-	//TODO:native and remote
-    //NOTICE: not using databases, drop a given one at a time
+    //REQUIRE: not using databases, drop a given one at a time
     if(current_database != NULL) //how to judge when remote
     {
         fprintf(stderr, "please donot use this command when you are using a database!\n");
@@ -658,24 +793,52 @@ drop_handler(char *args)
 		return -1;
 	}
 
-	char info[] = "drop";
-	too_dangerous(info);
-	//DEBUG:not works
+	//char info[] = "drop";
+	//too_dangerous(info);
+	//only drop when *.db, avoid other files be removed
+	string database = string(args) + string(".db");
+
+	if(gc != NULL)
+	{
+		if(gc->drop(database))
+			return 0;
+		else
+			return -1;
+	}
+
+	string cmd = string("rm -rf ") + database;
+	fprintf(stderr, "%s\n", cmd.c_str());
+	fprintf(stderr, "%s dropped!\n", database.c_str());
+	return system(cmd.c_str());
     //return remove(args);
-	//TODO:only drop when *.db, avoid other files be removed
-	//string cmd = string("rm -rf ") + string(args);
-	//fprintf(stderr, "%s\n", cmd.c_str());
-	//return system(cmd.c_str());
-	return 0;
+	//return 0;
 }
+
+//NOTICE+WARN:
+//generally, datasets are very large while a query file cannot be too large. 
+//So, when in remote mode, we expect that datasets in the server are used, while
+//queries in local machine are used(transformed to string and passed to server).
 
 int
 load_handler(char *args)
 {
+	bool flag = true;
+	//NOTICE: user should use exactly the name they type to build database
     string database = string(args);
+	if(database.substr(database.length()-3, 3) == ".db")
+	{
+		fprintf(stderr, "you should use exactly the same db name as building!(which should not ends with '.db')\n");
+		return -1;
+	}
+	database += string(".db");
+	//if(database[0] != '/' && database[0] != '~')  //using relative path
+	//{
+		//database = string("../") + database;
+	//}
     if(gc != NULL)
     {
-        gc->load(database);
+        if(gc->load(database))
+			flag = false;
     }
     else
     {
@@ -685,10 +848,26 @@ load_handler(char *args)
 			delete current_database;
 		}
         current_database = new Database(database);
-        current_database->load();
+        if(!current_database->load())
+			flag = false;
     }
-
-    return 0;
+	
+	if(flag)
+	{
+		fprintf(stderr, "database loaded successfully!\n");
+		return 0;
+	}
+	else
+	{
+		fprintf(stderr, "fail to load the database!\n");
+		if(gc == NULL)
+		{
+			delete current_database;
+			current_database = NULL;
+		}
+		//QUERY:else?
+		return -1;
+	}
 }
 
 int
@@ -731,6 +910,8 @@ unload_handler(char *args)
 int
 query_handler(char *args)
 {
+	//DEBUG:when using `query lubm.db ../data/ex0.sql`
+	//endless, and the db file is damaged!
     if(args == NULL || *args == '\0')
     {
         fprintf(stderr, "invalid arguments!\n");
@@ -794,7 +975,7 @@ query_handler(char *args)
         bool ret = current_database->query(sparql, rs, output);
         if(ret)
 		{
-#ifdef DEBUG
+#ifdef DEBUG_PRECISE
 			fprintf(stderr, "query() returns true!\n"); 
 #endif
 			return 0;

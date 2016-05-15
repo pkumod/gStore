@@ -141,6 +141,37 @@ GstoreConnector::build(string _db_name, string _rdf_file_path)
     return false;
 }
 
+bool 
+GstoreConnector::drop(string _db_name)
+{
+    bool connect_return = this->connect();
+    if (!connect_return)
+    {
+        cerr << "connect to server error. @GstoreConnector::unload" << endl;
+        return false;
+    }
+
+    string cmd = "drop " + _db_name;
+    bool send_return = this->socket.send(cmd);
+    if (!send_return)
+    {
+        cerr << "send unload command error. @GstoreConnector::unload" << endl;
+        return false;
+    }
+
+    string recv_msg;
+    this->socket.recv(recv_msg);
+
+    this->disconnect();
+
+    cout << recv_msg << endl; //debug
+    //if (recv_msg == "unload database done.")
+    //{
+        //return true;
+    //}
+	return true;
+}
+
 string 
 GstoreConnector::query(string _sparql)
 {
@@ -168,7 +199,7 @@ GstoreConnector::query(string _sparql)
 }
 
 string
-GstoreConnector::show()
+GstoreConnector::show(bool _type)
 {
     bool connect_return = this->connect();
     if (!connect_return)
@@ -177,7 +208,15 @@ GstoreConnector::show()
         return "connect to server error.";
     }
 
-    string cmd = "show databases";
+    string cmd;
+	if(_type)
+	{
+		cmd = "show all";
+	}
+	else
+	{
+		cmd = "show databases";
+	}
     bool send_return = this->socket.send(cmd);
     if (!send_return)
     {

@@ -1,0 +1,62 @@
+\contentsline {section}{\numberline {1}Preface}{4}{section.1}
+\contentsline {section}{\numberline {2}Environment Setup}{5}{section.2}
+\contentsline {section}{\numberline {3}Experiment Result}{7}{section.3}
+\contentsline {section}{\numberline {4}Comparative Analysis}{11}{section.4}
+\contentsline {section}{\numberline {5}Conclusion}{14}{section.5}
+\contentsline {section}{\numberline {6}Prospective}{15}{section.6}
+\contentsline {section}{\numberline {7}Appendix}{16}{section.7}
+\contentsline {subsection}{\numberline {7.1}WatDiv queries}{16}{subsection.7.1}
+\contentsline {subsubsection}{\numberline {7.1.1}C1.sql}{16}{subsubsection.7.1.1}
+\contentsline {subsubsection}{\numberline {7.1.2}C2.sql}{16}{subsubsection.7.1.2}
+\contentsline {subsubsection}{\numberline {7.1.3}C3.sql}{17}{subsubsection.7.1.3}
+\contentsline {subsubsection}{\numberline {7.1.4}F1.sql}{17}{subsubsection.7.1.4}
+\contentsline {subsubsection}{\numberline {7.1.5}F2.sql}{17}{subsubsection.7.1.5}
+\contentsline {subsubsection}{\numberline {7.1.6}F3.sql}{18}{subsubsection.7.1.6}
+\contentsline {subsubsection}{\numberline {7.1.7}L1.sql}{18}{subsubsection.7.1.7}
+\contentsline {subsubsection}{\numberline {7.1.8}L2.sql}{18}{subsubsection.7.1.8}
+\contentsline {subsubsection}{\numberline {7.1.9}L3.sql}{19}{subsubsection.7.1.9}
+\contentsline {subsubsection}{\numberline {7.1.10}S1.sql}{19}{subsubsection.7.1.10}
+\contentsline {subsubsection}{\numberline {7.1.11}S2.sql}{20}{subsubsection.7.1.11}
+\contentsline {subsubsection}{\numberline {7.1.12}S3.sql}{20}{subsubsection.7.1.12}
+\contentsline {subsection}{\numberline {7.2}LUBM queries}{20}{subsection.7.2}
+\contentsline {subsubsection}{\numberline {7.2.1}q0.sql}{20}{subsubsection.7.2.1}
+\contentsline {subsubsection}{\numberline {7.2.2}q1.sql}{21}{subsubsection.7.2.2}
+\contentsline {subsubsection}{\numberline {7.2.3}q2.sql}{21}{subsubsection.7.2.3}
+\contentsline {subsubsection}{\numberline {7.2.4}q3.sql}{21}{subsubsection.7.2.4}
+\contentsline {subsubsection}{\numberline {7.2.5}q4.sql}{22}{subsubsection.7.2.5}
+\contentsline {subsubsection}{\numberline {7.2.6}q5.sql}{22}{subsubsection.7.2.6}
+\contentsline {subsubsection}{\numberline {7.2.7}q6.sql}{22}{subsubsection.7.2.7}
+\contentsline {subsubsection}{\numberline {7.2.8}q7.sql}{22}{subsubsection.7.2.8}
+\contentsline {subsubsection}{\numberline {7.2.9}q8.sql}{23}{subsubsection.7.2.9}
+\contentsline {subsubsection}{\numberline {7.2.10}q9.sql}{23}{subsubsection.7.2.10}
+\contentsline {subsubsection}{\numberline {7.2.11}q10.sql}{23}{subsubsection.7.2.11}
+\contentsline {subsubsection}{\numberline {7.2.12}q11.sql}{24}{subsubsection.7.2.12}
+\contentsline {subsubsection}{\numberline {7.2.13}q12.sql}{24}{subsubsection.7.2.13}
+\contentsline {subsubsection}{\numberline {7.2.14}q13.sql}{24}{subsubsection.7.2.14}
+\contentsline {subsubsection}{\numberline {7.2.15}q14.sql}{25}{subsubsection.7.2.15}
+\contentsline {subsubsection}{\numberline {7.2.16}q15.sql}{25}{subsubsection.7.2.16}
+\contentsline {subsubsection}{\numberline {7.2.17}q16.sql}{25}{subsubsection.7.2.17}
+\contentsline {subsubsection}{\numberline {7.2.18}q17.sql}{26}{subsubsection.7.2.18}
+\contentsline {subsubsection}{\numberline {7.2.19}q18.sql}{26}{subsubsection.7.2.19}
+\contentsline {subsubsection}{\numberline {7.2.20}q19.sql}{26}{subsubsection.7.2.20}
+\contentsline {subsubsection}{\numberline {7.2.21}q20.sql}{26}{subsubsection.7.2.21}
+\contentsline {subsubsection}{\numberline {7.2.22}q21.sql}{27}{subsubsection.7.2.22}
+\contentsline {subsection}{\numberline {7.3}BSBM queries}{27}{subsection.7.3}
+\contentsline {subsubsection}{\numberline {7.3.1}self0.sql}{27}{subsubsection.7.3.1}
+\contentsline {subsubsection}{\numberline {7.3.2}self1.sql}{27}{subsubsection.7.3.2}
+\contentsline {subsubsection}{\numberline {7.3.3}self2.sql}{27}{subsubsection.7.3.3}
+\contentsline {subsubsection}{\numberline {7.3.4}self3.sql}{28}{subsubsection.7.3.4}
+\contentsline {subsubsection}{\numberline {7.3.5}self4.sql}{28}{subsubsection.7.3.5}
+\contentsline {subsubsection}{\numberline {7.3.6}self5.sql}{28}{subsubsection.7.3.6}
+\contentsline {subsubsection}{\numberline {7.3.7}self6.sql}{29}{subsubsection.7.3.7}
+\contentsline {subsubsection}{\numberline {7.3.8}self7.sql}{29}{subsubsection.7.3.8}
+\contentsline {subsubsection}{\numberline {7.3.9}self8.sql}{29}{subsubsection.7.3.9}
+\contentsline {subsubsection}{\numberline {7.3.10}self9.sql}{30}{subsubsection.7.3.10}
+\contentsline {subsection}{\numberline {7.4}DBpedia queries}{30}{subsection.7.4}
+\contentsline {subsubsection}{\numberline {7.4.1}q0.sql}{30}{subsubsection.7.4.1}
+\contentsline {subsubsection}{\numberline {7.4.2}q1.sql}{31}{subsubsection.7.4.2}
+\contentsline {subsubsection}{\numberline {7.4.3}q2.sql}{31}{subsubsection.7.4.3}
+\contentsline {subsubsection}{\numberline {7.4.4}q3.sql}{31}{subsubsection.7.4.4}
+\contentsline {subsubsection}{\numberline {7.4.5}q4.sql}{31}{subsubsection.7.4.5}
+\contentsline {subsubsection}{\numberline {7.4.6}q5.sql}{32}{subsubsection.7.4.6}
+\contentsline {subsubsection}{\numberline {7.4.7}q9.sql}{32}{subsubsection.7.4.7}

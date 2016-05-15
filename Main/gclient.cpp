@@ -11,9 +11,8 @@
 
 int main(int argc, char * argv[])
 {
-#ifdef DEBUG
+	//chdir(dirname(argv[0]));
     Util util;
-#endif
     std::string ip = Socket::DEFAULT_SERVER_IP;
     unsigned short port = Socket::DEFAULT_CONNECT_PORT;
 

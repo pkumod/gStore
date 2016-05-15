@@ -195,10 +195,13 @@ Tree::insert(const Bstr* _key, const Bstr* _value)
 	Bstr bstr = *_key;
 	while(!p->isLeaf())
 	{
-		j = p->getNum();
-		for(i = 0; i < j; ++i)
-			if(bstr < *(p->getKey(i)))
-				break;
+		//j = p->getNum();
+		//for(i = 0; i < j; ++i)
+			//if(bstr < *(p->getKey(i)))
+				//break;
+		//NOTICE: using binary search is better here
+		i = p->searchKey_less(bstr);
+
 		q = p->getChild(i);
 		this->prepare(q);
 		if(q->getNum() == Node::MAX_KEY_NUM)
@@ -226,10 +229,12 @@ Tree::insert(const Bstr* _key, const Bstr* _value)
 			p = q;
 		}
 	}
-	j = p->getNum();
-	for(i = 0; i < j; ++i)
-		if(bstr < *(p->getKey(i)))
-			break;
+	//j = p->getNum();
+	//for(i = 0; i < j; ++i)
+		//if(bstr < *(p->getKey(i)))
+			//break;
+	i = p->searchKey_less(bstr);
+
 	//insert existing key is ok, but not inserted in
 	//however, the tree-shape may change due to possible split in former code
 	bool ifexist = false;
@@ -287,7 +292,7 @@ Tree::modify(const Bstr* _key, const Bstr* _value)
 	return true;
 }
 
-/* this function is useful for search and modify, and range-query */
+//this function is useful for search and modify, and range-query 
 Node*		//return the first key's position that >= *_key
 Tree::find(const Bstr* _key, int* _store, bool ifmodify) const
 {											//to assign value for this->bstr, function shouldn't be const!
@@ -300,17 +305,22 @@ Tree::find(const Bstr* _key, int* _store, bool ifmodify) const
 	{
 		if(ifmodify)
 			p->setDirty();
-		j = p->getNum();
-		for(i = 0; i < j; ++i)				//BETTER(Binary-Search)
-			if(bstr < *(p->getKey(i)))
-				break;
+		//j = p->getNum();
+		//for(i = 0; i < j; ++i)				//BETTER(Binary-Search)
+			//if(bstr < *(p->getKey(i)))
+				//break;
+		i = p->searchKey_less(bstr);
+
 		p = p->getChild(i);
 		this->prepare(p);
 	}
+
 	j = p->getNum();
-	for(i = 0; i < j; ++i)
-		if(bstr <= *(p->getKey(i)))
-			break;
+	//for(i = 0; i < j; ++i)
+		//if(bstr <= *(p->getKey(i)))
+			//break;
+	i = p->searchKey_lessEqual(bstr);
+
 	if(i == j)
 		*_store = -1;	//Not Found
 	else	
@@ -353,9 +363,11 @@ Tree::remove(const Bstr* _key)
 	while(!p->isLeaf())
 	{
 		j = p->getNum();
-		for(i = 0; i < j; ++i)
-			if(bstr < *(p->getKey(i)))
-				break;
+		//for(i = 0; i < j; ++i)
+			//if(bstr < *(p->getKey(i)))
+				//break;
+		i = p->searchKey_less(bstr);
+
 		q = p->getChild(i);
 		this->prepare(q);
 		if(q->getNum() < Node::MIN_CHILD_NUM)	//==MIN_KEY_NUM
@@ -389,27 +401,44 @@ Tree::remove(const Bstr* _key)
 		p = q;
 	}
 	bool flag = false;
-	j = p->getNum();		//LeafNode(maybe root)
-	for(i = 0; i < j; ++i)
-		if(bstr == *(p->getKey(i)))
-		{
-			request -= p->getKey(i)->getLen();
-			request -= p->getValue(i)->getLen();
-			p->subKey(i, true);		//to release
-			p->subValue(i, true);	//to release
-			p->subNum();
-			if(p->getNum() == 0)	//root leaf 0 key
-			{
-				this->root = NULL;
-				this->leaves_head = NULL;
-				this->leaves_tail = NULL;
-				this->height = 0;
-				this->TSM->updateHeap(p, 0, true);	//instead of delete p
-			}
-			p->setDirty();
-			flag = true;
-			break;
-		}
+	//j = p->getNum();		//LeafNode(maybe root)
+	//for(i = 0; i < j; ++i)
+	//	if(bstr == *(p->getKey(i)))
+	//	{
+	//		request -= p->getKey(i)->getLen();
+	//		request -= p->getValue(i)->getLen();
+	//		p->subKey(i, true);		//to release
+	//		p->subValue(i, true);	//to release
+	//		p->subNum();
+	//		if(p->getNum() == 0)	//root leaf 0 key
+	//		{
+	//			this->root = NULL;
+	//			this->leaves_head = NULL;
+	//			this->leaves_tail = NULL;
+	//			this->height = 0;
+	//			this->TSM->updateHeap(p, 0, true);	//instead of delete p
+	//		}
+	//		p->setDirty();
+	//		flag = true;
+	//		break;
+	//	}
+	i = p->searchKey_equal(bstr);
+	request -= p->getKey(i)->getLen();
+	request -= p->getValue(i)->getLen();
+	p->subKey(i, true);		//to release
+	p->subValue(i, true);	//to release
+	p->subNum();
+	if(p->getNum() == 0)	//root leaf 0 key
+	{
+		this->root = NULL;
+		this->leaves_head = NULL;
+		this->leaves_tail = NULL;
+		this->height = 0;
+		this->TSM->updateHeap(p, 0, true);	//instead of delete p
+	}
+	p->setDirty();
+	flag = true;
+
 	this->TSM->request(request);
 	bstr.clear();
 	return flag;		//i == j, not found		

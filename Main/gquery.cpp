@@ -37,9 +37,8 @@ help()
 int
 main(int argc, char * argv[])
 {
-#ifdef DEBUG
+	//chdir(dirname(argv[0]));
     Util util;
-#endif
     if(argc == 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
     {
         help();
@@ -51,10 +50,20 @@ main(int argc, char * argv[])
         cerr << "error: lack of DB_store to be queried" << endl;
         return 0;
     }
+    {
+        cout << "argc: " << argc << "\t";
+        cout << "DB_store:" << argv[1] << "\t";
+        cout << endl;
+    }
 
     string db_folder = string(argv[1]);
+	//if(db_folder[0] != '/' && db_folder[0] != '~')  //using relative path
+	//{
+		//db_folder = string("../") + db_folder;
+	//}
     Database _db(db_folder);
     _db.load();
+    cout << "finish loading" << endl;
 
     // read query from file.
     if (argc >= 3)
@@ -76,11 +85,17 @@ main(int argc, char * argv[])
         //
         //        string query = _ss.str();
 
-        string query = Util::getQueryFromFile(argv[2]);
+		string query = string(argv[2]);
+		//if(query[0] != '/' && query[0] != '~')  //using relative path
+		//{
+			//query = string("../") + query;
+		//}
+        query = Util::getQueryFromFile(query.c_str());
         if (query.empty())
         {
             return 0;
         }
+        printf("query is:\n%s\n\n", query.c_str());
         ResultSet _rs;
         _db.query(query, _rs, stdout);
         if (argc >= 4)
@@ -186,6 +201,8 @@ main(int argc, char * argv[])
 			free(buf);
 			continue;
         }
+        else
+			printf("%s\n", q);
         //query = getQueryFromFile(p);
         query = Util::getQueryFromFile(q);
         if(query.empty())
@@ -197,6 +214,8 @@ main(int argc, char * argv[])
 				fclose(fp);
             continue;
         }
+        printf("query is:\n");
+        printf("%s\n\n", query.c_str());
         ResultSet _rs;
         _db.query(query, _rs, fp);
         //test...

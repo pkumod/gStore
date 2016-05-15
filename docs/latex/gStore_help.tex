@@ -1,5 +1,6 @@
 \documentclass[titlepage, a4paper, 12pt]{article}
 
+%\usepackage{ctex}
 \usepackage{lmodern}
 \usepackage{ifxetex,ifluatex}
 \usepackage{fixltx2e} 
@@ -115,7 +116,7 @@
 
 \begin{document}
 \title{\includegraphics[scale=0.3, bb=0 0 385 567]{../logo.png} \\
-	The handbook of gStore System}
+	The handbook of gStore System测试}
 %\author{Bookug Lobert\footnote{EECS of Peking University, zengli-bookug@pku.edu.cn}\\[2ex]}
 \author{Edited by gStore team \footnote{The mailing list is given in Chapter 11.}}
 \date{\today}
@@ -153,7 +154,6 @@ matching semantics of SPARQL. \textbf{Here, we implement a graph-based RDF tripl
 \part{Start}
 
 \hyperdef{}{chapter00}{\subsection{Chapter 00: A Quick Tour}\label{chapter00}}
-
 Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
 
 \hyperdef{}{getting-started}{\subsubsection{Getting
@@ -1347,7 +1347,7 @@ I use the newer gStore system to query the original database, why
 error?}\label{when-i-use-the-newer-gstore-system-to-query-the-original-database-why-error}}
 \quad\\
 The database produced by gStore contains several indexes, whose
-structures may have been chnaged in the new gStore version. So, please
+structures may have been changed in the new gStore version. So, please
 rebuild your dataset just in case.
 
 \hyperdef{}{why-error-when-i-try-to-write-programs-based-on-gstore-just-like-the-maingconsolecpp}{\paragraph{Why
@@ -1611,7 +1611,7 @@ system think that the debugging log is still open)
 We implement the version of B+Tree, and replace the old one.
 
 After testing on DBpedia, LUBM, and WatDiv benchmark, we conclude that
-the new BTree performs more efficient than\\ the old version. For the
+the new BTree performs more efficient than the old version. For the
 same triple file, the new version spends shorter time on executing gload
 command.
 
@@ -1718,7 +1718,7 @@ for different systems.
 \begin{threeparttable}
 \begin{tabular}{|c||c|c|c||c|c|c|}
 \hline
- & \multicolumn{3}{c||}{Index Size(KB)}& \multicolumn{3}{c|}{Loading Time(second)}\\
+ & \multicolumn{3}{c||}{Index Size(KB)}& \multicolumn{3}{c|}{Loading Time(ms)}\\
 \hline
 \hline
  Datasets & gStore & Jena& Virtuoso& gStore & Jena& Virtuoso\\
@@ -1748,7 +1748,7 @@ for different systems.
 \end{table}
 \end{comment}
 
-The performance of different database management systems is shown in Figures \ref{fig:dbpedia2014Performance}, \ref{fig:BsbmPerformance}, \ref{fig:LUBMPerformance} and \ref{fig:WatDivPerformance}.
+The performance of different database management systems is shown in Figures \ref{fig:dbpedia2014Performance}, \ref{fig:Bsbm10000Performance}, \ref{fig:LUBMPerformance} and \ref{fig:WatDivPerformance}.
 
 Notice that Sesame and Virtuoso are unable to operate on DBpedia 2014 and
 WatDiv 300M, because the size is too large. In addition, we do not use
@@ -1765,10 +1765,10 @@ Generally speaking, Virtuoso is not scalable, and Sesame is so weak. \\
 
 \begin{figure}%
 		\resizebox{0.8\columnwidth}{!}{
-			\input{bsbm_comparison}
+			\input{bsbm10000_comparison}
 		}
  \caption{Query Performance over Bsbm 10000}%
- \label{fig:BsbmPerformance}
+ \label{fig:Bsbm10000Performance}
 \end{figure}
 
 \begin{figure}[h]%
@@ -1906,7 +1906,10 @@ Box}\label{idea-collection-box}}
 
 \textit{This chapter lists people who inspire us or contribute to this project.}
 
-\emph{nobody now}
+\paragraph{GitHub user zhangxiaoyang \\
+	https://github.com/zhangxiaoyang \\
+	1. add python api \\
+	2. fix logger message}
 
 %\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 \clearpage

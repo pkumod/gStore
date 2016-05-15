@@ -81,4 +81,13 @@ cscope*
 .cproject
 .project
 tags
+.settings
+
+# latex files
+*.aux
+*.toc
+*.synctex.gz
+*.log
+*.out
+*.bak~
 

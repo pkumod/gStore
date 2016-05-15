@@ -57,11 +57,25 @@ BasicQuery::clear()
     this->candidate_list = NULL;
     delete[] this->is_literal_candidate_added;
     this->is_literal_candidate_added = NULL;
+	delete[] this->need_retrieve;
+	this->need_retrieve = NULL;
     for (unsigned i=0;i<this->result_list.size();++i)
     {
         delete[] this->result_list[i];
         this->result_list[i] = NULL;
     }    
+}
+
+int
+BasicQuery::getRetrievedVarNum()
+{
+	return this->retrieve_var_num;
+}
+
+int
+BasicQuery::getTotalVarNum()
+{
+	return this->total_var_num;
 }
 
 // get the num of vars need to be joined(>= select_var_num)
@@ -161,6 +175,12 @@ BasicQuery::getResultList()
     return result_list;
 }
 
+vector<int*>*
+BasicQuery::getResultListPointer()
+{
+    return &result_list;
+}
+
 const EntityBitSet& 
 BasicQuery::getVarBitSet(int _i)const
 {
@@ -172,18 +192,18 @@ BasicQuery::getVarBitSet(int _i)const
 bool 
 BasicQuery::isInEdge(int _var, int _i_th_edge)const
 {
-    return this->edge_type[_var][_i_th_edge] == BasicQuery::EDGE_IN;
+    return this->edge_type[_var][_i_th_edge] == Util::EDGE_IN;
 }
 
 // check whether the i-th edge of _var is OUT edge
 bool 
 BasicQuery::isOutEdge(int _var, int _i_th_edge)const
 {
-    return this->edge_type[_var][_i_th_edge] == BasicQuery::EDGE_OUT;
+    return this->edge_type[_var][_i_th_edge] == Util::EDGE_OUT;
 }
 
 bool 
-BasicQuery::isOneDegreeNotSelectVar(string& _no_sense_var)
+BasicQuery::isOneDegreeNotJoinVar(string& _no_sense_var)
 {
     // vars begin with ?
     if(_no_sense_var.at(0) != '?')
@@ -195,6 +215,12 @@ BasicQuery::isOneDegreeNotSelectVar(string& _no_sense_var)
     {
         return false;
     }
+	//ERROR:the value returned is 0
+	//if(this->var_str2id[_no_sense_var] != -1)
+	if(this->var_str2id.find(_no_sense_var) != this->var_str2id.end())
+	{
+		return false;
+	}
 
     return true;
 }
@@ -251,6 +277,18 @@ BasicQuery::setAddedLiteralCandidate(int _var)
     this->is_literal_candidate_added[_var] = true;
 }
 
+bool
+BasicQuery::if_need_retrieve(int _var)
+{
+	return _var >= 0 && this->need_retrieve[_var];
+}
+
+bool
+BasicQuery::isSatelliteInJoin(int _var)
+{
+	return _var >= 0 && _var < this->graph_var_num && !(this->need_retrieve[_var]);
+}
+
 void 
 BasicQuery::updateSubSig(int _sub_id, int _pre_id, int _obj_id, string _obj,int _line_id)
 {
@@ -261,9 +299,9 @@ BasicQuery::updateSubSig(int _sub_id, int _pre_id, int _obj_id, string _obj,int 
         Signature::encodeStr2Entity(_obj.c_str(), this->var_sig[_sub_id]);
     }
 
-    if(_pre_id != -1)
+    if(_pre_id >= 0)
     {
-        Signature::encodePredicate2Entity(_pre_id, this->var_sig[_sub_id], BasicQuery::EDGE_OUT);
+        Signature::encodePredicate2Entity(_pre_id, this->var_sig[_sub_id], Util::EDGE_OUT);
     }
 
     // update var(sub)_degree & edge_id according to this triple
@@ -271,7 +309,7 @@ BasicQuery::updateSubSig(int _sub_id, int _pre_id, int _obj_id, string _obj,int 
     // edge_id[var_id][i] : the ID of the i-th edge of the var
     this->edge_id[_sub_id][sub_degree] = _line_id;
     this->edge_nei_id[_sub_id][sub_degree] = _obj_id;
-    this->edge_type[_sub_id][sub_degree] = BasicQuery::EDGE_OUT;
+    this->edge_type[_sub_id][sub_degree] = Util::EDGE_OUT;
     this->edge_pre_id[_sub_id][sub_degree] = _pre_id;
     this->var_degree[_sub_id] ++;
 }
@@ -283,14 +321,14 @@ BasicQuery::updateObjSig(int _obj_id, int _pre_id, int _sub_id, string _sub,int 
     bool sub_is_str = (_sub_id == -1) && (_sub.at(0) != '?');
     if(sub_is_str)
     {
-        //////cout << "str2entity" << endl;
+        cout << "str2entity" << endl;
         Signature::encodeStr2Entity(_sub.c_str(), this->var_sig[_obj_id]);
     }
 
-    if(_pre_id != -1)
+    if(_pre_id >= 0)
     {
-        //////cout << "pre2entity" << endl;
-        Signature::encodePredicate2Entity(_pre_id, this->var_sig[_obj_id], BasicQuery::EDGE_IN);
+        cout << "pre2entity" << endl;
+        Signature::encodePredicate2Entity(_pre_id, this->var_sig[_obj_id], Util::EDGE_IN);
     }
 
     // update var(sub)_degree & edge_id according to this triple
@@ -298,7 +336,7 @@ BasicQuery::updateObjSig(int _obj_id, int _pre_id, int _sub_id, string _sub,int 
     // edge_id[var_id][i] : the ID of the i-th edge of the var 
     this->edge_id[_obj_id][obj_degree] = _line_id;
     this->edge_nei_id[_obj_id][obj_degree] = _sub_id;
-    this->edge_type[_obj_id][obj_degree] = BasicQuery::EDGE_IN;
+    this->edge_type[_obj_id][obj_degree] = Util::EDGE_IN;
     this->edge_pre_id[_obj_id][obj_degree] = _pre_id;
     this->var_degree[_obj_id] ++;
 }
@@ -307,9 +345,13 @@ BasicQuery::updateObjSig(int _obj_id, int _pre_id, int _sub_id, string _sub,int 
 void 
 BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_var)
 {
-    //////cout << "IN buildBasicSignature" << endl;
-    this->initial();
-    //////cout << "after init" << endl;
+	//TODO:the third parameter should be selected predicate variables
+	//(ordered, and merged with selected s/o in upper level)
+	//we append the candidates for selected pre_var to original select_var_num columns
+	//TODO:add pre var, assign name and select=true (not disturb the order between pres)
+    cout << "IN buildBasicSignature" << endl;
+    //this->initial();
+    //cout << "after init" << endl;
 
     this->buildTuple2Freq();
 
@@ -325,18 +367,20 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 #endif
     for(int i = 0; i < (this->select_var_num); ++i)
     {
+		//NOTICE:not place pre var in join
         string _var = _query_var[i];
         this->var_str2id[_var] = i;
         this->var_name[i] = _var;
     }
 
-    //////cout << "select variables: ";
+    cout << "select variables: ";
     for(unsigned i = 0; i < this->var_str2id.size(); ++i)
     {
-        //////cout << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
+        cout << "[" << this->var_name[i] << ", " << i << " " << this->var_str2id[this->var_name[i]] << "]\t";
     }
-    //////cout << endl;
+    cout << endl;
 
+	this->total_var_num = this->select_var_num;
     if(this->encode_method == BasicQuery::SELECT_VAR)
     {
         this->findVarNotInSelect();
@@ -348,13 +392,13 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
     // assign the this->var_num, all need to join
     this->graph_var_num = this->var_str2id.size();
 
-    ////cout<< "graph variables: ";
+    cout<< "graph variables: ";
     for(unsigned i = 0; i < this->var_str2id.size(); i ++)
     {
-        ////cout << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
+        cout << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
     }
-    ////cout << endl;
-	////cout << "before new IDList!" << endl;	//just for debug
+    cout << endl;
+	cout << "before new IDList!" << endl;	//just for debug
 
     this->candidate_list = new IDList[this->graph_var_num];
 
@@ -363,13 +407,38 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         string& sub = this->triple_vt[i].subject;
         string& pre = this->triple_vt[i].predicate;
         string& obj = this->triple_vt[i].object;
-		// -1 if not found, this means this query is invalid
-        int pre_id = _p_kvstore->getIDByPredicate(pre);
-        {
-            stringstream _ss;
-            _ss << "pre2id: " << pre << "=>" << pre_id << endl;
-            Util::logging(_ss.str());
-        }
+		int pre_id = -1;    //not found
+		if(pre[0] == '?')   //pre var
+		{
+			int pid = this->getPreVarID(pre);
+			if(pid == -1)
+			{
+				//pid = this->select_var_num + this->pre_var.size();
+				//this->pre_var[pid] = PreVar(pre);
+				this->pre_var.push_back(PreVar(pre));
+				pid = this->pre_var.size() - 1;
+			}
+			//map<int, PreVar>::iterator it = this->pre_var.find(pid);
+			//it->second.triples.push_back(i);
+			this->pre_var[pid].triples.push_back(i);
+			pre_id = -2;   //mark that this is a pre var
+		}
+		else
+		{
+			// -1 if not found, this means this query is invalid
+			pre_id = _p_kvstore->getIDByPredicate(pre);
+			{
+				stringstream _ss;
+				_ss << "pre2id: " << pre << "=>" << pre_id << endl;
+				Util::logging(_ss.str());
+			}
+			if(pre_id == -1)
+			{
+				//BETTER:this is too robust, not only one query, try return false
+				cerr << "invalid query because the pre is not found: " << pre << endl;
+				exit(1);
+			}
+		}
         int sub_id = -1;
         int obj_id = -1;
 
@@ -421,18 +490,70 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         bool two_var_edge = (sub_is_var && obj_is_var);
         if(two_var_edge)
         {
-            if(pre_id != -1)
+            if(pre_id >= 0)
             {
-                ////cout << "pre2edge" << endl;
+                cout << "pre2edge" << endl;
                 Signature::encodePredicate2Edge(pre_id, this->edge_sig[sub_id][obj_id]);
 //              this->edge_pre_id[sub_id][obj_id] = pre_id;
             }
         }
 
     }
-    ////cout << "OUT encodeBasicQuery" << endl;
+
+	//set need_retrieve for vars in join whose total degree > 1
+	this->retrieve_var_num = 0;
+	for(int i = 0; i < this->graph_var_num; ++i)
+	{
+		if(this->var_degree[i] > 1)
+		{
+			this->need_retrieve[i] = true;
+			this->retrieve_var_num++;
+		}
+	}
+
+    cout << "OUT encodeBasicQuery" << endl;
 }
 
+int
+BasicQuery::getPreVarID(const string& _name) const
+{
+	//map<int, PreVar>::const_iterator it;   //this is a const function
+	//for(it = this->pre_var.begin(); it != this->pre_var.end(); ++it)
+		//if(it->second.name == _name)
+			//return it->first;
+	for(unsigned i = 0; i < this->pre_var.size(); ++i)
+		if(this->pre_var[i].name == _name)
+			return i;
+	return -1;
+	//BETTER:use string2int map to speed up if using in too-many-loops
+}
+
+unsigned
+BasicQuery::getPreVarNum() const
+{
+	return this->pre_var.size();
+}
+
+const PreVar&
+BasicQuery::getPreVarByID(unsigned _id) const
+{
+	if(_id >= 0 && _id < this->pre_var.size())
+		return this->pre_var[_id];
+	else
+		return this->pre_var[0];
+}
+
+//int
+//BasicQuery::getIDByPreVarName(const string& _name) const
+//{
+	//return 0;
+//}
+
+int
+BasicQuery::getIDByVarName(const string& _name)
+{
+	return this->var_str2id[_name];
+}
 
 void 
 BasicQuery::addTriple(const Triple& _triple)
@@ -455,6 +576,7 @@ BasicQuery::null_initial()
     this->var_str2id.clear();
     this->var_degree = NULL;
     this->is_literal_candidate_added = NULL;
+	this->need_retrieve = NULL;
     this->edge_id = NULL;
     this->edge_nei_id = NULL;
     this->edge_pre_id = NULL;
@@ -486,13 +608,15 @@ BasicQuery::initial()
     this->edge_type = new char*[BasicQuery::MAX_VAR_NUM];
 
     this->is_literal_candidate_added = new bool[BasicQuery::MAX_VAR_NUM];
+    this->need_retrieve = new bool[BasicQuery::MAX_VAR_NUM];
 
-    for(int i = 0; i < BasicQuery::MAX_VAR_NUM; i ++)
+    for(int i = 0; i < BasicQuery::MAX_VAR_NUM; ++i)
     {
         this->var_degree[i] = 0;
         this->var_sig[i].reset();
         this->var_name[i] = "";
         this->is_literal_candidate_added[i] = false;
+        this->need_retrieve[i] = false;
 
         this->edge_sig[i] = new EdgeBitSet[BasicQuery::MAX_VAR_NUM];
         this->edge_id[i] = new int[BasicQuery::MAX_VAR_NUM];
@@ -500,7 +624,7 @@ BasicQuery::initial()
         this->edge_pre_id[i] = new int[BasicQuery::MAX_VAR_NUM];
         this->edge_type[i] = new char[BasicQuery::MAX_VAR_NUM];
 
-        for(int j = 0; j < BasicQuery::MAX_VAR_NUM; j ++)
+        for(int j = 0; j < BasicQuery::MAX_VAR_NUM; ++j)
         {
             this->edge_sig[i][j].reset();
             this->edge_id[i][j] = -1;
@@ -527,6 +651,7 @@ void BasicQuery::addInVarNotInSelect()
             bool not_var_yet = (find_sub_itr == this->var_str2id.end());
             if(not_var_yet)
             {
+				this->total_var_num++;
                 int _freq = this->tuple2freq[sub];
                 // so the var str must occur more than once
                 if(_freq > 1)
@@ -545,6 +670,7 @@ void BasicQuery::addInVarNotInSelect()
             bool not_var_yet = (find_obj_itr == this->var_str2id.end());
             if(not_var_yet)
             {
+				this->total_var_num++;
                 int _freq = this->tuple2freq[obj];
                 // so the var str must occur more than once
                 if(_freq > 1)
@@ -695,7 +821,7 @@ BasicQuery::getVarID_FirstProcessWhenJoin()
     {
         // when join variables' mapping candidate list, we should start with entity variable.
         // since literal variables' candidate list may not include all literals.
-        if (this->isLiteralVariable(i))
+        if(this->isLiteralVariable(i) || this->isSatelliteInJoin(i))
         {
             continue;
         }

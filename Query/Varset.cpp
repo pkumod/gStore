@@ -1,9 +1,9 @@
 /*=============================================================================
-# Filename: GeneralEvaluation.cpp
+# Filename: Varset.cpp
 # Author: Jiaqi, Chen
-# Mail: 1181955272@qq.com
+# Mail: chenjiaqi93@163.com
 # Last Modified: 2016-03-02 20:35
-# Description: implement functions in varset.h
+# Description: implement functions in Varset.h
 =============================================================================*/
 
 #include "Varset.h"
@@ -65,6 +65,20 @@ Varset Varset::operator - (Varset& x)
 bool Varset::operator ==(Varset &x)
 {
 	if ((int)this->varset.size() != (int)x.varset.size())	return false;
+	for (int i = 0; i < (int)this->varset.size(); i++)
+		if (!x.findVar(this->varset[i]))	return false;
+	return true;
+}
+
+bool Varset::hasCommonVar(Varset &x)
+{
+	for (int i = 0; i < (int)this->varset.size(); i++)
+		if (x.findVar(this->varset[i]))	return true;
+	return false;
+}
+
+bool Varset::belongTo(Varset &x)
+{
 	for (int i = 0; i < (int)this->varset.size(); i++)
 		if (!x.findVar(this->varset[i]))	return false;
 	return true;

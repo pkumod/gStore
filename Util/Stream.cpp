@@ -68,9 +68,11 @@ Stream::Stream(std::vector<int>& _keys, std::vector<bool>& _desc, unsigned _rown
     if(Util::memoryLeft() < size)
     {
         this->inMem = false;
+        fprintf(stderr, "Stream: memory is not enough!\n");
     }
     else
     {
+        fprintf(stderr, "Stream: memory is enough!\n");
     }
 #ifdef DEBUG_STREAM
     fprintf(stderr, "Stream:after memory check!\n");

@@ -8,6 +8,8 @@
 
 #include "Server.h"
 
+using namespace std;
+
 Server::Server()
 {
     this->connectionPort = Socket::DEFAULT_CONNECT_PORT; // default communication port is 3305.
@@ -132,6 +134,12 @@ Server::listen()
                 this->importRDF(db_name, "", rdf_path, ret_msg);
                 break;
             }
+			case CMD_DROP:
+			{
+                string db_name = operation.getParameter(0);
+                this->dropDatabase(db_name, "", ret_msg);
+                break;
+			}
             case CMD_QUERY:
             {
                 string query = operation.getParameter(0);
@@ -141,9 +149,9 @@ Server::listen()
             case CMD_SHOW:
             {
                 string para = operation.getParameter(0);
-                if (para == "databases")
+                if (para == "databases" || para == "all")
                 {
-                    this->showDatabases("", ret_msg);
+                    this->showDatabases(para, "", ret_msg);
                 }
                 else
                 {
@@ -294,10 +302,20 @@ Server::createDatabase(std::string _db_name, std::string _ac_name, std::string& 
 }
 
 bool 
-Server::deleteDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
+Server::dropDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
 {
-    // to be implemented...
-    return false;
+	//TODO
+    if (this->database == NULL || this->database->getName() != _db_name)
+    {
+        _ret_msg = "database:" + _db_name + " is not loaded.";
+        return false;
+    }
+
+    delete this->database;
+    this->database = NULL;
+    _ret_msg = "unload database done.";
+
+    return true;
 }
 
 bool 
@@ -314,6 +332,8 @@ Server::loadDatabase(std::string _db_name, std::string _ac_name, std::string& _r
     else
     {
         _ret_msg = "load database failed.";
+		delete this->database;
+		this->database = NULL;
     }
 
     return flag;
@@ -397,7 +417,7 @@ Server::query(const std::string _query, std::string& _ret_msg)
     if(flag)
     {
 		//_ret_msg = "results are too large!";
-		//TODO: divide and transfer if too large to be placed in memory, using Stream
+		//BETTER: divide and transfer if too large to be placed in memory, using Stream
         _ret_msg = res_set.to_str();
     }
     else
@@ -409,9 +429,14 @@ Server::query(const std::string _query, std::string& _ret_msg)
 }
 
 bool 
-Server::showDatabases(std::string _ac_name, std::string& _ret_msg)
+Server::showDatabases(string _para, string _ac_name, string& _ret_msg)
 {
-    if (this->database != NULL)
+	if(_para == "all")
+	{
+		_ret_msg = Util::getItemsFromDir(Util::db_home);
+		return true;
+	}
+    if(this->database != NULL)
     {
         _ret_msg = "\n" + this->database->getName() + "\n";
     }

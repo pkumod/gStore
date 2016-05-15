@@ -26,13 +26,15 @@ public:
 	std::string to_str();
 	int sort();
 	void clear();
+	void copy(std::vector<int>& _new_idlist);
 
 	// intersect/union _id_list to this IDList, note that the two list must be ordered before using these two functions.
 	int intersectList(const int* _id_list, int _list_len);
 	int intersectList(const IDList&);
-	int unionList(const int* _id_list, int _list_len);
-	int unionList(const IDList&);
+	int unionList(const int* _id_list, int _list_len, bool only_literal=false);
+	int unionList(const IDList&, bool only_literal=false);
 	int bsearch_uporder(int _key);
+	static IDList* intersect(const IDList&, const int*, int);
 private:
 	std::vector<int> id_list;
 	int erase(int i);

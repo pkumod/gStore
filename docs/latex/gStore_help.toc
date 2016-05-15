@@ -1,0 +1,77 @@
+\contentsline {section}{Preface}{5}{section*.2}
+\contentsline {part}{I\hspace {1em}Start}{7}{part.1}
+\contentsline {subsection}{Chapter 00: A Quick Tour}{7}{section*.3}
+\contentsline {subsubsection}{Getting Started}{7}{section*.4}
+\contentsline {subsubsection}{Advanced Help}{8}{section*.5}
+\contentsline {subsubsection}{Other Business}{8}{section*.6}
+\contentsline {subsection}{Chapter 01: System Requirements}{10}{section*.7}
+\contentsline {subsection}{Chapter 02: Basic Introduction}{12}{section*.8}
+\contentsline {subsubsection}{What Is gStore}{12}{section*.9}
+\contentsline {subsubsection}{Why gStore}{12}{section*.10}
+\contentsline {subsubsection}{Open Source}{13}{section*.11}
+\contentsline {subsection}{Chapter 03: Install Guide}{14}{section*.12}
+\contentsline {subsection}{Chapter 04: How To Use}{15}{section*.13}
+\contentsline {paragraph}{0. gconsole}{15}{section*.14}
+\contentsline {paragraph}{1. gload}{18}{section*.15}
+\contentsline {paragraph}{2. gquery}{18}{section*.16}
+\contentsline {paragraph}{3. gserver}{20}{section*.17}
+\contentsline {paragraph}{4. gclient}{21}{section*.18}
+\contentsline {paragraph}{5. test utilities}{22}{section*.19}
+\contentsline {part}{II\hspace {1em}Advanced}{24}{part.2}
+\contentsline {subsection}{Chapter 05: API Explanation}{24}{section*.20}
+\contentsline {subsubsection}{Easy Examples}{24}{section*.21}
+\contentsline {subsubsection}{API structure}{25}{section*.22}
+\contentsline {subsubsection}{C++ API}{26}{section*.23}
+\contentsline {paragraph}{Interface}{26}{section*.24}
+\contentsline {paragraph}{Compile}{27}{section*.25}
+\contentsline {subsubsection}{Java API}{28}{section*.26}
+\contentsline {paragraph}{Interface}{28}{section*.27}
+\contentsline {paragraph}{Compile}{30}{section*.28}
+\contentsline {subsection}{Chapter 06: Project Structure}{31}{section*.29}
+\contentsline {paragraph}{The core source codes are listed below:}{31}{section*.30}
+\contentsline {paragraph}{The parser part is listed below:}{33}{section*.31}
+\contentsline {paragraph}{The utilities are listed below:}{34}{section*.32}
+\contentsline {paragraph}{The interface part is listed below:}{34}{section*.33}
+\contentsline {paragraph}{More details}{35}{section*.34}
+\contentsline {paragraph}{Others}{36}{section*.35}
+\contentsline {subsection}{Chapter 07: Publications}{38}{section*.36}
+\contentsline {paragraph}{Publications related with gStore are listed here:}{38}{section*.37}
+\contentsline {subsection}{Chapter 08: Limitations}{39}{section*.38}
+\contentsline {subsection}{Chapter 09: Frequently Asked Questions}{40}{section*.39}
+\contentsline {paragraph}{When I use the newer gStore system to query the original database, why error?}{40}{section*.40}
+\contentsline {paragraph}{Why error when I try to write programs based on gStore, just like the Main/gconsole.cpp?}{40}{section*.41}
+\contentsline {paragraph}{Why does gStore report ``garbage collection failed'' error when I use the Java API?}{40}{section*.42}
+\contentsline {paragraph}{When I compile the code in ArchLinux, why the error that ``no -ltermcap'' is reported?}{40}{section*.43}
+\contentsline {paragraph}{Why does gStore report errors that the format of some RDF datasets are not supported?}{40}{section*.44}
+\contentsline {paragraph}{When I read on GitHub, why are some documents unable to be opened?}{41}{section*.45}
+\contentsline {paragraph}{Why sometimes strange characters appear when I use gStore?}{41}{section*.46}
+\contentsline {paragraph}{In centos7, if the watdiv.db(a generated database after gload) is copied or compressed/uncompressed, the size of watdiv.db will be different(generally increasing) if using \texttt {du\ -h} command to check?}{41}{section*.47}
+\contentsline {paragraph}{In gclient console, a database is built, queried, and then I quit the console. Next time I enter the console, load the originally imported database, but no output for any queries(originally the output is not empty)?}{42}{section*.48}
+\contentsline {paragraph}{If query results contain null value, how can I use the \href {run:../../test/full_test.sh}{full\_test} utility? Tab separated method will cause problem here because null value cannot be checked!}{42}{section*.49}
+\contentsline {paragraph}{When I compile and run the API examples, it reports the ``unable to connect to server'' error?}{42}{section*.50}
+\contentsline {paragraph}{When I use the Java API to write my own program, it reports ``not found main class'' error?}{42}{section*.51}
+\contentsline {subsection}{Chapter 10: Recipe Book}{43}{section*.52}
+\contentsline {part}{III\hspace {1em}Others}{44}{part.3}
+\contentsline {subsection}{Chapter 11: Contributors}{44}{section*.53}
+\contentsline {paragraph}{Faculty}{44}{section*.54}
+\contentsline {paragraph}{Students}{44}{section*.55}
+\contentsline {paragraph}{Alumni}{45}{section*.56}
+\contentsline {subsection}{Chapter 12: Updated Logs}{46}{section*.57}
+\contentsline {subsubsection}{Apr 01, 2016}{46}{section*.58}
+\contentsline {subsubsection}{Nov 06, 2015}{46}{section*.59}
+\contentsline {subsubsection}{Oct 20, 2015}{47}{section*.60}
+\contentsline {subsubsection}{Sep 25, 2015}{47}{section*.61}
+\contentsline {subsubsection}{Feb 2, 2015}{47}{section*.62}
+\contentsline {subsubsection}{Dec 11, 2014}{48}{section*.63}
+\contentsline {subsubsection}{Nov 20, 2014}{48}{section*.64}
+\contentsline {subsection}{Chapter 13: Test Result}{49}{section*.65}
+\contentsline {subsubsection}{Preparation}{49}{section*.66}
+\contentsline {subsubsection}{Result}{49}{section*.67}
+\contentsline {subsection}{Chapter 14: Future Plan}{53}{section*.68}
+\contentsline {subsubsection}{Improve The Core}{53}{section*.69}
+\contentsline {subsubsection}{Better The Interface}{53}{section*.70}
+\contentsline {subsubsection}{Idea Collection Box}{53}{section*.71}
+\contentsline {subsection}{Chapter 15: Thanks List}{55}{section*.72}
+\contentsline {paragraph}{GitHub user zhangxiaoyang \\ https://github.com/zhangxiaoyang \\ 1. add python api \\ 2. fix logger message}{55}{section*.73}
+\contentsline {subsection}{Chapter 16: Legal Issues}{56}{section*.74}
+\contentsline {section}{End}{58}{section*.75}

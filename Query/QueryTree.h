@@ -1,7 +1,7 @@
 /*=============================================================================
-# Filename: GeneralEvaluation.cpp
+# Filename: QueryTree.h
 # Author: Jiaqi, Chen
-# Mail: 1181955272@qq.com
+# Mail: chenjiaqi93@163.com
 # Last Modified: 2016-03-02 20:35
 # Description: 
 =============================================================================*/
@@ -15,85 +15,51 @@
 class QueryTree
 {
 	public:
-		QueryTree():query_form(Select_Query), projection_modifier(Modifier_None), projection_asterisk(false), offset(0), limit(-1){}
+		QueryTree():
+			query_form(Select_Query), projection_modifier(Modifier_None), projection_asterisk(false), offset(0), limit(-1){}
 
 		enum	QueryForm {Select_Query, Ask_Query};
+		enum ProjectionModifier {Modifier_None, Modifier_Distinct, Modifier_Reduced, Modifier_Count, Modifier_Duplicates};
 
-		enum ProjectionModifier { Modifier_None, Modifier_Distinct, Modifier_Reduced, Modifier_Count, Modifier_Duplicates };
-
-		class Element
+		class GroupPattern
 		{
 			public:
-				/*
-				enum Type { Variable, Literal, IRI };
-				enum SubType { None, CustomLanguage, CustomType };
-				Type type;
-				SubType subType;
-				std::string subTypeValue;
-				 */
-				std::string value;
-				Element(const std::string& _value):value(_value){}
-		};
-
-		class Pattern
-		{
-			public:
-				Element subject, predicate, object;
-				Pattern(const Element _subject, const Element _predicate,const Element _object):subject(_subject), predicate(_predicate), object(_object){}
-		};
-
-		class FilterTree
-		{
-			public:
-				enum FilterTree_Type
-				{
-					None_type, Or_type, And_type, Equal_type, NotEqual_type, Less_type, LessOrEqual_type, Greater_type, GreaterOrEqual_type,
-					Plus_type, Minus_type, Mul_type, Div_type,	Not_type, UnaryPlus_type, UnaryMinus_type, Literal_type, Variable_type, IRI_type,
-					Function_type, ArgumentList_type,Builtin_str_type, Builtin_lang_type, Builtin_langmatches_type, Builtin_datatype_type, Builtin_bound_type,
-					Builtin_sameterm_type,Builtin_isiri_type, Builtin_isblank_type, Builtin_isliteral_type, Builtin_regex_type, Builtin_in_type, Builtin_exists_type
-				};
-				FilterTree_Type type;
-
-				class FilterTreeChild
+				class Pattern
 				{
 					public:
-						FilterTreeChild():type(' '), ptr(NULL), arg(""), pos(-1){}
-						FilterTreeChild(const FilterTreeChild &ftc):type(ftc.type), ptr(NULL), arg(ftc.arg), pos(ftc.pos)
+						class Element
 						{
-							if (ftc.ptr != NULL)
-							{
-								ptr = new FilterTree();
-								*ptr = *ftc.ptr;
-							}
-						}
-						~FilterTreeChild(){	if (ptr != NULL)	delete ptr;		}
-
-						char type;
-						FilterTree *ptr;
-						std::string arg;
-						int pos;
+							public:
+								/*
+								enum Type { Variable, Literal, IRI };
+								enum SubType { None, CustomLanguage, CustomType };
+								Type type;
+								SubType subType;
+								std::string subTypeValue;
+								 */
+								std::string value;
+								Element(const std::string& _value):
+									value(_value){}
+						};
+						Element subject, predicate, object;
+						Varset varset;
+						Pattern(const Element _subject, const Element _predicate,const Element _object):subject(_subject), predicate(_predicate), object(_object){}
 				};
-				std::vector<FilterTreeChild> child;
-				int exists_patterngroup_id;
 
-				FilterTree():type(None_type), exists_patterngroup_id(-1){};
-				FilterTree(const FilterTree &ft):type(ft.type), child(ft.child), exists_patterngroup_id(ft.exists_patterngroup_id)	{}
-		};
 
-		class PatternGroup
-		{
-			public:
-				class OptionalOrMinusPatternGroup;
+				class GroupPatternUnions;
+				class OptionalOrMinusGroupPattern;
+				class FilterTreeNode;
+				class FilterTreeRoot;
 
 				std::vector<Pattern> patterns;
-				std::vector<std::vector<PatternGroup> > unions;
-				std::vector<OptionalOrMinusPatternGroup> optionals;
+				std::vector<GroupPatternUnions> unions;
+				std::vector<OptionalOrMinusGroupPattern> optionals;
 
-				std::vector<FilterTree> filters;
-				std::vector< std::vector<PatternGroup> > filter_exists_patterngroups;
+				std::vector<FilterTreeRoot> filters;
+				std::vector<std::vector<GroupPattern> > filter_exists_grouppatterns;
 
-				std::vector<Varset> pattern_varset;
-				Varset patterngroup_varset;
+				Varset grouppattern_resultset_minimal_varset, grouppattern_resultset_maximal_varset;
 
 				std::vector<int> pattern_blockid;
 
@@ -101,29 +67,89 @@ class QueryTree
 
 				void addOneGroupUnion();
 				void addOneUnion();
-				PatternGroup& getLastUnion();
+				GroupPattern& getLastUnion();
 
 				void addOneOptionalOrMinus(char _type);
-				PatternGroup& getLastOptionalOrMinus();
+				GroupPattern& getLastOptionalOrMinus();
 
 				void addOneFilterTree();
-				FilterTree& getLastFilterTree();
+				FilterTreeNode& getLastFilterTree();
 				void addOneExistsGroupPattern();
-				PatternGroup& getLastExistsGroupPattern();
+				GroupPattern& getLastExistsGroupPattern();
+
+				void getVarset();
+
+				bool checkOnlyUnionOptionalFilterNoExists();
+				std::pair<Varset, Varset> checkOptionalGroupPatternVarsAndSafeFilter(Varset occur , Varset ban, bool &check_condition);
 
 				void initPatternBlockid();
 				int getRootPatternBlockid(int x);
 				void mergePatternBlockid(int x, int y);
+
+				void print(int dep);
 		};
 
-		class PatternGroup::OptionalOrMinusPatternGroup
+		class GroupPattern::GroupPatternUnions
 		{
 			public:
-				PatternGroup patterngroup;
+				std::vector<GroupPattern> grouppattern_vec;
+				int lastpattern;
+				GroupPatternUnions(int _lastpattern):
+					lastpattern(_lastpattern){}
+		};
+
+		class GroupPattern::OptionalOrMinusGroupPattern
+		{
+			public:
+				GroupPattern grouppattern;
 				int lastpattern, lastunions;
 				char type;
-				OptionalOrMinusPatternGroup(int _lastpattern, int _lastunions, char _type):
-					patterngroup(PatternGroup()), lastpattern(_lastpattern), lastunions(_lastunions), type(_type){}
+				OptionalOrMinusGroupPattern(int _lastpattern, int _lastunions, char _type):
+					grouppattern(GroupPattern()), lastpattern(_lastpattern), lastunions(_lastunions), type(_type){}
+		};
+
+		class GroupPattern::FilterTreeNode
+		{
+			public:
+				enum FilterType
+				{
+					None_type, Or_type, And_type, Equal_type, NotEqual_type, Less_type, LessOrEqual_type, Greater_type, GreaterOrEqual_type,
+					Plus_type, Minus_type, Mul_type, Div_type,	Not_type, UnaryPlus_type, UnaryMinus_type, Literal_type, Variable_type, IRI_type,
+					Function_type, ArgumentList_type,Builtin_str_type, Builtin_lang_type, Builtin_langmatches_type, Builtin_datatype_type, Builtin_bound_type,
+					Builtin_sameterm_type,Builtin_isiri_type, Builtin_isblank_type, Builtin_isliteral_type, Builtin_regex_type, Builtin_in_type, Builtin_exists_type
+				};
+				FilterType type;
+
+				class FilterTreeChild;
+
+				std::vector<FilterTreeChild> child;
+				int exists_grouppattern_id;
+
+				FilterTreeNode():
+					type(None_type), exists_grouppattern_id(-1){}
+
+				void getVarset(Varset &varset);
+
+				void print(std::vector<GroupPattern> &exist_grouppatterns, int dep);
+		};
+
+		class GroupPattern::FilterTreeNode::FilterTreeChild
+		{
+			public:
+				FilterTreeChild():
+					type(' '), pos(-1){}
+
+				char type;
+				FilterTreeNode node;
+				std::string arg;
+				int pos;
+		};
+
+		class GroupPattern::FilterTreeRoot
+		{
+			public:
+				FilterTreeNode root;
+				Varset varset;
 		};
 
 		class Order
@@ -131,7 +157,8 @@ class QueryTree
 			public:
 				std::string var;
 				bool descending;
-				Order(std::string &_var, bool _descending):var(_var), descending(_descending){}
+				Order(std::string &_var, bool _descending):
+					var(_var), descending(_descending){}
 		};
 
 
@@ -143,7 +170,7 @@ class QueryTree
 			std::vector<Order> order;
 			int offset, limit;
 
-			PatternGroup patterngroup;
+			GroupPattern grouppattern;
 
 		public:
 			void setQueryForm(QueryForm _queryform);
@@ -162,7 +189,11 @@ class QueryTree
 			void setLimit(int _limit);
 			int getLimit();
 
-			PatternGroup& getPatternGroup();
+			GroupPattern& getGroupPattern();
+
+			bool checkWellDesigned();
+
+			void print();
 };
 
 #endif // _QUERY_QUERYTREE_H

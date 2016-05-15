@@ -24,8 +24,9 @@ public:
     bool load(std::string _db_name);
     bool unload(std::string _db_name);
     bool build(std::string _db_name, std::string _rdf_file_path);
+    bool drop(std::string _db_name);
     std::string query(std::string _sparql);
-	std::string show();
+	std::string show(bool _type=false);  //show current or all databases
 
 private:
     static std::string defaultServerIP;

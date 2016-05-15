@@ -271,3 +271,59 @@ Node::subKey(int _index, bool ifdel)
 	return true;
 }
 
+int
+Node::searchKey_less(const Bstr& _bstr) const
+{
+	int num = this->getNum();
+	//for(i = 0; i < num; ++i)
+		//if(bstr < *(p->getKey(i)))
+			//break;
+
+	int low = 0, high = num - 1, mid = -1;
+	while(low <= high)
+	{
+		mid = (low + high) / 2;
+		if(this->keys[mid] > _bstr)
+		{
+			if(low == mid)
+				break;
+			high = mid;
+		}
+		else
+		{
+			low = mid + 1;
+		}
+	}
+	return low;
+}
+
+int
+Node::searchKey_equal(const Bstr& _bstr) const
+{
+	int num = this->getNum();
+	//for(i = 0; i < num; ++i)
+	//	if(bstr == *(p->getKey(i)))
+	//	{
+
+	int ret = this->searchKey_less(_bstr);
+	if(ret > 0 && this->keys[ret-1] == _bstr)
+		return ret - 1;
+	else
+		return num;
+}
+
+int
+Node::searchKey_lessEqual(const Bstr& _bstr) const
+{
+	int num = this->getNum();
+	//for(i = 0; i < num; ++i)
+		//if(bstr <= *(p->getKey(i)))
+			//break;
+
+	int ret = this->searchKey_less(_bstr);
+	if(ret > 0 && this->keys[ret-1] == _bstr)
+		return ret - 1;
+	else
+		return ret;
+}
+
