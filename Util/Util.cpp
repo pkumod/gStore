@@ -1091,3 +1091,100 @@ Util::logarithm(double _a, double _b)
     return -1.0;
 }
 
+void
+Util::intersect(int*& _id_list, int& _id_list_len, const int* _list1, int _len1, const int* _list2, int _len2)
+{
+	vector<int> res;
+	if(_list1 == NULL || _len1 == 0 || _list2 == NULL || _len2 == 0)
+	{
+		_id_list = NULL;
+		_id_list_len = 0;
+	}
+
+	//when size is almost the same, intersect O(n)
+	//when one size is small ratio, search in the larger one O(mlogn)
+	//
+	//n>0 m=nk(0<k<1) 
+	//compare n(k+1) and nklogn: k0 = log(n/2)2 requiring that n>2
+	//k<=k0 binary search; k>k0 intersect
+	int method = -1; //0: intersect 1: search in list1 2: search in list2
+	int n = _len1;
+	double k = 0;
+	if(n < _len2)
+	{
+		k = (double)n / (double)_len2;
+		n = _len2;
+		method = 2;
+	}
+	else
+	{
+		k = (double)_len2 / (double)n;
+		method = 1;
+	}
+	if(n <= 2)
+		method = 0;
+	else
+	{
+		double limit = Util::logarithm(n/2, 2);
+		if(k > limit)
+			method = 0;
+	}
+
+	switch(method)
+	{
+	case 0:
+	{   //this bracket is needed if vars are defined in case
+		int id_i = 0;
+		int num = _len1;
+		for(int i = 0; i < num; ++i)
+		{
+			int can_id = _list1[i];
+			while((id_i < _len2) && (_list2[id_i] < can_id))
+			{
+				id_i ++;
+			}
+
+			if(id_i == _len2)
+			{
+				break;
+			}
+
+			if(can_id == _list2[id_i])
+			{
+				res.push_back(can_id);
+				id_i ++;
+			}
+		}
+		break;
+	}
+	case 1:
+	{
+		for(int i = 0; i < _len2; ++i)
+		{
+			if(Util::bsearch_int_uporder(_list2[i], _list1, _len1) != -1)
+				res.push_back(_list2[i]);
+		}
+		break;
+	}
+	case 2:
+	{
+		int m = _len1, i;
+		for(i = 0; i < m; ++i)
+		{
+			int t = _list1[i];
+			if(Util::bsearch_int_uporder(t, _list2, _len2) != -1)
+				res.push_back(t);
+		}
+		break;
+	}
+	default:
+		cerr << "no such method in Util::intersect()" << endl;
+		break;
+	}
+
+	_id_list_len = res.size();
+	_id_list = new int[_id_list_len];
+	for(int i = 0; i < _id_list_len; ++i)
+		_id_list[i] = res[i];
+}
+

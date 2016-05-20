@@ -19,14 +19,16 @@ public:
 	bool addID(int _id);
 
 	//check whether _id exists in this IDList.
-	bool isExistID(int _id)const;
-	int size()const;
+	bool isExistID(int _id) const;
+	int size() const;
+	bool empty() const;
 	const std::vector<int>* getList()const;
 	int& operator[] (const int & _i);
 	std::string to_str();
 	int sort();
 	void clear();
-	void copy(std::vector<int>& _new_idlist);
+	void copy(const std::vector<int>& _new_idlist);
+	void copy(const IDList* _new_idlist);
 
 	// intersect/union _id_list to this IDList, note that the two list must be ordered before using these two functions.
 	int intersectList(const int* _id_list, int _list_len);

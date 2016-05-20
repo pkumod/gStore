@@ -40,6 +40,12 @@ IDList::size()const
 	return this->id_list.size();
 }
 
+bool
+IDList::empty()const
+{
+	return this->id_list.size() == 0;
+}
+
 bool 
 IDList::isExistID(int _id)const
 {
@@ -99,9 +105,15 @@ IDList::clear()
 }
 
 void
-IDList::copy(vector<int>& _new_idlist)
+IDList::copy(const vector<int>& _new_idlist)
 {
 	this->id_list = _new_idlist;
+}
+
+void
+IDList::copy(const IDList* _new_idlist)
+{
+	this->id_list = *(_new_idlist->getList());
 }
 
 int 

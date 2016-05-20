@@ -68,6 +68,7 @@ in the sparql query can point to the same node in data graph)
 #define STREAM_ON 1			
 #define READLINE_ON	1
 #define MULTI_INDEX 1
+//#define SO2P 1
 
 //indicate that in debug mode
 //#define DEBUG_STREAM
@@ -200,6 +201,7 @@ public:
 	static HashFunction hash[];
 
 	static double logarithm(double _a, double _b);
+	static void intersect(int*& _id_list, int& _id_list_len, const int* _list1, int _len1, const int* _list2, int _len2);
 
 	static char* l_trim(char * szOutput, const char *szInput);
 	static char* r_trim(char *szOutput, const char *szInput);

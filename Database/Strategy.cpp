@@ -113,7 +113,16 @@ Strategy::handle(SPARQLquery& _query)
 				{
 					oid = (this->kvstore)->getIDByLiteral(triple.object);
 				}
+
+#ifdef SO2P
 				this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len);
+#else
+				int *list1 = NULL, *list2 = NULL;
+				int len1 = 0, len2 = 0;
+				this->kvstore->getpreIDlistBysubID(sid, list1, len1);
+				this->kvstore->getpreIDlistByobjID(oid, list2, len2);
+				Util::intersect(id_list, id_list_len, list1, len1, list2, len2);
+#endif
 
 				//copy to result list
 				for(int i = 0; i < id_list_len; ++i)

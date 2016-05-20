@@ -602,10 +602,13 @@ Database::encodeRDF_new(const string _rdf_file)
      * objID 2 <preIDsubID>_list */
 	//this->o2s_o2ps_op2s(_p_id_tuples, _id_tuples_max);
 
-	this->s2p_s2po_sp2o(_p_id_tuples, _id_tuples_max);
+	//this->s2p_s2po_sp2o(_p_id_tuples, _id_tuples_max);
+	this->s2p_s2o_s2po_sp2o(_p_id_tuples, _id_tuples_max);
 	this->o2p_o2s_o2ps_op2s(_p_id_tuples, _id_tuples_max);
 	this->p2s_p2o_p2so(_p_id_tuples, _id_tuples_max);
-	this->so2p_s2o(_p_id_tuples, _id_tuples_max);
+	//WARN:thsi is too costly because s-o key num is too large
+	//100G+ for DBpedia2014
+	//this->so2p_s2o(_p_id_tuples, _id_tuples_max);
 
     bool flag = this->saveDBInfoFile();
     if (!flag)
@@ -1438,15 +1441,21 @@ Database::o2s_o2ps_op2s(int** _p_id_tuples, int _id_tuples_max)
 
 //NOTICE: below are the the new ones
 bool
-Database::s2p_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
+Database::s2p_s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
 {
     qsort(_p_id_tuples, this->triples_num, sizeof(int*), Database:: _spo_cmp);
+
+	int* _oidlist_s = NULL;
 	int* _pidlist_s = NULL;
     int* _oidlist_sp = NULL;
     int* _pidoidlist_s = NULL;
+
+	int _oidlist_s_len = 0;
 	int _pidlist_s_len = 0;
     int _oidlist_sp_len = 0;
     int _pidoidlist_s_len = 0;
+
+    // only _oidlist_s will be assigned with space, _oidlist_sp is always a part of _oidlist_s, just a pointer is enough
     int _pidlist_max = 0;
     int _pidoidlist_max = 0;
 	int _oidlist_max = 0;
@@ -1460,6 +1469,7 @@ Database::s2p_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
 
     Util::logging("finish s2p_sp2o_s2po initial");
 
+    (this->kvstore)->open_subID2objIDlist(KVstore::CREATE_MODE);
     (this->kvstore)->open_subID2preIDlist(KVstore::CREATE_MODE);
     (this->kvstore)->open_subIDpreID2objIDlist(KVstore::CREATE_MODE);
     (this->kvstore)->open_subID2preIDobjIDlist(KVstore::CREATE_MODE);
@@ -1474,6 +1484,17 @@ Database::s2p_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
             _pidlist_s = new int[_pidlist_max];
             _pidlist_s_len = 0;
 			//pidoidlist 
+            //_pidoidlist_max = 1000 * 2;
+            //_pidoidlist_s = new int[_pidoidlist_max];
+            //_pidoidlist_s_len = 0;
+
+			 //oidlist 
+            _oidlist_max = 1000;
+            _oidlist_s = new int[_oidlist_max];
+            _oidlist_sp = _oidlist_s;
+            _oidlist_s_len = 0;
+            _oidlist_sp_len = 0;
+            /* pidoidlist */
             _pidoidlist_max = 1000 * 2;
             _pidoidlist_s = new int[_pidoidlist_max];
             _pidoidlist_s_len = 0;
@@ -1496,15 +1517,26 @@ Database::s2p_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
             _pidlist_s = _new_pidlist_s;
         }
 
+		 //enlarge the space when needed 
+        if(_oidlist_s_len == _oidlist_max)
+        {
+            _oidlist_max *= 10;
+            int * _new_oidlist_s = new int[_oidlist_max];
+            memcpy(_new_oidlist_s, _oidlist_s, sizeof(int) * _oidlist_s_len);
+            /* (_oidlist_sp-_oidlist_s) is the offset of _oidlist_sp */
+            _oidlist_sp = _new_oidlist_s + (_oidlist_sp-_oidlist_s);
+            delete[] _oidlist_s;
+            _oidlist_s = _new_oidlist_s;
+        }
 		//enalrge the space when needed
-		if(_oidlist_sp_len == _oidlist_max)
-		{
-			_oidlist_max *= 10;
-			int* _new_oidlist_sp = new int[_oidlist_max];
-			memcpy(_new_oidlist_sp, _oidlist_sp, sizeof(int) * _oidlist_sp_len);
-			delete[] _oidlist_sp;
-			_oidlist_sp = _new_oidlist_sp;
-		}
+		//if(_oidlist_sp_len == _oidlist_max)
+		//{
+		//	_oidlist_max *= 10;
+		//	int* _new_oidlist_sp = new int[_oidlist_max];
+		//	memcpy(_new_oidlist_sp, _oidlist_sp, sizeof(int) * _oidlist_sp_len);
+		//	delete[] _oidlist_sp;
+		//	_oidlist_sp = _new_oidlist_sp;
+		//}
 
 		//enlarge the space when needed 
         if(_pidoidlist_s_len == _pidoidlist_max)
@@ -1524,6 +1556,14 @@ Database::s2p_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
 //			_ss << _sub_id << "\t" << _pre_id << "\t" << _obj_id << endl;
 //			Util::logging(_ss.str());
 //		}
+
+        _oidlist_s[_oidlist_s_len] = _obj_id;
+        if(_sub_pre_change) 
+		{
+            _oidlist_sp = _oidlist_s + _oidlist_s_len;
+        }
+        _oidlist_s_len ++;
+        _oidlist_sp_len ++;
 
 		//add objid to list
 		_oidlist_sp[_oidlist_sp_len++] = _obj_id;
@@ -1550,7 +1590,8 @@ Database::s2p_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
 			_pidlist_s[_pidlist_s_len++] = _pre_id;
 
             (this->kvstore)->setobjIDlistBysubIDpreID(_sub_id, _pre_id, _oidlist_sp, _oidlist_sp_len);
-			delete[] _oidlist_sp;
+			//if not use s2o memory
+			//delete[] _oidlist_sp;
             _oidlist_sp = NULL;
             _oidlist_sp_len = 0;
         }
@@ -1566,6 +1607,12 @@ Database::s2p_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
             delete[] _pidoidlist_s;
             _pidoidlist_s = NULL;
             _pidoidlist_s_len = 0;
+
+            Util::sort(_oidlist_s, _oidlist_s_len);
+            (this->kvstore)->setobjIDlistBysubID(_sub_id, _oidlist_s, _oidlist_s_len);
+            delete[] _oidlist_s;
+            _oidlist_s = NULL;
+            _oidlist_s_len = 0;
         }
 
     }//end for( 0 to this->triple_num)

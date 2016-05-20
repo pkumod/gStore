@@ -162,7 +162,8 @@ private:
 	void add_literal_candidate();
 	bool pre_var_handler();
 	//bool filterBySatellites(int _var, int _ele);
-	bool allFilterBySatellites(int _var);
+	bool filterBySatellites(int _var);
+	bool allFilterByPres();
 	void generateAllSatellites();
 	void cartesian(int pos, int end);
 

@@ -154,9 +154,9 @@ Join::join_basic(BasicQuery* _basic_query)
     this->init(_basic_query);
     long begin = Util::get_cur_time();
     bool ret1 = this->filter_before_join();
-    long after_filter = Util::get_cur_time();
+    long after_constant_filter = Util::get_cur_time();
     //fprintf(stderr, "after filter_before_join: used %ld ms\n", after_filter - begin);
-    cerr<<"after filter_before_join: used "<<(after_filter-begin)<<" ms"<<endl;
+    cerr<<"after filter_before_join: used "<<(after_constant_filter - begin)<<" ms"<<endl;
     if(!ret1)
     {
         this->clear();
@@ -165,11 +165,25 @@ Join::join_basic(BasicQuery* _basic_query)
 
     this->add_literal_candidate();
     long after_add_literal = Util::get_cur_time();
-    cerr<<"after add_literal_candidate: used "<<(after_add_literal - after_filter)<<" ms"<<endl;
+    cerr<<"after add_literal_candidate: used "<<(after_add_literal - after_constant_filter)<<" ms"<<endl;
 
-    this->join();
+	bool ret2 = this->allFilterByPres();
+    long after_pre_filter = Util::get_cur_time();
+    cerr<<"after allFilterByPres: used "<<(after_pre_filter - after_add_literal)<<" ms"<<endl;
+    if(!ret2)
+    {
+        this->clear();
+        return false;
+    }
+
+    bool ret3 = this->join();
     long after_joinbasic = Util::get_cur_time();
-    cerr<<"after join_basic: used "<<(after_joinbasic - after_add_literal)<<" ms"<<endl;
+    cerr<<"after join_basic: used "<<(after_joinbasic - after_pre_filter)<<" ms"<<endl;
+    if(!ret3)
+    {
+        this->clear();
+        return false;
+    }
 
 	//NOTICE:we do pre_var_handler first, and generate all satellites when coping to result list
 	//
@@ -184,7 +198,7 @@ Join::join_basic(BasicQuery* _basic_query)
 	//2. generate candidates for satellites first using sp2o or s2o(op2s or o2s), later filtered by pre vars
 	//the generating process had better been placed at the final, just before copying result
     this->pre_var_handler();
-
+	//TODO+BETTER:maybe also reduce to empty, return false
     long after_pre_var = Util::get_cur_time();
     cerr<<"after pre var: used "<<(after_pre_var-after_joinbasic)<<" ms"<<endl;
 
@@ -344,7 +358,17 @@ Join::pre_var_handler()
                         //}
                         //cerr<<"sub str: "<<this->kvstore->getEntityByID((*it)[this->id2pos[var1]])<<endl;
                         //cerr<<"obj str: "<<this->kvstore->getEntityByID((*it)[this->id2pos[var2]])<<endl;
-                        this->kvstore->getpreIDlistBysubIDobjID((*it)[this->id2pos[var1]], (*it)[this->id2pos[var2]], id_list, id_list_len);
+                        //this->kvstore->getpreIDlistBysubIDobjID((*it)[this->id2pos[var1]], (*it)[this->id2pos[var2]], id_list, id_list_len);
+						int sid = (*it)[this->id2pos[var1]], oid = (*it)[this->id2pos[var2]];
+#ifdef SO2P
+						this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len);
+#else
+						int *list1 = NULL, *list2 = NULL;
+						int len1 = 0, len2 = 0;
+						this->kvstore->getpreIDlistBysubID(sid, list1, len1);
+						this->kvstore->getpreIDlistByobjID(oid, list2, len2);
+						Util::intersect(id_list, id_list_len, list1, len1, list2, len2);
+#endif
                         //NOTICE:no need to add literals here because they are added when join using s2o
                     }
                 }
@@ -352,7 +376,17 @@ Join::pre_var_handler()
                 else if(sub_id != -1 && obj_id != -1)
                 {
                     //just use so2p in query graph to find predicates
-                    this->kvstore->getpreIDlistBysubIDobjID(sub_id, obj_id, id_list, id_list_len);
+                    //this->kvstore->getpreIDlistBysubIDobjID(sub_id, obj_id, id_list, id_list_len);
+						int sid = sub_id, oid = obj_id;
+#ifdef SO2P
+						this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len);
+#else
+						int *list1 = NULL, *list2 = NULL;
+						int len1 = 0, len2 = 0;
+						this->kvstore->getpreIDlistBysubID(sid, list1, len1);
+						this->kvstore->getpreIDlistByobjID(oid, list2, len2);
+						Util::intersect(id_list, id_list_len, list1, len1, list2, len2);
+#endif
                 }
                 //sub is var while obj is constant
                 else if(sub_id == -1 && obj_id != -1)
@@ -364,6 +398,16 @@ Join::pre_var_handler()
                     else
                     {
                         this->kvstore->getpreIDlistBysubIDobjID((*it)[this->id2pos[var1]], obj_id, id_list, id_list_len);
+						int sid = (*it)[this->id2pos[var1]], oid = obj_id;
+#ifdef SO2P
+						this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len);
+#else
+						int *list1 = NULL, *list2 = NULL;
+						int len1 = 0, len2 = 0;
+						this->kvstore->getpreIDlistBysubID(sid, list1, len1);
+						this->kvstore->getpreIDlistByobjID(oid, list2, len2);
+						Util::intersect(id_list, id_list_len, list1, len1, list2, len2);
+#endif
                     }
                 }
                 //sub is constant while obj is var
@@ -376,7 +420,17 @@ Join::pre_var_handler()
                     else
                     {
                         //NOTICE:no need to add literals here because they are added in add_literal_candidate using s2o
-                        this->kvstore->getpreIDlistBysubIDobjID(sub_id, (*it)[this->id2pos[var2]], id_list, id_list_len);
+                        //this->kvstore->getpreIDlistBysubIDobjID(sub_id, (*it)[this->id2pos[var2]], id_list, id_list_len);
+						int sid = sub_id, oid = (*it)[this->id2pos[var2]];
+#ifdef SO2P
+						this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len);
+#else
+						int *list1 = NULL, *list2 = NULL;
+						int len1 = 0, len2 = 0;
+						this->kvstore->getpreIDlistBysubID(sid, list1, len1);
+						this->kvstore->getpreIDlistByobjID(oid, list2, len2);
+						Util::intersect(id_list, id_list_len, list1, len1, list2, len2);
+#endif
                     }
                 }
 
@@ -1097,7 +1151,7 @@ Join::multi_join()
     //
     //NOTICE:this should be done just once, so use it before pushing candidates
     //pruning the original candidates first(satellites only concerned with itself)
-    this->allFilterBySatellites(this->start_id);
+    //this->filterBySatellites(this->start_id);
 
     IDList& start_table = this->basic_query->getCandidateList(this->start_id);
     int start_size = this->basic_query->getCandidateSize(this->start_id);
@@ -1156,7 +1210,7 @@ Join::multi_join()
         //fprintf(stderr, "the next node id to join: %d\n", id2);
         cerr<<"the next node id to join: "<<id2<<endl;
 #endif
-        this->allFilterBySatellites(id2);
+        //this->filterBySatellites(id2);
 #ifdef DEBUG_JOIN
 	cerr<<"the start size "<<this->basic_query->getCandidateSize(id2)<<endl;
 #endif
@@ -2069,9 +2123,28 @@ Join::add_literal_candidate()
 //(constants ar enot necessary considered here)
 //this check is fast because predicate num is small, but the performance can be very good
 //(instead of filter when joining, we do a precheck first!)
-bool    //false when no result for this basicquery
-Join::allFilterBySatellites(int _var)
+bool
+Join::allFilterByPres()
 {
+	for(int i = 0; i < this->var_num; ++i)
+	{
+		if(this->basic_query->isSatelliteInJoin(i))
+			continue;
+		if(this->filterBySatellites(i) == false)
+			return false;
+	}
+	return true;
+}
+
+bool    //false when no result for this basicquery
+Join::filterBySatellites(int _var)
+{
+	IDList& cans = this->basic_query->getCandidateList(_var);
+	int size = this->basic_query->getCandidateSize(_var);
+	//cerr << "var " << "_var " << "size after pre_filter " << cans.size() <<endl;
+	if(size == 0 && !is_literal_var(_var))
+		return false;
+
     int var_degree = this->basic_query->getVarDegree(_var);
     vector<int> in_edge_pre_id;
     vector<int> out_edge_pre_id;
@@ -2121,75 +2194,218 @@ Join::allFilterBySatellites(int _var)
         return true;
     }
 
+	//QUERY:maybe we can divide edges into two separate groups according to the size of p2s
+	//NOTICE+BETTER: the cost should be due to the cans size, p2s size and s2p size
+	//generally, size of p2s is larger than s2p, but smaller than size of cans
+	//The best way is to extract the features of dataset and keep
+	//but we may use a simple strategy here: use p2s if cans size is too large, i.e. > size of p2s 
+	//(assuming 5000 here)
+	//WARN:different edge may corresponding different size of subjects, like <rdf:type> is too large
+
 	//QUERY: erase is too costly, use an invalid[] array, maybe bitset due to large candidates size
 	//only consider valid ones when join loop, but how about intersect and union?
 	//
 	//we build a new idlist with all valid ones, and update to the original idlist
 	//(consider in current_table is not good, too many duplicates)
-	vector<int> valid_idlist;
-	IDList& cans = this->basic_query->getCandidateList(_var);
-	int size = this->basic_query->getCandidateSize(_var);
-	for(int i = 0; i < size; ++i)
-    {
-        int ele = cans[i];
-        int* list = NULL;
-        int list_len = 0;
-        bool exist_preid = true;
+	IDList* valid_list = NULL;
+	int *list = NULL;
+	int len = 0;
 
-        if(exist_preid && !in_edge_pre_id.empty())
-        {
-            //(this->kvstore)->getpreIDsubIDlistByobjID(entity_id, pair_list, pair_len);
-            (this->kvstore)->getpreIDlistByobjID(ele, list, list_len);
+	if(!in_edge_pre_id.empty())
+	{
+		int size2 = in_edge_pre_id.size();
+		for(int i = 0; i < size2; ++i)
+		{
+			int preid = in_edge_pre_id[i];
+			this->kvstore->getobjIDlistBypreID(preid, list, len);
+			if(i == 0)
+			{
+				if(size > len)
+				{
+					valid_list = IDList::intersect(cans, list, len);
+				}
+				else
+				{
+					valid_list = new IDList;
+					int* list2 = NULL;
+					int len2 = 0;
+					for(int j = 0; j < size; ++j)
+					{
+						this->kvstore->getpreIDlistByobjID(cans[j], list2, len2);
+						if(Util::bsearch_int_uporder(preid, list2, len2) != -1)
+						{
+							valid_list->addID(cans[j]);
+						}
+						delete[] list2;
+					}
+				}
+			}
+			else
+			{
+				if(valid_list->size() > len)
+				{
+					valid_list->intersectList(list, len);
+				}	
+				else
+				{
+					int* list2 = NULL;
+					int len2 = 0;
+					IDList* new_list = new IDList;
+					int size3 = valid_list->size();
+					for(int j = 0; j < size3; ++j)
+					{
+						this->kvstore->getpreIDlistByobjID(valid_list->getID(j), list2, len2);
+						if(Util::bsearch_int_uporder(preid, list2, len2) != -1)
+						{
+							new_list->addID(cans[j]);
+						}
+						delete[] list2;
+					}
+					delete valid_list;
+					valid_list = new_list;
+				}
+			}
+			delete[] list;
+		}
+	}
 
-            for(vector<int>::iterator itr_pre = in_edge_pre_id.begin(); itr_pre != in_edge_pre_id.end(); itr_pre++)
-            {
-                int pre_id = (*itr_pre);
-				//the return value is pos, -1 if not found
-				if(Util::bsearch_int_uporder(pre_id, list, list_len) == -1)
-					exist_preid = false;
-                if(!exist_preid)
-                {
-                    break;
-                }
-            }
-            delete[] list;
-        }
+	if(!is_literal_var(_var) && valid_list != NULL && valid_list->empty())
+	{
+		//cerr << "quit when empty in edge"<<endl;
+		return false;
+	}
 
-		//NOTICE:we do not use intersect here because the case is a little different
-		//first the pre num is not so much in a query
-		//second once a pre in query is not found, break directly
+	if(!out_edge_pre_id.empty())
+	{
+		int size2 = out_edge_pre_id.size();
+		for(int i = 0; i < size2; ++i)
+		{
+			int preid = out_edge_pre_id[i];
+			this->kvstore->getsubIDlistBypreID(preid, list, len);
+			//cerr<<"p2s len "<<len<<endl;
+			if(valid_list == NULL && i == 0)
+			{
+				if(size > len)
+				{
+					valid_list = IDList::intersect(cans, list, len);
+				}
+				else
+				{
+					valid_list = new IDList;
+					int* list2 = NULL;
+					int len2 = 0;
+					for(int j = 0; j < size; ++j)
+					{
+						this->kvstore->getpreIDlistBysubID(cans[j], list2, len2);
+						if(Util::bsearch_int_uporder(preid, list2, len2) != -1)
+						{
+							valid_list->addID(cans[j]);
+						}
+						delete[] list2;
+					}
+				}
+			}
+			else
+			{
+				if(valid_list->size() > len)
+				{
+					valid_list->intersectList(list, len);
+				}	
+				else
+				{
+					int* list2 = NULL;
+					int len2 = 0;
+					IDList* new_list = new IDList;
+					int size3 = valid_list->size();
+					for(int j = 0; j < size3; ++j)
+					{
+						this->kvstore->getpreIDlistBysubID(valid_list->getID(j), list2, len2);
+						if(Util::bsearch_int_uporder(preid, list2, len2) != -1)
+						{
+							new_list->addID(cans[j]);
+						}
+						delete[] list2;
+					}
+					delete valid_list;
+					valid_list = new_list;
+				}
+			}
+			delete[] list;
+		}
+	}
 
-        if(exist_preid && !out_edge_pre_id.empty())
-        {
-            //(this->kvstore)->getpreIDobjIDlistBysubID(entity_id, pair_list, pair_len);
-            (this->kvstore)->getpreIDlistBysubID(ele, list, list_len);
+	if(!is_literal_var(_var) && valid_list->empty())
+	{
+		//cerr << "quit when empty out edge"<<endl;
+		return false;
+	}
+	cans.copy(valid_list);
+	delete valid_list;
+	cerr << "var " << _var << "size after pre_filter " << cans.size() <<endl;
 
-            for(vector<int>::iterator itr_pre = out_edge_pre_id.begin(); itr_pre != out_edge_pre_id.end(); itr_pre++)
-            {
-                int pre_id = (*itr_pre);
-				if(Util::bsearch_int_uporder(pre_id, list, list_len) == -1)
-					exist_preid = false;
-                if(!exist_preid)
-                {
-                    break;
-                }
-            }
-            delete[] list;
-        }
+	//vector<int> valid_idlist;
+	//for(int i = 0; i < size; ++i)
+    //{
+    //    int ele = cans[i];
+    //    int* list = NULL;
+    //    int list_len = 0;
+    //    bool exist_preid = true;
 
-        //result sequence is illegal when there exists any missing filter predicate id.
-        if(exist_preid)
-        {
-			valid_idlist.push_back(ele);
-        }
-    }
+    //    if(exist_preid && !in_edge_pre_id.empty())
+    //    {
+    //        //(this->kvstore)->getpreIDsubIDlistByobjID(entity_id, pair_list, pair_len);
+    //        (this->kvstore)->getpreIDlistByobjID(ele, list, list_len);
+
+    //        for(vector<int>::iterator itr_pre = in_edge_pre_id.begin(); itr_pre != in_edge_pre_id.end(); itr_pre++)
+    //        {
+    //            int pre_id = (*itr_pre);
+	//			//the return value is pos, -1 if not found
+	//			if(Util::bsearch_int_uporder(pre_id, list, list_len) == -1)
+	//				exist_preid = false;
+    //            if(!exist_preid)
+    //            {
+    //                break;
+    //            }
+    //        }
+    //        delete[] list;
+    //    }
+
+	//	//NOTICE:we do not use intersect here because the case is a little different
+	//	//first the pre num is not so much in a query
+	//	//second once a pre in query is not found, break directly
+
+    //    if(exist_preid && !out_edge_pre_id.empty())
+    //    {
+    //        //(this->kvstore)->getpreIDobjIDlistBysubID(entity_id, pair_list, pair_len);
+    //        (this->kvstore)->getpreIDlistBysubID(ele, list, list_len);
+
+    //        for(vector<int>::iterator itr_pre = out_edge_pre_id.begin(); itr_pre != out_edge_pre_id.end(); itr_pre++)
+    //        {
+    //            int pre_id = (*itr_pre);
+	//			if(Util::bsearch_int_uporder(pre_id, list, list_len) == -1)
+	//				exist_preid = false;
+    //            if(!exist_preid)
+    //            {
+    //                break;
+    //            }
+    //        }
+    //        delete[] list;
+    //    }
+
+    //    //result sequence is illegal when there exists any missing filter predicate id.
+    //    if(exist_preid)
+    //    {
+	//		valid_idlist.push_back(ele);
+    //    }
+    //}
 
 	//this is a core vertex, so if not literal var, exit when empty
-    if(!is_literal_var(_var) && valid_idlist.empty())
-    {
-        return false;
-    }
-	cans.copy(valid_idlist);
+    //if(!is_literal_var(_var) && valid_idlist.empty())
+    //{
+    //    return false;
+    //}
+	//cans.copy(valid_idlist);
+
     return true;
 }
 

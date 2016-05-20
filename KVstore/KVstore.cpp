@@ -252,20 +252,20 @@ KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id)
 	}
 
 	//update so2p
-	{
-		int* _so2plist = NULL;
-		int _so2p_len = 0;
-		this->getpreIDlistBysubIDobjID(_sub_id, _obj_id, _so2plist, _so2p_len);
-		bool _insert = this->insert_x(_so2plist, _so2p_len, _pre_id);
-		if(_insert)
-		{
-			this->setpreIDlistBysubIDobjID(_sub_id, _obj_id, _so2plist, _so2p_len);
-		}
-		updateListLen += _so2p_len;
-		delete[] _so2plist;
-		_so2plist = NULL;
-		_so2p_len = 0;
-	}
+	//{
+	//	int* _so2plist = NULL;
+	//	int _so2p_len = 0;
+	//	this->getpreIDlistBysubIDobjID(_sub_id, _obj_id, _so2plist, _so2p_len);
+	//	bool _insert = this->insert_x(_so2plist, _so2p_len, _pre_id);
+	//	if(_insert)
+	//	{
+	//		this->setpreIDlistBysubIDobjID(_sub_id, _obj_id, _so2plist, _so2p_len);
+	//	}
+	//	updateListLen += _so2p_len;
+	//	delete[] _so2plist;
+	//	_so2plist = NULL;
+	//	_so2p_len = 0;
+	//}
 
 	//update p2so
 	{
@@ -638,25 +638,25 @@ KVstore::updateTupleslist_remove(int _sub_id, int _pre_id, int _obj_id)
 	}
 
 	//update so2p
-	{
-		int* _so2plist = NULL;
-		int _so2p_len = 0;
-		this->getpreIDlistBysubIDobjID(_sub_id, _obj_id, _so2plist, _so2p_len);
-		bool _remove = this->remove_x(_so2plist, _so2p_len, _pre_id);
-		if(_so2p_len == 0)
-		{
-			int* _so = new int[2];
-			_so[0] = _sub_id;
-			_so[1] = _obj_id;
-			this->removeKey(this->subIDobjID2preIDlist, (char*)_so, sizeof(int)*2 );
-			delete[] _so;
-		}
-		else if(_remove)
-		{
-			this->setpreIDlistBysubIDobjID(_sub_id, _obj_id, _so2plist, _so2p_len);
-		}
-		delete[] _so2plist;
-	}
+	//{
+	//	int* _so2plist = NULL;
+	//	int _so2p_len = 0;
+	//	this->getpreIDlistBysubIDobjID(_sub_id, _obj_id, _so2plist, _so2p_len);
+	//	bool _remove = this->remove_x(_so2plist, _so2p_len, _pre_id);
+	//	if(_so2p_len == 0)
+	//	{
+	//		int* _so = new int[2];
+	//		_so[0] = _sub_id;
+	//		_so[1] = _obj_id;
+	//		this->removeKey(this->subIDobjID2preIDlist, (char*)_so, sizeof(int)*2 );
+	//		delete[] _so;
+	//	}
+	//	else if(_remove)
+	//	{
+	//		this->setpreIDlistBysubIDobjID(_sub_id, _obj_id, _so2plist, _so2p_len);
+	//	}
+	//	delete[] _so2plist;
+	//}
 
 	//update p2so
 	{
@@ -1527,7 +1527,9 @@ void KVstore::open()
 	this->open(this->preID2subIDlist, KVstore::s_pID2sIDlist, KVstore::READ_WRITE_MODE);
 	this->open(this->objID2preIDlist, KVstore::s_oID2pIDlist, KVstore::READ_WRITE_MODE);
 	this->open(this->preID2objIDlist, KVstore::s_pID2oIDlist, KVstore::READ_WRITE_MODE);
+#ifdef SO2P
 	this->open(this->subIDobjID2preIDlist, KVstore::s_sIDoID2pIDlist, KVstore::READ_WRITE_MODE);
+#endif
 	this->open(this->preID2subIDobjIDlist, KVstore::s_pID2sIDoIDlist, KVstore::READ_WRITE_MODE);
 }
 
