@@ -436,7 +436,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 			{
 				//BETTER:this is too robust, not only one query, try return false
 				cerr << "invalid query because the pre is not found: " << pre << endl;
-				exit(1);
+				//exit(1);
 			}
 		}
         int sub_id = -1;
