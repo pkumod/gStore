@@ -4,6 +4,8 @@ Gstore System(also called gStore) is a graph database engine for managing large 
 
 **The formal help document is in [Handbook](docs/latex/gStore_help.pdf).**
 
+**You can write your information in [survey](http://59.108.48.38/survey) if you like.**
+
 ## Getting Started
 
 This system is really user-friendly and you can pick it up in several minutes. Remember to check your platform where you want to run this system by viewing [System Requirements](docs/DEMAND.md). After all are verified, please get this project's source code. There are several ways to do this:
