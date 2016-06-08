@@ -131,6 +131,11 @@ typedef unsigned(*HashFunction)(const char*);
 class Util
 {
 public:
+	static int triple_num;
+	static int pre_num;
+	static int entity_num;
+	static int literal_num;
+
 	static const unsigned MB = 1048576;
 	static const unsigned GB = 1073741824;
 	static const int TRIPLE_NUM_MAX = 1000*1000*1000;

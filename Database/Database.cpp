@@ -301,12 +301,19 @@ Database::insert(const string& _insert_rdf_file)
     return true;
 }
 
+//TODO and DEBUG
 bool
 Database::remove(const string& _rdf_file)
 {
-    //TODO
+    bool flag = this->saveDBInfoFile();
+    if (!flag)
+    {
+        return false;
+    }
     return true;
 }
+
+//TODO:modify using delete and insert
 
 bool
 Database::build(const string& _rdf_file)
@@ -345,6 +352,9 @@ Database::build(const string& _rdf_file)
     long tv_build_end = Util::get_cur_time();
     cout << "after build, used " << (tv_build_end - tv_build_begin) << "ms." << endl;
     cout << "finish build VS-Tree." << endl;
+
+	string cmd = "rm -rf " + _entry_file;
+	system(cmd.c_str());
 
     return true;
 }
@@ -391,6 +401,11 @@ Database::saveDBInfoFile()
     fwrite(&this->encode_mode, sizeof(int), 1, filePtr);
     fclose(filePtr);
 
+	Util::triple_num = this->triples_num;
+	Util::pre_num = this->pre_num;
+	Util::entity_num = this->entity_num;
+	Util::literal_num = this->literal_num;
+
     return true;
 }
 
@@ -414,6 +429,11 @@ Database::loadDBInfoFile()
     fread(&this->literal_num, sizeof(int), 1, filePtr);
     fread(&this->encode_mode, sizeof(int), 1, filePtr);
     fclose(filePtr);
+
+	Util::triple_num = this->triples_num;
+	Util::pre_num = this->pre_num;
+	Util::entity_num = this->entity_num;
+	Util::literal_num = this->literal_num;
 
     return true;
 }
@@ -534,48 +554,6 @@ Database::exist_triple(int _sub_id, int _pre_id, int _obj_id)
     return is_exist;
 }
 
-//_rdf_file denotes the path of the RDF file, where stores the rdf data
-//there are many step will be finished in this function:
-//1. assign tuples of RDF data with id, and store the map into KVstore
-//2. build signature of each entity
-//BETTER:multi-thread implementation may save lots of time
-//bool
-//Database::encodeRDF(const string _rdf_file)
-//{
-//#ifdef DEBUG
-//    Util::logging("In encodeRDF");
-//#endif
-//    int ** _p_id_tuples = NULL;
-//    int _id_tuples_max = 0;
-//
-//    /* map sub2id and pre2id, storing in kvstore */
-//    this->sub2id_pre2id(_rdf_file, _p_id_tuples, _id_tuples_max);
-//
-//    /* map literal2id, and encode RDF data into signature in the meantime */
-//    this->literal2id_RDFintoSignature(_rdf_file, _p_id_tuples, _id_tuples_max);
-//
-//	//TODO:the functions below have changed
-//    /* map subid 2 objid_list  &
-//     * subIDpreID 2 objid_list &
-//     * subID 2 <preIDobjID>_list */
-//    this->s2o_sp2o_s2po(_p_id_tuples, _id_tuples_max);
-//
-//    /* map objid 2 subid_list  &
-//     * objIDpreID 2 subid_list &
-//     * objID 2 <preIDsubID>_list */
-//    this->o2s_op2s_o2ps(_p_id_tuples, _id_tuples_max);
-//
-//    bool flag = this->saveDBInfoFile();
-//    if (!flag)
-//    {
-//        return false;
-//    }
-//#ifdef DEBUG
-//    Util::logging("finish encodeRDF");
-//#endif
-//    return true;
-//}
-
 //NOTICE: all constants are transfered to ids in memory
 //this maybe not ok when size is too large!
 bool
@@ -603,10 +581,15 @@ Database::encodeRDF_new(const string _rdf_file)
 	//this->o2s_o2ps_op2s(_p_id_tuples, _id_tuples_max);
 
 	//this->s2p_s2po_sp2o(_p_id_tuples, _id_tuples_max);
+	//NOTICE:we had better compute the corresponding triple num here
 	this->s2p_s2o_s2po_sp2o(_p_id_tuples, _id_tuples_max);
+	//this->s2p_s2o_s2po_sp2o_sp2n(_p_id_tuples, _id_tuples_max);
 	this->o2p_o2s_o2ps_op2s(_p_id_tuples, _id_tuples_max);
+	//this->o2p_o2s_o2ps_op2s_op2n(_p_id_tuples, _id_tuples_max);
 	this->p2s_p2o_p2so(_p_id_tuples, _id_tuples_max);
-	//WARN:thsi is too costly because s-o key num is too large
+	//this->p2s_p2o_p2so_p2n(_p_id_tuples, _id_tuples_max);
+	//
+	//WARN:this is too costly because s-o key num is too large
 	//100G+ for DBpedia2014
 	//this->so2p_s2o(_p_id_tuples, _id_tuples_max);
 
@@ -992,456 +975,10 @@ Database::sub2id_pre2id(const string _rdf_file, int**& _p_id_tuples, int & _id_t
     return true;
 }
 
-/* map literal2id and encode RDF data into signature in the meantime
- * literal id begin with Util::LITERAL_FIRST_ID */
-bool
-Database::literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, int _id_tuples_max)
-{
-    Util::logging("IN literal2id...");
-
-    EntityBitSet* _entity_bitset = new EntityBitSet[this->sub_num];
-    for(int i = 0; i < this->sub_num; i ++) {
-        _entity_bitset[i].reset();
-    }
-
-    (this->kvstore)->open_id2literal(KVstore::CREATE_MODE);
-    (this->kvstore)->open_literal2id(KVstore::CREATE_MODE);
-    (this->kvstore)->open_entity2id(KVstore::READ_WRITE_MODE);
-
-    /*  map obj2id */
-    ifstream _fin(_rdf_file.c_str());
-    if(!_fin) {
-        cerr << "obj2id: Fail to open : " << _rdf_file << endl;
-        exit(0);
-    }
-
-    string _six_tuples_file = this->getSixTuplesFile();
-    ofstream _six_tuples_fout(_six_tuples_file.c_str());
-    if(! _six_tuples_fout) {
-        cerr << "obj2id: failed to open: " << _six_tuples_file << endl;
-        exit(0);
-    }
-
-    Triple* triple_array = new Triple[DBparser::TRIPLE_NUM_PER_GROUP];
-
-    DBparser _parser;
-    this->entity_num = this->sub_num;
-    int _i_tuples = 0;
-    EntityBitSet _tmp_bitset;
-    /* In while(true): For obj2id .
-     * parsed all RDF triples one group by one group
-     * when parsed out an group RDF triples
-     * for each triple
-     * assign object with objid
-     *  */
-    Util::logging("literal2id: while(true)");
-    while(true)
-    {
-        /* get next group of triples from rdfParser */
-        int parse_triple_num = 0;
-        _parser.rdfParser(_fin, triple_array, parse_triple_num);
-        {
-            stringstream _ss;
-            _ss << "finish rdfparser" << _i_tuples << endl;
-            Util::logging(_ss.str());
-            cout << _ss.str() << endl;
-        }
-        if(parse_triple_num == 0) {
-            break;
-        }
-
-        /* Process the Triple one by one */
-        for(int i = 0; i < parse_triple_num; i ++)
-        {
-            /*
-             * For object(literal)
-             * */
-            string _obj = triple_array[i].object;
-            /* check whether obj is an entity or not
-             * if not, obj is a literal and assign it with a literal id */
-            int _obj_id = (this->kvstore)->getIDByEntity(_obj);
-
-            /* if obj is an literal */
-            if(_obj_id == -1)
-            {
-                int _literal_id = (this->kvstore)->getIDByLiteral(_obj);
-                /* if this literal does not exist before */
-                if(_literal_id == -1)
-                {
-                    int _new_literal_id = Util::LITERAL_FIRST_ID + (this->literal_num);
-                    (this->kvstore)->setIDByLiteral(_obj, _new_literal_id);
-                    (this->kvstore)->setLiteralByID(_new_literal_id, _obj);
-                    this->literal_num ++;
-                    _obj_id = _new_literal_id;
-                }
-                else
-                {
-                    _obj_id = _literal_id;
-                }
-            }
-
-//			{
-//				stringstream _ss;
-//				_ss << "object: " << _obj << " has id " << _obj_id << endl;
-//				Util::logging(_ss.str());
-//			}
-
-            _p_id_tuples[_i_tuples][2] = _obj_id;
-
-            //  save six tuples
-#ifdef DEBUG_PRECISE
-                _six_tuples_fout << _p_id_tuples[_i_tuples][0] << '\t'
-                                 << _p_id_tuples[_i_tuples][1] << '\t'
-                                 << _p_id_tuples[_i_tuples][2] << '\t'
-                                 << triple_array[i].subject   << '\t'
-                                 << triple_array[i].predicate << '\t'
-                                 << triple_array[i].object    << endl;
-#endif
-
-            /*
-             * calculate entity signature
-             */
-            int _sub_id = _p_id_tuples[_i_tuples][0];
-            int _pre_id = _p_id_tuples[_i_tuples][1];
-
-            _tmp_bitset.reset();
-            Signature::encodePredicate2Entity(_pre_id, _tmp_bitset, Util::EDGE_OUT);
-            Signature::encodeStr2Entity((triple_array[i].object).c_str(), _tmp_bitset);
-            _entity_bitset[_sub_id] |= _tmp_bitset;
-
-            if(this->objIDIsEntityID(_obj_id))
-            {
-                _tmp_bitset.reset();
-                Signature::encodePredicate2Entity(_pre_id, _tmp_bitset, Util::EDGE_IN);
-                Signature::encodeStr2Entity((triple_array[i].subject).c_str(), _tmp_bitset);
-                _entity_bitset[_obj_id] |= _tmp_bitset;
-            }
-
-            _i_tuples ++;
-        }
-
-    }/* end for while(true) */
-
-    cout << "end for while" << endl;
-    delete[] triple_array;
-    _six_tuples_fout.close();
-    _fin.close();
-
-
-    {   /* save all entity_signature into binary file */
-        string _sig_binary_file = this->getSignatureBFile();
-        FILE* _sig_fp = fopen(_sig_binary_file.c_str(), "wb");
-        if(_sig_fp == NULL) {
-            cerr << "Failed to open : " << _sig_binary_file << endl;
-        }
-
-        EntityBitSet _all_bitset;
-        for(int i = 0; i < this->sub_num; i ++)
-        {
-            SigEntry* _sig = new SigEntry(EntitySig(_entity_bitset[i]), i);
-
-            //debug
-//			if(i == 0 || i == 2)
-//			{
-//				stringstream _ss;
-//				_ss << "encodeRDF: " << i << " =" << _sig->getEntitySig().entityBitSet << endl;
-//				Util::logging(_ss.str());
-//			}
-
-            fwrite(_sig, sizeof(SigEntry), 1, _sig_fp);
-            _all_bitset |= _entity_bitset[i];
-            delete _sig;
-        }
-        fclose(_sig_fp);
-
-        delete[] _entity_bitset;
-    }
-
-    Util::logging("OUT literal2id...");
-
-    return true;
-}
-
-/* map subid 2 objid_list  &
- * subIDpreID 2 objid_list &
- * subID 2 <preIDobjID>_list */
-bool
-Database::s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
-{
-    qsort(_p_id_tuples, this->triples_num, sizeof(int*), Database:: _spo_cmp);
-	int* _oidlist_s = NULL;
-    int* _oidlist_sp = NULL;
-    int* _pidoidlist_s = NULL;
-	int _oidlist_s_len = 0;
-    int _oidlist_sp_len = 0;
-    int _pidoidlist_s_len = 0;
-    /* only _oidlist_s will be assigned with space
-     * _oidlist_sp is always a part of _oidlist_s
-     * just a pointer is enough
-     *  */
-    int _oidlist_max = 0;
-    int _pidoidlist_max = 0;
-
-    /* true means next sub is a different one from the previous one */
-    bool _sub_change = true;
-
-    /* true means next <sub,pre> is different from the previous pair */
-    bool _sub_pre_change = true;
-
-    /* true means next pre is different from the previous one */
-    bool _pre_change = true;
-
-    Util::logging("finish s2p_sp2o_s2po initial");
-
-    (this->kvstore)->open_subID2objIDlist(KVstore::CREATE_MODE);
-    (this->kvstore)->open_subIDpreID2objIDlist(KVstore::CREATE_MODE);
-    (this->kvstore)->open_subID2preIDobjIDlist(KVstore::CREATE_MODE);
-
-    for(int i = 0; i < this->triples_num; i ++)
-    if (i + 1 == this->triples_num || (_p_id_tuples[i][0] != _p_id_tuples[i + 1][0] || _p_id_tuples[i][1] != _p_id_tuples[i + 1][1] || _p_id_tuples[i][2] != _p_id_tuples[i + 1][2]))
-    {
-        if(_sub_change)
-        {
-            /* oidlist */
-            _oidlist_max = 1000;
-            _oidlist_s = new int[_oidlist_max];
-            _oidlist_sp = _oidlist_s;
-            _oidlist_s_len = 0;
-            _oidlist_sp_len = 0;
-            /* pidoidlist */
-            _pidoidlist_max = 1000 * 2;
-            _pidoidlist_s = new int[_pidoidlist_max];
-            _pidoidlist_s_len = 0;
-        }
-        /* enlarge the space when needed */
-        if(_oidlist_s_len == _oidlist_max)
-        {
-            _oidlist_max *= 10;
-            int * _new_oidlist_s = new int[_oidlist_max];
-            memcpy(_new_oidlist_s, _oidlist_s, sizeof(int) * _oidlist_s_len);
-            /* (_oidlist_sp-_oidlist_s) is the offset of _oidlist_sp */
-            _oidlist_sp = _new_oidlist_s + (_oidlist_sp-_oidlist_s);
-            delete[] _oidlist_s;
-            _oidlist_s = _new_oidlist_s;
-        }
-
-        /* enlarge the space when needed */
-        if(_pidoidlist_s_len == _pidoidlist_max)
-        {
-            _pidoidlist_max *= 10;
-            int* _new_pidoidlist_s = new int[_pidoidlist_max];
-            memcpy(_new_pidoidlist_s, _pidoidlist_s, sizeof(int) * _pidoidlist_s_len);
-            delete[] _pidoidlist_s;
-            _pidoidlist_s = _new_pidoidlist_s;
-        }
-
-        int _sub_id = _p_id_tuples[i][0];
-        int _pre_id = _p_id_tuples[i][1];
-        int _obj_id = _p_id_tuples[i][2];
-//		{
-//			stringstream _ss;
-//			_ss << _sub_id << "\t" << _pre_id << "\t" << _obj_id << endl;
-//			Util::logging(_ss.str());
-//		}
-
-        /* add objid to list */
-        _oidlist_s[_oidlist_s_len] = _obj_id;
-
-        /* if <subid, preid> changes, _oidlist_sp should be adjusted */
-        if(_sub_pre_change) {
-            _oidlist_sp = _oidlist_s + _oidlist_s_len;
-        }
-
-        _oidlist_s_len ++;
-        _oidlist_sp_len ++;
-
-        /* add <preid, objid> to list */
-        _pidoidlist_s[_pidoidlist_s_len] = _pre_id;
-        _pidoidlist_s[_pidoidlist_s_len+1] = _obj_id;
-        _pidoidlist_s_len += 2;
-
-
-        /* whether sub in new triple changes or not */
-        _sub_change = (i+1 == this->triples_num) ||
-                      (_p_id_tuples[i][0] != _p_id_tuples[i+1][0]);
-
-        /* whether pre in new triple changes or not */
-        _pre_change = (i+1 == this->triples_num) ||
-                      (_p_id_tuples[i][1] != _p_id_tuples[i+1][1]);
-
-        /* whether <sub,pre> in new triple changes or not */
-        _sub_pre_change = _sub_change || _pre_change;
-
-        if(_sub_pre_change)
-        {
-            (this->kvstore)->setobjIDlistBysubIDpreID(_sub_id, _pre_id, _oidlist_sp, _oidlist_sp_len);
-            _oidlist_sp = NULL;
-            _oidlist_sp_len = 0;
-        }
-
-        if(_sub_change)
-        {
-            //map subid 2 objidlist
-            Util::sort(_oidlist_s, _oidlist_s_len);
-            (this->kvstore)->setobjIDlistBysubID(_sub_id, _oidlist_s, _oidlist_s_len);
-            delete[] _oidlist_s;
-            _oidlist_s = NULL;
-            _oidlist_sp = NULL;
-            _oidlist_s_len = 0;
-
-			//map subid 2 preid&objidlist 
-            (this->kvstore)->setpreIDobjIDlistBysubID(_sub_id, _pidoidlist_s, _pidoidlist_s_len);
-            delete[] _pidoidlist_s;
-            _pidoidlist_s = NULL;
-            _pidoidlist_s_len = 0;
-        }
-
-    }/* end for( 0 to this->triple_num)  */
-
-
-    Util::logging("OUT s2po...");
-
-    return true;
-}
-
-/* map objid 2 subid_list  &
- * objIDpreID 2 subid_list &
- * objID 2 <preIDsubID>_list */
-bool
-Database::o2s_o2ps_op2s(int** _p_id_tuples, int _id_tuples_max)
-{
-    Util::logging("IN o2ps...");
-
-    qsort(_p_id_tuples, this->triples_num, sizeof(int**), Database::_ops_cmp);
-    int* _sidlist_o = NULL;
-    int* _sidlist_op = NULL;
-    int* _pidsidlist_o = NULL;
-    int _sidlist_o_len = 0;
-    int _sidlist_op_len = 0;
-    int _pidsidlist_o_len = 0;
-    /* only _sidlist_o will be assigned with space
-     * _sidlist_op is always a part of _sidlist_o
-     * just a pointer is enough */
-    int _sidlist_max = 0;
-    int _pidsidlist_max = 0;
-
-    /* true means next obj is a different one from the previous one */
-    bool _obj_change = true;
-
-    /* true means next <obj,pre> is different from the previous pair */
-    bool _obj_pre_change = true;
-
-    /* true means next pre is a different one from the previous one */
-    bool _pre_change = true;
-
-    (this->kvstore)->open_objID2subIDlist(KVstore::CREATE_MODE);
-    (this->kvstore)->open_objIDpreID2subIDlist(KVstore::CREATE_MODE);
-    (this->kvstore)->open_objID2preIDsubIDlist(KVstore::CREATE_MODE);
-
-    for(int i = 0; i < this->triples_num; i ++)
-    if (i + 1 == this->triples_num || (_p_id_tuples[i][0] != _p_id_tuples[i + 1][0] || _p_id_tuples[i][1] != _p_id_tuples[i + 1][1] || _p_id_tuples[i][2] != _p_id_tuples[i + 1][2]))
-    {
-        if(_obj_change)
-        {
-            /* sidlist */
-            _sidlist_max = 1000;
-            _sidlist_o = new int[_sidlist_max];
-            _sidlist_op = _sidlist_o;
-            _sidlist_o_len = 0;
-            _sidlist_op_len = 0;
-            /* pidsidlist */
-            _pidsidlist_max = 1000 * 2;
-            _pidsidlist_o = new int[_pidsidlist_max];
-            _pidsidlist_o_len = 0;
-        }
-        /* enlarge the space when needed */
-        if(_sidlist_o_len == _sidlist_max)
-        {
-            _sidlist_max *= 10;
-            int * _new_sidlist_o = new int[_sidlist_max];
-            memcpy(_new_sidlist_o, _sidlist_o, sizeof(int)*_sidlist_o_len);
-            /* (_sidlist_op-_sidlist_o) is the offset of _sidlist_op */
-            _sidlist_op = _new_sidlist_o + (_sidlist_op-_sidlist_o);
-            delete[] _sidlist_o;
-            _sidlist_o = _new_sidlist_o;
-        }
-
-        /* enlarge the space when needed */
-        if(_pidsidlist_o_len == _pidsidlist_max)
-        {
-            _pidsidlist_max *= 10;
-            int* _new_pidsidlist_o = new int[_pidsidlist_max];
-            memcpy(_new_pidsidlist_o, _pidsidlist_o, sizeof(int) * _pidsidlist_o_len);
-            delete[] _pidsidlist_o;
-            _pidsidlist_o = _new_pidsidlist_o;
-        }
-
-        int _sub_id = _p_id_tuples[i][0];
-        int _pre_id = _p_id_tuples[i][1];
-        int _obj_id = _p_id_tuples[i][2];
-
-        /* add subid to list */
-        _sidlist_o[_sidlist_o_len] = _sub_id;
-
-        /* if <objid, preid> changes, _sidlist_op should be adjusted */
-        if(_obj_pre_change) {
-            _sidlist_op = _sidlist_o + _sidlist_o_len;
-        }
-
-        _sidlist_o_len ++;
-        _sidlist_op_len ++;
-
-        /* add <preid, subid> to list */
-        _pidsidlist_o[_pidsidlist_o_len] = _pre_id;
-        _pidsidlist_o[_pidsidlist_o_len+1] = _sub_id;;
-        _pidsidlist_o_len += 2;
-
-        /* whether sub in new triple changes or not */
-        _obj_change = (i+1 == this->triples_num) ||
-                      (_p_id_tuples[i][2] != _p_id_tuples[i+1][2]);
-
-        /* whether pre in new triple changes or not */
-        _pre_change = (i+1 == this->triples_num) ||
-                      (_p_id_tuples[i][1] != _p_id_tuples[i+1][1]);
-
-        /* whether <sub,pre> in new triple changes or not */
-        _obj_pre_change = _obj_change || _pre_change;
-
-        if(_obj_pre_change)
-        {
-            (this->kvstore)->setsubIDlistByobjIDpreID(_obj_id, _pre_id, _sidlist_op, _sidlist_op_len);
-            _sidlist_op = NULL;
-            _sidlist_op_len = 0;
-        }
-
-        if(_obj_change)
-        {
-            /* map objid 2 subidlist */
-            Util::sort(_sidlist_o, _sidlist_o_len);
-            (this->kvstore)->setsubIDlistByobjID(_obj_id, _sidlist_o, _sidlist_o_len);
-            delete[] _sidlist_o;
-            _sidlist_o = NULL;
-            _sidlist_op = NULL;
-            _sidlist_o_len = 0;
-
-            /* map objid 2 preid&subidlist */
-            (this->kvstore)->setpreIDsubIDlistByobjID(_obj_id, _pidsidlist_o, _pidsidlist_o_len);
-            delete[] _pidsidlist_o;
-            _pidsidlist_o = NULL;
-            _pidsidlist_o_len = 0;
-        }
-
-    }/* end for( 0 to this->triple_num)  */
-
-
-    Util::logging("OUT o2ps...");
-
-    return true;
-}
-
 //NOTICE: below are the the new ones
 bool
 Database::s2p_s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
+//Database::s2p_s2o_s2po_sp2o_sp2n(int** _p_id_tuples, int _id_tuples_max)
 {
     qsort(_p_id_tuples, this->triples_num, sizeof(int*), Database:: _spo_cmp);
 
@@ -1474,11 +1011,18 @@ Database::s2p_s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
     (this->kvstore)->open_subIDpreID2objIDlist(KVstore::CREATE_MODE);
     (this->kvstore)->open_subID2preIDobjIDlist(KVstore::CREATE_MODE);
 
+	//(this->kvstore)->open_subIDpreID2num(KVstore::CREATE_MODE);
+
     for(int i = 0; i < this->triples_num;i++)
     if (i + 1 == this->triples_num || (_p_id_tuples[i][0] != _p_id_tuples[i + 1][0] || _p_id_tuples[i][1] != _p_id_tuples[i + 1][1] || _p_id_tuples[i][2] != _p_id_tuples[i + 1][2]))
     {
+		//cout<<"this is the "<<i<<"th loop"<<endl;
         if(_sub_change)
         {
+			//cout<<"subject changed!"<<endl;
+			//
+			//QUERY:pidlist and oidlist maybe different size, not always use 1000 as start?
+			//
 			//pidlist 
             _pidlist_max = 1000;
             _pidlist_s = new int[_pidlist_max];
@@ -1488,6 +1032,7 @@ Database::s2p_s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
             //_pidoidlist_s = new int[_pidoidlist_max];
             //_pidoidlist_s_len = 0;
 
+			//NOTICE:when debug, can change 1000 to 10 to discover problem
 			 //oidlist 
             _oidlist_max = 1000;
             _oidlist_s = new int[_oidlist_max];
@@ -1499,13 +1044,13 @@ Database::s2p_s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
             _pidoidlist_s = new int[_pidoidlist_max];
             _pidoidlist_s_len = 0;
         }
-		if(_sub_pre_change)
-		{
-			//oidlist
-			_oidlist_max = 1000;
-            _oidlist_sp = new int[_oidlist_max];
-            _oidlist_sp_len = 0;
-		}
+		//if(_sub_pre_change)
+		//{
+			////oidlist
+			//_oidlist_max = 1000;
+            //_oidlist_sp = new int[_oidlist_max];
+            //_oidlist_sp_len = 0;
+		//}
 
 		//enlarge the space when needed 
         if(_pidlist_s_len == _pidlist_max)
@@ -1520,6 +1065,7 @@ Database::s2p_s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
 		 //enlarge the space when needed 
         if(_oidlist_s_len == _oidlist_max)
         {
+			//cout<<"s2o need to enlarge"<<endl;
             _oidlist_max *= 10;
             int * _new_oidlist_s = new int[_oidlist_max];
             memcpy(_new_oidlist_s, _oidlist_s, sizeof(int) * _oidlist_s_len);
@@ -1566,7 +1112,8 @@ Database::s2p_s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
         _oidlist_sp_len ++;
 
 		//add objid to list
-		_oidlist_sp[_oidlist_sp_len++] = _obj_id;
+		//_oidlist_sp[_oidlist_sp_len++] = _obj_id;
+		//WARN:this is wrong!
 
 		//add <preid, objid> to list 
         _pidoidlist_s[_pidoidlist_s_len] = _pre_id;
@@ -1589,6 +1136,10 @@ Database::s2p_s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
 			//add preid to list 
 			_pidlist_s[_pidlist_s_len++] = _pre_id;
 
+			//map subid&preid 2 triple num
+			//(this->kvstore)->setNumBysubIDpreID(_sub_id, _pre_id, _oidlist_sp_len);
+			//
+			//map subid&preid 2 objidlist
             (this->kvstore)->setobjIDlistBysubIDpreID(_sub_id, _pre_id, _oidlist_sp, _oidlist_sp_len);
 			//if not use s2o memory
 			//delete[] _oidlist_sp;
@@ -1609,10 +1160,11 @@ Database::s2p_s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
             _pidoidlist_s_len = 0;
 
             Util::sort(_oidlist_s, _oidlist_s_len);
+			_oidlist_s_len = Util::removeDuplicate(_oidlist_s, _oidlist_s_len);
             (this->kvstore)->setobjIDlistBysubID(_sub_id, _oidlist_s, _oidlist_s_len);
             delete[] _oidlist_s;
-            _oidlist_s = NULL;
-            _oidlist_s_len = 0;
+            _oidlist_sp = _oidlist_s = NULL;
+            _oidlist_sp_len = _oidlist_s_len = 0;
         }
 
     }//end for( 0 to this->triple_num)
@@ -1625,6 +1177,7 @@ Database::s2p_s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max)
 
 bool
 Database::o2p_o2s_o2ps_op2s(int** _p_id_tuples, int _id_tuples_max)
+//Database::o2p_o2s_o2ps_op2s_op2n(int** _p_id_tuples, int _id_tuples_max)
 {
     Util::logging("IN o2ps...");
 
@@ -1637,6 +1190,7 @@ Database::o2p_o2s_o2ps_op2s(int** _p_id_tuples, int _id_tuples_max)
     int _sidlist_op_len = 0;
     int _pidsidlist_o_len = 0;
 	int _pidlist_o_len = 0;
+
     //only _sidlist_o will be assigned with space _sidlist_op is always a part of _sidlist_o just a pointer is enough 
     int _sidlist_max = 0;
     int _pidsidlist_max = 0;
@@ -1655,6 +1209,8 @@ Database::o2p_o2s_o2ps_op2s(int** _p_id_tuples, int _id_tuples_max)
     (this->kvstore)->open_objIDpreID2subIDlist(KVstore::CREATE_MODE);
     (this->kvstore)->open_objID2preIDsubIDlist(KVstore::CREATE_MODE);
     (this->kvstore)->open_objID2preIDlist(KVstore::CREATE_MODE);
+
+	//(this->kvstore)->open_objIDpreID2num(KVstore::CREATE_MODE);
 
     for(int i = 0; i < this->triples_num; i ++)
     if (i + 1 == this->triples_num || (_p_id_tuples[i][0] != _p_id_tuples[i + 1][0] || _p_id_tuples[i][1] != _p_id_tuples[i + 1][1] || _p_id_tuples[i][2] != _p_id_tuples[i + 1][2]))
@@ -1746,6 +1302,10 @@ Database::o2p_o2s_o2ps_op2s(int** _p_id_tuples, int _id_tuples_max)
 			//add preid to list
 			_pidlist_o[_pidlist_o_len++] = _pre_id;
 
+			//map objid&preid 2 triple num
+			//(this->kvstore)->setNumByobjIDpreID(_obj_id, _pre_id, _sidlist_op_len);
+			//
+			//map objid&preid 2 subidlist
             (this->kvstore)->setsubIDlistByobjIDpreID(_obj_id, _pre_id, _sidlist_op, _sidlist_op_len);
             _sidlist_op = NULL;
             _sidlist_op_len = 0;
@@ -1785,6 +1345,7 @@ Database::o2p_o2s_o2ps_op2s(int** _p_id_tuples, int _id_tuples_max)
 
 bool
 Database::p2s_p2o_p2so(int** _p_id_tuples, int _id_tuples_max)
+//Database::p2s_p2o_p2so_p2n(int** _p_id_tuples, int _id_tuples_max)
 {
     qsort(_p_id_tuples, this->triples_num, sizeof(int*), Database:: _pso_cmp);
 	int* _sidlist_p = NULL;
@@ -1807,6 +1368,8 @@ Database::p2s_p2o_p2so(int** _p_id_tuples, int _id_tuples_max)
     (this->kvstore)->open_preID2subIDlist(KVstore::CREATE_MODE);
     (this->kvstore)->open_preID2objIDlist(KVstore::CREATE_MODE);
     (this->kvstore)->open_preID2subIDobjIDlist(KVstore::CREATE_MODE);
+
+	//(this->kvstore)->open_preID2num(KVstore::CREATE_MODE);
 
     for(int i = 0; i < this->triples_num;i++)
     if (i + 1 == this->triples_num || (_p_id_tuples[i][0] != _p_id_tuples[i + 1][0] || _p_id_tuples[i][1] != _p_id_tuples[i + 1][1] || _p_id_tuples[i][2] != _p_id_tuples[i + 1][2]))
@@ -1901,6 +1464,9 @@ Database::p2s_p2o_p2so(int** _p_id_tuples, int _id_tuples_max)
             delete[] _oidlist_p;
             _oidlist_p = NULL;
             _oidlist_p_len = 0;
+			//map preid 2 triple num
+			//(this->kvstore)->setNumBypreID(_pre_id, _sidoidlist_p_len/2);
+			//
 			//map preid 2 subid&objidlist 
             (this->kvstore)->setsubIDobjIDlistBypreID(_pre_id, _sidoidlist_p, _sidoidlist_p_len);
             delete[] _sidoidlist_p;
@@ -2273,7 +1839,7 @@ Database::insertTriple(const TripleWithObjType& _triple)
         this->triples_num ++;
     }
 
-    /* update sp2o op2s s2po o2ps s2o o2s */
+    /* update sp2o op2s s2po o2ps s2o o2s etc.*/
     int updateLen = (this->kvstore)->updateTupleslist_insert(_sub_id, _pre_id, _obj_id);
 
     //long tv_kv_store_end = Util::get_cur_time();

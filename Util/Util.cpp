@@ -12,6 +12,12 @@
 
 using namespace std;
 
+//NOTICE:used in Database, Join and Strategy
+int Util::triple_num = 0;
+int Util::pre_num = 0;
+int Util::entity_num = 0;
+int Util::literal_num = 0;
+
 //database home directory, which is an absolute path by config
 //TODO:everywhere using database, the prefix should be it
 string Util::db_home = ".";
@@ -1095,6 +1101,7 @@ void
 Util::intersect(int*& _id_list, int& _id_list_len, const int* _list1, int _len1, const int* _list2, int _len2)
 {
 	vector<int> res;
+	//cout<<"intersect prevar: "<<_len1<<"   "<<_len2<<endl;
 	if(_list1 == NULL || _len1 == 0 || _list2 == NULL || _len2 == 0)
 	{
 		_id_list = NULL;
@@ -1186,5 +1193,7 @@ Util::intersect(int*& _id_list, int& _id_list_len, const int* _list1, int _len1,
 	_id_list = new int[_id_list_len];
 	for(int i = 0; i < _id_list_len; ++i)
 		_id_list[i] = res[i];
+	delete[] _list1;
+	delete[] _list2;
 }
 
