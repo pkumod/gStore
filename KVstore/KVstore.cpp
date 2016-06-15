@@ -1190,12 +1190,14 @@ bool KVstore::setpreIDlistBysubID(int _subid, const int* _preidlist, int _list_l
 }
 
 //for preID 2 subIDlist 
-bool KVstore::open_preID2subIDlist(const int _mode)
+bool 
+KVstore::open_preID2subIDlist(const int _mode)
 {
 	return this->open(this->preID2subIDlist, KVstore::s_pID2sIDlist, _mode);
 }
 
-bool KVstore::getsubIDlistBypreID(int _preid, int*& _subidlist, int& _list_len)
+bool 
+KVstore::getsubIDlistBypreID(int _preid, int*& _subidlist, int& _list_len)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -1218,19 +1220,22 @@ bool KVstore::getsubIDlistBypreID(int _preid, int*& _subidlist, int& _list_len)
 	return true;
 }
 
-bool KVstore::setsubIDlistBypreID(int _preid, const int* _subidlist, int _list_len)
+bool 
+KVstore::setsubIDlistBypreID(int _preid, const int* _subidlist, int _list_len)
 {
 	return this->setValueByKey
 			(this->preID2subIDlist, (char*)&_preid, sizeof(int),(char*)_subidlist, _list_len * sizeof(int));
 }
 
 //for objID 2 preIDlist 
-bool KVstore::open_objID2preIDlist(const int _mode)
+bool 
+KVstore::open_objID2preIDlist(const int _mode)
 {
 	return this->open(this->objID2preIDlist, KVstore::s_oID2pIDlist, _mode);
 }
 
-bool KVstore::getpreIDlistByobjID(int _objid, int*& _preidlist, int& _list_len)
+bool 
+KVstore::getpreIDlistByobjID(int _objid, int*& _preidlist, int& _list_len)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -1253,19 +1258,22 @@ bool KVstore::getpreIDlistByobjID(int _objid, int*& _preidlist, int& _list_len)
 	return true;
 }
 
-bool KVstore::setpreIDlistByobjID(int _objid, const int* _preidlist, int _list_len)
+bool 
+KVstore::setpreIDlistByobjID(int _objid, const int* _preidlist, int _list_len)
 {
 	return this->setValueByKey
 			(this->objID2preIDlist, (char*)&_objid, sizeof(int),(char*)_preidlist, _list_len * sizeof(int));
 }
 
 //for preID 2 objIDlist 
-bool KVstore::open_preID2objIDlist(const int _mode)
+bool 
+KVstore::open_preID2objIDlist(const int _mode)
 {
 	return this->open(this->preID2objIDlist, KVstore::s_pID2oIDlist, _mode);
 }
 
-bool KVstore::getobjIDlistBypreID(int _preid, int*& _objidlist, int& _list_len)
+bool 
+KVstore::getobjIDlistBypreID(int _preid, int*& _objidlist, int& _list_len)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -1288,20 +1296,24 @@ bool KVstore::getobjIDlistBypreID(int _preid, int*& _objidlist, int& _list_len)
 	return true;
 }
 
-bool KVstore::setobjIDlistBypreID(int _preid, const int* _objidlist, int _list_len)
+bool 
+KVstore::setobjIDlistBypreID(int _preid, const int* _objidlist, int _list_len)
 {
 	return this->setValueByKey
 			(this->preID2objIDlist, (char*)&_preid, sizeof(int), (char*)_objidlist, _list_len * sizeof(int));
 }
 
 //for subID&objID2preIDlist  _mode is either KVstore::CREATE_MODE or KVstore::READ_WRITE_MODE
-bool KVstore::open_subIDobjID2preIDlist(const int _mode)
+bool 
+KVstore::open_subIDobjID2preIDlist(const int _mode)
 {
 	return this->open(this->subIDobjID2preIDlist, KVstore::s_sIDoID2pIDlist, _mode);
 }
 
-bool KVstore::getpreIDlistBysubIDobjID(int _subid, int _objid, int*& _preidlist, int& _list_len)
+bool 
+KVstore::getpreIDlistBysubIDobjID(int _subid, int _objid, int*& _preidlist, int& _list_len)
 {
+#ifdef SO2P
 	char* _tmp = NULL;
 	int _len = 0;
 	int* _sp = new int[2];
@@ -1323,11 +1335,20 @@ bool KVstore::getpreIDlistBysubIDobjID(int _subid, int _objid, int*& _preidlist,
 		memcpy((char*)_preidlist, _tmp, sizeof(int)*_list_len);
 	}
 	//delete[] _tmp;
+#else
+	int *list1 = NULL, *list2 = NULL;
+	int len1 = 0, len2 = 0;
+	this->getpreIDlistBysubID(_subid, list1, len1);
+	this->getpreIDlistByobjID(_objid, list2, len2);
+	Util::intersect(_preidlist, _list_len, list1, len1, list2, len2);
+#endif
 
 	return true;
 }
 
-bool KVstore::setpreIDlistBysubIDobjID(int _subid, int _objid, const int* _preidlist, int _list_len)
+//NOTICE:this is not used because so2p is implemented by s2p and o2p now
+bool 
+KVstore::setpreIDlistBysubIDobjID(int _subid, int _objid, const int* _preidlist, int _list_len)
 {
 	int* _sp = new int[2];
 	_sp[0] = _subid;
@@ -1342,12 +1363,14 @@ bool KVstore::setpreIDlistBysubIDobjID(int _subid, int _objid, const int* _preid
 }
 
 //preID2subID&objIDlist
-bool KVstore::open_preID2subIDobjIDlist(const int _mode)
+bool 
+KVstore::open_preID2subIDobjIDlist(const int _mode)
 {
 	return this->open(this->preID2subIDobjIDlist, KVstore::s_pID2sIDoIDlist, _mode);
 }
 
-bool KVstore::getsubIDobjIDlistBypreID(int _preid, int*& _subid_objidlist, int& _list_len)
+bool 
+KVstore::getsubIDobjIDlistBypreID(int _preid, int*& _subid_objidlist, int& _list_len)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -1370,11 +1393,120 @@ bool KVstore::getsubIDobjIDlistBypreID(int _preid, int*& _subid_objidlist, int& 
 	return true;
 }
 
-bool KVstore::setsubIDobjIDlistBypreID(int _preid, const int* _subid_objidlist, int _list_len)
+bool 
+KVstore::setsubIDobjIDlistBypreID(int _preid, const int* _subid_objidlist, int _list_len)
 {
 	return this->setValueByKey
 			(this->preID2subIDobjIDlist, (char*)&_preid, sizeof(int),(char*)_subid_objidlist, _list_len * sizeof(int));
 }
+
+//preID2num
+bool 
+KVstore::open_preID2num(const int _mode)
+{
+	return this->open(this->preID2num, KVstore::s_pID2num, _mode);
+}
+
+int
+KVstore::getNumBypreID(int _preid)
+{
+	char* _tmp = NULL;
+	int _len = 0;
+	bool _get = this->getValueByKey(this->preID2num, (char*)&_preid, sizeof(int), _tmp, _len);
+
+	if(!_get)
+	{
+		return 0;
+	}
+
+	return _tmp[0];
+}
+
+bool 
+KVstore::setNumBypreID(int _preid, int _tripleNum)
+{
+	return this->setValueByKey(this->preID2num, (char*)&_preid, sizeof(int), (char*)&_tripleNum, sizeof(int));
+}
+
+//subIDpreID2num
+bool 
+KVstore::open_subIDpreID2num(const int _mode)
+{
+	return this->open(this->subIDpreID2num, KVstore::s_sIDpID2num, _mode);
+}
+
+int
+KVstore::getNumBysubIDpreID(int _subid, int _preid)
+{
+	int* _key = new int[2];
+	_key[0] = _subid;
+	_key[1] = _preid;
+	char* _tmp = NULL;
+	int _len = 0;
+	bool _get = this->getValueByKey(this->subIDpreID2num, (char*)_key, 2 * sizeof(int), _tmp, _len);
+
+	if(!_get)
+	{
+		return 0;
+	}
+
+	delete[] _key;
+	return _tmp[0];
+}
+
+bool 
+KVstore::setNumBysubIDpreID(int _subid, int _preid, int _tripleNum)
+{
+	int* _key = new int[2];
+	_key[0] = _subid;
+	_key[1] = _preid;
+	bool ret = this->setValueByKey(this->subIDpreID2num, (char*)_key, 2 * sizeof(int), (char*)&_tripleNum, sizeof(int));
+
+	delete[] _key;
+	return ret;
+}
+
+//objIDpreID2num
+bool 
+KVstore::open_objIDpreID2num(const int _mode)
+{
+	return this->open(this->objIDpreID2num, KVstore::s_oIDpID2num, _mode);
+}
+
+int
+KVstore::getNumByobjIDpreID(int _objid, int _preid)
+{
+	int* _key = new int[2];
+	_key[0] = _objid;
+	_key[1] = _preid;
+	char* _tmp = NULL;
+	int _len = 0;
+	bool _get = this->getValueByKey(this->objIDpreID2num, (char*)_key, 2 * sizeof(int), _tmp, _len);
+
+	if(!_get)
+	{
+		return 0;
+	}
+
+	delete[] _key;
+	return _tmp[0];
+}
+
+bool 
+KVstore::setNumByobjIDpreID(int _objid, int _preid, int _tripleNum)
+{
+	int* _key = new int[2];
+	_key[0] = _objid;
+	_key[1] = _preid;
+	bool ret = this->setValueByKey(this->objIDpreID2num, (char*)_key, 2 * sizeof(int), (char*)&_tripleNum, sizeof(int));
+
+	delete[] _key;
+	return ret;
+}
+
+
+//==========================================================================================================================
+
 
 //set the store_path as the root dir of this KVstore
 //initial all Tree pointer as NULL
@@ -1407,39 +1539,69 @@ KVstore::KVstore(const string _store_path){
 
 	this->subIDobjID2preIDlist = NULL;
 	this->preID2subIDobjIDlist = NULL;
+
+	this->preID2num = NULL;
+	this->subIDpreID2num = NULL;
+	this->objIDpreID2num = NULL;
 }
 
 //release all the memory used in this KVstore
 //before destruction
 KVstore::~KVstore()
 {
-	//this->release();
 	this->flush();
+	this->release();
+}
 
+void
+KVstore::release()
+{
 	delete this->entity2id;
+	this->entity2id = NULL;
 	delete this->id2entity;
+	this->id2entity = NULL;
 
 	delete this->literal2id;
+	this->literal2id = NULL;
 	delete this->id2literal;
+	this->id2literal = NULL;
 
 	delete this->predicate2id;
+	this->predicate2id = NULL;
 	delete this->id2predicate;
+	this->id2predicate = NULL;
 
 	delete this->objID2subIDlist;
+	this->objID2subIDlist = NULL;
 	delete this->subID2objIDlist;
+	this->subID2objIDlist = NULL;
 
 	delete this->objIDpreID2subIDlist;
+	this->objIDpreID2subIDlist = NULL;
 	delete this->subIDpreID2objIDlist;
+	this->subIDpreID2objIDlist = NULL;
 
 	delete this->subID2preIDobjIDlist;
+	this->subID2preIDobjIDlist = NULL;
 	delete this->objID2preIDsubIDlist;
+	this->objID2preIDsubIDlist = NULL;
 
 	delete this->subID2preIDlist;
+	this->subID2preIDlist = NULL;
 	delete this->preID2subIDlist;
+	this->preID2subIDlist = NULL;
 	delete this->objID2preIDlist;
+	this->objID2preIDlist = NULL;
 	delete this->preID2objIDlist;
+	this->preID2objIDlist = NULL;
 	delete this->subIDobjID2preIDlist;
+	this->subIDobjID2preIDlist = NULL;
 	delete this->preID2subIDobjIDlist;
+	this->preID2subIDobjIDlist = NULL;
+
+	//delete this->preID2num;
+	//delete this->subIDpreID2num;
+	//delete this->objIDpreID2num;
 }
 
 /*
@@ -1448,7 +1610,9 @@ KVstore::~KVstore()
  * any Tree pointer that is null or
  * has not been modified will do nothing
  *  */
-void KVstore::flush(){
+void 
+KVstore::flush()
+{
 	this->flush(this->entity2id);
 	this->flush(this->id2entity);
 
@@ -1473,35 +1637,23 @@ void KVstore::flush(){
 	this->flush(this->preID2objIDlist);
 	this->flush(this->subIDobjID2preIDlist);
 	this->flush(preID2subIDobjIDlist);
+
+	//this->flush(this->preID2num);
+	//this->flush(this->subIDpreID2num);
+	//this->flush(this->objIDpreID2num);
 }
 
-/* Release all the memory used in this KVstore,
- * following an flush() for each Tree pointer
- * any Tree pointer that is null or
- * has not been modified will do nothing
- *  */
-//void KVstore::release(){
-//	cout << "release of KVstore..." << endl;
-//	this->release(this->entity2id);
-//	this->release(this->id2entity);
-//
-//	this->release(this->literal2id);
-//	this->release(this->id2literal);
-//
-//	this->release(this->predicate2id);
-//	this->release(this->id2predicate);
-//
-//	this->release(this->objID2subIDlist);
-//	this->release(this->subID2objIDlist);
-//
-//	this->release(this->objIDpreID2subIDlist);
-//	this->release(this->subIDpreID2objIDlist);
-//
-//	this->release(this->subID2preIDobjIDlist);
-//	this->release(this->objID2preIDsubIDlist);
-//}
+void 
+KVstore::flush(Tree* _p_btree)
+{
+	if(_p_btree != NULL)
+	{
+		_p_btree->save();
+	}
+}
 
-void KVstore::open()
+void 
+KVstore::open()
 {
 	cout << "open KVstore" << endl;
 
@@ -1531,20 +1683,17 @@ void KVstore::open()
 	this->open(this->subIDobjID2preIDlist, KVstore::s_sIDoID2pIDlist, KVstore::READ_WRITE_MODE);
 #endif
 	this->open(this->preID2subIDobjIDlist, KVstore::s_pID2sIDoIDlist, KVstore::READ_WRITE_MODE);
-}
 
-void KVstore::flush(Tree* _p_btree)
-{
-	if(_p_btree != NULL)
-	{
-		_p_btree->save();
-	}
+	//this->open(this->preID2num, KVstore::s_pID2num, KVstore::READ_WRITE_MODE);
+	//this->open(this->subIDpreID2num, KVstore::s_sIDpID2num, KVstore::READ_WRITE_MODE);
+	//this->open(this->objIDpreID2num, KVstore::s_oIDpID2num, KVstore::READ_WRITE_MODE);
 }
 
 /* Open a btree according the mode */
 /* CREATE_MODE: 		build a new btree and delete if exist 	*/
 /* READ_WRITE_MODE: 	open a btree, btree must exist  		*/
-bool KVstore::open(Tree* & _p_btree, const string _tree_name, const int _mode){
+bool 
+KVstore::open(Tree* & _p_btree, const string _tree_name, const int _mode){
 	if(_p_btree != NULL)
 	{
 		return false;
@@ -1625,4 +1774,8 @@ string KVstore::s_pID2oIDlist="s_pID2oIDlist";
 
 string KVstore::s_sIDoID2pIDlist="s_sIDoID2pIDlist";
 string KVstore::s_pID2sIDoIDlist="s_pID2sIDoIDlist";
+
+string KVstore::s_pID2num = "s_pID2num";
+string KVstore::s_sIDpID2num = "s_sIDpID2num";
+string KVstore::s_oIDpID2num = "s_oIDpID2num";
 

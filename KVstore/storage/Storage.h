@@ -20,8 +20,9 @@ class Storage
 public:
 	static const unsigned BLOCK_SIZE = 1 << 16;	//fixed size of disk-block
 	//there are 18 B+Tree indexes and one vstree index, so set 3G buffer size
-	static const unsigned long long MAX_BUFFER_SIZE = 0xC0000000;		//max buffer size 
+	//static const unsigned long long MAX_BUFFER_SIZE = 0xC0000000;		//max buffer size 
 	//static const unsigned long long MAX_BUFFER_SIZE = 0x1ffffffff;		//max buffer size 
+	static const unsigned long long MAX_BUFFER_SIZE = 0xffffffff;		//max buffer size 
 	//static const unsigned SET_BUFFER_SIZE = 1 << 30;		//set buffer size
 	static const unsigned HEAP_SIZE = MAX_BUFFER_SIZE/Node::INTL_SIZE;
 	static const unsigned MAX_BLOCK_NUM = 1 << 24;		//max block-num

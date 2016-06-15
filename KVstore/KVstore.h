@@ -138,10 +138,30 @@ public:
 	bool getsubIDobjIDlistBypreID(int _preid, int*& _subid_objidlist, int& _list_len);
 	bool setsubIDobjIDlistBypreID(int _preid, const int* _subid_objidlist, int _list_len);
 
+	//QUERY:is the below 3 indexes needed?
+	//In fact, p2so can compute the num of triples if dividing so_len by 2
+	//However, sometimes this can be very large and costly
+	//For example, the predicate is <rdf:type>
+
+	 //for predicate 2 triple num
+	bool open_preID2num(const int _mode);
+	int getNumBypreID(int _preid);
+	bool setNumBypreID(int _preid, int _tripleNum);
+
+	//for subject&predicate 2 triple num
+	bool open_subIDpreID2num(const int _mode);
+	int getNumBysubIDpreID(int _subID, int _preID);
+	bool setNumBysubIDpreID(int _subID, int _preID, int _tripleNum);
+
+	//for object&predicate 2 triple num
+	bool open_objIDpreID2num(const int _mode);
+	int getNumByobjIDpreID(int _objid, int _preid);
+	bool setNumByobjIDpreID(int _objid, int _preid, int _tripleNum);
+
 	KVstore(std::string _store_path = ".");
 	~KVstore();
 	void flush();
-	//void release();
+	void release();
 	void open();
 
 private:
@@ -195,6 +215,13 @@ private:
 	Tree* preID2subIDobjIDlist;
 	static std::string s_sIDoID2pIDlist;
 	static std::string s_pID2sIDoIDlist;
+
+	Tree* preID2num;
+	Tree* subIDpreID2num;
+	Tree* objIDpreID2num;
+	static std::string s_pID2num;
+	static std::string s_sIDpID2num;
+	static std::string s_oIDpID2num;
 
 	void flush(Tree* _p_btree);
 	bool setValueByKey(Tree* _p_btree, const char* _key, int _klen, const char* _val, int _vlen);

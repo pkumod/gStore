@@ -124,7 +124,8 @@ private:
 	int* var_degree;
 
 	//whether has added the variable's literal candidate
-	bool* is_literal_candidate_added;
+	//bool* is_literal_candidate_added;
+	bool* ready;
 	//if need to be retrieved by vstree or generate when join(first is graph var)
 	bool* need_retrieve;
 
@@ -245,17 +246,21 @@ public:
 	bool isFreeLiteralVariable(int _var);
 
 	// check whether has added _var's literal candidates
-	bool isAddedLiteralCandidate(int _var);
+	//bool isAddedLiteralCandidate(int _var);
 
 	// set _var's literal candidates has been added 
-	void setAddedLiteralCandidate(int _var);
+	//void setAddedLiteralCandidate(int _var);
 
 	//check if need to be retrieved
 	bool if_need_retrieve(int _var);
 	bool isSatelliteInJoin(int _var);
 
+	//if the candidates of var(in join) is all ready
+	bool isReady(int _var) const;
+	void setReady(int _var);
+
 	// encode relative signature data of the query graph 
-	void encodeBasicQuery(KVstore* _p_kvstore, const std::vector<std::string>& _query_var);
+	bool encodeBasicQuery(KVstore* _p_kvstore, const std::vector<std::string>& _query_var);
 
 	unsigned getPreVarNum() const;
 	const PreVar& getPreVarByID(unsigned) const;

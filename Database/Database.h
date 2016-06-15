@@ -134,8 +134,11 @@ private:
 	//NOTICE: below is the new one
 	//bool s2p_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max);
 	bool s2p_s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max);
+	//bool s2p_s2o_s2po_sp2o_sp2n(int** _p_id_tuples, int _id_tuples_max);
 	bool o2p_o2s_o2ps_op2s(int** _p_id_tuples, int _id_tuples_max);
+	//bool o2p_o2s_o2ps_op2s_op2n(int** _p_id_tuples, int _id_tuples_max);
 	bool p2s_p2o_p2so(int** _p_id_tuples, int _id_tuples_max);
+	//bool p2s_p2o_p2so_p2n(int** _p_id_tuples, int _id_tuples_max);
 	bool so2p_s2o(int** _p_id_tuples, int _id_tuples_max);
 
 	static int _spo_cmp(const void* _a, const void* _b);

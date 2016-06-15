@@ -16,8 +16,10 @@
 class VNode
 {
 public:
-    static const int MAX_CHILD_NUM = 151;
-    static const int MIN_CHILD_NUM = 60;
+    static const int MAX_CHILD_NUM = 200;
+    //static const int MAX_CHILD_NUM = 151;
+    static const int MIN_CHILD_NUM = 100;
+    //static const int MIN_CHILD_NUM = 60;
 
     //debug
 //    static const int MAX_CHILD_NUM = 50;

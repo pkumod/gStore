@@ -155,6 +155,8 @@ private:
 	//score the node according to degree and size
 	double score_node(unsigned _degree, unsigned _size);
 
+	void toStartJoin();
+
 	bool filter_before_join();
 	bool constant_edge_filter(int _var_i);
 	void preid_filter(int _var_i);

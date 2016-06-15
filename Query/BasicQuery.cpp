@@ -55,8 +55,10 @@ BasicQuery::clear()
 
     delete[] this->candidate_list;
     this->candidate_list = NULL;
-    delete[] this->is_literal_candidate_added;
-    this->is_literal_candidate_added = NULL;
+    //delete[] this->is_literal_candidate_added;
+    //this->is_literal_candidate_added = NULL;
+	delete[] this->ready;
+	this->ready = NULL;
 	delete[] this->need_retrieve;
 	this->need_retrieve = NULL;
     for (unsigned i=0;i<this->result_list.size();++i)
@@ -265,17 +267,17 @@ BasicQuery::isFreeLiteralVariable(int _var)
     return true;
 }
 
-bool 
-BasicQuery::isAddedLiteralCandidate(int _var)
-{
-    return this->is_literal_candidate_added[_var];
-}
+//bool 
+//BasicQuery::isAddedLiteralCandidate(int _var)
+//{
+    //return this->is_literal_candidate_added[_var];
+//}
 
-void 
-BasicQuery::setAddedLiteralCandidate(int _var)
-{
-    this->is_literal_candidate_added[_var] = true;
-}
+//void 
+//BasicQuery::setAddedLiteralCandidate(int _var)
+//{
+    //this->is_literal_candidate_added[_var] = true;
+//}
 
 bool
 BasicQuery::if_need_retrieve(int _var)
@@ -287,6 +289,21 @@ bool
 BasicQuery::isSatelliteInJoin(int _var)
 {
 	return _var >= 0 && _var < this->graph_var_num && !(this->need_retrieve[_var]);
+}
+
+bool
+BasicQuery::isReady(int _var) const
+{
+	return _var >= 0 && _var < this->graph_var_num && this->ready[_var];
+}
+
+void
+BasicQuery::setReady(int _var)
+{
+	if(_var >= 0 && _var < this->graph_var_num)
+	{
+		this->ready[_var] = true;
+	}
 }
 
 void 
@@ -342,7 +359,7 @@ BasicQuery::updateObjSig(int _obj_id, int _pre_id, int _sub_id, string _sub,int 
 }
 
 // encode relative signature data of the query graph
-void 
+bool
 BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_var)
 {
 	//TODO:the third parameter should be selected predicate variables
@@ -437,6 +454,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 				//BETTER:this is too robust, not only one query, try return false
 				cerr << "invalid query because the pre is not found: " << pre << endl;
 				//exit(1);
+				return false;
 			}
 		}
         int sub_id = -1;
@@ -512,6 +530,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 	}
 
     cout << "OUT encodeBasicQuery" << endl;
+	return true;
 }
 
 int
@@ -575,7 +594,8 @@ BasicQuery::null_initial()
     this->triple_vt.clear();
     this->var_str2id.clear();
     this->var_degree = NULL;
-    this->is_literal_candidate_added = NULL;
+    //this->is_literal_candidate_added = NULL;
+	this->ready = NULL;
 	this->need_retrieve = NULL;
     this->edge_id = NULL;
     this->edge_nei_id = NULL;
@@ -607,7 +627,8 @@ BasicQuery::initial()
     this->edge_pre_id = new int*[BasicQuery::MAX_VAR_NUM];
     this->edge_type = new char*[BasicQuery::MAX_VAR_NUM];
 
-    this->is_literal_candidate_added = new bool[BasicQuery::MAX_VAR_NUM];
+    //this->is_literal_candidate_added = new bool[BasicQuery::MAX_VAR_NUM];
+    this->ready = new bool[BasicQuery::MAX_VAR_NUM];
     this->need_retrieve = new bool[BasicQuery::MAX_VAR_NUM];
 
     for(int i = 0; i < BasicQuery::MAX_VAR_NUM; ++i)
@@ -615,7 +636,8 @@ BasicQuery::initial()
         this->var_degree[i] = 0;
         this->var_sig[i].reset();
         this->var_name[i] = "";
-        this->is_literal_candidate_added[i] = false;
+        //this->is_literal_candidate_added[i] = false;
+		this->ready[i] = false;
         this->need_retrieve[i] = false;
 
         this->edge_sig[i] = new EdgeBitSet[BasicQuery::MAX_VAR_NUM];
@@ -817,28 +839,49 @@ BasicQuery::getVarID_FirstProcessWhenJoin()
 {
     int min_var = -1;
     int min_size = Util::TRIPLE_NUM_MAX;
+    //int min_var2 = -1;
+    //int min_size2 = Util::TRIPLE_NUM_MAX;
     for(int i = 0; i < this->graph_var_num; ++i)
     {
         // when join variables' mapping candidate list, we should start with entity variable.
         // since literal variables' candidate list may not include all literals.
-        if(this->isLiteralVariable(i) || this->isSatelliteInJoin(i))
+        //if(this->isSatelliteInJoin(i))
+		//if(this->isLiteralVariable(i) || this->isSatelliteInJoin(i))
+		if(!this->isReady(i))
         {
+			cout<<"var "<<i<<" is not ready!"<<endl;
             continue;
         }
+		else
+			cout<<"var "<<i<<" is ready!"<<endl;
 
-        int tmp_size = (this->candidate_list[i]).size();
-        if(tmp_size < min_size)
-        {
-            min_var = i;
-            min_size = tmp_size;
-        }
+		int tmp_size = (this->candidate_list[i]).size();
+		//if(this->isLiteralVariable(i))
+		//{
+			//if(tmp_size < min_size2)
+			//{
+				//min_var2 = i;
+				//min_size2 = tmp_size;
+			//}
+		//}
+		//else
+		//{
+		if(tmp_size < min_size)
+		{
+			min_var = i;
+			min_size = tmp_size;
+		}
+		//}
     }
 
-    if (min_var == -1)
+    if(min_var == -1)
     {
-        // in this case, all variables may include literal results.
-        // then the join-step starting with any variables is ok.
-        return 0;
+        // in this case, all core vertices are literal variables
+		// we must generate candidates for satellites or use p2o to add literals for a core vertex
+		// For example:
+		// A->B<-C select A B C
+        //return min_var2;
+		return -1;
     }
     else
     {
@@ -846,7 +889,8 @@ BasicQuery::getVarID_FirstProcessWhenJoin()
     }
 }
 
-string BasicQuery::candidate_str()
+string 
+BasicQuery::candidate_str()
 {
     stringstream _ss;
 

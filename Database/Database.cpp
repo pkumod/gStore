@@ -343,8 +343,16 @@ Database::build(const string& _rdf_file)
 //    this->encodeRDF(ret);
     this->encodeRDF_new(ret);
     cout << "finish encode." << endl;
+	//this->kvstore->flush();
+	delete this->kvstore;
+	this->kvstore = NULL;
+	sync();
+	cout <<"sync kvstore"<<endl;
+	//this->kvstore->release();
+	//cout<<"release kvstore"<<endl;
+
+    //(this->kvstore)->open();
     string _entry_file = this->getSignatureBFile();
-    (this->kvstore)->open();
 
     cout << "begin build VS-Tree on " << ret << "..." << endl;
     (this->vstree)->buildTree(_entry_file);
@@ -353,8 +361,15 @@ Database::build(const string& _rdf_file)
     cout << "after build, used " << (tv_build_end - tv_build_begin) << "ms." << endl;
     cout << "finish build VS-Tree." << endl;
 
+	//this->vstree->saveTree();
+	delete this->vstree;
+	this->vstree = NULL;
+	sync();
+	cout<<"sync vstree"<<endl;
+
 	string cmd = "rm -rf " + _entry_file;
 	system(cmd.c_str());
+	cout<<"signature file removed"<<endl;
 
     return true;
 }
@@ -592,6 +607,13 @@ Database::encodeRDF_new(const string _rdf_file)
 	//WARN:this is too costly because s-o key num is too large
 	//100G+ for DBpedia2014
 	//this->so2p_s2o(_p_id_tuples, _id_tuples_max);
+
+	//WARN:we must free the memory for id_tuples array
+	for(int i = 0; i < _id_tuples_max; ++i)
+	{
+		delete[] _p_id_tuples[i];
+	}
+	delete[] _p_id_tuples;
 
     bool flag = this->saveDBInfoFile();
     if (!flag)

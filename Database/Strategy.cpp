@@ -114,16 +114,7 @@ Strategy::handle(SPARQLquery& _query)
 					oid = (this->kvstore)->getIDByLiteral(triple.object);
 				}
 
-#ifdef SO2P
 				this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len);
-#else
-				int *list1 = NULL, *list2 = NULL;
-				int len1 = 0, len2 = 0;
-				this->kvstore->getpreIDlistBysubID(sid, list1, len1);
-				this->kvstore->getpreIDlistByobjID(oid, list2, len2);
-				Util::intersect(id_list, id_list_len, list1, len1, list2, len2);
-#endif
-
 				//copy to result list
 				for(int i = 0; i < id_list_len; ++i)
 				{
@@ -230,6 +221,10 @@ Strategy::handler0(BasicQuery* _bq, vector<int*>& _result_list)
         const EntityBitSet& entityBitSet = _bq->getVarBitSet(i);
         IDList* idListPtr = &( _bq->getCandidateList(i) );
         this->vstree->retrieveEntity(entityBitSet, idListPtr);
+		if(!flag)
+		{
+			_bq->setReady(i);
+		}
         //the basic query should end if one non-literal var has no candidates
         if(idListPtr->size() == 0 && !flag)
         {
@@ -237,6 +232,8 @@ Strategy::handler0(BasicQuery* _bq, vector<int*>& _result_list)
         }
     }
 
+//if(_bq->isReady(0))
+	//cout<<"error: var 0 is ready?"<<endl;
 //TODO:end directly if one is empty!
 
     long tv_retrieve = Util::get_cur_time();
