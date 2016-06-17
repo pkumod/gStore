@@ -2278,201 +2278,201 @@ Join::filterBySatellites(int _var)
     int *list = NULL;
     int len = 0;
 
-    if(!in_edge_pre_id.empty())
-    {
-        int size2 = in_edge_pre_id.size();
-        for(int i = 0; i < size2; ++i)
-        {
-            int preid = in_edge_pre_id[i];
-            this->kvstore->getobjIDlistBypreID(preid, list, len);
-            if(i == 0)
-            {
-                if(size > len)
-                {
-                    valid_list = IDList::intersect(cans, list, len);
-                }
-                else
-                {
-                    valid_list = new IDList;
-                    int* list2 = NULL;
-                    int len2 = 0;
-                    for(int j = 0; j < size; ++j)
-                    {
-                        this->kvstore->getpreIDlistByobjID(cans[j], list2, len2);
-                        if(Util::bsearch_int_uporder(preid, list2, len2) != -1)
-                        {
-                            valid_list->addID(cans[j]);
-                        }
-                        delete[] list2;
-                    }
-                }
-            }
-            else
-            {
-                if(valid_list->size() > len)
-                {
-                    valid_list->intersectList(list, len);
-                }
-                else
-                {
-                    int* list2 = NULL;
-                    int len2 = 0;
-                    IDList* new_list = new IDList;
-                    int size3 = valid_list->size();
-                    for(int j = 0; j < size3; ++j)
-                    {
-                        this->kvstore->getpreIDlistByobjID(valid_list->getID(j), list2, len2);
-                        if(Util::bsearch_int_uporder(preid, list2, len2) != -1)
-                        {
-                            new_list->addID(cans[j]);
-                        }
-                        delete[] list2;
-                    }
-                    delete valid_list;
-                    valid_list = new_list;
-                }
-            }
-            delete[] list;
-        }
-    }
-
-    if(!is_literal_var(_var) && valid_list != NULL && valid_list->empty())
-    {
-        //cerr << "quit when empty in edge"<<endl;
-        return false;
-    }
-
-    if(!out_edge_pre_id.empty())
-    {
-        int size2 = out_edge_pre_id.size();
-        for(int i = 0; i < size2; ++i)
-        {
-            int preid = out_edge_pre_id[i];
-            this->kvstore->getsubIDlistBypreID(preid, list, len);
-            //cerr<<"p2s len "<<len<<endl;
-            if(valid_list == NULL && i == 0)
-            {
-                if(size > len)
-                {
-                    valid_list = IDList::intersect(cans, list, len);
-                }
-                else
-                {
-                    valid_list = new IDList;
-                    int* list2 = NULL;
-                    int len2 = 0;
-                    for(int j = 0; j < size; ++j)
-                    {
-                        this->kvstore->getpreIDlistBysubID(cans[j], list2, len2);
-                        if(Util::bsearch_int_uporder(preid, list2, len2) != -1)
-                        {
-                            valid_list->addID(cans[j]);
-                        }
-                        delete[] list2;
-                    }
-                }
-            }
-            else
-            {
-                if(valid_list->size() > len)
-                {
-                    valid_list->intersectList(list, len);
-                }
-                else
-                {
-                    int* list2 = NULL;
-                    int len2 = 0;
-                    IDList* new_list = new IDList;
-                    int size3 = valid_list->size();
-                    for(int j = 0; j < size3; ++j)
-                    {
-                        this->kvstore->getpreIDlistBysubID(valid_list->getID(j), list2, len2);
-                        if(Util::bsearch_int_uporder(preid, list2, len2) != -1)
-                        {
-                            new_list->addID(cans[j]);
-                        }
-                        delete[] list2;
-                    }
-                    delete valid_list;
-                    valid_list = new_list;
-                }
-            }
-            delete[] list;
-        }
-    }
-
-    if(!is_literal_var(_var) && valid_list->empty())
-    {
-        //cerr << "quit when empty out edge"<<endl;
-        return false;
-    }
-    cans.copy(valid_list);
-    delete valid_list;
-    cerr << "var " << _var << "size after pre_filter " << cans.size() <<endl;
-
-    //vector<int> valid_idlist;
-    //for(int i = 0; i < size; ++i)
+    //if(!in_edge_pre_id.empty())
     //{
-    //    int ele = cans[i];
-    //    int* list = NULL;
-    //    int list_len = 0;
-    //    bool exist_preid = true;
-
-    //    if(exist_preid && !in_edge_pre_id.empty())
+    //    int size2 = in_edge_pre_id.size();
+    //    for(int i = 0; i < size2; ++i)
     //    {
-    //        //(this->kvstore)->getpreIDsubIDlistByobjID(entity_id, pair_list, pair_len);
-    //        (this->kvstore)->getpreIDlistByobjID(ele, list, list_len);
-
-    //        for(vector<int>::iterator itr_pre = in_edge_pre_id.begin(); itr_pre != in_edge_pre_id.end(); itr_pre++)
+    //        int preid = in_edge_pre_id[i];
+    //        this->kvstore->getobjIDlistBypreID(preid, list, len);
+    //        if(i == 0)
     //        {
-    //            int pre_id = (*itr_pre);
-    //			//the return value is pos, -1 if not found
-    //			if(Util::bsearch_int_uporder(pre_id, list, list_len) == -1)
-    //				exist_preid = false;
-    //            if(!exist_preid)
+    //            if(size > len)
     //            {
-    //                break;
+    //                valid_list = IDList::intersect(cans, list, len);
+    //            }
+    //            else
+    //            {
+    //                valid_list = new IDList;
+    //                int* list2 = NULL;
+    //                int len2 = 0;
+    //                for(int j = 0; j < size; ++j)
+    //                {
+    //                    this->kvstore->getpreIDlistByobjID(cans[j], list2, len2);
+    //                    if(Util::bsearch_int_uporder(preid, list2, len2) != -1)
+    //                    {
+    //                        valid_list->addID(cans[j]);
+    //                    }
+    //                    delete[] list2;
+    //                }
+    //            }
+    //        }
+    //        else
+    //        {
+    //            if(valid_list->size() > len)
+    //            {
+    //                valid_list->intersectList(list, len);
+    //            }
+    //            else
+    //            {
+    //                int* list2 = NULL;
+    //                int len2 = 0;
+    //                IDList* new_list = new IDList;
+    //                int size3 = valid_list->size();
+    //                for(int j = 0; j < size3; ++j)
+    //                {
+    //                    this->kvstore->getpreIDlistByobjID(valid_list->getID(j), list2, len2);
+    //                    if(Util::bsearch_int_uporder(preid, list2, len2) != -1)
+    //                    {
+    //                        new_list->addID(cans[j]);
+    //                    }
+    //                    delete[] list2;
+    //                }
+    //                delete valid_list;
+    //                valid_list = new_list;
     //            }
     //        }
     //        delete[] list;
-    //    }
-
-    //	//NOTICE:we do not use intersect here because the case is a little different
-    //	//first the pre num is not so much in a query
-    //	//second once a pre in query is not found, break directly
-
-    //    if(exist_preid && !out_edge_pre_id.empty())
-    //    {
-    //        //(this->kvstore)->getpreIDobjIDlistBysubID(entity_id, pair_list, pair_len);
-    //        (this->kvstore)->getpreIDlistBysubID(ele, list, list_len);
-
-    //        for(vector<int>::iterator itr_pre = out_edge_pre_id.begin(); itr_pre != out_edge_pre_id.end(); itr_pre++)
-    //        {
-    //            int pre_id = (*itr_pre);
-    //			if(Util::bsearch_int_uporder(pre_id, list, list_len) == -1)
-    //				exist_preid = false;
-    //            if(!exist_preid)
-    //            {
-    //                break;
-    //            }
-    //        }
-    //        delete[] list;
-    //    }
-
-    //    //result sequence is illegal when there exists any missing filter predicate id.
-    //    if(exist_preid)
-    //    {
-    //		valid_idlist.push_back(ele);
     //    }
     //}
 
-    //this is a core vertex, so if not literal var, exit when empty
-    //if(!is_literal_var(_var) && valid_idlist.empty())
+    //if(!is_literal_var(_var) && valid_list != NULL && valid_list->empty())
     //{
+    //    //cerr << "quit when empty in edge"<<endl;
     //    return false;
     //}
-    //cans.copy(valid_idlist);
 
+    //if(!out_edge_pre_id.empty())
+    //{
+    //    int size2 = out_edge_pre_id.size();
+    //    for(int i = 0; i < size2; ++i)
+    //    {
+    //        int preid = out_edge_pre_id[i];
+    //        this->kvstore->getsubIDlistBypreID(preid, list, len);
+    //        //cerr<<"p2s len "<<len<<endl;
+    //        if(valid_list == NULL && i == 0)
+    //        {
+    //            if(size > len)
+    //            {
+    //                valid_list = IDList::intersect(cans, list, len);
+    //            }
+    //            else
+    //            {
+    //                valid_list = new IDList;
+    //                int* list2 = NULL;
+    //                int len2 = 0;
+    //                for(int j = 0; j < size; ++j)
+    //                {
+    //                    this->kvstore->getpreIDlistBysubID(cans[j], list2, len2);
+    //                    if(Util::bsearch_int_uporder(preid, list2, len2) != -1)
+    //                    {
+    //                        valid_list->addID(cans[j]);
+    //                    }
+    //                    delete[] list2;
+    //                }
+    //            }
+    //        }
+    //        else
+    //        {
+    //            if(valid_list->size() > len)
+    //            {
+    //                valid_list->intersectList(list, len);
+    //            }
+    //            else
+    //            {
+    //                int* list2 = NULL;
+    //                int len2 = 0;
+    //                IDList* new_list = new IDList;
+    //                int size3 = valid_list->size();
+    //                for(int j = 0; j < size3; ++j)
+    //                {
+    //                    this->kvstore->getpreIDlistBysubID(valid_list->getID(j), list2, len2);
+    //                    if(Util::bsearch_int_uporder(preid, list2, len2) != -1)
+    //                    {
+    //                        new_list->addID(cans[j]);
+    //                    }
+    //                    delete[] list2;
+    //                }
+    //                delete valid_list;
+    //                valid_list = new_list;
+    //            }
+    //        }
+    //        delete[] list;
+    //    }
+    //}
+
+    //if(!is_literal_var(_var) && valid_list->empty())
+    //{
+    //    //cerr << "quit when empty out edge"<<endl;
+    //    return false;
+    //}
+    //cans.copy(valid_list);
+    //delete valid_list;
+
+    vector<int> valid_idlist;
+    for(int i = 0; i < size; ++i)
+    {
+        int ele = cans[i];
+        int* list = NULL;
+        int list_len = 0;
+        bool exist_preid = true;
+
+        if(exist_preid && !in_edge_pre_id.empty())
+        {
+            //(this->kvstore)->getpreIDsubIDlistByobjID(entity_id, pair_list, pair_len);
+            (this->kvstore)->getpreIDlistByobjID(ele, list, list_len);
+
+            for(vector<int>::iterator itr_pre = in_edge_pre_id.begin(); itr_pre != in_edge_pre_id.end(); itr_pre++)
+            {
+                int pre_id = (*itr_pre);
+    			//the return value is pos, -1 if not found
+    			if(Util::bsearch_int_uporder(pre_id, list, list_len) == -1)
+    				exist_preid = false;
+                if(!exist_preid)
+                {
+                    break;
+                }
+            }
+            delete[] list;
+        }
+
+    	//NOTICE:we do not use intersect here because the case is a little different
+    	//first the pre num is not so much in a query
+    	//second once a pre in query is not found, break directly
+
+        if(exist_preid && !out_edge_pre_id.empty())
+        {
+            //(this->kvstore)->getpreIDobjIDlistBysubID(entity_id, pair_list, pair_len);
+            (this->kvstore)->getpreIDlistBysubID(ele, list, list_len);
+
+            for(vector<int>::iterator itr_pre = out_edge_pre_id.begin(); itr_pre != out_edge_pre_id.end(); itr_pre++)
+            {
+                int pre_id = (*itr_pre);
+    			if(Util::bsearch_int_uporder(pre_id, list, list_len) == -1)
+    				exist_preid = false;
+                if(!exist_preid)
+                {
+                    break;
+                }
+            }
+            delete[] list;
+        }
+
+        //result sequence is illegal when there exists any missing filter predicate id.
+        if(exist_preid)
+        {
+    		valid_idlist.push_back(ele);
+        }
+    }
+
+    //this is a core vertex, so if not literal var, exit when empty
+    if(!is_literal_var(_var) && valid_idlist.empty())
+    {
+        return false;
+    }
+    cans.copy(valid_idlist);
+
+    cerr << "var " << _var << "size after pre_filter " << cans.size() <<endl;
     return true;
 }
 
