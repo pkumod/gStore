@@ -1,0 +1,27 @@
+SELECT ?prof ?stu ?course
+WHERE
+{
+	?prof	<ub:worksFor>	<http://www.Department0.University0.edu>.
+	?stu	<ub:memberOf>	<http://www.Department0.University0.edu>.
+	{	?prof	<rdf:type>	<ub:FullProfessor>.	}
+	UNION
+	{	?prof	<rdf:type>	<ub:AssociateProfessor>.	}
+	{	?stu	<rdf:type>	<ub:UndergraduateStudent>.	}
+	UNION
+	{	?stu	<rdf:type>	<ub:GraduateStudent>.	}
+	?prof	<ub:teacherOf>	?course.
+	?stu	<ub:takesCourse>	?course.
+	OPTIONAL{	?stu	<ub:advisor>	?adv.	}
+	FILTER(?prof != ?adv)
+}
+
+
+
+select b1.sub, b2.sub, b5.obj
+from lubm b1, lubm b2, lubm b3, lubm b4, lubm b5, lubm b6
+where b1.pre = "<ub:worksFor>" and b1.obj="<http://www.Department0.University0.edu>"\
+and b2.pre="<ub:memberOf>" and b2.obj="<http://www.Department0.University0.edu>" \
+and b3.sub=b1.sub and b3.pre="<rdf:type>" and (b3.obj="<ub:FullProfessor>" or b3.obj="<ub:AssociateProfessor>") \
+and b4.sub=b2.sub and b4.pre="<rdf:type>" and (b4.obj="<ub:UndergraduateStudent>" or b4.obj="<ub:GraduateStudent>") \
+and b5.sub=b1.sub and b5.pre="<ub:teacherOf>" and b6.sub=b2.sub and b6.pre="<ub:takesCourse>" and b5.obj=b6.obj \
+and not exists(select * from lubm b7 where b7.sub=b2.sub and b7.pre="<ub:advisor>" and b7.obj=b1.sub)

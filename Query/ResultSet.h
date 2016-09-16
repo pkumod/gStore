@@ -1,53 +1,39 @@
-/*=============================================================================
-# Filename: ResultSet.h
-# Author: Bookug Lobert 
-# Mail: 1181955272@qq.com
-# Last Modified: 2015-10-24 21:57
-# Description: originally written by liyouhuan, modified by zengli
-=============================================================================*/
+/*
+ * ResultSet.h
+ *
+ *  Created on: 2014-6-20
+ *      Author: liyouhuan
+ */
 
-#ifndef _QUERY_RESULTSET_H
-#define _QUERY_RESULTSET_H
+#ifndef RESULTSET_H_
+#define RESULTSET_H_
 
-#include "../Util/Util.h"
-#include "../Util/Bstr.h"
-#include "../Util/Stream.h"
+#include<string>
+#include<vector>
+#include "../Bstr/Bstr.h"
+using namespace std;
 
-class ResultSet
-{
-private:
-#ifdef STREAM_ON
-	Stream* stream;
-#endif
+class ResultSet{
 public:
 	int select_var_num;
 	int ansNum;
-	std::string*  var_name;
-	int output_offset, output_limit;
+	string*  var_name;
+	string** answer;
 
-#ifndef STREAM_ON
-	std::string** answer;
-#endif
 
 	ResultSet();
 	~ResultSet();
-	ResultSet(int _v_num, const std::string* _v_names);
+	ResultSet(int _v_num, const string* _v_names);
 
-	//convert to binary string 
-	//Bstr* to_bstr();
+	/* convert to binary string */
+	Bstr* to_bstr();
 
-	//convert to usual string
-	std::string to_str();
-	void output(FILE* _fp);		//output all results using Stream
-	void setVar(const std::vector<std::string> & _var_names);
+	/* convert to usual string */
+	string to_str();
 
-	//operations on private stream from caller
-	void openStream(std::vector<int> &_keys, std::vector<bool> &_desc, int _output_offset, int _output_limit);
-	void resetStream();
-	void writeToStream(std::string& _s);
-	std::string readAllFromStream();
-	const Bstr* getOneRecord();
+	/*  */
+	void setVar(const std::vector<string> & _var_names);
 };
 
-#endif //_QUERY_RESULTSET_H
 
+#endif /* RESULTSET_H_ */

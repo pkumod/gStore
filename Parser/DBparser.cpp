@@ -1,8 +1,8 @@
 /*
  * DBparser.cpp
  *
- *  Created on: 2014-6-20
- *      Author: liyouhuan
+ *  Created on: 2015-4-11
+ *      Author: cjq
  */
 
 #include "DBparser.h"
@@ -13,16 +13,13 @@ DBparser::DBparser()
 	_prefix_map.clear();
 }
 
-/* input sparql query string and parse query into SPARQLquery
- * the returned string is set for log when error happen
- * */
-string DBparser::sparqlParser(const string& _sparql, SPARQLquery& _sparql_query)
+void DBparser::sparqlParser(const std::string& _sparql, SPARQLquery& _sparql_query)
 {
 	pANTLR3_INPUT_STREAM input;
 	pSparqlLexer lex;
 	pANTLR3_COMMON_TOKEN_STREAM tokens;
 	pSparqlParser parser;
-	input = antlr3StringStreamNew((ANTLR3_UINT8 *)(_sparql.c_str()),ANTLR3_ENC_UTF8,_sparql.length(),(ANTLR3_UINT8 *)"QueryString");
+	input = antlr3StringStreamNew((ANTLR3_UINT8 *)(_sparql.c_str()), ANTLR3_ENC_UTF8, _sparql.length(), (ANTLR3_UINT8 *)"QueryString");
 	//input = antlr3FileStreamNew((pANTLR3_UINT8)filePath,ANTLR3_ENC_8BIT);
 	lex = SparqlLexerNew(input);
 
@@ -32,285 +29,446 @@ string DBparser::sparqlParser(const string& _sparql, SPARQLquery& _sparql_query)
 
 	SparqlParser_workload_return r = parser->workload(parser);
 	pANTLR3_BASE_TREE root = r.tree;
-	//pANTLR3_BASE_TREE treeNode;
 
-	printNode(root);
-	parseNode(root,_sparql_query,0);
+	if (printNode(root) > 0)	throw "Some errors are found in the SPARQL query request.";
+	parseTree(root,_sparql_query);
+
+	printquery(_sparql_query);
+
+	genQueryVec(_sparql_query.getPatternGroup(), _sparql_query);
+
 	parser->free(parser);
 	tokens->free(tokens);
 	lex->free(lex);
 	input->close(input);
-	return "";
 }
 
-/* file pointer _fp points to rdfFile
- * that was opened previously in Database::encodeRDF
- * rdfParser() will be called many times until all triples in the rdfFile is parsed
- * and after each call, a group of triples will be parsed into the vector;
- * the returned string is set for log when error happen;
- * a single line in file responds to a triple and end up with a '.'
- * tuple in a line separated by '\t'
- */
-string DBparser::rdfParser(ifstream& _fin, Triple* _triple_array, int& _triple_num)
+int DBparser::printNode(pANTLR3_BASE_TREE node, int depth)
 {
-	memset(line_buf, 0, buf_len);
-	_triple_num = 0;
-	int _line_len = 0;
-	while(_triple_num < DBparser::TRIPLE_NUM_PER_GROUP
-			&& (! _fin.eof()))
+	const char* s = (const char*) node->getText(node)->chars;
+	ANTLR3_UINT32 treeType = node->getType(node);
+
+	int hasErrorNode = 0;
+	if (treeType == 0)	hasErrorNode = 1;
+
+	for (int i=0; i < depth; i++)		printf("    ");
+	printf("%d: %s\n",treeType,s);
+	for (unsigned int j = 0; j < node->getChildCount(node); j++)
 	{
-		_fin.getline(line_buf, buf_len-1);
-
-		_line_len = strlen(line_buf);
-
-		/* maybe this is an empty line at the ending of file  */
-		if(_line_len <  4)
-		{
-			continue;
-		}
-
-		bool _end_with_dot = true;
-		int _i_dot = 0;
-		for(int i = _line_len-1; i >= 0; i --)
-		{
-			if(line_buf[i] == '.')
-			{
-				_i_dot = i;
-				break;
-			}
-			if(line_buf[i] == '\t')
-			{
-				_end_with_dot = false;
-				break;
-			}
-		}
-
-		/* check the '.' */
-		if(! _end_with_dot)
-		{
-			cerr << "'.' is expected at line:" << line_buf << endl;
-			cerr << " line_length = " << _line_len << endl;
-			continue;
-		}
-
-		line_buf[_i_dot+1] = '\0';
-		_line_len = strlen(line_buf);
-
-		/* find the first TAB */
-		int _first_tab = -1;
-		for(int i = 0; i < _line_len; i ++)
-		{
-			if(line_buf[i] == '\t')
-			{
-				_first_tab = i;
-				break;
-			}
-		}
-		if(_first_tab == -1)
-		{
-			cerr << "First TAB is expected at line:" << line_buf << endl;
-			continue;
-		}
-
-		/* find the second TAB */
-		int _second_tab = -1;
-		for(int i = _first_tab+1; i < _line_len; i ++)
-		{
-			if(line_buf[i] == '\t')
-			{
-				_second_tab = i;
-				break;
-			}
-		}
-		if(_second_tab == -1)
-		{
-			cerr << "Second TAB is expected at line:" << line_buf << endl;
-		}
-
-		/* get sub, pre, obj and add new triple */
-		{
-			string _line = string(line_buf);
-			int _sub_size = _first_tab - 0;
-			_triple_array[_triple_num].subject = _line.substr(0, _sub_size);
-
-			int _pre_size = _second_tab - (_first_tab+1);
-			_triple_array[_triple_num].predicate = _line.substr(_first_tab+1, _pre_size);
-
-			/* (_line_len-1) make sure that '.' is not included */
-			int _obj_size = (_line_len-1) - (_second_tab+1);
-			_triple_array[_triple_num].object = _line.substr(_second_tab+1, _obj_size);
-		}
-		_triple_num ++;
-
+		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node, j);
+		int childNodeType = childNode->getType(childNode);
+		hasErrorNode += printNode(childNode, depth+1);
 	}
-	return "";
+	return hasErrorNode;
 }
 
-/*
- * used in readline of FILE, avoiding new memory each time
- */
-char* DBparser::line_buf = new char[100*1000];
-int   DBparser::buf_len = 100*1000;
 
-int DBparser::parseString(pANTLR3_BASE_TREE node,std::string& str,int depth){
-	const char* s =(const char*) node->getText(node)->chars;
-	//std::cout<<"parseString: "<<s<<std::endl;
-	if (depth==0){
-		str = s;
+void DBparser::parseTree(pANTLR3_BASE_TREE node, SPARQLquery& query)
+{
+	printf("parseTree\n");
+	for (unsigned int j = 0; j < node->getChildCount(node); j++)
+	{
+			pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, j);
+
+			//prologue	144
+			if (childNode->getType(childNode) == 144)
+			{
+				parsePrologue(childNode);
+			}
+			else
+			//select clause 156
+			if (childNode->getType(childNode) == 156)
+			{
+					parseSelectClause(childNode, query);
+			}
+			else
+			//group graph pattern 77
+			if (childNode->getType(childNode) == 77)
+			{
+					parseGroupPattern(childNode, query.getPatternGroup());
+			}
+			else	parseTree(childNode, query);
 	}
-	else{
-		parseString((pANTLR3_BASE_TREE) node->getChild(node,0),str,depth-1);
-	}
-	return 0;
 }
+void DBparser::parsePrologue(pANTLR3_BASE_TREE node)
+{
+	printf("parsePrologue\n");
+	for (unsigned int j = 0; j < node->getChildCount(node); j++)
+	{
+			pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, j);
 
-int DBparser::parsePrefix(pANTLR3_BASE_TREE node,std::pair<std::string,std::string>& prefixPair){
-	//const char* s =(const char*) node->getText(node)->chars;
+			//prefix 143
+			if (childNode->getType(childNode) == 143)
+			{
+				parsePrefix(childNode);
+			}
+	}
+}
+void DBparser::parsePrefix(pANTLR3_BASE_TREE node)
+{
+	printf("parsePrefix\n");
+
 	std::string key;
 	std::string value;
-	for (unsigned int j=0;j<node->getChildCount(node);j++){
-		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
+
+	for (unsigned int j = 0; j < node->getChildCount(node); j++)
+	{
+		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node, j);
 		//prefix key string 136
-		if (childNode->getType(childNode)==136){
-			parseString(childNode,key);
+		if (childNode->getType(childNode) == 136)
+		{
+			parseString(childNode, key);
 		}
+
 		//prefix value URL 89
-		if (childNode->getType(childNode)==89){
-			parseString(childNode,value);
+		if (childNode->getType(childNode) == 89)
+		{
+			parseString(childNode, value);
 		}
 	}
-	prefixPair = make_pair(key,value);
-	return 0;
+	_prefix_map.insert(make_pair(key, value));
 }
 
-void DBparser::replacePrefix(string& str){
-	if (str[0]!='<'){
+void DBparser::replacePrefix(std::string& str)
+{
+	if (str[0] != '<' && str[0] != '\"' && str[0] != '?')
+	{
 		int sep=str.find(":");
-		std::string prefix=str.substr(0,sep+1);
-		std::cout<<"prefix: "<<prefix<<std::endl;
-		if (_prefix_map.find(prefix)!=_prefix_map.end()){
-			str=_prefix_map[prefix].substr(0,_prefix_map[prefix].length()-1)+str.substr(sep+1,str.length()-sep-1)+">";
-			std::cout<<"str: "<<str<<std::endl;
+		if (sep == -1)	return;
+		std::string prefix=str.substr(0, sep+1);
+		std::cout << "prefix: " << prefix << std::endl;
+		if (_prefix_map.find(prefix) != _prefix_map.end())
+		{
+			str=_prefix_map[prefix].substr(0, _prefix_map[prefix].length() - 1) + str.substr(sep + 1 ,str.length() - sep - 1) + ">";
+			std::cout << "str: " << str << std::endl;
 		}
-		else{
-			std::cout<<"prefix not found..."<<std::endl;
+		else
+		{
+			std::cout << "prefix not found..." << std::endl;
+			throw "Some errors are found in the SPARQL query request.";
 		}
 	}
 }
 
-int DBparser::parseTriple(pANTLR3_BASE_TREE node,Triple& triple){
-	//const char* s =(const char*) node->getText(node)->chars;
-	std::string subject="";
-	std::string predicate="";
-	std::string object="";
-	for (unsigned int j=0;j<node->getChildCount(node);j++){
-		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
+void DBparser::parseSelectClause(pANTLR3_BASE_TREE node, SPARQLquery& query)
+{
+	printf("parseSelectClause\n");
+
+	for (unsigned int j = 0; j < node->getChildCount(node); j++)
+		{
+				pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, j);
+
+				//var 199
+				if (childNode->getType(childNode) == 199)
+				{
+					parseSelectVar(childNode, query);
+				}
+		}
+}
+
+void DBparser::parseSelectVar(pANTLR3_BASE_TREE node, SPARQLquery& query)
+{
+	printf("parseSelectVar\n");
+
+	std::string var = "";
+	for (unsigned int j = 0; j < node->getChildCount(node); j++)
+	{
+		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node, j);
+
+		if (childNode->getType(childNode) == 200)
+		{
+			parseString(childNode,var);
+			query.addOneProjection(var);
+		}
+	}
+}
+
+void DBparser::parseGroupPattern(pANTLR3_BASE_TREE node, SPARQLquery::PatternGroup& patterngroup)
+{
+	printf("parseGroupPattern\n");
+
+	for (unsigned int j = 0; j < node->getChildCount(node); j++)
+	{
+		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node, j);
+
+		//triples same subject 185
+		if (childNode->getType(childNode) == 185)
+		{
+			parsePattern(childNode, patterngroup);
+		}
+
+		//optional	124
+		if (childNode->getType(childNode) == 124)
+		{
+			parseOptional(childNode, patterngroup);
+		}
+
+		//union  195
+		if (childNode->getType(childNode) == 195)
+		{
+			patterngroup.addOneGroupUnion();
+			parseUnion(childNode, patterngroup);
+		}
+
+		//filter 67
+		if (childNode->getType(childNode) == 67)
+		{
+			parseFilter(childNode, patterngroup);
+		}
+	}
+}
+
+void DBparser::parsePattern(pANTLR3_BASE_TREE node, SPARQLquery::PatternGroup& patterngroup)
+{
+	printf("parsePattern\n");
+
+	std::string subject = "";
+	std::string predicate = "";
+	std::string object = "";
+	for (unsigned int j = 0; j < node->getChildCount(node); j++)
+	{
+		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node, j);
+
 		//subject 177
-		if (childNode->getType(childNode)==177){
-			parseString(childNode,subject,1);
+		if (childNode->getType(childNode) == 177)
+		{
+			parseString(childNode, subject, 1);
 			replacePrefix(subject);
 		}
+
 		//predicate 142
-		if (childNode->getType(childNode)==142){
-			parseString(childNode,predicate,4);
+		if (childNode->getType(childNode) == 142)
+		{
+			parseString(childNode, predicate, 4);
 			replacePrefix(predicate);
 		}
+
 		//object 119
-		if (childNode->getType(childNode)==119){
-			parseString(childNode,object,1);
+		if (childNode->getType(childNode) == 119)
+		{
+			parseString(childNode, object, 1);
 			replacePrefix(object);
 		}
 	}
-	triple=Triple(subject,predicate,object);
-	std::cout<<"Triple: \n\ts|"<<subject<<"|\n\tp|"<<predicate<<"|\n\to|"<<object<<"|"<<std::endl;
-	return 0;
+	patterngroup.addOnePattern(SPARQLquery::Pattern(SPARQLquery::Element(subject), SPARQLquery::Element(predicate), SPARQLquery::Element(object)));
 }
 
-int DBparser::parseBasicQuery(pANTLR3_BASE_TREE node,BasicQuery& basicQuery){
-	//const char* s =(const char*) node->getText(node)->chars;
-	Triple triple;
-	for (unsigned int j=0;j<node->getChildCount(node);j++){
-		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
-		//basicQuery 185
-		std::cout<<"Child type: "<<childNode->getType(childNode)<<endl;
-		if (childNode->getType(childNode)==185){
-				parseTriple(childNode,triple);
-				basicQuery.addTriple(triple);
-		}
-		if (childNode->getType(childNode)==195){
-				//Union part here!!
-				//parseUnion(childNode,U);
-				//basicQuery.addTriple(triple);
+void DBparser::parseOptional(pANTLR3_BASE_TREE node, SPARQLquery::PatternGroup& patterngroup)
+{
+	printf("parseOptional\n");
+	for (unsigned int j = 0; j < node->getChildCount(node); j++)
+	{
+		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node, j);
+
+		//group graph pattern 77
+		if (childNode->getType(childNode) == 77)
+		{
+			patterngroup.addOneOptional();
+			parseGroupPattern(childNode, patterngroup.getLastOptional());
 		}
 	}
-	return 0;
 }
 
-int DBparser::parseVar(pANTLR3_BASE_TREE node,SPARQLquery& query){
-	//const char* s =(const char*) node->getText(node)->chars;
-	std::string var="";
-	for (unsigned int j=0;j<node->getChildCount(node);j++){
-		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
-		//var 200
-		if (childNode->getType(childNode)==200){
-			parseString(childNode,var,0);
-			query.addQueryVar(var);
+void DBparser::parseUnion(pANTLR3_BASE_TREE node, SPARQLquery::PatternGroup& patterngroup)
+{
+	printf("parseUnion\n");
+
+	for (unsigned int j = 0; j < node->getChildCount(node); j++)
+	{
+		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node, j);
+
+		//group graph pattern 77
+		if (childNode->getType(childNode) == 77)
+		{
+			patterngroup.addOneUnion();
+			parseGroupPattern(childNode, patterngroup.getLastUnion());
 		}
 
+		//union  195
+		if (childNode->getType(childNode) == 195)
+		{
+			parseUnion(childNode, patterngroup);
+		}
 	}
-	return 0;
 }
 
-int DBparser::parseNode(pANTLR3_BASE_TREE node, SPARQLquery& query,int depth){
-	const char* s =(const char*) node->getText(node)->chars;
-	ANTLR3_UINT32 treeType = node->getType(node);
+void DBparser::parseFilter(pANTLR3_BASE_TREE node, SPARQLquery::PatternGroup& patterngroup)
+{
+	printf("parseFilter\n");
 
-	for (int i=0;i<depth;i++){
-		printf("    ");
+	for (unsigned int j = 0; j < node->getChildCount(node); j++)
+	{
+		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node, j);
+
+		patterngroup.addOneFilterTree();
+		parseFilterTree(childNode, patterngroup.getLastFilterTree());
 	}
-	printf("%d: %s\n",treeType,s);
+}
 
-	for (unsigned int j=0;j<node->getChildCount(node);j++){
-		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
-		int childNodeType = childNode->getType(childNode);
-		switch (childNodeType){
-			//prefix
-			case 199:{
-				parseVar(childNode,query);
-				break;
+void DBparser::parseFilterTree(pANTLR3_BASE_TREE node, SPARQLquery::FilterTree& filter)
+{
+	printf("parseFilterTree\n");
+
+	//not 192
+	if (node->getType(node) == 192)	filter.type = SPARQLquery::FilterTree::Not;
+	//or 125
+	if (node->getType(node) == 125)	filter.type = SPARQLquery::FilterTree::Or;
+	//and 8
+	if (node->getType(node) == 8)		filter.type = SPARQLquery::FilterTree::And;
+	//equal 62
+	if (node->getType(node) == 62)		filter.type = SPARQLquery::FilterTree::Equal;
+	//not equal 116
+	if (node->getType(node) == 116)	filter.type = SPARQLquery::FilterTree::NotEqual;
+	//less 100
+	if (node->getType(node) == 100)	filter.type = SPARQLquery::FilterTree::Less;
+	//less equal 101
+	if (node->getType(node) == 101)	filter.type = SPARQLquery::FilterTree::LessOrEqual;
+	//greater 72
+	if (node->getType(node) == 72)		filter.type = SPARQLquery::FilterTree::Greater;
+	//greater equal 73
+	if (node->getType(node) == 73)		filter.type = SPARQLquery::FilterTree::GreaterOrEqual;
+
+	for (unsigned int j = 0; j < node->getChildCount(node); j++)
+	{
+		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node, j);
+
+		//unary 190
+		if (childNode->getType(childNode) == 190)
+			if (j == 0)
+			{
+				parseString(childNode, filter.arg1, 1);
+				replacePrefix(filter.arg1);
 			}
-			//var
-			case 143:{
-				std::pair<std::string,std::string> prefixPair;
-				parsePrefix(childNode,prefixPair);
-				_prefix_map.insert(prefixPair);
-				break;
+			else
+			{
+				parseString(childNode, filter.arg2, 1);
+				replacePrefix(filter.arg2);
 			}
-			//BasicQuery
-			case 77:{
-				BasicQuery* basicQuery=new BasicQuery();
-				parseBasicQuery(childNode,*basicQuery);
-				query.addBasicQuery(basicQuery);
-				break;
+		else
+			if (j == 0)
+			{
+				filter.parg1 = new SPARQLquery::FilterTree();
+				parseFilterTree(childNode, *filter.parg1);
 			}
-		default:
-			parseNode(childNode,query,depth+1);
-		}
+			else
+			{
+				filter.parg2 = new SPARQLquery::FilterTree();
+				parseFilterTree(childNode, *filter.parg2);
+			}
 	}
-	return 0;
 }
 
-void DBparser::printNode(pANTLR3_BASE_TREE node, int depth){
-	const char* s =(const char*) node->getText(node)->chars;
-	ANTLR3_UINT32 treeType = node->getType(node);
+void DBparser::parseString(pANTLR3_BASE_TREE node, std::string& str, int depth)
+{
+	while (depth > 0 && node != NULL)
+	{
+		node = (pANTLR3_BASE_TREE) node->getChild(node, 0);
+		depth--;
+	}
+	if (node != NULL)
+		str = (const char*) node->getText(node)->chars;
+	else
+		throw "Some errors are found in the SPARQL query request.";
+}
 
-	for (int i=0;i<depth;i++){
-		printf("    ");
+
+void DBparser::printquery(SPARQLquery& query)
+{
+	std::vector <std::string> &varvec = query.getProjections();
+	printf("===========================================================================\n");
+	printf("var is :");
+	for (int i = 0; i < (int)varvec.size(); i++)
+	printf("%s\t", varvec[i].c_str());
+	printf("\n");
+	printgrouppattern(query.getPatternGroup(), 0);
+	printf("===========================================================================\n");
+}
+
+void DBparser::printgrouppattern(SPARQLquery::PatternGroup &pg, int dep)
+{
+	for (int j = 0; j < dep; j++)	printf("\t");	printf("{\n");
+	for (int j = 0; j < dep; j++)	printf("\t");	printf("pattern:\n");
+	for(int i = 0; i < pg.patterns.size(); i++)
+	{
+		for (int j = 0; j < dep; j++)	printf("\t");
+		printf("\t%s\t%s\t%s\n", pg.patterns[i].subject.value.c_str(), pg.patterns[i].predicate.value.c_str(), pg.patterns[i].object.value.c_str());
 	}
-	printf("%d: %s\n",treeType,s);
-	for (unsigned int j=0;j<node->getChildCount(node);j++){
-		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
-		//int childNodeType = childNode->getType(childNode);
-		printNode(childNode,depth+1);
+
+	if (pg.optionals.size() > 0)
+	{
+		for (int j = 0; j < dep; j++)	printf("\t");		printf("optional:\n");
+		for (int i = 0; i < pg.optionals.size(); i++)
+			printgrouppattern(pg.optionals[i], dep + 1);
 	}
+
+	for (int i = 0; i < pg.unions.size(); i++)
+	{
+		for (int j = 0; j < dep; j++)	printf("\t");	printf("union %d:\n", i + 1);
+		for (int k = 0; k < pg.unions[i].size(); k++)
+			printgrouppattern(pg.unions[i][k], dep + 1);
+	}
+
+	if (pg.filters.size() > 0)
+	{
+		for (int j = 0; j < dep; j++)	printf("\t");		printf("filter:\n");
+		for (int i = 0; i < pg.filters.size(); i++)
+		{
+			for (int j = 0; j <= dep; j++)	printf("\t");
+			printfilter(pg.filters[i]);
+			printf("\n");
+		}
+	}
+
+	for (int j = 0; j < dep; j++)	printf("\t");		printf("}\n");
+}
+
+void DBparser::printfilter(SPARQLquery::FilterTree &ft)
+{
+	printf("(");
+
+	if (ft.type == SPARQLquery::FilterTree::Not)	printf("!");
+
+	if (ft.parg1 == NULL)			printf("%s", ft.arg1.c_str());
+	else printfilter(*ft.parg1);
+	if (ft.type == SPARQLquery::FilterTree::Or)	printf("||");
+	if (ft.type == SPARQLquery::FilterTree::And)	printf("&&");
+	if (ft.type == SPARQLquery::FilterTree::Equal)	printf("=");
+	if (ft.type == SPARQLquery::FilterTree::NotEqual)	printf("!=");
+	if (ft.type == SPARQLquery::FilterTree::Less)	printf("<");
+	if (ft.type == SPARQLquery::FilterTree::LessOrEqual)	printf("<=");
+	if (ft.type == SPARQLquery::FilterTree::Greater)	printf(">");
+	if (ft.type == SPARQLquery::FilterTree::GreaterOrEqual)	printf(">=");
+
+
+	if (ft.type != SPARQLquery::FilterTree::Not)
+		if (ft.parg2 == NULL)	printf("%s", ft.arg2.c_str());
+		else printfilter(*ft.parg2);
+	printf(")");
+}
+
+void DBparser::genQueryVec(SPARQLquery::PatternGroup &pg, SPARQLquery& query)
+{
+	if (pg.hasVar)
+	{
+		query.addBasicQuery();
+		query.addQueryVarVec();
+
+		for(int i = 0; i < pg.patterns.size(); i++)
+		{
+			string &sub = pg.patterns[i].subject.value;
+			string &pre = pg.patterns[i].predicate.value;
+			string &obj = pg.patterns[i].object.value;
+			query.addTriple(Triple(sub, pre, obj));
+
+			if (sub[0] == '?')		query.addQueryVar(sub);
+			if (obj[0] == '?')		query.addQueryVar(obj);
+		}
+	}
+
+	for (int i = 0; i < pg.unions.size(); i++)
+		for (int j = 0; j < pg.unions[i].size(); j++)
+			genQueryVec(pg.unions[i][j], query);
+
+	for (int i = 0; i < pg.optionals.size(); i++)
+		genQueryVec(pg.optionals[i], query);
 }

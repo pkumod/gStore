@@ -1,0 +1,4 @@
+select ?X where
+{
+?X	<rdf:type>	<ub:UndergraduateStudent>.
+}

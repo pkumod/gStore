@@ -1,0 +1,10 @@
+select ?field where
+{
+	?person	<name>	"Peter".
+	?person <majorIn>	?field.
+	{?person	<graduatedFrom>	<PekingUniversity>.}
+	UNION
+	{?person	<graduatedFrom>	<TsinghuaUniversity>.}
+	OPTIONAL	{?person	<Birthmonth>	?month}
+	FILTER	(?month != "June")
+}

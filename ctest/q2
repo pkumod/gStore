@@ -1,0 +1,25 @@
+SELECT ?prof ?stu ?course
+WHERE
+{
+	?prof	<ub:worksFor>	<http://www.Department0.University0.edu>.
+	{	?prof	<rdf:type>	<ub:FullProfessor>.	
+		?prof	<ub:teacherOf>	?course.
+		?stu	<ub:takesCourse>	?course.
+		{	?stu	<rdf:type>	<ub:UndergraduateStudent>.	}
+		UNION
+		{	?stu	<rdf:type>	<ub:GraduateStudent>.	}
+
+	?stu	<ub:memberOf>	<http://www.Department0.University0.edu>.
+	}
+	UNION
+	{	?prof	<rdf:type>	<ub:AssociateProfessor>.	
+		?prof	<ub:teacherOf>	?course.
+		?stu	<ub:takesCourse>	?course.
+		{	?stu	<rdf:type>	<ub:UndergraduateStudent>.	}
+		UNION
+		{	?stu	<rdf:type>	<ub:GraduateStudent>.	}
+	?stu	<ub:memberOf>	<http://www.Department0.University0.edu>.
+	}
+	OPTIONAL{	?stu	<ub:advisor>	?adv.	}
+	FILTER(?prof != ?adv)
+}

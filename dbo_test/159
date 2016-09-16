@@ -1,0 +1,63 @@
+ 
+PREFIX res: <http://dbpedia.org/resource/> 
+PREFIX dbp: <http://dbpedia.org/property/> 
+PREFIX yago: <http://dbpedia.org/class/yago/> 
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+SELECT DISTINCT ?uri 
+WHERE { 
+        res:Utah dbp:timezone ?x .  
+        ?uri rdf:type yago:StatesOfTheUnitedStates .  
+        ?uri dbp:timezone ?x . 
+        FILTER (?uri != res:Utah) 
+} 
+
+
+
+http://dbpedia.org/resource/Rhode_Island
+http://dbpedia.org/resource/Montana
+http://dbpedia.org/resource/Kansas
+http://dbpedia.org/resource/Massachusetts
+http://dbpedia.org/resource/New_Mexico
+http://dbpedia.org/resource/Arkansas
+http://dbpedia.org/resource/Oklahoma
+http://dbpedia.org/resource/Minnesota
+http://dbpedia.org/resource/South_Dakota
+http://dbpedia.org/resource/New_Hampshire
+http://dbpedia.org/resource/Alabama
+http://dbpedia.org/resource/South_Carolina
+http://dbpedia.org/resource/Nevada
+http://dbpedia.org/resource/Arizona
+http://dbpedia.org/resource/Kentucky
+http://dbpedia.org/resource/Ohio
+http://dbpedia.org/resource/Iowa
+http://dbpedia.org/resource/Missouri
+http://dbpedia.org/resource/Pennsylvania
+http://dbpedia.org/resource/Illinois
+http://dbpedia.org/resource/Texas
+http://dbpedia.org/resource/New_Jersey
+http://dbpedia.org/resource/Georgia_(U.S._state)
+http://dbpedia.org/resource/North_Carolina
+http://dbpedia.org/resource/Idaho
+http://dbpedia.org/resource/Oregon
+http://dbpedia.org/resource/West_Virginia
+http://dbpedia.org/resource/Michigan
+http://dbpedia.org/resource/Florida
+http://dbpedia.org/resource/Delaware
+http://dbpedia.org/resource/Nebraska
+http://dbpedia.org/resource/Vermont
+http://dbpedia.org/resource/Mississippi
+http://dbpedia.org/resource/Maine
+http://dbpedia.org/resource/Indiana
+http://dbpedia.org/resource/Connecticut
+http://dbpedia.org/resource/Washington_(state)
+http://dbpedia.org/resource/Wyoming
+http://dbpedia.org/resource/North_Dakota
+http://dbpedia.org/resource/Wisconsin
+http://dbpedia.org/resource/Louisiana
+http://dbpedia.org/resource/Tennessee
+http://dbpedia.org/resource/Alaska
+http://dbpedia.org/resource/Virginia
+http://dbpedia.org/resource/Maryland
+http://dbpedia.org/resource/Hawaii
+http://dbpedia.org/resource/New_York
+http://dbpedia.org/resource/Colorado

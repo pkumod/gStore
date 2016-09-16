@@ -1,16 +1,15 @@
-/*=============================================================================
-# Filename: LRUCache.h
-# Author: Bookug Lobert 
-# Mail: zengli-bookug@pku.edu.cn
-# Last Modified: 2016-04-11 14:05
-# Description: written by hanshuo
-=============================================================================*/
+/*
+ * LRUCache.h
+ *
+ *  Created on: 2014-6-30
+ *      Author: hanshuo
+ */
 
 #ifndef LRUCACHE_H_
 #define LRUCACHE_H_
 
-#include "../Util/Util.h"
-
+#include<map>
+#include<string>
 class VNode;
 
 // before using the cache, you must loadCache or createCache.

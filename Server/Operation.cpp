@@ -5,7 +5,8 @@
  *      Author: hanshuo
  */
 
-#include "Operation.h"
+#include"Operation.h"
+#include<iostream>
 
 Operation::Operation()
 {
@@ -33,13 +34,13 @@ Operation::~Operation()
 
 Bstr Operation::encrypt()
 {
-    //TODO
+    // to be implemented...
     return Bstr(NULL, 0);
 }
 
 Bstr Operation::deencrypt()
 {
-    //TODO
+    // to be implemented...
     return Bstr(NULL, 0);
 }
 
@@ -50,7 +51,7 @@ CommandType Operation::getCommand()
 
 std::string Operation::getParameter(int _idx)
 {
-    if ((unsigned)_idx < this->parameters.size())
+    if (_idx < this->parameters.size())
     {
         return this->parameters[_idx];
     }

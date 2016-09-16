@@ -290,7 +290,7 @@ public class GstoreConnector
 
 		String sparql = "select ?x where {"
 				+ "?x	<rdf:type>	<cdblp.cn/class/Paper>. "
-				+ "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/wangshan>. "
+				+ "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/ÍõÉº>. "
 				+ "}";	
 		
 	    boolean flag = gc.load("db_cdblp");
@@ -303,7 +303,7 @@ public class GstoreConnector
 		
 		sparql = "select ?x where {"
 				+ "?x	<rdf:type>	<cdblp.cn/class/Paper>. "
-				+ "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/yuge>. "
+				+ "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/ÓÚ¸ê>. "
 				+ "}";	
 	    answer = gc.query(sparql);	    
 		System.out.println(answer);	

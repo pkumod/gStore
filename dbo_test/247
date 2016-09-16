@@ -1,0 +1,21 @@
+
+PREFIX dbo:  <http://dbpedia.org/ontology/>
+PREFIX res:  <http://dbpedia.org/resource/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+SELECT DISTINCT ?uri
+WHERE {
+        ?uri foaf:surname 'Baldwin'@en . 
+      { ?uri dbo:occupation res:Actor . } 
+      UNION 
+      { ?uri rdf:type dbo:Actor . }
+}
+
+
+
+http://dbpedia.org/resource/Lise_Baldwin
+http://dbpedia.org/resource/A._Michael_Baldwin
+http://dbpedia.org/resource/Alec_Baldwin
+http://dbpedia.org/resource/Greg_Baldwin
+http://dbpedia.org/resource/Judith_Baldwin
+http://dbpedia.org/resource/Robert_Baldwin_(actor)
+http://dbpedia.org/resource/Talon_(pornographic_actor)

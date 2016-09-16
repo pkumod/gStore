@@ -1,0 +1,14 @@
+PREFIX dbo: <http://dbpedia.org/ontology/> 
+PREFIX dbp: <http://dbpedia.org/property/> 
+PREFIX res: <http://dbpedia.org/resource/> 
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+SELECT DISTINCT ?uri 
+WHERE { 
+        ?uri rdf:type dbo:Weapon .  
+        ?uri dbp:designer ?x . 
+        res:Uzi dbp:designer ?x . 
+        FILTER (?uri != res:Uzi) 
+} 
+
+
+

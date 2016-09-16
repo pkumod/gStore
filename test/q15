@@ -1,0 +1,8 @@
+select ?X where
+{
+?X	<rdf:type>	<ub:UndergraduateStudent>.
+?Y	<rdf:type>	<ub:Department>.
+?X	<ub:memberOf>	?Y.
+?Y	<ub:subOrganizationOf>	<http://www.University0.edu>.
+?X	<ub:emailAddress>	?Z.
+}

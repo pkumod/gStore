@@ -1,0 +1,5 @@
+select ?x where
+{
+?x	<ub:subOrganizationOf>	<http://www.Department0.University0.edu>.
+?x	<rdf:type>	<ub:ResearchGroup>.
+}

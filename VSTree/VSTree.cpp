@@ -1,13 +1,18 @@
-/*=============================================================================
-# Filename: VSTree.cpp
-# Author: Bookug Lobert 
-# Mail: zengli-bookug@pku.edu.cn
-# Last Modified: 2016-04-11 14:02
-# Description: 
-=============================================================================*/
+/*
+ * VSTREE.cpp
+ *
+ *  Created on: 2014-6-20
+ *      Author: liyouhuan
+ */
 
-#include "VSTree.h"
-
+#include"VSTree.h"
+#include<stdio.h>
+#include<queue>
+#include"../Database/Database.h"
+#include"../Signature/Signature.h"
+#include<algorithm>
+#include<vector>
+#include<iostream>
 using namespace std;
 
 string VSTree::tree_file_foler_path;
@@ -22,7 +27,7 @@ VSTree::VSTree(std::string _store_path)
     this->root_file_line = 0;
     this->entry_buffer = NULL;
     this->node_buffer = NULL;
-    //set the store path
+    /* set the store path */
     VSTree::tree_file_foler_path = _store_path;
     VSTree::tree_node_file_path = VSTree::tree_file_foler_path + "/tree_node_file.dat";
     VSTree::tree_info_file_path = VSTree::tree_file_foler_path + "/tree_info_file.dat";
@@ -34,22 +39,19 @@ VSTree::~VSTree()
     delete this->entry_buffer;
 }
 
-int 
-VSTree::getHeight()const
+int VSTree::getHeight()const
 {
     return this->height;
 }
 
 /* get the tree's root node pointer. */
-VNode* 
-VSTree::getRoot()
+VNode* VSTree::getRoot()
 {
     return (this->node_buffer)->get(this->root_file_line);
 }
 
 /* get the node pointer by its file line. */
-VNode* 
-VSTree::getNode(int _line)
+VNode* VSTree::getNode(int _line)
 {
     if (_line >= this->node_num)
     {
@@ -60,10 +62,10 @@ VSTree::getNode(int _line)
     return this->node_buffer->get(_line);
 }
 
-//retrieve candidate result set by the var_sig in the _query. 
+/* retrieve candidate result set by the var_sig in the _query. */
 void VSTree::retrieve(SPARQLquery& _query)
 {
-	Util::logging("IN retrieve");
+	Database::log("IN retrieve");
 
 	//debug
 //	{
@@ -89,53 +91,47 @@ void VSTree::retrieve(SPARQLquery& _query)
 //	        _ss << Signature::BitSet2str(temp_ptr->getEntry().getEntitySig().entityBitSet) << endl;
 //	        temp_ptr = temp_ptr->getFather(*(this->node_buffer));
 //	    }
-//	    Util::logging(_ss.str());
+//	    Database::log(_ss.str());
 //	}
 
     vector<BasicQuery*>& queryList = _query.getBasicQueryVec();
     // enumerate each BasicQuery and retrieve their variables' mapping entity in the VSTree.
     vector<BasicQuery*>::iterator iter=queryList.begin();
-    for(; iter != queryList.end(); iter++)
+    for ( ;iter!=queryList.end();iter++)
     {
         int varNum = (*iter)->getVarNum();
-        for (int i = 0; i < varNum; i++)
+        for (int i=0;i<varNum;i++)
         {
             //debug
         	{
         		std::stringstream _ss;
         		_ss << "retrieve of var: " << i << endl;
-        		Util::logging(_ss.str());
+        		Database::log(_ss.str());
         	}
-			bool flag = (*iter)->isLiteralVariable(i);
             const EntityBitSet& entityBitSet = (*iter)->getVarBitSet(i);
             IDList* idListPtr = &( (*iter)->getCandidateList(i) );
             this->retrieveEntity(entityBitSet, idListPtr);
-#ifdef DEBUG_VSTREE
-			stringstream _ss;
-			_ss << "total num: " << this->entry_num << endl;
-			_ss << "candidate num: " << idListPtr->size() << endl;
-			_ss << endl;
-			_ss << "isExist 473738: " << (idListPtr->isExistID(473738)?"true":"false") <<endl;
-			_ss << "isExist 473472: " << (idListPtr->isExistID(473472)?"true":"false") <<endl;
-			_ss << "isExist 473473: " << (idListPtr->isExistID(473473)?"true":"false") <<endl;
-			Util::logging(_ss.str());
-#endif
 
-			//the basic query should end if one non-literal var has no candidates
-			if(idListPtr->size() == 0 && !flag)
-			{
-				break;
-			}
+            //debug
+//            {
+//                std::stringstream _ss;
+//                _ss << "candidate num: " << idListPtr->size() << endl;
+//                _ss << endl;
+//                _ss << "isExist 473738: " << (idListPtr->isExistID(473738)?"true":"false") <<endl;
+//                _ss << "isExist 473472: " << (idListPtr->isExistID(473472)?"true":"false") <<endl;
+//                _ss << "isExist 473473: " << (idListPtr->isExistID(473473)?"true":"false") <<endl;
+//                Database::log(_ss.str());
+//            }
+
         }
     }
-	Util::logging("OUT retrieve");
+	Database::log("OUT retrieve");
 }
 
-//build the VSTree from the _entity_signature_file. 
-bool 
-VSTree::buildTree(std::string _entry_file_path)
+/* build the VSTree from the _entity_signature_file. */
+bool VSTree::buildTree(std::string _entry_file_path)
 {
-	Util::logging("IN VSTree::buildTree");
+	Database::log("IN VSTree::buildTree");
 
     // create the entry buffer and node buffer.
     this->entry_buffer = new EntryBuffer(EntryBuffer::DEFAULT_CAPACITY);
@@ -150,9 +146,9 @@ VSTree::buildTree(std::string _entry_file_path)
     this->node_num ++;
     this->height ++;
 
-     //when building a new VSTree,
-      //we should first create a new tree node file as the external storage
-      //of the node buffer on hard disk.
+    /* when building a new VSTree,
+     * we should first create a new tree node file as the external storage
+     * of the node buffer on hard disk.*/
     this->node_buffer->createCache(VSTree::tree_node_file_path);
 
     FILE* filePtr = fopen(_entry_file_path.c_str(), "rb");
@@ -162,8 +158,8 @@ VSTree::buildTree(std::string _entry_file_path)
         return false;
     }
 
-     //load the entry file to entry buffer in memory, when the entry buffer is full,
-    //insert them into the tree. 
+    /* load the entry file to entry buffer in memory, when the entry buffer is full,
+    insert them into the tree. */
     int n;
     n = this->entry_buffer->fillElemsFromFile(filePtr);
     while (n != 0)
@@ -182,7 +178,7 @@ VSTree::buildTree(std::string _entry_file_path)
     }
 
     //debug
-    Util::logging("insert entries to tree done.");
+    Database::log("insert entries to tree done.");
 
     //bool flag = this->node_buffer->flush();
     bool flag = this->saveTree();
@@ -192,22 +188,21 @@ VSTree::buildTree(std::string _entry_file_path)
         stringstream _ss;
         _ss << "tree height: " << this->getHeight() << endl;
         _ss << "node num: " << this->node_num << endl;
-        Util::logging(_ss.str());
+        Database::log(_ss.str());
     }
 
-    Util::logging("OUT VSTree::buildTree");
+    Database::log("OUT VSTree::buildTree");
 
     //debug
 //    {
-//        Util::logging(this->to_str());
-//        Util::logging("\n\n\n");
+//        Database::log(this->to_str());
+//        Database::log("\n\n\n");
 //    }
 
     return flag;
 }
 
-bool 
-VSTree::deleteTree()
+bool VSTree::deleteTree()
 {
     this->height = 0;
     this->node_num = 0;
@@ -223,9 +218,9 @@ VSTree::deleteTree()
         return false;
 }
 
-//Incrementally update bitset of _entity_id
-//conduct OR operation on Entry(_entity_id)'s EntityBitSet with _bitset
-//Entry of _entity_id must exists    
+/* Incrementally update bitset of _entity_id
+ * conduct OR operation on Entry(_entity_id)'s EntityBitSet with _bitset
+ * Entry of _entity_id must exists    */
 bool VSTree::updateEntry(int _entity_id, const EntityBitSet& _bitset)
 {
     VNode* leafNodePtr = this->getLeafNodeByEntityID(_entity_id);
@@ -239,7 +234,7 @@ bool VSTree::updateEntry(int _entity_id, const EntityBitSet& _bitset)
     // find the mapping child entry, update it and refresh signature.
     int childNum = leafNodePtr->getChildNum();
     bool findFlag = false;
-    for (int i = 0; i < childNum; i++)
+    for (int i=0;i<childNum;i++)
     {
         const SigEntry& entry = leafNodePtr->getChildEntry(i);
 
@@ -256,7 +251,7 @@ bool VSTree::updateEntry(int _entity_id, const EntityBitSet& _bitset)
 //                    _ss << "lead node line: " << leafNodePtr->getFileLine() << endl;
 //                    _ss << "old entry:\n " << Signature::BitSet2str(entry.getEntitySig().entityBitSet) << endl;
 //                    _ss << "new entry:\n " << Signature::BitSet2str(newEntry.getEntitySig().entityBitSet) << endl;
-//                    Util::logging(_ss.str());
+//                    Database::log(_ss.str());
 //                }
 //            }
 
@@ -277,10 +272,9 @@ bool VSTree::updateEntry(int _entity_id, const EntityBitSet& _bitset)
     return true;
 }
 
-//Replace the Entry(_enitty_id)'s EntityBitSet with _bitset
-//Entry of _entity_id must exists    
-bool 
-VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
+/* Replace the Entry(_enitty_id)'s EntityBitSet with _bitset
+ * Entry of _entity_id must exists    */
+bool VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
 {
     VNode* leafNodePtr = this->getLeafNodeByEntityID(_entity_id);
 
@@ -293,7 +287,7 @@ VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
     // find the mapping child entry, update it and refresh signature.
     int childNum = leafNodePtr->getChildNum();
     bool findFlag = false;
-    for (int i = 0; i < childNum; i++)
+    for (int i=0;i<childNum;i++)
     {
         const SigEntry& entry = leafNodePtr->getChildEntry(i);
         if (entry.getEntityId() == _entity_id)
@@ -315,31 +309,31 @@ VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
     return true;
 }
 
-//insert an new Entry, whose entity doesn't exist before 
-bool 
-VSTree::insertEntry(const SigEntry& _entry)
+/* insert an new Entry, whose entity doesn't exist before */
+bool VSTree::insertEntry(const SigEntry& _entry)
 {
 
-	//choose the best leaf node to insert the _entry 
+	/* choose the best leaf node to insert the _entry */
     VNode* choosedNodePtr = this->chooseNode(this->getRoot(), _entry);
 
-#ifdef DEBUG_VSTREE
-		if (_entry.getEntityId() == 4000001)
-		{
-			stringstream _ss;
-			if (choosedNodePtr)
-			{
-				_ss << "insert " << _entry.getEntityId()
-					<< " into [" << choosedNodePtr->getFileLine() << "],\t";
-				_ss << "whose childnum is " << choosedNodePtr->getChildNum() << endl;
-			}
-			else
-			{
-				_ss << "insert " << _entry.getEntityId() << " , can not choose a leaf node to insert entry. @VSTree::insert" << endl;
-			}
-			Util::logging(_ss.str());
-		}
-#endif
+    //debug
+//	{
+//        if (_entry.getEntityId() == 4000001)
+//        {
+//            stringstream _ss;
+//            if (choosedNodePtr)
+//            {
+//                _ss << "insert " << _entry.getEntityId()
+//                    << " into [" << choosedNodePtr->getFileLine() << "],\t";
+//                _ss << "whose childnum is " << choosedNodePtr->getChildNum() << endl;
+//            }
+//            else
+//            {
+//                _ss << "insert " << _entry.getEntityId() << " , can not choose a leaf node to insert entry. @VSTree::insert" << endl;
+//            }
+//            Database::log(_ss.str());
+//        }
+//	}
 
     if (choosedNodePtr == NULL)
     {
@@ -349,7 +343,7 @@ VSTree::insertEntry(const SigEntry& _entry)
 
     if (choosedNodePtr->isFull())
     {
-		 //if the choosed leaf node to insert is full, the node should be split.
+        /* if the choosed leaf node to insert is full, the node should be split.*/
         this->split(choosedNodePtr, _entry, NULL);
 
         //debug
@@ -357,7 +351,7 @@ VSTree::insertEntry(const SigEntry& _entry)
 //        {
 //            stringstream _ss;
 //            _ss << "node " << choosedNodePtr->getFileLine() << " childFileLine error. after split" << endl;
-//            Util::logging(_ss.str());
+//            Database::log(_ss.str());
 //        }
     }
     else
@@ -372,7 +366,7 @@ VSTree::insertEntry(const SigEntry& _entry)
 //            _ss << "node " << choosedNodePtr->getFileLine() << " childFileLine error. after addChildEntry" << endl;
 //            _ss <<"child num=" << choosedNodePtr->getChildNum() << endl;
 //            _ss <<"node num=" << this->node_num << " entry num=" << this->entry_num << endl;
-//            Util::logging(_ss.str());
+//            Database::log(_ss.str());
 //        }
 
         // update the entityID2FileLineMap.
@@ -383,9 +377,8 @@ VSTree::insertEntry(const SigEntry& _entry)
     return true;
 }
 
-//remove an existed Entry(_entity_id) from VSTree 
-bool 
-VSTree::removeEntry(int _entity_id)
+/* remove an existed Entry(_entity_id) from VSTree */
+bool VSTree::removeEntry(int _entity_id)
 {
     VNode* leafNodePtr = this->getLeafNodeByEntityID(_entity_id);
 
@@ -418,18 +411,18 @@ VSTree::removeEntry(int _entity_id)
     leafNodePtr->refreshAncestorSignature(*(this->node_buffer));
     this->entry_num --;
 
-     //we do not consider the situation which the leaf node is to be empty by now...
-	 //in a better way, if the leaf node is empty after removing entry, we should delete it. and recursively judge whether its
-	 //father is empty, and delete its father node if true. to make the VSTree more balanced, we should combine two nodes if
-	 //their child number are less than the MIN_CHILD_NUM. when deleting one node from the tree, we should also remove it from
-	 //tree node file in hard disk by doing some operations on the node_buffer.
+    /* we do not consider the situation which the leaf node is to be empty by now...
+     * in a better way, if the leaf node is empty after removing entry, we should delete it. and recursively judge whether its
+     * father is empty, and delete its father node if true. to make the VSTree more balanced, we should combine two nodes if
+     * their child number are less than the MIN_CHILD_NUM. when deleting one node from the tree, we should also remove it from
+     * tree node file in hard disk by doing some operations on the node_buffer.
+     */
 
     return true;
 }
 
-//save the tree information to tree_info_file_path, and flush the tree nodes in memory to tree_node_file_path. 
-bool 
-VSTree::saveTree()
+/* save the tree information to tree_info_file_path, and flush the tree nodes in memory to tree_node_file_path. */
+bool VSTree::saveTree()
 {
     bool flag = this->saveTreeInfo();
 
@@ -442,10 +435,9 @@ VSTree::saveTree()
     return flag;
 }
 
-bool 
-VSTree::loadTree()
+bool VSTree::loadTree()
 {
-	cout << "load VSTree..." << endl;
+	cout << "loadTree..." << endl;
 	(this->node_buffer) = new LRUCache(LRUCache::DEFAULT_CAPACITY);
 
     bool flag = this->loadTreeInfo();
@@ -454,7 +446,7 @@ VSTree::loadTree()
     {
         stringstream _ss;
         _ss << "tree node num: " << this->node_num << endl;
-        Util::logging(_ss.str());
+        Database::log(_ss.str());
     }
     if (flag)
     {
@@ -471,55 +463,51 @@ VSTree::loadTree()
     return flag;
 }
 
-//choose the best leaf node to insert the _entry, return the choosed leaf node's pointer.  Recursion!
-VNode* 
-VSTree::chooseNode(VNode* _p_node, const SigEntry& _entry)
+/* choose the best leaf node to insert the _entry,
+ * return the choosed leaf node's pointer.
+ * Recursion function! */
+VNode* VSTree::chooseNode(VNode* _p_node, const SigEntry& _entry)
 {
-    if(_p_node->isLeaf())
+    if (_p_node->isLeaf())
     {
         return _p_node;
     }
     else
     {
-		int minDis = Signature::ENTITY_SIG_LENGTH + 1;
-        //int maxDis = Signature::ENTITY_SIG_LENGTH + 1;
+        int minDis = Signature::ENTITY_SIG_LENGTH + 1;
         int candidateIndex[VNode::MAX_CHILD_NUM];
         int candidateNum = 0;
         int childNum = _p_node->getChildNum();
-        for(int i = 0; i < childNum; i++)
+        for (int i=0;i<childNum;i++)
         {
             int curDis = _p_node->getChildEntry(i).xEpsilen(_entry);
-            if(minDis >= curDis)
+            if (minDis >= curDis)
             {
-                if(minDis > curDis)
+                if (minDis > curDis)
                 {
                     minDis = curDis;
                     candidateNum = 0;
                 }
-                candidateIndex[candidateNum++] = i;
+                candidateIndex[candidateNum ++] = i;
             }
         }
 
-		//NOTICE: the basic idea is to place similar signatures together?(the smaller num?)
-		//BETTER: recursion is too costly , and the performance maybe not so good
-
-		minDis = Signature::ENTITY_SIG_LENGTH + 1;
-        //maxDis = Signature::ENTITY_SIG_LENGTH + 1;
+        minDis = Signature::ENTITY_SIG_LENGTH + 1;
         VNode* ret = NULL;
-        for(int i = 0; i < candidateNum; i++)
+        for (int i=0;i<candidateNum;i++)
         {
         	int child_i = candidateIndex[i];
         	VNode* p_child = _p_node->getChild(child_i, *(this->node_buffer));
-			//Recursion 
+        	/* Recursion */
             VNode *candidateLeafPtr = this->chooseNode(p_child, _entry);
             int curDis = candidateLeafPtr->getEntry().xEpsilen(_entry);
 
-            if(curDis == 0)
+            if (curDis == 0)
             {
                 return candidateLeafPtr;
             }
 
-            if(minDis > curDis)
+            if (minDis > curDis)
             {
                 minDis = curDis;
                 ret = candidateLeafPtr;
@@ -530,19 +518,19 @@ VSTree::chooseNode(VNode* _p_node, const SigEntry& _entry)
     }
 }
 
-void 
-VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* _p_insert_node)
+void VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* _p_insert_node)
 {
-#ifdef DEBUG_VSTREE
-		stringstream _ss;
-		_ss << "**********************split happen at "
-			<< _p_node_being_split->getFileLine() << endl;
-		_ss << _p_node_being_split->to_str() << endl;
-		Util::logging(_ss.str());
-#endif
+    //debug
+//	{
+//		stringstream _ss;
+//		_ss << "**********************split happen at "
+//			<< _p_node_being_split->getFileLine() << endl;
+//		_ss << _p_node_being_split->to_str() << endl;
+//		Database::log(_ss.str());
+//	}
     // first, add the new child node(if not leaf) or child entry(if leaf) to the full node.
 	bool just_insert_entry = (_p_insert_node == NULL);
-    if(just_insert_entry)
+    if (just_insert_entry)
     {
         _p_node_being_split->addChildEntry(_insert_entry, true);
     }
@@ -552,38 +540,32 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
     }
 
     SigEntry entryA, entryB;
+    /* two seeds to generate two new nodes.
+     * seedA kernel: the SigEntry with the minimal count of signature.
+     * seedB kernel: the SigEntry with the second minimal count of signature.
+     * */
 
-	//BETTER: use hanming, xor result or the vector included angle to guess the distince.
-	//And then also use the farest two as seeds.
-	//
-     //two seeds to generate two new nodes.
-	 //seedA kernel: the SigEntry with the minimal count of signature.
-	 //seedB kernel: the SigEntry with the maximal count of signature.
-     
-
-    int maxCount = 0; // record the minimal signature count.
+    int minCount = 0; // record the minimal signature count.
     int entryA_index = 0; // record the seedA kernel index.
-    for(int i = 0; i < VNode::MAX_CHILD_NUM; i++)
+    for (int i=0;i<VNode::MAX_CHILD_NUM;i++)
     {
         int currentCount = (int) _p_node_being_split->getChildEntry(i).getSigCount();
-        if(maxCount < currentCount)
+        if (minCount < currentCount)
         {
-            maxCount = currentCount;
+            minCount = currentCount;
             entryA_index = i;
         }
     }
     entryA = _p_node_being_split->getChildEntry(entryA_index);
 
-	maxCount = 0;
+    minCount = 0;
     int entryB_index = 0; // record the seedB kernel index.
-    for(int i = 0; i < VNode::MAX_CHILD_NUM; i++)
+    for (int i=0;i<VNode::MAX_CHILD_NUM;i++)
     {
-		//NOTICE:I think xOR should be used here to choose the farest two
-		int currentCount = entryA.xOR(_p_node_being_split->getChildEntry(i));
-		//int currentCount = entryA.xEpsilen(_p_node_being_split->getChildEntry(i));
-        if(i != entryA_index && maxCount <= currentCount)
+        int currentCount = entryA.xEpsilen(_p_node_being_split->getChildEntry(i));
+        if (i != entryA_index && minCount <= currentCount)
         {
-            maxCount = currentCount;
+            minCount = currentCount;
             entryB_index = i;
         }
     }
@@ -597,20 +579,21 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
     entryIndex_nearA.push_back(entryA_index);
     entryIndex_nearB.push_back(entryB_index);
 
+    /* just tmp variables, for more readibility */
     int nearA_max_size, nearB_max_size;
     bool nearA_tooSmall, nearB_tooSmall;
 
-    for(int i = 0; i < VNode::MAX_CHILD_NUM; i++)
+    for (int i=0;i<VNode::MAX_CHILD_NUM;i++)
     {
-        if(i == entryA_index || i == entryB_index) continue;
+        if (i == entryA_index || i == entryB_index) continue;
 
-		//should guarantee that each new node has at least MIN_CHILD_NUM children. 
+        /* should guarantee that each new node has at least MIN_CHILD_NUM children. */
         nearA_max_size = VNode::MAX_CHILD_NUM - entryIndex_nearB.size();
         nearA_tooSmall = (nearA_max_size <= VNode::MIN_CHILD_NUM);
 
-        if(nearA_tooSmall)
+        if (nearA_tooSmall)
         {
-            for(; i < VNode::MAX_CHILD_NUM; i++)
+            for (;i<VNode::MAX_CHILD_NUM;i++)
             {
                 if (i == entryA_index || i == entryB_index) continue;
                 entryIndex_nearA.push_back(i);
@@ -620,93 +603,94 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 
         nearB_max_size = VNode::MAX_CHILD_NUM - entryIndex_nearA.size();
         nearB_tooSmall = (nearB_max_size <= VNode::MIN_CHILD_NUM);
-        if(nearB_tooSmall)
+        if (nearB_tooSmall)
         {
-            for(; i < VNode::MAX_CHILD_NUM; i++)
+            for (;i<VNode::MAX_CHILD_NUM;i++)
             {
-                if(i == entryA_index || i == entryB_index) continue;
+                if (i == entryA_index || i == entryB_index) continue;
                 entryIndex_nearB.push_back(i);
             }
             break;
         }
 
-         //calculate the distance from
-         //the i-th child entry signature to seedA(or seedB).
+        /* calculate the distance from
+         * the i-th child entry signature to seedA(or seedB).*/
 
-		//NOTICE:we should expect that the candidate can be almost contained!
-		//However, the precondition there are not too many 1s
+        /*debug target 1*/
         int disToSeedA = entryA.xEpsilen(_p_node_being_split->getChildEntry(i));
         int disToSeedB = entryB.xEpsilen(_p_node_being_split->getChildEntry(i));
         // choose the near one seed to add into
-        if(disToSeedA <= disToSeedB)
+        if (disToSeedA <= disToSeedB)
         {
-			 entryIndex_nearA.push_back(i);
+        	 entryIndex_nearA.push_back(i);
         }
         else
         {
-			 entryIndex_nearB.push_back(i);
+        	 entryIndex_nearB.push_back(i);
         }
     }
 
     // then create a new node to act as BEntryIndex's father.
     VNode* newNodePtr = this->createNode();
 
-#ifdef DEBUG_VSTREE
-		stringstream _ss2;
-		_ss2 << "new Node is :[" << newNodePtr->getFileLine() << "]" << endl;
-		Util::logging(_ss2.str());
-#endif
+    //debug
+//    {
+//    	stringstream _ss;
+//    	_ss << "new Node is :[" << newNodePtr->getFileLine() << "]" << endl;
+//    	Database::log(_ss.str());
+//    }
     // the old one acts as AEntryIndex's father.
     VNode* oldNodePtr = _p_node_being_split;
 
     // if the old node is leaf, set the new node as a leaf.
-    if(oldNodePtr->isLeaf())
+    if (oldNodePtr->isLeaf())
     {
         newNodePtr->setAsLeaf(true);
     }
 
-	 //add all the entries in BEntryIndex into the new node child entry array,
-	//and calculate the new node's entry.
-    for(unsigned i = 0; i < entryIndex_nearB.size(); i++)
+    /* add all the entries in BEntryIndex into the new node child entry array,
+    and calculate the new node's entry.*/
+    for (int i=0;i<entryIndex_nearB.size();i++)
     {
-        if(oldNodePtr->isLeaf())
+        if (oldNodePtr->isLeaf())
         {
             newNodePtr->addChildEntry(oldNodePtr->getChildEntry(entryIndex_nearB[i]), false);
         }
         else
         {
-			 //debug target 2
+        	 /*debug target 2*/
         	VNode* childPtr = oldNodePtr->getChild(entryIndex_nearB[i], *(this->node_buffer));
             newNodePtr->addChildNode(childPtr);
         }
     }
     newNodePtr->refreshSignature();
 
-     //label the child being removed with -1,
-     //and update the old node's entry.
-    sort(entryIndex_nearA.begin(), entryIndex_nearA.end(), less<int>());
+    /* label the child being removed with -1,
+     * and update the old node's entry.*/
+    std::sort(entryIndex_nearA.begin(), entryIndex_nearA.end(), less<int>());
 
-#ifdef DEBUG_VSTREE
-    	stringstream _ss1;
-    	{
-    		_ss1 << "nearA: ";
-    		for(unsigned i = 0; i < entryIndex_nearA.size(); i++)
-    		{
-    			_ss1 << entryIndex_nearA[i] << " ";
-    		}
-    		_ss1 << endl;
+    //debug
+//    {
+//    	stringstream _ss;
+//    	{
+//    		_ss << "nearA: ";
+//    		for(int i = 0; i < entryIndex_nearA.size(); i ++)
+//    		{
+//    			_ss << entryIndex_nearA[i] << " ";
+//    		}
+//    		_ss << endl;
+//
+//    		_ss << "nearB: ";
+//    		for(int i = 0; i < entryIndex_nearB.size(); i ++)
+//    		{
+//    			_ss << entryIndex_nearB[i] << " ";
+//    		}
+//    		_ss << endl;
+//    	}
+//    	Database::log(_ss.str());
+//    }
 
-    		_ss1 << "nearB: ";
-    		for(unsigned i = 0; i < entryIndex_nearB.size(); i++)
-    		{
-    			_ss1 << entryIndex_nearB[i] << " ";
-    		}
-    		_ss1 << endl;
-    	}
-    	Util::logging(_ss1.str());
-#endif
-
-    for(unsigned i = 0; i < entryIndex_nearA.size(); i++)
+    for (int i=0;i<entryIndex_nearA.size();i++)
     {
         oldNodePtr->setChildEntry(i, oldNodePtr->getChildEntry(entryIndex_nearA[i]));
         oldNodePtr->setChildFileLine(i, oldNodePtr->getChildFileLine(entryIndex_nearA[i]));
@@ -717,20 +701,20 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
     int oldNode_index = oldNodePtr->getIndexInFatherNode(*(this->node_buffer));
     // full node's father pointer.
     VNode* oldNodeFatherPtr = oldNodePtr->getFather(*(this->node_buffer));
-    if(oldNodePtr->isRoot())
+    if (oldNodePtr->isRoot())
     {
-         //if the old node is root,
-		 //split the root, create a new root,
-         //and the tree height will be increased.
+        /* if the old node is root,
+         * split the root, create a new root,
+         * and the tree height will be increased.*/
         VNode* RootNewPtr = this->createNode();
 
-         //change the old root node to not-root node,
-         //and set the RootNew to root node.
+        /* change the old root node to not-root node,
+         * and set the RootNew to root node.*/
         oldNodePtr->setAsRoot(false);
         RootNewPtr->setAsRoot(true);
 
-         //set the split two node(old node and new node) as the new root's child,
-         //and update signatures.
+        /* set the split two node(old node and new node) as the new root's child,
+         * and update signatures.*/
         RootNewPtr->addChildNode(oldNodePtr);
         RootNewPtr->addChildNode(newNodePtr);
         RootNewPtr->refreshSignature();
@@ -740,13 +724,13 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 //            stringstream _ss;
 //            _ss << "create new root:" << endl;
 //            _ss << "before swap file line, two sons are: " << oldNodePtr->getFileLine() << " " << newNodePtr->getFileLine() << endl;
-//            Util::logging(_ss.str());
+//            Database::log(_ss.str());
 //        }
 
-         //should keep the root node always being
-         //at the first line(line zero) of the tree node file.
+        /* should keep the root node always being
+         * at the first line(line zero) of the tree node file.*/
         this->swapNodeFileLine(RootNewPtr, oldNodePtr);
-        this->height++;
+        this->height ++;
 
         //debug
 //        {
@@ -755,17 +739,17 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 //            _ss << "two sons are: " << oldNodePtr->getFileLine() << " " << newNodePtr->getFileLine() << endl;
 //            _ss << Signature::BitSet2str(oldNodePtr->getEntry().getEntitySig().entityBitSet) << endl;
 //            _ss << RootNewPtr->to_str() << endl;
-//            Util::logging(_ss.str());
+//            Database::log(_ss.str());
 //        }
     }
     else
     {
-         //if the (OldNode) is not Root,
-         //change the old node's signature to A's signature.
+        /* if the (OldNode) is not Root,
+         * change the old node's signature to A's signature.*/
     	oldNodeFatherPtr->setChildEntry(oldNode_index, oldNodePtr->getEntry());
 
 
-        if(oldNodeFatherPtr->isFull())
+        if (oldNodeFatherPtr->isFull())
         {
         	oldNodeFatherPtr->refreshAncestorSignature(*(this->node_buffer));
             this->split(oldNodeFatherPtr, newNodePtr->getEntry(), newNodePtr);
@@ -782,13 +766,13 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 //    {
 //        stringstream _ss;
 //        _ss << "node " << oldNodePtr->getFileLine() << " childFileLine error. oldNode when split" << endl;
-//        Util::logging(_ss.str());
+//        Database::log(_ss.str());
 //    }
 //    if (!newNodePtr->checkState())
 //    {
 //        stringstream _ss;
 //        _ss << "node " << newNodePtr->getFileLine() << " childFileLine error. newNode when split" << endl;
-//        Util::logging(_ss.str());
+//        Database::log(_ss.str());
 //    }
 
     // update the entityID2FileLineMap by these two nodes.
@@ -796,9 +780,8 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
     this->updateEntityID2FileLineMap(newNodePtr);
 }
 
-//create a new node when one node need splitting. 
-VNode* 
-VSTree::createNode()
+/* create a new node when one node need splitting. */
+VNode* VSTree::createNode()
 {
     VNode* newNodePtr = new VNode();
     newNodePtr->setFileLine(this->node_num);
@@ -809,8 +792,7 @@ VSTree::createNode()
 }
 
 /* swap two nodes' file line, their related nodes(father and children nodes) will also be updated. */
-void 
-VSTree::swapNodeFileLine(VNode* _p_node_a, VNode* _p_node_b)
+void VSTree::swapNodeFileLine(VNode* _p_node_a, VNode* _p_node_b)
 {
     int oldNodeAFileLine = _p_node_a->getFileLine();
     int oldNodeBFileLine = _p_node_b->getFileLine();
@@ -871,9 +853,8 @@ VSTree::swapNodeFileLine(VNode* _p_node_a, VNode* _p_node_b)
     this->node_buffer->update(newNodeBFileLine, _p_node_b);
 }
 
-//save VSTree's information to tree_info_file_path, such as node_num, entry_num, height, etc. 
-bool 
-VSTree::saveTreeInfo()
+/* save VSTree's information to tree_info_file_path, such as node_num, entry_num, height, etc. */
+bool VSTree::saveTreeInfo()
 {
     FILE* filePtr = fopen(VSTree::tree_info_file_path.c_str(), "wb");
 
@@ -904,9 +885,8 @@ VSTree::saveTreeInfo()
     return true;
 }
 
-//load VSTree's information from tree_info_file_path. 
-bool 
-VSTree::loadTreeInfo()
+/* load VSTree's information from tree_info_file_path. */
+bool VSTree::loadTreeInfo()
 {
     FILE* filePtr = fopen(VSTree::tree_info_file_path.c_str(), "rb");
 
@@ -946,9 +926,8 @@ VSTree::loadTreeInfo()
     return true;
 }
 
-//traverse the tree_node_file_path file, load the mapping from entity id to file line. 
-bool 
-VSTree::loadEntityID2FileLineMap()
+/* traverse the tree_node_file_path file, load the mapping from entity id to file line. */
+bool VSTree::loadEntityID2FileLineMap()
 {
     FILE* filePtr = fopen(VSTree::tree_node_file_path.c_str(), "rb");
 
@@ -986,7 +965,7 @@ VSTree::loadEntityID2FileLineMap()
                 if (cycle_count != nodePtr->getFileLine())
                 {
                     _ss << "line=" << cycle_count << " nodeLine=" << nodePtr->getFileLine() << endl;
-                    Util::logging(_ss.str());
+                    Database::log(_ss.str());
                 }
             }
             cycle_count ++;
@@ -999,9 +978,8 @@ VSTree::loadEntityID2FileLineMap()
     return true;
 }
 
-//update the entityID2FileLineMap with the _p_node's child entries, the _p_node should be leaf node. 
-void 
-VSTree::updateEntityID2FileLineMap(VNode* _p_node)
+/* update the entityID2FileLineMap with the _p_node's child entries, the _p_node should be leaf node. */
+void VSTree::updateEntityID2FileLineMap(VNode* _p_node)
 {
     if (_p_node->isLeaf())
     {
@@ -1018,16 +996,15 @@ VSTree::updateEntityID2FileLineMap(VNode* _p_node)
             {
                 if (entityID == 4000001)
                 {
-                    Util::logging("entity(4000001) found in leaf node!!!");
+                    Database::log("entity(4000001) found in leaf node!!!");
                 }
             }
         }
     }
 }
 
-//get the leaf node pointer by the given _entityID 
-VNode* 
-VSTree::getLeafNodeByEntityID(int _entityID)
+/* get the leaf node pointer by the given _entityID */
+VNode* VSTree::getLeafNodeByEntityID(int _entityID)
 {
     map<int,int>::iterator iter = this->entityID2FileLineMap.find(_entityID);
 
@@ -1043,48 +1020,44 @@ VSTree::getLeafNodeByEntityID(int _entityID)
     return this->getNode(line);
 }
 
-//retrieve the candidate entity ID which signature can cover the _entity_bit_set, and add them to the  _p_id_list. 
-void 
-VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
+/* retrieve the candidate entity ID which signature can cover the_entity_bit_set, and add them to the  _p_id_list. */
+void VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
 {
-	Util::logging("IN retrieveEntity");
+	Database::log("IN retrieveEntity");
     EntitySig filterSig(_entity_bit_set);
-#ifdef DEBUG_VSTREE
-	cerr << "the filter signature: " << filterSig.to_str() << endl;
-#endif
-    queue<int> nodeQueue; //searching node file line queue.
+    std::queue<int>nodeFileFileQueue; //searching node file line queue.
 
     //debug
     {
         stringstream _ss;
         _ss << "filterSig=" << Signature::BitSet2str(filterSig.entityBitSet) << endl;
-        Util::logging(_ss.str());
+        Database::log(_ss.str());
     }
 
     const SigEntry& root_entry = (this->getRoot())->getEntry();
-    Util::logging("Get Root Entry");
+    Database::log("Get Root Entry");
 
     if(root_entry.cover(filterSig))
     {
-        nodeQueue.push(this->getRoot()->getFileLine());
-    	Util::logging("root cover the filter_sig");
+        nodeFileFileQueue.push(this->getRoot()->getFileLine());
+    	Database::log("root cover the filter_sig");
     }
     else
     {
-    	Util::logging("warning: root is not cover the filter_sig");
+    	Database::log("warning: root is not cover the filter_sig");
     }
 
     //debug
 //    {
-//    	Util::logging(this->getRoot()->to_str());
-//    	Util::logging("Before BFS");
+//    	Database::log(this->getRoot()->to_str());
+//    	Database::log("Before BFS");
 //    }
 
-	//using BFS algorithm to traverse the VSTree and retrieve the entry.
-    while (!nodeQueue.empty())
+    /* using BFS algorithm to traverse the VSTree and retrieve the entry.*/
+    while (!nodeFileFileQueue.empty())
     {
-        int currentNodeFileLine = nodeQueue.front();
-        nodeQueue.pop();
+        int currentNodeFileLine = nodeFileFileQueue.front();
+        nodeFileFileQueue.pop();
         VNode* currentNodePtr = this->getNode(currentNodeFileLine);
 
         int childNum = currentNodePtr->getChildNum();
@@ -1102,21 +1075,15 @@ VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
 //        	}
 //        	_ss << endl;
 //
-//        	Util::logging(_ss.str());
+//        	Database::log(_ss.str());
 //        }
 
-		int valid = 0;
-        for (int i = 0; i < childNum; i++)
+        for (int i=0;i<childNum;i++)
         {
             const SigEntry& entry = currentNodePtr->getChildEntry(i);
 
-#ifdef DEBUG_VSTREE
-			//cerr << "current entry: " << entry.to_str() << endl;
-#endif
-
             if (entry.cover(filterSig))
             {
-				valid++;
                 if (currentNodePtr->isLeaf())
                 {
                     // if leaf node, add the satisfying entries' entity id to result list.
@@ -1127,7 +1094,7 @@ VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
 //                    stringstream _ss;
 //                    _ss << "child_" << i << " cover filter sig" << endl;
 //                    _ss << Signature::BitSet2str(entry.getEntitySig().entityBitSet)<< endl;
-//                    Util::logging(_ss.str());
+//                    Database::log(_ss.str());
 //                    }
                 }
                 else
@@ -1136,33 +1103,29 @@ VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
                 	//VNode* childPtr = currentNodePtr->getChild(i, *(this->node_buffer));
                     // if non-leaf node, add the child node file line to the searching queue.
                 	int childNodeFileLine = currentNodePtr->getChildFileLine(i);
-                	nodeQueue.push(childNodeFileLine);
+                	nodeFileFileQueue.push(childNodeFileLine);
 
                     //debug
 //                    {
 //                        stringstream _ss;
 //                        _ss << "child[" << childPtr->getFileLine() << "] cover filter sig" << endl;
-//                        Util::logging(_ss.str());
+//                        Database::log(_ss.str());
 //                    }
                 }
             }
         }
-#ifdef DEBUG_VSTREE
-		//cerr << "child num: " << childNum << "   valid num: " << valid << endl;
-#endif
     }
-    Util::logging("OUT retrieveEntity");
+    Database::log("OUT retrieveEntity");
 }
 
-string 
-VSTree::to_str()
+std::string VSTree::to_str()
 {
     //debug
     {
         stringstream _ss;
         _ss << "after build tree, root is:" << endl;
         _ss << this->getRoot()->to_str() << endl;
-        Util::logging(_ss.str());
+        Database::log(_ss.str());
     }
 	std::stringstream _ss;
 
@@ -1190,4 +1153,3 @@ VSTree::to_str()
 
 	return _ss.str();
 }
-

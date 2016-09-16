@@ -1,0 +1,11 @@
+PREFIX dbo: <http://dbpedia.org/ontology/> 
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+SELECT DISTINCT ?uri 
+WHERE { 
+        ?uri rdf:type dbo:ChessPlayer .  
+        ?uri dbo:birthPlace ?x .  
+        ?uri dbo:deathPlace ?y . 
+        FILTER (?x = ?y) . 
+} 
+
+

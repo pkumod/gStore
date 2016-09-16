@@ -1,0 +1,13 @@
+PREFIX dbo:  <http://dbpedia.org/ontology/>
+PREFIX res:  <http://dbpedia.org/resource/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+SELECT DISTINCT ?uri
+WHERE {
+        ?uri foaf:surname 'Baldwin'@en . 
+      { ?uri dbo:occupation res:Actor . } 
+      UNION 
+      { ?uri rdf:type dbo:Actor . }
+}
+
+
+

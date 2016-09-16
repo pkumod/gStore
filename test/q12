@@ -1,0 +1,4 @@
+select ?X where
+{
+?X	<ub:memberOf>	<http://www.Department0.University0.edu>.	
+}

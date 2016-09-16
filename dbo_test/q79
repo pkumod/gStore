@@ -1,0 +1,18 @@
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX res: <http://dbpedia.org/resource/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT DISTINCT ?uri
+WHERE { 
+        ?uri rdf:type dbo:Airport .
+      { ?uri dbo:location res:California . }
+      UNION
+      { ?uri dbo:city res:California . } 
+      UNION 
+      { ?uri dbo:city ?city .
+        ?city dbo:isPartOf res:California . }
+      UNION
+      { ?uri dbo:operator res:California . } 
+}
+
+
+

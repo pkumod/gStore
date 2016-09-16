@@ -1,14 +1,14 @@
-/*=============================================================================
-# Filename: Server.cpp
-# Author: Bookug Lobert 
-# Mail: 1181955272@qq.com
-# Last Modified: 2015-10-25 13:47
-# Description: 
-=============================================================================*/
+/*
+ * Server.cpp
+ *
+ *  Created on: 2014-10-14
+ *      Author: hanshuo
+ */
 
-#include "Server.h"
-
-using namespace std;
+#include"Server.h"
+#include"../Database/Database.h"
+#include<iostream>
+#include<sstream>
 
 Server::Server()
 {
@@ -31,8 +31,7 @@ Server::~Server()
     delete this->database;
 }
 
-bool 
-Server::createConnection()
+bool Server::createConnection()
 {
     bool flag;
 
@@ -60,24 +59,21 @@ Server::createConnection()
     return true;
 }
 
-bool 
-Server::deleteConnection()
+bool Server::deleteConnection()
 {
     bool flag = this->socket.close();
 
     return flag;
 }
 
-bool 
-Server::response(Socket _socket, std::string& _msg)
+bool Server::response(Socket _socket, std::string& _msg)
 {
     bool flag = _socket.send(_msg);
 
     return flag;
 }
 
-void 
-Server::listen()
+void Server::listen()
 {
     while (true)
     {
@@ -134,12 +130,6 @@ Server::listen()
                 this->importRDF(db_name, "", rdf_path, ret_msg);
                 break;
             }
-			case CMD_DROP:
-			{
-                string db_name = operation.getParameter(0);
-                this->dropDatabase(db_name, "", ret_msg);
-                break;
-			}
             case CMD_QUERY:
             {
                 string query = operation.getParameter(0);
@@ -149,9 +139,9 @@ Server::listen()
             case CMD_SHOW:
             {
                 string para = operation.getParameter(0);
-                if (para == "databases" || para == "all")
+                if (para == "databases")
                 {
-                    this->showDatabases(para, "", ret_msg);
+                    this->showDatabases("", ret_msg);
                 }
                 else
                 {
@@ -175,11 +165,10 @@ Server::listen()
     }
 }
 
-bool 
-Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
+bool Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 {
     int cmd_start_pos = 0;
-    int raw_len = (int)_raw_cmd.size();
+    int raw_len = _raw_cmd.size();
 
     for (int i=0;i<raw_len;i++)
         if (_raw_cmd[i] == '\n')
@@ -293,33 +282,20 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
     return true;
 }
 
-bool 
-Server::createDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
+bool Server::createDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
 {
     // to be implemented...
 
     return false;
 }
 
-bool 
-Server::dropDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
+bool Server::deleteDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
 {
-	//TODO
-    if (this->database == NULL || this->database->getName() != _db_name)
-    {
-        _ret_msg = "database:" + _db_name + " is not loaded.";
-        return false;
-    }
-
-    delete this->database;
-    this->database = NULL;
-    _ret_msg = "unload database done.";
-
-    return true;
+    // to be implemented...
+    return false;
 }
 
-bool 
-Server::loadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
+bool Server::loadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
 {
     this->database = new Database(_db_name);
 
@@ -332,15 +308,12 @@ Server::loadDatabase(std::string _db_name, std::string _ac_name, std::string& _r
     else
     {
         _ret_msg = "load database failed.";
-		delete this->database;
-		this->database = NULL;
     }
 
     return flag;
 }
 
-bool 
-Server::unloadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
+bool Server::unloadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
 {
     if (this->database == NULL || this->database->getName() != _db_name)
     {
@@ -355,12 +328,11 @@ Server::unloadDatabase(std::string _db_name, std::string _ac_name, std::string& 
     return true;
 }
 
-bool 
-Server::importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
+bool Server::importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
 {
-    //if (this->database != NULL && this->database->getName() != _db_name)
-    if (this->database != NULL)
+    if (this->database != NULL && this->database->getName() != _db_name)
     {
+        this->database->unload();
         delete this->database;
     }
 
@@ -379,8 +351,7 @@ Server::importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_p
     return flag;
 }
 
-bool 
-Server::insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
+bool Server::insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
 {
     if (this->database != NULL)
     {
@@ -403,10 +374,9 @@ Server::insertTriple(std::string _db_name, std::string _ac_name, std::string _rd
     return flag;
 }
 
-bool 
-Server::query(const std::string _query, std::string& _ret_msg)
+bool Server::query(const std::string _query, std::string& _ret_msg)
 {
-    if(this->database == NULL)
+    if (this->database == NULL)
     {
         _ret_msg = "database has not been loaded.";
         return false;
@@ -414,10 +384,8 @@ Server::query(const std::string _query, std::string& _ret_msg)
 
     ResultSet res_set;
     bool flag = this->database->query(_query, res_set);
-    if(flag)
+    if (flag)
     {
-		//_ret_msg = "results are too large!";
-		//BETTER: divide and transfer if too large to be placed in memory, using Stream
         _ret_msg = res_set.to_str();
     }
     else
@@ -428,15 +396,9 @@ Server::query(const std::string _query, std::string& _ret_msg)
     return flag;
 }
 
-bool 
-Server::showDatabases(string _para, string _ac_name, string& _ret_msg)
+bool Server::showDatabases(std::string _ac_name, std::string& _ret_msg)
 {
-	if(_para == "all")
-	{
-		_ret_msg = Util::getItemsFromDir(Util::db_home);
-		return true;
-	}
-    if(this->database != NULL)
+    if (this->database != NULL)
     {
         _ret_msg = "\n" + this->database->getName() + "\n";
     }

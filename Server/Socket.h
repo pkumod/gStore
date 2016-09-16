@@ -5,10 +5,16 @@
  *      Author: hanshuo
  */
 
-#ifndef _SERVER_SOCKET_H
-#define _SERVER_SOCKET_H
+#ifndef SOCKET_H_
+#define SOCKET_H_
 
-#include "../Util/Util.h"
+#include<sys/types.h>
+#include<sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <string>
+#include <arpa/inet.h>
 
 class Socket
 {
@@ -38,5 +44,4 @@ private:
     sockaddr_in addr;
 };
 
-#endif // _SERVER_SOCKET_H
-
+#endif /* SOCKET_H_ */

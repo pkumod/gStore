@@ -1,0 +1,4 @@
+0	0	1000000000	<_:a>	<http://xmlns.com/foaf/0.1/name>	"Alice"
+0	1	1	<_:a>	<http://xmlns.com/foaf/0.1/homepage>	<http://work.example.org/alice/>
+2	0	1000000001	<_:b>	<http://xmlns.com/foaf/0.1/name>	"Bob"
+2	2	3	<_:b>	<http://xmlns.com/foaf/0.1/mbox>	<mailto:bob@work.example>

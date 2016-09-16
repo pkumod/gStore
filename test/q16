@@ -1,0 +1,8 @@
+select ?X ?Y ?Z where
+{
+?X	<rdf:type>	<ub:UndergraduateStudent>.
+?Z	<rdf:type>	<ub:Course>.
+?X	<ub:advisor>	?Y.
+?Y	<ub:teacherOf>	?Z.
+?X	<ub:takesCourse>	?Z.
+}

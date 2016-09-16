@@ -1,0 +1,7 @@
+select ?x ?y where
+{
+?y	<ub:subOrganizationOf>	<http://www.University0.edu>.	
+?y	<rdf:type>	<ub:Department>.
+?x	<ub:worksFor>	?y.
+?x	<rdf:type>	<ub:FullProfessor>.
+}

@@ -4,8 +4,15 @@
  *  Created on: 2014-10-14
  *      Author: hanshuo
  */
-
-#include "Socket.h"
+#include"Socket.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/time.h>
+#include <sstream>
+#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 const std::string Socket::DEFAULT_SERVER_IP = "127.0.0.1";
 
@@ -236,4 +243,3 @@ bool Socket::isValid()const
 {
     return (this->sock != -1);
 }
-

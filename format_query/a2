@@ -1,0 +1,13 @@
+select ?x1 ?x2 ?x3 ?x4 ?x5 where
+{
+?x1	<rdf:type>	<wordnet_actor_109765278>.
+?x1	<y:livesIn>	?x2.
+?x1	<y:actedIn>	?x4.
+?x1	<y:directed>	?x5.
+?x2	<y:locatedIn>	?x3.
+?x3	<y:locatedIn>	<New_York>.
+?x4	<rdf:type>	<wordnet_movie_106613686>.
+?x4	<y:hasProductionLanguage>	<English_language>.
+?x5	<rdf:type>	<wordnet_movie_106613686>.
+?x5	<y:hasProductionLanguage>	<English_language>.
+}

@@ -1,0 +1,4 @@
+select ?x1 ?x2where
+{
+?x1	<http://rdfs/label>	?x2.
+}

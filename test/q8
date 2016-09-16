@@ -1,0 +1,5 @@
+select ?X where
+{
+?X	<rdf:type>	<ub:GraduateStudent>.
+?X	<ub:takesCourse>	<http://www.Department0.University0.edu/GraduateCourse0>.
+}
