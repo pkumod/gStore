@@ -6,8 +6,8 @@
  */
 
 #include"EntryBuffer.h"
-#include"../Signature/SigEntry.h"
-#include"../Database/Database.h"
+
+using namespace std;
 
 int EntryBuffer::DEFAULT_CAPACITY = 2*1000*1000;
 

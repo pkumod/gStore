@@ -1,5 +1,0 @@
-select ?X where
-{
-?X	<rdf:type>	<ub:Publication>.
-?X	<ub:publicationAuthor>	<http://www.Department0.University0.edu/AssistantProfessor0>.
-}

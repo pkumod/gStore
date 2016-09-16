@@ -1,5 +1,0 @@
-select ?X where
-{
-?X	<rdf:type>	<ub:ResearchGroup>.
-?X	<ub:subOrganizationOf>	<http://www.University0.edu>.
-}

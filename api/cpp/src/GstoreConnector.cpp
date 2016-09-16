@@ -1,180 +1,314 @@
-/*
- * GstoreConnector.cpp
- *
- *  Created on: 2014-11-1
- *      Author: hanshuo
- */
+/*=============================================================================
+# Filename: GstoreConnector.cpp
+# Author: Bookug Lobert
+# Mail: 1181955272@qq.com
+# Last Modified: 2016-02-21 21:24
+# Description: achieve functions in GstoreConnector.h
+=============================================================================*/
 
-#include"GstoreConnector.h"
-#include<iostream>
+#include "GstoreConnector.h"
+#include <iostream>
 
-std::string GstoreConnector::defaultServerIP = "127.0.0.1";
-unsigned short GstoreConnector::defaultServerPort = 3305;
+using namespace std;
+
+const string GstoreConnector::defaultServerIP = "127.0.0.1";
+const unsigned short GstoreConnector::defaultServerPort = 3305;
 
 GstoreConnector::GstoreConnector()
 {
-    this->serverIP = GstoreConnector::defaultServerIP;
-    this->serverPort = GstoreConnector::defaultServerPort;
+	this->serverIP = GstoreConnector::defaultServerIP;
+}
+
+GstoreConnector::GstoreConnector(string _ip)
+{
+	this->serverIP = _ip;
+	this->serverPort = GstoreConnector::defaultServerPort;
 }
 
 GstoreConnector::GstoreConnector(unsigned short _port)
 {
-    this->serverIP = GstoreConnector::defaultServerIP;
-    this->serverPort = _port;
+	this->serverIP = GstoreConnector::defaultServerIP;
+	this->serverPort = _port;
 }
 
-GstoreConnector::GstoreConnector(std::string _ip, unsigned short _port)
+GstoreConnector::GstoreConnector(string _ip, unsigned short _port)
 {
-    this->serverIP = _ip;
-    this->serverPort = _port;
+	if (_ip == "localhost")
+		this->serverIP = "127.0.0.1";
+	else
+		this->serverIP = _ip;
+	this->serverPort = _port;
 }
 
 GstoreConnector::~GstoreConnector()
 {
-
+	this->disconnect();
 }
 
-bool GstoreConnector::load(std::string _db_name)
-{
-    bool connect_return = this->connect();
-    if (!connect_return)
-    {
-        std::cerr << "connect to server error. @GstoreConnector::load" << std::endl;
-        return false;
-    }
+bool GstoreConnector::test() {
+	bool connect_return = this->connect();
+	if (!connect_return) {
+		cerr << "failed to connect to server. @GstoreConnector::test" << endl;
+		return false;
+	}
 
-    std::string cmd = "load " + _db_name;
-    bool send_return = this->socket.send(cmd);
-    if (!send_return)
-    {
-        std::cerr << "send load command error. @GstoreConnector.load" << std::endl;
-        return false;
-    }
+	string cmd = "test";
+	bool send_return = this->socket.send(cmd);
+	if (!send_return) {
+		cerr << "send test command error. @GstoreConnector::test" << endl;
+		return false;
+	}
 
-    std::string recv_msg;
-    this->socket.recv(recv_msg);
+	string recv_msg;
+	this->socket.recv(recv_msg);
 
-    this->disconnect();
+	this->disconnect();
 
-    std::cout << recv_msg << std::endl; //debug
-    if (recv_msg == "load database done.")
-    {
-        return true;
-    }
-
-    return false;
+	cout << recv_msg << endl;
+	if (recv_msg == "OK") {
+		return true;
+	}
+	return false;
 }
 
-bool GstoreConnector::unload(std::string _db_name)
+bool
+GstoreConnector::load(string _db_name)
 {
-    bool connect_return = this->connect();
-    if (!connect_return)
-    {
-        std::cerr << "connect to server error. @GstoreConnector::unload" << std::endl;
-        return false;
-    }
+	bool connect_return = this->connect();
+	if (!connect_return)
+	{
+		cerr << "connect to server error. @GstoreConnector::load" << endl;
+		return false;
+	}
 
-    std::string cmd = "unload " + _db_name;
-    bool send_return = this->socket.send(cmd);
-    if (!send_return)
-    {
-        std::cerr << "send unload command error. @GstoreConnector::unload" << std::endl;
-        return false;
-    }
+	string cmd = "load " + _db_name;
+	bool send_return = this->socket.send(cmd);
+	if (!send_return)
+	{
+		cerr << "send load command error. @GstoreConnector.load" << endl;
+		return false;
+	}
 
-    std::string recv_msg;
-    this->socket.recv(recv_msg);
+	string recv_msg;
+	this->socket.recv(recv_msg);
 
-    this->disconnect();
+	this->disconnect();
 
-    std::cout << recv_msg << std::endl; //debug
-    if (recv_msg == "unload database done.")
-    {
-        return true;
-    }
+	cout << recv_msg << endl;
+	if (recv_msg == "load database done.")
+	{
+		return true;
+	}
 
-    return false;
+	return false;
 }
 
-bool GstoreConnector::build(std::string _db_name, std::string _rdf_file_path)
+bool
+GstoreConnector::unload(string _db_name)
 {
-    bool connect_return = this->connect();
-    if (!connect_return)
-    {
-        std::cerr << "connect to server error. @GstoreConnector::build" << std::endl;
-        return false;
-    }
+	bool connect_return = this->connect();
+	if (!connect_return)
+	{
+		cerr << "connect to server error. @GstoreConnector::unload" << endl;
+		return false;
+	}
 
-    std::string cmd = "import " + _db_name + " " + _rdf_file_path;
-    bool send_return = this->socket.send(cmd);
-    if (!send_return)
-    {
-        std::cerr << "send import command error. @GstoreConnector::build" << std::endl;
-        return false;
-    }
+	string cmd = "unload " + _db_name;
+	bool send_return = this->socket.send(cmd);
+	if (!send_return)
+	{
+		cerr << "send unload command error. @GstoreConnector::unload" << endl;
+		return false;
+	}
 
-    std::string recv_msg;
-    this->socket.recv(recv_msg);
+	string recv_msg;
+	this->socket.recv(recv_msg);
 
-    this->disconnect();
+	this->disconnect();
 
-    std::cerr << recv_msg << std::endl; //debug
-    if (recv_msg == "import RDF file to database done.")
-    {
-        return true;
-    }
+	cout << recv_msg << endl;
+	if (recv_msg == "unload database done.")
+	{
+		return true;
+	}
 
-    return false;
+	return false;
 }
 
-std::string GstoreConnector::query(std::string _sparql)
+bool
+GstoreConnector::build(string _db_name, string _rdf_file_path)
 {
-    bool connect_return = this->connect();
-    if (!connect_return)
-    {
-        std::cerr << "connect to server error. @GstoreConnector::query" << std::endl;
-        return "connect to server error.";
-    }
+	bool connect_return = this->connect();
+	if (!connect_return)
+	{
+		cerr << "connect to server error. @GstoreConnector::build" << endl;
+		return false;
+	}
 
-    std::string cmd = "query " + _sparql;
-    bool send_return = this->socket.send(cmd);
-    if (!send_return)
-    {
-        std::cerr << "send query command error. @GstoreConnector::query";
-        return "send query command error.";
-    }
+	string cmd = "import " + _db_name + " " + _rdf_file_path;
+	bool send_return = this->socket.send(cmd);
+	if (!send_return)
+	{
+		cerr << "send import command error. @GstoreConnector::build" << endl;
+		return false;
+	}
 
-    std::string recv_msg;
-    this->socket.recv(recv_msg);
+	string recv_msg;
+	this->socket.recv(recv_msg);
 
-    this->disconnect();
+	this->disconnect();
 
-    return recv_msg;
+	cerr << recv_msg << endl;
+	if (recv_msg == "import RDF file to database done.")
+	{
+		return true;
+	}
+
+	return false;
 }
 
-bool GstoreConnector::connect()
+bool
+GstoreConnector::drop(string _db_name)
 {
-    bool flag = this->socket.create();
-    if (!flag)
-    {
-        std::cerr << "cannot create socket. @GstoreConnector::connect" << std::endl;
-        return false;
-    }
+	bool connect_return = this->connect();
+	if (!connect_return)
+	{
+		cerr << "connect to server error. @GstoreConnector::unload" << endl;
+		return false;
+	}
 
-    flag = this->socket.connect(this->serverIP, this->serverPort);
+	string cmd = "drop " + _db_name;
+	bool send_return = this->socket.send(cmd);
+	if (!send_return)
+	{
+		cerr << "send unload command error. @GstoreConnector::unload" << endl;
+		return false;
+	}
 
-    if (!flag)
-    {
-        std::cerr << "cannot connect to server. @GstoreConnector::connect" << std::endl;
-        return false;
-    }
+	string recv_msg;
+	this->socket.recv(recv_msg);
 
-    return true;
+	this->disconnect();
+
+	cout << recv_msg << endl;
+	if (recv_msg == "drop database done.")
+	{
+		return true;
+	}
+	return false;
 }
 
-bool GstoreConnector::disconnect()
-{
-    bool flag = this->socket.close();
+bool GstoreConnector::stop() {
+	bool connect_return = this->connect();
+	if (!connect_return) {
+		cerr << "failed to connect to server. @GstoreConnector::stop" << endl;
+		return false;
+	}
 
-    return flag;
+	string cmd = "stop";
+	bool send_return = this->socket.send(cmd);
+	if (!send_return) {
+		cerr << "send stop command error. @GstoreConnector::stop" << endl;
+		return false;
+	}
+
+	string recv_msg;
+	this->socket.recv(recv_msg);
+
+	this->disconnect();
+
+	cout << recv_msg << endl;
+
+	if (recv_msg == "server stopped.") {
+		return true;
+	}
+	return false;
+}
+
+string
+GstoreConnector::query(string _sparql)
+{
+	bool connect_return = this->connect();
+	if (!connect_return)
+	{
+		cerr << "connect to server error. @GstoreConnector::query" << endl;
+		return "connect to server error.";
+	}
+
+	string cmd = "query " + _sparql;
+	bool send_return = this->socket.send(cmd);
+	if (!send_return)
+	{
+		cerr << "send query command error. @GstoreConnector::query";
+		return "send query command error.";
+	}
+
+	string recv_msg;
+	this->socket.recv(recv_msg);
+
+	this->disconnect();
+
+	return recv_msg;
+}
+
+string
+GstoreConnector::show(bool _type)
+{
+	bool connect_return = this->connect();
+	if (!connect_return)
+	{
+		cerr << "connect to server error. @GstoreConnector::show" << endl;
+		return "connect to server error.";
+	}
+
+	string cmd;
+	if (_type)
+	{
+		cmd = "show all";
+	}
+	else
+	{
+		cmd = "show databases";
+	}
+	bool send_return = this->socket.send(cmd);
+	if (!send_return)
+	{
+		cerr << "send show command error. @GstoreConnector::show";
+		return "send show command error.";
+	}
+
+	string recv_msg;
+	this->socket.recv(recv_msg);
+	this->disconnect();
+
+	return recv_msg;
+}
+
+bool
+GstoreConnector::connect()
+{
+	bool flag = this->socket.create();
+	if (!flag)
+	{
+		cerr << "cannot create socket. @GstoreConnector::connect" << endl;
+		return false;
+	}
+
+	flag = this->socket.connect(this->serverIP, this->serverPort);
+
+	if (!flag)
+	{
+		cerr << "cannot connect to server. @GstoreConnector::connect" << endl;
+		return false;
+	}
+
+	return true;
+}
+
+bool
+GstoreConnector::disconnect()
+{
+	bool flag = this->socket.close();
+
+	return flag;
 }

@@ -1,4 +1,0 @@
-select ?X where
-{
-<http://www.University0.edu>	<ub:undergraduateDegreeFrom>	?X.
-}

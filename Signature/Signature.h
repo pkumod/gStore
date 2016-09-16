@@ -1,57 +1,86 @@
-/*
- * Signature.h
- *
- *  Created on: 2014-6-20
- *      Author: liyouhuan
- *  Modified on: 2014-6-29
- *      add some private hash functions,
- *      fix some ill-formed function names.
- *      Author: hanshuo
- */
+/*=============================================================================
+# Filename: Signature.h
+# Author: Bookug Lobert 
+# Mail: zengli-bookug@pku.edu.cn
+# Last Modified: 2016-04-11 12:50
+# Description: written by liyouhuan and hanshuo
+=============================================================================*/
 
-#ifndef SIGNATURE_H_
-#define SIGNATURE_H_
 
-#include<iostream>
-#include<string.h>
-#include<bitset>
-#include<sstream>
-using namespace std;
+#ifndef _SIGNATURE_SIGNATURE_H
+#define _SIGNATURE_SIGNATURE_H
 
-class Signature{
+#include "../Util/Util.h"
+
+class Signature
+{
 public:
-	/* must make sure:
-	 *  ENTITY_SIG_LENGTH = EDGE_SIG_LENGTH + STR_SIG_LENGTH */
-	const static int ENTITY_SIG_LENGTH = 400;
-	const static int EDGE_SIG_LENGTH = 150;
-	const static int STR_SIG_LENGTH = 250;
+	//static HashFunction hash[HashNum];
+	//must make sure:   ENTITY_SIG_LENGTH = EDGE_SIG_LENGTH + STR_SIG_LENGTH 
+	//const static int ENTITY_SIG_LENGTH = 400;
+	static const int STR_SIG_BASE = 100;
+	//NOTICE: we can also use id here, but string is recommended due to special structure
+	//(maybe needed later, for example, wildcards)
+	//Th ehash function is costly, so just use two
+	static const int HASH_NUM = 3; //no more than Util::HashNum
+	//NOTICE:if using str id, we can also divide like EDGE_SIG
+	//here we divide as entity neighbors and literal neighbors: ENTITY, LITERAL
+	static const int STR_SIG_LENGTH = 2 * STR_SIG_BASE * HASH_NUM;    //250
+	static const int STR_SIG_LENGTH2 = STR_SIG_BASE * HASH_NUM;    
+	
+	//QUERY:I think that str filter is more important in VSTree than predicate, because
+	//a predicate may correspond to a lot of entities and predicate num is usually small
+	static const int EDGE_SIG_INTERVAL_NUM_HALF = 5;   //in edge or out edge
+	static const int EDGE_SIG_INTERVAL_NUM = 2 * EDGE_SIG_INTERVAL_NUM_HALF;
+	static const int EDGE_SIG_INTERVAL_BASE = 20;
+	static const int EDGE_SIG_LENGTH = EDGE_SIG_INTERVAL_NUM * EDGE_SIG_INTERVAL_BASE; //150
+	static const int EDGE_SIG_LENGTH2 = EDGE_SIG_INTERVAL_NUM_HALF * EDGE_SIG_INTERVAL_BASE; //150
 
-	typedef bitset<Signature::EDGE_SIG_LENGTH> EdgeBitSet;
-	typedef bitset<Signature::ENTITY_SIG_LENGTH> EntityBitSet;
+	static const int ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH;
+	//static const int ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH + NEIGHBOR_SIG_LENGTH;
+
+	typedef std::bitset<Signature::EDGE_SIG_LENGTH2> EdgeBitSet;
+	typedef std::bitset<Signature::ENTITY_SIG_LENGTH> EntityBitSet;
 
 	static std::string BitSet2str(const EntityBitSet& _bitset);
 
-	/* there are two predicate encoding method now, see the encoding functions @Signature.cpp for details. */
+	//NOTICE: there are two predicate encoding method now, see the encoding functions @Signature.cpp for details
 	const static int PREDICATE_ENCODE_METHOD = 1;
 	static void encodePredicate2Entity(int _pre_id, EntityBitSet& _entity_bs, const char _type);
 	static void encodePredicate2Edge(int _pre_id, EdgeBitSet& _edge_bs);
 	static void encodeStr2Entity(const char* _str, EntityBitSet& _entity_bs); //_str is subject or object(literal)
 	static void encodeStrID2Entity(int _str_id, EntityBitSet& _entity_bs);
-	unsigned int hash(const char* _str);
-private:
-	static unsigned int BKDRHash(const char *_str);
-	static unsigned int simpleHash(const char *_str);
-	static unsigned int RSHash(const char *_str);
-	static unsigned int JSHash(const char *_str);
-	static unsigned int PJWHash(const char *_str);
-	static unsigned int ELFHash(const char *_str);
-	static unsigned int SDBMHash(const char *_str);
-	static unsigned int DJBHash(const char *_str);
-	static unsigned int APHash(const char *_str);
+	//Signature()
+	//{
+		//NOTICE:not exceed the HashNum
+		//this->hash = new HashFunction[HashNum];
+		//this->hash[0] = Util::simpleHash;
+		//this->hash[1] = Util::APHash;
+		//this->hash[2] = Util::BKDRHash;
+		//this->hash[3] = Util::DJBHash;
+		//this->hash[4] = Util::ELFHash;
+		//this->hash[5] = Util::DEKHash;
+		//this->hash[6] = Util::BPHash;
+		//this->hash[7] = Util::FNVHash;
+		//this->hash[8] = Util::HFLPHash;
+		//this->hash[9] = Util::HFHash;
+		//this->hash[10] = Util::JSHash;
+		//this->hash[11] = Util::PJWHash;
+		//this->hash[12] = Util::RSHash;
+		//this->hash[13] = Util::SDBMHash;
+		//this->hash[14] = Util::StrHash;
+		//this->hash[15] = Util::TianlHash;
+	//}
+	//~Signature()
+	//{
+		//delete[] this->hash;
+	//}
 };
 
-typedef bitset<Signature::EDGE_SIG_LENGTH> EdgeBitSet;
-typedef bitset<Signature::ENTITY_SIG_LENGTH> EntityBitSet;
+//WARN:also defined in Signature, must be same!!!
+//NOTICE:EdgeBitSet is only used in Query, not for VSTree
+typedef std::bitset<Signature::EDGE_SIG_LENGTH2> EdgeBitSet;
+typedef std::bitset<Signature::ENTITY_SIG_LENGTH> EntityBitSet;
 
 class EntitySig : Signature{
 public:
@@ -66,6 +95,7 @@ public:
 	EntitySig& operator=(const EntitySig& _sig);
 	const EntityBitSet& getBitset()const;
 	void encode(const char * _str, int _pre_id);
+	std::string to_str() const;
 };
 
 class EdgeSig : Signature{
@@ -78,4 +108,5 @@ public:
 	EdgeSig& operator|=(const EdgeSig& _sig);
 };
 
-#endif /* SIGNATURE_H_ */
+#endif // _SIGNATURE_SIGNATURE_H
+

@@ -1,15 +1,16 @@
-/*
- * Client.h
- *
- *  Created on: 2014-10-18
- *      Author: hanshuo
- */
+/*=============================================================================
+# Filename: Client.h
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2016-02-23 13:40
+# Description: originally written by hanshuo, modified by zengli
+=============================================================================*/
 
-#ifndef CLIENT_H_
-#define CLIENT_H_
+#ifndef _SERVER_CLIENT_H
+#define _SERVER_CLIENT_H
 
-#include"Socket.h"
-#include<string>
+#include "../Util/Util.h"
+#include "Socket.h"
 
 class Client
 {
@@ -33,6 +34,5 @@ private:
     int random_key;
 };
 
+#endif // _SERVER_CLIENT_H
 
-
-#endif /* CLIENT_H_ */

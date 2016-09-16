@@ -1,0 +1,652 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Gstore System</title>
+</head>
+<body>
+<div style="visibility: hidden; overflow: hidden; position: absolute; top: 0px; height: 1px; width: auto; padding: 0px; border: 0px none; margin: 0px; text-align: left; text-indent: 0px; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal;"><div id="MathJax_SVG_Hidden"></div><svg><defs id="MathJax_SVG_glyphs"><path d="M40 437Q21 437 21 445Q21 450 37 501T71 602L88 651Q93 669 101 677H569H659Q691 677 697 676T704 667Q704 661 687 553T668 444Q668 437 649 437Q640 437 637 437T631 442L629 445Q629 451 635 490T641 551Q641 586 628 604T573 629Q568 630 515 631Q469 631 457 630T439 622Q438 621 368 343T298 60Q298 48 386 46Q418 46 427 45T436 36Q436 31 433 22Q429 4 424 1L422 0Q419 0 415 0Q410 0 363 1T228 2Q99 2 64 0H49Q43 6 43 9T45 27Q49 40 55 46H83H94Q174 46 189 55Q190 56 191 56Q196 59 201 76T241 233Q258 301 269 344Q339 619 339 625Q339 630 310 630H279Q212 630 191 624Q146 614 121 583T67 467Q60 445 57 441T43 437H40Z" stroke-width="1" id="MJMATHI-54"></path><path d="M492 213Q472 213 472 226Q472 230 477 250T482 285Q482 316 461 323T364 330H312Q311 328 277 192T243 52Q243 48 254 48T334 46Q428 46 458 48T518 61Q567 77 599 117T670 248Q680 270 683 272Q690 274 698 274Q718 274 718 261Q613 7 608 2Q605 0 322 0H133Q31 0 31 11Q31 13 34 25Q38 41 42 43T65 46Q92 46 125 49Q139 52 144 61Q146 66 215 342T285 622Q285 629 281 629Q273 632 228 634H197Q191 640 191 642T193 659Q197 676 203 680H757Q764 676 764 669Q764 664 751 557T737 447Q735 440 717 440H705Q698 445 698 453L701 476Q704 500 704 528Q704 558 697 578T678 609T643 625T596 632T532 634H485Q397 633 392 631Q388 629 386 622Q385 619 355 499T324 377Q347 376 372 376H398Q464 376 489 391T534 472Q538 488 540 490T557 493Q562 493 565 493T570 492T572 491T574 487T577 483L544 351Q511 218 508 216Q505 213 492 213Z" stroke-width="1" id="MJMATHI-45"></path><path d="M308 24Q367 24 416 76T466 197Q466 260 414 284Q308 311 278 321T236 341Q176 383 176 462Q176 523 208 573T273 648Q302 673 343 688T407 704H418H425Q521 704 564 640Q565 640 577 653T603 682T623 704Q624 704 627 704T632 705Q645 705 645 698T617 577T585 459T569 456Q549 456 549 465Q549 471 550 475Q550 478 551 494T553 520Q553 554 544 579T526 616T501 641Q465 662 419 662Q362 662 313 616T263 510Q263 480 278 458T319 427Q323 425 389 408T456 390Q490 379 522 342T554 242Q554 216 546 186Q541 164 528 137T492 78T426 18T332 -20Q320 -22 298 -22Q199 -22 144 33L134 44L106 13Q83 -14 78 -18T65 -22Q52 -22 52 -14Q52 -11 110 221Q112 227 130 227H143Q149 221 149 216Q149 214 148 207T144 186T142 153Q144 114 160 87T203 47T255 29T308 24Z" stroke-width="1" id="MJMATHI-53"></path><path d="M78 35T78 60T94 103T137 121Q165 121 187 96T210 8Q210 -27 201 -60T180 -117T154 -158T130 -185T117 -194Q113 -194 104 -185T95 -172Q95 -168 106 -156T131 -126T157 -76T173 -3V9L172 8Q170 7 167 6T161 3T152 1T140 0Q113 0 96 17Z" stroke-width="1" id="MJMAIN-2C"></path><path d="M580 385Q580 406 599 424T641 443Q659 443 674 425T690 368Q690 339 671 253Q656 197 644 161T609 80T554 12T482 -11Q438 -11 404 5T355 48Q354 47 352 44Q311 -11 252 -11Q226 -11 202 -5T155 14T118 53T104 116Q104 170 138 262T173 379Q173 380 173 381Q173 390 173 393T169 400T158 404H154Q131 404 112 385T82 344T65 302T57 280Q55 278 41 278H27Q21 284 21 287Q21 293 29 315T52 366T96 418T161 441Q204 441 227 416T250 358Q250 340 217 250T184 111Q184 65 205 46T258 26Q301 26 334 87L339 96V119Q339 122 339 128T340 136T341 143T342 152T345 165T348 182T354 206T362 238T373 281Q402 395 406 404Q419 431 449 431Q468 431 475 421T483 402Q483 389 454 274T422 142Q420 131 420 107V100Q420 85 423 71T442 42T487 26Q558 26 600 148Q609 171 620 213T632 273Q632 306 619 325T593 357T580 385Z" stroke-width="1" id="MJMATHI-77"></path><path d="M137 683Q138 683 209 688T282 694Q294 694 294 685Q294 674 258 534Q220 386 220 383Q220 381 227 388Q288 442 357 442Q411 442 444 415T478 336Q478 285 440 178T402 50Q403 36 407 31T422 26Q450 26 474 56T513 138Q516 149 519 151T535 153Q555 153 555 145Q555 144 551 130Q535 71 500 33Q466 -10 419 -10H414Q367 -10 346 17T325 74Q325 90 361 192T398 345Q398 404 354 404H349Q266 404 205 306L198 293L164 158Q132 28 127 16Q114 -11 83 -11Q69 -11 59 -2T48 16Q48 30 121 320L195 616Q195 629 188 632T149 637H128Q122 643 122 645T124 664Q129 683 137 683Z" stroke-width="1" id="MJMATHI-68"></path><path d="M184 600Q184 624 203 642T247 661Q265 661 277 649T290 619Q290 596 270 577T226 557Q211 557 198 567T184 600ZM21 287Q21 295 30 318T54 369T98 420T158 442Q197 442 223 419T250 357Q250 340 236 301T196 196T154 83Q149 61 149 51Q149 26 166 26Q175 26 185 29T208 43T235 78T260 137Q263 149 265 151T282 153Q302 153 302 143Q302 135 293 112T268 61T223 11T161 -11Q129 -11 102 10T74 74Q74 91 79 106T122 220Q160 321 166 341T173 380Q173 404 156 404H154Q124 404 99 371T61 287Q60 286 59 284T58 281T56 279T53 278T49 278T41 278H27Q21 284 21 287Z" stroke-width="1" id="MJMATHI-69"></path><path d="M117 59Q117 26 142 26Q179 26 205 131Q211 151 215 152Q217 153 225 153H229Q238 153 241 153T246 151T248 144Q247 138 245 128T234 90T214 43T183 6T137 -11Q101 -11 70 11T38 85Q38 97 39 102L104 360Q167 615 167 623Q167 626 166 628T162 632T157 634T149 635T141 636T132 637T122 637Q112 637 109 637T101 638T95 641T94 647Q94 649 96 661Q101 680 107 682T179 688Q194 689 213 690T243 693T254 694Q266 694 266 686Q266 675 193 386T118 83Q118 81 118 75T117 65V59Z" stroke-width="1" id="MJMATHI-6C"></path><path d="M39 168Q39 225 58 272T107 350T174 402T244 433T307 442H310Q355 442 388 420T421 355Q421 265 310 237Q261 224 176 223Q139 223 138 221Q138 219 132 186T125 128Q125 81 146 54T209 26T302 45T394 111Q403 121 406 121Q410 121 419 112T429 98T420 82T390 55T344 24T281 -1T205 -11Q126 -11 83 42T39 168ZM373 353Q367 405 305 405Q272 405 244 391T199 357T170 316T154 280T149 261Q149 260 169 260Q282 260 327 284T373 353Z" stroke-width="1" id="MJMATHI-65"></path><path d="M26 385Q19 392 19 395Q19 399 22 411T27 425Q29 430 36 430T87 431H140L159 511Q162 522 166 540T173 566T179 586T187 603T197 615T211 624T229 626Q247 625 254 615T261 596Q261 589 252 549T232 470L222 433Q222 431 272 431H323Q330 424 330 420Q330 398 317 385H210L174 240Q135 80 135 68Q135 26 162 26Q197 26 230 60T283 144Q285 150 288 151T303 153H307Q322 153 322 145Q322 142 319 133Q314 117 301 95T267 48T216 6T155 -11Q125 -11 98 4T59 56Q57 64 57 83V101L92 241Q127 382 128 383Q128 385 77 385H26Z" stroke-width="1" id="MJMATHI-74"></path><path d="M311 43Q296 30 267 15T206 0Q143 0 105 45T66 160Q66 265 143 353T314 442Q361 442 401 394L404 398Q406 401 409 404T418 412T431 419T447 422Q461 422 470 413T480 394Q480 379 423 152T363 -80Q345 -134 286 -169T151 -205Q10 -205 10 -137Q10 -111 28 -91T74 -71Q89 -71 102 -80T116 -111Q116 -121 114 -130T107 -144T99 -154T92 -162L90 -164H91Q101 -167 151 -167Q189 -167 211 -155Q234 -144 254 -122T282 -75Q288 -56 298 -13Q311 35 311 43ZM384 328L380 339Q377 350 375 354T369 368T359 382T346 393T328 402T306 405Q262 405 221 352Q191 313 171 233T151 117Q151 38 213 38Q269 38 323 108L331 118L384 328Z" stroke-width="1" id="MJMATHI-67"></path><path d="M201 -11Q126 -11 80 38T34 156Q34 221 64 279T146 380Q222 441 301 441Q333 441 341 440Q354 437 367 433T402 417T438 387T464 338T476 268Q476 161 390 75T201 -11ZM121 120Q121 70 147 48T206 26Q250 26 289 58T351 142Q360 163 374 216T388 308Q388 352 370 375Q346 405 306 405Q243 405 195 347Q158 303 140 230T121 120Z" stroke-width="1" id="MJMATHI-6F"></path><path d="M21 287Q22 290 23 295T28 317T38 348T53 381T73 411T99 433T132 442Q161 442 183 430T214 408T225 388Q227 382 228 382T236 389Q284 441 347 441H350Q398 441 422 400Q430 381 430 363Q430 333 417 315T391 292T366 288Q346 288 334 299T322 328Q322 376 378 392Q356 405 342 405Q286 405 239 331Q229 315 224 298T190 165Q156 25 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 114 189T154 366Q154 405 128 405Q107 405 92 377T68 316T57 280Q55 278 41 278H27Q21 284 21 287Z" stroke-width="1" id="MJMATHI-72"></path><path d="M23 287Q24 290 25 295T30 317T40 348T55 381T75 411T101 433T134 442Q209 442 230 378L240 387Q302 442 358 442Q423 442 460 395T497 281Q497 173 421 82T249 -10Q227 -10 210 -4Q199 1 187 11T168 28L161 36Q160 35 139 -51T118 -138Q118 -144 126 -145T163 -148H188Q194 -155 194 -157T191 -175Q188 -187 185 -190T172 -194Q170 -194 161 -194T127 -193T65 -192Q-5 -192 -24 -194H-32Q-39 -187 -39 -183Q-37 -156 -26 -148H-6Q28 -147 33 -136Q36 -130 94 103T155 350Q156 355 156 364Q156 405 131 405Q109 405 94 377T71 316T59 280Q57 278 43 278H29Q23 284 23 287ZM178 102Q200 26 252 26Q282 26 310 49T356 107Q374 141 392 215T411 325V331Q411 405 350 405Q339 405 328 402T306 393T286 380T269 365T254 350T243 336T235 326L232 322Q232 321 229 308T218 264T204 212Q178 106 178 102Z" stroke-width="1" id="MJMATHI-70"></path><path d="M297 596Q297 627 318 644T361 661Q378 661 389 651T403 623Q403 595 384 576T340 557Q322 557 310 567T297 596ZM288 376Q288 405 262 405Q240 405 220 393T185 362T161 325T144 293L137 279Q135 278 121 278H107Q101 284 101 286T105 299Q126 348 164 391T252 441Q253 441 260 441T272 442Q296 441 316 432Q341 418 354 401T367 348V332L318 133Q267 -67 264 -75Q246 -125 194 -164T75 -204Q25 -204 7 -183T-12 -137Q-12 -110 7 -91T53 -71Q70 -71 82 -81T95 -112Q95 -148 63 -167Q69 -168 77 -168Q111 -168 139 -140T182 -74L193 -32Q204 11 219 72T251 197T278 308T289 365Q289 372 288 376Z" stroke-width="1" id="MJMATHI-6A"></path><path d="M34 159Q34 268 120 355T306 442Q362 442 394 418T427 355Q427 326 408 306T360 285Q341 285 330 295T319 325T330 359T352 380T366 386H367Q367 388 361 392T340 400T306 404Q276 404 249 390Q228 381 206 359Q162 315 142 235T121 119Q121 73 147 50Q169 26 205 26H209Q321 26 394 111Q403 121 406 121Q410 121 419 112T429 98T420 83T391 55T346 25T282 0T202 -11Q127 -11 81 37T34 159Z" stroke-width="1" id="MJMATHI-63"></path><path d="M131 289Q131 321 147 354T203 415T300 442Q362 442 390 415T419 355Q419 323 402 308T364 292Q351 292 340 300T328 326Q328 342 337 354T354 372T367 378Q368 378 368 379Q368 382 361 388T336 399T297 405Q249 405 227 379T204 326Q204 301 223 291T278 274T330 259Q396 230 396 163Q396 135 385 107T352 51T289 7T195 -10Q118 -10 86 19T53 87Q53 126 74 143T118 160Q133 160 146 151T160 120Q160 94 142 76T111 58Q109 57 108 57T107 55Q108 52 115 47T146 34T201 27Q237 27 263 38T301 66T318 97T323 122Q323 150 302 164T254 181T195 196T148 231Q131 256 131 289Z" stroke-width="1" id="MJMATHI-73"></path><path d="M21 287Q22 293 24 303T36 341T56 388T89 425T135 442Q171 442 195 424T225 390T231 369Q231 367 232 367L243 378Q304 442 382 442Q436 442 469 415T503 336T465 179T427 52Q427 26 444 26Q450 26 453 27Q482 32 505 65T540 145Q542 153 560 153Q580 153 580 145Q580 144 576 130Q568 101 554 73T508 17T439 -10Q392 -10 371 17T350 73Q350 92 386 193T423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 180T152 343Q153 348 153 366Q153 405 129 405Q91 405 66 305Q60 285 60 284Q58 278 41 278H27Q21 284 21 287Z" stroke-width="1" id="MJMATHI-6E"></path><path d="M50 252Q50 367 117 473T286 641T490 704Q580 704 633 653Q642 643 648 636T656 626L657 623Q660 623 684 649Q691 655 699 663T715 679T725 690L740 705H746Q760 705 760 698Q760 694 728 561Q692 422 692 421Q690 416 687 415T669 413H653Q647 419 647 422Q647 423 648 429T650 449T651 481Q651 552 619 605T510 659Q492 659 471 656T418 643T357 615T294 567T236 496T189 394T158 260Q156 242 156 221Q156 173 170 136T206 79T256 45T308 28T353 24Q407 24 452 47T514 106Q517 114 529 161T541 214Q541 222 528 224T468 227H431Q425 233 425 235T427 254Q431 267 437 273H454Q494 271 594 271Q634 271 659 271T695 272T707 272Q721 272 721 263Q721 261 719 249Q714 230 709 228Q706 227 694 227Q674 227 653 224Q646 221 643 215T629 164Q620 131 614 108Q589 6 586 3Q584 1 581 1Q571 1 553 21T530 52Q530 53 528 52T522 47Q448 -22 322 -22Q201 -22 126 55T50 252Z" stroke-width="1" id="MJMATHI-47"></path><path d="M740 435Q740 320 676 213T511 42T304 -22Q207 -22 138 35T51 201Q50 209 50 244Q50 346 98 438T227 601Q351 704 476 704Q514 704 524 703Q621 689 680 617T740 435ZM637 476Q637 565 591 615T476 665Q396 665 322 605Q242 542 200 428T157 216Q157 126 200 73T314 19Q404 19 485 98T608 313Q637 408 637 476Z" stroke-width="1" id="MJMATHI-4F"></path><path d="M230 637Q203 637 198 638T193 649Q193 676 204 682Q206 683 378 683Q550 682 564 680Q620 672 658 652T712 606T733 563T739 529Q739 484 710 445T643 385T576 351T538 338L545 333Q612 295 612 223Q612 212 607 162T602 80V71Q602 53 603 43T614 25T640 16Q668 16 686 38T712 85Q717 99 720 102T735 105Q755 105 755 93Q755 75 731 36Q693 -21 641 -21H632Q571 -21 531 4T487 82Q487 109 502 166T517 239Q517 290 474 313Q459 320 449 321T378 323H309L277 193Q244 61 244 59Q244 55 245 54T252 50T269 48T302 46H333Q339 38 339 37T336 19Q332 6 326 0H311Q275 2 180 2Q146 2 117 2T71 2T50 1Q33 1 33 10Q33 12 36 24Q41 43 46 45Q50 46 61 46H67Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628Q287 635 230 637ZM630 554Q630 586 609 608T523 636Q521 636 500 636T462 637H440Q393 637 386 627Q385 624 352 494T319 361Q319 360 388 360Q466 361 492 367Q556 377 592 426Q608 449 619 486T630 554Z" stroke-width="1" id="MJMATHI-52"></path><path d="M423 750Q432 750 438 744T444 730Q444 725 271 248T92 -240Q85 -250 75 -250Q68 -250 62 -245T56 -231Q56 -221 230 257T407 740Q411 750 423 750Z" stroke-width="1" id="MJMAIN-2F"></path><path d="M366 683Q367 683 438 688T511 694Q523 694 523 686Q523 679 450 384T375 83T374 68Q374 26 402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487H491Q506 153 506 145Q506 140 503 129Q490 79 473 48T445 8T417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157Q33 205 53 255T101 341Q148 398 195 420T280 442Q336 442 364 400Q369 394 369 396Q370 400 396 505T424 616Q424 629 417 632T378 637H357Q351 643 351 645T353 664Q358 683 366 683ZM352 326Q329 405 277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q233 26 290 98L298 109L352 326Z" stroke-width="1" id="MJMATHI-64"></path><path d="M173 380Q173 405 154 405Q130 405 104 376T61 287Q60 286 59 284T58 281T56 279T53 278T49 278T41 278H27Q21 284 21 287Q21 294 29 316T53 368T97 419T160 441Q202 441 225 417T249 361Q249 344 246 335Q246 329 231 291T200 202T182 113Q182 86 187 69Q200 26 250 26Q287 26 319 60T369 139T398 222T409 277Q409 300 401 317T383 343T365 361T357 383Q357 405 376 424T417 443Q436 443 451 425T467 367Q467 340 455 284T418 159T347 40T241 -11Q177 -11 139 22Q102 54 102 117Q102 148 110 181T151 298Q173 362 173 380Z" stroke-width="1" id="MJMATHI-76"></path><path d="M60 749L64 750Q69 750 74 750H86L114 726Q208 641 251 514T294 250Q294 182 284 119T261 12T224 -76T186 -143T145 -194T113 -227T90 -246Q87 -249 86 -250H74Q66 -250 63 -250T58 -247T55 -238Q56 -237 66 -225Q221 -64 221 250T66 725Q56 737 55 738Q55 746 60 749Z" stroke-width="1" id="MJMAIN-29"></path><path d="M287 628Q287 635 230 637Q206 637 199 638T192 648Q192 649 194 659Q200 679 203 681T397 683Q587 682 600 680Q664 669 707 631T751 530Q751 453 685 389Q616 321 507 303Q500 302 402 301H307L277 182Q247 66 247 59Q247 55 248 54T255 50T272 48T305 46H336Q342 37 342 35Q342 19 335 5Q330 0 319 0Q316 0 282 1T182 2Q120 2 87 2T51 1Q33 1 33 11Q33 13 36 25Q40 41 44 43T67 46Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628ZM645 554Q645 567 643 575T634 597T609 619T560 635Q553 636 480 637Q463 637 445 637T416 636T404 636Q391 635 386 627Q384 621 367 550T332 412T314 344Q314 342 395 342H407H430Q542 342 590 392Q617 419 631 471T645 554Z" stroke-width="1" id="MJMATHI-50"></path><path d="M33 157Q33 258 109 349T280 441Q331 441 370 392Q386 422 416 422Q429 422 439 414T449 394Q449 381 412 234T374 68Q374 43 381 35T402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487Q506 153 506 144Q506 138 501 117T481 63T449 13Q436 0 417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157ZM351 328Q351 334 346 350T323 385T277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q217 26 254 59T298 110Q300 114 325 217T351 328Z" stroke-width="1" id="MJMATHI-61"></path></defs></svg></div><div id="wmd-preview" class="wmd-preview"><div class="md-section-divider"></div><div class="md-section-divider"></div><h1 id="gstore-system" data-anchor-id="ae2n">Gstore System</h1><p data-anchor-id="dlhn">gStore, a graph-based RDF triple store, is a joint research project by Peking University, University of Waterloo and Hong Kong University of Science and Technology. The system is developed and maintained by the database group in Institute of Computer Science and Technology, Peking University, China. A detailed description of gStore can be found at our papers [Zou et al., VLDB 11] and [Zou et al., VLDB Journal 14]  in the <a href="#chapter07">Publication</a> section. This HELP document includes system installment, usage, API, use cases and FAQ.  gStore is a open-source project in github under the BSD license. You are welcome to use gStore, report bugs or suggestions, or join us to make gStore better. It is also allowed for you to build all kinds of applications based on gStore, while respecting our work. </p><p data-anchor-id="w9eb"><strong>We are trying our best to avoid errors. However, if you encounter any unrecovable disaster when using this system, we shall not be responsible for it.</strong></p><p data-anchor-id="h746"><div class="toc"><div class="toc">
+<ul>
+<li><a href="#gstore-system">Gstore System</a><ul>
+<li><a href="#chapter-00-a-quick-tour">Chapter 00: A Quick Tour</a><ul>
+<li><a href="#getting-started">Getting Started</a></li>
+<li><a href="#advanced-help">Advanced Help</a></li>
+<li><a href="#other-business">Other Business</a></li>
+</ul>
+</li>
+<li><a href="#chapter-01-system-requirements">Chapter 01: System Requirements</a></li>
+<li><a href="#chapter-02-basic-introduction">Chapter 02: Basic Introduction</a><ul>
+<li><a href="#what-is-gstore">What Is gStore</a></li>
+<li><a href="#why-gstore">Why gStore</a></li>
+<li><a href="#open-source">Open Source</a></li>
+</ul>
+</li>
+<li><a href="#chapter-03-install-guide">Chapter 03: Install Guide</a></li>
+<li><a href="#chapter-04-how-to-use">Chapter 04: How To Use</a><ul>
+<li><a href="#gstore-currently-includes-five-executables-and-others">gStore currently includes five executables and others.</a><ul>
+<li><a href="#0-gconsole">0. gconsole</a></li>
+<li><a href="#1-gload">1. gload</a></li>
+<li><a href="#2-gquery">2. gquery</a></li>
+<li><a href="#3-gserver">3. gserver</a></li>
+<li><a href="#4-gclient">4. gclient</a></li>
+<li><a href="#5-test-utilities">5. test utilities</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#chapter-05-api-explanation">Chapter 05: API Explanation</a><ul>
+<li><a href="#easy-examples">Easy Examples</a></li>
+<li><a href="#api-structure">API structure</a></li>
+<li><a href="#c-api">C++ API</a><ul>
+<li><a href="#interface">Interface</a></li>
+<li><a href="#compile">Compile</a></li>
+</ul>
+</li>
+<li><a href="#java-api">Java API</a><ul>
+<li><a href="#interface-1">Interface</a></li>
+<li><a href="#compile-1">Compile</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#chapter-06-project-structure">Chapter 06: Project Structure</a><ul>
+<li><ul>
+<li><a href="#the-core-source-codes-are-listed-below">The core source codes are listed below:</a></li>
+<li><a href="#the-parser-part-is-listed-below">The parser part is listed below:</a></li>
+<li><a href="#the-utilities-are-listed-below">The utilities are listed below:</a></li>
+<li><a href="#the-interface-part-is-listed-below">The interface part is listed below:</a></li>
+<li><a href="#more-details">More details</a></li>
+<li><a href="#others">Others</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#chapter-07-publications">Chapter 07: Publications</a><ul>
+<li><ul>
+<li><a href="#publications-related-with-gstore-are-listed-here">Publications related with gStore are listed here:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#chapter-08-updated-logs">Chapter 08: Updated Logs</a><ul>
+<li><a href="#apr-01-2016">Apr 01, 2016</a></li>
+<li><a href="#nov-06-2015">Nov 06, 2015</a></li>
+<li><a href="#oct-20-2015">Oct 20, 2015</a></li>
+<li><a href="#sep-25-2015">Sep 25, 2015</a></li>
+<li><a href="#feb-2-2015">Feb 2, 2015</a></li>
+<li><a href="#dec-11-2014">Dec 11, 2014</a></li>
+<li><a href="#nov-20-2014">Nov 20, 2014</a></li>
+</ul>
+</li>
+<li><a href="#chapter-09-test-results">Chapter 09: Test Results</a><ul>
+<li><a href="#preparation">Preparation</a></li>
+<li><a href="#result">Result</a></li>
+</ul>
+</li>
+<li><a href="#chapter-10-recipe-book">Chapter 10: Recipe Book</a></li>
+<li><a href="#chapter-11-mailing-list">Chapter 11: Mailing List</a><ul>
+<li><a href="#people">People</a><ul>
+<li><a href="#faculty">Faculty</a></li>
+<li><a href="#students">Students</a></li>
+<li><a href="#alumni">Alumni</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#chapter-12-limit-description">Chapter 12: Limit Description</a></li>
+<li><a href="#chapter-13-frequently-asked-questions">Chapter 13: Frequently Asked Questions</a><ul>
+<li><ul>
+<li><a href="#when-i-use-the-newer-gstore-system-to-query-the-original-database-why-error">When I use the newer gStore system to query the original database, why error?</a></li>
+<li><a href="#why-error-when-i-try-to-write-programs-based-on-gstore-just-like-the-maingconsolecpp">Why error when I try to write programs based on gStore, just like the Main/gconsole.cpp?</a></li>
+<li><a href="#why-does-gstore-report-garbage-collection-failed-error-when-i-use-teh-java-api">Why does gStore report "garbage collection failed" error when I use teh Java API?</a></li>
+<li><a href="#when-i-compile-the-code-in-archlinux-why-the-error-that-no-ltermcap-is-reported">When I compile the code in ArchLinux, why the error that "no -ltermcap" is reported?</a></li>
+<li><a href="#why-does-gstore-report-errors-that-the-format-of-some-rdf-datasets-are-not-supported">Why does gStore report errors that the format of some RDF datasets are not supported?</a></li>
+<li><a href="#when-i-read-on-github-why-are-some-documents-unable-to-be-opened">When I read on GitHub, why are some documents unable to be opened?</a></li>
+<li><a href="#why-sometimes-strange-characters-appear-when-i-use-gstore">Why sometimes strange characters appear when I use gStore?</a></li>
+<li><a href="#in-centos7-if-the-watdivdba-generated-database-after-gload-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check">In centos7, if the watdiv.db(a generated database after gload) is copied or compressed/uncompressed, the size of watdiv.db will be different(generally increasing) if using du -h command to check?</a></li>
+<li><a href="#in-gclient-console-a-database-is-built-queried-and-then-i-quit-the-console-next-time-i-enter-the-console-load-the-originally-imported-database-but-no-output-for-any-queriesoriginally-the-output-is-not-empty">In gclient console, a database is built, queried, and then I quit the console. Next time I enter the console, load the originally imported database, but no output for any queries(originally the output is not empty)?</a></li>
+<li><a href="#if-query-results-contain-null-value-how-can-i-use-the-fulltest-utility-tab-separated-method-will-cause-problem-here-because-null-value-cannot-be-checked">If query results contain null value, how can I use the full_test utility? Tab separated method will cause problem here because null value cannot be checked!</a></li>
+<li><a href="#when-i-compile-and-run-the-api-examples-it-reports-the-unable-to-connect-to-server-error">When I compile and run the API examples, it reports the "unable to connect to server" error?</a></li>
+<li><a href="#when-i-use-the-java-api-to-write-my-own-program-it-reports-not-found-main-class-error">When I use the Java API to write my own program, it reports "not found main class" error?</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#chapter-14-future-plan">Chapter 14: Future Plan</a><ul>
+<li><a href="#improve-the-core">Improve The Core</a></li>
+<li><a href="#better-the-interface">Better The Interface</a></li>
+<li><a href="#idea-collection-box">Idea Collection Box</a></li>
+</ul>
+</li>
+<li><a href="#chapter-15-thanks-list">Chapter 15: Thanks List</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</p><hr><p data-anchor-id="udol"><span id="chapter00"></span></p><div class="md-section-divider"></div><h2 id="chapter-00-a-quick-tour" data-anchor-id="frpw">Chapter 00: A Quick Tour</h2><p data-anchor-id="4zlu">Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.</p><div class="md-section-divider"></div><h3 id="getting-started" data-anchor-id="y665">Getting Started</h3><p data-anchor-id="wh6q">This system is really user-friendly and you can pick it up in several minutes. Remember to check your platform where you want to run this system by viewing <a href="#chapter01">System Requirements</a>. After all are verified, please get this project's source code. There are several ways to do this:</p><ul data-anchor-id="q0vb">
+<li><p>download the zip from this repository and extract it</p></li>
+<li><p>fork this repository in your github account</p></li>
+<li><p>type <code>git clone git@github.com:Caesar11/gStore.git</code> in your terminal or use git GUI to acquire it</p></li>
+</ul><p data-anchor-id="bkf8">Then you need to compile the project, just type <code>make</code> in the gStore root directory, and all executables will be ok. To run gStore, please type <code>bin/gload database_name dataset_path</code> to build a database named by yourself. And you can use <code>bin/gquery database_name</code> command to query a existing database. What is more, <code>bin/gconsole</code> is a wonderful tool designed for you, providing all operations you need to use gStore. Notice that all commands should be typed in the root directory of gStore. </p><p data-anchor-id="lx85"><em>A detailed description can be found at Chapter 04 <a href="#chapter04">How to use</a> in this document.</em></p><div class="md-section-divider"></div><h3 id="advanced-help" data-anchor-id="ausv">Advanced Help</h3><p data-anchor-id="9yk6">If you want to understand the details of the gStore system, or you want to try some advanced operations(for example, using the API, server/client), please see the chapters below.</p><ul data-anchor-id="yokq">
+<li><p><a href="#chapter02">Basic Introduction</a>: introduce the theory and features of gStore</p></li>
+<li><p><a href="#chapter03">Install Guide</a>: instructions on how to install this system</p></li>
+<li><p><a href="#chapter04">How To Use</a>: detailed information about using the gStore system</p></li>
+<li><p><a href="#chapter05">API Explanation</a>: guide you to develop applications based on our API</p></li>
+<li><p><a href="#chapter06">Project Structure</a>: show the whole structure and sequence of this project</p></li>
+<li><p><a href="#chapter07">Publications</a>: contain essays and publications related with gStore</p></li>
+<li><p><a href="#chapter08">Update Logs</a>: keep the logs of the system updates</p></li>
+<li><p><a href="#chapter09">Test Results</a>: present the test results of a series of experiments</p></li>
+</ul><div class="md-section-divider"></div><h3 id="other-business" data-anchor-id="q7i5">Other Business</h3><p data-anchor-id="a8d5">We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in <a href="#chapter10">Recipe Book</a>.</p><p data-anchor-id="uo0w">You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to  to submit your suggestions and report bugs to us by emailing to . A full list of our whole team is in <a href="#chapter11">Mailing List</a>.</p><p data-anchor-id="4977">There are some restrictions when you use the current gStore project, you can see them on <a href="#chapter12">Limit Description</a>.</p><p data-anchor-id="mtne">Sometimes you may find some strange phenomena(but not wrong case), or something hard to understand/solve(don't know how to do next), then do not hesitate to visit the <a href="#chapter13">Frequently Asked Questions</a> page.</p><p data-anchor-id="n745">Graph database engine is a new area and we are still trying to go further. Things we plan to do next is in <a href="#chapter14">Future Plan</a> chapter, and we hope more and more people will support or even join us. You can support in many ways:</p><ul data-anchor-id="lae6">
+<li><p>watch/star our project</p></li>
+<li><p>fork this repository and submit pull requests to us</p></li>
+<li><p>download and use this system, report bugs or suggestions</p></li>
+<li><p>...</p></li>
+</ul><p data-anchor-id="woxx">People who inspire us or contribute to this project will be listed in the <a href="#chapter15">Thanks List</a> chapter.</p><hr><p></p><p data-anchor-id="0pas"><span id="chapter01"></span></p><div class="md-section-divider"></div><h2 id="chapter-01-system-requirements" data-anchor-id="1i0w">Chapter 01: System Requirements</h2><p data-anchor-id="mtvl"><em>We have tested on linux server with CentOS 6.2 x86_64 and CentOS 6.6 x86_64. The version of GCC should be 4.4.7 or later.</em></p><table class="table table-striped-white table-bordered" data-anchor-id="xu20">
+<thead>
+<tr>
+ <th style="text-align:left;">Item</th>
+ <th style="text-align:left;">Requirement</th>
+</tr>
+</thead>
+<tbody><tr>
+ <td style="text-align:left;">operation system</td>
+ <td style="text-align:left;">Linux, such as CentOS, Ubuntu and so on</td>
+</tr>
+<tr>
+ <td style="text-align:left;">architecture</td>
+ <td style="text-align:left;">x86_64</td>
+</tr>
+<tr>
+ <td style="text-align:left;">disk size</td>
+ <td style="text-align:left;">according to size of dataset</td>
+</tr>
+<tr>
+ <td style="text-align:left;">memory size</td>
+ <td style="text-align:left;">according to size of dataset</td>
+</tr>
+<tr>
+ <td style="text-align:left;">glibc</td>
+ <td style="text-align:left;">version &gt;= 2.14</td>
+</tr>
+<tr>
+ <td style="text-align:left;">gcc</td>
+ <td style="text-align:left;">version &gt;= 4.4.7</td>
+</tr>
+<tr>
+ <td style="text-align:left;">g++</td>
+ <td style="text-align:left;">version &gt;= 4.4.7</td>
+</tr>
+<tr>
+ <td style="text-align:left;">make</td>
+ <td style="text-align:left;">need to be installed</td>
+</tr>
+<tr>
+ <td style="text-align:left;">readline</td>
+ <td style="text-align:left;">need to be installed</td>
+</tr>
+<tr>
+ <td style="text-align:left;">readline-devel</td>
+ <td style="text-align:left;">need to be installed</td>
+</tr>
+<tr>
+ <td style="text-align:left;">openjdk</td>
+ <td style="text-align:left;">needed if using Java api</td>
+</tr>
+<tr>
+ <td style="text-align:left;">openjdk-devel</td>
+ <td style="text-align:left;">needed if using Java api</td>
+</tr>
+<tr>
+ <td style="text-align:left;">realpath</td>
+ <td style="text-align:left;">needed if using gconsole</td>
+</tr>
+</tbody></table><p data-anchor-id="bos5">NOTICE:</p><ol data-anchor-id="46qj">
+<li><p>The name of some packages may be different in different platforms, just install the corresponding one in your own operation system.</p></li>
+<li><p>To install readline and readline-devel, just type <code>dnf install readline-devel</code> in Redhat/CentOS/Fedora, or <code>apt-get install libreadline-dev</code> in Debian/Ubuntu. Please use corresponding commands in other systems. If you use ArchLinux, just type <code>pacman -S readline</code> to install the readline and readline-devel.(so do other packages)</p></li>
+<li><p>You do not have to install realpath to use gStore, but if you want to use the gconsole for its convenience, please do so by using <code>dnf install realpath</code> or <code>apt-get install realpath</code>.</p></li>
+<li><p>Our programs use regEx functions, which are provided by GNU/Linux by default. You do not need to have to install boost and boost-devel for more powerful regEx libraries.</p></li>
+<li><p>ANTLR3.4 is used in gStore to produce lexer and parser code for SPARQL query. However, you do not need to install the corresponding antlr libraries because we have merged the libantlr3.4 in our system.</p></li>
+<li><p>When you type <code>make</code> in the root directory of the gStore project, the Java api will also be compiled. You can modify the makefile if you do not have JDK in your system. However, you are advised to install openjdk-devel in your Linux system.</p></li>
+<li><p>Any other questions, please go to <a href="#chapter13">FAQ</a> page.</p></li>
+</ol><hr><p></p><p data-anchor-id="uoby"><span id="chapter02"></span></p><div class="md-section-divider"></div><h2 id="chapter-02-basic-introduction" data-anchor-id="h2ul">Chapter 02: Basic Introduction</h2><p data-anchor-id="ah7w"><strong>The first essay to come up with Gstore System is <a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/pdf/gStoreVLDBJ.pdf">gStore_VLDBJ</a>, and You can find related publications in <a href="#chapter07">Publications</a>.</strong></p><div class="md-section-divider"></div><h3 id="what-is-gstore" data-anchor-id="bdbi">What Is gStore</h3><p data-anchor-id="f7cw">gStore is a graph-based RDF data management system(or what is commonly called a "triple store") that maintains the graph structure of the original <a target="_blank" href="http://www.w3.org/TR/rdf11-concepts/">RDF</a> data. Its data model is a labeled, directed multi edge graph, where each vertex corresponds to a subject or an object. </p><p data-anchor-id="05fe">We represent a given <a target="_blank" href="http://www.w3.org/TR/sparql11-overview/">SPARQL</a> query by a query graph Q. Query processing involves finding subgraph matches of Q over the RDF graph G, instead of joining tables in relational data management system. gStore incorporates an index over the RDF graph (called VS-tree) to speed up query processing. VS-tree is a height balanced tree with a number of associated pruning techniques to speed up subgraph matching.</p><p data-anchor-id="0fz1"><strong>The gStore project is supported by the National Science Foundation of China (NSFC), Natural Sciences and Engineering Research Council (NSERC) of Canada, and Hong Kong RGC.</strong></p><div class="md-section-divider"></div><h3 id="why-gstore" data-anchor-id="hv1z">Why gStore</h3><p data-anchor-id="1nzj">After a series of test, we analyse and keep the result in <a href="#chapter09">Test Results</a>. gStore runs faster to answer complicated queries(for example, contain circles) than other database systems. For simple queries, both gStore and other database systems work well. </p><p data-anchor-id="6vfw">In addition, now is the big data era and more and more structured data is coming, while the original relational database systems(or database systems based on relational tables) cannot deal with them efficiently. In contrast, gStore can utilize the features of graph data structures, and improve the performance. </p><p data-anchor-id="20y3">What is more, gStore is a high-extensible project. Many new ideas of graph database have be proposed, and most of them can be used in gStore. For example, our group is also designing a distributed gstore system, which is expected to be released at the end of 2016. </p><div class="md-section-divider"></div><h3 id="open-source" data-anchor-id="djgi">Open Source</h3><p data-anchor-id="f823">The gStore source code is available as open-source code under the BSD license. You are welcome to use gStore, report bugs or suggestions, or join us to make gStore better. It is also allowed for you to build all kinds of applications based on gStore, while respecting our work.</p><hr><p></p><p data-anchor-id="i7nt"><span id="chapter03"></span></p><div class="md-section-divider"></div><h2 id="chapter-03-install-guide" data-anchor-id="gl9x">Chapter 03: Install Guide</h2><p data-anchor-id="1z8k">gStore is a green software, and you just need to compile it with one command. Please run</p><p data-anchor-id="2k3g"><code>make</code> </p><p data-anchor-id="bgla">in the gStore root directory to compile the gStore code, link the ANTLR lib, and build executable "gload", "gquery", "gserver", "gclient", "gconsole". What is more, the api of gStore is also built now.</p><p data-anchor-id="6nl7">If you want to use API examples of gStore, please run <code>make APIexample</code> to compile example codes for both C++ API and Java API. For details of API, please visit <a href="#chapter05">API</a> chapter.</p><p data-anchor-id="04qi">Use <code>make clean</code> command to clean all objects, executables, and use <code>make dist</code> command to clean all objects, executables, libs, datasets, databases, debug logs, temp/text files in the gStore root directory.</p><p data-anchor-id="ju40">You are free to modify the source code of gStore and create your own project while respecting our work, and type <code>make tarball</code> command to compress all useful files into a .tar.gz file, which is easy to carry.</p><p data-anchor-id="c7vh">Type <code>make gtest</code> to compile the gtest program if you want to use this test utility. You can see the <a href="#chapter04">HOW TO USE</a> for details of gtest program.</p><hr><p></p><p data-anchor-id="pfw1"><span id="chapter04"></span></p><div class="md-section-divider"></div><h2 id="chapter-04-how-to-use" data-anchor-id="byjg">Chapter 04: How To Use</h2><div class="md-section-divider"></div><h3 id="gstore-currently-includes-five-executables-and-others" data-anchor-id="2ste">gStore currently includes five executables and others.</h3><p data-anchor-id="2xce"><strong>All the commands of gStore should be used in the root directory of gStore like bin/gconsole, because executables are placed in bin/, and they may use some files whose paths are indicated in the code, not absolute paths. We will ensure that all paths are absolute later by asking users to give the absolute path in their own systems to really install/configure the gStore. However, you must do as we told now to avoid errors.</strong></p><div class="md-section-divider"></div><h4 id="0-gconsole" data-anchor-id="kdo2">0. gconsole</h4><p data-anchor-id="yxvt">gconsole is the main console of gStore, which integrates with all functions to operate on gStore, as well as some system commands. Completion of commands name, line editing features and access to the history list are all provided. Feel free to try it, and you may have a wonderful tour!(spaces or tabs at the beginning or end is ok, and no need to type any special characters as separators)</p><pre data-anchor-id="owph"><code>[bookug@localhost gStore]$ bin/gconsole 
+Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories.
+usage: start-gconsole [OPTION]
+-h,--help              print this help
+-s,--source            source the SPARQL script
+For bug reports and suggestions, see https://github.com/Caesar11/gStore
+
+notice that commands are a little different between native mode and remote mode!
+now is in native mode, please type your commands.
+please do not use any separators in the end.
+
+gstore&gt;help
+
+gstore&gt;help drop
+drop            Drop a database according to the given path.
+
+gstore&gt;connect 127.0.0.1 3305
+now is in remote mode, please type your commands.
+
+server&gt;disconnect
+now is in native mode, please type your commands.
+
+gstore&gt;build lubm_10 ./data/LUBM_10.n3
+...
+import RDF file to database done.
+
+gstore&gt;unload
+
+gstore&gt;load lubm_10
+...
+database loaded successfully!
+
+gstore&gt;show
+lubm_10.db
+
+gstore&gt;query ./data/LUBM_q0.sql
+...
+final result is : 
+?x
+&lt;http://www.Department0.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department1.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department2.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department3.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department4.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department5.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department6.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department7.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department8.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department9.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department10.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department11.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department12.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department13.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department14.University0.edu/FullProfessor0&gt;
+
+gstore&gt;query "select distinct ?x ?y where { ?x &lt;rdf:type&gt; &lt;ub:UndergraduateStudent&gt; . ?x &lt;ub:takesCourse&gt; ?y . ?y &lt;ub:name&gt; &lt;FullProfessor1&gt; . }"
+final result is : 
+?x      ?y
+[empty result]
+
+gstore&gt;unload
+
+gstore&gt;quit
+</code></pre><p data-anchor-id="6jz7">Just type <code>bin/gconsole</code> in the root directory of gStore to use this console, and you will find a <code>gstore&gt;</code> prompt, which indicates that you are in native mode and can type in native commands now. There are another mode of this console, which is called remote mode. Just type <code>connect</code> in the native mode to enter the remote mode, and type <code>disconnect</code> to exit to native mode.(the console connect to a gStore server whose ip is '127.0.0.1' and port is 3305, you can specify them by type <code>connect gStore_server_ip gStore_server_port</code>)</p><p data-anchor-id="yedc">You can use <code>help</code> or <code>?</code> either in native mode or remote mode to see the help information, or you can type <code>help command_name</code> or <code>? command_name</code> to see the information of a given command. Notice that there are some differences between the commands in native mode and commands in remote mode. For example, system commands like <code>ls</code>, <code>cd</code> and <code>pwd</code> are provided in native mode, but not in remote mode. Also take care that not all commands contained in the help page are totally achieved, and we may change some functions of the console in the future.</p><p data-anchor-id="b6vc">What we have done is enough to bring you much convenience to use gStore, just enjoy it!</p><div class="md-section-divider"></div><h4 id="1-gload" data-anchor-id="pd3w">1. gload</h4><p data-anchor-id="mmxs">gload is used to build a new database from a RDF triple format file.</p><p data-anchor-id="5hre"><code>bin/gload db_name rdf_triple_file_path</code></p><p data-anchor-id="knry">For example, we build a database from LUBM_10.n3 which can be found in example folder.</p><pre data-anchor-id="9fmu"><code>[bookug@localhost gStore]$ bin/gload LUBM10.db ./data/LUBM_10.n3
+gload...
+argc: 3 DB_store:db_LUBM10      RDF_data: ./data/LUBM_10.n3  
+begin encode RDF from : ./data/LUBM_10.n3 ...
+</code></pre><div class="md-section-divider"></div><h4 id="2-gquery" data-anchor-id="7uc9">2. gquery</h4><p data-anchor-id="b0ih">gquery is used to query an existing database with files containing SPARQL queries.(each file contains exact one SPARQL query)</p><p data-anchor-id="qf4s">Type <code>bin/gquery db_name query_file</code> to execute the SPARQL query retrieved from query_file in the database named db_name.</p><p data-anchor-id="jola">Use <code>bin/gquery --help</code> for detail information of gquery usage.</p><p data-anchor-id="n1ck">To enter the gquery console, type <code>bin/gquery db_name</code>. The program shows a command prompt("gsql&gt;"), and you can type in a command here. Use <code>help</code> to see basic information of all commands, while <code>help command_t</code> shows details of a specified command.</p><p data-anchor-id="hhc5">Type <code>quit</code> to leave the gquery console.</p><p data-anchor-id="wr9s">For <code>sparql</code> command, input a file path which contains a single SPARQL query. (<em>answer redirecting to file is supported</em>)</p><p data-anchor-id="lkig">When the program finish answering the query, it shows the command prompt again. </p><p data-anchor-id="0v7n"><em>gStore2.0 only support simple "select" queries(not for predicates) now.</em></p><p data-anchor-id="khzx">We also take LUBM_10.n3 as an example.</p><pre data-anchor-id="wy4r"><code>[bookug@localhost gStore]$ bin/gquery LUBM10.db
+gquery...
+argc: 2 DB_store:db_LUBM10/
+loadTree...
+LRUCache initial...
+LRUCache initial finish
+finish loadCache
+finish loadEntityID2FileLineMap
+open KVstore
+finish load
+finish loading
+Type `help` for information of all commands
+Type `help command_t` for detail of command_t
+gsql&gt;sparql ./data/LUBM_q0.sql
+... ...
+Total time used: 4ms.
+final result is : 
+&lt;http://www.Department0.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department1.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department2.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department3.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department4.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department5.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department6.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department7.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department8.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department9.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department10.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department11.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department12.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department13.University0.edu/FullProfessor0&gt;
+&lt;http://www.Department14.University0.edu/FullProfessor0&gt;
+</code></pre><p data-anchor-id="ujra">Notice: </p><ul data-anchor-id="3mt4">
+<li><p>"[empty result]" will be printed if no answer, and there is an empty line after all results.</p></li>
+<li><p>readline lib is used, so you can use  arrow key in your keyboard to see command history, and use  and  arrow key to move and modify your entire command.</p></li>
+<li><p>path completion is supported for utility. (not built-in command completion)</p></li>
+</ul><div class="md-section-divider"></div><h4 id="3-gserver" data-anchor-id="53l4">3. gserver</h4><p data-anchor-id="47v1">gserver is a daemon. It should be launched first when accessing gStore by gclient or API. It communicates with client through socket. </p><pre data-anchor-id="879t"><code>[bookug@localhost gStore]$ bin/gserver 
+port=3305
+Wait for input...
+</code></pre><p data-anchor-id="iii8">You can also assign a custom port for listening.</p><pre data-anchor-id="qu1s"><code>[bookug@localhost gStore]$ bin/gserver 3307
+port=3307
+Wait for input...
+</code></pre><p data-anchor-id="jmph">Notice: Multiple threads are not supported by gserver. If you start up gclient in more than one terminal in the same time, gserver will go down.</p><div class="md-section-divider"></div><h4 id="4-gclient" data-anchor-id="wvpv">4. gclient</h4><p data-anchor-id="nt58">gclient is designed as a client to send commands and receive feedbacks.</p><pre data-anchor-id="dvkb"><code>[bookug@localhost gStore]$ bin/gclient 
+ip=127.0.0.1 port=3305
+gsql&gt;help
+help - print commands message
+quit - quit the console normally
+import - build a database for a given dataset
+load - load an existen database
+unload - unload an existen database
+sparql - load query from the second argument
+show - show the current database's name
+gsql&gt;import lubm.db data/LUBM_10.n3
+import RDF file to database done.
+gsql&gt;load lubm.db
+load database done.
+gsql&gt;sparql "select ?s ?o where { ?s &lt;rdf:type&gt; ?o . }"
+[empty result]
+
+gsql&gt;quit
+</code></pre><p data-anchor-id="fhqd">You can also assign gserver's ip and port.</p><pre data-anchor-id="1890"><code>[bookug@localhost gStore]$ bin/gclient 172.31.19.15 3307
+ip=172.31.19.15 port=3307
+gsql&gt;
+</code></pre><p data-anchor-id="2j3o">We can use these following commands now:</p><ul data-anchor-id="sxc5">
+<li><p><code>help</code> shows the information of all commands</p></li>
+<li><p><code>import db_name rdf_triple_file_name</code> build a database from RDF triple file</p></li>
+<li><p><code>load db_name</code> load an existing database</p></li>
+<li><p><code>unload db_name</code> unload database, but will not delete it on disk, you can load it next time</p></li>
+<li><p><code>sparql "query_string"</code> query the current database with a SPARQL query string(quoted by "")</p></li>
+<li><p><code>show</code> displays the name of the current loaded database</p></li>
+</ul><p data-anchor-id="zl2v">Notice:</p><ul data-anchor-id="rs1b">
+<li><p>at most one database can be loaded in the gclient console</p></li>
+<li><p>you can place ' ' or '\t' between different parts of command, but not use characters like ';'</p></li>
+<li><p>you should not place any space or tab ahead of the start of any command</p></li>
+</ul><div class="md-section-divider"></div><h4 id="5-test-utilities" data-anchor-id="rsyx">5. test utilities</h4><p data-anchor-id="6uet">A series of test program are placed in the test/ folder, and we will introduce the two useful ones: gtest.cpp and full_test.sh</p><p data-anchor-id="a8cq"><strong>gtest is used to test gStore with multiple datasets and queries.</strong></p><p data-anchor-id="sgms">To use gtest utility, please type <code>make gtest</code> to compile the gtest program first. Program gtest is a test tool to generate structural logs for datasets. Please type <code>./gtest --help</code> in the working directory for details.</p><p data-anchor-id="rdtw"><strong>Please change paths in the test/gtest.cpp if needed.</strong></p><p data-anchor-id="ue1m">You should place the datasets and queries in this way: </p><pre data-anchor-id="znc1"><code>DIR/WatDiv/database/*.nt 
+
+DIR/WatDiv/query/*.sql 
+</code></pre><p data-anchor-id="qbyi">Notice that DIR is the root directory where you place all datasets waiting to be used by gtest. And WatDiv is a class of datasets, as well as LUBM. Inside WatDiv(or LUBM, etc. please place all datasets(named with .nt) in a database/ folder, and place all queries(corresponding to datasets, named with .sql) in a query folder.</p><p data-anchor-id="0fad">Then you can run the gtest program with specified parameters, and the output will be sorted into three logs in gStore root directory: load.log/(for database loading time and size), time.log/(for query time) and result.log/(for all query results, not the entire output strings, but the information to record the selected two database systems matched or not).</p><p data-anchor-id="9nc5">All logs produced by this program are in TSV format(separated with '\t'), you can load them into Calc/Excel/Gnumeric directly. Notice that time unit is ms, and space unit is kb.</p><p data-anchor-id="5b4j"><strong>full_test.sh is used to compare the performance of gStore and other database systems on multiple datasets and queries.</strong></p><p data-anchor-id="z50x">To use full_test.sh utility, please download the database system which you want to tats and compare, and set the exact position of database systems and datasets in this script. The name strategy should be the same as the requirements of gtest, as well as the logs strategy. </p><p data-anchor-id="pong">Only gStore and Jena are tested and compared in this script, but it is easy to add other database systems, if you would like to spend some time on reading this script. You may go to <a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/pdf/gstore测试报告.pdf">test report</a> or <a href="#chapter13">Frequently Asked Questions</a> for help if you encounter a problem.</p><hr><p></p><p data-anchor-id="f1a9"><span id="chapter05"></span></p><div class="md-section-divider"></div><h2 id="chapter-05-api-explanation" data-anchor-id="h5mh">Chapter 05: API Explanation</h2><p data-anchor-id="yljz"><strong>This Chapter guides you to use our API for accessing gStore.</strong></p><div class="md-section-divider"></div><h3 id="easy-examples" data-anchor-id="pho1">Easy Examples</h3><p data-anchor-id="7y8r">We provide JAVA and C++ API for gStore now. Please refer to example codes in <code>api/cpp/example</code> and <code>api/java/example</code>. To use the two examples to have a try, please ensure that executables have already been generated. Otherwise, just type <code>make APIexample</code> in the root directory of gStore to compile the codes, as well as API. </p><p data-anchor-id="ggka">Next, <strong>start up a gStore server by using <code>./gserver</code> command.</strong> It is ok if you know a running usable gStore server and try to connect to it, but notice that <strong>the server ip and port of server and client must be matched.</strong>(you don't need to change any thing if using examples, just by default) Then, you need to compile the example codes in the directory gStore/api/. We provide a utility to do this, and you just need to type <code>make APIexample</code> in the root directory of gStore. Or you can compile the codes by yourself, in this case please go to gStore/api/cpp/example/ and gStore/api/java/example/, respectively.</p><p data-anchor-id="2xtl">Finally, go to the example directory and run the corresponding executables. For C++, just use <code>./example</code> command to run it. And for Java, use <code>make run</code> command or <code>java -cp ../lib/GstoreJavaAPI.jar:. JavaAPIExample</code> to run it. Both the two executables will connect to a specified gStore server and do some load or query operations. Be sure that you see the query results in the terminal where you run the examples, otherwise please go to <a href="#chapter13">Frequently Asked Questions</a> for help or report it to us.(the report approach is described in <a href="#chapter00">README</a>)</p><p data-anchor-id="voho">You are advised to read the example code carefully, as well as the corresponding Makefile. This will help you to understand the API, specially if you want to write your own programs based on the API interface.</p><div class="md-section-divider"></div><h3 id="api-structure" data-anchor-id="3n1c">API structure</h3><p data-anchor-id="mbxd">The API of gStore is placed in api/ directory in the root directory of gStore, whose contents are listed below:</p><ul data-anchor-id="r3nr">
+<li><p>gStore/api/</p>
+
+<ul><li><p>cpp/ (the C++ API)</p>
+
+<ul><li><p>src/ (source code of C++ API, used to build the lib/libgstoreconnector.a)</p>
+
+<ul><li><p>GstoreConnector.cpp (interfaces to interact with gStore server)</p></li>
+<li><p>GstoreConnector.h</p></li>
+<li><p>Makefile (compile and build lib)</p></li></ul></li>
+<li><p>lib/ (where the static lib lies in)</p>
+
+<ul><li><p>.gitignore</p></li>
+<li><p>libgstoreconnector.a (only exist after compiled, you need to link this lib when you use the C++ API)</p></li></ul></li>
+<li><p>example/ (small example program to show the basic idea of using the C++ API)</p>
+
+<ul><li><p>CppAPIExample.cpp</p></li>
+<li><p>Makefile</p></li></ul></li></ul></li>
+<li><p>java/ (the Java API)</p>
+
+<ul><li><p>src/ (source code of Java API, used to build the lib/GstoreJavaAPI.jar)</p>
+
+<ul><li><p>jgsc/ (the package which you need to import when you use the Java API)</p>
+
+<ul><li>GstoreConnector.java (interfaces to interact with gStore server)</li></ul></li>
+<li><p>Makefile (compile and build lib)</p></li></ul></li>
+<li><p>lib/</p>
+
+<ul><li><p>.gitignore</p></li>
+<li><p>GstoreJavaAPI.jar (only exist after compiled, you need to include this JAR in your class path)</p></li></ul></li>
+<li><p>example/ (small example program to show the basic idea of using the Java API)</p>
+
+<ul><li><p>JavaAPIExample.cpp</p></li>
+<li><p>Makefile</p></li></ul></li></ul></li></ul></li>
+</ul><div class="md-section-divider"></div><h3 id="c-api" data-anchor-id="sndh">C++ API</h3><div class="md-section-divider"></div><h4 id="interface" data-anchor-id="rr70">Interface</h4><p data-anchor-id="pq0x">To use the C++ API, please place the phrase <code>#include "GstoreConnector.h"</code> in your cpp code. Functions in GstoreConnector.h should be called like below:</p><div class="md-section-divider"></div><pre style="" data-anchor-id="v4v3" class="prettyprint linenums prettyprinted"><ol class="linenums"><li class="L0"><code><span class="com">// initialize the Gstore server's IP address and port.</span></code></li><li class="L1"><code><span class="typ">GstoreConnector</span><span class="pln"> gc</span><span class="pun">(</span><span class="str">"127.0.0.1"</span><span class="pun">,</span><span class="pln"> </span><span class="lit">3305</span><span class="pun">);</span></code></li><li class="L2"><code></code></li><li class="L3"><code><span class="com">// build a new database by a RDF file.</span></code></li><li class="L4"><code><span class="com">// note that the relative path is related to gserver.</span></code></li><li class="L5"><code><span class="pln">gc</span><span class="pun">.</span><span class="pln">build</span><span class="pun">(</span><span class="str">"LUBM10.db"</span><span class="pun">,</span><span class="pln"> </span><span class="str">"example/LUBM_10.n3"</span><span class="pun">);</span></code></li><li class="L6"><code></code></li><li class="L7"><code><span class="com">// then you can execute SPARQL query on this database.</span></code></li><li class="L8"><code><span class="pln">std</span><span class="pun">::</span><span class="kwd">string</span><span class="pln"> sparql </span><span class="pun">=</span><span class="pln"> </span><span class="str">"select ?x where \</span></code></li><li class="L9"><code><span class="str">                     { \</span></code></li><li class="L0"><code><span class="str">                      ?x    &lt;rdf:type&gt;    &lt;ub:UndergraduateStudent&gt;. \</span></code></li><li class="L1"><code><span class="str">                      ?y    &lt;ub:name&gt; &lt;Course1&gt;. \</span></code></li><li class="L2"><code><span class="str">                      ?x    &lt;ub:takesCourse&gt;  ?y. \</span></code></li><li class="L3"><code><span class="str">                      ?z    &lt;ub:teacherOf&gt;    ?y. \</span></code></li><li class="L4"><code><span class="str">                      ?z    &lt;ub:name&gt; &lt;FullProfessor1&gt;. \</span></code></li><li class="L5"><code><span class="str">                      ?z    &lt;ub:worksFor&gt;    ?w. \</span></code></li><li class="L6"><code><span class="str">                      ?w    &lt;ub:name&gt;    &lt;Department0&gt;. \</span></code></li><li class="L7"><code><span class="str">                      }"</span><span class="pun">;</span></code></li><li class="L8"><code><span class="pln">std</span><span class="pun">::</span><span class="kwd">string</span><span class="pln"> answer </span><span class="pun">=</span><span class="pln"> gc</span><span class="pun">.</span><span class="pln">query</span><span class="pun">(</span><span class="pln">sparql</span><span class="pun">);</span></code></li><li class="L9"><code></code></li><li class="L0"><code><span class="com">// unload this database.</span></code></li><li class="L1"><code><span class="pln">gc</span><span class="pun">.</span><span class="pln">unload</span><span class="pun">(</span><span class="str">"LUBM10.db"</span><span class="pun">);</span></code></li><li class="L2"><code></code></li><li class="L3"><code><span class="com">// also, you can load some exist database directly and then query.</span></code></li><li class="L4"><code><span class="pln">gc</span><span class="pun">.</span><span class="pln">load</span><span class="pun">(</span><span class="str">"LUBM10.db"</span><span class="pun">);</span></code></li><li class="L5"><code></code></li><li class="L6"><code><span class="com">// query a SPARQL in current database</span></code></li><li class="L7"><code><span class="pln">answer </span><span class="pun">=</span><span class="pln"> gc</span><span class="pun">.</span><span class="pln">query</span><span class="pun">(</span><span class="pln">sparql</span><span class="pun">);</span></code></li></ol></pre><p data-anchor-id="sgtf">The original declaration of these functions are as below:</p><div class="md-section-divider"></div><pre style="" data-anchor-id="tyag" class="prettyprint linenums prettyprinted"><ol class="linenums"><li class="L0"><code><span class="typ">GstoreConnector</span><span class="pun">();</span></code></li><li class="L1"><code><span class="typ">GstoreConnector</span><span class="pun">(</span><span class="kwd">string</span><span class="pln"> _ip</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">unsigned</span><span class="pln"> </span><span class="kwd">short</span><span class="pln"> _port</span><span class="pun">);</span></code></li><li class="L2"><code><span class="typ">GstoreConnector</span><span class="pun">(</span><span class="kwd">unsigned</span><span class="pln"> </span><span class="kwd">short</span><span class="pln"> _port</span><span class="pun">);</span></code></li><li class="L3"><code><span class="kwd">bool</span><span class="pln"> load</span><span class="pun">(</span><span class="kwd">string</span><span class="pln"> _db_name</span><span class="pun">);</span></code></li><li class="L4"><code><span class="kwd">bool</span><span class="pln"> unload</span><span class="pun">(</span><span class="kwd">string</span><span class="pln"> _db_name</span><span class="pun">);</span></code></li><li class="L5"><code><span class="kwd">bool</span><span class="pln"> build</span><span class="pun">(</span><span class="kwd">string</span><span class="pln"> _db_name</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">string</span><span class="pln"> _rdf_file_path</span><span class="pun">);</span></code></li><li class="L6"><code><span class="kwd">string</span><span class="pln"> query</span><span class="pun">(</span><span class="kwd">string</span><span class="pln"> _sparql</span><span class="pun">);</span></code></li></ol></pre><p data-anchor-id="80xg">Notice:</p><ol data-anchor-id="fqca">
+<li><p>When using GstoreConnector(), the default value for ip and port is 127.0.0.1 and 3305, respectively.</p></li>
+<li><p>When using build(), the rdf_file_path(the second parameter) should be related to the position where gserver lies in.</p></li>
+<li><p>Please remember to unload the database you have loaded, otherwise things may go wrong.(the errors may not be reported!)</p></li>
+</ol><div class="md-section-divider"></div><h4 id="compile" data-anchor-id="o321">Compile</h4><p data-anchor-id="y5do">You are advised to see gStore/api/cpp/example/Makefile for instructions on how to compile your code with the C++ API. Generally, what you must do is compile your own code to object with header in the C++ API, and link the object with static lib in the C++ API.</p><p data-anchor-id="61x3">Let us assume that your source code is placed in test.cpp, whose position is <span class="MathJax_Preview"></span><span aria-readonly="true" role="textbox" id="MathJax-Element-1-Frame" class="MathJax_SVG" style="font-size: 100%; display: inline-block;"><svg viewBox="0 -726.9033013280564 17489.666666666664 953.8066026561128" style="width: 40.667ex; height: 2.222ex; vertical-align: -0.667ex; margin: 1px 0px;" xmlns:xlink="http://www.w3.org/1999/xlink"><g transform="matrix(1 0 0 -1 0 0)" stroke-width="0" fill="black" stroke="black"><use xlink:href="#MJMATHI-54"></use><use y="0" x="704" xlink:href="#MJMATHI-45"></use><use y="0" x="1469" xlink:href="#MJMATHI-53"></use><use y="0" x="2114" xlink:href="#MJMATHI-54"></use><use y="0" x="2819" xlink:href="#MJMAIN-2C"></use><use y="0" x="3264" xlink:href="#MJMATHI-77"></use><use y="0" x="3980" xlink:href="#MJMATHI-68"></use><use y="0" x="4557" xlink:href="#MJMATHI-69"></use><use y="0" x="4902" xlink:href="#MJMATHI-6C"></use><use y="0" x="5201" xlink:href="#MJMATHI-65"></use><use y="0" x="5667" xlink:href="#MJMATHI-74"></use><use y="0" x="6029" xlink:href="#MJMATHI-68"></use><use y="0" x="6605" xlink:href="#MJMATHI-65"></use><use y="0" x="7072" xlink:href="#MJMATHI-67"></use><use y="0" x="7552" xlink:href="#MJMATHI-53"></use><use y="0" x="8198" xlink:href="#MJMATHI-74"></use><use y="0" x="8559" xlink:href="#MJMATHI-6F"></use><use y="0" x="9045" xlink:href="#MJMATHI-72"></use><use y="0" x="9496" xlink:href="#MJMATHI-65"></use><use y="0" x="9963" xlink:href="#MJMATHI-70"></use><use y="0" x="10466" xlink:href="#MJMATHI-72"></use><use y="0" x="10918" xlink:href="#MJMATHI-6F"></use><use y="0" x="11403" xlink:href="#MJMATHI-6A"></use><use y="0" x="11816" xlink:href="#MJMATHI-65"></use><use y="0" x="12282" xlink:href="#MJMATHI-63"></use><use y="0" x="12716" xlink:href="#MJMATHI-74"></use><use y="0" x="13077" xlink:href="#MJMATHI-70"></use><use y="0" x="13581" xlink:href="#MJMATHI-6F"></use><use y="0" x="14066" xlink:href="#MJMATHI-73"></use><use y="0" x="14536" xlink:href="#MJMATHI-69"></use><use y="0" x="14881" xlink:href="#MJMATHI-74"></use><use y="0" x="15243" xlink:href="#MJMATHI-69"></use><use y="0" x="15588" xlink:href="#MJMATHI-6F"></use><use y="0" x="16074" xlink:href="#MJMATHI-6E"></use><use y="0" x="16674" xlink:href="#MJMATHI-69"></use><use y="0" x="17020" xlink:href="#MJMATHI-73"></use></g></svg></span><script id="MathJax-Element-1" type="math/tex">{TEST}, while the gStore project position is </script>{GSTORE}/gStore.(if using devGstore as name instead of gStore, then the path is <span class="MathJax_Preview"></span><span aria-readonly="true" role="textbox" id="MathJax-Element-2-Frame" class="MathJax_SVG" style="font-size: 100%; display: inline-block;"><svg viewBox="0 -771.9033013280564 16010 1043.8066026561128" style="width: 37.222ex; height: 2.444ex; vertical-align: -0.778ex; margin: 1px 0px;" xmlns:xlink="http://www.w3.org/1999/xlink"><g transform="matrix(1 0 0 -1 0 0)" stroke-width="0" fill="black" stroke="black"><use xlink:href="#MJMATHI-47"></use><use y="0" x="786" xlink:href="#MJMATHI-53"></use><use y="0" x="1432" xlink:href="#MJMATHI-54"></use><use y="0" x="2136" xlink:href="#MJMATHI-4F"></use><use y="0" x="2900" xlink:href="#MJMATHI-52"></use><use y="0" x="3659" xlink:href="#MJMATHI-45"></use><use y="0" x="4424" xlink:href="#MJMAIN-2F"></use><use y="0" x="4924" xlink:href="#MJMATHI-64"></use><use y="0" x="5448" xlink:href="#MJMATHI-65"></use><use y="0" x="5914" xlink:href="#MJMATHI-76"></use><use y="0" x="6400" xlink:href="#MJMATHI-47"></use><use y="0" x="7186" xlink:href="#MJMATHI-73"></use><use y="0" x="7656" xlink:href="#MJMATHI-74"></use><use y="0" x="8017" xlink:href="#MJMATHI-6F"></use><use y="0" x="8503" xlink:href="#MJMATHI-72"></use><use y="0" x="8954" xlink:href="#MJMATHI-65"></use><use y="0" x="9421" xlink:href="#MJMAIN-29"></use><use y="0" x="9810" xlink:href="#MJMATHI-50"></use><use y="0" x="10562" xlink:href="#MJMATHI-6C"></use><use y="0" x="10860" xlink:href="#MJMATHI-65"></use><use y="0" x="11327" xlink:href="#MJMATHI-61"></use><use y="0" x="11856" xlink:href="#MJMATHI-73"></use><use y="0" x="12326" xlink:href="#MJMATHI-65"></use><use y="0" x="12792" xlink:href="#MJMATHI-67"></use><use y="0" x="13273" xlink:href="#MJMATHI-6F"></use><use y="0" x="13758" xlink:href="#MJMATHI-74"></use><use y="0" x="14120" xlink:href="#MJMATHI-6F"></use><use y="0" x="14605" xlink:href="#MJMATHI-74"></use><use y="0" x="14967" xlink:href="#MJMATHI-68"></use><use y="0" x="15543" xlink:href="#MJMATHI-65"></use></g></svg></span><script id="MathJax-Element-2" type="math/tex">{GSTORE}/devGstore) Please go to the </script>{TEST} directory first:</p><blockquote class="white-blockquote" data-anchor-id="kngm">
+  <p>Use <code>g++ -c -I${GSTORE}/gStore/api/cpp/src/ test.cpp -o test.o</code> to compile your test.cpp into test.o, relative API header is placed in api/cpp/src/.</p>
+  
+  <p>Use <code>g++ -o test test.o -L${GSTORE}/gStore/api/cpp/lib/ -lgstoreconnector</code> to link your test.o with the libgstoreconnector.a(a static lib) in api/cpp/lib/.</p>
+</blockquote><p data-anchor-id="0pk5">Then you can type <code>./test</code> to execute your own program, which uses our C++ API. It is also advised for you to place relative compile commands in a Makefile, as well as other commands if you like.</p><div class="md-section-divider"></div><h3 id="java-api" data-anchor-id="od70">Java API</h3><div class="md-section-divider"></div><h4 id="interface-1" data-anchor-id="ok18">Interface</h4><p data-anchor-id="pdhh">To use the Java API, please place the phrase <code>import jgsc.GstoreConnector;</code> in your java code. Functions in GstoreConnector.java should be called like below:</p><div class="md-section-divider"></div><pre style="" data-anchor-id="8d5a" class="prettyprint linenums prettyprinted"><ol class="linenums"><li class="L0"><code><span class="com">// initialize the Gstore server's IP address and port.</span></code></li><li class="L1"><code><span class="typ">GstoreConnector</span><span class="pln"> gc </span><span class="pun">=</span><span class="pln"> </span><span class="kwd">new</span><span class="pln"> </span><span class="typ">GstoreConnector</span><span class="pun">(</span><span class="str">"127.0.0.1"</span><span class="pun">,</span><span class="pln"> </span><span class="lit">3305</span><span class="pun">);</span></code></li><li class="L2"><code></code></li><li class="L3"><code><span class="com">// build a new database by a RDF file.</span></code></li><li class="L4"><code><span class="com">// note that the relative path is related to gserver.</span></code></li><li class="L5"><code><span class="pln">gc</span><span class="pun">.</span><span class="pln">build</span><span class="pun">(</span><span class="str">"LUBM10.db"</span><span class="pun">,</span><span class="pln"> </span><span class="str">"example/LUBM_10.n3"</span><span class="pun">);</span></code></li><li class="L6"><code></code></li><li class="L7"><code><span class="com">// then you can execute SPARQL query on this database.</span></code></li><li class="L8"><code><span class="typ">String</span><span class="pln"> sparql </span><span class="pun">=</span><span class="pln"> </span><span class="str">"select ?x where "</span></code></li><li class="L9"><code><span class="pln">                </span><span class="pun">+</span><span class="pln"> </span><span class="str">"{"</span></code></li><li class="L0"><code><span class="pln">                </span><span class="pun">+</span><span class="pln"> </span><span class="str">"?x    &lt;rdf:type&gt;    &lt;ub:UndergraduateStudent&gt;. "</span></code></li><li class="L1"><code><span class="pln">                </span><span class="pun">+</span><span class="pln"> </span><span class="str">"?y    &lt;ub:name&gt; &lt;Course1&gt;. "</span></code></li><li class="L2"><code><span class="pln">                </span><span class="pun">+</span><span class="pln"> </span><span class="str">"?x    &lt;ub:takesCourse&gt;  ?y. "</span></code></li><li class="L3"><code><span class="pln">                </span><span class="pun">+</span><span class="pln"> </span><span class="str">"?z    &lt;ub:teacherOf&gt;    ?y. "</span></code></li><li class="L4"><code><span class="pln">                </span><span class="pun">+</span><span class="pln"> </span><span class="str">"?z    &lt;ub:name&gt; &lt;FullProfessor1&gt;. "</span></code></li><li class="L5"><code><span class="pln">                </span><span class="pun">+</span><span class="pln"> </span><span class="str">"?z    &lt;ub:worksFor&gt;    ?w. "</span></code></li><li class="L6"><code><span class="pln">                </span><span class="pun">+</span><span class="pln"> </span><span class="str">"?w    &lt;ub:name&gt;    &lt;Department0&gt;. "</span></code></li><li class="L7"><code><span class="pln">                </span><span class="pun">+</span><span class="pln"> </span><span class="str">"}"</span><span class="pun">;</span></code></li><li class="L8"><code><span class="typ">String</span><span class="pln"> answer </span><span class="pun">=</span><span class="pln"> gc</span><span class="pun">.</span><span class="pln">query</span><span class="pun">(</span><span class="pln">sparql</span><span class="pun">);</span></code></li><li class="L9"><code></code></li><li class="L0"><code><span class="com">// unload this database.</span></code></li><li class="L1"><code><span class="pln">gc</span><span class="pun">.</span><span class="pln">unload</span><span class="pun">(</span><span class="str">"LUBM10.db"</span><span class="pun">);</span></code></li><li class="L2"><code></code></li><li class="L3"><code><span class="com">// also, you can load some exist database directly and then query.</span></code></li><li class="L4"><code><span class="pln">gc</span><span class="pun">.</span><span class="pln">load</span><span class="pun">(</span><span class="str">"LUBM10.db"</span><span class="pun">);</span></code></li><li class="L5"><code></code></li><li class="L6"><code><span class="com">// query a SPARQL in current database</span></code></li><li class="L7"><code><span class="pln">answer </span><span class="pun">=</span><span class="pln"> gc</span><span class="pun">.</span><span class="pln">query</span><span class="pun">(</span><span class="pln">sparql</span><span class="pun">);</span><span class="pln">    </span></code></li></ol></pre><p data-anchor-id="drph">The original declaration of these functions are as below:</p><div class="md-section-divider"></div><pre style="" data-anchor-id="x4zv" class="prettyprint linenums prettyprinted"><ol class="linenums"><li class="L0"><code><span class="typ">GstoreConnector</span><span class="pun">();</span></code></li><li class="L1"><code><span class="typ">GstoreConnector</span><span class="pun">(</span><span class="kwd">string</span><span class="pln"> _ip</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">unsigned</span><span class="pln"> </span><span class="kwd">short</span><span class="pln"> _port</span><span class="pun">);</span></code></li><li class="L2"><code><span class="typ">GstoreConnector</span><span class="pun">(</span><span class="kwd">unsigned</span><span class="pln"> </span><span class="kwd">short</span><span class="pln"> _port</span><span class="pun">);</span></code></li><li class="L3"><code><span class="kwd">bool</span><span class="pln"> load</span><span class="pun">(</span><span class="kwd">string</span><span class="pln"> _db_name</span><span class="pun">);</span></code></li><li class="L4"><code><span class="kwd">bool</span><span class="pln"> unload</span><span class="pun">(</span><span class="kwd">string</span><span class="pln"> _db_name</span><span class="pun">);</span></code></li><li class="L5"><code><span class="kwd">bool</span><span class="pln"> build</span><span class="pun">(</span><span class="kwd">string</span><span class="pln"> _db_name</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">string</span><span class="pln"> _rdf_file_path</span><span class="pun">);</span></code></li><li class="L6"><code><span class="kwd">string</span><span class="pln"> query</span><span class="pun">(</span><span class="kwd">string</span><span class="pln"> _sparql</span><span class="pun">);</span></code></li></ol></pre><p data-anchor-id="3ay6">Notice:</p><ol data-anchor-id="bqjp">
+<li><p>When using GstoreConnector(), the default value for ip and port is 127.0.0.1 and 3305, respectively.</p></li>
+<li><p>When using build(), the rdf_file_path(the second parameter) should be related to the position where gserver lies in.</p></li>
+<li><p>Please remember to unload the database you have loaded, otherwise things may go wrong.(the errors may not be reported!)</p></li>
+</ol><div class="md-section-divider"></div><h4 id="compile-1" data-anchor-id="5u9y">Compile</h4><p data-anchor-id="qpck">You are advised to see gStore/api/java/example/Makefile for instructions on how to compile your code with the Java API. Generally, what you must do is compile your own code to object with jar file in the Java API.</p><p data-anchor-id="uyzc">Let us assume that your source code is placed in test.java, whose position is <span class="MathJax_Preview"></span><span aria-readonly="true" role="textbox" id="MathJax-Element-3-Frame" class="MathJax_SVG" style="font-size: 100%; display: inline-block;"><svg viewBox="0 -726.9033013280564 17489.666666666664 953.8066026561128" style="width: 40.667ex; height: 2.222ex; vertical-align: -0.667ex; margin: 1px 0px;" xmlns:xlink="http://www.w3.org/1999/xlink"><g transform="matrix(1 0 0 -1 0 0)" stroke-width="0" fill="black" stroke="black"><use xlink:href="#MJMATHI-54"></use><use y="0" x="704" xlink:href="#MJMATHI-45"></use><use y="0" x="1469" xlink:href="#MJMATHI-53"></use><use y="0" x="2114" xlink:href="#MJMATHI-54"></use><use y="0" x="2819" xlink:href="#MJMAIN-2C"></use><use y="0" x="3264" xlink:href="#MJMATHI-77"></use><use y="0" x="3980" xlink:href="#MJMATHI-68"></use><use y="0" x="4557" xlink:href="#MJMATHI-69"></use><use y="0" x="4902" xlink:href="#MJMATHI-6C"></use><use y="0" x="5201" xlink:href="#MJMATHI-65"></use><use y="0" x="5667" xlink:href="#MJMATHI-74"></use><use y="0" x="6029" xlink:href="#MJMATHI-68"></use><use y="0" x="6605" xlink:href="#MJMATHI-65"></use><use y="0" x="7072" xlink:href="#MJMATHI-67"></use><use y="0" x="7552" xlink:href="#MJMATHI-53"></use><use y="0" x="8198" xlink:href="#MJMATHI-74"></use><use y="0" x="8559" xlink:href="#MJMATHI-6F"></use><use y="0" x="9045" xlink:href="#MJMATHI-72"></use><use y="0" x="9496" xlink:href="#MJMATHI-65"></use><use y="0" x="9963" xlink:href="#MJMATHI-70"></use><use y="0" x="10466" xlink:href="#MJMATHI-72"></use><use y="0" x="10918" xlink:href="#MJMATHI-6F"></use><use y="0" x="11403" xlink:href="#MJMATHI-6A"></use><use y="0" x="11816" xlink:href="#MJMATHI-65"></use><use y="0" x="12282" xlink:href="#MJMATHI-63"></use><use y="0" x="12716" xlink:href="#MJMATHI-74"></use><use y="0" x="13077" xlink:href="#MJMATHI-70"></use><use y="0" x="13581" xlink:href="#MJMATHI-6F"></use><use y="0" x="14066" xlink:href="#MJMATHI-73"></use><use y="0" x="14536" xlink:href="#MJMATHI-69"></use><use y="0" x="14881" xlink:href="#MJMATHI-74"></use><use y="0" x="15243" xlink:href="#MJMATHI-69"></use><use y="0" x="15588" xlink:href="#MJMATHI-6F"></use><use y="0" x="16074" xlink:href="#MJMATHI-6E"></use><use y="0" x="16674" xlink:href="#MJMATHI-69"></use><use y="0" x="17020" xlink:href="#MJMATHI-73"></use></g></svg></span><script id="MathJax-Element-3" type="math/tex">{TEST}, while the gStore project position is </script>{GSTORE}/gStore.(if using devGstore as name instead of gStore, then the path is <span class="MathJax_Preview"></span><span aria-readonly="true" role="textbox" id="MathJax-Element-4-Frame" class="MathJax_SVG" style="font-size: 100%; display: inline-block;"><svg viewBox="0 -771.9033013280564 16010 1043.8066026561128" style="width: 37.222ex; height: 2.444ex; vertical-align: -0.778ex; margin: 1px 0px;" xmlns:xlink="http://www.w3.org/1999/xlink"><g transform="matrix(1 0 0 -1 0 0)" stroke-width="0" fill="black" stroke="black"><use xlink:href="#MJMATHI-47"></use><use y="0" x="786" xlink:href="#MJMATHI-53"></use><use y="0" x="1432" xlink:href="#MJMATHI-54"></use><use y="0" x="2136" xlink:href="#MJMATHI-4F"></use><use y="0" x="2900" xlink:href="#MJMATHI-52"></use><use y="0" x="3659" xlink:href="#MJMATHI-45"></use><use y="0" x="4424" xlink:href="#MJMAIN-2F"></use><use y="0" x="4924" xlink:href="#MJMATHI-64"></use><use y="0" x="5448" xlink:href="#MJMATHI-65"></use><use y="0" x="5914" xlink:href="#MJMATHI-76"></use><use y="0" x="6400" xlink:href="#MJMATHI-47"></use><use y="0" x="7186" xlink:href="#MJMATHI-73"></use><use y="0" x="7656" xlink:href="#MJMATHI-74"></use><use y="0" x="8017" xlink:href="#MJMATHI-6F"></use><use y="0" x="8503" xlink:href="#MJMATHI-72"></use><use y="0" x="8954" xlink:href="#MJMATHI-65"></use><use y="0" x="9421" xlink:href="#MJMAIN-29"></use><use y="0" x="9810" xlink:href="#MJMATHI-50"></use><use y="0" x="10562" xlink:href="#MJMATHI-6C"></use><use y="0" x="10860" xlink:href="#MJMATHI-65"></use><use y="0" x="11327" xlink:href="#MJMATHI-61"></use><use y="0" x="11856" xlink:href="#MJMATHI-73"></use><use y="0" x="12326" xlink:href="#MJMATHI-65"></use><use y="0" x="12792" xlink:href="#MJMATHI-67"></use><use y="0" x="13273" xlink:href="#MJMATHI-6F"></use><use y="0" x="13758" xlink:href="#MJMATHI-74"></use><use y="0" x="14120" xlink:href="#MJMATHI-6F"></use><use y="0" x="14605" xlink:href="#MJMATHI-74"></use><use y="0" x="14967" xlink:href="#MJMATHI-68"></use><use y="0" x="15543" xlink:href="#MJMATHI-65"></use></g></svg></span><script id="MathJax-Element-4" type="math/tex">{GSTORE}/devGstore) Please go to the </script>{TEST} directory first:</p><blockquote class="white-blockquote" data-anchor-id="gxjf">
+  <p>Use <code>javac -cp ${GSTORE}/gStore/api/java/lib/GstoreJavaAPI.jar test.java</code> to compile your test.java into test.class with the GstoreJavaAPI.jar(a jar package used in Java) in api/java/lib/.</p>
+</blockquote><p data-anchor-id="vumd">Then you can type <code>java -cp ${GSTORE}/gStore/api/java/lib/GstoreJavaAPI.jar:. test</code> to execute your own program(notice that the ":." in command cannot be neglected), which uses our Java API. It is also advised for you to place relative compile commands in a Makefile, as well as other commands if you like.</p><hr><p></p><p data-anchor-id="awke"><span id="chapter06"></span></p><div class="md-section-divider"></div><h2 id="chapter-06-project-structure" data-anchor-id="x3hj">Chapter 06: Project Structure</h2><p data-anchor-id="dnuq"><strong>This chapter introduce the whole structure of the gStore system project.</strong></p><div class="md-section-divider"></div><h4 id="the-core-source-codes-are-listed-below" data-anchor-id="j54e">The core source codes are listed below:</h4><ul data-anchor-id="vriw">
+<li><p>Database/ (calling other core parts to deal with requests from interface part)</p>
+
+<ul><li><p>Database.cpp (achieve functions)</p></li>
+<li><p>Database.h (class, members and functions definitions)</p></li>
+<li><p>Join.cpp (join the node candidates to get results)</p></li>
+<li><p>Join.h (class, members,, and functions definitions)</p></li></ul></li>
+<li><p>KVstore/ (a key-value store to swap between memory and disk)</p>
+
+<ul><li><p>KVstore.cpp (interact with upper layers)</p></li>
+<li><p>KVstore.h</p></li>
+<li><p>heap/ (a heap of nodes whose content are in memory)</p>
+
+<ul><li><p>Heap.cpp</p></li>
+<li><p>Heap.h</p></li></ul></li>
+<li><p>node/ (all kinds of nodes in B+-tree)</p>
+
+<ul><li><p>Node.cpp (the base class of IntlNode and LeafNode)</p></li>
+<li><p>Node.h</p></li>
+<li><p>IntlNode.cpp (internal nodes in B+-tree)</p></li>
+<li><p>IntlNode.h</p></li>
+<li><p>LeafNode.cpp (leaf nodes in B+-tree)</p></li>
+<li><p>LeafNode.h</p></li></ul></li>
+<li><p>storage/ (swap contents between memory and disk)</p>
+
+<ul><li><p>file.h</p></li>
+<li><p>Storage.cpp</p></li>
+<li><p>Storage.h</p></li></ul></li>
+<li><p>tree/ (implement all tree operations and interfaces)</p>
+
+<ul><li><p>Tree.cpp</p></li>
+<li><p>Tree.h</p></li></ul></li></ul></li>
+<li><p>Query/ (needed to answer SPARQL query)</p>
+
+<ul><li><p>BasicQuery.cpp (basic type of queries without aggregate operations)</p></li>
+<li><p>BasicQuery.h</p></li>
+<li><p>IDList.cpp (candidate list of a node/variable in query)</p></li>
+<li><p>IDList.h </p></li>
+<li><p>ResultSet.cpp (keep the result set corresponding to a query)</p></li>
+<li><p>ResultSet.h</p></li>
+<li><p>SPARQLquery.cpp (deal with a entire SPARQL query)</p></li>
+<li><p>SPARQLquery.h</p></li>
+<li><p>Varset.cpp</p></li>
+<li><p>Varset.h</p></li>
+<li><p>QueryTree.cpp</p></li>
+<li><p>QueryTree.h</p></li>
+<li><p>GeneralEvaluation.cpp</p></li>
+<li><p>GeneralEvaluation.h</p></li>
+<li><p>RegexExpression.h</p></li></ul></li>
+<li><p>Signature/ (assign signatures for nodes and edges, but not for literals)</p>
+
+<ul><li><p>SigEntry.cpp</p></li>
+<li><p>SigEntry.h</p></li>
+<li><p>Signature.cpp</p></li>
+<li><p>Signature.h</p></li></ul></li>
+<li><p>VSTree/ (an tree index to prune more efficiently)</p>
+
+<ul><li><p>EntryBuffer.cpp</p></li>
+<li><p>EntryBuffer.h</p></li>
+<li><p>LRUCache.cpp</p></li>
+<li><p>LRUCache.h</p></li>
+<li><p>VNode.cpp</p></li>
+<li><p>VNode.h</p></li>
+<li><p>VSTree.cpp</p></li>
+<li><p>VSTree.h</p></li></ul></li>
+</ul><div class="md-section-divider"></div><h4 id="the-parser-part-is-listed-below" data-anchor-id="fof0">The parser part is listed below:</h4><ul data-anchor-id="gdf6">
+<li><p>Parser/</p>
+
+<ul><li><p>DBParser.cpp</p></li>
+<li><p>DBParser.h</p></li>
+<li><p>RDFParser.cpp</p></li>
+<li><p>RDFParser.h</p></li>
+<li><p>SparqlParser.c (auto-generated, subtle modified manually, compressed)</p></li>
+<li><p>SparqlParser.h (auto-generated, subtle modified manually, compressed)</p></li>
+<li><p>SparqlLexer.c (auto-generated, subtle modified manually, compressed)</p></li>
+<li><p>SparqlLexer.h (auto-generated, subtle modified manually, compressed)</p></li>
+<li><p>TurtleParser.cpp</p></li>
+<li><p>TurtleParser.h</p></li>
+<li><p>Type.h</p></li>
+<li><p>QueryParser.cpp</p></li>
+<li><p>QueryParser.h</p></li></ul></li>
+</ul><div class="md-section-divider"></div><h4 id="the-utilities-are-listed-below" data-anchor-id="0y9z">The utilities are listed below:</h4><ul data-anchor-id="vhu5">
+<li><p>Util/</p>
+
+<ul><li><p>Util.cpp (headers, macros, typedefs, functions...)</p></li>
+<li><p>Util.h</p></li>
+<li><p>Bstr.cpp (represent strings of arbitrary length)</p></li>
+<li><p>Bstr.h (class, members and functions definitions)</p></li>
+<li><p>Stream.cpp (store and use temp results, which may be very large)</p></li>
+<li><p>Stream.h</p></li>
+<li><p>Triple.cpp (deal with triples, a triple can be divided as subject(entity), predicate(entity), object(entity or literal))</p></li>
+<li><p>Triple.h</p></li>
+<li><p>BloomFilter.cpp</p></li>
+<li><p>BloomFilter.h</p></li></ul></li>
+</ul><div class="md-section-divider"></div><h4 id="the-interface-part-is-listed-below" data-anchor-id="g4mk">The interface part is listed below:</h4><ul data-anchor-id="w4d9">
+<li><p>Server/ (client and server mode to use gStore)</p>
+
+<ul><li><p>Client.cpp</p></li>
+<li><p>Client.h</p></li>
+<li><p>Operation.cpp</p></li>
+<li><p>Operation.h</p></li>
+<li><p>Server.cpp</p></li>
+<li><p>Server.h</p></li>
+<li><p>Socket.cpp</p></li>
+<li><p>Socket.h</p></li></ul></li>
+<li><p>Main/ (a series of applications/main-program to operate on gStore)</p>
+
+<ul><li><p>gload.cpp (import a RDF dataset)</p></li>
+<li><p>gquery.cpp (query a database)</p></li>
+<li><p>gserver.cpp (start up the gStore server)</p></li>
+<li><p>gclient.cpp (connect to a gStore server and interact)</p></li></ul></li>
+</ul><div class="md-section-divider"></div><h4 id="more-details" data-anchor-id="x26p">More details</h4><p data-anchor-id="7z72">To acquire a deep understanding of gStore codes, please go to <a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/pdf/代码目录及概览.pdf">Code Detail</a>. See <a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/pdf/Gstore2.0_useCaseDoc.pdf">use case</a> to understand the design of use cases, and see <a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/pdf/OOA_class.pdf">OOA</a> and <a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/pdf/OOD_class.pdf">OOD</a> for OOA design and OOD design, respectively.</p><p data-anchor-id="gbuu">If you want to know the sequence of a running gStore, please view the list below:</p><ul data-anchor-id="8lxv">
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A01-连接Server.jpg">connect to server</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A02-断开与Server的连接.jpg">disconnect server</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A03-加载数据库实例.jpg">load database</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A04-卸载数据库实例.jpg">unload database</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A05-创建数据库实例.jpg">create database</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A06-删除数据库实例.jpg">delete database</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A07-连接数据库实例.jpg">connect to database</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A08-断开与数据库实例的连接.jpg">disconnect database</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A09-查看数据库实例列表.jpg">show databases</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A10-查询SPARQL.jpg">SPARQL query</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A11-导入RDF数据集.jpg">import RDF dataset</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A12-插入一条RDF三元组数据.jpg">insert a triple</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/A13-删除一条RDF三元组数据.jpg">delete a triple</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/B01-创建账户.jpg">create account</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/B02-删除账户.jpg">delete account</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/B03-修改账户权限.jpg">modify account authority</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/B04-强制卸载数据库实例.jpg">compulsively unload database</a></p></li>
+<li><p><a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/jpg/B05-查看账户权限信息.jpg">see account authority</a></p></li>
+</ul><p data-anchor-id="7q0l">It is really not strange to see something different with the original design in the source code. And some designed functions may have not be achieved so far.</p><div class="md-section-divider"></div><h4 id="others" data-anchor-id="d9f4">Others</h4><p data-anchor-id="j61u">The api/ folder in gStore is used to store API program, libs and examples, please go to <a href="#chapter05">API</a> for details. And test/ is used to store a series test programs or utilities, such as gtest, full_test and so on. Chapters related with test/ are <a href="#chapter04">How To Use</a> and <a href="#chapter09">Test Result</a>. This project need an ANTLR lib to parse the SPARQL query, whose code is placed in tools/(also archived here) and the compiled libantlr.a is placed in lib/ directory.</p><p data-anchor-id="fgqw">We place some datasets and queries in data/ directory as examples, and you can try them to see how gStore works. Related instructions are in <a href="#chapter04">How To Use</a>. The docs/ directory contains all kinds of documents of gStore, including a series of markdown files and two folders, pdf/ and jpg/. Files whose type is pdf are placed in pdf/ folder, while files with jpg type are placed in jpg/ folder.</p><p data-anchor-id="yirl">You are advised to start from the <a href="#chapter00">README</a> in the gStore root directory, and visit other chapters only when needed. At last, you will see all documents from link to link if you are really interested in gStore.</p><hr><p></p><p data-anchor-id="9kml"><span id="chapter07"></span></p><div class="md-section-divider"></div><h2 id="chapter-07-publications" data-anchor-id="03gp">Chapter 07: Publications</h2><div class="md-section-divider"></div><h4 id="publications-related-with-gstore-are-listed-here" data-anchor-id="qg4t">Publications related with gStore are listed here:</h4><ul data-anchor-id="cn88">
+<li><p>Lei Zou, M. Tamer Özsu,Lei Chen, Xuchuan Shen, Ruizhe Huang, Dongyan Zhao, <a target="_blank" href="http://www.icst.pku.edu.cn/intro/leizou/projects/papers/gStoreVLDBJ.pdf">gStore: A Graph-based SPARQL Query Engine</a>, VLDB Journal , 23(4): 565-590, 2014.</p></li>
+<li><p>Lei Zou, Jinghui Mo, Lei Chen,M. Tamer Özsu, Dongyan Zhao, <a target="_blank" href="http://www.icst.pku.edu.cn/intro/leizou/projects/papers/p482-zou.pdf">gStore: Answering SPARQL Queries Via Subgraph Matching</a>, Proc. VLDB 4(8): 482-493, 2011.</p></li>
+<li><p>Xuchuan Shen, Lei Zou, M. Tamer Özsu, Lei Chen, Youhuan Li, Shuo Han, Dongyan Zhao, <a target="_blank" href="http://www.icst.pku.edu.cn/intro/leizou/projects/papers/demo.pdf">A Graph-based RDF Triple Store</a>, in Proc. 31st International Conference on Data Engineering (ICDE), 2015; To appear (demo).</p></li>
+<li><p>Peng Peng, Lei Zou, M. Tamer Özsu, Lei Chen, Dongyan Zhao: Processing SPARQL queries over distributed RDF graphs. VLDB Journal (2016) (accepted, to appear)</p></li>
+<li><p>Dong Wang, Lei Zou, Yansong Feng, Xuchuan Shen, Jilei Tian, and Dongyan Zhao, <a target="_blank" href="http://www.icst.pku.edu.cn/intro/leizou/projects/papers/Store.pdf">S-store: An Engine for Large RDF Graph Integrating Spatial Information</a>, in Proc. 18th International Conference on Database Systems for Advanced Applications (DASFAA), pages 31-47, 2013.</p></li>
+<li><p>Dong Wang, Lei Zou and Dongyan Zhao, <a target="_blank" href="http://www.icst.pku.edu.cn/intro/leizou/projects/papers/edbtdemo2014.pdf">gst-Store: An Engine for Large RDF Graph Integrating Spatiotemporal Information</a>, in Proc. 17th International Conference on Extending Database Technology (EDBT), pages 652-655, 2014 (demo).</p></li>
+<li><p>Lei Zou, Yueguo Chen, <a target="_blank" href="http://www.icst.pku.edu.cn/intro/leizou/documentation/pdf/2012CCCF.pdf">A Survey of Large-Scale RDF Data Management</a>, Comunications of CCCF Vol.8(11): 32-43, 2012 (Invited Paper, in Chinese).</p></li>
+</ul><hr><p></p><p data-anchor-id="7z0m"><span id="chapter08"></span></p><div class="md-section-divider"></div><h2 id="chapter-08-updated-logs" data-anchor-id="55p2">Chapter 08: Updated Logs</h2><div class="md-section-divider"></div><h3 id="apr-01-2016" data-anchor-id="3bt2">Apr 01, 2016</h3><p data-anchor-id="o93p">The structure of this project has changed a lot now. A new join method has been achieved and we use it to replace the old one. The test result shows that speed is improved and the memory cost is lower. We also do some change to Parser/Sparql*, which are all generated by ANTLR. They must be modified because the code is in C, which brings several multiple definition problems, and its size is too large. </p><p data-anchor-id="nrpz">There is a bug in the original Stream module, which brings some control characters to the output, such as ^C, ^V and so on. We have fixed it now and enabled the Stream to sort the output strings(both internal and external). In addition, SPARQL queries which are not BGP(Basic Graph Pattern) are also supported now, using the naive method.</p><p data-anchor-id="nyvr">A powerful interactive console, which is named <code>gconsole</code> now, is achieved to bring convenience to users. What is more, we use valgrind tools to test our system, and deal with several memory leaks.</p><p data-anchor-id="d22i">The docs and API have also changed, but this is of little importance.</p><div class="md-section-divider"></div><h3 id="nov-06-2015" data-anchor-id="xuti">Nov 06, 2015</h3><p data-anchor-id="iq69">We merge several classes(like Bstr) and adjust the project structure, as well as the debug system. </p><p data-anchor-id="5lnd">In addition, most warnings are removed, except for warnings in Parser module, which is due to the use of ANTLR.</p><p data-anchor-id="fezv">What is more, we change RangeValue module to Stream, and add Stream for ResultSet. We also better the gquery console, so now you can redirect query results to a specified file in the gsql console.</p><p data-anchor-id="p1uh">Unable to add Stream for IDlist due to complex operations, but this is not necessary. Realpath is used to supported soft links in the gquery console, but it not works in Gstore.(though works if not in Gstore)</p><div class="md-section-divider"></div><h3 id="oct-20-2015" data-anchor-id="fji6">Oct 20, 2015</h3><p data-anchor-id="ygw4">We add a gtest tool for utility, you can use it to query several datasets with their own queries.</p><p data-anchor-id="xqva">In addition, gquery console is improved. Readline lib is used for input instead of fgets, and the gquery console can support commands history, modifying command and commands completion now.</p><p data-anchor-id="46pc">What is more, we found and fix a bug in Database/(a pointer for debugging log is not set to NULL after fclose operation, so if you close one database and open another, the system will fail entirely because the system think that the debugging log is still open)</p><div class="md-section-divider"></div><h3 id="sep-25-2015" data-anchor-id="7ore">Sep 25, 2015</h3><p data-anchor-id="3510">We implement the version of B+Tree, and replace the old one.</p><p data-anchor-id="1v66">After testing on DBpedia, LUBM, and WatDiv benchmark, we conclude that the new BTree performs more efficient than <br>
+the old version. For the same triple file, the new version spends shorter time on executing gload command.</p><p data-anchor-id="0z8l">Besides, the new version can handle the long literal objects efficiently, while triples whose object's length exceeds 4096 bytes result in frequent inefficient split operations on the old version BTree. </p><div class="md-section-divider"></div><h3 id="feb-2-2015" data-anchor-id="rvbe">Feb 2, 2015</h3><p data-anchor-id="emhc">We modify the RDF parser and SPARQL parser.</p><p data-anchor-id="pdtw">Under the new RDF parser, we also redesign the encode strategy, which reduces RDF file scanning times.</p><p data-anchor-id="0idd">Now we can parse the standard SPARQL v1.1 grammar correctly, and can support basic graph pattern(BGP) SPARQL queries written by this standard grammar.</p><div class="md-section-divider"></div><h3 id="dec-11-2014" data-anchor-id="61r2">Dec 11, 2014</h3><p data-anchor-id="xiao">We add API for C/CPP and JAVA.</p><div class="md-section-divider"></div><h3 id="nov-20-2014" data-anchor-id="y254">Nov 20, 2014</h3><p data-anchor-id="7dy5">We share our gStore2.0 code as an open-source project under BSD license on github.</p><hr><p></p><p data-anchor-id="rrkb"><span id="chapter09"></span></p><div class="md-section-divider"></div><h2 id="chapter-09-test-results" data-anchor-id="e0hb">Chapter 09: Test Results</h2><div class="md-section-divider"></div><h3 id="preparation" data-anchor-id="o0lw">Preparation</h3><p data-anchor-id="ipuk">We have compared the performance of gStore with several other database systems, such as <a target="_blank" href="http://jena.apache.org/">Jena</a>, <a target="_blank" href="http://www.rdf4j.org/">Sesame</a>, <a target="_blank" href="http://virtuoso.openlinksw.com/">Virtuoso</a> and so on. Contents to be compared are the time to build database, the size of the built database, the time to answer single SPARQL query and the matching case of single query's results. In addition, if the memory cost is very large(&gt;20G), we will record the memory cost when running these database systems.(not accurate, just for your reference)</p><p data-anchor-id="xnv2">To ensure all database systems can run correctly on all datasets and queries, the format of datasets must be supported by all database systems and the queries should not contain update operations, aggregate operations and operations related with uncertain predicates. Notice that when measuring the time to answer queries, the time of loading database index should not be included. To ensure this principle, we load the database index first for some database systems, and warm up several times for others.</p><p data-anchor-id="k7ha">Datasets used here are WatDiv, Lubm, Bsbm and DBpedia. Some of them are provided by websites, and others are generated by algorithms. Queries are generated by algorithms or written by us.</p><p data-anchor-id="0lnv">The experiment environment is a CentOS server, whose memory size is 82G and disk size is 7T. We use <a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/test/full_test.sh">full_test</a> to do this test.</p><div class="md-section-divider"></div><h3 id="result" data-anchor-id="0ncc">Result</h3><p data-anchor-id="k75d">The performance of different database management systems is as below(in watdiv_200, time unit is millisecond):</p><table class="table table-striped-white table-bordered" data-anchor-id="3r3e">
+<thead>
+<tr>
+ <th style="text-align:left;">dbms</th>
+ <th style="text-align:left;">time</th>
+</tr>
+</thead>
+<tbody><tr>
+ <td style="text-align:left;">gstore</td>
+ <td style="text-align:left;">4429</td>
+</tr>
+<tr>
+ <td style="text-align:left;">jena</td>
+ <td style="text-align:left;">31857</td>
+</tr>
+<tr>
+ <td style="text-align:left;">sesame</td>
+ <td style="text-align:left;">12468</td>
+</tr>
+<tr>
+ <td style="text-align:left;">virtuoso</td>
+ <td style="text-align:left;">15117</td>
+</tr>
+</tbody></table><table class="table table-striped-white table-bordered" data-anchor-id="gurk">
+<thead>
+<tr>
+ <th style="text-align:left;">dbms</th>
+ <th style="text-align:left;">time</th>
+</tr>
+</thead>
+<tbody><tr>
+ <td style="text-align:left;">gstore</td>
+ <td style="text-align:left;">197</td>
+</tr>
+<tr>
+ <td style="text-align:left;">jena</td>
+ <td style="text-align:left;">1158</td>
+</tr>
+<tr>
+ <td style="text-align:left;">sesame</td>
+ <td style="text-align:left;">1695</td>
+</tr>
+<tr>
+ <td style="text-align:left;">virtuoso</td>
+ <td style="text-align:left;">2488</td>
+</tr>
+</tbody></table><table class="table table-striped-white table-bordered" data-anchor-id="thpr">
+<thead>
+<tr>
+ <th style="text-align:left;">dbms</th>
+ <th style="text-align:left;">time</th>
+</tr>
+</thead>
+<tbody><tr>
+ <td style="text-align:left;">gstore</td>
+ <td style="text-align:left;">245</td>
+</tr>
+<tr>
+ <td style="text-align:left;">jena</td>
+ <td style="text-align:left;">381</td>
+</tr>
+<tr>
+ <td style="text-align:left;">sesame</td>
+ <td style="text-align:left;">1069</td>
+</tr>
+<tr>
+ <td style="text-align:left;">virtuoso</td>
+ <td style="text-align:left;">359</td>
+</tr>
+</tbody></table><p data-anchor-id="7xhq">This program produces many logs placed in result.log/, load.log/ and time.log/. You can see that all results of all queries are matched by viewing files in result.log/, and the time cost and space cost of gStore to build database are larger than others by viewing files in load.log/. More precisely, there is an order of magnitude difference between gStore and others in the time/space cost of building database. </p><p data-anchor-id="84as">Through analysing time.log/, we can find that gStore behave better than others on very complicated queries(many variables, circles, etc). For other simple queries, there is not much difference between the time of these database systems.</p><p data-anchor-id="201r">Generally speaking, the memory cost of gStore when answering queries is higher than others. More complicated the query is and more large the dataset is, more apparent the phenomenon is.</p><p data-anchor-id="ghsj">You can find more detailed information in <a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/docs/pdf/gstore测试报告.pdf">test report</a>. Notice that some questions in the test report have already be solved now.</p><hr><p></p><p data-anchor-id="0shw"><span id="chapter10"></span></p><div class="md-section-divider"></div><h2 id="chapter-10-recipe-book" data-anchor-id="2bd0">Chapter 10: Recipe Book</h2><p data-anchor-id="gm53"><strong>This chapter introduces some useful tricks if you are using gStore to implement applications.</strong></p><p data-anchor-id="wys3"><em>no tips available now</em></p><hr><p></p><p data-anchor-id="av0n"><span id="chapter11"></span></p><div class="md-section-divider"></div><h2 id="chapter-11-mailing-list" data-anchor-id="ldd0">Chapter 11: Mailing List</h2><div class="md-section-divider"></div><h3 id="people" data-anchor-id="9nra">People</h3><p data-anchor-id="pora"><strong>Li Zeng and Jiaqi Chen are responsible for the gStore now.</strong></p><div class="md-section-divider"></div><h4 id="faculty" data-anchor-id="vmy2">Faculty</h4><ul data-anchor-id="boqp">
+<li><p>Lei Zou (Peking University) email:zoulei@pku.edu.cn, Project Leader</p></li>
+<li><p>M. Tamer Özsu (University of Waterloo) email: tamer.ozsu@uwaterloo.ca</p></li>
+<li><p>Lei Chen (Hong Kong University of Science and Technology) email: leichen@cse.ust.hk</p></li>
+<li><p>Dongyan Zhao (Peking Univeristy) email:zhaodongyan@pku.edu.cn</p></li>
+</ul><div class="md-section-divider"></div><h4 id="students" data-anchor-id="l69w">Students</h4><ul data-anchor-id="59dp">
+<li><p>Peng Peng (Peking University) (PhD student) email: pku09pp@pku.edu.cn</p></li>
+<li><p>Youhuan Li (Peking University) (PhD student) email:liyouhuan@pku.edu.cn</p></li>
+<li><p>Shuo Han (Peking University) (PhD student) email:hanshuo@pku.edu.cn</p></li>
+</ul><div class="md-section-divider"></div><h4 id="alumni" data-anchor-id="f509">Alumni</h4><ul data-anchor-id="6jd0">
+<li><p>Xuchuan Shen (Peking University) (Master's student, graduated) email:shenxuchuan@pku.edu.cn</p></li>
+<li><p>Dong Wang (Peking University) (PhD student, graduated) email:wangdong@pku.edu.cn</p></li>
+<li><p>Ruizhe Huang (Peking University) (Undergraudate intern, graduated)</p></li>
+<li><p>Jinhui Mo (Peking University) (Master's, graduated)</p></li>
+<li><p>Li Zeng (Peking University) (Undergraudate intern) email:zengli-syzz@pku.edu.cn</p></li>
+<li><p>Jiaqi Chen (Peking University) (Undergraudate intern) email:chenjiaqi93@pku.edu.cn</p></li>
+</ul><hr><p></p><p data-anchor-id="s6jn"><span id="chapter12"></span></p><div class="md-section-divider"></div><h2 id="chapter-12-limit-description" data-anchor-id="18h7">Chapter 12: Limit Description</h2><ol data-anchor-id="ie78">
+<li><p>Queries related with uncertain predicates are not supported.</p></li>
+<li><p>This version only supports SPARQL select query. </p></li>
+<li><p>Only support RDF file in N3 file format. More file formats will be supported in the next version. </p></li>
+<li><p>The cost of disk and memory is still very large.</p></li>
+</ol><hr><p></p><p data-anchor-id="r77t"><span id="chapter13"></span></p><div class="md-section-divider"></div><h2 id="chapter-13-frequently-asked-questions" data-anchor-id="56g5">Chapter 13: Frequently Asked Questions</h2><div class="md-section-divider"></div><h4 id="when-i-use-the-newer-gstore-system-to-query-the-original-database-why-error" data-anchor-id="731a">When I use the newer gStore system to query the original database, why error?</h4><p data-anchor-id="9v5s">The database produced by gStore contains several indexes, whose structures may have been chnaged in the new gStore version. So, please rebuild your dataset just in case.</p><div class="md-section-divider"></div><h4 id="why-error-when-i-try-to-write-programs-based-on-gstore-just-like-the-maingconsolecpp" data-anchor-id="z2zx">Why error when I try to write programs based on gStore, just like the Main/gconsole.cpp?</h4><p data-anchor-id="o9py">You need to add these phrases at the beginning of your main program, otherwise gStore will not run correctly: <br>
+    //NOTICE:this is needed to set several debug files <br>
+    Util util;</p><div class="md-section-divider"></div><h4 id="why-does-gstore-report-garbage-collection-failed-error-when-i-use-teh-java-api" data-anchor-id="3ha1">Why does gStore report "garbage collection failed" error when I use teh Java API?</h4><p data-anchor-id="oyao">You need to adjust the parameters of jvm, see <a target="_blank" href="http://www.cnblogs.com/edwardlauxh/archive/2010/04/25/1918603.html">url1</a> and <a target="_blank" href="http://www.cnblogs.com/redcreen/archive/2011/05/04/2037057.html">url2</a> for details.</p><div class="md-section-divider"></div><h4 id="when-i-compile-the-code-in-archlinux-why-the-error-that-no-ltermcap-is-reported" data-anchor-id="n4ig">When I compile the code in ArchLinux, why the error that "no -ltermcap" is reported?</h4><p data-anchor-id="6rlh">In ArchLinux, you only need to use <code>-lreadline</code> to link the readline library. Please remove the <code>-ltermcap</code> in the makefile which is located in the root of the gStore project if you would like to use ArchLinux.</p><div class="md-section-divider"></div><h4 id="why-does-gstore-report-errors-that-the-format-of-some-rdf-datasets-are-not-supported" data-anchor-id="m0ma">Why does gStore report errors that the format of some RDF datasets are not supported?</h4><p data-anchor-id="ceg1">gStore does not support all RDF formats currently, please see <a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/test/format_question.txt">formats</a> for details.</p><div class="md-section-divider"></div><h4 id="when-i-read-on-github-why-are-some-documents-unable-to-be-opened" data-anchor-id="vth5">When I read on GitHub, why are some documents unable to be opened?</h4><p data-anchor-id="brnm">Codes, markdowns or other text files, and pictures can be read directly on GitHub. However, if you are using some light weight browsers like midori, for files in pdf type, please download them and read on your computer or other devices.</p><div class="md-section-divider"></div><h4 id="why-sometimes-strange-characters-appear-when-i-use-gstore" data-anchor-id="w5rn">Why sometimes strange characters appear when I use gStore?</h4><p data-anchor-id="ve0t">There are some documents's names are in Chinese, and you don't need to worry about it.</p><div class="md-section-divider"></div><h4 id="in-centos7-if-the-watdivdba-generated-database-after-gload-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check" data-anchor-id="tiek">In centos7, if the watdiv.db(a generated database after gload) is copied or compressed/uncompressed, the size of watdiv.db will be different(generally increasing) if using <code>du -h</code> command to check?</h4><p data-anchor-id="k7wl">It's the change of B+-trees' size in watdiv/kv_store/ that causes the change of the whole database's size. The reason is that in storage/Storage.cpp, many operations use fseek to move file pointer. As everyone knows, file is organized in blocks, and if we request for new block, file pointer may be moved beyond the end of this file(file operations are all achieved by C in gStore, no errors are reported), then contents will be written in the new position!</p><p data-anchor-id="naqf">In <strong>Advanced Programming In The Unix Environment</strong>, "file hole" is used to describe this phenomenon. "file hole" will be filled with 0, and it's also one part of the file. You can use <code>ls -l</code> to see the size of file(computing the size of holes), while <code>du -h</code> command shows the size of blocks that directory/file occupies in system. Generally, the output of <code>du -h</code> is large than that of <code>ls -l</code>, but if "file hole" exists, the opposite is the case because the size of holes are neglected.</p><p data-anchor-id="vg0k">The actual size of files containing holes are fixed, while in some operation systems, holes will be transformed to contents(also 0) when copied. Operation <code>mv</code> will not affect the size if not across different devices.(only need to adjust the file tree index) However, <code>cp</code> and all kinds of compress methods need to scan the file and transfer data.(there are two ways to achieve <code>cp</code> command, neglect holes or not, while the output size of <code>ls -l</code> not varies)</p><p data-anchor-id="wfyh">It is valid to use "file hole" in C, and this is not an error, which means you can go on using gStore. We achieve a small program to describe the "file holes", you can download and try it yourself.</p><div class="md-section-divider"></div><h4 id="in-gclient-console-a-database-is-built-queried-and-then-i-quit-the-console-next-time-i-enter-the-console-load-the-originally-imported-database-but-no-output-for-any-queriesoriginally-the-output-is-not-empty" data-anchor-id="0s15">In gclient console, a database is built, queried, and then I quit the console. Next time I enter the console, load the originally imported database, but no output for any queries(originally the output is not empty)?</h4><p data-anchor-id="kh7n">You need to unload the using database before quiting the gclient console, otherwise errors come.</p><div class="md-section-divider"></div><h4 id="if-query-results-contain-null-value-how-can-i-use-the-fulltest-utility-tab-separated-method-will-cause-problem-here-because-null-value-cannot-be-checked" data-anchor-id="yw4g">If query results contain null value, how can I use the <a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/test/full_test.sh">full_test</a> utility? Tab separated method will cause problem here because null value cannot be checked!</h4><p data-anchor-id="3va2">You may use other programming language(for example, Python) to deal with the null value cases. For example, you can change null value in output to special character like ',', later you can use the <a target="_blank" href="https://github.com/Caesar11/gStore/tree/master/test/full_test.sh">full_test</a> utility.</p><div class="md-section-divider"></div><h4 id="when-i-compile-and-run-the-api-examples-it-reports-the-unable-to-connect-to-server-error" data-anchor-id="pnb1">When I compile and run the API examples, it reports the "unable to connect to server" error?</h4><p data-anchor-id="jz2r">Please use <code>./gserver</code> command to start up a gStore server first, and notice that the server ip and port must be matched.</p><div class="md-section-divider"></div><h4 id="when-i-use-the-java-api-to-write-my-own-program-it-reports-not-found-main-class-error" data-anchor-id="r6sw">When I use the Java API to write my own program, it reports "not found main class" error?</h4><p data-anchor-id="jaqm">Please ensure that you include the position of your own program in class path of java. The whole command should be something like <code>java -cp /home/bookug/project/devGstore/api/java/lib/GstoreJavaAPI.jar:. JavaAPIExample</code>, and the ":." in this command cannot be neglected.</p><hr><p></p><p data-anchor-id="vpkf"><span id="chapter14"></span></p><div class="md-section-divider"></div><h2 id="chapter-14-future-plan" data-anchor-id="69fb">Chapter 14: Future Plan</h2><div class="md-section-divider"></div><h3 id="improve-the-core" data-anchor-id="n5ym">Improve The Core</h3><ul data-anchor-id="ncz2">
+<li><p>optimize the join operation of node candidates. multiple methods should be achieved, and design a score module to select a best one</p></li>
+<li><p>add numeric value query function. need to answer numeric range query efficiently and space consume cannot be too large</p></li>
+<li><p>add a control module to heuristically select an kind of index for a SPARQL query to filter(not always vstree)</p></li>
+<li><p>typedef all frequently used types, to avoid inconsistence and high modify cost</p></li>
+</ul><div class="md-section-divider"></div><h3 id="better-the-interface" data-anchor-id="c96f">Better The Interface</h3><ul data-anchor-id="yl4g">
+<li><p>build a console named gconsole, which provides all operations supported by gStore.(parser and auto-complete is required)</p></li>
+<li><p>write web interface for gStore, and a web page to operate on it, just like virtuoso</p></li>
+</ul><div class="md-section-divider"></div><h3 id="idea-collection-box" data-anchor-id="638v">Idea Collection Box</h3><ul data-anchor-id="w1ig">
+<li><p>to support soft links in console: realpath not work...(redefined in ANTLR?)</p></li>
+<li><p>store command history for consoles</p></li>
+<li><p>warnings remain in using Parser/(antlr)!(modify sparql.g 1.1 and regenerate). change name to avoid redefine problem, or go to use executable to parse</p></li>
+<li><p>build compress module(such as key-value module and stream module), but the latter just needs one-pass read/write, which may causes the compress method to be used both in disk and memory. all operations of string in memory can be changed to operations after compress: provide compress/archive interface, compare function. there are many compress algorithms to be chosen, then how to choose? what about utf-8 encoding problem? this method can lower the consume of memory and disk, but consumes more CPU. However, the time is decided by isomorphism. Simple compress is not good, but too complicated method will consume too much time, how to balance?  (merge the continuous same characters, Huffman tree)</p></li>
+<li><p>mmap to speedup KVstore?</p></li>
+<li><p>the strategy for Stream:is 85% valid? consider sampling, analyse the size of result set and decide strategy? how to support order by: sort in memory if not put in file; otherwise, partial sort in memory, then put into file, then proceed external sorting</p></li>
+</ul><hr><p></p><p data-anchor-id="6d4q"><span id="chapter15"></span></p><div class="md-section-divider"></div><h2 id="chapter-15-thanks-list" data-anchor-id="lcbr">Chapter 15: Thanks List</h2><p data-anchor-id="wim5"><strong>This chapter lists people who inspire us or contribute to this project.</strong></p><p data-anchor-id="wc1d"><em>nobody now</em></p><hr><p></p><p data-anchor-id="yenr"><strong>Thank you for reading this document. If any question or advice, or you have interests in this project, please don't hesitate to get in touch with us.</strong></p></div>
+</body>
+</html>

@@ -1,33 +1,39 @@
-/*
- * GstoreConnector.h
- *
- *  Created on: 2014-11-1
- *      Author: hanshuo
- */
+/*=============================================================================
+# Filename: GstoreConnector.h
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2016-02-21 21:22
+# Description: originally written by hanshuo, modified by zengli
+=============================================================================*/
 
-#ifndef GSTORECONNECTOR_H_
-#define GSTORECONNECTOR_H_
+#ifndef _GSTORECONNECTOR_H
+#define _GSTORECONNECTOR_H
 
-#include"../../../Server/Socket.h"
-#include<cstring>
+#include "../../../Server/Socket.h"
+#include <cstring>
 
 class GstoreConnector
 {
 public:
     GstoreConnector();
-    GstoreConnector(std::string _ip, unsigned short _port);
+	GstoreConnector(std::string _ip);
     GstoreConnector(unsigned short _port);
+    GstoreConnector(std::string _ip, unsigned short _port);
     ~GstoreConnector();
 
-    bool load(std::string _db_name);
+	bool test();
+	bool load(std::string _db_name);
     bool unload(std::string _db_name);
     bool build(std::string _db_name, std::string _rdf_file_path);
+    bool drop(std::string _db_name);
+	bool stop();
     std::string query(std::string _sparql);
+	std::string show(bool _type=false);  //show current or all databases
+
+	static const std::string defaultServerIP;
+	static const unsigned short defaultServerPort;
 
 private:
-    static std::string defaultServerIP;
-    static unsigned short defaultServerPort;
-
     std::string serverIP;
     unsigned short serverPort;
 //    std::string username;
@@ -38,4 +44,5 @@ private:
     bool disconnect();
 };
 
-#endif /* GSTORECONNECTOR_H_ */
+#endif // _GSTORECONNECTOR_H
+

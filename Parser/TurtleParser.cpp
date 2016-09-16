@@ -1,5 +1,4 @@
 #include "TurtleParser.h"
-#include <sstream>
 //---------------------------------------------------------------------------
 // RDF-3X
 // (c) 2008 Thomas Neumann. Web site: http://www.mpi-inf.mpg.de/~neumann/rdf3x

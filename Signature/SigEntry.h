@@ -1,38 +1,39 @@
-/*
- * SigEntry.h
- *
- *  Created on: 2014-6-20
- *      Author: liyouhuan
- *  Modified on: 2014-6-29
- *      Author: hanshuo
- */
+/*=============================================================================
+# Filename: SigEntry.h
+# Author: Bookug Lobert 
+# Mail: zengli-bookug@pku.edu.cn
+# Last Modified: 2016-04-11 13:48
+# Description: written by liyouhuan and hanshuo
+=============================================================================*/
 
-#ifndef SIGENTRY_H_
-#define SIGENTRY_H_
+#ifndef _SIGNATURE_SIGENTRY_H
+#define _SIGNATURE_SIGENTRY_H
 
-#include<iostream>
+#include "../Util/Util.h"
 #include "Signature.h"
-#include<sstream>
-using namespace std;
 
-class SigEntry{
+class SigEntry
+{
 private:
 	EntitySig sig;
+	//-1 if not in leaf node
 	int entity_id;
 public:
 	SigEntry();
 	SigEntry(int _entity_id, EntityBitSet& _bitset);
 	SigEntry(const SigEntry& _sig_entry);
 	SigEntry(const EntitySig& sig, int _entity_id);
-	const EntitySig& getEntitySig()const;
-	int getEntityId()const;
-	int getSigCount()const;
+	const EntitySig& getEntitySig() const;
+	int getEntityId() const;
+	int getSigCount() const;
 	SigEntry& operator=(const SigEntry _sig_entry);
 	SigEntry& operator|=(const SigEntry _sig_entry);
-	bool cover(const SigEntry& _sig_entry)const;
-	bool cover(const EntitySig& _sig)const;
-	int xEpsilen(const SigEntry& _sig_entry)const;
-	std::string to_str()const;
+	bool cover(const SigEntry& _sig_entry) const;
+	bool cover(const EntitySig& _sig) const;
+	int xEpsilen(const SigEntry& _sig_entry) const;
+	int xOR(const SigEntry& _sig_entry) const;
+	std::string to_str() const;
 };
 
-#endif /* SIGENTRY_H_ */
+#endif // _SIGNATURE_SIGENTRY_H
+

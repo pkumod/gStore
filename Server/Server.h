@@ -1,16 +1,18 @@
-/*
- * Server.h
- *
- *  Created on: 2014-10-14
- *      Author: hanshuo
- */
+/*=============================================================================
+# Filename: Server.h
+# Author: Bookug Lobert 
+# Mail: 1181955272@qq.com
+# Last Modified: 2015-10-25 13:49
+# Description: originally written by hanshuo, modified by zengli
+=============================================================================*/
 
-#ifndef SERVER_H_
-#define SERVER_H_
+#ifndef _SERVER_SERVER_H
+#define _SERVER_SERVER_H
 
-#include"Socket.h"
-#include"Operation.h"
-#include"../Database/Database.h"
+#include "../Util/Util.h"
+#include "../Database/Database.h"
+#include "Socket.h"
+#include "Operation.h"
 
 /*
  * the Server is only at a original and simple version.
@@ -41,14 +43,14 @@ public:
     bool response(Socket _socket, std::string& _msg);
     bool parser(std::string _raw_cmd, Operation& _ret_oprt);
     bool createDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg);
-    bool deleteDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg);
+    bool dropDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg);
     bool loadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg);
     bool unloadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg);
-    bool showDatabases(std::string _ac_name, std::string& _ret_msg);
+    bool showDatabases(std::string _para, std::string _ac_name, std::string& _ret_msg);
     bool importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg);
     bool insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg);
     bool query(const std::string _query, std::string& _ret_msg);
-
+	bool stopServer(std::string& _ret_msg);
 
 private:
     unsigned short connectionPort;
@@ -56,8 +58,8 @@ private:
     int databaseMaxNum;
     Socket socket;
     Database* database;
+
 };
 
+#endif // _SERVER_SERVER_H
 
-
-#endif /* SERVER_H_ */

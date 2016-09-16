@@ -1,8 +1,0 @@
-select ?Y1 ?Y2 ?Y3 where
-{
-?X	<rdf:type>	<ub:FullProfessor>.
-?X	<ub:worksFor>	<http://www.Department0.University0.edu>.
-?X	<ub:name>	?Y1.
-?X	<ub:emailAddress>	?Y2.
-?X	<ub:telephone>	?Y3.
-}
