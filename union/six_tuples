@@ -1,6 +1,0 @@
-0	0	1000000000	<_:a>	<http://purl.org/dc/elements/1.0/title>	"SPARQL Query Language Tutorial"
-0	1	1000000001	<_:a>	<http://purl.org/dc/elements/1.0/creator>	"Alice"
-1	2	1000000002	<_:b>	<http://purl.org/dc/elements/1.1/title>	"SPARQL Protocol Tutorial"
-1	3	1000000003	<_:b>	<http://purl.org/dc/elements/1.1/creator>	"Bob"
-2	0	1000000004	<_:c>	<http://purl.org/dc/elements/1.0/title>	"SPARQL"
-2	2	1000000005	<_:c>	<http://purl.org/dc/elements/1.1/title>	"SPARQL (updated)"
