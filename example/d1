@@ -1,5 +1,0 @@
-select	?x1 ?x2 where
-{
-?x1	y:discovered	?x2.
-?x2	rdfs:label	?x3.
-}

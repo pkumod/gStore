@@ -1,4 +1,0 @@
-select ?x where
-{
-?x	y:actedIn	<Desperados_(TV_series)>.
-}

@@ -9,7 +9,7 @@ objfile= $(objdir)Bstr.o $(objdir)Database.o $(objdir)KVstore.o $(objdir)Btree.o
 	 
 inc=-I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
-all: gload gquery gserver gclient
+all: lib_antlr gload gquery gserver gclient
 
 gload: $(objdir)gload.o $(objfile)
 	g++ -o gload $(objdir)gload.o $(objfile) lib/libantlr.a 
@@ -105,6 +105,8 @@ lib_antlr:
 	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
 	rm -rf lib/libantlr.a
 	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
+	rm -rf Parser/Sparql*
+	cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
 
 clean:
 	rm -rf gload gquery gserver gclient $(objdir)/*.o 

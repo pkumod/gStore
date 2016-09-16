@@ -1,6 +1,0 @@
-select ?person where
-{
-	{?person	<graduatedFrom>	<PekingUniversity>.}
-	UNION
-	{?person	<graduatedFrom>	<TsinghuaUniversity>.}
-}
