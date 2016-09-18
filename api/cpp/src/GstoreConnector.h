@@ -21,17 +21,19 @@ public:
     GstoreConnector(std::string _ip, unsigned short _port);
     ~GstoreConnector();
 
-    bool load(std::string _db_name);
+	bool test();
+	bool load(std::string _db_name);
     bool unload(std::string _db_name);
     bool build(std::string _db_name, std::string _rdf_file_path);
     bool drop(std::string _db_name);
+	bool stop();
     std::string query(std::string _sparql);
 	std::string show(bool _type=false);  //show current or all databases
 
-private:
-    static std::string defaultServerIP;
-    static unsigned short defaultServerPort;
+	static const std::string defaultServerIP;
+	static const unsigned short defaultServerPort;
 
+private:
     std::string serverIP;
     unsigned short serverPort;
 //    std::string username;

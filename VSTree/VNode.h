@@ -16,9 +16,13 @@
 class VNode
 {
 public:
-    static const int MAX_CHILD_NUM = 200;
+	static const int DEGREE = 100;  //use 100 for normal
+	//NOTICE+WARN:always ensure double times due to union operation safety in coalesce
+	//here 201 is used to ensure split operation is right
+	//(generally, 200 is ok if dealed carefully, but here only 200 is really used)
+    static const int MAX_CHILD_NUM = 2 * VNode::DEGREE + 1;
     //static const int MAX_CHILD_NUM = 151;
-    static const int MIN_CHILD_NUM = 100;
+    static const int MIN_CHILD_NUM = VNode::DEGREE;
     //static const int MIN_CHILD_NUM = 60;
 
     //debug
@@ -57,7 +61,7 @@ public:
 	/* only used by leaf Node */
 	bool retrieveEntry(std::vector<SigEntry>& _entry_vec, const EntitySig _filter_sig, LRUCache& _nodeBuffer);
 
-	/* for debug */
+	 //for debug 
 	bool checkState();
 
 	std::string to_str();
@@ -70,6 +74,7 @@ private:
     int father_file_line;
     SigEntry entry;
 	//BETTER:is this necessary? too much memory?
+	//DEBUG:add 1 in case of error
     SigEntry child_entries[VNode::MAX_CHILD_NUM];
     int child_file_lines[VNode::MAX_CHILD_NUM];
 };

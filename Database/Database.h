@@ -47,6 +47,7 @@ public:
 	bool load();
 	bool unload();
 	bool query(const string _query, ResultSet& _result_set, FILE* _fp = stdout);
+	bool query(const string _query, ResultSet& _result_set, string& intermediate_res, int myRank, FILE* _fp = stdout);
 
 	 //1. if subject of _triple doesn't exist,
 		//then assign a new subid, and insert a new SigEntry
@@ -56,6 +57,9 @@ public:
     bool insert(const string& _insert_rdf_file);
     bool remove(const string& _rdf_file);
     bool build(const string& _rdf_file);
+	//interfaces to insert/delete from given rdf file
+	bool insert(std::string _rdf_file, vector<int>& _vertices, vector<int>& _predicates);
+	bool remove(std::string _rdf_file, vector<int>& _vertices, vector<int>& _predicates);
 
 	/* name of this DB*/
 	string getName();
@@ -67,6 +71,8 @@ public:
 
     /* root Path of this DB + DBInfoFile */
     string getDBInfoFile();
+
+	bool loadInternalVertices(const string _in_file);
 
 private:
 	string name;
@@ -91,6 +97,42 @@ private:
 	 //B means binary 
 	string signature_binary_file;
 
+	/* internal vertices string */
+	string internal_tag_str;
+	
+	//triple num per group for insert/delete
+	//can not be too high, otherwise the heap will over
+	static const int GROUP_SIZE = 1000;
+	//manage the ID allocate and garbage
+	static const int START_ID_NUM = 1000;
+	/////////////////////////////////////////////////////////////////////////////////
+	//NOTICE:error if >= LITERAL_FIRST_ID
+	string free_id_file_entity; //the first is limitID, then free id list
+	int limitID_entity; //the current maxium ID num(maybe not used so much)
+	BlockInfo* freelist_entity; //free id list, reuse BlockInfo for Storage class
+	int allocEntityID();
+	void freeEntityID(int _id);
+	/////////////////////////////////////////////////////////////////////////////////
+	//NOTICE:error if >= 2*LITERAL_FIRST_ID
+	string free_id_file_literal;
+	int limitID_literal; 
+	BlockInfo* freelist_literal; 
+	int allocLiteralID();
+	void freeLiteralID(int _id);
+	/////////////////////////////////////////////////////////////////////////////////
+	//NOTICE:error if >= 2*LITERAL_FIRST_ID
+	string free_id_file_predicate;
+	int limitID_predicate; 
+	BlockInfo* freelist_predicate; 
+	int allocPredicateID();
+	void freePredicateID(int _id);
+	/////////////////////////////////////////////////////////////////////////////////
+	void initIDinfo();  //initialize the members
+	void resetIDinfo(); //reset the id info for build
+	void readIDinfo();  //read and build the free list
+	void writeIDinfo(); //write and empty the free list
+
+
     bool saveDBInfoFile();
     bool loadDBInfoFile();
 
@@ -104,7 +146,7 @@ private:
 	 //encode Triple into Object EntityBitSet 
     bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
 
-	bool calculateEntityBitSet(int _sub_id, EntityBitSet & _bitset);
+	bool calculateEntityBitSet(int _entity_id, EntityBitSet & _bitset);
 
 	 //check whether the relative 3-tuples exist
 	 //usually, through sp2olist 
@@ -122,11 +164,17 @@ private:
 	bool encodeRDF(const string _rdf_file);
 	bool encodeRDF_new(const string _rdf_file);
 
+	//insert and delete, notice that modify is not needed here
+	//we can read from file or use sparql syntax
     int insertTriple(const TripleWithObjType& _triple);
     bool removeTriple(const TripleWithObjType& _triple);
+	//NOTICE:one by one is too costly, sort and insert/delete at a time will be better
+	bool insert(const TripleWithObjType* _triples, int _triple_num, vector<int>& _vertices, vector<int>& _predicates);
+	//bool insert(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
+	bool remove(const TripleWithObjType* _triples, int _triple_num, vector<int>& _vertices, vector<int>& _predicates);
+	//bool remove(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
 
 	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _p_id_tuples, int & _id_tuples_max);
-	bool sub2id_pre2id(const string _rdf_file, int**& _p_id_tuples, int & _id_tuples_max);
 	bool literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, int _id_tuples_max);
 	
 	bool s2o_s2po_sp2o(int** _p_id_tuples, int _id_tuples_max);

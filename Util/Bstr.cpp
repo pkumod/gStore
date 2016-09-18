@@ -140,7 +140,12 @@ Bstr::setStr(char* _str)
 void
 Bstr::copy(const Bstr* _bp)
 {
+	//DEBUG!!!
+	//if(_bp == NULL)
+		//cerr<<"fatal error is Bstr::copy() -- null pointer"<<endl;
 	this->length = _bp->getLen();
+	//DEBUG!!!
+	//cerr<<"bstr length: "<<this->length<<endl;
 	this->str = (char*)malloc(this->length);
 	memcpy(this->str, _bp->getStr(), this->length);
 }

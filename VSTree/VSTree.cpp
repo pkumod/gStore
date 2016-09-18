@@ -26,32 +26,38 @@ VSTree::VSTree(std::string _store_path)
     VSTree::tree_file_foler_path = _store_path;
     VSTree::tree_node_file_path = VSTree::tree_file_foler_path + "/tree_node_file.dat";
     VSTree::tree_info_file_path = VSTree::tree_file_foler_path + "/tree_info_file.dat";
+
+	this->free_nid_list.clear();
+	this->max_nid_alloc = 0;
 }
 
 VSTree::~VSTree()
 {
     delete this->node_buffer;
     delete this->entry_buffer;
+	this->free_nid_list.clear();
+	this->max_nid_alloc = 0;
 }
 
 int 
-VSTree::getHeight()const
+VSTree::getHeight() const
 {
     return this->height;
 }
 
-/* get the tree's root node pointer. */
+//get the tree's root node pointer. 
 VNode* 
 VSTree::getRoot()
 {
     return (this->node_buffer)->get(this->root_file_line);
 }
 
-/* get the node pointer by its file line. */
+//get the node pointer by its file line. 
 VNode* 
 VSTree::getNode(int _line)
 {
-    if (_line >= this->node_num)
+    //if (_line >= this->node_num)
+    if (_line >= this->max_nid_alloc)
     {
         cerr << "error, the parameter:_line is bigger than the tree node_num. @VSTree::getNode" << endl;
         return NULL;
@@ -121,6 +127,10 @@ void VSTree::retrieve(SPARQLquery& _query)
 			Util::logging(_ss.str());
 #endif
 
+			if(!flag)
+			{
+				(*iter)->setReady(i);
+			}
 			//the basic query should end if one non-literal var has no candidates
 			if(idListPtr->size() == 0 && !flag)
 			{
@@ -142,12 +152,13 @@ VSTree::buildTree(std::string _entry_file_path)
     this->node_buffer = new LRUCache(LRUCache::DEFAULT_CAPACITY);
 
     // create the root node.
-    VNode* rootNodePtr = new VNode();
+    //VNode* rootNodePtr = new VNode();
+	VNode* rootNodePtr = this->createNode();
     rootNodePtr->setAsRoot(true);
     rootNodePtr->setAsLeaf(true);
-    rootNodePtr->setFileLine(this->root_file_line);
-    this->node_buffer->set(this->root_file_line, rootNodePtr);
-    this->node_num ++;
+    //rootNodePtr->setFileLine(this->root_file_line);
+    //this->node_buffer->set(this->root_file_line, rootNodePtr);
+    //this->node_num ++;
     this->height ++;
 
      //when building a new VSTree,
@@ -168,13 +179,13 @@ VSTree::buildTree(std::string _entry_file_path)
     n = this->entry_buffer->fillElemsFromFile(filePtr);
     while (n != 0)
     {
-        for (int i=0;i<n;i++)
+        for (int i = 0; i < n; i++)
         {
            SigEntry* entryPtr = this->entry_buffer->getElem(i);
 
-           /* the most important part of this function */
+		   //the most important part of this function 
+		   //insertEntry one by one 
            this->insertEntry(*entryPtr);
-           /* insertEntry one by one */
 
         }
 
@@ -212,7 +223,11 @@ VSTree::deleteTree()
     this->height = 0;
     this->node_num = 0;
     this->entry_num = 0;
-    this->root_file_line = 0;
+    this->root_file_line = -1;
+	
+	this->free_nid_list.clear();
+	this->max_nid_alloc = 0;
+
     delete this->node_buffer;
     delete this->entry_buffer;
 
@@ -282,6 +297,7 @@ bool VSTree::updateEntry(int _entity_id, const EntityBitSet& _bitset)
 bool 
 VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
 {
+	//cout<<"begin replaceEntry()"<<endl;
     VNode* leafNodePtr = this->getLeafNodeByEntityID(_entity_id);
 
     if (leafNodePtr == NULL)
@@ -292,12 +308,14 @@ VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
 
     // find the mapping child entry, update it and refresh signature.
     int childNum = leafNodePtr->getChildNum();
+	//cout<<"get child num, now to loop"<<endl;
     bool findFlag = false;
     for (int i = 0; i < childNum; i++)
     {
         const SigEntry& entry = leafNodePtr->getChildEntry(i);
         if (entry.getEntityId() == _entity_id)
         {
+			//cout<<"find the entityid in pos "<<i<<endl;
             SigEntry newEntry(EntitySig(_bitset), _entity_id);
             leafNodePtr->setChildEntry(i, newEntry);
             leafNodePtr->refreshAncestorSignature(*(this->node_buffer));
@@ -305,6 +323,19 @@ VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
             break;
         }
     }
+
+	//cout<<"root file line: "<<this->root_file_line<<"   "<<"max nid num: "<<this->max_nid_alloc<<endl;
+	//cout<<"node num: "<<this->node_num<<"   "<<"file line: "<<leafNodePtr->getFileLine()<<"   "<<"child num: "<<childNum<<endl;
+	//for(int j = 1; j < 4; ++j)
+	//{
+		//VNode* tmp = this->getNode(j);
+		//for(int i = 0; i < tmp->getChildNum(); ++i)
+		//{
+			//const SigEntry& entry = tmp->getChildEntry(i);
+			//cout << entry.getEntityId() << " ";
+		//}
+		//cout << endl;
+	//}
 
     if (!findFlag)
     {
@@ -315,16 +346,22 @@ VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
     return true;
 }
 
+
+//NOTICE:It is hard for vstree to keep balance if admitting insert/delete
+//So, small changes are ok, but please rebuild the vstree if so many changes
+
 //insert an new Entry, whose entity doesn't exist before 
 bool 
 VSTree::insertEntry(const SigEntry& _entry)
 {
+	//WARN:we do not deal with the case:the vstree is already empty,
+	//then to insert now
 
 	//choose the best leaf node to insert the _entry 
     VNode* choosedNodePtr = this->chooseNode(this->getRoot(), _entry);
 
 #ifdef DEBUG_VSTREE
-		if (_entry.getEntityId() == 4000001)
+		if(_entry.getEntityId() == 4000001)
 		{
 			stringstream _ss;
 			if (choosedNodePtr)
@@ -341,7 +378,7 @@ VSTree::insertEntry(const SigEntry& _entry)
 		}
 #endif
 
-    if (choosedNodePtr == NULL)
+    if(choosedNodePtr == NULL)
     {
         cerr << "error, can not choose a leaf node to insert entry. @VSTree::insert" << endl;
         return false;
@@ -398,27 +435,82 @@ VSTree::removeEntry(int _entity_id)
     // seek the entry index of the leaf node.
     int entryIndex = -1;
     int childNum = leafNodePtr->getChildNum();
-    for (int i=0;i<childNum;i++)
+
+	//cout<<"root file line: "<<this->root_file_line<<"   "<<"max nid num: "<<this->max_nid_alloc<<endl;
+	//cout<<"node num: "<<this->node_num<<"   "<<"file line: "<<leafNodePtr->getFileLine()<<"   "<<"child num: "<<childNum<<endl;
+
+    for(int i = 0; i < childNum; i++)
     {
-        if (leafNodePtr->getChildEntry(i).getEntityId() == _entity_id)
+        if(leafNodePtr->getChildEntry(i).getEntityId() == _entity_id)
         {
             entryIndex = i;
             break;
         }
     }
 
-    if (entryIndex == -1)
+    if(entryIndex == -1)
     {
         cerr << "error, can not find the entry in leaf node. @VSTree::removeEntry" << endl;
         return false;
     }
 
-    // remove the entry in this leaf node and refresh itself and its ancestors' signature.
-    leafNodePtr->removeChild(entryIndex);
-    leafNodePtr->refreshAncestorSignature(*(this->node_buffer));
-    this->entry_num --;
+	//BETTER?:consider up->bopttom to deal, not find leaf and recursively
+	if(leafNodePtr->isRoot())
+	{
+		if(childNum == 1)
+		{   //the tree is empty now
+			leafNodePtr->removeChild(entryIndex);
+			leafNodePtr->refreshAncestorSignature(*(this->node_buffer));
+			this->removeNode(leafNodePtr);
+			this->root_file_line = -1;
+			this->height = 0;
+			this->entry_num = 0;
+			this->node_num = 0;
+		}
+		else
+		{
+			leafNodePtr->removeChild(entryIndex);
+			leafNodePtr->refreshAncestorSignature(*(this->node_buffer));
+		}
+	}
+	else
+	{
+		if(childNum <= VNode::MIN_CHILD_NUM)
+		{
+			//cerr << "In VSTree::remove() -- the node is invalid" << endl;
+			//TODO+BETTER:this may search again, too costly
+			//VNode* fatherNodePtr = leafNodePtr->getFather(*(this->node_buffer));
+			////int index = leafNodePtr->getIndexInFatherNode(*(this->node_buffer));
+			//int n = fatherNodePtr->getChildNum();
+			//for (int i = 0; i < n; ++i)
+			//{
+				//if (fatherNodePtr->getChildFileLine(i) == leafNodePtr->getFileLine())
+				//{
+					//this->coalesce(fatherNodePtr, i, leafNodePtr, entryIndex);
+					//break;
+				//}
+			//}
+			//return false;
+			this->coalesce(leafNodePtr, entryIndex);
+		}
+		else
+		{
+			leafNodePtr->removeChild(entryIndex);
+			leafNodePtr->refreshAncestorSignature(*(this->node_buffer));
+		}
+	}
 
-     //we do not consider the situation which the leaf node is to be empty by now...
+
+	this->entry_num--;
+	this->entityID2FileLineMap.erase(_entity_id);
+
+     //NOTICE:insert is costly but can keep balance.
+	 //However, remove is not too costly but can not keep balance at all.
+	 //And remove maybe error if without coalesce!
+	 //If remove and insert are both wonderful, update/replace can both be balanced using delete and insert again.
+	 //(not care the balance now, if insert/delete many times, rebuilding is suggested)
+
+	 //we do not consider the situation which the leaf node is to be empty by now...
 	 //in a better way, if the leaf node is empty after removing entry, we should delete it. and recursively judge whether its
 	 //father is empty, and delete its father node if true. to make the VSTree more balanced, we should combine two nodes if
 	 //their child number are less than the MIN_CHILD_NUM. when deleting one node from the tree, we should also remove it from
@@ -438,14 +530,13 @@ VSTree::saveTree()
         flag = this->node_buffer->flush();
     }
 
-
     return flag;
 }
 
 bool 
 VSTree::loadTree()
 {
-	cout << "load VSTree..." << endl;
+	//cout << "load VSTree..." << endl;
 	(this->node_buffer) = new LRUCache(LRUCache::DEFAULT_CAPACITY);
 
     bool flag = this->loadTreeInfo();
@@ -459,13 +550,13 @@ VSTree::loadTree()
     if (flag)
     {
         this->node_buffer->loadCache(VSTree::tree_node_file_path);
-        cout << "finish loadCache" << endl;
+        //cout << "finish loadCache" << endl;
     }
 
     if (flag)
     {
         flag = loadEntityID2FileLineMap();
-        cout << "finish loadEntityID2FileLineMap" << endl;
+        //cout << "finish loadEntityID2FileLineMap" << endl;
     }
 
     return flag;
@@ -534,11 +625,12 @@ void
 VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* _p_insert_node)
 {
 #ifdef DEBUG_VSTREE
-		stringstream _ss;
-		_ss << "**********************split happen at "
-			<< _p_node_being_split->getFileLine() << endl;
-		_ss << _p_node_being_split->to_str() << endl;
-		Util::logging(_ss.str());
+		//stringstream _ss;
+		//_ss << "**********************split happen at "
+			//<< _p_node_being_split->getFileLine() << endl;
+		//_ss << _p_node_being_split->to_str() << endl;
+		//Util::logging(_ss.str());
+		//cout << "split happen" << endl;
 #endif
     // first, add the new child node(if not leaf) or child entry(if leaf) to the full node.
 	bool just_insert_entry = (_p_insert_node == NULL);
@@ -550,6 +642,7 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
     {
         _p_node_being_split->addChildNode(_p_insert_node, true);
     }
+	//NOTICE:now the child num in this node is exactly MAX_CHILD_NUM
 
     SigEntry entryA, entryB;
 
@@ -747,6 +840,7 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
          //at the first line(line zero) of the tree node file.
         this->swapNodeFileLine(RootNewPtr, oldNodePtr);
         this->height++;
+		this->root_file_line = RootNewPtr->getFileLine();
 
         //debug
 //        {
@@ -796,22 +890,270 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
     this->updateEntityID2FileLineMap(newNodePtr);
 }
 
+//the _entry_index in _child is to be removed.
+//node can only be deleted in this function.
+void 
+VSTree::coalesce(VNode* _child, int _entry_index)
+{
+#ifdef DEBUG
+	//cout << "coalesce happen" <<endl;
+#endif
+
+	//found the father and index
+	VNode* _father = _child->getFather(*(this->node_buffer));
+	int cn = _child->getChildNum();
+	
+	if(_father == NULL) //this is already root
+	{
+		//NOTICE:when root is leaf, at least one key, otherwise the tree is empty
+		//But when root is internal, at least two key, if one key then shrink
+		//(1-key internal root is not permitted)
+		//
+		//Notice that leaf-root case has been discussed in upper function removeEntry()
+		//so here the root must be internal node
+		_child->removeChild(_entry_index);
+		if(cn == 2)
+		{
+			//only one key after remove, shrink root
+			VNode* newRoot = _child->getChild(0, *(this->node_buffer));
+			newRoot->setAsRoot(true);
+			cout<<"shrink root in coalesce() -- to swap node file"<<endl;
+			this->swapNodeFileLine(newRoot, _child);
+			this->root_file_line = newRoot->getFileLine();
+			this->height--;
+			this->removeNode(_child);
+		}
+		return;
+	}
+
+	if(cn > VNode::MIN_CHILD_NUM)
+	{
+		_child->removeChild(_entry_index);
+		_child->refreshAncestorSignature(*(this->node_buffer));
+		return;
+	}
+
+    int fn = _father->getChildNum();
+	int i, _child_index = -1;
+
+	for (i = 0; i < fn; ++i)
+	{
+		if (_father->getChildFileLine(i) == _child->getFileLine())
+		{
+			break;
+		}
+	}
+	if(i == fn)
+	{
+		cerr << "not found the leaf node in VSTree::coalesce()" << endl;
+		return;
+	}
+	else
+	{
+		_child_index = i;
+	}
+
+	//_child->removeChild(_entry_index);
+	//_child->setChildNum(cn);
+
+	//NOTICE:we do not consider the efficiency here, so just ensure the operation is right
+	//BETTER:find good way to ensure signatures are separated(maybe similar ones together)
+	int ccase = 0;
+	VNode* p = NULL;
+	int n = 0;
+
+	if(_child_index < fn - 1)
+	{
+		p = _father->getChild(_child_index+1, *(this->node_buffer));
+		n = p->getChildNum();
+		if(n > VNode::MIN_CHILD_NUM)
+		{
+			ccase = 2;
+		}
+		else
+		{
+			ccase = 1;
+		}
+	}
+
+	if(_child_index > 0)
+	{
+		VNode* tp = _father->getChild(_child_index-1, *(this->node_buffer));
+		int tn = tp->getChildNum();
+		if(ccase < 2)
+		{
+			if(ccase == 0)
+				ccase = 3;
+			if(tn > VNode::MIN_CHILD_NUM)
+				ccase = 4;
+		}
+		if(ccase > 2)
+		{
+			p = tp;
+			n = tn;
+		}
+	}
+
+	VNode* tmp = NULL;
+	int child_no = _child->getFileLine();
+	int father_no = _father->getFileLine();
+
+#ifdef DEBUG
+	//if(ccase == 1 || ccase == 3)
+	//{
+		//cout << "union happened" << endl;
+	//}
+	//else if(ccase == 2 || ccase == 4)
+	//{
+		//cout << "move happened" << endl;
+	//}
+	//cout<< "father num: "<<fn<<"   child num: "<<cn<<"   neighbor num: "<<n<<endl;
+#endif
+
+	switch(ccase)
+	{
+	case 1:    //union right to this
+		if(_child->isLeaf())
+		{
+			_child->setChildFileLine(_entry_index, p->getChildFileLine(0));
+			_child->setChildEntry(_entry_index, p->getChildEntry(0));
+			for(int i = 1; i < n; ++i)
+			{
+				_child->setChildFileLine(cn+i-1, p->getChildFileLine(i));
+				_child->addChildEntry(p->getChildEntry(i));
+			}
+		}
+		else
+		{
+			_child->setChildFileLine(_entry_index, p->getChildFileLine(0));
+			_child->setChildEntry(_entry_index, p->getChildEntry(0));
+			tmp = p->getChild(0, *(this->node_buffer));
+			tmp->setFatherFileLine(child_no);
+			for(int i = 1; i < n; ++i)
+			{
+				tmp = p->getChild(i, *(this->node_buffer));
+				//cout<<i<<"   "<<_child->getChildNum()<<endl;
+				_child->addChildNode(tmp);
+				//_child->setChildNum(cn+i);
+				//tmp->setFatherFileLine(child_no);
+			}
+		}
+		this->removeNode(p);
+		_child->refreshSignature();
+		//recursive:to remove child index+1 in father
+		this->coalesce(_father, _child_index+1);
+		break;
+
+	case 2:    //move one from right
+		_child->setChildFileLine(_entry_index, p->getChildFileLine(n-1));
+		_child->setChildEntry(_entry_index, p->getChildEntry(n-1));
+		_child->refreshSignature();
+		if(!_child->isLeaf())
+		{
+			tmp = p->getChild(n-1, *(this->node_buffer));
+			tmp->setFatherFileLine(child_no);
+		}
+		p->removeChild(n-1);
+		p->refreshSignature();
+		_father->setChildEntry(_child_index, _child->getEntry());
+		_father->setChildEntry(_child_index+1, p->getEntry());
+		_father->refreshAncestorSignature(*(this->node_buffer));
+		break;
+
+	case 3:    //union left to this
+		if(_child->isLeaf())
+		{
+			_child->setChildFileLine(_entry_index, p->getChildFileLine(0));
+			_child->setChildEntry(_entry_index, p->getChildEntry(0));
+			for(int i = 1; i < n; ++i)
+			{
+				_child->setChildFileLine(cn+i-1, p->getChildFileLine(i));
+				_child->addChildEntry(p->getChildEntry(i));
+			}
+		}
+		else
+		{
+			_child->setChildFileLine(_entry_index, p->getChildFileLine(0));
+			_child->setChildEntry(_entry_index, p->getChildEntry(0));
+			tmp = p->getChild(0, *(this->node_buffer));
+			tmp->setFatherFileLine(child_no);
+			for(int i = 1; i < n; ++i)
+			{
+				tmp = p->getChild(i, *(this->node_buffer));
+				//cout<<i<<"   "<<_child->getChildNum()<<endl;
+				_child->addChildNode(tmp);
+				//_child->setChildNum(cn+i);
+				//tmp->setFatherFileLine(child_no);
+			}
+		}
+		this->removeNode(p);
+		_child->refreshSignature();
+		//recursive:to remove child index-1 in father
+		this->coalesce(_father, _child_index-1);
+		break;
+
+	case 4:    //move one from left
+		_child->setChildFileLine(_entry_index, p->getChildFileLine(n-1));
+		_child->setChildEntry(_entry_index, p->getChildEntry(n-1));
+		_child->refreshSignature();
+		if(!_child->isLeaf())
+		{
+			VNode* tmp = p->getChild(n-1, *(this->node_buffer));
+			tmp->setFatherFileLine(child_no);
+		}
+		p->removeChild(n-1);
+		p->refreshSignature();
+		_father->setChildEntry(_child_index, _child->getEntry());
+		_father->setChildEntry(_child_index-1, p->getEntry());
+		_father->refreshAncestorSignature(*(this->node_buffer));
+		break;
+
+	default:
+		cout << "error in coalesce: Invalid case!";
+		break;
+	}
+
+	//BETTER:thsi maybe very costly because many entity no need to update
+	if(_child->isLeaf())
+	{
+		this->updateEntityID2FileLineMap(_child);
+		if(ccase == 2 || ccase == 4)
+		{
+			this->updateEntityID2FileLineMap(p);
+		}
+	}	
+}
+
 //create a new node when one node need splitting. 
 VNode* 
 VSTree::createNode()
 {
     VNode* newNodePtr = new VNode();
-    newNodePtr->setFileLine(this->node_num);
-    this->node_buffer->set(this->node_num, newNodePtr);
-    this->node_num ++;
+	int key = -1;
+	if(this->free_nid_list.empty())
+	{
+		key = this->max_nid_alloc++;
+	}
+	else
+	{
+		key = *(this->free_nid_list.begin());
+		this->free_nid_list.pop_front();
+	}
+	//key = this->node_num;
+    newNodePtr->setFileLine(key);
+    this->node_buffer->set(key, newNodePtr);
+    this->node_num++;
 
     return newNodePtr;
 }
 
-/* swap two nodes' file line, their related nodes(father and children nodes) will also be updated. */
+//swap two nodes' file line, their related nodes(father and children nodes) will also be updated. 
 void 
 VSTree::swapNodeFileLine(VNode* _p_node_a, VNode* _p_node_b)
 {
+	//NOTICE+BETTER:used when root split to ensure root is at the first; 
+	//or when a node is deleted, move the last one to here(not need swap, just fill)
+	//we can also consider record the root num here, but why not?
     int oldNodeAFileLine = _p_node_a->getFileLine();
     int oldNodeBFileLine = _p_node_b->getFileLine();
     int newNodeAFileLine = oldNodeBFileLine;
@@ -827,11 +1169,11 @@ VSTree::swapNodeFileLine(VNode* _p_node_a, VNode* _p_node_b)
 
     int nodeAChildNum = _p_node_a->getChildNum();
     int nodeBChildNum = _p_node_b->getChildNum();
-    for (int i=0;i<nodeAChildNum;i++)
+    for (int i = 0; i < nodeAChildNum; ++i)
     {
         nodeAChildPtr[i] = _p_node_a->getChild(i, *(this->node_buffer));
     }
-    for (int i=0;i<nodeBChildNum;i++)
+    for (int i = 0; i < nodeBChildNum; ++i)
     {
         nodeBChildPtr[i] = _p_node_b->getChild(i, *(this->node_buffer));
     }
@@ -853,14 +1195,14 @@ VSTree::swapNodeFileLine(VNode* _p_node_a, VNode* _p_node_b)
     // update nodes' children's father file line.
     if (!_p_node_a->isLeaf())
     {
-        for (int i=0;i<nodeAChildNum;i++)
+        for (int i = 0; i < nodeAChildNum; ++i)
         {
             nodeAChildPtr[i]->setFatherFileLine(newNodeAFileLine);
         }
     }
     if (!_p_node_b->isLeaf())
     {
-        for (int i=0;i<nodeBChildNum;i++)
+        for (int i = 0; i < nodeBChildNum; ++i)
         {
             nodeBChildPtr[i]->setFatherFileLine(newNodeBFileLine);
         }
@@ -888,19 +1230,33 @@ VSTree::saveTreeInfo()
     fwrite(&this->node_num, sizeof(int), 1, filePtr);
     fwrite(&this->root_file_line, sizeof(int), 1, filePtr);
     fwrite(&this->height, sizeof(int), 1, filePtr);
+
     int minChildNum = VNode::MIN_CHILD_NUM;
     fwrite(&minChildNum, sizeof(int), 1, filePtr);
+
     int maxChildNum = VNode::MAX_CHILD_NUM;
     fwrite(&maxChildNum, sizeof(int), 1, filePtr);
+
     int nodeSize = sizeof(VNode);
     fwrite(&nodeSize,sizeof(int), 1, filePtr);
+
     int sigLength = Signature::ENTITY_SIG_LENGTH;
     fwrite(&sigLength, sizeof(int), 1, filePtr);
     fwrite(&this->entry_num, sizeof(int), 1, filePtr);
+
     int nodeBufferSize = this->node_buffer->getCapacity();
     fwrite(&nodeBufferSize, sizeof(int), 1, filePtr);
-    fclose(filePtr);
 
+	//write max id and free id list
+	fwrite(&(this->max_nid_alloc), sizeof(int), 1, filePtr);
+	list<int>::iterator it = this->free_nid_list.begin();
+	for(; it != this->free_nid_list.end(); ++it)
+	{
+		int ele = *it;
+		fwrite(&ele, sizeof(int), 1, filePtr);
+	}
+
+    fclose(filePtr);
     return true;
 }
 
@@ -928,21 +1284,40 @@ VSTree::loadTreeInfo()
     fread(&tmp, sizeof(int), 1, filePtr);
     fread(&tmp, sizeof(int), 1, filePtr);
     fread(&tmp,sizeof(int), 1, filePtr);
+
     int sigLength = Signature::ENTITY_SIG_LENGTH;
     fread(&sigLength, sizeof(int), 1, filePtr);
+
     if (sigLength > Signature::ENTITY_SIG_LENGTH)
     {
         cerr << "WARNING: signature length is too short. @VSTree::loadTreeInfo" << endl;
     }
+
     fread(&this->entry_num, sizeof(int), 1, filePtr);
     int nodeBufferSize = this->node_buffer->getCapacity();
     fread(&nodeBufferSize, sizeof(int), 1, filePtr);
+
     if (nodeBufferSize > this->node_buffer->getCapacity())
     {
         cerr << "WARNING: node buffer size may be too small. @VSTree::loadTreeInfo" << endl;
     }
-    fclose(filePtr);
 
+	//read max id and free id list
+	fread(&(this->max_nid_alloc), sizeof(int), 1, filePtr);
+	int key = -1;
+	fread(&key, sizeof(int), 1, filePtr);
+	while(!feof(filePtr))
+	{
+		this->free_nid_list.push_back(key);
+		fread(&key, sizeof(int), 1, filePtr);
+	}
+
+	if(this->root_file_line < 0 || this->root_file_line >= this->max_nid_alloc)
+	{
+		return false;
+	}
+
+    fclose(filePtr);
     return true;
 }
 
@@ -1007,7 +1382,7 @@ VSTree::updateEntityID2FileLineMap(VNode* _p_node)
     {
         int line = _p_node->getFileLine();
         int childNum = _p_node->getChildNum();
-        for (int i=0;i<childNum;i++)
+        for (int i = 0; i < childNum; i++)
         {
             // update all this node's child entries' entityID to file line mapping.
             const SigEntry& entry = _p_node->getChildEntry(i);
@@ -1034,7 +1409,6 @@ VSTree::getLeafNodeByEntityID(int _entityID)
     if (iter == this->entityID2FileLineMap.end())
     {
         cerr << "error,can not find the _entityID's mapping fileLine. @VSTree::getLeafNodeByEntityID" << endl;
-
         return NULL;
     }
 
@@ -1050,7 +1424,7 @@ VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
 	Util::logging("IN retrieveEntity");
     EntitySig filterSig(_entity_bit_set);
 #ifdef DEBUG_VSTREE
-	cerr << "the filter signature: " << filterSig.to_str() << endl;
+	//cerr << "the filter signature: " << filterSig.to_str() << endl;
 #endif
     queue<int> nodeQueue; //searching node file line queue.
 
@@ -1152,6 +1526,16 @@ VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
 #endif
     }
     Util::logging("OUT retrieveEntity");
+}
+
+void
+VSTree::removeNode(VNode* _vp)
+{
+	int key = _vp->getFileLine();
+	this->free_nid_list.push_back(key);
+	this->node_buffer->del(key);
+	this->node_num--;
+	//delete _vp;
 }
 
 string 

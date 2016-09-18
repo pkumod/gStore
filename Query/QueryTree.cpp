@@ -189,6 +189,19 @@ void QueryTree::GroupPattern::getVarset()
 		}
 }
 
+int QueryTree::GroupPattern::getVarNum()
+{
+	set<string> allvarset;
+	for (int i = 0; i < (int)this->patterns.size(); i++)
+	{
+		if (this->patterns[i].subject.value[0] == '?')
+			allvarset.insert(this->patterns[i].subject.value);
+		if (this->patterns[i].object.value[0] == '?')
+			allvarset.insert(this->patterns[i].object.value);
+	}
+	return allvarset.size();
+}
+
 bool QueryTree::GroupPattern::checkOnlyUnionOptionalFilterNoExists()
 {
 	for (int i = 0; i < (int)this->unions.size(); i++)

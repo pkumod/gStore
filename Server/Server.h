@@ -50,7 +50,7 @@ public:
     bool importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg);
     bool insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg);
     bool query(const std::string _query, std::string& _ret_msg);
-
+	bool stopServer(std::string& _ret_msg);
 
 private:
     unsigned short connectionPort;
@@ -58,6 +58,7 @@ private:
     int databaseMaxNum;
     Socket socket;
     Database* database;
+
 };
 
 #endif // _SERVER_SERVER_H

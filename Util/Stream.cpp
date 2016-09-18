@@ -326,6 +326,7 @@ Stream::read()
             char* s = (char*)calloc(len + 1, sizeof(char));
             fread(s, sizeof(char), len, this->ansDisk);
             this->copyToRecord(s, len, i);
+			free(s);
         }
     }
     this->xpos++;
@@ -510,6 +511,7 @@ Stream::~Stream()
 #ifdef DEBUG_STREAM
 		fprintf(stderr, "Stream::~Stream(): in memory, now table deleted!\n");
 #endif
+		//TODO:memory leak -- how about tempst
         return;
     }
 

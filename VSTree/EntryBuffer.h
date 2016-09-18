@@ -1,4 +1,5 @@
 /*
+ *
  * EntryBuffer.h
  *
  *  Created on: 2014Äê7ÔÂ3ÈÕ
@@ -13,7 +14,7 @@
 
 //class SigEntry;
 
-/* EntryBuffer is used to loading entries from hard disk when building VSTree. */
+//EntryBuffer is used to loading entries from hard disk when building VSTree. 
 class EntryBuffer
 {
 private:

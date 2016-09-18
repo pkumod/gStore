@@ -68,7 +68,10 @@ class GstoreConnector:
             if f.__name__ == 'build':
                 cmd = 'import'
             elif f.__name__ == 'show':
-                cmd = 'show databases'
+                if args[0]:
+                    cmd = 'show all'
+                else:
+                    cmd = 'show databases'
             else:
                 cmd = f.__name__
             params = ' '.join(map(lambda x:str(x), args))
@@ -85,10 +88,14 @@ class GstoreConnector:
             self._disconnect()
 
             succ = {
+                'test': 'OK',
                 'load': 'load database done.',
                 'unload': 'unload database done.',
                 'import': 'import RDF file to database done.',
+                'drop': 'drop database done.',
+                'stop': 'server stopped.',
                 'query': None,
+                'show all': None,
                 'show databases': None,
             }
             if cmd in succ:
@@ -104,6 +111,10 @@ class GstoreConnector:
         self.port = port
 
     @_communicate
+    def test(self):
+        pass
+
+    @_communicate
     def load(self, db_name):
         pass
 
@@ -116,9 +127,17 @@ class GstoreConnector:
         pass
 
     @_communicate
+    def drop(self, db_name):
+        pass
+
+    @_communicate
+    def stop(self):
+        pass
+
+    @_communicate
     def query(self, sparql):
         pass
 
     @_communicate
-    def show(self):
+    def show(self, _type = False):
         pass

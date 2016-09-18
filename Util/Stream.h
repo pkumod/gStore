@@ -64,7 +64,7 @@ struct ResultCmp
 			int t = this->keys[i];		
 			if(a[t] != b[t])
 			{
-				if (!this->desc[i])
+				if(!this->desc[i])
 					return (a[t] < b[t]);
 				else
 					return (a[t] > b[t]);

@@ -14,10 +14,11 @@ in the sparql query can point to the same node in data graph)
 #ifndef _UTIL_UTIL_H
 #define _UTIL_UTIL_H
 
-/* basic macros and types are defined here, including common headers */
+//basic macros and types are defined here, including common headers 
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <limits.h>
 #include <dirent.h>
 #include <string.h>
@@ -74,7 +75,7 @@ in the sparql query can point to the same node in data graph)
 //#define DEBUG_STREAM
 //#define DEBUG_PRECISE 1		all information
 //#define DEBUG_KVSTORE 1		//in KVstore
-//#define DEBUG_VSTREE 1	//in Database 
+#define DEBUG_VSTREE 1	//in Database 
 //#define DEBUG_DATABASE 1	//in Database
 #define DEBUG_JOIN      
 
@@ -127,6 +128,31 @@ typedef unsigned(*HashFunction)(const char*);
 //http://blog.csdn.net/mycomputerxiaomei/article/details/7641221
 //http://kb.cnblogs.com/page/189480/
 
+struct PPPartialRes
+{
+	std::vector<int> MatchVec;
+	std::vector<char> TagVec;
+	int FragmentID;
+	int ID;
+};
+
+struct PPPartialResVec{
+	std::vector<PPPartialRes> PartialResList;
+	int match_pos;
+};
+
+struct CrossingEdgeMapping{
+	int head_query_id;
+	int tail_query_id;
+	std::string mapping_str;
+	int fragmentID;
+};
+
+struct CrossingEdgeMappingVec{
+	int tag;
+	std::vector< std::vector<CrossingEdgeMapping> > CrossingEdgeMappings;
+};
+
 /******** all static&universal constants and fucntions ********/
 class Util
 {
@@ -147,6 +173,14 @@ public:
 	static const int LITERAL_FIRST_ID = 1000*1000*1000;
 	//initial transfer buffer size in Tree/ and Stream/
 	static const unsigned TRANSFER_SIZE = 1 << 20;	//1M
+	static const unsigned long long MAX_BUFFER_SIZE = 0xffffffff;		//max buffer size in Storage
+	//0x4fffffff 0x3fffffff
+
+	//type of B+ tree
+	static const int SS_TREE = 0;
+	static const int SI_TREE = 1;
+	static const int II_TREE = 2;
+	static const int IS_TREE = 3;
 
 	static std::string db_home;
 	static std::string tmp_path;
@@ -164,6 +198,7 @@ public:
 	static std::string int2string(long n);
 	//string2str: s.c_str()
 	//str2string: string(str)
+	static int compIIpair(int _a1, int _b1, int _a2, int _b2);
 	static std::string showtime();
 	static int cmp_int(const void* _i1, const void* _i2);
 	static void sort(int*& _id_list, int _list_len);
@@ -175,6 +210,8 @@ public:
 	static bool create_dir(const std:: string _dir);
 	static long get_cur_time();
 	static bool save_to_file(const char*, const std::string _content);
+	static bool isValidPort(std::string);
+	static bool isValidIP(std::string);
 
 	static bool is_literal_ele(int);
 	static int removeDuplicate(int*, int);
@@ -222,6 +259,38 @@ public:
 	static bool config_debug();
 	static bool gStore_mode;
 
+	static std::vector<std::string> split(std::string textline, std::string tag);
+	static void HashJoin(std::set< std::vector<int> >& finalPartialResSet, std::vector<PPPartialRes>& res1, std::map<int, std::vector<PPPartialRes> >& res2, int fragmentNum, int matchPos);
+	static int isFinalResult(PPPartialRes curPPPartialRes);
+	static bool myfunction0(PPPartialResVec v1, PPPartialResVec v2);
+	static int checkJoinable(CrossingEdgeMappingVec& vec1, CrossingEdgeMappingVec& vec2);
+	static void HashLECFJoin(CrossingEdgeMappingVec& final_res, CrossingEdgeMappingVec& res1, CrossingEdgeMappingVec& res2);
+
+private:
+	static bool isValidIPV4(std::string);
+	static bool isValidIPV6(std::string);
+};
+
+class BlockInfo
+{
+public:
+	unsigned num;			
+	BlockInfo* next;
+	BlockInfo()
+	{
+		num = 0;
+		next = NULL;
+	}
+	BlockInfo(unsigned _num)
+	{
+		num = _num;
+		next = NULL;
+	}
+	BlockInfo(unsigned _num, BlockInfo* _bp)
+	{
+		num = _num;
+		next = _bp;
+	}
 };
 
 #endif //_UTIL_UTIL_H

@@ -15,6 +15,8 @@
 #include "LRUCache.h"
 #include "EntryBuffer.h"
 
+//NOTICE:R/W more than 4G
+
 class VSTree
 {
     friend class VNode;
@@ -57,12 +59,20 @@ private:
 	int node_num;
 	int entry_num;
 	int height;
+
 	LRUCache* node_buffer;
 	EntryBuffer* entry_buffer;
 	map<int, int> entityID2FileLineMap; // record the mapping from entityID to their node's file line.
+
 	static std::string tree_file_foler_path;
 	static std::string tree_node_file_path;
 	static std::string tree_info_file_path;
+
+	//manage the node id to deal with insert/delete(only when node is created or removed).
+	//To create node, if free list is empty, then max_nid_alloc++;else, get one from free list
+	//To remove node, add its ID to free list
+	std::list<int> free_nid_list;
+	int max_nid_alloc;
 
 	//choose the best leaf node to insert the _entry, return the choosed leaf node's pointer. 
 	VNode* chooseNode(VNode* _p_node, const SigEntry& _entry);
@@ -70,6 +80,8 @@ private:
 	//the parameter _insert_entry and _p_insert_node are the entry/node
 	//need to be insert to the _p_full_node.
 	void split(VNode* _p_full_node, const SigEntry& _insert_entry, VNode* _p_insert_node);
+	//deal when _child key num not enough
+	void coalesce(VNode* _child, int _entry_index);
 	//create a new node when one node need splitting. 
 	VNode* createNode();
 	//swap two nodes' file line, their related nodes(father and children nodes) will also be updated. 
@@ -84,6 +96,9 @@ private:
 	void updateEntityID2FileLineMap(VNode* _p_node);
 	//get the leaf node pointer by the given _entityID 
 	VNode* getLeafNodeByEntityID(int _entityID);
+
+	//delete node and update the LRUCache and file storage
+	void removeNode(VNode* _vp);
 
 	std::string to_str();
 };

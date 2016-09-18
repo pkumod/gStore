@@ -277,7 +277,8 @@ public:
 	std::string candidate_str();
 	std::string result_str();
 	std::string triple_str();
+
+	void setRetrievalTag();
 };
 
 #endif //_QUERY_BASICQUERY_H
-

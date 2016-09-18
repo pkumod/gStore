@@ -23,57 +23,68 @@ VNode::VNode()
     }
 }
 
-bool VNode::isLeaf()const
+bool 
+VNode::isLeaf() const
 {
     return this->is_leaf;
 }
 
-bool VNode::isRoot()const
+bool 
+VNode::isRoot() const
 {
     return this->is_root;
 }
 
-bool VNode::isFull()const
+bool 
+VNode::isFull() const
 {
     return (this->child_num == VNode::MAX_CHILD_NUM - 1); // need one slot for splitting node.
 }
 
-void VNode::setAsLeaf(bool _isLeaf)
+void 
+VNode::setAsLeaf(bool _isLeaf)
 {
     this->is_leaf = _isLeaf;
 }
 
-void VNode::setAsRoot(bool _isRoot)
+void 
+VNode::setAsRoot(bool _isRoot)
 {
     this->is_root = _isRoot;
 }
 
-int VNode::getChildNum()const
+int 
+VNode::getChildNum() const
 {
     return this->child_num;
 }
 
-int VNode::getFileLine()const
+int 
+VNode::getFileLine() const
 {
     return this->self_file_line;
 }
 
-int VNode::getFatherFileLine()const
+int 
+VNode::getFatherFileLine() const
 {
     return this->father_file_line;
 }
 
-int VNode::getChildFileLine(int _i)const
+int 
+VNode::getChildFileLine(int _i) const
 {
     return this->child_file_lines[_i];
 }
 
-void VNode::setChildNum(int _num)
+void 
+VNode::setChildNum(int _num)
 {
     this->child_num = _num;
 }
 
-void VNode::setFileLine(int _line)
+void 
+VNode::setFileLine(int _line)
 {
     this->self_file_line = _line;
 }
@@ -144,11 +155,11 @@ VNode* VNode::getChild(int _i, LRUCache& _nodeBuffer)const
 /* add one child entry to this node. when splitting this node, can add a new entry to it. */
 bool VNode::addChildEntry(const SigEntry _entry, bool _is_splitting)
 {
-    if (this->isFull() && !_is_splitting)
-    {
-        cerr<< "error, can not add child entry when the node is full, in VNode::addChildEntry." << endl;
-        return false;
-    }
+    //if (this->isFull() && !_is_splitting)
+    //{
+        //cerr<< "error, can not add child entry when the node is full, in VNode::addChildEntry." << endl;
+        //return false;
+    //}
 
     this->setChildEntry(this->child_num, _entry);
     this->child_num ++;
@@ -159,21 +170,23 @@ bool VNode::addChildEntry(const SigEntry _entry, bool _is_splitting)
 /* add one child node to this node. when splitting this node, can add a new child to it. */
 bool VNode::addChildNode(VNode* _p_child_node, bool _is_splitting)
 {
-    if (this->isFull() && !_is_splitting)
-    {
-        cerr<< "error, can not add child when the node is full. @VNode::addChildNode" << endl;
-        return false;
-    }
+	//if (this->isFull() && !_is_splitting)
+	//{
+		//cerr<< "error, can not add child when the node is full. @VNode::addChildNode" << endl;
+		//return false;
+	//}
 
-    if (_p_child_node == NULL)
-    {
-        cerr<< "error, can not add child when the child node pointer is NULL. @VNode::addChildNode" << endl;
-        return false;
-    }
+    //if (_p_child_node == NULL)
+    //{
+        //cerr<< "error, can not add child when the child node pointer is NULL. @VNode::addChildNode" << endl;
+        //return false;
+    //}
 
     _p_child_node->setFatherFileLine(this->self_file_line);
     this->setChildFileLine(this->child_num, _p_child_node->getFileLine());
     this->addChildEntry( _p_child_node->getEntry(), _is_splitting);
+	//NOTICE:this function calls addChildEntry(), which already add the child_num
+    //this->child_num ++;
 
     return true;
 }
@@ -186,10 +199,10 @@ bool VNode::removeChild(int _i)
         return false;
     }
 
-    for (int i=_i+1;i<this->child_num;i++)
+    for (int j = _i + 1; j < this->child_num; ++j)
     {
-        child_entries[i-1] = child_entries[i];
-        child_file_lines[i-1] = child_file_lines[i];
+        child_entries[j-1] = child_entries[j];
+        child_file_lines[j-1] = child_file_lines[j];
     }
     this->child_num --;
 
@@ -206,7 +219,7 @@ int VNode::getIndexInFatherNode(LRUCache& _nodeBuffer)
     }
 
     int n = fatherNodePtr->getChildNum();
-    for (int i=0;i<n;i++)
+    for (int i = 0; i < n; i++)
     {
         if (fatherNodePtr->getChildFileLine(i) == this->self_file_line)
         {

@@ -26,12 +26,14 @@ public:
 	~Strategy();
 	//select efficient strategy to do the sparql query
 	bool handle(SPARQLquery&);
+	bool handle(SPARQLquery& _query, int myRank, string &internal_tag_str);
 
 private:
 	int method;
 	KVstore* kvstore;
 	VSTree* vstree;
 	void handler0(BasicQuery*, vector<int*>&);
+	void handler0_0(BasicQuery*, vector<int*>&, string &);
 	void handler1(BasicQuery*, vector<int*>&);
 	void handler2(BasicQuery*, vector<int*>&);
 	void handler3(BasicQuery*, vector<int*>&);

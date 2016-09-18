@@ -19,6 +19,139 @@ vector<vector<string> > GeneralEvaluation::getSPARQLQueryVarset()
     return res;
 }
 
+void GeneralEvaluation::doQuery(const string &_query, int myRank, string &internal_tag_str, string& lpm_str)
+{
+    long tv_begin = Util::get_cur_time();
+
+    if (!this->parseQuery(_query))
+        return;
+    long tv_parse = Util::get_cur_time();
+    //cout << "after Parsing, used " << (tv_parse - tv_begin) << "ms." << endl;
+
+    this->query_tree.getGroupPattern().getVarset();
+
+	{
+		//cout << "=====================" << endl;
+		//cout << "||not well-designed||" << endl;
+		//cout << "=====================" << endl;
+
+		this->getBasicQuery(this->query_tree.getGroupPattern());
+		this->sparql_query.encodeQuery(this->kvstore, this->getSPARQLQueryVarset());
+		
+		Strategy stra(this->kvstore, this->vstree);
+		stra.handle(this->sparql_query, myRank, internal_tag_str);
+		long tv_handle = Util::get_cur_time();
+		//cout << "after handle, used " << (tv_handle - tv_encode) << "ms." << endl;
+		
+		this->generateEvaluationPlan(this->query_tree.getGroupPattern());
+		this->doEvaluationPlan();
+		long tv_postpro = Util::get_cur_time();
+		//cout << "after Postprocessing, used " << (tv_postpro - tv_handle) << "ms." << endl;
+	}
+
+	stringstream lpm_res_ss;	
+	if(this->query_tree.getQueryForm() == QueryTree::Select_Query){
+		vector<BasicQuery*>& queryList = this->sparql_query.getBasicQueryVec();
+		vector<BasicQuery*>::iterator iter = queryList.begin();
+		for(; iter != queryList.end(); iter++)
+		{
+			vector<int*>& result_list = (*iter)->getResultList();
+			int varNum = (*iter)->getVarNum();
+			for(unsigned i = 0; i < result_list.size(); i ++)
+			{
+				int* _p_int = result_list[i];			
+				for(int j = 0; j < varNum; j++)
+				{
+					string tmp_ans;
+					if (_p_int[j] == -1){
+						lpm_res_ss << "-1\t";
+					}else if (_p_int[j] < Util::LITERAL_FIRST_ID){
+						lpm_res_ss << internal_tag_str.at(_p_int[j]) << this->kvstore->getEntityByID(_p_int[j]) << "\t";
+					}else{
+						lpm_res_ss << "1" << this->kvstore->getLiteralByID(_p_int[j]) << "\t";
+					}
+				}
+				lpm_res_ss << endl;
+			}
+		}
+		//cout << "lpm_res_str : " << lpm_res_ss.str() << endl;
+	}else{
+		vector<BasicQuery*>& queryList = this->sparql_query.getBasicQueryVec();
+		vector<BasicQuery*>::iterator iter = queryList.begin();
+		for(; iter != queryList.end(); iter++)
+		{
+			vector<int*>& all_result_list = (*iter)->getResultList();
+			int var_num = (*iter)->getVarNum();
+			
+			char* dealed_internal_id_sign = new char[var_num + 1];
+			set<string> LECF_set;
+			
+			for(vector<int*>::iterator it = all_result_list.begin(); it != all_result_list.end(); it++){
+				memset(dealed_internal_id_sign, '0', sizeof(bool) * var_num);
+				dealed_internal_id_sign[var_num] = 0;
+				int* result_var = *it;		
+				stringstream res_ss;
+				
+				for(int j = 0; j < var_num; j++){
+					int var_degree = (*iter)->getVarDegree(j);
+					
+					if(result_var[j] == -1)
+						continue;
+					
+					for (int i = 0; i < var_degree; i++)
+					{
+						if(result_var[j] >= Util::LITERAL_FIRST_ID || internal_tag_str.at(result_var[j]) == '1'){
+							dealed_internal_id_sign[j] = '1';
+						}else{
+							continue;
+						}
+						// each triple/edge need to be processed only once.
+						int edge_id = (*iter)->getEdgeID(j, i);				
+						int var_id2 = (*iter)->getEdgeNeighborID(j, i);
+						if (var_id2 == -1)
+						{
+							continue;
+						}
+						
+						if(result_var[var_id2] != -1){
+							if(result_var[var_id2] < Util::LITERAL_FIRST_ID && internal_tag_str.at(result_var[var_id2]) == '0'){
+								string _tmp_1, _tmp_2;
+								if(result_var[j] < Util::LITERAL_FIRST_ID){
+									_tmp_1 = (this->kvstore)->getEntityByID(result_var[j]);
+								}else{
+									_tmp_1 = (this->kvstore)->getLiteralByID(result_var[j]);
+								}
+								
+								if(result_var[var_id2] < Util::LITERAL_FIRST_ID){
+									_tmp_2 = (this->kvstore)->getEntityByID(result_var[var_id2]);
+								}else{
+									_tmp_2 = (this->kvstore)->getLiteralByID(result_var[var_id2]);
+								}
+								if(j < var_id2){
+									res_ss << j << "\t" << var_id2 << "\t" << _tmp_1 << "\t" << _tmp_2 << "\t";
+								}else{
+									res_ss << var_id2 << "\t" << j << "\t" << _tmp_2 << "\t" << _tmp_1 << "\t";
+								}
+							}
+						}
+					}
+				}
+				res_ss << dealed_internal_id_sign << endl;
+				//log_output << res_ss.str() << endl;
+				LECF_set.insert(res_ss.str());
+			}
+			delete[] dealed_internal_id_sign;
+			
+			for(set<string>::iterator it1 = LECF_set.begin(); it1 != LECF_set.end(); it1++){
+				lpm_res_ss << *it1 << endl;
+			}
+			lpm_str = lpm_res_ss.str();
+		}
+	}
+	
+	 lpm_str = lpm_res_ss.str();
+}
+
 void GeneralEvaluation::doQuery(const string &_query)
 {
     long tv_begin = Util::get_cur_time();
@@ -103,6 +236,28 @@ bool GeneralEvaluation::parseQuery(const string &_query)
         cerr << e << endl;
         return false;
     }
+    return true;
+}
+
+bool GeneralEvaluation::onlyParseQuery(const string &_query, int& var_num, QueryTree::QueryForm& query_form)
+{
+    try
+    {
+        this->query_parser.sparqlParser(_query, this->query_tree);
+    }
+    catch(const char* e)
+    {
+        cerr << e << endl;
+        return false;
+    }
+	
+	var_num = this->query_tree.getGroupPattern().getVarNum();
+	if(this->query_tree.getQueryForm() == QueryTree::Ask_Query){
+		query_form = QueryTree::Ask_Query;
+	}else{
+		query_form = QueryTree::Select_Query;
+	}
+	
     return true;
 }
 

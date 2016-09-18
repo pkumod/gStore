@@ -32,8 +32,15 @@ class Connector {
             return $buf;
         }
     }
+
     public function build($db_name, $rdf_file_path) {
         $data = "import " . $db_name . " " . $rdf_file_path . "\0";
+        self::send($data);
+        $result = self::recv();
+        return $result;
+    }
+    public function test() {
+        $data = "test";
         self::send($data);
         $result = self::recv();
         return $result;
@@ -50,8 +57,30 @@ class Connector {
         $result = self::recv();
         return $result;
     }
+    public function drop($db_name) {
+        $data = "drop " . $db_name;
+        self::send($data);
+        $result = self::recv();
+        return $result;
+    }
+    public function stop() {
+        $data = "stop";
+        self::send($data);
+        $result = self::recv();
+        return $result;
+    }
     public function query($sparql) {
         $data = "query " . $sparql . "\0";
+        self::send($data);
+        $result = self::recv();
+        return $result;
+    }
+    public function show($type = FALSE) {
+        if ($type) {
+            $data = "show all";
+        } else {
+            $data = "show databases";
+        }
         self::send($data);
         $result = self::recv();
         return $result;
@@ -61,4 +90,3 @@ class Connector {
     }
 }
 ?>
-
