@@ -1,0 +1,15 @@
+<http://dbpedia.org/resource/Woody_Allen>	1
+<http://dbpedia.org/resource/Sleeper_%28film%29>	1
+<http://dbpedia.org/resource/Small_Time_Crooks>	1
+<http://dbpedia.org/resource/Mystery_Men>	1
+<http://dbpedia.org/resource/Hank_Azaria>	1
+<http://dbpedia.org/resource/A_Very_Young_Lady>	1
+<http://dbpedia.org/resource/Louise_Lasser>	2
+<http://dbpedia.org/resource/New_York_City>	2
+<http://dbpedia.org/resource/Mary_Hartman%2C_Mary_Hartman>	2
+<http://dbpedia.org/resource/Slither_%281973_film%29>	2
+<http://dbpedia.org/resource/Nancy_Kelly>	3
+<http://dbpedia.org/resource/Hugh_Grant>	3
+<http://dbpedia.org/resource/Category:C%C3%A9sar_Award_winners>	3
+<http://dbpedia.org/resource/Man-Trap>	0
+<http://dbpedia.org/resource/Edmond_O%27Brien>	0

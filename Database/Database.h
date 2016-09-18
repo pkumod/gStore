@@ -47,6 +47,7 @@ public:
 	bool load();
 	bool unload();
 	bool query(const string _query, ResultSet& _result_set, FILE* _fp = stdout);
+	bool query(const string _query, ResultSet& _result_set, string& intermediate_res, int myRank, FILE* _fp = stdout);
 
 	 //1. if subject of _triple doesn't exist,
 		//then assign a new subid, and insert a new SigEntry
@@ -71,6 +72,8 @@ public:
     /* root Path of this DB + DBInfoFile */
     string getDBInfoFile();
 
+	bool loadInternalVertices(const string _in_file);
+
 private:
 	string name;
 	bool is_active;
@@ -93,6 +96,9 @@ private:
 	string six_tuples_file;
 	 //B means binary 
 	string signature_binary_file;
+
+	/* internal vertices string */
+	string internal_tag_str;
 	
 	//triple num per group for insert/delete
 	//can not be too high, otherwise the heap will over
@@ -160,8 +166,8 @@ private:
 
 	//insert and delete, notice that modify is not needed here
 	//we can read from file or use sparql syntax
-    int insertTriple(const TripleWithObjType& _triple, vector<int>* _vertices=NULL, vector<int>* _predicates=NULL);
-    bool removeTriple(const TripleWithObjType& _triple, vector<int>* _vertices=NULL, vector<int>* _predicates=NULL);
+    int insertTriple(const TripleWithObjType& _triple);
+    bool removeTriple(const TripleWithObjType& _triple);
 	//NOTICE:one by one is too costly, sort and insert/delete at a time will be better
 	bool insert(const TripleWithObjType* _triples, int _triple_num, vector<int>& _vertices, vector<int>& _predicates);
 	//bool insert(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);

@@ -78,6 +78,7 @@ class QueryTree
 				GroupPattern& getLastExistsGroupPattern();
 
 				void getVarset();
+				int getVarNum();
 
 				bool checkOnlyUnionOptionalFilterNoExists();
 				std::pair<Varset, Varset> checkOptionalGroupPatternVarsAndSafeFilter(Varset occur , Varset ban, bool &check_condition);

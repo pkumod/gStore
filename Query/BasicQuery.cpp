@@ -338,13 +338,13 @@ BasicQuery::updateObjSig(int _obj_id, int _pre_id, int _sub_id, string _sub,int 
     bool sub_is_str = (_sub_id == -1) && (_sub.at(0) != '?');
     if(sub_is_str)
     {
-        cout << "str2entity" << endl;
+        //cout << "str2entity" << endl;
         Signature::encodeStr2Entity(_sub.c_str(), this->var_sig[_obj_id]);
     }
 
     if(_pre_id >= 0)
     {
-        cout << "pre2entity" << endl;
+        //cout << "pre2entity" << endl;
         Signature::encodePredicate2Entity(_pre_id, this->var_sig[_obj_id], Util::EDGE_IN);
     }
 
@@ -370,7 +370,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 	//(ordered, and merged with selected s/o in upper level)
 	//we append the candidates for selected pre_var to original select_var_num columns
 	//TODO:add pre var, assign name and select=true (not disturb the order between pres)
-    cout << "IN buildBasicSignature" << endl;
+    //cout << "IN buildBasicSignature" << endl;
     //this->initial();
     //cout << "after init" << endl;
 
@@ -393,14 +393,14 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         this->var_str2id[_var] = i;
         this->var_name[i] = _var;
     }
-
+/*
     cout << "select variables: ";
     for(unsigned i = 0; i < this->var_str2id.size(); ++i)
     {
         cout << "[" << this->var_name[i] << ", " << i << " " << this->var_str2id[this->var_name[i]] << "]\t";
     }
     cout << endl;
-
+*/
 	this->total_var_num = this->select_var_num;
     if(this->encode_method == BasicQuery::SELECT_VAR)
     {
@@ -412,7 +412,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
     }
     // assign the this->var_num, all need to join
     this->graph_var_num = this->var_str2id.size();
-
+/*
     cout<< "graph variables: ";
     for(unsigned i = 0; i < this->var_str2id.size(); i ++)
     {
@@ -420,7 +420,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
     }
     cout << endl;
 	cout << "before new IDList!" << endl;	//just for debug
-
+*/
     this->candidate_list = new IDList[this->graph_var_num];
 
     for(unsigned i = 0; i < this->triple_vt.size(); i ++)
@@ -456,10 +456,11 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 			if(pre_id == -1)
 			{
 				//TODO:end this query, otherwise maybe error later
-				cerr << "invalid query because the pre is not found: " << pre << endl;
+				//cerr << "invalid query because the pre is not found: " << pre << endl;
 				//BETTER:this is too robust, not only one query, try return false
 				//exit(1);
-				return false;
+				//printf("invalid query because the pre is not found %s\n", pre.c_str());
+				//return false;
 			}
 		}
         int sub_id = -1;
@@ -515,7 +516,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         {
             if(pre_id >= 0)
             {
-                cout << "pre2edge" << endl;
+                //cout << "pre2edge" << endl;
                 Signature::encodePredicate2Edge(pre_id, this->edge_sig[sub_id][obj_id]);
 //              this->edge_pre_id[sub_id][obj_id] = pre_id;
             }
@@ -534,7 +535,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 		}
 	}
 
-    cout << "OUT encodeBasicQuery" << endl;
+    //cout << "OUT encodeBasicQuery" << endl;
 	return true;
 }
 
@@ -576,17 +577,7 @@ BasicQuery::getPreVarByID(unsigned _id) const
 int
 BasicQuery::getIDByVarName(const string& _name)
 {
-	map<string,int>::iterator it = this->var_str2id.find(_name);
-	if(it != this->var_str2id.end())
-	{
-		return it->second;
-	}
-	else
-	{
-		//WARN:if return var_str2id[_name] directly, this will be 0
-		//maybe conflict with valid ID 0
-		return -1;
-	}
+	return this->var_str2id[_name];
 }
 
 void 
@@ -864,12 +855,12 @@ BasicQuery::getVarID_FirstProcessWhenJoin()
 		//if(this->isLiteralVariable(i) || this->isSatelliteInJoin(i))
 		if(!this->isReady(i))
         {
-			cout<<"var "<<i<<" is not ready!"<<endl;
+			//cout<<"var "<<i<<" is not ready!"<<endl;
             continue;
         }
-		else
-			cout<<"var "<<i<<" is ready!"<<endl;
-
+		else{
+			//cout<<"var "<<i<<" is ready!"<<endl;
+		}
 		int tmp_size = (this->candidate_list[i]).size();
 		//if(this->isLiteralVariable(i))
 		//{
@@ -999,3 +990,12 @@ string BasicQuery::to_str()
     return _ss.str();
 }
 
+
+void
+BasicQuery::setRetrievalTag()
+{
+	for(int i = 0; i < BasicQuery::MAX_VAR_NUM; ++i)
+    {
+        this->need_retrieve[i] = true;
+	}
+}

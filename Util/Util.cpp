@@ -158,12 +158,12 @@ Util::config_setting()
     int status = 0; // 1 AppName 2 KeyName
 
 #ifdef DEBUG
-	fprintf(stderr, "profile: %s\n", profile.c_str());
+	//fprintf(stderr, "profile: %s\n", profile.c_str());
 #endif
     if((fp = fopen(profile.c_str(), "r")) == NULL)  //NOTICE: this is not a binary file
     {
 #ifdef DEBUG
-        fprintf(stderr, "openfile [%s] error [%s]\n", profile.c_str(), strerror(errno));
+        //fprintf(stderr, "openfile [%s] error [%s]\n", profile.c_str(), strerror(errno));
 #endif
         return false;
     }
@@ -171,7 +171,7 @@ Util::config_setting()
 	memset(appname, 0, sizeof(appname));
 	sprintf(appname,"[%s]", AppName);
 #ifdef DEBUG
-	fprintf(stderr, "appname: %s\n", appname);
+	//fprintf(stderr, "appname: %s\n", appname);
 #endif
 
     while(!feof(fp) && fgets(buf_i, len2, fp) != NULL)
@@ -191,7 +191,7 @@ Util::config_setting()
             if(strncmp(buf, appname, strlen(appname)) == 0)
             {
 #ifdef DEBUG
-				fprintf(stderr, "app found!\n");
+				//fprintf(stderr, "app found!\n");
 #endif
                 status = 1;
                 continue;
@@ -211,12 +211,12 @@ Util::config_setting()
                 memset(keyname, 0, sizeof(keyname));
                 sscanf(buf, "%[^=|^ |^\t]", keyname);
 #ifdef DEBUG
-				fprintf(stderr, "keyname: %s\n", keyname);
+				//fprintf(stderr, "keyname: %s\n", keyname);
 #endif
                 if(strcmp(keyname, KeyName) == 0) 
 				{
 #ifdef DEBUG
-					fprintf(stderr, "key found!\n");
+					//fprintf(stderr, "key found!\n");
 #endif
                     sscanf(++c, "%[^\n]", KeyVal);
                     char *KeyVal_o = (char *)calloc(strlen(KeyVal) + 1, sizeof(char));
@@ -224,7 +224,7 @@ Util::config_setting()
 					{
                         Util::a_trim(KeyVal_o, KeyVal);
 #ifdef DEBUG
-						fprintf(stderr, "KeyVal: %s\n", KeyVal_o);
+						//fprintf(stderr, "KeyVal: %s\n", KeyVal_o);
 #endif
                         if(KeyVal_o && strlen(KeyVal_o) > 0)
                             strcpy(KeyVal, KeyVal_o);
@@ -799,7 +799,8 @@ Util::getExactPath(const char *str)
     string cmd = "realpath ";
     cmd += string(str);
 
-    return getSystemOutput(cmd);
+    //return getSystemOutput(cmd);
+	return string(str);
 }
 
 void
@@ -1268,3 +1269,220 @@ Util::isValidIPV6(string str)
 	return false;
 }
 
+bool operator<(const CrossingEdgeMapping& node1, const CrossingEdgeMapping& node2)
+{
+	if(node1.head_query_id < node2.head_query_id)
+		return true;
+	if(node1.head_query_id == node2.head_query_id && node1.tail_query_id < node2.tail_query_id)
+		return true;
+	if(node1.head_query_id == node2.head_query_id && node1.tail_query_id == node2.tail_query_id && node1.mapping_str.compare(node2.mapping_str) < 0)
+		return true;
+
+	return false;
+}
+
+bool operator==(CrossingEdgeMapping& node1, CrossingEdgeMapping& node2)
+{
+	if(node1.head_query_id == node2.head_query_id && node1.tail_query_id == node2.tail_query_id && node1.mapping_str.compare(node2.mapping_str) == 0)
+		return true;
+
+	return false;
+}
+
+void
+Util::HashJoin(std::set< vector<int> >& finalPartialResSet, std::vector<PPPartialRes>& res1, std::map<int, vector<PPPartialRes> >& res2, int fragmentNum, int matchPos){
+
+	if(0 == res1.size()){
+		return;
+	}
+	
+	int tag = 0, len = res1[0].MatchVec.size();
+	std::vector<PPPartialRes> new_res;
+	for(int i = 0; i < res1.size(); i++){
+		if('1' == res1[i].TagVec[matchPos]){
+			new_res.push_back(res1[i]);
+			continue;
+		}
+		if(res2.count(res1[i].MatchVec[matchPos]) == 0)
+			continue;
+		//cout << res2[res1[i].MatchVec[matchPos]].size() << " " << endl;
+		
+		std::vector<PPPartialRes> tmp_res = res2[res1[i].MatchVec[matchPos]];
+		for(int j = 0; j < tmp_res.size(); j++){
+			//cout << tmp_res.size() << "~~~~" << j << endl;
+			tag = 0;
+			PPPartialRes curPPPartialRes;
+			curPPPartialRes.TagVec.assign(len, '0');
+			curPPPartialRes.FragmentID = fragmentNum + res1[i].FragmentID;
+			for(int k = 0; k < len; k++){
+				//cout << "++++" << k << " " << res1[i].MatchVec[k] << " " << tmp_res[j].MatchVec[k] << endl;
+				if(res1[i].MatchVec[k] != -1 && tmp_res[j].MatchVec[k] != -1
+					&& res1[i].MatchVec[k] != tmp_res[j].MatchVec[k]){
+
+					tag = 1;
+					break;
+				}else if(res1[i].MatchVec[k] == -1 && tmp_res[j].MatchVec[k] != -1){
+					curPPPartialRes.TagVec[k] = tmp_res[j].TagVec[k];
+					curPPPartialRes.MatchVec.push_back(tmp_res[j].MatchVec[k]);
+				}else if(res1[i].MatchVec[k] != -1 && tmp_res[j].MatchVec[k] == -1){
+					curPPPartialRes.TagVec[k] = res1[i].TagVec[k];
+					curPPPartialRes.MatchVec.push_back(res1[i].MatchVec[k]);
+				}else{
+					if('1' == res1[i].TagVec[k] || '1' == tmp_res[j].TagVec[k])
+						curPPPartialRes.TagVec[k] = '1';
+					curPPPartialRes.MatchVec.push_back(res1[i].MatchVec[k]);
+				}
+			}
+					
+			//cout << "tag = " << tag << endl;
+			if(tag == 1)
+				continue;
+
+			if(0 == Util::isFinalResult(curPPPartialRes)){
+				new_res.push_back(curPPPartialRes);
+			}else{
+				finalPartialResSet.insert(curPPPartialRes.MatchVec);
+			}
+		}
+	}
+	res1.assign(new_res.begin(), new_res.end());
+}
+
+int 
+Util::isFinalResult(PPPartialRes curPPPartialRes){
+	for(int i = 0; i < curPPPartialRes.TagVec.size(); i++){
+		if('1' != curPPPartialRes.TagVec[i])
+			return 0;
+	}
+	return 1;
+}
+
+bool 
+Util::myfunction0(PPPartialResVec v1, PPPartialResVec v2){
+	if(v1.PartialResList.size() != v2.PartialResList.size())
+		return (v1.PartialResList.size() < v2.PartialResList.size());
+	return (v1.match_pos < v2.match_pos);
+}
+
+int 
+Util::checkJoinable(CrossingEdgeMappingVec& vec1, CrossingEdgeMappingVec& vec2){
+	if(vec1.tag & vec2.tag){
+		return 0;
+	}
+	
+	for(int i = 0; i < vec1.CrossingEdgeMappings[0].size(); i++){
+		for(int j = 0; j < vec2.CrossingEdgeMappings[0].size(); j++){
+			if(vec1.CrossingEdgeMappings[0][i].head_query_id == vec2.CrossingEdgeMappings[0][j].head_query_id && vec1.CrossingEdgeMappings[0][i].tail_query_id == vec2.CrossingEdgeMappings[0][j].tail_query_id){
+				return 1;
+			}
+		}
+	}
+	
+	return 0;
+}
+
+void 
+Util::HashLECFJoin(CrossingEdgeMappingVec& final_res, CrossingEdgeMappingVec& res1, CrossingEdgeMappingVec& res2){
+	if(res1.CrossingEdgeMappings.size() == 0){
+		return ;
+	}
+
+	std::vector< std::pair<int, int> > matchPos;
+	std::set<int> second_match_pos;
+	for(int i = 0; i < res1.CrossingEdgeMappings[0].size(); i++){
+		for(int j = 0; j < res2.CrossingEdgeMappings[0].size(); j++){
+			
+			if(res1.CrossingEdgeMappings[0][i].head_query_id == res2.CrossingEdgeMappings[0][j].head_query_id && res1.CrossingEdgeMappings[0][i].tail_query_id == res2.CrossingEdgeMappings[0][j].tail_query_id){
+				std::pair<int, int> tmp_pair;
+				matchPos.push_back(tmp_pair);
+				matchPos[matchPos.size() - 1].first = i;
+				matchPos[matchPos.size() - 1].second = j;
+				second_match_pos.insert(j);
+			}
+		}
+	}
+	//printf("~~~%d\n", matchPos.size());
+	
+	map<CrossingEdgeMapping, CrossingEdgeMappingVec> edge_LECF_map;
+	for(int i = 0; i < res2.CrossingEdgeMappings.size(); i++){
+		if(edge_LECF_map.count(res2.CrossingEdgeMappings[i][matchPos[0].second]) == 0){
+			CrossingEdgeMappingVec tmpCrossingEdgeMappingVec;
+			edge_LECF_map.insert(make_pair(res2.CrossingEdgeMappings[i][matchPos[0].second], tmpCrossingEdgeMappingVec));
+		}
+		edge_LECF_map[res2.CrossingEdgeMappings[i][matchPos[0].second]].CrossingEdgeMappings.push_back(res2.CrossingEdgeMappings[i]);
+	}
+	
+	final_res.tag = res1.tag | res2.tag;
+	int tag = 0;
+	//printf("~~~%d\n", final_res.tag);
+	
+	for(int i = 0; i < res1.CrossingEdgeMappings.size(); i++){
+		if(edge_LECF_map.count(res1.CrossingEdgeMappings[i][matchPos[0].first]) == 0)
+			continue;
+			
+		CrossingEdgeMappingVec tmpCrossingEdgeMappingVec = edge_LECF_map[res1.CrossingEdgeMappings[i][matchPos[0].first]];
+		
+		for(int j = 0; j < tmpCrossingEdgeMappingVec.CrossingEdgeMappings.size(); j++){
+		
+			//printf("%d %d = %d %d\n", res1.tag, res2.tag, i, j);
+		
+			if(res1.CrossingEdgeMappings[i][matchPos[0].first].fragmentID == tmpCrossingEdgeMappingVec.CrossingEdgeMappings[j][matchPos[0].second].fragmentID)
+				continue;
+				
+			tag = 0;
+			std::vector<CrossingEdgeMapping> curCrossingEdgeMappingVec;
+			int first_match_pos = 0;
+			for(int k = 0; k < res1.CrossingEdgeMappings[i].size(); k++){
+				if(first_match_pos >= matchPos.size() || k != matchPos[first_match_pos].first){
+					curCrossingEdgeMappingVec.push_back(res1.CrossingEdgeMappings[i][k]);
+					continue;
+				}
+				if(res1.CrossingEdgeMappings[i][matchPos[first_match_pos].first].mapping_str.compare(tmpCrossingEdgeMappingVec.CrossingEdgeMappings[j][matchPos[first_match_pos].second].mapping_str) != 0){
+
+					tag = 1;
+					break;
+				}
+				
+				//printf("%d join position %d %d = %s and %s\n", first_match_pos, i, j, res1.CrossingEdgeMappings[i][matchPos[first_match_pos].first].mapping_str.c_str(), res2.CrossingEdgeMappings[j][matchPos[first_match_pos].second].mapping_str.c_str());
+				
+				first_match_pos++;
+			}
+			
+			if(tag == 1)
+				continue;
+			
+			for(int k = 0; k < tmpCrossingEdgeMappingVec.CrossingEdgeMappings[j].size(); k++){
+				if(second_match_pos.count(k) == 0){
+					curCrossingEdgeMappingVec.push_back(tmpCrossingEdgeMappingVec.CrossingEdgeMappings[j][k]);
+				}
+			}
+			
+			final_res.CrossingEdgeMappings.push_back(curCrossingEdgeMappingVec);
+		}
+	}
+	//printf("+++--- %d \n", final_res.CrossingEdgeMappings.size());
+}
+
+vector<string> 
+Util::split(string textline, string tag){
+	vector<string> res;
+	std::size_t pre_pos = 0;
+	std::size_t pos = textline.find_first_of(tag);
+	while (pos != std::string::npos){
+		string curStr = textline.substr(pre_pos, pos - pre_pos);
+		curStr.erase(0, curStr.find_first_not_of("\r\t\n "));
+		curStr.erase(curStr.find_last_not_of("\r\t\n ") + 1);
+		if(strcmp(curStr.c_str(), "") != 0)
+			res.push_back(curStr);
+		pre_pos = pos + 1;
+		pos = textline.find_first_of(tag, pre_pos);
+	}
+
+	string curStr = textline.substr(pre_pos, pos - pre_pos);
+	curStr.erase(0, curStr.find_first_not_of("\r\t\n "));
+	curStr.erase(curStr.find_last_not_of("\r\t\n ") + 1);
+	if(strcmp(curStr.c_str(), "") != 0)
+		res.push_back(curStr);
+
+	return res;
+}

@@ -1,11 +1,6 @@
 #include "../Database/Database.h"
 #include "../Util/Util.h"
 
-//NOTICE+WARN:
-//ok to remove the whole tree
-//but if add again, error will come
-//TODO:deal with empty tree and add eles
-
 using namespace std;
 
 int
@@ -28,7 +23,7 @@ main(int argc, char * argv[])
 	//_db.remove(argv[2]);
 	vector<int> vertices;
 	vector<int> predicates;
-	_db.remove(argv[2], vertices, predicates);
+	_db.insert(argv[2], vertices, predicates);
 
 	//string query = string(argv[2]);
 	//query = Util::getQueryFromFile(query.c_str());
