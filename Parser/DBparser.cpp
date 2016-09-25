@@ -34,7 +34,7 @@ string DBparser::sparqlParser(const string& _sparql, SPARQLquery& _sparql_query)
 	pANTLR3_BASE_TREE root = r.tree;
 	//pANTLR3_BASE_TREE treeNode;
 
-	//printNode(root);
+	printNode(root);
 	parseNode(root,_sparql_query,0);
 	parser->free(parser);
 	tokens->free(tokens);
@@ -187,13 +187,13 @@ void DBparser::replacePrefix(string& str){
 	if (str[0]!='<'){
 		int sep=str.find(":");
 		std::string prefix=str.substr(0,sep+1);
-		//std::cout<<"prefix: "<<prefix<<std::endl;
+		std::cout<<"prefix: "<<prefix<<std::endl;
 		if (_prefix_map.find(prefix)!=_prefix_map.end()){
 			str=_prefix_map[prefix].substr(0,_prefix_map[prefix].length()-1)+str.substr(sep+1,str.length()-sep-1)+">";
-			//std::cout<<"str: "<<str<<std::endl;
+			std::cout<<"str: "<<str<<std::endl;
 		}
 		else{
-			//std::cout<<"prefix not found..."<<std::endl;
+			std::cout<<"prefix not found..."<<std::endl;
 		}
 	}
 }
@@ -222,7 +222,7 @@ int DBparser::parseTriple(pANTLR3_BASE_TREE node,Triple& triple){
 		}
 	}
 	triple=Triple(subject,predicate,object);
-	//std::cout<<"Triple: \n\ts|"<<subject<<"|\n\tp|"<<predicate<<"|\n\to|"<<object<<"|"<<std::endl;
+	std::cout<<"Triple: \n\ts|"<<subject<<"|\n\tp|"<<predicate<<"|\n\to|"<<object<<"|"<<std::endl;
 	return 0;
 }
 
@@ -232,7 +232,7 @@ int DBparser::parseBasicQuery(pANTLR3_BASE_TREE node,BasicQuery& basicQuery){
 	for (unsigned int j=0;j<node->getChildCount(node);j++){
 		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
 		//basicQuery 185
-		//std::cout<<"Child type: "<<childNode->getType(childNode)<<endl;
+		std::cout<<"Child type: "<<childNode->getType(childNode)<<endl;
 		if (childNode->getType(childNode)==185){
 				parseTriple(childNode,triple);
 				basicQuery.addTriple(triple);
@@ -264,12 +264,12 @@ int DBparser::parseVar(pANTLR3_BASE_TREE node,SPARQLquery& query){
 int DBparser::parseNode(pANTLR3_BASE_TREE node, SPARQLquery& query,int depth){
 	const char* s =(const char*) node->getText(node)->chars;
 	ANTLR3_UINT32 treeType = node->getType(node);
-/*
+
 	for (int i=0;i<depth;i++){
 		printf("    ");
 	}
 	printf("%d: %s\n",treeType,s);
-*/
+
 	for (unsigned int j=0;j<node->getChildCount(node);j++){
 		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
 		int childNodeType = childNode->getType(childNode);

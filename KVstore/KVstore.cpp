@@ -24,6 +24,7 @@ KVstore::getEntityOutDegree(int _entity_id)
 	int* _plist = NULL;
 	int _list_len = 0;
 	this->getpreIDlistBysubID(_entity_id, _plist, _list_len);
+	delete[] _plist;
 	return _list_len;
 }
 int
@@ -32,6 +33,7 @@ KVstore::getEntityInDegree(int _entity_id)
 	int* _plist = NULL;
 	int _list_len = 0;
 	this->getpreIDlistByobjID(_entity_id, _plist, _list_len);
+	delete[] _plist;
 	return _list_len;
 }
 
@@ -41,6 +43,7 @@ KVstore::getLiteralDegree(int _literal_id)
 	int* _plist = NULL;
 	int _list_len = 0;
 	this->getpreIDlistByobjID(_literal_id, _plist, _list_len);
+	delete[] _plist;
 	return _list_len;
 }
 
@@ -50,6 +53,7 @@ KVstore::getPredicateDegree(int _predicate_id)
 	int* _slist = NULL;
 	int _list_len = 0;
 	this->getsubIDlistBypreID(_predicate_id, _slist, _list_len);
+	delete[] _slist;
 	return _list_len;
 }
 
@@ -61,6 +65,7 @@ KVstore::getSubjectPredicateDegree(int _subid, int _preid)
 	int* olist = NULL;
 	int len = 0;
 	this->getobjIDlistBysubIDpreID(_subid, _preid, olist, len);
+	delete[] olist;
 	return len;
 }
 
@@ -70,6 +75,7 @@ KVstore::getObjectPredicateDegree(int _objid, int _preid)
 	int* slist = NULL;
 	int len = 0;
 	this->getsubIDlistByobjIDpreID(_objid, _preid, slist, len);
+	delete[] slist;
 	return len;
 }
 
@@ -2079,7 +2085,7 @@ KVstore::close_subID2objIDlist()
 }
 
 bool
-KVstore::getobjIDlistBysubID(int _subid, int*& _objidlist, int& _list_len)
+KVstore::getobjIDlistBysubID(int _subid, int*& _objidlist, int& _list_len, bool _no_duplicate)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -2098,6 +2104,11 @@ KVstore::getobjIDlistBysubID(int _subid, int*& _objidlist, int& _list_len)
 		memcpy((char*)_objidlist, _tmp, sizeof(int)*_list_len);
 	}
 	//	delete[] _tmp;
+
+	if(_no_duplicate)
+	{
+		_list_len = Util::removeDuplicate(_objidlist, _list_len);
+	}
 
 	return true;
 }
@@ -2138,7 +2149,7 @@ KVstore::close_objID2subIDlist()
 }
 
 bool
-KVstore::getsubIDlistByobjID(int _objid, int*& _subidlist, int& _list_len)
+KVstore::getsubIDlistByobjID(int _objid, int*& _subidlist, int& _list_len, bool _no_duplicate)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -2157,6 +2168,11 @@ KVstore::getsubIDlistByobjID(int _objid, int*& _subidlist, int& _list_len)
 		memcpy((char*)_subidlist, _tmp, sizeof(int)*_list_len);
 	}
 	//delete[] _tmp;
+
+	if(_no_duplicate)
+	{
+		_list_len = Util::removeDuplicate(_subidlist, _list_len);
+	}
 
 	return true;
 }
@@ -2197,7 +2213,7 @@ KVstore::close_subIDpreID2objIDlist()
 }
 
 bool
-KVstore::getobjIDlistBysubIDpreID(int _subid, int _preid, int*& _objidlist, int& _list_len)
+KVstore::getobjIDlistBysubIDpreID(int _subid, int _preid, int*& _objidlist, int& _list_len, bool _no_duplicate)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -2220,6 +2236,11 @@ KVstore::getobjIDlistBysubIDpreID(int _subid, int _preid, int*& _objidlist, int&
 		memcpy((char*)_objidlist, _tmp, sizeof(int)*_list_len);
 	}
 	//delete[] _tmp;
+
+	if(_no_duplicate)
+	{
+		_list_len = Util::removeDuplicate(_objidlist, _list_len);
+	}
 
 	return true;
 }
@@ -2286,7 +2307,7 @@ KVstore::close_objIDpreID2subIDlist()
 }
 
 bool
-KVstore::getsubIDlistByobjIDpreID(int _objid, int _preid, int*& _subidlist, int& _list_len)
+KVstore::getsubIDlistByobjIDpreID(int _objid, int _preid, int*& _subidlist, int& _list_len, bool _no_duplicate)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -2311,6 +2332,11 @@ KVstore::getsubIDlistByobjIDpreID(int _objid, int _preid, int*& _subidlist, int&
 		memcpy((char*)_subidlist, _tmp, sizeof(int)*_list_len);
 	}
 	//delete[] _tmp;
+
+	if(_no_duplicate)
+	{
+		_list_len = Util::removeDuplicate(_subidlist, _list_len);
+	}
 
 	return true;
 }
@@ -2374,7 +2400,7 @@ KVstore::close_subID2preIDobjIDlist()
 }
 
 bool
-KVstore::getpreIDobjIDlistBysubID(int _subid, int*& _preid_objidlist, int& _list_len)
+KVstore::getpreIDobjIDlistBysubID(int _subid, int*& _preid_objidlist, int& _list_len, bool _no_duplicate)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -2393,6 +2419,9 @@ KVstore::getpreIDobjIDlistBysubID(int _subid, int*& _preid_objidlist, int& _list
 		memcpy((char*)_preid_objidlist, _tmp, sizeof(int)*_list_len);
 	}
 	//delete[] _tmp;
+
+	//NOTICE:Util::removeDuplicate is not ok to deal with 2-ele list
+	//But 2-ele list guarantees taht no duplicates exist:)
 
 	return true;
 }
@@ -2433,7 +2462,7 @@ KVstore::close_objID2preIDsubIDlist()
 }
 
 bool
-KVstore::getpreIDsubIDlistByobjID(int _objid, int*& _preid_subidlist, int& _list_len)
+KVstore::getpreIDsubIDlistByobjID(int _objid, int*& _preid_subidlist, int& _list_len, bool _no_duplicate)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -2452,6 +2481,9 @@ KVstore::getpreIDsubIDlistByobjID(int _objid, int*& _preid_subidlist, int& _list
 		memcpy((char*)_preid_subidlist, _tmp, sizeof(int)*_list_len);
 	}
 	//delete[] _tmp;
+
+	//NOTICE:Util::removeDuplicate is not ok to deal with 2-ele list
+	//But 2-ele list guarantees taht no duplicates exist:)
 
 	return true;
 }
@@ -2491,7 +2523,7 @@ KVstore::close_subID2preIDlist()
 }
 
 bool
-KVstore::getpreIDlistBysubID(int _subid, int*& _preidlist, int& _list_len)
+KVstore::getpreIDlistBysubID(int _subid, int*& _preidlist, int& _list_len, bool _no_duplicate)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -2510,6 +2542,11 @@ KVstore::getpreIDlistBysubID(int _subid, int*& _preidlist, int& _list_len)
 		memcpy((char*)_preidlist, _tmp, sizeof(int)*_list_len);
 	}
 	//delete[] _tmp;
+
+	if(_no_duplicate)
+	{
+		_list_len = Util::removeDuplicate(_preidlist, _list_len);
+	}
 
 	return true;
 }
@@ -2549,7 +2586,7 @@ KVstore::close_preID2subIDlist()
 }
 
 bool
-KVstore::getsubIDlistBypreID(int _preid, int*& _subidlist, int& _list_len)
+KVstore::getsubIDlistBypreID(int _preid, int*& _subidlist, int& _list_len, bool _no_duplicate)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -2568,6 +2605,11 @@ KVstore::getsubIDlistBypreID(int _preid, int*& _subidlist, int& _list_len)
 		memcpy((char*)_subidlist, _tmp, sizeof(int)*_list_len);
 	}
 	//delete[] _tmp;
+
+	if(_no_duplicate)
+	{
+		_list_len = Util::removeDuplicate(_subidlist, _list_len);
+	}
 
 	return true;
 }
@@ -2607,7 +2649,7 @@ KVstore::close_objID2preIDlist()
 }
 
 bool
-KVstore::getpreIDlistByobjID(int _objid, int*& _preidlist, int& _list_len)
+KVstore::getpreIDlistByobjID(int _objid, int*& _preidlist, int& _list_len, bool _no_duplicate)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -2626,6 +2668,11 @@ KVstore::getpreIDlistByobjID(int _objid, int*& _preidlist, int& _list_len)
 		memcpy((char*)_preidlist, _tmp, sizeof(int)*_list_len);
 	}
 	//delete[] _tmp;
+
+	if(_no_duplicate)
+	{
+		_list_len = Util::removeDuplicate(_preidlist, _list_len);
+	}
 
 	return true;
 }
@@ -2665,7 +2712,7 @@ KVstore::close_preID2objIDlist()
 }
 
 bool
-KVstore::getobjIDlistBypreID(int _preid, int*& _objidlist, int& _list_len)
+KVstore::getobjIDlistBypreID(int _preid, int*& _objidlist, int& _list_len, bool _no_duplicate)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -2684,6 +2731,11 @@ KVstore::getobjIDlistBypreID(int _preid, int*& _objidlist, int& _list_len)
 		memcpy((char*)_objidlist, _tmp, sizeof(int)*_list_len);
 	}
 	//delete[] _tmp;
+
+	if(_no_duplicate)
+	{
+		_list_len = Util::removeDuplicate(_objidlist, _list_len);
+	}
 
 	return true;
 }
@@ -2710,7 +2762,7 @@ KVstore::open_subIDobjID2preIDlist(int _mode)
 }
 
 bool
-KVstore::getpreIDlistBysubIDobjID(int _subid, int _objid, int*& _preidlist, int& _list_len)
+KVstore::getpreIDlistBysubIDobjID(int _subid, int _objid, int*& _preidlist, int& _list_len, bool _no_duplicate)
 {
 #ifdef SO2P
 	char* _tmp = NULL;
@@ -2743,6 +2795,10 @@ KVstore::getpreIDlistBysubIDobjID(int _subid, int _objid, int*& _preidlist, int&
 	this->getpreIDlistBysubID(_subid, list1, len1);
 	this->getpreIDlistByobjID(_objid, list2, len2);
 	Util::intersect(_preidlist, _list_len, list1, len1, list2, len2);
+	if(_no_duplicate)
+	{
+		_list_len = Util::removeDuplicate(_preidlist, _list_len);
+	}
 #endif
 
 	return true;
@@ -2800,7 +2856,7 @@ KVstore::close_preID2subIDobjIDlist()
 }
 
 bool
-KVstore::getsubIDobjIDlistBypreID(int _preid, int*& _subid_objidlist, int& _list_len)
+KVstore::getsubIDobjIDlistBypreID(int _preid, int*& _subid_objidlist, int& _list_len, bool _no_duplicate)
 {
 	char* _tmp = NULL;
 	int _len = 0;
@@ -2819,6 +2875,10 @@ KVstore::getsubIDobjIDlistBypreID(int _preid, int*& _subid_objidlist, int& _list
 		memcpy((char*)_subid_objidlist, _tmp, sizeof(int)*_list_len);
 	}
 	//delete[] _tmp;
+
+	//NOTICE:Util::removeDuplicate is not ok to deal with 2-ele list
+	//But 2-ele list guarantees taht no duplicates exist:)
+
 
 	return true;
 }
@@ -3127,55 +3187,55 @@ void
 KVstore::open()
 {
 #ifdef DEBUG
-	//cout << "open KVstore" << endl;
+	cout << "open KVstore" << endl;
 #endif
 
 	this->open(this->entity2id, KVstore::s_entity2id, KVstore::READ_WRITE_MODE);
 	this->open(this->id2entity, KVstore::s_id2entity, KVstore::READ_WRITE_MODE);
 #ifdef DEBUG
-	//cout<<"entity-id opened"<<endl;
+	cout<<"entity-id opened"<<endl;
 #endif
 
 	this->open(this->literal2id, KVstore::s_literal2id, KVstore::READ_WRITE_MODE);
 	this->open(this->id2literal, KVstore::s_id2literal, KVstore::READ_WRITE_MODE);
 #ifdef DEBUG
-	//cout<<"literal-id opened"<<endl;
+	cout<<"literal-id opened"<<endl;
 #endif
 
 	this->open(this->predicate2id, KVstore::s_predicate2id, KVstore::READ_WRITE_MODE);
 	this->open(this->id2predicate, KVstore::s_id2predicate, KVstore::READ_WRITE_MODE);
 #ifdef DEBUG
-	//cout<<"predicate-id opened"<<endl;
+	cout<<"predicate-id opened"<<endl;
 #endif
 
 	this->open(this->objID2subIDlist, KVstore::s_oID2sIDlist, KVstore::READ_WRITE_MODE);
 	this->open(this->subID2objIDlist, KVstore::s_sID2oIDlist, KVstore::READ_WRITE_MODE);
 #ifdef DEBUG
-	//cout<<"o-s opened"<<endl;
+	cout<<"o-s opened"<<endl;
 #endif
 
 	this->open(this->objIDpreID2subIDlist, KVstore::s_oIDpID2sIDlist, KVstore::READ_WRITE_MODE);
 	this->open(this->subIDpreID2objIDlist, KVstore::s_sIDpID2oIDlist, KVstore::READ_WRITE_MODE);
 #ifdef DEBUG
-	//cout<<"op-s opened"<<endl;
+	cout<<"op-s opened"<<endl;
 #endif
 
 	this->open(this->subID2preIDobjIDlist, KVstore::s_sID2pIDoIDlist, KVstore::READ_WRITE_MODE);
 	this->open(this->objID2preIDsubIDlist, KVstore::s_oID2pIDsIDlist, KVstore::READ_WRITE_MODE);
 #ifdef DEBUG
-	//cout<<"s-po opened"<<endl;
+	cout<<"s-po opened"<<endl;
 #endif
 
 	this->open(this->subID2preIDlist, KVstore::s_sID2pIDlist, KVstore::READ_WRITE_MODE);
 	this->open(this->preID2subIDlist, KVstore::s_pID2sIDlist, KVstore::READ_WRITE_MODE);
 #ifdef DEBUG
-	//cout<<"s-p opened"<<endl;
+	cout<<"s-p opened"<<endl;
 #endif
 
 	this->open(this->objID2preIDlist, KVstore::s_oID2pIDlist, KVstore::READ_WRITE_MODE);
 	this->open(this->preID2objIDlist, KVstore::s_pID2oIDlist, KVstore::READ_WRITE_MODE);
 #ifdef DEBUG
-	//cout<<"o-p opened"<<endl;
+	cout<<"o-p opened"<<endl;
 #endif
 
 #ifdef SO2P
@@ -3184,7 +3244,7 @@ KVstore::open()
 
 	this->open(this->preID2subIDobjIDlist, KVstore::s_pID2sIDoIDlist, KVstore::READ_WRITE_MODE);
 #ifdef DEBUG
-	//cout<<"p2so opened"<<endl;
+	cout<<"p2so opened"<<endl;
 #endif
 
 	//this->open(this->preID2num, KVstore::s_pID2num, KVstore::READ_WRITE_MODE);

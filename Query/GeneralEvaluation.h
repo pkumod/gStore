@@ -2,7 +2,7 @@
 # Filename: GeneralEvaluation.h
 # Author: Jiaqi, Chen
 # Mail: chenjiaqi93@163.com
-# Last Modified: 2016-03-02 20:33
+# Last Modified: 2016-09-12
 # Description: 
 =============================================================================*/
 
@@ -12,9 +12,10 @@
 //#include "../Database/Database.h"
 #include "SPARQLquery.h"
 #include "../VSTree/VSTree.h"
+#include "../KVstore/KVstore.h"
+#include "../StringIndex/StringIndex.h"
 #include "../Database/Join.h"
 #include "../Database/Strategy.h"
-#include "../KVstore/KVstore.h"
 #include "../Query/ResultSet.h"
 #include "../Util/Util.h"
 #include "../Parser/QueryParser.h"
@@ -22,126 +23,218 @@
 #include "Varset.h"
 #include "RegexExpression.h"
 #include "ResultFilter.h"
+#include "../Util/Triple.h"
 
 class GeneralEvaluation
 {
-private:
-	QueryParser query_parser;
-	QueryTree query_tree;
-	SPARQLquery sparql_query;
-	std::vector <Varset> sparql_query_varset;
-	VSTree *vstree;
-	KVstore *kvstore;
-	ResultSet &result_set;
-	ResultFilter result_filter;
-	bool handle(SPARQLquery&);
+	private:
+		QueryParser query_parser;
+		QueryTree query_tree;
+		SPARQLquery sparql_query;
+		std::vector <Varset> sparql_query_varset;
+		VSTree *vstree;
+		KVstore *kvstore;
+		StringIndex *stringindex;
+		Strategy strategy;
+		ResultFilter result_filter;
+		bool need_output_answer;
 
-public:
-	explicit GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, ResultSet &_result_set):
-		vstree(_vstree), kvstore(_kvstore), result_set(_result_set){}
+	public:
+		explicit GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex):
+			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), need_output_answer(false){}
 
-	std::vector<std::vector<std::string> > getSPARQLQueryVarset();
+		std::vector<std::vector<std::string> > getSPARQLQueryVarset();
 
-	void doQuery(const std::string &_query);
-	void doQuery(const std::string &_query, int myRank, std::string &internal_tag_str, string& lpm_str);
-	bool parseQuery(const std::string &_query);
-	bool onlyParseQuery(const std::string &_query, int& var_num, QueryTree::QueryForm& query_form);
+		bool parseQuery(const std::string &_query);
+		QueryTree& getQueryTree();
 
-	void getBasicQuery(QueryTree::GroupPattern &grouppattern);
+		void doQuery();
 
-	class FilterExistsGroupPatternResultSetRecord;
+		void getBasicQuery(QueryTree::GroupPattern &grouppattern);
 
-	class TempResult
-	{
-		public:
-			Varset var;
-			std::vector<int*> res;
+		class FilterExistsGroupPatternResultSetRecord;
 
-			void release();
+		class FilterEvaluationMultitypeValue
+		{
+			public:
+				class EffectiveBooleanValue
+				{
+					public:
+						enum EBV {true_value, false_value, error_value};
+						EBV value;
 
-			static int compareFunc(int *a, std::vector<int> &p, int *b, std::vector<int> &q);
-			void sort(int l, int r, std::vector<int> &p);
-			int findLeftBounder(std::vector<int> &p, int *b, std::vector<int> &q);
-			int findRightBounder(std::vector<int> &p, int *b, std::vector<int> &q);
+						EffectiveBooleanValue():value(error_value){}
+						EffectiveBooleanValue(bool _value){	if (_value)	value = true_value;	else value = false_value;	}
+						EffectiveBooleanValue(EBV _value):value(_value){}
 
-			void doJoin(TempResult &x, TempResult &r);
-			void doOptional(std::vector<bool> &binding, TempResult &x, TempResult &rn, TempResult &ra, bool add_no_binding);
-			void doUnion(TempResult &x, TempResult &rt, TempResult &rx);
-			void doMinus(TempResult &x, TempResult &r);
-			void doDistinct(TempResult &r);
+						EffectiveBooleanValue operator ! ();
+						EffectiveBooleanValue operator || (const EffectiveBooleanValue &x);
+						EffectiveBooleanValue operator && (const EffectiveBooleanValue &x);
+						EffectiveBooleanValue operator == (const EffectiveBooleanValue &x);
+						EffectiveBooleanValue operator != (const EffectiveBooleanValue &x);
+						EffectiveBooleanValue operator < (const EffectiveBooleanValue &x);
+						EffectiveBooleanValue operator <= (const EffectiveBooleanValue &x);
+						EffectiveBooleanValue operator > (const EffectiveBooleanValue &x);
+						EffectiveBooleanValue operator >= (const EffectiveBooleanValue &x);
+				};
 
-			void mapFilterTree2Varset(QueryTree::GroupPattern::FilterTreeNode& filter, Varset &v);
-			void doFilter(QueryTree::GroupPattern::FilterTreeNode &filter, FilterExistsGroupPatternResultSetRecord &filter_exists_grouppattern_resultset_record, TempResult &r, KVstore *kvstore);
-			void getFilterString(int* x, QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild &child, string &str, KVstore *kvstore);
-			bool matchFilterTree(int* x, QueryTree::GroupPattern::FilterTreeNode& filter, FilterExistsGroupPatternResultSetRecord &filter_exists_grouppattern_resultset_record, KVstore *kvstore);
+				class DateTime
+				{
+					private:
+						std::vector<int> date;
+						//year = date[0]
+						//month = date[1]
+						//day = date[2]
+						//hour = date[3]
+						//minute = date[4]
+						//second = date[5]
 
-			void print();
-	};
+					public:
+						DateTime(int _year = 0, int _month = 0, int _day = 0, int _hour = 0, int _minute = 0, int _second = 0)
+						{
+							this->date.reserve(6);
+							this->date.push_back(_year);
+							this->date.push_back(_month);
+							this->date.push_back(_day);
+							this->date.push_back(_hour);
+							this->date.push_back(_minute);
+							this->date.push_back(_second);
+						}
 
-	class TempResultSet
-	{
-		public:
-			std::vector<TempResult> results;
+						EffectiveBooleanValue operator == (const DateTime &x);
+						EffectiveBooleanValue operator != (const DateTime &x);
+						EffectiveBooleanValue operator < (const DateTime &x);
+						EffectiveBooleanValue operator <= (const DateTime &x);
+						EffectiveBooleanValue operator > (const DateTime &x);
+						EffectiveBooleanValue operator >= (const DateTime &x);
+				};
 
-			void release();
+				enum DataType {rdf_term, iri, simple_literal, xsd_string,
+					xsd_boolean, xsd_integer, xsd_decimal, xsd_float, xsd_double,
+					xsd_datetime};
 
-			int findCompatibleResult(Varset &_varset);
+				DataType datatype;
+				string term_value, str_value;
+				EffectiveBooleanValue bool_value;
+				int int_value;
+				float flt_value;
+				double dbl_value;
+				DateTime dt_value;
 
-			void doJoin(TempResultSet &x, TempResultSet &r);
-			void doOptional(TempResultSet &x, TempResultSet &r);
-			void doUnion(TempResultSet &x, TempResultSet &r);
-			void doMinus(TempResultSet &x, TempResultSet &r);
-			void doDistinct(Varset &projection, TempResultSet &r);
+				FilterEvaluationMultitypeValue operator !();
+				FilterEvaluationMultitypeValue operator || (FilterEvaluationMultitypeValue &x);
+				FilterEvaluationMultitypeValue operator && (FilterEvaluationMultitypeValue &x);
+				void getSameNumericType (FilterEvaluationMultitypeValue &x);
+				FilterEvaluationMultitypeValue operator == (FilterEvaluationMultitypeValue &x);
+				FilterEvaluationMultitypeValue operator != (FilterEvaluationMultitypeValue &x);
+				FilterEvaluationMultitypeValue operator < (FilterEvaluationMultitypeValue &x);
+				FilterEvaluationMultitypeValue operator <= (FilterEvaluationMultitypeValue &x);
+				FilterEvaluationMultitypeValue operator > (FilterEvaluationMultitypeValue &x);
+				FilterEvaluationMultitypeValue operator >= (FilterEvaluationMultitypeValue &x);
 
-			void doFilter(QueryTree::GroupPattern::FilterTreeNode& filter, FilterExistsGroupPatternResultSetRecord &filter_exists_grouppattern_resultset_record, TempResultSet &r, KVstore *kvstore);
+				FilterEvaluationMultitypeValue():datatype(rdf_term), int_value(0), flt_value(0), dbl_value(0){}
+		};
 
-			void print();
-	};
 
-	class EvaluationUnit
-	{
-		private:
-			char type;
-			void * p;
-		public:
-			EvaluationUnit(char _type, void *_p = NULL):type(_type), p(_p){}
-			char getType()
-			{	return type;	}
-			void * getPointer()
-			{	return p;	}
-	};
+		class TempResult
+		{
+			public:
+				Varset var;
+				std::vector<int*> res;
 
-	std::vector<EvaluationUnit>	semantic_evaluation_plan;
+				void release();
 
-	void generateEvaluationPlan(QueryTree::GroupPattern &grouppattern);
-	void dfsJoinableResultGraph(int x, vector < pair<char, int> > &node_info, vector < vector<int> > &edge, QueryTree::GroupPattern &grouppattern);
+				static int compareFunc(int *a, std::vector<int> &p, int *b, std::vector<int> &q);
+				void sort(int l, int r, std::vector<int> &p);
+				int findLeftBounder(std::vector<int> &p, int *b, std::vector<int> &q);
+				int findRightBounder(std::vector<int> &p, int *b, std::vector<int> &q);
 
-	std::stack<TempResultSet*>	semantic_evaluation_result_stack;
+				void doJoin(TempResult &x, TempResult &r);
+				void doUnion(TempResult &rt);
+				void doOptional(std::vector<bool> &binding, TempResult &x, TempResult &rn, TempResult &ra, bool add_no_binding);
+				void doMinus(TempResult &x, TempResult &r);
+				void doDistinct(TempResult &r);
 
-	class FilterExistsGroupPatternResultSetRecord
-	{
-		public:
-			std::vector<TempResultSet*> resultset;
-			std::vector< std::vector<Varset> > common;
-			std::vector< std::vector< std::pair< std::vector<int>, std::vector<int> > > > common2resultset;
-	} filter_exists_grouppattern_resultset_record;
+				void mapFilterTree2Varset(QueryTree::GroupPattern::FilterTreeNode &filter, Varset &v, Varset &entity_literal_varset);
+				void doFilter(QueryTree::GroupPattern::FilterTreeNode &filter, FilterExistsGroupPatternResultSetRecord &filter_exists_grouppattern_resultset_record, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset);
+				void getFilterString(QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild &child, FilterEvaluationMultitypeValue &femv, int *row, StringIndex *stringindex);
+				FilterEvaluationMultitypeValue matchFilterTree(QueryTree::GroupPattern::FilterTreeNode &filter, FilterExistsGroupPatternResultSetRecord &filter_exists_grouppattern_resultset_record, int *row, StringIndex *stringindex);
 
-	int countFilterExistsGroupPattern(QueryTree::GroupPattern::FilterTreeNode& filter);
-	void doEvaluationPlan();
+				void print();
+		};
 
-	class ExpansionEvaluationStackUnit
-	{
-		public:
-			QueryTree::GroupPattern grouppattern;
-			SPARQLquery sparql_query;
-			TempResultSet* result;
-	};
-	std::vector <ExpansionEvaluationStackUnit> expansion_evaluation_stack;
+		class TempResultSet
+		{
+			public:
+				std::vector<TempResult> results;
 
-	bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &grouppattern, std::deque<QueryTree::GroupPattern> &queue);
-	void queryRewriteEncodeRetrieveJoin(int dep, ResultFilter &result_filter);
+				void release();
 
-	void getFinalResult(ResultSet& result_str);
+				int findCompatibleResult(Varset &_varset);
+
+				void doJoin(TempResultSet &x, TempResultSet &r);
+				void doUnion(TempResultSet &x, TempResultSet &r);
+				void doOptional(TempResultSet &x, TempResultSet &r);
+				void doMinus(TempResultSet &x, TempResultSet &r);
+				void doDistinct(Varset &projection, TempResultSet &r);
+
+				void doFilter(QueryTree::GroupPattern::FilterTreeNode &filter, FilterExistsGroupPatternResultSetRecord &filter_exists_grouppattern_resultset_record, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
+
+				void print();
+		};
+
+		class EvaluationUnit
+		{
+			private:
+				char type;
+				void *p;
+			public:
+				EvaluationUnit(char _type, void *_p = NULL):type(_type), p(_p){}
+				char getType()
+				{	return type;	}
+				void *getPointer()
+				{	return p;	}
+		};
+
+		std::vector<EvaluationUnit>	semantic_evaluation_plan;
+
+		void generateEvaluationPlan(QueryTree::GroupPattern &grouppattern);
+		void dfsJoinableResultGraph(int x, vector < pair<char, int> > &node_info, vector < vector<int> > &edge, QueryTree::GroupPattern &grouppattern);
+
+		std::stack<TempResultSet*>	semantic_evaluation_result_stack;
+
+		class FilterExistsGroupPatternResultSetRecord
+		{
+			public:
+				std::vector<TempResultSet*> resultset;
+				std::vector< std::vector<Varset> > common;
+				std::vector< std::vector< std::pair< std::vector<int>, std::vector<int> > > > common2resultset;
+		} filter_exists_grouppattern_resultset_record;
+
+		int countFilterExistsGroupPattern(QueryTree::GroupPattern::FilterTreeNode &filter);
+		void doEvaluationPlan();
+
+		class ExpansionEvaluationStackUnit
+		{
+			public:
+				ExpansionEvaluationStackUnit():result(NULL){}
+				QueryTree::GroupPattern grouppattern;
+				SPARQLquery sparql_query;
+				TempResultSet *result;
+		};
+		std::vector <ExpansionEvaluationStackUnit> expansion_evaluation_stack;
+
+		bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &grouppattern, std::deque<QueryTree::GroupPattern> &queue);
+		bool checkExpantionRewritingConnectivity(int dep);
+		void queryRewriteEncodeRetrieveJoin(int dep);
+
+		bool needOutputAnswer();
+		void setNeedOutputAnswer();
+
+		void getFinalResult(ResultSet &result_str);
+		void releaseResultStack();
+
+		void prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, int &update_triple_num);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H

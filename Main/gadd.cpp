@@ -21,9 +21,7 @@ main(int argc, char * argv[])
 	cout << "finish loading" << endl;
 	//_db.insert(argv[2]);
 	//_db.remove(argv[2]);
-	vector<int> vertices;
-	vector<int> predicates;
-	_db.insert(argv[2], vertices, predicates);
+	_db.insert(argv[2]);
 
 	//string query = string(argv[2]);
 	//query = Util::getQueryFromFile(query.c_str());

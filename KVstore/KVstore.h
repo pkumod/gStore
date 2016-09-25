@@ -133,84 +133,84 @@ public:
 	 //for subID 2 objIDlist 
 	bool open_subID2objIDlist(int _mode);
 	bool close_subID2objIDlist();
-	bool getobjIDlistBysubID(int _subid, int*& _objidlist, int& _list_len);
+	bool getobjIDlistBysubID(int _subid, int*& _objidlist, int& _list_len, bool _no_duplicate = false);
 	bool addobjIDlistBysubID(int _subid, const int* _objidlist, int _list_len);
 	bool setobjIDlistBysubID(int _subid, const int* _objidlist, int _list_len);
 
 	 //for objID 2 subIDlist 
 	bool open_objID2subIDlist(int _mode);
 	bool close_objID2subIDlist();
-	bool getsubIDlistByobjID(int _objid, int*& _subidlist, int& _list_len);
+	bool getsubIDlistByobjID(int _objid, int*& _subidlist, int& _list_len, bool _no_duplicate = false);
 	bool addsubIDlistByobjID(int _objid, const int* _subidlist, int _list_len);
 	bool setsubIDlistByobjID(int _objid, const int* _subidlist, int _list_len);
 
 	 //for subID&preID 2 objIDlist 
 	bool open_subIDpreID2objIDlist(int _mode);
 	bool close_subIDpreID2objIDlist();
-	bool getobjIDlistBysubIDpreID(int _subid, int _preid, int*& _objidlist, int& _list_len);
+	bool getobjIDlistBysubIDpreID(int _subid, int _preid, int*& _objidlist, int& _list_len, bool _no_duplicate = false);
 	bool addobjIDlistBysubIDpreID(int _subid, int _preid, const int* _objidlist, int _list_len);
 	bool setobjIDlistBysubIDpreID(int _subid, int _preid, const int* _objidlist, int _list_len);
 
 	 //for objID&preID 2 subIDlist 
 	bool open_objIDpreID2subIDlist(int _mode);
 	bool close_objIDpreID2subIDlist();
-	bool getsubIDlistByobjIDpreID(int _objid, int _preid, int*& _subidlist, int& _list_len);
+	bool getsubIDlistByobjIDpreID(int _objid, int _preid, int*& _subidlist, int& _list_len, bool _no_duplicate = false);
 	bool addsubIDlistByobjIDpreID(int _objid, int _preid, const int* _subidlist, int _list_len);
 	bool setsubIDlistByobjIDpreID(int _objid, int _preid, const int* _subidlist, int _list_len);
 
 	 //for subID 2  preID&objIDlist 
 	bool open_subID2preIDobjIDlist(int _mode);
 	bool close_subID2preIDobjIDlist();
-	bool getpreIDobjIDlistBysubID(int _subid, int*& _preid_objidlist, int& _list_len);
+	bool getpreIDobjIDlistBysubID(int _subid, int*& _preid_objidlist, int& _list_len, bool _no_duplicate = false);
 	bool addpreIDobjIDlistBysubID(int _subid, const int* _preid_objidlist, int _list_len);
 	bool setpreIDobjIDlistBysubID(int _subid, const int* _preid_objidlist, int _list_len);
 
 	 //for objID 2 preID&subIDlist 
 	bool open_objID2preIDsubIDlist(int _mode);
 	bool close_objID2preIDsubIDlist();
-	bool getpreIDsubIDlistByobjID(int _objid, int*& _preid_subidlist, int& _list_len);
+	bool getpreIDsubIDlistByobjID(int _objid, int*& _preid_subidlist, int& _list_len, bool _no_duplicate = false);
 	bool addpreIDsubIDlistByobjID(int _objid, const int* _preid_subidlist, int _list_len);
 	bool setpreIDsubIDlistByobjID(int _objid, const int* _preid_subidlist, int _list_len);
 
 	//for subID 2 preIDlist
 	bool open_subID2preIDlist(int _mode);
 	bool close_subID2preIDlist();
-	bool getpreIDlistBysubID(int _subid, int*& _preidlist, int& _list_len);
+	bool getpreIDlistBysubID(int _subid, int*& _preidlist, int& _list_len, bool _no_duplicate = false);
 	bool addpreIDlistBysubID(int _subid, const int* _preidlist, int _list_len);
 	bool setpreIDlistBysubID(int _subid, const int* _preidlist, int _list_len);
 
 	//for preID 2 subIDlist
 	bool open_preID2subIDlist(int _mode);
 	bool close_preID2subIDlist();
-	bool getsubIDlistBypreID(int _preid, int*& _subidlist, int& _list_len);
+	bool getsubIDlistBypreID(int _preid, int*& _subidlist, int& _list_len, bool _no_duplicate = false);
 	bool addsubIDlistBypreID(int _preid, const int* _subidlist, int _list_len);
 	bool setsubIDlistBypreID(int _preid, const int* _subidlist, int _list_len);
 
 	//for objID 2 preIDlist
 	bool open_objID2preIDlist(int _mode);
 	bool close_objID2preIDlist();
-	bool getpreIDlistByobjID(int _objid, int*& _preidlist, int& _list_len);
+	bool getpreIDlistByobjID(int _objid, int*& _preidlist, int& _list_len, bool _no_duplicate = false);
 	bool addpreIDlistByobjID(int _objid, const int* _preidlist, int _list_len);
 	bool setpreIDlistByobjID(int _objid, const int* _preidlist, int _list_len);
 
 	//for preID 2 objIDlist
 	bool open_preID2objIDlist(int _mode);
 	bool close_preID2objIDlist();
-	bool getobjIDlistBypreID(int _preid, int*& _objidlist, int& _list_len);
+	bool getobjIDlistBypreID(int _preid, int*& _objidlist, int& _list_len, bool _no_duplicate = false);
 	bool addobjIDlistBypreID(int _preid, const int* _objidlist, int _list_len);
 	bool setobjIDlistBypreID(int _preid, const int* _objidlist, int _list_len);
 
 	//for subID&objID 2 preIDlist
 	bool open_subIDobjID2preIDlist(int _mode);
 	//bool close_subIDobjID2preIDlist();
-	bool getpreIDlistBysubIDobjID(int _subID, int _objID, int*& _preidlist, int& _list_len);
+	bool getpreIDlistBysubIDobjID(int _subID, int _objID, int*& _preidlist, int& _list_len, bool _no_duplicate = false);
 	bool addpreIDlistBysubIDobjID(int _subID, int _objID, const int* _preidlist, int _list_len);
 	bool setpreIDlistBysubIDobjID(int _subID, int _objID, const int* _preidlist, int _list_len);
 
 	//for preID 2 subID&objIDlist
 	bool open_preID2subIDobjIDlist(int _mode);
 	bool close_preID2subIDobjIDlist();
-	bool getsubIDobjIDlistBypreID(int _preid, int*& _subid_objidlist, int& _list_len);
+	bool getsubIDobjIDlistBypreID(int _preid, int*& _subid_objidlist, int& _list_len, bool _no_duplicate = false);
 	bool addsubIDobjIDlistBypreID(int _preid, const int* _subid_objidlist, int _list_len);
 	bool setsubIDobjIDlistBypreID(int _preid, const int* _subid_objidlist, int _list_len);
 

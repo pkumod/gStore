@@ -17,8 +17,9 @@
 #include "../Query/SPARQLquery.h"
 #include "../Query/BasicQuery.h"
 #include "../Signature/SigEntry.h"
-#include "../KVstore/KVstore.h"
 #include "../VSTree/VSTree.h"
+#include "../KVstore/KVstore.h"
+#include "../StringIndex/StringIndex.h"
 #include "../Parser/DBparser.h"
 #include "../Parser/RDFParser.h"
 #include "../Parser/SparqlParser.h"
@@ -47,19 +48,16 @@ public:
 	bool load();
 	bool unload();
 	bool query(const string _query, ResultSet& _result_set, FILE* _fp = stdout);
-	bool query(const string _query, ResultSet& _result_set, string& intermediate_res, int myRank, FILE* _fp = stdout);
 
 	 //1. if subject of _triple doesn't exist,
 		//then assign a new subid, and insert a new SigEntry
 	 //2. assign new tuple_id to tuple, if predicate or object doesn't exist before too;
 	 //3. if subject exist, update SigEntry, and update spo, ops... etc. if needed
 
-    bool insert(const string& _insert_rdf_file);
-    bool remove(const string& _rdf_file);
     bool build(const string& _rdf_file);
 	//interfaces to insert/delete from given rdf file
-	bool insert(std::string _rdf_file, vector<int>& _vertices, vector<int>& _predicates);
-	bool remove(std::string _rdf_file, vector<int>& _vertices, vector<int>& _predicates);
+	bool insert(std::string _rdf_file);
+	bool remove(std::string _rdf_file);
 
 	/* name of this DB*/
 	string getName();
@@ -71,8 +69,6 @@ public:
 
     /* root Path of this DB + DBInfoFile */
     string getDBInfoFile();
-
-	bool loadInternalVertices(const string _in_file);
 
 private:
 	string name;
@@ -87,6 +83,7 @@ private:
 
 	VSTree* vstree;
 	KVstore* kvstore;
+	StringIndex* stringindex;
 	Join* join;
 
 	 //metadata of this database: sub_num, pre_num, obj_num, literal_num, etc. 
@@ -96,9 +93,6 @@ private:
 	string six_tuples_file;
 	 //B means binary 
 	string signature_binary_file;
-
-	/* internal vertices string */
-	string internal_tag_str;
 	
 	//triple num per group for insert/delete
 	//can not be too high, otherwise the heap will over
@@ -166,12 +160,12 @@ private:
 
 	//insert and delete, notice that modify is not needed here
 	//we can read from file or use sparql syntax
-    int insertTriple(const TripleWithObjType& _triple);
-    bool removeTriple(const TripleWithObjType& _triple);
+    int insertTriple(const TripleWithObjType& _triple, vector<int>* _vertices=NULL, vector<int>* _predicates=NULL);
+    bool removeTriple(const TripleWithObjType& _triple, vector<int>* _vertices=NULL, vector<int>* _predicates=NULL);
 	//NOTICE:one by one is too costly, sort and insert/delete at a time will be better
-	bool insert(const TripleWithObjType* _triples, int _triple_num, vector<int>& _vertices, vector<int>& _predicates);
+	bool insert(const TripleWithObjType* _triples, int _triple_num);
 	//bool insert(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
-	bool remove(const TripleWithObjType* _triples, int _triple_num, vector<int>& _vertices, vector<int>& _predicates);
+	bool remove(const TripleWithObjType* _triples, int _triple_num);
 	//bool remove(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
 
 	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _p_id_tuples, int & _id_tuples_max);

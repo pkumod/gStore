@@ -70,14 +70,16 @@ in the sparql query can point to the same node in data graph)
 #define READLINE_ON	1
 #define MULTI_INDEX 1
 //#define SO2P 1
+//#define USE_GROUP_INSERT 1
+//#define USE_GROUP_DELETE 1
 
 //indicate that in debug mode
 //#define DEBUG_STREAM
 //#define DEBUG_PRECISE 1		all information
 //#define DEBUG_KVSTORE 1		//in KVstore
-#define DEBUG_VSTREE 1	//in Database 
+//#define DEBUG_VSTREE 1	//in Database 
 //#define DEBUG_DATABASE 1	//in Database
-#define DEBUG_JOIN      
+//#define DEBUG_JOIN      
 
 #ifdef DEBUG_PRECISE
 #ifndef DEBUG
@@ -128,31 +130,6 @@ typedef unsigned(*HashFunction)(const char*);
 //http://blog.csdn.net/mycomputerxiaomei/article/details/7641221
 //http://kb.cnblogs.com/page/189480/
 
-struct PPPartialRes
-{
-	std::vector<int> MatchVec;
-	std::vector<char> TagVec;
-	int FragmentID;
-	int ID;
-};
-
-struct PPPartialResVec{
-	std::vector<PPPartialRes> PartialResList;
-	int match_pos;
-};
-
-struct CrossingEdgeMapping{
-	int head_query_id;
-	int tail_query_id;
-	std::string mapping_str;
-	int fragmentID;
-};
-
-struct CrossingEdgeMappingVec{
-	int tag;
-	std::vector< std::vector<CrossingEdgeMapping> > CrossingEdgeMappings;
-};
-
 /******** all static&universal constants and fucntions ********/
 class Util
 {
@@ -175,6 +152,8 @@ public:
 	static const unsigned TRANSFER_SIZE = 1 << 20;	//1M
 	static const unsigned long long MAX_BUFFER_SIZE = 0xffffffff;		//max buffer size in Storage
 	//0x4fffffff 0x3fffffff
+	static const unsigned STORAGE_BLOCK_SIZE = 1 << 12;	//fixed size of disk-block in B+ tree storage
+	//1 << 16
 
 	//type of B+ tree
 	static const int SS_TREE = 0;
@@ -258,13 +237,6 @@ public:
 	static bool config_advanced();
 	static bool config_debug();
 	static bool gStore_mode;
-
-	static std::vector<std::string> split(std::string textline, std::string tag);
-	static void HashJoin(std::set< std::vector<int> >& finalPartialResSet, std::vector<PPPartialRes>& res1, std::map<int, std::vector<PPPartialRes> >& res2, int fragmentNum, int matchPos);
-	static int isFinalResult(PPPartialRes curPPPartialRes);
-	static bool myfunction0(PPPartialResVec v1, PPPartialResVec v2);
-	static int checkJoinable(CrossingEdgeMappingVec& vec1, CrossingEdgeMappingVec& vec2);
-	static void HashLECFJoin(CrossingEdgeMappingVec& final_res, CrossingEdgeMappingVec& res1, CrossingEdgeMappingVec& res2);
 
 private:
 	static bool isValidIPV4(std::string);

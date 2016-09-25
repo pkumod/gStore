@@ -1,2 +1,0 @@
-<http://dbpedia.org/resource/Man-Trap>
-<http://dbpedia.org/resource/Edmond_O%27Brien>

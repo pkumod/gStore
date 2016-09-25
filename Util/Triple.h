@@ -43,18 +43,16 @@ public:
 class TripleWithObjType : public Triple
 {
 public:
-    char object_type;
-
-    static const char ENTITY = 'e';
-    static const char LITERA = 'l';
+	enum ObjectType {None, Entity, Literal};
+	ObjectType object_type;
 
     TripleWithObjType();
-    TripleWithObjType(const string& _s, const string& _p, const string& _o, const char& _o_type = ' ');
+    TripleWithObjType(const string& _s, const string& _p, const string& _o, const ObjectType _o_type = None);
     TripleWithObjType(const TripleWithObjType& _triple_with_objtype);
 
     TripleWithObjType& operator=(const TripleWithObjType& _triple_with_objtype);
 
-    void setObjType(const char &_o_type);
+    void setObjType(const ObjectType _o_type);
 
     bool isObjEntity()const;
     bool isObjLiteral()const;

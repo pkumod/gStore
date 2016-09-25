@@ -131,6 +131,9 @@ private:
 
 	char encode_method;
 
+	//save the result of encodeBasicQuery
+	bool encode_result;
+
 	// edge_id[var_id][i] : the line id of the i-th edge of the var
 	int**    edge_id;
 	
@@ -261,6 +264,7 @@ public:
 
 	// encode relative signature data of the query graph 
 	bool encodeBasicQuery(KVstore* _p_kvstore, const std::vector<std::string>& _query_var);
+	bool getEncodeBasicQueryResult() const;
 
 	unsigned getPreVarNum() const;
 	const PreVar& getPreVarByID(unsigned) const;
@@ -277,8 +281,7 @@ public:
 	std::string candidate_str();
 	std::string result_str();
 	std::string triple_str();
-
-	void setRetrievalTag();
 };
 
 #endif //_QUERY_BASICQUERY_H
+

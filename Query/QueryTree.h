@@ -2,7 +2,7 @@
 # Filename: QueryTree.h
 # Author: Jiaqi, Chen
 # Mail: chenjiaqi93@163.com
-# Last Modified: 2016-03-02 20:35
+# Last Modified: 2016-07-14
 # Description: 
 =============================================================================*/
 
@@ -16,9 +16,9 @@ class QueryTree
 {
 	public:
 		QueryTree():
-			query_form(Select_Query), projection_modifier(Modifier_None), projection_asterisk(false), offset(0), limit(-1){}
+			query_form(Select_Query), update_type(Not_Update), projection_modifier(Modifier_None), projection_asterisk(false), offset(0), limit(-1){}
 
-		enum	QueryForm {Select_Query, Ask_Query};
+		enum QueryForm {Select_Query, Ask_Query};
 		enum ProjectionModifier {Modifier_None, Modifier_Distinct, Modifier_Reduced, Modifier_Count, Modifier_Duplicates};
 
 		class GroupPattern
@@ -38,14 +38,13 @@ class QueryTree
 								std::string subTypeValue;
 								 */
 								std::string value;
-								Element(const std::string& _value):
+								Element(const std::string &_value):
 									value(_value){}
 						};
 						Element subject, predicate, object;
 						Varset varset;
 						Pattern(const Element _subject, const Element _predicate,const Element _object):subject(_subject), predicate(_predicate), object(_object){}
 				};
-
 
 				class GroupPatternUnions;
 				class OptionalOrMinusGroupPattern;
@@ -60,6 +59,7 @@ class QueryTree
 				std::vector<std::vector<GroupPattern> > filter_exists_grouppatterns;
 
 				Varset grouppattern_resultset_minimal_varset, grouppattern_resultset_maximal_varset;
+				Varset grouppattern_subject_object_maximal_varset, grouppattern_predicate_maximal_varset;
 
 				std::vector<int> pattern_blockid;
 
@@ -78,14 +78,13 @@ class QueryTree
 				GroupPattern& getLastExistsGroupPattern();
 
 				void getVarset();
-				int getVarNum();
 
 				bool checkOnlyUnionOptionalFilterNoExists();
 				std::pair<Varset, Varset> checkOptionalGroupPatternVarsAndSafeFilter(Varset occur , Varset ban, bool &check_condition);
 
 				void initPatternBlockid();
-				int getRootPatternBlockid(int x);
-				void mergePatternBlockid(int x, int y);
+				int getRootPatternBlockID(int x);
+				void mergePatternBlockID(int x, int y);
 
 				void print(int dep);
 		};
@@ -112,14 +111,14 @@ class QueryTree
 		class GroupPattern::FilterTreeNode
 		{
 			public:
-				enum FilterType
+				enum FilterOperationType
 				{
 					None_type, Or_type, And_type, Equal_type, NotEqual_type, Less_type, LessOrEqual_type, Greater_type, GreaterOrEqual_type,
 					Plus_type, Minus_type, Mul_type, Div_type,	Not_type, UnaryPlus_type, UnaryMinus_type, Literal_type, Variable_type, IRI_type,
 					Function_type, ArgumentList_type,Builtin_str_type, Builtin_lang_type, Builtin_langmatches_type, Builtin_datatype_type, Builtin_bound_type,
 					Builtin_sameterm_type,Builtin_isiri_type, Builtin_isblank_type, Builtin_isliteral_type, Builtin_regex_type, Builtin_in_type, Builtin_exists_type
 				};
-				FilterType type;
+				FilterOperationType oper_type;
 
 				class FilterTreeChild;
 
@@ -127,7 +126,7 @@ class QueryTree
 				int exists_grouppattern_id;
 
 				FilterTreeNode():
-					type(None_type), exists_grouppattern_id(-1){}
+					oper_type(None_type), exists_grouppattern_id(-1){}
 
 				void getVarset(Varset &varset);
 
@@ -137,13 +136,16 @@ class QueryTree
 		class GroupPattern::FilterTreeNode::FilterTreeChild
 		{
 			public:
-				FilterTreeChild():
-					type(' '), pos(-1){}
+				enum FilterTreeChildNodeType {None_type, Tree_type, String_type};
+				FilterTreeChildNodeType node_type;
 
-				char type;
 				FilterTreeNode node;
 				std::string arg;
 				int pos;
+				bool isel;
+
+				FilterTreeChild():
+					node_type(None_type), pos(-1), isel(true){}
 		};
 
 		class GroupPattern::FilterTreeRoot
@@ -151,6 +153,8 @@ class QueryTree
 			public:
 				FilterTreeNode root;
 				Varset varset;
+				bool done;
+				FilterTreeRoot():done(false){}
 		};
 
 		class Order
@@ -162,6 +166,7 @@ class QueryTree
 					var(_var), descending(_descending){}
 		};
 
+		enum	UpdateType {Not_Update, Insert_Data, Delete_Data, Delete_Where, Insert_Clause, Delete_Clause, Modify_Clause};
 
 		private:
 			QueryForm query_form;
@@ -172,6 +177,13 @@ class QueryTree
 			int offset, limit;
 
 			GroupPattern grouppattern;
+
+			//----------------------------------------------------------------------------------------------------------------------------------------------------
+
+			UpdateType update_type;
+
+			//only use patterns
+			GroupPattern insert_patterns, delete_patterns;
 
 		public:
 			void setQueryForm(QueryForm _queryform);
@@ -191,6 +203,12 @@ class QueryTree
 			int getLimit();
 
 			GroupPattern& getGroupPattern();
+
+			void setUpdateType(UpdateType _updatetype);
+			UpdateType getUpdateType();
+			GroupPattern& getInsertPatterns();
+			GroupPattern& getDeletePatterns();
+
 
 			bool checkWellDesigned();
 

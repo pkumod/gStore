@@ -12,33 +12,30 @@ using namespace std;
 
 void ResultFilter::addVar(string var)
 {
-	if (this->hash_table.count(var) == 0)
-		this->hash_table.insert(pair<string, vector<int> >(var, vector<int>(this->MAX_SIZE, 0)));
+	if (this->result_filter.count(var) == 0)
+		this->result_filter.insert(make_pair(var, make_pair(0, vector<int>(this->MAX_SIZE, 0))));
 }
 
-vector<int>* ResultFilter::findVar(string var)
+void ResultFilter::changeResultHashTable(SPARQLquery &query, int value)
 {
-	if (this->hash_table.count(var) == 0)
-		return NULL;
+    long tv_begin = Util::get_cur_time();
 
-	return &this->hash_table[var];
-}
-
-void ResultFilter::change(SPARQLquery& query, int value)
-{
 	for (int i = 0; i < query.getBasicQueryNum(); i++)
 	{
-		BasicQuery& basicquery = query.getBasicQuery(i);
-		vector<int*>& basicquery_result =basicquery.getResultList();
+		BasicQuery &basicquery = query.getBasicQuery(i);
+		vector<int*> &basicquery_result =basicquery.getResultList();
 		int result_num = basicquery_result.size();
 		int var_num = basicquery.getVarNum();
 
 		for (int j = 0; j < var_num; j++)
 			this->addVar(basicquery.getVarName(j));
 
-		vector<vector<int>*> refer;
+		vector<vector<int>* > refer;
 		for (int j = 0; j < var_num; j++)
-			refer.push_back(this->findVar(basicquery.getVarName(j)));
+		{
+			this->result_filter[basicquery.getVarName(j)].first += value;
+			refer.push_back(&this->result_filter[basicquery.getVarName(j)].second);
+		}
 
 		for (int j = 0; j < result_num; j++)
 			for (int k = 0; k < var_num; k++)
@@ -46,36 +43,39 @@ void ResultFilter::change(SPARQLquery& query, int value)
 				(*refer[k])[this->hash(basicquery_result[j][k])] += value;
 			}
 	}
+
+    long tv_end = Util::get_cur_time();
+	printf("after ResultFilter::change, used %d ms.\n", tv_end - tv_begin);
 }
 
-void ResultFilter::candFilter(SPARQLquery& query)
+void ResultFilter::candFilterWithResultHashTable(BasicQuery &basicquery)
 {
-	for (int i = 0; i < query.getBasicQueryNum(); i++)
+	for (int j = 0; j < basicquery.getVarNum(); j++)
 	{
-		BasicQuery& basicquery = query.getBasicQuery(i);
-		for (int j = 0; j < basicquery.getVarNum(); j++)
+		map<string, pair<int, vector<int> > >::iterator iter = this->result_filter.find(basicquery.getVarName(j));
+		if (iter != this->result_filter.end() && iter->second.first != 0)
 		{
-			vector<int>* col = this->findVar(basicquery.getVarName(j));
-			if (col != NULL)
+			vector<int> &col = iter->second.second;
+
+			IDList &idlist = basicquery.getCandidateList(j);
+			IDList new_idlist;
+
+			printf("candFilter on %s\n", basicquery.getVarName(j).c_str());
+			printf("before candFilter, size = %d\n", idlist.size());
+		    long tv_begin = Util::get_cur_time();
+
+			for (int k = 0; k < idlist.size(); k++)
 			{
-				IDList& idlist = basicquery.getCandidateList(j);
-				IDList new_idlist;
-
-				printf("candFilter on %s\n", basicquery.getVarName(j).c_str());
-				printf("before candFilter, size = %d\n", idlist.size());
-
-				for (int k = 0; k < idlist.size(); k++)
+				int id = idlist.getID(k);
+				if (col[hash(id)] > 0)
 				{
-					int id = idlist.getID(k);
-					if ((*col)[hash(id)] > 0)
-					{
-						new_idlist.addID(id);
-					}
+					new_idlist.addID(id);
 				}
-				idlist = new_idlist;
-
-				printf("after candFilter, size = %d\n", idlist.size());
 			}
+			idlist = new_idlist;
+
+		    long tv_end = Util::get_cur_time();
+			printf("after candFilter, size = %d, used %d ms.\n", idlist.size(), tv_end - tv_begin);
 		}
 	}
 }

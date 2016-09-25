@@ -33,24 +33,34 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 		_subject = "<" + _subject + ">";
 		_predicate = "<" + _predicate + ">";
 
-		char _objectTypec;
+		TripleWithObjType::ObjectType _object_type = TripleWithObjType::None;
 		if (_objectType == Type::Type_URI)
 		{
 			_object = "<" + _object + ">";
-			_objectTypec = 'e';
+			_object_type = TripleWithObjType::Entity;
 		}
-		else if (_objectType == Type::Type_CustomLanguage)
+		else
 		{
-			_object = "\"" + _object + "\"@" + _objectSubType;
-			_objectTypec = 'l';
-		}
-		else 
-		{
-			_object = "\"" + _object + "\"";
-			_objectTypec = 'l';
+			if (_objectType == Type::Type_Literal)
+				_object = "\"" + _object + "\"";
+			else if (_objectType == Type::Type_CustomLanguage)
+				_object = "\"" + _object + "\"@" + _objectSubType;
+			else if (_objectType == Type::Type_String)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#string>";
+			else if (_objectType == Type::Type_Integer)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+			else if (_objectType == Type::Type_Decimal)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
+			else if (_objectType == Type::Type_Double)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
+			else if (_objectType == Type::Type_Boolean)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+			else if (_objectType == Type::Type_CustomType)
+				_object = "\"" + _object + "\"^^<" + _objectSubType + ">";
+			_object_type = TripleWithObjType::Literal;
 		}
 
-		_triple_array[_triple_num++] = TripleWithObjType(_subject, _predicate, _object, _objectTypec);
+		_triple_array[_triple_num++] = TripleWithObjType(_subject, _predicate, _object, _object_type);
 	}
 	return "";
 }
@@ -72,43 +82,5 @@ string RDFParser::parseString(string _str, TripleWithObjType* _triple_array, int
 	this->_sin.clear();
 	this->_sin << _str;
 	
-	string _subject, _predicate, _object, _objectSubType;
-	Type::Type_ID _objectType;
-
-	while (_triple_num < RDFParser::TRIPLE_NUM_PER_GROUP)
-	{
-		try
-		{
-			if (!this->_TurtleParser.parse(_subject, _predicate, _object, _objectType, _objectSubType))		break;
-		}
-		catch (const TurtleParser::Exception& _e)
-		{
-			cerr << _e.message << endl;
-			this->_TurtleParser.discardLine();
-			continue;
-		}
-
-		_subject = "<" + _subject + ">";
-		_predicate = "<" + _predicate + ">";
-
-		char _objectTypec;
-		if (_objectType == Type::Type_URI)
-		{
-			_object = "<" + _object + ">";
-			_objectTypec = 'e';
-		}
-		else if (_objectType == Type::Type_CustomLanguage)
-		{
-			_object = "\"" + _object + "\"@" + _objectSubType;
-			_objectTypec = 'l';
-		}
-		else
-		{
-			_object = "\"" + _object + "\"";
-			_objectTypec = 'l';
-		}
-
-		_triple_array[_triple_num++] = TripleWithObjType(_subject, _predicate, _object, _objectTypec);
-	}
-	return "";
+	return parseFile(_triple_array, _triple_num);
 }

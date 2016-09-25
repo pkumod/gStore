@@ -1,51 +1,68 @@
-#gStoreD
+# Gstore System
 
-## gStoreD 1.2
+Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
 
-### Overview
-gStoreD is a distributed RDF data management system (or what is commonly called a "triple store") that is based on "partial evaluation" and maintains the graph structure of the original [RDF](http://www.w3.org/TR/rdf11-concepts/) data. Its data model is a labeled, directed multiedge graph, where each vertex corresponds to a subject or an object. We also represent a given [SPARQL](http://www.w3.org/TR/sparql11-overview/) query by a query graph Q. Query processing involves finding subgraph matches of Q over the RDF graph G. 
+**The formal help document is in [Handbook](docs/latex/gStore_help.pdf).**
 
-### Install Steps
-System Requirement: 64-bit linux server with GCC, mpich-3.0.4, make, readline installed.
-*We have tested on linux server with CentOS 6.2 x86_64 and CentOS 6.6 x86_64. The version of GCC should be 4.4.7 or later.*
+**You can write your information in [survey](http://59.108.48.38/survey) if you like.**
 
-You can install gStoreD 1.2 in one command. Just run
+## Getting Started
 
-`# make` 
+This system is really user-friendly and you can pick it up in several minutes. Remember to check your platform where you want to run this system by viewing [System Requirements](docs/DEMAND.md). After all are verified, please get this project's source code. There are several ways to do this:
 
-to compile the gStore code and build executable "gloadD", "gqueryD".
+- download the zip from this repository and extract it
 
-### Usage
-gStoreD 1.2 currently includes four executables and others.
+- fork this repository in your github account
 
-####1. gloadD
-gloadD is used to build a new database from a RDF triple format file.
+- type `git clone git@github.com:Caesar11/gStore.git` in your terminal or use git GUI to acquire it
 
-`# mpiexec -f host_file_name -n host_number + 1 ./gloadD db_name rdf_triple_file_name internal_vertices_file_name`
+Then you need to compile the project, just type `make` in the gStore root directory, and all executables will be ok. To run gStore, please type `bin/gload database_name dataset_path` to build a database named by yourself. And you can use `bin/gquery database_name` command to query a existing database. What is more, `bin/gconsole` is a wonderful tool designed for you, providing all operations you need to use gStore. Notice that all commands should be typed in the root directory of gStore, and your database name should not end with ".db".
 
-The host file is used to idenitfy the hosts. "host_number + 1" means that there should be one more process as the master site.
+- - -
 
-Each line in the file of the internal vertices consists of two parts: the first part is the URI of an resouce, and the second part is the identifier of the partition that the resouce belongs to. The tab "\t" is used as the separator.
+## Advanced Help
 
-For example, we build a database from dbpedia_example_distgStore.n3 which can be found in example folder.
+If you want to understand the details of the gStore system, or you want to try some advanced operations(for example, using the API, server/client), please see the chapters below.
 
-    [root@master Gstore]# mpiexec -f hosts.txt -n 5 ./gloadD db_dbpedia_example_distgStore ./example/dbpedia_example_distgStore.n3 ./example/dbpedia_example_distgStore_internal.TXT
+- [Basic Introduction](docs/INTRO.md): introduce the theory and features of gStore
 
-####2. gqueryD
-gqueryD is used to query an exsisting database with SPARQL files.
+- [Install Guide](docs/INSTALL.md): instructions on how to install this system
 
-`mpiexec -f host_file_name -n host_number + 1 ./gqueryD db_name query_file_name`
+- [How To Use](docs/USAGE.md): detailed information about using the gStore system
 
-When the program finish answering the query, the SPARQL matches are written in the file named `finalRes.txt`.
+- [API Explanation](docs/API.md): guide you to develop applications based on our API
 
-*gStoreD 1.1 support simple "select" queries and "ask" queries now.*
+- [Project Structure](docs/STRUCT.md): show the whole structure and sequence of this project
 
-We also take dbpedia_example_distgStore.n3 as an example.
+- [Related Essays](docs/ESSAY.md): contain essays and publications related with gStore
 
-    [root@master Gstore]# mpiexec -f hosts.txt -n 5 ./gqueryD db_dbpedia_example_distgStore ./example/query.txt
-   
-Notice: 
+- [Update Logs](docs/CHANGELOG.md): keep the logs of the system updates
 
-All results are output into finalRes.txt.
+- [Test Results](docs/TEST.md): present the test results of a series of experiments
 
-If you encounter any problems, please send emails to me (email address: pku09pp@pku.edu.cn).
+- - -
+
+## Other Business
+
+We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in [Recipe Book](docs/TIPS.md).
+
+You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <chenjiaqi93@163.com> to submit your suggestions and report bugs to us by emailing to <zengli-bookug@pku.edu.cn>. A full list of our whole team is in [Mailing List](docs/MAIL.md).
+
+There are some restrictions when you use the current gStore project, you can see them on [Limit Description](docs/LIMIT.md).
+
+Sometimes you may find some strange phenomena(but not wrong case), or something hard to understand/solve(don't know how to do next), then do not hesitate to visit the [Frequently Asked Questions](docs/FAQ.md) page.
+
+Graph database engine is a new area and we are still trying to go further. Things we plan to do next is in [Future Plan](docs/PLAN.md) chapter, and we hope more and more people will support or even join us. You can support in many ways:
+
+- watch/star our project
+
+- fork this repository and submit pull requests to us
+
+- download and use this system, report bugs or suggestions
+
+- ...
+
+People who inspire us or contribute to this project will be listed in the [Thanks List](docs/THANK.md) chapter.
+
+This whole document is divided into different pieces, and each them is stored in a markdown file. You can see/download the combined markdown file in [help_markdown](docs/gStore_help.md), and for html file, please go to [help_html](docs/gStore_help.html). What is more, we also provide help file in pdf format, and you can visit it in [help_pdf](docs/latex/gStore_help.pdf).
+

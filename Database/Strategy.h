@@ -17,6 +17,7 @@
 #include "../Query/BasicQuery.h"
 #include "../KVstore/KVstore.h"
 #include "../VSTree/VSTree.h"
+#include "../Query/ResultFilter.h"
 
 class Strategy
 {
@@ -25,15 +26,13 @@ public:
 	Strategy(KVstore*, VSTree*);
 	~Strategy();
 	//select efficient strategy to do the sparql query
-	bool handle(SPARQLquery&);
-	bool handle(SPARQLquery& _query, int myRank, string &internal_tag_str);
+	bool handle(SPARQLquery&, ResultFilter* _result_filter = NULL);
 
 private:
 	int method;
 	KVstore* kvstore;
 	VSTree* vstree;
-	void handler0(BasicQuery*, vector<int*>&);
-	void handler0_0(BasicQuery*, vector<int*>&, string &);
+	void handler0(BasicQuery*, vector<int*>&, ResultFilter* _result_filter = NULL);
 	void handler1(BasicQuery*, vector<int*>&);
 	void handler2(BasicQuery*, vector<int*>&);
 	void handler3(BasicQuery*, vector<int*>&);

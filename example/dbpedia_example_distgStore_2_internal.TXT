@@ -1,4 +1,0 @@
-<http://dbpedia.org/resource/Louise_Lasser>
-<http://dbpedia.org/resource/New_York_City>
-<http://dbpedia.org/resource/Mary_Hartman%2C_Mary_Hartman>
-<http://dbpedia.org/resource/Slither_%281973_film%29>

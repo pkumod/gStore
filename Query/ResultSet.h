@@ -16,22 +16,24 @@
 class ResultSet
 {
 private:
-#ifdef STREAM_ON
 	Stream* stream;
-#endif
+	bool useStream;
 public:
 	int select_var_num;
 	int ansNum;
 	std::string*  var_name;
 	int output_offset, output_limit;
-
-#ifndef STREAM_ON
 	std::string** answer;
-#endif
 
 	ResultSet();
 	~ResultSet();
 	ResultSet(int _v_num, const std::string* _v_names);
+
+	void setUseStream();
+	inline bool checkUseStream()
+	{
+		return this->useStream;
+	}
 
 	//convert to binary string 
 	//Bstr* to_bstr();

@@ -14,7 +14,7 @@ int LRUCache::DEFAULT_CAPACITY = 1 * 1000 * 1000;
 
 LRUCache::LRUCache(int _capacity)
 {
-	//cout << "LRUCache initial..." << endl;
+	cout << "LRUCache initial..." << endl;
 	this->capacity = _capacity > 0 ? _capacity : LRUCache::DEFAULT_CAPACITY;
 	// we should guarantee the cache is big enough.
 	this->capacity = std::max(this->capacity, VNode::MAX_CHILD_NUM * 2000);
@@ -39,7 +39,7 @@ LRUCache::LRUCache(int _capacity)
 	this->prev[LRUCache::START_INDEX] = LRUCache::NULL_INDEX;
 	this->prev[LRUCache::END_INDEX] = LRUCache::START_INDEX;
 	this->size = 0;
-	//cout << "LRUCache initial finish" << endl;
+	cout << "LRUCache initial finish" << endl;
 }
 
 LRUCache::~LRUCache()
@@ -91,20 +91,26 @@ bool LRUCache::loadCache(string _filePath)
 			break;
 		}
 
+		//NOTICE:not consider invalid node
+		if(nodePtr->getFileLine() < 0)
+		{
+			continue;
+		}
+
 		//this->size if the real size, while DEFAULT_NUM is the prefix
 		//To maintain a double-linked list, the pos 0 is head, while the pos 1 is tail
 		int pos = LRUCache::DEFAULT_NUM + this->size;
 		this->setElem(pos, nodePtr->getFileLine(), nodePtr);
 
 		//debug
-		{
-			if (_tmp_cycle_count != nodePtr->getFileLine())
-			{
-				stringstream _ss;
-				_ss << "error file line: " << _tmp_cycle_count << " " << nodePtr->getFileLine() << " " << nodePtr->getChildNum() << endl;
-				Util::logging(_ss.str());
-			}
-		}
+		//{
+			//if (_tmp_cycle_count != nodePtr->getFileLine())
+			//{
+				//stringstream _ss;
+				//_ss << "error file line: " << _tmp_cycle_count << " " << nodePtr->getFileLine() << " " << nodePtr->getChildNum() << endl;
+				//Util::logging(_ss.str());
+			//}
+		//}
 
 		_tmp_cycle_count++;
 	}
@@ -166,11 +172,19 @@ bool LRUCache::set(int _key, VNode * _value)
 bool
 LRUCache::del(int _key)
 {
+#ifdef DEBUG
+	cout<<"to del in LRUCache "<<_key<<endl;
+#endif
 	map<int, int>::iterator iter = this->key2pos.find(_key);
 	if (iter != this->key2pos.end())
 	{
 		int pos1 = iter->second;
 		int pos2 = LRUCache::DEFAULT_NUM + this->size - 1;
+		cout<<"pos 1: "<<pos1<<"  pos2: "<<pos2<<endl;
+		if(this->values[pos1]->getFileLine() != _key)
+		{
+			cout<<"error in del() - file line not mapping"<<endl;
+		}
 		this->fillElem(pos1, pos2);
 
 		//NOTICE:we do not need to update the file now
@@ -293,7 +307,13 @@ void LRUCache::freeElem(int _pos)
 		cerr << "error in LRUCache::freeElem() -- invalid pos" << endl;
 		return;
 	}
-	delete this->values[_pos];
+
+	if(this->values[_pos] != NULL)
+	{
+		delete this->values[_pos];
+		this->values[_pos] = NULL;
+	}
+
 	this->key2pos.erase(this->keys[_pos]);
 	this->keys[_pos] = LRUCache::NULL_INDEX;
 
@@ -330,13 +350,23 @@ void LRUCache::setElem(int _pos, int _key, VNode* _value)
 void LRUCache::fillElem(int _pos1, int _pos2)
 {
 	cout<<"fill elem in LRUCache() happen"<<endl;
+
+	//NOTICE:update to disk, set the node as invalid
+	this->freeDisk(_pos1);
+	//NOTICE:size is reduced in freeElem
 	this->freeElem(_pos1);
 	if(_pos1 >= _pos2)  //0 ele or 1 ele(just remove the only one)
 	{
+		cout<<"LRUCache::fillElem() - no need to fill"<<endl;
 		return;
 	}
 
 	int key = this->keys[_pos2];
+	cout<<"another key in fillElem() - "<<key<<endl;
+	if(this->values[_pos2] == NULL)
+	{
+		cout<<"error in fillElem() - value for pos2 is NULL"<<endl;
+	}
 	this->key2pos[key] = _pos1;
 	this->keys[_pos1] = key;
 	this->values[_pos1] = this->values[_pos2];
@@ -346,14 +376,55 @@ void LRUCache::fillElem(int _pos1, int _pos2)
 	int prevPos = this->prev[_pos2];
 	int nextPos = this->next[_pos2];
 
+	//QUERY:if pos1 and pos2 are neighbors in prev-next relations
+	//can this conflict with freeElem?
 	this->next[prevPos] = _pos1;
 	this->prev[nextPos] = _pos1;
 	this->next[_pos1] = nextPos;
 	this->prev[_pos1] = prevPos;
 }
 
+bool
+LRUCache::freeDisk(int _pos)
+{
+	VNode* nodePtr = this->values[_pos];
+	FILE* filePtr = fopen(this->dataFilePath.c_str(), "r+b");
+
+	if (nodePtr == NULL)
+	{
+		cerr << "error, VNode do not exist. @LRUCache::freeDisk" << endl;
+		return false;
+	}
+	if (filePtr == NULL)
+	{
+		cerr << "error, can't open file. @LRUCache::freeDisk" << endl;
+		return false;
+	}
+
+	size_t vNodeSize = sizeof(VNode);
+	int line = nodePtr->getFileLine();
+	int flag = 0;
+	long long seekPos = (long long)line * vNodeSize;
+
+	flag = fseek(filePtr, seekPos, SEEK_SET);
+
+	if (flag != 0)
+	{
+		cerr << "error, can't seek to the fileLine. @LRUCache::writeOut" << endl;
+		return false;
+	}
+
+	nodePtr->setFileLine(-1);
+	fwrite((char *)nodePtr, vNodeSize, 1, filePtr);
+
+	fclose(filePtr);
+
+	return true;
+}
+
 //just write the values[_pos] to the hard disk, the VNode in memory will not be free. 
-bool LRUCache::writeOut(int _pos, int _fileLine)
+bool 
+LRUCache::writeOut(int _pos, int _fileLine)
 {
 	VNode* nodePtr = this->values[_pos];
 	FILE* filePtr = fopen(this->dataFilePath.c_str(), "r+b");
@@ -443,6 +514,7 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 //write out all the elements to hard disk. 
 bool LRUCache::flush()
 {
+	cout<<"to flush in LRUCache"<<endl;
 	FILE* filePtr = fopen(this->dataFilePath.c_str(), "r+b");
 
 	if (filePtr == NULL)
@@ -455,20 +527,19 @@ bool LRUCache::flush()
 	int endIndex = startIndex + this->size;
 	size_t vNodeSize = sizeof(VNode);
 
-	for (int i = startIndex; i<endIndex; i++)
+	//NOTICE:values are continuous
+	for (int i = startIndex; i < endIndex; ++i)
 	{
 		VNode* nodePtr = this->values[i];
 		int line = this->keys[i];
+		//cout<<"file line to write "<<line<<endl;
 
-		//debug
-		{
+#ifdef DEBUG
 			if (nodePtr->getFileLine() != line)
 			{
-				stringstream _ss;
-				_ss << "line error at !!!" << line << " " << nodePtr->getFileLine() << endl;
-				Util::logging(_ss.str());
+				cout << "line error at !!!" << line << " " << nodePtr->getFileLine() << endl;
 			}
-		}
+#endif
 
 		if (nodePtr == NULL)
 		{

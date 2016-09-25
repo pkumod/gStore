@@ -8,14 +8,12 @@
 #ifndef DBPARSER_H_
 #define DBPARSER_H_
 
-#include<string>
-#include<vector>
-#include<fstream>
-#include<stdio.h>
-#include "../Query/SPARQLquery.h"
+#include "../Util/Util.h"
 #include "../Util/Triple.h"
+#include "../Query/SPARQLquery.h"
 #include "SparqlParser.h"
 #include "SparqlLexer.h"
+
 using namespace std;
 
 class DBparser{

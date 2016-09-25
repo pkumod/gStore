@@ -19,7 +19,6 @@ class Varset
 		Varset(std::string & _var);
 		Varset(std::vector<std::string> & _varset);
 
-	public:
 		bool findVar(std::string& _var);
 		void addVar(std::string& _var);
 

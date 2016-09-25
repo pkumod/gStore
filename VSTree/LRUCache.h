@@ -66,6 +66,7 @@ private:
     void setElem(int _pos, int _key, VNode* _value);
 	//move pos2 ele to pos1, and pos1 ele should be freed
 	void fillElem(int _pos1, int _pos2);
+	bool freeDisk(int _pos);
 	 //just write the values[_pos] to the hard disk, the VNode in memory will not be free. 
     bool writeOut(int _pos, int _fileLine=-1);
      //read the value from hard disk, and put it to the values[_pos].

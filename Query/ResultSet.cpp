@@ -15,25 +15,26 @@ ResultSet::ResultSet()
 	this->select_var_num = 0;
 	this->var_name = NULL;
 	this->ansNum = 0;
-#ifndef STREAM_ON
 	this->answer = NULL;
-#else
 	this->stream = NULL;
-#endif
+	this->useStream = false;
 }
 
 ResultSet::~ResultSet()
 {
 	delete[] this->var_name;
-#ifndef STREAM_ON
-	for(int i = 0; i < this->ansNum; i ++)
+	if (!this->useStream)
 	{
-		delete[] this->answer[i];
+		for(int i = 0; i < this->ansNum; i ++)
+		{
+			delete[] this->answer[i];
+		}
+		delete[] this->answer;
 	}
-	delete[] this->answer;
-#else
-	delete this->stream;    //maybe NULL
-#endif
+	else
+	{
+		delete this->stream;    //maybe NULL
+	}
 }
 
 ResultSet::ResultSet(int _v_num, const string* _v_names)
@@ -44,9 +45,16 @@ ResultSet::ResultSet(int _v_num, const string* _v_names)
 	{
 		this->var_name[i] = _v_names[i];
 	}
-#ifdef STREAM_ON
+	this->ansNum = 0;
+	this->answer = NULL;
 	this->stream = NULL;
-#endif
+	this->useStream = false;
+}
+
+void
+ResultSet::setUseStream()
+{
+	this->useStream = true;
 }
 
 void 
@@ -72,7 +80,7 @@ ResultSet::to_str()
 	stringstream _buf;
 
 //#ifdef DEBUG_PRECISE
-	_buf << "There has answer: " << this->ansNum << endl;
+	//_buf << "There has answer: " << this->ansNum << endl;
 	_buf << this->var_name[0];
 	for(int i = 1; i < this->select_var_num; i ++)
 	{
@@ -80,16 +88,13 @@ ResultSet::to_str()
 	}
 	_buf << "\n";
 //#endif
-#ifndef STREAM_ON
-	for(int i = 0; i < this->ansNum; i++)
+	if (!this->useStream)
 	{
-		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
-			break;
-#ifdef DEBUG_PRECISE
-		printf("to_str: well!\n");	//just for debug!
-#endif	//DEBUG_PRECISE
-		if (i >= this->output_offset)
+		for(int i = 0; i < this->ansNum; i++)
 		{
+#ifdef DEBUG_PRECISE
+			printf("to_str: well!\n");	//just for debug!
+#endif	//DEBUG_PRECISE
 			_buf << this->answer[i][0];
 			for(int j = 1; j < this->select_var_num; j++)
 			{
@@ -99,104 +104,107 @@ ResultSet::to_str()
 			}
 			_buf << "\n";
 		}
-	}
 #ifdef DEBUG_PRECISE
-	printf("to_str: ends!\n");		//just for debug!
+		printf("to_str: ends!\n");		//just for debug!
 #endif	//DEBUG_PRECISE
-
-#else	//STREAM_ON
-	printf("using stream to produce to_str()!\n");
-	_buf << this->readAllFromStream();
-#endif	//STREAM_ON
+	}
+	else
+	{
+		printf("using stream to produce to_str()!\n");
+		_buf << this->readAllFromStream();
+	}
 	return _buf.str();
 }
 
 void
 ResultSet::output(FILE* _fp)
 {
-#ifdef STREAM_ON
-	fprintf(_fp, "%s", this->var_name[0].c_str());
-	for(int i = 1; i < this->select_var_num; i++)
+	if (this->useStream)
 	{
-		fprintf(_fp, "\t%s", this->var_name[i].c_str());
-	}
-	fprintf(_fp, "\n");
-
-
-	if(this->ansNum == 0)
-	{
-		fprintf(_fp, "[empty result]\n");
-		return;
-	}
-	const Bstr* bp;
-	for(int i = 0; i < this->ansNum; i++)
-	{
-		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
-			break;
-		bp = this->stream->read();
-		if (i >= this->output_offset)
+		fprintf(_fp, "%s", this->var_name[0].c_str());
+		for(int i = 1; i < this->select_var_num; i++)
 		{
-			fprintf(_fp, "%s", bp[0].getStr());
-			//fprintf(_fp, "%s", bp->getStr());
-			for(int j = 1; j < this->select_var_num; j++)
-			{
-				fprintf(_fp, "\t%s", bp[j].getStr());
-				//bp = this->stream.read();
-				//fprintf(_fp, "\t%s", bp->getStr());
-			}
-			fprintf(_fp, "\n");
+			fprintf(_fp, "\t%s", this->var_name[i].c_str());
 		}
-	}		
-#endif
+		fprintf(_fp, "\n");
+
+		if(this->ansNum == 0)
+		{
+			fprintf(_fp, "[empty result]\n");
+			return;
+		}
+		const Bstr* bp;
+		for(int i = 0; i < this->ansNum; i++)
+		{
+			if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
+				break;
+			bp = this->stream->read();
+			if (i >= this->output_offset)
+			{
+				fprintf(_fp, "%s", bp[0].getStr());
+				//fprintf(_fp, "%s", bp->getStr());
+				for(int j = 1; j < this->select_var_num; j++)
+				{
+					fprintf(_fp, "\t%s", bp[j].getStr());
+					//bp = this->stream.read();
+					//fprintf(_fp, "\t%s", bp->getStr());
+				}
+				fprintf(_fp, "\n");
+			}
+		}
+	}
 }
 
 void
 ResultSet::openStream(std::vector<int> &_keys, std::vector<bool> &_desc, int _output_offset, int _output_limit)
 {
-#ifdef STREAM_ON
-#ifdef DEBUG_STREAM
-	vector<int> debug_keys;
-	vector<bool> debug_desc;
-	for(int i = 0; i < this->select_var_num; ++i)
+	if (this->useStream)
 	{
-		debug_keys.push_back(i);
-		debug_desc.push_back(false);
-	}
+#ifdef DEBUG_STREAM
+		vector<int> debug_keys;
+		vector<bool> debug_desc;
+		for(int i = 0; i < this->select_var_num; ++i)
+		{
+			debug_keys.push_back(i);
+			debug_desc.push_back(false);
+		}
 #endif
-	if(this->stream != NULL)
-	{
-		delete this->stream;
-		this->stream = NULL;
-	}
+		if(this->stream != NULL)
+		{
+			delete this->stream;
+			this->stream = NULL;
+		}
 #ifdef DEBUG_STREAM
-	if(this->ansNum > 0)
-		this->stream = new Stream(debug_keys, debug_desc, this->ansNum, this->select_var_num, true);
+		if(this->ansNum > 0)
+			this->stream = new Stream(debug_keys, debug_desc, this->ansNum, this->select_var_num, true);
 #else
-	if(this->ansNum > 0)
-		this->stream = new Stream(_keys, _desc, this->ansNum, this->select_var_num, _keys.size() > 0);
+		if(this->ansNum > 0)
+			this->stream = new Stream(_keys, _desc, this->ansNum, this->select_var_num, _keys.size() > 0);
 #endif  //DEBUG_STREAM
-#endif  //STREAM_ON
-	this->output_offset = _output_offset;
-	this->output_limit = _output_limit;
+		this->output_offset = _output_offset;
+		this->output_limit = _output_limit;
+	}
 }
 
 void
 ResultSet::resetStream()
 {
-#ifdef STREAM_ON
-	//this->stream.reset();
-	if(this->stream != NULL)
-		this->stream->setEnd();
-#endif
+	if (this->useStream)
+	{
+		//this->stream.reset();
+		if(this->stream != NULL)
+			this->stream->setEnd();
+	}
 }
 
 void
 ResultSet::writeToStream(string& _s)
 {
-#ifdef STREAM_ON
-	if(this->stream != NULL)
-		this->stream->write(_s.c_str(), _s.length());	
-#endif
+	if (this->useStream)
+	{
+		if(this->stream != NULL)
+			this->stream->write(_s.c_str(), _s.length());
+	}
 }
 
 //QUERY: how to manage when large?
@@ -204,57 +212,61 @@ string
 ResultSet::readAllFromStream()
 {
 	stringstream buf;
-#ifdef STREAM_ON
-	if(this->stream == NULL)
-		return "";
-
-	this->resetStream();
-	const Bstr* bp;
-	for(int i = 0; i < this->ansNum; i++)
+	if (this->useStream)
 	{
-		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
-			break;
-		bp = this->stream->read();
-		if (i >= this->output_offset)
-		{
-			buf << bp[0].getStr();
-			for(int j = 1; j < this->select_var_num; ++j)
-			{
-				buf << "\t"	<< bp[j].getStr();
-			}
+		if(this->stream == NULL)
+			return "";
 
-			//buf << bp->getStr();
-			//for(int j = 1; j < this->select_var_num; j++)
-			//{
-				//bp = this->stream.read();
-				//buf << "\t" << bp->getStr();
-			//}
-			buf << "\n";
+		this->resetStream();
+		const Bstr* bp;
+		for(int i = 0; i < this->ansNum; i++)
+		{
+			if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
+				break;
+			bp = this->stream->read();
+			if (i >= this->output_offset)
+			{
+				buf << bp[0].getStr();
+				for(int j = 1; j < this->select_var_num; ++j)
+				{
+					buf << "\t"	<< bp[j].getStr();
+				}
+
+				//buf << bp->getStr();
+				//for(int j = 1; j < this->select_var_num; j++)
+				//{
+					//bp = this->stream.read();
+					//buf << "\t" << bp->getStr();
+				//}
+				buf << "\n";
+			}
 		}
-	}		
-#endif
+	}
 	return buf.str();
 }
 
 const Bstr*
 ResultSet::getOneRecord()
 {
-#ifdef STREAM_ON
-	if(this->stream == NULL)
+	if (this->useStream)
 	{
-		fprintf(stderr, "ResultSet::getOneRecord(): no results now!\n");
+		if(this->stream == NULL)
+		{
+			fprintf(stderr, "ResultSet::getOneRecord(): no results now!\n");
+			return NULL;
+		}
+		if(this->stream->isEnd())
+		{
+			fprintf(stderr, "ResultSet::getOneRecord(): read till end now!\n");
+			return NULL;
+		}
+		//NOTICE:this is one record, and donot free the memory!
+		//NOTICE:Bstr[] but only one element, used as Bstr*
+		return this->stream->read();
+	}
+	else
+	{
 		return NULL;
 	}
-	if(this->stream->isEnd())
-	{
-		fprintf(stderr, "ResultSet::getOneRecord(): read till end now!\n");
-		return NULL;
-	}
-	//NOTICE:this is one record, and donot free the memory!
-	//NOTICE:Bstr[] but only one element, used as Bstr*
-	return this->stream->read();
-#else
-	return NULL;
-#endif
 }
 

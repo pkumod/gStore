@@ -15,7 +15,6 @@
 #compile parameters
 
 CC = g++
-MPICC = mpicxx
 
 #the optimazition level of gcc/g++
 #http://blog.csdn.net/hit_090420216/article/details/44900215
@@ -54,6 +53,8 @@ signatureobj = $(objdir)SigEntry.o $(objdir)Signature.o
 
 vstreeobj = $(objdir)VSTree.o $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdir)VNode.o
 
+stringindexobj = $(objdir)StringIndex.o
+
 parserobj = $(objdir)RDFParser.o $(objdir)SparqlParser.o $(objdir)DBparser.o \
 			$(objdir)SparqlLexer.o $(objdir)TurtleParser.o $(objdir)QueryParser.o
 
@@ -62,7 +63,7 @@ serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)So
 databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o
 
 
-objfile = $(kvstoreobj) $(vstreeobj) $(parserobj) $(serverobj) $(databaseobj) \
+objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj) $(databaseobj) \
 		  $(utilobj) $(signatureobj) $(queryobj)
 	 
 inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include 
@@ -72,7 +73,7 @@ library = -ltermcap -lreadline -L./lib -lantlr
 def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 
 #gtest
-all: $(exedir)gload $(exedir)gloadD $(exedir)gserver $(exedir)gclient $(exedir)gquery $(exedir)gqueryD $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub
+all: $(exedir)gload $(exedir)gserver $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub
 
 test_index: test_index.cpp
 	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library)
@@ -82,12 +83,6 @@ test_index: test_index.cpp
 #NOTICE:not include g*.o in objfile due to multiple definitions of main()
 $(exedir)gload: $(lib_antlr) $(objdir)gload.o $(objfile) 
 	$(CC) $(EXEFLAG) -o $(exedir)gload $(objdir)gload.o $(objfile) $(library)
-
-$(exedir)gloadD: $(lib_antlr) $(objdir)gloadD.o $(objfile) 
-	$(MPICC) $(EXEFLAG) -o $(exedir)gloadD $(objdir)gloadD.o $(objfile) $(library)
-
-$(exedir)gqueryD: $(lib_antlr) $(objdir)gqueryD.o $(objfile) 
-	$(MPICC) $(EXEFLAG) -o $(exedir)gqueryD $(objdir)gqueryD.o $(objfile) $(library)
 
 $(exedir)gquery: $(lib_antlr) $(objdir)gquery.o $(objfile) 
 	$(CC) $(EXEFLAG) -o $(exedir)gquery $(objdir)gquery.o $(objfile) $(library)
@@ -109,15 +104,8 @@ $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
 $(objdir)gload.o: Main/gload.cpp Database/Database.h Util/Util.h
 	$(CC) $(CFLAGS) Main/gload.cpp $(inc) -o $(objdir)gload.o 
 	
-$(objdir)gloadD.o: Main/gloadD.cpp Database/Database.h Util/Util.h
-	$(MPICC) $(CFLAGS) Main/gloadD.cpp $(inc) -o $(objdir)gloadD.o 
-
 $(objdir)gquery.o: Main/gquery.cpp Database/Database.h Util/Util.h
 	$(CC) $(CFLAGS) Main/gquery.cpp $(inc) -o $(objdir)gquery.o  #-DREADLINE_ON
-	#add -DREADLINE_ON if using readline
-
-$(objdir)gqueryD.o: Main/gqueryD.cpp Database/Database.h Util/Util.h
-	$(MPICC) $(CFLAGS) Main/gqueryD.cpp $(inc) -o $(objdir)gqueryD.o  #-DREADLINE_ON
 	#add -DREADLINE_ON if using readline
 
 $(objdir)gserver.o: Main/gserver.cpp Server/Server.h Util/Util.h
@@ -206,7 +194,7 @@ $(objdir)Database.o: Database/Database.cpp Database/Database.h \
 	$(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
 	$(objdir)BasicQuery.o $(objdir)Triple.o $(objdir)SigEntry.o \
 	$(objdir)KVstore.o $(objdir)VSTree.o $(objdir)DBparser.o \
-	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o
+	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o $(objdir)GeneralEvaluation.o $(objdir)StringIndex.o
 	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o
 
 $(objdir)Join.o: Database/Join.cpp Database/Join.h $(objdir)IDList.o $(objdir)BasicQuery.o $(objdir)Util.o\
@@ -214,7 +202,7 @@ $(objdir)Join.o: Database/Join.cpp Database/Join.h $(objdir)IDList.o $(objdir)Ba
 	$(CC) $(CFLAGS) Database/Join.cpp $(inc) -o $(objdir)Join.o
 
 $(objdir)Strategy.o: Database/Strategy.cpp Database/Strategy.h $(objdir)SPARQLquery.o $(objdir)BasicQuery.o \
-	$(objdir)Triple.o $(objdir)IDList.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Util.o $(objdir)Join.o
+	$(objdir)Triple.o $(objdir)IDList.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Util.o $(objdir)Join.o $(objdir)ResultFilter.o
 	$(CC) $(CFLAGS) Database/Strategy.cpp $(inc) -o $(objdir)Strategy.o
 
 #objects in Database/ end
@@ -240,11 +228,12 @@ $(objdir)Varset.o: Query/Varset.cpp Query/Varset.h
 $(objdir)QueryTree.o: Query/QueryTree.cpp Query/QueryTree.h $(objdir)Varset.o
 	$(CC) $(CFLAGS) Query/QueryTree.cpp $(inc) -o $(objdir)QueryTree.o
 
-$(objdir)ResultFilter.o: Query/ResultFilter.cpp Query/ResultFilter.h $(objdir)SPARQLquery.o
+$(objdir)ResultFilter.o: Query/ResultFilter.cpp Query/ResultFilter.h $(objdir)BasicQuery.o $(objdir)SPARQLquery.o $(objdir)Util.o
 	$(CC) $(CFLAGS) Query/ResultFilter.cpp $(inc) -o $(objdir)ResultFilter.o
 
+#no more using $(objdir)Database.o
 $(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h $(objdir)QueryParser.o $(objdir)QueryTree.o \
-	$(objdir)SPARQLquery.o $(objdir)Varset.o $(objdir)Database.o $(objdir)KVstore.o $(objdir)ResultFilter.o $(objdir)Strategy.o
+	$(objdir)SPARQLquery.o $(objdir)Varset.o $(objdir)KVstore.o $(objdir)ResultFilter.o $(objdir)Strategy.o $(objdir)StringIndex.o 
 	$(CC) $(CFLAGS) Query/GeneralEvaluation.cpp $(inc) -o $(objdir)GeneralEvaluation.o
 
 #objects in Query/ end
@@ -296,6 +285,13 @@ $(objdir)VNode.o: VSTree/VNode.cpp VSTree/VNode.h
 	$(CC) $(CFLAGS) VSTree/VNode.cpp $(inc) -o $(objdir)VNode.o $(def64IO)
 
 #objects in VSTree/ end
+
+
+#objects in StringIndex/ begin
+$(objdir)StringIndex.o: StringIndex/StringIndex.cpp StringIndex/StringIndex.h $(objdir)KVstore.o $(objdir)Util.o
+
+	$(CC) $(CFLAGS) StringIndex/StringIndex.cpp $(inc) -o $(objdir)StringIndex.o
+#objects in StringIndex/ end
 
 
 #objects in Parser/ begin
@@ -373,7 +369,7 @@ dist: clean
 
 tarball:
 	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs test docs data makefile \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex
 
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/cpp/example

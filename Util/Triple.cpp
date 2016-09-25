@@ -95,10 +95,10 @@ const string Triple::toString()const{
 /* for TripleWithObjType */
 TripleWithObjType::TripleWithObjType():Triple()
 {
-    this->object_type = ' ';
+    this->object_type = None;
 }
 
-TripleWithObjType::TripleWithObjType(const string& _s, const string& _p, const string& _o, const char& _o_type):Triple(_s, _p, _o)
+TripleWithObjType::TripleWithObjType(const string& _s, const string& _p, const string& _o, const ObjectType _o_type):Triple(_s, _p, _o)
 {
     this->object_type = _o_type;
 }
@@ -115,27 +115,31 @@ TripleWithObjType& TripleWithObjType::operator=(const TripleWithObjType& _triple
     return *this;
 }
 
-void TripleWithObjType::setObjType(const char &_o_type)
+void TripleWithObjType::setObjType(const ObjectType _o_type)
 {
     this->object_type = _o_type;
 }
 
 bool TripleWithObjType::isObjEntity()const
 {
-    return this->object_type == TripleWithObjType::ENTITY;
+    return this->object_type == TripleWithObjType::Entity;
 }
 
 bool TripleWithObjType::isObjLiteral()const
 {
-    return this->object_type == TripleWithObjType::LITERA;
+    return this->object_type == TripleWithObjType::Literal;
 }
 
 const string TripleWithObjType::toString()const
 {
-    return this->subject+"\t"+
-            this->predicate+"\t"+
-            this->object+"\t"+
-            this->object_type + ".";
+	string ret = this->subject+"\t"+
+				 this->predicate+"\t"+
+				 this->object+"\t";
+	if (this->object_type == None)
+		ret += "[None]";
+	else if (this->object_type == Entity)
+		ret += "[Entity]";
+	else if (this->object_type == Literal)
+		ret += "[Literal]";
+    return ret + ".";
 }
-
-
