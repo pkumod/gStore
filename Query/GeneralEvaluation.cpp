@@ -2218,6 +2218,20 @@ void GeneralEvaluation::queryRewriteEncodeRetrieveJoin(int dep)
 			this->result_filter.changeResultHashTable(this->expansion_evaluation_stack[dep].sparql_query, -1);
 		}
 
+		for (int i = 0; i < (int)grouppattern.filters.size(); i++)
+		if (!grouppattern.filters[i].done)
+		{
+			grouppattern.filters[i].done = true;
+
+			TempResultSet *r = new TempResultSet();
+			temp->doFilter(grouppattern.filters[i].root, this->filter_exists_grouppattern_resultset_record, *r, this->stringindex, grouppattern.grouppattern_subject_object_maximal_varset);
+
+			temp->release();
+			delete temp;
+
+			temp = r;
+		}
+
 		TempResultSet *r = new TempResultSet();
 		this->expansion_evaluation_stack[dep].result->doUnion(*temp, *r);
 
@@ -2227,20 +2241,6 @@ void GeneralEvaluation::queryRewriteEncodeRetrieveJoin(int dep)
 		delete temp;
 
 		this->expansion_evaluation_stack[dep].result = r;
-
-		for (int i = 0; i < (int)grouppattern.filters.size(); i++)
-		if (!grouppattern.filters[i].done)
-		{
-			grouppattern.filters[i].done = true;
-
-			TempResultSet *r = new TempResultSet();
-			this->expansion_evaluation_stack[dep].result->doFilter(grouppattern.filters[i].root, this->filter_exists_grouppattern_resultset_record, *r, this->stringindex, grouppattern.grouppattern_subject_object_maximal_varset);
-
-			this->expansion_evaluation_stack[dep].result->release();
-			delete this->expansion_evaluation_stack[dep].result;
-
-			this->expansion_evaluation_stack[dep].result = r;
-		}
 	}
 }
 
