@@ -360,6 +360,18 @@ TurtleParser::Lexer::Token TurtleParser::Lexer::next(std::string& token)
    return Token_Eof;
 }
 //---------------------------------------------------------------------------
+void TurtleParser::Lexer::readUntilSep(std::string& value)
+{
+   value.resize(0);
+
+   char c;
+   while (read(c))
+   {
+      if (issep(c))	{ unread(); break; }
+      value += c;
+   }
+}
+//---------------------------------------------------------------------------
 TurtleParser::TurtleParser(istream& in)
    : lexer(in),triplesReader(0),nextBlank(0)
    // Constructor
@@ -451,6 +463,10 @@ void TurtleParser::parseQualifiedName(const string& prefix,string& name)
       parseError("unknown prefix '"+prefix+"'");
    string expandedPrefix=prefixes[prefix];
 
+   lexer.readUntilSep(name);
+   name=expandedPrefix+name;
+
+/*
    Lexer::Token token=lexer.next(name);
    if (isName(token)) {
       name=expandedPrefix+name;
@@ -458,6 +474,7 @@ void TurtleParser::parseQualifiedName(const string& prefix,string& name)
       lexer.unget(token,name);
       name=expandedPrefix;
    }
+*/
 }
 //---------------------------------------------------------------------------
 void TurtleParser::parseBlank(std::string& entry)

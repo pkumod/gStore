@@ -94,11 +94,8 @@ class TurtleParser
       /// Get the line
       unsigned getLine() const { return line; }
 
-	  void discardLine()
-	  {
-		  char c;
-		  while (read(c) && c != '\n');
-	  }
+      void readUntilSep(std::string& value);
+	  void discardLine() { char c; while (read(c) && c!='\n'); }
    };
    /// A triple
    struct Triple {
@@ -157,10 +154,7 @@ class TurtleParser
    /// Read the next triple
    bool parse(std::string& subject,std::string& predicate,std::string& object,Type::Type_ID& objectType,std::string& objectSubType);
 
-   void discardLine()
-   {
-	   lexer.discardLine();
-   }
+   void discardLine() { lexer.discardLine(); }
 };
 //---------------------------------------------------------------------------
 #endif
