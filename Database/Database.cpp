@@ -641,6 +641,7 @@ Database::build(const string& _rdf_file)
 	//this->kvstore->release();
 	//cout<<"release kvstore"<<endl;
 
+	long before_vstree = Util::get_cur_time();
 	//(this->kvstore)->open();
 	string _entry_file = this->getSignatureBFile();
 
@@ -648,6 +649,8 @@ Database::build(const string& _rdf_file)
 	(this->vstree)->buildTree(_entry_file);
 
 	long tv_build_end = Util::get_cur_time();
+
+	cout<<"after build vstree, used "<<(tv_build_end - before_vstree)<<"ms."<<endl;
 	cout << "after build, used " << (tv_build_end - tv_build_begin) << "ms." << endl;
 	cout << "finish build VS-Tree." << endl;
 
@@ -890,11 +893,16 @@ Database::encodeRDF_new(const string _rdf_file)
 	int** _p_id_tuples = NULL;
 	int _id_tuples_max = 0;
 
+	long t1 = Util::get_cur_time();
+
 	//map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature
 	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _p_id_tuples, _id_tuples_max))
 	{
 		return false;
 	}
+
+	long t2 = Util::get_cur_time();
+	cout<<"after encode, used "<<(t2-t1)<<"ms."<<endl;
 
     //build stringindex before this->kvstore->id2* trees are closed
     this->stringindex->setNum(StringIndexFile::Entity, this->entity_num);
@@ -923,10 +931,22 @@ Database::encodeRDF_new(const string _rdf_file)
 	//this->s2p_s2po_sp2o(_p_id_tuples, _id_tuples_max);
 	//NOTICE:we had better compute the corresponding triple num here
 	this->s2p_s2o_s2po_sp2o(_p_id_tuples, _id_tuples_max);
+
+	long t3 = Util::get_cur_time();
+	cout<<"after s2xx, used "<<(t3-t2)<<"ms."<<endl;
+
 	//this->s2p_s2o_s2po_sp2o_sp2n(_p_id_tuples, _id_tuples_max);
 	this->o2p_o2s_o2ps_op2s(_p_id_tuples, _id_tuples_max);
+
+	long t4 = Util::get_cur_time();
+	cout<<"after o2xx, used "<<(t4-t3)<<"ms."<<endl;
+
 	//this->o2p_o2s_o2ps_op2s_op2n(_p_id_tuples, _id_tuples_max);
 	this->p2s_p2o_p2so(_p_id_tuples, _id_tuples_max);
+
+	long t5 = Util::get_cur_time();
+	cout<<"after p2xx, used "<<(t5-t4)<<"ms."<<endl;
+
 	//this->p2s_p2o_p2so_p2n(_p_id_tuples, _id_tuples_max);
 	//
 	//WARN:this is too costly because s-o key num is too large
