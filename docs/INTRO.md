@@ -2,7 +2,7 @@
 
 ## What Is gStore
 
-gStore is a graph-based RDF data management system(or what is commonly called a "triple store") that maintains the graph structure of the original [RDF](http://www.w3.org/TR/rdf11-concepts/) data.
+gStore is a graph-based RDF data management system(or what is commonly called a "triple store") that maintains the graph structure of the original [RDF](http://www.w3.org/TR/rdf11-concepts/) data. Its data model is a labeled, directed graph with multiple vertices and edges, where each vertex corresponds to a subject or an object. 
 
 We represent a given [SPARQL](http://www.w3.org/TR/sparql11-overview/) query by a query graph Q. The query process involves finding subgraph matches of Q over the RDF graph G, instead of joining tables in relational data management system. gStore incorporates an VS-tree index over the RDF graph (called VS-tree) to speed up the query process, which is a height balanced tree with a number of associated pruning techniques to speed up subgraph matching.
 
@@ -18,7 +18,7 @@ There are three important features in gStore:
 
 - gStore manages RDF repository from a graph database perspective.
 
-- gStore supports both efficient query and update.
+- gStore supports both queries and updates efficiently.
 
 - gStore can handle, in a uniform manner, different data types (strings and numerical data) and SPARQL queries with wild cards, aggregate, range operators(only theoretically, not achieved so far)
 
