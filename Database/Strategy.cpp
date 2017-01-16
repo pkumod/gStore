@@ -18,11 +18,12 @@ Strategy::Strategy()
 	//this->prepare_handler();
 }
 
-Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree)
+Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TNUM* _pre2num)
 {
 	this->method = 0;
 	this->kvstore = _kvstore;
 	this->vstree = _vstree;
+	this->pre2num = _pre2num;
 	//this->prepare_handler();
 }
 
@@ -81,12 +82,12 @@ Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
 				//if only p is selected, use s2p or o2p
 				//only if both s/o and p are selected, use s2po or o2ps
 
-				if (triple.subject[0] != '?')  //constant
+				if(triple.subject[0] != '?')  //constant
 				{
 					int sid = (this->kvstore)->getIDByEntity(triple.subject);
 					this->kvstore->getpreIDobjIDlistBysubID(sid, id_list, id_list_len);
 				}
-				else if (triple.object[0] != '?')  //constant
+				else if(triple.object[0] != '?')  //constant
 				{
 					int oid = (this->kvstore)->getIDByEntity(triple.object);
 					if (oid == -1)
@@ -183,7 +184,7 @@ Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
 	long tv_retrieve = Util::get_cur_time();
 	cout << "after Retrieve, used " << (tv_retrieve - tv_handle) << "ms." << endl;
 
-	this->join = new Join(kvstore);
+	this->join = new Join(kvstore, pre2num);
 	this->join->join_sparql(_query);
 	delete this->join;
 
@@ -244,7 +245,7 @@ Strategy::handler0(BasicQuery* _bq, vector<int*>& _result_list, ResultFilter* _r
     if (_result_filter != NULL)
     	_result_filter->candFilterWithResultHashTable(*_bq);
 
-	Join *join = new Join(kvstore);
+	Join *join = new Join(kvstore, pre2num);
 	join->join_basic(_bq);
 	delete join;
 

@@ -13,8 +13,10 @@ using namespace std;
 vector<vector<string> > GeneralEvaluation::getSPARQLQueryVarset()
 {
 	vector<vector<string> > res;
+
 	for (int i = 0; i < (int)this->sparql_query_varset.size(); i++)
 		res.push_back(this->sparql_query_varset[i].varset);
+
 	return res;
 }
 
@@ -29,6 +31,7 @@ bool GeneralEvaluation::parseQuery(const string &_query)
 		cerr << e << endl;
 		return false;
 	}
+
 	return true;
 }
 
@@ -39,15 +42,24 @@ QueryTree& GeneralEvaluation::getQueryTree()
 
 void GeneralEvaluation::doQuery()
 {
-	this->query_tree.getGroupPattern().getVarset();
-	if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.hasCommonVar(this->query_tree.getGroupPattern().grouppattern_predicate_maximal_varset))
+	if (!this->query_tree.checkProjectionAsterisk() && this->query_tree.getProjection().size() == 0)
+		return;
+
+	if (!this->query_tree.checkSelectCompatibility())
 	{
-		cerr << "There are some vars occur both in subject/object and predicate." << endl;
+		cerr << "[ERROR]	The vars and aggregate functions in the SelectClause are not compatible." << endl;
 		return;
 	}
 
-	this->strategy = Strategy(this->kvstore, this->vstree);
-	if (this->query_tree.getQueryForm() == QueryTree::Select_Query && this->query_tree.checkWellDesigned() && this->checkExpantionRewritingConnectivity(0))
+	this->query_tree.getGroupPattern().getVarset();
+	if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.hasCommonVar(this->query_tree.getGroupPattern().grouppattern_predicate_maximal_varset))
+	{
+		cerr << "[ERROR]	There are some vars occur both in subject/object and predicate." << endl;
+		return;
+	}
+
+	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num);
+	if (this->query_tree.checkWellDesigned())
 	{
 		cout << "=================" << endl;
 		cout << "||well-designed||" << endl;
@@ -98,8 +110,8 @@ void GeneralEvaluation::getBasicQuery(QueryTree::GroupPattern &grouppattern)
 	for (int i = 0; i < (int)grouppattern.patterns.size(); i++)
 	{
 		for (int j = first_patternid; j < i; j++)
-		if (grouppattern.patterns[i].varset.hasCommonVar(grouppattern.patterns[j].varset))
-			grouppattern.mergePatternBlockID(i, j);
+			if (grouppattern.patterns[i].varset.hasCommonVar(grouppattern.patterns[j].varset))
+				grouppattern.mergePatternBlockID(i, j);
 
 		if ((current_optional != (int)grouppattern.optionals.size() && i == grouppattern.optionals[current_optional].lastpattern) || i + 1 == (int)grouppattern.patterns.size())
 		{
@@ -681,6 +693,7 @@ int GeneralEvaluation::TempResult::compareFunc(int *a, vector<int> &p, int *b, v
 		if (a[p[i]] < b[q[i]])		return -1;
 		if (a[p[i]] > b[q[i]])		return 1;
 	}
+
 	return 0;
 }
 
@@ -688,6 +701,7 @@ void GeneralEvaluation::TempResult::sort(int l, int r, vector<int> &p)
 {
 	int i = l, j = r;
 	int *x = this->res[(l + r) / 2];
+
 	do
 	{
 		while (compareFunc(this->res[i], p, x, p) == -1)	i++;
@@ -700,6 +714,7 @@ void GeneralEvaluation::TempResult::sort(int l, int r, vector<int> &p)
 		}
 	}
 	while (i <= j);
+
 	if (l < j)	sort(l, j, p);
 	if (i < r)	sort(i, r, p);
 }
@@ -717,6 +732,7 @@ int GeneralEvaluation::TempResult::findLeftBounder(vector<int> &p, int *b, vecto
 		if (compareFunc(this->res[m], p, b, q) >= 0)		r = m;
 		else l = m + 1;
 	}
+
 	if (compareFunc(this->res[l], p, b, q) == 0)		return l;
 	else return -1;
 }
@@ -734,6 +750,7 @@ int GeneralEvaluation::TempResult::findRightBounder(vector<int> &p, int *b, vect
 		if (compareFunc(this->res[m], p, b, q) <= 0)		l = m;
 		else r = m - 1;
 	}
+
 	if (compareFunc(this->res[l], p, b, q) == 0)		return l;
 	else return -1;
 }
@@ -847,13 +864,13 @@ void GeneralEvaluation::TempResult::doOptional(vector<bool> &binding, TempResult
 		int rn_varnum = (int)rn.var.varset.size();
 		int this_varnum = (int)this->var.varset.size();
 		for (int i = 0; i < (int)this->res.size(); i++)
-		if (!binding[i])
-		{
-			int *a = new int [rn_varnum];
-			for (int j = 0; j < this_varnum; j++)
-				a[this2rn[j]] = this->res[i][j];
-			rn.res.push_back(a);
-		}
+			if (!binding[i])
+			{
+				int *a = new int [rn_varnum];
+				for (int j = 0; j < this_varnum; j++)
+					a[this2rn[j]] = this->res[i][j];
+				rn.res.push_back(a);
+			}
 	}
 }
 
@@ -907,14 +924,14 @@ void GeneralEvaluation::TempResult::doDistinct(TempResult &r)
 		int r_varnum = (int)r.var.varset.size();
 		int this_varnum = (int)this->var.varset.size();
 		for (int i = 0; i < (int)this->res.size(); i++)
-		if (i == 0 || (i > 0 && compareFunc(this->res[i], r2this, this->res[i - 1], r2this) != 0))
-		{
-			int *a = new int [r_varnum];
-			for (int j = 0; j < this_varnum; j++)
-				if (this2r[j] != -1)
-					a[this2r[j]] = this->res[i][j];
-			r.res.push_back(a);
-		}
+			if (i == 0 || (i > 0 && compareFunc(this->res[i], r2this, this->res[i - 1], r2this) != 0))
+			{
+				int *a = new int [r_varnum];
+				for (int j = 0; j < this_varnum; j++)
+					if (this2r[j] != -1)
+						a[this2r[j]] = this->res[i][j];
+				r.res.push_back(a);
+			}
 	}
 }
 
@@ -1095,26 +1112,26 @@ void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::Fil
 
 			vector <int> date;
 			for (int i = 0; i < 6; i++)
-			if (value.length() > 0)
-			{
-				int p = 0;
-				stringstream ss;
-				while (p < value.length() && '0' <= value[p] && value[p] <= '9')
+				if (value.length() > 0)
 				{
-					ss << value[p];
-					p++;
+					int p = 0;
+					stringstream ss;
+					while (p < value.length() && '0' <= value[p] && value[p] <= '9')
+					{
+						ss << value[p];
+						p++;
+					}
+
+					int x;
+					ss >> x;
+					date.push_back(x);
+
+					while (p < value.length() && (value[p] < '0' || value[p] > '9'))
+						p++;
+					value = value.substr(p);
 				}
-
-				int x;
-				ss >> x;
-				date.push_back(x);
-
-				while (p < value.length() && (value[p] < '0' || value[p] > '9'))
-					p++;
-				value = value.substr(p);
-			}
-			else
-				date.push_back(0);
+				else
+					date.push_back(0);
 
 			femv.dt_value = GeneralEvaluation::FilterEvaluationMultitypeValue::DateTime(date[0], date[1], date[2], date[3], date[4], date[5]);
 		}
@@ -1471,6 +1488,7 @@ int GeneralEvaluation::TempResultSet::findCompatibleResult(Varset &_varset)
 	int p = (int)this->results.size();
 	this->results.push_back(TempResult());
 	this->results[p].var = _varset;
+
 	return p;
 }
 
@@ -1975,87 +1993,6 @@ bool GeneralEvaluation::expanseFirstOuterUnionGroupPattern(QueryTree::GroupPatte
 	return false;
 }
 
-bool GeneralEvaluation::checkExpantionRewritingConnectivity(int dep)
-{
-	if (dep == 0)
-	{
-		this->expansion_evaluation_stack.clear();
-		//avoid copying stack
-		this->expansion_evaluation_stack.reserve(100);
-		this->expansion_evaluation_stack.push_back(ExpansionEvaluationStackUnit());
-		this->expansion_evaluation_stack[0].grouppattern = this->query_tree.getGroupPattern();
-	}
-
-	deque<QueryTree::GroupPattern> queue;
-	queue.push_back(this->expansion_evaluation_stack[dep].grouppattern);
-	vector<QueryTree::GroupPattern> cand;
-
-	while (!queue.empty())
-	{
-		QueryTree::GroupPattern front = queue.front();
-		queue.pop_front();
-
-		if (!this->expanseFirstOuterUnionGroupPattern(front, queue))
-			cand.push_back(front);
-	}
-
-	for (int cand_id = 0; cand_id < (int)cand.size(); cand_id++)
-	{
-		this->expansion_evaluation_stack[dep].grouppattern = cand[cand_id];
-		QueryTree::GroupPattern &grouppattern = this->expansion_evaluation_stack[dep].grouppattern;
-
-		Varset varset;
-		for (int i = 0; i < (int)grouppattern.patterns.size(); i++)
-			varset = varset + grouppattern.patterns[i].varset;
-
-		for (int i = 0; i < dep; i++)
-		{
-			QueryTree::GroupPattern &upper_grouppattern = this->expansion_evaluation_stack[i].grouppattern;
-			for (int j = 0; j < (int)upper_grouppattern.patterns.size(); j++)
-				if (varset.hasCommonVar(upper_grouppattern.patterns[j].varset))
-					grouppattern.addOnePattern(upper_grouppattern.patterns[j]);
-		}
-
-		//check connectivity
-		{
-			grouppattern.initPatternBlockid();
-
-			for (int i = 0; i < (int)grouppattern.patterns.size(); i++)
-			{
-				for (int j = 0; j < i; j++)
-					if (grouppattern.patterns[i].varset.hasCommonVar(grouppattern.patterns[j].varset))
-						grouppattern.mergePatternBlockID(i, j);
-			}
-
-			int first_block_id = -1;
-			for (int i = 0; i < (int)grouppattern.patterns.size(); i++)
-			{
-				int root_id = grouppattern.getRootPatternBlockID(i);
-				if (first_block_id == -1)
-					first_block_id = root_id;
-				else
-				{
-					if (first_block_id != root_id)
-						return false;
-				}
-			}
-		}
-
-		for (int i = 0; i < (int)grouppattern.optionals.size(); i++)
-		{
-			if ((int)this->expansion_evaluation_stack.size() > dep + 1)
-				this->expansion_evaluation_stack[dep + 1] = ExpansionEvaluationStackUnit();
-			else
-				this->expansion_evaluation_stack.push_back(ExpansionEvaluationStackUnit());
-
-			this->expansion_evaluation_stack[dep + 1].grouppattern = grouppattern.optionals[i].grouppattern;
-			if (!checkExpantionRewritingConnectivity(dep + 1))
-				return false;
-		}
-	}
-	return true;
-}
-
 void GeneralEvaluation::queryRewriteEncodeRetrieveJoin(int dep)
 {
 	if (dep == 0)
@@ -2091,42 +2028,40 @@ void GeneralEvaluation::queryRewriteEncodeRetrieveJoin(int dep)
 		grouppattern.print(dep);
 		for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
 
-		TempResultSet *temp = new TempResultSet();
+		TempResultSet *temp = NULL;
 		//get the result of grouppattern
 		{
-			this->expansion_evaluation_stack[dep].sparql_query = SPARQLquery();
-			this->expansion_evaluation_stack[dep].sparql_query.addBasicQuery();
+			QueryTree::GroupPattern triplepattern;
 
-			Varset varset;
 			for (int i = 0; i < (int)grouppattern.patterns.size(); i++)
 			{
-				this->expansion_evaluation_stack[dep].sparql_query.addTriple(Triple(
-																		grouppattern.patterns[i].subject.value,
-																		grouppattern.patterns[i].predicate.value,
-																		grouppattern.patterns[i].object.value
-																	));
-				varset = varset + grouppattern.patterns[i].varset;
+				triplepattern.addOnePattern(QueryTree::GroupPattern::Pattern(
+					QueryTree::GroupPattern::Pattern::Element(grouppattern.patterns[i].subject.value),
+					QueryTree::GroupPattern::Pattern::Element(grouppattern.patterns[i].predicate.value),
+					QueryTree::GroupPattern::Pattern::Element(grouppattern.patterns[i].object.value)
+				));
 			}
+			triplepattern.getVarset();
 
 			for (int i = 0; i < dep; i++)
 			{
 				QueryTree::GroupPattern &upper_grouppattern = this->expansion_evaluation_stack[i].grouppattern;
 				for (int j = 0; j < (int)upper_grouppattern.patterns.size(); j++)
-					if (varset.hasCommonVar(upper_grouppattern.patterns[j].varset))
+					if (triplepattern.grouppattern_resultset_maximal_varset.hasCommonVar(upper_grouppattern.patterns[j].varset))
 					{
-						this->expansion_evaluation_stack[dep].sparql_query.addTriple(Triple(
-																				upper_grouppattern.patterns[j].subject.value,
-																				upper_grouppattern.patterns[j].predicate.value,
-																				upper_grouppattern.patterns[j].object.value
-																			));
+						triplepattern.addOnePattern(QueryTree::GroupPattern::Pattern(
+							QueryTree::GroupPattern::Pattern::Element(upper_grouppattern.patterns[j].subject.value),
+							QueryTree::GroupPattern::Pattern::Element(upper_grouppattern.patterns[j].predicate.value),
+							QueryTree::GroupPattern::Pattern::Element(upper_grouppattern.patterns[j].object.value)
+						));
 					}
 			}
+			triplepattern.getVarset();
 
-			//reduce return result vars
+			//get useful vars
+			Varset useful = this->query_tree.getProjectionUsefulVar();
 			if (!this->query_tree.checkProjectionAsterisk())
 			{
-				Varset useful = this->query_tree.getProjection().varset;
-
 				for (int i = 0; i < dep; i++)
 				{
 					QueryTree::GroupPattern &upper_grouppattern = this->expansion_evaluation_stack[i].grouppattern;
@@ -2141,37 +2076,105 @@ void GeneralEvaluation::queryRewriteEncodeRetrieveJoin(int dep)
 
 				for (int i = 0; i < (int)grouppattern.filters.size(); i++)
 					useful = useful + grouppattern.filters[i].varset;
-
-				varset = varset * useful;
 			}
 
-			printf("select vars : ");
-			varset.print();
+			this->expansion_evaluation_stack[dep].sparql_query = SPARQLquery();
+			vector<vector<string> > encode_varset;
 
-			this->expansion_evaluation_stack[dep].sparql_query.encodeQuery(this->kvstore, vector<vector<string> >(1, varset.varset));
+			//get connected block
+			triplepattern.initPatternBlockid();
+			for (int i = 0; i < (int)triplepattern.patterns.size(); i++)
+			{
+				for (int j = 0; j < i; j++)
+					if (triplepattern.patterns[i].varset.hasCommonVar(triplepattern.patterns[j].varset))
+						triplepattern.mergePatternBlockID(i, j);
+			}
+
+			//each connected block is a BasicQuery
+			for (int i = 0; i < (int)triplepattern.patterns.size(); i++)
+				if (triplepattern.getRootPatternBlockID(i) == i)
+				{
+					this->expansion_evaluation_stack[dep].sparql_query.addBasicQuery();
+					Varset varset;
+
+					for (int j = 0; j < (int)triplepattern.patterns.size(); j++)
+						if (triplepattern.getRootPatternBlockID(j) == i)
+						{
+							this->expansion_evaluation_stack[dep].sparql_query.addTriple(Triple(
+								triplepattern.patterns[j].subject.value,
+								triplepattern.patterns[j].predicate.value,
+								triplepattern.patterns[j].object.value
+							));
+
+							if (j < (int)grouppattern.patterns.size())
+								varset = varset + triplepattern.patterns[j].varset;
+						}
+					//reduce return result vars
+					if (!this->query_tree.checkProjectionAsterisk() && varset.hasCommonVar(useful))
+						varset = varset * useful;
+					encode_varset.push_back(varset.varset);
+
+					printf("select vars: ");
+					varset.print();
+
+					printf("triple patterns: \n");
+					for (int j = 0; j < (int)triplepattern.patterns.size(); j++)
+						if (triplepattern.getRootPatternBlockID(j) == i)
+						{
+							printf("%s\t%s\t%s\n", 	triplepattern.patterns[j].subject.value.c_str(),
+													triplepattern.patterns[j].predicate.value.c_str(),
+													triplepattern.patterns[j].object.value.c_str()
+							);
+						}
+				}
+
+			this->expansion_evaluation_stack[dep].sparql_query.encodeQuery(this->kvstore, encode_varset);
 			long tv_encode = Util::get_cur_time();
 
 			if (dep > 0)
 				this->strategy.handle(this->expansion_evaluation_stack[dep].sparql_query, &this->result_filter);
 			else
 				this->strategy.handle(this->expansion_evaluation_stack[dep].sparql_query);
+
 			long tv_handle = Util::get_cur_time();
 			cout << "after Handle, used " << (tv_handle - tv_encode) << "ms." << endl;
 
-			temp->results.push_back(TempResult());
-			temp->results[0].var = varset;
-
-			int varnum = (int)varset.varset.size();
-
-			vector<int*> &basicquery_result = this->expansion_evaluation_stack[dep].sparql_query.getBasicQuery(0).getResultList();
-			int basicquery_result_num = (int)basicquery_result.size();
-
-			temp->results[0].res.reserve(basicquery_result_num);
-			for (int i = 0; i < basicquery_result_num; i++)
+			//collect and join the result of each BasicQuery
+			for (int i = 0; i < this->expansion_evaluation_stack[dep].sparql_query.getBasicQueryNum(); i++)
 			{
-				int *result_vec = new int [varnum];
-				memcpy(result_vec, basicquery_result[i], sizeof(int) * varnum);
-				temp->results[0].res.push_back(result_vec);
+				TempResultSet *sub_temp = new TempResultSet();
+				sub_temp->results.push_back(TempResult());
+
+				sub_temp->results[0].var = Varset(encode_varset[i]);
+				int varnum = (int)encode_varset[i].size();
+
+				vector<int*> &basicquery_result = this->expansion_evaluation_stack[dep].sparql_query.getBasicQuery(i).getResultList();
+				int basicquery_result_num = (int)basicquery_result.size();
+
+				sub_temp->results[0].res.reserve(basicquery_result_num);
+				for (int i = 0; i < basicquery_result_num; i++)
+				{
+					int *result_vec = new int [varnum];
+					memcpy(result_vec, basicquery_result[i], sizeof(int) * varnum);
+					sub_temp->results[0].res.push_back(result_vec);
+				}
+
+				if (temp == NULL)
+				{
+					temp = sub_temp;
+				}
+				else
+				{
+					TempResultSet *r = new TempResultSet();
+					temp->doJoin(*sub_temp, *r);
+
+					temp->release();
+					sub_temp->release();
+					delete temp;
+					delete sub_temp;
+
+					temp = r;
+				}
 			}
 		}
 
@@ -2219,18 +2222,18 @@ void GeneralEvaluation::queryRewriteEncodeRetrieveJoin(int dep)
 		}
 
 		for (int i = 0; i < (int)grouppattern.filters.size(); i++)
-		if (!grouppattern.filters[i].done)
-		{
-			grouppattern.filters[i].done = true;
+			if (!grouppattern.filters[i].done)
+			{
+				grouppattern.filters[i].done = true;
 
-			TempResultSet *r = new TempResultSet();
-			temp->doFilter(grouppattern.filters[i].root, this->filter_exists_grouppattern_resultset_record, *r, this->stringindex, grouppattern.grouppattern_subject_object_maximal_varset);
+				TempResultSet *r = new TempResultSet();
+				temp->doFilter(grouppattern.filters[i].root, this->filter_exists_grouppattern_resultset_record, *r, this->stringindex, grouppattern.grouppattern_subject_object_maximal_varset);
 
-			temp->release();
-			delete temp;
+				temp->release();
+				delete temp;
 
-			temp = r;
-		}
+				temp = r;
+			}
 
 		TempResultSet *r = new TempResultSet();
 		this->expansion_evaluation_stack[dep].result->doUnion(*temp, *r);
@@ -2261,120 +2264,214 @@ void GeneralEvaluation::getFinalResult(ResultSet &result_str)
 	TempResultSet *results_id = this->semantic_evaluation_result_stack.top();
 	this->semantic_evaluation_result_stack.pop();
 
-	Varset &proj = this->query_tree.getProjection();
-
 	if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
 	{
-		if (this->query_tree.checkProjectionAsterisk())
+		if (!this->query_tree.atLeastOneAggregateFunction())
 		{
-			for (int i = 0 ; i < (int)results_id->results.size(); i++)
-				proj = proj + results_id->results[i].var;
-		}
+			Varset &proj_useful = this->query_tree.getProjectionUsefulVar();
 
-		if (this->query_tree.getProjectionModifier() == QueryTree::Modifier_Distinct)
-		{
-			TempResultSet *results_id_distinct = new TempResultSet();
-
-			results_id->doDistinct(proj, *results_id_distinct);
-
-			results_id->release();
-			delete results_id;
-
-			results_id = results_id_distinct;
-		}
-
-		int var_num = proj.varset.size();
-		result_str.select_var_num = var_num;
-		result_str.setVar(proj.varset);
-
-		for (int i = 0; i < (int)results_id->results.size(); i++)
-			result_str.ansNum += (int)results_id->results[i].res.size();
-
-#ifdef STREAM_ON
-		if ((long)result_str.ansNum * (long)result_str.select_var_num > 10000000 || (int)this->query_tree.getOrder().size() > 0 || this->query_tree.getOffset() != 0 || this->query_tree.getLimit() != -1)
-			result_str.setUseStream();
-#endif
-
-		if (!result_str.checkUseStream())
-		{
-			result_str.answer = new string* [result_str.ansNum];
-			for (int i = 0; i < result_str.ansNum; i++)
-				result_str.answer[i] = NULL;
-		}
-		else
-		{
-			vector <int> keys;
-			vector <bool> desc;
-			for (int i = 0; i < (int)this->query_tree.getOrder().size(); i++)
+			if (this->query_tree.checkProjectionAsterisk())
 			{
-				int var_id = Varset(this->query_tree.getOrder()[i].var).mapTo(proj)[0];
-				if (var_id != -1)
-				{
-					keys.push_back(var_id);
-					desc.push_back(this->query_tree.getOrder()[i].descending);
-				}
+				for (int i = 0 ; i < (int)results_id->results.size(); i++)
+					proj_useful = proj_useful + results_id->results[i].var;
 			}
-			result_str.openStream(keys, desc, this->query_tree.getOffset(), this->query_tree.getLimit());
-		}
 
-		int current_result = 0;
-		for (int i = 0; i < (int)results_id->results.size(); i++)
-		{
-			vector<int> result_str2id = proj.mapTo(results_id->results[i].var);
-			int size = results_id->results[i].res.size();
-			for (int j = 0; j < size; ++j)
+			if (this->query_tree.getProjectionModifier() == QueryTree::Modifier_Distinct)
 			{
-				if (!result_str.checkUseStream())
-				{
-					result_str.answer[current_result] = new string[var_num];
-				}
-				for (int v = 0; v < var_num; ++v)
-				{
-					int ans_id = -1;
-					if (result_str2id[v] != -1)
-						ans_id =  results_id->results[i].res[j][result_str2id[v]];
+				TempResultSet *results_id_distinct = new TempResultSet();
 
+				results_id->doDistinct(proj_useful, *results_id_distinct);
+
+				results_id->release();
+				delete results_id;
+
+				results_id = results_id_distinct;
+			}
+
+			int var_num = proj_useful.varset.size();
+			result_str.select_var_num = var_num;
+			result_str.setVar(proj_useful.varset);
+
+			for (int i = 0; i < (int)results_id->results.size(); i++)
+				result_str.ansNum += (int)results_id->results[i].res.size();
+
+	#ifdef STREAM_ON
+			if ((long)result_str.ansNum * (long)result_str.select_var_num > 10000000 || (int)this->query_tree.getOrder().size() > 0 || this->query_tree.getOffset() != 0 || this->query_tree.getLimit() != -1)
+				result_str.setUseStream();
+	#endif
+
+			if (!result_str.checkUseStream())
+			{
+				result_str.answer = new string* [result_str.ansNum];
+				for (int i = 0; i < result_str.ansNum; i++)
+					result_str.answer[i] = NULL;
+			}
+			else
+			{
+				vector <int> keys;
+				vector <bool> desc;
+				for (int i = 0; i < (int)this->query_tree.getOrder().size(); i++)
+				{
+					int var_id = Varset(this->query_tree.getOrder()[i].var).mapTo(proj_useful)[0];
+					if (var_id != -1)
+					{
+						keys.push_back(var_id);
+						desc.push_back(this->query_tree.getOrder()[i].descending);
+					}
+				}
+				result_str.openStream(keys, desc, this->query_tree.getOffset(), this->query_tree.getLimit());
+			}
+
+			int current_result = 0;
+			for (int i = 0; i < (int)results_id->results.size(); i++)
+			{
+				vector<int> result_str2id = proj_useful.mapTo(results_id->results[i].var);
+				int size = results_id->results[i].res.size();
+				for (int j = 0; j < size; ++j)
+				{
 					if (!result_str.checkUseStream())
 					{
-						result_str.answer[current_result][v] = "";
-						if (ans_id != -1)
-						{
-							if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.findVar(proj.varset[v]))
-								this->stringindex->addRequest(ans_id, &result_str.answer[current_result][v], true);
-							else
-								this->stringindex->addRequest(ans_id, &result_str.answer[current_result][v], false);
-						}
+						result_str.answer[current_result] = new string[var_num];
 					}
-					else
+					for (int v = 0; v < var_num; ++v)
 					{
-						string tmp_ans = "";
-						if (ans_id != -1)
-						{
-							if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.findVar(proj.varset[v]))
-								this->stringindex->randomAccess(ans_id, &tmp_ans, true);
-							else
-								this->stringindex->randomAccess(ans_id, &tmp_ans, false);
-						}
+						int ans_id = -1;
+						if (result_str2id[v] != -1)
+							ans_id =  results_id->results[i].res[j][result_str2id[v]];
 
-						result_str.writeToStream(tmp_ans);
+						if (!result_str.checkUseStream())
+						{
+							result_str.answer[current_result][v] = "";
+							if (ans_id != -1)
+							{
+								if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.findVar(proj_useful.varset[v]))
+									this->stringindex->addRequest(ans_id, &result_str.answer[current_result][v], true);
+								else
+									this->stringindex->addRequest(ans_id, &result_str.answer[current_result][v], false);
+							}
+						}
+						else
+						{
+							string tmp_ans = "";
+							if (ans_id != -1)
+							{
+								if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.findVar(proj_useful.varset[v]))
+									this->stringindex->randomAccess(ans_id, &tmp_ans, true);
+								else
+									this->stringindex->randomAccess(ans_id, &tmp_ans, false);
+							}
+
+							result_str.writeToStream(tmp_ans);
+						}
 					}
+					current_result++;
 				}
-				current_result++;
+			}
+			if (!result_str.checkUseStream())
+			{
+				this->stringindex->trySequenceAccess();
+			}
+			else
+			{
+				result_str.resetStream();
 			}
 		}
-		if (!result_str.checkUseStream())
+		else	//aggregate function
 		{
-			this->stringindex->trySequenceAccess();
-		}
-		else
-		{
-			result_str.resetStream();
+			Varset &proj_useful = this->query_tree.getProjectionUsefulVar();
+
+			if (this->query_tree.checkProjectionAsterisk())
+			{
+				for (int i = 0 ; i < (int)results_id->results.size(); i++)
+					proj_useful = proj_useful + results_id->results[i].var;
+			}
+
+			vector<QueryTree::ProjectionVar> &proj = this->query_tree.getProjection();
+
+			result_str.select_var_num = proj.size();
+			result_str.setVar(this->query_tree.getProjectionVar());
+			result_str.ansNum = 1;
+
+			if (!result_str.checkUseStream())
+			{
+				result_str.answer = new string* [result_str.ansNum];
+				result_str.answer[0] = new string[result_str.select_var_num];
+
+				for (int i = 0; i < (int)proj.size(); i++)
+				{
+					if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
+					{
+						if (proj[i].aggregate_var != "*")
+						{
+							int count = 0;
+							set<int> count_set;
+
+							for (int j = 0; j < (int)results_id->results.size(); j++)
+							{
+								int result_str2id = Varset(proj[i].aggregate_var).mapTo(results_id->results[j].var)[0];
+								if (result_str2id != -1)
+								{
+									if (proj[i].distinct)
+									{
+										for (int k = 0; k < (int)results_id->results[j].res.size(); k++)
+										{
+											if (results_id->results[j].res[k][result_str2id] != -1)
+												count_set.insert(results_id->results[j].res[k][result_str2id]);
+										}
+									}
+									else
+									{
+										for (int k = 0; k < (int)results_id->results[j].res.size(); k++)
+										{
+											if (results_id->results[j].res[k][result_str2id] != -1)
+												count++;
+										}
+									}
+								}
+							}
+
+							if (proj[i].distinct)
+								count = count_set.size();
+
+							stringstream ss;
+							ss << count;
+							ss >> result_str.answer[0][i];
+						}
+						else
+						{
+							int count = 0;
+
+							if (proj[i].distinct)
+							{
+								TempResultSet *results_id_distinct = new TempResultSet();
+
+								results_id->doDistinct(proj_useful, *results_id_distinct);
+
+								for (int j = 0; j < (int)results_id_distinct->results.size(); j++)
+									count += results_id_distinct->results[j].res.size();
+
+								results_id_distinct->release();
+								delete results_id_distinct;
+							}
+							else
+							{
+								for (int j = 0; j < (int)results_id->results.size(); j++)
+									count += results_id->results[j].res.size();
+							}
+
+							stringstream ss;
+							ss << count;
+							ss >> result_str.answer[0][i];
+						}
+					}
+				}
+			}
 		}
 	}
 	else if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
 	{
 		result_str.select_var_num = 1;
-		result_str.setVar(vector<string>(1, "__ask_retval"));
+		result_str.setVar(vector<string>(1, "?__ask_retval"));
 		result_str.ansNum = 1;
 
 		if (!result_str.checkUseStream())

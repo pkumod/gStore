@@ -129,6 +129,11 @@ typedef unsigned(*HashFunction)(const char*);
 //http://www.cppblog.com/aurain/archive/2010/07/06/119463.html
 //http://blog.csdn.net/mycomputerxiaomei/article/details/7641221
 //http://kb.cnblogs.com/page/189480/
+//
+//type for the triple num
+typedef int TNUM;
+//type for entity/literal/predicate ID
+typedef int ELPID;
 
 /******** all static&universal constants and fucntions ********/
 class Util
@@ -150,10 +155,16 @@ public:
 	static const int LITERAL_FIRST_ID = 1000*1000*1000;
 	//initial transfer buffer size in Tree/ and Stream/
 	static const unsigned TRANSFER_SIZE = 1 << 20;	//1M
-	static const unsigned long long MAX_BUFFER_SIZE = 0xffffffff;		//max buffer size in Storage
-	//0x4fffffff 0x3fffffff
+	//NOTICE:the larger the faster, but need to care the memory usage(not use 1<<33, negative)
+	//static const unsigned long long MAX_BUFFER_SIZE = 0xffffffff;		//max buffer size in Storage
+	static const unsigned long long MAX_BUFFER_SIZE = 1 << 30;
+	//static const unsigned long long MAX_BUFFER_SIZE = 0x1ffffffff;		//max buffer size in Storage
+	//NOTICE:use smaller if saving space, use larger if to be faster
+	//static const unsigned STORAGE_BLOCK_SIZE = 1 << 10;	//fixed size of disk-block in B+ tree storage
 	static const unsigned STORAGE_BLOCK_SIZE = 1 << 12;	//fixed size of disk-block in B+ tree storage
-	//1 << 16
+	//max block num in kvstore storage, blockNum*blockSize for a B+ tree file should >= 256G
+	//static const unsigned MAX_BLOCK_NUM = 1 << 26;
+	//DEBUG:maybe the file size will over if the data is too large
 
 	//type of B+ tree
 	static const int SS_TREE = 0;
@@ -191,6 +202,8 @@ public:
 	static bool save_to_file(const char*, const std::string _content);
 	static bool isValidPort(std::string);
 	static bool isValidIP(std::string);
+	static std::string getTimeString();
+	static std::string node2string(const char* _raw_str);
 
 	static bool is_literal_ele(int);
 	static int removeDuplicate(int*, int);
@@ -224,9 +237,9 @@ public:
 	static double logarithm(double _a, double _b);
 	static void intersect(int*& _id_list, int& _id_list_len, const int* _list1, int _len1, const int* _list2, int _len2);
 
-	static char* l_trim(char * szOutput, const char *szInput);
+	static char* l_trim(char *szOutput, const char *szInput);
 	static char* r_trim(char *szOutput, const char *szInput);
-	static char* a_trim(char * szOutput, const char * szInput);
+	static char* a_trim(char *szOutput, const char * szInput);
 
 	//NOTICE: this function must be called at the beginning of executing!
 	Util();
@@ -262,6 +275,61 @@ public:
 	{
 		num = _num;
 		next = _bp;
+	}
+};
+
+//BETTER+TODO:if considering frequent insert/delete, there maybe too many empty positions, too wasteful!
+//A method is to divide as groups, set the base for each, not conflict
+//Reproducing the array if needed!
+class Buffer
+{
+public:
+	unsigned size;
+	std::string* buffer;
+	
+	Buffer(unsigned _size)
+	{
+		this->size = _size;
+		this->buffer = new std::string[this->size];
+		//for(unsigned i = 0; i < this->size; ++i)
+		//{
+			//this->buffer[i] = "";
+		//}
+	}
+	
+	bool set(unsigned _pos, const std::string& _ele)
+	{
+		if(_pos >= this->size)
+		{
+			return false;
+		}
+		//BETTER:check if this position is used, and decide abort or update?
+		this->buffer[_pos] = _ele;
+		return true;
+	}
+
+	bool del(unsigned _pos)
+	{
+		if(_pos >= this->size)
+		{
+			return false;
+		}
+		this->buffer[_pos] = "";
+		return true;
+	}
+
+	std::string& get(unsigned _pos) const
+	{
+		return this->buffer[_pos];
+	}
+
+	~Buffer()
+	{
+		//for(unsigned i = 0; i < size; ++i)
+		//{
+			//delete[] buffer[i];
+		//}
+		delete[] buffer;
 	}
 };
 

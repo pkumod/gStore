@@ -66,6 +66,7 @@ bool LRUCache::loadCache(string _filePath)
 		return false;
 	}
 
+	//BETTER:increase this parameter if memory allows
 	int defaultLoadSize = this->capacity / 2;
 	size_t vNodeSize = sizeof(VNode);
 	int flag = 0;

@@ -35,7 +35,7 @@ void QueryParser::SPARQLParse(const string &query, QueryTree &querytree)
 	pANTLR3_BASE_TREE root = r.tree;
 
 	if (printNode(root) > 0)
-		throw "Some errors are found in the SPARQL query request.";
+		throw "[ERROR]	Some errors are found in the SPARQL query request.";
 
 	parseWorkload(root, querytree);
 
@@ -110,6 +110,7 @@ void QueryParser::parseQuery(pANTLR3_BASE_TREE node, QueryTree &querytree)
 		if (childNode->getType(childNode) == 13)
 		{
 			querytree.setQueryForm(QueryTree::Ask_Query);
+			querytree.setProjectionAsterisk();
 			parseQuery(childNode, querytree);
 		}
 		else
@@ -211,7 +212,7 @@ void QueryParser::replacePrefix(string &str)
 		else
 		{
 			cout << "prefix not found..." << endl;
-			throw "Some errors are found in the SPARQL query request.";
+			throw "[ERROR]	Prefix is not found, please define it before use.";
 		}
 	}
 }
@@ -232,6 +233,10 @@ void QueryParser::parseSelectClause(pANTLR3_BASE_TREE node, QueryTree &querytree
 		if (childNode->getType(childNode) == 199)
 			parseSelectVar(childNode, querytree);
 
+		//as 11
+		if (childNode->getType(childNode) == 11)
+			parseSelectAggregateFunction(childNode, querytree);
+
 		//asterisk 14
 		if (childNode->getType(childNode) == 14)
 			querytree.setProjectionAsterisk();
@@ -242,17 +247,78 @@ void QueryParser::parseSelectVar(pANTLR3_BASE_TREE node, QueryTree &querytree)
 {
 	printf("parseSelectVar\n");
 
-	string var = "";
 	for (unsigned int i = 0; i < node->getChildCount(node); i++)
 	{
 		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
 
 		if (childNode->getType(childNode) == 200)
 		{
-			parseString(childNode, var, 0);
-			querytree.addProjectionVar(var);
+			querytree.addProjectionVar();
+			QueryTree::ProjectionVar &var = querytree.getLastProjectionVar();
+			var.aggregate_type = QueryTree::ProjectionVar::None_type;
+
+			parseString(childNode, var.var, 0);
+			querytree.addProjectionUsefulVar(var.var);
 		}
 	}
+}
+
+void QueryParser::parseSelectAggregateFunction(pANTLR3_BASE_TREE node, QueryTree &querytree)
+{
+	printf("parseSelectAggregateFunction\n");
+
+	//AS
+		//UNARY
+			//COUNT
+				//DISTINCT
+				//UNARY
+					//var 200
+				//asterisk 14
+		//var 200
+
+	pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, 0);
+
+	//unary 190
+	if (childNode->getType(childNode) == 190)
+		childNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
+	//count 39
+	if (childNode->getType(childNode) != 39)
+		throw "[ERROR]	The supported aggregate functions now is COUNT only.";
+
+	bool distinct = false;
+	pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
+
+	//distinct 52
+	if (gchildNode->getType(gchildNode) == 52)
+	{
+		distinct = true;
+		gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 1);
+	}
+
+	//unary 190
+	if (gchildNode->getType(gchildNode) == 190)
+		gchildNode = (pANTLR3_BASE_TREE) gchildNode->getChild(gchildNode, 0);
+	if (gchildNode->getType(gchildNode) != 200 && gchildNode->getType(gchildNode) != 14)
+		throw "[ERROR]	The aggregate function COUNT can accepts only one var or *.";
+
+	querytree.addProjectionVar();
+	QueryTree::ProjectionVar &var = querytree.getLastProjectionVar();
+	var.aggregate_type = QueryTree::ProjectionVar::Count_type;
+	var.distinct = distinct;
+
+	if (gchildNode->getType(gchildNode) == 200)
+	{
+		parseString(gchildNode, var.aggregate_var, 0);
+		querytree.addProjectionUsefulVar(var.aggregate_var);
+	}
+	if (gchildNode->getType(gchildNode) == 14)
+	{
+		parseString(gchildNode, var.aggregate_var, 0);		//for convenience, set aggregate_var *
+		querytree.setProjectionAsterisk();
+	}
+
+	childNode = (pANTLR3_BASE_TREE) node->getChild(node, 1);
+	parseString(childNode, var.var, 0);
 }
 
 void QueryParser::parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern)
@@ -301,9 +367,8 @@ void QueryParser::parsePattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &
 {
 	printf("parsePattern\n");
 
-	string subject = "";
-	string predicate = "";
-	string object = "";
+	string subject, predicate, object;
+
 	for (unsigned int i = 0; i < node->getChildCount(node); i++)
 	{
 		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
@@ -327,6 +392,8 @@ void QueryParser::parsePattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &
 			else
 			{
 				parseString(childNode, predicate, 4);
+				if (predicate == "a")
+					predicate = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>";
 			}
 			replacePrefix(predicate);
 		}
@@ -648,7 +715,7 @@ void QueryParser::parseString(pANTLR3_BASE_TREE node, string &str, int dep)
 	}
 
 	if (node == NULL || node->getChildCount(node) == 0)
-		throw "Some errors are found in the SPARQL query request.";
+		throw "[ERROR]	Some errors are found in the SPARQL query request.";
 	else
 	{
 		str = "";
@@ -775,9 +842,7 @@ void QueryParser::parseTripleTemplate(pANTLR3_BASE_TREE node, QueryTree::GroupPa
 		//triples same subject 185
 		if (childNode->getType(childNode) == 185)
 		{
-			string subject = "";
-			string predicate = "";
-			string object = "";
+			string subject, predicate, object;
 
 			for (unsigned int j = 0; j < childNode->getChildCount(childNode); j++)
 			{
@@ -794,6 +859,8 @@ void QueryParser::parseTripleTemplate(pANTLR3_BASE_TREE node, QueryTree::GroupPa
 				if (gchildNode->getType(gchildNode) == 142)
 				{
 					parseString(gchildNode, predicate, 1);
+					if (predicate == "a")
+						predicate = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>";
 					replacePrefix(predicate);
 				}
 

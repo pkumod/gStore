@@ -49,7 +49,7 @@ public:
     bool showDatabases(std::string _para, std::string _ac_name, std::string& _ret_msg);
     bool importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg);
     bool insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg);
-    bool query(const std::string _query, std::string& _ret_msg);
+	bool query(const std::string _query, const std::string _output, std::string& _ret_msg);
 	bool stopServer(std::string& _ret_msg);
 
 private:

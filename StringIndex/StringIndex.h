@@ -98,9 +98,22 @@ class StringIndex
 {
 	private:
 		StringIndexFile entity, literal, predicate;
+		Buffer* entity_buffer;
+		unsigned entity_buffer_size;
+		Buffer* literal_buffer;
+		unsigned literal_buffer_size;
 	public:
 		StringIndex(std::string _dir, int _entity_num = 0, int _literal_num = 0, int _predicate_num = 0) :
 			entity(StringIndexFile::Entity, _dir, _entity_num), literal(StringIndexFile::Literal, _dir, _literal_num), predicate(StringIndexFile::Predicate, _dir, _predicate_num){}
+
+		void setBuffer(Buffer* _ebuf, Buffer* _lbuf)
+		{
+			this->entity_buffer = _ebuf;
+			this->entity_buffer_size = _ebuf->size;
+			this->literal_buffer = _lbuf;
+			this->literal_buffer_size = _lbuf->size;
+		}
+		bool searchBuffer(int _id, std::string* _str);
 
 		void setNum(StringIndexFile::StringIndexFileType _type, int _num);
 

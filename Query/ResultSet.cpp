@@ -84,9 +84,9 @@ ResultSet::to_str()
 	_buf << this->var_name[0];
 	for(int i = 1; i < this->select_var_num; i ++)
 	{
-		_buf << "\t" << this->var_name[i];
+		_buf << '\t' << this->var_name[i];
 	}
-	_buf << "\n";
+	_buf << '\n';
 //#endif
 	if (!this->useStream)
 	{
@@ -95,14 +95,12 @@ ResultSet::to_str()
 #ifdef DEBUG_PRECISE
 			printf("to_str: well!\n");	//just for debug!
 #endif	//DEBUG_PRECISE
-			_buf << this->answer[i][0];
+			_buf << Util::node2string(this->answer[i][0].c_str());
 			for(int j = 1; j < this->select_var_num; j++)
 			{
-				//there may be ' ' in spo, but no '\t'
-				_buf << "\t" << this->answer[i][j];
-				//_buf << " " << this->answer[i][j];
+				_buf << '\t' << Util::node2string(this->answer[i][j].c_str());
 			}
-			_buf << "\n";
+			_buf << '\n';
 		}
 #ifdef DEBUG_PRECISE
 		printf("to_str: ends!\n");		//just for debug!
@@ -141,17 +139,20 @@ ResultSet::output(FILE* _fp)
 			bp = this->stream->read();
 			if (i >= this->output_offset)
 			{
-				fprintf(_fp, "%s", bp[0].getStr());
+				fprintf(_fp, "%s", Util::node2string(bp[0].getStr()).c_str());
 				//fprintf(_fp, "%s", bp->getStr());
 				for(int j = 1; j < this->select_var_num; j++)
 				{
-					fprintf(_fp, "\t%s", bp[j].getStr());
+					fprintf(_fp, "\t%s", Util::node2string(bp[j].getStr()).c_str());
 					//bp = this->stream.read();
 					//fprintf(_fp, "\t%s", bp->getStr());
 				}
 				fprintf(_fp, "\n");
 			}
 		}
+	}
+	else {
+		fprintf(_fp, "%s", this->to_str().c_str());
 	}
 }
 

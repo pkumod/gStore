@@ -273,10 +273,41 @@ void StringIndex::load()
 	this->predicate.load();
 }
 
-bool StringIndex::randomAccess(int id, std::string *str, bool is_entity_or_literal)
+bool 
+StringIndex::searchBuffer(int _id, string* _str)
 {
+	if(_id < Util::LITERAL_FIRST_ID) //entity
+	{
+		if(_id < this->entity_buffer_size)
+		{
+			*_str = this->entity_buffer->get(_id);
+			return true;
+		}
+		return false;
+	}
+	else //literal
+	{
+		_id -= Util::LITERAL_FIRST_ID;
+		if(_id < this->literal_buffer_size)
+		{
+			*_str = this->literal_buffer->get(_id);
+			return true;
+		}
+		return false;
+	}
+}
+
+bool StringIndex::randomAccess(int id, string *str, bool is_entity_or_literal)
+{
+	if(id < 0) return false;
+
 	if (is_entity_or_literal)
 	{
+		if(searchBuffer(id, str))
+		{
+			return true;
+		}
+
 		if (id < Util::LITERAL_FIRST_ID)
 			return this->entity.randomAccess(id, str);
 		else
@@ -292,6 +323,10 @@ void StringIndex::addRequest(int id, std::string *str, bool is_entity_or_literal
 {
 	if (is_entity_or_literal)
 	{
+		if(searchBuffer(id, str))
+		{
+			return;
+		}
 		if (id < Util::LITERAL_FIRST_ID)
 			this->entity.addRequest(id, str);
 		else
@@ -347,3 +382,4 @@ void StringIndex::disable(std::vector<int> &ids, bool is_entity_or_literal)
 			this->predicate.disable(ids[i]);
 	}
 }
+

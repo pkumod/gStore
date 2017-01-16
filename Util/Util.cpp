@@ -43,22 +43,6 @@ FILE* Util::debug_vstree = NULL;			 //used by VSTree
 HashFunction Util::hash[] = { Util::simpleHash, Util::APHash, Util::BKDRHash, Util::DJBHash, Util::ELFHash, \
 	Util::DEKHash, Util::BPHash, Util::FNVHash, Util::HFLPHash, Util::HFHash, Util::JSHash, \
 	Util::PJWHash, Util::RSHash, Util::SDBMHash, Util::StrHash, Util::TianlHash, NULL};
-//hash[0] = Util::simpleHash;
-//hash[1] = Util::APHash;
-//hash[2] = Util::BKDRHash;
-//hash[3] = Util::DJBHash;
-//hash[4] = Util::ELFHash;
-//hash[5] = Util::DEKHash;
-//hash[6] = Util::BPHash;
-//hash[7] = Util::FNVHash;
-//hash[8] = Util::HFLPHash;
-//hash[9] = Util::HFHash;
-//hash[10] = Util::JSHash;
-//hash[11] = Util::PJWHash;
-//hash[12] = Util::RSHash;
-//hash[13] = Util::SDBMHash;
-//hash[14] = Util::StrHash;
-//hash[15] = Util::TianlHash;
 
 //remove spaces in the left
 char*
@@ -365,6 +349,9 @@ Util::is_literal_ele(int _id)
 int
 Util::removeDuplicate(int* _list, int _len)
 {
+	if (_list == NULL || _len == 0) {
+		return 0;
+	}
 	int valid = 0, limit = _len - 1;
 	for(int i = 0; i < limit; ++i)
 	{
@@ -823,7 +810,7 @@ Util::BKDRHash(const char *_str)
     unsigned int seed = 131; // 31 131 1313 13131 131313 etc..
     unsigned int key = 0;
 
-    //for(unsigned i = 0; i < _len; ++i)
+    //for(unsigned i = 0; i < i; ++i)
 	while(*_str)
     {
         //key = key * seed + _str[i];
@@ -1190,9 +1177,15 @@ Util::intersect(int*& _id_list, int& _id_list_len, const int* _list1, int _len1,
 	}
 
 	_id_list_len = res.size();
-	_id_list = new int[_id_list_len];
-	for(int i = 0; i < _id_list_len; ++i)
-		_id_list[i] = res[i];
+
+	if (_id_list_len == 0) {
+		_id_list = NULL;
+	}
+	else {
+		_id_list = new int[_id_list_len];
+		for (int i = 0; i < _id_list_len; ++i)
+			_id_list[i] = res[i];
+	}
 	delete[] _list1;
 	delete[] _list2;
 }
@@ -1268,3 +1261,64 @@ Util::isValidIPV6(string str)
 	return false;
 }
 
+string
+Util::getTimeString() {
+	static const int max = 20; // max length of time string
+	char time_str[max];
+	time_t timep;
+	time(&timep);
+	strftime(time_str, max, "%Y%m%d %H:%M:%S\t", gmtime(&timep));
+	return string(time_str);
+}
+
+string
+Util::node2string(const char* _raw_str) {
+	string _output;
+	unsigned _first_quote = 0;
+	unsigned _last_quote = 0;
+	bool _has_quote = false;
+	for (unsigned i = 0; _raw_str[i] != '\0'; i++) {
+		if (_raw_str[i] == '\"') {
+			if (!_has_quote) {
+				_first_quote = i;
+				_last_quote = i;
+				_has_quote = true;
+			}
+			else {
+				_last_quote = i;
+			}
+		}
+	}
+	if (_first_quote==_last_quote) {
+		_output += _raw_str;
+		return _output;
+	}
+	for (unsigned i = 0; i <= _first_quote; i++) {
+		_output += _raw_str[i];
+	}
+	for (unsigned i = _first_quote + 1; i < _last_quote; i++) {
+		switch (_raw_str[i]) {
+		case '\n':
+			_output += "\\n";
+			break;
+		case '\r':
+			_output += "\\r";
+			break;
+		case '\t':
+			_output += "\\t";
+			break;
+		case '\"':
+			_output += "\\\"";
+			break;
+		case '\\':
+			_output += "\\\\";
+			break;
+		default:
+			_output += _raw_str[i];
+		}
+	}
+	for (unsigned i = _last_quote; _raw_str[i] != 0; i++) {
+		_output += _raw_str[i];
+	}
+	return _output;
+}

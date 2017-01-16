@@ -364,13 +364,13 @@ IDList*
 IDList::intersect(const IDList& _id_list, const int* _list, int _len)
 {
 	IDList* p = new IDList;
-	if (_list == NULL || _len == 0)  //just copy _id_list
-	{
-		int size = _id_list.size();
-		for (int i = 0; i < size; ++i)
-			p->addID(_id_list.getID(i));
-		return p;
-	}
+	//if (_list == NULL || _len == 0)  //just copy _id_list
+	//{
+		//int size = _id_list.size();
+		//for (int i = 0; i < size; ++i)
+			//p->addID(_id_list.getID(i));
+		//return p;
+	//}
 
 	//when size is almost the same, intersect O(n)
 	//when one size is small ratio, search in the larger one O(mlogn)

@@ -205,6 +205,22 @@ BasicQuery::isOutEdge(int _var, int _i_th_edge)const
 }
 
 bool 
+BasicQuery::isOneDegreeVar(string& _no_sense_var)
+{
+    // vars begin with ?
+    if(_no_sense_var.at(0) != '?')
+    {
+        return false;
+    }
+    // freq equals 1
+    if(this->tuple2freq[_no_sense_var] != 1)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool 
 BasicQuery::isOneDegreeNotJoinVar(string& _no_sense_var)
 {
     // vars begin with ?

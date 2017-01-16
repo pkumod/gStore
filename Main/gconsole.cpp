@@ -23,67 +23,69 @@ using namespace std;
 
 //The names of functions that actually do the manipulation.
 //common commands
-int help_handler (const vector<string>&);
-int source_handler (const vector<string>&);
-int quit_handler (const vector<string>&);
+int help_handler(const vector<string>&);
+int source_handler(const vector<string>&);
+int quit_handler(const vector<string>&);
 //C/S commands
-int connect_handler (const vector<string>&);
-int disconnect_handler (const vector<string>&);
-//system commands
-int list_handler (const vector<string>&);
-int view_handler (const vector<string>&);
-int rename_handler (const vector<string>&);
-int stat_handler (const vector<string>&);
-int pwd_handler (const vector<string>&);
-int delete_handler (const vector<string>&);
-int cd_handler (const vector<string>&);
+int connect_handler(const vector<string>&);
+int disconnect_handler(const vector<string>&);
 // server commands
-int start_handler (const vector<string>&);
-int stop_handler (const vector<string>&);
+int start_handler(const vector<string>&);
+int stop_handler(const vector<string>&);
+int restart_handler(const vector<string>&);
+int port_handler(const vector<string>&);
+int printport_handler(const vector<string>&);
 //remote commands
-int build_handler (const vector<string>&);
-int drop_handler (const vector<string>&);
-int load_handler (const vector<string>&);
-int unload_handler (const vector<string>&);
-int query_handler (const vector<string>&);
-int show_handler (const vector<string>&);
+int build_handler(const vector<string>&);
+int drop_handler(const vector<string>&);
+int load_handler(const vector<string>&);
+int unload_handler(const vector<string>&);
+int query_handler(const vector<string>&);
+int show_handler(const vector<string>&);
+int add_handler(const vector<string>&);
+int sub_handler(const vector<string>&);
 
 //A structure which contains information on the commands this program can understand.
 typedef struct {
 	const char *name;					// User printable name of the function
-	int (*func)(const vector<string>&);	// Function to call to do the job
+	int(*func)(const vector<string>&);	// Function to call to do the job
 	const char *doc;					// Documentation for this function
 } COMMAND;
 //
 COMMAND native_commands[] = {
-	{ "help", help_handler, "Display this text." },
-	{ "?", help_handler, "Synonym for \"help\"." },
-	{ "source", source_handler, "Use a file containing SPARQL queries." },
-	{ "quit", quit_handler, "Quit this console." },
-	{ "connect", connect_handler, "Connect to a server running Gstore." },
-	{ "show", show_handler, "Show the database name which is used now." },
-	{ "build", build_handler, "Build a database from a dataset." },
-	{ "drop", drop_handler, "Drop a database according to the given path." },
-	{ "load", load_handler, "Load a existing database." },
-	{ "unload", unload_handler, "Unload the current used database." },
-	{ "query", query_handler, "Answer a SPARQL query." },
-	{ "start", start_handler, "Start local server." },
+	{ "help", help_handler, "\tDisplay this text." },
+	{ "?", help_handler, "\tSynonym for \"help\"." },
+	{ "source", source_handler, "\tUse a file containing SPARQL queries." },
+	{ "quit", quit_handler, "\tQuit this console." },
+	{ "connect", connect_handler, "\tConnect to a server running Gstore." },
+	{ "show", show_handler, "\tShow the database name which is used now." },
+	{ "build", build_handler, "\tBuild a database from a dataset." },
+	{ "drop", drop_handler, "\tDrop a database according to the given path." },
+	{ "load", load_handler, "\tLoad an existing database." },
+	{ "unload", unload_handler, "\tUnload the current used database." },
+	{ "query", query_handler, "\tAnswer a SPARQL query." },
+	{ "add", add_handler, "\tInsert triples to an existing database." },
+	{ "sub", sub_handler, "\tRemove triples from an existing database." },
+	{ "start", start_handler, "\tStart local server." },
+	{ "stop", stop_handler, "\tStop local server." },
+	{ "restart", restart_handler, "\tRestart local server." },
+	{ "port", port_handler, "\tChange port of local server." },
+	{ "printport", printport_handler, "Print local server's port configuration."},
 
 	{ NULL, NULL, NULL }
 };
 //
 COMMAND remote_commands[] = {
-	{ "help", help_handler, "Display this text." },
-	{ "?", help_handler, "Synonym for \"help\"." },
-	{ "source", source_handler, "Use a file containing SPARQL queries." },
-	{ "show", show_handler, "Show the database name which is used now." },
-	{ "build", build_handler, "Build a database from a dataset." },
-	{ "drop", drop_handler, "Drop a database according to the given path." },
-	{ "load", load_handler, "Load a existing database." },
-	{ "unload", unload_handler, "Unload the current used database." },
-	{ "query", query_handler, "Answer a SPARQL query." },
+	{ "help", help_handler, "\tDisplay this text." },
+	{ "?", help_handler, "\tSynonym for \"help\"." },
+	{ "source", source_handler, "\tUse a file containing SPARQL queries." },
+	{ "show", show_handler, "\tShow the database name which is used now." },
+	{ "build", build_handler, "\tBuild a database from a dataset." },
+	{ "drop", drop_handler, "\tDrop a database according to the given path." },
+	{ "load", load_handler, "\tLoad a existing database." },
+	{ "unload", unload_handler, "\tUnload the current used database." },
+	{ "query", query_handler, "\tAnswer a SPARQL query." },
 	{ "disconnect", disconnect_handler, "Disconnect the current server connection." },
-	{ "stop", stop_handler, "Stop server and disconnect." },
 
 	{ NULL, NULL, NULL }
 };
@@ -105,9 +107,9 @@ char *progname;
 //
 //When true, this global means the user is done using this program.
 bool done = false;   //still running
-//server-client mode or local engine mode
+					 //server-client mode or local engine mode
 GstoreConnector *gc = NULL;  //local mode by default
-//redirect mechanism, only useful for query
+							 //redirect mechanism, only useful for query
 FILE* output = stdout;
 //current using database in local
 Database *current_database = NULL;
@@ -125,6 +127,35 @@ main(int argc, char **argv)
 
 	char *line, *s;
 	progname = argv[0];
+
+	long cur_path_len;
+	char* cur_work_dir;
+	if ((cur_path_len = pathconf(".", _PC_PATH_MAX)) == -1) {
+		cerr << "Couldn't get current working path length" << endl;
+		return 1;
+	}
+	if ((cur_work_dir = (char*)malloc(cur_path_len + 1 + strlen(progname))) == NULL) {
+		cerr << "Couldn't allocate memory for the pathname" << endl;
+		return 1;
+	}
+	if (getcwd(cur_work_dir, cur_path_len) == NULL) {
+		cerr << "Couldn't get current working directory!" << endl;
+		return 1;
+	}
+	strcat(cur_work_dir, "/");
+	strcat(cur_work_dir, progname);
+	char* dir_name = dirname(cur_work_dir);
+	free(cur_work_dir);
+	if (dir_name == NULL) {
+		cerr << "Couldn't get current directory name!" << endl;
+		return 1;
+	}
+	string root(dir_name);
+	root += "/..";
+	if (chdir(root.c_str()) == -1) {
+		cerr << "Couldn't change current directory!" << endl;
+		return 1;
+	}
 
 	system("clear");
 
@@ -379,7 +410,8 @@ int deal_with_script(char* file) {
 		if (strlen(line) == 1)
 			continue;
 		s = stripwhite(line);
-		if (*s)
+		//To support comments that begin with "#"
+		if (*s && *s != '#')
 		{
 			execute_line(s);
 		}
@@ -503,8 +535,8 @@ int load_history() {
 /*                                                                  */
 /* **************************************************************** */
 
-char *command_generator (const char *, int);
-char **gconsole_completion (const char *, int, int);
+char *command_generator(const char *, int);
+char **gconsole_completion(const char *, int, int);
 
 /* Tell the GNU Readline library how to complete.  We want to try to complete
 on command names if this is the first word in the line, or on filenames
@@ -584,7 +616,7 @@ int help_handler(const vector<string>& args) {
 	{
 		int i;
 		for (i = 0; current_commands[i].name; i++) {
-			cout << current_commands[i].name << "\t\t" << current_commands[i].doc << endl;
+			cout << '\t' << current_commands[i].name << '\t' << current_commands[i].doc << endl;
 		}
 		break;
 	}
@@ -594,7 +626,7 @@ int help_handler(const vector<string>& args) {
 		int printed = 0;
 		for (i = 0; current_commands[i].name; i++) {
 			if (args[0] == current_commands[i].name) {
-				cout << current_commands[i].name << "\t\t" << current_commands[i].doc << endl;
+				cout << '\t' << current_commands[i].name << '\t' << current_commands[i].doc << endl;
 				printed++;
 				break;
 			}
@@ -812,7 +844,7 @@ int build_handler(const vector<string>& args) {
 		return -1;
 	}
 	database += ".db";
-	
+
 	//NOTICE: when in remote mode, the dataset should be placed in the server! And the exact path can only be got in the server
 	//we can deal with it in Database
 	string dataset = args[1];
@@ -916,7 +948,7 @@ int load_handler(const vector<string>& args) {
 			return -1;
 		}
 	}
-	
+
 	if (current_database != NULL) {
 		cerr << "Please unload your database first!" << endl;
 		return -1;
@@ -973,24 +1005,28 @@ int unload_handler(const vector<string>& args) {
 }
 
 int query_handler(const vector<string>& args) {
-	if (args.size() != 1) {
-		cerr << "Exactly 1 argument required!" << endl;
-		return -1;
+	if (gc == NULL) {
+		if (args.size() != 1) {
+			cerr << "Exactly 1 argument required!" << endl;
+			return -1;
+		}
+		if (current_database == NULL) {
+			cerr << "No database in use!" << endl;
+			return -1;
+		}
 	}
-
-	if (current_database == NULL)
-	{
-		cerr << "No database in use!" << endl;
+	else if (args.size() != 1 && !(args.size() == 3 && args[1] == "-r")) {
+		cerr << "Invalid arguments!" << endl;
 		return -1;
 	}
 
 	string sparql;
-	
+
 	if (args[0][0] == '\"') { //query quoted in string
 		sparql = args[0].substr(1, args[0].length() - 2);
 	}
 	else { //query in file indicated by this path
-		//NOTICE:the query is native, not in server!
+		   //NOTICE:the query is native, not in server!
 		string ret = Util::getExactPath(args[0].c_str());
 		const char *path = ret.c_str();
 		if (path == NULL)
@@ -1017,7 +1053,13 @@ int query_handler(const vector<string>& args) {
 	if (gc != NULL) {
 		//QUERY:how to use query path in the server
 		//execute SPARQL query on this database.
-		string answer = gc->query(sparql);
+		string answer;
+		if (args.size() == 3) {
+			answer = gc->query(sparql, args[2]);
+		}
+		else {
+			answer = gc->query(sparql);
+		}
 		fprintf(output, "%s\n", answer.c_str());
 		return 0;
 	}
@@ -1038,43 +1080,57 @@ int query_handler(const vector<string>& args) {
 	}
 }
 
+int add_handler(const vector<string>& args) {
+	if (args.size() != 2) {
+		cerr << "Exactly 2 arguments required!" << endl;
+		return -1;
+	}
+	if (current_database != NULL) {
+		cerr << "Please unload your database first!" << endl;
+		return -1;
+	}
+	string database = args[0];
+	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db") {
+		cerr << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
+		return -1;
+	}
+	database += ".db";
+	Database _db(database);
+	if (!_db.insert(args[1])) {
+		cerr << "Failed to insert!" << endl;
+		return -1;
+	}
+	return 0;
+}
+
+int sub_handler(const vector<string>& args) {
+	if (args.size() != 2) {
+		cerr << "Exactly 2 arguments required!" << endl;
+		return -1;
+	}
+	if (current_database != NULL) {
+		cerr << "Please unload your database first!" << endl;
+		return -1;
+	}
+	string database = args[0];
+	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db") {
+		cerr << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
+		return -1;
+	}
+	database += ".db";
+	Database _db(database);	if (!_db.remove(args[1])) {
+		cerr << "Failed to remove!" << endl;
+		return -1;
+	}
+	return 0;
+}
+
 int start_handler(const vector<string>& args) {
-	if (args.size() > 1) {
+	if (!args.empty()) {
 		cerr << "Too many arguments!" << endl;
 		return -1;
 	}
-
-	unsigned short port = GstoreConnector::defaultServerPort;
-
-	if (!args.empty()) {
-		if (Util::isValidPort(args[0])) {
-			stringstream(args[0]) >> port;
-		}
-		else {
-			cerr << "Invalid port: " << args[0] << endl;
-			return -1;
-		}
-	}
-
-	static const int max = 20; // max length of time string
-	char time_str[max];
-	time_t timep;
-	time(&timep);
-	strftime(time_str, max, "%Y%m%d_%H%M%S_", gmtime(&timep));
-
-	string gserver_path = "bin/gserver";
-	stringstream ss;
-	ss << "logs/gserver_" << time_str << port;
-	string log_path = ss.str();
-	ss.str(string());
-	ss << gserver_path << ' ' << port << " >> " << log_path << " 2>&1 &";
-	string cmd = ss.str();
-	Util::create_dir("logs");
-
-	system(cmd.c_str());
-	cout << "Local gserve started at port " << port << '.' << endl;
-	cout << "Output redirected to: " << log_path << endl;
-	return 0;
+	return system("bin/gserver -s");
 }
 
 int stop_handler(const vector<string>& args) {
@@ -1082,19 +1138,37 @@ int stop_handler(const vector<string>& args) {
 		cerr << "Too many arguments!" << endl;
 		return -1;
 	}
+	return system("bin/gserver -t");
+}
 
-	if (gc == NULL) {
-		cerr << "This command cannot be used when in native mode." << endl;
+int restart_handler(const vector<string>& args) {
+	if (!args.empty()) {
+		cerr << "Too many arguments!" << endl;
 		return -1;
 	}
+	return system("bin/gserver -r");
+}
 
-	if (!gc->stop()) {
+int port_handler(const vector<string>& args) {
+	if (args.size() > 1) {
+		cerr << "Too many arguments!" << endl;
 		return -1;
 	}
+	if (args.empty()) {
+		return system("bin/gserver -p");
+	}
+	if (!Util::isValidPort(args[0])) {
+		cerr << "Invalid port: " << args[0] << endl;
+		return -1;
+	}
+	string cmd = "bin/gserver -p " + args[0];
+	return system(cmd.c_str());
+}
 
-	delete gc;
-	gc = NULL;
-	current_commands = native_commands;
-	cout << "Now is in native mode, please type your commands." << endl;
-	return 0;
+int printport_handler(const vector<string>& args) {
+	if (!args.empty()) {
+		cerr << "Too many arguments!" << endl;
+		return -1;
+	}
+	return system("bin/gserver -P");
 }

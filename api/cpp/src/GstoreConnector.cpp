@@ -198,35 +198,8 @@ GstoreConnector::drop(string _db_name)
 	return false;
 }
 
-bool GstoreConnector::stop() {
-	bool connect_return = this->connect();
-	if (!connect_return) {
-		cerr << "failed to connect to server. @GstoreConnector::stop" << endl;
-		return false;
-	}
-
-	string cmd = "stop";
-	bool send_return = this->socket.send(cmd);
-	if (!send_return) {
-		cerr << "send stop command error. @GstoreConnector::stop" << endl;
-		return false;
-	}
-
-	string recv_msg;
-	this->socket.recv(recv_msg);
-
-	this->disconnect();
-
-	cout << recv_msg << endl;
-
-	if (recv_msg == "server stopped.") {
-		return true;
-	}
-	return false;
-}
-
 string
-GstoreConnector::query(string _sparql)
+GstoreConnector::query(string _sparql, string _output)
 {
 	bool connect_return = this->connect();
 	if (!connect_return)
@@ -235,7 +208,7 @@ GstoreConnector::query(string _sparql)
 		return "connect to server error.";
 	}
 
-	string cmd = "query " + _sparql;
+	string cmd = "query " + _output + ' ' + _sparql;
 	bool send_return = this->socket.send(cmd);
 	if (!send_return)
 	{

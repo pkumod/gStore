@@ -39,21 +39,21 @@ Server::createConnection()
 	flag = this->socket.create();
 	if (!flag)
 	{
-		cerr << "cannot create socket. @Server::createConnection" << endl;
+		cerr << Util::getTimeString() << "cannot create socket. @Server::createConnection" << endl;
 		return false;
 	}
 
 	flag = this->socket.bind(this->connectionPort);
 	if (!flag)
 	{
-		cerr << "cannot bind to port " << this->connectionPort << ". @Server::createConnection" << endl;
+		cerr << Util::getTimeString() << "cannot bind to port " << this->connectionPort << ". @Server::createConnection" << endl;
 		return false;
 	}
 
 	flag = this->socket.listen();
 	if (!flag)
 	{
-		cerr << "cannot listen to port" << this->connectionPort << ". @Server::createConnection" << endl;
+		cerr << Util::getTimeString() << "cannot listen to port" << this->connectionPort << ". @Server::createConnection" << endl;
 		return false;
 	}
 
@@ -83,28 +83,28 @@ Server::listen()
 	{
 		Socket new_server_socket;
 
-		cout << "Wait for input..." << endl;
+		cout << Util::getTimeString() << "Wait for input..." << endl;
 
 		this->socket.accept(new_server_socket);
 
-		cout << "accept new socket." << endl;
+		cout << Util::getTimeString() << "accept new socket." << endl;
 
 		string recv_cmd;
 		bool recv_return = new_server_socket.recv(recv_cmd);
 		if (!recv_return)
 		{
-			cerr << "receive command from client error. @Server::listen" << endl;
+			cerr << Util::getTimeString() << "receive command from client error. @Server::listen" << endl;
 			continue;
 		}
 
-		cout << "received msg: " << recv_cmd << endl;
+		cout << Util::getTimeString() << "received msg: " << recv_cmd << endl;
 
 		Operation operation;
 		bool parser_return = this->parser(recv_cmd, operation);
-		cout << "parser_return=" << parser_return << endl; //debug
+		cout << Util::getTimeString() << "parser_return=" << parser_return << endl; //debug
 		if (!parser_return)
 		{
-			cout << "parser command error. @Server::listen" << endl;
+			cout << Util::getTimeString() << "parser command error. @Server::listen" << endl;
 			string ret_msg = "invalid command.";
 			this->response(new_server_socket, ret_msg);
 			new_server_socket.close();
@@ -148,8 +148,9 @@ Server::listen()
 		}
 		case CMD_QUERY:
 		{
-			string query = operation.getParameter(0);
-			this->query(query, ret_msg);
+			string output = operation.getParameter(0);
+			string query = operation.getParameter(1);
+			this->query(query, output, ret_msg);
 			break;
 		}
 		case CMD_SHOW:
@@ -179,14 +180,14 @@ Server::listen()
 			break;
 		}
 		default:
-			cerr << "this command is not supported by now. @Server::listen" << endl;
+			cerr << Util::getTimeString() << "this command is not supported by now. @Server::listen" << endl;
 		}
 
 		this->response(new_server_socket, ret_msg);
 		new_server_socket.close();
 		if (_stop) {
 			this->deleteConnection();
-			cout << "server stopped." << endl;
+			cout << Util::getTimeString() << "server stopped." << endl;
 			break;
 		}
 	}
@@ -247,7 +248,7 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 	else if (cmd == "query")
 	{
 		_ret_oprt.setCommand(CMD_QUERY);
-		para_cnt = 1;
+		para_cnt = 2;
 	}
 	else if (cmd == "show")
 	{
@@ -441,7 +442,7 @@ Server::insertTriple(std::string _db_name, std::string _ac_name, std::string _rd
 }
 
 bool
-Server::query(const std::string _query, std::string& _ret_msg)
+Server::query(const string _query, const string _output, string& _ret_msg)
 {
 	if (this->database == NULL)
 	{
@@ -449,8 +450,34 @@ Server::query(const std::string _query, std::string& _ret_msg)
 		return false;
 	}
 
+	FILE* output;
+	if (_output != "/") {
+		regex_t reg;
+		char pattern[] = "^[a-zA-Z0-9_\\.]+$";
+		regcomp(&reg, pattern, REG_EXTENDED | REG_NOSUB);
+		regmatch_t pm[1];
+		int status = regexec(&reg, _output.c_str(), 1, pm, 0);
+		regfree(&reg);
+		if (status == REG_NOMATCH) {
+			_ret_msg = "invalid output path.";
+			return false;
+		}
+		if (!Util::dir_exist("server_results")) {
+			Util::create_dir("server_results");
+		}
+		string path = "server_results/" + _output;
+		output = fopen(path.c_str(), "w");
+	}
+	else {
+		output = stdout;
+	}
+
 	ResultSet res_set;
-	bool flag = this->database->query(_query, res_set);
+	bool flag = this->database->query(_query, res_set, output);
+	if (output != stdout) {
+		fclose(output);
+		output = stdout;
+	}
 	if (flag)
 	{
 		//_ret_msg = "results are too large!";

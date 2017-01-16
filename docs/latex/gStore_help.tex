@@ -118,7 +118,7 @@
 \title{\includegraphics[scale=0.3, bb=0 0 385 567]{../logo.png} \\
 	The handbook of gStore System测试}
 %\author{Bookug Lobert\footnote{EECS of Peking University, zengli-bookug@pku.edu.cn}\\[2ex]}
-\author{Edited by gStore team \footnote{The mailing list is given in Chapter 11.}}
+\author{Edited by gStore team \footnote{The mailing list is given in Chapter 12.}}
 \date{\today}
 %\begin{figure}[b]
 %	\centering
@@ -143,11 +143,11 @@ edges with property or relationship names as edge labels. For more details, plea
 To retrieve and manipulate an RDF graph, W3C also proposes a structured query language, SPARQL (\emph{S}imple \emph{P}rotocol \emph{A}nd \emph{R}DF \emph{Q}uery \emph{L}anguage), to access RDF repository. SPARQL contains capabilities for querying required and optional graph patterns along with their conjunctions and disjunctions. SPARQL also supports aggregation, subqueries, negation, creating values by expressions, extensible value testing, and constraining queries by source RDF graph. Similar to RDF graphs, a SPARQL query can also be modeled as a graph, which is a query graph with some variables. Then, evaluating a SPARQL query is equivalent to finding subgraph (homomorphism) matches of a query graph over an RDF graph. You can have a better understanding of SPARQL at \href{https://www.w3.org/TR/sparql11-query/}{SPARQL Introduction}.\\
 
 Although there are some RDF data management systems (like Jena, Virtuoso, Sesame) that store the RDF data in relational systems, few existing systems exploit the native graph pattern
-matching semantics of SPARQL. \textbf{Here, we implement a graph-based RDF triple store named gStore, which is a joint research project by Peking University, University of Waterloo and Hong Kong University of Science and Technology. The system is developed and maintained by the database group in Institute of Computer Science and Technology, Peking University, China.} A detailed description of gStore can be found at our papers {[}Zou et al., VLDB 11{]} and {[}Zou et al., VLDB Journal 14{]} in the \hyperref[chapter07]{Publication} chapter. This HELP document includes system installment, usage, API, use cases and FAQ. gStore is a open-source project in github under the BSD license. You are welcome to use gStore, report bugs or suggestions, or join us to make gStore better. It is also allowed for you to build all kinds of applications based on gStore, while respecting our work.\\
+matching semantics of SPARQL. \textbf{Here, we implement a graph-based RDF triple store named gStore, which is a joint research project by Peking University, University of Waterloo and Hong Kong University of Science and Technology. The system is developed and maintained by the database group in Institute of Computer Science and Technology, Peking University, China.} A detailed description of gStore can be found at our papers {[}Zou et al., VLDB 11{]} and {[}Zou et al., VLDB Journal 14{]} in the \hyperref[chapter08]{Publication} chapter. This HELP document includes system installment, usage, API, use cases and FAQ. gStore is a open-source project in github under the BSD license. You are welcome to use gStore, report bugs or suggestions, or join us to make gStore better. It is also allowed for you to build all kinds of applications based on gStore, while respecting our work.\\
 
 
 
-\textbf{Please make sure that you have read \hyperref[chapter16]{Legal Issues} before using gStore.}
+\textbf{Please make sure that you have read \hyperref[chapter17]{Legal Issues} before using gStore.}
 
 \clearpage
 
@@ -192,28 +192,28 @@ If you want to understand the details of the gStore system, or you want to try s
 \item
   \hyperref[chapter05]{API Explanation}: guide you to develop applications based on our API
 \item
-  \hyperref[chapter06]{Project Structure}: show the whole structure and sequence of this project
+  \hyperref[chapter07]{Project Structure}: show the whole structure and sequence of this project
 \item
-  \hyperref[chapter07]{Publications}: contain essays and publications
+  \hyperref[chapter08]{Publications}: contain essays and publications
   related with gStore
 \item
-  \hyperref[chapter12]{Update Logs}: keep the logs of the system updates
+  \hyperref[chapter09]{Update Logs}: keep the logs of the system updates
 \item
-  \hyperref[chapter13]{Test Result}: present the test results of a series of experiments
+  \hyperref[chapter14]{Test Result}: present the test results of a series of experiments
 \end{itemize}
 
 \hyperdef{}{other-business}{\subsubsection{Other Business}\label{other-business}}
 
 We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in
-\hyperref[chapter10]{Recipe Book}.
+\hyperref[chapter11]{Recipe Book}.
 
-You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to to submit your suggestions and report bugs to us by emailing to . A full list of our whole team is in \hyperref[chapter11]{Contributors}.
+You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to to submit your suggestions and report bugs to us by emailing to . A full list of our whole team is in \hyperref[chapter12]{Contributors}.
 
-There are some restrictions when you use the current gStore project, you can see them on \hyperref[chapter08]{Limitations}.
+There are some restrictions when you use the current gStore project, you can see them on \hyperref[chapter09]{Limitations}.
 
-Sometimes you may find some strange phenomena(but not wrong case), or something hard to understand/solve(don't know how to do next), then do not hesitate to visit the \hyperref[chapter09]{Frequently Asked Questions} page.
+Sometimes you may find some strange phenomena(but not wrong case), or something hard to understand/solve(don't know how to do next), then do not hesitate to visit the \hyperref[chapter10]{Frequently Asked Questions} page.
 
-Graph database engine is a new area and we are still trying to go further. Things we plan to do next is in \hyperref[chapter14]{Future Plan} chapter, and we hope more and more people will support or even
+Graph database engine is a new area and we are still trying to go further. Things we plan to do next is in \hyperref[chapter15]{Future Plan} chapter, and we hope more and more people will support or even
 join us. You can support in many ways:
 
 \begin{itemize}
@@ -227,7 +227,7 @@ join us. You can support in many ways:
   \ldots{}
 \end{itemize}
 
-People who inspire us or contribute to this project will be listed in the \hyperref[chapter15]{Thanks List} chapter.
+People who inspire us or contribute to this project will be listed in the \hyperref[chapter16]{Thanks List} chapter.
 
 \clearpage
 
@@ -273,7 +273,7 @@ NOTICE:
 \item
   When you type \texttt{make} in the root directory of the gStore project, the Java api will also be compiled. You can modify the makefile if you do not have JDK in your system. However, you are advised to install openjdk-devel in your Linux system.
 \item
-  Any other questions, please go to \hyperref[chapter09]{FAQ} page.
+  Any other questions, please go to \hyperref[chapter10]{FAQ} page.
 \end{enumerate}
 
 \clearpage
@@ -282,7 +282,7 @@ NOTICE:
 
 \textit{The first essay to come up with Gstore System is
 \href{run:../pdf/gStoreVLDBJ.pdf}{gStore\_VLDBJ}, and you can find related publications in
-\hyperref[chapter07]{Publications}.}
+\hyperref[chapter08]{Publications}.}
 
 \hyperdef{}{what-is-gstore}{\subsubsection{What Is
 gStore}\label{what-is-gstore}}
@@ -295,7 +295,7 @@ We represent a given \href{http://www.w3.org/TR/sparql11-overview/}{SPARQL} quer
 
 \hyperdef{}{why-gstore}{\subsubsection{Why gStore}\label{why-gstore}}
 
-After a series of test, we analyse and keep the result in \hyperref[chapter13]{Test Results}. gStore runs faster to answer complicated queries(for example, contain circles) than other database systems. For simple queries, both gStore and other database systems work
+After a series of test, we analyse and keep the result in \hyperref[chapter14]{Test Results}. gStore runs faster to answer complicated queries(for example, contain circles) than other database systems. For simple queries, both gStore and other database systems work
 well.
 
 In addition, now is the big data era and more and more structured data is coming, while the original relational database systems(or database systems based on relational tables) cannot deal with them efficiently.  In contrast, gStore can utilize the features of graph data structures, and improve the performance.
@@ -645,7 +645,7 @@ Only gStore and Jena are tested and compared in this script, but it is
 easy to add other database systems, if you would like to spend some time
 on reading this script. You may go to
 \href{run:../pdf/gstore���Ա���.pdf}{test
-report} or \hyperref[chapter09]{Frequently Asked Questions} for help if
+report} or \hyperref[chapter10]{Frequently Asked Questions} for help if
 you encounter a problem.
 
 \clearpage
@@ -659,17 +659,14 @@ you encounter a problem.
 \hyperdef{}{easy-examples}{\subsubsection{Easy
 Examples}\label{easy-examples}}
 
-We provide JAVA and C++ API for gStore now. Please refer to example
-codes in \texttt{api/cpp/example} and \texttt{api/java/example}. To use
-the two examples to have a try, please ensure that executables have
-already been generated. Otherwise, just type \texttt{make\ APIexample}
-in the root directory of gStore to compile the codes, as well as API.
+We provide JAVA, C++, PHP and Python API for gStore now. Please refer to example
+codes in \texttt{api/cpp/example}, \texttt{api/java/example}, \texttt{api/php} and \texttt{api/python/example}. To use the four examples to have a try, please ensure that executables have already been generated. Otherwise, for Java and C++, just type \texttt{make\ APIexample} in the root directory of gStore to compile the codes, as well as API.
 
 Next, \textbf{start up a gStore server by using \texttt{./gserver}
 command.} It is ok if you know a running usable gStore server and try to
 connect to it, but notice that \textbf{the server ip and port of server
 and client must be matched.}(you don't need to change any thing if using
-examples, just by default) Then, you need to compile the example codes
+examples, just by default) Then, for Java and C++ code, you need to compile the example codes
 in the directory gStore/api/. We provide a utility to do this, and you
 just need to type \texttt{make\ APIexample} in the root directory of
 gStore. Or you can compile the codes by yourself, in this case please go
@@ -677,12 +674,11 @@ to gStore/api/cpp/example/ and gStore/api/java/example/, respectively.
 
 Finally, go to the example directory and run the corresponding
 executables. For C++, just use \texttt{./example} command to run it. And
-for Java, use \texttt{make\ run} command or
-\texttt{java\ -cp\ ../lib/GstoreJavaAPI.jar:.\ JavaAPIExample} to run
-it. Both the two executables will connect to a specified gStore server
+for Java, use \texttt{make\ run} command or \texttt{java\ -cp\ ../lib/GstoreJavaAPI.jar:.\ JavaAPIExample} to run
+it. For PHP, use \texttt{php ./PHPAPIExample}. For python, use \texttt{python ./PythonAPIExample}. All these four executables will connect to a specified gStore server
 and do some load or query operations. Be sure that you see the query
 results in the terminal where you run the examples, otherwise please go
-to \hyperref[chapter09]{Frequently Asked Questions} for help or report
+to \hyperref[chapter10]{Frequently Asked Questions} for help or report
 it to us.(the report approach is described in
 \hyperref[chapter00]{README})
 
@@ -691,8 +687,7 @@ corresponding Makefile. This will help you to understand the API,
 specially if you want to write your own programs based on the API
 interface.
 
-\hyperdef{}{api-structure}{\subsubsection{API
-structure}\label{api-structure}}
+\hyperdef{}{api-structure}{\subsubsection{API structure}\label{api-structure}}
 
 The API of gStore is placed in api/ directory in the root directory of
 gStore, whose contents are listed below:
@@ -774,6 +769,35 @@ gStore, whose contents are listed below:
         Makefile
       \end{itemize}
     \end{itemize}
+
+   \item
+    php/ (the PHP API)
+
+    \begin{itemize}
+    \item
+      GstoreConnector.php (source code of PHP API, you need to include this file when you use the PHP API)
+
+    \item
+      PHPAPIExample.php (small example program to show the basic idea of using the PHP API)
+    \end{itemize}
+
+  \item
+    python/ (the Python API)
+    \begin{itemize}
+    \item
+      src/ (source code of Python API)
+      \begin{itemize}
+      \item
+        GstoreConnector.py (the package which you need to import when you use the Python API)
+      \end{itemize}
+    \item
+      example/ (small example program to show the basic idea of using the Python API)
+      \begin{itemize}
+      \item
+        PythonAPIExample.py
+      \end{itemize}
+    \end{itemize}
+
   \end{itemize}
 \end{itemize}
 
@@ -803,7 +827,8 @@ std::string sparql = "select ?x where \
 ?w    <ub:name>    <Department0>. \
 }";
 std::string answer = gc.query(sparql);
-// unload this database.gc.unload("LUBM10.db");
+// unload this database.
+gc.unload("LUBM10.db");
 // also, you can load some exist database directly and then query.
 gc.load("LUBM10.db");
 // query a SPARQL in current database
@@ -920,12 +945,285 @@ Use \texttt{javac\ -cp\ \$\{GSTORE\}/gStore/api/java/lib/GstoreJavaAPI.jar\ test
 
 Then you can type \texttt{java\ -cp\ \$\{GSTORE\}/gStore/api/java/lib/GstoreJavaAPI.jar:.\ test} to execute your own program(notice that the ``:.'' in command cannot be neglected), which uses our Java API. It is also advised for you to place relative compile commands in a Makefile, as well as other commands if you like.
 
+\hyperdef{}{php-api}{\subsubsection{PHP API}\label{php-api}}
+	
+	\hyperdef{}{interface-1}{\paragraph{Interface}\label{interface-1}}
+	
+	To use the PHP API, please place the phrase
+\texttt{include('GstoreConnector,php');} in your php code. Functions in
+GstoreConnector.php should be called like below:
+	
+	\begin{verbatim}
+	// initialize the Gstore server's IP address and port.
+	$gc = new Connector("127.0.0.1", 3305);
+	// build a new database by a RDF file.
+	// note that the relative path is related to gserver.
+	$gc->build("LUBM10.db", "example/LUBM_10.n3");
+	// then you can execute SPARQL query on this database.
+	$sparql = "select ?x where " + "{" +
+	"?x    <rdf:type>    <ub:UndergraduateStudent>. " +
+	"?y    <ub:name> <Course1>. " +
+	"?x    <ub:takesCourse>  ?y. " +
+	"?z    <ub:teacherOf>    ?y. " +
+	"?z    <ub:name> <FullProfessor1>. " +
+	"?z    <ub:worksFor>    ?w. " +
+	"?w    <ub:name>    <Department0>. " +
+	"}";
+	$answer = gc->query($sparql);
+	//unload this database.
+	$gc->unload("LUBM10.db");
+	//also, you can load some exist database directly and then query.
+	$gc->load("LUBM10.db");// query a SPARQL in current database
+	$answer = gc->query(sparql);
+	\end{verbatim}
+	
+	The original declaration of these functions are as below:
+	
+	\begin{verbatim}
+	class Connector {
+		public function __construct($host, $port);
+		public function send($data);
+		public function recv();
+		public function build($db_name, $rdf_file_path);
+		public function load($db_name);
+		public function unload($db_name);
+		public function query($sparql);
+		public function __destruct();
+	}
+	\end{verbatim}
+	
+	Notice:
+	
+	\begin{enumerate}
+		\item
+		When using Connector(), the default value for ip and port is
+		127.0.0.1 and 3305, respectively.
+		\item
+		When using build(), the rdf\_file\_path(the second parameter) should
+		be related to the position where gserver lies in.
+		\item
+		Please remember to unload the database you have loaded, otherwise
+		things may go wrong.(the errors may not be reported!)
+	\end{enumerate}
+	
+	\hyperdef{}{run-1}{\paragraph{Run}\label{run-1}}
+	
+	You can see gStore/api/php/PHPAPIExample for instructions on how to use PHP API. PHP script doesn't need compiling. You can run PHP file directly or use it in your web project.
+	
+
+\hyperdef{}{python-api}{\subsubsection{Python API}\label{python-api}}
+	
+	\hyperdef{}{interface-1}{\paragraph{Interface}\label{interface-1}}
+	
+	To use the Python API, please place the phrase \texttt{from GstoreConnector import GstoreConnector} in your python code. Functions in GstoreConnector.py should be called like below:
+	
+	\begin{verbatim}
+	// initialize the Gstore server's IP address and port.
+	gc = GstoreConnector('127.0.0.1', 3305)
+	// build a new database by a RDF file.
+	// note that the relative path is related to gserver.
+	gc.build('LUBM10.db', 'data/LUBM_10.n3')
+	// then you can execute SPARQL query on this database.
+	$sparql = "select ?x where " + "{" +
+	"?x    <rdf:type>    <ub:UndergraduateStudent>. " +
+	"?y    <ub:name> <Course1>. " +
+	"?x    <ub:takesCourse>  ?y. " +
+	"?z    <ub:teacherOf>    ?y. " +
+	"?z    <ub:name> <FullProfessor1>. " +
+
+	"?z    <ub:worksFor>    ?w. " +
+	"?w    <ub:name>    <Department0>. " +
+	"}";
+	answer = gc.query(sparql)
+	//unload this database.
+	gc.unload('LUBM10.db')
+	//also, you can load some exist database directly and then query.
+	gc.load('LUBM10.db')// query a SPARQL in current database
+	answer = gc.query(sparql)
+	\end{verbatim}
+	
+	The original declaration of these functions are as below:
+	
+	\begin{verbatim}
+	class GstoreConnector {
+		def _connect(self)
+		def _disconnect(self)
+		def _send(self, msg):
+		def _recv(self)
+		def _pack(self, msg):
+		def _communicate(f):
+		def __init__(self, ip='127.0.0.1', port=3305):
+		@_communicate
+    		def test(self)
+		@_communicate
+		def load(self, db_name)
+		@_communicate
+		def unload(self, db_name)
+		@_communicate
+		def build(self, db_name, rdf_file_path)
+		@_communicate
+		def drop(self, db_name)
+		@_communicate
+		def stop(self)
+		@_communicate
+		def query(self, sparql)
+		@_communicate
+		def show(self, _type=False)
+	}
+	\end{verbatim}
+	
+	Notice:
+	
+	\begin{enumerate}
+		\item
+		When using GstoreConnector(), the default value for ip and port is
+		127.0.0.1 and 3305, respectively.
+		\item
+		When using build(), the rdf\_file\_path(the second parameter) should
+		be related to the position where gserver lies in.
+		\item
+		Please remember to unload the database you have loaded, otherwise
+		things may go wrong.(the errors may not be reported!)
+	\end{enumerate}
+	
+	\hyperdef{}{run-1}{\paragraph{Run}\label{run-1}}
+	
+	You are advised to see gStore/api/python/example/PythonAPIExample for examples on how to use python API. Python file doesn't need compiling, and you can run it directly.
+
 \clearpage
 
-\hyperdef{}{chapter06}{\subsection{Chapter 06: Project Structure}\label{chapter06}}
+\hyperdef{}{chapter06}{\subsection{Chapter 06: Hello World}\label{chapter06}}
+	
+	\textbf{This Chapter provides a specific example on how to use our API in a web project.}
+	
+	\hyperdef{}{example}{\subsubsection{Example}\label{example}}
+	
+	Now you have the basic idea on how to use our APIs to connect gStore. Yet you might be still a little confused. Here we provide a simple demo to show you what to do explicitly.
 
-\textbf{This chapter introduce the whole structure of the gStore system
-project.}
+	Let's say, you need to use gStore in a web project. PHP is a popular general-purpose scripting language that is especially suited to web development. So, using our PHP API can meet your requirements. Here is what we implement: http://59.108.48.18/Gstore/form.php.
+
+	First, get your web server ready so it can run PHP files. We won't give detailed instructions on this step here. You can easily google it according to your web server(for example, Apache or Nginx, etc.) 
+	
+	Next, go to your web document root(usually in /var/www/html or apache/htdocs, you can check it in config file), and create a folder named "Gstore". Then copy the GstoreConnector.php file into it. Create a "PHPAPI.php" file. Edit it like below:
+
+	\begin{verbatim}
+	<?php
+
+	include( 'GstoreConnector.php');
+	$host = '127.0.0.1';
+	$port = 3305;
+	$dbname = $_POST["databasename"];
+	$sparql = $_POST["sparql"];
+	$format = $_POST["format"];
+	$load = new Connector($host, $port);
+	$load->load($dbname);
+	$query = new Connector($host, $port);
+	$result = $query->query($sparql);
+	switch ($format) {
+    	case 1:
+        $array = explode("<", $result);
+        $html = '<html><table class="sparql" border="1"><tr><th>' . 
+                $array[0] . "</th></tr>";
+        for ($i = 1; $i < count($array); $i++) {
+            $href = str_replace(">", "", $array[$i]);
+            $html.= '<tr><td><a href="' . $href . '">' . 
+                    $href . '</a></td></tr>';
+        }
+        $html.= '</table></html>';
+        echo $html;
+        exit;
+
+    	case 2:
+        $filename = 'result.txt';
+        header("Content-Type: application/octet-stream");
+        header('Content-Disposition: attachment; 
+                filename="' . $filename . '"');
+        echo $result;
+        exit;
+
+    	case 3:
+        $filename = 'result.csv';
+        header("Content-Type: application/octet-stream");
+        header('Content-Disposition: attachment; 
+                filename="' . $filename . '"');
+        $array = explode("<", $result);
+        echo $array[0];
+        for ($i = 1; $i < count($array); $i++) {
+            $href = str_replace(">", "", $array[$i]);
+            echo $href;
+        	}
+        exit;
+	}
+	?>
+	\end{verbatim}
+
+	This PHP file get three parametres from a website, including databasename, sparql and output format. Then it use our PHP API to connect gStore and run the query. Finally, the "switch" part gives the output. 
+
+	After that, we need a website to collect those imformation(databasename, sparql and output format). We create a html file and use a form to do it, just like below:
+	\begin{verbatim}
+<form id="form_1145884" class="appnitro"  method="post" action="PHPAPI.php">
+  <div class="form_description">
+    <h2>Gstore SPARQL Query Editor</h2>
+    <p></p>
+  </div>						
+  <ul>
+    <li id="li_1" >
+      <label class="description" for="element_1">
+        Database Name 
+      </label>
+      <div>
+        <input id="element_1" name="databasename" class="element text medium" 
+         type="text" maxlength="255" value="dbpedia_2014_reduce.db">
+        </input>
+      </div> 
+    </li>		
+
+    <li id="li_3">
+      <label class="description" for="element_3">Query Text </label>
+      <div>
+        <textarea id="element_3" name="sparql" class="element textarea large">
+          SELECT DISTINCT ?uri 
+          WHERE { 
+            ?uri <type> <Astronaut> . 
+          { ?uri <nationality> <Russia> . } 
+          UNION 
+          { ?uri <nationality> <Soviet_Union> . } 
+          } 
+      </textarea> 
+      </div> 
+    </li>		
+
+    <li id="li_5" >
+      <label class="description" for="element_5">
+        Results Format 
+      </label>
+      <div>
+        <select class="element select medium" id="element_5" name="format"> 
+          <option value="1" selected="ture">HTML</option>
+          <option value="2" >Text</option>
+          <option value="3" >CSV</option>
+        </select>
+      </div> 
+
+    <li class="buttons">
+      <input type="hidden" name="form_id" value="1145884" />
+      <input id="saveForm" class="button_text" type="submit" 
+       name="submit" value="Run Query" />
+    </li>
+  </ul>
+</form>
+	\end{verbatim}
+	
+	As you can see in the code, we use a <input> element to get the databasename, and <texarea> for sparql, <select> for output format. <form> lable has an attribute "action" which specifies which file to execute. So, when you click the "submit" button, it will call PHPAPI.php file and post the values from the form. 
+
+	Finally, don't forget to start gserver on your server.
+	
+	\clearpage
+
+
+\hyperdef{}{chapter07}{\subsection{Chapter 07: Project Structure}\label{chapter07}}
+
+\textbf{This chapter introduce the whole structure of the gStore system project.}
 
 \hyperdef{}{the-core-source-codes}{\paragraph{The core source codes are listed below:}\label{the-core-source-codes}}
 
@@ -1261,7 +1559,7 @@ The api/ folder in gStore is used to store API program, libs and
 examples, please go to \hyperref[chapter05]{API} for details. And test/
 is used to store a series test programs or utilities, such as gtest,
 full\_test and so on. Chapters related with test/ are
-\hyperref[chapter04]{How To Use} and \hyperref[chapter13]{Test Result}.
+\hyperref[chapter04]{How To Use} and \hyperref[chapter14]{Test Result}.
 This project need an ANTLR lib to parse the SPARQL query, whose code is
 placed in tools/(also archived here) and the compiled libantlr.a is
 placed in lib/ directory.
@@ -1280,7 +1578,7 @@ interested in gStore.
 
 \clearpage
 
-\hyperdef{}{chapter07}{\subsection{Chapter 07: Publications}\label{chapter07}}
+\hyperdef{}{chapter08}{\subsection{Chapter 08: Publications}\label{chapter08}}
 
 \hyperdef{}{publications-related-with-gstore-are-listed-here}{\paragraph{Publications related with gStore are listed here:}\label{publications-related-with-gstore-are-listed-here}}
 
@@ -1326,7 +1624,7 @@ interested in gStore.
 
 \clearpage
 
-\hyperdef{}{chapter08}{\subsection{Chapter 08: Limitations}\label{chapter08}}
+\hyperdef{}{chapter09}{\subsection{Chapter 09: Limitations}\label{chapter09}}
 
 \begin{enumerate}
 \item
@@ -1340,7 +1638,7 @@ interested in gStore.
 
 \clearpage
 
-\hyperdef{}{chapter09}{\subsection{Chapter 09: Frequently Asked Questions}\label{chapter09}}
+\hyperdef{}{chapter10}{\subsection{Chapter 10: Frequently Asked Questions}\label{chapter10}}
 
 \hyperdef{}{when-i-use-the-newer-gstore-system-to-query-the-original-database-why-error}{\paragraph{When
 I use the newer gStore system to query the original database, why
@@ -1480,7 +1778,7 @@ and the ``:.'' in this command cannot be neglected.
 
 %\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 \clearpage
-\hyperdef{}{chapter10}{\subsection{Chapter 10: Recipe Book}\label{chapter10}}
+\hyperdef{}{chapter11}{\subsection{Chapter 11: Recipe Book}\label{chapter11}}
 
 \textbf{This chapter introduces some useful tricks if you are using
 gStore to implement applications.}
@@ -1491,7 +1789,7 @@ gStore to implement applications.}
 
 \part{Others}
 
-\hyperdef{}{chapter11}{\subsection{Chapter 11: Contributors}\label{chapter11}}
+\hyperdef{}{chapter12}{\subsection{Chapter 12: Contributors}\label{chapter12}}
 
 Please contact with Lei Zou(zoulei@pku.edu.cn), Li Zeng(zengli-bookug@pku.edu.cn), Jiaqi Chen(chenjiaqi93@pku.edu.cn) and Peng Peng(pku09pp@pku.edu.cn) if you have suggestions or comments about gStore or you need help when using gStore.
 
@@ -1549,7 +1847,7 @@ Please contact with Lei Zou(zoulei@pku.edu.cn), Li Zeng(zengli-bookug@pku.edu.cn
 
 \clearpage
 
-\hyperdef{}{chapter12}{\subsection{Chapter 12: Updated Logs}\label{chapter12}}
+\hyperdef{}{chapter13}{\subsection{Chapter 13: Updated Logs}\label{chapter13}}
 
 \hyperdef{}{apr-01-2016}{\subsubsection{Apr 01,
 2016}\label{apr-01-2016}}
@@ -1644,7 +1942,7 @@ on github.
 
 \clearpage
 
-\hyperdef{}{chapter13}{\subsection{Chapter 13: Test Result}\label{chapter13}}
+\hyperdef{}{chapter14}{\subsection{Chapter 14: Test Result}\label{chapter14}}
 
 \hyperdef{}{preparation}{\subsubsection{Preparation}\label{preparation}}
 
@@ -1834,7 +2132,7 @@ The latest test report is \href{run:../latex/formal_experiment.pdf}{formal exper
 
 \clearpage
 
-\hyperdef{}{chapter14}{\subsection{Chapter 14: Future Plan}\label{chapter14}}
+\hyperdef{}{chapter15}{\subsection{Chapter 15: Future Plan}\label{chapter15}}
 
 \hyperdef{}{improve-the-core}{\subsubsection{Improve The
 Core}\label{improve-the-core}}
@@ -1902,7 +2200,7 @@ Box}\label{idea-collection-box}}
 
 \clearpage
 
-\hyperdef{}{chapter15}{\subsection{Chapter 15: Thanks List}\label{chapter15}}
+\hyperdef{}{chapter16}{\subsection{Chapter 16: Thanks List}\label{chapter16}}
 
 \textit{This chapter lists people who inspire us or contribute to this project.}
 
@@ -1914,7 +2212,7 @@ Box}\label{idea-collection-box}}
 %\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 \clearpage
 
-\hyperdef{}{chapter16}{\subsection{Chapter 16: Legal Issues}\label{chapter16}}
+\hyperdef{}{chapter17}{\subsection{Chapter 17: Legal Issues}\label{chapter17}}
 
 %\textbf{We are trying our best to avoid errors. However, if you encounter any unrecovable disaster when using this system, we shall not be responsible for it.}
 

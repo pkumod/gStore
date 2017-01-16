@@ -74,7 +74,10 @@ class GstoreConnector:
                     cmd = 'show databases'
             else:
                 cmd = f.__name__
-            params = ' '.join(map(lambda x:str(x), args))
+            if f.__name__ == 'query':
+                params = ' '.join([args[1], args[0])
+            else:
+                params = ' '.join(map(lambda x:str(x), args))
             full_cmd = ' '.join([
                 cmd,
                 params
@@ -106,7 +109,7 @@ class GstoreConnector:
             return False
         return wrapper
 
-    def __init__(self, ip='127.0.0.1', port=3305):
+    def __init__(self, ip = '127.0.0.1', port = 3305):
         self.ip = ip
         self.port = port
 
@@ -131,11 +134,7 @@ class GstoreConnector:
         pass
 
     @_communicate
-    def stop(self):
-        pass
-
-    @_communicate
-    def query(self, sparql):
+    def query(self, sparql, output = '/'):
         pass
 
     @_communicate

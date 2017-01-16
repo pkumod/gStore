@@ -1,0 +1,3 @@
+-- the versionCompare.db in docs/ is used to compare the performance of different versions
+-- no version record should be removed!
+-- For sqlite3 usage, see http://blog.csdn.net/byxdaz/article/details/5846023

@@ -24,15 +24,15 @@ void QueryTree::GroupPattern::FilterTreeNode::getVarset(Varset &varset)
 void QueryTree::GroupPattern::FilterTreeNode::print(vector<GroupPattern> &exist_grouppatterns, int dep)
 {
 	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Not_type)	printf("!");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_regex_type)	printf("regex");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_lang_type)		printf("lang");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_langmatches_type)		printf("langmatches");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_bound_type)		printf("bound");
+	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_regex_type)	printf("REGEX");
+	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_lang_type)		printf("LANG");
+	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_langmatches_type)		printf("LANGMATCHES");
+	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_bound_type)		printf("BOUND");
 
 	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_in_type)
 	{
 		if (this->child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)	printf("%s", this->child[0].arg.c_str());
-		printf(" in (");
+		printf(" IN (");
 		for (int i = 1; i < (int)this->child.size(); i++)
 		{
 			if (i != 1)	printf(" , ");
@@ -45,7 +45,7 @@ void QueryTree::GroupPattern::FilterTreeNode::print(vector<GroupPattern> &exist_
 
 	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_exists_type)
 	{
-		printf("exists");
+		printf("EXISTS");
 		exist_grouppatterns[this->exists_grouppattern_id].print(dep);
 
 		return;
@@ -394,19 +394,40 @@ QueryTree::ProjectionModifier QueryTree::getProjectionModifier()
 	return this->projection_modifier;
 }
 
-void QueryTree::addProjectionVar(string _projection)
+void QueryTree::addProjectionVar()
 {
-	this->projection.addVar(_projection);
+	this->projection.push_back(ProjectionVar());
 }
 
-int QueryTree::getProjectionNum()
+QueryTree::ProjectionVar& QueryTree::getLastProjectionVar()
 {
-	return (int)this->projection.varset.size();
+	int n = (int)this->projection.size();
+	return this->projection[n - 1];
 }
 
-Varset& QueryTree::getProjection()
+vector<QueryTree::ProjectionVar>& QueryTree::getProjection()
 {
 	return this->projection;
+}
+
+vector<string> QueryTree::getProjectionVar()
+{
+	vector<string> var_vec;
+
+	for (int i = 0; i < (int)this->projection.size(); i++)
+		var_vec.push_back(this->projection[i].var);
+
+	return var_vec;
+}
+
+void QueryTree::addProjectionUsefulVar(string &_var)
+{
+	this->projection_useful_varset.addVar(_var);
+}
+
+Varset& QueryTree::getProjectionUsefulVar()
+{
+	return this->projection_useful_varset;
 }
 
 void QueryTree::setProjectionAsterisk()
@@ -417,6 +438,33 @@ void QueryTree::setProjectionAsterisk()
 bool QueryTree::checkProjectionAsterisk()
 {
 	return this->projection_asterisk;
+}
+
+bool QueryTree::checkSelectCompatibility()
+{
+	bool all_var = true, all_aggregate_function = true;
+
+	if (this->checkProjectionAsterisk())
+		return true;
+
+	for (int i = 0; i < (int)this->projection.size(); i++)
+	{
+		if (this->projection[i].aggregate_type != ProjectionVar::None_type)
+			all_var = false;
+		if (this->projection[i].aggregate_type == ProjectionVar::None_type)
+			all_aggregate_function = false;
+	}
+
+	return all_var || all_aggregate_function;
+}
+
+bool QueryTree::atLeastOneAggregateFunction()
+{
+	for (int i = 0; i < (int)this->projection.size(); i++)
+		if (this->projection[i].aggregate_type != ProjectionVar::None_type)
+			return true;
+
+	return false;
 }
 
 void QueryTree::addOrder(string &_var, bool _descending)
@@ -494,40 +542,60 @@ void QueryTree::print()
 		{
 			printf("SELECT");
 			if (this->getProjectionModifier() == Modifier_Distinct)
-				printf(" distinct");
+				printf(" DISTINCT");
 			printf("\n");
 
-			printf("var : \t");
-			vector <string> &varvec = this->getProjection().varset;
-			for (int i = 0; i < (int)varvec.size(); i++)
-				printf("%s\t", varvec[i].c_str());
-			if (this->checkProjectionAsterisk())
+			printf("Var: \t");
+			vector<ProjectionVar> &proj = this->getProjection();
+			for (int i = 0; i < (int)proj.size(); i++)
+			{
+				if (proj[i].aggregate_type == QueryTree::ProjectionVar::None_type)
+					printf("%s\t", proj[i].var.c_str());
+				else
+				{
+					printf("(");
+					if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
+						printf("COUNT(");
+					if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type)
+						printf("SUM(");
+					if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
+						printf("MIN(");
+					if (proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+						printf("MAX(");
+					if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+						printf("AVG(");
+					if (proj[i].distinct)
+						printf("DISTINCT ");
+					printf("%s) AS %s)\t", proj[i].aggregate_var.c_str(), proj[i].var.c_str());
+				}
+			}
+			if (this->checkProjectionAsterisk() && !this->atLeastOneAggregateFunction())
 				printf("*");
 			printf("\n");
 		}
 		else printf("ASK\n");
 
-		printf("group pattern : \n");
+		printf("GroupPattern:\n");
 		this->getGroupPattern().print(0);
 
 		if (this->getQueryForm() == Select_Query)
 		{
 			if ((int)this->getOrder().size() > 0)
 			{
-				printf("order by : \t");
+				printf("ORDER BY\t");
 				vector<QueryTree::Order>&order = this->getOrder();
 				for (int i = 0; i < (int)order.size(); i++)
 				{
-					if (!order[i].descending)	printf("asc(");
-					else printf("desc(");
-					printf("%s)  ", order[i].var.c_str());
+					if (!order[i].descending)	printf("ASC(");
+					else printf("DESC(");
+					printf("%s)\t", order[i].var.c_str());
 				}
 				printf("\n");
 			}
 			if (this->getOffset() != 0)
-				printf("offset : %d\n", this->getOffset());
+				printf("OFFSET\t%d\n", this->getOffset());
 			if (this->getLimit() != -1)
-				printf("limit : %d\n", this->getLimit());
+				printf("LIMIT\t%d\n", this->getLimit());
 		}
 	}
 	else
@@ -536,18 +604,18 @@ void QueryTree::print()
 		if (this->getUpdateType() == Delete_Data || this->getUpdateType() == Delete_Where ||
 				this->getUpdateType() == Delete_Clause || this->getUpdateType() == Modify_Clause)
 		{
-			printf("delete : \n");
+			printf("Delete:\n");
 			this->getDeletePatterns().print(0);
 		}
 		if (this->getUpdateType() == Insert_Data || this->getUpdateType() == Insert_Clause || this->getUpdateType() == Modify_Clause)
 		{
-			printf("insert : \n");
+			printf("Insert:\n");
 			this->getInsertPatterns().print(0);
 		}
 		if (this->getUpdateType() == Delete_Where || this->getUpdateType() == Insert_Clause ||
 				this->getUpdateType() == Delete_Clause || this->getUpdateType() == Modify_Clause)
 		{
-			printf("group pattern : \n");
+			printf("GroupPattern:\n");
 			this->getGroupPattern().print(0);
 		}
 	}

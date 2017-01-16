@@ -34,7 +34,7 @@ class Connector {
     }
 
     public function build($db_name, $rdf_file_path) {
-        $data = "import " . $db_name . " " . $rdf_file_path . "\0";
+        $data = "import " . $db_name . " " . $rdf_file_path;
         self::send($data);
         $result = self::recv();
         return $result;
@@ -46,7 +46,7 @@ class Connector {
         return $result;
     }
     public function load($db_name) {
-        $data = "load " . $db_name . "\0";
+        $data = "load " . $db_name;
         self::send($data);
         $result = self::recv();
         return $result;
@@ -63,14 +63,8 @@ class Connector {
         $result = self::recv();
         return $result;
     }
-    public function stop() {
-        $data = "stop";
-        self::send($data);
-        $result = self::recv();
-        return $result;
-    }
-    public function query($sparql) {
-        $data = "query " . $sparql . "\0";
+    public function query($sparql, $output = "/") {
+        $data = "query " . $output . " " . $sparql;
         self::send($data);
         $result = self::recv();
         return $result;

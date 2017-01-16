@@ -1597,7 +1597,14 @@ VSTree::removeNode(VNode* _vp)
 	cout<<"the key to remove: "<<key<<endl;
 #endif
 
-	this->free_nid_list.push_back(key);
+	if(key == this->max_nid_alloc - 1)
+	{
+		this->max_nid_alloc--;
+	}
+	else
+	{
+		this->free_nid_list.push_back(key);
+	}
 	this->node_buffer->del(key);
 	this->node_num--;
 	//delete _vp;

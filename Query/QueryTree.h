@@ -157,6 +157,18 @@ class QueryTree
 				FilterTreeRoot():done(false){}
 		};
 
+		class ProjectionVar
+		{
+			public:
+				enum	AggregateType{None_type, Count_type, Sum_type, Min_type, Max_type, Avg_type};
+				AggregateType aggregate_type;
+
+				std::string var, aggregate_var;
+				bool distinct;
+
+				ProjectionVar():aggregate_type(None_type), distinct(false){}
+		};
+
 		class Order
 		{
 			public:
@@ -171,7 +183,8 @@ class QueryTree
 		private:
 			QueryForm query_form;
 			ProjectionModifier projection_modifier;
-			Varset projection;
+			std::vector<ProjectionVar> projection;
+			Varset projection_useful_varset;
 			bool projection_asterisk;
 			std::vector<Order> order;
 			int offset, limit;
@@ -190,11 +203,16 @@ class QueryTree
 			QueryForm getQueryForm();
 			void setProjectionModifier(ProjectionModifier _projection_modifier);
 			ProjectionModifier getProjectionModifier();
-			void addProjectionVar(std::string _projection);
-			int getProjectionNum();
-			Varset& getProjection();
+			void addProjectionVar();
+			ProjectionVar& getLastProjectionVar();
+			std::vector<ProjectionVar>& getProjection();
+			std::vector<std::string> getProjectionVar();
+			void addProjectionUsefulVar(std::string &_var);
+			Varset& getProjectionUsefulVar();
 			void setProjectionAsterisk();
 			bool checkProjectionAsterisk();
+			bool checkSelectCompatibility();
+			bool atLeastOneAggregateFunction();
 			void addOrder(std::string &_var, bool _descending);
 			std::vector<Order>& getOrder();
 			void setOffset(int _offset);
@@ -208,7 +226,6 @@ class QueryTree
 			UpdateType getUpdateType();
 			GroupPattern& getInsertPatterns();
 			GroupPattern& getDeletePatterns();
-
 
 			bool checkWellDesigned();
 

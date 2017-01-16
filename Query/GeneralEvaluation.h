@@ -34,14 +34,17 @@ class GeneralEvaluation
 		std::vector <Varset> sparql_query_varset;
 		VSTree *vstree;
 		KVstore *kvstore;
+		TNUM* pre2num;
 		StringIndex *stringindex;
 		Strategy strategy;
 		ResultFilter result_filter;
 		bool need_output_answer;
 
 	public:
-		explicit GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex):
-			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), need_output_answer(false){}
+		explicit GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, TNUM* _pre2num):
+			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), pre2num(_pre2num), need_output_answer(false)
+	{
+	}
 
 		std::vector<std::vector<std::string> > getSPARQLQueryVarset();
 
@@ -225,7 +228,6 @@ class GeneralEvaluation
 		std::vector <ExpansionEvaluationStackUnit> expansion_evaluation_stack;
 
 		bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &grouppattern, std::deque<QueryTree::GroupPattern> &queue);
-		bool checkExpantionRewritingConnectivity(int dep);
 		void queryRewriteEncodeRetrieveJoin(int dep);
 
 		bool needOutputAnswer();

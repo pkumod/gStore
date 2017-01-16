@@ -72,6 +72,7 @@ private:
 	//To create node, if free list is empty, then max_nid_alloc++;else, get one from free list
 	//To remove node, add its ID to free list
 	std::list<int> free_nid_list;
+	//max_nid_alloc-1 is the maxium using ID(need to maintain)
 	int max_nid_alloc;
 
 	//choose the best leaf node to insert the _entry, return the choosed leaf node's pointer. 

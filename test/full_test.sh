@@ -1,8 +1,6 @@
 #! /bin/env bash
 
-#TODO:to add result size in a unique column!
-#(how about size different)
-#how about time n different aspects
+#TODO: why no size.log?? always error!!!
 
 #in some system, maybe /usr/bin/ instead of /bin/
 #according executables to deal with dbms
@@ -12,38 +10,53 @@
 #when testing sesame and others, just use bsbm and watdiv because format in lubm
 #i snot supported by sesame(invalid IRI), and dbpedia may be too large
 
+#NOTICE+WARN:if only one db or no need to compare the database size, 
+#then comment the removing db phrases for virtuoso!!!
+
+#QUERY:do we need to empty the buffer after each dbms to compare the performance?
+#query performance should focus on warm instead of cold
+
 line1=--------------------------------------------------
 line2=##################################################
-path=/media/data/
+#path=/media/data/
+path=/home/data/
 
-#db0=${path}WatDiv/
-#db1=${path}LUBM/
-#db2=${path}DBpedia/
+db0=${path}WatDiv/
+db1=${path}LUBM/
+db2=${path}DBpedia/
 #db3=${path}BSBM/
 
 #db=($db0 $db1 $db2 $db3)	#db[4]=db4
-#db=(WatDiv/ LUBM/ BSBM/ DBpedia/)
-db=(TEST/)
+#db=($db0 $db1 $db2)	#db[4]=db4
+db=(WatDiv/ LUBM/ BSBM/ DBpedia/)
+#db=(WatDiv/ LUBM/)
+#db=(TEST/)
 
 #BETTER: add yago2/yago3, dblp...add more queries
 
 length1=${#db[*]}		#or @ instead of *
 
 #BETTER: let user indicate the executable directory
-#NOTICE:start the server of virtuoso before testing it
-gstore=~/project/devGstore/
-virtuoso=~/OpenRdf/Virtuoso/virtuoso-server/
-sesame=~/OpenRdf/Sesame/openrdf-sesame-4.1.1/
-jena=~/OpenRdf/Jena/jena/
+gstore=~/gStore/
+virtuoso=~/virtuoso/
+jena=~/jena/
+gstore2=~/devGstore/
 
 #NOTICE: maybe oldGstore and newGstore
 
 #NOTICE:remove debug and use -o2 not -g when testing gStore
 
-dbms_path=($gstore $jena $sesame $virtuoso)
-dbms_name=(gstore jena sesame virtuoso)
-#dbms_path=($gstore $virtuoso)
-#dbms_name=(gstore virtuoso)
+#dbms_path=($gstore $jena $sesame $virtuoso)
+#dbms_name=(gstore jena sesame virtuoso)
+#
+#dbms_path=($gstore $jena $virtuoso)
+#dbms_name=(gstore jena virtuoso)
+#
+#dbms_path=($gstore2 $gstore)
+#dbms_name=(gstore gstore)
+#
+dbms_path=($gstore2)
+dbms_name=(gstore)
 
 length2=${#dbms_path[*]}		#or @ instead of *
 
@@ -133,6 +146,7 @@ do
 		fi
 
 		cntdb="${tmpdb##*/}"
+		cntdbINFO=${cntdb}.info
 		echo "$tmpdb"	#in case of special characters like &
 		tsv1=${home}/${log1}/${cntdb}.tsv	#compare result
 		tsv2=${home}/${log2}/${cntdb}.tsv	#compare time
@@ -146,6 +160,8 @@ do
 			cd ${dbms_path[j]}
 			name=${dbms_name[j]}
 			echo $name
+			mkdir ${cntdb}
+			mkdir ${cntdbINFO}
 
 			#build logs structure
 			echo "build logs structure!"
@@ -161,7 +177,10 @@ do
 			#if [ ${j} -eq 0 ]	
 			then
 				echo "this is for gstore!"
-				bin/gload $cntdb $tmpdb > load.txt
+				lcov -z -d ./
+				bin/gbuild $cntdb $tmpdb > load.txt 2>&1
+				gcov -a -b -c gbuild.cpp
+				lcov --no-external --directory . --capture --output-file ${cntdb}/load.info
 				#awk '{if($1=="after" && $2=="build," && $3=="used"){split($4, a,"m");print "time:\t"a[1]}}'  load.txt > load_${cntdb}.log
 				awk '{if($1=="after" && $2=="build," && $3=="used"){split($4, a,"m");print "'$cntdb'""\t"a[1]}}'  load.txt >> ${log3}/time.log
 				#elif [ ${dbms[j]}x = ${virtuoso}x ]
@@ -203,6 +222,7 @@ do
 				bin/isql 1111 dba dba exec="checkpoint;" | awk '{if($1=="Done."){print $3}}' >> load.txt
 				awk 'BEGIN{sum=0}{sum+=$0}END{printf("%s\t%d\n", "'$cntdb'", sum);}' load.txt >> ${log3}/time.log
 			fi
+			mv load.txt ${cntdbINFO}/
 
 			#ls -l sums the actual size, unit is k
 			echo "now to sum the database size!"
@@ -257,7 +277,10 @@ do
 				then
 					echo "this is for gstore!"
 					#NOTICE:we do not add the start time in gquery.cpp, and we expect other dbms will also deal it this way.
-					bin/gquery "$cntdb" $query > ans.txt
+					lcov -z -d ./
+					bin/gquery "$cntdb" $query > ans.txt 2>&1
+					gcov -a -b -c gquery.cpp
+					lcov --no-external --directory . --capture --output-file ${cntdb}/${query##*/}.info
 					awk -F ':' 'BEGIN{query="'$query'"}{if($1=="Total time used"){split($2, a, "m");split(a[1],b," ");}}END{print query"\t"b[1]}' ans.txt >> $timelog
 					#grep "Total time used:" ans.txt | grep -o "[0-9]*ms" >> ${log2}/${cntdb}.log
 					awk -F ':' 'BEGIN{flag=0;old="[empty result]"}{if(flag==1 && $0 ~/^?/){flag=2}else if(flag==2){if($0 ~/^$/){flag=3}else if($0 != old){print $0;old=$0}}else if(flag == 0 && $1 ~/^final result/){flag=1}}' ans.txt > $anslog
@@ -323,6 +346,8 @@ do
 					#awk 'BEGIN{flag=0}{if($0 ~/^____/){flag=1}else if(flag==1 && $0 ~/^$/){flag=2}else if(flag==2){if($0 ~/^$/){flag=3}else{for(i=1;i<=NF;++i){if($i ~/^http:/){str="<"$i">";}else{str="\""$i"\"";}printf("%s", str) >> "'$anslog'";if(i<NF)printf("\t") >> "'$anslog'";}printf("\n") >> "'$anslog'";}}else if(flag==3){split($0, s, " ");print "'$query'""\t"s[4] >> "'$timelog'";}}' ans.txt
 					awk -F ' [ \t]+' 'BEGIN{flag=0}{if($0 ~/^____/){flag=1}else if(flag==1 && $0 ~/^$/){flag=2}else if(flag==2){if($0 ~/^$/){flag=3}else{for(i=1;i<=NF;++i){printf("%s", $i) >> "'$anslog'";if(i<NF)printf("\t") >> "'$anslog'";}printf("\n") >> "'$anslog'";}}else if(flag==3){split($0, s, " ");print "'$query'""\t"s[4] >> "'$timelog'";}}' ans.txt
 				fi
+				mv ans.txt ${cntdbINFO}/${query##*/}.txt
+
 				#NOTICE:the same record should be placed together before sorting!
 				#sort according to the path order
 				echo "now to sort anslog!"
@@ -361,12 +386,26 @@ do
 			mv $timelog ${timelog}.bak
 			awk -F '\t' '{print $1"\t"$2 | "sort -k1"}' ${timelog}.bak > ${timelog}
 			rm -f ${timelog}.bak
+
+			if [ ${name}x = gstorex ]    #add a x in case of empty (need a space from ])
+			then
+				#now to add the coverage info for this dataset
+				str="lcov"
+				for info in `ls *.info`
+				do
+					str="${str}"" -a ${info}"
+				done
+				str="${str}"" -o COVERAGE/${cntdb}.info"
+				`${str}`
+			fi
+
 			#remove the db when finished
 			echo "now to remove the cntdb!"
 			if [ ${name}x = gstorex -o ${name}x = jenax ]
 			#if [ ${j} -lt 2 ]
 			then
-				rm -rf "$cntdb"
+				#rm -rf "$cntdb"
+				echo "not remove db now"
 			elif [ ${name}x = sesamex ]
 			#elif [ ${j} -eq 2 ]
 			then
@@ -379,27 +418,28 @@ do
 			elif [ ${name}x = virtuosox ]
 			#elif [ ${j} -eq 3 ]
 			then
-				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
-				bin/isql 1111 dba dba exec="checkpoint;"
-				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
-				bin/isql 1111 dba dba exec="checkpoint;"
-				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
-				bin/isql 1111 dba dba exec="checkpoint;"
-				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
-				bin/isql 1111 dba dba exec="checkpoint;"
-				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
-				bin/isql 1111 dba dba exec="checkpoint;"
-				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
-				bin/isql 1111 dba dba exec="checkpoint;"
-				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
-				bin/isql 1111 dba dba exec="checkpoint;"
-				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
-				bin/isql 1111 dba dba exec="checkpoint;"
-				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
-				bin/isql 1111 dba dba exec="checkpoint;"
-				bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
-				bin/isql 1111 dba dba exec="checkpoint;"
-				bin/isql 1111 dba dba exec="delete from db.dba.load_list;"
+				echo "not remove db now"
+				#bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				#bin/isql 1111 dba dba exec="checkpoint;"
+				#bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				#bin/isql 1111 dba dba exec="checkpoint;"
+				#bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				#bin/isql 1111 dba dba exec="checkpoint;"
+				#bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				#bin/isql 1111 dba dba exec="checkpoint;"
+				#bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				#bin/isql 1111 dba dba exec="checkpoint;"
+				#bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				#bin/isql 1111 dba dba exec="checkpoint;"
+				#bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				#bin/isql 1111 dba dba exec="checkpoint;"
+				#bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				#bin/isql 1111 dba dba exec="checkpoint;"
+				#bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				#bin/isql 1111 dba dba exec="checkpoint;"
+				#bin/isql 1111 dba dba exec="sparql clear graph <${cntdb}>;"
+				#bin/isql 1111 dba dba exec="checkpoint;"
+				#bin/isql 1111 dba dba exec="delete from db.dba.load_list;"
 			fi
 			#BETTER:remove *.txt in each dbms path
 			#rm -f *.txt
@@ -424,6 +464,7 @@ do
 				rm -f ${tsv2}.bak
 			fi
 		done
+
 		#compare the result and construct the TSV table
 		echo "now to compare the results!"
 		cd ${home}
@@ -461,7 +502,8 @@ do
 							sub("^[<\"]", "", $i); sub("[>\"]$", "", $i); printf("%s", $i); 
 							if(i<NF)printf("\t");}printf("\n");}' ${dbms_path[y]}/${tmplog} > change.txt.bak
 						sort -t $'\t' -u change.txt.bak > change.txt
-						diff ${dbms_path[x]}/${tmplog} change.txt
+						diff ${dbms_path[x]}/${tmplog} change.txt > comp2.txt
+						rm -f comp2.txt
 						#cat > tmp.txt
 						#awk -F '\t' 'BEGIN{flag=0}{
 						#if(NR==FNR){map[NR]=$0}
@@ -477,7 +519,8 @@ do
 						#				flag=1;break}}}}}
 						#			END{print "'${query##*/}'""\tY"}' ${dbms_path[p]}/${tmplog} ${dbms_path[q]}/${tmplog} >> compare.txt
 					else
-						diff ${dbms_path[p]}/${tmplog} ${dbms_path[q]}/${tmplog}
+						diff ${dbms_path[p]}/${tmplog} ${dbms_path[q]}/${tmplog} > comp2.txt
+						rm -f comp2.txt
 						#NOTICE:the col num is almost all ok for query results
 						#WARN:what if row num is different?
 						#awk -F '\t' 'BEGIN{flag=0}{
@@ -559,6 +602,18 @@ do
 done
 
 
+#generate coverage information view for gstore
+cd ${gstore}
+str="lcov"
+for info in `ls COVERAGE/*.info`
+do
+	#info=${info##*/}
+	str="${str}"" -a ${info}"
+done
+str="${str}"" -o COVERAGE/gstore.info"
+`${str}`
+lcov --remove COVERAGE/gstore.info 'Server/*' 'Main/*' 'Parser/*'
+genhtml --output-directory COVERAGE --frames --show-details COVERAGE/gstore.info
 
 echo "this is the end of full test!"
 echo "please visit the result.log/, time.log/ and load.log/"

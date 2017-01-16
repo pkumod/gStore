@@ -5,6 +5,14 @@
 
 #to use gprof to analyse efficience of the program:
 #http://blog.chinaunix.net/uid-25194149-id-3215487.html
+
+#to use gcov and lcov
+#Notice that optimization should not be used here
+#http://blog.163.com/bobile45@126/blog/static/96061992201382025729313/
+#gcov -a main.cpp
+#lcov --directory .   --capture --output-file dig.info 
+#genhtml --output-directory . --frames --show-details dig.info 
+
 #to use doxygen+graphviz+htmlhelp to generate document from source code:
 #http://www.doxygen.nl/
 #(also include good comments norm)
@@ -21,8 +29,15 @@ CC = g++
 #NOTICE: -O2 is recommended, while -O3 is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
+#CFLAGS = -c -Wall -g #-fprofile-arcs -ftest-coverage #-pg
+#EXEFLAG = -g #-fprofile-arcs -ftest-coverage #-pg
+#-coverage
 CFLAGS = -c -Wall -O2
 EXEFLAG = -O2
+
+#add -lreadline -ltermcap if using readline or objs contain readline
+library = -ltermcap -lreadline -L./lib -lantlr -lgcov
+def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 
 # paths
 
@@ -38,11 +53,11 @@ api_java = api/java/lib/GstoreJavaAPI.jar
 
 # objects
 
-sstreeobj = $(objdir)Tree.o $(objdir)Storage.o $(objdir)Node.o $(objdir)IntlNode.o $(objdir)LeafNode.o $(objdir)Heap.o 
+#sstreeobj = $(objdir)Tree.o $(objdir)Storage.o $(objdir)Node.o $(objdir)IntlNode.o $(objdir)LeafNode.o $(objdir)Heap.o 
 sitreeobj = $(objdir)SITree.o $(objdir)SIStorage.o $(objdir)SINode.o $(objdir)SIIntlNode.o $(objdir)SILeafNode.o $(objdir)SIHeap.o 
 istreeobj = $(objdir)ISTree.o $(objdir)ISStorage.o $(objdir)ISNode.o $(objdir)ISIntlNode.o $(objdir)ISLeafNode.o $(objdir)ISHeap.o 
 
-kvstoreobj = $(objdir)KVstore.o $(sstreeobj) $(sitreeobj) $(istreeobj)
+kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) #$(sstreeobj)
 
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o
 
@@ -68,12 +83,9 @@ objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj)
 	 
 inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include 
 
-#add -lreadline -ltermcap if using readline or objs contain readline
-library = -ltermcap -lreadline -L./lib -lantlr 
-def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 
 #gtest
-all: $(exedir)gload $(exedir)gserver $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub
+all: $(exedir)gbuild $(exedir)gserver $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub
 
 test_index: test_index.cpp
 	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library)
@@ -81,8 +93,8 @@ test_index: test_index.cpp
 #executables begin
 
 #NOTICE:not include g*.o in objfile due to multiple definitions of main()
-$(exedir)gload: $(lib_antlr) $(objdir)gload.o $(objfile) 
-	$(CC) $(EXEFLAG) -o $(exedir)gload $(objdir)gload.o $(objfile) $(library)
+$(exedir)gbuild: $(lib_antlr) $(objdir)gbuild.o $(objfile) 
+	$(CC) $(EXEFLAG) -o $(exedir)gbuild $(objdir)gbuild.o $(objfile) $(library)
 
 $(exedir)gquery: $(lib_antlr) $(objdir)gquery.o $(objfile) 
 	$(CC) $(EXEFLAG) -o $(exedir)gquery $(objdir)gquery.o $(objfile) $(library)
@@ -101,20 +113,20 @@ $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
 
 #objects in Main/ begin
 
-$(objdir)gload.o: Main/gload.cpp Database/Database.h Util/Util.h
-	$(CC) $(CFLAGS) Main/gload.cpp $(inc) -o $(objdir)gload.o 
+$(objdir)gbuild.o: Main/gbuild.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gbuild.cpp $(inc) -o $(objdir)gbuild.o 
 	
-$(objdir)gquery.o: Main/gquery.cpp Database/Database.h Util/Util.h
+$(objdir)gquery.o: Main/gquery.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gquery.cpp $(inc) -o $(objdir)gquery.o  #-DREADLINE_ON
 	#add -DREADLINE_ON if using readline
 
-$(objdir)gserver.o: Main/gserver.cpp Server/Server.h Util/Util.h
+$(objdir)gserver.o: Main/gserver.cpp Server/Server.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gserver.cpp $(inc) -o $(objdir)gserver.o
 
-$(objdir)gclient.o: Main/gclient.cpp Server/Client.h Util/Util.h
+$(objdir)gclient.o: Main/gclient.cpp Server/Client.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gclient.cpp $(inc) -o $(objdir)gclient.o #-DREADLINE_ON
 
-$(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/cpp/src/GstoreConnector.h
+$(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/cpp/src/GstoreConnector.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gconsole.cpp $(inc) -o $(objdir)gconsole.o -I./api/cpp/src/ #-DREADLINE_ON
 
 #objects in Main/ end
@@ -123,63 +135,63 @@ $(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/cpp/s
 #objects in kvstore/ begin
 
 #objects in sstree/ begin
-$(objdir)Tree.o: KVstore/SSTree/Tree.cpp KVstore/SSTree/Tree.h $(objdir)Stream.o
-	$(CC) $(CFLAGS) KVstore/SSTree/Tree.cpp -o $(objdir)Tree.o
+#$(objdir)Tree.o: KVstore/SSTree/Tree.cpp KVstore/SSTree/Tree.h $(objdir)Stream.o
+	#$(CC) $(CFLAGS) KVstore/SSTree/Tree.cpp -o $(objdir)Tree.o
 
-$(objdir)Storage.o: KVstore/SSTree/storage/Storage.cpp KVstore/SSTree/storage/Storage.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/SSTree/storage/Storage.cpp -o $(objdir)Storage.o $(def64IO)
+#$(objdir)Storage.o: KVstore/SSTree/storage/Storage.cpp KVstore/SSTree/storage/Storage.h $(objdir)Util.o
+	#$(CC) $(CFLAGS) KVstore/SSTree/storage/Storage.cpp -o $(objdir)Storage.o $(def64IO)
 
-$(objdir)Node.o: KVstore/SSTree/node/Node.cpp KVstore/SSTree/node/Node.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/SSTree/node/Node.cpp -o $(objdir)Node.o
+#$(objdir)Node.o: KVstore/SSTree/node/Node.cpp KVstore/SSTree/node/Node.h $(objdir)Util.o
+	#$(CC) $(CFLAGS) KVstore/SSTree/node/Node.cpp -o $(objdir)Node.o
 
-$(objdir)IntlNode.o: KVstore/SSTree/node/IntlNode.cpp KVstore/SSTree/node/IntlNode.h
-	$(CC) $(CFLAGS) KVstore/SSTree/node/IntlNode.cpp -o $(objdir)IntlNode.o
+#$(objdir)IntlNode.o: KVstore/SSTree/node/IntlNode.cpp KVstore/SSTree/node/IntlNode.h
+	#$(CC) $(CFLAGS) KVstore/SSTree/node/IntlNode.cpp -o $(objdir)IntlNode.o
 
-$(objdir)LeafNode.o: KVstore/SSTree/node/LeafNode.cpp KVstore/SSTree/node/LeafNode.h
-	$(CC) $(CFLAGS) KVstore/SSTree/node/LeafNode.cpp -o $(objdir)LeafNode.o
+#$(objdir)LeafNode.o: KVstore/SSTree/node/LeafNode.cpp KVstore/SSTree/node/LeafNode.h
+	#$(CC) $(CFLAGS) KVstore/SSTree/node/LeafNode.cpp -o $(objdir)LeafNode.o
 
-$(objdir)Heap.o: KVstore/SSTree/heap/Heap.cpp KVstore/SSTree/heap/Heap.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/SSTree/heap/Heap.cpp -o $(objdir)Heap.o
+#$(objdir)Heap.o: KVstore/SSTree/heap/Heap.cpp KVstore/SSTree/heap/Heap.h $(objdir)Util.o
+	#$(CC) $(CFLAGS) KVstore/SSTree/heap/Heap.cpp -o $(objdir)Heap.o
 #objects in sstree/ end
 
 #objects in sitree/ begin
-$(objdir)SITree.o: KVstore/SITree/Tree.cpp KVstore/SITree/Tree.h $(objdir)Stream.o
-	$(CC) $(CFLAGS) KVstore/SITree/Tree.cpp -o $(objdir)SITree.o
+$(objdir)SITree.o: KVstore/SITree/SITree.cpp KVstore/SITree/SITree.h $(objdir)Stream.o
+	$(CC) $(CFLAGS) KVstore/SITree/SITree.cpp -o $(objdir)SITree.o
 
-$(objdir)SIStorage.o: KVstore/SITree/storage/Storage.cpp KVstore/SITree/storage/Storage.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/SITree/storage/Storage.cpp -o $(objdir)SIStorage.o $(def64IO)
+$(objdir)SIStorage.o: KVstore/SITree/storage/SIStorage.cpp KVstore/SITree/storage/SIStorage.h $(objdir)Util.o
+	$(CC) $(CFLAGS) KVstore/SITree/storage/SIStorage.cpp -o $(objdir)SIStorage.o $(def64IO)
 
-$(objdir)SINode.o: KVstore/SITree/node/Node.cpp KVstore/SITree/node/Node.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/SITree/node/Node.cpp -o $(objdir)SINode.o
+$(objdir)SINode.o: KVstore/SITree/node/SINode.cpp KVstore/SITree/node/SINode.h $(objdir)Util.o
+	$(CC) $(CFLAGS) KVstore/SITree/node/SINode.cpp -o $(objdir)SINode.o
 
-$(objdir)SIIntlNode.o: KVstore/SITree/node/IntlNode.cpp KVstore/SITree/node/IntlNode.h
-	$(CC) $(CFLAGS) KVstore/SITree/node/IntlNode.cpp -o $(objdir)SIIntlNode.o
+$(objdir)SIIntlNode.o: KVstore/SITree/node/SIIntlNode.cpp KVstore/SITree/node/SIIntlNode.h
+	$(CC) $(CFLAGS) KVstore/SITree/node/SIIntlNode.cpp -o $(objdir)SIIntlNode.o
 
-$(objdir)SILeafNode.o: KVstore/SITree/node/LeafNode.cpp KVstore/SITree/node/LeafNode.h
-	$(CC) $(CFLAGS) KVstore/SITree/node/LeafNode.cpp -o $(objdir)SILeafNode.o
+$(objdir)SILeafNode.o: KVstore/SITree/node/SILeafNode.cpp KVstore/SITree/node/SILeafNode.h
+	$(CC) $(CFLAGS) KVstore/SITree/node/SILeafNode.cpp -o $(objdir)SILeafNode.o
 
-$(objdir)SIHeap.o: KVstore/SITree/heap/Heap.cpp KVstore/SITree/heap/Heap.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/SITree/heap/Heap.cpp -o $(objdir)SIHeap.o
+$(objdir)SIHeap.o: KVstore/SITree/heap/SIHeap.cpp KVstore/SITree/heap/SIHeap.h $(objdir)Util.o
+	$(CC) $(CFLAGS) KVstore/SITree/heap/SIHeap.cpp -o $(objdir)SIHeap.o
 #objects in sitree/ end
 
 #objects in istree/ begin
-$(objdir)ISTree.o: KVstore/ISTree/Tree.cpp KVstore/ISTree/Tree.h $(objdir)Stream.o
-	$(CC) $(CFLAGS) KVstore/ISTree/Tree.cpp -o $(objdir)ISTree.o
+$(objdir)ISTree.o: KVstore/ISTree/ISTree.cpp KVstore/ISTree/ISTree.h $(objdir)Stream.o
+	$(CC) $(CFLAGS) KVstore/ISTree/ISTree.cpp -o $(objdir)ISTree.o
 
-$(objdir)ISStorage.o: KVstore/ISTree/storage/Storage.cpp KVstore/ISTree/storage/Storage.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/ISTree/storage/Storage.cpp -o $(objdir)ISStorage.o $(def64IO)
+$(objdir)ISStorage.o: KVstore/ISTree/storage/ISStorage.cpp KVstore/ISTree/storage/ISStorage.h $(objdir)Util.o
+	$(CC) $(CFLAGS) KVstore/ISTree/storage/ISStorage.cpp -o $(objdir)ISStorage.o $(def64IO)
 
-$(objdir)ISNode.o: KVstore/ISTree/node/Node.cpp KVstore/ISTree/node/Node.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/ISTree/node/Node.cpp -o $(objdir)ISNode.o
+$(objdir)ISNode.o: KVstore/ISTree/node/ISNode.cpp KVstore/ISTree/node/ISNode.h $(objdir)Util.o
+	$(CC) $(CFLAGS) KVstore/ISTree/node/ISNode.cpp -o $(objdir)ISNode.o
 
-$(objdir)ISIntlNode.o: KVstore/ISTree/node/IntlNode.cpp KVstore/ISTree/node/IntlNode.h
-	$(CC) $(CFLAGS) KVstore/ISTree/node/IntlNode.cpp -o $(objdir)ISIntlNode.o
+$(objdir)ISIntlNode.o: KVstore/ISTree/node/ISIntlNode.cpp KVstore/ISTree/node/ISIntlNode.h
+	$(CC) $(CFLAGS) KVstore/ISTree/node/ISIntlNode.cpp -o $(objdir)ISIntlNode.o
 
-$(objdir)ISLeafNode.o: KVstore/ISTree/node/LeafNode.cpp KVstore/ISTree/node/LeafNode.h
-	$(CC) $(CFLAGS) KVstore/ISTree/node/LeafNode.cpp -o $(objdir)ISLeafNode.o
+$(objdir)ISLeafNode.o: KVstore/ISTree/node/ISLeafNode.cpp KVstore/ISTree/node/ISLeafNode.h
+	$(CC) $(CFLAGS) KVstore/ISTree/node/ISLeafNode.cpp -o $(objdir)ISLeafNode.o
 
-$(objdir)ISHeap.o: KVstore/ISTree/heap/Heap.cpp KVstore/ISTree/heap/Heap.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/ISTree/heap/Heap.cpp -o $(objdir)ISHeap.o
+$(objdir)ISHeap.o: KVstore/ISTree/heap/ISHeap.cpp KVstore/ISTree/heap/ISHeap.h $(objdir)Util.o
+	$(CC) $(CFLAGS) KVstore/ISTree/heap/ISHeap.cpp -o $(objdir)ISHeap.o
 #objects in istree/ end
 
 $(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h KVstore/Tree.h 
@@ -353,12 +365,13 @@ $(api_java):
 .PHONY: clean dist tarball api_example gtest sumlines
 
 clean:
+	rm -rf lib/libantlr.a
 	$(MAKE) -C api/cpp/src clean
 	$(MAKE) -C api/cpp/example clean
 	$(MAKE) -C api/java/src clean
 	$(MAKE) -C api/java/example clean
 	#$(MAKE) -C KVstore clean
-	rm -rf $(exedir)g* $(objdir)*.o
+	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver*
 	#rm -rf .project .cproject .settings   just for eclipse
 	#rm -rf cscope* just for vim
 
@@ -366,10 +379,11 @@ dist: clean
 	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db
 	rm -rf tools/libantlr3c-3.4 lib/libantlr.a Parser/Sparql*
 	rm -rf cscope* .cproject .settings tags
+	rm -rf *.info
 
 tarball:
-	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs test docs data makefile \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex
+	tar -czvf gStore.tar.gz api bin lib tools .debug .tmp .objs test docs data makefile \
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf StringIndex
 
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/cpp/example
@@ -402,4 +416,14 @@ tag:
 idx:
 	find `realpath .` -name "*.h" -o -name "*.c" -o -name "*.cpp" > cscope.files
 	cscope -bkq #-i cscope.files
+
+cover:
+	bash test/cover.sh
+
+fulltest:
+	#NOTICE:compile gstore with -O2 only
+	#setup new virtuoso and configure it
+	cp test/full_test.sh ~
+	cd ~
+	bash full_test.sh
 

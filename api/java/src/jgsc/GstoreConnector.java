@@ -144,35 +144,18 @@ public class GstoreConnector {
         return recv_msg.equals("drop database done.");
     }
 
-    public boolean stop() {
-        boolean connect_return = this.connect();
-        if (!connect_return) {
-            System.err.println("connect to server error. @GstoreConnector.stop");
-            return false;
-        }
-
-        String cmd = "stop";
-        boolean send_return = this.send(cmd);
-        if (!send_return) {
-            System.err.println("send stop command error. @GstoreConnector.stop");
-            return false;
-        }
-        String recv_msg = this.recv();
-
-        this.disconnect();
-        System.out.println(recv_msg);
-
-        return recv_msg.equals("server stopped.");
+    public String query(String _sparql) {
+        return this.query(_sparql, "/");
     }
 
-    public String query(String _sparql) {
+    public String query(String _sparql, String _output) {
         boolean connect_return = this.connect();
         if (!connect_return) {
             System.err.println("connect to server error. @GstoreConnector.query");
             return "connect to server error.";
         }
 
-        String cmd = "query " + _sparql;
+        String cmd = "query " + _output + ' ' + _sparql;
         boolean send_return = this.send(cmd);
         if (!send_return) {
             System.err.println("send query command error. @GstoreConnector.query");

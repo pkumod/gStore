@@ -241,6 +241,7 @@ public:
 	// check whether the i-th edge of _var is OUT edge
 	bool isOutEdge(int _var, int _i_th_edge)const;
 
+	bool isOneDegreeVar(string& _no_sense_var);
 	bool isOneDegreeNotJoinVar(std::string& _not_select_var);
 
 	// check whether _var may include some literal results

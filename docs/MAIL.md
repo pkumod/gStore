@@ -28,6 +28,8 @@
 
 - Libo Wang (Peking University) (Intern student)
 
+- Lin Hu (Peking University) (Intern student)
+
 - - -
 
 ## Alumni

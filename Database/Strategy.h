@@ -23,7 +23,7 @@ class Strategy
 {
 public:
 	Strategy();
-	Strategy(KVstore*, VSTree*);
+	Strategy(KVstore*, VSTree*, TNUM*);
 	~Strategy();
 	//select efficient strategy to do the sparql query
 	bool handle(SPARQLquery&, ResultFilter* _result_filter = NULL);
@@ -32,6 +32,7 @@ private:
 	int method;
 	KVstore* kvstore;
 	VSTree* vstree;
+	TNUM* pre2num;
 	void handler0(BasicQuery*, vector<int*>&, ResultFilter* _result_filter = NULL);
 	void handler1(BasicQuery*, vector<int*>&);
 	void handler2(BasicQuery*, vector<int*>&);

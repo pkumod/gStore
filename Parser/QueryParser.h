@@ -28,6 +28,7 @@ private:
 	void replacePrefix(std::string &str);
 	void parseSelectClause(pANTLR3_BASE_TREE node, QueryTree &querytree);
 	void parseSelectVar(pANTLR3_BASE_TREE node, QueryTree &querytree);
+	void parseSelectAggregateFunction(pANTLR3_BASE_TREE node, QueryTree &querytree);
 	void parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern);
 	void parsePattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern);
 	void parseOptionalOrMinus(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern);
