@@ -155,7 +155,7 @@ public class GstoreConnector {
             return "connect to server error.";
         }
 
-        String cmd = "query " + _output + ' ' + _sparql;
+        String cmd = "query " + _sparql;
         boolean send_return = this.send(cmd);
         if (!send_return) {
             System.err.println("send query command error. @GstoreConnector.query");

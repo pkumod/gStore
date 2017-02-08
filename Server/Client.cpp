@@ -176,6 +176,7 @@ void Client::run()
 			}
 
 			char* q;
+			//BETTER:get real path in server port?
 			if(isPath)
 			{
 				//TODO: support the soft links(or hard links)

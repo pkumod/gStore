@@ -62,6 +62,7 @@ Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
 		int total_num = (*iter)->getTotalVarNum();
 		int pre_varNum = (*iter)->getPreVarNum();
 
+		//TODO:if need to return pre var?
 		if ((*iter)->getTripleNum() == 1 && pre_varNum == 1)
 		{
 			Triple triple = (*iter)->getTriple(0);

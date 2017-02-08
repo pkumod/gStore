@@ -208,7 +208,7 @@ GstoreConnector::query(string _sparql, string _output)
 		return "connect to server error.";
 	}
 
-	string cmd = "query " + _output + ' ' + _sparql;
+	string cmd = "query " + _sparql;
 	bool send_return = this->socket.send(cmd);
 	if (!send_return)
 	{

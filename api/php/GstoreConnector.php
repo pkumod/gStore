@@ -64,7 +64,7 @@ class Connector {
         return $result;
     }
     public function query($sparql, $output = "/") {
-        $data = "query " . $output . " " . $sparql;
+        $data = "query " . $sparql;
         self::send($data);
         $result = self::recv();
         return $result;

@@ -19,6 +19,7 @@ int main(int argc, char * argv[])
     // build a new database by a RDF file.
     // note that the relative path is related to gserver.
     gc.build("LUBM10.db", "data/LUBM_10.n3");
+    gc.load("LUBM10.db");
 
     // then you can execute SPARQL query on this database.
     std::string sparql = "select ?x where \

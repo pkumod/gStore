@@ -382,8 +382,8 @@ dist: clean
 	rm -rf *.info
 
 tarball:
-	tar -czvf gStore.tar.gz api bin lib tools .debug .tmp .objs test docs data makefile \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf StringIndex
+	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs test docs data makefile \
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex
 
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/cpp/example

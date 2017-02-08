@@ -148,9 +148,8 @@ Server::listen()
 		}
 		case CMD_QUERY:
 		{
-			string output = operation.getParameter(0);
-			string query = operation.getParameter(1);
-			this->query(query, output, ret_msg);
+			string query = operation.getParameter(0);
+			this->query(query, ret_msg);
 			break;
 		}
 		case CMD_SHOW:
@@ -248,7 +247,7 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 	else if (cmd == "query")
 	{
 		_ret_oprt.setCommand(CMD_QUERY);
-		para_cnt = 2;
+		para_cnt = 1;
 	}
 	else if (cmd == "show")
 	{
@@ -442,35 +441,20 @@ Server::insertTriple(std::string _db_name, std::string _ac_name, std::string _rd
 }
 
 bool
-Server::query(const string _query, const string _output, string& _ret_msg)
+Server::query(const string _query, string& _ret_msg)
 {
+	cout<<"Server query()"<<endl;
+	cout<<_query<<endl;
+	
 	if (this->database == NULL)
 	{
 		_ret_msg = "database has not been loaded.";
 		return false;
 	}
 
-	FILE* output;
-	if (_output != "/") {
-		regex_t reg;
-		char pattern[] = "^[a-zA-Z0-9_\\.]+$";
-		regcomp(&reg, pattern, REG_EXTENDED | REG_NOSUB);
-		regmatch_t pm[1];
-		int status = regexec(&reg, _output.c_str(), 1, pm, 0);
-		regfree(&reg);
-		if (status == REG_NOMATCH) {
-			_ret_msg = "invalid output path.";
-			return false;
-		}
-		if (!Util::dir_exist("server_results")) {
-			Util::create_dir("server_results");
-		}
-		string path = "server_results/" + _output;
-		output = fopen(path.c_str(), "w");
-	}
-	else {
-		output = stdout;
-	}
+	FILE* output = stdout;
+	string path = "logs/gserver_query.log";
+	output = fopen(path.c_str(), "w");
 
 	ResultSet res_set;
 	bool flag = this->database->query(_query, res_set, output);
@@ -520,3 +504,4 @@ bool Server::stopServer(std::string& _ret_msg) {
 	_ret_msg = "server stopped.";
 	return true;
 }
+

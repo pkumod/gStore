@@ -491,6 +491,8 @@ Join::copyToResult()
 	int pre_var_num = this->basic_query->getPreVarNum();
 
 	//NOTICE+DEBUG:set right selected_pre_var_num here
+	//WARN:currently, prepare all pre var results, but not fetched by getFinalResult
+	//BETTER:no need to prepare all and we should fetch
 	int selected_pre_var_num = pre_var_num;
 	if (this->id_pos != core_var_num + selected_pre_var_num)
 	{

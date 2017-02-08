@@ -9,6 +9,8 @@ from GstoreConnector import GstoreConnector
 if __name__ == '__main__':
     gc = GstoreConnector('127.0.0.1', 3305)
     gc.build('LUBM10.db', 'data/LUBM_10.n3')
+    gc.load('LUBM10.db')
+
     sparql = '''select ?x where {
         ?x    <rdf:type>    <ub:UndergraduateStudent>.
         ?y    <ub:name> <Course1>.
