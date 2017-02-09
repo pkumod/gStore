@@ -76,13 +76,18 @@ class GstoreConnector:
                 cmd = f.__name__
             if f.__name__ == 'query':
                 #DEBUG:only sparql query should be used, output should not be included in parameters
-                params = ' '.join([args[1], args[0]])
+                print "the first argument:"
+                print args[0]
+                # print args[1]
+                params = ' '.join([args[0]])
             else:
                 params = ' '.join(map(lambda x:str(x), args))
             full_cmd = ' '.join([
                 cmd,
                 params
             ]).strip()
+            print "command to send to server:"
+            print full_cmd
 
             if not self._send(full_cmd):
                 print 'send %s command error. @GstoreConnector.build' % cmd
