@@ -14,17 +14,17 @@ What we have done is enough to bring you much convenience to use gStore, just en
 
 - - -
 
-#### 1. gload
+#### 1. gbuild
 
-gload is used to build a new database from a RDF triple format file.
+gbuild is used to build a new database from a RDF triple format file.
 
-`# bin/gload db_name rdf_triple_file_path`
+`# bin/gbuild db_name rdf_triple_file_path`
 
 For example, we build a database from LUBM_10.n3 which can be found in example folder.
 
-    [bookug@localhost gStore]$ bin/gload LUBM10.db ./data/LUBM_10.n3 
+    [bookug@localhost gStore]$ bin/gbuild LUBM10.db ./data/LUBM_10.n3 
     2015年05月21日 星期四 20时58分21秒  -0.484698 seconds
-    gload...
+    gbuild...
     argc: 3 DB_store:db_LUBM10      RDF_data: ./data/LUBM_10.n3  
     begin encode RDF from : ./data/LUBM_10.n3 ...
 

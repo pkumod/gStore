@@ -73,7 +73,7 @@
 %set the font type
 %http://blog.csdn.net/plain_jane/article/details/6189524
 %http://www.tuicool.com/articles/aqYZRz
-\setCJKmainfont{AR PL UMing CN}
+%\setCJKmainfont{AR PL UMing CN}
 \usepackage{cite}
 \usepackage{etoolbox}
 \usepackage{float}
@@ -316,7 +316,7 @@ Gstore系统（也称作gStore）是一个用于管理大型图结构数据的�
 	在你的终端输入\texttt{git\ clone\ git@github.com:Caesar11/gStore.git}或使用git GUI获得
 \end{itemize}
 
-之后你需要对这个项目进行编译，只要在gStore 根目录下输入\texttt{make}，所有可执行程序就可以运行了。要运行gStore，请输入\texttt{bin/gload\ database\_name\ dataset\_path}生成一个你自己命名的数据库。你可以用\texttt{bin/gquery\ database\_name}这一命令查询一个已存在的数据库。此外，\texttt{bin/gconsole}是一个非常好的工具，提供了你使用gStore需要的所有操作。
+之后你需要对这个项目进行编译，只要在gStore 根目录下输入\texttt{make}，所有可执行程序就可以运行了。要运行gStore，请输入\texttt{bin/gbuild\ database\_name\ dataset\_path}生成一个你自己命名的数据库。你可以用\texttt{bin/gquery\ database\_name}这一命令查询一个已存在的数据库。此外，\texttt{bin/gconsole}是一个非常好的工具，提供了你使用gStore需要的所有操作。
 请注意，所有的命令都应该在gStore根目录下输入。
 \emph{你可以在本文档的第04章\hyperref[chapter04]{【如何使用】}一章中找到详细描述。}
 
@@ -448,7 +448,7 @@ gStore的源代码遵循BSD开源协议。你可以使用gStore、报告建议�
 
 \hyperdef{}{chapter03}{\subsection{第03章：安装指南}\label{chapter03}}
 
-gStore是一个绿色软件，你只需要用一个指令对它进行编译。请在gStore根目录下运行\texttt{make}来编译gStore代码，连接ANTLR 库，并生成可执行的``gload''、``gquery''、``gserver''、``gclient''、``gconsole''。 另外，gStore的api也在此时生成。
+gStore是一个绿色软件，你只需要用一个指令对它进行编译。请在gStore根目录下运行\texttt{make}来编译gStore代码，连接ANTLR 库，并生成可执行的``gbuild''、``gquery''、``gserver''、``gclient''、``gconsole''。 另外，gStore的api也在此时生成。
 
 如果你想使用gStore的API样例，请运行\texttt{make\ APIexample}编译C++ API和Java API的样例代码。关于API的更多细节，请参阅\hyperref[chapter05]{【API】}一章。
 
@@ -544,17 +544,17 @@ gstore>quit
 
 我们已经完成的工作足以让你便捷地使用gStore，尽情享受吧！
 
-\hyperdef{}{1-gload}{\paragraph{1. gload}\label{1-gload}}
+\hyperdef{}{1-gbuild}{\paragraph{1. gbuild}\label{1-gbuild}}
 
-gload用于由RDF三元格式文件生成一个新的数据库。
+gbuild用于由RDF三元格式文件生成一个新的数据库。
 
-\texttt{bin/gload\ db\_name\ rdf\_triple\_file\_path}
+\texttt{bin/gbuild\ db\_name\ rdf\_triple\_file\_path}
 
 例如，我们从example文件夹下的LUBM\_10.n3生成数据库。
 
 \begin{verbatim}
-[bookug@localhost gStore]$ bin/gload LUBM10.db ./data/LUBM_10.n3
-gload...
+[bookug@localhost gStore]$ bin/gbuild LUBM10.db ./data/LUBM_10.n3
+gbuild...
 argc: 3 DB_store:db_LUBM10      RDF_data: ./data/LUBM_10.n3
 begin encode RDF from : ./data/LUBM_10.n3 ...
 \end{verbatim}
@@ -631,7 +631,7 @@ final result is :
 gserver是一个后台程序。会在使用gclient或API连接gStore时运行。它通过套接字与客户端通信。
 
 \begin{verbatim}
-[bookug@localhost gStore]$ bin/gserver
+[bookug@localhost gStore]$ bin/gserver -s
 port=3305
 Wait for input...
 \end{verbatim}
@@ -639,12 +639,36 @@ Wait for input...
 你也可以为监听分配一个定制端口。
 
 \begin{verbatim}
-[bookug@localhost gStore]$ bin/gserver 3307
+[bookug@localhost gStore]$ bin/gserver -p 3307
 port=3307
 Wait for input...
 \end{verbatim}
 
+如果要停止gserver服务，请输入：
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gserver -t
+\end{verbatim}
+
 注意：gserver不支持多线程。如果你同时在多个终端启动gclient，gserver会崩溃。
+
+通过以下命令可查看gserver的更多参数选项：
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gserver
+gStore Server (gServer)
+
+Usage:  bin/gserver [option]
+
+Options:
+		-h,--help               Display this message.
+		-s,--start              Start gServer.
+		-t,--stop               Stop gServer.
+		-r,--restart            Restart gServer.
+		-p,--port [PORT=3305]   Change connection port configuration, takes effect after restart if gServer running.
+		-P,--printport          Display current connection port configuration.
+		-k,--kill               Kill existing gServer process(es), ONLY use when out of normal procedures.
+\end{verbatim}
 
 \hyperdef{}{4-gclient}{\paragraph{4. gclient}\label{4-gclient}}
 
@@ -692,6 +716,8 @@ gsql>
 	\texttt{unload\ db\_name} 卸载一个数据库，但不会从磁盘上删除它，你可以再次载入
 	\item
 	\texttt{sparql\ "query\_string"} 用一个SPARQL查询字符串（在``''内）查询当前数据库
+	\item
+	\texttt{sparql\ query\_path} 用一个SPARQL查询文件的路径（不在``''内）查询当前数据库
 	\item
 	\texttt{show} 显示当前数据库的名称
 \end{itemize}
@@ -1503,7 +1529,7 @@ switch ($format) {
 	
 	\begin{itemize}
 		\item
-		gload.cpp （导入一个RDF数据集）
+		gbuild.cpp （导入一个RDF数据集）
 		\item
 		gquery.cpp （查询一个数据库）
 		\item
@@ -1635,7 +1661,7 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 \quad\\
 一些文件的名称是中文，你不需要担心这个问题。
 
-\hyperdef{}{in-centos7-if-the-watdivdba-generated-database-after-gload-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}{\paragraph{\texorpdfstring{In centos7, if the watdiv.db(a generated database after gload) is copied or compressed/uncompressed, the size of watdiv.db will be different(generally increasing) if using \texttt{du\ -h} command to check?}{In centos7, if the watdiv.db(a generated database after gload) is copied or compressed/uncompressed, the size of watdiv.db will be different(generally increasing) if using du -h command to check?}}\label{in-centos7-if-the-watdivdba-generated-database-after-gload-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}}
+\hyperdef{}{in-centos7-if-the-watdivdba-generated-database-after-gbuild-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}{\paragraph{\texorpdfstring{In centos7, if the watdiv.db(a generated database after gbuild) is copied or compressed/uncompressed, the size of watdiv.db will be different(generally increasing) if using \texttt{du\ -h} command to check?}{In centos7, if the watdiv.db(a generated database after gbuild) is copied or compressed/uncompressed, the size of watdiv.db will be different(generally increasing) if using du -h command to check?}}\label{in-centos7-if-the-watdivdba-generated-database-after-gbuild-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}}
 \quad\\
 是watdiv/kv\_store/中B+-树大小的改变导致整个数据库大小的改变。原因是，在storage/Storage.cpp中，很多操作用fseek移动文件指针。大家都知道，文件是以块的形式组织的，如果我们请求新的块，文件指针可能移动到当前文件外（gStore中的文件操作都用C实现，没有报告错误），然后内容将写入新的位置！
 
@@ -1758,7 +1784,7 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 
 我们完成了B+树的版本，取代了旧版本。
 
-在测试了DBpedia，LUBM和WatDiv benchmark 后，我们得出结论，新的B树比旧版本更高效。对于相同的三元组文件，新版本在执行gload指令上花费的时间更少。
+在测试了DBpedia，LUBM和WatDiv benchmark 后，我们得出结论，新的B树比旧版本更高效。对于相同的三元组文件，新版本在执行gbuild指令上花费的时间更少。
 
 另外，新版本可以有效地处理长文本客体，三元组的客体长度超过4096字节在旧版本的B树上会导致频繁的无效分隔操作。
 

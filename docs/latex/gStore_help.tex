@@ -171,7 +171,7 @@ This system is really user-friendly and you can pick it up in several minutes. R
   terminal or use git GUI to acquire it
 \end{itemize}
 
-Then you need to compile the project, just type \texttt{make} in the gStore root directory, and all executables will be ok. To run gStore, please type \texttt{bin/gload\ database\_name\ dataset\_path} to build a database named by yourself. And you can use \texttt{bin/gquery\ database\_name} command to query a existing database. What is more, \texttt{bin/gconsole} is a wonderful tool designed for you, providing all operations you need to use gStore.
+Then you need to compile the project, just type \texttt{make} in the gStore root directory, and all executables will be ok. To run gStore, please type \texttt{bin/gbuild\ database\_name\ dataset\_path} to build a database named by yourself. And you can use \texttt{bin/gquery\ database\_name} command to query a existing database. What is more, \texttt{bin/gconsole} is a wonderful tool designed for you, providing all operations you need to use gStore.
 Notice that all commands should be typed in the root directory of gStore.
 
 \emph{A detailed description can be found at Chapter 04
@@ -310,7 +310,7 @@ The gStore source code is available as open-source code under the BSD license. Y
 
 \hyperdef{}{chapter03}{\subsection{Chapter 03: Install Guide}\label{chapter03}}
 
-gStore is a green software, and you just need to compile it with one command. Please run \texttt{make} in the gStore root directory to compile the gStore code, link the ANTLR lib, and build executable ``gload'', ``gquery'', ``gserver'', ``gclient'', ``gconsole''. What is more, the api of gStore is also built now.
+gStore is a green software, and you just need to compile it with one command. Please run \texttt{make} in the gStore root directory to compile the gStore code, link the ANTLR lib, and build executable ``gbuild'', ``gquery'', ``gserver'', ``gclient'', ``gconsole''. What is more, the api of gStore is also built now.
 
 If you want to use API examples of gStore, please run \texttt{make\ APIexample} to compile example codes for both C++ API and Java API. For details of API, please visit \hyperref[chapter05]{API} chapter.
 
@@ -407,18 +407,18 @@ You can use \texttt{help} or \texttt{?} either in native mode or remote mode to 
 
 What we have done is enough to bring you much convenience to use gStore, just enjoy it!
 
-\hyperdef{}{1-gload}{\paragraph{1. gload}\label{1-gload}}
+\hyperdef{}{1-gbuild}{\paragraph{1. gbuild}\label{1-gbuild}}
 
-gload is used to build a new database from a RDF triple format file.
+gbuild is used to build a new database from a RDF triple format file.
 
-\texttt{bin/gload\ db\_name\ rdf\_triple\_file\_path}
+\texttt{bin/gbuild\ db\_name\ rdf\_triple\_file\_path}
 
 For example, we build a database from LUBM\_10.n3 which can be found in
 example folder.
 
 \begin{verbatim}
-[bookug@localhost gStore]$ bin/gload LUBM10.db ./data/LUBM_10.n3
-gload...
+[bookug@localhost gStore]$ bin/gbuild LUBM10.db ./data/LUBM_10.n3
+gbuild...
 argc: 3 DB_store:db_LUBM10      RDF_data: ./data/LUBM_10.n3
 begin encode RDF from : ./data/LUBM_10.n3 ...
 \end{verbatim}
@@ -509,7 +509,7 @@ gserver is a daemon. It should be launched first when accessing gStore
 by gclient or API. It communicates with client through socket.
 
 \begin{verbatim}
-[bookug@localhost gStore]$ bin/gserver
+[bookug@localhost gStore]$ bin/gserver -s
 port=3305
 Wait for input...
 \end{verbatim}
@@ -517,14 +517,36 @@ Wait for input...
 You can also assign a custom port for listening.
 
 \begin{verbatim}
-[bookug@localhost gStore]$ bin/gserver 3307
+[bookug@localhost gStore]$ bin/gserver -p 3307
 port=3307
 Wait for input...
+\end{verbatim}
+
+To stop the server, type:
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gserver -t
 \end{verbatim}
 
 Notice: Multiple threads are not supported by gserver. If you start up
 gclient in more than one terminal in the same time, gserver will go
 down.
+
+For more options of gserver command, you can use this way:
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gserver
+gStore Server (gServer)
+
+Usage:  bin/gserver [option]
+
+Options:
+		-h,--help               Display this message.
+		-s,--start              Start gServer.
+		-t,--stop               Stop gServer.
+		-r,--restart            Restart gServer.
+		-p,--port [PORT=3305]   Change connection port configuration, takes effect after restart if gServer running.
+		-P,--printport          Display current connection port configuration.
+		-k,--kill               Kill existing gServer process(es), ONLY use when out of normal procedures.
+\end{verbatim}
 
 \hyperdef{}{4-gclient}{\paragraph{4. gclient}\label{4-gclient}}
 
@@ -575,6 +597,9 @@ We can use these following commands now:
 \item
   \texttt{sparql\ "query\_string"} query the current database with a
   SPARQL query string(quoted by ``'')
+\item
+\texttt{sparql\ query\_path} query the current database with a
+SPARQL query file path(not quoted by ``'')
 \item
   \texttt{show} displays the name of the current loaded database
 \end{itemize}
@@ -1467,7 +1492,7 @@ GstoreConnector.php should be called like below:
 
   \begin{itemize}
   \item
-    gload.cpp (import a RDF dataset)
+    gbuild.cpp (import a RDF dataset)
   \item
     gquery.cpp (query a database)
   \item
@@ -1700,11 +1725,11 @@ gStore?}\label{why-sometimes-strange-characters-appear-when-i-use-gstore}}
 There are some documents's names are in Chinese, and you don't need to
 worry about it.
 
-\hyperdef{}{in-centos7-if-the-watdivdba-generated-database-after-gload-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}{\paragraph{\texorpdfstring{In
-centos7, if the watdiv.db(a generated database after gload) is copied or
+\hyperdef{}{in-centos7-if-the-watdivdba-generated-database-after-gbuild-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}{\paragraph{\texorpdfstring{In
+centos7, if the watdiv.db(a generated database after gbuild) is copied or
 compressed/uncompressed, the size of watdiv.db will be
 different(generally increasing) if using \texttt{du\ -h} command to
-check?}{In centos7, if the watdiv.db(a generated database after gload) is copied or compressed/uncompressed, the size of watdiv.db will be different(generally increasing) if using du -h command to check?}}\label{in-centos7-if-the-watdivdba-generated-database-after-gload-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}}
+check?}{In centos7, if the watdiv.db(a generated database after gbuild) is copied or compressed/uncompressed, the size of watdiv.db will be different(generally increasing) if using du -h command to check?}}\label{in-centos7-if-the-watdivdba-generated-database-after-gbuild-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}}
 \quad\\
 It's the change of B+-trees' size in watdiv/kv\_store/ that causes the
 change of the whole database's size. The reason is that in
@@ -1910,7 +1935,7 @@ We implement the version of B+Tree, and replace the old one.
 
 After testing on DBpedia, LUBM, and WatDiv benchmark, we conclude that
 the new BTree performs more efficient than the old version. For the
-same triple file, the new version spends shorter time on executing gload
+same triple file, the new version spends shorter time on executing gbuild
 command.
 
 Besides, the new version can handle the long literal objects
