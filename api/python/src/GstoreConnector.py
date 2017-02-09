@@ -76,7 +76,7 @@ class GstoreConnector:
                 cmd = f.__name__
             if f.__name__ == 'query':
                 #DEBUG:only sparql query should be used, output should not be included in parameters
-                params = ' '.join([args[1], args[0])
+                params = ' '.join([args[1], args[0]])
             else:
                 params = ' '.join(map(lambda x:str(x), args))
             full_cmd = ' '.join([
