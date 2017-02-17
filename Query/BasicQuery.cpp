@@ -141,20 +141,33 @@ BasicQuery::getVarDegree(int _var)
 
 //get the index of edge between two var ids
 //-1 if no edge, the index is based on _id0
-int 
+vector<int>
 BasicQuery::getEdgeIndex(int _id0, int _id)
 {
 	//BETTER:this a brute-force method, using mapping if needed
 	//(though the query graph is small generally)
 	//is there any way to pre-compute all EdgeIndex relationship
+	
+	vector<int> result;
 	for(int i = 0; i < this->var_degree[_id0]; ++i)
 	{
 		if(this->edge_nei_id[_id0][i] == _id)
 		{
-			return i;
+			//NOTICE:maybe exist parallel edges i.e. 
+			//?s ?p1 ?o.  ?s ?p2 ?o.
+			//?s p1 ?o. ?s p2 ?o.
+			//return i;
+
+			//if(this->getEdgePreID(_id0, i) < 0)
+			//{
+				//continue;
+			//}
+			result.push_back(i);
 		}
 	}
-	return -1;
+	
+	//return -1;
+	return result;
 }
 
 //get the candidate list of _var in the query graph 
@@ -274,7 +287,10 @@ BasicQuery::isFreeLiteralVariable(int _var)
     int neighbor_num = this->var_degree[_var];
     for(int i = 0; i < neighbor_num; i ++)
     {
-        if(this->edge_nei_id[_var][i] == -1)
+		int triple_id = this->getEdgeID(_var, i);
+		Triple triple = this->getTriple(triple_id);
+		//NOTICE: the neighbor can also be a var whose id is -1
+        if(triple.subject[0] != '?')
         {
             return false;
         }
@@ -379,13 +395,8 @@ bool
 BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_var)
 {
 	//WARN:?p is ok to exist in both s/o or p position
-	//return only the entity ID, not the predicate ID
+	//TODO:return only the entity ID, not the predicate ID?
 	//so the _query_var mix all the variables, not considering the order
-	//
-	//TODO:the third parameter should be selected predicate variables
-	//(ordered, and merged with selected s/o in upper level)
-	//we append the candidates for selected pre_var to original select_var_num columns
-	//TODO:add pre var, assign name and select=true (not disturb the order between pres)
     cout << "IN buildBasicSignature" << endl;
     //this->initial();
     //cout << "after init" << endl;
@@ -395,20 +406,58 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
     // map id 2 var_name : this->var_name[]
     // map var_name 2 id : this->var_str2id
 
-    this->select_var_num = _query_var.size();
+	//find all predicate vars
+    for(unsigned i = 0; i < this->triple_vt.size(); i ++)
+    {
+        string& pre = this->triple_vt[i].predicate;
+		if(pre[0] != '?')
+		{
+			continue;
+		}
+
+        string& sub = this->triple_vt[i].subject;
+        string& obj = this->triple_vt[i].object;
+		int pid = this->getPreVarID(pre);
+		if(pid == -1)
+		{
+			this->pre_var.push_back(PreVar(pre));
+			pid = this->pre_var.size() - 1;
+		}
+		//map<int, PreVar>::iterator it = this->pre_var.find(pid);
+		//it->second.triples.push_back(i);
+		this->pre_var[pid].triples.push_back(i);
+	}
+
+	//NOTICE: we append the candidates for selected pre_var to original select_var_num columns
+    this->select_var_num = this->selected_pre_var_num = 0;
+	cout<<"now to check the query var list order:"<<endl;
+	for(unsigned i = 0; i < _query_var.size(); ++i)
+	{
+		//NOTICE:not place pre var in join
+		string var = _query_var[i];
+		cout<<i<<" "<<var<<endl;
+		int pid = this->getPreVarID(var);
+		if(pid == -1) // not pre var
+		{
+			this->selected_var_set.insert(var);
+			//assign id for this var
+			int id = this->select_var_num;
+			this->selected_var_position[id] = i;
+			this->var_str2id[var] = id;
+			this->var_name[id] = var;
+			this->select_var_num++;
+			continue;
+		}
+		this->selected_var_position[-1-pid] = i;
+		this->pre_var[pid].selected = true;
+		this->selected_pre_var_num++;
+	}
 
 #ifdef DEBUG
     stringstream _ss;
     _ss << "select_var_num=" << this->select_var_num << endl;
     Util::logging(_ss.str());
 #endif
-    for(int i = 0; i < (this->select_var_num); ++i)
-    {
-		//NOTICE:not place pre var in join
-        string _var = _query_var[i];
-        this->var_str2id[_var] = i;
-        this->var_name[i] = _var;
-    }
 
     cout << "select variables: ";
     for(unsigned i = 0; i < this->var_str2id.size(); ++i)
@@ -416,6 +465,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         cout << "[" << this->var_name[i] << ", " << i << " " << this->var_str2id[this->var_name[i]] << "]\t";
     }
     cout << endl;
+	//BETTER:ouput the selected pre vars
 
 	this->total_var_num = this->select_var_num;
     if(this->encode_method == BasicQuery::SELECT_VAR)
@@ -444,20 +494,10 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         string& sub = this->triple_vt[i].subject;
         string& pre = this->triple_vt[i].predicate;
         string& obj = this->triple_vt[i].object;
+
 		int pre_id = -1;    //not found
 		if(pre[0] == '?')   //pre var
 		{
-			int pid = this->getPreVarID(pre);
-			if(pid == -1)
-			{
-				//pid = this->select_var_num + this->pre_var.size();
-				//this->pre_var[pid] = PreVar(pre);
-				this->pre_var.push_back(PreVar(pre));
-				pid = this->pre_var.size() - 1;
-			}
-			//map<int, PreVar>::iterator it = this->pre_var.find(pid);
-			//it->second.triples.push_back(i);
-			this->pre_var[pid].triples.push_back(i);
 			pre_id = -2;   //mark that this is a pre var
 		}
 		else
@@ -469,18 +509,15 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 				_ss << "pre2id: " << pre << "=>" << pre_id << endl;
 				Util::logging(_ss.str());
 			}
-			if(pre_id == -1)
-			{
-				//TODO:end this query, otherwise maybe error later
-				cerr << "invalid query because the pre is not found: " << pre << endl;
-				//BETTER:this is too robust, not only one query, try return false
-				//exit(1);
-				return false;
-			}
 		}
+		if(pre_id == -1)
+		{
+			cout << "invalid query because the pre is not found: " << pre << endl;
+			return false;
+		}
+
         int sub_id = -1;
         int obj_id = -1;
-
         // -1 if not found, this means this subject is a constant
         map<string, int>::iterator _find_sub_itr = (this->var_str2id).find(sub);
         if(_find_sub_itr != this->var_str2id.end())
@@ -555,10 +592,108 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 	return true;
 }
 
+int 
+BasicQuery::getSelectedVarPosition(int _var)
+{
+	map<int, int>::iterator it = this->selected_var_position.find(_var);
+	if(it == this->selected_var_position.end())
+	{
+		return -1;
+	}
+	else
+	{
+		return it->second;
+	}
+}
+
+int 
+BasicQuery::getSelectedPreVarPosition(int _var)
+{
+	//change var to -1-var to avoid conflicting with normal var
+	map<int, int>::iterator it = this->selected_var_position.find(-1-_var);
+	if(it == this->selected_var_position.end())
+	{
+		return -1;
+	}
+	else
+	{
+		return it->second;
+	}
+}
+
+int 
+BasicQuery::getSelectedVarPosition(string _var)
+{
+	int id = this->getIDByVarName(_var);
+	if(id < 0)
+	{
+		return -1;
+	}
+	map<int, int>::iterator it = this->selected_var_position.find(id);
+	if(it == this->selected_var_position.end())
+	{
+		return -1;
+	}
+	else
+	{
+		return it->second;
+	}
+}
+
+int 
+BasicQuery::getSelectedPreVarPosition(string _var)
+{
+	int id = this->getPreVarID(_var);
+	if(id < 0)
+	{
+		return -1;
+	}
+	//change var to -1-var to avoid conflicting with normal var
+	map<int, int>::iterator it = this->selected_var_position.find(-1-id);
+	if(it == this->selected_var_position.end())
+	{
+		return -1;
+	}
+	else
+	{
+		return it->second;
+	}
+}
+
 bool
 BasicQuery::getEncodeBasicQueryResult() const
 {
 	return this->encode_result;
+}
+
+int
+BasicQuery::getIDByVarName(const string& _name)
+{
+	map<string,int>::iterator it = this->var_str2id.find(_name);
+	if(it != this->var_str2id.end())
+	{
+		return it->second;
+	}
+	else
+	{
+		//WARN:if return var_str2id[_name] directly, this will be 0
+		//maybe conflict with valid ID 0
+		return -1;
+	}
+}
+
+bool 
+BasicQuery::isVarSelected(const string& _name) const
+{
+	set<string>::iterator it = this->selected_var_set.find(_name);
+	if(it == this->selected_var_set.end())
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
 }
 
 int
@@ -589,27 +724,17 @@ BasicQuery::getPreVarByID(unsigned _id) const
 	else
 		return this->pre_var[0];
 }
-
-//int
-//BasicQuery::getIDByPreVarName(const string& _name) const
-//{
-	//return 0;
-//}
-
-int
-BasicQuery::getIDByVarName(const string& _name)
+unsigned 
+BasicQuery::getSelectedPreVarNum() const
 {
-	map<string,int>::iterator it = this->var_str2id.find(_name);
-	if(it != this->var_str2id.end())
-	{
-		return it->second;
-	}
-	else
-	{
-		//WARN:if return var_str2id[_name] directly, this will be 0
-		//maybe conflict with valid ID 0
-		return -1;
-	}
+	return this->selected_pre_var_num;
+}
+
+bool 
+BasicQuery::isPreVarSelected(unsigned _pid) const
+{
+	//BETTER:check if the pid is valid
+	return this->pre_var[_pid].selected;
 }
 
 void 
@@ -628,7 +753,6 @@ BasicQuery::getTriple(int _i_th_triple)
 void 
 BasicQuery::null_initial()
 {
-    this->option_vs.clear();
     this->triple_vt.clear();
     this->var_str2id.clear();
     this->var_degree = NULL;

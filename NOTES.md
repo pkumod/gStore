@@ -1,38 +1,95 @@
+# NOTICE
+
+一般在实践应用中不是单机，而是CS模式，因为API也是基于CS模式的。
+那么在CS模式中，可以禁用server端对query结果的输出，提升效率
+方式是控制Util/Util.h中OUTPUT_QUERY_RESULT宏的开启
+
+在使用gserver时，不能在数据库没有unload时再用gbuild或其他命令修改数据库，仅限于C/S模式
+
 # TODO
 
-gclient 不能正常使用
-gserver for multiple users, not load db for each connection, but get the db pointer
-assign the pointer to the user who require this db, and ensure that each db is just kept once in memory
+成组插删还没完全支持和测试，需要修改KVstore.cpp
 
-支持返回?p结果的查询
-辛雨非的插入时vstree bug和彭鹏的build时vstree bug
-vstree部分在build和insert时候的错误
-统计74上的8亿测试结果
-控制台命令如果使用方式不当，比如直接gbuild，应该输出提示信息示意该怎么操作
-数据库的多版本备份，动态删除
-保持连接而不是每次都用socket
-模仿海量图大作业，基于gStore开发一个社交应用，要求可以批量导入且实时查询
+gstore后续需要开发的地方：
+数据库连接池 保持连接而不是每次都用socket
+事务操作
+安全备份 数据库的多版本备份，动态删除
+多领域多库解决方案。
+分页查询
+
+任务分配：
+---
+JSON格式传输(陈佳棋)
 陈佳棋的任务：s和p对应同一个实体，应该先重命名，再过滤。还有一种情况是两者只是名字相同，实则并无关系
+---
+陈佳棋找人负责：
+模仿海量图大作业，基于gStore开发一个社交应用，要求可以批量导入且实时查询
+查询级别的缓存（测试时可将查询复制后再随机打乱）
+多查询优化
+---
+王力博：
+gserver for multiple users, not load db for each connection, but get the same db pointer
+assign the pointer to the user who require this db, and ensure that each db is just kept once in memory
+有什么办法去检测一个db是否存在呢？(首先要支持导入多个数据库)
+如果不存在  就新建一个  再进行查询  如果存在  就直接进行查询
+gserver-gclient if gclient quit(without unload), then restart, there maybe exist too many gserver process(so 3305 is occupied)
+or the reason maybe gserver still dealing with the previous job, then a new connection and a new job comes
+如何避免整个server崩溃或卡死，无论单个查询/建立等操作遇到任何问题
+---
+胡琳：
+彭鹏师兄的数据集bug
+优化谓词查询，谓词少而entity/literal多，所以先过滤得到谓词的解是一种可以考虑的策略
+以谓词为节点，以s/o为信息，来过滤得到谓词的结果
+---
+陈语嫣，李荆
+---
+张雨的任务：单起点单终点的正则表达式路径问题，如果是多起点多终点？
+下学期的任务：提取相关联的几个方向写论文
+将IRC聊天放到gstore文档上，freenode #gStore
+
+WARN：B+树删除时，向旁边兄弟借或者合并，要注意兄弟的定义，应该是同一父节点才对！
+考虑使用 sigmod2016 那篇图同构的论文方法，实现一套join
+但那个是基于路径的，BFS和索引连接的思想值得借用，可作为另外一套join方法
+@hulin
+---
+实现其他的join思路，比如基于过滤效果
+
+pthread写多线程
+
+如何在preFilter和join的开销之间做平衡
+preFilter中的限制条件是否过于严格
+
+寻找查询图的特征，分类做查询计划：
+先对于每个查询，确定各部分的开销比例
+
+fix the full_test:how to sum the db size right?
+for virtuoso, better to reset each time and the given configure file(need to reserver the temp logs)
+
+load过程先导入满足内存的内容，或者先来几轮搜索但不输出结果，避免开头的查询要读磁盘。vstree直接全导入内存？
+先完成合并测试，再测lubm500M和bsbm500M  -- 90 server
+
+两表拼接时多线程分块join
+jemalloc??
+vstree并行分块
+
+
+@lijing
+考虑出入度数，编码为1的个数？应该不用，在编码的邻居信息中能够得到体现。
+第二步编码应该更长，点和边对应着放在一起。按出入边分区，一步点，二步边分区和二步点。
+对一个节点保留其最长链信息没啥用，因为数据图基本是连通的，最长链就是图的最长链。
+多步编码不应分开，而应在编码逐一扩展，第二步可以依旧保留详细信息，最好用更长编码，因为信息更多。
+可能有相同的谓词对应多个邻居，同样的谓词只要保留一个即可，不同邻居可以重合。
+第三步可以只记谓词，第四步可以只记边的出入向。
 
 各版本对比的表格中应加一列几何平均数，现实中大多数查询是简单查询，最好还有一个平均数，对应着把数据做归一化后求和
 dbpedia q6现在应该统计并对比结果了，包含在测试结果中
 
-最好用json格式来输出结果，或者在JSON和字符串之间相互转换
-另外在改善kvstore后，build过程明显加快了很多，现在vstree的建立时间成了瓶颈
-
+在改善kvstore后，build过程明显加快了很多，现在vstree的建立时间成了瓶颈
 preFilter中不仅要看谓词，也要看表大小以及度数，有些节点最好过滤！！！
 
-在0.4.0版本后统一使用git管理，为各位开发者维护一个分支
-更新github上的测试报告和help文档
-5亿+bug，最好单机能支持到10亿
----
-备份原来的代码后，合并王的代码并测试，再在原来代码上加join缓存测试
-以后统一用git进行版本管理，以当前版本为基础
-bookug, hulin, wlb, cjq, pp, gpu, wuda, chenyuyan各一个分支
-
-张雨的任务：单起点单终点的正则表达式路径问题，如果是多起点多终点？
-下学期的任务：提取相关联的几个方向写论文
-将IRC聊天放到gstore文档上，freenode #gStore
+允许同时使用多个数据库，查询时指明数据库，这样的话可以支持from，但各个数据库是相互独立的；
+添加scala API;
+git管理开发；
 
 从下往上建立B+树和vstree树
 加快更新操作，如insert和delete等，是否考虑增加修改的源操作
@@ -49,50 +106,11 @@ bookug, hulin, wlb, cjq, pp, gpu, wuda, chenyuyan各一个分支
 但机器学习对新问题没有一个基本的界，不像数学化的评估函数，对任何情况都能保证一个上界
 (目前数据库里面很少有人利用机器学习来估价)
 
-WARN：B+树删除时，向旁边兄弟借或者合并，要注意兄弟的定义，应该是同一父节点才对！
-输出还是组织成JSON格式比较好，用JSON的C++库进行压缩解压，客户端也无需对输出格式有太多了解，减轻后者负担
-
 URI是唯一的，RDF图中不存在相同标签的节点，无法合并相似节点，也没法利用自同构的预处理加快查询
 DBpedia最新的数据集，原来的相对太小了
 count函数的优化：深搜计数即可，不必生成中间表
 B+树每个节点内部添加索引，对keys分段？
 
-考虑使用 sigmod2016 那篇图同构的论文方法，实现一套join
-但那个是基于路径的，BFS和索引连接的思想值得借用，可作为另外一套join方法
-@hulin
----
-实现其他的join思路，比如基于过滤效果
-
-pthread写多线程
-可以尝试开-O6优化，如果结果保证正确，应该速度可以提升很多
-@lijing
-验证-O6的正确性和效率
-
-如何在preFilter和join的开销之间做平衡
-preFilter中的限制条件是否过于严格
-
-寻找查询图的特征，分类做查询计划：
-先对于每个查询，确定各部分的开销比例
-
-fix the full_test:how to sum the db size right?
-for virtuoso, better to reset each time and the given configure file(need to reserver the temp logs)
-
-load过程先导入满足内存的内容，或者先来几轮搜索但不输出结果，避免开头的查询要读磁盘。vstree直接全导入内存？
-先完成合并测试，再测lubm500M和bsbm500M  -- 90 server
-
-两表拼接时多线程分块join
-jemalloc??
-查询级别的缓存（测试时可将查询复制后再随机打乱）
-vstree并行分块
-
-
-@lijing
-考虑出入度数，编码为1的个数？应该不用，在编码的邻居信息中能够得到体现。
-第二步编码应该更长，点和边对应着放在一起。按出入边分区，一步点，二步边分区和二步点。
-对一个节点保留其最长链信息没啥用，因为数据图基本是连通的，最长链就是图的最长链。
-多步编码不应分开，而应在编码逐一扩展，第二步可以依旧保留详细信息，最好用更长编码，因为信息更多。
-可能有相同的谓词对应多个邻居，同样的谓词只要保留一个即可，不同邻居可以重合。
-第三步可以只记谓词，第四步可以只记边的出入向。
 
 是否可以考虑把literal也作为vstree中的节点，加快过滤？
 join过程中生成literal可能开销大，且可以考虑用周围边对literal进行过滤。。。
@@ -365,7 +383,7 @@ http://www.oschina.net/question/188977_58777
 
 - 新算法在冷启动时时间不理想，即便只是0轮join开销也很大，对比时采用热启动
 
-- 不能支持非连通图查询(应该分割为多个连通图)
+- 如果select中某变量未出现在查询图中，应该对该变量返回空值还是直接认为该查询非法
 
 - - -
 

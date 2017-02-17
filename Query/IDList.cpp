@@ -216,7 +216,7 @@ IDList::intersectList(const int* _id_list, int _list_len)
 		break;
 	}
 	default:
-		cerr << "no such method in IDList::intersectList()" << endl;
+		cout << "no such method in IDList::intersectList()" << endl;
 		break;
 	}
 
@@ -450,7 +450,7 @@ IDList::intersect(const IDList& _id_list, const int* _list, int _len)
 		break;
 	}
 	default:
-		cerr << "no such method in IDList::intersectList()" << endl;
+		cout << "no such method in IDList::intersectList()" << endl;
 		break;
 	}
 

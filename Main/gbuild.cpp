@@ -20,6 +20,13 @@ main(int argc, char * argv[])
 #ifdef DEBUG
 	Util util;
 #endif
+	if(argc == 1)  //./gbuild
+	{
+		//output help info here
+		cout << "the usage of gbuild: " << endl;
+		cout << "bin/gbuild your_database_name.db your_dataset_path" << endl;
+		return 0;
+	}
 	//system("clock");
 	cout << "gbuild..." << endl;
 	{

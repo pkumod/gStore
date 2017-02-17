@@ -48,6 +48,8 @@ private:
 	BasicQuery* basic_query;
 	KVstore* kvstore;
 	TNUM* pre2num;
+	int limitID_predicate;
+	int limitID_literal;
 	//used by score_node for parameters
 	static const unsigned PARAM_DEGREE = 1;
 	static const unsigned PARAM_SIZE = 1000000;
@@ -118,7 +120,8 @@ private:
 
 	//BETTER?:change these params to members in class
 	void acquire_all_id_lists(IdLists& _id_lists, IdListsLen& _id_lists_len, IDList& _can_list, vector<int>& _edges, int _id, int _can_list_size);
-	bool join_two(vector<int>& _edges, IDList& _can_list, int _can_list_size, int _id, bool _is_literal);
+	void update_answer_list(IDList*& valid_ans_list, IDList& _can_list, int* id_list, int id_list_len, bool _is_literal);
+	bool join_two(vector< vector<int> >& _edges, IDList& _can_list, int _can_list_size, int _id, bool _is_literal);
 
 	bool multi_join();
 	//NOTICE:this is only used to join a BasicQuery
@@ -126,7 +129,7 @@ private:
 
 public:
 	Join();
-	Join(KVstore* _kvstore, TNUM* _pre2num);
+	Join(KVstore* _kvstore, TNUM* _pre2num, int _limitID_predicate, int _limitID_literal);
 	//these functions can be called by Database
 	bool join_sparql(SPARQLquery& _sparql_query);
 	bool join_basic(BasicQuery* _basic_query);

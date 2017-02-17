@@ -253,6 +253,7 @@ readline-devel & need to be installed\tabularnewline
 openjdk & needed if using Java api\tabularnewline
 openjdk-devel & needed if using Java api\tabularnewline
 realpath & needed if using gconsole\tabularnewline
+ccache & optional, used to speed up the compilation\tabularnewline
 \bottomrule
 \caption{software requirement}
 \end{longtable}
@@ -265,13 +266,15 @@ NOTICE:
 \item
   To install readline and readline-devel, just type \texttt{dnf\ install\ readline-devel} in Redhat/CentOS/Fedora, or \texttt{apt-get\ install\ libreadline-dev} in Debian/Ubuntu. Please use corresponding commands in other systems. If you use ArchLinux, just type \texttt{pacman\ -S\ readline} to install the readline and readline-devel.(so do other packages)
 \item
-  You do not have to install realpath to use gStore, but if you want to use the gconsole for its convenience, please do so by using \texttt{dnf\ install\ realpath} or \texttt{apt-get\ install\ realpath}.
+  You do not have to install realpath to use gStore, but if you want to use the gconsole for its convenience, please do so by using \texttt{dnf\ install\ realpath} or \texttt{apt-get\ install\ realpath}.  However, if you can not install realpath in your system, please go to modify the file Main/gconsole.cpp(just find the place using realpath command and remove the realpath command).
 \item
-  Our programs use regEx functions, which are provided by GNU/Linux by default. You do not need to have to install boost and boost-devel for more powerful regEx libraries.
+  Our programs use regEx functions, which are provided by GNU/Linux by default. You do not need to install boost and boost-devel for more powerful regEx libraries.
 \item
   ANTLR3.4 is used in gStore to produce lexer and parser code for SPARQL query. However, you do not need to install the corresponding antlr libraries because we have merged the libantlr3.4 in our system.
 \item
   When you type \texttt{make} in the root directory of the gStore project, the Java api will also be compiled. You can modify the makefile if you do not have JDK in your system. However, you are advised to install openjdk-devel in your Linux system.
+\item
+  To install ccache, you need to add epel repository if using CentOS, while in Ubuntu you can directly install it by `apt-get install ccache` command. If you can not install ccache(or maybe you do not want to), please go to modify the makefile(just change the CC variable to g++).
 \item
   Any other questions, please go to \hyperref[chapter10]{FAQ} page.
 \end{enumerate}

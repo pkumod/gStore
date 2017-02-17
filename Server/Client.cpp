@@ -232,7 +232,6 @@ void Client::run()
 		{
 			cmd = string(buf);
 		}
-		//DEBUG!
 		printf("%s\n", cmd.c_str());
 
 		free(buf);
@@ -262,6 +261,7 @@ void Client::run()
 
 		string recv_msg;
 		flag = this->receiveResponse(recv_msg);
+		//BETTER:the string maybe too large?
 		fprintf(fp, "%s\n", recv_msg.c_str());
 
 		this->disconnectServer();

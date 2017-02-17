@@ -1,0 +1,286 @@
+#help for make
+#http://www.cnblogs.com/wang_yb/p/3990952.html
+#https://segmentfault.com/a/1190000000349917
+#http://blog.csdn.net/cuiyifang/article/details/7910268
+
+#to use gprof to analyse efficience of the program:
+#http://blog.chinaunix.net/uid-25194149-id-3215487.html
+
+#to use gcov and lcov
+#Notice that optimization should not be used here
+#http://blog.163.com/bobile45@126/blog/static/96061992201382025729313/
+#gcov -a main.cpp
+#lcov --directory .   --capture --output-file dig.info 
+#genhtml --output-directory . --frames --show-details dig.info 
+
+#to use doxygen+graphviz+htmlhelp to generate document from source code:
+#http://www.ooxygen.nl/
+#(also include good comments norm)
+#http://blog.csdn.net/u010740725/article/details/51387810
+
+#NOTICE: to speed up the make process, use make -j4
+#use -j8 or higher may cause error
+#http://blog.csdn.net/cscrazybing/article/details/50789482
+#http://blog.163.com/liuhonggaono1@126/blog/static/10497901201210254622141/
+
+
+#TODO:the dependences are not complete!
+
+#compile parameters
+
+CC = ccache g++
+#CC = g++
+
+#the optimazition level of gcc/g++
+#http://blog.csdn.net/hit_090420216/article/details/44900215
+#NOTICE: -O2 is recommended, while -O3 is dangerous
+#when developing, not use -O because it will disturb the normal 
+#routine. use it for test and release.
+#CFLAGS = -c -Wall -g #-fprofile-arcs -ftest-coverage #-pg
+#EXEFLAG = -g #-fprofile-arcs -ftest-coverage #-pg
+#-coverage
+CFLAGS = -c -Wall -O2
+EXEFLAG = -O2
+
+#add -lreadline -ltermcap if using readline or objs contain readline
+library = -ltermcap -lreadline -L./lib -lantlr -lgcov
+def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
+
+# paths
+
+objdir = .objs/
+
+exedir = bin/
+
+lib_antlr = lib/libantlr.a
+
+api_cpp = api/cpp/lib/libgstoreconnector.a
+
+api_java = api/java/lib/GstoreJavaAPI.jar
+
+
+inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include 
+
+
+#gtest
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub
+
+objfile = $(objdir)SPARQLquery.o $(objdir)Database.o $(objdir)DBparser.o $(objdir)SparlParser.o $(objdir)SparqlLexer.o \
+		  $(objdir)QueryParser.o $(objdir)Server.o $(objdir)GeneralEvaluation.o
+	 
+#auto generate dependencies
+# http://blog.csdn.net/gmpy_tiger/article/details/51849474
+# http://blog.csdn.net/jeffrey0000/article/details/12421317
+
+DEPEND = Util/Util.d Util/Bstr.d Util/Stream.d Util/Stream.d Util/Triple.d Util/BloomFilter.d \
+		 KVstore/SITree/SITree.d KVstore/SITree/SIStorage.d KVstore/SITree/SINode.d KVstore/SITree/SIIntlNode.d KVstore/SITree/SILeafNode.d KVstore/SITree/SIHeap.d \
+		KVstore/ISTree/ISTree.d KVstore/ISTree/ISStorage.d KVstore/ISTree/ISNode.d KVstore/ISTree/ISIntlNode.d KVstore/ISTree/ISLeafNode.d KVstore/ISTree/ISHeap.d \
+		KVstore/KVstore.d Query/BasicQuery.d Query/ResultSet.d  Query/IDList.d Database/Join.d Database/Strategy.d \
+		Query/Varset.d Query/QueryTree.d Query/ResultFilter.d StringIndex/StringIndex.d \
+		Signature/SigEntry.d Signature/Signature.d VSTree/VSTree.d VSTree/EntryBuffer.d VSTree/LRUCache.d VSTree/VNode.d \
+		Parser/RDFParser.d Parser/TurtleParser.d Server/Operation.d Server/Client.d Server/Socket.d 
+
+
+#NOTICE: not place tab before include
+#-include Util/Util.d
+#sinclude?
+
+all: $(TARGET)
+-include $(DEPEND)
+
+test_index: test_index.cpp
+	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library)
+
+#executables begin
+
+#BETTER: use for loop to reduce the lines
+#NOTICE: g++ -MM will run error if linking failed, like Database.h/../SparlParser.h/../antlr3.h
+
+#NOTICE:not include g*.o in objfile due to multiple definitions of main()
+$(exedir)gbuild: $(lib_antlr) $(objdir)gbuild.o $(objfile) 
+	$(CC) $(EXEFLAG) -o $(exedir)gbuild $(objdir)gbuild.o $(objfile) $(library)
+
+$(exedir)gquery: $(lib_antlr) $(objdir)gquery.o $(objfile) 
+	$(CC) $(EXEFLAG) -o $(exedir)gquery $(objdir)gquery.o $(objfile) $(library)
+
+$(exedir)gserver: $(lib_antlr) $(objdir)gserver.o $(objfile) 
+	$(CC) $(EXEFLAG) -o $(exedir)gserver $(objdir)gserver.o $(objfile) $(library)
+
+$(exedir)gclient: $(lib_antlr) $(objdir)gclient.o $(objfile) 
+	$(CC) $(EXEFLAG) -o $(exedir)gclient $(objdir)gclient.o $(objfile) $(library)
+
+$(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
+	$(CC) $(EXEFLAG) -o $(exedir)gconsole $(objdir)gconsole.o $(objfile) $(library) -L./api/cpp/lib -lgstoreconnector
+
+#executables end
+
+
+#objects in Main/ begin
+
+$(objdir)gbuild.o: Main/gbuild.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gbuild.cpp $(inc) -o $(objdir)gbuild.o 
+	
+$(objdir)gquery.o: Main/gquery.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gquery.cpp $(inc) -o $(objdir)gquery.o  #-DREADLINE_ON
+	#add -DREADLINE_ON if using readline
+
+$(objdir)gserver.o: Main/gserver.cpp Server/Server.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gserver.cpp $(inc) -o $(objdir)gserver.o
+
+$(objdir)gclient.o: Main/gclient.cpp Server/Client.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gclient.cpp $(inc) -o $(objdir)gclient.o #-DREADLINE_ON
+
+$(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/cpp/src/GstoreConnector.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gconsole.cpp $(inc) -o $(objdir)gconsole.o -I./api/cpp/src/ #-DREADLINE_ON
+
+#objects in Main/ end
+
+# auto generated objects
+
+#TODO+DEBUG: 
+#TODO:maybe multiple lines? how about auto compile with given CC/CFLAGS args? \\n
+%.d: %.cpp
+	$(CC) -MM $^ > $@.tmp2
+	sed "s/\(\\\n\)/ /g" < $@.tmp2 > $@.tmp
+	#sed "s/\([^\.]*\)\(\.o: \)\([^\/]*\)/.objs\/\1.o \3\/\1.d: \3/g" < $@.tmp > $@
+	sed "s/\([^\.]*\)\(\.o: \)\([^\/]*\)\(.*\)/.objs\/\1.o: \3\4\n\t$(CC) $(CFLAGS) \3\/\1.cpp -o .objs\/\1.o/g" < $@.tmp > $@
+	#tmp=$^
+	#dir=${tmp%/*}
+	#tmp2=${tmp#*/}
+	#name=${tmp2%.*}
+	#NOTICE: use "" instead of '' if need to use shell var
+	#sed "s/\(${name}.o\)/$(objdir)\1 $@/g" < $@.tmp > $@
+	rm  $@.tmp*
+
+# special objects
+
+$(objdir)Database.o: Database/Database.cpp Database/Database.h \
+	Util/Util.h Util/Triple.h Parser/DBparser.h Parser/SparlParser.h Parser/RDFParser.h \
+	Query/IDList.h Query/ResultSet.h Query/SPARQLquery.h Query/BasicQuery.h \
+	Signature/SigEntry.h KVstore/KVstore.h VSTree/VSTree.h 
+	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o
+
+$(objdir)DBparser.o: Parser/DBparser.cpp Parser/DBparser.h $(objdir)SparqlParser.o $(objdir)SparqlLexer.o $(objdir)Triple.o $(objdir)SPARQLquery.o
+	$(CC) $(CFLAGS) Parser/DBparser.cpp $(inc) -o $(objdir)DBparser.o
+
+$(objdir)SparqlParser.o: Parser/SparqlParser.c Parser/SparqlParser.h
+	gcc  $(CFLAGS) Parser/SparqlParser.c $(inc) -o $(objdir)SparqlParser.o
+
+$(objdir)SparqlLexer.o: Parser/SparqlLexer.c Parser/SparqlLexer.h
+	gcc  $(CFLAGS) Parser/SparqlLexer.c $(inc) -o $(objdir)SparqlLexer.o
+
+$(objdir)QueryParser.o: Parser/QueryParser.cpp Parser/QueryParser.h $(objdir)SparqlParser.o $(objdir)SparqlLexer.o $(objdir)QueryTree.o $(objdir)Util.o
+	$(CC) $(CFLAGS) Parser/QueryParser.cpp $(inc) -o $(objdir)QueryParser.o
+
+$(objdir)Server.o: Server/Server.cpp Server/Server.h $(objdir)Socket.o $(objdir)Database.o $(objdir)Operation.o $(objdir)Util.o
+	$(CC) $(CFLAGS) Server/Server.cpp $(inc) -o $(objdir)Server.o
+
+$(objdir)SPARQLquery.o: Query/SPARQLquery.cpp Query/SPARQLquery.h $(objdir)BasicQuery.o
+	$(CC) $(CFLAGS) Query/SPARQLquery.cpp $(inc) -o $(objdir)SPARQLquery.o
+
+$(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h $(objdir)QueryParser.o $(objdir)QueryTree.o \
+	$(objdir)SPARQLquery.o $(objdir)Varset.o $(objdir)KVstore.o $(objdir)ResultFilter.o $(objdir)Strategy.o $(objdir)StringIndex.o 
+	$(CC) $(CFLAGS) Query/GeneralEvaluation.cpp $(inc) -o $(objdir)GeneralEvaluation.o
+
+#$(objdir)SIStorage.o: KVstore/SITree/storage/SIStorage.cpp KVstore/SITree/storage/SIStorage.h Util/Util.h
+	#$(CC) $(CFLAGS) KVstore/SITree/storage/SIStorage.cpp -o $(objdir)SIStorage.o $(def64IO)
+
+#$(objdir)ISStorage.o: KVstore/ISTree/storage/ISStorage.cpp KVstore/ISTree/storage/ISStorage.h Util/Util.h
+	#$(CC) $(CFLAGS) KVstore/ISTree/storage/ISStorage.cpp -o $(objdir)ISStorage.o $(def64IO)
+
+#$(objdir)VSTree.o $(objdir)VSTree.o: VSTree/VSTree.cpp VSTree/VSTree.h $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdir)VNode.o
+	#$(CC) $(CFLAGS) VSTree/VSTree.cpp $(inc) -o $(objdir)VSTree.o $(def64IO)
+
+#$(objdir)EntryBuffer.o: VSTree/EntryBuffer.cpp VSTree/EntryBuffer.h Signature/SigEntry.h
+	#$(CC) $(CFLAGS) VSTree/EntryBuffer.cpp $(inc) -o $(objdir)EntryBuffer.o $(def64IO)
+
+#$(objdir)LRUCache.o: VSTree/LRUCache.cpp  VSTree/LRUCache.h VSTree/VNode.h
+	#$(CC) $(CFLAGS) VSTree/LRUCache.cpp $(inc) -o $(objdir)LRUCache.o $(def64IO)
+
+#$(objdir)VNode.o: VSTree/VNode.cpp VSTree/VNode.h
+	#$(CC) $(CFLAGS) VSTree/VNode.cpp $(inc) -o $(objdir)VNode.o $(def64IO)
+
+
+$(lib_antlr):
+	rm -rf tools/libantlr3c-3.4/
+	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
+	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
+	rm -rf lib/libantlr.a
+	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
+	#NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
+	rm -rf Parser/Sparql*
+	cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
+
+$(api_cpp): $(objdir)Socket.o
+	$(MAKE) -C api/cpp/src 
+
+$(api_java):
+	$(MAKE) -C api/java/src
+
+.PHONY: clean dist tarball api_example gtest sumlines
+
+clean:
+	rm -rf lib/libantlr.a
+	$(MAKE) -C api/cpp/src clean
+	$(MAKE) -C api/cpp/example clean
+	$(MAKE) -C api/java/src clean
+	$(MAKE) -C api/java/example clean
+	#$(MAKE) -C KVstore clean
+	rm -rf $(exedir)g* $(objdir)*.o $(objdir)*.d $(exedir).gserver*
+	#rm -rf .project .cproject .settings   just for eclipse
+	#rm -rf cscope* just for vim
+	find . -type f -print|grep -E "\.d"|xargs rm  
+
+dist: clean
+	rm -rf *.nt *.n3 .oebug/*.log .tmp/*.oat *.txt *.ob
+	rm -rf tools/libantlr3c-3.4 lib/libantlr.a Parser/Sparql*
+	#rm -rf Parser/SparqlLexer* Parser/SparlParser.cpp
+	rm -rf cscope* .cproject .settings tags
+	rm -rf *.info
+
+tarball:
+	tar -czvf devGstore.tar.gz api bin lib tools .oebug .tmp .objs test docs data makefile \
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex
+
+APIexample: $(api_cpp) $(api_java)
+	$(MAKE) -C api/cpp/example
+	$(MAKE) -C api/java/example
+
+gtest: $(objdir)gtest.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr.a $(library)
+
+$(objdir)gtest.o: test/gtest.cpp
+	$(CC) $(CFLAGS) test/gtest.cpp $(inc) -o $(objdir)gtest.o
+	
+$(exedir)gadd: $(objdir)gadd.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)gadd $(objdir)gadd.o $(objfile) lib/libantlr.a $(library)
+
+$(objdir)gadd.o: Main/gadd.cpp
+	$(CC) $(CFLAGS) Main/gadd.cpp $(inc) -o $(objdir)gadd.o
+
+$(exedir)gsub: $(objdir)gsub.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)gsub $(objdir)gsub.o $(objfile) lib/libantlr.a $(library)
+
+$(objdir)gsub.o: Main/gsub.cpp
+	$(CC) $(CFLAGS) Main/gsub.cpp $(inc) -o $(objdir)gsub.o
+
+sumlines:
+	bash test/sumline.sh
+
+tag:
+	ctags -R
+
+idx:
+	find `realpath .` -name "*.h" -o -name "*.c" -o -name "*.cpp" > cscope.files
+	cscope -bkq #-i cscope.files
+
+cover:
+	bash test/cover.sh
+
+fulltest:
+	#NOTICE:compile gstore with -O2 only
+	#setup new virtuoso and configure it
+	cp test/full_test.sh ~
+	cd ~
+	bash full_test.sh
+

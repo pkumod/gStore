@@ -28,7 +28,7 @@ bool GeneralEvaluation::parseQuery(const string &_query)
 	}
 	catch(const char *e)
 	{
-		cerr << e << endl;
+		cout << e << endl;
 		return false;
 	}
 
@@ -40,25 +40,25 @@ QueryTree& GeneralEvaluation::getQueryTree()
 	return this->query_tree;
 }
 
-void GeneralEvaluation::doQuery()
+bool GeneralEvaluation::doQuery()
 {
 	if (!this->query_tree.checkProjectionAsterisk() && this->query_tree.getProjection().size() == 0)
-		return;
+		return false;
 
 	if (!this->query_tree.checkSelectCompatibility())
 	{
-		cerr << "[ERROR]	The vars and aggregate functions in the SelectClause are not compatible." << endl;
-		return;
+		cout << "[ERROR]	The vars and aggregate functions in the SelectClause are not compatible." << endl;
+		return false;
 	}
 
 	this->query_tree.getGroupPattern().getVarset();
 	if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.hasCommonVar(this->query_tree.getGroupPattern().grouppattern_predicate_maximal_varset))
 	{
-		cerr << "[ERROR]	There are some vars occur both in subject/object and predicate." << endl;
-		return;
+		cout << "[ERROR]	There are some vars occur both in subject/object and predicate." << endl;
+		return false;
 	}
 
-	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num);
+	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num, this->limitID_predicate, this->limitID_literal);
 	if (this->query_tree.checkWellDesigned())
 	{
 		cout << "=================" << endl;
@@ -91,6 +91,8 @@ void GeneralEvaluation::doQuery()
 		long tv_postproc = Util::get_cur_time();
 		cout << "after Postprocessing, used " << (tv_postproc - tv_handle) << "ms." << endl;
 	}
+
+	return true;
 }
 
 void GeneralEvaluation::getBasicQuery(QueryTree::GroupPattern &grouppattern)
@@ -2535,6 +2537,8 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 					object_id = Varset(update_pattern.patterns[i].object.value).mapTo(results_id->results[j].var)[0];
 
 				string subject, predicate, object;
+				TripleWithObjType::ObjectType object_type;
+
 				if (subject_id == -1)
 					subject = update_pattern.patterns[i].subject.value;
 				if (predicate_id == -1)
@@ -2550,8 +2554,12 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 						this->stringindex->randomAccess(results_id->results[j].res[k][predicate_id], &predicate, false);
 					if (object_id != -1)
 						this->stringindex->randomAccess(results_id->results[j].res[k][object_id], &object, true);
+					if (object[0] == '<')
+						object_type = TripleWithObjType::Entity;
+					else
+						object_type = TripleWithObjType::Literal;
 
-					update_triple[update_triple_count++] = TripleWithObjType(subject, predicate, object);
+					update_triple[update_triple_count++] = TripleWithObjType(subject, predicate, object, object_type);
 				}
 			}
 }

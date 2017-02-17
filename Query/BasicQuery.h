@@ -102,17 +102,17 @@ public:
 class BasicQuery
 {
 private:
-	vector<string> option_vs;
 	vector<Triple> triple_vt;
 	// mapping from variables' name to their assigned id
 	map<std::string, int> var_str2id;
 	// record each tuple's(subject, predicate, object) number of occurrences in this BasicQuery
 	map<std::string, int> tuple2freq;
+	set<std::string> selected_var_set;
+	//NOTICE:this is not used now!
 	map<std::string, int> var_not_in_select;
 
 	// id < select_var_num means in select
 	int select_var_num;
-
 	// var_num is different from that in SPARQLquery
 	// because there are some variable not in select
 	int graph_var_num;
@@ -165,6 +165,12 @@ private:
 
 	//infos for predicate variables
 	vector<PreVar> pre_var;
+	int selected_pre_var_num;
+
+	//to manage the selected vars order(considering selected pre var)
+	//NOTICE:the order is always same as query_var in encodeBasicQuery, but not always same as select-clause
+	//positive key id for normal var, -1-id for pre var
+	map<int, int> selected_var_position;
 
 public:
 	static const int MAX_VAR_NUM = 10;
@@ -192,13 +198,15 @@ public:
 	// get the name of _var in the query graph
 	std::string getVarName(int _var);
 
+	int getIDByVarName(const string& _name);
+
 	// get triples number, also sentences number
 	int getTripleNum();
 
-	int getIDByVarName(const string& _name);
+	//check if a normal var is in select
+	bool isVarSelected(const std::string& _name) const;
 
 	std::string to_str();
-
 
 	// get the ID of the i-th triple
 	const Triple& getTriple(int _i_th_triple);
@@ -219,7 +227,7 @@ public:
 	int getVarDegree(int _var);
 
 	//get the index of edge between two var ids
-	int getEdgeIndex(int _id0, int _id);
+	vector<int> getEdgeIndex(int _id0, int _id);
 
 	const EntityBitSet& getVarBitSet(int _i)const;
 
@@ -269,8 +277,14 @@ public:
 
 	unsigned getPreVarNum() const;
 	const PreVar& getPreVarByID(unsigned) const;
-	//int getIDByPreVarName(const std::string& _name) const;
 	int getPreVarID(const string& _name) const;
+	unsigned getSelectedPreVarNum() const;
+	bool isPreVarSelected(unsigned _pid) const;
+
+	int getSelectedVarPosition(int _var);
+	int getSelectedPreVarPosition(int _var);
+	int getSelectedVarPosition(std::string _var);
+	int getSelectedPreVarPosition(std::string _var);
 
 	void addTriple(const Triple& _triple);
 	void print(ostream& _out_stream);

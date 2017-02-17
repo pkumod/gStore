@@ -114,7 +114,6 @@ FILE* output = stdout;
 //current using database in local
 Database *current_database = NULL;
 
-//TODO:redirect 2>&1 or adjust the fprintf->stderr to file pointer
 int
 main(int argc, char **argv)
 {
@@ -128,34 +127,35 @@ main(int argc, char **argv)
 	char *line, *s;
 	progname = argv[0];
 
-	long cur_path_len;
-	char* cur_work_dir;
-	if ((cur_path_len = pathconf(".", _PC_PATH_MAX)) == -1) {
-		cerr << "Couldn't get current working path length" << endl;
-		return 1;
-	}
-	if ((cur_work_dir = (char*)malloc(cur_path_len + 1 + strlen(progname))) == NULL) {
-		cerr << "Couldn't allocate memory for the pathname" << endl;
-		return 1;
-	}
-	if (getcwd(cur_work_dir, cur_path_len) == NULL) {
-		cerr << "Couldn't get current working directory!" << endl;
-		return 1;
-	}
-	strcat(cur_work_dir, "/");
-	strcat(cur_work_dir, progname);
-	char* dir_name = dirname(cur_work_dir);
-	free(cur_work_dir);
-	if (dir_name == NULL) {
-		cerr << "Couldn't get current directory name!" << endl;
-		return 1;
-	}
-	string root(dir_name);
-	root += "/..";
-	if (chdir(root.c_str()) == -1) {
-		cerr << "Couldn't change current directory!" << endl;
-		return 1;
-	}
+	//NOTICE+DEBUG: the code segment below is used to change directory if not in gStore root, but here exists some bugs
+	//long cur_path_len;
+	//char* cur_work_dir;
+	//if ((cur_path_len = pathconf(".", _PC_PATH_MAX)) == -1) {
+		//cerr << "Couldn't get current working path length" << endl;
+		//return 1;
+	//}
+	//if ((cur_work_dir = (char*)malloc(cur_path_len + 1 + strlen(progname))) == NULL) {
+		//cerr << "Couldn't allocate memory for the pathname" << endl;
+		//return 1;
+	//}
+	//if (getcwd(cur_work_dir, cur_path_len) == NULL) {
+		//cerr << "Couldn't get current working directory!" << endl;
+		//return 1;
+	//}
+	//strcat(cur_work_dir, "/");
+	//strcat(cur_work_dir, progname);
+	//char* dir_name = dirname(cur_work_dir);
+	//free(cur_work_dir);
+	//if (dir_name == NULL) {
+		//cerr << "Couldn't get current directory name!" << endl;
+		//return 1;
+	//}
+	//string root(dir_name);
+	//root += "/..";
+	//if (chdir(root.c_str()) == -1) {
+		//cerr << "Couldn't change current directory!" << endl;
+		//return 1;
+	//}
 
 	system("clear");
 
@@ -1172,3 +1172,30 @@ int printport_handler(const vector<string>& args) {
 	}
 	return system("bin/gserver -P");
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

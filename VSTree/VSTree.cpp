@@ -377,7 +377,7 @@ VSTree::insertEntry(const SigEntry& _entry)
     VNode* choosedNodePtr = this->chooseNode(this->getRoot(), _entry);
 
 #ifdef DEBUG_VSTREE
-		if(_entry.getEntityId() == 2402)
+		if(_entry.getEntityId() == 200)
 		{
 			stringstream _ss;
 			if (choosedNodePtr)
@@ -402,6 +402,9 @@ VSTree::insertEntry(const SigEntry& _entry)
 
     if (choosedNodePtr->isFull())
     {
+#ifdef DEBUG_VSTREE
+		cout<<"split occur"<<endl;
+#endif
 		 //if the choosed leaf node to insert is full, the node should be split.
         this->split(choosedNodePtr, _entry, NULL);
 
@@ -433,6 +436,10 @@ VSTree::insertEntry(const SigEntry& _entry)
     }
     this->entry_num ++;
 
+#ifdef DEBUG_VSTREE
+	//cout<<"file line check: "<<this->entityID2FileLineMap[200]<<endl;
+#endif
+
     return true;
 }
 
@@ -440,6 +447,7 @@ VSTree::insertEntry(const SigEntry& _entry)
 bool 
 VSTree::removeEntry(int _entity_id)
 {
+	//cout<<"file line check: "<<this->entityID2FileLineMap[200]<<endl;
     VNode* leafNodePtr = this->getLeafNodeByEntityID(_entity_id);
 
     if (leafNodePtr == NULL)
@@ -478,6 +486,9 @@ VSTree::removeEntry(int _entity_id)
 			leafNodePtr->removeChild(entryIndex);
 			leafNodePtr->refreshAncestorSignature(*(this->node_buffer));
 			this->removeNode(leafNodePtr);
+			//DEBUG: already deleted in freeElem
+			//delete leafNodePtr;
+			//leafNodePtr = NULL;
 			this->root_file_line = -1;
 			this->height = 0;
 			this->entry_num = 0;
@@ -485,6 +496,7 @@ VSTree::removeEntry(int _entity_id)
 		}
 		else
 		{
+			//cout<<"root remove a child"<<endl;
 			leafNodePtr->removeChild(entryIndex);
 			leafNodePtr->refreshAncestorSignature(*(this->node_buffer));
 		}
@@ -718,57 +730,86 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
     entryIndex_nearB.clear();
     entryIndex_nearA.push_back(entryA_index);
     entryIndex_nearB.push_back(entryB_index);
+	int cnt = 1, i;
+	//BETTER:maybe sort and add?(how to sort according to two seeds)
+	for(i = 0; i < VNode::MAX_CHILD_NUM; ++i)
+	{
+		if(i == entryA_index || i == entryB_index)
+		{
+			continue;
+		}
+		if(cnt > VNode::MIN_CHILD_NUM) //num+1
+		{
+			break;
+		}
+		cnt++;
+		entryIndex_nearA.push_back(i);
+	}
+	for(; i < VNode::MAX_CHILD_NUM; ++i)
+	{
+		if(i == entryA_index || i == entryB_index)
+		{
+			continue;
+		}
+		entryIndex_nearB.push_back(i);
+	}
 
-    int nearA_max_size, nearB_max_size;
-    bool nearA_tooSmall, nearB_tooSmall;
+	//NOTICE: code below maybe exist error, can not divide evenly(and maybe not necessary to compute distance)
+	//
+    //int nearA_max_size, nearB_max_size;
+    //bool nearA_tooSmall, nearB_tooSmall;
+    //for(int i = 0; i < VNode::MAX_CHILD_NUM; i++)
+    //{
+        //if(i == entryA_index || i == entryB_index) continue;
 
-    for(int i = 0; i < VNode::MAX_CHILD_NUM; i++)
-    {
-        if(i == entryA_index || i == entryB_index) continue;
+		////should guarantee that each new node has at least MIN_CHILD_NUM children. 
+        //nearA_max_size = VNode::MAX_CHILD_NUM - entryIndex_nearB.size();
+        //nearA_tooSmall = (nearA_max_size < VNode::MIN_CHILD_NUM);
 
-		//should guarantee that each new node has at least MIN_CHILD_NUM children. 
-        nearA_max_size = VNode::MAX_CHILD_NUM - entryIndex_nearB.size();
-        nearA_tooSmall = (nearA_max_size <= VNode::MIN_CHILD_NUM);
+		////BETTER:is this too wasteful?
+        //if(nearA_tooSmall)
+        //{
+            //for(; i < VNode::MAX_CHILD_NUM; i++)
+            //{
+                //if (i == entryA_index || i == entryB_index) continue;
+                //entryIndex_nearA.push_back(i);
+            //}
+            //break;
+        //}
 
-        if(nearA_tooSmall)
-        {
-            for(; i < VNode::MAX_CHILD_NUM; i++)
-            {
-                if (i == entryA_index || i == entryB_index) continue;
-                entryIndex_nearA.push_back(i);
-            }
-            break;
-        }
+        //nearB_max_size = VNode::MAX_CHILD_NUM - entryIndex_nearA.size();
+        //nearB_tooSmall = (nearB_max_size < VNode::MIN_CHILD_NUM);
+        //if(nearB_tooSmall)
+        //{
+            //for(; i < VNode::MAX_CHILD_NUM; i++)
+            //{
+                //if(i == entryA_index || i == entryB_index) continue;
+                //entryIndex_nearB.push_back(i);
+            //}
+            //break;
+        //}
 
-        nearB_max_size = VNode::MAX_CHILD_NUM - entryIndex_nearA.size();
-        nearB_tooSmall = (nearB_max_size <= VNode::MIN_CHILD_NUM);
-        if(nearB_tooSmall)
-        {
-            for(; i < VNode::MAX_CHILD_NUM; i++)
-            {
-                if(i == entryA_index || i == entryB_index) continue;
-                entryIndex_nearB.push_back(i);
-            }
-            break;
-        }
+         ////calculate the distance from
+         ////the i-th child entry signature to seedA(or seedB).
 
-         //calculate the distance from
-         //the i-th child entry signature to seedA(or seedB).
+		////NOTICE:we should expect that the candidate can be almost contained!
+		////However, the precondition there are not too many 1s
+        //int disToSeedA = entryA.xEpsilen(_p_node_being_split->getChildEntry(i));
+        //int disToSeedB = entryB.xEpsilen(_p_node_being_split->getChildEntry(i));
+        //// choose the near one seed to add into
+        //if(disToSeedA <= disToSeedB)
+        //{
+			 //entryIndex_nearA.push_back(i);
+        //}
+        //else
+        //{
+			 //entryIndex_nearB.push_back(i);
+        //}
+    //}
 
-		//NOTICE:we should expect that the candidate can be almost contained!
-		//However, the precondition there are not too many 1s
-        int disToSeedA = entryA.xEpsilen(_p_node_being_split->getChildEntry(i));
-        int disToSeedB = entryB.xEpsilen(_p_node_being_split->getChildEntry(i));
-        // choose the near one seed to add into
-        if(disToSeedA <= disToSeedB)
-        {
-			 entryIndex_nearA.push_back(i);
-        }
-        else
-        {
-			 entryIndex_nearB.push_back(i);
-        }
-    }
+#ifdef DEBUG_VSTREE
+	cout<<"A: "<<entryIndex_nearA.size()<<"    B: "<<entryIndex_nearB.size()<<endl;
+#endif
 
     // then create a new node to act as BEntryIndex's father.
     VNode* newNodePtr = this->createNode();
@@ -795,7 +836,6 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
         }
         else
         {
-			 //debug target 2
         	VNode* childPtr = oldNodePtr->getChild(entryIndex_nearB[i], *(this->node_buffer));
             newNodePtr->addChildNode(childPtr);
         }
@@ -869,8 +909,10 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
          //should keep the root node always being
          //at the first line(line zero) of the tree node file.
         this->swapNodeFileLine(RootNewPtr, oldNodePtr);
+		cout<<"new root: "<<RootNewPtr->getFileLine()<<endl;
         this->height++;
-		this->root_file_line = RootNewPtr->getFileLine();
+		//NOTICE:below is unnecessary
+		//this->root_file_line = RootNewPtr->getFileLine();
 
 #ifdef DEBUG
 		cout<<"root file line "<<this->root_file_line<<" child num "<<RootNewPtr->getChildNum()<<endl;
@@ -939,6 +981,7 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 	
 	if(_father == NULL) //this is already root
 	{
+		//cout<<"the father is NULL!!!"<<endl;
 		//NOTICE:when root is leaf, at least one key, otherwise the tree is empty
 		//But when root is internal, at least two key, if one key then shrink
 		//(1-key internal root is not permitted)
@@ -951,18 +994,23 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 			//only one key after remove, shrink root
 			VNode* newRoot = _child->getChild(0, *(this->node_buffer));
 			newRoot->setAsRoot(true);
+#ifdef DEBUG
 			cout<<"shrink root in coalesce() -- to swap node file"<<endl;
+#endif
 			this->swapNodeFileLine(newRoot, _child);
-			this->root_file_line = newRoot->getFileLine();
+			//this->root_file_line = newRoot->getFileLine();
 			this->height--;
 			this->removeNode(_child);
 		}
 		return;
 	}
 
+	//cout<<"num: "<<cn<<endl;
 	if(cn > VNode::MIN_CHILD_NUM)
 	{
+#ifdef DEBUG_VSTREE
 		cout<<"no need to move or union in coalesce()"<<endl;
+#endif
 		_child->removeChild(_entry_index);
 		_child->refreshAncestorSignature(*(this->node_buffer));
 		return;
@@ -1157,6 +1205,12 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 		if(ccase == 2 || ccase == 4)
 		{
 			this->updateEntityID2FileLineMap(p);
+		}
+		else
+		{
+			//DEBUG
+			//delete p;
+			//p = NULL;
 		}
 	}	
 }
@@ -1356,10 +1410,12 @@ VSTree::loadTreeInfo()
 	fread(&key, sizeof(int), 1, filePtr);
 	while(!feof(filePtr))
 	{
-		//if(key == 25)
-		//{
-			//cout<<"loadTreeInfo() - get id 25"<<endl;
-		//}
+#ifdef DEBUG_VSTREE
+		if(key == 1)
+		{
+			cout<<"loadTreeInfo() - get id 1"<<endl;
+		}
+#endif
 		this->free_nid_list.push_back(key);
 		fread(&key, sizeof(int), 1, filePtr);
 	}
@@ -1608,6 +1664,7 @@ VSTree::removeNode(VNode* _vp)
 	this->node_buffer->del(key);
 	this->node_num--;
 	//delete _vp;
+	//_vp->setFileLine(-1);
 }
 
 string 

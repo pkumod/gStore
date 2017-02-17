@@ -67,6 +67,8 @@ in the sparql query can point to the same node in data graph)
 #include <readline/history.h>
 
 #define STREAM_ON 1			
+//when used as C/S, if output query result in the server port: default not(you can see the result in the client)
+//#define OUTPUT_QUERY_RESULT 1
 #define READLINE_ON	1
 #define MULTI_INDEX 1
 //#define SO2P 1
@@ -74,12 +76,14 @@ in the sparql query can point to the same node in data graph)
 //#define USE_GROUP_DELETE 1
 
 //indicate that in debug mode
+#define DEBUG_JOIN      
 //#define DEBUG_STREAM
 //#define DEBUG_PRECISE 1		all information
 //#define DEBUG_KVSTORE 1		//in KVstore
-//#define DEBUG_VSTREE 1	//in Database 
+#define DEBUG_VSTREE 1	//in Database 
 //#define DEBUG_DATABASE 1	//in Database
-//#define DEBUG_JOIN      
+//
+//
 
 #ifdef DEBUG_PRECISE
 #ifndef DEBUG

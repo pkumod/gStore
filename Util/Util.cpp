@@ -247,7 +247,7 @@ Util::Util()
         this->debug_kvstore = fopen(s.c_str(), "w+");
         if(this->debug_kvstore == NULL)
         {
-            printf("open error: kv.log\n");
+            cerr << "open error: kv.log\n";
             this->debug_kvstore = stderr;
         }
     }
@@ -259,7 +259,7 @@ Util::Util()
         this->debug_database = fopen(s.c_str(), "w+");
         if(this->debug_database == NULL)
         {
-            printf("open error: db.log\n");
+            cerr << "open error: db.log\n";
             this->debug_database = stderr;
         }
     }
@@ -271,7 +271,7 @@ Util::Util()
         this->debug_vstree = fopen(s.c_str(), "w+");
         if(this->debug_vstree == NULL)
         {
-            printf("open error: vs.log\n");
+            cerr << "open error: vs.log\n";
             this->debug_vstree = stderr;
         }
     }
@@ -660,7 +660,7 @@ string
 Util::getQueryFromFile(const char* _file_path)
 {
 #ifdef DEBUG_PRECISE
-    printf("file to open: %s\n", _file_path);
+    cerr << "file to open: " << _file_path <<endl;
 #endif
     char buf[10000];
     std::string query_file;
@@ -775,7 +775,7 @@ Util::getSystemOutput(string cmd)
     //fclose(fp);
     //}
     system(cmd.c_str());
-	cout<<"ans: "<<ans<<endl;
+	//cerr<<"ans: "<<ans<<endl;
     return ans;
 }
 

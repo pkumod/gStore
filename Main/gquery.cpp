@@ -50,7 +50,7 @@ main(int argc, char * argv[])
 	cout << "gquery..." << endl;
 	if (argc < 2)
 	{
-		cerr << "error: lack of DB_store to be queried" << endl;
+		cout << "error: lack of DB_store to be queried" << endl;
 		return 0;
 	}
 	{
@@ -100,11 +100,48 @@ main(int argc, char * argv[])
 		}
 		printf("query is:\n%s\n\n", query.c_str());
 		ResultSet _rs;
-		_db.query(query, _rs, stdout);
+		FILE* ofp = stdout;
 		if (argc >= 4)
 		{
-			Util::save_to_file(argv[3], _rs.to_str());
+			ofp = fopen(argv[3], "w");
 		}
+		string msg;
+		int ret = _db.query(query, _rs, ofp);
+
+		if(argc >= 4)
+		{
+			fclose(ofp);
+			ofp = NULL;
+		}
+
+		//cout<<"gquery ret: "<<ret<<endl;
+		if (ret <= -100)  //select query
+		{
+			if(ret == -100)
+			{
+				msg = _rs.to_str();
+			}
+			else //query error
+			{
+				msg = "query failed.";
+			}
+		}
+		else //update query
+		{
+			if(ret >= 0)
+			{
+				msg = "update num: " + Util::int2string(ret);
+			}
+			else //update error
+			{
+				msg = "update failed.";
+			}
+		}
+		if(ret != -100)
+		{
+			cout << msg <<endl;
+		}
+
 		return 0;
 	}
 
@@ -220,7 +257,39 @@ main(int argc, char * argv[])
 		printf("query is:\n");
 		printf("%s\n\n", query.c_str());
 		ResultSet _rs;
-		_db.query(query, _rs, fp);
+		int ret = _db.query(query, _rs, fp);
+		//int ret = _db.query(query, _rs, NULL);
+		string msg;
+
+		//cout<<"gquery ret: "<<ret<<endl;
+		if (ret <= -100)  //select query
+		{
+			if(ret == -100)
+			{
+				msg = "";
+			}
+			else //query error
+			{
+				msg = "query failed.";
+			}
+		}
+		else //update query
+		{
+			if(ret >= 0)
+			{
+				msg = "update num: " + Util::int2string(ret);
+			}
+			else //update error
+			{
+				msg = "update failed.";
+			}
+		}
+
+		if(ret != -100)
+		{
+			cout << msg << endl;
+		}
+
 		//test...
 		//string answer_file = query_file+".out";
 		//Util::save_to_file(answer_file.c_str(), _rs.to_str());

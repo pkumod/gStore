@@ -15,6 +15,7 @@ readline-devel | need to be installed
 openjdk | needed if using Java api
 openjdk-devel | needed if using Java api
 realpath | needed if using gconsole
+ccache | optional, used to speed up the compilation
 
 NOTICE:
 
@@ -22,13 +23,15 @@ NOTICE:
 
 2. To install readline and readline-devel, just type `dnf install readline-devel` in Redhat/CentOS/Fedora, or `apt-get install libreadline-dev` in Debian/Ubuntu. Please use corresponding commands in other systems. If you use ArchLinux, just type `pacman -S readline` to install the readline and readline-devel.(so do other packages)
 
-3. You do not have to install realpath to use gStore, but if you want to use the gconsole for its convenience, please do so by using `dnf install realpath` or `apt-get install realpath`.
+3. You do not have to install realpath to use gStore, but if you want to use the gconsole for its convenience, please do so by using `dnf install realpath` or `apt-get install realpath`. However, if you can not install realpath in your system, please go to modify the file Main/gconsole.cpp(just find the place using realpath command and remove the realpath command).
 
-4. Our programs use regEx functions, which are provided by GNU/Linux by default. You do not need to have to install boost and boost-devel for more powerful regEx libraries.
+4. Our programs use regEx functions, which are provided by GNU/Linux by default. You do not need to install boost and boost-devel for more powerful regEx libraries.
 
 5. ANTLR3.4 is used in gStore to produce lexer and parser code for SPARQL query. However, you do not need to install the corresponding antlr libraries because we have merged the libantlr3.4 in our system.
 
 6. When you type `make` in the root directory of the gStore project, the Java api will also be compiled. You can modify the makefile if you do not have JDK in your system. However, you are advised to install openjdk-devel in your Linux system.
 
-7. Any other questions, please go to [FAQ](FAQ.md) page.
+7. To install ccache, you need to add epel repository if using CentOS, while in Ubuntu you can directly install it by `apt-get install ccache` command. If you can not install ccache(or maybe you do not want to), please go to modify the makefile(just change the CC variable to g++).
+
+8. Any other questions, please go to [FAQ](FAQ.md) page.
 

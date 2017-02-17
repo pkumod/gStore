@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 	}
 
 	if (argc > 3 || (argc == 3 && mode != "-p" && mode != "--port")) {
-		cerr << "Invalid arguments! Input \"bin/gserver -h\" for help." << endl;
+		cout << "Invalid arguments! Input \"bin/gserver -h\" for help." << endl;
 		return -1;
 	}
 
@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 		unsigned short port = Socket::DEFAULT_CONNECT_PORT;
 		if (argc == 3) {
 			if (!Util::isValidPort(string(argv[2]))) {
-				cerr << "Invalid port: " << argv[2] << endl;
+				cout << "Invalid port: " << argv[2] << endl;
 				return -1;
 			}
 			else {
@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
 		if (!isOnlyProcess(argv[0])) {
 			ofstream out(GSERVER_PORT_SWAP, ios::out);
 			if (!out) {
-				cerr << "Failed to change port!" << endl;
+				cout << "Failed to change port!" << endl;
 				return -1;
 			}
 			out << port;
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
 		}
 		ofstream out(GSERVER_PORT_FILE, ios::out);
 		if (!out) {
-			cerr << "Failed to change port!" << endl;
+			cout << "Failed to change port!" << endl;
 			return -1;
 		}
 		out << port;
@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
 
 	if (mode == "-s" || mode == "--start") {
 		if (!isOnlyProcess(argv[0])) {
-			cerr << "gServer already running!" << endl;
+			cout << "gServer already running!" << endl;
 			return -1;
 		}
 		if (startServer()) {
@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
 
 	if (mode == "-t" || mode == "--stop") {
 		if (isOnlyProcess(argv[0])) {
-			cerr << "gServer not running!" << endl;
+			cout << "gServer not running!" << endl;
 			return -1;
 		}
 		if (stopServer()) {
@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
 
 	if (mode == "-r" || mode == "--restart") {
 		if (isOnlyProcess(argv[0])) {
-			cerr << "gServer not running!" << endl;
+			cout << "gServer not running!" << endl;
 			return -1;
 		}
 		if (!stopServer()) {
@@ -153,14 +153,14 @@ int main(int argc, char* argv[])
 
 	if (mode == "-k" || mode == "--kill") {
 		if (isOnlyProcess(argv[0])) {
-			cerr << "No process to kill!" << endl;
+			cout << "No process to kill!" << endl;
 			return -1;
 		}
 		execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
 		return 0;
 	}
 
-	cerr << "Invalid arguments! Input \"bin/gserver -h\" for help." << endl;
+	cout << "Invalid arguments! Input \"bin/gserver -h\" for help." << endl;
 	return -1;
 }
 
@@ -174,7 +174,7 @@ void checkSwap() {
 	}
 	ifstream in(GSERVER_PORT_SWAP, ios::in);
 	if (!in) {
-		cerr << "Failed in checkSwap(), port may not be changed." << endl;
+		cout << "Failed in checkSwap(), port may not be changed." << endl;
 		return;
 	}
 	unsigned short port;
@@ -182,7 +182,7 @@ void checkSwap() {
 	in.close();
 	ofstream out(GSERVER_PORT_FILE, ios::out);
 	if (!out) {
-		cerr << "Failed in checkSwap(), port may not be changed." << endl;
+		cout << "Failed in checkSwap(), port may not be changed." << endl;
 		return;
 	}
 	out << port;
@@ -219,7 +219,7 @@ bool startServer() {
 		freopen(GSERVER_LOG, "a", stderr);
 		Server server(port);
 		if (!server.createConnection()) {
-			cerr << Util::getTimeString() << "Failed to create connection at port " << port << '.' << endl;
+			cout << Util::getTimeString() << "Failed to create connection at port " << port << '.' << endl;
 			return false;
 		}
 		cout << Util::getTimeString() << "Server started at port " << port << '.' << endl;
@@ -234,7 +234,7 @@ bool startServer() {
 	}
 	// fork failure
 	else {
-		cerr << "Failed to start server at port " << port << '.' << endl;
+		cout << "Failed to start server at port " << port << '.' << endl;
 		return false;
 	}
 }
@@ -248,14 +248,14 @@ bool stopServer() {
 	}
 	Socket socket;
 	if (!socket.create() || !socket.connect("127.0.0.1", port) || !socket.send("stop")) {
-		cerr << "Failed to stop server at port " << port << '.' << endl;
+		cout << "Failed to stop server at port " << port << '.' << endl;
 		return false;
 	}
 	string recv_msg;
 	socket.recv(recv_msg);
 	socket.close();
 	if (recv_msg != "server stopped.") {
-		cerr << "Failed to stop server at port " << port << '.' << endl;
+		cout << "Failed to stop server at port " << port << '.' << endl;
 		return false;
 	}
 	cout << "Server stopped at port " << port << '.' << endl;

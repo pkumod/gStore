@@ -44,14 +44,14 @@ LRUCache::LRUCache(int _capacity)
 
 LRUCache::~LRUCache()
 {
-	delete[]this->next;
-	delete[]this->prev;
-	delete[]this->keys;
+	delete[] this->next;
+	delete[] this->prev;
+	delete[] this->keys;
 	for (int i = 0; i < this->size; ++i)
 	{
 		delete this->values[i];
 	}
-	delete[]this->values;
+	delete[] this->values;
 }
 
 //load cache's elements from an exist data file. 

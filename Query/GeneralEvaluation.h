@@ -35,14 +35,16 @@ class GeneralEvaluation
 		VSTree *vstree;
 		KVstore *kvstore;
 		TNUM* pre2num;
+		int limitID_predicate;
+		int limitID_literal;
 		StringIndex *stringindex;
 		Strategy strategy;
 		ResultFilter result_filter;
 		bool need_output_answer;
 
 	public:
-		explicit GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, TNUM* _pre2num):
-			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), pre2num(_pre2num), need_output_answer(false)
+		explicit GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, TNUM* _pre2num, int _limitID_predicate, int _limitID_literal):
+			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), pre2num(_pre2num), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), need_output_answer(false)
 	{
 	}
 
@@ -51,7 +53,7 @@ class GeneralEvaluation
 		bool parseQuery(const std::string &_query);
 		QueryTree& getQueryTree();
 
-		void doQuery();
+		bool doQuery();
 
 		void getBasicQuery(QueryTree::GroupPattern &grouppattern);
 

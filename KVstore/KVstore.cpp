@@ -1108,6 +1108,7 @@ string KVstore::getLiteralByID(int _id) const {
 	int _len = 0;
 	bool _get = this->getValueByKey(this->id2literal, _id, _tmp, _len);
 	if (!_get) {
+		//NOTICE:here assumes that all literals cannot be empty: ""
 		return "";
 	}
 	string _ret = string(_tmp);

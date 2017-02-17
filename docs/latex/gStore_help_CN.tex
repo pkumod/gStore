@@ -394,6 +394,7 @@ Gstore系统（也称作gStore）是一个用于管理大型图结构数据的�
 			openjdk & 使用Java api时需要 \\
 			openjdk-devel & 使用Java api时需要 \\
 			realpath & 使用gconsole时需要 \\
+			ccache & 可选, 可以加速编译过程 \\
 		\bottomrule
 	\end{tabular}
 	\caption{软件要求}
@@ -407,13 +408,15 @@ Gstore系统（也称作gStore）是一个用于管理大型图结构数据的�
 	\item
 	要安装readline和readline-devel，只需要在Redhat/CentOS/Fedora中输入\texttt{dnf\ install\ readline-devel}，或者在Debian/Ubuntu 中输入\texttt{apt-get\ install\ libreadline-dev}。请在其他系统中使用对应的指令。如果你使用的是ArchLinux，只要输入\texttt{pacman\ -S\ readline}就可以安装readline和readline-devel。（其他包也一样）
 	\item
-	使用gStore不需要安装realpath，但如果你想要使用gconsole，请输入\texttt{dnf\ install\ realpath}或\texttt{apt-get\ install\ realpath}进行安装。
+	使用gStore不需要安装realpath，但如果你想要使用gconsole，请输入\texttt{dnf\ install\ realpath}或\texttt{apt-get\ install\ realpath}进行安装。 然而，如果你不想安装realpath，请修改Main/gconsole.cpp文件(找到使用realpath的地方并移除realpath命令即可)。
 	\item
 	我们的项目使用了正则表达式，由GNU/Linux默认提供。要使用更强大的正则表达式库，你不需要安装boost和boost-devel。
 	\item
 	gStore使用了ANTLR3.4生成SPARQL查询的语法分析代码。你不需要安装相应的antlr 库，因为我们已经将libantlr3.4融入系统中。
 	\item
 	当你在gStore项目的根目录下输入\texttt{make}时，Java api也会编译。如果你的系统里没有JDK，你可以修改makefile。我们建议你在Linux系统中安装openjdk-devel。
+	\item
+	在CentOS系统上你需要添加epel源才能安装ccache，但在Ubuntu系统上你可以直接安装。如果你无法安装ccache(或者你不想安装)，请修改makefile文件(只需将CC变量改为g++即可)。
 	\item
 	其他问题请参阅\hyperref[chapter10]{【FAQ】}一章。
 \end{enumerate}

@@ -165,13 +165,13 @@ Server::listen()
 			}
 			break;
 		}
-		case CMD_INSERT:
-		{
-			string db_name = operation.getParameter(0);
-			string rdf_path = operation.getParameter(1);
-			this->insertTriple(db_name, "", rdf_path, ret_msg);
-			break;
-		}
+		//case CMD_INSERT:
+		//{
+			//string db_name = operation.getParameter(0);
+			//string rdf_path = operation.getParameter(1);
+			//this->insertTriple(db_name, "", rdf_path, ret_msg);
+			//break;
+		//}
 		case CMD_STOP:
 		{
 			this->stopServer(ret_msg);
@@ -355,7 +355,15 @@ Server::dropDatabase(std::string _db_name, std::string _ac_name, std::string& _r
 bool
 Server::loadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
 {
-	this->database = new Database(_db_name);
+	if(this->database == NULL)
+	{
+		this->database = new Database(_db_name);
+	}
+	else
+	{
+		_ret_msg = "please unload the current db first: " + this->database->getName();
+		return false;
+	}
 
 	bool flag = this->database->load();
 
@@ -416,29 +424,29 @@ Server::importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_p
 	return flag;
 }
 
-bool
-Server::insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
-{
-	if (this->database != NULL)
-	{
-		this->database->unload();
-		delete this->database;
-	}
+//bool
+//Server::insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
+//{
+	//if (this->database != NULL)
+	//{
+		//this->database->unload();
+		//delete this->database;
+	//}
 
-	this->database = new Database(_db_name);
-	bool flag = this->database->insert(_rdf_path);
+	//this->database = new Database(_db_name);
+	//bool flag = this->database->insert(_rdf_path);
 
-	if (flag)
-	{
-		_ret_msg = "insert triple file to database done.";
-	}
-	else
-	{
-		_ret_msg = "import triple file to database failed.";
-	}
+	//if (flag)
+	//{
+		//_ret_msg = "insert triple file to database done.";
+	//}
+	//else
+	//{
+		//_ret_msg = "import triple file to database failed.";
+	//}
 
-	return flag;
-}
+	//return flag;
+//}
 
 bool
 Server::query(const string _query, string& _ret_msg)
@@ -452,25 +460,47 @@ Server::query(const string _query, string& _ret_msg)
 		return false;
 	}
 
-	FILE* output = stdout;
+	FILE* output = NULL;
 	string path = "logs/gserver_query.log";
+#ifdef OUTPUT_QUERY_RESULT
 	output = fopen(path.c_str(), "w");
+#endif
 
 	ResultSet res_set;
-	bool flag = this->database->query(_query, res_set, output);
-	if (output != stdout) {
+	int query_ret = this->database->query(_query, res_set, output);
+	if (output != NULL) 
+	{
 		fclose(output);
-		output = stdout;
 	}
-	if (flag)
+
+	bool flag = true;
+	//cout<<"Server query ret: "<<query_ret<<endl;
+	if (query_ret <= -100)  //select query
 	{
 		//_ret_msg = "results are too large!";
 		//BETTER: divide and transfer if too large to be placed in memory, using Stream
-		_ret_msg = res_set.to_str();
+		if(query_ret == -100)
+		{
+			_ret_msg = res_set.to_str();
+		}
+		else //query error
+		{
+			flag = false;
+			_ret_msg = "query failed.";
+			//BETTER: {type:select} {success:false}
+		}
 	}
-	else
+	else //update query
 	{
-		_ret_msg = "query failed.";
+		if(query_ret >= 0)
+		{
+			_ret_msg = "update num: " + Util::int2string(query_ret);
+		}
+		else //update error
+		{
+			flag = false;
+			_ret_msg = "update failed.";
+		}
 	}
 
 	return flag;
