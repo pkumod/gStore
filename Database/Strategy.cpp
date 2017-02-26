@@ -68,7 +68,14 @@ Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
 		int selected_pre_var_num = (*iter)->getSelectedPreVarNum();
 		int selected_var_num = (*iter)->getSelectVarNum();
 
-		if ((*iter)->getTripleNum() == 1 && pre_varNum == 1)
+		//NOTICE: special case - query vertices only connected via same variables
+		//all constant triples will be viewed as unconnected, if a triple has no variable, 
+		//then this triple is a BGP(no other triples in this BGP)
+		if(total_num == 0 && pre_varNum == 0)
+		{
+			this->method = 5;
+		}
+		else if ((*iter)->getTripleNum() == 1 && pre_varNum == 1)
 		{
 			this->method = 4;
 		}
@@ -122,6 +129,9 @@ Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
 		case 4:
 			this->handler4(*iter, result_list);
 			break;
+		case 5:
+			this->handler5(*iter, result_list);
+			break;
 		default:
 			cout << "not support this method" << endl;
 
@@ -166,6 +176,7 @@ Strategy::handler0(BasicQuery* _bq, vector<int*>& _result_list, ResultFilter* _r
 
 	long tv_handle = Util::get_cur_time();
 	int varNum = _bq->getVarNum();  //the num of vars needing to be joined
+	//TODO:parallel by pthread
 	for (int i = 0; i < varNum; ++i)
 	{
 		if (_bq->if_need_retrieve(i) == false)
@@ -186,7 +197,7 @@ Strategy::handler0(BasicQuery* _bq, vector<int*>& _result_list, ResultFilter* _r
 		}
 	}
 
-	//TODO:end directly if one is empty!
+	//BETTER:end directly if one is empty!
 
 	long tv_retrieve = Util::get_cur_time();
 	cout << "after Retrieve, used " << (tv_retrieve - tv_handle) << "ms." << endl;
@@ -454,6 +465,49 @@ Strategy::handler4(BasicQuery* _bq, vector<int*>& _result_list)
 		}
 	}
 
+	delete[] id_list;
+}
+
+//TODO:if any constants in a query are not found in kvstore, then this BGP should end to speed up the processing
+
+void
+Strategy::handler5(BasicQuery* _bq, vector<int*>& _result_list)
+{
+	cout<<"Special Case: consider constant triple"<<endl;
+	Triple triple = _bq->getTriple(0);
+	_result_list.clear();
+
+	int subid = this->kvstore->getIDByEntity(triple.subject);
+	if(subid == -1) //not found
+	{
+		return;
+	}
+	int preid = this->kvstore->getIDByPredicate(triple.predicate);
+	if(preid == -1) //not found
+	{
+		return;
+	}
+	int objid = this->kvstore->getIDByEntity(triple.object);
+	if(objid == -1)
+	{
+		objid = this->kvstore->getIDByLiteral(triple.object);
+	}
+	if(objid == -1)
+	{
+		return;
+	}
+
+	int* id_list = NULL;
+	int id_list_len = 0;
+	(this->kvstore)->getobjIDlistBysubIDpreID(subid, preid, id_list, id_list_len);
+	if (Util::bsearch_int_uporder(objid, id_list, id_list_len) != -1)
+	{
+		int* record = new int[3];
+		record[0] = subid;
+		record[1] = preid;
+		record[2] = objid;
+		_result_list.push_back(record);
+	}
 	delete[] id_list;
 }
 

@@ -10,7 +10,10 @@
 
 using namespace std;
 
-int LRUCache::DEFAULT_CAPACITY = 1 * 1000 * 1000;
+//NOTICE: we aim to support 1 billion triples in a single machine, whose entity num
+//can not exceed the 2 billion limit, and the maxium VNODE num is 2000000000/100=20000000=20M
+int LRUCache::DEFAULT_CAPACITY = 20000000;
+//int LRUCache::DEFAULT_CAPACITY = 1 * 1000 * 1000;
 
 LRUCache::LRUCache(int _capacity)
 {
@@ -66,8 +69,9 @@ bool LRUCache::loadCache(string _filePath)
 		return false;
 	}
 
-	//BETTER:increase this parameter if memory allows
-	int defaultLoadSize = this->capacity / 2;
+	//NOTICE:here we set it to the maxium, to ensure all VNODE in memory
+	int defaultLoadSize = this->capacity;
+	//int defaultLoadSize = this->capacity / 2;
 	size_t vNodeSize = sizeof(VNode);
 	int flag = 0;
 
@@ -137,6 +141,8 @@ bool LRUCache::createCache(string _filePath)
 	return true;
 }
 
+//DEBUG+WARN:the memory-disk swap strategy exists serious bugs, however, we do not really use this startegy now!!!
+//
 //set the key(node's file line) and value(node's pointer). if the key exists now, the value of this key will be overwritten. 
 bool LRUCache::set(int _key, VNode * _value)
 {
@@ -158,6 +164,7 @@ bool LRUCache::set(int _key, VNode * _value)
 	// if the cache is full, should swap out the least recently used one to hard disk.
 	else
 	{
+		cout<<"memory-disk swap hadppened in VSTree - LRUCache"<<endl;
 		// write out and free the memory of the least recently used one.
 		int pos = this->next[LRUCache::START_INDEX];
 		this->writeOut(pos, this->keys[pos]);
@@ -222,6 +229,7 @@ VNode* LRUCache::get(int _key)
 	// if the memory pool is full now, should swap out the least recently used one, and swap in the required value.
 	else
 	{
+		cout<<"memory-disk swap hadppened in VSTree - LRUCache"<<endl;
 		int pos = this->next[LRUCache::START_INDEX];
 		this->writeOut(pos, this->keys[pos]);
 		this->freeElem(pos);

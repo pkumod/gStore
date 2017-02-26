@@ -20,7 +20,7 @@ main(int argc, char * argv[])
 #ifdef DEBUG
 	Util util;
 #endif
-	if(argc == 1)  //./gbuild
+	if(argc < 3)  //./gbuild
 	{
 		//output help info here
 		cout << "the usage of gbuild: " << endl;

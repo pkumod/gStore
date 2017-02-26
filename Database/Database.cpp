@@ -2328,8 +2328,17 @@ Database::remove(const TripleWithObjType* _triples, int _triple_num)
 	{
 		string sub = _triples[i].getSubject();
 		subid = this->kvstore->getIDByEntity(sub);
+		if(subid == -1)
+		{
+			continue;
+		}
+
 		string pre = _triples[i].getPredicate();
 		preid = this->kvstore->getIDByPredicate(pre);
+		if(preid == -1)
+		{
+			continue;
+		}
 
 		is_obj_entity = _triples[i].isObjEntity();
 		string obj = _triples[i].getObject();
@@ -2341,11 +2350,15 @@ Database::remove(const TripleWithObjType* _triples, int _triple_num)
 		{
 			objid = this->kvstore->getIDByLiteral(obj);
 		}
-
-		if (subid == -1 || preid == -1 || objid == -1)
+		if(objid == -1)
 		{
 			continue;
 		}
+
+		//if (subid == -1 || preid == -1 || objid == -1)
+		//{
+			//continue;
+		//}
 		bool _exist_triple = this->exist_triple(subid, preid, objid);
 		if (!_exist_triple)
 		{

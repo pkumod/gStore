@@ -45,8 +45,8 @@ class GeneralEvaluation
 	public:
 		explicit GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, TNUM* _pre2num, int _limitID_predicate, int _limitID_literal):
 			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), pre2num(_pre2num), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), need_output_answer(false)
-	{
-	}
+		{
+		}
 
 		std::vector<std::vector<std::string> > getSPARQLQueryVarset();
 
@@ -114,7 +114,7 @@ class GeneralEvaluation
 						EffectiveBooleanValue operator >= (const DateTime &x);
 				};
 
-				enum DataType {rdf_term, iri, simple_literal, xsd_string,
+				enum DataType {rdf_term, iri, literal, xsd_string,
 					xsd_boolean, xsd_integer, xsd_decimal, xsd_float, xsd_double,
 					xsd_datetime};
 
@@ -126,10 +126,11 @@ class GeneralEvaluation
 				double dbl_value;
 				DateTime dt_value;
 
+				bool isSimpleLiteral();
+				void getSameNumericType (FilterEvaluationMultitypeValue &x);
 				FilterEvaluationMultitypeValue operator !();
 				FilterEvaluationMultitypeValue operator || (FilterEvaluationMultitypeValue &x);
 				FilterEvaluationMultitypeValue operator && (FilterEvaluationMultitypeValue &x);
-				void getSameNumericType (FilterEvaluationMultitypeValue &x);
 				FilterEvaluationMultitypeValue operator == (FilterEvaluationMultitypeValue &x);
 				FilterEvaluationMultitypeValue operator != (FilterEvaluationMultitypeValue &x);
 				FilterEvaluationMultitypeValue operator < (FilterEvaluationMultitypeValue &x);

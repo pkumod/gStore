@@ -403,7 +403,10 @@ Server::importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_p
 	//if (this->database != NULL && this->database->getName() != _db_name)
 	if (this->database != NULL)
 	{
-		delete this->database;
+		//delete this->database;
+		//NOTICE:if there is a db loaded, we should not build directly, tell user to unload it first
+		_ret_msg = "please unload the current db first: " + this->database->getName();
+		return false;
 	}
 
 	this->database = new Database(_db_name);

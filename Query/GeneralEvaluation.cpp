@@ -306,6 +306,46 @@ GeneralEvaluation::FilterEvaluationMultitypeValue::EffectiveBooleanValue
 }
 
 
+bool GeneralEvaluation::FilterEvaluationMultitypeValue::isSimpleLiteral()
+{
+	if (this->datatype == literal)
+	{
+		int length = this->str_value.length();
+		if (length >= 2 && this->str_value[0] == '"' && this->str_value[length - 1] == '"')
+			return true;
+	}
+	return false;
+}
+
+void GeneralEvaluation::FilterEvaluationMultitypeValue::getSameNumericType (FilterEvaluationMultitypeValue &x)
+{
+	DataType to_type = max(this->datatype, x.datatype);
+
+	if (this->datatype == xsd_integer && to_type == xsd_decimal)
+		this->flt_value = this->int_value;
+	if (this->datatype == xsd_integer && to_type == xsd_float)
+		this->flt_value = this->int_value;
+	if (this->datatype == xsd_integer && to_type == xsd_double)
+		this->dbl_value = this->int_value;
+	if (this->datatype == xsd_decimal && to_type == xsd_double)
+		this->dbl_value = this->flt_value;
+	if (this->datatype == xsd_float && to_type == xsd_double)
+		this->dbl_value = this->flt_value;
+	this->datatype = to_type;
+
+	if (x.datatype == xsd_integer && to_type == xsd_decimal)
+		x.flt_value = x.int_value;
+	if (x.datatype == xsd_integer && to_type == xsd_float)
+		x.flt_value = x.int_value;
+	if (x.datatype == xsd_integer && to_type == xsd_double)
+		x.dbl_value = x.int_value;
+	if (x.datatype == xsd_decimal && to_type == xsd_double)
+		x.dbl_value = x.flt_value;
+	if (x.datatype == xsd_float && to_type == xsd_double)
+		x.dbl_value = x.flt_value;
+	x.datatype = to_type;
+}
+
 GeneralEvaluation::FilterEvaluationMultitypeValue
 	GeneralEvaluation::FilterEvaluationMultitypeValue::operator !()
 {
@@ -348,35 +388,6 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 	return ret_femv;
 }
 
-void GeneralEvaluation::FilterEvaluationMultitypeValue::getSameNumericType (FilterEvaluationMultitypeValue &x)
-{
-	DataType to_type = max(this->datatype, x.datatype);
-
-	if (this->datatype == xsd_integer && to_type == xsd_decimal)
-		this->flt_value = this->int_value;
-	if (this->datatype == xsd_integer && to_type == xsd_float)
-		this->flt_value = this->int_value;
-	if (this->datatype == xsd_integer && to_type == xsd_double)
-		this->dbl_value = this->int_value;
-	if (this->datatype == xsd_decimal && to_type == xsd_double)
-		this->dbl_value = this->flt_value;
-	if (this->datatype == xsd_float && to_type == xsd_double)
-		this->dbl_value = this->flt_value;
-	this->datatype = to_type;
-
-	if (x.datatype == xsd_integer && to_type == xsd_decimal)
-		x.flt_value = x.int_value;
-	if (x.datatype == xsd_integer && to_type == xsd_float)
-		x.flt_value = x.int_value;
-	if (x.datatype == xsd_integer && to_type == xsd_double)
-		x.dbl_value = x.int_value;
-	if (x.datatype == xsd_decimal && to_type == xsd_double)
-		x.dbl_value = x.flt_value;
-	if (x.datatype == xsd_float && to_type == xsd_double)
-		x.dbl_value = x.flt_value;
-	x.datatype = to_type;
-}
-
 GeneralEvaluation::FilterEvaluationMultitypeValue
 	GeneralEvaluation::FilterEvaluationMultitypeValue::operator == (FilterEvaluationMultitypeValue &x)
 {
@@ -406,26 +417,26 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		return ret_femv;
 	}
 
-	 if (this->datatype == simple_literal && x.datatype == simple_literal)
-	 {
-		 ret_femv.bool_value = (this->str_value == x.str_value);
-		 return ret_femv;
-	 }
+	if (this->isSimpleLiteral() && x.isSimpleLiteral())
+	{
+		ret_femv.bool_value = (this->str_value == x.str_value);
+		return ret_femv;
+	}
 
-	 if (this->datatype == xsd_string && x.datatype == xsd_string)
-	 {
-		 ret_femv.bool_value = (this->str_value == x.str_value);
-		 return ret_femv;
-	 }
+	if (this->datatype == xsd_string && x.datatype == xsd_string)
+	{
+		ret_femv.bool_value = (this->str_value == x.str_value);
+		return ret_femv;
+	}
 
-	 if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
-	 {
-		 ret_femv.bool_value = (this->dt_value == x.dt_value);
-		 return ret_femv;
-	 }
+	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
+	{
+		ret_femv.bool_value = (this->dt_value == x.dt_value);
+		return ret_femv;
+	}
 
-	 ret_femv.bool_value = (this->term_value == x.term_value);
-	 return ret_femv;
+	ret_femv.bool_value = (this->term_value == x.term_value);
+	return ret_femv;
 }
 
 GeneralEvaluation::FilterEvaluationMultitypeValue
@@ -457,26 +468,26 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		return ret_femv;
 	}
 
-	 if (this->datatype == simple_literal && x.datatype == simple_literal)
-	 {
-		 ret_femv.bool_value = (this->str_value != x.str_value);
-		 return ret_femv;
-	 }
+	if (this->isSimpleLiteral() && x.isSimpleLiteral())
+	{
+		ret_femv.bool_value = (this->str_value != x.str_value);
+		return ret_femv;
+	}
 
-	 if (this->datatype == xsd_string && x.datatype == xsd_string)
-	 {
-		 ret_femv.bool_value = (this->str_value != x.str_value);
-		 return ret_femv;
-	 }
+	if (this->datatype == xsd_string && x.datatype == xsd_string)
+	{
+		ret_femv.bool_value = (this->str_value != x.str_value);
+		return ret_femv;
+	}
 
-	 if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
-	 {
-		 ret_femv.bool_value = (this->dt_value != x.dt_value);
-		 return ret_femv;
-	 }
+	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
+	{
+		ret_femv.bool_value = (this->dt_value != x.dt_value);
+		return ret_femv;
+	}
 
-	 ret_femv.bool_value = (this->term_value != x.term_value);
-	 return ret_femv;
+	ret_femv.bool_value = (this->term_value != x.term_value);
+	return ret_femv;
 }
 
 GeneralEvaluation::FilterEvaluationMultitypeValue
@@ -508,25 +519,25 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		return ret_femv;
 	}
 
-	 if (this->datatype == simple_literal && x.datatype == simple_literal)
-	 {
-		 ret_femv.bool_value = (this->str_value < x.str_value);
-		 return ret_femv;
-	 }
+	if (this->isSimpleLiteral() && x.isSimpleLiteral())
+	{
+		ret_femv.bool_value = (this->str_value < x.str_value);
+		return ret_femv;
+	}
 
-	 if (this->datatype == xsd_string && x.datatype == xsd_string)
-	 {
-		 ret_femv.bool_value = (this->str_value < x.str_value);
-		 return ret_femv;
-	 }
+	if (this->datatype == xsd_string && x.datatype == xsd_string)
+	{
+		ret_femv.bool_value = (this->str_value < x.str_value);
+		return ret_femv;
+	}
 
-	 if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
-	 {
-		 ret_femv.bool_value = (this->dt_value < x.dt_value);
-		 return ret_femv;
-	 }
+	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
+	{
+		ret_femv.bool_value = (this->dt_value < x.dt_value);
+		return ret_femv;
+	}
 
-	 return ret_femv;
+	return ret_femv;
 }
 
 GeneralEvaluation::FilterEvaluationMultitypeValue
@@ -558,25 +569,25 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		return ret_femv;
 	}
 
-	 if (this->datatype == simple_literal && x.datatype == simple_literal)
-	 {
-		 ret_femv.bool_value = (this->str_value <= x.str_value);
-		 return ret_femv;
-	 }
+	if (this->isSimpleLiteral() && x.isSimpleLiteral())
+	{
+		ret_femv.bool_value = (this->str_value <= x.str_value);
+		return ret_femv;
+	}
 
-	 if (this->datatype == xsd_string && x.datatype == xsd_string)
-	 {
-		 ret_femv.bool_value = (this->str_value <= x.str_value);
-		 return ret_femv;
-	 }
+	if (this->datatype == xsd_string && x.datatype == xsd_string)
+	{
+		ret_femv.bool_value = (this->str_value <= x.str_value);
+		return ret_femv;
+	}
 
-	 if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
-	 {
-		 ret_femv.bool_value = (this->dt_value <= x.dt_value);
-		 return ret_femv;
-	 }
+	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
+	{
+		ret_femv.bool_value = (this->dt_value <= x.dt_value);
+		return ret_femv;
+	}
 
-	 return ret_femv;
+	return ret_femv;
 }
 
 GeneralEvaluation::FilterEvaluationMultitypeValue
@@ -608,25 +619,25 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		return ret_femv;
 	}
 
-	 if (this->datatype == simple_literal && x.datatype == simple_literal)
-	 {
-		 ret_femv.bool_value = (this->str_value > x.str_value);
-		 return ret_femv;
-	 }
+	if (this->isSimpleLiteral() && x.isSimpleLiteral())
+	{
+		ret_femv.bool_value = (this->str_value > x.str_value);
+		return ret_femv;
+	}
 
-	 if (this->datatype == xsd_string && x.datatype == xsd_string)
-	 {
-		 ret_femv.bool_value = (this->str_value > x.str_value);
-		 return ret_femv;
-	 }
+	if (this->datatype == xsd_string && x.datatype == xsd_string)
+	{
+		ret_femv.bool_value = (this->str_value > x.str_value);
+		return ret_femv;
+	}
 
-	 if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
-	 {
-		 ret_femv.bool_value = (this->dt_value > x.dt_value);
-		 return ret_femv;
-	 }
+	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
+	{
+		ret_femv.bool_value = (this->dt_value > x.dt_value);
+		return ret_femv;
+	}
 
-	 return ret_femv;
+	return ret_femv;
 }
 
 GeneralEvaluation::FilterEvaluationMultitypeValue
@@ -658,25 +669,25 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		return ret_femv;
 	}
 
-	 if (this->datatype == simple_literal && x.datatype == simple_literal)
-	 {
-		 ret_femv.bool_value = (this->str_value >= x.str_value);
-		 return ret_femv;
-	 }
+	if (this->isSimpleLiteral() && x.isSimpleLiteral())
+	{
+		ret_femv.bool_value = (this->str_value >= x.str_value);
+		return ret_femv;
+	}
 
-	 if (this->datatype == xsd_string && x.datatype == xsd_string)
-	 {
-		 ret_femv.bool_value = (this->str_value >= x.str_value);
-		 return ret_femv;
-	 }
+	if (this->datatype == xsd_string && x.datatype == xsd_string)
+	{
+		ret_femv.bool_value = (this->str_value >= x.str_value);
+		return ret_femv;
+	}
 
-	 if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
-	 {
-		 ret_femv.bool_value = (this->dt_value >= x.dt_value);
-		 return ret_femv;
-	 }
+	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
+	{
+		ret_femv.bool_value = (this->dt_value >= x.dt_value);
+		return ret_femv;
+	}
 
-	 return ret_femv;
+	return ret_femv;
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -970,7 +981,7 @@ void GeneralEvaluation::TempResult::mapFilterTree2Varset(QueryTree::GroupPattern
 			else filter.child[1].isel = false;
 		}
 	}
-	else if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_regex_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_lang_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_langmatches_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_bound_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_in_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_regex_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_str_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_lang_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_langmatches_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_bound_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_in_type)
 	{
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
 			mapFilterTree2Varset(filter.child[0].node, v, entity_literal_varset);
@@ -1024,13 +1035,6 @@ void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::Fil
 		}
 		else femv.term_value = child.arg;
 
-		//' to "
-		if (femv.term_value[0] == '\'')
-		{
-			femv.term_value[0] = '"';
-			femv.term_value[femv.term_value.rfind('\'')] = '"';
-		}
-
 		if (femv.term_value[0] == '<' && femv.term_value[femv.term_value.length() - 1] == '>')
 		{
 			femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::iri;
@@ -1039,7 +1043,7 @@ void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::Fil
 
 		if (femv.term_value[0] == '"' && femv.term_value.find("\"^^<") == -1 && femv.term_value[femv.term_value.length() - 1] != '>' )
 		{
-			femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::simple_literal;
+			femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::literal;
 			femv.str_value = femv.term_value;
 		}
 
@@ -1304,7 +1308,7 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 			getFilterString(filter.child[0], x, row, stringindex);
 		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
 			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
-		if (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::simple_literal)
+		if (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::literal || x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_string)
 		{
 			t = x.str_value;
 			t = t.substr(1, t.rfind('"') - 1);
@@ -1316,7 +1320,7 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 			getFilterString(filter.child[1], y, row, stringindex);
 		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
 			y = matchFilterTree(filter.child[1].node, filter_exists_grouppattern_resultset_record, row, stringindex);
-		if (y.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::simple_literal)
+		if (y.isSimpleLiteral())
 		{
 			p = y.str_value;
 			p = p.substr(1, p.rfind('"') - 1);
@@ -1330,7 +1334,7 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 				getFilterString(filter.child[2], z, row, stringindex);
 			else if (filter.child[2].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
 				z = matchFilterTree(filter.child[2].node, filter_exists_grouppattern_resultset_record, row, stringindex);
-			if (z.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::simple_literal)
+			if (z.isSimpleLiteral())
 			{
 				f = z.str_value;
 				f = f.substr(1, f.rfind('"') - 1);
@@ -1348,6 +1352,43 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		return ret_femv;
 	}
 
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_str_type)
+	{
+		FilterEvaluationMultitypeValue x;
+
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+
+		if (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::literal)
+		{
+			ret_femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::literal;
+
+			ret_femv.str_value = x.str_value.substr(0, x.str_value.rfind('"') + 1);
+
+			return ret_femv;
+		}
+		else if (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::iri)
+		{
+			ret_femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::literal;
+
+			ret_femv.str_value = "\"" + x.str_value.substr(1, x.str_value.length() - 2) + "\"";
+
+			return ret_femv;
+		}
+		else if (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_string)
+		{
+			ret_femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::literal;
+
+			ret_femv.str_value = x.str_value;
+
+			return ret_femv;
+		}
+		else
+			return ret_femv;
+	}
+
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_lang_type)
 	{
 		FilterEvaluationMultitypeValue x;
@@ -1357,9 +1398,9 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
 			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
 
-		if (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::simple_literal)
+		if (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::literal)
 		{
-			ret_femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::simple_literal;
+			ret_femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::literal;
 
 			int p = x.str_value.rfind('@');
 			if (p != -1)
@@ -1381,14 +1422,14 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 			getFilterString(filter.child[0], x, row, stringindex);
 		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
 			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
-		if (x.datatype != GeneralEvaluation::FilterEvaluationMultitypeValue::simple_literal)
+		if (!x.isSimpleLiteral())
 			return ret_femv;
 
 		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[1], y, row, stringindex);
 		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
 			y = matchFilterTree(filter.child[1].node, filter_exists_grouppattern_resultset_record, row, stringindex);
-		if (y.datatype != GeneralEvaluation::FilterEvaluationMultitypeValue::simple_literal)
+		if (!y.isSimpleLiteral())
 			return ret_femv;
 
 		ret_femv.bool_value = ((x.str_value == y.str_value) || (x.str_value.length() > 0 && y.str_value == "\"*\""));

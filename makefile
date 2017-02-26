@@ -26,6 +26,13 @@
 
 #TODO:the dependences are not complete!
 
+#TODO: parallel -pthread
+
+#TODO: judge and decide using which program
+#CC=$(shell which clang 2>/dev/null || which gcc)
+#ccache, readline, gcov lcov
+#http://blog.csdn.net/u012421852/article/details/52138960
+
 #compile parameters
 
 CC = ccache g++
@@ -401,7 +408,7 @@ dist: clean
 
 tarball:
 	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs test docs data makefile \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex Coverage
 
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/cpp/example

@@ -41,6 +41,7 @@ private:
 	void handler2(BasicQuery*, vector<int*>&);
 	void handler3(BasicQuery*, vector<int*>&);
 	void handler4(BasicQuery*, vector<int*>&);
+	void handler5(BasicQuery*, vector<int*>&);
 	//QueryHandler *dispatch;
 	//void prepare_handler();
 };

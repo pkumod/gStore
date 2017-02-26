@@ -480,6 +480,7 @@ Join::pre_var_handler()
 			//we need to copy only the selected ones in copyToResult
 			int size = valid_ans.size();
 
+			//BETTER:only add pre vars which are selected or linked with satellite
 			if (size > 0)
 			{
 				//if(!is_selected)

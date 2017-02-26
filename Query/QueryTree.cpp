@@ -25,20 +25,24 @@ void QueryTree::GroupPattern::FilterTreeNode::print(vector<GroupPattern> &exist_
 {
 	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Not_type)	printf("!");
 	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_regex_type)	printf("REGEX");
+	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_str_type)	printf("STR");
 	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_lang_type)		printf("LANG");
 	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_langmatches_type)		printf("LANGMATCHES");
 	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_bound_type)		printf("BOUND");
 
 	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_in_type)
 	{
+		printf("(");
 		if (this->child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)	printf("%s", this->child[0].arg.c_str());
+		if (this->child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)	this->child[0].node.print(exist_grouppatterns, dep);
 		printf(" IN (");
 		for (int i = 1; i < (int)this->child.size(); i++)
 		{
 			if (i != 1)	printf(" , ");
 			if (this->child[i].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)	printf("%s", this->child[i].arg.c_str());
+			if (this->child[i].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)	this->child[i].node.print(exist_grouppatterns, dep);
 		}
-		printf(")");
+		printf("))");
 
 		return;
 	}
