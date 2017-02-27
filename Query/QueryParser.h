@@ -3,7 +3,7 @@
 # Author: Jiaqi, Chen
 # Mail: chenjiaqi93@163.com
 # Last Modified: 2016-07-14
-# Description:
+# Description:qunimade
 =============================================================================*/
 
 #ifndef QUERYPARSER_H_
