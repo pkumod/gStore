@@ -279,7 +279,7 @@ void QueryParser::parseSelectAggregateFunction(pANTLR3_BASE_TREE node, QueryTree
 	pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, 0);
 
 	//unary 190
-	if (childNode->getType(childNode) == 190)
+	while (childNode->getType(childNode) == 190)
 		childNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
 	//count 39
 	if (childNode->getType(childNode) != 39)
@@ -296,7 +296,7 @@ void QueryParser::parseSelectAggregateFunction(pANTLR3_BASE_TREE node, QueryTree
 	}
 
 	//unary 190
-	if (gchildNode->getType(gchildNode) == 190)
+	while (gchildNode->getType(gchildNode) == 190)
 		gchildNode = (pANTLR3_BASE_TREE) gchildNode->getChild(gchildNode, 0);
 	if (gchildNode->getType(gchildNode) != 200 && gchildNode->getType(gchildNode) != 14)
 		throw "[ERROR]	The aggregate function COUNT can accepts only one var or *.";
@@ -471,7 +471,7 @@ void QueryParser::parseFilter(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &g
 		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
 
 		//unary 190
-		if (childNode->getType(childNode) == 190)
+		while (childNode->getType(childNode) == 190)
 			childNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
 
 		grouppattern.addOneFilterTree();
@@ -508,6 +508,8 @@ void QueryParser::parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::GroupPatter
 
 		//regex 150
 		case 150:	filter.oper_type = QueryTree::GroupPattern::FilterTreeNode::Builtin_regex_type;		break;
+		//str 167
+		case 167:	filter.oper_type = QueryTree::GroupPattern::FilterTreeNode::Builtin_str_type;		break;
 		//lang 96
 		case 96:		filter.oper_type = QueryTree::GroupPattern::FilterTreeNode::Builtin_lang_type;		break;
 		//langmatches 97
@@ -525,7 +527,7 @@ void QueryParser::parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::GroupPatter
 			return;
 	}
 
-	//in the "NOT IN" case,  in, var and expression list is on the same layer.
+	//in the "NOT IN" case, in, var and expression list is on the same layer.
 	//not 115
 	if (node->getType(node) == 115)
 	{
@@ -537,7 +539,7 @@ void QueryParser::parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::GroupPatter
 			filter.child.push_back(QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild());
 			filter.child[0].node_type = QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type;
 			filter.child[0].node.oper_type = QueryTree::GroupPattern::FilterTreeNode::Builtin_in_type;
-			parseVarInExpressionList(node, filter.child[0].node, 1);
+			parseVarInExpressionList(node, grouppattern, filter.child[0].node);
 
 			return;
 		}
@@ -546,7 +548,7 @@ void QueryParser::parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::GroupPatter
 	//in 81
 	if (node->getType(node) == 81)
 	{
-		parseVarInExpressionList(node, filter, 0);
+		parseVarInExpressionList(node, grouppattern, filter);
 
 		return;
 	}
@@ -576,14 +578,12 @@ void QueryParser::parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::GroupPatter
 		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
 
 		//unary 190
-		if (childNode->getType(childNode) == 190)
+		while (childNode->getType(childNode) == 190)
 		{
 			pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
-			//unsigned int type = gchildNode->getType(gchildNode);
-			//regex 150	lang 96	langmatches 97	bound 23	exists 63
-			//if (type == 150 || type == 96 || type == 97 || type == 23 || type == 63)
 			if (gchildNode->getChildCount(gchildNode) != 0)
 				childNode = gchildNode;
+			else break;
 		}
 
 		filter.child.push_back(QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild());
@@ -609,22 +609,51 @@ void QueryParser::parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::GroupPatter
 	}
 }
 
-void QueryParser::parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::GroupPattern::FilterTreeNode &filter, unsigned int begin)
+void QueryParser::parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern, QueryTree::GroupPattern::FilterTreeNode &filter)
 {
 	printf("parseVarInExpressionList\n");
 
-	for (unsigned int i = begin; i < node->getChildCount(node); i++)
+	for (unsigned int i = 0; i < node->getChildCount(node); i++)
 	{
 		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
+
+		//in 81
+		if (childNode->getType(childNode) == 81)
+			continue;
 
 		//unary 190
 		if (childNode->getType(childNode) == 190)
 		{
+			//unary 190
+			while (childNode->getType(childNode) == 190)
+			{
+				pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
+				if (gchildNode->getChildCount(gchildNode) != 0)
+					childNode = gchildNode;
+				else break;
+			}
+
+			int last = filter.child.size();
 			filter.child.push_back(QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild());
 
-			filter.child[i - begin].node_type = QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type;
-			parseString(childNode, filter.child[i - begin].arg, 1);
-			replacePrefix(filter.child[i - begin].arg);
+			//unary 190
+			if (childNode->getType(childNode) == 190)
+			{
+				filter.child[last].node_type = QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type;
+				parseString(childNode, filter.child[last].arg, 1);
+				replacePrefix(filter.child[last].arg);
+			}
+			else if (childNode->getChildCount(childNode) == 0)
+			{
+				filter.child[last].node_type = QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type;
+				parseString(childNode, filter.child[last].arg, 0);
+				replacePrefix(filter.child[last].arg);
+			}
+			else
+			{
+				filter.child[last].node_type = QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type;
+				parseFilterTree(childNode, grouppattern, filter.child[last].node);
+			}
 		}
 
 		//expression list 65
@@ -634,11 +663,36 @@ void QueryParser::parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::Gr
 			{
 				pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, j);
 
+				//unary 190
+				while (gchildNode->getType(gchildNode) == 190)
+				{
+					pANTLR3_BASE_TREE ggchildNode = (pANTLR3_BASE_TREE) gchildNode->getChild(gchildNode, 0);
+					if (ggchildNode->getChildCount(ggchildNode) != 0)
+						gchildNode = ggchildNode;
+					else break;
+				}
+
+				int last = filter.child.size();
 				filter.child.push_back(QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild());
 
-				filter.child[i + j - begin].node_type = QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type;
-				parseString(gchildNode, filter.child[i + j - begin].arg, 1);
-				replacePrefix(filter.child[i + j - begin].arg);
+				//unary 190
+				if (gchildNode->getType(gchildNode) == 190)
+				{
+					filter.child[last].node_type = QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type;
+					parseString(gchildNode, filter.child[last].arg, 1);
+					replacePrefix(filter.child[last].arg);
+				}
+				else if (gchildNode->getChildCount(gchildNode) == 0)
+				{
+					filter.child[last].node_type = QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type;
+					parseString(gchildNode, filter.child[last].arg, 0);
+					replacePrefix(filter.child[last].arg);
+				}
+				else
+				{
+					filter.child[last].node_type = QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type;
+					parseFilterTree(gchildNode, grouppattern, filter.child[last].node);
+				}
 			}
 		}
 	}
@@ -678,13 +732,13 @@ void QueryParser::parseOrderBy(pANTLR3_BASE_TREE node, QueryTree &querytree)
 			{
 				pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, k);
 
+				//unary 190
+				while (childNode->getType(childNode) == 190)
+					childNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
+
 				//var 200
 				if (gchildNode->getType(gchildNode) == 200)
 					parseString(gchildNode, var, 0);
-
-				//unary 190
-				if (gchildNode->getType(gchildNode) == 190)
-					parseString(gchildNode, var, 1);
 
 				//asend 12
 				if (gchildNode->getType(gchildNode) == 12)
@@ -695,7 +749,8 @@ void QueryParser::parseOrderBy(pANTLR3_BASE_TREE node, QueryTree &querytree)
 					desending = true;
 			}
 
-			querytree.addOrder(var, desending);
+			if (var.length() > 0)
+				querytree.addOrder(var, desending);
 		}
 	}
 }
@@ -729,9 +784,18 @@ void QueryParser::parseString(pANTLR3_BASE_TREE node, string &str, int dep)
 			//PNAME_LN 135
 			//custom language 98
 
+			//'' 170
+			//"" 171
+			//'''''' 172
+			//"""""" 173
+
 			string substr = (const char*) childNode->getText(childNode)->chars;
 			if (childNode->getType(childNode) == 170)
 				substr = "\"" + substr.substr(1, substr.length() - 2) + "\"";
+			if (childNode->getType(childNode) == 172)
+				substr = "\"" + substr.substr(3, substr.length() - 6) + "\"";
+			if (childNode->getType(childNode) == 173)
+				substr = "\"" + substr.substr(3, substr.length() - 6) + "\"";
 
 			if (i > 0)
 			{

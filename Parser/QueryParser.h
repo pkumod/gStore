@@ -35,7 +35,7 @@ private:
 	void parseUnion(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern);
 	void parseFilter(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern);
 	void parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern, QueryTree::GroupPattern::FilterTreeNode &filter);
-	void parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::GroupPattern::FilterTreeNode &filter, unsigned int begin);
+	void parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern, QueryTree::GroupPattern::FilterTreeNode &filter);
 	void parseExistsGroupPattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern, QueryTree::GroupPattern::FilterTreeNode &filter);
 	void parseOrderBy(pANTLR3_BASE_TREE node, QueryTree &querytree);
 	void parseString(pANTLR3_BASE_TREE node, std::string &str, int dep);
