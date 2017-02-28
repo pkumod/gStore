@@ -20,34 +20,33 @@ private:
 	bool useStream;
 public:
 	int select_var_num;
-	int ansNum;
 	std::string*  var_name;
-	int output_offset, output_limit;
+	int ansNum;
 	std::string** answer;
+	int output_offset, output_limit;
 
 	ResultSet();
 	~ResultSet();
 	ResultSet(int _v_num, const std::string* _v_names);
 
 	void setUseStream();
-	inline bool checkUseStream()
-	{
-		return this->useStream;
-	}
+	bool checkUseStream();
+	void setOutputOffsetLimit(int _output_offset, int _output_limit);
 
 	//convert to binary string 
 	//Bstr* to_bstr();
 
-	//convert to usual string
+	//convert to TSV string
 	std::string to_str();
+	//convert to JSON string
+	std::string to_JSON();
 	void output(FILE* _fp);		//output all results using Stream
 	void setVar(const std::vector<std::string> & _var_names);
 
 	//operations on private stream from caller
-	void openStream(std::vector<int> &_keys, std::vector<bool> &_desc, int _output_offset, int _output_limit);
+	void openStream(std::vector<int> &_keys, std::vector<bool> &_desc);
 	void resetStream();
 	void writeToStream(std::string& _s);
-	std::string readAllFromStream();
 	const Bstr* getOneRecord();
 };
 

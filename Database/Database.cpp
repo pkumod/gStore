@@ -693,7 +693,10 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 
 	if (general_evaluation.needOutputAnswer())
 	{
-		cout << "There has answer: " << _result_set.ansNum << endl;
+		int ans_num = max(_result_set.ansNum - _result_set.output_offset, 0);
+		if (_result_set.output_limit != -1)
+			ans_num = min(ans_num, _result_set.output_limit);
+		cout << "There has answer: " << ans_num << endl;
 		cout << "final result is : " << endl;
 		_result_set.output(_fp);
 		fprintf(_fp, "\n");
@@ -2685,7 +2688,7 @@ Database::getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set)
 #else
 	vector<int> keys;
 	vector<bool> desc;
-	_result_set.openStream(keys, desc, 0, -1);
+	_result_set.openStream(keys, desc);
 #ifdef DEBUG_PRECISE
 	printf("getFinalResult:after open stream\n");
 #endif

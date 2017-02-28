@@ -484,7 +484,11 @@ Server::query(const string _query, string& _ret_msg)
 		//BETTER: divide and transfer if too large to be placed in memory, using Stream
 		if(query_ret == -100)
 		{
+#ifdef SERVER_SEND_JSON
+			_ret_msg = res_set.to_JSON();
+#else
 			_ret_msg = res_set.to_str();
+#endif
 		}
 		else //query error
 		{

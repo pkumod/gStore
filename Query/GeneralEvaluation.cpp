@@ -2338,10 +2338,15 @@ void GeneralEvaluation::getFinalResult(ResultSet &result_str)
 			for (int i = 0; i < (int)results_id->results.size(); i++)
 				result_str.ansNum += (int)results_id->results[i].res.size();
 
-	#ifdef STREAM_ON
-			if ((long)result_str.ansNum * (long)result_str.select_var_num > 10000000 || (int)this->query_tree.getOrder().size() > 0 || this->query_tree.getOffset() != 0 || this->query_tree.getLimit() != -1)
+			result_str.setOutputOffsetLimit(this->query_tree.getOffset(), this->query_tree.getLimit());
+
+#ifdef STREAM_ON
+			if ((long)result_str.ansNum * (long)result_str.select_var_num > 10000000 || (int)this->query_tree.getOrder().size() > 0)
+			{
 				result_str.setUseStream();
-	#endif
+				cout << "set use Stream" << endl;
+			}
+#endif
 
 			if (!result_str.checkUseStream())
 			{
@@ -2362,7 +2367,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &result_str)
 						desc.push_back(this->query_tree.getOrder()[i].descending);
 					}
 				}
-				result_str.openStream(keys, desc, this->query_tree.getOffset(), this->query_tree.getLimit());
+				result_str.openStream(keys, desc);
 			}
 
 			int current_result = 0;
@@ -2477,7 +2482,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &result_str)
 								count = count_set.size();
 
 							stringstream ss;
+							ss << "\"";
 							ss << count;
+							ss << "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
 							ss >> result_str.answer[0][i];
 						}
 						else
@@ -2503,7 +2510,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &result_str)
 							}
 
 							stringstream ss;
+							ss << "\"";
 							ss << count;
+							ss << "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
 							ss >> result_str.answer[0][i];
 						}
 					}

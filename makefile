@@ -408,7 +408,7 @@ dist: clean
 
 tarball:
 	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs test docs data makefile \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex Coverage
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE
 
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/cpp/example

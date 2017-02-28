@@ -733,8 +733,8 @@ void QueryParser::parseOrderBy(pANTLR3_BASE_TREE node, QueryTree &querytree)
 				pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, k);
 
 				//unary 190
-				while (childNode->getType(childNode) == 190)
-					childNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
+				while (gchildNode->getType(gchildNode) == 190)
+					gchildNode = (pANTLR3_BASE_TREE) gchildNode->getChild(gchildNode, 0);
 
 				//var 200
 				if (gchildNode->getType(gchildNode) == 200)

@@ -1537,31 +1537,31 @@ VSTree::getLeafNodeByEntityID(int _entityID)
 void 
 VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
 {
-	Util::logging("IN retrieveEntity");
+	//NOTICE:this may cause parallism error
+	//Util::logging("IN retrieveEntity");
     EntitySig filterSig(_entity_bit_set);
 #ifdef DEBUG_VSTREE
 	cerr << "the filter signature: " << filterSig.to_str() << endl;
 #endif
     queue<int> nodeQueue; //searching node file line queue.
 
-    //debug
-    {
-        stringstream _ss;
-        _ss << "filterSig=" << Signature::BitSet2str(filterSig.entityBitSet) << endl;
-        Util::logging(_ss.str());
-    }
+#ifdef DEBUG_VSTREE
+	stringstream _ss;
+	_ss << "filterSig=" << Signature::BitSet2str(filterSig.entityBitSet) << endl;
+	Util::logging(_ss.str());
+#endif
 
     const SigEntry& root_entry = (this->getRoot())->getEntry();
-    Util::logging("Get Root Entry");
+    //Util::logging("Get Root Entry");
 
     if(root_entry.cover(filterSig))
     {
         nodeQueue.push(this->getRoot()->getFileLine());
-    	Util::logging("root cover the filter_sig");
+        //Util::logging("root cover the filter_sig");
     }
     else
     {
-    	Util::logging("warning: root is not cover the filter_sig");
+        //Util::logging("warning: root is not cover the filter_sig");
     }
 
     //debug
@@ -1641,7 +1641,7 @@ VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
 		//cerr << "child num: " << childNum << "   valid num: " << valid << endl;
 #endif
     }
-    Util::logging("OUT retrieveEntity");
+    //Util::logging("OUT retrieveEntity");
 }
 
 void

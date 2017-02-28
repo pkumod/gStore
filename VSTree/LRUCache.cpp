@@ -12,11 +12,17 @@ using namespace std;
 
 //NOTICE: we aim to support 1 billion triples in a single machine, whose entity num
 //can not exceed the 2 billion limit, and the maxium VNODE num is 2000000000/100=20000000=20M
-int LRUCache::DEFAULT_CAPACITY = 20000000;
+//However, if there is really 20M VNODEs, the whole memory can not afford it!
+//NOTICE:In fact, real graph is not linear, we can assume that 1 billion triples contains at most 1 billion entities
+//then the memory cost at most is 23448 * 10M = 200G, which is also too large
+//But we can only see at most 200M entities in web graphs, then the memory cost is 40G, which is affordable
+//TODO+BETTER:support memory-disk swap in vstree
+int LRUCache::DEFAULT_CAPACITY = 10000000;
 //int LRUCache::DEFAULT_CAPACITY = 1 * 1000 * 1000;
 
 LRUCache::LRUCache(int _capacity)
 {
+	cout<<"size of VNODE: "<<sizeof(VNode)<<endl;
 	cout << "LRUCache initial..." << endl;
 	this->capacity = _capacity > 0 ? _capacity : LRUCache::DEFAULT_CAPACITY;
 	// we should guarantee the cache is big enough.
@@ -210,6 +216,7 @@ LRUCache::del(int _key)
 VNode* LRUCache::get(int _key)
 {
 	VNode* ret = NULL;
+	//NOTICE:use map[] will cause the rbtree to enlarge, so we should use find
 	map<int, int>::iterator iter = this->key2pos.find(_key);
 
 	if (iter != this->key2pos.end())
@@ -220,6 +227,9 @@ VNode* LRUCache::get(int _key)
 	// the value is not in memory now, should load it from hard disk.
 	else if (this->size < this->capacity)
 	{
+		//NOTICE+DEBUG:now all are loaded and there should not be any not read, goes here means error!
+		//And this will cause error in multiple threads program(even if only read)
+		cout<<"new read hadppened in VSTree - LRUCache"<<endl;
 		int pos = LRUCache::DEFAULT_NUM + this->size;
 		if (this->readIn(pos, _key))
 		{
@@ -520,10 +530,10 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 	return true;
 }
 
+//BETTER+TODO:only write dirty nodes
 //write out all the elements to hard disk. 
 bool LRUCache::flush()
 {
-	cout<<"to flush in LRUCache"<<endl;
 	FILE* filePtr = fopen(this->dataFilePath.c_str(), "r+b");
 
 	if (filePtr == NULL)
