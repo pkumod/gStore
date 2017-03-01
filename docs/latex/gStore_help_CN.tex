@@ -73,7 +73,7 @@
 %set the font type
 %http://blog.csdn.net/plain_jane/article/details/6189524
 %http://www.tuicool.com/articles/aqYZRz
-%\setCJKmainfont{AR PL UMing CN}
+\setCJKmainfont{AR PL UMing CN}
 \usepackage{cite}
 \usepackage{etoolbox}
 \usepackage{float}
@@ -394,7 +394,7 @@ Gstore系统（也称作gStore）是一个用于管理大型图结构数据的�
 			openjdk & 使用Java api时需要 \\
 			openjdk-devel & 使用Java api时需要 \\
 			realpath & 使用gconsole时需要 \\
-			ccache & 可选, 可以加速编译过程 \\
+			ccache & 可选，可以加速编译过程 \\
 		\bottomrule
 	\end{tabular}
 	\caption{软件要求}
@@ -408,7 +408,7 @@ Gstore系统（也称作gStore）是一个用于管理大型图结构数据的�
 	\item
 	要安装readline和readline-devel，只需要在Redhat/CentOS/Fedora中输入\texttt{dnf\ install\ readline-devel}，或者在Debian/Ubuntu 中输入\texttt{apt-get\ install\ libreadline-dev}。请在其他系统中使用对应的指令。如果你使用的是ArchLinux，只要输入\texttt{pacman\ -S\ readline}就可以安装readline和readline-devel。（其他包也一样）
 	\item
-	使用gStore不需要安装realpath，但如果你想要使用gconsole，请输入\texttt{dnf\ install\ realpath}或\texttt{apt-get\ install\ realpath}进行安装。 然而，如果你不想安装realpath，请修改Main/gconsole.cpp文件(找到使用realpath的地方并移除realpath命令即可)。
+	使用gStore不需要安装realpath，但如果你想要使用gconsole，请输入\texttt{dnf\ install\ realpath}或\texttt{apt-get\ install\ realpath}进行安装。
 	\item
 	我们的项目使用了正则表达式，由GNU/Linux默认提供。要使用更强大的正则表达式库，你不需要安装boost和boost-devel。
 	\item
@@ -416,7 +416,7 @@ Gstore系统（也称作gStore）是一个用于管理大型图结构数据的�
 	\item
 	当你在gStore项目的根目录下输入\texttt{make}时，Java api也会编译。如果你的系统里没有JDK，你可以修改makefile。我们建议你在Linux系统中安装openjdk-devel。
 	\item
-	在CentOS系统上你需要添加epel源才能安装ccache，但在Ubuntu系统上你可以直接安装。如果你无法安装ccache(或者你不想安装)，请修改makefile文件(只需将CC变量改为g++即可)。
+	在CentOS系统上你需要添加epel源才能安装ccache，但在Ubuntu系统上可以直接用'apt-get install ccache'命令安装。如果你无法安装ccahe（或者不想安装），请修改makefile文件（只需要将CC变量改为g++即可）。
 	\item
 	其他问题请参阅\hyperref[chapter10]{【FAQ】}一章。
 \end{enumerate}
@@ -635,43 +635,22 @@ gserver是一个后台程序。会在使用gclient或API连接gStore时运行。
 
 \begin{verbatim}
 [bookug@localhost gStore]$ bin/gserver -s
-port=3305
-Wait for input...
+Server started at port 3305
+\end{verbatim}
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gserver -t
+Server stopped at port 3305
 \end{verbatim}
 
 你也可以为监听分配一个定制端口。
 
 \begin{verbatim}
 [bookug@localhost gStore]$ bin/gserver -p 3307
-port=3307
-Wait for input...
-\end{verbatim}
-
-如果要停止gserver服务，请输入：
-
-\begin{verbatim}
-[bookug@localhost gStore]$ bin/gserver -t
+Port changed to 3307.
 \end{verbatim}
 
 注意：gserver不支持多线程。如果你同时在多个终端启动gclient，gserver会崩溃。
-
-通过以下命令可查看gserver的更多参数选项：
-
-\begin{verbatim}
-[bookug@localhost gStore]$ bin/gserver
-gStore Server (gServer)
-
-Usage:  bin/gserver [option]
-
-Options:
-		-h,--help               Display this message.
-		-s,--start              Start gServer.
-		-t,--stop               Stop gServer.
-		-r,--restart            Restart gServer.
-		-p,--port [PORT=3305]   Change connection port configuration, takes effect after restart if gServer running.
-		-P,--printport          Display current connection port configuration.
-		-k,--kill               Kill existing gServer process(es), ONLY use when out of normal procedures.
-\end{verbatim}
 
 \hyperdef{}{4-gclient}{\paragraph{4. gclient}\label{4-gclient}}
 
@@ -719,8 +698,6 @@ gsql>
 	\texttt{unload\ db\_name} 卸载一个数据库，但不会从磁盘上删除它，你可以再次载入
 	\item
 	\texttt{sparql\ "query\_string"} 用一个SPARQL查询字符串（在``''内）查询当前数据库
-	\item
-	\texttt{sparql\ query\_path} 用一个SPARQL查询文件的路径（不在``''内）查询当前数据库
 	\item
 	\texttt{show} 显示当前数据库的名称
 \end{itemize}
@@ -1165,7 +1142,7 @@ gStore/api/python/example/PythonAPIExample展示了如何使用python API。Pyth
 
 \clearpage
 
-\hyperdef{}{chapter06}{\subsection{第06章：Hello World}\label{chapter06}}
+\hyperdef{}{chapter06}{\subsection{第06章：web应用}\label{chapter06}}
 
 \textbf{本章提供了API的具体用例。}
 
@@ -1627,7 +1604,7 @@ gStore中的api/文件夹用于存储API程序、库和样例，请参在\hyperr
 
 \begin{enumerate}
 	\item
-	支持SPARQL 1.1语法（WITH, FROM, GRAPH这几个关键字除外）
+	对SPARQL update查询的支持还不是很好。
 	\item
 	只支持N3格式的RDF文件。下一版本会支持更多文件格式。
 \end{enumerate}
@@ -1644,11 +1621,11 @@ gStore生产的数据库包含一些索引，其结构可能在新的gStore版�
 \quad\\
 你需要在你的主程序开头加入这些语句，否则gStore无法正确运行：\\ //NOTICE:this is needed to set several debug files\\ Util util;
 
-\hyperdef{}{why-does-gstore-report-garbage-collection-failed-error-when-i-use-teh-java-api}{\paragraph{\texorpdfstring{我使用Java API时，为什么gStore报告``garbage collection failed''错误？}{Why does gStore report garbage collection failed error when I use teh Java API?}}\label{why-does-gstore-report-garbage-collection-failed-error-when-i-use-teh-java-api}}
+\hyperdef{}{why-does-gstore-report-garbage-collection-failed-error-when-i-use-teh-java-api}{\paragraph{我使用Java API时，为什么gStore报告``garbage collection failed''错误？}\label{why-does-gstore-report-garbage-collection-failed-error-when-i-use-teh-java-api}}
 \quad\\
 你需要调整jvm参数，参见\href{http://www.cnblogs.com/edwardlauxh/archive/2010/04/25/1918603.html}{url1} 和\href{http://www.cnblogs.com/redcreen/archive/2011/05/04/2037057.html}{url2} 获取更多细节。
 
-\hyperdef{}{when-i-compile-the-code-in-archlinux-why-the-error-that-no-ltermcap-is-reported}{\paragraph{\texorpdfstring{我在ArchLinux中编译代码时，为什么报告``no -ltermcap''错误？}{When I compile the code in ArchLinux, why the error that no -ltermcap is reported?}}\label{when-i-compile-the-code-in-archlinux-why-the-error-that-no-ltermcap-is-reported}}
+\hyperdef{}{when-i-compile-the-code-in-archlinux-why-the-error-that-no-ltermcap-is-reported}{\paragraph{我在ArchLinux中编译代码时，为什么报告``no -ltermcap''错误？}\label{when-i-compile-the-code-in-archlinux-why-the-error-that-no-ltermcap-is-reported}}
 \quad\\
 在ArchLinux下，你只需要用\texttt{-lreadline}连接readline库。如果你要使用ArchLinux，请移除gStore根目录下makefile中的\texttt{-ltermcap}。
 
@@ -1664,7 +1641,7 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 \quad\\
 一些文件的名称是中文，你不需要担心这个问题。
 
-\hyperdef{}{in-centos7-if-the-watdivdba-generated-database-after-gbuild-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}{\paragraph{\texorpdfstring{In centos7, if the watdiv.db(a generated database after gbuild) is copied or compressed/uncompressed, the size of watdiv.db will be different(generally increasing) if using \texttt{du\ -h} command to check?}{In centos7, if the watdiv.db(a generated database after gbuild) is copied or compressed/uncompressed, the size of watdiv.db will be different(generally increasing) if using du -h command to check?}}\label{in-centos7-if-the-watdivdba-generated-database-after-gbuild-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}}
+\hyperdef{}{in-centos7-if-the-watdivdba-generated-database-after-gload-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}{\paragraph{在centos7系统中，如果复制或压缩/解压watdiv.db（gbuild生成的一个数据库），用\texttt{du\ -h}命令进行检查，watdiv.db的大小会改变（通常会变得更大）？}\label{in-centos7-if-the-watdivdba-generated-database-after-gload-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}}
 \quad\\
 是watdiv/kv\_store/中B+-树大小的改变导致整个数据库大小的改变。原因是，在storage/Storage.cpp中，很多操作用fseek移动文件指针。大家都知道，文件是以块的形式组织的，如果我们请求新的块，文件指针可能移动到当前文件外（gStore中的文件操作都用C实现，没有报告错误），然后内容将写入新的位置！
 
@@ -1678,15 +1655,15 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 \quad\\
 在退出gclient控制台之前，你需要卸载数据库，否则会出现错误。
 
-\hyperdef{}{if-query-results-contain-null-value-how-can-i-use-the-fulltest-utility-tab-separated-method-will-cause-problem-here-because-null-value-cannot-be-checked}{\paragraph{\texorpdfstring{如果查询结果包括null值，我要怎么使用\href{run:../../test/full_test.sh}{full\_test} 程序？用制表符分隔的方法会造成问题，因为不能检测到null值！}{If query results contain null value, how can I use the full\_test utility? Tab separated method will cause problem here because null value cannot be checked!}}\label{if-query-results-contain-null-value-how-can-i-use-the-fulltest-utility-tab-separated-method-will-cause-problem-here-because-null-value-cannot-be-checked}}
+\hyperdef{}{if-query-results-contain-null-value-how-can-i-use-the-fulltest-utility-tab-separated-method-will-cause-problem-here-because-null-value-cannot-be-checked}{\paragraph{如果查询结果包括null值，我要怎么使用\href{run:../../test/full_test.sh}{full\_test} 程序？用制表符分隔的方法会造成问题，因为不能检测到null值！}\label{if-query-results-contain-null-value-how-can-i-use-the-fulltest-utility-tab-separated-method-will-cause-problem-here-because-null-value-cannot-be-checked}}
 \quad\\
 你可使用其他编程语言（例如，Python）处理这种问题。例如，你可以在输出中将null值变为`,'之类的特殊字符，然后你就可以使用\href{run:../../test/full_test.sh}{full\_test} 了。
 
-\hyperdef{}{when-i-compile-and-run-the-api-examples-it-reports-the-unable-to-connect-to-server-error}{\paragraph{\texorpdfstring{当我编译并运行API样例时，报告``unable to connect to server''错误？}{When I compile and run the API examples, it reports the unable to connect to server error?}}\label{when-i-compile-and-run-the-api-examples-it-reports-the-unable-to-connect-to-server-error}}
+\hyperdef{}{when-i-compile-and-run-the-api-examples-it-reports-the-unable-to-connect-to-server-error}{\paragraph{当我编译并运行API样例时，报告``unable to connect to server''错误？}\label{when-i-compile-and-run-the-api-examples-it-reports-the-unable-to-connect-to-server-error}}
 \quad\\
 请先用\texttt{./gserver}命令启动gStore服务器，请注意服务器ip和端口号必须匹配。
 
-\hyperdef{}{when-i-use-the-java-api-to-write-my-own-program-it-reports-not-found-main-class-error}{\paragraph{\texorpdfstring{当我使用Java API写程序的时候，报告``not found main class'' 错误？}{When I use the Java API to write my own program, it reports not found main class error?}}\label{when-i-use-the-java-api-to-write-my-own-program-it-reports-not-found-main-class-error}}
+\hyperdef{}{when-i-use-the-java-api-to-write-my-own-program-it-reports-not-found-main-class-error}{\paragraph{当我使用Java API写程序的时候，报告``not found main class'' 错误？}\label{when-i-use-the-java-api-to-write-my-own-program-it-reports-not-found-main-class-error}}
 \quad\\
 请确保你在java的类路径中包含了你的程序的位置。完整的命令应该和\texttt{java\ -cp\ /home/bookug/project/devGstore/api/java/lib/GstoreJavaAPI.jar:.\ JavaAPIExample}类似，命令中的``:.''不能省略。
 
@@ -1755,7 +1732,24 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 
 \hyperdef{}{chapter13}{\subsection{第13章：更新日志}\label{chapter13}}
 
-\hyperdef{}{apr-01-2016}{\subsubsection{2016 年4月1日}\label{apr-01-2016}}
+\hyperdef{}{jan-10-2017}{\subsubsection{2017年1月10日}\label{jan-10-2017}}
+
+Join模块中的preFilter()函数通过pre2num结构进行了优化，choose\_next\_node()函数也是。加入了一个全局字符串缓存来降低getFinalResult()的开销，查询的时间大大减少。
+
+另外，我们为所有的B+树分配了不同大小的缓存（有些更加重要，且更常用）。
+王力博将几个B+树合并为一个，B+树的总量从17减到了9。这一策略不仅减少了空间开销，还减少了内存开销，并且加快了build过程和查询过程。
+
+陈佳琪优化了SPARQL查询。例如，一些未连接的SPARQL查询图可以特别处理。
+
+\hyperdef{}{sep-15-2016}{\subsubsection{2016年9月15日}\label{sep-15-2016}}
+
+曾立将KVstore根据键值的类型分成三部分，即int2string、string2int和string2string。另外，现在支持更新。你可以插入、删除或修改gStore数据库中的一些三元组。实际上，只有插入和删除已经实现，修改可以通过先删除再插入实现。
+
+\hyperdef{}{jun-20-2016}{\subsubsection{2016年6月20日}\label{jun-20-2016}}
+
+gStore可以执行包含谓词变量的查询了。另外，我们研究了很多查询的结构以加快查询过程。我们重写了sparql查询计划，目前这个更为有效。
+
+\hyperdef{}{apr-01-2016}{\subsubsection{2016年4月1日}\label{apr-01-2016}}
 
 这一项目的结构现在已经改变了很多。我们实现了一个新的连接方法，并取代了旧方法。测试结果显示，速度有所提升、内存消耗更低。我们还对Parser/Sparql*做了一些改变，都由ANTLR 生成。代码是用C实现的，因此必须做出一些修改，这带来了一些定义问题，还有就是它太大了。
 
@@ -1765,7 +1759,7 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 
 文档和API也做了更改，这一点比较不重要。
 
-\hyperdef{}{nov-06-2015}{\subsubsection{2015 年11月6日}\label{nov-06-2015}}
+\hyperdef{}{nov-06-2015}{\subsubsection{2015年11月6日}\label{nov-06-2015}}
 
 我们合并了一些类（例如Bstr）并调整了项目结构和调试系统。
 
@@ -1775,7 +1769,7 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 
 由于操作复杂，我们不能在IDlist中添加Stream，但这不是必需的。Realpath被用于支持gquery控制台中的软件连接，但在Gstore中不起作用（如果不是Gstore将会起作用）。
 
-\hyperdef{}{oct-20-2015}{\subsubsection{2015 年10月20日}\label{oct-20-2015}}
+\hyperdef{}{oct-20-2015}{\subsubsection{2015年10月20日}\label{oct-20-2015}}
 
 我们新增了一个gtest工具，你可以使用它查询数据集。
 
@@ -1783,15 +1777,15 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 
 此外，我们发现并修复了Database/中的一个错误（用于调试日志的指针在fclose操作后没的被设置为NULL，所以如果你关闭一个数据集再打开另一个数据集，系统会无法工作，因为系统认为调试日志还处于打开状态）。
 
-\hyperdef{}{sep-25-2015}{\subsubsection{2015 年9月25日}\label{sep-25-2015}}
+\hyperdef{}{sep-25-2015}{\subsubsection{2015年9月25日}\label{sep-25-2015}}
 
 我们完成了B+树的版本，取代了旧版本。
 
-在测试了DBpedia，LUBM和WatDiv benchmark 后，我们得出结论，新的B树比旧版本更高效。对于相同的三元组文件，新版本在执行gbuild指令上花费的时间更少。
+在测试了DBpedia，LUBM和WatDiv benchmark 后，我们得出结论，新的B树比旧版本更高效。对于相同的三元组文件，新版本在执行gload指令上花费的时间更少。
 
 另外，新版本可以有效地处理长文本客体，三元组的客体长度超过4096字节在旧版本的B树上会导致频繁的无效分隔操作。
 
-\hyperdef{}{feb-2-2015}{\subsubsection{2015 年2月2日}\label{feb-2-2015}}
+\hyperdef{}{feb-2-2015}{\subsubsection{2015年2月2日}\label{feb-2-2015}}
 
 我们修改了RDF解析和SPARQL解析。
 
@@ -1799,11 +1793,11 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 
 现在我们可以正确解析标准SPARQL v1.1的语法，并可以支持用这一标准语法写成的基本图模式（BGP）SPARQL查询。
 
-\hyperdef{}{dec-11-2014}{\subsubsection{2014 年12月11日}\label{dec-11-2014}}
+\hyperdef{}{dec-11-2014}{\subsubsection{2014年12月11日}\label{dec-11-2014}}
 
 我们添加了C/CPP和JAVA的API。
 
-\hyperdef{}{nov-20-2014}{\subsubsection{2014 年11月20日}\label{nov-20-2014}}
+\hyperdef{}{nov-20-2014}{\subsubsection{2014年11月20日}\label{nov-20-2014}}
 
 我们将gStore作为一个遵循BSD协议的开源软件，在github上分享了gStore2.0的代码。
 

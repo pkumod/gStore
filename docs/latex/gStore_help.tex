@@ -115,7 +115,7 @@
 \linespread{1.3}
 
 \begin{document}
-\title{\includegraphics[scale=0.3, bb=0 0 385 567]{../logo.png} \\
+\title{\includegraphics[scale=0.3, bb=0 0 385 567]{logo.png} \\
 	The handbook of gStore System测试}
 %\author{Bookug Lobert\footnote{EECS of Peking University, zengli-bookug@pku.edu.cn}\\[2ex]}
 \author{Edited by gStore team \footnote{The mailing list is given in Chapter 12.}}
@@ -266,15 +266,15 @@ NOTICE:
 \item
   To install readline and readline-devel, just type \texttt{dnf\ install\ readline-devel} in Redhat/CentOS/Fedora, or \texttt{apt-get\ install\ libreadline-dev} in Debian/Ubuntu. Please use corresponding commands in other systems. If you use ArchLinux, just type \texttt{pacman\ -S\ readline} to install the readline and readline-devel.(so do other packages)
 \item
-  You do not have to install realpath to use gStore, but if you want to use the gconsole for its convenience, please do so by using \texttt{dnf\ install\ realpath} or \texttt{apt-get\ install\ realpath}.  However, if you can not install realpath in your system, please go to modify the file Main/gconsole.cpp(just find the place using realpath command and remove the realpath command).
+  You do not have to install realpath to use gStore, but if you want to use the gconsole for its convenience, please do so by using \texttt{dnf\ install\ realpath} or \texttt{apt-get\ install\ realpath}.
 \item
-  Our programs use regEx functions, which are provided by GNU/Linux by default. You do not need to install boost and boost-devel for more powerful regEx libraries.
+  Our programs use regEx functions, which are provided by GNU/Linux by default. You do not need to have to install boost and boost-devel for more powerful regEx libraries.
 \item
   ANTLR3.4 is used in gStore to produce lexer and parser code for SPARQL query. However, you do not need to install the corresponding antlr libraries because we have merged the libantlr3.4 in our system.
 \item
   When you type \texttt{make} in the root directory of the gStore project, the Java api will also be compiled. You can modify the makefile if you do not have JDK in your system. However, you are advised to install openjdk-devel in your Linux system.
 \item
-  To install ccache, you need to add epel repository if using CentOS, while in Ubuntu you can directly install it by `apt-get install ccache` command. If you can not install ccache(or maybe you do not want to), please go to modify the makefile(just change the CC variable to g++).
+  To install ccache, you need to add epel repository if using CentOS, while in Ubuntu you can directly install it by 'apt-get install ccache' comand. If you can not install ccahe(or maybe you do not want to), please go to modify the makefile(just change the CC variable to g++).
 \item
   Any other questions, please go to \hyperref[chapter10]{FAQ} page.
 \end{enumerate}
@@ -513,43 +513,24 @@ by gclient or API. It communicates with client through socket.
 
 \begin{verbatim}
 [bookug@localhost gStore]$ bin/gserver -s
-port=3305
-Wait for input...
+Server started at port 3305
+\end{verbatim}
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gserver -t
+Server stopped at port 3305
 \end{verbatim}
 
 You can also assign a custom port for listening.
 
 \begin{verbatim}
 [bookug@localhost gStore]$ bin/gserver -p 3307
-port=3307
-Wait for input...
-\end{verbatim}
-
-To stop the server, type:
-\begin{verbatim}
-[bookug@localhost gStore]$ bin/gserver -t
+Port changed to 3307.
 \end{verbatim}
 
 Notice: Multiple threads are not supported by gserver. If you start up
 gclient in more than one terminal in the same time, gserver will go
 down.
-
-For more options of gserver command, you can use this way:
-\begin{verbatim}
-[bookug@localhost gStore]$ bin/gserver
-gStore Server (gServer)
-
-Usage:  bin/gserver [option]
-
-Options:
-		-h,--help               Display this message.
-		-s,--start              Start gServer.
-		-t,--stop               Stop gServer.
-		-r,--restart            Restart gServer.
-		-p,--port [PORT=3305]   Change connection port configuration, takes effect after restart if gServer running.
-		-P,--printport          Display current connection port configuration.
-		-k,--kill               Kill existing gServer process(es), ONLY use when out of normal procedures.
-\end{verbatim}
 
 \hyperdef{}{4-gclient}{\paragraph{4. gclient}\label{4-gclient}}
 
@@ -600,9 +581,6 @@ We can use these following commands now:
 \item
   \texttt{sparql\ "query\_string"} query the current database with a
   SPARQL query string(quoted by ``'')
-\item
-\texttt{sparql\ query\_path} query the current database with a
-SPARQL query file path(not quoted by ``'')
 \item
   \texttt{show} displays the name of the current loaded database
 \end{itemize}
@@ -1120,7 +1098,7 @@ GstoreConnector.php should be called like below:
 
 \clearpage
 
-\hyperdef{}{chapter06}{\subsection{Chapter 06: Hello World}\label{chapter06}}
+\hyperdef{}{chapter06}{\subsection{Chapter 06: Use gStore in Web}\label{chapter06}}
 	
 	\textbf{This Chapter provides a specific example on how to use our API in a web project.}
 	
@@ -1656,7 +1634,9 @@ interested in gStore.
 
 \begin{enumerate}
 \item
-  This version supports SPARQL 1.1 syntax(except WITH, FROM, GRAPH).
+  Queries related with unbounded predicates are not supported.
+\item
+  This version only supports SPARQL select query.
 \item
   Only support RDF file in N3 file format. More file formats will be
   supported in the next version.
@@ -1875,6 +1855,34 @@ Please contact with Lei Zou(zoulei@pku.edu.cn), Li Zeng(zengli-bookug@pku.edu.cn
 
 \hyperdef{}{chapter13}{\subsection{Chapter 13: Updated Logs}\label{chapter13}}
 
+\hyperdef{}{jan-10-2017}{\subsubsection{Jan 10,
+2017}\label{jan-10-2017}}
+
+preFilter() function in Join module is optimazed using the pre2num structure, as well as the choose\_next\_node() function.
+A global string buffer is added to lower the cost of getFinalResult(), and the time of answering queries is reduced greatly.
+
+In addition, we assign buffers of different size for all B+ trees.(some of them are more important and more frequently used)
+WangLibo merges several B+ trees into one, and the num of all B+ trees are reduced to 9 from 17.
+This strategy not only reduces the space cost, but also reduces the memory cost, meanwhile speeding up the build process and query process.
+
+What is more, ChenJiaqi has done a lot of work to optimaze the SPARQL query.
+For example, some unconnected SPARQL query graphs are dealed specially.
+
+\hyperdef{}{sep-15-2016}{\subsubsection{Sep 15,
+2016}\label{sep-15-2016}}
+
+ZengLi splits the KVstore into 3 parts according to the types of key and value, i.e. int2string, string2int and string2string.
+In addition, updates are supported now. 
+You can insert, delete or modify some triples in the gStore database.
+In fact, only insert() and remove() are implemented, while the modify() are supported by removing first and insert again.
+
+\hyperdef{}{jun-20-2016}{\subsubsection{Jun 20,
+2016}\label{jun-20-2016}}
+
+ZengLi has enabled the gStore to answer queries with predicate variables. 
+In addition, the structures of many queries have been studied to speed up the query processing.
+ChenJiaqi rewrites the sparql query plan to acquire a more efficient one, which brings many benefits to us.
+
 \hyperdef{}{apr-01-2016}{\subsubsection{Apr 01,
 2016}\label{apr-01-2016}}
 
@@ -1936,7 +1944,7 @@ We implement the version of B+Tree, and replace the old one.
 
 After testing on DBpedia, LUBM, and WatDiv benchmark, we conclude that
 the new BTree performs more efficient than the old version. For the
-same triple file, the new version spends shorter time on executing gbuild
+same triple file, the new version spends shorter time on executing gload
 command.
 
 Besides, the new version can handle the long literal objects
