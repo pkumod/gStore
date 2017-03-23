@@ -58,6 +58,8 @@ private:
     int databaseMaxNum;
     Socket socket;
     Database* database;
+	std::string db_home;
+	std::string db_suffix;
 
 };
 

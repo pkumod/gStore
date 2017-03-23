@@ -62,15 +62,21 @@ in the sparql query can point to the same node in data graph)
 #include <utility>
 
 //NOTICE:below are libraries need to link
+#include <pthread.h> 
 #include <math.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
+//if use pthread and lock
+//#define THREAD_ON 1			
+//if use stream module if result is too large than memory can hold
 #define STREAM_ON 1			
 //when used as C/S, if output query result in the server port: default not(you can see the result in the client)
 //#define OUTPUT_QUERY_RESULT 1
 #define SERVER_SEND_JSON 1
+//if to use readline library for console(open by default)
 #define READLINE_ON	1
+//if to use multiple strategy for answering queries
 #define MULTI_INDEX 1
 //#define SO2P 1
 //#define USE_GROUP_INSERT 1
@@ -81,7 +87,8 @@ in the sparql query can point to the same node in data graph)
 //#define DEBUG_STREAM
 //#define DEBUG_PRECISE 1		all information
 //#define DEBUG_KVSTORE 1		//in KVstore
-//#define DEBUG_VSTREE 1	//in Database 
+#define DEBUG_VSTREE 1	//in Database 
+//#define DEBUG_LRUCACHE 1
 //#define DEBUG_DATABASE 1	//in Database
 //
 //
@@ -136,18 +143,28 @@ typedef unsigned(*HashFunction)(const char*);
 //http://kb.cnblogs.com/page/189480/
 //
 //type for the triple num
+//TODO:this should use unsigned (triple num may > 2500000000)
 typedef int TNUM;
 //type for entity/literal/predicate ID
 typedef int ELPID;
+
+//TODO:typedef several ID typesand new a ID module
+//what is more, the str length and Block ID in kvstore
+typedef unsigned PREDICATE_ID;
+//TODO:encode entity from low to high, encode literal from high to low(finally select the mid of space as border)
+typedef unsigned ENTITY_LITERAL_ID;
+typedef unsigned NODE_ID;
+//can use `man limits.h` to see more
+#define INVALID UINT_MAX
 
 /******** all static&universal constants and fucntions ********/
 class Util
 {
 public:
-	static int triple_num;
-	static int pre_num;
-	static int entity_num;
-	static int literal_num;
+	//static int triple_num;
+	//static int pre_num;
+	//static int entity_num;
+	//static int literal_num;
 
 	static const unsigned MB = 1048576;
 	static const unsigned GB = 1073741824;
@@ -176,15 +193,6 @@ public:
 	static const int SI_TREE = 1;
 	static const int II_TREE = 2;
 	static const int IS_TREE = 3;
-
-	static std::string db_home;
-	static std::string tmp_path;
-	// this are for debugging
-	//to build logs-system, each class: print() in time 
-	static std::string debug_path;
-	static FILE* debug_kvstore;				
-	static FILE* debug_database;
-	static FILE* debug_vstree;
 
 	static int memUsedPercentage();
 	static int memoryLeft();
@@ -254,7 +262,23 @@ public:
 	static bool config_setting();
 	static bool config_advanced();
 	static bool config_debug();
-	static bool gStore_mode;
+	//static bool gStore_mode;
+	static std::map<std::string, std::string> global_config;
+	//static std::string db_home;
+	
+	//sort functions for qsort
+	static int _spo_cmp(const void* _a, const void* _b);
+	static int _ops_cmp(const void* _a, const void* _b);
+	static int _pso_cmp(const void* _a, const void* _b);
+
+	static std::string tmp_path;
+	// this are for debugging
+	//to build logs-system, each class: print() in time 
+	static std::string debug_path;
+	static FILE* debug_kvstore;				
+	static FILE* debug_database;
+	static FILE* debug_vstree;
+
 
 private:
 	static bool isValidIPV4(std::string);

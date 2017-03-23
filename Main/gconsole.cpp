@@ -114,6 +114,8 @@ FILE* output = stdout;
 //current using database in local
 Database *current_database = NULL;
 
+string db_home = ".";
+
 int
 main(int argc, char **argv)
 {
@@ -123,6 +125,8 @@ main(int argc, char **argv)
 #ifdef DEBUG
 	Util util;
 #endif
+
+	db_home = Util::global_config["db_home"];
 
 	char *line, *s;
 	progname = argv[0];
@@ -811,7 +815,7 @@ int show_handler(const vector<string>& args)
 
 	//native mode
 	if (flag) {
-		string database = Util::getItemsFromDir(Util::db_home);
+		string database = Util::getItemsFromDir(db_home);
 		if (database.empty()) {
 			database = "No databases.";
 		}
@@ -870,6 +874,14 @@ int build_handler(const vector<string>& args) {
 
 	cout << "Import dataset to build database..." << endl;
 	cout << "DB_store: " << database << "\tRDF_data: " << dataset << endl;
+	int len = database.length();
+
+	if(database.substr(len-3, 3) == ".db")
+	{
+		cerr<<"your database can not end with .db"<<endl;
+		return -1;
+	}
+
 	current_database = new Database(database);
 	bool flag = current_database->build(dataset);
 	delete current_database;

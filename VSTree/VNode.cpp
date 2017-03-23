@@ -12,51 +12,150 @@ using namespace std;
 
 VNode::VNode()
 {
-    this->is_leaf = false;
-    this->is_root = false;
-    this->child_num = 0;
+    //this->is_leaf = false;
+    //this->is_root = false;
+    //this->child_num = 0;
+	this->flag = 0;
     this->self_file_line = -1;
     this->father_file_line = -1;
+
+	this->child_file_lines = new int[VNode::MAX_CHILD_NUM];
+    for(int i = 0; i < VNode::MAX_CHILD_NUM; i ++)
+    {
+    	this->child_file_lines[i] = -1;
+    }
+
+	InitLock();
+}
+
+VNode::VNode(bool _is_leaf)
+{
+    //this->is_leaf = false;
+    //this->is_root = false;
+    //this->child_num = 0;
+	this->flag = 0;
+    this->self_file_line = -1;
+    this->father_file_line = -1;
+
+	if(_is_leaf)
+	{
+		this->child_file_lines = NULL;
+		//return;
+	}
+	else
+	{
+		this->AllocChilds();
+	}
+
+	InitLock();
+}
+
+VNode::~VNode()
+{
+	delete[] this->child_file_lines;
+	this->child_file_lines = NULL;
+
+#ifdef THREAD_ON
+	pthread_mutex_destroy(&(this->node_lock));
+#endif
+}
+
+void 
+VNode::AllocChilds()
+{
+	this->child_file_lines = new int[VNode::MAX_CHILD_NUM];
     for(int i = 0; i < VNode::MAX_CHILD_NUM; i ++)
     {
     	this->child_file_lines[i] = -1;
     }
 }
 
+void 
+VNode::InitLock()
+{
+#ifdef THREAD_ON
+	pthread_mutexattr_t attr;
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutex_init(&(this->node_lock), &attr);
+#endif
+}
+
+void
+VNode::setFlag(unsigned _flag)
+{
+	this->flag = _flag;
+}
+
+bool
+VNode::isDirty() const
+{
+	return this->flag & VNode::DIRTY_PART;
+}
+
+void
+VNode::setDirty(bool _flag)
+{
+	if(_flag)
+	{
+		this->flag |= VNode::DIRTY_PART;
+	}
+	else
+	{
+		this->flag &= VNode::DEL_DIRTY_PART;
+	}
+}
+
 bool 
 VNode::isLeaf() const
 {
-    return this->is_leaf;
+	return this->flag & VNode::LEAF_PART;
 }
 
 bool 
 VNode::isRoot() const
 {
-    return this->is_root;
+	return this->flag & VNode::ROOT_PART;
 }
 
 bool 
 VNode::isFull() const
 {
-    return (this->child_num == VNode::MAX_CHILD_NUM - 1); // need one slot for splitting node.
+    return (this->getChildNum() == VNode::MAX_CHILD_NUM - 1); // need one slot for splitting node.
 }
 
 void 
 VNode::setAsLeaf(bool _isLeaf)
 {
-    this->is_leaf = _isLeaf;
+	if(_isLeaf)
+	{
+		this->flag |= VNode::LEAF_PART;
+	}
+	else
+	{
+		this->flag &= VNode::DEL_LEAF_PART;
+	}
 }
 
 void 
 VNode::setAsRoot(bool _isRoot)
 {
-    this->is_root = _isRoot;
+	if(_isRoot)
+	{
+		this->flag |= VNode::ROOT_PART;
+	}
+	else
+	{
+		this->flag &= VNode::DEL_ROOT_PART;
+	}
+	//this->setDirty();
 }
 
 int 
 VNode::getChildNum() const
 {
-    return this->child_num;
+    //return this->child_num;
+	return this->flag & VNode::NUM_PART;
 }
 
 int 
@@ -80,13 +179,17 @@ VNode::getChildFileLine(int _i) const
 void 
 VNode::setChildNum(int _num)
 {
-    this->child_num = _num;
+    //this->child_num = _num;
+	this->flag &= VNode::DEL_NUM_PART;
+	this->flag |= _num;
+	//this->setDirty();
 }
 
 void 
 VNode::setFileLine(int _line)
 {
     this->self_file_line = _line;
+	//this->setDirty();
 }
 
 void VNode::setFatherFileLine(int _line)
@@ -161,8 +264,10 @@ bool VNode::addChildEntry(const SigEntry _entry, bool _is_splitting)
         //return false;
     //}
 
-    this->setChildEntry(this->child_num, _entry);
-    this->child_num ++;
+	int child_num = this->getChildNum();
+    this->setChildEntry(child_num, _entry);
+    //this->child_num ++;
+	this->setChildNum(child_num+1);
 
     return true;
 }
@@ -182,8 +287,10 @@ bool VNode::addChildNode(VNode* _p_child_node, bool _is_splitting)
         //return false;
     //}
 
+	int child_num = this->getChildNum();
     _p_child_node->setFatherFileLine(this->self_file_line);
-    this->setChildFileLine(this->child_num, _p_child_node->getFileLine());
+	_p_child_node->setDirty();
+    this->setChildFileLine(child_num, _p_child_node->getFileLine());
     this->addChildEntry( _p_child_node->getEntry(), _is_splitting);
 	//NOTICE:this function calls addChildEntry(), which already add the child_num
     //this->child_num ++;
@@ -193,18 +300,32 @@ bool VNode::addChildNode(VNode* _p_child_node, bool _is_splitting)
 
 bool VNode::removeChild(int _i)
 {
-    if (_i < 0 || _i >= this->child_num)
+	int child_num = this->getChildNum();
+    if (_i < 0 || _i >= child_num)
     {
         cerr<< "error, illegal child index. @VNode::removeChild" << endl;
         return false;
     }
 
-    for (int j = _i + 1; j < this->child_num; ++j)
-    {
-        child_entries[j-1] = child_entries[j];
-        child_file_lines[j-1] = child_file_lines[j];
-    }
-    this->child_num --;
+	if(this->isLeaf())
+	{
+		for (int j = _i + 1; j < child_num; ++j)
+		{
+			child_entries[j-1] = child_entries[j];
+			//child_file_lines[j-1] = child_file_lines[j];
+		}
+	}
+	else
+	{
+		for (int j = _i + 1; j < child_num; ++j)
+		{
+			child_entries[j-1] = child_entries[j];
+			child_file_lines[j-1] = child_file_lines[j];
+		}
+	}
+
+    //this->child_num --;
+	this->setChildNum(child_num-1);
 
     return true;
 }
@@ -223,19 +344,26 @@ int VNode::getIndexInFatherNode(LRUCache& _nodeBuffer)
     {
         if (fatherNodePtr->getChildFileLine(i) == this->self_file_line)
         {
+#ifdef THREAD_ON
+			pthread_mutex_unlock(&(fatherNodePtr->node_lock));
+#endif
             return i;
         }
     }
 
-    cerr << "error, can not find rank in father node. @VNode::getRankFatherNode" << endl;
+#ifdef THREAD_ON
+	pthread_mutex_unlock(&(fatherNodePtr->node_lock));
+#endif
+    cerr << "error, can not find rank in father node. @VNode::getIndexInFatherNode" << endl;
     return 0;
 }
 
 void VNode::refreshSignature()
 {
     EntitySig sig;
+	int child_num = this->getChildNum();
 
-    for (int i=0;i<this->child_num;i++)
+    for (int i = 0; i < child_num; i++)
     {
         sig |= this->child_entries[i].getEntitySig();
     }
@@ -255,6 +383,9 @@ void VNode::refreshAncestorSignature(LRUCache& _nodeBuffer)
     this->refreshSignature();
 
     // refresh father node's signature.
+#ifdef DEBUG_VSTREE
+	//cout<<"VNode::refreshAncestorSignature() - to get father"<<endl;
+#endif
     VNode* fatherNodePtr = this->getFather(_nodeBuffer);
     if (fatherNodePtr == NULL)
     {
@@ -266,9 +397,13 @@ void VNode::refreshAncestorSignature(LRUCache& _nodeBuffer)
     int rank = this->getIndexInFatherNode(_nodeBuffer);
     if (fatherNodePtr->getChildEntry(rank).getEntitySig() != this->entry.getEntitySig())
     {
+		fatherNodePtr->setDirty();
         fatherNodePtr->setChildEntry(rank, this->entry);
         fatherNodePtr->refreshAncestorSignature(_nodeBuffer);
     }
+#ifdef THREAD_ON
+	pthread_mutex_unlock(&(fatherNodePtr->node_lock));
+#endif
 }
 
 bool VNode::retrieveChild(vector<VNode*>& _child_vec, const EntitySig _filter_sig, LRUCache& _nodeBuffer)
@@ -279,7 +414,8 @@ bool VNode::retrieveChild(vector<VNode*>& _child_vec, const EntitySig _filter_si
         return false;
     }
 
-    for (int i=0;i<this->child_num;i++)
+	int child_num = this->getChildNum();
+    for (int i = 0; i < child_num; i++)
     {
         if (this->child_entries[i].cover(_filter_sig))
         {
@@ -298,7 +434,8 @@ bool VNode::retrieveEntry(vector<SigEntry>& _entry_vec, const EntitySig _filter_
         return false;
     }
 
-    for (int i=0;i<this->child_num;i++)
+	int child_num = this->getChildNum();
+    for (int i = 0 ; i < child_num; i++)
     {
         if (this->child_entries[i].cover(_filter_sig))
         {
@@ -314,7 +451,8 @@ bool VNode::checkState()
     if (this->getFileLine() < 0)
         return false;
 
-    for (int i=0;i<this->child_num;i++)
+	int child_num = this->getChildNum();
+    for (int i = 0; i < child_num; i++)
         if (!this->isLeaf() && this->getChildFileLine(i) < 0)
         {
             return false;
@@ -327,13 +465,14 @@ std::string VNode::to_str()
 	std::stringstream _ss;
 	_ss << "VNode:" << endl;
 	_ss << "\tEntityID:" << entry.getEntityId() << endl;
-	_ss << "\tisLeaf:" << this->is_leaf << endl;
-	_ss << "\tisRoot:" << this->is_root << endl;
+	_ss << "\tisLeaf:" << this->isLeaf() << endl;
+	_ss << "\tisRoot:" << this->isRoot() << endl;
 	_ss << "\tfileline:" << this->self_file_line << endl;
 	_ss << "\tsignature:" <<
 		Signature::BitSet2str(this->entry.getEntitySig().entityBitSet ) << endl;
-	_ss << "\tchildNum:" << this->child_num << endl << "\t";
-	for(int i = 0; i < this->child_num; i ++)
+	int child_num = this->getChildNum();
+	_ss << "\tchildNum:" << child_num << endl << "\t";
+	for(int i = 0; i < child_num; i ++)
 	{
 		if(! this->isLeaf()){
 			_ss << "[" << this->getChildFileLine(i) << "]\t";
@@ -349,3 +488,95 @@ std::string VNode::to_str()
 
 	return _ss.str();
 }
+
+//TODO: keep a lock for each node, but not write to disk
+
+bool
+VNode::readNode(FILE* _fp)
+{
+	int ret = fread(&(this->flag), sizeof(unsigned), 1, _fp);
+	if(ret == 0)  //the edn of file
+	{
+		return false;
+	}
+	fread(&(this->self_file_line), sizeof(int), 1, _fp);
+	//cout<<"to read node: "<<this->self_file_line<<endl;
+	//BETTER:if the id < 0, then just move, not read
+
+	fread(&(this->father_file_line), sizeof(int), 1, _fp);
+	fread(&(this->entry), sizeof(SigEntry), 1, _fp);
+
+	//for(int i = 0; i < VNode::MAX_CHILD_NUM; ++i)
+	//{
+		//fread(&(this->child_entries[i]), sizeof(SigEntry), 1, _fp);
+	//}
+	fread(this->child_entries, sizeof(SigEntry), VNode::MAX_CHILD_NUM, _fp);
+
+	if(!this->isLeaf())  //internal node
+	{
+		this->child_file_lines = new int[VNode::MAX_CHILD_NUM];
+		//for(int i = 0; i < VNode::MAX_CHILD_NUM; ++i)
+		//{
+			//fread(&(this->child_file_lines[i]), sizeof(int), 1, _fp);
+		//}
+		fread(this->child_file_lines, sizeof(int), VNode::MAX_CHILD_NUM, _fp);
+	}
+	else //move to the end of the node block
+	{
+		fseek(_fp, sizeof(int) * VNode::MAX_CHILD_NUM, SEEK_CUR);
+	}
+	//this->setDirty(false);
+
+	return true;
+}
+
+bool
+VNode::writeNode(FILE* _fp)
+{
+	//clean, then no need to write
+	//if(!this->isDirty())
+	//{
+		//return true;
+	//}
+	//NOTICE:already dealed in LRUCache
+	//this->setDirty(false);
+
+	//cout<<"to write node: "<<this->self_file_line<<endl;
+	fwrite(&(this->flag), sizeof(unsigned), 1, _fp);
+	fwrite(&(this->self_file_line), sizeof(int), 1, _fp);
+	//NOTICE: this must be a old node(not new inserted node), so no need to write more
+	if(this->self_file_line < 0)
+	{
+		return true;
+	}
+
+	fwrite(&(this->father_file_line), sizeof(int), 1, _fp);
+	fwrite(&(this->entry), sizeof(SigEntry), 1, _fp);
+
+	//for(int i = 0; i < VNode::MAX_CHILD_NUM; ++i)
+	//{
+		//fwrite(&(this->child_entries[i]), sizeof(SigEntry), 1, _fp);
+	//}
+	fwrite(this->child_entries, sizeof(SigEntry), VNode::MAX_CHILD_NUM, _fp);
+
+	if(!this->isLeaf())  //internal node
+	{
+		//for(int i = 0; i < VNode::MAX_CHILD_NUM; ++i)
+		//{
+			//fwrite(&(this->child_file_lines[i]), sizeof(int), 1, _fp);
+		//}
+		fwrite(this->child_file_lines, sizeof(int), VNode::MAX_CHILD_NUM, _fp);
+	}
+	else //move to the end of the node block
+	{
+		//fseek(_fp, sizeof(int) * VNode::MAX_CHILD_NUM, SEEK_CUR);
+		int t = 0;
+		for(int i = 0; i < VNode::MAX_CHILD_NUM; ++i)
+		{
+			fwrite(&t, sizeof(int), 1, _fp);
+		}
+	}
+
+	return true;
+}
+

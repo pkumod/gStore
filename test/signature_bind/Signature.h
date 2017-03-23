@@ -3,7 +3,7 @@
 # Author: Bookug Lobert 
 # Mail: zengli-bookug@pku.edu.cn
 # Last Modified: 2016-04-11 12:50
-# Description: written by liyouhuan and hanshuo
+# Description: written by liyouhuan and hanshuo, modified by zengli
 =============================================================================*/
 
 
@@ -12,59 +12,56 @@
 
 #include "../Util/Util.h"
 
-//NOTICE:
-//1. it is hard to set the parameter dynamiclly in Signature
-//2. unable to bind an edge's neighbor and pre because either pre or neighbor can be a variable in query
 class Signature
 {
 public:
-	//NOTICE: the match can be 160 * 3 + 160 * 2
-	//or 200 * 3 + 100 * 2
-	//TODO: we should adjust the parameter to harvest the best performance
-
-	//static HashFunction hash[HashNum];
-	//must make sure:   ENTITY_SIG_LENGTH = EDGE_SIG_LENGTH + STR_SIG_LENGTH 
-	static const int STR_SIG_INTERVAL_NUM = 20;
-	//static const int STR_SIG_INTERVAL_NUM = 16;
-	static const int STR_SIG_INTERVAL_BASE = 10;
-	static const int STR_SIG_LITERAL = STR_SIG_INTERVAL_NUM * STR_SIG_INTERVAL_BASE; 
-	static const int STR_SIG_ENTITY = STR_SIG_LITERAL * 2;
-	//here we divide as entity neighbors and literal neighbors: ENTITY(in and out), LITERAL(only for out edges)
-	static const int STR_SIG_LENGTH = STR_SIG_ENTITY + STR_SIG_LITERAL; //600
+	//TODO:how to set the length as a dynamic parameter?    below use typedef bitset<num>
+	//keep the parameter in Database and passed to here and Query??
+	//QUERY: is this really needed?!
 	
-	//NOTICE: after vstree filter, all constant neighbors will be used again to do precise filtering
-	//howvere, only few constant pres will be used again for filtering later
-	//So we must make most use of the pres here, while keeping the effect of string part
-	//(otherwise the result will be too large)
+	//static HashFunction hash[HashNum];
+	static const int PRE_SIG_BASE = 10;
+	static const int STR_SIG_BASE = PRE_SIG_BASE;
+	static const int STR_SIG_LENGTH = 3 * STR_SIG_BASE;
+	static const int ENTITY_SIG_INTERVAL_BASE = PRE_SIG_BASE + STR_SIG_LENGTH;
+	static const int EDGE_SIG_INTERVAL_NUM = 5;   //in edge or out edge, entity or literal
+	static const int ENTITY_SIG_INTERVAL_HALF = 2 * EDGE_SIG_INTERVAL_NUM;
+	//STRUCT: in egde | out egde(neighbor is entity | literal(pre1 pre2 pre3 pre4 pre5(str pre * 3) ) )
+	//NOTICE: the length should below 1000
+	static const int ENTITY_SIG_LENGTH = 2 * 2 * EDGE_SIG_INTERVAL_NUM * ENTITY_SIG_INTERVAL_BASE;
 
-	//str filter is more important in VSTree than predicate, because
+	//NOTICE: we can also use id here, but string is recommended due to special structure
+	//(maybe needed later, for example, wildcards)
+	//Th ehash function is costly, so just use two
+	//static const int HASH_NUM = 3; //no more than Util::HashNum
+	//NOTICE:if using str id, we can also divide like EDGE_SIG
+	//here we divide as entity neighbors and literal neighbors: ENTITY, LITERAL
+	//static const int STR_SIG_LENGTH = 2 * STR_SIG_BASE * HASH_NUM;    //250
+	//static const int STR_SIG_LENGTH2 = STR_SIG_BASE * HASH_NUM;    
+
+	//QUERY:I think that str filter is more important in VSTree than predicate, because
 	//a predicate may correspond to a lot of entities and predicate num is usually small
-	static const int EDGE_SIG_INTERVAL_NUM_HALF = 10;   //in edge or out edge
-	//static const int EDGE_SIG_INTERVAL_NUM_HALF = 16;   //in edge or out edge
-	static const int EDGE_SIG_INTERVAL_NUM = 2 * EDGE_SIG_INTERVAL_NUM_HALF;
-	static const int EDGE_SIG_INTERVAL_BASE = 10;
-	static const int EDGE_SIG_LENGTH = EDGE_SIG_INTERVAL_NUM * EDGE_SIG_INTERVAL_BASE;  //200
-	//static const int EDGE_SIG_LENGTH2 = EDGE_SIG_INTERVAL_NUM_HALF * EDGE_SIG_INTERVAL_BASE; 
+	//static const int EDGE_SIG_INTERVAL_NUM_HALF = 5;   //in edge or out edge
+	//static const int EDGE_SIG_INTERVAL_NUM = 2 * EDGE_SIG_INTERVAL_NUM_HALF;
+	//static const int EDGE_SIG_INTERVAL_BASE = 20;
+	//static const int EDGE_SIG_LENGTH = EDGE_SIG_INTERVAL_NUM * EDGE_SIG_INTERVAL_BASE; //150
+	//static const int EDGE_SIG_LENGTH2 = EDGE_SIG_INTERVAL_NUM_HALF * EDGE_SIG_INTERVAL_BASE; //150
 
-	static const int ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH; //1000
+	//static const int ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH;
 	//static const int ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH + NEIGHBOR_SIG_LENGTH;
 
-	//QUERY: the num of bitset must be based on 16, i.e. unsigned short?  1000 is not allowed
-	//but 800, 500 is ok
-	
 	//typedef std::bitset<Signature::EDGE_SIG_LENGTH2> EdgeBitSet;
 	typedef std::bitset<Signature::ENTITY_SIG_LENGTH> EntityBitSet;
 
 	static std::string BitSet2str(const EntityBitSet& _bitset);
 
 	//NOTICE: there are two predicate encoding method now, see the encoding functions @Signature.cpp for details
-	const static int PREDICATE_ENCODE_METHOD = 1;
-	static void encodePredicate2Entity(EntityBitSet& _entity_bs, int _pre_id, const char _type);
-	static void encodeStr2Entity(EntityBitSet& _entity_bs, int _neighbor_id, const char _type); 
-	static void encodeEdge2Entity(EntityBitSet& _entity_bs, int _pre_id, int _neighbor_id, const char _type);
-	//static void encodeStrID2Entity(int _str_id, EntityBitSet& _entity_bs);
+	//const static int PREDICATE_ENCODE_METHOD = 1;
+	//static void encodePredicate2Entity(int _pre_id, EntityBitSet& _entity_bs, const char _type);
 	//static void encodePredicate2Edge(int _pre_id, EdgeBitSet& _edge_bs);
-
+	//static void encodeStr2Entity(const char* _str, EntityBitSet& _entity_bs); //_str is subject or object(literal)
+	//static void encodeStrID2Entity(int _str_id, EntityBitSet& _entity_bs);
+	static void encodeEdge2Entity(EntityBitSet& _entity_bs, int _pre_id, int _neighbor_id, const char _type);
 	//Signature()
 	//{
 		//NOTICE:not exceed the HashNum

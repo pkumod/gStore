@@ -16,17 +16,34 @@ using namespace std;
 //NOTICE:In fact, real graph is not linear, we can assume that 1 billion triples contains at most 1 billion entities
 //then the memory cost at most is 23448 * 10M = 200G, which is also too large
 //But we can only see at most 200M entities in web graphs, then the memory cost is 40G, which is affordable
-//TODO+BETTER:support memory-disk swap in vstree
-int LRUCache::DEFAULT_CAPACITY = 10000000;
-//int LRUCache::DEFAULT_CAPACITY = 1 * 1000 * 1000;
+//
+//CONSIDER:support memory-disk swap in vstree
+//However, if we adjust the sig length according to entity num, and VNODE size is decided by sig length, we can control the
+//whole vstree memory cost almost 20G  
+//What is more, if the system memory is enough(precisely, the memory you want to assign to gstore), 
+//we can also set the sig length larger(which should be included in config file)
+//int LRUCache::DEFAULT_CAPACITY = 10000000;
+int LRUCache::DEFAULT_CAPACITY = 1 * 1000 * 1000;  //about 20G memory for vstree
+//int LRUCache::DEFAULT_CAPACITY = 1000;
+//TODO:10^6 is a good parameter, at most use 20G
 
 LRUCache::LRUCache(int _capacity)
 {
-	cout<<"size of VNODE: "<<sizeof(VNode)<<endl;
+	//initialize the lock
+#ifdef THREAD_ON
+	pthread_rwlock_init(&(this->cache_lock), NULL);
+#endif
+
+	//cout<<"size of VNODE: "<<sizeof(VNode)<<endl;
+	cout<<"size of VNODE: "<<VNode::VNODE_SIZE<<endl;
 	cout << "LRUCache initial..." << endl;
 	this->capacity = _capacity > 0 ? _capacity : LRUCache::DEFAULT_CAPACITY;
+
+	// TODO+DEBUG:it seems that a minium size is required, for example, multiple path down(the height?)
+	//at least 3*h
+	//
 	// we should guarantee the cache is big enough.
-	this->capacity = std::max(this->capacity, VNode::MAX_CHILD_NUM * 2000);
+	//this->capacity = std::max(this->capacity, VNode::MAX_CHILD_NUM * 2000);
 
 	this->next = new int[this->capacity + 2];
 	this->prev = new int[this->capacity + 2];
@@ -61,8 +78,14 @@ LRUCache::~LRUCache()
 		delete this->values[i];
 	}
 	delete[] this->values;
+
+	//destroy the lock
+#ifdef THREAD_ON
+	pthread_rwlock_destroy(&(this->cache_lock));
+#endif
 }
 
+//NOTICE:this must be done in one thread(and only one time)
 //load cache's elements from an exist data file. 
 bool LRUCache::loadCache(string _filePath)
 {
@@ -78,7 +101,8 @@ bool LRUCache::loadCache(string _filePath)
 	//NOTICE:here we set it to the maxium, to ensure all VNODE in memory
 	int defaultLoadSize = this->capacity;
 	//int defaultLoadSize = this->capacity / 2;
-	size_t vNodeSize = sizeof(VNode);
+	size_t vNodeSize = VNode::VNODE_SIZE;
+	//size_t vNodeSize = sizeof(VNode);
 	int flag = 0;
 
 	flag = fseek(filePtr, 0, SEEK_SET);
@@ -89,22 +113,32 @@ bool LRUCache::loadCache(string _filePath)
 		return false;
 	}
 
-	int _tmp_cycle_count = 0;
+	//int _tmp_cycle_count = 0;
 
 	while (this->size < defaultLoadSize)
 	{
-		VNode* nodePtr = new VNode();
 		bool is_reach_EOF = feof(filePtr);
-		bool is_node_read = (fread((char *)nodePtr, vNodeSize, 1, filePtr) == 1);
-
-		if (is_reach_EOF || !is_node_read)
+		if(is_reach_EOF)
 		{
+			break;
+		}
+
+		VNode* nodePtr = new VNode(true);
+		//VNode* nodePtr = NULL;
+		//bool is_node_read = (fread((char *)nodePtr, vNodeSize, 1, filePtr) == 1);
+		bool is_node_read = nodePtr->readNode(filePtr);
+
+		if (!is_node_read)
+		{
+			delete nodePtr;
 			break;
 		}
 
 		//NOTICE:not consider invalid node
 		if(nodePtr->getFileLine() < 0)
 		{
+			//remove invalid node
+			delete nodePtr;
 			continue;
 		}
 
@@ -123,7 +157,7 @@ bool LRUCache::loadCache(string _filePath)
 			//}
 		//}
 
-		_tmp_cycle_count++;
+		//_tmp_cycle_count++;
 	}
 
 	fclose(filePtr);
@@ -152,6 +186,11 @@ bool LRUCache::createCache(string _filePath)
 //set the key(node's file line) and value(node's pointer). if the key exists now, the value of this key will be overwritten. 
 bool LRUCache::set(int _key, VNode * _value)
 {
+#ifdef THREAD_ON
+	pthread_rwlock_wrlock(&(this->cache_lock));
+	pthread_mutex_lock(&(_value->node_lock));
+#endif
+
 	map<int, int>::iterator iter = this->key2pos.find(_key);
 
 	// if the _key is found, overwrite its mapping value.
@@ -160,25 +199,54 @@ bool LRUCache::set(int _key, VNode * _value)
 		int pos = iter->second;
 		this->freeElem(pos);
 		this->setElem(pos, _key, _value);
+		//this->refresh(pos);
 	}
 	// if the cache is not full now, just put the key-value to the free slot.
 	else if (this->size < this->capacity)
 	{
+#ifdef DEBUG_LRUCACHE
+		//cout<<"to insert a node in LRU cache"<<endl;
+#endif
 		int pos = LRUCache::DEFAULT_NUM + this->size;
 		this->setElem(pos, _key, _value);
+		//this->refresh(pos);
 	}
 	// if the cache is full, should swap out the least recently used one to hard disk.
 	else
 	{
-		cout<<"memory-disk swap hadppened in VSTree - LRUCache"<<endl;
+#ifdef DEBUG_LRUCACHE
+		//cout<<"memory-disk swap hadppened in VSTree - LRUCache"<<endl;
+#endif
 		// write out and free the memory of the least recently used one.
 		int pos = this->next[LRUCache::START_INDEX];
+		//cout<<pos<<" "<<_key<<" "<<_value->getFileLine()<<endl;
+
+		int ret = 0;
+#ifdef THREAD_ON
+		ret = pthread_mutex_trylock(&(this->values[pos]->node_lock));
+#endif
+		//TODO:scan and select a unlocked one to swap, if no, then wait by cond
+		if(ret != 0)  //not success
+		{
+			cout<<"error: fail to get the vnode lock in LRUCache::set()"<<endl;
+		}
+		//NOTICE:we can unlock here because user has released this lock, if he want to read 
+		//this node again, he must wait for this buffer operation to end up
+#ifdef THREAD_ON
+		pthread_mutex_unlock(&(this->values[pos]->node_lock));
+#endif
+
 		this->writeOut(pos, this->keys[pos]);
 		this->freeElem(pos);
 
 		// set the new one to the memory pool.
 		this->setElem(pos, _key, _value);
+		//this->refresh(pos);
 	}
+
+#ifdef THREAD_ON
+	pthread_rwlock_unlock(&(this->cache_lock));
+#endif
 	return false;
 }
 
@@ -186,7 +254,11 @@ bool LRUCache::set(int _key, VNode * _value)
 bool
 LRUCache::del(int _key)
 {
-#ifdef DEBUG
+#ifdef THREAD_ON
+	pthread_rwlock_wrlock(&(this->cache_lock));
+#endif
+
+#ifdef DEBUG_LRUCACHE
 	cout<<"to del in LRUCache "<<_key<<endl;
 #endif
 	map<int, int>::iterator iter = this->key2pos.find(_key);
@@ -194,20 +266,34 @@ LRUCache::del(int _key)
 	{
 		int pos1 = iter->second;
 		int pos2 = LRUCache::DEFAULT_NUM + this->size - 1;
+#ifdef DEBUG_LRUCACHE
 		cout<<"pos 1: "<<pos1<<"  pos2: "<<pos2<<endl;
+#endif
 		if(this->values[pos1]->getFileLine() != _key)
 		{
+#ifdef DEBUG_LRUCACHE
 			cout<<"error in del() - file line not mapping"<<endl;
+#endif
 		}
+
 		this->fillElem(pos1, pos2);
+		//this->refresh(pos1);
 
 		//NOTICE:we do not need to update the file now
 		//We only record the freed file_line, and not used now
 		//When this file_line is allocated again, then the new node can
 		//be written into the unused file part
 		//(VNode size is fixed)
+#ifdef THREAD_ON
+		pthread_rwlock_unlock(&(this->cache_lock));
+#endif
+
 		return true;
 	}
+
+#ifdef THREAD_ON
+	pthread_rwlock_unlock(&(this->cache_lock));
+#endif
 
 	return false;
 }
@@ -215,6 +301,10 @@ LRUCache::del(int _key)
 //get the value(node's pointer) by key(node's file line). 
 VNode* LRUCache::get(int _key)
 {
+#ifdef THREAD_ON
+	pthread_rwlock_rdlock(&(this->cache_lock));
+#endif
+
 	VNode* ret = NULL;
 	//NOTICE:use map[] will cause the rbtree to enlarge, so we should use find
 	map<int, int>::iterator iter = this->key2pos.find(_key);
@@ -223,32 +313,78 @@ VNode* LRUCache::get(int _key)
 	{
 		int pos = iter->second;
 		ret = this->values[pos];
+		this->refresh(pos);
 	}
 	// the value is not in memory now, should load it from hard disk.
 	else if (this->size < this->capacity)
 	{
+#ifdef THREAD_ON
+		pthread_rwlock_unlock(&(this->cache_lock));
+		pthread_rwlock_wrlock(&(this->cache_lock));
+#endif
+
 		//NOTICE+DEBUG:now all are loaded and there should not be any not read, goes here means error!
 		//And this will cause error in multiple threads program(even if only read)
+#ifdef DEBUG_LRUCACHE
 		cout<<"new read hadppened in VSTree - LRUCache"<<endl;
+#endif
 		int pos = LRUCache::DEFAULT_NUM + this->size;
 		if (this->readIn(pos, _key))
 		{
 			ret = this->values[pos];
+			this->refresh(pos);
+		}
+		else
+		{
+			cout<<"LRUCache::get() - readIn error in the second case"<<endl;
 		}
 	}
 	// if the memory pool is full now, should swap out the least recently used one, and swap in the required value.
 	else
 	{
-		cout<<"memory-disk swap hadppened in VSTree - LRUCache"<<endl;
+#ifdef THREAD_ON
+		pthread_rwlock_unlock(&(this->cache_lock));
+		pthread_rwlock_wrlock(&(this->cache_lock));
+#endif
+
+#ifdef DEBUG_LRUCACHE
+		//cout<<"memory-disk swap hadppened in VSTree - LRUCache::get()"<<endl;
+#endif
 		int pos = this->next[LRUCache::START_INDEX];
+
+		int retval = 0;
+#ifdef THREAD_ON
+		retval = pthread_mutex_trylock(&(this->values[pos]->node_lock));
+#endif
+		//TODO:scan and select a unlocked one to swap, if no, then wait by cond
+		if(retval != 0)  //not success
+		{
+			cout<<"error: fail to get the vnode lock in LRUCache::set()"<<endl;
+		}
+#ifdef THREAD_ON
+		pthread_mutex_unlock(&(this->values[pos]->node_lock));
+#endif
+
 		this->writeOut(pos, this->keys[pos]);
 		this->freeElem(pos);
 
+		//NOTICE: readIn will call setElem to add the new node to tail
+		//swap the head and push new to tail, so this is a LRU strategy
 		if (this->readIn(pos, _key))
 		{
 			ret = this->values[pos];
+			this->refresh(pos);
+		}
+		else
+		{
+			cout<<"LRUCache::get() - readIn error in the third case"<<endl;
 		}
 	}
+
+#ifdef THREAD_ON
+	pthread_mutex_lock(&(ret->node_lock));
+	pthread_rwlock_unlock(&(this->cache_lock));
+#endif
 
 	return ret;
 }
@@ -256,6 +392,10 @@ VNode* LRUCache::get(int _key)
 //update the _key's mapping _value. if the key do not exist, this operation will fail and return false. 
 bool LRUCache::update(int _key, VNode* _value)
 {
+#ifdef THREAD_ON
+	pthread_rwlock_wrlock(&(this->cache_lock));
+#endif
+
 	// should swap it into cache first.
 	VNode* valuePtr = this->get(_key);
 
@@ -266,15 +406,28 @@ bool LRUCache::update(int _key, VNode* _value)
 		if (this->keys[pos] != _key)
 		{
 			cerr << "error, the pos is wrong. @LRUCache::update" << endl;
+
+#ifdef THREAD_ON
+			pthread_rwlock_unlock(&(this->cache_lock));
+#endif
+
 			return false;
 		}
 
 		this->values[pos] = _value;
 
+#ifdef THREAD_ON
+		pthread_rwlock_unlock(&(this->cache_lock));
+#endif
+
 		return true;
 	}
 
 	cerr << "error:the key not exist!"<<endl;
+#ifdef THREAD_ON
+	pthread_rwlock_unlock(&(this->cache_lock));
+#endif
+
 	return false;
 }
 
@@ -282,29 +435,64 @@ int LRUCache::getCapacity()
 {
 	return this->capacity;
 }
+
 int LRUCache::getRestAmount()
 {
-	return this->capacity - this->size;
+#ifdef THREAD_ON
+	pthread_rwlock_rdlock(&(this->cache_lock));
+#endif
+	int t = this->size;
+#ifdef THREAD_ON
+	pthread_rwlock_unlock(&(this->cache_lock));
+#endif
+
+	return this->capacity - t;
+	//return this->capacity - this->size;
 }
+
 void LRUCache::showAmount()
 {
+#ifdef THREAD_ON
+	pthread_rwlock_rdlock(&(this->cache_lock));
+#endif
+
 	printf(
 		"TotalAmount=%d\tUsedAmount=%d\tUsedPercent=%.2f%%\n",
 		this->capacity, this->size,
 		(double)this->size / this->capacity * 100.0);
-}
-bool LRUCache::isFull()
-{
-	return this->size == this->capacity;
+
+#ifdef THREAD_ON
+	pthread_rwlock_unlock(&(this->cache_lock));
+#endif
 }
 
-//put the new visited one to the tail 
+bool LRUCache::isFull()
+{
+#ifdef THREAD_ON
+	pthread_rwlock_rdlock(&(this->cache_lock));
+#endif
+	bool ret = this->size == this->capacity;
+#ifdef THREAD_ON
+	pthread_rwlock_unlock(&(this->cache_lock));
+#endif
+
+	return ret;
+	//return this->size == this->capacity;
+}
+
+//LRU: put the new visited one to the tail 
 void LRUCache::refresh(int _pos)
 {
 	int prevPos, nextPos;
 
-	prevPos = this->prev[_pos];
 	nextPos = this->next[_pos];
+	if(nextPos == LRUCache::END_INDEX)
+	{
+		//already the last element
+		return;
+	}
+
+	prevPos = this->prev[_pos];
 	this->next[prevPos] = nextPos;
 	this->prev[nextPos] = prevPos;
 
@@ -347,6 +535,7 @@ void LRUCache::freeElem(int _pos)
 	this->size--;
 }
 
+//NOTICE: setElem will append the ele to the end, so LRU is ok
 //set the memory of the _pos element in cache 
 void LRUCache::setElem(int _pos, int _key, VNode* _value)
 {
@@ -365,6 +554,7 @@ void LRUCache::setElem(int _pos, int _key, VNode* _value)
 	this->size++;
 }
 
+//NOTICE: fillElem will change the pos1's next to the end, so LRU is ok(pos2 is always the current maximium position)
 //move pos2 ele to pos1, and pos1 ele should be freed
 void LRUCache::fillElem(int _pos1, int _pos2)
 {
@@ -376,12 +566,17 @@ void LRUCache::fillElem(int _pos1, int _pos2)
 	this->freeElem(_pos1);
 	if(_pos1 >= _pos2)  //0 ele or 1 ele(just remove the only one)
 	{
+#ifdef DEBUG_LRUCACHE
 		cout<<"LRUCache::fillElem() - no need to fill"<<endl;
+#endif
 		return;
 	}
 
 	int key = this->keys[_pos2];
+#ifdef DEBUG_LRUCACHE
 	cout<<"another key in fillElem() - "<<key<<endl;
+#endif
+
 	if(this->values[_pos2] == NULL)
 	{
 		cout<<"error in fillElem() - value for pos2 is NULL"<<endl;
@@ -395,6 +590,10 @@ void LRUCache::fillElem(int _pos1, int _pos2)
 	int prevPos = this->prev[_pos2];
 	int nextPos = this->next[_pos2];
 
+	//a real LRU strategy should be used, i.e. push new in tail, remove the oldest in head
+	//TODO:change to list and LRU, search only keep current node is ok, but update not
+	//lock: tree and buffer
+	//
 	//QUERY:if pos1 and pos2 are neighbors in prev-next relations
 	//can this conflict with freeElem?
 	this->next[prevPos] = _pos1;
@@ -420,7 +619,8 @@ LRUCache::freeDisk(int _pos)
 		return false;
 	}
 
-	size_t vNodeSize = sizeof(VNode);
+	//size_t vNodeSize = sizeof(VNode);
+	size_t vNodeSize = VNode::VNODE_SIZE;
 	int line = nodePtr->getFileLine();
 	int flag = 0;
 	long long seekPos = (long long)line * vNodeSize;
@@ -434,7 +634,8 @@ LRUCache::freeDisk(int _pos)
 	}
 
 	nodePtr->setFileLine(-1);
-	fwrite((char *)nodePtr, vNodeSize, 1, filePtr);
+	//fwrite((char *)nodePtr, vNodeSize, 1, filePtr);
+	nodePtr->writeNode(filePtr);
 
 	fclose(filePtr);
 
@@ -461,11 +662,23 @@ LRUCache::writeOut(int _pos, int _fileLine)
 
 	if (nodePtr->getFileLine() != _fileLine)
 	{
-		cerr << "error, fileLine " << _fileLine << "wrong. @LRUCache::writeOut" << endl;
+		cerr << "error, fileLine " << _fileLine <<" "<< nodePtr->getFileLine() << " wrong. @LRUCache::writeOut" << endl;
+	}
+
+	if(!nodePtr->isDirty())
+	{
+		//cout<<"the node not dirty!"<<endl;
+		fclose(filePtr);
+		return true;
+	}
+	else //is modified
+	{
+		nodePtr->setDirty(false);
 	}
 
 	int line = _fileLine == -1 ? nodePtr->getFileLine() : _fileLine;
-	size_t vNodeSize = sizeof(VNode);
+	size_t vNodeSize = VNode::VNODE_SIZE;
+	//size_t vNodeSize = sizeof(VNode);
 	int flag = 0;
 	long long seekPos = (long long)line * vNodeSize;
 
@@ -477,7 +690,8 @@ LRUCache::writeOut(int _pos, int _fileLine)
 		return false;
 	}
 
-	fwrite((char *)nodePtr, vNodeSize, 1, filePtr);
+	//fwrite((char *)nodePtr, vNodeSize, 1, filePtr);
+	nodePtr->writeNode(filePtr);
 	fclose(filePtr);
 
 	return true;
@@ -487,14 +701,19 @@ LRUCache::writeOut(int _pos, int _fileLine)
 //before use it, you must make sure that the _pos element in cache is free(unoccupied).
 bool LRUCache::readIn(int _pos, int _fileLine)
 {
-	VNode* nodePtr = new VNode();
+#ifdef DEBUG_LRUCACHE
+	//cout<<"pos: "<<_pos<<" "<<"fileline: "<<_fileLine<<endl;
+#endif
+	VNode* nodePtr = new VNode(true);
+	//VNode* nodePtr = NULL;
 	FILE* filePtr = fopen(this->dataFilePath.c_str(), "rb");
 
-	if (nodePtr == NULL)
-	{
-		cerr << "error, can not new a VNode. @LRUCache::readIn" << endl;
-		return false;
-	}
+	//if (nodePtr == NULL)
+	//{
+		//cerr << "error, can not new a VNode. @LRUCache::readIn" << endl;
+		//return false;
+	//}
+
 	if (filePtr == NULL)
 	{
 		cerr << "error, can't open " <<
@@ -504,7 +723,8 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 	}
 
 	int line = _fileLine;
-	size_t vNodeSize = sizeof(VNode);
+	size_t vNodeSize = VNode::VNODE_SIZE;
+	//size_t vNodeSize = sizeof(VNode);
 	int flag = 0;
 	long long seekPos = (long long)line * vNodeSize;
 
@@ -517,11 +737,13 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 	}
 
 	//bool is_node_read = (fread((char *)nodePtr, vNodeSize, 1, filePtr) == 1);
-	fread((char *)nodePtr, vNodeSize, 1, filePtr);
+	//fread((char *)nodePtr, vNodeSize, 1, filePtr);
+	nodePtr->readNode(filePtr);
 	fclose(filePtr);
 
 	if (nodePtr == NULL || nodePtr->getFileLine() != _fileLine)
 	{
+		cout<<"node file line: "<<nodePtr->getFileLine()<<endl;
 		cerr << "error,node fileLine error. @LRUCache::readIn" << endl;
 	}
 
@@ -530,10 +752,13 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 	return true;
 }
 
-//BETTER+TODO:only write dirty nodes
+//NOTICE:this can only be done by one thread
 //write out all the elements to hard disk. 
 bool LRUCache::flush()
 {
+#ifdef DEBUG_VSTREE
+	cout<<"to flush in LRUCache"<<endl;
+#endif
 	FILE* filePtr = fopen(this->dataFilePath.c_str(), "r+b");
 
 	if (filePtr == NULL)
@@ -544,7 +769,8 @@ bool LRUCache::flush()
 
 	int startIndex = LRUCache::DEFAULT_NUM;
 	int endIndex = startIndex + this->size;
-	size_t vNodeSize = sizeof(VNode);
+	size_t vNodeSize = VNode::VNODE_SIZE;
+	//size_t vNodeSize = sizeof(VNode);
 
 	//NOTICE:values are continuous
 	for (int i = startIndex; i < endIndex; ++i)
@@ -554,16 +780,21 @@ bool LRUCache::flush()
 		//cout<<"file line to write "<<line<<endl;
 
 #ifdef DEBUG
-			if (nodePtr->getFileLine() != line)
-			{
-				cout << "line error at !!!" << line << " " << nodePtr->getFileLine() << endl;
-			}
+		if (nodePtr->getFileLine() != line)
+		{
+			cout << "line error at !!!" << line << " " << nodePtr->getFileLine() << endl;
+		}
 #endif
 
 		if (nodePtr == NULL)
 		{
 			cerr << "error, VNode do not exist. @LRUCache::flush" << endl;
 			return false;
+		}
+
+		if(!nodePtr->isDirty())
+		{
+			continue;
 		}
 
 		int flag = 0;
@@ -576,7 +807,8 @@ bool LRUCache::flush()
 			return false;
 		}
 
-		fwrite((char *)nodePtr, vNodeSize, 1, filePtr);
+		//fwrite((char *)nodePtr, vNodeSize, 1, filePtr);
+		nodePtr->writeNode(filePtr);
 	}
 	fclose(filePtr);
 

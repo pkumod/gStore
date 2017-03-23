@@ -1,94 +1,64 @@
 /*=============================================================================
-# Filename:		Database.cpp
-# Author: Bookug Lobert
-# Mail: 1181955272@qq.com
-# Last Modified:	2016-09-11 15:27
-# Description: originally written by liyouhuan, modified by zengli and chenjiaqi
+# Filename: kvstore_test.cpp
+# Author: Bookug Lobert 
+# Mail: zengli-bookug@pku.edu.cn
+# Last Modified: 2017-03-06 15:46
+# Description: test the efficience of insert, delete, search
 =============================================================================*/
 
-#include "Database.h"
+#include "../Util/Util.h"
+#include "../Util/Triple.h"
+#include "../KVstore/KVstore.h"
+#include "../Parser/DBparser.h"
+#include "../Parser/RDFParser.h"
 
 using namespace std;
 
-Database::Database()
-{
-	this->name = "";
-	this->store_path = "";
-	string store_path = ".";
-	this->signature_binary_file = "signature.binary";
-	this->six_tuples_file = "six_tuples";
-	this->db_info_file = "db_info_file.dat";
+string db_name = "kvstore_test.db";
+string rdf_path = "/home/data/DBpedia/database/dbpedia170M.nt";
 
-	string kv_store_path = store_path + "/kv_store";
-	this->kvstore = new KVstore(kv_store_path);
+int triples_num;
+int entity_num;
+int sub_num;
+int pre_num;
+int literal_num;
 
-	string vstree_store_path = store_path + "/vs_store";
-	this->vstree = new VSTree(vstree_store_path);
+KVstore* kvstore;
+string six_tuples_file;
 
-	string stringindex_store_path = store_path + "/stringindex_store";
-	this->stringindex = new StringIndex(stringindex_store_path);
+//triple num per group for insert/delete
+//can not be too high, otherwise the heap will over
+static const int GROUP_SIZE = 1000;
+//manage the ID allocate and garbage
+static const int START_ID_NUM = 0;
+//static const int START_ID_NUM = 1000;
+/////////////////////////////////////////////////////////////////////////////////
+//NOTICE:error if >= LITERAL_FIRST_ID
+string free_id_file_entity; //the first is limitID, then free id list
+int limitID_entity; //the current maxium ID num(maybe not used so much)
+BlockInfo* freelist_entity; //free id list, reuse BlockInfo for Storage class
+int allocEntityID();
+void freeEntityID(int _id);
+/////////////////////////////////////////////////////////////////////////////////
+//NOTICE:error if >= 2*LITERAL_FIRST_ID
+string free_id_file_literal;
+int limitID_literal;
+BlockInfo* freelist_literal;
+int allocLiteralID();
+void freeLiteralID(int _id);
+/////////////////////////////////////////////////////////////////////////////////
+//NOTICE:error if >= 2*LITERAL_FIRST_ID
+string free_id_file_predicate;
+int limitID_predicate;
+BlockInfo* freelist_predicate;
+int allocPredicateID();
+void freePredicateID(int _id);
+/////////////////////////////////////////////////////////////////////////////////
+void initIDinfo();  //initialize the members
+void resetIDinfo(); //reset the id info for build
+void readIDinfo();  //read and build the free list
+void writeIDinfo(); //write and empty the free list
 
-	//this->encode_mode = Database::STRING_MODE;
-	this->encode_mode = Database::ID_MODE;
-	this->is_active = false;
-	this->sub_num = 0;
-	this->pre_num = 0;
-	this->literal_num = 0;
-	this->entity_num = 0;
-	this->triples_num = 0;
-
-	this->join = NULL;
-	this->pre2num = NULL;
-	this->entity_buffer = NULL;
-	this->entity_buffer_size = 0;
-	this->literal_buffer = NULL;
-	this->literal_buffer_size = 0;
-
-	this->if_loaded = false;
-
-	//this->resetIDinfo();
-	this->initIDinfo();
-}
-
-Database::Database(string _name)
-{
-	this->name = _name;
-	this->store_path = Util::global_config["db_home"] + "/" + this->name + Util::global_config["db_suffix"];
-
-	this->signature_binary_file = "signature.binary";
-	this->six_tuples_file = "six_tuples";
-	this->db_info_file = "db_info_file.dat";
-
-	string kv_store_path = store_path + "/kv_store";
-	this->kvstore = new KVstore(kv_store_path);
-
-	string vstree_store_path = store_path + "/vs_store";
-	this->vstree = new VSTree(vstree_store_path);
-
-	string stringindex_store_path = store_path + "/stringindex_store";
-	this->stringindex = new StringIndex(stringindex_store_path);
-
-	//this->encode_mode = Database::STRING_MODE;
-	this->encode_mode = Database::ID_MODE;
-	this->is_active = false;
-	this->sub_num = 0;
-	this->pre_num = 0;
-	this->literal_num = 0;
-	this->entity_num = 0;
-	this->triples_num = 0;
-
-	this->if_loaded = false;
-
-	this->join = NULL;
-	this->pre2num = NULL;
-	this->entity_buffer = NULL;
-	this->entity_buffer_size = 0;
-	this->literal_buffer = NULL;
-	this->literal_buffer_size = 0;
-
-	//this->resetIDinfo();
-	this->initIDinfo();
-}
 
 //==================================================================================================================================================
 //NOTICE:
@@ -101,8 +71,7 @@ Database::Database(string _name)
 //(when stored in disk, maybe consume larger space)
 //However, this method can keep the used largest easily(no!! 1->2->3, delete 2 and delete 3, then the max 1 is not kept by limit!)
 
-void
-Database::initIDinfo()
+void initIDinfo()
 {
 	//NOTICE:keep that limit-1 the maxium using ID
 	this->free_id_file_entity = this->getStorePath() + "/freeEntityID.dat";
@@ -410,320 +379,6 @@ Database::freePredicateID(int _id)
 	this->pre_num--;
 }
 
-void
-Database::release(FILE* fp0)
-{
-	fprintf(fp0, "begin to delete DB!\n");
-	fflush(fp0);
-	this->vstree->saveTree();
-	delete this->vstree;
-	fprintf(fp0, "ok to delete vstree!\n");
-	fflush(fp0);
-	delete this->kvstore;
-	fprintf(fp0, "ok to delete kvstore!\n");
-	fflush(fp0);
-	//fclose(Util::debug_database);
-	//Util::debug_database = NULL;	//debug: when multiple databases
-	fprintf(fp0, "ok to delete DB!\n");
-	fflush(fp0);
-}
-
-Database::~Database()
-{
-	this->unload();
-	//fclose(Util::debug_database);
-	//Util::debug_database = NULL;	//debug: when multiple databases
-}
-
-void
-Database::setPreMap()
-{
-	this->maxNumPID = this->minNumPID = -1;
-	int max = 0, min = this->triples_num + 1;
-	this->pre2num = new TNUM[this->limitID_predicate];
-	int valid = 0, i, t;
-	for (i = 0; i < this->limitID_predicate; ++i)
-	{
-		if (valid == this->pre_num)
-		{
-			t = 0;
-		}
-		else
-		{
-			t = this->kvstore->getPredicateDegree(i);
-		}
-		this->pre2num[i] = t;
-
-		//NOTICE:only when pre2num[i]>0 then i is a valid predicate id
-		if (t > 0)
-		{
-			valid++;
-			if (t > max)
-			{
-				this->maxNumPID = i;
-			}
-			if (t < min)
-			{
-				this->minNumPID = i;
-			}
-		}
-	}
-}
-
-void
-Database::setStringBuffer()
-{
-	//BETTER?maybe different size for entity and literal, maybe different offset should be used
-	this->entity_buffer_size = (this->limitID_entity<50000000) ? this->limitID_entity : 50000000;
-	this->literal_buffer_size = (this->limitID_literal<50000000) ? this->limitID_literal : 50000000;
-	this->entity_buffer = new Buffer(this->entity_buffer_size);
-	this->literal_buffer = new Buffer(this->literal_buffer_size);
-
-	int valid = 0, i;
-	string str;
-	for (i = 0; i < this->entity_buffer_size; ++i)
-	{
-		if (valid == this->entity_num)
-		{
-			str = "";
-		}
-		else
-		{
-			str = this->kvstore->getEntityByID(i);
-		}
-		this->entity_buffer->set(i, str);
-		if (str != "")
-		{
-			valid++;
-		}
-	}
-
-	valid = 0;
-	for (i = 0; i < this->literal_buffer_size; ++i)
-	{
-		if (valid == this->literal_num)
-		{
-			str = "";
-		}
-		else
-		{
-			str = this->kvstore->getLiteralByID(i + Util::LITERAL_FIRST_ID);
-		}
-		this->literal_buffer->set(i, str);
-		if (str != "")
-		{
-			valid++;
-		}
-	}
-
-	//use this string buffer in StringIndex class, if not exist, then also use StringIndex to search
-	this->stringindex->setBuffer(this->entity_buffer, this->literal_buffer);
-}
-
-void
-Database::warmUp()
-{
-	//the most frequent triple
-	int pid1 = this->maxNumPID;
-	ResultSet rs1;
-	string str1 = "select ?s ?o where { ?s " + this->kvstore->getPredicateByID(pid1) + " ?o . }";
-	this->query(str1, rs1);
-	//the most infrequent triple
-	int pid2 = this->minNumPID;
-	ResultSet rs2;
-	string str2 = "select ?s ?o where { ?s " + this->kvstore->getPredicateByID(pid2) + " ?o . }";
-	this->query(str2, rs2);
-}
-
-bool
-Database::load()
-{
-	if(this->if_loaded)
-	{
-		return true;
-	}
-
-	bool flag = (this->vstree)->loadTree();
-	if (!flag)
-	{
-		cout << "load tree error. @Database::load()" << endl;
-		return false;
-	}
-
-	flag = this->loadDBInfoFile();
-	if (!flag)
-	{
-		cout << "load database info error. @Database::load()" << endl;
-		return false;
-	}
-
-	(this->kvstore)->open();
-
-	this->stringindex->load();
-
-	this->readIDinfo();
-
-	this->setPreMap();
-	//generate the string buffer for entity and literal, no need for predicate
-	//NOTICE:the total string size should not exceed 10G, assume that most strings length < 500
-	//too many empty between entity and literal, so divide them
-	this->setStringBuffer();
-
-	//warm up always as finishing build(), to utilize the system buffer
-	//this->warmUp();
-	//DEBUG:the warmUp() calls query(), which will also output results, this is not we want
-
-	this->if_loaded = true;
-	cout << "finish load" << endl;
-
-	return true;
-}
-
-bool
-Database::unload()
-{
-	delete[] this->pre2num;
-	this->pre2num = NULL;
-	delete this->entity_buffer;
-	delete this->literal_buffer;
-
-	this->vstree->saveTree();
-	delete this->vstree;
-	this->vstree = NULL;
-	delete this->kvstore;
-	this->kvstore = NULL;
-	delete this->stringindex;
-	this->stringindex = NULL;
-
-	this->saveDBInfoFile();
-	this->writeIDinfo();
-	this->initIDinfo();
-
-	this->if_loaded = false;
-
-	return true;
-}
-
-string
-Database::getName()
-{
-	return this->name;
-}
-
-int
-Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
-{
-	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->pre2num, this->limitID_predicate, this->limitID_literal);
-
-	long tv_begin = Util::get_cur_time();
-
-	if (!general_evaluation.parseQuery(_query))
-		return false;
-	long tv_parse = Util::get_cur_time();
-	cout << "after Parsing, used " << (tv_parse - tv_begin) << "ms." << endl;
-
-	//TODO:output all results in JSON format, and transformed into string to client
-	//for select, -100 by default, -101 means error
-	//for update, non-negative means true(and the num is updated triples num), -1 means error
-	int success_num = -100;  
-
-	//Query
-	if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Not_Update)
-	{
-		bool query_ret = general_evaluation.doQuery();
-		if(!query_ret)
-		{
-			success_num = -101;
-		}
-
-		long tv_bfget = Util::get_cur_time();
-		general_evaluation.getFinalResult(_result_set);
-		long tv_afget = Util::get_cur_time();
-		cout << "after getFinalResult, used " << (tv_afget - tv_bfget) << "ms." << endl;
-
-		if(_fp != NULL)
-			general_evaluation.setNeedOutputAnswer();
-	}
-	//Update
-	else
-	{
-		success_num = 0;
-		TripleWithObjType *update_triple = NULL;
-		int update_triple_num = 0;
-
-		if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
-		{
-			QueryTree::GroupPattern &update_pattern = general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data ?
-				general_evaluation.getQueryTree().getInsertPatterns() : general_evaluation.getQueryTree().getDeletePatterns();
-
-			update_triple_num = update_pattern.patterns.size();
-			update_triple = new TripleWithObjType[update_triple_num];
-
-			for (int i = 0; i < (int)update_pattern.patterns.size(); i++)
-			{
-				TripleWithObjType::ObjectType object_type = TripleWithObjType::None;
-				if (update_pattern.patterns[i].object.value[0] == '<')
-					object_type = TripleWithObjType::Entity;
-				else
-					object_type = TripleWithObjType::Literal;
-
-				update_triple[i] = TripleWithObjType(update_pattern.patterns[i].subject.value,
-					update_pattern.patterns[i].predicate.value,
-					update_pattern.patterns[i].object.value, object_type);
-			}
-
-			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data)
-			{
-				success_num = insert(update_triple, update_triple_num);
-			}
-			else if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
-			{
-				success_num = remove(update_triple, update_triple_num);
-			}
-		}
-		else if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Where || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause ||
-			general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
-		{
-			general_evaluation.getQueryTree().setProjectionAsterisk();
-			general_evaluation.doQuery();
-
-			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Where || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
-			{
-				general_evaluation.prepareUpdateTriple(general_evaluation.getQueryTree().getDeletePatterns(), update_triple, update_triple_num);
-				success_num = remove(update_triple, update_triple_num);
-			}
-			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
-			{
-				general_evaluation.prepareUpdateTriple(general_evaluation.getQueryTree().getInsertPatterns(), update_triple, update_triple_num);
-				success_num = insert(update_triple, update_triple_num);
-			}
-		}
-
-		general_evaluation.releaseResultStack();
-		delete[] update_triple;
-	}
-
-	long tv_final = Util::get_cur_time();
-	cout << "Total time used: " << (tv_final - tv_begin) << "ms." << endl;
-
-	if (general_evaluation.needOutputAnswer())
-	{
-		int ans_num = max(_result_set.ansNum - _result_set.output_offset, 0);
-		if (_result_set.output_limit != -1)
-			ans_num = min(ans_num, _result_set.output_limit);
-		cout << "There has answer: " << ans_num << endl;
-		cout << "final result is : " << endl;
-		_result_set.output(_fp);
-		fprintf(_fp, "\n");
-		fflush(_fp);       //to empty the output buffer in C (fflush(stdin) not work in GCC)
-	}
-
-#ifdef DEBUG
-	cout<<"query success_num: "<<success_num<<endl;
-#endif
-	return success_num;
-}
-
 //NOTICE+QUERY:to save memory for large cases, we can consider building one tree at a time(then release)
 //Or read the rdf file on separate segments
 //WARN:the ID type is int, and entity/literal are just separated by a limit
@@ -742,29 +397,12 @@ Database::build(const string& _rdf_file)
 	string ret = Util::getExactPath(_rdf_file.c_str());
 	long tv_build_begin = Util::get_cur_time();
 
-	//string store_path = this->name;
-	Util::create_dir(this->store_path);
-
 	string kv_store_path = store_path + "/kv_store";
 	Util::create_dir(kv_store_path);
 
 	string vstree_store_path = store_path + "/vs_store";
 	Util::create_dir(vstree_store_path);
 
-	string stringindex_store_path = store_path + "/stringindex_store";
-	Util::create_dir(stringindex_store_path);
-
-	cout << "begin encode RDF from : " << ret << " ..." << endl;
-
-	//BETTER+TODO:now require that dataset size < memory
-	//to support really larger datasets, divide and insert into B+ tree and VStree
-	//(read the value, add list and set; update the signature, remove and reinsert)
-	//the query process is nearly the same
-	//QUERY:build each index in one thread to speed up, but the sorting case?
-	//one sorting order for several indexes
-
-	// to be switched to new encodeRDF method.
-	//    this->encodeRDF(ret);
 	if (!this->encodeRDF_new(ret))	//<-- this->kvstore->id2* trees are closed
 	{
 		return false;
@@ -782,12 +420,6 @@ Database::build(const string& _rdf_file)
 	//cout<<"release kvstore"<<endl;
 
 	long before_vstree = Util::get_cur_time();
-	//(this->kvstore)->open();
-	string _entry_file = this->getSignatureBFile();
-
-	cout << "begin build VS-Tree on " << ret << "..." << endl;
-	(this->vstree)->buildTree(_entry_file);
-
 	long tv_build_end = Util::get_cur_time();
 
 	cout << "after build vstree, used " << (tv_build_end - before_vstree) << "ms." << endl;
@@ -849,10 +481,10 @@ Database::saveDBInfoFile()
 	fwrite(&this->encode_mode, sizeof(int), 1, filePtr);
 	fclose(filePtr);
 
-	//Util::triple_num = this->triples_num;
-	//Util::pre_num = this->pre_num;
-	//Util::entity_num = this->entity_num;
-	//Util::literal_num = this->literal_num;
+	Util::triple_num = this->triples_num;
+	Util::pre_num = this->pre_num;
+	Util::entity_num = this->entity_num;
+	Util::literal_num = this->literal_num;
 
 	return true;
 }
@@ -878,128 +510,10 @@ Database::loadDBInfoFile()
 	fread(&this->encode_mode, sizeof(int), 1, filePtr);
 	fclose(filePtr);
 
-	//Util::triple_num = this->triples_num;
-	//Util::pre_num = this->pre_num;
-	//Util::entity_num = this->entity_num;
-	//Util::literal_num = this->literal_num;
-
-	return true;
-}
-
-string
-Database::getStorePath()
-{
-	return this->store_path;
-}
-
-//encode relative signature data of the query graph
-void
-Database::buildSparqlSignature(SPARQLquery & _sparql_q)
-{
-	vector<BasicQuery*>& _query_union = _sparql_q.getBasicQueryVec();
-	for (unsigned int i_bq = 0; i_bq < _query_union.size(); i_bq++)
-	{
-		BasicQuery* _basic_q = _query_union[i_bq];
-		_basic_q->encodeBasicQuery(this->kvstore, _sparql_q.getQueryVar());
-	}
-}
-
-bool
-Database::calculateEntityBitSet(int _entity_id, EntityBitSet & _bitset)
-{
-	int _list_len = 0;
-	//when as subject
-	int* _polist = NULL;
-	(this->kvstore)->getpreIDobjIDlistBysubID(_entity_id, _polist, _list_len);
-	Triple _triple;
-	_triple.subject = (this->kvstore)->getEntityByID(_entity_id);
-	for (int i = 0; i < _list_len; i += 2)
-	{
-		int _pre_id = _polist[i];
-		int _obj_id = _polist[i + 1];
-		_triple.object = (this->kvstore)->getEntityByID(_obj_id);
-		if (_triple.object == "")
-		{
-			_triple.object = (this->kvstore)->getLiteralByID(_obj_id);
-		}
-		_triple.predicate = (this->kvstore)->getPredicateByID(_pre_id);
-		this->encodeTriple2SubEntityBitSet(_bitset, &_triple);
-	}
-	delete[] _polist;
-
-	//when as object
-	int* _pslist = NULL;
-	_list_len = 0;
-	(this->kvstore)->getpreIDsubIDlistByobjID(_entity_id, _pslist, _list_len);
-	_triple.object = (this->kvstore)->getEntityByID(_entity_id);
-	for (int i = 0; i < _list_len; i += 2)
-	{
-		int _pre_id = _pslist[i];
-		int _sub_id = _pslist[i + 1];
-		_triple.subject = (this->kvstore)->getEntityByID(_sub_id);
-		_triple.predicate = (this->kvstore)->getPredicateByID(_pre_id);
-		this->encodeTriple2ObjEntityBitSet(_bitset, &_triple);
-	}
-	delete[] _pslist;
-
-	return true;
-}
-
-//encode Triple into subject SigEntry
-bool
-Database::encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple)
-{
-	int _pre_id = (this->kvstore)->getIDByPredicate(_p_triple->predicate);
-	if(_pre_id != -1)
-	{
-		Signature::encodePredicate2Entity(_bitset, _pre_id, Util::EDGE_OUT);
-	}
-
-	int _obj_id = (this->kvstore)->getIDByEntity(_p_triple->object);
-	if(_obj_id == -1)
-	{
-		_obj_id = (this->kvstore)->getIDByLiteral(_p_triple->object);
-	}
-	if(_obj_id != -1)
-	{
-		Signature::encodeStr2Entity(_bitset, _obj_id, Util::EDGE_OUT);
-	}
-
-	//if (this->encode_mode == Database::ID_MODE)
-	//{
-	//}
-	//else if (this->encode_mode == Database::STRING_MODE)
-	//{
-		//Signature::encodeStr2Entity((_p_triple->object).c_str(), _bitset);
-	//}
-
-	return true;
-}
-
-//encode Triple into object SigEntry
-bool
-Database::encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple)
-{
-	int _pre_id = (this->kvstore)->getIDByPredicate(_p_triple->predicate);
-	if(_pre_id != -1)
-	{
-		Signature::encodePredicate2Entity(_bitset, _pre_id, Util::EDGE_IN);
-	}
-
-	int _sub_id = (this->kvstore)->getIDByEntity(_p_triple->subject);
-	if(_sub_id != -1)
-	{
-		Signature::encodeStr2Entity(_bitset, _sub_id, Util::EDGE_IN);
-	}
-
-	//Signature::encodePredicate2Entity(_pre_id, _bitset, Util::EDGE_IN);
-	//if (this->encode_mode == Database::ID_MODE)
-	//{
-	//}
-	//else if (this->encode_mode == Database::STRING_MODE)
-	//{
-		//Signature::encodeStr2Entity((_p_triple->subject).c_str(), _bitset);
-	//}
+	Util::triple_num = this->triples_num;
+	Util::pre_num = this->pre_num;
+	Util::entity_num = this->entity_num;
+	Util::literal_num = this->literal_num;
 
 	return true;
 }
@@ -1045,37 +559,14 @@ Database::encodeRDF_new(const string _rdf_file)
 
 	long t1 = Util::get_cur_time();
 
-	//NOTICE: in encode process, we should not divide ID of entity and literal totally apart, i.e. entity is a system 
-	//while literal is another system
-	//The reason is that if we divide entity and literal, then in triple_array and final_result we can not decide a given
-	//ID is entity or not
-	//(one way is to add a more structure to tell us which is entity, but this is costly)
-
 	//map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature
 	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _p_id_tuples, _id_tuples_max))
 	{
 		return false;
 	}
 
-	//TODO+BETTER:after encode, we can know the exact entity num, so we can decide if our system can run this dataset 
-	//based on the current available memory(need a memory manager globally)
-	//If unbale to run, should exit and give a prompt
-	//User can modify the config file to run anyway, but gStore will not ensure correctness
-	//What is more, in load process, we also need to decide if gStore can run it
-	//
-	//TODO+BETTER: a global ID manager module, should be based on type template
-	//this can be used in vstree, storage and Database
-
 	long t2 = Util::get_cur_time();
 	cout << "after encode, used " << (t2 - t1) << "ms." << endl;
-
-	//build stringindex before this->kvstore->id2* trees are closed
-	this->stringindex->setNum(StringIndexFile::Entity, this->entity_num);
-	this->stringindex->setNum(StringIndexFile::Literal, this->literal_num);
-	this->stringindex->setNum(StringIndexFile::Predicate, this->pre_num);
-	this->stringindex->save(*this->kvstore);
-
-	//cout<<"special id: "<<this->kvstore->getIDByEntity("<point7>")<<endl;
 
 	//NOTICE:close these trees now to save memory
 	this->kvstore->close_entity2id();
@@ -1085,18 +576,15 @@ Database::encodeRDF_new(const string _rdf_file)
 	this->kvstore->close_predicate2id();
 	this->kvstore->close_id2predicate();
 
-	//this->kvstore->build_subID2values(_p_id_tuples, this->triples_num);
-	this->build_s2xx(_p_id_tuples);
+	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num);
 	long t3 = Util::get_cur_time();
 	cout << "after s2xx, used " << (t3 - t2) << "ms." << endl;
 
-	//this->kvstore->build_objID2values(_p_id_tuples, this->triples_num);
-	this->build_o2xx(_p_id_tuples);
+	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num);
 	long t4 = Util::get_cur_time();
 	cout << "after o2xx, used " << (t4 - t3) << "ms." << endl;
 
-	//this->kvstore->build_preID2values(_p_id_tuples, this->triples_num);
-	this->build_p2xx(_p_id_tuples);
+	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num);
 	long t5 = Util::get_cur_time();
 	cout << "after p2xx, used " << (t5 - t4) << "ms." << endl;
 
@@ -1116,197 +604,6 @@ Database::encodeRDF_new(const string _rdf_file)
 	Util::logging("finish encodeRDF_new");
 
 	return true;
-}
-
-void
-Database::build_s2xx(int** _p_id_tuples)
-{
-	qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_spo_cmp);
-	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num);
-
-	//save all entity_signature into binary file
-	string sig_binary_file = this->getSignatureBFile();
-	FILE* sig_fp = fopen(sig_binary_file.c_str(), "wb");
-	if (sig_fp == NULL) 
-	{
-		cout << "Failed to open : " << sig_binary_file << endl;
-		return;
-	}
-
-	//NOTICE:in build process, all IDs are continuous growing
-	EntityBitSet tmp_bitset;
-	tmp_bitset.reset();
-	for(int i = 0; i < this->entity_num; ++i)
-	{
-		SigEntry* sig = new SigEntry(EntitySig(tmp_bitset), -1);
-		fwrite(sig, sizeof(SigEntry), 1, sig_fp);
-		delete sig;
-	}
-
-	//TODO:use unsigned for type and -1 should be changed
-	int prev_entity_id = -1;
-	for (int i = 0; i < this->triples_num; ++i)
-	{
-		int subid = _p_id_tuples[i][0];
-		int preid = _p_id_tuples[i][1];
-		int objid = _p_id_tuples[i][2];
-		if(subid != prev_entity_id)
-		{
-			if(prev_entity_id != -1)
-			{
-#ifdef DEBUG
-				//if(prev_entity_id == 13)
-				//{
-					//cout<<"yy: "<<Signature::BitSet2str(tmp_bitset)<<endl;
-				//}
-#endif
-				//NOTICE: we must do twice, we need to locate on the same entry to deal, so we must place in order
-				SigEntry* sig = new SigEntry(EntitySig(tmp_bitset), prev_entity_id);
-				//write the sig entry
-				fseek(sig_fp, sizeof(SigEntry) * prev_entity_id, SEEK_SET);
-				fwrite(sig, sizeof(SigEntry), 1, sig_fp);
-				//_all_bitset |= *_entity_bitset[i];
-				delete sig;
-			}
-			prev_entity_id = subid;
-			tmp_bitset.reset();
-			Signature::encodeEdge2Entity(tmp_bitset, preid, objid, Util::EDGE_OUT);
-			//Signature::encodePredicate2Entity(preid, _tmp_bitset, Util::EDGE_OUT);
-			//Signature::encodeStr2Entity(objid, _tmp_bitset);
-		}
-		else
-		{
-			Signature::encodeEdge2Entity(tmp_bitset, preid, objid, Util::EDGE_OUT);
-		}
-	}
-
-	//NOTICE: remember to write the last entity's signature
-	if(prev_entity_id != -1)
-	{
-		SigEntry* sig = new SigEntry(EntitySig(tmp_bitset), prev_entity_id);
-		//write the sig entry
-		fseek(sig_fp, sizeof(SigEntry) * prev_entity_id, SEEK_SET);
-		fwrite(sig, sizeof(SigEntry), 1, sig_fp);
-		//_all_bitset |= *_entity_bitset[i];
-		delete sig;
-	}
-
-	fclose(sig_fp);
-}
-
-void
-Database::build_o2xx(int** _p_id_tuples)
-{
-	qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_ops_cmp);
-	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num);
-
-	//save all entity_signature into binary file
-	string sig_binary_file = this->getSignatureBFile();
-	//NOTICE: this is different from build_s2xx, the file already exists
-	FILE* sig_fp = fopen(sig_binary_file.c_str(), "rb+");
-	if (sig_fp == NULL) 
-	{
-		cout << "Failed to open : " << sig_binary_file << endl;
-		return;
-	}
-
-	//NOTICE:in build process, all IDs are continuous growing
-	//TODO:use unsigned for type and -1 should be changed
-	int prev_entity_id = -1;
-	EntityBitSet tmp_bitset;
-	for (int i = 0; i < this->triples_num; ++i)
-	{
-		int subid = _p_id_tuples[i][0];
-		int preid = _p_id_tuples[i][1];
-		int objid = _p_id_tuples[i][2];
-
-
-		if(Util::is_literal_ele(objid))
-		{
-			continue;
-		}
-
-		if(objid != prev_entity_id)
-		{
-			if(prev_entity_id != -1)
-			{
-				//NOTICE: we must do twice, we need to locate on the same entry to deal, so we must place in order
-				fseek(sig_fp, sizeof(SigEntry) * prev_entity_id, SEEK_SET);
-				SigEntry* old_sig = new SigEntry();
-				fread(old_sig, sizeof(SigEntry), 1, sig_fp);
-#ifdef DEBUG
-				//cout<<"to write a signature: "<<prev_entity_id<<endl;
-				//cout<<prev_entity_id<<endl;
-				//if(prev_entity_id == 13)
-				//{
-					//cout<<"yy: "<<Signature::BitSet2str(tmp_bitset)<<endl;
-				//}
-#endif
-				tmp_bitset |= old_sig->getEntitySig().entityBitSet;
-				delete old_sig;
-				
-#ifdef DEBUG
-				//if(prev_entity_id == 13)
-				//{
-					//cout<<"yy: "<<Signature::BitSet2str(tmp_bitset)<<endl;
-				//}
-#endif
-				
-					//write the sig entry
-				SigEntry* sig = new SigEntry(EntitySig(tmp_bitset), prev_entity_id);
-				fseek(sig_fp, sizeof(SigEntry) * prev_entity_id, SEEK_SET);
-				fwrite(sig, sizeof(SigEntry), 1, sig_fp);
-				//_all_bitset |= *_entity_bitset[i];
-				delete sig;
-			}
-
-#ifdef DEBUG
-			//cout<<"now is a new signature: "<<objid<<endl;
-#endif
-
-			prev_entity_id = objid;
-			tmp_bitset.reset();
-			//cout<<"bitset reset"<<endl;
-			Signature::encodeEdge2Entity(tmp_bitset, preid, subid, Util::EDGE_IN);
-			//cout<<"edge encoded"<<endl;
-			//Signature::encodePredicate2Entity(preid, _tmp_bitset, Util::EDGE_IN);
-			//Signature::encodeStr2Entity(subid, _tmp_bitset);
-		}
-		else
-		{
-			//cout<<"same signature: "<<objid<<" "<<preid<<" "<<subid<<endl;
-			Signature::encodeEdge2Entity(tmp_bitset, preid, subid, Util::EDGE_IN);
-			//cout<<"edge encoded"<<endl;
-		}
-	}
-	//cout<<"loop ended!"<<endl;
-
-	//NOTICE: remember to write the last entity's signature
-	if(prev_entity_id != -1)
-	{
-		//cout<<"to write the last signature"<<endl;
-
-		fseek(sig_fp, sizeof(SigEntry) * prev_entity_id, SEEK_SET);
-		SigEntry* old_sig = new SigEntry();
-		fread(old_sig, sizeof(SigEntry), 1, sig_fp);
-		tmp_bitset |= old_sig->getEntitySig().entityBitSet;
-		delete old_sig;
-		//write the sig entry
-		SigEntry* sig = new SigEntry(EntitySig(tmp_bitset), prev_entity_id);
-		fseek(sig_fp, sizeof(SigEntry) * prev_entity_id, SEEK_SET);
-		fwrite(sig, sizeof(SigEntry), 1, sig_fp);
-		//_all_bitset |= *_entity_bitset[i];
-		delete sig;
-	}
-
-	fclose(sig_fp);
-}
-
-void
-Database::build_p2xx(int** _p_id_tuples)
-{
-	qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_pso_cmp);
-	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num);
 }
 
 //NOTICE:in here and there in the insert/delete, we may get the maxium tuples num first
@@ -1361,18 +658,15 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 
 	//don't know the number of entity
 	//pre allocate entitybitset_max EntityBitSet for storing signature, double the space until the _entity_bitset is used up.
-	//
-	//TODO:改为用外存两轮排序，注意文件定位，需要修改Signature中string编码为ID(设置ID_MODE)，且应绑定点和边
-	//应该跑通4.5亿的数据集
-	//int entitybitset_max = 10000000;  //set larger to avoid the copy cost
+	int entitybitset_max = 10000000;  //set larger to avoid the copy cost
 	//int entitybitset_max = 10000;
-	//EntityBitSet** _entity_bitset = new EntityBitSet*[entitybitset_max];
-	//for (int i = 0; i < entitybitset_max; i++)
-	//{
-		//_entity_bitset[i] = new EntityBitSet();
-		//_entity_bitset[i]->reset();
-	//}
-	//EntityBitSet _tmp_bitset;
+	EntityBitSet** _entity_bitset = new EntityBitSet*[entitybitset_max];
+	for (int i = 0; i < entitybitset_max; i++)
+	{
+		_entity_bitset[i] = new EntityBitSet();
+		_entity_bitset[i]->reset();
+	}
+	EntityBitSet _tmp_bitset;
 
 	//parse a file
 	RDFParser _parser(_fin);
@@ -1486,12 +780,12 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 #ifdef DEBUG_PRECISE
 			//  save six tuples
 			{
-				//_six_tuples_fout << _sub_id << '\t'
-					//<< _pre_id << '\t'
-					//<< _obj_id << '\t'
-					//<< _sub << '\t'
-					//<< _pre << '\t'
-					//<< _obj << endl;
+				_six_tuples_fout << _sub_id << '\t'
+					<< _pre_id << '\t'
+					<< _obj_id << '\t'
+					<< _sub << '\t'
+					<< _pre << '\t'
+					<< _obj << endl;
 			}
 #endif
 
@@ -1500,7 +794,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 			//and we can decide the length of signature according to entity num then
 			//1. after all b+trees: empty id_tuples and only open id2string, reload rdf file and encode(using string for entity/literal)
 			//
-			//2. after this function or after all B+trees: close others and only use id_tuples to encode(no need to read file again, which is too costly)
+			//2. after thsi function or after all B+trees: close others and only use id_tuples to encode(no need to read file again, which is too costly)
 			//not encoded with string but all IDs(not using encode for string regex matching, then this is ok!)
 			//Because we encode with ID, then Signature has to be changed(and dynamic sig length)
 			//use same encode strategy for entity/literal/predicate, and adjust the rate of the 3 parts according to real case
@@ -1508,46 +802,46 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 			//we can also set the sig length larger(which should be included in config file)
 
 			//_entity_bitset is used up, double the space
-			//if (this->entity_num >= entitybitset_max)
-			//{
-				////cout<<"to double entity bitset num"<<endl;
-				//EntityBitSet** _new_entity_bitset = new EntityBitSet*[entitybitset_max * 2];
-				////TODO+BETTER?:if use pointer for array, avoid the copy cost of entitybitset, but consumes more mmeory
-				////if the triple size is 1-2 billion, then the memory cost will be very large!!!
-				//memcpy(_new_entity_bitset, _entity_bitset, sizeof(EntityBitSet*) * entitybitset_max);
-				//delete[] _entity_bitset;
-				//_entity_bitset = _new_entity_bitset;
+			if (this->entity_num >= entitybitset_max)
+			{
+				//cout<<"to double entity bitset num"<<endl;
+				EntityBitSet** _new_entity_bitset = new EntityBitSet*[entitybitset_max * 2];
+				//TODO+BETTER?:if use pointer for array, avoid the copy cost of entitybitset, but consumes more mmeory
+				//if the triple size is 1-2 billion, then the memory cost will be very large!!!
+				memcpy(_new_entity_bitset, _entity_bitset, sizeof(EntityBitSet*) * entitybitset_max);
+				delete[] _entity_bitset;
+				_entity_bitset = _new_entity_bitset;
 
-				//int tmp = entitybitset_max * 2;
-				//for (int i = entitybitset_max; i < tmp; i++)
-				//{
-					//_entity_bitset[i] = new EntityBitSet();
-					//_entity_bitset[i]->reset();
-				//}
+				int tmp = entitybitset_max * 2;
+				for (int i = entitybitset_max; i < tmp; i++)
+				{
+					_entity_bitset[i] = new EntityBitSet();
+					_entity_bitset[i]->reset();
+				}
 
-				//entitybitset_max = tmp;
-			//}
+				entitybitset_max = tmp;
+			}
 
-			//{
-				//_tmp_bitset.reset();
-				//Signature::encodePredicate2Entity(_pre_id, _tmp_bitset, Util::EDGE_OUT);
-				//Signature::encodeStr2Entity(_obj.c_str(), _tmp_bitset);
-				//*_entity_bitset[_sub_id] |= _tmp_bitset;
-			//}
+			{
+				_tmp_bitset.reset();
+				Signature::encodePredicate2Entity(_pre_id, _tmp_bitset, Util::EDGE_OUT);
+				Signature::encodeStr2Entity(_obj.c_str(), _tmp_bitset);
+				*_entity_bitset[_sub_id] |= _tmp_bitset;
+			}
 
-			//if (triple_array[i].isObjEntity())
-			//{
-				//_tmp_bitset.reset();
-				//Signature::encodePredicate2Entity(_pre_id, _tmp_bitset, Util::EDGE_IN);
-				//Signature::encodeStr2Entity(_sub.c_str(), _tmp_bitset);
-				////cout<<"objid: "<<_obj_id <<endl;
-				////when 15999 error
-				////WARN:id allocated can be very large while the num is not so much
-				////This means that maybe the space for the _obj_id is not allocated now
-				////NOTICE:we prepare the free id list in uporder and contiguous, so in build process
-				////this can work well
-				//*_entity_bitset[_obj_id] |= _tmp_bitset;
-			//}
+			if (triple_array[i].isObjEntity())
+			{
+				_tmp_bitset.reset();
+				Signature::encodePredicate2Entity(_pre_id, _tmp_bitset, Util::EDGE_IN);
+				Signature::encodeStr2Entity(_sub.c_str(), _tmp_bitset);
+				//cout<<"objid: "<<_obj_id <<endl;
+				//when 15999 error
+				//WARN:id allocated can be very large while the num is not so much
+				//This means that maybe the space for the _obj_id is not allocated now
+				//NOTICE:we prepare the free id list in uporder and contiguous, so in build process
+				//this can work well
+				*_entity_bitset[_obj_id] |= _tmp_bitset;
+			}
 		}
 	}
 
@@ -1558,28 +852,42 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 	_six_tuples_fout.close();
 
 
-		//for (int i = 0; i < entitybitset_max; i++)
-		//{
-			//delete _entity_bitset[i];
-		//}
-		//delete[] _entity_bitset;
+	{
+		//save all entity_signature into binary file
+		string _sig_binary_file = this->getSignatureBFile();
+		FILE* _sig_fp = fopen(_sig_binary_file.c_str(), "wb");
+		if (_sig_fp == NULL) {
+			cout << "Failed to open : " << _sig_binary_file << endl;
+		}
 
-	cout << "finish sub2id pre2id obj2id" << endl;
-	cout << "tripleNum is " << this->triples_num << endl;
-	cout << "entityNum is " << this->entity_num << endl;
-	cout << "preNum is " << this->pre_num << endl;
-	cout << "literalNum is " << this->literal_num << endl;
-	
-	//{
-		//stringstream _ss;
-		//_ss << "finish sub2id pre2id obj2id" << endl;
-		//_ss << "tripleNum is " << this->triples_num << endl;
-		//_ss << "entityNum is " << this->entity_num << endl;
-		//_ss << "preNum is " << this->pre_num << endl;
-		//_ss << "literalNum is " << this->literal_num << endl;
-		//Util::logging(_ss.str());
-		//cout << _ss.str() << endl;
-	//}
+		//NOTICE:in build process, all IDs are continuous growing
+		//EntityBitSet _all_bitset;
+		for (int i = 0; i < this->entity_num; i++)
+		{
+			SigEntry* _sig = new SigEntry(EntitySig(*_entity_bitset[i]), i);
+			fwrite(_sig, sizeof(SigEntry), 1, _sig_fp);
+			//_all_bitset |= *_entity_bitset[i];
+			delete _sig;
+		}
+		fclose(_sig_fp);
+
+		for (int i = 0; i < entitybitset_max; i++)
+		{
+			delete _entity_bitset[i];
+		}
+		delete[] _entity_bitset;
+	}
+
+	{
+		stringstream _ss;
+		_ss << "finish sub2id pre2id obj2id" << endl;
+		_ss << "tripleNum is " << this->triples_num << endl;
+		_ss << "entityNum is " << this->entity_num << endl;
+		_ss << "preNum is " << this->pre_num << endl;
+		_ss << "literalNum is " << this->literal_num << endl;
+		Util::logging(_ss.str());
+		cout << _ss.str() << endl;
+	}
 
 	return true;
 }
@@ -1748,7 +1056,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<int>* _vertices,
 	//if new entity then insert it, else update it.
 	if (_is_new_sub)
 	{
-		//cout<<"to insert: "<<_sub_id<<" "<<this->kvstore->getEntityByID(_sub_id)<<endl;
+		cout<<"to insert: "<<_sub_id<<" "<<this->kvstore->getEntityByID(_sub_id)<<endl;
 		SigEntry _sig(_sub_id, _sub_entity_bitset);
 		(this->vstree)->insertEntry(_sig);
 	}
@@ -1935,7 +1243,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<int>* _vertices,
 bool
 Database::insert(std::string _rdf_file)
 {
-	//cout<<"to load in insert"<<endl;
 	bool flag = this->load();
 	if (!flag)
 	{
@@ -2099,11 +1406,6 @@ Database::remove(std::string _rdf_file)
 
 	cout << "remove rdf triples done." << endl;
 	cout<<"removed triples num: "<<success_num<<endl;
-
-	if(this->vstree->isEmpty())
-	{
-		this->resetIDinfo();
-	}
 
 	return true;
 }
@@ -2554,10 +1856,6 @@ Database::insert(const TripleWithObjType* _triples, int _triple_num)
 	}
 #endif
 
-	//update string index
-	this->stringindex->change(vertices, *this->kvstore, true);
-	this->stringindex->change(predicates, *this->kvstore, false);
-
 	return valid_num;
 }
 
@@ -2897,17 +2195,6 @@ Database::remove(const TripleWithObjType* _triples, int _triple_num)
 	}
 #endif
 
-	//update string index
-	this->stringindex->disable(vertices, true);
-	this->stringindex->disable(predicates, false);
-
-	//BETTER+TODO:this will require us to lock all when remove process not ends(in multiple threads cases)
-	//An considerable idea is to check if empty after every triple removed
-	if(this->vstree->isEmpty())
-	{
-		this->resetIDinfo();
-	}
-
 	return valid_num;
 }
 
@@ -2917,349 +2204,14 @@ Database::objIDIsEntityID(int _id)
 	return _id < Util::LITERAL_FIRST_ID;
 }
 
-bool
-Database::getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set)
+int
+main(int argc, char * argv[])
 {
-#ifdef DEBUG_PRECISE
-	printf("getFinalResult:begins\n");
-#endif
-	// this is only selected var num
-	int _var_num = _sparql_q.getQueryVarNum();
-	_result_set.setVar(_sparql_q.getQueryVar());
-	vector<BasicQuery*>& query_vec = _sparql_q.getBasicQueryVec();
-
-	//sum the answer number
-	int _ans_num = 0;
-#ifdef DEBUG_PRECISE
-	printf("getFinalResult:before ansnum loop\n");
-#endif
-	for (unsigned i = 0; i < query_vec.size(); i++)
-	{
-		_ans_num += query_vec[i]->getResultList().size();
-	}
-#ifdef DEBUG_PRECISE
-	printf("getFinalResult:after ansnum loop\n");
+	//chdir(dirname(argv[0]));
+#ifdef DEBUG
+	Util util;
 #endif
 
-	_result_set.ansNum = _ans_num;
-#ifndef STREAM_ON
-	_result_set.answer = new string*[_ans_num];
-	for (int i = 0; i < _result_set.ansNum; i++)
-	{
-		_result_set.answer[i] = NULL;
-	}
-#else
-	vector<int> keys;
-	vector<bool> desc;
-	_result_set.openStream(keys, desc);
-#ifdef DEBUG_PRECISE
-	printf("getFinalResult:after open stream\n");
-#endif
-#endif
-#ifdef DEBUG_PRECISE
-	printf("getFinalResult:before main loop\n");
-#endif
-	int tmp_ans_count = 0;
-	//map int ans into string ans
-	//union every basic result into total result
-	for (unsigned i = 0; i < query_vec.size(); i++)
-	{
-		vector<int*>& tmp_vec = query_vec[i]->getResultList();
-		//ensure the spo order is right, but the triple order is still reversed
-		//for every result group in resultlist
-		//for(vector<int*>::reverse_iterator itr = tmp_vec.rbegin(); itr != tmp_vec.rend(); ++itr)
-		for (vector<int*>::iterator itr = tmp_vec.begin(); itr != tmp_vec.end(); ++itr)
-		{
-			//to ensure the order so do reversely in two nested loops
-#ifndef STREAM_ON
-			_result_set.answer[tmp_ans_count] = new string[_var_num];
-#endif
-#ifdef DEBUG_PRECISE
-			printf("getFinalResult:before map loop\n");
-#endif
-			//NOTICE: in new join method only selec_var_num columns,
-			//but before in shenxuchuan's join method, not like this.
-			//though there is all graph_var_num columns in result_list,
-			//we only consider the former selected vars
-			//map every ans_id into ans_str
-			for (int v = 0; v < _var_num; ++v)
-			{
-				int ans_id = (*itr)[v];
-				string ans_str;
-				if (this->objIDIsEntityID(ans_id))
-				{
-					ans_str = (this->kvstore)->getEntityByID(ans_id);
-				}
-				else
-				{
-					ans_str = (this->kvstore)->getLiteralByID(ans_id);
-				}
-#ifndef STREAM_ON
-				_result_set.answer[tmp_ans_count][v] = ans_str;
-#else
-				_result_set.writeToStream(ans_str);
-#endif
-#ifdef DEBUG_PRECISE
-				printf("getFinalResult:after copy/write\n");
-#endif
-			}
-			tmp_ans_count++;
-		}
-	}
-#ifdef STREAM_ON
-	_result_set.resetStream();
-#endif
-#ifdef DEBUG_PRECISE
-	printf("getFinalResult:ends\n");
-#endif
-
-	return true;
+	return 0;
 }
 
-void
-Database::printIDlist(int _i, int* _list, int _len, string _log)
-{
-	stringstream _ss;
-	_ss << "[" << _i << "] ";
-	for (int i = 0; i < _len; i++) {
-		_ss << _list[i] << "\t";
-	}
-	Util::logging("==" + _log + ":");
-	Util::logging(_ss.str());
-}
-
-void
-Database::printPairList(int _i, int* _list, int _len, string _log)
-{
-	stringstream _ss;
-	_ss << "[" << _i << "] ";
-	for (int i = 0; i < _len; i += 2) {
-		_ss << "[" << _list[i] << "," << _list[i + 1] << "]\t";
-	}
-	Util::logging("==" + _log + ":");
-	Util::logging(_ss.str());
-}
-
-void
-Database::test()
-{
-	int subNum = 9, preNum = 20, objNum = 90;
-
-	int* _id_list = NULL;
-	int _list_len = 0;
-	{   /* x2ylist */
-		for (int i = 0; i < subNum; i++)
-		{
-
-			(this->kvstore)->getobjIDlistBysubID(i, _id_list, _list_len);
-			if (_list_len != 0)
-			{
-				stringstream _ss;
-				this->printIDlist(i, _id_list, _list_len, "s2olist[" + _ss.str() + "]");
-				delete[] _id_list;
-			}
-
-			/* o2slist */
-			(this->kvstore)->getsubIDlistByobjID(i, _id_list, _list_len);
-			if (_list_len != 0)
-			{
-				stringstream _ss;
-				this->printIDlist(i, _id_list, _list_len, "o(sub)2slist[" + _ss.str() + "]");
-				delete[] _id_list;
-			}
-		}
-
-		for (int i = 0; i < objNum; i++)
-		{
-			int _i = Util::LITERAL_FIRST_ID + i;
-			(this->kvstore)->getsubIDlistByobjID(_i, _id_list, _list_len);
-			if (_list_len != 0)
-			{
-				stringstream _ss;
-				this->printIDlist(_i, _id_list, _list_len, "o(literal)2slist[" + _ss.str() + "]");
-				delete[] _id_list;
-			}
-		}
-	}
-	{   /* xy2zlist */
-		for (int i = 0; i < subNum; i++)
-		{
-			for (int j = 0; j < preNum; j++)
-			{
-				(this->kvstore)->getobjIDlistBysubIDpreID(i, j, _id_list,
-					_list_len);
-				if (_list_len != 0)
-				{
-					stringstream _ss;
-					_ss << "preid:" << j;
-					this->printIDlist(i, _id_list, _list_len, "sp2olist[" + _ss.str() + "]");
-					delete[] _id_list;
-				}
-
-				(this->kvstore)->getsubIDlistByobjIDpreID(i, j, _id_list,
-					_list_len);
-				if (_list_len != 0)
-				{
-					stringstream _ss;
-					_ss << "preid:" << j;
-					this->printIDlist(i, _id_list, _list_len, "o(sub)p2slist[" + _ss.str() + "]");
-					delete[] _id_list;
-				}
-			}
-		}
-
-		for (int i = 0; i < objNum; i++)
-		{
-			int _i = Util::LITERAL_FIRST_ID + i;
-			for (int j = 0; j < preNum; j++)
-			{
-				(this->kvstore)->getsubIDlistByobjIDpreID(_i, j, _id_list,
-					_list_len);
-				if (_list_len != 0)
-				{
-					stringstream _ss;
-					_ss << "preid:" << j;
-					this->printIDlist(_i, _id_list, _list_len,
-						"*o(literal)p2slist[" + _ss.str() + "]");
-					delete[] _id_list;
-				}
-			}
-		}
-	}
-	{   /* x2yzlist */
-		for (int i = 0; i < subNum; i++)
-		{
-			(this->kvstore)->getpreIDobjIDlistBysubID(i, _id_list, _list_len);
-			if (_list_len != 0)
-			{
-				this->printPairList(i, _id_list, _list_len, "s2polist");
-				delete[] _id_list;
-				_list_len = 0;
-			}
-		}
-
-		for (int i = 0; i < subNum; i++)
-		{
-			(this->kvstore)->getpreIDsubIDlistByobjID(i, _id_list, _list_len);
-			if (_list_len != 0)
-			{
-				this->printPairList(i, _id_list, _list_len, "o(sub)2pslist");
-				delete[] _id_list;
-			}
-		}
-
-		for (int i = 0; i < objNum; i++)
-		{
-			int _i = Util::LITERAL_FIRST_ID + i;
-			(this->kvstore)->getpreIDsubIDlistByobjID(_i, _id_list, _list_len);
-			if (_list_len != 0)
-			{
-				this->printPairList(_i, _id_list, _list_len,
-					"o(literal)2pslist");
-				delete[] _id_list;
-			}
-		}
-	}
-}
-
-void
-Database::test_build_sig()
-{
-	BasicQuery* _bq = new BasicQuery("");
-	/*
-	* <!!!>	y:created	<!!!_(album)>.
-	*  <!!!>	y:created	<Louden_Up_Now>.
-	*  <!!!_(album)>	y:hasSuccessor	<Louden_Up_Now>
-	* <!!!_(album)>	rdf:type	<wordnet_album_106591815>
-	*
-	* id of <!!!> is 0
-	* id of <!!!_(album)> is 2
-	*
-	*
-	* ?x1	y:created	?x2.
-	*  ?x1	y:created	<Louden_Up_Now>.
-	*  ?x2	y:hasSuccessor	<Louden_Up_Now>.
-	* ?x2	rdf:type	<wordnet_album_106591815>
-	*/
-	{
-		Triple _triple("?x1", "y:created", "?x2");
-		_bq->addTriple(_triple);
-	}
-	{
-		Triple _triple("?x1", "y:created", "<Louden_Up_Now>");
-		_bq->addTriple(_triple);
-	}
-	{
-		Triple _triple("?x2", "y:hasSuccessor", "<Louden_Up_Now>");
-		_bq->addTriple(_triple);
-	}
-	{
-		Triple _triple("?x2", "rdf:type", "<wordnet_album_106591815>");
-		_bq->addTriple(_triple);
-	}
-	vector<string> _v;
-	_v.push_back("?x1");
-	_v.push_back("?x2");
-
-	_bq->encodeBasicQuery(this->kvstore, _v);
-	Util::logging(_bq->to_str());
-	SPARQLquery _q;
-	_q.addBasicQuery(_bq);
-
-	(this->vstree)->retrieve(_q);
-
-	Util::logging("\n\n");
-	Util::logging("candidate:\n\n" + _q.candidate_str());
-}
-
-//void
-//Database::test_join()
-//{
-//BasicQuery* _bq = new BasicQuery("");
-//
-//* <!!!>	y:created	<!!!_(album)>.
-//*  <!!!>	y:created	<Louden_Up_Now>.
-//*  <!!!_(album)>	y:hasSuccessor	<Louden_Up_Now>
-//* <!!!_(album)>	rdf:type	<wordnet_album_106591815>
-//*
-//* id of <!!!> is 0
-//* id of <!!!_(album)> is 2
-//*
-//*
-//* ?x1	y:created	?x2.
-//*  ?x1	y:created	<Louden_Up_Now>.
-//*  ?x2	y:hasSuccessor	<Louden_Up_Now>.
-//* ?x2	rdf:type	<wordnet_album_106591815>
-//
-//{
-////Triple _triple("?x1", "y:created", "?x2");
-//_bq->addTriple(_triple);
-//}
-//{
-//Triple _triple("?x1", "y:created", "<Louden_Up_Now>");
-//_bq->addTriple(_triple);
-//}
-//{
-//Triple _triple("?x2", "y:hasSuccessor", "<Louden_Up_Now>");
-//_bq->addTriple(_triple);
-//}
-//{
-//Triple _triple("?x2", "rdf:type", "<wordnet_album_106591815>");
-//_bq->addTriple(_triple);
-//}
-//vector<string> _v;
-//_v.push_back("?x1");
-//_v.push_back("?x2");
-//_bq->encodeBasicQuery(this->kvstore, _v);
-//Util::logging(_bq->to_str());
-//SPARQLquery _q;
-//_q.addBasicQuery(_bq);
-//(this->vstree)->retrieve(_q);
-//Util::logging("\n\n");
-//Util::logging("candidate:\n\n"+_q.candidate_str());
-//_q.print(cout);
-//this->join(_q);
-//ResultSet _rs;
-//this->getFinalResult(_q, _rs);
-//cout << _rs.to_str() << endl;
-//}

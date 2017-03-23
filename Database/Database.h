@@ -72,6 +72,7 @@ public:
 
 private:
 	string name;
+	string store_path;
 	bool is_active;
 	int triples_num;
 	int entity_num;
@@ -80,6 +81,8 @@ private:
 	int literal_num;
 
 	int encode_mode;
+
+	bool if_loaded;
 
 	VSTree* vstree;
 	KVstore* kvstore;
@@ -107,6 +110,7 @@ private:
 	unsigned literal_buffer_size;
 	void setStringBuffer();
 	void warmUp();
+	//BETTER+TODO:add a predicate buffer for ?p query
 
 	//triple num per group for insert/delete
 	//can not be too high, otherwise the heap will over
@@ -170,6 +174,9 @@ private:
 	//* 4. build: objID2subIDlist, <objIDpreID>2subIDlist objID2<preIDsubID>list
 	//encodeRDF_new invoke new rdfParser to solve task 1 & 2 in one time scan.
 	bool encodeRDF_new(const string _rdf_file);
+	void build_s2xx(int**);
+	void build_o2xx(int**);
+	void build_p2xx(int**);
 
 	//insert and delete, notice that modify is not needed here
 	//we can read from file or use sparql syntax

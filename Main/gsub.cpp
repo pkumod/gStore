@@ -21,6 +21,13 @@ main(int argc, char * argv[])
 	cout << "remove file:" << argv[2] << endl;
 
 	string db_folder = string(argv[1]);
+	int len = db_folder.length();
+	if(db_folder.substr(len-3, 3) == ".db")
+	{
+		cout<<"your database can not end with .db"<<endl;
+		return -1;
+	}
+
 	Database _db(db_folder);
 	_db.load();
 	cout << "finish loading" << endl;

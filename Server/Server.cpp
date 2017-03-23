@@ -16,6 +16,8 @@ Server::Server()
 	this->connectionMaxNum = Socket::MAX_CONNECTIONS;
 	this->databaseMaxNum = 1; // will be updated when supporting multiple databases.
 	this->database = NULL;
+	this->db_home = Util::global_config["db_home"];
+	this->db_suffix = Util::global_config["db_suffix"];
 }
 
 Server::Server(unsigned short _port)
@@ -335,12 +337,14 @@ Server::dropDatabase(std::string _db_name, std::string _ac_name, std::string& _r
 	}
 
 	size_t length = _db_name.length();
-	if (length < 3 || _db_name.substr(length - 3, 3) != ".db") {
-		_ret_msg = "you can only drop databases whose names end with \".db\"";
+	if (length < 3 || _db_name.substr(length - 3, 3) == ".db") {
+		_ret_msg = "you can not only drop databases whose names end with \".db\"";
 		return false;
 	}
 
-	std::string cmd = std::string("rm -rf ") + _db_name;
+	string store_path = this->db_home + "/" + _db_name + this->db_suffix;
+
+	std::string cmd = std::string("rm -rf ") + store_path;
 	int ret = system(cmd.c_str());
 	if (ret == 0) {
 		_ret_msg = "drop database done.";
@@ -518,7 +522,7 @@ Server::showDatabases(string _para, string _ac_name, string& _ret_msg)
 {
 	if (_para == "all")
 	{
-		_ret_msg = Util::getItemsFromDir(Util::db_home);
+		_ret_msg = Util::getItemsFromDir(this->db_home);
 		return true;
 	}
 	if (this->database != NULL)

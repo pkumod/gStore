@@ -12,26 +12,52 @@
 
 using namespace std;
 
-//NOTICE:used in Database, Join and Strategy
-int Util::triple_num = 0;
-int Util::pre_num = 0;
-int Util::entity_num = 0;
-int Util::literal_num = 0;
+//==================================================================================================================
+//configure() to config the basic options of gStore system
+//==================================================================================================================
+
+//string Util::profile = "../init.conf";
+string Util::profile = "init.conf";
+
+map<string, string> Util::global_config;
 
 //database home directory, which is an absolute path by config
 //TODO:everywhere using database, the prefix should be it
-string Util::db_home = ".";
+//string Util::db_home = ".";
 
 //false:single true:distribute
-bool Util::gStore_mode = false;
+//bool Util::gstore_mode = false;
+
+//control the debug information
+//string Util::debug_level = "simple";
+
+//database placed in which path
+//string Util::db_path = ".";
+
+//the suffix to be added to database name
+//string Util::db_suffix = ".db";
+
+//the maxium buffer size assigned to gStore system
+//string Util::buffer_maxium = "100"; //the unit is GB
+
+//the maxium thread num assigned to gStore system
+//string Util::thread_maxium = "1000";
+
+//if record logs in gStore system(to be recoverable or faster)
+//string Util::operation_logs = "true";
+
+//==================================================================================================================
+
+//NOTICE:used in Database, Join and Strategy
+//int Util::triple_num = 0;
+//int Util::pre_num = 0;
+//int Util::entity_num = 0;
+//int Util::literal_num = 0;
 
 //string Util::tmp_path = "../.tmp/";
 //string Util::debug_path = "../.debug/";
 string Util::tmp_path = ".tmp/";
 string Util::debug_path = ".debug/";
-
-//string Util::profile = "../init.conf";
-string Util::profile = "init.conf";
 
 //QUERY: assign all in Util()?
 //BETTER:assigned in KVstore, not one tree?
@@ -85,7 +111,89 @@ Util::a_trim(char * szOutput, const char * szInput)
 bool
 Util::configure()
 {
-	return Util::config_setting() && Util::config_debug() && Util::config_advanced();
+    const unsigned len = 505;
+    char *buf, *c;
+    char buf_i[len], buf_o[len];
+    FILE *fp = NULL;
+	char keyname[len];
+	char keyval[len];
+
+	//initialize the settings
+	Util::global_config["gstore_mode"] = "single";
+	//NOTICE+BETTER+TODO:use macro is better to avoid too many judging on this variable(add a DEBUG macro at the outer)
+	Util::global_config["debug_level"] = "simple";
+	Util::global_config["db_home"] = ".";
+	Util::global_config["db_suffix"] = ".db";
+	Util::global_config["buffer_maxium"] = "100";
+	Util::global_config["thread_maxium"] = "1000";
+	//TODO:to be recoverable
+	Util::global_config["operation_logs"] = "true";
+
+#ifdef DEBUG
+	fprintf(stderr, "profile: %s\n", profile.c_str());
+#endif
+    if((fp = fopen(profile.c_str(), "r")) == NULL)  //NOTICE: this is not a binary file
+    {
+#ifdef DEBUG
+        fprintf(stderr, "openfile [%s] error [%s]\n", profile.c_str(), strerror(errno));
+#endif
+        return false;
+    }
+    fseek(fp, 0, SEEK_SET);
+
+    while(!feof(fp) && fgets(buf_i, len, fp) != NULL)
+    {
+		//fprintf(stderr, "buffer: %s\n", buf_i);
+        Util::l_trim(buf_o, buf_i);
+        if(strlen(buf_o) <= 0)
+            continue;
+        buf = NULL;
+        buf = buf_o;
+		if(buf[0] == '#')
+		{
+			continue;
+		}
+		else if(buf[0] == '[') 
+		{
+			continue;
+		} 
+		if((c = (char*)strchr(buf, '=')) == NULL)
+			continue;
+		memset(keyname, 0, sizeof(keyname));
+		sscanf(buf, "%[^=|^ |^\t]", keyname);
+#ifdef DEBUG
+				//fprintf(stderr, "keyname: %s\n", keyname);
+#endif
+		sscanf(++c, "%[^\n]", keyval);
+		char *keyval_o = (char *)calloc(strlen(keyval) + 1, sizeof(char));
+		if(keyval_o != NULL) 
+		{
+			Util::a_trim(keyval_o, keyval);
+#ifdef DEBUG
+			//fprintf(stderr, "keyval: %s\n", keyval_o);
+#endif
+			if(keyval_o && strlen(keyval_o) > 0)
+			{
+				//strcpy(keyval, keyval_o);
+				global_config[string(keyname)] = string(keyval_o);
+			}
+			xfree(keyval_o);
+		}
+	}
+
+    fclose(fp);
+	//display all settings here
+	cout<<"the current settings are as below: "<<endl;
+	cout<<"key : value"<<endl;
+	cout<<"------------------------------------------------------------"<<endl;
+	for(map<string, string>::iterator it = global_config.begin(); it != global_config.end(); ++it)
+	{
+		cout<<it->first<<" : "<<it->second<<endl;
+	}
+	cout<<endl;
+
+	return true;
+	//return Util::config_setting() && Util::config_debug() && Util::config_advanced();
 }
 
 bool
@@ -123,13 +231,6 @@ Util::config_advanced()
 bool
 Util::config_setting()
 {
-	//TODO:deal with more cases, need to be classified
-	//
-	//BETTER:different functions and function pointer array
-	//
-	//WARN:currently, we can call this function with different parameters
-	//to acquire different config module
-
     const unsigned len1 = 100;
     const unsigned len2 = 505;
 	char AppName[] = "setting";
@@ -231,7 +332,7 @@ Util::config_setting()
 #ifdef DEBUG
 		fprintf(stderr, "the gStore will run in distributed mode!\n");
 #endif
-		Util::gStore_mode = true;
+		//Util::gStore_mode = true;
 	}
 
     return true;   //config success
@@ -1322,3 +1423,85 @@ Util::node2string(const char* _raw_str) {
 	}
 	return _output;
 }
+
+int 
+Util::_spo_cmp(const void* _a, const void* _b) 
+{
+	int** _p_a = (int**)_a;
+	int** _p_b = (int**)_b;
+
+	int _sub_id_a = (*_p_a)[0];
+	int _sub_id_b = (*_p_b)[0];
+	if (_sub_id_a != _sub_id_b) {
+		return _sub_id_a - _sub_id_b;
+	}
+
+	int _pre_id_a = (*_p_a)[1];
+	int _pre_id_b = (*_p_b)[1];
+	if (_pre_id_a != _pre_id_b) {
+		return _pre_id_a - _pre_id_b;
+	}
+
+	int _obj_id_a = (*_p_a)[2];
+	int _obj_id_b = (*_p_b)[2];
+	if (_obj_id_a != _obj_id_b) {
+		return _obj_id_a - _obj_id_b;
+	}
+
+	return 0;
+}
+
+int 
+Util::_ops_cmp(const void* _a, const void* _b) 
+{
+	int** _p_a = (int**)_a;
+	int** _p_b = (int**)_b;
+
+	int _obj_id_a = (*_p_a)[2];
+	int _obj_id_b = (*_p_b)[2];
+	if (_obj_id_a != _obj_id_b) {
+		return _obj_id_a - _obj_id_b;
+	}
+
+	int _pre_id_a = (*_p_a)[1];
+	int _pre_id_b = (*_p_b)[1];
+	if (_pre_id_a != _pre_id_b) {
+		return _pre_id_a - _pre_id_b;
+	}
+
+	int _sub_id_a = (*_p_a)[0];
+	int _sub_id_b = (*_p_b)[0];
+	if (_sub_id_a != _sub_id_b) {
+		return _sub_id_a - _sub_id_b;
+	}
+
+	return 0;
+}
+
+int 
+Util::_pso_cmp(const void* _a, const void* _b) 
+{
+	int** _p_a = (int**)_a;
+	int** _p_b = (int**)_b;
+
+	int _pre_id_a = (*_p_a)[1];
+	int _pre_id_b = (*_p_b)[1];
+	if (_pre_id_a != _pre_id_b) {
+		return _pre_id_a - _pre_id_b;
+	}
+
+	int _sub_id_a = (*_p_a)[0];
+	int _sub_id_b = (*_p_b)[0];
+	if (_sub_id_a != _sub_id_b) {
+		return _sub_id_a - _sub_id_b;
+	}
+
+	int _obj_id_a = (*_p_a)[2];
+	int _obj_id_b = (*_p_b)[2];
+	if (_obj_id_a != _obj_id_b) {
+		return _obj_id_a - _obj_id_b;
+	}
+
+	return 0;
+}
+

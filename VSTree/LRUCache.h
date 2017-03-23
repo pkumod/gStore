@@ -13,6 +13,10 @@
 
 class VNode;
 
+//NOTICE: we should implement the LRU, not simply FIFO
+//not only consider updates, but also visits
+//TODO:this may cause the cost of mutiple-thread-sync very high
+
 // before using the cache, you must loadCache or createCache.
 class LRUCache
 {
@@ -33,7 +37,7 @@ public:
 	//delete a node from LRUcache and file
 	bool del(int _key);
 	 //update the _key's mapping _value. if the key do not exist, this operation will fail and return false. 
-    bool update(int _key, VNode* _value);
+	bool update(int _key, VNode* _value);
 	 //write out all the elements to hard disk. 
     bool flush();
     int getCapacity();
@@ -51,6 +55,7 @@ private:
 	//(pos is needed due to swap-in-out and insert/delete)
     int* keys;
     VNode** values;
+	//NOTICE: the key is node file line, i.e. vstree node ID
     std::map<int,int> key2pos; // mapping from key to pos.
     std::string dataFilePath;
     static const int DEFAULT_NUM = 2;
@@ -59,7 +64,7 @@ private:
     static const int NULL_INDEX = -1;
     static const int EOF_FLAG = -1;
 	 //put the new visited one to the tail 
-    void refresh(int _pos);
+	void refresh(int _pos);
 	 //free the memory of the _pos element in cache. 
     void freeElem(int _pos);
 	 //set the memory of the _pos element in cache 
@@ -72,6 +77,19 @@ private:
      //read the value from hard disk, and put it to the values[_pos].
      //before use it, you must make sure that the _pos element in cache is free(unoccupied).
     bool readIn(int _pos, int _fileLine);
+
+	//NOTICE: cost of rw lock is higher than mutex
+	//By default, read lock is recursive, write lock not, we can set mutex as recursive
+	//You can acquire read lock first and then upgrade to write lock, finally unlock twice
+	//R/W lock only fits for many-read and rare-write cases
+	//
+	//lock the whole buffer if get/set/swap element
+#ifdef THREAD_ON
+	pthread_rwlock_t cache_lock;
+	//TODO:if find no unlocked one to swap out, then need to wait by cond
+	//pthread_cond_t cache_cond;
+#endif
+
 };
 
 #endif //_VSTREE_LRUCACHE_H

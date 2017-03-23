@@ -39,6 +39,12 @@ VSTree::~VSTree()
 	this->max_nid_alloc = 0;
 }
 
+bool 
+VSTree::isEmpty() const
+{
+	return this->height == 0;
+}
+
 int 
 VSTree::getHeight() const
 {
@@ -49,6 +55,10 @@ VSTree::getHeight() const
 VNode* 
 VSTree::getRoot()
 {
+	//if(this->root_file_line < 0)
+	//{
+		//return NULL;
+	//}
     return (this->node_buffer)->get(this->root_file_line);
 }
 
@@ -59,6 +69,7 @@ VSTree::getNode(int _line)
     //if (_line >= this->node_num)
     if (_line >= this->max_nid_alloc)
     {
+		//cout<<_line <<" "<<this->max_nid_alloc<<endl;
         cerr << "error, the parameter:_line is bigger than the tree node_num. @VSTree::getNode" << endl;
         return NULL;
     }
@@ -69,6 +80,11 @@ VSTree::getNode(int _line)
 //retrieve candidate result set by the var_sig in the _query. 
 void VSTree::retrieve(SPARQLquery& _query)
 {
+	if(this->root_file_line < 0)
+	{
+		return;
+	}
+
 	Util::logging("IN retrieve");
 
 	//debug
@@ -141,6 +157,7 @@ void VSTree::retrieve(SPARQLquery& _query)
 	Util::logging("OUT retrieve");
 }
 
+//NOTICE:this can only be done by one thread
 //build the VSTree from the _entity_signature_file. 
 bool 
 VSTree::buildTree(std::string _entry_file_path)
@@ -148,7 +165,8 @@ VSTree::buildTree(std::string _entry_file_path)
 	Util::logging("IN VSTree::buildTree");
 
     // create the entry buffer and node buffer.
-    this->entry_buffer = new EntryBuffer(EntryBuffer::DEFAULT_CAPACITY);
+	this->entry_buffer = new EntryBuffer(EntryBuffer::DEFAULT_CAPACITY);
+	//cout<<"entry buffer newed"<<endl;
     this->node_buffer = new LRUCache(LRUCache::DEFAULT_CAPACITY);
 
     // create the root node.
@@ -183,6 +201,11 @@ VSTree::buildTree(std::string _entry_file_path)
         {
            SigEntry* entryPtr = this->entry_buffer->getElem(i);
 
+		   //if(entryPtr->getEntityId() < 0)
+		   //{
+			   //cout<<"error: "<<i<<endl;
+		   //}
+
 		   //the most important part of this function 
 		   //insertEntry one by one 
            this->insertEntry(*entryPtr);
@@ -193,20 +216,20 @@ VSTree::buildTree(std::string _entry_file_path)
     }
 
     //debug
-    Util::logging("insert entries to tree done.");
+    //Util::logging("insert entries to tree done.");
 
     //bool flag = this->node_buffer->flush();
     bool flag = this->saveTree();
 
     //debug
     {
-        stringstream _ss;
-        _ss << "tree height: " << this->getHeight() << endl;
-        _ss << "node num: " << this->node_num << endl;
-        Util::logging(_ss.str());
+        //stringstream _ss;
+        //_ss << "tree height: " << this->getHeight() << endl;
+        //_ss << "node num: " << this->node_num << endl;
+        //Util::logging(_ss.str());
     }
 
-    Util::logging("OUT VSTree::buildTree");
+    //Util::logging("OUT VSTree::buildTree");
 
     //debug
 //    {
@@ -302,9 +325,18 @@ bool VSTree::updateEntry(int _entity_id, const EntityBitSet& _bitset)
     if (!findFlag)
     {
         cerr<< "error, can not find the mapping child entry in the leaf node. @VSTree::updateEntry" << endl;
+#ifdef THREAD_ON
+		pthread_mutex_unlock(&(leafNodePtr->node_lock));
+#endif
         return false;
     }
 
+	//the node has been changed
+	leafNodePtr->setDirty();
+
+#ifdef THREAD_ON
+	pthread_mutex_unlock(&(leafNodePtr->node_lock));
+#endif
     return true;
 }
 
@@ -313,6 +345,11 @@ bool VSTree::updateEntry(int _entity_id, const EntityBitSet& _bitset)
 bool 
 VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
 {
+	if(this->root_file_line < 0)
+	{
+		return false;
+	}
+
 	//cout<<"begin replaceEntry()"<<endl;
     VNode* leafNodePtr = this->getLeafNodeByEntityID(_entity_id);
 
@@ -356,9 +393,17 @@ VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
     if (!findFlag)
     {
         cerr << "error, can not find the mapping child entry in the leaf node. @VSTree::replaceEntry" << endl;
+#ifdef THREAD_ON
+		pthread_mutex_unlock(&(leafNodePtr->node_lock));
+#endif
         return false;
     }
 
+	leafNodePtr->setDirty();
+
+#ifdef THREAD_ON
+	pthread_mutex_unlock(&(leafNodePtr->node_lock));
+#endif
     return true;
 }
 
@@ -370,11 +415,21 @@ VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
 bool 
 VSTree::insertEntry(const SigEntry& _entry)
 {
-	//WARN:we do not deal with the case:the vstree is already empty,
-	//then to insert now
-
 	//choose the best leaf node to insert the _entry 
-    VNode* choosedNodePtr = this->chooseNode(this->getRoot(), _entry);
+    VNode* choosedNodePtr = NULL;
+	if(this->root_file_line < 0)
+	{
+		choosedNodePtr = this->createNode();
+		choosedNodePtr->setAsRoot(true);
+		choosedNodePtr->setAsLeaf(true);
+		this->height ++;
+		this->root_file_line = 0;
+	}
+	else
+	{
+		choosedNodePtr = this->chooseNode(this->getRoot(), _entry);
+	}
+
 
 #ifdef DEBUG_VSTREE
 		if(_entry.getEntityId() == 200)
@@ -400,6 +455,7 @@ VSTree::insertEntry(const SigEntry& _entry)
         return false;
     }
 
+	choosedNodePtr->setDirty();
     if (choosedNodePtr->isFull())
     {
 #ifdef DEBUG_VSTREE
@@ -434,6 +490,11 @@ VSTree::insertEntry(const SigEntry& _entry)
         // update the entityID2FileLineMap.
         this->entityID2FileLineMap[_entry.getEntityId()] = choosedNodePtr->getFileLine();
     }
+
+#ifdef THREAD_ON
+	pthread_mutex_unlock(&(choosedNodePtr->node_lock));
+#endif
+
     this->entry_num ++;
 
 #ifdef DEBUG_VSTREE
@@ -447,6 +508,11 @@ VSTree::insertEntry(const SigEntry& _entry)
 bool 
 VSTree::removeEntry(int _entity_id)
 {
+	if(this->root_file_line < 0)
+	{
+		return false;
+	}
+
 	//cout<<"file line check: "<<this->entityID2FileLineMap[200]<<endl;
     VNode* leafNodePtr = this->getLeafNodeByEntityID(_entity_id);
 
@@ -478,21 +544,30 @@ VSTree::removeEntry(int _entity_id)
         return false;
     }
 
+	leafNodePtr->setDirty();
 	//BETTER?:consider up->bopttom to deal, not find leaf and recursively
 	if(leafNodePtr->isRoot())
 	{
 		if(childNum == 1)
 		{   //the tree is empty now
+			cout<<"the vstree is empty now!"<<endl;
 			leafNodePtr->removeChild(entryIndex);
 			leafNodePtr->refreshAncestorSignature(*(this->node_buffer));
 			this->removeNode(leafNodePtr);
+			leafNodePtr = NULL;
+
 			//DEBUG: already deleted in freeElem
 			//delete leafNodePtr;
 			//leafNodePtr = NULL;
+
 			this->root_file_line = -1;
 			this->height = 0;
 			this->entry_num = 0;
 			this->node_num = 0;
+
+			//reset the ID info
+			this->free_nid_list.clear();
+			this->max_nid_alloc = 0;
 		}
 		else
 		{
@@ -528,6 +603,12 @@ VSTree::removeEntry(int _entity_id)
 		}
 	}
 
+	if(leafNodePtr != NULL)
+	{
+#ifdef THREAD_ON
+		pthread_mutex_unlock(&(leafNodePtr->node_lock));
+#endif
+	}
 
 	this->entry_num--;
 	this->entityID2FileLineMap.erase(_entity_id);
@@ -566,8 +647,10 @@ VSTree::loadTree()
 {
 	cout << "load VSTree..." << endl;
 	(this->node_buffer) = new LRUCache(LRUCache::DEFAULT_CAPACITY);
+	cout<<"LRU cache built"<<endl;
 
     bool flag = this->loadTreeInfo();
+	cout<<"tree info loaded"<<endl;
 
     //debug
     {
@@ -581,6 +664,7 @@ VSTree::loadTree()
         cout << "finish loadCache" << endl;
     }
 
+	//NOTICE:this must cover all nodes(but not save), different with loadCache
     if (flag)
     {
         flag = loadEntityID2FileLineMap();
@@ -617,7 +701,7 @@ VSTree::chooseNode(VNode* _p_node, const SigEntry& _entry)
                 }
                 candidateIndex[candidateNum++] = i;
             }
-        }
+        }		
 
 		//NOTICE: the basic idea is to place similar signatures together?(the smaller num?)
 		//BETTER: recursion is too costly , and the performance maybe not so good
@@ -635,15 +719,37 @@ VSTree::chooseNode(VNode* _p_node, const SigEntry& _entry)
 
             if(curDis == 0)
             {
+				if(ret != NULL)
+				{
+#ifdef THREAD_ON
+					pthread_mutex_unlock(&(ret->node_lock));
+#endif
+				}
                 return candidateLeafPtr;
             }
 
             if(minDis > curDis)
             {
+				if(ret != NULL)
+				{
+#ifdef THREAD_ON
+					pthread_mutex_unlock(&(ret->node_lock));
+#endif
+				}
                 minDis = curDis;
                 ret = candidateLeafPtr;
             }
+			else
+			{
+#ifdef THREAD_ON
+				pthread_mutex_unlock(&(candidateLeafPtr->node_lock));
+#endif
+			}
         }
+
+#ifdef THREAD_ON
+		pthread_mutex_unlock(&(_p_node->node_lock));
+#endif
 
         return ret;
     }
@@ -672,7 +778,9 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 		cout << "split happen" << endl;
 		cout<<_p_node_being_split->getFileLine() << endl;
 		cout<<"to insert id "<<_insert_entry.getEntityId()<<endl;
+		cout<<"height: "<<this->height<<endl;
 #endif
+	int oldnode_fileline = _p_node_being_split->getFileLine();
     // first, add the new child node(if not leaf) or child entry(if leaf) to the full node.
 	bool just_insert_entry = (_p_insert_node == NULL);
     if(just_insert_entry)
@@ -682,6 +790,7 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
     else
     {
         _p_node_being_split->addChildNode(_p_insert_node, true);
+		//pthread_mutex_unlock(&(_p_insert_node->node_lock));
     }
 	//NOTICE:now the child num in this node is exactly MAX_CHILD_NUM
 
@@ -690,9 +799,11 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 	//BETTER: use hanming, xor result or the vector included angle to guess the distince.
 	//And then also use the farest two as seeds.
 	//
-     //two seeds to generate two new nodes.
-	 //seedA kernel: the SigEntry with the minimal count of signature.
-	 //seedB kernel: the SigEntry with the maximal count of signature.
+    //two seeds to generate two new nodes.
+	//seedA kernel: the SigEntry with the minimal count of signature.
+	//seedB kernel: the SigEntry with the maximal count of signature.
+	//
+	//AIM: divide the entries into two parts, and the or result of the two parts are very different, i.e. a^b is the maxium
      
 
     int maxCount = 0; // record the minimal signature count.
@@ -708,51 +819,52 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
     }
     entryA = _p_node_being_split->getChildEntry(entryA_index);
 
-	maxCount = 0;
-    int entryB_index = 0; // record the seedB kernel index.
-    for(int i = 0; i < VNode::MAX_CHILD_NUM; i++)
-    {
-		//NOTICE:I think xOR should be used here to choose the farest two
-		int currentCount = entryA.xOR(_p_node_being_split->getChildEntry(i));
-		//int currentCount = entryA.xEpsilen(_p_node_being_split->getChildEntry(i));
-        if(i != entryA_index && maxCount <= currentCount)
-        {
-            maxCount = currentCount;
-            entryB_index = i;
-        }
-    }
-    entryB = _p_node_being_split->getChildEntry(entryB_index);
+	//maxCount = 0;
+    //int entryB_index = 0; // record the seedB kernel index.
+    //for(int i = 0; i < VNode::MAX_CHILD_NUM; i++)
+    //{
+		////NOTICE:I think xOR should be used here to choose the farest two
+		//int currentCount = entryA.xOR(_p_node_being_split->getChildEntry(i));
+		////int currentCount = entryA.xEpsilen(_p_node_being_split->getChildEntry(i));
+        //if(i != entryA_index && maxCount <= currentCount)
+        //{
+            //maxCount = currentCount;
+            //entryB_index = i;
+        //}
+    //}
+    //entryB = _p_node_being_split->getChildEntry(entryB_index);
 
     // AEntryIndex: the entry index near seedA.
     // BEntryIndex: the entry index near seedB.
     std::vector<int> entryIndex_nearA, entryIndex_nearB;
     entryIndex_nearA.clear();
     entryIndex_nearB.clear();
-    entryIndex_nearA.push_back(entryA_index);
-    entryIndex_nearB.push_back(entryB_index);
-	int cnt = 1, i;
-	//BETTER:maybe sort and add?(how to sort according to two seeds)
-	for(i = 0; i < VNode::MAX_CHILD_NUM; ++i)
+
+	multimap<int, int> dist;
+	for(int i = 0; i < VNode::MAX_CHILD_NUM; ++i)
 	{
-		if(i == entryA_index || i == entryB_index)
-		{
-			continue;
-		}
-		if(cnt > VNode::MIN_CHILD_NUM) //num+1
+		int d = entryA.xEpsilen(_p_node_being_split->getChildEntry(i));
+		dist.insert(pair<int, int>(d, i));
+	}
+
+	int cnt = 0;
+	multimap<int, int>::iterator it;
+	for(it = dist.begin(); it != dist.end(); ++it)
+	{
+		if(cnt > VNode::MIN_CHILD_NUM)
 		{
 			break;
 		}
+		entryIndex_nearA.push_back(it->second);
 		cnt++;
-		entryIndex_nearA.push_back(i);
 	}
-	for(; i < VNode::MAX_CHILD_NUM; ++i)
+
+	for(; it != dist.end(); ++it)
 	{
-		if(i == entryA_index || i == entryB_index)
-		{
-			continue;
-		}
-		entryIndex_nearB.push_back(i);
+		entryIndex_nearB.push_back(it->second);
 	}
+	dist.clear();
+
 
 	//NOTICE: code below maybe exist error, can not divide evenly(and maybe not necessary to compute distance)
 	//
@@ -811,35 +923,49 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 	cout<<"A: "<<entryIndex_nearA.size()<<"    B: "<<entryIndex_nearB.size()<<endl;
 #endif
 
+    // the old one acts as AEntryIndex's father.
+    VNode* oldNodePtr = _p_node_being_split;
+
+	bool is_leaf = oldNodePtr->isLeaf();
     // then create a new node to act as BEntryIndex's father.
-    VNode* newNodePtr = this->createNode();
+    VNode* newNodePtr = this->createNode(is_leaf);
 #ifdef DEBUG
 	cout<<"new node file line: "<<newNodePtr->getFileLine()<<endl;
 #endif
 
-    // the old one acts as AEntryIndex's father.
-    VNode* oldNodePtr = _p_node_being_split;
-
     // if the old node is leaf, set the new node as a leaf.
-    if(oldNodePtr->isLeaf())
+    if(is_leaf)
     {
         newNodePtr->setAsLeaf(true);
     }
 
-	 //add all the entries in BEntryIndex into the new node child entry array,
+	//TODO:use lock, then can be used in parallism
+    //oldNodePtr = this->getNode(oldnode_fileline);
+	//add all the entries in BEntryIndex into the new node child entry array,
 	//and calculate the new node's entry.
-    for(unsigned i = 0; i < entryIndex_nearB.size(); i++)
-    {
-        if(oldNodePtr->isLeaf())
-        {
-            newNodePtr->addChildEntry(oldNodePtr->getChildEntry(entryIndex_nearB[i]), false);
-        }
-        else
-        {
-        	VNode* childPtr = oldNodePtr->getChild(entryIndex_nearB[i], *(this->node_buffer));
-            newNodePtr->addChildNode(childPtr);
-        }
-    }
+	if(is_leaf)
+	{
+		//NOTICE:I think write the judgement outside is better(no need to judge each time in loop)
+		for(unsigned i = 0; i < entryIndex_nearB.size(); i++)
+		{
+			//SigEntry st = oldNodePtr->getChildEntry(entryIndex_nearB[i]);
+			newNodePtr->addChildEntry(oldNodePtr->getChildEntry(entryIndex_nearB[i]), false);
+		}		
+	}
+	else
+	{
+		for(unsigned i = 0; i < entryIndex_nearB.size(); i++)
+		{
+			//NOTICE: this requires that the buffer should be able to place half childs of a node
+			//(to set the father as the new node)
+			//If split occur recursively, the buffer size should be at least 101 * h + h = 102h
+			VNode* childPtr = oldNodePtr->getChild(entryIndex_nearB[i], *(this->node_buffer));
+			newNodePtr->addChildNode(childPtr);
+#ifdef THREAD_ON
+			pthread_mutex_unlock(&(childPtr->node_lock));
+#endif
+		}	
+	}
     newNodePtr->refreshSignature();
 
      //label the child being removed with -1,
@@ -847,36 +973,47 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
     sort(entryIndex_nearA.begin(), entryIndex_nearA.end(), less<int>());
 
 #ifdef DEBUG_VSTREE
-    	stringstream _ss1;
-    	{
-    		_ss1 << "nearA: ";
-    		for(unsigned i = 0; i < entryIndex_nearA.size(); i++)
-    		{
-    			_ss1 << entryIndex_nearA[i] << " ";
-    		}
-    		_ss1 << endl;
+        //stringstream _ss1;
+        //{
+            //_ss1 << "nearA: ";
+            //for(unsigned i = 0; i < entryIndex_nearA.size(); i++)
+            //{
+                //_ss1 << entryIndex_nearA[i] << " ";
+            //}
+            //_ss1 << endl;
 
-    		_ss1 << "nearB: ";
-    		for(unsigned i = 0; i < entryIndex_nearB.size(); i++)
-    		{
-    			_ss1 << entryIndex_nearB[i] << " ";
-    		}
-    		_ss1 << endl;
-    	}
-    	Util::logging(_ss1.str());
+            //_ss1 << "nearB: ";
+            //for(unsigned i = 0; i < entryIndex_nearB.size(); i++)
+            //{
+                //_ss1 << entryIndex_nearB[i] << " ";
+            //}
+            //_ss1 << endl;
+        //}
+        //Util::logging(_ss1.str());
 #endif
 
-    for(unsigned i = 0; i < entryIndex_nearA.size(); i++)
-    {
-        oldNodePtr->setChildEntry(i, oldNodePtr->getChildEntry(entryIndex_nearA[i]));
-        oldNodePtr->setChildFileLine(i, oldNodePtr->getChildFileLine(entryIndex_nearA[i]));
-    }
+	//NOTICE:we need to sort entryIndex_nearA first because we must get from oldNodePtr and set oldNodePtr
+	//(in case of overwriting!)
+	if(is_leaf)
+	{
+		for(unsigned i = 0; i < entryIndex_nearA.size(); i++)
+		{
+			oldNodePtr->setChildEntry(i, oldNodePtr->getChildEntry(entryIndex_nearA[i]));
+			//WARN:no child file line for leaf node
+			//oldNodePtr->setChildFileLine(i, oldNodePtr->getChildFileLine(entryIndex_nearA[i]));
+		}
+	}
+	else
+	{
+		for(unsigned i = 0; i < entryIndex_nearA.size(); i++)
+		{
+			oldNodePtr->setChildEntry(i, oldNodePtr->getChildEntry(entryIndex_nearA[i]));
+			oldNodePtr->setChildFileLine(i, oldNodePtr->getChildFileLine(entryIndex_nearA[i]));
+		}
+	}
     oldNodePtr->setChildNum(entryIndex_nearA.size());
     oldNodePtr->refreshSignature();
 
-    int oldNode_index = oldNodePtr->getIndexInFatherNode(*(this->node_buffer));
-    // full node's father pointer.
-    VNode* oldNodeFatherPtr = oldNodePtr->getFather(*(this->node_buffer));
     if(oldNodePtr->isRoot())
     {
 #ifdef DEBUG
@@ -885,15 +1022,15 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
          //if the old node is root,
 		 //split the root, create a new root,
          //and the tree height will be increased.
-        VNode* RootNewPtr = this->createNode();
+        VNode* RootNewPtr = this->createNode(false);
 
          //change the old root node to not-root node,
          //and set the RootNew to root node.
         oldNodePtr->setAsRoot(false);
         RootNewPtr->setAsRoot(true);
 
-         //set the split two node(old node and new node) as the new root's child,
-         //and update signatures.
+        //set the split two node(old node and new node) as the new root's child,
+        //and update signatures.
         RootNewPtr->addChildNode(oldNodePtr);
         RootNewPtr->addChildNode(newNodePtr);
         RootNewPtr->refreshSignature();
@@ -906,8 +1043,8 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 //            Util::logging(_ss.str());
 //        }
 
-         //should keep the root node always being
-         //at the first line(line zero) of the tree node file.
+        //should keep the root node always being
+        //at the first line(line zero) of the tree node file.
         this->swapNodeFileLine(RootNewPtr, oldNodePtr);
 		cout<<"new root: "<<RootNewPtr->getFileLine()<<endl;
         this->height++;
@@ -927,13 +1064,19 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 //            _ss << RootNewPtr->to_str() << endl;
 //            Util::logging(_ss.str());
 //        }
+#ifdef THREAD_ON
+		pthread_mutex_unlock(&(RootNewPtr->node_lock));
+#endif
     }
     else
     {
-         //if the (OldNode) is not Root,
-         //change the old node's signature to A's signature.
+		int oldNode_index = oldNodePtr->getIndexInFatherNode(*(this->node_buffer));
+		// full node's father pointer.
+		VNode* oldNodeFatherPtr = oldNodePtr->getFather(*(this->node_buffer));
+        //if the (OldNode) is not Root,
+        //change the old node's signature to A's signature.
     	oldNodeFatherPtr->setChildEntry(oldNode_index, oldNodePtr->getEntry());
-
+		oldNodeFatherPtr->setDirty();
 
         if(oldNodeFatherPtr->isFull())
         {
@@ -945,6 +1088,10 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
         	oldNodeFatherPtr->addChildNode(newNodePtr);
         	oldNodeFatherPtr->refreshAncestorSignature(*(this->node_buffer));
         }
+
+#ifdef THREAD_ON
+		pthread_mutex_unlock(&(oldNodeFatherPtr->node_lock));
+#endif
     }
 
     //debug
@@ -964,12 +1111,17 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
     // update the entityID2FileLineMap by these two nodes.
     this->updateEntityID2FileLineMap(oldNodePtr);
     this->updateEntityID2FileLineMap(newNodePtr);
+
+	//pthread_mutex_unlock(&(oldNodePtr->node_lock));
+#ifdef THREAD_ON
+	pthread_mutex_unlock(&(newNodePtr->node_lock));
+#endif
 }
 
 //the _entry_index in _child is to be removed.
 //node can only be deleted in this function.
 void 
-VSTree::coalesce(VNode* _child, int _entry_index)
+VSTree::coalesce(VNode*& _child, int _entry_index)
 {
 #ifdef DEBUG
 	cout << "coalesce happen" <<endl;
@@ -994,13 +1146,20 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 			//only one key after remove, shrink root
 			VNode* newRoot = _child->getChild(0, *(this->node_buffer));
 			newRoot->setAsRoot(true);
+			newRoot->setDirty();
 #ifdef DEBUG
 			cout<<"shrink root in coalesce() -- to swap node file"<<endl;
 #endif
 			this->swapNodeFileLine(newRoot, _child);
+
+#ifdef THREAD_ON
+			pthread_mutex_unlock(&(newRoot->node_lock));
+#endif
+
 			//this->root_file_line = newRoot->getFileLine();
 			this->height--;
 			this->removeNode(_child);
+			_child = NULL;
 		}
 		return;
 	}
@@ -1072,6 +1231,9 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 		}
 		if(ccase > 2)
 		{
+#ifdef THREAD_ON
+			pthread_mutex_unlock(&(p->node_lock));
+#endif
 			p = tp;
 			n = tn;
 		}
@@ -1100,11 +1262,11 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 	case 1:    //union right to this
 		if(_child->isLeaf())
 		{
-			_child->setChildFileLine(_entry_index, p->getChildFileLine(0));
+			//_child->setChildFileLine(_entry_index, p->getChildFileLine(0));
 			_child->setChildEntry(_entry_index, p->getChildEntry(0));
 			for(int i = 1; i < n; ++i)
 			{
-				_child->setChildFileLine(cn+i-1, p->getChildFileLine(i));
+				//_child->setChildFileLine(cn+i-1, p->getChildFileLine(i));
 				_child->addChildEntry(p->getChildEntry(i));
 			}
 		}
@@ -1114,6 +1276,10 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 			_child->setChildEntry(_entry_index, p->getChildEntry(0));
 			tmp = p->getChild(0, *(this->node_buffer));
 			tmp->setFatherFileLine(child_no);
+			tmp->setDirty();
+#ifdef THREAD_ON
+			pthread_mutex_unlock(&(tmp->node_lock));
+#endif
 			for(int i = 1; i < n; ++i)
 			{
 				tmp = p->getChild(i, *(this->node_buffer));
@@ -1121,25 +1287,41 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 				_child->addChildNode(tmp);
 				//_child->setChildNum(cn+i);
 				//tmp->setFatherFileLine(child_no);
+#ifdef THREAD_ON
+				pthread_mutex_unlock(&(tmp->node_lock));
+#endif
 			}
 		}
+		p->setDirty();
 		this->removeNode(p);
+		//p = NULL;
 		_child->refreshSignature();
+		_father->setDirty();
+		_father->setChildEntry(_child_index, _child->getEntry());
 		//recursive:to remove child index+1 in father
 		this->coalesce(_father, _child_index+1);
 		break;
 
 	case 2:    //move one from right
-		_child->setChildFileLine(_entry_index, p->getChildFileLine(n-1));
+		if(!_child->isLeaf())
+		{
+			_child->setChildFileLine(_entry_index, p->getChildFileLine(n-1));
+		}
 		_child->setChildEntry(_entry_index, p->getChildEntry(n-1));
 		_child->refreshSignature();
 		if(!_child->isLeaf())
 		{
 			tmp = p->getChild(n-1, *(this->node_buffer));
 			tmp->setFatherFileLine(child_no);
+			tmp->setDirty();
+#ifdef THREAD_ON
+			pthread_mutex_unlock(&(tmp->node_lock));
+#endif
 		}
+		p->setDirty();
 		p->removeChild(n-1);
 		p->refreshSignature();
+		_father->setDirty();
 		_father->setChildEntry(_child_index, _child->getEntry());
 		_father->setChildEntry(_child_index+1, p->getEntry());
 		_father->refreshAncestorSignature(*(this->node_buffer));
@@ -1148,11 +1330,11 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 	case 3:    //union left to this
 		if(_child->isLeaf())
 		{
-			_child->setChildFileLine(_entry_index, p->getChildFileLine(0));
+			//_child->setChildFileLine(_entry_index, p->getChildFileLine(0));
 			_child->setChildEntry(_entry_index, p->getChildEntry(0));
 			for(int i = 1; i < n; ++i)
 			{
-				_child->setChildFileLine(cn+i-1, p->getChildFileLine(i));
+				//_child->setChildFileLine(cn+i-1, p->getChildFileLine(i));
 				_child->addChildEntry(p->getChildEntry(i));
 			}
 		}
@@ -1162,6 +1344,10 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 			_child->setChildEntry(_entry_index, p->getChildEntry(0));
 			tmp = p->getChild(0, *(this->node_buffer));
 			tmp->setFatherFileLine(child_no);
+			tmp->setDirty();
+#ifdef THREAD_ON
+			pthread_mutex_unlock(&(tmp->node_lock));
+#endif
 			for(int i = 1; i < n; ++i)
 			{
 				tmp = p->getChild(i, *(this->node_buffer));
@@ -1169,25 +1355,40 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 				_child->addChildNode(tmp);
 				//_child->setChildNum(cn+i);
 				//tmp->setFatherFileLine(child_no);
+#ifdef THREAD_ON
+				pthread_mutex_unlock(&(tmp->node_lock));
+#endif
 			}
 		}
+		p->setDirty();
 		this->removeNode(p);
 		_child->refreshSignature();
+		_father->setDirty();
+		_father->setChildEntry(_child_index, _child->getEntry());
 		//recursive:to remove child index-1 in father
 		this->coalesce(_father, _child_index-1);
 		break;
 
 	case 4:    //move one from left
-		_child->setChildFileLine(_entry_index, p->getChildFileLine(n-1));
+		if(!_child->isLeaf())
+		{
+			_child->setChildFileLine(_entry_index, p->getChildFileLine(n-1));
+		}
 		_child->setChildEntry(_entry_index, p->getChildEntry(n-1));
 		_child->refreshSignature();
 		if(!_child->isLeaf())
 		{
 			VNode* tmp = p->getChild(n-1, *(this->node_buffer));
 			tmp->setFatherFileLine(child_no);
+			tmp->setDirty();
+#ifdef THREAD_ON
+			pthread_mutex_unlock(&(tmp->node_lock));
+#endif
 		}
+		p->setDirty();
 		p->removeChild(n-1);
 		p->refreshSignature();
+		_father->setDirty();
 		_father->setChildEntry(_child_index, _child->getEntry());
 		_father->setChildEntry(_child_index-1, p->getEntry());
 		_father->refreshAncestorSignature(*(this->node_buffer));
@@ -1198,6 +1399,10 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 		break;
 	}
 
+#ifdef THREAD_ON
+	pthread_mutex_unlock(&(_father->node_lock));
+#endif
+
 	//BETTER:this maybe very costly because many entity no need to update
 	if(_child->isLeaf())
 	{
@@ -1205,6 +1410,9 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 		if(ccase == 2 || ccase == 4)
 		{
 			this->updateEntityID2FileLineMap(p);
+#ifdef THREAD_ON
+			pthread_mutex_unlock(&(p->node_lock));
+#endif
 		}
 		else
 		{
@@ -1217,9 +1425,9 @@ VSTree::coalesce(VNode* _child, int _entry_index)
 
 //create a new node when one node need splitting. 
 VNode* 
-VSTree::createNode()
+VSTree::createNode(bool _is_leaf)
 {
-    VNode* newNodePtr = new VNode();
+    VNode* newNodePtr = new VNode(_is_leaf);
 	int key = -1;
 	if(this->free_nid_list.empty())
 	{
@@ -1237,6 +1445,7 @@ VSTree::createNode()
 	}
 	//key = this->node_num;
     newNodePtr->setFileLine(key);
+	newNodePtr->setDirty();
     this->node_buffer->set(key, newNodePtr);
     this->node_num++;
 
@@ -1288,12 +1497,20 @@ VSTree::swapNodeFileLine(VNode* _p_node_a, VNode* _p_node_b)
         nodeBFatherPtr->setChildFileLine(nodeBRank, newNodeBFileLine);
     }
 
+#ifdef THREAD_ON
+	pthread_mutex_unlock(&(nodeAFatherPtr->node_lock));
+	pthread_mutex_unlock(&(nodeBFatherPtr->node_lock));
+#endif
+
     // update nodes' children's father file line.
     if (!_p_node_a->isLeaf())
     {
         for (int i = 0; i < nodeAChildNum; ++i)
         {
             nodeAChildPtr[i]->setFatherFileLine(newNodeAFileLine);
+#ifdef THREAD_ON
+			pthread_mutex_unlock(&(nodeAChildPtr[i]->node_lock));
+#endif
         }
     }
     if (!_p_node_b->isLeaf())
@@ -1301,6 +1518,9 @@ VSTree::swapNodeFileLine(VNode* _p_node_a, VNode* _p_node_b)
         for (int i = 0; i < nodeBChildNum; ++i)
         {
             nodeBChildPtr[i]->setFatherFileLine(newNodeBFileLine);
+#ifdef THREAD_ON
+			pthread_mutex_unlock(&(nodeBChildPtr[i]->node_lock));
+#endif
         }
     }
 
@@ -1372,6 +1592,7 @@ VSTree::loadTreeInfo()
         cerr << "error, can not open tree  file:[" <<
         		VSTree::tree_info_file_path <<
         		"]@VSTree::loadTreeInfo"  << endl;
+		fclose(filePtr);
         return false;
     }
 
@@ -1419,13 +1640,15 @@ VSTree::loadTreeInfo()
 		this->free_nid_list.push_back(key);
 		fread(&key, sizeof(int), 1, filePtr);
 	}
+    fclose(filePtr);
 
-	if(this->root_file_line < 0 || this->root_file_line >= this->max_nid_alloc)
+	//NOTICE: the tree can be empty
+	//if(this->root_file_line < 0 || this->root_file_line >= this->max_nid_alloc)
+	if(this->root_file_line >= this->max_nid_alloc)
 	{
 		return false;
 	}
 
-    fclose(filePtr);
     return true;
 }
 
@@ -1455,13 +1678,16 @@ VSTree::loadEntityID2FileLineMap()
 
     this->entityID2FileLineMap.clear();
 
-    VNode* nodePtr = new VNode();
-    int cycle_count = 0;
+    //int cycle_count = 0;
+
     while (!feof(filePtr))
     {
-        bool is_node_read = (fread((char *)nodePtr,vNodeSize,1,filePtr) == 1);
+		VNode* nodePtr = new VNode(true);
+        //bool is_node_read = (fread((char *)nodePtr,vNodeSize,1,filePtr) == 1);
+        bool is_node_read = nodePtr->readNode(filePtr);
+
 		//NOTICE:not consider invalid node
-        if (is_node_read && nodePtr->getFileLine() >= 0)
+        if (is_node_read && nodePtr->getFileLine() >= 0 && nodePtr->isLeaf())
         {
             this->updateEntityID2FileLineMap(nodePtr);
             //debug
@@ -1473,10 +1699,10 @@ VSTree::loadEntityID2FileLineMap()
                     //Util::logging(_ss.str());
                 //}
             //}
-            cycle_count ++;
+            //cycle_count ++;
         }
+		delete nodePtr;
     }
-    delete nodePtr;
 
     fclose(filePtr);
 
@@ -1487,8 +1713,6 @@ VSTree::loadEntityID2FileLineMap()
 void 
 VSTree::updateEntityID2FileLineMap(VNode* _p_node)
 {
-    if (_p_node->isLeaf())
-    {
         int line = _p_node->getFileLine();
 		//cout<<"updateEntityID2FileLineMap() - file line "<<line<<endl;
         int childNum = _p_node->getChildNum();
@@ -1513,7 +1737,6 @@ VSTree::updateEntityID2FileLineMap(VNode* _p_node)
                 //}
             //}
         }
-    }
 }
 
 //get the leaf node pointer by the given _entityID 
@@ -1537,6 +1760,11 @@ VSTree::getLeafNodeByEntityID(int _entityID)
 void 
 VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
 {
+	if(this->root_file_line < 0)
+	{
+		return;
+	}
+
 	//NOTICE:this may cause parallism error
 	//Util::logging("IN retrieveEntity");
     EntitySig filterSig(_entity_bit_set);
@@ -1574,10 +1802,13 @@ VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
     while (!nodeQueue.empty())
     {
         int currentNodeFileLine = nodeQueue.front();
+		//cout<<"current node file line: "<<currentNodeFileLine<<endl;
+
         nodeQueue.pop();
         VNode* currentNodePtr = this->getNode(currentNodeFileLine);
 
         int childNum = currentNodePtr->getChildNum();
+		//cout<<"child num: "<<childNum<<endl;
 
         //debug
 //        {
@@ -1628,6 +1859,12 @@ VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
                 	int childNodeFileLine = currentNodePtr->getChildFileLine(i);
                 	nodeQueue.push(childNodeFileLine);
 
+					//the root
+					//if(currentNodePtr->getFileLine() == 0)
+					//{
+						//cout<<"root: "<<i<<" "<<childNodeFileLine<<endl;
+					//}
+
                     //debug
 //                    {
 //                        stringstream _ss;
@@ -1639,6 +1876,10 @@ VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
         }
 #ifdef DEBUG_VSTREE
 		//cerr << "child num: " << childNum << "   valid num: " << valid << endl;
+#endif
+
+#ifdef THREAD_ON
+		pthread_mutex_unlock(&(currentNodePtr->node_lock));
 #endif
     }
     //Util::logging("OUT retrieveEntity");

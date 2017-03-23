@@ -133,12 +133,6 @@ public:
 	//for so2p
 	bool getpreIDlistBysubIDobjID(int _subID, int _objID, int*& _preidlist, int& _list_len, bool _no_duplicate = false) const;
 
-	//===============================================================================
-	//sort functions for qsort
-
-	static int _spo_cmp(const void* _a, const void* _b);
-	static int _ops_cmp(const void* _a, const void* _b);
-	static int _pso_cmp(const void* _a, const void* _b);
 
 private:
 	std::string store_path;

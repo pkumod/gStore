@@ -43,11 +43,11 @@ CC = ccache g++
 #NOTICE: -O2 is recommended, while -O3 is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-#CFLAGS = -c -Wall -g #-fprofile-arcs -ftest-coverage #-pg
-#EXEFLAG = -g #-fprofile-arcs -ftest-coverage #-pg
+CFLAGS = -c -Wall -g -pthread #-fprofile-arcs -ftest-coverage #-pg
+EXEFLAG = -g -pthread #-fprofile-arcs -ftest-coverage #-pg
 #-coverage
-CFLAGS = -c -Wall -O2
-EXEFLAG = -O2
+#CFLAGS = -c -Wall -O2 -pthread
+#EXEFLAG = -O2 -pthread
 
 #add -lreadline -ltermcap if using readline or objs contain readline
 library = -ltermcap -lreadline -L./lib -lantlr -lgcov
@@ -408,7 +408,7 @@ dist: clean
 
 tarball:
 	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs test docs data makefile \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE LICENSE
 
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/cpp/example
@@ -451,4 +451,8 @@ fulltest:
 	cp test/full_test.sh ~
 	cd ~
 	bash full_test.sh
+
+#test the efficience of kvstore, insert/delete/search, use dbpedia170M by default
+test-kvstore:
+	echo "TODO"
 

@@ -951,9 +951,15 @@ Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, int* id_lis
 	}
 }
 
-//TODO:consider two directions according to table1 size and table2 size
+//NOTICE: consider two directions according to table1 size and table2 size
 //1. ->  add ID mapping record for the first linking column, whole(offset, size) zengli
 //2. <-  join using inverted index for each column, offset and size for each column, hulin
+//However, the result is that this case is rare, and not really better
+//
+//NOTICE: you may think that when joining to enlarge the current table, there maybe exist many duplicates in a column,
+//which causes too many redunt linking operations.
+//However, the case is really rare in our test(the reason may be that the web graph is always very sparse)
+//If we add a buffer for this case, will cause worse performance
 bool
 Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, int _can_list_size, int _id, bool _is_literal)
 {
@@ -1100,6 +1106,8 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, int _can_list_s
 			}
 			if(exist_constant_pre)
 			{
+				//NOTICE: this means there exists constant pre in parallel edges, so update_answer_list has already been used
+				//in this case, later we needn't do s2o_pre_var or o2s_pre_var because sp2o and op2s is more precise
 				continue;
 			}
 			//all pres are variable, so use s2o or o2s to add

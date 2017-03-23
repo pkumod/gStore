@@ -31,67 +31,49 @@ Signature::BitSet2str(const EntityBitSet& _bitset)
 	return _ss.str();
 }
 
-void 
-Signature::encodeEdge2Entity(EntityBitSet& _entity_bs, int _pre_id, int _neighbor_id, const char _type)
-{
-	Signature::encodePredicate2Entity(_entity_bs, _pre_id, _type);
-	
-#ifdef DEBUG
-	//if(_neighbor_id == 438460)
+//void
+//Signature::encodePredicate2Entity(int _pre_id, EntityBitSet& _entity_bs, const char _type)
+//{
+	//if (Signature::PREDICATE_ENCODE_METHOD == 0)
 	//{
-		//cout<<"predicate encoded"<<endl;
+		////WARN:change if need to use again, because the encoding method has changed now!
+		//int pos = ((_pre_id + 10) % Signature::EDGE_SIG_LENGTH) + Signature::STR_SIG_LENGTH;
+		//_entity_bs.set(pos);
 	//}
-#endif
+	//else
+	//{
+		//int seed_num = _pre_id % Signature::EDGE_SIG_INTERVAL_NUM_HALF;
 
-	Signature::encodeStr2Entity(_entity_bs, _neighbor_id, _type);
-}
-
-void
-Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, int _pre_id, const char _type)
-{
-	//NOTICE:this not used now
-	if (Signature::PREDICATE_ENCODE_METHOD == 0)
-	{
-		//WARN:change if need to use again, because the encoding method has changed now!
-		int pos = ((_pre_id + 10) % Signature::EDGE_SIG_LENGTH) + Signature::STR_SIG_LENGTH;
-		_entity_bs.set(pos);
-	}
-	else
-	{
-		//NOTICE: in * maybe the int will overflow
-		long long id = _pre_id;
-		int seed_num = id % Signature::EDGE_SIG_INTERVAL_NUM_HALF;
-
-		if (_type == Util::EDGE_OUT)
-		{
-			seed_num += Signature::EDGE_SIG_INTERVAL_NUM_HALF;
-		}
-
-		//int primeSize = 5;
-		//int prime1[]={5003,5009,5011,5021,5023};
-		//int prime2[]={49943,49957,49991,49993,49999};
-
-		//NOTICE: more ones in the bitset(use more primes) means less conflicts, but also weakens the filtration of VSTree.
-		// when the data set is big enough, cutting down the size of candidate list should come up to our primary consideration.
-		// in this case we should not encode too many ones in entities' signature.
-		// also, when the data set is small, hash conflicts can hardly happen.
-		// therefore, I think using 2 primes(set up two ones in bitset) is enough.
-		// --by hanshuo.
-		//int primeSize = 2;
-		//int prime1[] = {5003, 5011};
-		//int prime2[] = {49957, 49993};
-
-		//for(int i = 0; i < primeSize; i++)
+		//if (_type == Util::EDGE_OUT)
 		//{
-		//int seed = _pre_id * prime1[i] % prime2[i];
+			//seed_num += Signature::EDGE_SIG_INTERVAL_NUM_HALF;
+		//}
+
+		////int primeSize = 5;
+		////int prime1[]={5003,5009,5011,5021,5023};
+		////int prime2[]={49943,49957,49991,49993,49999};
+
+		////NOTICE: more ones in the bitset(use more primes) means less conflicts, but also weakens the filtration of VSTree.
+		//// when the data set is big enough, cutting down the size of candidate list should come up to our primary consideration.
+		//// in this case we should not encode too many ones in entities' signature.
+		//// also, when the data set is small, hash conflicts can hardly happen.
+		//// therefore, I think using 2 primes(set up two ones in bitset) is enough.
+		//// --by hanshuo.
+		////int primeSize = 2;
+		////int prime1[] = {5003, 5011};
+		////int prime2[] = {49957, 49993};
+
+		////for(int i = 0; i < primeSize; i++)
+		////{
+		////int seed = _pre_id * prime1[i] % prime2[i];
+		////int pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
+		////_entity_bs.set(pos);
+		////}
+		//int seed = _pre_id * 5003 % 49957;
 		//int pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
 		//_entity_bs.set(pos);
-		//}
-		int seed = id * 5003 % 49957;
-		int pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
-		_entity_bs.set(pos);
-	}
-}
+	//}
+//}
 
 //void
 //Signature::encodePredicate2Edge(int _pre_id, EdgeBitSet& _edge_bs)
@@ -124,47 +106,22 @@ Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, int _pre_id, const c
 	//}
 //}
 
-//NOTICE: no need to encode itself because only variable in query need to be filtered!
-//So only consider all neighbors!
-void
-Signature::encodeStr2Entity(EntityBitSet& _entity_bs, int _neighbor_id, const char _type)
-{
-	//NOTICE: we assume the parameter is always valid(invalid args should not be passed here)
-	long long id = _neighbor_id;
-	//NOTICE: in * maybe the int will overflow
-	long long seed = id * 5003 % 49957;
-	seed = seed % Signature::STR_SIG_INTERVAL_BASE;
-	seed = seed + (id % Signature::STR_SIG_INTERVAL_NUM) * Signature::STR_SIG_INTERVAL_BASE;
-
-	if(Util::is_literal_ele(_neighbor_id))
-	{
-		seed += Signature::STR_SIG_ENTITY;
-	}
-	else //entity part
-	{
-		//entity can be in edge or out edge
-		if (_type == Util::EDGE_OUT)
-		{
-			seed += Signature::STR_SIG_LITERAL;
-		}
-	}
-
-	//if(_neighbor_id == 438460)
-	//{
-		//cout<<_neighbor_id<<" "<<seed<<endl;
-	//}
-
-	_entity_bs.set(seed);
-
-	//_str is subject or object or literal
+////NOTICE: no need to encode itself because only variable in query need to be filtered!
+////So only consider all neighbors!
+//void
+//Signature::encodeStr2Entity(const char* _str, EntityBitSet& _entity_bs)
+//{
+	////_str is subject or object or literal
 	//if (strlen(_str) >0 && _str[0] == '?')
 		//return;
+
 	//int length = (int)strlen(_str);
 	//unsigned int hashKey = 0;
 	//unsigned int pos = 0;
 	//char *str2 = (char*)calloc(length + 1, sizeof(char));
 	//strcpy(str2, _str);
 	//char *str = str2;
+
 	//unsigned base = Signature::STR_SIG_BASE * (Signature::HASH_NUM - 1);
 	//for (int i = Signature::HASH_NUM - 1; i >= 0; --i)
 	//{
@@ -187,21 +144,56 @@ Signature::encodeStr2Entity(EntityBitSet& _entity_bs, int _neighbor_id, const ch
 		//}
 		//_entity_bs.set(pos);
 	//}
-	//BETTER: use multiple threads for different hash functions
+	////BETTER: use multiple threads for different hash functions
 
-#ifdef DEBUG_VSTREE
-	//std::stringstream _ss;
-	//_ss << "encodeStr2Entity:" << str2 << endl;
-	//Util::logging(_ss.str());
-#endif
+//#ifdef DEBUG_VSTREE
+	////std::stringstream _ss;
+	////_ss << "encodeStr2Entity:" << str2 << endl;
+	////Util::logging(_ss.str());
+//#endif
 	//free(str2);
-}
+//}
 
 //void
 //Signature::encodeStrID2Entity(int _str_id, EntityBitSet& _entity_bs)
 //{
-	////NOT USED NOW
+	////NO NEED
 //}
+
+//TODO: what if pre or neighbor not exist in Query? how to ensure the containment?!
+void 
+Signature::encodeEdge2Entity(EntityBitSet& _entity_bs, int _pre_id, int _neighbor_id, const char _type)
+{
+	//switch(_type)
+	//{
+		//case Util::EDGE_IN:
+			//break;
+		//case Util::EDGE_OUT:
+			//break;
+		//default:
+			//cout<<"error in Signature::encodeEdge2Entity() - non seen type"<<endl;
+			//break;
+	//}
+
+	int seed_num = _pre_id % Signature::EDGE_SIG_INTERVAL_NUM;
+	if (_type == Util::EDGE_OUT)
+	{
+		seed_num += Signature::ENTITY_SIG_INTERVAL_HALF;
+	}
+	if (Util::is_literal_ele(_neighbor_id))
+	{
+		seed_num += Signature::EDGE_SIG_INTERVAL_NUM;
+	}
+
+	int base = Signature::ENTITY_SIG_INTERVAL_BASE * seed_num;
+	int seed = _pre_id * 5003 % 49957;
+	int pos = (seed % Signature::PRE_SIG_BASE) + base;
+	_entity_bs.set(pos);
+	base += Signature::PRE_SIG_BASE;
+	seed = _neighbor_id * 5003 % 49957;
+	pos = (seed % Signature::STR_SIG_LENGTH) + base;
+	_entity_bs.set(pos);
+}
 
 EntitySig::EntitySig()
 {

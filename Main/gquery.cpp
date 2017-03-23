@@ -60,6 +60,13 @@ main(int argc, char * argv[])
 	}
 
 	string db_folder = string(argv[1]);
+	int len = db_folder.length();
+	if(db_folder.substr(len-3, 3) == ".db")
+	{
+		cout<<"your database can not end with .db"<<endl;
+		return -1;
+	}
+
 	//if(db_folder[0] != '/' && db_folder[0] != '~')  //using relative path
 	//{
 	//db_folder = string("../") + db_folder;

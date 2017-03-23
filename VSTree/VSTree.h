@@ -28,6 +28,9 @@ public:
     bool buildTree(std::string _entity_signature_file);
     bool deleteTree();
 
+	//if the tree is empty
+	bool isEmpty() const;
+
     //Incrementally update bitset of _entity_id conduct OR operation on Entry(_entity_id)'s EntityBitSet with _bitset
     //Entry of _entity_id must exists
     bool updateEntry(int _entity_id, const EntityBitSet& _bitset);
@@ -55,6 +58,11 @@ public:
 	void retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list);
 
 private:
+	//TODO:add a tree lock(read-write), if a thread is writing, lock the whole tree
+	//NOTICE: all updates occur in one-thread, the buffer ensures that 3*h nodes can be loaded is ok
+	//However, only-read queries can occur in many threads, but a query at a time only need to keep one node
+	//But, how can you ensure that for a thread, its original node is at the top of the list? we must keep a lock for a node(but no need to write to disk)!!!
+	//(and each time select a unlocked node to swap out)
 	int root_file_line;
 	int node_num;
 	int entry_num;
@@ -82,9 +90,9 @@ private:
 	//need to be insert to the _p_full_node.
 	void split(VNode* _p_full_node, const SigEntry& _insert_entry, VNode* _p_insert_node);
 	//deal when _child key num not enough
-	void coalesce(VNode* _child, int _entry_index);
+	void coalesce(VNode*& _child, int _entry_index);
 	//create a new node when one node need splitting. 
-	VNode* createNode();
+	VNode* createNode(bool _is_leaf = true);
 	//swap two nodes' file line, their related nodes(father and children nodes) will also be updated. 
 	void swapNodeFileLine(VNode* _p_node_a, VNode* _p_node_b);
 	//save VSTree's information to tree_info_file_path, such as node_num, entry_num, height, etc. 

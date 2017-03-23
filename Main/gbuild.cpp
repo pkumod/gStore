@@ -37,6 +37,13 @@ main(int argc, char * argv[])
 	}
 
 	string _db_path = string(argv[1]);
+	int len = _db_path.length();
+	if(_db_path.substr(len-3, 3) == ".db")
+	{
+		cout<<"your database can not end with .db"<<endl;
+		return -1;
+	}
+
 	//if(_db_path[0] != '/' && _db_path[0] != '~')  //using relative path
 	//{
 	//_db_path = string("../") + _db_path;

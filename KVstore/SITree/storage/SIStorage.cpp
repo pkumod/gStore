@@ -42,6 +42,8 @@ SIStorage::SIStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 	}
 	this->treeheight = _height;		//originally set to 0
 	this->max_buffer_size = _buffer_size;
+	//cout<<"buffer size: "<<this->max_buffer_size<<endl;
+
 	this->heap_size = this->max_buffer_size / SINode::INTL_SIZE;
 	this->freemem = this->max_buffer_size;
 	this->freelist = new BlockInfo;	//null-head
@@ -573,16 +575,18 @@ SIStorage::updateHeap(SINode* _np, unsigned _rank, bool _inheap) const
 	}
 }
 
-void
+bool
 SIStorage::request(long long _needmem)	//aligned to byte
 {	//NOTICE: <0 means release
 	if (_needmem > 0 && this->freemem < (unsigned long long)_needmem)
 		if (!this->handler(_needmem - freemem))	//disaster in buffer memory
 		{
 			print(string("error in request: out of buffer-mem, now to exit"));
-			exit(1);
+			//exit(1);
+			return false;;
 		}
 	this->freemem -= _needmem;
+	return true;
 }
 
 bool

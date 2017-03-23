@@ -62,7 +62,7 @@ public:
 	bool writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock);
 	bool writeTree(ISNode* _np);
 	void updateHeap(ISNode* _np, unsigned _rank, bool _inheap) const;
-	void request(long long _needmem);			//deal with memory request
+	bool request(long long _needmem);			//deal with memory request
 	bool handler(unsigned long long _needmem);	//swap some nodes out
 	//bool update();				//update InMem Node's rank, with clock
 	~ISStorage();

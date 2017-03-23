@@ -405,6 +405,8 @@ ISStorage::writeNode(ISNode* _np)
 	t = 0;
 	fwrite(&t, sizeof(unsigned), 1, treefp);		//the end-block
 													//_np->setFlag(_np->getFlag() & ~Node::NF_ID);
+	//NOTICE:we may store the dirty bit into the tree file, but that is ok
+	//Each time we read the tree file to construct a node, we always set the drity bit to 0
 	_np->delDirty();
 	return true;
 }
@@ -573,7 +575,7 @@ ISStorage::updateHeap(ISNode* _np, unsigned _rank, bool _inheap) const
 	}
 }
 
-void
+bool
 ISStorage::request(long long _needmem)	//aligned to byte
 {	//NOTICE: <0 means release
 	//cout<<"freemem: "<<this->freemem<<" needmem: "<<_needmem<<endl;
@@ -581,9 +583,11 @@ ISStorage::request(long long _needmem)	//aligned to byte
 		if (!this->handler(_needmem - freemem))	//disaster in buffer memory
 		{
 			print(string("error in request: out of buffer-mem, now to exit"));
-			exit(1);
+			//exit(1);
+			return false;
 		}
 	this->freemem -= _needmem;
+	return true;
 }
 
 bool

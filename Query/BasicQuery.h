@@ -152,7 +152,7 @@ private:
 
 	// BETTER:edge sig is of little importance 
 	// edge_sig[sub_id][obj_id]
-	EdgeBitSet**  edge_sig;
+	//EdgeBitSet**  edge_sig;
 
 	void addInVarNotInSelect();
 	void findVarNotInSelect();
@@ -160,8 +160,10 @@ private:
 	void initial();
 	void null_initial();
 
-	void updateSubSig(int _sub_id, int _pre_id, int _obj_id, std::string _obj, int _line_id);
-	void updateObjSig(int _obj_id, int _pre_id, int _sub_id, std::string _sub, int _line_id);
+	//void updateSubSig(int _sub_id, int _pre_id, int _obj_id, std::string _obj, int _line_id);
+	//void updateObjSig(int _obj_id, int _pre_id, int _sub_id, std::string _sub, int _line_id);
+	void updateSubSig(int _sub_var_id, int _pre_id, int _obj_id, int _line_id, int _obj_var_id);
+	void updateObjSig(int _obj_var_id, int _pre_id, int _sub_id, int _line_id, int _sub_var_id);
 
 	//infos for predicate variables
 	vector<PreVar> pre_var;

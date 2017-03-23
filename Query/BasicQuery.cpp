@@ -30,14 +30,14 @@ BasicQuery::clear()
 
     for(int i = 0; i < BasicQuery::MAX_VAR_NUM; i ++)
     {
-        delete[] this->edge_sig[i];
+        //delete[] this->edge_sig[i];
         delete[] this->edge_id[i];
         delete[] this->edge_nei_id[i];
         delete[] this->edge_pre_id[i];
         delete[] this->edge_type[i];
     }
 
-    delete[] this->edge_sig;
+    //delete[] this->edge_sig;
     delete[] this->edge_id;
     delete[] this->edge_nei_id;
     delete[] this->edge_pre_id;
@@ -47,7 +47,7 @@ BasicQuery::clear()
     this->var_sig = NULL;
     this->var_name = NULL;
 
-    this->edge_sig = NULL;
+    //this->edge_sig = NULL;
     this->edge_id = NULL;
     this->edge_nei_id = NULL;
     this->edge_pre_id = NULL;
@@ -339,55 +339,66 @@ BasicQuery::setReady(int _var)
 }
 
 void 
-BasicQuery::updateSubSig(int _sub_id, int _pre_id, int _obj_id, string _obj,int _line_id)
+BasicQuery::updateSubSig(int _sub_var_id, int _pre_id, int _obj_id, int _line_id, int _obj_var_id)
 {
+	cout<<"sub var id: "<<_sub_var_id<<endl;
     // update var(sub)_signature according this triple
-    bool obj_is_str = (_obj_id == -1) && (_obj.at(0) != '?');
-    if(obj_is_str)
+    //bool obj_is_str = (_obj_id == -1) && (_obj.at(0) != '?');
+    //if(obj_is_str)
+	if(_obj_id >= 0)
     {
-        Signature::encodeStr2Entity(_obj.c_str(), this->var_sig[_sub_id]);
+        //Signature::encodeStr2Entity(_obj.c_str(), this->var_sig[_sub_id]);
+        Signature::encodeStr2Entity(this->var_sig[_sub_var_id], _obj_id, Util::EDGE_OUT);
     }
 
     if(_pre_id >= 0)
     {
-        Signature::encodePredicate2Entity(_pre_id, this->var_sig[_sub_id], Util::EDGE_OUT);
+        Signature::encodePredicate2Entity(this->var_sig[_sub_var_id], _pre_id, Util::EDGE_OUT);
     }
 
     // update var(sub)_degree & edge_id according to this triple
-    int sub_degree = this->var_degree[_sub_id];
+    int sub_degree = this->var_degree[_sub_var_id];
     // edge_id[var_id][i] : the ID of the i-th edge of the var
-    this->edge_id[_sub_id][sub_degree] = _line_id;
-    this->edge_nei_id[_sub_id][sub_degree] = _obj_id;
-    this->edge_type[_sub_id][sub_degree] = Util::EDGE_OUT;
-    this->edge_pre_id[_sub_id][sub_degree] = _pre_id;
-    this->var_degree[_sub_id] ++;
+    this->edge_id[_sub_var_id][sub_degree] = _line_id;
+    this->edge_nei_id[_sub_var_id][sub_degree] = _obj_var_id;
+    this->edge_type[_sub_var_id][sub_degree] = Util::EDGE_OUT;
+    this->edge_pre_id[_sub_var_id][sub_degree] = _pre_id;
+    this->var_degree[_sub_var_id] ++;
 }
 
 void 
-BasicQuery::updateObjSig(int _obj_id, int _pre_id, int _sub_id, string _sub,int _line_id)
+BasicQuery::updateObjSig(int _obj_var_id, int _pre_id, int _sub_id, int _line_id, int _sub_var_id)
 {
+	cout<<"obj var id: "<<_obj_var_id<<endl;
     // update var(obj)_signature
-    bool sub_is_str = (_sub_id == -1) && (_sub.at(0) != '?');
-    if(sub_is_str)
+    //bool sub_is_str = (_sub_id == -1) && (_sub.at(0) != '?');
+    //if(sub_is_str)
+	if(_sub_id >= 0)
     {
-        cout << "str2entity" << endl;
-        Signature::encodeStr2Entity(_sub.c_str(), this->var_sig[_obj_id]);
+        //cout << "str2entity" << endl;
+        Signature::encodeStr2Entity(this->var_sig[_obj_var_id], _sub_id, Util::EDGE_IN);
     }
 
     if(_pre_id >= 0)
     {
-        cout << "pre2entity" << endl;
-        Signature::encodePredicate2Entity(_pre_id, this->var_sig[_obj_id], Util::EDGE_IN);
+        //cout << "pre2entity" << endl;
+        Signature::encodePredicate2Entity(this->var_sig[_obj_var_id], _pre_id, Util::EDGE_IN);
+#ifdef DEBUG
+		//if(_obj_var_id == 1)
+		//{
+			//cout<<"yy: "<<Signature::BitSet2str(this->var_sig[1])<<endl;
+		//}
+#endif
     }
 
     // update var(sub)_degree & edge_id according to this triple
-    int obj_degree = this->var_degree[_obj_id];
+    int obj_degree = this->var_degree[_obj_var_id];
     // edge_id[var_id][i] : the ID of the i-th edge of the var 
-    this->edge_id[_obj_id][obj_degree] = _line_id;
-    this->edge_nei_id[_obj_id][obj_degree] = _sub_id;
-    this->edge_type[_obj_id][obj_degree] = Util::EDGE_IN;
-    this->edge_pre_id[_obj_id][obj_degree] = _pre_id;
-    this->var_degree[_obj_id] ++;
+    this->edge_id[_obj_var_id][obj_degree] = _line_id;
+    this->edge_nei_id[_obj_var_id][obj_degree] = _sub_var_id;
+    this->edge_type[_obj_var_id][obj_degree] = Util::EDGE_IN;
+    this->edge_pre_id[_obj_var_id][obj_degree] = _pre_id;
+    this->var_degree[_obj_var_id] ++;
 }
 
 // encode relative signature data of the query graph
@@ -505,9 +516,9 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 			// -1 if not found, this means this query is invalid
 			pre_id = _p_kvstore->getIDByPredicate(pre);
 			{
-				stringstream _ss;
-				_ss << "pre2id: " << pre << "=>" << pre_id << endl;
-				Util::logging(_ss.str());
+				//stringstream _ss;
+				//_ss << "pre2id: " << pre << "=>" << pre_id << endl;
+				//Util::logging(_ss.str());
 			}
 		}
 		if(pre_id == -1)
@@ -516,65 +527,85 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 			return false;
 		}
 
-        int sub_id = -1;
-        int obj_id = -1;
+        int sub_var_id = -1;
+        int obj_var_id = -1;
         // -1 if not found, this means this subject is a constant
         map<string, int>::iterator _find_sub_itr = (this->var_str2id).find(sub);
         if(_find_sub_itr != this->var_str2id.end())
         {
-            sub_id = _find_sub_itr->second;
+            sub_var_id = _find_sub_itr->second;
         }
 
         // -1 if not found, this means this object is a constant(string)
         map<string, int>::iterator _find_obj_itr = (this->var_str2id).find(obj);
         if(_find_obj_itr != this->var_str2id.end())
         {
-            obj_id = _find_obj_itr->second;
+            obj_var_id = _find_obj_itr->second;
         }
 
         // sub is either a var or a string
-        bool sub_is_var = (sub_id != -1);
+        bool sub_is_var = (sub_var_id != -1);
         if(sub_is_var)
         {
-            this->updateSubSig(sub_id, pre_id, obj_id, obj,i);
+			int obj_id = -1;
+			if(obj.at(0) != '?')
+			{
+				obj_id = _p_kvstore->getIDByEntity(obj);
+				if(obj_id == -1)
+				{
+					obj_id = _p_kvstore->getIDByLiteral(obj);
+				}
+			}
+			//cout<<"to update sub: "<<sub<<endl<<sub_var_id<<" "<<pre_id<<" "<<obj_id<<" "<<obj<<endl<<obj_var_id<<endl;
+            this->updateSubSig(sub_var_id, pre_id, obj_id, i, obj_var_id);
 
             //debug
             {
-                stringstream _ss;
-                _ss << "updateSubSig:\tsub:" << sub_id << "; pre:" << pre_id << "; obj:" << obj_id;
-                _ss << "; [" << obj << "]";
-                Util::logging(_ss.str());
+                //stringstream _ss;
+                //_ss << "updateSubSig:\tsub:" << sub_var_id << "; pre:" << pre_id << "; obj:" << obj_var_id;
+                //_ss << "; [" << obj << "]";
+                //Util::logging(_ss.str());
             }
         }
 
         // obj is either a var or a string
-        bool obj_is_var = (obj_id != -1);
+        bool obj_is_var = (obj_var_id != -1);
         if(obj_is_var)
         {
-            this->updateObjSig(obj_id, pre_id, sub_id, sub,i);
+			int sub_id = -1;
+			if(sub.at(0) != '?')
+			{
+				sub_id = _p_kvstore->getIDByEntity(sub);
+			}
+			//cout<<"to update obj: "<<obj<<endl<<obj_var_id<<" "<<pre_id<<" "<<sub_id<<" "<<sub<<endl<<sub_var_id<<endl;
+            this->updateObjSig(obj_var_id, pre_id, sub_id, i, sub_var_id);
 
             //debug
             {
-                stringstream _ss;
-                _ss << "updateObjSig:\tobj:" << obj_id << "; pre:" << pre_id << "; sub:" << sub_id;
-                _ss << "; [" << sub << "]";
-                Util::logging(_ss.str());
+                //stringstream _ss;
+                //_ss << "updateObjSig:\tobj:" << obj_var_id << "; pre:" << pre_id << "; sub:" << sub_var_id;
+                //_ss << "; [" << sub << "]";
+                //Util::logging(_ss.str());
             }
         }
 
         // if both end points are variables
-        bool two_var_edge = (sub_is_var && obj_is_var);
-        if(two_var_edge)
-        {
-            if(pre_id >= 0)
-            {
-                cout << "pre2edge" << endl;
-                Signature::encodePredicate2Edge(pre_id, this->edge_sig[sub_id][obj_id]);
-//              this->edge_pre_id[sub_id][obj_id] = pre_id;
-            }
-        }
-
+        //bool two_var_edge = (sub_is_var && obj_is_var);
+        //if(two_var_edge)
+        //{
+            //if(pre_id >= 0)
+            //{
+                //cout << "pre2edge" << endl;
+                //Signature::encodePredicate2Edge(pre_id, this->edge_sig[sub_id][obj_id]);
+				////this->edge_pre_id[sub_id][obj_id] = pre_id;
+            //}
+        //}
     }
+
+#ifdef DEBUG
+	//cout<<"yy: "<<Signature::BitSet2str(this->var_sig[2])<<endl;
+	//cout<<this->var_name[2]<<endl;
+#endif
 
 	//set need_retrieve for vars in join whose total degree > 1
 	this->retrieve_var_num = 0;
@@ -764,7 +795,7 @@ BasicQuery::null_initial()
     this->edge_pre_id = NULL;
     this->edge_type = NULL;
     this->var_sig = NULL;
-    this->edge_sig = NULL;
+    //this->edge_sig = NULL;
     this->encode_method = BasicQuery::NOT_JUST_SELECT;
     this->candidate_list = NULL;
     this->graph_var_num = 0;
@@ -784,7 +815,7 @@ BasicQuery::initial()
     this->var_sig = new EntityBitSet[BasicQuery::MAX_VAR_NUM];
     this->var_name = new string[BasicQuery::MAX_VAR_NUM];
 
-    this->edge_sig = new EdgeBitSet*[BasicQuery::MAX_VAR_NUM];
+    //this->edge_sig = new EdgeBitSet*[BasicQuery::MAX_VAR_NUM];
     this->edge_id = new int*[BasicQuery::MAX_VAR_NUM];
     this->edge_nei_id = new int*[BasicQuery::MAX_VAR_NUM];
     this->edge_pre_id = new int*[BasicQuery::MAX_VAR_NUM];
@@ -803,7 +834,7 @@ BasicQuery::initial()
 		this->ready[i] = false;
         this->need_retrieve[i] = false;
 
-        this->edge_sig[i] = new EdgeBitSet[BasicQuery::MAX_VAR_NUM];
+        //this->edge_sig[i] = new EdgeBitSet[BasicQuery::MAX_VAR_NUM];
         this->edge_id[i] = new int[BasicQuery::MAX_VAR_NUM];
         this->edge_nei_id[i] = new int[BasicQuery::MAX_VAR_NUM];
         this->edge_pre_id[i] = new int[BasicQuery::MAX_VAR_NUM];
@@ -811,7 +842,7 @@ BasicQuery::initial()
 
         for(int j = 0; j < BasicQuery::MAX_VAR_NUM; ++j)
         {
-            this->edge_sig[i][j].reset();
+            //this->edge_sig[i][j].reset();
             this->edge_id[i][j] = -1;
             this->edge_nei_id[i][j] = -1;
             this->edge_pre_id[i][j] = -1;
@@ -1127,18 +1158,18 @@ string BasicQuery::to_str()
         _ss << endl;
     }
 
-    for(int i = 0; i < this->graph_var_num; i ++)
-    {
-        for(int j = 0; j < BasicQuery::MAX_VAR_NUM; j ++)
-        {
-            if(edge_sig[i][j].count() != 0)
-            {
-                _ss << "pre_id=" << edge_pre_id[i][j] << "\t";
-                _ss << i << ":" << j << "\t" << edge_sig[i][j] << endl;
-            }
-        }
-        _ss << endl;
-    }
+    //for(int i = 0; i < this->graph_var_num; i ++)
+    //{
+        //for(int j = 0; j < BasicQuery::MAX_VAR_NUM; j ++)
+        //{
+            //if(edge_sig[i][j].count() != 0)
+            //{
+                //_ss << "pre_id=" << edge_pre_id[i][j] << "\t";
+                //_ss << i << ":" << j << "\t" << edge_sig[i][j] << endl;
+            //}
+        //}
+        //_ss << endl;
+    //}
 
     Util::logging(_ss.str()); //debug
 

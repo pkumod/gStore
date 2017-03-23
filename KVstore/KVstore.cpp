@@ -1146,7 +1146,7 @@ bool KVstore::close_subID2values() {
 
 bool KVstore::build_subID2values(int** _p_id_tuples, int _triples_num) {
 	cout << "Begin building subID2values..." << endl;
-	qsort(_p_id_tuples, _triples_num, sizeof(int*), KVstore::_spo_cmp);
+	//qsort(_p_id_tuples, _triples_num, sizeof(int*), Util::_spo_cmp);
 	vector<int> _oidlist_s;
 	vector<int> _pidoffsetlist_s;
 	int _entity_num = 0;
@@ -1363,7 +1363,7 @@ bool KVstore::close_objID2values() {
 
 bool KVstore::build_objID2values(int** _p_id_tuples, int _triples_num) {
 	cout << "Begin building objID2values..." << endl;
-	qsort(_p_id_tuples, _triples_num, sizeof(int*), KVstore::_ops_cmp);
+	//qsort(_p_id_tuples, _triples_num, sizeof(int*), Util::_ops_cmp);
 	vector<int> _sidlist_o;
 	vector<int> _pidoffsetlist_o;
 
@@ -1552,7 +1552,7 @@ bool KVstore::close_preID2values() {
 
 bool KVstore::build_preID2values(int** _p_id_tuples, int _triples_num) {
 	cout << "Begin building preID2values..." << endl;
-	qsort(_p_id_tuples, _triples_num, sizeof(int*), KVstore::_pso_cmp);
+	//qsort(_p_id_tuples, _triples_num, sizeof(int*), Util::_pso_cmp);
 	vector<int> _sidlist_p;
 	vector<int> _oidlist_p;
 
@@ -1734,80 +1734,6 @@ bool KVstore::getpreIDlistBysubIDobjID(int _subid, int _objid, int*& _preidlist,
 	return true;
 }
 
-int KVstore::_spo_cmp(const void* _a, const void* _b) {
-	int** _p_a = (int**)_a;
-	int** _p_b = (int**)_b;
-
-	int _sub_id_a = (*_p_a)[0];
-	int _sub_id_b = (*_p_b)[0];
-	if (_sub_id_a != _sub_id_b) {
-		return _sub_id_a - _sub_id_b;
-	}
-
-	int _pre_id_a = (*_p_a)[1];
-	int _pre_id_b = (*_p_b)[1];
-	if (_pre_id_a != _pre_id_b) {
-		return _pre_id_a - _pre_id_b;
-	}
-
-	int _obj_id_a = (*_p_a)[2];
-	int _obj_id_b = (*_p_b)[2];
-	if (_obj_id_a != _obj_id_b) {
-		return _obj_id_a - _obj_id_b;
-	}
-
-	return 0;
-}
-
-int KVstore::_ops_cmp(const void* _a, const void* _b) {
-	int** _p_a = (int**)_a;
-	int** _p_b = (int**)_b;
-
-	int _obj_id_a = (*_p_a)[2];
-	int _obj_id_b = (*_p_b)[2];
-	if (_obj_id_a != _obj_id_b) {
-		return _obj_id_a - _obj_id_b;
-	}
-
-	int _pre_id_a = (*_p_a)[1];
-	int _pre_id_b = (*_p_b)[1];
-	if (_pre_id_a != _pre_id_b) {
-		return _pre_id_a - _pre_id_b;
-	}
-
-	int _sub_id_a = (*_p_a)[0];
-	int _sub_id_b = (*_p_b)[0];
-	if (_sub_id_a != _sub_id_b) {
-		return _sub_id_a - _sub_id_b;
-	}
-
-	return 0;
-}
-
-int KVstore::_pso_cmp(const void* _a, const void* _b) {
-	int** _p_a = (int**)_a;
-	int** _p_b = (int**)_b;
-
-	int _pre_id_a = (*_p_a)[1];
-	int _pre_id_b = (*_p_b)[1];
-	if (_pre_id_a != _pre_id_b) {
-		return _pre_id_a - _pre_id_b;
-	}
-
-	int _sub_id_a = (*_p_a)[0];
-	int _sub_id_b = (*_p_b)[0];
-	if (_sub_id_a != _sub_id_b) {
-		return _sub_id_a - _sub_id_b;
-	}
-
-	int _obj_id_a = (*_p_a)[2];
-	int _obj_id_b = (*_p_b)[2];
-	if (_obj_id_a != _obj_id_b) {
-		return _obj_id_a - _obj_id_b;
-	}
-
-	return 0;
-}
 
 bool KVstore::open(SITree*& _p_btree, string _tree_name, int _mode, unsigned long long _buffer_size) {
 	if (_p_btree != NULL) {

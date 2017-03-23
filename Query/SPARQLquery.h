@@ -16,6 +16,7 @@ class SPARQLquery
 private:
 	vector<BasicQuery*> query_union;
 	vector<string>	query_var;
+
 public:
 	SPARQLquery(const string& _query);
 
