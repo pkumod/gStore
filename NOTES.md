@@ -7,6 +7,19 @@
 在使用gserver时，不能在数据库没有unload时再用gbuild或其他命令修改数据库，仅限于C/S模式
 将IRC聊天放到gstore文档上，freenode #gStore
 
+---
+
+论文：新的join策略，特殊的子图同态问题，如何选择顺序
+动态估价的评估函数要考虑方向性，因为可能含literal变量，对应的候选集大小不可靠，只能单向。
+但每条边总是含subject的，所以每条边总是可以备选的。不过问题是literal变量应该先做还是后做
+
+另一种过滤方式：直接用key-value索引，比如?x-?y-constant，可能就比较适合，如果用vstree先过滤出的候选集太大的话
+考虑对线状查询或星形查询做特殊处理，这里的形状仅指需要join的部分
+比如?x-?y-constant, why not just use key-value to generate sequentially
+但这种没有考虑到更远的约束，可能导致不少中间解是无效的，实际上线状图的拼接顺序也不一定是从两端开始
+
+---
+
 # 推广
 
 必须建立一个官方网站，可以展示下团队、demo，需要建立社区/论坛并维护
@@ -90,9 +103,10 @@ http://blog.csdn.net/infoworld/article/details/8670951
 注意pre的ID还可以为-2，或者对于pre仍然用int，或者改函数的返回值为long long (还有一些没有用-1而是>=0)
 ---
 将B+tree中叶节点的大的value分离出来，新建一套缓存，使用block机制，标记length为0表示未读取
-类型bstr的length问题也需要解决
+类型bstr的length问题也需要解决(新建Istr类型)
 如果把类型直接改成long long，空间开销一下子就上升了一倍
-解决方法：对于ID2string，仍然用char*和unsigned，但对于s2xx p2xx o2xx，应该用unsigned long long*和unsigned来表示，这样最高可支持到40亿triple
+解决方法：对于ID2string，仍然用char*和unsigned，但对于s2xx p2xx o2xx，应该用long long*和unsigned来表示，这样最高可支持到40亿triple
+注意：在B+树中是以long long*的方式存，但读出后应该全部换成unsigned*和unsigned搭配的方式(最长支持20亿个po对)
 ---
 那么是否可以调整entity与literal的分界线，如果entity数目一般都比literal数目多的话
 直接把literal从大到小编号，可在ID模块中指定顺序，这样每个Datbase模块应该有自己独特的分界线，其他模块用时也需要注意

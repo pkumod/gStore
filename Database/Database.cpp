@@ -129,7 +129,7 @@ Database::resetIDinfo()
 	//this->limitID_predicate = Database::START_ID_NUM;
 
 	//BlockInfo* tmp = NULL;
-	//for (int i = Database::START_ID_NUM - 1; i >= 0; --i)
+	//for (TYPE_ENTITY_LITERAL_ID i = Database::START_ID_NUM - 1; i >= 0; --i)
 	//{
 	//tmp = new BlockInfo(i, this->freelist_entity);
 	//this->freelist_entity = tmp;
@@ -146,7 +146,8 @@ Database::readIDinfo()
 	this->initIDinfo();
 
 	FILE* fp = NULL;
-	int t = -1;
+	//int t = -1;
+	TYPE_ENTITY_LITERAL_ID t = INVALID_ENTITY_LITERAL_ID;
 	BlockInfo* bp = NULL;
 
 	fp = fopen(this->free_id_file_entity.c_str(), "r");
@@ -191,6 +192,7 @@ Database::readIDinfo()
 		cout << "read literal id info error" << endl;
 		return;
 	}
+
 	fread(&(this->limitID_literal), sizeof(int), 1, fp);
 	fread(&t, sizeof(int), 1, fp);
 	while (!feof(fp))
@@ -290,7 +292,9 @@ Database::writeIDinfo()
 int
 Database::allocEntityID()
 {
-	int t;
+	//int t;
+	TYPE_ENTITY_LITERAL_ID t = INVALID_ENTITY_LITERAL_ID;
+
 	if (this->freelist_entity == NULL)
 	{
 		t = this->limitID_entity++;
@@ -313,7 +317,7 @@ Database::allocEntityID()
 }
 
 void
-Database::freeEntityID(int _id)
+Database::freeEntityID(TYPE_ENTITY_LITERAL_ID _id)
 {
 	if (_id == this->limitID_entity - 1)
 	{
@@ -331,7 +335,9 @@ Database::freeEntityID(int _id)
 int
 Database::allocLiteralID()
 {
-	int t;
+	//int t;
+	TYPE_ENTITY_LITERAL_ID t = INVALID_ENTITY_LITERAL_ID;
+
 	if (this->freelist_literal == NULL)
 	{
 		t = this->limitID_literal++;
@@ -354,15 +360,17 @@ Database::allocLiteralID()
 }
 
 void
-Database::freeLiteralID(int _id)
+Database::freeLiteralID(TYPE_ENTITY_LITERAL_ID _id)
 {
+	_id -= Util::LITERAL_FIRST_ID;
+
 	if (_id == this->limitID_literal - 1)
 	{
 		this->limitID_literal--;
 	}
 	else
 	{
-		BlockInfo* p = new BlockInfo(_id - Util::LITERAL_FIRST_ID, this->freelist_literal);
+		BlockInfo* p = new BlockInfo(_id, this->freelist_literal);
 		this->freelist_literal = p;
 	}
 
@@ -372,7 +380,9 @@ Database::freeLiteralID(int _id)
 int
 Database::allocPredicateID()
 {
-	int t;
+	//int t;
+	TYPE_PREDICATE_ID t = INVALID_PREDICATE_ID;
+
 	if (this->freelist_predicate == NULL)
 	{
 		t = this->limitID_predicate++;
@@ -395,7 +405,7 @@ Database::allocPredicateID()
 }
 
 void
-Database::freePredicateID(int _id)
+Database::freePredicateID(TYPE_PREDICATE_ID _id)
 {
 	if (_id == this->limitID_predicate - 1)
 	{
@@ -438,10 +448,14 @@ Database::~Database()
 void
 Database::setPreMap()
 {
-	this->maxNumPID = this->minNumPID = -1;
-	int max = 0, min = this->triples_num + 1;
-	this->pre2num = new TNUM[this->limitID_predicate];
-	int valid = 0, i, t;
+	//this->maxNumPID = this->minNumPID = -1;
+	this->maxNumPID = this->minNumPID = INVALID_PREDICATE_ID;
+	//int max = 0, min = this->triples_num + 1;
+	TYPE_TRIPLE_NUM max = 0, min = this->triples_num + 1;
+
+	this->pre2num = new TYPE_TRIPLE_NUM[this->limitID_predicate];
+	TYPE_PREDICATE_ID valid = 0, i, t;
+
 	for (i = 0; i < this->limitID_predicate; ++i)
 	{
 		if (valid == this->pre_num)
@@ -479,7 +493,7 @@ Database::setStringBuffer()
 	this->entity_buffer = new Buffer(this->entity_buffer_size);
 	this->literal_buffer = new Buffer(this->literal_buffer_size);
 
-	int valid = 0, i;
+	TYPE_ENTITY_LITERAL_ID valid = 0, i;
 	string str;
 	for (i = 0; i < this->entity_buffer_size; ++i)
 	{
@@ -524,12 +538,12 @@ void
 Database::warmUp()
 {
 	//the most frequent triple
-	int pid1 = this->maxNumPID;
+	TYPE_PREDICATE_ID pid1 = this->maxNumPID;
 	ResultSet rs1;
 	string str1 = "select ?s ?o where { ?s " + this->kvstore->getPredicateByID(pid1) + " ?o . }";
 	this->query(str1, rs1);
 	//the most infrequent triple
-	int pid2 = this->minNumPID;
+	TYPE_PREDICATE_ID pid2 = this->minNumPID;
 	ResultSet rs2;
 	string str2 = "select ?s ?o where { ?s " + this->kvstore->getPredicateByID(pid2) + " ?o . }";
 	this->query(str2, rs2);
@@ -649,7 +663,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	{
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
-		int update_triple_num = 0;
+		TYPE_TRIPLE_NUM update_triple_num = 0;
 
 		if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
 		{
@@ -659,7 +673,8 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 			update_triple_num = update_pattern.patterns.size();
 			update_triple = new TripleWithObjType[update_triple_num];
 
-			for (int i = 0; i < (int)update_pattern.patterns.size(); i++)
+			//for (int i = 0; i < (int)update_pattern.patterns.size(); i++)
+			for (TYPE_TRIPLE_NUM i = 0; i < update_triple_num; ++i)
 			{
 				TripleWithObjType::ObjectType object_type = TripleWithObjType::None;
 				if (update_pattern.patterns[i].object.value[0] == '<')
@@ -708,7 +723,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 
 	if (general_evaluation.needOutputAnswer())
 	{
-		int ans_num = max(_result_set.ansNum - _result_set.output_offset, 0);
+		unsigned ans_num = max((long long)_result_set.ansNum - _result_set.output_offset, (long long)0);
 		if (_result_set.output_limit != -1)
 			ans_num = min(ans_num, _result_set.output_limit);
 		cout << "There has answer: " << ans_num << endl;
@@ -897,7 +912,7 @@ void
 Database::buildSparqlSignature(SPARQLquery & _sparql_q)
 {
 	vector<BasicQuery*>& _query_union = _sparql_q.getBasicQueryVec();
-	for (unsigned int i_bq = 0; i_bq < _query_union.size(); i_bq++)
+	for (unsigned i_bq = 0; i_bq < _query_union.size(); i_bq++)
 	{
 		BasicQuery* _basic_q = _query_union[i_bq];
 		_basic_q->encodeBasicQuery(this->kvstore, _sparql_q.getQueryVar());
@@ -905,18 +920,18 @@ Database::buildSparqlSignature(SPARQLquery & _sparql_q)
 }
 
 bool
-Database::calculateEntityBitSet(int _entity_id, EntityBitSet & _bitset)
+Database::calculateEntityBitSet(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet & _bitset)
 {
-	int _list_len = 0;
+	unsigned _list_len = 0;
 	//when as subject
-	int* _polist = NULL;
+	unsigned* _polist = NULL;
 	(this->kvstore)->getpreIDobjIDlistBysubID(_entity_id, _polist, _list_len);
 	Triple _triple;
 	_triple.subject = (this->kvstore)->getEntityByID(_entity_id);
-	for (int i = 0; i < _list_len; i += 2)
+	for (unsigned i = 0; i < _list_len; i += 2)
 	{
-		int _pre_id = _polist[i];
-		int _obj_id = _polist[i + 1];
+		TYPE_PREDICATE_ID _pre_id = _polist[i];
+		TYPE_ENTITY_LITERAL_ID _obj_id = _polist[i + 1];
 		_triple.object = (this->kvstore)->getEntityByID(_obj_id);
 		if (_triple.object == "")
 		{
@@ -928,14 +943,14 @@ Database::calculateEntityBitSet(int _entity_id, EntityBitSet & _bitset)
 	delete[] _polist;
 
 	//when as object
-	int* _pslist = NULL;
+	unsigned* _pslist = NULL;
 	_list_len = 0;
 	(this->kvstore)->getpreIDsubIDlistByobjID(_entity_id, _pslist, _list_len);
 	_triple.object = (this->kvstore)->getEntityByID(_entity_id);
-	for (int i = 0; i < _list_len; i += 2)
+	for (unsigned i = 0; i < _list_len; i += 2)
 	{
-		int _pre_id = _pslist[i];
-		int _sub_id = _pslist[i + 1];
+		TYPE_PREDICATE_ID _pre_id = _pslist[i];
+		TYPE_ENTITY_LITERAL_ID _sub_id = _pslist[i + 1];
 		_triple.subject = (this->kvstore)->getEntityByID(_sub_id);
 		_triple.predicate = (this->kvstore)->getPredicateByID(_pre_id);
 		this->encodeTriple2ObjEntityBitSet(_bitset, &_triple);
@@ -949,18 +964,18 @@ Database::calculateEntityBitSet(int _entity_id, EntityBitSet & _bitset)
 bool
 Database::encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple)
 {
-	int _pre_id = (this->kvstore)->getIDByPredicate(_p_triple->predicate);
-	if(_pre_id != -1)
+	TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_p_triple->predicate);
+	if(_pre_id != INVALID_PREDICATE_ID)
 	{
 		Signature::encodePredicate2Entity(_bitset, _pre_id, Util::EDGE_OUT);
 	}
 
-	int _obj_id = (this->kvstore)->getIDByEntity(_p_triple->object);
-	if(_obj_id == -1)
+	TYPE_ENTITY_LITERAL_ID _obj_id = (this->kvstore)->getIDByEntity(_p_triple->object);
+	if(_obj_id == INVALID_ENTITY_LITERAL_ID)
 	{
 		_obj_id = (this->kvstore)->getIDByLiteral(_p_triple->object);
 	}
-	if(_obj_id != -1)
+	if(_obj_id != INVALID_ENTITY_LITERAL_ID)
 	{
 		Signature::encodeStr2Entity(_bitset, _obj_id, Util::EDGE_OUT);
 	}
@@ -980,14 +995,14 @@ Database::encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, const Triple* _p_t
 bool
 Database::encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple)
 {
-	int _pre_id = (this->kvstore)->getIDByPredicate(_p_triple->predicate);
-	if(_pre_id != -1)
+	TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_p_triple->predicate);
+	if(_pre_id != INVALID_PREDICATE_ID)
 	{
 		Signature::encodePredicate2Entity(_bitset, _pre_id, Util::EDGE_IN);
 	}
 
-	int _sub_id = (this->kvstore)->getIDByEntity(_p_triple->subject);
-	if(_sub_id != -1)
+	TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_p_triple->subject);
+	if(_sub_id != INVALID_ENTITY_LITERAL_ID)
 	{
 		Signature::encodeStr2Entity(_bitset, _sub_id, Util::EDGE_IN);
 	}
@@ -1006,14 +1021,14 @@ Database::encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_t
 
 //check whether the relative 3-tuples exist usually, through sp2olist
 bool
-Database::exist_triple(int _sub_id, int _pre_id, int _obj_id)
+Database::exist_triple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id)
 {
-	int* _objidlist = NULL;
-	int _list_len = 0;
+	unsigned* _objidlist = NULL;
+	unsigned _list_len = 0;
 	(this->kvstore)->getobjIDlistBysubIDpreID(_sub_id, _pre_id, _objidlist, _list_len);
 
 	bool is_exist = false;
-	//	for(int i = 0; i < _list_len; i ++)
+	//	for(unsigned i = 0; i < _list_len; i ++)
 	//	{
 	//		if(_objidlist[i] == _obj_id)
 	//		{
@@ -1021,7 +1036,8 @@ Database::exist_triple(int _sub_id, int _pre_id, int _obj_id)
 	//			break;
 	//		}
 	//	}
-	if (Util::bsearch_int_uporder(_obj_id, _objidlist, _list_len) != -1)
+	if (Util::bsearch_int_uporder(_obj_id, _objidlist, _list_len) != INVALID)
+	//if (Util::bsearch_int_uporder(_obj_id, _objidlist, _list_len) != -1)
 	{
 		is_exist = true;
 	}
@@ -1040,8 +1056,8 @@ Database::encodeRDF_new(const string _rdf_file)
 	Util::logging("In encodeRDF_new");
 	//cout<< "end log!!!" << endl;
 #endif
-	int** _p_id_tuples = NULL;
-	int _id_tuples_max = 0;
+	TYPE_ENTITY_LITERAL_ID** _p_id_tuples = NULL;
+	TYPE_TRIPLE_NUM _id_tuples_max = 0;
 
 	long t1 = Util::get_cur_time();
 
@@ -1101,7 +1117,7 @@ Database::encodeRDF_new(const string _rdf_file)
 	cout << "after p2xx, used " << (t5 - t4) << "ms." << endl;
 
 	//WARN:we must free the memory for id_tuples array
-	for (int i = 0; i < this->triples_num; ++i)
+	for (TYPE_TRIPLE_NUM i = 0; i < this->triples_num; ++i)
 	{
 		delete[] _p_id_tuples[i];
 	}
@@ -1119,7 +1135,7 @@ Database::encodeRDF_new(const string _rdf_file)
 }
 
 void
-Database::build_s2xx(int** _p_id_tuples)
+Database::build_s2xx(TYPE_ENTITY_LITERAL_ID** _p_id_tuples)
 {
 	qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_spo_cmp);
 	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num);
@@ -1136,23 +1152,24 @@ Database::build_s2xx(int** _p_id_tuples)
 	//NOTICE:in build process, all IDs are continuous growing
 	EntityBitSet tmp_bitset;
 	tmp_bitset.reset();
-	for(int i = 0; i < this->entity_num; ++i)
+	for(TYPE_ENTITY_LITERAL_ID i = 0; i < this->entity_num; ++i)
 	{
 		SigEntry* sig = new SigEntry(EntitySig(tmp_bitset), -1);
 		fwrite(sig, sizeof(SigEntry), 1, sig_fp);
 		delete sig;
 	}
 
-	//TODO:use unsigned for type and -1 should be changed
-	int prev_entity_id = -1;
-	for (int i = 0; i < this->triples_num; ++i)
+	TYPE_ENTITY_LITERAL_ID prev_entity_id = INVALID_ENTITY_LITERAL_ID;
+	//int prev_entity_id = -1;
+	for (TYPE_TRIPLE_NUM i = 0; i < this->triples_num; ++i)
 	{
-		int subid = _p_id_tuples[i][0];
-		int preid = _p_id_tuples[i][1];
-		int objid = _p_id_tuples[i][2];
+		TYPE_ENTITY_LITERAL_ID subid = _p_id_tuples[i][0];
+		TYPE_PREDICATE_ID preid = _p_id_tuples[i][1];
+		TYPE_ENTITY_LITERAL_ID objid = _p_id_tuples[i][2];
 		if(subid != prev_entity_id)
 		{
-			if(prev_entity_id != -1)
+			if(prev_entity_id != INVALID_ENTITY_LITERAL_ID)
+			//if(prev_entity_id != -1)
 			{
 #ifdef DEBUG
 				//if(prev_entity_id == 13)
@@ -1181,7 +1198,8 @@ Database::build_s2xx(int** _p_id_tuples)
 	}
 
 	//NOTICE: remember to write the last entity's signature
-	if(prev_entity_id != -1)
+	if(prev_entity_id != INVALID_ENTITY_LITERAL_ID)
+	//if(prev_entity_id != -1)
 	{
 		SigEntry* sig = new SigEntry(EntitySig(tmp_bitset), prev_entity_id);
 		//write the sig entry
@@ -1195,7 +1213,7 @@ Database::build_s2xx(int** _p_id_tuples)
 }
 
 void
-Database::build_o2xx(int** _p_id_tuples)
+Database::build_o2xx(TYPE_ENTITY_LITERAL_ID** _p_id_tuples)
 {
 	qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_ops_cmp);
 	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num);
@@ -1212,13 +1230,14 @@ Database::build_o2xx(int** _p_id_tuples)
 
 	//NOTICE:in build process, all IDs are continuous growing
 	//TODO:use unsigned for type and -1 should be changed
-	int prev_entity_id = -1;
+	TYPE_ENTITY_LITERAL_ID prev_entity_id = INVALID_ENTITY_LITERAL_ID;
+	//int prev_entity_id = -1;
 	EntityBitSet tmp_bitset;
-	for (int i = 0; i < this->triples_num; ++i)
+	for (TYPE_TRIPLE_NUM i = 0; i < this->triples_num; ++i)
 	{
-		int subid = _p_id_tuples[i][0];
-		int preid = _p_id_tuples[i][1];
-		int objid = _p_id_tuples[i][2];
+		TYPE_ENTITY_LITERAL_ID subid = _p_id_tuples[i][0];
+		TYPE_PREDICATE_ID preid = _p_id_tuples[i][1];
+		TYPE_ENTITY_LITERAL_ID objid = _p_id_tuples[i][2];
 
 
 		if(Util::is_literal_ele(objid))
@@ -1228,7 +1247,8 @@ Database::build_o2xx(int** _p_id_tuples)
 
 		if(objid != prev_entity_id)
 		{
-			if(prev_entity_id != -1)
+			//if(prev_entity_id != -1)
+			if(prev_entity_id != INVALID_ENTITY_LITERAL_ID)
 			{
 				//NOTICE: we must do twice, we need to locate on the same entry to deal, so we must place in order
 				fseek(sig_fp, sizeof(SigEntry) * prev_entity_id, SEEK_SET);
@@ -1282,7 +1302,8 @@ Database::build_o2xx(int** _p_id_tuples)
 	//cout<<"loop ended!"<<endl;
 
 	//NOTICE: remember to write the last entity's signature
-	if(prev_entity_id != -1)
+	if(prev_entity_id != INVALID_ENTITY_LITERAL_ID)
+	//if(prev_entity_id != -1)
 	{
 		//cout<<"to write the last signature"<<endl;
 
@@ -1303,7 +1324,7 @@ Database::build_o2xx(int** _p_id_tuples)
 }
 
 void
-Database::build_p2xx(int** _p_id_tuples)
+Database::build_p2xx(TYPE_ENTITY_LITERAL_ID** _p_id_tuples)
 {
 	qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_pso_cmp);
 	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num);
@@ -1315,13 +1336,13 @@ Database::build_p2xx(int** _p_id_tuples)
 //CONSIDER: just an estimated value is ok or use vector!!!(but vector also copy when enlarge)
 //and read file line numbers are also costly!
 bool
-Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _p_id_tuples, int & _id_tuples_max)
+Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, TYPE_ENTITY_LITERAL_ID**& _p_id_tuples, TYPE_TRIPLE_NUM & _id_tuples_max)
 {
-	int _id_tuples_size;
+	TYPE_TRIPLE_NUM _id_tuples_size;
 	{
 		//initial
 		_id_tuples_max = 10 * 1000 * 1000;
-		_p_id_tuples = new int*[_id_tuples_max];
+		_p_id_tuples = new TYPE_ENTITY_LITERAL_ID*[_id_tuples_max];
 		_id_tuples_size = 0;
 		this->sub_num = 0;
 		this->pre_num = 0;
@@ -1362,8 +1383,6 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 	//don't know the number of entity
 	//pre allocate entitybitset_max EntityBitSet for storing signature, double the space until the _entity_bitset is used up.
 	//
-	//TODO:改为用外存两轮排序，注意文件定位，需要修改Signature中string编码为ID(设置ID_MODE)，且应绑定点和边
-	//应该跑通4.5亿的数据集
 	//int entitybitset_max = 10000000;  //set larger to avoid the copy cost
 	//int entitybitset_max = 10000;
 	//EntityBitSet** _entity_bitset = new EntityBitSet*[entitybitset_max];
@@ -1401,14 +1420,16 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 		//Process the Triple one by one
 		for (int i = 0; i < parse_triple_num; i++)
 		{
+			//TODO+BETTER: assume that no duplicate triples in RDF for building
+			//should judge first??
 			this->triples_num++;
 
 			//if the _id_tuples exceeds, double the space
 			if (_id_tuples_size == _id_tuples_max)
 			{
-				int _new_tuples_len = _id_tuples_max * 2;
-				int** _new_id_tuples = new int*[_new_tuples_len];
-				memcpy(_new_id_tuples, _p_id_tuples, sizeof(int*) * _id_tuples_max);
+				TYPE_TRIPLE_NUM _new_tuples_len = _id_tuples_max * 2;
+				TYPE_ENTITY_LITERAL_ID** _new_id_tuples = new TYPE_ENTITY_LITERAL_ID*[_new_tuples_len];
+				memcpy(_new_id_tuples, _p_id_tuples, sizeof(TYPE_ENTITY_LITERAL_ID*) * _id_tuples_max);
 				delete[] _p_id_tuples;
 				_p_id_tuples = _new_id_tuples;
 				_id_tuples_max = _new_tuples_len;
@@ -1417,8 +1438,9 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 			// For subject
 			// (all subject is entity, some object is entity, the other is literal)
 			string _sub = triple_array[i].getSubject();
-			int _sub_id = (this->kvstore)->getIDByEntity(_sub);
-			if (_sub_id == -1)
+			TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_sub);
+			if (_sub_id == INVALID_ENTITY_LITERAL_ID)
+			//if (_sub_id == -1)
 			{
 				//_sub_id = this->entity_num;
 				_sub_id = this->allocEntityID();
@@ -1428,8 +1450,9 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 			}
 			//  For predicate
 			string _pre = triple_array[i].getPredicate();
-			int _pre_id = (this->kvstore)->getIDByPredicate(_pre);
-			if (_pre_id == -1)
+			TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_pre);
+			if (_pre_id == INVALID_PREDICATE_ID)
+			//if (_pre_id == -1)
 			{
 				//_pre_id = this->pre_num;
 				_pre_id = this->allocPredicateID();
@@ -1440,12 +1463,14 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 
 			//  For object
 			string _obj = triple_array[i].getObject();
-			int _obj_id = -1;
+			//int _obj_id = -1;
+			TYPE_ENTITY_LITERAL_ID _obj_id = INVALID_ENTITY_LITERAL_ID;
 			// obj is entity
 			if (triple_array[i].isObjEntity())
 			{
 				_obj_id = (this->kvstore)->getIDByEntity(_obj);
-				if (_obj_id == -1)
+				if (_obj_id == INVALID_ENTITY_LITERAL_ID)
+				//if (_obj_id == -1)
 				{
 					//_obj_id = this->entity_num;
 					_obj_id = this->allocEntityID();
@@ -1458,7 +1483,8 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 			if (triple_array[i].isObjLiteral())
 			{
 				_obj_id = (this->kvstore)->getIDByLiteral(_obj);
-				if (_obj_id == -1)
+				if (_obj_id == INVALID_ENTITY_LITERAL_ID)
+				//if (_obj_id == -1)
 				{
 					//_obj_id = Util::LITERAL_FIRST_ID + (this->literal_num);
 					_obj_id = this->allocLiteralID();
@@ -1477,25 +1503,23 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 			}
 
 			//  For id_tuples
-			_p_id_tuples[_id_tuples_size] = new int[3];
+			_p_id_tuples[_id_tuples_size] = new TYPE_ENTITY_LITERAL_ID[3];
 			_p_id_tuples[_id_tuples_size][0] = _sub_id;
 			_p_id_tuples[_id_tuples_size][1] = _pre_id;
 			_p_id_tuples[_id_tuples_size][2] = _obj_id;
 			_id_tuples_size++;
 
 #ifdef DEBUG_PRECISE
-			//  save six tuples
-			{
+			////  save six tuples
 				//_six_tuples_fout << _sub_id << '\t'
 					//<< _pre_id << '\t'
 					//<< _obj_id << '\t'
 					//<< _sub << '\t'
 					//<< _pre << '\t'
 					//<< _obj << endl;
-			}
 #endif
 
-			//TODO:the memory cost maybe too larger if combine teh below process here
+			//NOTICE: the memory cost maybe too larger if combine teh below process here
 			//we can do below after this function or after all B+trees are built and closed
 			//and we can decide the length of signature according to entity num then
 			//1. after all b+trees: empty id_tuples and only open id2string, reload rdf file and encode(using string for entity/literal)
@@ -1512,7 +1536,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 			//{
 				////cout<<"to double entity bitset num"<<endl;
 				//EntityBitSet** _new_entity_bitset = new EntityBitSet*[entitybitset_max * 2];
-				////TODO+BETTER?:if use pointer for array, avoid the copy cost of entitybitset, but consumes more mmeory
+				////BETTER?:if use pointer for array, avoid the copy cost of entitybitset, but consumes more mmeory
 				////if the triple size is 1-2 billion, then the memory cost will be very large!!!
 				//memcpy(_new_entity_bitset, _entity_bitset, sizeof(EntityBitSet*) * entitybitset_max);
 				//delete[] _entity_bitset;
@@ -1585,7 +1609,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 }
 
 bool
-Database::insertTriple(const TripleWithObjType& _triple, vector<int>* _vertices, vector<int>* _predicates)
+Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices, vector<unsigned>* _predicates)
 {
 	//cout<<endl<<"the new triple is:"<<endl;
 	//cout<<_triple.subject<<endl;
@@ -1600,10 +1624,11 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<int>* _vertices,
 
 	long tv_kv_store_begin = Util::get_cur_time();
 
-	int _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
+	TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
 	bool _is_new_sub = false;
 	//if sub does not exist
-	if (_sub_id == -1)
+	if (_sub_id == INVALID_ENTITY_LITERAL_ID)
+	//if (_sub_id == -1)
 	{
 		_is_new_sub = true;
 		//_sub_id = this->entity_num++;
@@ -1629,10 +1654,11 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<int>* _vertices,
 			_vertices->push_back(_sub_id);
 	}
 
-	int _pre_id = (this->kvstore)->getIDByPredicate(_triple.predicate);
+	TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_triple.predicate);
 	bool _is_new_pre = false;
 	//if pre does not exist
-	if (_pre_id == -1)
+	if (_pre_id == INVALID_PREDICATE_ID)
+	//if (_pre_id == -1)
 	{
 		_is_new_pre = true;
 		//_pre_id = this->pre_num++;
@@ -1645,14 +1671,16 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<int>* _vertices,
 	}
 
 	//object is either entity or literal
-	int _obj_id = -1;
+	TYPE_ENTITY_LITERAL_ID _obj_id = INVALID_ENTITY_LITERAL_ID;
+	//int _obj_id = -1;
 	bool _is_new_obj = false;
 	bool is_obj_entity = _triple.isObjEntity();
 	if (is_obj_entity)
 	{
 		_obj_id = (this->kvstore)->getIDByEntity(_triple.object);
 
-		if (_obj_id == -1)
+		//if (_obj_id == -1)
+		if (_obj_id == INVALID_ENTITY_LITERAL_ID)
 		{
 			_is_new_obj = true;
 			//_obj_id = this->entity_num++;
@@ -1674,7 +1702,8 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<int>* _vertices,
 	{
 		_obj_id = (this->kvstore)->getIDByLiteral(_triple.object);
 
-		if (_obj_id == -1)
+		//if (_obj_id == -1)
+		if (_obj_id == INVALID_ENTITY_LITERAL_ID)
 		{
 			_is_new_obj = true;
 			//_obj_id = Util::LITERAL_FIRST_ID + this->literal_num;
@@ -1683,7 +1712,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<int>* _vertices,
 			(this->kvstore)->setLiteralByID(_obj_id, _triple.object);
 
 			//update the string buffer
-			int tid = _obj_id - Util::LITERAL_FIRST_ID;
+			TYPE_ENTITY_LITERAL_ID tid = _obj_id - Util::LITERAL_FIRST_ID;
 			if (tid < this->literal_buffer_size)
 			{
 				this->literal_buffer->set(tid, _triple.object);
@@ -1721,7 +1750,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<int>* _vertices,
 	//cout<<"the triple spo ids: "<<_sub_id<<" "<<_pre_id<<" "<<_obj_id<<endl;
 
 	//update sp2o op2s s2po o2ps s2o o2s etc.
-	int updateLen = (this->kvstore)->updateTupleslist_insert(_sub_id, _pre_id, _obj_id);
+	unsigned updateLen = (this->kvstore)->updateTupleslist_insert(_sub_id, _pre_id, _obj_id);
 
 	//int* list = NULL;
 	//int len = 0;
@@ -1792,19 +1821,22 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<int>* _vertices,
 }
 
 bool
-Database::removeTriple(const TripleWithObjType& _triple, vector<int>* _vertices, vector<int>* _predicates)
+Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices, vector<unsigned>* _predicates)
 {
 	long tv_kv_store_begin = Util::get_cur_time();
 
-	int _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
-	int _pre_id = (this->kvstore)->getIDByPredicate(_triple.predicate);
-	int _obj_id = (this->kvstore)->getIDByEntity(_triple.object);
-	if (_obj_id == -1)
+	TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
+	TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_triple.predicate);
+	TYPE_ENTITY_LITERAL_ID _obj_id = (this->kvstore)->getIDByEntity(_triple.object);
+
+	//if (_obj_id == -1)
+	if (_obj_id == INVALID_ENTITY_LITERAL_ID)
 	{
 		_obj_id = (this->kvstore)->getIDByLiteral(_triple.object);
 	}
 
-	if (_sub_id == -1 || _pre_id == -1 || _obj_id == -1)
+	//if (_sub_id == -1 || _pre_id == -1 || _obj_id == -1)
+	if (_sub_id == INVALID_ENTITY_LITERAL_ID || _pre_id == INVALID_PREDICATE_ID || _obj_id == INVALID_ENTITY_LITERAL_ID)
 	{
 		return false;
 	}
@@ -1900,7 +1932,7 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<int>* _vertices,
 			this->kvstore->subIDByLiteral(_triple.object);
 			this->freeLiteralID(_obj_id);
 			//update the string buffer
-			int tid = _obj_id - Util::LITERAL_FIRST_ID;
+			TYPE_ENTITY_LITERAL_ID tid = _obj_id - Util::LITERAL_FIRST_ID;
 			if (tid < this->literal_buffer_size)
 			{
 				this->literal_buffer->del(tid);
@@ -1945,7 +1977,7 @@ Database::insert(std::string _rdf_file)
 
 	long tv_load = Util::get_cur_time();
 
-	int success_num = 0;
+	TYPE_TRIPLE_NUM success_num = 0;
 
 	ifstream _fin(_rdf_file.c_str());
 	if (!_fin)
@@ -1963,7 +1995,7 @@ Database::insert(std::string _rdf_file)
 	//parse a file
 	RDFParser _parser(_fin);
 
-	int triple_num = 0;
+	TYPE_TRIPLE_NUM triple_num = 0;
 #ifdef DEBUG
 	Util::logging("==> while(true)");
 #endif
@@ -2040,7 +2072,7 @@ Database::remove(std::string _rdf_file)
 	cout << "finish loading" << endl;
 
 	long tv_load = Util::get_cur_time();
-	int success_num = 0;
+	TYPE_TRIPLE_NUM success_num = 0;
 
 	ifstream _fin(_rdf_file.c_str());
 	if (!_fin)
@@ -2108,16 +2140,18 @@ Database::remove(std::string _rdf_file)
 	return true;
 }
 
-int
-Database::insert(const TripleWithObjType* _triples, int _triple_num)
+unsigned
+Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num)
 {
-	vector<int> vertices, predicates;
-	int valid_num = 0;
+	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
+	TYPE_TRIPLE_NUM valid_num = 0;
 
 #ifdef USE_GROUP_INSERT
 	//NOTICE:this is called by insert(file) or query()(but can not be too large),
 	//assume that db is loaded already
-	int** id_tuples = new int*[_triple_num];
+	TYPE_ENTITY_LITERAL_ID** id_tuples = new TYPE_ENTITY_LITERAL_ID*[_triple_num];
+
+	//TODO:change the type in this catagolory
 	int i = 0;
 	//for(i = 0; i < _triple_num; ++i)
 	//{
@@ -2544,7 +2578,7 @@ Database::insert(const TripleWithObjType* _triples, int _triple_num)
 #else
 	//NOTICE:we deal with insertions one by one here
 	//Callers should save the vstree(node and info) after calling this function
-	for (int i = 0; i < _triple_num; ++i)
+	for (TYPE_TRIPLE_NUM i = 0; i < _triple_num; ++i)
 	{
 		bool ret = this->insertTriple(_triples[i], &vertices, &predicates);
 		if(ret)
@@ -2561,17 +2595,20 @@ Database::insert(const TripleWithObjType* _triples, int _triple_num)
 	return valid_num;
 }
 
-int
-Database::remove(const TripleWithObjType* _triples, int _triple_num)
+unsigned
+Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num)
 {
-	vector<int> vertices, predicates;
-	int valid_num = 0;
+	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
+	TYPE_TRIPLE_NUM valid_num = 0;
 
 #ifdef USE_GROUP_DELETE
 	//NOTICE:this is called by remove(file) or query()(but can not be too large),
 	//assume that db is loaded already
-	int** id_tuples = new int*[_triple_num];
-	int i = 0;
+	TYPE_ENTITY_LITERAL_ID** id_tuples = new TYPE_ENTITY_LITERAL_ID*[_triple_num];
+	TYPE_TRIPLE_NUM i = 0;
+
+	//TODO: change type in this catagolory
+
 	//for(i = 0; i < _triple_num; ++i)
 	//{
 	//id_tuples[i] = new int[3];
@@ -2581,20 +2618,23 @@ Database::remove(const TripleWithObjType* _triples, int _triple_num)
 	EntityBitSet tmpset;
 	tmpset.reset();
 
-	int subid, objid, preid;
+	TYPE_ENTITY_LITERAL_ID subid, objid;
+	TYPE_PREDICATE_ID preid;
 	bool is_obj_entity;
 	for (i = 0; i < _triple_num; ++i)
 	{
 		string sub = _triples[i].getSubject();
 		subid = this->kvstore->getIDByEntity(sub);
-		if(subid == -1)
+		//if(subid == -1)
+		if(subid == INVALID_ENTITY_LITERAL_ID)
 		{
 			continue;
 		}
 
 		string pre = _triples[i].getPredicate();
 		preid = this->kvstore->getIDByPredicate(pre);
-		if(preid == -1)
+		//if(preid == -1)
+		if(preid == INVALID_PREDICATE_ID)
 		{
 			continue;
 		}
@@ -2609,7 +2649,8 @@ Database::remove(const TripleWithObjType* _triples, int _triple_num)
 		{
 			objid = this->kvstore->getIDByLiteral(obj);
 		}
-		if(objid == -1)
+		//if(objid == -1)
+		if(objid == INVALID_ENTITY_LITERAL_ID)
 		{
 			continue;
 		}
@@ -2624,7 +2665,7 @@ Database::remove(const TripleWithObjType* _triples, int _triple_num)
 			continue;
 		}
 
-		id_tuples[valid_num] = new int[3];
+		id_tuples[valid_num] = new TYPE_ENTITY_LITERAL_ID[3];
 		id_tuples[valid_num][0] = subid;
 		id_tuples[valid_num][1] = preid;
 		id_tuples[valid_num][2] = objid;
@@ -2887,7 +2928,7 @@ Database::remove(const TripleWithObjType* _triples, int _triple_num)
 #else
 	//NOTICE:we deal with deletions one by one here
 	//Callers should save the vstree(node and info) after calling this function
-	for (int i = 0; i < _triple_num; ++i)
+	for (TYPE_TRIPLE_NUM i = 0; i < _triple_num; ++i)
 	{
 		bool ret = this->removeTriple(_triples[i], &vertices, &predicates);
 		if(ret)
@@ -2912,7 +2953,7 @@ Database::remove(const TripleWithObjType* _triples, int _triple_num)
 }
 
 bool
-Database::objIDIsEntityID(int _id)
+Database::objIDIsEntityID(TYPE_ENTITY_LITERAL_ID _id)
 {
 	return _id < Util::LITERAL_FIRST_ID;
 }
@@ -2929,7 +2970,7 @@ Database::getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set)
 	vector<BasicQuery*>& query_vec = _sparql_q.getBasicQueryVec();
 
 	//sum the answer number
-	int _ans_num = 0;
+	unsigned _ans_num = 0;
 #ifdef DEBUG_PRECISE
 	printf("getFinalResult:before ansnum loop\n");
 #endif
@@ -2944,12 +2985,12 @@ Database::getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set)
 	_result_set.ansNum = _ans_num;
 #ifndef STREAM_ON
 	_result_set.answer = new string*[_ans_num];
-	for (int i = 0; i < _result_set.ansNum; i++)
+	for (unsigned i = 0; i < _result_set.ansNum; i++)
 	{
 		_result_set.answer[i] = NULL;
 	}
 #else
-	vector<int> keys;
+	vector<unsigned> keys;
 	vector<bool> desc;
 	_result_set.openStream(keys, desc);
 #ifdef DEBUG_PRECISE
@@ -2959,16 +3000,16 @@ Database::getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set)
 #ifdef DEBUG_PRECISE
 	printf("getFinalResult:before main loop\n");
 #endif
-	int tmp_ans_count = 0;
+	unsigned tmp_ans_count = 0;
 	//map int ans into string ans
 	//union every basic result into total result
 	for (unsigned i = 0; i < query_vec.size(); i++)
 	{
-		vector<int*>& tmp_vec = query_vec[i]->getResultList();
+		vector<unsigned*>& tmp_vec = query_vec[i]->getResultList();
 		//ensure the spo order is right, but the triple order is still reversed
 		//for every result group in resultlist
 		//for(vector<int*>::reverse_iterator itr = tmp_vec.rbegin(); itr != tmp_vec.rend(); ++itr)
-		for (vector<int*>::iterator itr = tmp_vec.begin(); itr != tmp_vec.end(); ++itr)
+		for (vector<unsigned*>::iterator itr = tmp_vec.begin(); itr != tmp_vec.end(); ++itr)
 		{
 			//to ensure the order so do reversely in two nested loops
 #ifndef STREAM_ON
@@ -2984,7 +3025,7 @@ Database::getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set)
 			//map every ans_id into ans_str
 			for (int v = 0; v < _var_num; ++v)
 			{
-				int ans_id = (*itr)[v];
+				unsigned ans_id = (*itr)[v];
 				string ans_str;
 				if (this->objIDIsEntityID(ans_id))
 				{
@@ -3016,156 +3057,156 @@ Database::getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set)
 	return true;
 }
 
-void
-Database::printIDlist(int _i, int* _list, int _len, string _log)
-{
-	stringstream _ss;
-	_ss << "[" << _i << "] ";
-	for (int i = 0; i < _len; i++) {
-		_ss << _list[i] << "\t";
-	}
-	Util::logging("==" + _log + ":");
-	Util::logging(_ss.str());
-}
+//void
+//Database::printIDlist(int _i, int* _list, int _len, string _log)
+//{
+	//stringstream _ss;
+	//_ss << "[" << _i << "] ";
+	//for (int i = 0; i < _len; i++) {
+		//_ss << _list[i] << "\t";
+	//}
+	//Util::logging("==" + _log + ":");
+	//Util::logging(_ss.str());
+//}
 
-void
-Database::printPairList(int _i, int* _list, int _len, string _log)
-{
-	stringstream _ss;
-	_ss << "[" << _i << "] ";
-	for (int i = 0; i < _len; i += 2) {
-		_ss << "[" << _list[i] << "," << _list[i + 1] << "]\t";
-	}
-	Util::logging("==" + _log + ":");
-	Util::logging(_ss.str());
-}
+//void
+//Database::printPairList(int _i, int* _list, int _len, string _log)
+//{
+	//stringstream _ss;
+	//_ss << "[" << _i << "] ";
+	//for (int i = 0; i < _len; i += 2) {
+		//_ss << "[" << _list[i] << "," << _list[i + 1] << "]\t";
+	//}
+	//Util::logging("==" + _log + ":");
+	//Util::logging(_ss.str());
+//}
 
-void
-Database::test()
-{
-	int subNum = 9, preNum = 20, objNum = 90;
+//void
+//Database::test()
+//{
+	//int subNum = 9, preNum = 20, objNum = 90;
 
-	int* _id_list = NULL;
-	int _list_len = 0;
-	{   /* x2ylist */
-		for (int i = 0; i < subNum; i++)
-		{
+	//int* _id_list = NULL;
+	//int _list_len = 0;
+	//{   [> x2ylist <]
+		//for (int i = 0; i < subNum; i++)
+		//{
 
-			(this->kvstore)->getobjIDlistBysubID(i, _id_list, _list_len);
-			if (_list_len != 0)
-			{
-				stringstream _ss;
-				this->printIDlist(i, _id_list, _list_len, "s2olist[" + _ss.str() + "]");
-				delete[] _id_list;
-			}
+			//(this->kvstore)->getobjIDlistBysubID(i, _id_list, _list_len);
+			//if (_list_len != 0)
+			//{
+				//stringstream _ss;
+				//this->printIDlist(i, _id_list, _list_len, "s2olist[" + _ss.str() + "]");
+				//delete[] _id_list;
+			//}
 
-			/* o2slist */
-			(this->kvstore)->getsubIDlistByobjID(i, _id_list, _list_len);
-			if (_list_len != 0)
-			{
-				stringstream _ss;
-				this->printIDlist(i, _id_list, _list_len, "o(sub)2slist[" + _ss.str() + "]");
-				delete[] _id_list;
-			}
-		}
+			//[> o2slist <]
+			//(this->kvstore)->getsubIDlistByobjID(i, _id_list, _list_len);
+			//if (_list_len != 0)
+			//{
+				//stringstream _ss;
+				//this->printIDlist(i, _id_list, _list_len, "o(sub)2slist[" + _ss.str() + "]");
+				//delete[] _id_list;
+			//}
+		//}
 
-		for (int i = 0; i < objNum; i++)
-		{
-			int _i = Util::LITERAL_FIRST_ID + i;
-			(this->kvstore)->getsubIDlistByobjID(_i, _id_list, _list_len);
-			if (_list_len != 0)
-			{
-				stringstream _ss;
-				this->printIDlist(_i, _id_list, _list_len, "o(literal)2slist[" + _ss.str() + "]");
-				delete[] _id_list;
-			}
-		}
-	}
-	{   /* xy2zlist */
-		for (int i = 0; i < subNum; i++)
-		{
-			for (int j = 0; j < preNum; j++)
-			{
-				(this->kvstore)->getobjIDlistBysubIDpreID(i, j, _id_list,
-					_list_len);
-				if (_list_len != 0)
-				{
-					stringstream _ss;
-					_ss << "preid:" << j;
-					this->printIDlist(i, _id_list, _list_len, "sp2olist[" + _ss.str() + "]");
-					delete[] _id_list;
-				}
+		//for (int i = 0; i < objNum; i++)
+		//{
+			//int _i = Util::LITERAL_FIRST_ID + i;
+			//(this->kvstore)->getsubIDlistByobjID(_i, _id_list, _list_len);
+			//if (_list_len != 0)
+			//{
+				//stringstream _ss;
+				//this->printIDlist(_i, _id_list, _list_len, "o(literal)2slist[" + _ss.str() + "]");
+				//delete[] _id_list;
+			//}
+		//}
+	//}
+	//{   [> xy2zlist <]
+		//for (int i = 0; i < subNum; i++)
+		//{
+			//for (int j = 0; j < preNum; j++)
+			//{
+				//(this->kvstore)->getobjIDlistBysubIDpreID(i, j, _id_list,
+					//_list_len);
+				//if (_list_len != 0)
+				//{
+					//stringstream _ss;
+					//_ss << "preid:" << j;
+					//this->printIDlist(i, _id_list, _list_len, "sp2olist[" + _ss.str() + "]");
+					//delete[] _id_list;
+				//}
 
-				(this->kvstore)->getsubIDlistByobjIDpreID(i, j, _id_list,
-					_list_len);
-				if (_list_len != 0)
-				{
-					stringstream _ss;
-					_ss << "preid:" << j;
-					this->printIDlist(i, _id_list, _list_len, "o(sub)p2slist[" + _ss.str() + "]");
-					delete[] _id_list;
-				}
-			}
-		}
+				//(this->kvstore)->getsubIDlistByobjIDpreID(i, j, _id_list,
+					//_list_len);
+				//if (_list_len != 0)
+				//{
+					//stringstream _ss;
+					//_ss << "preid:" << j;
+					//this->printIDlist(i, _id_list, _list_len, "o(sub)p2slist[" + _ss.str() + "]");
+					//delete[] _id_list;
+				//}
+			//}
+		//}
 
-		for (int i = 0; i < objNum; i++)
-		{
-			int _i = Util::LITERAL_FIRST_ID + i;
-			for (int j = 0; j < preNum; j++)
-			{
-				(this->kvstore)->getsubIDlistByobjIDpreID(_i, j, _id_list,
-					_list_len);
-				if (_list_len != 0)
-				{
-					stringstream _ss;
-					_ss << "preid:" << j;
-					this->printIDlist(_i, _id_list, _list_len,
-						"*o(literal)p2slist[" + _ss.str() + "]");
-					delete[] _id_list;
-				}
-			}
-		}
-	}
-	{   /* x2yzlist */
-		for (int i = 0; i < subNum; i++)
-		{
-			(this->kvstore)->getpreIDobjIDlistBysubID(i, _id_list, _list_len);
-			if (_list_len != 0)
-			{
-				this->printPairList(i, _id_list, _list_len, "s2polist");
-				delete[] _id_list;
-				_list_len = 0;
-			}
-		}
+		//for (int i = 0; i < objNum; i++)
+		//{
+			//int _i = Util::LITERAL_FIRST_ID + i;
+			//for (int j = 0; j < preNum; j++)
+			//{
+				//(this->kvstore)->getsubIDlistByobjIDpreID(_i, j, _id_list,
+					//_list_len);
+				//if (_list_len != 0)
+				//{
+					//stringstream _ss;
+					//_ss << "preid:" << j;
+					//this->printIDlist(_i, _id_list, _list_len,
+						//"*o(literal)p2slist[" + _ss.str() + "]");
+					//delete[] _id_list;
+				//}
+			//}
+		//}
+	//}
+	//{   [> x2yzlist <]
+		//for (int i = 0; i < subNum; i++)
+		//{
+			//(this->kvstore)->getpreIDobjIDlistBysubID(i, _id_list, _list_len);
+			//if (_list_len != 0)
+			//{
+				//this->printPairList(i, _id_list, _list_len, "s2polist");
+				//delete[] _id_list;
+				//_list_len = 0;
+			//}
+		//}
 
-		for (int i = 0; i < subNum; i++)
-		{
-			(this->kvstore)->getpreIDsubIDlistByobjID(i, _id_list, _list_len);
-			if (_list_len != 0)
-			{
-				this->printPairList(i, _id_list, _list_len, "o(sub)2pslist");
-				delete[] _id_list;
-			}
-		}
+		//for (int i = 0; i < subNum; i++)
+		//{
+			//(this->kvstore)->getpreIDsubIDlistByobjID(i, _id_list, _list_len);
+			//if (_list_len != 0)
+			//{
+				//this->printPairList(i, _id_list, _list_len, "o(sub)2pslist");
+				//delete[] _id_list;
+			//}
+		//}
 
-		for (int i = 0; i < objNum; i++)
-		{
-			int _i = Util::LITERAL_FIRST_ID + i;
-			(this->kvstore)->getpreIDsubIDlistByobjID(_i, _id_list, _list_len);
-			if (_list_len != 0)
-			{
-				this->printPairList(_i, _id_list, _list_len,
-					"o(literal)2pslist");
-				delete[] _id_list;
-			}
-		}
-	}
-}
+		//for (int i = 0; i < objNum; i++)
+		//{
+			//int _i = Util::LITERAL_FIRST_ID + i;
+			//(this->kvstore)->getpreIDsubIDlistByobjID(_i, _id_list, _list_len);
+			//if (_list_len != 0)
+			//{
+				//this->printPairList(_i, _id_list, _list_len,
+					//"o(literal)2pslist");
+				//delete[] _id_list;
+			//}
+		//}
+	//}
+//}
 
-void
-Database::test_build_sig()
-{
-	BasicQuery* _bq = new BasicQuery("");
+//void
+//Database::test_build_sig()
+//{
+	//BasicQuery* _bq = new BasicQuery("");
 	/*
 	* <!!!>	y:created	<!!!_(album)>.
 	*  <!!!>	y:created	<Louden_Up_Now>.
@@ -3181,36 +3222,36 @@ Database::test_build_sig()
 	*  ?x2	y:hasSuccessor	<Louden_Up_Now>.
 	* ?x2	rdf:type	<wordnet_album_106591815>
 	*/
-	{
-		Triple _triple("?x1", "y:created", "?x2");
-		_bq->addTriple(_triple);
-	}
-	{
-		Triple _triple("?x1", "y:created", "<Louden_Up_Now>");
-		_bq->addTriple(_triple);
-	}
-	{
-		Triple _triple("?x2", "y:hasSuccessor", "<Louden_Up_Now>");
-		_bq->addTriple(_triple);
-	}
-	{
-		Triple _triple("?x2", "rdf:type", "<wordnet_album_106591815>");
-		_bq->addTriple(_triple);
-	}
-	vector<string> _v;
-	_v.push_back("?x1");
-	_v.push_back("?x2");
+	//{
+		//Triple _triple("?x1", "y:created", "?x2");
+		//_bq->addTriple(_triple);
+	//}
+	//{
+		//Triple _triple("?x1", "y:created", "<Louden_Up_Now>");
+		//_bq->addTriple(_triple);
+	//}
+	//{
+		//Triple _triple("?x2", "y:hasSuccessor", "<Louden_Up_Now>");
+		//_bq->addTriple(_triple);
+	//}
+	//{
+		//Triple _triple("?x2", "rdf:type", "<wordnet_album_106591815>");
+		//_bq->addTriple(_triple);
+	//}
+	//vector<string> _v;
+	//_v.push_back("?x1");
+	//_v.push_back("?x2");
 
-	_bq->encodeBasicQuery(this->kvstore, _v);
-	Util::logging(_bq->to_str());
-	SPARQLquery _q;
-	_q.addBasicQuery(_bq);
+	//_bq->encodeBasicQuery(this->kvstore, _v);
+	//Util::logging(_bq->to_str());
+	//SPARQLquery _q;
+	//_q.addBasicQuery(_bq);
 
-	(this->vstree)->retrieve(_q);
+	//(this->vstree)->retrieve(_q);
 
-	Util::logging("\n\n");
-	Util::logging("candidate:\n\n" + _q.candidate_str());
-}
+	//Util::logging("\n\n");
+	//Util::logging("candidate:\n\n" + _q.candidate_str());
+//}
 
 //void
 //Database::test_join()

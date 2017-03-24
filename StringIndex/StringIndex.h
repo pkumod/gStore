@@ -12,6 +12,8 @@
 #include "../KVstore/KVstore.h"
 #include "../Util/Util.h"
 
+//TODO: adjust the type
+
 class StringIndexFile
 {
 	public:
@@ -124,8 +126,8 @@ class StringIndex
 		void addRequest(int id, std::string *str, bool is_entity_or_literal = true);
 		void trySequenceAccess();
 
-		void change(std::vector<int> &ids, KVstore &kv_store, bool is_entity_or_literal = true);
-		void disable(std::vector<int> &ids, bool is_entity_or_literal = true);
+		void change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_entity_or_literal = true);
+		void disable(std::vector<unsigned> &ids, bool is_entity_or_literal = true);
 };
 
 #endif // _STRING_INDEX_H

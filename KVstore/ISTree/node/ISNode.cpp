@@ -203,7 +203,7 @@ ISNode::setFlag(unsigned _flag)
 	this->flag = _flag;
 }
 
-int
+unsigned
 ISNode::getKey(int _index) const
 {
 	int num = this->getNum();
@@ -211,14 +211,15 @@ ISNode::getKey(int _index) const
 	{
 		//print(string("error in getKey: Invalid index ") + Util::int2string(_index));    
 		printf("error in getKey: Invalid index\n");
-		return -1;
+		//return -1;
+		return INVALID;
 	}
 	else
 		return this->keys[_index];
 }
 
 bool
-ISNode::setKey(int _key, int _index)
+ISNode::setKey(unsigned _key, int _index)
 {
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
@@ -231,7 +232,7 @@ ISNode::setKey(int _key, int _index)
 }
 
 bool
-ISNode::addKey(int _key, int _index)
+ISNode::addKey(unsigned _key, int _index)
 {
 	int num = this->getNum();
 	if (_index < 0 || _index > num)
@@ -264,7 +265,7 @@ ISNode::subKey(int _index)
 }
 
 int
-ISNode::searchKey_less(int _key) const
+ISNode::searchKey_less(unsigned _key) const
 {
 	int num = this->getNum();
 	//for(i = 0; i < num; ++i)
@@ -290,7 +291,7 @@ ISNode::searchKey_less(int _key) const
 }
 
 int
-ISNode::searchKey_equal(int _key) const
+ISNode::searchKey_equal(unsigned _key) const
 {
 	int num = this->getNum();
 	//for(i = 0; i < num; ++i)
@@ -305,7 +306,7 @@ ISNode::searchKey_equal(int _key) const
 }
 
 int
-ISNode::searchKey_lessEqual(int _key) const
+ISNode::searchKey_lessEqual(unsigned _key) const
 {
 	//int num = this->getNum();
 	//for(i = 0; i < num; ++i)
@@ -318,3 +319,4 @@ ISNode::searchKey_lessEqual(int _key) const
 	else
 		return ret;
 }
+

@@ -104,13 +104,14 @@ ISTree::prepare(ISNode* _np)
 }
 
 bool
-ISTree::search(int _key, char*& _str, int& _len)
+ISTree::search(unsigned _key, char*& _str, unsigned& _len)
 {
-	if (_key < 0)
-	{
-		printf("error in ISTree-search: empty string\n");
-		return false;
-	}
+	//DEBUG
+	//if (_key < 0)
+	//{
+		//printf("error in ISTree-search: empty string\n");
+		//return false;
+	//}
 
 	this->request = 0;
 	int store;
@@ -129,13 +130,13 @@ ISTree::search(int _key, char*& _str, int& _len)
 }
 
 bool
-ISTree::insert(int _key, const char* _str, unsigned _len)
+ISTree::insert(unsigned _key, const char* _str, unsigned _len)
 {
-	if (_key < 0)
-	{
-		printf("error in ISTree-insert: empty string\n");
-		return false;
-	}
+	//if (_key < 0)
+	//{
+		//printf("error in ISTree-insert: empty string\n");
+		//return false;
+	//}
 
 	this->CopyToTransfer(_str, _len, 2);
 	const Bstr* val = &(this->transfer[2]);
@@ -235,13 +236,13 @@ ISTree::insert(int _key, const char* _str, unsigned _len)
 }
 
 bool
-ISTree::modify(int _key, const char* _str, unsigned _len)
+ISTree::modify(unsigned _key, const char* _str, unsigned _len)
 {
-	if (_key < 0)
-	{
-		printf("error in ISTree-modify: empty string\n");
-		return false;
-	}
+	//if (_key < 0)
+	//{
+		//printf("error in ISTree-modify: empty string\n");
+		//return false;
+	//}
 
 	this->CopyToTransfer(_str, _len, 2);	//not check value
 	const Bstr* val = &(this->transfer[2]);
@@ -270,7 +271,7 @@ ISTree::modify(int _key, const char* _str, unsigned _len)
 
 //this function is useful for search and modify, and range-query 
 ISNode*		//return the first key's position that >= *_key
-ISTree::find(int _key, int* _store, bool ifmodify)
+ISTree::find(unsigned _key, int* _store, bool ifmodify)
 {											//to assign value for this->bstr, function shouldn't be const!
 	if (this->root == NULL)
 		return NULL;						//ISTree Is Empty
@@ -311,13 +312,14 @@ ISTree::find(unsigned _len, const char* _str, int* store) const
 */
 
 bool
-ISTree::remove(int _key)
+ISTree::remove(unsigned _key)
 {
-	if (_key < 0)
-	{
-		printf("error in ISTree-remove: empty string\n");
-		return false;
-	}
+	//DEBUG
+	//if (_key < 0)
+	//{
+		//printf("error in ISTree-remove: empty string\n");
+		//return false;
+	//}
 
 	this->request = 0;
 	ISNode* ret;
@@ -443,7 +445,7 @@ ISTree::resetStream()
 }
 
 bool	//special case: not exist, one-edge-case
-ISTree::range_query(int _key1, int _key2)
+ISTree::range_query(unsigned _key1, unsigned _key2)
 {		//the range is: *_key1 <= x < *_key2 	
 		//if(_key1 <0 && _key2 <0)
 		//return false;
@@ -516,7 +518,7 @@ ISTree::range_query(int _key1, int _key2)
 		delete this->stream;
 		this->stream = NULL;
 	}
-	vector<int> keys;
+	vector<unsigned> keys;
 	vector<bool> desc;
 	this->stream = new Stream(keys, desc, ansNum, 1, false);
 
@@ -570,6 +572,7 @@ ISTree::release(ISNode* _np) const
 		return;
 	}
 	int cnt = _np->getNum();
+	//WARN: not chnage cnt to int type here(otherwise endless loop)
 	for (; cnt >= 0; --cnt)
 		release(_np->getChild(cnt));
 	delete _np;
@@ -655,3 +658,4 @@ ISTree::print(string s)
 	else;
 #endif
 }
+

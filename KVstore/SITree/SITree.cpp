@@ -102,12 +102,12 @@ SITree::prepare(SINode* _np)
 }
 
 bool
-SITree::search(const char* _str, unsigned _len, int* _val)
+SITree::search(const char* _str, unsigned _len, unsigned* _val)
 {
 	if (_str == NULL || _len == 0)
 	{
 		printf("error in SITree-search: empty string\n");
-		*_val = -1;
+		//*_val = -1;
 		return false;
 	}
 	this->CopyToTransfer(_str, _len, 1);
@@ -124,11 +124,12 @@ SITree::search(const char* _str, unsigned _len, int* _val)
 	*_val = ret->getValue(store);
 	this->TSM->request(request);
 	bstr.clear();
+
 	return true;
 }
 
 bool
-SITree::insert(const char* _str, unsigned _len, int _val)
+SITree::insert(const char* _str, unsigned _len, unsigned _val)
 {
 	if (_str == NULL || _len == 0)
 	{
@@ -230,11 +231,12 @@ SITree::insert(const char* _str, unsigned _len, int _val)
 	}
 	this->TSM->request(request);
 	bstr.clear();		//NOTICE: must be cleared!
+
 	return !ifexist;		//QUERY(which case:return false)
 }
 
 bool
-SITree::modify(const char* _str, unsigned _len, int _val)
+SITree::modify(const char* _str, unsigned _len, unsigned _val)
 {
 	if (_str == NULL || _len == 0)
 	{
@@ -257,6 +259,7 @@ SITree::modify(const char* _str, unsigned _len, int _val)
 	ret->setDirty();
 	this->TSM->request(request);
 	bstr.clear();
+
 	return true;
 }
 
@@ -294,6 +297,7 @@ SITree::find(const Bstr* _key, int* _store, bool ifmodify)
 	else
 		*_store = i;
 	bstr.clear();
+
 	return p;
 }
 
@@ -387,6 +391,7 @@ SITree::remove(const char* _str, unsigned _len)
 
 	this->TSM->request(request);
 	bstr.clear();
+
 	return flag;		//i == j, not found		
 }
 
@@ -496,3 +501,4 @@ SITree::print(string s)
 	else;
 #endif
 }
+

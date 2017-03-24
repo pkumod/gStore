@@ -17,6 +17,9 @@
 
 //NOTICE:R/W more than 4G
 
+//TODO: in multiple threads case, to ensure the vstree and cache is correct, maybe lock the whole vstree!
+//(at one time, only one thread can query/update the vstree)
+
 class VSTree
 {
     friend class VNode;

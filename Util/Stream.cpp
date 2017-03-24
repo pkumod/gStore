@@ -41,7 +41,7 @@ Stream::Stream()
     this->init();
 }
 
-Stream::Stream(std::vector<int>& _keys, std::vector<bool>& _desc, unsigned _rownum, unsigned _colnum, bool _flag)
+Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _desc, unsigned _rownum, unsigned _colnum, bool _flag)
 {
     this->init();
 #ifdef DEBUG_STREAM

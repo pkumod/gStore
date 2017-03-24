@@ -23,7 +23,7 @@ void ResultFilter::changeResultHashTable(SPARQLquery &query, int value)
 	for (int i = 0; i < query.getBasicQueryNum(); i++)
 	{
 		BasicQuery &basicquery = query.getBasicQuery(i);
-		vector<int*> &basicquery_result =basicquery.getResultList();
+		vector<unsigned*> &basicquery_result =basicquery.getResultList();
 		int result_num = basicquery_result.size();
 		int var_num = basicquery.getVarNum();
 
@@ -79,3 +79,4 @@ void ResultFilter::candFilterWithResultHashTable(BasicQuery &basicquery)
 		}
 	}
 }
+

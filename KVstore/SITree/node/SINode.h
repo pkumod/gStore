@@ -30,7 +30,7 @@ public:
 	static const unsigned NF_HT = 0xf00000;		//height area in rank
 	static const unsigned NF_KN = 0x07f000;		//NOTICE: decided by DEGREE
 	static const unsigned INTL_SIZE = sizeof(Bstr) * MAX_KEY_NUM;
-	static const unsigned LEAF_SIZE = sizeof(int) * MAX_KEY_NUM + INTL_SIZE;
+	static const unsigned LEAF_SIZE = sizeof(unsigned) * MAX_KEY_NUM + INTL_SIZE;
 protected:
 	unsigned store;			//store address, the BLock index
 	unsigned flag;			//NF_RK, NF_IL,NF_ID, NF_IV, propety
@@ -81,9 +81,9 @@ public:
 	virtual bool subChild(int _index) { return true; };
 	virtual SINode* getPrev() const { return NULL; };
 	virtual SINode* getNext() const { return NULL; };
-	virtual int getValue(int _index) const { return -1; };
-	virtual bool setValue(int _val, int _index) { return true; };
-	virtual bool addValue(int _val, int _index) { return true; };
+	virtual unsigned getValue(int _index) const { return -1; };
+	virtual bool setValue(unsigned _val, int _index) { return true; };
+	virtual bool addValue(unsigned _val, int _index) { return true; };
 	virtual bool subValue(int _index) { return true; };
 	virtual void setPrev(SINode* _prev) {};
 	virtual void setNext(SINode* _next) {};
@@ -112,3 +112,4 @@ public:
 */
 
 #endif
+

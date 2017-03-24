@@ -181,7 +181,7 @@ ISLeafNode::split(ISNode* _father, int _index)
 		p->addValue(this->values + i, k);
 		p->addNum();
 	}
-	int tp = this->keys[MIN_KEY_NUM];
+	unsigned tp = this->keys[MIN_KEY_NUM];
 	this->setNum(MIN_KEY_NUM);
 	_father->addKey(tp, _index);
 	_father->addChild(p, _index + 1);	//DEBUG(check the index)
@@ -226,7 +226,7 @@ ISLeafNode::coalesce(ISNode* _father, int _index)
 		}
 	}
 
-	int tmp = 0;
+	unsigned tmp = 0;
 	switch (ccase)
 	{
 	case 1:					//union right to this
@@ -374,3 +374,4 @@ ISLeafNode::print(string s)
 	else;
 #endif
 }
+

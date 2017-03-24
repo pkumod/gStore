@@ -13,11 +13,13 @@
 #include "SPARQLquery.h"
 #include "../Util/Util.h"
 
+//TODO: adjust the type to unsigned
+
 class ResultFilter
 {
 	private:
 		static const int MAX_SIZE = 1048576;
-		inline int hash(unsigned int x)
+		inline int hash(unsigned x)
 		{
 			x = (x + 0x7ed55d16) + (x << 12);
 			x = (x ^ 0xc761c23c) ^ (x >> 19);

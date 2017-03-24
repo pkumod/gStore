@@ -38,17 +38,17 @@
 struct ResultCmp
 {
     int result_len;
-	std::vector<int> keys;
+	std::vector<TYPE_ENTITY_LITERAL_ID> keys;
 	std::vector<bool> desc;
     //ResultCmp(int _l):result_len(_l){}
 	ResultCmp()
 	{
 		this->result_len = 0;
 	}
-	ResultCmp(int _l, std::vector<int>& _keys, std::vector<bool> &_desc)
+	ResultCmp(int _l, std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool> &_desc)
 	{
 		this->result_len = _l;
-		this->keys = std::vector<int>(_keys);
+		this->keys = std::vector<TYPE_ENTITY_LITERAL_ID>(_keys);
 		this->desc = std::vector<bool>(_desc);
 	}
     bool operator() (Bstr* const& a, Bstr* const& b)
@@ -140,7 +140,7 @@ public:
 	static const unsigned BASE_MEMORY_LIMIT = 1 << 30;
 
 	Stream();
-	Stream(std::vector<int>& _keys, std::vector<bool>& _desc, unsigned _rownum, unsigned _colnum, bool _flag);
+	Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _desc, unsigned _rownum, unsigned _colnum, bool _flag);
 
 	//read/write should be based on the unit of record
 

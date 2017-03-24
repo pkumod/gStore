@@ -28,13 +28,14 @@
 class Database
 {
 public:
-	static const bool only_sub2idpre2id = true;
-	static const int internal = 100 * 1000;
-	void test();
-	void test_build_sig();
-	void test_join();
-	void printIDlist(int _i, int* _list, int _len, std::string _log);
-	void printPairList(int _i, int* _list, int _len, std::string _log);
+	//static const bool only_sub2idpre2id = true;
+	//static const int internal = 100 * 1000;
+
+	//void test();
+	//void test_build_sig();
+	//void test_join();
+	//void printIDlist(int _i, int* _list, int _len, std::string _log);
+	//void printPairList(int _i, int* _list, int _len, std::string _log);
 
 	//when encode EntitySig, one way uses STRING-hash, the other one uses ID-hash
 	//depending on this->encode_mode  
@@ -74,11 +75,11 @@ private:
 	string name;
 	string store_path;
 	bool is_active;
-	int triples_num;
-	int entity_num;
-	int sub_num;
-	int pre_num;
-	int literal_num;
+	TYPE_TRIPLE_NUM triples_num;
+	TYPE_ENTITY_LITERAL_ID entity_num;
+	TYPE_ENTITY_LITERAL_ID sub_num;
+	TYPE_PREDICATE_ID pre_num;
+	TYPE_ENTITY_LITERAL_ID literal_num;
 
 	int encode_mode;
 
@@ -98,47 +99,51 @@ private:
 	string signature_binary_file;
 
 	//pre2num mapping
-	TNUM* pre2num;
+	TYPE_TRIPLE_NUM* pre2num;
 	//valid: check from minNumPID to maxNumPID
-	int maxNumPID, minNumPID;
+	TYPE_PREDICATE_ID maxNumPID, minNumPID;
 	void setPreMap();
+
+	//TODO: set the buffer capacity as dynamic according to the current memory usage
 	//string buffer
 	Buffer* entity_buffer;
 	//unsigned offset; //maybe let id start from an offset
 	unsigned entity_buffer_size;
 	Buffer* literal_buffer;
 	unsigned literal_buffer_size;
+
 	void setStringBuffer();
 	void warmUp();
-	//BETTER+TODO:add a predicate buffer for ?p query
+	//BETTER:add a predicate buffer for ?p query
+	//However, I think this is not necessary because ?p is rare and the p2xx tree is small enough
 
 	//triple num per group for insert/delete
 	//can not be too high, otherwise the heap will over
 	static const int GROUP_SIZE = 1000;
 	//manage the ID allocate and garbage
-	static const int START_ID_NUM = 0;
+	static const TYPE_ENTITY_LITERAL_ID START_ID_NUM = 0;
 	//static const int START_ID_NUM = 1000;
 	/////////////////////////////////////////////////////////////////////////////////
 	//NOTICE:error if >= LITERAL_FIRST_ID
 	string free_id_file_entity; //the first is limitID, then free id list
-	int limitID_entity; //the current maxium ID num(maybe not used so much)
+	TYPE_ENTITY_LITERAL_ID limitID_entity; //the current maxium ID num(maybe not used so much)
 	BlockInfo* freelist_entity; //free id list, reuse BlockInfo for Storage class
-	int allocEntityID();
-	void freeEntityID(int _id);
+	TYPE_ENTITY_LITERAL_ID allocEntityID();
+	void freeEntityID(TYPE_ENTITY_LITERAL_ID _id);
 	/////////////////////////////////////////////////////////////////////////////////
 	//NOTICE:error if >= 2*LITERAL_FIRST_ID
 	string free_id_file_literal;
-	int limitID_literal;
+	TYPE_ENTITY_LITERAL_ID limitID_literal;
 	BlockInfo* freelist_literal;
-	int allocLiteralID();
-	void freeLiteralID(int _id);
+	TYPE_ENTITY_LITERAL_ID allocLiteralID();
+	void freeLiteralID(TYPE_ENTITY_LITERAL_ID _id);
 	/////////////////////////////////////////////////////////////////////////////////
 	//NOTICE:error if >= 2*LITERAL_FIRST_ID
 	string free_id_file_predicate;
-	int limitID_predicate;
+	TYPE_PREDICATE_ID limitID_predicate;
 	BlockInfo* freelist_predicate;
-	int allocPredicateID();
-	void freePredicateID(int _id);
+	TYPE_PREDICATE_ID allocPredicateID();
+	void freePredicateID(TYPE_PREDICATE_ID _id);
 	/////////////////////////////////////////////////////////////////////////////////
 	void initIDinfo();  //initialize the members
 	void resetIDinfo(); //reset the id info for build
@@ -158,11 +163,11 @@ private:
 	//encode Triple into Object EntityBitSet 
 	bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
 
-	bool calculateEntityBitSet(int _entity_id, EntityBitSet & _bitset);
+	bool calculateEntityBitSet(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet & _bitset);
 
 	//check whether the relative 3-tuples exist
 	//usually, through sp2olist 
-	bool exist_triple(int _sub_id, int _pre_id, int _obj_id);
+	bool exist_triple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
 
 	//* _rdf_file denotes the path of the RDF file, where stores the rdf data
 	//* there are many step in this function, each one responds to an sub-function
@@ -174,24 +179,24 @@ private:
 	//* 4. build: objID2subIDlist, <objIDpreID>2subIDlist objID2<preIDsubID>list
 	//encodeRDF_new invoke new rdfParser to solve task 1 & 2 in one time scan.
 	bool encodeRDF_new(const string _rdf_file);
-	void build_s2xx(int**);
-	void build_o2xx(int**);
-	void build_p2xx(int**);
+	void build_s2xx(TYPE_ENTITY_LITERAL_ID**);
+	void build_o2xx(TYPE_ENTITY_LITERAL_ID**);
+	void build_p2xx(TYPE_ENTITY_LITERAL_ID**);
 
 	//insert and delete, notice that modify is not needed here
 	//we can read from file or use sparql syntax
-	bool insertTriple(const TripleWithObjType& _triple, vector<int>* _vertices = NULL, vector<int>* _predicates = NULL);
-	bool removeTriple(const TripleWithObjType& _triple, vector<int>* _vertices = NULL, vector<int>* _predicates = NULL);
+	bool insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL);
+	bool removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL);
 	//NOTICE:one by one is too costly, sort and insert/delete at a time will be better
-	int insert(const TripleWithObjType* _triples, int _triple_num);
+	unsigned insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num);
 	//bool insert(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
-	int remove(const TripleWithObjType* _triples, int _triple_num);
+	unsigned remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num);
 	//bool remove(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
 
-	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _p_id_tuples, int & _id_tuples_max);
-	bool literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, int _id_tuples_max);
+	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, TYPE_ENTITY_LITERAL_ID**& _p_id_tuples, TYPE_TRIPLE_NUM & _id_tuples_max);
+	//bool literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, TYPE_TRIPLE_NUM _id_tuples_max);
 
-	bool objIDIsEntityID(int _id);
+	bool objIDIsEntityID(TYPE_ENTITY_LITERAL_ID _id);
 
 	//* join on the vector of CandidateList, available after retrieve from the VSTREE
 	//* and store the resut in _result_set

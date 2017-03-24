@@ -1828,7 +1828,7 @@ void GeneralEvaluation::dfsJoinableResultGraph(int x, vector < pair<char, int> >
 
 		int varnum = (int)temp->results[0].var.varset.size();
 
-		vector<int*> &basicquery_result =this->sparql_query.getBasicQuery(blockid).getResultList();
+		vector<unsigned*> &basicquery_result =this->sparql_query.getBasicQuery(blockid).getResultList();
 		int basicquery_result_num = (int)basicquery_result.size();
 
 		temp->results[0].res.reserve(basicquery_result_num);
@@ -2191,7 +2191,7 @@ void GeneralEvaluation::queryRewriteEncodeRetrieveJoin(int dep)
 				sub_temp->results[0].var = Varset(encode_varset[i]);
 				int varnum = (int)encode_varset[i].size();
 
-				vector<int*> &basicquery_result = this->expansion_evaluation_stack[dep].sparql_query.getBasicQuery(i).getResultList();
+				vector<unsigned*> &basicquery_result = this->expansion_evaluation_stack[dep].sparql_query.getBasicQuery(i).getResultList();
 				int basicquery_result_num = (int)basicquery_result.size();
 
 				sub_temp->results[0].res.reserve(basicquery_result_num);
@@ -2356,7 +2356,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &result_str)
 			}
 			else
 			{
-				vector <int> keys;
+				vector <unsigned> keys;
 				vector <bool> desc;
 				for (int i = 0; i < (int)this->query_tree.getOrder().size(); i++)
 				{

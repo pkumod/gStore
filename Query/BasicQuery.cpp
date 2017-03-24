@@ -102,7 +102,7 @@ BasicQuery::getVarName(int _var)
 }
 
 // get triples number, also sentences number
-int 
+unsigned
 BasicQuery::getTripleNum()
 {
     return this->triple_vt.size();
@@ -121,7 +121,8 @@ int BasicQuery::getEdgeNeighborID(int _var, int _i_th_edge)
 }
 
 // get the ID of the i-th edge of _var
-int BasicQuery::getEdgePreID(int _var, int _i_th_edge)
+TYPE_PREDICATE_ID
+BasicQuery::getEdgePreID(int _var, int _i_th_edge)
 {
     return this->edge_pre_id[_var][_i_th_edge];
 }
@@ -177,20 +178,20 @@ BasicQuery::getCandidateList(int _var)
     return candidate_list[_var];
 }
 
-int 
+unsigned
 BasicQuery::getCandidateSize(int _var)
 {
     return this->candidate_list[_var].size();
 }
 
 // get the result list of _var in the query graph
-vector<int*>& 
+vector<unsigned*>& 
 BasicQuery::getResultList()
 {
     return result_list;
 }
 
-vector<int*>*
+vector<unsigned*>*
 BasicQuery::getResultListPointer()
 {
     return &result_list;
@@ -339,18 +340,20 @@ BasicQuery::setReady(int _var)
 }
 
 void 
-BasicQuery::updateSubSig(int _sub_var_id, int _pre_id, int _obj_id, int _line_id, int _obj_var_id)
+BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, int _line_id, int _obj_var_id)
 {
 	cout<<"sub var id: "<<_sub_var_id<<endl;
     // update var(sub)_signature according this triple
     //bool obj_is_str = (_obj_id == -1) && (_obj.at(0) != '?');
     //if(obj_is_str)
-	if(_obj_id >= 0)
+	if(_obj_id != INVALID_ENTITY_LITERAL_ID)
+	//if(_obj_id >= 0)
     {
         //Signature::encodeStr2Entity(_obj.c_str(), this->var_sig[_sub_id]);
         Signature::encodeStr2Entity(this->var_sig[_sub_var_id], _obj_id, Util::EDGE_OUT);
     }
 
+	//DEBUG: if type of pre id is changed to usnigned, this will cause error
     if(_pre_id >= 0)
     {
         Signature::encodePredicate2Entity(this->var_sig[_sub_var_id], _pre_id, Util::EDGE_OUT);
@@ -367,13 +370,14 @@ BasicQuery::updateSubSig(int _sub_var_id, int _pre_id, int _obj_id, int _line_id
 }
 
 void 
-BasicQuery::updateObjSig(int _obj_var_id, int _pre_id, int _sub_id, int _line_id, int _sub_var_id)
+BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _sub_id, int _line_id, int _sub_var_id)
 {
 	cout<<"obj var id: "<<_obj_var_id<<endl;
     // update var(obj)_signature
     //bool sub_is_str = (_sub_id == -1) && (_sub.at(0) != '?');
     //if(sub_is_str)
-	if(_sub_id >= 0)
+	if(_sub_id != INVALID_ENTITY_LITERAL_ID)
+	//if(_sub_id >= 0)
     {
         //cout << "str2entity" << endl;
         Signature::encodeStr2Entity(this->var_sig[_obj_var_id], _sub_id, Util::EDGE_IN);
@@ -506,7 +510,8 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         string& pre = this->triple_vt[i].predicate;
         string& obj = this->triple_vt[i].object;
 
-		int pre_id = -1;    //not found
+		//int pre_id = -1;    //not found
+		TYPE_PREDICATE_ID pre_id = INVALID_PREDICATE_ID;    //not found
 		if(pre[0] == '?')   //pre var
 		{
 			pre_id = -2;   //mark that this is a pre var
@@ -547,11 +552,12 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         bool sub_is_var = (sub_var_id != -1);
         if(sub_is_var)
         {
-			int obj_id = -1;
+			//int obj_id = -1;
+			TYPE_ENTITY_LITERAL_ID obj_id = INVALID_ENTITY_LITERAL_ID;
 			if(obj.at(0) != '?')
 			{
 				obj_id = _p_kvstore->getIDByEntity(obj);
-				if(obj_id == -1)
+				if(obj_id == INVALID_ENTITY_LITERAL_ID)
 				{
 					obj_id = _p_kvstore->getIDByLiteral(obj);
 				}
@@ -572,7 +578,8 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         bool obj_is_var = (obj_var_id != -1);
         if(obj_is_var)
         {
-			int sub_id = -1;
+			//int sub_id = -1;
+			TYPE_ENTITY_LITERAL_ID sub_id = INVALID_ENTITY_LITERAL_ID;
 			if(sub.at(0) != '?')
 			{
 				sub_id = _p_kvstore->getIDByEntity(sub);
@@ -994,45 +1001,47 @@ BasicQuery::print(ostream& _out_stream)
 
 // WARN:not used because this also considers the candidate not 
 // adding literals
-int 
+int
 BasicQuery::getVarID_MinCandidateList()
 {
     int min_var = -1;
-    int min_size = Util::TRIPLE_NUM_MAX;
+    unsigned min_size = Util::TRIPLE_NUM_MAX;
     for(int i = 0; i < this->graph_var_num; i ++)
     {
-        int tmp_size = (this->candidate_list[i]).size();
+        unsigned tmp_size = (this->candidate_list[i]).size();
         if(tmp_size < min_size)
         {
             min_var = i;
             min_size = tmp_size;
         }
     }
+
     return min_var;
 }
 
-int 
+int
 BasicQuery::getVarID_MaxCandidateList()
 {
     int max_var = -1;
-    int max_size = -1;
+    unsigned max_size = 0;
     for(int i = 0; i < this->graph_var_num; i ++)
     {
-        int tmp_size = (this->candidate_list[i]).size();
+        unsigned tmp_size = (this->candidate_list[i]).size();
         if(tmp_size > max_size)
         {
             max_var = i;
             max_size = tmp_size;
         }
     }
+
     return max_var;
 }
 
-int 
+int
 BasicQuery::getVarID_FirstProcessWhenJoin()
 {
     int min_var = -1;
-    int min_size = Util::TRIPLE_NUM_MAX;
+    unsigned min_size = Util::TRIPLE_NUM_MAX;
     //int min_var2 = -1;
     //int min_size2 = Util::TRIPLE_NUM_MAX;
     for(int i = 0; i < this->graph_var_num; ++i)
@@ -1049,7 +1058,7 @@ BasicQuery::getVarID_FirstProcessWhenJoin()
 		else
 			cout<<"var "<<i<<" is ready!"<<endl;
 
-		int tmp_size = (this->candidate_list[i]).size();
+		unsigned tmp_size = (this->candidate_list[i]).size();
 		//if(this->isLiteralVariable(i))
 		//{
 			//if(tmp_size < min_size2)
@@ -1112,10 +1121,12 @@ string BasicQuery::triple_str()
     stringstream _ss;
 
     _ss<<"Triple num:"<<this->getTripleNum()<<endl;
-    for (int i=0;i<getTripleNum();i++)
+
+    for (int i = 0; i < getTripleNum(); i++)
     {
         _ss<<(this->getTriple(i).toString())<<endl;
     }
+
     return _ss.str();
 }
 

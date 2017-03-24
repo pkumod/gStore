@@ -23,7 +23,7 @@ class Strategy
 {
 public:
 	Strategy();
-	Strategy(KVstore*, VSTree*, TNUM*, int, int);
+	Strategy(KVstore*, VSTree*, TYPE_TRIPLE_NUM*, TYPE_PREDICATE_ID, TYPE_ENTITY_LITERAL_ID);
 	~Strategy();
 	//select efficient strategy to do the sparql query
 	bool handle(SPARQLquery&, ResultFilter* _result_filter = NULL);
@@ -32,22 +32,25 @@ private:
 	int method;
 	KVstore* kvstore;
 	VSTree* vstree;
-	TNUM* pre2num;
-	int limitID_predicate;
-	int limitID_literal;
+	TYPE_TRIPLE_NUM* pre2num;
+	TYPE_PREDICATE_ID limitID_predicate;
+	TYPE_ENTITY_LITERAL_ID limitID_literal;
 
-	void handler0(BasicQuery*, vector<int*>&, ResultFilter* _result_filter = NULL);
-	void handler1(BasicQuery*, vector<int*>&);
-	void handler2(BasicQuery*, vector<int*>&);
-	void handler3(BasicQuery*, vector<int*>&);
-	void handler4(BasicQuery*, vector<int*>&);
-	void handler5(BasicQuery*, vector<int*>&);
+	//NOTICE: even the ID type is int, it is no problem and no waste that we use unsigned in answer
+	//(because -1, -2 or other invalid IDs can not be in answer)
+	void handler0(BasicQuery*, vector<unsigned*>&, ResultFilter* _result_filter = NULL);
+	void handler1(BasicQuery*, vector<unsigned*>&);
+	void handler2(BasicQuery*, vector<unsigned*>&);
+	void handler3(BasicQuery*, vector<unsigned*>&);
+	void handler4(BasicQuery*, vector<unsigned*>&);
+	void handler5(BasicQuery*, vector<unsigned*>&);
 	//QueryHandler *dispatch;
 	//void prepare_handler();
 };
 
+//function pointer array
 static const unsigned QUERY_HANDLER_NUM = 4;
-typedef void (Strategy::*QueryHandler[QUERY_HANDLER_NUM]) (BasicQuery*, vector<int*>&);
+typedef void (Strategy::*QueryHandler[QUERY_HANDLER_NUM]) (BasicQuery*, vector<unsigned*>&);
 //QueryHandler dispatch;
 
 #endif //_DATABASE_STRATEGY_H

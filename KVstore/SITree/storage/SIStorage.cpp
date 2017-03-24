@@ -71,7 +71,8 @@ SIStorage::SIStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 	else	//_mode == "open"
 	{
 		//read basic information
-		int rootnum;
+		unsigned rootnum;
+		//int rootnum;
 		char c;
 		fread(this->treeheight, sizeof(unsigned), 1, this->treefp);
 		fread(&rootnum, sizeof(unsigned), 1, this->treefp);
@@ -214,6 +215,7 @@ SIStorage::AllocBlock()
 	unsigned t = p->num;
 	this->freelist->next = p->next;
 	delete p;
+
 	return t;
 }
 
@@ -286,10 +288,11 @@ SIStorage::readNode(SINode* _np, long long* _request)
 	if (flag)
 	{
 		//to read all values
-		int tmp = -1;
+		unsigned tmp = INVALID;
+		//int tmp = -1;
 		for (i = 0; i < num; ++i)
 		{
-			fread(&tmp, sizeof(int), 1, treefp);
+			fread(&tmp, sizeof(unsigned), 1, treefp);
 			this->ReadAlign(&next);
 			_np->setValue(tmp, i);
 		}
@@ -300,6 +303,7 @@ SIStorage::readNode(SINode* _np, long long* _request)
 	//_np->setMem();
 	this->updateHeap(_np, _np->getRank(), false);
 	bstr.clear();
+
 	return true;
 }
 
@@ -335,6 +339,7 @@ SIStorage::createNode(SINode*& _np) //cretae virtual nodes, not in-mem
 	_np->delDirty();
 	_np->delMem();
 	_np->setStore(Blocknum(ftell(treefp) - 4));
+
 	return true;
 }
 
@@ -343,6 +348,7 @@ SIStorage::writeNode(SINode* _np)
 {
 	if (_np == NULL || !_np->inMem() || (_np->getRank() > 0 && !_np->isDirty()))
 		return false;	//not need to write back
+
 	unsigned num = _np->getNum(), i;
 	bool flag = _np->isLeaf(), SpecialBlock = true;
 	/*
@@ -392,12 +398,13 @@ SIStorage::writeNode(SINode* _np)
 
 	if (flag)
 	{
-		int tmp = -1;
+		//int tmp = -1;
+		unsigned tmp = INVALID;
 		//to write all values
 		for (i = 0; i < num; ++i)
 		{
 			tmp = _np->getValue(i);
-			fwrite(&tmp, sizeof(int), 1, treefp);
+			fwrite(&tmp, sizeof(unsigned), 1, treefp);
 			this->WriteAlign(&blocknum, SpecialBlock);
 		}
 	}
@@ -408,6 +415,7 @@ SIStorage::writeNode(SINode* _np)
 	fwrite(&t, sizeof(unsigned), 1, treefp);		//the end-block
 	//_np->setFlag(_np->getFlag() & ~Node::NF_ID);
 	_np->delDirty();
+
 	return true;
 }
 
@@ -437,6 +445,7 @@ SIStorage::readBstr(Bstr* _bp, unsigned* _next)
 	fseek(treefp, j, SEEK_CUR);
 	this->ReadAlign(_next);
 	_bp->setStr(s);
+
 	return true;
 }
 
@@ -462,6 +471,7 @@ SIStorage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
 		j = 4 - j;
 	fseek(treefp, j, SEEK_CUR);
 	this->WriteAlign(_curnum, _SpecialBlock);
+
 	return true;
 }
 
@@ -552,6 +562,7 @@ SIStorage::writeTree(SINode* _root)	//write the whole tree back and close treefp
 		bp = bp->next;
 	}
 	//fclose(this->treefp);
+
 	return true;
 }
 
@@ -586,6 +597,7 @@ SIStorage::request(long long _needmem)	//aligned to byte
 			return false;;
 		}
 	this->freemem -= _needmem;
+
 	return true;
 }
 
@@ -614,6 +626,7 @@ SIStorage::handler(unsigned long long _needmem)	//>0
 		else
 			break;
 	}
+
 	return true;
 }
 
@@ -657,3 +670,4 @@ SIStorage::print(string s)
 	fputs("\n", Util::debug_kvstore);
 #endif
 }
+

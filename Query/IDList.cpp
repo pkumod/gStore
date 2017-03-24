@@ -16,38 +16,40 @@ IDList::IDList()
 }
 
 //return the _i-th id of the list if _i exceeds, return -1 
-int
-IDList::getID(int _i)const
+unsigned
+IDList::getID(unsigned _i) const
 {
 	if (this->size() > _i)
 	{
 		return this->id_list[_i];
 	}
-	return -1;
+
+	//return -1;
+	return INVALID;
 }
 
 bool
-IDList::addID(int _id)
+IDList::addID(unsigned _id)
 {
 	//a check for duplicate case will be more reliable 
 	this->id_list.push_back(_id);
 	return true;
 }
 
-int
-IDList::size()const
+unsigned
+IDList::size() const
 {
 	return this->id_list.size();
 }
 
 bool
-IDList::empty()const
+IDList::empty() const
 {
 	return this->id_list.size() == 0;
 }
 
 bool
-IDList::isExistID(int _id)const
+IDList::isExistID(unsigned _id) const
 {
 	// naive implementation of searching(linear search).
 	// you can use binary search when the id list is sorted, if necessary.
@@ -62,15 +64,14 @@ IDList::isExistID(int _id)const
 	return false;
 }
 
-const vector<int>*
-IDList::getList()const
+const vector<unsigned>*
+IDList::getList() const
 {
 	return &(this->id_list);
 }
 
-
-int&
-IDList::operator[](const int& _i)
+unsigned&
+IDList::operator[](const unsigned& _i)
 {
 	if (this->size() > _i)
 	{
@@ -105,7 +106,7 @@ IDList::clear()
 }
 
 void
-IDList::copy(const vector<int>& _new_idlist)
+IDList::copy(const vector<unsigned>& _new_idlist)
 {
 	this->id_list = _new_idlist;
 }
@@ -116,8 +117,8 @@ IDList::copy(const IDList* _new_idlist)
 	this->id_list = *(_new_idlist->getList());
 }
 
-int
-IDList::intersectList(const int* _id_list, int _list_len)
+unsigned
+IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
 {
 	if (_id_list == NULL || _list_len == 0)
 	{
@@ -160,9 +161,9 @@ IDList::intersectList(const int* _id_list, int _list_len)
 	{
 	case 0:
 	{   //this bracket is needed if vars are defined in case
-		int id_i = 0;
-		int index_move_forward = 0;
-		vector<int>::iterator it = this->id_list.begin();
+		unsigned id_i = 0;
+		unsigned index_move_forward = 0;
+		vector<unsigned>::iterator it = this->id_list.begin();
 		while (it != (this->id_list).end())
 		{
 			int can_id = *it;
@@ -186,16 +187,16 @@ IDList::intersectList(const int* _id_list, int _list_len)
 			it++;
 		}
 		remove_number = this->id_list.size() - index_move_forward;
-		vector<int>::iterator new_end = this->id_list.begin() + index_move_forward;
+		vector<unsigned>::iterator new_end = this->id_list.begin() + index_move_forward;
 		(this->id_list).erase(new_end, this->id_list.end());
 		break;
 	}
 	case 1:
 	{
-		vector<int> new_id_list;
-		for (int i = 0; i < _list_len; ++i)
+		vector<unsigned> new_id_list;
+		for (unsigned i = 0; i < _list_len; ++i)
 		{
-			if (Util::bsearch_vec_uporder(_id_list[i], this->getList()) != -1)
+			if (Util::bsearch_vec_uporder(_id_list[i], this->getList()) != INVALID)
 				new_id_list.push_back(_id_list[i]);
 		}
 		this->id_list = new_id_list;
@@ -204,11 +205,11 @@ IDList::intersectList(const int* _id_list, int _list_len)
 	}
 	case 2:
 	{
-		vector<int> new_id_list;
-		int m = this->id_list.size(), i;
+		vector<unsigned> new_id_list;
+		unsigned m = this->id_list.size(), i;
 		for (i = 0; i < m; ++i)
 		{
-			if (Util::bsearch_int_uporder(this->id_list[i], _id_list, _list_len) != -1)
+			if (Util::bsearch_int_uporder(this->id_list[i], _id_list, _list_len) != INVALID)
 				new_id_list.push_back(this->id_list[i]);
 		}
 		this->id_list = new_id_list;
@@ -223,25 +224,25 @@ IDList::intersectList(const int* _id_list, int _list_len)
 	return remove_number;
 }
 
-int
+unsigned
 IDList::intersectList(const IDList& _id_list)
 {
 	// copy _id_list to the temp array first.
-	int temp_list_len = _id_list.size();
-	int* temp_list = new int[temp_list_len];
+	unsigned temp_list_len = _id_list.size();
+	unsigned* temp_list = new unsigned[temp_list_len];
 	//BETTER:not to copy, just achieve here
-	for (int i = 0; i < temp_list_len; i++)
+	for (unsigned i = 0; i < temp_list_len; i++)
 	{
 		temp_list[i] = _id_list.getID(i);
 	}
 
-	int remove_number = this->intersectList(temp_list, temp_list_len);
-	delete[]temp_list;
+	unsigned remove_number = this->intersectList(temp_list, temp_list_len);
+	delete[] temp_list;
 	return remove_number;
 }
 
-int
-IDList::unionList(const int* _id_list, int _list_len, bool only_literal)
+unsigned
+IDList::unionList(const unsigned* _id_list, unsigned _list_len, bool only_literal)
 {
 	if (_id_list == NULL || _list_len == 0)
 		return 0;
@@ -249,23 +250,25 @@ IDList::unionList(const int* _id_list, int _list_len, bool only_literal)
 	if (only_literal)
 	{
 		//NOTICE:this means that the original is no literals and we need to add from a list(containing entities/literals)
-		int k = 0;
+		unsigned k = 0;
 		//NOTICE:literal id > entity id; the list is ordered
 		for (; k < _list_len; ++k)
 			if (Util::is_literal_ele(_id_list[k]))
 				break;
+
+		//TODO+BETTER: speed up the process to find the first literal
 		for (; k < _list_len; ++k)
 			this->addID(_id_list[k]);
 		return _list_len - k;
 	}
 	// O(n)
-	int origin_size = (this->id_list).size();
-	int* temp_list = new int[origin_size + _list_len];
-	int temp_list_len = 0;
+	unsigned origin_size = (this->id_list).size();
+	unsigned* temp_list = new unsigned[origin_size + _list_len];
+	unsigned temp_list_len = 0;
 
 	// union
 	{
-		int i = 0, j = 0;
+		unsigned i = 0, j = 0;
 		while (i < origin_size && j < _list_len)
 		{
 			if (this->id_list[i] == _id_list[j])
@@ -298,7 +301,7 @@ IDList::unionList(const int* _id_list, int _list_len, bool only_literal)
 		}
 	}
 
-	int add_number = temp_list_len - origin_size;
+	unsigned add_number = temp_list_len - origin_size;
 
 	// update this IDList
 	this->clear();
@@ -344,24 +347,24 @@ IDList::unionList(const int* _id_list, int _list_len, bool only_literal)
 	*/
 }
 
-int
+unsigned
 IDList::unionList(const IDList& _id_list, bool only_literal)
 {
 	// copy _id_list to the temp array first.
-	int temp_list_len = _id_list.size();
-	int* temp_list = new int[temp_list_len];
+	unsigned temp_list_len = _id_list.size();
+	unsigned* temp_list = new unsigned[temp_list_len];
 	//BETTER:not to copy, just achieve here
-	for (int i = 0; i < temp_list_len; i++)
+	for (unsigned i = 0; i < temp_list_len; i++)
 	{
 		temp_list[i] = _id_list.getID(i);
 	}
-	int ret = this->unionList(temp_list, temp_list_len, only_literal);
+	unsigned ret = this->unionList(temp_list, temp_list_len, only_literal);
 	delete[] temp_list;
 	return ret;
 }
 
 IDList*
-IDList::intersect(const IDList& _id_list, const int* _list, int _len)
+IDList::intersect(const IDList& _id_list, const unsigned* _list, unsigned _len)
 {
 	IDList* p = new IDList;
 	//if (_list == NULL || _len == 0)  //just copy _id_list
@@ -379,7 +382,7 @@ IDList::intersect(const IDList& _id_list, const int* _list, int _len)
 	//compare n(k+1) and nklogn: k0 = log(n/2)2 requiring that n>2
 	//k<=k0 binary search; k>k0 intersect
 	int method = -1; //0: intersect 1: search in vector 2: search in int*
-	int n = _id_list.size();
+	unsigned n = _id_list.size();
 	double k = 0;
 	if (n < _len)
 	{
@@ -407,10 +410,10 @@ IDList::intersect(const IDList& _id_list, const int* _list, int _len)
 	case 0:
 	{   //this bracket is needed if vars are defined in case
 		int id_i = 0;
-		int num = _id_list.size();
-		for (int i = 0; i < num; ++i)
+		unsigned num = _id_list.size();
+		for (unsigned i = 0; i < num; ++i)
 		{
-			int can_id = _id_list.getID(i);
+			unsigned can_id = _id_list.getID(i);
 			while ((id_i < _len) && (_list[id_i] < can_id))
 			{
 				id_i++;
@@ -431,20 +434,20 @@ IDList::intersect(const IDList& _id_list, const int* _list, int _len)
 	}
 	case 1:
 	{
-		for (int i = 0; i < _len; ++i)
+		for (unsigned i = 0; i < _len; ++i)
 		{
-			if (Util::bsearch_vec_uporder(_list[i], _id_list.getList()) != -1)
+			if (Util::bsearch_vec_uporder(_list[i], _id_list.getList()) != INVALID)
 				p->addID(_list[i]);
 		}
 		break;
 	}
 	case 2:
 	{
-		int m = _id_list.size(), i;
+		unsigned m = _id_list.size(), i;
 		for (i = 0; i < m; ++i)
 		{
-			int t = _id_list.getID(i);
-			if (Util::bsearch_int_uporder(t, _list, _len) != -1)
+			unsigned t = _id_list.getID(i);
+			if (Util::bsearch_int_uporder(t, _list, _len) != INVALID)
 				p->addID(t);
 		}
 		break;
@@ -457,15 +460,16 @@ IDList::intersect(const IDList& _id_list, const int* _list, int _len)
 	return p;
 }
 
-int
-IDList::erase(int i)
+bool
+IDList::erase(unsigned i)
 {
 	id_list.erase(id_list.begin() + i, id_list.end());
-	return 0;
+	return true;
 }
 
-int
-IDList::bsearch_uporder(int _key)
+unsigned
+IDList::bsearch_uporder(unsigned _key)
 {
 	return Util::bsearch_vec_uporder(_key, this->getList());
 }
+

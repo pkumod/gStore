@@ -25,7 +25,7 @@ using namespace std;
 //int LRUCache::DEFAULT_CAPACITY = 10000000;
 int LRUCache::DEFAULT_CAPACITY = 1 * 1000 * 1000;  //about 20G memory for vstree
 //int LRUCache::DEFAULT_CAPACITY = 1000;
-//TODO:10^6 is a good parameter, at most use 20G
+//NOTICE:10^6 is a good parameter, at most use 20G
 
 LRUCache::LRUCache(int _capacity)
 {

@@ -251,6 +251,7 @@ SINode::addKey(const Bstr* _key, int _index, bool ifcopy)
 		keys[_index].copy(_key);
 	else
 		keys[_index] = *_key;
+
 	return true;
 }
 
@@ -268,6 +269,7 @@ SINode::subKey(int _index, bool ifdel)
 		keys[_index].release();
 	for (i = _index; i < num - 1; ++i)
 		keys[i] = keys[i + 1];
+
 	return true;
 }
 
@@ -294,6 +296,7 @@ SINode::searchKey_less(const Bstr& _bstr) const
 			low = mid + 1;
 		}
 	}
+
 	return low;
 }
 
@@ -326,3 +329,4 @@ SINode::searchKey_lessEqual(const Bstr& _bstr) const
 	else
 		return ret;
 }
+

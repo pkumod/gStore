@@ -69,7 +69,7 @@ ISStorage::ISStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 	else	//_mode == "open"
 	{
 		//read basic information
-		int rootnum;
+		unsigned rootnum;
 		char c;
 		fread(this->treeheight, sizeof(unsigned), 1, this->treefp);
 		fread(&rootnum, sizeof(unsigned), 1, this->treefp);
@@ -274,7 +274,8 @@ ISStorage::readNode(ISNode* _np, long long* _request)
 		fseek(treefp, 4 * (num + 1), SEEK_CUR);
 
 	//to read all keys
-	int tmp = -1;
+	unsigned tmp = INVALID;
+	//int tmp = -1;
 	for (i = 0; i < num; ++i)
 	{
 		fread(&tmp, sizeof(int), 1, treefp);
@@ -384,7 +385,8 @@ ISStorage::writeNode(ISNode* _np)
 		}
 	}
 
-	int tmp = 0;
+	//int tmp = 0;
+	unsigned tmp = INVALID;
 	//to write all keys
 	for (i = 0; i < num; ++i)
 	{
@@ -408,6 +410,7 @@ ISStorage::writeNode(ISNode* _np)
 	//NOTICE:we may store the dirty bit into the tree file, but that is ok
 	//Each time we read the tree file to construct a node, we always set the drity bit to 0
 	_np->delDirty();
+
 	return true;
 }
 
@@ -437,6 +440,7 @@ ISStorage::readBstr(Bstr* _bp, unsigned* _next)
 	fseek(treefp, j, SEEK_CUR);
 	this->ReadAlign(_next);
 	_bp->setStr(s);
+
 	return true;
 }
 
@@ -675,3 +679,4 @@ ISStorage::print(string s)
 	fputs("\n", Util::debug_kvstore);
 #endif
 }
+

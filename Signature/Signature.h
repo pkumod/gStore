@@ -24,13 +24,13 @@ public:
 
 	//static HashFunction hash[HashNum];
 	//must make sure:   ENTITY_SIG_LENGTH = EDGE_SIG_LENGTH + STR_SIG_LENGTH 
-	static const int STR_SIG_INTERVAL_NUM = 20;
-	//static const int STR_SIG_INTERVAL_NUM = 16;
-	static const int STR_SIG_INTERVAL_BASE = 10;
-	static const int STR_SIG_LITERAL = STR_SIG_INTERVAL_NUM * STR_SIG_INTERVAL_BASE; 
-	static const int STR_SIG_ENTITY = STR_SIG_LITERAL * 2;
+	static const unsigned STR_SIG_INTERVAL_NUM = 20;
+	//static const unsigned STR_SIG_INTERVAL_NUM = 16;
+	static const unsigned STR_SIG_INTERVAL_BASE = 10;
+	static const unsigned STR_SIG_LITERAL = STR_SIG_INTERVAL_NUM * STR_SIG_INTERVAL_BASE; 
+	static const unsigned STR_SIG_ENTITY = STR_SIG_LITERAL * 2;
 	//here we divide as entity neighbors and literal neighbors: ENTITY(in and out), LITERAL(only for out edges)
-	static const int STR_SIG_LENGTH = STR_SIG_ENTITY + STR_SIG_LITERAL; //600
+	static const unsigned STR_SIG_LENGTH = STR_SIG_ENTITY + STR_SIG_LITERAL; //600
 	
 	//NOTICE: after vstree filter, all constant neighbors will be used again to do precise filtering
 	//howvere, only few constant pres will be used again for filtering later
@@ -39,15 +39,15 @@ public:
 
 	//str filter is more important in VSTree than predicate, because
 	//a predicate may correspond to a lot of entities and predicate num is usually small
-	static const int EDGE_SIG_INTERVAL_NUM_HALF = 10;   //in edge or out edge
-	//static const int EDGE_SIG_INTERVAL_NUM_HALF = 16;   //in edge or out edge
-	static const int EDGE_SIG_INTERVAL_NUM = 2 * EDGE_SIG_INTERVAL_NUM_HALF;
-	static const int EDGE_SIG_INTERVAL_BASE = 10;
-	static const int EDGE_SIG_LENGTH = EDGE_SIG_INTERVAL_NUM * EDGE_SIG_INTERVAL_BASE;  //200
-	//static const int EDGE_SIG_LENGTH2 = EDGE_SIG_INTERVAL_NUM_HALF * EDGE_SIG_INTERVAL_BASE; 
+	static const unsigned EDGE_SIG_INTERVAL_NUM_HALF = 10;   //in edge or out edge
+	//static const unsigned EDGE_SIG_INTERVAL_NUM_HALF = 16;   //in edge or out edge
+	static const unsigned EDGE_SIG_INTERVAL_NUM = 2 * EDGE_SIG_INTERVAL_NUM_HALF;
+	static const unsigned EDGE_SIG_INTERVAL_BASE = 10;
+	static const unsigned EDGE_SIG_LENGTH = EDGE_SIG_INTERVAL_NUM * EDGE_SIG_INTERVAL_BASE;  //200
+	//static const unsigned EDGE_SIG_LENGTH2 = EDGE_SIG_INTERVAL_NUM_HALF * EDGE_SIG_INTERVAL_BASE; 
 
-	static const int ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH; //1000
-	//static const int ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH + NEIGHBOR_SIG_LENGTH;
+	static const unsigned ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH; //1000
+	//static const unsigned ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH + NEIGHBOR_SIG_LENGTH;
 
 	//QUERY: the num of bitset must be based on 16, i.e. unsigned short?  1000 is not allowed
 	//but 800, 500 is ok
@@ -58,12 +58,12 @@ public:
 	static std::string BitSet2str(const EntityBitSet& _bitset);
 
 	//NOTICE: there are two predicate encoding method now, see the encoding functions @Signature.cpp for details
-	const static int PREDICATE_ENCODE_METHOD = 1;
-	static void encodePredicate2Entity(EntityBitSet& _entity_bs, int _pre_id, const char _type);
-	static void encodeStr2Entity(EntityBitSet& _entity_bs, int _neighbor_id, const char _type); 
-	static void encodeEdge2Entity(EntityBitSet& _entity_bs, int _pre_id, int _neighbor_id, const char _type);
-	//static void encodeStrID2Entity(int _str_id, EntityBitSet& _entity_bs);
-	//static void encodePredicate2Edge(int _pre_id, EdgeBitSet& _edge_bs);
+	const static unsigned PREDICATE_ENCODE_METHOD = 1;
+	static void encodePredicate2Entity(EntityBitSet& _entity_bs, TYPE_PREDICATE_ID _pre_id, const char _type);
+	static void encodeStr2Entity(EntityBitSet& _entity_bs, TYPE_ENTITY_LITERAL_ID _neighbor_id, const char _type); 
+	static void encodeEdge2Entity(EntityBitSet& _entity_bs, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _neighbor_id, const char _type);
+	//static void encodeStrID2Entity(unsigned _str_id, EntityBitSet& _entity_bs);
+	//static void encodePredicate2Edge(unsigned _pre_id, EdgeBitSet& _edge_bs);
 
 	//Signature()
 	//{
@@ -109,7 +109,7 @@ public:
 	bool operator!=(const EntitySig& _sig)const;
 	EntitySig& operator=(const EntitySig& _sig);
 	const EntityBitSet& getBitset()const;
-	void encode(const char * _str, int _pre_id);
+	void encode(const char * _str, TYPE_PREDICATE_ID _pre_id);
 	std::string to_str() const;
 };
 

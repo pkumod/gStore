@@ -120,7 +120,7 @@ private:
 	int retrieve_var_num;
 	string* var_name;
 	IDList* candidate_list;
-	vector<int*> result_list;
+	vector<unsigned*> result_list;
 	int* var_degree;
 
 	//whether has added the variable's literal candidate
@@ -162,8 +162,8 @@ private:
 
 	//void updateSubSig(int _sub_id, int _pre_id, int _obj_id, std::string _obj, int _line_id);
 	//void updateObjSig(int _obj_id, int _pre_id, int _sub_id, std::string _sub, int _line_id);
-	void updateSubSig(int _sub_var_id, int _pre_id, int _obj_id, int _line_id, int _obj_var_id);
-	void updateObjSig(int _obj_var_id, int _pre_id, int _sub_id, int _line_id, int _sub_var_id);
+	void updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, int _line_id, int _obj_var_id);
+	void updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _sub_id, int _line_id, int _sub_var_id);
 
 	//infos for predicate variables
 	vector<PreVar> pre_var;
@@ -203,7 +203,7 @@ public:
 	int getIDByVarName(const string& _name);
 
 	// get triples number, also sentences number
-	int getTripleNum();
+	unsigned getTripleNum();
 
 	//check if a normal var is in select
 	bool isVarSelected(const std::string& _name) const;
@@ -220,7 +220,7 @@ public:
 	int getEdgeNeighborID(int _var, int _i_th_edge);
 	
 	// get the preID of the i-th edge of _var
-	int getEdgePreID(int _var, int _i_th_edge);
+	TYPE_PREDICATE_ID getEdgePreID(int _var, int _i_th_edge);
 
 	// get the type of the i-th edge of _var
 	char getEdgeType(int _var, int _i_th_edge);
@@ -236,11 +236,11 @@ public:
 	// get the candidate list of _var in the query graph
 	IDList& getCandidateList(int _var);
 
-	int getCandidateSize(int _var);
+	unsigned getCandidateSize(int _var);
 
 	// get the result list of _var in the query graph
-	vector<int*>& getResultList();
-	vector<int*>* getResultListPointer();
+	vector<unsigned*>& getResultList();
+	vector<unsigned*>* getResultListPointer();
 
 	// get the entity signature of _var in the query graph
 	const EntityBitSet& getEntitySignature(int _var);

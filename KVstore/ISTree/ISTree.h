@@ -19,7 +19,7 @@
 class ISTree
 {
 protected:
-	unsigned int height;		//0 indicates an empty tree
+	unsigned height;		//0 indicates an empty tree
 	ISNode* root;
 	ISNode* leaves_head;			//the head of LeafNode-list
 	ISNode* leaves_tail;			//the tail of LeafNode-list
@@ -55,19 +55,19 @@ protected:
 public:
 	ISTree();				//always need to initial transfer
 	ISTree(std::string _storepath, std::string _filename, std::string _mode, unsigned long long _buffer_size);
-	unsigned int getHeight() const;
+	unsigned getHeight() const;
 	void setHeight(unsigned _h);
 	ISNode* getRoot() const;
 	//void setRoot(Node* _root);
 	//insert, search, remove, set
-	bool search(int _key, char*& _str, int& _len);
-	bool insert(int _key, const char* _str, unsigned _len);
-	bool modify(int _key, const char* _str, unsigned _len);
-	ISNode* find(int _key, int* store, bool ifmodify);
-	bool remove(int _key);
+	bool search(unsigned _key, char*& _str, unsigned& _len);
+	bool insert(unsigned _key, const char* _str, unsigned _len);
+	bool modify(unsigned _key, const char* _str, unsigned _len);
+	ISNode* find(unsigned _key, int* store, bool ifmodify);
+	bool remove(unsigned _key);
 	const Bstr* getRangeValue();
 	void resetStream();
-	bool range_query(int  _key1, int _key2);
+	bool range_query(unsigned _key1, unsigned _key2);
 	bool save();
 	~ISTree();
 	void print(std::string s);			//DEBUG(print the tree)
@@ -77,3 +77,4 @@ public:
 //After saved, it's ok to continue operations on tree!
 
 #endif
+

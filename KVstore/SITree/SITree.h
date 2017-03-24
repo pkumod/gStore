@@ -21,7 +21,7 @@
 class SITree
 {					
 private:
-	unsigned int height;		//0 indicates an empty tree
+	unsigned height;		//0 indicates an empty tree
 	SINode* root;
 	SINode* leaves_head;			//the head of LeafNode-list
 	SINode* leaves_tail;			//the tail of LeafNode-list
@@ -54,13 +54,13 @@ private:
 public:
 	SITree();				//always need to initial transfer
 	SITree(std::string _storepath, std::string _filename, std::string _mode, unsigned long long _buffer_size);
-	unsigned int getHeight() const;
+	unsigned getHeight() const;
 	void setHeight(unsigned _h);
 	SINode* getRoot() const;
 	//insert, search, remove, set
-	bool search(const char* _str, unsigned _len, int* _val);
-	bool insert(const char* _str, unsigned _len, int _val);
-	bool modify(const char* _str, unsigned _len, int _val);
+	bool search(const char* _str, unsigned _len, unsigned* _val);
+	bool insert(const char* _str, unsigned _len, unsigned _val);
+	bool modify(const char* _str, unsigned _len, unsigned _val);
 	SINode* find(const Bstr* _key, int* store, bool ifmodify);
 	bool remove(const char* _str, unsigned _len);
 	bool save(); 			
@@ -72,3 +72,4 @@ public:
 //After saved, it's ok to continue operations on tree!
 
 #endif
+
