@@ -22,9 +22,9 @@ bool stopServer();
 
 int main(int argc, char* argv[])
 {
-#ifdef DEBUG
+//#ifdef DEBUG
 	Util util;
-#endif
+//#endif
 
 	string mode;
 	if (argc == 1) {

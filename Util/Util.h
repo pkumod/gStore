@@ -87,7 +87,7 @@ in the sparql query can point to the same node in data graph)
 //#define DEBUG_STREAM
 //#define DEBUG_PRECISE 1		all information
 //#define DEBUG_KVSTORE 1		//in KVstore
-#define DEBUG_VSTREE 1	//in Database 
+//#define DEBUG_VSTREE 1	//in Database 
 //#define DEBUG_LRUCACHE 1
 //#define DEBUG_DATABASE 1	//in Database
 //
@@ -280,6 +280,9 @@ public:
 	Util();
 	~Util();
 	static std::string profile;
+	//NOTICE: this function must be called out of any Database to config the basic settings
+	//You can call it by Util util in the first of your main program
+	//Another way is to build a GstoreApplication program, and do this configure in the initialization of the application
 	static bool configure();  //read init.conf and set the parameters for this system
 	static bool config_setting();
 	static bool config_advanced();

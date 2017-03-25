@@ -1815,6 +1815,8 @@ Join::preFilter(int _var)
 			continue;
 		}
 
+		//TODO+BETTER: is any pre really used? do we need to losen the restrictions?
+
 		//size:m<n; time:mlgn < n-m
 		//The former time is computed because the m should be small if we select this p, tending to use binary-search 
 		//when doing intersectList operation(mlgn < m+n).

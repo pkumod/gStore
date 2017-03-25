@@ -239,7 +239,7 @@ class GeneralEvaluation
 		void getFinalResult(ResultSet &result_str);
 		void releaseResultStack();
 
-		void prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, int &update_triple_num);
+		void prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, unsigned &update_triple_num);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H

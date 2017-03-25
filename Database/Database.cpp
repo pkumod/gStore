@@ -289,7 +289,7 @@ Database::writeIDinfo()
 }
 
 //ID alloc garbage error(LITERAL_FIRST_ID or double) add base for literal
-int
+TYPE_ENTITY_LITERAL_ID
 Database::allocEntityID()
 {
 	//int t;
@@ -301,7 +301,8 @@ Database::allocEntityID()
 		if (this->limitID_entity >= Util::LITERAL_FIRST_ID)
 		{
 			cout << "fail to alloc id for entity" << endl;
-			return -1;
+			//return -1;
+			return INVALID;
 		}
 	}
 	else
@@ -332,7 +333,7 @@ Database::freeEntityID(TYPE_ENTITY_LITERAL_ID _id)
 	this->entity_num--;
 }
 
-int
+TYPE_ENTITY_LITERAL_ID
 Database::allocLiteralID()
 {
 	//int t;
@@ -344,7 +345,8 @@ Database::allocLiteralID()
 		if (this->limitID_literal >= Util::LITERAL_FIRST_ID)
 		{
 			cout << "fail to alloc id for literal" << endl;
-			return -1;
+			//return -1;
+			return INVALID;
 		}
 	}
 	else
@@ -377,7 +379,7 @@ Database::freeLiteralID(TYPE_ENTITY_LITERAL_ID _id)
 	this->literal_num--;
 }
 
-int
+TYPE_PREDICATE_ID
 Database::allocPredicateID()
 {
 	//int t;
@@ -389,6 +391,7 @@ Database::allocPredicateID()
 		if (this->limitID_predicate >= Util::LITERAL_FIRST_ID)
 		{
 			cout << "fail to alloc id for predicate" << endl;
+			//WARN:if pid is changed to unsigned type, this must be changed
 			return -1;
 		}
 	}
@@ -1361,6 +1364,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, TYPE_ENT
 	cout << "finish initial sub2id_pre2id_obj2id" << endl;
 
 	//BETTER?:close the stdio buffer sync??
+
 	ifstream _fin(_rdf_file.c_str());
 	if (!_fin)
 	{
@@ -1420,8 +1424,9 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, TYPE_ENT
 		//Process the Triple one by one
 		for (int i = 0; i < parse_triple_num; i++)
 		{
-			//TODO+BETTER: assume that no duplicate triples in RDF for building
-			//should judge first??
+			//BETTER: assume that no duplicate triples in RDF for building
+			//should judge first? using exist_triple() 
+			//or sub triples_num in build_subID2values(judge if two neighbor triples are same)
 			this->triples_num++;
 
 			//if the _id_tuples exceeds, double the space

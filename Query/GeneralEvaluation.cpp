@@ -2552,7 +2552,7 @@ void GeneralEvaluation::releaseResultStack()
 	delete results_id;
 }
 
-void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, int &update_triple_num)
+void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, unsigned &update_triple_num)
 {
 	update_pattern.getVarset();
 
@@ -2613,3 +2613,4 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 				}
 			}
 }
+
