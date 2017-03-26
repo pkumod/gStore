@@ -17,8 +17,8 @@ public class JavaAPIExample
 		
 	    // build a new database by a RDF file.
 	    // note that the relative path is related to gserver.
-		gc.build("LUBM10.db", "data/LUBM_10.n3");
-	    gc.load("LUBM10.db");
+		gc.build("LUBM10", "data/LUBM_10.n3");
+	    gc.load("LUBM10");
 		
 		// then you can execute SPARQL query on this database.
 		String sparql = "select ?x where "
@@ -35,12 +35,13 @@ public class JavaAPIExample
 		System.out.println(answer);
 		
 		// unload this database.
-		gc.unload("LUBM10.db");
+		gc.unload("LUBM10");
 		
 	    // also, you can load some exist database directly and then query.
-	    gc.load("LUBM10.db");
+	    gc.load("LUBM10");
 	    answer = gc.query(sparql);	    
 		System.out.println(answer);
+		gc.unload("LUBM10");
 	}
 }
 

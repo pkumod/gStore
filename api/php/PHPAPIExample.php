@@ -2,7 +2,7 @@
 require 'GstoreConnector.php';
 $host = '127.0.0.1';
 $port = 3305;
-$dbname = "LUBM10.db";
+$dbname = "LUBM10";
 $dbpath = "./data/LUBM_10.n3";
 $query1 = "select ?x where
 {
@@ -15,5 +15,6 @@ $load->load($dbname);
 $query = new Connector($host,$port);
 $result = $query->query($query1);
 echo $result;
+$load->unload($dbname);
 ?>
 

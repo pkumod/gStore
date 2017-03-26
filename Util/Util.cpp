@@ -808,12 +808,15 @@ Util::getItemsFromDir(string _path)
 			{
 				continue;
 			}
+
+			//BETTER: change to use db_suffix instead
 			if(name.substr(len-3, 3) == ".db")
 			{
+				string tmp = name.substr(0, len-3);
 				if(ret == "")
-					ret = name;
+					ret = tmp;
 				else
-					ret = ret + "  " + name;
+					ret = ret + "  " + tmp;
 			}
 		}
 		closedir(dp);

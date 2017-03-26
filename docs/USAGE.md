@@ -22,10 +22,10 @@ gbuild is used to build a new database from a RDF triple format file.
 
 For example, we build a database from LUBM_10.n3 which can be found in example folder.
 
-    [bookug@localhost gStore]$ bin/gbuild LUBM10.db ./data/LUBM_10.n3 
+    [bookug@localhost gStore]$ bin/gbuild LUBM10 ./data/LUBM_10.n3 
     2015年05月21日 星期四 20时58分21秒  -0.484698 seconds
     gbuild...
-    argc: 3 DB_store:db_LUBM10      RDF_data: ./data/LUBM_10.n3  
+    argc: 3 DB_store:LUBM10      RDF_data: ./data/LUBM_10.n3  
     begin encode RDF from : ./data/LUBM_10.n3 ...
 
 - - -
@@ -50,9 +50,9 @@ When the program finish answering the query, it shows the command prompt again.
 
 We also take LUBM_10.n3 as an example.
 
-    [bookug@localhost gStore]$ bin/gquery LUBM10.db
+    [bookug@localhost gStore]$ bin/gquery LUBM10
     gquery...
-    argc: 2 DB_store:db_LUBM10/
+    argc: 2 DB_store:LUBM10/
     loadTree...
     LRUCache initial...
     LRUCache initial finish

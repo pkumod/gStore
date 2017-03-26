@@ -815,6 +815,7 @@ int show_handler(const vector<string>& args)
 
 	//native mode
 	if (flag) {
+		//showing all avaliable databases
 		string database = Util::getItemsFromDir(db_home);
 		if (database.empty()) {
 			database = "No databases.";
@@ -823,6 +824,7 @@ int show_handler(const vector<string>& args)
 		return 0;
 	}
 
+	//below is to show current using database
 	if (current_database == NULL) {
 		cout << "No database used now." << endl;
 	}
@@ -847,7 +849,9 @@ int build_handler(const vector<string>& args) {
 		cerr << "Your db name to be built should not end with \".db\"." << endl;
 		return -1;
 	}
-	database += ".db";
+
+	//NOTICE: not add .db here, better to use db_suffix
+	//database += ".db";
 
 	//NOTICE: when in remote mode, the dataset should be placed in the server! And the exact path can only be got in the server
 	//we can deal with it in Database
@@ -949,7 +953,9 @@ int load_handler(const vector<string>& args) {
 		cerr << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
 		return -1;
 	}
-	database += ".db";
+
+	//NOTICE: not add .db here, better to use db_suffix
+	//database += ".db";
 
 	//remote mode
 	if (gc != NULL) {

@@ -1,6 +1,4 @@
-%this is for the graduation paper
-%RDF查询引擎优化研究
-%RDF Query Engine Optimization
+%NOTICE: this tex file must be compiled with xelatex
 
 %Latex Help
 %http://www.tuicool.com/articles/FzY3Yz
@@ -73,7 +71,7 @@
 %set the font type
 %http://blog.csdn.net/plain_jane/article/details/6189524
 %http://www.tuicool.com/articles/aqYZRz
-\setCJKmainfont{AR PL UMing CN}
+%\setCJKmainfont{AR PL UMing CN}
 \usepackage{cite}
 \usepackage{etoolbox}
 \usepackage{float}
@@ -451,6 +449,8 @@ gStore的源代码遵循BSD开源协议。你可以使用gStore、报告建议�
 
 \hyperdef{}{chapter03}{\subsection{第03章：安装指南}\label{chapter03}}
 
+用户应该详细阅读init.conf文件，并根据自己的实际情况修改它。（这个文件包含gStore系统的基本配置）
+
 gStore是一个绿色软件，你只需要用一个指令对它进行编译。请在gStore根目录下运行\texttt{make}来编译gStore代码，连接ANTLR 库，并生成可执行的``gbuild''、``gquery''、``gserver''、``gclient''、``gconsole''。 另外，gStore的api也在此时生成。
 
 如果你想使用gStore的API样例，请运行\texttt{make\ APIexample}编译C++ API和Java API的样例代码。关于API的更多细节，请参阅\hyperref[chapter05]{【API】}一章。
@@ -507,7 +507,7 @@ gstore>load lubm_10
 database loaded successfully!
 
 gstore>show
-lubm_10.db
+lubm_10
 
 gstore>query ./data/LUBM_q0.sql
 ...
@@ -556,9 +556,9 @@ gbuild用于由RDF三元格式文件生成一个新的数据库。
 例如，我们从example文件夹下的LUBM\_10.n3生成数据库。
 
 \begin{verbatim}
-[bookug@localhost gStore]$ bin/gbuild LUBM10.db ./data/LUBM_10.n3
+[bookug@localhost gStore]$ bin/gbuild LUBM10 ./data/LUBM_10.n3
 gbuild...
-argc: 3 DB_store:db_LUBM10      RDF_data: ./data/LUBM_10.n3
+argc: 3 DB_store:LUBM10      RDF_data: ./data/LUBM_10.n3
 begin encode RDF from : ./data/LUBM_10.n3 ...
 \end{verbatim}
 
@@ -583,9 +583,9 @@ gquery用包含SPARQL的文件查询一个已有的数据库（每个文件包�
 我们还是以LUBM\_10.n3为例。
 
 \begin{verbatim}
-[bookug@localhost gStore]$ bin/gquery LUBM10.db
+[bookug@localhost gStore]$ bin/gquery LUBM10
 gquery...
-argc: 2 DB_store:db_LUBM10/
+argc: 2 DB_store:LUBM10/
 loadTree...
 LRUCache initial...
 LRUCache initial finish
@@ -667,9 +667,9 @@ load - load an existen database
 unload - unload an existen database
 sparql - load query from the second argument
 show - show the current database's name
-gsql>import lubm.db data/LUBM_10.n3
+gsql>import lubm data/LUBM_10.n3
 import RDF file to database done.
-gsql>load lubm.db
+gsql>load lubm
 load database done.
 gsql>sparql "select ?s ?o where { ?s <rdf:type> ?o . }"
 [empty result]
@@ -880,7 +880,7 @@ gStore的API在gStore根目录的api/目录下，内容如下：
 GstoreConnector gc("127.0.0.1", 3305);
 // 由一个RDF文件新建一个数据库
 // 注意，文件地址是相对gserver的地址
-gc.build("LUBM10.db", "example/LUBM_10.n3");
+gc.build("LUBM10", "example/LUBM_10.n3");
 // 然后你可以在这一数据库上执行SPARQL查询
 std::string sparql = "select ?x where \
 {\
@@ -894,9 +894,9 @@ std::string sparql = "select ?x where \
 }";
 std::string answer = gc.query(sparql);
 // 卸载这一数据库
-gc.unload("LUBM10.db");
+gc.unload("LUBM10");
 // 你也可以直接加载已存在的数据库然后进行查询
-gc.load("LUBM10.db");
+gc.load("LUBM10");
 // 在当前数据库查询SPARQL
 answer = gc.query(sparql);
 \end{verbatim}
@@ -949,7 +949,7 @@ string query(string _sparql);
 GstoreConnector gc = new GstoreConnector("127.0.0.1", 3305);
 // 由一个RDF文件新建一个数据库
 // 注意，文件地址是相对gserver的地址
-gc.build("LUBM10.db", "example/LUBM_10.n3");
+gc.build("LUBM10", "example/LUBM_10.n3");
 // 然后你可以在这一数据库上执行SPARQL查询.
 String sparql = "select ?x where " + "{" +
 "?x    <rdf:type>    <ub:UndergraduateStudent>. " +
@@ -962,9 +962,9 @@ String sparql = "select ?x where " + "{" +
 "}";
 String answer = gc.query(sparql);
 // 卸载这一数据库
-gc.unload("LUBM10.db");
+gc.unload("LUBM10");
 // 你也可以直接加载已存在的数据库然后进行查询
-gc.load("LUBM10.db");// 在当前数据库查询SPARQL
+gc.load("LUBM10");// 在当前数据库查询SPARQL
 answer = gc.query(sparql);
 \end{verbatim}
 
@@ -1014,7 +1014,7 @@ string query(string _sparql);
 $gc = new Connector("127.0.0.1", 3305);
 // 由一个RDF文件新建一个数据库
 // 注意，文件地址是相对gserver的地址
-$gc->build("LUBM10.db", "example/LUBM_10.n3");
+$gc->build("LUBM10", "example/LUBM_10.n3");
 // 然后你可以在这一数据库上执行SPARQL查询
 $sparql = "select ?x where " + "{" +
 "?x    <rdf:type>    <ub:UndergraduateStudent>. " +
@@ -1027,9 +1027,9 @@ $sparql = "select ?x where " + "{" +
 "}";
 $answer = gc->query($sparql);
 // 卸载这一数据库
-$gc->unload("LUBM10.db");
+$gc->unload("LUBM10");
 // 你也可以直接加载已存在的数据库然后进行查询
-$gc->load("LUBM10.db");// 在当前数据库查询SPARQL
+$gc->load("LUBM10");// 在当前数据库查询SPARQL
 $answer = gc->query(sparql);
 \end{verbatim}
 
@@ -1076,7 +1076,7 @@ gStore/api/php/PHPAPIExample展示了如何使用PHP API。PHP脚本不需要编
 gc = GstoreConnector('127.0.0.1', 3305)
 // 由一个RDF文件新建一个数据库
 // 注意，文件地址是相对gserver的地址
-gc.build('LUBM10.db', 'data/LUBM_10.n3')
+gc.build('LUBM10', 'data/LUBM_10.n3')
 // 然后你可以在这一数据库上执行SPARQL查询
 $sparql = "select ?x where " + "{" +
 "?x    <rdf:type>    <ub:UndergraduateStudent>. " +
@@ -1089,9 +1089,9 @@ $sparql = "select ?x where " + "{" +
 "}";
 answer = gc.query(sparql)
 // 卸载这一数据库
-gc.unload('LUBM10.db')
+gc.unload('LUBM10')
 // 你也可以直接加载已存在的数据库然后进行查询
-gc.load('LUBM10.db')// 在当前数据库查询sparql
+gc.load('LUBM10')// 在当前数据库查询sparql
 answer = gc.query(sparql)
 \end{verbatim}
 
@@ -1219,7 +1219,7 @@ switch ($format) {
       </label>
       <div>
         <input id="element_1" name="databasename" class="element text medium" 
-         type="text" maxlength="255" value="dbpedia_2014_reduce.db">
+         type="text" maxlength="255" value="dbpedia_2014_reduce">
         </input>
       </div> 
     </li>		

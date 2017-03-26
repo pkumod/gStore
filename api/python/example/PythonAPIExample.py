@@ -8,8 +8,8 @@ from GstoreConnector import GstoreConnector
 
 if __name__ == '__main__':
     gc = GstoreConnector('127.0.0.1', 3305)
-    gc.build('LUBM10.db', 'data/LUBM_10.n3')
-    gc.load('LUBM10.db')
+    gc.build('LUBM10', 'data/LUBM_10.n3')
+    gc.load('LUBM10')
 
     sparql = '''select ?x where {
         ?x    <rdf:type>    <ub:UndergraduateStudent>.
@@ -23,7 +23,8 @@ if __name__ == '__main__':
     answer = gc.query(sparql)
     print answer
 
-    gc.unload('LUBM10.db')
-    gc.load('LUBM10.db')
+    gc.unload('LUBM10')
+    gc.load('LUBM10')
     answer = gc.query(sparql)
     print answer
+    gc.unload('LUBM10')
