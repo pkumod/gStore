@@ -55,7 +55,12 @@ private:
 	static const unsigned PARAM_SIZE = 1000000;
 	static const unsigned PARAM_PRE = 10000;
 	static const unsigned PARAM_DENSE = 1;
+
 	static const double JUDGE_LIMIT = 0.5;
+	//NOTICE+DEBUG: please use constexpr below instead of the phase above(constexpr is supported in C++11)
+	//http://www.cnblogs.com/wanyuanchun/p/4041080.html
+	//constexpr static const double JUDGE_LIMIT = 0.5;
+
 	static const int LIMIT_CANDIDATE_LIST_SIZE = 1000;
 	//BETTER?:predefine size to avoid copy cost
 	TableType current_table;

@@ -1317,6 +1317,7 @@ Database::build_p2xx(int** _p_id_tuples)
 bool
 Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _p_id_tuples, int & _id_tuples_max)
 {
+	//TODO:unsigned    double not to max?? set to max directly
 	int _id_tuples_size;
 	{
 		//initial
