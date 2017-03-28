@@ -96,6 +96,7 @@ SIHeap::insert(SINode* _np)
 		i = j;
 	}
 	this->heap[i] = _np;
+	_np->heapId = i;
 	this->length++;
 	return true;
 }
@@ -110,6 +111,7 @@ SIHeap::remove()
 	}
 	//Node* tp = this->heap[0];
 	this->length--;
+	this->heap[0]->heapId = -1;
 	if (this->length == 0)
 		return true;
 	SINode* xp = this->heap[this->length];
@@ -133,9 +135,10 @@ SIHeap::modify(SINode* _np, bool _flag)	//control direction
 {
 	//search and adjust
 	unsigned i, j;
-	for (i = 0; i < this->length; ++i)
-		if (this->heap[i] == _np)
-			break;
+	i = _np->heapId;
+	// for (i = 0; i < this->length; ++i)
+		// if (this->heap[i] == _np)
+			// break;
 	if (_flag == true)	//move up
 	{
 		while (i != 0)

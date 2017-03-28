@@ -41,6 +41,9 @@ protected:
 public:
 	ISNode();
 	ISNode(bool isVirtual);
+	
+	int heapId = -1;
+	
 	bool isLeaf() const;
 	bool isDirty() const;
 	void setDirty();
