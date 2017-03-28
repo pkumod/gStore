@@ -1317,7 +1317,6 @@ Database::build_p2xx(int** _p_id_tuples)
 bool
 Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _p_id_tuples, int & _id_tuples_max)
 {
-	//TODO:unsigned    double not to max?? set to max directly
 	int _id_tuples_size;
 	{
 		//initial
@@ -1476,6 +1475,10 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _
 					//#endif
 				}
 			}
+
+			//NOTICE: we assume that there is no duplicates in the dataset
+			//if not, this->triple_num will be not right, and _p_id_tuples will save useless triples
+			//However, we can not use exist_triple to detect duplicates here, because it is too time-costly
 
 			//  For id_tuples
 			_p_id_tuples[_id_tuples_size] = new int[3];

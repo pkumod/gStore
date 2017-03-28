@@ -951,6 +951,11 @@ Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, int* id_lis
 	}
 }
 
+//TODO: multiple lists intersect, how about sort and intersect from small to big?
+//but this need to generate all first, I think sort by pre2num if better!
+//
+//TODO: set the entity_literal border in kvstore, and intersect entity part and literal part respectively
+
 //NOTICE: consider two directions according to table1 size and table2 size
 //1. ->  add ID mapping record for the first linking column, whole(offset, size) zengli
 //2. <-  join using inverted index for each column, offset and size for each column, hulin

@@ -188,7 +188,7 @@ private:
 	int remove(const TripleWithObjType* _triples, int _triple_num);
 	//bool remove(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
 
-	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, unsigned**& _p_id_tuples, unsigned & _id_tuples_max);
+	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, int**& _p_id_tuples, int & _id_tuples_max);
 	bool literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, int _id_tuples_max);
 
 	bool objIDIsEntityID(int _id);

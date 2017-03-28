@@ -164,9 +164,9 @@ private:
 	static unsigned short buffer_literal2id_query;
 	static unsigned short buffer_id2literal_query;
 
-	ISTree* subID2values;
-	ISTree* objID2values;
-	ISTree* preID2values;
+	IVTree* subID2values;
+	IVTree* objID2values;
+	IVTree* preID2values;
 	static std::string s_sID2values;
 	static std::string s_oID2values;
 	static std::string s_pID2values;
@@ -181,23 +181,29 @@ private:
 
 	bool open(SITree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
 	bool open(ISTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
+	bool open(IVTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
 
 	void flush(SITree* _p_btree);
 	void flush(ISTree* _p_btree);
+	void flush(IVTree* _p_btree);
 
 	bool addValueByKey(SITree* _p_btree, const char* _key, int _klen, int _val);
 	bool addValueByKey(ISTree* _p_btree, int _key, const char* _val, int _vlen);
+	bool addValueByKey(IVTree* _p_btree, int _key, const char* _val, int _vlen);
 
 	bool setValueByKey(SITree* _p_btree, const char* _key, int _klen, int _val);
 	bool setValueByKey(ISTree* _p_btree, int _key, const char* _val, int _vlen);
+	bool setValueByKey(IVTree* _p_btree, int _key, const char* _val, int _vlen);
 
 	bool getValueByKey(SITree* _p_btree, const char* _key, int _klen, int* _val) const;
 	bool getValueByKey(ISTree* _p_btree, int _key, char*& _val, int& _vlen) const;
+	bool getValueByKey(IVTree* _p_btree, int _key, char*& _val, int& _vlen) const;
 
 	int getIDByStr(SITree* _p_btree, const char* _key, int _klen) const;
 
 	bool removeKey(SITree* _p_btree, const char* _key, int _klen);
 	bool removeKey(ISTree* _p_btree, int _key);
+	bool removeKey(IVTree* _p_btree, int _key);
 
 	static std::vector<int> intersect(const int* _list1, const int* _list2, int _len1, int _len2);
 	static int binarySearch(int key, const int* _list, int _list_len, int step = 1);

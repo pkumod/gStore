@@ -1,16 +1,16 @@
 /*=============================================================================
-# Filename: SITree.cpp
+# Filename: IVTree.cpp
 # Author: syzz
 # Mail: 1181955272@qq.com
 # Last Modified: 2015-04-26 16:45
-# Description: achieve functions in SITree.h
+# Description: achieve functions in IVTree.h
 =============================================================================*/
 
-#include "SITree.h"
+#include "IVTree.h"
 
 using namespace std;
 
-SITree::SITree()
+IVTree::IVTree()
 {
 	height = 0;
 	mode = "";
@@ -21,36 +21,47 @@ SITree::SITree()
 	storepath = "";
 	filename = "";
 	//transfer_size[0] = transfer_size[1] = transfer_size[2] = 0;
+	//transfer_size = 0;
+	this->stream = NULL;
 	this->request = 0;
+	this->value_list = NULL;
 }
 
-SITree::SITree(string _storepath, string _filename, string _mode, unsigned long long _buffer_size)
+IVTree::IVTree(string _storepath, string _filename, string _mode, unsigned long long _buffer_size)
 {
 	storepath = _storepath;
 	filename = _filename;
 	this->height = 0;
 	this->mode = string(_mode);
 	string filepath = this->getFilePath();
-	TSM = new SIStorage(filepath, this->mode, &this->height, _buffer_size);
+
+	string vlist_file = filepath + "_vlist";
+	this->value_list = new VList(vlist_file, 1<<30);
+
+	TSM = new IVStorage(filepath, this->mode, &this->height, _buffer_size, this->value_list);
 	if (this->mode == "open")
 		this->TSM->preRead(this->root, this->leaves_head, this->leaves_tail);
 	else
 		this->root = NULL;
+
 	//this->transfer[0].setStr((char*)malloc(Util::TRANSFER_SIZE));
 	//this->transfer[1].setStr((char*)malloc(Util::TRANSFER_SIZE));
 	//this->transfer[2].setStr((char*)malloc(Util::TRANSFER_SIZE));
 	//this->transfer_size[0] = this->transfer_size[1] = this->transfer_size[2] = Util::TRANSFER_SIZE;		//initialied to 1M
+	//this->transfer.setStr((char*)malloc(Util::TRANSFER_SIZE));
+
+	this->stream = NULL;
 	this->request = 0;
 }
 
 string
-SITree::getFilePath()
+IVTree::getFilePath()
 {
 	return storepath + "/" + filename;
 }
 
 //void			//WARN: not check _str and _len
-//SITree::CopyToTransfer(const char* _str, unsigned _len, unsigned _index)
+//IVTree::CopyToTransfer(const char* _str, unsigned _len, unsigned _index)
 //{
 	//if (_index > 2)
 		//return;
@@ -75,109 +86,105 @@ SITree::getFilePath()
 //}
 
 unsigned
-SITree::getHeight() const
+IVTree::getHeight() const
 {
 	return this->height;
 }
 
 void
-SITree::setHeight(unsigned _h)
+IVTree::setHeight(unsigned _h)
 {
 	this->height = _h;
 }
 
-SINode*
-SITree::getRoot() const
+IVNode*
+IVTree::getRoot() const
 {
 	return this->root;
 }
 
 void
-SITree::prepare(SINode* _np)
+IVTree::prepare(IVNode* _np)
 {
 	//this->request = 0;
 	bool flag = _np->inMem();
 	if (!flag)
+	{
 		this->TSM->readNode(_np, &request);	//readNode deal with request
+	}
 }
 
 bool
-SITree::search(const char* _str, unsigned _len, int* _val)
+IVTree::search(int _key, char*& _str, int& _len)
 {
-	if (_str == NULL || _len == 0)
+	if (_key < 0)
 	{
-		printf("error in SITree-search: empty string\n");
-		*_val = -1;
+		printf("error in IVTree-search: empty string\n");
 		return false;
 	}
-	//this->CopyToTransfer(_str, _len, 1);
 
-	request = 0;
-	//Bstr bstr = this->transfer[1];	//not to modify its memory
-	//Bstr bstr(_str, _len, true);
+	this->request = 0;
 	int store;
-	SINode* ret = this->find(_str, _len, &store, false);
-	if (ret == NULL || store == -1)	//tree is empty or not found
-	{
-		//bstr.clear();
-		return false;
-	}
-	const Bstr* tmp = ret->getKey(store);
-	if (Util::compare(_str, _len, tmp->getStr(), tmp->getLen()) != 0)	//tree is empty or not found
+	IVNode* ret = this->find(_key, &store, false);
+	if (ret == NULL || store == -1 || _key != ret->getKey(store))	//tree is empty or not found
 	{
 		return false;
 	}
-	*_val = ret->getValue(store);
+
+	ret->getValue(this->value_list, store, _str, _len);
+	//const Bstr* val = ret->getValue(store);
+	//this->CopyToTransfer(val->getStr(), val->getLen(), 0);		//not sum to request
+	//_str = this->transfer[0].getStr();
+	//_len = this->transfer[0].getLen();
+
 	this->TSM->request(request);
-	//bstr.clear();
 	return true;
 }
 
 bool
-SITree::insert(const char* _str, unsigned _len, int _val)
+IVTree::insert(int _key, const char* _str, unsigned _len)
 {
-	if (_str == NULL || _len == 0)
+	if (_key < 0)
 	{
-		printf("error in SITree-insert: empty string\n");
+		printf("error in IVTree-insert: empty string\n");
 		return false;
 	}
-	//this->CopyToTransfer(_str, _len, 1);
 
+	//this->CopyToTransfer(_str, _len, 2);
+	//const Bstr* val = &(this->transfer[2]);
 	this->request = 0;
-	SINode* ret;
+	IVNode* ret;
 	if (this->root == NULL)	//tree is empty
 	{
-		leaves_tail = leaves_head = root = new SILeafNode;
-		request += SINode::LEAF_SIZE;
+		leaves_tail = leaves_head = root = new IVLeafNode;
+		request += IVNode::LEAF_SIZE;
 		this->height = 1;
 		root->setHeight(1);	//add to heap later
 	}
 
 	//this->prepare(this->root); //root must be in-mem
-	if (root->getNum() == SINode::MAX_KEY_NUM)
+	if (root->getNum() == IVNode::MAX_KEY_NUM)
 	{
-		SINode* father = new SIIntlNode;
-		request += SINode::INTL_SIZE;
+		IVNode* father = new IVIntlNode;
+		request += IVNode::INTL_SIZE;
 		father->addChild(root, 0);
 		ret = root->split(father, 0);
 		if (ret->isLeaf() && ret->getNext() == NULL)
 			this->leaves_tail = ret;
 		if (ret->isLeaf())
-			request += SINode::LEAF_SIZE;
+			request += IVNode::LEAF_SIZE;
 		else
-			request += SINode::INTL_SIZE;
+			request += IVNode::INTL_SIZE;
 		this->height++;		//height rises only when root splits
-		//WARN: height area in SINode: 4 bit!
+							//WARN: height area in Node: 4 bit!
 		father->setHeight(this->height);	//add to heap later
 		this->TSM->updateHeap(ret, ret->getRank(), false);
 		this->root = father;
 	}
 
-	SINode* p = this->root;
-	SINode* q;
+	IVNode* p = this->root;
+	IVNode* q;
 	int i;
-	//const Bstr* _key = &transfer[1];
-	//Bstr bstr = *_key;
 	while (!p->isLeaf())
 	{
 		//j = p->getNum();
@@ -185,27 +192,24 @@ SITree::insert(const char* _str, unsigned _len, int _val)
 		//if(bstr < *(p->getKey(i)))
 		//break;
 		//NOTICE: using binary search is better here
-		i = p->searchKey_less(_str, _len);
+		i = p->searchKey_less(_key);
 
 		q = p->getChild(i);
 		this->prepare(q);
-		if (q->getNum() == SINode::MAX_KEY_NUM)
+		if (q->getNum() == IVNode::MAX_KEY_NUM)
 		{
 			ret = q->split(p, i);
 			if (ret->isLeaf() && ret->getNext() == NULL)
 				this->leaves_tail = ret;
 			if (ret->isLeaf())
-				request += SINode::LEAF_SIZE;
+				request += IVNode::LEAF_SIZE;
 			else
-				request += SINode::INTL_SIZE;
+				request += IVNode::INTL_SIZE;
 			//BETTER: in loop may update multiple times
 			this->TSM->updateHeap(ret, ret->getRank(), false);
 			this->TSM->updateHeap(q, q->getRank(), true);
 			this->TSM->updateHeap(p, p->getRank(), true);
-			//if (bstr < *(p->getKey(i)))
-			const Bstr* tmp = p->getKey(i);
-			int cmp_res = Util::compare(_str, _len, tmp->getStr(), tmp->getLen());
-			if (cmp_res < 0)
+			if (_key < p->getKey(i))
 				p = q;
 			else
 				p = ret;
@@ -221,82 +225,75 @@ SITree::insert(const char* _str, unsigned _len, int _val)
 	//for(i = 0; i < j; ++i)
 	//if(bstr < *(p->getKey(i)))
 	//break;
-	i = p->searchKey_less(_str, _len);
+	i = p->searchKey_less(_key);
 
 	//insert existing key is ok, but not inserted in
 	//however, the tree-shape may change due to possible split in former code
 	bool ifexist = false;
-	//if (i > 0 && bstr == *(p->getKey(i - 1)))
-	if (i > 0)
+	if (i > 0 && _key == p->getKey(i - 1))
+		ifexist = true;
+	else
 	{
-		const Bstr* tmp = p->getKey(i-1);
-		int cmp_res = Util::compare(_str, _len, tmp->getStr(), tmp->getLen());
-		if(cmp_res == 0)
-		{
-			ifexist = true;
-		}
-	}
-
-	if(!ifexist)
-	{
-		p->addKey(_str, _len, i, true);
-		p->addValue(_val, i);
+		p->addKey(_key, i);
+		p->addValue(this->value_list, i, _str, _len, true);
 		p->addNum();
 		request += _len;
+		//request += val->getLen();
 		p->setDirty();
 		this->TSM->updateHeap(p, p->getRank(), true);
+		//_key->clear();
+		//_value->clear();
 	}
-
 	this->TSM->request(request);
-	//bstr.clear();		//NOTICE: must be cleared!
-
 	return !ifexist;		//QUERY(which case:return false)
 }
 
 bool
-SITree::modify(const char* _str, unsigned _len, int _val)
+IVTree::modify(int _key, const char* _str, unsigned _len)
 {
-	if (_str == NULL || _len == 0)
+	if (_key < 0)
 	{
-		printf("error in SITree-modify: empty string\n");
+		printf("error in IVTree-modify: empty string\n");
 		return false;
 	}
-	//this->CopyToTransfer(_str, _len, 1);
 
+	//this->CopyToTransfer(_str, _len, 2);	//not check value
+	//const Bstr* val = &(this->transfer[2]);
 	this->request = 0;
-	//const Bstr* _key = &transfer[1];
-	//Bstr bstr = *_key;
 	int store;
-	SINode* ret = this->find(_str, _len, &store, true);
-	if (ret == NULL || store == -1)	//tree is empty or not found
+	IVNode* ret = this->find(_key, &store, true);
+	if (ret == NULL || store == -1 || _key != ret->getKey(store))	//tree is empty or not found
 	{
-		//bstr.clear();
+		cerr << "tree is empty or not found" << endl;
 		return false;
 	}
-	const Bstr* tmp = ret->getKey(store);
-	if (Util::compare(_str, _len, tmp->getStr(), tmp->getLen()) != 0)	//tree is empty or not found
-	{
-		return false;
-	}
-
-	ret->setValue(_val, store);
+	//cout<<"IVTree::modify() - key is found, now to remove"<<endl;
+	unsigned len = ret->getValue(store)->getLen();
+	ret->setValue(this->value_list, store, _str, _len, true);
+	//ret->setValue(val, store, true);
+	//cout<<"value reset"<<endl;
+	//cout<<"newlen: "<<val->getLen()<<" oldlen: "<<len<<endl;
+	//request += (val->getLen() - len);
+	this->request = _len;
+	//this->request = val->getLen();
+	this->request -= len;
 	ret->setDirty();
+	//cout<<"to request"<<endl;
 	this->TSM->request(request);
-	//bstr.clear();
+	//cout<<"memory requested"<<endl;
 
 	return true;
 }
 
 //this function is useful for search and modify, and range-query 
-SINode*		//return the first key's position that >= *_key
-SITree::find(const char* _str, unsigned _len, int* _store, bool ifmodify)
+IVNode*		//return the first key's position that >= *_key
+IVTree::find(int _key, int* _store, bool ifmodify)
 {											//to assign value for this->bstr, function shouldn't be const!
 	if (this->root == NULL)
-		return NULL;						//SITree Is Empty
+		return NULL;						//IVTree Is Empty
 
-	SINode* p = root;
+	IVNode* p = root;
 	int i, j;
-	//Bstr bstr = *_key;					//local Bstr: multiple delete
 	while (!p->isLeaf())
 	{
 		if (ifmodify)
@@ -305,7 +302,7 @@ SITree::find(const char* _str, unsigned _len, int* _store, bool ifmodify)
 		//for(i = 0; i < j; ++i)				//BETTER(Binary-Search)
 		//if(bstr < *(p->getKey(i)))
 		//break;
-		i = p->searchKey_less(_str, _len);
+		i = p->searchKey_less(_key);
 
 		p = p->getChild(i);
 		this->prepare(p);
@@ -315,56 +312,51 @@ SITree::find(const char* _str, unsigned _len, int* _store, bool ifmodify)
 	//for(i = 0; i < j; ++i)
 	//if(bstr <= *(p->getKey(i)))
 	//break;
-	i = p->searchKey_lessEqual(_str, _len);
+	i = p->searchKey_lessEqual(_key);
 
 	if (i == j)
 		*_store = -1;	//Not Found
 	else
 		*_store = i;
 
-	//bstr.clear();
-
 	return p;
 }
 
 /*
-SINode*
-SITree::find(unsigned _len, const char* _str, int* store) const
+Node*
+IVTree::find(unsigned _len, const char* _str, int* store) const
 {
 }
 */
 
 bool
-SITree::remove(const char* _str, unsigned _len)
+IVTree::remove(int _key)
 {
-	if (_str == NULL || _len == 0)
+	if (_key < 0)
 	{
-		printf("error in SITree-remove: empty string\n");
+		printf("error in IVTree-remove: empty string\n");
 		return false;
 	}
-	//this->CopyToTransfer(_str, _len, 1);
 
-	request = 0;
-	//const Bstr* _key = &transfer[1];
-	SINode* ret;
+	this->request = 0;
+	IVNode* ret;
 	if (this->root == NULL)	//tree is empty
 		return false;
 
-	SINode* p = this->root;
-	SINode* q;
+	IVNode* p = this->root;
+	IVNode* q;
 	int i, j;
-	//Bstr bstr = *_key;
 	while (!p->isLeaf())
 	{
 		j = p->getNum();
 		//for(i = 0; i < j; ++i)
 		//if(bstr < *(p->getKey(i)))
 		//break;
-		i = p->searchKey_less(_str, _len);
+		i = p->searchKey_less(_key);
 
 		q = p->getChild(i);
 		this->prepare(q);
-		if (q->getNum() < SINode::MIN_CHILD_NUM)	//==MIN_KEY_NUM
+		if (q->getNum() < IVNode::MIN_CHILD_NUM)	//==MIN_KEY_NUM
 		{
 			if (i > 0)
 				this->prepare(p->getChild(i - 1));
@@ -374,7 +366,6 @@ SITree::remove(const char* _str, unsigned _len)
 			if (ret != NULL)
 				this->TSM->updateHeap(ret, 0, true);//non-sense node
 			this->TSM->updateHeap(q, q->getRank(), true);
-
 			if (q->isLeaf())
 			{
 				if (q->getPrev() == NULL)
@@ -382,7 +373,6 @@ SITree::remove(const char* _str, unsigned _len)
 				if (q->getNext() == NULL)
 					this->leaves_tail = q;
 			}
-
 			if (p->getNum() == 0)		//root shrinks
 			{
 				//this->leaves_head = q;
@@ -396,15 +386,35 @@ SITree::remove(const char* _str, unsigned _len)
 		this->TSM->updateHeap(p, p->getRank(), true);
 		p = q;
 	}
-
 	bool flag = false;
-	i = p->searchKey_equal(_str, _len);
+	//j = p->getNum();		//LeafNode(maybe root)
+	//for(i = 0; i < j; ++i)
+	//	if(bstr == *(p->getKey(i)))
+	//	{
+	//		request -= p->getKey(i)->getLen();
+	//		request -= p->getValue(i)->getLen();
+	//		p->subKey(i, true);		//to release
+	//		p->subValue(i, true);	//to release
+	//		p->subNum();
+	//		if(p->getNum() == 0)	//root leaf 0 key
+	//		{
+	//			this->root = NULL;
+	//			this->leaves_head = NULL;
+	//			this->leaves_tail = NULL;
+	//			this->height = 0;
+	//			this->TSM->updateHeap(p, 0, true);	//instead of delete p
+	//		}
+	//		p->setDirty();
+	//		flag = true;
+	//		break;
+	//	}
+	i = p->searchKey_equal(_key);
 	//WARN+NOTICE:here must check, because the key to remove maybe not exist
 	if (i != (int)p->getNum())
 	{
-		request -= p->getKey(i)->getLen();
-		p->subKey(i, true);		//to release
-		p->subValue(i);	//to release
+		request -= p->getValue(i)->getLen();
+		p->subKey(i);		//to release
+		p->subValue(i, true);	//to release
 		p->subNum();
 		if (p->getNum() == 0)	//root leaf 0 key
 		{
@@ -419,13 +429,146 @@ SITree::remove(const char* _str, unsigned _len)
 	}
 
 	this->TSM->request(request);
-	//bstr.clear();
-
 	return flag;		//i == j, not found		
 }
 
+const Bstr*
+IVTree::getRangeValue()
+{
+	if (this->stream == NULL)
+	{
+		fprintf(stderr, "IVTree::getRangeValue(): no results now!\n");
+		return NULL;
+	}
+	if (this->stream->isEnd())
+	{
+		fprintf(stderr, "IVTree::getRangeValue(): read till end now!\n");
+		return NULL;
+	}
+	//NOTICE:this is one record, and donot free the memory!
+	//NOTICE:Bstr[] but only one element, used as Bstr*
+	return this->stream->read();
+}
+
+void
+IVTree::resetStream()
+{
+	if (this->stream == NULL)
+	{
+		fprintf(stderr, "no results now!\n");
+		return;
+	}
+	this->stream->setEnd();
+}
+
+bool	//special case: not exist, one-edge-case
+IVTree::range_query(int _key1, int _key2)
+{		//the range is: *_key1 <= x < *_key2 	
+		//if(_key1 <0 && _key2 <0)
+		//return false;
+		//ok to search one-edge, requiring only one be negative
+		//find and write value
+	int store1, store2;
+	IVNode *p1, *p2;
+	if (_key1 >= 0)
+	{
+		request = 0;
+		p1 = this->find(_key1, &store1, false);
+		if (p1 == NULL || store1 == -1)
+			return false;	//no element
+		this->TSM->request(request);
+	}
+	else
+	{
+		p1 = this->leaves_head;
+		store1 = 0;
+	}
+	if (_key2 >= 0)
+	{		//QUERY: another strategy is to getnext and compare every time to tell end
+		request = 0;
+		p2 = this->find(_key2, &store2, false);
+		if (p2 == NULL)
+			return false;
+		else if (store2 == -1)
+			store2 = p2->getNum();
+		else if (store2 == 0)
+		{
+			p2 = p2->getPrev();
+			if (p2 == NULL)
+				return false;		//no element
+			store2 = p2->getNum();
+		}
+		this->TSM->request(request);
+	}
+	else
+	{
+		p2 = this->leaves_tail;
+		store2 = p2->getNum();
+	}
+
+	IVNode* p = p1;
+	unsigned i, l, r;
+	//get the num of answers first, not need to prepare the node
+	unsigned ansNum = 0;
+	while (true)
+	{
+		//request = 0;
+		//this->prepare(p);
+		if (p == p1)
+			l = store1;
+		else
+			l = 0;
+		if (p == p2)
+			r = store2;
+		else
+			r = p->getNum();
+		ansNum += (r - l);
+		//this->TSM->request(request);
+		if (p != p2)
+			p = p->getNext();
+		else
+			break;
+	}
+
+	if (this->stream != NULL)
+	{
+		delete this->stream;
+		this->stream = NULL;
+	}
+	vector<int> keys;
+	vector<bool> desc;
+	this->stream = new Stream(keys, desc, ansNum, 1, false);
+
+	p = p1;
+	while (1)
+	{
+		request = 0;
+		this->prepare(p);
+		if (p == p1)
+			l = store1;
+		else
+			l = 0;
+		if (p == p2)
+			r = store2;
+		else
+			r = p->getNum();
+		for (i = l; i < r; ++i)
+		{
+			//NOTICE:Bstr* in an array, used as Bstr[]
+			this->stream->write(p->getValue(i));
+		}
+		this->TSM->request(request);
+		if (p != p2)
+			p = p->getNext();
+		else
+			break;
+	}
+	this->stream->setEnd();
+	return true;
+}
+
 bool
-SITree::save()	//save the whole tree to disk
+IVTree::save()	//save the whole tree to disk
 {
 #ifdef DEBUG_KVSTORE
 	printf("now to save tree!\n");
@@ -437,7 +580,7 @@ SITree::save()	//save the whole tree to disk
 }
 
 void
-SITree::release(SINode* _np) const
+IVTree::release(IVNode* _np) const
 {
 	if (_np == NULL)	return;
 	if (_np->isLeaf())
@@ -451,22 +594,23 @@ SITree::release(SINode* _np) const
 	delete _np;
 }
 
-SITree::~SITree()
+IVTree::~IVTree()
 {
+	delete this->stream;   //maybe NULL
 	delete TSM;
 #ifdef DEBUG_KVSTORE
 	printf("already empty the buffer, now to delete all nodes in tree!\n");
 #endif
-	//recursively delete each SINode
+	//recursively delete each Node
 	release(root);
 }
 
 void
-SITree::print(string s)
+IVTree::print(string s)
 {
 #ifdef DEBUG_KVSTORE
 	fputs(Util::showtime().c_str(), Util::debug_kvstore);
-	fputs("Class SITree\n", Util::debug_kvstore);
+	fputs("Class IVTree\n", Util::debug_kvstore);
 	fputs("Message: ", Util::debug_kvstore);
 	fputs(s.c_str(), Util::debug_kvstore);
 	fputs("\n", Util::debug_kvstore);
@@ -475,12 +619,12 @@ SITree::print(string s)
 	{
 		if (this->root == NULL)
 		{
-			fputs("Null SITree\n", Util::debug_kvstore);
+			fputs("Null IVTree\n", Util::debug_kvstore);
 			return;
 		}
-		SINode** ns = new SINode*[this->height];
+		IVNode** ns = new IVNode*[this->height];
 		int* ni = new int[this->height];
-		SINode* np;
+		IVNode* np;
 		int i, pos = 0;
 		ns[pos] = this->root;
 		ni[pos] = this->root->getNum();
@@ -490,7 +634,7 @@ SITree::print(string s)
 			np = ns[pos - 1];
 			i = ni[pos - 1];
 			this->prepare(np);
-			if (np->isLeaf() || i < 0)	//LeafSINode or ready IntlNode
+			if (np->isLeaf() || i < 0)	//LeafNode or ready IntlNode
 			{							//child-num ranges: 0~num
 				if (s == "tree")
 					np->print("node");
@@ -512,7 +656,7 @@ SITree::print(string s)
 	}
 	else if (s == "LEAVES" || s == "leaves")
 	{
-		SINode* np;
+		IVNode* np;
 		for (np = this->leaves_head; np != NULL; np = np->getNext())
 		{
 			this->prepare(np);

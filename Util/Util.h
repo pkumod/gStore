@@ -37,6 +37,7 @@ in the sparql query can point to the same node in data graph)
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -87,7 +88,7 @@ in the sparql query can point to the same node in data graph)
 //#define DEBUG_STREAM
 //#define DEBUG_PRECISE 1		all information
 //#define DEBUG_KVSTORE 1		//in KVstore
-#define DEBUG_VSTREE 1	//in Database 
+//#define DEBUG_VSTREE 1	//in Database 
 //#define DEBUG_LRUCACHE 1
 //#define DEBUG_DATABASE 1	//in Database
 //
@@ -218,7 +219,9 @@ public:
 	static std::string getTimeString();
 	static std::string node2string(const char* _raw_str);
 
-	static bool is_literal_ele(int);
+	static bool is_literal_ele(unsigned id);
+	static bool is_entity_ele(unsigned id);
+
 	static int removeDuplicate(int*, int);
 	static std::string getQueryFromFile(const char* _file_path); 
 	static std::string getSystemOutput(std::string cmd);
@@ -278,6 +281,10 @@ public:
 	static FILE* debug_kvstore;				
 	static FILE* debug_database;
 	static FILE* debug_vstree;
+
+	static std::string  gserver_port_file;
+	static std::string  gserver_port_swap;
+	static std::string  gserver_log;
 
 
 private:

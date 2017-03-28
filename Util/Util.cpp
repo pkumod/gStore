@@ -48,6 +48,10 @@ map<string, string> Util::global_config;
 
 //==================================================================================================================
 
+string Util::gserver_port_file = "bin/.gserver_port";
+string Util::gserver_port_swap = "bin/.gserver_port.swap";
+string Util::gserver_log = "logs/gserver.log";
+
 //NOTICE:used in Database, Join and Strategy
 //int Util::triple_num = 0;
 //int Util::pre_num = 0;
@@ -441,10 +445,17 @@ Util::memoryLeft()
 }
 
 bool
-Util::is_literal_ele(int _id)
+Util::is_literal_ele(unsigned _id)
 {
     return _id >= Util::LITERAL_FIRST_ID;
 }
+
+bool 
+Util::is_entity_ele(unsigned id) 
+{
+	return id < Util::LITERAL_FIRST_ID;
+}
+
 
 //NOTICE: require that the list is ordered
 int

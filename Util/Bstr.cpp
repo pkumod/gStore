@@ -17,12 +17,17 @@ Bstr::Bstr()
 	this->str = NULL;
 }
 
-Bstr::Bstr(const char* _str, unsigned _len)
+Bstr::Bstr(const char* _str, unsigned _len, bool _nocopy)
 {
 	//WARN: if need a string .please add '\0' in your own!
 	this->length = _len;
-	//DEBUG:if copy memory?
-	//this->str = _str; //not valid:const char* -> char*
+
+	//if(_nocopy)
+	//{
+		//this->str = _str; //not valid:const char* -> char*
+		//return;
+	//}
+
 	this->str = (char*)malloc(_len);
 	memcpy(this->str, _str, sizeof(char) * _len);
 	//this->str[_len]='\0';
@@ -116,6 +121,12 @@ Bstr::operator != (const Bstr& _bstr)
 unsigned
 Bstr::getLen() const
 {
+	//NOTICE: this is for VList
+	if(this->str == NULL)
+	{
+		return 0;
+	}
+
 	return length;
 }
 

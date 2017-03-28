@@ -12,9 +12,9 @@
 int main(int argc, char * argv[])
 {
 	//chdir(dirname(argv[0]));
-#ifdef DEBUG
+//#ifdef DEBUG
 	Util util;
-#endif
+//#endif
 
 	std::string ip = Socket::DEFAULT_SERVER_IP;
 	unsigned short port = Socket::DEFAULT_CONNECT_PORT;
