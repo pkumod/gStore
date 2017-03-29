@@ -18,6 +18,7 @@ Database::Database()
 	this->signature_binary_file = "signature.binary";
 	this->six_tuples_file = "six_tuples";
 	this->db_info_file = "db_info_file.dat";
+	this->id_tuples_file = "id_tuples";
 
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = new KVstore(kv_store_path);
@@ -58,6 +59,7 @@ Database::Database(string _name)
 	this->signature_binary_file = "signature.binary";
 	this->six_tuples_file = "six_tuples";
 	this->db_info_file = "db_info_file.dat";
+	this->id_tuples_file = "id_tuples";
 
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = new KVstore(kv_store_path);
@@ -804,6 +806,8 @@ Database::build(const string& _rdf_file)
 	string _entry_file = this->getSignatureBFile();
 
 	cout << "begin build VS-Tree on " << ret << "..." << endl;
+	//TODO: we can use larger buffer for vstree in building process, because it does not compete with others
+	//we only need to build vstree in this phase(no need for id tuples anymore)
 	(this->vstree)->buildTree(_entry_file);
 
 	long tv_build_end = Util::get_cur_time();
@@ -832,18 +836,24 @@ Database::getSixTuplesFile()
 	return this->getStorePath() + "/" + this->six_tuples_file;
 }
 
-/* root Path of this DB + signatureBFile */
+//root Path of this DB + signatureBFile 
 string
 Database::getSignatureBFile()
 {
 	return this->getStorePath() + "/" + this->signature_binary_file;
 }
 
-/* root Path of this DB + DBInfoFile */
+//root Path of this DB + DBInfoFile 
 string
 Database::getDBInfoFile()
 {
 	return this->getStorePath() + "/" + this->db_info_file;
+}
+
+string
+Database::getIDTuplesFile()
+{
+	return this->getStorePath() + "/" + this->id_tuples_file;
 }
 
 bool
@@ -1059,7 +1069,9 @@ Database::encodeRDF_new(const string _rdf_file)
 	Util::logging("In encodeRDF_new");
 	//cout<< "end log!!!" << endl;
 #endif
-	TYPE_ENTITY_LITERAL_ID** _p_id_tuples = NULL;
+
+	//TYPE_ENTITY_LITERAL_ID** _p_id_tuples = NULL;
+	ID_TUPLE* _p_id_tuples = NULL;
 	TYPE_TRIPLE_NUM _id_tuples_max = 0;
 
 	long t1 = Util::get_cur_time();
@@ -1071,7 +1083,7 @@ Database::encodeRDF_new(const string _rdf_file)
 	//(one way is to add a more structure to tell us which is entity, but this is costly)
 
 	//map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature
-	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _p_id_tuples, _id_tuples_max))
+	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file))
 	{
 		return false;
 	}
@@ -1094,6 +1106,9 @@ Database::encodeRDF_new(const string _rdf_file)
 	this->stringindex->setNum(StringIndexFile::Predicate, this->pre_num);
 	this->stringindex->save(*this->kvstore);
 
+	long t3 = Util::get_cur_time();
+	cout << "after stringindex, used " << (t3 - t2) << "ms." << endl;
+
 	//cout<<"special id: "<<this->kvstore->getIDByEntity("<point7>")<<endl;
 
 	//NOTICE:close these trees now to save memory
@@ -1104,27 +1119,44 @@ Database::encodeRDF_new(const string _rdf_file)
 	this->kvstore->close_predicate2id();
 	this->kvstore->close_id2predicate();
 
+	long t4 = Util::get_cur_time();
+	cout << "id2string and string2id closed, used " << (t4 - t3) << "ms." << endl;
+
+	//after closing the 6 trees, read the id tuples again, and remove the file     given num, a dimension,return a pointer
+	//NOTICE: the file can also be used for debugging, and a program can start just from the id tuples file
+	//(if copy the 6 id2string trees, no need to parse each time)
+	this->readIDTuples(_p_id_tuples);
+
+	long t5 = Util::get_cur_time();
+	cout << "id tuples read, used " << (t5 - t4) << "ms." << endl;
+
+	//TODO: how to set the buffer of trees is a big question, fully utilize the availiable memory
+
 	//this->kvstore->build_subID2values(_p_id_tuples, this->triples_num);
 	this->build_s2xx(_p_id_tuples);
-	long t3 = Util::get_cur_time();
-	cout << "after s2xx, used " << (t3 - t2) << "ms." << endl;
+
+	long t6 = Util::get_cur_time();
+	cout << "after s2xx, used " << (t6 - t5) << "ms." << endl;
 
 	//this->kvstore->build_objID2values(_p_id_tuples, this->triples_num);
 	this->build_o2xx(_p_id_tuples);
-	long t4 = Util::get_cur_time();
-	cout << "after o2xx, used " << (t4 - t3) << "ms." << endl;
+
+	long t7 = Util::get_cur_time();
+	cout << "after o2xx, used " << (t7 - t6) << "ms." << endl;
 
 	//this->kvstore->build_preID2values(_p_id_tuples, this->triples_num);
 	this->build_p2xx(_p_id_tuples);
-	long t5 = Util::get_cur_time();
-	cout << "after p2xx, used " << (t5 - t4) << "ms." << endl;
+
+	long t8 = Util::get_cur_time();
+	cout << "after p2xx, used " << (t8 - t7) << "ms." << endl;
 
 	//WARN:we must free the memory for id_tuples array
-	for (TYPE_TRIPLE_NUM i = 0; i < this->triples_num; ++i)
-	{
-		delete[] _p_id_tuples[i];
-	}
 	delete[] _p_id_tuples;
+	//for (TYPE_TRIPLE_NUM i = 0; i < this->triples_num; ++i)
+	//{
+		//delete[] _p_id_tuples[i];
+	//}
+	//delete[] _p_id_tuples;
 
 	bool flag = this->saveDBInfoFile();
 	if (!flag)
@@ -1132,15 +1164,47 @@ Database::encodeRDF_new(const string _rdf_file)
 		return false;
 	}
 
-	Util::logging("finish encodeRDF_new");
+	long t9 = Util::get_cur_time();
+	cout << "db info saved, used " << (t9 - t8) << "ms." << endl;
+
+	//Util::logging("finish encodeRDF_new");
 
 	return true;
 }
 
-void
-Database::build_s2xx(TYPE_ENTITY_LITERAL_ID** _p_id_tuples)
+void 
+Database::readIDTuples(ID_TUPLE*& _p_id_tuples)
 {
-	qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_spo_cmp);
+	_p_id_tuples = NULL;
+	string fname = this->getIDTuplesFile();
+	FILE* fp = fopen(fname.c_str(), "rb");
+	if(fp == NULL)
+	{
+		cout<<"error in Database::readIDTuples() -- unable to open file "<<fname<<endl;
+		return;
+	}
+
+	//NOTICE: avoid to break the unsigned limit, size_t is used in Linux C
+	//size_t means long unsigned int in 64-bit machine
+	//unsigned long total_num = this->triples_num * 3;
+	//_p_id_tuples = new TYPE_ENTITY_LITERAL_ID[total_num];
+	_p_id_tuples = new ID_TUPLE[this->triples_num];
+	fread(_p_id_tuples, sizeof(ID_TUPLE), this->triples_num, fp);
+
+	fclose(fp);
+	//NOTICE: choose to empty the file or not
+	Util::empty_file(fname.c_str());
+
+	//return NULL;
+}
+
+void
+Database::build_s2xx(ID_TUPLE* _p_id_tuples)
+{
+	//NOTICE: STL sort() is generally fatser than C qsort, especially when qsort is very slow
+	//STL sort() not only use qsort algorithm, it can also choose heap-sort method
+	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::spo_cmp_idtuple);
+	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_spo_cmp);
 	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num);
 
 	//save all entity_signature into binary file
@@ -1164,11 +1228,17 @@ Database::build_s2xx(TYPE_ENTITY_LITERAL_ID** _p_id_tuples)
 
 	TYPE_ENTITY_LITERAL_ID prev_entity_id = INVALID_ENTITY_LITERAL_ID;
 	//int prev_entity_id = -1;
+	
+	//NOTICE: i*3 + j maybe break the unsigned limit
+	//for (unsigned long i = 0; i < this->triples_num; ++i)
 	for (TYPE_TRIPLE_NUM i = 0; i < this->triples_num; ++i)
 	{
-		TYPE_ENTITY_LITERAL_ID subid = _p_id_tuples[i][0];
-		TYPE_PREDICATE_ID preid = _p_id_tuples[i][1];
-		TYPE_ENTITY_LITERAL_ID objid = _p_id_tuples[i][2];
+		TYPE_ENTITY_LITERAL_ID subid = _p_id_tuples[i].subid;
+		TYPE_PREDICATE_ID preid = _p_id_tuples[i].preid;
+		TYPE_ENTITY_LITERAL_ID objid = _p_id_tuples[i].objid;
+		//TYPE_ENTITY_LITERAL_ID subid = _p_id_tuples[i*3+0];
+		//TYPE_PREDICATE_ID preid = _p_id_tuples[i*3+1];
+		//TYPE_ENTITY_LITERAL_ID objid = _p_id_tuples[i*3+2];
 		if(subid != prev_entity_id)
 		{
 			if(prev_entity_id != INVALID_ENTITY_LITERAL_ID)
@@ -1216,9 +1286,10 @@ Database::build_s2xx(TYPE_ENTITY_LITERAL_ID** _p_id_tuples)
 }
 
 void
-Database::build_o2xx(TYPE_ENTITY_LITERAL_ID** _p_id_tuples)
+Database::build_o2xx(ID_TUPLE* _p_id_tuples)
 {
-	qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_ops_cmp);
+	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::ops_cmp_idtuple);
+	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_ops_cmp);
 	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num);
 
 	//save all entity_signature into binary file
@@ -1236,11 +1307,17 @@ Database::build_o2xx(TYPE_ENTITY_LITERAL_ID** _p_id_tuples)
 	TYPE_ENTITY_LITERAL_ID prev_entity_id = INVALID_ENTITY_LITERAL_ID;
 	//int prev_entity_id = -1;
 	EntityBitSet tmp_bitset;
+
+	//NOTICE: i*3 + j maybe break the unsigned limit
+	//for (unsigned long i = 0; i < this->triples_num; ++i)
 	for (TYPE_TRIPLE_NUM i = 0; i < this->triples_num; ++i)
 	{
-		TYPE_ENTITY_LITERAL_ID subid = _p_id_tuples[i][0];
-		TYPE_PREDICATE_ID preid = _p_id_tuples[i][1];
-		TYPE_ENTITY_LITERAL_ID objid = _p_id_tuples[i][2];
+		TYPE_ENTITY_LITERAL_ID subid = _p_id_tuples[i].subid;
+		TYPE_PREDICATE_ID preid = _p_id_tuples[i].preid;
+		TYPE_ENTITY_LITERAL_ID objid = _p_id_tuples[i].objid;
+		//TYPE_ENTITY_LITERAL_ID subid = _p_id_tuples[i*3+0];
+		//TYPE_PREDICATE_ID preid = _p_id_tuples[i*3+1];
+		//TYPE_ENTITY_LITERAL_ID objid = _p_id_tuples[i*3+2];
 
 
 		if(Util::is_literal_ele(objid))
@@ -1327,9 +1404,10 @@ Database::build_o2xx(TYPE_ENTITY_LITERAL_ID** _p_id_tuples)
 }
 
 void
-Database::build_p2xx(TYPE_ENTITY_LITERAL_ID** _p_id_tuples)
+Database::build_p2xx(ID_TUPLE* _p_id_tuples)
 {
-	qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_pso_cmp);
+	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::pso_cmp_idtuple);
+	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_pso_cmp);
 	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num);
 }
 
@@ -1339,14 +1417,33 @@ Database::build_p2xx(TYPE_ENTITY_LITERAL_ID** _p_id_tuples)
 //CONSIDER: just an estimated value is ok or use vector!!!(but vector also copy when enlarge)
 //and read file line numbers are also costly!
 bool
-Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, TYPE_ENTITY_LITERAL_ID**& _p_id_tuples, TYPE_TRIPLE_NUM & _id_tuples_max)
+Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 {
+	//NOTICE: if we keep the id_tuples always in memory, i.e. [unsigned*] each unsigned* is [3]
+	//then for freebase, there is 2.5B triples. the mmeory cost of this array is 25*10^8*3*4 + 25*10^8*8 = 50G
+	//
+	//So I choose not to store the id_tuples in memory in this function, but to store them in file and read again after this function
+	//Notice that the most memory-costly part of building process is this function, setup 6 trees together
+	//later we can read the id_tuples and stored as [num][3], only cost 25*10^8*3*4 = 30G, and later we only build one tree at a time
+
+	string fname = this->getIDTuplesFile();
+	FILE* fp = fopen(fname.c_str(), "wb");
+	if(fp == NULL)
+	{
+		cout<<"error in Database::sub2id_pre2id_obj2id() -- unable to open file to write "<<fname<<endl;
+		return false;
+	}
+	ID_TUPLE tmp_id_tuple;
+	//NOTICE: avoid to break the unsigned limit, size_t is used in Linux C
+	//size_t means long unsigned int in 64-bit machine
+	//fread(_p_id_tuples, sizeof(TYPE_ENTITY_LITERAL_ID), total_num, fp);
+
 	TYPE_TRIPLE_NUM _id_tuples_size;
 	{
 		//initial
-		_id_tuples_max = 10 * 1000 * 1000;
-		_p_id_tuples = new TYPE_ENTITY_LITERAL_ID*[_id_tuples_max];
-		_id_tuples_size = 0;
+		//_id_tuples_max = 10 * 1000 * 1000;
+		//_p_id_tuples = new TYPE_ENTITY_LITERAL_ID*[_id_tuples_max];
+		//_id_tuples_size = 0;
 		this->sub_num = 0;
 		this->pre_num = 0;
 		this->entity_num = 0;
@@ -1430,15 +1527,15 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, TYPE_ENT
 			this->triples_num++;
 
 			//if the _id_tuples exceeds, double the space
-			if (_id_tuples_size == _id_tuples_max)
-			{
-				TYPE_TRIPLE_NUM _new_tuples_len = _id_tuples_max * 2;
-				TYPE_ENTITY_LITERAL_ID** _new_id_tuples = new TYPE_ENTITY_LITERAL_ID*[_new_tuples_len];
-				memcpy(_new_id_tuples, _p_id_tuples, sizeof(TYPE_ENTITY_LITERAL_ID*) * _id_tuples_max);
-				delete[] _p_id_tuples;
-				_p_id_tuples = _new_id_tuples;
-				_id_tuples_max = _new_tuples_len;
-			}
+			//if (_id_tuples_size == _id_tuples_max)
+			//{
+				//TYPE_TRIPLE_NUM _new_tuples_len = _id_tuples_max * 2;
+				//TYPE_ENTITY_LITERAL_ID** _new_id_tuples = new TYPE_ENTITY_LITERAL_ID*[_new_tuples_len];
+				//memcpy(_new_id_tuples, _p_id_tuples, sizeof(TYPE_ENTITY_LITERAL_ID*) * _id_tuples_max);
+				//delete[] _p_id_tuples;
+				//_p_id_tuples = _new_id_tuples;
+				//_id_tuples_max = _new_tuples_len;
+			//}
 
 			// For subject
 			// (all subject is entity, some object is entity, the other is literal)
@@ -1508,11 +1605,18 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, TYPE_ENT
 			}
 
 			//  For id_tuples
-			_p_id_tuples[_id_tuples_size] = new TYPE_ENTITY_LITERAL_ID[3];
-			_p_id_tuples[_id_tuples_size][0] = _sub_id;
-			_p_id_tuples[_id_tuples_size][1] = _pre_id;
-			_p_id_tuples[_id_tuples_size][2] = _obj_id;
-			_id_tuples_size++;
+			//_p_id_tuples[_id_tuples_size] = new TYPE_ENTITY_LITERAL_ID[3];
+			//_p_id_tuples[_id_tuples_size][0] = _sub_id;
+			//_p_id_tuples[_id_tuples_size][1] = _pre_id;
+			//_p_id_tuples[_id_tuples_size][2] = _obj_id;
+			//_id_tuples_size++;
+			tmp_id_tuple.subid = _sub_id;
+			tmp_id_tuple.preid = _pre_id;
+			tmp_id_tuple.objid = _obj_id;
+			fwrite(&tmp_id_tuple, sizeof(ID_TUPLE), 1, fp);
+			//fwrite(&_sub_id, sizeof(TYPE_ENTITY_LITERAL_ID), 1, fp);
+			//fwrite(&_pre_id, sizeof(TYPE_ENTITY_LITERAL_ID), 1, fp);
+			//fwrite(&_obj_id, sizeof(TYPE_ENTITY_LITERAL_ID), 1, fp);
 
 #ifdef DEBUG_PRECISE
 			////  save six tuples
@@ -1585,6 +1689,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, TYPE_ENT
 	delete[] triple_array;
 	_fin.close();
 	_six_tuples_fout.close();
+	fclose(fp);
 
 
 		//for (int i = 0; i < entitybitset_max; i++)

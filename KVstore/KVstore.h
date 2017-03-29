@@ -107,7 +107,7 @@ public:
 	//for subID2values
 	bool open_subID2values(int _mode);
 	bool close_subID2values();
-	bool build_subID2values(TYPE_ENTITY_LITERAL_ID** _p_id_tuples, TYPE_TRIPLE_NUM _triples_num);
+	bool build_subID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num);
 	bool getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
@@ -116,7 +116,7 @@ public:
 	//for objID2values
 	bool open_objID2values(int _mode);
 	bool close_objID2values();
-	bool build_objID2values(unsigned** _p_id_tuples, unsigned _triples_num);
+	bool build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num);
 	bool getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false) const;
@@ -125,7 +125,7 @@ public:
 	//for preID2values
 	bool open_preID2values(int _mode);
 	bool close_preID2values();
-	bool build_preID2values(TYPE_ENTITY_LITERAL_ID** _p_id_tuples, TYPE_TRIPLE_NUM _triples_num);
+	bool build_preID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num);
 	bool getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_objidlist, unsigned& _list_len, bool _no_duplicate = false) const;

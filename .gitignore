@@ -91,3 +91,6 @@ tags
 *.out
 *.bak~
 
+# modules
+node_modules
+

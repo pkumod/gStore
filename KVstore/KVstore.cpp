@@ -1247,7 +1247,7 @@ bool KVstore::close_subID2values() {
 }
 
 bool 
-KVstore::build_subID2values(TYPE_ENTITY_LITERAL_ID** _p_id_tuples, TYPE_TRIPLE_NUM _triples_num) 
+KVstore::build_subID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num) 
 {
 	cout << "Begin building subID2values..." << endl;
 	//qsort(_p_id_tuples, _triples_num, sizeof(int*), Util::_spo_cmp);
@@ -1264,20 +1264,26 @@ KVstore::build_subID2values(TYPE_ENTITY_LITERAL_ID** _p_id_tuples, TYPE_TRIPLE_N
 
 	this->open_subID2values(KVstore::CREATE_MODE);
 
-	for (unsigned i = 0; i < _triples_num; i++) {
-		if (i + 1 == _triples_num || _p_id_tuples[i][0] != _p_id_tuples[i + 1][0]
-			|| _p_id_tuples[i][1] != _p_id_tuples[i + 1][1] || _p_id_tuples[i][2] != _p_id_tuples[i + 1][2]) {
-			if (_sub_change) {
+	//NOTICE: i*3 + j maybe break the unsigned limit
+	//for (unsigned long i = 0; i < _triples_num; i++) 
+	for (TYPE_TRIPLE_NUM i = 0; i < _triples_num; i++) 
+	{
+		if (i + 1 == _triples_num || _p_id_tuples[i].subid != _p_id_tuples[i+1].subid
+			|| _p_id_tuples[i].preid != _p_id_tuples[i+1].preid || _p_id_tuples[i].objid != _p_id_tuples[i+1].objid) 
+		{
+			if (_sub_change) 
+			{
 				_pidoffsetlist_s.clear();
 				_oidlist_s.clear();
 				_entity_num = 0;
 			}
 
-			TYPE_ENTITY_LITERAL_ID _sub_id = _p_id_tuples[i][0];
-			TYPE_PREDICATE_ID _pre_id = _p_id_tuples[i][1];
-			TYPE_ENTITY_LITERAL_ID _obj_id = _p_id_tuples[i][2];
+			TYPE_ENTITY_LITERAL_ID _sub_id = _p_id_tuples[i].subid;
+			TYPE_PREDICATE_ID _pre_id = _p_id_tuples[i].preid;
+			TYPE_ENTITY_LITERAL_ID _obj_id = _p_id_tuples[i].objid;
 
-			if (_sub_pre_change) {
+			if (_sub_pre_change) 
+			{
 				_pidoffsetlist_s.push_back(_pre_id);
 				_pidoffsetlist_s.push_back(_oidlist_s.size());
 			}
@@ -1287,8 +1293,8 @@ KVstore::build_subID2values(TYPE_ENTITY_LITERAL_ID** _p_id_tuples, TYPE_TRIPLE_N
 				_entity_num++;
 			}
 
-			_sub_change = (i + 1 == _triples_num) || (_p_id_tuples[i][0] != _p_id_tuples[i + 1][0]);
-			_pre_change = (i + 1 == _triples_num) || (_p_id_tuples[i][1] != _p_id_tuples[i + 1][1]);
+			_sub_change = (i + 1 == _triples_num) || (_p_id_tuples[i].subid != _p_id_tuples[i+1].subid);
+			_pre_change = (i + 1 == _triples_num) || (_p_id_tuples[i].preid != _p_id_tuples[i+1].preid);
 			_sub_pre_change = _sub_change || _pre_change;
 
 			if (_sub_change) {
@@ -1478,7 +1484,7 @@ bool KVstore::close_objID2values() {
 }
 
 bool 
-KVstore::build_objID2values(TYPE_ENTITY_LITERAL_ID** _p_id_tuples, TYPE_TRIPLE_NUM _triples_num) 
+KVstore::build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num) 
 {
 	cout << "Begin building objID2values..." << endl;
 	//qsort(_p_id_tuples, _triples_num, sizeof(int*), Util::_ops_cmp);
@@ -1494,17 +1500,19 @@ KVstore::build_objID2values(TYPE_ENTITY_LITERAL_ID** _p_id_tuples, TYPE_TRIPLE_N
 
 	this->open_objID2values(KVstore::CREATE_MODE);
 
-	for (TYPE_TRIPLE_NUM i = 0; i < _triples_num; i++) {
-		if (i + 1 == _triples_num || _p_id_tuples[i][2] != _p_id_tuples[i + 1][2]
-			|| _p_id_tuples[i][1] != _p_id_tuples[i + 1][1] || _p_id_tuples[i][0] != _p_id_tuples[i + 1][0]) {
+	//for (unsigned long i = 0; i < _triples_num; i++) 
+	for (TYPE_TRIPLE_NUM i = 0; i < _triples_num; i++) 
+	{
+		if (i + 1 == _triples_num || _p_id_tuples[i].subid != _p_id_tuples[i+1].subid
+			|| _p_id_tuples[i].preid != _p_id_tuples[i+1].preid || _p_id_tuples[i].objid != _p_id_tuples[i+1].objid) {
 			if (_obj_change) {
 				_pidoffsetlist_o.clear();
 				_sidlist_o.clear();
 			}
 
-			TYPE_ENTITY_LITERAL_ID _sub_id = _p_id_tuples[i][0];
-			TYPE_PREDICATE_ID _pre_id = _p_id_tuples[i][1];
-			TYPE_ENTITY_LITERAL_ID _obj_id = _p_id_tuples[i][2];
+			TYPE_ENTITY_LITERAL_ID _sub_id = _p_id_tuples[i].subid;
+			TYPE_PREDICATE_ID _pre_id = _p_id_tuples[i].preid;
+			TYPE_ENTITY_LITERAL_ID _obj_id = _p_id_tuples[i].objid;
 
 			if (_obj_pre_change) {
 				_pidoffsetlist_o.push_back(_pre_id);
@@ -1513,8 +1521,8 @@ KVstore::build_objID2values(TYPE_ENTITY_LITERAL_ID** _p_id_tuples, TYPE_TRIPLE_N
 
 			_sidlist_o.push_back(_sub_id);
 
-			_obj_change = (i + 1 == _triples_num) || (_p_id_tuples[i][2] != _p_id_tuples[i + 1][2]);
-			_pre_change = (i + 1 == _triples_num) || (_p_id_tuples[i][1] != _p_id_tuples[i + 1][1]);
+			_obj_change = (i + 1 == _triples_num) || (_p_id_tuples[i].objid != _p_id_tuples[i+1].objid);
+			_pre_change = (i + 1 == _triples_num) || (_p_id_tuples[i].preid != _p_id_tuples[i+1].preid);
 			_obj_pre_change = _obj_change || _pre_change;
 
 			if (_obj_change) {
@@ -1683,7 +1691,7 @@ bool KVstore::close_preID2values() {
 }
 
 bool 
-KVstore::build_preID2values(TYPE_ENTITY_LITERAL_ID** _p_id_tuples, TYPE_TRIPLE_NUM _triples_num) 
+KVstore::build_preID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num) 
 {
 	cout << "Begin building preID2values..." << endl;
 	//qsort(_p_id_tuples, _triples_num, sizeof(int*), Util::_pso_cmp);
@@ -1695,22 +1703,24 @@ KVstore::build_preID2values(TYPE_ENTITY_LITERAL_ID** _p_id_tuples, TYPE_TRIPLE_N
 
 	this->open_preID2values(KVstore::CREATE_MODE);
 
-	for (TYPE_TRIPLE_NUM i = 0; i < _triples_num; i++) {
-		if (i + 1 == _triples_num || _p_id_tuples[i][0] != _p_id_tuples[i + 1][0]
-			|| _p_id_tuples[i][1] != _p_id_tuples[i + 1][1] || _p_id_tuples[i][2] != _p_id_tuples[i + 1][2]) {
+	//for (unsigned long i = 0; i < _triples_num; i++) 
+	for (TYPE_TRIPLE_NUM i = 0; i < _triples_num; i++) 
+	{
+		if (i + 1 == _triples_num || _p_id_tuples[i].subid != _p_id_tuples[i+1].subid
+			|| _p_id_tuples[i].preid != _p_id_tuples[i+1].preid || _p_id_tuples[i].objid != _p_id_tuples[i+1].objid) {
 			if (_pre_change) {
 				_sidlist_p.clear();
 				_oidlist_p.clear();
 			}
 
-			TYPE_ENTITY_LITERAL_ID _sub_id = _p_id_tuples[i][0];
-			TYPE_PREDICATE_ID _pre_id = _p_id_tuples[i][1];
-			TYPE_ENTITY_LITERAL_ID _obj_id = _p_id_tuples[i][2];
+			TYPE_ENTITY_LITERAL_ID _sub_id = _p_id_tuples[i].subid;
+			TYPE_PREDICATE_ID _pre_id = _p_id_tuples[i].preid;
+			TYPE_ENTITY_LITERAL_ID _obj_id = _p_id_tuples[i].objid;
 
 			_sidlist_p.push_back(_sub_id);
 			_oidlist_p.push_back(_obj_id);
 
-			_pre_change = (i + 1 == _triples_num) || (_p_id_tuples[i][1] != _p_id_tuples[i + 1][1]);
+			_pre_change = (i + 1 == _triples_num) || (_p_id_tuples[i].preid != _p_id_tuples[i+1].preid);
 
 			if (_pre_change) {
 				unsigned* _entrylist_p = new unsigned[1 + _sidlist_p.size() * 2];

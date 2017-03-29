@@ -1537,3 +1537,85 @@ Util::_pso_cmp(const void* _a, const void* _b)
 	return 0;
 }
 
+bool 
+Util::spo_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b)
+{
+	if(a.subid != b.subid)
+	{
+		return a.subid < b.subid;
+	}
+
+	if(a.preid != b.preid)
+	{
+		return a.preid < b.preid;
+	}
+
+	if(a.objid != b.objid)
+	{
+		return a.objid < b.objid;
+	}
+
+	//all are equal, no need to sort this two
+	return false;
+}
+
+bool 
+Util::ops_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b)
+{
+	if(a.objid != b.objid)
+	{
+		return a.objid < b.objid;
+	}
+
+	if(a.preid != b.preid)
+	{
+		return a.preid < b.preid;
+	}
+
+	if(a.subid != b.subid)
+	{
+		return a.subid < b.subid;
+	}
+
+	//all are equal, no need to sort this two
+	return false;
+}
+
+bool 
+Util::pso_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b)
+{
+	if(a.preid != b.preid)
+	{
+		return a.preid < b.preid;
+	}
+
+	if(a.subid != b.subid)
+	{
+		return a.subid < b.subid;
+	}
+
+	if(a.objid != b.objid)
+	{
+		return a.objid < b.objid;
+	}
+
+	//all are equal, no need to sort this two
+	return false;
+}
+
+void
+Util::empty_file(const char* _fname)
+{
+	FILE * fp;
+	//NOTICE: if exist, then overwrite and create a empty file
+	fp = fopen(_fname, "w"); 
+	if(fp == NULL)
+	{
+		printf("do empty file %s failed\n", _fname);
+	}
+	else 
+	{
+		fclose(fp);
+	}
+}
+

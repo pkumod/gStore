@@ -175,6 +175,13 @@ static const unsigned INVALID = UINT_MAX;
 //
 //NOTICE: if use define, the type is none
 
+typedef struct TYPE_ID_TUPLE
+{
+	TYPE_ENTITY_LITERAL_ID subid;
+	TYPE_ENTITY_LITERAL_ID preid;
+	TYPE_ENTITY_LITERAL_ID objid;
+}ID_TUPLE;
+
 /******** all static&universal constants and fucntions ********/
 class Util
 {
@@ -247,6 +254,7 @@ public:
 	static std::string getExactPath(const char* path);
 	static std::string getItemsFromDir(std::string path);
 	static void logging(std::string _str);
+	static void empty_file(const char* _fname);
 
 	// Below are some useful hash functions for string
 	static unsigned simpleHash(const char *_str);
@@ -295,6 +303,10 @@ public:
 	static int _spo_cmp(const void* _a, const void* _b);
 	static int _ops_cmp(const void* _a, const void* _b);
 	static int _pso_cmp(const void* _a, const void* _b);
+	//sort functions for sort on ID_TUPLE
+	static bool spo_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);
+	static bool ops_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);
+	static bool pso_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);
 
 	static std::string tmp_path;
 	// this are for debugging

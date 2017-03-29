@@ -60,16 +60,20 @@ public:
 	bool insert(std::string _rdf_file);
 	bool remove(std::string _rdf_file);
 
-	/* name of this DB*/
+	//name of this DB
 	string getName();
-	/* root Path of this DB + sixTuplesFile */
+
+	//root Path of this DB + sixTuplesFile
 	string getSixTuplesFile();
 
-	/* root Path of this DB + signatureBFile */
+	//root Path of this DB + signatureBFile
 	string getSignatureBFile();
 
-	/* root Path of this DB + DBInfoFile */
+	//root Path of this DB + DBInfoFile
 	string getDBInfoFile();
+
+	//id tuples file
+	string getIDTuplesFile();
 
 private:
 	string name;
@@ -95,8 +99,12 @@ private:
 
 	//six tuples: <sub pre obj sid pid oid> 
 	string six_tuples_file;
+
 	//B means binary 
 	string signature_binary_file;
+
+	//id tuples file
+	string id_tuples_file;
 
 	//pre2num mapping
 	TYPE_TRIPLE_NUM* pre2num;
@@ -179,9 +187,10 @@ private:
 	//* 4. build: objID2subIDlist, <objIDpreID>2subIDlist objID2<preIDsubID>list
 	//encodeRDF_new invoke new rdfParser to solve task 1 & 2 in one time scan.
 	bool encodeRDF_new(const string _rdf_file);
-	void build_s2xx(TYPE_ENTITY_LITERAL_ID**);
-	void build_o2xx(TYPE_ENTITY_LITERAL_ID**);
-	void build_p2xx(TYPE_ENTITY_LITERAL_ID**);
+	void readIDTuples(ID_TUPLE*& _p_id_tuples);
+	void build_s2xx(ID_TUPLE*);
+	void build_o2xx(ID_TUPLE*);
+	void build_p2xx(ID_TUPLE*);
 
 	//insert and delete, notice that modify is not needed here
 	//we can read from file or use sparql syntax
@@ -193,7 +202,7 @@ private:
 	unsigned remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num);
 	//bool remove(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
 
-	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, TYPE_ENTITY_LITERAL_ID**& _p_id_tuples, TYPE_TRIPLE_NUM & _id_tuples_max);
+	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file);
 	//bool literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, TYPE_TRIPLE_NUM _id_tuples_max);
 
 	bool objIDIsEntityID(TYPE_ENTITY_LITERAL_ID _id);
