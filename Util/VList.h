@@ -6,11 +6,11 @@
 # Description: 
 =============================================================================*/
 
-#ifndef _KVSTORE_IVTREE_STORAGE_VLIST_H
-#define _KVSTORE_IVTREE_STORAGE_VLIST_H
+#ifndef _UTIL_VLIST_H
+#define _UTIL_VLIST_H
 
-#include "../../../Util/Util.h"
-#include "../../../Util/Bstr.h"
+#include "Util.h"
+#include "Bstr.h"
 
 //TODO: not keep long list in memory, read each time
 //but when can you free the long list(kvstore should release it after parsing)
@@ -22,15 +22,21 @@
 
 //BETTER: use two kind of blocks in two files, like 1M and 1G (split the block num into two parts)
 
+//STRUCT: a long list    real-address is the block ID in file2(only for long value lists, a list across several 1M blocks)
+//tree-value Bstr: unsigned=the real address   char*=NULL
+//in disk: 
+//file1 is tree file, the long list is represented as: 0 real-address
+//NOTICE: long list is not kept in mmeory for cache, it is read/update each time on need!
+
 class VList
 {
 public:
 	//NOTICE:the border is 10^6, but the block is larger, 1M
 	static const unsigned LENGTH_BORDER = 1000000;
 	static const unsigned BLOCK_SIZE = 1 << 20;	//fixed size of disk-block
-	static const unsigned MAX_BLOCK_NUM = 1 << 16;		//max block-num
+	static const unsigned MAX_BLOCK_NUM = 1 << 23;		//max block-num
 	//below two constants: must can be exactly divided by 8
-	static const unsigned SET_BLOCK_NUM = 1 << 8;		//initial blocks num
+	static const unsigned SET_BLOCK_NUM = 1 << 2;		//initial blocks num
 	static const unsigned SET_BLOCK_INC = SET_BLOCK_NUM;	//base of blocks-num inc
 	static const unsigned SuperNum = MAX_BLOCK_NUM / (8 * BLOCK_SIZE) + 1;
 
@@ -59,12 +65,14 @@ private:
 
 public:
 	VList();
-	VList(std::string& _filepath, unsigned long long _buffer_size);//create a fixed-size file or open an existence
+	VList(std::string& _filepath, std::string& _mode, unsigned long long _buffer_size);//create a fixed-size file or open an existence
 	bool readBstr(Bstr* _bp, unsigned* _next);
 	bool writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock);
 	bool readValue(unsigned _block_num);
 	bool writeValue(const Bstr* _bp);
 	~VList();
+
+	static bool isLongList(unsigned _len);
 };
 
 #endif

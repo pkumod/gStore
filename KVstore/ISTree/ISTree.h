@@ -36,8 +36,8 @@ protected:
 	//so lock is a must. Add lock to transfer is better than to add 
 	//lock to every key/value. However, modify requires a lock for a
 	//key/value, and multiple search for different keys are ok!!!
-	Bstr transfer[3];	//0:transfer value searched; 1:copy key-data from const char*; 2:copy val-data from const char*
-	unsigned transfer_size[3];
+	//Bstr transfer[3];	//0:transfer value searched; 1:copy key-data from const char*; 2:copy val-data from const char*
+	//unsigned transfer_size[3];
 
 	//tree's operations should be atom(if read nodes)
 	//sum the request and send to ISStorage at last
@@ -49,7 +49,7 @@ protected:
 	std::string filename;      	//ok for user to change
 								/* some private functions */
 	std::string getFilePath();	//in UNIX system
-	void CopyToTransfer(const char* _str, unsigned _len, unsigned _index);
+	//void CopyToTransfer(const char* _str, unsigned _len, unsigned _index);
 	void release(ISNode* _np) const;
 
 public:
@@ -61,8 +61,8 @@ public:
 	//void setRoot(Node* _root);
 	//insert, search, remove, set
 	bool search(int _key, char*& _str, int& _len);
-	bool insert(int _key, const char* _str, unsigned _len);
-	bool modify(int _key, const char* _str, unsigned _len);
+	bool insert(int _key, char* _str, unsigned _len);
+	bool modify(int _key, char* _str, unsigned _len);
 	ISNode* find(int _key, int* store, bool ifmodify);
 	bool remove(int _key);
 	const Bstr* getRangeValue();

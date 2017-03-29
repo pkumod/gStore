@@ -125,6 +125,42 @@ ISLeafNode::addValue(const Bstr* _value, int _index, bool ifcopy)
 	return true;
 }
 
+bool 
+ISLeafNode::setValue(char* _str, unsigned _len, int _index, bool ifcopy)
+{
+	int num = this->getNum();
+	if (_index < 0 || _index >= num)
+	{
+		print(string("error in setValue: Invalid index ") + Util::int2string(_index));
+		return false;
+	}
+	this->values[_index].release(); //NOTICE: only used in modify
+
+	this->values[_index].setStr(_str);
+	this->values[_index].setLen(_len);
+
+	return true;
+}
+
+bool 
+ISLeafNode::addValue(char* _str, unsigned _len, int _index, bool ifcopy)
+{
+	int num = this->getNum();
+	if (_index < 0 || _index > num)
+	{
+		print(string("error in addValue: Invalid index ") + Util::int2string(_index));
+		return false;
+	}
+	int i;
+	for (i = num - 1; i >= _index; --i)
+		this->values[i + 1] = this->values[i];
+
+	this->values[_index].setStr(_str);
+	this->values[_index].setLen(_len);
+
+	return true;
+}
+
 bool
 ISLeafNode::subValue(int _index, bool ifdel)
 {

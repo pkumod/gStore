@@ -80,12 +80,18 @@ public:
 	virtual bool subChild(int _index) { return true; };
 	virtual ISNode* getPrev() const { return NULL; };
 	virtual ISNode* getNext() const { return NULL; };
+
 	virtual const Bstr* getValue(int _index) const { return NULL; };
 	virtual bool setValue(const Bstr* _value, int _index, bool ifcopy = false) { return true; };
 	virtual bool addValue(const Bstr* _value, int _index, bool ifcopy = false) { return true; };
 	virtual bool subValue(int _index, bool ifdel = false) { return true; };
 	virtual void setPrev(ISNode* _prev) {};
 	virtual void setNext(ISNode* _next) {};
+
+	virtual bool setValue(char* _str, unsigned _len, int _index, bool ifcopy = false) { return true; };
+	virtual bool addValue(char* _str, unsigned _len, int _index, bool ifcopy = false) { return true; };
+
+	//pure virtual function
 	virtual void Virtual() = 0;
 	virtual void Normal() = 0;
 	virtual unsigned getSize() const = 0;		//return all memory owned

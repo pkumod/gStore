@@ -134,7 +134,7 @@ SITree::search(const char* _str, unsigned _len, int* _val)
 }
 
 bool
-SITree::insert(const char* _str, unsigned _len, int _val)
+SITree::insert(char* _str, unsigned _len, int _val)
 {
 	if (_str == NULL || _len == 0)
 	{

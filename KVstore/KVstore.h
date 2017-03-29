@@ -10,7 +10,15 @@
 #define _KVSTORE_KVSTORE_H
 
 #include "../Util/Util.h"
+#include "../Util/VList.h"
 #include "Tree.h"
+
+//TODO: is it needed to keep a length in Bstr?? especially for IVTree?
+//add a length: sizeof bstr from 8 to 16(4 -> 8 for alignment)
+//add a \0 in tail: only add 1 char
+//QUERY: but to count the length each time maybe very costly?
+//No, because triple num is stored in char* now!!!! we do not need to save it again
+//TODO: entity_border in s2values list is not needed!!! not waste memory here
 
 class KVstore
 {
@@ -187,13 +195,13 @@ private:
 	void flush(ISTree* _p_btree);
 	void flush(IVTree* _p_btree);
 
-	bool addValueByKey(SITree* _p_btree, const char* _key, int _klen, int _val);
-	bool addValueByKey(ISTree* _p_btree, int _key, const char* _val, int _vlen);
-	bool addValueByKey(IVTree* _p_btree, int _key, const char* _val, int _vlen);
+	bool addValueByKey(SITree* _p_btree, char* _key, int _klen, int _val);
+	bool addValueByKey(ISTree* _p_btree, int _key, char* _val, int _vlen);
+	bool addValueByKey(IVTree* _p_btree, int _key, char* _val, int _vlen);
 
-	bool setValueByKey(SITree* _p_btree, const char* _key, int _klen, int _val);
-	bool setValueByKey(ISTree* _p_btree, int _key, const char* _val, int _vlen);
-	bool setValueByKey(IVTree* _p_btree, int _key, const char* _val, int _vlen);
+	bool setValueByKey(SITree* _p_btree, char* _key, int _klen, int _val);
+	bool setValueByKey(ISTree* _p_btree, int _key, char* _val, int _vlen);
+	bool setValueByKey(IVTree* _p_btree, int _key, char* _val, int _vlen);
 
 	bool getValueByKey(SITree* _p_btree, const char* _key, int _klen, int* _val) const;
 	bool getValueByKey(ISTree* _p_btree, int _key, char*& _val, int& _vlen) const;

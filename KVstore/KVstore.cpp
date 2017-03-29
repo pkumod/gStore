@@ -1422,6 +1422,14 @@ KVstore::getpreIDlistBysubID(int _subid, int*& _preidlist, int& _list_len, bool 
 		_preidlist[i] = _tmp[2 * i + 3];
 	}
 
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
+	}
+
 	return true;
 }
 
@@ -1450,6 +1458,14 @@ KVstore::getobjIDlistBysubID(int _subid, int*& _objidlist, int& _list_len, bool 
 	Util::sort(_objidlist, _list_len);
 	if (_no_duplicate) {
 		_list_len = Util::removeDuplicate(_objidlist, _list_len);
+	}
+
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
 	}
 
 	return true;
@@ -1493,6 +1509,14 @@ KVstore::getobjIDlistBysubIDpreID(int _subid, int _preid, int*& _objidlist, int&
 	_objidlist = new int[_list_len];
 	memcpy(_objidlist, _tmp + _offset, sizeof(int) * _list_len);
 
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
+	}
+
 	return true;
 }
 
@@ -1531,6 +1555,14 @@ KVstore::getpreIDobjIDlistBysubID(int _subid, int*& _preid_objidlist, int& _list
 			_preid_objidlist[2 * j] = _tmp[3 + 2 * i];
 			_preid_objidlist[2 * j + 1] = _tmp[3 + 2 * _tmp[1] + j];
 		}
+	}
+
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
 	}
 
 	return true;
@@ -1664,6 +1696,14 @@ KVstore::getpreIDlistByobjID(int _objid, int*& _preidlist, int& _list_len, bool 
 		_preidlist[i] = _tmp[2 * i + 2];
 	}
 
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
+	}
+
 	return true;
 }
 
@@ -1686,6 +1726,14 @@ KVstore::getsubIDlistByobjID(int _objid, int*& _subidlist, int& _list_len, bool 
 	Util::sort(_subidlist, _list_len);
 	if (_no_duplicate) {
 		_list_len = Util::removeDuplicate(_subidlist, _list_len);
+	}
+
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
 	}
 
 	return true;
@@ -1723,6 +1771,14 @@ KVstore::getsubIDlistByobjIDpreID(int _objid, int _preid, int*& _subidlist, int&
 	_subidlist = new int[_list_len];
 	memcpy(_subidlist, _tmp + _offset, sizeof(int) * _list_len);
 
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
+	}
+
 	return true;
 }
 
@@ -1754,6 +1810,14 @@ KVstore::getpreIDsubIDlistByobjID(int _objid, int*& _preid_subidlist, int& _list
 			_preid_subidlist[2 * j] = _tmp[2 + 2 * i];
 			_preid_subidlist[2 * j + 1] = _tmp[2 + 2 * _tmp[1] + j];
 		}
+	}
+
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
 	}
 
 	return true;
@@ -1867,6 +1931,14 @@ KVstore::getsubIDlistBypreID(int _preid, int*& _subidlist, int& _list_len, bool 
 		_list_len = Util::removeDuplicate(_subidlist, _list_len);
 	}
 
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
+	}
+
 	return true;
 }
 
@@ -1891,6 +1963,14 @@ KVstore::getobjIDlistBypreID(int _preid, int*& _objidlist, int& _list_len, bool 
 		_list_len = Util::removeDuplicate(_objidlist, _list_len);
 	}
 
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
+	}
+
 	return true;
 }
 
@@ -1911,6 +1991,14 @@ KVstore::getsubIDobjIDlistBypreID(int _preid, int*& _subid_objidlist, int& _list
 	for (int i = 0; i < _tmp[0]; i++) {
 		_subid_objidlist[2 * i] = _tmp[1 + i];
 		_subid_objidlist[2 * i + 1] = _tmp[1 + _tmp[0] + i];
+	}
+
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
 	}
 
 	return true;
@@ -1975,6 +2063,14 @@ KVstore::getpreIDlistBysubIDobjID(int _subid, int _objid, int*& _preidlist, int&
 			list[i] = -1;
 			_list_len--;
 		}
+	}
+
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
 	}
 
 	if (_list_len == 0) {
@@ -2091,37 +2187,37 @@ KVstore::flush(IVTree* _p_btree)
 }
 
 bool 
-KVstore::addValueByKey(SITree* _p_btree, const char* _key, int _klen, int _val) 
+KVstore::addValueByKey(SITree* _p_btree, char* _key, int _klen, int _val) 
 {
 	return _p_btree->insert(_key, _klen, _val);
 }
 
 bool 
-KVstore::addValueByKey(ISTree* _p_btree, int _key, const char* _val, int _vlen) 
+KVstore::addValueByKey(ISTree* _p_btree, int _key, char* _val, int _vlen) 
 {
 	return _p_btree->insert(_key, _val, _vlen);
 }
 
 bool 
-KVstore::addValueByKey(IVTree* _p_btree, int _key, const char* _val, int _vlen) 
+KVstore::addValueByKey(IVTree* _p_btree, int _key, char* _val, int _vlen) 
 {
 	return _p_btree->insert(_key, _val, _vlen);
 }
 
 bool 
-KVstore::setValueByKey(SITree* _p_btree, const char* _key, int _klen, int _val) 
+KVstore::setValueByKey(SITree* _p_btree, char* _key, int _klen, int _val) 
 {
 	return _p_btree->modify(_key, _klen, _val);
 }
 
 bool 
-KVstore::setValueByKey(ISTree* _p_btree, int _key, const char* _val, int _vlen) 
+KVstore::setValueByKey(ISTree* _p_btree, int _key, char* _val, int _vlen) 
 {
 	return _p_btree->modify(_key, _val, _vlen);
 }
 
 bool 
-KVstore::setValueByKey(IVTree* _p_btree, int _key, const char* _val, int _vlen) 
+KVstore::setValueByKey(IVTree* _p_btree, int _key, char* _val, int _vlen) 
 {
 	return _p_btree->modify(_key, _val, _vlen);
 }
@@ -2218,6 +2314,7 @@ KVstore::binarySearch(int _key, const int* _list, int _list_len, int _step)
 }
 
 //TODO: better to adjust these parameters according to memory usage and entity num
+//need a memory manager first
 string KVstore::s_entity2id = "s_entity2id";
 string KVstore::s_id2entity = "s_id2entity";
 unsigned short KVstore::buffer_entity2id_build = 8;

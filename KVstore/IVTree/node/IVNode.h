@@ -11,7 +11,7 @@
 
 #include "../../../Util/Util.h"
 #include "../../../Util/Bstr.h"
-#include "../vlist/VList.h"
+#include "../../../Util/VList.h"
 
 class IVNode       				//abstract basic class 
 {
@@ -81,6 +81,7 @@ public:
 	virtual bool subChild(int _index) { return true; };
 	virtual IVNode* getPrev() const { return NULL; };
 	virtual IVNode* getNext() const { return NULL; };
+
 	virtual const Bstr* getValue(int _index) const { return NULL; };
 	virtual bool getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) const { return NULL; };
 	virtual bool setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy = false) { return true; };
@@ -92,6 +93,8 @@ public:
 
 	virtual void setPrev(IVNode* _prev) {};
 	virtual void setNext(IVNode* _next) {};
+
+	//pure virtual functions
 	virtual void Virtual() = 0;
 	virtual void Normal() = 0;
 	virtual unsigned getSize() const = 0;		//return all memory owned

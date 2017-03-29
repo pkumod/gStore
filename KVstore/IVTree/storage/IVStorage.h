@@ -9,10 +9,10 @@
 #ifndef _KVSTORE_IVTREE_STORAGE_IVSTORAGE_H
 #define _KVSTORE_IVTREE_STORAGE_IVSTORAGE_H
 
+#include "../../../Util/VList.h"
 #include "../node/IVIntlNode.h"
 #include "../node/IVLeafNode.h"
 #include "../heap/IVHeap.h"
-#include "../vlist/VList.h"
 
 //It controls read, write, swap
 class IVStorage

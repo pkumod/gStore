@@ -65,7 +65,7 @@ public:
 	SINode* getRoot() const;
 	//insert, search, remove, set
 	bool search(const char* _str, unsigned _len, int* _val);
-	bool insert(const char* _str, unsigned _len, int _val);
+	bool insert(char* _str, unsigned _len, int _val);
 	bool modify(const char* _str, unsigned _len, int _val);
 	SINode* find(const char* _key, unsigned _len, int* store, bool ifmodify);
 	bool remove(const char* _str, unsigned _len);

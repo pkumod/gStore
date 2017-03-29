@@ -27,18 +27,24 @@ public:
 	void Normal();
 	SINode* getPrev() const;
 	SINode* getNext() const;
+
 	int getValue(int _index) const;
 	bool setValue(int _val, int _index);
 	bool addValue(int _val, int _index);
 	bool subValue(int _index);
+
 	void setPrev(SINode* _prev);
 	void setNext(SINode* _next);
+
 	unsigned getSize() const;
+
 	SINode* split(SINode* _father, int _index);
 	SINode* coalesce(SINode* _father, int _index);
+
 	void release();
 	~SILeafNode();
 	void print(std::string s);			//DEBUG
+
 	/*non-sense virtual function
 	Node* getChild(int _index) const;
 	bool addChild(Node* _child, int _index);

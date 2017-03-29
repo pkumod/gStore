@@ -36,7 +36,7 @@ IVTree::IVTree(string _storepath, string _filename, string _mode, unsigned long 
 	string filepath = this->getFilePath();
 
 	string vlist_file = filepath + "_vlist";
-	this->value_list = new VList(vlist_file, 1<<30);
+	this->value_list = new VList(vlist_file, this->mode, 1<<30);
 
 	TSM = new IVStorage(filepath, this->mode, &this->height, _buffer_size, this->value_list);
 	if (this->mode == "open")
@@ -142,7 +142,7 @@ IVTree::search(int _key, char*& _str, int& _len)
 }
 
 bool
-IVTree::insert(int _key, const char* _str, unsigned _len)
+IVTree::insert(int _key, char* _str, unsigned _len)
 {
 	if (_key < 0)
 	{
@@ -244,12 +244,13 @@ IVTree::insert(int _key, const char* _str, unsigned _len)
 		//_key->clear();
 		//_value->clear();
 	}
+
 	this->TSM->request(request);
 	return !ifexist;		//QUERY(which case:return false)
 }
 
 bool
-IVTree::modify(int _key, const char* _str, unsigned _len)
+IVTree::modify(int _key, char* _str, unsigned _len)
 {
 	if (_key < 0)
 	{
@@ -268,11 +269,14 @@ IVTree::modify(int _key, const char* _str, unsigned _len)
 		return false;
 	}
 	//cout<<"IVTree::modify() - key is found, now to remove"<<endl;
+
+	//NOTICE+DEBUG: if this value is a long list, then it is not saved in memory, here should return 0 in Bstr
 	unsigned len = ret->getValue(store)->getLen();
 	ret->setValue(this->value_list, store, _str, _len, true);
 	//ret->setValue(val, store, true);
 	//cout<<"value reset"<<endl;
 	//cout<<"newlen: "<<val->getLen()<<" oldlen: "<<len<<endl;
+
 	//request += (val->getLen() - len);
 	this->request = _len;
 	//this->request = val->getLen();
@@ -386,6 +390,7 @@ IVTree::remove(int _key)
 		this->TSM->updateHeap(p, p->getRank(), true);
 		p = q;
 	}
+
 	bool flag = false;
 	//j = p->getNum();		//LeafNode(maybe root)
 	//for(i = 0; i < j; ++i)
@@ -414,7 +419,7 @@ IVTree::remove(int _key)
 	{
 		request -= p->getValue(i)->getLen();
 		p->subKey(i);		//to release
-		p->subValue(i, true);	//to release
+		p->subValue(this->value_list, i, true);	//to release
 		p->subNum();
 		if (p->getNum() == 0)	//root leaf 0 key
 		{
@@ -461,6 +466,7 @@ IVTree::resetStream()
 	this->stream->setEnd();
 }
 
+//TODO: change to using value list, getValue() maybe not get real long list
 bool	//special case: not exist, one-edge-case
 IVTree::range_query(int _key1, int _key2)
 {		//the range is: *_key1 <= x < *_key2 	
@@ -555,6 +561,7 @@ IVTree::range_query(int _key1, int _key2)
 		for (i = l; i < r; ++i)
 		{
 			//NOTICE:Bstr* in an array, used as Bstr[]
+			//DEBUG+TODO: if long list?? clean
 			this->stream->write(p->getValue(i));
 		}
 		this->TSM->request(request);
@@ -563,7 +570,9 @@ IVTree::range_query(int _key1, int _key2)
 		else
 			break;
 	}
+
 	this->stream->setEnd();
+
 	return true;
 }
 

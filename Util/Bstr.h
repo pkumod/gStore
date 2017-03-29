@@ -18,6 +18,7 @@ class Bstr
 {
 private:
 	char* str;		//pointers consume 8 byte in 64-bit system
+	//TODO: the length maybe not needed
 	unsigned length;
 
 public:

@@ -10,55 +10,64 @@
 
 using namespace std;
 
+bool 
+VList::isLongList(unsigned _len)
+{
+	return _len > VList::LENGTH_BORDER;
+}
+
 VList::VList()
 {							//not use ../logs/, notice the location of program
 	cur_block_num = SET_BLOCK_NUM;
 	filepath = "";
 	freelist = NULL;
-	treefp = NULL;
-	minheap = NULL;
 	max_buffer_size = Util::MAX_BUFFER_SIZE;
-	heap_size = max_buffer_size / IVNode::INTL_SIZE;
 	freemem = max_buffer_size;
 }
 
-VList::VList(string& _filepath, unsigned long long _buffer_size)
+VList::VList(string& _filepath, string& _mode, unsigned long long _buffer_size)
 {
 	cur_block_num = SET_BLOCK_NUM;		//initialize
 	this->filepath = _filepath;
+
 	if (_mode == string("build"))
-		treefp = fopen(_filepath.c_str(), "w+b");
+		valfp = fopen(_filepath.c_str(), "w+b");
 	else if (_mode == string("open"))
-		treefp = fopen(_filepath.c_str(), "r+b");
+		valfp = fopen(_filepath.c_str(), "r+b");
 	else
 	{
-		print(string("error in IVStorage: Invalid mode ") + _mode);
+		cout<<string("error in VList: Invalid mode ") + _mode<<endl;
 		return;
 	}
-	if (treefp == NULL)
+	if (valfp == NULL)
 	{
-		print(string("error in IVStorage: Open error ") + _filepath);
+		cout<<string("error in VList: Open error ") + _filepath<<endl;
 		return;
 	}
-	this->treeheight = _height;		//originally set to 0
+
 	this->max_buffer_size = _buffer_size;
-	this->heap_size = this->max_buffer_size / IVNode::INTL_SIZE;
 	this->freemem = this->max_buffer_size;
 	this->freelist = new BlockInfo;	//null-head
+
+	//TODO: read/write by char is too slow, how about read all and deal , then clear?
+	//
+	//BETTER: hwo about assign IDs in a dynamic way?
+	//limitID freelist
+	//QUETY: can free id list consume very large memory??
+
 	unsigned i, j, k;	//j = (SuperNum-1)*BLOCK_SIZE
 	BlockInfo* bp;
 	if (_mode == "build")
 	{	//write basic information
 		i = 0;
-		fwrite(&i, sizeof(unsigned), 1, this->treefp);	//height
-		fwrite(&i, sizeof(unsigned), 1, this->treefp); //rootnum
-		fwrite(&cur_block_num, sizeof(unsigned), 1, this->treefp);	//current block num
-		fseek(this->treefp, BLOCK_SIZE, SEEK_SET);
+		fwrite(&cur_block_num, sizeof(unsigned), 1, this->valfp);	//current block num
+		//NOTICE: use a 1M block for a unsigned?? not ok!
+		fseek(this->valfp, BLOCK_SIZE, SEEK_SET);
 		bp = this->freelist;
 		j = cur_block_num / 8;
 		for (i = 0; i < j; ++i)
 		{
-			fputc(0, this->treefp);
+			fputc(0, this->valfp);
 			for (k = 0; k < 8; ++k)
 			{
 				bp->next = new BlockInfo(i * 8 + k + 1, NULL);
@@ -69,17 +78,14 @@ VList::VList(string& _filepath, unsigned long long _buffer_size)
 	else	//_mode == "open"
 	{
 		//read basic information
-		int rootnum;
 		char c;
-		fread(this->treeheight, sizeof(unsigned), 1, this->treefp);
-		fread(&rootnum, sizeof(unsigned), 1, this->treefp);
-		fread(&cur_block_num, sizeof(unsigned), 1, this->treefp);
-		fseek(this->treefp, BLOCK_SIZE, SEEK_SET);
+		fread(&cur_block_num, sizeof(unsigned), 1, this->valfp);
+		fseek(this->valfp, BLOCK_SIZE, SEEK_SET);
 		bp = this->freelist;
 		j = cur_block_num / 8;
 		for (i = 0; i < j; ++i)
 		{
-			c = fgetc(treefp);
+			c = fgetc(valfp);
 			for (k = 0; k < 8; ++k)
 			{
 				if ((c & (1 << k)) == 0)
@@ -89,14 +95,13 @@ VList::VList(string& _filepath, unsigned long long _buffer_size)
 				}
 			}
 		}
-		fseek(treefp, Address(rootnum), SEEK_SET);
-		//treefp is now ahead of root-block
 	}
-	this->minheap = new IVHeap(this->heap_size);
+
+	//NOTICE: we do not need to alloc the blocks for free block id list, AllocBlock is only for later blocks
 }
 
 long		//8-byte in 64-bit machine
-IVStorage::Address(unsigned _blocknum) const  //BETTER: inline function
+VList::Address(unsigned _blocknum) const  //BETTER: inline function
 {
 	if (_blocknum == 0)
 		return 0;
@@ -110,13 +115,13 @@ IVStorage::Address(unsigned _blocknum) const  //BETTER: inline function
 }
 
 unsigned
-IVStorage::Blocknum(long address) const
+VList::Blocknum(long address) const
 {
 	return (address / BLOCK_SIZE) + 1 - this->SuperNum;
 }
 
 unsigned
-IVStorage::AllocBlock()
+VList::AllocBlock()
 {
 	BlockInfo* p = this->freelist->next;
 	if (p == NULL)
@@ -131,11 +136,12 @@ IVStorage::AllocBlock()
 	unsigned t = p->num;
 	this->freelist->next = p->next;
 	delete p;
+
 	return t;
 }
 
 void
-IVStorage::FreeBlock(unsigned _blocknum)
+VList::FreeBlock(unsigned _blocknum)
 {			//QUERY: head-sub and tail-add will be better?
 	BlockInfo* bp = new BlockInfo(_blocknum, this->freelist->next);
 	this->freelist->next = bp;
@@ -145,93 +151,96 @@ IVStorage::FreeBlock(unsigned _blocknum)
 //a string may acrossseveral blocks
 
 void
-IVStorage::ReadAlign(unsigned* _next)
+VList::ReadAlign(unsigned* _next)
 {
-	if (ftell(treefp) % BLOCK_SIZE == 0)
+	if (ftell(valfp) % BLOCK_SIZE == 0)
 	{
-		fseek(treefp, Address(*_next), SEEK_SET);
-		fread(_next, sizeof(unsigned), 1, treefp);
+		fseek(valfp, Address(*_next), SEEK_SET);
+		fread(_next, sizeof(unsigned), 1, valfp);
 	}
 }
 
 void
-IVStorage::WriteAlign(unsigned* _curnum, bool& _SpecialBlock)
+VList::WriteAlign(unsigned* _curnum, bool& _SpecialBlock)
 {
-	if (ftell(treefp) % BLOCK_SIZE == 0)
+	if (ftell(valfp) % BLOCK_SIZE == 0)
 	{
 		unsigned blocknum = this->AllocBlock();
-		fseek(treefp, Address(*_curnum), SEEK_SET);
+		fseek(valfp, Address(*_curnum), SEEK_SET);
 		if (_SpecialBlock)
 		{
-			fseek(treefp, 4, SEEK_CUR);
+			fseek(valfp, 4, SEEK_CUR);
 			_SpecialBlock = false;
 		}
-		fwrite(&blocknum, sizeof(unsigned), 1, treefp);
-		fseek(treefp, Address(blocknum) + 4, SEEK_SET);
+		fwrite(&blocknum, sizeof(unsigned), 1, valfp);
+		fseek(valfp, Address(blocknum) + 4, SEEK_SET);
 		*_curnum = blocknum;
 	}
 }
 
+//TODO: check , read/write a long list, across several blocks
+//not use buffer, read/write on need, update at once, so no need to write back at last
+
+//TODO: still use Bstr?? how can we get the next pointer?? use NULL to init
+//NOTICE: the next is placed at the begin of a block
 bool
-IVStorage::readBstr(Bstr* _bp, unsigned* _next)
+VList::readBstr(Bstr* _bp, unsigned* _next)
 {
 	//long address;
 	unsigned len, i, j;
-	fread(&len, sizeof(unsigned), 1, this->treefp);
+	fread(&len, sizeof(unsigned), 1, this->valfp);
 	this->ReadAlign(_next);
 	//this->request(len);
 	char* s = (char*)malloc(len);
 	_bp->setLen(len);
 	for (i = 0; i + 4 < len; i += 4)
 	{
-		fread(s + i, sizeof(char), 4, treefp);
+		fread(s + i, sizeof(char), 4, valfp);
 		this->ReadAlign(_next);
 	}
 	while (i < len)
 	{
-		fread(s + i, sizeof(char), 1, treefp);	//BETTER
+		fread(s + i, sizeof(char), 1, valfp);	//BETTER
 		i++;
 	}
 	j = len % 4;
 	if (j > 0)
 		j = 4 - j;
-	fseek(treefp, j, SEEK_CUR);
+	fseek(valfp, j, SEEK_CUR);
 	this->ReadAlign(_next);
 	_bp->setStr(s);
+
 	return true;
 }
 
 bool
-IVStorage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
+VList::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
 {
 	unsigned i, j, len = _bp->getLen();
-	fwrite(&len, sizeof(unsigned), 1, treefp);
+	fwrite(&len, sizeof(unsigned), 1, valfp);
 	this->WriteAlign(_curnum, _SpecialBlock);
 	char* s = _bp->getStr();
 	for (i = 0; i + 4 < len; i += 4)
 	{
-		fwrite(s + i, sizeof(char), 4, treefp);
+		fwrite(s + i, sizeof(char), 4, valfp);
 		this->WriteAlign(_curnum, _SpecialBlock);
 	}
 	while (i < len)
 	{
-		fwrite(s + i, sizeof(char), 1, treefp);
+		fwrite(s + i, sizeof(char), 1, valfp);
 		i++;
 	}
 	j = len % 4;
 	if (j > 0)
 		j = 4 - j;
-	fseek(treefp, j, SEEK_CUR);
+	fseek(valfp, j, SEEK_CUR);
 	this->WriteAlign(_curnum, _SpecialBlock);
+
 	return true;
 }
 
 VList::~VList()
 {
-	//release heap and freelist...
-#ifdef DEBUG_KVSTORE
-	printf("now to release the kvstore!\n");
-#endif
 	BlockInfo* bp = this->freelist;
 	BlockInfo* next;
 	while (bp != NULL)
@@ -240,18 +249,6 @@ VList::~VList()
 		delete bp;
 		bp = next;
 	}
-#ifdef DEBUG_KVSTORE
-	printf("already empty the freelist!\n");
-#endif
-	delete this->minheap;
-#ifdef DEBUG_KVSTORE
-	printf("already empty the buffer heap!\n");
-#endif
-	fclose(this->treefp);
-	//#ifdef DEBUG_KVSTORE
-	//NOTICE:there is more than one tree
-	//fclose(Util::debug_kvstore);	//NULL is ok!
-	//Util::debug_kvstore = NULL;
-	//#endif
+	fclose(this->valfp);
 }
 

@@ -11,11 +11,11 @@
 
 #include "../../Util/Util.h"
 #include "../../Util/Stream.h"
+#include "../../Util/VList.h"
 #include "node/IVNode.h"
 #include "node/IVIntlNode.h"
 #include "node/IVLeafNode.h"
 #include "storage/IVStorage.h"
-#include "./vlist/VList.h"
 
 //TODO: for long list, do not read in time, just on need
 //the memory is kept with the node, updat ewith node
@@ -80,8 +80,8 @@ public:
 	//void setRoot(Node* _root);
 	//insert, search, remove, set
 	bool search(int _key, char*& _str, int& _len);
-	bool insert(int _key, const char* _str, unsigned _len);
-	bool modify(int _key, const char* _str, unsigned _len);
+	bool insert(int _key, char* _str, unsigned _len);
+	bool modify(int _key, char* _str, unsigned _len);
 	IVNode* find(int _key, int* store, bool ifmodify);
 	bool remove(int _key);
 	const Bstr* getRangeValue();

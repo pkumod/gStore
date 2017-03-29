@@ -89,6 +89,7 @@ IVLeafNode::getValue(int _index) const
 		return this->values + _index;
 }
 
+//TODO!!!
 bool 
 IVLeafNode::getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) const
 {
@@ -149,6 +150,26 @@ IVLeafNode::addValue(VList* _vlist, int _index, char* _str, unsigned _len, bool 
 }
 
 bool
+IVLeafNode::subValue(VList* _vlist, int _index, bool ifdel)
+{
+	//TODO: if is to sub long list
+	int num = this->getNum();
+	if (_index < 0 || _index >= num)
+	{
+		print(string("error in subValue: Invalid index ") + Util::int2string(_index));
+		return false;
+	}
+
+	int i;
+	if (ifdel)
+		values[_index].release();
+	for (i = _index; i < num - 1; ++i)
+		this->values[i] = this->values[i + 1];
+
+	return true;
+}
+
+bool
 IVLeafNode::addValue(const Bstr* _value, int _index, bool ifcopy)
 {
 	int num = this->getNum();
@@ -165,26 +186,6 @@ IVLeafNode::addValue(const Bstr* _value, int _index, bool ifcopy)
 		this->values[_index].copy(_value);
 	else
 		this->values[_index] = *_value;
-
-	return true;
-}
-
-bool
-IVLeafNode::subValue(VList* _vlist, int _index, bool ifdel)
-{
-	//TODO: if is to sub long list
-	int num = this->getNum();
-	if (_index < 0 || _index >= num)
-	{
-		print(string("error in subValue: Invalid index ") + Util::int2string(_index));
-		return false;
-	}
-
-	int i;
-	if (ifdel)
-		values[_index].release();
-	for (i = _index; i < num - 1; ++i)
-		this->values[i] = this->values[i + 1];
 
 	return true;
 }
