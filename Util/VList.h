@@ -12,7 +12,10 @@
 #include "Util.h"
 #include "Bstr.h"
 
-//TODO: not keep long list in memory, read each time
+//TODO: all use new/delete for Bstr, KVstore and trees, including Stream
+//then give a full test, including valgrind
+
+//NOTICE: not keep long list in memory, read each time
 //but when can you free the long list(kvstore should release it after parsing)
 //
 //CONSIDER: if to keep long list in memory, should adjust the bstr in memory:
@@ -61,15 +64,16 @@ private:
 	unsigned AllocBlock();
 	void FreeBlock(unsigned _blocknum);
 	void ReadAlign(unsigned* _next);
-	void WriteAlign(unsigned* _next, bool& _SpecialBlock);
+	void WriteAlign(unsigned* _next);
+	bool readBstr(char*& _bp, unsigned& _len, unsigned* _next);
+	bool writeBstr(const char* _str, unsigned _len, unsigned* _curnum);
 
 public:
 	VList();
 	VList(std::string& _filepath, std::string& _mode, unsigned long long _buffer_size);//create a fixed-size file or open an existence
-	bool readBstr(Bstr* _bp, unsigned* _next);
-	bool writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock);
-	bool readValue(unsigned _block_num);
-	bool writeValue(const Bstr* _bp);
+	bool readValue(unsigned _block_num, char*& _str, unsigned& _len);
+	unsigned writeValue(const char* _str, unsigned _len);
+	bool removeValue(unsigned _block_num);
 	~VList();
 
 	static bool isLongList(unsigned _len);

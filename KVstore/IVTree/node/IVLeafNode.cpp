@@ -89,25 +89,74 @@ IVLeafNode::getValue(int _index) const
 		return this->values + _index;
 }
 
-//TODO!!!
 bool 
-IVLeafNode::getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) const
+IVLeafNode::setValue(const Bstr* _value, int _index, bool _ifcopy)
 {
-	//TODO: read long list
-	return true;
-}
-
-bool
-IVLeafNode::setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy)
-{
-	//TODO: consider the long list, how to cancel and reset
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
 		print(string("error in setValue: Invalid index ") + Util::int2string(_index));
 		return false;
 	}
+
 	this->values[_index].release(); //NOTICE: only used in modify
+
+	if(_ifcopy)
+	{
+		this->values[_index].copy(_value);
+	}
+	else
+	{
+		this->values[_index] = *_value;
+	}
+
+	return true;
+}
+
+bool 
+IVLeafNode::getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) const
+{
+	int num = this->getNum();
+	if (_index < 0 || _index >= num)
+	{
+		//print(string("error in getValue: Invalid index ") + Util::int2string(_index));
+		return NULL;
+	}
+
+	//read long list
+	if(this->values[_index].isBstrLongList())
+	{
+		unsigned block_num = this->values[_index].getLen();
+		_vlist->readValue(block_num, _str, _len);
+	}
+	else
+	{
+		_str = this->values[_index].getStr();
+		_len = this->values[_index].getLen();
+	}
+
+	return true;
+}
+
+bool
+IVLeafNode::setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy)
+{
+	int num = this->getNum();
+	if (_index < 0 || _index >= num)
+	{
+		print(string("error in setValue: Invalid index ") + Util::int2string(_index));
+		return false;
+	}
+
+	if(this->values[_index].isBstrLongList())
+	{
+		unsigned block_num = this->values[_index].getLen();
+		_vlist->removeValue(block_num);
+	}
+	else
+	{
+		this->values[_index].release(); //NOTICE: only used in modify
+	}
 	
 	//DEBUG: we do not need to copy here
 	//we just need to ensure that the pointer's memory is not released
@@ -119,8 +168,17 @@ IVLeafNode::setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool 
 	//else
 	//{
 		//this->values[_index] = *_value;
+	if(VList::isLongList(_len))
+	{
+		unsigned block_num = _vlist->writeValue(_str, _len);
+		this->values[_index].setStr(NULL);
+		this->values[_index].setLen(block_num);
+	}
+	else
+	{
 		this->values[_index].setStr(_str);
 		this->values[_index].setLen(_len);
+	}
 	//}
 	return true;
 }
@@ -128,23 +186,34 @@ IVLeafNode::setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool 
 bool
 IVLeafNode::addValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy)
 {
-	//TODO:if the list is too large
 	int num = this->getNum();
 	if (_index < 0 || _index > num)
 	{
 		print(string("error in addValue: Invalid index ") + Util::int2string(_index));
 		return false;
 	}
-	int i;
-	for (i = num - 1; i >= _index; --i)
+
+	for (int i = num - 1; i >= _index; --i)
 		this->values[i + 1] = this->values[i];
 
 	//if (ifcopy)
 		//this->values[_index].copy(_value);
 	//else
 		//this->values[_index] = *_value;
-	this->values[_index].setStr(_str);
-	this->values[_index].setLen(_len);
+
+	if(VList::isLongList(_len))
+	{
+		unsigned block_num = _vlist->writeValue(_str, _len);
+		this->values[_index].setStr(NULL);
+		this->values[_index].setLen(block_num);
+	}
+	else
+	{
+		this->values[_index].setStr(_str);
+		this->values[_index].setLen(_len);
+	}
+	//this->values[_index].setStr(_str);
+	//this->values[_index].setLen(_len);
 
 	return true;
 }
@@ -152,7 +221,6 @@ IVLeafNode::addValue(VList* _vlist, int _index, char* _str, unsigned _len, bool 
 bool
 IVLeafNode::subValue(VList* _vlist, int _index, bool ifdel)
 {
-	//TODO: if is to sub long list
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
@@ -160,10 +228,20 @@ IVLeafNode::subValue(VList* _vlist, int _index, bool ifdel)
 		return false;
 	}
 
-	int i;
-	if (ifdel)
-		values[_index].release();
-	for (i = _index; i < num - 1; ++i)
+	if(this->values[_index].isBstrLongList())
+	{
+		unsigned block_num = this->values[_index].getLen();
+		_vlist->removeValue(block_num);
+	}
+	else
+	{
+		if (ifdel)
+		{
+			values[_index].release();
+		}
+	}
+
+	for (int i = _index; i < num - 1; ++i)
 		this->values[i] = this->values[i + 1];
 
 	return true;

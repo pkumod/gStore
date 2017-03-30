@@ -88,9 +88,8 @@ http://blog.csdn.net/infoworld/article/details/8670951
 要在单机支持到10亿triple，最坏情况下最多有20亿entity和20亿literal，目前的编号方式是不行的(int扩展为unsigned)
 最好在单机100G内存上支持起freebase(2.5B triples)这个规模的数据集，就像jena和virtuoso一样，慢不要紧
 
-type分支中query过程可能还有问题，需要修改Query/里面的类型
-去掉tree里面的复制，另外kvstore里面的复制可以考虑通过一个或若干个bstr buffer来实现，避免每次都重新new，但这会影响多线程程序
-而且在kvstore中往往需要对原始list做一些额外处理
+type分支中query过程可能还有问题，需要修改Query/里面的类型，另外stringindex中也要修改，分界线已经是20亿且非法不再是-1
+vstree在build和query时可以用不同大小的缓存，来加速build过程
 ---
 UBSTR: 类型bstr的length问题也需要解决 如果把类型直接改成long long，空间开销一下子就上升了一倍
 解决方法：对于ID2string，仍然用char*和unsigned，但对于s2xx p2xx o2xx，应该用unsigned long long*和unsigned来表示，这样最高可支持到40亿triple

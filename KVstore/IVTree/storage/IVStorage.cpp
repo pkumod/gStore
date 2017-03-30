@@ -348,6 +348,11 @@ IVStorage::createNode(IVNode*& _np) //cretae virtual nodes, not in-mem
 	return true;
 }
 
+//BETTER: Does SpecialBlock really needed? why can't we place next before flag??
+//
+//NOTICE: root num begins from 1, if root num is 0, then it is invalid, i.e. the tree is NULL
+//(and ftell(root address) will be 0 either)
+
 bool
 IVStorage::writeNode(IVNode* _np)
 {
@@ -446,7 +451,10 @@ IVStorage::readBstr(Bstr* _bp, unsigned* _next)
 	}
 
 	//this->request(len);
-	char* s = (char*)malloc(len);
+
+	//NOTICE: we use new for all, consistent with Bstr and KVstore
+	//char* s = (char*)malloc(len);
+	char* s = new char[len];
 	_bp->setLen(len);
 	for (i = 0; i + 4 < len; i += 4)
 	{

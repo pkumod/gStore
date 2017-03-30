@@ -115,13 +115,13 @@ IVTree::prepare(IVNode* _np)
 }
 
 bool
-IVTree::search(int _key, char*& _str, int& _len)
+IVTree::search(unsigned _key, char*& _str, unsigned& _len)
 {
-	if (_key < 0)
-	{
-		printf("error in IVTree-search: empty string\n");
-		return false;
-	}
+	//if (_key < 0)
+	//{
+		//printf("error in IVTree-search: empty string\n");
+		//return false;
+	//}
 
 	this->request = 0;
 	int store;
@@ -142,13 +142,13 @@ IVTree::search(int _key, char*& _str, int& _len)
 }
 
 bool
-IVTree::insert(int _key, char* _str, unsigned _len)
+IVTree::insert(unsigned _key, char* _str, unsigned _len)
 {
-	if (_key < 0)
-	{
-		printf("error in IVTree-insert: empty string\n");
-		return false;
-	}
+	//if (_key < 0)
+	//{
+		//printf("error in IVTree-insert: empty string\n");
+		//return false;
+	//}
 
 	//this->CopyToTransfer(_str, _len, 2);
 	//const Bstr* val = &(this->transfer[2]);
@@ -250,13 +250,13 @@ IVTree::insert(int _key, char* _str, unsigned _len)
 }
 
 bool
-IVTree::modify(int _key, char* _str, unsigned _len)
+IVTree::modify(unsigned _key, char* _str, unsigned _len)
 {
-	if (_key < 0)
-	{
-		printf("error in IVTree-modify: empty string\n");
-		return false;
-	}
+	//if (_key < 0)
+	//{
+		//printf("error in IVTree-modify: empty string\n");
+		//return false;
+	//}
 
 	//this->CopyToTransfer(_str, _len, 2);	//not check value
 	//const Bstr* val = &(this->transfer[2]);
@@ -291,7 +291,7 @@ IVTree::modify(int _key, char* _str, unsigned _len)
 
 //this function is useful for search and modify, and range-query 
 IVNode*		//return the first key's position that >= *_key
-IVTree::find(int _key, int* _store, bool ifmodify)
+IVTree::find(unsigned _key, int* _store, bool ifmodify)
 {											//to assign value for this->bstr, function shouldn't be const!
 	if (this->root == NULL)
 		return NULL;						//IVTree Is Empty
@@ -334,13 +334,13 @@ IVTree::find(unsigned _len, const char* _str, int* store) const
 */
 
 bool
-IVTree::remove(int _key)
+IVTree::remove(unsigned _key)
 {
-	if (_key < 0)
-	{
-		printf("error in IVTree-remove: empty string\n");
-		return false;
-	}
+	//if (_key < 0)
+	//{
+		//printf("error in IVTree-remove: empty string\n");
+		//return false;
+	//}
 
 	this->request = 0;
 	IVNode* ret;
@@ -468,7 +468,7 @@ IVTree::resetStream()
 
 //TODO: change to using value list, getValue() maybe not get real long list
 bool	//special case: not exist, one-edge-case
-IVTree::range_query(int _key1, int _key2)
+IVTree::range_query(unsigned _key1, unsigned _key2)
 {		//the range is: *_key1 <= x < *_key2 	
 		//if(_key1 <0 && _key2 <0)
 		//return false;

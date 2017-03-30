@@ -28,6 +28,8 @@ public:
 	IVNode* getPrev() const;
 	IVNode* getNext() const;
 	const Bstr* getValue(int _index) const;
+	bool setValue(const Bstr* _value, int _index, bool _ifcopy=false);
+
 	bool getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) const;
 	bool setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy = false);
 

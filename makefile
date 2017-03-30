@@ -72,9 +72,9 @@ sitreeobj = $(objdir)SITree.o $(objdir)SIStorage.o $(objdir)SINode.o $(objdir)SI
 istreeobj = $(objdir)ISTree.o $(objdir)ISStorage.o $(objdir)ISNode.o $(objdir)ISIntlNode.o $(objdir)ISLeafNode.o $(objdir)ISHeap.o 
 ivtreeobj = $(objdir)IVTree.o $(objdir)IVStorage.o $(objdir)IVNode.o $(objdir)IVIntlNode.o $(objdir)IVLeafNode.o $(objdir)IVHeap.o 
 
-kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) #$(sstreeobj)
+kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) #$(sstreeobj)
 
-utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o
+utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o \
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)ResultFilter.o $(objdir)GeneralEvaluation.o
@@ -219,7 +219,7 @@ $(objdir)ISHeap.o: KVstore/ISTree/heap/ISHeap.cpp KVstore/ISTree/heap/ISHeap.h $
 #objects in istree/ end
 
 #objects in ivtree/ begin
-$(objdir)IVTree.o: KVstore/IVTree/IVTree.cpp KVstore/IVTree/IVTree.h $(objdir)Stream.o
+$(objdir)IVTree.o: KVstore/IVTree/IVTree.cpp KVstore/IVTree/IVTree.h $(objdir)Stream.o $(objdir)VList.o
 	$(CC) $(CFLAGS) KVstore/IVTree/IVTree.cpp -o $(objdir)IVTree.o
 
 $(objdir)IVStorage.o: KVstore/IVTree/storage/IVStorage.cpp KVstore/IVTree/storage/IVStorage.h $(objdir)Util.o
@@ -322,6 +322,9 @@ $(objdir)Triple.o: Util/Triple.cpp Util/Triple.h $(objdir)Util.o
 
 $(objdir)BloomFilter.o:  Util/BloomFilter.cpp Util/BloomFilter.h $(objdir)Util.o
 	$(CC) $(CFLAGS) Util/BloomFilter.cpp -o $(objdir)BloomFilter.o 
+
+$(objdir)VList.o:  Util/VList.cpp Util/VList.h
+	$(CC) $(CFLAGS) Util/VList.cpp -o $(objdir)VList.o
 
 #objects in util/ end
 

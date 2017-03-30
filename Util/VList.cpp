@@ -149,6 +149,10 @@ VList::FreeBlock(unsigned _blocknum)
 
 //NOTICE: all reads are aligned to 4 bytes(including a string)
 //a string may acrossseveral blocks
+//
+//NOTICE: not use buffer, read/write on need, update at once, so no need to write back at last
+//NOTICE: the next is placed at the begin of a block
+
 
 void
 VList::ReadAlign(unsigned* _next)
@@ -161,38 +165,68 @@ VList::ReadAlign(unsigned* _next)
 }
 
 void
-VList::WriteAlign(unsigned* _curnum, bool& _SpecialBlock)
+VList::WriteAlign(unsigned* _curnum)
 {
 	if (ftell(valfp) % BLOCK_SIZE == 0)
 	{
 		unsigned blocknum = this->AllocBlock();
 		fseek(valfp, Address(*_curnum), SEEK_SET);
-		if (_SpecialBlock)
-		{
-			fseek(valfp, 4, SEEK_CUR);
-			_SpecialBlock = false;
-		}
 		fwrite(&blocknum, sizeof(unsigned), 1, valfp);
 		fseek(valfp, Address(blocknum) + 4, SEEK_SET);
 		*_curnum = blocknum;
 	}
 }
 
-//TODO: check , read/write a long list, across several blocks
-//not use buffer, read/write on need, update at once, so no need to write back at last
+bool 
+VList::readValue(unsigned _block_num, char*& _str, unsigned& _len)
+{
+	fseek(valfp, Address(_block_num), SEEK_SET);
+	unsigned next;
+	fread(&next, sizeof(unsigned), 1, valfp);
+	this->readBstr(_str, _len, &next);
 
-//TODO: still use Bstr?? how can we get the next pointer?? use NULL to init
-//NOTICE: the next is placed at the begin of a block
+	return true;
+}
+
+unsigned 
+VList::writeValue(const char* _str, unsigned _len)
+{
+	unsigned blocknum = this->AllocBlock();
+	unsigned curnum = blocknum;
+	this->writeBstr(_str, _len, &curnum);
+
+	return blocknum;
+}
+
+bool 
+VList::removeValue(unsigned _block_num)
+{
+	unsigned store = _block_num, next;
+	fseek(this->valfp, Address(store), SEEK_SET);
+	fread(&next, sizeof(unsigned), 1, valfp);
+
+	while (store != 0)
+	{
+		this->FreeBlock(store);
+		store = next;
+		fseek(valfp, Address(store), SEEK_SET);
+		fread(&next, sizeof(unsigned), 1, valfp);
+	}
+
+	return true;
+}
+
 bool
-VList::readBstr(Bstr* _bp, unsigned* _next)
+VList::readBstr(char*& _str, unsigned& _len, unsigned* _next)
 {
 	//long address;
 	unsigned len, i, j;
 	fread(&len, sizeof(unsigned), 1, this->valfp);
 	this->ReadAlign(_next);
-	//this->request(len);
+
 	char* s = (char*)malloc(len);
-	_bp->setLen(len);
+	_len = len;
+
 	for (i = 0; i + 4 < len; i += 4)
 	{
 		fread(s + i, sizeof(char), 4, valfp);
@@ -203,38 +237,52 @@ VList::readBstr(Bstr* _bp, unsigned* _next)
 		fread(s + i, sizeof(char), 1, valfp);	//BETTER
 		i++;
 	}
+
 	j = len % 4;
 	if (j > 0)
 		j = 4 - j;
 	fseek(valfp, j, SEEK_CUR);
-	this->ReadAlign(_next);
-	_bp->setStr(s);
 
+	//NOTICE+DEBUG: I think no need to align here, later no data to read 
+	//(if need to read, then fseek again to find a new value)
+	//this->ReadAlign(_next);
+
+	_str = s;
 	return true;
 }
 
 bool
-VList::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
+VList::writeBstr(const char* _str, unsigned _len, unsigned* _curnum)
 {
-	unsigned i, j, len = _bp->getLen();
+	unsigned i, j, len = _len;
 	fwrite(&len, sizeof(unsigned), 1, valfp);
-	this->WriteAlign(_curnum, _SpecialBlock);
-	char* s = _bp->getStr();
+	this->WriteAlign(_curnum);
+
+	//BETTER: compute this need how many blocks first, then write a block a time
+
+	const char* s = _str;
 	for (i = 0; i + 4 < len; i += 4)
 	{
 		fwrite(s + i, sizeof(char), 4, valfp);
-		this->WriteAlign(_curnum, _SpecialBlock);
+		this->WriteAlign(_curnum);
 	}
 	while (i < len)
 	{
 		fwrite(s + i, sizeof(char), 1, valfp);
 		i++;
 	}
+
 	j = len % 4;
 	if (j > 0)
 		j = 4 - j;
 	fseek(valfp, j, SEEK_CUR);
-	this->WriteAlign(_curnum, _SpecialBlock);
+
+	//NOTICE+DEBUG: I think no need to align here, later no data to write 
+	//(if need to write, then fseek again to write a new value)
+	//this->WriteAlign(_curnum);
+	fseek(valfp, Address(*_curnum), SEEK_SET);
+	unsigned t = 0;
+	fwrite(&t, sizeof(unsigned), 1, valfp);
 
 	return true;
 }

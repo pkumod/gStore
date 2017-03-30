@@ -19,6 +19,11 @@
 //QUERY: but to count the length each time maybe very costly?
 //No, because triple num is stored in char* now!!!! we do not need to save it again
 //TODO: entity_border in s2values list is not needed!!! not waste memory here
+//
+//QUERY: but to implement vlist, we need a unsigned flag
+//What is more, we need to store the string in disk, how can we store it if without the length? 
+//unsigned type stored as chars, maybe will have '\0'
+//In memory, we do not know when the oidlist ends if without the original length (butthe triple num will answer this!)
 
 class KVstore
 {
@@ -197,15 +202,15 @@ private:
 
 	bool addValueByKey(SITree* _p_btree, char* _key, int _klen, int _val);
 	bool addValueByKey(ISTree* _p_btree, int _key, char* _val, int _vlen);
-	bool addValueByKey(IVTree* _p_btree, int _key, char* _val, int _vlen);
+	bool addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 
 	bool setValueByKey(SITree* _p_btree, char* _key, int _klen, int _val);
 	bool setValueByKey(ISTree* _p_btree, int _key, char* _val, int _vlen);
-	bool setValueByKey(IVTree* _p_btree, int _key, char* _val, int _vlen);
+	bool setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 
 	bool getValueByKey(SITree* _p_btree, const char* _key, int _klen, int* _val) const;
 	bool getValueByKey(ISTree* _p_btree, int _key, char*& _val, int& _vlen) const;
-	bool getValueByKey(IVTree* _p_btree, int _key, char*& _val, int& _vlen) const;
+	bool getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
 
 	int getIDByStr(SITree* _p_btree, const char* _key, int _klen) const;
 

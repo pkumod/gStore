@@ -122,7 +122,8 @@ unsigned
 Bstr::getLen() const
 {
 	//NOTICE: this is for VList
-	if(this->str == NULL)
+	if(this->isBstrLongList())
+	//if(this->str == NULL)
 	{
 		return 0;
 	}
@@ -212,5 +213,11 @@ Bstr::print(string s) const
 //	}
 //	else;
 //#endif
+}
+
+bool
+Bstr::isBstrLongList() const
+{
+	return this->str == NULL;
 }
 

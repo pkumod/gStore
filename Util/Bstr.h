@@ -48,6 +48,9 @@ public:
 	//int write(FILE* _fp);
 	~Bstr();
 	void print(std::string s) const;		//DEBUG
+
+	//judge if this Bstr represent a long list value, and waiting to be each time on need
+	bool isBstrLongList() const;
 };
 
 #endif // _UTIL_BSTR_H
