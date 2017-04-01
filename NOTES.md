@@ -89,6 +89,7 @@ http://blog.csdn.net/infoworld/article/details/8670951
 最好在单机100G内存上支持起freebase(2.5B triples)这个规模的数据集，就像jena和virtuoso一样，慢不要紧
 
 type分支中query过程可能还有问题，需要修改Query/里面的类型，另外stringindex中也要修改，分界线已经是20亿且非法不再是-1
+remove signature.binary, 合并两个分支type value
 vstree在build和query时可以用不同大小的缓存，来加速build过程
 ---
 UBSTR: 类型bstr的length问题也需要解决 如果把类型直接改成long long，空间开销一下子就上升了一倍
@@ -468,6 +469,8 @@ build db error if triple num > 500M
 - - -
 
 # BETTER
+
+#### 添加数据访问层，数据范式和生成数据访问的源码
 
 #### 在BasicQuery.cpp中的encodeBasicQuery函数中发现有pre_id==-1时就可以直接中止查询，返回空值！
 

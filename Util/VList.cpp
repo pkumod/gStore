@@ -180,6 +180,9 @@ VList::WriteAlign(unsigned* _curnum)
 bool 
 VList::readValue(unsigned _block_num, char*& _str, unsigned& _len)
 {
+#ifdef DEBUG_VLIST
+	cout<<"to get value of block num: "<<_block_num<<endl;
+#endif
 	fseek(valfp, Address(_block_num), SEEK_SET);
 	unsigned next;
 	fread(&next, sizeof(unsigned), 1, valfp);
@@ -193,8 +196,14 @@ VList::writeValue(const char* _str, unsigned _len)
 {
 	unsigned blocknum = this->AllocBlock();
 	unsigned curnum = blocknum;
+
+	//NOTICE: here we must skip the next position first
+	fseek(valfp, Address(curnum) + 4, SEEK_SET);
 	this->writeBstr(_str, _len, &curnum);
 
+#ifdef DEBUG_VLIST
+	cout<<"to write value - block num: "<<blocknum<<endl;
+#endif
 	return blocknum;
 }
 
@@ -222,9 +231,13 @@ VList::readBstr(char*& _str, unsigned& _len, unsigned* _next)
 	//long address;
 	unsigned len, i, j;
 	fread(&len, sizeof(unsigned), 1, this->valfp);
+#ifdef DEBUG_VLIST
+	cout<<"the length of value: "<<len<<endl;
+#endif
 	this->ReadAlign(_next);
 
-	char* s = (char*)malloc(len);
+	//char* s = (char*)malloc(len);
+	char* s = new char[len];
 	_len = len;
 
 	for (i = 0; i + 4 < len; i += 4)
@@ -257,6 +270,7 @@ VList::writeBstr(const char* _str, unsigned _len, unsigned* _curnum)
 	unsigned i, j, len = _len;
 	fwrite(&len, sizeof(unsigned), 1, valfp);
 	this->WriteAlign(_curnum);
+	//cout<<"to write bstr, length: "<<len<<endl;
 
 	//BETTER: compute this need how many blocks first, then write a block a time
 
@@ -289,7 +303,39 @@ VList::writeBstr(const char* _str, unsigned _len, unsigned* _curnum)
 
 VList::~VList()
 {
-	BlockInfo* bp = this->freelist;
+	//write the info back
+	fseek(this->valfp, 0, SEEK_SET);
+	fwrite(&cur_block_num, sizeof(unsigned), 1, valfp);//write current blocks num
+	fseek(valfp, BLOCK_SIZE, SEEK_SET);
+	int i, j = cur_block_num / 8;	//(SuperNum-1)*BLOCK_SIZE;
+	for (i = 0; i < j; ++i)
+	{
+		//reset to 1 first
+		fputc(0xff, valfp);
+	}
+	char c;
+	BlockInfo* bp = this->freelist->next;
+	while (bp != NULL)
+	{
+		//if not-use then set 0, aligned to byte!
+#ifdef DEBUG_KVSTORE
+		if (bp->num > cur_block_num)
+		{
+			printf("blocks num exceed, cur_block_num: %u\n", cur_block_num);
+			exit(1);
+		}
+#endif
+		j = bp->num - 1;
+		i = j / 8;
+		j = 7 - j % 8;
+		fseek(valfp, BLOCK_SIZE + i, SEEK_SET);
+		c = fgetc(valfp);
+		fseek(valfp, -1, SEEK_CUR);
+		fputc(c & ~(1 << j), valfp);
+		bp = bp->next;
+	}
+
+	bp = this->freelist;
 	BlockInfo* next;
 	while (bp != NULL)
 	{

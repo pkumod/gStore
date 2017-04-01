@@ -237,7 +237,11 @@ IVTree::insert(unsigned _key, char* _str, unsigned _len)
 		p->addKey(_key, i);
 		p->addValue(this->value_list, i, _str, _len, true);
 		p->addNum();
-		request += _len;
+		//NOTICE: is this is a vlist, then it will be freed, and should not be included in the request memory
+		if(!VList::isLongList(_len))
+		{
+			request += _len;
+		}
 		//request += val->getLen();
 		p->setDirty();
 		this->TSM->updateHeap(p, p->getRank(), true);
@@ -272,13 +276,20 @@ IVTree::modify(unsigned _key, char* _str, unsigned _len)
 
 	//NOTICE+DEBUG: if this value is a long list, then it is not saved in memory, here should return 0 in Bstr
 	unsigned len = ret->getValue(store)->getLen();
+	if(ret->getValue(store)->isBstrLongList())
+	{
+		len = 0;
+	}
 	ret->setValue(this->value_list, store, _str, _len, true);
 	//ret->setValue(val, store, true);
 	//cout<<"value reset"<<endl;
 	//cout<<"newlen: "<<val->getLen()<<" oldlen: "<<len<<endl;
 
 	//request += (val->getLen() - len);
-	this->request = _len;
+	if(!VList::isLongList(_len))
+	{
+		this->request += _len;
+	}
 	//this->request = val->getLen();
 	this->request -= len;
 	ret->setDirty();
@@ -417,7 +428,10 @@ IVTree::remove(unsigned _key)
 	//WARN+NOTICE:here must check, because the key to remove maybe not exist
 	if (i != (int)p->getNum())
 	{
-		request -= p->getValue(i)->getLen();
+		if(!p->getValue(i)->isBstrLongList())
+		{
+			request -= p->getValue(i)->getLen();
+		}
 		p->subKey(i);		//to release
 		p->subValue(this->value_list, i, true);	//to release
 		p->subNum();
@@ -605,6 +619,8 @@ IVTree::release(IVNode* _np) const
 
 IVTree::~IVTree()
 {
+	delete this->value_list;
+
 	delete this->stream;   //maybe NULL
 	delete TSM;
 #ifdef DEBUG_KVSTORE

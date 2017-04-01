@@ -651,7 +651,14 @@ Util::result_id_str(vector<int*>& _v, int _var_num)
 bool
 Util::dir_exist(const string _dir)
 {
-    return (opendir(_dir.c_str()) != NULL);
+	DIR* dirptr = opendir(_dir.c_str());
+	if(dirptr != NULL)
+	{
+		closedir(dirptr);
+		return true;
+	}
+
+	return false;
 }
 
 bool

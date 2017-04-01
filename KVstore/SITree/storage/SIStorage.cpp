@@ -419,7 +419,8 @@ SIStorage::readBstr(Bstr* _bp, unsigned* _next)
 	fread(&len, sizeof(unsigned), 1, this->treefp);
 	this->ReadAlign(_next);
 	//this->request(len);
-	char* s = (char*)malloc(len);
+	//char* s = (char*)malloc(len);
+	char* s = new char[len];
 	_bp->setLen(len);
 	for (i = 0; i + 4 < len; i += 4)
 	{

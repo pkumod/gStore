@@ -800,6 +800,7 @@ Database::build(const string& _rdf_file)
 	//sync();
 	//cout << "sync vstree" << endl;
 
+	//TODO: use fopen w+ to remove signature.binary file
 	//string cmd = "rm -rf " + _entry_file;
 	//system(cmd.c_str());
 	//cout << "signature file removed" << endl;

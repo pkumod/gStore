@@ -91,6 +91,7 @@ in the sparql query can point to the same node in data graph)
 //#define DEBUG_VSTREE 1	//in Database 
 //#define DEBUG_LRUCACHE 1
 //#define DEBUG_DATABASE 1	//in Database
+//#define DEBUG_VLIST 1
 //
 //
 
@@ -119,6 +120,12 @@ in the sparql query can point to the same node in data graph)
 #endif
 
 #ifdef DEBUG_JOIN
+#ifndef DEBUG
+#define DEBUG
+#endif
+#endif
+
+#ifdef DEBUG_VLIST
 #ifndef DEBUG
 #define DEBUG
 #endif

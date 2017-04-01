@@ -12,9 +12,6 @@
 #include "Util.h"
 #include "Bstr.h"
 
-//TODO: all use new/delete for Bstr, KVstore and trees, including Stream
-//then give a full test, including valgrind
-
 //NOTICE: not keep long list in memory, read each time
 //but when can you free the long list(kvstore should release it after parsing)
 //
@@ -31,15 +28,19 @@
 //file1 is tree file, the long list is represented as: 0 real-address
 //NOTICE: long list is not kept in mmeory for cache, it is read/update each time on need!
 
+//TODO: use fread/fwrite here instead of fgetc/fputc
+//including  other trees
+
 class VList
 {
 public:
 	//NOTICE:the border is 10^6, but the block is larger, 1M
-	static const unsigned LENGTH_BORDER = 1000000;
+	//static const unsigned LENGTH_BORDER = 1000000;
+	static const unsigned LENGTH_BORDER = 1000;
 	static const unsigned BLOCK_SIZE = 1 << 20;	//fixed size of disk-block
 	static const unsigned MAX_BLOCK_NUM = 1 << 23;		//max block-num
 	//below two constants: must can be exactly divided by 8
-	static const unsigned SET_BLOCK_NUM = 1 << 2;		//initial blocks num
+	static const unsigned SET_BLOCK_NUM = 1 << 3;		//initial blocks num
 	static const unsigned SET_BLOCK_INC = SET_BLOCK_NUM;	//base of blocks-num inc
 	static const unsigned SuperNum = MAX_BLOCK_NUM / (8 * BLOCK_SIZE) + 1;
 

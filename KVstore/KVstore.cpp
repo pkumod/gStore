@@ -12,7 +12,8 @@ using namespace std;
 
 //sets store_path as the root dir of this KVstore
 //initial all Tree pointers as NULL
-KVstore::KVstore(string _store_path) {
+KVstore::KVstore(string _store_path) 
+{
 	this->store_path = _store_path;
 
 	this->entity2id = NULL;
@@ -30,14 +31,17 @@ KVstore::KVstore(string _store_path) {
 }
 
 //Release all the memory used in this KVstore before destruction
-KVstore::~KVstore() {
+KVstore::~KVstore() 
+{
 	this->flush();
 	this->release();
 }
 
 //Flush all modified parts into the disk, which will not release any memory
 //Does nothing to null tree pointers or parts that has not been modified 
-void KVstore::flush() {
+void 
+KVstore::flush() 
+{
 	this->flush(this->entity2id);
 	this->flush(this->id2entity);
 
@@ -52,7 +56,9 @@ void KVstore::flush() {
 	this->flush(this->objID2values);
 }
 
-void KVstore::release() {
+void 
+KVstore::release() 
+{
 	delete this->entity2id;
 	this->entity2id = NULL;
 	delete this->id2entity;
@@ -76,7 +82,9 @@ void KVstore::release() {
 	this->objID2values = NULL;
 }
 
-void KVstore::open() {
+void 
+KVstore::open() 
+{
 	cout << "open KVstore" << endl;
 
 	this->open_entity2id(KVstore::READ_WRITE_MODE);
@@ -93,102 +101,192 @@ void KVstore::open() {
 	this->open_preID2values(KVstore::READ_WRITE_MODE);
 }
 
-int KVstore::getEntityDegree(int _entity_id) const {
+int 
+KVstore::getEntityDegree(int _entity_id) const 
+{
 	return this->getEntityInDegree(_entity_id) + this->getEntityOutDegree(_entity_id);
 }
 
-int KVstore::getEntityInDegree(int _entity_id) const {
+int 
+KVstore::getEntityInDegree(int _entity_id) const 
+{
 	//cout << "In getEntityInDegree " << _entity_id << endl;
 	unsigned* _tmp = NULL;
 	unsigned _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _entity_id, (char*&)_tmp, _len);
-	if (!_get) {
-		return 0;
+
+	int ret = 0;
+	if (_get) 
+	{
+		ret = _tmp[0];
 	}
-	return _tmp[0];
+
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
+	}
+
+	return ret;
 }
 
-int KVstore::getEntityOutDegree(int _entity_id) const {
+int 
+KVstore::getEntityOutDegree(int _entity_id) const 
+{
 	//cout << "In getEntityOutDegree " << _entity_id << endl;
 	unsigned* _tmp = NULL;
 	unsigned _len = 0;
 	bool _get = this->getValueByKey(this->subID2values, _entity_id, (char*&)_tmp, _len);
-	if (!_get) {
-		return 0;
+
+	int ret = 0;
+	if (_get) 
+	{
+		ret = _tmp[0];
 	}
-	return _tmp[0];
+
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
+	}
+
+	return ret;
 }
 
-int KVstore::getLiteralDegree(int _literal_id) const {
+int 
+KVstore::getLiteralDegree(int _literal_id) const 
+{
 	//cout << "In getLiteralDegree " << _literal_id << endl;
 	unsigned* _tmp = NULL;
 	unsigned _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _literal_id, (char*&)_tmp, _len);
-	if (!_get) {
-		return 0;
+
+	int ret = 0;
+	if (_get) 
+	{
+		ret = _tmp[0];
 	}
-	return _tmp[0];
+
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
+	}
+
+	return ret;
 }
 
-int KVstore::getPredicateDegree(int _predicate_id) const {
+int 
+KVstore::getPredicateDegree(int _predicate_id) const 
+{
 	//cout << "In getPredicate Degree " << _predicate_id << endl;
 	unsigned* _tmp = NULL;
 	unsigned _len = 0;
 	bool _get = this->getValueByKey(this->preID2values, _predicate_id, (char*&)_tmp, _len);
-	if (!_get) {
-		return 0;
+
+	int ret = 0;
+	if (_get) 
+	{
+		ret = _tmp[0];
 	}
-	return _tmp[0];
+
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
+	}
+
+	return ret;
 }
 
-int KVstore::getSubjectPredicateDegree(int _subid, int _preid) const {
+int 
+KVstore::getSubjectPredicateDegree(int _subid, int _preid) const 
+{
 	//cout << "In getSubjectPredicateDegree " << _subid << ' ' << _preid << endl;
 
 	//TODO: use unsigned
 	int* _tmp = NULL;
 	unsigned _len = 0;
 	bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
-	if (!_get) {
-		return 0;
+
+	int ret = 0;
+	if(_get)
+	{
+		int _result = KVstore::binarySearch(_preid, _tmp + 3, _tmp[1], 2);
+		if (_result != -1) 
+		{
+			int _offset = _tmp[4 + 2 * _result];
+			int _offset_next;
+			if (_result == _tmp[1] - 1) 
+			{
+				_offset_next = 3 + 2 * _tmp[1] + _tmp[0];
+			}
+			else 
+			{
+				_offset_next = _tmp[6 + 2 * _result];
+			}
+			ret = _offset_next - _offset;
+		}
 	}
-	int _result = KVstore::binarySearch(_preid, _tmp + 3, _tmp[1], 2);
-	if (_result == -1) {
-		return 0;
+
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
 	}
-	int _offset = _tmp[4 + 2 * _result];
-	int _offset_next;
-	if (_result == _tmp[1] - 1) {
-		_offset_next = 3 + 2 * _tmp[1] + _tmp[0];
-	}
-	else {
-		_offset_next = _tmp[6 + 2 * _result];
-	}
-	return _offset_next - _offset;
+
+	return ret;
 }
 
-int KVstore::getObjectPredicateDegree(int _objid, int _preid) const {
+int 
+KVstore::getObjectPredicateDegree(int _objid, int _preid) const 
+{
 	//cout << "In getObjectPredicateDegree " << _objid << _preid << endl;
 	
 	//TODO: use unsigned
 	int* _tmp = NULL;
 	unsigned _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
-	if (!_get) {
-		return 0;
+
+	int ret = 0;
+	if (_get) 
+	{
+		int _result = KVstore::binarySearch(_preid, _tmp + 2, _tmp[1], 2);
+		if (_result != -1) 
+		{
+			int _offset = _tmp[3 + 2 * _result];
+			int _offset_next;
+			if (_result == _tmp[1] - 1) 
+			{
+				_offset_next = 2 + 2 * _tmp[1] + _tmp[0];
+			}
+			else 
+			{
+				_offset_next = _tmp[5 + 2 * _result];
+			}
+			ret = _offset_next - _offset;
+		}
 	}
-	int _result = KVstore::binarySearch(_preid, _tmp + 2, _tmp[1], 2);
-	if (_result == -1) {
-		return 0;
+
+	//if this is a long list, then we should remove itself after copying
+	//otherwise, we should not free the list memory
+	if(VList::isLongList(_len))
+	{
+		delete[] _tmp;
+		//_tmp = NULL;
 	}
-	int _offset = _tmp[3 + 2 * _result];
-	int _offset_next;
-	if (_result == _tmp[1] - 1) {
-		_offset_next = 2 + 2 * _tmp[1] + _tmp[0];
-	}
-	else {
-		_offset_next = _tmp[5 + 2 * _result];
-	}
-	return _offset_next - _offset;
+
+	return ret;
 }
 
 bool KVstore::updateTupleslist_insert(int _sub_id, int _pre_id, int _obj_id) {

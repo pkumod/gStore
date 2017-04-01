@@ -28,7 +28,9 @@ Bstr::Bstr(const char* _str, unsigned _len, bool _nocopy)
 		//return;
 	//}
 
-	this->str = (char*)malloc(_len);
+	//NOTICE: we decide to use new/delete in global area
+	//this->str = (char*)malloc(_len);
+	this->str = new char[_len];
 	memcpy(this->str, _str, sizeof(char) * _len);
 	//this->str[_len]='\0';
 }
@@ -121,12 +123,14 @@ Bstr::operator != (const Bstr& _bstr)
 unsigned
 Bstr::getLen() const
 {
+//WARN: we should not include too complicate logic here!!!!
+
 	//NOTICE: this is for VList
-	if(this->isBstrLongList())
-	//if(this->str == NULL)
-	{
-		return 0;
-	}
+	//if(this->isBstrLongList())
+	////if(this->str == NULL)
+	//{
+		//return 0;
+	//}
 
 	return length;
 }
@@ -158,15 +162,18 @@ Bstr::copy(const Bstr* _bp)
 	this->length = _bp->getLen();
 	//DEBUG!!!
 	//cerr<<"bstr length: "<<this->length<<endl;
-	this->str = (char*)malloc(this->length);
-	memcpy(this->str, _bp->getStr(), this->length);
+
+	//this->str = (char*)malloc(this->length);
+	this->str = new char[this->length];
+	memcpy(this->str, _bp->getStr(), sizeof(char) * this->length);
 }
 
 void
 Bstr::copy(const char* _str, unsigned _len)
 {
 	this->length = _len;
-	this->str = (char*)malloc(this->length);
+	//this->str = (char*)malloc(this->length);
+	this->str = new char[this->length];
 	memcpy(this->str, _str, this->length);
 }
 
@@ -180,7 +187,8 @@ Bstr::clear()
 void
 Bstr::release()
 {
-	free(this->str);	//ok to be null, do nothing
+	//free(this->str);	//ok to be null, do nothing
+	delete[] this->str;
 	clear();
 }
 

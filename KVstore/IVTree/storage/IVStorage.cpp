@@ -444,6 +444,9 @@ IVStorage::readBstr(Bstr* _bp, unsigned* _next)
 	{
 		unsigned addr = 0;
 		fread(&addr, sizeof(unsigned), 1, this->treefp);
+#ifdef DEBUG_VLIST
+		cout<<"read a vlist in IVStorage - addr: "<<addr<<endl;
+#endif
 		_bp->setLen(addr);
 		_bp->setStr(NULL);
 		this->ReadAlign(_next);
@@ -489,6 +492,9 @@ IVStorage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
 		this->WriteAlign(_curnum, _SpecialBlock);
 		//then this is the real block num
 		fwrite(&len, sizeof(unsigned), 1, treefp);
+#ifdef DEBUG_VLIST
+		cout<<"to write a vlist in IVStorage::writeBstr() - blocknum: "<<len<<endl;
+#endif
 		this->WriteAlign(_curnum, _SpecialBlock);
 		return true;
 	}
