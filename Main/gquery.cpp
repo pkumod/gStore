@@ -38,9 +38,9 @@ int
 main(int argc, char * argv[])
 {
 	//chdir(dirname(argv[0]));
-#ifdef DEBUG
+//#ifdef DEBUG
 	Util util;
-#endif
+//#endif
 
 	if (argc == 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
 	{
