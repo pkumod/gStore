@@ -92,6 +92,7 @@ ISHeap::insert(ISNode* _np)
 		if (_np->getRank() >= this->heap[j]->getRank())
 			break;
 		heap[i] = heap[j];
+		heap[i]->heapId = i;
 		//this->npmap[k].pos = i;			//adjust the position
 		i = j;
 	}
@@ -123,10 +124,12 @@ ISHeap::remove()
 		if (xp->getRank() <= this->heap[j]->getRank())
 			break;
 		this->heap[i] = this->heap[j];
+		this->heap[i]->heapId = i;
 		i = j;
 		j = 2 * i + 1;
 	}
 	this->heap[i] = xp;
+	this->heap[i]->heapId = i;
 	return true;
 }
 
@@ -147,7 +150,9 @@ ISHeap::modify(ISNode* _np, bool _flag)	//control direction
 			if (_np->getRank() < heap[j]->getRank())
 			{
 				heap[i] = heap[j];
+				heap[i]->heapId = i;
 				heap[j] = _np;
+				heap[j]->heapId = j;
 				i = j;
 			}
 			else
@@ -164,7 +169,9 @@ ISHeap::modify(ISNode* _np, bool _flag)	//control direction
 			if (heap[j]->getRank() < _np->getRank())
 			{
 				heap[i] = heap[j];
+				heap[i]->heapId = i;
 				heap[j] = _np;
+				heap[j]->heapId = j;
 				i = j;
 			}
 			else
