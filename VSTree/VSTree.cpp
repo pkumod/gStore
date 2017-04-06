@@ -160,14 +160,18 @@ void VSTree::retrieve(SPARQLquery& _query)
 //NOTICE:this can only be done by one thread
 //build the VSTree from the _entity_signature_file. 
 bool 
-VSTree::buildTree(std::string _entry_file_path)
+VSTree::buildTree(std::string _entry_file_path, int _cache_size)
 {
 	Util::logging("IN VSTree::buildTree");
+	
+	//NOTICE: entry buffer don't  need to store all entities, just loop, read and deal
+	//not so much memory: 2 * 10^6 * (4+800/8) < 1G
 
     // create the entry buffer and node buffer.
 	this->entry_buffer = new EntryBuffer(EntryBuffer::DEFAULT_CAPACITY);
 	//cout<<"entry buffer newed"<<endl;
-    this->node_buffer = new LRUCache(LRUCache::DEFAULT_CAPACITY);
+    this->node_buffer = new LRUCache(_cache_size);
+    //this->node_buffer = new LRUCache(LRUCache::DEFAULT_CAPACITY);
 
     // create the root node.
     //VNode* rootNodePtr = new VNode();
@@ -643,10 +647,11 @@ VSTree::saveTree()
 }
 
 bool 
-VSTree::loadTree()
+VSTree::loadTree(int _cache_size)
 {
 	cout << "load VSTree..." << endl;
-	(this->node_buffer) = new LRUCache(LRUCache::DEFAULT_CAPACITY);
+	(this->node_buffer) = new LRUCache(_cache_size);
+	//(this->node_buffer) = new LRUCache(LRUCache::DEFAULT_CAPACITY);
 	cout<<"LRU cache built"<<endl;
 
     bool flag = this->loadTreeInfo();

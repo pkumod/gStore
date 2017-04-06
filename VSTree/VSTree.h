@@ -28,7 +28,7 @@ public:
     ~VSTree();
     int getHeight()const;
 	 //build the VSTree from the _entity_signature_file. 
-    bool buildTree(std::string _entity_signature_file);
+    bool buildTree(std::string _entity_signature_file, int _cache_size = -1);
     bool deleteTree();
 
 	//if the tree is empty
@@ -50,7 +50,7 @@ public:
 	//save the tree information to tree_info_file_path, and flush the tree nodes in memory to tree_node_file_path. 
     bool saveTree();
 	//load tree from tree_info_file_path and tree_node_file_path files. 
-    bool loadTree();
+    bool loadTree(int _cache_size = -1);
 	//get the tree's root node pointer. 
     VNode* getRoot();
 	//get the node pointer by its file line. 

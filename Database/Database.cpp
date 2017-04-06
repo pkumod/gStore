@@ -562,7 +562,9 @@ Database::load()
 		return true;
 	}
 
-	bool flag = (this->vstree)->loadTree();
+	//TODO: acquire this arg from memory manager
+	unsigned vstree_cache = LRUCache::DEFAULT_CAPACITY;
+	bool flag = (this->vstree)->loadTree(vstree_cache);
 	if (!flag)
 	{
 		cout << "load tree error. @Database::load()" << endl;
@@ -806,9 +808,12 @@ Database::build(const string& _rdf_file)
 	string _entry_file = this->getSignatureBFile();
 
 	cout << "begin build VS-Tree on " << ret << "..." << endl;
-	//TODO: we can use larger buffer for vstree in building process, because it does not compete with others
+	//NOTICE: we can use larger buffer for vstree in building process, because it does not compete with others
 	//we only need to build vstree in this phase(no need for id tuples anymore)
-	(this->vstree)->buildTree(_entry_file);
+	//TODO: acquire this arg from memory manager
+	unsigned vstree_cache_size = 4 * LRUCache::DEFAULT_CAPACITY;
+	//BETTER: we should set the parameter according to current memory usage
+	(this->vstree)->buildTree(_entry_file, vstree_cache_size);
 
 	long tv_build_end = Util::get_cur_time();
 
