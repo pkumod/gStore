@@ -109,6 +109,9 @@ all: $(TARGET)
 
 test_index: test_index.cpp
 	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library)
+	
+mytest_kvstore: $(lib_antlr) $(objfile)
+	$(CC) $(EXEFLAG) -o KVstore/test_kvstore KVstore/test_kvstore.cpp $(objfile) $(library)
 
 #BETTER: use for loop to reduce the lines
 #NOTICE: g++ -MM will run error if linking failed, like Database.h/../SparlParser.h/../antlr3.h
