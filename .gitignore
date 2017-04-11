@@ -91,6 +91,9 @@ tags
 *.out
 *.bak~
 
+# queries
+*.sql
+
 # modules
 node_modules
 

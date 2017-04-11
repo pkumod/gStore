@@ -31,12 +31,14 @@ in the sparql query can point to the same node in data graph)
 #include <locale.h>
 #include <assert.h>
 #include <libgen.h>
+#include <signal.h>
 
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -194,6 +196,15 @@ public:
 	static const int II_TREE = 2;
 	static const int IS_TREE = 3;
 
+	static std::string gserver_port_file;
+	static std::string gserver_port_swap;
+	static std::string gserver_log;
+	static const int gserver_query_timeout = 10000; // Timeout of gServer's query (in seconds)
+	
+	static std::string backup_path;
+	static const long gserver_backup_interval = 86400;
+	static const long gserver_backup_time = 72000; // Default backup time (UTC)
+
 	static int memUsedPercentage();
 	static int memoryLeft();
 	static int compare(const char* _str1, unsigned _len1, const char* _str2, unsigned _len2); //QUERY(how to use default args)
@@ -211,12 +222,15 @@ public:
 	static std::string result_id_str(std::vector<int*>& _v, int _var_num);
 	static bool dir_exist(const std::string _dir);
 	static bool create_dir(const std:: string _dir);
+	static bool create_file(const std::string _file);
+
 	static long get_cur_time();
 	static bool save_to_file(const char*, const std::string _content);
 	static bool isValidPort(std::string);
 	static bool isValidIP(std::string);
 	static std::string getTimeString();
 	static std::string node2string(const char* _raw_str);
+	static long read_backup_time();
 
 	static bool is_literal_ele(int);
 	static int removeDuplicate(int*, int);

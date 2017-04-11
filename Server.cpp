@@ -10,24 +10,12 @@
 
 using namespace std;
 
-//Server::Server()
-//{
-	//this->connectionPort = Socket::DEFAULT_CONNECT_PORT;
-	//this->connectionMaxNum = Socket::MAX_CONNECTIONS;
-	//this->databaseMaxNum = 1; // will be updated when supporting multiple databases.
-	//this->database = NULL;
-	//this->db_home = Util::global_config["db_home"];
-	//this->db_suffix = Util::global_config["db_suffix"];
-//}
-
 Server::Server(unsigned short _port)
 {
 	this->connectionPort = _port;
 	this->connectionMaxNum = Socket::MAX_CONNECTIONS;
 	this->databaseMaxNum = 1; // will be updated when supporting multiple databases.
 	this->database = NULL;
-	this->db_home = Util::global_config["db_home"];
-	this->db_suffix = Util::global_config["db_suffix"];
 	this->next_backup = 0;
 	this->scheduler_pid = 0;
 }
@@ -180,10 +168,10 @@ Server::listen()
 		}
 		//case CMD_INSERT:
 		//{
-			//string db_name = operation.getParameter(0);
-			//string rdf_path = operation.getParameter(1);
-			//this->insertTriple(db_name, "", rdf_path, ret_msg);
-			//break;
+		//	string db_name = operation.getParameter(0);
+		//	string rdf_path = operation.getParameter(1);
+		//	this->insertTriple(db_name, "", rdf_path, ret_msg);
+		//	break;
 		//}
 		case CMD_STOP:
 		{
@@ -378,14 +366,12 @@ Server::dropDatabase(std::string _db_name, std::string _ac_name, std::string& _r
 	}
 
 	size_t length = _db_name.length();
-	if (length < 3 || _db_name.substr(length - 3, 3) == ".db") {
-		_ret_msg = "you can not only drop databases whose names end with \".db\"";
+	if (length < 3 || _db_name.substr(length - 3, 3) != ".db") {
+		_ret_msg = "you can only drop databases whose names end with \".db\"";
 		return false;
 	}
 
-	string store_path = this->db_home + "/" + _db_name + this->db_suffix;
-
-	std::string cmd = std::string("rm -rf ") + store_path;
+	std::string cmd = std::string("rm -rf ") + _db_name;
 	int ret = system(cmd.c_str());
 	if (ret == 0) {
 		_ret_msg = "drop database done.";
@@ -400,7 +386,7 @@ Server::dropDatabase(std::string _db_name, std::string _ac_name, std::string& _r
 bool
 Server::loadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
 {
-	if(this->database == NULL)
+	if (this->database == NULL)
 	{
 		this->database = new Database(_db_name);
 	}
@@ -410,14 +396,7 @@ Server::loadDatabase(std::string _db_name, std::string _ac_name, std::string& _r
 		return false;
 	}
 
-	bool flag = this->database->load();
-
-	if (flag)
-	{
-		_ret_msg = "load database done.";
-	}
-	else
-	{
+	if (!this->database->load()) {
 		_ret_msg = "load database failed.";
 		delete this->database;
 		this->database = NULL;
@@ -447,10 +426,8 @@ Server::loadDatabase(std::string _db_name, std::string _ac_name, std::string& _r
 	else if (fpid < 0) {
 		cerr << Util::getTimeString() << "Database will not be backed-up automatically." << endl;
 	}
-
-	//_ret_msg = "load database done.";
+	_ret_msg = "load database done.";
 	return true;
-	//return flag;
 }
 
 bool
@@ -467,8 +444,6 @@ Server::unloadDatabase(std::string _db_name, std::string _ac_name, std::string& 
 	_ret_msg = "unload database done.";
 
 	this->next_backup = 0;
-	//string cmd = "kill " + Util::int2string(this->scheduler_pid);
-	//system(cmd.c_str());
 	kill(this->scheduler_pid, SIGTERM);
 	waitpid(this->scheduler_pid, NULL, 0);
 	this->scheduler_pid = 0;
@@ -509,34 +484,29 @@ Server::importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_p
 //bool
 //Server::insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
 //{
-	//if (this->database != NULL)
-	//{
-		//this->database->unload();
-		//delete this->database;
-	//}
-
-	//this->database = new Database(_db_name);
-	//bool flag = this->database->insert(_rdf_path);
-
-	//if (flag)
-	//{
-		//_ret_msg = "insert triple file to database done.";
-	//}
-	//else
-	//{
-		//_ret_msg = "import triple file to database failed.";
-	//}
-
-	//return flag;
+//	if (this->database != NULL)
+//	{
+//		this->database->unload();
+//		delete this->database;
+//	}
+//	this->database = new Database(_db_name);
+//	bool flag = this->database->insert(_rdf_path);
+//	if (flag)
+//	{
+//		_ret_msg = "insert triple file to database done.";
+//	}
+//	else
+//	{
+//		_ret_msg = "import triple file to database failed.";
+//	}
+//	return flag;
 //}
 
 bool
 Server::query(const string _query, string& _ret_msg)
 {
-	//cout<<"Server query()"<<endl;
-	//cout<<_query<<endl;
 	cout << Util::getTimeString() << "Server query(): " << _query << endl;
-	
+
 	if (this->database == NULL)
 	{
 		_ret_msg = "database has not been loaded.";
@@ -551,7 +521,7 @@ Server::query(const string _query, string& _ret_msg)
 
 	ResultSet res_set;
 	int query_ret = this->database->query(_query, res_set, output);
-	if (output != NULL) 
+	if (output != NULL)
 	{
 		fclose(output);
 	}
@@ -562,13 +532,9 @@ Server::query(const string _query, string& _ret_msg)
 	{
 		//_ret_msg = "results are too large!";
 		//BETTER: divide and transfer if too large to be placed in memory, using Stream
-		if(query_ret == -100)
+		if (query_ret == -100)
 		{
-#ifdef SERVER_SEND_JSON
-			_ret_msg = res_set.to_JSON();
-#else
 			_ret_msg = res_set.to_str();
-#endif
 		}
 		else //query error
 		{
@@ -579,7 +545,7 @@ Server::query(const string _query, string& _ret_msg)
 	}
 	else //update query
 	{
-		if(query_ret >= 0)
+		if (query_ret >= 0)
 		{
 			_ret_msg = "update num: " + Util::int2string(query_ret);
 		}
@@ -598,7 +564,7 @@ Server::showDatabases(string _para, string _ac_name, string& _ret_msg)
 {
 	if (_para == "all")
 	{
-		_ret_msg = Util::getItemsFromDir(this->db_home);
+		_ret_msg = Util::getItemsFromDir(Util::db_home);
 		return true;
 	}
 	if (this->database != NULL)
@@ -658,4 +624,3 @@ void* Server::timer(void* _args) {
 void Server::timer_sigterm_handler(int _signal_num) {
 	pthread_exit(0);
 }
-

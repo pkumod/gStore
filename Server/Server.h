@@ -32,8 +32,8 @@
 class Server
 {
 public:
-    Server();
-    Server(unsigned short _port);
+    //Server();
+	Server(unsigned short _port = Socket::DEFAULT_CONNECT_PORT);
     ~Server();
 
     bool createConnection();
@@ -51,6 +51,7 @@ public:
     //bool insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg);
 	bool query(const std::string _query, std::string& _ret_msg);
 	bool stopServer(std::string& _ret_msg);
+	bool backup(std::string& _ret_msg);
 
 private:
     unsigned short connectionPort;
@@ -61,6 +62,13 @@ private:
 	std::string db_home;
 	std::string db_suffix;
 
+	static pthread_t start_timer();
+	static bool stop_timer(pthread_t _timer);
+	static void* timer(void* _args);
+	static void timer_sigterm_handler(int _signal_num);
+
+	long next_backup;
+	pid_t scheduler_pid;
 };
 
 #endif // _SERVER_SERVER_H

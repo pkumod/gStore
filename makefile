@@ -103,7 +103,7 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 # http://blog.csdn.net/jeffrey0000/article/details/12421317
 
 #gtest
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub
 
 all: $(TARGET)
 
@@ -125,6 +125,9 @@ $(exedir)gquery: $(lib_antlr) $(objdir)gquery.o $(objfile)
 $(exedir)gserver: $(lib_antlr) $(objdir)gserver.o $(objfile) 
 	$(CC) $(EXEFLAG) -o $(exedir)gserver $(objdir)gserver.o $(objfile) $(library)
 
+$(exedir)gserver_backup_scheduler: $(lib_antlr) $(objdir)gserver_backup_scheduler.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)gserver_backup_scheduler $(objdir)gserver_backup_scheduler.o $(objfile) $(library)
+
 $(exedir)gclient: $(lib_antlr) $(objdir)gclient.o $(objfile) 
 	$(CC) $(EXEFLAG) -o $(exedir)gclient $(objdir)gclient.o $(objfile) $(library)
 
@@ -145,6 +148,9 @@ $(objdir)gquery.o: Main/gquery.cpp Database/Database.h Util/Util.h $(lib_antlr)
 
 $(objdir)gserver.o: Main/gserver.cpp Server/Server.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gserver.cpp $(inc) -o $(objdir)gserver.o
+
+$(objdir)gserver_backup_scheduler.o: Main/gserver_backup_scheduler.cpp Server/Server.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gserver_backup_scheduler.cpp $(inc) -o $(objdir)gserver_backup_scheduler.o
 
 $(objdir)gclient.o: Main/gclient.cpp Server/Client.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gclient.cpp $(inc) -o $(objdir)gclient.o #-DREADLINE_ON
@@ -454,5 +460,6 @@ fulltest:
 
 #test the efficience of kvstore, insert/delete/search, use dbpedia170M by default
 test-kvstore:
+	# test/kvstore_test.cpp
 	echo "TODO"
 
