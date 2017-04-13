@@ -1508,3 +1508,11 @@ Util::_pso_cmp(const void* _a, const void* _b)
 	return 0;
 }
 
+//require that _base>=1
+unsigned 
+ceiling(unsigned _val, unsigned _base)
+{
+	//WARN: we donot check overflow here
+	return (_val+_base-1) / _base * _base;
+}
+

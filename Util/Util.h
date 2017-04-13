@@ -225,6 +225,7 @@ public:
 	static std::string getExactPath(const char* path);
 	static std::string getItemsFromDir(std::string path);
 	static void logging(std::string _str);
+	static unsigned ceiling(unsigned _val, unsigned _base);
 
 	// Below are some useful hash functions for string
 	static unsigned simpleHash(const char *_str);
@@ -359,6 +360,72 @@ public:
 			//delete[] buffer[i];
 		//}
 		delete[] buffer;
+	}
+};
+
+//NOTICE: bool used to be represented by int in C, but in C++ it only occupies a byte
+//But in 32-bit machine, read/write on 32-bit(4-byte) will be more efficient, so bools are compressed into 4-bytes
+//vector<bool> is not suggested:)
+//http://blog.csdn.net/liushu1231/article/details/8844631
+class BoolArray
+{
+private:
+	unsigned size;
+	char* arr;
+
+public:
+	BoolArray()
+	{
+		size = 0;
+		arr = NULL;
+	}
+	BoolArray(unsigned _size)
+	{
+		//this->size = (_size+7)/8*8;
+		this->size = Util::ceiling(_size, 8);
+		this->arr = new char[this->size/8];
+	}
+	void fill(unsigned _size)
+	{
+		if(this->arr != NULL)
+		{
+			//unsigned tmp = (_size+7)/8*8;
+			unsigned tmp = Util::ceiling(_size, 8);
+			if(tmp > this->size)
+			{
+				this->size= tmp;
+				delete[] this->arr;
+				this->arr = new char[this->size/8];
+			}
+		}
+		else
+		{
+			//this->size = (_size+7)/8*8;
+			this->size = Util::ceiling(_size, 8);
+			this->arr = new char[this->size/8];
+		}
+	}
+	//void load()
+	//{
+	//}
+
+	bool exist()
+	{
+		return this->size > 0;
+	}
+	unsigned getSize()
+	{
+		return size;
+	}
+	void clear()
+	{
+		this->size = 0;
+		delete[] arr;
+		arr = NULL;
+	}
+	~BoolArray()
+	{
+		delete[] arr;
 	}
 };
 
