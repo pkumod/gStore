@@ -132,7 +132,9 @@ Join::judge(int _smallest, int _biggest)
 	//BETTER:how to guess the size of can_lists
 	double size = (_smallest + _biggest) / 2.0;
 	double ans = Join::PARAM_DENSE * dense - size / Join::PARAM_SIZE;
-	if (ans > Join::JUDGE_LIMIT)
+	double limit = 1.0 / (double)Join::JUDGE_LIMIT;
+	//if (ans > Join::JUDGE_LIMIT)
+	if (ans > limit)
 		return 0;	//multi_join method
 	else
 		return 1;	//index_join method

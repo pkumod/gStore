@@ -122,9 +122,9 @@ main(int argc, char **argv)
 	//NOTICE:this is needed to ensure the file path is the work path
 	//chdir(dirname(argv[0]));
 	//NOTICE:this is needed to set several debug files
-#ifdef DEBUG
+//#ifdef DEBUG
 	Util util;
-#endif
+//#endif
 
 	db_home = Util::global_config["db_home"];
 
