@@ -28,12 +28,14 @@ SINode::SINode()
 {
 	store = flag = 0;
 	flag |= NF_IM;
+	heapId = -1;
 	AllocKeys();
 }
 
 SINode::SINode(bool isVirtual)
 {
 	store = flag = 0;
+	heapId = -1;
 	if (!isVirtual)
 	{
 		flag |= NF_IM;
