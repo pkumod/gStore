@@ -55,8 +55,12 @@ private:
 	static const unsigned PARAM_SIZE = 1000000;
 	static const unsigned PARAM_PRE = 10000;
 	static const unsigned PARAM_DENSE = 1;
-	static const double JUDGE_LIMIT = 0.5;
+
+	//constexpr needed in C++11 (or in newer g++)
+	//static const double JUDGE_LIMIT = 0.5;
+	static const int JUDGE_LIMIT = 2;  //use 1.0/JUDGE_LIMIT
 	static const int LIMIT_CANDIDATE_LIST_SIZE = 1000;
+
 	//BETTER?:predefine size to avoid copy cost
 	TableType current_table;
 	TableIterator new_start;   //keep to end() as default
