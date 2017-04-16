@@ -79,6 +79,10 @@ http://blog.csdn.net/infoworld/article/details/8670951
 要在单机支持到10亿triple，最坏情况下最多有20亿entity和20亿literal，目前的编号方式是不行的(int扩展为unsigned)
 最好在单机100G内存上支持起freebase(2.5B triples)这个规模的数据集，就像jena和virtuoso一样，慢不要紧
 
+OPTIMIZE: in pre filter and only_pre_after_filter, p2s and p2o should be used instead of for-loop
+In addition, pre with lower degree should be placed in early position
+use hash-link for large candidates, use sort-link for small candidates and very large list
+
 同时将ID的编码改为unsigned，无效标志-1改为最大值的宏, triple数目的类型也要改为unsigned
 注意pre的ID还可以为-2，或者对于pre仍然用int，或者改函数的返回值为long long (还有一些没有用-1而是>=0)
 ---

@@ -62,10 +62,14 @@ Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, int _pre_id, const c
 		long long id = _pre_id;
 		int seed_num = id % Signature::EDGE_SIG_INTERVAL_NUM_HALF;
 
+		//int pos = Signature::STR_SIG_LENGTH;
 		if (_type == Util::EDGE_OUT)
 		{
 			seed_num += Signature::EDGE_SIG_INTERVAL_NUM_HALF;
+			//pos += Signature::EDGE_SIG_IN;
 		}
+
+		//pos += (_pre_id % Signature::EDGE_SIG_OUT);
 
 		//int primeSize = 5;
 		//int prime1[]={5003,5009,5011,5021,5023};
@@ -87,6 +91,7 @@ Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, int _pre_id, const c
 		//int pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
 		//_entity_bs.set(pos);
 		//}
+
 		int seed = id * 5003 % 49957;
 		int pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
 		_entity_bs.set(pos);
@@ -132,9 +137,11 @@ Signature::encodeStr2Entity(EntityBitSet& _entity_bs, int _neighbor_id, const ch
 	//NOTICE: we assume the parameter is always valid(invalid args should not be passed here)
 	long long id = _neighbor_id;
 	//NOTICE: in * maybe the int will overflow
-	long long seed = id * 5003 % 49957;
-	seed = seed % Signature::STR_SIG_INTERVAL_BASE;
-	seed = seed + (id % Signature::STR_SIG_INTERVAL_NUM) * Signature::STR_SIG_INTERVAL_BASE;
+	//long long seed = id * 5003 % 49957;
+	//seed = seed % Signature::STR_SIG_INTERVAL_BASE;
+	//seed = seed + (id % Signature::STR_SIG_INTERVAL_NUM) * Signature::STR_SIG_INTERVAL_BASE;
+
+	int seed = _neighbor_id % Signature::STR_SIG_LITERAL;
 
 	if(Util::is_literal_ele(_neighbor_id))
 	{

@@ -24,10 +24,11 @@ public:
 
 	//static HashFunction hash[HashNum];
 	//must make sure:   ENTITY_SIG_LENGTH = EDGE_SIG_LENGTH + STR_SIG_LENGTH 
-	static const int STR_SIG_INTERVAL_NUM = 20;
+	//static const int STR_SIG_INTERVAL_NUM = 20;
 	//static const int STR_SIG_INTERVAL_NUM = 16;
-	static const int STR_SIG_INTERVAL_BASE = 10;
-	static const int STR_SIG_LITERAL = STR_SIG_INTERVAL_NUM * STR_SIG_INTERVAL_BASE; 
+	//static const int STR_SIG_INTERVAL_BASE = 10;
+	//static const int STR_SIG_LITERAL = STR_SIG_INTERVAL_NUM * STR_SIG_INTERVAL_BASE; 
+	static const int STR_SIG_LITERAL = 200; 
 	static const int STR_SIG_ENTITY = STR_SIG_LITERAL * 2;
 	//here we divide as entity neighbors and literal neighbors: ENTITY(in and out), LITERAL(only for out edges)
 	static const int STR_SIG_LENGTH = STR_SIG_ENTITY + STR_SIG_LITERAL; //600
@@ -39,12 +40,16 @@ public:
 
 	//str filter is more important in VSTree than predicate, because
 	//a predicate may correspond to a lot of entities and predicate num is usually small
-	static const int EDGE_SIG_INTERVAL_NUM_HALF = 10;   //in edge or out edge
 	//static const int EDGE_SIG_INTERVAL_NUM_HALF = 16;   //in edge or out edge
+	static const int EDGE_SIG_INTERVAL_NUM_HALF = 10;   //in edge or out edge
 	static const int EDGE_SIG_INTERVAL_NUM = 2 * EDGE_SIG_INTERVAL_NUM_HALF;
 	static const int EDGE_SIG_INTERVAL_BASE = 10;
 	static const int EDGE_SIG_LENGTH = EDGE_SIG_INTERVAL_NUM * EDGE_SIG_INTERVAL_BASE;  //200
-	//static const int EDGE_SIG_LENGTH2 = EDGE_SIG_INTERVAL_NUM_HALF * EDGE_SIG_INTERVAL_BASE; 
+	static const int EDGE_SIG_LENGTH2 = EDGE_SIG_INTERVAL_NUM_HALF * EDGE_SIG_INTERVAL_BASE; 
+	
+	//static const int EDGE_SIG_IN = 100;  
+	//static const int EDGE_SIG_OUT = EDGE_SIG_IN;
+	//static const int EDGE_SIG_LENGTH = EDGE_SIG_IN + EDGE_SIG_OUT;  //200
 
 	static const int ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH; //1000
 	//static const int ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH + NEIGHBOR_SIG_LENGTH;
