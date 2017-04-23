@@ -79,6 +79,9 @@ http://blog.csdn.net/infoworld/article/details/8670951
 要在单机支持到10亿triple，最坏情况下最多有20亿entity和20亿literal，目前的编号方式是不行的(int扩展为unsigned)
 最好在单机100G内存上支持起freebase(2.5B triples)这个规模的数据集，就像jena和virtuoso一样，慢不要紧
 
+vstree建立太耗时，严重拖了build过程的后腿
+triple num改为unsigned long long，争取单机最大支持到100亿数据集，只要entity等数目不超过20亿。
+
 同时将ID的编码改为unsigned，无效标志-1改为最大值的宏, triple数目的类型也要改为unsigned
 注意pre的ID还可以为-2，或者对于pre仍然用int，或者改函数的返回值为long long (还有一些没有用-1而是>=0)
 ---
@@ -585,6 +588,8 @@ ACID? neo4j GraphDB
 ## 单个文件的gStore？嵌入式，轻便，类似sqlite，方便移植，做成库的方式给python等调用
 
 ## 联邦数据库，避免数据重导入，上层查询分块
+mysql适合存属性，而gstore适合处理关系，trinity适合做算法
+gstore是否能处理各种图算法需求呢，比如对两点求最短路？比如正则路径查询？
 
 ## 没必要关闭IO缓冲同步，因为用的基本都是C语言的输入输出操作
 
