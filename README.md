@@ -4,6 +4,8 @@ Gstore System(also called gStore) is a graph database engine for managing large 
 
 **The formal help document is in [Handbook](docs/latex/gStore_help.pdf).**
 
+**The formal experiment result is in [Experiment](docs/latex/formal_experiment.pdf).**
+
 **We have built an IRC channel named #gStore on freenode, and you can also come to our website: [gStore](http://gstore-pku.com).**
 
 <!--**You can write your information in [survey](http://59.108.48.38/survey) if you like.**-->
