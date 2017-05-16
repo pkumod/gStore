@@ -55,7 +55,7 @@ private:
 	static const unsigned PARAM_SIZE = 1000000;
 	static const unsigned PARAM_PRE = 10000;
 	static const unsigned PARAM_DENSE = 1;
-	static const double JUDGE_LIMIT = 0.5;
+	static const int JUDGE_LIMIT = 2;
 	static const int LIMIT_CANDIDATE_LIST_SIZE = 1000;
 	//BETTER?:predefine size to avoid copy cost
 	TableType current_table;

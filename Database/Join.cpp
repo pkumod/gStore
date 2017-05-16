@@ -132,7 +132,8 @@ Join::judge(int _smallest, int _biggest)
 	//BETTER:how to guess the size of can_lists
 	double size = (_smallest + _biggest) / 2.0;
 	double ans = Join::PARAM_DENSE * dense - size / Join::PARAM_SIZE;
-	if (ans > Join::JUDGE_LIMIT)
+	double limit = 1.0 / (double)Join::JUDGE_LIMIT;
+	if (ans > limit)
 		return 0;	//multi_join method
 	else
 		return 1;	//index_join method
@@ -1229,6 +1230,8 @@ Join::multi_join()
 	for (int i = 0; i < start_size; ++i)
 	{
 		int ele = start_table.getID(i);
+		//NOTICE: we can denote the total size here in vector, but no need because the variables' num is small
+		//(won't double to require more space)
 		RecordType record(1, ele);
 		this->current_table.push_back(record);
 		//this->table_row_new.push_back(false);

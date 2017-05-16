@@ -23,6 +23,10 @@
 #http://blog.csdn.net/cscrazybing/article/details/50789482
 #http://blog.163.com/liuhonggaono1@126/blog/static/10497901201210254622141/
 
+#NOTICE: to debug the program, gdb and valgrind can be used
+# objdump, nm and size command
+#To analyse the performance, gprof and gcov/lcov can be used
+
 
 #TODO:the dependences are not complete!
 
@@ -35,7 +39,7 @@
 
 #compile parameters
 
-CC = ccache g++
+CC = ccache g++ -std=c++11
 #CC = g++
 
 #the optimazition level of gcc/g++
@@ -51,6 +55,7 @@ EXEFLAG = -g -pthread #-fprofile-arcs -ftest-coverage #-pg
 
 #add -lreadline -ltermcap if using readline or objs contain readline
 library = -ltermcap -lreadline -L./lib -lantlr -lgcov
+library = -ltermcap -lreadline -L./lib -L/usr/local/lib/ -lantlr -lgcov -lboost_filesystem -lboost_system -lpthread
 def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 
 # paths
