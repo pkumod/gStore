@@ -23,10 +23,6 @@
 #http://blog.csdn.net/cscrazybing/article/details/50789482
 #http://blog.163.com/liuhonggaono1@126/blog/static/10497901201210254622141/
 
-#NOTICE: to debug the program, gdb and valgrind can be used
-# objdump, nm and size command
-#To analyse the performance, gprof and gcov/lcov can be used
-
 
 #TODO:the dependences are not complete!
 
@@ -47,15 +43,15 @@ CC = ccache g++ -std=c++11
 #NOTICE: -O2 is recommended, while -O3 is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -g -pthread #-fprofile-arcs -ftest-coverage #-pg
-EXEFLAG = -g -pthread #-fprofile-arcs -ftest-coverage #-pg
+CFLAGS = -c -Wall -O2
+EXEFLAG = -O2
 #-coverage
 #CFLAGS = -c -Wall -O2 -pthread
 #EXEFLAG = -O2 -pthread
 
 #add -lreadline -ltermcap if using readline or objs contain readline
-library = -ltermcap -lreadline -L./lib -lantlr -lgcov
-library = -ltermcap -lreadline -L./lib -L/usr/local/lib/ -lantlr -lgcov -lboost_filesystem -lboost_system -lpthread
+library = -ltermcap -lreadline -L./lib -lantlr -lgcov -lboost_filesystem -lboost_system -lpthread -I/usr/local/include/boost
+# library = -ltermcap -lreadline -L./lib -lantlr -lgcov
 def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 
 # paths
@@ -92,15 +88,18 @@ stringindexobj = $(objdir)StringIndex.o
 parserobj = $(objdir)RDFParser.o $(objdir)SparqlParser.o $(objdir)DBparser.o \
 			$(objdir)SparqlLexer.o $(objdir)TurtleParser.o $(objdir)QueryParser.o
 
-serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)Socket.o 
+serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)Socket.o
+
+# httpobj = $(objdir)client_http.hpp.gch $(objdir)server_http.hpp.gch
 
 databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o
 
 
-objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj) $(databaseobj) \
+objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj) $(httpobj) $(databaseobj) \
 		  $(utilobj) $(signatureobj) $(queryobj)
 	 
-inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include 
+inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
+#-I./usr/local/include/boost/
 
 
 #auto generate dependencies
@@ -108,7 +107,8 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 # http://blog.csdn.net/jeffrey0000/article/details/12421317
 
 #gtest
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub
+
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)HttpConnector
 
 all: $(TARGET)
 
@@ -136,6 +136,10 @@ $(exedir)gclient: $(lib_antlr) $(objdir)gclient.o $(objfile)
 $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
 	$(CC) $(EXEFLAG) -o $(exedir)gconsole $(objdir)gconsole.o $(objfile) $(library) -L./api/cpp/lib -lgstoreconnector
 
+$(exedir)HttpConnector: $(lib_antlr) $(objdir)HttpConnector.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)HttpConnector $(objdir)HttpConnector.o $(objfile) $(library) $(inc)
+
+
 #executables end
 
 
@@ -156,6 +160,10 @@ $(objdir)gclient.o: Main/gclient.cpp Server/Client.h Util/Util.h $(lib_antlr)
 
 $(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/cpp/src/GstoreConnector.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gconsole.cpp $(inc) -o $(objdir)gconsole.o -I./api/cpp/src/ #-DREADLINE_ON
+
+$(objdir)HttpConnector.o: Main/HttpConnector.cpp Server/server_http.hpp Server/client_http.hpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/HttpConnector.cpp $(inc) -o $(objdir)HttpConnector.o
+
 
 #objects in Main/ end
 
@@ -371,6 +379,12 @@ $(objdir)Server.o: Server/Server.cpp Server/Server.h $(objdir)Socket.o $(objdir)
 $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)Util.o
 	$(CC) $(CFLAGS) Server/Client.cpp $(inc) -o $(objdir)Client.o
 
+# $(objdir)client_http.o: Server/client_http.hpp
+# 	$(CC) $(CFLAGS) Server/client_http.hpp $(inc) -o $(objdir)client_http.o
+
+# $(objdir)server_http.o: Server/server_http.hpp
+# 	$(CC) $(CFLAGS) Server/server_http.hpp $(inc) -o $(objdir)server_http.o
+
 #objects in Server/ end
 
 
@@ -430,6 +444,12 @@ $(exedir)gadd: $(objdir)gadd.o $(objfile)
 
 $(objdir)gadd.o: Main/gadd.cpp
 	$(CC) $(CFLAGS) Main/gadd.cpp $(inc) -o $(objdir)gadd.o
+
+$(objdir)HttpConnector: $(objdir)HttpConnector.o $(objfile)
+	$(CC) $(CFLAGS) -o $(exedir)HttpConnector $(objdir)HttpConnector.o $(objfile) lib/libantlr.a $(library) $(inc)
+
+$(objdir)HttpConnector.o: Main/HttpConnector.cpp
+	$(CC) $(CFLAGS) Main/HttpConnector.cpp $(inc) -o $(objdir)HttpConnector.o $(library)
 
 $(exedir)gsub: $(objdir)gsub.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gsub $(objdir)gsub.o $(objfile) lib/libantlr.a $(library)
