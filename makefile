@@ -50,7 +50,7 @@ EXEFLAG = -O2
 #EXEFLAG = -O2 -pthread
 
 #add -lreadline -ltermcap if using readline or objs contain readline
-library = -ltermcap -lreadline -L./lib -lantlr -lgcov -lboost_filesystem -lboost_system -lpthread -I/usr/local/include/boost
+library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost
 # library = -ltermcap -lreadline -L./lib -lantlr -lgcov
 def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 
@@ -137,7 +137,7 @@ $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
 	$(CC) $(EXEFLAG) -o $(exedir)gconsole $(objdir)gconsole.o $(objfile) $(library) -L./api/cpp/lib -lgstoreconnector
 
 $(exedir)HttpConnector: $(lib_antlr) $(objdir)HttpConnector.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)HttpConnector $(objdir)HttpConnector.o $(objfile) $(library) $(inc)
+	$(CC) $(EXEFLAG) -o $(exedir)HttpConnector $(objdir)HttpConnector.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX
 
 
 #executables end
@@ -162,7 +162,7 @@ $(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/cpp/s
 	$(CC) $(CFLAGS) Main/gconsole.cpp $(inc) -o $(objdir)gconsole.o -I./api/cpp/src/ #-DREADLINE_ON
 
 $(objdir)HttpConnector.o: Main/HttpConnector.cpp Server/server_http.hpp Server/client_http.hpp Database/Database.h Util/Util.h $(lib_antlr)
-	$(CC) $(CFLAGS) Main/HttpConnector.cpp $(inc) -o $(objdir)HttpConnector.o
+	$(CC) $(CFLAGS) Main/HttpConnector.cpp $(inc) -o $(objdir)HttpConnector.o -DUSE_BOOST_REGEX
 
 
 #objects in Main/ end
@@ -446,10 +446,10 @@ $(objdir)gadd.o: Main/gadd.cpp
 	$(CC) $(CFLAGS) Main/gadd.cpp $(inc) -o $(objdir)gadd.o
 
 $(objdir)HttpConnector: $(objdir)HttpConnector.o $(objfile)
-	$(CC) $(CFLAGS) -o $(exedir)HttpConnector $(objdir)HttpConnector.o $(objfile) lib/libantlr.a $(library) $(inc)
+	$(CC) $(CFLAGS) -o $(exedir)HttpConnector $(objdir)HttpConnector.o $(objfile) lib/libantlr.a $(library) $(inc) -DUSE_BOOST_REGEX
 
 $(objdir)HttpConnector.o: Main/HttpConnector.cpp
-	$(CC) $(CFLAGS) Main/HttpConnector.cpp $(inc) -o $(objdir)HttpConnector.o $(library)
+	$(CC) $(CFLAGS) Main/HttpConnector.cpp $(inc) -o $(objdir)HttpConnector.o $(library) -DUSE_BOOST_REGEX
 
 $(exedir)gsub: $(objdir)gsub.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gsub $(objdir)gsub.o $(objfile) lib/libantlr.a $(library)
