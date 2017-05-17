@@ -3,7 +3,7 @@
 # Author: syzz
 # Mail: 1181955272@qq.com
 # Last Modified: 2015-04-26 16:44
-# Description: struct and interface of the B+ tree
+# Description: string2ID, including entity2id, literal2id, predicate2id
 =============================================================================*/
 
 #ifndef _KVSTORE_SITREE_SITREE_H
@@ -36,13 +36,19 @@ private:
 	//so lock is a must. Add lock to transfer is better than to add 
 	//lock to every key/value. However, modify requires a lock for a
 	//key/value, and multiple search for different keys are ok!!!
-	Bstr transfer[3];	//0:transfer value searched; 1:copy key-data from const char*; 2:copy val-data from const char*
-	unsigned transfer_size[3];
+	//Bstr transfer[3];	//0:transfer value searched; 1:copy key-data from const char*; 2:copy val-data from const char*
+	//unsigned transfer_size[3];
+
+	//TODO: in all B+ trees, updat eoperation should lock the whole tree, while search operations not
+	//However, the transfer bstr maybe cause the parallism error!!!!
+	//Why we need the transfer? It is ok to pass the original string pointer to return
+	//A problem is that before the caller ends, the tree can not be modified(so a read-writ elock is required)
+
 	std::string storepath;
 	std::string filename;      	//ok for user to change
 	/* some private functions */
 	std::string getFilePath();	//in UNIX system
-	void CopyToTransfer(const char* _str, unsigned _len, unsigned _index);
+	//void CopyToTransfer(const char* _str, unsigned _len, unsigned _index);
 	void release(SINode* _np) const;
 
 	//tree's operations should be atom(if read nodes)
@@ -59,9 +65,10 @@ public:
 	SINode* getRoot() const;
 	//insert, search, remove, set
 	bool search(const char* _str, unsigned _len, unsigned* _val);
-	bool insert(const char* _str, unsigned _len, unsigned _val);
+	bool insert(char* _str, unsigned _len, unsigned _val);
 	bool modify(const char* _str, unsigned _len, unsigned _val);
 	SINode* find(const Bstr* _key, int* store, bool ifmodify);
+	SINode* find(const char* _key, unsigned _len, int* store, bool ifmodify);
 	bool remove(const char* _str, unsigned _len);
 	bool save(); 			
 	~SITree();

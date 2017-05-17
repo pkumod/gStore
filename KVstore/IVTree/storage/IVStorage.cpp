@@ -1,28 +1,29 @@
 /*=============================================================================
-# Filename: SIStorage.cpp
+# Filename: IVStorage.cpp
 # Author: syzz
 # Mail: 1181955272@qq.com
 # Last Modified: 2015-04-26 16:43
-# Description: achieve functions in SIStorage.h
+# Description: achieve functions in IVStorage.h
 =============================================================================*/
 
-#include "SIStorage.h"
+#include "IVStorage.h"
 
 using namespace std;
 
-SIStorage::SIStorage()
+IVStorage::IVStorage()
 {							//not use ../logs/, notice the location of program
 	cur_block_num = SET_BLOCK_NUM;
 	filepath = "";
 	freelist = NULL;
 	treefp = NULL;
-	minheap = NULL;
 	max_buffer_size = Util::MAX_BUFFER_SIZE;
-	heap_size = max_buffer_size / SINode::INTL_SIZE;
+	heap_size = max_buffer_size / IVNode::INTL_SIZE;
 	freemem = max_buffer_size;
+	minheap = NULL;
+	this->value_list = NULL;
 }
 
-SIStorage::SIStorage(string& _filepath, string& _mode, unsigned* _height, unsigned long long _buffer_size)
+IVStorage::IVStorage(string& _filepath, string& _mode, unsigned* _height, unsigned long long _buffer_size, VList* _vlist)
 {
 	cur_block_num = SET_BLOCK_NUM;		//initialize
 	this->filepath = _filepath;
@@ -32,19 +33,17 @@ SIStorage::SIStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 		treefp = fopen(_filepath.c_str(), "r+b");
 	else
 	{
-		print(string("error in SIStorage: Invalid mode ") + _mode);
+		print(string("error in IVStorage: Invalid mode ") + _mode);
 		return;
 	}
 	if (treefp == NULL)
 	{
-		print(string("error in SIStorage: Open error ") + _filepath);
+		print(string("error in IVStorage: Open error ") + _filepath);
 		return;
 	}
 	this->treeheight = _height;		//originally set to 0
 	this->max_buffer_size = _buffer_size;
-	//cout<<"buffer size: "<<this->max_buffer_size<<endl;
-
-	this->heap_size = this->max_buffer_size / SINode::INTL_SIZE;
+	this->heap_size = this->max_buffer_size / IVNode::INTL_SIZE;
 	this->freemem = this->max_buffer_size;
 	this->freelist = new BlockInfo;	//null-head
 	unsigned i, j, k;	//j = (SuperNum-1)*BLOCK_SIZE
@@ -72,7 +71,6 @@ SIStorage::SIStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 	{
 		//read basic information
 		unsigned rootnum;
-		//int rootnum;
 		char c;
 		fread(this->treeheight, sizeof(unsigned), 1, this->treefp);
 		fread(&rootnum, sizeof(unsigned), 1, this->treefp);
@@ -95,11 +93,13 @@ SIStorage::SIStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 		fseek(treefp, Address(rootnum), SEEK_SET);
 		//treefp is now ahead of root-block
 	}
-	this->minheap = new SIHeap(this->heap_size);
+
+	this->minheap = new IVHeap(this->heap_size);
+	this->value_list = _vlist;
 }
 
 bool
-SIStorage::preRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)		//pre-read and build whole tree
+IVStorage::preRead(IVNode*& _root, IVNode*& _leaves_head, IVNode*& _leaves_tail)		//pre-read and build whole tree
 {	//set root(in memory) and leaves_head
 	//TODO: false when exceed memory
 	_leaves_tail = _leaves_head = _root = NULL;
@@ -109,7 +109,7 @@ SIStorage::preRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
 	}
 	unsigned next, store, j, pos = 0;
 	unsigned h = *this->treeheight;
-	SINode* p;
+	IVNode* p;
 	//read root node
 	this->createNode(p);
 	_root = p;
@@ -119,14 +119,14 @@ SIStorage::preRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
 	unsigned used[h];	//used child num
 	unsigned total[h];	//total child num
 	unsigned block[h];	//next block num
-	SINode* nodes[h];
+	IVNode* nodes[h];
 	address[pos] = ftell(treefp);
 	used[pos] = 0;
 	total[pos] = p->getNum() + 1;
 	block[pos] = next;
 	nodes[pos] = p;
 	pos++;
-	SINode* prev = NULL;
+	IVNode* prev = NULL;
 	while (pos > 0)
 	{
 		j = pos - 1;
@@ -180,7 +180,7 @@ SIStorage::preRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
 }
 
 long		//8-byte in 64-bit machine
-SIStorage::Address(unsigned _blocknum) const  //BETTER: inline function
+IVStorage::Address(unsigned _blocknum) const  //BETTER: inline function
 {
 	if (_blocknum == 0)
 		return 0;
@@ -194,13 +194,13 @@ SIStorage::Address(unsigned _blocknum) const  //BETTER: inline function
 }
 
 unsigned
-SIStorage::Blocknum(long address) const
+IVStorage::Blocknum(long address) const
 {
 	return (address / BLOCK_SIZE) + 1 - this->SuperNum;
 }
 
 unsigned
-SIStorage::AllocBlock()
+IVStorage::AllocBlock()
 {
 	BlockInfo* p = this->freelist->next;
 	if (p == NULL)
@@ -215,19 +215,21 @@ SIStorage::AllocBlock()
 	unsigned t = p->num;
 	this->freelist->next = p->next;
 	delete p;
-
 	return t;
 }
 
 void
-SIStorage::FreeBlock(unsigned _blocknum)
+IVStorage::FreeBlock(unsigned _blocknum)
 {			//QUERY: head-sub and tail-add will be better?
 	BlockInfo* bp = new BlockInfo(_blocknum, this->freelist->next);
 	this->freelist->next = bp;
 }
 
+//NOTICE: all reads are aligned to 4 bytes(including a string)
+//a string may acrossseveral blocks
+
 void
-SIStorage::ReadAlign(unsigned* _next)
+IVStorage::ReadAlign(unsigned* _next)
 {
 	if (ftell(treefp) % BLOCK_SIZE == 0)
 	{
@@ -237,7 +239,7 @@ SIStorage::ReadAlign(unsigned* _next)
 }
 
 void
-SIStorage::WriteAlign(unsigned* _curnum, bool& _SpecialBlock)
+IVStorage::WriteAlign(unsigned* _curnum, bool& _SpecialBlock)
 {
 	if (ftell(treefp) % BLOCK_SIZE == 0)
 	{
@@ -255,10 +257,11 @@ SIStorage::WriteAlign(unsigned* _curnum, bool& _SpecialBlock)
 }
 
 bool
-SIStorage::readNode(SINode* _np, long long* _request)
+IVStorage::readNode(IVNode* _np, long long* _request)
 {
 	if (_np == NULL || _np->inMem())
 		return false;	//can't read or needn't
+
 	fseek(treefp, Address(_np->getStore()), SEEK_SET);
 	bool flag = _np->isLeaf();
 	unsigned next;
@@ -266,35 +269,40 @@ SIStorage::readNode(SINode* _np, long long* _request)
 	Bstr bstr;
 	fseek(treefp, 4, SEEK_CUR);
 	fread(&next, sizeof(unsigned), 1, treefp);
+
 	//read data, use readBstr...
 	//fread(treefp, "%u", &num);
 	//_np->setNum(num);
 	if (flag)
-		*_request += SINode::LEAF_SIZE;
+		*_request += IVNode::LEAF_SIZE;
 	else
-		*_request += SINode::INTL_SIZE;
+		*_request += IVNode::INTL_SIZE;
 	_np->Normal();
 	if (!flag)
 		fseek(treefp, 4 * (num + 1), SEEK_CUR);
 
 	//to read all keys
+	//int tmp = -1;
+	unsigned tmp = INVALID;
 	for (i = 0; i < num; ++i)
 	{
-		this->readBstr(&bstr, &next);
-		*_request += bstr.getLen();
-		_np->setKey(&bstr, i);
+		fread(&tmp, sizeof(int), 1, treefp);
+		this->ReadAlign(&next);
+		_np->setKey(tmp, i);
 	}
 
 	if (flag)
 	{
 		//to read all values
-		unsigned tmp = INVALID;
-		//int tmp = -1;
 		for (i = 0; i < num; ++i)
 		{
-			fread(&tmp, sizeof(unsigned), 1, treefp);
-			this->ReadAlign(&next);
-			_np->setValue(tmp, i);
+			this->readBstr(&bstr, &next);
+			//if not long list value
+			if(bstr.getStr() != NULL)
+			{
+				*_request += bstr.getLen();
+			}
+			_np->setValue(&bstr, i);
 		}
 	}
 	//_np->setFlag((_np->getFlag() & ~Node::NF_IV & ~Node::NF_ID) | Node::NF_IM);
@@ -303,12 +311,11 @@ SIStorage::readNode(SINode* _np, long long* _request)
 	//_np->setMem();
 	this->updateHeap(_np, _np->getRank(), false);
 	bstr.clear();
-
 	return true;
 }
 
 bool
-SIStorage::createNode(SINode*& _np) //cretae virtual nodes, not in-mem
+IVStorage::createNode(IVNode*& _np) //cretae virtual nodes, not in-mem
 {
 	/*
 	if(ftell(this->treefp)== 0)	//null root
@@ -320,17 +327,17 @@ SIStorage::createNode(SINode*& _np) //cretae virtual nodes, not in-mem
 	unsigned t;		//QUERY: maybe next-flag... will be better-storage?
 	bool flag = false;			//IntlNode
 	fread(&t, sizeof(unsigned), 1, treefp);
-	if ((t & SINode::NF_IL) > 0)	//WARN: according to setting
+	if ((t & IVNode::NF_IL) > 0)	//WARN: according to setting
 		flag = true;			//LeafNode
 	if (flag)
 	{
 		//this->request(sizeof(LeafNode));
-		_np = new SILeafNode(true);
+		_np = new IVLeafNode(true);
 	}
 	else
 	{
 		//this->request(sizeof(IntlNode));
-		_np = new SIIntlNode(true);
+		_np = new IVIntlNode(true);
 	}
 	//fseek(treefp, -4, SEEK_CUR);
 	//_np->setFlag(_np->getFlag() | (t & Node::NF_RK));
@@ -339,12 +346,16 @@ SIStorage::createNode(SINode*& _np) //cretae virtual nodes, not in-mem
 	_np->delDirty();
 	_np->delMem();
 	_np->setStore(Blocknum(ftell(treefp) - 4));
-
 	return true;
 }
 
+//BETTER: Does SpecialBlock really needed? why can't we place next before flag??
+//
+//NOTICE: root num begins from 1, if root num is 0, then it is invalid, i.e. the tree is NULL
+//(and ftell(root address) will be 0 either)
+
 bool
-SIStorage::writeNode(SINode* _np)
+IVStorage::writeNode(IVNode* _np)
 {
 	if (_np == NULL || !_np->inMem() || (_np->getRank() > 0 && !_np->isDirty()))
 		return false;	//not need to write back
@@ -392,20 +403,22 @@ SIStorage::writeNode(SINode* _np)
 		}
 	}
 
+	//int tmp = 0;
+	unsigned tmp = INVALID;
 	//to write all keys
 	for (i = 0; i < num; ++i)
-		this->writeBstr(_np->getKey(i), &blocknum, SpecialBlock);
+	{
+		tmp = _np->getKey(i);
+		fwrite(&tmp, sizeof(int), 1, treefp);
+		this->WriteAlign(&blocknum, SpecialBlock);
+	}
 
 	if (flag)
 	{
-		//int tmp = -1;
-		unsigned tmp = INVALID;
 		//to write all values
 		for (i = 0; i < num; ++i)
 		{
-			tmp = _np->getValue(i);
-			fwrite(&tmp, sizeof(unsigned), 1, treefp);
-			this->WriteAlign(&blocknum, SpecialBlock);
+			this->writeBstr(_np->getValue(i), &blocknum, SpecialBlock);
 		}
 	}
 	fseek(treefp, Address(blocknum), SEEK_SET);
@@ -413,20 +426,38 @@ SIStorage::writeNode(SINode* _np)
 		fseek(treefp, 4, SEEK_CUR);
 	t = 0;
 	fwrite(&t, sizeof(unsigned), 1, treefp);		//the end-block
-	//_np->setFlag(_np->getFlag() & ~Node::NF_ID);
+													//_np->setFlag(_np->getFlag() & ~Node::NF_ID);
+	//NOTICE:we may store the dirty bit into the tree file, but that is ok
+	//Each time we read the tree file to construct a node, we always set the drity bit to 0
 	_np->delDirty();
-
 	return true;
 }
 
 bool
-SIStorage::readBstr(Bstr* _bp, unsigned* _next)
+IVStorage::readBstr(Bstr* _bp, unsigned* _next)
 {
 	//long address;
 	unsigned len, i, j;
 	fread(&len, sizeof(unsigned), 1, this->treefp);
 	this->ReadAlign(_next);
+
+	//NOTICE: if this is a long list as value
+	if(len == 0)
+	{
+		unsigned addr = 0;
+		fread(&addr, sizeof(unsigned), 1, this->treefp);
+#ifdef DEBUG_VLIST
+		cout<<"read a vlist in IVStorage - addr: "<<addr<<endl;
+#endif
+		_bp->setLen(addr);
+		_bp->setStr(NULL);
+		this->ReadAlign(_next);
+		return true;
+	}
+
 	//this->request(len);
+
+	//NOTICE: we use new for all, consistent with Bstr and KVstore
 	//char* s = (char*)malloc(len);
 	char* s = new char[len];
 	_bp->setLen(len);
@@ -451,11 +482,28 @@ SIStorage::readBstr(Bstr* _bp, unsigned* _next)
 }
 
 bool
-SIStorage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
+IVStorage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
 {
 	unsigned i, j, len = _bp->getLen();
+
+	//NOTICE: to write long list value
+	if(_bp->getStr() == NULL)
+	{
+		unsigned flag = 0;
+		fwrite(&flag, sizeof(unsigned), 1, treefp);
+		this->WriteAlign(_curnum, _SpecialBlock);
+		//then this is the real block num
+		fwrite(&len, sizeof(unsigned), 1, treefp);
+#ifdef DEBUG_VLIST
+		cout<<"to write a vlist in IVStorage::writeBstr() - blocknum: "<<len<<endl;
+#endif
+		this->WriteAlign(_curnum, _SpecialBlock);
+		return true;
+	}
+
 	fwrite(&len, sizeof(unsigned), 1, treefp);
 	this->WriteAlign(_curnum, _SpecialBlock);
+
 	char* s = _bp->getStr();
 	for (i = 0; i + 4 < len; i += 4)
 	{
@@ -467,6 +515,7 @@ SIStorage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
 		fwrite(s + i, sizeof(char), 1, treefp);
 		i++;
 	}
+
 	j = len % 4;
 	if (j > 0)
 		j = 4 - j;
@@ -477,12 +526,12 @@ SIStorage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
 }
 
 bool
-SIStorage::writeTree(SINode* _root)	//write the whole tree back and close treefp
+IVStorage::writeTree(IVNode* _root)	//write the whole tree back and close treefp
 {
 	fseek(this->treefp, 0, SEEK_SET);
 	fwrite(this->treeheight, sizeof(unsigned), 1, treefp);
 	//delete all nonsense-node in heap, otherwise will waste storage permanently
-	SINode* p;
+	IVNode* p;
 	while (1)
 	{	//all non-sense nodes will be in-head-area, due to minimal rank
 		p = minheap->getTop();
@@ -505,9 +554,9 @@ SIStorage::writeTree(SINode* _root)	//write the whole tree back and close treefp
 	//write nodes recursively using stack, including root-num
 	if (_root != NULL)
 	{
-		SINode* p = _root;
+		IVNode* p = _root;
 		unsigned h = *this->treeheight, pos = 0;
-		SINode* ns[h];
+		IVNode* ns[h];
 		int ni[h];
 		ns[pos] = p;
 		ni[pos] = p->getNum();
@@ -531,6 +580,7 @@ SIStorage::writeTree(SINode* _root)	//write the whole tree back and close treefp
 	}
 	else
 		t = 0;
+
 	fseek(this->treefp, 4, SEEK_SET);
 	fwrite(&t, sizeof(unsigned), 1, treefp);	//write the root num
 	fwrite(&cur_block_num, sizeof(unsigned), 1, treefp);//write current blocks num
@@ -563,12 +613,11 @@ SIStorage::writeTree(SINode* _root)	//write the whole tree back and close treefp
 		bp = bp->next;
 	}
 	//fclose(this->treefp);
-
 	return true;
 }
 
 void
-SIStorage::updateHeap(SINode* _np, unsigned _rank, bool _inheap) const
+IVStorage::updateHeap(IVNode* _np, unsigned _rank, bool _inheap) const
 {
 	if (_inheap)	//already in heap, to modify
 	{
@@ -588,50 +637,66 @@ SIStorage::updateHeap(SINode* _np, unsigned _rank, bool _inheap) const
 }
 
 bool
-SIStorage::request(long long _needmem)	//aligned to byte
+IVStorage::request(long long _needmem)	//aligned to byte
 {	//NOTICE: <0 means release
+	//cout<<"freemem: "<<this->freemem<<" needmem: "<<_needmem<<endl;
 	if (_needmem > 0 && this->freemem < (unsigned long long)_needmem)
 		if (!this->handler(_needmem - freemem))	//disaster in buffer memory
 		{
 			print(string("error in request: out of buffer-mem, now to exit"));
 			//exit(1);
-			return false;;
+			return false;
 		}
 	this->freemem -= _needmem;
-
 	return true;
 }
 
 bool
-SIStorage::handler(unsigned long long _needmem)	//>0
+IVStorage::handler(unsigned long long _needmem)	//>0
 {
-	SINode* p;
+	//cout<<"swap happen"<<endl;
+	IVNode* p;
 	unsigned long long size;
 	//if(_needmem < SET_BUFFER_SIZE)		//to recover to SET_BUFFER_SIZE buffer
 	//	_needmem = SET_BUFFER_SIZE;
+	//cout<<"IVStorage::handler() - now to loop to release nodes"<<endl;
 	while (1)
 	{
 		p = this->minheap->getTop();
+		//cout<<"get heap top"<<endl;
 		if (p == NULL)
+		{
+			cout << "the heap top is null" << endl;
 			return false;	//can't satisfy or can't recover to SET_BUFFER_SIZE
+		}
+
 		this->minheap->remove();
+		//cout<<"node removed in heap"<<endl;
 		size = p->getSize();
 		this->freemem += size;
 		this->writeNode(p);
+		//cout<<"node write back"<<endl;
 		if (p->getNum() > 0)
 			p->Virtual();
 		else
 			delete p;	//non-sense node
+			//cout<<"node memory released"<<endl;
 		if (_needmem > size)
+		{
+			//cout<<"reduce the request"<<endl;
 			_needmem -= size;
+		}
 		else
+		{
+			//cout<<"ok to break"<<endl;
 			break;
+		}
 	}
-
+	//cout<<"IVStorage::handler() -- finished"<<endl;
 	return true;
 }
 
-SIStorage::~SIStorage()
+IVStorage::~IVStorage()
 {
 	//release heap and freelist...
 #ifdef DEBUG_KVSTORE
@@ -654,21 +719,20 @@ SIStorage::~SIStorage()
 #endif
 	fclose(this->treefp);
 	//#ifdef DEBUG_KVSTORE
-	//	//NOTICE:there is more than one tree
-	//	fclose(Util::debug_kvstore);	//NULL is ok!
-	//	Util::debug_kvstore = NULL;
+	//NOTICE:there is more than one tree
+	//fclose(Util::debug_kvstore);	//NULL is ok!
+	//Util::debug_kvstore = NULL;
 	//#endif
 }
 
 void
-SIStorage::print(string s)
+IVStorage::print(string s)
 {
 #ifdef DEBUG_KVSTORE
 	fputs(Util::showtime().c_str(), Util::debug_kvstore);
-	fputs("Class SIStorage\n", Util::debug_kvstore);
+	fputs("Class IVStorage\n", Util::debug_kvstore);
 	fputs("Message: ", Util::debug_kvstore);
 	fputs(s.c_str(), Util::debug_kvstore);
 	fputs("\n", Util::debug_kvstore);
 #endif
 }
-

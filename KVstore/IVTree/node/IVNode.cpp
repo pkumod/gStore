@@ -1,37 +1,37 @@
 /*=============================================================================
-# Filename: SINode.cpp
+# Filename: IVNode.cpp
 # Author: syzz
 # Mail: 1181955272@qq.com
 # Last Modified: 2015-04-26 16:39
-# Description: achieve functions in SINode.h
+# Description: achieve functions in IVNode.h
 =============================================================================*/
 
-#include "SINode.h"
+#include "IVNode.h"
 
 using namespace std;
 
 void
-SINode::AllocKeys()
+IVNode::AllocKeys()
 {
-	keys = new Bstr[MAX_KEY_NUM];
+	keys = new unsigned[MAX_KEY_NUM];
 }
 
 /*
 void
-SINode::FreeKeys()
+IVNode::FreeKeys()
 {
 delete[] keys;
 }
 */
 
-SINode::SINode()
+IVNode::IVNode()
 {
 	store = flag = 0;
 	flag |= NF_IM;
 	AllocKeys();
 }
 
-SINode::SINode(bool isVirtual)
+IVNode::IVNode(bool isVirtual)
 {
 	store = flag = 0;
 	if (!isVirtual)
@@ -42,108 +42,108 @@ SINode::SINode(bool isVirtual)
 }
 
 /*
-SINode::Node(Storage* TSM)
+IVNode::Node(Storage* TSM)
 {
 AllocKeys();
-TSM->readSINode(this, Storage::OVER);
+TSM->readIVNode(this, Storage::OVER);
 }
 */
 bool
-SINode::isLeaf() const
+IVNode::isLeaf() const
 {
 	return this->flag & NF_IL;
 }
 
 bool
-SINode::isDirty() const
+IVNode::isDirty() const
 {
 	return this->flag & NF_ID;
 }
 
 void
-SINode::setDirty()
+IVNode::setDirty()
 {
 	this->flag |= NF_ID;
 }
 
 void
-SINode::delDirty()
+IVNode::delDirty()
 {
 	this->flag &= ~NF_ID;
 }
 
 bool
-SINode::inMem() const
+IVNode::inMem() const
 {
 	return this->flag & NF_IM;
 }
 
 void
-SINode::setMem()
+IVNode::setMem()
 {
 	this->flag |= NF_IM;
 }
 
 void
-SINode::delMem()
+IVNode::delMem()
 {
 	this->flag &= ~NF_IM;
 }
 
 /*
 bool
-SINode::isVirtual() const
+IVNode::isVirtual() const
 {
 return this->flag & NF_IV;
 }
 
 void
-SINode::setVirtual()
+IVNode::setVirtual()
 {
 this->flag |= NF_IV;
 }
 
 void
-SINode::delVirtual()
+IVNode::delVirtual()
 {
 this->flag &= ~NF_IV;
 }
 */
 
 unsigned
-SINode::getRank() const
+IVNode::getRank() const
 {
 	return this->flag & NF_RK;
 }
 
 void
-SINode::setRank(unsigned _rank)
+IVNode::setRank(unsigned _rank)
 {
 	this->flag &= ~NF_RK;
 	this->flag |= _rank;
 }
 
 unsigned
-SINode::getHeight() const
+IVNode::getHeight() const
 {
 	return (this->flag & NF_HT) >> 20;
 }
 
 void
-SINode::setHeight(unsigned _h)
+IVNode::setHeight(unsigned _h)
 {
 	this->flag &= ~NF_HT;
 	this->flag |= (_h << 20);
 }
 
 unsigned
-SINode::getNum() const
+IVNode::getNum() const
 {
 	return (this->flag & NF_KN) >> 12;
 }
 
 bool
-SINode::setNum(int _num)
+IVNode::setNum(int _num)
 {
 	if (_num < 0 || (unsigned)_num > MAX_KEY_NUM)
 	{
@@ -156,7 +156,7 @@ SINode::setNum(int _num)
 }
 
 bool
-SINode::addNum()
+IVNode::addNum()
 {
 	if (this->getNum() + 1 > MAX_KEY_NUM)
 	{
@@ -168,7 +168,7 @@ SINode::addNum()
 }
 
 bool
-SINode::subNum()
+IVNode::subNum()
 {
 	if (this->getNum() < 1)
 	{
@@ -180,45 +180,45 @@ SINode::subNum()
 }
 
 unsigned
-SINode::getStore() const
+IVNode::getStore() const
 {
 	return this->store;
 }
 
 void
-SINode::setStore(unsigned _store)
+IVNode::setStore(unsigned _store)
 {
 	this->store = _store;
 }
 
 unsigned
-SINode::getFlag() const
+IVNode::getFlag() const
 {
 	return flag;
 }
 
 void
-SINode::setFlag(unsigned _flag)
+IVNode::setFlag(unsigned _flag)
 {
 	this->flag = _flag;
 }
 
-const Bstr*
-SINode::getKey(int _index) const
+unsigned
+IVNode::getKey(int _index) const
 {
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
 		//print(string("error in getKey: Invalid index ") + Util::int2string(_index));    
 		printf("error in getKey: Invalid index\n");
-		return NULL;
+		return -1;
 	}
 	else
-		return this->keys + _index;
+		return this->keys[_index];
 }
 
 bool
-SINode::setKey(const Bstr* _key, int _index, bool ifcopy)
+IVNode::setKey(unsigned _key, int _index)
 {
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
@@ -226,15 +226,12 @@ SINode::setKey(const Bstr* _key, int _index, bool ifcopy)
 		print(string("error in setKey: Invalid index ") + Util::int2string(_index));
 		return false;
 	}
-	if (ifcopy)
-		keys[_index].copy(_key);
-	else
-		keys[_index] = *_key;
+	keys[_index] = _key;
 	return true;
 }
 
 bool
-SINode::addKey(const Bstr* _key, int _index, bool ifcopy)
+IVNode::addKey(unsigned _key, int _index)
 {
 	int num = this->getNum();
 	if (_index < 0 || _index > num)
@@ -247,37 +244,12 @@ SINode::addKey(const Bstr* _key, int _index, bool ifcopy)
 	//however. tree operations ensure that: when node is full, not add but split first!
 	for (i = num - 1; i >= _index; --i)
 		keys[i + 1] = keys[i];
-	if (ifcopy)
-		keys[_index].copy(_key);
-	else
-		keys[_index] = *_key;
-
-	return true;
-}
-
-bool 
-SINode::addKey(char* _str, unsigned _len, int _index, bool ifcopy)
-{
-	int num = this->getNum();
-	if (_index < 0 || _index > num)
-	{
-		print(string("error in addKey: Invalid index ") + Util::int2string(_index));
-		return false;
-	}
-	int i;
-	//NOTICE: if num == MAX_KEY_NUM, will visit keys[MAX_KEY_NUM], not legal!!!
-	//however. tree operations ensure that: when node is full, not add but split first!
-	for (i = num - 1; i >= _index; --i)
-		keys[i + 1] = keys[i];
-
-	keys[_index].setStr(_str);
-	keys[_index].setLen(_len);
-
+	keys[_index] = _key;
 	return true;
 }
 
 bool
-SINode::subKey(int _index, bool ifdel)
+IVNode::subKey(int _index)
 {
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
@@ -286,16 +258,13 @@ SINode::subKey(int _index, bool ifdel)
 		return false;
 	}
 	int i;
-	if (ifdel)
-		keys[_index].release();
 	for (i = _index; i < num - 1; ++i)
 		keys[i] = keys[i + 1];
-
 	return true;
 }
 
 int
-SINode::searchKey_less(const Bstr& _bstr) const
+IVNode::searchKey_less(unsigned _key) const
 {
 	int num = this->getNum();
 	//for(i = 0; i < num; ++i)
@@ -306,7 +275,7 @@ SINode::searchKey_less(const Bstr& _bstr) const
 	while (low <= high)
 	{
 		mid = (low + high) / 2;
-		if (this->keys[mid] > _bstr)
+		if (this->keys[mid] > _key)
 		{
 			if (low == mid)
 				break;
@@ -317,89 +286,35 @@ SINode::searchKey_less(const Bstr& _bstr) const
 			low = mid + 1;
 		}
 	}
-
 	return low;
 }
 
 int
-SINode::searchKey_equal(const Bstr& _bstr) const
+IVNode::searchKey_equal(unsigned _key) const
 {
 	int num = this->getNum();
 	//for(i = 0; i < num; ++i)
 	//	if(bstr == *(p->getKey(i)))
 	//	{
 
-	int ret = this->searchKey_less(_bstr);
-	if (ret > 0 && this->keys[ret - 1] == _bstr)
+	int ret = this->searchKey_less(_key);
+	if (ret > 0 && this->keys[ret - 1] == _key)
 		return ret - 1;
 	else
 		return num;
 }
 
 int
-SINode::searchKey_lessEqual(const Bstr& _bstr) const
+IVNode::searchKey_lessEqual(unsigned _key) const
 {
 	//int num = this->getNum();
 	//for(i = 0; i < num; ++i)
 	//if(bstr <= *(p->getKey(i)))
 	//break;
 
-	int ret = this->searchKey_less(_bstr);
-	if (ret > 0 && this->keys[ret - 1] == _bstr)
+	int ret = this->searchKey_less(_key);
+	if (ret > 0 && this->keys[ret - 1] == _key)
 		return ret - 1;
 	else
 		return ret;
 }
-
-int 
-SINode::searchKey_less(const char* _str, unsigned _len) const
-{
-	int num = this->getNum();
-
-	int low = 0, high = num - 1, mid = -1;
-	while (low <= high)
-	{
-		mid = (low + high) / 2;
-		//if (this->keys[mid] > _bstr)
-		if (Util::compare(this->keys[mid].getStr(), this->keys[mid].getLen(), _str, _len) > 0)
-		{
-			if (low == mid)
-				break;
-			high = mid;
-		}
-		else
-		{
-			low = mid + 1;
-		}
-	}
-
-	return low;
-}
-
-int 
-SINode::searchKey_equal(const char* _str, unsigned _len) const
-{
-	int num = this->getNum();
-	//for(i = 0; i < num; ++i)
-	//	if(bstr == *(p->getKey(i)))
-	//	{
-
-	int ret = this->searchKey_less(_str, _len);
-	//if (ret > 0 && this->keys[ret - 1] == _bstr)
-	if (ret > 0 && Util::compare(this->keys[ret-1].getStr(), this->keys[ret-1].getLen(), _str, _len) == 0)
-		return ret - 1;
-	else
-		return num;
-}
-
-int 
-SINode::searchKey_lessEqual(const char* _str, unsigned _len) const
-{
-	int ret = this->searchKey_less(_str, _len);
-	//if (ret > 0 && this->keys[ret - 1] == _bstr)
-	if (ret > 0 && Util::compare(this->keys[ret-1].getStr(), this->keys[ret-1].getLen(), _str, _len) == 0)
-		return ret - 1;
-	else
-		return ret;
-}
-

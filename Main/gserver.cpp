@@ -11,9 +11,9 @@
 
 using namespace std;
 
-#define GSERVER_PORT_FILE "bin/.gserver_port"
-#define GSERVER_PORT_SWAP "bin/.gserver_port.swap"
-#define GSERVER_LOG "logs/gserver.log"
+//#define GSERVER_PORT_FILE "bin/.gserver_port"
+//#define GSERVER_PORT_SWAP "bin/.gserver_port.swap"
+//#define GSERVER_LOG "logs/gserver.log"
 
 bool isOnlyProcess(const char* argv0);
 void checkSwap();
@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 		unsigned short port = Socket::DEFAULT_CONNECT_PORT;
 		if (argc == 3) {
 			if (!Util::isValidPort(string(argv[2]))) {
-				cout << "Invalid port: " << argv[2] << endl;
+				cerr << "Invalid port: " << argv[2] << endl;
 				return -1;
 			}
 			else {
@@ -70,9 +70,9 @@ int main(int argc, char* argv[])
 			}
 		}
 		if (!isOnlyProcess(argv[0])) {
-			ofstream out(GSERVER_PORT_SWAP, ios::out);
+			ofstream out(Util::gserver_port_swap.c_str());
 			if (!out) {
-				cout << "Failed to change port!" << endl;
+				cerr << "Failed to change port!" << endl;
 				return -1;
 			}
 			out << port;
@@ -80,9 +80,9 @@ int main(int argc, char* argv[])
 			cout << "Port will be changed to " << port << " after the current server stops or restarts." << endl;
 			return 0;
 		}
-		ofstream out(GSERVER_PORT_FILE, ios::out);
+		ofstream out(Util::gserver_port_file.c_str());
 		if (!out) {
-			cout << "Failed to change port!" << endl;
+			cerr << "Failed to change port!" << endl;
 			return -1;
 		}
 		out << port;
@@ -93,10 +93,15 @@ int main(int argc, char* argv[])
 
 	if (mode == "-s" || mode == "--start") {
 		if (!isOnlyProcess(argv[0])) {
-			cout << "gServer already running!" << endl;
+			cerr << "gServer already running!" << endl;
 			return -1;
 		}
 		if (startServer()) {
+			sleep(1);
+			if (isOnlyProcess(argv[0])) {
+				cerr << "Server stopped unexpectedly. Check for port conflicts!" << endl;
+				return -1;
+			}
 			return 0;
 		}
 		else {
@@ -106,7 +111,7 @@ int main(int argc, char* argv[])
 
 	if (mode == "-t" || mode == "--stop") {
 		if (isOnlyProcess(argv[0])) {
-			cout << "gServer not running!" << endl;
+			cerr << "gServer not running!" << endl;
 			return -1;
 		}
 		if (stopServer()) {
@@ -119,7 +124,7 @@ int main(int argc, char* argv[])
 
 	if (mode == "-r" || mode == "--restart") {
 		if (isOnlyProcess(argv[0])) {
-			cout << "gServer not running!" << endl;
+			cerr << "gServer not running!" << endl;
 			return -1;
 		}
 		if (!stopServer()) {
@@ -133,14 +138,14 @@ int main(int argc, char* argv[])
 
 	if (mode == "-P" || mode == "--printport") {
 		unsigned short port = Socket::DEFAULT_CONNECT_PORT;
-		ifstream in(GSERVER_PORT_FILE);
+		ifstream in(Util::gserver_port_file.c_str());
 		if (in) {
 			in >> port;
 			in.close();
 		}
 		cout << "Current connection port is " << port << '.' << endl;
 		unsigned short portSwap = 0;
-		ifstream inSwap(GSERVER_PORT_SWAP);
+		ifstream inSwap(Util::gserver_port_swap.c_str());
 		if (inSwap) {
 			inSwap >> portSwap;
 			inSwap.close();
@@ -153,14 +158,14 @@ int main(int argc, char* argv[])
 
 	if (mode == "-k" || mode == "--kill") {
 		if (isOnlyProcess(argv[0])) {
-			cout << "No process to kill!" << endl;
+			cerr << "No process to kill!" << endl;
 			return -1;
 		}
 		execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
 		return 0;
 	}
 
-	cout << "Invalid arguments! Input \"bin/gserver -h\" for help." << endl;
+	cerr << "Invalid arguments! Type \"bin/gserver -h\" for help." << endl;
 	return -1;
 }
 
@@ -169,38 +174,38 @@ bool isOnlyProcess(const char* argv0) {
 }
 
 void checkSwap() {
-	if (access(GSERVER_PORT_SWAP, 00) != 0) {
+	if (access(Util::gserver_port_swap.c_str(), 00) != 0) {
 		return;
 	}
-	ifstream in(GSERVER_PORT_SWAP, ios::in);
+	ifstream in(Util::gserver_port_swap.c_str());
 	if (!in) {
-		cout << "Failed in checkSwap(), port may not be changed." << endl;
+		cerr << "Failed in checkSwap(), port may not be changed." << endl;
 		return;
 	}
 	unsigned short port;
 	in >> port;
 	in.close();
-	ofstream out(GSERVER_PORT_FILE, ios::out);
+	ofstream out(Util::gserver_port_file.c_str());
 	if (!out) {
-		cout << "Failed in checkSwap(), port may not be changed." << endl;
+		cerr << "Failed in checkSwap(), port may not be changed." << endl;
 		return;
 	}
 	out << port;
 	out.close();
-	chmod(GSERVER_PORT_FILE, 0644);
-	string cmd = string("rm ") + GSERVER_PORT_SWAP;
+	chmod(Util::gserver_port_file.c_str(), 0644);
+	string cmd = string("rm ") + Util::gserver_port_swap;
 	system(cmd.c_str());
 }
 
 bool startServer() {
 	unsigned short port = Socket::DEFAULT_CONNECT_PORT;
-	ifstream in(GSERVER_PORT_FILE, ios::in);
+	ifstream in(Util::gserver_port_file.c_str());
 	if (!in) {
-		ofstream out(GSERVER_PORT_FILE, ios::out);
+		ofstream out(Util::gserver_port_file.c_str());
 		if (out) {
 			out << port;
 			out.close();
-			chmod(GSERVER_PORT_FILE, 0644);
+			chmod(Util::gserver_port_file.c_str(), 0644);
 		}
 	}
 	else {
@@ -215,47 +220,75 @@ bool startServer() {
 		if (!Util::dir_exist("logs")) {
 			Util::create_dir("logs");
 		}
-		freopen(GSERVER_LOG, "a", stdout);
-		freopen(GSERVER_LOG, "a", stderr);
-		Server server(port);
-		if (!server.createConnection()) {
-			cout << Util::getTimeString() << "Failed to create connection at port " << port << '.' << endl;
-			return false;
+		freopen(Util::gserver_log.c_str(), "a", stdout);
+		freopen(Util::gserver_log.c_str(), "a", stderr);
+
+		int status;
+
+		while (true) {
+			fpid = fork();
+
+			// child, main process
+			if (fpid == 0) {
+				Server server(port);
+				if (!server.createConnection()) {
+					cerr << Util::getTimeString() << "Failed to create connection at port " << port << '.' << endl;
+					return false;
+				}
+				cout << Util::getTimeString() << "Server started at port " << port << '.' << endl;
+				server.listen();
+				exit(0);
+				return true;
+			}
+
+			// parent, deamon process
+			else if (fpid > 0) {
+				waitpid(fpid, &status, 0);
+				if (WIFEXITED(status)) {
+					exit(0);
+					return true;
+				}
+				cerr << Util::getTimeString() << "Server stopped abnormally, restarting server..." << endl;
+			}
+
+			// fork failure
+			else {
+				cerr << Util::getTimeString() << "Failed to start server: deamon fork failure." << endl;
+				return false;
+			}
 		}
-		cout << Util::getTimeString() << "Server started at port " << port << '.' << endl;
-		server.listen();
-		exit(0);
-		return true;
 	}
+
 	// parent
 	else if (fpid > 0) {
 		cout << "Server started at port " << port << '.' << endl;
 		return true;
 	}
+
 	// fork failure
 	else {
-		cout << "Failed to start server at port " << port << '.' << endl;
+		cerr << "Failed to start server at port " << port << '.' << endl;
 		return false;
 	}
 }
 
 bool stopServer() {
 	unsigned short port = Socket::DEFAULT_CONNECT_PORT;
-	ifstream in(GSERVER_PORT_FILE, ios::in);
+	ifstream in(Util::gserver_port_file.c_str());
 	if (in) {
 		in >> port;
 		in.close();
 	}
 	Socket socket;
 	if (!socket.create() || !socket.connect("127.0.0.1", port) || !socket.send("stop")) {
-		cout << "Failed to stop server at port " << port << '.' << endl;
+		cerr << "Failed to stop server at port " << port << '.' << endl;
 		return false;
 	}
 	string recv_msg;
 	socket.recv(recv_msg);
 	socket.close();
 	if (recv_msg != "server stopped.") {
-		cout << "Failed to stop server at port " << port << '.' << endl;
+		cerr << "Failed to stop server at port " << port << '.' << endl;
 		return false;
 	}
 	cout << "Server stopped at port " << port << '.' << endl;

@@ -37,6 +37,7 @@ in the sparql query can point to the same node in data graph)
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -86,10 +87,11 @@ in the sparql query can point to the same node in data graph)
 //#define DEBUG_JOIN      
 //#define DEBUG_STREAM
 //#define DEBUG_PRECISE 1		all information
-//#define DEBUG_KVSTORE 1		//in KVstore
+#define DEBUG_KVSTORE 1		//in KVstore
 //#define DEBUG_VSTREE 1	//in Database 
 //#define DEBUG_LRUCACHE 1
 //#define DEBUG_DATABASE 1	//in Database
+//#define DEBUG_VLIST 1
 //
 //
 
@@ -118,6 +120,12 @@ in the sparql query can point to the same node in data graph)
 #endif
 
 #ifdef DEBUG_JOIN
+#ifndef DEBUG
+#define DEBUG
+#endif
+#endif
+
+#ifdef DEBUG_VLIST
 #ifndef DEBUG
 #define DEBUG
 #endif
@@ -247,8 +255,11 @@ public:
 	static std::string getTimeString();
 	static std::string node2string(const char* _raw_str);
 
-	static bool is_literal_ele(TYPE_ENTITY_LITERAL_ID);
+	static bool is_literal_ele(TYPE_ENTITY_LITERAL_ID id);
+	static bool is_entity_ele(TYPE_ENTITY_LITERAL_ID id);
+
 	static unsigned removeDuplicate(unsigned*, unsigned);
+
 	static std::string getQueryFromFile(const char* _file_path); 
 	static std::string getSystemOutput(std::string cmd);
 	static std::string getExactPath(const char* path);
@@ -315,6 +326,10 @@ public:
 	static FILE* debug_kvstore;				
 	static FILE* debug_database;
 	static FILE* debug_vstree;
+
+	static std::string  gserver_port_file;
+	static std::string  gserver_port_swap;
+	static std::string  gserver_log;
 
 
 private:

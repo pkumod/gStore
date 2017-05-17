@@ -743,6 +743,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 #ifdef DEBUG
 	cout<<"query success_num: "<<success_num<<endl;
 #endif
+	//cout<<"to check: "<<this->kvstore->getEntityByID(0)<<endl;
 	return success_num;
 }
 
@@ -827,6 +828,7 @@ Database::build(const string& _rdf_file)
 	//sync();
 	//cout << "sync vstree" << endl;
 
+	//TODO: use fopen w+ to remove signature.binary file
 	//string cmd = "rm -rf " + _entry_file;
 	//system(cmd.c_str());
 	//cout << "signature file removed" << endl;
@@ -1608,6 +1610,10 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 					//#endif
 				}
 			}
+
+			//NOTICE: we assume that there is no duplicates in the dataset
+			//if not, this->triple_num will be not right, and _p_id_tuples will save useless triples
+			//However, we can not use exist_triple to detect duplicates here, because it is too time-costly
 
 			//  For id_tuples
 			//_p_id_tuples[_id_tuples_size] = new TYPE_ENTITY_LITERAL_ID[3];

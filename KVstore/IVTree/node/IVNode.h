@@ -1,18 +1,19 @@
 /*=============================================================================
-# Filename: ISNode.h
+# Filename: IVNode.h
 # Author: syzz
 # Mail: 1181955272@qq.com
 # Last Modified: 2015-04-26 16:38
-# Description: basic Node class, father of ISIntlNode and ISLeafNode
+# Description: basic Node class, father of IVIntlNode and IVLeafNode
 =============================================================================*/
 
-#ifndef _KVSTORE_ISTREE_NODE_ISNODE_H
-#define _KVSTORE_ISTREE_NODE_ISNODE_H
+#ifndef _KVSTORE_IVTREE_NODE_IVNODE_H
+#define _KVSTORE_IVTREE_NODE_IVNODE_H
 
 #include "../../../Util/Util.h"
 #include "../../../Util/Bstr.h"
+#include "../../../Util/VList.h"
 
-class ISNode       				//abstract basic class 
+class IVNode       				//abstract basic class 
 {
 public:
 	static const unsigned DEGREE = 2 * 63;	//the degree of B+ tree
@@ -35,12 +36,12 @@ protected:
 	unsigned flag;			//NF_RK, NF_IL,NF_ID, NF_IV, propety
 							//int num; 			//totle keys num
 							//Node* father;		//point to father-node, which must be IntlNode
-	int* keys;
+	unsigned* keys;
 	void AllocKeys();
 	//void FreeKeys();
 public:
-	ISNode();
-	ISNode(bool isVirtual);
+	IVNode();
+	IVNode(bool isVirtual);
 	bool isLeaf() const;
 	bool isDirty() const;
 	void setDirty();
@@ -74,31 +75,34 @@ public:
 	int searchKey_lessEqual(unsigned _key) const;
 
 	//virtual functions: polymorphic
-	virtual ISNode* getChild(int _index) const { return NULL; };
-	virtual bool setChild(ISNode* _child, int _index) { return true; };
-	virtual bool addChild(ISNode* _child, int _index) { return true; };
+	virtual IVNode* getChild(int _index) const { return NULL; };
+	virtual bool setChild(IVNode* _child, int _index) { return true; };
+	virtual bool addChild(IVNode* _child, int _index) { return true; };
 	virtual bool subChild(int _index) { return true; };
-	virtual ISNode* getPrev() const { return NULL; };
-	virtual ISNode* getNext() const { return NULL; };
+	virtual IVNode* getPrev() const { return NULL; };
+	virtual IVNode* getNext() const { return NULL; };
 
 	virtual const Bstr* getValue(int _index) const { return NULL; };
-	virtual bool setValue(const Bstr* _value, int _index, bool ifcopy = false) { return true; };
-	virtual bool addValue(const Bstr* _value, int _index, bool ifcopy = false) { return true; };
+	virtual bool setValue(const Bstr* _value, int _index, bool _ifcopy=false) { return true; };
+	virtual bool getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) const { return NULL; };
+	virtual bool setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy = false) { return true; };
+
+	virtual bool addValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy = false) { return true; };
+	virtual bool subValue(VList* _vlist, int _index, bool ifdel = false) { return true; };
+	virtual bool addValue(const Bstr* _val, int _index, bool ifcopy = false) { return true; };
 	virtual bool subValue(int _index, bool ifdel = false) { return true; };
-	virtual void setPrev(ISNode* _prev) {};
-	virtual void setNext(ISNode* _next) {};
 
-	virtual bool setValue(const char* _str, unsigned _len, int _index, bool ifcopy = false) { return true; };
-	virtual bool addValue(const char* _str, unsigned _len, int _index, bool ifcopy = false) { return true; };
+	virtual void setPrev(IVNode* _prev) {};
+	virtual void setNext(IVNode* _next) {};
 
-	//pure virtual function
+	//pure virtual functions
 	virtual void Virtual() = 0;
 	virtual void Normal() = 0;
 	virtual unsigned getSize() const = 0;		//return all memory owned
-	virtual ISNode* split(ISNode* _father, int _index) = 0;
-	virtual ISNode* coalesce(ISNode* _father, int _index) = 0;
+	virtual IVNode* split(IVNode* _father, int _index) = 0;
+	virtual IVNode* coalesce(IVNode* _father, int _index) = 0;
 	virtual void release() = 0;		//release the node, only remain necessary information
-	virtual ~ISNode() {};
+	virtual ~IVNode() {};
 	virtual void print(std::string s) = 0;		//DEBUG(print the Node)
 };
 
@@ -117,4 +121,3 @@ public:
 */
 
 #endif
-

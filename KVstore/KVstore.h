@@ -10,7 +10,20 @@
 #define _KVSTORE_KVSTORE_H
 
 #include "../Util/Util.h"
+#include "../Util/VList.h"
 #include "Tree.h"
+
+//TODO: is it needed to keep a length in Bstr?? especially for IVTree?
+//add a length: sizeof bstr from 8 to 16(4 -> 8 for alignment)
+//add a \0 in tail: only add 1 char
+//QUERY: but to count the length each time maybe very costly?
+//No, because triple num is stored in char* now!!!! we do not need to save it again
+//TODO: entity_border in s2values list is not needed!!! not waste memory here
+//
+//QUERY: but to implement vlist, we need a unsigned flag
+//What is more, we need to store the string in disk, how can we store it if without the length? 
+//unsigned type stored as chars, maybe will have '\0'
+//In memory, we do not know when the oidlist ends if without the original length (butthe triple num will answer this!)
 
 class KVstore
 {
@@ -164,9 +177,9 @@ private:
 	static unsigned short buffer_literal2id_query;
 	static unsigned short buffer_id2literal_query;
 
-	ISTree* subID2values;
-	ISTree* objID2values;
-	ISTree* preID2values;
+	IVTree* subID2values;
+	IVTree* objID2values;
+	IVTree* preID2values;
 	static std::string s_sID2values;
 	static std::string s_oID2values;
 	static std::string s_pID2values;
@@ -181,23 +194,31 @@ private:
 
 	bool open(SITree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
 	bool open(ISTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
+	bool open(IVTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
 
 	void flush(SITree* _p_btree);
 	void flush(ISTree* _p_btree);
+	void flush(IVTree* _p_btree);
 
-	bool addValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsigned _val);
-	bool addValueByKey(ISTree* _p_btree, unsigned _key, const char* _val, unsigned _vlen);
+	bool addValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val);
+	bool addValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
+	bool addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 
-	bool setValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsigned _val);
-	bool setValueByKey(ISTree* _p_btree, unsigned _key, const char* _val, unsigned _vlen);
+	bool setValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val);
+	bool setValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
+	bool setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 
 	bool getValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsigned* _val) const;
 	bool getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
+	bool getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
+
+
 
 	TYPE_ENTITY_LITERAL_ID getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const;
 
 	bool removeKey(SITree* _p_btree, const char* _key, unsigned _klen);
 	bool removeKey(ISTree* _p_btree, unsigned _key);
+	bool removeKey(IVTree* _p_btree, unsigned _key);
 
 	static std::vector<unsigned> intersect(const unsigned* _list1, const unsigned* _list2, unsigned _len1, unsigned _len2);
 	static unsigned binarySearch(unsigned key, const unsigned* _list, unsigned _list_len, int step = 1);

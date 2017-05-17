@@ -133,7 +133,8 @@ Join::judge(unsigned _smallest, unsigned _biggest)
 	//BETTER:how to guess the size of can_lists
 	double size = (_smallest + _biggest) / 2.0;
 	double ans = Join::PARAM_DENSE * dense - size / Join::PARAM_SIZE;
-	if (ans > Join::JUDGE_LIMIT)
+	double limit = 1.0 / (double)Join::JUDGE_LIMIT;
+	if (ans > limit)
 		return 0;	//multi_join method
 	else
 		return 1;	//index_join method
@@ -983,6 +984,11 @@ Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* i
 		valid_ans_list->intersectList(id_list, id_list_len);
 	}
 }
+
+//TODO: multiple lists intersect, how about sort and intersect from small to big?
+//but this need to generate all first, I think sort by pre2num if better!
+//
+//TODO: set the entity_literal border in kvstore, and intersect entity part and literal part respectively
 
 //NOTICE: consider two directions according to table1 size and table2 size
 //1. ->  add ID mapping record for the first linking column, whole(offset, size) zengli

@@ -1,37 +1,37 @@
 /*=============================================================================
-# Filename: ISLeafNode.cpp
+# Filename: IVLeafNode.cpp
 # Author: syzz
 # Mail: 1181955272@qq.com
 # Last Modified: 2015-04-26 16:40
-# Description: ahieve functions in ISLeafNode.h
+# Description: ahieve functions in IVLeafNode.h
 =============================================================================*/
 
-#include "ISLeafNode.h"
+#include "IVLeafNode.h"
 
 using namespace std;
 
 void
-ISLeafNode::AllocValues()
+IVLeafNode::AllocValues()
 {
 	values = new Bstr[MAX_KEY_NUM];
 }
 
 /*
 void
-ISLeafNode::FreeValues()
+IVLeafNode::FreeValues()
 {
 delete[] values;
 }
 */
 
-ISLeafNode::ISLeafNode()
+IVLeafNode::IVLeafNode()
 {
 	flag |= NF_IL;		//leaf flag
 	prev = next = NULL;
 	AllocValues();
 }
 
-ISLeafNode::ISLeafNode(bool isVirtual)
+IVLeafNode::IVLeafNode(bool isVirtual)
 {
 	flag |= NF_IL;
 	prev = next = NULL;
@@ -40,7 +40,7 @@ ISLeafNode::ISLeafNode(bool isVirtual)
 }
 
 /*
-ISLeafNode::LeafNode(Storage* TSM)
+IVLeafNode::LeafNode(Storage* TSM)
 {
 AllocValues();
 TSM->readNode(this, Storage::OVER);
@@ -48,7 +48,7 @@ TSM->readNode(this, Storage::OVER);
 */
 
 void
-ISLeafNode::Virtual()
+IVLeafNode::Virtual()
 {
 	//this->FreeKeys();
 	//this->FreeValues();
@@ -57,27 +57,27 @@ ISLeafNode::Virtual()
 }
 
 void
-ISLeafNode::Normal()
+IVLeafNode::Normal()
 {
 	this->AllocKeys();
 	this->AllocValues();
 	this->setMem();
 }
 
-ISNode*
-ISLeafNode::getPrev() const
+IVNode*
+IVLeafNode::getPrev() const
 {
 	return prev;
 }
 
-ISNode*
-ISLeafNode::getNext() const
+IVNode*
+IVLeafNode::getNext() const
 {
 	return next;
 }
 
 const Bstr*
-ISLeafNode::getValue(int _index) const
+IVLeafNode::getValue(int _index) const
 {
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
@@ -89,8 +89,8 @@ ISLeafNode::getValue(int _index) const
 		return this->values + _index;
 }
 
-bool
-ISLeafNode::setValue(const Bstr* _value, int _index, bool ifcopy)
+bool 
+IVLeafNode::setValue(const Bstr* _value, int _index, bool _ifcopy)
 {
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
@@ -98,35 +98,51 @@ ISLeafNode::setValue(const Bstr* _value, int _index, bool ifcopy)
 		print(string("error in setValue: Invalid index ") + Util::int2string(_index));
 		return false;
 	}
-	this->values[_index].release(); //NOTICE: only used in modify
-	if (ifcopy)
-		this->values[_index].copy(_value);
-	else
-		this->values[_index] = *_value;
-	return true;
-}
 
-bool
-ISLeafNode::addValue(const Bstr* _value, int _index, bool ifcopy)
-{
-	int num = this->getNum();
-	if (_index < 0 || _index > num)
+	this->values[_index].release(); //NOTICE: only used in modify
+
+	if(_ifcopy)
 	{
-		print(string("error in addValue: Invalid index ") + Util::int2string(_index));
-		return false;
-	}
-	int i;
-	for (i = num - 1; i >= _index; --i)
-		this->values[i + 1] = this->values[i];
-	if (ifcopy)
 		this->values[_index].copy(_value);
+	}
 	else
+	{
 		this->values[_index] = *_value;
+	}
+
 	return true;
 }
 
 bool 
-ISLeafNode::setValue(char* _str, unsigned _len, int _index, bool ifcopy)
+IVLeafNode::getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) const
+{
+	int num = this->getNum();
+	if (_index < 0 || _index >= num)
+	{
+		//print(string("error in getValue: Invalid index ") + Util::int2string(_index));
+		return NULL;
+	}
+
+	//read long list
+	if(this->values[_index].isBstrLongList())
+	{
+#ifdef DEBUG_VLIST
+		cout<<"this is a vlist in get()"<<endl;
+#endif
+		unsigned block_num = this->values[_index].getLen();
+		_vlist->readValue(block_num, _str, _len);
+	}
+	else
+	{
+		_str = this->values[_index].getStr();
+		_len = this->values[_index].getLen();
+	}
+
+	return true;
+}
+
+bool
+IVLeafNode::setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy)
 {
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
@@ -134,16 +150,49 @@ ISLeafNode::setValue(char* _str, unsigned _len, int _index, bool ifcopy)
 		print(string("error in setValue: Invalid index ") + Util::int2string(_index));
 		return false;
 	}
-	this->values[_index].release(); //NOTICE: only used in modify
 
-	this->values[_index].setStr(_str);
-	this->values[_index].setLen(_len);
+	if(this->values[_index].isBstrLongList())
+	{
+#ifdef DEBUG_VLIST
+		cout<<"this is a vlist in set()"<<endl;
+#endif
+		unsigned block_num = this->values[_index].getLen();
+		_vlist->removeValue(block_num);
+	}
+	else
+	{
+		this->values[_index].release(); //NOTICE: only used in modify
+	}
+	
+	//DEBUG: we do not need to copy here
+	//we just need to ensure that the pointer's memory is not released
 
+	//if (ifcopy)
+	//{
+		//this->values[_index].copy(_value);
+	//}
+	//else
+	//{
+		//this->values[_index] = *_value;
+	if(VList::isLongList(_len))
+	{
+		unsigned block_num = _vlist->writeValue(_str, _len);
+		this->values[_index].setStr(NULL);
+		this->values[_index].setLen(block_num);
+		//NOTICE: we need to free the long list value
+		delete[] _str;
+	}
+	else
+	{
+		this->values[_index].setStr(_str);
+		this->values[_index].setLen(_len);
+	}
+	//}
 	return true;
 }
 
-bool 
-ISLeafNode::addValue(char* _str, unsigned _len, int _index, bool ifcopy)
+bool
+IVLeafNode::addValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy)
 {
 	int num = this->getNum();
 	if (_index < 0 || _index > num)
@@ -151,18 +200,42 @@ ISLeafNode::addValue(char* _str, unsigned _len, int _index, bool ifcopy)
 		print(string("error in addValue: Invalid index ") + Util::int2string(_index));
 		return false;
 	}
-	int i;
-	for (i = num - 1; i >= _index; --i)
+
+	for (int i = num - 1; i >= _index; --i)
 		this->values[i + 1] = this->values[i];
 
-	this->values[_index].setStr(_str);
-	this->values[_index].setLen(_len);
+	//if (ifcopy)
+		//this->values[_index].copy(_value);
+	//else
+		//this->values[_index] = *_value;
+
+	if(VList::isLongList(_len))
+	{
+#ifdef DEBUG_VLIST
+		cout<<"this is a vlist in add()"<<endl;
+#endif
+		unsigned block_num = _vlist->writeValue(_str, _len);
+		this->values[_index].setStr(NULL);
+		this->values[_index].setLen(block_num);
+		//NOTICE: we need to free the long list value
+		delete[] _str;
+#ifdef DEBUG_VLIST
+		//cout<<"to check vlist: "<<this->values[_index].getLen()<<endl;
+#endif
+	}
+	else
+	{
+		this->values[_index].setStr(_str);
+		this->values[_index].setLen(_len);
+	}
+	//this->values[_index].setStr(_str);
+	//this->values[_index].setLen(_len);
 
 	return true;
 }
 
 bool
-ISLeafNode::subValue(int _index, bool ifdel)
+IVLeafNode::subValue(VList* _vlist, int _index, bool ifdel)
 {
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
@@ -170,28 +243,80 @@ ISLeafNode::subValue(int _index, bool ifdel)
 		print(string("error in subValue: Invalid index ") + Util::int2string(_index));
 		return false;
 	}
+
+	if(this->values[_index].isBstrLongList())
+	{
+		unsigned block_num = this->values[_index].getLen();
+		_vlist->removeValue(block_num);
+	}
+	else
+	{
+		if (ifdel)
+		{
+			values[_index].release();
+		}
+	}
+
+	for (int i = _index; i < num - 1; ++i)
+		this->values[i] = this->values[i + 1];
+
+	return true;
+}
+
+bool
+IVLeafNode::addValue(const Bstr* _value, int _index, bool ifcopy)
+{
+	int num = this->getNum();
+	if (_index < 0 || _index > num)
+	{
+		print(string("error in addValue: Invalid index ") + Util::int2string(_index));
+		return false;
+	}
+	int i;
+	for (i = num - 1; i >= _index; --i)
+		this->values[i + 1] = this->values[i];
+
+	if (ifcopy)
+		this->values[_index].copy(_value);
+	else
+		this->values[_index] = *_value;
+
+	return true;
+}
+
+bool
+IVLeafNode::subValue(int _index, bool ifdel)
+{
+	int num = this->getNum();
+	if (_index < 0 || _index >= num)
+	{
+		print(string("error in subValue: Invalid index ") + Util::int2string(_index));
+		return false;
+	}
+
 	int i;
 	if (ifdel)
 		values[_index].release();
 	for (i = _index; i < num - 1; ++i)
 		this->values[i] = this->values[i + 1];
+
 	return true;
 }
 
 void
-ISLeafNode::setPrev(ISNode* _prev)
+IVLeafNode::setPrev(IVNode* _prev)
 {
 	this->prev = _prev;
 }
 
 void
-ISLeafNode::setNext(ISNode* _next)
+IVLeafNode::setNext(IVNode* _next)
 {
 	this->next = _next;
 }
 
 unsigned
-ISLeafNode::getSize() const
+IVLeafNode::getSize() const
 {
 	unsigned sum = LEAF_SIZE, num = this->getNum(), i;
 	for (i = 0; i < num; ++i)
@@ -201,11 +326,11 @@ ISLeafNode::getSize() const
 	return sum;
 }
 
-ISNode*
-ISLeafNode::split(ISNode* _father, int _index)
+IVNode*
+IVLeafNode::split(IVNode* _father, int _index)
 {
 	int num = this->getNum();
-	ISNode* p = new ISLeafNode;		//right child
+	IVNode* p = new IVLeafNode;		//right child
 	p->setHeight(this->getHeight());	//NOTICE: assign height for new node
 	p->setNext(this->next);
 	this->setNext(p);
@@ -217,7 +342,7 @@ ISLeafNode::split(ISNode* _father, int _index)
 		p->addValue(this->values + i, k);
 		p->addNum();
 	}
-	unsigned tp = this->keys[MIN_KEY_NUM];
+	int tp = this->keys[MIN_KEY_NUM];
 	this->setNum(MIN_KEY_NUM);
 	_father->addKey(tp, _index);
 	_father->addChild(p, _index + 1);	//DEBUG(check the index)
@@ -228,11 +353,11 @@ ISLeafNode::split(ISNode* _father, int _index)
 	return p;
 }
 
-ISNode*
-ISLeafNode::coalesce(ISNode* _father, int _index)
+IVNode*
+IVLeafNode::coalesce(IVNode* _father, int _index)
 {		//add a key or coalesce a neighbor to this
 	int i, j = _father->getNum(), k;	//BETTER: unsigned?
-	ISNode* p = NULL;
+	IVNode* p = NULL;
 	int ccase = 0;
 	//const Bstr* bstr;
 	if (_index < j)	//the right neighbor
@@ -246,7 +371,7 @@ ISLeafNode::coalesce(ISNode* _father, int _index)
 	}
 	if (_index > 0)			//the left neighbor
 	{
-		ISNode* tp = _father->getChild(_index - 1);
+		IVNode* tp = _father->getChild(_index - 1);
 		unsigned tk = tp->getNum();
 		if (ccase < 2)
 		{
@@ -262,7 +387,7 @@ ISLeafNode::coalesce(ISNode* _father, int _index)
 		}
 	}
 
-	unsigned tmp = 0;
+	int tmp = 0;
 	switch (ccase)
 	{
 	case 1:					//union right to this
@@ -332,7 +457,7 @@ ISLeafNode::coalesce(ISNode* _father, int _index)
 }
 
 void
-ISLeafNode::release()
+IVLeafNode::release()
 {
 	if (!this->inMem())
 		return;
@@ -352,18 +477,18 @@ ISLeafNode::release()
 	delete[] values;
 }
 
-ISLeafNode::~ISLeafNode()
+IVLeafNode::~IVLeafNode()
 {
 	release();
 }
 
 void
-ISLeafNode::print(string s)
+IVLeafNode::print(string s)
 {
 #ifdef DEBUG_KVSTORE
 	unsigned num = this->getNum();
 	fputs(Util::showtime().c_str(), Util::debug_kvstore);
-	fputs("Class ISLeafNode\n", Util::debug_kvstore);
+	fputs("Class IVLeafNode\n", Util::debug_kvstore);
 	fputs("Message: ", Util::debug_kvstore);
 	fputs(s.c_str(), Util::debug_kvstore);
 	fputs("\n", Util::debug_kvstore);

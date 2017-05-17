@@ -64,9 +64,11 @@ public:
 	void setStore(unsigned _store);
 	unsigned getFlag() const;
 	void setFlag(unsigned _flag);
+
 	const Bstr* getKey(int _index) const;	//need to check the index
 	bool setKey(const Bstr* _key, int _index, bool ifcopy = false);
 	bool addKey(const Bstr* _key, int _index, bool ifcopy = false);
+	bool addKey(char* _str, unsigned _len, int _index, bool ifcopy = false);
 	bool subKey(int _index, bool ifdel = false);
 
 	//several binary key search utilities
@@ -74,7 +76,12 @@ public:
 	int searchKey_equal(const Bstr& _bstr) const;
 	int searchKey_lessEqual(const Bstr& _bstr) const;
 
+	int searchKey_less(const char* _str, unsigned _len) const;
+	int searchKey_equal(const char* _str, unsigned _len) const;
+	int searchKey_lessEqual(const char* _str, unsigned _len) const;
+
 	//virtual functions: polymorphic
+	//NOTICE: not pure-virtual, not required to be implemented again, can be used now
 	virtual SINode* getChild(int _index) const { return NULL; };
 	virtual bool setChild(SINode* _child, int _index) { return true; };
 	virtual bool addChild(SINode* _child, int _index) { return true; };
@@ -87,6 +94,8 @@ public:
 	virtual bool subValue(int _index) { return true; };
 	virtual void setPrev(SINode* _prev) {};
 	virtual void setNext(SINode* _next) {};
+
+	//NOTICE: pure-virtual, must to be implemented again in the sub-class
 	virtual void Virtual() = 0;
 	virtual void Normal() = 0;
 	virtual unsigned getSize() const = 0;		//return all memory owned

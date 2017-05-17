@@ -7,6 +7,11 @@
 在使用gserver时，不能在数据库没有unload时再用gbuild或其他命令修改数据库，仅限于C/S模式
 将IRC聊天放到gstore文档上，freenode #gStore
 
+storage中大量使用long类型，文件大小也可能达到64G，最好在64位机器上运行。
+
+# 推广
+
+必须建立一个官方网站，可以展示下团队、demo，需要建立社区/论坛并维护
 另外要有桌面应用或者网页应用，以可视化的方式操作数据库，类似virtuoso和neo4j那种
 server  118.89.115.42 gstore-pku.com
 
@@ -86,14 +91,18 @@ http://blog.csdn.net/infoworld/article/details/8670951
 要在单机支持到10亿triple，最坏情况下最多有20亿entity和20亿literal，目前的编号方式是不行的(int扩展为unsigned)
 最好在单机100G内存上支持起freebase(2.5B triples)这个规模的数据集，就像jena和virtuoso一样，慢不要紧
 
-同时将ID的编码改为unsigned，无效标志-1改为最大值的宏, triple数目的类型也要改为unsigned
-注意pre的ID还可以为-2，或者对于pre仍然用int，或者改函数的返回值为long long (还有一些没有用-1而是>=0)
+type分支中query过程可能还有问题，需要修改Query/里面的类型，另外stringindex中也要修改，分界线已经是20亿且非法不再是-1
+remove signature.binary, 合并两个分支type value
+vstree在build和query时可以用不同大小的缓存，来加速build过程
 ---
 将B+tree中叶节点的大的value分离出来，新建一套缓存，使用block机制，标记length为0表示未读取
 类型bstr的length问题也需要解决(新建Istr类型)
 如果把类型直接改成long long，空间开销一下子就上升了一倍
 解决方法：对于ID2string，仍然用char*和unsigned，但对于s2xx p2xx o2xx，应该用long long*和unsigned来表示，这样最高可支持到40亿triple
 注意：在B+树中是以long long*的方式存，但读出后应该全部换成unsigned*和unsigned搭配的方式(最长支持20亿个po对)
+UBSTR: 类型bstr的length问题也需要解决 如果把类型直接改成long long，空间开销一下子就上升了一倍
+解决方法：对于ID2string，仍然用char*和unsigned，但对于s2xx p2xx o2xx，应该用unsigned long long*和unsigned来表示，这样最高可支持到40亿triple
+(其实这个不是特别必要，很少会有这种情况，我们处理的triple数目一般限制在20亿，就算是type这种边，po对数也就是跟entity数目持平，很难达到5亿)
 ---
 那么是否可以调整entity与literal的分界线，如果entity数目一般都比literal数目多的话
 直接把literal从大到小编号，可在ID模块中指定顺序，这样每个Datbase模块应该有自己独特的分界线，其他模块用时也需要注意
@@ -469,6 +478,8 @@ build db error if triple num > 500M
 
 # BETTER
 
+#### 添加数据访问层，数据范式和生成数据访问的源码
+
 #### 在BasicQuery.cpp中的encodeBasicQuery函数中发现有pre_id==-1时就可以直接中止查询，返回空值！
 
 #### 将KVstore模块中在堆中寻找Node*的操作改为用treap实现(或多存指针避开搜索？)
@@ -518,6 +529,8 @@ http://www.oschina.net/question/188977_58777
 - - -
 
 # ADVICE
+
+#### 考虑利用hdfs或者hbase，这样就可以利用各公司已有的数据库系统，但这是否会和已有的内外存交换冲突？
 
 #### 数值型查询 实数域 [-bound, bound] 类型很难匹配，有必要单独编码么？    数据集中不应有范围    Query中编码过滤后还需验证
 x>a, x<b, >=, <=, a<x<b, x=c
@@ -607,4 +620,20 @@ http://www.hprd.org/download/
 
 ## GIT USAGE
 https://git-scm.com/book/zh/v1/%E8%B5%B7%E6%AD%A5-%E5%88%9D%E6%AC%A1%E8%BF%90%E8%A1%8C-Git-%E5%89%8D%E7%9A%84%E9%85%8D%E7%BD%AE
+
+#### how to commit a message
+
+package.json
+http://www.json.cn/
+https://www.oschina.net/news/69705/git-commit-message-and-changelog-guide
+https://sanwen8.cn/p/44eCof7.html
+
+1. commit one by one, a commit just do one thing
+
+2. place a empty line between head and body, body and footer
+
+3. the first letter of header should be in uppercase, and the header should not be too long, just a wonderful summary
+FIX: ...       ADD:...   REF:...  代码重构   SUB:...
+
+4. each line should not be too long, add your real name and the influence in footer(maybe cause the code struct to change)
 

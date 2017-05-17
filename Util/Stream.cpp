@@ -58,7 +58,8 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
     this->record_size = new unsigned[this->colnum];
     for(unsigned i = 0; i < this->colnum; ++i)
     {
-        this->record[i].setStr((char*)malloc(Util::TRANSFER_SIZE));
+		char* tmptr = new char[Util::TRANSFER_SIZE];
+        this->record[i].setStr(tmptr);
         this->record_size[i] = Util::TRANSFER_SIZE;
     }
 
@@ -148,7 +149,8 @@ Stream::copyToRecord(const char* _str, unsigned _len, unsigned _idx)
     if(length + 1 > this->record_size[_idx])
     {
         this->record[_idx].release();
-        this->record[_idx].setStr((char*)malloc((length + 1) * sizeof(char)));
+		char* tmptr = new char[length+1];
+        this->record[_idx].setStr(tmptr);
         this->record_size[_idx] = length + 1;	//one more byte: convenient to add \0
     }
 
@@ -187,7 +189,8 @@ Stream::outputCache()
     {
         unsigned len;
         fread(&len, sizeof(unsigned), 1, this->tempfp);
-        char* p = (char*)malloc(len * sizeof(char));
+        //char* p = (char*)malloc(len * sizeof(char));
+		char* p = new char[len];
         fread(p, sizeof(char), len, this->tempfp);
         bp[i].setLen(len);
         bp[i].setStr(p);
@@ -320,13 +323,16 @@ Stream::read()
         //FILE* fp = (FILE*)(this->ans);
         for(unsigned i = 0; i < this->colnum; ++i)
         {
-            //BETTER:alloca and reuse the space in Bstr?
+            //BETTER:alloc and reuse the space in Bstr?
             unsigned len;
             fread(&len, sizeof(unsigned), 1, this->ansDisk);
-            char* s = (char*)calloc(len + 1, sizeof(char));
+            //char* s = (char*)calloc(len + 1, sizeof(char));
+			char* s = new char[len+1];
             fread(s, sizeof(char), len, this->ansDisk);
+			s[len] = '\0';
             this->copyToRecord(s, len, i);
-			free(s);
+			//free(s);
+			delete[] s;
         }
     }
     this->xpos++;
@@ -420,7 +426,9 @@ Stream::mergeSort()
 #endif
                 break;
             }
-            s = (char*)malloc(sizeof(char) * len);
+
+            //s = (char*)malloc(sizeof(char) * len);
+            s = new char[len];
             fread(s, sizeof(char), len, tp);
             bp[i].setLen(len);
             bp[i].setStr(s);

@@ -175,8 +175,8 @@ private:
 	map<int, int> selected_var_position;
 
 public:
-	static const int MAX_VAR_NUM = 10;
-	static const int MAX_PRE_VAR_NUM = 10;
+	static const int MAX_VAR_NUM = 20;
+	static const int MAX_PRE_VAR_NUM = 20;
 	static const char NOT_JUST_SELECT = 'a';
 	static const char SELECT_VAR = 's';
 

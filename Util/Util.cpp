@@ -48,6 +48,10 @@ map<string, string> Util::global_config;
 
 //==================================================================================================================
 
+string Util::gserver_port_file = "bin/.gserver_port";
+string Util::gserver_port_swap = "bin/.gserver_port.swap";
+string Util::gserver_log = "logs/gserver.log";
+
 //NOTICE:used in Database, Join and Strategy
 //int Util::triple_num = 0;
 //int Util::pre_num = 0;
@@ -446,6 +450,13 @@ Util::is_literal_ele(TYPE_ENTITY_LITERAL_ID _id)
     return _id >= Util::LITERAL_FIRST_ID;
 }
 
+bool 
+Util::is_entity_ele(TYPE_ENTITY_LITERAL_ID id) 
+{
+	return id < Util::LITERAL_FIRST_ID;
+}
+
+
 //NOTICE: require that the list is ordered
 unsigned
 Util::removeDuplicate(unsigned* _list, unsigned _len)
@@ -672,7 +683,14 @@ Util::result_id_str(vector<unsigned*>& _v, int _var_num)
 bool
 Util::dir_exist(const string _dir)
 {
-    return (opendir(_dir.c_str()) != NULL);
+	DIR* dirptr = opendir(_dir.c_str());
+	if(dirptr != NULL)
+	{
+		closedir(dirptr);
+		return true;
+	}
+
+	return false;
 }
 
 bool

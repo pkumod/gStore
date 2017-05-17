@@ -399,7 +399,13 @@ ISStorage::writeNode(ISNode* _np)
 	{
 		//to write all values
 		for (i = 0; i < num; ++i)
+		{
 			this->writeBstr(_np->getValue(i), &blocknum, SpecialBlock);
+			if(_np->getKey(0) == 0)
+			{
+				cout<<"the 0th value: "<<_np->getValue(i)->getStr()[0]<<endl;
+			}
+		}
 	}
 	fseek(treefp, Address(blocknum), SEEK_SET);
 	if (SpecialBlock)
@@ -422,7 +428,8 @@ ISStorage::readBstr(Bstr* _bp, unsigned* _next)
 	fread(&len, sizeof(unsigned), 1, this->treefp);
 	this->ReadAlign(_next);
 	//this->request(len);
-	char* s = (char*)malloc(len);
+	//char* s = (char*)malloc(len);
+	char* s = new char[len];
 	_bp->setLen(len);
 	for (i = 0; i + 4 < len; i += 4)
 	{
