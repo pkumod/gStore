@@ -1268,6 +1268,8 @@ Join::multi_join()
 	for (unsigned i = 0; i < start_size; ++i)
 	{
 		unsigned ele = start_table.getID(i);
+		//NOTICE: we can denote the total size here in vector, but no need because the variables' num is small
+		//(won't double to require more space)
 		RecordType record(1, ele);
 		this->current_table.push_back(record);
 		//this->table_row_new.push_back(false);
@@ -1419,8 +1421,16 @@ Join::filter_before_join()
 		IDList &can_list = this->basic_query->getCandidateList(i);
 		//fprintf(stderr, "\t\tsize of canlist before filter: %d\n", can_list.size());
 		cout << "\t\tsize of canlist before filter: " << can_list.size() << endl;
+
 		//NOTICE:must sort before using binary search.
+		//However, the sort-merge maybe not always better because the sort() will take too much time if
+		//the can_list size is large, i.e. > 1000000
 		can_list.sort();
+		//vstree ? place on ID?
+		//TODO: use BoolArray isntead of bitset
+		//n is candidate num, m is sp2o num, then when n<m/(lg2(m)_lg2(n)), sort m and binary search in m
+		//otherwise, use BoolArray for n, only construct a time
+		//NOTICE: for parallelism, use a BoolArray for each BGP(either on join or in Strategy)
 
 		long begin = Util::get_cur_time();
 		bool ret = this->constant_edge_filter(i);

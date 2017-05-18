@@ -4,7 +4,7 @@ Gstore System(also called gStore) is a graph database engine for managing large 
 
 **The formal help document is in [Handbook](docs/latex/gStore_help.pdf).**
 
-**We have built an IRC channel named #gStore on freenode, and you can also come to our website: [gStore](gstore-pku.com).**
+**We have built an IRC channel named #gStore on freenode, and you can also come to our website: [gStore](http://gstore-pku.com).**
 
 <!--**You can write your information in [survey](http://59.108.48.38/survey) if you like.**-->
 
@@ -48,7 +48,7 @@ If you want to understand the details of the gStore system, or you want to try s
 
 We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in [Recipe Book](docs/TIPS.md).
 
-You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <chenjiaqi93@163.com> to submit your suggestions and report bugs to us by emailing to <zengli-bookug@pku.edu.cn>. A full list of our whole team is in [Mailing List](docs/MAIL.md).
+You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <zengli@bookug.cc> to submit your suggestions and report bugs to us by emailing to <gStoreDB@gmail.com>. A full list of our whole team is in [Mailing List](docs/MAIL.md).
 
 There are some restrictions when you use the current gStore project, you can see them on [Limit Description](docs/LIMIT.md).
 

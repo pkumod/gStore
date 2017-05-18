@@ -1642,3 +1642,11 @@ Util::empty_file(const char* _fname)
 	}
 }
 
+//require that _base>=1
+unsigned 
+ceiling(unsigned _val, unsigned _base)
+{
+	//WARN: we donot check overflow here
+	return (_val+_base-1) / _base * _base;
+}
+

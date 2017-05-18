@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+  <!--[if lt IE 9]>
+    <script src="https://cdn.bootcss.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+  <div class="container">
+    <div style="margin: 50px 150px">
+      <!-- Nav tabs -->
+      <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active"><a href="#build" aria-controls="build" role="tab" data-toggle="tab">build</a></li>
+        <li role="presentation"><a href="#load" aria-controls="load" role="tab" data-toggle="tab">load</a></li>
+        <li role="presentation"><a href="#query" aria-controls="query" role="tab" data-toggle="tab">query</a></li>
+        <li role="presentation"><a href="#unload" aria-controls="unload" role="tab" data-toggle="tab">unload</a></li>
+      </ul>
+
+      <!-- Tab panes -->
+      <div class="tab-content" style="margin: 20px auto">
+        <div role="tabpanel" class="tab-pane active" id="build">
+          <form>
+            <div class="form-group">
+              <label for="_db_name">Database name</label>
+              <input type="text" class="form-control" id="_db_name" name="_db_name" placeholder="db_name">
+            </div>
+            <div class="form-group">
+              <label for="_ds_path">Dataset path</label>
+              <input type="text" class="form-control" id="_ds_path" name="_ds_path" placeholder="ds_path">
+            </div>
+            <button id="build_button" type="button" class="btn btn-default" onclick="build(_db_name.value, _ds_path.value)">build</button>
+          </form>
+        </div>
+        <div role="tabpanel" class="tab-pane" id="load">
+          <form>
+            <div class="form-group">
+              <label for="_db_name_1">Database name</label>
+              <input type="text" class="form-control" id="_db_name_1" name="_db_name_1" placeholder="db_name">
+            </div>
+            <button id="load_button" type="button" class="btn btn-default" onclick="load(_db_name_1.value)">load</button>
+          </form>
+        </div>
+        <div role="tabpanel" class="tab-pane" id="query">
+          <form>
+            <div class="form-group">
+              <label for="query_file">Query file Path</label>
+              <input type="text" class="form-control" id="query_file" name="query_file" placeholder="query_file_path">
+            </div>
+            <button id="query_button" type="button" class="btn btn-default" onclick="query(query_file.value)">query</button>
+          </form>
+		  <div class="alert alert-warning alert-dismissible fade in" style="margin: 20px auto; height: 400px; overflow: auto" id="queryAns">
+
+		  </div>
+        </div>
+        <div role="tabpanel" class="tab-pane" id="unload">
+          <form>
+            <div class="form-group">
+            <button id="unload_button" type="button" class="btn btn-default" onclick="unload()">unload</button>
+	    </div>
+          </form>
+        </div>
+      </div>
+ 
+
+
+
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+  <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+  <!-- Include all compiled plugins (below), or include individual files as needed -->
+  <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -94,6 +94,11 @@ http://blog.csdn.net/infoworld/article/details/8670951
 type分支中query过程可能还有问题，需要修改Query/里面的类型，另外stringindex中也要修改，分界线已经是20亿且非法不再是-1
 remove signature.binary, 合并两个分支type value
 vstree在build和query时可以用不同大小的缓存，来加速build过程
+vstree建立太耗时，严重拖了build过程的后腿
+triple num改为unsigned long long，争取单机最大支持到100亿数据集，只要entity等数目不超过20亿。
+
+同时将ID的编码改为unsigned，无效标志-1改为最大值的宏, triple数目的类型也要改为unsigned
+注意pre的ID还可以为-2，或者对于pre仍然用int，或者改函数的返回值为long long (还有一些没有用-1而是>=0)
 ---
 将B+tree中叶节点的大的value分离出来，新建一套缓存，使用block机制，标记length为0表示未读取
 类型bstr的length问题也需要解决(新建Istr类型)
@@ -606,6 +611,8 @@ ACID? neo4j GraphDB
 ## 单个文件的gStore？嵌入式，轻便，类似sqlite，方便移植，做成库的方式给python等调用
 
 ## 联邦数据库，避免数据重导入，上层查询分块
+mysql适合存属性，而gstore适合处理关系，trinity适合做算法
+gstore是否能处理各种图算法需求呢，比如对两点求最短路？比如正则路径查询？
 
 ## 没必要关闭IO缓冲同步，因为用的基本都是C语言的输入输出操作
 
