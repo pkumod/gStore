@@ -43,6 +43,8 @@ private:
 	//Because the bstr' size is controlled, so is the node.
 	unsigned long long freemem;  		//free memory to use, non-negative
 	//unsigned long long time;			//QUERY(achieving an old-swap startegy?)
+
+	//QUERY: should this be long long? (otherwise will be different in 32-bit and 64-bit machine)
 	long Address(unsigned _blocknum) const;
 	unsigned Blocknum(long address) const;
 	unsigned AllocBlock();
@@ -70,3 +72,4 @@ public:
 };
 
 #endif
+

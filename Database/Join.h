@@ -15,23 +15,23 @@
 #include "../KVstore/KVstore.h"
 #include "../Util/Util.h"
 
-typedef vector<int> RecordType;
-typedef vector<int>::iterator RecordIterator;
+typedef vector<unsigned> RecordType;
+typedef vector<unsigned>::iterator RecordIterator;
 typedef list<RecordType> TableType;
 typedef list<RecordType>::iterator TableIterator;
 typedef list<RecordType>::reverse_iterator TableReverseIterator;
 //typedef list< vector<int> > TableType;
 //typedef list< vector<int> >::iterator TableIterator;
 //typedef list< vector<int> >::reverse_iterator TableReverseIterator;
-typedef vector< vector<int*> > IdLists;
-typedef vector< vector<int> > IdListsLen;
+//typedef vector< vector<int*> > IdLists;
+//typedef vector< vector<int> > IdListsLen;
 
 typedef struct Satellite
 {
 	int id;
-	int* idlist;
-	int idlist_len;
-	Satellite(int _id, int* _idlist, int _idlist_len)
+	unsigned* idlist;
+	unsigned idlist_len;
+	Satellite(int _id, unsigned* _idlist, unsigned _idlist_len)
 	{
 		this->id = _id;
 		this->idlist = _idlist;
@@ -47,16 +47,21 @@ private:
 	int var_num;
 	BasicQuery* basic_query;
 	KVstore* kvstore;
-	TNUM* pre2num;
-	int limitID_predicate;
-	int limitID_literal;
+	TYPE_TRIPLE_NUM* pre2num;
+	TYPE_PREDICATE_ID limitID_predicate;
+	TYPE_ENTITY_LITERAL_ID limitID_literal;
 	//used by score_node for parameters
 	static const unsigned PARAM_DEGREE = 1;
 	static const unsigned PARAM_SIZE = 1000000;
 	static const unsigned PARAM_PRE = 10000;
 	static const unsigned PARAM_DENSE = 1;
-	static const double JUDGE_LIMIT = 0.5;
-	static const int LIMIT_CANDIDATE_LIST_SIZE = 1000;
+
+	static const unsigned JUDGE_LIMIT = 2;
+	//NOTICE+DEBUG: please use constexpr below instead of the phase above(constexpr is supported in C++11)
+	//http://www.cnblogs.com/wanyuanchun/p/4041080.html
+	//constexpr static const double JUDGE_LIMIT = 0.5;
+
+	static const unsigned LIMIT_CANDIDATE_LIST_SIZE = 1000;
 	//BETTER?:predefine size to avoid copy cost
 	TableType current_table;
 	TableIterator new_start;   //keep to end() as default
@@ -69,10 +74,10 @@ private:
 	bool* dealed_triple;
 	stack<int> mystack;
 
-	vector<int*>* result_list;
+	vector<unsigned*>* result_list;
 	vector<Satellite> satellites;
-	int* record;
-	int record_len;
+	unsigned* record;
+	unsigned record_len;
 
 	void init(BasicQuery* _basic_query);
 	void clear();
@@ -81,7 +86,7 @@ private:
 
 	//judge which method should be used according to 
 	//the size of candidates and structure of quering graph
-	int judge(int _smallest, int _biggest);
+	int judge(unsigned _smallest, unsigned _biggest);
 
 	//select the start point and search order
 	void select();
@@ -108,20 +113,20 @@ private:
 
 	//functions for help
 	//copy/add to the end of current_table and set true
-	void add_new_to_results(TableIterator it, int id);
+	void add_new_to_results(TableIterator it, unsigned id);
 
 	//void set_results_old(list<bool>::iterator it);
 	int choose_next_node(int id);
 
 	bool is_literal_var(int id);
-	bool is_literal_ele(int _id);
+	//bool is_literal_ele(int _id);
 	
 	void copyToResult();
 
 	//BETTER?:change these params to members in class
-	void acquire_all_id_lists(IdLists& _id_lists, IdListsLen& _id_lists_len, IDList& _can_list, vector<int>& _edges, int _id, int _can_list_size);
-	void update_answer_list(IDList*& valid_ans_list, IDList& _can_list, int* id_list, int id_list_len, bool _is_literal);
-	bool join_two(vector< vector<int> >& _edges, IDList& _can_list, int _can_list_size, int _id, bool _is_literal);
+	//void acquire_all_id_lists(IdLists& _id_lists, IdListsLen& _id_lists_len, IDList& _can_list, vector<int>& _edges, int _id, unsigned _can_list_size);
+	void update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* id_list, unsigned id_list_len, bool _is_literal);
+	bool join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_list_size, int _id, bool _is_literal);
 
 	bool multi_join();
 	//NOTICE:this is only used to join a BasicQuery
@@ -129,7 +134,7 @@ private:
 
 public:
 	Join();
-	Join(KVstore* _kvstore, TNUM* _pre2num, int _limitID_predicate, int _limitID_literal);
+	Join(KVstore* _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal);
 	//these functions can be called by Database
 	bool join_sparql(SPARQLquery& _sparql_query);
 	bool join_basic(BasicQuery* _basic_query);

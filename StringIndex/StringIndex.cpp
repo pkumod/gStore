@@ -345,7 +345,7 @@ void StringIndex::trySequenceAccess()
 	this->predicate.trySequenceAccess();
 }
 
-void StringIndex::change(std::vector<int> &ids, KVstore &kv_store, bool is_entity_or_literal)
+void StringIndex::change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_entity_or_literal)
 {
 	if (is_entity_or_literal)
 	{
@@ -364,7 +364,7 @@ void StringIndex::change(std::vector<int> &ids, KVstore &kv_store, bool is_entit
 	}
 }
 
-void StringIndex::disable(std::vector<int> &ids, bool is_entity_or_literal)
+void StringIndex::disable(std::vector<unsigned> &ids, bool is_entity_or_literal)
 {
 	if (is_entity_or_literal)
 	{

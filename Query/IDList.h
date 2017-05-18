@@ -15,31 +15,31 @@ class IDList
 {
 public:
 	IDList();
-	int getID(int _i)const;
-	bool addID(int _id);
+	unsigned getID(unsigned _i) const;
+	bool addID(unsigned _id);
 
 	//check whether _id exists in this IDList.
-	bool isExistID(int _id) const;
-	int size() const;
+	bool isExistID(unsigned _id) const;
+	unsigned size() const;
 	bool empty() const;
-	const std::vector<int>* getList()const;
-	int& operator[] (const int & _i);
+	const std::vector<unsigned>* getList()const;
+	unsigned& operator[] (const unsigned & _i);
 	std::string to_str();
 	int sort();
 	void clear();
-	void copy(const std::vector<int>& _new_idlist);
+	void copy(const std::vector<unsigned>& _new_idlist);
 	void copy(const IDList* _new_idlist);
 
 	// intersect/union _id_list to this IDList, note that the two list must be ordered before using these two functions.
-	int intersectList(const int* _id_list, int _list_len);
-	int intersectList(const IDList&);
-	int unionList(const int* _id_list, int _list_len, bool only_literal=false);
-	int unionList(const IDList&, bool only_literal=false);
-	int bsearch_uporder(int _key);
-	static IDList* intersect(const IDList&, const int*, int);
+	unsigned intersectList(const unsigned* _id_list, unsigned _list_len);
+	unsigned intersectList(const IDList&);
+	unsigned unionList(const unsigned* _id_list, unsigned _list_len, bool only_literal=false);
+	unsigned unionList(const IDList&, bool only_literal=false);
+	unsigned bsearch_uporder(unsigned _key);
+	static IDList* intersect(const IDList&, const unsigned*, unsigned);
 private:
-	std::vector<int> id_list;
-	int erase(int i);
+	std::vector<unsigned> id_list;
+	bool erase(unsigned i);
 };
 
 #endif //_QUERY_IDLIST_H

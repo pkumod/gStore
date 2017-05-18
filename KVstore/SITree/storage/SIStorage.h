@@ -13,6 +13,14 @@
 #include "../node/SILeafNode.h"
 #include "../heap/SIHeap.h"
 
+//TODO: whether to use heap or not, is a big question
+//For single-query application, it seems that LRU list like VSTree is a better choice(no much cost in the buffer itself)
+//But in multiple-queries case, things maybe different
+//BETTER:
+//add a heap position in node, to speed up the node-pointer searching
+//lower the update times of heap, if the size is 128M, then each update is 27 at most
+//if not update in time, then the heap maybe not be a heap, then why do we use heap? why not a simple array?
+
 //It controls read, write, swap
 class SIStorage
 {
@@ -70,3 +78,4 @@ public:
 };
 
 #endif
+

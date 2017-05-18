@@ -25,8 +25,10 @@ using namespace std;
 //int LRUCache::DEFAULT_CAPACITY = 10000000;
 int LRUCache::DEFAULT_CAPACITY = 1 * 1000 * 1000;  //about 20G memory for vstree
 //int LRUCache::DEFAULT_CAPACITY = 1000;
-//TODO:10^6 is a good parameter, at most use 20G
+//NOTICE:10^6 is a good parameter, at most use 20G
 
+//NOTICE: it is ok to set it 4000000 when building!!!  better to adjust according to the current memory usage
+//also use 2000000 or smaller for query()
 LRUCache::LRUCache(int _capacity)
 {
 	//initialize the lock
@@ -39,7 +41,7 @@ LRUCache::LRUCache(int _capacity)
 	cout << "LRUCache initial..." << endl;
 	this->capacity = _capacity > 0 ? _capacity : LRUCache::DEFAULT_CAPACITY;
 
-	// TODO+DEBUG:it seems that a minium size is required, for example, multiple path down(the height?)
+	//DEBUG:it seems that a minium size is required, for example, multiple path down(the height?)
 	//at least 3*h
 	//
 	// we should guarantee the cache is big enough.

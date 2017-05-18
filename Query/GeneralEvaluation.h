@@ -34,16 +34,16 @@ class GeneralEvaluation
 		std::vector <Varset> sparql_query_varset;
 		VSTree *vstree;
 		KVstore *kvstore;
-		TNUM* pre2num;
-		int limitID_predicate;
-		int limitID_literal;
+		TYPE_TRIPLE_NUM* pre2num;
+		TYPE_PREDICATE_ID limitID_predicate;
+		TYPE_ENTITY_LITERAL_ID limitID_literal;
 		StringIndex *stringindex;
 		Strategy strategy;
 		ResultFilter result_filter;
 		bool need_output_answer;
 
 	public:
-		explicit GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, TNUM* _pre2num, int _limitID_predicate, int _limitID_literal):
+		explicit GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal):
 			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), pre2num(_pre2num), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), need_output_answer(false)
 		{
 		}
@@ -239,7 +239,7 @@ class GeneralEvaluation
 		void getFinalResult(ResultSet &result_str);
 		void releaseResultStack();
 
-		void prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, int &update_triple_num);
+		void prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, unsigned &update_triple_num);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H

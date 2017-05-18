@@ -37,6 +37,7 @@ in the sparql query can point to the same node in data graph)
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -87,9 +88,10 @@ in the sparql query can point to the same node in data graph)
 //#define DEBUG_STREAM
 //#define DEBUG_PRECISE 1		all information
 //#define DEBUG_KVSTORE 1		//in KVstore
-#define DEBUG_VSTREE 1	//in Database 
+//#define DEBUG_VSTREE 1	//in Database 
 //#define DEBUG_LRUCACHE 1
 //#define DEBUG_DATABASE 1	//in Database
+//#define DEBUG_VLIST 1
 //
 //
 
@@ -123,6 +125,12 @@ in the sparql query can point to the same node in data graph)
 #endif
 #endif
 
+#ifdef DEBUG_VLIST
+#ifndef DEBUG
+#define DEBUG
+#endif
+#endif
+
 #ifndef DEBUG
 //#define DEBUG
 #endif
@@ -141,21 +149,46 @@ typedef unsigned(*HashFunction)(const char*);
 //http://www.cppblog.com/aurain/archive/2010/07/06/119463.html
 //http://blog.csdn.net/mycomputerxiaomei/article/details/7641221
 //http://kb.cnblogs.com/page/189480/
-//
-//type for the triple num
-//TODO:this should use unsigned (triple num may > 2500000000)
-typedef int TNUM;
-//type for entity/literal/predicate ID
-typedef int ELPID;
 
-//TODO:typedef several ID typesand new a ID module
-//what is more, the str length and Block ID in kvstore
-typedef unsigned PREDICATE_ID;
+//type for the triple num
+//NOTICE: this should use unsigned (triple num may > 2500000000)
+typedef unsigned TYPE_TRIPLE_NUM;
+
+//type for entity/literal ID
+typedef unsigned TYPE_ENTITY_LITERAL_ID;
+static const TYPE_ENTITY_LITERAL_ID INVALID_ENTITY_LITERAL_ID = UINT_MAX;
+//static const TYPE_ENTITY_LITERAL_ID INVALID_ENTITY_LITERAL_ID = -1;
+//#define INVALID_ENTITY_LITERAL_ID UINT_MAX
+
+//type for predicate ID
+typedef int TYPE_PREDICATE_ID;
+static const TYPE_PREDICATE_ID INVALID_PREDICATE_ID = -1;
+//static const TYPE_PREDICATE_ID INVALID_PREDICATE_ID = -1;
+//#define INVALID_PREDICATE_ID -1
+
+
+//TODO:typedef several ID types and new a ID module
+
 //TODO:encode entity from low to high, encode literal from high to low(finally select the mid of space as border)
-typedef unsigned ENTITY_LITERAL_ID;
-typedef unsigned NODE_ID;
+
+//TODO: what is more, the Block ID in kvstore
+//typedef unsigned NODE_ID;
+
 //can use `man limits.h` to see more
-#define INVALID UINT_MAX
+static const unsigned INVALID = UINT_MAX;
+//static const int INVALID = -1;
+//#define INVALID UINT_MAX
+
+//NOTICE: always use unsigned for query result matrix
+//
+//NOTICE: if use define, the type is none
+
+typedef struct TYPE_ID_TUPLE
+{
+	TYPE_ENTITY_LITERAL_ID subid;
+	TYPE_ENTITY_LITERAL_ID preid;
+	TYPE_ENTITY_LITERAL_ID objid;
+}ID_TUPLE;
 
 /******** all static&universal constants and fucntions ********/
 class Util
@@ -168,13 +201,16 @@ public:
 
 	static const unsigned MB = 1048576;
 	static const unsigned GB = 1073741824;
-	static const int TRIPLE_NUM_MAX = 1000*1000*1000;
+	//static const int TRIPLE_NUM_MAX = 1000*1000*1000;
+	static const TYPE_TRIPLE_NUM TRIPLE_NUM_MAX = INVALID;
 	static const char EDGE_IN = 'i';
 	static const char EDGE_OUT= 'o';
+
 	//In order to differentiate the sub-part and literal-part of object
 	//let subid begin with 0, while literalid begins with LITERAL_FIRST_ID 
 	//used in Database and Join
-	static const int LITERAL_FIRST_ID = 1000*1000*1000;
+	static const int LITERAL_FIRST_ID = 2 * 1000*1000*1000;
+
 	//initial transfer buffer size in Tree/ and Stream/
 	static const unsigned TRANSFER_SIZE = 1 << 20;	//1M
 	//NOTICE:the larger the faster, but need to care the memory usage(not use 1<<33, negative)
@@ -204,11 +240,12 @@ public:
 	static int compIIpair(int _a1, int _b1, int _a2, int _b2);
 	static std::string showtime();
 	static int cmp_int(const void* _i1, const void* _i2);
-	static void sort(int*& _id_list, int _list_len);
-	static int bsearch_int_uporder(int _key, const int* _array,int _array_num);
-	static bool bsearch_preid_uporder(int _preid, int* _pair_idlist, int _list_len);
-	static int bsearch_vec_uporder(int _key, const std::vector<int>* _vec);
-	static std::string result_id_str(std::vector<int*>& _v, int _var_num);
+	static int cmp_unsigned(const void* _i1, const void* _i2);
+	static void sort(unsigned*& _id_list, unsigned _list_len);
+	static unsigned bsearch_int_uporder(unsigned _key, const unsigned* _array, unsigned _array_num);
+	static bool bsearch_preid_uporder(TYPE_PREDICATE_ID _preid, unsigned* _pair_idlist, unsigned _list_len);
+	static unsigned bsearch_vec_uporder(unsigned _key, const std::vector<unsigned>* _vec);
+	static std::string result_id_str(std::vector<unsigned*>& _v, int _var_num);
 	static bool dir_exist(const std::string _dir);
 	static bool create_dir(const std:: string _dir);
 	static long get_cur_time();
@@ -218,13 +255,17 @@ public:
 	static std::string getTimeString();
 	static std::string node2string(const char* _raw_str);
 
-	static bool is_literal_ele(int);
-	static int removeDuplicate(int*, int);
+	static bool is_literal_ele(TYPE_ENTITY_LITERAL_ID id);
+	static bool is_entity_ele(TYPE_ENTITY_LITERAL_ID id);
+
+	static unsigned removeDuplicate(unsigned*, unsigned);
+
 	static std::string getQueryFromFile(const char* _file_path); 
 	static std::string getSystemOutput(std::string cmd);
 	static std::string getExactPath(const char* path);
 	static std::string getItemsFromDir(std::string path);
 	static void logging(std::string _str);
+	static void empty_file(const char* _fname);
 
 	// Below are some useful hash functions for string
 	static unsigned simpleHash(const char *_str);
@@ -248,7 +289,7 @@ public:
 	static HashFunction hash[];
 
 	static double logarithm(double _a, double _b);
-	static void intersect(int*& _id_list, int& _id_list_len, const int* _list1, int _len1, const int* _list2, int _len2);
+	static void intersect(unsigned*& _id_list, unsigned& _id_list_len, const unsigned* _list1, unsigned _len1, const unsigned* _list2, unsigned _len2);
 
 	static char* l_trim(char *szOutput, const char *szInput);
 	static char* r_trim(char *szOutput, const char *szInput);
@@ -258,6 +299,9 @@ public:
 	Util();
 	~Util();
 	static std::string profile;
+	//NOTICE: this function must be called out of any Database to config the basic settings
+	//You can call it by Util util in the first of your main program
+	//Another way is to build a GstoreApplication program, and do this configure in the initialization of the application
 	static bool configure();  //read init.conf and set the parameters for this system
 	static bool config_setting();
 	static bool config_advanced();
@@ -270,6 +314,10 @@ public:
 	static int _spo_cmp(const void* _a, const void* _b);
 	static int _ops_cmp(const void* _a, const void* _b);
 	static int _pso_cmp(const void* _a, const void* _b);
+	//sort functions for sort on ID_TUPLE
+	static bool spo_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);
+	static bool ops_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);
+	static bool pso_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);
 
 	static std::string tmp_path;
 	// this are for debugging
@@ -278,6 +326,10 @@ public:
 	static FILE* debug_kvstore;				
 	static FILE* debug_database;
 	static FILE* debug_vstree;
+
+	static std::string  gserver_port_file;
+	static std::string  gserver_port_swap;
+	static std::string  gserver_log;
 
 
 private:

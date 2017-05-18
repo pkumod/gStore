@@ -27,7 +27,7 @@ ResultSet::~ResultSet()
 	delete[] this->var_name;
 	if (!this->useStream)
 	{
-		for(int i = 0; i < this->ansNum; i++)
+		for(unsigned i = 0; i < this->ansNum; i++)
 		{
 			delete[] this->answer[i];
 		}
@@ -68,7 +68,7 @@ ResultSet::checkUseStream()
 }
 
 void 
-ResultSet::setOutputOffsetLimit(int _output_offset, int _output_limit)
+ResultSet::setOutputOffsetLimit(unsigned _output_offset, unsigned _output_limit)
 {
 	this->output_offset = _output_offset;
 	this->output_limit = _output_limit;
@@ -89,7 +89,7 @@ ResultSet::setVar(const vector<string> & _var_names)
 string 
 ResultSet::to_str()
 {
-	int ans_num = max(this->ansNum - this->output_offset, 0);
+	unsigned ans_num = max((long long)this->ansNum - this->output_offset, (long long)0);
 	if (this->output_limit != -1)
 		ans_num = min(ans_num, this->output_limit);
 	if(ans_num == 0)
@@ -111,7 +111,7 @@ ResultSet::to_str()
 		this->resetStream();
 
 	const Bstr* bp;
-	for(int i = (!this->useStream ? this->output_offset : 0); i < this->ansNum; i++)
+	for(unsigned i = (!this->useStream ? this->output_offset : 0); i < this->ansNum; i++)
 	{
 		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
 			break;
@@ -161,7 +161,7 @@ ResultSet::to_JSON()
 		this->resetStream();
 
 	const Bstr* bp;
-	for(int i = (!this->useStream ? this->output_offset : 0); i < this->ansNum; i++)
+	for(unsigned i = (!this->useStream ? this->output_offset : 0); i < this->ansNum; i++)
 	{
 		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
 			break;
@@ -234,7 +234,7 @@ ResultSet::output(FILE* _fp)
 {
 	if (this->useStream)
 	{
-		int ans_num = max(this->ansNum - this->output_offset, 0);
+		unsigned ans_num = max((long long)this->ansNum - this->output_offset, (long long)0);
 		if (this->output_limit != -1)
 			ans_num = min(ans_num, this->output_limit);
 		if(ans_num == 0)
@@ -251,7 +251,7 @@ ResultSet::output(FILE* _fp)
 		fprintf(_fp, "\n");
 
 		const Bstr* bp;
-		for(int i = 0; i < this->ansNum; i++)
+		for(unsigned i = 0; i < this->ansNum; i++)
 		{
 			if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
 				break;
@@ -275,7 +275,7 @@ ResultSet::output(FILE* _fp)
 }
 
 void
-ResultSet::openStream(std::vector<int> &_keys, std::vector<bool> &_desc)
+ResultSet::openStream(vector<unsigned> &_keys, vector<bool> &_desc)
 {
 	if (this->useStream)
 	{

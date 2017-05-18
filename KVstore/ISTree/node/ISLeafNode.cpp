@@ -82,6 +82,7 @@ ISLeafNode::getValue(int _index) const
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
+		//cout<<"null in getValue: "<<_index<<endl;
 		//print(string("error in getValue: Invalid index ") + Util::int2string(_index));
 		return NULL;
 	}
@@ -125,13 +126,53 @@ ISLeafNode::addValue(const Bstr* _value, int _index, bool ifcopy)
 	return true;
 }
 
+bool 
+ISLeafNode::setValue(char* _str, unsigned _len, int _index, bool ifcopy)
+{
+	int num = this->getNum();
+	if (_index < 0 || _index >= num)
+	{
+		//print(string("error in setValue: Invalid index ") + Util::int2string(_index));
+		return false;
+	}
+	this->values[_index].release(); //NOTICE: only used in modify
+
+	this->values[_index].setStr(_str);
+	this->values[_index].setLen(_len);
+
+	return true;
+}
+
+bool 
+ISLeafNode::addValue(char* _str, unsigned _len, int _index, bool ifcopy)
+{
+	int num = this->getNum();
+	//cout<<"addValue: "<<num<<" "<<_index<<endl;
+
+	if (_index < 0 || _index > num)
+	{
+		//print(string("error in addValue: Invalid index ") + Util::int2string(_index));
+		//cout<<"error in addValue: "<<_index<<" "<<num<<endl;
+		return false;
+	}
+	int i;
+	for (i = num - 1; i >= _index; --i)
+		this->values[i + 1] = this->values[i];
+
+	this->values[_index].setStr(_str);
+	this->values[_index].setLen(_len);
+	//cout<<"show: "<<this->values[_index].getLen()<<" "<<this->values[_index].getStr()[0]<<endl;
+
+	return true;
+}
+
 bool
 ISLeafNode::subValue(int _index, bool ifdel)
 {
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		print(string("error in subValue: Invalid index ") + Util::int2string(_index));
+		//print(string("error in subValue: Invalid index ") + Util::int2string(_index));
 		return false;
 	}
 	int i;
@@ -181,7 +222,7 @@ ISLeafNode::split(ISNode* _father, int _index)
 		p->addValue(this->values + i, k);
 		p->addNum();
 	}
-	int tp = this->keys[MIN_KEY_NUM];
+	unsigned tp = this->keys[MIN_KEY_NUM];
 	this->setNum(MIN_KEY_NUM);
 	_father->addKey(tp, _index);
 	_father->addChild(p, _index + 1);	//DEBUG(check the index)
@@ -226,7 +267,7 @@ ISLeafNode::coalesce(ISNode* _father, int _index)
 		}
 	}
 
-	int tmp = 0;
+	unsigned tmp = 0;
 	switch (ccase)
 	{
 	case 1:					//union right to this
@@ -283,8 +324,8 @@ ISLeafNode::coalesce(ISNode* _father, int _index)
 		p->subNum();
 		break;
 	default:
-		print("error in coalesce: Invalid case!");
-		//printf("error in coalesce: Invalid case!");
+		//print("error in coalesce: Invalid case!");
+		cout<<"error in coalesce: Invalid case!"<<endl;
 	}
 	_father->setDirty();
 	p->setDirty();
@@ -374,3 +415,4 @@ ISLeafNode::print(string s)
 	else;
 #endif
 }
+

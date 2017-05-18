@@ -251,6 +251,28 @@ SINode::addKey(const Bstr* _key, int _index, bool ifcopy)
 		keys[_index].copy(_key);
 	else
 		keys[_index] = *_key;
+
+	return true;
+}
+
+bool 
+SINode::addKey(char* _str, unsigned _len, int _index, bool ifcopy)
+{
+	int num = this->getNum();
+	if (_index < 0 || _index > num)
+	{
+		print(string("error in addKey: Invalid index ") + Util::int2string(_index));
+		return false;
+	}
+	int i;
+	//NOTICE: if num == MAX_KEY_NUM, will visit keys[MAX_KEY_NUM], not legal!!!
+	//however. tree operations ensure that: when node is full, not add but split first!
+	for (i = num - 1; i >= _index; --i)
+		keys[i + 1] = keys[i];
+
+	keys[_index].setStr(_str);
+	keys[_index].setLen(_len);
+
 	return true;
 }
 
@@ -268,6 +290,7 @@ SINode::subKey(int _index, bool ifdel)
 		keys[_index].release();
 	for (i = _index; i < num - 1; ++i)
 		keys[i] = keys[i + 1];
+
 	return true;
 }
 
@@ -294,6 +317,7 @@ SINode::searchKey_less(const Bstr& _bstr) const
 			low = mid + 1;
 		}
 	}
+
 	return low;
 }
 
@@ -326,3 +350,56 @@ SINode::searchKey_lessEqual(const Bstr& _bstr) const
 	else
 		return ret;
 }
+
+int 
+SINode::searchKey_less(const char* _str, unsigned _len) const
+{
+	int num = this->getNum();
+
+	int low = 0, high = num - 1, mid = -1;
+	while (low <= high)
+	{
+		mid = (low + high) / 2;
+		//if (this->keys[mid] > _bstr)
+		if (Util::compare(this->keys[mid].getStr(), this->keys[mid].getLen(), _str, _len) > 0)
+		{
+			if (low == mid)
+				break;
+			high = mid;
+		}
+		else
+		{
+			low = mid + 1;
+		}
+	}
+
+	return low;
+}
+
+int 
+SINode::searchKey_equal(const char* _str, unsigned _len) const
+{
+	int num = this->getNum();
+	//for(i = 0; i < num; ++i)
+	//	if(bstr == *(p->getKey(i)))
+	//	{
+
+	int ret = this->searchKey_less(_str, _len);
+	//if (ret > 0 && this->keys[ret - 1] == _bstr)
+	if (ret > 0 && Util::compare(this->keys[ret-1].getStr(), this->keys[ret-1].getLen(), _str, _len) == 0)
+		return ret - 1;
+	else
+		return num;
+}
+
+int 
+SINode::searchKey_lessEqual(const char* _str, unsigned _len) const
+{
+	int ret = this->searchKey_less(_str, _len);
+	//if (ret > 0 && this->keys[ret - 1] == _bstr)
+	if (ret > 0 && Util::compare(this->keys[ret-1].getStr(), this->keys[ret-1].getLen(), _str, _len) == 0)
+		return ret - 1;
+	else
+		return ret;
+}
+

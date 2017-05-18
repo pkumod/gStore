@@ -17,14 +17,14 @@ class SigEntry
 private:
 	EntitySig sig;
 	//-1 if not in leaf node
-	int entity_id;
+	TYPE_ENTITY_LITERAL_ID entity_id;
 public:
 	SigEntry();
-	SigEntry(int _entity_id, EntityBitSet& _bitset);
+	SigEntry(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet& _bitset);
 	SigEntry(const SigEntry& _sig_entry);
-	SigEntry(const EntitySig& sig, int _entity_id);
+	SigEntry(const EntitySig& sig, TYPE_ENTITY_LITERAL_ID _entity_id);
 	const EntitySig& getEntitySig() const;
-	int getEntityId() const;
+	TYPE_ENTITY_LITERAL_ID getEntityId() const;
 	int getSigCount() const;
 	SigEntry& operator=(const SigEntry _sig_entry);
 	SigEntry& operator|=(const SigEntry _sig_entry);

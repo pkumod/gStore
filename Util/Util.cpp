@@ -48,6 +48,10 @@ map<string, string> Util::global_config;
 
 //==================================================================================================================
 
+string Util::gserver_port_file = "bin/.gserver_port";
+string Util::gserver_port_swap = "bin/.gserver_port.swap";
+string Util::gserver_log = "logs/gserver.log";
+
 //NOTICE:used in Database, Join and Strategy
 //int Util::triple_num = 0;
 //int Util::pre_num = 0;
@@ -441,20 +445,27 @@ Util::memoryLeft()
 }
 
 bool
-Util::is_literal_ele(int _id)
+Util::is_literal_ele(TYPE_ENTITY_LITERAL_ID _id)
 {
     return _id >= Util::LITERAL_FIRST_ID;
 }
 
+bool 
+Util::is_entity_ele(TYPE_ENTITY_LITERAL_ID id) 
+{
+	return id < Util::LITERAL_FIRST_ID;
+}
+
+
 //NOTICE: require that the list is ordered
-int
-Util::removeDuplicate(int* _list, int _len)
+unsigned
+Util::removeDuplicate(unsigned* _list, unsigned _len)
 {
 	if (_list == NULL || _len == 0) {
 		return 0;
 	}
-	int valid = 0, limit = _len - 1;
-	for(int i = 0; i < limit; ++i)
+	unsigned valid = 0, limit = _len - 1;
+	for(unsigned i = 0; i < limit; ++i)
 	{
 		if(_list[i] != _list[i+1])
 		{
@@ -462,6 +473,7 @@ Util::removeDuplicate(int* _list, int _len)
 		}
 	}
 	_list[valid++] = _list[limit];
+
 	return valid;
 }
 
@@ -471,25 +483,47 @@ Util::cmp_int(const void* _i1, const void* _i2)
     return *(int*)_i1  -  *(int*)_i2;
 }
 
-void
-Util::sort(int*& _id_list, int _list_len)
+int
+Util::cmp_unsigned(const void* _i1, const void* _i2)
 {
-    qsort(_id_list, _list_len, sizeof(int), Util::cmp_int);
+	unsigned t1 = *(unsigned*)_i1;
+	unsigned t2 = *(unsigned*)_i2;
+	if(t1 > t2)
+	{
+		return 1;
+	}
+	else if(t1 == t2)
+	{
+		return 0;
+	}
+	else //t1 < t2
+	{
+		return -1;
+	}
 }
 
-int
-Util::bsearch_int_uporder(int _key, const int* _array,int _array_num)
+void
+Util::sort(unsigned*& _id_list, unsigned _list_len)
+{
+    qsort(_id_list, _list_len, sizeof(unsigned), Util::cmp_unsigned);
+}
+
+unsigned
+Util::bsearch_int_uporder(unsigned _key, const unsigned* _array, unsigned _array_num)
 {
     if (_array_num == 0)
     {
-        return -1;
+        //return -1;
+		return INVALID;
     }
     if (_array == NULL)
     {
-        return -1;
+        //return -1;
+		return INVALID;
     }
-    int _first = _array[0];
-    int _last = _array[_array_num - 1];
+
+    unsigned _first = _array[0];
+    unsigned _last = _array[_array_num - 1];
 
     if (_last == _key)
     {
@@ -498,13 +532,14 @@ Util::bsearch_int_uporder(int _key, const int* _array,int _array_num)
 
     if (_last < _key || _first > _key)
     {
-        return -1;
+        //return -1;
+		return INVALID;
     }
 
-    int low = 0;
-    int high = _array_num - 1;
+    unsigned low = 0;
+    unsigned high = _array_num - 1;
 
-    int mid;
+    unsigned mid;
     while (low <= high)
     {
         mid = (high - low) / 2 + low;
@@ -521,19 +556,22 @@ Util::bsearch_int_uporder(int _key, const int* _array,int _array_num)
             low = mid + 1;
         }
     }
-    return -1;
+
+    //return -1;
+	return INVALID;
 }
 
 bool
-Util::bsearch_preid_uporder(int _preid, int* _pair_idlist, int _list_len)
+Util::bsearch_preid_uporder(TYPE_PREDICATE_ID _preid, unsigned* _pair_idlist, unsigned _list_len)
 {
     if(_list_len == 0)
     {
         return false;
     }
-    int pair_num = _list_len / 2;
-    int _first = _pair_idlist[2*0 + 0];
-    int _last = _pair_idlist[2*(pair_num-1) + 0];
+	//NOTICE: if list len > 0, then it must >= 2, so pair num >= 1
+    unsigned pair_num = _list_len / 2;
+    unsigned _first = _pair_idlist[2*0 + 0];
+    unsigned _last = _pair_idlist[2*(pair_num-1) + 0];
 
     if(_preid == _last)
     {
@@ -546,9 +584,9 @@ Util::bsearch_preid_uporder(int _preid, int* _pair_idlist, int _list_len)
         return false;
     }
 
-    int low = 0;
-    int high = pair_num - 1;
-    int mid;
+    unsigned low = 0;
+    unsigned high = pair_num - 1;
+    unsigned mid;
 
     while(low <= high)
     {
@@ -571,17 +609,18 @@ Util::bsearch_preid_uporder(int _preid, int* _pair_idlist, int _list_len)
     return false;
 }
 
-int
-Util::bsearch_vec_uporder(int _key, const vector<int>* _vec)
+unsigned
+Util::bsearch_vec_uporder(unsigned _key, const vector<unsigned>* _vec)
 {
-    int tmp_size = _vec->size();
+    unsigned tmp_size = _vec->size();
     if (tmp_size == 0)
     {
-        return -1;
+        //return -1;
+		return INVALID;
     }
 
-    int _first = (*_vec)[0];
-    int _last = (*_vec)[tmp_size - 1];
+    unsigned _first = (*_vec)[0];
+    unsigned _last = (*_vec)[tmp_size - 1];
 
     if (_key == _last)
     {
@@ -591,12 +630,13 @@ Util::bsearch_vec_uporder(int _key, const vector<int>* _vec)
     bool not_find = (_last < _key || _first > _key);
     if (not_find)
     {
-        return -1;
+        //return -1;
+		return INVALID;
     }
 
-    int low = 0;
-    int high = tmp_size - 1;
-    int mid;
+    unsigned low = 0;
+    unsigned high = tmp_size - 1;
+    unsigned mid;
 
     while (low <= high)
     {
@@ -615,17 +655,20 @@ Util::bsearch_vec_uporder(int _key, const vector<int>* _vec)
             low = mid + 1;
         }
     }
-    return -1;
+
+    //return -1;
+	return INVALID;
 }
 
 string
-Util::result_id_str(vector<int*>& _v, int _var_num)
+Util::result_id_str(vector<unsigned*>& _v, int _var_num)
 {
     stringstream _ss;
 
-    for(unsigned i = 0; i < _v.size(); i ++)
+	unsigned size = _v.size();
+    for(unsigned i = 0; i < size; ++i)
     {
-        int* _p_int = _v[i];
+        unsigned* _p_int = _v[i];
         _ss << "[";
         for(int j = 0; j < _var_num-1; j ++)
         {
@@ -637,10 +680,18 @@ Util::result_id_str(vector<int*>& _v, int _var_num)
     return _ss.str();
 }
 
+
 bool
 Util::dir_exist(const string _dir)
 {
-    return (opendir(_dir.c_str()) != NULL);
+	DIR* dirptr = opendir(_dir.c_str());
+	if(dirptr != NULL)
+	{
+		closedir(dirptr);
+		return true;
+	}
+
+	return false;
 }
 
 bool
@@ -1188,10 +1239,11 @@ Util::logarithm(double _a, double _b)
     return -1.0;
 }
 
+
 void
-Util::intersect(int*& _id_list, int& _id_list_len, const int* _list1, int _len1, const int* _list2, int _len2)
+Util::intersect(unsigned*& _id_list, unsigned& _id_list_len, const unsigned* _list1, unsigned _len1, const unsigned* _list2, unsigned _len2)
 {
-	vector<int> res;
+	vector<unsigned> res;
 	//cout<<"intersect prevar: "<<_len1<<"   "<<_len2<<endl;
 	if(_list1 == NULL || _len1 == 0 || _list2 == NULL || _len2 == 0)
 	{
@@ -1206,7 +1258,7 @@ Util::intersect(int*& _id_list, int& _id_list_len, const int* _list1, int _len1,
 	//compare n(k+1) and nklogn: k0 = log(n/2)2 requiring that n>2
 	//k<=k0 binary search; k>k0 intersect
 	int method = -1; //0: intersect 1: search in list1 2: search in list2
-	int n = _len1;
+	unsigned n = _len1;
 	double k = 0;
 	if(n < _len2)
 	{
@@ -1232,11 +1284,11 @@ Util::intersect(int*& _id_list, int& _id_list_len, const int* _list1, int _len1,
 	{
 	case 0:
 	{   //this bracket is needed if vars are defined in case
-		int id_i = 0;
-		int num = _len1;
-		for(int i = 0; i < num; ++i)
+		unsigned id_i = 0;
+		unsigned num = _len1;
+		for(unsigned i = 0; i < num; ++i)
 		{
-			int can_id = _list1[i];
+			unsigned can_id = _list1[i];
 			while((id_i < _len2) && (_list2[id_i] < can_id))
 			{
 				id_i ++;
@@ -1257,20 +1309,20 @@ Util::intersect(int*& _id_list, int& _id_list_len, const int* _list1, int _len1,
 	}
 	case 1:
 	{
-		for(int i = 0; i < _len2; ++i)
+		for(unsigned i = 0; i < _len2; ++i)
 		{
-			if(Util::bsearch_int_uporder(_list2[i], _list1, _len1) != -1)
+			if(Util::bsearch_int_uporder(_list2[i], _list1, _len1) != INVALID)
 				res.push_back(_list2[i]);
 		}
 		break;
 	}
 	case 2:
 	{
-		int m = _len1, i;
+		unsigned m = _len1, i;
 		for(i = 0; i < m; ++i)
 		{
-			int t = _list1[i];
-			if(Util::bsearch_int_uporder(t, _list2, _len2) != -1)
+			unsigned t = _list1[i];
+			if(Util::bsearch_int_uporder(t, _list2, _len2) != INVALID)
 				res.push_back(t);
 		}
 		break;
@@ -1286,8 +1338,8 @@ Util::intersect(int*& _id_list, int& _id_list_len, const int* _list1, int _len1,
 		_id_list = NULL;
 	}
 	else {
-		_id_list = new int[_id_list_len];
-		for (int i = 0; i < _id_list_len; ++i)
+		_id_list = new unsigned[_id_list_len];
+		for (unsigned i = 0; i < _id_list_len; ++i)
 			_id_list[i] = res[i];
 	}
 	delete[] _list1;
@@ -1506,5 +1558,87 @@ Util::_pso_cmp(const void* _a, const void* _b)
 	}
 
 	return 0;
+}
+
+bool 
+Util::spo_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b)
+{
+	if(a.subid != b.subid)
+	{
+		return a.subid < b.subid;
+	}
+
+	if(a.preid != b.preid)
+	{
+		return a.preid < b.preid;
+	}
+
+	if(a.objid != b.objid)
+	{
+		return a.objid < b.objid;
+	}
+
+	//all are equal, no need to sort this two
+	return false;
+}
+
+bool 
+Util::ops_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b)
+{
+	if(a.objid != b.objid)
+	{
+		return a.objid < b.objid;
+	}
+
+	if(a.preid != b.preid)
+	{
+		return a.preid < b.preid;
+	}
+
+	if(a.subid != b.subid)
+	{
+		return a.subid < b.subid;
+	}
+
+	//all are equal, no need to sort this two
+	return false;
+}
+
+bool 
+Util::pso_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b)
+{
+	if(a.preid != b.preid)
+	{
+		return a.preid < b.preid;
+	}
+
+	if(a.subid != b.subid)
+	{
+		return a.subid < b.subid;
+	}
+
+	if(a.objid != b.objid)
+	{
+		return a.objid < b.objid;
+	}
+
+	//all are equal, no need to sort this two
+	return false;
+}
+
+void
+Util::empty_file(const char* _fname)
+{
+	FILE * fp;
+	//NOTICE: if exist, then overwrite and create a empty file
+	fp = fopen(_fname, "w"); 
+	if(fp == NULL)
+	{
+		printf("do empty file %s failed\n", _fname);
+	}
+	else 
+	{
+		fclose(fp);
+	}
 }
 

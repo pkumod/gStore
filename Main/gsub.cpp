@@ -12,9 +12,9 @@ int
 main(int argc, char * argv[])
 {
 	//chdir(dirname(argv[0]));
-#ifdef DEBUG
+//#ifdef DEBUG
 	Util util;
-#endif
+//#endif
 
 	cout << "argc: " << argc << "\t";
 	cout << "DB_store:" << argv[1] << "\t";

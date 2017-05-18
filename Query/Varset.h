@@ -36,3 +36,4 @@ class Varset
 
 #endif // _QUERY_VARSET_H
 
+
