@@ -88,8 +88,8 @@ public:
 	virtual void setPrev(ISNode* _prev) {};
 	virtual void setNext(ISNode* _next) {};
 
-	virtual bool setValue(const char* _str, unsigned _len, int _index, bool ifcopy = false) { return true; };
-	virtual bool addValue(const char* _str, unsigned _len, int _index, bool ifcopy = false) { return true; };
+	virtual bool setValue(char* _str, unsigned _len, int _index, bool ifcopy = false) { return true; };
+	virtual bool addValue(char* _str, unsigned _len, int _index, bool ifcopy = false) { return true; };
 
 	//pure virtual function
 	virtual void Virtual() = 0;

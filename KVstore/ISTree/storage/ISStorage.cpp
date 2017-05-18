@@ -401,10 +401,10 @@ ISStorage::writeNode(ISNode* _np)
 		for (i = 0; i < num; ++i)
 		{
 			this->writeBstr(_np->getValue(i), &blocknum, SpecialBlock);
-			if(_np->getKey(0) == 0)
-			{
-				cout<<"the 0th value: "<<_np->getValue(i)->getStr()[0]<<endl;
-			}
+			//if(_np->getKey(0) == 0)
+			//{
+				//cout<<"the 0th value: "<<_np->getValue(i)->getStr()[0]<<endl;
+			//}
 		}
 	}
 	fseek(treefp, Address(blocknum), SEEK_SET);

@@ -218,8 +218,9 @@ KVstore::getSubjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE
 	int ret = 0;
 	if(_get)
 	{
-		int _result = KVstore::binarySearch(_preid, _tmp + 3, _tmp[1], 2);
-		if (_result != -1) 
+		unsigned _result = KVstore::binarySearch(_preid, _tmp + 3, _tmp[1], 2);
+		//if (_result != -1) 
+		if (_result != INVALID) 
 		{
 			int _offset = _tmp[4 + 2 * _result];
 			int _offset_next;
@@ -257,8 +258,9 @@ KVstore::getObjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 	int ret = 0;
 	if (_get) 
 	{
-		int _result = KVstore::binarySearch(_preid, _tmp + 2, _tmp[1], 2);
-		if (_result != -1) 
+		unsigned _result = KVstore::binarySearch(_preid, _tmp + 2, _tmp[1], 2);
+		//if (_result != -1) 
+		if (_result != INVALID) 
 		{
 			int _offset = _tmp[3 + 2 * _result];
 			int _offset_next;
@@ -709,7 +711,8 @@ KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 		unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 2, _tmp[1], 2);
 
 		//preID doesn't exist
-		if (_position == -1) {
+		if (_position == INVALID) 
+		{
 			_values_len = _len / sizeof(unsigned) + 3;
 			_values = new unsigned[_values_len];
 			_values[0] = _tmp[0] + 1;
@@ -1632,6 +1635,7 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 		_list_len = 0;
 		return false;
 	}
+	//cout<<"check "<<_subid<<" "<<_preid<<endl;
 	unsigned _result = KVstore::binarySearch(_preid, _tmp + 3, _tmp[1], 2);
 	//if (_result == -1) 
 	if (_result == INVALID) 
@@ -2202,7 +2206,8 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 		}
 		if (_result == _tmp[1]) {
 			for (unsigned j = i; j < len; j++) {
-				list[j] = -1;
+				//list[j] = -1;
+				list[j] = INVALID;
 				_list_len--;
 			}
 			break;
@@ -2215,8 +2220,8 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 		else {
 			_offset_next = _tmp[6 + 2 * _result];
 		}
-		if (KVstore::binarySearch(_objid, _tmp + _offset, _offset_next - _offset) == -1) {
-			list[i] = -1;
+		if (KVstore::binarySearch(_objid, _tmp + _offset, _offset_next - _offset) == INVALID) {
+			list[i] = INVALID;
 			_list_len--;
 		}
 	}
@@ -2236,7 +2241,8 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 	_preidlist = new unsigned[_list_len];
 	unsigned i = 0, j = 0;
 	while (i < len) {
-		if (list[i] != -1) {
+		if (list[i] != INVALID) 
+		{
 			_preidlist[j] = list[i];
 			i++;
 			j++;
@@ -2451,11 +2457,12 @@ KVstore::intersect(const unsigned* _list1, const unsigned* _list2, unsigned _len
 unsigned
 KVstore::binarySearch(unsigned _key, const unsigned* _list, unsigned _list_len, int _step) 
 {
-	unsigned _left = 0;
-	unsigned _right = _list_len - 1;
-	unsigned _mid;
+	long long _left = 0;
+	long long _right = _list_len - 1;
+	long long _mid;
 	while (_left <= _right) {
 		_mid = (_right - _left) / 2 + _left;
+		cout<<"check "<<_step<<" "<<_mid<<" "<<_step*_mid<<" "<<_list_len<<endl;
 		if (_key == _list[_step * _mid]) {
 			return _mid;
 		}

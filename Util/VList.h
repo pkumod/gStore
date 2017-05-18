@@ -36,7 +36,7 @@ class VList
 public:
 	//NOTICE:the border is 10^6, but the block is larger, 1M
 	static const unsigned LENGTH_BORDER = 1000000;
-	//static const unsigned LENGTH_BORDER = 1000;
+	//static const unsigned LENGTH_BORDER = 100;
 	static const unsigned BLOCK_SIZE = 1 << 20;	//fixed size of disk-block
 	static const unsigned MAX_BLOCK_NUM = 1 << 23;		//max block-num
 	//below two constants: must can be exactly divided by 8

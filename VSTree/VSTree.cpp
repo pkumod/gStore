@@ -934,7 +934,7 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 	bool is_leaf = oldNodePtr->isLeaf();
     // then create a new node to act as BEntryIndex's father.
     VNode* newNodePtr = this->createNode(is_leaf);
-#ifdef DEBUG
+#ifdef DEBUG_VSTREE
 	cout<<"new node file line: "<<newNodePtr->getFileLine()<<endl;
 #endif
 
