@@ -619,6 +619,8 @@ http://www.hprd.org/download/
 
 
 ## GIT USAGE
+
+http://www.ruanyifeng.com/blog/2014/06/git_remote.html
 https://git-scm.com/book/zh/v1/%E8%B5%B7%E6%AD%A5-%E5%88%9D%E6%AC%A1%E8%BF%90%E8%A1%8C-Git-%E5%89%8D%E7%9A%84%E9%85%8D%E7%BD%AE
 
 #### how to commit a message

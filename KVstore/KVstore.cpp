@@ -2462,7 +2462,7 @@ KVstore::binarySearch(unsigned _key, const unsigned* _list, unsigned _list_len, 
 	long long _mid;
 	while (_left <= _right) {
 		_mid = (_right - _left) / 2 + _left;
-		cout<<"check "<<_step<<" "<<_mid<<" "<<_step*_mid<<" "<<_list_len<<endl;
+		//cout<<"check "<<_step<<" "<<_mid<<" "<<_step*_mid<<" "<<_list_len<<endl;
 		if (_key == _list[_step * _mid]) {
 			return _mid;
 		}
