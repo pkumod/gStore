@@ -48,10 +48,6 @@ map<string, string> Util::global_config;
 
 //==================================================================================================================
 
-string Util::gserver_port_file = "bin/.gserver_port";
-string Util::gserver_port_swap = "bin/.gserver_port.swap";
-string Util::gserver_log = "logs/gserver.log";
-
 //NOTICE:used in Database, Join and Strategy
 //int Util::triple_num = 0;
 //int Util::pre_num = 0;
@@ -68,6 +64,12 @@ string Util::debug_path = ".debug/";
 FILE* Util::debug_kvstore = NULL;            //used by KVstore
 FILE* Util::debug_database = NULL;			 //used by Database
 FILE* Util::debug_vstree = NULL;			 //used by VSTree
+
+string Util::gserver_port_file = "bin/.gserver_port";
+string Util::gserver_port_swap = "bin/.gserver_port.swap";
+string Util::gserver_log = "logs/gserver.log";
+
+string Util::backup_path = "backups/";
 
 //set hash table
 HashFunction Util::hash[] = { Util::simpleHash, Util::APHash, Util::BKDRHash, Util::DJBHash, Util::ELFHash, \
@@ -704,6 +706,14 @@ Util::create_dir(const  string _dir)
     }
 
     return false;
+}
+
+bool
+Util::create_file(const string _file) {
+	if (creat(_file.c_str(), 0755) > 0) {
+		return true;
+	}
+	return false;
 }
 
 long
@@ -1648,5 +1658,42 @@ ceiling(unsigned _val, unsigned _base)
 {
 	//WARN: we donot check overflow here
 	return (_val+_base-1) / _base * _base;
+}
+
+long 
+Util::read_backup_time() 
+{
+	ifstream in;
+	in.open(Util::profile.c_str(), ios::in);
+	if (!in) {
+		return Util::gserver_backup_time;
+	}
+	int buf_size = 512;
+	char lbuf[buf_size];
+	while (!in.eof()) {
+		in.getline(lbuf, buf_size);
+		regex_t reg;
+		char pattern[] = "^\\s*BackupTime\\s*=\\s*((0|1)[0-9]|2[0-3])[0-5][0-9]\\s*(\\s#.*)?$";
+		regcomp(&reg, pattern, REG_EXTENDED | REG_NOSUB);
+		regmatch_t pm[1];
+		int status = regexec(&reg, lbuf, 1, pm, 0);
+		regfree(&reg);
+		if (status == REG_NOMATCH) {
+			continue;
+		}
+		else if (status != 0) {
+			in.close();
+			return Util::gserver_backup_time;
+		}
+		for (int i = 11; i < buf_size && lbuf[i]; i++) {
+			if (lbuf[i] >= '0' && lbuf[i] <= '9') {
+				in.close();
+				return 36000 * (lbuf[i] - '0') + 3600 * (lbuf[i + 1] - '0')
+					+ 600 * (lbuf[i + 2] - '0') + 60 * (lbuf[i + 3] - '0');
+			}
+		}
+	}
+	in.close();
+	return Util::gserver_backup_time;
 }
 

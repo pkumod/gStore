@@ -44,6 +44,9 @@ int query_handler(const vector<string>&);
 int show_handler(const vector<string>&);
 int add_handler(const vector<string>&);
 int sub_handler(const vector<string>&);
+//backup commands
+int backup_handler(const vector<string>&);
+int restore_handler(const vector<string>&);
 
 //A structure which contains information on the commands this program can understand.
 typedef struct {
@@ -71,6 +74,8 @@ COMMAND native_commands[] = {
 	{ "restart", restart_handler, "\tRestart local server." },
 	{ "port", port_handler, "\tChange port of local server." },
 	{ "printport", printport_handler, "Print local server's port configuration."},
+	{ "backup", backup_handler, "\tBackup current database." },
+	{ "restore", restore_handler, "\tRestore a database backup." },
 
 	{ NULL, NULL, NULL }
 };
@@ -914,7 +919,7 @@ int drop_handler(const vector<string>& args) {
 		cerr << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
 		return -1;
 	}
-	database += ".db";
+	//database += ".db";
 
 	//remote mode
 	if (gc != NULL) {
@@ -1112,7 +1117,7 @@ int add_handler(const vector<string>& args) {
 		cerr << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
 		return -1;
 	}
-	database += ".db";
+	//database += ".db";
 	Database _db(database);
 	if (!_db.insert(args[1])) {
 		cerr << "Failed to insert!" << endl;
@@ -1135,8 +1140,9 @@ int sub_handler(const vector<string>& args) {
 		cerr << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
 		return -1;
 	}
-	database += ".db";
-	Database _db(database);	if (!_db.remove(args[1])) {
+	//database += ".db";
+	Database _db(database);
+	if (!_db.remove(args[1])) {
 		cerr << "Failed to remove!" << endl;
 		return -1;
 	}
@@ -1191,6 +1197,41 @@ int printport_handler(const vector<string>& args) {
 	return system("bin/gserver -P");
 }
 
+int backup_handler(const vector<string>& args) {
+	if (!args.empty()) {
+		cerr << "Too many arguments!" << endl;
+		return -1;
+	}
+	if (current_database == NULL) {
+		cerr << "No database loaded!" << endl;
+		return -1;
+	}
+	current_database->backup();
+	return 0;
+}
+
+int restore_handler(const vector<string>& args) {
+	if (args.size() != 1) {
+		cerr << "Exactly 1 argument required!" << endl;
+		return -1;
+	}
+	if (current_database != NULL) {
+		cerr << "Please unload your database first!" << endl;
+		return -1;
+	}
+	string database = args[0];
+	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db") {
+		cerr << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
+		return -1;
+	}
+	//database += ".db";
+
+	Database db(database);
+	if (!db.restore()) {
+		return -1;
+	}
+	return 0;
+}
 
 
 

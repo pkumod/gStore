@@ -17,7 +17,7 @@ using namespace std;
 
 bool isOnlyProcess(const char* argv0);
 void checkSwap();
-bool startServer();
+bool startServer(bool _debug);
 bool stopServer();
 
 int main(int argc, char* argv[])
@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	if (mode == "-h" || mode == "--help") {
+	else if (mode == "-h" || mode == "--help") {
 		cout << endl;
 		cout << "gStore Server (gServer)" << endl;
 		cout << endl;
@@ -52,6 +52,7 @@ int main(int argc, char* argv[])
 		cout << "\t-r,--restart\t\tRestart gServer." << endl;
 		cout << "\t-p,--port [PORT=" << Socket::DEFAULT_CONNECT_PORT << "]\tChange connection port configuration, takes effect after restart if gServer running." << endl;
 		cout << "\t-P,--printport\t\tDisplay current connection port configuration." << endl;
+		cout << "\t-d,--debug\t\tStart gServer in debug mode (keep gServer in the foreground)." << endl;
 		cout << "\t-k,--kill\t\tKill existing gServer process(es), ONLY use when out of normal procedures." << endl;
 		cout << endl;
 		return 0;
@@ -70,6 +71,7 @@ int main(int argc, char* argv[])
 			}
 		}
 		if (!isOnlyProcess(argv[0])) {
+			//ofstream out(GSERVER_PORT_SWAP, ios::out);
 			ofstream out(Util::gserver_port_swap.c_str());
 			if (!out) {
 				cerr << "Failed to change port!" << endl;
@@ -80,6 +82,7 @@ int main(int argc, char* argv[])
 			cout << "Port will be changed to " << port << " after the current server stops or restarts." << endl;
 			return 0;
 		}
+		//ofstream out(GSERVER_PORT_FILE, ios::out);
 		ofstream out(Util::gserver_port_file.c_str());
 		if (!out) {
 			cerr << "Failed to change port!" << endl;
@@ -91,12 +94,12 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	if (mode == "-s" || mode == "--start") {
+	else if (mode == "-s" || mode == "--start") {
 		if (!isOnlyProcess(argv[0])) {
 			cerr << "gServer already running!" << endl;
 			return -1;
 		}
-		if (startServer()) {
+		if (startServer(false)) {
 			sleep(1);
 			if (isOnlyProcess(argv[0])) {
 				cerr << "Server stopped unexpectedly. Check for port conflicts!" << endl;
@@ -109,7 +112,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if (mode == "-t" || mode == "--stop") {
+	else if (mode == "-t" || mode == "--stop") {
 		if (isOnlyProcess(argv[0])) {
 			cerr << "gServer not running!" << endl;
 			return -1;
@@ -122,7 +125,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if (mode == "-r" || mode == "--restart") {
+	else if (mode == "-r" || mode == "--restart") {
 		if (isOnlyProcess(argv[0])) {
 			cerr << "gServer not running!" << endl;
 			return -1;
@@ -130,14 +133,23 @@ int main(int argc, char* argv[])
 		if (!stopServer()) {
 			return -1;
 		}
-		if (!startServer()) {
+		if (startServer(false)) {
+			sleep(1);
+			if (isOnlyProcess(argv[0])) {
+				cerr << "Server stopped unexpectedly. Check for port conflicts!" << endl;
+				return -1;
+			}
+			return 0;
+		}
+		else {
 			return -1;
 		}
 		return 0;
 	}
 
-	if (mode == "-P" || mode == "--printport") {
+	else if (mode == "-P" || mode == "--printport") {
 		unsigned short port = Socket::DEFAULT_CONNECT_PORT;
+		//ifstream in(GSERVER_PORT_FILE);
 		ifstream in(Util::gserver_port_file.c_str());
 		if (in) {
 			in >> port;
@@ -145,6 +157,7 @@ int main(int argc, char* argv[])
 		}
 		cout << "Current connection port is " << port << '.' << endl;
 		unsigned short portSwap = 0;
+		//ifstream inSwap(GSERVER_PORT_SWAP);
 		ifstream inSwap(Util::gserver_port_swap.c_str());
 		if (inSwap) {
 			inSwap >> portSwap;
@@ -156,7 +169,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	if (mode == "-k" || mode == "--kill") {
+	else if (mode == "-k" || mode == "--kill") {
 		if (isOnlyProcess(argv[0])) {
 			cerr << "No process to kill!" << endl;
 			return -1;
@@ -165,8 +178,10 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	cerr << "Invalid arguments! Type \"bin/gserver -h\" for help." << endl;
-	return -1;
+	else {
+		cerr << "Invalid arguments! Type \"bin/gserver -h\" for help." << endl;
+		return -1;
+	}
 }
 
 bool isOnlyProcess(const char* argv0) {
@@ -174,9 +189,11 @@ bool isOnlyProcess(const char* argv0) {
 }
 
 void checkSwap() {
+	//if (access(GSERVER_PORT_SWAP, 00) != 0) {
 	if (access(Util::gserver_port_swap.c_str(), 00) != 0) {
 		return;
 	}
+	//ifstream in(GSERVER_PORT_SWAP, ios::in);
 	ifstream in(Util::gserver_port_swap.c_str());
 	if (!in) {
 		cerr << "Failed in checkSwap(), port may not be changed." << endl;
@@ -185,6 +202,7 @@ void checkSwap() {
 	unsigned short port;
 	in >> port;
 	in.close();
+	//ofstream out(GSERVER_PORT_FILE, ios::out);
 	ofstream out(Util::gserver_port_file.c_str());
 	if (!out) {
 		cerr << "Failed in checkSwap(), port may not be changed." << endl;
@@ -192,25 +210,41 @@ void checkSwap() {
 	}
 	out << port;
 	out.close();
+	//chmod(GSERVER_PORT_FILE, 0644);
 	chmod(Util::gserver_port_file.c_str(), 0644);
+	//string cmd = string("rm ") + GSERVER_PORT_SWAP;
 	string cmd = string("rm ") + Util::gserver_port_swap;
 	system(cmd.c_str());
 }
 
-bool startServer() {
+bool startServer(bool _debug) {
 	unsigned short port = Socket::DEFAULT_CONNECT_PORT;
+	//ifstream in(GSERVER_PORT_FILE, ios::in);
 	ifstream in(Util::gserver_port_file.c_str());
 	if (!in) {
+		//ofstream out(GSERVER_PORT_FILE, ios::out);
 		ofstream out(Util::gserver_port_file.c_str());
 		if (out) {
 			out << port;
 			out.close();
+			//chmod(GSERVER_PORT_FILE, 0644);
 			chmod(Util::gserver_port_file.c_str(), 0644);
 		}
 	}
 	else {
 		in >> port;
 		in.close();
+	}
+
+	if (_debug) {
+		Server server(port);
+		if (!server.createConnection()) {
+			cerr << Util::getTimeString() << "Failed to create connection at port " << port << '.' << endl;
+			return false;
+		}
+		cout << Util::getTimeString() << "Server started at port " << port << '.' << endl;
+		server.listen();
+		return true;
 	}
 
 	pid_t fpid = fork();
@@ -274,6 +308,7 @@ bool startServer() {
 
 bool stopServer() {
 	unsigned short port = Socket::DEFAULT_CONNECT_PORT;
+	//ifstream in(GSERVER_PORT_FILE, ios::in);
 	ifstream in(Util::gserver_port_file.c_str());
 	if (in) {
 		in >> port;
@@ -295,3 +330,4 @@ bool stopServer() {
 	checkSwap();
 	return true;
 }
+

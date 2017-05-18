@@ -19,6 +19,8 @@ Database::Database()
 	this->six_tuples_file = "six_tuples";
 	this->db_info_file = "db_info_file.dat";
 	this->id_tuples_file = "id_tuples";
+	this->update_log = "update.log";
+	this->update_log_since_backup = "update_since_backup.log";
 
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = new KVstore(kv_store_path);
@@ -54,12 +56,19 @@ Database::Database()
 Database::Database(string _name)
 {
 	this->name = _name;
+	size_t found = this->name.find_last_not_of('/');
+	if (found != string::npos) 
+	{
+		this->name.erase(found + 1);
+	}
 	this->store_path = Util::global_config["db_home"] + "/" + this->name + Util::global_config["db_suffix"];
 
 	this->signature_binary_file = "signature.binary";
 	this->six_tuples_file = "six_tuples";
 	this->db_info_file = "db_info_file.dat";
 	this->id_tuples_file = "id_tuples";
+	this->update_log = "update.log";
+	this->update_log_since_backup = "update_since_backup.log";
 
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = new KVstore(kv_store_path);
@@ -600,19 +609,30 @@ Database::load()
 	return true;
 }
 
+//NOTICE: we ensure that if the unload() exists normally, then all updates have already been written to disk
+//So when accidents happens, we only have to restore the databases that are in load status(inlucidng that unload
+//not finished) later.
 bool
 Database::unload()
 {
+	//TODO: do we need to update the pre2num if update queries exist??
+	//or we just neglect this, that is ok because pre2num is just used to count
 	delete[] this->pre2num;
 	this->pre2num = NULL;
-	delete this->entity_buffer;
-	delete this->literal_buffer;
 
+	delete this->entity_buffer;
+	this->entity_buffer = NULL;
+	delete this->literal_buffer;
+	this->literal_buffer = NULL;
+
+	//TODO: fflush the database file
 	this->vstree->saveTree();
 	delete this->vstree;
 	this->vstree = NULL;
+
 	delete this->kvstore;
 	this->kvstore = NULL;
+
 	delete this->stringindex;
 	this->stringindex = NULL;
 
@@ -621,8 +641,26 @@ Database::unload()
 	this->initIDinfo();
 
 	this->if_loaded = false;
+	this->clear_update_log();
 
 	return true;
+}
+
+void Database::clear() 
+{
+	delete[] this->pre2num;
+	this->pre2num = NULL;
+	delete this->entity_buffer;
+	this->entity_buffer = NULL;
+	delete this->literal_buffer;
+	this->literal_buffer = NULL;
+
+	delete this->vstree;
+	this->vstree = NULL;
+	delete this->kvstore;
+	this->kvstore = NULL;
+	delete this->stringindex;
+	this->stringindex = NULL;
 }
 
 string
@@ -776,6 +814,11 @@ Database::build(const string& _rdf_file)
 
 	string stringindex_store_path = store_path + "/stringindex_store";
 	Util::create_dir(stringindex_store_path);
+
+	string update_log_path = this->store_path + '/' + this->update_log;
+	Util::create_file(update_log_path);
+	string update_log_since_backup = this->store_path + '/' + this->update_log_since_backup;
+	Util::create_file(update_log_since_backup);
 
 	cout << "begin encode RDF from : " << ret << " ..." << endl;
 
@@ -1064,6 +1107,31 @@ Database::exist_triple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id
 	delete[] _objidlist;
 
 	return is_exist;
+}
+
+bool Database::exist_triple(const TripleWithObjType& _triple) {
+	int sub_id = this->kvstore->getIDByEntity(_triple.getSubject());
+	if (sub_id == -1) {
+		return false;
+	}
+
+	int pre_id = this->kvstore->getIDByPredicate(_triple.getPredicate());
+	if (pre_id == -1) {
+		return false;
+	}
+
+	int obj_id = -1;
+	if (_triple.isObjEntity()) {
+		obj_id = this->kvstore->getIDByEntity(_triple.getObject());
+	}
+	else if (_triple.isObjLiteral()) {
+		obj_id = this->kvstore->getIDByLiteral(_triple.getObject());
+	}
+	if (obj_id == -1) {
+		return false;
+	}
+
+	return exist_triple(sub_id, pre_id, obj_id);
 }
 
 //NOTICE: all constants are transfered to ids in memory
@@ -2086,10 +2154,10 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 }
 
 bool
-Database::insert(std::string _rdf_file)
+Database::insert(std::string _rdf_file, bool _is_restore)
 {
-	//cout<<"to load in insert"<<endl;
-	bool flag = this->load();
+	bool flag = _is_restore || this->load();
+	//bool flag = this->load();
 	if (!flag)
 	{
 		return false;
@@ -2137,7 +2205,7 @@ Database::insert(std::string _rdf_file)
 		}
 
 		//Process the Triple one by one
-		success_num += this->insert(triple_array, parse_triple_num);
+		success_num += this->insert(triple_array, parse_triple_num, _is_restore);
 		//some maybe invalid or duplicate
 		//triple_num += parse_triple_num;
 	}
@@ -2183,9 +2251,10 @@ Database::insert(std::string _rdf_file)
 }
 
 bool
-Database::remove(std::string _rdf_file)
+Database::remove(std::string _rdf_file, bool _is_restore)
 {
-	bool flag = this->load();
+	bool flag = _is_restore || this->load();
+	//bool flag = this->load();
 	if (!flag)
 	{
 		return false;
@@ -2227,7 +2296,7 @@ Database::remove(std::string _rdf_file)
 			break;
 		}
 
-		success_num += this->remove(triple_array, parse_triple_num);
+		success_num += this->remove(triple_array, parse_triple_num, _is_restore);
 		//some maybe invalid or duplicate
 		//triple_num -= parse_triple_num;
 	}
@@ -2262,10 +2331,36 @@ Database::remove(std::string _rdf_file)
 }
 
 unsigned
-Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num)
+Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore)
 {
 	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
 	TYPE_TRIPLE_NUM valid_num = 0;
+
+	if (!_is_restore) {
+		string path = this->getStorePath() + '/' + this->update_log;
+		string path_all = this->getStorePath() + '/' + this->update_log_since_backup;
+		ofstream out;
+		ofstream out_all;
+		out.open(path.c_str(), ios::out | ios::app);
+		out_all.open(path_all.c_str(), ios::out | ios::app);
+		if (!out || !out_all) {
+			cerr << "Failed to open update log. Insertion aborted." << endl;
+			return 0;
+		}
+		for (int i = 0; i < _triple_num; i++) {
+			if (exist_triple(_triples[i])) {
+				continue;
+			}
+			stringstream ss;
+			ss << "I\t" << Util::node2string(_triples[i].getSubject().c_str()) << '\t';
+			ss << Util::node2string(_triples[i].getPredicate().c_str()) << '\t';
+			ss << Util::node2string(_triples[i].getObject().c_str()) << '.' << endl;
+			out << ss.str();
+			out_all << ss.str();
+		}
+		out.close();
+		out_all.close();
+	}
 
 #ifdef USE_GROUP_INSERT
 	//NOTICE:this is called by insert(file) or query()(but can not be too large),
@@ -2717,10 +2812,36 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num)
 }
 
 unsigned
-Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num)
+Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore)
 {
 	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
 	TYPE_TRIPLE_NUM valid_num = 0;
+
+	if (!_is_restore) {
+		string path = this->getStorePath() + '/' + this->update_log;
+		string path_all = this->getStorePath() + '/' + this->update_log_since_backup;
+		ofstream out;
+		ofstream out_all;
+		out.open(path.c_str(), ios::out | ios::app);
+		out_all.open(path_all.c_str(), ios::out | ios::app);
+		if (!out || !out_all) {
+			cerr << "Failed to open update log. Removal aborted." << endl;
+			return 0;
+		}
+		for (int i = 0; i < _triple_num; i++) {
+			if (!exist_triple(_triples[i])) {
+				continue;
+			}
+			stringstream ss;
+			ss << "R\t" << Util::node2string(_triples[i].getSubject().c_str()) << '\t';
+			ss << Util::node2string(_triples[i].getPredicate().c_str()) << '\t';
+			ss << Util::node2string(_triples[i].getObject().c_str()) << '.' << endl;
+			out << ss.str();
+			out_all << ss.str();
+		}
+		out.close();
+		out_all.close();
+	}
 
 #ifdef USE_GROUP_DELETE
 	//NOTICE:this is called by remove(file) or query()(but can not be too large),
@@ -3073,6 +3194,214 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num)
 	return valid_num;
 }
 
+bool 
+Database::backup() 
+{
+	if (!Util::dir_exist(Util::backup_path)) 
+	{
+		Util::create_dir(Util::backup_path);
+	}
+	string backup_path = Util::backup_path + this->store_path;
+
+	cout << "Beginning backup." << endl;
+
+	string sys_cmd;
+	if (Util::dir_exist(backup_path)) 
+	{
+		sys_cmd = "rm -rf " + backup_path;
+		system(sys_cmd.c_str());
+	}
+	sys_cmd = "cp -r " + this->store_path + ' ' + backup_path;
+	system(sys_cmd.c_str());
+	sys_cmd = "rm " + backup_path + '/' + this->update_log;
+	system(sys_cmd.c_str());
+
+	this->vstree->saveTree();
+	this->kvstore->flush();
+
+	this->clear_update_log();
+	string update_log_path = this->store_path + '/' + this->update_log_since_backup;
+	sys_cmd = "rm " + update_log_path;
+	system(sys_cmd.c_str());
+	Util::create_file(update_log_path);
+
+	cout << "Backup completed!" << endl;
+	return true;
+}
+
+bool 
+Database::restore() 
+{
+	cout << "Begining restore." << endl;
+	string sys_cmd;
+
+	multiset<string> insertions;
+	multiset<string> removals;
+
+	int num_update = 0;
+	if (!this->load()) 
+	{
+		this->clear();
+
+		string backup_path = Util::backup_path + this->store_path;
+		if (!Util::dir_exist(Util::backup_path)) 
+		{
+			cerr << "Failed to restore!" << endl;
+			return false;
+		}
+
+		num_update += Database::read_update_log(this->store_path + '/' + this->update_log_since_backup, insertions, removals);
+
+		cout << "Failed to restore from original db file, trying to restore from backup file." << endl;
+		cout << "Your old db file will be stored at " << this->store_path << ".bad" << endl;
+
+		sys_cmd = "rm -rf " + this->store_path + ".bad";
+		system(sys_cmd.c_str());
+		sys_cmd = "cp -r " + this->store_path + ' ' + this->store_path + ".bad";
+		system(sys_cmd.c_str());
+		sys_cmd = "rm -rf " + this->store_path;
+		system(sys_cmd.c_str());
+		sys_cmd = "cp -r " + backup_path + ' ' + this->store_path;
+		system(sys_cmd.c_str());
+		Util::create_file(this->store_path + '/' + this->update_log);
+
+		if (!this->load()) 
+		{
+			this->clear();
+			cerr << "Failed to restore from backup file." << endl;
+			return false;
+		}
+
+		num_update += Database::read_update_log(this->store_path + '/' + this->update_log_since_backup, insertions, removals);
+	}
+	else 
+	{
+		num_update += Database::read_update_log(this->store_path + '/' + this->update_log, insertions, removals);
+	}
+
+	cout << "Restoring " << num_update << " updates." << endl;
+
+	if (!this->restore_update(insertions, removals)) 
+	{
+		cerr << "Failed to restore updates" << endl;
+		return false;
+	}
+
+	cout << "Restore completed." << endl;
+
+	return true;
+}
+
+int 
+Database::read_update_log(const string _path, multiset<string>& _i, multiset<string>& _r) 
+{
+	ifstream in;
+#ifdef DEBUG
+	cout<<_path<<endl;
+#endif
+	in.open(_path.c_str(), ios::in);
+	if (!in) {
+		cerr << "Failed to read update log." << endl;
+		return 0;
+	}
+	
+	int ret = 0;
+	int buffer_size = 1024 + 2;
+	char buffer[buffer_size];
+	in.getline(buffer, buffer_size);
+	while (!in.eof() && buffer[0]) {
+		string triple;
+		switch (buffer[0]) {
+		case 'I':
+			triple = string(buffer + 2);
+			ret++;
+			_i.insert(triple);
+			break;
+		case 'R':
+			triple = string(buffer + 2);
+			ret++;
+			_r.insert(triple);
+			break;
+		default:
+			cerr << "Bad line in update log!" << endl;
+		}
+		in.getline(buffer, buffer_size);
+	}
+
+	return ret;
+}
+
+bool 
+Database::restore_update(multiset<string>& _i, multiset<string>& _r) 
+{
+	multiset<string>::iterator pos;
+	multiset<string>::iterator it_to_erase = _r.end();
+	for (multiset<string>::iterator it = _r.begin(); it != _r.end(); it++) 
+	{
+		//NOTICE: check the intersect of insert_set and remove_set
+		if (it_to_erase != _r.end()) {
+			_r.erase(it_to_erase);
+		}
+		pos = _i.find(*it);
+		if (pos != _i.end()) {
+			_i.erase(pos);
+			it_to_erase = it;
+		}
+		else {
+			it_to_erase = _r.end();
+		}
+	}
+	if (it_to_erase != _r.end()) {
+		_r.erase(it_to_erase);
+	}
+
+	string tmp_path = this->store_path + "/.update_tmp";
+
+	ofstream out_i;
+	out_i.open(tmp_path.c_str(), ios::out);
+	if (!out_i) {
+		cerr << "Failed to open temp file, restore failed!" << endl;
+		return false;
+	}
+	for (multiset<string>::iterator it = _i.begin(); it != _i.end(); it++) {
+		out_i << *it << endl;
+	}
+	out_i.close();
+	if (!this->insert(tmp_path, true)) 
+	//if (!this->remove(tmp_path, true)) 
+	{
+		return false;
+	}
+
+	ofstream out_r;
+	out_r.open(tmp_path.c_str(), ios::out);
+	if (!out_r) {
+		cerr << "Failed to open temp file!" << endl;
+		return false;
+	}
+	for (multiset<string>::iterator it = _r.begin(); it != _r.end(); it++) {
+		out_r << *it << endl;
+	}
+	out_r.close();
+	if (!this->remove(tmp_path, true)) 
+	//if (!this->insert(tmp_path, true)) 
+	{
+		return false;
+	}
+
+	string cmd = "rm " + tmp_path;
+	system(cmd.c_str());
+	return true;
+}
+
+void 
+Database::clear_update_log() 
+{
+	string cmd = "rm " + this->store_path + '/' + this->update_log;
+	system(cmd.c_str());
+	Util::create_file(this->store_path + '/' + this->update_log);
+}
+
 bool
 Database::objIDIsEntityID(TYPE_ENTITY_LITERAL_ID _id)
 {
@@ -3114,6 +3443,7 @@ Database::getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set)
 	vector<unsigned> keys;
 	vector<bool> desc;
 	_result_set.openStream(keys, desc);
+	//_result_set.openStream(keys, desc, 0, -1);
 #ifdef DEBUG_PRECISE
 	printf("getFinalResult:after open stream\n");
 #endif

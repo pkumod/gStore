@@ -48,6 +48,7 @@ public:
 
 	bool load();
 	bool unload();
+	void clear();
 	int query(const string _query, ResultSet& _result_set, FILE* _fp = stdout);
 
 	//1. if subject of _triple doesn't exist,
@@ -57,8 +58,11 @@ public:
 
 	bool build(const string& _rdf_file);
 	//interfaces to insert/delete from given rdf file
-	bool insert(std::string _rdf_file);
-	bool remove(std::string _rdf_file);
+	bool insert(std::string _rdf_file, bool _is_restore = false);
+	bool remove(std::string _rdf_file, bool _is_restore = false);
+
+	bool backup();
+	bool restore();
 
 	//name of this DB
 	string getName();
@@ -105,6 +109,8 @@ private:
 
 	//id tuples file
 	string id_tuples_file;
+	string update_log;
+	string update_log_since_backup;
 
 	//pre2num mapping
 	TYPE_TRIPLE_NUM* pre2num;
@@ -176,6 +182,7 @@ private:
 	//check whether the relative 3-tuples exist
 	//usually, through sp2olist 
 	bool exist_triple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
+	bool exist_triple(const TripleWithObjType& _triple);
 
 	//* _rdf_file denotes the path of the RDF file, where stores the rdf data
 	//* there are many step in this function, each one responds to an sub-function
@@ -197,10 +204,9 @@ private:
 	bool insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL);
 	bool removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL);
 	//NOTICE:one by one is too costly, sort and insert/delete at a time will be better
-	unsigned insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num);
+	unsigned insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false);
 	//bool insert(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
-	unsigned remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num);
-	//bool remove(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
+	unsigned remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false);
 
 	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file);
 	//bool literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, TYPE_TRIPLE_NUM _id_tuples_max);
@@ -216,6 +222,10 @@ private:
 
 	//get the final string result_set from SPARQLquery 
 	bool getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set);
+
+	static int read_update_log(const string _path, multiset<string>& _i, multiset<string>& _r);
+	bool restore_update(multiset<string>& _i, multiset<string>& _r);
+	void clear_update_log();
 };
 
 #endif //_DATABASE_DATABASE_H
