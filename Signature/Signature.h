@@ -24,10 +24,11 @@ public:
 
 	//static HashFunction hash[HashNum];
 	//must make sure:   ENTITY_SIG_LENGTH = EDGE_SIG_LENGTH + STR_SIG_LENGTH 
-	static const unsigned STR_SIG_INTERVAL_NUM = 20;
+	//static const unsigned STR_SIG_INTERVAL_NUM = 20;
 	//static const unsigned STR_SIG_INTERVAL_NUM = 16;
-	static const unsigned STR_SIG_INTERVAL_BASE = 10;
-	static const unsigned STR_SIG_LITERAL = STR_SIG_INTERVAL_NUM * STR_SIG_INTERVAL_BASE; 
+	//static const unsigned STR_SIG_INTERVAL_BASE = 10;
+	//static const unsigned STR_SIG_LITERAL = STR_SIG_INTERVAL_NUM * STR_SIG_INTERVAL_BASE; 
+	static const int STR_SIG_LITERAL = 200; 
 	static const unsigned STR_SIG_ENTITY = STR_SIG_LITERAL * 2;
 	//here we divide as entity neighbors and literal neighbors: ENTITY(in and out), LITERAL(only for out edges)
 	static const unsigned STR_SIG_LENGTH = STR_SIG_ENTITY + STR_SIG_LITERAL; //600
@@ -46,14 +47,20 @@ public:
 	static const unsigned EDGE_SIG_LENGTH = EDGE_SIG_INTERVAL_NUM * EDGE_SIG_INTERVAL_BASE;  //200
 	//static const unsigned EDGE_SIG_LENGTH2 = EDGE_SIG_INTERVAL_NUM_HALF * EDGE_SIG_INTERVAL_BASE; 
 
-	static const unsigned ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH; //1000
+	static const unsigned STR_AND_EDGE_INTERVAL_BASE = 48;
+	static const unsigned STR_AND_EDGE_INTERVAL_NUM = 3;
+	static const unsigned STR_AND_EDGE_SIG_LENGTH = STR_AND_EDGE_INTERVAL_BASE * STR_AND_EDGE_INTERVAL_NUM;//144
+	static const unsigned SEPARATE_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH;
+	static const unsigned ENTITY_SIG_LENGTH = SEPARATE_SIG_LENGTH + STR_AND_EDGE_SIG_LENGTH; //944
+
+	//static const unsigned ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH; //1000
 	//static const unsigned ENTITY_SIG_LENGTH = STR_SIG_LENGTH + EDGE_SIG_LENGTH + NEIGHBOR_SIG_LENGTH;
 
 	//QUERY: the num of bitset must be based on 16, i.e. unsigned short?  1000 is not allowed
 	//but 800, 500 is ok
 	
 	//typedef std::bitset<Signature::EDGE_SIG_LENGTH2> EdgeBitSet;
-	typedef std::bitset<Signature::ENTITY_SIG_LENGTH> EntityBitSet;
+	typedef std::bitset<ENTITY_SIG_LENGTH> EntityBitSet;
 
 	static std::string BitSet2str(const EntityBitSet& _bitset);
 

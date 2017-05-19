@@ -31,6 +31,10 @@
 //TODO: use fread/fwrite here instead of fgetc/fputc
 //including  other trees
 
+typedef char* CACHE_VALUE;
+typedef std::map<unsigned, CACHE_VALUE> CACHE_TYPE;
+typedef CACHE_TYPE::iterator CACHE_ITERATOR;
+
 class VList
 {
 public:
@@ -48,6 +52,19 @@ public:
 	static const unsigned SuperNum = MAX_BLOCK_NUM / (8 * BLOCK_SIZE) + 1;
 
 private:
+	//NOTICE: we need to set a buffer for vlist
+	static const unsigned CACHE_LIMIT = 1 << 26;  //not cache too long list
+	//TODO+BETTER: get this paramemter by MemoryManager
+	static const unsigned CACHE_CAPACITY = UINT_MAX;  
+	//BETTER+TODO: swap the buffer in and out according to access frequence
+	//Here we simply add and give a warnning if cache overflow, but not swap/lock
+	//TODO: swap if full, check if one is locked(being used by some query)
+	std::map<unsigned, char*> vlist_cache;
+	unsigned vlist_cache_left;   //size of cache left
+	//QUERY: maybe use array isntead of map will bAe better - char*[NULL]
+	//NOTICE: check if the cache consumes too much memory. 
+	//In addition, for different trees, maybe different size of caches should be used, i.e. p2values can have longer list!
+
 	unsigned long long max_buffer_size;
 	unsigned cur_block_num;
 	std::string filepath;
@@ -76,11 +93,12 @@ public:
 	VList();
 	VList(std::string& _filepath, std::string& _mode, unsigned long long _buffer_size);//create a fixed-size file or open an existence
 	bool readValue(unsigned _block_num, char*& _str, unsigned& _len);
-	unsigned writeValue(const char* _str, unsigned _len);
+	unsigned writeValue(char* _str, unsigned _len);
 	bool removeValue(unsigned _block_num);
 	~VList();
 
 	static bool isLongList(unsigned _len);
+	static bool listNeedDelete(unsigned _len);
 };
 
 #endif

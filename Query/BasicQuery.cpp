@@ -350,13 +350,20 @@ BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY
 	//if(_obj_id >= 0)
     {
         //Signature::encodeStr2Entity(_obj.c_str(), this->var_sig[_sub_id]);
-        Signature::encodeStr2Entity(this->var_sig[_sub_var_id], _obj_id, Util::EDGE_OUT);
+        //Signature::encodeStr2Entity(this->var_sig[_sub_var_id], _obj_id, Util::EDGE_OUT);
+		if(_pre_id >= 0)
+		{
+			Signature::encodeEdge2Entity(this->var_sig[_sub_var_id], _pre_id, _obj_id, Util::EDGE_OUT);
+		}
+		else
+		{
+			Signature::encodeStr2Entity(this->var_sig[_sub_var_id], _obj_id, Util::EDGE_OUT);
+		} 
     }
-
 	//DEBUG: if type of pre id is changed to usnigned, this will cause error
-    if(_pre_id >= 0)
+	else if(_pre_id >= 0)
     {
-        Signature::encodePredicate2Entity(this->var_sig[_sub_var_id], _pre_id, Util::EDGE_OUT);
+		Signature::encodePredicate2Entity(this->var_sig[_sub_var_id], _pre_id, Util::EDGE_OUT);
     }
 
     // update var(sub)_degree & edge_id according to this triple
@@ -380,13 +387,20 @@ BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY
 	//if(_sub_id >= 0)
     {
         //cout << "str2entity" << endl;
-        Signature::encodeStr2Entity(this->var_sig[_obj_var_id], _sub_id, Util::EDGE_IN);
+        //Signature::encodeStr2Entity(this->var_sig[_obj_var_id], _sub_id, Util::EDGE_IN);
+		 if(_pre_id >= 0)
+		 {
+			 Signature::encodeEdge2Entity(this->var_sig[_obj_var_id], _pre_id, _sub_id, Util::EDGE_IN);
+		 }
+		 else
+		 {
+			Signature::encodeStr2Entity(this->var_sig[_obj_var_id], _sub_id, Util::EDGE_IN);
+		 }
     }
-
-    if(_pre_id >= 0)
+	else if(_pre_id >= 0)
     {
         //cout << "pre2entity" << endl;
-        Signature::encodePredicate2Entity(this->var_sig[_obj_var_id], _pre_id, Util::EDGE_IN);
+		Signature::encodePredicate2Entity(this->var_sig[_obj_var_id], _pre_id, Util::EDGE_IN);
 #ifdef DEBUG
 		//if(_obj_var_id == 1)
 		//{

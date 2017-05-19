@@ -16,8 +16,15 @@ VList::isLongList(unsigned _len)
 	return _len > VList::LENGTH_BORDER;
 }
 
+bool 
+VList::listNeedDelete(unsigned _len)
+{
+	return _len > VList::CACHE_LIMIT;
+}
+
 VList::VList()
 {							//not use ../logs/, notice the location of program
+	vlist_cache_left = CACHE_CAPACITY;
 	cur_block_num = SET_BLOCK_NUM;
 	filepath = "";
 	freelist = NULL;
@@ -27,6 +34,7 @@ VList::VList()
 
 VList::VList(string& _filepath, string& _mode, unsigned long long _buffer_size)
 {
+	vlist_cache_left = CACHE_CAPACITY;
 	cur_block_num = SET_BLOCK_NUM;		//initialize
 	this->filepath = _filepath;
 
@@ -183,16 +191,42 @@ VList::readValue(unsigned _block_num, char*& _str, unsigned& _len)
 #ifdef DEBUG_VLIST
 	cout<<"to get value of block num: "<<_block_num<<endl;
 #endif
+	//if in cache, get directly(and this pointer shouldn't be clear in upper layer)
+	CACHE_ITERATOR it = this->vlist_cache.find(_block_num);
+	if(it != this->vlist_cache.end())
+	{
+		_str = it->second;
+		_len = strlen(_str);
+		return true;
+	}
+
+	//if not in cache, read from disk(add a random seek time), the pointer should be clear in upper layer
 	fseek(valfp, Address(_block_num), SEEK_SET);
 	unsigned next;
 	fread(&next, sizeof(unsigned), 1, valfp);
 	this->readBstr(_str, _len, &next);
 
+	//add this to cache if the list is not too long
+	if(!this->listNeedDelete(_len))
+	{
+		//TODO: swap the oldest when overflow detected
+		//DEBUG: if simple stop adding here, then listNeedDelete will be invalid!
+		if(this->vlist_cache_left < _len)
+		{
+			cout<<"WARN in VList::readValue() -- cache overflow"<<endl;
+		}
+		else
+		{
+			this->vlist_cache_left -= _len;
+		}
+		this->vlist_cache.insert(CACHE_TYPE::value_type(_block_num, _str));
+	}
+
 	return true;
 }
 
 unsigned 
-VList::writeValue(const char* _str, unsigned _len)
+VList::writeValue(char* _str, unsigned _len)
 {
 	unsigned blocknum = this->AllocBlock();
 	unsigned curnum = blocknum;
@@ -210,6 +244,15 @@ VList::writeValue(const char* _str, unsigned _len)
 bool 
 VList::removeValue(unsigned _block_num)
 {
+	CACHE_ITERATOR it = this->vlist_cache.find(_block_num);
+	if(it != this->vlist_cache.end())
+	{
+		this->vlist_cache_left += strlen(it->second);
+		delete[] it->second;
+		this->vlist_cache.erase(it);
+	}
+	//this->vlist_cache.erase(_block_num);
+
 	unsigned store = _block_num, next;
 	fseek(this->valfp, Address(store), SEEK_SET);
 	fread(&next, sizeof(unsigned), 1, valfp);
@@ -237,7 +280,7 @@ VList::readBstr(char*& _str, unsigned& _len, unsigned* _next)
 	this->ReadAlign(_next);
 
 	//char* s = (char*)malloc(len);
-	char* s = new char[len];
+	char* s = new char[len+1];
 	_len = len;
 
 	for (i = 0; i + 4 < len; i += 4)
@@ -260,6 +303,7 @@ VList::readBstr(char*& _str, unsigned& _len, unsigned* _next)
 	//(if need to read, then fseek again to find a new value)
 	//this->ReadAlign(_next);
 
+	s[len] = '\0';
 	_str = s;
 	return true;
 }
@@ -303,6 +347,13 @@ VList::writeBstr(const char* _str, unsigned _len, unsigned* _curnum)
 
 VList::~VList()
 {
+	//clear the cache
+	for(CACHE_ITERATOR it = this->vlist_cache.begin(); it != this->vlist_cache.end(); ++it)
+	{
+		delete[] it->second;
+	}
+	this->vlist_cache.clear();
+
 	//write the info back
 	fseek(this->valfp, 0, SEEK_SET);
 	fwrite(&cur_block_num, sizeof(unsigned), 1, valfp);//write current blocks num

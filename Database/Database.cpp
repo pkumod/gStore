@@ -989,19 +989,20 @@ Database::calculateEntityBitSet(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet 
 	//when as subject
 	unsigned* _polist = NULL;
 	(this->kvstore)->getpreIDobjIDlistBysubID(_entity_id, _polist, _list_len);
-	Triple _triple;
-	_triple.subject = (this->kvstore)->getEntityByID(_entity_id);
+	//Triple _triple;
+	//_triple.subject = (this->kvstore)->getEntityByID(_entity_id);
 	for (unsigned i = 0; i < _list_len; i += 2)
 	{
 		TYPE_PREDICATE_ID _pre_id = _polist[i];
 		TYPE_ENTITY_LITERAL_ID _obj_id = _polist[i + 1];
-		_triple.object = (this->kvstore)->getEntityByID(_obj_id);
-		if (_triple.object == "")
-		{
-			_triple.object = (this->kvstore)->getLiteralByID(_obj_id);
-		}
-		_triple.predicate = (this->kvstore)->getPredicateByID(_pre_id);
-		this->encodeTriple2SubEntityBitSet(_bitset, &_triple);
+		//_triple.object = (this->kvstore)->getEntityByID(_obj_id);
+		//if (_triple.object == "")
+		//{
+			//_triple.object = (this->kvstore)->getLiteralByID(_obj_id);
+		//}
+		//_triple.predicate = (this->kvstore)->getPredicateByID(_pre_id);
+		//this->encodeTriple2SubEntityBitSet(_bitset, &_triple);
+		this->encodeTriple2SubEntityBitSet(_bitset, _pre_id, _obj_id);
 	}
 	delete[] _polist;
 
@@ -1009,14 +1010,15 @@ Database::calculateEntityBitSet(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet 
 	unsigned* _pslist = NULL;
 	_list_len = 0;
 	(this->kvstore)->getpreIDsubIDlistByobjID(_entity_id, _pslist, _list_len);
-	_triple.object = (this->kvstore)->getEntityByID(_entity_id);
+	//_triple.object = (this->kvstore)->getEntityByID(_entity_id);
 	for (unsigned i = 0; i < _list_len; i += 2)
 	{
 		TYPE_PREDICATE_ID _pre_id = _pslist[i];
 		TYPE_ENTITY_LITERAL_ID _sub_id = _pslist[i + 1];
-		_triple.subject = (this->kvstore)->getEntityByID(_sub_id);
-		_triple.predicate = (this->kvstore)->getPredicateByID(_pre_id);
-		this->encodeTriple2ObjEntityBitSet(_bitset, &_triple);
+		//_triple.subject = (this->kvstore)->getEntityByID(_sub_id);
+		//_triple.predicate = (this->kvstore)->getPredicateByID(_pre_id);
+		//this->encodeTriple2ObjEntityBitSet(_bitset, &_triple);
+		this->encodeTriple2ObjEntityBitSet(_bitset, _pre_id, _sub_id);
 	}
 	delete[] _pslist;
 
@@ -1054,6 +1056,14 @@ Database::encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, const Triple* _p_t
 	return true;
 }
 
+bool
+Database::encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id)
+{
+	Signature::encodeEdge2Entity(_bitset, _pre_id, _obj_id, Util::EDGE_OUT);
+
+	return true;
+}
+
 //encode Triple into object SigEntry
 bool
 Database::encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple)
@@ -1078,6 +1088,14 @@ Database::encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_t
 	//{
 		//Signature::encodeStr2Entity((_p_triple->subject).c_str(), _bitset);
 	//}
+
+	return true;
+}
+
+bool
+Database::encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _sub_id)
+{
+	Signature::encodeEdge2Entity(_bitset, _pre_id, _sub_id, Util::EDGE_IN);
 
 	return true;
 }
@@ -1961,7 +1979,8 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	EntityBitSet _sub_entity_bitset;
 	_sub_entity_bitset.reset();
 
-	this->encodeTriple2SubEntityBitSet(_sub_entity_bitset, &_triple);
+	//this->encodeTriple2SubEntityBitSet(_sub_entity_bitset, &_triple);
+	this->encodeTriple2SubEntityBitSet(_sub_entity_bitset, _pre_id, _obj_id);
 
 	//if new entity then insert it, else update it.
 	if (_is_new_sub)
@@ -1982,7 +2001,8 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		EntityBitSet _obj_entity_bitset;
 		_obj_entity_bitset.reset();
 
-		this->encodeTriple2ObjEntityBitSet(_obj_entity_bitset, &_triple);
+		//this->encodeTriple2ObjEntityBitSet(_obj_entity_bitset, &_triple);
+		this->encodeTriple2ObjEntityBitSet(_obj_entity_bitset, _pre_id, _sub_id);
 
 		if (_is_new_obj)
 		{
@@ -2016,13 +2036,21 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 
 	TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
 	TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_triple.predicate);
-	TYPE_ENTITY_LITERAL_ID _obj_id = (this->kvstore)->getIDByEntity(_triple.object);
-
-	//if (_obj_id == -1)
-	if (_obj_id == INVALID_ENTITY_LITERAL_ID)
+	TYPE_ENTITY_LITERAL_ID _obj_id = INVALID_ENTITY_LITERAL_ID;
+	if(_triple.isObjEntity())
+	{
+		_obj_id = (this->kvstore)->getIDByEntity(_triple.object);
+	}
+	else
 	{
 		_obj_id = (this->kvstore)->getIDByLiteral(_triple.object);
 	}
+
+	//if (_obj_id == -1)
+	//if (_obj_id == INVALID_ENTITY_LITERAL_ID)
+	//{
+		//_obj_id = (this->kvstore)->getIDByLiteral(_triple.object);
+	//}
 
 	//if (_sub_id == -1 || _pre_id == -1 || _obj_id == -1)
 	if (_sub_id == INVALID_ENTITY_LITERAL_ID || _pre_id == INVALID_PREDICATE_ID || _obj_id == INVALID_ENTITY_LITERAL_ID)

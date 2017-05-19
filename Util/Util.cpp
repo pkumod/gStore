@@ -458,6 +458,32 @@ Util::is_entity_ele(TYPE_ENTITY_LITERAL_ID id)
 	return id < Util::LITERAL_FIRST_ID;
 }
 
+bool 
+Util::isEntity(const std::string& _str)
+{
+	if(_str[0] == '<')
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool 
+Util::isLiteral(const std::string& _str)
+{
+	if(_str[0] == '"')
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 
 //NOTICE: require that the list is ordered
 unsigned

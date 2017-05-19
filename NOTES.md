@@ -8,6 +8,8 @@
 将IRC聊天放到gstore文档上，freenode #gStore
 
 storage中大量使用long类型，文件大小也可能达到64G，最好在64位机器上运行。
+在将unsigned转换为long long或者unsigned long long的时候要注意补全问题，long类型不知是否类似情况
+也许可以考虑Bstr中不存length只存str(内存中还有对齐的开销)，但对于特别长的串来说可能strlen过于耗时
 
 # 推广
 

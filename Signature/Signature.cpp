@@ -44,6 +44,29 @@ Signature::encodeEdge2Entity(EntityBitSet& _entity_bs, TYPE_PREDICATE_ID _pre_id
 #endif
 
 	Signature::encodeStr2Entity(_entity_bs, _neighbor_id, _type);
+
+//	for(int i = 800; i < _entity_bs.size(); i++){
+//		_entity_bs.set(i);
+//	} 
+   //encode predicate and entity together
+    int x = _pre_id % Signature::STR_AND_EDGE_INTERVAL_BASE;
+    int y = _neighbor_id % Signature::STR_AND_EDGE_INTERVAL_BASE;
+    int seed = x + (x + y + 1) * (x + y) / 2;
+    seed %= Signature::STR_AND_EDGE_INTERVAL_BASE;
+    seed = seed + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_LENGTH;
+    if(Util::is_literal_ele(_neighbor_id))
+	{
+		seed += (Signature::STR_AND_EDGE_INTERVAL_BASE * 2);
+	}
+	else //entity part
+	{
+		//entity can be in edge or out edge
+		if (_type == Util::EDGE_OUT)
+		{
+			seed += Signature::STR_AND_EDGE_INTERVAL_BASE;
+		}
+	}
+	_entity_bs.set(seed);
 }
 
 void
@@ -87,9 +110,13 @@ Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, TYPE_PREDICATE_ID _p
 		//unsigned pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
 		//_entity_bs.set(pos);
 		//}
-		unsigned seed = id * 5003 % 49957;
-		unsigned pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
-		_entity_bs.set(pos);
+		//unsigned seed = id * 5003 % 49957;
+		//unsigned pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
+		//_entity_bs.set(pos);
+
+		long long seed = id * 5003 % 49957;
+		seed = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
+		_entity_bs.set(seed);
 	}
 }
 
@@ -132,9 +159,11 @@ Signature::encodeStr2Entity(EntityBitSet& _entity_bs, TYPE_ENTITY_LITERAL_ID _ne
 	//NOTICE: we assume the parameter is always valid(invalid args should not be passed here)
 	long long id = _neighbor_id;
 	//NOTICE: in * maybe the unsigned will overflow
-	long long seed = id * 5003 % 49957;
-	seed = seed % Signature::STR_SIG_INTERVAL_BASE;
-	seed = seed + (id % Signature::STR_SIG_INTERVAL_NUM) * Signature::STR_SIG_INTERVAL_BASE;
+	//long long seed = id * 5003 % 49957;
+	//seed = seed % Signature::STR_SIG_INTERVAL_BASE;
+	//seed = seed + (id % Signature::STR_SIG_INTERVAL_NUM) * Signature::STR_SIG_INTERVAL_BASE;
+
+	int seed = _neighbor_id % Signature::STR_SIG_LITERAL;
 
 	if(Util::is_literal_ele(_neighbor_id))
 	{

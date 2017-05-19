@@ -174,8 +174,11 @@ private:
 
 	//encode Triple into Subject EntityBitSet 
 	bool encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
+	//NOTICE: the encodeTriple with Triple* is invalid now(not enocde the linkage of neighbor-predicate)
+	bool encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
 	//encode Triple into Object EntityBitSet 
 	bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
+	bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _sub_id);
 
 	bool calculateEntityBitSet(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet & _bitset);
 

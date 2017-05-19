@@ -123,7 +123,7 @@ KVstore::getEntityInDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -148,7 +148,7 @@ KVstore::getEntityOutDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -173,7 +173,7 @@ KVstore::getLiteralDegree(TYPE_ENTITY_LITERAL_ID _literal_id) const
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -198,7 +198,7 @@ KVstore::getPredicateDegree(TYPE_PREDICATE_ID _predicate_id) const
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -238,7 +238,7 @@ KVstore::getSubjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -278,7 +278,7 @@ KVstore::getObjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -1570,7 +1570,7 @@ KVstore::getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlis
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -1608,7 +1608,7 @@ KVstore::getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlis
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -1658,7 +1658,7 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -1706,7 +1706,7 @@ KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _pre
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -1846,7 +1846,7 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -1878,7 +1878,7 @@ KVstore::getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlis
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -1922,7 +1922,7 @@ KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -1963,7 +1963,7 @@ KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _pre
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -2083,7 +2083,7 @@ KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, un
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -2114,7 +2114,7 @@ KVstore::getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, un
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
@@ -2154,7 +2154,7 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 #ifdef DEBUG_KVSTORE
 		cout<<"this is a vlist"<<endl;
@@ -2228,7 +2228,7 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::isLongList(_len))
+	if(VList::listNeedDelete(_len))
 	{
 		delete[] _tmp;
 		//_tmp = NULL;
