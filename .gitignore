@@ -98,3 +98,6 @@ tags
 # modules
 node_modules
 
+# query results
+*.info
+

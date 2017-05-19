@@ -7,9 +7,9 @@ bool send_backup_msg(unsigned short _port, long _time);
 
 int main(int argc, char* argv[]) {
 
-#ifdef DEBUG
+//#ifdef DEBUG
 	Util util;
-#endif
+//#endif
 
 	if (argc != 3) {
 		return -1;
