@@ -97,15 +97,18 @@ Notice:
 
 gserver is a daemon. It should be launched first when accessing gStore by gclient or API. It communicates with client through socket. 
 
-    [bookug@localhost gStore]$ bin/gserver 
-    port=3305
-    Wait for input...
+    [bookug@localhost gStore]$ bin/gserver -s
+	Server started at port 3305.
 
 You can also assign a custom port for listening.
 
-    [bookug@localhost gStore]$ bin/gserver 3307
-    port=3307
-    Wait for input...
+    [bookug@localhost gStore]$ bin/gserver -s -p 3307
+	Server started at port 3307.
+
+You can stop the server by:
+
+    [bookug@localhost gStore]$ bin/gserver -t
+	Server stopped at port 3305.
 
 Notice: Multiple threads are not supported by gserver. If you start up gclient in more than one terminal in the same time, gserver will go down.
 
@@ -149,7 +152,18 @@ Notice:
 
 - - -
 
-#### 5. test utilities
+#### 5. HttpConnector
+
+HttpConnector is a daemon. It should be launched first when accessing gStore by HTTP 1.1 protocol.
+
+    [bookug@localhost gStore]$ bin/HttpConnector
+	Server started at port 8080.
+
+After the server is started, you can access it by visit the url in a browser or use the Restful API in your program. You can press Ctrl-C to stop the server. (Multiple connections are supported in HTTP server)
+
+- - -
+
+#### 6. test utilities
 
 A series of test program are placed in the test/ folder, and we will introduce the two useful ones: gtest.cpp and full_test.sh
 
