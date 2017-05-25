@@ -109,7 +109,7 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
 #gtest
 
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)HttpConnector
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)HttpConnector $(exedir)gpath
 
 all: $(TARGET)
 
@@ -142,7 +142,6 @@ $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
 
 $(exedir)HttpConnector: $(lib_antlr) $(objdir)HttpConnector.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)HttpConnector $(objdir)HttpConnector.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX
-
 
 #executables end
 
@@ -511,4 +510,14 @@ fulltest:
 test-kvstore:
 	# test/kvstore_test.cpp
 	echo "TODO"
+
+
+
+# Below are for Property Path
+
+$(exedir)gpath: $(lib_antlr) $(objdir)gpath.o $(objfile) $(api_cpp)
+	$(CC) $(EXEFLAG) -o $(exedir)gpath $(objdir)gpath.o $(objfile) $(library)
+
+$(objdir)gpath.o: PropertyPath/gpath.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) PropertyPath/gpath.cpp $(inc) -o $(objdir)gpath.o 
 
