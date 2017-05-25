@@ -11,11 +11,15 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
+#include "../KVstore/KVstore.h"
 
 using namespace std;
 
 //NOTICE: we don't consider recombination path* here, like (P1|P2)* or (P1*/P2)*
+//^path, path(n) and path(n,m) are currently not considered
+//WARN: the direction is from left to right, no edge with different directions!(so all are entity except that the last one cna be literal)
 //(P1/P2)* and P1*/P2*are considered here
+//NOTICE: we assume that ';' can be used to divide src and dest and pres
 typedef struct PreUnitType
 {
 	//not dividable
@@ -26,12 +30,38 @@ typedef struct PreUnitType
 typedef list< vector<unsigned> > ResultType;
 typedef ResultType::iterator ResultIterator;
 
-void convert(Database& _db, string _query, unsigned& src, unsigned& dest, vector<PreUnit>& _pres)
+KVstore* kvstore;
+
+void convert(string _query, unsigned& src, unsigned& dest, vector<PreUnit>& _pres)
 {
-	//TODO
+	vector<unsigned> divid;
+	int i = 0, j = _query.size()-1, k = 0;
+	while(_query[k] != ';')
+	{
+		k++;
+	}
+	string str1 = _query.substr(0, k);
+	src = kvstore->getIDByEntity(str1);
+	//get the dest, which may be a literal
+	k = j;
+	while(_query[k] != ';')
+	{
+		k--;
+	}
+	string str2 = _query.substr(k+1, j-k);
+	if(Util::is_entity_ele(str2))
+	{
+		dest = kvstore->getIDByEntity(str2);
+	}
+	else
+	{
+		dest = kvstore->getIDByLiteral(str2);
+	}
+
+	//TODO:divide all pres
 }
 
-void project(ResultType& _rs, unsigned _idx, vector<unsigned> _cand)
+void project(ResultType& _rs, unsigned _idx, vector<unsigned>& _cand)
 {
 	//TODO: project a column and remove duplicates
 }
@@ -39,7 +69,7 @@ void project(ResultType& _rs, unsigned _idx, vector<unsigned> _cand)
 //NOTICE: if src or dest is variable, use -1 instead 
 void query(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest)
 {
-	//TODO: use gstore to answer queries
+	//TODO: use gstore to answer queries, set NULL, convert to unsigned
 }
 
 void compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vector<PreUnit>& _pres)
@@ -101,6 +131,9 @@ main(int argc, char* argv[])
 		cout<<"ERROR: invalid option!"<<endl;
 		return -1;
 	}
+
+	//assign kvstore
+	kvstore = db.getKVstore();
 
 	//query console - input or a file
 	string query;
@@ -213,8 +246,8 @@ main(int argc, char* argv[])
 		//NOTICE: we only find one path if reachable, or empty if not reachable
 		unsigned src = INVALID, dest = INVALID;
 		vector<PreUnit> pres;
-		convert(db, query, src, dest, pres);
-		//TODO: compute all uses ID instead of string
+		convert(query, src, dest, pres);
+		//BETTER: when query() returns, it should be IDs instead of Strings?
 		ResultType rs;
 		compute(db, rs, src, dest, pres);
 		output(rs, fp);

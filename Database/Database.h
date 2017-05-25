@@ -28,6 +28,11 @@
 class Database
 {
 public:
+	KVstore* getKVstore()
+	{
+		return this->kvstore;
+	}
+
 	//static const bool only_sub2idpre2id = true;
 	//static const int internal = 100 * 1000;
 
