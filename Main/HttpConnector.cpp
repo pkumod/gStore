@@ -184,7 +184,8 @@ int main() {
             return 0;
         }
 
-        FILE* output = stdout;
+        //FILE* output = stdout;
+        FILE* output = NULL; //not update result on the screen
 
         ResultSet rs;
         bool ret = current_database->query(sparql, rs, output);
