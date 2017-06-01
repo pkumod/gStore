@@ -32,7 +32,7 @@ public:
 	static const unsigned INTL_SIZE = sizeof(Bstr) * MAX_KEY_NUM;
 	static const unsigned LEAF_SIZE = sizeof(int) * MAX_KEY_NUM + INTL_SIZE;
 	
-	int heapId;
+	// int heapId;
 protected:
 	unsigned store;			//store address, the BLock index
 	unsigned flag;			//NF_RK, NF_IL,NF_ID, NF_IV, propety

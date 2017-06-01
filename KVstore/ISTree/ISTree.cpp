@@ -12,6 +12,7 @@ using namespace std;
 
 ISTree::ISTree()
 {
+	pthread_rwlock_init(&rwlock, NULL);
 	height = 0;
 	mode = "";
 	root = NULL;
@@ -27,6 +28,7 @@ ISTree::ISTree()
 
 ISTree::ISTree(string _storepath, string _filename, string _mode, unsigned long long _buffer_size)
 {
+	pthread_rwlock_init(&rwlock, NULL);
 	storepath = _storepath;
 	filename = _filename;
 	this->height = 0;
@@ -97,10 +99,16 @@ ISTree::getRoot() const
 void
 ISTree::prepare(ISNode* _np)
 {
+	TSM->wlock();
 	//this->request = 0;
 	bool flag = _np->inMem();
 	if (!flag)
-		this->TSM->readNode(_np, &request);	//readNode deal with request
+	{
+		
+		TSM->readNode(_np, &request);	//readNode deal with request
+		
+	}
+	TSM->unlock();
 }
 
 bool
@@ -111,20 +119,24 @@ ISTree::search(int _key, char*& _str, int& _len)
 		printf("error in ISTree-search: empty string\n");
 		return false;
 	}
-
+	rlock();
 	this->request = 0;
 	int store;
 	ISNode* ret = this->find(_key, &store, false);
 	if (ret == NULL || store == -1 || _key != ret->getKey(store))	//tree is empty or not found
 	{
+		unlock();
 		return false;
 	}
 
 	const Bstr* val = ret->getValue(store);
+	TFlock.wlock();
 	this->CopyToTransfer(val->getStr(), val->getLen(), 0);		//not sum to request
 	_str = this->transfer[0].getStr();
 	_len = this->transfer[0].getLen();
-	this->TSM->request(request);
+	// this->TSM->request(request);
+	TFlock.unlock();
+	unlock();
 	return true;
 }
 
@@ -136,7 +148,7 @@ ISTree::insert(int _key, const char* _str, unsigned _len)
 		printf("error in ISTree-insert: empty string\n");
 		return false;
 	}
-
+	wlock();
 	this->CopyToTransfer(_str, _len, 2);
 	const Bstr* val = &(this->transfer[2]);
 	this->request = 0;
@@ -165,7 +177,7 @@ ISTree::insert(int _key, const char* _str, unsigned _len)
 		this->height++;		//height rises only when root splits
 							//WARN: height area in Node: 4 bit!
 		father->setHeight(this->height);	//add to heap later
-		this->TSM->updateHeap(ret, ret->getRank(), false);
+		this->TSM->updateLRU(ret);
 		this->root = father;
 	}
 
@@ -193,9 +205,9 @@ ISTree::insert(int _key, const char* _str, unsigned _len)
 			else
 				request += ISNode::INTL_SIZE;
 			//BETTER: in loop may update multiple times
-			this->TSM->updateHeap(ret, ret->getRank(), false);
-			this->TSM->updateHeap(q, q->getRank(), true);
-			this->TSM->updateHeap(p, p->getRank(), true);
+			this->TSM->updateLRU(ret);
+			// this->TSM->updateHeap(q, q->getRank(), true);
+			// this->TSM->updateHeap(p, p->getRank(), true);
 			if (_key < p->getKey(i))
 				p = q;
 			else
@@ -204,7 +216,7 @@ ISTree::insert(int _key, const char* _str, unsigned _len)
 		else
 		{
 			p->setDirty();
-			this->TSM->updateHeap(p, p->getRank(), true);
+			// this->TSM->updateHeap(p, p->getRank(), true);
 			p = q;
 		}
 	}
@@ -226,11 +238,12 @@ ISTree::insert(int _key, const char* _str, unsigned _len)
 		p->addNum();
 		request += val->getLen();
 		p->setDirty();
-		this->TSM->updateHeap(p, p->getRank(), true);
+		// this->TSM->updateHeap(p, p->getRank(), true);
 		//_key->clear();
 		//_value->clear();
 	}
 	this->TSM->request(request);
+	unlock();
 	return !ifexist;		//QUERY(which case:return false)
 }
 
@@ -242,7 +255,7 @@ ISTree::modify(int _key, const char* _str, unsigned _len)
 		printf("error in ISTree-modify: empty string\n");
 		return false;
 	}
-
+	wlock();
 	this->CopyToTransfer(_str, _len, 2);	//not check value
 	const Bstr* val = &(this->transfer[2]);
 	this->request = 0;
@@ -251,6 +264,7 @@ ISTree::modify(int _key, const char* _str, unsigned _len)
 	if (ret == NULL || store == -1 || _key != ret->getKey(store))	//tree is empty or not found
 	{
 		cerr << "tree is empty or not found" << endl;
+		unlock();
 		return false;
 	}
 	//cout<<"ISTree::modify() - key is found, now to remove"<<endl;
@@ -265,6 +279,7 @@ ISTree::modify(int _key, const char* _str, unsigned _len)
 	//cout<<"to request"<<endl;
 	this->TSM->request(request);
 	//cout<<"memory requested"<<endl;
+	unlock();
 	return true;
 }
 
@@ -318,12 +333,12 @@ ISTree::remove(int _key)
 		printf("error in ISTree-remove: empty string\n");
 		return false;
 	}
-
+	
 	this->request = 0;
 	ISNode* ret;
 	if (this->root == NULL)	//tree is empty
 		return false;
-
+	wlock();
 	ISNode* p = this->root;
 	ISNode* q;
 	int i, j;
@@ -345,8 +360,9 @@ ISTree::remove(int _key)
 				this->prepare(p->getChild(i + 1));
 			ret = q->coalesce(p, i);
 			if (ret != NULL)
-				this->TSM->updateHeap(ret, 0, true);//non-sense node
-			this->TSM->updateHeap(q, q->getRank(), true);
+				ret->setRank(0);
+				// this->TSM->updateLRU(ret, true, false);//non-sense node
+			// this->TSM->updateHeap(q, q->getRank(), true);
 			if (q->isLeaf())
 			{
 				if (q->getPrev() == NULL)
@@ -358,13 +374,14 @@ ISTree::remove(int _key)
 			{
 				//this->leaves_head = q;
 				this->root = q;
-				this->TSM->updateHeap(p, 0, true);	//instead of delete p				
+				p->setRank(0);
+				// this->TSM->updateLRU(p, true, false);	//instead of delete p				
 				this->height--;
 			}
 		}
 		else
 			p->setDirty();
-		this->TSM->updateHeap(p, p->getRank(), true);
+		// this->TSM->updateLRU(p, p->getRank(), true);
 		p = q;
 	}
 	bool flag = false;
@@ -403,13 +420,15 @@ ISTree::remove(int _key)
 			this->leaves_head = NULL;
 			this->leaves_tail = NULL;
 			this->height = 0;
-			this->TSM->updateHeap(p, 0, true);	//instead of delete p
+			p->setRank(0);
+			// this->TSM->updateLRU(p, true, false);	//instead of delete p
 		}
 		p->setDirty();
 		flag = true;
 	}
 
 	this->TSM->request(request);
+	unlock();
 	return flag;		//i == j, not found		
 }
 
@@ -575,8 +594,24 @@ ISTree::release(ISNode* _np) const
 	delete _np;
 }
 
+void ISTree::rlock()
+{
+	pthread_rwlock_rdlock(&rwlock);
+}
+
+void ISTree::wlock()
+{
+	pthread_rwlock_wrlock(&rwlock);
+}
+
+void ISTree::unlock()
+{
+	pthread_rwlock_unlock(&rwlock);
+}
+
 ISTree::~ISTree()
 {
+	pthread_rwlock_destroy(&rwlock);
 	delete this->stream;   //maybe NULL
 	delete TSM;
 #ifdef DEBUG_KVSTORE

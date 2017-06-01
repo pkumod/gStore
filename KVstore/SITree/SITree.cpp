@@ -12,6 +12,7 @@ using namespace std;
 
 SITree::SITree()
 {
+	pthread_rwlock_init(&rwlock, NULL);
 	height = 0;
 	mode = "";
 	root = NULL;
@@ -26,6 +27,7 @@ SITree::SITree()
 
 SITree::SITree(string _storepath, string _filename, string _mode, unsigned long long _buffer_size)
 {
+	pthread_rwlock_init(&rwlock, NULL);
 	storepath = _storepath;
 	filename = _filename;
 	this->height = 0;
@@ -95,10 +97,12 @@ SITree::getRoot() const
 void
 SITree::prepare(SINode* _np)
 {
+	TSM->wlock();
 	//this->request = 0;
 	bool flag = _np->inMem();
 	if (!flag)
 		this->TSM->readNode(_np, &request);	//readNode deal with request
+	TSM->unlock();
 }
 
 bool
@@ -110,20 +114,24 @@ SITree::search(const char* _str, unsigned _len, int* _val)
 		*_val = -1;
 		return false;
 	}
+	rlock();
+	TFlock.wlock();
 	this->CopyToTransfer(_str, _len, 1);
-
-	request = 0;
 	Bstr bstr = this->transfer[1];	//not to modify its memory
+	TFlock.unlock();
+	request = 0;
 	int store;
-	SINode* ret = this->find(&transfer[1], &store, false);
+	SINode* ret = this->find(&bstr, &store, false);
 	if (ret == NULL || store == -1 || bstr != *(ret->getKey(store)))	//tree is empty or not found
 	{
 		bstr.clear();
+		unlock();
 		return false;
 	}
 	*_val = ret->getValue(store);
 	this->TSM->request(request);
 	bstr.clear();
+	unlock();
 	return true;
 }
 
@@ -135,6 +143,7 @@ SITree::insert(const char* _str, unsigned _len, int _val)
 		printf("error in SITree-insert: empty string\n");
 		return false;
 	}
+	wlock();
 	this->CopyToTransfer(_str, _len, 1);
 
 	this->request = 0;
@@ -163,7 +172,7 @@ SITree::insert(const char* _str, unsigned _len, int _val)
 		this->height++;		//height rises only when root splits
 		//WARN: height area in SINode: 4 bit!
 		father->setHeight(this->height);	//add to heap later
-		this->TSM->updateHeap(ret, ret->getRank(), false);
+		this->TSM->updateLRU(ret);
 		this->root = father;
 	}
 
@@ -193,9 +202,9 @@ SITree::insert(const char* _str, unsigned _len, int _val)
 			else
 				request += SINode::INTL_SIZE;
 			//BETTER: in loop may update multiple times
-			this->TSM->updateHeap(ret, ret->getRank(), false);
-			this->TSM->updateHeap(q, q->getRank(), true);
-			this->TSM->updateHeap(p, p->getRank(), true);
+			this->TSM->updateLRU(ret);
+			// this->TSM->updateHeap(q, q->getRank(), true);
+			// this->TSM->updateHeap(p, p->getRank(), true);
 			if (bstr < *(p->getKey(i)))
 				p = q;
 			else
@@ -204,7 +213,7 @@ SITree::insert(const char* _str, unsigned _len, int _val)
 		else
 		{
 			p->setDirty();
-			this->TSM->updateHeap(p, p->getRank(), true);
+			// this->TSM->updateHeap(p, p->getRank(), true);
 			p = q;
 		}
 	}
@@ -226,10 +235,11 @@ SITree::insert(const char* _str, unsigned _len, int _val)
 		p->addNum();
 		request += _key->getLen();
 		p->setDirty();
-		this->TSM->updateHeap(p, p->getRank(), true);
+		// this->TSM->updateHeap(p, p->getRank(), true);
 	}
 	this->TSM->request(request);
 	bstr.clear();		//NOTICE: must be cleared!
+	unlock();
 	return !ifexist;		//QUERY(which case:return false)
 }
 
@@ -241,6 +251,7 @@ SITree::modify(const char* _str, unsigned _len, int _val)
 		printf("error in SITree-modify: empty string\n");
 		return false;
 	}
+	wlock();
 	this->CopyToTransfer(_str, _len, 1);
 
 	this->request = 0;
@@ -251,12 +262,14 @@ SITree::modify(const char* _str, unsigned _len, int _val)
 	if (ret == NULL || store == -1 || bstr != *(ret->getKey(store)))	//tree is empty or not found
 	{
 		bstr.clear();
+		unlock();
 		return false;
 	}
 	ret->setValue(_val, store);
 	ret->setDirty();
 	this->TSM->request(request);
 	bstr.clear();
+	unlock();
 	return true;
 }
 
@@ -312,13 +325,17 @@ SITree::remove(const char* _str, unsigned _len)
 		printf("error in SITree-remove: empty string\n");
 		return false;
 	}
+	wlock();
 	this->CopyToTransfer(_str, _len, 1);
 
 	request = 0;
 	const Bstr* _key = &transfer[1];
 	SINode* ret;
 	if (this->root == NULL)	//tree is empty
+	{
+		unlock();
 		return false;
+	}
 	SINode* p = this->root;
 	SINode* q;
 	int i, j;
@@ -341,8 +358,9 @@ SITree::remove(const char* _str, unsigned _len)
 				this->prepare(p->getChild(i + 1));
 			ret = q->coalesce(p, i);
 			if (ret != NULL)
-				this->TSM->updateHeap(ret, 0, true);//non-sense node
-			this->TSM->updateHeap(q, q->getRank(), true);
+				ret->setRank(0);
+				// this->TSM->updateHeap(ret, 0, true);//non-sense node
+			// this->TSM->updateHeap(q, q->getRank(), true);
 			if (q->isLeaf())
 			{
 				if (q->getPrev() == NULL)
@@ -354,13 +372,14 @@ SITree::remove(const char* _str, unsigned _len)
 			{
 				//this->leaves_head = q;
 				this->root = q;
-				this->TSM->updateHeap(p, 0, true);	//instead of delete p				
+				p->setRank(0);
+				// this->TSM->updateHeap(p, 0, true);	//instead of delete p				
 				this->height--;
 			}
 		}
 		else
 			p->setDirty();
-		this->TSM->updateHeap(p, p->getRank(), true);
+		// this->TSM->updateHeap(p, p->getRank(), true);
 		p = q;
 	}
 
@@ -379,7 +398,8 @@ SITree::remove(const char* _str, unsigned _len)
 			this->leaves_head = NULL;
 			this->leaves_tail = NULL;
 			this->height = 0;
-			this->TSM->updateHeap(p, 0, true);	//instead of delete p
+			p->setRank(0);
+			// this->TSM->updateHeap(p, 0, true);	//instead of delete p
 		}
 		p->setDirty();
 		flag = true;
@@ -387,6 +407,7 @@ SITree::remove(const char* _str, unsigned _len)
 
 	this->TSM->request(request);
 	bstr.clear();
+	unlock();
 	return flag;		//i == j, not found		
 }
 
@@ -417,8 +438,24 @@ SITree::release(SINode* _np) const
 	delete _np;
 }
 
+void SITree::rlock()
+{
+	pthread_rwlock_rdlock(&rwlock);
+}
+
+void SITree::wlock()
+{
+	pthread_rwlock_wrlock(&rwlock);
+}
+
+void SITree::unlock()
+{
+	pthread_rwlock_unlock(&rwlock);
+}
+
 SITree::~SITree()
 {
+	pthread_rwlock_destroy(&rwlock);
 	delete TSM;
 #ifdef DEBUG_KVSTORE
 	printf("already empty the buffer, now to delete all nodes in tree!\n");

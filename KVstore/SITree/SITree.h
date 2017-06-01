@@ -28,6 +28,19 @@ private:
 	std::string mode;           //BETTER(to use enum)
 	SIStorage* TSM;           	//Tree-Storage-Manage
 
+	pthread_rwlock_t rwlock;
+	
+	class crwlock
+	{
+	public:
+		crwlock(){pthread_rwlock_init(&lock, NULL);}
+		~crwlock(){pthread_rwlock_destroy(&lock);}
+		void rlock(){pthread_rwlock_rdlock(&lock);}
+		void wlock(){pthread_rwlock_wrlock(&lock);}
+		void unlock(){pthread_rwlock_unlock(&lock);}
+	private:
+		pthread_rwlock_t lock;
+	}TFlock;
 	//always alloc one more byte than length, then user can add a '\0'
 	//to get a real string, instead of new and copy
 	//other operations will be harmful to search, so store value in
@@ -63,7 +76,12 @@ public:
 	bool modify(const char* _str, unsigned _len, int _val);
 	SINode* find(const Bstr* _key, int* store, bool ifmodify);
 	bool remove(const char* _str, unsigned _len);
-	bool save(); 			
+	bool save(); 
+
+	void rlock();
+	void wlock();
+	void unlock();
+	
 	~SITree();
 	void print(std::string s);			//DEBUG(print the tree)
 };

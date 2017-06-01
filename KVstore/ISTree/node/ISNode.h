@@ -12,6 +12,7 @@
 #include "../../../Util/Util.h"
 #include "../../../Util/Bstr.h"
 
+
 class ISNode       				//abstract basic class 
 {
 public:
@@ -31,7 +32,8 @@ public:
 	static const unsigned INTL_SIZE = sizeof(int) * MAX_KEY_NUM;
 	static const unsigned LEAF_SIZE = INTL_SIZE + sizeof(Bstr) * MAX_KEY_NUM;
 	
-	int heapId;
+	//int heapId;
+	// IScontainer::iterator *con_iter;
 protected:
 	unsigned store;			//store address, the BLock index
 	unsigned flag;			//NF_RK, NF_IL,NF_ID, NF_IV, propety

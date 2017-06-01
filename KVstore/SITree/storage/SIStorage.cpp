@@ -12,18 +12,21 @@ using namespace std;
 
 SIStorage::SIStorage()
 {							//not use ../logs/, notice the location of program
+	pthread_rwlock_init(&rwlock, NULL);
 	cur_block_num = SET_BLOCK_NUM;
 	filepath = "";
 	freelist = NULL;
 	treefp = NULL;
-	minheap = NULL;
+	// minheap = NULL;
+	lru = NULL;
 	max_buffer_size = Util::MAX_BUFFER_SIZE;
-	heap_size = max_buffer_size / SINode::INTL_SIZE;
+	lru_size = max_buffer_size / SINode::INTL_SIZE;
 	freemem = max_buffer_size;
 }
 
 SIStorage::SIStorage(string& _filepath, string& _mode, unsigned* _height, unsigned long long _buffer_size)
 {
+	pthread_rwlock_init(&rwlock, NULL);
 	cur_block_num = SET_BLOCK_NUM;		//initialize
 	this->filepath = _filepath;
 	if (_mode == string("build"))
@@ -44,7 +47,7 @@ SIStorage::SIStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 	this->max_buffer_size = _buffer_size;
 	//cout<<"buffer size: "<<this->max_buffer_size<<endl;
 
-	this->heap_size = this->max_buffer_size / SINode::INTL_SIZE;
+	this->lru_size = this->max_buffer_size / SINode::INTL_SIZE;
 	this->freemem = this->max_buffer_size;
 	this->freelist = new BlockInfo;	//null-head
 	unsigned i, j, k;	//j = (SuperNum-1)*BLOCK_SIZE
@@ -94,7 +97,7 @@ SIStorage::SIStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 		fseek(treefp, Address(rootnum), SEEK_SET);
 		//treefp is now ahead of root-block
 	}
-	this->minheap = new SIHeap(this->heap_size);
+	this->lru = new SILRU(this->lru_size);
 }
 
 bool
@@ -110,7 +113,13 @@ SIStorage::preRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
 	unsigned h = *this->treeheight;
 	SINode* p;
 	//read root node
+	bool full = false;
+	long long memory = 0;
+	long long mxmem = this->freemem * (1/3.0);
 	this->createNode(p);
+	this->readNode(p, &memory);
+	this->request(memory);
+	if(this->freemem < mxmem)full = true;
 	_root = p;
 	fread(&next, sizeof(unsigned), 1, treefp);
 	//use stack to achieve
@@ -158,6 +167,13 @@ SIStorage::preRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
 		block[pos] = next;
 		nodes[pos] = p;
 		pos++;
+		if(!full)
+		{
+			memory = 0;
+			this->readNode(p, &memory);
+			this->request(memory);
+			if(this->freemem < mxmem)full=1;
+		}
 	}
 	//set leaves and read root, which is always keeped in-mem
 	p = _root;
@@ -172,9 +188,9 @@ SIStorage::preRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
 		p = p->getChild(p->getNum());
 	}
 	_leaves_tail = p;
-	long long memory = 0;
-	this->readNode(_root, &memory);
-	this->request(memory);
+	// long long memory = 0;
+	// this->readNode(_root, &memory);
+	// this->request(memory);
 	return true;
 }
 
@@ -298,7 +314,7 @@ SIStorage::readNode(SINode* _np, long long* _request)
 	//_np->delVirtual();
 	_np->delDirty();
 	//_np->setMem();
-	this->updateHeap(_np, _np->getRank(), false);
+	this->updateLRU(_np);
 	bstr.clear();
 	return true;
 }
@@ -471,21 +487,37 @@ SIStorage::writeTree(SINode* _root)	//write the whole tree back and close treefp
 	fseek(this->treefp, 0, SEEK_SET);
 	fwrite(this->treeheight, sizeof(unsigned), 1, treefp);
 	//delete all nonsense-node in heap, otherwise will waste storage permanently
-	SINode* p;
-	while (1)
-	{	//all non-sense nodes will be in-head-area, due to minimal rank
-		p = minheap->getTop();
-		if (p == NULL)	//heap is empty, only when root==NULL
-			break;
-		if (p->getRank() == 0)	//indicate non-sense node
+	if (!this->lru->isEmpty())
+	{
+		for(auto it = this->lru->beginIter(); !this->lru->isEndIter(it); )
 		{
-			this->minheap->remove();
-			this->writeNode(p);
-			delete p;
+			if((*it)->getRank() == 0)
+			{
+				auto tmp = it;
+				it = this->lru->nxtIter(it);
+				this->writeNode(*tmp);
+				delete *tmp;
+				this->lru->removeIt(tmp);
+			}
+			else it = this->lru->nxtIter(it);
 		}
-		else
-			break;
 	}
+	// SINode* p;
+	// while (1)
+	// {	//all non-sense nodes will be in-head-area, due to minimal rank
+		// p = minheap->getTop();
+		// if (p == NULL)	//heap is empty, only when root==NULL
+			// break;
+		// if (p->getRank() == 0)	//indicate non-sense node
+		// {
+			// this->minheap->remove();
+			// this->writeNode(p);
+			// delete p;
+		// }
+		// else
+			// break;
+	// }
+	
 
 	unsigned i, j, t;
 	//QUERY: another way to write all nodes back is to print out all nodes in heap
@@ -555,25 +587,30 @@ SIStorage::writeTree(SINode* _root)	//write the whole tree back and close treefp
 	return true;
 }
 
-void
-SIStorage::updateHeap(SINode* _np, unsigned _rank, bool _inheap) const
+bool
+SIStorage::updateLRU(SINode* _np)
 {
-	if (_inheap)	//already in heap, to modify
-	{
-		unsigned t = _np->getRank();
-		_np->setRank(_rank);
-		if (t < _rank)
-			this->minheap->modify(_np, false);
-		else if (t > _rank)
-			this->minheap->modify(_np, true);
-		else;
-	}
-	else		//not in heap, to add
-	{
-		_np->setRank(_rank);
-		this->minheap->insert(_np);
-	}
+	return this->lru->insert(_np);
 }
+// void
+// SIStorage::updateHeap(SINode* _np, unsigned _rank, bool _inheap) const
+// {
+	// if (_inheap)	//already in heap, to modify
+	// {
+		// unsigned t = _np->getRank();
+		// _np->setRank(_rank);
+		// if (t < _rank)
+			// this->minheap->modify(_np, false);
+		// else if (t > _rank)
+			// this->minheap->modify(_np, true);
+		// else;
+	// }
+	// else		//not in heap, to add
+	// {
+		// _np->setRank(_rank);
+		// this->minheap->insert(_np);
+	// }
+// }
 
 bool
 SIStorage::request(long long _needmem)	//aligned to byte
@@ -583,7 +620,7 @@ SIStorage::request(long long _needmem)	//aligned to byte
 		{
 			print(string("error in request: out of buffer-mem, now to exit"));
 			//exit(1);
-			return false;;
+			return false;
 		}
 	this->freemem -= _needmem;
 	return true;
@@ -598,10 +635,16 @@ SIStorage::handler(unsigned long long _needmem)	//>0
 	//	_needmem = SET_BUFFER_SIZE;
 	while (1)
 	{
-		p = this->minheap->getTop();
-		if (p == NULL)
+		if (this->lru->isEmpty())
+		{
+			cout << "the lru is empty" << endl;
 			return false;	//can't satisfy or can't recover to SET_BUFFER_SIZE
-		this->minheap->remove();
+		}
+		p = this->lru->getTop();
+		// p = this->minheap->getTop();
+		// if (p == NULL)
+			// return false;	//can't satisfy or can't recover to SET_BUFFER_SIZE
+		this->lru->removeTop();
 		size = p->getSize();
 		this->freemem += size;
 		this->writeNode(p);
@@ -617,12 +660,28 @@ SIStorage::handler(unsigned long long _needmem)	//>0
 	return true;
 }
 
+void SIStorage::rlock()
+{
+	pthread_rwlock_rdlock(&rwlock);
+}
+
+void SIStorage::wlock()
+{
+	pthread_rwlock_wrlock(&rwlock);
+}
+
+void SIStorage::unlock()
+{
+	pthread_rwlock_unlock(&rwlock);
+}
+
 SIStorage::~SIStorage()
 {
 	//release heap and freelist...
 #ifdef DEBUG_KVSTORE
 	printf("now to release the kvstore!\n");
 #endif
+	pthread_rwlock_destroy(&rwlock);
 	BlockInfo* bp = this->freelist;
 	BlockInfo* next;
 	while (bp != NULL)
@@ -634,7 +693,7 @@ SIStorage::~SIStorage()
 #ifdef DEBUG_KVSTORE
 	printf("already empty the freelist!\n");
 #endif
-	delete this->minheap;
+	delete this->lru;
 #ifdef DEBUG_KVSTORE
 	printf("already empty the buffer heap!\n");
 #endif

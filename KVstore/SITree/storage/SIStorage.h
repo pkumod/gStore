@@ -11,7 +11,8 @@
 
 #include "../node/SIIntlNode.h"
 #include "../node/SILeafNode.h"
-#include "../heap/SIHeap.h"
+// #include "../heap/SIHeap.h"
+#include "../LRU/SILRU.h"
 
 //It controls read, write, swap
 class SIStorage
@@ -31,13 +32,15 @@ public:
 	//enum ReadType { OVER = 0, EXPAND, NORMAL };
 private:
 	unsigned long long max_buffer_size;
-	unsigned heap_size;
+	unsigned lru_size;
 	unsigned cur_block_num;
 	std::string filepath;
 	unsigned* treeheight;
 	BlockInfo* freelist;
 	FILE* treefp;						//file: tree nodes
-	SIHeap* minheap;					//heap of Nodes's pointer, sorted in NF_RK
+	// SIHeap* minheap;					//heap of Nodes's pointer, sorted in NF_RK
+	SILRU* lru;
+	pthread_rwlock_t rwlock;
 	//NOTICE: freemem's type is long long here, due to large memory in server.
 	//However, needmem in handler() and request() is ok to be int/unsigned.
 	//Because the bstr' size is controlled, so is the node.
@@ -61,10 +64,18 @@ public:
 	bool readBstr(Bstr* _bp, unsigned* _next);
 	bool writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock);
 	bool writeTree(SINode* _np);
-	void updateHeap(SINode* _np, unsigned _rank, bool _inheap) const;
+	
+	// void updateHeap(SINode* _np, unsigned _rank, bool _inheap) const;
+	bool updateLRU(SINode* _np);
+	
 	bool request(long long _needmem);			//deal with memory request
 	bool handler(unsigned long long _needmem);	//swap some nodes out
 	//bool update();				//update InMem Node's rank, with clock
+	
+	void rlock();
+	void wlock();
+	void unlock();
+	
 	~SIStorage();
 	void print(std::string s);				//DEBUG
 };
