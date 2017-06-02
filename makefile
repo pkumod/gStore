@@ -43,11 +43,11 @@ CC = ccache g++ -std=c++11
 #NOTICE: -O2 is recommended, while -O3 is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -g
-EXEFLAG = -g
+#CFLAGS = -c -Wall -g
+#EXEFLAG = -g
 #-coverage
-#CFLAGS = -c -Wall -O2 -pthread
-#EXEFLAG = -O2 -pthread
+CFLAGS = -c -Wall -O2 -pthread
+EXEFLAG = -O2 -pthread
 
 #add -lreadline -ltermcap if using readline or objs contain readline
 library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost

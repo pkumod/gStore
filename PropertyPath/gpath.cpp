@@ -104,6 +104,8 @@ typedef ResultType::iterator ResultIterator;
 
 #define ONE_EDGE INVALID
 #define NO_EDGE INVALID-1
+#define DEPTH 20
+#define LIMIT_DEPTH 1
 
 KVstore* kvstore;
 
@@ -246,13 +248,13 @@ bool query(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vector
 		//_pres.clear();
 		if(ret == INVALID)
 		{
-			cout<<"unreachable: "<<_src<<" "<<preid<<" "<<_dest<<endl;
+			//cout<<"unreachable: "<<_src<<" "<<preid<<" "<<_dest<<endl;
 			return  false;
 		}
 		else
 		{
 			_rs.push_back(vector<unsigned>(1, ONE_EDGE));
-			cout<<"reachable: "<<_src<<" "<<preid<<" "<<_dest<<endl;
+			//cout<<"reachable: "<<_src<<" "<<preid<<" "<<_dest<<endl;
 			return true;
 		}
 	}
@@ -324,6 +326,10 @@ bool query(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vector
 	//transform all strings to IDs
 	int rowNum = ts.ansNum;
 	cout<<"query(): "<<rowNum<<endl;
+	if(rowNum == 0)
+	{
+		return false;
+	}
 	int colNum = ts.select_var_num;
 	string** ansp = ts.answer;
 	for(int i = 0 ; i < rowNum; ++i)
@@ -397,9 +403,15 @@ void merge(ResultType& _rs, ResultType* _curRS, int _num)
 	}
 }
 
-bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vector<PreUnit>& _pres)
+bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vector<PreUnit>& _pres, int _depth=DEPTH)
 {
-	cout<<"compute: "<<_src<<" "<<_dest<<endl;
+#ifdef LIMIT_DEPTH
+	if(_depth <= 0)
+	{
+		return false;
+	}
+#endif
+	//cout<<"compute: "<<_src<<" "<<_dest<<endl;
 	int size = _pres.size();
 	if(size == 0)
 	{
@@ -407,11 +419,11 @@ bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vect
 		if(flag)
 		{
 			_rs.push_back(vector<unsigned>(1, NO_EDGE));
-			cout<<"matched: "<<_src<<" "<<_dest<<endl;
+			//cout<<"matched: "<<_src<<" "<<_dest<<endl;
 		}
 		else
 		{
-			cout<<"not matched: "<<_src<<" "<<_dest<<endl;
+			//cout<<"not matched: "<<_src<<" "<<_dest<<endl;
 		}
 		return flag;
 	}
@@ -501,13 +513,15 @@ bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vect
 			}
 		}
 
-		_pres.clear();
+		//DEBUG!
+		//_pres.clear();
 		bool flag;
 		for(int i = 0; i < num; ++i)
 		{
 			unsigned t1 = (i==0)?constant_src:INVALID;
 			unsigned t2 = (i==num-1)?constant_dest:INVALID;
 			bool ret = query(_db, curRS[i], t1, t2, constant_pres[i]);
+			//cout<<"check: finish the "<<i<<"th query"<<endl;
 			if(i == 0)
 			{
 				flag = ret;
@@ -538,19 +552,19 @@ bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vect
 			{
 				unsigned id = (*it)[0];
 				ResultType tmprs;
-				compute(_db, tmprs, _src, id, other_pres[cnt]);
+				compute(_db, tmprs, _src, id, other_pres[cnt], _depth-1);
 				for(ResultIterator it2 = tmprs.begin(); it2 != tmprs.end(); ++it2)
 				{
 					unsigned t2 = (*it2)[0];
-					cout<<"check: "<<t2<<endl;
-					if(t2 == ONE_EDGE)
-					{
-						cout<<"check: one edge exists"<<endl;
-					}
-					else if(t2 == NO_EDGE)
-					{
-						cout<<"check: no edge exists"<<endl;
-					}
+					//cout<<"check: "<<t2<<endl;
+					//if(t2 == ONE_EDGE)
+					//{
+						//cout<<"check: one edge exists"<<endl;
+					//}
+					//else if(t2 == NO_EDGE)
+					//{
+						//cout<<"check: no edge exists"<<endl;
+					//}
 					_rs.push_back(*(it2));
 					//if(t2 != ONE_EDGE && t2 != NO_EDGE)
 					//{
@@ -579,6 +593,7 @@ bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vect
 		{
 			_rs = curRS[0];
 		}
+		//cout<<"check: left delaed"<<endl;
 
 		//deal with medium
 		for(int i = 1; i < num; ++i)
@@ -592,7 +607,7 @@ bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vect
 				{
 					unsigned id2 = (*it2).front();
 					ResultType tmprs;
-					compute(_db, tmprs, id1, id2, other_pres[cnt]);
+					compute(_db, tmprs, id1, id2, other_pres[cnt], _depth-1);
 					for(ResultIterator it3 = tmprs.begin(); it3 != tmprs.end(); ++it3)
 					{
 						unsigned t2 = (*it3)[0];
@@ -624,6 +639,11 @@ bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vect
 			//}
 			cnt++;
 		}
+		//cout<<"check: medium delaed"<<endl;
+		//if(_rs.empty())
+		//{
+			//cout<<"check: the result is aleardy empty!"<<endl;
+		//}
 
 		//deal with right
 		if(constant_dest == INVALID)
@@ -634,7 +654,7 @@ bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vect
 			{
 				unsigned id = (*it).back();
 				ResultType tmprs;
-				compute(_db, tmprs, id, _dest, other_pres[cnt]);
+				compute(_db, tmprs, id, _dest, other_pres[cnt], _depth-1);
 				for(ResultIterator it2 = tmprs.begin(); it2 != tmprs.end(); ++it2)
 				{
 					unsigned t2 = (*it2)[0];
@@ -657,10 +677,14 @@ bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vect
 			}
 			_rs = swapRS;
 		}
+		//cout<<"check: right delaed"<<endl;
 
 		delete[] constant_pres;
+		//cout<<"check: constant pres"<<endl;
 		delete[] other_pres;
+		//cout<<"check: other pres"<<endl;
 		delete[] curRS;
+		//cout<<"check: current result"<<endl;
 		//DEBUG: this may be error
 		return true;
 	}
@@ -685,11 +709,11 @@ bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vect
 		{
 			pnum = 2;
 			curRS = new ResultType[pnum];
-			compute(_db, curRS[0], _src, _dest, tpu);
+			compute(_db, curRS[0], _src, _dest, tpu, _depth-1);
 			//cout<<"to erase: "<<i<<" "<<tpu[i].pset[0]<<endl;
 			tpu.erase(tpu.begin() + i);
 			//cout<<"check: "<<tpu.size()<<endl;
-			compute(_db, curRS[1], _src, _dest, tpu);
+			compute(_db, curRS[1], _src, _dest, tpu, _depth-1);
 		}
 		else if(_pres[i].op == '|')
 		{
@@ -698,12 +722,12 @@ bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vect
 			for(int j = 0; j < pnum; ++j)
 			{
 				tpu[i].pset = vector<string>(1, _pres[i].pset[j]);
-				compute(_db, curRS[j], _src, _dest, tpu);
+				compute(_db, curRS[j], _src, _dest, tpu, _depth-1);
 			}
 		}
 
 		merge(_rs, curRS, pnum);
-		cout<<"check rs: "<<_rs.size()<<endl;
+		//cout<<"check rs: "<<_rs.size()<<endl;
 		delete[] curRS;
 		return true;
 	}
@@ -718,8 +742,9 @@ bool compute(Database& _db, ResultType& _rs, unsigned _src, unsigned _dest, vect
 	ResultType* curRS = new ResultType[2];
 	vector<PreUnit> tpu = _pres, tpu2;
 	tpu.push_back(tpu[0]); tpu[1].op = ' ';
-	compute(_db, curRS[0], _src, _dest, tpu2);
-	compute(_db, curRS[1], _src, _dest, tpu);
+	//DEBUG: we set the maxium depth to 20 here to avoid circles
+	compute(_db, curRS[0], _src, _dest, tpu2, _depth-1);
+	compute(_db, curRS[1], _src, _dest, tpu, _depth-1);
 	merge(_rs, curRS, 2);
 	delete[] curRS;
 
@@ -931,6 +956,7 @@ main(int argc, char* argv[])
 		printf("query is:\n");
 		printf("%s\n\n", query.c_str());
 
+	//freopen("ans.txt", "w", stdout); 
 		//property path handling: the query format is s regex_path t
 		//NOTICE: we only find one path if reachable, or empty if not reachable
 		unsigned src = INVALID, dest = INVALID;
@@ -957,6 +983,7 @@ main(int argc, char* argv[])
 		cout<<"the source is: "<<src_str<<endl;
 		cout<<"the destination is: "<<dest_str<<endl;
 		output(rs, fp);
+	//fclose(stdout);
 
 		//string msg;
 		free(q);
