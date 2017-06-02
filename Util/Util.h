@@ -274,6 +274,7 @@ public:
 	static bool isLiteral(const std::string& _str);
 
 	static unsigned removeDuplicate(unsigned*, unsigned);
+	static unsigned removeDuplicate(std::vector<unsigned>&);
 
 	static std::string getQueryFromFile(const char* _file_path); 
 	static std::string getSystemOutput(std::string cmd);

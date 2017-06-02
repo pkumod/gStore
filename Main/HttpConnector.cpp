@@ -22,6 +22,9 @@ using namespace std;
 //Added for the json-example:
 using namespace boost::property_tree;
 
+//BETTER+TODO: add post method
+//Though get() has no restriction on the length of URL, the browser and server(like apache, nginx or IIS) does(usually 8000)
+
 typedef SimpleWeb::Server<SimpleWeb::HTTP> HttpServer;
 typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 

@@ -43,8 +43,8 @@ CC = ccache g++ -std=c++11
 #NOTICE: -O2 is recommended, while -O3 is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -O2
-EXEFLAG = -O2
+CFLAGS = -c -Wall -g
+EXEFLAG = -g
 #-coverage
 #CFLAGS = -c -Wall -O2 -pthread
 #EXEFLAG = -O2 -pthread

@@ -505,6 +505,28 @@ Util::removeDuplicate(unsigned* _list, unsigned _len)
 	return valid;
 }
 
+unsigned 
+Util::removeDuplicate(vector<unsigned>& _list)
+{
+	int size = _list.size();
+	if (size == 0) {
+		return 0;
+	}
+	vector<unsigned> valid;
+	unsigned limit = size - 1;
+	for(unsigned i = 0; i < limit; ++i)
+	{
+		if(_list[i] != _list[i+1])
+		{
+			valid.push_back(_list[i]);
+		}
+	}
+	valid.push_back(_list[limit]);
+
+	_list = valid;
+	return _list.size();
+}
+
 int
 Util::cmp_int(const void* _i1, const void* _i2)
 {
