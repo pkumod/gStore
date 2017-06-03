@@ -105,7 +105,7 @@ typedef ResultType::iterator ResultIterator;
 #define ONE_EDGE INVALID
 #define NO_EDGE INVALID-1
 #define DEPTH 20
-#define LIMIT_DEPTH 1
+//#define LIMIT_DEPTH 1
 
 KVstore* kvstore;
 
