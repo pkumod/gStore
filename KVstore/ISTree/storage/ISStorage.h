@@ -11,7 +11,8 @@
 
 #include "../node/ISIntlNode.h"
 #include "../node/ISLeafNode.h"
-#include "../heap/ISHeap.h"
+// #include "../heap/ISHeap.h"
+#include "../LRU/ISLRU.h"
 
 //It controls read, write, swap
 class ISStorage
@@ -31,13 +32,16 @@ public:
 	//enum ReadType { OVER = 0, EXPAND, NORMAL };
 private:
 	unsigned long long max_buffer_size;
-	unsigned heap_size;
+	unsigned lru_size;
 	unsigned cur_block_num;
 	std::string filepath;
 	unsigned* treeheight;
 	BlockInfo* freelist;
 	FILE* treefp;						//file: tree nodes
-	ISHeap* minheap;					//heap of Nodes's pointer, sorted in NF_RK
+	// ISHeap* minheap;					//heap of Nodes's pointer, sorted in NF_RK
+	ISLRU* lru;
+	pthread_rwlock_t rwlock;
+	
 	//NOTICE: freemem's type is long long here, due to large memory in server.
 	//However, needmem in handler() and request() is ok to be int/unsigned.
 	//Because the bstr' size is controlled, so is the node.
@@ -63,10 +67,17 @@ public:
 	bool readBstr(Bstr* _bp, unsigned* _next);
 	bool writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock);
 	bool writeTree(ISNode* _np);
-	void updateHeap(ISNode* _np, unsigned _rank, bool _inheap) const;
+	
+	bool updateLRU(ISNode* _np);
+	
 	bool request(long long _needmem);			//deal with memory request
 	bool handler(unsigned long long _needmem);	//swap some nodes out
 	//bool update();				//update InMem Node's rank, with clock
+	
+	void rlock();
+	void wlock();
+	void unlock();
+	
 	~ISStorage();
 	void print(std::string s);				//DEBUG
 };

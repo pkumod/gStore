@@ -42,6 +42,7 @@ protected:
 public:
 	SINode();
 	SINode(bool isVirtual);
+	
 	bool isLeaf() const;
 	bool isDirty() const;
 	void setDirty();

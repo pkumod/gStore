@@ -43,8 +43,8 @@ CC = ccache g++ -std=c++11
 #NOTICE: -O2 is recommended, while -O3 is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -O2
-EXEFLAG = -O2
+CFLAGS = -c -Wall -O2 -g
+EXEFLAG = -O2 -g
 #-coverage
 #CFLAGS = -c -Wall -O2 -pthread
 #EXEFLAG = -O2 -pthread
@@ -69,9 +69,9 @@ api_java = api/java/lib/GstoreJavaAPI.jar
 # objects
 
 #sstreeobj = $(objdir)Tree.o $(objdir)Storage.o $(objdir)Node.o $(objdir)IntlNode.o $(objdir)LeafNode.o $(objdir)Heap.o 
-sitreeobj = $(objdir)SITree.o $(objdir)SIStorage.o $(objdir)SINode.o $(objdir)SIIntlNode.o $(objdir)SILeafNode.o $(objdir)SIHeap.o 
-istreeobj = $(objdir)ISTree.o $(objdir)ISStorage.o $(objdir)ISNode.o $(objdir)ISIntlNode.o $(objdir)ISLeafNode.o $(objdir)ISHeap.o 
-ivtreeobj = $(objdir)IVTree.o $(objdir)IVStorage.o $(objdir)IVNode.o $(objdir)IVIntlNode.o $(objdir)IVLeafNode.o $(objdir)IVHeap.o 
+sitreeobj = $(objdir)SITree.o $(objdir)SIStorage.o $(objdir)SINode.o $(objdir)SIIntlNode.o $(objdir)SILeafNode.o $(objdir)SIHeap.o $(objdir)SILRU.o
+istreeobj = $(objdir)ISTree.o $(objdir)ISStorage.o $(objdir)ISNode.o $(objdir)ISIntlNode.o $(objdir)ISLeafNode.o $(objdir)ISHeap.o $(objdir)ISLRU.o
+ivtreeobj = $(objdir)IVTree.o $(objdir)IVStorage.o $(objdir)IVNode.o $(objdir)IVIntlNode.o $(objdir)IVLeafNode.o $(objdir)IVHeap.o $(objdir)IVLRU.o
 
 kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) #$(sstreeobj)
 
@@ -115,6 +115,10 @@ all: $(TARGET)
 
 test_index: test_index.cpp
 	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library)
+
+mytest_kvstore: $(lib_antlr) $(kvstoreobj) $(utilobj)
+	$(CC) $(EXEFLAG) -o KVstore/test_kvstore KVstore/test_kvstore.cpp $(kvstoreobj) $(utilobj) $(library) -fpermissive
+
 
 #BETTER: use for loop to reduce the lines
 #NOTICE: g++ -MM will run error if linking failed, like Database.h/../SparlParser.h/../antlr3.h
