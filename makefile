@@ -200,6 +200,9 @@ $(objdir)SILeafNode.o: KVstore/SITree/node/SILeafNode.cpp KVstore/SITree/node/SI
 
 $(objdir)SIHeap.o: KVstore/SITree/heap/SIHeap.cpp KVstore/SITree/heap/SIHeap.h $(objdir)Util.o
 	$(CC) $(CFLAGS) KVstore/SITree/heap/SIHeap.cpp -o $(objdir)SIHeap.o
+	
+$(objdir)SILRU.o: KVstore/SITree/LRU/SILRU.cpp KVstore/SITree/LRU/SILRU.h $(objdir)Util.o
+	$(CC) $(CFLAGS) KVstore/SITree/LRU/SILRU.cpp -o $(objdir)SILRU.o
 #objects in sitree/ end
 
 #objects in istree/ begin
@@ -220,6 +223,9 @@ $(objdir)ISLeafNode.o: KVstore/ISTree/node/ISLeafNode.cpp KVstore/ISTree/node/IS
 
 $(objdir)ISHeap.o: KVstore/ISTree/heap/ISHeap.cpp KVstore/ISTree/heap/ISHeap.h $(objdir)Util.o
 	$(CC) $(CFLAGS) KVstore/ISTree/heap/ISHeap.cpp -o $(objdir)ISHeap.o
+	
+$(objdir)ISLRU.o: KVstore/ISTree/LRU/ISLRU.cpp KVstore/ISTree/LRU/ISLRU.h $(objdir)Util.o
+	$(CC) $(CFLAGS) KVstore/ISTree/LRU/ISLRU.cpp -o $(objdir)ISLRU.o
 #objects in istree/ end
 
 $(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h KVstore/Tree.h 
