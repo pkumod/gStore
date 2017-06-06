@@ -10,7 +10,7 @@
 
 using namespace std;
 
-void StringIndexFile::setNum(int _num)
+void StringIndexFile::setNum(unsigned _num)
 {
 	this->num = _num;
 }
@@ -33,7 +33,7 @@ void StringIndexFile::save(KVstore &kv_store)
 	fwrite(&this->num, sizeof(int), 1, this->index_file);
 
 	long offset = 0;
-	for (int i = 0; i < this->num; i++)
+	for (unsigned i = 0; i < this->num; i++)
 	{
 		string str;
 		if (this->type == Entity)
@@ -43,7 +43,7 @@ void StringIndexFile::save(KVstore &kv_store)
 		if (this->type == Predicate)
 			str = kv_store.getPredicateByID(i);
 
-		int length = str.length();
+		unsigned length = str.length();
 		fwrite(&offset, sizeof(long), 1, this->index_file);
 		fwrite(&length, sizeof(int), 1, this->index_file);
 		offset += length;
@@ -74,7 +74,7 @@ void StringIndexFile::load()
 	fread(&this->num, sizeof(int), 1, this->index_file);
 
 	this->index_table.resize(this->num);
-	for (int i = 0; i < this->num; i++)
+	for (unsigned i = 0; i < this->num; i++)
 	{
 		fread(&this->index_table[i].offset, sizeof(long), 1, this->index_file);
 		fread(&this->index_table[i].length, sizeof(int), 1, this->index_file);
@@ -82,13 +82,15 @@ void StringIndexFile::load()
 	}
 }
 
-bool StringIndexFile::randomAccess(int id, string *str)
+bool StringIndexFile::randomAccess(unsigned id, string *str)
 {
-	if (id < 0 || id >= this->num)
+	//DEBUG: int or unsigned here???
+	//if (id < 0 || id >= this->num)
+	if (id >= this->num)
 		return false;
 
 	long offset = this->index_table[id].offset;
-	int length = this->index_table[id].length;
+	unsigned length = this->index_table[id].length;
 
 	allocBuffer(length);
 
@@ -97,11 +99,16 @@ bool StringIndexFile::randomAccess(int id, string *str)
 	this->buffer[length] = '\0';
 
 	*str = string(this->buffer);
+	//cout<<"check: read from string index - "<<id<<" "<<*str<<endl;
+	if(*str == "")
+	{
+		cout<<"ERROR in StringIndex - "<<id<<endl;
+	}
 
 	return true;
 }
 
-void StringIndexFile::addRequest(int id, std::string *str)
+void StringIndexFile::addRequest(unsigned id, std::string *str)
 {
 	this->request.push_back(AccessRequest(id, this->index_table[id].offset, this->index_table[id].length, str));
 }
@@ -109,7 +116,7 @@ void StringIndexFile::addRequest(int id, std::string *str)
 void StringIndexFile::trySequenceAccess()
 {
 	long max_end = 0;
-	for (int i = 0; i < (int)this->request.size(); i++)
+	for (unsigned i = 0; i < this->request.size(); i++)
 		max_end = max(max_end, this->request[i].offset + long(this->request[i].length));
 
 	if (this->type == Entity)
@@ -124,7 +131,7 @@ void StringIndexFile::trySequenceAccess()
 
 		sort(this->request.begin(), this->request.end());
 
-		int pos = 0;
+		unsigned pos = 0;
 		fseek(this->value_file, 0, SEEK_SET);
 		char *block = new char[MAX_BLOCK_SIZE];
 		long current_block_begin = 0;
@@ -145,6 +152,10 @@ void StringIndexFile::trySequenceAccess()
 					memcpy(this->buffer, &block[offset - current_block_begin], length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str = string(this->buffer);
+					if(string(this->buffer) == "")
+					{
+						cout<<"Error in  StringIndex"<<endl;
+					}
 					pos++;
 				}
 				else if (current_block_begin <= offset)
@@ -154,6 +165,10 @@ void StringIndexFile::trySequenceAccess()
 					memcpy(this->buffer, &block[offset - current_block_begin], length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str = string(this->buffer);
+					if(string(this->buffer) == "")
+					{
+						cout<<"Error in  StringIndex"<<endl;
+					}
 					break;
 				}
 				else if (offset + length <= current_block_end)
@@ -167,6 +182,10 @@ void StringIndexFile::trySequenceAccess()
 					while (pos < (int)this->request.size() && this->request[pos - 1].offset == this->request[pos].offset)
 					{
 						*this->request[pos].str = *this->request[pos - 1].str;
+					if(*this->request[pos].str == "")
+					{
+						cout<<"Error in  StringIndex"<<endl;
+					}
 						pos++;
 					}
 				}
@@ -177,6 +196,10 @@ void StringIndexFile::trySequenceAccess()
 					memcpy(this->buffer, block, length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str += string(this->buffer);
+					if(*this->request[pos].str == "")
+					{
+						cout<<"Error in  StringIndex"<<endl;
+					}
 					break;
 				}
 			}
@@ -189,16 +212,23 @@ void StringIndexFile::trySequenceAccess()
 	{
 		cout << "random access." << endl;
 
-		for (int i = 0; i < (int)this->request.size(); i++)
+		for (unsigned i = 0; i < (int)this->request.size(); i++)
 			this->randomAccess(this->request[i].id, this->request[i].str);
 	}
 	this->request.clear();
 }
 
 
-void StringIndexFile::change(int id, KVstore &kv_store)
+void StringIndexFile::change(unsigned id, KVstore &kv_store)
 {
-	if (id < 0)	return;
+	if(this->type == Predicate)
+	{
+		if (id < 0)	return;
+	}
+	else
+	{
+		if (id == INVALID)	return;
+	}
 
 	if (this->num <= id)
 	{
@@ -237,9 +267,16 @@ void StringIndexFile::change(int id, KVstore &kv_store)
 	fwrite(str.c_str(), sizeof(char), this->index_table[id].length, this->value_file);
 }
 
-void StringIndexFile::disable(int id)
+void StringIndexFile::disable(unsigned id)
 {
-	if (id < 0 || id >= this->num)	return ;
+	if(this->type == Predicate)
+	{
+		if (id < 0 || id >= this->num)	return ;
+	}
+	else
+	{
+		if (id == INVALID)	return;
+	}
 
 	this->index_table[id] = IndexInfo();
 
@@ -249,7 +286,7 @@ void StringIndexFile::disable(int id)
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
-void StringIndex::setNum(StringIndexFile::StringIndexFileType _type, int _num)
+void StringIndex::setNum(StringIndexFile::StringIndexFileType _type, unsigned _num)
 {
 	if (_type == StringIndexFile::Entity)
 		this->entity.setNum(_num);
@@ -274,7 +311,7 @@ void StringIndex::load()
 }
 
 bool 
-StringIndex::searchBuffer(int _id, string* _str)
+StringIndex::searchBuffer(unsigned _id, string* _str)
 {
 	if(_id < Util::LITERAL_FIRST_ID) //entity
 	{
@@ -297,7 +334,7 @@ StringIndex::searchBuffer(int _id, string* _str)
 	}
 }
 
-bool StringIndex::randomAccess(int id, string *str, bool is_entity_or_literal)
+bool StringIndex::randomAccess(unsigned id, string *str, bool is_entity_or_literal)
 {
 	if(id < 0) return false;
 
@@ -307,11 +344,18 @@ bool StringIndex::randomAccess(int id, string *str, bool is_entity_or_literal)
 		{
 			return true;
 		}
+		else
+		{
+			//cout<<"check: not found in string buffer - "<<id<<endl;
+		}
 
 		if (id < Util::LITERAL_FIRST_ID)
 			return this->entity.randomAccess(id, str);
 		else
+		{
+			//cout<<"check: to search literal "<<id-Util::LITERAL_FIRST_ID<<endl;
 			return this->literal.randomAccess(id - Util::LITERAL_FIRST_ID, str);
+		}
 	}
 	else
 	{
@@ -319,7 +363,7 @@ bool StringIndex::randomAccess(int id, string *str, bool is_entity_or_literal)
 	}
 }
 
-void StringIndex::addRequest(int id, std::string *str, bool is_entity_or_literal)
+void StringIndex::addRequest(unsigned id, std::string *str, bool is_entity_or_literal)
 {
 	if (is_entity_or_literal)
 	{
@@ -349,7 +393,7 @@ void StringIndex::change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_
 {
 	if (is_entity_or_literal)
 	{
-		for (int i = 0; i < (int)ids.size(); i++)
+		for (unsigned i = 0; i < ids.size(); i++)
 		{
 			if (ids[i] < Util::LITERAL_FIRST_ID)
 				this->entity.change(ids[i], kv_store);
@@ -359,7 +403,7 @@ void StringIndex::change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_
 	}
 	else
 	{
-		for (int i = 0; i < (int)ids.size(); i++)
+		for (unsigned i = 0; i < ids.size(); i++)
 			this->predicate.change(ids[i], kv_store);
 	}
 }
@@ -368,7 +412,7 @@ void StringIndex::disable(std::vector<unsigned> &ids, bool is_entity_or_literal)
 {
 	if (is_entity_or_literal)
 	{
-		for (int i = 0; i < (int)ids.size(); i++)
+		for (unsigned i = 0; i < ids.size(); i++)
 		{
 			if (ids[i] < Util::LITERAL_FIRST_ID)
 				this->entity.disable(ids[i]);
@@ -378,7 +422,7 @@ void StringIndex::disable(std::vector<unsigned> &ids, bool is_entity_or_literal)
 	}
 	else
 	{
-		for (int i = 0; i < (int)ids.size(); i++)
+		for (unsigned i = 0; i < ids.size(); i++)
 			this->predicate.disable(ids[i]);
 	}
 }

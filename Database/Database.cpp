@@ -572,14 +572,30 @@ Database::load()
 	}
 
 	//TODO: acquire this arg from memory manager
+	//BETTER: get return value from subthread(using ref or file as hub)
 	unsigned vstree_cache = LRUCache::DEFAULT_CAPACITY;
-	bool flag = (this->vstree)->loadTree(vstree_cache);
-	if (!flag)
-	{
-		cout << "load tree error. @Database::load()" << endl;
-		return false;
-	}
+	thread vstree_thread(&Database::load_vstree, this, vstree_cache);
+	bool flag;
+	//flag = (this->vstree)->loadTree(vstree_cache);
+	//if (!flag)
+	//{
+		//cout << "load tree error. @Database::load()" << endl;
+		//return false;
+	//}
 
+	//(this->kvstore)->open();
+	int kv_mode = KVstore::READ_WRITE_MODE;
+	thread entity2id_thread(&Database::load_entity2id, this, kv_mode);
+	thread id2entity_thread(&Database::load_id2entity, this, kv_mode);
+	thread literal2id_thread(&Database::load_literal2id, this, kv_mode);
+	thread id2literal_thread(&Database::load_id2literal, this, kv_mode);
+	thread predicate2id_thread(&Database::load_predicate2id, this, kv_mode);
+	thread id2predicate_thread(&Database::load_id2predicate, this, kv_mode);
+	thread sub2values_thread(&Database::load_sub2values, this, kv_mode);
+	thread obj2values_thread(&Database::load_obj2values, this, kv_mode);
+	thread pre2values_thread(&Database::load_pre2values, this, kv_mode);
+
+	//this is very fast
 	flag = this->loadDBInfoFile();
 	if (!flag)
 	{
@@ -587,17 +603,29 @@ Database::load()
 		return false;
 	}
 
-	(this->kvstore)->open();
-
+	//NOTICE: we should also run some heavy work in the main thread
 	this->stringindex->load();
 
 	this->readIDinfo();
 
+	pre2values_thread.join();
 	this->setPreMap();
+
+	id2entity_thread.join();
+	id2literal_thread.join();
 	//generate the string buffer for entity and literal, no need for predicate
 	//NOTICE:the total string size should not exceed 10G, assume that most strings length < 500
 	//too many empty between entity and literal, so divide them
 	this->setStringBuffer();
+
+	id2predicate_thread.join();
+	entity2id_thread.join();
+	literal2id_thread.join();
+	predicate2id_thread.join();
+	sub2values_thread.join();
+	obj2values_thread.join();
+	//wait for vstree thread
+	vstree_thread.join();
 
 	//warm up always as finishing build(), to utilize the system buffer
 	//this->warmUp();
@@ -606,7 +634,108 @@ Database::load()
 	this->if_loaded = true;
 	cout << "finish load" << endl;
 
+	//TODO: for only-read application(like endpoint), 3 id2values trees can be closed now
+	//and we should load all trees on only READ mode
+
+	//HELP: just for checking infos(like kvstore)
+	check();
+
 	return true;
+}
+void 
+Database::load_entity2id(int _mode)
+{
+	this->kvstore->open_entity2id(_mode);
+}
+
+void 
+Database::load_id2entity(int _mode)
+{
+	this->kvstore->open_id2entity(_mode);
+}
+
+void 
+Database::load_literal2id(int _mode)
+{
+	this->kvstore->open_literal2id(_mode);
+}
+
+void 
+Database::load_id2literal(int _mode)
+{
+	this->kvstore->open_id2literal(_mode);
+}
+
+void 
+Database::load_predicate2id(int _mode)
+{
+	this->kvstore->open_predicate2id(_mode);
+}
+
+void 
+Database::load_id2predicate(int _mode)
+{
+	this->kvstore->open_id2predicate(_mode);
+}
+
+void 
+Database::load_sub2values(int _mode)
+{
+	this->kvstore->open_subID2values(_mode);
+}
+
+void 
+Database::load_obj2values(int _mode)
+{
+	this->kvstore->open_objID2values(_mode);
+}
+
+void 
+Database::load_pre2values(int _mode)
+{
+	this->kvstore->open_preID2values(_mode);
+}
+
+void 
+Database::load_vstree(unsigned _vstree_size)
+{
+	(this->vstree)->loadTree(_vstree_size);
+	cout<<"vstree loaded"<<endl;
+}
+
+void 
+Database::check()
+{
+ //unsigned pid = this->kvstore->getIDByPredicate("<http://www.w3.org/2000/01/rdf-schema#label>");
+ //cout<<"check: pre "<<pid<<endl;
+ //unsigned sid = this->kvstore->getIDByEntity("<http://rdf.freebase.com/ns/american_football.football_player>");
+ //unsigned oid = this->kvstore->getIDByLiteral("\"Игроки в американский футбол\"@ru");
+ //unsigned* list = NULL; unsigned len = 0;
+ //this->kvstore->getobjIDlistBysubIDpreID(sid, pid, list, len);
+ //FILE* fp = fopen("kv.txt", "w");
+//for(unsigned i = 0; i < len; ++i)
+//{
+	//fprintf(fp, "%u\n", list[i]);
+	//string ts;
+	//if(Util::is_literal_ele(list[i]))
+	//ts = this->kvstore->getLiteralByID(list[i]);
+	//else
+	//ts = this->kvstore->getEntityByID(list[i]);
+	//if(ts == "")
+	//{
+			//fprintf(fp, "Error in id2string\n");
+	//}
+	//else
+	//{
+			//fprintf(fp, "%s\n", ts.c_str());
+	//}
+//}
+//string tstr;
+//this->stringindex->randomAccess(2164939819, &tstr, true);
+//cout<<"check: 2164939819 "<<tstr<<endl;
+//this->stringindex->randomAccess(2164939818, &tstr, true);
+//cout<<"check: 2164939818 "<<tstr<<endl;
+  //fclose(fp);
 }
 
 //NOTICE: we ensure that if the unload() exists normally, then all updates have already been written to disk

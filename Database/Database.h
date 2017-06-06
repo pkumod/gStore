@@ -131,6 +131,19 @@ private:
 	//BETTER:add a predicate buffer for ?p query
 	//However, I think this is not necessary because ?p is rare and the p2xx tree is small enough
 
+	void check();
+	//used for multiple threads
+	void load_vstree(unsigned _vstree_size);
+	void load_entity2id(int _mode);
+	void load_id2entity(int _mode);
+	void load_literal2id(int _mode);
+	void load_id2literal(int _mode);
+	void load_predicate2id(int _mode);
+	void load_id2predicate(int _mode);
+	void load_sub2values(int _mode);
+	void load_obj2values(int _mode);
+	void load_pre2values(int _mode);
+
 	//triple num per group for insert/delete
 	//can not be too high, otherwise the heap will over
 	static const int GROUP_SIZE = 1000;

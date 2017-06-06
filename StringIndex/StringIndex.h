@@ -22,30 +22,30 @@ class StringIndexFile
 	private:
 		StringIndexFileType type;
 		std::string loc;
-		int num;
+		unsigned num;
 		long empty_offset;
 		FILE *index_file, *value_file;
 
 		class IndexInfo
 		{
 			public:
-				IndexInfo(long _offset = 0, int _length = 0):offset(_offset), length(_length){}
+				IndexInfo(long _offset = 0, unsigned _length = 0):offset(_offset), length(_length){}
 				long offset;
-				int length;
+				unsigned length;
 		};
 		std::vector<IndexInfo> index_table;
 
-		int buffer_size;
+		unsigned buffer_size;
 		char *buffer;
 
 		class AccessRequest
 		{
 			public:
-				int id;
+				unsigned id;
 				long offset;
-				int length;
+				unsigned length;
 				std::string *str;
-				AccessRequest(int _id, long _offset, int _length, std::string *_str):
+				AccessRequest(unsigned _id, long _offset, unsigned _length, std::string *_str):
 					id(_id), offset(_offset), length(_length), str(_str){};
 				inline bool operator < (const AccessRequest &x) const
 				{
@@ -55,7 +55,7 @@ class StringIndexFile
 		std::vector<AccessRequest> request;
 
 	public:
-		StringIndexFile(StringIndexFileType _type, std::string _dir, int _num):type(_type), num(_num), empty_offset(0), index_file(NULL), value_file(NULL),  buffer_size(0), buffer(NULL)
+		StringIndexFile(StringIndexFileType _type, std::string _dir, unsigned _num):type(_type), num(_num), empty_offset(0), index_file(NULL), value_file(NULL),  buffer_size(0), buffer(NULL)
 		{
 			if (this->type == Entity)
 				this->loc = _dir + "/entity_";
@@ -73,12 +73,12 @@ class StringIndexFile
 			if (this->buffer != NULL)
 				delete[] this->buffer;
 		}
-		void setNum(int _num);
+		void setNum(unsigned _num);
 
 		void save(KVstore &kv_store);
 		void load();
 
-		inline void allocBuffer(int length)
+		inline void allocBuffer(unsigned length)
 		{
 			if (this->buffer_size <= length)
 			{
@@ -88,12 +88,12 @@ class StringIndexFile
 			}
 		}
 
-		bool randomAccess(int id, std::string *str);
-		void addRequest(int id, std::string *str);
+		bool randomAccess(unsigned id, std::string *str);
+		void addRequest(unsigned id, std::string *str);
 		void trySequenceAccess();
 
-		void change(int id, KVstore &kv_store);
-		void disable(int id);
+		void change(unsigned id, KVstore &kv_store);
+		void disable(unsigned id);
 };
 
 class StringIndex
@@ -105,7 +105,7 @@ class StringIndex
 		Buffer* literal_buffer;
 		unsigned literal_buffer_size;
 	public:
-		StringIndex(std::string _dir, int _entity_num = 0, int _literal_num = 0, int _predicate_num = 0) :
+		StringIndex(std::string _dir, unsigned _entity_num = 0, unsigned _literal_num = 0, unsigned _predicate_num = 0) :
 			entity(StringIndexFile::Entity, _dir, _entity_num), literal(StringIndexFile::Literal, _dir, _literal_num), predicate(StringIndexFile::Predicate, _dir, _predicate_num){}
 
 		void setBuffer(Buffer* _ebuf, Buffer* _lbuf)
@@ -115,15 +115,15 @@ class StringIndex
 			this->literal_buffer = _lbuf;
 			this->literal_buffer_size = _lbuf->size;
 		}
-		bool searchBuffer(int _id, std::string* _str);
+		bool searchBuffer(unsigned _id, std::string* _str);
 
-		void setNum(StringIndexFile::StringIndexFileType _type, int _num);
+		void setNum(StringIndexFile::StringIndexFileType _type, unsigned _num);
 
 		void save(KVstore &kv_store);
 		void load();
 
-		bool randomAccess(int id, std::string *str, bool is_entity_or_literal = true);
-		void addRequest(int id, std::string *str, bool is_entity_or_literal = true);
+		bool randomAccess(unsigned id, std::string *str, bool is_entity_or_literal = true);
+		void addRequest(unsigned id, std::string *str, bool is_entity_or_literal = true);
 		void trySequenceAccess();
 
 		void change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_entity_or_literal = true);

@@ -1,5 +1,5 @@
 #CC=g++
-CC=ccache g++
+CC=ccache g++ -std=c++11
 
 lib_dir=../lib/
 socket_obj_dir=../../../.objs/

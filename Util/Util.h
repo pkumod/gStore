@@ -56,6 +56,7 @@ in the sparql query can point to the same node in data graph)
 #include <set>
 #include <stack>
 #include <queue>
+#include <deque>
 #include <vector>
 #include <list>
 #include <iterator>
@@ -64,6 +65,13 @@ in the sparql query can point to the same node in data graph)
 #include <utility>
 
 //NOTICE:below are libraries need to link
+#include <thread>    //only for c++11 or greater versions
+#include <atomic> 
+#include <mutex> 
+#include <condition_variable> 
+#include <future> 
+#include <memory> 
+#include <stdexcept> 
 #include <pthread.h> 
 #include <math.h>
 #include <readline/readline.h>
@@ -210,7 +218,8 @@ public:
 	//In order to differentiate the sub-part and literal-part of object
 	//let subid begin with 0, while literalid begins with LITERAL_FIRST_ID 
 	//used in Database and Join
-	static const int LITERAL_FIRST_ID = 2 * 1000*1000*1000;
+	static const unsigned LITERAL_FIRST_ID = 2 * 1000*1000*1000;
+	//static const int LITERAL_FIRST_ID = 2 * 1000*1000*1000;
 
 	//initial transfer buffer size in Tree/ and Stream/
 	static const unsigned TRANSFER_SIZE = 1 << 20;	//1M
