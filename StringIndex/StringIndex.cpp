@@ -100,10 +100,10 @@ bool StringIndexFile::randomAccess(unsigned id, string *str)
 
 	*str = string(this->buffer);
 	//cout<<"check: read from string index - "<<id<<" "<<*str<<endl;
-	if(*str == "")
-	{
-		cout<<"ERROR in StringIndex - "<<id<<endl;
-	}
+	//if(*str == "")
+	//{
+		//cout<<"ERROR in StringIndex - "<<id<<endl;
+	//}
 
 	return true;
 }
@@ -152,10 +152,10 @@ void StringIndexFile::trySequenceAccess()
 					memcpy(this->buffer, &block[offset - current_block_begin], length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str = string(this->buffer);
-					if(string(this->buffer) == "")
-					{
-						cout<<"Error in  StringIndex"<<endl;
-					}
+					//if(string(this->buffer) == "")
+					//{
+						//cout<<"Error in  StringIndex"<<endl;
+					//}
 					pos++;
 				}
 				else if (current_block_begin <= offset)
@@ -165,10 +165,10 @@ void StringIndexFile::trySequenceAccess()
 					memcpy(this->buffer, &block[offset - current_block_begin], length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str = string(this->buffer);
-					if(string(this->buffer) == "")
-					{
-						cout<<"Error in  StringIndex"<<endl;
-					}
+					//if(string(this->buffer) == "")
+					//{
+						//cout<<"Error in  StringIndex"<<endl;
+					//}
 					break;
 				}
 				else if (offset + length <= current_block_end)
@@ -182,10 +182,10 @@ void StringIndexFile::trySequenceAccess()
 					while (pos < (int)this->request.size() && this->request[pos - 1].offset == this->request[pos].offset)
 					{
 						*this->request[pos].str = *this->request[pos - 1].str;
-					if(*this->request[pos].str == "")
-					{
-						cout<<"Error in  StringIndex"<<endl;
-					}
+					//if(*this->request[pos].str == "")
+					//{
+						//cout<<"Error in  StringIndex"<<endl;
+					//}
 						pos++;
 					}
 				}
@@ -196,10 +196,10 @@ void StringIndexFile::trySequenceAccess()
 					memcpy(this->buffer, block, length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str += string(this->buffer);
-					if(*this->request[pos].str == "")
-					{
-						cout<<"Error in  StringIndex"<<endl;
-					}
+					//if(*this->request[pos].str == "")
+					//{
+						//cout<<"Error in  StringIndex"<<endl;
+					//}
 					break;
 				}
 			}

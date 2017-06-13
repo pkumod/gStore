@@ -37,6 +37,9 @@ public:
 	void release();
 	void open();
 
+	std::string getStringByID(TYPE_ENTITY_LITERAL_ID _id);
+	TYPE_ENTITY_LITERAL_ID getIDByString(std::string _str);
+
 	//===============================================================================
 
 	//including IN-neighbor & OUT-neighbor 

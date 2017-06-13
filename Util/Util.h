@@ -77,8 +77,10 @@ in the sparql query can point to the same node in data graph)
 #include <readline/readline.h>
 #include <readline/history.h>
 
+//if used as only-read application(like sparql endpoint)
+#define ONLY_READ 1
 //if use pthread and lock
-//#define THREAD_ON 1			
+#define THREAD_ON 1			
 //if use stream module if result is too large than memory can hold
 #define STREAM_ON 1			
 //when used as C/S, if output query result in the server port: default not(you can see the result in the client)

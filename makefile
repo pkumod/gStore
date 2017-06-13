@@ -368,7 +368,7 @@ $(objdir)VNode.o: VSTree/VNode.cpp VSTree/VNode.h
 #objects in StringIndex/ begin
 $(objdir)StringIndex.o: StringIndex/StringIndex.cpp StringIndex/StringIndex.h $(objdir)KVstore.o $(objdir)Util.o
 
-	$(CC) $(CFLAGS) StringIndex/StringIndex.cpp $(inc) -o $(objdir)StringIndex.o
+	$(CC) $(CFLAGS) StringIndex/StringIndex.cpp $(inc) -o $(objdir)StringIndex.o $(def64IO)
 #objects in StringIndex/ end
 
 

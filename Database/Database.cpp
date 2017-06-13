@@ -501,6 +501,7 @@ Database::setPreMap()
 void
 Database::setStringBuffer()
 {
+	//TODO: assign according to memory manager
 	//BETTER?maybe different size for entity and literal, maybe different offset should be used
 	this->entity_buffer_size = (this->limitID_entity<50000000) ? this->limitID_entity : 50000000;
 	this->literal_buffer_size = (this->limitID_literal<50000000) ? this->limitID_literal : 50000000;
@@ -574,26 +575,32 @@ Database::load()
 	//TODO: acquire this arg from memory manager
 	//BETTER: get return value from subthread(using ref or file as hub)
 	unsigned vstree_cache = LRUCache::DEFAULT_CAPACITY;
-	thread vstree_thread(&Database::load_vstree, this, vstree_cache);
 	bool flag;
-	//flag = (this->vstree)->loadTree(vstree_cache);
-	//if (!flag)
-	//{
-		//cout << "load tree error. @Database::load()" << endl;
-		//return false;
-	//}
+#ifndef THREAD_ON
+	flag = (this->vstree)->loadTree(vstree_cache);
+	if (!flag)
+	{
+		cout << "load tree error. @Database::load()" << endl;
+		return false;
+	}
 
-	//(this->kvstore)->open();
+	(this->kvstore)->open();
+#else
+	thread vstree_thread(&Database::load_vstree, this, vstree_cache);
+
 	int kv_mode = KVstore::READ_WRITE_MODE;
 	thread entity2id_thread(&Database::load_entity2id, this, kv_mode);
 	thread id2entity_thread(&Database::load_id2entity, this, kv_mode);
 	thread literal2id_thread(&Database::load_literal2id, this, kv_mode);
 	thread id2literal_thread(&Database::load_id2literal, this, kv_mode);
 	thread predicate2id_thread(&Database::load_predicate2id, this, kv_mode);
+#ifndef ONLY_READ
 	thread id2predicate_thread(&Database::load_id2predicate, this, kv_mode);
+#endif
 	thread sub2values_thread(&Database::load_sub2values, this, kv_mode);
 	thread obj2values_thread(&Database::load_obj2values, this, kv_mode);
 	thread pre2values_thread(&Database::load_pre2values, this, kv_mode);
+#endif
 
 	//this is very fast
 	flag = this->loadDBInfoFile();
@@ -608,17 +615,29 @@ Database::load()
 
 	this->readIDinfo();
 
+#ifdef THREAD_ON
 	pre2values_thread.join();
+#endif
 	this->setPreMap();
 
+#ifdef THREAD_ON
 	id2entity_thread.join();
 	id2literal_thread.join();
+#endif
 	//generate the string buffer for entity and literal, no need for predicate
-	//NOTICE:the total string size should not exceed 10G, assume that most strings length < 500
+	//NOTICE:the total string size should not exceed 20G, assume that most strings length < 500
 	//too many empty between entity and literal, so divide them
 	this->setStringBuffer();
+	//NOTICE: we should build string buffer from kvstore, not string index
+	//Because when searching in string index, it will first check if in buffer(but the buffer is being built)
 
+#ifndef ONLY_READ
+#ifdef THREAD_ON
 	id2predicate_thread.join();
+#endif
+#endif
+
+#ifdef THREAD_ON
 	entity2id_thread.join();
 	literal2id_thread.join();
 	predicate2id_thread.join();
@@ -626,6 +645,7 @@ Database::load()
 	obj2values_thread.join();
 	//wait for vstree thread
 	vstree_thread.join();
+#endif
 
 	//warm up always as finishing build(), to utilize the system buffer
 	//this->warmUp();
@@ -639,6 +659,11 @@ Database::load()
 
 	//HELP: just for checking infos(like kvstore)
 	check();
+
+#ifdef ONLY_READ
+	this->kvstore->close_id2entity();
+	this->kvstore->close_id2literal();
+#endif
 
 	return true;
 }
@@ -706,36 +731,54 @@ Database::load_vstree(unsigned _vstree_size)
 void 
 Database::check()
 {
- //unsigned pid = this->kvstore->getIDByPredicate("<http://www.w3.org/2000/01/rdf-schema#label>");
- //cout<<"check: pre "<<pid<<endl;
- //unsigned sid = this->kvstore->getIDByEntity("<http://rdf.freebase.com/ns/american_football.football_player>");
- //unsigned oid = this->kvstore->getIDByLiteral("\"Игроки в американский футбол\"@ru");
- //unsigned* list = NULL; unsigned len = 0;
- //this->kvstore->getobjIDlistBysubIDpreID(sid, pid, list, len);
- //FILE* fp = fopen("kv.txt", "w");
-//for(unsigned i = 0; i < len; ++i)
-//{
-	//fprintf(fp, "%u\n", list[i]);
-	//string ts;
-	//if(Util::is_literal_ele(list[i]))
-	//ts = this->kvstore->getLiteralByID(list[i]);
-	//else
-	//ts = this->kvstore->getEntityByID(list[i]);
-	//if(ts == "")
-	//{
-			//fprintf(fp, "Error in id2string\n");
-	//}
-	//else
-	//{
-			//fprintf(fp, "%s\n", ts.c_str());
-	//}
-//}
-//string tstr;
-//this->stringindex->randomAccess(2164939819, &tstr, true);
-//cout<<"check: 2164939819 "<<tstr<<endl;
-//this->stringindex->randomAccess(2164939818, &tstr, true);
-//cout<<"check: 2164939818 "<<tstr<<endl;
-  //fclose(fp);
+string tstr;
+ unsigned pid = this->kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
+ cout<<"check: pre "<<pid<<endl;
+ this->stringindex->randomAccess(pid, &tstr, false);
+ cout<<"string index: "<<tstr<<endl;
+ //cout<<"kvstore: "<<this->kvstore->getPredicateByID(pid)<<endl;
+
+ unsigned sid = this->kvstore->getIDByEntity("<http://www.Department4.University1821.edu/Course50>");
+ cout<<"check: sub "<<sid<<endl;
+ this->stringindex->randomAccess(sid, &tstr, true);
+ cout<<"string index: "<<tstr<<endl;
+ cout<<"kvstore: "<<this->kvstore->getEntityByID(sid)<<endl;
+
+ unsigned oid = this->kvstore->getIDByString("<http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#Course>");
+ cout<<"check: obj "<<oid<<endl;
+ this->stringindex->randomAccess(oid, &tstr, true);
+ cout<<"string index: "<<tstr<<endl;
+ cout<<"kvstore: "<<this->kvstore->getEntityByID(oid)<<endl;
+
+ unsigned* list = NULL; unsigned len = 0;
+ this->kvstore->getsubIDlistByobjIDpreID(oid, pid, list, len);
+ FILE* fp = fopen("kv.txt", "w");
+for(unsigned i = 0; i < len; ++i)
+{
+	fprintf(fp, "%u\n", list[i]);
+	string ts;
+	if(Util::is_literal_ele(list[i]))
+	ts = this->kvstore->getLiteralByID(list[i]);
+	else
+	ts = this->kvstore->getEntityByID(list[i]);
+	if(ts == "")
+	{
+			fprintf(fp, "Error in id2string\n");
+	}
+	else
+	{
+			fprintf(fp, "%s\n", ts.c_str());
+	}
+	this->stringindex->randomAccess(list[i], &tstr, true);
+	fprintf(fp, "string index: %s\n", ts.c_str());
+}
+this->stringindex->randomAccess(86006539, &tstr, true);
+cout<<"check: 86006539 "<<tstr<<endl;
+cout<<this->kvstore->getStringByID(86006539)<<endl;
+this->stringindex->randomAccess(82855205, &tstr, true);
+cout<<this->kvstore->getStringByID(82855205)<<endl;
+cout<<"check: 82855205 "<<tstr<<endl;
+fclose(fp);
 }
 
 //NOTICE: we ensure that if the unload() exists normally, then all updates have already been written to disk
@@ -926,6 +969,12 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 bool
 Database::build(const string& _rdf_file)
 {
+	//NOTICE: it is not necessary to use multiple threads here, because some process may rely on others
+	//In addition, the memory is a bootleneck and it is dangerous to build serveral indices at a time
+	//For example, if we build id2string indices using different threads, they 
+	//all have to scan the dataset and only use a part of the data, which may be costly
+	//Besides, build process is already very fast, able to build freebase in 12h
+
 	//manage the id for a new database
 	this->resetIDinfo();
 
@@ -1327,6 +1376,9 @@ Database::encodeRDF_new(const string _rdf_file)
 	this->stringindex->setNum(StringIndexFile::Literal, this->literal_num);
 	this->stringindex->setNum(StringIndexFile::Predicate, this->pre_num);
 	this->stringindex->save(*this->kvstore);
+	//NOTICE: the string index can be parallized with readIDTuples and others
+	//However, we should read and build otehr indices only after the 6 trees and string index closed
+	//(to save memory)
 
 	long t3 = Util::get_cur_time();
 	cout << "after stringindex, used " << (t3 - t2) << "ms." << endl;
@@ -1348,6 +1400,10 @@ Database::encodeRDF_new(const string _rdf_file)
 	//NOTICE: the file can also be used for debugging, and a program can start just from the id tuples file
 	//(if copy the 6 id2string trees, no need to parse each time)
 	this->readIDTuples(_p_id_tuples);
+
+	//NOTICE: we can also build the signature when we are reading triples, and 
+	//update to the corresponding position in the signature file
+	//However, this may be costly due to frequent read/write
 
 	long t5 = Util::get_cur_time();
 	cout << "id tuples read, used " << (t5 - t4) << "ms." << endl;
@@ -1374,11 +1430,14 @@ Database::encodeRDF_new(const string _rdf_file)
 
 	//WARN:we must free the memory for id_tuples array
 	delete[] _p_id_tuples;
+
 	//for (TYPE_TRIPLE_NUM i = 0; i < this->triples_num; ++i)
 	//{
 		//delete[] _p_id_tuples[i];
 	//}
 	//delete[] _p_id_tuples;
+
+	//NOTICE: we should build vstree after id tuples are freed(to save memory)
 
 	bool flag = this->saveDBInfoFile();
 	if (!flag)
@@ -1719,7 +1778,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	//parse a file
 	RDFParser _parser(_fin);
 
-	Util::logging("==> while(true)");
+	//Util::logging("==> while(true)");
 
 	while (true)
 	{
@@ -1758,6 +1817,10 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 				//_p_id_tuples = _new_id_tuples;
 				//_id_tuples_max = _new_tuples_len;
 			//}
+
+			//TODO: use 3 threads to deal with sub, obj, pre separately
+			//However, the cost of new /delete threads may be high
+			//We need a thread pool!
 
 			// For subject
 			// (all subject is entity, some object is entity, the other is literal)
@@ -1910,7 +1973,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 		}
 	}
 
-	cout<<"==> end while(true)"<<endl;
+	//cout<<"==> end while(true)"<<endl;
 
 	delete[] triple_array;
 	_fin.close();

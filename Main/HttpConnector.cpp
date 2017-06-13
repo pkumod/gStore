@@ -191,12 +191,15 @@ int main() {
         bool ret = current_database->query(sparql, rs, output);
         if(ret)
         {
+			//TODO: if the result is too large? or if the result is placed in Stream?
+			//Should use file donload
             string success = rs.to_str();
             *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
             return 0;
         }
         else
         {
+			//TODO: if error, browser should give some prompt
             string error = "query() returns false.";
             *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
             return 0;
