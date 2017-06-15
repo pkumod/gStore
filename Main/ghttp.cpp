@@ -1,19 +1,13 @@
+/*=============================================================================
+# Filename: ghttp.cpp
+# Author: Bookug Lobert 
+# Mail: zengli-bookug@pku.edu.cn
+# Last Modified: 2017-06-15 15:09
+# Description: created by lvxin, improved by lijing
+=============================================================================*/
+
 #include "../Server/server_http.hpp"
 #include "../Server/client_http.hpp"
-
-//Added for the json-example
-#define BOOST_SPIRIT_THREADSAFE
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-
-//Added for the default_resource example
-#include <fstream>
-#include <boost/filesystem.hpp>
-//#include <boost/regex.hpp>
-#include <vector>
-#include <algorithm>
-#include <memory>
-
 //db
 #include "../Database/Database.h"
 #include "../Util/Util.h"
@@ -30,6 +24,16 @@ void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer
         const shared_ptr<ifstream> &ifs);
 
 Database *current_database = NULL;
+int connection_num = 0;
+
+//TODO+BETTER: port should be optional
+//1. admin.html: build/load/query/unload
+//2. index.html: only query (maybe load/unload if using multiple databases)
+//3. ghttp: can add or not add a db as parameter
+//BETTER: How about change HttpConnector into a console?
+//TODO: we need a route
+//JSON parser: http://www.tuicool.com/articles/yUJb6f     
+//(or use boost spirit to generate parser when compiling)
 
 int main() {
     Util util;
@@ -222,6 +226,40 @@ int main() {
         *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
         return 0;
     };
+
+    server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+        if(current_database == NULL)
+        {
+            string error = "No database used now.";
+            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+            return 0;
+        }
+
+		//BETTER: use JSON format to send/receive messages
+		//C++ can not deal with JSON directly, JSON2string string2JSON
+        string success;
+		string name = current_database->getName();
+		success = success + "database: " + name + "\n";
+		TYPE_TRIPLE_NUM triple_num = current_database->getTripleNum();
+		success = success + "triple num: " + Util::int2string(triple_num) + "\n";
+		TYPE_ENTITY_LITERAL_ID entity_num = current_database->getEntityNum();
+		success = success + "entity num: " + Util::int2string(entity_num) + "\n";
+		TYPE_ENTITY_LITERAL_ID literal_num = current_database->getLiteralNum();
+		success = success + "literal num: " + Util::int2string(literal_num) + "\n";
+		TYPE_ENTITY_LITERAL_ID sub_num = current_database->getSubNum();
+		success = success + "subject num: " + Util::int2string(sub_num) + "\n";
+		TYPE_PREDICATE_ID pre_num = current_database->getPreNum();
+		success = success + "predicate num: " + Util::int2string(pre_num) + "\n";
+		//BETTER: how to compute the connection num in Boost::asio?
+		int conn_num = connection_num / 2;
+		//int conn_num = 3;    //currectly connected sessions
+		success = success + "connection num: " + Util::int2string(conn_num) + "\n";
+		//TODO: add the info of memory and thread, operation num and IO frequency
+
+		//success = "<p>" + success + "</p>";
+        *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+        return 0;
+    };
     
     // server.resource["^/json$"]["POST"]=[](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     //     try {
@@ -245,6 +283,11 @@ int main() {
     //Default file: index.html
     //Can for instance be used to retrieve an HTML 5 client that uses REST-resources on this server
     server.default_resource["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		//BETTER: use lock to ensure thread safe
+		connection_num++;
+		//NOTICE: it seems a visit will output twice times
+		//And different pages in a browser is viewed as two connections here
+		//cout<<"new connection"<<endl;
         try {
             auto web_root_path=boost::filesystem::canonical("./Server/web");
             auto path=boost::filesystem::canonical(web_root_path/request->path);

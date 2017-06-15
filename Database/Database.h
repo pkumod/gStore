@@ -66,6 +66,12 @@ public:
 
 	//name of this DB
 	string getName();
+	//get infos
+	TYPE_TRIPLE_NUM getTripleNum();
+	TYPE_ENTITY_LITERAL_ID getEntityNum();
+	TYPE_ENTITY_LITERAL_ID getLiteralNum();
+	TYPE_ENTITY_LITERAL_ID getSubNum();
+	TYPE_PREDICATE_ID getPreNum();
 
 	//root Path of this DB + sixTuplesFile
 	string getSixTuplesFile();
@@ -86,6 +92,7 @@ private:
 	TYPE_TRIPLE_NUM triples_num;
 	TYPE_ENTITY_LITERAL_ID entity_num;
 	TYPE_ENTITY_LITERAL_ID sub_num;
+	//BETTER: add object num
 	TYPE_PREDICATE_ID pre_num;
 	TYPE_ENTITY_LITERAL_ID literal_num;
 

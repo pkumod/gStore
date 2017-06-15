@@ -1,17 +1,7 @@
 #ifndef SERVER_HTTP_HPP
 #define	SERVER_HTTP_HPP
 
-#include <boost/asio.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/functional/hash.hpp>
-
-#include <map>
-#include <unordered_map>
-#include <thread>
-#include <functional>
-#include <iostream>
-#include <sstream>
-#include <memory>
+#include "../Util/Util.h"
 
 #ifndef CASE_INSENSITIVE_EQUALS_AND_HASH
 #define CASE_INSENSITIVE_EQUALS_AND_HASH

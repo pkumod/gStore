@@ -731,54 +731,54 @@ Database::load_vstree(unsigned _vstree_size)
 void 
 Database::check()
 {
-string tstr;
- unsigned pid = this->kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
- cout<<"check: pre "<<pid<<endl;
- this->stringindex->randomAccess(pid, &tstr, false);
- cout<<"string index: "<<tstr<<endl;
- //cout<<"kvstore: "<<this->kvstore->getPredicateByID(pid)<<endl;
+//string tstr;
+ //unsigned pid = this->kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
+ //cout<<"check: pre "<<pid<<endl;
+ //this->stringindex->randomAccess(pid, &tstr, false);
+ //cout<<"string index: "<<tstr<<endl;
+ ////cout<<"kvstore: "<<this->kvstore->getPredicateByID(pid)<<endl;
 
- unsigned sid = this->kvstore->getIDByEntity("<http://www.Department4.University1821.edu/Course50>");
- cout<<"check: sub "<<sid<<endl;
- this->stringindex->randomAccess(sid, &tstr, true);
- cout<<"string index: "<<tstr<<endl;
- cout<<"kvstore: "<<this->kvstore->getEntityByID(sid)<<endl;
+ //unsigned sid = this->kvstore->getIDByEntity("<http://www.Department4.University1821.edu/Course50>");
+ //cout<<"check: sub "<<sid<<endl;
+ //this->stringindex->randomAccess(sid, &tstr, true);
+ //cout<<"string index: "<<tstr<<endl;
+ //cout<<"kvstore: "<<this->kvstore->getEntityByID(sid)<<endl;
 
- unsigned oid = this->kvstore->getIDByString("<http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#Course>");
- cout<<"check: obj "<<oid<<endl;
- this->stringindex->randomAccess(oid, &tstr, true);
- cout<<"string index: "<<tstr<<endl;
- cout<<"kvstore: "<<this->kvstore->getEntityByID(oid)<<endl;
+ //unsigned oid = this->kvstore->getIDByString("<http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#Course>");
+ //cout<<"check: obj "<<oid<<endl;
+ //this->stringindex->randomAccess(oid, &tstr, true);
+ //cout<<"string index: "<<tstr<<endl;
+ //cout<<"kvstore: "<<this->kvstore->getEntityByID(oid)<<endl;
 
- unsigned* list = NULL; unsigned len = 0;
- this->kvstore->getsubIDlistByobjIDpreID(oid, pid, list, len);
- FILE* fp = fopen("kv.txt", "w");
-for(unsigned i = 0; i < len; ++i)
-{
-	fprintf(fp, "%u\n", list[i]);
-	string ts;
-	if(Util::is_literal_ele(list[i]))
-	ts = this->kvstore->getLiteralByID(list[i]);
-	else
-	ts = this->kvstore->getEntityByID(list[i]);
-	if(ts == "")
-	{
-			fprintf(fp, "Error in id2string\n");
-	}
-	else
-	{
-			fprintf(fp, "%s\n", ts.c_str());
-	}
-	this->stringindex->randomAccess(list[i], &tstr, true);
-	fprintf(fp, "string index: %s\n", ts.c_str());
-}
-this->stringindex->randomAccess(86006539, &tstr, true);
-cout<<"check: 86006539 "<<tstr<<endl;
-cout<<this->kvstore->getStringByID(86006539)<<endl;
-this->stringindex->randomAccess(82855205, &tstr, true);
-cout<<this->kvstore->getStringByID(82855205)<<endl;
-cout<<"check: 82855205 "<<tstr<<endl;
-fclose(fp);
+ //unsigned* list = NULL; unsigned len = 0;
+ //this->kvstore->getsubIDlistByobjIDpreID(oid, pid, list, len);
+ //FILE* fp = fopen("kv.txt", "w");
+//for(unsigned i = 0; i < len; ++i)
+//{
+	//fprintf(fp, "%u\n", list[i]);
+	//string ts;
+	//if(Util::is_literal_ele(list[i]))
+	//ts = this->kvstore->getLiteralByID(list[i]);
+	//else
+	//ts = this->kvstore->getEntityByID(list[i]);
+	//if(ts == "")
+	//{
+			//fprintf(fp, "Error in id2string\n");
+	//}
+	//else
+	//{
+			//fprintf(fp, "%s\n", ts.c_str());
+	//}
+	//this->stringindex->randomAccess(list[i], &tstr, true);
+	//fprintf(fp, "string index: %s\n", ts.c_str());
+//}
+//this->stringindex->randomAccess(86006539, &tstr, true);
+//cout<<"check: 86006539 "<<tstr<<endl;
+//cout<<this->kvstore->getStringByID(86006539)<<endl;
+//this->stringindex->randomAccess(82855205, &tstr, true);
+//cout<<this->kvstore->getStringByID(82855205)<<endl;
+//cout<<"check: 82855205 "<<tstr<<endl;
+//fclose(fp);
 }
 
 //NOTICE: we ensure that if the unload() exists normally, then all updates have already been written to disk
@@ -839,6 +839,36 @@ string
 Database::getName()
 {
 	return this->name;
+}
+
+TYPE_TRIPLE_NUM 
+Database::getTripleNum()
+{
+	return this->triples_num;
+}
+
+TYPE_ENTITY_LITERAL_ID 
+Database::getEntityNum()
+{
+	return this->entity_num;
+}
+
+TYPE_ENTITY_LITERAL_ID 
+Database::getLiteralNum()
+{
+	return this->literal_num;
+}
+
+TYPE_ENTITY_LITERAL_ID 
+Database::getSubNum()
+{
+	return this->sub_num;
+}
+
+TYPE_PREDICATE_ID 
+Database::getPreNum()
+{
+	return this->pre_num;
 }
 
 int
@@ -1831,6 +1861,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 			{
 				//_sub_id = this->entity_num;
 				_sub_id = this->allocEntityID();
+				this->sub_num++;
 				//this->entity_num++;
 				(this->kvstore)->setIDByEntity(_sub, _sub_id);
 				(this->kvstore)->setEntityByID(_sub_id, _sub);
