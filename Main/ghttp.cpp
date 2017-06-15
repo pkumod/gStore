@@ -31,9 +31,20 @@ int connection_num = 0;
 //2. index.html: only query (maybe load/unload if using multiple databases)
 //3. ghttp: can add or not add a db as parameter
 //BETTER: How about change HttpConnector into a console?
+//
 //TODO: we need a route
 //JSON parser: http://www.tuicool.com/articles/yUJb6f     
 //(or use boost spirit to generate parser when compiling)
+//
+//NOTICE: no need to close connection here due to the usage of shared_ptr
+//http://www.tuicool.com/articles/3Ub2y2
+//
+//TODO: the URL format is terrible, i.e. 127.0.0.1:8080/build/lubm/data/LUBM_10.n3
+//we should define some keys like operation, database, dataset, query, path ...
+//127.0.0.1:8080?operation=build&database=lubm&dataset=data/LUBM_10.n3
+//
+//TODO: control the authority, check it if requesting for build/load/unload
+//for sparql endpoint, just load database when starting, and comment out all functions except for query()
 
 int main() {
     Util util;
@@ -50,6 +61,7 @@ int main() {
     //server.resource["^/build/([a-zA-Z]+[0-9]*)/([a-zA-Z]+/*[a-zA-Z]+[0-9]*.n[a-zA-Z]*[0-9]*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     // server.resource["^/build/([a-zA-Z0-9]+)/([a-zA-Z0-9]+)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     server.resource["^/build/([a-zA-Z0-9]*)/(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		cout<<"HTTP: this is build"<<endl;
         string db_name=request->path_match[1];
         string db_path=request->path_match[2];
         if(db_name=="" || db_path=="")
@@ -104,6 +116,7 @@ int main() {
     //GET-example for the path /load/[db_name], responds with the matched string in path
     //For instance a request GET /load/db123 will receive: db123
     server.resource["^/load/(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		cout<<"HTTP: this is load"<<endl;
         string db_name=request->path_match[1];
 	
 	
@@ -154,6 +167,7 @@ int main() {
     //GET-example for the path /query/[query_file_path], responds with the matched string in path
     //For instance a request GET /query/db123 will receive: db123
     server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		cout<<"HTTP: this is query"<<endl;
         string db_query=request->path_match[1];
         string str = db_query;
 
@@ -213,6 +227,7 @@ int main() {
     //GET-example for the path /unload/[db_name], responds with the matched string in path
     //For instance a request GET /unload/db123 will receive: db123
     server.resource["^/unload$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		cout<<"HTTP: this is unload"<<endl;
         if(current_database == NULL)
         {
             string error = "No database used now.";
@@ -228,6 +243,7 @@ int main() {
     };
 
     server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		cout<<"HTTP: this is monitor"<<endl;
         if(current_database == NULL)
         {
             string error = "No database used now.";
@@ -284,6 +300,7 @@ int main() {
     //Can for instance be used to retrieve an HTML 5 client that uses REST-resources on this server
     server.default_resource["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		//BETTER: use lock to ensure thread safe
+		cout<<"HTTP: this is default"<<endl;
 		connection_num++;
 		//NOTICE: it seems a visit will output twice times
 		//And different pages in a browser is viewed as two connections here
