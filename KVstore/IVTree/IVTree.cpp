@@ -12,6 +12,7 @@ using namespace std;
 
 IVTree::IVTree()
 {
+	pthread_rwlock_init(&rwlock, NULL);
 	height = 0;
 	mode = "";
 	root = NULL;
@@ -29,6 +30,7 @@ IVTree::IVTree()
 
 IVTree::IVTree(string _storepath, string _filename, string _mode, unsigned long long _buffer_size)
 {
+	pthread_rwlock_init(&rwlock, NULL);
 	storepath = _storepath;
 	filename = _filename;
 	this->height = 0;
@@ -106,12 +108,14 @@ IVTree::getRoot() const
 void
 IVTree::prepare(IVNode* _np)
 {
+	TSM->wlock();
 	//this->request = 0;
 	bool flag = _np->inMem();
 	if (!flag)
 	{
-		this->TSM->readNode(_np, &request);	//readNode deal with request
+		TSM->readNode(_np, &request);	//readNode deal with request
 	}
+	TSM->unlock();
 }
 
 bool
@@ -122,12 +126,14 @@ IVTree::search(unsigned _key, char*& _str, unsigned& _len)
 		//printf("error in IVTree-search: empty string\n");
 		//return false;
 	//}
-
+	
+	rlock();
 	this->request = 0;
 	int store;
 	IVNode* ret = this->find(_key, &store, false);
 	if (ret == NULL || store == -1 || _key != ret->getKey(store))	//tree is empty or not found
 	{
+		unlock();
 		return false;
 	}
 
@@ -138,6 +144,7 @@ IVTree::search(unsigned _key, char*& _str, unsigned& _len)
 	//_len = this->transfer[0].getLen();
 
 	this->TSM->request(request);
+	unlock();
 	return true;
 }
 
@@ -152,6 +159,7 @@ IVTree::insert(unsigned _key, char* _str, unsigned _len)
 
 	//this->CopyToTransfer(_str, _len, 2);
 	//const Bstr* val = &(this->transfer[2]);
+	wlock();
 	this->request = 0;
 	IVNode* ret;
 	if (this->root == NULL)	//tree is empty
@@ -178,7 +186,8 @@ IVTree::insert(unsigned _key, char* _str, unsigned _len)
 		this->height++;		//height rises only when root splits
 							//WARN: height area in Node: 4 bit!
 		father->setHeight(this->height);	//add to heap later
-		this->TSM->updateHeap(ret, ret->getRank(), false);
+		//this->TSM->updateHeap(ret, ret->getRank(), false);
+		this->TSM->updateLRU(ret);
 		this->root = father;
 	}
 
@@ -206,9 +215,9 @@ IVTree::insert(unsigned _key, char* _str, unsigned _len)
 			else
 				request += IVNode::INTL_SIZE;
 			//BETTER: in loop may update multiple times
-			this->TSM->updateHeap(ret, ret->getRank(), false);
-			this->TSM->updateHeap(q, q->getRank(), true);
-			this->TSM->updateHeap(p, p->getRank(), true);
+			this->TSM->updateLRU(ret);
+			//this->TSM->updateHeap(q, q->getRank(), true);
+			//this->TSM->updateHeap(p, p->getRank(), true);
 			if (_key < p->getKey(i))
 				p = q;
 			else
@@ -217,7 +226,7 @@ IVTree::insert(unsigned _key, char* _str, unsigned _len)
 		else
 		{
 			p->setDirty();
-			this->TSM->updateHeap(p, p->getRank(), true);
+			//this->TSM->updateHeap(p, p->getRank(), true);
 			p = q;
 		}
 	}
@@ -244,12 +253,13 @@ IVTree::insert(unsigned _key, char* _str, unsigned _len)
 		}
 		//request += val->getLen();
 		p->setDirty();
-		this->TSM->updateHeap(p, p->getRank(), true);
+		//this->TSM->updateHeap(p, p->getRank(), true);
 		//_key->clear();
 		//_value->clear();
 	}
 
 	this->TSM->request(request);
+	unlock();
 	return !ifexist;		//QUERY(which case:return false)
 }
 
@@ -264,6 +274,7 @@ IVTree::modify(unsigned _key, char* _str, unsigned _len)
 
 	//this->CopyToTransfer(_str, _len, 2);	//not check value
 	//const Bstr* val = &(this->transfer[2]);
+	wlock();
 	this->request = 0;
 	int store;
 	IVNode* ret = this->find(_key, &store, true);
@@ -296,7 +307,7 @@ IVTree::modify(unsigned _key, char* _str, unsigned _len)
 	//cout<<"to request"<<endl;
 	this->TSM->request(request);
 	//cout<<"memory requested"<<endl;
-
+	unlock();
 	return true;
 }
 
@@ -357,7 +368,7 @@ IVTree::remove(unsigned _key)
 	IVNode* ret;
 	if (this->root == NULL)	//tree is empty
 		return false;
-
+	wlock();
 	IVNode* p = this->root;
 	IVNode* q;
 	int i, j;
@@ -379,8 +390,9 @@ IVTree::remove(unsigned _key)
 				this->prepare(p->getChild(i + 1));
 			ret = q->coalesce(p, i);
 			if (ret != NULL)
-				this->TSM->updateHeap(ret, 0, true);//non-sense node
-			this->TSM->updateHeap(q, q->getRank(), true);
+				ret->setRank(0);
+				//this->TSM->updateHeap(ret, 0, true);//non-sense node
+			//this->TSM->updateHeap(q, q->getRank(), true);
 			if (q->isLeaf())
 			{
 				if (q->getPrev() == NULL)
@@ -392,13 +404,14 @@ IVTree::remove(unsigned _key)
 			{
 				//this->leaves_head = q;
 				this->root = q;
-				this->TSM->updateHeap(p, 0, true);	//instead of delete p				
+				p->setRank(0);
+				//this->TSM->updateHeap(p, 0, true);	//instead of delete p				
 				this->height--;
 			}
 		}
 		else
 			p->setDirty();
-		this->TSM->updateHeap(p, p->getRank(), true);
+		//this->TSM->updateHeap(p, p->getRank(), true);
 		p = q;
 	}
 
@@ -441,13 +454,15 @@ IVTree::remove(unsigned _key)
 			this->leaves_head = NULL;
 			this->leaves_tail = NULL;
 			this->height = 0;
-			this->TSM->updateHeap(p, 0, true);	//instead of delete p
+			p->setRank(0);
+			//this->TSM->updateHeap(p, 0, true);	//instead of delete p
 		}
 		p->setDirty();
 		flag = true;
 	}
 
 	this->TSM->request(request);
+	unlock();
 	return flag;		//i == j, not found		
 }
 
@@ -617,8 +632,24 @@ IVTree::release(IVNode* _np) const
 	delete _np;
 }
 
+void IVTree::rlock()
+{
+	pthread_rwlock_rdlock(&rwlock);
+}
+
+void IVTree::wlock()
+{
+	pthread_rwlock_wrlock(&rwlock);
+}
+
+void IVTree::unlock()
+{
+	pthread_rwlock_unlock(&rwlock);
+}
+
 IVTree::~IVTree()
 {
+	pthread_rwlock_destroy(&rwlock);
 	delete this->value_list;
 
 	delete this->stream;   //maybe NULL

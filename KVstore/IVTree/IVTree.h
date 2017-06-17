@@ -37,6 +37,8 @@ protected:
 	IVStorage* TSM;           	//Tree-Storage-Manage
 								//BETTER:multiple stream maybe needed:)
 	Stream* stream;
+	
+	pthread_rwlock_t rwlock;
 
 	//always alloc one more byte than length, then user can add a '\0'
 	//to get a real string, instead of new and copy
@@ -88,6 +90,11 @@ public:
 	void resetStream();
 	bool range_query(unsigned _key1, unsigned _key2);
 	bool save();
+	
+	void rlock();
+	void wlock();
+	void unlock();
+	
 	~IVTree();
 	void print(std::string s);			//DEBUG(print the tree)
 };

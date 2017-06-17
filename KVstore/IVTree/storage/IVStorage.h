@@ -12,7 +12,8 @@
 #include "../../../Util/VList.h"
 #include "../node/IVIntlNode.h"
 #include "../node/IVLeafNode.h"
-#include "../heap/IVHeap.h"
+//#include "../heap/IVHeap.h"
+#include "../LRU/IVLRU.h"
 
 //It controls read, write, swap
 class IVStorage
@@ -35,14 +36,15 @@ public:
 
 private:
 	unsigned long long max_buffer_size;
-	unsigned heap_size;
+	unsigned lru_size;
 	unsigned cur_block_num;
 	std::string filepath;
 	unsigned* treeheight;
 	BlockInfo* freelist;
 	FILE* treefp;						//file: tree nodes
-	IVHeap* minheap;					//heap of Nodes's pointer, sorted in NF_RK
-
+	//IVHeap* minheap;					//heap of Nodes's pointer, sorted in NF_RK
+	IVLRU* lru;
+	pthread_rwlock_t rwlock;
 	//very long value list are stored in a separate file(with large block)
 	//
 	//NOTICE: according to the summary result, 90% value lists are just below 100 bytes
@@ -72,10 +74,15 @@ public:
 	bool readBstr(Bstr* _bp, unsigned* _next);
 	bool writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock);
 	bool writeTree(IVNode* _np);
-	void updateHeap(IVNode* _np, unsigned _rank, bool _inheap) const;
+	//void updateHeap(IVNode* _np, unsigned _rank, bool _inheap) const;
+	bool updateLRU(IVNode* _np);
 	bool request(long long _needmem);			//deal with memory request
 	bool handler(unsigned long long _needmem);	//swap some nodes out
 	//bool update();				//update InMem Node's rank, with clock
+	void rlock();
+	void wlock();
+	void unlock();
+	
 	~IVStorage();
 	void print(std::string s);				//DEBUG
 };

@@ -82,23 +82,49 @@ KVstore::release()
 	this->objID2values = NULL;
 }
 
+struct KVstore_thread_open_para
+{
+	KVstore* kvp;
+	int id;
+};
+
+void* 
+KVstore_thread_open(void* para)
+{
+	KVstore_thread_open_para* t = (KVstore_thread_open_para*)para;
+	KVstore* thisp = t->kvp;
+	switch(t->id)
+	{
+		case 0:thisp->open_entity2id(KVstore::READ_WRITE_MODE);break;
+		case 1:thisp->open_id2entity(KVstore::READ_WRITE_MODE);break;
+		case 2:thisp->open_literal2id(KVstore::READ_WRITE_MODE);break;
+		case 3:thisp->open_id2literal(KVstore::READ_WRITE_MODE);break;
+		case 4:thisp->open_predicate2id(KVstore::READ_WRITE_MODE);break;
+		case 5:thisp->open_id2predicate(KVstore::READ_WRITE_MODE);break;
+		case 6:thisp->open_subID2values(KVstore::READ_WRITE_MODE);break;
+		case 7:thisp->open_objID2values(KVstore::READ_WRITE_MODE);break;
+		case 8:thisp->open_preID2values(KVstore::READ_WRITE_MODE);break;
+	}
+	return NULL;
+}
+
 void 
 KVstore::open() 
 {
 	cout << "open KVstore" << endl;
-
-	this->open_entity2id(KVstore::READ_WRITE_MODE);
-	this->open_id2entity(KVstore::READ_WRITE_MODE);
-
-	this->open_literal2id(KVstore::READ_WRITE_MODE);
-	this->open_id2literal(KVstore::READ_WRITE_MODE);
-
-	this->open_predicate2id(KVstore::READ_WRITE_MODE);
-	this->open_id2predicate(KVstore::READ_WRITE_MODE);
-
-	this->open_subID2values(KVstore::READ_WRITE_MODE);
-	this->open_objID2values(KVstore::READ_WRITE_MODE);
-	this->open_preID2values(KVstore::READ_WRITE_MODE);
+	
+	pthread_t pid[9];
+	KVstore_thread_open_para para[9];
+	for (int i = 0; i < 9; i++) 
+	{
+		para[i].kvp = this;
+		para[i].id = i;
+		pthread_create(&pid[i], NULL, KVstore_thread_open, &(para[i]));
+	}
+	for (int i = 0; i < 9; i++)
+	{
+		pthread_join(pid[i], NULL);
+	}
 }
 
 unsigned

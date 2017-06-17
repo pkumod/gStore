@@ -114,7 +114,7 @@ TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(ex
 all: $(TARGET)
 
 test_index: test_index.cpp
-	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library)
+	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile)
 
 mytest_kvstore: $(lib_antlr) $(kvstoreobj) $(utilobj)
 	$(CC) $(EXEFLAG) -o KVstore/test_kvstore KVstore/test_kvstore.cpp $(kvstoreobj) $(utilobj) $(library) -fpermissive
@@ -265,6 +265,9 @@ $(objdir)IVLeafNode.o: KVstore/IVTree/node/IVLeafNode.cpp KVstore/IVTree/node/IV
 
 $(objdir)IVHeap.o: KVstore/IVTree/heap/IVHeap.cpp KVstore/IVTree/heap/IVHeap.h $(objdir)Util.o
 	$(CC) $(CFLAGS) KVstore/IVTree/heap/IVHeap.cpp -o $(objdir)IVHeap.o
+	
+$(objdir)IVLRU.o: KVstore/IVTree/LRU/IVLRU.cpp KVstore/IVTree/LRU/IVLRU.h $(objdir)Util.o
+	$(CC) $(CFLAGS) KVstore/IVTree/LRU/IVLRU.cpp -o $(objdir)IVLRU.o
 #objects in ivtree/ end
 
 $(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h KVstore/Tree.h 
