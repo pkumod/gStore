@@ -39,21 +39,21 @@ int connection_num = 0;
 //NOTICE: no need to close connection here due to the usage of shared_ptr
 //http://www.tuicool.com/articles/3Ub2y2
 //
-//TODO: the URL format is terrible, i.e. 127.0.0.1:8080/build/lubm/data/LUBM_10.n3
+//TODO: the URL format is terrible, i.e. 127.0.0.1:9000/build/lubm/data/LUBM_10.n3
 //we should define some keys like operation, database, dataset, query, path ...
-//127.0.0.1:8080?operation=build&database=lubm&dataset=data/LUBM_10.n3
+//127.0.0.1:9000?operation=build&database=lubm&dataset=data/LUBM_10.n3
 //
 //TODO: control the authority, check it if requesting for build/load/unload
 //for sparql endpoint, just load database when starting, and comment out all functions except for query()
 
 int main() {
     Util util;
-    //HTTP-server at port 8080 using 1 thread
+    //HTTP-server at port 9000 using 1 thread
     //Unless you do more heavy non-threaded processing in the resources,
     //1 thread is usually faster than several threads
     HttpServer server;
-    server.config.port=8080;
-    //server.config.port=9000;
+    //server.config.port=8080;
+	server.config.port=9000;
 	//cout<<"after server built"<<endl;
 
     //GET-example for the path /build/[db_name]/[db_path], responds with the matched string in path
@@ -350,7 +350,7 @@ int main() {
     this_thread::sleep_for(chrono::seconds(1));
 
     // //Client examples
-    // HttpClient client("localhost:8080");
+    // HttpClient client("localhost:9000");
     // auto r1=client.request("GET", "/match/123");
     // cout << r1->content.rdbuf() << endl;
 
