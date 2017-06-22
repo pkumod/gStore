@@ -2,6 +2,7 @@
 #define __HTTP_CURL_H__
 
 //REFERENCE: https://curl.haxx.se/
+//libcurl is useful for developing http client, but not for server
 //
 //TODO: deal with cookie
 //URL encode: http://www.ruanyifeng.com/blog/2010/02/url_encoding.html

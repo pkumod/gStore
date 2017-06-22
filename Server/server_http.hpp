@@ -424,7 +424,7 @@ namespace SimpleWeb {
             config.timeout_content=timeout_content;
         }
 
-        Server() : ServerBase<HTTP>::ServerBase(80) {}
+        Server() : ServerBase<HTTP>::ServerBase(9000) {}
 
     protected:
         void accept() {
