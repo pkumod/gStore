@@ -9,8 +9,12 @@
 #ifndef _GSTORECONNECTOR_H
 #define _GSTORECONNECTOR_H
 
-#include "../../../Server/Socket.h"
+#include "../../../../Server/Socket.h"
 #include <cstring>
+
+//TODO: C++ URL encoder
+//http://blog.csdn.net/nanjunxiao/article/details/9974593
+//TODO: for a string, we should add \"\" in the head and tail, while for a path not do so
 
 class GstoreConnector
 {

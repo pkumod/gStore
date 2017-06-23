@@ -46,6 +46,34 @@ int connection_num = 0;
 //TODO: control the authority, check it if requesting for build/load/unload
 //for sparql endpoint, just load database when starting, and comment out all functions except for query()
 
+//REFERENCE: C++ URL encoder and decoder
+//http://blog.csdn.net/nanjunxiao/article/details/9974593
+string UrlDecode(string& SRC)
+{
+	string ret;
+	char ch;
+	int ii;
+	for(size_t i = 0; i < SRC.length(); ++i)
+	{
+		if(int(SRC[i]) == 37)
+		{
+			sscanf(SRC.substr(i+1,2).c_str(), "%x", &ii);
+			ch = static_cast<char>(ii);
+			ret += ch;
+			i = i + 2;
+		}
+		else if(SRC[i] == '+')
+		{
+			ret += ' ';
+		}
+		else
+		{
+			ret += SRC[i];
+		}
+	}
+	return (ret);
+}
+
 int main() {
     Util util;
     //HTTP-server at port 9000 using 1 thread
@@ -167,8 +195,12 @@ int main() {
     //GET-example for the path /query/[query_file_path], responds with the matched string in path
     //For instance a request GET /query/db123 will receive: db123
     server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		//TODO: add a format parameter, better to change tp "?format=json"
+		string format = "json";
 		cout<<"HTTP: this is query"<<endl;
         string db_query=request->path_match[1];
+		db_query = UrlDecode(db_query);
+		cout<<"check: "<<db_query<<endl;
         string str = db_query;
 
         if(current_database == NULL)
@@ -183,6 +215,7 @@ int main() {
         if(db_query[0]=='\"')
         {
             sparql = db_query.substr(1, db_query.length()-2);
+			cout<<"check: this is string "<<sparql<<endl;
         }
         else
         {
@@ -195,6 +228,7 @@ int main() {
                 return 0;
             }
             sparql = Util::getQueryFromFile(path);
+			cout<<"check: this is path "<<sparql<<endl;
         }
 
         if (sparql.empty()) {
@@ -211,7 +245,15 @@ int main() {
         {
 			//TODO: if the result is too large? or if the result is placed in Stream?
 			//Should use file donload
-            string success = rs.to_str();
+            string success = "";
+			if(format == "json")
+			{
+				success = rs.to_JSON();
+			}
+			else
+			{
+				success = rs.to_str();
+			}
             *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
             return 0;
         }
