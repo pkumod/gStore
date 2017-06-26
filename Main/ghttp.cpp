@@ -26,6 +26,9 @@ void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer
 Database *current_database = NULL;
 int connection_num = 0;
 
+//DEBUG+TODO: why the result transfered to client has no \n \t??
+//using json is a good way to avoid this problem
+
 //TODO+BETTER: port should be optional
 //1. admin.html: build/load/query/unload
 //2. index.html: only query (maybe load/unload if using multiple databases)

@@ -39,6 +39,10 @@ public class JavaAPIExample
 		
 	    // also, you can load some exist database directly and then query.
 	    gc.load("LUBM10");
+		//sparql = "delete where "
+				//+ "{"
+				//+ "<http://www.founder/121> ?predicate ?object ."
+				//+ "}";				
 	    answer = gc.query(sparql);	    
 		System.out.println(answer);
 		gc.unload("LUBM10");

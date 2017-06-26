@@ -109,7 +109,7 @@ in the sparql query can point to the same node in data graph)
 //===================================================================================================================
 
 //if used as only-read application(like sparql endpoint)
-#define ONLY_READ 1
+//#define ONLY_READ 1
 //if use pthread and lock
 #define THREAD_ON 1			
 //if use stream module if result is too large than memory can hold
