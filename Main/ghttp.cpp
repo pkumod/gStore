@@ -19,12 +19,22 @@ using namespace boost::property_tree;
 typedef SimpleWeb::Server<SimpleWeb::HTTP> HttpServer;
 typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 
+int initialize();
 //Added for the default_resource example
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
         const shared_ptr<ifstream> &ifs);
 
+pthread_t start_thread(void *(*_function)(void*));
+bool stop_thread(pthread_t _thread);
+void* func_timer(void* _args);
+void* func_scheduler(void* _args);
+void thread_sigterm_handler(int _signal_num);
+
 Database *current_database = NULL;
 int connection_num = 0;
+
+long next_backup = 0;
+pthread_t scheduler = 0;
 
 //DEBUG+TODO: why the result transfered to client has no \n \t??
 //using json is a good way to avoid this problem
@@ -78,7 +88,40 @@ string UrlDecode(string& SRC)
 }
 
 int main() {
-    Util util;
+
+	Util util;
+
+	while (true) {
+		pid_t fpid = fork();
+
+		if (fpid == 0) {
+			int ret = initialize();
+			exit(ret);
+			return ret;
+		}
+
+		else if (fpid > 0) {
+			int status;
+			waitpid(fpid, &status, 0);
+			if (WIFEXITED(status)) {
+				exit(0);
+				return 0;
+			}
+			cerr << "Server stopped abnormally, restarting server..." << endl;
+		}
+
+		else {
+			cerr << "Failed to start server: deamon fork failure." << endl;
+			return -1;
+		}
+
+	}
+
+	return 0;
+}
+
+
+int initialize() {
     //HTTP-server at port 9000 using 1 thread
     //Unless you do more heavy non-threaded processing in the resources,
     //1 thread is usually faster than several threads
@@ -187,6 +230,10 @@ int main() {
             return 0;
         }
 	
+		time_t cur_time = time(NULL);
+		long time_backup = Util::read_backup_time();
+		long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
+		scheduler = start_thread(func_scheduler);
 
 	//string success = db_name;
        string success = "Database loaded successfully.";
@@ -242,8 +289,17 @@ int main() {
         //FILE* output = stdout;
         FILE* output = NULL; //not update result on the screen
 
+		pthread_t timer = start_thread(func_timer);
+		if (timer == 0) {
+			cerr << "Failed to start timer." << endl;
+		}
+
         ResultSet rs;
         bool ret = current_database->query(sparql, rs, output);
+		if (timer != 0 && !stop_thread(timer)) {
+			cerr << "Failed to stop timer." << endl;
+		}
+
         if(ret)
         {
 			//TODO: if the result is too large? or if the result is placed in Stream?
@@ -280,6 +336,14 @@ int main() {
             return 0;
         }
 
+		if (scheduler != 0 && !stop_thread(scheduler)) {
+			cerr << "Failed to stop scheduler." << endl;
+		}
+		else {
+			scheduler = 0;
+			next_backup = 0;
+		}
+
         delete current_database;
         current_database = NULL;
         string success = "Database unloaded.";
@@ -314,6 +378,7 @@ int main() {
 		//BETTER: how to compute the connection num in Boost::asio?
 		int conn_num = connection_num / 2;
 		//int conn_num = 3;    //currectly connected sessions
+		//this connection num is countint the total(no break)
 		success = success + "connection num: " + Util::int2string(conn_num) + "\n";
 		//TODO: add the info of memory and thread, operation num and IO frequency
 
@@ -429,3 +494,39 @@ void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer
     }
 }
 
+pthread_t start_thread(void *(*_function)(void*)) {
+	pthread_t thread;
+	if (pthread_create(&thread, NULL, _function, NULL) == 0) {
+		return thread;
+	}
+	return 0;
+}
+
+bool stop_thread(pthread_t _thread) {
+	return pthread_kill(_thread, SIGTERM) == 0;
+}
+
+void* func_timer(void* _args) {
+	signal(SIGTERM, thread_sigterm_handler);
+	sleep(Util::gserver_query_timeout);
+	cerr << "Query out of time." << endl;
+	abort();
+}
+
+void* func_scheduler(void* _args) {
+	signal(SIGTERM, thread_sigterm_handler);
+	while (true) {
+		time_t cur_time = time(NULL);
+		while (cur_time >= next_backup) {
+			next_backup += Util::gserver_backup_interval;
+		}
+		sleep(next_backup - cur_time);
+		if (!current_database->backup()) {
+			return NULL;
+		}
+	}
+}
+
+void thread_sigterm_handler(int _signal_num) {
+	pthread_exit(0);
+}
