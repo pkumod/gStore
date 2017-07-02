@@ -1542,7 +1542,7 @@ VSTree::saveTreeInfo()
 
     if (filePtr == NULL)
     {
-        cerr << "error, can not create tree info file. @VSTree::saveTreeInfo"  << endl;
+        //cerr << "error, can not create tree info file. @VSTree::saveTreeInfo"  << endl;
         return false;
     }
 
