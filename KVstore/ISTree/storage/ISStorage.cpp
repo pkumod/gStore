@@ -111,13 +111,7 @@ ISStorage::preRead(ISNode*& _root, ISNode*& _leaves_head, ISNode*& _leaves_tail)
 	unsigned h = *this->treeheight;
 	ISNode* p;
 	//read root node
-	bool full = false;
-	long long memory = 0;
-	long long mxmem = this->freemem * (1/3.0);
 	this->createNode(p);
-	this->readNode(p, &memory);
-	this->request(memory);
-	if(this->freemem < mxmem)full = true;
 	_root = p;
 	fread(&next, sizeof(unsigned), 1, treefp);
 	//use stack to achieve
@@ -165,13 +159,6 @@ ISStorage::preRead(ISNode*& _root, ISNode*& _leaves_head, ISNode*& _leaves_tail)
 		block[pos] = next;
 		nodes[pos] = p;
 		pos++;
-		if(!full)
-		{
-			memory = 0;
-			this->readNode(p, &memory);
-			this->request(memory);
-			if(this->freemem < mxmem)full=1;
-		}
 	}
 	//set leaves and read root, which is always keeped in-mem
 	p = _root;
@@ -186,8 +173,9 @@ ISStorage::preRead(ISNode*& _root, ISNode*& _leaves_head, ISNode*& _leaves_tail)
 		p = p->getChild(p->getNum());
 	}
 	_leaves_tail = p;
-	// this->readNode(_root, &memory);
-	// this->request(memory);
+	long long memory = 0;
+	this->readNode(_root, &memory);
+	this->request(memory);
 	return true;
 }
 
