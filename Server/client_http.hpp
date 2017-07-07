@@ -1,16 +1,7 @@
 #ifndef CLIENT_HTTP_HPP
 #define	CLIENT_HTTP_HPP
 
-#include <boost/asio.hpp>
-#include <boost/utility/string_ref.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/functional/hash.hpp>
-
-#include <unordered_map>
-#include <map>
-#include <random>
-#include <mutex>
-#include <type_traits>
+#include "../Util/Util.h"
 
 #ifndef CASE_INSENSITIVE_EQUALS_AND_HASH
 #define CASE_INSENSITIVE_EQUALS_AND_HASH
@@ -397,7 +388,7 @@ namespace SimpleWeb {
                 if(config.proxy_server.empty())
                     query=std::unique_ptr<boost::asio::ip::tcp::resolver::query>(new boost::asio::ip::tcp::resolver::query(host, std::to_string(port)));
                 else {
-                    auto proxy_host_port=parse_host_port(config.proxy_server, 8080);
+                    auto proxy_host_port=parse_host_port(config.proxy_server, 80);
                     query=std::unique_ptr<boost::asio::ip::tcp::resolver::query>(new boost::asio::ip::tcp::resolver::query(proxy_host_port.first, std::to_string(proxy_host_port.second)));
                 }
                 resolver.async_resolve(*query, [this](const boost::system::error_code &ec,

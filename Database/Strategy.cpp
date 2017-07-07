@@ -140,10 +140,11 @@ Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
 	}
 #else
 	cout << "this BasicQuery use original query strategy" << endl;
-	long tv_handle = Util::get_cur_time();
-	(this->vstree)->retrieve(_query);
+	//VSTREE:
+	//long tv_handle = Util::get_cur_time();
+	//(this->vstree)->retrieve(_query);
+	//cout << "after Retrieve, used " << (tv_retrieve - tv_handle) << "ms." << endl;
 	long tv_retrieve = Util::get_cur_time();
-	cout << "after Retrieve, used " << (tv_retrieve - tv_handle) << "ms." << endl;
 
 	this->join = new Join(kvstore, pre2num, this->limitID_predicate, this->limitID_literal);
 	this->join->join_sparql(_query);
@@ -176,26 +177,26 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list, ResultFilte
 
 	long tv_handle = Util::get_cur_time();
 	int varNum = _bq->getVarNum();  //the num of vars needing to be joined
-	//TODO:parallel by pthread
-	for (int i = 0; i < varNum; ++i)
-	{
-		if (_bq->if_need_retrieve(i) == false)
-			continue;
-		bool flag = _bq->isLiteralVariable(i);
-		const EntityBitSet& entityBitSet = _bq->getVarBitSet(i);
-		IDList* idListPtr = &(_bq->getCandidateList(i));
-		this->vstree->retrieveEntity(entityBitSet, idListPtr);
-		if (!flag)
-		{
+	//TODO:parallel by pthread, requiring that index is parallelable
+	//for (int i = 0; i < varNum; ++i)
+	//{
+		//if (_bq->if_need_retrieve(i) == false)
+			//continue;
+		//bool flag = _bq->isLiteralVariable(i);
+		//const EntityBitSet& entityBitSet = _bq->getVarBitSet(i);
+		//IDList* idListPtr = &(_bq->getCandidateList(i));
+		//this->vstree->retrieveEntity(entityBitSet, idListPtr);
+		//if (!flag)
+		//{
 			//cout<<"set ready: "<<i<<endl;
-			_bq->setReady(i);
-		}
+			//_bq->setReady(i);
+		//}
 		//the basic query should end if one non-literal var has no candidates
-		if (idListPtr->size() == 0 && !flag)
-		{
-			break;
-		}
-	}
+		//if (idListPtr->size() == 0 && !flag)
+		//{
+			//break;
+		//}
+	//}
 
 	//BETTER:end directly if one is empty!
 

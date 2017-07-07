@@ -103,6 +103,8 @@ private:
 	bool filter_before_join();
 	bool constant_edge_filter(int _var_i);
 	void preid_filter(int _var_i);
+	//new
+	bool pre_handler();
 	bool only_pre_filter_after_join();
 	void add_literal_candidate();
 	bool pre_var_handler();

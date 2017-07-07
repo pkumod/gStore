@@ -84,7 +84,7 @@ private:
 	//R/W lock only fits for many-read and rare-write cases
 	//
 	//lock the whole buffer if get/set/swap element
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_t cache_lock;
 	//TODO:if find no unlocked one to swap out, then need to wait by cond
 	//pthread_cond_t cache_cond;

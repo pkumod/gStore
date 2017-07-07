@@ -18,12 +18,21 @@
 //add a \0 in tail: only add 1 char
 //QUERY: but to count the length each time maybe very costly?
 //No, because triple num is stored in char* now!!!! we do not need to save it again
-//TODO: entity_border in s2values list is not needed!!! not waste memory here
 //
 //QUERY: but to implement vlist, we need a unsigned flag
 //What is more, we need to store the string in disk, how can we store it if without the length? 
 //unsigned type stored as chars, maybe will have '\0'
 //In memory, we do not know when the oidlist ends if without the original length (butthe triple num will answer this!)
+//
+//TODO: entity_border in s2values list is not needed!!! not waste memory here
+
+//STRUCT:
+//1. s2xx
+//Triple Num   Pre Num   Entity Num   p1 offset1  p2 offset2  ...  pn offsetn (olist-p1) (olist-p2) ... (olist-pn)
+//2. o2xx
+//Triple Num   Pre Num   p1 offset1  p2 offset2 ... pn offsetn (slist-p1) (slist-p2) ... (slist-pn)
+//3. p2xx
+//Triple Num   (sid list)  (oid list) (not sorted, matched with sid one by one)
 
 class KVstore
 {
@@ -36,6 +45,9 @@ public:
 	void flush();
 	void release();
 	void open();
+
+	std::string getStringByID(TYPE_ENTITY_LITERAL_ID _id);
+	TYPE_ENTITY_LITERAL_ID getIDByString(std::string _str);
 
 	//===============================================================================
 

@@ -1,19 +1,13 @@
+/*=============================================================================
+# Filename: ghttp.cpp
+# Author: Bookug Lobert 
+# Mail: zengli-bookug@pku.edu.cn
+# Last Modified: 2017-06-15 15:09
+# Description: created by lvxin, improved by lijing
+=============================================================================*/
+
 #include "../Server/server_http.hpp"
 #include "../Server/client_http.hpp"
-
-//Added for the json-example
-#define BOOST_SPIRIT_THREADSAFE
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-
-//Added for the default_resource example
-#include <fstream>
-#include <boost/filesystem.hpp>
-//#include <boost/regex.hpp>
-#include <vector>
-#include <algorithm>
-#include <memory>
-
 //db
 #include "../Database/Database.h"
 #include "../Util/Util.h"
@@ -25,20 +19,115 @@ using namespace boost::property_tree;
 typedef SimpleWeb::Server<SimpleWeb::HTTP> HttpServer;
 typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 
+int initialize();
 //Added for the default_resource example
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
         const shared_ptr<ifstream> &ifs);
 
+pthread_t start_thread(void *(*_function)(void*));
+bool stop_thread(pthread_t _thread);
+void* func_timer(void* _args);
+void* func_scheduler(void* _args);
+void thread_sigterm_handler(int _signal_num);
+
 Database *current_database = NULL;
+int connection_num = 0;
+
+long next_backup = 0;
+pthread_t scheduler = 0;
+
+//DEBUG+TODO: why the result transfered to client has no \n \t??
+//using json is a good way to avoid this problem
+
+//TODO+BETTER: port should be optional
+//1. admin.html: build/load/query/unload
+//2. index.html: only query (maybe load/unload if using multiple databases)
+//3. ghttp: can add or not add a db as parameter
+//BETTER: How about change HttpConnector into a console?
+//
+//TODO: we need a route
+//JSON parser: http://www.tuicool.com/articles/yUJb6f     
+//(or use boost spirit to generate parser when compiling)
+//
+//NOTICE: no need to close connection here due to the usage of shared_ptr
+//http://www.tuicool.com/articles/3Ub2y2
+//
+//TODO: the URL format is terrible, i.e. 127.0.0.1:9000/build/lubm/data/LUBM_10.n3
+//we should define some keys like operation, database, dataset, query, path ...
+//127.0.0.1:9000?operation=build&database=lubm&dataset=data/LUBM_10.n3
+//
+//TODO: control the authority, check it if requesting for build/load/unload
+//for sparql endpoint, just load database when starting, and comment out all functions except for query()
+
+//REFERENCE: C++ URL encoder and decoder
+//http://blog.csdn.net/nanjunxiao/article/details/9974593
+string UrlDecode(string& SRC)
+{
+	string ret;
+	char ch;
+	int ii;
+	for(size_t i = 0; i < SRC.length(); ++i)
+	{
+		if(int(SRC[i]) == 37)
+		{
+			sscanf(SRC.substr(i+1,2).c_str(), "%x", &ii);
+			ch = static_cast<char>(ii);
+			ret += ch;
+			i = i + 2;
+		}
+		else if(SRC[i] == '+')
+		{
+			ret += ' ';
+		}
+		else
+		{
+			ret += SRC[i];
+		}
+	}
+	return (ret);
+}
 
 int main() {
-    Util util;
-    //HTTP-server at port 8080 using 1 thread
+
+	Util util;
+
+	while (true) {
+		pid_t fpid = fork();
+
+		if (fpid == 0) {
+			int ret = initialize();
+			exit(ret);
+			return ret;
+		}
+
+		else if (fpid > 0) {
+			int status;
+			waitpid(fpid, &status, 0);
+			if (WIFEXITED(status)) {
+				exit(0);
+				return 0;
+			}
+			cerr << "Server stopped abnormally, restarting server..." << endl;
+		}
+
+		else {
+			cerr << "Failed to start server: deamon fork failure." << endl;
+			return -1;
+		}
+
+	}
+
+	return 0;
+}
+
+
+int initialize() {
+    //HTTP-server at port 9000 using 1 thread
     //Unless you do more heavy non-threaded processing in the resources,
     //1 thread is usually faster than several threads
     HttpServer server;
-    server.config.port=8080;
-    //server.config.port=9000;
+    //server.config.port=8080;
+	server.config.port=9000;
 	//cout<<"after server built"<<endl;
 
     //GET-example for the path /build/[db_name]/[db_path], responds with the matched string in path
@@ -46,6 +135,7 @@ int main() {
     //server.resource["^/build/([a-zA-Z]+[0-9]*)/([a-zA-Z]+/*[a-zA-Z]+[0-9]*.n[a-zA-Z]*[0-9]*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     // server.resource["^/build/([a-zA-Z0-9]+)/([a-zA-Z0-9]+)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     server.resource["^/build/([a-zA-Z0-9]*)/(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		cout<<"HTTP: this is build"<<endl;
         string db_name=request->path_match[1];
         string db_path=request->path_match[2];
         if(db_name=="" || db_path=="")
@@ -100,6 +190,7 @@ int main() {
     //GET-example for the path /load/[db_name], responds with the matched string in path
     //For instance a request GET /load/db123 will receive: db123
     server.resource["^/load/(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		cout<<"HTTP: this is load"<<endl;
         string db_name=request->path_match[1];
 	
 	
@@ -139,6 +230,10 @@ int main() {
             return 0;
         }
 	
+		time_t cur_time = time(NULL);
+		long time_backup = Util::read_backup_time();
+		long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
+		scheduler = start_thread(func_scheduler);
 
 	//string success = db_name;
        string success = "Database loaded successfully.";
@@ -150,7 +245,12 @@ int main() {
     //GET-example for the path /query/[query_file_path], responds with the matched string in path
     //For instance a request GET /query/db123 will receive: db123
     server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		//TODO: add a format parameter, better to change tp "?format=json"
+		string format = "json";
+		cout<<"HTTP: this is query"<<endl;
         string db_query=request->path_match[1];
+		db_query = UrlDecode(db_query);
+		cout<<"check: "<<db_query<<endl;
         string str = db_query;
 
         if(current_database == NULL)
@@ -165,6 +265,7 @@ int main() {
         if(db_query[0]=='\"')
         {
             sparql = db_query.substr(1, db_query.length()-2);
+			cout<<"check: this is string "<<sparql<<endl;
         }
         else
         {
@@ -177,6 +278,7 @@ int main() {
                 return 0;
             }
             sparql = Util::getQueryFromFile(path);
+			cout<<"check: this is path "<<sparql<<endl;
         }
 
         if (sparql.empty()) {
@@ -187,16 +289,36 @@ int main() {
         //FILE* output = stdout;
         FILE* output = NULL; //not update result on the screen
 
+		pthread_t timer = start_thread(func_timer);
+		if (timer == 0) {
+			cerr << "Failed to start timer." << endl;
+		}
+
         ResultSet rs;
         bool ret = current_database->query(sparql, rs, output);
+		if (timer != 0 && !stop_thread(timer)) {
+			cerr << "Failed to stop timer." << endl;
+		}
+
         if(ret)
         {
-            string success = rs.to_str();
+			//TODO: if the result is too large? or if the result is placed in Stream?
+			//Should use file donload
+            string success = "";
+			if(format == "json")
+			{
+				success = rs.to_JSON();
+			}
+			else
+			{
+				success = rs.to_str();
+			}
             *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
             return 0;
         }
         else
         {
+			//TODO: if error, browser should give some prompt
             string error = "query() returns false.";
             *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
             return 0;
@@ -206,6 +328,7 @@ int main() {
     //GET-example for the path /unload/[db_name], responds with the matched string in path
     //For instance a request GET /unload/db123 will receive: db123
     server.resource["^/unload$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		cout<<"HTTP: this is unload"<<endl;
         if(current_database == NULL)
         {
             string error = "No database used now.";
@@ -213,9 +336,53 @@ int main() {
             return 0;
         }
 
+		if (scheduler != 0 && !stop_thread(scheduler)) {
+			cerr << "Failed to stop scheduler." << endl;
+		}
+		else {
+			scheduler = 0;
+			next_backup = 0;
+		}
+
         delete current_database;
         current_database = NULL;
         string success = "Database unloaded.";
+        *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+        return 0;
+    };
+
+    server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		cout<<"HTTP: this is monitor"<<endl;
+        if(current_database == NULL)
+        {
+            string error = "No database used now.";
+            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+            return 0;
+        }
+
+		//BETTER: use JSON format to send/receive messages
+		//C++ can not deal with JSON directly, JSON2string string2JSON
+        string success;
+		string name = current_database->getName();
+		success = success + "database: " + name + "\n";
+		TYPE_TRIPLE_NUM triple_num = current_database->getTripleNum();
+		success = success + "triple num: " + Util::int2string(triple_num) + "\n";
+		TYPE_ENTITY_LITERAL_ID entity_num = current_database->getEntityNum();
+		success = success + "entity num: " + Util::int2string(entity_num) + "\n";
+		TYPE_ENTITY_LITERAL_ID literal_num = current_database->getLiteralNum();
+		success = success + "literal num: " + Util::int2string(literal_num) + "\n";
+		TYPE_ENTITY_LITERAL_ID sub_num = current_database->getSubNum();
+		success = success + "subject num: " + Util::int2string(sub_num) + "\n";
+		TYPE_PREDICATE_ID pre_num = current_database->getPreNum();
+		success = success + "predicate num: " + Util::int2string(pre_num) + "\n";
+		//BETTER: how to compute the connection num in Boost::asio?
+		int conn_num = connection_num / 2;
+		//int conn_num = 3;    //currectly connected sessions
+		//this connection num is countint the total(no break)
+		success = success + "connection num: " + Util::int2string(conn_num) + "\n";
+		//TODO: add the info of memory and thread, operation num and IO frequency
+
+		//success = "<p>" + success + "</p>";
         *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
         return 0;
     };
@@ -242,6 +409,12 @@ int main() {
     //Default file: index.html
     //Can for instance be used to retrieve an HTML 5 client that uses REST-resources on this server
     server.default_resource["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		//BETTER: use lock to ensure thread safe
+		cout<<"HTTP: this is default"<<endl;
+		connection_num++;
+		//NOTICE: it seems a visit will output twice times
+		//And different pages in a browser is viewed as two connections here
+		//cout<<"new connection"<<endl;
         try {
             auto web_root_path=boost::filesystem::canonical("./Server/web");
             auto path=boost::filesystem::canonical(web_root_path/request->path);
@@ -287,7 +460,7 @@ int main() {
     this_thread::sleep_for(chrono::seconds(1));
 
     // //Client examples
-    // HttpClient client("localhost:8080");
+    // HttpClient client("localhost:9000");
     // auto r1=client.request("GET", "/match/123");
     // cout << r1->content.rdbuf() << endl;
 
@@ -321,3 +494,39 @@ void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer
     }
 }
 
+pthread_t start_thread(void *(*_function)(void*)) {
+	pthread_t thread;
+	if (pthread_create(&thread, NULL, _function, NULL) == 0) {
+		return thread;
+	}
+	return 0;
+}
+
+bool stop_thread(pthread_t _thread) {
+	return pthread_kill(_thread, SIGTERM) == 0;
+}
+
+void* func_timer(void* _args) {
+	signal(SIGTERM, thread_sigterm_handler);
+	sleep(Util::gserver_query_timeout);
+	cerr << "Query out of time." << endl;
+	abort();
+}
+
+void* func_scheduler(void* _args) {
+	signal(SIGTERM, thread_sigterm_handler);
+	while (true) {
+		time_t cur_time = time(NULL);
+		while (cur_time >= next_backup) {
+			next_backup += Util::gserver_backup_interval;
+		}
+		sleep(next_backup - cur_time);
+		if (!current_database->backup()) {
+			return NULL;
+		}
+	}
+}
+
+void thread_sigterm_handler(int _signal_num) {
+	pthread_exit(0);
+}

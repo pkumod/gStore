@@ -19,6 +19,9 @@ VList::isLongList(unsigned _len)
 bool 
 VList::listNeedDelete(unsigned _len)
 {
+	//NOTICE: use this for application to save memory
+	return _len > VList::LENGTH_BORDER;
+	//NOTICE: use this for benchmark to improve performance
 	return _len > VList::CACHE_LIMIT;
 }
 
@@ -210,7 +213,14 @@ VList::readValue(unsigned _block_num, char*& _str, unsigned& _len)
 	if(!this->listNeedDelete(_len))
 	{
 		//TODO: swap the oldest when overflow detected
-		//DEBUG: if simple stop adding here, then listNeedDelete will be invalid!
+		//DEBUG: if simple stop adding here, then listNeedDelete will be invalid(need delete but not, memory leak)!
+		//However, if using swap here, no error in sequential process, but in parallel process, error may come because the 
+		//inconsistency between the swap thread and the delete thread in KVstore.cpp
+		//
+		//Here we just withdraw the cache in VList, and delete each time when vlist is parsed, just control the listNeedDelete()
+		//(rely on the system cache to ensure performance in real applications)
+		//TODO: another choice may be using lock, before each vlist is parsed, the cache can not swap it out and delete it
+		//(In fact, if we use a long array as cache, and use LRU strategy with not so much requests, maybe lock is needless)
 		if(this->vlist_cache_left < _len)
 		{
 			cout<<"WARN in VList::readValue() -- cache overflow"<<endl;
