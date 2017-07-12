@@ -20,8 +20,8 @@ IVHeap::IVHeap(unsigned _size)
 {
 	this->length = 0;
 	this->size = _size;
-	//this->heap = (Node**)malloc(this->size * sizeof(Node*));	//not use 4 or 8
-	this->heap = new IVNode*[this->size];
+	this->heap = (IVNode**)malloc(this->size * sizeof(IVNode*));	//not use 4 or 8
+	//this->heap = new IVNode*[this->size];
 	if (this->heap == NULL)
 	{
 		this->print("error in IVHeap: Allocation fail!");
@@ -69,6 +69,7 @@ IVHeap::insert(IVNode* _np)
 {
 	if (this->length == this->size)	//when full, reallocate
 	{
+		cout<<"check: double the heap"<<endl;
 		this->heap = (IVNode**)realloc(this->heap, 2 * this->size * sizeof(IVNode*));
 		if (this->heap == NULL)
 		{
@@ -173,7 +174,8 @@ IVHeap::modify(IVNode* _np, bool _flag)	//control direction
 
 IVHeap::~IVHeap()
 {
-	delete[] this->heap;
+	//delete[] this->heap;
+	free(this->heap);
 	this->heap = NULL;
 	this->length = this->size = 0;
 }

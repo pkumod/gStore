@@ -63,6 +63,7 @@ in the sparql query can point to the same node in data graph)
 #include <algorithm>
 #include <functional>
 #include <utility>
+#include <new>
 
 //NOTICE:below are libraries need to link
 #include <thread>    //only for c++11 or greater versions

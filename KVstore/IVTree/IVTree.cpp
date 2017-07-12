@@ -137,6 +137,13 @@ IVTree::search(unsigned _key, char*& _str, unsigned& _len)
 	//_str = this->transfer[0].getStr();
 	//_len = this->transfer[0].getLen();
 
+	if (!VList::isLongList(_len))
+	{
+		char* debug = new char [_len];
+		memcpy(debug, _str, _len);
+		_str = debug;
+	}
+
 	this->TSM->request(request);
 	return true;
 }

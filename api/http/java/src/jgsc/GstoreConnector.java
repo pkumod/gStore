@@ -132,6 +132,8 @@ public class GstoreConnector {
             return false;
         }
 
+		//TODO: also use encode to support spaces?
+		//Consider change format into ?name=DBname
         String cmd = "build/" + _db_name + "/" + _rdf_file_path;
         String msg = this.sendGet(cmd);
 

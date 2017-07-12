@@ -129,7 +129,20 @@ ISTree::search(unsigned _key, char*& _str, unsigned& _len)
 	_str = val->getStr();
 	_len = val->getLen();
 
+	char* debug = new char[_len];
+	memcpy(debug, _str, _len);
+//	debug[_len] = '\0';
+	_str = debug;
+
+	//if(_key==62)
+	//{
+		//cout<<"check in search: "<<string(_str, _len)<<endl;
+	//}
 	this->TSM->request(request);
+	//if(_key==62)
+	//{
+		//cout<<"check in search: "<<string(_str, _len)<<endl;
+	//}
 	return true;
 }
 

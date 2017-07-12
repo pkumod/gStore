@@ -223,6 +223,7 @@ ISLeafNode::split(ISNode* _father, int _index)
 		p->addNum();
 	}
 	unsigned tp = this->keys[MIN_KEY_NUM];
+	//cout<<"split: "<<tp<<" "<<this->values[MIN_KEY_NUM].getStr()<<endl;
 	this->setNum(MIN_KEY_NUM);
 	_father->addKey(tp, _index);
 	_father->addChild(p, _index + 1);	//DEBUG(check the index)

@@ -196,8 +196,9 @@ Join::join_sparql(SPARQLquery& _sparql_query)
 	return true;
 }
 
-//TODO: consider a node with multiple same predicates(not pre var), use getXXX(...false) to do this
+//TODO: consider a node with multiple same predicates(not pre var), use p2s(...false) to do this
 //BETTER?: ?s-p-?o, use p2so instead of p2s and p2o to get candidates for ?s and ?o will be better??
+//TODO: deal with predicate variables, maybe not ready like literals
 bool 
 Join::pre_handler()
 {
@@ -214,12 +215,12 @@ Join::pre_handler()
 	    for (int j = 0; j < var_degree; j++)
 	    {
 	        int neighbor_id = this->basic_query->getEdgeNeighborID(_var_i, j);
-	        if (neighbor_id != -1)   //TODO:what does it mean???variables in join not considered here
+			//-1: constant or variable not in join; otherwise, variable in join
+	        if (neighbor_id != -1)   
 	        {
 	            continue;
 	        }
-	        //TODO set ready here?
-	        this->basic_query->setReady(_var_i);
+
 	        char edge_type = this->basic_query->getEdgeType(_var_i, j);
 	        int triple_id = this->basic_query->getEdgeID(_var_i, j);
 	        Triple triple = this->basic_query->getTriple(triple_id);
@@ -234,8 +235,8 @@ Join::pre_handler()
 	            neighbor_name = triple.subject;
 	        }
 	        
-	        //TODO : consider or not??
 	        bool only_preid_filter = (this->basic_query->isOneDegreeNotJoinVar(neighbor_name));
+			//NOTICE: we only need to consider constants here
 	        if(only_preid_filter)
 	        {
 	            continue;
@@ -243,11 +244,11 @@ Join::pre_handler()
 	        else
 	        {
 	            this->dealed_triple[triple_id] = true;
+				this->basic_query->setReady(_var_i);
 	        }
 	        
 	        TYPE_PREDICATE_ID pre_id = this->basic_query->getEdgePreID(_var_i, j);
 	        
-	        //TODO : cancle the literal
 	        TYPE_ENTITY_LITERAL_ID lit_id = (this->kvstore)->getIDByEntity(neighbor_name);
 	        if (lit_id == INVALID_ENTITY_LITERAL_ID)
 	        {
@@ -284,19 +285,20 @@ Join::pre_handler()
 	            id_list_len = 0;
 	        }
 	        
+			//WARN: this may need to check, end directly
 	        if (id_list_len == 0)
 	        {
 	            _list.clear();
 	            delete[] id_list;
 	            return false;
 	        }
-	        //TODO : correct ways to intersect
 	        //updateList(_list, id_list, id_list_len);
 	        if (_list.size() == 0)
 	            _list.unionList(id_list,id_list_len);
 	        else
 	            _list.intersectList(id_list, id_list_len);
 	        delete[] id_list;
+
 	        if (_list.size() == 0)
 	        {
 	            return false;
@@ -305,7 +307,9 @@ Join::pre_handler()
 
 	    cout << "\t\t[" << _var_i << "] after constant filter, candidate size = " << _list.size() << endl << endl << endl;
 	}
-	cout << "pre var filter start here" << endl;
+
+	cout << "pre filter start here" << endl;
+	//TODO:use vector instead of set
 	for(int _var = 0; _var < this->var_num; _var++)
 	{
 	    if(this->basic_query->isSatelliteInJoin(_var))
@@ -316,7 +320,6 @@ Join::pre_handler()
 	    unsigned size = this->basic_query->getCandidateSize(_var);
 	    
 	    //result if already empty for non-literal variable
-	    //TODO: whether use this
 	    /*
 	    if (size == 0)
 	    {
@@ -362,8 +365,6 @@ Join::pre_handler()
 	            continue;
 	        }
 	        
-	        //TODO+BETTER: is any pre really used? do we need to losen the restrictions?
-	        
 	        //size:m<n; time:mlgn < n-m
 	        //The former time is computed because the m should be small if we select this p, tending to use binary-search
 	        //when doing intersectList operation(mlgn < m+n).
@@ -393,7 +394,6 @@ Join::pre_handler()
 	    {
 	        continue;
 	    }
-	    //TODO : set ready here ?
 	    this->basic_query->setReady(_var);
 	    //NOTICE:use p2s here, use s2p in only_pre_filter_after_join because pres there are not efficient
 	    set<TYPE_PREDICATE_ID>::iterator it;
@@ -407,6 +407,10 @@ Join::pre_handler()
 	        else
 	            cans.intersectList(list, len);
 	        delete[] list;
+	        if(cans.size() == 0)
+			{
+				return false;
+			}
 	    }
     	
     	if(in_edge_pre_id.size() != 0 && cans.size() == 0)
@@ -423,6 +427,10 @@ Join::pre_handler()
             else
                 cans.intersectList(list, len);
             delete[] list;
+	        if(cans.size() == 0)
+			{
+				return false;
+			}
         }
 	    
 	    
@@ -432,8 +440,8 @@ Join::pre_handler()
 	        return false;
 	    }
 	    cout << "\t\t[" << _var << "] after pre var filter, candidate size = " << cans.size() << endl << endl << endl;
-	    
 	}
+
 	return true;
 
 }

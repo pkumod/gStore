@@ -732,18 +732,19 @@ Database::load_vstree(unsigned _vstree_size)
 void 
 Database::check()
 {
-//string tstr;
+string tstr;
  //unsigned pid = this->kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
  //cout<<"check: pre "<<pid<<endl;
  //this->stringindex->randomAccess(pid, &tstr, false);
  //cout<<"string index: "<<tstr<<endl;
  ////cout<<"kvstore: "<<this->kvstore->getPredicateByID(pid)<<endl;
 
- //unsigned sid = this->kvstore->getIDByEntity("<http://www.Department4.University1821.edu/Course50>");
- //cout<<"check: sub "<<sid<<endl;
- //this->stringindex->randomAccess(sid, &tstr, true);
- //cout<<"string index: "<<tstr<<endl;
- //cout<<"kvstore: "<<this->kvstore->getEntityByID(sid)<<endl;
+	cout<<"right pair: "<<62<<" "<<"<http://www.Department0.University0.edu/GraduateCourse11>"<<endl;
+ unsigned sid = this->kvstore->getIDByEntity("<http://www.Department0.University0.edu/GraduateCourse11>");
+ cout<<"check: sub "<<sid<<endl;
+ this->stringindex->randomAccess(sid, &tstr, true);
+ cout<<"string index: "<<tstr<<endl;
+ cout<<"kvstore: "<<this->kvstore->getEntityByID(sid)<<endl;
 
  //unsigned oid = this->kvstore->getIDByString("<http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#Course>");
  //cout<<"check: obj "<<oid<<endl;

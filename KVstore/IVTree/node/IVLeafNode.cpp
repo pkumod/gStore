@@ -342,7 +342,7 @@ IVLeafNode::split(IVNode* _father, int _index)
 		p->addValue(this->values + i, k);
 		p->addNum();
 	}
-	int tp = this->keys[MIN_KEY_NUM];
+	unsigned tp = this->keys[MIN_KEY_NUM];
 	this->setNum(MIN_KEY_NUM);
 	_father->addKey(tp, _index);
 	_father->addChild(p, _index + 1);	//DEBUG(check the index)

@@ -249,6 +249,7 @@ int initialize() {
 		string format = "json";
 		cout<<"HTTP: this is query"<<endl;
         string db_query=request->path_match[1];
+		cout<<"check: "<<db_query<<endl;
 		db_query = UrlDecode(db_query);
 		cout<<"check: "<<db_query<<endl;
         string str = db_query;

@@ -1154,6 +1154,38 @@ KVstore::getEntityByID(TYPE_ENTITY_LITERAL_ID _id) const
 
 	//NOTICE: no need to add \0 at last if we indicate the length
 	string _ret = string(_tmp, _len);
+	delete[] _tmp;
+	//CONSIDER: represent "abc" by 4 chars with length=4, and construct with string(str) directly
+
+	//if(_id == 62)
+	//{
+		//cout<<"check 62: "<<_ret<<endl;
+		//char* nstr = new char[_len+1];
+		//memcpy(nstr, _tmp, _len);
+		//nstr[_len] = '\0';
+		//cout<<"check 62: "<<nstr<<endl;
+		//for(int k = 0; k < _len; ++k)
+		//{
+			//cout<<_tmp[k]<<" ";
+		//}cout<<endl;
+		//delete[] nstr;
+	//}
+
+	//NOTICE: if there is messy code, then int(char) will < 0, otherwise not
+	//bool invalid = false;
+	//for(unsigned i = 0; i < _len; ++i)
+	//{
+		//if(int(_ret[i])<0)
+		//{
+			//invalid = true;
+			//break;
+		//}
+	//}
+	//if(invalid)
+	//{
+		//cout<<"error in kvstore: "<<_id<<" "<<_ret<<endl;
+		//cout<<"length: "<<_len<<" "<<_tmp<<" "<<_tmp[0]<<endl;
+	//}
 
 	return _ret;
 }
@@ -1166,6 +1198,8 @@ KVstore::setEntityByID(TYPE_ENTITY_LITERAL_ID _id, string _entity)
 	int len = _entity.length();
 	char* str = new char[len];
 	memcpy(str, _entity.c_str(), len);
+
+	//cout<<"check 62: "<<this->getEntityByID(62)<<endl;
 
 	return this->addValueByKey(this->id2entity, _id, str, len);
 }
@@ -1287,6 +1321,7 @@ KVstore::getPredicateByID(TYPE_PREDICATE_ID _id) const
 		return "";
 	}
 	string _ret = string(_tmp, _len);
+	delete[] _tmp;
 
 	return _ret;
 }
@@ -1422,6 +1457,21 @@ KVstore::getLiteralByID(TYPE_ENTITY_LITERAL_ID _id) const
 		return "";
 	}
 	string _ret = string(_tmp, _len);
+	delete[] _tmp;
+
+	//bool invalid = false;
+	//for(unsigned i = 0; i < _len; ++i)
+	//{
+		//if(int(_ret[i])<0)
+		//{
+			//invalid = true;
+			//break;
+		//}
+	//}
+	//if(invalid)
+	//{
+		//cout<<"error in kvstore: "<<_id<<" "<<_ret<<endl;
+	//}
 
 	return _ret;
 }
@@ -1596,11 +1646,11 @@ KVstore::getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlis
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::listNeedDelete(_len))
-	{
+	//if(VList::listNeedDelete(_len))
+	//{
 		delete[] _tmp;
 		//_tmp = NULL;
-	}
+	//}
 
 	return true;
 }
@@ -1634,11 +1684,11 @@ KVstore::getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlis
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::listNeedDelete(_len))
-	{
+	//if(VList::listNeedDelete(_len))
+	//{
 		delete[] _tmp;
 		//_tmp = NULL;
-	}
+	//}
 
 	return true;
 }
@@ -1684,11 +1734,11 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::listNeedDelete(_len))
-	{
+	//if(VList::listNeedDelete(_len))
+	//{
 		delete[] _tmp;
 		//_tmp = NULL;
-	}
+	//}
 
 	return true;
 }
@@ -1732,11 +1782,11 @@ KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _pre
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::listNeedDelete(_len))
-	{
+	//if(VList::listNeedDelete(_len))
+	//{
 		delete[] _tmp;
 		//_tmp = NULL;
-	}
+	//}
 
 	return true;
 }
@@ -1872,11 +1922,11 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::listNeedDelete(_len))
-	{
+	//if(VList::listNeedDelete(_len))
+	//{
 		delete[] _tmp;
 		//_tmp = NULL;
-	}
+	//}
 
 	return true;
 }
@@ -1904,11 +1954,11 @@ KVstore::getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlis
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::listNeedDelete(_len))
-	{
+	//if(VList::listNeedDelete(_len))
+	//{
 		delete[] _tmp;
 		//_tmp = NULL;
-	}
+	//}
 
 	return true;
 }
@@ -1948,11 +1998,11 @@ KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::listNeedDelete(_len))
-	{
+	//if(VList::listNeedDelete(_len))
+	//{
 		delete[] _tmp;
 		//_tmp = NULL;
-	}
+	//}
 
 	return true;
 }
@@ -1989,11 +2039,11 @@ KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _pre
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::listNeedDelete(_len))
-	{
+	//if(VList::listNeedDelete(_len))
+	//{
 		delete[] _tmp;
 		//_tmp = NULL;
-	}
+	//}
 
 	return true;
 }
@@ -2109,11 +2159,11 @@ KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, un
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::listNeedDelete(_len))
-	{
+	//if(VList::listNeedDelete(_len))
+	//{
 		delete[] _tmp;
 		//_tmp = NULL;
-	}
+	//}
 
 	return true;
 }
@@ -2140,11 +2190,11 @@ KVstore::getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, un
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::listNeedDelete(_len))
-	{
+	//if(VList::listNeedDelete(_len))
+	//{
 		delete[] _tmp;
 		//_tmp = NULL;
-	}
+	//}
 
 	return true;
 }
@@ -2180,14 +2230,14 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::listNeedDelete(_len))
-	{
+	//if(VList::listNeedDelete(_len))
+	//{
 #ifdef DEBUG_KVSTORE
 		cout<<"this is a vlist"<<endl;
 #endif
 		delete[] _tmp;
 		//_tmp = NULL;
-	}
+	//}
 
 	return true;
 }
@@ -2254,11 +2304,11 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 
 	//if this is a long list, then we should remove itself after copying
 	//otherwise, we should not free the list memory
-	if(VList::listNeedDelete(_len))
-	{
+	//if(VList::listNeedDelete(_len))
+	//{
 		delete[] _tmp;
 		//_tmp = NULL;
-	}
+	//}
 
 	if (_list_len == 0) {
 		_preidlist = NULL;
