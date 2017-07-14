@@ -2,7 +2,7 @@
 # Filename: GeneralEvaluation.h
 # Author: Jiaqi, Chen
 # Mail: chenjiaqi93@163.com
-# Last Modified: 2016-09-12
+# Last Modified: 2017-05-05
 # Description: 
 =============================================================================*/
 
@@ -30,34 +30,26 @@ class GeneralEvaluation
 	private:
 		QueryParser query_parser;
 		QueryTree query_tree;
-		SPARQLquery sparql_query;
-		std::vector <Varset> sparql_query_varset;
 		VSTree *vstree;
 		KVstore *kvstore;
-		TYPE_TRIPLE_NUM* pre2num;
-		TYPE_PREDICATE_ID limitID_predicate;
-		TYPE_ENTITY_LITERAL_ID limitID_literal;
 		StringIndex *stringindex;
 		Strategy strategy;
 		ResultFilter result_filter;
-		bool need_output_answer;
+
+		TYPE_TRIPLE_NUM *pre2num;
+		TYPE_PREDICATE_ID limitID_predicate;
+		TYPE_ENTITY_LITERAL_ID limitID_literal;
 
 	public:
-		explicit GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal):
-			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), pre2num(_pre2num), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), need_output_answer(false)
+		GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, TYPE_TRIPLE_NUM *_pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal):
+			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), pre2num(_pre2num), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), temp_result(NULL)
 		{
 		}
-
-		std::vector<std::vector<std::string> > getSPARQLQueryVarset();
 
 		bool parseQuery(const std::string &_query);
 		QueryTree& getQueryTree();
 
 		bool doQuery();
-
-		void getBasicQuery(QueryTree::GroupPattern &grouppattern);
-
-		class FilterExistsGroupPatternResultSetRecord;
 
 		class FilterEvaluationMultitypeValue
 		{
@@ -141,32 +133,41 @@ class GeneralEvaluation
 				FilterEvaluationMultitypeValue():datatype(rdf_term), int_value(0), flt_value(0), dbl_value(0){}
 		};
 
-
 		class TempResult
 		{
 			public:
-				Varset var;
-				std::vector<int*> res;
+				class ResultPair
+				{
+					public:
+						unsigned *id;
+						std::vector<string> str;
+						ResultPair():id(NULL){}
+				};
+
+				Varset id_varset, str_varset;
+				std::vector<ResultPair> result;
+
+				Varset getAllVarset();
 
 				void release();
 
-				static int compareFunc(int *a, std::vector<int> &p, int *b, std::vector<int> &q);
-				void sort(int l, int r, std::vector<int> &p);
-				int findLeftBounder(std::vector<int> &p, int *b, std::vector<int> &q);
-				int findRightBounder(std::vector<int> &p, int *b, std::vector<int> &q);
+				static int compareRow(const ResultPair &x, const int x_id_cols, const std::vector<int> &x_pos,
+									  const ResultPair &y, const int y_id_cols, const std::vector<int> &y_pos);
+				void sort(int l, int r, const std::vector<int> &this_pos);
+				int findLeftBounder(const std::vector<int> &this_pos, const ResultPair &x, const int x_id_cols, const std::vector<int> &x_pos) const;
+				int findRightBounder(const std::vector<int> &this_pos, const ResultPair &x, const int x_id_cols, const std::vector<int> &x_pos) const;
 
+				void convertId2Str(Varset convert_varset, StringIndex *stringindex, Varset &entity_literal_varset);
 				void doJoin(TempResult &x, TempResult &r);
-				void doUnion(TempResult &rt);
+				void doUnion(TempResult &r);
 				void doOptional(std::vector<bool> &binding, TempResult &x, TempResult &rn, TempResult &ra, bool add_no_binding);
 				void doMinus(TempResult &x, TempResult &r);
-				void doDistinct(TempResult &r);
 
-				void mapFilterTree2Varset(QueryTree::GroupPattern::FilterTreeNode &filter, Varset &v, Varset &entity_literal_varset);
-				void doFilter(QueryTree::GroupPattern::FilterTreeNode &filter, FilterExistsGroupPatternResultSetRecord &filter_exists_grouppattern_resultset_record, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset);
-				void getFilterString(QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild &child, FilterEvaluationMultitypeValue &femv, int *row, StringIndex *stringindex);
-				FilterEvaluationMultitypeValue matchFilterTree(QueryTree::GroupPattern::FilterTreeNode &filter, FilterExistsGroupPatternResultSetRecord &filter_exists_grouppattern_resultset_record, int *row, StringIndex *stringindex);
+				void getFilterString(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild &child, FilterEvaluationMultitypeValue &femv, ResultPair &row, int id_cols, StringIndex *stringindex);
+				FilterEvaluationMultitypeValue matchFilterTree(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, ResultPair &row, int id_cols, StringIndex *stringindex);
+				void doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset);
 
-				void print();
+				void print(int no=-1);
 		};
 
 		class TempResultSet
@@ -176,68 +177,32 @@ class GeneralEvaluation
 
 				void release();
 
-				int findCompatibleResult(Varset &_varset);
+				int findCompatibleResult(Varset &_id_varset, Varset &_str_varset);
 
-				void doJoin(TempResultSet &x, TempResultSet &r);
+				void doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
 				void doUnion(TempResultSet &x, TempResultSet &r);
-				void doOptional(TempResultSet &x, TempResultSet &r);
-				void doMinus(TempResultSet &x, TempResultSet &r);
-				void doDistinct(Varset &projection, TempResultSet &r);
+				void doOptional(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
+				void doMinus(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
+				void doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
 
-				void doFilter(QueryTree::GroupPattern::FilterTreeNode &filter, FilterExistsGroupPatternResultSetRecord &filter_exists_grouppattern_resultset_record, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
+				void doProjection1(Varset &proj, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
+				void doDistinct1(TempResultSet &r);
 
 				void print();
 		};
 
-		class EvaluationUnit
-		{
-			private:
-				char type;
-				void *p;
-			public:
-				EvaluationUnit(char _type, void *_p = NULL):type(_type), p(_p){}
-				char getType()
-				{	return type;	}
-				void *getPointer()
-				{	return p;	}
-		};
+	private:
+		TempResultSet* temp_result;
+		std::vector<QueryTree::GroupPattern> rewriting_evaluation_stack;
 
-		std::vector<EvaluationUnit>	semantic_evaluation_plan;
-
-		void generateEvaluationPlan(QueryTree::GroupPattern &grouppattern);
-		void dfsJoinableResultGraph(int x, vector < pair<char, int> > &node_info, vector < vector<int> > &edge, QueryTree::GroupPattern &grouppattern);
-
-		std::stack<TempResultSet*>	semantic_evaluation_result_stack;
-
-		class FilterExistsGroupPatternResultSetRecord
-		{
-			public:
-				std::vector<TempResultSet*> resultset;
-				std::vector< std::vector<Varset> > common;
-				std::vector< std::vector< std::pair< std::vector<int>, std::vector<int> > > > common2resultset;
-		} filter_exists_grouppattern_resultset_record;
-
-		int countFilterExistsGroupPattern(QueryTree::GroupPattern::FilterTreeNode &filter);
-		void doEvaluationPlan();
-
-		class ExpansionEvaluationStackUnit
-		{
-			public:
-				ExpansionEvaluationStackUnit():result(NULL){}
-				QueryTree::GroupPattern grouppattern;
-				SPARQLquery sparql_query;
-				TempResultSet *result;
-		};
-		std::vector <ExpansionEvaluationStackUnit> expansion_evaluation_stack;
+	public:
+		TempResultSet* semanticBasedQueryEvaluation(QueryTree::GroupPattern &grouppattern);
 
 		bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &grouppattern, std::deque<QueryTree::GroupPattern> &queue);
-		void queryRewriteEncodeRetrieveJoin(int dep);
+		TempResultSet* rewritingBasedQueryEvaluation(int dep);
 
-		bool needOutputAnswer();
-		void setNeedOutputAnswer();
-
-		void getFinalResult(ResultSet &result_str);
-		void releaseResultStack();
+		void getFinalResult(ResultSet &ret_result);
+		void releaseResult();
 
 		void prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, unsigned &update_triple_num);
 };

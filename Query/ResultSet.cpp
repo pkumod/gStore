@@ -68,7 +68,7 @@ ResultSet::checkUseStream()
 }
 
 void 
-ResultSet::setOutputOffsetLimit(unsigned _output_offset, unsigned _output_limit)
+ResultSet::setOutputOffsetLimit(int _output_offset, int _output_limit)
 {
 	this->output_offset = _output_offset;
 	this->output_limit = _output_limit;
@@ -89,9 +89,9 @@ ResultSet::setVar(const vector<string> & _var_names)
 string 
 ResultSet::to_str()
 {
-	unsigned ans_num = max((long long)this->ansNum - this->output_offset, (long long)0);
+	long long ans_num = max((long long)this->ansNum - this->output_offset, 0LL);
 	if (this->output_limit != -1)
-		ans_num = min(ans_num, this->output_limit);
+		ans_num = min(ans_num, (long long)this->output_limit);
 	if(ans_num == 0)
 	{
 		return "[empty result]\n";
@@ -110,8 +110,8 @@ ResultSet::to_str()
 	if (this->useStream)
 		this->resetStream();
 
-	const Bstr* bp;
-	for(unsigned i = (!this->useStream ? this->output_offset : 0); i < this->ansNum; i++)
+	const Bstr* bp = NULL;
+	for(long long i = (!this->useStream ? this->output_offset : 0LL); i < this->ansNum; i++)
 	{
 		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
 			break;
@@ -160,8 +160,8 @@ ResultSet::to_JSON()
 	if (this->useStream)
 		this->resetStream();
 
-	const Bstr* bp;
-	for(unsigned i = (!this->useStream ? this->output_offset : 0); i < this->ansNum; i++)
+	const Bstr* bp = NULL;
+	for(long long i = (!this->useStream ? this->output_offset : 0LL); i < this->ansNum; i++)
 	{
 		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
 			break;
@@ -199,14 +199,14 @@ ResultSet::to_JSON()
 					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
 					_buf << "\"type\": \"" + ans_type + "\", \"value\": \"" + Util::node2string(ans_str.c_str()) + "\" }";
 				}
-				else if (ans_str[0] == '"' && ans_str.find("\"^^<") == -1 && ans_str[ans_str.length() - 1] != '>' )
+				else if (ans_str[0] == '"' && ans_str.find("\"^^<") == string::npos && ans_str[ans_str.length() - 1] != '>' )
 				{
 					ans_type = "literal";
 					ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
 					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
 					_buf << "\"type\": \"" + ans_type + "\", \"value\": \"" + Util::node2string(ans_str.c_str()) + "\" }";
 				}
-				else if (ans_str[0] == '"' && ans_str.find("\"^^<") != -1 && ans_str[ans_str.length() - 1] == '>' )
+				else if (ans_str[0] == '"' && ans_str.find("\"^^<") != string::npos && ans_str[ans_str.length() - 1] == '>' )
 				{
 					ans_type = "typed-literal";
 					int pos = ans_str.find("\"^^<");
@@ -234,9 +234,9 @@ ResultSet::output(FILE* _fp)
 {
 	if (this->useStream)
 	{
-		unsigned ans_num = max((long long)this->ansNum - this->output_offset, (long long)0);
+		long long ans_num = max((long long)this->ansNum - this->output_offset, 0LL);
 		if (this->output_limit != -1)
-			ans_num = min(ans_num, this->output_limit);
+			ans_num = min(ans_num, (long long)this->output_limit);
 		if(ans_num == 0)
 		{
 			fprintf(_fp, "[empty result]\n");
@@ -251,7 +251,7 @@ ResultSet::output(FILE* _fp)
 		fprintf(_fp, "\n");
 
 		const Bstr* bp;
-		for(unsigned i = 0; i < this->ansNum; i++)
+		for(long long i = 0; i < this->ansNum; i++)
 		{
 			if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
 				break;

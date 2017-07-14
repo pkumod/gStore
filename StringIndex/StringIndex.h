@@ -12,8 +12,6 @@
 #include "../KVstore/KVstore.h"
 #include "../Util/Util.h"
 
-//TODO: adjust the type
-
 class StringIndexFile
 {
 	public:
@@ -29,9 +27,9 @@ class StringIndexFile
 		class IndexInfo
 		{
 			public:
-				IndexInfo(long _offset = 0, unsigned _length = 0):offset(_offset), length(_length){}
 				long offset;
 				unsigned length;
+				IndexInfo(long _offset = 0, unsigned _length = 0):offset(_offset), length(_length){}
 		};
 		std::vector<IndexInfo> index_table;
 
@@ -55,7 +53,7 @@ class StringIndexFile
 		std::vector<AccessRequest> request;
 
 	public:
-		StringIndexFile(StringIndexFileType _type, std::string _dir, unsigned _num):type(_type), num(_num), empty_offset(0), index_file(NULL), value_file(NULL),  buffer_size(0), buffer(NULL)
+		StringIndexFile(StringIndexFileType _type, std::string _dir, unsigned _num):type(_type), num(_num), empty_offset(0), index_file(NULL), value_file(NULL), buffer_size(0), buffer(NULL)
 		{
 			if (this->type == Entity)
 				this->loc = _dir + "/entity_";
@@ -105,7 +103,7 @@ class StringIndex
 		Buffer* literal_buffer;
 		unsigned literal_buffer_size;
 	public:
-		StringIndex(std::string _dir, unsigned _entity_num = 0, unsigned _literal_num = 0, unsigned _predicate_num = 0) :
+		StringIndex(std::string _dir, unsigned _entity_num = 0, unsigned _literal_num = 0, unsigned _predicate_num = 0):
 			entity(StringIndexFile::Entity, _dir, _entity_num), literal(StringIndexFile::Literal, _dir, _literal_num), predicate(StringIndexFile::Predicate, _dir, _predicate_num){}
 
 		void setBuffer(Buffer* _ebuf, Buffer* _lbuf)

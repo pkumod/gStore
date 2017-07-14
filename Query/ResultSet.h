@@ -20,10 +20,10 @@ private:
 	bool useStream;
 public:
 	int select_var_num;
-	std::string*  var_name;
+	std::string* var_name;
 	unsigned ansNum;
 	std::string** answer;
-	unsigned output_offset, output_limit;
+	int output_offset, output_limit;
 
 	ResultSet();
 	~ResultSet();
@@ -31,7 +31,7 @@ public:
 
 	void setUseStream();
 	bool checkUseStream();
-	void setOutputOffsetLimit(unsigned _output_offset, unsigned _output_limit);
+	void setOutputOffsetLimit(int _output_offset, int _output_limit);
 
 	//convert to binary string 
 	//Bstr* to_bstr();

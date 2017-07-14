@@ -739,12 +739,12 @@ string tstr;
  //cout<<"string index: "<<tstr<<endl;
  ////cout<<"kvstore: "<<this->kvstore->getPredicateByID(pid)<<endl;
 
-	cout<<"right pair: "<<62<<" "<<"<http://www.Department0.University0.edu/GraduateCourse11>"<<endl;
- unsigned sid = this->kvstore->getIDByEntity("<http://www.Department0.University0.edu/GraduateCourse11>");
- cout<<"check: sub "<<sid<<endl;
- this->stringindex->randomAccess(sid, &tstr, true);
- cout<<"string index: "<<tstr<<endl;
- cout<<"kvstore: "<<this->kvstore->getEntityByID(sid)<<endl;
+	//cout<<"right pair: "<<62<<" "<<"<http://www.Department0.University0.edu/GraduateCourse11>"<<endl;
+ //unsigned sid = this->kvstore->getIDByEntity("<http://www.Department0.University0.edu/GraduateCourse11>");
+ //cout<<"check: sub "<<sid<<endl;
+ //this->stringindex->randomAccess(sid, &tstr, true);
+ //cout<<"string index: "<<tstr<<endl;
+ //cout<<"kvstore: "<<this->kvstore->getEntityByID(sid)<<endl;
 
  //unsigned oid = this->kvstore->getIDByString("<http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#Course>");
  //cout<<"check: obj "<<oid<<endl;
@@ -881,7 +881,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	long tv_begin = Util::get_cur_time();
 
 	if (!general_evaluation.parseQuery(_query))
-		return false;
+		return -101;
 	long tv_parse = Util::get_cur_time();
 	cout << "after Parsing, used " << (tv_parse - tv_begin) << "ms." << endl;
 
@@ -889,6 +889,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	//for select, -100 by default, -101 means error
 	//for update, non-negative means true(and the num is updated triples num), -1 means error
 	int success_num = -100;  
+	bool need_output_answer = false;
 
 	//Query
 	if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Not_Update)
@@ -905,7 +906,8 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		cout << "after getFinalResult, used " << (tv_afget - tv_bfget) << "ms." << endl;
 
 		if(_fp != NULL)
-			general_evaluation.setNeedOutputAnswer();
+			need_output_answer = true;
+			//general_evaluation.setNeedOutputAnswer();
 	}
 	//Update
 	else
@@ -919,22 +921,23 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 			QueryTree::GroupPattern &update_pattern = general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data ?
 				general_evaluation.getQueryTree().getInsertPatterns() : general_evaluation.getQueryTree().getDeletePatterns();
 
-			update_triple_num = update_pattern.patterns.size();
+			update_triple_num = update_pattern.sub_grouppattern.size();
 			update_triple = new TripleWithObjType[update_triple_num];
 
-			//for (int i = 0; i < (int)update_pattern.patterns.size(); i++)
-			for (TYPE_TRIPLE_NUM i = 0; i < update_triple_num; ++i)
-			{
-				TripleWithObjType::ObjectType object_type = TripleWithObjType::None;
-				if (update_pattern.patterns[i].object.value[0] == '<')
-					object_type = TripleWithObjType::Entity;
-				else
-					object_type = TripleWithObjType::Literal;
+			for (TYPE_TRIPLE_NUM i = 0; i < update_triple_num; i++)
+				if (update_pattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+				{
+					TripleWithObjType::ObjectType object_type = TripleWithObjType::None;
+					if (update_pattern.sub_grouppattern[i].pattern.object.value[0] == '<')
+						object_type = TripleWithObjType::Entity;
+					else
+						object_type = TripleWithObjType::Literal;
 
-				update_triple[i] = TripleWithObjType(update_pattern.patterns[i].subject.value,
-					update_pattern.patterns[i].predicate.value,
-					update_pattern.patterns[i].object.value, object_type);
-			}
+					update_triple[i] = TripleWithObjType(update_pattern.sub_grouppattern[i].pattern.subject.value,
+														 update_pattern.sub_grouppattern[i].pattern.predicate.value,
+														 update_pattern.sub_grouppattern[i].pattern.object.value, object_type);
+				}
+				else throw "Database::query failed";
 
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data)
 			{
@@ -963,18 +966,19 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 			}
 		}
 
-		general_evaluation.releaseResultStack();
+		general_evaluation.releaseResult();
 		delete[] update_triple;
 	}
 
 	long tv_final = Util::get_cur_time();
 	cout << "Total time used: " << (tv_final - tv_begin) << "ms." << endl;
 
-	if (general_evaluation.needOutputAnswer())
+	//if (general_evaluation.needOutputAnswer())
+	if (need_output_answer)
 	{
-		unsigned ans_num = max((long long)_result_set.ansNum - _result_set.output_offset, (long long)0);
+		long long ans_num = max((long long)_result_set.ansNum - _result_set.output_offset, 0LL);
 		if (_result_set.output_limit != -1)
-			ans_num = min(ans_num, _result_set.output_limit);
+			ans_num = min(ans_num, (long long)_result_set.output_limit);
 		cout << "There has answer: " << ans_num << endl;
 		cout << "final result is : " << endl;
 		_result_set.output(_fp);
@@ -985,6 +989,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 #ifdef DEBUG
 	cout<<"query success_num: "<<success_num<<endl;
 #endif
+
 	//cout<<"to check: "<<this->kvstore->getEntityByID(0)<<endl;
 	return success_num;
 }
