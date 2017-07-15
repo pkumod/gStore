@@ -130,7 +130,7 @@ IVLeafNode::getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) con
 		cout<<"this is a vlist in get()"<<endl;
 #endif
 		unsigned block_num = this->values[_index].getLen();
-		_vlist->readValue(block_num, _str, _len);
+		_vlist->readValue(block_num, _str, _len, this->keys[_index]);
 	}
 	else
 	{
