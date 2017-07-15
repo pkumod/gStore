@@ -88,6 +88,7 @@ public:
 	void resetStream();
 	bool range_query(unsigned _key1, unsigned _key2);
 	bool save();
+	void AddIntoCache(TYPE_ENTITY_LITERAL_ID _id);
 	~IVTree();
 	void print(std::string s);			//DEBUG(print the tree)
 };
