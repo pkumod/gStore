@@ -157,11 +157,14 @@ private:
 	std::vector <TYPE_PREDICATE_ID> important_preID;
 	void load_important_sub2values();
 	void load_important_obj2values();
+	void load_candidate_pre2values();
 	void build_CacheOfPre2values();
 	void build_CacheOfSub2values();
 	void build_CacheOfObj2values();
 	void get_important_subID();
 	void get_important_objID();
+	void get_candidate_preID();
+	std::priority_queue <KEY_SIZE_VALUE> candidate_preID;
 	std::priority_queue <KEY_SIZE_VALUE> important_subID;
 	std::priority_queue <KEY_SIZE_VALUE> important_objID;
 	
