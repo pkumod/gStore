@@ -440,9 +440,9 @@ Database::release(FILE* fp0)
 {
 	fprintf(fp0, "begin to delete DB!\n");
 	fflush(fp0);
-	this->vstree->saveTree();
-	delete this->vstree;
-	fprintf(fp0, "ok to delete vstree!\n");
+	//this->vstree->saveTree();
+	//delete this->vstree;
+	//fprintf(fp0, "ok to delete vstree!\n");
 	fflush(fp0);
 	delete this->kvstore;
 	fprintf(fp0, "ok to delete kvstore!\n");
@@ -1108,8 +1108,8 @@ void Database::clear()
 	delete this->literal_buffer;
 	this->literal_buffer = NULL;
 
-	delete this->vstree;
-	this->vstree = NULL;
+	//delete this->vstree;
+	//this->vstree = NULL;
 	delete this->kvstore;
 	this->kvstore = NULL;
 	delete this->stringindex;
@@ -2495,13 +2495,13 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	if (_is_new_sub)
 	{
 		//cout<<"to insert: "<<_sub_id<<" "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-		SigEntry _sig(_sub_id, _sub_entity_bitset);
-		(this->vstree)->insertEntry(_sig);
+		//SigEntry _sig(_sub_id, _sub_entity_bitset);
+		//(this->vstree)->insertEntry(_sig);
 	}
 	else
 	{
 		//cout<<"to update: "<<_sub_id<<" "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-		(this->vstree)->updateEntry(_sub_id, _sub_entity_bitset);
+		//(this->vstree)->updateEntry(_sub_id, _sub_entity_bitset);
 	}
 
 	//if the object is an entity, then update or insert this entity's entry.
@@ -2516,13 +2516,13 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		if (_is_new_obj)
 		{
 			//cout<<"to insert: "<<_obj_id<<" "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			SigEntry _sig(_obj_id, _obj_entity_bitset);
-			(this->vstree)->insertEntry(_sig);
+			//SigEntry _sig(_obj_id, _obj_entity_bitset);
+			//(this->vstree)->insertEntry(_sig);
 		}
 		else
 		{
 			//cout<<"to update: "<<_obj_id<<" "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			(this->vstree)->updateEntry(_obj_id, _obj_entity_bitset);
+			//(this->vstree)->updateEntry(_obj_id, _obj_entity_bitset);
 		}
 	}
 
@@ -2593,7 +2593,7 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
 		this->kvstore->subEntityByID(_sub_id);
 		this->kvstore->subIDByEntity(_triple.subject);
-		(this->vstree)->removeEntry(_sub_id);
+		//(this->vstree)->removeEntry(_sub_id);
 		this->freeEntityID(_sub_id);
 		this->sub_num--;
 		//update the string buffer
@@ -2614,7 +2614,7 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		this->calculateEntityBitSet(_sub_id, _entity_bitset);
 		//NOTICE:can not use updateEntry as insert because this is in remove
 		//In insert we can add a OR operation and all is ok
-		(this->vstree)->replaceEntry(_sub_id, _entity_bitset);
+		//(this->vstree)->replaceEntry(_sub_id, _entity_bitset);
 	}
 	//cout<<"subject dealed"<<endl;
 
@@ -2629,7 +2629,7 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			//cout<<_obj_id << " "<<this->kvstore->getEntityByID(_obj_id)<<endl;
 			this->kvstore->subEntityByID(_obj_id);
 			this->kvstore->subIDByEntity(_triple.object);
-			this->vstree->removeEntry(_obj_id);
+			//this->vstree->removeEntry(_obj_id);
 			this->freeEntityID(_obj_id);
 			//update the string buffer
 			if (_obj_id < this->entity_buffer_size)
@@ -2643,10 +2643,10 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		{
 			//cout<<"to replace entry for obj"<<endl;
 			//cout<<_obj_id << " "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			EntityBitSet _entity_bitset;
-			_entity_bitset.reset();
-			this->calculateEntityBitSet(_obj_id, _entity_bitset);
-			this->vstree->replaceEntry(_obj_id, _entity_bitset);
+			//EntityBitSet _entity_bitset;
+			//_entity_bitset.reset();
+			//this->calculateEntityBitSet(_obj_id, _entity_bitset);
+			//this->vstree->replaceEntry(_obj_id, _entity_bitset);
 		}
 	}
 	else
@@ -2859,7 +2859,8 @@ Database::remove(std::string _rdf_file, bool _is_restore)
 	cout << "remove rdf triples done." << endl;
 	cout<<"removed triples num: "<<success_num<<endl;
 
-	if(this->vstree->isEmpty())
+	//if(this->vstree->isEmpty())
+	if(this->triples_num == 0)
 	{
 		this->resetIDinfo();
 	}
@@ -3319,15 +3320,15 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	}
 	delete[] id_tuples;
 
-	for (it = old_sigmap.begin(); it != old_sigmap.end(); ++it)
-	{
-		this->vstree->updateEntry(it->first, it->second);
-	}
-	for (it = new_sigmap.begin(); it != new_sigmap.end(); ++it)
-	{
-		SigEntry _sig(it->first, it->second);
-		this->vstree->insertEntry(_sig);
-	}
+	//for (it = old_sigmap.begin(); it != old_sigmap.end(); ++it)
+	//{
+		//this->vstree->updateEntry(it->first, it->second);
+	//}
+	//for (it = new_sigmap.begin(); it != new_sigmap.end(); ++it)
+	//{
+		//SigEntry _sig(it->first, it->second);
+		//this->vstree->insertEntry(_sig);
+	//}
 #else
 	//NOTICE:we deal with insertions one by one here
 	//Callers should save the vstree(node and info) after calling this function
@@ -3517,7 +3518,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 						tmpstr = this->kvstore->getEntityByID(_sub_id);
 						this->kvstore->subEntityByID(_sub_id);
 						this->kvstore->subIDByEntity(tmpstr);
-						(this->vstree)->removeEntry(_sub_id);
+						//(this->vstree)->removeEntry(_sub_id);
 						this->freeEntityID(_sub_id);
 						this->sub_num--;
 						//add info and update buffer
@@ -3531,7 +3532,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 					{
 						tmpset.reset();
 						this->calculateEntityBitSet(_sub_id, tmpset);
-						this->vstree->replaceEntry(_sub_id, tmpset);
+						//this->vstree->replaceEntry(_sub_id, tmpset);
 					}
 				}
 
@@ -3598,7 +3599,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 							tmpstr = this->kvstore->getEntityByID(_obj_id);
 							this->kvstore->subEntityByID(_obj_id);
 							this->kvstore->subIDByEntity(tmpstr);
-							(this->vstree)->removeEntry(_obj_id);
+							//(this->vstree)->removeEntry(_obj_id);
 							this->freeEntityID(_obj_id);
 							//add info and update buffer
 							vertices.push_back(_obj_id);
@@ -3611,7 +3612,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 						{
 							tmpset.reset();
 							this->calculateEntityBitSet(_obj_id, tmpset);
-							this->vstree->replaceEntry(_obj_id, tmpset);
+							//this->vstree->replaceEntry(_obj_id, tmpset);
 						}
 					}
 					else
@@ -3723,7 +3724,8 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 
 	//BETTER+TODO:this will require us to lock all when remove process not ends(in multiple threads cases)
 	//An considerable idea is to check if empty after every triple removed
-	if(this->vstree->isEmpty())
+	//if(this->vstree->isEmpty())
+	if(this->triples_num == 0)
 	{
 		this->resetIDinfo();
 	}
@@ -3753,7 +3755,7 @@ Database::backup()
 	sys_cmd = "rm " + backup_path + '/' + this->update_log;
 	system(sys_cmd.c_str());
 
-	this->vstree->saveTree();
+	//this->vstree->saveTree();
 	this->kvstore->flush();
 
 	this->clear_update_log();
