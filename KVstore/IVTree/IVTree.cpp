@@ -188,7 +188,6 @@ IVTree::insert(unsigned _key, char* _str, unsigned _len)
 		this->TSM->updateHeap(ret, ret->getRank(), false);
 		this->root = father;
 	}
-
 	IVNode* p = this->root;
 	IVNode* q;
 	int i;
@@ -255,7 +254,6 @@ IVTree::insert(unsigned _key, char* _str, unsigned _len)
 		//_key->clear();
 		//_value->clear();
 	}
-
 	this->TSM->request(request);
 	return !ifexist;		//QUERY(which case:return false)
 }

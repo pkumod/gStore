@@ -76,7 +76,7 @@ private:
 	//<10%: 5000000~100M bytes
 	FILE* valfp;
 	// cache for vlist.
-	Longlist_inMem* longlist;
+	Longlist_inMem longlist[2000];
 	//NOTICE: freemem's type is long long here, due to large memory in server.
 	//However, needmem in handler() and request() is ok to be int/unsigned.
 	//Because the bstr' size is controlled, so is the node.
