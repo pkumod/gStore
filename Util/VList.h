@@ -94,7 +94,7 @@ private:
 public:
 	VList();
 	VList(std::string& _filepath, std::string& _mode, unsigned long long _buffer_size);//create a fixed-size file or open an existence
-	bool readValue(unsigned _block_num, char*& _str, unsigned& _len);
+	bool readValue(unsigned _block_num, char*& _str, unsigned& _len, unsigned _key);
 	unsigned writeValue(char* _str, unsigned _len);
 	bool removeValue(unsigned _block_num);
 	~VList();
