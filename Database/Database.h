@@ -24,6 +24,7 @@
 #include "../Parser/RDFParser.h"
 #include "../Parser/SparqlParser.h"
 #include "../Query/GeneralEvaluation.h"
+#include "../Util/ClassForVlistCache.h"
 
 class Database
 {
