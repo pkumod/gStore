@@ -627,12 +627,12 @@ IVTree::release(IVNode* _np) const
 void
 IVTree::AddIntoCache(TYPE_ENTITY_LITERAL_ID _id)
 {
-	char* tmp = NULL;
-	unsigned len;
-	this->search(_id, tmp, len);
+	char* _tmp = NULL;
+	unsigned _len;
+	this->search(_id, _tmp, _len);
 //	cout << "len is " << len << endl;
-	this->value_list->AddIntoCache(_id, tmp, len);
-	delete [] tmp;
+	this->value_list->AddIntoCache(_id, _tmp, _len);
+	delete [] _tmp;
 }
 
 IVTree::~IVTree()
