@@ -11,6 +11,7 @@
 
 #include "Util.h"
 #include "Bstr.h"
+#include "ClassForVlistCache.h"
 
 //NOTICE: not keep long list in memory, read each time
 //but when can you free the long list(kvstore should release it after parsing)
@@ -74,7 +75,8 @@ private:
 	//NOTICE: according to the summary result, 90% value lists are just below 100 bytes
 	//<10%: 5000000~100M bytes
 	FILE* valfp;
-
+	// cache for vlist.
+	Longlist_inMem* longlist;
 	//NOTICE: freemem's type is long long here, due to large memory in server.
 	//However, needmem in handler() and request() is ok to be int/unsigned.
 	//Because the bstr' size is controlled, so is the node.
@@ -99,6 +101,7 @@ public:
 
 	static bool isLongList(unsigned _len);
 	static bool listNeedDelete(unsigned _len);
+	void AddIntoCache(unsigned _key, char*& _str, unsigned _len);
 };
 
 #endif
