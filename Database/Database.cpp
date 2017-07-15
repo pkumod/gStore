@@ -647,7 +647,9 @@ Database::load()
 	//wait for vstree thread
 	//vstree_thread.join();
 #endif
-
+	//load cache of sub2values and obj2values
+	this->load_cache();
+	
 	//warm up always as finishing build(), to utilize the system buffer
 	//this->warmUp();
 	//DEBUG:the warmUp() calls query(), which will also output results, this is not we want
@@ -668,6 +670,196 @@ Database::load()
 
 	return true;
 }
+
+void
+Database::load_cache()
+{
+	// get important pre ID
+	// a pre whose degree is more than 50% of max pre degree is important pre
+	cout << "get important pre ID" << endl;
+	this->get_important_preID();
+	cout << "total preID num is " << pre_num << endl;
+	cout << "important pre ID is: ";
+	for(int i = 0; i < important_preID.size(); ++i)
+		cout << important_preID[i] << ' ';
+	cout << endl;
+	this->load_important_sub2values();
+	this->load_important_obj2values();
+}
+
+void
+Database::get_important_preID()
+{
+	important_preID.clear();
+	unsigned max_degree = 0;
+	for(TYPE_PREDICATE_ID i = 0; i <= limitID_predicate; ++i)
+		if (pre2num[i] > max_degree)
+			max_degree = pre2num[i];
+	unsigned limit_degree = max_degree / 2;
+	for(TYPE_PREDICATE_ID i = 0; i <= limitID_predicate; ++i)
+		if (pre2num[i] > limit_degree)
+			important_preID.push_back(i);
+}
+
+void
+Database::load_important_obj2values()
+{
+	cout << "get important objID..." << endl;
+	this->get_important_objID();
+
+	this->build_CacheOfObj2values();
+}
+void
+Database::load_important_sub2values()
+{
+	cout << "get important subID..." << endl;
+	this->get_important_subID();
+
+	this->build_CacheOfSub2values();
+}
+
+void
+Database::build_CacheOfObj2values()
+{
+	cout << "now add cache of objID2values..." << endl;
+	while (!important_objID.empty())
+	{
+		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
+		this->kvstore->AddIntoObjCache(important_objID.top().key);
+		important_objID.pop();
+	}
+}
+
+void
+Database::build_CacheOfSub2values()
+{
+	cout << "now add cache of subID2values..." << endl;
+	while (!important_subID.empty())
+	{
+		//cout << "add key " << important_subID.top().key << " size: " << important_subID.top().size << endl;
+		this->kvstore->AddIntoSubCache(important_subID.top().key);
+		important_subID.pop();
+	}
+}
+
+void
+Database::get_important_subID()
+{
+	while(!important_subID.empty()) important_subID.pop();
+	unsigned now_total_size = 0;
+	const unsigned max_total_size = 500000000;//0.5G
+	std::priority_queue <KEY_SIZE_VALUE, deque<KEY_SIZE_VALUE>, greater<KEY_SIZE_VALUE> > rubbish;
+	while(!rubbish.empty()) rubbish.pop();
+	// a sub who has largest degree with important pre is important subs
+	for(TYPE_ENTITY_LITERAL_ID i = 0; i <= limitID_entity; ++i)
+	{
+		unsigned _value = 0;
+		unsigned _size;
+		unsigned* _tmp = NULL;
+		
+		_size = this->kvstore->getSubListSize(i);
+		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
+
+		for(unsigned j = 0; j < important_preID.size(); ++j)
+		{
+			_value += this->kvstore->getSubjectPredicateDegree(i, j);
+		}
+		if (_size + now_total_size < max_total_size)
+		{
+			important_subID.push(KEY_SIZE_VALUE(i, _size, _value));
+			now_total_size += _size;
+		}
+		else
+		{
+			if (!important_subID.empty() && _value > important_subID.top().value)
+			{
+				while (now_total_size + _size >= max_total_size)
+				{
+					if (important_subID.top().value >= _value) break;
+					rubbish.push(important_subID.top());
+					now_total_size -= important_subID.top().size;
+					important_subID.pop();
+				}
+				if (now_total_size + _size < max_total_size)
+				{
+					now_total_size += _size;
+					important_subID.push(KEY_SIZE_VALUE(i, _size, _value));
+				}
+				while (!rubbish.empty())
+				{
+					if (now_total_size + rubbish.top().size < max_total_size)
+					{
+						now_total_size += rubbish.top().size;
+						important_subID.push(rubbish.top());
+					}
+					rubbish.pop();
+				}
+			}
+		}
+	}
+	cout << "finish getting important subID, the cache size is " << now_total_size << endl;
+}
+
+void
+Database::get_important_objID()
+{
+	while(!important_objID.empty()) important_objID.pop();
+	unsigned now_total_size = 0;
+	const unsigned max_total_size = 1500000000;//1.5G
+	std::priority_queue <KEY_SIZE_VALUE, deque<KEY_SIZE_VALUE>, greater<KEY_SIZE_VALUE> > rubbish;
+	while(!rubbish.empty()) rubbish.pop();
+	// a sub who has largest degree with important pre is important subs
+	for(TYPE_ENTITY_LITERAL_ID i = 0; i <= limitID_literal; ++i)
+	{
+		unsigned _value = 0;
+		unsigned _size;
+		unsigned* _tmp = NULL;
+
+		_size = this->kvstore->getObjListSize(i);
+		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
+		
+		for(unsigned j = 0; j < important_preID.size(); ++j)
+		{
+			_value += this->kvstore->getObjectPredicateDegree(i, j);
+		}
+		
+		if (_size + now_total_size < max_total_size)
+		{
+			important_objID.push(KEY_SIZE_VALUE(i, _size, _value));
+			now_total_size += _size;
+		}
+		else
+		{
+			if (!important_objID.empty() && _value > important_objID.top().value)
+			{
+				while (now_total_size + _size >= max_total_size)
+				{
+					if (important_objID.top().value >= _value) break;
+					rubbish.push(important_objID.top());
+					now_total_size -= important_objID.top().size;
+					important_objID.pop();
+				}
+				if (now_total_size + _size < max_total_size)
+				{
+					now_total_size += _size;
+					important_objID.push(KEY_SIZE_VALUE(i, _size, _value));
+				}
+				while (!rubbish.empty())
+				{
+					if (now_total_size + rubbish.top().size < max_total_size)
+					{
+						now_total_size += rubbish.top().size;
+						important_objID.push(rubbish.top());
+					}
+					rubbish.pop();
+				}
+			}
+		}
+	}
+	cout << endl;
+	cout << "finish getting imporatn objID, the cache size is " << now_total_size << endl;
+}
+
 void 
 Database::load_entity2id(int _mode)
 {
