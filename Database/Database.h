@@ -150,7 +150,20 @@ private:
 	void load_sub2values(int _mode);
 	void load_obj2values(int _mode);
 	void load_pre2values(int _mode);
-
+	
+	// functions used to build cache
+	void load_cache();
+	void get_important_preID();
+	std::vector <TYPE_PREDICATE_ID> important_preID;
+	void load_important_sub2values();
+	void load_important_obj2values();
+	void build_CacheOfSub2values();
+	void build_CacheOfObj2values();
+	void get_important_subID();
+	void get_important_objID();
+	std::priority_queue <KEY_SIZE_VALUE> important_subID;
+	std::priority_queue <KEY_SIZE_VALUE> important_objID;
+	
 	//triple num per group for insert/delete
 	//can not be too high, otherwise the heap will over
 	static const int GROUP_SIZE = 1000;
