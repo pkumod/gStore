@@ -194,7 +194,7 @@ VList::WriteAlign(unsigned* _curnum)
 }
 
 bool 
-VList::readValue(unsigned _block_num, char*& _str, unsigned& _len)
+VList::readValue(unsigned _block_num, char*& _str, unsigned& _len, unsigned _key)
 {
 #ifdef DEBUG_VLIST
 	cout<<"to get value of block num: "<<_block_num<<endl;
