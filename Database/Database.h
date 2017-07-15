@@ -157,6 +157,7 @@ private:
 	std::vector <TYPE_PREDICATE_ID> important_preID;
 	void load_important_sub2values();
 	void load_important_obj2values();
+	void build_CacheOfPre2values();
 	void build_CacheOfSub2values();
 	void build_CacheOfObj2values();
 	void get_important_subID();
