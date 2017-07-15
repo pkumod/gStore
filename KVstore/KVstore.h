@@ -48,7 +48,15 @@ public:
 
 	std::string getStringByID(TYPE_ENTITY_LITERAL_ID _id);
 	TYPE_ENTITY_LITERAL_ID getIDByString(std::string _str);
-
+	
+	// functions to load Vlist's cache
+	void AddIntoSubCache(TYPE_ENTITY_LITERAL_ID _entity_id);
+	void AddIntoObjCache(TYPE_ENTITY_LITERAL_ID _entity_literal_id);
+	void AddIntoPreCache(TYPE_PREDICATE_ID _pre_id);
+	unsigned getPreListSize(TYPE_PREDICATE_ID _pre_id);
+	unsigned getSubListSize(TYPE_ENTITY_LITERAL_ID _sub_id);
+	unsigned getObjListSize(TYPE_ENTITY_LITERAL_ID _obj_id);
+	
 	//===============================================================================
 
 	//including IN-neighbor & OUT-neighbor 

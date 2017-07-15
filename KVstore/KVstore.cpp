@@ -2499,6 +2499,53 @@ KVstore::isEntity(TYPE_ENTITY_LITERAL_ID id)
 	return id < Util::LITERAL_FIRST_ID;
 }
 
+void
+KVstore::AddIntoPreCache(TYPE_PREDICATE_ID _pre_id)
+{
+	this->preID2values->AddIntoCache(_pre_id);
+}
+void 
+KVstore::AddIntoSubCache(TYPE_ENTITY_LITERAL_ID _entity_id)
+{
+	this->subID2values->AddIntoCache(_entity_id);
+}
+
+void 
+KVstore::AddIntoObjCache(TYPE_ENTITY_LITERAL_ID _entity_literal_id)
+{
+	this->objID2values->AddIntoCache(_entity_literal_id);
+}
+
+unsigned
+KVstore::getSubListSize(TYPE_ENTITY_LITERAL_ID _sub_id)
+{
+	unsigned* _tmp = NULL;
+	unsigned _ret;
+	this->getValueByKey(this->subID2values, _sub_id, (char*&) _tmp, _ret);
+	delete [] _tmp;
+	return _ret;
+}
+
+unsigned
+KVstore::getObjListSize(TYPE_ENTITY_LITERAL_ID _obj_id)
+{
+	unsigned* _tmp = NULL;
+	unsigned _ret;
+	this->getValueByKey(this->objID2values, _obj_id, (char*&) _tmp, _ret);
+	delete [] _tmp;
+	return _ret;
+}
+
+unsigned
+KVstore::getPreListSize(TYPE_PREDICATE_ID _pre_id)
+{
+	unsigned* _tmp = NULL;
+	unsigned _ret;
+	this->getValueByKey(this->preID2values, _pre_id, (char*&) _tmp, _ret);
+	delete [] _tmp;
+	return _ret;
+}
+
 //TODO+BETTER: adjust the buffer size according to current memory usage(global memory manager)
 //better to adjust these parameters according to memory usage and entity num
 //need a memory manager first
