@@ -54,7 +54,11 @@ VList::VList(string& _filepath, string& _mode, unsigned long long _buffer_size)
 		cout<<string("error in VList: Open error ") + _filepath<<endl;
 		return;
 	}
-
+	for(int i = 0; i < 2000; ++i)
+		if (longlist[i]._str != NULL)
+		{
+			cout << "not init with null, " << i << endl;
+		}
 	this->max_buffer_size = _buffer_size;
 	this->freemem = this->max_buffer_size;
 	this->freelist = new BlockInfo;	//null-head
@@ -203,7 +207,10 @@ VList::readValue(unsigned _block_num, char*& _str, unsigned& _len, unsigned _key
 	}*/
 		unsigned node = _key % 2000, i;
 		for(i = node; longlist[i].key % 2000 <= node; ++i)
+		{
 			if (longlist[i].key == (int)_key || longlist[i].key == -1) break;
+			if (i > 1999) i %= 2000;
+		}
 		if (longlist[i].key == (int)_key) // value is in cache
 		{
 		//	cout << "access in cache" << endl;
@@ -370,13 +377,18 @@ VList::writeBstr(const char* _str, unsigned _len, unsigned* _curnum)
 void
 VList::AddIntoCache(unsigned _key, char*& _str, unsigned _len)
 {
+	cout << "vlist start" << endl;
 	unsigned node = _key % 2000;
 	while (longlist[node].key != -1)
-		node++;
+	{
+		++node;
+		if (node > 1999) node %= 2000;
+	}
 	longlist[node].key = _key;
 	longlist[node]._str = new char [_len];
 	memcpy(longlist[node]._str, _str, _len);
 	longlist[node]._len = _len;
+	cout << "vlist finish" << endl;
 //	cout << "done vlist addintocache" << endl;
 }
 
@@ -388,8 +400,8 @@ VList::~VList()
 		delete[] it->second;
 	}
 	this->vlist_cache.clear();
-	for(int i = 0; i < 2000; i++)
-		delete [] longlist[i]._str;
+	/*for(int i = 0; i < 2000; i++)
+			delete [] longlist[i]._str;*/
 	//write the info back
 	fseek(this->valfp, 0, SEEK_SET);
 	fwrite(&cur_block_num, sizeof(unsigned), 1, valfp);//write current blocks num
