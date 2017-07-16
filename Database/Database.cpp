@@ -693,11 +693,11 @@ Database::get_important_preID()
 {
 	important_preID.clear();
 	unsigned max_degree = 0;
-	for(TYPE_PREDICATE_ID i = 0; i <= limitID_predicate; ++i)
+	for(TYPE_PREDICATE_ID i = 0; i < limitID_predicate; ++i)
 		if (pre2num[i] > max_degree)
 			max_degree = pre2num[i];
 	unsigned limit_degree = max_degree / 2;
-	for(TYPE_PREDICATE_ID i = 0; i <= limitID_predicate; ++i)
+	for(TYPE_PREDICATE_ID i = 0; i < limitID_predicate; ++i)
 		if (pre2num[i] > limit_degree)
 			important_preID.push_back(i);
 }
@@ -745,7 +745,7 @@ Database::get_candidate_preID()
 	std::priority_queue <KEY_SIZE_VALUE, deque<KEY_SIZE_VALUE>, greater<KEY_SIZE_VALUE> > rubbish;
 	while(!rubbish.empty()) rubbish.pop();
 	while(!candidate_preID.empty()) candidate_preID.pop();
-	for(TYPE_PREDICATE_ID i = 0; i <= limitID_predicate; ++i)
+	for(TYPE_PREDICATE_ID i = 0; i < limitID_predicate; ++i)
 	{
 		unsigned _value = 0;
 		unsigned _size;
@@ -755,6 +755,7 @@ Database::get_candidate_preID()
 		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
 
 		_value = pre2num[i];
+		if (_value == 0) continue;
 
 		if (_size + now_total_size < max_total_size)
 		{
@@ -834,15 +835,16 @@ Database::get_important_subID()
 {
 	while(!important_subID.empty()) important_subID.pop();
 	unsigned now_total_size = 0;
+	const string invalid = "";
 	const unsigned max_total_size = 2000000000;//2G
 	std::priority_queue <KEY_SIZE_VALUE, deque<KEY_SIZE_VALUE>, greater<KEY_SIZE_VALUE> > rubbish;
 	while(!rubbish.empty()) rubbish.pop();
 	// a sub who has largest degree with important pre is important subs
-	for(TYPE_ENTITY_LITERAL_ID i = 0; i <= limitID_entity; ++i)
+	for(TYPE_ENTITY_LITERAL_ID i = 0; i < limitID_entity; ++i)
 	{
 		unsigned _value = 0;
 		unsigned _size;
-		
+		if (this->kvstore->getEntityByID(i) == invalid) continue;	
 		_size = this->kvstore->getSubListSize(i);
 		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
 
@@ -893,13 +895,18 @@ Database::get_important_objID()
 	while(!important_objID.empty()) important_objID.pop();
 	unsigned now_total_size = 0;
 	const unsigned max_total_size = 2000000000;//2G
+	const string invalid = "";
 	std::priority_queue <KEY_SIZE_VALUE, deque<KEY_SIZE_VALUE>, greater<KEY_SIZE_VALUE> > rubbish;
 	while(!rubbish.empty()) rubbish.pop();
 	// a sub who has largest degree with important pre is important subs
-	for(TYPE_ENTITY_LITERAL_ID i = 0; i <= limitID_literal; ++i)
+	for(TYPE_ENTITY_LITERAL_ID i = 0; i < limitID_literal; ++i)
 	{
 		unsigned _value = 0;
 		unsigned _size;
+		string _tmp;
+		if (i < limitID_entity) _tmp = this->kvstore->getEntityByID(i);
+		else _tmp = this->kvstore->getLiteralByID(i);
+		if (_tmp == invalid) continue;
 
 		_size = this->kvstore->getObjListSize(i);
 		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
