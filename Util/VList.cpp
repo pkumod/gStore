@@ -377,7 +377,7 @@ VList::writeBstr(const char* _str, unsigned _len, unsigned* _curnum)
 void
 VList::AddIntoCache(unsigned _key, char*& _str, unsigned _len)
 {
-	cout << "vlist start" << endl;
+//	cout << "vlist start" << endl;
 	unsigned node = _key % 2000;
 	while (longlist[node].key != -1)
 	{
@@ -388,7 +388,7 @@ VList::AddIntoCache(unsigned _key, char*& _str, unsigned _len)
 	longlist[node]._str = new char [_len];
 	memcpy(longlist[node]._str, _str, _len);
 	longlist[node]._len = _len;
-	cout << "vlist finish" << endl;
+//	cout << "vlist finish" << endl;
 //	cout << "done vlist addintocache" << endl;
 }
 
