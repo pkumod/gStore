@@ -28,6 +28,10 @@ public:
 	}
 	~Longlist_inMem()
 	{
-		if(_str != NULL)	delete []_str;
+		if(_str != NULL)
+		{
+			delete [] _str;
+			_str = NULL;
+		}
 	}
 };

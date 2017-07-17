@@ -88,6 +88,7 @@ public:
 	void resetStream();
 	bool range_query(unsigned _key1, unsigned _key2);
 	bool save();
+	
 	void AddIntoCache(TYPE_PREDICATE_ID _id);
 	void AddIntoCache(TYPE_ENTITY_LITERAL_ID _id);
 	~IVTree();
