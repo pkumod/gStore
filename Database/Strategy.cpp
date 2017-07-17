@@ -18,7 +18,7 @@ Strategy::Strategy()
 	//this->prepare_handler();
 }
 
-Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal)
+Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,TYPE_ENTITY_LITERAL_ID _limitID_entity)
 {
 	this->method = 0;
 	this->kvstore = _kvstore;
@@ -26,6 +26,8 @@ Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num
 	this->pre2num = _pre2num;
 	this->limitID_predicate = _limitID_predicate;
 	this->limitID_literal = _limitID_literal;
+	this->limitID_entity = _limitID_entity;
+
 	//this->prepare_handler();
 }
 
@@ -207,7 +209,7 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list, ResultFilte
     if (_result_filter != NULL)
     	_result_filter->candFilterWithResultHashTable(*_bq);
 
-	Join *join = new Join(kvstore, pre2num, this->limitID_predicate, this->limitID_literal);
+	Join *join = new Join(kvstore, pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 	join->join_basic(_bq);
 	delete join;
 

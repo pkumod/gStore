@@ -56,7 +56,7 @@ bool GeneralEvaluation::doQuery()
 		return false;
 	}
 
-	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num, this->limitID_predicate, this->limitID_literal);
+	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 	if (this->query_tree.checkWellDesigned())
 	{
 		printf("=================\n");
