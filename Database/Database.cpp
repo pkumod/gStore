@@ -876,7 +876,7 @@ Database::getPreNum()
 int
 Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 {
-	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->pre2num, this->limitID_predicate, this->limitID_literal);
+	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 
 	long tv_begin = Util::get_cur_time();
 

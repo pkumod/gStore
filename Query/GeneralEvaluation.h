@@ -39,10 +39,12 @@ class GeneralEvaluation
 		TYPE_TRIPLE_NUM *pre2num;
 		TYPE_PREDICATE_ID limitID_predicate;
 		TYPE_ENTITY_LITERAL_ID limitID_literal;
+		TYPE_ENTITY_LITERAL_ID limitID_entity;
+
 
 	public:
-		GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, TYPE_TRIPLE_NUM *_pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal):
-			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), pre2num(_pre2num), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), temp_result(NULL)
+		GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, TYPE_TRIPLE_NUM *_pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,TYPE_ENTITY_LITERAL_ID _limitID_entity):
+			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), pre2num(_pre2num), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), limitID_entity(_limitID_entity),temp_result(NULL)
 		{
 		}
 
