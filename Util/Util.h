@@ -198,6 +198,9 @@ typedef unsigned(*HashFunction)(const char*);
 //type for the triple num
 //NOTICE: this should use unsigned (triple num may > 2500000000)
 typedef unsigned TYPE_TRIPLE_NUM;
+//NOTICE: we do not use long long because it will consume more spaces in pre2num of Database
+//For single machines, we aim to support 4.2B triples, and that's enough
+//typedef long long TYPE_TRIPLE_NUM;
 //TODO: use long if need to run 5B dataset
 
 //type for entity/literal ID
@@ -251,6 +254,7 @@ public:
 	static const unsigned GB = 1073741824;
 	//static const int TRIPLE_NUM_MAX = 1000*1000*1000;
 	static const TYPE_TRIPLE_NUM TRIPLE_NUM_MAX = INVALID;
+	//static const TYPE_TRIPLE_NUM TRIPLE_NUM_MAX = (long long)10000*1000*1000;
 	static const char EDGE_IN = 'i';
 	static const char EDGE_OUT= 'o';
 
