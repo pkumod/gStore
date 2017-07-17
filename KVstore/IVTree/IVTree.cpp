@@ -646,15 +646,23 @@ IVTree::AddIntoCache(TYPE_ENTITY_LITERAL_ID _id)
 
 IVTree::~IVTree()
 {
+	cout << "IVTree" << endl;
+	cout << "delete Vlist" << endl;
 	delete this->value_list;
-
-	delete this->stream;   //maybe NULL
+	value_list = NULL;
+	cout << "delete stream" << endl;
+	delete this->stream;//maybe NULL
+	this->stream = NULL;
+	cout << "delete TSM" << endl;
 	delete TSM;
+	TSM = NULL;
 #ifdef DEBUG_KVSTORE
 	printf("already empty the buffer, now to delete all nodes in tree!\n");
 #endif
 	//recursively delete each Node
+	cout << "release" << endl;
 	release(root);
+	cout << "~IVTree done" << endl;
 }
 
 void

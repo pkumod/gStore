@@ -1077,11 +1077,13 @@ Database::unload()
 {
 	//TODO: do we need to update the pre2num if update queries exist??
 	//or we just neglect this, that is ok because pre2num is just used to count
+	cout << "delete pre2num" << endl;
 	delete[] this->pre2num;
 	this->pre2num = NULL;
-
+	cout << "delete entity buffer" << endl;
 	delete this->entity_buffer;
 	this->entity_buffer = NULL;
+	cout << "delete literal buffer" << endl;
 	delete this->literal_buffer;
 	this->literal_buffer = NULL;
 
@@ -1089,10 +1091,10 @@ Database::unload()
 	//this->vstree->saveTree();
 	//delete this->vstree;
 	//this->vstree = NULL;
-
+	cout << "delete kvstore" << endl;
 	delete this->kvstore;
 	this->kvstore = NULL;
-
+	cout << "delete stringindex" << endl;
 	delete this->stringindex;
 	this->stringindex = NULL;
 
@@ -2300,6 +2302,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	//cout<<"==> end while(true)"<<endl;
 
 	delete[] triple_array;
+	triple_array = NULL;
 	_fin.close();
 	_six_tuples_fout.close();
 	fclose(fp);
@@ -2755,6 +2758,7 @@ Database::insert(std::string _rdf_file, bool _is_restore)
 	}
 
 	delete[] triple_array;
+	triple_array = NULL;
 	long tv_insert = Util::get_cur_time();
 	cout << "after insert, used " << (tv_insert - tv_load) << "ms." << endl;
 	//BETTER:update kvstore and vstree separately, to lower the memory cost
@@ -2849,6 +2853,7 @@ Database::remove(std::string _rdf_file, bool _is_restore)
 	//(only when using group insertion/deletion)
 	//or reduce the array size
 	delete[] triple_array;
+	triple_array = NULL;
 	long tv_remove = Util::get_cur_time();
 	cout << "after remove, used " << (tv_remove - tv_load) << "ms." << endl;
 
@@ -3326,6 +3331,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		delete[] id_tuples[i];
 	}
 	delete[] id_tuples;
+	id_tuples = NULL;
 
 	//for (it = old_sigmap.begin(); it != old_sigmap.end(); ++it)
 	//{
@@ -3712,6 +3718,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		delete[] id_tuples[i];
 	}
 	delete[] id_tuples;
+	id_tuples = NULL;
 #else
 	//NOTICE:we deal with deletions one by one here
 	//Callers should save the vstree(node and info) after calling this function

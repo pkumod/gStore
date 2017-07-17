@@ -150,7 +150,7 @@ VList::AllocBlock()
 	unsigned t = p->num;
 	this->freelist->next = p->next;
 	delete p;
-
+	p = NULL;
 	return t;
 }
 
