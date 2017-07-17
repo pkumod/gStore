@@ -44,11 +44,11 @@ CC = g++
 #NOTICE: -O2 is recommended, while -O3 is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -g -pthread #-fprofile-arcs -ftest-coverage #-pg
-EXEFLAG = -g -pthread #-fprofile-arcs -ftest-coverage #-pg
+#CFLAGS = -c -Wall -g -pthread #-fprofile-arcs -ftest-coverage #-pg
+#EXEFLAG = -g -pthread #-fprofile-arcs -ftest-coverage #-pg
 #-coverage
-#CFLAGS = -c -Wall -O2 -pthread
-#EXEFLAG = -O2 -pthread
+CFLAGS = -c -Wall -O2 -pthread
+EXEFLAG = -O2 -pthread
 
 #add -lreadline -ltermcap if using readline or objs contain readline
 library = -ltermcap -lreadline -L./lib -lantlr -lgcov
