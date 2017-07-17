@@ -1077,13 +1077,13 @@ Database::unload()
 {
 	//TODO: do we need to update the pre2num if update queries exist??
 	//or we just neglect this, that is ok because pre2num is just used to count
-	cout << "delete pre2num" << endl;
+	//cout << "delete pre2num" << endl;
 	delete[] this->pre2num;
 	this->pre2num = NULL;
-	cout << "delete entity buffer" << endl;
+	//cout << "delete entity buffer" << endl;
 	delete this->entity_buffer;
 	this->entity_buffer = NULL;
-	cout << "delete literal buffer" << endl;
+	//cout << "delete literal buffer" << endl;
 	delete this->literal_buffer;
 	this->literal_buffer = NULL;
 
@@ -1091,10 +1091,10 @@ Database::unload()
 	//this->vstree->saveTree();
 	//delete this->vstree;
 	//this->vstree = NULL;
-	cout << "delete kvstore" << endl;
+	//cout << "delete kvstore" << endl;
 	delete this->kvstore;
 	this->kvstore = NULL;
-	cout << "delete stringindex" << endl;
+	//cout << "delete stringindex" << endl;
 	delete this->stringindex;
 	this->stringindex = NULL;
 

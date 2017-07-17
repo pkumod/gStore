@@ -59,33 +59,33 @@ KVstore::flush()
 void 
 KVstore::release() 
 {
-	cout << "delete entity2id" << endl;
+	//cout << "delete entity2id" << endl;
 	delete this->entity2id;
 	this->entity2id = NULL;
-	cout << "delete id2eneity" << endl;
+	//cout << "delete id2eneity" << endl;
 	delete this->id2entity;
 	this->id2entity = NULL;
-	cout << "delete literal2id" << endl;
+	//cout << "delete literal2id" << endl;
 	delete this->literal2id;
 	this->literal2id = NULL;
-	cout << "delete id2leteral" << endl;
+	//cout << "delete id2leteral" << endl;
 	delete this->id2literal;
 	this->id2literal = NULL;
 
-	cout << "delete p2id" << endl;
+	//cout << "delete p2id" << endl;
 	delete this->predicate2id;
 	this->predicate2id = NULL;
-	cout << "delte id2p" << endl;
+	//cout << "delte id2p" << endl;
 	delete this->id2predicate;
 	this->id2predicate = NULL;
 
-	cout << "delete s2v" << endl;
+	//cout << "delete s2v" << endl;
 	delete this->subID2values;
 	this->subID2values = NULL;
-	cout << "delete p2v" << endl;
+	//cout << "delete p2v" << endl;
 	delete this->preID2values;
 	this->preID2values = NULL;
-	cout << "delete o2v" << endl;
+	//cout << "delete o2v" << endl;
 	delete this->objID2values;
 	this->objID2values = NULL;
 }
