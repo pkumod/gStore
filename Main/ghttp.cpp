@@ -6,6 +6,12 @@
 # Description: created by lvxin, improved by lijing
 =============================================================================*/
 
+//TODO: change json or other formats to RDF N3 format in openkg
+//
+//SPARQL Endpoint:  log files in logs/endpoint/
+//operation.log: not used
+//query.log: query string, result num, and time of answering
+
 #include "../Server/server_http.hpp"
 #include "../Server/client_http.hpp"
 //db
@@ -19,10 +25,12 @@ using namespace boost::property_tree;
 typedef SimpleWeb::Server<SimpleWeb::HTTP> HttpServer;
 typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 
-int initialize();
+//int initialize();
+int initialize(int argc, char *argv[]);
 //Added for the default_resource example
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
         const shared_ptr<ifstream> &ifs);
+void download_result(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string download, string filepath);
 
 pthread_t start_thread(void *(*_function)(void*));
 bool stop_thread(pthread_t _thread);
@@ -39,12 +47,7 @@ pthread_t scheduler = 0;
 //DEBUG+TODO: why the result transfered to client has no \n \t??
 //using json is a good way to avoid this problem
 
-//TODO+BETTER: port should be optional
-//1. admin.html: build/load/query/unload
-//2. index.html: only query (maybe load/unload if using multiple databases)
-//3. ghttp: can add or not add a db as parameter
 //BETTER: How about change HttpConnector into a console?
-//
 //TODO: we need a route
 //JSON parser: http://www.tuicool.com/articles/yUJb6f     
 //(or use boost spirit to generate parser when compiling)
@@ -87,15 +90,17 @@ string UrlDecode(string& SRC)
 	return (ret);
 }
 
-int main() {
-
+int main(int argc, char *argv[])
+{
 	Util util;
+	srand(time(NULL));
 
 	while (true) {
 		pid_t fpid = fork();
 
 		if (fpid == 0) {
-			int ret = initialize();
+			//int ret = initialize();
+			int ret = initialize(argc, argv);
 			exit(ret);
 			return ret;
 		}
@@ -120,21 +125,176 @@ int main() {
 	return 0;
 }
 
+bool isNum(char *str)
+{
+	for(int i = 0; i < strlen(str); i++)
+	{
+		int tmp = (int)(str[i]);
+		if(tmp < 48 || tmp > 57)
+			return false;
+	}
+	return true;
+}
 
-int initialize() {
+int initialize(int argc, char *argv[]) 
+{
+    cout << "enter initialize." << endl;
+	HttpServer server;
+	string db_name;
+	if(argc == 1)
+	{
+		server.config.port = 9000;
+		db_name = "";
+	}
+	else if(argc == 2)
+	{
+		if(isNum(argv[1]))
+		{
+			server.config.port = atoi(argv[1]);
+			db_name = "";
+		}
+		else
+		{
+			server.config.port = 9000;
+			db_name = argv[1];
+		}
+	}
+	else
+	{
+		if(isNum(argv[1]))
+		{
+			server.config.port = atoi(argv[1]);
+			db_name = argv[2];
+		}
+		else if(isNum(argv[2]))
+		{
+			server.config.port = atoi(argv[2]);
+			db_name = argv[1];
+		}
+		else
+		{
+			cout << "wrong format of parameters, please input the server port and the database." << endl;
+			return 0;
+		}
+	}
+	cout << "server port: " << server.config.port << " database name: " << db_name << endl;
+	Util util;
     //HTTP-server at port 9000 using 1 thread
+
     //Unless you do more heavy non-threaded processing in the resources,
     //1 thread is usually faster than several threads
-    HttpServer server;
+    //HttpServer server;
     //server.config.port=8080;
-	server.config.port=9000;
+	//server.config.port=9000;
 	//cout<<"after server built"<<endl;
 
+/*
     //GET-example for the path /build/[db_name]/[db_path], responds with the matched string in path
     //For instance a request GET /build/db/123 will receive: db 123
     //server.resource["^/build/([a-zA-Z]+[0-9]*)/([a-zA-Z]+/*[a-zA-Z]+[0-9]*.n[a-zA-Z]*[0-9]*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     // server.resource["^/build/([a-zA-Z0-9]+)/([a-zA-Z0-9]+)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     server.resource["^/build/([a-zA-Z0-9]*)/(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		cout<<"HTTP: this is build"<<endl;
+        string db_name=request->path_match[1];
+        string db_path=request->path_match[2];
+        if(db_name=="" || db_path=="")
+        {
+            string error = "Exactly 2 arguments required!";
+            // error = db_name + " " + db_path;
+            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+            return 0;
+        }
+
+        string database = db_name;
+        if(database.length() > 3 && database.substr(database.length()-3, 3) == ".db")
+        {
+            string error = "Your db name to be built should not end with \".db\".";
+            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+            return 0;
+        }
+	
+	//database += ".db";
+        string dataset = db_path;
+
+        if(current_database != NULL)
+        {
+            string error = "Please unload your database first.";
+            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+            return 0;
+        }
+	
+		cout << "Import dataset to build database..." << endl;
+		cout << "DB_store: " << database << "\tRDF_data: " << dataset << endl;
+		int len = database.length();
+
+        current_database = new Database(database);
+        bool flag = current_database->build(dataset);
+        delete current_database;
+        current_database = NULL;
+
+        if(!flag)
+        {
+            string error = "Import RDF file to database failed.";
+            string cmd = "rm -r " + database;
+            system(cmd.c_str());
+            return 0;
+        }
+
+        // string success = db_name + " " + db_path;
+        string success = "Import RDF file to database done.";
+        *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+        return 0;
+    };
+*/
+
+
+    //GET-example for the path /load/[db_name], responds with the matched string in path
+    //For instance a request GET /load/db123 will receive: db123
+    //server.resource["^/load/(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+
+        string database = db_name;
+		if(database != "")
+		{
+			if(database.length() > 3 && database.substr(database.length()-3, 3) == ".db")
+			{
+				cout << "Your db name to be built should not end with \".db\"." << endl;
+				return 0;
+			}
+		
+			//database += ".db";
+
+			if(current_database != NULL)
+			{
+				cout << "Please unload your current database first." << endl;
+				return 0;
+			}
+			cout << database << endl;
+			current_database = new Database(database);
+			bool flag = current_database->load();
+			if (!flag)
+			{
+				cout << "Failed to load the database."<<endl;
+				delete current_database;
+				current_database = NULL;
+				return 0;
+			}
+			//string success = db_name;
+			cout << "Database loaded successfully."<<endl;
+		}
+
+		time_t cur_time = time(NULL);
+		long time_backup = Util::read_backup_time();
+		long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
+		scheduler = start_thread(func_scheduler);
+
+
+
+
+#ifndef USED_AS_ENDPOINT
+	//GET-example for the path /?operation=build&db_name=[db_name]&ds_path=[ds_path], responds with the matched string in path
+	//i.e. database name and dataset path
+	server.resource["^/%3[F|f]operation%3[D|d]build%26db_name%3[D|d](.*)%26ds_path%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+
 		cout<<"HTTP: this is build"<<endl;
         string db_name=request->path_match[1];
         string db_path=request->path_match[2];
@@ -187,25 +347,24 @@ int initialize() {
         return 0;
     };
 
-    //GET-example for the path /load/[db_name], responds with the matched string in path
-    //For instance a request GET /load/db123 will receive: db123
-    server.resource["^/load/(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	//GET-example for the path /?operation=load&db_name=[db_name], responds with the matched string in path
+    server.resource["^/%3[F|f]operation%3[D|d]load%26db_name%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		cout<<"HTTP: this is load"<<endl;
         string db_name=request->path_match[1];
 	
-	
-
+       //	string db_name = argv[1];
         if(db_name=="")
-        {
-            string error = "Exactly 1 argument is required!";
-            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-            return 0;
-        }
-
+		{
+			string error = "Exactly 1 argument is required!";
+			*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+			return 0;
+		}
+ 
         string database = db_name;
         if(database.length() > 3 && database.substr(database.length()-3, 3) == ".db")
         {
-            string error = "Your db name to be built should not end with \".db\".";
+			//cout << "Your db name to be built should not end with \".db\"." << endl;
+           string error = "Your db name to be built should not end with \".db\".";
             *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
             return 0;
         }
@@ -214,6 +373,7 @@ int initialize() {
 
         if(current_database != NULL)
         {
+			//cout << "Please unload your current database first." <<endl;
             string error = "Please unload your current database first.";
             *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
             return 0;
@@ -229,66 +389,65 @@ int initialize() {
             current_database = NULL;
             return 0;
         }
-	
-		time_t cur_time = time(NULL);
+	  	time_t cur_time = time(NULL);
 		long time_backup = Util::read_backup_time();
 		long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
 		scheduler = start_thread(func_scheduler);
-
 	//string success = db_name;
-       string success = "Database loaded successfully.";
+	//cout << "Database loaded successfully." << endl;
+        string success = "Database loaded successfully.";
         *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 
         return 0;
-    };
+	};
 
-    //GET-example for the path /query/[query_file_path], responds with the matched string in path
-    //For instance a request GET /query/db123 will receive: db123
-    server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		//TODO: add a format parameter, better to change tp "?format=json"
-		string format = "json";
+    //GET-example for the path /?operation=unload&db_name=[db_name], responds with the matched string in path
+    server.resource["^/%3[F|f]operation%3[D|d]unload%26db_name%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+
+		if(current_database == NULL)
+        {
+            string error = "No database used now.";
+            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+            return 0;
+        }
+
+        delete current_database;
+        current_database = NULL;
+        string success = "Database unloaded.";
+        *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+        return 0;
+    };    
+#endif
+	
+	
+
+	//GET-example for the path /?operation=query&format=[format]&sparql=[sparql], responds with the matched string in path
+		 server.resource["^/%3[F|f]operation%3[D|d]query%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		string format = request->path_match[1];
+		//string format = "html";
 		cout<<"HTTP: this is query"<<endl;
-        string db_query=request->path_match[1];
-		cout<<"check: "<<db_query<<endl;
+        string db_query=request->path_match[2];
 		db_query = UrlDecode(db_query);
 		cout<<"check: "<<db_query<<endl;
         string str = db_query;
+
 
         if(current_database == NULL)
         {
             string error = "No database in use!";
             *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
             return 0;
-        };
-
-        string sparql;
-
-        if(db_query[0]=='\"')
-        {
-            sparql = db_query.substr(1, db_query.length()-2);
-			cout<<"check: this is string "<<sparql<<endl;
-        }
-        else
-        {
-            string ret = Util::getExactPath(db_query.c_str());
-            const char *path = ret.c_str();
-            if(path == NULL)
-            {
-                string error = "Invalid path of query.";
-                *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-                return 0;
-            }
-            sparql = Util::getQueryFromFile(path);
-			cout<<"check: this is path "<<sparql<<endl;
         }
 
+		string sparql;
+		sparql = db_query;
         if (sparql.empty()) {
             cerr << "Empty SPARQL." << endl;
             return 0;
         }
+        FILE* output = NULL;
 
-        //FILE* output = stdout;
-        FILE* output = NULL; //not update result on the screen
 
 		pthread_t timer = start_thread(func_timer);
 		if (timer == 0) {
@@ -300,23 +459,117 @@ int initialize() {
 		if (timer != 0 && !stop_thread(timer)) {
 			cerr << "Failed to stop timer." << endl;
 		}
-
+	ostringstream stream;
+	stream << rs.ansNum;
+	string ansNum_s = stream.str();
+	cout << "ansNum_s: " << ansNum_s << endl;
+	time_t rawtime;
+	struct tm* timeinfo;
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	string tempTime = asctime(timeinfo);
+	for(int i = 0; i < tempTime.length(); i++)
+	{
+		if(tempTime[i] == ' ')
+			tempTime[i] = '_';
+	}
+	string myTime = tempTime.substr(0, tempTime.length()-1);
+	myTime = myTime + "_" + Util::int2string(rand() % 10000);
+	//TODO+BETTER: attach the thread's ID in fileName when running in parallism
+	string localname = ".tmp/web/" + myTime + "_query";
+	//string filename = ".tmp/web/" + myTime + "_query";
+	string filename = myTime + "_query";
+	
+	//TODO: if result is stored in Stream instead of memory?  (if out of memory to use to_str)
         if(ret)
         {
-			//TODO: if the result is too large? or if the result is placed in Stream?
-			//Should use file donload
-            string success = "";
+		//	cout << "query returned successfully." << endl;
+			
+			//record each query operation, including the sparql and the answer number
+			//TODO: get the query time, and also record it to the log and response to the browser.
+			ofstream outlog;
+			string queryLog = "logs/endpoint/query.log";
+			//BETTER: only open once and close when server stops, use C read/write
+			outlog.open(queryLog, ios::app);
+			if(!outlog)
+			{
+				cout << queryLog << "can't open." << endl;
+				return 0;
+			}
+			outlog << sparql << endl << endl;
+			outlog << "answer num: "<<rs.ansNum << endl;
+			outlog << "-----------------------------------------------------------" << endl;
+			outlog.close();
+
+
+			ofstream outfile;
+			string ans = "";
+			string success = "";
 			if(format == "json")
 			{
+			//	cout << "query success, transfer to json." << endl;
 				success = rs.to_JSON();
 			}
 			else
 			{
+			//	cout << "query success, transfer to str." << endl;
 				success = rs.to_str();
 			}
-            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
-            return 0;
-        }
+			if(format == "html")
+			{
+				localname = localname + ".txt";
+				filename = filename + ".txt";
+			}
+			else
+			{
+				localname = localname + "." + format;
+				filename = filename + "." + format;
+			}
+			cout << "filename: " << filename << endl;
+			if(format == "html")
+			{
+				outfile.open(localname);
+				outfile << success;
+				outfile.close();
+				if(rs.ansNum <= 100)
+				{
+					
+					*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ansNum_s.length()+filename.length()+success.length()+4;
+					*response  << "\r\n\r\n" << "0+" << rs.ansNum << '+' << filename << '+' << success;
+					return 0;
+				}
+				else
+				{
+					rs.output_limit = 100;
+					success = "";
+					success = rs.to_str();
+					*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ansNum_s.length()+filename.length()+success.length()+4;
+					*response << "\r\n\r\n" << "1+" << rs.ansNum << '+' << filename << '+' << success;
+					return 0;
+				}
+			}
+			else
+			{
+				/*
+				string filename = "";
+				filename = "sparql." + format;
+				cout << "filename: " << filename << endl;
+				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length();
+				*response << "\r\nContent-Type: application/octet-stream";
+				*response << "\r\nContent-Disposition: attachment; filename=\"" << filename << '"';
+				*response << "\r\n\r\n" << success;
+				return 0;
+				*/
+				outfile.open(localname);
+				outfile << success;
+				outfile.close();
+
+				download_result(server, response, request, "true", filename);
+				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ansNum_s.length()+filename.length()+3;
+				//*response << "\r\n\r\n" << "2+" << rs.ansNum << '+' << filename;
+				return 0;
+			}
+		}
         else
         {
 			//TODO: if error, browser should give some prompt
@@ -326,33 +579,9 @@ int initialize() {
         }
     };
 
-    //GET-example for the path /unload/[db_name], responds with the matched string in path
-    //For instance a request GET /unload/db123 will receive: db123
-    server.resource["^/unload$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		cout<<"HTTP: this is unload"<<endl;
-        if(current_database == NULL)
-        {
-            string error = "No database used now.";
-            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-            return 0;
-        }
 
-		if (scheduler != 0 && !stop_thread(scheduler)) {
-			cerr << "Failed to stop scheduler." << endl;
-		}
-		else {
-			scheduler = 0;
-			next_backup = 0;
-		}
 
-        delete current_database;
-        current_database = NULL;
-        string success = "Database unloaded.";
-        *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
-        return 0;
-    };
-
-    server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	 server.resource["^/%3Foperation%3[D|d]monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		cout<<"HTTP: this is monitor"<<endl;
         if(current_database == NULL)
         {
@@ -393,7 +622,7 @@ int initialize() {
     //         ptree pt;
     //         read_json(request->content, pt);
 
-    //         string name=pt.get<string>("firstName")+" "+pt.get<string>("lastName");
+    //         string sparql=pt.get<string>("queryContent");
 
     //         *response << "HTTP/1.1 200 OK\r\n"
     //             << "Content-Type: application/json\r\n"
@@ -404,6 +633,29 @@ int initialize() {
     //         *response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << strlen(e.what()) << "\r\n\r\n" << e.what();
     //     }
     // };
+
+	 //USAGE: in endpoint, if user choose to display via html, but not display all because the result's num is too large.
+	 //Then, user can choose to download all results in TXT format, and this URL is used for download in this case
+	 //WARN: this URL rule should not be published!
+	 //
+	 //NOTICE: we need to remove temp result files after download once, otherwise the disk of server will be run out easily.
+	 //
+	 //Safety: user can attack by using this URL and point a specific filePath to be removed, which is not the download one!
+	 //We do not have the http session ID here and can not provide best safety, but we can set the filePath complicated.
+	 //(then attacker is hard to guess, and the directory is restricted)
+	 //BETTER+TODO: associate the thread/session ID with download fileName, otherwise error may come in parallism
+	 //
+	 //GET-example for the path /?operation=delete&download=[download]&filepath=[filepath], responds with the matched string in path
+	 server.resource["^/%3[F|f]operation%3[D|d]delete%26download%3[D|d](.*)%26filepath%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+       cout << "HTTP: this is delete" << endl;
+	   string download = request->path_match[1];
+	   download = UrlDecode(download);
+	   cout << "download: " << download << endl;
+	   string filepath = request->path_match[2];
+	   filepath = UrlDecode(filepath);
+
+	   download_result(server, response, request, download, filepath);
+    };
 
     //Default GET-example. If no other matches, this anonymous function will be called.
     //Will respond with content in the web/-directory, and its subdirectories.
@@ -531,3 +783,61 @@ void* func_scheduler(void* _args) {
 void thread_sigterm_handler(int _signal_num) {
 	pthread_exit(0);
 }
+
+void download_result(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string download, string filepath)
+{
+	cout<<"to download result or not"<<endl;
+	try {
+		//set the home directory of the web server
+		//NOTICE: we use .tmp/web instead of . to avoid attack: delete other files rather than the download one
+		auto root_path=boost::filesystem::canonical(".tmp/web");
+		auto path=boost::filesystem::canonical(root_path/filepath);
+		cout << "path: " << path << endl;
+		//Check if path is within root_path
+		if(distance(root_path.begin(), root_path.end())>distance(path.begin(), path.end()) ||
+				!equal(root_path.begin(), root_path.end(), path.begin()))
+			throw invalid_argument("path must be within root path.");
+		if(download == "true")
+		{
+			std::string cache_control, etag;
+
+			// Uncomment the following line to enable Cache-Control
+			// cache_control="Cache-Control: max-age=86400\r\n";
+			
+			//return file in path
+			auto ifs=make_shared<ifstream>();
+			ifs->open(path.string(), ifstream::in | ios::binary | ios::ate);
+
+			if(*ifs) {
+		//cout<<"open file!!!"<<endl;
+				auto length=ifs->tellg();
+				ifs->seekg(0, ios::beg);
+
+				*response << "HTTP/1.1 200 OK\r\n" << cache_control << etag << "Content-Length: " << length << "\r\n\r\n";
+				default_resource_send(server, response, ifs);
+			}
+			else
+				throw invalid_argument("could not read file.");
+		}
+		if((boost::filesystem::exists(path) && boost::filesystem::is_regular_file(path)))
+		{
+			//delete file in delpath.
+			char name[60];
+			strcpy(name, path.c_str());
+			cout << "name: " << name << endl;
+			if(remove(name) == -1)
+			{
+				cout << "could not delete file." << endl;
+				perror("remove");
+			}
+			else
+				cout << "file delete." << endl;
+		}	
+	}
+	catch(const exception &e) {
+		//cout<<"can not open file!!!"<<endl;
+		string content="Could not open path "+request->path+": "+e.what();
+		*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
+	}
+}
+

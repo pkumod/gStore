@@ -625,6 +625,10 @@ Database::load()
 	id2entity_thread.join();
 	id2literal_thread.join();
 #endif
+
+	//TODO+BETTER: if we set string buffer using string index instead of B+Tree, then we can
+	//avoid to load id2entity and id2literal in ONLY_READ mode
+
 	//generate the string buffer for entity and literal, no need for predicate
 	//NOTICE:the total string size should not exceed 20G, assume that most strings length < 500
 	//too many empty between entity and literal, so divide them
@@ -1200,6 +1204,10 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	//Update
 	else
 	{
+#ifdef ONLY_READ
+		//invalid query because updates are not allowed in ONLY_READ mode
+		return -101;
+#endif
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
 		TYPE_TRIPLE_NUM update_triple_num = 0;

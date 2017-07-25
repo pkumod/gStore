@@ -111,6 +111,13 @@ in the sparql query can point to the same node in data graph)
 
 //if used as only-read application(like sparql endpoint)
 //#define ONLY_READ 1
+//#define USED_AS_ENDPOINT 1
+#ifdef USED_AS_ENDPOINT
+#ifndef ONLY_READ
+#define ONLY_READ 1
+#endif
+#endif
+
 //if use pthread and lock
 #define THREAD_ON 1			
 //if use stream module if result is too large than memory can hold
