@@ -12,6 +12,8 @@
 //operation.log: not used
 //query.log: query string, result num, and time of answering
 
+//TODO: extract server.get into new functions
+
 #include "../Server/server_http.hpp"
 #include "../Server/client_http.hpp"
 //db
@@ -178,6 +180,7 @@ int initialize(int argc, char *argv[])
 		}
 	}
 	cout << "server port: " << server.config.port << " database name: " << db_name << endl;
+	//USAGE: then user can use http://localhost:port/ to visit the server or coding with RESTful API
 	Util util;
     //HTTP-server at port 9000 using 1 thread
 
@@ -581,7 +584,10 @@ int initialize(int argc, char *argv[])
 
 
 
+     //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
+	 //In programming language, do URL encode first and then call server, then all is ok
 	 server.resource["^/%3Foperation%3[D|d]monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		cout<<"HTTP: this is monitor"<<endl;
         if(current_database == NULL)
         {
