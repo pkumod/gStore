@@ -35,7 +35,7 @@
 
 #compile parameters
 
-CC = ccache g++ 
+CC = g++ 
 #CC = g++
 
 #the optimazition level of gcc/g++

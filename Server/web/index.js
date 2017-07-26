@@ -14,13 +14,34 @@ function query(dp) {
 		format = "json";
 	var argu = "?operation=query&format=" + format + "&sparql=" + dp;
 	var encodeArgu = escape(argu);
-	$.get(encodeArgu, function(data, status){
+	if(format != "html")
+	{
+		var element = document.getElementById("hideLink");
+		element.setAttribute("href", encodeArgu);
+		if(format == "txt")
+			element.setAttribute("download", "sparql.txt");
+		else if(format == "csv")
+			element.setAttribute("download", "sparql.csv");
+		else if(format == "json")
+			element.setAttribute("download", "sparql.json");
+		if(/msie/i.test(navigator.userAgent))
+		{
+			element.fireEvent("onclick");
+		}
+		else
+		{
+			var e = document.createEvent("MouseEvents");
+			e.initEvent("click", true, true);
+			element.dispatchEvent(e);
+		}
+	}
+	else
+	{
+		$.get(encodeArgu, function(data, status){
 
-		if(status=="success"){
-			//toTxt();
-			//alert(data);
-			if(format == "html")
-			{
+			if(status=="success"){
+				//toTxt();
+				//alert(data);
 				var parts = data.split("+");
 				var fileName = parts[2];
 			    var lines = Number(parts[1]);
@@ -89,32 +110,7 @@ function query(dp) {
 						$.get(request2, function(data, status){});
 					}
 				}
-			}
-			else
-			{
-				var parts = data.split("+");
-				var fileName = parts[2];
-				var tmp = "?operation=delete&download=true&filepath=" + fileName;
-				var request = escape(tmp);
-				var element = document.getElementById("hideLink");
-				element.setAttribute("href", request);
-				if(format == "txt")
-					element.setAttribute("download", "sparql.txt");
-				else if(format == "csv")
-					element.setAttribute("download", "sparql.csv");
-				else if(format == "json")
-					element.setAttribute("download", "sparql.json");
-				if(/msie/i.test(navigator.userAgent))
-				{
-					element.fireEvent("onclick");
-				}
-				else
-				{
-					var e = document.createEvent("MouseEvents");
-					e.initEvent("click", true, true);
-					element.dispatchEvent(e);
-				}
-			}
+		}
 			/*
 		
 		alert(data);
@@ -126,9 +122,8 @@ function query(dp) {
 		alert(vl);
 		document.getElementById("myForm").submit();
 		*/
-		}
-	});
-	
+		});
+	}
 }
 
 function handleQueryExample()
