@@ -1,6 +1,8 @@
 URL rules:  operation, db_name, ds_path, format, sparql
 
-operation: build, load, unload, query, monitor
+NOTICE: do URL encoding before sending it to database server
+
+operation: build, load, unload, query, monitor, show, checkpoint
 db_name: the name of database, like lubm
 format: html, json, txt, csv
 sparql: select ?s where { ?s ?p ?o . }
@@ -20,4 +22,11 @@ http://localhost:9000/?operation=unload&db_name=[db_name]
 
 to monitor the server:
 http://localhost:9000/?operation=monitor
+
+to show the database used:
+http://localhost:9000/?operation=show
+
+to save the database currently:
+http://localhost:9000/?operation=checkpoint
+
 

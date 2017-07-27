@@ -847,7 +847,7 @@ Database::get_important_subID()
 	for(TYPE_ENTITY_LITERAL_ID i = 0; i < limitID_entity; ++i)
 	{
 		unsigned _value = 0;
-		unsigned _size;
+		unsigned _size = 0;
 		if (this->kvstore->getEntityByID(i) == invalid) continue;	
 		_size = this->kvstore->getSubListSize(i);
 		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
@@ -955,7 +955,7 @@ Database::get_important_objID()
 		}
 	}
 	cout << endl;
-	cout << "finish getting imporatn objID, the cache size is " << now_total_size << endl;
+	cout << "finish getting important objID, the cache size is " << now_total_size << endl;
 }
 
 void 
@@ -3755,6 +3755,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	return valid_num;
 }
 
+//TODO: check and improve the backup program
 bool 
 Database::backup() 
 {

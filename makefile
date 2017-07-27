@@ -36,18 +36,18 @@
 #compile parameters
 
 CC = g++ 
-#CC = g++
+#CC = ccache g++
 
 #the optimazition level of gcc/g++
 #http://blog.csdn.net/hit_090420216/article/details/44900215
 #NOTICE: -O2 is recommended, while -O3 is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -O2 -pthread -std=c++11
-EXEFLAG = -O2 -pthread -std=c++11
+#CFLAGS = -c -Wall -O2 -pthread -std=c++11
+#EXEFLAG = -O2 -pthread -std=c++11
 #-coverage
-#CFLAGS = -c -Wall -pthread -g -std=c++11
-#EXEFLAG = -pthread -g -std=c++11
+CFLAGS = -c -Wall -pthread -g -std=c++11
+EXEFLAG = -pthread -g -std=c++11
 
 #add -lreadline -ltermcap if using readline or objs contain readline
 library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost

@@ -39,6 +39,8 @@ public class JavaAPIExample
 		
 	    // also, you can load some exist database directly and then query.
 	    gc.load("LUBM10");
+
+		sparql="select ?s where { ?s ?p ?o . }";
 		//sparql = "delete where "
 				//+ "{"
 				//+ "<http://www.founder/121> ?predicate ?object ."
