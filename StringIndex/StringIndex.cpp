@@ -97,11 +97,6 @@ bool StringIndexFile::randomAccess(unsigned id, string *str)
 	this->buffer[length] = '\0';
 
 	*str = string(this->buffer);
-	//cout<<"check: read from string index - "<<id<<" "<<*str<<endl;
-	//if(*str == "")
-	//{
-		//cout<<"ERROR in StringIndex - "<<id<<endl;
-	//}
 
 	return true;
 }
@@ -113,9 +108,16 @@ void StringIndexFile::addRequest(unsigned id, std::string *str)
 
 void StringIndexFile::trySequenceAccess()
 {
-	long max_end = 0;
+	long min_begin = -1, max_end = 0;
 	for (int i = 0; i < (int)this->request.size(); i++)
+	{
+		if (min_begin == -1)
+			min_begin = this->request[i].offset;
+		else
+			min_begin = min(min_begin, this->request[i].offset);
+
 		max_end = max(max_end, this->request[i].offset + long(this->request[i].length));
+	}
 
 	if (this->type == Entity)
 		cout << "Entity StringIndex ";
@@ -123,37 +125,43 @@ void StringIndexFile::trySequenceAccess()
 		cout << "Literal StringIndex ";
 	if (this->type == Predicate)
 		cout << "Predicate StringIndex ";
-	if (max_end / (long)1e5 < (long)this->request.size())
+
+	if ((max_end - min_begin) / 800000L < (long)this->request.size())
 	{
 		cout << "sequence access." << endl;
 
 		sort(this->request.begin(), this->request.end());
 
 		int pos = 0;
-		fseek(this->value_file, 0, SEEK_SET);
 		char *block = new char[MAX_BLOCK_SIZE];
-		long current_block_begin = 0;
+
+		long current_block_begin = min_begin;
+		fseek(this->value_file, current_block_begin, SEEK_SET);
+
 		while (current_block_begin < max_end)
 		{
 			long current_block_end = min(current_block_begin + MAX_BLOCK_SIZE, max_end);
+
+			if (current_block_end <= this->request[pos].offset)
+			{
+				current_block_begin = this->request[pos].offset;
+				fseek(this->value_file, current_block_begin, SEEK_SET);
+				current_block_end = min(current_block_begin + MAX_BLOCK_SIZE, max_end);
+			}
+
 			fread(block, sizeof(char), current_block_end - current_block_begin, this->value_file);
 
 			while (pos < (int)this->request.size())
 			{
 				long offset = this->request[pos].offset;
 				long length = this->request[pos].length;
-				if (offset >= current_block_end)
-					break;
+
 				if (current_block_begin <= offset && offset + length <= current_block_end)
 				{
 					allocBuffer(length);
 					memcpy(this->buffer, &block[offset - current_block_begin], length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str = string(this->buffer);
-					//if(string(this->buffer) == "")
-					//{
-						//cout<<"Error in  StringIndex"<<endl;
-					//}
 					pos++;
 				}
 				else if (current_block_begin <= offset)
@@ -163,10 +171,6 @@ void StringIndexFile::trySequenceAccess()
 					memcpy(this->buffer, &block[offset - current_block_begin], length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str = string(this->buffer);
-					//if(string(this->buffer) == "")
-					//{
-						//cout<<"Error in  StringIndex"<<endl;
-					//}
 					break;
 				}
 				else if (offset + length <= current_block_end)
@@ -180,10 +184,6 @@ void StringIndexFile::trySequenceAccess()
 					while (pos < (int)this->request.size() && this->request[pos - 1].offset == this->request[pos].offset)
 					{
 						*this->request[pos].str = *this->request[pos - 1].str;
-					//if(*this->request[pos].str == "")
-					//{
-						//cout<<"Error in  StringIndex"<<endl;
-					//}
 						pos++;
 					}
 				}
@@ -194,10 +194,6 @@ void StringIndexFile::trySequenceAccess()
 					memcpy(this->buffer, block, length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str += string(this->buffer);
-					//if(*this->request[pos].str == "")
-					//{
-						//cout<<"Error in  StringIndex"<<endl;
-					//}
 					break;
 				}
 			}
@@ -221,14 +217,6 @@ void StringIndexFile::change(unsigned id, KVstore &kv_store)
 {
 	//DEBUG: for predicate, -1 when invalid
 	if (id == INVALID)	return;
-	//if(this->type == Predicate)
-	//{
-		//if (id < 0)	return;
-	//}
-	//else
-	//{
-		//if (id == INVALID)	return;
-	//}
 
 	if (this->num <= id)
 	{
@@ -271,14 +259,6 @@ void StringIndexFile::disable(unsigned id)
 {
 	//DEBUG: for predicate, -1 when invalid
 	if (id >= this->num)	return ;
-	//if(this->type == Predicate)
-	//{
-		//if (id < 0 || id >= this->num)	return ;
-	//}
-	//else
-	//{
-		//if (id == INVALID)	return;
-	//}
 
 	this->index_table[id] = IndexInfo();
 
@@ -346,10 +326,6 @@ bool StringIndex::randomAccess(unsigned id, string *str, bool is_entity_or_liter
 		{
 			return true;
 		}
-		//else
-		//{
-			//cout<<"check: not found in string buffer - "<<id<<endl;
-		//}
 
 		if (id < Util::LITERAL_FIRST_ID)
 		{
@@ -357,7 +333,6 @@ bool StringIndex::randomAccess(unsigned id, string *str, bool is_entity_or_liter
 		}
 		else
 		{
-			//cout<<"check: to search literal "<<id-Util::LITERAL_FIRST_ID<<endl;
 			return this->literal.randomAccess(id - Util::LITERAL_FIRST_ID, str);
 		}
 	}

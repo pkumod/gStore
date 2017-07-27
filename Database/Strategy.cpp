@@ -47,7 +47,7 @@ Strategy::~Strategy()
 //however, this can be dealed due to several basic queries and linking
 
 bool
-Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
+Strategy::handle(SPARQLquery& _query)
 {
 #ifdef MULTI_INDEX
 	Util::logging("IN GeneralEvaluation::handle");
@@ -117,7 +117,7 @@ Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
 		//BETTER: use function pointer array in C++ class
 		case 0:
 			//default:filter by vstree and then verified by join
-			this->handler0(*iter, result_list, _result_filter);
+			this->handler0(*iter, result_list);
 			break;
 		case 1:
 			this->handler1(*iter, result_list);
@@ -160,7 +160,7 @@ Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
 }
 
 void
-Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list, ResultFilter* _result_filter)
+Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	//long before_filter = Util::get_cur_time();
 	cout << "this BasicQuery use query strategy 0" << endl;
@@ -204,10 +204,6 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list, ResultFilte
 
 	long tv_retrieve = Util::get_cur_time();
 	cout << "after Retrieve, used " << (tv_retrieve - tv_handle) << "ms." << endl;
-
-    //between retrieve and join
-    if (_result_filter != NULL)
-    	_result_filter->candFilterWithResultHashTable(*_bq);
 
 	Join *join = new Join(kvstore, pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 	join->join_basic(_bq);
