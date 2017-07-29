@@ -13,7 +13,7 @@ public class JavaAPIExample
 	public static void main(String[] args)
 	{
 		// initialize the GStore server's IP address and port.
-		GstoreConnector gc = new GstoreConnector("127.0.0.1", 9000);
+		GstoreConnector gc = new GstoreConnector("tourist.gstore-pku.com", 9003);
 		
 	    // build a new database by a RDF file.
 	    // note that the relative path is related to gserver.

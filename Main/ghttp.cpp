@@ -57,6 +57,8 @@ bool show_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 
 bool delete_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
+bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+
 bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 //=============================================================================
 
@@ -331,12 +333,16 @@ int initialize(int argc, char *argv[])
 	//(then attacker is hard to guess, and the directory is restricted)
 	//BETTER+TODO: associate the thread/session ID with download fileName, otherwise error may come in parallism
 	//
-	//GET-example for the path /?operation=delete&download=[download]&filepath=[filepath], responds with the matched string in path
-	server.resource["^/%3[F|f]operation%3[D|d]delete%26download%3[D|d](.*)%26filepath%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	//GET-example for the path /?operation=delete&filepath=[filepath], responds with the matched string in path
+	server.resource["^/%3[F|f]operation%3[D|d]delete%26filepath%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
 		delete_handler(server, response, request);
     };
-
+	//GET-example for the path /?operation=delete&filepath=[filepath], responds with the matched string in path
+	server.resource["^/%3[F|f]operation%3[D|d]download%26filepath%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		download_handler(server, response, request);
+    };
     //Default GET-example. If no other matches, this anonymous function will be called.
     //Will respond with content in the web/-directory, and its subdirectories.
     //Default file: index.html
@@ -432,9 +438,9 @@ void thread_sigterm_handler(int _signal_num) {
 	pthread_exit(0);
 }
 
-void download_result(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string download, string filepath)
+void delete_result(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string filepath)
 {
-	cout<<"to download result or not"<<endl;
+	cout<<"to delete result"<<endl;
 	try {
 		//set the home directory of the web server
 		//NOTICE: we use .tmp/web instead of . to avoid attack: delete other files rather than the download one
@@ -445,6 +451,7 @@ void download_result(const HttpServer& server, const shared_ptr<HttpServer::Resp
 		if(distance(root_path.begin(), root_path.end())>distance(path.begin(), path.end()) ||
 				!equal(root_path.begin(), root_path.end(), path.begin()))
 			throw invalid_argument("path must be within root path.");
+		/*
 		if(download == "true")
 		{
 			std::string cache_control, etag;
@@ -467,6 +474,7 @@ void download_result(const HttpServer& server, const shared_ptr<HttpServer::Resp
 			else
 				throw invalid_argument("could not read file.");
 		}
+		*/
 		if((boost::filesystem::exists(path) && boost::filesystem::is_regular_file(path)))
 		{
 			//delete file in delpath.
@@ -481,6 +489,63 @@ void download_result(const HttpServer& server, const shared_ptr<HttpServer::Resp
 			else
 				cout << "file delete." << endl;
 		}	
+	}
+	catch(const exception &e) {
+		//cout<<"can not open file!!!"<<endl;
+		string content="Could not open path "+request->path+": "+e.what();
+		*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
+	}
+}
+
+void download_result(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string filepath)
+{
+	cout<<"to download result"<<endl;
+	try {
+		//set the home directory of the web server
+		//NOTICE: we use .tmp/web instead of . to avoid attack: delete other files rather than the download one
+		auto root_path=boost::filesystem::canonical(".tmp/web");
+		auto path=boost::filesystem::canonical(root_path/filepath);
+		cout << "path: " << path << endl;
+		//Check if path is within root_path
+		if(distance(root_path.begin(), root_path.end())>distance(path.begin(), path.end()) ||
+				!equal(root_path.begin(), root_path.end(), path.begin()))
+			throw invalid_argument("path must be within root path.");
+
+		std::string cache_control, etag;
+
+		// Uncomment the following line to enable Cache-Control
+		// cache_control="Cache-Control: max-age=86400\r\n";
+			
+		//return file in path
+		auto ifs=make_shared<ifstream>();
+		ifs->open(path.string(), ifstream::in | ios::binary | ios::ate);
+
+		if(*ifs) {
+			//cout<<"open file!!!"<<endl;
+			auto length=ifs->tellg();
+			ifs->seekg(0, ios::beg);
+
+			*response << "HTTP/1.1 200 OK\r\n" << cache_control << etag << "Content-Length: " << length << "\r\n\r\n";
+			default_resource_send(server, response, ifs);
+		}
+		else
+			throw invalid_argument("could not read file.");
+		/*
+		if((boost::filesystem::exists(path) && boost::filesystem::is_regular_file(path)))
+		{
+			//delete file in delpath.
+			char name[60];
+			strcpy(name, path.c_str());
+			cout << "name: " << name << endl;
+			if(remove(name) == -1)
+			{
+				cout << "could not delete file." << endl;
+				perror("remove");
+			}
+			else
+				cout << "file delete." << endl;
+		}
+		*/
 	}
 	catch(const exception &e) {
 		//cout<<"can not open file!!!"<<endl;
@@ -744,7 +809,7 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 		}
 		else
 		{
-			/*
+			
 			string filename = "";
 			filename = "sparql." + format;
 			cout << "filename: " << filename << endl;
@@ -753,12 +818,13 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 			*response << "\r\nContent-Disposition: attachment; filename=\"" << filename << '"';
 			*response << "\r\n\r\n" << success;
 			return 0;
-			*/
-			outfile.open(localname);
-			outfile << success;
-			outfile.close();
+			
+			//outfile.open(localname);
+			//outfile << success;
+			//outfile.close();
 
-			download_result(server, response, request, "true", filename);
+			//download_result(server, response, request, "true", filename);
+			//
 			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ansNum_s.length()+filename.length()+3;
 			//*response << "\r\n\r\n" << "2+" << rs.ansNum << '+' << filename;
 			return true;
@@ -816,13 +882,31 @@ bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 bool delete_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
 	cout << "HTTP: this is delete" << endl;
+	/*
 	string download = request->path_match[1];
 	download = UrlDecode(download);
 	cout << "download: " << download << endl;
-	string filepath = request->path_match[2];
+	*/
+	string filepath = request->path_match[1];
 	filepath = UrlDecode(filepath);
 
-	download_result(server, response, request, download, filepath);
+	delete_result(server, response, request, filepath);
+
+	return true;
+}
+
+bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	cout << "HTTP: this is download" << endl;
+	/*
+	string download = request->path_match[1];
+	download = UrlDecode(download);
+	cout << "download: " << download << endl;
+	*/
+	string filepath = request->path_match[1];
+	filepath = UrlDecode(filepath);
+
+	download_result(server, response, request, filepath);
 
 	return true;
 }

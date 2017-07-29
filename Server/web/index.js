@@ -16,14 +16,24 @@ function query(dp) {
 	var encodeArgu = escape(argu);
 	if(format != "html")
 	{
+		/*
+		$.get(encodeArgu, function(data, status){
+			if(status == "success")
+		{
+			alert("success");
+		}
+		});
+		*/
 		var element = document.getElementById("hideLink");
 		element.setAttribute("href", encodeArgu);
+		/*
 		if(format == "txt")
 			element.setAttribute("download", "sparql.txt");
 		else if(format == "csv")
 			element.setAttribute("download", "sparql.csv");
 		else if(format == "json")
 			element.setAttribute("download", "sparql.json");
+		*/
 		if(/msie/i.test(navigator.userAgent))
 		{
 			element.fireEvent("onclick");
@@ -93,22 +103,24 @@ function query(dp) {
 				$("#main_body").empty();
 				$("#main_body").append(page);
 
-				var tmp1 = "?operation=delete&download=true&filepath=" + fileName;
+				var tmp1 = "?operation=download&filepath=" + fileName;
 				var request1 = escape(tmp1);
 				var element1 = document.getElementById("download");
 				element1.setAttribute("href", request1);
 				element1.setAttribute("download", "sparql.txt");
+				/*
 				element1.onclick = function(){
 					element1.setAttribute("style", "display: none");
 				}
+				*/
 				var element2 = document.getElementById("back");
 				element2.onclick = function(){
-					if($(element1).css("display") != "none")
-					{
-						var tmp2 = "?operation=delete&download=false&filepath=" + fileName;
+				//	if($(element1).css("display") != "none")
+				//	{
+						var tmp2 = "?operation=delete&filepath=" + fileName;
 						var request2 = escape(tmp2);
 						$.get(request2, function(data, status){});
-					}
+				//	}
 				}
 		}
 			/*
