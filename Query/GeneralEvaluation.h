@@ -22,7 +22,6 @@
 #include "QueryTree.h"
 #include "Varset.h"
 #include "RegexExpression.h"
-#include "ResultFilter.h"
 #include "../Util/Triple.h"
 
 class GeneralEvaluation
@@ -34,7 +33,6 @@ class GeneralEvaluation
 		KVstore *kvstore;
 		StringIndex *stringindex;
 		Strategy strategy;
-		ResultFilter result_filter;
 
 		TYPE_TRIPLE_NUM *pre2num;
 		TYPE_PREDICATE_ID limitID_predicate;
@@ -194,8 +192,15 @@ class GeneralEvaluation
 		};
 
 	private:
-		TempResultSet* temp_result;
-		std::vector<QueryTree::GroupPattern> rewriting_evaluation_stack;
+		TempResultSet *temp_result;
+
+		struct EvaluationStackStruct
+		{
+			QueryTree::GroupPattern grouppattern;
+			SPARQLquery *sparql_query;
+			vector<vector<string> > encode_varset;
+		};
+		std::vector<EvaluationStackStruct> rewriting_evaluation_stack;
 
 	public:
 		TempResultSet* semanticBasedQueryEvaluation(QueryTree::GroupPattern &grouppattern);

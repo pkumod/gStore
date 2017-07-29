@@ -78,7 +78,7 @@ kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) #$(sstree
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o \
-		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)ResultFilter.o $(objdir)GeneralEvaluation.o
+		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)GeneralEvaluation.o
 
 signatureobj = $(objdir)SigEntry.o $(objdir)Signature.o
 
@@ -277,7 +277,7 @@ $(objdir)Join.o: Database/Join.cpp Database/Join.h $(objdir)IDList.o $(objdir)Ba
 	$(CC) $(CFLAGS) Database/Join.cpp $(inc) -o $(objdir)Join.o
 
 $(objdir)Strategy.o: Database/Strategy.cpp Database/Strategy.h $(objdir)SPARQLquery.o $(objdir)BasicQuery.o \
-	$(objdir)Triple.o $(objdir)IDList.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Util.o $(objdir)Join.o $(objdir)ResultFilter.o
+	$(objdir)Triple.o $(objdir)IDList.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Util.o $(objdir)Join.o
 	$(CC) $(CFLAGS) Database/Strategy.cpp $(inc) -o $(objdir)Strategy.o
 
 #objects in Database/ end
@@ -303,12 +303,9 @@ $(objdir)Varset.o: Query/Varset.cpp Query/Varset.h
 $(objdir)QueryTree.o: Query/QueryTree.cpp Query/QueryTree.h $(objdir)Varset.o
 	$(CC) $(CFLAGS) Query/QueryTree.cpp $(inc) -o $(objdir)QueryTree.o
 
-$(objdir)ResultFilter.o: Query/ResultFilter.cpp Query/ResultFilter.h $(objdir)BasicQuery.o $(objdir)SPARQLquery.o $(objdir)Util.o
-	$(CC) $(CFLAGS) Query/ResultFilter.cpp $(inc) -o $(objdir)ResultFilter.o
-
 #no more using $(objdir)Database.o
 $(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h $(objdir)QueryParser.o $(objdir)QueryTree.o \
-	$(objdir)SPARQLquery.o $(objdir)Varset.o $(objdir)KVstore.o $(objdir)ResultFilter.o $(objdir)Strategy.o $(objdir)StringIndex.o 
+	$(objdir)SPARQLquery.o $(objdir)Varset.o $(objdir)KVstore.o $(objdir)Strategy.o $(objdir)StringIndex.o 
 	$(CC) $(CFLAGS) Query/GeneralEvaluation.cpp $(inc) -o $(objdir)GeneralEvaluation.o
 
 #objects in Query/ end
