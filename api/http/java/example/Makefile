@@ -1,4 +1,4 @@
-JavaAPIExample.class:
+JavaAPIExample.class: JavaAPIExample.java
 	javac -cp ../lib/GstoreJavaAPI.jar JavaAPIExample.java
 
 .PHONY: clean run

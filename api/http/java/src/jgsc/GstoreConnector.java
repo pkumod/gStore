@@ -32,7 +32,7 @@ public class GstoreConnector {
         this.serverPort = _port;
     }
 
-	//TODO: what if the query result is too large?  
+	//TODO: what if the query result is too large?  split and save to file, or use Stream
 	//how about get next (need to record the connection or user in db server)
     public String sendGet(String param) {
 		String url = "http://" + this.serverIP + ":" + this.serverPort;
@@ -66,6 +66,7 @@ public class GstoreConnector {
             for (String key : map.keySet()) {
                 System.out.println(key + "--->" + map.get(key));
             }
+                //System.out.println("============================================");
             // 定义 BufferedReader输入流来读取URL的响应
             in = new BufferedReader(new InputStreamReader(
                     connection.getInputStream()));
@@ -189,6 +190,7 @@ public class GstoreConnector {
 		//catch (UnsupportedEncodingException ex) {
 			//throw new RuntimeException("Broken VM does not support UTF-8");
 		//}
+
 		String cmd = "?operation=query&format=json&sparql=" + _sparql;
         //String cmd = "query/\"" + _sparql + "\"";
         String msg = this.sendGet(cmd);
@@ -222,6 +224,23 @@ public class GstoreConnector {
         this.disconnect();
         return msg;
     }
+
+	public String test_download(String filepath)
+	{
+        boolean connect_return = this.connect();
+        if (!connect_return) {
+            System.err.println("connect to server error. @GstoreConnector.query");
+            return "connect to server error.";
+        }
+
+		//TEST: a small file, a large file
+		String cmd = "?operation=delete&download=true&filepath=" + filepath;
+        String msg = this.sendGet(cmd);
+
+        this.disconnect();
+
+        return msg;
+	}
 
     private boolean connect() {
 		return true;

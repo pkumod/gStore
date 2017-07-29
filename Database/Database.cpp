@@ -300,6 +300,66 @@ Database::writeIDinfo()
 	fp = NULL;
 }
 
+void
+Database::saveIDinfo()
+{
+	//cout<<"now to write the id info"<<endl;
+	FILE* fp = NULL;
+	BlockInfo *bp = NULL, *tp = NULL;
+
+	fp = fopen(this->free_id_file_entity.c_str(), "w+");
+	if (fp == NULL)
+	{
+		cout << "write entity id info error" << endl;
+		return;
+	}
+	fwrite(&(this->limitID_entity), sizeof(int), 1, fp);
+	bp = this->freelist_entity;
+	while (bp != NULL)
+	{
+		fwrite(&(bp->num), sizeof(int), 1, fp);
+		tp = bp->next;
+		bp = tp;
+	}
+	fclose(fp);
+	fp = NULL;
+
+	fp = fopen(this->free_id_file_literal.c_str(), "w+");
+	if (fp == NULL)
+	{
+		cout << "write literal id info error" << endl;
+		return;
+	}
+	fwrite(&(this->limitID_literal), sizeof(int), 1, fp);
+	bp = this->freelist_literal;
+	while (bp != NULL)
+	{
+		fwrite(&(bp->num), sizeof(int), 1, fp);
+		tp = bp->next;
+		bp = tp;
+	}
+	fclose(fp);
+	fp = NULL;
+
+	fp = fopen(this->free_id_file_predicate.c_str(), "w+");
+	if (fp == NULL)
+	{
+		cout << "write predicate id info error" << endl;
+		return;
+	}
+	fwrite(&(this->limitID_predicate), sizeof(int), 1, fp);
+	bp = this->freelist_predicate;
+	while (bp != NULL)
+	{
+		fwrite(&(bp->num), sizeof(int), 1, fp);
+		tp = bp->next;
+		bp = tp;
+	}
+	fclose(fp);
+	fp = NULL;
+}
+
+
 //ID alloc garbage error(LITERAL_FIRST_ID or double) add base for literal
 TYPE_ENTITY_LITERAL_ID
 Database::allocEntityID()
@@ -460,6 +520,7 @@ Database::~Database()
 	//Util::debug_database = NULL;	//debug: when multiple databases
 }
 
+//TODO: update pre map if insert/delete
 void
 Database::setPreMap()
 {
@@ -1112,6 +1173,26 @@ Database::unload()
 	return true;
 }
 
+//this is used for checkpoint, we must ensure that modification is written to disk,
+//so flush() is a must
+bool Database::save()
+{
+	//this->vstree->saveTree();
+	this->kvstore->flush();
+	this->saveDBInfoFile();
+	this->saveIDinfo();
+
+	//TODO: fsync or using sync in Util
+	//should sync every file modified
+	//TODO: add flush for string index
+	//this->stringindex->flush();
+	this->clear_update_log();
+
+	cerr<<"database checkpoint: "<<this->getName()<<endl;
+
+	return true;
+}
+
 void Database::clear() 
 {
 	delete[] this->pre2num;
@@ -1436,6 +1517,8 @@ Database::saveDBInfoFile()
 	fwrite(&this->pre_num, sizeof(int), 1, filePtr);
 	fwrite(&this->literal_num, sizeof(int), 1, filePtr);
 	fwrite(&this->encode_mode, sizeof(int), 1, filePtr);
+
+	fflush(filePtr);
 	fclose(filePtr);
 
 	//Util::triple_num = this->triples_num;

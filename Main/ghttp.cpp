@@ -10,9 +10,27 @@
 //operation.log: not used
 //query.log: query string, result num, and time of answering
 
+//TODO: to add db_name to all URLs, and change the index.js using /show to get name
+//TODO: modify gmonitor.java
+
 //TODO: mutiple threads , multiple users and multiple databases
 //How to acquire http connection ID? getSocket()  or use username to login?
 //But when setting up endpoint, username may not be a good choice
+
+//TODO: use response<< directly for query result, but for results too large to be placed in memory,
+//file donwload and Stream should be considered, split-page getNext() as well
+//Notice that read each block from disk and transfer to network may be very slow
+//
+//BETTER: define a format to return all information (header and body)
+//
+//TODO: backup() only preserve one version? is remove() and copy() updated to disk in time?
+//how to avoid disk error itself? send to otherwhere?
+//
+//TODO+DEBUG?: write log in update_log in Database.cpp 
+//is ostream.write() ok to update to disk at once? all add ofstream.flush()?
+//Also the checkpoint function!!!
+//http://bookug.cc/rwbuffer
+//BETTER: add a sync function in Util to support FILE*, fd, and fstream
 
 #include "../Server/server_http.hpp"
 #include "../Server/client_http.hpp"
@@ -311,7 +329,8 @@ int initialize(int argc, char *argv[])
     //     }
     // };
 
-    server.resource["^/%3[F|f]operation%3[D|d]checkpoint%26db_name%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	//TODO: use db_name if multiple databases
+    server.resource["^/%3[F|f]operation%3[D|d]checkpoint$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
 		checkpoint_handler(server, response, request);
     };
@@ -470,6 +489,11 @@ void delete_result(const HttpServer& server, const shared_ptr<HttpServer::Respon
 
 				*response << "HTTP/1.1 200 OK\r\n" << cache_control << etag << "Content-Length: " << length << "\r\n\r\n";
 				default_resource_send(server, response, ifs);
+				//DEBUG: in fact this make no sense, result will be received by clients even if server not wait for the network transfer!  (but very slow if results are large)
+				//sleep(10);  //seconds
+				//cout<<"sleep ends"<<endl;
+				//DEBUG: this will close the stream, and the info received by client may be incomplete
+				//ifs->close();
 			}
 			else
 				throw invalid_argument("could not read file.");
@@ -907,6 +931,8 @@ bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 	filepath = UrlDecode(filepath);
 
 	download_result(server, response, request, filepath);
+	//sleep(1);  //seconds
+	//cout<<"sleep ends"<<endl;
 
 	return true;
 }
@@ -957,17 +983,44 @@ bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	return true;
 }
 
-//BETTER: server choose to save a database when system is not busy
+//TODO+BETTER: server choose to save a database when system is not busy
+//If user send this command too frequently, the performance may be awful if updates are large
 bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	//TODO
+	if(current_database == NULL)
+	{
+		string error = "No database used.";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return false;
+	}
+
+	//For database checkpoint or log/transaction:
+	//http://www.newsmth.net/nForum/#!article/LinuxDev/37802?p=2
+	//http://blog.csdn.net/cywosp/article/details/8767327
+	//http://www.fx114.net/qa-63-143449.aspx
+	current_database->save();
+	//NOTICE: this info is in header
+	string success = "Database saveed successfully.";
+	//header and content are split by an empty line
+	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+
 	return true;
 }
 
 //BETTER+TODO: indicate the db_name when query
 bool show_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	//TODO
+	if(current_database == NULL)
+	{
+		string error = "No database used.";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return false;
+	}
+
+	//NOTICE: this info is in header
+	string success = current_database->getName();
+	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+
 	return true;
 }
 
