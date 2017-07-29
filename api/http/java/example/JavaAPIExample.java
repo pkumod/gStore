@@ -14,6 +14,13 @@ public class JavaAPIExample
 	{
 		// initialize the GStore server's IP address and port.
 		GstoreConnector gc = new GstoreConnector("127.0.0.1", 9000);
+		//for sparql endpoint, URL can also be used here, like freebase.gstore-pku.com:80
+		//GstoreConnector gc = new GstoreConnector("tourist.gstore-pku.com", 80);
+
+		//test download function
+		//String file = gc.test_download("big.txt");
+		//String file = gc.test_download("big.txt");
+		//System.out.println(file.substring(file.length()-100, file.length()));
 		
 	    // build a new database by a RDF file.
 	    // note that the relative path is related to gserver.
