@@ -10,8 +10,8 @@
 //operation.log: not used
 //query.log: query string, result num, and time of answering
 
-//TODO: to add db_name to all URLs, and change the index.js using /show to get name
-//TODO: modify gmonitor.java
+//TODO: to add db_name to all URLs, and change the index.js using /show to get name, save and set
+//TODO: use gzip for network transfer, it is ok to download a gzip file instead of the original one
 
 //TODO: mutiple threads , multiple users and multiple databases
 //How to acquire http connection ID? getSocket()  or use username to login?
@@ -31,6 +31,7 @@
 //Also the checkpoint function!!!
 //http://bookug.cc/rwbuffer
 //BETTER: add a sync function in Util to support FILE*, fd, and fstream
+//In addition, query log in endpoint should also be synced!
 
 #include "../Server/server_http.hpp"
 #include "../Server/client_http.hpp"
@@ -275,7 +276,7 @@ int initialize(int argc, char *argv[])
 
 
 
-#ifndef USED_AS_ENDPOINT
+#ifndef SPARQL_ENDPOINT
 	//GET-example for the path /?operation=build&db_name=[db_name]&ds_path=[ds_path], responds with the matched string in path
 	//i.e. database name and dataset path
 	server.resource["^/%3[F|f]operation%3[D|d]build%26db_name%3[D|d](.*)%26ds_path%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
@@ -591,6 +592,7 @@ bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	cout<<"HTTP: this is build"<<endl;
 	string db_name=request->path_match[1];
 	string db_path=request->path_match[2];
+	db_name = UrlDecode(db_name);
 	db_path = UrlDecode(db_path);
 	if(db_name=="" || db_path=="")
 	{
@@ -646,6 +648,7 @@ bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 {
 	cout<<"HTTP: this is load"<<endl;
 	string db_name = request->path_match[1];
+	db_name = UrlDecode(db_name);
 
    //	string db_name = argv[1];
 	if(db_name=="")
@@ -698,9 +701,20 @@ bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 
 bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
+	cout<<"HTTP: this is unload"<<endl;
+	string db_name = request->path_match[1];
+	db_name = UrlDecode(db_name);
+
 	if(current_database == NULL)
 	{
 		string error = "No database used now.";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return false;
+	}
+
+	if(current_database->getName() != db_name)
+	{
+		string error = "Database Name not matched.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return false;
 	}
@@ -709,15 +723,18 @@ bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	current_database = NULL;
 	string success = "Database unloaded.";
 	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+
 	return true;
 }
 
 bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
+	cout<<"HTTP: this is query"<<endl;
+
 	string format = request->path_match[1];
 	//string format = "html";
-	cout<<"HTTP: this is query"<<endl;
 	string db_query=request->path_match[2];
+	format = UrlDecode(format);
 	db_query = UrlDecode(db_query);
 	cout<<"check: "<<db_query<<endl;
 	string str = db_query;
@@ -853,7 +870,6 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 			*response << "\r\nContent-Type: application/octet-stream";
 			*response << "\r\nContent-Disposition: attachment; filename=\"" << filename << '"';
 			*response << "\r\n\r\n" << success;
-			return 0;
 			
 			//outfile.open(localname);
 			//outfile << success;
@@ -880,6 +896,7 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
 	cout<<"HTTP: this is monitor"<<endl;
+
 	if(current_database == NULL)
 	{
 		string error = "No database used now.";
@@ -893,20 +910,20 @@ bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	string name = current_database->getName();
 	success = success + "database: " + name + "\n";
 	TYPE_TRIPLE_NUM triple_num = current_database->getTripleNum();
-	success = success + "triple num: " + Util::int2string(triple_num) + "\n";
+	success = success + "triple num: " + Util::int2string(triple_num) + "\r\n";
 	TYPE_ENTITY_LITERAL_ID entity_num = current_database->getEntityNum();
-	success = success + "entity num: " + Util::int2string(entity_num) + "\n";
+	success = success + "entity num: " + Util::int2string(entity_num) + "\r\n";
 	TYPE_ENTITY_LITERAL_ID literal_num = current_database->getLiteralNum();
-	success = success + "literal num: " + Util::int2string(literal_num) + "\n";
+	success = success + "literal num: " + Util::int2string(literal_num) + "\r\n";
 	TYPE_ENTITY_LITERAL_ID sub_num = current_database->getSubNum();
-	success = success + "subject num: " + Util::int2string(sub_num) + "\n";
+	success = success + "subject num: " + Util::int2string(sub_num) + "\r\n";
 	TYPE_PREDICATE_ID pre_num = current_database->getPreNum();
-	success = success + "predicate num: " + Util::int2string(pre_num) + "\n";
+	success = success + "predicate num: " + Util::int2string(pre_num) + "\r\n";
 	//BETTER: how to compute the connection num in Boost::asio?
 	int conn_num = connection_num / 2;
 	//int conn_num = 3;    //currectly connected sessions
 	//this connection num is countint the total(no break)
-	success = success + "connection num: " + Util::int2string(conn_num) + "\n";
+	success = success + "connection num: " + Util::int2string(conn_num) + "\r\n";
 	//TODO: add the info of memory and thread, operation num and IO frequency
 
 	//success = "<p>" + success + "</p>";
@@ -918,6 +935,7 @@ bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 bool delete_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
 	cout << "HTTP: this is delete" << endl;
+
 	/*
 	string download = request->path_match[1];
 	download = UrlDecode(download);
@@ -934,6 +952,7 @@ bool delete_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
 	cout << "HTTP: this is download" << endl;
+
 	/*
 	string download = request->path_match[1];
 	download = UrlDecode(download);
@@ -952,7 +971,6 @@ bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
 	cout<<"HTTP: this is default"<<endl;
-	cout << "request: " << request->path << endl;
 	//BETTER: use lock to ensure thread safe
 	connection_num++;
 	//NOTICE: it seems a visit will output twice times
@@ -1008,6 +1026,8 @@ bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 //If user send this command too frequently, the performance may be awful if updates are large
 bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
+	cout<<"HTTP: this is checkpoint"<<endl;
+
 	if(current_database == NULL)
 	{
 		string error = "No database used.";
@@ -1031,6 +1051,8 @@ bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::R
 //BETTER+TODO: indicate the db_name when query
 bool show_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
+	cout<<"HTTP: this is show"<<endl;
+
 	if(current_database == NULL)
 	{
 		string error = "No database used.";

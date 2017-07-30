@@ -115,21 +115,20 @@ function query(dp) {
 				element2.onclick = function(){
 					$.get(request2, function(data, status){
 						//alert("delete return");
-					var element3 = document.getElementById("trick");
-					if(/msie/i.test(navigator.userAgent))
-					{
-						element3.fireEvent("onclick");
-					}
-					else
-					{
-						var e1 = document.createEvent("MouseEvents");
-						e1.initEvent("click", true, true);
-						element3.dispatchEvent(e1);
-					}
-
+						var element3 = document.getElementById("trick");
+						if(/msie/i.test(navigator.userAgent))
+						{
+							element3.fireEvent("onclick");
+						}
+						else
+						{
+							var e1 = document.createEvent("MouseEvents");
+							e1.initEvent("click", true, true);
+							element3.dispatchEvent(e1);
+						}
 					});
 				}
-		}
+			}
 		});
 	}
 }
