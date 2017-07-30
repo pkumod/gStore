@@ -119,6 +119,7 @@ function query(dp) {
 				//	{
 						var tmp2 = "?operation=delete&filepath=" + fileName;
 						var request2 = escape(tmp2);
+						//alert(request2);
 						$.get(request2, function(data, status){});
 				//	}
 				}

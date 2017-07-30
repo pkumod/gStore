@@ -111,7 +111,7 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
 TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp
 
-all: $(TARGET)
+all: $(TARGET) bin/GMonitor.class
 
 test_index: test_index.cpp
 	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library)
@@ -171,6 +171,10 @@ $(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/socke
 $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/ghttp.cpp $(inc) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO)
 
+bin/GMonitor.class: Main/GMonitor.java
+	javac -d bin/ Main/GMonitor.java
+	cp test/gmonitor bin/
+	cp test/gshow bin/
 
 #objects in Main/ end
 
@@ -441,6 +445,7 @@ clean:
 	$(MAKE) -C api/socket/java/example clean
 	#$(MAKE) -C KVstore clean
 	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver*
+	rm -rf bin/*.class
 	#rm -rf .project .cproject .settings   just for eclipse
 	#rm -rf cscope* just for vim
 	rm -rf logs/*.log
