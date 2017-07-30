@@ -112,6 +112,8 @@ function query(dp) {
 				var tmp2 = "?operation=delete&filepath=" + fileName;
 				var request2 = escape(tmp2);	
 				var element2 = document.getElementById("back");
+				//!Notice: element2 is a "<a>" tag, and it has two actions, href and onclick, be careful with the executing order of these two actions.
+				//in this case, we use a call-back function to prevent strange things. we return to the origin web page after the request to delete file returns successfully.
 				element2.onclick = function(){
 					$.get(request2, function(data, status){
 						//alert("delete return");
