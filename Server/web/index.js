@@ -1,6 +1,5 @@
 
 function query(dp) {
-	//alert(dp);
 	var encodeVal = escape(dp);
 	//alert(encodeVal);
 	var format = document.getElementById("element_5").value;
@@ -48,7 +47,6 @@ function query(dp) {
 	else
 	{
 		$.get(encodeArgu, function(data, status){
-
 			if(status=="success"){
 				//toTxt();
 				//alert(data);
@@ -60,12 +58,13 @@ function query(dp) {
 					lines = 100;
 				//alert(lines);
 				var items = parts[3].split("\n");
-				//alert(items[86]);
+				//alert(items[0]);
 				var valNum = items[0].split("?");
 				var rows = valNum.length - 1;
-
-				var page = '<html><div align="left"><a href="/" id="back" style="font-size:16px;color:blue">Click to Return</a>';
+				//alert(rows);
+				var page = '<html><div align="left"><a href="javascript:void(0);" id="back" style="font-size:16px;color:blue">Click to Return</a>';
 				page = page + '<a id="download" style="font-size:16px;margin-left:20px">Click to Download</a>';
+				page = page + '<a href="/" id="trick" style="display: none">Click to back</a>';
 				page = page + '<p>Total answers: ';
 				page = page + parts[1];
 				page = page + '</p>';
@@ -95,6 +94,7 @@ function query(dp) {
 					//alert(item.length);
 					for(j = 0; j < rows; j++)
 					{
+						//alert(item[j]);
 						page = page + '<td>' + item[j].replace("<", "") + '</td>';
 					}
 					page = page + "</tr>";
@@ -108,32 +108,28 @@ function query(dp) {
 				var element1 = document.getElementById("download");
 				element1.setAttribute("href", request1);
 				element1.setAttribute("download", "sparql.txt");
-				/*
-				element1.onclick = function(){
-					element1.setAttribute("style", "display: none");
-				}
-				*/
+	
+				var tmp2 = "?operation=delete&filepath=" + fileName;
+				var request2 = escape(tmp2);	
 				var element2 = document.getElementById("back");
 				element2.onclick = function(){
-				//	if($(element1).css("display") != "none")
-				//	{
-						var tmp2 = "?operation=delete&filepath=" + fileName;
-						var request2 = escape(tmp2);
-						$.get(request2, function(data, status){});
-				//	}
+					$.get(request2, function(data, status){
+						//alert("delete return");
+					var element3 = document.getElementById("trick");
+					if(/msie/i.test(navigator.userAgent))
+					{
+						element3.fireEvent("onclick");
+					}
+					else
+					{
+						var e1 = document.createEvent("MouseEvents");
+						e1.initEvent("click", true, true);
+						element3.dispatchEvent(e1);
+					}
+
+					});
 				}
 		}
-			/*
-		
-		alert(data);
-		var vl = document.getElementById("queryAns").value;
-		alert(vl);
-		//$("#queryAns").value=data;
-		document.getElementById("queryAns").value = data;
-		vl = document.getElementById("queryAns").value;
-		alert(vl);
-		document.getElementById("myForm").submit();
-		*/
 		});
 	}
 }

@@ -403,14 +403,14 @@ void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer
     //read and send 128 KB at a time
     static vector<char> buffer(131072); // Safe when server is running on one thread
     streamsize read_length;
-	cout<<"int 0"<<endl;
+	//cout<<"int 0"<<endl;
     if((read_length=ifs->read(&buffer[0], buffer.size()).gcount())>0) {
         response->write(&buffer[0], read_length);
-	cout<<"int 1"<<endl;
+	//cout<<"int 1"<<endl;
         if(read_length==static_cast<streamsize>(buffer.size())) {
-	cout<<"int 2"<<endl;
+	//cout<<"int 2"<<endl;
             server.send(response, [&server, response, ifs](const boost::system::error_code &ec) {
-	cout<<"int 3"<<endl;
+	//cout<<"int 3"<<endl;
                     if(!ec)
                     default_resource_send(server, response, ifs);
                     else
@@ -511,7 +511,11 @@ void delete_result(const HttpServer& server, const shared_ptr<HttpServer::Respon
 				perror("remove");
 			}
 			else
+			{
 				cout << "file delete." << endl;
+				string success = "file delete successfully.";
+				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+			}
 		}	
 	}
 	catch(const exception &e) {
@@ -527,7 +531,9 @@ void download_result(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	try {
 		//set the home directory of the web server
 		//NOTICE: we use .tmp/web instead of . to avoid attack: delete other files rather than the download one
+		cout << "filepath: " << filepath << endl;
 		auto root_path=boost::filesystem::canonical(".tmp/web");
+		cout << "root_path: " << root_path << endl;
 		auto path=boost::filesystem::canonical(root_path/filepath);
 		cout << "path: " << path << endl;
 		//Check if path is within root_path
@@ -549,7 +555,9 @@ void download_result(const HttpServer& server, const shared_ptr<HttpServer::Resp
 			auto length=ifs->tellg();
 			ifs->seekg(0, ios::beg);
 
-			*response << "HTTP/1.1 200 OK\r\n" << cache_control << etag << "Content-Length: " << length << "\r\n\r\n";
+			*response << "HTTP/1.1 200 OK\r\n" << "Content-Length: " << length << "\r\n";
+			*response << "Content-Disposition: attachment; filename=sparql.txt" << "\r\n";
+			*response << "Content-Type: application/octet-stream" << "\r\n\r\n";
 			default_resource_send(server, response, ifs);
 		}
 		else
@@ -818,6 +826,8 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 			{
 				
 				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ansNum_s.length()+filename.length()+success.length()+4;
+				*response << "\r\nContent-Type: text/plain";
+				*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
 				*response  << "\r\n\r\n" << "0+" << rs.ansNum << '+' << filename << '+' << success;
 				return true;
 			}
@@ -827,6 +837,8 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 				success = "";
 				success = rs.to_str();
 				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ansNum_s.length()+filename.length()+success.length()+4;
+				*response << "\r\nContent-Type: text/plain";
+				*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
 				*response << "\r\n\r\n" << "1+" << rs.ansNum << '+' << filename << '+' << success;
 				return true;
 			}
@@ -940,6 +952,7 @@ bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
 	cout<<"HTTP: this is default"<<endl;
+	cout << "request: " << request->path << endl;
 	//BETTER: use lock to ensure thread safe
 	connection_num++;
 	//NOTICE: it seems a visit will output twice times
@@ -964,12 +977,20 @@ bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 
 		auto ifs=make_shared<ifstream>();
 		ifs->open(path.string(), ifstream::in | ios::binary | ios::ate);
-
+		string extName = path.extension().string();
+		cout << "extName: " << extName << endl;
+		
 		if(*ifs) {
 			auto length=ifs->tellg();
 			ifs->seekg(0, ios::beg);
 
-			*response << "HTTP/1.1 200 OK\r\n" << cache_control << etag << "Content-Length: " << length << "\r\n\r\n";
+			*response << "HTTP/1.1 200 OK\r\n" << cache_control << etag << "Content-Length: " << length << "\r\n";
+			if(extName == ".html")
+				*response << "Content-Type: text/html" << "\r\n\r\n";
+			else if(extName == ".js")
+				*response << "Content-Type: application/x-javascript" << "\r\n\r\n";
+			else if(extName == ".css")
+				*response << "Content-Type: text/css" << "\r\n\r\n";
 			default_resource_send(server, response, ifs);
 		}
 		else
