@@ -17,9 +17,12 @@
 //How to acquire http connection ID? getSocket()  or use username to login?
 //But when setting up endpoint, username may not be a good choice
 
+//DEBUG: if port has already been occupied, the server will be restarted endlessly, here we should stop
+
 //TODO: use response<< directly for query result, but for results too large to be placed in memory,
 //file donwload and Stream should be considered, split-page getNext() as well
 //Notice that read each block from disk and transfer to network may be very slow
+//(and multi-page requests will bring high overhead for parallism)
 //
 //BETTER: define a format to return all information (header and body)
 //
@@ -399,6 +402,8 @@ int initialize(int argc, char *argv[])
     return 0;
 }
 
+//TCP is slower than UDP, but more safely, and can support large data transfer well
+//http://blog.csdn.net/javaniuniu/article/details/51419348
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
         const shared_ptr<ifstream> &ifs) {
     //read and send 128 KB at a time

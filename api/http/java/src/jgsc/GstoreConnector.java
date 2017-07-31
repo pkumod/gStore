@@ -32,8 +32,9 @@ public class GstoreConnector {
         this.serverPort = _port;
     }
 
-	//TODO: what if the query result is too large?  split and save to file, or use Stream
-	//how about get next (need to record the connection or user in db server)
+	//PERFORMANCE: what if the query result is too large?  receive and save to file directly at once
+	//In addition, set the -Xmx larger(maybe in scale of Gs) if the query result could be very large, 
+	//this may help to reduce the GC cost
     public String sendGet(String param) {
 		String url = "http://" + this.serverIP + ":" + this.serverPort;
         String result = "";
@@ -56,24 +57,38 @@ public class GstoreConnector {
             // 设置通用的请求属性
             connection.setRequestProperty("accept", "*/*");
             connection.setRequestProperty("connection", "Keep-Alive");
+			//set agent to avoid: speed limited by server if server think the client not a browser
             connection.setRequestProperty("user-agent",
                     "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
             // 建立实际的连接
             connection.connect();
+
+			long t0 = System.currentTimeMillis(); //ms
+
             // 获取所有响应头字段
             Map<String, List<String>> map = connection.getHeaderFields();
             // 遍历所有的响应头字段
             for (String key : map.keySet()) {
                 System.out.println(key + "--->" + map.get(key));
             }
-                //System.out.println("============================================");
+
+			long t1 = System.currentTimeMillis(); //ms
+			System.out.println("Time to get header: "+(t1 - t0)+" ms");
+			//System.out.println("============================================");
+
             // 定义 BufferedReader输入流来读取URL的响应
-            in = new BufferedReader(new InputStreamReader(
-                    connection.getInputStream()));
+            in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String line;
             while ((line = in.readLine()) != null) {
-                result += line;
+				//PERFORMANCE: this can be very costly if result is very large, because many temporary Strings are produced
+				//In this case, just print the line directly will be much faster
+				result += line;
+				//System.out.println("get data size: " + line.length());
+				//System.out.println(line);
             }
+
+			long t2 = System.currentTimeMillis(); //ms
+			System.out.println("Time to get data: "+(t2 - t1)+" ms");
         } catch (Exception e) {
             System.out.println("error in get request: " + e);
             e.printStackTrace();
@@ -326,6 +341,13 @@ public class GstoreConnector {
                 + "}";
         answer = gc.query(sparql);
         System.out.println(answer);
+
+		//To count the time cost
+		//long startTime=System.nanoTime();   //ns
+		//long startTime=System.currentTimeMillis();   //ms
+		//doSomeThing();  //测试的代码段
+		//long endTime=System.currentTimeMillis(); //获取结束时间
+		//System.out.println("程序运行时间： "+(end-start)+"ms");
     }
 }
 

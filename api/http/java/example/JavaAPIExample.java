@@ -47,11 +47,14 @@ public class JavaAPIExample
 	    // also, you can load some exist database directly and then query.
 	    gc.load("LUBM10");
 
-		sparql="select ?s where { ?s ?p ?o . }";
 		//sparql = "delete where "
 				//+ "{"
 				//+ "<http://www.founder/121> ?predicate ?object ."
 				//+ "}";				
+		//sparql="select ?s where { ?s ?p ?o . }";
+		//PERFORMANCE: if we use the query above(as comment), result will be very large and the time cost is large, too
+		//The method to improve it is to receive a line and output/save to file at once, instead of combining all lines into a String
+		//The related code is in api/http/java/src/jgsc/GstoreConnector.java
 	    answer = gc.query(sparql);	    
 		System.out.println(answer);
 		gc.unload("LUBM10");
