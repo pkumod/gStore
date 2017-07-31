@@ -519,6 +519,7 @@ void delete_result(const HttpServer& server, const shared_ptr<HttpServer::Respon
 			else
 			{
 				cout << "file delete." << endl;
+				//Notice: if file deleted successfully, service need to response to the browser, if not the browser will not execute the call-back function.
 				string success = "file delete successfully.";
 				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 			}
@@ -560,7 +561,7 @@ void download_result(const HttpServer& server, const shared_ptr<HttpServer::Resp
 			//cout<<"open file!!!"<<endl;
 			auto length=ifs->tellg();
 			ifs->seekg(0, ios::beg);
-
+			//!Notice: remember to set the Content-Disposition and the Content-type to let the browser to download.
 			*response << "HTTP/1.1 200 OK\r\n" << "Content-Length: " << length << "\r\n";
 			*response << "Content-Disposition: attachment; filename=sparql.txt" << "\r\n";
 			*response << "Content-Type: application/octet-stream" << "\r\n\r\n";
@@ -846,7 +847,10 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 			outfile.close();
 			if(rs.ansNum <= 100)
 			{
-				
+				//!Notice: remember to set no-cache in the response of query, Firefox and chrome works well even if you don't set, but IE will act strange if you don't set
+				//beacause IE will defaultly cache the query result after first query request, so the following query request of the same url will not be send if the result in cache isn't expired.
+				//then the following query will show the same result without sending a request to let the service run query
+				//so the download function will go wrong because there is no file in the service.
 				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ansNum_s.length()+filename.length()+success.length()+4;
 				*response << "\r\nContent-Type: text/plain";
 				*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
@@ -1008,6 +1012,8 @@ bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 			ifs->seekg(0, ios::beg);
 
 			*response << "HTTP/1.1 200 OK\r\n" << cache_control << etag << "Content-Length: " << length << "\r\n";
+			//!Notice: IE need to declare the Content-type of the response, if not the browser will not show the result with an unknow format.
+			//it works well in Firefox and Chrome if you don't declare the Content-type, but in IE the css file will be ignored because of unmatched MIME type, then the web page will show in a form without css style and it looks ugly.
 			if(extName == ".html")
 				*response << "Content-Type: text/html" << "\r\n\r\n";
 			else if(extName == ".js")
