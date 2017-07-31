@@ -36,6 +36,9 @@
 //BETTER: add a sync function in Util to support FILE*, fd, and fstream
 //In addition, query log in endpoint should also be synced!
 
+//PARALLISM: now all requests are queued automatically, after one is finished , then another
+//Hiw can we make some requests run in parallism
+
 #include "../Server/server_http.hpp"
 #include "../Server/client_http.hpp"
 //db
@@ -227,12 +230,11 @@ int initialize(int argc, char *argv[])
 		else
 		{
 			cout << "wrong format of parameters, please input the server port and the database." << endl;
-			return 0;
+			return -1;
 		}
 	}
 	cout << "server port: " << server.config.port << " database name: " << db_name << endl;
 	//USAGE: then user can use http://localhost:port/ to visit the server or coding with RESTful API
-	Util util;
     //HTTP-server at port 9000 using 1 thread
     //Unless you do more heavy non-threaded processing in the resources,
     //1 thread is usually faster than several threads
@@ -250,8 +252,6 @@ int initialize(int argc, char *argv[])
 			return 0;
 		}
 	
-		//database += ".db";
-
 		if(current_database != NULL)
 		{
 			cout << "Please unload your current database first." << endl;

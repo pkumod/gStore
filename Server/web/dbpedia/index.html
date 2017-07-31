@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
         <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
-        <title>SPARQL Query Endpoint</title>
+        <title>DBpedia Query Endpoint</title>
         <link rel="stylesheet" type="text/css" href="view.css" media="all" />
 		<!--<script type="text/javascript" src="view.js"></script> -->
          <script type="text/javascript" src="index.js"></script>
@@ -11,10 +11,10 @@
     <body id="main_body" onload="handleQueryExample()">
         <div id="form_container">
 
-            <h1><a>SPARQL Query Endpoint</a></h1>
+            <h1><a>DBpedia Query Endpoint</a></h1>
             <form id="myForm" method="post" action="PHPAPIExample.php">
                 <div class="form_description">
-                    <h2>SPARQL Query Endpoint</h2>
+                    <h2>DBpedia Query Endpoint</h2>
                     <p></p>
                 </div>
 
@@ -22,7 +22,7 @@
                     <li id="li_1" >
                         <label class="description" for="element_1">Database Name </label>
                         <div>
-                        <input id="element_1" name="databasename" class="element text medium" type="text" maxlength="255" value="lubm" readonly>
+                        <input id="element_1" name="databasename" class="element text medium" type="text" maxlength="255" value="dbpedia" readonly>
                         </input>
                         </div> 
 
@@ -35,13 +35,13 @@
                                 <option value="q1" selected="selected">q1</option>
                                 <option value="q2">q2</option>
                                 <option value="q3">q3</option>
-                                <!--<option value="q4">q4</option>-->
-                                <!--<option value="q5">q5</option>-->
-                                <!--<option value="q6">q6</option>-->
-                                <!--<option value="q7">q7</option>-->
-                                <!--<option value="q8">q8</option>-->
-                                <!--<option value="q9">q9</option>-->
-                                <!--<option value="q10">q10</option>-->
+                                <option value="q4">q4</option>
+                                <option value="q5">q5</option>
+                                <option value="q6">q6</option>
+                                <option value="q7">q7</option>
+                                <option value="q8">q8</option>
+                                <option value="q9">q9</option>
+                                <option value="q10">q10</option>
                             </select>
                         </div>
                     </li>

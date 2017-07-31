@@ -138,65 +138,74 @@ function query(dp) {
 function handleQueryExample()
             {
                 var example = document.getElementById("example").value;
-                if (example === "q1")
-                {
-                    document.getElementById("element_3").value =    "SELECT DISTINCT ?p \n" +
-                    												"WHERE \n" +
-																	"{ \n" +
-																	"\t?s ?p ?o . \n" +
-																	"} \n";
-                }
+				if(example === "q1")
+				{
+						document.getElementById("element_3").value = "select ?x ?y \n" + 
+						"where\n" + 
+						"{ \n" +
+								"\t?x <http://www.w3.org/2000/01/rdf-schema#label> ?o.\n" +
+								"\t?x <http://www.brain-inspired-cognitive-engine.org/knowledge-engine/cas-kb/zhongwenming> ?z.\n" + 
+								"\t?z <http://www.w3.org/2000/01/rdf-schema#label> ?y.\n" + 
+						"} \n";
+				}
 
-                if (example === "q2")
-                {
-                    document.getElementById("element_3").value =    "SELECT ?x WHERE \n" +
-																	"{ \n" +
-																	"\t?x  <ub:name>   <FullProfessor0> .\n" +
-																	"} \n";
-                }
-
-                if (example === "q3")
-                {
-                    document.getElementById("element_3").value =    "SELECT ?x WHERE \n" +
-																	"{ \n" +
-																	"\t?x  <rdf:type>  <ub:Course> .\n" +
-																	"\t?x  <ub:name>   ?y .\n" +
-																	"} \n";
-                }
+				if(example === "q2")
+				{
+						document.getElementById("element_3").value = "select ?x ?y ?z\n" + 
+						"where\n" + 
+						"{ \n" +
+								"\t<http://www.brain-inspired-cognitive-engine.org/knowledge-engine/cas-kb/huang-shan>  ?y ?z.\n" +
+								"\t<http://www.brain-inspired-cognitive-engine.org/knowledge-engine/cas-kb/huang-shan> <http://www.w3.org/2000/01/rdf-schema#label> ?x.\n" +
+						"}\n";
+				}
+				if(example === "q3")
+				{
+						document.getElementById("element_3").value = "select ?x ?y \n" + 
+						"where\n" +
+						"{\n" +
+								"\t<http://www.brain-inspired-cognitive-engine.org/knowledge-engine/cas-kb/huang-shan>  ?y ?z.\n" +
+								"\t<http://www.brain-inspired-cognitive-engine.org/knowledge-engine/cas-kb/huang-shan> <http://www.w3.org/2000/01/rdf-schema#label> ?x.\n" +
+						"}\n";
+				}
 
                 //if (example === "q4")
                 //{
-                    //document.getElementById("element_3").value =    "SELECT DISTINCT ?v0 WHERE \n" +
+                    //document.getElementById("element_3").value =    "select distinct ?x where \n" +
 																	//"{ \n" +
-																	//"\t?v0 <http://purl.org/dc/terms/subject> <http://dbpedia.org/resource/Category:956_births> .\n" +
-																	//"\t{?v0 <http://dbpedia.org/property/wikiPageUsesTemplate> ?v1 .}\n" + "UNION\n" +
-																	//"\t{?v0 <http://dbpedia.org/prpperty/hasPhotoCollection> ?v2 .}\n" +
+																	//"\t?x	<rdf:type>	<ub:GraduateStudent>. \n" +
+																	//"\t?y	<rdf:type>	<ub:University>. \n" +
+																	//"\t?z	<rdf:type>	<ub:Department>. \n" +
+																	//"\t?x	<ub:memberOf>	?z. \n" +
+																	//"\t?z	<ub:subOrganizationOf>	?y. \n" +
+																	//"\t?x	<ub:undergraduateDegreeFrom>	?y. \n" +
 																	//"} \n";
                 //}
                 //if (example === "q5")
                 //{
-                    //document.getElementById("element_3").value =    "SELECT ?v0 ?v2 ?v3 WHERE \n" +
+                    //document.getElementById("element_3").value =    "select distinct ?x where \n" +
 																	//"{ \n" +
-																	//"\t?v0 <http://dbpedia.org/ontology/wikiPageWikiLink> <http://dbpedia.org/resource/Autism> .\n" +
-																	//"\t?v2 <http://dbpedia.org/property/candidate> ?v0 .\n" +
-																	//"\t?v3 <http://dbpedia.org/property/constituencyWestminster> ?v2 .\n" +
+																	//"\t?x	<rdf:type>	<ub:Course>. \n" +
+																	//"\t?x	<ub:name>	?y. \n" +
 																	//"} \n";
                 //}
                 //if (example === "q6")
                 //{
-                    //document.getElementById("element_3").value =    "SELECT ?V1 ?V2 WHERE \n" +
+                    //document.getElementById("element_3").value =    "select distinct ?x where \n" +
 																	//"{ \n" +
-																	//"\t?v1 <http://www.w3.org/2002/07/owl#sameAs> <http://it.dbpedia.org/resource/Category:Filosofi_del_IV_secolo_a.C.> .\n" +
-																	//"\t?v2 <dbpedia.org/ontology/wikiPageWikiLink> ?v1 .\n" +
-																	//"\t<http://dbpedia.org/resource/Chinese_classics> <http://dbpedia.org/ontology/wikiPageWikiLink> ?v2  .\n" +
+																	//"\t?x    <rdf:type>    <ub:UndergraduateStudent>. \n" +
+																	//"\t?y    <ub:name> <Course1>. \n" +
+																	//"\t?x    <ub:takesCourse>  ?y. \n" +
+																	//"\t?z    <ub:teacherOf>    ?y. \n" +
+																	//"\t?z    <ub:name> <FullProfessor1>. \n" +
+																	//"\t?z    <ub:worksFor>    ?w. \n" +
+																	//"\t?w    <ub:name>    <Department0>. \n" +
 																	//"} \n";
                 //}
                 //if (example === "q7")
                 //{
-                    //document.getElementById("element_3").value =    "SELECT ?v0 ?v1 WHERE \n" +
+                    //document.getElementById("element_3").value =    "select distinct ?x where \n" +
 																	//"{ \n" +
-																	//"\t<http://dbpedia.org/resource/Albedo> <http://dbpedia.org/ontology/wikiPageWikiLink> ?v0 .\n" +
-																	//"\t?v1 <http://dbpedia.org/ontology/wikiPageWikiLink> ?v0 .\n" +
+																	//"\t?x    <rdf:type>    <ub:UndergraduateStudent>. \n" +
 																	//"}\n";
                 //}
                 //if (example === "q8")
@@ -231,4 +240,4 @@ function handleQueryExample()
 																	//"\t?v0 <http://dbpedia.org/ontology/wikiPageWikiLink> <http://dbpedia.org/resource/Combination> .\n" +
 																	//"}\n";
                 //}
-            }
+			}
