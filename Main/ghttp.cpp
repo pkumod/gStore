@@ -244,19 +244,14 @@ int initialize(int argc, char *argv[])
     //server.resource["^/load/(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 
 	string database = db_name;
-	if(database != "")
+	if(current_database == NULL && database != "")
 	{
 		if(database.length() > 3 && database.substr(database.length()-3, 3) == ".db")
 		{
 			cout << "Your db name to be built should not end with \".db\"." << endl;
-			return 0;
+			return -1;
 		}
 	
-		if(current_database != NULL)
-		{
-			cout << "Please unload your current database first." << endl;
-			return 0;
-		}
 		cout << database << endl;
 		current_database = new Database(database);
 		bool flag = current_database->load();
@@ -265,7 +260,7 @@ int initialize(int argc, char *argv[])
 			cout << "Failed to load the database."<<endl;
 			delete current_database;
 			current_database = NULL;
-			return 0;
+			return -1;
 		}
 		//string success = db_name;
 		cout << "Database loaded successfully."<<endl;
@@ -768,7 +763,9 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	}
 
 	ResultSet rs;
+	int query_time = Util::get_cur_time();
 	bool ret = current_database->query(sparql, rs, output);
+	query_time = Util::get_cur_time() - query_time;
 	if (timer != 0 && !stop_thread(timer)) {
 		cerr << "Failed to stop timer." << endl;
 	}
@@ -810,8 +807,10 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 			cout << queryLog << "can't open." << endl;
 			return false;
 		}
+		outlog << Util::get_date_time() << endl;
 		outlog << sparql << endl << endl;
 		outlog << "answer num: "<<rs.ansNum << endl;
+		outlog << "query time: "<<query_time <<" ms"<< endl;
 		outlog << "-----------------------------------------------------------" << endl;
 		outlog.close();
 

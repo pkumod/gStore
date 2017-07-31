@@ -750,6 +750,16 @@ Util::get_cur_time()
     return (tv.tv_sec*1000 + tv.tv_usec/1000);
 }
 
+string 
+Util::get_date_time()
+{
+	time_t timep;
+	time(&timep);
+	char tmp[64];
+	strftime(tmp, sizeof(tmp), "%Y-%m-%d %H:%M:%S",localtime(&timep) );
+	return tmp;
+}
+
 bool
 Util::save_to_file(const char* _dir, const string _content)
 {

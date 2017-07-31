@@ -2630,10 +2630,10 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	long tv_vs_store_end = Util::get_cur_time();
 
 	//debug
-	{
-		cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
-		cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
-	}
+	//{
+		//cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
+		//cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
+	//}
 
 	return true;
 	//return updateLen;
@@ -2677,12 +2677,12 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		this->triples_num--;
 	}
 
-	cout << "triple existence checked" << endl;
+	//cout << "triple existence checked" << endl;
 
 	//remove from sp2o op2s s2po o2ps s2o o2s
 	//sub2id, pre2id and obj2id will not be updated
 	(this->kvstore)->updateTupleslist_remove(_sub_id, _pre_id, _obj_id);
-	cout << "11 trees updated" << endl;
+	//cout << "11 trees updated" << endl;
 
 	long tv_kv_store_end = Util::get_cur_time();
 
@@ -2690,8 +2690,8 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	//if subject become an isolated point, remove its corresponding entry
 	if (sub_degree == 0)
 	{
-		cout<<"to remove entry for sub"<<endl;
-		cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
+		//cout<<"to remove entry for sub"<<endl;
+		//cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
 		this->kvstore->subEntityByID(_sub_id);
 		this->kvstore->subIDByEntity(_triple.subject);
 		//(this->vstree)->removeEntry(_sub_id);
@@ -2784,10 +2784,10 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	long tv_vs_store_end = Util::get_cur_time();
 
 	//debug
-	{
-		cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
-		cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
-	}
+	//{
+		//cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
+		//cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
+	//}
 	return true;
 }
 

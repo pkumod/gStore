@@ -320,6 +320,7 @@ public:
 	static bool create_file(const std::string _file);
 
 	static long get_cur_time();
+	static std::string get_date_time();
 	static bool save_to_file(const char*, const std::string _content);
 	static bool isValidPort(std::string);
 	static bool isValidIP(std::string);
