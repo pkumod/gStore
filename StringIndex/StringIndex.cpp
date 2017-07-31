@@ -108,6 +108,9 @@ void StringIndexFile::addRequest(unsigned id, std::string *str)
 
 void StringIndexFile::trySequenceAccess()
 {
+	if (this->request.empty())
+		return;
+
 	long min_begin = -1, max_end = 0;
 	for (int i = 0; i < (int)this->request.size(); i++)
 	{
@@ -155,6 +158,9 @@ void StringIndexFile::trySequenceAccess()
 			{
 				long offset = this->request[pos].offset;
 				long length = this->request[pos].length;
+
+				if (offset >= current_block_end)
+					break;
 
 				if (current_block_begin <= offset && offset + length <= current_block_end)
 				{
