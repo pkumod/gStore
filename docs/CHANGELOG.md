@@ -1,3 +1,18 @@
+## Oct 2, 2017
+
+Bind and GroupBy are supported in SPARQL queries now, and the Join module has been optimized to harvest a big improvement.
+
+In addition, VSTree module is deprecated to save memory and support larger datasets like freebase, which has almost 2.5B triples.
+In fact, we have finish experiments on a microbiology dataset with 3.5B triples, and the time of query answering is almost in a scale of 10s.
+
+What's more, we redesign the Database Server using HTTP1.1 protocol and provide REST interface and Java API example now.
+Users can visit the server by URL in a browser directly, and we have built several SPARQL endpoints based on it(including freebase, dbpedia, and openKG).
+
+What is not mentioned above is the robutness of Database Server, which supports restart function and query timeout handler(1 hour by default).
+Backup function is also included in Database Server now, as well as the REDO function to finish a update query which was interrupted by a system crash.
+
+---
+
 ## Jan 10, 2017
 
 preFilter() function in Join module is optimazed using the pre2num structure, as well as the choose_next_node() function.

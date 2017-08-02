@@ -4,7 +4,7 @@ gStore is a green software, and you just need to compile it with one command. Pl
 
 `make` 
 
-in the gStore root directory to compile the gStore code, link the ANTLR lib, and build executable "gbuild", "gquery", "gserver", "gclient", "gconsole". What is more, the api of gStore is also built now.
+in the gStore root directory to compile the gStore code, link the ANTLR lib, and build executable "gbuild", "gquery", "ghttp", "gserver", "gclient", "gconsole". What is more, the api of gStore is also built now.
 
 If you want to use API examples of gStore, please run `make APIexample` to compile example codes for both C++ API and Java API. For details of API, please visit [API](API.md) chapter.
 
