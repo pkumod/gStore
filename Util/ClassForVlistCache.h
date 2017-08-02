@@ -35,3 +35,13 @@ public:
 		}
 	}
 };
+
+template <unsigned mod>
+class CmpByMod
+{
+public:
+	bool operator () (const KEY_SIZE_VALUE& a, const KEY_SIZE_VALUE& b)
+	{
+		return (a.key % mod) > (b.key % mod);
+	}
+};

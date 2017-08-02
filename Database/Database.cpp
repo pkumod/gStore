@@ -798,11 +798,17 @@ void
 Database::build_CacheOfPre2values()
 {
 	cout << "now add cache of preID2values..." << endl;
+	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
 	while (!candidate_preID.empty())
 	{
-		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
-		this->kvstore->AddIntoPreCache(candidate_preID.top().key);
+		temp_queue.push(candidate_preID.top());
 		candidate_preID.pop();
+	}
+	while (!temp_queue.empty())
+	{
+		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
+		this->kvstore->AddIntoPreCache(temp_queue.top().key);
+		temp_queue.pop();
 	}
 }
 
@@ -810,11 +816,18 @@ void
 Database::build_CacheOfObj2values()
 {
 	cout << "now add cache of objID2values..." << endl;
+	// sort key according to their mod by 2000
+	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
 	while (!important_objID.empty())
 	{
-		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
-		this->kvstore->AddIntoObjCache(important_objID.top().key);
+		temp_queue.push(important_objID.top());
 		important_objID.pop();
+	}
+	while (!temp_queue.empty())
+	{
+		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
+		this->kvstore->AddIntoObjCache(temp_queue.top().key);
+		temp_queue.pop();
 	}
 }
 
@@ -822,11 +835,17 @@ void
 Database::build_CacheOfSub2values()
 {
 	cout << "now add cache of subID2values..." << endl;
+	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
 	while (!important_subID.empty())
 	{
-		//cout << "add key " << important_subID.top().key << " size: " << important_subID.top().size << endl;
-		this->kvstore->AddIntoSubCache(important_subID.top().key);
+		temp_queue.push(important_subID.top());
 		important_subID.pop();
+	}
+	while (!temp_queue.empty())
+	{
+		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
+		this->kvstore->AddIntoSubCache(temp_queue.top().key);
+		temp_queue.pop();
 	}
 }
 
@@ -1077,13 +1096,13 @@ Database::unload()
 {
 	//TODO: do we need to update the pre2num if update queries exist??
 	//or we just neglect this, that is ok because pre2num is just used to count
-	cout << "delete pre2num" << endl;
+	//cout << "delete pre2num" << endl;
 	delete[] this->pre2num;
 	this->pre2num = NULL;
-	cout << "delete entity buffer" << endl;
+	//cout << "delete entity buffer" << endl;
 	delete this->entity_buffer;
 	this->entity_buffer = NULL;
-	cout << "delete literal buffer" << endl;
+	//cout << "delete literal buffer" << endl;
 	delete this->literal_buffer;
 	this->literal_buffer = NULL;
 
@@ -1091,10 +1110,10 @@ Database::unload()
 	//this->vstree->saveTree();
 	//delete this->vstree;
 	//this->vstree = NULL;
-	cout << "delete kvstore" << endl;
+	//cout << "delete kvstore" << endl;
 	delete this->kvstore;
 	this->kvstore = NULL;
-	cout << "delete stringindex" << endl;
+	//cout << "delete stringindex" << endl;
 	delete this->stringindex;
 	this->stringindex = NULL;
 
