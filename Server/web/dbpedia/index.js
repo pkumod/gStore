@@ -140,6 +140,47 @@ function handleQueryExample()
                 var example = document.getElementById("example").value;
                 if (example === "q1")
                 {
+                    document.getElementById("element_3").value =    "SELECT ?v0 ?v1 ?v2 WHERE \n" +
+																	"{ \n" +
+																	"\t?v0 <http://dbpedia.org/property/dateOfBirth> ?v2 .\n" +
+																	"\t?v1 <http://dbpedia.org/property/genre> ?v2 .\n" +
+																	"} \n";
+                }
+
+                if (example === "q2")
+                {
+                    document.getElementById("element_3").value =    "SELECT ?v0 WHERE \n" +
+																	"{ \n" +
+																	"\t?v0 <http://dbpedia.org/ontology/associatedBand> <http://dbpedia.org/resource/LCD_Soundsystem> .\n" +
+																	"} \n";
+                }
+
+                if (example === "q3")
+                {
+                    document.getElementById("element_3").value =    "SELECT ?v2 WHERE \n" +
+																	"{ \n" +
+																	"\t<http://dbpedia.org/resource/!!Destroy-Oh-Boy!!> <http://dbpedia.org/property/title> ?v2 .\n" +
+																	"} \n";
+                }
+
+                if (example === "q4")
+                {
+                    document.getElementById("element_3").value =    "SELECT ?v0 ?v2 WHERE \n" +
+																	"{ \n" +
+																	"\t ?v0 <http://dbpedia.org/ontology/activeYearsStartYear> ?v2 .\n" +
+																	"} \n";
+                }
+                if (example === "q5")
+                {
+                    document.getElementById("element_3").value =    "SELECT ?v0 ?V1 ?V2 ?v3 WHERE \n" +
+																	"{ \n" +
+																	"\t?v0 <http://dbpedia.org/property/familycolor> ?v1 .\n" +
+																	"\t?v0 <http://dbpedia.org/property/glotto> ?v2 .\n" +
+																	"\t?v0 <http://dbpedia.org/property/lc> ?v3 .\n" +
+																	"} \n";
+                }
+                if (example === "q6")
+                {
                     document.getElementById("element_3").value =    "SELECT DISTINCT ?v0 ?v1 ?v2 \n" +
                     												"WHERE \n" +
 																	"{ \n" +
@@ -148,89 +189,44 @@ function handleQueryExample()
 																	"\t?v0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Language> . \n" +
 																	"} \n";
                 }
-
-                if (example === "q2")
-                {
-                    document.getElementById("element_3").value =    "SELECT ?v0 ?v1 WHERE \n" +
-																	"{ \n" +
-																	"\t?v0 <http://purl.org/dc/terms/subject> ?v1 .\n" +
-																	"} \n";
-                }
-
-                if (example === "q3")
-                {
-                    document.getElementById("element_3").value =    "SELECT ?v0 ?v1 ?v2 ?v3 WHERE \n" +
-																	"{ \n" +
-																	"\t?v0 <http://dbpedia.org/ontology/wikiPageWikiLink> <http://dbpedia.org/resource/Alcohol> .\n" +
-																	"\tOPTIONAL{?v0 <http://dbpedia.org/ontology/wikiPageWikiLink> ?v2 .}\n" +
-																	"} \n";
-                }
-
-                if (example === "q4")
-                {
-                    document.getElementById("element_3").value =    "SELECT DISTINCT ?v0 WHERE \n" +
-																	"{ \n" +
-																	"\t?v0 <http://purl.org/dc/terms/subject> <http://dbpedia.org/resource/Category:956_births> .\n" +
-																	"\t{?v0 <http://dbpedia.org/property/wikiPageUsesTemplate> ?v1 .}\n" + "UNION\n" +
-																	"\t{?v0 <http://dbpedia.org/prpperty/hasPhotoCollection> ?v2 .}\n" +
-																	"} \n";
-                }
-                if (example === "q5")
-                {
-                    document.getElementById("element_3").value =    "SELECT ?v0 ?v2 ?v3 WHERE \n" +
-																	"{ \n" +
-																	"\t?v0 <http://dbpedia.org/ontology/wikiPageWikiLink> <http://dbpedia.org/resource/Autism> .\n" +
-																	"\t?v2 <http://dbpedia.org/property/candidate> ?v0 .\n" +
-																	"\t?v3 <http://dbpedia.org/property/constituencyWestminster> ?v2 .\n" +
-																	"} \n";
-                }
-                if (example === "q6")
-                {
-                    document.getElementById("element_3").value =    "SELECT ?V1 ?V2 WHERE \n" +
-																	"{ \n" +
-																	"\t?v1 <http://www.w3.org/2002/07/owl#sameAs> <http://it.dbpedia.org/resource/Category:Filosofi_del_IV_secolo_a.C.> .\n" +
-																	"\t?v2 <dbpedia.org/ontology/wikiPageWikiLink> ?v1 .\n" +
-																	"\t<http://dbpedia.org/resource/Chinese_classics> <http://dbpedia.org/ontology/wikiPageWikiLink> ?v2  .\n" +
-																	"} \n";
-                }
-                if (example === "q7")
-                {
-                    document.getElementById("element_3").value =    "SELECT ?v0 ?v1 WHERE \n" +
-																	"{ \n" +
-																	"\t<http://dbpedia.org/resource/Albedo> <http://dbpedia.org/ontology/wikiPageWikiLink> ?v0 .\n" +
-																	"\t?v1 <http://dbpedia.org/ontology/wikiPageWikiLink> ?v0 .\n" +
-																	"}\n";
-                }
-                if (example === "q8")
-                {
-                    document.getElementById("element_3").value =    "SELECT ?v0 ?v1 ?v2 ?v3 ?v4 ?v5 ?v6 WHERE \n" +
-																	"{\n" +
-																	"\t?v0 <http://www.w3.org/2004/02/skos/core#broader> ?v1 .\n" +
-																	"\t?v0 <http://dbpedia.org/ontology/child> ?v2 .\n" +
-																	"\t?v0 <http://dbpedia.org/ontology/spouse> ?v3 .\n" +
-																	"\t?v0 <http://dbpedia.org/ontology/profession> ?v4 .\n" +
-																	"\t?v0 <http://dbpedia.org/ontology/party> ?v5 .\n" +
-																	"\t?v0 <http://dbpedia.prg/ontology/militaryRank> ?v6 .\n" + 
-																	"}\n";
-                }
-                if (example === "q9")
-                {
-                    document.getElementById("element_3").value =    "SELECT ?v0 ?v1 ?v2 ?v3 WHERE\n" +
-																	"{\n" +
-																	"\t?V0 <http://dbpedia.org/ontology/location> ?v1 .\n" +
-																	"\t?v0 <http://dbpedia.org/ontology/typeOfElectrification> ?v2 .\n" +
-																	"\t?v0 <http://dbpedia.org/ontology/wikiPageWikiLink> <http://dbpedia.org/resource/Koltsevaya_Line> .\n" +
-																	"\t?v0 <http://dbpedia.org/property/wikiPageUsesTemplate> ?v3 .\n" +
-																	"}\n";
-                }
-                if (example === "q10")
-                {
-                    document.getElementById("element_3").value =    "SELECT ?v0 ?v1 ?v2 ?v3 WHERE\n" +
-																	"{\n" +
-																	"\t?v0 <http://dbpedia.org/property/hasPhotoCollection> ?v1 .\n" +
-																	"\t?v0 <xmlns.com/foaf/0.1/depiction> ?v2 .\n" +
-																	"\t?v0 <http://dbpedia.org/ontology/abstract> ?v3 .\n" +
-																	"\t?v0 <http://dbpedia.org/ontology/wikiPageWikiLink> <http://dbpedia.org/resource/Combination> .\n" +
-																	"}\n";
-                }
+                //if (example === "q7")
+                //{
+                    //document.getElementById("element_3").value =    "SELECT ?v0 ?v1 WHERE \n" +
+																	//"{ \n" +
+																	//"\t<http://dbpedia.org/resource/Albedo> <http://dbpedia.org/ontology/wikiPageWikiLink> ?v0 .\n" +
+																	//"\t?v1 <http://dbpedia.org/ontology/wikiPageWikiLink> ?v0 .\n" +
+																	//"}\n";
+                //}
+                //if (example === "q8")
+                //{
+                    //document.getElementById("element_3").value =    "SELECT ?v0 ?v1 ?v2 ?v3 ?v4 ?v5 ?v6 WHERE \n" +
+																	//"{\n" +
+																	//"\t?v0 <http://www.w3.org/2004/02/skos/core#broader> ?v1 .\n" +
+																	//"\t?v0 <http://dbpedia.org/ontology/child> ?v2 .\n" +
+																	//"\t?v0 <http://dbpedia.org/ontology/spouse> ?v3 .\n" +
+																	//"\t?v0 <http://dbpedia.org/ontology/profession> ?v4 .\n" +
+																	//"\t?v0 <http://dbpedia.org/ontology/party> ?v5 .\n" +
+																	//"\t?v0 <http://dbpedia.prg/ontology/militaryRank> ?v6 .\n" + 
+																	//"}\n";
+                //}
+                //if (example === "q9")
+                //{
+                    //document.getElementById("element_3").value =    "SELECT ?v0 ?v1 ?v2 ?v3 WHERE\n" +
+																	//"{\n" +
+																	//"\t?V0 <http://dbpedia.org/ontology/location> ?v1 .\n" +
+																	//"\t?v0 <http://dbpedia.org/ontology/typeOfElectrification> ?v2 .\n" +
+																	//"\t?v0 <http://dbpedia.org/ontology/wikiPageWikiLink> <http://dbpedia.org/resource/Koltsevaya_Line> .\n" +
+																	//"\t?v0 <http://dbpedia.org/property/wikiPageUsesTemplate> ?v3 .\n" +
+																	//"}\n";
+                //}
+                //if (example === "q10")
+                //{
+                    //document.getElementById("element_3").value =    "SELECT ?v0 ?v1 ?v2 ?v3 WHERE\n" +
+																	//"{\n" +
+																	//"\t?v0 <http://dbpedia.org/property/hasPhotoCollection> ?v1 .\n" +
+																	//"\t?v0 <xmlns.com/foaf/0.1/depiction> ?v2 .\n" +
+																	//"\t?v0 <http://dbpedia.org/ontology/abstract> ?v3 .\n" +
+																	//"\t?v0 <http://dbpedia.org/ontology/wikiPageWikiLink> <http://dbpedia.org/resource/Combination> .\n" +
+																	//"}\n";
+                //}
             }
