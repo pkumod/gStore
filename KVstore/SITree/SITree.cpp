@@ -454,17 +454,13 @@ SITree::release(SINode* _np) const
 
 SITree::~SITree()
 {
-	cout << "SITree" << endl;
-	cout << "delete TSM" << endl;
 	delete TSM;
 	TSM = NULL;
 #ifdef DEBUG_KVSTORE
 	printf("already empty the buffer, now to delete all nodes in tree!\n");
 #endif
-	cout << "release" << endl;
 	//recursively delete each SINode
 	release(root);
-	cout << "~SITree done" << endl;
 }
 
 void
