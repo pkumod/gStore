@@ -293,7 +293,12 @@ public:
 	static std::string gserver_port_file;
 	static std::string gserver_port_swap;
 	static std::string gserver_log;
+	//NOTICE: for endpoints, just set to 1 minute
+#ifdef SPARQL_ENDPOINT
+	static const int gserver_query_timeout = 60; // Timeout of gServer's query (in seconds)
+#else
 	static const int gserver_query_timeout = 10000; // Timeout of gServer's query (in seconds)
+#endif
 	
 	static std::string backup_path;
 	static const long gserver_backup_interval = 86400;

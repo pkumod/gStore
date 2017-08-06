@@ -269,8 +269,10 @@ int initialize(int argc, char *argv[])
 	time_t cur_time = time(NULL);
 	long time_backup = Util::read_backup_time();
 	long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
+	//NOTICE: no need to backup for endpoint
+#ifndef ONLY_READ
 	scheduler = start_thread(func_scheduler);
-
+#endif
 
 
 
@@ -392,7 +394,7 @@ int initialize(int argc, char *argv[])
     // cout << r3->content.rdbuf() << endl;
 
     server_thread.join();
-			cout<<"check: server stoped"<<endl;
+	cout<<"check: server stoped"<<endl;
 
     return 0;
 }

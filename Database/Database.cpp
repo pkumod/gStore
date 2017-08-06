@@ -1083,6 +1083,11 @@ Database::load_vstree(unsigned _vstree_size)
 void 
 Database::check()
 {
+cout<<"triple num: "<<this->triples_num<<endl;
+cout<<"pre num: "<<this->pre_num<<endl;
+cout<<"entity num: "<<this->entity_num<<endl;
+cout<<"literal num: "<<this->literal_num<<endl;
+
 string tstr;
  //unsigned pid = this->kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
  //cout<<"check: pre "<<pid<<endl;

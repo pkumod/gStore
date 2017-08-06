@@ -163,6 +163,7 @@ function handleQueryExample()
 																	"\t?s  <http://www.w3.org/2000/01/rdf-schema#label>    ?o . \n" +
 																	"\t?s <http://rdf.freebase.com/ns/type.object.type> ?s2 . \n" +
 																	"\t?s2  <http://www.w3.org/2000/01/rdf-schema#label>    ?o . \n" +
+																	"\t<http://rdf.freebase.com/ns/m.026wjqb>  <http://rdf.freebase.com/ns/type.object.type> ?s2 . \n" +
 																	"} \n";
                 }
 
