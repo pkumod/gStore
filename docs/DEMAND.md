@@ -10,6 +10,7 @@ glibc | version >= 2.14
 gcc | version >= 4.4.7
 g++ | version >= 4.4.7
 make | need to be installed
+boost | version >= 1.54
 readline | need to be installed
 readline-devel | need to be installed
 openjdk | needed if using Java api
@@ -33,5 +34,7 @@ NOTICE:
 
 7. To install ccache, you need to add epel repository if using CentOS, while in Ubuntu you can directly install it by `apt-get install ccache` command. If you can not install ccache(or maybe you do not want to), please go to modify the makefile(just change the CC variable to g++).
 
-8. Any other questions, please go to [FAQ](FAQ.md) page.
+8. If you need to use the HTTP server in gStore, then Boost Library must be installed and the version should not be less than 1.54. Remember to check the makefile for your installed path of Boost.
+
+9. Any other questions, please go to [FAQ](FAQ.md) page.
 

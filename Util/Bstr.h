@@ -18,13 +18,14 @@ class Bstr
 {
 private:
 	char* str;		//pointers consume 8 byte in 64-bit system
+	//TODO: the length maybe not needed
 	unsigned length;
 
 public:
 	Bstr();
 	//if copy memory, then use const char*, but slow
 	//else, can not use const char* -> char*
-	Bstr(const char* _str, unsigned _len);
+	Bstr(const char* _str, unsigned _len, bool _nocopy = false);
 	//Bstr(char* _str, unsigned _len);
 	Bstr(const Bstr& _bstr);
 	//Bstr& operate = (const Bstr& _bstr);
@@ -47,6 +48,9 @@ public:
 	//int write(FILE* _fp);
 	~Bstr();
 	void print(std::string s) const;		//DEBUG
+
+	//judge if this Bstr represent a long list value, and waiting to be each time on need
+	bool isBstrLongList() const;
 };
 
 #endif // _UTIL_BSTR_H

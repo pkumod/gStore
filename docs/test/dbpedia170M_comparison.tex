@@ -1,0 +1,30 @@
+	\begin{tikzpicture}[font=\large]
+ 		 \begin{semilogyaxis}[
+ 		   %width = 30cm,
+ 		   %height = 15cm,
+ 		   %ymax = 100000,
+               width = 12cm,
+               height = 8cm,
+    			ybar,
+    			%ymin = 1,
+    			%ymax = 5000000000,
+%    ytick = {1,10,100,1000,10000,100000,1000000,10000000},
+   			ymajorgrids = true,
+   			ylabel = {Query Response Time (in ms)},
+                %xlabel = {Queries},
+    			symbolic x coords = {$Q_0$,$Q_1$,$Q_2$,$Q_3$,$Q_4$,$Q_5$},
+    			  %bar width=5pt,
+    			  %enlarge x limits=0.02,
+    			scaled y ticks = true,
+			legend pos= north west,
+ legend cell align=left
+   		]
+   \addplot coordinates {($Q_0$, 40) ($Q_1$, 25) ($Q_2$, 25) ($Q_3$, 131) ($Q_4$, 616) ($Q_5$, 27)};
+
+   \addplot coordinates {($Q_0$, 1070) ($Q_1$, 245) ($Q_2$, 164) ($Q_3$, 53887) ($Q_4$, 5577) ($Q_5$, 469)};
+   
+   \addplot coordinates {($Q_0$, 50) ($Q_1$, 217) ($Q_2$, 210) ($Q_3$, 23797) ($Q_4$, 5536) ($Q_5$, 2736)};
+		
+   		 \legend{gStore,Jena, Virtuoso}
+  		\end{semilogyaxis}
+\end{tikzpicture}

@@ -10,15 +10,15 @@
 
 using namespace std;
 
-Server::Server()
-{
-	this->connectionPort = Socket::DEFAULT_CONNECT_PORT;
-	this->connectionMaxNum = Socket::MAX_CONNECTIONS;
-	this->databaseMaxNum = 1; // will be updated when supporting multiple databases.
-	this->database = NULL;
-	this->db_home = Util::global_config["db_home"];
-	this->db_suffix = Util::global_config["db_suffix"];
-}
+//Server::Server()
+//{
+	//this->connectionPort = Socket::DEFAULT_CONNECT_PORT;
+	//this->connectionMaxNum = Socket::MAX_CONNECTIONS;
+	//this->databaseMaxNum = 1; // will be updated when supporting multiple databases.
+	//this->database = NULL;
+	//this->db_home = Util::global_config["db_home"];
+	//this->db_suffix = Util::global_config["db_suffix"];
+//}
 
 Server::Server(unsigned short _port)
 {
@@ -26,6 +26,10 @@ Server::Server(unsigned short _port)
 	this->connectionMaxNum = Socket::MAX_CONNECTIONS;
 	this->databaseMaxNum = 1; // will be updated when supporting multiple databases.
 	this->database = NULL;
+	this->db_home = Util::global_config["db_home"];
+	this->db_suffix = Util::global_config["db_suffix"];
+	this->next_backup = 0;
+	this->scheduler_pid = 0;
 }
 
 Server::~Server()
@@ -151,7 +155,14 @@ Server::listen()
 		case CMD_QUERY:
 		{
 			string query = operation.getParameter(0);
+			pthread_t timer = Server::start_timer();
+			if (timer == 0) {
+				cerr << Util::getTimeString() << "Failed to start timer." << endl;
+			}
 			this->query(query, ret_msg);
+			if (timer != 0 && !Server::stop_timer(timer)) {
+				cerr << Util::getTimeString() << "Failed to stop timer." << endl;
+			}
 			break;
 		}
 		case CMD_SHOW:
@@ -180,6 +191,25 @@ Server::listen()
 			_stop = true;
 			break;
 		}
+		case CMD_BACKUP: {
+			string para = operation.getParameter(0);
+			stringstream ss(para);
+			long time_backup;
+			ss >> time_backup;
+			if (this->next_backup == 0) {
+				break;
+			}
+			while (this->next_backup < time_backup) {
+				this->next_backup += Util::gserver_backup_interval;
+			}
+			if (this->next_backup == time_backup) {
+				this->backup(ret_msg);
+			}
+			else {
+				ret_msg = "done";
+			}
+			break;
+		}
 		default:
 			cerr << Util::getTimeString() << "this command is not supported by now. @Server::listen" << endl;
 		}
@@ -190,6 +220,13 @@ Server::listen()
 			this->deleteConnection();
 			cout << Util::getTimeString() << "server stopped." << endl;
 			break;
+		}
+		if (this->next_backup > 0) {
+			time_t cur_time = time(NULL);
+			if (cur_time >= this->next_backup) {
+				string str;
+				this->backup(str);
+			}
 		}
 	}
 }
@@ -268,6 +305,10 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 	else if (cmd == "stop") {
 		_ret_oprt.setCommand(CMD_STOP);
 		para_cnt = 0;
+	}
+	else if (cmd == "backup") {
+		_ret_oprt.setCommand(CMD_BACKUP);
+		para_cnt = 1;
 	}
 	else
 	{
@@ -380,9 +421,36 @@ Server::loadDatabase(std::string _db_name, std::string _ac_name, std::string& _r
 		_ret_msg = "load database failed.";
 		delete this->database;
 		this->database = NULL;
+		return false;
 	}
 
-	return flag;
+	pid_t fpid = vfork();
+
+	// child, scheduler
+	if (fpid == 0) {
+		time_t cur_time = time(NULL);
+		long time_backup = Util::read_backup_time();
+		long first_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval
+			+ Util::gserver_backup_interval;
+		this->next_backup = first_backup;
+		string s_port = Util::int2string(this->connectionPort);
+		string s_next_backup = Util::int2string(first_backup);
+		execl("bin/gserver_backup_scheduler", "gserver_backup_scheduler", s_port.c_str(), s_next_backup.c_str(), NULL);
+		exit(0);
+		return true;
+	}
+	// parent
+	if (fpid > 0) {
+		this->scheduler_pid = fpid;
+	}
+	// fork failure
+	else if (fpid < 0) {
+		cerr << Util::getTimeString() << "Database will not be backed-up automatically." << endl;
+	}
+
+	//_ret_msg = "load database done.";
+	return true;
+	//return flag;
 }
 
 bool
@@ -397,6 +465,13 @@ Server::unloadDatabase(std::string _db_name, std::string _ac_name, std::string& 
 	delete this->database;
 	this->database = NULL;
 	_ret_msg = "unload database done.";
+
+	this->next_backup = 0;
+	//string cmd = "kill " + Util::int2string(this->scheduler_pid);
+	//system(cmd.c_str());
+	kill(this->scheduler_pid, SIGTERM);
+	waitpid(this->scheduler_pid, NULL, 0);
+	this->scheduler_pid = 0;
 
 	return true;
 }
@@ -458,8 +533,9 @@ Server::importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_p
 bool
 Server::query(const string _query, string& _ret_msg)
 {
-	cout<<"Server query()"<<endl;
-	cout<<_query<<endl;
+	//cout<<"Server query()"<<endl;
+	//cout<<_query<<endl;
+	cout << Util::getTimeString() << "Server query(): " << _query << endl;
 	
 	if (this->database == NULL)
 	{
@@ -468,8 +544,8 @@ Server::query(const string _query, string& _ret_msg)
 	}
 
 	FILE* output = NULL;
-	string path = "logs/gserver_query.log";
 #ifdef OUTPUT_QUERY_RESULT
+	string path = "logs/gserver_query.log";
 	output = fopen(path.c_str(), "w");
 #endif
 
@@ -537,12 +613,49 @@ Server::showDatabases(string _para, string _ac_name, string& _ret_msg)
 	return true;
 }
 
-bool Server::stopServer(std::string& _ret_msg) {
+bool Server::stopServer(string& _ret_msg) {
 	if (this->database != NULL) {
 		delete this->database;
 		this->database = NULL;
 	}
 	_ret_msg = "server stopped.";
 	return true;
+}
+
+bool Server::backup(string& _ret_msg) {
+	this->next_backup += Util::gserver_backup_interval;
+	if (this->database == NULL) {
+		_ret_msg = "No database in use.";
+		return false;
+	}
+	if (!this->database->backup()) {
+		_ret_msg = "Backup failed.";
+		return false;
+	}
+	_ret_msg = "done";
+	return true;
+}
+
+pthread_t Server::start_timer() {
+	pthread_t timer_thread;
+	if (pthread_create(&timer_thread, NULL, Server::timer, NULL) == 0) {
+		return timer_thread;
+	}
+	return 0;
+}
+
+bool Server::stop_timer(pthread_t _timer) {
+	return pthread_kill(_timer, SIGTERM) == 0;
+}
+
+void* Server::timer(void* _args) {
+	signal(SIGTERM, Server::timer_sigterm_handler);
+	sleep(Util::gserver_query_timeout);
+	cerr << Util::getTimeString() << "Query out of time." << endl;
+	abort();
+}
+
+void Server::timer_sigterm_handler(int _signal_num) {
+	pthread_exit(0);
 }
 

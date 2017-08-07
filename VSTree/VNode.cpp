@@ -55,7 +55,7 @@ VNode::~VNode()
 	delete[] this->child_file_lines;
 	this->child_file_lines = NULL;
 
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_mutex_destroy(&(this->node_lock));
 #endif
 }
@@ -73,7 +73,7 @@ VNode::AllocChilds()
 void 
 VNode::InitLock()
 {
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
@@ -344,14 +344,14 @@ int VNode::getIndexInFatherNode(LRUCache& _nodeBuffer)
     {
         if (fatherNodePtr->getChildFileLine(i) == this->self_file_line)
         {
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 			pthread_mutex_unlock(&(fatherNodePtr->node_lock));
 #endif
             return i;
         }
     }
 
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_mutex_unlock(&(fatherNodePtr->node_lock));
 #endif
     cerr << "error, can not find rank in father node. @VNode::getIndexInFatherNode" << endl;
@@ -401,7 +401,7 @@ void VNode::refreshAncestorSignature(LRUCache& _nodeBuffer)
         fatherNodePtr->setChildEntry(rank, this->entry);
         fatherNodePtr->refreshAncestorSignature(_nodeBuffer);
     }
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_mutex_unlock(&(fatherNodePtr->node_lock));
 #endif
 }

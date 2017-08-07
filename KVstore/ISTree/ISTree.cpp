@@ -20,7 +20,7 @@ ISTree::ISTree()
 	TSM = NULL;
 	storepath = "";
 	filename = "";
-	transfer_size[0] = transfer_size[1] = transfer_size[2] = 0;
+	//transfer_size[0] = transfer_size[1] = transfer_size[2] = 0;
 	this->stream = NULL;
 	this->request = 0;
 }
@@ -37,10 +37,10 @@ ISTree::ISTree(string _storepath, string _filename, string _mode, unsigned long 
 		this->TSM->preRead(this->root, this->leaves_head, this->leaves_tail);
 	else
 		this->root = NULL;
-	this->transfer[0].setStr((char*)malloc(Util::TRANSFER_SIZE));
-	this->transfer[1].setStr((char*)malloc(Util::TRANSFER_SIZE));
-	this->transfer[2].setStr((char*)malloc(Util::TRANSFER_SIZE));
-	this->transfer_size[0] = this->transfer_size[1] = this->transfer_size[2] = Util::TRANSFER_SIZE;		//initialied to 1M
+	//this->transfer[0].setStr((char*)malloc(Util::TRANSFER_SIZE));
+	//this->transfer[1].setStr((char*)malloc(Util::TRANSFER_SIZE));
+	//this->transfer[2].setStr((char*)malloc(Util::TRANSFER_SIZE));
+	//this->transfer_size[0] = this->transfer_size[1] = this->transfer_size[2] = Util::TRANSFER_SIZE;		//initialied to 1M
 	this->stream = NULL;
 	this->request = 0;
 }
@@ -51,30 +51,30 @@ ISTree::getFilePath()
 	return storepath + "/" + filename;
 }
 
-void			//WARN: not check _str and _len
-ISTree::CopyToTransfer(const char* _str, unsigned _len, unsigned _index)
-{
-	if (_index > 2)
-		return;
-	/*
-	if(_str == NULL || _len == 0)
-	{
-	printf("error in CopyToTransfer: empty string\n");
-	return;
-	}
-	*/
-	//unsigned length = _bstr->getLen();
-	unsigned length = _len;
-	if (length + 1 > this->transfer_size[_index])
-	{
-		transfer[_index].release();
-		transfer[_index].setStr((char*)malloc(length + 1));
-		this->transfer_size[_index] = length + 1;	//one more byte: convenient to add \0
-	}
-	memcpy(this->transfer[_index].getStr(), _str, length);
-	this->transfer[_index].getStr()[length] = '\0';	//set for string() in KVstore
-	this->transfer[_index].setLen(length);
-}
+//void			//WARN: not check _str and _len
+//ISTree::CopyToTransfer(const char* _str, unsigned _len, unsigned _index)
+//{
+	//if (_index > 2)
+		//return;
+	//[>
+	//if(_str == NULL || _len == 0)
+	//{
+	//printf("error in CopyToTransfer: empty string\n");
+	//return;
+	//}
+	//*/
+	////unsigned length = _bstr->getLen();
+	//unsigned length = _len;
+	//if (length + 1 > this->transfer_size[_index])
+	//{
+		//transfer[_index].release();
+		//transfer[_index].setStr((char*)malloc(length + 1));
+		//this->transfer_size[_index] = length + 1;	//one more byte: convenient to add \0
+	//}
+	//memcpy(this->transfer[_index].getStr(), _str, length);
+	//this->transfer[_index].getStr()[length] = '\0';	//set for string() in KVstore
+	//this->transfer[_index].setLen(length);
+//}
 
 unsigned
 ISTree::getHeight() const
@@ -104,41 +104,59 @@ ISTree::prepare(ISNode* _np)
 }
 
 bool
-ISTree::search(int _key, char*& _str, int& _len)
+ISTree::search(unsigned _key, char*& _str, unsigned& _len)
 {
-	if (_key < 0)
-	{
-		printf("error in ISTree-search: empty string\n");
-		return false;
-	}
+	//DEBUG
+	//if (_key < 0)
+	//{
+		//printf("error in ISTree-search: empty string\n");
+		//return false;
+	//}
 
 	this->request = 0;
 	int store;
 	ISNode* ret = this->find(_key, &store, false);
+	//cout<<"to find the position: "<<store<<endl;
 	if (ret == NULL || store == -1 || _key != ret->getKey(store))	//tree is empty or not found
 	{
 		return false;
 	}
 
 	const Bstr* val = ret->getValue(store);
-	this->CopyToTransfer(val->getStr(), val->getLen(), 0);		//not sum to request
-	_str = this->transfer[0].getStr();
-	_len = this->transfer[0].getLen();
+	//this->CopyToTransfer(val->getStr(), val->getLen(), 0);		//not sum to request
+	//_str = this->transfer[0].getStr();
+	//_len = this->transfer[0].getLen();
+	_str = val->getStr();
+	_len = val->getLen();
+
+	char* debug = new char[_len];
+	memcpy(debug, _str, _len);
+//	debug[_len] = '\0';
+	_str = debug;
+
+	//if(_key==62)
+	//{
+		//cout<<"check in search: "<<string(_str, _len)<<endl;
+	//}
 	this->TSM->request(request);
+	//if(_key==62)
+	//{
+		//cout<<"check in search: "<<string(_str, _len)<<endl;
+	//}
 	return true;
 }
 
 bool
-ISTree::insert(int _key, const char* _str, unsigned _len)
+ISTree::insert(unsigned _key, char* _str, unsigned _len)
 {
-	if (_key < 0)
-	{
-		printf("error in ISTree-insert: empty string\n");
-		return false;
-	}
+	//if (_key < 0)
+	//{
+		//printf("error in ISTree-insert: empty string\n");
+		//return false;
+	//}
 
-	this->CopyToTransfer(_str, _len, 2);
-	const Bstr* val = &(this->transfer[2]);
+	//this->CopyToTransfer(_str, _len, 2);
+	//const Bstr* val = &(this->transfer[2]);
 	this->request = 0;
 	ISNode* ret;
 	if (this->root == NULL)	//tree is empty
@@ -222,29 +240,33 @@ ISTree::insert(int _key, const char* _str, unsigned _len)
 	else
 	{
 		p->addKey(_key, i);
-		p->addValue(val, i, true);
+		p->addValue(_str, _len, i, true);
 		p->addNum();
-		request += val->getLen();
+		request += _len;
 		p->setDirty();
 		this->TSM->updateHeap(p, p->getRank(), true);
 		//_key->clear();
 		//_value->clear();
 	}
 	this->TSM->request(request);
+	//if(_key == 0) 
+	//{
+		//cout<<"the 0th element is: "<<_str[0]<<endl;
+	//}
 	return !ifexist;		//QUERY(which case:return false)
 }
 
 bool
-ISTree::modify(int _key, const char* _str, unsigned _len)
+ISTree::modify(unsigned _key, char* _str, unsigned _len)
 {
-	if (_key < 0)
-	{
-		printf("error in ISTree-modify: empty string\n");
-		return false;
-	}
+	//if (_key < 0)
+	//{
+		//printf("error in ISTree-modify: empty string\n");
+		//return false;
+	//}
 
-	this->CopyToTransfer(_str, _len, 2);	//not check value
-	const Bstr* val = &(this->transfer[2]);
+	//this->CopyToTransfer(_str, _len, 2);	//not check value
+	//const Bstr* val = &(this->transfer[2]);
 	this->request = 0;
 	int store;
 	ISNode* ret = this->find(_key, &store, true);
@@ -255,22 +277,23 @@ ISTree::modify(int _key, const char* _str, unsigned _len)
 	}
 	//cout<<"ISTree::modify() - key is found, now to remove"<<endl;
 	unsigned len = ret->getValue(store)->getLen();
-	ret->setValue(val, store, true);
+	ret->setValue(_str, _len, store, true);
 	//cout<<"value reset"<<endl;
 	//cout<<"newlen: "<<val->getLen()<<" oldlen: "<<len<<endl;
 	//request += (val->getLen() - len);
-	this->request = val->getLen();
+	this->request = _len;
 	this->request -= len;
 	ret->setDirty();
 	//cout<<"to request"<<endl;
 	this->TSM->request(request);
 	//cout<<"memory requested"<<endl;
+
 	return true;
 }
 
 //this function is useful for search and modify, and range-query 
 ISNode*		//return the first key's position that >= *_key
-ISTree::find(int _key, int* _store, bool ifmodify)
+ISTree::find(unsigned _key, int* _store, bool ifmodify)
 {											//to assign value for this->bstr, function shouldn't be const!
 	if (this->root == NULL)
 		return NULL;						//ISTree Is Empty
@@ -300,6 +323,7 @@ ISTree::find(int _key, int* _store, bool ifmodify)
 		*_store = -1;	//Not Found
 	else
 		*_store = i;
+
 	return p;
 }
 
@@ -311,13 +335,14 @@ ISTree::find(unsigned _len, const char* _str, int* store) const
 */
 
 bool
-ISTree::remove(int _key)
+ISTree::remove(unsigned _key)
 {
-	if (_key < 0)
-	{
-		printf("error in ISTree-remove: empty string\n");
-		return false;
-	}
+	//DEBUG
+	//if (_key < 0)
+	//{
+		//printf("error in ISTree-remove: empty string\n");
+		//return false;
+	//}
 
 	this->request = 0;
 	ISNode* ret;
@@ -443,7 +468,7 @@ ISTree::resetStream()
 }
 
 bool	//special case: not exist, one-edge-case
-ISTree::range_query(int _key1, int _key2)
+ISTree::range_query(unsigned _key1, unsigned _key2)
 {		//the range is: *_key1 <= x < *_key2 	
 		//if(_key1 <0 && _key2 <0)
 		//return false;
@@ -516,7 +541,7 @@ ISTree::range_query(int _key1, int _key2)
 		delete this->stream;
 		this->stream = NULL;
 	}
-	vector<int> keys;
+	vector<unsigned> keys;
 	vector<bool> desc;
 	this->stream = new Stream(keys, desc, ansNum, 1, false);
 
@@ -570,6 +595,7 @@ ISTree::release(ISNode* _np) const
 		return;
 	}
 	int cnt = _np->getNum();
+	//WARN: not chnage cnt to int type here(otherwise endless loop)
 	for (; cnt >= 0; --cnt)
 		release(_np->getChild(cnt));
 	delete _np;
@@ -577,13 +603,20 @@ ISTree::release(ISNode* _np) const
 
 ISTree::~ISTree()
 {
+	//cout << "istree : " << endl;
+	//cout << "delete stream" << endl;
 	delete this->stream;   //maybe NULL
+	stream = NULL;
+	//cout << "delete TSM" << endl;
 	delete TSM;
+	TSM = NULL;
 #ifdef DEBUG_KVSTORE
-	printf("already empty the buffer, now to delete all nodes in tree!\n");
+	//printf("already empty the buffer, now to delete all nodes in tree!\n");
 #endif
 	//recursively delete each Node
+	//cout << "release" << endl;
 	release(root);
+	//cout << "~istree done" << endl;
 }
 
 void
@@ -655,3 +688,4 @@ ISTree::print(string s)
 	else;
 #endif
 }
+

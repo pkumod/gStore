@@ -20,8 +20,8 @@ private:
 	bool useStream;
 public:
 	int select_var_num;
-	std::string*  var_name;
-	int ansNum;
+	std::string* var_name;
+	unsigned ansNum;
 	std::string** answer;
 	int output_offset, output_limit;
 
@@ -44,7 +44,7 @@ public:
 	void setVar(const std::vector<std::string> & _var_names);
 
 	//operations on private stream from caller
-	void openStream(std::vector<int> &_keys, std::vector<bool> &_desc);
+	void openStream(std::vector<unsigned> &_keys, std::vector<bool> &_desc);
 	void resetStream();
 	void writeToStream(std::string& _s);
 	const Bstr* getOneRecord();

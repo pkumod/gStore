@@ -1,3 +1,28 @@
+git commit: http://www.cnblogs.com/ctaodream/p/6066694.html
+<type>(<scope>) : <subject>
+<空行>
+<body>
+<空行>
+<footer>
+type:
++ fix :修复bug  
++ doc : 文档改变
++ style : 代码格式改变
++ refactor :某个已有功能重构
++ perf :性能优化
++ test :增加测试
++  build :改变了build工具 如 grunt换成了 npm
++ revert: 撤销上一次的 commit 
+scope:用来说明此次修改的影响范围 可以随便填写任何东西，commitizen也给出了几个 如：location 、browser、compile，不过我推荐使用
+all ：表示影响面大 ，如修改了网络框架  会对真个程序产生影响
+loation： 表示影响小，某个小小的功能
+module：表示会影响某个模块 如登录模块、首页模块 、用户管理模块等等
+subject: 用来简要描述本次改动，概述就好了
+body:具体的修改信息 应该尽量详细
+footer：放置写备注啥的，如果是 bug ，可以把bug id放入
+
+---
+
 # NOTICE
 
 一般在实践应用中不是单机，而是CS模式，因为API也是基于CS模式的。
@@ -7,6 +32,12 @@
 在使用gserver时，不能在数据库没有unload时再用gbuild或其他命令修改数据库，仅限于C/S模式
 将IRC聊天放到gstore文档上，freenode #gStore
 
+storage中大量使用long类型，文件大小也可能达到64G，最好在64位机器上运行。
+在将unsigned转换为long long或者unsigned long long的时候要注意补全问题，long类型不知是否类似情况
+也许可以考虑Bstr中不存length只存str(内存中还有对齐的开销)，但对于特别长的串来说可能strlen过于耗时
+
+# 推广
+
 必须建立一个官方网站，可以展示下团队、demo，需要建立社区/论坛并维护
 另外要有桌面应用或者网页应用，以可视化的方式操作数据库，类似virtuoso和neo4j那种
 server  118.89.115.42 gstore-pku.com
@@ -15,8 +46,26 @@ server  118.89.115.42 gstore-pku.com
 
 1. gstore开发应用需要一个强大的中间层，设计范式
 2. 组建configure，单机和分布式合并，以后直接在合并的基础上做修改
+考虑使用hbase，结合云平台
 
 ---
+
+论文：新的join策略，特殊的子图同态问题，如何选择顺序
+动态估价的评估函数要考虑方向性，因为可能含literal变量，对应的候选集大小不可靠，只能单向。
+但每条边总是含subject的，所以每条边总是可以备选的。不过问题是literal变量应该先做还是后做
+
+另一种过滤方式：直接用key-value索引，比如?x-?y-constant，可能就比较适合，如果用vstree先过滤出的候选集太大的话
+考虑对线状查询或星形查询做特殊处理，这里的形状仅指需要join的部分
+比如?x-?y-constant, why not just use key-value to generate sequentially
+但这种没有考虑到更远的约束，可能导致不少中间解是无效的，实际上线状图的拼接顺序也不一定是从两端开始
+
+---
+
+# 数据库可恢复性、事务与日志
+
+以后可能要支持事务，那样就需要日志能够支持UNDO, REDO等操作，可以以后根据需要再修改。
+数据库多版本，可以指定恢复到一个带标签的版本（比如时间作为标签，用户指定标签）
+
 
 # 并行策略- 线程控制模块
 
@@ -75,21 +124,19 @@ http://blog.csdn.net/infoworld/article/details/8670951
 
 # TODO
 
-保证通过测试：shape和warp数据集，插删查操作都要测，bbug一系列特殊的查询也要跑
-要在单机支持到10亿triple，最坏情况下最多有20亿entity和20亿literal，目前的编号方式是不行的(int扩展为unsigned)
-最好在单机100G内存上支持起freebase(2.5B triples)这个规模的数据集，就像jena和virtuoso一样，慢不要紧
+Http通讯中answer的\n\t问题，可能是因为没有url encode的关系
+返回结果是否需要进行encode？如果是json是没有问题的
+但若一个string中本身就含有空格或\t，还能正确传输么？
+因为返回的结果不是URL，所以可以不处理
 
-OPTIMIZE: in pre filter and only_pre_after_filter, p2s and p2o should be used instead of for-loop
-In addition, pre with lower degree should be placed in early position
-use hash-link for large candidates, use sort-link for small candidates and very large list
-
-同时将ID的编码改为unsigned，无效标志-1改为最大值的宏, triple数目的类型也要改为unsigned
-注意pre的ID还可以为-2，或者对于pre仍然用int，或者改函数的返回值为long long (还有一些没有用-1而是>=0)
+triple num改为unsigned long long，争取单机最大支持到100亿数据集，只要entity等数目不超过20亿。
+triple数目的类型应该为long long
 ---
-将B+tree中叶节点的大的value分离出来，新建一套缓存，使用block机制，标记length为0表示未读取
-类型bstr的length问题也需要解决
-如果把类型直接改成long long，空间开销一下子就上升了一倍
+解决方法：对于ID2string，仍然用char*和unsigned，但对于s2xx p2xx o2xx，应该用long long*和unsigned来表示，这样最高可支持到40亿triple
+注意：在B+树中是以long long*的方式存，但读出后应该全部换成unsigned*和unsigned搭配的方式(最长支持20亿个po对)
+UBSTR: 类型bstr的length问题也需要解决 如果把类型直接改成long long，空间开销一下子就上升了一倍
 解决方法：对于ID2string，仍然用char*和unsigned，但对于s2xx p2xx o2xx，应该用unsigned long long*和unsigned来表示，这样最高可支持到40亿triple
+(其实这个不是特别必要，很少会有这种情况，我们处理的triple数目一般限制在20亿，就算是type这种边，po对数也就是跟entity数目持平，很难达到5亿)
 ---
 那么是否可以调整entity与literal的分界线，如果entity数目一般都比literal数目多的话
 直接把literal从大到小编号，可在ID模块中指定顺序，这样每个Datbase模块应该有自己独特的分界线，其他模块用时也需要注意
@@ -469,6 +516,8 @@ build db error if triple num > 500M
 
 # BETTER
 
+#### 添加数据访问层，数据范式和生成数据访问的源码
+
 #### 在BasicQuery.cpp中的encodeBasicQuery函数中发现有pre_id==-1时就可以直接中止查询，返回空值！
 
 #### 将KVstore模块中在堆中寻找Node*的操作改为用treap实现(或多存指针避开搜索？)
@@ -518,6 +567,8 @@ http://www.oschina.net/question/188977_58777
 - - -
 
 # ADVICE
+
+#### 考虑利用hdfs或者hbase，这样就可以利用各公司已有的数据库系统，但这是否会和已有的内外存交换冲突？
 
 #### 数值型查询 实数域 [-bound, bound] 类型很难匹配，有必要单独编码么？    数据集中不应有范围    Query中编码过滤后还需验证
 x>a, x<b, >=, <=, a<x<b, x=c
@@ -589,11 +640,15 @@ ACID? neo4j GraphDB
 ## 单个文件的gStore？嵌入式，轻便，类似sqlite，方便移植，做成库的方式给python等调用
 
 ## 联邦数据库，避免数据重导入，上层查询分块
+mysql适合存属性，而gstore适合处理关系，trinity适合做算法
+gstore是否能处理各种图算法需求呢，比如对两点求最短路？比如正则路径查询？
 
 ## 没必要关闭IO缓冲同步，因为用的基本都是C语言的输入输出操作
 
 是否可以考虑用vf2算法来作子图同构？比较效率，相互结合？
 考虑按谓词频度划分，比如建立两棵sp2o树，两者的缓存大小应该不同
+
+gStore实现的是子图同态算法，要实现子图同构，只要保证中间表扩展时每一行中不会出现重复的元素即可
 
 Consider the use of Bloom Filter and FM-sketches
 
@@ -602,4 +657,29 @@ Consider the use of Bloom Filter and FM-sketches
 ## DataSet
 
 http://www.hprd.org/download/
+
+
+
+## GIT USAGE
+
+http://www.ruanyifeng.com/blog/2014/06/git_remote.html
+https://git-scm.com/book/zh/v1/%E8%B5%B7%E6%AD%A5-%E5%88%9D%E6%AC%A1%E8%BF%90%E8%A1%8C-Git-%E5%89%8D%E7%9A%84%E9%85%8D%E7%BD%AE
+
+To see all operations in Git, use git reflog
+
+#### how to commit a message
+
+package.json
+http://www.json.cn/
+https://www.oschina.net/news/69705/git-commit-message-and-changelog-guide
+https://sanwen8.cn/p/44eCof7.html
+
+1. commit one by one, a commit just do one thing
+
+2. place a empty line between head and body, body and footer
+
+3. the first letter of header should be in uppercase, and the header should not be too long, just a wonderful summary
+FIX: ...       ADD:...   REF:...  代码重构   SUB:...
+
+4. each line should not be too long, add your real name and the influence in footer(maybe cause the code struct to change)
 

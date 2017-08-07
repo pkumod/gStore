@@ -20,8 +20,8 @@ SIHeap::SIHeap(unsigned _size)
 {
 	this->length = 0;
 	this->size = _size;
-	//this->heap = (Node**)malloc(this->size * sizeof(Node*));	//not use 4 or 8
-	this->heap = new SINode*[this->size];
+	this->heap = (SINode**)malloc(this->size * sizeof(SINode*));	//not use 4 or 8
+	//this->heap = new SINode*[this->size];
 	if (this->heap == NULL)
 	{
 		this->print("error in SIHeap: Allocation fail!");
@@ -69,6 +69,7 @@ SIHeap::insert(SINode* _np)
 {
 	if (this->length == this->size)	//when full, reallocate
 	{
+		cout<<"check: double the heap"<<endl;
 		this->heap = (SINode**)realloc(this->heap, 2 * this->size * sizeof(SINode*));
 		if (this->heap == NULL)
 		{
@@ -183,7 +184,8 @@ SIHeap::modify(SINode* _np, bool _flag)	//control direction
 
 SIHeap::~SIHeap()
 {
-	delete[] this->heap;
+	//delete[] this->heap;
+	free(this->heap);
 	this->heap = NULL;
 	this->length = this->size = 0;
 }
@@ -194,3 +196,4 @@ SIHeap::print(string s)
 #ifdef DEBUG_KVSTORE
 #endif
 }
+

@@ -2,7 +2,7 @@
 # Filename: QueryTree.cpp
 # Author: Jiaqi, Chen
 # Mail: chenjiaqi93@163.com
-# Last Modified: 2016-07-14
+# Last Modified: 2017-03-13
 # Description: implement functions in QueryTree.h
 =============================================================================*/
 
@@ -10,47 +10,93 @@
 
 using namespace std;
 
-void QueryTree::GroupPattern::FilterTreeNode::getVarset(Varset &varset)
+void QueryTree::GroupPattern::FilterTree::FilterTreeNode::getVarset(Varset &varset)
 {
 	for (int i = 0; i < (int)this->child.size(); i++)
 	{
-		if (this->child[i].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type && this->child[i].arg[0] == '?')
-			varset.addVar(this->child[i].arg);
-		if (this->child[i].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
+		if (this->child[i].node_type == FilterTreeChild::String_type && this->child[i].str[0] == '?')
+			varset.addVar(this->child[i].str);
+		if (this->child[i].node_type == FilterTreeChild::Tree_type)
 			this->child[i].node.getVarset(varset);
 	}
 }
 
-void QueryTree::GroupPattern::FilterTreeNode::print(vector<GroupPattern> &exist_grouppatterns, int dep)
+void QueryTree::GroupPattern::FilterTree::FilterTreeNode::mapVarPos2Varset(Varset &varset, Varset &entity_literal_varset)
 {
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Not_type)	printf("!");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_regex_type)	printf("REGEX");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_str_type)	printf("STR");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_lang_type)		printf("LANG");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_langmatches_type)		printf("LANGMATCHES");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_bound_type)		printf("BOUND");
+	if (this->oper_type == Not_type)
+	{
+		this->child[0].node.mapVarPos2Varset(varset, entity_literal_varset);
+	}
+	else if (this->oper_type == Or_type || this->oper_type == And_type)
+	{
+		this->child[0].node.mapVarPos2Varset(varset, entity_literal_varset);
+		this->child[1].node.mapVarPos2Varset(varset, entity_literal_varset);
+	}
+	else if (Equal_type <= this->oper_type && this->oper_type <= GreaterOrEqual_type)
+	{
+		if (this->child[0].node_type == FilterTreeChild::Tree_type)
+			this->child[0].node.mapVarPos2Varset(varset, entity_literal_varset);
+		else if (this->child[0].node_type == FilterTreeChild::String_type && this->child[0].str[0] == '?')
+		{
+			this->child[0].pos = Varset(this->child[0].str).mapTo(varset)[0];
+			this->child[0].isel = entity_literal_varset.findVar(this->child[0].str);
+		}
 
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_in_type)
+		if (this->child[1].node_type == FilterTreeChild::Tree_type)
+			this->child[1].node.mapVarPos2Varset(varset, entity_literal_varset);
+		else if (this->child[1].node_type == FilterTreeChild::String_type && this->child[1].str[0] == '?')
+		{
+			this->child[1].pos = Varset(this->child[1].str).mapTo(varset)[0];
+			this->child[1].isel = entity_literal_varset.findVar(this->child[1].str);
+		}
+	}
+	else if (this->oper_type == Builtin_regex_type ||
+			 this->oper_type == Builtin_str_type ||
+			 this->oper_type == Builtin_isiri_type ||
+			 this->oper_type == Builtin_isuri_type ||
+			 this->oper_type == Builtin_isliteral_type ||
+			 this->oper_type == Builtin_isnumeric_type ||
+			 this->oper_type == Builtin_lang_type ||
+			 this->oper_type == Builtin_langmatches_type ||
+			 this->oper_type == Builtin_bound_type ||
+			 this->oper_type == Builtin_in_type)
+	{
+		if (this->child[0].node_type == FilterTreeChild::Tree_type)
+			this->child[0].node.mapVarPos2Varset(varset, entity_literal_varset);
+		else if (this->child[0].node_type == FilterTreeChild::String_type && this->child[0].str[0] == '?')
+		{
+			this->child[0].pos = Varset(this->child[0].str).mapTo(varset)[0];
+			this->child[0].isel = entity_literal_varset.findVar(this->child[0].str);
+		}
+	}
+}
+
+void QueryTree::GroupPattern::FilterTree::FilterTreeNode::print(int dep)
+{
+	if (this->oper_type == Not_type)					printf("!");
+	if (this->oper_type == Builtin_regex_type)			printf("REGEX");
+	if (this->oper_type == Builtin_str_type)			printf("STR");
+	if (this->oper_type == Builtin_isiri_type)			printf("ISIRI");
+	if (this->oper_type == Builtin_isuri_type)			printf("ISURI");
+	if (this->oper_type == Builtin_isliteral_type)		printf("ISLITERAL");
+	if (this->oper_type == Builtin_isnumeric_type)		printf("ISNUMERIC");
+	if (this->oper_type == Builtin_lang_type)			printf("LANG");
+	if (this->oper_type == Builtin_langmatches_type)	printf("LANGMATCHES");
+	if (this->oper_type == Builtin_bound_type)			printf("BOUND");
+
+	if (this->oper_type == Builtin_in_type)
 	{
 		printf("(");
-		if (this->child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)	printf("%s", this->child[0].arg.c_str());
-		if (this->child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)	this->child[0].node.print(exist_grouppatterns, dep);
+		if (this->child[0].node_type == FilterTreeChild::String_type)	printf("%s", this->child[0].str.c_str());
+		if (this->child[0].node_type == FilterTreeChild::Tree_type)		this->child[0].node.print(dep);
 		printf(" IN (");
 		for (int i = 1; i < (int)this->child.size(); i++)
 		{
-			if (i != 1)	printf(" , ");
-			if (this->child[i].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)	printf("%s", this->child[i].arg.c_str());
-			if (this->child[i].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)	this->child[i].node.print(exist_grouppatterns, dep);
+			if (i != 1)	printf(", ");
+			if (this->child[i].node_type == FilterTreeChild::String_type)	printf("%s", this->child[i].str.c_str());
+			if (this->child[i].node_type == FilterTreeChild::Tree_type)		this->child[i].node.print(dep);
 		}
 		printf("))");
-
-		return;
-	}
-
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_exists_type)
-	{
-		printf("EXISTS");
-		exist_grouppatterns[this->exists_grouppattern_id].print(dep);
 
 		return;
 	}
@@ -59,31 +105,31 @@ void QueryTree::GroupPattern::FilterTreeNode::print(vector<GroupPattern> &exist_
 
 	if ((int)this->child.size() >= 1)
 	{
-		if (this->child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)	printf("%s", this->child[0].arg.c_str());
-		if (this->child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)	this->child[0].node.print(exist_grouppatterns, dep);
+		if (this->child[0].node_type == FilterTreeChild::String_type)	printf("%s", this->child[0].str.c_str());
+		if (this->child[0].node_type == FilterTreeChild::Tree_type)		this->child[0].node.print(dep);
 	}
 
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Or_type)	printf(" || ");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::And_type)	printf(" && ");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Equal_type)	printf(" = ");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::NotEqual_type)	printf(" != ");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Less_type)	printf(" < ");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::LessOrEqual_type)	printf(" <= ");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Greater_type)	printf(" > ");
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::GreaterOrEqual_type)	printf(" >= ");
+	if (this->oper_type == Or_type)				printf(" || ");
+	if (this->oper_type == And_type)			printf(" && ");
+	if (this->oper_type == Equal_type)			printf(" = ");
+	if (this->oper_type == NotEqual_type)		printf(" != ");
+	if (this->oper_type == Less_type)			printf(" < ");
+	if (this->oper_type == LessOrEqual_type)	printf(" <= ");
+	if (this->oper_type == Greater_type)		printf(" > ");
+	if (this->oper_type == GreaterOrEqual_type)	printf(" >= ");
 
-	if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_regex_type || this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_langmatches_type)	printf(", ");
+	if (this->oper_type == Builtin_regex_type || this->oper_type == Builtin_langmatches_type)	printf(", ");
 
 	if ((int)this->child.size() >= 2)
 	{
-		if (this->child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)	printf("%s", this->child[1].arg.c_str());
-		if (this->child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)	this->child[1].node.print(exist_grouppatterns, dep);
+		if (this->child[1].node_type == FilterTreeChild::String_type)	printf("%s", this->child[1].str.c_str());
+		if (this->child[1].node_type == FilterTreeChild::Tree_type)		this->child[1].node.print(dep);
 	}
 
 	if ((int)this->child.size() >= 3)
 	{
-		if (this->oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_regex_type && this->child[2].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			printf(", %s", this->child[2].arg.c_str());
+		if (this->oper_type == FilterTreeNode::Builtin_regex_type && this->child[2].node_type == FilterTreeChild::String_type)
+			printf(", %s", this->child[2].str.c_str());
 	}
 
 	printf(")");
@@ -93,285 +139,280 @@ void QueryTree::GroupPattern::FilterTreeNode::print(vector<GroupPattern> &exist_
 
 void QueryTree::GroupPattern::addOnePattern(Pattern _pattern)
 {
-	this->patterns.push_back(_pattern);
+	this->sub_grouppattern.push_back(SubGroupPattern(SubGroupPattern::Pattern_type));
+	this->sub_grouppattern.back().pattern = _pattern;
 }
 
 void QueryTree::GroupPattern::addOneGroupUnion()
 {
-	this->unions.push_back(GroupPatternUnions((int)this->patterns.size() - 1));
+	this->sub_grouppattern.push_back(SubGroupPattern(SubGroupPattern::Union_type));
 }
 
 void QueryTree::GroupPattern::addOneUnion()
 {
-	int n = (int)this->unions.size();
-	this->unions[n - 1].grouppattern_vec.push_back(GroupPattern());
+	if (this->sub_grouppattern.back().type != SubGroupPattern::Union_type)
+		throw "QueryTree::GroupPattern::addOneUnion failed";
+
+	this->sub_grouppattern.back().unions.push_back(GroupPattern());
 }
 
 QueryTree::GroupPattern& QueryTree::GroupPattern::getLastUnion()
 {
-	int n = (int)this->unions.size();
-	int m = (int)this->unions[n - 1].grouppattern_vec.size();
-	return this->unions[n - 1].grouppattern_vec[m - 1];
+	if (this->sub_grouppattern.back().type != SubGroupPattern::Union_type || this->sub_grouppattern.back().unions.empty())
+		throw "QueryTree::GroupPattern::getLastUnion failed";
+
+	return this->sub_grouppattern.back().unions.back();
 }
 
-void QueryTree::GroupPattern::addOneOptionalOrMinus(char _type)
+void QueryTree::GroupPattern::addOneOptional(int _type)
 {
-	this->optionals.push_back(OptionalOrMinusGroupPattern((int)this->patterns.size() - 1, (int)this->unions.size() - 1, _type));
+	SubGroupPattern::SubGroupPatternType type = (SubGroupPattern::SubGroupPatternType)_type;
+	if (type != SubGroupPattern::Optional_type && type != SubGroupPattern::Minus_type)
+		throw "QueryTree::GroupPattern::addOneOptional failed";
+
+	this->sub_grouppattern.push_back(SubGroupPattern(type));
 }
 
-QueryTree::GroupPattern& QueryTree::GroupPattern::getLastOptionalOrMinus()
+QueryTree::GroupPattern& QueryTree::GroupPattern::getLastOptional()
 {
-	int n = (int)this->optionals.size();
-	return this->optionals[n - 1].grouppattern;
+	if (this->sub_grouppattern.back().type != SubGroupPattern::Optional_type && this->sub_grouppattern.back().type != SubGroupPattern::Minus_type)
+		throw "QueryTree::GroupPattern::getLastOptional failed";
+
+	return this->sub_grouppattern.back().optional;
 }
 
-void QueryTree::GroupPattern::addOneFilterTree()
+void QueryTree::GroupPattern::addOneFilter()
 {
-	this->filters.push_back(FilterTreeRoot());
-	this->filter_exists_grouppatterns.push_back(vector<GroupPattern>());
+	this->sub_grouppattern.push_back(SubGroupPattern(SubGroupPattern::Filter_type));
 }
 
-QueryTree::GroupPattern::FilterTreeNode& QueryTree::GroupPattern::getLastFilterTree()
+QueryTree::GroupPattern::FilterTree& QueryTree::GroupPattern::getLastFilter()
 {
-	return this->filters[(int)(this->filters.size()) - 1].root;
+	if (this->sub_grouppattern.back().type != SubGroupPattern::Filter_type)
+		throw "QueryTree::GroupPattern::getLastFilter failed";
+
+	return this->sub_grouppattern.back().filter;
 }
 
-void QueryTree::GroupPattern::addOneExistsGroupPattern()
+void QueryTree::GroupPattern::addOneBind()
 {
-	int n = (int)this->filter_exists_grouppatterns.size();
-	this->filter_exists_grouppatterns[n - 1].push_back(GroupPattern());
+	this->sub_grouppattern.push_back(SubGroupPattern(SubGroupPattern::Bind_type));
 }
 
-QueryTree::GroupPattern& QueryTree::GroupPattern::getLastExistsGroupPattern()
+QueryTree::GroupPattern::Bind& QueryTree::GroupPattern::getLastBind()
 {
-	int n = (int)this->filter_exists_grouppatterns.size();
-	int m = (int)this->filter_exists_grouppatterns[n - 1].size();
-	return this->filter_exists_grouppatterns[n - 1][m - 1];
+	if (this->sub_grouppattern.back().type != SubGroupPattern::Bind_type)
+		throw "QueryTree::GroupPattern::getLastBind failed";
+
+	return this->sub_grouppattern.back().bind;
 }
 
 void QueryTree::GroupPattern::getVarset()
 {
-	for (int i = 0; i < (int)this->patterns.size(); i++)
-	{
-		if (this->patterns[i].subject.value[0] == '?')
+	for (int i = 0; i < (int)this->sub_grouppattern.size(); i++)
+		if (this->sub_grouppattern[i].type == SubGroupPattern::Pattern_type)
 		{
-			this->patterns[i].varset.addVar(this->patterns[i].subject.value);
-			this->grouppattern_subject_object_maximal_varset.addVar(this->patterns[i].subject.value);
+			if (this->sub_grouppattern[i].pattern.subject.value[0] == '?')
+			{
+				this->sub_grouppattern[i].pattern.varset.addVar(this->sub_grouppattern[i].pattern.subject.value);
+				this->sub_grouppattern[i].pattern.subject_object_varset.addVar(this->sub_grouppattern[i].pattern.subject.value);
+				this->grouppattern_subject_object_maximal_varset.addVar(this->sub_grouppattern[i].pattern.subject.value);
+			}
+			if (this->sub_grouppattern[i].pattern.predicate.value[0] == '?')
+			{
+				this->sub_grouppattern[i].pattern.varset.addVar(this->sub_grouppattern[i].pattern.predicate.value);
+				this->grouppattern_predicate_maximal_varset.addVar(this->sub_grouppattern[i].pattern.predicate.value);
+			}
+			if (this->sub_grouppattern[i].pattern.object.value[0] == '?')
+			{
+				this->sub_grouppattern[i].pattern.varset.addVar(this->sub_grouppattern[i].pattern.object.value);
+				this->sub_grouppattern[i].pattern.subject_object_varset.addVar(this->sub_grouppattern[i].pattern.object.value);
+				this->grouppattern_subject_object_maximal_varset.addVar(this->sub_grouppattern[i].pattern.object.value);
+			}
+			this->grouppattern_resultset_minimal_varset += this->sub_grouppattern[i].pattern.varset;
+			this->grouppattern_resultset_maximal_varset += this->sub_grouppattern[i].pattern.varset;
 		}
-		if (this->patterns[i].predicate.value[0] == '?')
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Union_type)
 		{
-			this->patterns[i].varset.addVar(this->patterns[i].predicate.value);
-			this->grouppattern_predicate_maximal_varset.addVar(this->patterns[i].predicate.value);
-		}
-		if (this->patterns[i].object.value[0] == '?')
-		{
-			this->patterns[i].varset.addVar(this->patterns[i].object.value);
-			this->grouppattern_subject_object_maximal_varset.addVar(this->patterns[i].object.value);
-		}
-		this->grouppattern_resultset_minimal_varset = this->grouppattern_resultset_minimal_varset + this->patterns[i].varset;
-		this->grouppattern_resultset_maximal_varset = this->grouppattern_resultset_maximal_varset + this->patterns[i].varset;
-	}
+			Varset minimal_varset;
 
-	for (int i = 0; i < (int)this->unions.size(); i++)
-	{
-		Varset minimal_varset;
-		for (int j = 0; j < (int)this->unions[i].grouppattern_vec.size(); j++)
-		{
-			this->unions[i].grouppattern_vec[j].getVarset();
-			if (j == 0)
-				minimal_varset = minimal_varset + this->unions[i].grouppattern_vec[j].grouppattern_resultset_minimal_varset;
-			else
-				minimal_varset = minimal_varset * this->unions[i].grouppattern_vec[j].grouppattern_resultset_minimal_varset;
-			this->grouppattern_resultset_maximal_varset = this->grouppattern_resultset_maximal_varset + this->unions[i].grouppattern_vec[j].grouppattern_resultset_maximal_varset;
-			this->grouppattern_subject_object_maximal_varset = this->grouppattern_subject_object_maximal_varset + this->unions[i].grouppattern_vec[j].grouppattern_subject_object_maximal_varset;
-			this->grouppattern_predicate_maximal_varset = this->grouppattern_predicate_maximal_varset + this->unions[i].grouppattern_vec[j].grouppattern_predicate_maximal_varset;
+			for (int j = 0; j < (int)this->sub_grouppattern[i].unions.size(); j++)
+			{
+				this->sub_grouppattern[i].unions[j].getVarset();
+				if (j == 0)
+					minimal_varset = this->sub_grouppattern[i].unions[j].grouppattern_resultset_minimal_varset;
+				else
+					minimal_varset = minimal_varset * this->sub_grouppattern[i].unions[j].grouppattern_resultset_minimal_varset;
+				this->grouppattern_resultset_maximal_varset += this->sub_grouppattern[i].unions[j].grouppattern_resultset_maximal_varset;
+				this->grouppattern_subject_object_maximal_varset += this->sub_grouppattern[i].unions[j].grouppattern_subject_object_maximal_varset;
+				this->grouppattern_predicate_maximal_varset += this->sub_grouppattern[i].unions[j].grouppattern_predicate_maximal_varset;
+			}
+
+			this->grouppattern_resultset_minimal_varset += minimal_varset;
 		}
-		this->grouppattern_resultset_minimal_varset = this->grouppattern_resultset_minimal_varset + minimal_varset;
-	}
-
-	for (int i = 0; i < (int)this->optionals.size(); i++)
-	{
-		this->optionals[i].grouppattern.getVarset();
-		if (this->optionals[i].type == 'o')
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Optional_type)
 		{
-			this->grouppattern_resultset_maximal_varset = this->grouppattern_resultset_maximal_varset + this->optionals[i].grouppattern.grouppattern_resultset_maximal_varset;
-			this->grouppattern_subject_object_maximal_varset = this->grouppattern_subject_object_maximal_varset + this->optionals[i].grouppattern.grouppattern_subject_object_maximal_varset;
-			this->grouppattern_predicate_maximal_varset = this->grouppattern_predicate_maximal_varset + this->optionals[i].grouppattern.grouppattern_predicate_maximal_varset;
+			this->sub_grouppattern[i].optional.getVarset();
+
+			this->grouppattern_resultset_maximal_varset += this->sub_grouppattern[i].optional.grouppattern_resultset_maximal_varset;
+			this->grouppattern_subject_object_maximal_varset += this->sub_grouppattern[i].optional.grouppattern_subject_object_maximal_varset;
+			this->grouppattern_predicate_maximal_varset += this->sub_grouppattern[i].optional.grouppattern_predicate_maximal_varset;
 		}
-	}
-
-	for (int i = 0; i < (int)this->filters.size(); i++)
-	{
-		this->filters[i].root.getVarset(this->filters[i].varset);
-	}
-
-	for(int i = 0; i < (int)this->filter_exists_grouppatterns.size(); i++)
-		for (int j = 0; j < (int)this->filter_exists_grouppatterns[i].size(); j++)
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Minus_type)
 		{
-			this->filter_exists_grouppatterns[i][j].getVarset();
+			this->sub_grouppattern[i].optional.getVarset();
+		}
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Filter_type)
+		{
+			this->sub_grouppattern[i].filter.root.getVarset(this->sub_grouppattern[i].filter.varset);
+		}
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Bind_type)
+		{
+			this->sub_grouppattern[i].bind.varset = Varset(this->sub_grouppattern[i].bind.var);
+			this->grouppattern_resultset_minimal_varset += this->sub_grouppattern[i].bind.varset;
+			this->grouppattern_resultset_maximal_varset += this->sub_grouppattern[i].bind.varset;
 		}
 }
 
-bool QueryTree::GroupPattern::checkOnlyUnionOptionalFilterNoExists()
-{
-	for (int i = 0; i < (int)this->unions.size(); i++)
-	{
-		for (int j = 0; j < (int)this->unions[i].grouppattern_vec.size(); j++)
-			if (!this->unions[i].grouppattern_vec[j].checkOnlyUnionOptionalFilterNoExists())
-				return false;
-	}
-
-	for (int i = 0; i < (int)this->optionals.size(); i++)
-	{
-		if (this->optionals[i].type != 'o')
-			return false;
-		if (!this->optionals[i].grouppattern.checkOnlyUnionOptionalFilterNoExists())
-			return false;
-	}
-
-	for (int i = 0; i < (int)this->filter_exists_grouppatterns.size(); i++)
-		if ((int)this->filter_exists_grouppatterns[i].size() != 0)
-			return false;
-
-	return true;
-}
-
-pair<Varset, Varset> QueryTree::GroupPattern::checkOptionalGroupPatternVarsAndSafeFilter(Varset occur , Varset ban, bool &check_condition)
+pair<Varset, Varset> QueryTree::GroupPattern::checkNoMinusAndOptionalVarAndSafeFilter(Varset occur_varset, Varset ban_varset, bool &check_condition)
 //return occur varset and ban varset
 {
 	if (!check_condition)	return make_pair(Varset(), Varset());
 
-	Varset this_ban;
+	Varset new_ban_varset;
 
-	int lastpattern = -1, lastunions = -1, lastoptional = -1;
-	while (check_condition && (lastpattern + 1 < (int)this->patterns.size() || lastunions + 1 < (int)this->unions.size() || lastoptional + 1 < (int)this->optionals.size()))
-	{
-		if (lastoptional + 1 < (int)this->optionals.size() && this->optionals[lastoptional + 1].lastpattern == lastpattern && this->optionals[lastoptional + 1].lastunions == lastunions)
-		//optional
+	for (int i = 0; i < (int)this->sub_grouppattern.size(); i++)
+		if (!check_condition)	break;
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Pattern_type)
 		{
-			pair<Varset, Varset> sub_grouppattern_return_varset = this->optionals[lastoptional + 1].grouppattern.checkOptionalGroupPatternVarsAndSafeFilter(Varset(), ban, check_condition);
-
-			if (occur.hasCommonVar(sub_grouppattern_return_varset.second))
+			if (this->sub_grouppattern[i].pattern.varset.hasCommonVar(ban_varset))
 				check_condition = false;
 
-			Varset out = this->optionals[lastoptional + 1].grouppattern.grouppattern_resultset_maximal_varset - occur;
-			occur = occur + sub_grouppattern_return_varset.first;
-			this_ban = this_ban + sub_grouppattern_return_varset.second;
-			this_ban = this_ban + out;
-			ban = ban + this_ban;
-
-			lastoptional++;
+			occur_varset += this->sub_grouppattern[i].pattern.varset;
 		}
-		else if (lastunions + 1 < (int)this->unions.size() && this->unions[lastunions + 1].lastpattern == lastpattern)
-		//union
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Union_type)
 		{
-			Varset sub_grouppattern_occur, sub_grouppattern_ban;
+			Varset sub_occur_varset, sub_ban_varset;
 
-			for (int i = 0; i < (int)this->unions[lastunions + 1].grouppattern_vec.size(); i++)
+			for (int j = 0; j < (int)this->sub_grouppattern[i].unions.size(); j++)
 			{
-				pair<Varset, Varset> sub_grouppattern_result = this->unions[lastunions + 1].grouppattern_vec[i].checkOptionalGroupPatternVarsAndSafeFilter(occur, ban, check_condition);
+				pair<Varset, Varset> sub_return_varset =
+					this->sub_grouppattern[i].unions[j].checkNoMinusAndOptionalVarAndSafeFilter(occur_varset, ban_varset, check_condition);
 
-				if (i == 0)
-					sub_grouppattern_occur = sub_grouppattern_occur + sub_grouppattern_result.first;
+				if (j == 0)
+					sub_occur_varset = sub_return_varset.first;
 				else
-					sub_grouppattern_occur = sub_grouppattern_occur * sub_grouppattern_result.first;
-				sub_grouppattern_ban = sub_grouppattern_ban + sub_grouppattern_result.second;
+					sub_occur_varset = sub_occur_varset * sub_return_varset.first;
+
+				sub_ban_varset += sub_return_varset.second;
 			}
 
-			occur = occur + sub_grouppattern_occur;
-			this_ban = this_ban + sub_grouppattern_ban;
-			ban = ban + this_ban;
-
-			lastunions++;
+			new_ban_varset += sub_ban_varset;
+			occur_varset += sub_occur_varset;
+			ban_varset += new_ban_varset;
 		}
-		else
-		//triple pattern
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Optional_type)
 		{
-			if (this->patterns[lastpattern + 1].varset.hasCommonVar(ban))
+			pair<Varset, Varset> sub_return_varset =
+				this->sub_grouppattern[i].optional.checkNoMinusAndOptionalVarAndSafeFilter(Varset(), ban_varset, check_condition);
+
+			//occur before
+			if (occur_varset.hasCommonVar(sub_return_varset.second))
 				check_condition = false;
 
-			occur = occur + this->patterns[lastpattern + 1].varset;
-
-			lastpattern++;
+			new_ban_varset += sub_return_varset.second;
+			new_ban_varset += this->sub_grouppattern[i].optional.grouppattern_resultset_maximal_varset - occur_varset;
+			occur_varset += sub_return_varset.first;
+			ban_varset += new_ban_varset;
 		}
-	}
-	//filter
-	for (int i = 0; i < (int)this->filters.size(); i++)
-	if (!this->filters[i].varset.belongTo(occur))
-	{
-		check_condition = false;
-		break;
-	}
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Minus_type)
+		{
+			check_condition = false;
+		}
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Filter_type)
+		{
+			if (!this->sub_grouppattern[i].filter.varset.belongTo(occur_varset))
+				check_condition = false;
+		}
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Bind_type)
+		{
+			if (this->sub_grouppattern[i].bind.varset.hasCommonVar(ban_varset))
+				check_condition = false;
 
-	return make_pair(occur, this_ban);
+			occur_varset += this->sub_grouppattern[i].bind.varset;
+		}
+
+	return make_pair(occur_varset, new_ban_varset);
 }
 
 void QueryTree::GroupPattern::initPatternBlockid()
 {
-	this->pattern_blockid.clear();
-	for (int i = 0; i < (int)this->patterns.size(); i++)
-		this->pattern_blockid.push_back(i);
+	for (int i = 0; i < (int)this->sub_grouppattern.size(); i++)
+		if (this->sub_grouppattern[i].type == SubGroupPattern::Pattern_type)
+			this->sub_grouppattern[i].pattern.blockid = i;
 }
 
 int QueryTree::GroupPattern::getRootPatternBlockID(int x)
 {
-	if (this->pattern_blockid[x] == x)	return x;
-	this->pattern_blockid[x] = getRootPatternBlockID(this->pattern_blockid[x]);
-	return this->pattern_blockid[x];
+	if (this->sub_grouppattern[x].type != SubGroupPattern::Pattern_type)
+		throw "QueryTree::GroupPattern::getRootPatternBlockID failed";
+
+	if (this->sub_grouppattern[x].pattern.blockid == x)
+		return x;
+	this->sub_grouppattern[x].pattern.blockid = this->getRootPatternBlockID(this->sub_grouppattern[x].pattern.blockid);
+
+	return this->sub_grouppattern[x].pattern.blockid;
 }
 
 void QueryTree::GroupPattern::mergePatternBlockID(int x, int y)
 {
-	int px = getRootPatternBlockID(x);
-	int py = getRootPatternBlockID(y);
-	this->pattern_blockid[px] = py;
+	int px = this->getRootPatternBlockID(x);
+	int py = this->getRootPatternBlockID(y);
+	this->sub_grouppattern[px].pattern.blockid = py;
 }
 
 void QueryTree::GroupPattern::print(int dep)
 {
 	for (int t = 0; t < dep; t++)	printf("\t");	printf("{\n");
 
-	int lastpattern = -1, lastunions = -1, lastoptional = -1;
-	while (lastpattern + 1 < (int)this->patterns.size() || lastunions + 1 < (int)this->unions.size() || lastoptional + 1 < (int)this->optionals.size())
-	{
-		if (lastoptional + 1 < (int)this->optionals.size() && this->optionals[lastoptional + 1].lastpattern == lastpattern && this->optionals[lastoptional + 1].lastunions == lastunions)
-		//optional
+	for (int i = 0; i < (int)this->sub_grouppattern.size(); i++)
+		if (this->sub_grouppattern[i].type == SubGroupPattern::Pattern_type)
 		{
 			for (int t = 0; t <= dep; t++)	printf("\t");
-			if (this->optionals[lastoptional + 1].type == 'o')	printf("OPTIONAL\n");
-			if (this->optionals[lastoptional + 1].type == 'm')	printf("MINUS\n");
-
-			this->optionals[lastoptional + 1].grouppattern.print(dep + 1);
-			lastoptional++;
+			printf("%s\t%s\t%s.\n",	this->sub_grouppattern[i].pattern.subject.value.c_str(),
+									this->sub_grouppattern[i].pattern.predicate.value.c_str(),
+									this->sub_grouppattern[i].pattern.object.value.c_str());
 		}
-		else if (lastunions + 1 < (int)this->unions.size() && this->unions[lastunions + 1].lastpattern == lastpattern)
-		//union
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Union_type)
 		{
-			for (int i = 0; i < (int)this->unions[lastunions + 1].grouppattern_vec.size(); i++)
+			for (int j = 0; j < (int)this->sub_grouppattern[i].unions.size(); j++)
 			{
-				if (i != 0)
+				if (j != 0)
 				{
 					for (int t = 0; t <= dep; t++)	printf("\t");	printf("UNION\n");
 				}
-				this->unions[lastunions + 1].grouppattern_vec[i].print(dep + 1);
+				this->sub_grouppattern[i].unions[j].print(dep + 1);
 			}
-			lastunions++;
 		}
-		else
-		//triple pattern
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Optional_type || this->sub_grouppattern[i].type == SubGroupPattern::Minus_type)
 		{
 			for (int t = 0; t <= dep; t++)	printf("\t");
-			printf("%s\t%s\t%s.\n", this->patterns[lastpattern + 1].subject.value.c_str(), this->patterns[lastpattern + 1].predicate.value.c_str(), this->patterns[lastpattern + 1].object.value.c_str());
-			lastpattern++;
+			if (this->sub_grouppattern[i].type == SubGroupPattern::Optional_type)	printf("OPTIONAL\n");
+			if (this->sub_grouppattern[i].type == SubGroupPattern::Minus_type)	printf("MINUS\n");
+			this->sub_grouppattern[i].optional.print(dep + 1);
 		}
-	}
-	//filter
-	for (int i = 0; i < (int)this->filters.size(); i++)
-	{
-		for (int t = 0; t <= dep; t++)	printf("\t");	printf("FILTER\t");
-		this->filters[i].root.print(this->filter_exists_grouppatterns[i], dep + 1);
-		printf("\n");
-	}
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Filter_type)
+		{
+			for (int t = 0; t <= dep; t++)	printf("\t");	printf("FILTER\t");
+			this->sub_grouppattern[i].filter.root.print(dep + 1);
+			printf("\n");
+		}
+		else if (this->sub_grouppattern[i].type == SubGroupPattern::Bind_type)
+		{
+			for (int t = 0; t <= dep; t++)	printf("\t");
+			printf("BIND(%s\tAS\t%s)", this->sub_grouppattern[i].bind.str.c_str(), this->sub_grouppattern[i].bind.var.c_str());
+			printf("\n");
+		}
 
 	for (int t = 0; t < dep; t++)	printf("\t");	printf("}\n");
 }
@@ -390,7 +431,7 @@ QueryTree::QueryForm QueryTree::getQueryForm()
 
 void QueryTree::setProjectionModifier(ProjectionModifier _projection_modifier)
 {
-	projection_modifier = _projection_modifier;
+	this->projection_modifier = _projection_modifier;
 }
 
 QueryTree::ProjectionModifier QueryTree::getProjectionModifier()
@@ -405,8 +446,7 @@ void QueryTree::addProjectionVar()
 
 QueryTree::ProjectionVar& QueryTree::getLastProjectionVar()
 {
-	int n = (int)this->projection.size();
-	return this->projection[n - 1];
+	return this->projection.back();
 }
 
 vector<QueryTree::ProjectionVar>& QueryTree::getProjection()
@@ -414,24 +454,27 @@ vector<QueryTree::ProjectionVar>& QueryTree::getProjection()
 	return this->projection;
 }
 
-vector<string> QueryTree::getProjectionVar()
+Varset QueryTree::getProjectionVarset()
 {
-	vector<string> var_vec;
+	Varset varset;
 
 	for (int i = 0; i < (int)this->projection.size(); i++)
-		var_vec.push_back(this->projection[i].var);
+		varset.addVar(this->projection[i].var);
 
-	return var_vec;
+	return varset;
 }
 
-void QueryTree::addProjectionUsefulVar(string &_var)
+Varset QueryTree::getResultProjectionVarset()
 {
-	this->projection_useful_varset.addVar(_var);
-}
+	Varset varset;
 
-Varset& QueryTree::getProjectionUsefulVar()
-{
-	return this->projection_useful_varset;
+	for (int i = 0; i < (int)this->projection.size(); i++)
+		if (this->projection[i].aggregate_type == ProjectionVar::None_type)
+			varset.addVar(this->projection[i].var);
+		else if (this->projection[i].aggregate_var != "*")
+			varset.addVar(this->projection[i].aggregate_var);
+
+	return varset;
 }
 
 void QueryTree::setProjectionAsterisk()
@@ -444,41 +487,34 @@ bool QueryTree::checkProjectionAsterisk()
 	return this->projection_asterisk;
 }
 
-bool QueryTree::checkSelectCompatibility()
+void QueryTree::addGroupByVar(string &_var)
 {
-	bool all_var = true, all_aggregate_function = true;
-
-	if (this->checkProjectionAsterisk())
-		return true;
-
-	for (int i = 0; i < (int)this->projection.size(); i++)
-	{
-		if (this->projection[i].aggregate_type != ProjectionVar::None_type)
-			all_var = false;
-		if (this->projection[i].aggregate_type == ProjectionVar::None_type)
-			all_aggregate_function = false;
-	}
-
-	return all_var || all_aggregate_function;
+	this->group_by.addVar(_var);
 }
 
-bool QueryTree::atLeastOneAggregateFunction()
+Varset& QueryTree::getGroupByVarset()
 {
-	for (int i = 0; i < (int)this->projection.size(); i++)
-		if (this->projection[i].aggregate_type != ProjectionVar::None_type)
-			return true;
-
-	return false;
+	return this->group_by;
 }
 
-void QueryTree::addOrder(string &_var, bool _descending)
+void QueryTree::addOrderVar(string &_var, bool _descending)
 {
-	this->order.push_back(Order(_var, _descending));
+	this->order_by.push_back(Order(_var, _descending));
 }
 
-vector<QueryTree::Order>& QueryTree::getOrder()
+vector<QueryTree::Order>& QueryTree::getOrderVarVector()
 {
-	return this->order;
+	return this->order_by;
+}
+
+Varset QueryTree::getOrderByVarset()
+{
+	Varset varset;
+
+	for (int i = 0; i < (int)this->order_by.size(); i++)
+		varset.addVar(this->order_by[i].var);
+
+	return varset;
 }
 
 void QueryTree::setOffset(int _offset)
@@ -528,102 +564,135 @@ QueryTree::GroupPattern& QueryTree::getDeletePatterns()
 
 bool QueryTree::checkWellDesigned()
 {
-	if (!this->getGroupPattern().checkOnlyUnionOptionalFilterNoExists())
-		return false;
-
 	bool check_condition = true;
-	this->getGroupPattern().checkOptionalGroupPatternVarsAndSafeFilter(Varset(), Varset(), check_condition);
+	this->grouppattern.checkNoMinusAndOptionalVarAndSafeFilter(Varset(), Varset(), check_condition);
 	return check_condition;
+}
+
+bool QueryTree::checkAtLeastOneAggregateFunction()
+{
+	for (int i = 0; i < (int)this->projection.size(); i++)
+		if (this->projection[i].aggregate_type != ProjectionVar::None_type)
+			return true;
+
+	return false;
+}
+
+bool QueryTree::checkSelectAggregateFunctionGroupByValid()
+{
+	if (this->checkAtLeastOneAggregateFunction() && this->group_by.empty())
+	{
+		for (int i = 0; i < (int)this->projection.size(); i++)
+			if (this->projection[i].aggregate_type == ProjectionVar::None_type)
+				return false;
+	}
+
+	if (!this->group_by.empty())
+	{
+		for (int i = 0; i < (int)this->projection.size(); i++)
+			if (this->projection[i].aggregate_type == ProjectionVar::None_type && !this->group_by.findVar(this->projection[i].var))
+				return false;
+	}
+
+	return true;
 }
 
 void QueryTree::print()
 {
 	for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
 
-	if (this->getUpdateType() == Not_Update)
+	if (this->update_type == Not_Update)
 	{
-		if (this->getQueryForm() == Select_Query)
+		if (this->query_form == Select_Query)
 		{
 			printf("SELECT");
-			if (this->getProjectionModifier() == Modifier_Distinct)
+			if (this->projection_modifier == Modifier_Distinct)
 				printf(" DISTINCT");
 			printf("\n");
 
 			printf("Var: \t");
-			vector<ProjectionVar> &proj = this->getProjection();
-			for (int i = 0; i < (int)proj.size(); i++)
+			for (int i = 0; i < (int)this->projection.size(); i++)
 			{
-				if (proj[i].aggregate_type == QueryTree::ProjectionVar::None_type)
-					printf("%s\t", proj[i].var.c_str());
+				if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::None_type)
+					printf("%s\t", this->projection[i].var.c_str());
 				else
 				{
 					printf("(");
-					if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
 						printf("COUNT(");
-					if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type)
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::Sum_type)
 						printf("SUM(");
-					if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
 						printf("MIN(");
-					if (proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
 						printf("MAX(");
-					if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
 						printf("AVG(");
-					if (proj[i].distinct)
+					if (this->projection[i].distinct)
 						printf("DISTINCT ");
-					printf("%s) AS %s)\t", proj[i].aggregate_var.c_str(), proj[i].var.c_str());
+					printf("%s) AS %s)\t", this->projection[i].aggregate_var.c_str(), this->projection[i].var.c_str());
 				}
 			}
-			if (this->checkProjectionAsterisk() && !this->atLeastOneAggregateFunction())
+			if (this->projection_asterisk && !this->checkAtLeastOneAggregateFunction())
 				printf("*");
 			printf("\n");
 		}
 		else printf("ASK\n");
 
 		printf("GroupPattern:\n");
-		this->getGroupPattern().print(0);
+		this->grouppattern.print(0);
 
-		if (this->getQueryForm() == Select_Query)
+		if (this->query_form == Select_Query)
 		{
-			if ((int)this->getOrder().size() > 0)
+			if (!this->group_by.empty())
+			{
+				printf("GROUP BY\t");
+
+				for (int i = 0; i < (int)this->group_by.vars.size(); i++)
+					printf("%s\t", this->group_by.vars[i].c_str());
+
+				printf("\n");
+			}
+
+			if (!this->order_by.empty())
 			{
 				printf("ORDER BY\t");
-				vector<QueryTree::Order>&order = this->getOrder();
-				for (int i = 0; i < (int)order.size(); i++)
+
+				for (int i = 0; i < (int)this->order_by.size(); i++)
 				{
-					if (!order[i].descending)	printf("ASC(");
+					if (!this->order_by[i].descending)	printf("ASC(");
 					else printf("DESC(");
-					printf("%s)\t", order[i].var.c_str());
+					printf("%s)\t", this->order_by[i].var.c_str());
 				}
 				printf("\n");
 			}
-			if (this->getOffset() != 0)
-				printf("OFFSET\t%d\n", this->getOffset());
-			if (this->getLimit() != -1)
-				printf("LIMIT\t%d\n", this->getLimit());
+			if (this->offset != 0)
+				printf("OFFSET\t%d\n", this->offset);
+			if (this->limit != -1)
+				printf("LIMIT\t%d\n", this->limit);
 		}
 	}
 	else
 	{
 		printf("UPDATE\n");
-		if (this->getUpdateType() == Delete_Data || this->getUpdateType() == Delete_Where ||
-				this->getUpdateType() == Delete_Clause || this->getUpdateType() == Modify_Clause)
+		if (this->update_type == Delete_Data || this->update_type == Delete_Where ||
+				this->update_type == Delete_Clause || this->update_type == Modify_Clause)
 		{
 			printf("Delete:\n");
-			this->getDeletePatterns().print(0);
+			this->delete_patterns.print(0);
 		}
-		if (this->getUpdateType() == Insert_Data || this->getUpdateType() == Insert_Clause || this->getUpdateType() == Modify_Clause)
+		if (this->update_type == Insert_Data || this->update_type == Insert_Clause || this->update_type == Modify_Clause)
 		{
 			printf("Insert:\n");
-			this->getInsertPatterns().print(0);
+			this->insert_patterns.print(0);
 		}
-		if (this->getUpdateType() == Delete_Where || this->getUpdateType() == Insert_Clause ||
-				this->getUpdateType() == Delete_Clause || this->getUpdateType() == Modify_Clause)
+		if (this->update_type == Delete_Where || this->update_type == Insert_Clause ||
+				this->update_type == Delete_Clause || this->update_type == Modify_Clause)
 		{
 			printf("GroupPattern:\n");
-			this->getGroupPattern().print(0);
+			this->grouppattern.print(0);
 		}
 	}
-
 
 	for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
 }

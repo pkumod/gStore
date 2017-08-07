@@ -2,23 +2,13 @@
 # Filename: GeneralEvaluation.cpp
 # Author: Jiaqi, Chen
 # Mail: chenjiaqi93@163.com
-# Last Modified: 2016-09-12
+# Last Modified: 2017-05-05
 # Description: implement functions in GeneralEvaluation.h
 =============================================================================*/
 
 #include "GeneralEvaluation.h"
 
 using namespace std;
-
-vector<vector<string> > GeneralEvaluation::getSPARQLQueryVarset()
-{
-	vector<vector<string> > res;
-
-	for (int i = 0; i < (int)this->sparql_query_varset.size(); i++)
-		res.push_back(this->sparql_query_varset[i].varset);
-
-	return res;
-}
 
 bool GeneralEvaluation::parseQuery(const string &_query)
 {
@@ -28,7 +18,7 @@ bool GeneralEvaluation::parseQuery(const string &_query)
 	}
 	catch(const char *e)
 	{
-		cout << e << endl;
+		printf("%s\n", e);
 		return false;
 	}
 
@@ -42,115 +32,54 @@ QueryTree& GeneralEvaluation::getQueryTree()
 
 bool GeneralEvaluation::doQuery()
 {
-	if (!this->query_tree.checkProjectionAsterisk() && this->query_tree.getProjection().size() == 0)
+	if (!this->query_tree.checkProjectionAsterisk() && this->query_tree.getProjection().empty())
 		return false;
-
-	if (!this->query_tree.checkSelectCompatibility())
-	{
-		cout << "[ERROR]	The vars and aggregate functions in the SelectClause are not compatible." << endl;
-		return false;
-	}
 
 	this->query_tree.getGroupPattern().getVarset();
-	if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.hasCommonVar(this->query_tree.getGroupPattern().grouppattern_predicate_maximal_varset))
+	this->query_tree.getGroupByVarset() = this->query_tree.getGroupByVarset() * this->query_tree.getGroupPattern().grouppattern_resultset_maximal_varset;
+
+	if (this->query_tree.checkProjectionAsterisk() && this->query_tree.getProjection().empty() && !this->query_tree.getGroupByVarset().empty())
 	{
-		cout << "[ERROR]	There are some vars occur both in subject/object and predicate." << endl;
+		printf("[ERROR]	Select * and Group By can't appear at the same time.\n");
 		return false;
 	}
 
-	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num, this->limitID_predicate, this->limitID_literal);
+	if (!this->query_tree.checkSelectAggregateFunctionGroupByValid())
+	{
+		printf("[ERROR]	The vars/aggregate functions in the Select Clause are invalid.\n");
+		return false;
+	}
+
+	if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.hasCommonVar(this->query_tree.getGroupPattern().grouppattern_predicate_maximal_varset))
+	{
+		printf("[ERROR]	There are some vars occur both in subject/object and predicate.\n");
+		return false;
+	}
+
+	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 	if (this->query_tree.checkWellDesigned())
 	{
-		cout << "=================" << endl;
-		cout << "||well-designed||" << endl;
-		cout << "=================" << endl;
+		printf("=================\n");
+		printf("||well-designed||\n");
+		printf("=================\n");
 
-		this->queryRewriteEncodeRetrieveJoin(0);
-		this->semantic_evaluation_result_stack.push(this->expansion_evaluation_stack[0].result);
+		this->rewriting_evaluation_stack.clear();
+		this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
+		this->rewriting_evaluation_stack.back().grouppattern = this->query_tree.getGroupPattern();
+		this->rewriting_evaluation_stack.back().sparql_query = NULL;
+
+		this->temp_result = this->rewritingBasedQueryEvaluation(0);
 	}
 	else
 	{
-		cout << "=====================" << endl;
-		cout << "||not well-designed||" << endl;
-		cout << "=====================" << endl;
+		printf("=====================\n");
+		printf("||not well-designed||\n");
+		printf("=====================\n");
 
-		this->getBasicQuery(this->query_tree.getGroupPattern());
-		long tv_getbq = Util::get_cur_time();
-
-		this->sparql_query.encodeQuery(this->kvstore, this->getSPARQLQueryVarset());
-		cout << "sparqlSTR:\t" << this->sparql_query.to_str() << endl;
-		long tv_encode = Util::get_cur_time();
-		cout << "after Encode, used " << (tv_encode - tv_getbq) << "ms." << endl;
-
-		this->strategy.handle(this->sparql_query);
-		long tv_handle = Util::get_cur_time();
-		cout << "after Handle, used " << (tv_handle - tv_encode) << "ms." << endl;
-
-		this->generateEvaluationPlan(this->query_tree.getGroupPattern());
-		this->doEvaluationPlan();
-		long tv_postproc = Util::get_cur_time();
-		cout << "after Postprocessing, used " << (tv_postproc - tv_handle) << "ms." << endl;
+		this->temp_result = this->semanticBasedQueryEvaluation(this->query_tree.getGroupPattern());
 	}
 
 	return true;
-}
-
-void GeneralEvaluation::getBasicQuery(QueryTree::GroupPattern &grouppattern)
-{
-	for (int i = 0; i < (int)grouppattern.unions.size(); i++)
-		for (int j = 0; j < (int)grouppattern.unions[i].grouppattern_vec.size(); j++)
-			getBasicQuery(grouppattern.unions[i].grouppattern_vec[j]);
-	for (int i = 0; i < (int)grouppattern.optionals.size(); i++)
-		getBasicQuery(grouppattern.optionals[i].grouppattern);
-
-	int current_optional = 0;
-	int first_patternid = 0;
-
-	grouppattern.initPatternBlockid();
-	vector<int> basicqueryid((int)grouppattern.patterns.size(), 0);
-
-	for (int i = 0; i < (int)grouppattern.patterns.size(); i++)
-	{
-		for (int j = first_patternid; j < i; j++)
-			if (grouppattern.patterns[i].varset.hasCommonVar(grouppattern.patterns[j].varset))
-				grouppattern.mergePatternBlockID(i, j);
-
-		if ((current_optional != (int)grouppattern.optionals.size() && i == grouppattern.optionals[current_optional].lastpattern) || i + 1 == (int)grouppattern.patterns.size())
-		{
-			for (int j = first_patternid; j <= i; j++)
-				if ((int)grouppattern.patterns[j].varset.varset.size() > 0)
-				{
-					if (grouppattern.getRootPatternBlockID(j) == j)			//root node
-					{
-						this->sparql_query.addBasicQuery();
-						this->sparql_query_varset.push_back(Varset());
-
-						for (int k = first_patternid; k <= i; k++)
-							if (grouppattern.getRootPatternBlockID(k) == j)
-							{
-								this->sparql_query.addTriple(Triple(
-									grouppattern.patterns[k].subject.value,
-									grouppattern.patterns[k].predicate.value,
-									grouppattern.patterns[k].object.value));
-
-									basicqueryid[k] = this->sparql_query.getBasicQueryNum() - 1;
-									this->sparql_query_varset[(int)this->sparql_query_varset.size() - 1] = this->sparql_query_varset[(int)this->sparql_query_varset.size() - 1] + grouppattern.patterns[k].varset;
-							}
-					}
-				}
-				else	basicqueryid[j] = -1;
-
-			for (int j = first_patternid; j <= i; j++)
-				grouppattern.pattern_blockid[j] = basicqueryid[j];
-
-			if (current_optional != (int)grouppattern.optionals.size())	current_optional++;
-			first_patternid = i + 1;
-		}
-	}
-
-	for(int i = 0; i < (int)grouppattern.filter_exists_grouppatterns.size(); i++)
-		for (int j = 0; j < (int)grouppattern.filter_exists_grouppatterns[i].size(); j++)
-			getBasicQuery(grouppattern.filter_exists_grouppatterns[i][j]);
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -401,6 +330,17 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		return ret_femv;
 	}
 
+	if ((this->datatype == xsd_boolean) ^ (x.datatype == xsd_boolean))
+	{
+		if (this->datatype == xsd_boolean && this->bool_value.value == EffectiveBooleanValue::error_value)
+			return ret_femv;
+		if (x.datatype == xsd_boolean && x.bool_value.value == EffectiveBooleanValue::error_value)
+			return ret_femv;
+
+		ret_femv.bool_value = EffectiveBooleanValue::false_value;
+		return ret_femv;
+	}
+
 	if (xsd_integer <= this->datatype && this->datatype <= xsd_double && xsd_integer <= x.datatype && x.datatype <= xsd_double)
 	{
 		this->getSameNumericType(x);
@@ -449,6 +389,17 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 	if (this->datatype == xsd_boolean && x.datatype == xsd_boolean)
 	{
 		ret_femv.bool_value = (this->bool_value != x.bool_value);
+		return ret_femv;
+	}
+
+	if ((this->datatype == xsd_boolean) ^ (x.datatype == xsd_boolean))
+	{
+		if (this->datatype == xsd_boolean && this->bool_value.value == EffectiveBooleanValue::error_value)
+			return ret_femv;
+		if (x.datatype == xsd_boolean && x.bool_value.value == EffectiveBooleanValue::error_value)
+			return ret_femv;
+
+		ret_femv.bool_value = EffectiveBooleanValue::true_value;
 		return ret_femv;
 	}
 
@@ -692,181 +643,349 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
 
-void GeneralEvaluation::TempResult::release()
+Varset GeneralEvaluation::TempResult::getAllVarset()
 {
-	for (int i = 0; i < (int)this->res.size(); i++)
-		delete[] res[i];
+	return this->id_varset + this->str_varset;
 }
 
-int GeneralEvaluation::TempResult::compareFunc(int *a, vector<int> &p, int *b, vector<int> &q)			//compare a[p] & b[q]
+void GeneralEvaluation::TempResult::release()
 {
-	int p_size = (int)p.size();
-	for (int i = 0; i < p_size; i++)
+	for (int i = 0; i < (int)this->result.size(); i++)
 	{
-		if (a[p[i]] < b[q[i]])		return -1;
-		if (a[p[i]] > b[q[i]])		return 1;
+		delete[] result[i].id;
+		vector<string>().swap(result[i].str);
+	}
+}
+
+int GeneralEvaluation::TempResult::compareRow(const ResultPair &x, const int x_id_cols, const vector<int> &x_pos,
+		  	  	  	  	  	  	  	  	  	  const ResultPair &y, const int y_id_cols, const vector<int> &y_pos)
+{
+	for (int i = 0; i < min((int)x_pos.size(), (int)y_pos.size()); i++)
+	{
+		int px = x_pos[i], py = y_pos[i];
+
+		if (px < x_id_cols && py < y_id_cols)
+		{
+			if (x.id[px] < y.id[py])
+				return -1;
+			if (x.id[px] > y.id[py])
+				return 1;
+		}
+
+		if (px >= x_id_cols && py >= y_id_cols)
+		{
+			if (x.str[px - x_id_cols] < y.str[py - y_id_cols])
+				return -1;
+			if (x.str[px - x_id_cols] > y.str[py - y_id_cols])
+				return 1;
+		}
 	}
 
 	return 0;
 }
 
-void GeneralEvaluation::TempResult::sort(int l, int r, vector<int> &p)
+void GeneralEvaluation::TempResult::sort(int l, int r, const vector<int> &this_pos)
 {
 	int i = l, j = r;
-	int *x = this->res[(l + r) / 2];
+	ResultPair m = this->result[(l + r) / 2];
 
+	int this_id_cols = this->id_varset.getVarsetSize();
 	do
 	{
-		while (compareFunc(this->res[i], p, x, p) == -1)	i++;
-		while(compareFunc(x, p, this->res[j], p) == -1)	j--;
+		while (compareRow(this->result[i], this_id_cols, this_pos, m, this_id_cols, this_pos) == -1)	i++;
+		while (compareRow(m, this_id_cols, this_pos, this->result[j], this_id_cols, this_pos) == -1)	j--;
 		if (i <= j)
 		{
-			swap(this->res[i], this->res[j]);
+			swap(this->result[i].id, this->result[j].id);
+			swap(this->result[i].str, this->result[j].str);
 			i++;
 			j--;
 		}
 	}
 	while (i <= j);
 
-	if (l < j)	sort(l, j, p);
-	if (i < r)	sort(i, r, p);
+	if (l < j)	sort(l, j, this_pos);
+	if (i < r)	sort(i, r, this_pos);
 }
 
-int GeneralEvaluation::TempResult::findLeftBounder(vector<int> &p, int *b, vector<int> &q)
+int GeneralEvaluation::TempResult::findLeftBounder(const vector<int> &this_pos, const ResultPair &x, const int x_id_cols, const vector<int> &x_pos) const
 {
-	int l = 0, r = (int)this->res.size() - 1;
-
+	int l = 0, r = (int)this->result.size() - 1;
 	if (r == -1)
 		return -1;
 
+	int this_id_cols = this->id_varset.getVarsetSize();
 	while (l < r)
 	{
 		int m = (l + r) / 2;
-		if (compareFunc(this->res[m], p, b, q) >= 0)		r = m;
+		if (compareRow(this->result[m], this_id_cols, this_pos, x, x_id_cols, x_pos) >= 0)		r = m;
 		else l = m + 1;
 	}
 
-	if (compareFunc(this->res[l], p, b, q) == 0)		return l;
-	else return -1;
+	if (compareRow(this->result[l], this_id_cols, this_pos, x, x_id_cols, x_pos) == 0)
+		return l;
+	else
+		return -1;
 }
 
-int GeneralEvaluation::TempResult::findRightBounder(vector<int> &p, int *b, vector<int> &q)
+int GeneralEvaluation::TempResult::findRightBounder(const vector<int> &this_pos, const ResultPair &x, const int x_id_cols, const vector<int> &x_pos) const
 {
-	int l = 0, r = (int)this->res.size() - 1;
+	int l = 0, r = (int)this->result.size() - 1;
 
 	if (r == -1)
 		return -1;
 
+	int this_id_cols = this->id_varset.getVarsetSize();
 	while (l < r)
 	{
 		int m = (l + r) / 2 + 1;
-		if (compareFunc(this->res[m], p, b, q) <= 0)		l = m;
+		if (compareRow(this->result[m], this_id_cols, this_pos, x, x_id_cols, x_pos) <= 0)		l = m;
 		else r = m - 1;
 	}
 
-	if (compareFunc(this->res[l], p, b, q) == 0)		return l;
-	else return -1;
+	if (compareRow(this->result[l], this_id_cols, this_pos, x, x_id_cols, x_pos) == 0)
+		return l;
+	else
+		return -1;
+}
+
+void GeneralEvaluation::TempResult::convertId2Str(Varset convert_varset, StringIndex *stringindex, Varset &entity_literal_varset)
+{
+	int this_id_cols = this->id_varset.getVarsetSize();
+
+	Varset new_id_varset = this->id_varset - convert_varset;
+	Varset new_str_varset = this->str_varset + convert_varset;
+	int new_id_cols = new_id_varset.getVarsetSize();
+
+	vector<int> this2new_id_pos = this->id_varset.mapTo(new_id_varset);
+
+	for (int i = 0; i < (int)this->result.size(); i++)
+	{
+		unsigned *v = new unsigned [new_id_cols];
+
+		for (int k = 0; k < this_id_cols; k++)
+			if (this2new_id_pos[k] != -1)
+			{
+				v[this2new_id_pos[k]] = this->result[i].id[k];
+			}
+			else
+			{
+				string str;
+
+				if (entity_literal_varset.findVar(this->id_varset.vars[k]))
+					stringindex->randomAccess(this->result[i].id[k], &str, true);
+				else
+					stringindex->randomAccess(this->result[i].id[k], &str, false);
+
+				this->result[i].str.push_back(str);
+			}
+
+		delete[] this->result[i].id;
+		this->result[i].id = v;
+	}
+
+	this->id_varset = new_id_varset;
+	this->str_varset = new_str_varset;
 }
 
 void GeneralEvaluation::TempResult::doJoin(TempResult &x, TempResult &r)
 {
-	if ((int)r.var.varset.size() == 0)		return;
+	int this_id_cols = this->id_varset.getVarsetSize();
+	int x_id_cols = x.id_varset.getVarsetSize();
 
-	vector <int> this2r = this->var.mapTo(r.var);
-	vector <int> x2r = x.var.mapTo(r.var);
+	int r_id_cols = r.id_varset.getVarsetSize();
+	vector<int> this2r_id_pos = this->id_varset.mapTo(r.id_varset);
+	vector<int> x2r_id_pos = x.id_varset.mapTo(r.id_varset);
 
-	Varset common_var = this->var * x.var;
-	int r_varnum = (int)r.var.varset.size();
-	int this_varnum = (int)this->var.varset.size();
-	int x_varnum = (int)x.var.varset.size();
-	if ((int)common_var.varset.size() == 0)
+	int this_str_cols = this->str_varset.getVarsetSize();
+	int x_str_cols = x.str_varset.getVarsetSize();
+
+	int r_str_cols = r.str_varset.getVarsetSize();
+	vector<int> this2r_str_pos = this->str_varset.mapTo(r.str_varset);
+	vector<int> x2r_str_pos = x.str_varset.mapTo(r.str_varset);
+
+	Varset common = this->getAllVarset() * x.getAllVarset();
+
+	if (common.empty())
 	{
-		for (int i = 0; i < (int)this->res.size(); i++)
-			for (int j = 0; j < (int)x.res.size(); j++)
+		for (int i = 0; i < (int)this->result.size(); i++)
+			for (int j = 0; j < (int)x.result.size(); j++)
 			{
-				int *a = new int [r_varnum];
-				for (int k = 0; k < this_varnum; k++)
-					a[this2r[k]] = this->res[i][k];
-				for (int k = 0; k < x_varnum; k++)
-					a[x2r[k]] = x.res[j][k];
-				r.res.push_back(a);
+				r.result.push_back(ResultPair());
+
+				if (r_id_cols > 0)
+				{
+					r.result.back().id = new unsigned [r_id_cols];
+					unsigned *v = r.result.back().id;
+
+					for (int k = 0; k < this_id_cols; k++)
+						v[this2r_id_pos[k]] = this->result[i].id[k];
+					for (int k = 0; k < x_id_cols; k++)
+						v[x2r_id_pos[k]] = x.result[j].id[k];
+				}
+
+				if (r_str_cols > 0)
+				{
+					r.result.back().str.resize(r_str_cols);
+					vector<string> &v = r.result.back().str;
+
+					for (int k = 0; k < this_str_cols; k++)
+						v[this2r_str_pos[k]] = this->result[i].str[k];
+					for (int k = 0; k < x_str_cols; k++)
+						v[x2r_str_pos[k]] = x.result[j].str[k];
+				}
 			}
 	}
-	else
-	if ((int)x.res.size() > 0)
+	else if (!x.result.empty())
 	{
-		vector<int> common2x = common_var.mapTo(x.var);
-		x.sort(0, (int)x.res.size() - 1, common2x);
+		vector<int> common2this = common.mapTo(this->getAllVarset());
+		vector<int> common2x = common.mapTo(x.getAllVarset());
+		x.sort(0, (int)x.result.size() - 1, common2x);
 
-		vector<int> common2this = common_var.mapTo(this->var);
-		for (int i = 0; i < (int)this->res.size(); i++)
+		int this_id_cols = this->id_varset.getVarsetSize();
+		for (int i = 0; i < (int)this->result.size(); i++)
 		{
-			int left, right;
-			left = x.findLeftBounder(common2x, this->res[i], common2this);
+			int left = x.findLeftBounder(common2x, this->result[i], this_id_cols, common2this);
 			if (left == -1)	continue;
-			right = x.findRightBounder(common2x, this->res[i], common2this);
+			int right = x.findRightBounder(common2x, this->result[i], this_id_cols, common2this);
 
 			for (int j = left; j <= right; j++)
 			{
-				int *a = new int [r_varnum];
-				for (int k = 0; k < this_varnum; k++)
-					a[this2r[k]] = this->res[i][k];
-				for (int k = 0; k < x_varnum; k++)
-					a[x2r[k]] = x.res[j][k];
-				r.res.push_back(a);
+				r.result.push_back(ResultPair());
+
+				if (r_id_cols > 0)
+				{
+					r.result.back().id = new unsigned [r_id_cols];
+					unsigned *v = r.result.back().id;
+
+					for (int k = 0; k < this_id_cols; k++)
+						v[this2r_id_pos[k]] = this->result[i].id[k];
+					for (int k = 0; k < x_id_cols; k++)
+						v[x2r_id_pos[k]] = x.result[j].id[k];
+				}
+
+				if (r_str_cols > 0)
+				{
+					r.result.back().str.resize(r_str_cols);
+					vector<string> &v = r.result.back().str;
+
+					for (int k = 0; k < this_str_cols; k++)
+						v[this2r_str_pos[k]] = this->result[i].str[k];
+					for (int k = 0; k < x_str_cols; k++)
+						v[x2r_str_pos[k]] = x.result[j].str[k];
+				}
 			}
 		}
 	}
 }
 
-void GeneralEvaluation::TempResult::doUnion(TempResult &rt)
+void GeneralEvaluation::TempResult::doUnion(TempResult &r)
 {
-	vector <int> this2rt = this->var.mapTo(rt.var);
+	int this_id_cols = this->id_varset.getVarsetSize();
 
-	int rt_varnum = (int)rt.var.varset.size();
-	int this_varnum = (int)this->var.varset.size();
-	for (int i = 0; i < (int)this->res.size(); i++)
+	int r_id_cols = r.id_varset.getVarsetSize();
+	vector<int> this2r_id_pos = this->id_varset.mapTo(r.id_varset);
+
+	int this_str_cols = this->str_varset.getVarsetSize();
+
+	int r_str_cols = r.str_varset.getVarsetSize();
+	vector<int> this2r_str_pos = this->str_varset.mapTo(r.str_varset);
+
+	for (int i = 0; i < (int)this->result.size(); i++)
 	{
-		int *a = new int [rt_varnum];
-		for (int j = 0; j < this_varnum; j++)
-			a[this2rt[j]] = this->res[i][j];
-		rt.res.push_back(a);
+		r.result.push_back(ResultPair());
+
+		if (r_id_cols > 0)
+		{
+			r.result.back().id = new unsigned [r_id_cols];
+			unsigned *v = r.result.back().id;
+
+			for (int k = 0; k < this_id_cols; k++)
+				v[this2r_id_pos[k]] = this->result[i].id[k];
+		}
+
+		if (r_str_cols > 0)
+		{
+			r.result.back().str.resize(r_str_cols);
+			vector<string> &v = r.result.back().str;
+
+			for (int k = 0; k < this_str_cols; k++)
+				v[this2r_str_pos[k]] = this->result[i].str[k];
+		}
 	}
 }
 
 void GeneralEvaluation::TempResult::doOptional(vector<bool> &binding, TempResult &x, TempResult &rn, TempResult &ra, bool add_no_binding)
 {
-	vector <int> this2rn = this->var.mapTo(rn.var);
+	int this_id_cols = this->id_varset.getVarsetSize();
+	int x_id_cols = x.id_varset.getVarsetSize();
 
-	Varset common_var = this->var * x.var;
-	if ((int)common_var.varset.size() != 0 && (int)x.res.size() != 0)
+	int rn_id_cols = rn.id_varset.getVarsetSize();
+	vector<int> this2rn_id_pos = this->id_varset.mapTo(rn.id_varset);
+	vector<int> x2rn_id_pos = x.id_varset.mapTo(rn.id_varset);
+
+	int ra_id_cols = ra.id_varset.getVarsetSize();
+	vector<int> this2ra_id_pos = this->id_varset.mapTo(ra.id_varset);
+	vector<int> x2ra_id_pos = x.id_varset.mapTo(ra.id_varset);
+
+	int this_str_cols = this->str_varset.getVarsetSize();
+	int x_str_cols = x.str_varset.getVarsetSize();
+
+	int rn_str_cols = rn.str_varset.getVarsetSize();
+	vector<int> this2rn_str_pos = this->str_varset.mapTo(rn.str_varset);
+	vector<int> x2rn_str_pos = x.str_varset.mapTo(rn.str_varset);
+
+	int ra_str_cols = ra.str_varset.getVarsetSize();
+	vector<int> this2ra_str_pos = this->str_varset.mapTo(ra.str_varset);
+	vector<int> x2ra_str_pos = x.str_varset.mapTo(ra.str_varset);
+
+	Varset common = this->getAllVarset() * x.getAllVarset();
+
+	if (common.empty())
 	{
-		vector <int> this2ra = this->var.mapTo(ra.var);
-		vector <int> x2ra = x.var.mapTo(ra.var);
+		this->doJoin(x, ra);
 
-		vector<int> common2x = common_var.mapTo(x.var);
-		x.sort(0, (int)x.res.size() - 1, common2x);
+		binding.resize((int)this->result.size(), true);
+	}
+	else if (!x.result.empty())
+	{
+		vector<int> common2this = common.mapTo(this->getAllVarset());
+		vector<int> common2x = common.mapTo(x.getAllVarset());
+		x.sort(0, (int)x.result.size() - 1, common2x);
 
-		vector<int> common2this = common_var.mapTo(this->var);
-		int ra_varnum = (int)ra.var.varset.size();
-		int this_varnum = (int)this->var.varset.size();
-		int x_varnum = (int)x.var.varset.size();
-		for (int i = 0; i < (int)this->res.size(); i++)
+		int this_id_cols = this->id_varset.getVarsetSize();
+		for (int i = 0; i < (int)this->result.size(); i++)
 		{
-			int left, right;
-			left = x.findLeftBounder(common2x, this->res[i], common2this);
-			if (left != -1)
+			int left = x.findLeftBounder(common2x, this->result[i], this_id_cols, common2this);
+			if (left == -1)	continue;
+			int right = x.findRightBounder(common2x, this->result[i], this_id_cols, common2this);
+
+			binding[i] = true;
+
+			for (int j = left; j <= right; j++)
 			{
-				binding[i] = true;
-				right = x.findRightBounder(common2x, this->res[i], common2this);
-				for (int j = left; j <= right; j++)
+				ra.result.push_back(ResultPair());
+
+				if (ra_id_cols > 0)
 				{
-					int *a = new int [ra_varnum];
-					for (int k = 0; k < this_varnum; k++)
-						a[this2ra[k]] = this->res[i][k];
-					for (int k = 0; k < x_varnum; k++)
-						a[x2ra[k]] = x.res[j][k];
-					ra.res.push_back(a);
+					ra.result.back().id = new unsigned [ra_id_cols];
+					unsigned *v = ra.result.back().id;
+
+					for (int k = 0; k < this_id_cols; k++)
+						v[this2ra_id_pos[k]] = this->result[i].id[k];
+					for (int k = 0; k < x_id_cols; k++)
+						v[x2ra_id_pos[k]] = x.result[j].id[k];
+				}
+
+				if (ra_str_cols > 0)
+				{
+					ra.result.back().str.resize(ra_str_cols);
+					vector<string> &v = ra.result.back().str;
+
+					for (int k = 0; k < this_str_cols; k++)
+						v[this2ra_str_pos[k]] = this->result[i].str[k];
+					for (int k = 0; k < x_str_cols; k++)
+						v[x2ra_str_pos[k]] = x.result[j].str[k];
 				}
 			}
 		}
@@ -874,166 +993,141 @@ void GeneralEvaluation::TempResult::doOptional(vector<bool> &binding, TempResult
 
 	if (add_no_binding)
 	{
-		int rn_varnum = (int)rn.var.varset.size();
-		int this_varnum = (int)this->var.varset.size();
-		for (int i = 0; i < (int)this->res.size(); i++)
+		for (int i = 0; i < (int)this->result.size(); i++)
 			if (!binding[i])
 			{
-				int *a = new int [rn_varnum];
-				for (int j = 0; j < this_varnum; j++)
-					a[this2rn[j]] = this->res[i][j];
-				rn.res.push_back(a);
+				rn.result.push_back(ResultPair());
+
+				if (rn_id_cols > 0)
+				{
+					rn.result.back().id = new unsigned [rn_id_cols];
+					unsigned *v = rn.result.back().id;
+
+					for (int k = 0; k < this_id_cols; k++)
+						v[this2rn_id_pos[k]] = this->result[i].id[k];
+				}
+
+				if (rn_str_cols > 0)
+				{
+					rn.result.back().str.resize(rn_str_cols);
+					vector<string> &v = rn.result.back().str;
+
+					for (int k = 0; k < this_str_cols; k++)
+						v[this2rn_str_pos[k]] = this->result[i].str[k];
+				}
 			}
 	}
 }
 
 void GeneralEvaluation::TempResult::doMinus(TempResult &x, TempResult &r)
 {
-	vector <int> this2r = this->var.mapTo(r.var);
+	int this_id_cols = this->id_varset.getVarsetSize();
 
-	Varset common_var = this->var * x.var;
-	int r_varnum = (int)r.var.varset.size();
-	int this_varnum = (int)this->var.varset.size();
-	if ((int)common_var.varset.size() == 0)
+	int r_id_cols = r.id_varset.getVarsetSize();
+	vector<int> this2r_id_pos = this->id_varset.mapTo(r.id_varset);
+
+	int this_str_cols = this->str_varset.getVarsetSize();
+
+	int r_str_cols = r.str_varset.getVarsetSize();
+	vector<int> this2r_str_pos = this->str_varset.mapTo(r.str_varset);
+
+	Varset common = this->getAllVarset() * x.getAllVarset();
+
+	if (common.empty())
 	{
-		for (int i = 0; i < (int)this->res.size(); i++)
+		for (int i = 0; i < (int)this->result.size(); i++)
 		{
-			int *a = new int [r_varnum];
-			for (int j = 0; j < this_varnum; j++)
-				a[this2r[j]] = this->res[i][j];
-			r.res.push_back(a);
+			r.result.push_back(ResultPair());
+
+			if (r_id_cols > 0)
+			{
+				r.result.back().id = new unsigned [r_id_cols];
+				unsigned *v = r.result.back().id;
+
+				for (int k = 0; k < this_id_cols; k++)
+					v[this2r_id_pos[k]] = this->result[i].id[k];
+			}
+
+			if (r_str_cols > 0)
+			{
+				r.result.back().str.resize(r_str_cols);
+				vector<string> &v = r.result.back().str;
+
+				for (int k = 0; k < this_str_cols; k++)
+					v[this2r_str_pos[k]] = this->result[i].str[k];
+			}
 		}
 	}
-	else
-	if ((int)x.res.size() > 0)
+	else if (!x.result.empty())
 	{
-		vector<int> common2x = common_var.mapTo(x.var);
-		x.sort(0, (int)x.res.size() - 1, common2x);
+		vector<int> common2this = common.mapTo(this->getAllVarset());
+		vector<int> common2x = common.mapTo(x.getAllVarset());
+		x.sort(0, (int)x.result.size() - 1, common2x);
 
-		vector<int> common2this = common_var.mapTo(this->var);
-		for (int i = 0; i < (int)this->res.size(); i++)
+		int this_id_cols = this->id_varset.getVarsetSize();
+		for (int i = 0; i < (int)this->result.size(); i++)
 		{
-			int left = x.findLeftBounder(common2x, this->res[i], common2this);
+			int left = x.findLeftBounder(common2x, this->result[i], this_id_cols, common2this);
 			if (left == -1)
 			{
-				int *a = new int [r_varnum];
-				for (int j = 0; j < this_varnum; j++)
-					a[this2r[j]] = this->res[i][j];
-				r.res.push_back(a);
+				r.result.push_back(ResultPair());
+
+				if (r_id_cols > 0)
+				{
+					r.result.back().id = new unsigned [r_id_cols];
+					unsigned *v = r.result.back().id;
+
+					for (int k = 0; k < this_id_cols; k++)
+						v[this2r_id_pos[k]] = this->result[i].id[k];
+				}
+
+				if (r_str_cols > 0)
+				{
+					r.result.back().str.resize(r_str_cols);
+					vector<string> &v = r.result.back().str;
+
+					for (int k = 0; k < this_str_cols; k++)
+						v[this2r_str_pos[k]] = this->result[i].str[k];
+				}
 			}
 		}
 	}
 }
 
-void GeneralEvaluation::TempResult::doDistinct(TempResult &r)
+void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild &child, FilterEvaluationMultitypeValue &femv, ResultPair &row, int id_cols, StringIndex *stringindex)
 {
-	vector <int> this2r = this->var.mapTo(r.var);
-
-	if ((int)this->res.size() > 0)
-	{
-		vector<int> r2this = r.var.mapTo(this->var);
-		this->sort(0, (int)this->res.size() - 1, r2this);
-
-		int r_varnum = (int)r.var.varset.size();
-		int this_varnum = (int)this->var.varset.size();
-		for (int i = 0; i < (int)this->res.size(); i++)
-			if (i == 0 || (i > 0 && compareFunc(this->res[i], r2this, this->res[i - 1], r2this) != 0))
-			{
-				int *a = new int [r_varnum];
-				for (int j = 0; j < this_varnum; j++)
-					if (this2r[j] != -1)
-						a[this2r[j]] = this->res[i][j];
-				r.res.push_back(a);
-			}
-	}
-}
-
-
-
-void GeneralEvaluation::TempResult::mapFilterTree2Varset(QueryTree::GroupPattern::FilterTreeNode &filter, Varset &v, Varset &entity_literal_varset)
-{
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Not_type)
-	{
-		mapFilterTree2Varset(filter.child[0].node, v, entity_literal_varset);
-	}
-	else if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Or_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::And_type)
-	{
-		mapFilterTree2Varset(filter.child[0].node, v, entity_literal_varset);
-		mapFilterTree2Varset(filter.child[1].node, v, entity_literal_varset);
-	}
-	else if (QueryTree::GroupPattern::FilterTreeNode::Equal_type <= filter.oper_type && filter.oper_type <= QueryTree::GroupPattern::FilterTreeNode::GreaterOrEqual_type)
-	{
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			mapFilterTree2Varset(filter.child[0].node, v, entity_literal_varset);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type && filter.child[0].arg[0] == '?')
-		{
-			filter.child[0].pos = Varset(filter.child[0].arg).mapTo(v)[0];
-			if (entity_literal_varset.findVar(filter.child[0].arg))	filter.child[0].isel = true;
-			else filter.child[0].isel = false;
-		}
-
-		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			mapFilterTree2Varset(filter.child[1].node, v, entity_literal_varset);
-		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type && filter.child[1].arg[0] == '?')
-		{
-			filter.child[1].pos = Varset(filter.child[1].arg).mapTo(v)[0];
-			if (entity_literal_varset.findVar(filter.child[1].arg))	filter.child[1].isel = true;
-			else filter.child[1].isel = false;
-		}
-	}
-	else if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_regex_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_str_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_lang_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_langmatches_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_bound_type || filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_in_type)
-	{
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			mapFilterTree2Varset(filter.child[0].node, v, entity_literal_varset);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type && filter.child[0].arg[0] == '?')
-		{
-			filter.child[0].pos = Varset(filter.child[0].arg).mapTo(v)[0];
-			if (entity_literal_varset.findVar(filter.child[0].arg))	filter.child[0].isel = true;
-			else filter.child[0].isel = false;
-		}
-	}
-}
-
-void GeneralEvaluation::TempResult::doFilter(QueryTree::GroupPattern::FilterTreeNode &filter, FilterExistsGroupPatternResultSetRecord &filter_exists_grouppattern_resultset_record, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset)
-{
-	mapFilterTree2Varset(filter, this->var, entity_literal_varset);
-
-	r.var = this->var;
-
-	int varnum = (int)this->var.varset.size();
-	for (int i = 0; i < (int)this->res.size(); i++)
-	{
-		GeneralEvaluation::FilterEvaluationMultitypeValue ret_femv = matchFilterTree(filter, filter_exists_grouppattern_resultset_record, this->res[i], stringindex);
-		if (ret_femv.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_boolean && ret_femv.bool_value.value == GeneralEvaluation::FilterEvaluationMultitypeValue::EffectiveBooleanValue::true_value)
-		{
-			int *a = new int[varnum];
-			memcpy(a, this->res[i], sizeof(int) * varnum);
-			r.res.push_back(a);
-		}
-	}
-}
-
-void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild &child, FilterEvaluationMultitypeValue &femv, int *row, StringIndex *stringindex)
-{
-	if (child.node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
+	if (child.node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 	{
 		femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::rdf_term;
 
-		if (child.arg[0] == '?')
+		if (child.str[0] == '?')
 		{
-			int id = -1;
-			if (child.pos != -1)	id = row[child.pos];
-
-			femv.term_value = "";
-			if (id != -1)
+			if (child.pos == -1)
 			{
+				femv.datatype = FilterEvaluationMultitypeValue::xsd_boolean;
+				femv.bool_value = FilterEvaluationMultitypeValue::EffectiveBooleanValue::error_value;
+
+				return;
+			}
+
+			if (child.pos < id_cols)
+			{
+				int id = row.id[child.pos];
+
 				if (child.isel)
 					stringindex->randomAccess(id, &femv.term_value, true);
 				else
 					stringindex->randomAccess(id, &femv.term_value, false);
 			}
+			else
+			{
+				femv.term_value = row.str[child.pos - id_cols];
+			}
 		}
-		else femv.term_value = child.arg;
+		else
+		{
+			femv.term_value = child.str;
+		}
 
 		if (femv.term_value[0] == '<' && femv.term_value[femv.term_value.length() - 1] == '>')
 		{
@@ -1041,19 +1135,19 @@ void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::Fil
 			femv.str_value = femv.term_value;
 		}
 
-		if (femv.term_value[0] == '"' && femv.term_value.find("\"^^<") == -1 && femv.term_value[femv.term_value.length() - 1] != '>' )
+		if (femv.term_value[0] == '"' && femv.term_value.find("\"^^<") == string::npos && femv.term_value[femv.term_value.length() - 1] != '>' )
 		{
 			femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::literal;
 			femv.str_value = femv.term_value;
 		}
 
-		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#string>") != -1)
+		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#string>") != string::npos)
 		{
 			femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_string;
 			femv.str_value = femv.term_value.substr(0, femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#string>"));
 		}
 
-		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#boolean>") != -1)
+		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#boolean>") != string::npos)
 		{
 			femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_boolean;
 
@@ -1066,7 +1160,7 @@ void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::Fil
 				femv.bool_value = GeneralEvaluation::FilterEvaluationMultitypeValue::EffectiveBooleanValue::error_value;
 		}
 
-		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#integer>") != -1)
+		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#integer>") != string::npos)
 		{
 			femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_integer;
 
@@ -1076,7 +1170,7 @@ void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::Fil
 			ss >> femv.int_value;
 		}
 
-		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#decimal>") != -1)
+		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#decimal>") != string::npos)
 		{
 			femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_decimal;
 
@@ -1086,7 +1180,7 @@ void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::Fil
 			ss >> femv.flt_value;
 		}
 
-		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#float>") != -1)
+		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#float>") != string::npos)
 		{
 			femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_float;
 
@@ -1096,7 +1190,7 @@ void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::Fil
 			ss >> femv.flt_value;
 		}
 
-		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#double>") != -1)
+		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#double>") != string::npos)
 		{
 			femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_double;
 
@@ -1106,14 +1200,15 @@ void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::Fil
 			ss >> femv.dbl_value;
 		}
 
-		if (femv.term_value[0] == '"' && (femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") != -1 || femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") != -1))
+		if (femv.term_value[0] == '"' &&
+				(femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") != string::npos || femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") != string::npos))
 		{
 			femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_datetime;
 
 			string value;
-			if (femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") != -1)
+			if (femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") != string::npos)
 				value = femv.term_value.substr(1, femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") - 2);
-			if (femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") != -1)
+			if (femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") != string::npos)
 				value = femv.term_value.substr(1, femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") - 2);
 
 			vector <int> date;
@@ -1122,7 +1217,7 @@ void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::Fil
 				{
 					int p = 0;
 					stringstream ss;
-					while (p < value.length() && '0' <= value[p] && value[p] <= '9')
+					while (p < (int)value.length() && '0' <= value[p] && value[p] <= '9')
 					{
 						ss << value[p];
 						p++;
@@ -1132,7 +1227,7 @@ void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::Fil
 					ss >> x;
 					date.push_back(x);
 
-					while (p < value.length() && (value[p] < '0' || value[p] > '9'))
+					while (p < (int)value.length() && (value[p] < '0' || value[p] > '9'))
 						p++;
 					value = value.substr(p);
 				}
@@ -1145,169 +1240,169 @@ void GeneralEvaluation::TempResult::getFilterString(QueryTree::GroupPattern::Fil
 }
 
 GeneralEvaluation::FilterEvaluationMultitypeValue
-	GeneralEvaluation::TempResult::matchFilterTree(QueryTree::GroupPattern::FilterTreeNode &filter, FilterExistsGroupPatternResultSetRecord &filter_exists_grouppattern_resultset_record, int *row, StringIndex *stringindex)
+	GeneralEvaluation::TempResult::matchFilterTree(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, ResultPair &row, int id_cols, StringIndex *stringindex)
 {
 	FilterEvaluationMultitypeValue ret_femv;
 	ret_femv.datatype = GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_boolean;
 	ret_femv.bool_value = GeneralEvaluation::FilterEvaluationMultitypeValue::EffectiveBooleanValue::error_value;
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Not_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Not_type)
 	{
 		FilterEvaluationMultitypeValue x;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
 		return !x;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Or_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Or_type)
 	{
 		FilterEvaluationMultitypeValue x, y;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[1], y, row, stringindex);
-		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			y = matchFilterTree(filter.child[1].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[1], y, row, id_cols, stringindex);
+		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			y = matchFilterTree(filter.child[1].node, row, id_cols, stringindex);
 
 		return x || y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::And_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::And_type)
 	{
 		FilterEvaluationMultitypeValue x, y;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[1], y, row, stringindex);
-		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			y = matchFilterTree(filter.child[1].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[1], y, row, id_cols, stringindex);
+		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			y = matchFilterTree(filter.child[1].node, row, id_cols, stringindex);
 
 		return x && y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Equal_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Equal_type)
 	{
 		FilterEvaluationMultitypeValue x, y;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[1], y, row, stringindex);
-		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			y = matchFilterTree(filter.child[1].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[1], y, row, id_cols, stringindex);
+		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			y = matchFilterTree(filter.child[1].node, row, id_cols, stringindex);
 
 		return x == y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::NotEqual_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::NotEqual_type)
 	{
 		FilterEvaluationMultitypeValue x, y;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[1], y, row, stringindex);
-		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			y = matchFilterTree(filter.child[1].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[1], y, row, id_cols, stringindex);
+		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			y = matchFilterTree(filter.child[1].node, row, id_cols, stringindex);
 
 		return x != y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Less_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Less_type)
 	{
 		FilterEvaluationMultitypeValue x, y;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[1], y, row, stringindex);
-		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			y = matchFilterTree(filter.child[1].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[1], y, row, id_cols, stringindex);
+		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			y = matchFilterTree(filter.child[1].node, row, id_cols, stringindex);
 
 		return x < y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::LessOrEqual_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::LessOrEqual_type)
 	{
 		FilterEvaluationMultitypeValue x, y;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[1], y, row, stringindex);
-		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			y = matchFilterTree(filter.child[1].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[1], y, row, id_cols, stringindex);
+		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			y = matchFilterTree(filter.child[1].node, row, id_cols, stringindex);
 
 		return x <= y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Greater_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Greater_type)
 	{
 		FilterEvaluationMultitypeValue x, y;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[1], y, row, stringindex);
-		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			y = matchFilterTree(filter.child[1].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[1], y, row, id_cols, stringindex);
+		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			y = matchFilterTree(filter.child[1].node, row, id_cols, stringindex);
 
 		return x > y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::GreaterOrEqual_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::GreaterOrEqual_type)
 	{
 		FilterEvaluationMultitypeValue x, y;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[1], y, row, stringindex);
-		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			y = matchFilterTree(filter.child[1].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[1], y, row, id_cols, stringindex);
+		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			y = matchFilterTree(filter.child[1].node, row, id_cols, stringindex);
 
 		return x >= y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_regex_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_regex_type)
 	{
 		FilterEvaluationMultitypeValue x, y, z;
 		string t, p, f;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 		if (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::literal || x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_string)
 		{
 			t = x.str_value;
@@ -1316,10 +1411,10 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		else
 			return ret_femv;
 
-		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[1], y, row, stringindex);
-		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			y = matchFilterTree(filter.child[1].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[1], y, row, id_cols, stringindex);
+		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			y = matchFilterTree(filter.child[1].node, row, id_cols, stringindex);
 		if (y.isSimpleLiteral())
 		{
 			p = y.str_value;
@@ -1330,10 +1425,10 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 
 		if ((int)filter.child.size() >= 3)
 		{
-			if (filter.child[2].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-				getFilterString(filter.child[2], z, row, stringindex);
-			else if (filter.child[2].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-				z = matchFilterTree(filter.child[2].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+			if (filter.child[2].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+				getFilterString(filter.child[2], z, row, id_cols, stringindex);
+			else if (filter.child[2].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+				z = matchFilterTree(filter.child[2].node, row, id_cols, stringindex);
 			if (z.isSimpleLiteral())
 			{
 				f = z.str_value;
@@ -1352,14 +1447,14 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_str_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_str_type)
 	{
 		FilterEvaluationMultitypeValue x;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
 		if (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::literal)
 		{
@@ -1389,14 +1484,60 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 			return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_lang_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isiri_type ||
+		filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isuri_type)
 	{
 		FilterEvaluationMultitypeValue x;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
+
+		ret_femv.bool_value = (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::iri);
+
+		return ret_femv;
+	}
+
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isliteral_type)
+	{
+		FilterEvaluationMultitypeValue x;
+
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
+
+		ret_femv.bool_value = (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::literal);
+
+		return ret_femv;
+	}
+
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isnumeric_type)
+	{
+		FilterEvaluationMultitypeValue x;
+
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
+
+		ret_femv.bool_value = (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_integer ||
+							   x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_decimal ||
+							   x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_float ||
+							   x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_double);
+
+		return ret_femv;
+	}
+
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_lang_type)
+	{
+		FilterEvaluationMultitypeValue x;
+
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
 		if (x.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::literal)
 		{
@@ -1414,21 +1555,21 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 			return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_langmatches_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_langmatches_type)
 	{
 		FilterEvaluationMultitypeValue x, y;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 		if (!x.isSimpleLiteral())
 			return ret_femv;
 
-		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[1], y, row, stringindex);
-		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			y = matchFilterTree(filter.child[1].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[1], y, row, id_cols, stringindex);
+		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			y = matchFilterTree(filter.child[1].node, row, id_cols, stringindex);
 		if (!y.isSimpleLiteral())
 			return ret_femv;
 
@@ -1437,30 +1578,30 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_bound_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_bound_type)
 	{
 		ret_femv.bool_value = (filter.child[0].pos != -1);
 
 		return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_in_type)
+	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_in_type)
 	{
 		FilterEvaluationMultitypeValue x;
 
-		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-			getFilterString(filter.child[0], x, row, stringindex);
-		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			x = matchFilterTree(filter.child[0].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
 		for (int i = 1; i < (int)filter.child.size(); i++)
 		{
 			FilterEvaluationMultitypeValue y;
 
-			if (filter.child[i].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::String_type)
-				getFilterString(filter.child[i], y, row, stringindex);
-			else if (filter.child[i].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-				y = matchFilterTree(filter.child[i].node, filter_exists_grouppattern_resultset_record, row, stringindex);
+			if (filter.child[i].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+				getFilterString(filter.child[i], y, row, id_cols, stringindex);
+			else if (filter.child[i].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+				y = matchFilterTree(filter.child[i].node, row, id_cols, stringindex);
 
 			FilterEvaluationMultitypeValue equal = (x == y);
 			if (i == 1)
@@ -1475,41 +1616,68 @@ GeneralEvaluation::FilterEvaluationMultitypeValue
 		return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_exists_type)
-	{
-		int id = filter.exists_grouppattern_id;
-		for (int i = 0; i < (int)filter_exists_grouppattern_resultset_record.resultset[id]->results.size(); i++)
-		{
-			if (((int)filter_exists_grouppattern_resultset_record.resultset[id]->results[i].res.size() > 0) &&
-				((int)filter_exists_grouppattern_resultset_record.common[id][i].varset.size() == 0 ||
-				filter_exists_grouppattern_resultset_record.resultset[id]->results[i].findLeftBounder(
-					filter_exists_grouppattern_resultset_record.common2resultset[id][i].first, row,
-					filter_exists_grouppattern_resultset_record.common2resultset[id][i].second) != -1))
-			{
-				ret_femv.bool_value = GeneralEvaluation::FilterEvaluationMultitypeValue::EffectiveBooleanValue::true_value;
-				return ret_femv;
-			}
-		}
-		ret_femv.bool_value = GeneralEvaluation::FilterEvaluationMultitypeValue::EffectiveBooleanValue::false_value;
-		return ret_femv;
-	}
-
 	return ret_femv;
 }
 
-
-
-void GeneralEvaluation::TempResult::print()
+void GeneralEvaluation::TempResult::doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset)
 {
-	int varnum = (int)this->var.varset.size();
+	Varset this_varset = this->getAllVarset();
+	filter.mapVarPos2Varset(this_varset, entity_literal_varset);
 
-	this->var.print();
+	int this_id_cols = this->id_varset.getVarsetSize();
 
-	printf("temp result:\n");
-	for (int i = 0; i < (int)this->res.size(); i++)
+	int r_id_cols = r.id_varset.getVarsetSize();
+	vector<int> this2r_id_pos = this->id_varset.mapTo(r.id_varset);
+
+	int this_str_cols = this->str_varset.getVarsetSize();
+
+	int r_str_cols = r.str_varset.getVarsetSize();
+	vector<int> this2r_str_pos = this->str_varset.mapTo(r.str_varset);
+
+	for (int i = 0; i < (int)this->result.size(); i++)
 	{
-		for (int j = 0; j < varnum; j++)
-			printf("%d ", this->res[i][j]);
+		GeneralEvaluation::FilterEvaluationMultitypeValue ret_femv = matchFilterTree(filter, this->result[i], this_id_cols, stringindex);
+
+		if (ret_femv.datatype == GeneralEvaluation::FilterEvaluationMultitypeValue::xsd_boolean && ret_femv.bool_value.value == GeneralEvaluation::FilterEvaluationMultitypeValue::EffectiveBooleanValue::true_value)
+		{
+			r.result.push_back(ResultPair());
+
+			if (r_id_cols > 0)
+			{
+				r.result.back().id = new unsigned [r_id_cols];
+				unsigned *v = r.result.back().id;
+
+				for (int k = 0; k < this_id_cols; k++)
+					v[this2r_id_pos[k]] = this->result[i].id[k];
+			}
+
+			if (r_str_cols > 0)
+			{
+				r.result.back().str.resize(r_str_cols);
+				vector<string> &v = r.result.back().str;
+
+				for (int k = 0; k < this_str_cols; k++)
+					v[this2r_str_pos[k]] = this->result[i].str[k];
+			}
+		}
+	}
+}
+
+void GeneralEvaluation::TempResult::print(int no)
+{
+	this->getAllVarset().print();
+
+	if (no == -1)
+		printf("temp result:\n");
+	else
+		printf("temp result no.%d:\n", no);
+
+	for (int i = 0; i < (int)this->result.size(); i++)
+	{
+		for (int j = 0; j < this->id_varset.getVarsetSize(); j++)
+			printf("%d\t", this->result[i].id[j]);
+		for (int j = 0; j < this->str_varset.getVarsetSize(); j++)
+			printf("%s\t", this->result[i].str[j].c_str());
 		printf("\n");
 	}
 }
@@ -1519,33 +1687,54 @@ void GeneralEvaluation::TempResult::print()
 void GeneralEvaluation::TempResultSet::release()
 {
 	for (int i = 0; i < (int)this->results.size(); i++)
-		results[i].release();
+		this->results[i].release();
 }
 
-int GeneralEvaluation::TempResultSet::findCompatibleResult(Varset &_varset)
+int GeneralEvaluation::TempResultSet::findCompatibleResult(Varset &_id_varset, Varset &_str_varset)
 {
 	for (int i = 0; i < (int)this->results.size(); i++)
-		if (results[i].var == _varset)
+		if (this->results[i].id_varset == _id_varset && this->results[i].str_varset == _str_varset)
 			return i;
 
-	int p = (int)this->results.size();
 	this->results.push_back(TempResult());
-	this->results[p].var = _varset;
+	this->results.back().id_varset = _id_varset;
+	this->results.back().str_varset = _str_varset;
 
-	return p;
+	return (int)this->results.size() - 1;
 }
 
-
-void GeneralEvaluation::TempResultSet::doJoin(TempResultSet &x, TempResultSet &r)
+void GeneralEvaluation::TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
 {
 	long tv_begin = Util::get_cur_time();
+
+	if (this->results.empty() || x.results.empty())
+	{
+		this->doUnion(x, r);
+		return;
+	}
+
+	Varset this_str_varset, x_str_varset;
+
+	for (int i = 0; i < (int)this->results.size(); i++)
+		this_str_varset += this->results[i].str_varset;
+	for (int i = 0; i < (int)x.results.size(); i++)
+		x_str_varset += x.results[i].str_varset;
+
+	for (int i = 0; i < (int)this->results.size(); i++)
+		if (this->results[i].id_varset.hasCommonVar(x_str_varset))
+			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, stringindex, entity_literal_varset);
+	for (int i = 0; i < (int)x.results.size(); i++)
+		if (x.results[i].id_varset.hasCommonVar(this_str_varset))
+			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, stringindex, entity_literal_varset);
 
 	for (int i = 0; i < (int)this->results.size(); i++)
 		for (int j = 0; j < (int)x.results.size(); j++)
 		{
-			Varset var_r = this->results[i].var + x.results[j].var;
-			int pos_r = r.findCompatibleResult(var_r);
-			this->results[i].doJoin(x.results[j], r.results[pos_r]);
+			Varset id_varset = this->results[i].id_varset + x.results[j].id_varset;
+			Varset str_varset = this->results[i].str_varset + x.results[j].str_varset;
+
+			int pos = r.findCompatibleResult(id_varset, str_varset);
+			this->results[i].doJoin(x.results[j], r.results[pos]);
 		}
 
 	long tv_end = Util::get_cur_time();
@@ -1558,15 +1747,13 @@ void GeneralEvaluation::TempResultSet::doUnion(TempResultSet &x, TempResultSet &
 
 	for (int i = 0; i < (int)this->results.size(); i++)
 	{
-		Varset &var_r = this->results[i].var;
-		int pos = r.findCompatibleResult(var_r);
+		int pos = r.findCompatibleResult(this->results[i].id_varset, this->results[i].str_varset);
 		this->results[i].doUnion(r.results[pos]);
 	}
 
 	for (int i = 0; i < (int)x.results.size(); i++)
 	{
-		Varset &var_r = x.results[i].var;
-		int pos = r.findCompatibleResult(var_r);
+		int pos = r.findCompatibleResult(x.results[i].id_varset, x.results[i].str_varset);
 		x.results[i].doUnion(r.results[pos]);
 	}
 
@@ -1574,20 +1761,43 @@ void GeneralEvaluation::TempResultSet::doUnion(TempResultSet &x, TempResultSet &
 	printf("after doUnion, used %ld ms.\n", tv_end - tv_begin);
 }
 
-void GeneralEvaluation::TempResultSet::doOptional(TempResultSet &x, TempResultSet &r)
+void GeneralEvaluation::TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
 {
 	long tv_begin = Util::get_cur_time();
 
+	if (this->results.empty() || x.results.empty())
+	{
+		this->doUnion(x, r);
+		return;
+	}
+
+	Varset this_str_varset, x_str_varset;
+
+	for (int i = 0; i < (int)this->results.size(); i++)
+		this_str_varset += this->results[i].str_varset;
+	for (int i = 0; i < (int)x.results.size(); i++)
+		x_str_varset += x.results[i].str_varset;
+
+	for (int i = 0; i < (int)this->results.size(); i++)
+		if (this->results[i].id_varset.hasCommonVar(x_str_varset))
+			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, stringindex, entity_literal_varset);
+	for (int i = 0; i < (int)x.results.size(); i++)
+		if (x.results[i].id_varset.hasCommonVar(this_str_varset))
+			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, stringindex, entity_literal_varset);
+
 	for (int i = 0; i < (int)this->results.size(); i++)
 	{
-		vector <bool> binding((int)this->results[i].res.size(), false);
+		vector<bool> binding((int)this->results[i].result.size(), false);
+
+		int noadd_pos = r.findCompatibleResult(this->results[i].id_varset, this->results[i].str_varset);
+
 		for (int j = 0; j < (int)x.results.size(); j++)
 		{
-			Varset &var_rn = this->results[i].var;
-			Varset var_ra = this->results[i].var + x.results[j].var;
-			int pos_rn = r.findCompatibleResult(var_rn);
-			int pos_ra = r.findCompatibleResult(var_ra);
-			this->results[i].doOptional(binding, x.results[j], r.results[pos_rn], r.results[pos_ra], j + 1 == (int)x.results.size());
+			Varset add_id_varset = this->results[i].id_varset + x.results[j].id_varset;
+			Varset add_str_varset = this->results[i].str_varset + x.results[j].str_varset;
+
+			int add_pos = r.findCompatibleResult(add_id_varset, add_str_varset);
+			this->results[i].doOptional(binding, x.results[j], r.results[noadd_pos], r.results[add_pos], j + 1 == (int)x.results.size());
 		}
 	}
 
@@ -1595,36 +1805,59 @@ void GeneralEvaluation::TempResultSet::doOptional(TempResultSet &x, TempResultSe
 	printf("after doOptional, used %ld ms.\n", tv_end - tv_begin);
 }
 
-void GeneralEvaluation::TempResultSet::doMinus(TempResultSet &x, TempResultSet &r)
+void GeneralEvaluation::TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
 {
 	long tv_begin = Util::get_cur_time();
 
+	if (x.results.empty())
+	{
+		this->doUnion(x, r);
+		return;
+	}
+
+	Varset this_str_varset, x_str_varset;
+
+	for (int i = 0; i < (int)this->results.size(); i++)
+		this_str_varset += this->results[i].str_varset;
+	for (int i = 0; i < (int)x.results.size(); i++)
+		x_str_varset += x.results[i].str_varset;
+
+	for (int i = 0; i < (int)this->results.size(); i++)
+		if (this->results[i].id_varset.hasCommonVar(x_str_varset))
+			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, stringindex, entity_literal_varset);
+	for (int i = 0; i < (int)x.results.size(); i++)
+		if (x.results[i].id_varset.hasCommonVar(this_str_varset))
+			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, stringindex, entity_literal_varset);
+
 	for (int i = 0; i < (int)this->results.size(); i++)
 	{
-		vector <TempResult> tr;
+		vector<TempResult> temp;
+
 		for (int j = 0; j < (int)x.results.size(); j++)
 		{
 			if (j == 0 && j + 1 == (int)x.results.size())
 			{
-				int pos_r = r.findCompatibleResult(this->results[i].var);
-				this->results[i].doMinus(x.results[j], r.results[pos_r]);
+				int pos = r.findCompatibleResult(this->results[i].id_varset, this->results[i].str_varset);
+				this->results[i].doMinus(x.results[j], r.results[pos]);
 			}
 			else if (j == 0)
 			{
-				tr.push_back(TempResult());
-				tr[0].var = this->results[i].var;
-				this->results[i].doMinus(x.results[j], tr[0]);
+				temp.push_back(TempResult());
+				temp[0].id_varset = this->results[i].id_varset;
+				temp[0].str_varset = this->results[i].str_varset;
+				this->results[i].doMinus(x.results[j], temp[0]);
 			}
 			else if (j + 1 == (int)x.results.size())
 			{
-				int pos_r = r.findCompatibleResult(this->results[i].var);
-				tr[j - 1].doMinus(x.results[j], r.results[pos_r]);
+				int pos = r.findCompatibleResult(this->results[i].id_varset, this->results[i].str_varset);
+				temp[j - 1].doMinus(x.results[j], r.results[pos]);
 			}
 			else
 			{
-				tr.push_back(TempResult());
-				tr[j].var = this->results[i].var;
-				tr[j - 1].doMinus(x.results[j], tr[j]);
+				temp.push_back(TempResult());
+				temp[j].id_varset = this->results[i].id_varset;
+				temp[j].str_varset = this->results[i].str_varset;
+				temp[j - 1].doMinus(x.results[j], temp[j]);
 			}
 		}
 	}
@@ -1633,926 +1866,1059 @@ void GeneralEvaluation::TempResultSet::doMinus(TempResultSet &x, TempResultSet &
 	printf("after doMinus, used %ld ms.\n", tv_end - tv_begin);
 }
 
-void GeneralEvaluation::TempResultSet::doDistinct(Varset &projection, TempResultSet &r)
-{
-	long tv_begin = Util::get_cur_time();
-
-	TempResultSet *temp = new TempResultSet();
-	temp->findCompatibleResult(projection);
-	r.findCompatibleResult(projection);
-
-	int projection_varnum = (int)projection.varset.size();
-	for (int i = 0; i < (int)this->results.size(); i++)
-	{
-		vector<int> projection2this = projection.mapTo(this->results[i].var);
-		for (int j = 0; j < (int)this->results[i].res.size(); j++)
-		{
-			int *a = new int[projection_varnum];
-			for (int k = 0; k < projection_varnum; k++)
-				if (projection2this[k] == -1)	a[k] = -1;
-				else	a[k] = this->results[i].res[j][projection2this[k]];
-			temp->results[0].res.push_back(a);
-		}
-	}
-
-	temp->results[0].doDistinct(r.results[0]);
-
-	temp->release();
-	delete temp;
-
-	long tv_end = Util::get_cur_time();
-	printf("after doDistinct, used %ld ms.\n", tv_end - tv_begin);
-}
-
-void GeneralEvaluation::TempResultSet::doFilter(QueryTree::GroupPattern::FilterTreeNode &filter, FilterExistsGroupPatternResultSetRecord &filter_exists_grouppattern_resultset_record, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
+void GeneralEvaluation::TempResultSet::doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
 {
 	long tv_begin = Util::get_cur_time();
 
 	for (int i = 0; i < (int)this->results.size(); i++)
 	{
-		filter_exists_grouppattern_resultset_record.common.clear();
-		filter_exists_grouppattern_resultset_record.common2resultset.clear();
-
-		Varset &var_r = this->results[i].var;
-
-		for (int j = 0; j < (int)filter_exists_grouppattern_resultset_record.resultset.size(); j++)
-		{
-			filter_exists_grouppattern_resultset_record.common.push_back(vector<Varset>());
-			filter_exists_grouppattern_resultset_record.common2resultset.push_back(vector< pair< vector<int>, vector<int> > >());
-
-			for (int k = 0; k < (int)filter_exists_grouppattern_resultset_record.resultset[j]->results.size(); k++)
-			{
-				TempResult &filter_result = filter_exists_grouppattern_resultset_record.resultset[j]->results[k];
-
-				Varset common = var_r * filter_result.var;
-				filter_exists_grouppattern_resultset_record.common[j].push_back(common);
-				vector<int> common2filter_result = common.mapTo(filter_result.var);
-				filter_exists_grouppattern_resultset_record.common2resultset[j].push_back(make_pair(common2filter_result, common.mapTo(var_r)));
-
-				if (common.varset.size() > 0 && filter_result.res.size() > 0)
-					filter_result.sort(0, filter_result.res.size() - 1, common2filter_result);
-			}
-		}
-
-		int pos_r = r.findCompatibleResult(var_r);
-		this->results[i].doFilter(filter, filter_exists_grouppattern_resultset_record, r.results[pos_r], stringindex, entity_literal_varset);
+		int pos = r.findCompatibleResult(this->results[i].id_varset, this->results[i].str_varset);
+		this->results[i].doFilter(filter, r.results[pos], stringindex, entity_literal_varset);
 	}
 
 	long tv_end = Util::get_cur_time();
 	printf("after doFilter, used %ld ms.\n", tv_end - tv_begin);
 }
 
+void GeneralEvaluation::TempResultSet::doProjection1(Varset &proj, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
+{
+	long tv_begin = Util::get_cur_time();
+
+	Varset this_str_varset;
+
+	for (int i = 0; i < (int)this->results.size(); i++)
+		this_str_varset += this->results[i].str_varset;
+
+	for (int i = 0; i < (int)this->results.size(); i++)
+		if (this->results[i].id_varset.hasCommonVar(this_str_varset * proj))
+			this->results[i].convertId2Str(this->results[i].id_varset * this_str_varset * proj, stringindex, entity_literal_varset);
+
+	Varset r_id_varset, r_str_varset;
+
+	for (int i = 0; i < (int)this->results.size(); i++)
+		r_str_varset += this->results[i].str_varset * proj;
+	r_id_varset = proj - r_str_varset;
+
+	if (!r.results.empty())
+		return;
+
+	r.findCompatibleResult(r_id_varset, r_str_varset);
+
+	int r_id_cols = r_id_varset.getVarsetSize();
+	int r_str_cols = r_str_varset.getVarsetSize();
+
+	for (int i = 0; i < (int)this->results.size(); i++)
+		if (this->results[i].id_varset.hasCommonVar(r_id_varset) || this->results[i].str_varset.hasCommonVar(r_str_varset))
+		{
+			vector<int> r2this_id_pos = r_id_varset.mapTo(this->results[i].id_varset);
+			vector<int> r2this_str_pos = r_str_varset.mapTo(this->results[i].str_varset);
+
+			for (int j = 0; j < (int)this->results[i].result.size(); j++)
+			{
+				r.results[0].result.push_back(TempResult::ResultPair());
+
+				if (r_id_cols > 0)
+				{
+					r.results[0].result.back().id = new unsigned [r_id_cols];
+					unsigned *v = r.results[0].result.back().id;
+
+					for (int k = 0; k < r_id_cols; k++)
+						if (r2this_id_pos[k] == -1)
+							v[k] = INVALID;
+						else
+							v[k] = this->results[i].result[j].id[r2this_id_pos[k]];
+				}
+
+				if (r_str_cols > 0)
+				{
+					r.results[0].result.back().str.resize(r_str_cols);
+					vector<string> &v = r.results[0].result.back().str;
+
+					for (int k = 0; k < r_str_cols; k++)
+						if (r2this_str_pos[k] != -1)
+							v[k] = this->results[i].result[j].str[r2this_str_pos[k]];
+				}
+			}
+		}
+
+	long tv_end = Util::get_cur_time();
+	printf("after doProjection, used %ld ms.\n", tv_end - tv_begin);
+}
+
+void GeneralEvaluation::TempResultSet::doDistinct1(TempResultSet &r)
+{
+	long tv_begin = Util::get_cur_time();
+
+	if ((int)this->results.size() != 1)
+		return;
+
+	TempResult &this_results0 = this->results[0];
+
+	if (!r.results.empty())
+		return;
+
+	r.findCompatibleResult(this_results0.id_varset, this_results0.str_varset);
+	TempResult &r_results0 = r.results[0];
+
+	int this_id_cols = this_results0.id_varset.getVarsetSize();
+
+	int r_id_cols = r_results0.id_varset.getVarsetSize();
+	vector<int> this2r_id_pos = this_results0.id_varset.mapTo(r_results0.id_varset);
+
+	int this_str_cols = this_results0.str_varset.getVarsetSize();
+
+	int r_str_cols = r_results0.str_varset.getVarsetSize();
+	vector<int> this2r_str_pos = this_results0.str_varset.mapTo(r_results0.str_varset);
+
+	if (!this_results0.result.empty())
+	{
+		vector<int> r2this = r_results0.getAllVarset().mapTo(this_results0.getAllVarset());
+		this_results0.sort(0, (int)this_results0.result.size() - 1, r2this);
+
+		int this_result0_id_cols = this_results0.id_varset.getVarsetSize();
+		for (int i = 0; i < (int)this_results0.result.size(); i++)
+			if (i == 0 || TempResult::compareRow(this_results0.result[i], this_result0_id_cols, r2this, this_results0.result[i - 1], this_result0_id_cols, r2this) != 0)
+			{
+				r_results0.result.push_back(TempResult::ResultPair());
+
+				if (r_id_cols > 0)
+				{
+					r_results0.result.back().id = new unsigned [r_id_cols];
+					unsigned *v = r_results0.result.back().id;
+
+					for (int k = 0; k < this_id_cols; k++)
+						v[this2r_id_pos[k]] = this_results0.result[i].id[k];
+				}
+
+				if (r_str_cols > 0)
+				{
+					r_results0.result.back().str.resize(r_str_cols);
+					vector<string> &v = r_results0.result.back().str;
+
+					for (int k = 0; k < this_str_cols; k++)
+						v[this2r_str_pos[k]] = this_results0.result[i].str[k];
+				}
+			}
+	}
+
+	long tv_end = Util::get_cur_time();
+	printf("after doDistinct, used %ld ms.\n", tv_end - tv_begin);
+}
 
 void GeneralEvaluation::TempResultSet::print()
 {
-	printf("total temp result : %d\n", (int)this->results.size());
+	printf("total temp result: %d\n", (int)this->results.size());
 	for (int i = 0; i < (int)this->results.size(); i++)
-	{
-		printf("temp result no.%d\n", i);
-		this->results[i].print();
-	}
+		this->results[i].print(i);
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
 
-void GeneralEvaluation::generateEvaluationPlan(QueryTree::GroupPattern &grouppattern)
+GeneralEvaluation::TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupPattern &grouppattern)
 {
-	if ((int)grouppattern.patterns.size() == 0 && (int)grouppattern.unions.size() == 0 && (int)grouppattern.optionals.size() == 0)
-	{
-		TempResultSet *temp = new TempResultSet();
-		temp->results.push_back(TempResult());
-		this->semantic_evaluation_plan.push_back(EvaluationUnit('r', temp));
+	TempResultSet *result = new TempResultSet();
 
-		return;
-	}
+	grouppattern.initPatternBlockid();
 
-	int current_pattern = 0, current_unions = 0;
-	Varset current_result_varset;
-
-	grouppattern.addOneOptionalOrMinus(' ');	//for convenience
-
-	for (int i = 0; i < (int)grouppattern.optionals.size(); i++)
-	{
-		if (current_pattern <= grouppattern.optionals[i].lastpattern || current_unions <= grouppattern.optionals[i].lastunions)
+	for (int i = 0; i < (int)grouppattern.sub_grouppattern.size(); i++)
+		if (grouppattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 		{
-			vector <pair<char, int> > node_info;
-			vector <Varset> node_varset;
-			vector <vector<int> > edge;
+			int st = i;
+			while (st > 0 && (grouppattern.sub_grouppattern[st - 1].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type || grouppattern.sub_grouppattern[st - 1].type == QueryTree::GroupPattern::SubGroupPattern::Union_type))
+				st--;
 
-			if ((int)current_result_varset.varset.size() > 0)
-			{
-				node_info.push_back(make_pair('r', -1));
-				node_varset.push_back(current_result_varset);
-			}
-
-			while (current_pattern <= grouppattern.optionals[i].lastpattern)
-			{
-				int current_blockid = grouppattern.pattern_blockid[current_pattern];
-				if (current_blockid != -1)
+			for (int j = st; j < i; j++)
+				if (grouppattern.sub_grouppattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 				{
-					bool found = false;
-					for (int i = 0; i < (int)node_info.size(); i++)
-						if (node_info[i].second == current_blockid)
+					if (grouppattern.sub_grouppattern[i].pattern.subject_object_varset.hasCommonVar(grouppattern.sub_grouppattern[j].pattern.subject_object_varset))
+						grouppattern.mergePatternBlockID(i, j);
+				}
+
+			if (i + 1 == (int)grouppattern.sub_grouppattern.size() ||
+				(grouppattern.sub_grouppattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Pattern_type && grouppattern.sub_grouppattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Union_type))
+			{
+				SPARQLquery sparql_query;
+				vector<vector<string> > encode_varset;
+
+				for (int j = st; j <= i; j++)
+					if (grouppattern.sub_grouppattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+						if (!grouppattern.sub_grouppattern[j].pattern.varset.empty())
 						{
-							found = true;
-							break;
+							if (grouppattern.getRootPatternBlockID(j) == j)		//root node
+							{
+								sparql_query.addBasicQuery();
+								Varset occur;
+
+								for (int k = st; k <= i; k++)
+									if (grouppattern.sub_grouppattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+										if (grouppattern.getRootPatternBlockID(k) == j)
+										{
+											sparql_query.addTriple(Triple(grouppattern.sub_grouppattern[k].pattern.subject.value,
+																		  grouppattern.sub_grouppattern[k].pattern.predicate.value,
+																		  grouppattern.sub_grouppattern[k].pattern.object.value));
+
+											occur += grouppattern.sub_grouppattern[k].pattern.varset;
+										}
+
+								encode_varset.push_back(occur.vars);
+
+								printf("select vars: ");
+								occur.print();
+
+								printf("triple patterns: \n");
+								for (int k = st; k <= i; k++)
+									if (grouppattern.sub_grouppattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+										if (grouppattern.getRootPatternBlockID(k) == j)
+										{
+											printf("%s\t%s\t%s\n", 	grouppattern.sub_grouppattern[k].pattern.subject.value.c_str(),
+																	grouppattern.sub_grouppattern[k].pattern.predicate.value.c_str(),
+																	grouppattern.sub_grouppattern[k].pattern.object.value.c_str()
+											);
+										}
+							}
 						}
-					if (!found)
+
+				long tv_begin = Util::get_cur_time();
+				sparql_query.encodeQuery(this->kvstore, encode_varset);
+				long tv_encode = Util::get_cur_time();
+				printf("after Encode, used %ld ms.\n", tv_encode - tv_begin);
+
+				this->strategy.handle(sparql_query);
+				long tv_handle = Util::get_cur_time();
+				printf("after Handle, used %ld ms.\n", tv_handle - tv_encode);
+
+				//collect and join the result of each BasicQuery
+				for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
+				{
+					TempResultSet *temp = new TempResultSet();
+					temp->results.push_back(TempResult());
+
+					temp->results[0].id_varset = Varset(encode_varset[j]);
+					int varnum = (int)encode_varset[j].size();
+
+					vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
+					int basicquery_result_num = (int)basicquery_result.size();
+
+					temp->results[0].result.reserve(basicquery_result_num);
+					for (int k = 0; k < basicquery_result_num; k++)
 					{
-						node_info.push_back(make_pair('b', current_blockid));
-						node_varset.push_back(this->sparql_query_varset[current_blockid]);
+						unsigned *v = new unsigned [varnum];
+						memcpy(v, basicquery_result[k], sizeof(int) * varnum);
+						temp->results[0].result.push_back(TempResult::ResultPair());
+						temp->results[0].result.back().id = v;
+					}
+
+					if (result->results.empty())
+					{
+						delete result;
+						result = temp;
+					}
+					else
+					{
+						TempResultSet *new_result = new TempResultSet();
+						result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset);
+
+						temp->release();
+						result->release();
+						delete temp;
+						delete result;
+
+						result = new_result;
 					}
 				}
-				current_pattern ++;
 			}
+		}
+		else if (grouppattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
+		{
+			TempResultSet *sub_result = new TempResultSet();
 
-			while (current_unions <= grouppattern.optionals[i].lastunions)
+			for (int j = 0; j < (int)grouppattern.sub_grouppattern[i].unions.size(); j++)
 			{
-				node_info.push_back(make_pair('u', current_unions));
-				Varset varset = grouppattern.unions[current_unions].grouppattern_vec[0].grouppattern_resultset_minimal_varset;
-				for (int j = 1; j < (int)grouppattern.unions[current_unions].grouppattern_vec.size(); j++)
-					varset = varset * grouppattern.unions[current_unions].grouppattern_vec[j].grouppattern_resultset_minimal_varset;
-				node_varset.push_back(varset);
-				current_unions ++;
-			}
+				TempResultSet *temp = semanticBasedQueryEvaluation(grouppattern.sub_grouppattern[i].unions[j]);
 
-			for (int i = 0; i < (int)node_varset.size(); i++)
-			{
-				edge.push_back(vector<int>());
-				for (int j = 0; j < (int)node_varset.size(); j++)
-					if (i != j && node_varset[i].hasCommonVar(node_varset[j]))
-						edge[i].push_back(j);
-			}
-
-			for (int i = 0; i < (int)node_info.size(); i++)
-				if (node_info[i].first != 'v')					//visited
+				if (sub_result->results.empty())
 				{
-					dfsJoinableResultGraph(i, node_info, edge, grouppattern);
-					if (i != 0)
-						this->semantic_evaluation_plan.push_back(EvaluationUnit('j'));
+					delete sub_result;
+					sub_result = temp;
 				}
-
-			for (int i = 0; i < (int)node_varset.size(); i++)
-				current_result_varset = current_result_varset + node_varset[i];
-		}
-
-		if (i + 1 != (int)grouppattern.optionals.size())
-		{
-			generateEvaluationPlan(grouppattern.optionals[i].grouppattern);
-			if (i != 0 || grouppattern.optionals[i].lastpattern != -1 || grouppattern.optionals[i].lastunions != -1)
-				this->semantic_evaluation_plan.push_back(EvaluationUnit(grouppattern.optionals[i].type));
-		}
-	}
-
-	grouppattern.optionals.pop_back();
-
-	for (int i = 0; i < (int)grouppattern.filters.size(); i++)
-	{
-		for (int j = 0; j < (int)grouppattern.filter_exists_grouppatterns[i].size(); j++)
-			generateEvaluationPlan(grouppattern.filter_exists_grouppatterns[i][j]);
-
-		this->semantic_evaluation_plan.push_back(EvaluationUnit('f', &grouppattern.filters[i]));
-	}
-}
-
-
-void GeneralEvaluation::dfsJoinableResultGraph(int x, vector < pair<char, int> > &node_info, vector < vector<int> > &edge, QueryTree::GroupPattern &grouppattern)
-{
-	if (node_info[x].first == 'b')
-	{
-		int blockid = node_info[x].second;
-
-		TempResultSet *temp = new TempResultSet();
-		temp->results.push_back(TempResult());
-		temp->results[0].var = this->sparql_query_varset[blockid];
-
-		int varnum = (int)temp->results[0].var.varset.size();
-
-		vector<int*> &basicquery_result =this->sparql_query.getBasicQuery(blockid).getResultList();
-		int basicquery_result_num = (int)basicquery_result.size();
-
-		temp->results[0].res.reserve(basicquery_result_num);
-		for (int i = 0; i < basicquery_result_num; i++)
-		{
-			int *result_vec = new int [varnum];
-			memcpy(result_vec, basicquery_result[i], sizeof(int) * varnum);
-			temp->results[0].res.push_back(result_vec);
-		}
-		this->semantic_evaluation_plan.push_back(EvaluationUnit('r', temp));
-	}
-	if (node_info[x].first == 'u')
-	{
-		int unionsid = node_info[x].second;
-		for (int i = 0; i < (int)grouppattern.unions[unionsid].grouppattern_vec.size(); i++)
-		{
-			generateEvaluationPlan(grouppattern.unions[unionsid].grouppattern_vec[i]);
-			if (i > 0)	this->semantic_evaluation_plan.push_back(EvaluationUnit('u'));
-		}
-	}
-
-	node_info[x].first = 'v';
-
-	for (int i = 0; i < (int)edge[x].size(); i++)
-	{
-		int y = edge[x][i];
-		if (node_info[y].first != 'v')
-		{
-			dfsJoinableResultGraph(y, node_info, edge, grouppattern);
-			this->semantic_evaluation_plan.push_back(EvaluationUnit('j'));
-		}
-	}
-}
-
-int GeneralEvaluation::countFilterExistsGroupPattern(QueryTree::GroupPattern::FilterTreeNode &filter)
-{
-	int count = 0;
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTreeNode::Builtin_exists_type)
-		count = 1;
-	for (int i = 0; i < (int)filter.child.size(); i++)
-		if (filter.child[i].node_type == QueryTree::GroupPattern::FilterTreeNode::FilterTreeChild::Tree_type)
-			count += countFilterExistsGroupPattern(filter.child[i].node);
-	return count;
-}
-
-void GeneralEvaluation::doEvaluationPlan()
-{
-	for (int i = 0; i < (int)this->semantic_evaluation_plan.size(); i++)
-	{
-		if (semantic_evaluation_plan[i].getType() == 'r')
-			this->semantic_evaluation_result_stack.push((TempResultSet*)semantic_evaluation_plan[i].getPointer());
-		if (semantic_evaluation_plan[i].getType() == 'j' || semantic_evaluation_plan[i].getType() == 'o' || semantic_evaluation_plan[i].getType() == 'm' || semantic_evaluation_plan[i].getType() == 'u')
-		{
-			TempResultSet *b = semantic_evaluation_result_stack.top();
-			semantic_evaluation_result_stack.pop();
-			TempResultSet *a = semantic_evaluation_result_stack.top();
-			semantic_evaluation_result_stack.pop();
-			TempResultSet *r = new TempResultSet();
-
-			if (semantic_evaluation_plan[i].getType() == 'j')
-				a->doJoin(*b, *r);
-			if (semantic_evaluation_plan[i].getType() == 'o')
-				a->doOptional(*b, *r);
-			if (semantic_evaluation_plan[i].getType() == 'm')
-				a->doMinus(*b, *r);
-			if (semantic_evaluation_plan[i].getType() == 'u')
-				a->doUnion(*b, *r);
-
-			a->release();
-			b->release();
-			delete a;
-			delete b;
-
-			semantic_evaluation_result_stack.push(r);
-		}
-
-		if (semantic_evaluation_plan[i].getType() == 'f')
-		{
-			int filter_exists_grouppattern_size = countFilterExistsGroupPattern(*(QueryTree::GroupPattern::FilterTreeNode *)semantic_evaluation_plan[i].getPointer());
-
-			if (filter_exists_grouppattern_size > 0)
-				for (int i = 0; i < filter_exists_grouppattern_size; i++)
+				else
 				{
-					this->filter_exists_grouppattern_resultset_record.resultset.push_back(semantic_evaluation_result_stack.top());
-					semantic_evaluation_result_stack.pop();
+					TempResultSet *new_result = new TempResultSet();
+					sub_result->doUnion(*temp, *new_result);
+
+					temp->release();
+					sub_result->release();
+					delete temp;
+					delete sub_result;
+
+					sub_result = new_result;
 				}
-
-			TempResultSet *a = semantic_evaluation_result_stack.top();
-			semantic_evaluation_result_stack.pop();
-
-			TempResultSet *r = new TempResultSet();
-
-			a->doFilter(*(QueryTree::GroupPattern::FilterTreeNode*)semantic_evaluation_plan[i].getPointer(), this->filter_exists_grouppattern_resultset_record, *r, this->stringindex, this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset);
-
-			if (filter_exists_grouppattern_size > 0)
-			{
-				for (int i = 0; i < filter_exists_grouppattern_size; i++)
-					this->filter_exists_grouppattern_resultset_record.resultset[i]->release();
-				this->filter_exists_grouppattern_resultset_record.resultset.clear();
 			}
 
-			a->release();
-			delete a;
+			if (result->results.empty())
+			{
+				delete result;
+				result = sub_result;
+			}
+			else
+			{
+				TempResultSet *new_result = new TempResultSet();
+				result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset);
 
-			semantic_evaluation_result_stack.push(r);
+				sub_result->release();
+				result->release();
+				delete sub_result;
+				delete result;
+
+				result = new_result;
+			}
 		}
-	}
+		else if (grouppattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type || grouppattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
+		{
+			TempResultSet *temp = semanticBasedQueryEvaluation(grouppattern.sub_grouppattern[i].optional);
+
+			{
+				TempResultSet *new_result = new TempResultSet();
+
+				if (grouppattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+					result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset);
+				else if (grouppattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
+					result->doMinus(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset);
+
+				temp->release();
+				result->release();
+				delete temp;
+				delete result;
+
+				result = new_result;
+			}
+		}
+		else if (grouppattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+		{
+			TempResultSet *new_result = new TempResultSet();
+			result->doFilter(grouppattern.sub_grouppattern[i].filter.root, *new_result, this->stringindex, grouppattern.grouppattern_subject_object_maximal_varset);
+
+			result->release();
+			delete result;
+
+			result = new_result;
+		}
+		else if (grouppattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Bind_type)
+		{
+			TempResultSet *temp = new TempResultSet();
+			temp->results.push_back(TempResult());
+
+			temp->results[0].str_varset = grouppattern.sub_grouppattern[i].bind.varset;
+
+			temp->results[0].result.push_back(TempResult::ResultPair());
+			temp->results[0].result[0].str.push_back(grouppattern.sub_grouppattern[i].bind.str);
+
+			{
+				TempResultSet *new_result = new TempResultSet();
+				result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset);
+
+				temp->release();
+				result->release();
+				delete temp;
+				delete result;
+
+				result = new_result;
+			}
+		}
+
+	return result;
 }
 
 bool GeneralEvaluation::expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &grouppattern, deque<QueryTree::GroupPattern> &queue)
 {
-	if (grouppattern.unions.size() > 0)
-	{
-		QueryTree::GroupPattern copy = grouppattern;
+	int first_union_pos = -1;
 
-		for (int union_id = 0; union_id < (int)copy.unions[0].grouppattern_vec.size(); union_id++)
+	for (int i = 0; i < (int)grouppattern.sub_grouppattern.size(); i++)
+		if (grouppattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
 		{
-			grouppattern = QueryTree::GroupPattern();
+			first_union_pos = i;
+			break;
+		}
 
-			int lastpattern = -1, lastunions = -1, lastoptional = -1;
-			while (lastpattern + 1 < (int)copy.patterns.size() || lastunions + 1 < (int)copy.unions.size() || lastoptional + 1 < (int)copy.optionals.size())
+	if (first_union_pos == -1)
+		return false;
+
+	for (int i = 0; i < (int)grouppattern.sub_grouppattern[first_union_pos].unions.size(); i++)
+	{
+		QueryTree::GroupPattern new_grouppattern;
+
+		for (int j = 0; j < first_union_pos; j++)
+			new_grouppattern.sub_grouppattern.push_back(grouppattern.sub_grouppattern[j]);
+
+		for (int j = 0; j < (int)grouppattern.sub_grouppattern[first_union_pos].unions[i].sub_grouppattern.size(); j++)
+			new_grouppattern.sub_grouppattern.push_back(grouppattern.sub_grouppattern[first_union_pos].unions[i].sub_grouppattern[j]);
+
+		for (int j = first_union_pos + 1; j < (int)grouppattern.sub_grouppattern.size(); j++)
+			new_grouppattern.sub_grouppattern.push_back(grouppattern.sub_grouppattern[j]);
+
+		queue.push_back(new_grouppattern);
+	}
+
+	return true;
+}
+
+GeneralEvaluation::TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
+{
+	deque<QueryTree::GroupPattern> queue;
+	queue.push_back(this->rewriting_evaluation_stack[dep].grouppattern);
+	vector<QueryTree::GroupPattern> grouppattern_union;
+
+	while (!queue.empty())
+	{
+		if (!this->expanseFirstOuterUnionGroupPattern(queue.front(), queue))
+			grouppattern_union.push_back(queue.front());
+		queue.pop_front();
+	}
+
+	TempResultSet *result = new TempResultSet();
+
+	for (int i = 0; i < (int)grouppattern_union.size(); i++)
+	{
+		this->rewriting_evaluation_stack[dep].grouppattern = grouppattern_union[i];
+		QueryTree::GroupPattern *grouppattern = &this->rewriting_evaluation_stack[dep].grouppattern;
+		grouppattern->getVarset();
+
+		for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
+		grouppattern->print(dep);
+		for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
+
+		TempResultSet *sub_result = new TempResultSet();
+
+		QueryTree::GroupPattern triplepattern;
+		for (int j = 0; j < (int)grouppattern->sub_grouppattern.size(); j++)
+			if (grouppattern->sub_grouppattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 			{
-				if (lastoptional + 1 < (int)copy.optionals.size() && copy.optionals[lastoptional + 1].lastpattern == lastpattern && copy.optionals[lastoptional + 1].lastunions == lastunions)
-				//optional
-				{
-					grouppattern.addOneOptionalOrMinus('o');
-					grouppattern.getLastOptionalOrMinus() = copy.optionals[lastoptional + 1].grouppattern;
-					lastoptional++;
-				}
-				else if (lastunions + 1 < (int)copy.unions.size() && copy.unions[lastunions + 1].lastpattern == lastpattern)
-				//union
-				{
-					//first union
-					if (lastunions == -1)
-					{
-						QueryTree::GroupPattern &inner_grouppattern = copy.unions[0].grouppattern_vec[union_id];
+				triplepattern.addOnePattern(QueryTree::GroupPattern::Pattern(
+					QueryTree::GroupPattern::Pattern::Element(grouppattern->sub_grouppattern[j].pattern.subject.value),
+					QueryTree::GroupPattern::Pattern::Element(grouppattern->sub_grouppattern[j].pattern.predicate.value),
+					QueryTree::GroupPattern::Pattern::Element(grouppattern->sub_grouppattern[j].pattern.object.value)
+				));
+			}
+		triplepattern.getVarset();
 
-						int inner_lastpattern = -1, inner_lastunions = -1, inner_lastoptional = -1;
-						while (inner_lastpattern + 1 < (int)inner_grouppattern.patterns.size() || inner_lastunions + 1 < (int)inner_grouppattern.unions.size() || inner_lastoptional + 1 < (int)inner_grouppattern.optionals.size())
-						{
-							if (inner_lastoptional + 1 < (int)inner_grouppattern.optionals.size() && inner_grouppattern.optionals[inner_lastoptional + 1].lastpattern == inner_lastpattern && inner_grouppattern.optionals[inner_lastoptional + 1].lastunions == inner_lastunions)
-							//inner optional
+		//get useful varset
+		Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset();
+		if (!this->query_tree.checkProjectionAsterisk())
+		{
+			for (int j = 0; j < dep; j++)
+			{
+				QueryTree::GroupPattern &parrent_grouppattern = this->rewriting_evaluation_stack[j].grouppattern;
+
+				for (int k = 0; k < (int)parrent_grouppattern.sub_grouppattern.size(); k++)
+				{
+					if (parrent_grouppattern.sub_grouppattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+						useful += parrent_grouppattern.sub_grouppattern[k].pattern.varset;
+					else if (parrent_grouppattern.sub_grouppattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+						useful += parrent_grouppattern.sub_grouppattern[k].filter.varset;
+				}
+			}
+
+			for (int j = 0; j < (int)grouppattern->sub_grouppattern.size(); j++)
+			{
+				if (grouppattern->sub_grouppattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+					useful += grouppattern->sub_grouppattern[j].optional.grouppattern_resultset_maximal_varset;
+				else if (grouppattern->sub_grouppattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+					useful += grouppattern->sub_grouppattern[j].filter.varset;
+			}
+		}
+
+		this->rewriting_evaluation_stack[dep].sparql_query = new SPARQLquery();
+		this->rewriting_evaluation_stack[dep].encode_varset.clear();
+
+		//get connected block
+		triplepattern.initPatternBlockid();
+
+		for (int j = 0; j < (int)triplepattern.sub_grouppattern.size(); j++)
+			if (triplepattern.sub_grouppattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+			{
+				for (int k = 0; k < j; k++)
+					if (triplepattern.sub_grouppattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+						if (triplepattern.sub_grouppattern[j].pattern.subject_object_varset.hasCommonVar(triplepattern.sub_grouppattern[k].pattern.subject_object_varset))
+							triplepattern.mergePatternBlockID(j, k);
+			}
+
+		//each connected block is a BasicQuery
+		for (int j = 0; j < (int)triplepattern.sub_grouppattern.size(); j++)
+			if (triplepattern.sub_grouppattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+				if (triplepattern.getRootPatternBlockID(j) == j)
+				{
+					this->rewriting_evaluation_stack[dep].sparql_query->addBasicQuery();
+					Varset occur;
+
+					for (int k = 0; k < (int)triplepattern.sub_grouppattern.size(); k++)
+						if (triplepattern.sub_grouppattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+							if (triplepattern.getRootPatternBlockID(k) == j)
 							{
-								grouppattern.addOneOptionalOrMinus('o');
-								grouppattern.getLastOptionalOrMinus() = inner_grouppattern.optionals[inner_lastoptional + 1].grouppattern;
-								inner_lastoptional++;
+								this->rewriting_evaluation_stack[dep].sparql_query->addTriple(Triple(
+									triplepattern.sub_grouppattern[k].pattern.subject.value,
+									triplepattern.sub_grouppattern[k].pattern.predicate.value,
+									triplepattern.sub_grouppattern[k].pattern.object.value
+								));
+								occur += triplepattern.sub_grouppattern[k].pattern.varset;
 							}
-							else if (inner_lastunions + 1 < (int)inner_grouppattern.unions.size() && inner_grouppattern.unions[inner_lastunions + 1].lastpattern == inner_lastpattern)
-							//inner union
+
+					//reduce return result vars
+					if (!this->query_tree.checkProjectionAsterisk() && useful.hasCommonVar(occur))
+						useful = useful * occur;
+					else
+						useful = occur;
+
+					this->rewriting_evaluation_stack[dep].encode_varset.push_back(useful.vars);
+
+					printf("select vars: ");
+					useful.print();
+
+					printf("triple patterns: \n");
+					for (int k = 0; k < (int)triplepattern.sub_grouppattern.size(); k++)
+						if (triplepattern.sub_grouppattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+							if (triplepattern.getRootPatternBlockID(k) == j)
 							{
-								grouppattern.addOneGroupUnion();
-								for (int i = 0; i < (int)inner_grouppattern.unions[inner_lastunions + 1].grouppattern_vec.size(); i++)
+								printf("%s\t%s\t%s\n", 	triplepattern.sub_grouppattern[k].pattern.subject.value.c_str(),
+														triplepattern.sub_grouppattern[k].pattern.predicate.value.c_str(),
+														triplepattern.sub_grouppattern[k].pattern.object.value.c_str()
+								);
+							}
+				}
+
+		long tv_begin = Util::get_cur_time();
+		this->rewriting_evaluation_stack[dep].sparql_query->encodeQuery(this->kvstore, this->rewriting_evaluation_stack[dep].encode_varset);
+		long tv_encode = Util::get_cur_time();
+		printf("after Encode, used %ld ms.\n", tv_encode - tv_begin);
+
+		if (dep > 0)
+		{
+			SPARQLquery *this_sparql_query = this->rewriting_evaluation_stack[dep].sparql_query;
+			SPARQLquery *last_sparql_query = this->rewriting_evaluation_stack[dep - 1].sparql_query;
+
+			for (int j = 0; j < this_sparql_query->getBasicQueryNum(); j++)
+			{
+				BasicQuery &this_basic_query = this_sparql_query->getBasicQuery(j);
+				vector<string> &this_encode_varset = this->rewriting_evaluation_stack[dep].encode_varset[j];
+
+				for (int k = 0; k < last_sparql_query->getBasicQueryNum(); k++)
+				{
+					BasicQuery &last_basic_query = last_sparql_query->getBasicQuery(k);
+					vector<string> &last_encode_varset = this->rewriting_evaluation_stack[dep - 1].encode_varset[k];
+
+					for (int p = 0; p < (int)this_encode_varset.size(); p++)
+					{
+						for (int q = 0; q < (int)last_encode_varset.size(); q++)
+							if (this_encode_varset[p] == last_encode_varset[q])
+							{
+								vector<unsigned*> &result = last_basic_query.getResultList();
+								set<unsigned> result_set;
+
+								for (int l = 0; l < (int)result.size(); l++)
+									result_set.insert(result[l][q]);
+
+								vector<unsigned> result_vector;
+								result_vector.reserve(result_set.size());
+
+								for (set<unsigned>::iterator iter = result_set.begin(); iter != result_set.end(); iter++)
+									result_vector.push_back(*iter);
+
+								this_basic_query.getCandidateList(p).copy(result_vector);
+								this_basic_query.setReady(p);
+
+								printf("fill var %s CandidateList size %d\n", this_encode_varset[p].c_str(), (int)result_vector.size());
+							}
+					}
+				}
+			}
+		}
+		long tv_fillcand = Util::get_cur_time();
+		printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
+
+		this->strategy.handle(*this->rewriting_evaluation_stack[dep].sparql_query);
+		long tv_handle = Util::get_cur_time();
+		printf("after Handle, used %ld ms.\n", tv_handle - tv_fillcand);
+
+		//collect and join the result of each BasicQuery
+		for (int j = 0; j < this->rewriting_evaluation_stack[dep].sparql_query->getBasicQueryNum(); j++)
+		{
+			TempResultSet *temp = new TempResultSet();
+			temp->results.push_back(TempResult());
+
+			temp->results[0].id_varset = Varset(this->rewriting_evaluation_stack[dep].encode_varset[j]);
+			int varnum = (int)this->rewriting_evaluation_stack[dep].encode_varset[j].size();
+
+			vector<unsigned*> &basicquery_result = this->rewriting_evaluation_stack[dep].sparql_query->getBasicQuery(j).getResultList();
+			int basicquery_result_num = (int)basicquery_result.size();
+
+			temp->results[0].result.reserve(basicquery_result_num);
+			for (int k = 0; k < basicquery_result_num; k++)
+			{
+				unsigned *v = new unsigned [varnum];
+				memcpy(v, basicquery_result[k], sizeof(int) * varnum);
+				temp->results[0].result.push_back(TempResult::ResultPair());
+				temp->results[0].result.back().id = v;
+			}
+
+			if (sub_result->results.empty())
+			{
+				delete sub_result;
+				sub_result = temp;
+			}
+			else
+			{
+				TempResultSet *new_result = new TempResultSet();
+				sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset);
+
+				temp->release();
+				sub_result->release();
+				delete temp;
+				delete sub_result;
+
+				sub_result = new_result;
+			}
+		}
+
+		for (int j = 0; j < (int)grouppattern->sub_grouppattern.size(); j++)
+			if (grouppattern->sub_grouppattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Bind_type)
+			{
+				TempResultSet *temp = new TempResultSet();
+				temp->results.push_back(TempResult());
+
+				temp->results[0].str_varset = grouppattern->sub_grouppattern[j].bind.varset;
+
+				temp->results[0].result.push_back(TempResult::ResultPair());
+				temp->results[0].result[0].str.push_back(grouppattern->sub_grouppattern[j].bind.str);
+
+				TempResultSet *new_result = new TempResultSet();
+				sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset);
+
+				temp->release();
+				sub_result->release();
+				delete temp;
+				delete sub_result;
+
+				sub_result = new_result;
+			}
+
+		for (int j = 0; j < (int)grouppattern->sub_grouppattern.size(); j++)
+			if (grouppattern->sub_grouppattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+				if (!grouppattern->sub_grouppattern[j].filter.done && grouppattern->sub_grouppattern[j].filter.varset.belongTo(grouppattern->grouppattern_resultset_minimal_varset))
+				{
+					grouppattern->sub_grouppattern[j].filter.done = true;
+
+					TempResultSet *new_result = new TempResultSet();
+					sub_result->doFilter(grouppattern->sub_grouppattern[j].filter.root, *new_result, this->stringindex, grouppattern->grouppattern_subject_object_maximal_varset);
+
+					sub_result->release();
+					delete sub_result;
+
+					sub_result = new_result;
+				}
+
+		if (!sub_result->results[0].result.empty())
+		{
+			for (int j = 0; j < (int)grouppattern->sub_grouppattern.size(); j++)
+			if (grouppattern->sub_grouppattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+			{
+				if ((int)this->rewriting_evaluation_stack.size() == dep + 1)
+				{
+					this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
+					this->rewriting_evaluation_stack.back().sparql_query = NULL;
+					grouppattern = &this->rewriting_evaluation_stack[dep].grouppattern;
+				}
+
+				this->rewriting_evaluation_stack[dep + 1].grouppattern = grouppattern->sub_grouppattern[j].optional;
+
+				TempResultSet *temp = rewritingBasedQueryEvaluation(dep + 1);
+
+				TempResultSet *new_result = new TempResultSet();
+				sub_result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset);
+
+				temp->release();
+				sub_result->release();
+				delete temp;
+				delete sub_result;
+
+				sub_result = new_result;
+			}
+		}
+
+		for (int j = 0; j < (int)grouppattern->sub_grouppattern.size(); j++)
+			if (grouppattern->sub_grouppattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+				if (!grouppattern->sub_grouppattern[j].filter.done)
+				{
+					grouppattern->sub_grouppattern[j].filter.done = true;
+
+					TempResultSet *new_result = new TempResultSet();
+					sub_result->doFilter(grouppattern->sub_grouppattern[j].filter.root, *new_result, this->stringindex, grouppattern->grouppattern_subject_object_maximal_varset);
+
+					sub_result->release();
+					delete sub_result;
+
+					sub_result = new_result;
+				}
+
+		if (result->results.empty())
+		{
+			delete result;
+			result = sub_result;
+		}
+		else
+		{
+			TempResultSet *new_result = new TempResultSet();
+			result->doUnion(*sub_result, *new_result);
+
+			sub_result->release();
+			result->release();
+			delete sub_result;
+			delete result;
+
+			result = new_result;
+		}
+
+		delete this->rewriting_evaluation_stack[dep].sparql_query;
+		this->rewriting_evaluation_stack[dep].sparql_query = NULL;
+	}
+
+	return result;
+}
+
+void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
+{
+	if (this->temp_result == NULL)
+		return;
+
+	if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
+	{
+		Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset();
+
+		if (this->query_tree.checkProjectionAsterisk())
+		{
+			for (int i = 0 ; i < (int)this->temp_result->results.size(); i++)
+				useful += this->temp_result->results[i].getAllVarset();
+		}
+
+		{
+			TempResultSet *new_temp_result = new TempResultSet();
+
+			this->temp_result->doProjection1(useful, *new_temp_result, this->stringindex, this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset);
+
+			this->temp_result->release();
+			delete this->temp_result;
+
+			this->temp_result = new_temp_result;
+		}
+
+		if (this->query_tree.checkAtLeastOneAggregateFunction() || !this->query_tree.getGroupByVarset().empty())
+		{
+			vector<QueryTree::ProjectionVar> &proj = this->query_tree.getProjection();
+
+			TempResultSet *new_temp_result = new TempResultSet();
+			new_temp_result->results.push_back(TempResult());
+
+			TempResult &result0 = this->temp_result->results[0];
+			TempResult &new_result0 = new_temp_result->results[0];
+
+			for (int i = 0; i < (int)proj.size(); i++)
+				if (proj[i].aggregate_type == QueryTree::ProjectionVar::None_type)
+				{
+					if (result0.id_varset.findVar(proj[i].var))
+						new_result0.id_varset.addVar(proj[i].var);
+					else if (result0.str_varset.findVar(proj[i].var))
+						new_result0.str_varset.addVar(proj[i].var);
+				}
+				else
+					new_result0.str_varset.addVar(proj[i].var);
+
+			vector<int> proj2temp((int)proj.size(), -1);
+			for (int i = 0; i < (int)proj.size(); i++)
+				if (proj[i].aggregate_type == QueryTree::ProjectionVar::None_type)
+					proj2temp[i] = Varset(proj[i].var).mapTo(result0.getAllVarset())[0];
+				else if (proj[i].aggregate_var != "*")
+					proj2temp[i] = Varset(proj[i].aggregate_var).mapTo(result0.getAllVarset())[0];
+
+			vector<int> proj2new = this->query_tree.getProjectionVarset().mapTo(new_result0.getAllVarset());
+
+			int result0_size = (int)result0.result.size();
+			vector<int> group2temp;
+
+			if (!this->query_tree.getGroupByVarset().empty())
+			{
+				group2temp = this->query_tree.getGroupByVarset().mapTo(result0.getAllVarset());
+				result0.sort(0, result0_size - 1, group2temp);
+			}
+
+			TempResultSet *temp_result_distinct = NULL;
+			vector<int> group2distinct;
+
+			for (int i = 0; i < (int)proj.size(); i++)
+				if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type && proj[i].distinct && proj[i].aggregate_var == "*")
+				{
+					temp_result_distinct = new TempResultSet();
+
+					this->temp_result->doDistinct1(*temp_result_distinct);
+					group2distinct = this->query_tree.getGroupByVarset().mapTo(temp_result_distinct->results[0].getAllVarset());
+					temp_result_distinct->results[0].sort(0, (int)temp_result_distinct->results[0].result.size() - 1, group2distinct);
+
+					break;
+				}
+
+			int result0_id_cols = result0.id_varset.getVarsetSize();
+			int new_result0_id_cols = new_result0.id_varset.getVarsetSize();
+			int new_result0_str_cols = new_result0.str_varset.getVarsetSize();
+			for (int begin = 0; begin < result0_size;)
+			{
+				int end;
+				if (group2temp.empty())
+					end = result0_size - 1;
+				else
+					end = result0.findRightBounder(group2temp, result0.result[begin], result0_id_cols, group2temp);
+
+				new_result0.result.push_back(TempResult::ResultPair());
+				new_result0.result.back().id = new unsigned [new_result0_id_cols];
+				new_result0.result.back().str.resize(new_result0_str_cols);
+
+				for (int i = 0; i < new_result0_id_cols; i++)
+					new_result0.result.back().id[i] = INVALID;
+
+				for (int i = 0; i < (int)proj.size(); i++)
+					if (proj[i].aggregate_type == QueryTree::ProjectionVar::None_type)
+					{
+						if (proj2temp[i] < result0_id_cols)
+							new_result0.result.back().id[proj2new[i]] = result0.result[begin].id[proj2temp[i]];
+						else
+							new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = result0.result[begin].str[proj2temp[i] - result0_id_cols];
+					}
+					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
+					{
+						int count = 0;
+
+						if (proj[i].aggregate_var != "*")
+						{
+							if (proj[i].distinct)
+							{
+								if (proj2temp[i] < result0_id_cols)
 								{
-									grouppattern.addOneUnion();
-									grouppattern.getLastUnion() = inner_grouppattern.unions[inner_lastunions + 1].grouppattern_vec[i];
+									set<int> count_set;
+									for (int j = begin; j <= end; j++)
+										if(result0.result[j].id[proj2temp[i]] != INVALID)
+											count_set.insert(result0.result[j].id[proj2temp[i]]);
+									count = (int)count_set.size();
 								}
-								inner_lastunions++;
+								else
+								{
+									set<string> count_set;
+									for (int j = begin; j <= end; j++)
+										if (result0.result[j].str[proj2temp[i] - result0_id_cols].length() > 0)
+											count_set.insert(result0.result[j].str[proj2temp[i] - result0_id_cols]);
+									count = (int)count_set.size();
+								}
 							}
 							else
-							//inner triple pattern
 							{
-								grouppattern.addOnePattern(inner_grouppattern.patterns[inner_lastpattern + 1]);
-								inner_lastpattern++;
+								if (proj2temp[i] < result0_id_cols)
+								{
+									for (int j = begin; j <= end; j++)
+										if(result0.result[j].id[proj2temp[i]] != INVALID)
+											count++;
+								}
+								else
+								{
+									for (int j = begin; j <= end; j++)
+										if (result0.result[j].str[proj2temp[i] - result0_id_cols].length() > 0)
+											count++;
+								}
 							}
 						}
-						//inner filter
-						for (int i = 0; i < (int)inner_grouppattern.filters.size(); i++)
+						else
 						{
-							grouppattern.addOneFilterTree();
-							grouppattern.getLastFilterTree() = inner_grouppattern.filters[i].root;
+							if (proj[i].distinct)
+							{
+								count = temp_result_distinct->results[0].findRightBounder(group2distinct, result0.result[begin], result0_id_cols, group2temp) -
+										temp_result_distinct->results[0].findLeftBounder(group2distinct, result0.result[begin], result0_id_cols, group2temp) + 1;
+							}
+							else
+							{
+								count = end - begin + 1;
+							}
+						}
+
+						stringstream ss;
+						ss << "\"";
+						ss << count;
+						ss << "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+						ss >> new_result0.result.back().str[proj2new[i] - new_result0_id_cols];
+					}
+
+				begin = end + 1;
+			}
+
+			if (temp_result_distinct != NULL)
+			{
+				temp_result_distinct->release();
+				delete temp_result_distinct;
+			}
+
+			this->temp_result->release();
+			delete this->temp_result;
+
+			this->temp_result = new_temp_result;
+		}
+
+		//temp_result --> ret_result
+
+		if (this->query_tree.getProjectionModifier() == QueryTree::Modifier_Distinct)
+		{
+			TempResultSet *new_temp_result = new TempResultSet();
+
+			this->temp_result->doDistinct1(*new_temp_result);
+
+			this->temp_result->release();
+			delete this->temp_result;
+
+			this->temp_result = new_temp_result;
+		}
+
+		TempResult &result0 = this->temp_result->results[0];
+		Varset ret_result_varset;
+
+		if (this->query_tree.checkProjectionAsterisk() && this->query_tree.getProjectionVarset().empty())
+		{
+			ret_result.select_var_num = result0.getAllVarset().getVarsetSize();
+			ret_result.setVar(result0.getAllVarset().vars);
+			ret_result_varset = result0.getAllVarset();
+		}
+		else
+		{
+			ret_result.select_var_num = this->query_tree.getProjectionVarset().getVarsetSize();
+			ret_result.setVar(this->query_tree.getProjectionVarset().vars);
+			ret_result_varset = this->query_tree.getProjectionVarset();
+		}
+
+		ret_result.ansNum = (int)result0.result.size();
+		ret_result.setOutputOffsetLimit(this->query_tree.getOffset(), this->query_tree.getLimit());
+
+#ifdef STREAM_ON
+		long long ret_result_size = (long long)ret_result.ansNum * (long long)ret_result.select_var_num * 100 / Util::GB;
+    	if(Util::memoryLeft() < ret_result_size || !this->query_tree.getOrderVarVector().empty())
+		{
+			ret_result.setUseStream();
+			printf("set use Stream\n");
+		}
+#endif
+
+		if (!ret_result.checkUseStream())
+		{
+			ret_result.answer = new string* [ret_result.ansNum];
+			for (unsigned i = 0; i < ret_result.ansNum; i++)
+				ret_result.answer[i] = NULL;
+		}
+		else
+		{
+			vector <unsigned> keys;
+			vector <bool> desc;
+			for (int i = 0; i < (int)this->query_tree.getOrderVarVector().size(); i++)
+			{
+				int var_id = Varset(this->query_tree.getOrderVarVector()[i].var).mapTo(ret_result_varset)[0];
+				if (var_id != -1)
+				{
+					keys.push_back(var_id);
+					desc.push_back(this->query_tree.getOrderVarVector()[i].descending);
+				}
+			}
+			ret_result.openStream(keys, desc);
+		}
+
+		vector<int> proj2temp = ret_result_varset.mapTo(result0.getAllVarset());
+		int id_cols = result0.id_varset.getVarsetSize();
+
+		for (unsigned i = 0; i < ret_result.ansNum; i++)
+		{
+			if (!ret_result.checkUseStream())
+			{
+				ret_result.answer[i] = new string [ret_result.select_var_num];
+			}
+
+			for (int j = 0; j < ret_result.select_var_num; j++)
+			{
+				if (proj2temp[j] < id_cols)
+				{
+					unsigned ans_id = result0.result[i].id[proj2temp[j]];
+
+					if (!ret_result.checkUseStream())
+					{
+						ret_result.answer[i][j] = "";
+						if (ans_id != INVALID)
+						{
+							if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.findVar(result0.id_varset.vars[proj2temp[j]]))
+								this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], true);
+							else
+								this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], false);
 						}
 					}
 					else
 					{
-						grouppattern.addOneGroupUnion();
-						for (int i = 0; i < (int)copy.unions[lastunions + 1].grouppattern_vec.size(); i++)
+						string ans_str = "";
+						if (ans_id != INVALID)
 						{
-							grouppattern.addOneUnion();
-							grouppattern.getLastUnion() = copy.unions[lastunions + 1].grouppattern_vec[i];
-						}
-					}
-					lastunions++;
-				}
-				else
-				//triple pattern
-				{
-					grouppattern.addOnePattern(copy.patterns[lastpattern + 1]);
-					lastpattern++;
-				}
-			}
-			//filter
-			for (int i = 0; i < (int)copy.filters.size(); i++)
-			{
-				grouppattern.addOneFilterTree();
-				grouppattern.getLastFilterTree() = copy.filters[i].root;
-			}
-
-			queue.push_back(grouppattern);
-		}
-
-		grouppattern = copy;
-		return true;
-	}
-
-	return false;
-}
-
-void GeneralEvaluation::queryRewriteEncodeRetrieveJoin(int dep)
-{
-	if (dep == 0)
-	{
-		this->expansion_evaluation_stack.clear();
-		//avoid copying stack
-		this->expansion_evaluation_stack.reserve(100);
-		this->expansion_evaluation_stack.push_back(ExpansionEvaluationStackUnit());
-		this->expansion_evaluation_stack[0].grouppattern = this->query_tree.getGroupPattern();
-	}
-
-	deque<QueryTree::GroupPattern> queue;
-	queue.push_back(this->expansion_evaluation_stack[dep].grouppattern);
-	vector<QueryTree::GroupPattern> cand;
-
-	while (!queue.empty())
-	{
-		QueryTree::GroupPattern front = queue.front();
-		queue.pop_front();
-
-		if (!this->expanseFirstOuterUnionGroupPattern(front, queue))
-			cand.push_back(front);
-	}
-
-	this->expansion_evaluation_stack[dep].result = new TempResultSet();
-	for (int cand_id = 0; cand_id < (int)cand.size(); cand_id++)
-	{
-		this->expansion_evaluation_stack[dep].grouppattern = cand[cand_id];
-		QueryTree::GroupPattern &grouppattern = this->expansion_evaluation_stack[dep].grouppattern;
-		grouppattern.getVarset();
-
-		for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
-		grouppattern.print(dep);
-		for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
-
-		TempResultSet *temp = NULL;
-		//get the result of grouppattern
-		{
-			QueryTree::GroupPattern triplepattern;
-
-			for (int i = 0; i < (int)grouppattern.patterns.size(); i++)
-			{
-				triplepattern.addOnePattern(QueryTree::GroupPattern::Pattern(
-					QueryTree::GroupPattern::Pattern::Element(grouppattern.patterns[i].subject.value),
-					QueryTree::GroupPattern::Pattern::Element(grouppattern.patterns[i].predicate.value),
-					QueryTree::GroupPattern::Pattern::Element(grouppattern.patterns[i].object.value)
-				));
-			}
-			triplepattern.getVarset();
-
-			for (int i = 0; i < dep; i++)
-			{
-				QueryTree::GroupPattern &upper_grouppattern = this->expansion_evaluation_stack[i].grouppattern;
-				for (int j = 0; j < (int)upper_grouppattern.patterns.size(); j++)
-					if (triplepattern.grouppattern_resultset_maximal_varset.hasCommonVar(upper_grouppattern.patterns[j].varset))
-					{
-						triplepattern.addOnePattern(QueryTree::GroupPattern::Pattern(
-							QueryTree::GroupPattern::Pattern::Element(upper_grouppattern.patterns[j].subject.value),
-							QueryTree::GroupPattern::Pattern::Element(upper_grouppattern.patterns[j].predicate.value),
-							QueryTree::GroupPattern::Pattern::Element(upper_grouppattern.patterns[j].object.value)
-						));
-					}
-			}
-			triplepattern.getVarset();
-
-			//get useful vars
-			Varset useful = this->query_tree.getProjectionUsefulVar();
-			if (!this->query_tree.checkProjectionAsterisk())
-			{
-				for (int i = 0; i < dep; i++)
-				{
-					QueryTree::GroupPattern &upper_grouppattern = this->expansion_evaluation_stack[i].grouppattern;
-					for (int j = 0; j < (int)upper_grouppattern.patterns.size(); j++)
-						useful = useful + upper_grouppattern.patterns[j].varset;
-					for (int j = 0; j < (int)upper_grouppattern.filters.size(); j++)
-						useful = useful + upper_grouppattern.filters[j].varset;
-				}
-
-				for (int i = 0; i < (int)grouppattern.optionals.size(); i++)
-					useful = useful + grouppattern.optionals[i].grouppattern.grouppattern_resultset_maximal_varset;
-
-				for (int i = 0; i < (int)grouppattern.filters.size(); i++)
-					useful = useful + grouppattern.filters[i].varset;
-			}
-
-			this->expansion_evaluation_stack[dep].sparql_query = SPARQLquery();
-			vector<vector<string> > encode_varset;
-
-			//get connected block
-			triplepattern.initPatternBlockid();
-			for (int i = 0; i < (int)triplepattern.patterns.size(); i++)
-			{
-				for (int j = 0; j < i; j++)
-					if (triplepattern.patterns[i].varset.hasCommonVar(triplepattern.patterns[j].varset))
-						triplepattern.mergePatternBlockID(i, j);
-			}
-
-			//each connected block is a BasicQuery
-			for (int i = 0; i < (int)triplepattern.patterns.size(); i++)
-				if (triplepattern.getRootPatternBlockID(i) == i)
-				{
-					this->expansion_evaluation_stack[dep].sparql_query.addBasicQuery();
-					Varset varset;
-
-					for (int j = 0; j < (int)triplepattern.patterns.size(); j++)
-						if (triplepattern.getRootPatternBlockID(j) == i)
-						{
-							this->expansion_evaluation_stack[dep].sparql_query.addTriple(Triple(
-								triplepattern.patterns[j].subject.value,
-								triplepattern.patterns[j].predicate.value,
-								triplepattern.patterns[j].object.value
-							));
-
-							if (j < (int)grouppattern.patterns.size())
-								varset = varset + triplepattern.patterns[j].varset;
-						}
-					//reduce return result vars
-					if (!this->query_tree.checkProjectionAsterisk() && varset.hasCommonVar(useful))
-						varset = varset * useful;
-					encode_varset.push_back(varset.varset);
-
-					printf("select vars: ");
-					varset.print();
-
-					printf("triple patterns: \n");
-					for (int j = 0; j < (int)triplepattern.patterns.size(); j++)
-						if (triplepattern.getRootPatternBlockID(j) == i)
-						{
-							printf("%s\t%s\t%s\n", 	triplepattern.patterns[j].subject.value.c_str(),
-													triplepattern.patterns[j].predicate.value.c_str(),
-													triplepattern.patterns[j].object.value.c_str()
-							);
-						}
-				}
-
-			this->expansion_evaluation_stack[dep].sparql_query.encodeQuery(this->kvstore, encode_varset);
-			long tv_encode = Util::get_cur_time();
-
-			if (dep > 0)
-				this->strategy.handle(this->expansion_evaluation_stack[dep].sparql_query, &this->result_filter);
-			else
-				this->strategy.handle(this->expansion_evaluation_stack[dep].sparql_query);
-
-			long tv_handle = Util::get_cur_time();
-			cout << "after Handle, used " << (tv_handle - tv_encode) << "ms." << endl;
-
-			//collect and join the result of each BasicQuery
-			for (int i = 0; i < this->expansion_evaluation_stack[dep].sparql_query.getBasicQueryNum(); i++)
-			{
-				TempResultSet *sub_temp = new TempResultSet();
-				sub_temp->results.push_back(TempResult());
-
-				sub_temp->results[0].var = Varset(encode_varset[i]);
-				int varnum = (int)encode_varset[i].size();
-
-				vector<int*> &basicquery_result = this->expansion_evaluation_stack[dep].sparql_query.getBasicQuery(i).getResultList();
-				int basicquery_result_num = (int)basicquery_result.size();
-
-				sub_temp->results[0].res.reserve(basicquery_result_num);
-				for (int i = 0; i < basicquery_result_num; i++)
-				{
-					int *result_vec = new int [varnum];
-					memcpy(result_vec, basicquery_result[i], sizeof(int) * varnum);
-					sub_temp->results[0].res.push_back(result_vec);
-				}
-
-				if (temp == NULL)
-				{
-					temp = sub_temp;
-				}
-				else
-				{
-					TempResultSet *r = new TempResultSet();
-					temp->doJoin(*sub_temp, *r);
-
-					temp->release();
-					sub_temp->release();
-					delete temp;
-					delete sub_temp;
-
-					temp = r;
-				}
-			}
-		}
-
-		for (int i = 0; i < (int)grouppattern.filters.size(); i++)
-		if (!grouppattern.filters[i].done && grouppattern.filters[i].varset.belongTo(grouppattern.grouppattern_resultset_minimal_varset))
-		//var in Filter and Optional but not in Pattern
-		{
-			grouppattern.filters[i].done = true;
-
-			TempResultSet *r = new TempResultSet();
-			temp->doFilter(grouppattern.filters[i].root, this->filter_exists_grouppattern_resultset_record, *r, this->stringindex, grouppattern.grouppattern_subject_object_maximal_varset);
-
-			temp->release();
-			delete temp;
-
-			temp = r;
-		}
-
-		if (temp->results[0].res.size() > 0 && grouppattern.optionals.size() > 0)
-		{
-			this->result_filter.changeResultHashTable(this->expansion_evaluation_stack[dep].sparql_query, 1);
-
-			for (int i = 0; i < (int)grouppattern.optionals.size(); i++)
-			{
-				if ((int)this->expansion_evaluation_stack.size() > dep + 1)
-					this->expansion_evaluation_stack[dep + 1] = ExpansionEvaluationStackUnit();
-				else
-					this->expansion_evaluation_stack.push_back(ExpansionEvaluationStackUnit());
-
-				this->expansion_evaluation_stack[dep + 1].grouppattern = grouppattern.optionals[i].grouppattern;
-				queryRewriteEncodeRetrieveJoin(dep + 1);
-
-				TempResultSet *r = new TempResultSet();
-				temp->doOptional(*this->expansion_evaluation_stack[dep + 1].result, *r);
-
-				this->expansion_evaluation_stack[dep + 1].result->release();
-				temp->release();
-				delete this->expansion_evaluation_stack[dep + 1].result;
-				delete temp;
-
-				temp = r;
-			}
-
-			this->result_filter.changeResultHashTable(this->expansion_evaluation_stack[dep].sparql_query, -1);
-		}
-
-		for (int i = 0; i < (int)grouppattern.filters.size(); i++)
-			if (!grouppattern.filters[i].done)
-			{
-				grouppattern.filters[i].done = true;
-
-				TempResultSet *r = new TempResultSet();
-				temp->doFilter(grouppattern.filters[i].root, this->filter_exists_grouppattern_resultset_record, *r, this->stringindex, grouppattern.grouppattern_subject_object_maximal_varset);
-
-				temp->release();
-				delete temp;
-
-				temp = r;
-			}
-
-		TempResultSet *r = new TempResultSet();
-		this->expansion_evaluation_stack[dep].result->doUnion(*temp, *r);
-
-		this->expansion_evaluation_stack[dep].result->release();
-		temp->release();
-		delete this->expansion_evaluation_stack[dep].result;
-		delete temp;
-
-		this->expansion_evaluation_stack[dep].result = r;
-	}
-}
-
-bool GeneralEvaluation::needOutputAnswer()
-{
-	return this->need_output_answer;
-}
-
-void GeneralEvaluation::setNeedOutputAnswer()
-{
-	this->need_output_answer = true;
-}
-
-void GeneralEvaluation::getFinalResult(ResultSet &result_str)
-{
-	if (this->semantic_evaluation_result_stack.empty())		return;
-
-	TempResultSet *results_id = this->semantic_evaluation_result_stack.top();
-	this->semantic_evaluation_result_stack.pop();
-
-	if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
-	{
-		if (!this->query_tree.atLeastOneAggregateFunction())
-		{
-			Varset &proj_useful = this->query_tree.getProjectionUsefulVar();
-
-			if (this->query_tree.checkProjectionAsterisk())
-			{
-				for (int i = 0 ; i < (int)results_id->results.size(); i++)
-					proj_useful = proj_useful + results_id->results[i].var;
-			}
-
-			if (this->query_tree.getProjectionModifier() == QueryTree::Modifier_Distinct)
-			{
-				TempResultSet *results_id_distinct = new TempResultSet();
-
-				results_id->doDistinct(proj_useful, *results_id_distinct);
-
-				results_id->release();
-				delete results_id;
-
-				results_id = results_id_distinct;
-			}
-
-			int var_num = proj_useful.varset.size();
-			result_str.select_var_num = var_num;
-			result_str.setVar(proj_useful.varset);
-
-			for (int i = 0; i < (int)results_id->results.size(); i++)
-				result_str.ansNum += (int)results_id->results[i].res.size();
-
-			result_str.setOutputOffsetLimit(this->query_tree.getOffset(), this->query_tree.getLimit());
-
-#ifdef STREAM_ON
-			if ((long)result_str.ansNum * (long)result_str.select_var_num > 10000000 || (int)this->query_tree.getOrder().size() > 0)
-			{
-				result_str.setUseStream();
-				cout << "set use Stream" << endl;
-			}
-#endif
-
-			if (!result_str.checkUseStream())
-			{
-				result_str.answer = new string* [result_str.ansNum];
-				for (int i = 0; i < result_str.ansNum; i++)
-					result_str.answer[i] = NULL;
-			}
-			else
-			{
-				vector <int> keys;
-				vector <bool> desc;
-				for (int i = 0; i < (int)this->query_tree.getOrder().size(); i++)
-				{
-					int var_id = Varset(this->query_tree.getOrder()[i].var).mapTo(proj_useful)[0];
-					if (var_id != -1)
-					{
-						keys.push_back(var_id);
-						desc.push_back(this->query_tree.getOrder()[i].descending);
-					}
-				}
-				result_str.openStream(keys, desc);
-			}
-
-			int current_result = 0;
-			for (int i = 0; i < (int)results_id->results.size(); i++)
-			{
-				vector<int> result_str2id = proj_useful.mapTo(results_id->results[i].var);
-				int size = results_id->results[i].res.size();
-				for (int j = 0; j < size; ++j)
-				{
-					if (!result_str.checkUseStream())
-					{
-						result_str.answer[current_result] = new string[var_num];
-					}
-					for (int v = 0; v < var_num; ++v)
-					{
-						int ans_id = -1;
-						if (result_str2id[v] != -1)
-							ans_id =  results_id->results[i].res[j][result_str2id[v]];
-
-						if (!result_str.checkUseStream())
-						{
-							result_str.answer[current_result][v] = "";
-							if (ans_id != -1)
-							{
-								if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.findVar(proj_useful.varset[v]))
-									this->stringindex->addRequest(ans_id, &result_str.answer[current_result][v], true);
-								else
-									this->stringindex->addRequest(ans_id, &result_str.answer[current_result][v], false);
-							}
-						}
-						else
-						{
-							string tmp_ans = "";
-							if (ans_id != -1)
-							{
-								if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.findVar(proj_useful.varset[v]))
-									this->stringindex->randomAccess(ans_id, &tmp_ans, true);
-								else
-									this->stringindex->randomAccess(ans_id, &tmp_ans, false);
-							}
-
-							result_str.writeToStream(tmp_ans);
-						}
-					}
-					current_result++;
-				}
-			}
-			if (!result_str.checkUseStream())
-			{
-				this->stringindex->trySequenceAccess();
-			}
-			else
-			{
-				result_str.resetStream();
-			}
-		}
-		else	//aggregate function
-		{
-			Varset &proj_useful = this->query_tree.getProjectionUsefulVar();
-
-			if (this->query_tree.checkProjectionAsterisk())
-			{
-				for (int i = 0 ; i < (int)results_id->results.size(); i++)
-					proj_useful = proj_useful + results_id->results[i].var;
-			}
-
-			vector<QueryTree::ProjectionVar> &proj = this->query_tree.getProjection();
-
-			result_str.select_var_num = proj.size();
-			result_str.setVar(this->query_tree.getProjectionVar());
-			result_str.ansNum = 1;
-
-			if (!result_str.checkUseStream())
-			{
-				result_str.answer = new string* [result_str.ansNum];
-				result_str.answer[0] = new string[result_str.select_var_num];
-
-				for (int i = 0; i < (int)proj.size(); i++)
-				{
-					if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
-					{
-						if (proj[i].aggregate_var != "*")
-						{
-							int count = 0;
-							set<int> count_set;
-
-							for (int j = 0; j < (int)results_id->results.size(); j++)
-							{
-								int result_str2id = Varset(proj[i].aggregate_var).mapTo(results_id->results[j].var)[0];
-								if (result_str2id != -1)
-								{
-									if (proj[i].distinct)
-									{
-										for (int k = 0; k < (int)results_id->results[j].res.size(); k++)
-										{
-											if (results_id->results[j].res[k][result_str2id] != -1)
-												count_set.insert(results_id->results[j].res[k][result_str2id]);
-										}
-									}
-									else
-									{
-										for (int k = 0; k < (int)results_id->results[j].res.size(); k++)
-										{
-											if (results_id->results[j].res[k][result_str2id] != -1)
-												count++;
-										}
-									}
-								}
-							}
-
-							if (proj[i].distinct)
-								count = count_set.size();
-
-							stringstream ss;
-							ss << "\"";
-							ss << count;
-							ss << "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
-							ss >> result_str.answer[0][i];
-						}
-						else
-						{
-							int count = 0;
-
-							if (proj[i].distinct)
-							{
-								TempResultSet *results_id_distinct = new TempResultSet();
-
-								results_id->doDistinct(proj_useful, *results_id_distinct);
-
-								for (int j = 0; j < (int)results_id_distinct->results.size(); j++)
-									count += results_id_distinct->results[j].res.size();
-
-								results_id_distinct->release();
-								delete results_id_distinct;
-							}
+							if (this->query_tree.getGroupPattern().grouppattern_subject_object_maximal_varset.findVar(result0.id_varset.vars[proj2temp[j]]))
+								this->stringindex->randomAccess(ans_id, &ans_str, true);
 							else
-							{
-								for (int j = 0; j < (int)results_id->results.size(); j++)
-									count += results_id->results[j].res.size();
-							}
-
-							stringstream ss;
-							ss << "\"";
-							ss << count;
-							ss << "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
-							ss >> result_str.answer[0][i];
+								this->stringindex->randomAccess(ans_id, &ans_str, false);
 						}
+						ret_result.writeToStream(ans_str);
 					}
 				}
+				else
+				{
+					if (!ret_result.checkUseStream())
+						ret_result.answer[i][j] = result0.result[i].str[proj2temp[j] - id_cols];
+					else
+						ret_result.writeToStream(result0.result[i].str[proj2temp[j] - id_cols]);
+				}
 			}
+		}
+		if (!ret_result.checkUseStream())
+		{
+			this->stringindex->trySequenceAccess();
+		}
+		else
+		{
+			ret_result.resetStream();
 		}
 	}
 	else if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
 	{
-		result_str.select_var_num = 1;
-		result_str.setVar(vector<string>(1, "?__ask_retval"));
-		result_str.ansNum = 1;
+		ret_result.select_var_num = 1;
+		ret_result.setVar(vector<string>(1, "?__ask_retval"));
+		ret_result.ansNum = 1;
 
-		if (!result_str.checkUseStream())
+		if (!ret_result.checkUseStream())
 		{
-			result_str.answer = new string* [result_str.ansNum];
-			result_str.answer[0] = new string[result_str.select_var_num];
+			ret_result.answer = new string* [ret_result.ansNum];
+			ret_result.answer[0] = new string[ret_result.select_var_num];
 
-			result_str.answer[0][0] = "false";
-			for (int i = 0; i < (int)results_id->results.size(); i++)
-				if ((int)results_id->results[i].res.size() > 0)
-					result_str.answer[0][0] = "true";
+			ret_result.answer[0][0] = "false";
+			for (int i = 0; i < (int)this->temp_result->results.size(); i++)
+				if (!this->temp_result->results[i].result.empty())
+					ret_result.answer[0][0] = "true";
 		}
 	}
 
-	results_id->release();
-	delete results_id;
+	this->releaseResult();
 }
 
-void GeneralEvaluation::releaseResultStack()
+void GeneralEvaluation::releaseResult()
 {
-	if (this->semantic_evaluation_result_stack.empty())		return;
+	if (this->temp_result == NULL)
+		return;
 
-	TempResultSet *results_id = this->semantic_evaluation_result_stack.top();
-	this->semantic_evaluation_result_stack.pop();
-	results_id->release();
-	delete results_id;
+	this->temp_result->release();
+	delete this->temp_result;
+	this->temp_result = NULL;
 }
 
-void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, int &update_triple_num)
+void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, unsigned &update_triple_num)
 {
 	update_pattern.getVarset();
 
@@ -2561,55 +2927,84 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 		delete[] update_triple;
 		update_triple = NULL;
 	}
+
+	if (this->temp_result == NULL)
+		return;
+
 	update_triple_num = 0;
 
-	if (this->semantic_evaluation_result_stack.empty())	return;
-	TempResultSet *results_id = this->semantic_evaluation_result_stack.top();
-
-	for (int i = 0; i < (int)update_pattern.patterns.size(); i++)
-		for (int j = 0 ; j < (int)results_id->results.size(); j++)
-			if (update_pattern.patterns[i].varset.belongTo(results_id->results[j].var))
-				update_triple_num += results_id->results[j].res.size();
+	for (int i = 0; i < (int)update_pattern.sub_grouppattern.size(); i++)
+		if (update_pattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		{
+			for (int j = 0 ; j < (int)this->temp_result->results.size(); j++)
+				if (update_pattern.sub_grouppattern[i].pattern.varset.belongTo(this->temp_result->results[j].getAllVarset()))
+					update_triple_num += this->temp_result->results[j].result.size();
+		}
 
 	update_triple  = new TripleWithObjType[update_triple_num];
 
 	int update_triple_count = 0;
-	for (int i = 0; i < (int)update_pattern.patterns.size(); i++)
-		for (int j = 0 ; j < (int)results_id->results.size(); j++)
-			if (update_pattern.patterns[i].varset.belongTo(results_id->results[j].var))
+	for (int i = 0; i < (int)update_pattern.sub_grouppattern.size(); i++)
+		if (update_pattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		{
+			for (int j = 0 ; j < (int)this->temp_result->results.size(); j++)
 			{
-				int subject_id = -1, predicate_id = -1, object_id = -1;
-				if (update_pattern.patterns[i].subject.value[0] == '?')
-					subject_id = Varset(update_pattern.patterns[i].subject.value).mapTo(results_id->results[j].var)[0];
-				if (update_pattern.patterns[i].predicate.value[0] == '?')
-					predicate_id = Varset(update_pattern.patterns[i].predicate.value).mapTo(results_id->results[j].var)[0];
-				if (update_pattern.patterns[i].object.value[0] == '?')
-					object_id = Varset(update_pattern.patterns[i].object.value).mapTo(results_id->results[j].var)[0];
+				int id_cols = this->temp_result->results[j].id_varset.getVarsetSize();
 
-				string subject, predicate, object;
-				TripleWithObjType::ObjectType object_type;
-
-				if (subject_id == -1)
-					subject = update_pattern.patterns[i].subject.value;
-				if (predicate_id == -1)
-					predicate =update_pattern.patterns[i].predicate.value;
-				if (object_id == -1)
-					object = update_pattern.patterns[i].object.value;
-
-				for (int k = 0; k < (int)results_id->results[j].res.size(); k++)
+				if (update_pattern.sub_grouppattern[i].pattern.varset.belongTo(this->temp_result->results[j].getAllVarset()))
 				{
-					if (subject_id != -1)
-						this->stringindex->randomAccess(results_id->results[j].res[k][subject_id], &subject, true);
-					if (predicate_id != -1)
-						this->stringindex->randomAccess(results_id->results[j].res[k][predicate_id], &predicate, false);
-					if (object_id != -1)
-						this->stringindex->randomAccess(results_id->results[j].res[k][object_id], &object, true);
-					if (object[0] == '<')
-						object_type = TripleWithObjType::Entity;
-					else
-						object_type = TripleWithObjType::Literal;
+					int subject_id = -1, predicate_id = -1, object_id = -1;
+					if (update_pattern.sub_grouppattern[i].pattern.subject.value[0] == '?')
+						subject_id = Varset(update_pattern.sub_grouppattern[i].pattern.subject.value).mapTo(this->temp_result->results[j].getAllVarset())[0];
+					if (update_pattern.sub_grouppattern[i].pattern.predicate.value[0] == '?')
+						predicate_id = Varset(update_pattern.sub_grouppattern[i].pattern.predicate.value).mapTo(this->temp_result->results[j].getAllVarset())[0];
+					if (update_pattern.sub_grouppattern[i].pattern.object.value[0] == '?')
+						object_id = Varset(update_pattern.sub_grouppattern[i].pattern.object.value).mapTo(this->temp_result->results[j].getAllVarset())[0];
 
-					update_triple[update_triple_count++] = TripleWithObjType(subject, predicate, object, object_type);
+					string subject, predicate, object;
+					TripleWithObjType::ObjectType object_type;
+
+					if (subject_id == -1)
+						subject = update_pattern.sub_grouppattern[i].pattern.subject.value;
+					if (predicate_id == -1)
+						predicate = update_pattern.sub_grouppattern[i].pattern.predicate.value;
+					if (object_id == -1)
+						object = update_pattern.sub_grouppattern[i].pattern.object.value;
+
+					for (int k = 0; k < (int)this->temp_result->results[j].result.size(); k++)
+					{
+						if (subject_id != -1)
+						{
+							if (subject_id < id_cols)
+								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[subject_id], &subject, true);
+							else
+								subject = this->temp_result->results[j].result[k].str[subject_id - id_cols];
+						}
+
+						if (predicate_id != -1)
+						{
+							if (predicate_id < id_cols)
+								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[predicate_id], &predicate, false);
+							else
+								predicate = this->temp_result->results[j].result[k].str[predicate_id - id_cols];
+						}
+
+						if (object_id != -1)
+						{
+							if (object_id < id_cols)
+								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[object_id], &object, true);
+							else
+								object = this->temp_result->results[j].result[k].str[object_id - id_cols];
+						}
+
+						if (object[0] == '<')
+							object_type = TripleWithObjType::Entity;
+						else
+							object_type = TripleWithObjType::Literal;
+
+						update_triple[update_triple_count++] = TripleWithObjType(subject, predicate, object, object_type);
+					}
 				}
 			}
+		}
 }

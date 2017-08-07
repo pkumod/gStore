@@ -13,10 +13,11 @@ using namespace std;
 SigEntry::SigEntry()
 {
 	(this->sig).entityBitSet.reset();
-    this->entity_id = -1;
+    this->entity_id = INVALID_ENTITY_LITERAL_ID;
+    //this->entity_id = -1;
 }
 
-SigEntry::SigEntry(int _entity_id, EntityBitSet& _bitset)
+SigEntry::SigEntry(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet& _bitset)
 {
 	this->entity_id = _entity_id;
 	(this->sig).entityBitSet |= _bitset;
@@ -28,7 +29,7 @@ SigEntry::SigEntry(const SigEntry& _sig_entry)
     this->entity_id = _sig_entry.entity_id;
 }
 
-SigEntry::SigEntry(const EntitySig& _sig, int _entity_id)
+SigEntry::SigEntry(const EntitySig& _sig, TYPE_ENTITY_LITERAL_ID _entity_id)
 {
 	this->sig = _sig;
 	this->entity_id = _entity_id;
@@ -40,7 +41,7 @@ SigEntry::getEntitySig() const
 	return this->sig;
 }
 
-int 
+TYPE_ENTITY_LITERAL_ID
 SigEntry::getEntityId() const
 {
     return this->entity_id;

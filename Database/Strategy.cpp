@@ -18,7 +18,7 @@ Strategy::Strategy()
 	//this->prepare_handler();
 }
 
-Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TNUM* _pre2num, int _limitID_predicate, int _limitID_literal)
+Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,TYPE_ENTITY_LITERAL_ID _limitID_entity)
 {
 	this->method = 0;
 	this->kvstore = _kvstore;
@@ -26,6 +26,8 @@ Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TNUM* _pre2num, int _limi
 	this->pre2num = _pre2num;
 	this->limitID_predicate = _limitID_predicate;
 	this->limitID_literal = _limitID_literal;
+	this->limitID_entity = _limitID_entity;
+
 	//this->prepare_handler();
 }
 
@@ -45,7 +47,7 @@ Strategy::~Strategy()
 //however, this can be dealed due to several basic queries and linking
 
 bool
-Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
+Strategy::handle(SPARQLquery& _query)
 {
 #ifdef MULTI_INDEX
 	Util::logging("IN GeneralEvaluation::handle");
@@ -58,7 +60,7 @@ Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
 	{
 		this->method = -1;
 
-		vector<int*>& result_list = (*iter)->getResultList();
+		vector<unsigned*>& result_list = (*iter)->getResultList();
 		//int select_var_num = (*iter)->getSelectVarNum();
 		//the num of vars needing to be joined, i.e. selectVarNum if only one triple
 		int varNum = (*iter)->getVarNum();  
@@ -115,7 +117,7 @@ Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
 		//BETTER: use function pointer array in C++ class
 		case 0:
 			//default:filter by vstree and then verified by join
-			this->handler0(*iter, result_list, _result_filter);
+			this->handler0(*iter, result_list);
 			break;
 		case 1:
 			this->handler1(*iter, result_list);
@@ -140,10 +142,11 @@ Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
 	}
 #else
 	cout << "this BasicQuery use original query strategy" << endl;
-	long tv_handle = Util::get_cur_time();
-	(this->vstree)->retrieve(_query);
+	//VSTREE:
+	//long tv_handle = Util::get_cur_time();
+	//(this->vstree)->retrieve(_query);
+	//cout << "after Retrieve, used " << (tv_retrieve - tv_handle) << "ms." << endl;
 	long tv_retrieve = Util::get_cur_time();
-	cout << "after Retrieve, used " << (tv_retrieve - tv_handle) << "ms." << endl;
 
 	this->join = new Join(kvstore, pre2num, this->limitID_predicate, this->limitID_literal);
 	this->join->join_sparql(_query);
@@ -157,7 +160,7 @@ Strategy::handle(SPARQLquery& _query, ResultFilter* _result_filter)
 }
 
 void
-Strategy::handler0(BasicQuery* _bq, vector<int*>& _result_list, ResultFilter* _result_filter)
+Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	//long before_filter = Util::get_cur_time();
 	cout << "this BasicQuery use query strategy 0" << endl;
@@ -176,37 +179,33 @@ Strategy::handler0(BasicQuery* _bq, vector<int*>& _result_list, ResultFilter* _r
 
 	long tv_handle = Util::get_cur_time();
 	int varNum = _bq->getVarNum();  //the num of vars needing to be joined
-	//TODO:parallel by pthread
-	for (int i = 0; i < varNum; ++i)
-	{
-		if (_bq->if_need_retrieve(i) == false)
-			continue;
-		bool flag = _bq->isLiteralVariable(i);
-		const EntityBitSet& entityBitSet = _bq->getVarBitSet(i);
-		IDList* idListPtr = &(_bq->getCandidateList(i));
-		this->vstree->retrieveEntity(entityBitSet, idListPtr);
-		if (!flag)
-		{
+	//TODO:parallel by pthread, requiring that index is parallelable
+	//for (int i = 0; i < varNum; ++i)
+	//{
+		//if (_bq->if_need_retrieve(i) == false)
+			//continue;
+		//bool flag = _bq->isLiteralVariable(i);
+		//const EntityBitSet& entityBitSet = _bq->getVarBitSet(i);
+		//IDList* idListPtr = &(_bq->getCandidateList(i));
+		//this->vstree->retrieveEntity(entityBitSet, idListPtr);
+		//if (!flag)
+		//{
 			//cout<<"set ready: "<<i<<endl;
-			_bq->setReady(i);
-		}
+			//_bq->setReady(i);
+		//}
 		//the basic query should end if one non-literal var has no candidates
-		if (idListPtr->size() == 0 && !flag)
-		{
-			break;
-		}
-	}
+		//if (idListPtr->size() == 0 && !flag)
+		//{
+			//break;
+		//}
+	//}
 
 	//BETTER:end directly if one is empty!
 
 	long tv_retrieve = Util::get_cur_time();
 	cout << "after Retrieve, used " << (tv_retrieve - tv_handle) << "ms." << endl;
 
-    //between retrieve and join
-    if (_result_filter != NULL)
-    	_result_filter->candFilterWithResultHashTable(*_bq);
-
-	Join *join = new Join(kvstore, pre2num, this->limitID_predicate, this->limitID_literal);
+	Join *join = new Join(kvstore, pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 	join->join_basic(_bq);
 	delete join;
 
@@ -215,7 +214,7 @@ Strategy::handler0(BasicQuery* _bq, vector<int*>& _result_list, ResultFilter* _r
 }
 
 void
-Strategy::handler1(BasicQuery* _bq, vector<int*>& _result_list)
+Strategy::handler1(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	long before_filter = Util::get_cur_time();
 	cout << "this BasicQuery use query strategy 1" << endl;
@@ -223,14 +222,15 @@ Strategy::handler1(BasicQuery* _bq, vector<int*>& _result_list)
 	char edge_type = _bq->getEdgeType(0, 0);
 	int triple_id = _bq->getEdgeID(0, 0);
 	Triple triple = _bq->getTriple(triple_id);
-	int pre_id = _bq->getEdgePreID(0, 0);
-	int* id_list = NULL;
-	int id_list_len = 0;
+	TYPE_PREDICATE_ID pre_id = _bq->getEdgePreID(0, 0);
+	unsigned* id_list = NULL;
+	unsigned id_list_len = 0;
 	if (edge_type == Util::EDGE_OUT)
 	{
 		//cout<<"edge out!!!"<<endl;
-		int nid = (this->kvstore)->getIDByEntity(triple.object);
-		if (nid == -1)
+		TYPE_ENTITY_LITERAL_ID nid = (this->kvstore)->getIDByEntity(triple.object);
+		//if (nid == -1)
+		if (nid == INVALID_ENTITY_LITERAL_ID)
 		{
 			nid = (this->kvstore)->getIDByLiteral(triple.object);
 		}
@@ -246,9 +246,9 @@ Strategy::handler1(BasicQuery* _bq, vector<int*>& _result_list)
 	cout << "after filter, used " << (after_filter - before_filter) << "ms" << endl;
 	_result_list.clear();
 	//cout<<"now to copy result to list"<<endl;
-	for (int i = 0; i < id_list_len; ++i)
+	for (unsigned i = 0; i < id_list_len; ++i)
 	{
-		int* record = new int[1];    //only this var is selected
+		unsigned* record = new unsigned[1];    //only this var is selected
 		record[0] = id_list[i];
 		//cout<<this->kvstore->getEntityByID(record[0])<<endl;
 		_result_list.push_back(record);
@@ -260,20 +260,20 @@ Strategy::handler1(BasicQuery* _bq, vector<int*>& _result_list)
 }
 
 void
-Strategy::handler2(BasicQuery* _bq, vector<int*>& _result_list)
+Strategy::handler2(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	long before_filter = Util::get_cur_time();
 	cout << "this BasicQuery use query strategy 2" << endl;
 	int triple_id = _bq->getEdgeID(0, 0);
 	Triple triple = _bq->getTriple(triple_id);
-	int pre_id = _bq->getEdgePreID(0, 0);
+	TYPE_PREDICATE_ID pre_id = _bq->getEdgePreID(0, 0);
 
 	//NOTICE:it is ok for var1 or var2 to be -1, i.e. not encoded
 	int var1_id = _bq->getIDByVarName(triple.subject);
 	int var2_id = _bq->getIDByVarName(triple.object);
 
-	int* id_list = NULL;
-	int id_list_len = 0;
+	unsigned* id_list = NULL;
+	unsigned id_list_len = 0;
 	if (var1_id == 0)   //subject var selected
 	{
 		//use p2s directly
@@ -291,9 +291,9 @@ Strategy::handler2(BasicQuery* _bq, vector<int*>& _result_list)
 	long after_filter = Util::get_cur_time();
 	cout << "after filter, used " << (after_filter - before_filter) << "ms" << endl;
 	_result_list.clear();
-	for (int i = 0; i < id_list_len; ++i)
+	for (unsigned i = 0; i < id_list_len; ++i)
 	{
-		int* record = new int[1];    //only one var
+		unsigned* record = new unsigned[1];    //only one var
 		record[0] = id_list[i];
 		_result_list.push_back(record);
 	}
@@ -304,15 +304,15 @@ Strategy::handler2(BasicQuery* _bq, vector<int*>& _result_list)
 }
 
 void
-Strategy::handler3(BasicQuery* _bq, vector<int*>& _result_list)
+Strategy::handler3(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	long before_filter = Util::get_cur_time();
 	cout << "this BasicQuery use query strategy 3" << endl;
 	int triple_id = _bq->getEdgeID(0, 0);
 	Triple triple = _bq->getTriple(triple_id);
-	int pre_id = _bq->getEdgePreID(0, 0);
-	int* id_list = NULL;
-	int id_list_len = 0;
+	TYPE_PREDICATE_ID pre_id = _bq->getEdgePreID(0, 0);
+	unsigned* id_list = NULL;
+	unsigned id_list_len = 0;
 
 	_result_list.clear();
 	this->kvstore->getsubIDobjIDlistBypreID(pre_id, id_list, id_list_len);
@@ -328,9 +328,9 @@ Strategy::handler3(BasicQuery* _bq, vector<int*>& _result_list)
 	long after_filter = Util::get_cur_time();
 	cout << "after filter, used " << (after_filter - before_filter) << "ms" << endl;
 
-	for (int i = 0; i < id_list_len; i += 2)
+	for (unsigned i = 0; i < id_list_len; i += 2)
 	{
-		int* record = new int[2];    //2 vars and selected
+		unsigned* record = new unsigned[2];    //2 vars and selected
 		record[var1_id] = id_list[i];
 		record[var2_id] = id_list[i + 1];
 		_result_list.push_back(record);
@@ -343,7 +343,7 @@ Strategy::handler3(BasicQuery* _bq, vector<int*>& _result_list)
 }
 
 void
-Strategy::handler4(BasicQuery* _bq, vector<int*>& _result_list)
+Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	cout<<"Special Case: consider pre var in this triple"<<endl;
 	int varNum = _bq->getVarNum();  
@@ -354,8 +354,9 @@ Strategy::handler4(BasicQuery* _bq, vector<int*>& _result_list)
 	int selected_var_num = _bq->getSelectVarNum();
 	Triple triple = _bq->getTriple(0);
 	int pvpos = _bq->getSelectedPreVarPosition(triple.predicate);
-	int* id_list = NULL;
-	int id_list_len = 0;
+
+	unsigned* id_list = NULL;
+	unsigned id_list_len = 0;
 	_result_list.clear();
 
 	//cout<<"total num: "<<total_num <<endl;
@@ -369,9 +370,9 @@ Strategy::handler4(BasicQuery* _bq, vector<int*>& _result_list)
 		cout<<"predicate: "<<triple.predicate<<" "<<pvpos<<endl;
 		//very special case, to find all triples, select ?s (?p) ?o where { ?s ?p ?o . }
 		//filter and join is too costly, should enum all predicates and use p2so
-		for(int i = 0; i < this->limitID_predicate; ++i)
+		for(TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate; ++i)
 		{
-			int pid = i;
+			TYPE_PREDICATE_ID pid = i;
 			this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len);
 			int rsize = selected_var_num;
 			if(selected_pre_var_num == 1)
@@ -380,9 +381,9 @@ Strategy::handler4(BasicQuery* _bq, vector<int*>& _result_list)
 			}
 
 			//always place s/o before p in result list
-			for (int j = 0; j < id_list_len; j += 2)
+			for (unsigned j = 0; j < id_list_len; j += 2)
 			{
-				int* record = new int[rsize];
+				unsigned* record = new unsigned[rsize];
 				//check the s/o var if selected, need to ensure the placement order
 				if(ovpos >= 0)
 				{
@@ -409,14 +410,15 @@ Strategy::handler4(BasicQuery* _bq, vector<int*>& _result_list)
 		int vpos = -1;
 		if(triple.subject[0] != '?')  //constant
 		{
-			int sid = (this->kvstore)->getIDByEntity(triple.subject);
+			TYPE_ENTITY_LITERAL_ID sid = (this->kvstore)->getIDByEntity(triple.subject);
 			this->kvstore->getpreIDobjIDlistBysubID(sid, id_list, id_list_len);
 			vpos = _bq->getSelectedVarPosition(triple.object);
 		}
 		else if(triple.object[0] != '?')  //constant
 		{
-			int oid = (this->kvstore)->getIDByEntity(triple.object);
-			if (oid == -1)
+			TYPE_ENTITY_LITERAL_ID oid = (this->kvstore)->getIDByEntity(triple.object);
+			//if (oid == -1)
+			if (oid == INVALID_ENTITY_LITERAL_ID)
 			{
 				oid = (this->kvstore)->getIDByLiteral(triple.object);
 			}
@@ -430,9 +432,9 @@ Strategy::handler4(BasicQuery* _bq, vector<int*>& _result_list)
 			rsize++;
 		}
 		//always place s/o before p in result list
-		for (int i = 0; i < id_list_len; i += 2)
+		for (unsigned i = 0; i < id_list_len; i += 2)
 		{
-			int* record = new int[rsize];
+			unsigned* record = new unsigned[rsize];
 			if(vpos >= 0)
 			{
 				record[vpos] = id_list[i + 1]; //for the s/o var
@@ -448,8 +450,8 @@ Strategy::handler4(BasicQuery* _bq, vector<int*>& _result_list)
 	{
 		cout<<"Special Case 3"<<endl;
 		//just use so2p
-		int sid = (this->kvstore)->getIDByEntity(triple.subject);
-		int oid = (this->kvstore)->getIDByEntity(triple.object);
+		unsigned sid = (this->kvstore)->getIDByEntity(triple.subject);
+		unsigned oid = (this->kvstore)->getIDByEntity(triple.object);
 		if (oid == -1)
 		{
 			oid = (this->kvstore)->getIDByLiteral(triple.object);
@@ -457,9 +459,9 @@ Strategy::handler4(BasicQuery* _bq, vector<int*>& _result_list)
 
 		this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len);
 		//copy to result list
-		for (int i = 0; i < id_list_len; ++i)
+		for (unsigned i = 0; i < id_list_len; ++i)
 		{
-			int* record = new int[1];
+			unsigned* record = new unsigned[1];
 			record[0] = id_list[i];
 			_result_list.push_back(record);
 		}
@@ -471,38 +473,42 @@ Strategy::handler4(BasicQuery* _bq, vector<int*>& _result_list)
 //TODO:if any constants in a query are not found in kvstore, then this BGP should end to speed up the processing
 
 void
-Strategy::handler5(BasicQuery* _bq, vector<int*>& _result_list)
+Strategy::handler5(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	cout<<"Special Case: consider constant triple"<<endl;
 	Triple triple = _bq->getTriple(0);
 	_result_list.clear();
 
-	int subid = this->kvstore->getIDByEntity(triple.subject);
-	if(subid == -1) //not found
+	TYPE_ENTITY_LITERAL_ID subid = this->kvstore->getIDByEntity(triple.subject);
+	//if(subid == -1) //not found
+	if(subid == INVALID_ENTITY_LITERAL_ID) //not found
 	{
 		return;
 	}
-	int preid = this->kvstore->getIDByPredicate(triple.predicate);
-	if(preid == -1) //not found
+	TYPE_PREDICATE_ID preid = this->kvstore->getIDByPredicate(triple.predicate);
+	//if(preid == -1) //not found
+	if(preid == INVALID_PREDICATE_ID) //not found
 	{
 		return;
 	}
-	int objid = this->kvstore->getIDByEntity(triple.object);
-	if(objid == -1)
+	TYPE_ENTITY_LITERAL_ID objid = this->kvstore->getIDByEntity(triple.object);
+	//if(objid == -1)
+	if(objid == INVALID_ENTITY_LITERAL_ID)
 	{
 		objid = this->kvstore->getIDByLiteral(triple.object);
 	}
-	if(objid == -1)
+	//if(objid == -1)
+	if(objid == INVALID_ENTITY_LITERAL_ID)
 	{
 		return;
 	}
 
-	int* id_list = NULL;
-	int id_list_len = 0;
+	unsigned* id_list = NULL;
+	unsigned id_list_len = 0;
 	(this->kvstore)->getobjIDlistBysubIDpreID(subid, preid, id_list, id_list_len);
-	if (Util::bsearch_int_uporder(objid, id_list, id_list_len) != -1)
+	if (Util::bsearch_int_uporder(objid, id_list, id_list_len) != INVALID)
 	{
-		int* record = new int[3];
+		unsigned* record = new unsigned[3];
 		record[0] = subid;
 		record[1] = preid;
 		record[2] = objid;

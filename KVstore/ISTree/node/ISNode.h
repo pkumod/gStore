@@ -66,15 +66,15 @@ public:
 	void setStore(unsigned _store);
 	unsigned getFlag() const;
 	void setFlag(unsigned _flag);
-	int getKey(int _index) const;	//need to check the index
-	bool setKey(int _key, int _index);
-	bool addKey(int _key, int _index);
+	unsigned getKey(int _index) const;	//need to check the index
+	bool setKey(unsigned _key, int _index);
+	bool addKey(unsigned _key, int _index);
 	bool subKey(int _index);
 
 	//several binary key search utilities
-	int searchKey_less(int _key) const;
-	int searchKey_equal(int _key) const;
-	int searchKey_lessEqual(int _key) const;
+	int searchKey_less(unsigned _key) const;
+	int searchKey_equal(unsigned _key) const;
+	int searchKey_lessEqual(unsigned _key) const;
 
 	//virtual functions: polymorphic
 	virtual ISNode* getChild(int _index) const { return NULL; };
@@ -83,12 +83,18 @@ public:
 	virtual bool subChild(int _index) { return true; };
 	virtual ISNode* getPrev() const { return NULL; };
 	virtual ISNode* getNext() const { return NULL; };
+
 	virtual const Bstr* getValue(int _index) const { return NULL; };
 	virtual bool setValue(const Bstr* _value, int _index, bool ifcopy = false) { return true; };
 	virtual bool addValue(const Bstr* _value, int _index, bool ifcopy = false) { return true; };
 	virtual bool subValue(int _index, bool ifdel = false) { return true; };
 	virtual void setPrev(ISNode* _prev) {};
 	virtual void setNext(ISNode* _next) {};
+
+	virtual bool setValue(char* _str, unsigned _len, int _index, bool ifcopy = false) { return true; };
+	virtual bool addValue(char* _str, unsigned _len, int _index, bool ifcopy = false) { return true; };
+
+	//pure virtual function
 	virtual void Virtual() = 0;
 	virtual void Normal() = 0;
 	virtual unsigned getSize() const = 0;		//return all memory owned
@@ -114,3 +120,4 @@ public:
 */
 
 #endif
+

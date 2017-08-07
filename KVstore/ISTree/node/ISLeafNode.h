@@ -27,6 +27,7 @@ public:
 	void Normal();
 	ISNode* getPrev() const;
 	ISNode* getNext() const;
+
 	const Bstr* getValue(int _index) const;
 	bool setValue(const Bstr* _value, int _index, bool ifcopy = false);
 	bool addValue(const Bstr* _value, int _index, bool ifcopy = false);
@@ -34,6 +35,10 @@ public:
 	void setPrev(ISNode* _prev);
 	void setNext(ISNode* _next);
 	unsigned getSize() const;
+
+	bool setValue(char* _str, unsigned _len, int _index, bool ifcopy = false);
+	bool addValue(char* _str, unsigned _len, int _index, bool ifcopy = false);
+
 	ISNode* split(ISNode* _father, int _index);
 	ISNode* coalesce(ISNode* _father, int _index);
 	void release();
@@ -48,3 +53,4 @@ public:
 //BETTER: prev isn't a must, and reverse-range can be achieved using recursive-next
 
 #endif
+

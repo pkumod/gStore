@@ -13,7 +13,7 @@ using namespace std;
 void
 SILeafNode::AllocValues()
 {
-	values = new int[MAX_KEY_NUM];
+	values = new unsigned[MAX_KEY_NUM];
 }
 
 /*
@@ -76,7 +76,7 @@ SILeafNode::getNext() const
 	return next;
 }
 
-int
+unsigned
 SILeafNode::getValue(int _index) const
 {
 	int num = this->getNum();
@@ -90,7 +90,7 @@ SILeafNode::getValue(int _index) const
 }
 
 bool
-SILeafNode::setValue(int _val, int _index)
+SILeafNode::setValue(unsigned _val, int _index)
 {
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
@@ -99,11 +99,12 @@ SILeafNode::setValue(int _val, int _index)
 		return false;
 	}
 	this->values[_index] = _val;
+
 	return true;
 }
 
 bool
-SILeafNode::addValue(int _val, int _index)
+SILeafNode::addValue(unsigned _val, int _index)
 {
 	int num = this->getNum();
 	if (_index < 0 || _index > num)
@@ -115,6 +116,7 @@ SILeafNode::addValue(int _val, int _index)
 	for (i = num - 1; i >= _index; --i)
 		this->values[i + 1] = this->values[i];
 	this->values[_index] = _val;
+
 	return true;
 }
 
@@ -130,6 +132,7 @@ SILeafNode::subValue(int _index)
 	int i;
 	for (i = _index; i < num - 1; ++i)
 		this->values[i] = this->values[i + 1];
+
 	return true;
 }
 
@@ -180,6 +183,7 @@ SILeafNode::split(SINode* _father, int _index)
 	_father->setDirty();
 	p->setDirty();
 	this->setDirty();
+
 	return p;
 }
 
@@ -275,6 +279,7 @@ SILeafNode::coalesce(SINode* _father, int _index)
 		print("error in coalesce: Invalid case!");
 		//printf("error in coalesce: Invalid case!");
 	}
+
 	_father->setDirty();
 	p->setDirty();
 	this->setDirty();
@@ -363,3 +368,4 @@ SILeafNode::print(string s)
 	else;
 #endif
 }
+

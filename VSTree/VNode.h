@@ -39,7 +39,7 @@ public:
 	static const unsigned NUM_PART = 0x000000ff;
 	static const unsigned DEL_NUM_PART = ~NUM_PART;
 
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	//NOTICE: rw lock has higher cost than mutex lock
 	//mutex lock: if in memory
 	pthread_mutex_t node_lock;

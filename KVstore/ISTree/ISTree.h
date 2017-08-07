@@ -3,7 +3,7 @@
 # Author: syzz
 # Mail: 1181955272@qq.com
 # Last Modified: 2015-04-26 16:44
-# Description: struct and interface of the B+ tree
+# Description: ID2string, including id2entity, id2literal and id2predicate
 =============================================================================*/
 
 #ifndef _KVSTORE_ISTREE_ISTREE_H
@@ -19,7 +19,7 @@
 class ISTree
 {
 protected:
-	unsigned int height;		//0 indicates an empty tree
+	unsigned height;		//0 indicates an empty tree
 	ISNode* root;
 	ISNode* leaves_head;			//the head of LeafNode-list
 	ISNode* leaves_tail;			//the tail of LeafNode-list
@@ -36,8 +36,8 @@ protected:
 	//so lock is a must. Add lock to transfer is better than to add 
 	//lock to every key/value. However, modify requires a lock for a
 	//key/value, and multiple search for different keys are ok!!!
-	Bstr transfer[3];	//0:transfer value searched; 1:copy key-data from const char*; 2:copy val-data from const char*
-	unsigned transfer_size[3];
+	//Bstr transfer[3];	//0:transfer value searched; 1:copy key-data from const char*; 2:copy val-data from const char*
+	//unsigned transfer_size[3];
 
 	//tree's operations should be atom(if read nodes)
 	//sum the request and send to ISStorage at last
@@ -49,25 +49,25 @@ protected:
 	std::string filename;      	//ok for user to change
 								/* some private functions */
 	std::string getFilePath();	//in UNIX system
-	void CopyToTransfer(const char* _str, unsigned _len, unsigned _index);
+	//void CopyToTransfer(const char* _str, unsigned _len, unsigned _index);
 	void release(ISNode* _np) const;
 
 public:
 	ISTree();				//always need to initial transfer
 	ISTree(std::string _storepath, std::string _filename, std::string _mode, unsigned long long _buffer_size);
-	unsigned int getHeight() const;
+	unsigned getHeight() const;
 	void setHeight(unsigned _h);
 	ISNode* getRoot() const;
 	//void setRoot(Node* _root);
 	//insert, search, remove, set
-	bool search(int _key, char*& _str, int& _len);
-	bool insert(int _key, const char* _str, unsigned _len);
-	bool modify(int _key, const char* _str, unsigned _len);
-	ISNode* find(int _key, int* store, bool ifmodify);
-	bool remove(int _key);
+	bool search(unsigned _key, char*& _str, unsigned& _len);
+	bool insert(unsigned _key, char* _str, unsigned _len);
+	bool modify(unsigned _key, char* _str, unsigned _len);
+	ISNode* find(unsigned _key, int* store, bool ifmodify);
+	bool remove(unsigned _key);
 	const Bstr* getRangeValue();
 	void resetStream();
-	bool range_query(int  _key1, int _key2);
+	bool range_query(unsigned _key1, unsigned _key2);
 	bool save();
 	~ISTree();
 	void print(std::string s);			//DEBUG(print the tree)
@@ -77,3 +77,4 @@ public:
 //After saved, it's ok to continue operations on tree!
 
 #endif
+

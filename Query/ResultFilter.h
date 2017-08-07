@@ -16,8 +16,8 @@
 class ResultFilter
 {
 	private:
-		static const int MAX_SIZE = 1048576;
-		inline int hash(unsigned int x)
+		static const unsigned MAX_SIZE = 1048576;
+		inline unsigned hash(unsigned x)
 		{
 			x = (x + 0x7ed55d16) + (x << 12);
 			x = (x ^ 0xc761c23c) ^ (x >> 19);

@@ -75,6 +75,7 @@ SIIntlNode::setChild(SINode* _child, int _index)
 		return false;
 	}
 	this->childs[_index] = _child;
+
 	return true;
 }
 
@@ -91,6 +92,7 @@ SIIntlNode::addChild(SINode* _child, int _index)
 	for (i = num; i >= _index; --i)	//DEBUG: right bounder!!!
 		childs[i + 1] = childs[i];
 	childs[_index] = _child;
+
 	return true;
 }
 
@@ -106,6 +108,7 @@ SIIntlNode::subChild(int _index)
 	int i;
 	for (i = _index; i < num; ++i) //DEBUG: right bounder!!!
 		childs[i] = childs[i + 1];
+
 	return true;
 }
 
@@ -115,6 +118,7 @@ SIIntlNode::getSize() const
 	unsigned sum = INTL_SIZE, num = this->getNum(), i;
 	for (i = 0; i < num; ++i)
 		sum += keys[i].getLen();
+
 	return sum;
 }
 
@@ -140,6 +144,7 @@ SIIntlNode::split(SINode* _father, int _index)
 	_father->setDirty();
 	p->setDirty();
 	this->setDirty();
+
 	return p;
 }
 
@@ -235,6 +240,7 @@ SIIntlNode::coalesce(SINode* _father, int _index)
 		print("error in coalesce: Invalid case!");
 		//printf("error in coalesce: Invalid case!");
 	}
+
 	_father->setDirty();
 	p->setDirty();
 	this->setDirty();
@@ -291,3 +297,4 @@ SIIntlNode::print(string s)
 	else;
 #endif
 }
+

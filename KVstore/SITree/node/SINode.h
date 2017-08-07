@@ -30,9 +30,9 @@ public:
 	static const unsigned NF_HT = 0xf00000;		//height area in rank
 	static const unsigned NF_KN = 0x07f000;		//NOTICE: decided by DEGREE
 	static const unsigned INTL_SIZE = sizeof(Bstr) * MAX_KEY_NUM;
-	static const unsigned LEAF_SIZE = sizeof(int) * MAX_KEY_NUM + INTL_SIZE;
-	
 	int heapId;
+	static const unsigned LEAF_SIZE = sizeof(unsigned) * MAX_KEY_NUM + INTL_SIZE;
+
 protected:
 	unsigned store;			//store address, the BLock index
 	unsigned flag;			//NF_RK, NF_IL,NF_ID, NF_IV, propety
@@ -67,9 +67,11 @@ public:
 	void setStore(unsigned _store);
 	unsigned getFlag() const;
 	void setFlag(unsigned _flag);
+
 	const Bstr* getKey(int _index) const;	//need to check the index
 	bool setKey(const Bstr* _key, int _index, bool ifcopy = false);
 	bool addKey(const Bstr* _key, int _index, bool ifcopy = false);
+	bool addKey(char* _str, unsigned _len, int _index, bool ifcopy = false);
 	bool subKey(int _index, bool ifdel = false);
 
 	//several binary key search utilities
@@ -77,19 +79,26 @@ public:
 	int searchKey_equal(const Bstr& _bstr) const;
 	int searchKey_lessEqual(const Bstr& _bstr) const;
 
+	int searchKey_less(const char* _str, unsigned _len) const;
+	int searchKey_equal(const char* _str, unsigned _len) const;
+	int searchKey_lessEqual(const char* _str, unsigned _len) const;
+
 	//virtual functions: polymorphic
+	//NOTICE: not pure-virtual, not required to be implemented again, can be used now
 	virtual SINode* getChild(int _index) const { return NULL; };
 	virtual bool setChild(SINode* _child, int _index) { return true; };
 	virtual bool addChild(SINode* _child, int _index) { return true; };
 	virtual bool subChild(int _index) { return true; };
 	virtual SINode* getPrev() const { return NULL; };
 	virtual SINode* getNext() const { return NULL; };
-	virtual int getValue(int _index) const { return -1; };
-	virtual bool setValue(int _val, int _index) { return true; };
-	virtual bool addValue(int _val, int _index) { return true; };
+	virtual unsigned getValue(int _index) const { return -1; };
+	virtual bool setValue(unsigned _val, int _index) { return true; };
+	virtual bool addValue(unsigned _val, int _index) { return true; };
 	virtual bool subValue(int _index) { return true; };
 	virtual void setPrev(SINode* _prev) {};
 	virtual void setNext(SINode* _next) {};
+
+	//NOTICE: pure-virtual, must to be implemented again in the sub-class
 	virtual void Virtual() = 0;
 	virtual void Normal() = 0;
 	virtual unsigned getSize() const = 0;		//return all memory owned
@@ -115,3 +124,4 @@ public:
 */
 
 #endif
+

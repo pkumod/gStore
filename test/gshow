@@ -1,0 +1,7 @@
+#! /usr/bin/bash
+
+echo "require ip/url and port as parameters"
+echo "to show database used"
+
+java GMonitor "show" $1 $2
+

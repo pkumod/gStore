@@ -69,7 +69,7 @@ ISStorage::ISStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 	else	//_mode == "open"
 	{
 		//read basic information
-		int rootnum;
+		unsigned rootnum;
 		char c;
 		fread(this->treeheight, sizeof(unsigned), 1, this->treefp);
 		fread(&rootnum, sizeof(unsigned), 1, this->treefp);
@@ -274,7 +274,8 @@ ISStorage::readNode(ISNode* _np, long long* _request)
 		fseek(treefp, 4 * (num + 1), SEEK_CUR);
 
 	//to read all keys
-	int tmp = -1;
+	unsigned tmp = INVALID;
+	//int tmp = -1;
 	for (i = 0; i < num; ++i)
 	{
 		fread(&tmp, sizeof(int), 1, treefp);
@@ -384,7 +385,8 @@ ISStorage::writeNode(ISNode* _np)
 		}
 	}
 
-	int tmp = 0;
+	//int tmp = 0;
+	unsigned tmp = INVALID;
 	//to write all keys
 	for (i = 0; i < num; ++i)
 	{
@@ -397,7 +399,13 @@ ISStorage::writeNode(ISNode* _np)
 	{
 		//to write all values
 		for (i = 0; i < num; ++i)
+		{
 			this->writeBstr(_np->getValue(i), &blocknum, SpecialBlock);
+			//if(_np->getKey(0) == 0)
+			//{
+				//cout<<"the 0th value: "<<_np->getValue(i)->getStr()[0]<<endl;
+			//}
+		}
 	}
 	fseek(treefp, Address(blocknum), SEEK_SET);
 	if (SpecialBlock)
@@ -408,6 +416,7 @@ ISStorage::writeNode(ISNode* _np)
 	//NOTICE:we may store the dirty bit into the tree file, but that is ok
 	//Each time we read the tree file to construct a node, we always set the drity bit to 0
 	_np->delDirty();
+
 	return true;
 }
 
@@ -419,7 +428,8 @@ ISStorage::readBstr(Bstr* _bp, unsigned* _next)
 	fread(&len, sizeof(unsigned), 1, this->treefp);
 	this->ReadAlign(_next);
 	//this->request(len);
-	char* s = (char*)malloc(len);
+	//char* s = (char*)malloc(len);
+	char* s = new char[len];
 	_bp->setLen(len);
 	for (i = 0; i + 4 < len; i += 4)
 	{
@@ -437,6 +447,7 @@ ISStorage::readBstr(Bstr* _bp, unsigned* _next)
 	fseek(treefp, j, SEEK_CUR);
 	this->ReadAlign(_next);
 	_bp->setStr(s);
+
 	return true;
 }
 
@@ -551,7 +562,10 @@ ISStorage::writeTree(ISNode* _root)	//write the whole tree back and close treefp
 		fputc(c & ~(1 << j), treefp);
 		bp = bp->next;
 	}
+
+	fflush(this->treefp);
 	//fclose(this->treefp);
+
 	return true;
 }
 
@@ -653,6 +667,7 @@ ISStorage::~ISStorage()
 	printf("already empty the freelist!\n");
 #endif
 	delete this->minheap;
+	minheap = NULL;
 #ifdef DEBUG_KVSTORE
 	printf("already empty the buffer heap!\n");
 #endif
@@ -675,3 +690,4 @@ ISStorage::print(string s)
 	fputs("\n", Util::debug_kvstore);
 #endif
 }
+

@@ -32,7 +32,7 @@ Signature::BitSet2str(const EntityBitSet& _bitset)
 }
 
 void 
-Signature::encodeEdge2Entity(EntityBitSet& _entity_bs, int _pre_id, int _neighbor_id, const char _type)
+Signature::encodeEdge2Entity(EntityBitSet& _entity_bs, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _neighbor_id, const char _type)
 {
 	Signature::encodePredicate2Entity(_entity_bs, _pre_id, _type);
 	
@@ -44,23 +44,46 @@ Signature::encodeEdge2Entity(EntityBitSet& _entity_bs, int _pre_id, int _neighbo
 #endif
 
 	Signature::encodeStr2Entity(_entity_bs, _neighbor_id, _type);
+
+//	for(int i = 800; i < _entity_bs.size(); i++){
+//		_entity_bs.set(i);
+//	} 
+   //encode predicate and entity together
+    int x = _pre_id % Signature::STR_AND_EDGE_INTERVAL_BASE;
+    int y = _neighbor_id % Signature::STR_AND_EDGE_INTERVAL_BASE;
+    int seed = x + (x + y + 1) * (x + y) / 2;
+    seed %= Signature::STR_AND_EDGE_INTERVAL_BASE;
+    seed = seed + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_LENGTH;
+    if(Util::is_literal_ele(_neighbor_id))
+	{
+		seed += (Signature::STR_AND_EDGE_INTERVAL_BASE * 2);
+	}
+	else //entity part
+	{
+		//entity can be in edge or out edge
+		if (_type == Util::EDGE_OUT)
+		{
+			seed += Signature::STR_AND_EDGE_INTERVAL_BASE;
+		}
+	}
+	_entity_bs.set(seed);
 }
 
 void
-Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, int _pre_id, const char _type)
+Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, TYPE_PREDICATE_ID _pre_id, const char _type)
 {
 	//NOTICE:this not used now
 	if (Signature::PREDICATE_ENCODE_METHOD == 0)
 	{
 		//WARN:change if need to use again, because the encoding method has changed now!
-		int pos = ((_pre_id + 10) % Signature::EDGE_SIG_LENGTH) + Signature::STR_SIG_LENGTH;
+		unsigned pos = ((_pre_id + 10) % Signature::EDGE_SIG_LENGTH) + Signature::STR_SIG_LENGTH;
 		_entity_bs.set(pos);
 	}
 	else
 	{
-		//NOTICE: in * maybe the int will overflow
+		//NOTICE: in * maybe the unsigned will overflow
 		long long id = _pre_id;
-		int seed_num = id % Signature::EDGE_SIG_INTERVAL_NUM_HALF;
+		unsigned seed_num = id % Signature::EDGE_SIG_INTERVAL_NUM_HALF;
 
 		//int pos = Signature::STR_SIG_LENGTH;
 		if (_type == Util::EDGE_OUT)
@@ -69,11 +92,9 @@ Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, int _pre_id, const c
 			//pos += Signature::EDGE_SIG_IN;
 		}
 
-		//pos += (_pre_id % Signature::EDGE_SIG_OUT);
-
-		//int primeSize = 5;
-		//int prime1[]={5003,5009,5011,5021,5023};
-		//int prime2[]={49943,49957,49991,49993,49999};
+		//unsigned primeSize = 5;
+		//unsigned prime1[]={5003,5009,5011,5021,5023};
+		//unsigned prime2[]={49943,49957,49991,49993,49999};
 
 		//NOTICE: more ones in the bitset(use more primes) means less conflicts, but also weakens the filtration of VSTree.
 		// when the data set is big enough, cutting down the size of candidate list should come up to our primary consideration.
@@ -81,50 +102,53 @@ Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, int _pre_id, const c
 		// also, when the data set is small, hash conflicts can hardly happen.
 		// therefore, I think using 2 primes(set up two ones in bitset) is enough.
 		// --by hanshuo.
-		//int primeSize = 2;
-		//int prime1[] = {5003, 5011};
-		//int prime2[] = {49957, 49993};
+		//unsigned primeSize = 2;
+		//unsigned prime1[] = {5003, 5011};
+		//unsigned prime2[] = {49957, 49993};
 
-		//for(int i = 0; i < primeSize; i++)
+		//for(unsigned i = 0; i < primeSize; i++)
 		//{
-		//int seed = _pre_id * prime1[i] % prime2[i];
-		//int pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
+		//unsigned seed = _pre_id * prime1[i] % prime2[i];
+		//unsigned pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
 		//_entity_bs.set(pos);
 		//}
+		//unsigned seed = id * 5003 % 49957;
+		//unsigned pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
+		//_entity_bs.set(pos);
 
-		int seed = id * 5003 % 49957;
-		int pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
-		_entity_bs.set(pos);
+		long long seed = id * 5003 % 49957;
+		seed = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::STR_SIG_LENGTH + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
+		_entity_bs.set(seed);
 	}
 }
 
 //void
-//Signature::encodePredicate2Edge(int _pre_id, EdgeBitSet& _edge_bs)
+//Signature::encodePredicate2Edge(unsigned _pre_id, EdgeBitSet& _edge_bs)
 //{
 	//if (Signature::PREDICATE_ENCODE_METHOD == 0)
 	//{
-		//int pos = (_pre_id + 10) % Signature::EDGE_SIG_LENGTH;
+		//unsigned pos = (_pre_id + 10) % Signature::EDGE_SIG_LENGTH;
 		//_edge_bs.set(pos);
 	//}
 	//else
 	//{
-		//int seed_num = _pre_id % Signature::EDGE_SIG_INTERVAL_NUM_HALF;
-		////int primeSize = 5;
-		////int prime1[]={5003,5009,5011,5021,5023};
-		////int prime2[]={49943,49957,49991,49993,49999};
+		//unsigned seed_num = _pre_id % Signature::EDGE_SIG_INTERVAL_NUM_HALF;
+		////unsigned primeSize = 5;
+		////unsigned prime1[]={5003,5009,5011,5021,5023};
+		////unsigned prime2[]={49943,49957,49991,49993,49999};
 
-		////int primeSize = 2;
-		////int prime1[] = {5003,5011};
-		////int prime2[] = {49957,49993};
+		////unsigned primeSize = 2;
+		////unsigned prime1[] = {5003,5011};
+		////unsigned prime2[] = {49957,49993};
 
-		////for (int i = 0; i < primeSize; i++)
+		////for (unsigned i = 0; i < primeSize; i++)
 		////{
-		////int seed = _pre_id * prime1[i] % prime2[i];
-		////int pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
+		////unsigned seed = _pre_id * prime1[i] % prime2[i];
+		////unsigned pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
 		////_edge_bs.set(pos);
 		////}
-		//int seed = _pre_id * 5003 % 49957;
-		//int pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
+		//unsigned seed = _pre_id * 5003 % 49957;
+		//unsigned pos = (seed % Signature::EDGE_SIG_INTERVAL_BASE) + Signature::EDGE_SIG_INTERVAL_BASE * seed_num;
 		//_edge_bs.set(pos);
 	//}
 //}
@@ -132,11 +156,11 @@ Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, int _pre_id, const c
 //NOTICE: no need to encode itself because only variable in query need to be filtered!
 //So only consider all neighbors!
 void
-Signature::encodeStr2Entity(EntityBitSet& _entity_bs, int _neighbor_id, const char _type)
+Signature::encodeStr2Entity(EntityBitSet& _entity_bs, TYPE_ENTITY_LITERAL_ID _neighbor_id, const char _type)
 {
 	//NOTICE: we assume the parameter is always valid(invalid args should not be passed here)
 	long long id = _neighbor_id;
-	//NOTICE: in * maybe the int will overflow
+	//NOTICE: in * maybe the unsigned will overflow
 	//long long seed = id * 5003 % 49957;
 	//seed = seed % Signature::STR_SIG_INTERVAL_BASE;
 	//seed = seed + (id % Signature::STR_SIG_INTERVAL_NUM) * Signature::STR_SIG_INTERVAL_BASE;
@@ -166,14 +190,14 @@ Signature::encodeStr2Entity(EntityBitSet& _entity_bs, int _neighbor_id, const ch
 	//_str is subject or object or literal
 	//if (strlen(_str) >0 && _str[0] == '?')
 		//return;
-	//int length = (int)strlen(_str);
-	//unsigned int hashKey = 0;
-	//unsigned int pos = 0;
+	//unsigned length = (unsigned)strlen(_str);
+	//unsigned unsigned hashKey = 0;
+	//unsigned unsigned pos = 0;
 	//char *str2 = (char*)calloc(length + 1, sizeof(char));
 	//strcpy(str2, _str);
 	//char *str = str2;
 	//unsigned base = Signature::STR_SIG_BASE * (Signature::HASH_NUM - 1);
-	//for (int i = Signature::HASH_NUM - 1; i >= 0; --i)
+	//for (unsigned i = Signature::HASH_NUM - 1; i >= 0; --i)
 	//{
 		//HashFunction hf = Util::hash[i];
 		//if (hf == NULL)
@@ -205,7 +229,7 @@ Signature::encodeStr2Entity(EntityBitSet& _entity_bs, int _neighbor_id, const ch
 }
 
 //void
-//Signature::encodeStrID2Entity(int _str_id, EntityBitSet& _entity_bs)
+//Signature::encodeStrID2Entity(unsigned _str_id, EntityBitSet& _entity_bs)
 //{
 	////NOT USED NOW
 //}

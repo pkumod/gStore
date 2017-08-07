@@ -25,12 +25,14 @@ using namespace std;
 //int LRUCache::DEFAULT_CAPACITY = 10000000;
 int LRUCache::DEFAULT_CAPACITY = 1 * 1000 * 1000;  //about 20G memory for vstree
 //int LRUCache::DEFAULT_CAPACITY = 1000;
-//TODO:10^6 is a good parameter, at most use 20G
+//NOTICE:10^6 is a good parameter, at most use 20G
 
+//NOTICE: it is ok to set it 4000000 when building!!!  better to adjust according to the current memory usage
+//also use 2000000 or smaller for query()
 LRUCache::LRUCache(int _capacity)
 {
 	//initialize the lock
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_init(&(this->cache_lock), NULL);
 #endif
 
@@ -39,7 +41,7 @@ LRUCache::LRUCache(int _capacity)
 	cout << "LRUCache initial..." << endl;
 	this->capacity = _capacity > 0 ? _capacity : LRUCache::DEFAULT_CAPACITY;
 
-	// TODO+DEBUG:it seems that a minium size is required, for example, multiple path down(the height?)
+	//DEBUG:it seems that a minium size is required, for example, multiple path down(the height?)
 	//at least 3*h
 	//
 	// we should guarantee the cache is big enough.
@@ -80,7 +82,7 @@ LRUCache::~LRUCache()
 	delete[] this->values;
 
 	//destroy the lock
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_destroy(&(this->cache_lock));
 #endif
 }
@@ -186,7 +188,7 @@ bool LRUCache::createCache(string _filePath)
 //set the key(node's file line) and value(node's pointer). if the key exists now, the value of this key will be overwritten. 
 bool LRUCache::set(int _key, VNode * _value)
 {
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_wrlock(&(this->cache_lock));
 	pthread_mutex_lock(&(_value->node_lock));
 #endif
@@ -222,7 +224,7 @@ bool LRUCache::set(int _key, VNode * _value)
 		//cout<<pos<<" "<<_key<<" "<<_value->getFileLine()<<endl;
 
 		int ret = 0;
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 		ret = pthread_mutex_trylock(&(this->values[pos]->node_lock));
 #endif
 		//TODO:scan and select a unlocked one to swap, if no, then wait by cond
@@ -232,7 +234,7 @@ bool LRUCache::set(int _key, VNode * _value)
 		}
 		//NOTICE:we can unlock here because user has released this lock, if he want to read 
 		//this node again, he must wait for this buffer operation to end up
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 		pthread_mutex_unlock(&(this->values[pos]->node_lock));
 #endif
 
@@ -244,7 +246,7 @@ bool LRUCache::set(int _key, VNode * _value)
 		//this->refresh(pos);
 	}
 
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_unlock(&(this->cache_lock));
 #endif
 	return false;
@@ -254,7 +256,7 @@ bool LRUCache::set(int _key, VNode * _value)
 bool
 LRUCache::del(int _key)
 {
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_wrlock(&(this->cache_lock));
 #endif
 
@@ -284,14 +286,14 @@ LRUCache::del(int _key)
 		//When this file_line is allocated again, then the new node can
 		//be written into the unused file part
 		//(VNode size is fixed)
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 		pthread_rwlock_unlock(&(this->cache_lock));
 #endif
 
 		return true;
 	}
 
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_unlock(&(this->cache_lock));
 #endif
 
@@ -301,7 +303,7 @@ LRUCache::del(int _key)
 //get the value(node's pointer) by key(node's file line). 
 VNode* LRUCache::get(int _key)
 {
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_rdlock(&(this->cache_lock));
 #endif
 
@@ -318,7 +320,7 @@ VNode* LRUCache::get(int _key)
 	// the value is not in memory now, should load it from hard disk.
 	else if (this->size < this->capacity)
 	{
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 		pthread_rwlock_unlock(&(this->cache_lock));
 		pthread_rwlock_wrlock(&(this->cache_lock));
 #endif
@@ -342,7 +344,7 @@ VNode* LRUCache::get(int _key)
 	// if the memory pool is full now, should swap out the least recently used one, and swap in the required value.
 	else
 	{
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 		pthread_rwlock_unlock(&(this->cache_lock));
 		pthread_rwlock_wrlock(&(this->cache_lock));
 #endif
@@ -353,7 +355,7 @@ VNode* LRUCache::get(int _key)
 		int pos = this->next[LRUCache::START_INDEX];
 
 		int retval = 0;
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 		retval = pthread_mutex_trylock(&(this->values[pos]->node_lock));
 #endif
 		//TODO:scan and select a unlocked one to swap, if no, then wait by cond
@@ -361,7 +363,7 @@ VNode* LRUCache::get(int _key)
 		{
 			cout<<"error: fail to get the vnode lock in LRUCache::set()"<<endl;
 		}
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 		pthread_mutex_unlock(&(this->values[pos]->node_lock));
 #endif
 
@@ -381,7 +383,7 @@ VNode* LRUCache::get(int _key)
 		}
 	}
 
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_mutex_lock(&(ret->node_lock));
 	pthread_rwlock_unlock(&(this->cache_lock));
 #endif
@@ -392,7 +394,7 @@ VNode* LRUCache::get(int _key)
 //update the _key's mapping _value. if the key do not exist, this operation will fail and return false. 
 bool LRUCache::update(int _key, VNode* _value)
 {
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_wrlock(&(this->cache_lock));
 #endif
 
@@ -407,7 +409,7 @@ bool LRUCache::update(int _key, VNode* _value)
 		{
 			cerr << "error, the pos is wrong. @LRUCache::update" << endl;
 
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 			pthread_rwlock_unlock(&(this->cache_lock));
 #endif
 
@@ -416,7 +418,7 @@ bool LRUCache::update(int _key, VNode* _value)
 
 		this->values[pos] = _value;
 
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 		pthread_rwlock_unlock(&(this->cache_lock));
 #endif
 
@@ -424,7 +426,7 @@ bool LRUCache::update(int _key, VNode* _value)
 	}
 
 	cerr << "error:the key not exist!"<<endl;
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_unlock(&(this->cache_lock));
 #endif
 
@@ -438,11 +440,11 @@ int LRUCache::getCapacity()
 
 int LRUCache::getRestAmount()
 {
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_rdlock(&(this->cache_lock));
 #endif
 	int t = this->size;
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_unlock(&(this->cache_lock));
 #endif
 
@@ -452,7 +454,7 @@ int LRUCache::getRestAmount()
 
 void LRUCache::showAmount()
 {
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_rdlock(&(this->cache_lock));
 #endif
 
@@ -461,18 +463,18 @@ void LRUCache::showAmount()
 		this->capacity, this->size,
 		(double)this->size / this->capacity * 100.0);
 
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_unlock(&(this->cache_lock));
 #endif
 }
 
 bool LRUCache::isFull()
 {
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_rdlock(&(this->cache_lock));
 #endif
 	bool ret = this->size == this->capacity;
-#ifdef THREAD_ON
+#ifdef THREAD_VSTREE_ON
 	pthread_rwlock_unlock(&(this->cache_lock));
 #endif
 

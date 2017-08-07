@@ -20,8 +20,8 @@ ISHeap::ISHeap(unsigned _size)
 {
 	this->length = 0;
 	this->size = _size;
-	//this->heap = (Node**)malloc(this->size * sizeof(Node*));	//not use 4 or 8
-	this->heap = new ISNode*[this->size];
+	this->heap = (ISNode**)malloc(this->size * sizeof(ISNode*));	//not use 4 or 8
+	//this->heap = new ISNode*[this->size];
 	if (this->heap == NULL)
 	{
 		this->print("error in ISHeap: Allocation fail!");
@@ -69,6 +69,10 @@ ISHeap::insert(ISNode* _np)
 {
 	if (this->length == this->size)	//when full, reallocate
 	{
+		cout<<"check: double the heap"<<endl;
+		//WARN: realloc should be combined with malloc instead of new
+		//http://bbs.csdn.net/topics/320148799
+		//For new, use placement new to enlarge space: http://blog.csdn.net/vangoals/article/details/4252833
 		this->heap = (ISNode**)realloc(this->heap, 2 * this->size * sizeof(ISNode*));
 		if (this->heap == NULL)
 		{
@@ -183,7 +187,8 @@ ISHeap::modify(ISNode* _np, bool _flag)	//control direction
 
 ISHeap::~ISHeap()
 {
-	delete[] this->heap;
+	//delete[] this->heap;
+	free(this->heap);
 	this->heap = NULL;
 	this->length = this->size = 0;
 }

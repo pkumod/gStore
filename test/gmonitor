@@ -1,0 +1,7 @@
+#! /usr/bin/bash
+
+echo "require ip/url and port as parameters"
+echo "to show the status of server"
+
+java GMonitor "monitor" $1 $2
+
