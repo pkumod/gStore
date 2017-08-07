@@ -252,7 +252,7 @@
 \title{\includegraphics[scale=0.3, bb=0 0 385 567]{logo.png} \\
 	gStore系统使用手册}
 %\author{Bookug Lobert\footnote{EECS of Peking University, zengli-bookug@pku.edu.cn}\\[2ex]}
-\author{由gStore团队编写 \footnote{邮箱列表在第11章中给出。}}
+\author{由gStore团队编写 \footnote{邮箱列表在第13章中给出。}}
 \date{\today}
 \maketitle
 
@@ -288,9 +288,9 @@ RDF（\emph{R}esource \emph{D}escription \emph{F}ramework，资源描述框架�
 
 为了检索并操控一个RDF图，W3C提供了一种结构化的查询语言，SPARQL (\emph{S}imple \emph{P}rotocol \emph{A}nd \emph{R}DF \emph{Q}uery \emph{L}anguage，简单协议和RDF查询语言)。SPARQL能够依据连接或分离关系，查询指定图模式和可选图模式。SPARQL同时支持聚集函数、子查询、否定查询、根据表达式创造值、可扩展的值检验、根据源RDF的限制性查询。与RDF图类似，SPARQL查询可以表示为有若干变量的查询图。这样一来，回答一个SPARQL 查询就等价于在一个RDF图中找到一个匹配查询的子图。通过\href{https://www.w3.org/TR/sparql11-query/}{SPARQL 介绍}了解有关SPARQL的更多信息。
 
-虽然有一些RDF数据管理系统（例如Jena、Virtuoso、Sesame）在关系系统中储存RDF数据，但现有的系统几乎都没有开发符合SPARQL语义的图模式。\textbf{在这里我们完善了基于图的RDF 三元组存储，称为gStore，是北京大学、滑铁卢大学、香港科技大学的联合研究项目。中国北京大学计算机科学与技术研究所的数据库组对该系统进行开发和维护。}对于gStore的详细描述可以在\hyperref[chapter08]{【出版物】}一章我们的论文{[}Zou et al., VLDB 11{]}和{[}Zou et al., VLDB Journal 14{]}中找到。这份帮助文档包括系统安装、使用、API、 用例和FAQ。gStore是github上遵循BSD协议的一个开源项目。你可以使用gStore、报告问题、提出建议，或加入我们使gStore变得更好。你也可以在尊重我们的工作的基础上基于gStore开发各种应用。
+虽然有一些RDF数据管理系统（例如Jena、Virtuoso、Sesame）在关系系统中储存RDF数据，但现有的系统几乎都没有开发符合SPARQL语义的图模式。\textbf{在这里我们完善了基于图的RDF 三元组存储，称为gStore，是北京大学、滑铁卢大学、香港科技大学的联合研究项目。中国北京大学计算机科学与技术研究所的数据库组对该系统进行开发和维护。}对于gStore的详细描述可以在\hyperref[chapter09]{【出版物】}一章我们的论文{[}Zou et al., VLDB 11{]}和{[}Zou et al., VLDB Journal 14{]}中找到。这份帮助文档包括系统安装、使用、API、 用例和FAQ。gStore是github上遵循BSD协议的一个开源项目。你可以使用gStore、报告问题、提出建议，或加入我们使gStore变得更好。你也可以在尊重我们的工作的基础上基于gStore开发各种应用。
 
-\textbf{请确保在使用gStore之前已经阅读了\hyperref[chapter17]{【法律问题】}一章。}
+\textbf{请确保在使用gStore之前已经阅读了\hyperref[chapter18]{【法律问题】}一章。}
 
 \clearpage
 
@@ -330,28 +330,30 @@ Gstore系统（也称作gStore）是一个用于管理大型图结构数据的�
 	\item
 	\hyperref[chapter04]{【如何使用】}：使用gStore系统的详细指导
 	\item
-	\hyperref[chapter05]{【API说明】}：基于gStore API开发应用
+	\hyperref[chapter05]{【socket API说明】}：基于gStore socket API开发应用
 	\item
-	\hyperref[chapter07]{【项目结构】}：展现本项目的结构和流程
+	\hyperref[chapter06]{【HTTP API说明】}：基于gStore HTTP API开发应用
 	\item
-	\hyperref[chapter08]{【出版物】}：与gStore相关的论文和出版物
+	\hyperref[chapter08]{【项目结构】}：展现本项目的结构和流程
 	\item
-	\hyperref[chapter13]{【更新日志】}：保存了系统更新的日志
+	\hyperref[chapter09]{【出版物】}：与gStore相关的论文和出版物
 	\item
-	\hyperref[chapter14]{【测试结果】}：展现一系列的实验结果
+	\hyperref[chapter14]{【更新日志】}：保存了系统更新的日志
+	\item
+	\hyperref[chapter15]{【测试结果】}：展现一系列的实验结果
 \end{itemize}
 
 \hyperdef{}{other-business}{\subsubsection{其他事项}\label{other-business}}
 
-在\hyperref[chapter11]{【技巧】}一章中，我们撰写了一系列短文，解决使用gStore来实现应用时出现的常见问题。
+在\hyperref[chapter12]{【技巧】}一章中，我们撰写了一系列短文，解决使用gStore来实现应用时出现的常见问题。
 
-如果不需要及时回复，你可以在这个库的Issues 部分报告建议或错误。如果你急于联系我们处理你的报告，请通过电子邮件提交你的建议和错误报告。我们团队的完整列表在\hyperref[chapter12]{【贡献者】}一章中给出。
+如果不需要及时回复，你可以在这个库的Issues 部分报告建议或错误。如果你急于联系我们处理你的报告，请通过电子邮件提交你的建议和错误报告。我们团队的完整列表在\hyperref[chapter13]{【贡献者】}一章中给出。
 
-使用现有的gStore系统有一些限制，你可以在\hyperref[chapter09]{【限制】}一章中看到。
+使用现有的gStore系统有一些限制，你可以在\hyperref[chapter10]{【限制】}一章中看到。
 
-有时候你可能会发现一些奇怪的现象（但不是错误案例），或者很难理解/解决（不知道接下来怎么做），可以参阅\hyperref[chapter10]{【FAQ】}。
+有时候你可能会发现一些奇怪的现象（但不是错误案例），或者很难理解/解决（不知道接下来怎么做），可以参阅\hyperref[chapter11]{【FAQ】}。
 
-图数据库引擎是一个新的领域，我们还在努力发展。我们接下来要做的事在\hyperref[chapter15]{【将来计划】}一章中列出，我们希望越来越多的人可以支持甚至加入我们。你可以通过很多方法支持我们：
+图数据库引擎是一个新的领域，我们还在努力发展。我们接下来要做的事在\hyperref[chapter16]{【将来计划】}一章中列出，我们希望越来越多的人可以支持甚至加入我们。你可以通过很多方法支持我们：
 
 \begin{itemize}
 	\item
@@ -364,7 +366,7 @@ Gstore系统（也称作gStore）是一个用于管理大型图结构数据的�
 	\ldots{}
 \end{itemize}
 
-启发我们或对这个项目做出贡献的人会在\hyperref[chapter16]{【致谢列表】}中列出。
+启发我们或对这个项目做出贡献的人会在\hyperref[chapter17]{【致谢列表】}中列出。
 
 \clearpage
 
@@ -416,14 +418,14 @@ Gstore系统（也称作gStore）是一个用于管理大型图结构数据的�
 	\item
 	在CentOS系统上你需要添加epel源才能安装ccache，但在Ubuntu系统上可以直接用'apt-get install ccache'命令安装。如果你无法安装ccahe（或者不想安装），请修改makefile文件（只需要将CC变量改为g++即可）。
 	\item
-	其他问题请参阅\hyperref[chapter10]{【FAQ】}一章。
+	其他问题请参阅\hyperref[chapter11]{【FAQ】}一章。
 \end{enumerate}
 
 \clearpage
 
 \hyperdef{}{chapter02}{\subsection{第02章：基本介绍}\label{chapter02}}
 
-\textit{与Gstore系统相关的第一篇论文是\href{run:../pdf/gStoreVLDBJ.pdf}{gStore\_VLDBJ}，你可以在\hyperref[chapter08]{【出版物】}一章中找到相关出版物。}
+\textit{与Gstore系统相关的第一篇论文是\href{run:../pdf/gStoreVLDBJ.pdf}{gStore\_VLDBJ}，你可以在\hyperref[chapter09]{【出版物】}一章中找到相关出版物。}
 
 \hyperdef{}{what-is-gstore}{\subsubsection{什么是gStore}\label{what-is-gstore}}
 
@@ -435,7 +437,7 @@ gStore是一个基于图的RDF数据管理系统（也称为“三元组存储�
 
 \hyperdef{}{why-gstore}{\subsubsection{为什么选择gStore}\label{why-gstore}}
 
-在一系列测试后，我们进行了分析并将结果记录在\hyperref[chapter14]{【测试结果】}一章中。gStore在回答复杂查询时（例如，包含循环）比其他数据库系统运行更快。对于简单查询，gStore和其他数据库系统都运行得很好。
+在一系列测试后，我们进行了分析并将结果记录在\hyperref[chapter15]{【测试结果】}一章中。gStore在回答复杂查询时（例如，包含循环）比其他数据库系统运行更快。对于简单查询，gStore和其他数据库系统都运行得很好。
 
 另外，当今是大数据时代，出现了越来越多的结构化数据，原来的关系型数据库系统（或是基于关系表的数据库系统）不能高效地处理结构化数据。相反，gStore可以利用图数据结构的特征并提升性能。
 
@@ -629,7 +631,72 @@ final result is :
 	支持路径补全（不是内嵌命令补全）。
 \end{itemize}
 
-\hyperdef{}{3-gserver}{\paragraph{3. gserver}\label{3-gserver}}
+\hyperdef{}{3-ghttp}{\paragraph{3. ghttp}\label{3-ghttp}}
+
+运行ghttp之后就可以通过HTTP协议访问gStore，使用9000端口进行通信。服务启动后，你可以通过在浏览器中访问特定url或在程序中使用HTTP API连接到gStore。按Ctrl-C停止服务。（HTTP服务器支持多连接）。
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/ghttp
+the current settings are as below:
+key : value
+-----------------------------------------------------------
+BackupTime : 2000          # 4 am (GMT+8)
+buffer_maxium : 100
+db_home : .
+db_suffix : .db
+debug_level : simple
+gstore_mode : single
+operation_logs : true
+thread_maxium : 1000
+\end{verbatim}
+
+URL规则如下：  
+
+参数：operation, db\_name, ds\_path, format, sparql
+
+注意：请先完成URL编码，再将其发送到数据库服务器。
+
+操作类型：build, load, unload, query, monitor, show, checkpoint
+
+\begin{itemize}
+	\item
+	\texttt{db\_name}  数据库名称，例如lubm
+	\item
+	\texttt{format} html, json, txt, csv
+	\item
+	\texttt{sparql} select ?s where { ?s ?p ?o . }
+	\item
+	\texttt{ds\_path}  例如/home/data/test.n3
+\end{itemize}
+
+示例如下：
+
+\begin{itemize}
+	\item
+	从数据集建立一个数据库：\\
+	http://localhost:9000/?operation=build\&db\_name=[db\_name]\&ds\_path=[ds\_path]
+	\item 
+	加载一个数据库：\\
+	http://localhost:9000/?operation=load\&db\_name=[db\_name]
+	\item 
+	在当前数据库进行查询：\\
+	http://localhost:9000/?operation=query\&format=[format]\&sparql=[sparql]
+	\item 
+	卸载数据库：\\
+	http://localhost:9000/?operation=unload\&db\_name=[db\_name]
+	\item 
+	监控服务器：\\
+	http://localhost:9000/?operation=monitor
+	\item 
+	展示数据库：\\
+	http://localhost:9000/?operation=show
+	\item
+	保存当前数据库：\\
+	http://localhost:9000/?operation=checkpoint
+\end{itemize}
+
+
+\hyperdef{}{4-gserver}{\paragraph{4. gserver}\label{4-gserver}}
 
 gserver是一个后台程序。会在使用gclient或API连接gStore时运行。它通过套接字与客户端通信。
 
@@ -652,7 +719,7 @@ Port changed to 3307.
 
 注意：gserver不支持多线程。如果你同时在多个终端启动gclient，gserver会崩溃。
 
-\hyperdef{}{4-gclient}{\paragraph{4. gclient}\label{4-gclient}}
+\hyperdef{}{5-gclient}{\paragraph{5. gclient}\label{5-gclient}}
 
 gclient是用于发送命令和接收反馈的客户端。
 
@@ -714,7 +781,7 @@ gsql>
 	在指令前不能有空格或制表符
 \end{itemize}
 
-\hyperdef{}{5-test-utilities}{\paragraph{5. 测试工具}\label{5-test-utilities}}
+\hyperdef{}{6-test-utilities}{\paragraph{6. 测试工具}\label{6-test-utilities}}
 
 test/文件夹下有一系列测试程序，我们会介绍两个比较有用的：gtest.cpp和full\_test.sh
 \textbf{gtest用多个数据集和查询测试gStore。}
@@ -741,7 +808,71 @@ DIR/WatDiv/query/*.sql
 
 要使用full\_test.sh，请下载你想要比较的数据库系统，并在这一脚本中准确设置数据库系统和数据集的位置。命名策略和日志策略应该与gtest的要求一致。
 
-在这一脚本中仅测试比较了gStore和Jena，如果你愿意花时间阅读这一脚本，很容易添加其他数据库系统。如果遇到问题，你可以到\href{run:../latex/formal_experiment.pdf}{测试报告}或\hyperref[chapter10]{【FAQ】}一章寻求帮助。
+在这一脚本中仅测试比较了gStore和Jena，如果你愿意花时间阅读这一脚本，很容易添加其他数据库系统。如果遇到问题，你可以到\href{run:../latex/formal_experiment.pdf}{测试报告}或\hyperref[chapter11]{【FAQ】}一章寻求帮助。
+
+\hyperdef{}{7-gadd}{\paragraph{7. gadd}\label{7-gadd}}
+
+gadd向数据库中插入一个文件中的三元组。
+
+用法：\texttt{bin/gadd db\_name rdf\_triple\_file\_path}.
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gadd lubm ./data/LUBM\_10.n3
+...
+argc: 3 DB_store:lubm   insert file:./data/LUBM_10.n3
+get important pre ID
+...
+insert rdf triples done.
+inserted triples num: 99550
+\end{verbatim}
+
+\hyperdef{}{8-gsub}{\paragraph{8. gsub}\label{8-gsub}}
+
+gsub从数据库中删除某一文件中的三元组。
+
+用法：\texttt{bin/gsub db\_name rdf\_triple\_file\_path}.
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gsub lubm data/LUBM\_10.n3
+...
+argc: 3 DB_store:lubm  remove file: data/LUBM\_10.n3
+...
+remove rdf triples done.
+removed triples num: 99550
+\end{verbatim}
+
+\hyperdef{}{9-gmonitor}{\paragraph{9. gmonitor}\label{9-gmonitor}}
+
+启动ghttp后，进入gStore/bin/目录下，输入\texttt{./gmonitor ip port}查看服务器信息。
+
+\begin{verbatim}
+[bookug@localhost bin]$ ./gmonitor 127.0.0.1 9000
+parameter: ?operation=monitor
+request: http://127.0.0.1:9000/%3Foperation%3Dmonitor
+null--->[HTTP/1.1 200 OK]
+Content-Length--->[127]
+database: lubm
+triple num: 99550
+entity num: 28413
+literal num: 0
+subject num: 14569
+predicate num: 17
+connection num: 7
+\end{verbatim}
+
+\hyperdef{}{10-gshow}{\paragraph{10. gshow}\label{10-gshow}}
+
+启动ghttp后，进入gStore/bin目录下，输入\texttt{./gshow ip port}查看当前加载的数据库。
+
+\begin{verbatim}
+[bookug@localhost gStore]$ ./gshow 127.0.0.1 9000
+parameter: ?operation=show
+request: http://127.0.0.1:9000/%3Foperation%3Dshow
+null--->[HTTP/1.1 200 OK]
+Content-Length--->[4]
+lubm
+\end{verbatim}
+
 
 \clearpage
 
@@ -749,17 +880,17 @@ DIR/WatDiv/query/*.sql
 \section{高级}
 %\part{Advanced}
 
-\hyperdef{}{chapter05}{\subsection{第05章：API说明}\label{chapter05}}
+\hyperdef{}{chapter05}{\subsection{第05章：socket API说明}\label{chapter05}}
 
-\textbf{本章节将引导你用我们的API连接gStore。}
+\textbf{本章节将引导你用我们的socket API连接gStore，在服务器端运行gserver时使用。另外，我们还提供ghttp对应的API，请见\hyperref[chapter06]{【HTTP API说明】}}。
 
 \hyperdef{}{easy-examples}{\subsubsection{简单样例}\label{easy-examples}}
 
-我们目前提供了JAVA，C++，PHP和Python的gStore API。请参考\texttt{api/cpp/example}，\texttt{api/java/example}，\texttt{api/php}和{api/php/example}的样例代码。要使用Java和C++的样例，请确保已经生成了可执行程序。如果没有生成，只需要在gStore根目录下输入\texttt{make\ APIexample}来编译代码和API。
+我们目前提供了JAVA，C++，PHP和Python的gStore API。请参考\texttt{api/socket/cpp/example}，\texttt{api/socket/java/example}，\texttt{api/socket/php}和{api/socket/php/example}的样例代码。要使用Java和C++的样例，请确保已经生成了可执行程序。如果没有生成，只需要在gStore根目录下输入\texttt{make\ APIexample}来编译代码和API。
 
-接下来，\textbf{用\texttt{./gserver}指令启动gStore服务器。}如果你知道一个正在运行的可用的gStore服务器，你可以尝试连接它，请注意\textbf{服务器ip、服务器和客户端的端口号必须匹配。}（样例使用默认设置，不需要更改。）之后，对于Java和C++来说，你需要在gStore/api/目录下编译样例代码。我们提供了一个程序，只需要在gStore根目录下输入\texttt{make\ APIexample}。 或者你可以自己编译代码，在本例中，请分别打开gStore/api/cpp/example/和gStore/api/java/example/。
+接下来，\textbf{用\texttt{./gserver}指令启动gStore服务器。}如果你知道一个正在运行的可用的gStore服务器，你可以尝试连接它，请注意\textbf{服务器ip、服务器和客户端的端口号必须匹配。}（样例使用默认设置，不需要更改。）之后，对于Java和C++来说，你需要在gStore/api/目录下编译样例代码。我们提供了一个程序，只需要在gStore根目录下输入\texttt{make\ APIexample}。 或者你可以自己编译代码，在本例中，请分别打开gStore/api/socket/cpp/example/和gStore/api/socket/java/example/。
 
-最后，打开样例目录并运行相应的可执行程序。对C++而言，用\texttt{./example}指令运行。对Java而言，用\texttt{make\ run}指令或\texttt{java\ -cp\ ../lib/GstoreJavaAPI.jar:.\ JavaAPIExample}运行。PHP和Python文件不需要编译，可以直接执行。这些程序都会连接到指定的gStore服务器并做一些加载或查询操作。请确保你在运行样例的终端看到了查询结果，如果没有，请参阅\hyperref[chapter10]{【FAQ】}一章或向我们报告。（\hyperref[chapter00]{【README】}中描述了报告方法。）
+最后，打开样例目录并运行相应的可执行程序。对C++而言，用\texttt{./example}指令运行。对Java而言，用\texttt{make\ run}指令或\texttt{java\ -cp\ ../lib/GstoreJavaAPI.jar:.\ JavaAPIExample}运行。PHP和Python文件不需要编译，可以直接执行。这些程序都会连接到指定的gStore服务器并做一些加载或查询操作。请确保你在运行样例的终端看到了查询结果，如果没有，请参阅\hyperref[chapter11]{【FAQ】}一章或向我们报告。（\hyperref[chapter00]{【README】}中描述了报告方法。）
 
 我们建议你仔细阅读样例代码和相应的Makefile。这会帮助你理解API，特别是如果你想基于API接口写自己的程序。
 
@@ -926,14 +1057,14 @@ string query(string _sparql);
 
 \hyperdef{}{compile}{\paragraph{编译}\label{compile}}
 
-我们建议你在gStore/api/cpp/example/Makefile中查看如何用C++ API编译你的代码。通常来说，你必须要将代码编译为包含了C++ API 头的目标文件，并将目标文件连接到C++ API中的静态库。
+我们建议你在gStore/api/socket/cpp/example/Makefile中查看如何用C++ API编译你的代码。通常来说，你必须要将代码编译为包含了C++ API 头的目标文件，并将目标文件连接到C++ API中的静态库。
 
 我们假设你的源代码在test.cpp中，位置为\$\{GSTORE\}/gStore/。（如果名字是devGstores 而不是gStore，那么路径为\$\{GSTORE\}/devGstore/）
 
 \begin{quote}
-	用\texttt{g++\ -c\ -I\$\{GSTORE\}/gStore/api/cpp/src/\ test.cpp\ -o\ test.o}将你的test.cpp编译成test.o，相关的API头在api/cpp/src/中。
+	用\texttt{g++\ -c\ -I\$\{GSTORE\}/gStore/api/socket/cpp/src/\ test.cpp\ -o\ test.o}将你的test.cpp编译成test.o，相关的API头在api/socket/cpp/src/中。
 	
-	用\texttt{g++\ -o\ test\ test.o\ -L\$\{GSTORE\}/gStore/api/cpp/lib/\ -lgstoreconnector}将test.o连接到api/cpp/lib/中的libgstoreconnector.a(静态库)。
+	用\texttt{g++\ -o\ test\ test.o\ -L\$\{GSTORE\}/gStore/api/socket/cpp/lib/\ -lgstoreconnector}将test.o连接到api/socket/cpp/lib/中的libgstoreconnector.a(静态库)。
 \end{quote}
 
 接下来，你可以输入\texttt{./test}执行使用了C++ API的程序。我们还建议你将相关的编译命令和其他你需要的命令放在Makefile中。
@@ -993,19 +1124,19 @@ string query(string _sparql);
 
 \hyperdef{}{compile-1}{\paragraph{编译}\label{compile-1}}
 
-我们建议你在gStore/api/java/example/Makefile中查看如何用Java API编译你的代码。通常来说，你必须要将代码编译为包含了Java API 中jar文件的目标文件。
+我们建议你在gStore/api/socket/java/example/Makefile中查看如何用Java API编译你的代码。通常来说，你必须要将代码编译为包含了Java API 中jar文件的目标文件。
 
 我们假设你的源代码在test.java中，位置为\$\{GSTORE\}/gStore/。（如果名字是devGstores 而不是gStore，那么路径为\$\{GSTORE\}/devGstore/）
 
 \begin{quote}
-	用\texttt{javac\ -cp\ \$\{GSTORE\}/gStore/api/java/lib/GstoreJavaAPI.jar\ test.java}将test.java编译为使用了api/java/lib/ 中GstoreJavaAPI.jar（Java 中使用的jar包）的test.class
+	用\texttt{javac\ -cp\ \$\{GSTORE\}/gStore/api/socket/java/lib/GstoreJavaAPI.jar\ test.java}将test.java编译为使用了api/socket/java/lib/ 中GstoreJavaAPI.jar（Java 中使用的jar包）的test.class
 \end{quote}
 
-接下来，你可以输入\texttt{java\ -cp\ \$\{GSTORE\}/gStore/api/java/lib/GstoreJavaAPI.jar:.\ test}执行使用了Java API的程序（注意，命令中的``:.''不能省略）。我们还建议你将相关的编译命令和其他你需要的命令放在Makefile中。
+接下来，你可以输入\texttt{java\ -cp\ \$\{GSTORE\}/gStore/api/socket/java/lib/GstoreJavaAPI.jar:.\ test}执行使用了Java API的程序（注意，命令中的``:.''不能省略）。我们还建议你将相关的编译命令和其他你需要的命令放在Makefile中。
 
 \hyperdef{}{php-api}{\subsubsection{PHP API}\label{php-api}}
 
-\hyperdef{}{interface-1}{\paragraph{接口}\label{interface-1}}
+\hyperdef{}{interface-2}{\paragraph{接口}\label{interface-2}}
 
 要使用PHP API，请在你的PHP代码中加入\texttt{include('GstoreConnector,php');}。GstoreConnector.php中的函数应该如下调用：
 
@@ -1060,14 +1191,14 @@ public function __destruct();
 	请记得卸载你导入的数据库，否则可能会出错。（错误可能不被报告！）
 \end{enumerate}
 
-\hyperdef{}{run-1}{\paragraph{运行}\label{run-1}}
+\hyperdef{}{run-2}{\paragraph{运行}\label{run-2}}
 
-gStore/api/php/PHPAPIExample展示了如何使用PHP API。PHP脚本不需要编译，你可以直接运行，或将其用在你的网页中。
+gStore/api/socket/php/PHPAPIExample展示了如何使用PHP API。PHP脚本不需要编译，你可以直接运行，或将其用在你的网页中。
 
 
 \hyperdef{}{python-api}{\subsubsection{Python API}\label{python-api}}
 
-\hyperdef{}{interface-1}{\paragraph{接口}\label{interface-1}}
+\hyperdef{}{interface-3}{\paragraph{接口}\label{interface-3}}
 
 要使用Python API，请在代码中加入\texttt{from GstoreConnector import GstoreConnector}。GstoreConnector.py中的函数应该如下调用：
 
@@ -1136,13 +1267,173 @@ def show(self, _type=False)
 	请记得卸载你导入的数据库，否则可能会出错。（错误可能不被报告！）
 \end{enumerate}
 
-\hyperdef{}{run-1}{\paragraph{运行}\label{run-1}}
+\hyperdef{}{run-3}{\paragraph{运行}\label{run-3}}
 
-gStore/api/python/example/PythonAPIExample展示了如何使用python API。Python文件不需要编译，可以直接运行。
+gStore/api/socket/python/example/PythonAPIExample展示了如何使用python API。Python文件不需要编译，可以直接运行。
 
 \clearpage
 
-\hyperdef{}{chapter06}{\subsection{第06章：web应用}\label{chapter06}}
+
+\hyperdef{}{chapter06}{\subsection{第06章：HTTP API说明}\label{chapter06}}
+
+\textbf{本章节提供了使用http服务的API，在服务器端运行ghttp时使用。和socket API相比，HTTP API更稳定且能保持连接，也更规范，而socket API不保证传输正确，所以网络传输会更快。}
+
+\hyperdef{}{easy-http-examples}{\subsubsection{简单样例}\label{easy-http-examples}}
+
+我们目前提供了JAVA和C++的HTTP API。请参考\texttt{api/http/cpp}和\texttt{api/http/java}的样例代码。要使用Java和C++的样例，请确保已经生成了可执行程序。如果没有生成，只需要在gStore根目录下输入\texttt{make\ APIexample}来编译代码和API。
+
+接下来，\textbf{用\texttt{./ghttp}指令启动gStore服务器。}如果你知道一个正在运行的可用的gStore服务器，你可以尝试连接它，请注意\textbf{服务器ip、服务器和客户端的端口号必须匹配。}（样例使用默认设置，不需要更改。）之后，对于Java和C++来说，你需要在gStore/api/目录下编译样例代码。我们提供了一个程序，只需要在gStore根目录下输入\texttt{make\ APIexample}。 或者你可以自己编译代码，在本例中，请分别打开gStore/api/http/cpp和gStore/api/http/java。
+
+最后，打开样例目录并运行相应的可执行程序。这些程序发出HTTP请求连接到指定的gStore服务器并做一些加载或查询操作。请确保你在运行样例的终端还者浏览器中看到了查询结果，如果没有，请参阅\hyperref[chapter11]{【FAQ】}一章或向我们报告。（\hyperref[chapter00]{【README】}中描述了报告方法。）
+
+我们建议你仔细阅读样例代码和相应的Makefile。这会帮助你理解API，特别是如果你想基于API接口写自己的程序。
+
+\hyperdef{}{http-api-structure}{\subsubsection{API 结构}\label{http-api-structure}}
+
+gStore的HTTP API在gStore根目录的api/http/目录下，内容如下：
+
+\begin{itemize}
+	\item
+	gStore/api/http/
+	
+	\begin{itemize}
+		\item
+		cpp/ （C++ API）
+		
+		\begin{itemize}
+			\item
+			client.cpp （C++ API源代码）
+			\item 
+			client.h
+			\item 
+			example.cpp (样例程序，展示使用C++ API的基本思路)
+			\item 
+			Makefile （编译并生成lib）
+			
+		\end{itemize}
+		
+		\item
+		\begin{itemize}
+			\item
+			src/ （Java API的源代码，用于生成lib/GstoreJavaAPI.jar）
+			
+			\begin{itemize}
+				\item
+				jgsc/GstoreConnector.java （使用Java API时需要导入的包）
+				\item
+				Makefile （编译并生成库）
+			\end{itemize}
+			\item
+			lib/
+			
+			\begin{itemize}
+				\item
+				.gitignore
+				\item
+				GstoreJavaAPI.jar （只在编译后存在，你需要在类目录中包括这一JAR）
+			\end{itemize}
+			\item
+			example/ （样例程序，展示使用Java API的基本思路）
+			
+			\begin{itemize}
+				\item
+				JavaAPIExample.cpp
+				\item
+				Makefile
+			\end{itemize}
+		\end{itemize}
+		
+	\end{itemize}
+\end{itemize}
+
+\hyperdef{}{http-c-api}{\subsubsection{C++ API}\label{http-c-api}}
+
+\hyperdef{}{http-interface}{\paragraph{接口}\label{http-interface}}
+
+要使用C++ HTTP API，请在你的cpp代码中加入\texttt{\#include\ "client.h"}。client.h中的函数可以如下调用：
+
+\begin{verbatim}
+CHttpClient hc;
+string res; //用于接收结果
+int ret;
+// 由一个RDF文件新建一个数据库
+ret = hc.Get("127.0.0.1:9000/build/lumb/data/LUBM_10.n3", res);
+cout<<res<<endl;
+// 加载数据库
+ret = hc.Get("127.0.0.1:9000/load/lumb", res);
+cout<<res<<endl;
+// 然后你可以在这一数据库上执行SPARQL查询
+ret = hc.Get("127.0.0.1:9000/query/data/ex0.sql", res);
+cout<<res<<endl;
+//输出当前加载的数据库信息
+ret = hc.Get("127.0.0.1:9000/monitor", res);
+cout<<res<<endl;
+//卸载数据库
+ret = hc.Get("127.0.0.1:9000/unload", res);
+cout<<res<<endl;
+
+\end{verbatim}
+
+原始的函数声明如下：
+
+\begin{verbatim}
+CHttpClient();
+int Post(const std::string & strUrl, const std::string & strPost, std::string & strResponse);
+int Get(const std::string & strUrl, std::string & strResponse);
+int Posts(const std::string & strUrl, const std::string & strPost, std::string & strResponse, const char * pCaPath = NULL);
+int Gets(const std::string & strUrl, std::string & strResponse, const char * pCaPath = NULL);
+\end{verbatim}
+
+
+\hyperdef{}{http-java-api}{\subsubsection{Java API}\label{http-java-api}}
+
+\hyperdef{}{http-interface-1}{\paragraph{接口}\label{http-interface-1}}
+
+要使用Java API，请在java代码中加入\texttt{import\ jgsc.GstoreConnector;}。GstoreConnector.java 中的函数应该如下调用：
+
+\begin{verbatim}
+// 初始化Gstore服务器的IP地址和端口
+GstoreConnector gc = new GstoreConnector("127.0.0.1", 9000);
+// 由一个RDF文件新建一个数据库
+// 注意，文件地址是相对gserver的地址
+gc.build("LUBM10", "data/LUBM_10.n3");
+// 然后你可以在这一数据库上执行SPARQL查询.
+String sparql = "select ?x where " + "{" +
+"?x    <rdf:type>    <ub:UndergraduateStudent>. " +
+"?y    <ub:name> <Course1>. " +
+"?x    <ub:takesCourse>  ?y. " +
+"?z    <ub:teacherOf>    ?y. " +
+"?z    <ub:name> <FullProfessor1>. " +
+"?z    <ub:worksFor>    ?w. " +
+"?w    <ub:name>    <Department0>. " +
+"}";
+String answer = gc.query(sparql);
+// 卸载这一数据库
+gc.unload("LUBM10");
+// 你也可以直接加载已存在的数据库然后进行查询
+gc.load("LUBM10");// 在当前数据库查询SPARQL
+answer = gc.query(sparql);
+\end{verbatim}
+
+这些函数的原始声明如下：
+
+\begin{verbatim}
+GstoreConnector();
+GstoreConnector(int _port);
+GstoreConnector(String _ip, int _port);
+boolean load(String _db_name);
+boolean unload(String _db_name);
+boolean build(String _db_name, String _rdf_file_path);
+boolean drop(String _db_name);
+String query(String _sparql);
+String show();
+String show(boolean _type);
+\end{verbatim}
+
+
+\clearpage
+
+\hyperdef{}{chapter07}{\subsection{第07章：web应用}\label{chapter07}}
 
 \textbf{本章提供了API的具体用例。}
 
@@ -1267,7 +1558,7 @@ switch ($format) {
 \clearpage
 
 
-\hyperdef{}{chapter07}{\subsection{第07章：项目结构}\label{chapter07}}
+\hyperdef{}{chapter08}{\subsection{第08章：项目结构}\label{chapter08}}
 
 \textbf(本章介绍了gStore系统项目的整体结构。)
 
@@ -1568,7 +1859,7 @@ switch ($format) {
 
 \hyperdef{}{others}{\paragraph{其他}\label{others}}
 
-gStore中的api/文件夹用于存储API程序、库和样例，请参在\hyperref[chapter05]{【API】} 一章中获取更多信息。test/文件夹用于存储一系列测试程序，例如gtest，full\_test等等。和test/有关的章节是\hyperref[chapter04]{【如何使用】}和\hyperref[chapter14]{【测试结果】}。本项目需要ANTLR库解析SPARQL查询，其代码在tools/ 中（也在这里实现），编译的libantlr.a在lib/ 目录下。
+gStore中的api/文件夹用于存储API程序、库和样例，请参在\hyperref[chapter05]{【socket API】} 一章中获取更多信息。test/文件夹用于存储一系列测试程序，例如gtest，full\_test等等。和test/有关的章节是\hyperref[chapter04]{【如何使用】}和\hyperref[chapter15]{【测试结果】}。本项目需要ANTLR库解析SPARQL查询，其代码在tools/ 中（也在这里实现），编译的libantlr.a在lib/ 目录下。
 
 我们在data/目录下放置了一些数据集和查询作为样例，你可以尝试它们，看看gStore怎样工作。相关说明在\hyperref[chapter04]{【如何使用】}一章中。docs/目录包含gStore的各类文档，包括一系列markdown文件，还有pdf/和jpg/ 两个文件夹。pdf文件储存在pdf/文件夹下，jpg 文件在jpg/文件夹下。
 
@@ -1576,7 +1867,7 @@ gStore中的api/文件夹用于存储API程序、库和样例，请参在\hyperr
 
 \clearpage
 
-\hyperdef{}{chapter08}{\subsection{第08章：出版物}\label{chapter08}}
+\hyperdef{}{chapter09}{\subsection{第09章：出版物}\label{chapter09}}
 
 \hyperdef{}{publications-related-with-gstore-are-listed-here}{\paragraph{和gStore相关的出版物在此列出：}\label{publications-related-with-gstore-are-listed-here}}
 
@@ -1600,7 +1891,7 @@ gStore中的api/文件夹用于存储API程序、库和样例，请参在\hyperr
 
 \clearpage
 
-\hyperdef{}{chapter09}{\subsection{第09章：限制}\label{chapter09}}
+\hyperdef{}{chapter10}{\subsection{第10章：限制}\label{chapter10}}
 
 \begin{enumerate}
 	\item
@@ -1611,7 +1902,7 @@ gStore中的api/文件夹用于存储API程序、库和样例，请参在\hyperr
 
 \clearpage
 
-\hyperdef{}{chapter10}{\subsection{第10章：FAQ}\label{chapter10}}
+\hyperdef{}{chapter11}{\subsection{第11章：FAQ}\label{chapter11}}
 
 \hyperdef{}{when-i-use-the-newer-gstore-system-to-query-the-original-database-why-error}{\paragraph{使用更新版本的gStore系统查询原始数据库时，为什么会出错？}\label{when-i-use-the-newer-gstore-system-to-query-the-original-database-why-error}}
 \quad\\
@@ -1668,7 +1959,7 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 请确保你在java的类路径中包含了你的程序的位置。完整的命令应该和\texttt{java\ -cp\ /home/bookug/project/devGstore/api/java/lib/GstoreJavaAPI.jar:.\ JavaAPIExample}类似，命令中的``:.''不能省略。
 
 \clearpage
-\hyperdef{}{chapter11}{\subsection{第11章：技巧}\label{chapter11}}
+\hyperdef{}{chapter12}{\subsection{第12章：技巧}\label{chapter12}}
 
 \textbf{本章节介绍在使用gStore实现应用时的一些实用技巧。}
 
@@ -1679,7 +1970,7 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 %TODO：use \part with book class
 \section{其他}
 
-\hyperdef{}{chapter12}{\subsection{第12章：贡献者}\label{chapter12}}
+\hyperdef{}{chapter13}{\subsection{第13章：贡献者}\label{chapter13}}
 
 如果你对gStore有什么建议或意见，或者使用gStore时需要帮助，请与邹磊（zoulei@pku.edu.cn）、曾立（zengli-bookug@pku.edu.cn）、陈佳棋（chenjiaqi93@pku.edu.cn）和彭鹏（pku09pp@pku.edu.cn）联系。
 
@@ -1694,6 +1985,8 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 	陈雷 （香港科技大学）
 	\item
 	赵东岩 （北京大学）
+	\item 
+	邓智源 （武汉大学）
 \end{itemize}
 
 \hyperdef{}{students}{\paragraph{学生}\label{students}}
@@ -1730,7 +2023,7 @@ gStore现在不支持所有的RDF格式，请参阅\href{run:../../test/format_q
 
 \clearpage
 
-\hyperdef{}{chapter13}{\subsection{第13章：更新日志}\label{chapter13}}
+\hyperdef{}{chapter14}{\subsection{第14章：更新日志}\label{chapter14}}
 
 \hyperdef{}{jan-10-2017}{\subsubsection{2017年1月10日}\label{jan-10-2017}}
 
@@ -1803,7 +2096,7 @@ gStore可以执行包含谓词变量的查询了。另外，我们研究了很�
 
 \clearpage
 
-\hyperdef{}{chapter14}{\subsection{第14章：测试结果}\label{chapter14}}
+\hyperdef{}{chapter15}{\subsection{第15章：测试结果}\label{chapter15}}
 
 \hyperdef{}{preparation}{\subsubsection{准备工作}\label{preparation}}
 
@@ -1920,7 +2213,7 @@ gStore可以执行包含谓词变量的查询了。另外，我们研究了很�
 
 \clearpage
 
-\hyperdef{}{chapter15}{\subsection{第15章：将来计划}\label{chapter15}}
+\hyperdef{}{chapter16}{\subsection{第16章：将来计划}\label{chapter16}}
 
 \hyperdef{}{improve-the-core}{\subsubsection{提升内核}\label{improve-the-core}}
 
@@ -1959,7 +2252,7 @@ gStore可以执行包含谓词变量的查询了。另外，我们研究了很�
 
 \clearpage
 
-\hyperdef{}{chapter16}{\subsection{第16章：致谢列表}\label{chapter16}}
+\hyperdef{}{chapter17}{\subsection{第17章：致谢列表}\label{chapter17}}
 
 \textit{本章列出了启发我们或为项目做出贡献的人}
 
@@ -1968,7 +2261,7 @@ gStore可以执行包含谓词变量的查询了。另外，我们研究了很�
 %\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 \clearpage
 
-\hyperdef{}{chapter17}{\subsection{第17章：法律问题}\label{chapter17}}
+\hyperdef{}{chapter18}{\subsection{第18章：法律问题}\label{chapter18}}
 
 %\textbf{We are trying our best to avoid errors. However, if you encounter any unrecovable disaster when using this system, we shall not be responsible for it.}
 
