@@ -1,7 +1,16 @@
 #ifndef CLIENT_HTTP_HPP
 #define	CLIENT_HTTP_HPP
 
-#include "../Util/Util.h"
+#include <boost/asio.hpp>
+#include <boost/utility/string_ref.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/functional/hash.hpp>
+
+#include <unordered_map>
+#include <map>
+#include <random>
+#include <mutex>
+#include <type_traits>
 
 #ifndef CASE_INSENSITIVE_EQUALS_AND_HASH
 #define CASE_INSENSITIVE_EQUALS_AND_HASH

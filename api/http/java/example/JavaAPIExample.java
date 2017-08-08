@@ -14,6 +14,13 @@ public class JavaAPIExample
 	{
 		// initialize the GStore server's IP address and port.
 		GstoreConnector gc = new GstoreConnector("127.0.0.1", 9000);
+		//for sparql endpoint, URL can also be used here, like freebase.gstore-pku.com:80
+		//GstoreConnector gc = new GstoreConnector("tourist.gstore-pku.com", 80);
+
+		//test download function
+		//String file = gc.test_download("big.txt");
+		//String file = gc.test_download("big.txt");
+		//System.out.println(file.substring(file.length()-100, file.length()));
 		
 	    // build a new database by a RDF file.
 	    // note that the relative path is related to gserver.
@@ -39,10 +46,15 @@ public class JavaAPIExample
 		
 	    // also, you can load some exist database directly and then query.
 	    gc.load("LUBM10");
+
 		//sparql = "delete where "
 				//+ "{"
 				//+ "<http://www.founder/121> ?predicate ?object ."
 				//+ "}";				
+		//sparql="select ?s where { ?s ?p ?o . }";
+		//PERFORMANCE: if we use the query above(as comment), result will be very large and the time cost is large, too
+		//The method to improve it is to receive a line and output/save to file at once, instead of combining all lines into a String
+		//The related code is in api/http/java/src/jgsc/GstoreConnector.java
 	    answer = gc.query(sparql);	    
 		System.out.println(answer);
 		gc.unload("LUBM10");

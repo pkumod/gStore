@@ -111,6 +111,13 @@ in the sparql query can point to the same node in data graph)
 
 //if used as only-read application(like sparql endpoint)
 //#define ONLY_READ 1
+//#define SPARQL_ENDPOINT 1
+#ifdef SPARQL_ENDPOINT
+#ifndef ONLY_READ
+#define ONLY_READ 1
+#endif
+#endif
+
 //if use pthread and lock
 #define THREAD_ON 1			
 //if use stream module if result is too large than memory can hold
@@ -198,6 +205,9 @@ typedef unsigned(*HashFunction)(const char*);
 //type for the triple num
 //NOTICE: this should use unsigned (triple num may > 2500000000)
 typedef unsigned TYPE_TRIPLE_NUM;
+//NOTICE: we do not use long long because it will consume more spaces in pre2num of Database
+//For single machines, we aim to support 4.2B triples, and that's enough
+//typedef long long TYPE_TRIPLE_NUM;
 //TODO: use long if need to run 5B dataset
 
 //type for entity/literal ID
@@ -251,6 +261,7 @@ public:
 	static const unsigned GB = 1073741824;
 	//static const int TRIPLE_NUM_MAX = 1000*1000*1000;
 	static const TYPE_TRIPLE_NUM TRIPLE_NUM_MAX = INVALID;
+	//static const TYPE_TRIPLE_NUM TRIPLE_NUM_MAX = (long long)10000*1000*1000;
 	static const char EDGE_IN = 'i';
 	static const char EDGE_OUT= 'o';
 
@@ -282,7 +293,12 @@ public:
 	static std::string gserver_port_file;
 	static std::string gserver_port_swap;
 	static std::string gserver_log;
+	//NOTICE: for endpoints, just set to 1 minute
+#ifdef SPARQL_ENDPOINT
+	static const int gserver_query_timeout = 60; // Timeout of gServer's query (in seconds)
+#else
 	static const int gserver_query_timeout = 10000; // Timeout of gServer's query (in seconds)
+#endif
 	
 	static std::string backup_path;
 	static const long gserver_backup_interval = 86400;
@@ -309,6 +325,7 @@ public:
 	static bool create_file(const std::string _file);
 
 	static long get_cur_time();
+	static std::string get_date_time();
 	static bool save_to_file(const char*, const std::string _content);
 	static bool isValidPort(std::string);
 	static bool isValidIP(std::string);

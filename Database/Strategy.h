@@ -17,16 +17,15 @@
 #include "../Query/BasicQuery.h"
 #include "../KVstore/KVstore.h"
 #include "../VSTree/VSTree.h"
-#include "../Query/ResultFilter.h"
 
 class Strategy
 {
 public:
 	Strategy();
-	Strategy(KVstore*, VSTree*, TYPE_TRIPLE_NUM*, TYPE_PREDICATE_ID, TYPE_ENTITY_LITERAL_ID);
+	Strategy(KVstore*, VSTree*, TYPE_TRIPLE_NUM*, TYPE_PREDICATE_ID, TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID);
 	~Strategy();
 	//select efficient strategy to do the sparql query
-	bool handle(SPARQLquery&, ResultFilter* _result_filter = NULL);
+	bool handle(SPARQLquery&);
 
 private:
 	int method;
@@ -35,10 +34,11 @@ private:
 	TYPE_TRIPLE_NUM* pre2num;
 	TYPE_PREDICATE_ID limitID_predicate;
 	TYPE_ENTITY_LITERAL_ID limitID_literal;
+	TYPE_ENTITY_LITERAL_ID limitID_entity;
 
 	//NOTICE: even the ID type is int, it is no problem and no waste that we use unsigned in answer
 	//(because -1, -2 or other invalid IDs can not be in answer)
-	void handler0(BasicQuery*, vector<unsigned*>&, ResultFilter* _result_filter = NULL);
+	void handler0(BasicQuery*, vector<unsigned*>&);
 	void handler1(BasicQuery*, vector<unsigned*>&);
 	void handler2(BasicQuery*, vector<unsigned*>&);
 	void handler3(BasicQuery*, vector<unsigned*>&);

@@ -300,6 +300,66 @@ Database::writeIDinfo()
 	fp = NULL;
 }
 
+void
+Database::saveIDinfo()
+{
+	//cout<<"now to write the id info"<<endl;
+	FILE* fp = NULL;
+	BlockInfo *bp = NULL, *tp = NULL;
+
+	fp = fopen(this->free_id_file_entity.c_str(), "w+");
+	if (fp == NULL)
+	{
+		cout << "write entity id info error" << endl;
+		return;
+	}
+	fwrite(&(this->limitID_entity), sizeof(int), 1, fp);
+	bp = this->freelist_entity;
+	while (bp != NULL)
+	{
+		fwrite(&(bp->num), sizeof(int), 1, fp);
+		tp = bp->next;
+		bp = tp;
+	}
+	fclose(fp);
+	fp = NULL;
+
+	fp = fopen(this->free_id_file_literal.c_str(), "w+");
+	if (fp == NULL)
+	{
+		cout << "write literal id info error" << endl;
+		return;
+	}
+	fwrite(&(this->limitID_literal), sizeof(int), 1, fp);
+	bp = this->freelist_literal;
+	while (bp != NULL)
+	{
+		fwrite(&(bp->num), sizeof(int), 1, fp);
+		tp = bp->next;
+		bp = tp;
+	}
+	fclose(fp);
+	fp = NULL;
+
+	fp = fopen(this->free_id_file_predicate.c_str(), "w+");
+	if (fp == NULL)
+	{
+		cout << "write predicate id info error" << endl;
+		return;
+	}
+	fwrite(&(this->limitID_predicate), sizeof(int), 1, fp);
+	bp = this->freelist_predicate;
+	while (bp != NULL)
+	{
+		fwrite(&(bp->num), sizeof(int), 1, fp);
+		tp = bp->next;
+		bp = tp;
+	}
+	fclose(fp);
+	fp = NULL;
+}
+
+
 //ID alloc garbage error(LITERAL_FIRST_ID or double) add base for literal
 TYPE_ENTITY_LITERAL_ID
 Database::allocEntityID()
@@ -460,6 +520,7 @@ Database::~Database()
 	//Util::debug_database = NULL;	//debug: when multiple databases
 }
 
+//TODO: update pre map if insert/delete
 void
 Database::setPreMap()
 {
@@ -625,6 +686,10 @@ Database::load()
 	id2entity_thread.join();
 	id2literal_thread.join();
 #endif
+
+	//TODO+BETTER: if we set string buffer using string index instead of B+Tree, then we can
+	//avoid to load id2entity and id2literal in ONLY_READ mode
+
 	//generate the string buffer for entity and literal, no need for predicate
 	//NOTICE:the total string size should not exceed 20G, assume that most strings length < 500
 	//too many empty between entity and literal, so divide them
@@ -862,7 +927,7 @@ Database::get_important_subID()
 	for(TYPE_ENTITY_LITERAL_ID i = 0; i < limitID_entity; ++i)
 	{
 		unsigned _value = 0;
-		unsigned _size;
+		unsigned _size = 0;
 		if (this->kvstore->getEntityByID(i) == invalid) continue;	
 		_size = this->kvstore->getSubListSize(i);
 		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
@@ -970,7 +1035,7 @@ Database::get_important_objID()
 		}
 	}
 	cout << endl;
-	cout << "finish getting imporatn objID, the cache size is " << now_total_size << endl;
+	cout << "finish getting important objID, the cache size is " << now_total_size << endl;
 }
 
 void 
@@ -1037,6 +1102,11 @@ Database::load_vstree(unsigned _vstree_size)
 void 
 Database::check()
 {
+cout<<"triple num: "<<this->triples_num<<endl;
+cout<<"pre num: "<<this->pre_num<<endl;
+cout<<"entity num: "<<this->entity_num<<endl;
+cout<<"literal num: "<<this->literal_num<<endl;
+
 string tstr;
  //unsigned pid = this->kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
  //cout<<"check: pre "<<pid<<endl;
@@ -1127,6 +1197,26 @@ Database::unload()
 	return true;
 }
 
+//this is used for checkpoint, we must ensure that modification is written to disk,
+//so flush() is a must
+bool Database::save()
+{
+	//this->vstree->saveTree();
+	this->kvstore->flush();
+	this->saveDBInfoFile();
+	this->saveIDinfo();
+
+	//TODO: fsync or using sync in Util
+	//should sync every file modified
+	//TODO: add flush for string index
+	//this->stringindex->flush();
+	this->clear_update_log();
+
+	cerr<<"database checkpoint: "<<this->getName()<<endl;
+
+	return true;
+}
+
 void Database::clear() 
 {
 	delete[] this->pre2num;
@@ -1183,7 +1273,7 @@ Database::getPreNum()
 int
 Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 {
-	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->pre2num, this->limitID_predicate, this->limitID_literal);
+	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 
 	long tv_begin = Util::get_cur_time();
 
@@ -1219,6 +1309,10 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	//Update
 	else
 	{
+#ifdef ONLY_READ
+		//invalid query because updates are not allowed in ONLY_READ mode
+		return -101;
+#endif
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
 		TYPE_TRIPLE_NUM update_triple_num = 0;
@@ -1447,6 +1541,8 @@ Database::saveDBInfoFile()
 	fwrite(&this->pre_num, sizeof(int), 1, filePtr);
 	fwrite(&this->literal_num, sizeof(int), 1, filePtr);
 	fwrite(&this->encode_mode, sizeof(int), 1, filePtr);
+
+	fflush(filePtr);
 	fclose(filePtr);
 
 	//Util::triple_num = this->triples_num;
@@ -2558,10 +2654,10 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	long tv_vs_store_end = Util::get_cur_time();
 
 	//debug
-	{
-		cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
-		cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
-	}
+	//{
+		//cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
+		//cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
+	//}
 
 	return true;
 	//return updateLen;
@@ -2605,12 +2701,12 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		this->triples_num--;
 	}
 
-	cout << "triple existence checked" << endl;
+	//cout << "triple existence checked" << endl;
 
 	//remove from sp2o op2s s2po o2ps s2o o2s
 	//sub2id, pre2id and obj2id will not be updated
 	(this->kvstore)->updateTupleslist_remove(_sub_id, _pre_id, _obj_id);
-	cout << "11 trees updated" << endl;
+	//cout << "11 trees updated" << endl;
 
 	long tv_kv_store_end = Util::get_cur_time();
 
@@ -2618,8 +2714,8 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	//if subject become an isolated point, remove its corresponding entry
 	if (sub_degree == 0)
 	{
-		cout<<"to remove entry for sub"<<endl;
-		cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
+		//cout<<"to remove entry for sub"<<endl;
+		//cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
 		this->kvstore->subEntityByID(_sub_id);
 		this->kvstore->subIDByEntity(_triple.subject);
 		//(this->vstree)->removeEntry(_sub_id);
@@ -2712,10 +2808,10 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	long tv_vs_store_end = Util::get_cur_time();
 
 	//debug
-	{
-		cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
-		cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
-	}
+	//{
+		//cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
+		//cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
+	//}
 	return true;
 }
 
@@ -3766,6 +3862,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	return valid_num;
 }
 
+//TODO: check and improve the backup program
 bool 
 Database::backup() 
 {

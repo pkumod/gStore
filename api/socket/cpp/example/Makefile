@@ -1,5 +1,5 @@
-#CC=g++
-CC=ccache g++
+CC=g++
+#CC=ccache g++
 
 example: CppAPIExample.o
 	$(CC) -o example CppAPIExample.o -L../lib -lgstoreconnector

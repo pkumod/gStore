@@ -1,0 +1,26 @@
+	\begin{tikzpicture}[font=\Large]
+ 		 \begin{semilogyaxis}[
+                width = 20cm,
+               height = 19cm,
+    			ybar,
+   			ymajorgrids = true,
+   			ylabel = {Query Response Time (in ms)},
+                %xlabel = {Queries},
+    			symbolic x coords = 
+    			    	{$C_{1}$,$C_{2}$,$C_{3}$,$F_{1}$,$F_{2}$,$F_{3}$, $L_{1}$,$L_{2}$,$L_{3}$,$L_{4}$,$L_{5}$, $S_{1}$,$S_{2}$,$S_{3}$},
+    bar width=5pt,
+             enlarge x limits=0.04,
+    			scaled y ticks = true,
+			legend pos= north east,
+ legend cell align=left
+   		]
+	  %\part{title}
+	   \addplot coordinates {($C_{1}$, 324042) ($C_{2}$, 25094) ($C_{3}$, 26955) ($F_{1}$, 25147) ($F_{2}$, 25779) ($F_{3}$, 19410) ($L_{1}$, 32) ($L_{2}$, 3051565) ($L_{3}$, 17) ($L_{4}$, 47) ($L_{5}$, 32) ($S_{1}$, 32) ($S_{2}$, 4811) ($S_{3}$, 5361) };   
+	   
+	   \addplot coordinates {($C_{1}$, 9428609) ($C_{2}$, 348) ($C_{3}$, 764) ($F_{1}$, 231) ($F_{2}$, 135) ($F_{3}$, 36434) ($L_{1}$, 230) ($L_{2}$, 7961623) ($L_{3}$, 306) ($L_{4}$, 2637) ($L_{5}$, 544) ($S_{1}$, 139) ($S_{2}$, 183) ($S_{3}$, 3064) };   
+	   
+	   \addplot coordinates {($C_{1}$, 400589) ($C_{2}$, 394) ($C_{3}$, 329) ($F_{1}$, 74) ($F_{2}$, 83) ($F_{3}$, 217162) ($L_{1}$, 36) ($L_{2}$, 1940036) ($L_{3}$, 20) ($L_{4}$, 50) ($L_{5}$, 364) ($S_{1}$, 14) ($S_{2}$, 24) ($S_{3}$, 696) };		
+	  		
+   		 \legend{gStore,Jena,Virtuoso}
+  		\end{semilogyaxis}
+\end{tikzpicture}

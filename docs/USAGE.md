@@ -93,7 +93,49 @@ Notice:
 
 - - -
 
-#### 3. gserver
+#### 3. ghttp
+
+ghttp runs gStore like HTTP server with port 9000. Visit from browser with prescriptive url, then gStore will execute corresponding operation.
+
+Just type `bin/ghttp` to start server.
+
+URL rules are listed blow:  
+
+parameters: operation, db_name, ds_path, format, sparql
+
+NOTICE: do URL encoding before sending it to database server
+
+operation: build, load, unload, query, monitor, show, checkpoint
+db_name: the name of database, like lubm
+format: html, json, txt, csv
+sparql: select ?s where { ?s ?p ?o . }
+ds_path in the server: like /home/data/test.n3
+
+to build a database from a dataset:
+http://localhost:9000/?operation=build&db_name=[db_name]&ds_path=[ds_path]
+
+to load a database:
+http://localhost:9000/?operation=load&db_name=[db_name]
+
+to query a database:
+http://localhost:9000/?operation=query&format=[format]&sparql=[sparql]
+
+to unload a database:
+http://localhost:9000/?operation=unload&db_name=[db_name]
+
+to monitor the server:
+http://localhost:9000/?operation=monitor
+
+to show the database used:
+http://localhost:9000/?operation=show
+
+to save the database currently:
+http://localhost:9000/?operation=checkpoint
+
+- - -
+
+
+#### 4. gserver
 
 gserver is a daemon. It should be launched first when accessing gStore by gclient or API. It communicates with client through socket. 
 
@@ -114,7 +156,7 @@ Notice: Multiple threads are not supported by gserver. If you start up gclient i
 
 - - -
 
-#### 4. gclient
+#### 5. gclient
 
 gclient is designed as a client to send commands and receive feedbacks.
 
@@ -152,16 +194,7 @@ Notice:
 
 - - -
 
-#### 5. HttpConnector
 
-HttpConnector is a daemon. It should be launched first when accessing gStore by HTTP 1.1 protocol.
-
-    [bookug@localhost gStore]$ bin/HttpConnector
-	Server started at port 8080.
-
-After the server is started, you can access it by visit the url in a browser or use the Restful API in your program. You can press Ctrl-C to stop the server. (Multiple connections are supported in HTTP server)
-
-- - -
 
 #### 6. test utilities
 
@@ -191,3 +224,66 @@ To use full_test.sh utility, please download the database system which you want 
 
 Only gStore and Jena are tested and compared in this script, but it is easy to add other database systems, if you would like to spend some time on reading this script. You may go to [test report](pdf/gstore测试报告.pdf) or [Frequently Asked Questions](FAQ.md) for help if you encounter a problem.
 
+- - - 
+
+#### 7. gadd
+
+gadd is used to insert triples in a file to an existing database.
+
+Usage: bin/gadd db_name rdf_triple_file_path
+
+    [bookug@localhost gStore]$ bin/gadd lubm data/LUBM_10.n3
+    ...
+    argc: 3 DB_store:lubm   insert file:./data/LUBM_10.n3
+    get important pre ID
+    ...
+    insert rdf triples done.
+    inserted triples num: 99550
+
+- - -
+
+#### 8. gsub
+
+gsub is used to remove triples in a file from an existing database.
+
+Usage: bin/gsub db_name rdf_triple_file_path
+
+    [bookug@localhost gStore]$ bin/gsub lubm data/LUBM_10.n3
+    ...
+    argc: 3 DB_store:lubm  remove file: data/LUBM\_10.n3
+    ...
+    remove rdf triples done.
+    removed triples num: 99550
+
+- - - 
+
+#### 9. gmonitor
+
+After starting ghttp, go into gStore/bin/ and type `./gmonitor ip port` to check current status of gStore.
+
+    [bookug@localhost bin]$ ./gmonitor 127.0.0.1 9000
+    parameter: ?operation=monitor
+    request: http://127.0.0.1:9000/%3Foperation%3Dmonitor
+    null--->[HTTP/1.1 200 OK]
+    Content-Length--->[127]
+    database: lubm
+    triple num: 99550
+    entity num: 28413
+    literal num: 0
+    subject num: 14569
+    predicate num: 17
+    connection num: 7
+
+- - -
+
+#### 10. gshow
+
+After starting ghttp, go into gStore/bin/ and type `./gshow ip port` to check loaded database.
+
+    [bookug@localhost bin]$ ./gshow 127.0.0.1 9000
+    parameter: ?operation=show
+    request: http://127.0.0.1:9000/%3Foperation%3Dshow
+    null--->[HTTP/1.1 200 OK]
+    Content-Length--->[4]
+    lubm
+    

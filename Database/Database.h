@@ -46,6 +46,7 @@ public:
 	void release(FILE* fp0);
 	~Database();
 
+	bool save();
 	bool load();
 	bool unload();
 	void clear();
@@ -200,6 +201,7 @@ private:
 	void resetIDinfo(); //reset the id info for build
 	void readIDinfo();  //read and build the free list
 	void writeIDinfo(); //write and empty the free list
+	void saveIDinfo(); //write and empty the free list
 
 	bool saveDBInfoFile();
 	bool loadDBInfoFile();

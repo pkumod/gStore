@@ -30,7 +30,9 @@ public:
 	static const unsigned NF_HT = 0xf00000;		//height area in rank
 	static const unsigned NF_KN = 0x07f000;		//NOTICE: decided by DEGREE
 	static const unsigned INTL_SIZE = sizeof(Bstr) * MAX_KEY_NUM;
+	int heapId;
 	static const unsigned LEAF_SIZE = sizeof(unsigned) * MAX_KEY_NUM + INTL_SIZE;
+
 protected:
 	unsigned store;			//store address, the BLock index
 	unsigned flag;			//NF_RK, NF_IL,NF_ID, NF_IV, propety
@@ -42,6 +44,7 @@ protected:
 public:
 	SINode();
 	SINode(bool isVirtual);
+	
 	bool isLeaf() const;
 	bool isDirty() const;
 	void setDirty();

@@ -28,12 +28,14 @@ ISNode::ISNode()
 {
 	store = flag = 0;
 	flag |= NF_IM;
+	heapId = -1;
 	AllocKeys();
 }
 
 ISNode::ISNode(bool isVirtual)
 {
 	store = flag = 0;
+	heapId = -1;
 	if (!isVirtual)
 	{
 		flag |= NF_IM;

@@ -16,13 +16,15 @@ Join::Join()
 	this->result_list = NULL;
 }
 
-Join::Join(KVstore* _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal)
+Join::Join(KVstore* _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
+	TYPE_ENTITY_LITERAL_ID _limitID_entity)
 {
 	this->kvstore = _kvstore;
 	this->result_list = NULL;
 	this->pre2num = _pre2num;
 	this->limitID_predicate = _limitID_predicate;
 	this->limitID_literal = _limitID_literal;
+	this->limitID_entity = _limitID_entity;
 }
 
 Join::~Join()
@@ -1043,6 +1045,17 @@ Join::toStartJoin()
 	{
 		cout<<"Special Case: star graph whose pres are all var"<<endl;
 		//get all literals in this db
+		for(TYPE_ENTITY_LITERAL_ID i = 0; i < this->limitID_entity; ++i)
+		{
+			TYPE_ENTITY_LITERAL_ID id = i;
+			string literal = this->kvstore->getEntityByID(id);
+			if(literal == "")
+			{
+				continue;
+			}
+			//BETTER:cache the whole literal id list to improve the query throughput
+			literal_candidate_list.addID(id);
+		}
 		for(TYPE_ENTITY_LITERAL_ID i = 0; i < this->limitID_literal; ++i)
 		{
 			TYPE_ENTITY_LITERAL_ID id = i + Util::LITERAL_FIRST_ID;
@@ -1054,17 +1067,17 @@ Join::toStartJoin()
 			//BETTER:cache the whole literal id list to improve the query throughput
 			literal_candidate_list.addID(id);
 		}
+		IDList& origin_candidate_list = this->basic_query->getCandidateList(var_id);
+		//int origin_candidate_list_len = origin_candidate_list.size();
+		origin_candidate_list.unionList(literal_candidate_list, false);
 	}
 
-	IDList& origin_candidate_list = this->basic_query->getCandidateList(var_id);
-	//int origin_candidate_list_len = origin_candidate_list.size();
-	//origin_candidate_list.unionList(literal_candidate_list, true);
 	//int after_add_literal_candidate_list_len = origin_candidate_list.size();
 	this->basic_query->setReady(var_id);
 
 	cout<<"the prepared var id: "<<var_id<<endl;
 	//cout<<"add literals num: "<<literal_candidate_list.size()<<endl;
-	cout<<"current can size: "<<origin_candidate_list.size()<<endl;
+	//cout<<"current can size: "<<origin_candidate_list.size()<<endl;
 }
 
 // use the appropriate method to join candidates
@@ -1212,11 +1225,19 @@ Join::add_new_to_results(TableIterator it, unsigned id)
 
 //after remove VSTREE, modify here
 void
-Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* id_list, unsigned id_list_len, bool _is_literal)
+Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* id_list, unsigned id_list_len, bool _is_ready)
 {
 	if (valid_ans_list == NULL)
 	{
-		valid_ans_list = IDList::intersect(_can_list, id_list, id_list_len);
+		if(_is_ready)
+			valid_ans_list = IDList::intersect(_can_list, id_list, id_list_len);
+		else
+		{
+			valid_ans_list = new IDList();
+			for(int i = 0; i < id_list_len; i++)
+				valid_ans_list->addID(id_list[i]);
+		}
+
 	}
 	else
 	{
@@ -1239,10 +1260,10 @@ Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* i
 //However, the case is really rare in our test(the reason may be that the web graph is always very sparse)
 //If we add a buffer for this case, will cause worse performance
 bool
-Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_list_size, int _id, bool _is_literal)
+Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_list_size, int _id, bool _is_ready)
 {
 	//if(_can_list_size == 0 && !_is_literal)
-	if(_can_list_size == 0)
+	if(_can_list_size == 0 && _is_ready)
 	{
 		return false;   //empty result
 	}
@@ -1370,7 +1391,7 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_l
 
 				//only can occur the first time, means cnt == 0
 				//if(valid_ans_list.size() == 0)
-				update_answer_list(valid_ans_list, _can_list, id_list, id_list_len, _is_literal);
+				update_answer_list(valid_ans_list, _can_list, id_list, id_list_len, _is_ready);
 				delete[] id_list;
 				if (valid_ans_list->size() == 0)
 				{
@@ -1395,7 +1416,7 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_l
 				unsigned* id_list2;
 				unsigned id_list2_len;
 				this->kvstore->getobjIDlistBysubID(ele, id_list2, id_list2_len, true);
-				update_answer_list(valid_ans_list, _can_list, id_list2, id_list2_len, _is_literal);
+				update_answer_list(valid_ans_list, _can_list, id_list2, id_list2_len, _is_ready);
 				delete[] id_list2;
 				if (valid_ans_list->size() == 0)
 				{
@@ -1408,7 +1429,7 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_l
 				unsigned* id_list2;
 				unsigned id_list2_len;
 				this->kvstore->getsubIDlistByobjID(ele, id_list2, id_list2_len, true);
-				update_answer_list(valid_ans_list, _can_list, id_list2, id_list2_len, _is_literal);
+				update_answer_list(valid_ans_list, _can_list, id_list2, id_list2_len, _is_ready);
 				delete[] id_list2;
 				if (valid_ans_list->size() == 0)
 				{
@@ -1584,6 +1605,7 @@ Join::multi_join()
 		//NOTICE: not cancle the followings, to be used for later
 		//TODO: if queries contain predicate variables, it may be hard to prepare candidates for a node
 		//(so it is not ready, can also be represented by is_literal_var())
+		/*
 		bool is_literal = this->is_literal_var(id2);
 		if(is_literal)
 		{
@@ -1598,12 +1620,12 @@ Join::multi_join()
 			cout << "this var not contain literals: " << id2 << endl;
 #endif
 		}
-
+		*/
 		bool flag = false;
 #ifdef DEBUG_PRECISE
 			cout << "this edge uses not-prepared-join way" << endl;
 #endif
-			flag = this->join_two(edges, can_list, can_list_size, id2, is_literal);
+			flag = this->join_two(edges, can_list, can_list_size, id2, this->basic_query->isReady(id2));
 
 		//if current_table is empty, ends directly
 		if (!flag)
