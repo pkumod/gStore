@@ -2,6 +2,7 @@ package jgsc;
 
 import java.io.*;
 import java.net.*;
+import java.lang.*;
 import java.net.URLEncoder;
 import java.net.URLDecoder;
 import java.io.UnsupportedEncodingException;
@@ -37,7 +38,7 @@ public class GstoreConnector {
 	//this may help to reduce the GC cost
     public String sendGet(String param) {
 		String url = "http://" + this.serverIP + ":" + this.serverPort;
-        String result = "";
+        StringBuffer result = new StringBuffer();
         BufferedReader in = null;
 		System.out.println("parameter: "+param);
 
@@ -50,7 +51,7 @@ public class GstoreConnector {
 
         try {
             String urlNameString = url + "/" + param;
-		System.out.println("request: "+urlNameString);
+            System.out.println("request: "+urlNameString);
             URL realUrl = new URL(urlNameString);
             // 打开和URL之间的连接
             URLConnection connection = realUrl.openConnection();
@@ -82,7 +83,7 @@ public class GstoreConnector {
             while ((line = in.readLine()) != null) {
 				//PERFORMANCE: this can be very costly if result is very large, because many temporary Strings are produced
 				//In this case, just print the line directly will be much faster
-				result += line;
+				result.append(line);
 				//System.out.println("get data size: " + line.length());
 				//System.out.println(line);
             }
@@ -103,7 +104,7 @@ public class GstoreConnector {
                 e2.printStackTrace();
             }
         }
-        return result;
+        return result.toString();
     }
 
 //NOTICE: no need to connect now, HTTP connection is kept by default
