@@ -1,4 +1,4 @@
-**The formal experiment report is in [EXPERIMENT](latex/formal_experiment.pdf).**
+**The formal experiment report is in [EXPERIMENT](test/formal_experiment.pdf).**
 
 ## Preparation
 
