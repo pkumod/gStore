@@ -93,10 +93,12 @@ SIHeap::insert(SINode* _np)
 		if (_np->getRank() >= this->heap[j]->getRank())
 			break;
 		heap[i] = heap[j];
+		heap[i]->heapId = i;
 		//this->npmap[k].pos = i;			//adjust the position
 		i = j;
 	}
 	this->heap[i] = _np;
+	_np->heapId = i;
 	this->length++;
 	return true;
 }
@@ -111,6 +113,7 @@ SIHeap::remove()
 	}
 	//Node* tp = this->heap[0];
 	this->length--;
+	this->heap[0]->heapId = -1;
 	if (this->length == 0)
 		return true;
 	SINode* xp = this->heap[this->length];
@@ -122,10 +125,12 @@ SIHeap::remove()
 		if (xp->getRank() <= this->heap[j]->getRank())
 			break;
 		this->heap[i] = this->heap[j];
+		this->heap[i]->heapId = i;
 		i = j;
 		j = 2 * i + 1;
 	}
 	this->heap[i] = xp;
+	this->heap[i]->heapId = i;
 	return true;
 }
 
@@ -134,9 +139,10 @@ SIHeap::modify(SINode* _np, bool _flag)	//control direction
 {
 	//search and adjust
 	unsigned i, j;
-	for (i = 0; i < this->length; ++i)
-		if (this->heap[i] == _np)
-			break;
+	i = _np->heapId;
+	// for (i = 0; i < this->length; ++i)
+		// if (this->heap[i] == _np)
+			// break;
 	if (_flag == true)	//move up
 	{
 		while (i != 0)
@@ -145,7 +151,9 @@ SIHeap::modify(SINode* _np, bool _flag)	//control direction
 			if (_np->getRank() < heap[j]->getRank())
 			{
 				heap[i] = heap[j];
+				heap[i]->heapId = i;
 				heap[j] = _np;
+				heap[j]->heapId = j;
 				i = j;
 			}
 			else
@@ -162,7 +170,9 @@ SIHeap::modify(SINode* _np, bool _flag)	//control direction
 			if (heap[j]->getRank() < _np->getRank())
 			{
 				heap[i] = heap[j];
+				heap[i]->heapId = i;
 				heap[j] = _np;
+				heap[j]->heapId = j;
 				i = j;
 			}
 			else

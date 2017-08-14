@@ -85,9 +85,11 @@ Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, TYPE_PREDICATE_ID _p
 		long long id = _pre_id;
 		unsigned seed_num = id % Signature::EDGE_SIG_INTERVAL_NUM_HALF;
 
+		//int pos = Signature::STR_SIG_LENGTH;
 		if (_type == Util::EDGE_OUT)
 		{
 			seed_num += Signature::EDGE_SIG_INTERVAL_NUM_HALF;
+			//pos += Signature::EDGE_SIG_IN;
 		}
 
 		//unsigned primeSize = 5;

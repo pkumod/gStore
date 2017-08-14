@@ -2,6 +2,7 @@ package jgsc;
 
 import java.io.*;
 import java.net.*;
+import java.lang.*;
 import java.net.URLEncoder;
 import java.net.URLDecoder;
 import java.io.UnsupportedEncodingException;
@@ -11,7 +12,7 @@ import java.util.Map;
 public class GstoreConnector {
 
     public static final String defaultServerIP = "127.0.0.1";
-    public static final int defaultServerPort = 3305;
+    public static final int defaultServerPort = 9000;
 
     private String serverIP;
     private int serverPort;
@@ -32,36 +33,63 @@ public class GstoreConnector {
         this.serverPort = _port;
     }
 
+	//PERFORMANCE: what if the query result is too large?  receive and save to file directly at once
+	//In addition, set the -Xmx larger(maybe in scale of Gs) if the query result could be very large, 
+	//this may help to reduce the GC cost
     public String sendGet(String param) {
 		String url = "http://" + this.serverIP + ":" + this.serverPort;
-        String result = "";
+        StringBuffer result = new StringBuffer();
         BufferedReader in = null;
+		System.out.println("parameter: "+param);
+
+		try {
+			param = URLEncoder.encode(param, "UTF-8");
+		}
+		catch (UnsupportedEncodingException ex) {
+			throw new RuntimeException("Broken VM does not support UTF-8");
+		}
+
         try {
             String urlNameString = url + "/" + param;
-		System.out.println("request: "+urlNameString);
+            System.out.println("request: "+urlNameString);
             URL realUrl = new URL(urlNameString);
             // 打开和URL之间的连接
             URLConnection connection = realUrl.openConnection();
             // 设置通用的请求属性
             connection.setRequestProperty("accept", "*/*");
             connection.setRequestProperty("connection", "Keep-Alive");
+			//set agent to avoid: speed limited by server if server think the client not a browser
             connection.setRequestProperty("user-agent",
                     "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
             // 建立实际的连接
             connection.connect();
+
+			long t0 = System.currentTimeMillis(); //ms
+
             // 获取所有响应头字段
             Map<String, List<String>> map = connection.getHeaderFields();
             // 遍历所有的响应头字段
             for (String key : map.keySet()) {
                 System.out.println(key + "--->" + map.get(key));
             }
+
+			long t1 = System.currentTimeMillis(); //ms
+			System.out.println("Time to get header: "+(t1 - t0)+" ms");
+			//System.out.println("============================================");
+
             // 定义 BufferedReader输入流来读取URL的响应
-            in = new BufferedReader(new InputStreamReader(
-                    connection.getInputStream()));
+            in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String line;
             while ((line = in.readLine()) != null) {
-                result += line;
+				//PERFORMANCE: this can be very costly if result is very large, because many temporary Strings are produced
+				//In this case, just print the line directly will be much faster
+				result.append(line);
+				//System.out.println("get data size: " + line.length());
+				//System.out.println(line);
             }
+
+			long t2 = System.currentTimeMillis(); //ms
+			System.out.println("Time to get data: "+(t2 - t1)+" ms");
         } catch (Exception e) {
             System.out.println("error in get request: " + e);
             e.printStackTrace();
@@ -76,7 +104,7 @@ public class GstoreConnector {
                 e2.printStackTrace();
             }
         }
-        return result;
+        return result.toString();
     }
 
 //NOTICE: no need to connect now, HTTP connection is kept by default
@@ -87,7 +115,7 @@ public class GstoreConnector {
 			return false;
 		}
 
-        String cmd = "load/" + _db_name;
+        String cmd = "?operation=load&db_name=" + _db_name;
         String msg = this.sendGet(cmd);
         //if (!send_return) {
             //System.err.println("send load command error. @GstoreConnector.load");
@@ -112,7 +140,7 @@ public class GstoreConnector {
         }
 
         //String cmd = "unload/" + _db_name;
-		String cmd = "unload";
+		String cmd = "?operation=unload&db_name=" + _db_name;
         String msg = this.sendGet(cmd);
 
         this.disconnect();
@@ -134,7 +162,7 @@ public class GstoreConnector {
 
 		//TODO: also use encode to support spaces?
 		//Consider change format into ?name=DBname
-        String cmd = "build/" + _db_name + "/" + _rdf_file_path;
+        String cmd = "?operation=build&db_name=" + _db_name + "&ds_path=" + _rdf_file_path;
         String msg = this.sendGet(cmd);
 
         this.disconnect();
@@ -147,6 +175,7 @@ public class GstoreConnector {
         return false;
     }
 
+	//TODO: not implemented
     public boolean drop(String _db_name) {
         boolean connect_return = this.connect();
         if (!connect_return) {
@@ -171,13 +200,14 @@ public class GstoreConnector {
         }
 
 		//URL encode should be used here
-		try {
-		_sparql = URLEncoder.encode("\""+_sparql+"\"", "UTF-8");
-		}
-		catch (UnsupportedEncodingException ex) {
-			throw new RuntimeException("Broken VM does not support UTF-8");
-		}
-		String cmd = "query/" + _sparql;
+		//try {
+		//_sparql = URLEncoder.encode("\""+_sparql+"\"", "UTF-8");
+		//}
+		//catch (UnsupportedEncodingException ex) {
+			//throw new RuntimeException("Broken VM does not support UTF-8");
+		//}
+
+		String cmd = "?operation=query&format=json&sparql=" + _sparql;
         //String cmd = "query/\"" + _sparql + "\"";
         String msg = this.sendGet(cmd);
 
@@ -190,6 +220,7 @@ public class GstoreConnector {
         return this.show(false);
     }
 
+	//TODO: not implemented
     public String show(boolean _type) {
         boolean connect_return = this.connect();
         if (!connect_return) {
@@ -209,6 +240,23 @@ public class GstoreConnector {
         this.disconnect();
         return msg;
     }
+
+	public String test_download(String filepath)
+	{
+        boolean connect_return = this.connect();
+        if (!connect_return) {
+            System.err.println("connect to server error. @GstoreConnector.query");
+            return "connect to server error.";
+        }
+
+		//TEST: a small file, a large file
+		String cmd = "?operation=delete&download=true&filepath=" + filepath;
+        String msg = this.sendGet(cmd);
+
+        this.disconnect();
+
+        return msg;
+	}
 
     private boolean connect() {
 		return true;
@@ -270,7 +318,7 @@ public class GstoreConnector {
 
     public static void main(String[] args) {
         // initialize the GStore server's IP address and port.
-        GstoreConnector gc = new GstoreConnector("172.31.19.15", 3305);
+        GstoreConnector gc = new GstoreConnector("127.0.0.1", 9000);
 
         // build a new database by a RDF file.
         // note that the relative path is related to gserver.
@@ -294,6 +342,13 @@ public class GstoreConnector {
                 + "}";
         answer = gc.query(sparql);
         System.out.println(answer);
+
+		//To count the time cost
+		//long startTime=System.nanoTime();   //ns
+		//long startTime=System.currentTimeMillis();   //ms
+		//doSomeThing();  //测试的代码段
+		//long endTime=System.currentTimeMillis(); //获取结束时间
+		//System.out.println("程序运行时间： "+(end-start)+"ms");
     }
 }
 

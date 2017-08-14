@@ -1,0 +1,2598 @@
+\documentclass[titlepage, a4paper, 12pt]{article}
+
+%\usepackage{ctex}
+\usepackage{lmodern}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} 
+\usepackage{amsmath}
+\usepackage{txfonts}
+\usepackage{amssymb}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{epsfig,tabularx,amssymb,amsmath,subfigure,multirow}
+%\usepackage{algorithmic}
+\usepackage[linesnumbered,ruled,noend]{algorithm2e}
+\usepackage[noend]{algorithmic}
+\usepackage{multirow}
+\usepackage{graphicx,floatrow}
+\usepackage{listings}
+\usepackage{threeparttable}
+%\usepackage{tikz}
+\usepackage[T1]{fontenc}
+\usepackage{pgfplots}
+\usepackage{filecontents}
+\usepackage{comment}
+
+\lstset{%
+	alsolanguage=Java,
+	%language={[ISO]C++},       %language为，还有{[Visual]C++}
+	%alsolanguage=[ANSI]C,      %可以添加很多个alsolanguage,如alsolanguage=matlab,alsolanguage=VHDL等
+	%alsolanguage= tcl,
+	alsolanguage= XML,
+	tabsize=4, %
+	frame=shadowbox, %把代码用带有阴影的框圈起来
+	commentstyle=\color{red!50!green!50!blue!50},%浅灰色的注释
+	rulesepcolor=\color{red!20!green!20!blue!20},%代码块边框为淡青色
+	keywordstyle=\color{blue!90}\bfseries, %代码关键字的颜色为蓝色，粗体
+	showstringspaces=false,%不显示代码字符串中间的空格标记
+	stringstyle=\ttfamily, % 代码字符串的特殊格式
+	keepspaces=true, %
+	breakindent=22pt, %
+	numbers=left,%左侧显示行号 往左靠,还可以为right，或none，即不加行号
+	stepnumber=1,%若设置为2，则显示行号为1,3,5，即stepnumber为公差,默认stepnumber=1
+	%numberstyle=\tiny, %行号字体用小号
+	numberstyle={\color[RGB]{0,192,192}\tiny} ,%设置行号的大小，大小有tiny,scriptsize,footnotesize,small,normalsize,large等
+	numbersep=8pt,  %设置行号与代码的距离，默认是5pt
+	basicstyle=\footnotesize, % 这句设置代码的大小
+	showspaces=false, %
+	flexiblecolumns=true, %
+	breaklines=true, %对过长的代码自动换行
+	breakautoindent=true,%
+	breakindent=4em, %
+	%	escapebegin=\begin{CJK*}{GBK}{hei},escapeend=\end{CJK*},
+	aboveskip=1em, %代码块边框
+	tabsize=2,
+	showstringspaces=false, %不显示字符串中的空格
+	backgroundcolor=\color[RGB]{245,245,244},   %代码背景色
+	%backgroundcolor=\color[rgb]{0.91,0.91,0.91}    %添加背景色
+	escapeinside=``,  %在``里显示中文
+	%% added by http://bbs.ctex.org/viewthread.php?tid=53451
+	fontadjust,
+	captionpos=t,
+	framextopmargin=2pt,framexbottommargin=2pt,abovecaptionskip=-3pt,belowcaptionskip=3pt,
+	xleftmargin=4em,xrightmargin=4em, % 设定listing左右的空白
+	texcl=true,
+	% 设定中文冲突，断行，列模式，数学环境输入，listing数字的样式
+	extendedchars=false,columns=flexible,mathescape=true
+	% numbersep=-1em
+}
+
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+    \usepackage{xltxtra,xunicode}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+  \newcommand{\euro}{�}
+\fi
+
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage{longtable,booktabs}
+\ifxetex
+  \usepackage[setpagesize=false, % page size defined by xetex
+              unicode=false, % unicode breaks when used with xetex
+              xetex]{hyperref}
+\else
+  \usepackage[unicode=true]{hyperref}
+\fi
+\hypersetup{breaklinks=true,
+            bookmarks=true,
+            pdfauthor={},
+            pdftitle={Gstore System},
+            colorlinks=true,
+            citecolor=blue,
+            urlcolor=blue,
+            linkcolor=magenta,
+            pdfborder={0 0 0}}
+\urlstyle{same}  % don't use monospace font for urls
+%\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\setcounter{secnumdepth}{0}
+\setlength{\parindent}{0pt}
+%\setlength{\parindent}{2em}
+\addtolength{\parskip}{3pt}
+\linespread{1.3}
+
+\begin{document}
+\title{\includegraphics[scale=0.3, bb=0 0 385 567]{logo.png} \\
+	The handbook of gStore System测试}
+%\author{Bookug Lobert\footnote{EECS of Peking University, zengli-bookug@pku.edu.cn}\\[2ex]}
+\author{Edited by gStore team \footnote{The mailing list is given in Chapter 13.}}
+\date{\today}
+%\begin{figure}[b]
+%	\centering
+%　	\includegraphics[scale=0.3,bb=0 0 385 567]{../logo.png}
+	%\caption{Some description about the picture}
+%	\label{logo}
+%\end{figure}
+\maketitle
+
+\hyperdef{}{MathJaxux5fSVGux5fHidden}{}
+
+\hyperdef{}{wmd-preview}{}
+
+\setcounter{tocdepth}{4}
+\tableofcontents
+\clearpage
+
+\section{Preface}
+The RDF (\emph{R}esource \emph{D}escription \emph{F}ramework) is a family of specifications proposed by W3C for modeling Web objects as part of developing the semantic web. In RDF model, each Web object is modeled as a uniquely named \emph{resource} and denoted by a URI (\emph{U}niform \emph{R}esource \emph{I}dentifier). RDF also uses URIs to name the properties of resources and the relationships between resources as well as the two ends of the link (this is usually referred to as a ``triple''). Hence, an RDF dataset can be represented as a directed, labeled graph where resources are vertices, and triples are
+edges with property or relationship names as edge labels. For more details, please go to \href{https://www.w3.org/RDF/}{RDF Introduction}\\
+
+To retrieve and manipulate an RDF graph, W3C also proposes a structured query language, SPARQL (\emph{S}imple \emph{P}rotocol \emph{A}nd \emph{R}DF \emph{Q}uery \emph{L}anguage), to access RDF repository. SPARQL contains capabilities for querying required and optional graph patterns along with their conjunctions and disjunctions. SPARQL also supports aggregation, subqueries, negation, creating values by expressions, extensible value testing, and constraining queries by source RDF graph. Similar to RDF graphs, a SPARQL query can also be modeled as a graph, which is a query graph with some variables. Then, evaluating a SPARQL query is equivalent to finding subgraph (homomorphism) matches of a query graph over an RDF graph. You can have a better understanding of SPARQL at \href{https://www.w3.org/TR/sparql11-query/}{SPARQL Introduction}.\\
+
+Although there are some RDF data management systems (like Jena, Virtuoso, Sesame) that store the RDF data in relational systems, few existing systems exploit the native graph pattern
+matching semantics of SPARQL. \textbf{Here, we implement a graph-based RDF triple store named gStore, which is a joint research project by Peking University, University of Waterloo and Hong Kong University of Science and Technology. The system is developed and maintained by the database group in Institute of Computer Science and Technology, Peking University, China.} A detailed description of gStore can be found at our papers {[}Zou et al., VLDB 11{]} and {[}Zou et al., VLDB Journal 14{]} in the \hyperref[chapter09]{Publication} chapter. This HELP document includes system installment, usage, API, use cases and FAQ. gStore is a open-source project in github under the BSD license. You are welcome to use gStore, report bugs or suggestions, or join us to make gStore better. It is also allowed for you to build all kinds of applications based on gStore, while respecting our work.\\
+
+
+
+\textbf{Please make sure that you have read \hyperref[chapter18]{Legal Issues} before using gStore.}
+
+\clearpage
+
+\part{Start}
+
+\hyperdef{}{chapter00}{\subsection{Chapter 00: A Quick Tour}\label{chapter00}}
+Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
+
+\hyperdef{}{getting-started}{\subsubsection{Getting
+Started}\label{getting-started}}
+
+This system is really user-friendly and you can pick it up in several minutes. Remember to check your platform where you want to run this system by viewing \hyperref[chapter01]{System Requirements}. After all are verified, please get this project's source code. There are several ways to do this:
+
+\begin{itemize}
+\item
+  download the zip from this repository and extract it
+\item
+  fork this repository in your github account
+\item
+  type \texttt{git\ clone\ git@github.com:Caesar11/gStore.git} in your
+  terminal or use git GUI to acquire it
+\end{itemize}
+
+Then you need to compile the project, just type \texttt{make} in the gStore root directory, and all executables will be ok. To run gStore, please type \texttt{bin/gbuild\ database\_name\ dataset\_path} to build a database named by yourself. And you can use \texttt{bin/gquery\ database\_name} command to query a existing database. What is more, \texttt{bin/gconsole} is a wonderful tool designed for you, providing all operations you need to use gStore.
+Notice that all commands should be typed in the root directory of gStore.
+
+\emph{A detailed description can be found at Chapter 04
+\hyperref[chapter04]{How to use} in this document.}
+
+\hyperdef{}{advanced-help}{\subsubsection{Advanced
+Help}\label{advanced-help}}
+
+If you want to understand the details of the gStore system, or you want to try some advanced operations(for example, using the API, server/client), please see the chapters below.
+
+\begin{itemize}
+\item
+  \hyperref[chapter02]{Basic Introduction}: introduce the theory and features of gStore
+\item
+  \hyperref[chapter03]{Install Guide}: instructions on how to install this system
+\item
+  \hyperref[chapter04]{How To Use}: detailed information about using the gStore system
+\item
+  \hyperref[chapter05]{Socket API Explanation}: guide you to develop applications based on our Socket API
+\item  
+  \hyperref[chapter06]{HTTP API Explanation}: guide you to develop applications based on our HTTP API
+\item
+  \hyperref[chapter08]{Project Structure}: show the whole structure and sequence of this project
+\item
+  \hyperref[chapter09]{Publications}: contain essays and publications
+  related with gStore
+\item
+  \hyperref[chapter10]{Update Logs}: keep the logs of the system updates
+\item
+  \hyperref[chapter15]{Test Result}: present the test results of a series of experiments
+\end{itemize}
+
+\hyperdef{}{other-business}{\subsubsection{Other Business}\label{other-business}}
+
+We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in
+\hyperref[chapter12]{Recipe Book}.
+
+You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to to submit your suggestions and report bugs to us by emailing to . A full list of our whole team is in \hyperref[chapter13]{Contributors}.
+
+There are some restrictions when you use the current gStore project, you can see them on \hyperref[chapter10]{Limitations}.
+
+Sometimes you may find some strange phenomena(but not wrong case), or something hard to understand/solve(don't know how to do next), then do not hesitate to visit the \hyperref[chapter11]{Frequently Asked Questions} page.
+
+Graph database engine is a new area and we are still trying to go further. Things we plan to do next is in \hyperref[chapter16]{Future Plan} chapter, and we hope more and more people will support or even
+join us. You can support in many ways:
+
+\begin{itemize}
+\item
+  watch/star our project
+\item
+  fork this repository and submit pull requests to us
+\item
+  download and use this system, report bugs or suggestions
+\item
+  \ldots{}
+\end{itemize}
+
+People who inspire us or contribute to this project will be listed in the \hyperref[chapter17]{Thanks List} chapter.
+
+\clearpage
+
+\hyperdef{}{chapter01}{\subsection{Chapter 01: System Requirements}\label{chapter01}}
+
+\emph{We have tested on linux server with CentOS 6.2 x86\_64 and CentOS 6.6 x86\_64. The version of GCC should be 4.4.7 or later.}
+
+\begin{longtable}[c]{@{}ll@{}}
+\toprule
+Item & Requirement\tabularnewline
+\midrule
+\endhead
+operation system & Linux, such as CentOS, Ubuntu and so on\tabularnewline
+architecture & x86\_64\tabularnewline
+disk size & according to size of dataset\tabularnewline
+memory size & according to size of dataset\tabularnewline
+glibc & version \textgreater{}= 2.14\tabularnewline
+gcc & version \textgreater{}= 4.4.7\tabularnewline
+g++ & version \textgreater{}= 4.4.7\tabularnewline
+make & need to be installed\tabularnewline
+readline & need to be installed\tabularnewline
+readline-devel & need to be installed\tabularnewline
+openjdk & needed if using Java api\tabularnewline
+openjdk-devel & needed if using Java api\tabularnewline
+realpath & needed if using gconsole\tabularnewline
+ccache & optional, used to speed up the compilation\tabularnewline
+\bottomrule
+\caption{software requirement}
+\end{longtable}
+
+NOTICE:
+
+\begin{enumerate}
+\item
+  The name of some packages may be different in different platforms, just install the corresponding one in your own operation system.
+\item
+  To install readline and readline-devel, just type \texttt{dnf\ install\ readline-devel} in Redhat/CentOS/Fedora, or \texttt{apt-get\ install\ libreadline-dev} in Debian/Ubuntu. Please use corresponding commands in other systems. If you use ArchLinux, just type \texttt{pacman\ -S\ readline} to install the readline and readline-devel.(so do other packages)
+\item
+  You do not have to install realpath to use gStore, but if you want to use the gconsole for its convenience, please do so by using \texttt{dnf\ install\ realpath} or \texttt{apt-get\ install\ realpath}.
+\item
+  Our programs use regEx functions, which are provided by GNU/Linux by default. You do not need to have to install boost and boost-devel for more powerful regEx libraries.
+\item
+  ANTLR3.4 is used in gStore to produce lexer and parser code for SPARQL query. However, you do not need to install the corresponding antlr libraries because we have merged the libantlr3.4 in our system.
+\item
+  When you type \texttt{make} in the root directory of the gStore project, the Java api will also be compiled. You can modify the makefile if you do not have JDK in your system. However, you are advised to install openjdk-devel in your Linux system.
+\item
+  To install ccache, you need to add epel repository if using CentOS, while in Ubuntu you can directly install it by 'apt-get install ccache' comand. If you can not install ccahe(or maybe you do not want to), please go to modify the makefile(just change the CC variable to g++).
+\item
+  Any other questions, please go to \hyperref[chapter11]{FAQ} page.
+\end{enumerate}
+
+\clearpage
+
+\hyperdef{}{chapter02}{\subsection{Chapter 02: Basic Introduction}\label{chapter02}}
+
+\textit{The first essay to come up with Gstore System is
+\href{run:../pdf/gStoreVLDBJ.pdf}{gStore\_VLDBJ}, and you can find related publications in
+\hyperref[chapter09]{Publications}.}
+
+\hyperdef{}{what-is-gstore}{\subsubsection{What Is
+gStore}\label{what-is-gstore}}
+
+gStore is a graph-based RDF data management system(or what is commonly called a ``triple store'') that maintains the graph structure of the original \href{http://www.w3.org/TR/rdf11-concepts/}{RDF} data. Its data model is a labeled, directed multi edge graph, where each vertex corresponds to a subject or an object.
+
+We represent a given \href{http://www.w3.org/TR/sparql11-overview/}{SPARQL} query by a query graph Q. Query processing involves finding subgraph matches of Q over the RDF graph G, instead of joining tables in relational data management system. gStore incorporates an index over the RDF graph (called VS-tree) to speed up query processing. VS-tree is a height balanced tree with a number of associated pruning techniques to speed up subgraph matching.
+
+\textbf{The gStore project is supported by the National Science Foundation of China (NSFC), Natural Sciences and Engineering Research Council (NSERC) of Canada, and Hong Kong RGC.}
+
+\hyperdef{}{why-gstore}{\subsubsection{Why gStore}\label{why-gstore}}
+
+After a series of test, we analyse and keep the result in \hyperref[chapter15]{Test Results}. gStore runs faster to answer complicated queries(for example, contain circles) than other database systems. For simple queries, both gStore and other database systems work
+well.
+
+In addition, now is the big data era and more and more structured data is coming, while the original relational database systems(or database systems based on relational tables) cannot deal with them efficiently.  In contrast, gStore can utilize the features of graph data structures, and improve the performance.
+
+What is more, gStore is a high-extensible project. Many new ideas of graph database have be proposed, and most of them can be used in gStore.  For example, our group is also designing a distributed gstore system, which is expected to be released at the end of 2016.
+
+\hyperdef{}{open-source}{\subsubsection{Open Source}\label{open-source}}
+
+The gStore source code is available as open-source code under the BSD license. You are welcome to use gStore, report bugs or suggestions, or join us to make gStore better. It is also allowed for you to build all kinds of applications based on gStore, while respecting our work.
+
+\clearpage
+
+\hyperdef{}{chapter03}{\subsection{Chapter 03: Install Guide}\label{chapter03}}
+
+You are advised to read init.conf file, and modify it as you wish. (this file will configure the basic options of gStore system)
+
+gStore is a green software, and you just need to compile it with one command. Please run \texttt{make} in the gStore root directory to compile the gStore code, link the ANTLR lib, and build executable ``gbuild'', ``gquery'', ``gserver'', ``gclient'', ``gconsole''. What is more, the api of gStore is also built now.
+
+If you want to use API examples of gStore, please run \texttt{make\ APIexample} to compile example codes for both C++ API and Java API. For details of API, please visit \hyperref[chapter05]{API} chapter.
+
+Use \texttt{make\ clean} command to clean all objects, executables, and use \texttt{make\ dist} command to clean all objects, executables, libs, datasets, databases, debug logs, temp/text files in the gStore root directory.
+
+You are free to modify the source code of gStore and create your own project while respecting our work, and type \texttt{make\ tarball} command to compress all useful files into a .tar.gz file, which is easy to carry.
+
+Type \texttt{make\ gtest} to compile the gtest program if you want to use this test utility. You can see the \hyperref[chapter04]{HOW TO USE} for details of gtest program.
+
+\clearpage
+
+\hyperdef{}{chapter04}{\subsection{Chapter 04: How To Use}\label{chapter04}}
+
+\textit{gStore currently includes five executables and others.}
+
+\textbf{All the commands of gStore should be used in the root directory of gStore like bin/gconsole, because executables are placed in bin/, and they may use some files whose paths are indicated in the code, not absolute paths. We will ensure that all paths are absolute later by asking users to give the absolute path in their own systems to really install/configure the gStore. However, you must do as we told now to avoid errors.}
+
+\hyperdef{}{0-gconsole}{\paragraph{0. gconsole}\label{0-gconsole}}
+
+gconsole is the main console of gStore, which integrates with all functions to operate on gStore, as well as some system commands.  Completion of commands name, line editing features and access to the history list are all provided. Feel free to try it, and you may have a wonderful tour!(spaces or tabs at the beginning or end is ok, and no need to type any special characters as separators)
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gconsole
+Gstore Console(gconsole), an interactive shell based utility to communicate with
+gStore repositories.
+usage: start-gconsole [OPTION]
+-h,--help              print this help
+-s,--source            source the SPARQL script
+For bug reports and suggestions, see https://github.com/Caesar11/gStore
+
+notice that commands are a little different between native mode and remote mode!
+now is in native mode, please type your commands.
+please do not use any separators in the end.
+
+gstore>help
+
+gstore>help drop
+drop            Drop a database according to the given path.
+
+gstore>connect 127.0.0.1 3305
+now is in remote mode, please type your commands.
+
+server>disconnect
+now is in native mode, please type your commands.
+
+gstore>build lubm_10 ./data/LUBM_10.n3
+...
+import RDF file to database done.
+
+gstore>unload
+
+gstore>load lubm_10
+...
+database loaded successfully!
+
+gstore>show
+lubm_10
+
+gstore>query ./data/LUBM_q0.sql
+...
+final result is :
+?x
+<http://www.Department0.University0.edu/FullProfessor0>
+<http://www.Department1.University0.edu/FullProfessor0>
+<http://www.Department2.University0.edu/FullProfessor0>
+<http://www.Department3.University0.edu/FullProfessor0>
+<http://www.Department4.University0.edu/FullProfessor0>
+<http://www.Department5.University0.edu/FullProfessor0>
+<http://www.Department6.University0.edu/FullProfessor0>
+<http://www.Department7.University0.edu/FullProfessor0>
+<http://www.Department8.University0.edu/FullProfessor0>
+<http://www.Department9.University0.edu/FullProfessor0>
+<http://www.Department10.University0.edu/FullProfessor0>
+<http://www.Department11.University0.edu/FullProfessor0>
+<http://www.Department12.University0.edu/FullProfessor0>
+<http://www.Department13.University0.edu/FullProfessor0>
+<http://www.Department14.University0.edu/FullProfessor0>
+
+gstore>query "select distinct ?x ?y where { ?x <rdf:type>
+<ub:UndergraduateStudent> .
+?x <ub:takesCourse> ?y . ?y <ub:name> <FullProfessor1> . }"
+final result is :
+?x      ?y
+[empty result]
+
+gstore>unload
+
+gstore>quit
+\end{verbatim}
+
+Just type \texttt{bin/gconsole} in the root directory of gStore to use this console, and you will find a \texttt{gstore\textgreater{}} prompt, which indicates that you are in native mode and can type in native commands now. There are another mode of this console, which is called remote mode. Just type \texttt{connect} in the native mode to enter the remote mode, and type \texttt{disconnect} to exit to native mode.(the console connect to a gStore server whose ip is `127.0.0.1' and port is 3305, you can specify them by type \texttt{connect\ gStore\_server\_ip\ gStore\_server\_port})
+
+You can use \texttt{help} or \texttt{?} either in native mode or remote mode to see the help information, or you can type \texttt{help\ command\_name} or \texttt{?\ command\_name} to see the information of a given command. Notice that there are some differences between the commands in native mode and commands in remote mode. For example, system commands like \texttt{ls}, \texttt{cd} and \texttt{pwd} are provided in native mode, but not in remote mode. Also take care that not all commands contained in the help page are totally achieved, and we may change some functions of the console in the future.
+
+What we have done is enough to bring you much convenience to use gStore, just enjoy it!
+
+\hyperdef{}{1-gbuild}{\paragraph{1. gbuild}\label{1-gbuild}}
+
+gbuild is used to build a new database from a RDF triple format file.
+
+\texttt{bin/gbuild\ db\_name\ rdf\_triple\_file\_path}
+
+For example, we build a database from LUBM\_10.n3 which can be found in
+example folder.
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gbuild LUBM10 ./data/LUBM_10.n3
+gbuild...
+argc: 3 DB_store:LUBM10      RDF_data: ./data/LUBM_10.n3
+begin encode RDF from : ./data/LUBM_10.n3 ...
+\end{verbatim}
+
+\hyperdef{}{2-gquery}{\paragraph{2. gquery}\label{2-gquery}}
+
+gquery is used to query an existing database with files containing
+SPARQL queries.(each file contains exact one SPARQL query)
+
+Type \texttt{bin/gquery\ db\_name\ query\_file} to execute the SPARQL
+query retrieved from query\_file in the database named db\_name.
+
+Use \texttt{bin/gquery\ -\/-help} for detail information of gquery
+usage.
+
+To enter the gquery console, type \texttt{bin/gquery\ db\_name}. The
+program shows a command prompt(``gsql\textgreater{}''), and you can type
+in a command here. Use \texttt{help} to see basic information of all
+commands, while \texttt{help\ command\_t} shows details of a specified
+command.
+
+Type \texttt{quit} to leave the gquery console.
+
+For \texttt{sparql} command, input a file path which contains a single
+SPARQL query. (\emph{answer redirecting to file is supported})
+
+When the program finish answering the query, it shows the command prompt
+again.
+
+\emph{gStore2.0 only support simple ``select'' queries(not for
+predicates) now.}
+
+We also take LUBM\_10.n3 as an example.
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gquery LUBM10
+gquery...
+argc: 2 DB_store:LUBM10/
+loadTree...
+LRUCache initial...
+LRUCache initial finish
+finish loadCache
+finish loadEntityID2FileLineMap
+open KVstore
+finish load
+finish loading
+Type `help` for information of all commands
+Type `help command_t` for detail of command_t
+gsql>sparql ./data/LUBM_q0.sql
+... ...
+Total time used: 4ms.
+final result is :
+<http://www.Department0.University0.edu/FullProfessor0>
+<http://www.Department1.University0.edu/FullProfessor0>
+<http://www.Department2.University0.edu/FullProfessor0>
+<http://www.Department3.University0.edu/FullProfessor0>
+<http://www.Department4.University0.edu/FullProfessor0>
+<http://www.Department5.University0.edu/FullProfessor0>
+<http://www.Department6.University0.edu/FullProfessor0>
+<http://www.Department7.University0.edu/FullProfessor0>
+<http://www.Department8.University0.edu/FullProfessor0>
+<http://www.Department9.University0.edu/FullProfessor0>
+<http://www.Department10.University0.edu/FullProfessor0>
+<http://www.Department11.University0.edu/FullProfessor0>
+<http://www.Department12.University0.edu/FullProfessor0>
+<http://www.Department13.University0.edu/FullProfessor0>
+<http://www.Department14.University0.edu/FullProfessor0>
+\end{verbatim}
+
+Notice:
+
+\begin{itemize}
+\item
+  ``{[}empty result{]}'' will be printed if no answer, and there is an
+  empty line after all results.
+\item
+  readline lib is used, so you can use arrow key in your keyboard to see
+  command history, and use and arrow key to move and modify your entire
+  command.
+\item
+  path completion is supported for utility. (not built-in command
+  completion)
+\end{itemize}
+
+\hyperdef{}{3-ghttp}{\paragraph{3. ghttp}\label{3-ghttp}}
+
+ghttp is a daemon. It should be launched first when accessing gStore by HTTP protocol. It uses port 9000.
+
+Just type \texttt{bin/ghttp} to start server. After the server is started, you can access it by visit the url in a browser or use the Restful API in your program. You can press Ctrl-C to stop the server. (Multiple connections are supported in HTTP server)
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/ghttp
+the current settings are as below:
+key : value
+-----------------------------------------------------------
+BackupTime : 2000          # 4 am (GMT+8)
+buffer_maxium : 100
+db_home : .
+db_suffix : .db
+debug_level : simple
+gstore_mode : single
+operation_logs : true
+thread_maxium : 1000
+
+enter initialize.
+server port: 9000 database name: 
+
+\end{verbatim}
+
+URL rules are listed blow:  
+
+parameters: operation, db\_name, ds\_path, format, sparql
+
+NOTICE: do URL encoding before sending it to database server.
+
+operation: build, load, unload, query, monitor, show, checkpoint
+\begin{itemize}
+	\item 
+	db\_name: the name of database, like lubm
+	\item 
+	format: html, json, txt, csv
+	\item 
+	sparql: select ?s where { ?s ?p ?o . }
+	\item 
+	ds\_path in the server: like /home/data/test.n3				
+\end{itemize}
+
+Examples:
+
+\begin{itemize}
+	\item 
+	to build a database from a dataset:\\
+	http://localhost:9000/?operation=build\&db\_name=[db\_name]\&ds\_path=[ds\_path]
+	\item 
+	to load a database:\\
+	http://localhost:9000/?operation=load\&db\_name=[db\_name]
+	\item 
+	to query a database:\\
+	http://localhost:9000/?operation=query\&format=[format]\&sparql=[sparql]
+	\item 
+	to unload a database:\\
+	http://localhost:9000/?operation=unload\&db\_name=[db\_name]
+	\item 
+	to monitor the server:\\
+	http://localhost:9000/?operation=monitor
+	\item 
+	to show the database used:\\
+	http://localhost:9000/?operation=show
+	\item 
+	to save the database currently:\\
+	http://localhost:9000/?operation=checkpoint		
+\end{itemize}
+
+
+\hyperdef{}{4-gserver}{\paragraph{4. gserver}\label{4-gserver}}
+
+gserver is a daemon. It should be launched first when accessing gStore
+by gclient or API. It communicates with client through socket.
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gserver -s
+Server started at port 3305
+\end{verbatim}
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gserver -t
+Server stopped at port 3305
+\end{verbatim}
+
+You can also assign a custom port for listening.
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gserver -p 3307
+Port changed to 3307.
+\end{verbatim}
+
+Notice: Multiple threads are not supported by gserver. If you start up
+gclient in more than one terminal in the same time, gserver will go
+down.
+
+\hyperdef{}{5-gclient}{\paragraph{5. gclient}\label{5-gclient}}
+
+gclient is designed as a client to send commands and receive feedbacks.
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gclient
+ip=127.0.0.1 port=3305
+gsql>help
+help - print commands message
+quit - quit the console normally
+import - build a database for a given dataset
+load - load an existen database
+unload - unload an existen database
+sparql - load query from the second argument
+show - show the current database's name
+gsql>import lubm data/LUBM_10.n3
+import RDF file to database done.
+gsql>load lubm
+load database done.
+gsql>sparql "select ?s ?o where { ?s <rdf:type> ?o . }"
+[empty result]
+
+gsql>quit
+\end{verbatim}
+
+You can also assign gserver's ip and port.
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gclient 172.31.19.15 3307
+ip=172.31.19.15 port=3307
+gsql>
+\end{verbatim}
+
+We can use these following commands now:
+
+\begin{itemize}
+\item
+  \texttt{help} shows the information of all commands
+\item
+  \texttt{import\ db\_name\ rdf\_triple\_file\_name} build a database
+  from RDF triple file
+\item
+  \texttt{load\ db\_name} load an existing database
+\item
+  \texttt{unload\ db\_name} unload database, but will not delete it on
+  disk, you can load it next time
+\item
+  \texttt{sparql\ "query\_string"} query the current database with a
+  SPARQL query string(quoted by ``'')
+\item
+  \texttt{show} displays the name of the current loaded database
+\end{itemize}
+
+Notice:
+
+\begin{itemize}
+\item
+  at most one database can be loaded in the gclient console
+\item
+  you can place ` ' or `\textbackslash{}t' between different parts of
+  command, but not use characters like `;'
+\item
+  you should not place any space or tab ahead of the start of any
+  command
+\end{itemize}
+
+\hyperdef{}{6-test-utilities}{\paragraph{6. test
+utilities}\label{6-test-utilities}}
+
+A series of test program are placed in the test/ folder, and we will
+introduce the two useful ones: gtest.cpp and full\_test.sh
+
+\textbf{gtest is used to test gStore with multiple datasets and
+queries.}
+
+To use gtest utility, please type \texttt{make\ gtest} to compile the
+gtest program first. Program gtest is a test tool to generate structural
+logs for datasets. Please type \texttt{./gtest\ -\/-help} in the working
+directory for details.
+
+\textbf{Please change paths in the test/gtest.cpp if needed.}
+
+You should place the datasets and queries in this way:
+
+\begin{verbatim}
+DIR/WatDiv/database/*.nt
+
+DIR/WatDiv/query/*.sql
+\end{verbatim}
+
+Notice that DIR is the root directory where you place all datasets
+waiting to be used by gtest. And WatDiv is a class of datasets, as well
+as LUBM. Inside WatDiv(or LUBM, etc. please place all datasets(named
+with .nt) in a database/ folder, and place all queries(corresponding to
+datasets, named with .sql) in a query folder.
+
+Then you can run the gtest program with specified parameters, and the
+output will be sorted into three logs in gStore root directory:
+load.log/(for database loading time and size), time.log/(for query time)
+and result.log/(for all query results, not the entire output strings,
+but the information to record the selected two database systems matched
+or not).
+
+All logs produced by this program are in TSV format(separated with
+`\textbackslash{}t'), you can load them into Calc/Excel/Gnumeric
+directly. Notice that time unit is ms, and space unit is kb.
+
+\textbf{full\_test.sh is used to compare the performance of gStore and
+other database systems on multiple datasets and queries.}
+
+To use full\_test.sh utility, please download the database system which
+you want to tats and compare, and set the exact position of database
+systems and datasets in this script. The name strategy should be the
+same as the requirements of gtest, as well as the logs strategy.
+
+Only gStore and Jena are tested and compared in this script, but it is
+easy to add other database systems, if you would like to spend some time
+on reading this script. You may go to
+\href{run:../pdf/gstore���Ա���.pdf}{test
+report} or \hyperref[chapter11]{Frequently Asked Questions} for help if
+you encounter a problem.
+
+\hyperdef{}{7-gadd}{\paragraph{7. gadd}\label{7-gadd}}
+
+gadd is used to add triples in a file to an existing database.
+
+Usage: \texttt{bin/gadd db\_name rdf\_triple\_file\_path}.
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gadd lubm ./data/LUBM\_10.n3
+...
+argc: 3 DB_store:lubm   insert file:./data/LUBM_10.n3
+get important pre ID
+...
+insert rdf triples done.
+inserted triples num: 99550
+\end{verbatim}
+
+\hyperdef{}{8-gsub}{\paragraph{8. gsub}\label{8-gsub}}
+
+gsub is used to remove triples from an existing database.
+
+Usage: \texttt{bin/gsub db\_name rdf\_triple\_file\_path}.
+
+\begin{verbatim}
+[bookug@localhost gStore]$ bin/gsub lubm data/LUBM\_10.n3
+...
+argc: 3 DB_store:lubm  remove file: data/LUBM\_10.n3
+...
+remove rdf triples done.
+removed triples num: 99550
+\end{verbatim}
+
+\hyperdef{}{9-gmonitor}{\paragraph{9. gmonitor}\label{9-gmonitor}}
+
+After starting ghttp, go into gStore/bin/ and type \texttt{./gmonitor ip port} to check current status of gStore.
+
+\begin{verbatim}
+[bookug@localhost bin]$ ./gmonitor 127.0.0.1 9000
+parameter: ?operation=monitor
+request: http://127.0.0.1:9000/%3Foperation%3Dmonitor
+null--->[HTTP/1.1 200 OK]
+Content-Length--->[127]
+database: lubm
+triple num: 99550
+entity num: 28413
+literal num: 0
+subject num: 14569
+predicate num: 17
+connection num: 7
+\end{verbatim}
+
+\hyperdef{}{10-gshow}{\paragraph{10. gshow}\label{10-gshow}}
+
+After starting ghttp, go into gStore/bin and type \texttt{./gshow ip port} to check loaded database.
+
+\begin{verbatim}
+[bookug@localhost gStore]$ ./gshow 127.0.0.1 9000
+parameter: ?operation=show
+request: http://127.0.0.1:9000/%3Foperation%3Dshow
+null--->[HTTP/1.1 200 OK]
+Content-Length--->[4]
+lubm
+\end{verbatim}
+
+\clearpage
+
+\part{Advanced}
+
+\hyperdef{}{chapter05}{\subsection{Chapter 05: Socket API Explanation}\label{chapter05}}
+
+\textbf{This Chapter guides you to use socket API for accessing gStore, which can be used when the server runs gserver. We also provide HTTP API for ghttp, please see \hyperref[chapter06]{【HTTP API Explanation】}.}
+
+\hyperdef{}{easy-examples}{\subsubsection{Easy
+Examples}\label{easy-examples}}
+
+We provide JAVA, C++, PHP and Python API for gStore now. Please refer to example
+codes in \texttt{api/socket/cpp/example}, \texttt{api/socket/java/example}, \texttt{api/socket/php} and \texttt{api/socket/python/example}. To use the four examples to have a try, please ensure that executables have already been generated. Otherwise, for Java and C++, just type \texttt{make\ APIexample} in the root directory of gStore to compile the codes, as well as API.
+
+Next, \textbf{start up a gStore server by using \texttt{./gserver}
+command.} It is ok if you know a running usable gStore server and try to
+connect to it, but notice that \textbf{the server ip and port of server
+and client must be matched.}(you don't need to change any thing if using
+examples, just by default) Then, for Java and C++ code, you need to compile the example codes
+in the directory gStore/api/socket/. We provide a utility to do this, and you
+just need to type \texttt{make\ APIexample} in the root directory of
+gStore. Or you can compile the codes by yourself, in this case please go
+to gStore/api/socket/cpp/example/ and gStore/api/socket/java/example/, respectively.
+
+Finally, go to the example directory and run the corresponding
+executables. For C++, just use \texttt{./example} command to run it. And
+for Java, use \texttt{make\ run} command or \texttt{java\ -cp\ ../lib/GstoreJavaAPI.jar:.\ JavaAPIExample} to run
+it. For PHP, use \texttt{php ./PHPAPIExample}. For python, use \texttt{python ./PythonAPIExample}. All these four executables will connect to a specified gStore server
+and do some load or query operations. Be sure that you see the query
+results in the terminal where you run the examples, otherwise please go
+to \hyperref[chapter11]{Frequently Asked Questions} for help or report
+it to us.(the report approach is described in
+\hyperref[chapter00]{README})
+
+You are advised to read the example code carefully, as well as the
+corresponding Makefile. This will help you to understand the API,
+specially if you want to write your own programs based on the API
+interface.
+
+\hyperdef{}{api-structure}{\subsubsection{API structure}\label{api-structure}}
+
+The API of gStore is placed in api/socket/ directory in the root directory of
+gStore, whose contents are listed below:
+
+\begin{itemize}
+\item
+  gStore/api/socket/
+
+  \begin{itemize}
+  \item
+    cpp/ (the C++ API)
+
+    \begin{itemize}
+    \item
+      src/ (source code of C++ API, used to build the
+      lib/libgstoreconnector.a)
+
+      \begin{itemize}
+      \item
+        GstoreConnector.cpp (interfaces to interact with gStore server)
+      \item
+        GstoreConnector.h
+      \item
+        Makefile (compile and build lib)
+      \end{itemize}
+    \item
+      lib/ (where the static lib lies in)
+
+      \begin{itemize}
+      \item
+        .gitignore
+      \item
+        libgstoreconnector.a (only exist after compiled, you need to
+        link this lib when you use the C++ API)
+      \end{itemize}
+    \item
+      example/ (small example program to show the basic idea of using
+      the C++ API)
+
+      \begin{itemize}
+      \item
+        CppAPIExample.cpp
+      \item
+        Makefile
+      \end{itemize}
+    \end{itemize}
+  \item
+    java/ (the Java API)
+
+    \begin{itemize}
+    \item
+      src/ (source code of Java API, used to build the
+      lib/GstoreJavaAPI.jar)
+
+      \begin{itemize}
+      \item
+        jgsc/GstoreConnector.java (the package which you need to import when you use the Java API)
+      \item
+        Makefile (compile and build lib)
+      \end{itemize}
+    \item
+      lib/
+
+      \begin{itemize}
+      \item
+        .gitignore
+      \item
+        GstoreJavaAPI.jar (only exist after compiled, you need to
+        include this JAR in your class path)
+      \end{itemize}
+    \item
+      example/ (small example program to show the basic idea of using
+      the Java API)
+
+      \begin{itemize}
+      \item
+        JavaAPIExample.cpp
+      \item
+        Makefile
+      \end{itemize}
+    \end{itemize}
+
+   \item
+    php/ (the PHP API)
+
+    \begin{itemize}
+    \item
+      GstoreConnector.php (source code of PHP API, you need to include this file when you use the PHP API)
+
+    \item
+      PHPAPIExample.php (small example program to show the basic idea of using the PHP API)
+    \end{itemize}
+
+  \item
+    python/ (the Python API)
+    \begin{itemize}
+    \item
+      src/ (source code of Python API)
+      \begin{itemize}
+      \item
+        GstoreConnector.py (the package which you need to import when you use the Python API)
+      \end{itemize}
+    \item
+      example/ (small example program to show the basic idea of using the Python API)
+      \begin{itemize}
+      \item
+        PythonAPIExample.py
+      \end{itemize}
+    \end{itemize}
+
+  \end{itemize}
+\end{itemize}
+
+\hyperdef{}{c-api}{\subsubsection{C++ API}\label{c-api}}
+
+\hyperdef{}{interface}{\paragraph{Interface}\label{interface}}
+
+To use the C++ API, please place the phrase
+\texttt{\#include\ "GstoreConnector.h"} in your cpp code. Functions in
+GstoreConnector.h should be called like below:
+
+\begin{verbatim}
+// initialize the Gstore server's IP address and port.
+GstoreConnector gc("127.0.0.1", 3305);
+// build a new database by a RDF file.
+// note that the relative path is related to gserver.
+gc.build("LUBM10", "example/LUBM_10.n3");
+// then you can execute SPARQL query on this database.
+std::string sparql = "select ?x where \
+{\
+?x    <rdf:type>    <ub:UndergraduateStudent>. \
+?y    <ub:name> <Course1>. \
+?x    <ub:takesCourse>  ?y. \
+?z    <ub:teacherOf>    ?y. \
+?z    <ub:name> <FullProfessor1>. \
+?z    <ub:worksFor>    ?w. \
+?w    <ub:name>    <Department0>. \
+}";
+std::string answer = gc.query(sparql);
+// unload this database.
+gc.unload("LUBM10");
+// also, you can load some exist database directly and then query.
+gc.load("LUBM10");
+// query a SPARQL in current database
+answer = gc.query(sparql);
+\end{verbatim}
+
+The original declaration of these functions are as below:
+
+\begin{verbatim}
+GstoreConnector();
+GstoreConnector(string _ip, unsigned short _port);
+GstoreConnector(unsigned short _port);
+bool load(string _db_name);
+bool unload(string _db_name);
+bool build(string _db_name, string _rdf_file_path);
+string query(string _sparql);
+\end{verbatim}
+
+Notice:
+
+\begin{enumerate}
+\item
+  When using GstoreConnector(), the default value for ip and port is
+  127.0.0.1 and 3305, respectively.
+\item
+  When using build(), the rdf\_file\_path(the second parameter) should
+  be related to the position where gserver lies in.
+\item
+  Please remember to unload the database you have loaded, otherwise
+  things may go wrong.(the errors may not be reported!)
+\end{enumerate}
+
+\hyperdef{}{compile}{\paragraph{Compile}\label{compile}}
+
+You are advised to see gStore/api/socket/cpp/example/Makefile for instructions on how to compile your code with the C++ API. Generally, what you must do is compile your own code to object with header in the C++ API, and link the object with static lib in the C++ API.
+
+Let us assume that your source code is placed in test.cpp, whose position is \$\{GSTORE\}/gStore/.(if using devGstore as name instead of gStore, then the path is \$\{GSTORE\}/devGstore/ directory first:
+
+\begin{quote}
+Use \texttt{g++\ -c\ -I\$\{GSTORE\}/gStore/api/socket/cpp/src/\ test.cpp\ -o\ test.o} to compile your test.cpp into test.o, relative API header is placed in api/socket/cpp/src/.
+
+Use \texttt{g++\ -o\ test\ test.o\ -L\$\{GSTORE\}/gStore/api/socket/cpp/lib/\ -lgstoreconnector} to link your test.o with the libgstoreconnector.a(a static lib) in api/socket/cpp/lib/.
+\end{quote}
+
+Then you can type \texttt{./test} to execute your own program, which uses our C++ API. It is also advised for you to place relative compile commands in a Makefile, as well as other commands if you like.
+
+\hyperdef{}{java-api}{\subsubsection{Java API}\label{java-api}}
+
+\hyperdef{}{interface-1}{\paragraph{Interface}\label{interface-1}}
+
+To use the Java API, please place the phrase
+\texttt{import\ jgsc.GstoreConnector;} in your java code. Functions in
+GstoreConnector.java should be called like below:
+
+\begin{verbatim}
+// initialize the Gstore server's IP address and port.
+GstoreConnector gc = new GstoreConnector("127.0.0.1", 3305);
+// build a new database by a RDF file.
+// note that the relative path is related to gserver.
+gc.build("LUBM10", "example/LUBM_10.n3");
+// then you can execute SPARQL query on this database.
+String sparql = "select ?x where " + "{" +
+"?x    <rdf:type>    <ub:UndergraduateStudent>. " +
+"?y    <ub:name> <Course1>. " +
+"?x    <ub:takesCourse>  ?y. " +
+"?z    <ub:teacherOf>    ?y. " +
+"?z    <ub:name> <FullProfessor1>. " +
+"?z    <ub:worksFor>    ?w. " +
+"?w    <ub:name>    <Department0>. " +
+"}";
+String answer = gc.query(sparql);
+//unload this database.
+gc.unload("LUBM10");
+//also, you can load some exist database directly and then query.
+gc.load("LUBM10");// query a SPARQL in current database
+answer = gc.query(sparql);
+\end{verbatim}
+
+The original declaration of these functions are as below:
+
+\begin{verbatim}
+GstoreConnector();
+GstoreConnector(string _ip, unsigned short _port);
+GstoreConnector(unsigned short _port);
+bool load(string _db_name);
+bool unload(string _db_name);
+bool build(string _db_name, string _rdf_file_path);
+string query(string _sparql);
+\end{verbatim}
+
+Notice:
+
+\begin{enumerate}
+\item
+  When using GstoreConnector(), the default value for ip and port is
+  127.0.0.1 and 3305, respectively.
+\item
+  When using build(), the rdf\_file\_path(the second parameter) should
+  be related to the position where gserver lies in.
+\item
+  Please remember to unload the database you have loaded, otherwise
+  things may go wrong.(the errors may not be reported!)
+\end{enumerate}
+
+\hyperdef{}{compile-1}{\paragraph{Compile}\label{compile-1}}
+
+You are advised to see gStore/api/socket/java/example/Makefile for instructions on how to compile your code with the Java API. Generally, what you must do is compile your own code to object with jar file in the Java API.
+
+Let us assume that your source code is placed in test.java, whose position is \$\{GSTORE\}/gStore/.(if using devGstore as name instead of gStore, then the path is \$\{GSTORE\}/devGstore/ directory first:
+
+\begin{quote}
+Use \texttt{javac\ -cp\ \$\{GSTORE\}/gStore/api/socket/java/lib/GstoreJavaAPI.jar\ test.java} to compile your test.java into test.class with the GstoreJavaAPI.jar(a jar package used in Java) in api/socket/java/lib/.
+\end{quote}
+
+Then you can type \texttt{java\ -cp\ \$\{GSTORE\}/gStore/api/socket/java/lib/GstoreJavaAPI.jar:.\ test} to execute your own program(notice that the ``:.'' in command cannot be neglected), which uses our Java API. It is also advised for you to place relative compile commands in a Makefile, as well as other commands if you like.
+
+\hyperdef{}{php-api}{\subsubsection{PHP API}\label{php-api}}
+	
+	\hyperdef{}{interface-2}{\paragraph{Interface}\label{interface-2}}
+	
+	To use the PHP API, please place the phrase
+\texttt{include('GstoreConnector,php');} in your php code. Functions in
+GstoreConnector.php should be called like below:
+	
+	\begin{verbatim}
+	// initialize the Gstore server's IP address and port.
+	$gc = new Connector("127.0.0.1", 3305);
+	// build a new database by a RDF file.
+	// note that the relative path is related to gserver.
+	$gc->build("LUBM10", "example/LUBM_10.n3");
+	// then you can execute SPARQL query on this database.
+	$sparql = "select ?x where " + "{" +
+	"?x    <rdf:type>    <ub:UndergraduateStudent>. " +
+	"?y    <ub:name> <Course1>. " +
+	"?x    <ub:takesCourse>  ?y. " +
+	"?z    <ub:teacherOf>    ?y. " +
+	"?z    <ub:name> <FullProfessor1>. " +
+	"?z    <ub:worksFor>    ?w. " +
+	"?w    <ub:name>    <Department0>. " +
+	"}";
+	$answer = gc->query($sparql);
+	//unload this database.
+	$gc->unload("LUBM10");
+	//also, you can load some exist database directly and then query.
+	$gc->load("LUBM10");// query a SPARQL in current database
+	$answer = gc->query(sparql);
+	\end{verbatim}
+	
+	The original declaration of these functions are as below:
+	
+	\begin{verbatim}
+	class Connector {
+		public function __construct($host, $port);
+		public function send($data);
+		public function recv();
+		public function build($db_name, $rdf_file_path);
+		public function load($db_name);
+		public function unload($db_name);
+		public function query($sparql);
+		public function __destruct();
+	}
+	\end{verbatim}
+	
+	Notice:
+	
+	\begin{enumerate}
+		\item
+		When using Connector(), the default value for ip and port is
+		127.0.0.1 and 3305, respectively.
+		\item
+		When using build(), the rdf\_file\_path(the second parameter) should
+		be related to the position where gserver lies in.
+		\item
+		Please remember to unload the database you have loaded, otherwise
+		things may go wrong.(the errors may not be reported!)
+	\end{enumerate}
+	
+	\hyperdef{}{run-2}{\paragraph{Run}\label{run-2}}
+	
+	You can see gStore/api/socket/php/PHPAPIExample for instructions on how to use PHP API. PHP script doesn't need compiling. You can run PHP file directly or use it in your web project.
+	
+
+\hyperdef{}{python-api}{\subsubsection{Python API}\label{python-api}}
+	
+	\hyperdef{}{interface-3}{\paragraph{Interface}\label{interface-3}}
+	
+	To use the Python API, please place the phrase \texttt{from GstoreConnector import GstoreConnector} in your python code. Functions in GstoreConnector.py should be called like below:
+	
+	\begin{verbatim}
+	// initialize the Gstore server's IP address and port.
+	gc = GstoreConnector('127.0.0.1', 3305)
+	// build a new database by a RDF file.
+	// note that the relative path is related to gserver.
+	gc.build('LUBM10', 'data/LUBM_10.n3')
+	// then you can execute SPARQL query on this database.
+	$sparql = "select ?x where " + "{" +
+	"?x    <rdf:type>    <ub:UndergraduateStudent>. " +
+	"?y    <ub:name> <Course1>. " +
+	"?x    <ub:takesCourse>  ?y. " +
+	"?z    <ub:teacherOf>    ?y. " +
+	"?z    <ub:name> <FullProfessor1>. " +
+
+	"?z    <ub:worksFor>    ?w. " +
+	"?w    <ub:name>    <Department0>. " +
+	"}";
+	answer = gc.query(sparql)
+	//unload this database.
+	gc.unload('LUBM10')
+	//also, you can load some exist database directly and then query.
+	gc.load('LUBM10')// query a SPARQL in current database
+	answer = gc.query(sparql)
+	\end{verbatim}
+	
+	The original declaration of these functions are as below:
+	
+	\begin{verbatim}
+	class GstoreConnector {
+		def _connect(self)
+		def _disconnect(self)
+		def _send(self, msg):
+		def _recv(self)
+		def _pack(self, msg):
+		def _communicate(f):
+		def __init__(self, ip='127.0.0.1', port=3305):
+		@_communicate
+    		def test(self)
+		@_communicate
+		def load(self, db_name)
+		@_communicate
+		def unload(self, db_name)
+		@_communicate
+		def build(self, db_name, rdf_file_path)
+		@_communicate
+		def drop(self, db_name)
+		@_communicate
+		def stop(self)
+		@_communicate
+		def query(self, sparql)
+		@_communicate
+		def show(self, _type=False)
+	}
+	\end{verbatim}
+	
+	Notice:
+	
+	\begin{enumerate}
+		\item
+		When using GstoreConnector(), the default value for ip and port is
+		127.0.0.1 and 3305, respectively.
+		\item
+		When using build(), the rdf\_file\_path(the second parameter) should
+		be related to the position where gserver lies in.
+		\item
+		Please remember to unload the database you have loaded, otherwise
+		things may go wrong.(the errors may not be reported!)
+	\end{enumerate}
+	
+	\hyperdef{}{run-3}{\paragraph{Run}\label{run-3}}
+	
+	You are advised to see gStore/api/socket/python/example/PythonAPIExample for examples on how to use python API. Python file doesn't need compiling, and you can run it directly.
+
+\clearpage
+
+
+\hyperdef{}{chapter06}{\subsection{Chapter 06: HTTP API Explanation}\label{chapter06}}
+
+\textbf{This chapter provides API for ghttp. Compared with socket API, HTTP API is more stable and more standard, and can maintain connection. Socket API can not guaratee correct transmission, so the network transmission is faster.}
+
+\hyperdef{}{easy-http-examples}{\subsubsection{Easy Examples}\label{easy-http-examples}}
+
+We provide JAVA and C++ API for ghttp now. Please see \texttt{api/http/cpp} and \texttt{api/http/java}. To use these examples, please make sure that executables have already been generated.
+
+Next, \textbf{start up ghttp service by using \texttt{./ghttp} command.} It is ok if you know a running usable ghttp server and try to connect to it. (you don't need to change anything if using
+examples, just by default) Then, for Java and C++ code, you need to compile the example codes in the directory gStore/api/http/. We provide a utility to do this, and you just need to type \texttt{make\ APIexample} in the root directory of gStore. Or you can compile the codes by yourself, in this case please go to gStore/api/http/cpp/ and gStore/api/http/java/, respectively.
+
+Finally, go to the example directory and run the corresponding executables. All these four executables will connect to a specified ghttp server and do some load or query operations. Be sure that you see the query results in the terminal where you run the examples, otherwise please go to \hyperref[chapter11]{Frequently Asked Questions} for help or report it to us.(the report approach is described in \hyperref[chapter00]{README})
+
+You are advised to read the example code carefully, as well as the corresponding Makefile. This will help you to understand the API, specially if you want to write your own programs based on the API interface.
+
+\hyperdef{}{http-api-structure}{\subsubsection{API Structure}\label{http-api-structure}}
+
+The HTTP API of gStore is placed in api/http/ directory in the root directory of gStore, whose contents are listed below:
+
+\begin{itemize}
+	\item
+	gStore/api/http/
+	
+	\begin{itemize}
+		\item
+		cpp/ （C++ API）
+		
+		\begin{itemize}
+			\item
+			client.cpp （source code of C++ API）
+			\item 
+			client.h
+			\item 
+			example.cpp (example program to show the basic idea of using the C++ API)
+			\item 
+			Makefile （compile）
+			
+		\end{itemize}
+		
+		\item
+		java/ （Java API）
+		\begin{itemize}
+			\item
+			src/ (source code of Java API, used to build the
+			lib/GstoreJavaAPI.jar)
+			
+			\begin{itemize}
+				\item
+				jgsc/GstoreConnector.java (the package which you need to import when you use the Java API)
+				\item
+				Makefile (compile and build lib)
+			\end{itemize}
+			\item
+			lib/
+			
+			\begin{itemize}
+				\item
+				.gitignore
+				\item
+				GstoreJavaAPI.jar (only exist after compiled, you need to
+				include this JAR in your class path)
+			\end{itemize}
+			\item
+			example/ (small example program to show the basic idea of using
+			the Java API)
+			
+			\begin{itemize}
+				\item
+				JavaAPIExample.cpp
+				\item
+				Makefile
+			\end{itemize}
+		\end{itemize}
+		
+	\end{itemize}
+\end{itemize}
+
+\hyperdef{}{http-c-api}{\subsubsection{C++ API}\label{http-c-api}}
+
+\hyperdef{}{http-interface}{\paragraph{Interface}\label{http-interface}}
+
+
+To use the C++ API, please place the phrase \texttt{\#include\ "Client.h"} in your cpp code. Functions in Client.h should be called like below:
+
+\begin{verbatim}
+CHttpClient hc;
+string res; 
+int ret;
+// build a new database by a RDF file.
+ret = hc.Get("127.0.0.1:9000/build/lumb/data/LUBM_10.n3", res);
+cout<<res<<endl;
+// load databse
+ret = hc.Get("127.0.0.1:9000/load/lumb", res);
+cout<<res<<endl;
+// then you can execute SPARQL query on this database.
+ret = hc.Get("127.0.0.1:9000/query/data/ex0.sql", res);
+cout<<res<<endl;
+// output information of current database
+ret = hc.Get("127.0.0.1:9000/monitor", res);
+cout<<res<<endl;
+// unload this databse
+ret = hc.Get("127.0.0.1:9000/unload", res);
+cout<<res<<endl;
+\end{verbatim}
+
+The original declaration of these functions are as below:
+
+\begin{verbatim}
+CHttpClient();
+int Post(const std::string & strUrl, const std::string & strPost, std::string & strResponse);
+int Get(const std::string & strUrl, std::string & strResponse);
+int Posts(const std::string & strUrl, const std::string & strPost, std::string & strResponse, const char * pCaPath = NULL);
+int Gets(const std::string & strUrl, std::string & strResponse, const char * pCaPath = NULL);
+\end{verbatim}
+
+
+\hyperdef{}{http-java-api}{\subsubsection{Java API}\label{http-java-api}}
+
+\hyperdef{}{http-interface-1}{\paragraph{Interface}\label{http-interface-1}}
+
+To use the Java API, please place the phrase
+\texttt{import\ jgsc.GstoreConnector;} in your java code. Functions in
+GstoreConnector.java should be called like below:
+
+\begin{verbatim}
+// initialize the Gstore server's IP address and port.
+GstoreConnector gc = new GstoreConnector("127.0.0.1", 9000);
+// build a new database by a RDF file.
+// note that the relative path is related to gserver.
+gc.build("LUBM10", "example/LUBM_10.n3");
+gc.load("LUBM10");
+// then you can execute SPARQL query on this database.
+String sparql = "select ?x where " + "{" +
+"?x    <rdf:type>    <ub:UndergraduateStudent>. " +
+"?y    <ub:name> <Course1>. " +
+"?x    <ub:takesCourse>  ?y. " +
+"?z    <ub:teacherOf>    ?y. " +
+"?z    <ub:name> <FullProfessor1>. " +
+"?z    <ub:worksFor>    ?w. " +
+"?w    <ub:name>    <Department0>. " +
+"}";
+String answer = gc.query(sparql);
+//unload this database.
+gc.unload("LUBM10");
+//also, you can load some exist database directly and then query.
+gc.load("LUBM10");// query a SPARQL in current database
+answer = gc.query(sparql);
+gc.unload("LUBM10");
+\end{verbatim}
+
+The original declaration of these functions are as below:
+
+\begin{verbatim}
+GstoreConnector();
+GstoreConnector(int _port);
+GstoreConnector(String _ip, int _port);
+boolean load(String _db_name);
+boolean unload(String _db_name);
+boolean build(String _db_name, String _rdf_file_path);
+boolean drop(String _db_name);
+String query(String _sparql);
+String show();
+String show(boolean _type);
+\end{verbatim}
+
+\clearpage
+
+
+\hyperdef{}{chapter07}{\subsection{Chapter 07: Use gStore in Web}\label{chapter07}}
+	
+	\textbf{This Chapter provides a specific example on how to use our API in a web project.}
+	
+	\hyperdef{}{example}{\subsubsection{Example}\label{example}}
+	
+	Now you have the basic idea on how to use our APIs to connect gStore. Yet you might be still a little confused. Here we provide a simple demo to show you what to do explicitly.
+
+	Let's say, you need to use gStore in a web project. PHP is a popular general-purpose scripting language that is especially suited to web development. So, using our PHP API can meet your requirements. Here is what we implement: http://59.108.48.18/Gstore/form.php.
+
+	First, get your web server ready so it can run PHP files. We won't give detailed instructions on this step here. You can easily google it according to your web server(for example, Apache or Nginx, etc.) 
+	
+	Next, go to your web document root(usually in /var/www/html or apache/htdocs, you can check it in config file), and create a folder named "Gstore". Then copy the GstoreConnector.php file into it. Create a "PHPAPI.php" file. Edit it like below:
+
+	\begin{verbatim}
+	<?php
+
+	include( 'GstoreConnector.php');
+	$host = '127.0.0.1';
+	$port = 3305;
+	$dbname = $_POST["databasename"];
+	$sparql = $_POST["sparql"];
+	$format = $_POST["format"];
+	$load = new Connector($host, $port);
+	$load->load($dbname);
+	$query = new Connector($host, $port);
+	$result = $query->query($sparql);
+	switch ($format) {
+    	case 1:
+        $array = explode("<", $result);
+        $html = '<html><table class="sparql" border="1"><tr><th>' . 
+                $array[0] . "</th></tr>";
+        for ($i = 1; $i < count($array); $i++) {
+            $href = str_replace(">", "", $array[$i]);
+            $html.= '<tr><td><a href="' . $href . '">' . 
+                    $href . '</a></td></tr>';
+        }
+        $html.= '</table></html>';
+        echo $html;
+        exit;
+
+    	case 2:
+        $filename = 'result.txt';
+        header("Content-Type: application/octet-stream");
+        header('Content-Disposition: attachment; 
+                filename="' . $filename . '"');
+        echo $result;
+        exit;
+
+    	case 3:
+        $filename = 'result.csv';
+        header("Content-Type: application/octet-stream");
+        header('Content-Disposition: attachment; 
+                filename="' . $filename . '"');
+        $array = explode("<", $result);
+        echo $array[0];
+        for ($i = 1; $i < count($array); $i++) {
+            $href = str_replace(">", "", $array[$i]);
+            echo $href;
+        	}
+        exit;
+	}
+	?>
+	\end{verbatim}
+
+	This PHP file get three parametres from a website, including databasename, sparql and output format. Then it use our PHP API to connect gStore and run the query. Finally, the "switch" part gives the output. 
+
+	After that, we need a website to collect those imformation(databasename, sparql and output format). We create a html file and use a form to do it, just like below:
+	\begin{verbatim}
+<form id="form_1145884" class="appnitro"  method="post" action="PHPAPI.php">
+  <div class="form_description">
+    <h2>Gstore SPARQL Query Editor</h2>
+    <p></p>
+  </div>						
+  <ul>
+    <li id="li_1" >
+      <label class="description" for="element_1">
+        Database Name 
+      </label>
+      <div>
+        <input id="element_1" name="databasename" class="element text medium" 
+         type="text" maxlength="255" value="dbpedia_2014_reduce">
+        </input>
+      </div> 
+    </li>		
+
+    <li id="li_3">
+      <label class="description" for="element_3">Query Text </label>
+      <div>
+        <textarea id="element_3" name="sparql" class="element textarea large">
+          SELECT DISTINCT ?uri 
+          WHERE { 
+            ?uri <type> <Astronaut> . 
+          { ?uri <nationality> <Russia> . } 
+          UNION 
+          { ?uri <nationality> <Soviet_Union> . } 
+          } 
+      </textarea> 
+      </div> 
+    </li>		
+
+    <li id="li_5" >
+      <label class="description" for="element_5">
+        Results Format 
+      </label>
+      <div>
+        <select class="element select medium" id="element_5" name="format"> 
+          <option value="1" selected="ture">HTML</option>
+          <option value="2" >Text</option>
+          <option value="3" >CSV</option>
+        </select>
+      </div> 
+
+    <li class="buttons">
+      <input type="hidden" name="form_id" value="1145884" />
+      <input id="saveForm" class="button_text" type="submit" 
+       name="submit" value="Run Query" />
+    </li>
+  </ul>
+</form>
+	\end{verbatim}
+	
+	As you can see in the code, we use a <input> element to get the databasename, and <texarea> for sparql, <select> for output format. <form> lable has an attribute "action" which specifies which file to execute. So, when you click the "submit" button, it will call PHPAPI.php file and post the values from the form. 
+
+	Finally, don't forget to start gserver on your server.
+	
+	\clearpage
+
+
+\hyperdef{}{chapter08}{\subsection{Chapter 08: Project Structure}\label{chapter08}}
+
+\textbf{This chapter introduce the whole structure of the gStore system project.}
+
+\hyperdef{}{the-core-source-codes}{\paragraph{The core source codes are listed below:}\label{the-core-source-codes}}
+
+\begin{itemize}
+\item
+  Database/ (calling other core parts to deal with requests from
+  interface part)
+
+  \begin{itemize}
+  \item
+    Database.cpp (achieve functions)
+  \item
+    Database.h (class, members and functions definitions)
+  \item
+    Join.cpp (join the node candidates to get results)
+  \item
+    Join.h (class, members,, and functions definitions)
+  \end{itemize}
+\item
+  KVstore/ (a key-value store to swap between memory and disk)
+
+  \begin{itemize}
+  \item
+    KVstore.cpp (interact with upper layers)
+  \item
+    KVstore.h
+  \item
+    heap/ (a heap of nodes whose content are in memory)
+
+    \begin{itemize}
+    \item
+      Heap.cpp
+    \item
+      Heap.h
+    \end{itemize}
+  \item
+    node/ (all kinds of nodes in B+-tree)
+
+    \begin{itemize}
+    \item
+      Node.cpp (the base class of IntlNode and LeafNode)
+    \item
+      Node.h
+    \item
+      IntlNode.cpp (internal nodes in B+-tree)
+    \item
+      IntlNode.h
+    \item
+      LeafNode.cpp (leaf nodes in B+-tree)
+    \item
+      LeafNode.h
+    \end{itemize}
+  \item
+    storage/ (swap contents between memory and disk)
+
+    \begin{itemize}
+    \item
+      file.h
+    \item
+      Storage.cpp
+    \item
+      Storage.h
+    \end{itemize}
+  \item
+    tree/ (implement all tree operations and interfaces)
+
+    \begin{itemize}
+    \item
+      Tree.cpp
+    \item
+      Tree.h
+    \end{itemize}
+  \end{itemize}
+\item
+  Query/ (needed to answer SPARQL query)
+
+  \begin{itemize}
+  \item
+    BasicQuery.cpp (basic type of queries without aggregate operations)
+  \item
+    BasicQuery.h
+  \item
+    IDList.cpp (candidate list of a node/variable in query)
+  \item
+    IDList.h
+  \item
+    ResultSet.cpp (keep the result set corresponding to a query)
+  \item
+    ResultSet.h
+  \item
+    SPARQLquery.cpp (deal with a entire SPARQL query)
+  \item
+    SPARQLquery.h
+  \item
+    Varset.cpp
+  \item
+    Varset.h
+  \item
+    QueryTree.cpp
+  \item
+    QueryTree.h
+  \item
+    GeneralEvaluation.cpp
+  \item
+    GeneralEvaluation.h
+  \item
+    RegexExpression.h
+  \end{itemize}
+\item
+  Signature/ (assign signatures for nodes and edges, but not for
+  literals)
+
+  \begin{itemize}
+  \item
+    SigEntry.cpp
+  \item
+    SigEntry.h
+  \item
+    Signature.cpp
+  \item
+    Signature.h
+  \end{itemize}
+\item
+  VSTree/ (an tree index to prune more efficiently)
+
+  \begin{itemize}
+  \item
+    EntryBuffer.cpp
+  \item
+    EntryBuffer.h
+  \item
+    LRUCache.cpp
+  \item
+    LRUCache.h
+  \item
+    VNode.cpp
+  \item
+    VNode.h
+  \item
+    VSTree.cpp
+  \item
+    VSTree.h
+  \end{itemize}
+\end{itemize}
+
+\hyperdef{}{the-parser-part}{\paragraph{The parser part is listed below:}\label{the-parser-part}}
+
+\begin{itemize}
+\item
+  Parser/
+
+  \begin{itemize}
+  \item
+    DBParser.cpp
+  \item
+    DBParser.h
+  \item
+    RDFParser.cpp
+  \item
+    RDFParser.h
+  \item
+    SparqlParser.c (auto-generated, subtle modified manually,
+    compressed)
+  \item
+    SparqlParser.h (auto-generated, subtle modified manually,
+    compressed)
+  \item
+    SparqlLexer.c (auto-generated, subtle modified manually, compressed)
+  \item
+    SparqlLexer.h (auto-generated, subtle modified manually, compressed)
+  \item
+    TurtleParser.cpp
+  \item
+    TurtleParser.h
+  \item
+    Type.h
+  \item
+    QueryParser.cpp
+  \item
+    QueryParser.h
+  \end{itemize}
+\end{itemize}
+
+\hyperdef{}{the-utilities}{\paragraph{The utilities are listed below:}\label{the-utilities}}
+
+\begin{itemize}
+\item
+  Util/
+
+  \begin{itemize}
+  \item
+    Util.cpp (headers, macros, typedefs, functions\ldots{})
+  \item
+    Util.h
+  \item
+    Bstr.cpp (represent strings of arbitrary length)
+  \item
+    Bstr.h (class, members and functions definitions)
+  \item
+    Stream.cpp (store and use temp results, which may be very large)
+  \item
+    Stream.h
+  \item
+    Triple.cpp (deal with triples, a triple can be divided as
+    subject(entity), predicate(entity), object(entity or literal))
+  \item
+    Triple.h
+  \item
+    BloomFilter.cpp
+  \item
+    BloomFilter.h
+  \end{itemize}
+\end{itemize}
+
+\hyperdef{}{the-interface-part}{\paragraph{The interface part is listed below:}\label{the-interface-part}}
+
+\begin{itemize}
+\item
+  Server/ (client and server mode to use gStore)
+
+  \begin{itemize}
+  \item
+    Client.cpp
+  \item
+    Client.h
+  \item
+    Operation.cpp
+  \item
+    Operation.h
+  \item
+    Server.cpp
+  \item
+    Server.h
+  \item
+    Socket.cpp
+  \item
+    Socket.h
+  \end{itemize}
+\item
+  Main/ (a series of applications/main-program to operate on gStore)
+
+  \begin{itemize}
+  \item
+    gbuild.cpp (import a RDF dataset)
+  \item
+    gquery.cpp (query a database)
+  \item
+    gserver.cpp (start up the gStore server)
+  \item
+    gclient.cpp (connect to a gStore server and interact)
+  \end{itemize}
+\end{itemize}
+
+\hyperdef{}{more-details}{\paragraph{More details}\label{more-details}}
+
+To acquire a deep understanding of gStore codes, please go to
+\href{run:../pdf/code_overview.pdf}{Code
+Detail}. See
+\href{run:../pdf/Gstore2.0_useCaseDoc.pdf}{use
+case} to understand the design of use cases, and see
+\href{run:../pdf/OOA_class.pdf}{OOA}
+and
+\href{run:../pdf/OOD_class.pdf}{OOD}
+for OOA design and OOD design, respectively.
+
+If you want to know the sequence of a running gStore, please view the
+list below:
+
+\begin{itemize}
+\item
+  \href{run:../jpg/A01-connectServer.jpg}{connect
+  to server}
+\item
+  \href{run:../jpg/A02-disconnectServer.jpg}{disconnect
+  server}
+\item
+  \href{run:../jpg/A03-loadDatabase.jpg}{load
+  database}
+\item
+  \href{run:../jpg/A04-unloadDatabase.jpg}{unload
+  database}
+\item
+  \href{run:../jpg/A05-buildDatabase.jpg}{create
+  database}
+\item
+  \href{run:../jpg/A06-deleteDatabase.jpg}{delete
+  database}
+\item
+  \href{run:../jpg/A07-connectDatabase.jpg}{connect
+  to database}
+\item
+  \href{run:../jpg/A08-disconnectDatabase.jpg}{disconnect
+  database}
+\item
+  \href{run:../jpg/A09-showDatabase.jpg}{show
+  databases}
+\item
+  \href{run:../jpg/A10-querySPARQL.jpg}{SPARQL
+  query}
+\item
+  \href{run:../jpg/A11-loadRDF.jpg}{import
+  RDF dataset}
+\item
+  \href{run:../jpg/A12-insertRDF.jpg}{insert
+  a triple}
+\item
+  \href{run:../jpg/A13-deleteRDF.jpg}{delete
+  a triple}
+\item
+  \href{run:../jpg/B01-createAccount.jpg}{create
+  account}
+\item
+  \href{run:../jpg/B02-deleteAccount.jpg}{delete
+  account}
+\item
+  \href{run:../jpg/B03-changeAccount.jpg}{modify
+  account authority}
+\item
+  \href{run:../jpg/B04-removeDatabase.jpg}{compulsively
+  unload database}
+\item
+  \href{run:../jpg/B05-showAccount.jpg}{see
+  account authority}
+\end{itemize}
+
+It is really not strange to see something different with the original
+design in the source code. And some designed functions may have not be
+achieved so far.
+
+\hyperdef{}{others}{\paragraph{Others}\label{others}}
+
+The api/ folder in gStore is used to store API program, libs and
+examples, please go to \hyperref[chapter05]{API} for details. And test/
+is used to store a series test programs or utilities, such as gtest,
+full\_test and so on. Chapters related with test/ are
+\hyperref[chapter04]{How To Use} and \hyperref[chapter15]{Test Result}.
+This project need an ANTLR lib to parse the SPARQL query, whose code is
+placed in tools/(also archived here) and the compiled libantlr.a is
+placed in lib/ directory.
+
+We place some datasets and queries in data/ directory as examples, and
+you can try them to see how gStore works. Related instructions are in
+\hyperref[chapter04]{How To Use}. The docs/ directory contains all kinds
+of documents of gStore, including a series of markdown files and two
+folders, pdf/ and jpg/. Files whose type is pdf are placed in pdf/
+folder, while files with jpg type are placed in jpg/ folder.
+
+You are advised to start from the \hyperref[chapter00]{README} in the
+gStore root directory, and visit other chapters only when needed. At
+last, you will see all documents from link to link if you are really
+interested in gStore.
+
+\clearpage
+
+\hyperdef{}{chapter09}{\subsection{Chapter 09: Publications}\label{chapter09}}
+
+\hyperdef{}{publications-related-with-gstore-are-listed-here}{\paragraph{Publications related with gStore are listed here:}\label{publications-related-with-gstore-are-listed-here}}
+
+\begin{itemize}
+\item
+  Lei Zou, M. Tamer $\ddot{O}$zsu,Lei Chen, Xuchuan Shen, Ruizhe Huang, Dongyan
+  Zhao,
+  \href{http://www.icst.pku.edu.cn/intro/leizou/projects/papers/gStoreVLDBJ.pdf}{gStore:
+  A Graph-based SPARQL Query Engine}, VLDB Journal , 23(4): 565-590,
+  2014.
+\item
+  Lei Zou, Jinghui Mo, Lei Chen,M. Tamer $\ddot{O}$zsu, Dongyan Zhao,
+  \href{http://www.icst.pku.edu.cn/intro/leizou/projects/papers/p482-zou.pdf}{gStore:
+  Answering SPARQL Queries Via Subgraph Matching}, Proc. VLDB 4(8):
+  482-493, 2011.
+\item
+  Xuchuan Shen, Lei Zou, M. Tamer $\ddot{O}$zsu, Lei Chen, Youhuan Li, Shuo Han,
+  Dongyan Zhao,
+  \href{http://www.icst.pku.edu.cn/intro/leizou/projects/papers/demo.pdf}{A
+  Graph-based RDF Triple Store}, ICDE 2015: 1508-1511.
+\item
+  Peng Peng, Lei Zou, M. Tamer $\ddot{O}$zsu, Lei Chen, Dongyan Zhao: \href{http://arxiv.org/pdf/1411.6763v4.pdf}{Processing
+  SPARQL queries over distributed RDF graphs}. VLDB Journal 25(2): 243-268 (2016).
+\item
+  Dong Wang, Lei Zou, Yansong Feng, Xuchuan Shen, Jilei Tian, and
+  Dongyan Zhao,
+  \href{http://www.icst.pku.edu.cn/intro/leizou/projects/papers/Store.pdf}{S-store:
+  An Engine for Large RDF Graph Integrating Spatial Information}, in
+  Proc. 18th International Conference on Database Systems for Advanced
+  Applications (DASFAA), pages 31-47, 2013.
+\item
+  Dong Wang, Lei Zou and Dongyan Zhao,
+  \href{http://www.icst.pku.edu.cn/intro/leizou/projects/papers/edbtdemo2014.pdf}{gst-Store:
+  An Engine for Large RDF Graph Integrating Spatiotemporal Information},
+  in Proc. 17th International Conference on Extending Database
+  Technology (EDBT), pages 652-655, 2014 (demo).
+\item
+  Lei Zou, Yueguo Chen,
+  \href{http://www.icst.pku.edu.cn/intro/leizou/documentation/pdf/2012CCCF.pdf}{A
+  Survey of Large-Scale RDF Data Management}, Comunications of CCCF
+  Vol.8(11): 32-43, 2012 (Invited Paper, in Chinese).
+\end{itemize}
+
+\clearpage
+
+\hyperdef{}{chapter10}{\subsection{Chapter 10: Limitations}\label{chapter10}}
+
+\begin{enumerate}
+\item
+  Queries related with unbounded predicates are not supported.
+\item
+  This version only supports SPARQL select query.
+\item
+  Only support RDF file in N3 file format. More file formats will be
+  supported in the next version.
+\end{enumerate}
+
+\clearpage
+
+\hyperdef{}{chapter11}{\subsection{Chapter 11: Frequently Asked Questions}\label{chapter11}}
+
+\hyperdef{}{when-i-use-the-newer-gstore-system-to-query-the-original-database-why-error}{\paragraph{When
+I use the newer gStore system to query the original database, why
+error?}\label{when-i-use-the-newer-gstore-system-to-query-the-original-database-why-error}}
+\quad\\
+The database produced by gStore contains several indexes, whose
+structures may have been changed in the new gStore version. So, please
+rebuild your dataset just in case.
+
+\hyperdef{}{why-error-when-i-try-to-write-programs-based-on-gstore-just-like-the-maingconsolecpp}{\paragraph{Why
+error when I try to write programs based on gStore, just like the
+Main/gconsole.cpp?}\label{why-error-when-i-try-to-write-programs-based-on-gstore-just-like-the-maingconsolecpp}}
+\quad\\
+You need to add these phrases at the beginning of your main program,
+otherwise gStore will not run correctly:\\ //NOTICE:this is needed to
+set several debug files\\ Util util;
+
+\hyperdef{}{why-does-gstore-report-garbage-collection-failed-error-when-i-use-teh-java-api}{\paragraph{\texorpdfstring{Why
+does gStore report ``garbage collection failed'' error when I use the
+Java
+API?}{Why does gStore report garbage collection failed error when I use teh Java API?}}\label{why-does-gstore-report-garbage-collection-failed-error-when-i-use-teh-java-api}}
+\quad\\
+You need to adjust the parameters of jvm, see
+\href{http://www.cnblogs.com/edwardlauxh/archive/2010/04/25/1918603.html}{url1}
+and
+\href{http://www.cnblogs.com/redcreen/archive/2011/05/04/2037057.html}{url2}
+for details.
+
+\hyperdef{}{when-i-compile-the-code-in-archlinux-why-the-error-that-no-ltermcap-is-reported}{\paragraph{\texorpdfstring{When
+I compile the code in ArchLinux, why the error that ``no -ltermcap'' is
+reported?}{When I compile the code in ArchLinux, why the error that no -ltermcap is reported?}}\label{when-i-compile-the-code-in-archlinux-why-the-error-that-no-ltermcap-is-reported}}
+\quad\\
+In ArchLinux, you only need to use \texttt{-lreadline} to link the
+readline library. Please remove the \texttt{-ltermcap} in the makefile
+which is located in the root of the gStore project if you would like to
+use ArchLinux.
+
+\hyperdef{}{why-does-gstore-report-errors-that-the-format-of-some-rdf-datasets-are-not-supported}{\paragraph{Why
+does gStore report errors that the format of some RDF datasets are not
+supported?}\label{why-does-gstore-report-errors-that-the-format-of-some-rdf-datasets-are-not-supported}}
+\quad\\
+gStore does not support all RDF formats currently, please see
+\href{run:../../test/format_question.txt}{formats}
+for details. However, it is quite easy for you to convey your RDF data format to the N3 file format that is used in gStore.
+
+\hyperdef{}{when-i-read-on-github-why-are-some-documents-unable-to-be-opened}{\paragraph{When
+I read on GitHub, why are some documents unable to be
+opened?}\label{when-i-read-on-github-why-are-some-documents-unable-to-be-opened}}
+\quad\\
+Codes, markdowns or other text files, and pictures can be read directly
+on GitHub. However, if you are using some light weight browsers like
+midori, for files in pdf type, please download them and read on your
+computer or other devices.
+
+\hyperdef{}{why-sometimes-strange-characters-appear-when-i-use-gstore}{\paragraph{Why
+sometimes strange characters appear when I use
+gStore?}\label{why-sometimes-strange-characters-appear-when-i-use-gstore}}
+\quad\\
+There are some documents's names are in Chinese, and you don't need to
+worry about it.
+
+\hyperdef{}{in-centos7-if-the-watdivdba-generated-database-after-gbuild-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}{\paragraph{\texorpdfstring{In
+centos7, if the watdiv.db(a generated database after gbuild) is copied or
+compressed/uncompressed, the size of watdiv.db will be
+different(generally increasing) if using \texttt{du\ -h} command to
+check?}{In centos7, if the watdiv.db(a generated database after gbuild) is copied or compressed/uncompressed, the size of watdiv.db will be different(generally increasing) if using du -h command to check?}}\label{in-centos7-if-the-watdivdba-generated-database-after-gbuild-is-copied-or-compresseduncompressed-the-size-of-watdivdb-will-be-differentgenerally-increasing-if-using-du-h-command-to-check}}
+\quad\\
+It's the change of B+-trees' size in watdiv/kv\_store/ that causes the
+change of the whole database's size. The reason is that in
+storage/Storage.cpp, many operations use fseek to move file pointer. As
+everyone knows, file is organized in blocks, and if we request for new
+block, file pointer may be moved beyond the end of this file(file
+operations are all achieved by C in gStore, no errors are reported),
+then contents will be written in the new position!
+
+In \textbf{Advanced Programming In The Unix Environment}, ``file hole''
+is used to describe this phenomenon. ``file hole'' will be filled with
+0, and it's also one part of the file. You can use \texttt{ls\ -l} to
+see the size of file(computing the size of holes), while \texttt{du\ -h}
+command shows the size of blocks that directory/file occupies in system.
+Generally, the output of \texttt{du\ -h} is large than that of
+\texttt{ls\ -l}, but if ``file hole'' exists, the opposite is the case
+because the size of holes are neglected.
+
+The actual size of files containing holes are fixed, while in some
+operation systems, holes will be transformed to contents(also 0) when
+copied. Operation \texttt{mv} will not affect the size if not across
+different devices.(only need to adjust the file tree index) However,
+\texttt{cp} and all kinds of compress methods need to scan the file and
+transfer data.(there are two ways to achieve \texttt{cp} command,
+neglect holes or not, while the output size of \texttt{ls\ -l} not
+varies)
+
+It is valid to use ``file hole'' in C, and this is not an error, which
+means you can go on using gStore. We achieve a small program to describe
+the ``file holes'', you can download and try it yourself.
+
+\hyperdef{}{in-gclient-console-a-database-is-built-queried-and-then-i-quit-the-console-next-time-i-enter-the-console-load-the-originally-imported-database-but-no-output-for-any-queriesoriginally-the-output-is-not-empty}{\paragraph{In
+gclient console, a database is built, queried, and then I quit the
+console. Next time I enter the console, load the originally imported
+database, but no output for any queries(originally the output is not
+empty)?}\label{in-gclient-console-a-database-is-built-queried-and-then-i-quit-the-console-next-time-i-enter-the-console-load-the-originally-imported-database-but-no-output-for-any-queriesoriginally-the-output-is-not-empty}}
+\quad\\
+You need to unload the using database before quiting the gclient
+console, otherwise errors come.
+
+\hyperdef{}{if-query-results-contain-null-value-how-can-i-use-the-fulltest-utility-tab-separated-method-will-cause-problem-here-because-null-value-cannot-be-checked}{\paragraph{\texorpdfstring{If
+query results contain null value, how can I use the
+\href{run:../../test/full_test.sh}{full\_test}
+utility? Tab separated method will cause problem here because null value
+cannot be
+checked!}{If query results contain null value, how can I use the full\_test utility? Tab separated method will cause problem here because null value cannot be checked!}}\label{if-query-results-contain-null-value-how-can-i-use-the-fulltest-utility-tab-separated-method-will-cause-problem-here-because-null-value-cannot-be-checked}}
+\quad\\
+You may use other programming language(for example, Python) to deal with
+the null value cases. For example, you can change null value in output
+to special character like `,', later you can use the
+\href{run:../../test/full_test.sh}{full\_test}
+utility.
+
+\hyperdef{}{when-i-compile-and-run-the-api-examples-it-reports-the-unable-to-connect-to-server-error}{\paragraph{\texorpdfstring{When
+I compile and run the API examples, it reports the ``unable to connect
+to server''
+error?}{When I compile and run the API examples, it reports the unable to connect to server error?}}\label{when-i-compile-and-run-the-api-examples-it-reports-the-unable-to-connect-to-server-error}}
+\quad\\
+Please use \texttt{./gserver} command to start up a gStore server first,
+and notice that the server ip and port must be matched.
+
+\hyperdef{}{when-i-use-the-java-api-to-write-my-own-program-it-reports-not-found-main-class-error}{\paragraph{\texorpdfstring{When
+I use the Java API to write my own program, it reports ``not found main
+class''
+error?}{When I use the Java API to write my own program, it reports not found main class error?}}\label{when-i-use-the-java-api-to-write-my-own-program-it-reports-not-found-main-class-error}}
+\quad\\
+Please ensure that you include the position of your own program in class
+path of java. The whole command should be something like
+\texttt{java\ -cp\ /home/bookug/project/devGstore/api/java/lib/GstoreJavaAPI.jar:.\ JavaAPIExample},
+and the ``:.'' in this command cannot be neglected.
+
+%\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+\clearpage
+\hyperdef{}{chapter12}{\subsection{Chapter 12: Recipe Book}\label{chapter12}}
+
+\textbf{This chapter introduces some useful tricks if you are using
+gStore to implement applications.}
+
+\emph{no tips available now}
+
+\clearpage
+
+\part{Others}
+
+\hyperdef{}{chapter13}{\subsection{Chapter 13: Contributors}\label{chapter13}}
+
+Please contact with Lei Zou(zoulei@pku.edu.cn), Li Zeng(zengli-bookug@pku.edu.cn), Jiaqi Chen(chenjiaqi93@pku.edu.cn) and Peng Peng(pku09pp@pku.edu.cn) if you have suggestions or comments about gStore or you need help when using gStore.
+
+\hyperdef{}{faculty}{\paragraph{Faculty}\label{faculty}}
+
+\begin{itemize}
+\item
+  Lei Zou (Peking University) Project Leader
+\item
+  M. Tamer {\"O}zsu (University of Waterloo)
+\item
+  Lei Chen (Hong Kong University of Science and Technology)
+\item
+  Dongyan Zhao (Peking Univeristy)
+\item 
+  Zhiyuan Deng (Wuhan University)
+\end{itemize}
+
+\hyperdef{}{students}{\paragraph{Students}\label{students}}
+
+\quad \\
+
+\textit{Li Zeng and Jiaqi Chen are responsible for the gStore system optimization. Peng Peng is responsible for the distributed version of gStore, which is expected to be released before October.}
+
+\begin{itemize}
+\item
+  Peng Peng (Peking University) (PhD student)
+  %email: \href{mailto:pku09pp@pku.edu.cn}{pku09pp@pku.edu.cn}
+\item
+  Youhuan Li (Peking University) (PhD student)
+  %email: \href{mailto:liyouhuan@pku.edu.cn}{liyouhuan@pku.edu.cn}
+\item
+  Shuo Han (Peking University) (PhD student)
+  %email: \href{mailto:hanshuo@pku.edu.cn}{hanshuo@pku.edu.cn}
+\item
+  Li Zeng (Peking University) (Master student)
+  %email: \href{mailto:zengli-syzz@pku.edu.cn}{zengli-syzz@pku.edu.cn}
+\item
+  Jiaqi Chen (Peking University) (Master student)
+  %email: \href{mailto:chenjiaqi93@pku.edu.cn}{chenjiaqi93@pku.edu.cn}
+\end{itemize}
+
+\hyperdef{}{alumni}{\paragraph{Alumni}\label{alumni}}
+
+\begin{itemize}
+\item
+  Xuchuan Shen (Peking University) (Master's student, graduated)
+  %email: \href{mailto:shenxuchuan@pku.edu.cn}{shenxuchuan@pku.edu.cn}
+\item
+  Dong Wang (Peking University) (PhD student, graduated)
+  %email: \href{mailto:wangdong@pku.edu.cn}{wangdong@pku.edu.cn}
+\item
+  Ruizhe Huang (Peking University) (Undergraudate intern, graduated)
+\item
+  Jinhui Mo (Peking University) (Master's, graduated)
+\end{itemize}
+
+\clearpage
+
+\hyperdef{}{chapter14}{\subsection{Chapter 14: Updated Logs}\label{chapter14}}
+
+\hyperdef{}{jan-10-2017}{\subsubsection{Jan 10,
+2017}\label{jan-10-2017}}
+
+preFilter() function in Join module is optimazed using the pre2num structure, as well as the choose\_next\_node() function.
+A global string buffer is added to lower the cost of getFinalResult(), and the time of answering queries is reduced greatly.
+
+In addition, we assign buffers of different size for all B+ trees.(some of them are more important and more frequently used)
+WangLibo merges several B+ trees into one, and the num of all B+ trees are reduced to 9 from 17.
+This strategy not only reduces the space cost, but also reduces the memory cost, meanwhile speeding up the build process and query process.
+
+What is more, ChenJiaqi has done a lot of work to optimaze the SPARQL query.
+For example, some unconnected SPARQL query graphs are dealed specially.
+
+\hyperdef{}{sep-15-2016}{\subsubsection{Sep 15,
+2016}\label{sep-15-2016}}
+
+ZengLi splits the KVstore into 3 parts according to the types of key and value, i.e. int2string, string2int and string2string.
+In addition, updates are supported now. 
+You can insert, delete or modify some triples in the gStore database.
+In fact, only insert() and remove() are implemented, while the modify() are supported by removing first and insert again.
+
+\hyperdef{}{jun-20-2016}{\subsubsection{Jun 20,
+2016}\label{jun-20-2016}}
+
+ZengLi has enabled the gStore to answer queries with predicate variables. 
+In addition, the structures of many queries have been studied to speed up the query processing.
+ChenJiaqi rewrites the sparql query plan to acquire a more efficient one, which brings many benefits to us.
+
+\hyperdef{}{apr-01-2016}{\subsubsection{Apr 01,
+2016}\label{apr-01-2016}}
+
+The structure of this project has changed a lot now. A new join method
+has been achieved and we use it to replace the old one. The test result
+shows that speed is improved and the memory cost is lower. We also do
+some change to Parser/Sparql*, which are all generated by ANTLR. They
+must be modified because the code is in C, which brings several multiple
+definition problems, and its size is too large.
+
+There is a bug in the original Stream module, which brings some control
+characters to the output, such as \^{}C, \^{}V and so on. We have fixed
+it now and enabled the Stream to sort the output strings(both internal
+and external). In addition, SPARQL queries which are not BGP(Basic Graph
+Pattern) are also supported now, using the naive method.
+
+A powerful interactive console, which is named \texttt{gconsole} now, is
+achieved to bring convenience to users. What is more, we use valgrind
+tools to test our system, and deal with several memory leaks.
+
+The docs and API have also changed, but this is of little importance.
+
+\hyperdef{}{nov-06-2015}{\subsubsection{Nov 06,
+2015}\label{nov-06-2015}}
+
+We merge several classes(like Bstr) and adjust the project structure, as
+well as the debug system.
+
+In addition, most warnings are removed, except for warnings in Parser
+module, which is due to the use of ANTLR.
+
+What is more, we change RangeValue module to Stream, and add Stream for
+ResultSet. We also better the gquery console, so now you can redirect
+query results to a specified file in the gsql console.
+
+Unable to add Stream for IDlist due to complex operations, but this is
+not necessary. Realpath is used to supported soft links in the gquery
+console, but it not works in Gstore.(though works if not in Gstore)
+
+\hyperdef{}{oct-20-2015}{\subsubsection{Oct 20,
+2015}\label{oct-20-2015}}
+
+We add a gtest tool for utility, you can use it to query several
+datasets with their own queries.
+
+In addition, gquery console is improved. Readline lib is used for input
+instead of fgets, and the gquery console can support commands history,
+modifying command and commands completion now.
+
+What is more, we found and fix a bug in Database/(a pointer for
+debugging log is not set to NULL after fclose operation, so if you close
+one database and open another, the system will fail entirely because the
+system think that the debugging log is still open)
+
+\hyperdef{}{sep-25-2015}{\subsubsection{Sep 25,
+2015}\label{sep-25-2015}}
+
+We implement the version of B+Tree, and replace the old one.
+
+After testing on DBpedia, LUBM, and WatDiv benchmark, we conclude that
+the new BTree performs more efficient than the old version. For the
+same triple file, the new version spends shorter time on executing gload
+command.
+
+Besides, the new version can handle the long literal objects
+efficiently, while triples whose object's length exceeds 4096 bytes
+result in frequent inefficient split operations on the old version
+BTree.
+
+\hyperdef{}{feb-2-2015}{\subsubsection{Feb 2, 2015}\label{feb-2-2015}}
+
+We modify the RDF parser and SPARQL parser.
+
+Under the new RDF parser, we also redesign the encode strategy, which
+reduces RDF file scanning times.
+
+Now we can parse the standard SPARQL v1.1 grammar correctly, and can
+support basic graph pattern(BGP) SPARQL queries written by this standard
+grammar.
+
+\hyperdef{}{dec-11-2014}{\subsubsection{Dec 11,
+2014}\label{dec-11-2014}}
+
+We add API for C/CPP and JAVA.
+
+\hyperdef{}{nov-20-2014}{\subsubsection{Nov 20,
+2014}\label{nov-20-2014}}
+
+We share our gStore2.0 code as an open-source project under BSD license
+on github.
+
+\clearpage
+
+\hyperdef{}{chapter15}{\subsection{Chapter 15: Test Result}\label{chapter15}}
+
+\hyperdef{}{preparation}{\subsubsection{Preparation}\label{preparation}}
+
+We have compared the performance of gStore with several other database
+systems, such as \href{http://jena.apache.org/}{Jena},
+\href{http://www.rdf4j.org/}{Sesame},
+\href{http://virtuoso.openlinksw.com/}{Virtuoso} and so on. Contents to
+be compared are the time to build database, the size of the built
+database, the time to answer single SPARQL query and the matching case
+of single query's results. In addition, if the memory cost is very
+large(\textgreater{}20G), we will record the memory cost when running
+these database systems.(not accurate, just for your reference) \\
+
+To ensure all database systems can run correctly on all datasets and
+queries, the format of datasets must be supported by all database
+systems and the queries should not contain update operations, aggregate
+operations and operations related with uncertain predicates. Notice that
+when measuring the time to answer queries, the time of loading database
+index should not be included. To ensure this principle, we load the
+database index first for some database systems, and warm up several
+times for others. \\
+
+Datasets used here are WatDiv, Lubm, Bsbm and DBpedia. Some of them are
+provided by websites, and others are generated by algorithms. Queries
+are generated by algorithms or written by us. Table \ref{table:datasets} summarizes the statistics of these datasets.
+
+The experiment environment is a CentOS server, whose memory size is 82G
+and disk size is 7T. We use
+\href{run:../../test/full_test.sh}{full\_test}
+to do this test.
+
+\begin{table}[b]
+	\small
+	\centering
+	%\vspace{-0.1in}
+	\caption{Datasets}
+	\begin{tabular}{|c|c|r|r|r|}
+		\hline
+		Dataset& Number of Triples& RDF N3 File Size(B)  & Number of Entities\\
+		\hline  
+		\hline
+		%WatDiv 10M & 109,164,587 & 1542624409 & 0 \\
+		%\hline
+		%WatDiv 100M & 108,997,714 & 15,599,074,048 & 5,212,745 \\
+		%\hline
+		WatDiv 300M & 329,539,576  & 47,670,221,085 & 15,636,385 \\
+		\hline
+		%LUBM 500 & 6652613 & 801112089 & 1648692 \\
+		%\hline
+		LUBM 5000 & 66718642 & 8134671485 & 16437950 \\
+		\hline
+		DBpedia 2014 & 170784508 & 23844158944 & 7123915 \\
+		\hline
+		Bsbm 10000 & 34872182 & 912646084  & 526590 \\
+		\hline
+	\end{tabular}
+	%  \vspace{-0.1in}
+	\label{table:datasets}
+\end{table}
+
+%BETTER:using bsbm_100000?
+
+\hyperdef{}{result}{\subsubsection{Result}\label{result}}
+
+\begin{comment}
+Table \ref{table:loading} shows the index size and loading time of the datasets
+for different systems.
+
+\begin{table}[htcp]
+\small
+\begin{threeparttable}
+\begin{tabular}{|c||c|c|c||c|c|c|}
+\hline
+ & \multicolumn{3}{c||}{Index Size(KB)}& \multicolumn{3}{c|}{Loading Time(ms)}\\
+\hline
+\hline
+ Datasets & gStore & Jena& Virtuoso& gStore & Jena& Virtuoso\\
+  \hline
+  DBpedia 2014 & 42,415,852&	23,151,272 &	-\tnote{$1$} & 8,639,666	&15,555,000	& -	\\
+  \hline
+  Bsbm 10000 & 1,814,480 & 718,024 & 2,080,000 & 244,153 & 76,000 & 59999  \\
+  \hline
+  LUBM 500  &2,171,084 &1,022,528	&	38,000,000 &	291,382&	94,000 &100,532	 \\
+  \hline
+  %LUBM 5000 & 23,397,548&	10,262,524	 &	- & 3,767,764	&1,098,000  &	- \\
+   %\hline
+  %WatDiv 10M & 2,563,168&	1,315,764	 &	10,320,000 & 532,542	&304,000	&225,464 \\
+  %\hline
+  WatDiv 100M & 26,566,780&	13,286,608	 &	8,615,100 & 7,879,602	&20,969,000	&16,981,470 \\
+  \hline
+  %WatDiv 300M & 80,166,500&	38,108,940	 &	- & 19,864,431	&25,041,000 &	- \\
+  %\hline
+  \end{tabular}
+    \begin{tablenotes}
+  \small
+  \item[$1$] ``-'' means that loading does not terminate in 10 hour
+  \end{tablenotes}
+  \end{threeparttable}
+  \caption{Offline Performance}
+  \label{table:loading}
+\end{table}
+\end{comment}
+
+The performance of different database management systems is shown in Figures \ref{fig:dbpedia2014Performance}, \ref{fig:Bsbm10000Performance}, \ref{fig:LUBMPerformance} and \ref{fig:WatDivPerformance}.
+
+Notice that Sesame and Virtuoso are unable to operate on DBpedia 2014 and
+WatDiv 300M, because the size is too large. In addition, we do not use
+Sesame and Virtuoso to test on the LUBM 5000 due to format questions. 
+Generally speaking, Virtuoso is not scalable, and Sesame is so weak. \\
+
+\begin{figure}[b]%
+		\resizebox{0.48\columnwidth}{!}{
+			\input{dbpedia2014_comparison}
+		}
+ \caption{Query Performance over DBpedia 2014}%
+ \label{fig:dbpedia2014Performance}
+\end{figure}
+
+\begin{figure}%
+		\resizebox{0.8\columnwidth}{!}{
+			\input{bsbm10000_comparison}
+		}
+ \caption{Query Performance over Bsbm 10000}%
+ \label{fig:Bsbm10000Performance}
+\end{figure}
+
+\begin{figure}[h]%
+   %\subfigure[LUBM 500]{%
+		%\resizebox{0.98\columnwidth}{!}{
+			%\input{LUBM500_comparison}
+		%}
+       %\label{fig:LUBM500Performance}%
+       %}
+       %\\
+\subfigure[LUBM 5000]{%
+		\resizebox{0.98\columnwidth}{!}{
+			\input{LUBM5000_comparison}
+		}
+	   \label{fig:LUBM5000Performance}%
+	   }%
+ \caption{Query Performance over LUBM}%
+ \label{fig:LUBMPerformance}
+\end{figure}
+
+\begin{figure}[h]%
+ %\subfigure[WatDiv 10M]{%
+		%\resizebox{0.8\columnwidth}{!}{
+			%\input{WatDiv10M_comparison}
+		%}
+       %\label{fig:WatDiv10MPerformance}%
+       %}
+   %\subfigure[WatDiv 100M]{%
+		%\resizebox{0.8\columnwidth}{!}{
+			%\input{WatDiv100M_comparison}
+		%}
+       %\label{fig:WatDiv100MPerformance}%
+       %}
+\subfigure[WatDiv 300M]{%
+		\resizebox{0.8\columnwidth}{!}{
+			\input{WatDiv300M_comparison}
+		}
+	   \label{fig:WatDiv300MPerformance}%
+	   }%
+ \caption{Query Performance over WatDiv}%
+ \label{fig:WatDivPerformance}
+\end{figure}
+
+
+This program produces many logs placed in result.log/, load.log/ and
+time.log/. You can see that all results of all queries are matched by
+viewing files in result.log/, and the time cost and space cost of gStore
+to build database are larger than others by viewing files in load.log/.
+More precisely, there is an order of magnitude difference between gStore
+and others in the time/space cost of building database.
+
+Through analysing time.log/, we can find that gStore behave better than
+others on very complicated queries(many variables, circles, etc). For
+other simple queries, there is not much difference between the time of
+these database systems.
+
+Generally speaking, the memory cost of gStore when answering queries is
+higher than others. More complicated the query is and more large the
+dataset is, more apparent the phenomenon is.
+
+You can find more detailed information in \href{run:../pdf/gstore_test_report.pdf}{original test report}. Notice that some questions in the test report have already be solved now.
+The latest test report is \href{run:../test/formal_experiment.pdf}{formal experiment}.
+
+\clearpage
+
+\hyperdef{}{chapter16}{\subsection{Chapter 16: Future Plan}\label{chapter16}}
+
+\hyperdef{}{improve-the-core}{\subsubsection{Improve The
+Core}\label{improve-the-core}}
+
+\begin{itemize}
+\item
+  optimize the join operation of node candidates. multiple methods
+  should be achieved, and design a score module to select a best one
+\item
+  add numeric value query function. need to answer numeric range query
+  efficiently and space consume cannot be too large
+\item
+  add a control module to heuristically select an kind of index for a
+  SPARQL query to filter(not always vstree)
+\item
+  typedef all frequently used types, to avoid inconsistence and high
+  modify cost
+\end{itemize}
+
+\hyperdef{}{better-the-interface}{\subsubsection{Better The
+Interface}\label{better-the-interface}}
+
+\begin{itemize}
+\item
+  build a console named gconsole, which provides all operations
+  supported by gStore.(parser and auto-complete is required)
+\item
+  write web interface for gStore, and a web page to operate on it, just
+  like virtuoso
+\end{itemize}
+
+\hyperdef{}{idea-collection-box}{\subsubsection{Idea Collection
+Box}\label{idea-collection-box}}
+
+\begin{itemize}
+\item
+  to support soft links in console: realpath not work\ldots{}(redefined
+  in ANTLR?)
+\item
+  store command history for consoles
+\item
+  warnings remain in using Parser/(antlr)!(modify sparql.g 1.1 and
+  regenerate). change name to avoid redefine problem, or go to use
+  executable to parse
+\item
+  build compress module(such as key-value module and stream module), but
+  the latter just needs one-pass read/write, which may causes the
+  compress method to be used both in disk and memory. all operations of
+  string in memory can be changed to operations after compress: provide
+  compress/archive interface, compare function. there are many compress
+  algorithms to be chosen, then how to choose? what about utf-8 encoding
+  problem? this method can lower the consume of memory and disk, but
+  consumes more CPU. However, the time is decided by isomorphism. Simple
+  compress is not good, but too complicated method will consume too much
+  time, how to balance? (merge the continuous same characters, Huffman
+  tree)
+\item
+  mmap to speedup KVstore?
+\item
+  the strategy for Stream:is 85\% valid? consider sampling, analyse the
+  size of result set and decide strategy? how to support order by: sort
+  in memory if not put in file; otherwise, partial sort in memory, then
+  put into file, then proceed external sorting
+\end{itemize}
+
+\clearpage
+
+\hyperdef{}{chapter17}{\subsection{Chapter 17: Thanks List}\label{chapter17}}
+
+\textit{This chapter lists people who inspire us or contribute to this project.}
+
+\paragraph{GitHub user zhangxiaoyang \\
+	https://github.com/zhangxiaoyang \\
+	1. add python api \\
+	2. fix logger message}
+
+%\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+\clearpage
+
+\hyperdef{}{chapter18}{\subsection{Chapter 18: Legal Issues}\label{chapter18}}
+
+%\textbf{We are trying our best to avoid errors. However, if you encounter any unrecovable disaster when using this system, we shall not be responsible for it.}
+
+%below is the BSD LICENSE: http://baike.baidu.com/link?url=a7XUsshp1Sd_DvF7oIJ_CpHTOZryu4ACSSj1AyQl1GU9XL5pPEj9RxIEMF1nC213VvJ2quhWTK9OCZot-CS0LK
+%The following is a BSD license template. To generate your own license, change the values of OWNER, ORGANIZATION and YEAR from their original values as given here, and substitute your own.
+%Note: The advertising clause in the license appearing on BSD Unix files was officially rescinded by the Director of the Office of Technology Licensing of the University of California on July 22 1999. He states that clause 3 is "hereby deleted in its entirety."
+%Note the new BSD license is thus equivalent to the MIT License, except for the no-endorsement final clause.
+%<OWNER> = gStore team
+%<ORGANIZATION> = Peking University
+%<YEAR> = 2016
+%In the original BSD license, both occurrences of the phrase "COPYRIGHT HOLDERS AND CONTRIBUTORS" in the disclaimer read "REGENTS AND CONTRIBUTORS".
+%Here is the license template:
+%Copyright (c) &lt;YEAR&gt;, &lt;OWNER&gt;
+
+Copyright (c) 2016 gStore team \\
+All rights reserved. \\
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+Neither the name of the Peking University nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission. \\
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. \\
+
+What's more, you need to include the label "powered by gStore", as well as the logo of gStore, in your software product which is using gStore.
+
+We would be very grateful if you are willing to tell us about your name, institution, purpose and email.  Such information can be sent to us by emailing to \href{mailto:gStoreDB@gmail.com}{gStoreDB@gmail.com}, and we promise not to reveal privacy.
+%using gmail or website
+
+\clearpage
+
+\section{End}
+\textbf{Thank you for reading this document. If any question or advice, or you have interests in this project, please don't hesitate to get in touch with us.}
+
+\clearpage
+
+\end{document}
+

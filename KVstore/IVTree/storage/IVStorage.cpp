@@ -612,7 +612,10 @@ IVStorage::writeTree(IVNode* _root)	//write the whole tree back and close treefp
 		fputc(c & ~(1 << j), treefp);
 		bp = bp->next;
 	}
+
+	fflush(this->treefp);
 	//fclose(this->treefp);
+
 	return true;
 }
 

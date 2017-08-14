@@ -2,7 +2,9 @@
 
 Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
 
-**The formal help document is in [Handbook](docs/latex/gStore_help.pdf).**
+**The formal help document is in [EN](docs/help/gStore_help.pdf) and [CH](docs/help/gStore_help_CN.pdf).**
+
+**The formal experiment result is in [Experiment](docs/test/formal_experiment.pdf).**
 
 **We have built an IRC channel named #gStore on freenode, and you can also come to our website: [gStore](http://gstore-pku.com).**
 
@@ -18,7 +20,7 @@ This system is really user-friendly and you can pick it up in several minutes. R
 
 - type `git clone git@github.com:Caesar11/gStore.git` in your terminal or use git GUI to acquire it
 
-Then you need to compile the project, just type `make` in the gStore root directory, and all executables will be ok. To run gStore, please type `bin/gbuild database_name dataset_path` to build a database named by yourself. And you can use `bin/gquery database_name` command to query a existing database. What is more, `bin/gconsole` is a wonderful tool designed for you, providing all operations you need to use gStore. Notice that all commands should be typed in the root directory of gStore, and your database name should not end with ".db".
+Then you need to compile the project, just type `make` in the gStore root directory, and all executables will be ok. To run gStore, please type `bin/gbuild database_name dataset_path` to build a database named by yourself. And you can use `bin/gquery database_name` command to query a existing database. What is more, `bin/ghttp` is a wonderful tool designed for you, as a database server which can be visited via HTTP protocol. Notice that all commands should be typed in the root directory of gStore, and your database name should not end with ".db".
 
 - - -
 
@@ -66,5 +68,5 @@ Graph database engine is a new area and we are still trying to go further. Thing
 
 People who inspire us or contribute to this project will be listed in the [Thanks List](docs/THANK.md) chapter.
 
-This whole document is divided into different pieces, and each them is stored in a markdown file. You can see/download the combined markdown file in [help_markdown](docs/gStore_help.md), and for html file, please go to [help_html](docs/gStore_help.html). What is more, we also provide help file in pdf format, and you can visit it in [help_pdf](docs/latex/gStore_help.pdf).
+<!--This whole document is divided into different pieces, and each them is stored in a markdown file. You can see/download the combined markdown file in [help_markdown](docs/gStore_help.md), and for html file, please go to [help_html](docs/gStore_help.html). What is more, we also provide help file in pdf format, and you can visit it in [help_pdf](docs/latex/gStore_help.pdf).-->
 

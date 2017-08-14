@@ -1,3 +1,5 @@
+**The formal experiment report is in [EXPERIMENT](test/formal_experiment.pdf).**
+
 ## Preparation
 
 We have compared the performance of gStore with several other database systems, such as [Jena](http://jena.apache.org/), [Sesame](http://www.rdf4j.org/), [Virtuoso](http://virtuoso.openlinksw.com/) and so on. Contents to be compared are the time to build database, the size of the built database, the time to answer single SPARQL query and the matching case of single query's results. In addition, if the memory cost is very large(>20G), we will record the memory cost when running these database systems.(not accurate, just for your reference)
