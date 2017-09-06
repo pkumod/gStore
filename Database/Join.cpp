@@ -373,10 +373,19 @@ Join::pre_handler()
 	        //The latter time is computed due to the unnecessary copy cost if not using this p
 	        //TYPE_TRIPLE_NUM border = size / (Util::logarithm(2, size) + 1);
 	        //not use inefficient pre to filter
+
 	        if(this->dealed_triple[triple_id])
 	        {
 	            continue;
 	        }
+
+	        double border = size / (Util::logarithm(2, size) + 1);
+	        if(this->pre2num[pre_id] > border)
+	        {
+	        	//cout << "skip the prefilter because the pre var is not efficent enough" << endl;
+	        	continue;
+	        }
+
 	        if(this->basic_query->isOneDegreeVar(neighbor))
 	        {
 	            this->dealed_triple[triple_id] = true;
@@ -403,15 +412,55 @@ Join::pre_handler()
 	    unsigned len = 0;
 	    for(it = in_edge_pre_id.begin(); it != in_edge_pre_id.end(); ++it)
 	    {
-	        this->kvstore->getobjIDlistBypreID(*it, list, len, true);
-	        if(cans.size() == 0)
-	            cans.unionList(list,len);
-	        else
-	            cans.intersectList(list, len);
-	        delete[] list;
-	        if(cans.size() == 0)
-			{
-				return false;
+	    	if(this->pre2num[*it] < 1000000 || cans.size() > 1000000)
+        	{
+		        this->kvstore->getobjIDlistBypreID(*it, list, len, true);
+		        if(cans.size() == 0)
+		            cans.unionList(list,len);
+		        else
+		            cans.intersectList(list, len);
+		        delete[] list;
+		        if(cans.size() == 0)
+				{
+					return false;
+				}
+			}
+			else{
+				int can_size = cans.size();
+				for(int i = 0; i < can_size; i ++)
+				{
+					this->kvstore->getpreIDlistByobjID(cans.getID(i), list, len, true);
+					bool can_matched = false;
+					int s = 0, e = len - 1;
+					int mid = (s + e)/2;
+					while (s <= e)
+					{
+						if(list[mid] == *it)
+						{
+							can_matched = true;
+							break;
+						}
+						else if(list[mid] < *it)
+						{
+							s = mid + 1;
+						}
+						else {
+							e = mid - 1;
+						}
+						mid = (s + e)/2;
+					}
+					if(can_matched == false)
+					{
+						IDList * newlist = new IDList();
+						for(int j = 0; j < can_size; j ++)
+						{
+							if( j != i)
+								newlist->addID(cans.getID(j));
+						}
+						cans.clear();
+						cans.copy(newlist);
+					}
+				}
 			}
 	    }
     	
@@ -423,15 +472,55 @@ Join::pre_handler()
 
         for(it = out_edge_pre_id.begin(); it != out_edge_pre_id.end(); ++it)
         {
-            this->kvstore->getsubIDlistBypreID(*it, list, len, true);
-            if(cans.size() == 0)
-                cans.unionList(list,len);
-            else
-                cans.intersectList(list, len);
-            delete[] list;
-	        if(cans.size() == 0)
-			{
-				return false;
+        	if(this->pre2num[*it] < 1000000 || cans.size() > 1000000)
+        	{
+	            this->kvstore->getsubIDlistBypreID(*it, list, len, true);
+	            if(cans.size() == 0)
+	                cans.unionList(list,len);
+	            else
+	                cans.intersectList(list, len);
+	            delete[] list;
+		        if(cans.size() == 0)
+				{
+					return false;
+				}
+			}
+			else{
+				int can_size = cans.size();
+				for(int i = 0; i < can_size; i ++)
+				{
+					this->kvstore->getpreIDlistBysubID(cans.getID(i), list, len, true);
+					bool can_matched = false;
+					int s = 0, e = len - 1;
+					int mid = (s + e)/2;
+					while (s <= e)
+					{
+						if(list[mid] == *it)
+						{
+							can_matched = true;
+							break;
+						}
+						else if(list[mid] < *it)
+						{
+							s = mid + 1;
+						}
+						else {
+							e = mid - 1;
+						}
+						mid = (s + e)/2;
+					}
+					if(can_matched == false)
+					{
+						IDList * newlist = new IDList();
+						for(int j = 0; j < can_size; j ++)
+						{
+							if( j != i)
+								newlist->addID(cans.getID(j));
+						}
+						cans.clear();
+						cans.copy(newlist);
+					}
+				}
 			}
         }
 	    
