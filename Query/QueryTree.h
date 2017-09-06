@@ -26,10 +26,10 @@ class QueryTree
 				class Bind;
 				class SubGroupPattern;
 
-				std::vector<SubGroupPattern> sub_grouppattern;
+				std::vector<SubGroupPattern> sub_group_pattern;
 
-				Varset grouppattern_resultset_minimal_varset, grouppattern_resultset_maximal_varset;
-				Varset grouppattern_subject_object_maximal_varset, grouppattern_predicate_maximal_varset;
+				Varset group_pattern_resultset_minimal_varset, group_pattern_resultset_maximal_varset;
+				Varset group_pattern_subject_object_maximal_varset, group_pattern_predicate_maximal_varset;
 
 				void addOnePattern(Pattern _pattern);
 
@@ -80,6 +80,15 @@ class QueryTree
 				Pattern():blockid(-1){}
 				Pattern(const Element _subject, const Element _predicate, const Element _object):
 					subject(_subject), predicate(_predicate), object(_object), blockid(-1){}
+
+				bool operator < (const Pattern &x) const
+				{
+					if (this->subject.value != x.subject.value)
+						return this->subject.value < x.subject.value;
+					if (this->predicate.value != x.predicate.value)
+						return this->predicate.value < x.predicate.value;
+					return (this->object.value < x.object.value);
+				}
 		};
 
 		class GroupPattern::FilterTree
@@ -195,7 +204,7 @@ class QueryTree
 			std::vector<Order> order_by;
 			int offset, limit;
 
-			GroupPattern grouppattern;
+			GroupPattern group_pattern;
 
 			//----------------------------------------------------------------------------------------------------------------------------------------------------
 

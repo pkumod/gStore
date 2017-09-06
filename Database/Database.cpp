@@ -47,6 +47,8 @@ Database::Database()
 	this->literal_buffer = NULL;
 	this->literal_buffer_size = 0;
 
+	this->query_cache = new QueryCache();
+
 	this->if_loaded = false;
 
 	//this->resetIDinfo();
@@ -97,6 +99,8 @@ Database::Database(string _name)
 	this->entity_buffer_size = 0;
 	this->literal_buffer = NULL;
 	this->literal_buffer_size = 0;
+
+	this->query_cache = new QueryCache();
 
 	//this->resetIDinfo();
 	this->initIDinfo();
@@ -1254,7 +1258,7 @@ Database::getPreNum()
 int
 Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 {
-	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
+	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 
 	long tv_begin = Util::get_cur_time();
 
@@ -1303,21 +1307,21 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 			QueryTree::GroupPattern &update_pattern = general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data ?
 				general_evaluation.getQueryTree().getInsertPatterns() : general_evaluation.getQueryTree().getDeletePatterns();
 
-			update_triple_num = update_pattern.sub_grouppattern.size();
+			update_triple_num = update_pattern.sub_group_pattern.size();
 			update_triple = new TripleWithObjType[update_triple_num];
 
 			for (TYPE_TRIPLE_NUM i = 0; i < update_triple_num; i++)
-				if (update_pattern.sub_grouppattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+				if (update_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 				{
 					TripleWithObjType::ObjectType object_type = TripleWithObjType::None;
-					if (update_pattern.sub_grouppattern[i].pattern.object.value[0] == '<')
+					if (update_pattern.sub_group_pattern[i].pattern.object.value[0] == '<')
 						object_type = TripleWithObjType::Entity;
 					else
 						object_type = TripleWithObjType::Literal;
 
-					update_triple[i] = TripleWithObjType(update_pattern.sub_grouppattern[i].pattern.subject.value,
-														 update_pattern.sub_grouppattern[i].pattern.predicate.value,
-														 update_pattern.sub_grouppattern[i].pattern.object.value, object_type);
+					update_triple[i] = TripleWithObjType(update_pattern.sub_group_pattern[i].pattern.subject.value,
+														 update_pattern.sub_group_pattern[i].pattern.predicate.value,
+														 update_pattern.sub_group_pattern[i].pattern.object.value, object_type);
 				}
 				else throw "Database::query failed";
 

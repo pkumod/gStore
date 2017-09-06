@@ -8,6 +8,9 @@
 
 #include "../Util/Util.h"
 
+#ifndef _QUERY_REGEXEXPRESSION_H
+#define _QUERY_REGEXEXPRESSION_H
+
 class RegexExpression
 {
 	private:
@@ -18,6 +21,7 @@ class RegexExpression
 		{
 			regfree(&oRegex);
 		}
+
 		inline bool compile(std::string &pRegexStr, std::string &flag)
 		{
 			int flags = 0;
@@ -27,6 +31,7 @@ class RegexExpression
 			int nErrCode = regcomp(&oRegex, pRegexStr.c_str(), flags);
 			return  (nErrCode == 0);
 		}
+
 		inline bool match(std::string &pText)
 		{
 			int nErrCode = regexec(&oRegex, pText.c_str(), 0, NULL, 0);
@@ -34,3 +39,4 @@ class RegexExpression
 		}
 };
 
+#endif // _QUERY_REGEXEXPRESSION_H

@@ -311,7 +311,7 @@ void QueryParser::parseSelectAggregateFunction(pANTLR3_BASE_TREE node, QueryTree
 	parseString(childNode, proj_var.var, 0);
 }
 
-void QueryParser::parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern)
+void QueryParser::parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
 {
 	printf("parseGroupPattern\n");
 
@@ -322,44 +322,44 @@ void QueryParser::parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::GroupPatt
 		//triples same subject 185
 		if (childNode->getType(childNode) == 185)
 		{
-			parsePattern(childNode, grouppattern);
+			parsePattern(childNode, group_pattern);
 		}
 
 		//optional	124		minus	108
 		if (childNode->getType(childNode) == 124 || childNode->getType(childNode) == 108)
 		{
-			parseOptionalOrMinus(childNode, grouppattern);
+			parseOptionalOrMinus(childNode, group_pattern);
 		}
 
 		//union  195
 		if (childNode->getType(childNode) == 195)
 		{
-			grouppattern.addOneGroupUnion();
-			parseUnion(childNode, grouppattern);
+			group_pattern.addOneGroupUnion();
+			parseUnion(childNode, group_pattern);
 		}
 
 		//filter 67
 		if (childNode->getType(childNode) == 67)
 		{
-			parseFilter(childNode, grouppattern);
+			parseFilter(childNode, group_pattern);
 		}
 
 		//bind 17
 		if (childNode->getType(childNode) == 17)
 		{
-			parseBind(childNode, grouppattern);
+			parseBind(childNode, group_pattern);
 		}
 
 		//group graph pattern 77
 		//redundant {}
 		if (childNode->getType(childNode) == 77)
 		{
-			parseGroupPattern(childNode, grouppattern);
+			parseGroupPattern(childNode, group_pattern);
 		}
 	}
 }
 
-void QueryParser::parsePattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern)
+void QueryParser::parsePattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
 {
 	printf("parsePattern\n");
 
@@ -403,25 +403,25 @@ void QueryParser::parsePattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &
 
 		if (i != 0 && i % 2 == 0)		//triples same subject
 		{
-			grouppattern.addOnePattern(QueryTree::GroupPattern::Pattern(QueryTree::GroupPattern::Pattern::Element(subject),
+			group_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(QueryTree::GroupPattern::Pattern::Element(subject),
 																		QueryTree::GroupPattern::Pattern::Element(predicate),
 																		QueryTree::GroupPattern::Pattern::Element(object)));
 
 			//scope of filter
-			for (int j = (int)grouppattern.sub_grouppattern.size() - 1; j > 0; j--)
-				if (grouppattern.sub_grouppattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type &&
-					grouppattern.sub_grouppattern[j - 1].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+			for (int j = (int)group_pattern.sub_group_pattern.size() - 1; j > 0; j--)
+				if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type &&
+					group_pattern.sub_group_pattern[j - 1].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
 				{
-					QueryTree::GroupPattern::SubGroupPattern tmp(grouppattern.sub_grouppattern[j - 1]);
-					grouppattern.sub_grouppattern[j - 1] = grouppattern.sub_grouppattern[j];
-					grouppattern.sub_grouppattern[j] = tmp;
+					QueryTree::GroupPattern::SubGroupPattern tmp(group_pattern.sub_group_pattern[j - 1]);
+					group_pattern.sub_group_pattern[j - 1] = group_pattern.sub_group_pattern[j];
+					group_pattern.sub_group_pattern[j] = tmp;
 				}
 				else break;
 		}
 	}
 }
 
-void QueryParser::parseOptionalOrMinus(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern)
+void QueryParser::parseOptionalOrMinus(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
 {
 	//optional 124
 	if (node->getType(node) == 124)
@@ -438,16 +438,16 @@ void QueryParser::parseOptionalOrMinus(pANTLR3_BASE_TREE node, QueryTree::GroupP
 		if (childNode->getType(childNode) == 77)
 		{
 			if (node->getType(node) == 124)
-				grouppattern.addOneOptional(QueryTree::GroupPattern::SubGroupPattern::Optional_type);
+				group_pattern.addOneOptional(QueryTree::GroupPattern::SubGroupPattern::Optional_type);
 			else if (node->getType(node) == 108)
-				grouppattern.addOneOptional(QueryTree::GroupPattern::SubGroupPattern::Minus_type);
+				group_pattern.addOneOptional(QueryTree::GroupPattern::SubGroupPattern::Minus_type);
 
-			parseGroupPattern(childNode, grouppattern.getLastOptional());
+			parseGroupPattern(childNode, group_pattern.getLastOptional());
 		}
 	}
 }
 
-void QueryParser::parseUnion(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern)
+void QueryParser::parseUnion(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
 {
 	printf("parseUnion\n");
 
@@ -458,19 +458,19 @@ void QueryParser::parseUnion(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &gr
 		//group graph pattern 77
 		if (childNode->getType(childNode) == 77)
 		{
-			grouppattern.addOneUnion();
-			parseGroupPattern(childNode, grouppattern.getLastUnion());
+			group_pattern.addOneUnion();
+			parseGroupPattern(childNode, group_pattern.getLastUnion());
 		}
 
 		//union  195
 		if (childNode->getType(childNode) == 195)
 		{
-			parseUnion(childNode, grouppattern);
+			parseUnion(childNode, group_pattern);
 		}
 	}
 }
 
-void QueryParser::parseFilter(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern)
+void QueryParser::parseFilter(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
 {
 	printf("parseFilter\n");
 
@@ -482,8 +482,8 @@ void QueryParser::parseFilter(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &g
 		while (childNode->getType(childNode) == 190)
 			childNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
 
-		grouppattern.addOneFilter();
-		parseFilterTree(childNode, grouppattern.getLastFilter().root);
+		group_pattern.addOneFilter();
+		parseFilterTree(childNode, group_pattern.getLastFilter().root);
 	}
 }
 
@@ -693,7 +693,7 @@ void QueryParser::parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::Gr
 	}
 }
 
-void QueryParser::parseBind(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern)
+void QueryParser::parseBind(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
 {
 	printf("parseBind\n");
 
@@ -734,8 +734,8 @@ void QueryParser::parseBind(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &gro
 		parseString(childNode, var, 1);
 	}
 
-	grouppattern.addOneBind();
-	grouppattern.getLastBind() = QueryTree::GroupPattern::Bind(str, var);
+	group_pattern.addOneBind();
+	group_pattern.getLastBind() = QueryTree::GroupPattern::Bind(str, var);
 }
 
 void QueryParser::parseGroupBy(pANTLR3_BASE_TREE node, QueryTree &querytree)
@@ -930,7 +930,7 @@ void QueryParser::parseUpdate(pANTLR3_BASE_TREE node, QueryTree &querytree)
 	}
 }
 
-void QueryParser::parseTripleTemplate(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern)
+void QueryParser::parseTripleTemplate(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
 {
 	printf("parseTripleTemplate\n");
 
@@ -981,7 +981,7 @@ void QueryParser::parseTripleTemplate(pANTLR3_BASE_TREE node, QueryTree::GroupPa
 
 				if (j != 0 && j % 2 == 0)		//triples same subject
 				{
-					grouppattern.addOnePattern(QueryTree::GroupPattern::Pattern(QueryTree::GroupPattern::Pattern::Element(subject),
+					group_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(QueryTree::GroupPattern::Pattern::Element(subject),
 																				QueryTree::GroupPattern::Pattern::Element(predicate),
 																				QueryTree::GroupPattern::Pattern::Element(object)));
 				}

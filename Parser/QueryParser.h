@@ -33,20 +33,20 @@ class QueryParser
 		void parseSelectClause(pANTLR3_BASE_TREE node, QueryTree &querytree);
 		void parseSelectVar(pANTLR3_BASE_TREE node, QueryTree &querytree);
 		void parseSelectAggregateFunction(pANTLR3_BASE_TREE node, QueryTree &querytree);
-		void parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern);
-		void parsePattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern);
-		void parseOptionalOrMinus(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern);
-		void parseUnion(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern);
-		void parseFilter(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern);
+		void parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
+		void parsePattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
+		void parseOptionalOrMinus(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
+		void parseUnion(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
+		void parseFilter(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
 		void parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter);
 		void parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter);
-		void parseBind(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern);
+		void parseBind(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
 		void parseGroupBy(pANTLR3_BASE_TREE node, QueryTree &querytree);
 		void parseOrderBy(pANTLR3_BASE_TREE node, QueryTree &querytree);
 		void parseString(pANTLR3_BASE_TREE node, std::string &str, int dep);
 
 		void parseUpdate(pANTLR3_BASE_TREE node, QueryTree &querytree);
-		void parseTripleTemplate(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &grouppattern);
+		void parseTripleTemplate(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
 		void parseModify(pANTLR3_BASE_TREE node, QueryTree &querytree);
 };
 

@@ -23,6 +23,7 @@
 #include "../Parser/DBparser.h"
 #include "../Parser/RDFParser.h"
 #include "../Parser/SparqlParser.h"
+#include "../Query/QueryCache.h"
 #include "../Query/GeneralEvaluation.h"
 
 class Database
@@ -133,6 +134,8 @@ private:
 	unsigned entity_buffer_size;
 	Buffer* literal_buffer;
 	unsigned literal_buffer_size;
+
+	QueryCache *query_cache;
 
 	void setStringBuffer();
 	void warmUp();
