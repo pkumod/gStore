@@ -139,10 +139,14 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 								TempResultSet *temp = new TempResultSet();
 								temp->results.push_back(TempResult());
 
-								long tv_bfcheck = Util::get_cur_time();
-								bool success = this->query_cache != NULL && this->query_cache->checkCached(basic_query, occur, temp->results[0]);
-								long tv_afcheck = Util::get_cur_time();
-								printf("after checkCache, used %ld ms.\n", tv_afcheck - tv_bfcheck);
+								bool success = false;
+								if (this->query_cache != NULL)
+								{
+									long tv_bfcheck = Util::get_cur_time();
+									success = this->query_cache->checkCached(basic_query, occur, temp->results[0]);
+									long tv_afcheck = Util::get_cur_time();
+									printf("after checkCache, used %ld ms.\n", tv_afcheck - tv_bfcheck);
+								}
 
 								if (success)
 								{
@@ -489,10 +493,14 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 					TempResultSet *temp = new TempResultSet();
 					temp->results.push_back(TempResult());
 
-					long tv_bfcheck = Util::get_cur_time();
-					bool success = this->query_cache != NULL && this->query_cache->checkCached(basic_query, useful, temp->results[0]);
-					long tv_afcheck = Util::get_cur_time();
-					printf("after checkCache, used %ld ms.\n", tv_afcheck - tv_bfcheck);
+					bool success = false;
+					if (this->query_cache != NULL && dep == 0)
+					{
+						long tv_bfcheck = Util::get_cur_time();
+						success = this->query_cache->checkCached(basic_query, useful, temp->results[0]);
+						long tv_afcheck = Util::get_cur_time();
+						printf("after checkCache, used %ld ms.\n", tv_afcheck - tv_bfcheck);
+					}
 
 					if (success)
 					{
@@ -508,7 +516,8 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 					}
 					else
 					{
-						printf("QueryCache miss\n");
+						if (dep == 0)
+							printf("QueryCache miss\n");
 
 						this->rewriting_evaluation_stack[dep].sparql_query->addBasicQuery();
 						for (int k = 0; k < (int)basic_query.size(); k++)
@@ -598,7 +607,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 				temp->results[0].result.back().id = v;
 			}
 
-			if (this->query_cache != NULL)
+			if (this->query_cache != NULL && dep == 0)
 			{
 				//if unconnected, time is incorrect
 				int time = tv_handle - tv_begin;
