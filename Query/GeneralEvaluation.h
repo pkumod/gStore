@@ -57,8 +57,7 @@ class GeneralEvaluation
 		struct EvaluationStackStruct
 		{
 			QueryTree::GroupPattern group_pattern;
-			SPARQLquery *sparql_query;
-			vector<vector<string> > encode_varset;
+			TempResultSet *result;
 		};
 		std::vector<EvaluationStackStruct> rewriting_evaluation_stack;
 
