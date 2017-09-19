@@ -191,7 +191,7 @@ Join::join_sparql(SPARQLquery& _sparql_query)
 		//fprintf(stderr, "Basic query %d\n", i);
 		cout << "Basic query " << i << endl;
 		bool * d_triple = (bool*)calloc(this->basic_query->getTripleNum(), sizeof(bool));
-		bool ret = this->join_basic(&(_sparql_query.getBasicQuery(i)),d_triple);
+		bool ret = this->join_basic(&(_sparql_query.getBasicQuery(i)), d_triple);
 		if (!ret)
 			cout << "end directly for this basic query: " << i << endl;
 	}
@@ -204,7 +204,7 @@ Join::join_sparql(SPARQLquery& _sparql_query)
 //TODO: deal with predicate variables, maybe not ready like literals
 
 bool
-Join::join_basic(BasicQuery* _basic_query， bool* d_triple)
+Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 {
 	this->init(_basic_query,d_triple);
 	long begin = Util::get_cur_time();
