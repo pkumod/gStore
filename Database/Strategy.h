@@ -26,6 +26,7 @@ public:
 	~Strategy();
 	//select efficient strategy to do the sparql query
 	bool handle(SPARQLquery&);
+	bool pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_NUM* pre2num, bool* dealed_triple);
 
 private:
 	int method;

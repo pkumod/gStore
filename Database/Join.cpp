@@ -33,7 +33,7 @@ Join::~Join()
 }
 
 void
-Join::init(BasicQuery* _basic_query)
+Join::init(BasicQuery* _basic_query, bool * d_triple)
 {
 	//BETTER:only common are placed here!
 	this->basic_query = _basic_query;
@@ -53,7 +53,7 @@ Join::init(BasicQuery* _basic_query)
 	this->start_id = -1;
 	int triple_num = this->basic_query->getTripleNum();
 	//calloc set all to false intially
-	this->dealed_triple = (bool*)calloc(triple_num, sizeof(bool));
+	this->dealed_triple = d_triple;
 	this->result_list = _basic_query->getResultListPointer();
 }
 
@@ -190,7 +190,8 @@ Join::join_sparql(SPARQLquery& _sparql_query)
 	{
 		//fprintf(stderr, "Basic query %d\n", i);
 		cout << "Basic query " << i << endl;
-		bool ret = this->join_basic(&(_sparql_query.getBasicQuery(i)));
+		bool * d_triple = (bool*)calloc(this->basic_query->getTripleNum(), sizeof(bool));
+		bool ret = this->join_basic(&(_sparql_query.getBasicQuery(i)),d_triple);
 		if (!ret)
 			cout << "end directly for this basic query: " << i << endl;
 	}
@@ -201,257 +202,11 @@ Join::join_sparql(SPARQLquery& _sparql_query)
 //TODO: consider a node with multiple same predicates(not pre var), use p2s(...false) to do this
 //BETTER?: ?s-p-?o, use p2so instead of p2s and p2o to get candidates for ?s and ?o will be better??
 //TODO: deal with predicate variables, maybe not ready like literals
-bool 
-Join::pre_handler()
-{
-	cout << "start constant filter here " << endl << endl;
-	for (int _var_i = 0; _var_i < this->var_num; _var_i++)
-	{
-	    
-	    //filter before join here
-	    
-	    int var_degree = this->basic_query->getVarDegree(_var_i);
-	    IDList &_list = this->basic_query->getCandidateList(_var_i);
-	    cout << "\tVar" << _var_i << " " << this->basic_query->getVarName(_var_i) << endl;
-	   // this->basic_query->setReady(_var_i);
-	    for (int j = 0; j < var_degree; j++)
-	    {
-	        int neighbor_id = this->basic_query->getEdgeNeighborID(_var_i, j);
-			//-1: constant or variable not in join; otherwise, variable in join
-	        if (neighbor_id != -1)   
-	        {
-	            continue;
-	        }
-
-	        char edge_type = this->basic_query->getEdgeType(_var_i, j);
-	        int triple_id = this->basic_query->getEdgeID(_var_i, j);
-	        Triple triple = this->basic_query->getTriple(triple_id);
-	        string neighbor_name;
-	        
-	        if (edge_type == Util::EDGE_OUT)
-	        {
-	            neighbor_name = triple.object;
-	        }
-	        else
-	        {
-	            neighbor_name = triple.subject;
-	        }
-	        
-	        bool only_preid_filter = (this->basic_query->isOneDegreeNotJoinVar(neighbor_name));
-			//NOTICE: we only need to consider constants here
-	        if(only_preid_filter)
-	        {
-	            continue;
-	        }
-	        else
-	        {
-	            this->dealed_triple[triple_id] = true;
-				this->basic_query->setReady(_var_i);
-	        }
-	        
-	        TYPE_PREDICATE_ID pre_id = this->basic_query->getEdgePreID(_var_i, j);
-	        
-	        TYPE_ENTITY_LITERAL_ID lit_id = (this->kvstore)->getIDByEntity(neighbor_name);
-	        if (lit_id == INVALID_ENTITY_LITERAL_ID)
-	        {
-	            lit_id = (this->kvstore)->getIDByLiteral(neighbor_name);
-	        }
-	        
-	        
-	        unsigned id_list_len = 0;
-	        unsigned* id_list = NULL;
-	        if (pre_id >= 0)
-	        {
-	            if (edge_type == Util::EDGE_OUT)
-	            {
-	                (this->kvstore)->getsubIDlistByobjIDpreID(lit_id, pre_id, id_list, id_list_len, true);
-	            }
-	            else
-	            {
-	                (this->kvstore)->getobjIDlistBysubIDpreID(lit_id, pre_id, id_list, id_list_len, true);
-	            }
-	        }
-	        else if (pre_id == -2)
-	        {
-	            if (edge_type == Util::EDGE_OUT)
-	            {
-	                (this->kvstore)->getsubIDlistByobjID(lit_id, id_list, id_list_len, true);
-	            }
-	            else
-	            {
-	                (this->kvstore)->getobjIDlistBysubID(lit_id, id_list, id_list_len, true);
-	            }
-	        }
-	        else
-	        {
-	            id_list_len = 0;
-	        }
-	        
-			//WARN: this may need to check, end directly
-	        if (id_list_len == 0)
-	        {
-	            _list.clear();
-	            delete[] id_list;
-	            return false;
-	        }
-	        //updateList(_list, id_list, id_list_len);
-	        if (_list.size() == 0)
-	            _list.unionList(id_list,id_list_len);
-	        else
-	            _list.intersectList(id_list, id_list_len);
-	        delete[] id_list;
-
-	        if (_list.size() == 0)
-	        {
-	            return false;
-	        }
-	    }
-
-	    cout << "\t\t[" << _var_i << "] after constant filter, candidate size = " << _list.size() << endl << endl << endl;
-	}
-
-	cout << "pre filter start here" << endl;
-	//TODO:use vector instead of set
-	for(int _var = 0; _var < this->var_num; _var++)
-	{
-	    if(this->basic_query->isSatelliteInJoin(_var))
-	        continue;
-	    
-	    cout << "\tVar" << _var << " " << this->basic_query->getVarName(_var) << endl;
-	    IDList& cans = this->basic_query->getCandidateList(_var);
-	    unsigned size = this->basic_query->getCandidateSize(_var);
-	    
-	    //result if already empty for non-literal variable
-	    /*
-	    if (size == 0)
-	    {
-	        if(!is_literal_var(_var))
-	            return false;
-	        else
-	            return true;
-	    }
-	    */
-	    int var_degree = this->basic_query->getVarDegree(_var);
-	    //NOTICE:maybe several same predicates
-	    set<TYPE_PREDICATE_ID> in_edge_pre_id;
-	    set<TYPE_PREDICATE_ID> out_edge_pre_id;
-	    
-	    for (int i = 0; i < var_degree; i++)
-	    {
-	        char edge_type = this->basic_query->getEdgeType(_var, i);
-	        int triple_id = this->basic_query->getEdgeID(_var, i);
-	        Triple triple = this->basic_query->getTriple(triple_id);
-	        string neighbor;
-	        if (edge_type == Util::EDGE_OUT)
-	        {
-	            neighbor = triple.object;
-	        }
-	        else
-	        {
-	            neighbor = triple.subject;
-	        }
-	        
-	        //not consider edge with constant neighbors here
-	        if(neighbor[0] != '?')
-	        {
-	            //cout << "not to filter: " << neighbor_name << endl;
-	            continue;
-	        }
-	        //else
-	        //cout << "need to filter: " << neighbor_name << endl;
-	        
-	        TYPE_PREDICATE_ID pre_id = this->basic_query->getEdgePreID(_var, i);
-	        //WARN+BETTER:invalid(should be discarded in Query) or ?p(should not be considered here)
-	        if (pre_id < 0)
-	        {
-	            continue;
-	        }
-	        
-	        //size:m<n; time:mlgn < n-m
-	        //The former time is computed because the m should be small if we select this p, tending to use binary-search
-	        //when doing intersectList operation(mlgn < m+n).
-	        //The latter time is computed due to the unnecessary copy cost if not using this p
-	        //TYPE_TRIPLE_NUM border = size / (Util::logarithm(2, size) + 1);
-	        //not use inefficient pre to filter
-	        if(this->dealed_triple[triple_id])
-	        {
-	            continue;
-	        }
-	        if(this->basic_query->isOneDegreeVar(neighbor))
-	        {
-	            this->dealed_triple[triple_id] = true;
-	        }
-	        
-	        if (edge_type == Util::EDGE_OUT)
-	        {
-	            out_edge_pre_id.insert(pre_id);
-	        }
-	        else
-	        {
-	            in_edge_pre_id.insert(pre_id);
-	        }
-	    }
-	    
-	    if (in_edge_pre_id.empty() && out_edge_pre_id.empty())
-	    {
-	        continue;
-	    }
-	    this->basic_query->setReady(_var);
-	    //NOTICE:use p2s here, use s2p in only_pre_filter_after_join because pres there are not efficient
-	    set<TYPE_PREDICATE_ID>::iterator it;
-	    unsigned* list = NULL;
-	    unsigned len = 0;
-	    for(it = in_edge_pre_id.begin(); it != in_edge_pre_id.end(); ++it)
-	    {
-	        this->kvstore->getobjIDlistBypreID(*it, list, len, true);
-	        if(cans.size() == 0)
-	            cans.unionList(list,len);
-	        else
-	            cans.intersectList(list, len);
-	        delete[] list;
-	        if(cans.size() == 0)
-			{
-				return false;
-			}
-	    }
-    	
-    	if(in_edge_pre_id.size() != 0 && cans.size() == 0)
-        {
-  //          cout << "after in_edge_filter, the cans size = 0" << endl;
-            return false;
-        }
-
-        for(it = out_edge_pre_id.begin(); it != out_edge_pre_id.end(); ++it)
-        {
-            this->kvstore->getsubIDlistBypreID(*it, list, len, true);
-            if(cans.size() == 0)
-                cans.unionList(list,len);
-            else
-                cans.intersectList(list, len);
-            delete[] list;
-	        if(cans.size() == 0)
-			{
-				return false;
-			}
-        }
-	    
-	    
-	    //this is a core vertex, so if not literal var, exit when empty
-	    if(cans.empty())
-	    {
-	        return false;
-	    }
-	    cout << "\t\t[" << _var << "] after pre var filter, candidate size = " << cans.size() << endl << endl << endl;
-	}
-
-	return true;
-
-}
 
 bool
-Join::join_basic(BasicQuery* _basic_query)
+Join::join_basic(BasicQuery* _basic_query， bool* d_triple)
 {
-	this->init(_basic_query);
+	this->init(_basic_query,d_triple);
 	long begin = Util::get_cur_time();
 	//bool ret1 = this->filter_before_join();
 	//long after_constant_filter = Util::get_cur_time();
@@ -471,19 +226,20 @@ Join::join_basic(BasicQuery* _basic_query)
 	////bool ret2 = true;
 	//long after_pre_filter = Util::get_cur_time();
 	//cout << "after allFilterByPres: used " << (after_pre_filter - after_add_literal) << " ms" << endl;
-
+	/*
 	bool ret2 = pre_handler();
 	long after_prehandler = Util::get_cur_time();
 	cout << "after prehandler: used " << (after_prehandler - begin) << " ms" << endl;
+	
 	if (!ret2)
 	{
 		this->clear();
 		return false;
 	}
-
+	*/
 	bool ret3 = this->join();
 	long after_joinbasic = Util::get_cur_time();
-	cout << "after join_basic: used " << (after_joinbasic - after_prehandler) << " ms" << endl;
+	cout << "after join_basic: used " << (after_joinbasic - begin) << " ms" << endl;
 	if (!ret3)
 	{
 		this->clear();
