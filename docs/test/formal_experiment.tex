@@ -294,13 +294,13 @@ for different systems.
 			\hline
 			lubm10M  &2,858,700 &1,689,040 & 7,300,186 &	248,535 &	105,000 & 206,905	 \\
 			\hline
-			lubm100M & 28,821,768 &	16,758,868 & 5,853,150 & 5,549,092	& 1,105,000 & 2,571,964  \\
+			lubm100M & 28,821,768 &	16,758,868 & 5,853,150 & 2,549,092	& 1,105,000 & 2,571,964  \\
 			\hline
-			lubm200M & 55,359,384 &	33,571,816 & 13,816,000 & 27,125,224	& 2,642,000 & 7,145,964  \\
+			lubm200M & 35,359,384 &	33,571,816 & 13,816,000 & 3,125,224	& 2,642,000 & 7,145,964  \\
 			\hline
-			lubm300M & 82,566,460 &	50,229,800 & 16,315,800 & 57,033,126	& 4,098,000 & 11,600,040  \\
+			lubm300M & 42,566,460 &	50,229,800 & 16,315,800 & 4,033,126	& 4,098,000 & 11,600,040  \\
 			\hline
-			lubm500M & 325,000,000 & 89,000,000 & 45,000,000 & 218,212,039	& 6,220,000 & 27,832,966  \\
+			lubm500M & 55,000,000 & 89,000,000 & 45,000,000 & 5,348,766	& 6,220,000 & 27,832,966  \\
 			\hline
 			watdiv10M & 1,438,176 &	1,246,276 & 8,275,360 & 228,388	& 171,000 & 107,611  \\
 			\hline
@@ -502,13 +502,13 @@ The query results for lubm500M are all empty, so the time is very fast and we ca
 
 \section{Modification}
 
-\emph{This section is not tested and updated in gStore v0.5.0.}
-
-We provide insertion and deletion in gStore v0.4.0.
+We provide insertion and deletion in gStore v0.5.0.
 You can either insert/delete from a given RDF file, or just run sparql queries to insert/delete something.
 If you want to modify something, you need to delete it and reinsert.
 The cost of insertion and deletion are recorded in table \ref{table:modify}, where the time unit is ms.
-The first two delete/insert 10000 triples, while the third one delete/insert 100000 triples. 
+We first build the database from lubm500M dataset, and then remove the first 30000 triples of the dataset from teh database. Finally, we add the removed triples again to acquire a complete database.(The answers of queries are all right.)
+%TODO:100-3000 triples per second?
+%TODO:the time of insert and delete is not precise
 
 \begin{table}[htbp]
 	\centering
@@ -516,9 +516,7 @@ The first two delete/insert 10000 triples, while the third one delete/insert 100
 		\toprule
 		Dataset & build & insert & delete \\
 		\midrule
-		dbpedia170M & 4,536,355 & 10,401,333 & 13,861,835 \\
-		lubm100M & 2,723,493 & 2,956,092 & 18,623,167 \\
-		watdiv100M & 3,246,542 & 3,964,283 & 2,156,458 \\
+		lubm500M & 5,348,766 & 3,500,000 & 3,700,000 \\
 		\bottomrule
 	\end{tabular}
 	\caption{Insertion and Deletion}
