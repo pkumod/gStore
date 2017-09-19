@@ -434,7 +434,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 
         for(it = out_edge_pre_id.begin(); it != out_edge_pre_id.end(); ++it)
         {
-        	if(pre2num[*it] < 1000000 || cans.size() > 1000000 || cans.size() == 0)
+        	if(pre2num[*it] < 1000000 || cans.size() > 1000000  || cans.size() == 0)
         	{
 	            kvstore->getsubIDlistBypreID(*it, list, len, true);
 	            if(cans.size() == 0)
@@ -556,7 +556,7 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	}
 
 	Join *join = new Join(kvstore, pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
-	join->join_basic(_bq, d_triple);
+	join->join_basic(_bq,d_triple);
 	delete join;
 
 	long tv_join = Util::get_cur_time();
