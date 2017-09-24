@@ -1354,6 +1354,9 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 
 		general_evaluation.releaseResult();
 		delete[] update_triple;
+
+		printf("QueryCache cleared\n");
+		this->query_cache->clear();
 	}
 
 	long tv_final = Util::get_cur_time();

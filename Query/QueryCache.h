@@ -39,6 +39,7 @@ class QueryCache
 
 		bool tryCaching(const Patterns &triple_pattern, const TempResult &temp_result, int eva_time);
 		bool checkCached(const Patterns &triple_pattern, const Varset &varset, TempResult &temp_result);
+		void clear();
 };
 
 #endif // _QUERY_QUERYCACHE_H

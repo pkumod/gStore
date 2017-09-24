@@ -215,3 +215,13 @@ bool QueryCache::checkCached(const Patterns &triple_pattern, const Varset &varse
 
 	return false;
 }
+
+void QueryCache::clear()
+{
+	time_now = 0;
+	total_memory_used = 0;
+
+	cache.clear();
+	while (!lru.empty())
+		lru.pop();
+}
