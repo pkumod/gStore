@@ -601,6 +601,7 @@ IVTree::save()	//save the whole tree to disk
 #ifdef DEBUG_KVSTORE
 	printf("now to save tree!\n");
 #endif
+	this->value_list->release_cache();
 	if (TSM->writeTree(this->root))
 		return true;
 	else
