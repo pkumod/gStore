@@ -26,15 +26,18 @@ public:
 		_len = 0;
 		_str = NULL;
 	}
-	~Longlist_inMem()
+	void free()
 	{
 		if(_str != NULL)
 		{
 			delete [] _str;
 			_str = NULL;
 		}
+		key = -1;
+		_len = 0;
 	}
 };
+
 
 template <unsigned mod>
 class CmpByMod

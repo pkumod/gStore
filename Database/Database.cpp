@@ -713,7 +713,7 @@ Database::load()
 	//vstree_thread.join();
 #endif
 	//load cache of sub2values and obj2values
-	this->load_cache();
+	//this->load_cache();
 	
 	//warm up always as finishing build(), to utilize the system buffer
 	//this->warmUp();
