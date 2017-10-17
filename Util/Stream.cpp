@@ -65,7 +65,7 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
 
     this->mode = 0;    //wait for writing records
 
-    int size = _rownum * _colnum * 100 / Util::GB;
+    long long size = (long long)_rownum * (long long)_colnum * 100 / Util::GB;
 	//TODO: get this arg from memory manager
     if(Util::memoryLeft() < size)
     {

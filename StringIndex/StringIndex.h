@@ -87,7 +87,10 @@ class StringIndexFile
 		}
 
 		bool randomAccess(unsigned id, std::string *str);
-		void addRequest(unsigned id, std::string *str);
+		inline void addRequest(unsigned id, std::string *str)
+		{
+			this->request.push_back(AccessRequest(id, this->index_table[id].offset, this->index_table[id].length, str));
+		}
 		void trySequenceAccess();
 
 		void change(unsigned id, KVstore &kv_store);
