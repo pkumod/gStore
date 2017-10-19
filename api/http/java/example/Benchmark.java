@@ -43,8 +43,7 @@ public class Benchmark
 		
 	    // build a new database by a RDF file.
 	    // note that the relative path is related to gserver.
-		//gc.load("lubm");
-		gc.load("dbpedia");
+		gc.load("lubm");
 		
 		//TODO: use multithreading to send queries and output results
 	String[] spq = new String[6];
@@ -54,13 +53,15 @@ public class Benchmark
 	spq[3] = "select ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. ?y    <ub:name> <Course1>. ?x    <ub:takesCourse>  ?y. ?z    <ub:teacherOf>    ?y. ?z    <ub:name> <FullProfessor1>. ?z    <ub:worksFor>    ?w. ?w    <ub:name>    <Department0>. }";
 	spq[4] = "select distinct ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. }";
 	spq[5] = "select ?s ?o where { ?s ?p ?o . }";
-	MyThread[] qt = new MyThread[6];
-	for(int i = 0; i < 6; ++i)
+	//int tnum = 6;
+	int tnum = 1200;
+	MyThread[] qt = new MyThread[tnum];
+	for(int i = 0; i < tnum; ++i)
 	{
-		qt[i] = new MyThread(i, gc, spq[i]);
+		qt[i] = new MyThread(i, gc, spq[i%6]);
 		qt[i].start();
 	}
-	for(int i = 0; i < 6; ++i)
+	for(int i = 0; i < tnum; ++i)
 	{
 		try {
 			qt[i].join();
@@ -77,8 +78,7 @@ public class Benchmark
 		//e.printStackTrace();
 	//}
 		// unload this database.
-		//gc.unload("lubm");
-		gc.unload("dbpedia");
+		gc.unload("lubm");
 		
 	    // also, you can load some exist database directly and then query.
 
