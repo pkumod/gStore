@@ -296,7 +296,26 @@ int initialize(int argc, char *argv[])
     server.resource["^/%3[F|f]operation%3[D|d]unload%26db_name%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
 		unload_handler(server, response, request);
-    };    
+    }; 
+
+	//GET-example for the path /?operation=build&db_name=[db_name]&ds_path=[ds_path], responds with the matched string in path
+	//i.e. database name and dataset path
+	server.resource["^/?operation=build&db_name=(.*)&ds_path=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		build_handler(server, response, request);
+    };
+
+	//GET-example for the path /?operation=load&db_name=[db_name], responds with the matched string in path
+    server.resource["^/?operation=load&db_name=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		load_handler(server, response, request);
+	};
+
+    //GET-example for the path /?operation=unload&db_name=[db_name], responds with the matched string in path
+    server.resource["^/?operation=unload&db_name=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		unload_handler(server, response, request);
+    };
 #endif
 	
 	
@@ -307,14 +326,15 @@ int initialize(int argc, char *argv[])
 		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     };
 
+
     //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
 	//In programming language, do URL encode first and then call server, then all is ok
-	server.resource["^/%3Foperation%3[D|d]monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/?operation=monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
 	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		monitor_handler(server, response, request);
     };
-    
+   
     // server.resource["^/json$"]["POST"]=[](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     //     try {
     //         ptree pt;
@@ -985,6 +1005,14 @@ bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
 	cout<<"HTTP: this is default"<<endl;
+	string req_url = request->path;
+	cout << "request url: " << req_url << endl;
+	//if request matches /?operation=monitor, then do monitor_handler
+	//because if the user visit through the browser by using url /?operation=monitor
+	//it can not match directly to monitor_handler, and will match this default get
+	//so we need to check here to do monitor_handler, although the implementation is not perfect enough.
+	if(req_url == "/?operation=monitor")
+		monitor_handler(server, response, request);
 	//BETTER: use lock to ensure thread safe
 	connection_num++;
 	//NOTICE: it seems a visit will output twice times

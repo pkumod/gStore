@@ -111,7 +111,7 @@ in the sparql query can point to the same node in data graph)
 
 //if used as only-read application(like sparql endpoint)
 //#define ONLY_READ 1
-//#define SPARQL_ENDPOINT 1
+#define SPARQL_ENDPOINT 1
 #ifdef SPARQL_ENDPOINT
 #ifndef ONLY_READ
 #define ONLY_READ 1
