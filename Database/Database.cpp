@@ -717,7 +717,7 @@ Database::load()
 	//vstree_thread.join();
 #endif
 	//load cache of sub2values and obj2values
-	this->load_cache();
+	//this->load_cache();
 	
 	//warm up always as finishing build(), to utilize the system buffer
 	//this->warmUp();
@@ -867,11 +867,17 @@ void
 Database::build_CacheOfPre2values()
 {
 	cout << "now add cache of preID2values..." << endl;
+	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
 	while (!candidate_preID.empty())
 	{
-		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
-		this->kvstore->AddIntoPreCache(candidate_preID.top().key);
+		temp_queue.push(candidate_preID.top());
 		candidate_preID.pop();
+	}
+	while (!temp_queue.empty())
+	{
+		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
+		this->kvstore->AddIntoPreCache(temp_queue.top().key);
+		temp_queue.pop();
 	}
 }
 
@@ -879,11 +885,18 @@ void
 Database::build_CacheOfObj2values()
 {
 	cout << "now add cache of objID2values..." << endl;
+	// sort key according to their mod by 2000
+	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
 	while (!important_objID.empty())
 	{
-		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
-		this->kvstore->AddIntoObjCache(important_objID.top().key);
+		temp_queue.push(important_objID.top());
 		important_objID.pop();
+	}
+	while (!temp_queue.empty())
+	{
+		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
+		this->kvstore->AddIntoObjCache(temp_queue.top().key);
+		temp_queue.pop();
 	}
 }
 
@@ -891,11 +904,17 @@ void
 Database::build_CacheOfSub2values()
 {
 	cout << "now add cache of subID2values..." << endl;
+	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
 	while (!important_subID.empty())
 	{
-		//cout << "add key " << important_subID.top().key << " size: " << important_subID.top().size << endl;
-		this->kvstore->AddIntoSubCache(important_subID.top().key);
+		temp_queue.push(important_subID.top());
 		important_subID.pop();
+	}
+	while (!temp_queue.empty())
+	{
+		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
+		this->kvstore->AddIntoSubCache(temp_queue.top().key);
+		temp_queue.pop();
 	}
 }
 
@@ -1407,6 +1426,9 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 
 		general_evaluation.releaseResult();
 		delete[] update_triple;
+
+		printf("QueryCache cleared\n");
+		this->query_cache->clear();
 	}
 
 	long tv_final = Util::get_cur_time();

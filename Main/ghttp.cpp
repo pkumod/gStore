@@ -1114,6 +1114,10 @@ bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 				*response << "Content-Type: application/x-javascript" << "\r\n\r\n";
 			else if(extName == ".css")
 				*response << "Content-Type: text/css" << "\r\n\r\n";
+			else if(extName == ".png")
+				*response << "Content-Type: image/png" << "\r\n\r\n";
+			else if(extName == ".jpg")
+				*response << "Content-Type: image/jpeg" << "\r\n\r\n";
 			default_resource_send(server, response, ifs);
 		}
 		else
