@@ -924,6 +924,14 @@ Util::getItemsFromDir(string _path)
 	return ret;
 }
 
+//NOTICE: system() is implemented by fork() and exec(), the latter will change the whole control flow, 
+//so it must be used with fork()
+//The fork() will copy the whole process's image, including the heap and stack.
+//But in UNIX, this copy is only logical, in practice it is copy-on-write, which will save a lot memory usage.
+//Another function is vfork(), which won't copy a lot of things
+//
+//http://www.cnblogs.com/wuchanming/p/3784862.html
+//http://www.cnblogs.com/sky-heaven/p/4687489.html
 string
 Util::getSystemOutput(string cmd)
 {

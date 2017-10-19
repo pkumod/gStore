@@ -142,6 +142,8 @@ private:
 	//BETTER:add a predicate buffer for ?p query
 	//However, I think this is not necessary because ?p is rare and the p2xx tree is small enough
 
+	void query_stringIndex(int id);
+	void query_thread(string);
 	void check();
 	//used for multiple threads
 	void load_vstree(unsigned _vstree_size);

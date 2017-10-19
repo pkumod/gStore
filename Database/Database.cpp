@@ -1141,6 +1141,59 @@ string tstr;
 //cout<<this->kvstore->getStringByID(82855205)<<endl;
 //cout<<"check: 82855205 "<<tstr<<endl;
 //fclose(fp);
+
+
+
+//test String Index for parallism
+//int limit = 2;
+//int limit = this->entity_num / 2;
+//thread* thr_si = new thread[limit];
+//for(int i = 0; i < limit; ++i)
+//{
+	//thr_si[i] = thread(&Database::query_stringIndex, this, i);
+//}
+//for(int i = 0; i < limit; ++i)
+//{
+	//thr_si[i].join();
+//}
+//delete[] thr_si;
+
+//TODO: each thread for a sparql query, support by assigning a thread for each query in ghttp(better to set timeout)
+//and test stringIndex::addRequest(), 
+//the request array maybe not right, request.clear()
+	string spq[6];
+	spq[0] = "select ?x where { ?x <ub:name> <FullProfessor0> . }";
+	spq[1] = "select distinct ?x where { ?x      <rdf:type>      <ub:GraduateStudent>. ?y      <rdf:type>      <ub:University>. ?z      <rdf:type>      <ub:Department>. ?x      <ub:memberOf>   ?z. ?z      <ub:subOrganizationOf>  ?y. ?x      <ub:undergraduateDegreeFrom>    ?y. }";
+	spq[2] = "select distinct ?x where { ?x      <rdf:type>      <ub:Course>. ?x      <ub:name>       ?y. }";
+	spq[3] = "select ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. ?y    <ub:name> <Course1>. ?x    <ub:takesCourse>  ?y. ?z    <ub:teacherOf>    ?y. ?z    <ub:name> <FullProfessor1>. ?z    <ub:worksFor>    ?w. ?w    <ub:name>    <Department0>. }";
+	spq[4] = "select distinct ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. }";
+	spq[5] = "select ?s ?o where { ?s ?p ?o . }";
+	for(int i = 0; i < 6; ++i)
+	{
+		//NOTICE: we need to detach it, otherwise the thread object will be released beyond the scope,
+		//so the thread ends causing an exception
+		//thread qt(&Database::query_thread, this, spq[i]);
+		//qt.detach();
+	}
+	cout<<"this function ends!"<<endl;
+	//WARN: if each threda for a query, then the QueryParser will cause error in parallism!
+	//so we should do the parser sequentially
+}
+
+void 
+Database::query_thread(string spq)
+{
+	ResultSet rs;
+	int ret = this->query(spq, rs, NULL);
+	cout<<rs.to_str()<<endl;
+}
+
+void 
+Database::query_stringIndex(int id)
+{
+	string str;
+	this->stringindex->randomAccess(id, &str, true);
+	cout<<"thread: "<<id<<" "<<str<<endl;
 }
 
 //NOTICE: we ensure that if the unload() exists normally, then all updates have already been written to disk

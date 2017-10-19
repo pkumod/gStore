@@ -36,8 +36,8 @@
 #compile parameters
 
 # WARN: maybe difficult to install ccache in some systems
-CC = ccache g++
-#CC = g++
+#CC = ccache g++
+CC = g++
 
 #the optimazition level of gcc/g++
 #http://blog.csdn.net/hit_090420216/article/details/44900215
@@ -441,9 +441,11 @@ $(lib_antlr):
 
 $(api_cpp): $(objdir)Socket.o
 	$(MAKE) -C api/socket/cpp/src 
+	$(MAKE) -C api/http/cpp/src 
 
 $(api_java):
 	$(MAKE) -C api/socket/java/src
+	$(MAKE) -C api/http/java/src
 
 .PHONY: clean dist tarball api_example gtest sumlines
 
@@ -453,6 +455,10 @@ clean:
 	$(MAKE) -C api/socket/cpp/example clean
 	$(MAKE) -C api/socket/java/src clean
 	$(MAKE) -C api/socket/java/example clean
+	$(MAKE) -C api/http/cpp/src clean
+	$(MAKE) -C api/http/cpp/example clean
+	$(MAKE) -C api/http/java/src clean
+	$(MAKE) -C api/http/java/example clean
 	#$(MAKE) -C KVstore clean
 	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver*
 	rm -rf bin/*.class
@@ -474,6 +480,8 @@ tarball:
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/socket/cpp/example
 	$(MAKE) -C api/socket/java/example
+	$(MAKE) -C api/http/cpp/example
+	$(MAKE) -C api/http/java/example
 
 gtest: $(objdir)gtest.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr.a $(library)

@@ -1,10 +1,17 @@
+all: JavaAPIExample.class Benchmark.class
+
 JavaAPIExample.class: JavaAPIExample.java
 	javac -cp ../lib/GstoreJavaAPI.jar JavaAPIExample.java
+
+Benchmark.class: Benchmark.java
+	javac -cp ../lib/GstoreJavaAPI.jar Benchmark.java
 
 .PHONY: clean run
 
 run: JavaAPIExample.class
 	java -cp ../lib/GstoreJavaAPI.jar:. JavaAPIExample
+test: Benchmark.class
+	java -cp ../lib/GstoreJavaAPI.jar:. Benchmark
 
 clean:
 	rm -f JavaAPIExample.class

@@ -72,7 +72,7 @@ bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 
 bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
-bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+void query_handler(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
@@ -92,6 +92,22 @@ int connection_num = 0;
 
 long next_backup = 0;
 pthread_t scheduler = 0;
+
+int query_num = 0;
+//WARN: if the response or request is freed by main thread
+void test_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	int num = query_num;
+	cout<<"test thread: "<<num<<endl;
+	sleep(10);
+	string error = "test thread here: query ";
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error<<query_num;
+	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length()+4;
+	*response << "\r\nContent-Type: text/plain";
+	*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
+	*response << "\r\n\r\n" << error<<num;
+	cout<<"thread ends: "<<num<<endl;
+}
 
 //DEBUG+TODO: why the result transfered to client has no \n \t??
 //using json is a good way to avoid this problem
@@ -144,6 +160,9 @@ int main(int argc, char *argv[])
 	Util util;
 	srand(time(NULL));
 
+	//Notice that current_database is assigned in the child process, not in the father process
+	//TODO: when used as endpoint, or when the database is indicated in command line, we can assign 
+	//current_database in father process
 	while (true) {
 		//NOTICE: here we use 2 processes, father process is used for monitor and control(like, restart)
 		//Child process is used to deal with web requests, can also has many threads
@@ -152,15 +171,16 @@ int main(int argc, char *argv[])
 		if (fpid == 0) {
 			//int ret = initialize();
 			int ret = initialize(argc, argv);
+			//TODO: which to use here!
 			exit(ret);
-			return ret;
+			//return ret;
 		}
 
 		else if (fpid > 0) {
 			int status;
 			waitpid(fpid, &status, 0);
 			if (WIFEXITED(status)) {
-				exit(0);
+				//exit(0);
 				return 0;
 			}
 			else
@@ -301,9 +321,70 @@ int initialize(int argc, char *argv[])
 	
 	
 	//GET-example for the path /?operation=query&format=[format]&sparql=[sparql], responds with the matched string in path
-	 server.resource["^/%3[F|f]operation%3[D|d]query%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	 server.resource["^/%3[F|f]operation%3[D|d]query%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	 {
-		query_handler(server, response, request);
+		query_num++;
+		//cout<<"content: "<<request->content.string()<<endl;
+		cout<<"Header: "<<endl;
+		//Usage of auto: http://blog.csdn.net/qq_26399665/article/details/52267734
+		for(auto it : request->header)
+		{
+			cout<<it.first<<" "<<it.second<<endl;
+		}
+		//TODO: check the addr and port of the client in this request
+		cout<<"client addr: "<<request->remote_endpoint_address<<endl;
+		cout<<"client port: "<<request->remote_endpoint_port<<endl;
+		//query_handler(response, request);
+		//thread t(&test_thread, response, request);
+
+		//DEBUG: when using a thread for a query and run in parallism, the QueryParser will fail due to ANTLR
+		//In addition, addRequest and io buffer in StringIndex will also cause error
+		//thread t(&query_handler, response, request);
+		//t.detach();
+		//t.join();
+
+		//As a result, we try to use multi-process here instead of multithreading
+		//Each process for a query processing, and use multithreading intra-process
+		//TODO: limit the concurrent process's num in 64
+		pid_t child = fork();
+		if(child == -1)
+		{
+			cout<<"child fork error in query processing of ghttp"<<endl;
+			//here we do it sequentially
+			query_handler(response, request);
+		}
+		else if(child == 0)
+		{
+			query_handler(response, request);
+			//sleep(10); //wait the IO to end in this process
+			cout<<"now the child process to exit"<<endl;
+			//DEBUG: if we use this , then error? why? restart endlessly
+			//exit(0);
+		}
+		else
+		{
+			//if father process exits, all child process will exit
+			pid_t ret = waitpid(child, NULL, 0);
+			if(ret == child)
+			{
+				cout<<"father process get child exit code: "<<ret<<endl;
+			}
+			else
+			{
+				cout<<"error occured"<<endl;
+			}
+		}
+		//The upper is blocked-waiting(the child process should not use exit), 
+		//below is non-blocked-waiting(the child process should use exit)
+		//do {
+			//pid_t ret = waitpid(child, NULL, WNOHANG); 
+			//if(ret == 0) {
+				//cout<<"xxx"<<endl;
+				//sleep(1); //query again for each second
+			//}
+		//}while(ret == 0);
+		//if(ret == child){};
+
 		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     };
 
@@ -734,9 +815,10 @@ bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	return true;
 }
 
-bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void query_handler(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
 	cout<<"HTTP: this is query"<<endl;
+	//sleep(5);
 
 	string format = request->path_match[1];
 	//string format = "html";
@@ -751,14 +833,16 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	{
 		string error = "No database in use!";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return;
 	}
 
 	string sparql;
 	sparql = db_query;
 	if (sparql.empty()) {
 		cerr << "Empty SPARQL." << endl;
-		return false;
+		//return false;
+		return;
 	}
 	FILE* output = NULL;
 
@@ -811,7 +895,8 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 		if(!outlog)
 		{
 			cout << queryLog << "can't open." << endl;
-			return false;
+			//return false;
+			return;
 		}
 		outlog << Util::get_date_time() << endl;
 		outlog << sparql << endl << endl;
@@ -860,7 +945,8 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 				*response << "\r\nContent-Type: text/plain";
 				*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
 				*response  << "\r\n\r\n" << "0+" << rs.ansNum << '+' << filename << '+' << success;
-				return true;
+				//return true;
+				return;
 			}
 			else
 			{
@@ -871,7 +957,8 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 				*response << "\r\nContent-Type: text/plain";
 				*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
 				*response << "\r\n\r\n" << "1+" << rs.ansNum << '+' << filename << '+' << success;
-				return true;
+				//return true;
+				return;
 			}
 		}
 		else
@@ -893,7 +980,8 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 			//
 			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ansNum_s.length()+filename.length()+3;
 			//*response << "\r\n\r\n" << "2+" << rs.ansNum << '+' << filename;
-			return true;
+			return;
+			//return true;
 		}
 	}
 	else
@@ -901,10 +989,11 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 		//TODO: if error, browser should give some prompt
 		string error = "query() returns false.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return;
 	}
 
-	return true;
+	//return true;
 }
 
 bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
