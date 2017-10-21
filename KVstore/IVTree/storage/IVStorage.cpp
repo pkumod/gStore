@@ -25,6 +25,7 @@ IVStorage::IVStorage()
 
 IVStorage::IVStorage(string& _filepath, string& _mode, unsigned* _height, unsigned long long _buffer_size, VList* _vlist)
 {
+	updateHeapTime = 0;
 	cur_block_num = SET_BLOCK_NUM;		//initialize
 	this->filepath = _filepath;
 	if (_mode == string("build"))
@@ -98,6 +99,8 @@ IVStorage::IVStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 	this->value_list = _vlist;
 }
 
+
+//preRead only put root, leaves_head and leaves_tail in memmory
 bool
 IVStorage::preRead(IVNode*& _root, IVNode*& _leaves_head, IVNode*& _leaves_tail)		//pre-read and build whole tree
 {	//set root(in memory) and leaves_head
@@ -176,6 +179,41 @@ IVStorage::preRead(IVNode*& _root, IVNode*& _leaves_head, IVNode*& _leaves_tail)
 	long long memory = 0;
 	this->readNode(_root, &memory);
 	this->request(memory);
+	return true;
+}
+
+bool
+IVStorage::preLoad(IVNode*& _root)
+{
+	// preload nodes of tree till storage is half full
+	bool mem_full = false;
+	std::queue <IVNode*> node_q;
+	IVNode* p = _root;
+	while (!p->isLeaf())
+	{
+		IVNode* tmp;
+		unsigned KN = p->getNum();
+		for(unsigned i = 0; i <= KN; ++i)
+		{
+			tmp = p->getChild(i);
+			long long memory = 0;
+			this->readNode(tmp, &memory);
+			this->request(memory);
+			if (this->freemem < this->max_buffer_size / 2 )
+			{
+				mem_full = true;
+				break;
+			}
+			node_q.push(tmp);
+		}
+		if (mem_full) break;
+		p = node_q.front();
+		node_q.pop();
+	}
+	while (!node_q.empty())
+	{
+		node_q.pop();
+	}
 	return true;
 }
 
@@ -622,6 +660,7 @@ IVStorage::writeTree(IVNode* _root)	//write the whole tree back and close treefp
 void
 IVStorage::updateHeap(IVNode* _np, unsigned _rank, bool _inheap) const
 {
+	//long t1 = Util::get_cur_time();
 	if (_inheap)	//already in heap, to modify
 	{
 		unsigned t = _np->getRank();
@@ -637,6 +676,8 @@ IVStorage::updateHeap(IVNode* _np, unsigned _rank, bool _inheap) const
 		_np->setRank(_rank);
 		this->minheap->insert(_np);
 	}
+	//long t2 = Util::get_cur_time();
+	//updateHeapTime += (t2 - t1);
 }
 
 bool
@@ -657,7 +698,7 @@ IVStorage::request(long long _needmem)	//aligned to byte
 bool
 IVStorage::handler(unsigned long long _needmem)	//>0
 {
-	//cout<<"swap happen"<<endl;
+	cout<<"swap happen"<<endl;
 	IVNode* p;
 	unsigned long long size;
 	//if(_needmem < SET_BUFFER_SIZE)		//to recover to SET_BUFFER_SIZE buffer
@@ -701,6 +742,7 @@ IVStorage::handler(unsigned long long _needmem)	//>0
 
 IVStorage::~IVStorage()
 {
+	cout << "update heap time is " << updateHeapTime << "ms" << endl;
 	//release heap and freelist...
 #ifdef DEBUG_KVSTORE
 	printf("now to release the kvstore!\n");

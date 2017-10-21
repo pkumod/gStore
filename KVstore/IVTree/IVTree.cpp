@@ -40,7 +40,12 @@ IVTree::IVTree(string _storepath, string _filename, string _mode, unsigned long 
 
 	TSM = new IVStorage(filepath, this->mode, &this->height, _buffer_size, this->value_list);
 	if (this->mode == "open")
+	{
 		this->TSM->preRead(this->root, this->leaves_head, this->leaves_tail);
+		cout << "IVTree: begin preLoad..." << endl;
+		this->TSM->preLoad(this->root);
+		cout << "IVTree: finish preLoad." << endl;
+	}
 	else
 		this->root = NULL;
 
