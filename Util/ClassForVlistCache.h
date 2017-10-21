@@ -26,12 +26,25 @@ public:
 		_len = 0;
 		_str = NULL;
 	}
-	~Longlist_inMem()
+	void free()
 	{
 		if(_str != NULL)
 		{
 			delete [] _str;
 			_str = NULL;
 		}
+		key = -1;
+		_len = 0;
+	}
+};
+
+
+template <unsigned mod>
+class CmpByMod
+{
+public:
+	bool operator () (const KEY_SIZE_VALUE& a, const KEY_SIZE_VALUE& b)
+	{
+		return (a.key % mod) > (b.key % mod);
 	}
 };

@@ -157,7 +157,7 @@ IVLeafNode::setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool 
 		cout<<"this is a vlist in set()"<<endl;
 #endif
 		unsigned block_num = this->values[_index].getLen();
-		_vlist->removeValue(block_num);
+		_vlist->removeValue(block_num, this->keys[_index]);
 	}
 	else
 	{
@@ -247,7 +247,7 @@ IVLeafNode::subValue(VList* _vlist, int _index, bool ifdel)
 	if(this->values[_index].isBstrLongList())
 	{
 		unsigned block_num = this->values[_index].getLen();
-		_vlist->removeValue(block_num);
+		_vlist->removeValue(block_num, this->keys[_index]);
 	}
 	else
 	{
