@@ -120,6 +120,7 @@ in the sparql query can point to the same node in data graph)
 
 //WARN: when running in parallism, please modify the limits of system
 //http://www.cnblogs.com/likehua/p/3831331.html
+//http://blog.csdn.net/xyang81/article/details/52779229
 //
 //if use pthread and lock
 #define THREAD_ON 1			
