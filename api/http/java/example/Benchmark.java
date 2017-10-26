@@ -23,6 +23,7 @@ class MyThread extends Thread  {
 		System.out.println("Thread: "+num);
 		String answer = gc.query(sparql);
 		System.out.println(answer);
+		System.out.println("Thread "+t.getName()+" ends!");
 	}
 }
 
@@ -44,8 +45,8 @@ public class Benchmark
 	    // build a new database by a RDF file.
 	    // note that the relative path is related to gserver.
 		gc.load("lubm");
+		//gc.load("dbpedia");
 		
-		//TODO: use multithreading to send queries and output results
 	String[] spq = new String[6];
 	spq[0] = "select ?x where { ?x <ub:name> <FullProfessor0> . }";
 	spq[1] = "select distinct ?x where { ?x      <rdf:type>      <ub:GraduateStudent>. ?y      <rdf:type>      <ub:University>. ?z      <rdf:type>      <ub:Department>. ?x      <ub:memberOf>   ?z. ?z      <ub:subOrganizationOf>  ?y. ?x      <ub:undergraduateDegreeFrom>    ?y. }";
@@ -53,8 +54,8 @@ public class Benchmark
 	spq[3] = "select ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. ?y    <ub:name> <Course1>. ?x    <ub:takesCourse>  ?y. ?z    <ub:teacherOf>    ?y. ?z    <ub:name> <FullProfessor1>. ?z    <ub:worksFor>    ?w. ?w    <ub:name>    <Department0>. }";
 	spq[4] = "select distinct ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. }";
 	spq[5] = "select ?s ?o where { ?s ?p ?o . }";
-	//int tnum = 6;
-	int tnum = 1200;
+	int tnum = 6;
+	tnum = 12000;
 	MyThread[] qt = new MyThread[tnum];
 	for(int i = 0; i < tnum; ++i)
 	{
@@ -78,6 +79,7 @@ public class Benchmark
 		//e.printStackTrace();
 	//}
 		// unload this database.
+		//gc.unload("dbpedia");
 		gc.unload("lubm");
 		
 	    // also, you can load some exist database directly and then query.

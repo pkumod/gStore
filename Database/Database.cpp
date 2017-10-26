@@ -53,6 +53,8 @@ Database::Database()
 
 	//this->resetIDinfo();
 	this->initIDinfo();
+
+	pthread_rwlock_init(&(this->update_lock), NULL);
 }
 
 Database::Database(string _name)
@@ -104,6 +106,8 @@ Database::Database(string _name)
 
 	//this->resetIDinfo();
 	this->initIDinfo();
+
+	pthread_rwlock_init(&(this->update_lock), NULL);
 }
 
 //==================================================================================================================================================
@@ -519,6 +523,7 @@ Database::release(FILE* fp0)
 
 Database::~Database()
 {
+	pthread_rwlock_destroy(&(this->update_lock));
 	this->unload();
 	//fclose(Util::debug_database);
 	//Util::debug_database = NULL;	//debug: when multiple databases
@@ -1200,14 +1205,6 @@ string tstr;
 }
 
 void 
-Database::query_thread(string spq)
-{
-	ResultSet rs;
-	int ret = this->query(spq, rs, NULL);
-	cout<<rs.to_str()<<endl;
-}
-
-void 
 Database::query_stringIndex(int id)
 {
 	string str;
@@ -1334,12 +1331,15 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 
 	long tv_begin = Util::get_cur_time();
 
-	if (!general_evaluation.parseQuery(_query))
+	this->query_parse_lock.lock();
+	bool parse_ret = general_evaluation.parseQuery(_query);
+	this->query_parse_lock.unlock();
+	if (!parse_ret)
 		return -101;
 	long tv_parse = Util::get_cur_time();
 	cout << "after Parsing, used " << (tv_parse - tv_begin) << "ms." << endl;
+	//return -100;
 
-	//TODO:output all results in JSON format, and transformed into string to client
 	//for select, -100 by default, -101 means error
 	//for update, non-negative means true(and the num is updated triples num), -1 means error
 	int success_num = -100;  
@@ -1348,11 +1348,28 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	//Query
 	if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Not_Update)
 	{
+		//lock_guard<mutex> (this->update_lock);  //when quit this scope the lock will be released
+		//unique_guard<mutex> updateLCK(this->update_lock);
+		//if(!unique_guard.try_lock())
+		//BETTER: use timed lock
+		if(pthread_rwlock_tryrdlock(&(this->update_lock)) != 0)
+		{
+			return -101;
+		}
+		cout<<"read lock acquired"<<endl;
+
+		//copy the string index for each query thread
+		StringIndex tmpsi = *this->stringindex;
+		tmpsi.emptyBuffer();
+		general_evaluation.setStringIndexPointer(&tmpsi);
+
+		this->debug_lock.lock();
 		bool query_ret = general_evaluation.doQuery();
 		if(!query_ret)
 		{
 			success_num = -101;
 		}
+		this->debug_lock.unlock();
 
 		long tv_bfget = Util::get_cur_time();
 		general_evaluation.getFinalResult(_result_set);
@@ -1362,6 +1379,9 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		if(_fp != NULL)
 			need_output_answer = true;
 			//general_evaluation.setNeedOutputAnswer();
+
+		tmpsi.clear();
+		pthread_rwlock_unlock(&(this->update_lock));
 	}
 	//Update
 	else
@@ -1370,6 +1390,11 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		//invalid query because updates are not allowed in ONLY_READ mode
 		return -101;
 #endif
+		if(pthread_rwlock_trywrlock(&(this->update_lock)) != 0)
+		{
+			return -101;
+		}
+
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
 		TYPE_TRIPLE_NUM update_triple_num = 0;
@@ -1395,7 +1420,11 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 														 update_pattern.sub_group_pattern[i].pattern.predicate.value,
 														 update_pattern.sub_group_pattern[i].pattern.object.value, object_type);
 				}
-				else throw "Database::query failed";
+				else 
+				{
+					pthread_rwlock_unlock(&(this->update_lock));
+					throw "Database::query failed";
+				}
 
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data)
 			{
@@ -1429,6 +1458,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 
 		printf("QueryCache cleared\n");
 		this->query_cache->clear();
+		pthread_rwlock_unlock(&(this->update_lock));
 	}
 
 	long tv_final = Util::get_cur_time();

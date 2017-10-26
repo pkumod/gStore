@@ -73,12 +73,12 @@ void StringIndexFile::load()
 
 	fread(&this->num, sizeof(unsigned), 1, this->index_file);
 
-	this->index_table.resize(this->num);
+	(*this->index_table).resize(this->num);
 	for (unsigned i = 0; i < this->num; i++)
 	{
-		fread(&this->index_table[i].offset, sizeof(long), 1, this->index_file);
-		fread(&this->index_table[i].length, sizeof(unsigned), 1, this->index_file);
-		this->empty_offset = max(this->empty_offset, this->index_table[i].offset + (long)this->index_table[i].length);
+		fread(&(*this->index_table)[i].offset, sizeof(long), 1, this->index_file);
+		fread(&(*this->index_table)[i].length, sizeof(unsigned), 1, this->index_file);
+		this->empty_offset = max(this->empty_offset, (*this->index_table)[i].offset + (long)(*this->index_table)[i].length);
 	}
 }
 
@@ -87,8 +87,8 @@ bool StringIndexFile::randomAccess(unsigned id, string *str)
 	if (id >= this->num)
 		return false;
 
-	long offset = this->index_table[id].offset;
-	unsigned length = this->index_table[id].length;
+	long offset = (*this->index_table)[id].offset;
+	unsigned length = (*this->index_table)[id].length;
 
 	allocBuffer(length);
 
@@ -103,7 +103,7 @@ bool StringIndexFile::randomAccess(unsigned id, string *str)
 
 void StringIndexFile::addRequest(unsigned id, std::string *str)
 {
-	this->request.push_back(AccessRequest(id, this->index_table[id].offset, this->index_table[id].length, str));
+	this->request.push_back(AccessRequest(id, (*this->index_table)[id].offset, (*this->index_table)[id].length, str));
 }
 
 void StringIndexFile::trySequenceAccess()
@@ -228,11 +228,11 @@ void StringIndexFile::change(unsigned id, KVstore &kv_store)
 	{
 		while (this->num <= id)
 		{
-			this->index_table.push_back(IndexInfo());
+			(*this->index_table).push_back(IndexInfo());
 
 			fseek(this->index_file, sizeof(unsigned) + this->num * (sizeof(long) + sizeof(unsigned)), SEEK_SET);
-			fwrite(&this->index_table[this->num].offset, sizeof(long), 1, this->index_file);
-			fwrite(&this->index_table[this->num].length, sizeof(unsigned), 1, this->index_file);
+			fwrite(&(*this->index_table)[this->num].offset, sizeof(long), 1, this->index_file);
+			fwrite(&(*this->index_table)[this->num].length, sizeof(unsigned), 1, this->index_file);
 
 			this->num++;
 		}
@@ -249,16 +249,16 @@ void StringIndexFile::change(unsigned id, KVstore &kv_store)
 	if (this->type == Predicate)
 		str = kv_store.getPredicateByID(id);
 
-	this->index_table[id].offset = this->empty_offset;
-	this->index_table[id].length = str.length();
-	this->empty_offset += this->index_table[id].length;
+	(*this->index_table)[id].offset = this->empty_offset;
+	(*this->index_table)[id].length = str.length();
+	this->empty_offset += (*this->index_table)[id].length;
 
 	fseek(this->index_file, sizeof(unsigned) + id * (sizeof(long) + sizeof(unsigned)), SEEK_SET);
-	fwrite(&this->index_table[id].offset, sizeof(long), 1, this->index_file);
-	fwrite(&this->index_table[id].length, sizeof(unsigned), 1, this->index_file);
+	fwrite(&(*this->index_table)[id].offset, sizeof(long), 1, this->index_file);
+	fwrite(&(*this->index_table)[id].length, sizeof(unsigned), 1, this->index_file);
 
-	fseek(this->value_file, this->index_table[id].offset, SEEK_SET);
-	fwrite(str.c_str(), sizeof(char), this->index_table[id].length, this->value_file);
+	fseek(this->value_file, (*this->index_table)[id].offset, SEEK_SET);
+	fwrite(str.c_str(), sizeof(char), (*this->index_table)[id].length, this->value_file);
 }
 
 void StringIndexFile::disable(unsigned id)
@@ -266,11 +266,11 @@ void StringIndexFile::disable(unsigned id)
 	//DEBUG: for predicate, -1 when invalid
 	if (id >= this->num)	return ;
 
-	this->index_table[id] = IndexInfo();
+	(*this->index_table)[id] = IndexInfo();
 
 	fseek(this->index_file, sizeof(unsigned) + id * (sizeof(long) + sizeof(unsigned)), SEEK_SET);
-	fwrite(&this->index_table[id].offset, sizeof(long), 1, this->index_file);
-	fwrite(&this->index_table[id].length, sizeof(unsigned), 1, this->index_file);
+	fwrite(&(*this->index_table)[id].offset, sizeof(long), 1, this->index_file);
+	fwrite(&(*this->index_table)[id].length, sizeof(unsigned), 1, this->index_file);
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------

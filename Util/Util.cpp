@@ -397,6 +397,16 @@ Util::~Util()
 #endif
 }
 
+string 
+Util::getThreadID()
+{
+	//thread::id, neither int or long
+	auto myid = this_thread::get_id();
+	stringstream ss;
+	ss << myid;
+	return ss.str();
+}
+
 int
 Util::memUsedPercentage()
 {
@@ -1471,6 +1481,24 @@ Util::isValidIPV6(string str)
 	return false;
 }
 
+string 
+Util::getTimeName()
+{
+	//NOTICE: this is another method to get the concrete time
+	time_t rawtime;
+	struct tm* timeinfo;
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	string tempTime = asctime(timeinfo);
+	for(int i = 0; i < tempTime.length(); i++)
+	{
+		if(tempTime[i] == ' ')
+			tempTime[i] = '_';
+	}
+	string myTime = tempTime.substr(0, tempTime.length()-1);
+	return myTime;
+}
+
 string
 Util::getTimeString() {
 	static const int max = 20; // max length of time string
@@ -1479,6 +1507,22 @@ Util::getTimeString() {
 	time(&timep);
 	strftime(time_str, max, "%Y%m%d %H:%M:%S\t", gmtime(&timep));
 	return string(time_str);
+}
+
+//is ostream.write() ok to update to disk at once? all add ofstream.flush()?
+//Also the checkpoint function!!!
+//http://bookug.cc/rwbuffer
+//BETTER: add a sync function in Util to support FILE*, fd, and fstream
+//In addition, query log in endpoint should also be synced!
+void 
+Util::Csync(FILE* _fp)
+{
+	if(_fp == NULL)
+	{
+		return; 
+	}
+	fflush(_fp);
+	//TODO: change to Unix fd and use fsync
 }
 
 string
