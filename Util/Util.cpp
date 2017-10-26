@@ -433,17 +433,26 @@ Util::memoryLeft()
     FILE* fp = fopen("/proc/meminfo", "r");
     if(fp == NULL)
         return -1;
+
     char str[20], tail[3];
-    unsigned t, sum, unuse = 0;		//WARN:unsigned,memory cant be too large!
-    fscanf(fp, "%s%u%s", str, &sum, tail);       //MemTotal, KB
-    fscanf(fp, "%s%u%s", str, &unuse, tail);		//MemFree
-    fscanf(fp, "%s%u%s", str, &t, tail);
-    if(strcmp(str, "MemAvailable") == 0)
+    unsigned num, avail = 0, free = 0, buffer = 0, cache = 0;		//WARN:unsigned,memory cant be too large!
+    while (fscanf(fp, "%s%u%s", str, &num, tail) != EOF)
     {
-        unuse = t;
+        if(strcmp(str, "MemAvailable:") == 0)
+        	avail = num;
+        if(strcmp(str, "MemFree:") == 0)
+        	free = num;
+        if(strcmp(str, "Buffers:") == 0)
+        	buffer = num;
+        if(strcmp(str, "Cached:") == 0)
+        	cache = num;
     }
+
+    if (avail == 0)
+    	avail = free + buffer + cache;
+
     fclose(fp);
-    return unuse / Util::MB;
+    return avail / Util::MB;
 }
 
 bool
