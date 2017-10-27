@@ -53,7 +53,7 @@ EXEFLAG = -pthread -g -std=c++11
 #add -lreadline -ltermcap if using readline or objs contain readline
 library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost
 # library = -ltermcap -lreadline -L./lib -lantlr -lgcov
-def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
+def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE
 
 # paths
 

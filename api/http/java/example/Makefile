@@ -11,7 +11,7 @@ Benchmark.class: Benchmark.java
 run: JavaAPIExample.class
 	java -cp ../lib/GstoreJavaAPI.jar:. JavaAPIExample
 test: Benchmark.class
-	java -cp ../lib/GstoreJavaAPI.jar:. Benchmark
+	java -XX:-UseGCOverheadLimit -Xmx64G -cp ../lib/GstoreJavaAPI.jar:. Benchmark
 
 clean:
 	rm -f JavaAPIExample.class
