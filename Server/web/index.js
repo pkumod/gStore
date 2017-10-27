@@ -157,8 +157,10 @@ function query(dp) {
 
 function handleQueryExample()
             {
+			
                 var example = document.getElementById("example").value;
 			
+				/*
 				if(example === "q1")
 				{
 						document.getElementById("element_3").value = "select ?x\n" +
@@ -185,46 +187,49 @@ function handleQueryExample()
 								"\t?y <http://www.w3.org/2002/07/owl#sameAs> ?x.\n" +
 						"} \n";
 				}
-                //if (example === "q4")
-                //{
-                    //document.getElementById("element_3").value =    "select distinct ?x where \n" +
-																	//"{ \n" +
-																	//"\t?x	<rdf:type>	<ub:GraduateStudent>. \n" +
-																	//"\t?y	<rdf:type>	<ub:University>. \n" +
-																	//"\t?z	<rdf:type>	<ub:Department>. \n" +
-																	//"\t?x	<ub:memberOf>	?z. \n" +
-																	//"\t?z	<ub:subOrganizationOf>	?y. \n" +
-																	//"\t?x	<ub:undergraduateDegreeFrom>	?y. \n" +
-																	//"} \n";
-                //}
-                //if (example === "q5")
-                //{
-                    //document.getElementById("element_3").value =    "select distinct ?x where \n" +
-																	//"{ \n" +
-																	//"\t?x	<rdf:type>	<ub:Course>. \n" +
-																	//"\t?x	<ub:name>	?y. \n" +
-																	//"} \n";
-                //}
-                //if (example === "q6")
-                //{
-                    //document.getElementById("element_3").value =    "select distinct ?x where \n" +
-																	//"{ \n" +
-																	//"\t?x    <rdf:type>    <ub:UndergraduateStudent>. \n" +
-																	//"\t?y    <ub:name> <Course1>. \n" +
-																	//"\t?x    <ub:takesCourse>  ?y. \n" +
-																	//"\t?z    <ub:teacherOf>    ?y. \n" +
-																	//"\t?z    <ub:name> <FullProfessor1>. \n" +
-																	//"\t?z    <ub:worksFor>    ?w. \n" +
-																	//"\t?w    <ub:name>    <Department0>. \n" +
-																	//"} \n";
-                //}
-                //if (example === "q7")
-                //{
-                    //document.getElementById("element_3").value =    "select distinct ?x where \n" +
-																	//"{ \n" +
-																	//"\t?x    <rdf:type>    <ub:UndergraduateStudent>. \n" +
-																	//"}\n";
-                //}
+				
+                if (example === "q1")
+                {
+                    document.getElementById("element_3").value =    "select distinct ?x where \n" +
+																	"{ \n" +
+																	"\t?x	<rdf:type>	<ub:GraduateStudent>. \n" +
+																	"\t?y	<rdf:type>	<ub:University>. \n" +
+																	"\t?z	<rdf:type>	<ub:Department>. \n" +
+																	"\t?x	<ub:memberOf>	?z. \n" +
+																	"\t?z	<ub:subOrganizationOf>	?y. \n" +
+																	"\t?x	<ub:undergraduateDegreeFrom>	?y. \n" +
+																	"} \n";
+                }
+				*/
+            
+                if (example === "q1")
+                {
+                    document.getElementById("element_3").value =    "select distinct ?x where \n" +
+																	"{ \n" +
+																	"\t?x    <rdf:type>    <ub:UndergraduateStudent>. \n" +
+																	"\t?y    <ub:name> <Course1>. \n" +
+																	"\t?x    <ub:takesCourse>  ?y. \n" +
+																	"\t?z    <ub:teacherOf>    ?y. \n" +
+																	"\t?z    <ub:name> <FullProfessor1>. \n" +
+																	"\t?z    <ub:worksFor>    ?w. \n" +
+																	"\t?w    <ub:name>    <Department0>. \n" +
+																	"} \n";
+                }
+                if (example === "q2")
+                {
+                    document.getElementById("element_3").value =    "select distinct ?x where \n" +
+																	"{ \n" +
+																	"\t?x	<rdf:type>	<ub:Course>. \n" +
+																	"\t?x	<ub:name>	?y. \n" +
+																	"} \n";
+				} 
+                if (example === "q4")
+                {
+                    document.getElementById("element_3").value =    "select distinct ?x where \n" +
+																	"{ \n" +
+																	"\t?x    <rdf:type>    <ub:UndergraduateStudent>. \n" +
+																	"}\n";
+                }
                 //if (example === "q8")
                 //{
                     //document.getElementById("element_3").value =    "SELECT ?v0 ?v1 ?v2 ?v3 ?v4 ?v5 ?v6 WHERE \n" +

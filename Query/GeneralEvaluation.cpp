@@ -835,6 +835,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				useful += this->temp_result->results[i].getAllVarset();
 		}
 
+		if ((int)this->temp_result->results.size() > 1)
 		{
 			TempResultSet *new_temp_result = new TempResultSet();
 
@@ -1069,58 +1070,52 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		vector<int> proj2temp = ret_result_varset.mapTo(result0.getAllVarset());
 		int id_cols = result0.id_varset.getVarsetSize();
 
-		for (unsigned i = 0; i < ret_result.ansNum; i++)
-		{
-			if (!ret_result.checkUseStream())
-			{
-				ret_result.answer[i] = new string [ret_result.select_var_num];
-			}
+		vector<bool> isel;
+		for (int i = 0; i < result0.id_varset.getVarsetSize(); i++)
+			isel.push_back(this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.findVar(result0.id_varset.vars[i]));
 
-			for (int j = 0; j < ret_result.select_var_num; j++)
-			{
-				if (proj2temp[j] < id_cols)
-				{
-					unsigned ans_id = result0.result[i].id[proj2temp[j]];
-
-					if (!ret_result.checkUseStream())
-					{
-						ret_result.answer[i][j] = "";
-						if (ans_id != INVALID)
-						{
-							if (this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.findVar(result0.id_varset.vars[proj2temp[j]]))
-								this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], true);
-							else
-								this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], false);
-						}
-					}
-					else
-					{
-						string ans_str = "";
-						if (ans_id != INVALID)
-						{
-							if (this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.findVar(result0.id_varset.vars[proj2temp[j]]))
-								this->stringindex->randomAccess(ans_id, &ans_str, true);
-							else
-								this->stringindex->randomAccess(ans_id, &ans_str, false);
-						}
-						ret_result.writeToStream(ans_str);
-					}
-				}
-				else
-				{
-					if (!ret_result.checkUseStream())
-						ret_result.answer[i][j] = result0.result[i].str[proj2temp[j] - id_cols];
-					else
-						ret_result.writeToStream(result0.result[i].str[proj2temp[j] - id_cols]);
-				}
-			}
-		}
 		if (!ret_result.checkUseStream())
 		{
+			for (unsigned i = 0; i < ret_result.ansNum; i++)
+			{
+				ret_result.answer[i] = new string [ret_result.select_var_num];
+
+				for (int j = 0; j < ret_result.select_var_num; j++)
+				{
+					int k = proj2temp[j];
+					if (k < id_cols)
+					{
+						unsigned ans_id = result0.result[i].id[k];
+						if (ans_id != INVALID)
+							this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], isel[k]);
+					}
+					else
+						ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
+				}
+			}
+
 			this->stringindex->trySequenceAccess();
 		}
 		else
 		{
+			for (unsigned i = 0; i < ret_result.ansNum; i++)
+				for (int j = 0; j < ret_result.select_var_num; j++)
+				{
+					int k = proj2temp[j];
+					if (k < id_cols)
+					{
+						string ans_str;
+
+						unsigned ans_id = result0.result[i].id[k];
+						if (ans_id != INVALID)
+							this->stringindex->randomAccess(ans_id, &ans_str, isel[k]);
+
+						ret_result.writeToStream(ans_str);
+					}
+					else
+						ret_result.writeToStream(result0.result[i].str[k - id_cols]);
+				}
+
 			ret_result.resetStream();
 		}
 	}

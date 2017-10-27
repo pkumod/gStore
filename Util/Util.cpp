@@ -443,17 +443,26 @@ Util::memoryLeft()
     FILE* fp = fopen("/proc/meminfo", "r");
     if(fp == NULL)
         return -1;
+
     char str[20], tail[3];
-    unsigned t, sum, unuse = 0;		//WARN:unsigned,memory cant be too large!
-    fscanf(fp, "%s%u%s", str, &sum, tail);       //MemTotal, KB
-    fscanf(fp, "%s%u%s", str, &unuse, tail);		//MemFree
-    fscanf(fp, "%s%u%s", str, &t, tail);
-    if(strcmp(str, "MemAvailable") == 0)
+    unsigned num, avail = 0, free = 0, buffer = 0, cache = 0;		//WARN:unsigned,memory cant be too large!
+    while (fscanf(fp, "%s%u%s", str, &num, tail) != EOF)
     {
-        unuse = t;
+        if(strcmp(str, "MemAvailable:") == 0)
+        	avail = num;
+        if(strcmp(str, "MemFree:") == 0)
+        	free = num;
+        if(strcmp(str, "Buffers:") == 0)
+        	buffer = num;
+        if(strcmp(str, "Cached:") == 0)
+        	cache = num;
     }
+
+    if (avail == 0)
+    	avail = free + buffer + cache;
+
     fclose(fp);
-    return unuse / Util::MB;
+    return avail / Util::MB;
 }
 
 bool
@@ -1510,19 +1519,24 @@ Util::getTimeString() {
 }
 
 //is ostream.write() ok to update to disk at once? all add ofstream.flush()?
-//Also the checkpoint function!!!
 //http://bookug.cc/rwbuffer
 //BETTER: add a sync function in Util to support FILE*, fd, and fstream
-//In addition, query log in endpoint should also be synced!
 void 
 Util::Csync(FILE* _fp)
 {
+	//NOTICE: fclose will also do fflush() operation, but not others
 	if(_fp == NULL)
 	{
 		return; 
 	}
+	//this will update the buffer from user mode to kernel mode
 	fflush(_fp);
-	//TODO: change to Unix fd and use fsync
+	//change to Unix fd and use fsync to sync to disk: fileno(stdin)=0
+	int fd = fileno(_fp);
+	fsync(fd);
+	//FILE * fp = fdopen (1, "w+");   //file descriptor to file pointer 
+	//NOTICE: disk scheduler also has a small buffer, but there is no matter even if the power is off
+	//(UPS for each server to enable the synchronization between scheduler and disk)
 }
 
 string

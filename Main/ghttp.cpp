@@ -308,7 +308,26 @@ int initialize(int argc, char *argv[])
     server.resource["^/%3[F|f]operation%3[D|d]unload%26db_name%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
 		unload_handler(server, response, request);
-    };    
+    }; 
+
+	//GET-example for the path /?operation=build&db_name=[db_name]&ds_path=[ds_path], responds with the matched string in path
+	//i.e. database name and dataset path
+	server.resource["^/?operation=build&db_name=(.*)&ds_path=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		build_handler(server, response, request);
+    };
+
+	//GET-example for the path /?operation=load&db_name=[db_name], responds with the matched string in path
+    server.resource["^/?operation=load&db_name=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		load_handler(server, response, request);
+	};
+
+    //GET-example for the path /?operation=unload&db_name=[db_name], responds with the matched string in path
+    server.resource["^/?operation=unload&db_name=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		unload_handler(server, response, request);
+    };
 #endif
 	
 	
@@ -318,14 +337,15 @@ int initialize(int argc, char *argv[])
 		query_handler(response, request);
 	 };
 
+
     //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
 	//In programming language, do URL encode first and then call server, then all is ok
-	server.resource["^/%3Foperation%3[D|d]monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/?operation=monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
 	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		monitor_handler(server, response, request);
     };
-    
+   
     // server.resource["^/json$"]["POST"]=[](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     //     try {
     //         ptree pt;
@@ -1194,9 +1214,6 @@ void default_thread(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is default"<<endl;
-	//NOTICE: it seems a visit will output twice times
-	//And different pages in a browser is viewed as two connections here
-	//cout<<"new connection"<<endl;
 
 	try {
 		auto web_root_path=boost::filesystem::canonical("./Server/web");
@@ -1250,6 +1267,18 @@ void default_thread(const HttpServer& server, const shared_ptr<HttpServer::Respo
 bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
 	connection_num++;
+	string req_url = request->path;
+	cout << "request url: " << req_url << endl;
+	//if request matches /?operation=monitor, then do monitor_handler
+	//because if the user visit through the browser by using url /?operation=monitor
+	//it can not match directly to monitor_handler, and will match this default get
+	//so we need to check here to do monitor_handler, although the implementation is not perfect enough.
+	if(req_url == "/?operation=monitor")
+	{
+		monitor_handler(server, response, request);
+		return true;
+	}
+
 	default_thread(server, response, request);
 	//thread t(&default_thread, response, request);
 	//t.detach();

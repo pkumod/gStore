@@ -101,11 +101,6 @@ bool StringIndexFile::randomAccess(unsigned id, string *str)
 	return true;
 }
 
-void StringIndexFile::addRequest(unsigned id, std::string *str)
-{
-	this->request.push_back(AccessRequest(id, (*this->index_table)[id].offset, (*this->index_table)[id].length, str));
-}
-
 void StringIndexFile::trySequenceAccess()
 {
 	if (this->request.empty())

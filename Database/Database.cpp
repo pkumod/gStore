@@ -329,6 +329,7 @@ Database::saveIDinfo()
 		tp = bp->next;
 		bp = tp;
 	}
+	Util::Csync(fp);
 	fclose(fp);
 	fp = NULL;
 
@@ -346,6 +347,7 @@ Database::saveIDinfo()
 		tp = bp->next;
 		bp = tp;
 	}
+	Util::Csync(fp);
 	fclose(fp);
 	fp = NULL;
 
@@ -363,6 +365,7 @@ Database::saveIDinfo()
 		tp = bp->next;
 		bp = tp;
 	}
+	Util::Csync(fp);
 	fclose(fp);
 	fp = NULL;
 }
@@ -1632,7 +1635,7 @@ Database::saveDBInfoFile()
 	fwrite(&this->literal_num, sizeof(int), 1, filePtr);
 	fwrite(&this->encode_mode, sizeof(int), 1, filePtr);
 
-	fflush(filePtr);
+	Util::Csync(filePtr);
 	fclose(filePtr);
 
 	//Util::triple_num = this->triples_num;
