@@ -326,7 +326,21 @@ int initialize(int argc, char *argv[])
 		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     };
 
+	 //GET-example for the path /?operation=query&format=[format]&sparql=[sparql], responds with the matched string in path
+	 server.resource["^/?operation=query&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	 {
+		query_handler(server, response, request);
+		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+    };
 
+    //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
+	//In programming language, do URL encode first and then call server, then all is ok
+	server.resource["^/%3[F|f]operation%3[D|d]monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		monitor_handler(server, response, request);
+    };
+ 
     //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
 	//In programming language, do URL encode first and then call server, then all is ok
 	server.resource["^/?operation=monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
@@ -357,9 +371,20 @@ int initialize(int argc, char *argv[])
 	{
 		checkpoint_handler(server, response, request);
     };
+	//TODO: use db_name if multiple databases
+	server.resource["^/?operation=checkpoint$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		checkpoint_handler(server, response, request);
+    };
 
 	//TODO: add user name as parameter, current using or all databases availiable
     server.resource["^/%3[F|f]operation%3[D|d]show$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		show_handler(server, response, request);
+    };
+
+	//TODO: add user name as parameter, current using or all databases availiable
+    server.resource["^/?operation=show$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
 		show_handler(server, response, request);
     };
@@ -1011,8 +1036,13 @@ bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	//because if the user visit through the browser by using url /?operation=monitor
 	//it can not match directly to monitor_handler, and will match this default get
 	//so we need to check here to do monitor_handler, although the implementation is not perfect enough.
+	//it is also used in /?operation=show    /?operation=checkpoint
 	if(req_url == "/?operation=monitor")
 		monitor_handler(server, response, request);
+	else if(req_url == "/?operation=show")
+		show_handler(server, response, request);
+	else if(req_url == "/?operation=checkpoint")
+		checkpoint_handler(server, response, request);
 	//BETTER: use lock to ensure thread safe
 	connection_num++;
 	//NOTICE: it seems a visit will output twice times
