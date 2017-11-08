@@ -742,7 +742,7 @@ IVStorage::handler(unsigned long long _needmem)	//>0
 
 IVStorage::~IVStorage()
 {
-	cout << "update heap time is " << updateHeapTime << "ms" << endl;
+	//cout << "update heap time is " << updateHeapTime << "ms" << endl;
 	//release heap and freelist...
 #ifdef DEBUG_KVSTORE
 	printf("now to release the kvstore!\n");
