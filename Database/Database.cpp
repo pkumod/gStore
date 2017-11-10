@@ -1202,7 +1202,7 @@ string tstr;
 		//thread qt(&Database::query_thread, this, spq[i]);
 		//qt.detach();
 	}
-	cout<<"this function ends!"<<endl;
+	//cout<<"this function ends!"<<endl;
 	//WARN: if each threda for a query, then the QueryParser will cause error in parallism!
 	//so we should do the parser sequentially
 }

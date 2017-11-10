@@ -185,6 +185,11 @@ IVStorage::preRead(IVNode*& _root, IVNode*& _leaves_head, IVNode*& _leaves_tail)
 bool
 IVStorage::preLoad(IVNode*& _root)
 {
+	if(_root == NULL)
+	{
+		return false;
+	}
+
 	// preload nodes of tree till storage is half full
 	bool mem_full = false;
 	std::queue <IVNode*> node_q;
@@ -742,7 +747,7 @@ IVStorage::handler(unsigned long long _needmem)	//>0
 
 IVStorage::~IVStorage()
 {
-	cout << "update heap time is " << updateHeapTime << "ms" << endl;
+	//cout << "update heap time is " << updateHeapTime << "ms" << endl;
 	//release heap and freelist...
 #ifdef DEBUG_KVSTORE
 	printf("now to release the kvstore!\n");

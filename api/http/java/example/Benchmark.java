@@ -55,7 +55,7 @@ public class Benchmark
 	spq[4] = "select distinct ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. }";
 	spq[5] = "select ?s ?o where { ?s ?p ?o . }";
 	int tnum = 6;
-	tnum = 12000;
+	//tnum = 12000;
 	//tnum = 30000;
 	MyThread[] qt = new MyThread[tnum];
 	for(int i = 0; i < tnum; ++i)
