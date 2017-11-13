@@ -1,17 +1,47 @@
 #include "client.h"
 #include <curl/curl.h>
 #include <string>
-
+#include <cstring>
+#include <iostream>
+using namespace std;
 CHttpClient::CHttpClient(void) : 
 m_bDebug(false)
 {
-
 }
-
 CHttpClient::~CHttpClient(void)
 {
 
 }
+
+static const std::string UrlEncode(const std::string& s)
+{
+        std::string ret;
+        unsigned char *ptr = (unsigned char *)s.c_str();
+        ret.reserve(s.length());
+
+        for(int i=0;i<s.length();++i)
+        {
+                if((int(ptr[i])==42) || (int(ptr[i])==45) || (int(ptr[i])==46) || (int(ptr[i])==47) || (int(ptr[i])==58) ||(int(ptr[i])==95))
+                        ret += ptr[i];
+                else if((int(ptr[i])>=48) && (int(ptr[i])<=57))
+                        ret += ptr[i];
+                else if((int(ptr[i])>=65) && (int(ptr[i])<=90))
+                        ret += ptr[i];
+                else if((int(ptr[i])>=97) && (int(ptr[i])<=122))
+                        ret += ptr[i];
+                else if(int(ptr[i])==32)
+                        ret += '+';
+                else
+                {
+                        char buf[5];
+                        memset(buf,0,5);
+                        snprintf(buf,5,"%%%X",ptr[i]);
+                        ret.append(buf);
+                }
+        }
+        return ret;
+}
+
 
 static int OnDebug(CURL *, curl_infotype itype, char * pData, size_t size, void *)
 {
@@ -65,7 +95,7 @@ int CHttpClient::Post(const std::string & strUrl, const std::string & strPost, s
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, strUrl.c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_POST, 1);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
@@ -93,7 +123,7 @@ int CHttpClient::Get(const std::string & strUrl, std::string & strResponse)
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, strUrl.c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);
@@ -123,7 +153,7 @@ int CHttpClient::Posts(const std::string & strUrl, const std::string & strPost, 
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, strUrl.c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_POST, 1);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
@@ -163,7 +193,7 @@ int CHttpClient::Gets(const std::string & strUrl, std::string & strResponse, con
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, strUrl.c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);
@@ -186,7 +216,6 @@ int CHttpClient::Gets(const std::string & strUrl, std::string & strResponse, con
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-
 void CHttpClient::SetDebug(bool bDebug)
 {
 	m_bDebug = bDebug;

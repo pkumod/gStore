@@ -1,11 +1,11 @@
-CC=g++
+CC=g++ -std=c++11
 #CC=ccache g++
 
-example: CppAPIExample.o
-	$(CC) -o example CppAPIExample.o -L../lib -lgstoreconnector
+example: example.o
+	$(CC) -o example example.o -lcurl -L../lib -lclient
 
-CppAPIExample.o: CppAPIExample.cpp
-	$(CC) -c -I../src/ CppAPIExample.cpp -o CppAPIExample.o
+example.o: example.cpp
+	$(CC) -c -I../ example.cpp -o example.o
 
 clean:
 	rm -rf *.o example
