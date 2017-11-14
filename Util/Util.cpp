@@ -397,6 +397,16 @@ Util::~Util()
 #endif
 }
 
+string 
+Util::getThreadID()
+{
+	//thread::id, neither int or long
+	auto myid = this_thread::get_id();
+	stringstream ss;
+	ss << myid;
+	return ss.str();
+}
+
 int
 Util::memUsedPercentage()
 {
@@ -933,6 +943,14 @@ Util::getItemsFromDir(string _path)
 	return ret;
 }
 
+//NOTICE: system() is implemented by fork() and exec(), the latter will change the whole control flow, 
+//so it must be used with fork()
+//The fork() will copy the whole process's image, including the heap and stack.
+//But in UNIX, this copy is only logical, in practice it is copy-on-write, which will save a lot memory usage.
+//Another function is vfork(), which won't copy a lot of things
+//
+//http://www.cnblogs.com/wuchanming/p/3784862.html
+//http://www.cnblogs.com/sky-heaven/p/4687489.html
 string
 Util::getSystemOutput(string cmd)
 {
@@ -1472,6 +1490,24 @@ Util::isValidIPV6(string str)
 	return false;
 }
 
+string 
+Util::getTimeName()
+{
+	//NOTICE: this is another method to get the concrete time
+	time_t rawtime;
+	struct tm* timeinfo;
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	string tempTime = asctime(timeinfo);
+	for(int i = 0; i < tempTime.length(); i++)
+	{
+		if(tempTime[i] == ' ')
+			tempTime[i] = '_';
+	}
+	string myTime = tempTime.substr(0, tempTime.length()-1);
+	return myTime;
+}
+
 string
 Util::getTimeString() {
 	static const int max = 20; // max length of time string
@@ -1480,6 +1516,27 @@ Util::getTimeString() {
 	time(&timep);
 	strftime(time_str, max, "%Y%m%d %H:%M:%S\t", gmtime(&timep));
 	return string(time_str);
+}
+
+//is ostream.write() ok to update to disk at once? all add ofstream.flush()?
+//http://bookug.cc/rwbuffer
+//BETTER: add a sync function in Util to support FILE*, fd, and fstream
+void 
+Util::Csync(FILE* _fp)
+{
+	//NOTICE: fclose will also do fflush() operation, but not others
+	if(_fp == NULL)
+	{
+		return; 
+	}
+	//this will update the buffer from user mode to kernel mode
+	fflush(_fp);
+	//change to Unix fd and use fsync to sync to disk: fileno(stdin)=0
+	int fd = fileno(_fp);
+	fsync(fd);
+	//FILE * fp = fdopen (1, "w+");   //file descriptor to file pointer 
+	//NOTICE: disk scheduler also has a small buffer, but there is no matter even if the power is off
+	//(UPS for each server to enable the synchronization between scheduler and disk)
 }
 
 string

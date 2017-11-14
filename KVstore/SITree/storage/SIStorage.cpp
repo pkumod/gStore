@@ -563,7 +563,7 @@ SIStorage::writeTree(SINode* _root)	//write the whole tree back and close treefp
 		bp = bp->next;
 	}
 
-	fflush(this->treefp);
+	Util::Csync(this->treefp);
 	//fclose(this->treefp);
 
 	return true;

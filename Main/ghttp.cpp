@@ -12,32 +12,7 @@
 
 //TODO: to add db_name to all URLs, and change the index.js using /show to get name, save and set
 //TODO: use gzip for network transfer, it is ok to download a gzip file instead of the original one
-
-//TODO: mutiple threads , multiple users and multiple databases
-//How to acquire http connection ID? getSocket()  or use username to login?
-//But when setting up endpoint, username may not be a good choice
-
 //DEBUG: if port has already been occupied, the server will be restarted endlessly, here we should stop
-
-//TODO: use response<< directly for query result, but for results too large to be placed in memory,
-//file donwload and Stream should be considered, split-page getNext() as well
-//Notice that read each block from disk and transfer to network may be very slow
-//(and multi-page requests will bring high overhead for parallism)
-//
-//BETTER: define a format to return all information (header and body)
-//
-//TODO: backup() only preserve one version? is remove() and copy() updated to disk in time?
-//how to avoid disk error itself? send to otherwhere?
-//
-//TODO+DEBUG?: write log in update_log in Database.cpp 
-//is ostream.write() ok to update to disk at once? all add ofstream.flush()?
-//Also the checkpoint function!!!
-//http://bookug.cc/rwbuffer
-//BETTER: add a sync function in Util to support FILE*, fd, and fstream
-//In addition, query log in endpoint should also be synced!
-
-//PARALLISM: now all requests are queued automatically, after one is finished , then another
-//Hiw can we make some requests run in parallism
 
 #include "../Server/server_http.hpp"
 #include "../Server/client_http.hpp"
@@ -72,7 +47,7 @@ bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 
 bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
-bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+void query_handler(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
@@ -87,11 +62,33 @@ bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 //=============================================================================
 
+//TODO: use locak to protect logs when running in multithreading environment
+FILE* query_logfp = NULL;
+string queryLog = "logs/endpoint/query.log";
+mutex query_log_lock;
+pthread_rwlock_t database_load_lock;
+
 Database *current_database = NULL;
 int connection_num = 0;
 
 long next_backup = 0;
 pthread_t scheduler = 0;
+
+int query_num = 0;
+//WARN: if the response or request is freed by main thread
+void test_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	int num = query_num;
+	cout<<"test thread: "<<num<<endl;
+	sleep(10);
+	string error = "test thread here: query ";
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error<<query_num;
+	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length()+4;
+	*response << "\r\nContent-Type: text/plain";
+	*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
+	*response << "\r\n\r\n" << error<<num;
+	cout<<"thread ends: "<<num<<endl;
+}
 
 //DEBUG+TODO: why the result transfered to client has no \n \t??
 //using json is a good way to avoid this problem
@@ -144,6 +141,10 @@ int main(int argc, char *argv[])
 	Util util;
 	srand(time(NULL));
 
+	//Notice that current_database is assigned in the child process, not in the father process
+	//when used as endpoint, or when the database is indicated in command line, we can assign 
+	//current_database in father process(but this is resource consuming)
+	//TODO+DEBUG: when will the restarting error?
 	while (true) {
 		//NOTICE: here we use 2 processes, father process is used for monitor and control(like, restart)
 		//Child process is used to deal with web requests, can also has many threads
@@ -152,15 +153,16 @@ int main(int argc, char *argv[])
 		if (fpid == 0) {
 			//int ret = initialize();
 			int ret = initialize(argc, argv);
+			//TODO: which to use here!
 			exit(ret);
-			return ret;
+			//return ret;
 		}
 
 		else if (fpid > 0) {
 			int status;
 			waitpid(fpid, &status, 0);
 			if (WIFEXITED(status)) {
-				exit(0);
+				//exit(0);
 				return 0;
 			}
 			else
@@ -268,15 +270,25 @@ int initialize(int argc, char *argv[])
 		cout << "Database loaded successfully."<<endl;
 	}
 
-	time_t cur_time = time(NULL);
-	long time_backup = Util::read_backup_time();
-	long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
+	//open the query log
+	query_logfp = fopen(queryLog.c_str(), "a");
+	if(query_logfp == NULL)
+	{
+		cerr << "open query log error"<<endl;
+		return -1;
+	}
+
+	//time_t cur_time = time(NULL);
+	//long time_backup = Util::read_backup_time();
+	//long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
 	//NOTICE: no need to backup for endpoint
+//TODO: we give up the backup function here
 #ifndef ONLY_READ
-	scheduler = start_thread(func_scheduler);
+	//scheduler = start_thread(func_scheduler);
 #endif
 
 
+	pthread_rwlock_init(&database_load_lock, NULL);
 
 #ifndef SPARQL_ENDPOINT
 	//GET-example for the path /?operation=build&db_name=[db_name]&ds_path=[ds_path], responds with the matched string in path
@@ -320,18 +332,17 @@ int initialize(int argc, char *argv[])
 	
 	
 	//GET-example for the path /?operation=query&format=[format]&sparql=[sparql], responds with the matched string in path
-	 server.resource["^/%3[F|f]operation%3[D|d]query%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	 server.resource["^/%3[F|f]operation%3[D|d]query%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	 {
-		query_handler(server, response, request);
-		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-    };
+		query_handler(response, request);
+	 };
 
 	 //GET-example for the path /?operation=query&format=[format]&sparql=[sparql], responds with the matched string in path
-	 server.resource["^/?operation=query&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
-	 {
-		query_handler(server, response, request);
-		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-    };
+	 //server.resource["^/?operation=query&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	 //{
+		//query_handler(server, response, request);
+		//// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+    //};
 
     //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
 	//In programming language, do URL encode first and then call server, then all is ok
@@ -343,11 +354,11 @@ int initialize(int argc, char *argv[])
  
     //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
 	//In programming language, do URL encode first and then call server, then all is ok
-	server.resource["^/?operation=monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
-	{
-	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		monitor_handler(server, response, request);
-    };
+	//server.resource["^/?operation=monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	//{
+	 ////server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		//monitor_handler(server, response, request);
+    //};
    
     // server.resource["^/json$"]["POST"]=[](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     //     try {
@@ -372,10 +383,10 @@ int initialize(int argc, char *argv[])
 		checkpoint_handler(server, response, request);
     };
 	//TODO: use db_name if multiple databases
-	server.resource["^/?operation=checkpoint$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
-	{
-		checkpoint_handler(server, response, request);
-    };
+	//server.resource["^/?operation=checkpoint$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	//{
+		//checkpoint_handler(server, response, request);
+    //};
 
 	//TODO: add user name as parameter, current using or all databases availiable
     server.resource["^/%3[F|f]operation%3[D|d]show$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
@@ -384,10 +395,10 @@ int initialize(int argc, char *argv[])
     };
 
 	//TODO: add user name as parameter, current using or all databases availiable
-    server.resource["^/?operation=show$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
-	{
-		show_handler(server, response, request);
-    };
+    //server.resource["^/?operation=show$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	//{
+		//show_handler(server, response, request);
+    //};
 
 	//USAGE: in endpoint, if user choose to display via html, but not display all because the result's num is too large.
 	//Then, user can choose to download all results in TXT format, and this URL is used for download in this case
@@ -442,9 +453,12 @@ int initialize(int argc, char *argv[])
 
     server_thread.join();
 	cout<<"check: server stoped"<<endl;
+	pthread_rwlock_destroy(&database_load_lock);
 
     return 0;
 }
+
+//QUERY: can server.send() in default_resource_send run in parallism?
 
 //TCP is slower than UDP, but more safely, and can support large data transfer well
 //http://blog.csdn.net/javaniuniu/article/details/51419348
@@ -488,6 +502,8 @@ void* func_timer(void* _args) {
 	signal(SIGTERM, thread_sigterm_handler);
 	sleep(Util::gserver_query_timeout);
 	cerr << "Query out of time." << endl;
+	//TODO: not use SIGTERM and abort() here, which will cause process to quit abnormally
+	//here shoudl just end the timer thread 
 	abort();
 }
 
@@ -509,9 +525,15 @@ void thread_sigterm_handler(int _signal_num) {
 	pthread_exit(0);
 }
 
-void delete_result(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string filepath)
+//NOTICE: what if several requests to delete the same file? we assume all are valid and no attackers
+void delete_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	cout<<"to delete result"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<< "HTTP: this is delete" << endl;
+
+	string filepath = request->path_match[1];
+	filepath = UrlDecode(filepath);
 	try {
 		//set the home directory of the web server
 		//NOTICE: we use .tmp/web instead of . to avoid attack: delete other files rather than the download one
@@ -578,9 +600,14 @@ void delete_result(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	}
 }
 
-void download_result(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string filepath)
+void download_thread(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	cout<<"to download result"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<< "HTTP: this is download" << endl;
+
+	string filepath = request->path_match[1];
+	filepath = UrlDecode(filepath);
 	try {
 		//set the home directory of the web server
 		//NOTICE: we use .tmp/web instead of . to avoid attack: delete other files rather than the download one
@@ -639,9 +666,12 @@ void download_result(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	}
 }
 
-bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void build_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	cout<<"HTTP: this is build"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is build"<<endl;
+
 	string db_name=request->path_match[1];
 	string db_path=request->path_match[2];
 	db_name = UrlDecode(db_name);
@@ -651,7 +681,7 @@ bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 		string error = "Exactly 2 arguments required!";
 		// error = db_name + " " + db_path;
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		return;
 	}
 
 	string database = db_name;
@@ -659,22 +689,38 @@ bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	{
 		string error = "Your db name to be built should not end with \".db\".";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		return;
 	}
 
 	//database += ".db";
 	string dataset = db_path;
 
+	if(pthread_rwlock_tryrdlock(&database_load_lock) != 0)
+	{
+		string error = "Unable to build due to the loss of lock!";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
 	if(current_database != NULL)
 	{
 		string error = "Please unload your database first.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		pthread_rwlock_unlock(&database_load_lock);
+		return;
 	}
 
 	cout << "Import dataset to build database..." << endl;
 	cout << "DB_store: " << database << "\tRDF_data: " << dataset << endl;
 	int len = database.length();
+
+	pthread_rwlock_unlock(&database_load_lock);
+	if(pthread_rwlock_trywrlock(&database_load_lock) != 0)
+	{
+		string error = "Unable to build due to the loss of lock!";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
 
 	current_database = new Database(database);
 	bool flag = current_database->build(dataset);
@@ -686,19 +732,31 @@ bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 		string error = "Import RDF file to database failed.";
 		string cmd = "rm -r " + database;
 		system(cmd.c_str());
-		return false;
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		
+		pthread_rwlock_unlock(&database_load_lock);
+		return;
 	}
 
 	// string success = db_name + " " + db_path;
 	string success = "Import RDF file to database done.";
 	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	pthread_rwlock_unlock(&database_load_lock);
+}
 
+bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	thread t(&build_thread, response, request);
+	t.detach();
 	return true;
 }
 
-bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	cout<<"HTTP: this is load"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is load"<<endl;
+
 	string db_name = request->path_match[1];
 	db_name = UrlDecode(db_name);
 
@@ -707,7 +765,7 @@ bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 	{
 		string error = "Exactly 1 argument is required!";
 		*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		return;
 	}
 
 	string database = db_name;
@@ -716,7 +774,14 @@ bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		//cout << "Your db name to be built should not end with \".db\"." << endl;
 	   string error = "Your db name to be built should not end with \".db\".";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		return;
+	}
+
+	if(pthread_rwlock_tryrdlock(&database_load_lock) != 0)
+	{
+	    string error = "Unable to load due to loss of lock";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
 	}
 
 	//database += ".db";
@@ -725,9 +790,19 @@ bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		//cout << "Please unload your current database first." <<endl;
 		string error = "Please unload your current database first.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		pthread_rwlock_unlock(&database_load_lock);
+		return;
 	}
 	cout << database << endl;
+
+	pthread_rwlock_unlock(&database_load_lock);
+	if(pthread_rwlock_trywrlock(&database_load_lock) != 0)
+	{
+	    string error = "Unable to load due to loss of lock";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
 	current_database = new Database(database);
 	bool flag = current_database->load();
 	if (!flag)
@@ -736,139 +811,200 @@ bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		delete current_database;
 		current_database = NULL;
-		return false;
+		pthread_rwlock_unlock(&database_load_lock);
+		return;
 	}
 
-	time_t cur_time = time(NULL);
-	long time_backup = Util::read_backup_time();
-	long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
-	scheduler = start_thread(func_scheduler);
+	//TODO+DEBUG: if we use the scheduler here, then each load will bring an asleep thread!
+	//time_t cur_time = time(NULL);
+	//long time_backup = Util::read_backup_time();
+	//long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
+	//scheduler = start_thread(func_scheduler);
+	
 //string success = db_name;
 //cout << "Database loaded successfully." << endl;
 	string success = "Database loaded successfully.";
 	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	pthread_rwlock_unlock(&database_load_lock);
+}
 
+bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	thread t(&load_thread, response, request);
+	t.detach();
 	return true;
 }
 
-bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void unload_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	cout<<"HTTP: this is unload"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is unload"<<endl;
+
 	string db_name = request->path_match[1];
 	db_name = UrlDecode(db_name);
 
+   //	string db_name = argv[1];
+	if(db_name=="")
+	{
+		string error = "Exactly 1 argument is required!";
+		*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	string database = db_name;
+	if(database.length() > 3 && database.substr(database.length()-3, 3) == ".db")
+	{
+		//cout << "Your db name to be built should not end with \".db\"." << endl;
+	   string error = "Your db name to be built should not end with \".db\".";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	if(pthread_rwlock_tryrdlock(&database_load_lock) != 0)
+	{
+	    string error = "Unable to unload due to loss of lock";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	//database += ".db";
 	if(current_database == NULL)
 	{
 		string error = "No database used now.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		pthread_rwlock_unlock(&database_load_lock);
+		return;
 	}
+	cout << database << endl;
 
-	if(current_database->getName() != db_name)
+	if(current_database->getName() != database)
 	{
 		string error = "Database Name not matched.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		pthread_rwlock_unlock(&database_load_lock);
+		return;
+	}
+
+	pthread_rwlock_unlock(&database_load_lock);
+	if(pthread_rwlock_trywrlock(&database_load_lock) != 0)
+	{
+	    string error = "Unable to unload due to loss of lock";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
 	}
 
 	delete current_database;
 	current_database = NULL;
 	string success = "Database unloaded.";
 	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	pthread_rwlock_unlock(&database_load_lock);
+}
 
+bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	thread t(&unload_thread, response, request);
+	t.detach();
 	return true;
 }
 
-bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void writeLog(FILE* fp, string _info)
 {
-	cout<<"HTTP: this is query"<<endl;
+	//Another way to locka many: lock(lk1, lk2...)
+	query_log_lock.lock();
+	fprintf(fp, "%s", _info.c_str());
+	Util::Csync(fp);
+	query_log_lock.unlock();
+}
+
+void query_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	//Notice: update the log in mutithreading environment
+	//1. add therad ID to each line
+	//2. combine information in a therad then write
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is query"<<endl;
+	//sleep(5);
 
 	string format = request->path_match[1];
 	//string format = "html";
 	string db_query=request->path_match[2];
 	format = UrlDecode(format);
 	db_query = UrlDecode(db_query);
-	cout<<"check: "<<db_query<<endl;
+	cout<<log_prefix<<"check: "<<db_query<<endl;
 	string str = db_query;
 
+	if(pthread_rwlock_tryrdlock(&database_load_lock) != 0)
+	{
+		string error = "Unable to query due to the loss of lock!";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
 
 	if(current_database == NULL)
 	{
 		string error = "No database in use!";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		pthread_rwlock_unlock(&database_load_lock);
+		return;
 	}
 
 	string sparql;
 	sparql = db_query;
 	if (sparql.empty()) {
-		cerr << "Empty SPARQL." << endl;
-		return false;
+		cerr <<log_prefix<< "Empty SPARQL." << endl;
+		string error = "Empty SPARQL.";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&database_load_lock);
+		return;
 	}
 	FILE* output = NULL;
 
+	//just for DEBUG
+	//sleep(3);
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << sparql.length() << "\r\n\r\n" << sparql;
+	//cout<<log_prefix<<"ends here"<<endl;
+	//return; 
 
-	pthread_t timer = start_thread(func_timer);
-	if (timer == 0) {
-		cerr << "Failed to start timer." << endl;
-	}
+	//TODO+DEBUG: manage the timer, not causing the db to restart
+	//pthread_t timer = start_thread(func_timer);
+	//if (timer == 0) {
+		//cerr <<log_prefix<< "Failed to start timer." << endl;
+	//}
 
 	ResultSet rs;
 	int query_time = Util::get_cur_time();
-	bool ret = current_database->query(sparql, rs, output);
+	//TODO: extract the parser and do sequentially first, search or update
+	int ret_val = current_database->query(sparql, rs, output);
+	bool ret = (ret_val == -100);
+
 	query_time = Util::get_cur_time() - query_time;
-	if (timer != 0 && !stop_thread(timer)) {
-		cerr << "Failed to stop timer." << endl;
-	}
+	//if (timer != 0 && !stop_thread(timer)) 
+	//{
+		//cerr <<log_prefix<< "Failed to stop timer." << endl;
+	//}
+
 	ostringstream stream;
 	stream << rs.ansNum;
 	string ansNum_s = stream.str();
-	cout << "ansNum_s: " << ansNum_s << endl;
-	time_t rawtime;
-	struct tm* timeinfo;
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	string tempTime = asctime(timeinfo);
-	for(int i = 0; i < tempTime.length(); i++)
-	{
-		if(tempTime[i] == ' ')
-			tempTime[i] = '_';
-	}
-	string myTime = tempTime.substr(0, tempTime.length()-1);
-	myTime = myTime + "_" + Util::int2string(rand() % 10000);
-	//TODO+BETTER: attach the thread's ID in fileName when running in parallism
-	string localname = ".tmp/web/" + myTime + "_query";
-	//string filename = ".tmp/web/" + myTime + "_query";
-	string filename = myTime + "_query";
+	cout <<log_prefix<< "ansNum_s: " << ansNum_s << endl;
+	string filename = "thread_" + thread_id + "_" + Util::getTimeName() + "_query";
+	string localname = ".tmp/web/" + filename;
 
-	//TODO: if result is stored in Stream instead of memory?  (if out of memory to use to_str)
-	//BETTER: divide and transfer, in multiple times, getNext()
 	if(ret)
 	{
-	//	cout << "query returned successfully." << endl;
+		cout <<log_prefix<< "query returned successfully." << endl;
 		
 		//record each query operation, including the sparql and the answer number
-		//TODO: get the query time, and also record it to the log and response to the browser.
-		ofstream outlog;
-		string queryLog = "logs/endpoint/query.log";
-		//BETTER: only open once and close when server stops, use C read/write
-		outlog.open(queryLog, ios::app);
-		if(!outlog)
-		{
-			cout << queryLog << "can't open." << endl;
-			return false;
-		}
-		outlog << Util::get_date_time() << endl;
-		outlog << sparql << endl << endl;
-		outlog << "answer num: "<<rs.ansNum << endl;
-		outlog << "query time: "<<query_time <<" ms"<< endl;
-		outlog << "-----------------------------------------------------------" << endl;
-		outlog.close();
-
+		string log_info = Util::get_date_time() + "\n" + sparql + "\n\nanswer num: " + Util::int2string(rs.ansNum)+"\nquery time: "+Util::int2string(query_time) +" ms\n-----------------------------------------------------------\n";
+		writeLog(query_logfp, log_info);
 
 		ofstream outfile;
 		string ans = "";
 		string success = "";
+	//TODO: if result is stored in Stream instead of memory?  (if out of memory to use to_str)
+	//BETTER: divide and transfer, in multiple times, getNext()
 		if(format == "json")
 		{
 		//	cout << "query success, transfer to json." << endl;
@@ -889,7 +1025,7 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 			localname = localname + "." + format;
 			filename = filename + "." + format;
 		}
-		cout << "filename: " << filename << endl;
+		cout <<log_prefix<< "filename: " << filename << endl;
 		if(format == "html")
 		{
 			outfile.open(localname);
@@ -905,7 +1041,9 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 				*response << "\r\nContent-Type: text/plain";
 				*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
 				*response  << "\r\n\r\n" << "0+" << rs.ansNum << '+' << filename << '+' << success;
-				return true;
+				pthread_rwlock_unlock(&database_load_lock);
+				//return true;
+				return;
 			}
 			else
 			{
@@ -916,7 +1054,9 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 				*response << "\r\nContent-Type: text/plain";
 				*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
 				*response << "\r\n\r\n" << "1+" << rs.ansNum << '+' << filename << '+' << success;
-				return true;
+				pthread_rwlock_unlock(&database_load_lock);
+				//return true;
+				return;
 			}
 		}
 		else
@@ -924,7 +1064,7 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 			
 			string filename = "";
 			filename = "sparql." + format;
-			cout << "filename: " << filename << endl;
+			cout <<log_prefix<< "filename: " << filename << endl;
 			*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length();
 			*response << "\r\nContent-Type: application/octet-stream";
 			*response << "\r\nContent-Disposition: attachment; filename=\"" << filename << '"';
@@ -938,29 +1078,111 @@ bool query_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 			//
 			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ansNum_s.length()+filename.length()+3;
 			//*response << "\r\n\r\n" << "2+" << rs.ansNum << '+' << filename;
-			return true;
+			pthread_rwlock_unlock(&database_load_lock);
+			return;
+			//return true;
 		}
 	}
 	else
 	{
-		//TODO: if error, browser should give some prompt
+		cout <<log_prefix<< "query returned error." << endl;
+
 		string error = "query() returns false.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		pthread_rwlock_unlock(&database_load_lock);
+		//return false;
+		return;
 	}
 
-	return true;
+	//return true;
 }
 
-bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void query_handler(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	cout<<"HTTP: this is monitor"<<endl;
+	query_num++;
+	//cout<<"content: "<<request->content.string()<<endl;
+	//cout<<"Header: "<<endl;
+	//Usage of auto: http://blog.csdn.net/qq_26399665/article/details/52267734
+	//for(auto it : request->header)
+	//{
+		//cout<<it.first<<" "<<it.second<<endl;
+	//}
+	//cout<<"client addr: "<<request->remote_endpoint_address<<endl;
+	//cout<<"client port: "<<request->remote_endpoint_port<<endl;
+
+	//DEBUG: when using a thread for a query and run in parallism, the QueryParser will fail due to ANTLR
+	//In addition, addRequest and io buffer in StringIndex will also cause error
+	thread t(&query_thread, response, request);
+	t.detach();
+	//t.join();
+
+	//DEBUG: here will cause error due to the use of socket in 2 processes
+	//NOTICE: we should sue multithreading here because frequently creating/destroying processes will be costly
+	//Another reason is the log4cplus supports multithreading but not multiprocessing
+	//pid_t child = fork();
+	//if(child == -1)
+	//{
+		//cout<<"child fork error in query processing of ghttp"<<endl;
+		////here we do it sequentially
+		//query_handler(response, request);
+	//}
+	//else if(child == 0)
+	//{
+		//query_handler(response, request);
+		////sleep(10); //wait the IO to end in this process
+		//cout<<"now the child process to exit"<<endl;
+		////DEBUG: if we use this , then error? why? restart endlessly
+		////exit(0);
+	//}
+	//else
+	//{
+		////if father process exits, all child process will exit
+		//pid_t ret = waitpid(child, NULL, 0);
+		//if(ret == child)
+		//{
+			//cout<<"father process get child exit code: "<<ret<<endl;
+			////DEBUG: if not exit before, the process won't end, the mmeory of query won't be released
+			////TODO: error here
+			////return 0;
+		//}
+		//else
+		//{
+			//cout<<"error occured"<<endl;
+			////return -1;
+		//}
+	//}
+	//The upper is blocked-waiting(the child process should not use exit), 
+	//below is non-blocked-waiting(the child process should use exit)
+	//do {
+		//pid_t ret = waitpid(child, NULL, WNOHANG); 
+		//if(ret == 0) {
+			//cout<<"xxx"<<endl;
+			//sleep(1); //query again for each second
+		//}
+	//}while(ret == 0);
+	//if(ret == child){};
+}
+
+
+void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is monitor"<<endl;
+
+	if(pthread_rwlock_tryrdlock(&database_load_lock) != 0)
+	{
+	    string error = "Unable to monitor due to loss of lock";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
 
 	if(current_database == NULL)
 	{
 		string error = "No database used now.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		pthread_rwlock_unlock(&database_load_lock);
+		return;
 	}
 
 	//BETTER: use JSON format to send/receive messages
@@ -987,67 +1209,37 @@ bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 
 	//success = "<p>" + success + "</p>";
 	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	pthread_rwlock_unlock(&database_load_lock);
+}
 
+bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	thread t(&monitor_thread, response, request);
+	t.detach();
 	return true;
 }
 
 bool delete_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	cout << "HTTP: this is delete" << endl;
-
-	/*
-	string download = request->path_match[1];
-	download = UrlDecode(download);
-	cout << "download: " << download << endl;
-	*/
-	string filepath = request->path_match[1];
-	filepath = UrlDecode(filepath);
-
-	delete_result(server, response, request, filepath);
-
+	thread t(&delete_thread, response, request);
+	t.detach();
 	return true;
 }
 
 bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	cout << "HTTP: this is download" << endl;
-
-	/*
-	string download = request->path_match[1];
-	download = UrlDecode(download);
-	cout << "download: " << download << endl;
-	*/
-	string filepath = request->path_match[1];
-	filepath = UrlDecode(filepath);
-
-	download_result(server, response, request, filepath);
-	//sleep(1);  //seconds
-	//cout<<"sleep ends"<<endl;
-
+	download_thread(server, response, request);
+	//thread t(&download_thread, response, request);
+	//t.detach();
 	return true;
 }
 
-bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void default_thread(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	cout<<"HTTP: this is default"<<endl;
-	string req_url = request->path;
-	cout << "request url: " << req_url << endl;
-	//if request matches /?operation=monitor, then do monitor_handler
-	//because if the user visit through the browser by using url /?operation=monitor
-	//it can not match directly to monitor_handler, and will match this default get
-	//so we need to check here to do monitor_handler, although the implementation is not perfect enough.
-	//it is also used in /?operation=show    /?operation=checkpoint
-	if(req_url == "/?operation=monitor")
-		monitor_handler(server, response, request);
-	else if(req_url == "/?operation=show")
-		show_handler(server, response, request);
-	else if(req_url == "/?operation=checkpoint")
-		checkpoint_handler(server, response, request);
-	//BETTER: use lock to ensure thread safe
-	connection_num++;
-	//NOTICE: it seems a visit will output twice times
-	//And different pages in a browser is viewed as two connections here
-	//cout<<"new connection"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is default"<<endl;
+
 	try {
 		auto web_root_path=boost::filesystem::canonical("./Server/web");
 		auto path=boost::filesystem::canonical(web_root_path/request->path);
@@ -1061,7 +1253,6 @@ bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 			throw invalid_argument("file does not exist");
 
 		std::string cache_control, etag;
-
 		// Uncomment the following line to enable Cache-Control
 		// cache_control="Cache-Control: max-age=86400\r\n";
 
@@ -1096,21 +1287,62 @@ bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 		string content="Could not open path "+request->path+": "+e.what();
 		*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
 	}
+}
 
+bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	//NOTICE: it seems a visit will output twice times
+	//And different pages in a browser is viewed as two connections here
+	//cout<<"new connection"<<endl;
+	connection_num++;
+	string req_url = request->path;
+	cout << "request url: " << req_url << endl;
+	//if request matches /?operation=monitor, then do monitor_handler
+	//because if the user visit through the browser by using url /?operation=monitor
+	//it can not match directly to monitor_handler, and will match this default get
+	//so we need to check here to do monitor_handler, although the implementation is not perfect enough.
+	//it is also used in /?operation=show    /?operation=checkpoint
+	if(req_url == "/?operation=monitor")
+	{
+		monitor_handler(server, response, request);
+		return true;
+	}
+	else if(req_url == "/?operation=show")
+	{
+		show_handler(server, response, request);
+		return true;
+	}
+	else if(req_url == "/?operation=checkpoint")
+	{
+		checkpoint_handler(server, response, request);
+		return true;
+	}
+
+	default_thread(server, response, request);
+	//thread t(&default_thread, response, request);
+	//t.detach();
 	return true;
 }
 
-//TODO+BETTER: server choose to save a database when system is not busy
-//If user send this command too frequently, the performance may be awful if updates are large
-bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	cout<<"HTTP: this is checkpoint"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is checkpoint"<<endl;
+
+	if(pthread_rwlock_tryrdlock(&database_load_lock) != 0)
+	{
+		string error = "Unbale to checkpoint due to the loss of lock.";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
 
 	if(current_database == NULL)
 	{
 		string error = "No database used.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		pthread_rwlock_unlock(&database_load_lock);
+		return;
 	}
 
 	//For database checkpoint or log/transaction:
@@ -1123,25 +1355,50 @@ bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::R
 	//header and content are split by an empty line
 	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 
+	pthread_rwlock_unlock(&database_load_lock);
+}
+
+//TODO+BETTER: server choose to save a database when system is not busy
+//If user send this command too frequently, the performance may be awful if updates are large
+bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	thread t(&checkpoint_thread, response, request);
+	t.detach();
 	return true;
 }
 
-//BETTER+TODO: indicate the db_name when query
-bool show_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
-	cout<<"HTTP: this is show"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is show"<<endl;
+
+	if(pthread_rwlock_tryrdlock(&database_load_lock) != 0)
+	{
+	    string error = "Unable to show due to loss of lock";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
 
 	if(current_database == NULL)
 	{
 		string error = "No database used.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		pthread_rwlock_unlock(&database_load_lock);
+		return;
 	}
 
 	//NOTICE: this info is in header
 	string success = current_database->getName();
 	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	pthread_rwlock_unlock(&database_load_lock);
+}
 
+//BETTER: indicate the db_name when query
+bool show_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	thread t(&show_thread, response, request);
+	t.detach();
 	return true;
 }
 
