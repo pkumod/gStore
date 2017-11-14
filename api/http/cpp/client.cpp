@@ -132,8 +132,8 @@ int CHttpClient::Get(const std::string & strUrl, std::string & strResponse)
 	* 如果不设置这个选项，libcurl将会发信号打断这个wait从而导致程序退出。
 	*/
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
-	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 	return res;
