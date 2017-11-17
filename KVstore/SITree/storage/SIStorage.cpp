@@ -179,6 +179,37 @@ SIStorage::preRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
 	return true;
 }
 
+bool
+SIStorage::fullLoad(SINode*& _root)
+{
+	if(_root == NULL)
+	{
+		return false;
+	}
+	std::queue <SINode*> node_q;
+	SINode* p = _root;
+	while (!p->isLeaf())
+	{
+		SINode* tmp;
+		unsigned KN = p->getNum();
+		for(unsigned i = 0; i <= KN; ++i)
+		{
+			tmp = p->getChild(i);
+			long long memory = 0;
+			this->readNode(tmp, &memory);
+			//this->request(memory);
+			node_q.push(tmp);
+		}
+		p = node_q.front();
+		node_q.pop();
+	}
+	while (!node_q.empty())
+	{
+		node_q.pop();
+	}
+	return true;
+}
+
 long		//8-byte in 64-bit machine
 SIStorage::Address(unsigned _blocknum) const  //BETTER: inline function
 {
