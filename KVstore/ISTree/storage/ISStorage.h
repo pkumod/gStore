@@ -56,6 +56,7 @@ public:
 	ISStorage();
 	ISStorage(std::string& _filepath, std::string& _mode, unsigned* _height, unsigned long long _buffer_size);//create a fixed-size file or open an existence
 	bool preRead(ISNode*& _root, ISNode*& _leaves_head, ISNode*& _leaves_tail);		//read and build all nodes, only root in memory
+	bool fullLoad(ISNode*& _root); //puts all nodes of IVTree in memory, assuming the memory is enough
 	bool readNode(ISNode* _np, long long* _request);	//read, if virtual 
 	bool createNode(ISNode*& _np);		//use fp to create a new node
 										//NOTICE(if children and child not exist, build children's Nodes)
