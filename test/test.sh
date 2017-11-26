@@ -10,12 +10,15 @@ bbug_ans=(-1 -1 297 -1 2 24 0 -1)
 lubm_ans=(15 227393 0 27 5916 15 0 828 27 27 5916)
 num_ans=(8 0 4 1)
 small_ans=(2 2 1 27 1 1 1 4 1 5 5)
-res=("queries are correct" "queries exist errors")
+res="queries exist errors"
+pass=1
 
 #gbuild
+echo "gbuild......"
 for i in 0 1 2 3
 do
-	${op[0]} ${db[$i]} ${path}${db[$i]}"/"${db[$i]}".nt"
+	${op[0]} ${db[$i]} ${path}${db[$i]}"/"${db[$i]}".nt" > "1.txt"
+	"rm" "1.txt"
 done
 
 #gquery
@@ -30,15 +33,14 @@ do
 		if [ ${ans:18:${#ans}-18} -ne ${bbug_ans[$i]} ]
 		then 
 			correctness=0
+			pass=0
 		fi
 	fi
 	"rm" "1.txt"
 done
 if [ $correctness -eq 0 ]
 then 
-	echo ${db[0]} ${res[1]}
-else 
-	echo ${db[0]} ${res[0]}
+	echo ${db[0]} ${res}
 fi
 
 correctness=1
@@ -49,14 +51,13 @@ do
 	if [ ${ans:18:${#ans}-18} -ne ${lubm_ans[$i]} ]
 	then
 		correctness=0
+		pass=0
 	fi
 	"rm" "1.txt"
 done
 if [ $correctness -eq 0 ]
 then
-	echo ${db[1]} ${res[1]}
-else
-	echo ${db[1]} ${res[0]}
+	echo ${db[1]} ${res}
 fi
 
 correctness=1
@@ -67,14 +68,13 @@ do
         if [ ${ans:18:${#ans}-18} -ne ${num_ans[$i]} ]
         then
                 correctness=0
+		pass=0
         fi
         "rm" "1.txt"
 done
 if [ $correctness -eq 0 ]
 then
-        echo ${db[2]} ${res[1]}
-else
-        echo ${db[2]} ${res[0]}
+        echo ${db[2]} ${res}
 fi
 
 correctness=1
@@ -85,21 +85,26 @@ do
         if [ ${ans:18:${#ans}-18} -ne ${small_ans[$i]} ]
         then
                 correctness=0
+		pass=0
         fi
         "rm" "1.txt"
 
 done
 if [ $correctness -eq 0 ]
 then
-        echo ${db[3]} ${res[1]}
-else
-        echo ${db[3]} ${res[0]}
+        echo ${db[3]} ${res}
 fi
 }
+echo "gquery......"
 gquery
+if [ $pass -eq 1 ]
+then
+        echo "Passed!"
+fi
 
 #gadd and gsub
-echo "check the correctness after gsub and gadd:"
+pass=1
+echo "gsub and gadd......"
 for i in 0 1 2 3
 do
 	for j in 3 2
@@ -110,7 +115,6 @@ do
 done
 gquery
 
-echo "check the correctness after gadd and gsub:"
 for i in 2 3
 do	
 	${op[$i]} ${db[3]} ${path}${db[3]}"/small_add.nt" > "1.txt"
@@ -124,14 +128,18 @@ do
         if [ ${ans:18:${#ans}-18} -ne ${small_ans[$i]} ]
         then
                 correctness=0
+		pass=0
         fi
         "rm" "1.txt"
 
 done
 if [ $correctness -eq 0 ]
 then
-        echo ${db[3]} ${res[1]}
-else
-        echo ${db[3]} ${res[0]}
+        echo ${db[3]} ${res}
 fi
+if [ $pass -eq 1 ]
+then
+        echo "Passed!"
+fi
+
 
