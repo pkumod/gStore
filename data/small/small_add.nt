@@ -1,0 +1,6 @@
+<node1> <link> <node2> .
+<node3> <link> <node4> .
+<point2> <to> <point3> .
+<point1> <from> <point5> .
+<root> <contain> <node5> .
+<node6> <own> <point6> .
