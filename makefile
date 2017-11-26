@@ -113,7 +113,7 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow
 
 all: $(TARGET)
-
+	./test/test.sh
 test_index: test_index.cpp
 	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library)
 
@@ -451,8 +451,7 @@ $(api_cpp): $(objdir)Socket.o
 
 $(api_java):
 	$(MAKE) -C api/socket/java/src
-test:
-	./test/test.sh
+
 .PHONY: clean dist tarball api_example gtest sumlines
 
 clean:
