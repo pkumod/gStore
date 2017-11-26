@@ -46,32 +46,32 @@ public class JavaAPIExample
 			+"}";
 		int[] result = {10, 14, 14, 199424, 33910, 1039};
 		int tnum = 6;
-		tnum = 3000;
+		//tnum = 3000;
 		boolean correctness=true;
 		for(int i = 0; i < tnum; ++i)
 		{
 			String answer = gc.query(sparql[i%6]);
-			//int m = 0;
-			//for(int ii = 0; ii<sparql[i%6].length(); ++ii)
-			//{
-			//	if(sparql[i%6].charAt(ii) == '?')
-			//		++m;
-			//	if(sparql[i%6].charAt(ii) == '{')
-			//		break;
-			//}
-			//int n = 0;
-			//for(int ii = 0; ii<answer.length(); ++ii)
-			//{
-			//	 if(answer.charAt(ii) == '{')
-			//		++n;
-			//}
-			//int Num = (n-3)/(m+1);
-			//if(Num!=result[i%6])
-			//	correctness =false;
+			int m = 0;
+			for(int ii = 0; ii<sparql[i%6].length(); ++ii)
+			{
+				if(sparql[i%6].charAt(ii) == '?')
+					++m;
+				if(sparql[i%6].charAt(ii) == '{')
+					break;
+			}
+			int n = 0;
+			for(int ii = 0; ii<answer.length(); ++ii)
+			{
+				 if(answer.charAt(ii) == '{')
+					++n;
+			}
+			int Num = (n-3)/(m+1);
+			if(Num!=result[i%6])
+				correctness =false;
 			System.out.println(i+"\n");
 		}
-		//if(correctness == true)
-		//	System.out.println("correct!");
+		if(correctness == true)
+			System.out.println("correct!");
 		//for sparql endpoint, URL can also be used here, like freebase.gstore-pku.com:80
 		//GstoreConnector gc = new GstoreConnector("tourist.gstore-pku.com", 80);
 

@@ -1,0 +1,137 @@
+#!/bin/bash
+db=("bbug" "lubm" "num" "small")
+op=("bin/gbuild" "bin/gquery" "bin/gadd" "bin/gsub")
+path="./data/"
+bbug_sql=("0" "0d" "1" "2" "3" "4" "5" "6")
+lubm_sql=("_p0" "_p1" "_p2" "_p3" "_p4" "_q0" "_q1" "_q2" "_q3" "_q4" "_q5")
+num_sql=("0" "1" "2" "3")
+small_sql=("_dist" "_p0" "_p1" "_p2" "_p3" "_q0" "_q1" "_q2" "_q3" "_s0" "_s1")
+bbug_ans=(-1 -1 297 -1 2 24 0 -1)
+lubm_ans=(15 227393 0 27 5916 15 0 828 27 27 5916)
+num_ans=(8 0 4 1)
+small_ans=(2 2 1 27 1 1 1 4 1 5 5)
+res=("queries are correct" "queries exist errors")
+
+#gbuild
+for i in 0 1 2 3
+do
+	${op[0]} ${db[$i]} ${path}${db[$i]}"/"${db[$i]}".nt"
+done
+
+#gquery
+gquery(){
+correctness=1
+for i in 0 1 2 3 4 5 6 7
+do
+	${op[1]} ${db[0]} ${path}${db[0]}"/"${db[0]}${bbug_sql[$i]}".sql" > "1.txt"
+	if [ ${bbug_ans[$i]} -ne -1 ]
+	then 
+		ans=$(grep "There has answer" 1.txt)
+		if [ ${ans:18:${#ans}-18} -ne ${bbug_ans[$i]} ]
+		then 
+			correctness=0
+		fi
+	fi
+	"rm" "1.txt"
+done
+if [ $correctness -eq 0 ]
+then 
+	echo ${db[0]} ${res[1]}
+else 
+	echo ${db[0]} ${res[0]}
+fi
+
+correctness=1
+for i in 0 1 2 3 4 5 6 7 8 9 10
+do
+        ${op[1]} ${db[1]} ${path}${db[1]}"/"${db[1]}${lubm_sql[$i]}".sql" > "1.txt"
+	ans=$(grep "There has answer" 1.txt)
+	if [ ${ans:18:${#ans}-18} -ne ${lubm_ans[$i]} ]
+	then
+		correctness=0
+	fi
+	"rm" "1.txt"
+done
+if [ $correctness -eq 0 ]
+then
+	echo ${db[1]} ${res[1]}
+else
+	echo ${db[1]} ${res[0]}
+fi
+
+correctness=1
+for i in 0 1 2 3
+do
+        ${op[1]} ${db[2]} ${path}${db[2]}"/"${db[2]}${num_sql[$i]}".sql" > "1.txt"
+        ans=$(grep "There has answer" 1.txt)
+        if [ ${ans:18:${#ans}-18} -ne ${num_ans[$i]} ]
+        then
+                correctness=0
+        fi
+        "rm" "1.txt"
+done
+if [ $correctness -eq 0 ]
+then
+        echo ${db[2]} ${res[1]}
+else
+        echo ${db[2]} ${res[0]}
+fi
+
+correctness=1
+for i in 0 1 2 3 4 5 6 7 8 9 10
+do
+        ${op[1]} ${db[3]} ${path}${db[3]}"/"${db[3]}${small_sql[$i]}".sql" > "1.txt"
+        ans=$(grep "There has answer" 1.txt)
+        if [ ${ans:18:${#ans}-18} -ne ${small_ans[$i]} ]
+        then
+                correctness=0
+        fi
+        "rm" "1.txt"
+
+done
+if [ $correctness -eq 0 ]
+then
+        echo ${db[3]} ${res[1]}
+else
+        echo ${db[3]} ${res[0]}
+fi
+}
+gquery
+
+#gadd and gsub
+echo "check the correctness after gsub and gadd:"
+for i in 0 1 2 3
+do
+	for j in 3 2
+	do
+        	${op[$j]} ${db[$i]} ${path}${db[$i]}"/"${db[$i]}".nt" > "1.txt"
+		"rm" "1.txt"
+	done
+done
+gquery
+
+echo "check the correctness after gadd and gsub:"
+for i in 2 3
+do	
+	${op[$i]} ${db[3]} ${path}${db[3]}"/small_add.nt" > "1.txt"
+	"rm" "1.txt"
+done
+correctness=1
+for i in 0 1 2 3 4 5 6 7 8 9 10
+do
+        ${op[1]} ${db[3]} ${path}${db[3]}"/"${db[3]}${small_sql[$i]}".sql" > "1.txt"
+        ans=$(grep "There has answer" 1.txt)
+        if [ ${ans:18:${#ans}-18} -ne ${small_ans[$i]} ]
+        then
+                correctness=0
+        fi
+        "rm" "1.txt"
+
+done
+if [ $correctness -eq 0 ]
+then
+        echo ${db[3]} ${res[1]}
+else
+        echo ${db[3]} ${res[0]}
+fi
+

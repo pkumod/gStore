@@ -451,7 +451,8 @@ $(api_cpp): $(objdir)Socket.o
 
 $(api_java):
 	$(MAKE) -C api/socket/java/src
-
+test:
+	./test/test.sh
 .PHONY: clean dist tarball api_example gtest sumlines
 
 clean:
@@ -530,4 +531,3 @@ fulltest:
 test-kvstore:
 	# test/kvstore_test.cpp
 	echo "TODO"
-
