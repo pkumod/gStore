@@ -17,7 +17,7 @@ pass=1
 echo "gbuild......"
 for i in 0 1 2 3
 do
-	${op[0]} ${db[$i]} ${path}${db[$i]}"/"${db[$i]}".nt" > "1.txt"
+	${op[0]} ${db[$i]} ${path}${db[$i]}"/"${db[$i]}".nt" > "1.txt" 2>&1
 	"rm" "1.txt"
 done
 
@@ -97,13 +97,8 @@ fi
 }
 echo "gquery......"
 gquery
-if [ $pass -eq 1 ]
-then
-        echo "Passed!"
-fi
 
 #gadd and gsub
-pass=1
 echo "gsub and gadd......"
 for i in 0 1 2 3
 do
@@ -139,7 +134,9 @@ then
 fi
 if [ $pass -eq 1 ]
 then
-        echo "Passed!"
+        echo "Test passed!"
+else
+	echo "Test failed!"
 fi
 
 
