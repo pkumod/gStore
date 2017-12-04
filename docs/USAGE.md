@@ -20,13 +20,13 @@ gbuild is used to build a new database from a RDF triple format file.
 
 `# bin/gbuild db_name rdf_triple_file_path`
 
-For example, we build a database from LUBM_10.n3 which can be found in example folder.
+For example, we build a database from lubm.nt which can be found in example folder.
 
-    [bookug@localhost gStore]$ bin/gbuild LUBM10 ./data/LUBM_10.n3 
-    2015年05月21日 星期四 20时58分21秒  -0.484698 seconds
+    [bookug@localhost gStore]$ bin/gbuild lubm ./data/lubm/lubm.nt 
+    2017年11月23日 星期四 20时58分21秒  -0.484698 seconds
     gbuild...
-    argc: 3 DB_store:LUBM10      RDF_data: ./data/LUBM_10.n3  
-    begin encode RDF from : ./data/LUBM_10.n3 ...
+    argc: 3 DB_store:lubm      RDF_data: ./data/lubm/lubm.nt  
+    begin encode RDF from : ./data/lubm/lubm.nt ...
 
 - - -
 
@@ -48,11 +48,11 @@ When the program finish answering the query, it shows the command prompt again.
 
 *gStore2.0 only support simple "select" queries(not for predicates) now.*
 
-We also take LUBM_10.n3 as an example.
+We also take lubm.nt as an example.
 
-    [bookug@localhost gStore]$ bin/gquery LUBM10
+    [bookug@localhost gStore]$ bin/gquery lubm
     gquery...
-    argc: 2 DB_store:LUBM10/
+    argc: 2 DB_store:lubm/
     loadTree...
     LRUCache initial...
     LRUCache initial finish
@@ -63,7 +63,7 @@ We also take LUBM_10.n3 as an example.
     finish loading
     Type `help` for information of all commands
 	Type `help command_t` for detail of command_t
-    gsql>sparql ./data/LUBM_q0.sql
+    gsql>sparql ./data/lubm/lubm_q0.sql
     ... ...
     Total time used: 4ms.
     final result is : 
@@ -212,7 +212,7 @@ You should place the datasets and queries in this way:
 
 	DIR/WatDiv/query/*.sql 
 
-Notice that DIR is the root directory where you place all datasets waiting to be used by gtest. And WatDiv is a class of datasets, as well as LUBM. Inside WatDiv(or LUBM, etc. please place all datasets(named with .nt) in a database/ folder, and place all queries(corresponding to datasets, named with .sql) in a query folder.
+Notice that DIR is the root directory where you place all datasets waiting to be used by gtest. And WatDiv is a class of datasets, as well as lubm. Inside WatDiv(or lubm, etc. please place all datasets(named with .nt) in a database/ folder, and place all queries(corresponding to datasets, named with .sql) in a query folder.
 
 Then you can run the gtest program with specified parameters, and the output will be sorted into three logs in gStore root directory: load.log/(for database loading time and size), time.log/(for query time) and result.log/(for all query results, not the entire output strings, but the information to record the selected two database systems matched or not).
 
@@ -232,9 +232,9 @@ gadd is used to insert triples in a file to an existing database.
 
 Usage: bin/gadd db_name rdf_triple_file_path
 
-    [bookug@localhost gStore]$ bin/gadd lubm data/LUBM_10.n3
+    [bookug@localhost gStore]$ bin/gadd lubm ./data/lubm/lubm.nt
     ...
-    argc: 3 DB_store:lubm   insert file:./data/LUBM_10.n3
+    argc: 3 DB_store:lubm   insert file:./data/lubm/lubm.nt
     get important pre ID
     ...
     insert rdf triples done.
@@ -248,9 +248,9 @@ gsub is used to remove triples in a file from an existing database.
 
 Usage: bin/gsub db_name rdf_triple_file_path
 
-    [bookug@localhost gStore]$ bin/gsub lubm data/LUBM_10.n3
+    [bookug@localhost gStore]$ bin/gsub lubm ./data/lubm/lubm.nt
     ...
-    argc: 3 DB_store:lubm  remove file: data/LUBM\_10.n3
+    argc: 3 DB_store:lubm  remove file: ./data/lubm/lubm.nt
     ...
     remove rdf triples done.
     removed triples num: 99550
@@ -259,9 +259,9 @@ Usage: bin/gsub db_name rdf_triple_file_path
 
 #### 9. gmonitor
 
-After starting ghttp, go into gStore/bin/ and type `./gmonitor ip port` to check current status of gStore.
+After starting ghttp, type `bin/gmonitor ip port` to check current status of gStore.
 
-    [bookug@localhost bin]$ ./gmonitor 127.0.0.1 9000
+    [bookug@localhost gStore]$ bin/gmonitor 127.0.0.1 9000
     parameter: ?operation=monitor
     request: http://127.0.0.1:9000/%3Foperation%3Dmonitor
     null--->[HTTP/1.1 200 OK]
@@ -278,12 +278,12 @@ After starting ghttp, go into gStore/bin/ and type `./gmonitor ip port` to check
 
 #### 10. gshow
 
-After starting ghttp, go into gStore/bin/ and type `./gshow ip port` to check loaded database.
+After starting ghttp, type `bin/gshow ip port` to check loaded database.
 
-    [bookug@localhost bin]$ ./gshow 127.0.0.1 9000
+    [bookug@localhost gStore]$ bin/gshow 127.0.0.1 9000
     parameter: ?operation=show
     request: http://127.0.0.1:9000/%3Foperation%3Dshow
     null--->[HTTP/1.1 200 OK]
     Content-Length--->[4]
-    lubm
+    database: lubm
     
