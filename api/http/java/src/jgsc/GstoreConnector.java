@@ -78,7 +78,7 @@ public class GstoreConnector {
 			//System.out.println("============================================");
 
             // 定义 BufferedReader输入流来读取URL的响应
-            in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
             String line;
             while ((line = in.readLine()) != null) {
 				//PERFORMANCE: this can be very costly if result is very large, because many temporary Strings are produced
