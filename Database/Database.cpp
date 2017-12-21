@@ -1390,11 +1390,13 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	else
 	{
 #ifdef ONLY_READ
+		cout<<"this database is only read";
 		//invalid query because updates are not allowed in ONLY_READ mode
 		return -101;
 #endif
 		if(pthread_rwlock_trywrlock(&(this->update_lock)) != 0)
 		{
+			cout<<"unable to write lock"<<endl;
 			return -101;
 		}
 
@@ -1459,8 +1461,8 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		general_evaluation.releaseResult();
 		delete[] update_triple;
 
-		printf("QueryCache cleared\n");
 		this->query_cache->clear();
+		cout<<"QueryCache cleared"<<endl;
 		pthread_rwlock_unlock(&(this->update_lock));
 	}
 

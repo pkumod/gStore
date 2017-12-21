@@ -975,9 +975,16 @@ void query_thread(const shared_ptr<HttpServer::Response>& response, const shared
 
 	ResultSet rs;
 	int query_time = Util::get_cur_time();
-	//TODO: extract the parser and do sequentially first, search or update
 	int ret_val = current_database->query(sparql, rs, output);
-	bool ret = (ret_val == -100);
+	bool ret = false, update = false;
+	if(ret_val < -1)   //non-update query
+	{
+		ret = (ret_val == -100);
+	}
+	else  //update query, -1 for error, non-negative for num of triples updated
+	{
+		update = true;
+	}
 
 	query_time = Util::get_cur_time() - query_time;
 	//if (timer != 0 && !stop_thread(timer)) 
@@ -994,7 +1001,7 @@ void query_thread(const shared_ptr<HttpServer::Response>& response, const shared
 
 	if(ret)
 	{
-		cout <<log_prefix<< "query returned successfully." << endl;
+		cout <<log_prefix<< "search query returned successfully." << endl;
 		
 		//record each query operation, including the sparql and the answer number
 		string log_info = Util::get_date_time() + "\n" + sparql + "\n\nanswer num: " + Util::int2string(rs.ansNum)+"\nquery time: "+Util::int2string(query_time) +" ms\n-----------------------------------------------------------\n";
@@ -1085,9 +1092,17 @@ void query_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	}
 	else
 	{
-		cout <<log_prefix<< "query returned error." << endl;
-
-		string error = "query() returns false.";
+		string error = "";
+		if(update)
+		{
+			cout <<log_prefix<< "update query returned correctly." << endl;
+			error = "update query returns true.";
+		}
+		else
+		{
+			cout <<log_prefix<< "search query returned error." << endl;
+			error = "search query returns false.";
+		}
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&database_load_lock);
 		//return false;
