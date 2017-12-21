@@ -1,4 +1,7 @@
 #!/bin/bash
+
+#set -v
+
 db=("bbug" "lubm" "num" "small")
 op=("bin/gbuild" "bin/gquery" "bin/gadd" "bin/gsub")
 path="./data/"
