@@ -1366,6 +1366,8 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		tmpsi.emptyBuffer();
 		general_evaluation.setStringIndexPointer(&tmpsi);
 
+		//TODO: withdraw this lock, and allow for multiple doQuery() to run in parallism
+		//we need to add lock in QueryCache's operations
 		this->debug_lock.lock();
 		bool query_ret = general_evaluation.doQuery();
 		if(!query_ret)
@@ -2703,57 +2705,6 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	//cout << this->kvstore->getEntityByID(list[i])<<" "<<list[i]<<endl;
 	//}
 
-	long tv_kv_store_end = Util::get_cur_time();
-
-	EntityBitSet _sub_entity_bitset;
-	_sub_entity_bitset.reset();
-
-	//this->encodeTriple2SubEntityBitSet(_sub_entity_bitset, &_triple);
-	this->encodeTriple2SubEntityBitSet(_sub_entity_bitset, _pre_id, _obj_id);
-
-	//if new entity then insert it, else update it.
-	if (_is_new_sub)
-	{
-		//cout<<"to insert: "<<_sub_id<<" "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-		//SigEntry _sig(_sub_id, _sub_entity_bitset);
-		//(this->vstree)->insertEntry(_sig);
-	}
-	else
-	{
-		//cout<<"to update: "<<_sub_id<<" "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-		//(this->vstree)->updateEntry(_sub_id, _sub_entity_bitset);
-	}
-
-	//if the object is an entity, then update or insert this entity's entry.
-	if (is_obj_entity)
-	{
-		EntityBitSet _obj_entity_bitset;
-		_obj_entity_bitset.reset();
-
-		//this->encodeTriple2ObjEntityBitSet(_obj_entity_bitset, &_triple);
-		this->encodeTriple2ObjEntityBitSet(_obj_entity_bitset, _pre_id, _sub_id);
-
-		if (_is_new_obj)
-		{
-			//cout<<"to insert: "<<_obj_id<<" "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			//SigEntry _sig(_obj_id, _obj_entity_bitset);
-			//(this->vstree)->insertEntry(_sig);
-		}
-		else
-		{
-			//cout<<"to update: "<<_obj_id<<" "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			//(this->vstree)->updateEntry(_obj_id, _obj_entity_bitset);
-		}
-	}
-
-	long tv_vs_store_end = Util::get_cur_time();
-
-	//debug
-	//{
-		//cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
-		//cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
-	//}
-
 	return true;
 	//return updateLen;
 }
@@ -2813,7 +2764,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		//cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
 		this->kvstore->subEntityByID(_sub_id);
 		this->kvstore->subIDByEntity(_triple.subject);
-		//(this->vstree)->removeEntry(_sub_id);
 		this->freeEntityID(_sub_id);
 		this->sub_num--;
 		//update the string buffer
@@ -2823,18 +2773,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		}
 		if (_vertices != NULL)
 			_vertices->push_back(_sub_id);
-	}
-	//else re-calculate the signature of subject & replace that in vstree
-	else
-	{
-		//cout<<"to replace entry for sub"<<endl;
-		//cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-		EntityBitSet _entity_bitset;
-		_entity_bitset.reset();
-		this->calculateEntityBitSet(_sub_id, _entity_bitset);
-		//NOTICE:can not use updateEntry as insert because this is in remove
-		//In insert we can add a OR operation and all is ok
-		//(this->vstree)->replaceEntry(_sub_id, _entity_bitset);
 	}
 	//cout<<"subject dealed"<<endl;
 
@@ -2849,7 +2787,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			//cout<<_obj_id << " "<<this->kvstore->getEntityByID(_obj_id)<<endl;
 			this->kvstore->subEntityByID(_obj_id);
 			this->kvstore->subIDByEntity(_triple.object);
-			//this->vstree->removeEntry(_obj_id);
 			this->freeEntityID(_obj_id);
 			//update the string buffer
 			if (_obj_id < this->entity_buffer_size)
@@ -2858,15 +2795,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			}
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
-		}
-		else
-		{
-			//cout<<"to replace entry for obj"<<endl;
-			//cout<<_obj_id << " "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			//EntityBitSet _entity_bitset;
-			//_entity_bitset.reset();
-			//this->calculateEntityBitSet(_obj_id, _entity_bitset);
-			//this->vstree->replaceEntry(_obj_id, _entity_bitset);
 		}
 	}
 	else
@@ -2900,13 +2828,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	}
 	//cout<<"predicate dealed"<<endl;
 
-	long tv_vs_store_end = Util::get_cur_time();
-
-	//debug
-	//{
-		//cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
-		//cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
-	//}
 	return true;
 }
 
