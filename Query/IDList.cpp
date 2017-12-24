@@ -95,7 +95,9 @@ IDList::to_str()
 int
 IDList::sort()
 {
-	std::sort(id_list.begin(), id_list.end());
+	//std::sort(id_list.begin(), id_list.end());
+	omp_set_num_threads(thread_num);
+	__gnu_parallel::sort(id_list.begin(), id_list.end());
 	return 0;
 }
 
