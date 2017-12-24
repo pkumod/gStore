@@ -130,8 +130,9 @@ void StringIndexFile::trySequenceAccess()
 	{
 		cout << "sequence access." << endl;
 
-		sort(this->request.begin(), this->request.end());
-
+		//sort(this->request.begin(), this->request.end());
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(this->request.begin(), this->request.end());
 		int pos = 0;
 		char *block = new char[MAX_BLOCK_SIZE];
 

@@ -98,6 +98,11 @@ in the sparql query can point to the same node in data graph)
 #include <random>
 #include <type_traits>
 
+//Added for __gnu_parallel::sort
+#include <omp.h>
+#include <parallel/algorithm>
+#define thread_num 10
+
 //NOTICE: hpp is different from static library(*.a) or dynamic library(*.so)
 //It places the implementations totally in header file, hpp = *.h + *.cpp
 
