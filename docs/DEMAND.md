@@ -26,7 +26,7 @@ NOTICE:
 
 3. You do not have to install realpath to use gStore, but if you want to use the gconsole for its convenience, please do so by using `dnf install realpath` or `apt-get install realpath`. However, if you can not install realpath in your system, please go to modify the file Main/gconsole.cpp(just find the place using realpath command and remove the realpath command).
 
-4. Our programs use regEx functions, which are provided by GNU/Linux by default. You do not need to install boost and boost-devel for more powerful regEx libraries.
+4. Our programs use regEx functions, which are provided by GNU/Linux by default. 
 
 5. ANTLR3.4 is used in gStore to produce lexer and parser code for SPARQL query. However, you do not need to install the corresponding antlr libraries because we have merged the libantlr3.4 in our system.
 
@@ -34,7 +34,7 @@ NOTICE:
 
 7. To install ccache, you need to add epel repository if using CentOS, while in Ubuntu you can directly install it by `apt-get install ccache` command. If you can not install ccache(or maybe you do not want to), please go to modify the makefile(just change the CC variable to g++).
 
-8. If you need to use the HTTP server in gStore, then Boost Library must be installed and the version should not be less than 1.54. Remember to check the makefile for your installed path of Boost.
+8. If you need to use the HTTP server in gStore, then Boost Library(like boost-devel, including boost headers for developing) must be installed and the version should not be less than 1.54. Remember to check the makefile for your installed path of Boost.
 
 9. Any other questions, please go to [FAQ](FAQ.md) page.
 
