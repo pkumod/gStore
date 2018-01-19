@@ -47,8 +47,8 @@ CC = g++
 CFLAGS = -c -Wall -O2 -pthread -std=c++11
 EXEFLAG = -O2 -pthread -std=c++11
 #-coverage
-#CFLAGS = -c -Wall -pthread -g -std=c++11
-#EXEFLAG = -pthread -g -std=c++11
+CFLAGS = -c -Wall -pthread -g -std=c++11
+EXEFLAG = -pthread -g -std=c++11
 
 #add -lreadline -ltermcap if using readline or objs contain readline
 library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost

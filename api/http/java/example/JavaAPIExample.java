@@ -13,7 +13,7 @@ public class JavaAPIExample
 	public static void main(String[] args)
 	{
 		// initialize the GStore server's IP address and port.
-		GstoreConnector gc = new GstoreConnector("127.0.0.1", 9000);
+		GstoreConnector gc = new GstoreConnector("172.31.222.93", 9016);
 		//for sparql endpoint, URL can also be used here, like freebase.gstore-pku.com:80
 		//GstoreConnector gc = new GstoreConnector("tourist.gstore-pku.com", 80);
 
@@ -24,8 +24,8 @@ public class JavaAPIExample
 		
 	    // build a new database by a RDF file.
 	    // note that the relative path is related to gserver.
-		gc.build("LUBM10", "data/LUBM_10.n3");
-	    gc.load("LUBM10");
+		gc.build("LUBM10", "data/LUBM_10.n3", "root", "123456");
+	    gc.load("LUBM10", "root", "123456");
 		
 		// then you can execute SPARQL query on this database.
 		String sparql = "select ?x where "
@@ -38,14 +38,14 @@ public class JavaAPIExample
 				+ "?z    <ub:worksFor>    ?w. "
 				+ "?w    <ub:name>    <Department0>. "
 				+ "}";				
-		String answer = gc.query(sparql);
+		String answer = gc.query(sparql, "lubm", "root", "123456");
 		System.out.println(answer);
 		
 		// unload this database.
-		gc.unload("LUBM10");
+		gc.unload("LUBM10", "root", "123456");
 		
 	    // also, you can load some exist database directly and then query.
-	    gc.load("LUBM10");
+	    gc.load("LUBM10", "root", "123456");
 
 		//sparql = "delete where "
 				//+ "{"
@@ -55,9 +55,9 @@ public class JavaAPIExample
 		//PERFORMANCE: if we use the query above(as comment), result will be very large and the time cost is large, too
 		//The method to improve it is to receive a line and output/save to file at once, instead of combining all lines into a String
 		//The related code is in api/http/java/src/jgsc/GstoreConnector.java
-	    answer = gc.query(sparql);	    
+	    answer = gc.query(sparql, "lubm", "root", "123456");	    
 		System.out.println(answer);
-		gc.unload("LUBM10");
+		gc.unload("LUBM10", "root", "123456");
 	}
 }
 

@@ -51,13 +51,15 @@ function query(dp) {
 				//toTxt();
 				//alert(data);
 				var parts = data.split("+");
-				var fileName = parts[2];
-			    var lines = Number(parts[1]);
+				var query_time = parts[1];
+				//alert(query_time);
+				var fileName = parts[3];
+			    var lines = Number(parts[2]);
 				//alert(lines);
 				if(lines > 100)
 					lines = 100;
 				//alert(lines);
-				var items = parts[3].split("\n");
+				var items = parts[4].split("\n");
 				//alert(items[0]);
 				var valNum = items[0].split("?");
 				var rows = valNum.length - 1;
@@ -65,9 +67,8 @@ function query(dp) {
 				var page = '<html><div align="left"><a href="javascript:void(0);" id="back" style="font-size:16px;color:blue">Click to Return</a>';
 				page = page + '<a id="download" style="font-size:16px;margin-left:20px">Click to Download</a>';
 				page = page + '<a href="/" id="trick" style="display: none">Click to back</a>';
-				page = page + '<p>Total answers: ';
-				page = page + parts[1];
-				page = page + '</p>';
+				page = page + '<p>Total answers: ' + parts[2] + '</p>';
+				page = page + '<p>Query time: ' + parts[1] + 'ms</p>';
 				if(parts[0] == "1")
 				{
 					
@@ -149,7 +150,7 @@ function query(dp) {
 							element3.dispatchEvent(e1);
 						}
 					});
-				}
+				};
 			}
 		});
 	}
