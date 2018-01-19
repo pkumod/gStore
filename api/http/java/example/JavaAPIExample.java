@@ -38,7 +38,7 @@ public class JavaAPIExample
 				+ "?z    <ub:worksFor>    ?w. "
 				+ "?w    <ub:name>    <Department0>. "
 				+ "}";				
-		String answer = gc.query(sparql, "lubm", "root", "123456");
+		String answer = gc.query(sparql, "LUBM10", "root", "123456");
 		System.out.println(answer);
 		
 		// unload this database.
@@ -55,7 +55,7 @@ public class JavaAPIExample
 		//PERFORMANCE: if we use the query above(as comment), result will be very large and the time cost is large, too
 		//The method to improve it is to receive a line and output/save to file at once, instead of combining all lines into a String
 		//The related code is in api/http/java/src/jgsc/GstoreConnector.java
-	    answer = gc.query(sparql, "lubm", "root", "123456");	    
+	    answer = gc.query(sparql, "LUBM10", "root", "123456");	    
 		System.out.println(answer);
 		gc.unload("LUBM10", "root", "123456");
 	}
