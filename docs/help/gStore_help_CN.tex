@@ -389,6 +389,7 @@ Gstore系统（也称作gStore）是一个用于管理大型图结构数据的�
 			gcc & 版本 \textgreater{}= 4.4.7 \\
 			g++ & 版本 \textgreater{}= 4.4.7 \\
 			make & 需要安装 \\
+			boost & 版本 \textgreater{}= 1.54 \\
 			readline & 需要安装 \\
 			readline-devel & 需要安装 \\
 			openjdk & 使用Java api时需要 \\
@@ -410,13 +411,14 @@ Gstore系统（也称作gStore）是一个用于管理大型图结构数据的�
 	\item
 	使用gStore不需要安装realpath，但如果你想要使用gconsole，请输入\texttt{dnf\ install\ realpath}或\texttt{apt-get\ install\ realpath}进行安装。
 	\item
-	我们的项目使用了正则表达式，由GNU/Linux默认提供。要使用更强大的正则表达式库，你不需要安装boost和boost-devel。
+	我们的项目使用了正则表达式，由GNU/Linux默认提供。
 	\item
 	gStore使用了ANTLR3.4生成SPARQL查询的语法分析代码。你不需要安装相应的antlr 库，因为我们已经将libantlr3.4融入系统中。
 	\item
 	当你在gStore项目的根目录下输入\texttt{make}时，Java api也会编译。如果你的系统里没有JDK，你可以修改makefile。我们建议你在Linux系统中安装openjdk-devel。
 	\item
 	在CentOS系统上你需要添加epel源才能安装ccache，但在Ubuntu系统上可以直接用'apt-get install ccache'命令安装。如果你无法安装ccahe（或者不想安装），请修改makefile文件（只需要将CC变量改为g++即可）。
+	\item 如果要使用gStore的HTTP服务， 则必须安装boost开发库（比如boost-devel，包括用于开发的boost头文件），且版本不能低于1.54。注意检查makefile中boost库的安装位置。 
 	\item
 	其他问题请参阅\hyperref[chapter11]{【FAQ】}一章。
 \end{enumerate}
