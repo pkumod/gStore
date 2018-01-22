@@ -51,6 +51,8 @@ Database::Database()
 
 	this->if_loaded = false;
 
+	this->trie = NULL;
+
 	//this->resetIDinfo();
 	this->initIDinfo();
 
@@ -76,14 +78,11 @@ Database::Database(string _name)
 
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = new KVstore(kv_store_path);
-
 	string vstree_store_path = store_path + "/vs_store";
 	//this->vstree = new VSTree(vstree_store_path);
 	this->vstree = NULL;
-
 	string stringindex_store_path = store_path + "/stringindex_store";
 	this->stringindex = new StringIndex(stringindex_store_path);
-
 	//this->encode_mode = Database::STRING_MODE;
 	this->encode_mode = Database::ID_MODE;
 	this->is_active = false;
@@ -103,6 +102,8 @@ Database::Database(string _name)
 	this->literal_buffer_size = 0;
 
 	this->query_cache = new QueryCache();
+
+	this->trie = NULL;
 
 	//this->resetIDinfo();
 	this->initIDinfo();
@@ -731,6 +732,18 @@ Database::load()
 	//this->warmUp();
 	//DEBUG:the warmUp() calls query(), which will also output results, this is not we want
 
+	// Load trie
+
+	if (trie != NULL)
+		delete trie;
+	trie = new Trie;
+
+	string dictionary_path = store_path + "/dictionary.dc";
+	if (!trie->LoadTrie(dictionary_path))
+	{
+		return false;
+	}
+
 	this->if_loaded = true;
 	cout << "finish load" << endl;
 
@@ -1193,7 +1206,7 @@ string tstr;
 	spq[1] = "select distinct ?x where { ?x      <rdf:type>      <ub:GraduateStudent>. ?y      <rdf:type>      <ub:University>. ?z      <rdf:type>      <ub:Department>. ?x      <ub:memberOf>   ?z. ?z      <ub:subOrganizationOf>  ?y. ?x      <ub:undergraduateDegreeFrom>    ?y. }";
 	spq[2] = "select distinct ?x where { ?x      <rdf:type>      <ub:Course>. ?x      <ub:name>       ?y. }";
 	spq[3] = "select ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. ?y    <ub:name> <Course1>. ?x    <ub:takesCourse>  ?y. ?z    <ub:teacherOf>    ?y. ?z    <ub:name> <FullProfessor1>. ?z    <ub:worksFor>    ?w. ?w    <ub:name>    <Department0>. }";
-	spq[4] = "select distinct ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. }";
+		spq[4] = "select distinct ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. }";
 	spq[5] = "select ?s ?o where { ?s ?p ?o . }";
 	for(int i = 0; i < 6; ++i)
 	{
@@ -1250,6 +1263,12 @@ Database::unload()
 
 	this->if_loaded = false;
 	this->clear_update_log();
+
+	if (this->trie != NULL)
+	{
+		delete this->trie;
+		trie = NULL;
+	}
 
 	return true;
 }
@@ -1330,6 +1349,8 @@ Database::getPreNum()
 int
 Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 {
+	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
+
 	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 
 	long tv_begin = Util::get_cur_time();
@@ -1374,8 +1395,19 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		}
 		this->debug_lock.unlock();
 
+		if (trie == NULL)
+		{
+			trie = new Trie;
+			string dictionary_path = this->store_path + "/dictionary.dc";
+			if (!trie->LoadTrie(dictionary_path))
+			{
+				exit(0);
+			}
+			trie->LoadDictionary();
+		}
+
 		long tv_bfget = Util::get_cur_time();
-		general_evaluation.getFinalResult(_result_set);
+		general_evaluation.getFinalResult(_result_set, trie);
 		long tv_afget = Util::get_cur_time();
 		cout << "after getFinalResult, used " << (tv_afget - tv_bfget) << "ms." << endl;
 
@@ -1401,6 +1433,18 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
 		TYPE_TRIPLE_NUM update_triple_num = 0;
+	
+		if (trie == NULL)
+		{
+			trie = new Trie;
+			string dictionary_path = this->store_path + "/dictionary.dc";
+			if (!trie->LoadTrie(dictionary_path))
+			{
+				exit(0);
+			}
+			trie->LoadDictionary();
+		}
+
 
 		if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
 		{
@@ -1422,6 +1466,9 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 					update_triple[i] = TripleWithObjType(update_pattern.sub_group_pattern[i].pattern.subject.value,
 														 update_pattern.sub_group_pattern[i].pattern.predicate.value,
 														 update_pattern.sub_group_pattern[i].pattern.object.value, object_type);
+
+					// Compress
+					update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
 				}
 				else 
 				{
@@ -2311,6 +2358,20 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	//parse a file
 	RDFParser _parser(_fin);
 
+	// Initialize trie
+	string dictionary_store_path = this->store_path + "/dictionary.dc"; 
+	this->trie = new Trie (_rdf_file, dictionary_store_path);
+	if (!trie->isInitialized())
+	{
+		cout << "Fail to initialize trie" << endl;
+		exit(0);
+	}
+	
+	if(!trie->WriteDown())
+	{
+		cout << "Fail to write down dictionary" << endl;
+		exit(0);
+	}
 	//Util::logging("==> while(true)");
 
 	while (true)
@@ -2354,6 +2415,11 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 			//TODO: use 3 threads to deal with sub, obj, pre separately
 			//However, the cost of new /delete threads may be high
 			//We need a thread pool!
+
+			// Compress triple begin
+			TripleWithObjType compressed_triple = trie->Compress(triple_array[i], Trie::BUILDMODE);
+			triple_array[i] = compressed_triple;
+			//Compress triple end
 
 			// For subject
 			// (all subject is entity, some object is entity, the other is literal)
@@ -2959,6 +3025,13 @@ Database::insert(std::string _rdf_file, bool _is_restore)
 			break;
 		}
 
+		//Compress triple here
+		for(int i = 0; i < parse_triple_num; i++)
+		{
+			TripleWithObjType compressed_triple = trie->Compress(triple_array[i], Trie::QUERYMODE);
+			triple_array[i] = compressed_triple;
+		}
+
 		//Process the Triple one by one
 		success_num += this->insert(triple_array, parse_triple_num, _is_restore);
 		//some maybe invalid or duplicate
@@ -3051,6 +3124,14 @@ Database::remove(std::string _rdf_file, bool _is_restore)
 		{
 			break;
 		}
+
+		//Compress triple
+		for(int i = 0; i < parse_triple_num; i++)
+		{
+			TripleWithObjType compressed_triple = trie->Compress(triple_array[i], Trie::QUERYMODE);
+			triple_array[i] = compressed_triple;
+		}
+
 
 		success_num += this->remove(triple_array, parse_triple_num, _is_restore);
 		//some maybe invalid or duplicate

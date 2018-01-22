@@ -12,6 +12,7 @@
 #include "../Util/Util.h"
 #include "../Util/VList.h"
 #include "Tree.h"
+#include "../Trie/Trie.h"
 
 //TODO: is it needed to keep a length in Bstr?? especially for IVTree?
 //add a length: sizeof bstr from 8 to 16(4 -> 8 for alignment)
@@ -97,7 +98,7 @@ public:
 	bool open_entity2id(int _mode);
 	bool close_entity2id();
 	bool subIDByEntity(std::string _entity);
-	TYPE_ENTITY_LITERAL_ID getIDByEntity(std::string _entity) const;
+	TYPE_ENTITY_LITERAL_ID getIDByEntity(std::string _entity);
 	bool setIDByEntity(std::string _entity, TYPE_ENTITY_LITERAL_ID _id);
 
 	//for id2entity 
@@ -111,7 +112,7 @@ public:
 	bool open_predicate2id(int _mode);
 	bool close_predicate2id();
 	bool subIDByPredicate(std::string _predicate);
-	TYPE_PREDICATE_ID getIDByPredicate(std::string _predicate) const;
+	TYPE_PREDICATE_ID getIDByPredicate(std::string _predicate);
 	bool setIDByPredicate(std::string _predicate, TYPE_PREDICATE_ID _id);
 
 	//for id2predicate 
@@ -125,7 +126,7 @@ public:
 	bool open_literal2id(int _mode);
 	bool close_literal2id();
 	bool subIDByLiteral(std::string _literal);
-	TYPE_ENTITY_LITERAL_ID getIDByLiteral(std::string _literal) const;
+	TYPE_ENTITY_LITERAL_ID getIDByLiteral(std::string _literal);
 	bool setIDByLiteral(std::string _literal, TYPE_ENTITY_LITERAL_ID _id);
 
 	//for id2literal 
@@ -166,9 +167,14 @@ public:
 	//for so2p
 	bool getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subID, TYPE_ENTITY_LITERAL_ID _objID, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 
+	void load_trie();
 
 private:
 	std::string store_path;
+
+	std::string dictionary_store_path;
+
+	Trie *trie;
 
 	SITree* entity2id;
 	ISTree* id2entity;
@@ -209,6 +215,7 @@ private:
 	static unsigned short buffer_sID2values_query;
 	static unsigned short buffer_oID2values_query;
 	static unsigned short buffer_pID2values_query;
+
 
 	//===============================================================================
 

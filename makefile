@@ -96,9 +96,10 @@ serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)So
 
 databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o
 
+trieobj = $(objdir)Trie.o $(objdir)TrieNode.o
 
 objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj) $(httpobj) $(databaseobj) \
-		  $(utilobj) $(signatureobj) $(queryobj)
+		  $(utilobj) $(signatureobj) $(queryobj) $(trieobj)
 	 
 inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 #-I./usr/local/include/boost/
@@ -412,6 +413,13 @@ $(objdir)QueryParser.o: Parser/QueryParser.cpp Parser/QueryParser.h $(objdir)Spa
 
 #objects in Parser/ end
 
+#objects in Trie/ begin
+
+$(objdir)TrieNode.o: Trie/TrieNode.cpp Trie/TrieNode.h
+	$(CC) $(CFLAGS) Trie/TrieNode.cpp -o $(objdir)TrieNode.o
+
+$(objdir)Trie.o: Trie/Trie.cpp Trie/Trie.h $(objdir)TrieNode.o $(objdir)Triple.o $(objdir)RDFParser.o
+	$(CC) $(CFLAGS) Trie/Trie.cpp $(inc) -o $(objdir)Trie.o
 
 #objects in Server/ begin
 
