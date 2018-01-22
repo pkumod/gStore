@@ -15,6 +15,9 @@ using namespace std;
 KVstore::KVstore(string _store_path) 
 {
 	this->store_path = _store_path;
+	
+	this->dictionary_store_path = _store_path + "/../dictionary.dc";
+	this->trie = NULL;
 
 	this->entity2id = NULL;
 	this->id2entity = NULL;
@@ -88,6 +91,10 @@ KVstore::release()
 	//cout << "delete o2v" << endl;
 	delete this->objID2values;
 	this->objID2values = NULL;
+
+	if (trie != NULL)
+		delete this->trie;
+	this->trie = NULL;
 }
 
 void 
@@ -107,6 +114,21 @@ KVstore::open()
 	this->open_subID2values(KVstore::READ_WRITE_MODE);
 	this->open_objID2values(KVstore::READ_WRITE_MODE);
 	this->open_preID2values(KVstore::READ_WRITE_MODE);
+
+	this->trie = new Trie;
+	trie->LoadTrie(dictionary_store_path);
+}
+
+void
+KVstore::load_trie()
+{
+	if (trie != NULL) return;
+	
+	trie = new Trie;
+	if (!trie->LoadTrie(dictionary_store_path))
+	{
+		exit(0);
+	}
 }
 
 string 
@@ -125,8 +147,24 @@ KVstore::getStringByID(TYPE_ENTITY_LITERAL_ID _id)
 TYPE_ENTITY_LITERAL_ID
 KVstore::getIDByString(string _str)
 {
+	cout << "KVSTORE::GETIDBYSTRING" << endl;
+	//load kv_trie
+/*	if (kv_trie == NULL)
+	{
+		string dictionary_path = this->store_path.substr(0, store_path.length() - 9);
+		dictionary_path = dictionary_path + "/dictionary.dc";
+
+		this->kv_trie = new Trie;
+		if (!kv_trie->LoadTrie(dictionary_path))
+		{
+			exit(0);
+		}
+	}*/
+
 	if(Util::isEntity(_str))
 	{
+	//	string tmp_str = kv_trie->Compress(_str);
+	//	cout << "GetIDBYString: " << tmp_str << endl;
 		return this->getIDByEntity(_str);
 	}
 	else
@@ -1061,12 +1099,16 @@ KVstore::subIDByEntity(string _entity)
 	//NOTICE: no need to copy _entity to a char* buffer
 	//_entity will not be released befor ethis function ends
 	//so _entity.c_str() is a valid const char*
+	this->load_trie();
+	_entity = trie->Compress(_entity);
 	return this->entity2id->remove(_entity.c_str(), _entity.length());
 }
 
 TYPE_ENTITY_LITERAL_ID
-KVstore::getIDByEntity(string _entity) const 
+KVstore::getIDByEntity(string _entity)  
 {
+	this->load_trie();
+	_entity = trie->Compress(_entity);
 	return this->getIDByStr(this->entity2id, _entity.c_str(), _entity.length());
 }
 
@@ -1077,6 +1119,9 @@ KVstore::setIDByEntity(string _entity, TYPE_ENTITY_LITERAL_ID _id)
 	//int len = _entity.length() + 1;
 	int len = _entity.length();
 	char* str = new char[len];
+
+	this->load_trie();
+	_entity = trie->Compress(_entity);
 	memcpy(str, _entity.c_str(), len);
 	return this->addValueByKey(this->entity2id, str, len, _id);
 }
@@ -1212,12 +1257,16 @@ KVstore::close_predicate2id()
 bool 
 KVstore::subIDByPredicate(string _predicate) 
 {
+	this->load_trie();
+	_predicate = trie->Compress(_predicate);
 	return this->predicate2id->remove(_predicate.c_str(), _predicate.length());
 }
 
 TYPE_PREDICATE_ID
-KVstore::getIDByPredicate(string _predicate) const 
+KVstore::getIDByPredicate(string _predicate)  
 {
+	this->load_trie();
+	_predicate = trie->Compress(_predicate);
 	return this->getIDByStr(this->predicate2id, _predicate.c_str(), _predicate.length());
 }
 
@@ -1228,6 +1277,9 @@ KVstore::setIDByPredicate(string _predicate, TYPE_PREDICATE_ID _id)
 	//int len = _predicate.length() + 1;
 	int len = _predicate.length();
 	char* str = new char[len];
+
+	this->load_trie();
+	_predicate = trie->Compress(_predicate);
 	memcpy(str, _predicate.c_str(), len);
 	return this->addValueByKey(this->predicate2id, str, len, _id);
 }
@@ -1345,12 +1397,16 @@ KVstore::close_literal2id()
 bool 
 KVstore::subIDByLiteral(string _literal) 
 {
+	this->load_trie();
+	_literal = trie->Compress(_literal);
 	return this->literal2id->remove(_literal.c_str(), _literal.length());
 }
 
 TYPE_ENTITY_LITERAL_ID
-KVstore::getIDByLiteral(string _literal) const 
+KVstore::getIDByLiteral(string _literal) 
 {
+	this->load_trie();
+	_literal = trie->Compress(_literal);
 	return this->getIDByStr(this->literal2id, _literal.c_str(), _literal.length());
 }
 
@@ -1359,8 +1415,10 @@ KVstore::setIDByLiteral(string _literal, TYPE_ENTITY_LITERAL_ID _id)
 {
 	//return this->addValueByKey(this->literal2id, _literal.c_str(), _literal.length(), _id);
 	//int len = _literal.length() + 1;
+	this->load_trie();
 	int len = _literal.length();
 	char* str = new char[len];
+	_literal = trie->Compress(_literal);
 	memcpy(str, _literal.c_str(), len);
 
 	return this->addValueByKey(this->literal2id, str, len, _id);
