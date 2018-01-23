@@ -103,7 +103,6 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, bool real)
 
 	if (real)
 	{
-		cout << "FLAG1" << endl;
 		*str = trie->Uncompress(*str, str->length());//Uncompresss
 	}
 

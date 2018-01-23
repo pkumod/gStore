@@ -230,7 +230,6 @@ Trie::LoadDictionary()
 string
 Trie::Uncompress(const char *_str, const int len)
 {
-	cout << _str << ' ' << len << endl;
 	if (len == 0)
 		return "";
 
