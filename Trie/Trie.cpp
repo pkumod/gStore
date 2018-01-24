@@ -249,7 +249,13 @@ Trie::Uncompress(const char *_str, const int len)
 		}
 	}
 	int dictionaryID;
-	char *tmp_str = new char [len + 1];
+	char buf[10000];
+	char *tmp_str = buf;
+	if (len >= 10000)
+	{
+		tmp_str = new char [len + 1];
+	}
+
 	if (tmp_str == NULL)
 	{
 		cout << "Trie::Uncompress Error, failed new " << endl;
@@ -257,7 +263,9 @@ Trie::Uncompress(const char *_str, const int len)
 	}
 	sscanf(_str, "%d %s", &dictionaryID, tmp_str);
 	string strPiece = tmp_str;
-	delete [] tmp_str;
+	
+	if (len >= 10000)
+		delete [] tmp_str;
 
 	string retval;
 

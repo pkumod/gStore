@@ -68,7 +68,7 @@ class GeneralEvaluation
 		bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &group_pattern, std::deque<QueryTree::GroupPattern> &queue);
 		TempResultSet* rewritingBasedQueryEvaluation(int dep);
 
-		void getFinalResult(ResultSet &ret_result, Trie *trie);
+		void getFinalResult(ResultSet &ret_result);
 		void releaseResult();
 
 		void prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, unsigned &update_triple_num);
