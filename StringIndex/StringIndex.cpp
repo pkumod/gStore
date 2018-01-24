@@ -176,6 +176,10 @@ void StringIndexFile::trySequenceAccess(bool real)
 					memcpy(this->buffer, &block[offset - current_block_begin], length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str = string(this->buffer);
+					
+					*this->request[pos].str = trie->Uncompress(
+					*this->request[pos].str, this->request[pos].str->length());
+					
 					pos++;
 				}
 				else if (current_block_begin <= offset)
@@ -194,6 +198,10 @@ void StringIndexFile::trySequenceAccess(bool real)
 					memcpy(this->buffer, block, length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str += string(this->buffer);
+
+					*this->request[pos].str = trie->Uncompress(
+					*this->request[pos].str, this->request[pos].str->length());
+				
 					pos++;
 					while (pos < (int)this->request.size() && this->request[pos - 1].offset == this->request[pos].offset)
 					{
@@ -364,6 +372,7 @@ void StringIndex::addRequest(unsigned id, std::string *str, bool is_entity_or_li
 	{
 		if(searchBuffer(id, str))
 		{
+//			*str = trie->Uncompress(*str)
 			return;
 		}
 		if (id < Util::LITERAL_FIRST_ID)
