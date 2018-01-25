@@ -17,8 +17,8 @@ using namespace std;
 
 class Trie
 {
-	static const int SAMPLE_UPBOUND = 300000;
-	static const int LOWBOUND = 20;
+	static const int SAMPLE_UPBOUND = 1000000;
+	static const int LOWBOUND = 100;//this param should change with data sets
 	string store_path;
 	int curID;
 	TrieNode *root;
@@ -41,6 +41,6 @@ public:
 	string Compress(string _str);
 	bool LoadDictionary();
 	string Uncompress(const char *_str, const int len);
-	string Uncompress(const string _str, const int len);
+	string Uncompress(const string &_str, const int len);
 	bool LoadTrie(string dictionary_path);
 };

@@ -111,7 +111,7 @@ Trie::WriteDownNode(TrieNode *_node, ofstream& _fout, string _str)
 	string curString = _node->getString();
 	int curCount;
 
-	if ((curCount = _node->getCount()) > Trie::LOWBOUND)
+	if ((curCount = _node->getCount()) > Trie::LOWBOUND || _node == root)
 	{
 		_node->ID = curID++;
 
@@ -251,6 +251,7 @@ Trie::Uncompress(const char *_str, const int len)
 			exit(0);
 		}
 	}
+
 	int dictionaryID;
 	char buf[10000];
 	char *tmp_str = buf;
@@ -264,8 +265,9 @@ Trie::Uncompress(const char *_str, const int len)
 		cout << "Trie::Uncompress Error, failed new " << endl;
 		exit(0);
 	}
+
 	sscanf(_str, "%d %s", &dictionaryID, tmp_str);
-	string strPiece = tmp_str;
+	string strPiece = string(tmp_str + 1);
 	
 	if (len >= 10000)
 		delete [] tmp_str;
@@ -274,7 +276,7 @@ Trie::Uncompress(const char *_str, const int len)
 
 	if (dictionaryID < 0) /* _str is literal */
 	{
-		return strPiece.substr(1, strPiece.length() - 1);
+		return strPiece;
 	}		
 	else
 	{
@@ -282,13 +284,12 @@ Trie::Uncompress(const char *_str, const int len)
 
 		if (dictionaryID == 0)
 		{
-			return strPiece.substr(1, strLen - 1);
+			return strPiece;
 		}
 
 		if (strLen > 1)
 		{
-			return dictionary[dictionaryID] + strPiece.substr(1, 
-                               strLen - 1);
+			return dictionary[dictionaryID] + strPiece;
 		}
 		else
 		{
@@ -299,7 +300,7 @@ Trie::Uncompress(const char *_str, const int len)
 }
 
 string
-Trie::Uncompress(const string _str, const int len)
+Trie::Uncompress(const string &_str, const int len)
 {
 	return Uncompress(_str.data(), len);
 }
