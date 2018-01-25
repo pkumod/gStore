@@ -17,7 +17,7 @@ using namespace std;
 
 class Trie
 {
-	static const int SAMPLE_UPBOUND = 100000;
+	static const int SAMPLE_UPBOUND = 300000;
 	static const int LOWBOUND = 20;
 	string store_path;
 	int curID;
