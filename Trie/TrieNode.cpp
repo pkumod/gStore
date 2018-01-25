@@ -132,14 +132,21 @@ TrieNode::split(string& _str)
 {
 	int len = _str.length();
 	int i = 0;
+	bool divide_flag = false;
 	
 	while (i < len)
 	{
-		if (_str[i] == '/' || _str[i] == '.')
+		if (_str[i] == '/' || _str[i] == '.'
+			|| (_str[i] >= '0' && _str[i] <= '9'))
 		{
 			// ignore first char because it's '.' or '/'
 			// and there might be "//"
-			if (i > 0 && _str[i - 1] != '/') break;
+			if (divide_flag ||
+				(_str[i] == '.' && i > 0)) break;
+		}
+		else
+		{
+			divide_flag = true;
 		}
 		i++;
 	}

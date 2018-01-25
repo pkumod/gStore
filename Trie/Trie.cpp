@@ -22,6 +22,8 @@ Trie::Trie(const string _rdf_file, string _store_path)
 {
 	cout << "begin building Trie..." << endl;
 
+	long t1 = Util::get_cur_time();
+
 	dictionary.clear();
 
 	ifstream _fin(_rdf_file.c_str());
@@ -73,7 +75,8 @@ Trie::Trie(const string _rdf_file, string _store_path)
 	delete [] triple_array;
 	triple_array = NULL;
 
-	cout << "Finished building Trie." << endl;
+	long t2 = Util::get_cur_time();
+	cout << "Finish building trie, cost " << t2 - t1 << "ms." << endl;
 }
 
 /* return if the trie is built successfully */
