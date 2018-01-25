@@ -98,7 +98,7 @@ public:
 	bool open_entity2id(int _mode);
 	bool close_entity2id();
 	bool subIDByEntity(std::string _entity);
-	TYPE_ENTITY_LITERAL_ID getIDByEntity(std::string _entity);
+	TYPE_ENTITY_LITERAL_ID getIDByEntity(std::string _entity) const;
 	bool setIDByEntity(std::string _entity, TYPE_ENTITY_LITERAL_ID _id);
 
 	//for id2entity 
@@ -112,7 +112,7 @@ public:
 	bool open_predicate2id(int _mode);
 	bool close_predicate2id();
 	bool subIDByPredicate(std::string _predicate);
-	TYPE_PREDICATE_ID getIDByPredicate(std::string _predicate);
+	TYPE_PREDICATE_ID getIDByPredicate(std::string _predicate) const;
 	bool setIDByPredicate(std::string _predicate, TYPE_PREDICATE_ID _id);
 
 	//for id2predicate 
@@ -126,7 +126,7 @@ public:
 	bool open_literal2id(int _mode);
 	bool close_literal2id();
 	bool subIDByLiteral(std::string _literal);
-	TYPE_ENTITY_LITERAL_ID getIDByLiteral(std::string _literal);
+	TYPE_ENTITY_LITERAL_ID getIDByLiteral(std::string _literal) const;
 	bool setIDByLiteral(std::string _literal, TYPE_ENTITY_LITERAL_ID _id);
 
 	//for id2literal 

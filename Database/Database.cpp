@@ -658,11 +658,9 @@ Database::load()
 		//cout << "load tree error. @Database::load()" << endl;
 		//return false;
 	//}
-
 	(this->kvstore)->open();
 #else
 	//thread vstree_thread(&Database::load_vstree, this, vstree_cache);
-
 	int kv_mode = KVstore::READ_WRITE_MODE;
 	thread entity2id_thread(&Database::load_entity2id, this, kv_mode);
 	thread id2entity_thread(&Database::load_id2entity, this, kv_mode);
@@ -684,6 +682,8 @@ Database::load()
 		cout << "load database info error. @Database::load()" << endl;
 		return false;
 	}
+
+	(this->kvstore)->load_trie();
 
 	//NOTICE: we should also run some heavy work in the main thread
 	this->stringindex->load();
@@ -745,6 +745,7 @@ Database::load()
 	}
 
 	this->if_loaded = true;
+
 	cout << "finish load" << endl;
 
 	//TODO: for only-read application(like endpoint), 3 id2values trees can be closed now
@@ -1407,7 +1408,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		}
 
 		long tv_bfget = Util::get_cur_time();
-		general_evaluation.getFinalResult(_result_set, trie);
+		general_evaluation.getFinalResult(_result_set);
 		long tv_afget = Util::get_cur_time();
 		cout << "after getFinalResult, used " << (tv_afget - tv_bfget) << "ms." << endl;
 
@@ -2316,6 +2317,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 		(this->kvstore)->open_id2predicate(KVstore::CREATE_MODE);
 		(this->kvstore)->open_literal2id(KVstore::CREATE_MODE);
 		(this->kvstore)->open_id2literal(KVstore::CREATE_MODE);
+		(this->kvstore)->load_trie();
 	}
 
 	//Util::logging("finish initial sub2id_pre2id_obj2id");

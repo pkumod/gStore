@@ -820,7 +820,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 	return result;
 }
 
-void GeneralEvaluation::getFinalResult(ResultSet &ret_result, Trie *trie)
+void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 {
 	//cout << "flag1" << endl;
 
@@ -1107,13 +1107,13 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result, Trie *trie)
 			this->stringindex->trySequenceAccess();
 
 			//Uncompress
-			for (unsigned i = 0; i < ret_result.ansNum; i++)
+		/*	for (unsigned i = 0; i < ret_result.ansNum; i++)
 			{
 				for(int j = 0; j < ret_result.select_var_num; j++)
 				{
 					ret_result.answer[i][j] = trie->Uncompress(ret_result.answer[i][j], ret_result.answer[i][j].length());
 				}
-			}
+			}*/
 		}
 		else
 		{
