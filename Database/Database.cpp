@@ -683,7 +683,8 @@ Database::load()
 		return false;
 	}
 
-	(this->kvstore)->load_trie();
+	if(!(this->kvstore)->load_trie())
+		return false;
 
 	//NOTICE: we should also run some heavy work in the main thread
 	this->stringindex->load();

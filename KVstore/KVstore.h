@@ -167,7 +167,7 @@ public:
 	//for so2p
 	bool getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subID, TYPE_ENTITY_LITERAL_ID _objID, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 
-	void load_trie();
+	bool load_trie();
 
 private:
 	std::string store_path;

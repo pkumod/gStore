@@ -23,7 +23,7 @@ Trie::Trie(const string _rdf_file, string _store_path)
 	cout << "begin building Trie..." << endl;
 
 	long t1 = Util::get_cur_time();
-
+	
 	dictionary.clear();
 
 	ifstream _fin(_rdf_file.c_str());
@@ -122,6 +122,27 @@ Trie::WriteDownNode(TrieNode *_node, ofstream& _fout, string _str)
 			_fout << "/";
 		} */
 		_fout << endl;
+	}
+	else  // delete unqualified node 
+	{
+		Release(_node->getLchd());
+		_node->setLchd(NULL);
+
+		TrieNode *lbro = _node->getLbro();
+		TrieNode *rbro = _node->getRbro();
+		TrieNode *father = _node->getFather();
+		if (lbro != NULL)
+			lbro->setRbro(rbro);
+		if (rbro != NULL)
+			rbro->setLbro(lbro);
+
+		if (lbro == NULL && father != NULL) // _node is the most left child
+		{
+			father->setLchd(rbro);
+		}
+
+		if (_node != root)
+			delete _node;
 	}
 
 	TrieNode *pointer;
@@ -272,11 +293,9 @@ Trie::Uncompress(const char *_str, const int len)
 	if (len >= 10000)
 		delete [] tmp_str;
 
-	string retval;
-
 	if (dictionaryID < 0) /* _str is literal */
 	{
-		return strPiece;
+		return string(_str + 3);
 	}		
 	else
 	{

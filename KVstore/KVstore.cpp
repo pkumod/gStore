@@ -119,16 +119,13 @@ KVstore::open()
 	trie->LoadTrie(dictionary_store_path);
 }
 
-void
+bool
 KVstore::load_trie()
 {
-	if (trie != NULL) return;
+	if (trie != NULL) return true;
 	
 	trie = new Trie;
-	if (!trie->LoadTrie(dictionary_store_path))
-	{
-		exit(0);
-	}
+    return trie->LoadTrie(dictionary_store_path);
 }
 
 string 

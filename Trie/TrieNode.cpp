@@ -14,7 +14,7 @@ using namespace std;
 
 TrieNode::TrieNode()
 {
-	lchd = rbro = NULL;
+	father = lbro = lchd = rbro = NULL;
 	str = "";
 	count = 0;
 	ID = -1;
@@ -22,7 +22,7 @@ TrieNode::TrieNode()
 
 TrieNode::TrieNode(const string &_str)
 {
-	lchd = rbro = NULL;
+	father = lbro = lchd = rbro = NULL;
 	str = _str;
 	count = 0;
 	ID = -1;
@@ -58,9 +58,15 @@ TrieNode::addString(string& _str, int _ID)
 	/* no child matching strPiece */
 	TrieNode *p = new TrieNode(strPiece);
 
+	p->father = this;
 	child = this->lchd;
 	p->rbro = child;
 	this->lchd = p;
+	if (child != NULL)
+	{
+		child->lbro = p;
+	}
+
 	p->addString(_str, _ID);
 	
 	return;	
@@ -179,6 +185,18 @@ TrieNode::setRbro(const TrieNode *_rbro)
 }
 
 void
+TrieNode::setLbro(const TrieNode *_lbro)
+{
+	lbro = (TrieNode *) _lbro;
+}
+
+void
+TrieNode::setFather(const TrieNode *_father)
+{
+	father = (TrieNode *) _father;
+}
+
+void
 TrieNode::setString(const string &_str)
 {
 	str = _str;
@@ -200,6 +218,18 @@ TrieNode*
 TrieNode::getRbro()
 {
 	return rbro;
+}
+
+TrieNode*
+TrieNode::getLbro()
+{
+	return lbro;
+}
+
+TrieNode*
+TrieNode::getFather()
+{
+	return father;
 }
 
 string
