@@ -15,6 +15,8 @@ class TrieNode
 {
 	TrieNode *lchd;	// pointer to the most left child
 	TrieNode *rbro;	// pointer to the nearest right brother
+	TrieNode *lbro; // pointer to the nearest left brother
+	TrieNode *father; // pointer to its father
 	string str;
 	int count;
 public:
@@ -24,10 +26,14 @@ public:
 	void addCount();
 	void setLchd(const TrieNode *_lchd);
 	void setRbro(const TrieNode *_rbro);
+	void setLbro(const TrieNode *_lbro);
+	void setFather(const TrieNode *_father);
 	void setString(const string &_str);
 	int getCount();
 	TrieNode *getLchd();
 	TrieNode *getRbro();
+	TrieNode *getLbro();
+	TrieNode *getFather();
 	string getString();
 	void addString(string& _str, int _ID);
 	string compress(string& _str, const int& lowbound);
