@@ -263,7 +263,7 @@ function handle9(example, query)
 {
                 if (example === "q1")
                 {
-                    document.getElementById(query).value =    "select ?v0 ?v1 ?v2 where { ?v0 <http://dbpedia.org/property/dateOfBirth> ?v2 . ?v1 <http://dbpedia.org/property/genre> ?v2 . ?v0  <http://dbpedia.org/ontology/activeYearsStartYear> ?v1 . }";
+                    document.getElementById(query).value =    "select ?v0 ?v1 ?v2 where { ?v0 <http://dbpedia.org/ontology/associatedBand> ?v2 . ?v0 <http://dbpedia.org/property/pastMembers> ?v1 . ?v1 <http://dbpedia.org/ontology/associatedBand> ?v2 .  }";
                 }
                 if (example === "q2")
                 {
@@ -287,6 +287,30 @@ function handle11(example, query)
 {
                 if (example === "q1")
                 {
+                    document.getElementById(query).value =    "select ?v0 ?v3 where { ?v0 <http://dbpedia.org/property/dateOfBirth> ?v1 . ?v2 <http://dbpedia.org/property/genre> ?v1 .  ?v2  <http://xmlns.com/foaf/0.1/homepage> ?v3. }";
+                }
+                if (example === "q2")
+                {
+                    document.getElementById(query).value =    "select ?v0 ?v3 where { ?v0 <http://dbpedia.org/property/dateOfBirth> ?v1 . ?v2 <http://dbpedia.org/property/genre> ?v1 .  ?v2 <http://dbpedia.org/property/alias> ?v3. }";
+				} 
+}
+
+function handle12(example, query)
+{
+                if (example === "q1")
+                {
+                    document.getElementById(query).value =    "select ?v0 ?v1 where { ?v0 <http://dbpedia.org/ontology/associatedBand> <http://dbpedia.org/resource/LCD_Soundsystem> . ?v0 <http://dbpedia.org/ontology/associatedBand> <http://dbpedia.org/resource/Six_Finger_Satellite> .  ?v0  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?v1 . <http://dbpedia.org/resource/!PAUS3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?v1 . <http://dbpedia.org/resource/!Action_Pact!> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?v1 . }";
+                }
+                if (example === "q2")
+                {
+                    document.getElementById(query).value =    "select ?v0 ?v1 where { ?v0 <http://dbpedia.org/ontology/associatedBand> <http://dbpedia.org/resource/LCD_Soundsystem> . ?v0 <http://dbpedia.org/ontology/associatedBand> <http://dbpedia.org/resource/Six_Finger_Satellite> .  ?v0  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?v1 . <http://dbpedia.org/resource/!PAUS3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?v1 . <http://dbpedia.org/resource/07_Vestur> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?v1 . }";
+				} 
+}
+
+function handle13(example, query)
+{
+                if (example === "q1")
+                {
                     document.getElementById(query).value =    "dog";
                 }
                 if (example === "q2")
@@ -295,7 +319,7 @@ function handle11(example, query)
 				} 
 }
 
-function handle12(example, query)
+function handle14(example, query)
 {
                 if (example === "q1")
                 {
@@ -308,7 +332,7 @@ function handle12(example, query)
 				} 
 }
 
-function handle13(example, query)
+function handle15(example, query)
 {
                 if (example === "q1")
                 {
@@ -317,6 +341,18 @@ function handle13(example, query)
                 if (example === "q2")
                 {
                     document.getElementById(query).value =    "insert { ?v0 <http://dbpedia.org/ontology/type> <http://dbpedia.org/class/entity> . } where { ?v0 <http://dbpedia.org/ontology/associatedBand>  <http://dbpedia.org/resource/Illa> . }";
+				} 
+}
+
+function handle16(example, query)
+{
+                if (example === "q1")
+                {
+                    document.getElementById(query).value =    "select ?v0 where { ?v0 <http://dbpedia.org/ontology/associatedBand> <http://dbpedia.org/resource/LCD_Soundsystem> .   }";
+				}
+                if (example === "q2")
+                {
+                    document.getElementById(query).value =    "select ?v0 where { ?v0 <http://dbpedia.org/ontology/type> <http://dbpedia.org/class/entity> .  }";
 				} 
 }
 
@@ -338,6 +374,9 @@ function handleQueryExample(num)
 			handle11(document.getElementById("example11").value, "query_text11");
 			handle12(document.getElementById("example12").value, "query_text12");
 			handle13(document.getElementById("example13").value, "query_text13");
+			handle14(document.getElementById("example14").value, "query_text14");
+			handle15(document.getElementById("example15").value, "query_text15");
+			handle16(document.getElementById("example16").value, "query_text16");
 			return;
 		}
 	examp = "example"+num; query="query_text"+num;
@@ -355,4 +394,7 @@ function handleQueryExample(num)
 	if(num==11) handle11(example, query);
 	if(num==12) handle12(example, query);
 	if(num==13) handle13(example, query);
+	if(num==14) handle14(example, query);
+	if(num==15) handle15(example, query);
+	if(num==16) handle16(example, query);
 }

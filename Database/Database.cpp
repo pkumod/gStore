@@ -3336,7 +3336,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to ops cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int**), KVstore::_ops_cmp);
+		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_ops_cmp);
 		vector<int> sidlist_o;
 		vector<int> sidlist_op;
 		vector<int> pidsidlist_o;
@@ -3690,7 +3690,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to ops cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int**), KVstore::_ops_cmp);
+		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_ops_cmp);
 		vector<int> sidlist_o;
 		vector<int> sidlist_op;
 		vector<int> pidsidlist_o;
