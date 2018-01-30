@@ -389,9 +389,9 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 			}
 			else{
 				int can_size = cans.size();
-				for(int i = 0; i < can_size; i ++)
+				for(std::vector<unsigned>::iterator i = cans.begin(); i != cans.end();)
 				{
-					kvstore->getpreIDlistByobjID(cans.getID(i), list, len, true);
+					kvstore->getpreIDlistByobjID(cans.getID(*i), list, len, true);
 					bool can_matched = false;
 					int s = 0, e = len - 1;
 					int mid = (s + e)/2;
@@ -413,14 +413,10 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 					}
 					if(can_matched == false)
 					{
-						IDList * newlist = new IDList();
-						for(int j = 0; j < can_size; j ++)
-						{
-							if( j != i)
-								newlist->addID(cans.getID(j));
-						}
-						cans.clear();
-						cans.copy(newlist);
+						i = cans.eraseAt(i);
+					}
+					else{
+						i++;
 					}
 				}
 			}
@@ -449,9 +445,9 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 			}
 			else{
 				int can_size = cans.size();
-				for(int i = 0; i < can_size; i ++)
+				for(std::vector<unsigned>::iterator i = cans.begin(); i != cans.end();)
 				{
-					kvstore->getpreIDlistBysubID(cans.getID(i), list, len, true);
+					kvstore->getpreIDlistBysubID(cans.getID(*i), list, len, true);
 					bool can_matched = false;
 					int s = 0, e = len - 1;
 					int mid = (s + e)/2;
@@ -473,14 +469,9 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 					}
 					if(can_matched == false)
 					{
-						IDList * newlist = new IDList();
-						for(int j = 0; j < can_size; j ++)
-						{
-							if( j != i)
-								newlist->addID(cans.getID(j));
-						}
-						cans.clear();
-						cans.copy(newlist);
+						i = cans.eraseAt(i);
+					}else{
+						i++;
 					}
 				}
 			}
