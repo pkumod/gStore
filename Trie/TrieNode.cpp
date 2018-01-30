@@ -58,7 +58,7 @@ TrieNode::addString(string& _str, int _ID)
 	/* no child matching strPiece */
 	TrieNode *p = new TrieNode(strPiece);
 
-	p->father = this;
+	p->father = (TrieNode *) this;
 	child = this->lchd;
 	p->rbro = child;
 	this->lchd = p;

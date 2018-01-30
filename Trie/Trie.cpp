@@ -101,6 +101,8 @@ Trie::WriteDown()
 
 	dictionary_out.close();
 
+	cout << "Finish writing trie." << endl;
+
 	return true;
 }
 
@@ -110,6 +112,7 @@ Trie::WriteDownNode(TrieNode *_node, ofstream& _fout, string _str)
 {
 	string curString = _node->getString();
 	int curCount;
+	bool deleteFlag = false;
 
 	if ((curCount = _node->getCount()) > Trie::LOWBOUND || _node == root)
 	{
@@ -141,8 +144,7 @@ Trie::WriteDownNode(TrieNode *_node, ofstream& _fout, string _str)
 			father->setLchd(rbro);
 		}
 
-		if (_node != root)
-			delete _node;
+		deleteFlag = true;
 	}
 
 	TrieNode *pointer;
@@ -160,6 +162,8 @@ Trie::WriteDownNode(TrieNode *_node, ofstream& _fout, string _str)
 		WriteDownNode(pointer, _fout, _str + curString);
 	}	
 
+	if (deleteFlag)
+		delete _node;
 	return;
 } 
 
