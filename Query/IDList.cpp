@@ -473,3 +473,8 @@ IDList::bsearch_uporder(unsigned _key)
 	return Util::bsearch_vec_uporder(_key, this->getList());
 }
 
+
+std::vector<unsigned>::iterator 
+IDList::eraseAt(std::vector<unsigned>::iterator  it){
+	return id_list.erase( it);
+}
