@@ -44,16 +44,16 @@ CC = g++
 #NOTICE: -O2 is recommended, while -O3 is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -O2 -pthread -std=c++11
-EXEFLAG = -O2 -pthread -std=c++11
+#CFLAGS = -c -Wall -O2 -pthread -std=c++11
+#EXEFLAG = -O2 -pthread -std=c++11
 #-coverage
-#CFLAGS = -c -Wall -pthread -g -std=c++11
-#EXEFLAG = -pthread -g -std=c++11
+CFLAGS = -c -Wall -pthread -g -std=c++11
+EXEFLAG = -pthread -g -std=c++11
 
 #add -lreadline -ltermcap if using readline or objs contain readline
-library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost
+library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
 # library = -ltermcap -lreadline -L./lib -lantlr -lgcov
-def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
+def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE
 
 # paths
 
@@ -110,10 +110,10 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
 #gtest
 
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow
 
-all: $(TARGET) bin/GMonitor.class
-
+all: $(TARGET)
+	./test/test.sh
 test_index: test_index.cpp
 	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library)
 
@@ -123,6 +123,12 @@ test_index: test_index.cpp
 #executables begin
 
 #NOTICE:not include g*.o in objfile due to multiple definitions of main()
+$(exedir)gmonitor: $(lib_antlr) $(objdir)gmonitor.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)gmonitor $(objdir)gmonitor.o $(objfile) $(library)
+
+$(exedir)gshow: $(lib_antlr) $(objdir)gshow.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)gshow $(objdir)gshow.o $(objfile) $(library)
+
 $(exedir)gbuild: $(lib_antlr) $(objdir)gbuild.o $(objfile) 
 	$(CC) $(EXEFLAG) -o $(exedir)gbuild $(objdir)gbuild.o $(objfile) $(library)
 
@@ -150,6 +156,12 @@ $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/
 
 #objects in Main/ begin
 
+$(objdir)gmonitor.o: Main/gmonitor.cpp $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gmonitor.cpp $(inc) -o $(objdir)gmonitor.o
+
+$(objdir)gshow.o: Main/gshow.cpp $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gshow.cpp $(inc) -o $(objdir)gshow.o
+
 $(objdir)gbuild.o: Main/gbuild.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gbuild.cpp $(inc) -o $(objdir)gbuild.o 
 	
@@ -171,11 +183,6 @@ $(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/socke
 
 $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/ghttp.cpp $(inc) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO)
-
-bin/GMonitor.class: Main/GMonitor.java
-	javac -d bin/ Main/GMonitor.java
-	cp test/gmonitor bin/
-	cp test/gshow bin/
 
 #objects in Main/ end
 
@@ -441,9 +448,11 @@ $(lib_antlr):
 
 $(api_cpp): $(objdir)Socket.o
 	$(MAKE) -C api/socket/cpp/src 
+	$(MAKE) -C api/http/cpp/src 
 
 $(api_java):
 	$(MAKE) -C api/socket/java/src
+	$(MAKE) -C api/http/java/src
 
 .PHONY: clean dist tarball api_example gtest sumlines
 
@@ -453,6 +462,10 @@ clean:
 	$(MAKE) -C api/socket/cpp/example clean
 	$(MAKE) -C api/socket/java/src clean
 	$(MAKE) -C api/socket/java/example clean
+	$(MAKE) -C api/http/cpp/src clean
+	$(MAKE) -C api/http/cpp/example clean
+	$(MAKE) -C api/http/java/src clean
+	$(MAKE) -C api/http/java/example clean
 	#$(MAKE) -C KVstore clean
 	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver*
 	rm -rf bin/*.class
@@ -474,6 +487,8 @@ tarball:
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/socket/cpp/example
 	$(MAKE) -C api/socket/java/example
+	$(MAKE) -C api/http/cpp/example
+	$(MAKE) -C api/http/java/example
 
 gtest: $(objdir)gtest.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr.a $(library)
@@ -523,4 +538,3 @@ fulltest:
 test-kvstore:
 	# test/kvstore_test.cpp
 	echo "TODO"
-

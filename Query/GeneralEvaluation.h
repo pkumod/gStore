@@ -51,6 +51,8 @@ class GeneralEvaluation
 
 		bool doQuery();
 
+		void setStringIndexPointer(StringIndex* _tmpsi);
+
 	private:
 		TempResultSet *temp_result;
 
