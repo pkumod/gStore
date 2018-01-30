@@ -37,6 +37,9 @@ public:
 	unsigned unionList(const IDList&, bool only_literal=false);
 	unsigned bsearch_uporder(unsigned _key);
 	static IDList* intersect(const IDList&, const unsigned*, unsigned);
+	std::vector<unsigned>::iterator eraseAt(std::vector<unsigned>::iterator  it);
+	std::vector<unsigned>::iterator begin(){	return id_list.begin();}
+	std::vector<unsigned>::iterator end(){	return id_list.end();}
 private:
 	std::vector<unsigned> id_list;
 	bool erase(unsigned i);
