@@ -53,6 +53,8 @@ Database::Database()
 
 	//this->resetIDinfo();
 	this->initIDinfo();
+
+	pthread_rwlock_init(&(this->update_lock), NULL);
 }
 
 Database::Database(string _name)
@@ -104,6 +106,8 @@ Database::Database(string _name)
 
 	//this->resetIDinfo();
 	this->initIDinfo();
+
+	pthread_rwlock_init(&(this->update_lock), NULL);
 }
 
 //==================================================================================================================================================
@@ -325,6 +329,7 @@ Database::saveIDinfo()
 		tp = bp->next;
 		bp = tp;
 	}
+	Util::Csync(fp);
 	fclose(fp);
 	fp = NULL;
 
@@ -342,6 +347,7 @@ Database::saveIDinfo()
 		tp = bp->next;
 		bp = tp;
 	}
+	Util::Csync(fp);
 	fclose(fp);
 	fp = NULL;
 
@@ -359,6 +365,7 @@ Database::saveIDinfo()
 		tp = bp->next;
 		bp = tp;
 	}
+	Util::Csync(fp);
 	fclose(fp);
 	fp = NULL;
 }
@@ -519,6 +526,7 @@ Database::release(FILE* fp0)
 
 Database::~Database()
 {
+	pthread_rwlock_destroy(&(this->update_lock));
 	this->unload();
 	//fclose(Util::debug_database);
 	//Util::debug_database = NULL;	//debug: when multiple databases
@@ -1160,6 +1168,51 @@ string tstr;
 //cout<<this->kvstore->getStringByID(82855205)<<endl;
 //cout<<"check: 82855205 "<<tstr<<endl;
 //fclose(fp);
+
+
+
+//test String Index for parallism
+//int limit = 2;
+//int limit = this->entity_num / 2;
+//thread* thr_si = new thread[limit];
+//for(int i = 0; i < limit; ++i)
+//{
+	//thr_si[i] = thread(&Database::query_stringIndex, this, i);
+//}
+//for(int i = 0; i < limit; ++i)
+//{
+	//thr_si[i].join();
+//}
+//delete[] thr_si;
+
+//TODO: each thread for a sparql query, support by assigning a thread for each query in ghttp(better to set timeout)
+//and test stringIndex::addRequest(), 
+//the request array maybe not right, request.clear()
+	string spq[6];
+	spq[0] = "select ?x where { ?x <ub:name> <FullProfessor0> . }";
+	spq[1] = "select distinct ?x where { ?x      <rdf:type>      <ub:GraduateStudent>. ?y      <rdf:type>      <ub:University>. ?z      <rdf:type>      <ub:Department>. ?x      <ub:memberOf>   ?z. ?z      <ub:subOrganizationOf>  ?y. ?x      <ub:undergraduateDegreeFrom>    ?y. }";
+	spq[2] = "select distinct ?x where { ?x      <rdf:type>      <ub:Course>. ?x      <ub:name>       ?y. }";
+	spq[3] = "select ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. ?y    <ub:name> <Course1>. ?x    <ub:takesCourse>  ?y. ?z    <ub:teacherOf>    ?y. ?z    <ub:name> <FullProfessor1>. ?z    <ub:worksFor>    ?w. ?w    <ub:name>    <Department0>. }";
+	spq[4] = "select distinct ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. }";
+	spq[5] = "select ?s ?o where { ?s ?p ?o . }";
+	for(int i = 0; i < 6; ++i)
+	{
+		//NOTICE: we need to detach it, otherwise the thread object will be released beyond the scope,
+		//so the thread ends causing an exception
+		//thread qt(&Database::query_thread, this, spq[i]);
+		//qt.detach();
+	}
+	//cout<<"this function ends!"<<endl;
+	//WARN: if each threda for a query, then the QueryParser will cause error in parallism!
+	//so we should do the parser sequentially
+}
+
+void 
+Database::query_stringIndex(int id)
+{
+	string str;
+	this->stringindex->randomAccess(id, &str, true);
+	cout<<"thread: "<<id<<" "<<str<<endl;
 }
 
 //NOTICE: we ensure that if the unload() exists normally, then all updates have already been written to disk
@@ -1281,12 +1334,15 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 
 	long tv_begin = Util::get_cur_time();
 
-	if (!general_evaluation.parseQuery(_query))
+	this->query_parse_lock.lock();
+	bool parse_ret = general_evaluation.parseQuery(_query);
+	this->query_parse_lock.unlock();
+	if (!parse_ret)
 		return -101;
 	long tv_parse = Util::get_cur_time();
 	cout << "after Parsing, used " << (tv_parse - tv_begin) << "ms." << endl;
+	//return -100;
 
-	//TODO:output all results in JSON format, and transformed into string to client
 	//for select, -100 by default, -101 means error
 	//for update, non-negative means true(and the num is updated triples num), -1 means error
 	int success_num = -100;  
@@ -1295,11 +1351,30 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	//Query
 	if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Not_Update)
 	{
+		//lock_guard<mutex> (this->update_lock);  //when quit this scope the lock will be released
+		//unique_guard<mutex> updateLCK(this->update_lock);
+		//if(!unique_guard.try_lock())
+		//BETTER: use timed lock
+		if(pthread_rwlock_tryrdlock(&(this->update_lock)) != 0)
+		{
+			return -101;
+		}
+		cout<<"read lock acquired"<<endl;
+
+		//copy the string index for each query thread
+		StringIndex tmpsi = *this->stringindex;
+		tmpsi.emptyBuffer();
+		general_evaluation.setStringIndexPointer(&tmpsi);
+
+		//TODO: withdraw this lock, and allow for multiple doQuery() to run in parallism
+		//we need to add lock in QueryCache's operations
+		this->debug_lock.lock();
 		bool query_ret = general_evaluation.doQuery();
 		if(!query_ret)
 		{
 			success_num = -101;
 		}
+		this->debug_lock.unlock();
 
 		long tv_bfget = Util::get_cur_time();
 		general_evaluation.getFinalResult(_result_set);
@@ -1309,14 +1384,24 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		if(_fp != NULL)
 			need_output_answer = true;
 			//general_evaluation.setNeedOutputAnswer();
+
+		tmpsi.clear();
+		pthread_rwlock_unlock(&(this->update_lock));
 	}
 	//Update
 	else
 	{
 #ifdef ONLY_READ
+		cout<<"this database is only read";
 		//invalid query because updates are not allowed in ONLY_READ mode
 		return -101;
 #endif
+		if(pthread_rwlock_trywrlock(&(this->update_lock)) != 0)
+		{
+			cout<<"unable to write lock"<<endl;
+			return -101;
+		}
+
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
 		TYPE_TRIPLE_NUM update_triple_num = 0;
@@ -1342,7 +1427,11 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 														 update_pattern.sub_group_pattern[i].pattern.predicate.value,
 														 update_pattern.sub_group_pattern[i].pattern.object.value, object_type);
 				}
-				else throw "Database::query failed";
+				else 
+				{
+					pthread_rwlock_unlock(&(this->update_lock));
+					throw "Database::query failed";
+				}
 
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data)
 			{
@@ -1374,8 +1463,9 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		general_evaluation.releaseResult();
 		delete[] update_triple;
 
-		printf("QueryCache cleared\n");
 		this->query_cache->clear();
+		cout<<"QueryCache cleared"<<endl;
+		pthread_rwlock_unlock(&(this->update_lock));
 	}
 
 	long tv_final = Util::get_cur_time();
@@ -1549,7 +1639,7 @@ Database::saveDBInfoFile()
 	fwrite(&this->literal_num, sizeof(int), 1, filePtr);
 	fwrite(&this->encode_mode, sizeof(int), 1, filePtr);
 
-	fflush(filePtr);
+	Util::Csync(filePtr);
 	fclose(filePtr);
 
 	//Util::triple_num = this->triples_num;
@@ -2615,57 +2705,6 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	//cout << this->kvstore->getEntityByID(list[i])<<" "<<list[i]<<endl;
 	//}
 
-	long tv_kv_store_end = Util::get_cur_time();
-
-	EntityBitSet _sub_entity_bitset;
-	_sub_entity_bitset.reset();
-
-	//this->encodeTriple2SubEntityBitSet(_sub_entity_bitset, &_triple);
-	this->encodeTriple2SubEntityBitSet(_sub_entity_bitset, _pre_id, _obj_id);
-
-	//if new entity then insert it, else update it.
-	if (_is_new_sub)
-	{
-		//cout<<"to insert: "<<_sub_id<<" "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-		//SigEntry _sig(_sub_id, _sub_entity_bitset);
-		//(this->vstree)->insertEntry(_sig);
-	}
-	else
-	{
-		//cout<<"to update: "<<_sub_id<<" "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-		//(this->vstree)->updateEntry(_sub_id, _sub_entity_bitset);
-	}
-
-	//if the object is an entity, then update or insert this entity's entry.
-	if (is_obj_entity)
-	{
-		EntityBitSet _obj_entity_bitset;
-		_obj_entity_bitset.reset();
-
-		//this->encodeTriple2ObjEntityBitSet(_obj_entity_bitset, &_triple);
-		this->encodeTriple2ObjEntityBitSet(_obj_entity_bitset, _pre_id, _sub_id);
-
-		if (_is_new_obj)
-		{
-			//cout<<"to insert: "<<_obj_id<<" "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			//SigEntry _sig(_obj_id, _obj_entity_bitset);
-			//(this->vstree)->insertEntry(_sig);
-		}
-		else
-		{
-			//cout<<"to update: "<<_obj_id<<" "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			//(this->vstree)->updateEntry(_obj_id, _obj_entity_bitset);
-		}
-	}
-
-	long tv_vs_store_end = Util::get_cur_time();
-
-	//debug
-	//{
-		//cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
-		//cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
-	//}
-
 	return true;
 	//return updateLen;
 }
@@ -2725,7 +2764,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		//cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
 		this->kvstore->subEntityByID(_sub_id);
 		this->kvstore->subIDByEntity(_triple.subject);
-		//(this->vstree)->removeEntry(_sub_id);
 		this->freeEntityID(_sub_id);
 		this->sub_num--;
 		//update the string buffer
@@ -2735,18 +2773,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		}
 		if (_vertices != NULL)
 			_vertices->push_back(_sub_id);
-	}
-	//else re-calculate the signature of subject & replace that in vstree
-	else
-	{
-		//cout<<"to replace entry for sub"<<endl;
-		//cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-		EntityBitSet _entity_bitset;
-		_entity_bitset.reset();
-		this->calculateEntityBitSet(_sub_id, _entity_bitset);
-		//NOTICE:can not use updateEntry as insert because this is in remove
-		//In insert we can add a OR operation and all is ok
-		//(this->vstree)->replaceEntry(_sub_id, _entity_bitset);
 	}
 	//cout<<"subject dealed"<<endl;
 
@@ -2761,7 +2787,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			//cout<<_obj_id << " "<<this->kvstore->getEntityByID(_obj_id)<<endl;
 			this->kvstore->subEntityByID(_obj_id);
 			this->kvstore->subIDByEntity(_triple.object);
-			//this->vstree->removeEntry(_obj_id);
 			this->freeEntityID(_obj_id);
 			//update the string buffer
 			if (_obj_id < this->entity_buffer_size)
@@ -2770,15 +2795,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			}
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
-		}
-		else
-		{
-			//cout<<"to replace entry for obj"<<endl;
-			//cout<<_obj_id << " "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			//EntityBitSet _entity_bitset;
-			//_entity_bitset.reset();
-			//this->calculateEntityBitSet(_obj_id, _entity_bitset);
-			//this->vstree->replaceEntry(_obj_id, _entity_bitset);
 		}
 	}
 	else
@@ -2812,13 +2828,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	}
 	//cout<<"predicate dealed"<<endl;
 
-	long tv_vs_store_end = Util::get_cur_time();
-
-	//debug
-	//{
-		//cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
-		//cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
-	//}
 	return true;
 }
 
@@ -3327,7 +3336,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to ops cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int**), KVstore::_ops_cmp);
+		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_ops_cmp);
 		vector<int> sidlist_o;
 		vector<int> sidlist_op;
 		vector<int> pidsidlist_o;
@@ -3681,7 +3690,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to ops cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int**), KVstore::_ops_cmp);
+		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_ops_cmp);
 		vector<int> sidlist_o;
 		vector<int> sidlist_op;
 		vector<int> pidsidlist_o;

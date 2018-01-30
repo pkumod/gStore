@@ -31,7 +31,7 @@ class StringIndexFile
 				unsigned length;
 				IndexInfo(long _offset = 0, unsigned _length = 0):offset(_offset), length(_length){}
 		};
-		std::vector<IndexInfo> index_table;
+		std::vector<IndexInfo>* index_table;
 
 		unsigned buffer_size;
 		char *buffer;
@@ -61,6 +61,7 @@ class StringIndexFile
 				this->loc = _dir + "/literal_";
 			if (this->type == Predicate)
 				this->loc = _dir + "/predicate_";
+			this->index_table = new std::vector<IndexInfo>;
 		}
 		~StringIndexFile()
 		{
@@ -70,9 +71,17 @@ class StringIndexFile
 				fclose(this->value_file);
 			if (this->buffer != NULL)
 				delete[] this->buffer;
+			delete this->index_table;
 		}
-		void setNum(unsigned _num);
 
+		void clear()
+		{
+			this->index_file = NULL;
+			this->value_file = NULL;
+			this->index_table = NULL;
+		}
+
+		void setNum(unsigned _num);
 		void save(KVstore &kv_store);
 		void load();
 
@@ -86,10 +95,16 @@ class StringIndexFile
 			}
 		}
 
+		inline void emptyBuffer()
+		{
+			this->buffer_size = 0;
+			this->buffer = NULL;
+		}
+
 		bool randomAccess(unsigned id, std::string *str);
 		inline void addRequest(unsigned id, std::string *str)
 		{
-			this->request.push_back(AccessRequest(id, this->index_table[id].offset, this->index_table[id].length, str));
+			this->request.push_back(AccessRequest(id, (*this->index_table)[id].offset, (*this->index_table)[id].length, str));
 		}
 		void trySequenceAccess();
 
@@ -108,6 +123,20 @@ class StringIndex
 	public:
 		StringIndex(std::string _dir, unsigned _entity_num = 0, unsigned _literal_num = 0, unsigned _predicate_num = 0):
 			entity(StringIndexFile::Entity, _dir, _entity_num), literal(StringIndexFile::Literal, _dir, _literal_num), predicate(StringIndexFile::Predicate, _dir, _predicate_num){}
+
+		void clear()
+		{
+			entity.clear();
+			literal.clear();
+			predicate.clear();
+		}
+
+		void emptyBuffer()
+		{
+			entity.emptyBuffer();
+			literal.emptyBuffer();
+			predicate.emptyBuffer();
+		}
 
 		void setBuffer(Buffer* _ebuf, Buffer* _lbuf)
 		{

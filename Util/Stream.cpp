@@ -112,7 +112,7 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
     //below are for disk
     if(!this->needSort)	   // in disk and need sort
     {
-        string file_name = Util::tmp_path + Util::int2string(Util::get_cur_time());
+        string file_name = Util::tmp_path + "thread_" + Util::getThreadID() + "_"+ Util::int2string(Util::get_cur_time());
         file_name += ".dat";
 #ifdef DEBUG_STREAM
         fprintf(stderr, "%s\n", file_name.c_str());
@@ -247,9 +247,7 @@ Stream::write(const Bstr* _bp)
     {
         if(this->tempfp == NULL)
         {
-            string name = Util::tmp_path + "stream_" + Util::int2string(this->files.size());
-			//NOTICE:name derived from time maybe same
-            //name = Util::tmp_path + Util::int2string(Util::get_cur_time());
+            string name = Util::tmp_path + "thread_" + Util::getThreadID() + "_stream_" + Util::int2string(Util::get_cur_time());
             name += ".dat";
 #ifdef DEBUG_STREAM
             fprintf(stderr, "%s\n", name.c_str());

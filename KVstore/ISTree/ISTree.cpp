@@ -34,7 +34,10 @@ ISTree::ISTree(string _storepath, string _filename, string _mode, unsigned long 
 	string filepath = this->getFilePath();
 	TSM = new ISStorage(filepath, this->mode, &this->height, _buffer_size);
 	if (this->mode == "open")
+	{
 		this->TSM->preRead(this->root, this->leaves_head, this->leaves_tail);
+		//this->TSM->fullLoad(this->root);
+	}
 	else
 		this->root = NULL;
 	//this->transfer[0].setStr((char*)malloc(Util::TRANSFER_SIZE));

@@ -10,6 +10,12 @@
 
 using namespace std;
 
+void 
+GeneralEvaluation::setStringIndexPointer(StringIndex* _tmpsi)
+{
+	this->stringindex = _tmpsi;
+}
+
 bool GeneralEvaluation::parseQuery(const string &_query)
 {
 	try
