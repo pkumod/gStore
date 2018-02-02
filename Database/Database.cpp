@@ -3326,8 +3326,10 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to spo cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_spo_cmp);
-
+		//qsort(id_tuples, valid_num, sizeof(int*), KVstore::_spo_cmp);
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_spo_cmp);
+		
 		//To remove duplicates
 		//int ti = 1, tj = 1;
 		//while(tj < valid_num)
@@ -3421,7 +3423,9 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to ops cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int**), KVstore::_ops_cmp);
+		//qsort(id_tuples, valid_num, sizeof(int**), KVstore::_ops_cmp);
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_ops_cmp);
 		vector<int> sidlist_o;
 		vector<int> sidlist_op;
 		vector<int> pidsidlist_o;
@@ -3491,7 +3495,9 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to pso cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_pso_cmp);
+		//qsort(id_tuples, valid_num, sizeof(int*), KVstore::_pso_cmp);
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num,  KVstore::parallel_pso_cmp);
 		vector<int> sidlist_p;
 		vector<int> oidlist_p;
 		vector<int> sidoidlist_p;
@@ -3701,7 +3707,9 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to spo cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_spo_cmp);
+		//qsort(id_tuples, valid_num, sizeof(int*), KVstore::_spo_cmp);
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_spo_cmp);
 		vector<int> oidlist_s;
 		vector<int> pidlist_s;
 		vector<int> oidlist_sp;
@@ -3781,7 +3789,9 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to ops cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int**), KVstore::_ops_cmp);
+		//qsort(id_tuples, valid_num, sizeof(int**), KVstore::_ops_cmp);
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_ops_cmp);
 		vector<int> sidlist_o;
 		vector<int> sidlist_op;
 		vector<int> pidsidlist_o;
@@ -3882,7 +3892,9 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to pso cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_pso_cmp);
+		//qsort(id_tuples, valid_num, sizeof(int*), KVstore::_pso_cmp);
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_pso_cmp);
 		vector<int> sidlist_p;
 		vector<int> oidlist_p;
 		vector<int> sidoidlist_p;

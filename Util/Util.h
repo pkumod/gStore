@@ -101,7 +101,7 @@ in the sparql query can point to the same node in data graph)
 //Added for __gnu_parallel::sort
 #include <omp.h>
 #include <parallel/algorithm>
-#define thread_num 10
+#define thread_num 1
 
 //NOTICE: hpp is different from static library(*.a) or dynamic library(*.so)
 //It places the implementations totally in header file, hpp = *.h + *.cpp
@@ -325,6 +325,7 @@ public:
 	static std::string showtime();
 	static int cmp_int(const void* _i1, const void* _i2);
 	static int cmp_unsigned(const void* _i1, const void* _i2);
+	static bool parallel_cmp_unsigned(unsigned _i1, unsigned _i2);
 	static void sort(unsigned*& _id_list, unsigned _list_len);
 	static unsigned bsearch_int_uporder(unsigned _key, const unsigned* _array, unsigned _array_num);
 	static bool bsearch_preid_uporder(TYPE_PREDICATE_ID _preid, unsigned* _pair_idlist, unsigned _list_len);
@@ -405,8 +406,11 @@ public:
 	
 	//sort functions for qsort
 	static int _spo_cmp(const void* _a, const void* _b);
+	static bool parallel_spo_cmp(int* _a, int* _b);
 	static int _ops_cmp(const void* _a, const void* _b);
+	static bool parallel_ops_cmp(int* _a, int* _b);
 	static int _pso_cmp(const void* _a, const void* _b);
+	static bool parallel_pso_cmp(int* _a, int* _b);
 	//sort functions for sort on ID_TUPLE
 	static bool spo_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);
 	static bool ops_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);

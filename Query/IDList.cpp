@@ -96,8 +96,12 @@ int
 IDList::sort()
 {
 	//std::sort(id_list.begin(), id_list.end());
+	long t1=Util::get_cur_time();
 	omp_set_num_threads(thread_num);
 	__gnu_parallel::sort(id_list.begin(), id_list.end());
+	long t2=Util::get_cur_time();
+	long t=t2-t1;
+	cout<<"\ntime:"<<t<<endl;
 	return 0;
 }
 
