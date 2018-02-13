@@ -768,7 +768,7 @@ Database::load_cache()
 {
 	// get important pre ID
 	// a pre whose degree is more than 50% of max pre degree is important pre
-	cout << "get important pre ID" << endl;
+/*	cout << "get important pre ID" << endl;
 	this->get_important_preID();
 	cout << "total preID num is " << pre_num << endl;
 	cout << "important pre ID is: ";
@@ -777,7 +777,7 @@ Database::load_cache()
 	cout << endl;
 	this->load_candidate_pre2values();
 	this->load_important_sub2values();
-	this->load_important_obj2values();
+	this->load_important_obj2values();*/
 }
 
 void
@@ -889,7 +889,7 @@ Database::get_candidate_preID()
 void
 Database::build_CacheOfPre2values()
 {
-	cout << "now add cache of preID2values..." << endl;
+/*	cout << "now add cache of preID2values..." << endl;
 	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
 	while (!candidate_preID.empty())
 	{
@@ -901,13 +901,13 @@ Database::build_CacheOfPre2values()
 		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
 		this->kvstore->AddIntoPreCache(temp_queue.top().key);
 		temp_queue.pop();
-	}
+	}*/
 }
 
 void
 Database::build_CacheOfObj2values()
 {
-	cout << "now add cache of objID2values..." << endl;
+/*	cout << "now add cache of objID2values..." << endl;
 	// sort key according to their mod by 2000
 	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
 	while (!important_objID.empty())
@@ -920,13 +920,13 @@ Database::build_CacheOfObj2values()
 		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
 		this->kvstore->AddIntoObjCache(temp_queue.top().key);
 		temp_queue.pop();
-	}
+	}*/
 }
 
 void
 Database::build_CacheOfSub2values()
 {
-	cout << "now add cache of subID2values..." << endl;
+/*	cout << "now add cache of subID2values..." << endl;
 	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
 	while (!important_subID.empty())
 	{
@@ -938,7 +938,7 @@ Database::build_CacheOfSub2values()
 		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
 		this->kvstore->AddIntoSubCache(temp_queue.top().key);
 		temp_queue.pop();
-	}
+	}*/
 }
 
 void
@@ -2072,7 +2072,7 @@ Database::build_s2xx(ID_TUPLE* _p_id_tuples)
 	//STL sort() not only use qsort algorithm, it can also choose heap-sort method
 	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::spo_cmp_idtuple);
 	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_spo_cmp);
-	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num);
+	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num, this->entity_num);
 
 	//save all entity_signature into binary file
 	//string sig_binary_file = this->getSignatureBFile();
@@ -2157,7 +2157,7 @@ Database::build_o2xx(ID_TUPLE* _p_id_tuples)
 {
 	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::ops_cmp_idtuple);
 	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_ops_cmp);
-	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num);
+	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num, this->entity_num, this->literal_num);
 
 	//save all entity_signature into binary file
 	//string sig_binary_file = this->getSignatureBFile();
@@ -2275,7 +2275,7 @@ Database::build_p2xx(ID_TUPLE* _p_id_tuples)
 {
 	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::pso_cmp_idtuple);
 	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_pso_cmp);
-	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num);
+	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num, this->pre_num);
 }
 
 //NOTICE:in here and there in the insert/delete, we may get the maxium tuples num first

@@ -226,6 +226,9 @@ static const TYPE_PREDICATE_ID INVALID_PREDICATE_ID = -1;
 //static const TYPE_PREDICATE_ID INVALID_PREDICATE_ID = -1;
 //#define INVALID_PREDICATE_ID -1
 
+//type for block index in IVArray
+typedef unsigned TYPE_IVBLOCK_ID;
+static const TYPE_IVBLOCK_ID INVALID_BLOCK_ID = 0;
 
 //TODO:typedef several ID types and new a ID module
 
@@ -445,6 +448,29 @@ public:
 		next = _bp;
 	}
 };
+
+class IVBlockInfo
+{
+public:
+	TYPE_IVBLOCK_ID num;			
+	IVBlockInfo* next;
+	IVBlockInfo()
+	{
+		num = 0;
+		next = NULL;
+	}
+	IVBlockInfo(TYPE_IVBLOCK_ID _num)
+	{
+		num = _num;
+		next = NULL;
+	}
+	IVBlockInfo(TYPE_IVBLOCK_ID _num, IVBlockInfo* _bp)
+	{
+		num = _num;
+		next = _bp;
+	}
+};
+
 
 //BETTER+TODO:if considering frequent insert/delete, there maybe too many empty positions, too wasteful!
 //A method is to divide as groups, set the base for each, not conflict
