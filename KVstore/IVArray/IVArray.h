@@ -1,0 +1,54 @@
+/*=======================================================================
+ * File name: IVArray.h
+ * Author: Zongyue Qin
+ * Mail: qinzongyue@pku.edu.cn
+ * Last Modified: 2018-02-09
+ * Description:
+ * a Key-Value Index for ID-Value pair in form of Array
+ * =======================================================================*/
+
+#include "IVEntry.h"
+#include "BlockManager.h"
+
+using namespace std;
+
+class IVArray
+{
+private:
+	// stores at most 1 billion keys
+	static const unsigned int MAX_KEY_NUM = 1 << 31;
+	static const unsigned int SET_KEY_NUM = 1 << 10; // minimum initial keys num
+	static const unsigned int SET_KEY_INC = SET_KEY_NUM; // minimum keys num inc
+	unsigned long long MAX_CACHE_SIZE;
+
+private:
+	IVEntry* array;
+	FILE* IVfile; // file that records index-store
+	string IVfile_name;
+	string filename;
+	string dir_path;
+	BlockManager *BM;
+	unsigned CurEntryNum; // how many entries are available
+	unsigned CurKeyNum; // how many keys are stored
+	bool CurEntryNumChange;
+
+	//Cache 
+	unsigned CurCacheSize;
+	map <unsigned, long> index_time_map;
+	multimap <long, unsigned> time_index_map;
+
+	bool AddInCache(unsigned _key, char *_str, unsigned _len);
+	bool SwapOut();
+	bool UpdateTime(unsigned _key);
+
+public:
+	IVArray();
+	IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num = 0);
+	~IVArray();
+
+	bool search(unsigned _key, char *& _str, unsigned& _len);
+	bool modify(unsigned _key, char *_str, unsigned _len);
+	bool remove(unsigned _key);
+	bool insert(unsigned _key, char *_str, unsigned _len);
+	bool save();
+};
