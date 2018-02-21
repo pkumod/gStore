@@ -2394,7 +2394,28 @@ KVstore::open(ISTree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 	_p_btree = new ISTree(this->store_path, _tree_name, smode, _buffer_size);
 	return true;
 }
-
+/*
+bool 
+KVstore::open(ISArray*& _array, string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num) 
+{
+	if (_array != NULL) {
+		return false;
+	}
+	string smode;
+	if (_mode == KVstore::CREATE_MODE) {
+		smode = "build";
+	}
+	else if (_mode == KVstore::READ_WRITE_MODE) {
+		smode = "open";
+	}
+	else {
+		cerr << "Invalid open mode of: " << _name << " mode = " << _mode << endl;
+		return false;
+	}
+	_array = new ISArray(this->store_path, _name, smode, _buffer_size, _key_num);
+	return true;
+}
+*/
 /*bool 
 KVstore::open(IVTree*& _p_btree, string _tree_name, int _mode, unsigned long long _buffer_size) 
 {
@@ -2461,6 +2482,17 @@ KVstore::flush(ISTree* _p_btree)
 	}
 }
 
+/*
+void 
+KVstore::flush(ISArray* _array)
+{
+	if (_array != NULL)
+	{
+		_array->save();
+	}
+}
+*/
+
 /*void 
 KVstore::flush(IVTree* _p_btree) 
 {
@@ -2490,7 +2522,13 @@ KVstore::addValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vl
 {
 	return _p_btree->insert(_key, _val, _vlen);
 }
-
+/*
+bool
+KVstore::addValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen)
+{
+	return _array->insert(key, _val, _vlen);
+}
+*/
 /*bool 
 KVstore::addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen) 
 {
@@ -2519,7 +2557,13 @@ KVstore::setValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vl
 {
 	return _p_btree->modify(_key, _val, _vlen);
 }
-
+/*
+bool
+KVstore::setValueByKet(ISArray* _array, unsigned _key, char* _val, unsigned _vlen)
+{
+	return _array->modify(_key, _val, _vlen);
+}
+*/
 /*bool
 KVstore::setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen) 
 {
@@ -2548,7 +2592,13 @@ KVstore::getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _
 {
 	return _p_btree->search(_key, _val, _vlen);
 }
-
+/*
+bool
+KVstore::getValueByKey(ISArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const
+{
+	return _array->search(_key, _val, _vlen);
+}
+*/
 /*bool 
 KVstore::getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const 
 {
@@ -2561,7 +2611,6 @@ KVstore::getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned& _v
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
 		unsigned key = _key - Util::LITERAL_FIRST_ID;
-		cout << "get value by key in objID2values_literal " << _key << " turned to " << key << endl; 
 		return objID2values_literal->search(key, _val, _vlen);
 	}
 	return _array->search(_key, _val, _vlen);
@@ -2592,7 +2641,13 @@ KVstore::removeKey(ISTree* _p_btree, unsigned _key)
 {
 	return _p_btree->remove(_key);
 }
-
+/*
+bool
+KVstore::removeKey(ISArray* _array, unsigned _key)
+{
+	return _array->remove(_key);
+}
+*/
 /*bool 
 KVstore::removeKey(IVTree* _p_btree, unsigned _key) 
 {
