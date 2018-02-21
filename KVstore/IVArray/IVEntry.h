@@ -16,6 +16,7 @@ class IVEntry
 	bool usedFlag;   // mark if the entry is used
 	bool dirtyFlag;
 	bool cacheFlag;
+	bool LongListFlag;
 	unsigned store;  //index of block where value is stored
 	Bstr* value;
 public:
@@ -36,6 +37,9 @@ public:
 	
 	void setCacheFlag(bool _flag);
 	bool inCache() const;
+
+	void setLongListFlag(bool _flag);
+	bool isLongList() const;
 
 	void release();
 

@@ -8,7 +8,7 @@
  * =======================================================================*/
 
 #include "IVEntry.h"
-#include "BlockManager.h"
+#include "IVBlockManager.h"
 
 using namespace std;
 
@@ -19,6 +19,7 @@ private:
 	static const unsigned int MAX_KEY_NUM = 1 << 31;
 	static const unsigned int SET_KEY_NUM = 1 << 10; // minimum initial keys num
 	static const unsigned int SET_KEY_INC = SET_KEY_NUM; // minimum keys num inc
+	static const unsigned int SEG_LEN = 1 << 8; 
 	unsigned long long MAX_CACHE_SIZE;
 
 private:
@@ -27,7 +28,7 @@ private:
 	string IVfile_name;
 	string filename;
 	string dir_path;
-	BlockManager *BM;
+	IVBlockManager *BM;
 	unsigned CurEntryNum; // how many entries are available
 	unsigned CurKeyNum; // how many keys are stored
 	bool CurEntryNumChange;
@@ -40,6 +41,8 @@ private:
 	bool AddInCache(unsigned _key, char *_str, unsigned _len);
 	bool SwapOut();
 	bool UpdateTime(unsigned _key);
+
+	bool PreLoad();
 
 public:
 	IVArray();

@@ -18,6 +18,19 @@ IVEntry::IVEntry()
 	usedFlag = false;
 	dirtyFlag = true;
 	cacheFlag = false;
+	LongListFlag = false;
+}
+
+void
+IVEntry::setLongListFlag(bool _flag)
+{
+	LongListFlag = _flag;
+}
+
+bool
+IVEntry::isLongList() const
+{
+	return LongListFlag;
 }
 
 void

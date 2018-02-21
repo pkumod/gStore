@@ -40,7 +40,7 @@ IVArray::~IVArray()
 
 IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num)
 {
-	cout << "Initialize " << _filename << "...";
+//	cout << "Initialize " << _filename << "..." << endl;
 	dir_path = _dir_path;
 	filename = _dir_path + "/" + _filename;
 	IVfile_name = filename + "_IVfile";
@@ -61,7 +61,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 		CurEntryNum = max(temp, SETKEYNUM);
 		CurEntryNumChange = true;
 
-		BM = new BlockManager(filename, mode, CurEntryNum);
+		BM = new IVBlockManager(filename, mode, CurEntryNum);
 		array = new IVEntry [CurEntryNum];
 
 		IVfile = fopen(IVfile_name.c_str(), "w+b");
@@ -81,10 +81,10 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 
 		pread(fd, &CurEntryNum, 1 * sizeof(unsigned), 0);
 
-		BM = new BlockManager(filename, mode, CurEntryNum);
+		BM = new IVBlockManager(filename, mode, CurEntryNum);
 		if (BM == NULL)
 		{
-			cout << _filename << ": Fail to initialize BlockManager" << endl;
+			cout << _filename << ": Fail to initialize IVBlockManager" << endl;
 			exit(0);
 		}
 
@@ -94,10 +94,15 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 			cout << _filename << ": Fail to malloc enough space in main memory for array." << endl;
 			exit(0);
 		}
+//		cout << _filename << " CurEntryNum = " << CurEntryNum << endl;
 		for(unsigned i = 0; i < CurEntryNum; i++)
 		{
 			unsigned _store;
-			pread(fd, &_store, 1 * sizeof(unsigned), sizeof(unsigned) + i * sizeof(unsigned));
+			off_t offset = (i + 1) * sizeof(unsigned);
+			pread(fd, &_store, 1 * sizeof(unsigned), offset);
+
+//			if (i % 1000000 == 0)
+//			cout << _filename << ": Key " << i << " stored in block " << _store << endl;
 
 			array[i].setStore(_store);
 			array[i].setDirtyFlag(false);
@@ -107,9 +112,39 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 				array[i].setUsedFlag(true);
 			}	
 		}
+		//TODO PreLoad
+//		PreLoad();
 
 	}
-	cout << "Done." << endl;
+//	cout << _filename << " Done." << endl;
+}
+
+bool
+IVArray::PreLoad()
+{
+	if (array == NULL)
+		return false;
+
+	for(unsigned i = 0; i < CurEntryNum; i++)
+	{
+		if (!array[i].isUsed())
+			continue;
+
+		unsigned store = array[i].getStore();
+		char *str = NULL;
+		unsigned len = 0;
+
+		if (!BM->ReadValue(store, str, len))
+			return false;
+		if (CurCacheSize + len > (MAX_CACHE_SIZE >> 1))
+			break;
+		
+		AddInCache(i, str, len);
+		
+		delete [] str;
+	}
+
+	return true;
 }
 
 bool
@@ -120,6 +155,7 @@ IVArray::save()
 
 	if (CurEntryNumChange)
 		pwrite(fd, &CurEntryNum, 1 * sizeof(unsigned), 0);
+	CurEntryNumChange = false;
 
 	for(unsigned i = 0; i < CurEntryNum; i++)
 	{
@@ -136,8 +172,11 @@ IVArray::save()
 			}
 
 			_store = array[i].getStore();
+//			if (i == 839)
+//				cout << filename << " key " << i << " stored in block " << _store << endl;
 
-			pwrite(fd, &_store, 1 * sizeof(unsigned), i * sizeof(unsigned) + sizeof(unsigned));
+			off_t offset = (off_t)(i + 1) * sizeof(unsigned);
+			pwrite(fd, &_store, 1 * sizeof(unsigned), offset);
 
 			array[i].setDirtyFlag(false);
 
@@ -240,9 +279,10 @@ IVArray::UpdateTime(unsigned _key)
 bool
 IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 {
+	//printf("%s search %d: ", filename.c_str(), _key);
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
-		cout << "IVArray " << filename << "  Search Error: Key " << _key << " is not available." << endl;
+//		cout << "IVArray " << filename << "  Search Error: Key " << _key << " is not available." << endl;
 		_str = NULL;
 		_len = 0;
 		return false;
@@ -253,9 +293,11 @@ IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 		UpdateTime(_key);
 		return array[_key].getBstr(_str, _len);
 	}
+//	printf(" need to read disk ");
 	// read in disk
 	unsigned store = array[_key].getStore();
 //	cout << "store: " << store << endl;
+//	printf("stored in block %d, ", store);
 	if (!BM->ReadValue(store, _str, _len))
 	{
 		return false;
@@ -270,6 +312,39 @@ IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 	}*/
 	if (!VList::isLongList(_len))
 		AddInCache(_key, _str, _len);
+
+//	printf("value is %s, length: %d\n", _str, _len);
+	
+	// also read values near it so that we can take advantage of spatial locality
+/*	unsigned start = (_key / SEG_LEN) * SEG_LEN;
+	unsigned end = start + SEG_LEN;
+	for(unsigned i = start; i < end; i++)
+	{
+		unsigned store = array[i].getStore();
+		if (i == _key)
+		{
+			if (!BM->ReadValue(store, _str, _len))
+				return false;
+			//if (!VList::isLongList(_len))
+				AddInCache(_key, _str, _len);
+			//else
+			if (VList::isLongList(_len))
+				array[_key].setLongListFlag(true);
+		}
+		else if (!array[i].isLongList() && array[i].isUsed() && !array[i].inCache())
+		{
+			char *temp_str;
+			unsigned temp_len;
+			if (!BM->ReadValue(store, temp_str, temp_len))
+				continue;
+			if (!VList::isLongList(temp_len))
+				AddInCache(i, temp_str, temp_len);
+			else
+				array[_key].setLongListFlag(true);
+			
+			delete [] temp_str;
+		}
+	}*/
 
 	return true;
 }
@@ -323,6 +398,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 			return false;
 		}
 		array[_key].setStore(store);
+		array[_key].setLongListFlag(true);
 	}
 	else
 	{
@@ -395,6 +471,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 			array[_key].setCacheFlag(false);
 			unsigned store = BM->WriteValue(_str, _len);
 			array[_key].setStore(store);
+			array[_key].setLongListFlag(true);
 		}
 	}
 	else
@@ -405,6 +482,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 		{
 			unsigned store = BM->WriteValue(_str, _len);
 			array[_key].setStore(store);
+			array[_key].setLongListFlag(true);
 		}
 		else
 		{
