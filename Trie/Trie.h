@@ -17,8 +17,8 @@ using namespace std;
 
 class Trie
 {
-	static const int SAMPLE_UPBOUND = 300000;
-	static const int LOWBOUND = 30;//this param should change with data sets
+	static const int SAMPLE_UPBOUND = 100000;
+	static const int LOWBOUND = 20;//this param should change with data sets
 	string store_path;
 	int curID;
 	TrieNode *root;
