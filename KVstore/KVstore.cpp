@@ -2374,7 +2374,7 @@ KVstore::open(SITree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 	return true;
 }
 
-bool 
+/*bool 
 KVstore::open(ISTree*& _p_btree, string _tree_name, int _mode, unsigned long long _buffer_size) 
 {
 	if (_p_btree != NULL) {
@@ -2393,8 +2393,8 @@ KVstore::open(ISTree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 	}
 	_p_btree = new ISTree(this->store_path, _tree_name, smode, _buffer_size);
 	return true;
-}
-/*
+}*/
+
 bool 
 KVstore::open(ISArray*& _array, string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num) 
 {
@@ -2415,7 +2415,7 @@ KVstore::open(ISArray*& _array, string _name, int _mode, unsigned long long _buf
 	_array = new ISArray(this->store_path, _name, smode, _buffer_size, _key_num);
 	return true;
 }
-*/
+
 /*bool 
 KVstore::open(IVTree*& _p_btree, string _tree_name, int _mode, unsigned long long _buffer_size) 
 {
@@ -2473,16 +2473,16 @@ KVstore::flush(SITree* _p_btree)
 	}
 }
 
-void 
+/*void 
 KVstore::flush(ISTree* _p_btree) 
 {
 	if (_p_btree != NULL) 
 	{
 		_p_btree->save();
 	}
-}
+}*/
 
-/*
+
 void 
 KVstore::flush(ISArray* _array)
 {
@@ -2491,7 +2491,7 @@ KVstore::flush(ISArray* _array)
 		_array->save();
 	}
 }
-*/
+
 
 /*void 
 KVstore::flush(IVTree* _p_btree) 
@@ -2517,18 +2517,23 @@ KVstore::addValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _v
 	return _p_btree->insert(_key, _klen, _val);
 }
 
-bool 
+/*bool 
 KVstore::addValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen) 
 {
 	return _p_btree->insert(_key, _val, _vlen);
-}
-/*
+}*/
+
 bool
 KVstore::addValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen)
 {
-	return _array->insert(key, _val, _vlen);
+	if (_array == this->id2literal)
+	{
+		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		return _array->insert(key, _val, _vlen);
+	}
+	return _array->insert(_key, _val, _vlen);
 }
-*/
+
 /*bool 
 KVstore::addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen) 
 {
@@ -2552,18 +2557,23 @@ KVstore::setValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _v
 	return _p_btree->modify(_key, _klen, _val);
 }
 
-bool 
+/*bool 
 KVstore::setValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen) 
 {
 	return _p_btree->modify(_key, _val, _vlen);
-}
-/*
+}*/
+
 bool
-KVstore::setValueByKet(ISArray* _array, unsigned _key, char* _val, unsigned _vlen)
+KVstore::setValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen)
 {
+	if (_array == this->id2literal)
+	{
+		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		return _array->modify(key, _val, _vlen);
+	}
 	return _array->modify(_key, _val, _vlen);
 }
-*/
+
 /*bool
 KVstore::setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen) 
 {
@@ -2587,18 +2597,24 @@ KVstore::getValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsig
 	return _p_btree->search(_key, _klen, _val);
 }
 
-bool 
+/*bool 
 KVstore::getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const 
 {
 	return _p_btree->search(_key, _val, _vlen);
-}
-/*
+}*/
+
 bool
 KVstore::getValueByKey(ISArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const
 {
+	if (_array == this->id2literal)
+	{
+		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		return _array->search(key, _val, _vlen);
+	}
+
 	return _array->search(_key, _val, _vlen);
 }
-*/
+
 /*bool 
 KVstore::getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const 
 {
@@ -2636,18 +2652,23 @@ KVstore::removeKey(SITree* _p_btree, const char* _key, unsigned _klen)
 	return _p_btree->remove(_key, _klen);
 }
 
-bool 
+/*bool 
 KVstore::removeKey(ISTree* _p_btree, unsigned _key) 
 {
 	return _p_btree->remove(_key);
-}
-/*
+}*/
+
 bool
 KVstore::removeKey(ISArray* _array, unsigned _key)
 {
+	if (_array == this->id2literal)
+	{
+		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		return _array->remove(key);
+	}
 	return _array->remove(_key);
 }
-*/
+
 /*bool 
 KVstore::removeKey(IVTree* _p_btree, unsigned _key) 
 {

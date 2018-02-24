@@ -688,7 +688,6 @@ Database::load()
 
 	//NOTICE: we should also run some heavy work in the main thread
 	this->stringindex->load();
-
 	this->readIDinfo();
 
 #ifdef THREAD_ON
