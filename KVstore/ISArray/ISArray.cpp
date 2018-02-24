@@ -1,20 +1,20 @@
 /*=========================================================================
- * File name: IVArray.cpp
+ * File name: ISArray.cpp
  * Author: Zongyue Qin
  * Mail: qinzongyue@pku.edu.cn
  * Last Modified: 2018-02-08
  * Description:
- * Implementation of class IVArray
+ * Implementation of class ISArray
  * =========================================================================*/
 
-#include "IVArray.h"
+#include "ISArray.h"
 
-IVArray::IVArray()
+ISArray::ISArray()
 {
 	array = NULL;
-	IVfile = NULL;
+	ISfile = NULL;
 	dir_path = "";
-	IVfile_name = "";
+	ISfile_name = "";
 	BM = NULL;
 	CurKeyNum = 0;
 	CurEntryNum = 0;
@@ -25,25 +25,24 @@ IVArray::IVArray()
 	MAX_CACHE_SIZE = 0;
 }
 
-IVArray::~IVArray()
+ISArray::~ISArray()
 {
 	if (array != NULL)
 	{
 		delete [] array;
 		array = NULL;
 	}
-	fclose(IVfile);
+	fclose(ISfile);
 	delete BM;
 	index_time_map.clear();
 	time_index_map.clear();
 }
 
-IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num)
+ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num)
 {
-//	cout << "Initialize " << _filename << "..." << endl;
 	dir_path = _dir_path;
 	filename = _dir_path + "/" + _filename;
-	IVfile_name = filename + "_IVfile";
+	ISfile_name = filename + "_ISfile";
 	CurEntryNumChange = false;
 	index_time_map.clear();
 	time_index_map.clear();
@@ -61,48 +60,44 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 		CurEntryNum = max(temp, SETKEYNUM);
 		CurEntryNumChange = true;
 
-		BM = new IVBlockManager(filename, mode, CurEntryNum);
-		array = new IVEntry [CurEntryNum];
+		BM = new ISBlockManager(filename, mode, CurEntryNum);
+		array = new ISEntry [CurEntryNum];
 
-		IVfile = fopen(IVfile_name.c_str(), "w+b");
+		ISfile = fopen(ISfile_name.c_str(), "w+b");
 	
-		if (BM == NULL || array == NULL || IVfile == NULL)
+		if (BM == NULL || array == NULL || ISfile == NULL)
 		{
-			cout << "Initialize IVArray ERROR" << endl;
+			cout << "Initialize ISArray ERROR" << endl;
 		}
 	}
 	else // open mode
 	{
 		CurCacheSize = 0;
 		
-		IVfile = fopen(IVfile_name.c_str(), "r+b");
+		ISfile = fopen(ISfile_name.c_str(), "r+b");
 		
-		int fd  = fileno(IVfile);
+		int fd  = fileno(ISfile);
 
 		pread(fd, &CurEntryNum, 1 * sizeof(unsigned), 0);
 
-		BM = new IVBlockManager(filename, mode, CurEntryNum);
+		BM = new ISBlockManager(filename, mode, CurEntryNum);
 		if (BM == NULL)
 		{
-			cout << _filename << ": Fail to initialize IVBlockManager" << endl;
+			cout << _filename << ": Fail to initialize ISBlockManager" << endl;
 			exit(0);
 		}
 
-		array = new IVEntry [CurEntryNum];
+		array = new ISEntry [CurEntryNum];
 		if (array == NULL)
 		{
 			cout << _filename << ": Fail to malloc enough space in main memory for array." << endl;
 			exit(0);
 		}
-//		cout << _filename << " CurEntryNum = " << CurEntryNum << endl;
 		for(unsigned i = 0; i < CurEntryNum; i++)
 		{
 			unsigned _store;
 			off_t offset = (i + 1) * sizeof(unsigned);
 			pread(fd, &_store, 1 * sizeof(unsigned), offset);
-
-//			if (i % 1000000 == 0)
-//			cout << _filename << ": Key " << i << " stored in block " << _store << endl;
 
 			array[i].setStore(_store);
 			array[i].setDirtyFlag(false);
@@ -116,11 +111,10 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 //		PreLoad();
 
 	}
-//	cout << _filename << " Done." << endl;
 }
 
 bool
-IVArray::PreLoad()
+ISArray::PreLoad()
 {
 	if (array == NULL)
 		return false;
@@ -148,10 +142,10 @@ IVArray::PreLoad()
 }
 
 bool
-IVArray::save()
+ISArray::save()
 {
-	// save ValueFile and IVfile
-	int fd = fileno(IVfile);
+	// save ValueFile and ISfile
+	int fd = fileno(ISfile);
 
 	if (CurEntryNumChange)
 		pwrite(fd, &CurEntryNum, 1 * sizeof(unsigned), 0);
@@ -191,7 +185,7 @@ IVArray::save()
 
 // Swap the least used entry out of main memory
 bool
-IVArray::SwapOut()
+ISArray::SwapOut()
 {
 	if (time_index_map.empty())
 	{
@@ -201,12 +195,14 @@ IVArray::SwapOut()
 	multimap <long, unsigned>::iterator it = time_index_map.begin();
 
 	unsigned key = it->second;
-	char *str = NULL;
 	unsigned len = 0;
+	char *str = NULL;
 	array[key].getBstr(str, len);
-	
+
 	if (array[key].isDirty() && array[key].inCache())
 	{
+		//char *str = NULL;
+		//array[key].getBstr(str, len);
 		unsigned store = BM->WriteValue(str, len);
 		array[key].setStore(store);
 	}
@@ -225,7 +221,7 @@ IVArray::SwapOut()
 
 // Add an entry into main memory
 bool
-IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
+ISArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 {
 	if (_len > MAX_CACHE_SIZE)
 	{
@@ -249,7 +245,7 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 
 //Update last used time of array[_key]
 bool
-IVArray::UpdateTime(unsigned _key)
+ISArray::UpdateTime(unsigned _key)
 {
 	map <unsigned, long>::iterator it;
 	if ((it = index_time_map.find(_key)) == index_time_map.end())
@@ -282,12 +278,11 @@ IVArray::UpdateTime(unsigned _key)
 }
 
 bool
-IVArray::search(unsigned _key, char *&_str, unsigned &_len)
+ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 {
-	//printf("%s search %d: ", filename.c_str(), _key);
+	//printf("%s search %d: \n", filename.c_str(), _key);
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
-//		cout << "IVArray " << filename << "  Search Error: Key " << _key << " is not available." << endl;
 		_str = NULL;
 		_len = 0;
 		return false;
@@ -307,65 +302,24 @@ IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 	{
 		return false;
 	}
-	// try to add the entry into cache
-/*	if (VList::isLongList(_len) && _len + CurCacheSize <= IVArray::MAX_CACHE_SIZE)
-	{
-		array[_key].setBstr(_str, _len);
-		array[_key].setCacheFlag(true);
 
-		CurCacheSize += _len;
-	}*/
-	if (!VList::isLongList(_len))
-		AddInCache(_key, _str, _len);
-
-//	printf("value is %s, length: %d\n", _str, _len);
-	
-	// also read values near it so that we can take advantage of spatial locality
-/*	unsigned start = (_key / SEG_LEN) * SEG_LEN;
-	unsigned end = start + SEG_LEN;
-	for(unsigned i = start; i < end; i++)
-	{
-		unsigned store = array[i].getStore();
-		if (i == _key)
-		{
-			if (!BM->ReadValue(store, _str, _len))
-				return false;
-			//if (!VList::isLongList(_len))
-				AddInCache(_key, _str, _len);
-			//else
-			if (VList::isLongList(_len))
-				array[_key].setLongListFlag(true);
-		}
-		else if (!array[i].isLongList() && array[i].isUsed() && !array[i].inCache())
-		{
-			char *temp_str;
-			unsigned temp_len;
-			if (!BM->ReadValue(store, temp_str, temp_len))
-				continue;
-			if (!VList::isLongList(temp_len))
-				AddInCache(i, temp_str, temp_len);
-			else
-				array[_key].setLongListFlag(true);
-			
-			delete [] temp_str;
-		}
-	}*/
+	AddInCache(_key, _str, _len);
 
 	return true;
 }
 
 bool
-IVArray::insert(unsigned _key, char *_str, unsigned _len)
+ISArray::insert(unsigned _key, char *_str, unsigned _len)
 {
 	if (_key < CurEntryNum && array[_key].isUsed())
 	{
 		return false;
 	}
 	
-	if (_key >= IVArray::MAX_KEY_NUM)
+	if (_key >= ISArray::MAX_KEY_NUM)
 	{
 		cout << _key << ' ' << MAX_KEY_NUM << endl;
-		cout << "IVArray insert error: Key is bigger than MAX_KEY_NUM" << endl;
+		cout << "ISArray insert error: Key is bigger than MAX_KEY_NUM" << endl;
 		return false;
 	}
 
@@ -377,12 +331,12 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 		// temp is the smallest number >= _key and mod SET_KEY_INC = 0
 		unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
 		unsigned OldEntryNum = CurEntryNum;
-		CurEntryNum = max(CurEntryNum + IVArray::SET_KEY_INC, temp);
+		CurEntryNum = max(CurEntryNum + ISArray::SET_KEY_INC, temp);
 		
-		IVEntry* newp = new IVEntry[CurEntryNum];
+		ISEntry* newp = new ISEntry[CurEntryNum];
 		if (newp == NULL)
 		{
-			cout << "IVArray insert error: main memory full" << endl;
+			cout << "ISArray insert error: main memory full" << endl;
 			return false;
 		}
 
@@ -394,32 +348,16 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 
 	}
 
-	// TODO maybe sometimes not to write in disk, but stored in main memory
-	if (VList::isLongList(_len))
-	{
-		unsigned store = BM->WriteValue(_str, _len);
-		if (store == 0)
-		{
-			return false;
-		}
-		array[_key].setStore(store);
-		array[_key].setLongListFlag(true);
-	}
-	else
-	{
-		AddInCache(_key, _str, _len);
-	}
-	
+	AddInCache(_key, _str, _len);
 	array[_key].setUsedFlag(true);
 	array[_key].setDirtyFlag(true);
-
 	return true;
 }
 
 bool
-IVArray::remove(unsigned _key)
+ISArray::remove(unsigned _key)
 {
-	if (!array[_key].isUsed())
+	if (_key >= CurEntryNum || !array[_key].isUsed())
 	{
 		return false;
 	}
@@ -449,9 +387,9 @@ IVArray::remove(unsigned _key)
 }
 
 bool
-IVArray::modify(unsigned _key, char *_str, unsigned _len)
+ISArray::modify(unsigned _key, char *_str, unsigned _len)
 {
-	if (!array[_key].isUsed())
+	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
 		return false;
 	}
@@ -463,36 +401,19 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 		unsigned len = 0;
 		array[_key].getBstr(str, len);
 
-		if (!VList::isLongList(_len))
-		{
-			CurCacheSize -= len;
-			CurCacheSize += _len;
-			array[_key].setBstr(_str, _len);
-		}
-		else
-		{
-			CurCacheSize -= len;
-			array[_key].release();
-			array[_key].setCacheFlag(false);
-			unsigned store = BM->WriteValue(_str, _len);
-			array[_key].setStore(store);
-			array[_key].setLongListFlag(true);
-		}
+		CurCacheSize -= len;
+		array[_key].release();
+		array[_key].setCacheFlag(false);
+		unsigned store = BM->WriteValue(_str, _len);
+		array[_key].setStore(store);
+		
 	}
 	else
 	{
 		unsigned store = array[_key].getStore();
 		BM->FreeBlocks(store);
-		if (VList::isLongList(_len))
-		{
-			unsigned store = BM->WriteValue(_str, _len);
-			array[_key].setStore(store);
-			array[_key].setLongListFlag(true);
-		}
-		else
-		{
-			AddInCache(_key, _str, _len);
-		}
+		AddInCache(_key, _str, _len);
+		
 	}
 
 	return true;

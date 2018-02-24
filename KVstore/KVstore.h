@@ -14,6 +14,7 @@
 #include "Tree.h"
 #include "../Trie/Trie.h"
 #include "IVArray/IVArray.h"
+#include "ISArray/ISArray.h"
 
 //TODO: is it needed to keep a length in Bstr?? especially for IVTree?
 //add a length: sizeof bstr from 8 to 16(4 -> 8 for alignment)
@@ -178,8 +179,8 @@ private:
 	Trie *trie;
 
 	SITree* entity2id;
-	ISTree* id2entity;
-	//ISArray* id2entity;
+	//ISTree* id2entity;
+	ISArray* id2entity;
 	static std::string s_entity2id;
 	static std::string s_id2entity;
 	static unsigned short buffer_entity2id_build;
@@ -188,8 +189,8 @@ private:
 	static unsigned short buffer_id2entity_query;
 
 	SITree* predicate2id;
-	ISTree* id2predicate;
-	//ISArray* id2predicate;
+	//ISTree* id2predicate;
+	ISArray* id2predicate;
 	static std::string s_predicate2id;
 	static std::string s_id2predicate;
 	static unsigned short buffer_predicate2id_build;
@@ -198,8 +199,8 @@ private:
 	static unsigned short buffer_id2predicate_query;
 
 	SITree* literal2id;
-	ISTree* id2literal;
-	//ISArray* id2literal;
+	//ISTree* id2literal;
+	ISArray* id2literal;
 	static std::string s_literal2id;
 	static std::string s_id2literal;
 	static unsigned short buffer_literal2id_build;
@@ -229,32 +230,32 @@ private:
 	//===============================================================================
 
 	bool open(SITree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
-	bool open(ISTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
-	//bool open(ISArray* & _array, std::string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num = 0);
+	//bool open(ISTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
+	bool open(ISArray* & _array, std::string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num = 0);
 	//bool open(IVTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
 	bool open(IVArray* & _array, std::string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num = 0);
 
 	void flush(SITree* _p_btree);
-	void flush(ISTree* _p_btree);
-	//void flush(ISArray* _array);
+	//void flush(ISTree* _p_btree);
+	void flush(ISArray* _array);
 	//void flush(IVTree* _p_btree);
 	void flush(IVArray* _array);
 
 	bool addValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val);
-	bool addValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
-	//bool addValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen);
+	//bool addValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
+	bool addValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen);
 	//bool addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 	bool addValueByKey(IVArray* _array, unsigned _key, char *_val, unsigned _vlen);
 
 	bool setValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val);
-	bool setValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
-	//bool setValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen);
+	//bool setValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
+	bool setValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen);
 //	bool setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 	bool setValueByKey(IVArray* _array, unsigned _key, char* _val, unsigned _vlen);
 
 	bool getValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsigned* _val) const;
-	bool getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
-	//bool getValueByKey(ISArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const;
+	//bool getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
+	bool getValueByKey(ISArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const;
 //	bool getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
 	bool getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const;
 
@@ -262,8 +263,8 @@ private:
 	TYPE_ENTITY_LITERAL_ID getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const;
 
 	bool removeKey(SITree* _p_btree, const char* _key, unsigned _klen);
-	bool removeKey(ISTree* _p_btree, unsigned _key);
-	//bool removeKey(ISArray* _array, unsigned _key);
+	//bool removeKey(ISTree* _p_btree, unsigned _key);
+	bool removeKey(ISArray* _array, unsigned _key);
 //	bool removeKey(IVTree* _p_btree, unsigned _key);
 	bool removeKey(IVArray* _array, unsigned _key);
 
