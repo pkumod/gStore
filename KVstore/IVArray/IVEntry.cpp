@@ -18,19 +18,7 @@ IVEntry::IVEntry()
 	usedFlag = false;
 	dirtyFlag = true;
 	cacheFlag = false;
-	LongListFlag = false;
-}
-
-void
-IVEntry::setLongListFlag(bool _flag)
-{
-	LongListFlag = _flag;
-}
-
-bool
-IVEntry::isLongList() const
-{
-	return LongListFlag;
+	prevID = nextID = -1;
 }
 
 void
@@ -51,7 +39,7 @@ IVEntry::setBstr(const char *_str, unsigned _len)
 }
 
 bool
-IVEntry::getBstr(char *& _str, unsigned &_len) const
+IVEntry::getBstr(char *& _str, unsigned &_len, bool if_copy) const
 {
 	if (value == NULL)
 	{
@@ -60,11 +48,18 @@ IVEntry::getBstr(char *& _str, unsigned &_len) const
 		return false;
 	}
 
-	char *str = value->getStr();
-	_len = value->getLen();
-	_str = new char [_len];
-	memcpy(_str, str, _len);
-
+	if (if_copy)
+	{
+		char *str = value->getStr();
+		_len = value->getLen();
+		_str = new char [_len];
+		memcpy(_str, str, _len);
+	}
+	else
+	{
+		_str = value->getStr();
+		_len = value->getLen();
+	}
 	return true;
 }
 
@@ -124,6 +119,7 @@ IVEntry::release()
 		delete value;
 	}
 	value = NULL;
+	nextID = prevID = -1;
 }
 
 void
@@ -138,6 +134,30 @@ IVEntry::Copy(const IVEntry& _entry)
 		this->value = new Bstr();
 		value->copy(_entry.value);
 	}
+}
+
+void
+IVEntry::setPrev(int ID)
+{
+	prevID = ID;
+}
+
+int
+IVEntry::getPrev() const
+{
+	return prevID;
+}
+
+void
+IVEntry::setNext(int ID)
+{
+	nextID = ID;
+}
+
+int
+IVEntry::getNext() const
+{
+	return nextID;
 }
 
 IVEntry::~IVEntry()
