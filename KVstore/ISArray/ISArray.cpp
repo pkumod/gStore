@@ -20,9 +20,9 @@ ISArray::ISArray()
 	CurEntryNum = 0;
 	CurCacheSize = 0;
 	CurEntryNumChange = false;
-	index_time_map.clear();
-	time_index_map.clear();
 	MAX_CACHE_SIZE = 0;
+	cache_head = new ISEntry;
+	cache_tail_id = -1;
 }
 
 ISArray::~ISArray()
@@ -34,8 +34,6 @@ ISArray::~ISArray()
 	}
 	fclose(ISfile);
 	delete BM;
-	index_time_map.clear();
-	time_index_map.clear();
 }
 
 ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num)
@@ -44,9 +42,9 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 	filename = _dir_path + "/" + _filename;
 	ISfile_name = filename + "_ISfile";
 	CurEntryNumChange = false;
-	index_time_map.clear();
-	time_index_map.clear();
 	MAX_CACHE_SIZE = buffer_size;
+	cache_head = new ISEntry;
+	cache_tail_id = -1;
 
 	unsigned SETKEYNUM = 1 << 10;
 
@@ -187,34 +185,27 @@ ISArray::save()
 bool
 ISArray::SwapOut()
 {
-	if (time_index_map.empty())
-	{
+	int targetID;
+	if ((targetID = cache_head->getNext()) == -1)
 		return false;
-	}
 
-	multimap <long, unsigned>::iterator it = time_index_map.begin();
-
-	unsigned key = it->second;
-	unsigned len = 0;
-	char *str = NULL;
-	array[key].getBstr(str, len);
-
-	if (array[key].isDirty() && array[key].inCache())
+	int nextID = array[targetID].getNext();
+	cache_head->setNext(nextID);
+	if (nextID != -1)
 	{
-		//char *str = NULL;
-		//array[key].getBstr(str, len);
-		unsigned store = BM->WriteValue(str, len);
-		array[key].setStore(store);
+		array[nextID].setPrev(-1);
+	}
+	else
+	{
+		cache_tail_id = -1;
 	}
 
+	char *str = NULL;
+	unsigned len;
+	array[targetID].getBstr(str, len, false);
 	CurCacheSize -= len;
-	delete [] str;
-
-	array[key].release();
-	array[key].setCacheFlag(false);
-
-	index_time_map.erase(key);
-	time_index_map.erase(it);
+	array[targetID].release();
+	array[targetID].setCacheFlag(false);
 
 	return true;
 }
@@ -235,10 +226,13 @@ ISArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 	array[_key].setBstr(_str, _len);
 	array[_key].setCacheFlag(true);
 
-	//modify maps
-	long time = Util::get_cur_time();
-	index_time_map[_key] = time;
-	time_index_map.insert(make_pair(time, _key));
+	if (cache_tail_id == -1)
+		cache_head->setNext(_key);
+	else
+		array[cache_tail_id].setNext(_key);
+	array[_key].setPrev(cache_tail_id);
+	array[_key].setNext(-1);
+	cache_tail_id = _key;
 
 	return true;
 }
@@ -247,32 +241,21 @@ ISArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 bool
 ISArray::UpdateTime(unsigned _key)
 {
-	map <unsigned, long>::iterator it;
-	if ((it = index_time_map.find(_key)) == index_time_map.end())
-	{
-		return false;
-	}
+	if (_key == (unsigned) cache_tail_id)
+		return true;
 
-	unsigned oldtime = it->second;
-	long time = Util::get_cur_time();
-	it->second = time;
+	int prevID = array[_key].getPrev();
+	int nextID = array[_key].getNext();
+	if (prevID == -1)
+		cache_head->setNext(nextID);
+	else
+		array[prevID].setNext(nextID);
+	array[nextID].setPrev(prevID);
 
-	pair < multimap<long, unsigned>::iterator, multimap<long, unsigned>::iterator > ret;
-	ret = time_index_map.equal_range(oldtime);
-
-	multimap <long, unsigned>::iterator p;
-	for(p = ret.first; p != ret.second; p++)
-	{
-		if (p->second == _key)
-			break;
-	}
-
-	if (p == ret.second)
-	{
-		return false;
-	}
-	time_index_map.erase(p);
-	time_index_map.insert(make_pair(time, _key));
+	array[_key].setPrev(cache_tail_id);
+	array[_key].setNext(-1);
+	array[cache_tail_id].setNext(_key);
+	cache_tail_id = _key;
 
 	return true;
 }

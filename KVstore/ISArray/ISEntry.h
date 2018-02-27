@@ -16,14 +16,18 @@ class ISEntry
 	bool usedFlag;   // mark if the entry is used
 	bool dirtyFlag;
 	bool cacheFlag;
-	bool LongListFlag;
+	// pointer to id for LRU list
+	int prevID;
+	int nextID;
+
 	unsigned store;  //index of block where value is stored
 	Bstr* value;
+
 public:
 	ISEntry();
 	
 	void setBstr(const Bstr* _value);
-	bool getBstr(char *& _str, unsigned& _len) const;
+	bool getBstr(char *& _str, unsigned& _len, bool if_copy = true) const;
 	void setBstr(const char *_str, unsigned _len);
 	
 	void setStore(unsigned _store);
@@ -38,12 +42,14 @@ public:
 	void setCacheFlag(bool _flag);
 	bool inCache() const;
 
-	void setLongListFlag(bool _flag);
-	bool isLongList() const;
-
 	void release();
 
 	void Copy(const ISEntry& _entry);
+
+	void setPrev(int ID);
+	int getPrev() const;
+	void setNext(int ID);
+	int getNext() const;
 
 	~ISEntry();
 };

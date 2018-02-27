@@ -20,9 +20,11 @@ IVArray::IVArray()
 	CurEntryNum = 0;
 	CurCacheSize = 0;
 	CurEntryNumChange = false;
-	index_time_map.clear();
-	time_index_map.clear();
+	//index_time_map.clear();
+	//time_index_map.clear();
 	MAX_CACHE_SIZE = 0;
+	cache_head = new IVEntry;
+	cache_tail_id = -1;
 }
 
 IVArray::~IVArray()
@@ -34,8 +36,8 @@ IVArray::~IVArray()
 	}
 	fclose(IVfile);
 	delete BM;
-	index_time_map.clear();
-	time_index_map.clear();
+	//index_time_map.clear();
+	//time_index_map.clear();
 }
 
 IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num)
@@ -45,9 +47,11 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 	filename = _dir_path + "/" + _filename;
 	IVfile_name = filename + "_IVfile";
 	CurEntryNumChange = false;
-	index_time_map.clear();
-	time_index_map.clear();
+	//index_time_map.clear();
+	//time_index_map.clear();
 	MAX_CACHE_SIZE = buffer_size;
+	cache_head = new IVEntry;
+	cache_tail_id = -1;
 
 	unsigned SETKEYNUM = 1 << 10;
 
@@ -165,7 +169,7 @@ IVArray::save()
 			unsigned len = 0;
 			unsigned _store;
 			// probably value has been written but store has not	
-			if (array[i].isUsed() && array[i].getBstr(str, len))
+			if (array[i].isUsed() && array[i].getBstr(str, len, false))
 			{
 				_store = BM->WriteValue(str, len);
 				array[i].setStore(_store);
@@ -193,7 +197,30 @@ IVArray::save()
 bool
 IVArray::SwapOut()
 {
-	if (time_index_map.empty())
+	int targetID;
+	if ((targetID = cache_head->getNext()) == -1) // cache is empty
+	{
+		return false;
+	}
+
+	int nextID = array[targetID].getNext();
+	cache_head->setNext(nextID);
+	if (nextID != -1)
+	{
+		array[nextID].setPrev(-1);
+	}
+	else // p is tail
+	{
+		cache_tail_id = -1;
+	}
+
+	char *str = NULL;
+	unsigned len = 0;
+	array[targetID].getBstr(str, len, false);
+	CurCacheSize -= len;
+	array[targetID].release();
+	array[targetID].setCacheFlag(false);
+/*	if (time_index_map.empty())
 	{
 		return false;
 	}
@@ -203,7 +230,7 @@ IVArray::SwapOut()
 	unsigned key = it->second;
 	char *str = NULL;
 	unsigned len = 0;
-	array[key].getBstr(str, len);
+	array[key].getBstr(str, len, false);
 	
 	if (array[key].isDirty() && array[key].inCache())
 	{
@@ -212,14 +239,14 @@ IVArray::SwapOut()
 	}
 
 	CurCacheSize -= len;
-	delete [] str;
 
 	array[key].release();
 	array[key].setCacheFlag(false);
 
-	index_time_map.erase(key);
+	//array[key].setTime(0);
+	//index_time_map.erase(key);
 	time_index_map.erase(it);
-
+*/
 	return true;
 }
 
@@ -239,10 +266,19 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 	array[_key].setBstr(_str, _len);
 	array[_key].setCacheFlag(true);
 
+	if (cache_tail_id == -1)
+		cache_head->setNext(_key);
+	else
+		array[cache_tail_id].setNext(_key);
+
+	array[_key].setPrev(cache_tail_id);
+	array[_key].setNext(-1);
+	cache_tail_id = _key;
+
 	//modify maps
-	long time = Util::get_cur_time();
-	index_time_map[_key] = time;
-	time_index_map.insert(make_pair(time, _key));
+//	long time = Util::get_cur_time();
+//	array[_key].setTime(time);
+//	time_index_map.insert(make_pair(time, _key));
 
 	return true;
 }
@@ -251,33 +287,56 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 bool
 IVArray::UpdateTime(unsigned _key)
 {
-	map <unsigned, long>::iterator it;
-	if ((it = index_time_map.find(_key)) == index_time_map.end())
+	if (_key == (unsigned) cache_tail_id)// already most recent
+		return true;
+
+//	cout << "UpdateTime: " << _key << endl;
+	int prevID = array[_key].getPrev();
+	int nextID = array[_key].getNext();
+
+	if (prevID == -1)
+		cache_head->setNext(nextID);
+	else
+		array[prevID].setNext(nextID);
+
+	array[nextID].setPrev(prevID); // since array[_key] is not tail, nextp will not be NULL
+
+	array[_key].setPrev(cache_tail_id);
+	array[_key].setNext(-1);
+	array[cache_tail_id].setNext(_key);
+	cache_tail_id = _key;
+	/*
+	//map <unsigned, long>::iterator it;
+	unsigned oldtime;
+	if ((oldtime = array[_key].getTime()) == 0)
 	{
 		return false;
 	}
 
-	unsigned oldtime = it->second;
+	//unsigned oldtime = it->second;
 	long time = Util::get_cur_time();
-	it->second = time;
+	array[_key].setTime(time);
+	//it->second = time;
 
-	pair < multimap<long, unsigned>::iterator, multimap<long, unsigned>::iterator > ret;
-	ret = time_index_map.equal_range(oldtime);
+//	pair < multimap<long, unsigned>::iterator, multimap<long, unsigned>::iterator > ret;
+//	ret = time_index_map.equal_range(oldtime);
 
-	multimap <long, unsigned>::iterator p;
-	for(p = ret.first; p != ret.second; p++)
+	multimap <long, unsigned>::iterator p = time_index_map.lower_bound(oldtime);
+	//for(p = ret.first; p != ret.second; p++)
+	for(p; p->first == oldtime; p++)
 	{
 		if (p->second == _key)
 			break;
 	}
 
-	if (p == ret.second)
+	//if (p == ret.second)
+	if (p->first != oldtime)
 	{
 		return false;
 	}
 	time_index_map.erase(p);
 	time_index_map.insert(make_pair(time, _key));
-
+	*/
 	return true;
 }
 
@@ -318,7 +377,7 @@ IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 	if (!VList::isLongList(_len))
 		AddInCache(_key, _str, _len);
 
-//	printf("value is %s, length: %d\n", _str, _len);
+//	printf(" value is %s, length: %d\n", _str, _len);
 	
 	// also read values near it so that we can take advantage of spatial locality
 /*	unsigned start = (_key / SEG_LEN) * SEG_LEN;
@@ -403,7 +462,6 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 			return false;
 		}
 		array[_key].setStore(store);
-		array[_key].setLongListFlag(true);
 	}
 	else
 	{
@@ -437,7 +495,7 @@ IVArray::remove(unsigned _key)
 	{
 		char *str = NULL;
 		unsigned len = 0;
-		array[_key].getBstr(str, len);
+		array[_key].getBstr(str, len, false);
 		CurCacheSize += len;
 		array[_key].setCacheFlag(false);
 	}
@@ -461,7 +519,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 	{
 		char* str = NULL;
 		unsigned len = 0;
-		array[_key].getBstr(str, len);
+		array[_key].getBstr(str, len, false);
 
 		if (!VList::isLongList(_len))
 		{
@@ -476,7 +534,6 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 			array[_key].setCacheFlag(false);
 			unsigned store = BM->WriteValue(_str, _len);
 			array[_key].setStore(store);
-			array[_key].setLongListFlag(true);
 		}
 	}
 	else
@@ -487,7 +544,6 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 		{
 			unsigned store = BM->WriteValue(_str, _len);
 			array[_key].setStore(store);
-			array[_key].setLongListFlag(true);
 		}
 		else
 		{

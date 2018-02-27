@@ -24,6 +24,8 @@ private:
 
 private:
 	ISEntry* array;
+	ISEntry *cache_head;
+	int cache_tail_id;
 	FILE* ISfile; // file that records index-store
 	string ISfile_name;
 	string filename;
@@ -35,8 +37,8 @@ private:
 
 	//Cache 
 	unsigned CurCacheSize;
-	map <unsigned, long> index_time_map;
-	multimap <long, unsigned> time_index_map;
+	//map <unsigned, long> index_time_map;
+	//multimap <long, unsigned> time_index_map;
 
 	bool AddInCache(unsigned _key, char *_str, unsigned _len);
 	bool SwapOut();

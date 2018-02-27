@@ -135,7 +135,7 @@ IVBlockManager::ReadValue(unsigned _blk_index, char *&_str, unsigned &_len)
 	unsigned Len_left; // how many bits left to read
 	int fd = fileno(ValueFile);
 
-//	fseek(ValueFile, (off_t)BLOCK_SIZE * (_blk_index - 1) + sizeof(unsigned), SEEK_SET);
+	//fseek(ValueFile, (off_t)BLOCK_SIZE * (_blk_index - 1) + sizeof(unsigned), SEEK_SET);
 	off_t offset = (off_t)BLOCK_SIZE * (_blk_index - 1) + sizeof(unsigned);
 	pread(fd, &Len_left, 1 * sizeof(unsigned), offset);
 //	fread(&Len_left, sizeof(unsigned), 1, ValueFile);
@@ -161,9 +161,9 @@ IVBlockManager::ReadValue(unsigned _blk_index, char *&_str, unsigned &_len)
 //		fread(&next_blk, sizeof(unsigned), 1, ValueFile);
 		offset += sizeof(unsigned) + sizeof(unsigned);
 		pread(fd, _str + (_len - Len_left), Bits2read * sizeof(char), offset);
-//		pread(fd, pstr, Bits2read * sizeof(char), offset);
+///		pread(fd, pstr, Bits2read * sizeof(char), offset);
 //		fseek(ValueFile, sizeof(unsigned), SEEK_CUR);
-//		fread(pstr, sizeof(char), Bits2read, ValueFile);
+//		fread(_str + (_len - Len_left), sizeof(char), Bits2read, ValueFile);
 
 //		pstr += Bits2read;
 		Len_left -= Bits2read;
