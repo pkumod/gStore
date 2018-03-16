@@ -863,6 +863,43 @@ Util::int2string(long n)
     return s;
 }
 
+//NOTICE: there does not exist itoa() function in Linux, atoi() is included in stdlib.h
+//itoa() is not a standard C function, and it is only used in Windows.
+//However, there do exist a function called sprintf() in standard library which can replace itoa()
+//char str[255];
+//sprintf(str, "%x", 100); //将100转为16进制表示的字符串
+char* 
+Util::itoa(int num, char* str, int radix) //the last parameter means the number's radix: decimal, or octal formats
+{
+	//index table
+	char index[]="0123456789ABCDEF";
+	unsigned unum;
+	int i=0,j,k;
+	if(radix==10&&num<0)  //negative in decimal
+	{
+		unum=(unsigned)-num;
+		str[i++]='-';
+	}
+	else unum=(unsigned)num;
+	do{
+		str[i++]=index[unum%(unsigned)radix];
+		unum/=radix;
+	}while(unum);
+	str[i]='\0';
+	//reverse order
+	if(str[0]=='-')k=1;
+	else k=0;
+	char temp;
+	for(j=k;j<=(i-1)/2;j++)
+	{
+		temp = str[j];
+		str[j] = str[i-1+k-j];
+		str[i-1+k-j] = temp;
+	}
+	return str;
+}
+
+
 string
 Util::showtime()
 {
