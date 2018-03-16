@@ -20,6 +20,8 @@ in the sparql query can point to the same node in data graph)
 #include <stdlib.h>
 #include <stdbool.h>
 #include <limits.h>
+//DBL_MAX is contained in the header below
+#include <float.h>
 #include <dirent.h>
 #include <string.h>
 #include <unistd.h>
@@ -314,6 +316,7 @@ public:
 	static int compare(const char* _str1, unsigned _len1, const char* _str2, unsigned _len2); //QUERY(how to use default args)
 	static int string2int(std::string s);
 	static std::string int2string(long n);
+	static char* itoa(int num, char* str, int radix);
 	//string2str: s.c_str()
 	//str2string: string(str)
 	static int compIIpair(int _a1, int _b1, int _a2, int _b2);
