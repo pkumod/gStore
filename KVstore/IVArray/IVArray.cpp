@@ -375,8 +375,12 @@ IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 		CurCacheSize += _len;
 	}*/
 	if (!VList::isLongList(_len))
+	{
 		AddInCache(_key, _str, _len);
-
+		char *debug = new char [_len];
+		memcpy(debug, _str, _len);
+		_str = debug;
+	}
 //	printf(" value is %s, length: %d\n", _str, _len);
 	
 	// also read values near it so that we can take advantage of spatial locality
@@ -467,6 +471,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 	{
 		AddInCache(_key, _str, _len);
 	}
+	//AddInCache(_key, _str, _len);
 	
 	array[_key].setUsedFlag(true);
 	array[_key].setDirtyFlag(true);
@@ -521,7 +526,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 		unsigned len = 0;
 		array[_key].getBstr(str, len, false);
 
-		if (!VList::isLongList(_len))
+/*		if (!VList::isLongList(_len))
 		{
 			CurCacheSize -= len;
 			CurCacheSize += _len;
@@ -535,12 +540,16 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 			unsigned store = BM->WriteValue(_str, _len);
 			array[_key].setStore(store);
 		}
+*/
+		array[_key].release();
+		CurCacheSize -= len;
+		AddInCache(_key, _str, _len);
 	}
 	else
 	{
 		unsigned store = array[_key].getStore();
 		BM->FreeBlocks(store);
-		if (VList::isLongList(_len))
+		/*if (VList::isLongList(_len))
 		{
 			unsigned store = BM->WriteValue(_str, _len);
 			array[_key].setStore(store);
@@ -548,7 +557,8 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 		else
 		{
 			AddInCache(_key, _str, _len);
-		}
+		}*/
+		AddInCache(_key, _str, _len);
 	}
 
 	return true;

@@ -30,12 +30,14 @@ IVEntry::setBstr(const Bstr* _value)
 }
 
 void
-IVEntry::setBstr(const char *_str, unsigned _len)
+IVEntry::setBstr(char *_str, unsigned _len)
 {
 	if (value != NULL)
 		delete value;
 	value = new Bstr();
-	value->copy(_str, _len);
+	//value->copy(_str, _len);
+	value->setStr(_str);
+	value->setLen(_len);
 }
 
 bool
