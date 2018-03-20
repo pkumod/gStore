@@ -391,7 +391,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 				int can_size = cans.size();
 				for(std::vector<unsigned>::iterator i = cans.begin(); i != cans.end();)
 				{
-					kvstore->getpreIDlistByobjID(cans.getID(*i), list, len, true);
+					kvstore->getpreIDlistByobjID(*i, list, len, true);
 					bool can_matched = false;
 					int s = 0, e = len - 1;
 					int mid = (s + e)/2;
@@ -447,7 +447,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 				int can_size = cans.size();
 				for(std::vector<unsigned>::iterator i = cans.begin(); i != cans.end();)
 				{
-					kvstore->getpreIDlistBysubID(cans.getID(*i), list, len, true);
+					kvstore->getpreIDlistBysubID(*i, list, len, true);
 					bool can_matched = false;
 					int s = 0, e = len - 1;
 					int mid = (s + e)/2;
