@@ -1918,7 +1918,7 @@ KVstore::build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num
 				
 				this->addValueByKey(this->objID2values, _obj_id, (char*)_entrylist_o, sizeof(unsigned) * j);
 				
-				delete[] _entrylist_o;
+				//delete[] _entrylist_o;
 			}
 		}
 	}
