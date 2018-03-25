@@ -28,7 +28,7 @@ public:
 	
 	void setBstr(const Bstr* _value);
 	bool getBstr(char *& _str, unsigned& _len, bool if_copy = true) const;
-	void setBstr(const char *_str, unsigned _len);
+	void setBstr(char *_str, unsigned _len);
 	
 	void setStore(unsigned _store);
 	unsigned getStore() const;
