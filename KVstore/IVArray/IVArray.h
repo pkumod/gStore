@@ -12,6 +12,9 @@
 
 using namespace std;
 
+#define IVMAXKEYNUM 1 << 31
+#define IVMIN(a, b) a < b ? a : b
+
 class IVArray
 {
 private:

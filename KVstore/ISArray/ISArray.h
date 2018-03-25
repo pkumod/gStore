@@ -12,6 +12,9 @@
 
 using namespace std;
 
+#define ISMAXKEYNUM 1 << 31
+#define ISMIN(a, b) a < b ? a : b
+
 class ISArray
 {
 private:
