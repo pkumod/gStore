@@ -314,8 +314,8 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 		// temp is the smallest number >= _key and mod SET_KEY_INC = 0
 		unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
 		unsigned OldEntryNum = CurEntryNum;
-		CurEntryNum = max(CurEntryNum + ISArray::SET_KEY_INC, temp);
-		
+		//CurEntryNum = max(CurEntryNum + ISArray::SET_KEY_INC, temp);
+		CurEntryNum = ISMIN(OldEntryNum << 1, ISMAXKEYNUM);
 		ISEntry* newp = new ISEntry[CurEntryNum];
 		if (newp == NULL)
 		{
