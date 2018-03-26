@@ -6,7 +6,7 @@
 #include <cstring>
 #include <fstream>
 using namespace std;
-#define tnum 4000
+#define tnum 3000
 bool correctness = true;
 pthread_mutex_t mutex;
 
@@ -33,7 +33,7 @@ void* MyThread_run(void* thread_args)
 	CHttpClient hc;
 	string res;
 	int ret;
-	ret = hc.Get("http://172.31.222.94:9000/?operation=query&format=json&sparql="+args->sparql,res);
+	ret = hc.Get("http://172.31.222.78:9000/?operation=query&format=json&sparql="+args->sparql,res);
 	int m = 0;
 	for(int i = 0; i<args->sparql.length(); ++i)
 	{
