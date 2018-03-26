@@ -2021,7 +2021,9 @@ Database::build_s2xx(ID_TUPLE* _p_id_tuples)
 {
 	//NOTICE: STL sort() is generally fatser than C qsort, especially when qsort is very slow
 	//STL sort() not only use qsort algorithm, it can also choose heap-sort method
-	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::spo_cmp_idtuple);
+	//sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::spo_cmp_idtuple);
+	omp_set_num_threads(thread_num);
+	__gnu_parallel::sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::spo_cmp_idtuple);
 	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_spo_cmp);
 	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num);
 
@@ -2106,7 +2108,9 @@ Database::build_s2xx(ID_TUPLE* _p_id_tuples)
 void
 Database::build_o2xx(ID_TUPLE* _p_id_tuples)
 {
-	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::ops_cmp_idtuple);
+	//sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::ops_cmp_idtuple);
+	omp_set_num_threads(thread_num);
+	__gnu_parallel::sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::ops_cmp_idtuple);
 	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_ops_cmp);
 	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num);
 
@@ -2224,7 +2228,9 @@ Database::build_o2xx(ID_TUPLE* _p_id_tuples)
 void
 Database::build_p2xx(ID_TUPLE* _p_id_tuples)
 {
-	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::pso_cmp_idtuple);
+	//sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::pso_cmp_idtuple);
+	omp_set_num_threads(thread_num);
+	__gnu_parallel::sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::pso_cmp_idtuple);
 	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_pso_cmp);
 	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num);
 }
@@ -3243,8 +3249,10 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to spo cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_spo_cmp);
-
+		//qsort(id_tuples, valid_num, sizeof(int*), KVstore::_spo_cmp);
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_spo_cmp);
+		
 		//To remove duplicates
 		//int ti = 1, tj = 1;
 		//while(tj < valid_num)
@@ -3321,7 +3329,9 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 					cout << "update s2o: " << _sub_id << " " << oidlist_s.size() << endl;
 #endif
-					sort(oidlist_s.begin(), oidlist_s.end());
+					//sort(oidlist_s.begin(), oidlist_s.end());
+					omp_set_num_threads(thread_num);
+					__gnu_parallel::sort(oidlist_s.begin(), oidlist_s.end());
 					//this->kvstore->updateInsert_s2o(_sub_id, oidlist_s);
 					oidlist_s.clear();
 				}
@@ -3336,7 +3346,9 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to ops cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_ops_cmp);
+		//qsort(id_tuples, valid_num, sizeof(int**), KVstore::_ops_cmp);
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_ops_cmp);
 		vector<int> sidlist_o;
 		vector<int> sidlist_op;
 		vector<int> pidsidlist_o;
@@ -3377,7 +3389,9 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 					cout << "update o2s: " << _obj_id << " " << sidlist_o.size() << endl;
 #endif
-					sort(sidlist_o.begin(), sidlist_o.end());
+					//sort(sidlist_o.begin(), sidlist_o.end());
+					omp_set_num_threads(thread_num);
+					__gnu_parallel::sort(sidlist_o.begin(), sidlist_o.end());
 					//this->kvstore->updateInsert_o2s(_obj_id, sidlist_o);
 					sidlist_o.clear();
 
@@ -3404,7 +3418,9 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to pso cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_pso_cmp);
+		//qsort(id_tuples, valid_num, sizeof(int*), KVstore::_pso_cmp);
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num,  KVstore::parallel_pso_cmp);
 		vector<int> sidlist_p;
 		vector<int> oidlist_p;
 		vector<int> sidoidlist_p;
@@ -3440,7 +3456,9 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 					cout << "update p2o: " << _pre_id << " " << oidlist_p.size() << endl;
 #endif
-					sort(oidlist_p.begin(), oidlist_p.end());
+					//sort(oidlist_p.begin(), oidlist_p.end());
+					omp_set_num_threads(thread_num);
+					__gnu_parallel::sort(oidlist_p.begin(), oidlist_p.end());
 					//this->kvstore->updateInsert_p2o(_pre_id, oidlist_p);
 					oidlist_p.clear();
 
@@ -3612,7 +3630,9 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to spo cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_spo_cmp);
+		//qsort(id_tuples, valid_num, sizeof(int*), KVstore::_spo_cmp);
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_spo_cmp);
 		vector<int> oidlist_s;
 		vector<int> pidlist_s;
 		vector<int> oidlist_sp;
@@ -3652,7 +3672,9 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 					this->kvstore->updateRemove_s2po(_sub_id, pidoidlist_s);
 					pidoidlist_s.clear();
 
-					sort(oidlist_s.begin(), oidlist_s.end());
+					//sort(oidlist_s.begin(), oidlist_s.end());
+					omp_set_num_threads(thread_num);
+					__gnu_parallel::sort(oidlist_s.begin(), oidlist_s.end());
 					this->kvstore->updateRemove_s2o(_sub_id, oidlist_s);
 					oidlist_s.clear();
 
@@ -3690,7 +3712,9 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to ops cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_ops_cmp);
+		//qsort(id_tuples, valid_num, sizeof(int**), KVstore::_ops_cmp);
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_ops_cmp);
 		vector<int> sidlist_o;
 		vector<int> sidlist_op;
 		vector<int> pidsidlist_o;
@@ -3725,7 +3749,9 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 
 				if (_obj_change)
 				{
-					sort(sidlist_o.begin(), sidlist_o.end());
+					//sort(sidlist_o.begin(), sidlist_o.end());
+					omp_set_num_threads(thread_num);
+					__gnu_parallel::sort(sidlist_o.begin(), sidlist_o.end());
 					this->kvstore->updateRemove_o2s(_obj_id, sidlist_o);
 					sidlist_o.clear();
 					this->kvstore->updateRemove_o2ps(_obj_id, pidsidlist_o);
@@ -3789,7 +3815,9 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to pso cmp and update" << endl;
 #endif
-		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_pso_cmp);
+		//qsort(id_tuples, valid_num, sizeof(int*), KVstore::_pso_cmp);
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_pso_cmp);
 		vector<int> sidlist_p;
 		vector<int> oidlist_p;
 		vector<int> sidoidlist_p;
@@ -3819,7 +3847,9 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 					this->kvstore->updateRemove_p2s(_pre_id, sidlist_p);
 					sidlist_p.clear();
 
-					sort(oidlist_p.begin(), oidlist_p.end());
+					//sort(oidlist_p.begin(), oidlist_p.end());
+					omp_set_num_threads(thread_num);
+					__gnu_parallel::sort(oidlist_p.begin(), oidlist_p.end());
 					this->kvstore->updateRemove_p2o(_pre_id, oidlist_p);
 					oidlist_p.clear();
 

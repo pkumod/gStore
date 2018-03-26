@@ -549,10 +549,18 @@ Util::cmp_unsigned(const void* _i1, const void* _i2)
 	}
 }
 
+bool
+Util::parallel_cmp_unsigned(unsigned _i1, unsigned _i2)
+{
+	return _i1 < _i2;
+}
+
 void
 Util::sort(unsigned*& _id_list, unsigned _list_len)
 {
-    qsort(_id_list, _list_len, sizeof(unsigned), Util::cmp_unsigned);
+    //qsort(_id_list, _list_len, sizeof(unsigned), Util::cmp_unsigned);
+    omp_set_num_threads(thread_num);
+    __gnu_parallel::sort(_id_list, _id_list + _list_len, Util::parallel_cmp_unsigned);
 }
 
 unsigned
@@ -1655,6 +1663,30 @@ Util::_spo_cmp(const void* _a, const void* _b)
 	return 0;
 }
 
+bool
+Util::parallel_spo_cmp(int* _a, int* _b)
+{
+        int _sub_id_a = _a[0];
+        int _sub_id_b = _b[0];
+        if (_sub_id_a != _sub_id_b) {
+                return _sub_id_a < _sub_id_b;
+        }
+
+        int _pre_id_a = _a[1];
+        int _pre_id_b = _b[1];
+        if (_pre_id_a != _pre_id_b) {
+                return _pre_id_a < _pre_id_b;
+        }
+
+        int _obj_id_a = _a[2];
+        int _obj_id_b = _b[2];
+        if (_obj_id_a != _obj_id_b) {
+                return _obj_id_a < _obj_id_b;
+        }
+
+        return 0;
+}
+
 int 
 Util::_ops_cmp(const void* _a, const void* _b) 
 {
@@ -1682,6 +1714,30 @@ Util::_ops_cmp(const void* _a, const void* _b)
 	return 0;
 }
 
+bool
+Util::parallel_ops_cmp(int* _a, int* _b)
+{
+        int _obj_id_a = _a[2];
+        int _obj_id_b = _b[2];
+        if (_obj_id_a != _obj_id_b) {
+                return _obj_id_a < _obj_id_b;
+        }
+
+        int _pre_id_a = _a[1];
+        int _pre_id_b = _b[1];
+        if (_pre_id_a != _pre_id_b) {
+                return _pre_id_a < _pre_id_b;
+        }
+
+        int _sub_id_a = _a[0];
+        int _sub_id_b = _b[0];
+        if (_sub_id_a != _sub_id_b) {
+                return _sub_id_a < _sub_id_b;
+        }
+
+        return 0;
+}
+
 int 
 Util::_pso_cmp(const void* _a, const void* _b) 
 {
@@ -1707,6 +1763,30 @@ Util::_pso_cmp(const void* _a, const void* _b)
 	}
 
 	return 0;
+}
+
+bool
+Util::parallel_pso_cmp(int* _a, int* _b)
+{
+        int _pre_id_a = _a[1];
+        int _pre_id_b = _b[1];
+        if (_pre_id_a != _pre_id_b) {
+                return _pre_id_a < _pre_id_b;
+        }
+
+        int _sub_id_a = _a[0];
+        int _sub_id_b = _b[0];
+        if (_sub_id_a != _sub_id_b) {
+                return _sub_id_a < _sub_id_b;
+        }
+
+        int _obj_id_a = _a[2];
+        int _obj_id_b = _b[2];
+        if (_obj_id_a != _obj_id_b) {
+                return _obj_id_a < _obj_id_b;
+        }
+
+        return 0;
 }
 
 bool 
