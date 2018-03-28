@@ -18,7 +18,7 @@ This system is really user-friendly and you can pick it up in several minutes. R
 
 - fork this repository in your github account
 
-- type `git clone git@github.com:Caesar11/gStore.git` in your terminal or use git GUI to acquire it
+- type `git clone https://github.com/Caesar11/gStore.git` in your terminal or use git GUI to acquire it
 
 Then you need to compile the project, just type `make` in the gStore root directory, and all executables will be ok. To run gStore, please type `bin/gbuild database_name dataset_path` to build a database named by yourself. And you can use `bin/gquery database_name` command to query a existing database. What is more, `bin/ghttp` is a wonderful tool designed for you, as a database server which can be visited via HTTP protocol. Notice that all commands should be typed in the root directory of gStore, and your database name should not end with ".db".
 
