@@ -1636,6 +1636,7 @@ Util::node2string(const char* _raw_str) {
 	return _output;
 }
 
+//TODO: change these compare functions from int to unsigned, but take care of the returned values
 int 
 Util::_spo_cmp(const void* _a, const void* _b) 
 {
