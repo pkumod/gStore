@@ -869,7 +869,8 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	{
 		string error = "database already built.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 	//check identity.
 	std::map<std::string, struct User *>::iterator it = users.find(username);
@@ -877,13 +878,15 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	{
 		string error = "username not find.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 	else if(it->second->getPassword() != password)
 	{
 		string error = "wrong password.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 
 	cout << "check identity successfully." << endl;
@@ -956,7 +959,8 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	{
 		string error = "add query or load or unload privilege failed.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 
 	//add database name to already_build set.
@@ -993,7 +997,8 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "database already load.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 	//check identity.
 	std::map<std::string, struct User *>::iterator it = users.find(username);
@@ -1001,13 +1006,15 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "username not find.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 	else if(it->second->getPassword() != password)
 	{
 		string error = "wrong password.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 
 	cout << "check identity successfully." << endl;
@@ -1017,7 +1024,8 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "no load privilege, operation failed.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 	cout << "check privilege successfully." << endl;
 
@@ -1026,7 +1034,8 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "Database already loaded.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 
 	//if database haven't been built.
@@ -1034,7 +1043,8 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "Database not built yet.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
    //	string db_name = argv[1];
 	if(db_name=="")
@@ -1137,13 +1147,15 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	{
 		string error = "username not find.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 	else if(it->second->getPassword() != password)
 	{
 		string error = "wrong password.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 
 	cout << "check identity successfully." << endl;
@@ -1153,7 +1165,8 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	{
 		string error = "no unload privilege, operation failed.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 	cout << "check privilege successfully." << endl;
 /*
@@ -1187,7 +1200,8 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	{
 		string error = "Database not load yet.";
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		return false;
+		//return false;
+		return; 
 	}
 	delete current_database;
 	current_database = NULL;
@@ -1439,6 +1453,7 @@ void query_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	}
 
 	query_time = Util::get_cur_time() - query_time;
+	string query_time_s = Util::int2string(query_time);
 	//if (timer != 0 && !stop_thread(timer)) 
 	//{
 		//cerr <<log_prefix<< "Failed to stop timer." << endl;
@@ -2130,14 +2145,16 @@ void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		{
 			string error = "No database used.\r\n";
 			*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-			return false;
+			//return false;
+			return; 
 		}
 
 		//NOTICE: this info is in header
 		string success = current_database->getName();
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 
-		return true;
+		//return true;
+			return; 
 	}
 	else if(type == "all")
 	{
@@ -2145,7 +2162,8 @@ void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		{
 			string error = "No database.\r\n";
 			*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-			return false;
+			//return false;
+			return; 
 		}
 		std::map<std::string, Database *>::iterator it;
 		string success;
@@ -2155,7 +2173,8 @@ void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 			success = success + database_name + "\r\n";
 		}
 		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
-		return true;
+		//return true;
+			return; 
 
 	}
 	else
