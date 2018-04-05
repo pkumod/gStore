@@ -176,6 +176,37 @@ ISStorage::preRead(ISNode*& _root, ISNode*& _leaves_head, ISNode*& _leaves_tail)
 	return true;
 }
 
+bool
+ISStorage::fullLoad(ISNode*& _root)
+{
+	if(_root == NULL)
+	{
+		return false;
+	}
+	std::queue <ISNode*> node_q;
+	ISNode* p = _root;
+	while (!p->isLeaf())
+	{
+		ISNode* tmp;
+		unsigned KN = p->getNum();
+		for(unsigned i = 0; i <= KN; ++i)
+		{
+			tmp = p->getChild(i);
+			long long memory = 0;
+			this->readNode(tmp, &memory);
+			//this->request(memory);
+			node_q.push(tmp);
+		}
+		p = node_q.front();
+		node_q.pop();
+	}
+	while (!node_q.empty())
+	{
+		node_q.pop();
+	}
+	return true;
+}
+
 long		//8-byte in 64-bit machine
 ISStorage::Address(unsigned _blocknum) const  //BETTER: inline function
 {
@@ -563,7 +594,7 @@ ISStorage::writeTree(ISNode* _root)	//write the whole tree back and close treefp
 		bp = bp->next;
 	}
 
-	fflush(this->treefp);
+	Util::Csync(this->treefp);
 	//fclose(this->treefp);
 
 	return true;
