@@ -14,15 +14,15 @@ int main()
 	string res;
 	int ret;
 	//NOTICE: here no need to add admin.html
-	ret = hc.Get("127.0.0.1:8080/build/lubm/data/LUBM_10.n3", res); 
+	//ret = hc.Get("172.31.222.78:9000/build/lubm/data/LUBM_10.n3", res); 
+	//cout<<res<<endl;
+	ret = hc.Get("172.31.222.78:9000/load/lubm10", res); 
 	cout<<res<<endl;
-	ret = hc.Get("127.0.0.1:8080/load/lubm", res); 
-	cout<<res<<endl;
-	ret = hc.Get("127.0.0.1:8080/query/data/ex0.sql", res); 
-	cout<<res<<endl;
-	ret = hc.Get("127.0.0.1:8080/monitor", res); 
-	cout<<res<<endl;
-	ret = hc.Get("127.0.0.1:8080/unload", res); 
+	//ret = hc.Get("127.0.0.1:8080/query/data/ex0.sql", res); 
+	//cout<<res<<endl;
+	//ret = hc.Get("127.0.0.1:8080/monitor", res); 
+	//cout<<res<<endl;
+	ret = hc.Get("172.31.222.78:9000/unload", res); 
 	cout<<res<<endl;
 
 	return 0;

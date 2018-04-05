@@ -221,6 +221,37 @@ IVStorage::preLoad(IVNode*& _root)
 	return true;
 }
 
+bool
+IVStorage::fullLoad(IVNode*& _root)
+{
+	if(_root == NULL)
+	{
+		return false;
+	}
+	std::queue <IVNode*> node_q;
+	IVNode* p = _root;
+	while (!p->isLeaf())
+	{
+		IVNode* tmp;
+		unsigned KN = p->getNum();
+		for(unsigned i = 0; i <= KN; ++i)
+		{
+			tmp = p->getChild(i);
+			long long memory = 0;
+			this->readNode(tmp, &memory);
+			//this->request(memory);
+			node_q.push(tmp);
+		}
+		p = node_q.front();
+		node_q.pop();
+	}
+	while (!node_q.empty())
+	{
+		node_q.pop();
+	}
+	return true;
+}
+
 long		//8-byte in 64-bit machine
 IVStorage::Address(unsigned _blocknum) const  //BETTER: inline function
 {
@@ -655,7 +686,7 @@ IVStorage::writeTree(IVNode* _root)	//write the whole tree back and close treefp
 		bp = bp->next;
 	}
 
-	fflush(this->treefp);
+	Util::Csync(this->treefp);
 	//fclose(this->treefp);
 
 	return true;

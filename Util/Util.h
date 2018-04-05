@@ -20,6 +20,8 @@ in the sparql query can point to the same node in data graph)
 #include <stdlib.h>
 #include <stdbool.h>
 #include <limits.h>
+//DBL_MAX is contained in the header below
+#include <float.h>
 #include <dirent.h>
 #include <string.h>
 #include <unistd.h>
@@ -98,6 +100,11 @@ in the sparql query can point to the same node in data graph)
 #include <random>
 #include <type_traits>
 
+//Added for __gnu_parallel::sort
+#include <omp.h>
+#include <parallel/algorithm>
+#define thread_num 1
+
 //NOTICE: hpp is different from static library(*.a) or dynamic library(*.so)
 //It places the implementations totally in header file, hpp = *.h + *.cpp
 
@@ -118,6 +125,10 @@ in the sparql query can point to the same node in data graph)
 #endif
 #endif
 
+//WARN: when running in parallism, please modify the limits of system
+//http://www.cnblogs.com/likehua/p/3831331.html
+//http://blog.csdn.net/xyang81/article/details/52779229
+//
 //if use pthread and lock
 #define THREAD_ON 1			
 //if use stream module if result is too large than memory can hold
@@ -304,17 +315,20 @@ public:
 	static const long gserver_backup_interval = 86400;
 	static const long gserver_backup_time = 72000; // Default backup time (UTC)
 
+	static std::string getThreadID();
 	static int memUsedPercentage();
 	static int memoryLeft();
 	static int compare(const char* _str1, unsigned _len1, const char* _str2, unsigned _len2); //QUERY(how to use default args)
 	static int string2int(std::string s);
 	static std::string int2string(long n);
+	static char* itoa(int num, char* str, int radix);
 	//string2str: s.c_str()
 	//str2string: string(str)
 	static int compIIpair(int _a1, int _b1, int _a2, int _b2);
 	static std::string showtime();
 	static int cmp_int(const void* _i1, const void* _i2);
 	static int cmp_unsigned(const void* _i1, const void* _i2);
+	static bool parallel_cmp_unsigned(unsigned _i1, unsigned _i2);
 	static void sort(unsigned*& _id_list, unsigned _list_len);
 	static unsigned bsearch_int_uporder(unsigned _key, const unsigned* _array, unsigned _array_num);
 	static bool bsearch_preid_uporder(TYPE_PREDICATE_ID _preid, unsigned* _pair_idlist, unsigned _list_len);
@@ -324,12 +338,13 @@ public:
 	static bool create_dir(const std:: string _dir);
 	static bool create_file(const std::string _file);
 
+	static std::string getTimeName();
+	static std::string getTimeString();
 	static long get_cur_time();
 	static std::string get_date_time();
 	static bool save_to_file(const char*, const std::string _content);
 	static bool isValidPort(std::string);
 	static bool isValidIP(std::string);
-	static std::string getTimeString();
 	static std::string node2string(const char* _raw_str);
 	static long read_backup_time();
 
@@ -339,6 +354,7 @@ public:
 	static bool isLiteral(const std::string& _str);
 
 	static unsigned removeDuplicate(unsigned*, unsigned);
+	static void Csync(FILE* _fp);
 
 	static std::string getQueryFromFile(const char* _file_path); 
 	static std::string getSystemOutput(std::string cmd);
@@ -393,8 +409,11 @@ public:
 	
 	//sort functions for qsort
 	static int _spo_cmp(const void* _a, const void* _b);
+	static bool parallel_spo_cmp(int* _a, int* _b);
 	static int _ops_cmp(const void* _a, const void* _b);
+	static bool parallel_ops_cmp(int* _a, int* _b);
 	static int _pso_cmp(const void* _a, const void* _b);
+	static bool parallel_pso_cmp(int* _a, int* _b);
 	//sort functions for sort on ID_TUPLE
 	static bool spo_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);
 	static bool ops_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);
@@ -557,6 +576,21 @@ public:
 	~BoolArray()
 	{
 		delete[] arr;
+	}
+};
+
+class AccessRequest
+{
+public:
+	unsigned id;
+	long offset;
+	unsigned length;
+	std::string *str;
+	AccessRequest(unsigned _id, long _offset, unsigned _length, std::string *_str):
+		id(_id), offset(_offset), length(_length), str(_str){};
+	inline bool operator < (const AccessRequest &x) const
+	{
+		return this->offset < x.offset;
 	}
 };
 

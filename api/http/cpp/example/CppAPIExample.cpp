@@ -9,20 +9,21 @@
 #include "GstoreConnector.h"
 #include <string>
 #include <iostream>
-
+using namespace std;
 // before run this example, you must start up the GStore server at first (use command ./gserver).
 int main(int argc, char * argv[])
 {
     // initialize the GStore server's IP address and port.
-    GstoreConnector gc("127.0.0.1", 3305);
-
+    cout << "in" <<endl;
+    GstoreConnector gc("127.0.0.1", 9000);
+    cout << "out"<<endl;
     // build a new database by a RDF file.
     // note that the relative path is related to gserver.
-    gc.build("LUBM10", "data/LUBM_10.n3");
-    gc.load("LUBM10");
-
+    //gc.build("LUBM10", "data/LUBM_10.n3");
+    gc.load("lubm10");
+    cout << "load" <<endl;
     // then you can execute SPARQL query on this database.
-    std::string sparql = "select ?x where \
+    //std::string sparql = "select ?x where \
                          { \
                          ?x    <rdf:type>    <ub:UndergraduateStudent>. \
                          ?y    <ub:name> <Course1>. \
@@ -32,17 +33,17 @@ int main(int argc, char * argv[])
                          ?z    <ub:worksFor>    ?w. \
                          ?w    <ub:name>    <Department0>. \
                          }";
-    std::string answer = gc.query(sparql);
-    std::cout << answer << std::endl;
+    //std::string answer = gc.query(sparql);
+    //std::cout << answer << std::endl;
 
     // unload this database.
-    gc.unload("LUBM10");
-
+    gc.unload("lubm10");
+    cout << "unload" <<endl;
     // also, you can load some exist database directly and then query.
-    gc.load("LUBM10");
-    answer = gc.query(sparql);
-    std::cout << answer << std::endl;
-    gc.unload("LUBM10");
+    //gc.load("LUBM10");
+    //answer = gc.query(sparql);
+    //std::cout << answer << std::endl;
+    //gc.unload("LUBM10");
 
     return 0;
 }

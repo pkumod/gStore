@@ -218,7 +218,13 @@ namespace SimpleWeb {
 
         ///Use this function if you need to recursively send parts of a longer message
         void send(const std::shared_ptr<Response> &response, const std::function<void(const boost::system::error_code&)>& callback=nullptr) const {
+			//session->connection->set_timeout(timeout_content);
+			//auto self = this->shared_from_this(); // Keep Response instance alive through the following async_write
             boost::asio::async_write(*response->socket, response->streambuf, [this, response, callback](const boost::system::error_code& ec, size_t /*bytes_transferred*/) {
+				//self->session->connection->cancel_timeout();
+				//auto lock = self->session->connection->handler_runner->continue_lock();
+				//if(!lock)
+					//return;
                 if(callback)
                     callback(ec);
             });

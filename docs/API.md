@@ -390,7 +390,12 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 
 		- client.h
 
-		- example.cpp (small example program to show the basic idea of using the C++ API)
+		- example/ (small example program to show the basic idea of using the C++ API)
+			- example.cpp
+
+			- Benchmark.cpp
+
+			- Makefile
 
 		- Makefile (compile and build lib)
 		
@@ -413,19 +418,19 @@ CHttpClient hc;
 string res; 
 int ret;
 // build a new database by a RDF file.
-ret = hc.Get("127.0.0.1:9000/build/lumb/data/LUBM_10.n3", res);
+ret = hc.Get("http://127.0.0.1:9000/?operation=build&db_name=lubm&ds_path=data/lubm/lubm.nt", res);
 cout&lt;&lt;res&lt;&lt;endl;
 // load databse
-ret = hc.Get("127.0.0.1:9000/load/lumb", res);
+ret = hc.Get("http://127.0.0.1:9000/?operation=load&db_name=lumb", res);
 cout&lt;&lt;res&lt;&lt;endl;
 // then you can execute SPARQL query on this database.
-ret = hc.Get("127.0.0.1:9000/query/data/ex0.sql", res);
+ret = hc.Get("http://127.0.0.1:9000/?operation=query&format=json&sparql=data/lubm/lubm_q0.sql", res);
 cout&lt;&lt;res&lt;&lt;endl;
 // output information of current database
-ret = hc.Get("127.0.0.1:9000/monitor", res);
+ret = hc.Get("http://127.0.0.1:9000/?operation=monitor", res);
 cout&lt;&lt;res&lt;&lt;endl;
 // unload this databse
-ret = hc.Get("127.0.0.1:9000/unload", res);
+ret = hc.Get("http://127.0.0.1:9000/?operation=unload&db_name=lubm", res);
 cout&lt;&lt;res&lt;&lt;endl;
 ```
 

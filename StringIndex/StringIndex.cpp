@@ -73,12 +73,12 @@ void StringIndexFile::load()
 
 	fread(&this->num, sizeof(unsigned), 1, this->index_file);
 
-	this->index_table.resize(this->num);
+	(*this->index_table).resize(this->num);
 	for (unsigned i = 0; i < this->num; i++)
 	{
-		fread(&this->index_table[i].offset, sizeof(long), 1, this->index_file);
-		fread(&this->index_table[i].length, sizeof(unsigned), 1, this->index_file);
-		this->empty_offset = max(this->empty_offset, this->index_table[i].offset + (long)this->index_table[i].length);
+		fread(&(*this->index_table)[i].offset, sizeof(long), 1, this->index_file);
+		fread(&(*this->index_table)[i].length, sizeof(unsigned), 1, this->index_file);
+		this->empty_offset = max(this->empty_offset, (*this->index_table)[i].offset + (long)(*this->index_table)[i].length);
 	}
 }
 
@@ -87,13 +87,14 @@ bool StringIndexFile::randomAccess(unsigned id, string *str)
 	if (id >= this->num)
 		return false;
 
-	long offset = this->index_table[id].offset;
-	unsigned length = this->index_table[id].length;
+	long offset = (*this->index_table)[id].offset;
+	unsigned length = (*this->index_table)[id].length;
 
 	allocBuffer(length);
 
-	fseek(this->value_file, offset, SEEK_SET);
-	fread(this->buffer, sizeof(char), length, this->value_file);
+	//fseek(this->value_file, offset, SEEK_SET);
+	//fread(this->buffer, sizeof(char), length, this->value_file);
+	pread(fileno(value_file), this->buffer, sizeof(char)*length, offset);
 	this->buffer[length] = '\0';
 
 	*str = string(this->buffer);
@@ -124,17 +125,20 @@ void StringIndexFile::trySequenceAccess()
 	if (this->type == Predicate)
 		cout << "Predicate StringIndex ";
 
+	long current_offset = 0;
 	if ((max_end - min_begin) / 800000L < (long)this->request.size())
 	{
 		cout << "sequence access." << endl;
 
-		sort(this->request.begin(), this->request.end());
-
+		//sort(this->request.begin(), this->request.end());
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(this->request.begin(), this->request.end());
 		int pos = 0;
 		char *block = new char[MAX_BLOCK_SIZE];
 
 		long current_block_begin = min_begin;
-		fseek(this->value_file, current_block_begin, SEEK_SET);
+		//fseek(this->value_file, current_block_begin, SEEK_SET);
+		current_offset = current_block_begin;
 
 		while (current_block_begin < max_end)
 		{
@@ -143,11 +147,14 @@ void StringIndexFile::trySequenceAccess()
 			if (current_block_end <= this->request[pos].offset)
 			{
 				current_block_begin = this->request[pos].offset;
-				fseek(this->value_file, current_block_begin, SEEK_SET);
+				//fseek(this->value_file, current_block_begin, SEEK_SET);
+				current_offset = current_block_begin;
 				current_block_end = min(current_block_begin + MAX_BLOCK_SIZE, max_end);
 			}
 
-			fread(block, sizeof(char), current_block_end - current_block_begin, this->value_file);
+			//fread(block, sizeof(char), current_block_end - current_block_begin, this->value_file);
+			pread(fileno(this->value_file), block, sizeof(char)*(current_block_end-current_block_begin), current_offset);
+			current_offset += sizeof(char)*(current_block_end-current_block_begin);
 
 			while (pos < (int)this->request.size())
 			{
@@ -223,11 +230,11 @@ void StringIndexFile::change(unsigned id, KVstore &kv_store)
 	{
 		while (this->num <= id)
 		{
-			this->index_table.push_back(IndexInfo());
+			(*this->index_table).push_back(IndexInfo());
 
 			fseek(this->index_file, sizeof(unsigned) + this->num * (sizeof(long) + sizeof(unsigned)), SEEK_SET);
-			fwrite(&this->index_table[this->num].offset, sizeof(long), 1, this->index_file);
-			fwrite(&this->index_table[this->num].length, sizeof(unsigned), 1, this->index_file);
+			fwrite(&(*this->index_table)[this->num].offset, sizeof(long), 1, this->index_file);
+			fwrite(&(*this->index_table)[this->num].length, sizeof(unsigned), 1, this->index_file);
 
 			this->num++;
 		}
@@ -244,16 +251,16 @@ void StringIndexFile::change(unsigned id, KVstore &kv_store)
 	if (this->type == Predicate)
 		str = kv_store.getPredicateByID(id);
 
-	this->index_table[id].offset = this->empty_offset;
-	this->index_table[id].length = str.length();
-	this->empty_offset += this->index_table[id].length;
+	(*this->index_table)[id].offset = this->empty_offset;
+	(*this->index_table)[id].length = str.length();
+	this->empty_offset += (*this->index_table)[id].length;
 
 	fseek(this->index_file, sizeof(unsigned) + id * (sizeof(long) + sizeof(unsigned)), SEEK_SET);
-	fwrite(&this->index_table[id].offset, sizeof(long), 1, this->index_file);
-	fwrite(&this->index_table[id].length, sizeof(unsigned), 1, this->index_file);
+	fwrite(&(*this->index_table)[id].offset, sizeof(long), 1, this->index_file);
+	fwrite(&(*this->index_table)[id].length, sizeof(unsigned), 1, this->index_file);
 
-	fseek(this->value_file, this->index_table[id].offset, SEEK_SET);
-	fwrite(str.c_str(), sizeof(char), this->index_table[id].length, this->value_file);
+	fseek(this->value_file, (*this->index_table)[id].offset, SEEK_SET);
+	fwrite(str.c_str(), sizeof(char), (*this->index_table)[id].length, this->value_file);
 }
 
 void StringIndexFile::disable(unsigned id)
@@ -261,11 +268,11 @@ void StringIndexFile::disable(unsigned id)
 	//DEBUG: for predicate, -1 when invalid
 	if (id >= this->num)	return ;
 
-	this->index_table[id] = IndexInfo();
+	(*this->index_table)[id] = IndexInfo();
 
 	fseek(this->index_file, sizeof(unsigned) + id * (sizeof(long) + sizeof(unsigned)), SEEK_SET);
-	fwrite(&this->index_table[id].offset, sizeof(long), 1, this->index_file);
-	fwrite(&this->index_table[id].length, sizeof(unsigned), 1, this->index_file);
+	fwrite(&(*this->index_table)[id].offset, sizeof(long), 1, this->index_file);
+	fwrite(&(*this->index_table)[id].length, sizeof(unsigned), 1, this->index_file);
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------

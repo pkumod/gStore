@@ -397,6 +397,16 @@ Util::~Util()
 #endif
 }
 
+string 
+Util::getThreadID()
+{
+	//thread::id, neither int or long
+	auto myid = this_thread::get_id();
+	stringstream ss;
+	ss << myid;
+	return ss.str();
+}
+
 int
 Util::memUsedPercentage()
 {
@@ -539,10 +549,18 @@ Util::cmp_unsigned(const void* _i1, const void* _i2)
 	}
 }
 
+bool
+Util::parallel_cmp_unsigned(unsigned _i1, unsigned _i2)
+{
+	return _i1 < _i2;
+}
+
 void
 Util::sort(unsigned*& _id_list, unsigned _list_len)
 {
-    qsort(_id_list, _list_len, sizeof(unsigned), Util::cmp_unsigned);
+    //qsort(_id_list, _list_len, sizeof(unsigned), Util::cmp_unsigned);
+    omp_set_num_threads(thread_num);
+    __gnu_parallel::sort(_id_list, _id_list + _list_len, Util::parallel_cmp_unsigned);
 }
 
 unsigned
@@ -853,6 +871,43 @@ Util::int2string(long n)
     return s;
 }
 
+//NOTICE: there does not exist itoa() function in Linux, atoi() is included in stdlib.h
+//itoa() is not a standard C function, and it is only used in Windows.
+//However, there do exist a function called sprintf() in standard library which can replace itoa()
+//char str[255];
+//sprintf(str, "%x", 100); //将100转为16进制表示的字符串
+char* 
+Util::itoa(int num, char* str, int radix) //the last parameter means the number's radix: decimal, or octal formats
+{
+	//index table
+	char index[]="0123456789ABCDEF";
+	unsigned unum;
+	int i=0,j,k;
+	if(radix==10&&num<0)  //negative in decimal
+	{
+		unum=(unsigned)-num;
+		str[i++]='-';
+	}
+	else unum=(unsigned)num;
+	do{
+		str[i++]=index[unum%(unsigned)radix];
+		unum/=radix;
+	}while(unum);
+	str[i]='\0';
+	//reverse order
+	if(str[0]=='-')k=1;
+	else k=0;
+	char temp;
+	for(j=k;j<=(i-1)/2;j++)
+	{
+		temp = str[j];
+		str[j] = str[i-1+k-j];
+		str[i-1+k-j] = temp;
+	}
+	return str;
+}
+
+
 string
 Util::showtime()
 {
@@ -933,6 +988,14 @@ Util::getItemsFromDir(string _path)
 	return ret;
 }
 
+//NOTICE: system() is implemented by fork() and exec(), the latter will change the whole control flow, 
+//so it must be used with fork()
+//The fork() will copy the whole process's image, including the heap and stack.
+//But in UNIX, this copy is only logical, in practice it is copy-on-write, which will save a lot memory usage.
+//Another function is vfork(), which won't copy a lot of things
+//
+//http://www.cnblogs.com/wuchanming/p/3784862.html
+//http://www.cnblogs.com/sky-heaven/p/4687489.html
 string
 Util::getSystemOutput(string cmd)
 {
@@ -1472,6 +1535,24 @@ Util::isValidIPV6(string str)
 	return false;
 }
 
+string 
+Util::getTimeName()
+{
+	//NOTICE: this is another method to get the concrete time
+	time_t rawtime;
+	struct tm* timeinfo;
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	string tempTime = asctime(timeinfo);
+	for(int i = 0; i < tempTime.length(); i++)
+	{
+		if(tempTime[i] == ' ')
+			tempTime[i] = '_';
+	}
+	string myTime = tempTime.substr(0, tempTime.length()-1);
+	return myTime;
+}
+
 string
 Util::getTimeString() {
 	static const int max = 20; // max length of time string
@@ -1480,6 +1561,27 @@ Util::getTimeString() {
 	time(&timep);
 	strftime(time_str, max, "%Y%m%d %H:%M:%S\t", gmtime(&timep));
 	return string(time_str);
+}
+
+//is ostream.write() ok to update to disk at once? all add ofstream.flush()?
+//http://bookug.cc/rwbuffer
+//BETTER: add a sync function in Util to support FILE*, fd, and fstream
+void 
+Util::Csync(FILE* _fp)
+{
+	//NOTICE: fclose will also do fflush() operation, but not others
+	if(_fp == NULL)
+	{
+		return; 
+	}
+	//this will update the buffer from user mode to kernel mode
+	fflush(_fp);
+	//change to Unix fd and use fsync to sync to disk: fileno(stdin)=0
+	int fd = fileno(_fp);
+	fsync(fd);
+	//FILE * fp = fdopen (1, "w+");   //file descriptor to file pointer 
+	//NOTICE: disk scheduler also has a small buffer, but there is no matter even if the power is off
+	//(UPS for each server to enable the synchronization between scheduler and disk)
 }
 
 string
@@ -1534,6 +1636,7 @@ Util::node2string(const char* _raw_str) {
 	return _output;
 }
 
+//TODO: change these compare functions from int to unsigned, but take care of the returned values
 int 
 Util::_spo_cmp(const void* _a, const void* _b) 
 {
@@ -1559,6 +1662,30 @@ Util::_spo_cmp(const void* _a, const void* _b)
 	}
 
 	return 0;
+}
+
+bool
+Util::parallel_spo_cmp(int* _a, int* _b)
+{
+        int _sub_id_a = _a[0];
+        int _sub_id_b = _b[0];
+        if (_sub_id_a != _sub_id_b) {
+                return _sub_id_a < _sub_id_b;
+        }
+
+        int _pre_id_a = _a[1];
+        int _pre_id_b = _b[1];
+        if (_pre_id_a != _pre_id_b) {
+                return _pre_id_a < _pre_id_b;
+        }
+
+        int _obj_id_a = _a[2];
+        int _obj_id_b = _b[2];
+        if (_obj_id_a != _obj_id_b) {
+                return _obj_id_a < _obj_id_b;
+        }
+
+        return 0;
 }
 
 int 
@@ -1588,6 +1715,30 @@ Util::_ops_cmp(const void* _a, const void* _b)
 	return 0;
 }
 
+bool
+Util::parallel_ops_cmp(int* _a, int* _b)
+{
+        int _obj_id_a = _a[2];
+        int _obj_id_b = _b[2];
+        if (_obj_id_a != _obj_id_b) {
+                return _obj_id_a < _obj_id_b;
+        }
+
+        int _pre_id_a = _a[1];
+        int _pre_id_b = _b[1];
+        if (_pre_id_a != _pre_id_b) {
+                return _pre_id_a < _pre_id_b;
+        }
+
+        int _sub_id_a = _a[0];
+        int _sub_id_b = _b[0];
+        if (_sub_id_a != _sub_id_b) {
+                return _sub_id_a < _sub_id_b;
+        }
+
+        return 0;
+}
+
 int 
 Util::_pso_cmp(const void* _a, const void* _b) 
 {
@@ -1613,6 +1764,30 @@ Util::_pso_cmp(const void* _a, const void* _b)
 	}
 
 	return 0;
+}
+
+bool
+Util::parallel_pso_cmp(int* _a, int* _b)
+{
+        int _pre_id_a = _a[1];
+        int _pre_id_b = _b[1];
+        if (_pre_id_a != _pre_id_b) {
+                return _pre_id_a < _pre_id_b;
+        }
+
+        int _sub_id_a = _a[0];
+        int _sub_id_b = _b[0];
+        if (_sub_id_a != _sub_id_b) {
+                return _sub_id_a < _sub_id_b;
+        }
+
+        int _obj_id_a = _a[2];
+        int _obj_id_b = _b[2];
+        if (_obj_id_a != _obj_id_b) {
+                return _obj_id_a < _obj_id_b;
+        }
+
+        return 0;
 }
 
 bool 
