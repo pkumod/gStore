@@ -80,6 +80,12 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 		CurCacheSize = 0;
 		
 		IVfile = fopen(IVfile_name.c_str(), "r+b");
+		if (IVfile == NULL)
+		{
+			cout << "Error in open " << IVfile_name << endl;
+			perror("fopen");
+			exit(0);
+		}
 		
 		int fd  = fileno(IVfile);
 
@@ -171,6 +177,7 @@ IVArray::save()
 			// probably value has been written but store has not	
 			if (array[i].isUsed() && array[i].getBstr(str, len, false))
 			{
+				//TODO Recycle free block
 				_store = BM->WriteValue(str, len);
 				array[i].setStore(_store);
 			}
@@ -218,6 +225,15 @@ IVArray::SwapOut()
 	unsigned len = 0;
 	array[targetID].getBstr(str, len, false);
 	CurCacheSize -= len;
+	if (array[targetID].isDirty())
+	{
+		//TODO recycle free blocks
+		unsigned store = BM->WriteValue(str, len);
+		if (store == 0)
+			return false;
+		array[targetID].setStore(store);
+		array[targetID].setDirtyFlag(false);
+	}
 	array[targetID].release();
 	array[targetID].setCacheFlag(false);
 /*	if (time_index_map.empty())
@@ -260,7 +276,13 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 	}
 	// ensure there is enough room in main memory
 	while (CurCacheSize + _len > MAX_CACHE_SIZE)
-		SwapOut();
+	{
+		if (!SwapOut())
+		{
+			cout << filename << ": swapout error" << endl;
+			exit(0);
+		}
+	}
 
 	CurCacheSize += _len;
 	array[_key].setBstr(_str, _len);

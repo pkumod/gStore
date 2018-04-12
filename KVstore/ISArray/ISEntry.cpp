@@ -35,7 +35,9 @@ ISEntry::setBstr(const char *_str, unsigned _len)
 	if (value != NULL)
 		delete value;
 	value = new Bstr();
-	value->copy(_str, _len);
+	//value->copy(_str, _len);
+	value->setStr((char *)_str);
+	value->setLen(_len);
 }
 
 bool
@@ -129,6 +131,8 @@ ISEntry::Copy(const ISEntry& _entry)
 	this->cacheFlag = _entry.cacheFlag;
 	this->dirtyFlag = _entry.dirtyFlag;
 	this->usedFlag = _entry.usedFlag;
+	this->prevID = _entry.prevID;
+	this->nextID = _entry.nextID;
 	if (_entry.value != NULL)
 	{
 		this->value = new Bstr();

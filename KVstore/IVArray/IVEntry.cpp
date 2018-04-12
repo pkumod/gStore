@@ -136,6 +136,8 @@ IVEntry::Copy(const IVEntry& _entry)
 		this->value = new Bstr();
 		value->copy(_entry.value);
 	}
+	this->prevID = _entry.prevID;
+	this->nextID = _entry.nextID;
 }
 
 void

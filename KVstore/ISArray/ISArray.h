@@ -12,14 +12,14 @@
 
 using namespace std;
 
-#define ISMAXKEYNUM 1 << 31
+#define ISMAXKEYNUM 1 << 30
 #define ISMIN(a, b) a < b ? a : b
 
 class ISArray
 {
 private:
 	// stores at most 1 billion keys
-	static const unsigned int MAX_KEY_NUM = 1 << 31;
+	static const unsigned int MAX_KEY_NUM = 300000000;
 	static const unsigned int SET_KEY_NUM = 10 * 1000 * 1000; // minimum initial keys num, same as RDFParser::TRIPLE_NUM_PER_GROUP
 	static const unsigned int SET_KEY_INC = SET_KEY_NUM; // minimum keys num inc
 	static const unsigned int SEG_LEN = 1 << 8; 
