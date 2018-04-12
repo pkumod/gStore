@@ -190,6 +190,7 @@ ISArray::SwapOut()
 		return false;
 
 	int nextID = array[targetID].getNext();
+	//cout << "nextID = " << nextID << endl;
 	cache_head->setNext(nextID);
 	if (nextID != -1)
 	{
@@ -201,9 +202,18 @@ ISArray::SwapOut()
 	}
 
 	char *str = NULL;
-	unsigned len;
+	unsigned len = 0;
 	array[targetID].getBstr(str, len, false);
 	CurCacheSize -= len;
+	if (array[targetID].isDirty())
+	{
+		//TODO recycle free blocks
+		unsigned store = BM->WriteValue(str, len);
+		if (store == 0)
+			return false;
+		array[targetID].setStore(store);
+		array[targetID].setDirtyFlag(false);
+	}
 	array[targetID].release();
 	array[targetID].setCacheFlag(false);
 
@@ -216,11 +226,21 @@ ISArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 {
 	if (_len > MAX_CACHE_SIZE)
 	{
+		//TODO should write to disk
 		return false;
 	}
 	// ensure there is enough room in main memory
 	while (CurCacheSize + _len > MAX_CACHE_SIZE)
-		SwapOut();
+	{
+		if (!SwapOut())
+		{
+			cout << "Error in SwapOut: CurCacheSize is " << CurCacheSize << " , MaxSize is " << MAX_CACHE_SIZE << " , need size " << _len << endl;
+			// false means cache is empty
+			exit(0);
+			//	CurCacheSize = 0;
+		//	break;
+		}
+	}
 
 	CurCacheSize += _len;
 	array[_key].setBstr(_str, _len);
@@ -230,6 +250,7 @@ ISArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 		cache_head->setNext(_key);
 	else
 		array[cache_tail_id].setNext(_key);
+
 	array[_key].setPrev(cache_tail_id);
 	array[_key].setNext(-1);
 	cache_tail_id = _key;
@@ -287,6 +308,9 @@ ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 	}
 
 	AddInCache(_key, _str, _len);
+	char *debug = new char [_len];
+	memcpy(debug, _str, _len);
+	_str = debug;
 
 	return true;
 }
@@ -306,21 +330,28 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 		return false;
 	}
 
+	bool Alloc = false;
 	CurKeyNum++;
 	//if (CurKeyNum >= CurEntryNum) // need to realloc
 	if (_key >= CurEntryNum)
 	{
+		Alloc = true;
 		CurEntryNumChange = true;
 		// temp is the smallest number >= _key and mod SET_KEY_INC = 0
 		unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
 		unsigned OldEntryNum = CurEntryNum;
-		//CurEntryNum = max(CurEntryNum + ISArray::SET_KEY_INC, temp);
-		CurEntryNum = ISMIN(OldEntryNum << 1, ISMAXKEYNUM);
+		CurEntryNum = max(OldEntryNum << 1, temp);
+		CurEntryNum = ISMIN(CurEntryNum, ISMAXKEYNUM);
 		ISEntry* newp = new ISEntry[CurEntryNum];
+		//maybe using realloc and then initialize manually
 		if (newp == NULL)
 		{
 			cout << "ISArray insert error: main memory full" << endl;
 			return false;
+		}
+		else
+		{
+			cout << "Alloc new array size " << CurEntryNum << endl;
 		}
 
 		for(int i = 0; i < OldEntryNum; i++)
@@ -329,11 +360,14 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 		delete [] array;
 		array = newp;
 
+		cout << "Finish Alloc" << endl;
 	}
 
 	AddInCache(_key, _str, _len);
 	array[_key].setUsedFlag(true);
 	array[_key].setDirtyFlag(true);
+	if (Alloc)
+		cout << "Success" << endl;
 	return true;
 }
 
@@ -358,7 +392,7 @@ ISArray::remove(unsigned _key)
 	{
 		char *str = NULL;
 		unsigned len = 0;
-		array[_key].getBstr(str, len);
+		array[_key].getBstr(str, len, false);
 		CurCacheSize += len;
 		array[_key].setCacheFlag(false);
 	}
@@ -382,22 +416,19 @@ ISArray::modify(unsigned _key, char *_str, unsigned _len)
 	{
 		char* str = NULL;
 		unsigned len = 0;
-		array[_key].getBstr(str, len);
+		array[_key].getBstr(str, len, false);
 
 		CurCacheSize -= len;
 		array[_key].release();
 		array[_key].setCacheFlag(false);
-		unsigned store = BM->WriteValue(_str, _len);
-		array[_key].setStore(store);
+		//unsigned store = BM->WriteValue(_str, _len);
+		//array[_key].setStore(store);
 		
 	}
-	else
-	{
-		unsigned store = array[_key].getStore();
-		BM->FreeBlocks(store);
-		AddInCache(_key, _str, _len);
-		
-	}
+
+	unsigned store = array[_key].getStore();
+	BM->FreeBlocks(store);
+	AddInCache(_key, _str, _len);
 
 	return true;
 	

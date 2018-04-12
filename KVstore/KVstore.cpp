@@ -2791,30 +2791,30 @@ KVstore::getPreListSize(TYPE_PREDICATE_ID _pre_id)
 string KVstore::s_entity2id = "s_entity2id";
 string KVstore::s_id2entity = "s_id2entity";
 unsigned short KVstore::buffer_entity2id_build = 8;
-unsigned short KVstore::buffer_id2entity_build = 8;
+unsigned short KVstore::buffer_id2entity_build = 1;
 unsigned short KVstore::buffer_entity2id_query = 2;
 unsigned short KVstore::buffer_id2entity_query = 1;
 
 string KVstore::s_predicate2id = "s_predicate2id";
 string KVstore::s_id2predicate = "s_id2predicate";
 unsigned short KVstore::buffer_predicate2id_build = 8;
-unsigned short KVstore::buffer_id2predicate_build = 8;
+unsigned short KVstore::buffer_id2predicate_build = 1;
 unsigned short KVstore::buffer_predicate2id_query = 1;
 unsigned short KVstore::buffer_id2predicate_query = 1;
 
 string KVstore::s_literal2id = "s_literal2id";
 string KVstore::s_id2literal = "s_id2literal";
 unsigned short KVstore::buffer_literal2id_build = 8;
-unsigned short KVstore::buffer_id2literal_build = 8;
+unsigned short KVstore::buffer_id2literal_build = 1;
 unsigned short KVstore::buffer_literal2id_query = 2;
 unsigned short KVstore::buffer_id2literal_query = 1;
 
 string KVstore::s_sID2values = "s_sID2values";
 string KVstore::s_oID2values = "s_oID2values";
 string KVstore::s_pID2values = "s_pID2values";
-unsigned short KVstore::buffer_sID2values_build = 32;
-unsigned short KVstore::buffer_oID2values_build = 32;
-unsigned short KVstore::buffer_pID2values_build = 32;
+unsigned short KVstore::buffer_sID2values_build = 16;
+unsigned short KVstore::buffer_oID2values_build = 16;
+unsigned short KVstore::buffer_pID2values_build = 8;
 unsigned short KVstore::buffer_sID2values_query = 16;
 unsigned short KVstore::buffer_oID2values_query = 16;
 unsigned short KVstore::buffer_pID2values_query = 8;
