@@ -80,9 +80,11 @@ void StringIndexFile::load()
 		fread(&(*this->index_table)[i].length, sizeof(unsigned), 1, this->index_file);
 		this->empty_offset = max(this->empty_offset, (*this->index_table)[i].offset + (long)(*this->index_table)[i].length);
 	}
+
+	trie->LoadTrie(dictionary_path);
 }
 
-bool StringIndexFile::randomAccess(unsigned id, string *str)
+bool StringIndexFile::randomAccess(unsigned id, string *str, bool real)
 {
 	if (id >= this->num)
 		return false;
@@ -99,10 +101,15 @@ bool StringIndexFile::randomAccess(unsigned id, string *str)
 
 	*str = string(this->buffer);
 
+	if (real)
+	{
+		*str = trie->Uncompress(*str, str->length());//Uncompresss
+	}
+
 	return true;
 }
 
-void StringIndexFile::trySequenceAccess()
+void StringIndexFile::trySequenceAccess(bool real)
 {
 	if (this->request.empty())
 		return;
@@ -170,6 +177,10 @@ void StringIndexFile::trySequenceAccess()
 					memcpy(this->buffer, &block[offset - current_block_begin], length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str = string(this->buffer);
+					
+					*this->request[pos].str = trie->Uncompress(
+					*this->request[pos].str, this->request[pos].str->length());
+					
 					pos++;
 				}
 				else if (current_block_begin <= offset)
@@ -188,6 +199,10 @@ void StringIndexFile::trySequenceAccess()
 					memcpy(this->buffer, block, length);
 					this->buffer[length] = '\0';
 					*this->request[pos].str += string(this->buffer);
+
+					*this->request[pos].str = trie->Uncompress(
+					*this->request[pos].str, this->request[pos].str->length());
+				
 					pos++;
 					while (pos < (int)this->request.size() && this->request[pos - 1].offset == this->request[pos].offset)
 					{
@@ -215,7 +230,7 @@ void StringIndexFile::trySequenceAccess()
 		cout << "random access." << endl;
 
 		for (int i = 0; i < (int)this->request.size(); i++)
-			this->randomAccess(this->request[i].id, this->request[i].str);
+			this->randomAccess(this->request[i].id, this->request[i].str, real);
 	}
 	this->request.clear();
 }
@@ -324,7 +339,7 @@ StringIndex::searchBuffer(unsigned _id, string* _str)
 	}
 }
 
-bool StringIndex::randomAccess(unsigned id, string *str, bool is_entity_or_literal)
+bool StringIndex::randomAccess(unsigned id, string *str, bool is_entity_or_literal, bool real)
 {
 	if(id < 0) return false;
 
@@ -332,21 +347,23 @@ bool StringIndex::randomAccess(unsigned id, string *str, bool is_entity_or_liter
 	{
 		if(searchBuffer(id, str))
 		{
+			cout << "FLAG2" << endl;
+			*str = trie->Uncompress(*str, str->length());
 			return true;
 		}
 
 		if (id < Util::LITERAL_FIRST_ID)
 		{
-			return this->entity.randomAccess(id, str);
+			return this->entity.randomAccess(id, str, real);
 		}
 		else
 		{
-			return this->literal.randomAccess(id - Util::LITERAL_FIRST_ID, str);
+			return this->literal.randomAccess(id - Util::LITERAL_FIRST_ID, str, real);
 		}
 	}
 	else
 	{
-		return this->predicate.randomAccess(id, str);
+		return this->predicate.randomAccess(id, str, real);
 	}
 }
 
@@ -356,6 +373,7 @@ void StringIndex::addRequest(unsigned id, std::string *str, bool is_entity_or_li
 	{
 		if(searchBuffer(id, str))
 		{
+//			*str = trie->Uncompress(*str)
 			return;
 		}
 		if (id < Util::LITERAL_FIRST_ID)
@@ -369,11 +387,11 @@ void StringIndex::addRequest(unsigned id, std::string *str, bool is_entity_or_li
 	}
 }
 
-void StringIndex::trySequenceAccess()
+void StringIndex::trySequenceAccess(bool real)
 {
-	this->entity.trySequenceAccess();
-	this->literal.trySequenceAccess();
-	this->predicate.trySequenceAccess();
+	this->entity.trySequenceAccess(real);
+	this->literal.trySequenceAccess(real);
+	this->predicate.trySequenceAccess(real);
 }
 
 void StringIndex::change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_entity_or_literal)
