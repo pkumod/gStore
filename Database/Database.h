@@ -143,6 +143,8 @@ private:
 
 	QueryCache *query_cache;
 
+	Trie *trie;
+
 	void setStringBuffer();
 	void warmUp();
 	//BETTER:add a predicate buffer for ?p query
