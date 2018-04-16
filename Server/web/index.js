@@ -3,6 +3,7 @@ function query(dp) {
 	var encodeVal = escape(dp);
 	//alert(encodeVal);
 	var format = document.getElementById("element_5").value;
+	var db_name = document.getElementById("element_1").value;
 	if(format == "1")
 		format = "html";
 	else if(format == "2")
@@ -11,8 +12,8 @@ function query(dp) {
 		format = "csv";
 	else if(format == "4")
 		format = "json";
-	var argu = "?operation=query&format=" + format + "&sparql=" + dp;
-	var encodeArgu = escape(argu);
+	var argu = "?operation=query&db_name=" + db_name +"&format=" + format + "&sparql=" + dp;
+	var encodeArgu = encodeURIComponent(argu);
 	if(format != "html")
 	{
 		/*
@@ -51,13 +52,19 @@ function query(dp) {
 				//toTxt();
 				//alert(data);
 				var parts = data.split("+");
-				var fileName = parts[2];
-			    var lines = Number(parts[1]);
+				var query_time = parts[1];
+				//alert(query_time);
+				var fileName = parts[3];
+			    var lines = Number(parts[2]);
 				//alert(lines);
 				if(lines > 100)
 					lines = 100;
 				//alert(lines);
-				var items = parts[3].split("\n");
+				for(var ip = 5; ip < parts.length; ip++)
+				{
+					parts[4] = parts[4] + "+" + parts[ip];
+				}
+				var items = parts[4].split("\n");
 				//alert(items[0]);
 				var valNum = items[0].split("?");
 				var rows = valNum.length - 1;
@@ -65,9 +72,8 @@ function query(dp) {
 				var page = '<html><div align="left"><a href="javascript:void(0);" id="back" style="font-size:16px;color:blue">Click to Return</a>';
 				page = page + '<a id="download" style="font-size:16px;margin-left:20px">Click to Download</a>';
 				page = page + '<a href="/" id="trick" style="display: none">Click to back</a>';
-				page = page + '<p>Total answers: ';
-				page = page + parts[1];
-				page = page + '</p>';
+				page = page + '<p>Total answers: ' + parts[2] + '</p>';
+				page = page + '<p>Query time: ' + parts[1] + 'ms</p>';
 				if(parts[0] == "1")
 				{
 					
@@ -149,7 +155,7 @@ function query(dp) {
 							element3.dispatchEvent(e1);
 						}
 					});
-				}
+				};
 			}
 		});
 	}

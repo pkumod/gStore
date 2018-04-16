@@ -14,7 +14,19 @@
     <script src="https://cdn.bootcss.com/html5shiv/3.7.3/html5shiv.min.js"></script>
     <script src="https://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
   <![endif]-->
-</head>
+
+  <style type="text/css">
+.inline-group{
+	display: inline-block;
+}
+.left-group{
+	float: left;
+}
+.right-group{
+	float: right;
+}
+  </style>
+  </head>
 <body id="main_body">
   <div id="wapper" class="container">
 	  <div id="img-box" style="margin:0px 150px;">
@@ -30,7 +42,7 @@
         <li role="presentation"><a href="#unload" aria-controls="unload" role="tab" data-toggle="tab">unload</a></li>
 		<li role="presentation" onclick="monitor_empty()"><a href="#monitor" aria-controls="monitor" role="tab" data-toggle="tab">monitor</a></li>
 		<li role="presentation" onclick="databases_empty()"><a href="#databases" aria-controls="databases" role="tab" data-toggle="tab">databases</a></li>
-		<!--<li role="presentation"><a href="#user" aria-controls="user" role="tab" data-toggle="tab">user</a></li>-->
+		<li role="presentation"><a href="#user" aria-controls="user" role="tab" data-toggle="tab">user</a></li>
 		<li role="presentation"><a href="/api.html" target="_blank">About API</a></li>
       </ul>
 
@@ -135,47 +147,87 @@
 			</div>
 		</form>
 		</div>
-	
-		<!--<div role="tabpanel" class="tab-pane" id="user">
+		<div role="tabpanel" class="tab-pane" id="user">
 			<form>
-			<div class="form-group">
-              <label for="_username1">Username</label>
-              <input type="text" class="form-control" id="_username1" name="_username1" placeholder="_username">
+			<div>
+			<div class="inline-group">
+				<!--<label for="_username1">Username</label>-->
+              <input type="text" class="form-control" id="_username1" name="_username1" placeholder="username">
             </div>
-            <div class="form-group">
-              <label for="_password">Password</label>
-              <input type="text" class="form-control" id="_password" name="_password" placeholder="_password">
+            <div class="inline-group">
+				<!--<label for="_password">Password</label>-->
+              <input type="text" class="form-control" id="_password" name="_password" placeholder="password">
             </div>
+			<div class="inline-group" style="float:right">
             <button id="add_user_button" type="button" class="btn btn-default" onclick="addUser(_username1.value, _password.value)">Add user</button>
-        
-			<div class="form-group">
-              <label for="_username2">Username</label>
-              <input type="text" class="form-control" id="_username2" name="_username2" placeholder="_username">
+			</div>
+			</div>
+
+			<br>
+
+			<div>
+			<div class="inline-group">
+				<!--<label for="_username2">Username</label>-->
+              <input type="text" class="form-control" id="_username2" name="_username2" placeholder="username">
             </div>
+			<div class="inline-group" style="float:right">
             <button id="del_user_button" type="button" class="btn btn-default" onclick="delUser(_username2.value)">Delete user</button>
-        
-			<div class="form-group">
-              <label for="_username3">Username</label>
-              <input type="text" class="form-control" id="_username3" name="_username3" placeholder="_username">
+			</div>
+			</div>
+			
+			<br>
+
+			<div>
+			<div class="inline-group">
+				<!--<label for="_username3">Username</label>-->
+              <input type="text" class="form-control" id="_username3" name="_username3" placeholder="username">
             </div>
-			<div class="form-group">
-              <label for="privilege_type">Privilege type</label>
-              <input type="text" class="form-control" id="privilege_type" name="privilege_type" placeholder="privilege_type">
+			<div class="inline-group">
+				<!--<label for="privilege_type">Privilege type</label>-->
+              <input type="text" class="form-control" id="privilege_type" name="privilege_type" placeholder="privilege:query,load,unload">
             </div>
-			<div class="form-group">
-              <label for="pri_db_name">Database name</label>
+			<div class="inline-group">
+				<!--<label for="pri_db_name">Database name</label>-->
               <input type="text" class="form-control" id="pri_db_name" name="pri_db_name" placeholder="pri_db_name">
             </div>
+			<div class="inline-group" style="float:right">
 			<button id="add_privilege_button" type="button" class="btn btn-default" onclick="addPrivilege(_username3.value, privilege_type.value, pri_db_name.value)">Add privilege</button>
-        	
+			</div>
+			</div>
+
+			<br>
+			
+			<div>
+			<div class="inline-group">
+				<!--<label for="_username3">Username</label>-->
+              <input type="text" class="form-control" id="_username4" name="_username4" placeholder="username">
+            </div>
+			<div class="inline-group">
+				<!--<label for="privilege_type">Privilege type</label>-->
+              <input type="text" class="form-control" id="privilege_type4" name="privilege_type4" placeholder="privilege:query,load,unload">
+            </div>
+			<div class="inline-group">
+				<!--<label for="pri_db_name">Database name</label>-->
+              <input type="text" class="form-control" id="pri_db_name4" name="pri_db_name4" placeholder="pri_db_name">
+            </div>
+			<div class="inline-group" style="float:right">
+			<button id="del_privilege_button" type="button" class="btn btn-default" onclick="delPrivilege(_username4.value, privilege_type4.value, pri_db_name4.value)">Delete privilege</button>
+			</div>
+			</div>
+
+			<br>
+			<br>
+
 			<div class="form-group">
 				<button id="user_button" type="button" class="btn btn-default" onclick="showUsers()">show Users</button>
 			<div class="alert alert-warning alert-dismissible fade in" style="margin: 20px auto; height: 400px; overflow: auto" id="userAns">
 			</div>
+			<!--<input type="text" class="form-control" name="monitor_text" id="monitor_text" placeholder="monitor_text" readonly>
+			-->
 			</div>
 			</form>
 		</div>
-		-->
+
       </div>
       </div>
 
