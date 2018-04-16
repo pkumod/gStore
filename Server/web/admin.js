@@ -49,8 +49,8 @@ function query(db, dp) {
 		format = "csv";
 	else if(format == "4")
 		format = "json";
-	var argu3 = "?operation=query&db_name=" + db + "&username=" + username3 + "&password=" + password3 + "&format=" + format +"&sparql=" + dp;
-	var encodeArgu3 = escape(argu3);
+	var argu3 = "?operation=query&username=" + username3 + "&password=" + password3 + "&db_name=" + db + "&format=" + format +"&sparql=" + dp;
+	var encodeArgu3 = encodeURIComponent(argu3);
 	if(format != "html")
 	{
 		/*
@@ -100,6 +100,10 @@ function query(db, dp) {
 				if(lines > 100)
 					lines = 100;
 				//alert(lines);
+				for(var ip = 5; ip < parts.length; ip++)
+				{
+					parts[4] = parts[4] + "+" + parts[ip];
+				}
 				var items = parts[4].split("\n");
 				//alert(items[0]);
 				var valNum = items[0].split("?");
@@ -245,7 +249,7 @@ function unload(db) {
 	else
 		alert("input needed.");
 }
-
+/*
 function getDatabaseName(){
 	//alert("getDatabaseName");
 	var argu5 = "?operation=show&type=current";
@@ -259,6 +263,7 @@ function getDatabaseName(){
 		}
 	});
 }
+*/
 function monitor() {
 	var db_name6 = document.getElementById("_db_name_monitor").value;
 	if(db_name6 != "")
@@ -424,7 +429,7 @@ function showUsers(){
 }
 function showDatabases() {
 	//alert("showDatabases");
-	var argu10 = "?operation=show&type=all";
+	var argu10 = "?operation=show";
 	var encodeArgu10 = escape(argu10);
 	//alert(encodeArgu10);
 	$.get(encodeArgu10, function(data, status){
