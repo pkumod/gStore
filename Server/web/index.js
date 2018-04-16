@@ -3,6 +3,7 @@ function query(dp) {
 	var encodeVal = escape(dp);
 	//alert(encodeVal);
 	var format = document.getElementById("element_5").value;
+	var db_name = document.getElementById("element_1").value;
 	if(format == "1")
 		format = "html";
 	else if(format == "2")
@@ -11,8 +12,8 @@ function query(dp) {
 		format = "csv";
 	else if(format == "4")
 		format = "json";
-	var argu = "?operation=query&format=" + format + "&sparql=" + dp;
-	var encodeArgu = escape(argu);
+	var argu = "?operation=query&db_name=" + db_name +"&format=" + format + "&sparql=" + dp;
+	var encodeArgu = encodeURIComponent(argu);
 	if(format != "html")
 	{
 		/*
@@ -59,6 +60,10 @@ function query(dp) {
 				if(lines > 100)
 					lines = 100;
 				//alert(lines);
+				for(var ip = 5; ip < parts.length; ip++)
+				{
+					parts[4] = parts[4] + "+" + parts[ip];
+				}
 				var items = parts[4].split("\n");
 				//alert(items[0]);
 				var valNum = items[0].split("?");
