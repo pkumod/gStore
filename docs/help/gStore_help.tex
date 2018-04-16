@@ -250,6 +250,7 @@ glibc & version \textgreater{}= 2.14\tabularnewline
 gcc & version \textgreater{}= 4.4.7\tabularnewline
 g++ & version \textgreater{}= 4.4.7\tabularnewline
 make & need to be installed\tabularnewline
+boost & version >= 1.54\tabularnewline
 readline & need to be installed\tabularnewline
 readline-devel & need to be installed\tabularnewline
 openjdk & needed if using Java api\tabularnewline
@@ -270,13 +271,14 @@ NOTICE:
 \item
   You do not have to install realpath to use gStore, but if you want to use the gconsole for its convenience, please do so by using \texttt{dnf\ install\ realpath} or \texttt{apt-get\ install\ realpath}.
 \item
-  Our programs use regEx functions, which are provided by GNU/Linux by default. You do not need to have to install boost and boost-devel for more powerful regEx libraries.
+  Our programs use regEx functions, which are provided by GNU/Linux by default. 
 \item
   ANTLR3.4 is used in gStore to produce lexer and parser code for SPARQL query. However, you do not need to install the corresponding antlr libraries because we have merged the libantlr3.4 in our system.
 \item
   When you type \texttt{make} in the root directory of the gStore project, the Java api will also be compiled. You can modify the makefile if you do not have JDK in your system. However, you are advised to install openjdk-devel in your Linux system.
 \item
   To install ccache, you need to add epel repository if using CentOS, while in Ubuntu you can directly install it by 'apt-get install ccache' comand. If you can not install ccahe(or maybe you do not want to), please go to modify the makefile(just change the CC variable to g++).
+\item If you need to use the HTTP server in gStore, then Boost Library(like boost-devel, including boost headers for developing) must be installed and the version should not be less than 1.54. Remember to check the makefile for your installed path of Boost.
 \item
   Any other questions, please go to \hyperref[chapter11]{FAQ} page.
 \end{enumerate}
