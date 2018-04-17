@@ -232,7 +232,7 @@ IVArray::SwapOut()
 		if (store == 0)
 			return false;
 		array[targetID].setStore(store);
-		array[targetID].setDirtyFlag(false);
+	//	array[targetID].setDirtyFlag(false);
 	}
 	array[targetID].release();
 	array[targetID].setCacheFlag(false);
