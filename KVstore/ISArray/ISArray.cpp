@@ -212,7 +212,7 @@ ISArray::SwapOut()
 		if (store == 0)
 			return false;
 		array[targetID].setStore(store);
-		array[targetID].setDirtyFlag(false);
+		//array[targetID].setDirtyFlag(false);
 	}
 	array[targetID].release();
 	array[targetID].setCacheFlag(false);
@@ -284,7 +284,7 @@ ISArray::UpdateTime(unsigned _key)
 bool
 ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 {
-	//printf("%s search %d: \n", filename.c_str(), _key);
+//	printf("%s search %d: \n", filename.c_str(), _key);
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
 		_str = NULL;
@@ -311,6 +311,8 @@ ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 	char *debug = new char [_len];
 	memcpy(debug, _str, _len);
 	_str = debug;
+
+//	printf("str = %s, len = %d\n", _str, _len);
 
 	return true;
 }
@@ -366,8 +368,6 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 	AddInCache(_key, _str, _len);
 	array[_key].setUsedFlag(true);
 	array[_key].setDirtyFlag(true);
-	if (Alloc)
-		cout << "Success" << endl;
 	return true;
 }
 
