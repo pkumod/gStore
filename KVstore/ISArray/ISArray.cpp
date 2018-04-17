@@ -284,7 +284,7 @@ ISArray::UpdateTime(unsigned _key)
 bool
 ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 {
-	printf("%s search %d: \n", filename.c_str(), _key);
+//	printf("%s search %d: \n", filename.c_str(), _key);
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
 		_str = NULL;
@@ -301,7 +301,7 @@ ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 	// read in disk
 	unsigned store = array[_key].getStore();
 //	cout << "store: " << store << endl;
-	printf("stored in block %d, ", store);
+//	printf("stored in block %d, ", store);
 	if (!BM->ReadValue(store, _str, _len))
 	{
 		return false;
@@ -312,7 +312,7 @@ ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 	memcpy(debug, _str, _len);
 	_str = debug;
 
-	printf("str = %s, len = %d\n", _str, _len);
+//	printf("str = %s, len = %d\n", _str, _len);
 
 	return true;
 }
