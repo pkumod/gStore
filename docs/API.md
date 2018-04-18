@@ -434,38 +434,51 @@ int ret;
 // build a new database by a RDF file.
 ret = hc.Get("http://127.0.0.1:9000/?operation=build&db_name=lubm&ds_path=data/lubm/lubm.nt&username=root&password=123456", res);
 cout&lt;&lt;res&lt;&lt;endl;
+
 // load databse
 ret = hc.Get("http://127.0.0.1:9000/?operation=load&db_name=lumb&username=root&password=123456", res);
 cout&lt;&lt;res&lt;&lt;endl;
+
 // then you can execute SPARQL query on this database.
 ret = hc.Get("http://127.0.0.1:9000/?operation=query&username=root&password=123456&db_name=lubm&format=json&sparql="+sparql, res);
 cout&lt;&lt;res&lt;&lt;endl;
+
 // output information of a database
 ret = hc.Get("http://127.0.0.1:9000/?operation=monitor&db_name=lubm", res);
 cout&lt;&lt;res&lt;&lt;endl;
+
 // unload this databse
 ret = hc.Get("http://127.0.0.1:9000/?operation=unload&db_name=lubm&username=root&password=123456", res);
 cout&lt;&lt;res&lt;&lt;endl;
+
 //add a user(with username: Jack, password: 2)
 ret = hc.Get("http://127.0.0.1:9000/?operation=add_user&username1=root&password1=123456&username2=Jack&addtion=2");
 cout&lt;&lt;res&lt;&lt;endl;
+
 //add privilege to user Jack(add_query, add_load, add_unload)
 ret = hc.Get("http://127.0.0.1:9000/?operation=add_query&username1=root&password1=123456&username2=Jack&addtion=lubm");
 cout&lt;&lt;res&lt;&lt;endl;
+
 //delete privilege of a user Jack(delete_query, delete_load, delete_unload)
 ret = hc.Get("http://127.0.0.1:9000/?operation=delete_query&username1=root&password1=123456&username2=Jack&addtion=lubm");
 cout&lt;&lt;res&lt;&lt;endl;
+
 //delete user(with username: Jack, password: 2)
 ret = hc.Get("http://127.0.0.1:9000/?operation=delete_user&username1=root&password1=123456&username2=Jack&addtion=2");
 cout&lt;&lt;res&lt;&lt;endl;
 
+```
 The original declaration of these functions are as below:
 
+```
 
 CHttpClient();
 int Post(const std::string &amp; strUrl, const std::string &amp; strPost, std::string &amp; strResponse);
+
 int Get(const std::string &amp; strUrl, std::string &amp; strResponse);
+
 int Posts(const std::string &amp; strUrl, const std::string &amp; strPost, std::string &amp; strResponse, const char * pCaPath = NULL);
+
 int Gets(const std::string &amp; strUrl, std::string &amp; strResponse, const char * pCaPath = NULL);
 ```
 
@@ -481,36 +494,48 @@ To use the Java API, please see gStore/api/http/java/HttpRequest.java. Functions
 // build a new database by a RDF file.
 String s=HttpRequest.sendGet("http://localhost:9000/?operation=build&db_name=lubm&ds_path=data/lubm/lubm.nt&username=root&password=123456", "");
 System.out.println(s);
+
 // load databse
 String s=HttpRequest.sendGet("http://localhost:9000/?operation=load&db_name=lumb&username=root&password=123456", "");
 System.out.println(s);
+
 // then you can execute SPARQL query on this database.
 String s=HttpRequest.sendGet("http://localhost:9000/?operation=query&username=root&password=123456&db_name=lubm&format=json&sparql=" + sparql, "");
 System.out.println(s);
+
 // output information of a databse
 String s=HttpRequest.sendGet("http://localhost:9000/?operation=monitor&db_name=lubm", "");
 System.out.println(s);
+
 // unload this database
 String s=HttpRequest.sendGet("http://localhost:9000/?operation=unload&db_name=lubm&username=root&password=123456", "");
 System.out.println(s);
+
 //add a user(with username: Jack, password: 2)
 ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=add_user&username1=root&password1=123456&username2=Jack&addtion=2", "");
 System.out.println(s);
+
 //add privilege to user Jack(add_query, add_load, add_unload)
 ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=add_query&username1=root&password1=123456&username2=Jack&addtion=lubm", "");
 System.out.println(s);
+
 //delete privilege of a user Jack(delete_query, delete_load, delete_unload)
 ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=delete_query&username1=root&password1=123456&username2=Jack&addtion=lubm", "");
 System.out.println(s);
+
 //delete user(with username: Jack, password: 2)
 ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=delete_user&username1=root&password1=123456&username2=Jack&addtion=2", "");
 System.out.println(s);
 ```
 
+
 The original declaration of these functions are as below:
 
+```
 
 public class HttpRequest();
+
 public static String sendGet(String url, String param);
+
 public static String sendPost(String url, String param);
 ```
