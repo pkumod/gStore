@@ -10,6 +10,7 @@ using namespace std;
 
 int main()
 {
+
 	CHttpClient hc;
 	string res;
 	int ret;

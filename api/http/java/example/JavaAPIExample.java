@@ -86,7 +86,7 @@ public class JavaAPIExample
 		
 	    // build a new database by a RDF file.
 	    // note that the relative path is related to gserver.
-		gc.build("LUBM10", "data/LUBM_10.n3", "root", "123456");
+		gc.build("LUBM10", "data/lubm/LUBM_10.n3", "root", "123456");
 	    gc.load("LUBM10", "root", "123456");
 		
 		// then you can execute SPARQL query on this database.
@@ -100,7 +100,7 @@ public class JavaAPIExample
 				+ "?z    <ub:worksFor>    ?w. "
 				+ "?w    <ub:name>    <Department0>. "
 				+ "}";				
-		String answer = gc.query(sparql, "LUBM10", "root", "123456");
+		String answer = gc.query("root", "123456", "LUBM10", sparql);
 		System.out.println(answer);
 		
 		// unload this database.
@@ -117,9 +117,30 @@ public class JavaAPIExample
 		//PERFORMANCE: if we use the query above(as comment), result will be very large and the time cost is large, too
 		//The method to improve it is to receive a line and output/save to file at once, instead of combining all lines into a String
 		//The related code is in api/http/java/src/jgsc/GstoreConnector.java
-	    answer = gc.query(sparql, "LUBM10", "root", "123456");	    
+	    answer = gc.query("root", "123456", "LUBM10", sparql);	    
 		System.out.println(answer);
+			
+		//monitor a database
+		answer = gc.monitor("LUBM10");
+		System.out.println(answer);
+		//add a user(with username: Jack, password: 2)
+		answer = gc.user("add_user", "root", "123456", "Jack", "2");
+		System.out.println(answer);
+		//add privilege to user Jack(add_query, add_load, add_unload)
+		answer = gc.user("add_query", "root", "123456", "Jack", "LUBM10");
+		System.out.println(answer);
+		//then Jack can query the database LUBM10
+		answer = gc.query("Jack", "2", "LUBM10", sparql);
+		System.out.println(answer);
+		//delete privilege of user Jack(delete_query, delete_load, delete_unload)
+		answer = gc.user("delete_query", "root", "123456", "Jack", "LUBM10");
+		System.out.println(answer);
+		//delete user(with username: Jack, password: 2)
+		answer = gc.user("delete_user", "root", "123456", "Jack", "2");
+		System.out.println(answer);
+
 		gc.unload("LUBM10", "root", "123456");
+	
 	}
 }
 
