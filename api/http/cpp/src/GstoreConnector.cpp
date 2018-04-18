@@ -42,9 +42,9 @@ GstoreConnector::GstoreConnector(string _ip, unsigned short _port)
 
 GstoreConnector::~GstoreConnector()
 {
-	this->disconnect();
+	//this->disconnect();
 }
-
+/*
 bool GstoreConnector::test() {
 	bool connect_return = this->connect();
 	if (!connect_return) {
@@ -70,30 +70,16 @@ bool GstoreConnector::test() {
 	}
 	return false;
 }
-
+*/
 bool
-GstoreConnector::load(string _db_name)
+GstoreConnector::load(string _db_name, string username, string password)
 {
-	bool connect_return = this->connect();
-	if (!connect_return)
-	{
-		cerr << "connect to server error. @GstoreConnector::load" << endl;
-		return false;
-	}
+	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
 
-	string cmd = "load " + _db_name;
-	bool send_return = this->socket.send(cmd);
-	if (!send_return)
-	{
-		cerr << "send load command error. @GstoreConnector.load" << endl;
-		return false;
-	}
-
+		string cmd = url + "/?operation=load&db_name=" + _db_name + "&username=" + username + "&password=" + password;
 	string recv_msg;
-	this->socket.recv(recv_msg);
-
-	this->disconnect();
-
+	int ret;
+	ret = hc.Get(cmd, recv_msg);
 	cout << recv_msg << endl;
 	if (recv_msg == "load database done.")
 	{
@@ -104,28 +90,14 @@ GstoreConnector::load(string _db_name)
 }
 
 bool
-GstoreConnector::unload(string _db_name)
+GstoreConnector::unload(string _db_name, string username, string password)
 {
-	bool connect_return = this->connect();
-	if (!connect_return)
-	{
-		cerr << "connect to server error. @GstoreConnector::unload" << endl;
-		return false;
-	}
+	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
 
-	string cmd = "unload " + _db_name;
-	bool send_return = this->socket.send(cmd);
-	if (!send_return)
-	{
-		cerr << "send unload command error. @GstoreConnector::unload" << endl;
-		return false;
-	}
 
+	string cmd = url + "/?operation=unload&db_name=" + _db_name + "&username=" + username + "&password=" + password;
 	string recv_msg;
-	this->socket.recv(recv_msg);
-
-	this->disconnect();
-
+	int ret = hc.Get(cmd, recv_msg);
 	cout << recv_msg << endl;
 	if (recv_msg == "unload database done.")
 	{
@@ -136,28 +108,13 @@ GstoreConnector::unload(string _db_name)
 }
 
 bool
-GstoreConnector::build(string _db_name, string _rdf_file_path)
+GstoreConnector::build(string _db_name, string _rdf_file_path, string username, string password)
 {
-	bool connect_return = this->connect();
-	if (!connect_return)
-	{
-		cerr << "connect to server error. @GstoreConnector::build" << endl;
-		return false;
-	}
+	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
 
-	string cmd = "import " + _db_name + " " + _rdf_file_path;
-	bool send_return = this->socket.send(cmd);
-	if (!send_return)
-	{
-		cerr << "send import command error. @GstoreConnector::build" << endl;
-		return false;
-	}
-
+	string cmd = url + "/?operation=build&db_name=" + _db_name + "&ds_path=" + _rdf_file_path + "&username=" + username + "&password=" + password;
 	string recv_msg;
-	this->socket.recv(recv_msg);
-
-	this->disconnect();
-
+	int ret = hc.Get(cmd, recv_msg);
 	cerr << recv_msg << endl;
 	if (recv_msg == "import RDF file to database done.")
 	{
@@ -166,7 +123,7 @@ GstoreConnector::build(string _db_name, string _rdf_file_path)
 
 	return false;
 }
-
+/*
 bool
 GstoreConnector::drop(string _db_name)
 {
@@ -197,66 +154,29 @@ GstoreConnector::drop(string _db_name)
 	}
 	return false;
 }
-
+*/
 string
-GstoreConnector::query(string _sparql, string _output)
+GstoreConnector::query(string username, string password, string db_name, string sparql)
 {
-	bool connect_return = this->connect();
-	if (!connect_return)
-	{
-		cerr << "connect to server error. @GstoreConnector::query" << endl;
-		return "connect to server error.";
-	}
+	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
 
-	string cmd = "query " + _sparql;
-	bool send_return = this->socket.send(cmd);
-	if (!send_return)
-	{
-		cerr << "send query command error. @GstoreConnector::query";
-		return "send query command error.";
-	}
-
+	string cmd = url + "/?operation=query&username=" + username + "&password=" + password + "&db_name=" + db_name + "&format=json&sparql=" + sparql; 
 	string recv_msg;
-	this->socket.recv(recv_msg);
-
-	this->disconnect();
-
+	int ret = hc.Get(cmd, recv_msg);
 	return recv_msg;
 }
 
 string
-GstoreConnector::show(bool _type)
+GstoreConnector::show()
 {
-	bool connect_return = this->connect();
-	if (!connect_return)
-	{
-		cerr << "connect to server error. @GstoreConnector::show" << endl;
-		return "connect to server error.";
-	}
+	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
 
-	string cmd;
-	if (_type)
-	{
-		cmd = "show all";
-	}
-	else
-	{
-		cmd = "show databases";
-	}
-	bool send_return = this->socket.send(cmd);
-	if (!send_return)
-	{
-		cerr << "send show command error. @GstoreConnector::show";
-		return "send show command error.";
-	}
-
+	string cmd = url + "/?operation=show";
 	string recv_msg;
-	this->socket.recv(recv_msg);
-	this->disconnect();
-
+	int ret = hc.Get(cmd, recv_msg);
 	return recv_msg;
 }
-
+/*
 bool
 GstoreConnector::connect()
 {
@@ -285,3 +205,45 @@ GstoreConnector::disconnect()
 
 	return flag;
 }
+*/
+string
+GstoreConnector::user(string type, string username1, string password1, string username2, string addtion)
+{
+	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
+
+	string cmd = url + "/?operation=user&type=" + type + "&username1=" + username1 + "&password1=" + password1 + "&username2=" + username2 + "&addtion=" + addtion; 
+	string recv_msg;
+	int ret = hc.Get(cmd, recv_msg);
+	return recv_msg;
+}
+string
+GstoreConnector::showUser()
+{
+	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
+
+	string cmd = url + "/?operation=showUser";
+	string recv_msg;
+	int ret = hc.Get(cmd, recv_msg);
+	return recv_msg;
+}
+string
+GstoreConnector::monitor(string db_name)
+{
+	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
+
+	string cmd = url + "/?operation=monitor&db_name=" + db_name; 
+	string recv_msg;
+	int ret = hc.Get(cmd, recv_msg);
+	return recv_msg;
+}
+string
+GstoreConnector::checkpoint(string db_name)
+{
+	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
+
+	string cmd = url + "/?operation=checkpoint&db_name=" + db_name;
+	string recv_msg;
+	int ret = hc.Get(cmd, recv_msg);
+	return recv_msg;
+}
+
