@@ -461,7 +461,7 @@ cout&lt;&lt;res&lt;&lt;endl;
 
 The original declaration of these functions are as below:
 
-```
+
 CHttpClient();
 int Post(const std::string &amp; strUrl, const std::string &amp; strPost, std::string &amp; strResponse);
 int Get(const std::string &amp; strUrl, std::string &amp; strResponse);
@@ -509,7 +509,7 @@ System.out.println(s);
 
 The original declaration of these functions are as below:
 
-```
+
 public class HttpRequest();
 public static String sendGet(String url, String param);
 public static String sendPost(String url, String param);
