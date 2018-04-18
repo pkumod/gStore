@@ -9,8 +9,8 @@
 #ifndef _GSTORECONNECTOR_H
 #define _GSTORECONNECTOR_H
 
-#include "../../../../Server/Socket.h"
 #include <cstring>
+#include "client.h"
 
 //TODO: C++ URL encoder
 //http://blog.csdn.net/nanjunxiao/article/details/9974593
@@ -25,14 +25,17 @@ public:
 	GstoreConnector(std::string _ip, unsigned short _port);
 	~GstoreConnector();
 
-	bool test();
-	bool load(std::string _db_name);
-	bool unload(std::string _db_name);
-	bool build(std::string _db_name, std::string _rdf_file_path);
+	//bool test();
+	bool load(std::string _db_name, std::string username, std::string password);
+	bool unload(std::string _db_name, std::string username, std::string password);
+	bool build(std::string _db_name, std::string _rdf_file_path, std::string username, std::string password);
 	bool drop(std::string _db_name);
-	std::string query(std::string _sparql, std::string _output = "/");
-	std::string show(bool _type = false);  //show current or all databases
-
+	std::string query(std::string username, std::string password, std::string db_name, std::string sparql);
+	std::string show();  //show all databases
+	std::string user(std::string type, std::string username1, std::string password1, std::string username2, std::string addtion);
+	std::string showUser();
+	std::string monitor(std::string db_name);
+	std::string checkpoint(std::string db_name);
 	static const std::string defaultServerIP;
 	static const unsigned short defaultServerPort;
 
@@ -41,8 +44,8 @@ private:
 	unsigned short serverPort;
 	//    std::string username;
 	//    std::string password;
-	Socket socket;
-
+	//Socket socket;
+	CHttpClient hc;
 	bool connect();
 	bool disconnect();
 };

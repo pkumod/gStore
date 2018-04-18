@@ -97,7 +97,7 @@ GstoreConnector gc("127.0.0.1", 3305);
 
 // build a new database by a RDF file.
 // note that the relative path is related to gserver.
-gc.build("LUBM10.db", "example/LUBM_10.n3");
+gc.build("LUBM10.db", "example/LUBM_10.n3"，"root", "123456");
 
 // then you can execute SPARQL query on this database.
 std::string sparql = "select ?x where \
@@ -113,10 +113,10 @@ std::string sparql = "select ?x where \
 std::string answer = gc.query(sparql);
 
 // unload this database.
-gc.unload("LUBM10.db");
+gc.unload("LUBM10.db","root","123456");
 
 // also, you can load some exist database directly and then query.
-gc.load("LUBM10.db");
+gc.load("LUBM10.db","root","123456");
 
 // query a SPARQL in current database
 answer = gc.query(sparql);
@@ -395,15 +395,29 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 
 			- Benchmark.cpp
 
+			- CppAPIExample.cpp
+
 			- Makefile
 
 		- Makefile (compile and build lib)
 		
 	- java/ (the Java API)
 
-		- HttpRequest.java (source code of Java API, with examples in main function)
+		- client.java
 
-		- HttpRequest.class
+		-lib/
+
+		-src/
+			-Makefile
+
+			-jgsc/
+				-GstoreConnector.java
+		-example/
+			-Benckmark.java
+
+			-JavaAPIExample.java
+
+			-Makefile
 
 - - -
 
@@ -418,21 +432,32 @@ CHttpClient hc;
 string res; 
 int ret;
 // build a new database by a RDF file.
-ret = hc.Get("http://127.0.0.1:9000/?operation=build&db_name=lubm&ds_path=data/lubm/lubm.nt", res);
+ret = hc.Get("http://127.0.0.1:9000/?operation=build&db_name=lubm&ds_path=data/lubm/lubm.nt&username=root&password=123456", res);
 cout&lt;&lt;res&lt;&lt;endl;
 // load databse
-ret = hc.Get("http://127.0.0.1:9000/?operation=load&db_name=lumb", res);
+ret = hc.Get("http://127.0.0.1:9000/?operation=load&db_name=lumb&username=root&password=123456", res);
 cout&lt;&lt;res&lt;&lt;endl;
 // then you can execute SPARQL query on this database.
-ret = hc.Get("http://127.0.0.1:9000/?operation=query&format=json&sparql=data/lubm/lubm_q0.sql", res);
+ret = hc.Get("http://127.0.0.1:9000/?operation=query&username=root&password=123456&db_name=lubm&format=json&sparql="+sparql, res);
 cout&lt;&lt;res&lt;&lt;endl;
-// output information of current database
-ret = hc.Get("http://127.0.0.1:9000/?operation=monitor", res);
+// output information of a database
+ret = hc.Get("http://127.0.0.1:9000/?operation=monitor&db_name=lubm", res);
 cout&lt;&lt;res&lt;&lt;endl;
 // unload this databse
-ret = hc.Get("http://127.0.0.1:9000/?operation=unload&db_name=lubm", res);
+ret = hc.Get("http://127.0.0.1:9000/?operation=unload&db_name=lubm&username=root&password=123456", res);
 cout&lt;&lt;res&lt;&lt;endl;
-```
+//add a user(with username: Jack, password: 2)
+ret = hc.Get("http://127.0.0.1:9000/?operation=add_user&username1=root&password1=123456&username2=Jack&addtion=2");
+cout&lt;&lt;res&lt;&lt;endl;
+//add privilege to user Jack(add_query, add_load, add_unload)
+ret = hc.Get("http://127.0.0.1:9000/?operation=add_query&username1=root&password1=123456&username2=Jack&addtion=lubm");
+cout&lt;&lt;res&lt;&lt;endl;
+//delete privilege of a user Jack(delete_query, delete_load, delete_unload)
+ret = hc.Get("http://127.0.0.1:9000/?operation=delete_query&username1=root&password1=123456&username2=Jack&addtion=lubm");
+cout&lt;&lt;res&lt;&lt;endl;
+//delete user(with username: Jack, password: 2)
+ret = hc.Get("http://127.0.0.1:9000/?operation=delete_user&username1=root&password1=123456&username2=Jack&addtion=2");
+cout&lt;&lt;res&lt;&lt;endl;
 
 The original declaration of these functions are as below:
 
@@ -454,19 +479,31 @@ To use the Java API, please see gStore/api/http/java/HttpRequest.java. Functions
 
 ```
 // build a new database by a RDF file.
-String s=HttpRequest.sendGet("http://localhost:9000/build/lubm/data/LUBM_10/n3", "");
+String s=HttpRequest.sendGet("http://localhost:9000/?operation=build&db_name=lubm&ds_path=data/lubm/lubm.nt&username=root&password=123456", "");
 System.out.println(s);
 // load databse
-String s=HttpRequest.sendGet("http://localhost:9000/load/lubm", "");
+String s=HttpRequest.sendGet("http://localhost:9000/?operation=load&db_name=lumb&username=root&password=123456", "");
 System.out.println(s);
 // then you can execute SPARQL query on this database.
-String s=HttpRequest.sendGet("http://localhost:9000/query/data/ex0.sql", "");
+String s=HttpRequest.sendGet("http://localhost:9000/?operation=query&username=root&password=123456&db_name=lubm&format=json&sparql=" + sparql, "");
 System.out.println(s);
-// output information of current databse
-String s=HttpRequest.sendGet("http://localhost:9000/monitor", "");
+// output information of a databse
+String s=HttpRequest.sendGet("http://localhost:9000/?operation=monitor&db_name=lubm", "");
 System.out.println(s);
 // unload this database
-String s=HttpRequest.sendGet("http://localhost:9000/unload", "");
+String s=HttpRequest.sendGet("http://localhost:9000/?operation=unload&db_name=lubm&username=root&password=123456", "");
+System.out.println(s);
+//add a user(with username: Jack, password: 2)
+ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=add_user&username1=root&password1=123456&username2=Jack&addtion=2", "");
+System.out.println(s);
+//add privilege to user Jack(add_query, add_load, add_unload)
+ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=add_query&username1=root&password1=123456&username2=Jack&addtion=lubm", "");
+System.out.println(s);
+//delete privilege of a user Jack(delete_query, delete_load, delete_unload)
+ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=delete_query&username1=root&password1=123456&username2=Jack&addtion=lubm", "");
+System.out.println(s);
+//delete user(with username: Jack, password: 2)
+ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=delete_user&username1=root&password1=123456&username2=Jack&addtion=2", "");
 System.out.println(s);
 ```
 
