@@ -101,36 +101,46 @@ Just type `bin/ghttp` to start server.
 
 URL rules are listed blow:  
 
-parameters: operation, db_name, ds_path, format, sparql
+parameters: operation, db_name, ds_path, format, sparql, type, username, password
 
 NOTICE: do URL encoding before sending it to database server
 
-operation: build, load, unload, query, monitor, show, checkpoint
+operation: build, load, unload, query, monitor, show, checkpoint, user
+// build a new database by a RDF file.
+"http://127.0.0.1:9000/?operation=build&db_name=lubm&ds_path=data/lubm/lubm.nt&username=root&password=123456"
+
+// load databse
+"http://127.0.0.1:9000/?operation=load&db_name=lumb&username=root&password=123456"
+
+// then you can execute SPARQL query on this database.
+"http://127.0.0.1:9000/?operation=query&username=root&password=123456&db_name=lubm&format=json&sparql="
+
+// output information of a database
+"http://127.0.0.1:9000/?operation=monitor&db_name=lubm"
+
+
+// unload this databse
+"http://127.0.0.1:9000/?operation=unload&db_name=lubm&username=root&password=123456"
+
+//add a user(with username: Jack, passwor: 2)
+"http://127.0.0.1:9000/?operation=user&type=add_user&username1=root&password1=123456&username2=Jack&addtion=2"
+
+//add privilege to user Jack(add_query, add_load, add_unload)
+"http://127.0.0.1:9000/?operation=user&type=add_query&username1=root&password1=123456&username2=Jack&addtion=lubm"
+
+//delete privilege of a user Jack(delete_query, delete_load, delete_unload)
+"http://127.0.0.1:9000/?operation=user&type=delete_query&username1=root&password1=123456&username2=Jack&addtion=lubm"
+
+//delete user(with username: Jack, password: 2)
+"http://127.0.0.1:9000/?operation=user&type=delete_user&username1=root&password1=123456&username2=Jack&addtion=2"
 db_name: the name of database, like lubm
 format: html, json, txt, csv
 sparql: select ?s where { ?s ?p ?o . }
 ds_path in the server: like /home/data/test.n3
-
-to build a database from a dataset:
-http://localhost:9000/?operation=build&db_name=[db_name]&ds_path=[ds_path]
-
-to load a database:
-http://localhost:9000/?operation=load&db_name=[db_name]
-
-to query a database:
-http://localhost:9000/?operation=query&format=[format]&sparql=[sparql]
-
-to unload a database:
-http://localhost:9000/?operation=unload&db_name=[db_name]
-
-to monitor the server:
-http://localhost:9000/?operation=monitor
-
-to show the database used:
-http://localhost:9000/?operation=show
-
-to save the database currently:
-http://localhost:9000/?operation=checkpoint
+operation: the type of operation: like load, unload, query ...
+type: the type of operation that you execute on user, like: add_user, delete_user, add_query, add_load...
+username: the username of the user that execute the operation
+password: the password of the user that execute the operation
 
 - - -
 
