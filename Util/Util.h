@@ -104,6 +104,8 @@ in the sparql query can point to the same node in data graph)
 #include <omp.h>
 #include <parallel/algorithm>
 #define thread_num 1
+//below is used to control if using the parallelable sort()
+//#define PARALLEL_SORT 1
 
 //NOTICE: hpp is different from static library(*.a) or dynamic library(*.so)
 //It places the implementations totally in header file, hpp = *.h + *.cpp

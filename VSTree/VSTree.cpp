@@ -975,9 +975,12 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 
      //label the child being removed with -1,
      //and update the old node's entry.
-    //sort(entryIndex_nearA.begin(), entryIndex_nearA.end(), less<int>());
+#ifndef PARALLEL_SORT
+	sort(entryIndex_nearA.begin(), entryIndex_nearA.end(), less<int>());
+#else
     omp_set_num_threads(thread_num);
     __gnu_parallel::sort(entryIndex_nearA.begin(), entryIndex_nearA.end(), less<int>());
+#endif
 
 #ifdef DEBUG_VSTREE
         //stringstream _ss1;
