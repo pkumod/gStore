@@ -452,19 +452,19 @@ ret = hc.Get("http://127.0.0.1:9000/?operation=unload&db_name=lubm&username=root
 cout&lt;&lt;res&lt;&lt;endl;
 
 //add a user(with username: Jack, password: 2)
-ret = hc.Get("http://127.0.0.1:9000/?operation=add_user&username1=root&password1=123456&username2=Jack&addtion=2");
+ret = hc.Get("http://127.0.0.1:9000/?operation=user&type=add_user&username1=root&password1=123456&username2=Jack&addtion=2", res);
 cout&lt;&lt;res&lt;&lt;endl;
 
 //add privilege to user Jack(add_query, add_load, add_unload)
-ret = hc.Get("http://127.0.0.1:9000/?operation=add_query&username1=root&password1=123456&username2=Jack&addtion=lubm");
+ret = hc.Get("http://127.0.0.1:9000/?operation=user&type=add_query&username1=root&password1=123456&username2=Jack&addtion=lubm", res);
 cout&lt;&lt;res&lt;&lt;endl;
 
 //delete privilege of a user Jack(delete_query, delete_load, delete_unload)
-ret = hc.Get("http://127.0.0.1:9000/?operation=delete_query&username1=root&password1=123456&username2=Jack&addtion=lubm");
+ret = hc.Get("http://127.0.0.1:9000/?operation=user&type=delete_query&username1=root&password1=123456&username2=Jack&addtion=lubm", res);
 cout&lt;&lt;res&lt;&lt;endl;
 
 //delete user(with username: Jack, password: 2)
-ret = hc.Get("http://127.0.0.1:9000/?operation=delete_user&username1=root&password1=123456&username2=Jack&addtion=2");
+ret = hc.Get("http://127.0.0.1:9000/?operation=user&type=delete_user&username1=root&password1=123456&username2=Jack&addtion=2", res);
 cout&lt;&lt;res&lt;&lt;endl;
 
 ```
@@ -512,19 +512,19 @@ String s=HttpRequest.sendGet("http://localhost:9000/?operation=unload&db_name=lu
 System.out.println(s);
 
 //add a user(with username: Jack, password: 2)
-ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=add_user&username1=root&password1=123456&username2=Jack&addtion=2", "");
+ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=user&type=add_user&username1=root&password1=123456&username2=Jack&addtion=2", "");
 System.out.println(s);
 
 //add privilege to user Jack(add_query, add_load, add_unload)
-ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=add_query&username1=root&password1=123456&username2=Jack&addtion=lubm", "");
+ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=user&type=add_query&username1=root&password1=123456&username2=Jack&addtion=lubm", "");
 System.out.println(s);
 
 //delete privilege of a user Jack(delete_query, delete_load, delete_unload)
-ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=delete_query&username1=root&password1=123456&username2=Jack&addtion=lubm", "");
+ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=user&type=delete_query&username1=root&password1=123456&username2=Jack&addtion=lubm", "");
 System.out.println(s);
 
 //delete user(with username: Jack, password: 2)
-ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=delete_user&username1=root&password1=123456&username2=Jack&addtion=2", "");
+ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=user&type=delete_user&username1=root&password1=123456&username2=Jack&addtion=2", "");
 System.out.println(s);
 ```
 
