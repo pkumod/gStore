@@ -558,9 +558,12 @@ Util::parallel_cmp_unsigned(unsigned _i1, unsigned _i2)
 void
 Util::sort(unsigned*& _id_list, unsigned _list_len)
 {
-    //qsort(_id_list, _list_len, sizeof(unsigned), Util::cmp_unsigned);
+#ifndef PARALLEL_SORT
+	qsort(_id_list, _list_len, sizeof(unsigned), Util::cmp_unsigned);
+#else
     omp_set_num_threads(thread_num);
     __gnu_parallel::sort(_id_list, _id_list + _list_len, Util::parallel_cmp_unsigned);
+#endif
 }
 
 unsigned
