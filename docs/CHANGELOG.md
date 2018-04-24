@@ -1,3 +1,22 @@
+## Apr 24, 2018
+
+Multithreading is enabled by zengli in ghttp, to improve the performance of this HTTP web server.
+
+In addition, openmp is added by suxunbin for sort and qsort to excavate hidden performance. However, this optimization does not yield good result.
+As a result, we reserve the code of openmp, but still use standard sort and qsort functions.
+
+Lijing adds support for multiple users and databases in ghttp, and improve the functions of web server, as well as the SPARQL query endpoint.
+
+New key-value indices are designed by qinzongyue to take place of the original B+ trees. 
+In detail, we think the original ISTree and IVTree are not efficient enough, so we choose to implement array+hash method instead of B+ tree.
+What needs to be noticed is that all these indices does not support parallism now, so when multiple queries are running concurrently, we must add locks to ensure that the indices are visited in sequence.
+Furthermore, qinzongyue designs a new method to compress the original string in RDF dataset. 
+For example, the prefix can be extracted and compressed using some special characters.
+
+Hulin fixes the bugs in preFilter and Join functions, which has no impact on the performance of answering SPARQL queries.
+
+---
+
 ## Oct 2, 2017
 
 Bind and GroupBy are supported in SPARQL queries now, and the Join module has been optimized to harvest a big improvement.
