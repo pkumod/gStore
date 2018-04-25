@@ -1852,12 +1852,12 @@ bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	//it can not match directly to monitor_handler, and will match this default get
 	//so we need to check here to do monitor_handler, although the implementation is not perfect enough.
 	//it is also used in /?operation=show    /?operation=checkpoint
-	if(req_url == "/?operation=monitor")
-	{
-		monitor_handler(server, response, request);
-		return true;
-	}
-	else if(req_url == "/?operation=show")
+	//if(req_url == "/?operation=monitor")
+	//{
+	//	monitor_handler(server, response, request);
+	//	return true;
+	//}
+	if(req_url == "/?operation=show")
 	{
 		show_handler(server, response, request);
 		return true;

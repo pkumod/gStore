@@ -48,10 +48,13 @@ main(int argc, char * argv[])
 	cout << "argc: " << argc << endl;
 	cout << "ip: " << argv[1] << endl;
 	cout << "port: " << argv[2] << endl;
+	cout << "db_name: " << argv[3] << endl;
 
 	string serverIP = string(argv[1]);
 	string serverPort = string(argv[2]);
-	const string strUrl = "http://"+serverIP+":"+serverPort+"/?operation=monitor";
+	string db_name = string(argv[3]);
+
+	const string strUrl = "http://"+serverIP+":"+serverPort+"/?operation=monitor&db_name="+db_name;
 	string res;
 	res.clear();
 	CURLcode ret;
