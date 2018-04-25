@@ -97,7 +97,15 @@ Notice:
 
 ghttp runs gStore like HTTP server with port 9000. Visit from browser with prescriptive url, then gStore will execute corresponding operation.
 
-Just type `bin/ghttp` to start server.
+type:
+
+`bin/ghttp db_name serverPort` or `bin/ghttp serverPort db_name` to start server with serverPort and load database named db_name initially.
+
+Attention: the argument db_name and serverPort can be left out
+
+if you leave out the argument serverPort in the commond, then the corresponding value will be set to default as 9000.
+
+if you leave out the argument db_name in the commond, then the db_name will set to null which means not to load a database initially.
 
 URL rules are listed blow:  
 
@@ -269,11 +277,11 @@ Usage: bin/gsub db_name rdf_triple_file_path
 
 #### 9. gmonitor
 
-After starting ghttp, type `bin/gmonitor ip port` to check current status of gStore.
+After starting ghttp, type `bin/gmonitor ip port db_name` to check current status of database db_name of gStore.
 
-    [bookug@localhost gStore]$ bin/gmonitor 127.0.0.1 9000
-    parameter: ?operation=monitor
-    request: http://127.0.0.1:9000/%3Foperation%3Dmonitor
+    [bookug@localhost gStore]$ bin/gmonitor 127.0.0.1 9000 lubm
+    parameter: ?operation=monitor&db_name=lubm
+    request: http://127.0.0.1:9000/%3Foperation%3Dmonitor%26db_name%3Dlubm
     null--->[HTTP/1.1 200 OK]
     Content-Length--->[127]
     database: lubm
