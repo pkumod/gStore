@@ -101,11 +101,12 @@ type:
 
 `bin/ghttp db_name serverPort` or `bin/ghttp serverPort db_name` to start server with serverPort and load database named db_name initially.
 
-Attention: the argument db_name and serverPort can be left out
+(*Attention: the argument db_name and serverPort can be left out*)
+Attention: the argument serverPort can be left out
 
 if you leave out the argument serverPort in the commond, then the corresponding value will be set to default as 9000.
 
-if you leave out the argument db_name in the commond, then the db_name will set to null which means not to load a database initially.
+(*if you leave out the argument db_name in the commond, then the db_name will set to null which means not to load a database initially.*)
 
 URL rules are listed blow:  
 
