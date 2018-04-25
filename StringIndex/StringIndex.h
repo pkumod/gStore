@@ -31,7 +31,7 @@ class StringIndexFile
 				unsigned length;
 				IndexInfo(long _offset = 0, unsigned _length = 0):offset(_offset), length(_length){}
 		};
-		std::vector<IndexInfo> index_table;
+		std::vector<IndexInfo>* index_table;
 
 		unsigned buffer_size;
 		char *buffer;
@@ -52,7 +52,11 @@ class StringIndexFile
 		};
 		std::vector<AccessRequest> request;
 
+		std::string dictionary_path;
+
 	public:
+		Trie *trie;
+
 		StringIndexFile(StringIndexFileType _type, std::string _dir, unsigned _num):type(_type), num(_num), empty_offset(0), index_file(NULL), value_file(NULL), buffer_size(0), buffer(NULL)
 		{
 			if (this->type == Entity)
@@ -61,6 +65,10 @@ class StringIndexFile
 				this->loc = _dir + "/literal_";
 			if (this->type == Predicate)
 				this->loc = _dir + "/predicate_";
+			this->index_table = new std::vector<IndexInfo>;
+
+			dictionary_path = _dir + "/../dictionary.dc";
+			trie = new Trie;
 		}
 		~StringIndexFile()
 		{
@@ -70,9 +78,20 @@ class StringIndexFile
 				fclose(this->value_file);
 			if (this->buffer != NULL)
 				delete[] this->buffer;
+			delete this->index_table;
+			if (this->trie != NULL)
+				delete trie;
 		}
-		void setNum(unsigned _num);
 
+		void clear()
+		{
+			this->index_file = NULL;
+			this->value_file = NULL;
+			this->index_table = NULL;
+			this->trie = NULL;
+		}
+
+		void setNum(unsigned _num);
 		void save(KVstore &kv_store);
 		void load();
 
@@ -86,12 +105,18 @@ class StringIndexFile
 			}
 		}
 
-		bool randomAccess(unsigned id, std::string *str);
+		inline void emptyBuffer()
+		{
+			this->buffer_size = 0;
+			this->buffer = NULL;
+		}
+
+		bool randomAccess(unsigned id, std::string *str, bool real = true);
 		inline void addRequest(unsigned id, std::string *str)
 		{
-			this->request.push_back(AccessRequest(id, this->index_table[id].offset, this->index_table[id].length, str));
+			this->request.push_back(AccessRequest(id, (*this->index_table)[id].offset, (*this->index_table)[id].length, str));
 		}
-		void trySequenceAccess();
+		void trySequenceAccess(bool real = true);
 
 		void change(unsigned id, KVstore &kv_store);
 		void disable(unsigned id);
@@ -105,9 +130,29 @@ class StringIndex
 		unsigned entity_buffer_size;
 		Buffer* literal_buffer;
 		unsigned literal_buffer_size;
+
 	public:
+		Trie *trie;
+
 		StringIndex(std::string _dir, unsigned _entity_num = 0, unsigned _literal_num = 0, unsigned _predicate_num = 0):
-			entity(StringIndexFile::Entity, _dir, _entity_num), literal(StringIndexFile::Literal, _dir, _literal_num), predicate(StringIndexFile::Predicate, _dir, _predicate_num){}
+			entity(StringIndexFile::Entity, _dir, _entity_num), literal(StringIndexFile::Literal, _dir, _literal_num), predicate(StringIndexFile::Predicate, _dir, _predicate_num)
+		{
+			trie = entity.trie;
+		}
+
+		void clear()
+		{
+			entity.clear();
+			literal.clear();
+			predicate.clear();
+		}
+
+		void emptyBuffer()
+		{
+			entity.emptyBuffer();
+			literal.emptyBuffer();
+			predicate.emptyBuffer();
+		}
 
 		void setBuffer(Buffer* _ebuf, Buffer* _lbuf)
 		{
@@ -123,9 +168,9 @@ class StringIndex
 		void save(KVstore &kv_store);
 		void load();
 
-		bool randomAccess(unsigned id, std::string *str, bool is_entity_or_literal = true);
+		bool randomAccess(unsigned id, std::string *str, bool is_entity_or_literal = true, bool real = true);
 		void addRequest(unsigned id, std::string *str, bool is_entity_or_literal = true);
-		void trySequenceAccess();
+		void trySequenceAccess(bool real = true);
 
 		void change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_entity_or_literal = true);
 		void disable(std::vector<unsigned> &ids, bool is_entity_or_literal = true);

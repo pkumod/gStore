@@ -51,9 +51,11 @@ EXEFLAG = -O2 -pthread -std=c++11
 #EXEFLAG = -pthread -g -std=c++11
 
 #add -lreadline -ltermcap if using readline or objs contain readline
-library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost
+library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
+#used for parallelsort
+openmp = -fopenmp -march=native
 # library = -ltermcap -lreadline -L./lib -lantlr -lgcov
-def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
+def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE
 
 # paths
 
@@ -73,8 +75,10 @@ api_java = api/socket/java/lib/GstoreJavaAPI.jar
 sitreeobj = $(objdir)SITree.o $(objdir)SIStorage.o $(objdir)SINode.o $(objdir)SIIntlNode.o $(objdir)SILeafNode.o $(objdir)SIHeap.o 
 istreeobj = $(objdir)ISTree.o $(objdir)ISStorage.o $(objdir)ISNode.o $(objdir)ISIntlNode.o $(objdir)ISLeafNode.o $(objdir)ISHeap.o 
 ivtreeobj = $(objdir)IVTree.o $(objdir)IVStorage.o $(objdir)IVNode.o $(objdir)IVIntlNode.o $(objdir)IVLeafNode.o $(objdir)IVHeap.o 
+ivarrayobj = $(objdir)IVArray.o $(objdir)IVEntry.o $(objdir)IVBlockManager.o
+isarrayobj = $(objdir)ISArray.o $(objdir)ISEntry.o $(objdir)ISBlockManager.o
 
-kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) #$(sstreeobj)
+kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarrayobj) $(isarrayobj) #$(sstreeobj)
 
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o
 
@@ -96,9 +100,10 @@ serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)So
 
 databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o
 
+trieobj = $(objdir)Trie.o $(objdir)TrieNode.o
 
 objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj) $(httpobj) $(databaseobj) \
-		  $(utilobj) $(signatureobj) $(queryobj)
+		  $(utilobj) $(signatureobj) $(queryobj) $(trieobj)
 	 
 inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 #-I./usr/local/include/boost/
@@ -110,12 +115,12 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
 #gtest
 
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow
 
-all: $(TARGET) bin/GMonitor.class
-
+all: $(TARGET)
+	./test/test.sh
 test_index: test_index.cpp
-	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library)
+	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library) $(openmp)
 
 #BETTER: use for loop to reduce the lines
 #NOTICE: g++ -MM will run error if linking failed, like Database.h/../SparlParser.h/../antlr3.h
@@ -123,26 +128,32 @@ test_index: test_index.cpp
 #executables begin
 
 #NOTICE:not include g*.o in objfile due to multiple definitions of main()
+$(exedir)gmonitor: $(lib_antlr) $(objdir)gmonitor.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)gmonitor $(objdir)gmonitor.o $(objfile) $(library) $(openmp)
+
+$(exedir)gshow: $(lib_antlr) $(objdir)gshow.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)gshow $(objdir)gshow.o $(objfile) $(library) $(openmp)
+
 $(exedir)gbuild: $(lib_antlr) $(objdir)gbuild.o $(objfile) 
-	$(CC) $(EXEFLAG) -o $(exedir)gbuild $(objdir)gbuild.o $(objfile) $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gbuild $(objdir)gbuild.o $(objfile) $(library) $(openmp)
 
 $(exedir)gquery: $(lib_antlr) $(objdir)gquery.o $(objfile) 
-	$(CC) $(EXEFLAG) -o $(exedir)gquery $(objdir)gquery.o $(objfile) $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gquery $(objdir)gquery.o $(objfile) $(library) $(openmp)
 
 $(exedir)gserver: $(lib_antlr) $(objdir)gserver.o $(objfile) 
-	$(CC) $(EXEFLAG) -o $(exedir)gserver $(objdir)gserver.o $(objfile) $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gserver $(objdir)gserver.o $(objfile) $(library) $(openmp)
 
 $(exedir)gserver_backup_scheduler: $(lib_antlr) $(objdir)gserver_backup_scheduler.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gserver_backup_scheduler $(objdir)gserver_backup_scheduler.o $(objfile) $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gserver_backup_scheduler $(objdir)gserver_backup_scheduler.o $(objfile) $(library) $(openmp)
 
 $(exedir)gclient: $(lib_antlr) $(objdir)gclient.o $(objfile) 
-	$(CC) $(EXEFLAG) -o $(exedir)gclient $(objdir)gclient.o $(objfile) $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gclient $(objdir)gclient.o $(objfile) $(library) $(openmp)
 
 $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
-	$(CC) $(EXEFLAG) -o $(exedir)gconsole $(objdir)gconsole.o $(objfile) $(library) -L./api/socket/cpp/lib -lgstoreconnector
+	$(CC) $(EXEFLAG) -o $(exedir)gconsole $(objdir)gconsole.o $(objfile) $(library) -L./api/socket/cpp/lib -lgstoreconnector $(openmp)
 
 $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX
+	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX $(openmp)
 
 
 #executables end
@@ -150,32 +161,33 @@ $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/
 
 #objects in Main/ begin
 
+$(objdir)gmonitor.o: Main/gmonitor.cpp $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gmonitor.cpp $(inc) -o $(objdir)gmonitor.o $(openmp)
+
+$(objdir)gshow.o: Main/gshow.cpp $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gshow.cpp $(inc) -o $(objdir)gshow.o $(openmp)
+
 $(objdir)gbuild.o: Main/gbuild.cpp Database/Database.h Util/Util.h $(lib_antlr)
-	$(CC) $(CFLAGS) Main/gbuild.cpp $(inc) -o $(objdir)gbuild.o 
+	$(CC) $(CFLAGS) Main/gbuild.cpp $(inc) -o $(objdir)gbuild.o $(openmp)
 	
 $(objdir)gquery.o: Main/gquery.cpp Database/Database.h Util/Util.h $(lib_antlr)
-	$(CC) $(CFLAGS) Main/gquery.cpp $(inc) -o $(objdir)gquery.o  #-DREADLINE_ON
+	$(CC) $(CFLAGS) Main/gquery.cpp $(inc) -o $(objdir)gquery.o $(openmp) #-DREADLINE_ON
 	#add -DREADLINE_ON if using readline
 
 $(objdir)gserver.o: Main/gserver.cpp Server/Server.h Util/Util.h $(lib_antlr)
-	$(CC) $(CFLAGS) Main/gserver.cpp $(inc) -o $(objdir)gserver.o
+	$(CC) $(CFLAGS) Main/gserver.cpp $(inc) -o $(objdir)gserver.o $(openmp)
 
 $(objdir)gserver_backup_scheduler.o: Main/gserver_backup_scheduler.cpp Server/Server.h Util/Util.h $(lib_antlr)
-	$(CC) $(CFLAGS) Main/gserver_backup_scheduler.cpp $(inc) -o $(objdir)gserver_backup_scheduler.o
+	$(CC) $(CFLAGS) Main/gserver_backup_scheduler.cpp $(inc) -o $(objdir)gserver_backup_scheduler.o $(openmp)
 
 $(objdir)gclient.o: Main/gclient.cpp Server/Client.h Util/Util.h $(lib_antlr)
-	$(CC) $(CFLAGS) Main/gclient.cpp $(inc) -o $(objdir)gclient.o #-DREADLINE_ON
+	$(CC) $(CFLAGS) Main/gclient.cpp $(inc) -o $(objdir)gclient.o $(openmp) #-DREADLINE_ON
 
 $(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/socket/cpp/src/GstoreConnector.h $(lib_antlr)
-	$(CC) $(CFLAGS) Main/gconsole.cpp $(inc) -o $(objdir)gconsole.o -I./api/socket/cpp/src/ #-DREADLINE_ON
+	$(CC) $(CFLAGS) Main/gconsole.cpp $(inc) -o $(objdir)gconsole.o -I./api/socket/cpp/src/ $(openmp) #-DREADLINE_ON
 
 $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Database/Database.h Util/Util.h $(lib_antlr)
-	$(CC) $(CFLAGS) Main/ghttp.cpp $(inc) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO)
-
-bin/GMonitor.class: Main/GMonitor.java
-	javac -d bin/ Main/GMonitor.java
-	cp test/gmonitor bin/
-	cp test/gshow bin/
+	$(CC) $(CFLAGS) Main/ghttp.cpp $(inc) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
 #objects in Main/ end
 
@@ -204,66 +216,89 @@ bin/GMonitor.class: Main/GMonitor.java
 
 #objects in sitree/ begin
 $(objdir)SITree.o: KVstore/SITree/SITree.cpp KVstore/SITree/SITree.h $(objdir)Stream.o
-	$(CC) $(CFLAGS) KVstore/SITree/SITree.cpp -o $(objdir)SITree.o
+	$(CC) $(CFLAGS) KVstore/SITree/SITree.cpp -o $(objdir)SITree.o $(openmp)
 
 $(objdir)SIStorage.o: KVstore/SITree/storage/SIStorage.cpp KVstore/SITree/storage/SIStorage.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/SITree/storage/SIStorage.cpp -o $(objdir)SIStorage.o $(def64IO)
+	$(CC) $(CFLAGS) KVstore/SITree/storage/SIStorage.cpp -o $(objdir)SIStorage.o $(def64IO) $(openmp)
 
 $(objdir)SINode.o: KVstore/SITree/node/SINode.cpp KVstore/SITree/node/SINode.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/SITree/node/SINode.cpp -o $(objdir)SINode.o
+	$(CC) $(CFLAGS) KVstore/SITree/node/SINode.cpp -o $(objdir)SINode.o $(openmp)
 
 $(objdir)SIIntlNode.o: KVstore/SITree/node/SIIntlNode.cpp KVstore/SITree/node/SIIntlNode.h
-	$(CC) $(CFLAGS) KVstore/SITree/node/SIIntlNode.cpp -o $(objdir)SIIntlNode.o
+	$(CC) $(CFLAGS) KVstore/SITree/node/SIIntlNode.cpp -o $(objdir)SIIntlNode.o $(openmp)
 
 $(objdir)SILeafNode.o: KVstore/SITree/node/SILeafNode.cpp KVstore/SITree/node/SILeafNode.h
-	$(CC) $(CFLAGS) KVstore/SITree/node/SILeafNode.cpp -o $(objdir)SILeafNode.o
+	$(CC) $(CFLAGS) KVstore/SITree/node/SILeafNode.cpp -o $(objdir)SILeafNode.o $(openmp)
 
 $(objdir)SIHeap.o: KVstore/SITree/heap/SIHeap.cpp KVstore/SITree/heap/SIHeap.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/SITree/heap/SIHeap.cpp -o $(objdir)SIHeap.o
+	$(CC) $(CFLAGS) KVstore/SITree/heap/SIHeap.cpp -o $(objdir)SIHeap.o $(openmp)
 #objects in sitree/ end
 
 #objects in istree/ begin
 $(objdir)ISTree.o: KVstore/ISTree/ISTree.cpp KVstore/ISTree/ISTree.h $(objdir)Stream.o
-	$(CC) $(CFLAGS) KVstore/ISTree/ISTree.cpp -o $(objdir)ISTree.o
+	$(CC) $(CFLAGS) KVstore/ISTree/ISTree.cpp -o $(objdir)ISTree.o $(openmp)
 
 $(objdir)ISStorage.o: KVstore/ISTree/storage/ISStorage.cpp KVstore/ISTree/storage/ISStorage.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/ISTree/storage/ISStorage.cpp -o $(objdir)ISStorage.o $(def64IO)
+	$(CC) $(CFLAGS) KVstore/ISTree/storage/ISStorage.cpp -o $(objdir)ISStorage.o $(def64IO) $(openmp)
 
 $(objdir)ISNode.o: KVstore/ISTree/node/ISNode.cpp KVstore/ISTree/node/ISNode.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/ISTree/node/ISNode.cpp -o $(objdir)ISNode.o
+	$(CC) $(CFLAGS) KVstore/ISTree/node/ISNode.cpp -o $(objdir)ISNode.o $(openmp)
 
 $(objdir)ISIntlNode.o: KVstore/ISTree/node/ISIntlNode.cpp KVstore/ISTree/node/ISIntlNode.h
-	$(CC) $(CFLAGS) KVstore/ISTree/node/ISIntlNode.cpp -o $(objdir)ISIntlNode.o
+	$(CC) $(CFLAGS) KVstore/ISTree/node/ISIntlNode.cpp -o $(objdir)ISIntlNode.o $(openmp)
 
 $(objdir)ISLeafNode.o: KVstore/ISTree/node/ISLeafNode.cpp KVstore/ISTree/node/ISLeafNode.h
-	$(CC) $(CFLAGS) KVstore/ISTree/node/ISLeafNode.cpp -o $(objdir)ISLeafNode.o
+	$(CC) $(CFLAGS) KVstore/ISTree/node/ISLeafNode.cpp -o $(objdir)ISLeafNode.o $(openmp)
 
 $(objdir)ISHeap.o: KVstore/ISTree/heap/ISHeap.cpp KVstore/ISTree/heap/ISHeap.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/ISTree/heap/ISHeap.cpp -o $(objdir)ISHeap.o
+	$(CC) $(CFLAGS) KVstore/ISTree/heap/ISHeap.cpp -o $(objdir)ISHeap.o $(openmp)
 #objects in istree/ end
+
+#objects in isarray/ begin
+$(objdir)ISArray.o: KVstore/ISArray/ISArray.cpp KVstore/ISArray/ISArray.h $(objdir)VList.o
+	$(CC) $(CFLAGS) KVstore/ISArray/ISArray.cpp -o $(objdir)ISArray.o
+
+$(objdir)ISBlockManager.o: KVstore/ISArray/ISBlockManager.cpp KVstore/ISArray/ISBlockManager.h 
+	$(CC) $(CFLAGS) KVstore/ISArray/ISBlockManager.cpp -o $(objdir)ISBlockManager.o
+
+$(objdir)ISEntry.o: KVstore/ISArray/ISEntry.cpp KVstore/ISArray/ISEntry.h
+	$(CC) $(CFLAGS) KVstore/ISArray/ISEntry.cpp -o $(objdir)ISEntry.o
+#objects in isarray/ end
 
 #objects in ivtree/ begin
 $(objdir)IVTree.o: KVstore/IVTree/IVTree.cpp KVstore/IVTree/IVTree.h $(objdir)Stream.o $(objdir)VList.o
-	$(CC) $(CFLAGS) KVstore/IVTree/IVTree.cpp -o $(objdir)IVTree.o
+	$(CC) $(CFLAGS) KVstore/IVTree/IVTree.cpp -o $(objdir)IVTree.o $(openmp)
 
 $(objdir)IVStorage.o: KVstore/IVTree/storage/IVStorage.cpp KVstore/IVTree/storage/IVStorage.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/IVTree/storage/IVStorage.cpp -o $(objdir)IVStorage.o $(def64IO)
+	$(CC) $(CFLAGS) KVstore/IVTree/storage/IVStorage.cpp -o $(objdir)IVStorage.o $(def64IO) $(openmp)
 
 $(objdir)IVNode.o: KVstore/IVTree/node/IVNode.cpp KVstore/IVTree/node/IVNode.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/IVTree/node/IVNode.cpp -o $(objdir)IVNode.o
+	$(CC) $(CFLAGS) KVstore/IVTree/node/IVNode.cpp -o $(objdir)IVNode.o $(openmp)
 
 $(objdir)IVIntlNode.o: KVstore/IVTree/node/IVIntlNode.cpp KVstore/IVTree/node/IVIntlNode.h
-	$(CC) $(CFLAGS) KVstore/IVTree/node/IVIntlNode.cpp -o $(objdir)IVIntlNode.o
+	$(CC) $(CFLAGS) KVstore/IVTree/node/IVIntlNode.cpp -o $(objdir)IVIntlNode.o $(openmp)
 
 $(objdir)IVLeafNode.o: KVstore/IVTree/node/IVLeafNode.cpp KVstore/IVTree/node/IVLeafNode.h
-	$(CC) $(CFLAGS) KVstore/IVTree/node/IVLeafNode.cpp -o $(objdir)IVLeafNode.o
+	$(CC) $(CFLAGS) KVstore/IVTree/node/IVLeafNode.cpp -o $(objdir)IVLeafNode.o $(openmp)
 
 $(objdir)IVHeap.o: KVstore/IVTree/heap/IVHeap.cpp KVstore/IVTree/heap/IVHeap.h $(objdir)Util.o
-	$(CC) $(CFLAGS) KVstore/IVTree/heap/IVHeap.cpp -o $(objdir)IVHeap.o
+	$(CC) $(CFLAGS) KVstore/IVTree/heap/IVHeap.cpp -o $(objdir)IVHeap.o $(openmp)
 #objects in ivtree/ end
 
+#objects in ivarray/ begin
+$(objdir)IVArray.o: KVstore/IVArray/IVArray.cpp KVstore/IVArray/IVArray.h $(objdir)VList.o 
+	$(CC) $(CFLAGS) KVstore/IVArray/IVArray.cpp -o $(objdir)IVArray.o
+
+$(objdir)IVBlockManager.o: KVstore/IVArray/IVBlockManager.cpp KVstore/IVArray/IVBlockManager.h 
+	$(CC) $(CFLAGS) KVstore/IVArray/IVBlockManager.cpp -o $(objdir)IVBlockManager.o
+
+$(objdir)IVEntry.o: KVstore/IVArray/IVEntry.cpp KVstore/IVArray/IVEntry.h
+	$(CC) $(CFLAGS) KVstore/IVArray/IVEntry.cpp -o $(objdir)IVEntry.o
+
+#objects in ivarray/ end
+
 $(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h KVstore/Tree.h 
-	$(CC) $(CFLAGS) KVstore/KVstore.cpp $(inc) -o $(objdir)KVstore.o
+	$(CC) $(CFLAGS) KVstore/KVstore.cpp $(inc) -o $(objdir)KVstore.o $(openmp)
 
 #objects in kvstore/ end
 
@@ -275,15 +310,15 @@ $(objdir)Database.o: Database/Database.cpp Database/Database.h \
 	$(objdir)BasicQuery.o $(objdir)Triple.o $(objdir)SigEntry.o \
 	$(objdir)KVstore.o $(objdir)VSTree.o $(objdir)DBparser.o \
 	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o $(objdir)GeneralEvaluation.o $(objdir)StringIndex.o
-	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o
+	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o $(openmp)
 
 $(objdir)Join.o: Database/Join.cpp Database/Join.h $(objdir)IDList.o $(objdir)BasicQuery.o $(objdir)Util.o\
 	$(objdir)KVstore.o $(objdir)Util.o $(objdir)SPARQLquery.o
-	$(CC) $(CFLAGS) Database/Join.cpp $(inc) -o $(objdir)Join.o
+	$(CC) $(CFLAGS) Database/Join.cpp $(inc) -o $(objdir)Join.o $(openmp)
 
 $(objdir)Strategy.o: Database/Strategy.cpp Database/Strategy.h $(objdir)SPARQLquery.o $(objdir)BasicQuery.o \
 	$(objdir)Triple.o $(objdir)IDList.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Util.o $(objdir)Join.o
-	$(CC) $(CFLAGS) Database/Strategy.cpp $(inc) -o $(objdir)Strategy.o
+	$(CC) $(CFLAGS) Database/Strategy.cpp $(inc) -o $(objdir)Strategy.o $(openmp)
 
 #objects in Database/ end
 
@@ -291,37 +326,37 @@ $(objdir)Strategy.o: Database/Strategy.cpp Database/Strategy.h $(objdir)SPARQLqu
 #objects in Query/ begin
 
 $(objdir)IDList.o: Query/IDList.cpp Query/IDList.h
-	$(CC) $(CFLAGS) Query/IDList.cpp $(inc) -o $(objdir)IDList.o
+	$(CC) $(CFLAGS) Query/IDList.cpp $(inc) -o $(objdir)IDList.o $(openmp)
 
 $(objdir)SPARQLquery.o: Query/SPARQLquery.cpp Query/SPARQLquery.h $(objdir)BasicQuery.o
-	$(CC) $(CFLAGS) Query/SPARQLquery.cpp $(inc) -o $(objdir)SPARQLquery.o
+	$(CC) $(CFLAGS) Query/SPARQLquery.cpp $(inc) -o $(objdir)SPARQLquery.o $(openmp)
 
 $(objdir)BasicQuery.o: Query/BasicQuery.cpp Query/BasicQuery.h $(objdir)Signature.o
-	$(CC) $(CFLAGS) Query/BasicQuery.cpp $(inc) -o $(objdir)BasicQuery.o
+	$(CC) $(CFLAGS) Query/BasicQuery.cpp $(inc) -o $(objdir)BasicQuery.o $(openmp)
 
 $(objdir)ResultSet.o: Query/ResultSet.cpp Query/ResultSet.h $(objdir)Stream.o
-	$(CC) $(CFLAGS) Query/ResultSet.cpp $(inc) -o $(objdir)ResultSet.o
+	$(CC) $(CFLAGS) Query/ResultSet.cpp $(inc) -o $(objdir)ResultSet.o $(openmp)
 
 $(objdir)Varset.o: Query/Varset.cpp Query/Varset.h
-	$(CC) $(CFLAGS) Query/Varset.cpp $(inc) -o $(objdir)Varset.o
+	$(CC) $(CFLAGS) Query/Varset.cpp $(inc) -o $(objdir)Varset.o $(openmp)
 
 $(objdir)QueryTree.o: Query/QueryTree.cpp Query/QueryTree.h $(objdir)Varset.o
-	$(CC) $(CFLAGS) Query/QueryTree.cpp $(inc) -o $(objdir)QueryTree.o
+	$(CC) $(CFLAGS) Query/QueryTree.cpp $(inc) -o $(objdir)QueryTree.o $(openmp)
 
 $(objdir)TempResult.o: Query/TempResult.cpp Query/TempResult.h Query/RegexExpression.h $(objdir)Util.o \
 	$(objdir)StringIndex.o $(objdir)QueryTree.o $(objdir)Varset.o
-	$(CC) $(CFLAGS) Query/TempResult.cpp $(inc) -o $(objdir)TempResult.o
+	$(CC) $(CFLAGS) Query/TempResult.cpp $(inc) -o $(objdir)TempResult.o $(openmp)
 
 $(objdir)QueryCache.o: Query/QueryCache.cpp Query/QueryCache.h $(objdir)Util.o $(objdir)QueryTree.o \
 	$(objdir)TempResult.o $(objdir)Varset.o
-	$(CC) $(CFLAGS) Query/QueryCache.cpp $(inc) -o $(objdir)QueryCache.o
+	$(CC) $(CFLAGS) Query/QueryCache.cpp $(inc) -o $(objdir)QueryCache.o $(openmp)
 
 #no more using $(objdir)Database.o
 $(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h Query/RegexExpression.h \
 	$(objdir)VSTree.o $(objdir)KVstore.o $(objdir)StringIndex.o $(objdir)Strategy.o $(objdir)QueryParser.o \
 	$(objdir)Triple.o $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)QueryTree.o $(objdir)Varset.o \
 	$(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)ResultSet.o
-	$(CC) $(CFLAGS) Query/GeneralEvaluation.cpp $(inc) -o $(objdir)GeneralEvaluation.o
+	$(CC) $(CFLAGS) Query/GeneralEvaluation.cpp $(inc) -o $(objdir)GeneralEvaluation.o $(openmp)
 
 #objects in Query/ end
 
@@ -329,10 +364,10 @@ $(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluatio
 #objects in Signature/ begin
 
 $(objdir)SigEntry.o: Signature/SigEntry.cpp Signature/SigEntry.h $(objdir)Signature.o
-	$(CC) $(CFLAGS) Signature/SigEntry.cpp $(inc) -o $(objdir)SigEntry.o
+	$(CC) $(CFLAGS) Signature/SigEntry.cpp $(inc) -o $(objdir)SigEntry.o $(openmp)
 
 $(objdir)Signature.o: Signature/Signature.cpp Signature/Signature.h
-	$(CC) $(CFLAGS) Signature/Signature.cpp $(inc) -o $(objdir)Signature.o
+	$(CC) $(CFLAGS) Signature/Signature.cpp $(inc) -o $(objdir)Signature.o $(openmp)
 
 #objects in Signature/ end
 
@@ -340,22 +375,22 @@ $(objdir)Signature.o: Signature/Signature.cpp Signature/Signature.h
 #objects in Util/ begin
 
 $(objdir)Util.o:  Util/Util.cpp Util/Util.h
-	$(CC) $(CFLAGS) Util/Util.cpp -o $(objdir)Util.o
+	$(CC) $(CFLAGS) Util/Util.cpp -o $(objdir)Util.o $(openmp)
 
 $(objdir)Stream.o:  Util/Stream.cpp Util/Stream.h $(objdir)Util.o $(objdir)Bstr.o
-	$(CC) $(CFLAGS) Util/Stream.cpp -o $(objdir)Stream.o $(def64IO)
+	$(CC) $(CFLAGS) Util/Stream.cpp -o $(objdir)Stream.o $(def64IO) $(openmp)
 
 $(objdir)Bstr.o: Util/Bstr.cpp Util/Bstr.h $(objdir)Util.o
-	$(CC) $(CFLAGS)  Util/Bstr.cpp -o $(objdir)Bstr.o
+	$(CC) $(CFLAGS)  Util/Bstr.cpp -o $(objdir)Bstr.o $(openmp)
 
 $(objdir)Triple.o: Util/Triple.cpp Util/Triple.h $(objdir)Util.o
-	$(CC) $(CFLAGS) Util/Triple.cpp -o $(objdir)Triple.o
+	$(CC) $(CFLAGS) Util/Triple.cpp -o $(objdir)Triple.o $(openmp)
 
 $(objdir)BloomFilter.o:  Util/BloomFilter.cpp Util/BloomFilter.h $(objdir)Util.o
-	$(CC) $(CFLAGS) Util/BloomFilter.cpp -o $(objdir)BloomFilter.o 
+	$(CC) $(CFLAGS) Util/BloomFilter.cpp -o $(objdir)BloomFilter.o $(openmp) 
 
 $(objdir)VList.o:  Util/VList.cpp Util/VList.h
-	$(CC) $(CFLAGS) Util/VList.cpp -o $(objdir)VList.o
+	$(CC) $(CFLAGS) Util/VList.cpp -o $(objdir)VList.o $(openmp)
 
 #objects in util/ end
 
@@ -363,62 +398,69 @@ $(objdir)VList.o:  Util/VList.cpp Util/VList.h
 #objects in VSTree/ begin
 
 $(objdir)VSTree.o: VSTree/VSTree.cpp VSTree/VSTree.h $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdir)VNode.o
-	$(CC) $(CFLAGS) VSTree/VSTree.cpp $(inc) -o $(objdir)VSTree.o $(def64IO)
+	$(CC) $(CFLAGS) VSTree/VSTree.cpp $(inc) -o $(objdir)VSTree.o $(def64IO) $(openmp)
 
 $(objdir)EntryBuffer.o: VSTree/EntryBuffer.cpp VSTree/EntryBuffer.h Signature/SigEntry.h
-	$(CC) $(CFLAGS) VSTree/EntryBuffer.cpp $(inc) -o $(objdir)EntryBuffer.o $(def64IO)
+	$(CC) $(CFLAGS) VSTree/EntryBuffer.cpp $(inc) -o $(objdir)EntryBuffer.o $(def64IO) $(openmp)
 
 $(objdir)LRUCache.o: VSTree/LRUCache.cpp  VSTree/LRUCache.h VSTree/VNode.h
-	$(CC) $(CFLAGS) VSTree/LRUCache.cpp $(inc) -o $(objdir)LRUCache.o $(def64IO)
+	$(CC) $(CFLAGS) VSTree/LRUCache.cpp $(inc) -o $(objdir)LRUCache.o $(def64IO) $(openmp)
 
 $(objdir)VNode.o: VSTree/VNode.cpp VSTree/VNode.h
-	$(CC) $(CFLAGS) VSTree/VNode.cpp $(inc) -o $(objdir)VNode.o $(def64IO)
+	$(CC) $(CFLAGS) VSTree/VNode.cpp $(inc) -o $(objdir)VNode.o $(def64IO) $(openmp)
 
 #objects in VSTree/ end
 
 
 #objects in StringIndex/ begin
 $(objdir)StringIndex.o: StringIndex/StringIndex.cpp StringIndex/StringIndex.h $(objdir)KVstore.o $(objdir)Util.o
-	$(CC) $(CFLAGS) StringIndex/StringIndex.cpp $(inc) -o $(objdir)StringIndex.o $(def64IO)
+	$(CC) $(CFLAGS) StringIndex/StringIndex.cpp $(inc) -o $(objdir)StringIndex.o $(def64IO) $(openmp)
 #objects in StringIndex/ end
 
 
 #objects in Parser/ begin
 
 $(objdir)DBparser.o: Parser/DBparser.cpp Parser/DBparser.h $(objdir)SparqlParser.o $(objdir)SparqlLexer.o $(objdir)Triple.o
-	$(CC) $(CFLAGS) Parser/DBparser.cpp $(inc) -o $(objdir)DBparser.o
+	$(CC) $(CFLAGS) Parser/DBparser.cpp $(inc) -o $(objdir)DBparser.o $(openmp)
 
 $(objdir)SparqlParser.o: Parser/SparqlParser.c Parser/SparqlParser.h
-	gcc  $(CFLAGS) Parser/SparqlParser.c $(inc) -o $(objdir)SparqlParser.o
+	gcc  $(CFLAGS) Parser/SparqlParser.c $(inc) -o $(objdir)SparqlParser.o $(openmp)
 
 $(objdir)SparqlLexer.o: Parser/SparqlLexer.c Parser/SparqlLexer.h
-	gcc  $(CFLAGS) Parser/SparqlLexer.c $(inc) -o $(objdir)SparqlLexer.o
+	gcc  $(CFLAGS) Parser/SparqlLexer.c $(inc) -o $(objdir)SparqlLexer.o $(openmp)
 
 $(objdir)TurtleParser.o: Parser/TurtleParser.cpp Parser/TurtleParser.h Parser/Type.h
-	gcc  $(CFLAGS) Parser/TurtleParser.cpp $(inc) -o $(objdir)TurtleParser.o
+	gcc  $(CFLAGS) Parser/TurtleParser.cpp $(inc) -o $(objdir)TurtleParser.o $(openmp)
 
 $(objdir)RDFParser.o: Parser/RDFParser.cpp Parser/RDFParser.h $(objdir)TurtleParser.o $(objdir)Triple.o
-	gcc  $(CFLAGS) Parser/RDFParser.cpp $(inc) -o $(objdir)RDFParser.o
+	gcc  $(CFLAGS) Parser/RDFParser.cpp $(inc) -o $(objdir)RDFParser.o $(openmp)
 
 $(objdir)QueryParser.o: Parser/QueryParser.cpp Parser/QueryParser.h $(objdir)SparqlParser.o $(objdir)SparqlLexer.o $(objdir)QueryTree.o
-	$(CC) $(CFLAGS) Parser/QueryParser.cpp $(inc) -o $(objdir)QueryParser.o
+	$(CC) $(CFLAGS) Parser/QueryParser.cpp $(inc) -o $(objdir)QueryParser.o $(openmp)
 
 #objects in Parser/ end
 
+#objects in Trie/ begin
+
+$(objdir)TrieNode.o: Trie/TrieNode.cpp Trie/TrieNode.h
+	$(CC) $(CFLAGS) Trie/TrieNode.cpp -o $(objdir)TrieNode.o
+
+$(objdir)Trie.o: Trie/Trie.cpp Trie/Trie.h $(objdir)TrieNode.o $(objdir)Triple.o $(objdir)RDFParser.o
+	$(CC) $(CFLAGS) Trie/Trie.cpp $(inc) -o $(objdir)Trie.o
 
 #objects in Server/ begin
 
 $(objdir)Operation.o: Server/Operation.cpp Server/Operation.h
-	$(CC) $(CFLAGS) Server/Operation.cpp $(inc) -o $(objdir)Operation.o
+	$(CC) $(CFLAGS) Server/Operation.cpp $(inc) -o $(objdir)Operation.o $(openmp)
 
 $(objdir)Socket.o: Server/Socket.cpp Server/Socket.h
-	$(CC) $(CFLAGS) Server/Socket.cpp $(inc) -o $(objdir)Socket.o
+	$(CC) $(CFLAGS) Server/Socket.cpp $(inc) -o $(objdir)Socket.o $(openmp)
 
 $(objdir)Server.o: Server/Server.cpp Server/Server.h $(objdir)Socket.o $(objdir)Database.o $(objdir)Operation.o
-	$(CC) $(CFLAGS) Server/Server.cpp $(inc) -o $(objdir)Server.o
+	$(CC) $(CFLAGS) Server/Server.cpp $(inc) -o $(objdir)Server.o $(openmp)
 
 $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)Util.o
-	$(CC) $(CFLAGS) Server/Client.cpp $(inc) -o $(objdir)Client.o
+	$(CC) $(CFLAGS) Server/Client.cpp $(inc) -o $(objdir)Client.o $(openmp)
 
 # $(objdir)client_http.o: Server/client_http.hpp
 # 	$(CC) $(CFLAGS) Server/client_http.hpp $(inc) -o $(objdir)client_http.o
@@ -441,9 +483,11 @@ $(lib_antlr):
 
 $(api_cpp): $(objdir)Socket.o
 	$(MAKE) -C api/socket/cpp/src 
+	$(MAKE) -C api/http/cpp/src 
 
 $(api_java):
 	$(MAKE) -C api/socket/java/src
+	$(MAKE) -C api/http/java/src
 
 .PHONY: clean dist tarball api_example gtest sumlines
 
@@ -453,6 +497,10 @@ clean:
 	$(MAKE) -C api/socket/cpp/example clean
 	$(MAKE) -C api/socket/java/src clean
 	$(MAKE) -C api/socket/java/example clean
+	$(MAKE) -C api/http/cpp/src clean
+	$(MAKE) -C api/http/cpp/example clean
+	$(MAKE) -C api/http/java/src clean
+	$(MAKE) -C api/http/java/example clean
 	#$(MAKE) -C KVstore clean
 	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver*
 	rm -rf bin/*.class
@@ -474,18 +522,20 @@ tarball:
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/socket/cpp/example
 	$(MAKE) -C api/socket/java/example
+	$(MAKE) -C api/http/cpp/example
+	$(MAKE) -C api/http/java/example
 
 gtest: $(objdir)gtest.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr.a $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr.a $(library) $(openmp)
 
 $(objdir)gtest.o: test/gtest.cpp
-	$(CC) $(CFLAGS) test/gtest.cpp $(inc) -o $(objdir)gtest.o
+	$(CC) $(CFLAGS) test/gtest.cpp $(inc) -o $(objdir)gtest.o $(openmp)
 	
 $(exedir)gadd: $(objdir)gadd.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gadd $(objdir)gadd.o $(objfile) lib/libantlr.a $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gadd $(objdir)gadd.o $(objfile) lib/libantlr.a $(library) $(openmp)
 
 $(objdir)gadd.o: Main/gadd.cpp
-	$(CC) $(CFLAGS) Main/gadd.cpp $(inc) -o $(objdir)gadd.o
+	$(CC) $(CFLAGS) Main/gadd.cpp $(inc) -o $(objdir)gadd.o $(openmp)
 
 #$(objdir)HttpConnector: $(objdir)HttpConnector.o $(objfile)
 	#$(CC) $(CFLAGS) -o $(exedir)HttpConnector $(objdir)HttpConnector.o $(objfile) lib/libantlr.a $(library) $(inc) -DUSE_BOOST_REGEX
@@ -494,10 +544,10 @@ $(objdir)gadd.o: Main/gadd.cpp
 	#$(CC) $(CFLAGS) Main/HttpConnector.cpp $(inc) -o $(objdir)HttpConnector.o $(library) -DUSE_BOOST_REGEX
 
 $(exedir)gsub: $(objdir)gsub.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gsub $(objdir)gsub.o $(objfile) lib/libantlr.a $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gsub $(objdir)gsub.o $(objfile) lib/libantlr.a $(library) $(openmp)
 
 $(objdir)gsub.o: Main/gsub.cpp
-	$(CC) $(CFLAGS) Main/gsub.cpp $(inc) -o $(objdir)gsub.o
+	$(CC) $(CFLAGS) Main/gsub.cpp $(inc) -o $(objdir)gsub.o $(openmp)
 
 sumlines:
 	bash test/sumline.sh
@@ -523,4 +573,3 @@ fulltest:
 test-kvstore:
 	# test/kvstore_test.cpp
 	echo "TODO"
-

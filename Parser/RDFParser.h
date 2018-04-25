@@ -23,6 +23,7 @@ public:
     RDFParser(ifstream& _fin):_TurtleParser(_fin) {}
 
     string parseFile(TripleWithObjType* _triple_array, int& _triple_num);
-    string parseString(string _str, TripleWithObjType* _triple_array, int& _triple_num);
+    string parseFileSample(TripleWithObjType* _triple_array, int& _triple_num, int UPBOUND);
+   string parseString(string _str, TripleWithObjType* _triple_array, int& _triple_num);
 };
 #endif

@@ -297,7 +297,6 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	    //NOTICE:maybe several same predicates
 	    set<TYPE_PREDICATE_ID> in_edge_pre_id;
 	    set<TYPE_PREDICATE_ID> out_edge_pre_id;
-	    
 	    for (int i = 0; i < var_degree; i++)
 	    {
 	        char edge_type = basic_query->getEdgeType(_var, i);
@@ -362,7 +361,6 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	            in_edge_pre_id.insert(pre_id);
 	        }
 	    }
-	    
 	    if (in_edge_pre_id.empty() && out_edge_pre_id.empty())
 	    {
 	        continue;
@@ -383,7 +381,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 		            cans.intersectList(list, len);
 		        delete[] list;
 		        if(cans.size() == 0)
-				{
+				{	
 					return false;
 				}
 			}
@@ -427,9 +425,8 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
   //          cout << "after in_edge_filter, the cans size = 0" << endl;
             return false;
         }
-
         for(it = out_edge_pre_id.begin(); it != out_edge_pre_id.end(); ++it)
-        {
+	{
         	if(pre2num[*it] < 1000000 || cans.size() > 1000000  || cans.size() == 0)
         	{
 	            kvstore->getsubIDlistBypreID(*it, list, len, true);
@@ -476,7 +473,6 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 				}
 			}
         }
-	    
 	    
 	    //this is a core vertex, so if not literal var, exit when empty
 	    if(cans.empty())

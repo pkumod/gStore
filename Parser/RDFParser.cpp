@@ -65,6 +65,58 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 	return "";
 }
 
+string RDFParser::parseFileSample(TripleWithObjType* _triple_array, int& _triple_num, int UPBOUND)
+{
+	string _subject, _predicate, _object, _objectSubType;
+	Type::Type_ID _objectType;
+
+	while (_triple_num < UPBOUND)
+	{
+		try
+		{
+			if (!this->_TurtleParser.parse(_subject, _predicate, _object, _objectType, _objectSubType))		break;
+		}
+		catch (const TurtleParser::Exception& _e) 
+		{
+			cerr << _e.message << endl;
+			this->_TurtleParser.discardLine();
+			continue;
+		}
+
+		_subject = "<" + _subject + ">";
+		_predicate = "<" + _predicate + ">";
+
+		TripleWithObjType::ObjectType _object_type = TripleWithObjType::None;
+		if (_objectType == Type::Type_URI)
+		{
+			_object = "<" + _object + ">";
+			_object_type = TripleWithObjType::Entity;
+		}
+		else
+		{
+			if (_objectType == Type::Type_Literal)
+				_object = "\"" + _object + "\"";
+			else if (_objectType == Type::Type_CustomLanguage)
+				_object = "\"" + _object + "\"@" + _objectSubType;
+			else if (_objectType == Type::Type_String)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#string>";
+			else if (_objectType == Type::Type_Integer)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+			else if (_objectType == Type::Type_Decimal)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
+			else if (_objectType == Type::Type_Double)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
+			else if (_objectType == Type::Type_Boolean)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+			else if (_objectType == Type::Type_CustomType)
+				_object = "\"" + _object + "\"^^<" + _objectSubType + ">";
+			_object_type = TripleWithObjType::Literal;
+		}
+
+		_triple_array[_triple_num++] = TripleWithObjType(_subject, _predicate, _object, _object_type);
+	}
+	return "";
+}
 /*	if you want to parse a string, you need to create a RDFParser object with no parameter, if the triple has prefix, you also need to provide it.
 *	the whole string must be processed in one time of invoking parseString, pay attention to the triples in the string won't exceed the limit of RDFParser::TRIPLE_NUM_PER_GROUP.
 *	for example:
