@@ -51,8 +51,12 @@ Database::Database()
 
 	this->if_loaded = false;
 
+	this->trie = NULL;
+
 	//this->resetIDinfo();
 	this->initIDinfo();
+
+	pthread_rwlock_init(&(this->update_lock), NULL);
 }
 
 Database::Database(string _name)
@@ -74,14 +78,11 @@ Database::Database(string _name)
 
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = new KVstore(kv_store_path);
-
 	string vstree_store_path = store_path + "/vs_store";
 	//this->vstree = new VSTree(vstree_store_path);
 	this->vstree = NULL;
-
 	string stringindex_store_path = store_path + "/stringindex_store";
 	this->stringindex = new StringIndex(stringindex_store_path);
-
 	//this->encode_mode = Database::STRING_MODE;
 	this->encode_mode = Database::ID_MODE;
 	this->is_active = false;
@@ -102,8 +103,12 @@ Database::Database(string _name)
 
 	this->query_cache = new QueryCache();
 
+	this->trie = NULL;
+
 	//this->resetIDinfo();
 	this->initIDinfo();
+
+	pthread_rwlock_init(&(this->update_lock), NULL);
 }
 
 //==================================================================================================================================================
@@ -325,6 +330,7 @@ Database::saveIDinfo()
 		tp = bp->next;
 		bp = tp;
 	}
+	Util::Csync(fp);
 	fclose(fp);
 	fp = NULL;
 
@@ -342,6 +348,7 @@ Database::saveIDinfo()
 		tp = bp->next;
 		bp = tp;
 	}
+	Util::Csync(fp);
 	fclose(fp);
 	fp = NULL;
 
@@ -359,6 +366,7 @@ Database::saveIDinfo()
 		tp = bp->next;
 		bp = tp;
 	}
+	Util::Csync(fp);
 	fclose(fp);
 	fp = NULL;
 }
@@ -519,6 +527,7 @@ Database::release(FILE* fp0)
 
 Database::~Database()
 {
+	pthread_rwlock_destroy(&(this->update_lock));
 	this->unload();
 	//fclose(Util::debug_database);
 	//Util::debug_database = NULL;	//debug: when multiple databases
@@ -649,11 +658,9 @@ Database::load()
 		//cout << "load tree error. @Database::load()" << endl;
 		//return false;
 	//}
-
 	(this->kvstore)->open();
 #else
 	//thread vstree_thread(&Database::load_vstree, this, vstree_cache);
-
 	int kv_mode = KVstore::READ_WRITE_MODE;
 	thread entity2id_thread(&Database::load_entity2id, this, kv_mode);
 	thread id2entity_thread(&Database::load_id2entity, this, kv_mode);
@@ -676,9 +683,11 @@ Database::load()
 		return false;
 	}
 
+	if(!(this->kvstore)->load_trie())
+		return false;
+
 	//NOTICE: we should also run some heavy work in the main thread
 	this->stringindex->load();
-
 	this->readIDinfo();
 
 #ifdef THREAD_ON
@@ -723,7 +732,20 @@ Database::load()
 	//this->warmUp();
 	//DEBUG:the warmUp() calls query(), which will also output results, this is not we want
 
+	// Load trie
+
+	if (trie != NULL)
+		delete trie;
+	trie = new Trie;
+
+	string dictionary_path = store_path + "/dictionary.dc";
+	if (!trie->LoadTrie(dictionary_path))
+	{
+		return false;
+	}
+
 	this->if_loaded = true;
+
 	cout << "finish load" << endl;
 
 	//TODO: for only-read application(like endpoint), 3 id2values trees can be closed now
@@ -745,7 +767,7 @@ Database::load_cache()
 {
 	// get important pre ID
 	// a pre whose degree is more than 50% of max pre degree is important pre
-	cout << "get important pre ID" << endl;
+/*	cout << "get important pre ID" << endl;
 	this->get_important_preID();
 	cout << "total preID num is " << pre_num << endl;
 	cout << "important pre ID is: ";
@@ -754,7 +776,7 @@ Database::load_cache()
 	cout << endl;
 	this->load_candidate_pre2values();
 	this->load_important_sub2values();
-	this->load_important_obj2values();
+	this->load_important_obj2values();*/
 }
 
 void
@@ -866,7 +888,7 @@ Database::get_candidate_preID()
 void
 Database::build_CacheOfPre2values()
 {
-	cout << "now add cache of preID2values..." << endl;
+/*	cout << "now add cache of preID2values..." << endl;
 	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
 	while (!candidate_preID.empty())
 	{
@@ -878,13 +900,13 @@ Database::build_CacheOfPre2values()
 		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
 		this->kvstore->AddIntoPreCache(temp_queue.top().key);
 		temp_queue.pop();
-	}
+	}*/
 }
 
 void
 Database::build_CacheOfObj2values()
 {
-	cout << "now add cache of objID2values..." << endl;
+/*	cout << "now add cache of objID2values..." << endl;
 	// sort key according to their mod by 2000
 	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
 	while (!important_objID.empty())
@@ -897,13 +919,13 @@ Database::build_CacheOfObj2values()
 		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
 		this->kvstore->AddIntoObjCache(temp_queue.top().key);
 		temp_queue.pop();
-	}
+	}*/
 }
 
 void
 Database::build_CacheOfSub2values()
 {
-	cout << "now add cache of subID2values..." << endl;
+/*	cout << "now add cache of subID2values..." << endl;
 	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
 	while (!important_subID.empty())
 	{
@@ -915,7 +937,7 @@ Database::build_CacheOfSub2values()
 		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
 		this->kvstore->AddIntoSubCache(temp_queue.top().key);
 		temp_queue.pop();
-	}
+	}*/
 }
 
 void
@@ -1160,6 +1182,51 @@ string tstr;
 //cout<<this->kvstore->getStringByID(82855205)<<endl;
 //cout<<"check: 82855205 "<<tstr<<endl;
 //fclose(fp);
+
+
+
+//test String Index for parallism
+//int limit = 2;
+//int limit = this->entity_num / 2;
+//thread* thr_si = new thread[limit];
+//for(int i = 0; i < limit; ++i)
+//{
+	//thr_si[i] = thread(&Database::query_stringIndex, this, i);
+//}
+//for(int i = 0; i < limit; ++i)
+//{
+	//thr_si[i].join();
+//}
+//delete[] thr_si;
+
+//TODO: each thread for a sparql query, support by assigning a thread for each query in ghttp(better to set timeout)
+//and test stringIndex::addRequest(), 
+//the request array maybe not right, request.clear()
+	string spq[6];
+	spq[0] = "select ?x where { ?x <ub:name> <FullProfessor0> . }";
+	spq[1] = "select distinct ?x where { ?x      <rdf:type>      <ub:GraduateStudent>. ?y      <rdf:type>      <ub:University>. ?z      <rdf:type>      <ub:Department>. ?x      <ub:memberOf>   ?z. ?z      <ub:subOrganizationOf>  ?y. ?x      <ub:undergraduateDegreeFrom>    ?y. }";
+	spq[2] = "select distinct ?x where { ?x      <rdf:type>      <ub:Course>. ?x      <ub:name>       ?y. }";
+	spq[3] = "select ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. ?y    <ub:name> <Course1>. ?x    <ub:takesCourse>  ?y. ?z    <ub:teacherOf>    ?y. ?z    <ub:name> <FullProfessor1>. ?z    <ub:worksFor>    ?w. ?w    <ub:name>    <Department0>. }";
+		spq[4] = "select distinct ?x where { ?x    <rdf:type>    <ub:UndergraduateStudent>. }";
+	spq[5] = "select ?s ?o where { ?s ?p ?o . }";
+	for(int i = 0; i < 6; ++i)
+	{
+		//NOTICE: we need to detach it, otherwise the thread object will be released beyond the scope,
+		//so the thread ends causing an exception
+		//thread qt(&Database::query_thread, this, spq[i]);
+		//qt.detach();
+	}
+	//cout<<"this function ends!"<<endl;
+	//WARN: if each threda for a query, then the QueryParser will cause error in parallism!
+	//so we should do the parser sequentially
+}
+
+void 
+Database::query_stringIndex(int id)
+{
+	string str;
+	this->stringindex->randomAccess(id, &str, true);
+	cout<<"thread: "<<id<<" "<<str<<endl;
 }
 
 //NOTICE: we ensure that if the unload() exists normally, then all updates have already been written to disk
@@ -1197,6 +1264,12 @@ Database::unload()
 
 	this->if_loaded = false;
 	this->clear_update_log();
+
+	if (this->trie != NULL)
+	{
+		delete this->trie;
+		trie = NULL;
+	}
 
 	return true;
 }
@@ -1277,16 +1350,21 @@ Database::getPreNum()
 int
 Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 {
+	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
+
 	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 
 	long tv_begin = Util::get_cur_time();
 
-	if (!general_evaluation.parseQuery(_query))
+	this->query_parse_lock.lock();
+	bool parse_ret = general_evaluation.parseQuery(_query);
+	this->query_parse_lock.unlock();
+	if (!parse_ret)
 		return -101;
 	long tv_parse = Util::get_cur_time();
 	cout << "after Parsing, used " << (tv_parse - tv_begin) << "ms." << endl;
+	//return -100;
 
-	//TODO:output all results in JSON format, and transformed into string to client
 	//for select, -100 by default, -101 means error
 	//for update, non-negative means true(and the num is updated triples num), -1 means error
 	int success_num = -100;  
@@ -1295,10 +1373,40 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	//Query
 	if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Not_Update)
 	{
+		//lock_guard<mutex> (this->update_lock);  //when quit this scope the lock will be released
+		//unique_guard<mutex> updateLCK(this->update_lock);
+		//if(!unique_guard.try_lock())
+		//BETTER: use timed lock
+		if(pthread_rwlock_tryrdlock(&(this->update_lock)) != 0)
+		{
+			return -101;
+		}
+		cout<<"read lock acquired"<<endl;
+
+		//copy the string index for each query thread
+		StringIndex tmpsi = *this->stringindex;
+		tmpsi.emptyBuffer();
+		general_evaluation.setStringIndexPointer(&tmpsi);
+
+		//TODO: withdraw this lock, and allow for multiple doQuery() to run in parallism
+		//we need to add lock in QueryCache's operations
+		this->debug_lock.lock();
 		bool query_ret = general_evaluation.doQuery();
 		if(!query_ret)
 		{
 			success_num = -101;
+		}
+		this->debug_lock.unlock();
+
+		if (trie == NULL)
+		{
+			trie = new Trie;
+			string dictionary_path = this->store_path + "/dictionary.dc";
+			if (!trie->LoadTrie(dictionary_path))
+			{
+				exit(0);
+			}
+			trie->LoadDictionary();
 		}
 
 		long tv_bfget = Util::get_cur_time();
@@ -1309,17 +1417,39 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		if(_fp != NULL)
 			need_output_answer = true;
 			//general_evaluation.setNeedOutputAnswer();
+
+		tmpsi.clear();
+		pthread_rwlock_unlock(&(this->update_lock));
 	}
 	//Update
 	else
 	{
 #ifdef ONLY_READ
+		cout<<"this database is only read";
 		//invalid query because updates are not allowed in ONLY_READ mode
 		return -101;
 #endif
+		if(pthread_rwlock_trywrlock(&(this->update_lock)) != 0)
+		{
+			cout<<"unable to write lock"<<endl;
+			return -101;
+		}
+
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
 		TYPE_TRIPLE_NUM update_triple_num = 0;
+	
+		if (trie == NULL)
+		{
+			trie = new Trie;
+			string dictionary_path = this->store_path + "/dictionary.dc";
+			if (!trie->LoadTrie(dictionary_path))
+			{
+				exit(0);
+			}
+			trie->LoadDictionary();
+		}
+
 
 		if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
 		{
@@ -1341,8 +1471,15 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 					update_triple[i] = TripleWithObjType(update_pattern.sub_group_pattern[i].pattern.subject.value,
 														 update_pattern.sub_group_pattern[i].pattern.predicate.value,
 														 update_pattern.sub_group_pattern[i].pattern.object.value, object_type);
+
+					// Compress
+					update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
 				}
-				else throw "Database::query failed";
+				else 
+				{
+					pthread_rwlock_unlock(&(this->update_lock));
+					throw "Database::query failed";
+				}
 
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data)
 			{
@@ -1374,8 +1511,9 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		general_evaluation.releaseResult();
 		delete[] update_triple;
 
-		printf("QueryCache cleared\n");
 		this->query_cache->clear();
+		cout<<"QueryCache cleared"<<endl;
+		pthread_rwlock_unlock(&(this->update_lock));
 	}
 
 	long tv_final = Util::get_cur_time();
@@ -1549,7 +1687,7 @@ Database::saveDBInfoFile()
 	fwrite(&this->literal_num, sizeof(int), 1, filePtr);
 	fwrite(&this->encode_mode, sizeof(int), 1, filePtr);
 
-	fflush(filePtr);
+	Util::Csync(filePtr);
 	fclose(filePtr);
 
 	//Util::triple_num = this->triples_num;
@@ -1931,9 +2069,14 @@ Database::build_s2xx(ID_TUPLE* _p_id_tuples)
 {
 	//NOTICE: STL sort() is generally fatser than C qsort, especially when qsort is very slow
 	//STL sort() not only use qsort algorithm, it can also choose heap-sort method
+#ifndef PARALLEL_SORT
 	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::spo_cmp_idtuple);
+#else
+	omp_set_num_threads(thread_num);
+	__gnu_parallel::sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::spo_cmp_idtuple);
+#endif
 	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_spo_cmp);
-	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num);
+	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num, this->entity_num);
 
 	//save all entity_signature into binary file
 	//string sig_binary_file = this->getSignatureBFile();
@@ -2016,9 +2159,14 @@ Database::build_s2xx(ID_TUPLE* _p_id_tuples)
 void
 Database::build_o2xx(ID_TUPLE* _p_id_tuples)
 {
+#ifndef PARALLEL_SORT
 	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::ops_cmp_idtuple);
+#else
+	omp_set_num_threads(thread_num);
+	__gnu_parallel::sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::ops_cmp_idtuple);
+#endif
 	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_ops_cmp);
-	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num);
+	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num, this->entity_num, this->literal_num);
 
 	//save all entity_signature into binary file
 	//string sig_binary_file = this->getSignatureBFile();
@@ -2134,9 +2282,14 @@ Database::build_o2xx(ID_TUPLE* _p_id_tuples)
 void
 Database::build_p2xx(ID_TUPLE* _p_id_tuples)
 {
+#ifndef PARALLEL_SORT
 	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::pso_cmp_idtuple);
+#else
+	omp_set_num_threads(thread_num);
+	__gnu_parallel::sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::pso_cmp_idtuple);
+#endif
 	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_pso_cmp);
-	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num);
+	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num, this->pre_num);
 }
 
 //NOTICE:in here and there in the insert/delete, we may get the maxium tuples num first
@@ -2183,6 +2336,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 		(this->kvstore)->open_id2predicate(KVstore::CREATE_MODE);
 		(this->kvstore)->open_literal2id(KVstore::CREATE_MODE);
 		(this->kvstore)->open_id2literal(KVstore::CREATE_MODE);
+		(this->kvstore)->load_trie();
 	}
 
 	//Util::logging("finish initial sub2id_pre2id_obj2id");
@@ -2225,6 +2379,20 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	//parse a file
 	RDFParser _parser(_fin);
 
+	// Initialize trie
+	string dictionary_store_path = this->store_path + "/dictionary.dc"; 
+	this->trie = new Trie (_rdf_file, dictionary_store_path);
+	if (!trie->isInitialized())
+	{
+		cout << "Fail to initialize trie" << endl;
+		exit(0);
+	}
+	
+	if(!trie->WriteDown())
+	{
+		cout << "Fail to write down dictionary" << endl;
+		exit(0);
+	}
 	//Util::logging("==> while(true)");
 
 	while (true)
@@ -2268,6 +2436,11 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 			//TODO: use 3 threads to deal with sub, obj, pre separately
 			//However, the cost of new /delete threads may be high
 			//We need a thread pool!
+
+			// Compress triple begin
+			TripleWithObjType compressed_triple = trie->Compress(triple_array[i], Trie::BUILDMODE);
+			triple_array[i] = compressed_triple;
+			//Compress triple end
 
 			// For subject
 			// (all subject is entity, some object is entity, the other is literal)
@@ -2615,57 +2788,6 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	//cout << this->kvstore->getEntityByID(list[i])<<" "<<list[i]<<endl;
 	//}
 
-	long tv_kv_store_end = Util::get_cur_time();
-
-	EntityBitSet _sub_entity_bitset;
-	_sub_entity_bitset.reset();
-
-	//this->encodeTriple2SubEntityBitSet(_sub_entity_bitset, &_triple);
-	this->encodeTriple2SubEntityBitSet(_sub_entity_bitset, _pre_id, _obj_id);
-
-	//if new entity then insert it, else update it.
-	if (_is_new_sub)
-	{
-		//cout<<"to insert: "<<_sub_id<<" "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-		//SigEntry _sig(_sub_id, _sub_entity_bitset);
-		//(this->vstree)->insertEntry(_sig);
-	}
-	else
-	{
-		//cout<<"to update: "<<_sub_id<<" "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-		//(this->vstree)->updateEntry(_sub_id, _sub_entity_bitset);
-	}
-
-	//if the object is an entity, then update or insert this entity's entry.
-	if (is_obj_entity)
-	{
-		EntityBitSet _obj_entity_bitset;
-		_obj_entity_bitset.reset();
-
-		//this->encodeTriple2ObjEntityBitSet(_obj_entity_bitset, &_triple);
-		this->encodeTriple2ObjEntityBitSet(_obj_entity_bitset, _pre_id, _sub_id);
-
-		if (_is_new_obj)
-		{
-			//cout<<"to insert: "<<_obj_id<<" "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			//SigEntry _sig(_obj_id, _obj_entity_bitset);
-			//(this->vstree)->insertEntry(_sig);
-		}
-		else
-		{
-			//cout<<"to update: "<<_obj_id<<" "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			//(this->vstree)->updateEntry(_obj_id, _obj_entity_bitset);
-		}
-	}
-
-	long tv_vs_store_end = Util::get_cur_time();
-
-	//debug
-	//{
-		//cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
-		//cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
-	//}
-
 	return true;
 	//return updateLen;
 }
@@ -2725,7 +2847,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		//cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
 		this->kvstore->subEntityByID(_sub_id);
 		this->kvstore->subIDByEntity(_triple.subject);
-		//(this->vstree)->removeEntry(_sub_id);
 		this->freeEntityID(_sub_id);
 		this->sub_num--;
 		//update the string buffer
@@ -2735,18 +2856,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		}
 		if (_vertices != NULL)
 			_vertices->push_back(_sub_id);
-	}
-	//else re-calculate the signature of subject & replace that in vstree
-	else
-	{
-		//cout<<"to replace entry for sub"<<endl;
-		//cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-		EntityBitSet _entity_bitset;
-		_entity_bitset.reset();
-		this->calculateEntityBitSet(_sub_id, _entity_bitset);
-		//NOTICE:can not use updateEntry as insert because this is in remove
-		//In insert we can add a OR operation and all is ok
-		//(this->vstree)->replaceEntry(_sub_id, _entity_bitset);
 	}
 	//cout<<"subject dealed"<<endl;
 
@@ -2761,7 +2870,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			//cout<<_obj_id << " "<<this->kvstore->getEntityByID(_obj_id)<<endl;
 			this->kvstore->subEntityByID(_obj_id);
 			this->kvstore->subIDByEntity(_triple.object);
-			//this->vstree->removeEntry(_obj_id);
 			this->freeEntityID(_obj_id);
 			//update the string buffer
 			if (_obj_id < this->entity_buffer_size)
@@ -2770,15 +2878,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			}
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
-		}
-		else
-		{
-			//cout<<"to replace entry for obj"<<endl;
-			//cout<<_obj_id << " "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			//EntityBitSet _entity_bitset;
-			//_entity_bitset.reset();
-			//this->calculateEntityBitSet(_obj_id, _entity_bitset);
-			//this->vstree->replaceEntry(_obj_id, _entity_bitset);
 		}
 	}
 	else
@@ -2812,13 +2911,6 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	}
 	//cout<<"predicate dealed"<<endl;
 
-	long tv_vs_store_end = Util::get_cur_time();
-
-	//debug
-	//{
-		//cout << "update kv_store, used " << (tv_kv_store_end - tv_kv_store_begin) << "ms." << endl;
-		//cout << "update vs_store, used " << (tv_vs_store_end - tv_kv_store_end) << "ms." << endl;
-	//}
 	return true;
 }
 
@@ -2871,6 +2963,13 @@ Database::insert(std::string _rdf_file, bool _is_restore)
 		if (parse_triple_num == 0)
 		{
 			break;
+		}
+
+		//Compress triple here
+		for(int i = 0; i < parse_triple_num; i++)
+		{
+			TripleWithObjType compressed_triple = trie->Compress(triple_array[i], Trie::QUERYMODE);
+			triple_array[i] = compressed_triple;
 		}
 
 		//Process the Triple one by one
@@ -2965,6 +3064,14 @@ Database::remove(std::string _rdf_file, bool _is_restore)
 		{
 			break;
 		}
+
+		//Compress triple
+		for(int i = 0; i < parse_triple_num; i++)
+		{
+			TripleWithObjType compressed_triple = trie->Compress(triple_array[i], Trie::QUERYMODE);
+			triple_array[i] = compressed_triple;
+		}
+
 
 		success_num += this->remove(triple_array, parse_triple_num, _is_restore);
 		//some maybe invalid or duplicate
@@ -3234,8 +3341,13 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to spo cmp and update" << endl;
 #endif
+#ifndef PARALLEL_SORT
 		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_spo_cmp);
-
+#else
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_spo_cmp);
+#endif
+		
 		//To remove duplicates
 		//int ti = 1, tj = 1;
 		//while(tj < valid_num)
@@ -3312,7 +3424,12 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 					cout << "update s2o: " << _sub_id << " " << oidlist_s.size() << endl;
 #endif
+#ifndef PARALLEL_SORT
 					sort(oidlist_s.begin(), oidlist_s.end());
+#else
+					omp_set_num_threads(thread_num);
+					__gnu_parallel::sort(oidlist_s.begin(), oidlist_s.end());
+#endif
 					//this->kvstore->updateInsert_s2o(_sub_id, oidlist_s);
 					oidlist_s.clear();
 				}
@@ -3327,7 +3444,12 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to ops cmp and update" << endl;
 #endif
+#ifndef PARALLEL_SORT
 		qsort(id_tuples, valid_num, sizeof(int**), KVstore::_ops_cmp);
+#else
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_ops_cmp);
+#endif
 		vector<int> sidlist_o;
 		vector<int> sidlist_op;
 		vector<int> pidsidlist_o;
@@ -3368,7 +3490,12 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 					cout << "update o2s: " << _obj_id << " " << sidlist_o.size() << endl;
 #endif
+#ifndef PARALLEL_SORT
 					sort(sidlist_o.begin(), sidlist_o.end());
+#else
+					omp_set_num_threads(thread_num);
+					__gnu_parallel::sort(sidlist_o.begin(), sidlist_o.end());
+#endif
 					//this->kvstore->updateInsert_o2s(_obj_id, sidlist_o);
 					sidlist_o.clear();
 
@@ -3395,7 +3522,12 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to pso cmp and update" << endl;
 #endif
+#ifndef PARALLEL_SORT
 		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_pso_cmp);
+#else
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num,  KVstore::parallel_pso_cmp);
+#endif
 		vector<int> sidlist_p;
 		vector<int> oidlist_p;
 		vector<int> sidoidlist_p;
@@ -3431,7 +3563,12 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 					cout << "update p2o: " << _pre_id << " " << oidlist_p.size() << endl;
 #endif
+#ifndef PARALLEL_SORT
 					sort(oidlist_p.begin(), oidlist_p.end());
+#else
+					omp_set_num_threads(thread_num);
+					__gnu_parallel::sort(oidlist_p.begin(), oidlist_p.end());
+#endif
 					//this->kvstore->updateInsert_p2o(_pre_id, oidlist_p);
 					oidlist_p.clear();
 
@@ -3603,7 +3740,12 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to spo cmp and update" << endl;
 #endif
+#ifndef PARALLEL_SORT
 		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_spo_cmp);
+#else
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_spo_cmp);
+#endif
 		vector<int> oidlist_s;
 		vector<int> pidlist_s;
 		vector<int> oidlist_sp;
@@ -3643,7 +3785,12 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 					this->kvstore->updateRemove_s2po(_sub_id, pidoidlist_s);
 					pidoidlist_s.clear();
 
+#ifndef PARALLEL_SORT
 					sort(oidlist_s.begin(), oidlist_s.end());
+#else
+					omp_set_num_threads(thread_num);
+					__gnu_parallel::sort(oidlist_s.begin(), oidlist_s.end());
+#endif
 					this->kvstore->updateRemove_s2o(_sub_id, oidlist_s);
 					oidlist_s.clear();
 
@@ -3681,7 +3828,12 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to ops cmp and update" << endl;
 #endif
+#ifndef PARALLEL_SORT
 		qsort(id_tuples, valid_num, sizeof(int**), KVstore::_ops_cmp);
+#else
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_ops_cmp);
+#endif
 		vector<int> sidlist_o;
 		vector<int> sidlist_op;
 		vector<int> pidsidlist_o;
@@ -3716,7 +3868,12 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 
 				if (_obj_change)
 				{
+#ifndef PARALLEL_SORT
 					sort(sidlist_o.begin(), sidlist_o.end());
+#else
+					omp_set_num_threads(thread_num);
+					__gnu_parallel::sort(sidlist_o.begin(), sidlist_o.end());
+#endif
 					this->kvstore->updateRemove_o2s(_obj_id, sidlist_o);
 					sidlist_o.clear();
 					this->kvstore->updateRemove_o2ps(_obj_id, pidsidlist_o);
@@ -3780,7 +3937,12 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 #ifdef DEBUG
 		cout << "INSRET PROCESS: to pso cmp and update" << endl;
 #endif
+#ifndef PARALLEL_SORT
 		qsort(id_tuples, valid_num, sizeof(int*), KVstore::_pso_cmp);
+#else
+		omp_set_num_threads(thread_num);
+		__gnu_parallel::sort(id_tuples, id_tuples + valid_num, KVstore::parallel_pso_cmp);
+#endif
 		vector<int> sidlist_p;
 		vector<int> oidlist_p;
 		vector<int> sidoidlist_p;
@@ -3810,7 +3972,12 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 					this->kvstore->updateRemove_p2s(_pre_id, sidlist_p);
 					sidlist_p.clear();
 
+#ifndef PARALLEL_SORT
 					sort(oidlist_p.begin(), oidlist_p.end());
+#else
+					omp_set_num_threads(thread_num);
+					__gnu_parallel::sort(oidlist_p.begin(), oidlist_p.end());
+#endif
 					this->kvstore->updateRemove_p2o(_pre_id, oidlist_p);
 					oidlist_p.clear();
 

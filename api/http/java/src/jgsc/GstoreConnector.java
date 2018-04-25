@@ -78,7 +78,7 @@ public class GstoreConnector {
 			//System.out.println("============================================");
 
             // 定义 BufferedReader输入流来读取URL的响应
-            in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
             String line;
             while ((line = in.readLine()) != null) {
 				//PERFORMANCE: this can be very costly if result is very large, because many temporary Strings are produced
@@ -108,14 +108,14 @@ public class GstoreConnector {
     }
 
 //NOTICE: no need to connect now, HTTP connection is kept by default
-    public boolean load(String _db_name) {
+    public boolean load(String _db_name, String _username, String _password) {
 		boolean connect_return = this.connect();
 		if (!connect_return) {
 			System.err.println("connect to server error. @GstoreConnector.load");
 			return false;
 		}
 
-        String cmd = "?operation=load&db_name=" + _db_name;
+        String cmd = "?operation=load&db_name=" + _db_name + "&username=" + _username + "&password=" + _password;
         String msg = this.sendGet(cmd);
         //if (!send_return) {
             //System.err.println("send load command error. @GstoreConnector.load");
@@ -132,7 +132,7 @@ public class GstoreConnector {
         return false;
     }
 
-    public boolean unload(String _db_name) {
+    public boolean unload(String _db_name,String _username, String _password) {
         boolean connect_return = this.connect();
         if (!connect_return) {
             System.err.println("connect to server error. @GstoreConnector.unload");
@@ -140,7 +140,7 @@ public class GstoreConnector {
         }
 
         //String cmd = "unload/" + _db_name;
-		String cmd = "?operation=unload&db_name=" + _db_name;
+		String cmd = "?operation=unload&db_name=" + _db_name + "&username=" + _username + "&password=" + _password;
         String msg = this.sendGet(cmd);
 
         this.disconnect();
@@ -153,7 +153,7 @@ public class GstoreConnector {
         return false;
     }
 
-    public boolean build(String _db_name, String _rdf_file_path) {
+    public boolean build(String _db_name, String _rdf_file_path, String _username, String _password) {
         boolean connect_return = this.connect();
         if (!connect_return) {
             System.err.println("connect to server error. @GstoreConnector.build");
@@ -162,7 +162,7 @@ public class GstoreConnector {
 
 		//TODO: also use encode to support spaces?
 		//Consider change format into ?name=DBname
-        String cmd = "?operation=build&db_name=" + _db_name + "&ds_path=" + _rdf_file_path;
+        String cmd = "?operation=build&db_name=" + _db_name + "&ds_path=" + _rdf_file_path  + "&username=" + _username + "&password=" + _password;;
         String msg = this.sendGet(cmd);
 
         this.disconnect();
@@ -192,7 +192,7 @@ public class GstoreConnector {
         return msg.equals("drop database done.");
     }
 
-    public String query(String _sparql) {
+    public String query(String _username, String _password, String _db_name, String _sparql) {
         boolean connect_return = this.connect();
         if (!connect_return) {
             System.err.println("connect to server error. @GstoreConnector.query");
@@ -207,7 +207,7 @@ public class GstoreConnector {
 			//throw new RuntimeException("Broken VM does not support UTF-8");
 		//}
 
-		String cmd = "?operation=query&format=json&sparql=" + _sparql;
+		String cmd = "?operation=query&username=" + _username + "&password=" + _password + "&db_name=" + _db_name + "&format=json&sparql=" + _sparql;
         //String cmd = "query/\"" + _sparql + "\"";
         String msg = this.sendGet(cmd);
 
@@ -216,31 +216,76 @@ public class GstoreConnector {
         return msg;
     }
 
-    public String show() {
-        return this.show(false);
-    }
+ //   public String show() {
+  //      return this.show(false);
+  //  }
 
-	//TODO: not implemented
-    public String show(boolean _type) {
+	//show all databases
+    public String show() {
         boolean connect_return = this.connect();
         if (!connect_return) {
             System.err.println("connect to server error. @GstoreConnector.show");
             return "connect to server error.";
         }
 
-        String cmd;
-        if (_type) {
-            cmd = "show/all";
-        } 
-		else {
-            cmd = "show/databases";
-        }
+        String cmd = "?operation=show";
         String msg = this.sendGet(cmd);
         
         this.disconnect();
         return msg;
     }
+	 public String user(String type, String username1, String password1, String username2, String addtion) {
+        boolean connect_return = this.connect();
+        if (!connect_return) {
+            System.err.println("connect to server error. @GstoreConnector.show");
+            return "connect to server error.";
+        }
 
+        String cmd = "?operation=user&type=" + type + "&username1=" + username1 + "&password1=" + password1 + "&username2=" + username2 + "&addtion=" + addtion;
+        String msg = this.sendGet(cmd);
+        
+        this.disconnect();
+        return msg;
+    }
+	 public String showUser() {
+        boolean connect_return = this.connect();
+        if (!connect_return) {
+            System.err.println("connect to server error. @GstoreConnector.show");
+            return "connect to server error.";
+        }
+
+        String cmd = "?operation=showUser";
+        String msg = this.sendGet(cmd);
+        
+        this.disconnect();
+        return msg;
+    }
+	 public String monitor(String db_name) {
+        boolean connect_return = this.connect();
+        if (!connect_return) {
+            System.err.println("connect to server error. @GstoreConnector.show");
+            return "connect to server error.";
+        }
+
+        String cmd = "?operation=monitor&db_name=" + db_name;
+        String msg = this.sendGet(cmd);
+        
+        this.disconnect();
+        return msg;
+    }
+	 public String checkpoint(String db_name) {
+        boolean connect_return = this.connect();
+        if (!connect_return) {
+            System.err.println("connect to server error. @GstoreConnector.show");
+            return "connect to server error.";
+        }
+
+        String cmd = "?operation=checkpoint&db_name=" + db_name;
+        String msg = this.sendGet(cmd);
+        
+        this.disconnect();
+        return msg;
+    }
 	public String test_download(String filepath)
 	{
         boolean connect_return = this.connect();
@@ -318,7 +363,7 @@ public class GstoreConnector {
 
     public static void main(String[] args) {
         // initialize the GStore server's IP address and port.
-        GstoreConnector gc = new GstoreConnector("127.0.0.1", 9000);
+        GstoreConnector gc = new GstoreConnector("172.31.222.93", 9016);
 
         // build a new database by a RDF file.
         // note that the relative path is related to gserver.
@@ -328,19 +373,19 @@ public class GstoreConnector {
                 + "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/wangshan>. "
                 + "}";
 
-        boolean flag = gc.load("db_cdblp");
+        boolean flag = gc.load("lubm", "root", "123456");
         System.out.println(flag);
-        String answer = gc.query(sparql);
+        String answer = gc.query("root", "123456", "lubm", sparql);
         System.out.println(answer);
 
-        answer = gc.query(sparql);
+        answer = gc.query("root", "123456", "lubm", sparql);
         System.out.println(answer);
 
         sparql = "select ?x where {"
                 + "?x	<rdf:type>	<cdblp.cn/class/Paper>. "
                 + "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/yuge>. "
                 + "}";
-        answer = gc.query(sparql);
+        answer = gc.query("root", "123456", "lubm", sparql);
         System.out.println(answer);
 
 		//To count the time cost

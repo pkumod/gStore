@@ -21,7 +21,7 @@
 String url = "http://" + "127.0.0.1" + ":" + "9000";<br>
 StringBuffer result = new StringBuffer();<br>
 BufferedReader in = null;<br>
-String param = "?operation=load&db_name=lubm";<br>
+String param = "?operation=load&db_name=lubm&username=lijing&password=2";<br>
 String urlNameString = url + "/" + URLEncoder.encode(param, "UTF-8");<br>
 URL realUrl = new URL(urlNameString);<br>
 <b>// 打开和URL之间的连接</b><br>
@@ -64,31 +64,37 @@ public class JavaAPIExample<br>
 &nbsp;&nbsp; + "?w    &lt; ub:name &gt;    &lt; Department0 &gt;." <br>
 &nbsp;&nbsp; + "}";<br>
 &nbsp;&nbsp; <b>//执行查询</b><br>
-&nbsp;&nbsp; String answer = gc.query(sparql);<br>
+&nbsp;&nbsp; String answer = gc.query(sparql, "lubm", "lijing", "2");<br>
 &nbsp;&nbsp; System.out.println(answer);<br>
 &nbsp;&nbsp; }<br>
 }<br>
 <h2>URL规范</h2>
 <p>
-URL rules: operation, db_name, ds_path, format, sparql<br>
+URL rules: operation, db_name, ds_path, format, sparql, username, password, type<br>
 <br>
 <b>NOTICE:</b> do URL encoding before sending it to database server<br>
 <ul>
-<li><b>operation:</b>&nbsp;&nbsp;&nbsp;build, load, unload, query, monitor, show, checkpoint</li>
+<li><b>operation:</b>&nbsp;&nbsp;&nbsp;build, load, unload, query, monitor, show, checkpoint, user</li>
 <li><b>db_name:</b>&nbsp;&nbsp;&nbsp;the name of database, for example: lubm</li>
 <li><b>ds_path:</b>&nbsp;&nbsp;&nbsp;dataset path in the server, for example: /home/data/test.n3</li>
 <li><b>format:</b>&nbsp;&nbsp;&nbsp;html, json, txt, csv</li>
 <li><b>sparql:</b>&nbsp;&nbsp;&nbsp;select ?s where { ?s ?p ?o.}</li>
+<li><b>username:</b>&nbsp;&nbsp;&nbsp;the username of the user that perform the operation</li>
+<li><b>password:</b>&nbsp;&nbsp;&nbsp;the password of the user that perform the operation</li>
+<li><b>type:</b>&nbsp;&nbsp;&nbsp;the type of operation user, like: add_user, delete_user, add_query, delete_query, add_load, delete_load, add_unload, delete_unload</li>
+<li><b>
 </ul>
 </ul>
 <ul>
-<li><b>to build a database from a dataset:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=build&db_name=[db_name]&ds_path=[ds_path]</li>
-<li><b>to load a database:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=load&db_name=[db_name]</li>
-<li><b>to unload a database:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=unload&db_name=[db_name]</li>
-<li><b>to query a database:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=query&format=[format]&sparql=[sparql]</li>
-<li><b>to monitor the server:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=monitor</li>
-<li><b>to show the database used:</b>&nbsp;&nbsp;&nbsp; http://dlocalhost:9000/?operation=show</li>
-<li><b>to save the database currently:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=checkpoint</li>
+<li><b>to build a database from a dataset:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=build&db_name=[db_name]&ds_path=[ds_path]&username=[username]&password=[password]</li>
+<li><b>to load a database:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=load&db_name=[db_name]&username=[username]&password=[password]</li>
+<li><b>to unload a database:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=unload&db_name=[db_name]]&username=[username]&password=[password]</li>
+<li><b>to query a database:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=query&username=[username]&password=[password]&db_name=[db_name]&format=[format]&sparql=[sparql]</li>
+<li><b>to monitor the server:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=monitor&db_name=[db_name]</li>
+<li><b>to show all databases:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=show</li>
+<li><b>to save the database:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=checkpoint&db_name=[db_name]</li>
+<li><b>to add a user(username: Jack, password: 2):</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=user&type=add_user&username1=[username1]&password1=[password1]&username2=[username2]&addtion=[addtion]</li>
+<li><b>to add query privilege to a user:</b>&nbsp;&nbsp;&nbsp; http://localhost:9000/?operation=user&type=add_query&username1=[username1]&password1=[password1]&username2=[username2]&addtion2=[addtion2]</li>
 </ul>
 <br>
 <div id="footer" style="color:#080808; font-size:small; text-align:center;">

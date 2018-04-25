@@ -99,8 +99,14 @@ private:
 	TYPE_ENTITY_LITERAL_ID literal_num;
 
 	int encode_mode;
-
 	bool if_loaded;
+
+	//locks
+	mutex query_parse_lock;
+	//for read/write, we should use rwlock to improve parallism
+	pthread_rwlock_t update_lock;
+	//just for debug a block of code
+	mutex debug_lock;
 
 	VSTree* vstree;
 	KVstore* kvstore;
@@ -137,11 +143,14 @@ private:
 
 	QueryCache *query_cache;
 
+	Trie *trie;
+
 	void setStringBuffer();
 	void warmUp();
 	//BETTER:add a predicate buffer for ?p query
 	//However, I think this is not necessary because ?p is rare and the p2xx tree is small enough
 
+	void query_stringIndex(int id);
 	void check();
 	//used for multiple threads
 	void load_vstree(unsigned _vstree_size);

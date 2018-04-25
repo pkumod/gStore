@@ -62,6 +62,7 @@ public:
 	SIStorage();
 	SIStorage(std::string& _filepath, std::string& _mode, unsigned* _height, unsigned long long _buffer_size);//create a fixed-size file or open an existence
 	bool preRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail);		//read and build all nodes, only root in memory
+	bool fullLoad(SINode*& _root); //puts all nodes of IVTree in memory
 	bool readNode(SINode* _np, long long* _request);	//read, if virtual 
 	bool createNode(SINode*& _np);		//use fp to create a new node
 										//NOTICE(if children and child not exist, build children's Nodes)
