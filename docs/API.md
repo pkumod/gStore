@@ -97,7 +97,7 @@ GstoreConnector gc("127.0.0.1", 3305);
 
 // build a new database by a RDF file.
 // note that the relative path is related to gserver.
-gc.build("LUBM10.db", "example/LUBM_10.n3"，"root", "123456");
+gc.build("LUBM10.db", "example/LUBM_10.n3");
 
 // then you can execute SPARQL query on this database.
 std::string sparql = "select ?x where \
@@ -113,10 +113,10 @@ std::string sparql = "select ?x where \
 std::string answer = gc.query(sparql);
 
 // unload this database.
-gc.unload("LUBM10.db","root","123456");
+gc.unload("LUBM10.db");
 
 // also, you can load some exist database directly and then query.
-gc.load("LUBM10.db","root","123456");
+gc.load("LUBM10.db");
 
 // query a SPARQL in current database
 answer = gc.query(sparql);
