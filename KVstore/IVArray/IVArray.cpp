@@ -36,6 +36,7 @@ IVArray::~IVArray()
 	}
 	fclose(IVfile);
 	delete BM;
+	delete cache_head;
 	//index_time_map.clear();
 	//time_index_map.clear();
 }

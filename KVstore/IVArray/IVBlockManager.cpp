@@ -365,11 +365,19 @@ IVBlockManager::FreeBlocks(const unsigned index)
 
 IVBlockManager::~IVBlockManager()
 {
-	if (BlockToWrite != NULL)
+//	if (BlockToWrite != NULL)
+//	{
+//		delete BlockToWrite;
+//		BlockToWrite = NULL;
+//	}
+	BlockInfo* p = BlockToWrite;
+	while (p != NULL)
 	{
-		delete BlockToWrite;
-		BlockToWrite = NULL;
+		BlockInfo *np = p->next;
+		delete p;
+		p = np;
 	}
+	BlockToWrite = NULL;
 	fclose(FreeBlockList);
 	fclose(ValueFile);
 }
