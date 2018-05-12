@@ -34,6 +34,7 @@ ISArray::~ISArray()
 	}
 	fclose(ISfile);
 	delete BM;
+	delete cache_head;
 }
 
 ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num)
@@ -157,7 +158,7 @@ ISArray::save()
 			unsigned len = 0;
 			unsigned _store;
 			// probably value has been written but store has not	
-			if (array[i].isUsed() && array[i].getBstr(str, len))
+			if (array[i].isUsed() && array[i].getBstr(str, len, false))
 			{
 				_store = BM->WriteValue(str, len);
 				array[i].setStore(_store);
