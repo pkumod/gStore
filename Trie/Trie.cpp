@@ -97,7 +97,38 @@ Trie::WriteDown()
 		return false;
 	}
 
-	WriteDownNode(root, dictionary_out, "/");
+//	WriteDownNode(root, dictionary_out, "/");
+	stack <TrieNode*> stk;
+	stack <string> Prefix;
+	stk.push(root);
+	Prefix.push("/");
+	while (!stk.empty())
+	{
+		TrieNode* p = stk.top();
+		stk.pop();
+		string str = Prefix.top();
+		Prefix.pop();
+
+		TrieNode* tp;
+		if ((tp = p->getRbro()) != NULL)
+		{
+			stk.push(tp);
+			Prefix.push(str);
+		}
+
+		if(WriteDownNode(p, dictionary_out, str) != 0)
+		{
+			delete p;
+		}
+		else
+		{
+			if ((tp = p->getLchd()) != NULL)
+			{
+				stk.push(tp);
+				Prefix.push(str + p->getString());
+			}
+		}
+	}
 
 	dictionary_out.close();
 
@@ -107,7 +138,7 @@ Trie::WriteDown()
 }
 
 /* Write Down node whose count is larger than LOWBOUND, recursively */
-void
+int
 Trie::WriteDownNode(TrieNode *_node, ofstream& _fout, string _str)
 {
 	string curString = _node->getString();
@@ -125,6 +156,7 @@ Trie::WriteDownNode(TrieNode *_node, ofstream& _fout, string _str)
 			_fout << "/";
 		} */
 		_fout << endl;
+		return 0;
 	}
 	else  // delete unqualified node 
 	{
@@ -144,27 +176,28 @@ Trie::WriteDownNode(TrieNode *_node, ofstream& _fout, string _str)
 			father->setLchd(rbro);
 		}
 
-		deleteFlag = true;
+		return -1;
+		//deleteFlag = true;
 	}
 
-	TrieNode *pointer;
-	
-	if ((pointer = _node->getRbro()) != NULL)
-	{
-		WriteDownNode(pointer, _fout, _str);
-	}
+//	TrieNode *pointer;
+//	
+//	if ((pointer = _node->getRbro()) != NULL)
+//	{
+//		WriteDownNode(pointer, _fout, _str);
+//	}
 
 	/* if it has no child or the count of itself is lower than LOWBOUND, 
  	 * no need to visit its children
  	 */
-	if ((pointer = _node->getLchd()) != NULL && curCount > Trie::LOWBOUND)
-	{
-		WriteDownNode(pointer, _fout, _str + curString);
-	}	
-
-	if (deleteFlag)
-		delete _node;
-	return;
+//	if ((pointer = _node->getLchd()) != NULL && curCount > Trie::LOWBOUND)
+//	{
+//		WriteDownNode(pointer, _fout, _str + curString);
+//	}	
+//
+//	if (deleteFlag)
+//		delete _node;
+//	return;
 } 
 
 /* Return compressed Triple */
@@ -233,8 +266,9 @@ Trie::LoadDictionary()
 	string dictionaryEntry;
 	dictionary.clear();
 
-	while (_fin >> dictionaryID >> dictionaryEntry)
+	while (_fin >> dictionaryID)
 	{
+		getline(_fin, dictionaryEntry);
 		if (dictionaryID != cnt++)
 		{
 			cout << "DictionaryID mismatch: " << dictionaryID << endl;
@@ -385,12 +419,34 @@ Trie::Release()
 void
 Trie::Release(TrieNode *node)
 {
-	if (node == NULL) return;
-	
-	Release(node->getLchd());
-	Release(node->getRbro());
+	if (node == NULL)
+		return;
+	TrieNode *p;
+	if ((p = node->getLchd()) == NULL)
+	{
+		delete node;
+		return;
+	}
 
 	delete node;
+	stack <TrieNode*> stk;
+	stk.push(p);
+	while (!stk.empty())
+	{
+		TrieNode *tp = stk.top();
+		stk.pop();
+		if ((p = tp->getLchd()) != NULL)
+			stk.push(p);
+		if ((p = tp->getRbro()) != NULL)
+			stk.push(p);
+		delete tp;
+	}
+//	if (node == NULL) return;
+	
+//	Release(node->getLchd());
+//	Release(node->getRbro());
+
+//	delete node;
 }
 
 Trie::~Trie()
