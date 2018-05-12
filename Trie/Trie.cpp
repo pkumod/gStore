@@ -280,8 +280,8 @@ Trie::LoadDictionary()
 		}
 		else
 		{
-			dictionary.push_back(dictionaryEntry.substr(1, //2
-						dictionaryEntry.length() - 1)); //2
+			dictionary.push_back(dictionaryEntry.substr(2, //2
+						dictionaryEntry.length() - 2)); //2
 		}
 	}
 
