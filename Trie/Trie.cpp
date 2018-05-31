@@ -247,7 +247,8 @@ Trie::Compress(string _str)
 	     _str[1] == '1'))	// already been compressed
 		return _str;
 	
-	return root->compress(_str, lowbound);
+	string ret =  root->compress(_str, lowbound);
+	return ret;
 }
 
 /* Load dictionary to uncompress */
@@ -391,16 +392,18 @@ Trie::LoadTrie(string dictionary_path)
 	int dictionaryID;
 	string dictionaryEntry;
 
-	while (fin >> dictionaryID >> dictionaryEntry)
+	while (fin >> dictionaryID)
 	{
+		getline(fin, dictionaryEntry);
+
 		if (dictionaryEntry == "/")	// corresponding to root node
 		{
 			dictionaryEntry = "";
 		}
 		else
 		{
-			dictionaryEntry = dictionaryEntry.substr(1, 
-				  dictionaryEntry.length() - 1);
+			dictionaryEntry = dictionaryEntry.substr(2, 
+				  dictionaryEntry.length() - 2);
 		}
 
 		addString(dictionaryEntry, dictionaryID);
