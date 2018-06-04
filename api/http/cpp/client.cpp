@@ -68,6 +68,38 @@ static int OnDebug(CURL *, curl_infotype itype, char * pData, size_t size, void 
 	return 0;
 }
 
+struct MemoryStruct
+{
+	char* memory;
+	size_t size;
+	MemoryStruct()
+	{
+		memory = (char*)malloc(1);
+		size = 0;
+	}
+	~MemoryStruct()
+	{
+		free(memory);
+		memory = NULL;
+		size = 0;
+	}
+};
+
+static size_t WriteMemoryCallBack(void *buffer, size_t size, size_t nmemb, void *lpVoid) 
+{
+	size_t realsize = size * nmemb;
+	struct MemoryStruct *mem = (struct MemoryStruct*)lpVoid;
+
+	mem->memory = (char*)realloc(mem->memory, mem->size + realsize + 1);
+	if (mem->memory)
+	{
+		memcpy(&(mem->memory[mem->size]), buffer, realsize);
+		mem->size += realsize;
+		mem->memory[mem->size] = 0;
+	}
+	return realsize;
+}
+
 static size_t OnWriteData(void* buffer, size_t size, size_t nmemb, void* lpVoid)
 {
 	std::string* str = dynamic_cast<std::string*>((std::string *)lpVoid);
@@ -109,7 +141,46 @@ int CHttpClient::Post(const std::string & strUrl, const std::string & strPost, s
 	return res;
 }
 
-int CHttpClient::Get(const std::string & strUrl, std::string & strResponse)
+int CHttpClient::Get(const std::string &strUrl, const std::string &filename, bool SavedOnFile) {
+	if (!SavedOnFile)
+		return -1;	
+
+	CURLcode res;
+	CURL* curl = curl_easy_init();
+	if (NULL == curl)
+	{
+		return CURLE_FAILED_INIT;
+	}
+	if (m_bDebug)
+	{
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
+	}
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallBack);
+
+	MemoryStruct oDataChunk;
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &oDataChunk);
+
+	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+	res = curl_easy_perform(curl);
+
+	FILE* fMem = (FILE*)oDataChunk.memory;
+	FILE* fp = fopen(filename.c_str(), "wb");
+	if (!fp) 
+	{
+		cout << "open file failed" << endl;
+		return -1;
+	} 
+	fwrite(fMem, 1, oDataChunk.size, fp);
+	fclose(fp);
+
+	curl_easy_cleanup(curl);
+	return res;
+}
+
+int CHttpClient::Get(const std::string &strUrl, std::string & strResponse)
 {
 	strResponse.clear();
 	CURLcode res;
