@@ -1,6 +1,6 @@
 # Deploy gStore by Docker
 
-[点击查看中文文档]([gStore](https://github.com/0x00Geek/gStore)/[docs](https://github.com/0x00Geek/gStore/tree/master/docs)/**Docker方式部署gStore.md** )
+[点击查看中文文档](Docker方式部署gStore.md)
 
 >Roughly speaking, there are two ways to deploy gStore via Docker.
 >
