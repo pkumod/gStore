@@ -8,7 +8,39 @@
 #ifndef _SERVER_SOCKET_H
 #define _SERVER_SOCKET_H
 
-#include "../Util/Util.h"
+//#include "../Util/Util.h"
+#include <iostream> 
+#include <string> 
+#include <string.h> 
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <sys/wait.h>
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <limits.h>
+//DBL_MAX is contained in the header below
+#include <float.h>
+#include <dirent.h>
+#include <string.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <time.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <regex.h>
+#include <locale.h>
+#include <assert.h>
+#include <libgen.h>
+#include <signal.h>
 
 class Socket
 {

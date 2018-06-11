@@ -7,6 +7,8 @@
 
 #include "Socket.h"
 
+using namespace std;
+
 const std::string Socket::DEFAULT_SERVER_IP = "127.0.0.1";
 
 Socket::Socket()
