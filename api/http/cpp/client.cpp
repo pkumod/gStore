@@ -109,6 +109,42 @@ int CHttpClient::Post(const std::string & strUrl, const std::string & strPost, s
 	return res;
 }
 
+int CHttpClient::Get(const std::string &strUrl, const std::string &filename, bool SavedOnFile) {
+	if (!SavedOnFile)
+		return -1;	
+		
+	CURLcode res;
+	CURL* curl = curl_easy_init();
+	if (NULL == curl)
+	{
+		return CURLE_FAILED_INIT;
+	}
+	if (m_bDebug)
+	{
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
+	}
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
+
+	FILE* fw = fopen(filename.c_str(), "wb");
+	if (!fw) 
+	{
+		cout << "open file failed" << endl;
+		return -1;
+	}
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fw);
+
+	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+	res = curl_easy_perform(curl);
+	
+	curl_easy_cleanup(curl);
+	fclose(fw);
+	return res;
+}
+
+
 int CHttpClient::Get(const std::string & strUrl, std::string & strResponse)
 {
 	strResponse.clear();
@@ -128,8 +164,8 @@ int CHttpClient::Get(const std::string & strUrl, std::string & strResponse)
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);
 	/**
-	* å½“å¤šä¸ªçº¿ç¨‹éƒ½ä½¿ç”¨è¶…æ—¶å¤„ç†çš„æ—¶å€™ï¼ŒåŒæ—¶ä¸»çº¿ç¨‹ä¸­æœ‰sleepæˆ–æ˜¯waitç­‰æ“ä½œã€‚
-	* å¦‚æžœä¸è®¾ç½®è¿™ä¸ªé€‰é¡¹ï¼Œlibcurlå°†ä¼šå‘ä¿¡å·æ‰“æ–­è¿™ä¸ªwaitä»Žè€Œå¯¼è‡´ç¨‹åºé€€å‡ºã€‚
+	* µ±¶à¸öÏß³Ì¶¼Ê¹ÓÃ³¬Ê±´¦ÀíµÄÊ±ºò£¬Í¬Ê±Ö÷Ïß³ÌÖÐÓÐsleep»òÊÇwaitµÈ²Ù×÷¡£
+	* Èç¹û²»ÉèÖÃÕâ¸öÑ¡Ïî£¬libcurl½«»á·¢ÐÅºÅ´ò¶ÏÕâ¸öwait´Ó¶øµ¼ÖÂ³ÌÐòÍË³ö¡£
 	*/
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
@@ -167,7 +203,7 @@ int CHttpClient::Posts(const std::string & strUrl, const std::string & strPost, 
 	}
 	else
 	{
-		//ç¼ºçœæƒ…å†µå°±æ˜¯PEMï¼Œæ‰€ä»¥æ— éœ€è®¾ç½®ï¼Œå¦å¤–æ”¯æŒDER
+		//È±Ê¡Çé¿ö¾ÍÊÇPEM£¬ËùÒÔÎÞÐèÉèÖÃ£¬ÁíÍâÖ§³ÖDER
 		//curl_easy_setopt(curl,CURLOPT_SSLCERTTYPE,"PEM");
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, true);
 		curl_easy_setopt(curl, CURLOPT_CAINFO, pCaPath);
@@ -220,4 +256,5 @@ void CHttpClient::SetDebug(bool bDebug)
 {
 	m_bDebug = bDebug;
 }
+
 

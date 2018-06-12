@@ -17,38 +17,41 @@ public:
 
 public:
 	/**
-	* @brief HTTP POSTè¯·æ±‚
-	* @param strUrl è¾“å…¥å‚æ•°,è¯·æ±‚çš„Urlåœ°å€,å¦‚:http://www.baidu.com
-	* @param strPost è¾“å…¥å‚æ•°,ä½¿ç”¨å¦‚ä¸‹æ ¼å¼para1=val1Â¶2=val2&â€¦
-	* @param strResponse è¾“å‡ºå‚æ•°,è¿”å›çš„å†…å®¹
-	* @return è¿”å›æ˜¯å¦PostæˆåŠŸ
+	* @brief HTTP POSTÇëÇó
+	* @param strUrl ÊäÈë²ÎÊı,ÇëÇóµÄUrlµØÖ·,Èç:http://www.baidu.com
+	* @param strPost ÊäÈë²ÎÊı,Ê¹ÓÃÈçÏÂ¸ñÊ½para1=val1?2=val2&¡­
+	* @param strResponse Êä³ö²ÎÊı,·µ»ØµÄÄÚÈİ
+	* @return ·µ»ØÊÇ·ñPost³É¹¦
 	*/
 	int Post(const std::string & strUrl, const std::string & strPost, std::string & strResponse);
 
 	/**
-	* @brief HTTP GETè¯·æ±‚
-	* @param strUrl è¾“å…¥å‚æ•°,è¯·æ±‚çš„Urlåœ°å€,å¦‚:http://www.baidu.com
-	* @param strResponse è¾“å‡ºå‚æ•°,è¿”å›çš„å†…å®¹
-	* @return è¿”å›æ˜¯å¦PostæˆåŠŸ
+	* @brief HTTP GETÇëÇó
+	* @param strUrl ÊäÈë²ÎÊı,ÇëÇóµÄUrlµØÖ·,Èç:http://www.baidu.com
+	* @param strResponse Êä³ö²ÎÊı,·µ»ØµÄÄÚÈİ
+	* @return ·µ»ØÊÇ·ñPost³É¹¦
 	*/
+
+	int Get(const std::string & strUrl, const std::string & filename, bool SavedOnFile);
+	
 	int Get(const std::string & strUrl, std::string & strResponse);
 
 	/**
-	* @brief HTTPS POSTè¯·æ±‚,æ— è¯ä¹¦ç‰ˆæœ¬
-	* @param strUrl è¾“å…¥å‚æ•°,è¯·æ±‚çš„Urlåœ°å€,å¦‚:https://www.alipay.com
-	* @param strPost è¾“å…¥å‚æ•°,ä½¿ç”¨å¦‚ä¸‹æ ¼å¼para1=val1Â¶2=val2&â€¦
-	* @param strResponse è¾“å‡ºå‚æ•°,è¿”å›çš„å†…å®¹
-	* @param pCaPath è¾“å…¥å‚æ•°,ä¸ºCAè¯ä¹¦çš„è·¯å¾„.å¦‚æœè¾“å…¥ä¸ºNULL,åˆ™ä¸éªŒè¯æœåŠ¡å™¨ç«¯è¯ä¹¦çš„æœ‰æ•ˆæ€§.
-	* @return è¿”å›æ˜¯å¦PostæˆåŠŸ
+	* @brief HTTPS POSTÇëÇó,ÎŞÖ¤Êé°æ±¾
+	* @param strUrl ÊäÈë²ÎÊı,ÇëÇóµÄUrlµØÖ·,Èç:https://www.alipay.com
+	* @param strPost ÊäÈë²ÎÊı,Ê¹ÓÃÈçÏÂ¸ñÊ½para1=val1?2=val2&¡­
+	* @param strResponse Êä³ö²ÎÊı,·µ»ØµÄÄÚÈİ
+	* @param pCaPath ÊäÈë²ÎÊı,ÎªCAÖ¤ÊéµÄÂ·¾¶.Èç¹ûÊäÈëÎªNULL,Ôò²»ÑéÖ¤·şÎñÆ÷¶ËÖ¤ÊéµÄÓĞĞ§ĞÔ.
+	* @return ·µ»ØÊÇ·ñPost³É¹¦
 	*/
 	int Posts(const std::string & strUrl, const std::string & strPost, std::string & strResponse, const char * pCaPath = NULL);
 
 	/**
-	* @brief HTTPS GETè¯·æ±‚,æ— è¯ä¹¦ç‰ˆæœ¬
-	* @param strUrl è¾“å…¥å‚æ•°,è¯·æ±‚çš„Urlåœ°å€,å¦‚:https://www.alipay.com
-	* @param strResponse è¾“å‡ºå‚æ•°,è¿”å›çš„å†…å®¹
-	* @param pCaPath è¾“å…¥å‚æ•°,ä¸ºCAè¯ä¹¦çš„è·¯å¾„.å¦‚æœè¾“å…¥ä¸ºNULL,åˆ™ä¸éªŒè¯æœåŠ¡å™¨ç«¯è¯ä¹¦çš„æœ‰æ•ˆæ€§.
-	* @return è¿”å›æ˜¯å¦PostæˆåŠŸ
+	* @brief HTTPS GETÇëÇó,ÎŞÖ¤Êé°æ±¾
+	* @param strUrl ÊäÈë²ÎÊı,ÇëÇóµÄUrlµØÖ·,Èç:https://www.alipay.com
+	* @param strResponse Êä³ö²ÎÊı,·µ»ØµÄÄÚÈİ
+	* @param pCaPath ÊäÈë²ÎÊı,ÎªCAÖ¤ÊéµÄÂ·¾¶.Èç¹ûÊäÈëÎªNULL,Ôò²»ÑéÖ¤·şÎñÆ÷¶ËÖ¤ÊéµÄÓĞĞ§ĞÔ.
+	* @return ·µ»ØÊÇ·ñPost³É¹¦
 	*/
 	int Gets(const std::string & strUrl, std::string & strResponse, const char * pCaPath = NULL);
 
@@ -60,4 +63,5 @@ private:
 };
 
 #endif
+
 
