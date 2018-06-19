@@ -7,8 +7,8 @@ architecture | x86_64
 disk size | according to size of dataset 
 memory size | according to size of dataset
 glibc | version >= 2.14
-gcc | version >= 4.4.7
-g++ | version >= 4.4.7
+gcc | version >= 4.8
+g++ | version >= 4.8
 make | need to be installed
 boost | version >= 1.54
 readline | need to be installed
