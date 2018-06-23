@@ -32,4 +32,5 @@ ENV LANG C.UTF-8
 
 #Subsequent test version can be put here.
 #And some procedures you need can also be attached here.
-CMD ["make"]
+#CMD ["make"]
+RUN make
