@@ -83,6 +83,11 @@ cscope*
 tags
 .settings
 
+# GNU Global index files
+GPATH
+GRTAGS
+GTAGS
+
 # latex files
 *.aux
 *.toc
