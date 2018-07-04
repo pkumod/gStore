@@ -17,6 +17,7 @@ openjdk | needed if using Java api
 openjdk-devel | needed if using Java api
 realpath | needed if using gconsole
 ccache | optional, used to speed up the compilation
+libcurl-devel | needed to be installed
 
 NOTICE:
 
