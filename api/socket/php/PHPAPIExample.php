@@ -3,7 +3,7 @@ require 'GstoreConnector.php';
 $host = '127.0.0.1';
 $port = 3305;
 $dbname = "LUBM10";
-$dbpath = "./data/LUBM_10.n3";
+$dbpath = "./data/lubm/lubm.nt";
 $query1 = "select ?x where
 {
 	?x	<ub:name>	<FullProfessor0>.
