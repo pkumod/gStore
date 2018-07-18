@@ -46,6 +46,7 @@ private:
 	bool AddInCache(unsigned _key, char *_str, unsigned _len);
 	bool SwapOut();
 	bool UpdateTime(unsigned _key);
+	void RemoveFromLRUQueue(unsigned _key);
 
 	bool PreLoad();
 

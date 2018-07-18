@@ -16,6 +16,7 @@ class IVEntry
 	bool usedFlag;   // mark if the entry is used
 	bool dirtyFlag;
 	bool cacheFlag;
+	bool CachePinFlag;
 	unsigned store;  //index of block where value is stored
 	// pointer to id for LRU list
 	int prevID;
@@ -41,6 +42,9 @@ public:
 	
 	void setCacheFlag(bool _flag);
 	bool inCache() const;
+
+	void setCachePinFlag(bool _flag);
+	bool isPined();
 
 	void release();
 

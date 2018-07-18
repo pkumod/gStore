@@ -726,7 +726,7 @@ Database::load()
 	//vstree_thread.join();
 #endif
 	//load cache of sub2values and obj2values
-	//this->load_cache();
+	this->load_cache();
 	
 	//warm up always as finishing build(), to utilize the system buffer
 	//this->warmUp();
@@ -767,7 +767,7 @@ Database::load_cache()
 {
 	// get important pre ID
 	// a pre whose degree is more than 50% of max pre degree is important pre
-/*	cout << "get important pre ID" << endl;
+	cout << "get important pre ID" << endl;
 	this->get_important_preID();
 	cout << "total preID num is " << pre_num << endl;
 	cout << "important pre ID is: ";
@@ -776,7 +776,7 @@ Database::load_cache()
 	cout << endl;
 	this->load_candidate_pre2values();
 	this->load_important_sub2values();
-	this->load_important_obj2values();*/
+	this->load_important_obj2values();
 }
 
 void
@@ -888,56 +888,34 @@ Database::get_candidate_preID()
 void
 Database::build_CacheOfPre2values()
 {
-/*	cout << "now add cache of preID2values..." << endl;
-	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
+	cout << "now add cache of preID2values..." << endl;
 	while (!candidate_preID.empty())
 	{
-		temp_queue.push(candidate_preID.top());
+		this->kvstore->AddIntoPreCache(candidate_preID.top().key);
 		candidate_preID.pop();
 	}
-	while (!temp_queue.empty())
-	{
-		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
-		this->kvstore->AddIntoPreCache(temp_queue.top().key);
-		temp_queue.pop();
-	}*/
 }
 
 void
 Database::build_CacheOfObj2values()
 {
-/*	cout << "now add cache of objID2values..." << endl;
-	// sort key according to their mod by 2000
-	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
+	cout << "now add cache of objID2values..." << endl;
 	while (!important_objID.empty())
 	{
-		temp_queue.push(important_objID.top());
+		this->kvstore->AddIntoObjCache(important_objID.top().key);
 		important_objID.pop();
 	}
-	while (!temp_queue.empty())
-	{
-		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
-		this->kvstore->AddIntoObjCache(temp_queue.top().key);
-		temp_queue.pop();
-	}*/
 }
 
 void
 Database::build_CacheOfSub2values()
 {
-/*	cout << "now add cache of subID2values..." << endl;
-	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
+	cout << "now add cache of subID2values..." << endl;
 	while (!important_subID.empty())
 	{
-		temp_queue.push(important_subID.top());
+		this->kvstore->AddIntoSubCache(important_subID.top().key);
 		important_subID.pop();
 	}
-	while (!temp_queue.empty())
-	{
-		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
-		this->kvstore->AddIntoSubCache(temp_queue.top().key);
-		temp_queue.pop();
-	}*/
 }
 
 void
