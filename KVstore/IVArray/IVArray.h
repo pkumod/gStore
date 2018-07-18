@@ -48,6 +48,7 @@ private:
 	bool UpdateTime(unsigned _key);
 
 	bool PreLoad();
+	void RemoveFromLRUQueue(unsigned _key);
 
 public:
 	IVArray();
@@ -59,4 +60,5 @@ public:
 	bool remove(unsigned _key);
 	bool insert(unsigned _key, char *_str, unsigned _len);
 	bool save();
+	void PinCache(unsigned _key);
 };

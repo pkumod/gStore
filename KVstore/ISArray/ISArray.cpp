@@ -391,6 +391,8 @@ ISArray::remove(unsigned _key)
 
 	if (array[_key].inCache())
 	{
+		RemoveFromLRUQueue(_key);
+
 		char *str = NULL;
 		unsigned len = 0;
 		array[_key].getBstr(str, len, false);
@@ -415,6 +417,8 @@ ISArray::modify(unsigned _key, char *_str, unsigned _len)
 	array[_key].setDirtyFlag(true);
 	if (array[_key].inCache())
 	{
+		RemoveFromLRUQueue(_key);
+
 		char* str = NULL;
 		unsigned len = 0;
 		array[_key].getBstr(str, len, false);
@@ -435,4 +439,19 @@ ISArray::modify(unsigned _key, char *_str, unsigned _len)
 	
 }
 
+void
+ISArray::RemoveFromLRUQueue(unsigned _key)
+{
+	if (!array[_key].inCache())
+		return;
 
+	UpdateTime(_key);
+	unsigned PrevID = array[_key].getPrev();
+	cache_tail_id = PrevID;
+	if (PrevID == -1)
+		cache_head->setNext(-1);
+	else
+		array[PrevID].setNext(-1);
+
+	return;
+}
