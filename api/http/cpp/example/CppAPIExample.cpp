@@ -37,6 +37,9 @@ int main(int argc, char * argv[])
                          }";
     std::string answer = gc.query("root", "123456", "test", sparql);
     std::cout << answer << std::endl;
+    
+    // make a SPARQL query and save the result in ans.txt
+    gc.query("root", "123456", "test", sparql, "ans.txt");
 
     // unload this database.
     gc.unload("test", "root", "123456");
