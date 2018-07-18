@@ -166,6 +166,14 @@ GstoreConnector::query(string username, string password, string db_name, string 
 	return recv_msg;
 }
 
+void GstoreConnector::query(string username, string password, string db_name, string sparql, string filename)
+{
+    string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
+    string cmd = url + "/?operation=query&username=" + username + "&password=" + password + "&db_name=" + db_name + "&format=json&sparql=" + sparql;
+    int ret = hc.Get(cmd, filename, true);
+    return;
+}
+
 string
 GstoreConnector::show()
 {
