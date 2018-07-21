@@ -843,7 +843,7 @@ Database::get_candidate_preID()
 		
 		_size = this->kvstore->getPreListSize(i);
 		
-		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
+		if (!VList::isLongList(_size) || _size >= max_total_size) continue; // only long list need to be stored in cache
 
 		_value = pre2num[i];
 		if (_value == 0) continue;
@@ -934,7 +934,7 @@ Database::get_important_subID()
 		unsigned _size = 0;
 		if (this->kvstore->getEntityByID(i) == invalid) continue;	
 		_size = this->kvstore->getSubListSize(i);
-		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
+		if (!VList::isLongList(_size) || _size >= max_total_size) continue; // only long list need to be stored in cache
 
 		for(unsigned j = 0; j < important_preID.size(); ++j)
 		{
@@ -997,7 +997,7 @@ Database::get_important_objID()
 		if (_tmp == invalid) continue;
 
 		_size = this->kvstore->getObjListSize(i);
-		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
+		if (!VList::isLongList(_size) || _size >= max_total_size) continue; // only long list need to be stored in cache
 		
 		for(unsigned j = 0; j < important_preID.size(); ++j)
 		{
