@@ -13,7 +13,7 @@ public class JavaAPIExample
 	public static void main(String[] args)
 	{
 		// initialize the GStore server's IP address and port.
-		GstoreConnector gc = new GstoreConnector("172.31.222.93", 9016);
+		GstoreConnector gc = new GstoreConnector("172.31.222.78", 3305);
 
 		//below are for parallel test
 		//GstoreConnector gc = new GstoreConnector("172.31.222.94", 9000);
@@ -86,7 +86,7 @@ public class JavaAPIExample
 		
 	    // build a new database by a RDF file.
 	    // note that the relative path is related to gserver.
-		gc.build("LUBM10", "data/lubm/LUBM_10.n3", "root", "123456");
+		gc.build("LUBM10", "data/lubm/lubm.nt", "root", "123456");
 	    gc.load("LUBM10", "root", "123456");
 		
 		// then you can execute SPARQL query on this database.
@@ -119,7 +119,10 @@ public class JavaAPIExample
 		//The related code is in api/http/java/src/jgsc/GstoreConnector.java
 	    answer = gc.query("root", "123456", "LUBM10", sparql);	    
 		System.out.println(answer);
-			
+		
+        // make a SPARQL query and save the result in ans.txt
+        gc.query("root", "123456", "LUBM10", sparql, "ans.txt");
+            
 		//monitor a database
 		answer = gc.monitor("LUBM10");
 		System.out.println(answer);
