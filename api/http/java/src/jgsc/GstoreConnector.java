@@ -112,6 +112,9 @@ public class GstoreConnector {
         BufferedReader in = null;
         System.out.println("parameter: "+param);
         
+        if (filename == null)
+            return;
+
         FileWriter fw = null;
         try {
             fw = new FileWriter(filename);
@@ -153,10 +156,12 @@ public class GstoreConnector {
 
             // 定义 BufferedReader输入流来读取URL的响应
             in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
-            String line;
-            while ((line = in.readLine()) != null) {
+            char chars[] = new char[2048];
+            int b;
+            while ((b = in.read(chars, 0, 2048)) != -1) {
                 if (fw != null)
-                    fw.write(line+"\n");
+                    fw.write(chars);
+                chars = new char[2048];
             }
 
             long t2 = System.currentTimeMillis(); //ms
