@@ -69,12 +69,12 @@ public class GstoreConnector {
             // 获取所有响应头字段
             Map<String, List<String>> map = connection.getHeaderFields();
             // 遍历所有的响应头字段
-            for (String key : map.keySet()) {
-                System.out.println(key + "--->" + map.get(key));
-            }
+            //for (String key : map.keySet()) {
+            //    System.out.println(key + "--->" + map.get(key));
+            //}
 
 			long t1 = System.currentTimeMillis(); //ms
-			System.out.println("Time to get header: "+(t1 - t0)+" ms");
+			//System.out.println("Time to get header: "+(t1 - t0)+" ms");
 			//System.out.println("============================================");
 
             // 定义 BufferedReader输入流来读取URL的响应
@@ -83,13 +83,13 @@ public class GstoreConnector {
             while ((line = in.readLine()) != null) {
 				//PERFORMANCE: this can be very costly if result is very large, because many temporary Strings are produced
 				//In this case, just print the line directly will be much faster
-				result.append(line);
+				result.append(line+"\n");
 				//System.out.println("get data size: " + line.length());
 				//System.out.println(line);
             }
 
 			long t2 = System.currentTimeMillis(); //ms
-			System.out.println("Time to get data: "+(t2 - t1)+" ms");
+			//System.out.println("Time to get data: "+(t2 - t1)+" ms");
         } catch (Exception e) {
             System.out.println("error in get request: " + e);
             e.printStackTrace();
@@ -106,6 +106,81 @@ public class GstoreConnector {
         }
         return result.toString();
     }
+
+    public void sendGet(String param, String filename) {
+        String url = "http://" + this.serverIP + ":" + this.serverPort;
+        BufferedReader in = null;
+        System.out.println("parameter: "+param);
+        
+        FileWriter fw = null;
+        try {
+            fw = new FileWriter(filename);
+        } catch (IOException e) {
+            System.out.println("can not open " + filename + "!");
+        }
+
+        try {
+            param = URLEncoder.encode(param, "UTF-8");
+        } catch (UnsupportedEncodingException ex) {
+            throw new RuntimeException("Broken VM does not support UTF-8");
+        }
+
+        try {
+            String urlNameString = url + "/" + param;
+            System.out.println("request: "+urlNameString);
+            URL realUrl = new URL(urlNameString);
+            // 打开和URL之间的连接
+            URLConnection connection = realUrl.openConnection();
+            // 设置通用的请求属性
+            connection.setRequestProperty("accept", "*/*");
+            connection.setRequestProperty("connection", "Keep-Alive");
+            //set agent to avoid: speed limited by server if server think the client not a browser
+            connection.setRequestProperty("user-agent","Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+            // 建立实际的连接
+            connection.connect();
+            
+            long t0 = System.currentTimeMillis(); //ms
+            
+            // 获取所有响应头字段
+            Map<String, List<String>> map = connection.getHeaderFields();
+            // 遍历所有的响应头字段
+            //for (String key : map.keySet()) {
+            //   System.out.println(key + "--->" + map.get(key));
+            //}
+
+            long t1 = System.currentTimeMillis(); // ms
+            //System.out.println("Time to get header: "+(t1 - t0)+" ms");
+
+            // 定义 BufferedReader输入流来读取URL的响应
+            in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
+            String line;
+            while ((line = in.readLine()) != null) {
+                if (fw != null)
+                    fw.write(line+"\n");
+            }
+
+            long t2 = System.currentTimeMillis(); //ms
+            //System.out.println("Time to get data: "+(t2 - t1)+" ms");
+        } catch (Exception e) {
+            //System.out.println("error in get request: " + e);
+            e.printStackTrace();
+        }
+        // 使用finally块来关闭输入流
+        finally {
+            try {
+                if (in != null) {
+                    in.close();
+                }
+                if (fw != null) {
+                    fw.close();
+                }
+            } catch (Exception e2) {
+                e2.printStackTrace();
+            }
+        }
+        return;
+    }
+
 
 //NOTICE: no need to connect now, HTTP connection is kept by default
     public boolean load(String _db_name, String _username, String _password) {
@@ -139,7 +214,6 @@ public class GstoreConnector {
             return false;
         }
 
-        //String cmd = "unload/" + _db_name;
 		String cmd = "?operation=unload&db_name=" + _db_name + "&username=" + _username + "&password=" + _password;
         String msg = this.sendGet(cmd);
 
@@ -215,6 +289,21 @@ public class GstoreConnector {
 
         return msg;
     }
+    
+    public void query(String _username, String _password, String _db_name, String _sparql, String _filename) {
+        boolean connect_return = this.connect();
+        if (!connect_return) {
+            System.err.println("connect to server error. @GstoreConnector.query");
+        }
+
+        String cmd = "?operation=query&username=" + _username + "&password=" + _password + "&db_name=" + _db_name + "&format=json&sparql=" + _sparql;
+        this.sendGet(cmd, _filename);
+      
+        this.disconnect();
+        
+        return;
+    }
+
 
  //   public String show() {
   //      return this.show(false);
