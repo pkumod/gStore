@@ -1,11 +1,11 @@
 /*=============================================================================
-# Filename: Benchmark.java
-# Author: Bookug Lobert 
-# Mail: zengli-bookug@pku.edu.cn
-# Last Modified: 2017-12-04 11:24
+# Filename: Benchmark1.java
+# Author: yangchaofan 
+# Last Modified: 2018-7-28 15:46
 # Description: 
 =============================================================================*/
 
+// before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
 import java.io.*;
 import java.util.*;
 import jgsc.GstoreConnector;

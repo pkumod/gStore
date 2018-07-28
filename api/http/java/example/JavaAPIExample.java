@@ -7,7 +7,7 @@
 
 import jgsc.GstoreConnector;
 
-// before run this example, you must start up the GStore server at first (use command ./gserver).
+// before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
 public class JavaAPIExample 
 {
 	public static void main(String[] args)
