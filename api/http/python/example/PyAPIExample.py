@@ -8,7 +8,7 @@ import sys
 sys.path.append('../src')
 import GstoreConnector
 
-# before you run this example, make sure that you have started up gStore server (use ./ghttp ~ ~)     
+# before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
 username = "root"
 password = "123456"
 sparql = "select ?x where \

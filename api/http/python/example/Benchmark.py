@@ -4,6 +4,7 @@
 # Last Modified: 2018-7-18 15:13
 # Description: a simple example of multi-thread query
 """
+# before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
 
 import threading
 import sys
