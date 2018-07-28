@@ -7,7 +7,7 @@
 #include "client.h"
 
 using namespace std;
-
+// before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
 int main()
 {
 

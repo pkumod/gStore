@@ -124,6 +124,7 @@ int CHttpClient::Get(const std::string &strUrl, const std::string &filename, boo
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
 	}
+    curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 4096);
 	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
