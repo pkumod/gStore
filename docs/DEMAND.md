@@ -15,6 +15,9 @@ readline | need to be installed
 readline-devel | need to be installed
 openjdk | needed if using Java api
 openjdk-devel | needed if using Java api
+requests | needed if using Python http api
+pthreads | needed if using php http api 
+curl-devel | needed if using php http api
 realpath | needed if using gconsole
 ccache | optional, used to speed up the compilation
 
@@ -34,7 +37,60 @@ NOTICE:
 
 7. To install ccache, you need to add epel repository if using CentOS, while in Ubuntu you can directly install it by `apt-get install ccache` command. If you can not install ccache(or maybe you do not want to), please go to modify the makefile(just change the CC variable to g++).
 
-8. If you need to use the HTTP server in gStore, then Boost Library(like boost-devel, including boost headers for developing) must be installed and the version should not be less than 1.54. Remember to check the makefile for your installed path of Boost.
+8. If you need to use the HTTP server in gStore, then Boost Library(like boost-devel, including boost headers for developing) must be installed and the version should not be less than 1.54. Remember to check the makefile for your installed path of Boost. To use Python api, you need to install requests by `pip install requests` in CentOS. To use php api, you need to install pthreads and curl in CentOS as follows:
+```
+1- get curl-devel
+# yum install curl-devel
+
+2- get php
+# wget http://www.php.net/distributions/php-5.4.36.tar.gz
+
+   get pthreads
+# wget http://pecl.php.net/get/pthreads-1.0.0.tgz
+
+3- extract both
+# tar zxvf php-5.4.36.tar.gz
+# tar zxvf pthreads-1.0.0.tgz
+
+4- move pthreads to php/ext folder 
+# mv pthreads-1.0.0 php-5.4.36/ext/pthreads
+
+5- reconfigure sources
+# ./buildconf --force
+# ./configure --help | grep pthreads
+
+You have to see --enable-pthreads listed. If do not, clear the buidls with this commands:
+
+# rm -rf aclocal.m4
+# rm -rf autom4te.cache/
+# ./buildconf --force
+
+6- Inside php folder run configure command to set what we need:
+# ./configure --enable-debug --enable-maintainer-zts --enable-pthreads --prefix=/usr --with-config-file-path=/etc --with-curl
+
+7- install php
+We will run make clear just to be sure that no other crashed build will mess our new one.
+
+# make clear
+# make
+# make install
+
+8- Copy configuration file of PHP and add local lib to include path
+# cp php.ini-development /etc/php.ini
+
+Edit php.ini and set Include_path to be like this:
+
+Include_path = "/usr/local/lib/php"
+
+9- Check Modules
+# php -m (check pthread loaded)
+
+You have to see pthreads listed
+
+10- If pthread is not listed, update php.ini
+# echo "extension=pthreads.so" >> /etc/php.ini
+
+```
 
 9. Any other questions, please go to [FAQ](FAQ.md) page.
 
