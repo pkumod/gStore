@@ -70,7 +70,7 @@ The socket API of gStore is placed in api/socket directory in the root directory
 
 		- GstoreConnector.php (source code of PHP API)
 
-	-python/ (the python API)
+	- python/ (the python API)
 
 		- src/ (source code of Python API)
 
@@ -395,6 +395,8 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 
 			- Benchmark.cpp
 
+            - Benchmark1.cpp
+
 			- CppAPIExample.cpp
 
 			- Makefile
@@ -405,81 +407,101 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 
 		- client.java
 
-		-lib/
+		- lib/
 
-		-src/
-			-Makefile
+		- src/
 
-			-jgsc/
-				-GstoreConnector.java
-		-example/
-			-Benckmark.java
+			- Makefile
 
-			-JavaAPIExample.java
+			- jgsc/
 
-			-Makefile
+				- GstoreConnector.java
 
+		- example/
+
+			- Benckmark.java
+
+            - Benchmark1.java
+
+			- JavaAPIExample.java
+
+			- Makefile
+
+    - python/ (the Python API)
+
+        - example/
+
+            - Benchmark.py
+
+            - PyAPIExample.py
+
+        - src/ 
+
+            - GstoreConnector.py
+
+    - php/ (the Php API)
+
+        - example/
+
+            - Benchmark.php
+
+            - phpAPIExample.php
+
+        - src/
+            
+            - GstoreConnector.php
 - - -
 
 ## C++ API
 
 #### Interface
 
-To use the C++ API, please place the phrase `#include "Client.h"` in your cpp code. Functions in Client.h should be called like below:
+To use the C++ API, please place the phrase `#include "GstoreConnector.h"` in your cpp code. Functions in GstoreConnector.h should be called like below:
 
 ```
-CHttpClient hc;
-string res; 
-int ret;
-// build a new database by a RDF file.
-ret = hc.Get("http://127.0.0.1:9000/?operation=build&db_name=lubm&ds_path=data/lubm/lubm.nt&username=root&password=123456", res);
-cout&lt;&lt;res&lt;&lt;endl;
+// initialize 
+GstoreConnector gc("172.31.222.93", 9016);
 
-// load databse
-ret = hc.Get("http://127.0.0.1:9000/?operation=load&db_name=lumb&username=root&password=123456", res);
-cout&lt;&lt;res&lt;&lt;endl;
+// build a new database by a RDF file.
+// note that the relative path is related to gserver
+gc.build("test", "data/lubm/LUBM_10.n3", "root", "123456");
+
+// load the database that you built.
+gc.load("test", "root", "123456");
 
 // then you can execute SPARQL query on this database.
-ret = hc.Get("http://127.0.0.1:9000/?operation=query&username=root&password=123456&db_name=lubm&format=json&sparql="+sparql, res);
-cout&lt;&lt;res&lt;&lt;endl;
+std::string answer = gc.query("root", "123456", "test", sparql);
+std::cout << answer << std::endl;
 
-// output information of a database
-ret = hc.Get("http://127.0.0.1:9000/?operation=monitor&db_name=lubm", res);
-cout&lt;&lt;res&lt;&lt;endl;
+// make a SPARQL query and save the result in ans.txt
+gc.query("root", "123456", "test", sparql, "ans.txt");
 
-// unload this databse
-ret = hc.Get("http://127.0.0.1:9000/?operation=unload&db_name=lubm&username=root&password=123456", res);
-cout&lt;&lt;res&lt;&lt;endl;
+// unload this database.
+gc.unload("test", "root", "123456");
 
-//add a user(with username: Jack, password: 2)
-ret = hc.Get("http://127.0.0.1:9000/?operation=user&type=add_user&username1=root&password1=123456&username2=Jack&addtion=2", res);
-cout&lt;&lt;res&lt;&lt;endl;
+// also, you can load some exist database directly and then query.
+gc.load("lubm", "root", "123456");
+answer = gc.query("root", "123456", "lubm", sparql);
 
-//add privilege to user Jack(add_query, add_load, add_unload)
-ret = hc.Get("http://127.0.0.1:9000/?operation=user&type=add_query&username1=root&password1=123456&username2=Jack&addtion=lubm", res);
-cout&lt;&lt;res&lt;&lt;endl;
-
-//delete privilege of a user Jack(delete_query, delete_load, delete_unload)
-ret = hc.Get("http://127.0.0.1:9000/?operation=user&type=delete_query&username1=root&password1=123456&username2=Jack&addtion=lubm", res);
-cout&lt;&lt;res&lt;&lt;endl;
-
-//delete user(with username: Jack, password: 2)
-ret = hc.Get("http://127.0.0.1:9000/?operation=user&type=delete_user&username1=root&password1=123456&username2=Jack&addtion=2", res);
-cout&lt;&lt;res&lt;&lt;endl;
+std::cout << answer << std::endl;
+gc.unload("lubm", "root", "123456");
 
 ```
 The original declaration of these functions are as below:
 
 ```
+GstoreConnector();
 
-CHttpClient();
-int Post(const std::string &amp; strUrl, const std::string &amp; strPost, std::string &amp; strResponse);
+bool build(std::string _db_name, std::string _rdf_file_path, std::string username, std::string password);
 
-int Get(const std::string &amp; strUrl, std::string &amp; strResponse);
+bool load(std::string _db_name, std::string username, std::string password);
 
-int Posts(const std::string &amp; strUrl, const std::string &amp; strPost, std::string &amp; strResponse, const char * pCaPath = NULL);
+bool unload(std::string _db_name, std::string username, std::string password);
 
-int Gets(const std::string &amp; strUrl, std::string &amp; strResponse, const char * pCaPath = NULL);
+void query(std::string username, std::string password, std::string db_name, std::string sparql, std::string filename);
+
+std::string query(std::string username, std::string password, std::string db_name, std::string sparql);
+
 ```
 
 - - -
@@ -488,54 +510,139 @@ int Gets(const std::string &amp; strUrl, std::string &amp; strResponse, const ch
 
 #### Interface
 
-To use the Java API, please see gStore/api/http/java/HttpRequest.java. Functions should be called like below:
+To use the Java API, please see gStore/api/http/java/src/jgsc/GstoreConnector.java. Functions should be called like below:
 
 ```
-// build a new database by a RDF file.
-String s=HttpRequest.sendGet("http://localhost:9000/?operation=build&db_name=lubm&ds_path=data/lubm/lubm.nt&username=root&password=123456", "");
-System.out.println(s);
 
-// load databse
-String s=HttpRequest.sendGet("http://localhost:9000/?operation=load&db_name=lumb&username=root&password=123456", "");
-System.out.println(s);
+// initialize
+GstoreConnector gc = new GstoreConnector("172.31.222.78", 3305);
 
-// then you can execute SPARQL query on this database.
-String s=HttpRequest.sendGet("http://localhost:9000/?operation=query&username=root&password=123456&db_name=lubm&format=json&sparql=" + sparql, "");
-System.out.println(s);
+// build the database
+gc.build("LUBM10", "data/lubm/lubm.nt", "root", "123456");
 
-// output information of a databse
-String s=HttpRequest.sendGet("http://localhost:9000/?operation=monitor&db_name=lubm", "");
-System.out.println(s);
+// load the database you built
+gc.load("LUBM10", "root", "123456");
 
-// unload this database
-String s=HttpRequest.sendGet("http://localhost:9000/?operation=unload&db_name=lubm&username=root&password=123456", "");
-System.out.println(s);
+// also, you can load some exist database directly and then query.
+gc.load("LUBM10", "root", "123456");
 
-//add a user(with username: Jack, password: 2)
-ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=user&type=add_user&username1=root&password1=123456&username2=Jack&addtion=2", "");
-System.out.println(s);
+// make a SPARQL query
+answer = gc.query("root", "123456", "LUBM10", sparql);
+System.out.println(answer);
 
-//add privilege to user Jack(add_query, add_load, add_unload)
-ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=user&type=add_query&username1=root&password1=123456&username2=Jack&addtion=lubm", "");
-System.out.println(s);
+// make a SPARQL query and save the result in ans.txt
+gc.query("root", "123456", "LUBM10", sparql, "ans.txt");
 
-//delete privilege of a user Jack(delete_query, delete_load, delete_unload)
-ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=user&type=delete_query&username1=root&password1=123456&username2=Jack&addtion=lubm", "");
-System.out.println(s);
+// unload the database
+gc.unload("LUBM10", "root", "123456");
 
-//delete user(with username: Jack, password: 2)
-ret = HttpRequest.sendGet("http://127.0.0.1:9000/?operation=user&type=delete_user&username1=root&password1=123456&username2=Jack&addtion=2", "");
-System.out.println(s);
 ```
 
 
 The original declaration of these functions are as below:
 
 ```
+public class GstoreConnector();
 
-public class HttpRequest();
+public boolean build(String _db_name, String _rdf_file_path, String _username, String _password);
 
-public static String sendGet(String url, String param);
+public boolean load(String _db_name, String _username, String _password);
 
-public static String sendPost(String url, String param);
+public boolean unload(String _db_name,String _username, String _password);
+
+public String query(String _username, String _password, String _db_name, String _sparql);
+
+public void query(String _username, String _password, String _db_name, String _sparql, String _filename);
+```
+
+- - -
+
+##Python API
+
+####Interface
+
+To use Python API, please see gStore/api/http/python/src/GstoreConnector.py. Functions should be called like following:
+
+```
+# start a gc with given IP and Port
+gc =  GstoreConnector.GstoreConnector("172.31.222.78", 3305)
+
+# build database with a RDF graph
+ret = gc.build("test", "data/lubm/lubm.nt", username, password)
+
+# load the database
+ret = gc.load("test", username, password)
+
+# query
+print (gc.query(username, password, "test", sparql))
+
+# query and save the result in a file
+gc.fquery(username, password, "test", sparql, filename)
+
+# unload the database
+ret = gc.unload("test", username, password)
+```
+The original declaration of these functions are as below:
+
+```
+public class GstoreConnector()
+
+def build(self, db_name, rdf_file_path, username, password):
+
+def load(self, db_name, username, password):
+
+def unload(self, db_name, username, password):
+
+def query(self, username, password, db_name, sparql):
+
+def fquery(self, username, password, db_name, sparql, filename):
+
+```
+
+- - -
+
+##Php API
+
+####Interface
+
+To use Php API, please see gStore/api/http/php/src/GstoreConnector.php. Functions should be called like following:
+
+```
+// start a gc
+$gc = new GstoreConnector("172.31.222.78", 3305);
+
+// build database
+$ret = $gc->build("test", "data/lubm/lubm.nt", $username, $password);
+echo $ret . PHP_EOL;
+
+// load rdf
+$ret = $gc->load("test", $username, $password);
+echo $ret . PHP_EOL;
+
+// query
+echo $gc->query($username, $password, "test", $sparql) . PHP_EOL;
+
+// fquery--make a SPARQL query and save the result in the file
+$gc->fquery($username, $password, "test", $sparql, $filename);
+
+// unload rdf
+$ret = $gc->unload("test", $username, $password);
+echo $ret . PHP_EOL;
+
+```
+
+The original declaration of these functions are as below:
+
+```
+class GstoreConnector
+
+function build($db_name, $rdf_file_path, $username, $password)
+
+function load($db_name, $username, $password)
+
+function unload($db_name, $username, $password)
+
+function query($username, $password, $db_name, $sparql)
+
+function fquery($username, $password, $db_name, $sparql, $filename)
 ```
