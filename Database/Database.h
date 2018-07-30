@@ -107,6 +107,8 @@ private:
 	pthread_rwlock_t update_lock;
 	//just for debug a block of code
 	mutex debug_lock;
+	// for getFinalResult
+	mutex getFinalResult_lock;
 
 	VSTree* vstree;
 	KVstore* kvstore;

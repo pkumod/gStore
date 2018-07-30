@@ -161,6 +161,7 @@ IVArray::PreLoad()
 bool
 IVArray::save()
 {
+	this->AccessLock.lock();
 	// save ValueFile and IVfile
 	int fd = fileno(IVfile);
 
@@ -198,6 +199,7 @@ IVArray::save()
 
 	BM->SaveFreeBlockList();
 
+	this->AccessLock.unlock();
 	return true;
 }
 
@@ -307,23 +309,27 @@ IVArray::UpdateTime(unsigned _key)
 bool
 IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 {
+	this->AccessLock.lock();
 	//printf("%s search %d: ", filename.c_str(), _key);
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
 		_str = NULL;
 		_len = 0;
+		this->AccessLock.unlock();
 		return false;
 	}
 	// try to read in main memory
 	if (array[_key].inCache())
 	{
 		UpdateTime(_key);
+		this->AccessLock.unlock();
 		return array[_key].getBstr(_str, _len);
 	}
 	// read in disk
 	unsigned store = array[_key].getStore();
 	if (!BM->ReadValue(store, _str, _len))
 	{
+		this->AccessLock.unlock();
 		return false;
 	}
 	if (!VList::isLongList(_len))
@@ -334,14 +340,17 @@ IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 		_str = debug;
 	}
 
+	this->AccessLock.unlock();
 	return true;
 }
 
 bool
 IVArray::insert(unsigned _key, char *_str, unsigned _len)
 {
+	this->AccessLock.lock();
 	if (_key < CurEntryNum && array[_key].isUsed())
 	{
+		this->AccessLock.unlock();
 		return false;
 	}
 	
@@ -349,6 +358,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 	{
 		cout << _key << ' ' << MAX_KEY_NUM << endl;
 		cout << "IVArray insert error: Key is bigger than MAX_KEY_NUM" << endl;
+		this->AccessLock.unlock();
 		return false;
 	}
 
@@ -367,6 +377,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 		if (newp == NULL)
 		{
 			cout << "IVArray insert error: main memory full" << endl;
+			this->AccessLock.unlock();
 			return false;
 		}
 
@@ -384,6 +395,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 		unsigned store = BM->WriteValue(_str, _len);
 		if (store == 0)
 		{
+			this->AccessLock.unlock();
 			return false;
 		}
 		array[_key].setStore(store);
@@ -397,14 +409,17 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 	array[_key].setUsedFlag(true);
 	array[_key].setDirtyFlag(true);
 
+	this->AccessLock.unlock();
 	return true;
 }
 
 bool
 IVArray::remove(unsigned _key)
 {
+	this->AccessLock.lock();
 	if (!array[_key].isUsed())
 	{
+		this->AccessLock.unlock();
 		return false;
 	}
 
@@ -435,6 +450,7 @@ IVArray::remove(unsigned _key)
 
 	array[_key].release();
 
+	this->AccessLock.unlock();
 	return true;
 
 }
@@ -442,8 +458,10 @@ IVArray::remove(unsigned _key)
 bool
 IVArray::modify(unsigned _key, char *_str, unsigned _len)
 {
+	this->AccessLock.lock();
 	if (!array[_key].isUsed())
 	{
+		this->AccessLock.unlock();
 		return false;
 	}
 
@@ -470,6 +488,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 		AddInCache(_key, _str, _len);
 	}
 
+	this->AccessLock.unlock();
 	return true;
 	
 }
@@ -478,9 +497,11 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 void
 IVArray::PinCache(unsigned _key)
 {
+	this->AccessLock.lock();
 	//printf("%s search %d: ", filename.c_str(), _key);
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
+		this->AccessLock.unlock();
 		return;
 	}
 	// try to read in main memory
@@ -490,6 +511,7 @@ IVArray::PinCache(unsigned _key)
 
 		array[_key].setCachePinFlag(true);
 
+		this->AccessLock.unlock();
 		return;
 	}
 	// read in disk
@@ -498,6 +520,7 @@ IVArray::PinCache(unsigned _key)
 	unsigned _len = 0;
 	if (!BM->ReadValue(store, _str, _len))
 	{
+		this->AccessLock.unlock();
 		return;
 	}
 
@@ -505,6 +528,7 @@ IVArray::PinCache(unsigned _key)
 	array[_key].setCacheFlag(true);
 	array[_key].setCachePinFlag(true);
 
+	this->AccessLock.unlock();
 	return;
 }
 
