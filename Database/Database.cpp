@@ -1368,14 +1368,16 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 
 		//TODO: withdraw this lock, and allow for multiple doQuery() to run in parallism
 		//we need to add lock in QueryCache's operations
-		this->debug_lock.lock();
+	//	this->debug_lock.lock();
 		bool query_ret = general_evaluation.doQuery();
 		if(!query_ret)
 		{
 			success_num = -101;
 		}
-		this->debug_lock.unlock();
+	//	this->debug_lock.unlock();
 
+		long tv_bfget = Util::get_cur_time();
+		this->getFinalResult_lock.lock();
 		if (trie == NULL)
 		{
 			trie = new Trie;
@@ -1387,8 +1389,8 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 			trie->LoadDictionary();
 		}
 
-		long tv_bfget = Util::get_cur_time();
 		general_evaluation.getFinalResult(_result_set);
+		this->getFinalResult_lock.unlock();
 		long tv_afget = Util::get_cur_time();
 		cout << "after getFinalResult, used " << (tv_afget - tv_bfget) << "ms." << endl;
 

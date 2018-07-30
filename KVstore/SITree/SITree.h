@@ -57,18 +57,20 @@ private:
 	long long request;
 	void prepare(SINode* _np);
 
-public:
-	SITree();				//always need to initial transfer
-	SITree(std::string _storepath, std::string _filename, std::string _mode, unsigned long long _buffer_size);
+	std::mutex AccessLock;
+
 	unsigned getHeight() const;
 	void setHeight(unsigned _h);
 	SINode* getRoot() const;
+	SINode* find(const Bstr* _key, int* store, bool ifmodify);
+	SINode* find(const char* _key, unsigned _len, int* store, bool ifmodify);
+public:
+	SITree();				//always need to initial transfer
+	SITree(std::string _storepath, std::string _filename, std::string _mode, unsigned long long _buffer_size);
 	//insert, search, remove, set
 	bool search(const char* _str, unsigned _len, unsigned* _val);
 	bool insert(char* _str, unsigned _len, unsigned _val);
 	bool modify(const char* _str, unsigned _len, unsigned _val);
-	SINode* find(const Bstr* _key, int* store, bool ifmodify);
-	SINode* find(const char* _key, unsigned _len, int* store, bool ifmodify);
 	bool remove(const char* _str, unsigned _len);
 	bool save(); 			
 	~SITree();

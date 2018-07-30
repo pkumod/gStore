@@ -49,6 +49,8 @@ private:
 
 	bool PreLoad();
 	void RemoveFromLRUQueue(unsigned _key);
+	
+	mutex AccessLock;
 
 public:
 	IVArray();
