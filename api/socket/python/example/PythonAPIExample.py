@@ -8,7 +8,7 @@ from GstoreConnector import GstoreConnector
 
 if __name__ == '__main__':
     gc = GstoreConnector('127.0.0.1', 3305)
-    gc.build('LUBM10', 'data/LUBM_10.n3')
+    gc.build('LUBM10', 'data/lubm/lubm.nt')
     gc.load('LUBM10')
 
     sparql = '''select ?x where {

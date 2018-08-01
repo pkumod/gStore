@@ -34,6 +34,7 @@ public:
 	//enum ReadType { OVER = 0, EXPAND, NORMAL };
 
 private:
+	unsigned long updateHeapTime;
 	unsigned long long max_buffer_size;
 	unsigned heap_size;
 	unsigned cur_block_num;
@@ -65,6 +66,8 @@ public:
 	IVStorage();
 	IVStorage(std::string& _filepath, std::string& _mode, unsigned* _height, unsigned long long _buffer_size, VList* _vlist); //create a fixed-size file or open an existence
 	bool preRead(IVNode*& _root, IVNode*& _leaves_head, IVNode*& _leaves_tail);		//read and build all nodes, only root in memory
+	bool preLoad(IVNode*& _root); //puts all nodes of IVTree in memory until the memory is full
+	bool fullLoad(IVNode*& _root); //puts all nodes of IVTree in memory, assuming the memory is enough
 	bool readNode(IVNode* _np, long long* _request);	//read, if virtual 
 	bool createNode(IVNode*& _np);		//use fp to create a new node
 										//NOTICE(if children and child not exist, build children's Nodes)

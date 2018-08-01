@@ -3,6 +3,7 @@ function query(dp) {
 	var encodeVal = escape(dp);
 	//alert(encodeVal);
 	var format = document.getElementById("element_5").value;
+	var db_name = document.getElementById("element_1").value;
 	if(format == "1")
 		format = "html";
 	else if(format == "2")
@@ -11,8 +12,8 @@ function query(dp) {
 		format = "csv";
 	else if(format == "4")
 		format = "json";
-	var argu = "?operation=query&format=" + format + "&sparql=" + dp;
-	var encodeArgu = escape(argu);
+	var argu = "?operation=query&db_name=" + db_name +"&format=" + format + "&sparql=" + dp;
+	var encodeArgu = encodeURIComponent(argu);
 	if(format != "html")
 	{
 		/*
@@ -51,13 +52,19 @@ function query(dp) {
 				//toTxt();
 				//alert(data);
 				var parts = data.split("+");
-				var fileName = parts[2];
-			    var lines = Number(parts[1]);
+				var query_time = parts[1];
+				//alert(query_time);
+				var fileName = parts[3];
+			    var lines = Number(parts[2]);
 				//alert(lines);
 				if(lines > 100)
 					lines = 100;
 				//alert(lines);
-				var items = parts[3].split("\n");
+				for(var ip = 5; ip < parts.length; ip++)
+				{
+					parts[4] = parts[4] + "+" + parts[ip];
+				}
+				var items = parts[4].split("\n");
 				//alert(items[0]);
 				var valNum = items[0].split("?");
 				var rows = valNum.length - 1;
@@ -65,9 +72,8 @@ function query(dp) {
 				var page = '<html><div align="left"><a href="javascript:void(0);" id="back" style="font-size:16px;color:blue">Click to Return</a>';
 				page = page + '<a id="download" style="font-size:16px;margin-left:20px">Click to Download</a>';
 				page = page + '<a href="/" id="trick" style="display: none">Click to back</a>';
-				page = page + '<p>Total answers: ';
-				page = page + parts[1];
-				page = page + '</p>';
+				page = page + '<p>Total answers: ' + parts[2] + '</p>';
+				page = page + '<p>Query time: ' + parts[1] + 'ms</p>';
 				if(parts[0] == "1")
 				{
 					
@@ -88,6 +94,8 @@ function query(dp) {
 				{
 					page = page + "<tr>";
 					//alert(items[i]);
+
+					/*
 					var tmpItem = items[i].replace(/"([^"]*)"/g, "<$1>");
 					//alert(tmpItem);
 					var item = tmpItem.split(">");
@@ -95,8 +103,26 @@ function query(dp) {
 					for(j = 0; j < rows; j++)
 					{
 						//alert(item[j]);
-						page = page + '<td>' + item[j].replace("<", "") + '</td>';
+						if(j < item.length)
+							page = page + '<td>' + item[j].replace("<","") + '</td>';
+						else
+							page = page + '<td>' + " " + '</td>';
+					
 					}
+					*/
+
+					
+					//alert(items[i]);
+					var item = items[i].split("\t");
+					//alert(item.length);
+					for(j = 0; j < rows; j++)
+					{
+						//alert(item[j]);
+						if(item[j] == "")
+							item[j] = " ";
+						page = page + '<td>' + item[j].replace("<","&lt;") + '</td>';
+					}
+					
 					page = page + "</tr>";
 				}
 				page = page + '</table></div></html>';
@@ -129,7 +155,7 @@ function query(dp) {
 							element3.dispatchEvent(e1);
 						}
 					});
-				}
+				};
 			}
 		});
 	}
@@ -137,68 +163,79 @@ function query(dp) {
 
 function handleQueryExample()
             {
+			
                 var example = document.getElementById("example").value;
+			
+				/*
+				if(example === "q1")
+				{
+						document.getElementById("element_3").value = "select ?x\n" +
+						"where\n" +
+						"{ \n" +
+								"\t?x <http://purl.org/dc/terms/relation> <http://zhonto.org/resource/Giga>.\n" +
+						"} \n";
+				}
+	            if(example === "q2")
+				{
+						document.getElementById("element_3").value = "select ?x ?y\n" +
+						"where\n" +
+						"{ \n" +
+								"\t?x <http://purl.org/dc/terms/references> ?y.\n" +
+						"}\n";
+				}
+
+				if(example === "q3")
+				{
+						document.getElementById("element_3").value = "select ?x\n" + 
+						"where\n" +
+						"{ \n" +
+								"\t?y <http://purl.org/dc/terms/relation> <http://zhonto.org/resource/2004_MD6>.\n" +
+								"\t?y <http://www.w3.org/2002/07/owl#sameAs> ?x.\n" +
+						"} \n";
+				}
+				
                 if (example === "q1")
                 {
-                    document.getElementById("element_3").value =    "SELECT DISTINCT ?p \n" +
-                    												"WHERE \n" +
+                    document.getElementById("element_3").value =    "select distinct ?x where \n" +
 																	"{ \n" +
-																	"\t?s ?p ?o . \n" +
+																	"\t?x	<rdf:type>	<ub:GraduateStudent>. \n" +
+																	"\t?y	<rdf:type>	<ub:University>. \n" +
+																	"\t?z	<rdf:type>	<ub:Department>. \n" +
+																	"\t?x	<ub:memberOf>	?z. \n" +
+																	"\t?z	<ub:subOrganizationOf>	?y. \n" +
+																	"\t?x	<ub:undergraduateDegreeFrom>	?y. \n" +
 																	"} \n";
                 }
-
+				*/
+            
+                if (example === "q1")
+                {
+                    document.getElementById("element_3").value =    "select distinct ?x where \n" +
+																	"{ \n" +
+																	"\t?x    <rdf:type>    <ub:UndergraduateStudent>. \n" +
+																	"\t?y    <ub:name> <Course1>. \n" +
+																	"\t?x    <ub:takesCourse>  ?y. \n" +
+																	"\t?z    <ub:teacherOf>    ?y. \n" +
+																	"\t?z    <ub:name> <FullProfessor1>. \n" +
+																	"\t?z    <ub:worksFor>    ?w. \n" +
+																	"\t?w    <ub:name>    <Department0>. \n" +
+																	"} \n";
+                }
                 if (example === "q2")
                 {
-                    document.getElementById("element_3").value =    "SELECT ?x WHERE \n" +
+                    document.getElementById("element_3").value =    "select distinct ?x where \n" +
 																	"{ \n" +
-																	"\t?x  <ub:name>   <FullProfessor0> .\n" +
+																	"\t?x	<rdf:type>	<ub:Course>. \n" +
+																	"\t?x	<ub:name>	?y. \n" +
 																	"} \n";
-                }
-
-                if (example === "q3")
+				} 
+                if (example === "q4")
                 {
-                    document.getElementById("element_3").value =    "SELECT ?x WHERE \n" +
+                    document.getElementById("element_3").value =    "select distinct ?x where \n" +
 																	"{ \n" +
-																	"\t?x  <rdf:type>  <ub:Course> .\n" +
-																	"\t?x  <ub:name>   ?y .\n" +
-																	"} \n";
+																	"\t?x    <rdf:type>    <ub:UndergraduateStudent>. \n" +
+																	"}\n";
                 }
-
-                //if (example === "q4")
-                //{
-                    //document.getElementById("element_3").value =    "SELECT DISTINCT ?v0 WHERE \n" +
-																	//"{ \n" +
-																	//"\t?v0 <http://purl.org/dc/terms/subject> <http://dbpedia.org/resource/Category:956_births> .\n" +
-																	//"\t{?v0 <http://dbpedia.org/property/wikiPageUsesTemplate> ?v1 .}\n" + "UNION\n" +
-																	//"\t{?v0 <http://dbpedia.org/prpperty/hasPhotoCollection> ?v2 .}\n" +
-																	//"} \n";
-                //}
-                //if (example === "q5")
-                //{
-                    //document.getElementById("element_3").value =    "SELECT ?v0 ?v2 ?v3 WHERE \n" +
-																	//"{ \n" +
-																	//"\t?v0 <http://dbpedia.org/ontology/wikiPageWikiLink> <http://dbpedia.org/resource/Autism> .\n" +
-																	//"\t?v2 <http://dbpedia.org/property/candidate> ?v0 .\n" +
-																	//"\t?v3 <http://dbpedia.org/property/constituencyWestminster> ?v2 .\n" +
-																	//"} \n";
-                //}
-                //if (example === "q6")
-                //{
-                    //document.getElementById("element_3").value =    "SELECT ?V1 ?V2 WHERE \n" +
-																	//"{ \n" +
-																	//"\t?v1 <http://www.w3.org/2002/07/owl#sameAs> <http://it.dbpedia.org/resource/Category:Filosofi_del_IV_secolo_a.C.> .\n" +
-																	//"\t?v2 <dbpedia.org/ontology/wikiPageWikiLink> ?v1 .\n" +
-																	//"\t<http://dbpedia.org/resource/Chinese_classics> <http://dbpedia.org/ontology/wikiPageWikiLink> ?v2  .\n" +
-																	//"} \n";
-                //}
-                //if (example === "q7")
-                //{
-                    //document.getElementById("element_3").value =    "SELECT ?v0 ?v1 WHERE \n" +
-																	//"{ \n" +
-																	//"\t<http://dbpedia.org/resource/Albedo> <http://dbpedia.org/ontology/wikiPageWikiLink> ?v0 .\n" +
-																	//"\t?v1 <http://dbpedia.org/ontology/wikiPageWikiLink> ?v0 .\n" +
-																	//"}\n";
-                //}
                 //if (example === "q8")
                 //{
                     //document.getElementById("element_3").value =    "SELECT ?v0 ?v1 ?v2 ?v3 ?v4 ?v5 ?v6 WHERE \n" +
@@ -231,4 +268,4 @@ function handleQueryExample()
 																	//"\t?v0 <http://dbpedia.org/ontology/wikiPageWikiLink> <http://dbpedia.org/resource/Combination> .\n" +
 																	//"}\n";
                 //}
-            }
+			}

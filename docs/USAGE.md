@@ -20,13 +20,13 @@ gbuild is used to build a new database from a RDF triple format file.
 
 `# bin/gbuild db_name rdf_triple_file_path`
 
-For example, we build a database from LUBM_10.n3 which can be found in example folder.
+For example, we build a database from lubm.nt which can be found in example folder.
 
-    [bookug@localhost gStore]$ bin/gbuild LUBM10 ./data/LUBM_10.n3 
-    2015年05月21日 星期四 20时58分21秒  -0.484698 seconds
+    [bookug@localhost gStore]$ bin/gbuild lubm ./data/lubm/lubm.nt 
+    2017年11月23日 星期四 20时58分21秒  -0.484698 seconds
     gbuild...
-    argc: 3 DB_store:LUBM10      RDF_data: ./data/LUBM_10.n3  
-    begin encode RDF from : ./data/LUBM_10.n3 ...
+    argc: 3 DB_store:lubm      RDF_data: ./data/lubm/lubm.nt  
+    begin encode RDF from : ./data/lubm/lubm.nt ...
 
 - - -
 
@@ -48,11 +48,11 @@ When the program finish answering the query, it shows the command prompt again.
 
 *gStore2.0 only support simple "select" queries(not for predicates) now.*
 
-We also take LUBM_10.n3 as an example.
+We also take lubm.nt as an example.
 
-    [bookug@localhost gStore]$ bin/gquery LUBM10
+    [bookug@localhost gStore]$ bin/gquery lubm
     gquery...
-    argc: 2 DB_store:LUBM10/
+    argc: 2 DB_store:lubm/
     loadTree...
     LRUCache initial...
     LRUCache initial finish
@@ -63,7 +63,7 @@ We also take LUBM_10.n3 as an example.
     finish loading
     Type `help` for information of all commands
 	Type `help command_t` for detail of command_t
-    gsql>sparql ./data/LUBM_q0.sql
+    gsql>sparql ./data/lubm/lubm_q0.sql
     ... ...
     Total time used: 4ms.
     final result is : 
@@ -97,40 +97,59 @@ Notice:
 
 ghttp runs gStore like HTTP server with port 9000. Visit from browser with prescriptive url, then gStore will execute corresponding operation.
 
-Just type `bin/ghttp` to start server.
+type:
+
+`bin/ghttp db_name serverPort` or `bin/ghttp serverPort db_name` to start server with serverPort and load database named db_name initially.
+
+(*Attention: the argument db_name and serverPort can be left out*)
+Attention: the argument serverPort can be left out
+
+if you leave out the argument serverPort in the commond, then the corresponding value will be set to default as 9000.
+
+(*if you leave out the argument db_name in the commond, then the db_name will set to null which means not to load a database initially.*)
 
 URL rules are listed blow:  
 
-parameters: operation, db_name, ds_path, format, sparql
+parameters: operation, db_name, ds_path, format, sparql, type, username, password
 
 NOTICE: do URL encoding before sending it to database server
 
-operation: build, load, unload, query, monitor, show, checkpoint
+operation: build, load, unload, query, monitor, show, checkpoint, user
+// build a new database by a RDF file.
+"http://127.0.0.1:9000/?operation=build&db_name=lubm&ds_path=data/lubm/lubm.nt&username=root&password=123456"
+
+// load databse
+"http://127.0.0.1:9000/?operation=load&db_name=lumb&username=root&password=123456"
+
+// then you can execute SPARQL query on this database.
+"http://127.0.0.1:9000/?operation=query&username=root&password=123456&db_name=lubm&format=json&sparql="
+
+// output information of a database
+"http://127.0.0.1:9000/?operation=monitor&db_name=lubm"
+
+
+// unload this databse
+"http://127.0.0.1:9000/?operation=unload&db_name=lubm&username=root&password=123456"
+
+//add a user(with username: Jack, passwor: 2)
+"http://127.0.0.1:9000/?operation=user&type=add_user&username1=root&password1=123456&username2=Jack&addtion=2"
+
+//add privilege to user Jack(add_query, add_load, add_unload)
+"http://127.0.0.1:9000/?operation=user&type=add_query&username1=root&password1=123456&username2=Jack&addtion=lubm"
+
+//delete privilege of a user Jack(delete_query, delete_load, delete_unload)
+"http://127.0.0.1:9000/?operation=user&type=delete_query&username1=root&password1=123456&username2=Jack&addtion=lubm"
+
+//delete user(with username: Jack, password: 2)
+"http://127.0.0.1:9000/?operation=user&type=delete_user&username1=root&password1=123456&username2=Jack&addtion=2"
 db_name: the name of database, like lubm
 format: html, json, txt, csv
 sparql: select ?s where { ?s ?p ?o . }
 ds_path in the server: like /home/data/test.n3
-
-to build a database from a dataset:
-http://localhost:9000/?operation=build&db_name=[db_name]&ds_path=[ds_path]
-
-to load a database:
-http://localhost:9000/?operation=load&db_name=[db_name]
-
-to query a database:
-http://localhost:9000/?operation=query&format=[format]&sparql=[sparql]
-
-to unload a database:
-http://localhost:9000/?operation=unload&db_name=[db_name]
-
-to monitor the server:
-http://localhost:9000/?operation=monitor
-
-to show the database used:
-http://localhost:9000/?operation=show
-
-to save the database currently:
-http://localhost:9000/?operation=checkpoint
+operation: the type of operation: like load, unload, query ...
+type: the type of operation that you execute on user, like: add_user, delete_user, add_query, add_load...
+username: the username of the user that execute the operation
+password: the password of the user that execute the operation
 
 - - -
 
@@ -212,7 +231,7 @@ You should place the datasets and queries in this way:
 
 	DIR/WatDiv/query/*.sql 
 
-Notice that DIR is the root directory where you place all datasets waiting to be used by gtest. And WatDiv is a class of datasets, as well as LUBM. Inside WatDiv(or LUBM, etc. please place all datasets(named with .nt) in a database/ folder, and place all queries(corresponding to datasets, named with .sql) in a query folder.
+Notice that DIR is the root directory where you place all datasets waiting to be used by gtest. And WatDiv is a class of datasets, as well as lubm. Inside WatDiv(or lubm, etc. please place all datasets(named with .nt) in a database/ folder, and place all queries(corresponding to datasets, named with .sql) in a query folder.
 
 Then you can run the gtest program with specified parameters, and the output will be sorted into three logs in gStore root directory: load.log/(for database loading time and size), time.log/(for query time) and result.log/(for all query results, not the entire output strings, but the information to record the selected two database systems matched or not).
 
@@ -232,9 +251,9 @@ gadd is used to insert triples in a file to an existing database.
 
 Usage: bin/gadd db_name rdf_triple_file_path
 
-    [bookug@localhost gStore]$ bin/gadd lubm data/LUBM_10.n3
+    [bookug@localhost gStore]$ bin/gadd lubm ./data/lubm/lubm.nt
     ...
-    argc: 3 DB_store:lubm   insert file:./data/LUBM_10.n3
+    argc: 3 DB_store:lubm   insert file:./data/lubm/lubm.nt
     get important pre ID
     ...
     insert rdf triples done.
@@ -248,9 +267,9 @@ gsub is used to remove triples in a file from an existing database.
 
 Usage: bin/gsub db_name rdf_triple_file_path
 
-    [bookug@localhost gStore]$ bin/gsub lubm data/LUBM_10.n3
+    [bookug@localhost gStore]$ bin/gsub lubm ./data/lubm/lubm.nt
     ...
-    argc: 3 DB_store:lubm  remove file: data/LUBM\_10.n3
+    argc: 3 DB_store:lubm  remove file: ./data/lubm/lubm.nt
     ...
     remove rdf triples done.
     removed triples num: 99550
@@ -259,11 +278,11 @@ Usage: bin/gsub db_name rdf_triple_file_path
 
 #### 9. gmonitor
 
-After starting ghttp, go into gStore/bin/ and type `./gmonitor ip port` to check current status of gStore.
+After starting ghttp, type `bin/gmonitor ip port db_name` to check current status of database db_name of gStore.
 
-    [bookug@localhost bin]$ ./gmonitor 127.0.0.1 9000
-    parameter: ?operation=monitor
-    request: http://127.0.0.1:9000/%3Foperation%3Dmonitor
+    [bookug@localhost gStore]$ bin/gmonitor 127.0.0.1 9000 lubm
+    parameter: ?operation=monitor&db_name=lubm
+    request: http://127.0.0.1:9000/%3Foperation%3Dmonitor%26db_name%3Dlubm
     null--->[HTTP/1.1 200 OK]
     Content-Length--->[127]
     database: lubm
@@ -278,12 +297,12 @@ After starting ghttp, go into gStore/bin/ and type `./gmonitor ip port` to check
 
 #### 10. gshow
 
-After starting ghttp, go into gStore/bin/ and type `./gshow ip port` to check loaded database.
+After starting ghttp, type `bin/gshow ip port` to check loaded database.
 
-    [bookug@localhost bin]$ ./gshow 127.0.0.1 9000
+    [bookug@localhost gStore]$ bin/gshow 127.0.0.1 9000
     parameter: ?operation=show
     request: http://127.0.0.1:9000/%3Foperation%3Dshow
     null--->[HTTP/1.1 200 OK]
     Content-Length--->[4]
-    lubm
+    database: lubm
     

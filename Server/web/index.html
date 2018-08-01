@@ -1,21 +1,24 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
-        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
-        <title>SPARQL Query Endpoint</title>
+		<meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta http-equiv="X-UA-Compatible" content="IE=9,chrome=1">
+		<title>OpenKG Query Endpoint</title>
         <link rel="stylesheet" type="text/css" href="view.css" media="all" />
 		<!--<script type="text/javascript" src="view.js"></script> -->
          <script type="text/javascript" src="index.js"></script>
        
     </head>
     <body id="main_body" onload="handleQueryExample()">
-        <div id="form_container">
-
-            <h1><a>SPARQL Query Endpoint</a></h1>
-            <form id="myForm" method="post" action="PHPAPIExample.php">
+		<div id="form_container">
+            <div class="img-box">
+				<img src="logo.png" alt="gStore" height="100">
+			</div>
+		<form id="myForm" method="post" action="PHPAPIExample.php">
                 <div class="form_description">
-                    <h2>SPARQL Query Endpoint</h2>
-                    <p></p>
+					<h2>OpenkG Query Endpoint</h2>
+					<h3 style="text-align:right;margin-top:0px;margin-bottom:0px;margin-right:5px;font-weight:lighter;"><a href="api.html" target="_blank" style="font-size:100%;color:#1435E9">About API</a></h3>
                 </div>
 
                 <ul >
@@ -35,8 +38,8 @@
                                 <option value="q1" selected="selected">q1</option>
                                 <option value="q2">q2</option>
                                 <option value="q3">q3</option>
-                                <!--<option value="q4">q4</option>-->
-                                <!--<option value="q5">q5</option>-->
+								<!--<option value="q4">q4</option>-->
+								<!--<option value="q5">q5</option>-->
                                 <!--<option value="q6">q6</option>-->
                                 <!--<option value="q7">q7</option>-->
                                 <!--<option value="q8">q8</option>-->
@@ -60,7 +63,7 @@
                             <select class="element select medium" id="element_5" name="format"> 
                             <option value="1" selected="ture">HTML</option>
                             <option value="2" >Text</option>
-                            <option value="3" >CSV</option>
+							<!--<option value="3" >CSV</option>-->
 							<option value="4" >JSON</option>
                             </select>
                         </div> 
@@ -69,11 +72,17 @@
                 <input type="hidden" name="queryAns1" id="queryAns" value="defaultAns" />
 				<a id="hideLink" style="display: none">link</a>
                 <button id="query_button" type="button" class="btn btn-default" onclick="query(query_file.value)">Run Query</button>
-            </form> 
-            <div id="footer">
-            </div>
-        </div>
-       <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+            </form>
+			<br>
+			<br>
+            <div id="footer" style="color:#080808;">
+				<div id="support">
+					Supported by <a href="http://www.gstore-pku.com" style="color:#1435E9">gStore</a></div>
+				<div id="copyright">
+					Copyright &copy; 2017 <a href="http://www.icst.pku.edu.cn/db/zh/index.php/%E9%A6%96%E9%A1%B5" style="color:#1435E9">Data Management Lab, Institute of Computer Science & Technology of Peking University</a></div>
+			</div>
+		</div>
+			<script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
   <!-- Include all compiled plugins (below), or include individual files as needed -->
   <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
   <!--<script src="index.js"></script>-->

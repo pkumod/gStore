@@ -2,25 +2,31 @@
 
 Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
 
-**The formal help document is in [EN](docs/help/gStore_help.pdf) and [CH](docs/help/gStore_help_CN.pdf).**
+**The formal help document is in [English(EN)](docs/help/gStore_help.pdf) and [中文(CN)](docs/help/gStore_help_CN.pdf).**
 
 **The formal experiment result is in [Experiment](docs/test/formal_experiment.pdf).**
 
-**We have built an IRC channel named #gStore on freenode, and you can also come to our website: [gStore](http://gstore-pku.com).**
+**We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore](http://gstore-pku.com).**
 
 <!--**You can write your information in [survey](http://59.108.48.38/survey) if you like.**-->
 
 ## Getting Started
-
+### Compile from Source
 This system is really user-friendly and you can pick it up in several minutes. Remember to check your platform where you want to run this system by viewing [System Requirements](docs/DEMAND.md). After all are verified, please get this project's source code. There are several ways to do this:
 
 - download the zip from this repository and extract it
 
 - fork this repository in your github account
 
-- type `git clone git@github.com:Caesar11/gStore.git` in your terminal or use git GUI to acquire it
+- type `git clone https://github.com/Caesar11/gStore.git` in your terminal or use git GUI to acquire it
 
-Then you need to compile the project, just type `make` in the gStore root directory, and all executables will be ok. To run gStore, please type `bin/gbuild database_name dataset_path` to build a database named by yourself. And you can use `bin/gquery database_name` command to query a existing database. What is more, `bin/ghttp` is a wonderful tool designed for you, as a database server which can be visited via HTTP protocol. Notice that all commands should be typed in the root directory of gStore, and your database name should not end with ".db".
+Then you need to compile the project, just type `make` in the gStore root directory, then all executables will be generated.
+
+### Deploy via Docker
+You can easily deploy gStore via Docker. We provide both of Dockerfile and docker image. Please see our [Docker Deployment Doc(EN)](docs/DOCKER_DEPLOY_EN.md) or [Docker部署文档(中文)](docs/DOCKER_DEPLOY_CN.md) for details.
+
+### Run
+To run gStore, please type `bin/gbuild database_name dataset_path` to build a database named by yourself. And you can use `bin/gquery database_name` command to query an existing database. What is more, `bin/ghttp` is a wonderful tool designed for you, as a database server which can be accessed via HTTP protocol. Notice that all commands should be typed in the root directory of gStore, and your database name should not end with ".db".
 
 - - -
 

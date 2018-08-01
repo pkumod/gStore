@@ -2,7 +2,7 @@
 # Filename:		KVstore.h
 # Author: Bookug Lobert
 # Mail: 1181955272@qq.com
-# Last Modified:	2015-10-23 14:23
+# Last Modified:	2018-02-09 14:23
 # Description: Modified by Wang Libo
 =============================================================================*/
 
@@ -12,6 +12,9 @@
 #include "../Util/Util.h"
 #include "../Util/VList.h"
 #include "Tree.h"
+#include "../Trie/Trie.h"
+#include "IVArray/IVArray.h"
+#include "ISArray/ISArray.h"
 
 //TODO: is it needed to keep a length in Bstr?? especially for IVTree?
 //add a length: sizeof bstr from 8 to 16(4 -> 8 for alignment)
@@ -138,27 +141,27 @@ public:
 	//===============================================================================
 
 	//for subID2values
-	bool open_subID2values(int _mode);
+	bool open_subID2values(int _mode, TYPE_ENTITY_LITERAL_ID _entity_num = 0);
 	bool close_subID2values();
-	bool build_subID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num);
+	bool build_subID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num);
 	bool getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preid_objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 
 	//for objID2values
-	bool open_objID2values(int _mode);
+	bool open_objID2values(int _mode, TYPE_ENTITY_LITERAL_ID _entitynum = 0, TYPE_ENTITY_LITERAL_ID _literal_num = 0);
 	bool close_objID2values();
-	bool build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num);
+	bool build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num, TYPE_ENTITY_LITERAL_ID total_literal_num);
 	bool getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preid_subidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 
 	//for preID2values
-	bool open_preID2values(int _mode);
+	bool open_preID2values(int _mode, TYPE_PREDICATE_ID _pre_num = 0);
 	bool close_preID2values();
-	bool build_preID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num);
+	bool build_preID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID total_pre_num);
 	bool getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 	bool getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
@@ -166,12 +169,18 @@ public:
 	//for so2p
 	bool getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subID, TYPE_ENTITY_LITERAL_ID _objID, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 
+	bool load_trie();
 
 private:
 	std::string store_path;
 
+	std::string dictionary_store_path;
+
+	Trie *trie;
+
 	SITree* entity2id;
-	ISTree* id2entity;
+	//ISTree* id2entity;
+	ISArray* id2entity;
 	static std::string s_entity2id;
 	static std::string s_id2entity;
 	static unsigned short buffer_entity2id_build;
@@ -180,7 +189,8 @@ private:
 	static unsigned short buffer_id2entity_query;
 
 	SITree* predicate2id;
-	ISTree* id2predicate;
+	//ISTree* id2predicate;
+	ISArray* id2predicate;
 	static std::string s_predicate2id;
 	static std::string s_id2predicate;
 	static unsigned short buffer_predicate2id_build;
@@ -189,7 +199,8 @@ private:
 	static unsigned short buffer_id2predicate_query;
 
 	SITree* literal2id;
-	ISTree* id2literal;
+	//ISTree* id2literal;
+	ISArray* id2literal;
 	static std::string s_literal2id;
 	static std::string s_id2literal;
 	static unsigned short buffer_literal2id_build;
@@ -197,9 +208,14 @@ private:
 	static unsigned short buffer_literal2id_query;
 	static unsigned short buffer_id2literal_query;
 
-	IVTree* subID2values;
-	IVTree* objID2values;
-	IVTree* preID2values;
+//	IVTree* subID2values;
+//	IVTree* objID2values;
+//	IVTree* preID2values;
+
+	IVArray* subID2values;
+	IVArray* objID2values;
+	IVArray* objID2values_literal;
+	IVArray* preID2values;
 	static std::string s_sID2values;
 	static std::string s_oID2values;
 	static std::string s_pID2values;
@@ -210,35 +226,47 @@ private:
 	static unsigned short buffer_oID2values_query;
 	static unsigned short buffer_pID2values_query;
 
+
 	//===============================================================================
 
 	bool open(SITree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
-	bool open(ISTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
-	bool open(IVTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
+	//bool open(ISTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
+	bool open(ISArray* & _array, std::string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num = 0);
+	//bool open(IVTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
+	bool open(IVArray* & _array, std::string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num = 0);
 
 	void flush(SITree* _p_btree);
-	void flush(ISTree* _p_btree);
-	void flush(IVTree* _p_btree);
+	//void flush(ISTree* _p_btree);
+	void flush(ISArray* _array);
+	//void flush(IVTree* _p_btree);
+	void flush(IVArray* _array);
 
 	bool addValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val);
-	bool addValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
-	bool addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
+	//bool addValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
+	bool addValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen);
+	//bool addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
+	bool addValueByKey(IVArray* _array, unsigned _key, char *_val, unsigned _vlen);
 
 	bool setValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val);
-	bool setValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
-	bool setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
+	//bool setValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
+	bool setValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen);
+//	bool setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
+	bool setValueByKey(IVArray* _array, unsigned _key, char* _val, unsigned _vlen);
 
 	bool getValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsigned* _val) const;
-	bool getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
-	bool getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
-
+	//bool getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
+	bool getValueByKey(ISArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const;
+//	bool getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
+	bool getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const;
 
 
 	TYPE_ENTITY_LITERAL_ID getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const;
 
 	bool removeKey(SITree* _p_btree, const char* _key, unsigned _klen);
-	bool removeKey(ISTree* _p_btree, unsigned _key);
-	bool removeKey(IVTree* _p_btree, unsigned _key);
+	//bool removeKey(ISTree* _p_btree, unsigned _key);
+	bool removeKey(ISArray* _array, unsigned _key);
+//	bool removeKey(IVTree* _p_btree, unsigned _key);
+	bool removeKey(IVArray* _array, unsigned _key);
 
 	static std::vector<unsigned> intersect(const unsigned* _list1, const unsigned* _list2, unsigned _len1, unsigned _len2);
 	static unsigned binarySearch(unsigned key, const unsigned* _list, unsigned _list_len, int step = 1);

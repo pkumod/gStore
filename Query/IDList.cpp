@@ -95,7 +95,16 @@ IDList::to_str()
 int
 IDList::sort()
 {
+#ifndef PARALLEL_SORT
 	std::sort(id_list.begin(), id_list.end());
+#else
+	//long t1=Util::get_cur_time();
+	omp_set_num_threads(thread_num);
+	__gnu_parallel::sort(id_list.begin(), id_list.end());
+#endif
+	//long t2=Util::get_cur_time();
+	//long t=t2-t1;
+	//cout<<"\ntime:"<<t<<endl;
 	return 0;
 }
 
@@ -473,3 +482,8 @@ IDList::bsearch_uporder(unsigned _key)
 	return Util::bsearch_vec_uporder(_key, this->getList());
 }
 
+
+std::vector<unsigned>::iterator 
+IDList::eraseAt(std::vector<unsigned>::iterator  it){
+	return id_list.erase( it);
+}

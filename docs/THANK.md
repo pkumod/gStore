@@ -2,6 +2,12 @@
 
 ---
 
+[zhangxiaoyang](https://github.com/zhangxiaoyang)
+
+- add python socket API(api/socket/python)
+
+---
+
 王定峰   
 
 fei123581321@qq.com 
@@ -50,3 +56,7 @@ prospace@bupt.edu.cn
 
 ---
 
+[imbajin](https://github.com/imbajin)
+
+- provide the support of docker deployment
+---
