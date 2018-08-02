@@ -82,6 +82,11 @@ cscope*
 .project
 tags
 .settings
+.vs
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
 
 # latex files
 *.aux
