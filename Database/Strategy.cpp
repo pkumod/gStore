@@ -648,34 +648,78 @@ Strategy::handler3(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	int triple_id = _bq->getEdgeID(0, 0);
 	Triple triple = _bq->getTriple(triple_id);
 	TYPE_PREDICATE_ID pre_id = _bq->getEdgePreID(0, 0);
-	unsigned* id_list = NULL;
-	unsigned id_list_len = 0;
 
 	_result_list.clear();
-	this->kvstore->getsubIDobjIDlistBypreID(pre_id, id_list, id_list_len);
 	int var1_id = _bq->getSelectedVarPosition(triple.subject);
 	int var2_id = _bq->getSelectedVarPosition(triple.object);
 
-	if(var1_id < 0 || var2_id < 0)
+	if (var1_id < 0 || var2_id < 0)
 	{
-		delete[] id_list;
 		return;
 	}
 
-	long after_filter = Util::get_cur_time();
-	cout << "after filter, used " << (after_filter - before_filter) << "ms" << endl;
-
-	for (unsigned i = 0; i < id_list_len; i += 2)
+	if (_bq->isReady(var1_id))
 	{
-		unsigned* record = new unsigned[2];    //2 vars and selected
-		record[var1_id] = id_list[i];
-		record[var2_id] = id_list[i + 1];
-		_result_list.push_back(record);
+		IDList &var1_candidate_list = _bq->getCandidateList(var1_id);
+
+		for (unsigned i = 0; i < var1_candidate_list.size(); i++)
+		{
+			unsigned sub_id = var1_candidate_list.getID(i);
+
+			unsigned *obj_id_list, id_list_len;
+			this->kvstore->getobjIDlistBysubIDpreID(sub_id, pre_id, obj_id_list, id_list_len);
+
+			for (unsigned j = 0; j < id_list_len; j++)
+			{
+				unsigned *record = new unsigned[2];
+				record[var1_id] = sub_id;
+				record[var2_id] = obj_id_list[j];
+				_result_list.push_back(record);
+			}
+
+			delete[] obj_id_list;
+		}
+	}
+	else if (_bq->isReady(var2_id))
+	{
+		IDList &var2_candidate_list = _bq->getCandidateList(var2_id);
+
+		for (unsigned i = 0; i < var2_candidate_list.size(); i++)
+		{
+			unsigned obj_id = var2_candidate_list.getID(i);
+
+			unsigned *sub_id_list, id_list_len;
+			this->kvstore->getsubIDlistByobjIDpreID(obj_id, pre_id, sub_id_list, id_list_len);
+
+			for (unsigned j = 0; j < id_list_len; j++)
+			{
+				unsigned *record = new unsigned[2];
+				record[var1_id] = sub_id_list[j];
+				record[var2_id] = obj_id;
+				_result_list.push_back(record);
+			}
+
+			delete[] sub_id_list;
+		}
+	}
+	else
+	{
+		unsigned *id_list, id_list_len;
+		this->kvstore->getsubIDobjIDlistBypreID(pre_id, id_list, id_list_len);
+
+		for (unsigned i = 0; i < id_list_len; i += 2)
+		{
+			unsigned *record = new unsigned[2];    //2 vars and selected
+			record[var1_id] = id_list[i];
+			record[var2_id] = id_list[i + 1];
+			_result_list.push_back(record);
+		}
+
+		delete[] id_list;
 	}
 
 	long after_copy = Util::get_cur_time();
-	cout << "after copy to result list: used " << (after_copy - after_filter) << " ms" << endl;
-	delete[] id_list;
+	cout << "after filter and copy to result list: used " << (after_copy - before_filter) << " ms" << endl;
 	cout << "Final result size: " << _result_list.size() << endl;
 }
 

@@ -424,6 +424,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 			}
 		triple_pattern.getVarset();
 
+		/*
 		//add extra triple pattern
 		{
 			Varset need_add;
@@ -490,6 +491,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 			}
 		}
 		triple_pattern.getVarset();
+		*/
 
 		//get useful varset
 		Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset();
@@ -1268,6 +1270,3 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 			}
 		}
 }
-
-
-
