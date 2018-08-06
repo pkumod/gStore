@@ -56,4 +56,6 @@ public:
 	int getNext() const;
 
 	~IVEntry();
+
+	mutex Lock;
 };

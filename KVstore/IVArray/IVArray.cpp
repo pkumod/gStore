@@ -25,6 +25,7 @@ IVArray::IVArray()
 	MAX_CACHE_SIZE = 0;
 	cache_head = new IVEntry;
 	cache_tail_id = -1;
+	srand(time(NULL));
 }
 
 IVArray::~IVArray()
@@ -43,6 +44,7 @@ IVArray::~IVArray()
 
 IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num)
 {
+	srand(time(NULL));
 //	cout << "Initialize " << _filename << "..." << endl;
 	dir_path = _dir_path;
 	filename = _dir_path + "/" + _filename;
@@ -161,7 +163,6 @@ IVArray::PreLoad()
 bool
 IVArray::save()
 {
-	this->AccessLock.lock();
 	// save ValueFile and IVfile
 	int fd = fileno(IVfile);
 
@@ -199,7 +200,6 @@ IVArray::save()
 
 	BM->SaveFreeBlockList();
 
-	this->AccessLock.unlock();
 	return true;
 }
 
@@ -251,6 +251,8 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 	{
 		return false;
 	}
+
+	this->CacheLock.lock();
 	// ensure there is enough room in main memory
 	while (CurCacheSize + _len > MAX_CACHE_SIZE)
 	{
@@ -274,19 +276,26 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 	array[_key].setNext(-1);
 	cache_tail_id = _key;
 
+	this->CacheLock.unlock();
 	return true;
 }
 
 //Update last used time of array[_key]
 bool
-IVArray::UpdateTime(unsigned _key)
+IVArray::UpdateTime(unsigned _key, bool HasLock)
 {
 	if (array[_key].isPined()) // the cache pined should not be swaped out
 		return true;
 
 	if (_key == (unsigned) cache_tail_id)// already most recent
 		return true;
+	
+	//randomly choose thread to update cache
+	if (Util::get_cur_time() % 5 == 0)
+		return true;
 
+	if (!HasLock)
+		this->CacheLock.lock();
 //	cout << "UpdateTime: " << _key << endl;
 	int prevID = array[_key].getPrev();
 	int nextID = array[_key].getNext();
@@ -303,54 +312,50 @@ IVArray::UpdateTime(unsigned _key)
 	array[cache_tail_id].setNext(_key);
 	cache_tail_id = _key;
 
+	if (!HasLock)
+		this->CacheLock.unlock();
 	return true;
 }
 
 bool
 IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 {
-	this->AccessLock.lock();
 	//printf("%s search %d: ", filename.c_str(), _key);
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
 		_str = NULL;
 		_len = 0;
-		this->AccessLock.unlock();
 		return false;
 	}
 	// try to read in main memory
 	if (array[_key].inCache())
 	{
 		UpdateTime(_key);
-		this->AccessLock.unlock();
 		return array[_key].getBstr(_str, _len);
 	}
 	// read in disk
 	unsigned store = array[_key].getStore();
 	if (!BM->ReadValue(store, _str, _len))
 	{
-		this->AccessLock.unlock();
 		return false;
 	}
-	if (!VList::isLongList(_len))
+	if(!VList::isLongList(_len) && array[_key].Lock.try_lock())
 	{
 		AddInCache(_key, _str, _len);
 		char *debug = new char [_len];
 		memcpy(debug, _str, _len);
 		_str = debug;
+		array[_key].Lock.unlock();
 	}
 
-	this->AccessLock.unlock();
 	return true;
 }
 
 bool
 IVArray::insert(unsigned _key, char *_str, unsigned _len)
 {
-	this->AccessLock.lock();
 	if (_key < CurEntryNum && array[_key].isUsed())
 	{
-		this->AccessLock.unlock();
 		return false;
 	}
 	
@@ -358,7 +363,6 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 	{
 		cout << _key << ' ' << MAX_KEY_NUM << endl;
 		cout << "IVArray insert error: Key is bigger than MAX_KEY_NUM" << endl;
-		this->AccessLock.unlock();
 		return false;
 	}
 
@@ -377,7 +381,6 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 		if (newp == NULL)
 		{
 			cout << "IVArray insert error: main memory full" << endl;
-			this->AccessLock.unlock();
 			return false;
 		}
 
@@ -395,7 +398,6 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 		unsigned store = BM->WriteValue(_str, _len);
 		if (store == 0)
 		{
-			this->AccessLock.unlock();
 			return false;
 		}
 		array[_key].setStore(store);
@@ -409,17 +411,14 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 	array[_key].setUsedFlag(true);
 	array[_key].setDirtyFlag(true);
 
-	this->AccessLock.unlock();
 	return true;
 }
 
 bool
 IVArray::remove(unsigned _key)
 {
-	this->AccessLock.lock();
 	if (!array[_key].isUsed())
 	{
-		this->AccessLock.unlock();
 		return false;
 	}
 
@@ -450,7 +449,6 @@ IVArray::remove(unsigned _key)
 
 	array[_key].release();
 
-	this->AccessLock.unlock();
 	return true;
 
 }
@@ -458,10 +456,8 @@ IVArray::remove(unsigned _key)
 bool
 IVArray::modify(unsigned _key, char *_str, unsigned _len)
 {
-	this->AccessLock.lock();
 	if (!array[_key].isUsed())
 	{
-		this->AccessLock.unlock();
 		return false;
 	}
 
@@ -488,7 +484,6 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 		AddInCache(_key, _str, _len);
 	}
 
-	this->AccessLock.unlock();
 	return true;
 	
 }
@@ -497,11 +492,9 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 void
 IVArray::PinCache(unsigned _key)
 {
-	this->AccessLock.lock();
 	//printf("%s search %d: ", filename.c_str(), _key);
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
-		this->AccessLock.unlock();
 		return;
 	}
 	// try to read in main memory
@@ -510,8 +503,7 @@ IVArray::PinCache(unsigned _key)
 		RemoveFromLRUQueue(_key);
 
 		array[_key].setCachePinFlag(true);
-
-		this->AccessLock.unlock();
+	
 		return;
 	}
 	// read in disk
@@ -520,7 +512,6 @@ IVArray::PinCache(unsigned _key)
 	unsigned _len = 0;
 	if (!BM->ReadValue(store, _str, _len))
 	{
-		this->AccessLock.unlock();
 		return;
 	}
 
@@ -528,7 +519,6 @@ IVArray::PinCache(unsigned _key)
 	array[_key].setCacheFlag(true);
 	array[_key].setCachePinFlag(true);
 
-	this->AccessLock.unlock();
 	return;
 }
 
@@ -538,13 +528,32 @@ IVArray::RemoveFromLRUQueue(unsigned _key)
 	if (!array[_key].inCache() || array[_key].isPined())
 		return;
 
-	UpdateTime(_key);
+	this->CacheLock.lock();
+	int prevID = array[_key].getPrev();
+	int nextID = array[_key].getNext();
+
+	if (prevID == -1)
+		cache_head->setNext(nextID);
+	else
+		array[prevID].setNext(nextID);
+
+	//cout << "next ID: " << nextID << endl;
+	if (nextID != -1)
+		array[nextID].setPrev(prevID); // since array[_key] is not tail, nextp will not be NULL
+	else
+		cache_tail_id = prevID;
+
+	array[_key].setCacheFlag(false);
+	array[_key].setPrev(-1);
+	array[_key].setNext(-1);
+	/*UpdateTime(_key, true);
 	unsigned PrevID = array[_key].getPrev();
 	cache_tail_id = PrevID;
 	if (PrevID == -1)
 		cache_head->setNext(-1);
 	else
-		array[PrevID].setNext(-1);
+		array[PrevID].setNext(-1);*/
 
+	this->CacheLock.unlock();
 	return;
 }
