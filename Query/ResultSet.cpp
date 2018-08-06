@@ -191,20 +191,19 @@ ResultSet::to_JSON()
 
 				if (!list_empty)
 					_buf << ",\t";
-
 				if (ans_str[0] == '<')
 				{
 					ans_type = "uri";
 					ans_str = ans_str.substr(1, ans_str.length() - 2);
 					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-					_buf << "\"type\": \"" + ans_type + "\", \"value\": \"" + Util::node2string(ans_str.c_str()) + "\" }";
+					_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
 				}
 				else if (ans_str[0] == '"' && ans_str.find("\"^^<") == string::npos && ans_str[ans_str.length() - 1] != '>' )
 				{
 					ans_type = "literal";
 					ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
 					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-					_buf << "\"type\": \"" + ans_type + "\", \"value\": \"" + Util::node2string(ans_str.c_str()) + "\" }";
+					_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
 				}
 				else if (ans_str[0] == '"' && ans_str.find("\"^^<") != string::npos && ans_str[ans_str.length() - 1] == '>' )
 				{
@@ -214,7 +213,7 @@ ResultSet::to_JSON()
 					ans_str = ans_str.substr(1, pos - 1);
 
 					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-					_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": \"" + Util::node2string(ans_str.c_str()) + "\" }";
+					_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
 				}
 				list_empty = false;
 			}
