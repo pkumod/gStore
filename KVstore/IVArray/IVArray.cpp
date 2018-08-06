@@ -291,7 +291,7 @@ IVArray::UpdateTime(unsigned _key, bool HasLock)
 		return true;
 	
 	//randomly choose thread to update cache
-	if (Util::get_cur_time() % 5 == 0)
+	if (Util::get_cur_time() % 5 == 6)
 		return true;
 
 	if (!HasLock)
@@ -339,13 +339,17 @@ IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 	{
 		return false;
 	}
-	if(!VList::isLongList(_len) && array[_key].Lock.try_lock())
+	if(!VList::isLongList(_len))
 	{
-		AddInCache(_key, _str, _len);
-		char *debug = new char [_len];
-		memcpy(debug, _str, _len);
-		_str = debug;
-		array[_key].Lock.unlock();
+		if (array[_key].Lock.try_lock())
+		{
+			AddInCache(_key, _str, _len);
+			char *debug = new char [_len];
+			memcpy(debug, _str, _len);
+			_str = debug;
+			array[_key].Lock.unlock();
+	
+		}
 	}
 
 	return true;
