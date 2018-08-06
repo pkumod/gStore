@@ -45,12 +45,12 @@ private:
 
 	bool AddInCache(unsigned _key, char *_str, unsigned _len);
 	bool SwapOut();
-	bool UpdateTime(unsigned _key);
+	bool UpdateTime(unsigned _key, bool HasLock = false);
 
 	bool PreLoad();
 	void RemoveFromLRUQueue(unsigned _key);
 	
-	mutex AccessLock;
+	mutex CacheLock;
 
 public:
 	IVArray();
