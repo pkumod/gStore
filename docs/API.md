@@ -557,9 +557,9 @@ public void query(String _username, String _password, String _db_name, String _s
 
 - - -
 
-##Python API
+## Python API
 
-####Interface
+#### Interface
 
 To use Python API, please see gStore/api/http/python/src/GstoreConnector.py. Functions should be called like following:
 
@@ -601,9 +601,9 @@ def fquery(self, username, password, db_name, sparql, filename):
 
 - - -
 
-##Php API
+## Php API
 
-####Interface
+#### Interface
 
 To use Php API, please see gStore/api/http/php/src/GstoreConnector.php. Functions should be called like following:
 
