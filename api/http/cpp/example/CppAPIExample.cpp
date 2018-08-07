@@ -15,15 +15,15 @@ int main(int argc, char * argv[])
 {
     // initialize the GStore server's IP address and port.
     cout << "in" <<endl;
-    GstoreConnector gc("172.31.222.93", 9016);
+    GstoreConnector gc("172.31.222.94", 9000);
     cout << "out"<<endl;
     // build a new database by a RDF file.
     // note that the relative path is related to gserver
 	
-	gc.build("test", "data/lubm/LUBM_10.n3", "root", "123456");
+	gc.build("lubm", "data/lubm/lubm.nt", "root", "123456");
    
 	//load the database that you've build.
-	gc.load("test", "root", "123456");
+	gc.load("lubm", "root", "123456");
     // then you can execute SPARQL query on this database.
     std::string sparql = "select ?x where \
                          { \
@@ -35,11 +35,11 @@ int main(int argc, char * argv[])
                          ?z    <ub:worksFor>    ?w. \
                          ?w    <ub:name>    <Department0>. \
                          }";
-    std::string answer = gc.query("root", "123456", "test", sparql);
+    std::string answer = gc.query("root", "123456", "lubm", sparql);
     std::cout << answer << std::endl;
 
     // unload this database.
-    gc.unload("test", "root", "123456");
+    gc.unload("lubm", "root", "123456");
     // also, you can load some exist database directly and then query.
     gc.load("lubm", "root", "123456");
     answer = gc.query("root", "123456", "lubm", sparql);

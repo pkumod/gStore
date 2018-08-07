@@ -483,6 +483,7 @@ $(lib_antlr):
 
 $(api_cpp): $(objdir)Socket.o
 	$(MAKE) -C api/socket/cpp/src 
+	$(MAKE) -C api/http/cpp/
 	$(MAKE) -C api/http/cpp/src 
 
 $(api_java):
