@@ -110,10 +110,10 @@ operation: build, load, unload, query, monitor, show, checkpoint, user
 
 ```
 // build a new database by a RDF file.
-ld("test", "data/lubm/LUBM_10.n3", "root", "123456");
+gc.build("test", "data/lubm/LUBM_10.n3", "root", "123456");
 
 // load databse
-gc.build("test", "data/lubm/LUBM_10.n3", "root", "123456");
+gc.load("test", "root", "123456");
 
 // then you can execute SPARQL query on this database.
 answer = gc.query("root", "123456", "test", sparql);
