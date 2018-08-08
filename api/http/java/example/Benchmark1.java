@@ -26,7 +26,7 @@ class MyThread extends Thread {
         String filename = "result/" + num + ".txt";
         String answer = "";
 //		String answer = gc.query("root", "123456", "test", sparql);
-        gc.query("root", "123456", "test", sparql, filename); 
+        gc.query("root", "123456", "lubm", sparql, filename); 
         
         FileInputStream in = null;
         try {
@@ -67,8 +67,8 @@ public class Benchmark1
 {
 	public static void main(String[] args)
 	{
-		GstoreConnector gc = new GstoreConnector("172.31.222.78", 3305);
-        gc.load("test", "root", "123456");
+		GstoreConnector gc = new GstoreConnector("172.31.222.94", 9000);
+        gc.load("lubm", "root", "123456");
 		String[] spq = new String[6];
         spq[0] = "select ?x where"
                 +"{"
