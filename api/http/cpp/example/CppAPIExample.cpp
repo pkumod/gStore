@@ -9,8 +9,10 @@
 #include "GstoreConnector.h"
 #include <string>
 #include <iostream>
+
 using namespace std;
-// before run this example, you must start up the GStore server at first (use command ./gserver).
+
+// before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
 int main(int argc, char * argv[])
 {
     // initialize the GStore server's IP address and port.
@@ -37,6 +39,9 @@ int main(int argc, char * argv[])
                          }";
     std::string answer = gc.query("root", "123456", "lubm", sparql);
     std::cout << answer << std::endl;
+    
+    // make a SPARQL query and save the result in ans.txt
+    gc.query("root", "123456", "lubm", sparql, "ans.txt");
 
     // unload this database.
     gc.unload("lubm", "root", "123456");

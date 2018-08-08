@@ -9,6 +9,11 @@ using namespace std;
 //#define tnum 12000
 #define tnum 3000
 bool correctness = true;
+bool lcorrectness = true;
+bool ucorrectness = true;
+
+// before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
+
 pthread_mutex_t mutex;
 
 string int2string(int n)

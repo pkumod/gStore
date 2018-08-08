@@ -1,4 +1,5 @@
 # Executables
+*.pyc
 *.exe
 *.out
 *.app

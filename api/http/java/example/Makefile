@@ -13,8 +13,8 @@ run: JavaAPIExample.class
 test: Benchmark.class
 	java -XX:-UseGCOverheadLimit -Xmx64G -cp ../lib/GstoreJavaAPI.jar:. Benchmark
 
-test: Benchmark.class
-	java -XX:-UseGCOverheadLimit -Xmx64G -cp ../lib/GstoreJavaAPI.jar:. Benchmark >> time.txt
+#test: Benchmark.class
+	#java -XX:-UseGCOverheadLimit -Xmx64G -cp ../lib/GstoreJavaAPI.jar:. Benchmark >> time.txt
 clean:
 	rm -f JavaAPIExample.class
 
