@@ -9,7 +9,7 @@
 import java.io.*;
 import java.util.*;
 import jgsc.GstoreConnector;
-
+// before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
 class MyThread extends Thread {
 	public static boolean correctness = true; 
 	//public static int cnum = 0;

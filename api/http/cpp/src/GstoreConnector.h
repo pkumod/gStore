@@ -31,7 +31,8 @@ public:
 	bool build(std::string _db_name, std::string _rdf_file_path, std::string username, std::string password);
 	bool drop(std::string _db_name);
 	std::string query(std::string username, std::string password, std::string db_name, std::string sparql);
-	std::string show();  //show all databases
+    void query(std::string username, std::string password, std::string db_name, std::string sparql, std::string filename);
+    std::string show();  //show all databases
 	std::string user(std::string type, std::string username1, std::string password1, std::string username2, std::string addtion);
 	std::string showUser();
 	std::string monitor(std::string db_name);
