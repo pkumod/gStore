@@ -1479,11 +1479,19 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Where || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
 			{
 				general_evaluation.prepareUpdateTriple(general_evaluation.getQueryTree().getDeletePatterns(), update_triple, update_triple_num);
+				for(int i = 0; i < update_triple_num; i++)
+				{
+					update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
+				}
 				success_num = remove(update_triple, update_triple_num);
 			}
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
 			{
 				general_evaluation.prepareUpdateTriple(general_evaluation.getQueryTree().getInsertPatterns(), update_triple, update_triple_num);
+				for(int i = 0; i < update_triple_num; i++)
+				{
+					update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
+				}
 				success_num = insert(update_triple, update_triple_num);
 			}
 		}
