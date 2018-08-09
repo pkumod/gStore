@@ -25,7 +25,6 @@ IVArray::IVArray()
 	MAX_CACHE_SIZE = 0;
 	cache_head = new IVEntry;
 	cache_tail_id = -1;
-	srand(time(NULL));
 }
 
 IVArray::~IVArray()
@@ -44,7 +43,6 @@ IVArray::~IVArray()
 
 IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num)
 {
-	srand(time(NULL));
 //	cout << "Initialize " << _filename << "..." << endl;
 	dir_path = _dir_path;
 	filename = _dir_path + "/" + _filename;
@@ -53,6 +51,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 	//index_time_map.clear();
 	//time_index_map.clear();
 	MAX_CACHE_SIZE = buffer_size;
+//	MAX_CACHE_SIZE = 10 * (1 << 30);
 	cache_head = new IVEntry;
 	cache_tail_id = -1;
 
@@ -130,34 +129,6 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 
 	}
 //	cout << _filename << " Done." << endl;
-}
-
-bool
-IVArray::PreLoad()
-{
-	if (array == NULL)
-		return false;
-
-	for(unsigned i = 0; i < CurEntryNum; i++)
-	{
-		if (!array[i].isUsed())
-			continue;
-
-		unsigned store = array[i].getStore();
-		char *str = NULL;
-		unsigned len = 0;
-
-		if (!BM->ReadValue(store, str, len))
-			return false;
-		if (CurCacheSize + len > (MAX_CACHE_SIZE >> 1))
-			break;
-		
-		AddInCache(i, str, len);
-		
-		delete [] str;
-	}
-
-	return true;
 }
 
 bool
@@ -252,7 +223,7 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 		return false;
 	}
 
-	this->CacheLock.lock();
+//	this->CacheLock.lock();
 	// ensure there is enough room in main memory
 	while (CurCacheSize + _len > MAX_CACHE_SIZE)
 	{
@@ -263,9 +234,6 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 		}
 	}
 
-	CurCacheSize += _len;
-	array[_key].setBstr(_str, _len);
-	array[_key].setCacheFlag(true);
 
 	if (cache_tail_id == -1)
 		cache_head->setNext(_key);
@@ -276,7 +244,11 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 	array[_key].setNext(-1);
 	cache_tail_id = _key;
 
-	this->CacheLock.unlock();
+	CurCacheSize += _len;
+	array[_key].setBstr(_str, _len);
+	array[_key].setCacheFlag(true);
+
+//	this->CacheLock.unlock();
 	return true;
 }
 
@@ -289,13 +261,9 @@ IVArray::UpdateTime(unsigned _key, bool HasLock)
 
 	if (_key == (unsigned) cache_tail_id)// already most recent
 		return true;
-	
-	//randomly choose thread to update cache
-	if (Util::get_cur_time() % 5 == 6)
-		return true;
 
-	if (!HasLock)
-		this->CacheLock.lock();
+//	if (!HasLock)
+//		this->CacheLock.lock();
 //	cout << "UpdateTime: " << _key << endl;
 	int prevID = array[_key].getPrev();
 	int nextID = array[_key].getNext();
@@ -312,46 +280,54 @@ IVArray::UpdateTime(unsigned _key, bool HasLock)
 	array[cache_tail_id].setNext(_key);
 	cache_tail_id = _key;
 
-	if (!HasLock)
-		this->CacheLock.unlock();
+//	if (!HasLock)
+//		this->CacheLock.unlock();
 	return true;
 }
 
 bool
 IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 {
+	this->CacheLock.lock();
 	//printf("%s search %d: ", filename.c_str(), _key);
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
 		_str = NULL;
 		_len = 0;
+		this->CacheLock.unlock();
 		return false;
 	}
 	// try to read in main memory
 	if (array[_key].inCache())
 	{
 		UpdateTime(_key);
-		return array[_key].getBstr(_str, _len);
+		bool ret = array[_key].getBstr(_str, _len);
+		this->CacheLock.unlock();
+		return ret;
 	}
 	// read in disk
 	unsigned store = array[_key].getStore();
 	if (!BM->ReadValue(store, _str, _len))
 	{
+		this->CacheLock.unlock();
 		return false;
 	}
 	if(!VList::isLongList(_len))
 	{
-		if (array[_key].Lock.try_lock())
-		{
+//		if (array[_key].Lock.try_lock())
+//		{
+//			if (array[_key].inCache())
+//				return true;
 			AddInCache(_key, _str, _len);
 			char *debug = new char [_len];
 			memcpy(debug, _str, _len);
 			_str = debug;
-			array[_key].Lock.unlock();
+	//		array[_key].Lock.unlock();
 	
-		}
+//		}
 	}
 
+	this->CacheLock.unlock();
 	return true;
 }
 
@@ -532,7 +508,7 @@ IVArray::RemoveFromLRUQueue(unsigned _key)
 	if (!array[_key].inCache() || array[_key].isPined())
 		return;
 
-	this->CacheLock.lock();
+	//this->CacheLock.lock();
 	int prevID = array[_key].getPrev();
 	int nextID = array[_key].getNext();
 
@@ -558,6 +534,6 @@ IVArray::RemoveFromLRUQueue(unsigned _key)
 	else
 		array[PrevID].setNext(-1);*/
 
-	this->CacheLock.unlock();
+	//this->CacheLock.unlock();
 	return;
 }
