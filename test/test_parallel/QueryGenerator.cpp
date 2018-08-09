@@ -169,7 +169,7 @@ main(int argc, char **argv)
 				num = atoi(optarg);
 				break;
 			default:
-				printf("Note: MyBenchmark only support query!!!")
+				printf("Note: MyBenchmark only support query!!!");
 				printf("You input option %c\n", opt);
 				printf("Valid options include:\n");
 				printf("-r percentage of reading operations(int)\n");
