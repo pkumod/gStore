@@ -18,7 +18,7 @@ int main(int argc, char * argv[])
 
     // build a new database by a RDF file.
     // note that the relative path is related to gserver.
-    gc.build("LUBM10", "data/LUBM_10.n3");
+    gc.build("LUBM10", "data/lubm/lubm.nt");
     gc.load("LUBM10");
 
     // then you can execute SPARQL query on this database.
