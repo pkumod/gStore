@@ -7,6 +7,7 @@
  * a Key-Value Index for ID-Value pair in form of Array
  * =======================================================================*/
 
+#include "../../Util/Util.h"
 #include "IVEntry.h"
 #include "IVBlockManager.h"
 
@@ -45,10 +46,11 @@ private:
 
 	bool AddInCache(unsigned _key, char *_str, unsigned _len);
 	bool SwapOut();
-	bool UpdateTime(unsigned _key);
+	bool UpdateTime(unsigned _key, bool HasLock = false);
 
-	bool PreLoad();
-	void RemoveFromLRUQueue(unsigned int);
+	void RemoveFromLRUQueue(unsigned _key);
+	
+	mutex CacheLock;
 
 public:
 	IVArray();
@@ -60,4 +62,5 @@ public:
 	bool remove(unsigned _key);
 	bool insert(unsigned _key, char *_str, unsigned _len);
 	bool save();
+	void PinCache(unsigned _key);
 };

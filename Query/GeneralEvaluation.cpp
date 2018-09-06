@@ -1095,7 +1095,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						//ret_result.answer[i][j] = trie->Uncompress(ret_result.answer[i][j], ret_result.answer[i][j].length());
 						}
 					}
-					else //TODO add Uncompress
+					else 
 					{
 				//		ret_result.answer[i][j] = trie->Uncompress(result0.result[i].str[k - id_cols], 
 				//result0.result[i].str[k - id_cols].length());
@@ -1145,7 +1145,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			ret_result.resetStream();
 		}
 	}
-	// TODO: is this part need uncompression?
+	
 	else if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
 	{
 	//	cout << "flag4" << endl;

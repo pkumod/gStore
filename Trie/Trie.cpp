@@ -204,6 +204,9 @@ Trie::WriteDownNode(TrieNode *_node, ofstream& _fout, string _str)
 TripleWithObjType 
 Trie::Compress(const TripleWithObjType &_in_triple, int MODE)
 {
+	//use this to forbid the trie
+	return _in_triple;
+
 	int lowbound = (MODE == BUILDMODE) ? Trie::LOWBOUND : 0;
 	
 	string _in_sub = _in_triple.getSubject();
@@ -236,6 +239,9 @@ Trie::Compress(const TripleWithObjType &_in_triple, int MODE)
 string
 Trie::Compress(string _str)
 {
+	//use this to forbid the trie
+	return _str;
+
 	int lowbound = 0;
 
 	if (Util::isLiteral(_str))
@@ -259,6 +265,7 @@ Trie::LoadDictionary()
 	if (!_fin)
 	{
 		cout << "Trie::LoadDictionary: Fail to open " << store_path 
+			 << " but it doesn't matter if you are building a database."
 		     << endl;
 		return false;
 	}
@@ -293,6 +300,9 @@ Trie::LoadDictionary()
 string
 Trie::Uncompress(const char *_str, const int len)
 {
+	//use this to forbid the trie
+	return string(_str);
+
 	if (len == 0)
 		return "";
 
@@ -360,6 +370,9 @@ Trie::Uncompress(const char *_str, const int len)
 string
 Trie::Uncompress(const string &_str, const int len)
 {
+	//use this to forbid the trie
+	return _str;
+
 	return Uncompress(_str.data(), len);
 }
 
