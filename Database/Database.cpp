@@ -2,7 +2,7 @@
 # Filename:		Database.cpp
 # Author: Bookug Lobert
 # Mail: 1181955272@qq.com
-# Last Modified:	2016-09-11 15:27
+# Last Modified:	2018-09-05 14:20
 # Description: originally written by liyouhuan, modified by zengli and chenjiaqi
 =============================================================================*/
 
@@ -726,7 +726,7 @@ Database::load()
 	//vstree_thread.join();
 #endif
 	//load cache of sub2values and obj2values
-	//this->load_cache();
+	this->load_cache();
 	
 	//warm up always as finishing build(), to utilize the system buffer
 	//this->warmUp();
@@ -767,7 +767,7 @@ Database::load_cache()
 {
 	// get important pre ID
 	// a pre whose degree is more than 50% of max pre degree is important pre
-/*	cout << "get important pre ID" << endl;
+	cout << "get important pre ID" << endl;
 	this->get_important_preID();
 	cout << "total preID num is " << pre_num << endl;
 	cout << "important pre ID is: ";
@@ -776,7 +776,7 @@ Database::load_cache()
 	cout << endl;
 	this->load_candidate_pre2values();
 	this->load_important_sub2values();
-	this->load_important_obj2values();*/
+	this->load_important_obj2values();
 }
 
 void
@@ -843,7 +843,7 @@ Database::get_candidate_preID()
 		
 		_size = this->kvstore->getPreListSize(i);
 		
-		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
+		if (!VList::isLongList(_size) || _size >= max_total_size) continue; // only long list need to be stored in cache
 
 		_value = pre2num[i];
 		if (_value == 0) continue;
@@ -888,56 +888,34 @@ Database::get_candidate_preID()
 void
 Database::build_CacheOfPre2values()
 {
-/*	cout << "now add cache of preID2values..." << endl;
-	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
+	cout << "now add cache of preID2values..." << endl;
 	while (!candidate_preID.empty())
 	{
-		temp_queue.push(candidate_preID.top());
+		this->kvstore->AddIntoPreCache(candidate_preID.top().key);
 		candidate_preID.pop();
 	}
-	while (!temp_queue.empty())
-	{
-		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
-		this->kvstore->AddIntoPreCache(temp_queue.top().key);
-		temp_queue.pop();
-	}*/
 }
 
 void
 Database::build_CacheOfObj2values()
 {
-/*	cout << "now add cache of objID2values..." << endl;
-	// sort key according to their mod by 2000
-	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
+	cout << "now add cache of objID2values..." << endl;
 	while (!important_objID.empty())
 	{
-		temp_queue.push(important_objID.top());
+		this->kvstore->AddIntoObjCache(important_objID.top().key);
 		important_objID.pop();
 	}
-	while (!temp_queue.empty())
-	{
-		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
-		this->kvstore->AddIntoObjCache(temp_queue.top().key);
-		temp_queue.pop();
-	}*/
 }
 
 void
 Database::build_CacheOfSub2values()
 {
-/*	cout << "now add cache of subID2values..." << endl;
-	priority_queue <KEY_SIZE_VALUE, vector<KEY_SIZE_VALUE>, CmpByMod<2000> > temp_queue;
+	cout << "now add cache of subID2values..." << endl;
 	while (!important_subID.empty())
 	{
-		temp_queue.push(important_subID.top());
+		this->kvstore->AddIntoSubCache(important_subID.top().key);
 		important_subID.pop();
 	}
-	while (!temp_queue.empty())
-	{
-		//cout << "add key " << important_objID.top().key << " size: " << important_objID.top().size << endl;
-		this->kvstore->AddIntoSubCache(temp_queue.top().key);
-		temp_queue.pop();
-	}*/
 }
 
 void
@@ -956,7 +934,7 @@ Database::get_important_subID()
 		unsigned _size = 0;
 		if (this->kvstore->getEntityByID(i) == invalid) continue;	
 		_size = this->kvstore->getSubListSize(i);
-		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
+		if (!VList::isLongList(_size) || _size >= max_total_size) continue; // only long list need to be stored in cache
 
 		for(unsigned j = 0; j < important_preID.size(); ++j)
 		{
@@ -1019,7 +997,7 @@ Database::get_important_objID()
 		if (_tmp == invalid) continue;
 
 		_size = this->kvstore->getObjListSize(i);
-		if (!VList::isLongList(_size)) continue; // only long list need to be stored in cache
+		if (!VList::isLongList(_size) || _size >= max_total_size) continue; // only long list need to be stored in cache
 		
 		for(unsigned j = 0; j < important_preID.size(); ++j)
 		{
@@ -1390,14 +1368,16 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 
 		//TODO: withdraw this lock, and allow for multiple doQuery() to run in parallism
 		//we need to add lock in QueryCache's operations
-		this->debug_lock.lock();
+	//	this->debug_lock.lock();
 		bool query_ret = general_evaluation.doQuery();
 		if(!query_ret)
 		{
 			success_num = -101;
 		}
-		this->debug_lock.unlock();
+	//	this->debug_lock.unlock();
 
+		long tv_bfget = Util::get_cur_time();
+		this->getFinalResult_lock.lock();
 		if (trie == NULL)
 		{
 			trie = new Trie;
@@ -1409,8 +1389,8 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 			trie->LoadDictionary();
 		}
 
-		long tv_bfget = Util::get_cur_time();
 		general_evaluation.getFinalResult(_result_set);
+		this->getFinalResult_lock.unlock();
 		long tv_afget = Util::get_cur_time();
 		cout << "after getFinalResult, used " << (tv_afget - tv_bfget) << "ms." << endl;
 
@@ -1499,11 +1479,19 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Where || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
 			{
 				general_evaluation.prepareUpdateTriple(general_evaluation.getQueryTree().getDeletePatterns(), update_triple, update_triple_num);
+				for(int i = 0; i < update_triple_num; i++)
+				{
+					update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
+				}
 				success_num = remove(update_triple, update_triple_num);
 			}
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
 			{
 				general_evaluation.prepareUpdateTriple(general_evaluation.getQueryTree().getInsertPatterns(), update_triple, update_triple_num);
+				for(int i = 0; i < update_triple_num; i++)
+				{
+					update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
+				}
 				success_num = insert(update_triple, update_triple_num);
 			}
 		}
@@ -2717,6 +2705,11 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
+			cout<<"insert: "<<_triple.object<<endl;
+			if(_triple.object == "<http://example/zhoujielun>")
+			{
+				cout<<"found a new entity: "<<_obj_id<<endl;
+			}
 		}
 	}
 	else
