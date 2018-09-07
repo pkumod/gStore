@@ -279,6 +279,10 @@ void StringIndexFile::change(unsigned id, KVstore &kv_store)
 
 	fseek(this->value_file, (*this->index_table)[id].offset, SEEK_SET);
 	fwrite(str.c_str(), sizeof(char), (*this->index_table)[id].length, this->value_file);
+	if(id == 9)
+	{
+		cout<<"check in change():9 "<<str<<endl;
+	}
 }
 
 void StringIndexFile::disable(unsigned id)
@@ -321,6 +325,9 @@ void StringIndex::load()
 bool 
 StringIndex::searchBuffer(unsigned _id, string* _str)
 {
+	//NOTICE: not use string buffer now
+	return false;
+
 	if(_id < Util::LITERAL_FIRST_ID) //entity
 	{
 		if(_id < this->entity_buffer_size)
@@ -374,9 +381,14 @@ void StringIndex::addRequest(unsigned id, std::string *str, bool is_entity_or_li
 {
 	if (is_entity_or_literal)
 	{
+		if(id == 9)
+		{
+			cout<<"to search 9 in string buffer"<<endl;
+		}
 		if(searchBuffer(id, str))
 		{
 //			*str = trie->Uncompress(*str)
+			cout<<"found in string buffer"<<endl;
 			return;
 		}
 		if (id < Util::LITERAL_FIRST_ID)
