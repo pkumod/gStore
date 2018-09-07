@@ -576,13 +576,18 @@ Database::setPreMap()
 void
 Database::setStringBuffer()
 {
-	//TODO: assign according to memory manager
+	//TODO: withdraw string buffer in all places
+	return;
+
+	//BETTER: assign according to memory manager
 	//BETTER?maybe different size for entity and literal, maybe different offset should be used
 	this->entity_buffer_size = (this->limitID_entity<50000000) ? this->limitID_entity : 50000000;
 	this->literal_buffer_size = (this->limitID_literal<50000000) ? this->limitID_literal : 50000000;
 	this->entity_buffer = new Buffer(this->entity_buffer_size);
 	this->literal_buffer = new Buffer(this->literal_buffer_size);
 
+	//DEBUG: insert/delete we should update the size of buffer if adding new string
+	//WARN: after delete and insert, IDs may be not continuous, then the string buffer will cause errors!
 	TYPE_ENTITY_LITERAL_ID valid = 0, i;
 	string str;
 	for (i = 0; i < this->entity_buffer_size; ++i)
@@ -2701,6 +2706,10 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			if (_obj_id < this->entity_buffer_size)
 			{
 				this->entity_buffer->set(_obj_id, _triple.object);
+				if(_obj_id == 9)
+				{
+					cout<<"check 9 in string buffer: "<<this->entity_buffer->get(9);
+				}
 			}
 
 			if (_vertices != NULL)
@@ -2709,6 +2718,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			if(_triple.object == "<http://example/zhoujielun>")
 			{
 				cout<<"found a new entity: "<<_obj_id<<endl;
+				cout<<"entity buffer size: "<<this->entity_buffer_size<<endl;
 			}
 		}
 	}
