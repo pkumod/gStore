@@ -24,6 +24,8 @@ libcurl-devel | needed to be installed
 
 NOTICE:
 
+**To help ease the burden of setting environments, several scripts are provided in [setup](../scripts/setup/) for different Linux distributions. Please select the setup script corresponding to your system and run it with root(or sudo) priviledge.**
+
 1. The name of some packages may be different in different platforms, just install the corresponding one in your own operation system.
 
 2. To install readline and readline-devel, just type `dnf install readline-devel` in Redhat/CentOS/Fedora, or `apt-get install libreadline-dev` in Debian/Ubuntu. Please use corresponding commands in other systems. If you use ArchLinux, just type `pacman -S readline` to install the readline and readline-devel.(so do other packages)
