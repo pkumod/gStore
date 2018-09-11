@@ -89,7 +89,7 @@ Notice:
 
 #### 3. ghttp
 
-ghttp runs gStore like HTTP server with port 9000(You need to open this port in your environment, iptables tool is suggested). Visit from browser with prescriptive url, then gStore will execute corresponding operation.
+ghttp runs gStore like HTTP server with port 9000(You need to open this port in your environment, `iptables` tool is suggested). Visit from browser with prescriptive url, then gStore will execute corresponding operation.
 
 type:
 
@@ -146,6 +146,8 @@ password: the password of the user that execute the operation
 The number of concurrent running queries is suggest to be lower than 300 on a machine with dozens of kernel threads, though we can run 13000 queries concurrently in our experiments.
 To use the concurrency feature, you had better modify the system settings of 'open files' and 'maximum processes' to 65535 or larger.
 Three scripts are placed in [setup](../scripts/setup/) to help you modify the settings in different Linux distributions.
+
+**If queries containing updates are sent via `ghttp`, a `checkpoint` command must be sent and done by the `ghttp` console before we shutdown the database server. Otherwise, the updates may not be synchronize to disk and will be lost if the `ghttp` server is stopped.**
 
 - - -
 
