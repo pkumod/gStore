@@ -604,12 +604,10 @@ int initialize(int argc, char *argv[])
     //     }
     // };
 
-	//TODO: use db_name if multiple databases
     server.resource["^/%3[F|f]operation%3[D|d]checkpoint%26db_name%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
 		checkpoint_handler(server, response, request);
     };
-	//TODO: use db_name if multiple databases
 	server.resource["^/?operation=checkpoint&db_name=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
 		checkpoint_handler(server, response, request);
