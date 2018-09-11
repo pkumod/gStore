@@ -576,9 +576,6 @@ Database::setPreMap()
 void
 Database::setStringBuffer()
 {
-	//TODO: withdraw string buffer in all places
-	return;
-
 	//BETTER: assign according to memory manager
 	//BETTER?maybe different size for entity and literal, maybe different offset should be used
 	this->entity_buffer_size = (this->limitID_entity<50000000) ? this->limitID_entity : 50000000;
@@ -705,13 +702,15 @@ Database::load()
 	id2literal_thread.join();
 #endif
 
-	//TODO+BETTER: if we set string buffer using string index instead of B+Tree, then we can
+	//BETTER: if we set string buffer using string index instead of B+Tree, then we can
 	//avoid to load id2entity and id2literal in ONLY_READ mode
 
 	//generate the string buffer for entity and literal, no need for predicate
 	//NOTICE:the total string size should not exceed 20G, assume that most strings length < 500
 	//too many empty between entity and literal, so divide them
-	this->setStringBuffer();
+
+	//this->setStringBuffer();
+
 	//NOTICE: we should build string buffer from kvstore, not string index
 	//Because when searching in string index, it will first check if in buffer(but the buffer is being built)
 
@@ -753,7 +752,7 @@ Database::load()
 
 	cout << "finish load" << endl;
 
-	//TODO: for only-read application(like endpoint), 3 id2values trees can be closed now
+	//BETTER: for only-read application(like endpoint), 3 id2values trees can be closed now
 	//and we should load all trees on only READ mode
 
 	//HELP: just for checking infos(like kvstore)
@@ -2659,10 +2658,10 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		(this->kvstore)->setEntityByID(_sub_id, _triple.subject);
 
 		//update the string buffer
-		if (_sub_id < this->entity_buffer_size)
-		{
-			this->entity_buffer->set(_sub_id, _triple.subject);
-		}
+		//if (_sub_id < this->entity_buffer_size)
+		//{
+			//this->entity_buffer->set(_sub_id, _triple.subject);
+		//}
 
 		if (_vertices != NULL)
 			_vertices->push_back(_sub_id);
@@ -2703,23 +2702,13 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			(this->kvstore)->setEntityByID(_obj_id, _triple.object);
 
 			//update the string buffer
-			if (_obj_id < this->entity_buffer_size)
-			{
-				this->entity_buffer->set(_obj_id, _triple.object);
-				if(_obj_id == 9)
-				{
-					cout<<"check 9 in string buffer: "<<this->entity_buffer->get(9);
-				}
-			}
+			//if (_obj_id < this->entity_buffer_size)
+			//{
+				//this->entity_buffer->set(_obj_id, _triple.object);
+			//}
 
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
-			cout<<"insert: "<<_triple.object<<endl;
-			if(_triple.object == "<http://example/zhoujielun>")
-			{
-				cout<<"found a new entity: "<<_obj_id<<endl;
-				cout<<"entity buffer size: "<<this->entity_buffer_size<<endl;
-			}
 		}
 	}
 	else
@@ -2736,11 +2725,11 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			(this->kvstore)->setLiteralByID(_obj_id, _triple.object);
 
 			//update the string buffer
-			TYPE_ENTITY_LITERAL_ID tid = _obj_id - Util::LITERAL_FIRST_ID;
-			if (tid < this->literal_buffer_size)
-			{
-				this->literal_buffer->set(tid, _triple.object);
-			}
+			//TYPE_ENTITY_LITERAL_ID tid = _obj_id - Util::LITERAL_FIRST_ID;
+			//if (tid < this->literal_buffer_size)
+			//{
+				//this->literal_buffer->set(tid, _triple.object);
+			//}
 
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
@@ -2853,10 +2842,10 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		this->freeEntityID(_sub_id);
 		this->sub_num--;
 		//update the string buffer
-		if (_sub_id < this->entity_buffer_size)
-		{
-			this->entity_buffer->del(_sub_id);
-		}
+		//if (_sub_id < this->entity_buffer_size)
+		//{
+			//this->entity_buffer->del(_sub_id);
+		//}
 		if (_vertices != NULL)
 			_vertices->push_back(_sub_id);
 	}
@@ -2875,10 +2864,10 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			this->kvstore->subIDByEntity(_triple.object);
 			this->freeEntityID(_obj_id);
 			//update the string buffer
-			if (_obj_id < this->entity_buffer_size)
-			{
-				this->entity_buffer->del(_obj_id);
-			}
+			//if (_obj_id < this->entity_buffer_size)
+			//{
+				//this->entity_buffer->del(_obj_id);
+			//}
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
 		}
@@ -2892,11 +2881,11 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			this->kvstore->subIDByLiteral(_triple.object);
 			this->freeLiteralID(_obj_id);
 			//update the string buffer
-			TYPE_ENTITY_LITERAL_ID tid = _obj_id - Util::LITERAL_FIRST_ID;
-			if (tid < this->literal_buffer_size)
-			{
-				this->literal_buffer->del(tid);
-			}
+			//TYPE_ENTITY_LITERAL_ID tid = _obj_id - Util::LITERAL_FIRST_ID;
+			//if (tid < this->literal_buffer_size)
+			//{
+				//this->literal_buffer->del(tid);
+			//}
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
 		}
@@ -3181,10 +3170,10 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 			new_entity.insert(subid);
 			//add info and update buffer
 			vertices.push_back(subid);
-			if (subid < this->entity_buffer_size)
-			{
-				this->entity_buffer->set(subid, sub);
-			}
+			//if (subid < this->entity_buffer_size)
+			//{
+				//this->entity_buffer->set(subid, sub);
+			//}
 		}
 
 		string pre = _triples[i].getPredicate();
@@ -3214,10 +3203,10 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 				new_entity.insert(objid);
 				//add info and update
 				vertices.push_back(objid);
-				if (objid < this->entity_buffer_size)
-				{
-					this->entity_buffer->set(objid, obj);
-				}
+				//if (objid < this->entity_buffer_size)
+				//{
+					//this->entity_buffer->set(objid, obj);
+				//}
 			}
 		}
 		else //isObjLiteral
@@ -3232,11 +3221,11 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 				this->kvstore->setLiteralByID(objid, obj);
 				//add info and update
 				vertices.push_back(objid);
-				int tid = objid - Util::LITERAL_FIRST_ID;
-				if (tid < this->literal_buffer_size)
-				{
-					this->literal_buffer->set(tid, obj);
-				}
+				//int tid = objid - Util::LITERAL_FIRST_ID;
+				//if (tid < this->literal_buffer_size)
+				//{
+					//this->literal_buffer->set(tid, obj);
+				//}
 			}
 		}
 
@@ -3808,10 +3797,10 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 						this->sub_num--;
 						//add info and update buffer
 						vertices.push_back(_sub_id);
-						if (_sub_id < this->entity_buffer_size)
-						{
-							this->entity_buffer->del(_sub_id);
-						}
+						//if (_sub_id < this->entity_buffer_size)
+						//{
+							//this->entity_buffer->del(_sub_id);
+						//}
 					}
 					else
 					{
@@ -3898,15 +3887,15 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 							this->freeEntityID(_obj_id);
 							//add info and update buffer
 							vertices.push_back(_obj_id);
-							if (_obj_id < this->entity_buffer_size)
-							{
-								this->entity_buffer->del(_obj_id);
-							}
+							//if (_obj_id < this->entity_buffer_size)
+							//{
+								//this->entity_buffer->del(_obj_id);
+							//}
 						}
 						else
 						{
 							tmpset.reset();
-							this->calculateEntityBitSet(_obj_id, tmpset);
+							//this->calculateEntityBitSet(_obj_id, tmpset);
 							//this->vstree->replaceEntry(_obj_id, tmpset);
 						}
 					}
@@ -3921,11 +3910,11 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 							this->freeLiteralID(_obj_id);
 							//add info and update buffer
 							vertices.push_back(_obj_id);
-							int tid = _obj_id - Util::LITERAL_FIRST_ID;
-							if (tid < this->literal_buffer_size)
-							{
-								this->literal_buffer->del(tid);
-							}
+							//int tid = _obj_id - Util::LITERAL_FIRST_ID;
+							//if (tid < this->literal_buffer_size)
+							//{
+								//this->literal_buffer->del(tid);
+							//}
 						}
 					}
 				}

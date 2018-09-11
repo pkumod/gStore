@@ -325,9 +325,6 @@ void StringIndex::load()
 bool 
 StringIndex::searchBuffer(unsigned _id, string* _str)
 {
-	//NOTICE: not use string buffer now
-	return false;
-
 	if(_id < Util::LITERAL_FIRST_ID) //entity
 	{
 		if(_id < this->entity_buffer_size)
@@ -355,12 +352,12 @@ bool StringIndex::randomAccess(unsigned id, string *str, bool is_entity_or_liter
 
 	if (is_entity_or_literal)
 	{
-		if(searchBuffer(id, str))
-		{
-			cout << "FLAG2" << endl;
-			*str = trie->Uncompress(*str, str->length());
-			return true;
-		}
+		//if(searchBuffer(id, str))
+		//{
+			//cout << "FLAG2" << endl;
+			//*str = trie->Uncompress(*str, str->length());
+			//return true;
+		//}
 
 		if (id < Util::LITERAL_FIRST_ID)
 		{
@@ -385,12 +382,12 @@ void StringIndex::addRequest(unsigned id, std::string *str, bool is_entity_or_li
 		{
 			cout<<"to search 9 in string buffer"<<endl;
 		}
-		if(searchBuffer(id, str))
-		{
-//			*str = trie->Uncompress(*str)
-			cout<<"found in string buffer"<<endl;
-			return;
-		}
+		//if(searchBuffer(id, str))
+		//{
+////			*str = trie->Uncompress(*str)
+			//cout<<"found in string buffer"<<endl;
+			//return;
+		//}
 		if (id < Util::LITERAL_FIRST_ID)
 			this->entity.addRequest(id, str);
 		else
