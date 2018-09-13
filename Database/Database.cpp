@@ -1229,7 +1229,6 @@ Database::unload()
 	delete this->literal_buffer;
 	this->literal_buffer = NULL;
 
-	//TODO: fflush the database file
 	//this->vstree->saveTree();
 	//delete this->vstree;
 	//this->vstree = NULL;
@@ -1265,10 +1264,7 @@ bool Database::save()
 	this->saveDBInfoFile();
 	this->saveIDinfo();
 
-	//TODO: fsync or using sync in Util
-	//should sync every file modified
-	//TODO: add flush for string index
-	//this->stringindex->flush();
+	this->stringindex->flush();
 	this->clear_update_log();
 
 	cerr<<"database checkpoint: "<<this->getName()<<endl;
@@ -1370,8 +1366,6 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		tmpsi.emptyBuffer();
 		general_evaluation.setStringIndexPointer(&tmpsi);
 
-		//TODO: withdraw this lock, and allow for multiple doQuery() to run in parallism
-		//we need to add lock in QueryCache's operations
 	//	this->debug_lock.lock();
 		bool query_ret = general_evaluation.doQuery();
 		if(!query_ret)

@@ -147,6 +147,11 @@ class StringIndex
 			predicate.clear();
 		}
 
+		void flush()
+		{
+			//TODO: flush updates to disk to avoid missing
+		}
+
 		void emptyBuffer()
 		{
 			entity.emptyBuffer();

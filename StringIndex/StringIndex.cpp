@@ -282,6 +282,9 @@ void StringIndexFile::change(unsigned id, KVstore &kv_store)
 	if(id == 9)
 	{
 		cout<<"check in change():9 "<<str<<endl;
+		string str2;
+		randomAccess(id, &str2);
+		cout<<str2<<endl;
 	}
 }
 
