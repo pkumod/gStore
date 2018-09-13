@@ -39,7 +39,9 @@ echo "system environment variables set \n"
 
 echo "when running program if you get a [can not find -lxxx] prompt, please search this dynamic library by [ldconfig -p|grep xxx] \n"
 
-
+#sleep 5s
+# compile the gStore system here
+#make
 
 
 # colored output: https://blog.csdn.net/david_dai_1108/article/details/70478826
