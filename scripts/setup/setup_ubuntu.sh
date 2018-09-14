@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# USAGE: run this script in bash using root priviledge
+echo -e "\033[43;35m run this script in bash using root priviledge \033[0m \n"
+#echo -e "\033[43;35m please place this script in the home directory of the gStore repository \033[0m \n"
 # TODO: check versions of system software, disk size and memory
 
 apt install aptitude
@@ -41,6 +42,13 @@ echo "*    -    noproc    65535" >> /etc/security/limits.conf
 echo "system environment variables set \n"
 
 echo "when running program if you get a [can not find -lxxx] prompt, please search this dynamic library by [ldconfig -p|grep xxx] \n"
+
+#sleep 5s
+# compile the gStore system here
+#logout  # exit from root account
+#exit
+#make
+
 
 # colored output: https://blog.csdn.net/david_dai_1108/article/details/70478826
 
