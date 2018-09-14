@@ -91,19 +91,32 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, bool real)
 
 	long offset = (*this->index_table)[id].offset;
 	unsigned length = (*this->index_table)[id].length;
+	if(id == 9)
+	{
+		cout<<"check: "<<offset<<" "<<length<<endl;
+	}
 
 	allocBuffer(length);
 
-	//fseek(this->value_file, offset, SEEK_SET);
-	//fread(this->buffer, sizeof(char), length, this->value_file);
-	pread(fileno(value_file), this->buffer, sizeof(char)*length, offset);
+	//DEBUG!!!!
+	fseek(this->value_file, offset, SEEK_SET);
+	fread(this->buffer, sizeof(char), length, this->value_file);
+	//pread(fileno(value_file), this->buffer, sizeof(char)*length, offset);
 	this->buffer[length] = '\0';
 
 	*str = string(this->buffer);
+	if(id == 9)
+	{
+		cout<<"check: "<<*str<<endl;
+	}
 
 	if (real)
 	{
 		*str = trie->Uncompress(*str, str->length());//Uncompresss
+	}
+	if(id == 9)
+	{
+		cout<<"check: "<<*str<<endl;
 	}
 
 	return true;

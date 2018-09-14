@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# USAGE: run this script in bash using root priviledge
+echo -e "\033[43;35m run this script in bash using root priviledge \033[0m \n"
+#echo -e "\033[43;35m please place this script in the home directory of the gStore repository \033[0m \n"
 # TODO: check versions of system software, disk size and memory
 
 pacman -S gcc gcc
@@ -41,6 +42,8 @@ echo "when running program if you get a [can not find -lxxx] prompt, please sear
 
 #sleep 5s
 # compile the gStore system here
+#logout  # exit from root account
+#exit
 #make
 
 
