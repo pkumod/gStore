@@ -1497,9 +1497,12 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		general_evaluation.releaseResult();
 		delete[] update_triple;
 
-		//TODO: maybe no updates are really done!
-		this->query_cache->clear();
-		cout<<"QueryCache cleared"<<endl;
+		//NOTICE: maybe no updates are really done!
+		if(success_num > 0)
+		{
+			this->query_cache->clear();
+			cout<<"QueryCache cleared"<<endl;
+		}
 		pthread_rwlock_unlock(&(this->update_lock));
 	}
 
