@@ -1347,6 +1347,60 @@ Database::getPreNum()
 	return this->pre_num;
 }
 
+VSTree*
+Database::getVSTree()
+{
+	return this->vstree;
+}
+
+KVstore*
+Database::getKVstore()
+{
+	return this->kvstore;
+}
+
+StringIndex*
+Database::getStringIndex()
+{
+	return this->stringindex;
+}
+
+QueryCache*
+Database::getQueryCache()
+{
+	return this->query_cache;
+}
+
+TYPE_TRIPLE_NUM*
+Database::getpre2num()
+{
+	return this->pre2num;
+}
+
+TYPE_ENTITY_LITERAL_ID&
+Database::getlimitID_literal()
+{
+	return this->limitID_literal;
+}
+
+TYPE_ENTITY_LITERAL_ID&
+Database::getlimitID_entity()
+{
+	return this->limitID_entity;
+}
+
+TYPE_PREDICATE_ID&
+Database::getlimitID_predicate()
+{
+	return this->limitID_predicate;
+}
+
+mutex&
+Database::get_query_parse_lock()
+{
+	return this->query_parse_lock;
+}
+
 int
 Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 {
