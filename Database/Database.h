@@ -87,6 +87,16 @@ public:
 	//id tuples file
 	string getIDTuplesFile();
 
+	VSTree* getVSTree();
+	KVstore* getKVstore();
+	StringIndex* getStringIndex();
+	QueryCache* getQueryCache();
+	TYPE_TRIPLE_NUM* getpre2num();
+	TYPE_ENTITY_LITERAL_ID& getlimitID_literal();
+	TYPE_ENTITY_LITERAL_ID& getlimitID_entity();
+	TYPE_PREDICATE_ID& getlimitID_predicate();
+	mutex& get_query_parse_lock();
+
 private:
 	string name;
 	string store_path;
