@@ -23,6 +23,8 @@ class QueryCache
 		const long long ITEM_MEMORY_LIMIT = 1000000LL;
 		const long long TOTAL_MEMORY_LIMIT = 100000000LL;
 
+		mutex query_cache_lock;
+
 		int time_now;
 		long long total_memory_used;
 
