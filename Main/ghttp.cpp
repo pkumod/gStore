@@ -27,6 +27,7 @@ using namespace boost::property_tree;
 typedef SimpleWeb::Server<SimpleWeb::HTTP> HttpServer;
 typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 
+#define THREAD_NUM 30
 #define MAX_DATABASE_NUM 100
 #define MAX_USER_NUM 1000
 #define ROOT_USERNAME "root"
@@ -81,6 +82,8 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+
+void query_thread(string db_name, string format, string db_query, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 //=============================================================================
 
 //TODO: use locak to protect logs when running in multithreading environment
@@ -271,6 +274,227 @@ string UrlDecode(string& SRC)
 	return (ret);
 }
 
+class Task
+{
+public:
+	string db_name;
+	string format;
+	string db_query;
+	const shared_ptr<HttpServer::Response> response;
+	const shared_ptr<HttpServer::Request> request;
+	Task(string name, string ft, string query, const shared_ptr<HttpServer::Response>& res, const shared_ptr<HttpServer::Request>& req);
+	~Task();
+	void run();
+};
+Task::Task(string name, string ft, string query, const shared_ptr<HttpServer::Response>& res, const shared_ptr<HttpServer::Request>& req):response(res),request(req)
+{
+	db_name = name;
+	format = ft;
+	db_query = query;
+}
+Task::~Task()
+{
+
+}
+void Task::run()
+{
+	query_thread(db_name, format, db_query, response, request);
+}
+
+class Thread
+{
+public:
+	thread TD;
+	int ID;
+	static int threadnum;
+	Task* task;
+	Thread();
+	~Thread();
+	int GetThreadID();
+	void assign(Task* t);
+	void run();
+	void start();
+	friend bool operator==(Thread t1, Thread t2);
+	friend bool operator!=(Thread t1, Thread t2);
+};
+
+list<Thread*> busythreads;
+vector<Thread*> freethreads;
+mutex busy_mutex;
+mutex free_mutex;
+mutex task_mutex;
+
+void BackToFree(Thread *t)
+{
+	busy_mutex.lock();
+	busythreads.erase(find(busythreads.begin(), busythreads.end(), t));
+	busy_mutex.unlock();
+
+	free_mutex.lock();
+	freethreads.push_back(t);
+	free_mutex.unlock();
+}
+
+int Thread::threadnum = 0;
+
+Thread::Thread()
+{
+	threadnum++;
+	ID = threadnum;
+}
+Thread::~Thread()
+{
+	
+}
+int Thread::GetThreadID()
+{
+	return ID;
+}
+void Thread::assign(Task* t)
+{
+	task = t;
+}
+void Thread::run()
+{
+	cout << "Thread:" << ID << " run\n";
+	task->run();
+	delete task;
+	BackToFree(this);
+}
+void Thread::start()
+{
+	TD = thread(&Thread::run, this);
+	TD.detach();
+}
+bool operator==(Thread t1, Thread t2)
+{
+	return t1.ID == t2.ID;
+}
+bool operator!=(Thread t1, Thread t2)
+{
+	return !(t1.ID == t2.ID);
+}
+
+class ThreadPool
+{
+public:
+	int ThreadNum;
+	bool isclose;
+	thread ThreadsManage;
+	queue<Task*> tasklines;
+	ThreadPool();
+	ThreadPool(int t);
+	~ThreadPool();
+	void create();
+	void SetThreadNum(int t);
+	int GetThreadNum();
+	void AddTask(Task* t);
+	void start();
+	void close();
+};
+ThreadPool::ThreadPool()
+{
+	isclose = false;
+	ThreadNum = 10;
+	busythreads.clear();
+	freethreads.clear();
+	for (int i = 0; i < ThreadNum; i++)
+	{
+		Thread *p = new Thread();
+		freethreads.push_back(p);
+	}
+}
+ThreadPool::ThreadPool(int t)
+{
+	isclose = false;
+	ThreadNum = t;
+	busythreads.clear();
+	freethreads.clear();
+	for (int i = 0; i < t; i++)
+	{
+		Thread *p = new Thread();
+		freethreads.push_back(p);
+	}
+}
+ThreadPool::~ThreadPool()
+{
+	for (vector<Thread*>::iterator i = freethreads.begin(); i != freethreads.end(); i++)
+		delete *i;
+}
+void ThreadPool::create()
+{
+	ThreadsManage = thread(&ThreadPool::start, this);
+	ThreadsManage.detach();
+}
+void ThreadPool::SetThreadNum(int t)
+{
+	ThreadNum = t;
+}
+int ThreadPool::GetThreadNum()
+{
+	return ThreadNum;
+}
+void ThreadPool::AddTask(Task* t)
+{
+	task_mutex.lock();
+	tasklines.push(t);
+	task_mutex.unlock();
+}
+void ThreadPool::start()
+{
+	while (true)
+	{
+		if (isclose == true)
+		{
+			busy_mutex.lock();
+			if (busythreads.size() != 0)
+			{
+				busy_mutex.unlock();
+				continue;
+			}
+			busy_mutex.unlock();
+			break;
+		}
+		
+		free_mutex.lock();
+		if (freethreads.size() == 0)
+		{
+			free_mutex.unlock();
+			continue;
+		}
+		free_mutex.unlock();
+		
+		task_mutex.lock();
+		if (tasklines.size() == 0)
+		{
+			task_mutex.unlock();
+			continue;
+		}
+		
+		Task *job = tasklines.front();
+		tasklines.pop();
+		task_mutex.unlock();
+		
+		free_mutex.lock();
+		Thread *t = freethreads.back();
+		freethreads.pop_back();
+		t->assign(job);
+		free_mutex.unlock();
+
+		busy_mutex.lock();
+		busythreads.push_back(t);
+		busy_mutex.unlock();
+		
+		t->start();
+	}			
+}
+void ThreadPool::close()
+{
+	isclose = true;
+}
+
+ThreadPool pool(THREAD_NUM);
+
 int main(int argc, char *argv[])
 {
 	Util util;
@@ -448,7 +672,7 @@ int initialize(int argc, char *argv[])
 	//scheduler = start_thread(func_scheduler);
 #endif
 
-
+	pool.create();
 	//pthread_rwlock_init(&database_load_lock, NULL);
 
 #ifndef SPARQL_ENDPOINT
@@ -1558,9 +1782,8 @@ bool query_handler0(const HttpServer& server, const shared_ptr<HttpServer::Respo
 //	}
 	//doQuery(format, db_query, server, response, request);
 	query_num++;
-	thread t(&query_thread, db_name, format, db_query, response, request);
-	t.detach();
-
+	Task* task = new Task(db_name, format, db_query, response, request);
+	pool.AddTask(task);
 }
 
 bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
@@ -1614,8 +1837,10 @@ bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	//current_database = iter->second;
 	//doQuery(format, db_query, server, response, request);
 	query_num++;
-	thread t(&query_thread, db_name, format, db_query, response, request);
-	t.detach();
+	Task* task = new Task(db_name, format, db_query, response, request);
+	pool.AddTask(task);
+	//thread t(&query_thread, db_name, format, db_query, response, request);
+	//t.detach();
 }
 
 //void query_handler(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
