@@ -1359,12 +1359,12 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		{
 			return -101;
 		}
-		cout<<"read lock acquired"<<endl;
+		cout<<"read priviledge of update lock acquired"<<endl;
 
 		//copy the string index for each query thread
-		StringIndex tmpsi = *this->stringindex;
-		tmpsi.emptyBuffer();
-		general_evaluation.setStringIndexPointer(&tmpsi);
+		//StringIndex tmpsi = *this->stringindex;
+		//tmpsi.emptyBuffer();
+		//general_evaluation.setStringIndexPointer(&tmpsi);
 
 	//	this->debug_lock.lock();
 		bool query_ret = general_evaluation.doQuery();
@@ -1375,6 +1375,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	//	this->debug_lock.unlock();
 
 		long tv_bfget = Util::get_cur_time();
+		//NOTICE: this lock lock ensures that StringIndex is visited sequentially
 		this->getFinalResult_lock.lock();
 		if (trie == NULL)
 		{
@@ -1386,7 +1387,6 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 			}
 			trie->LoadDictionary();
 		}
-
 		general_evaluation.getFinalResult(_result_set);
 		this->getFinalResult_lock.unlock();
 		long tv_afget = Util::get_cur_time();
@@ -1396,7 +1396,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 			need_output_answer = true;
 			//general_evaluation.setNeedOutputAnswer();
 
-		tmpsi.clear();
+		//tmpsi.clear();
 		pthread_rwlock_unlock(&(this->update_lock));
 	}
 	//Update
@@ -1412,6 +1412,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 			cout<<"unable to write lock"<<endl;
 			return -101;
 		}
+		cout<<"write priviledge of update lock acquired"<<endl;
 
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
@@ -3068,7 +3069,7 @@ Database::remove(std::string _rdf_file, bool _is_restore)
 		//triple_num -= parse_triple_num;
 	}
 
-	//TODO:better to free this just after id_tuples are ok
+	//BETTER: free this just after id_tuples are ok
 	//(only when using group insertion/deletion)
 	//or reduce the array size
 	delete[] triple_array;
@@ -3161,7 +3162,9 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		{
 			is_new_sub = true;
 			subid = this->allocEntityID();
+#ifdef DEBUG
 			cout << "this is a new subject: " << sub << " " << subid << endl;
+#endif
 			this->sub_num++;
 			this->kvstore->setIDByEntity(sub, subid);
 			this->kvstore->setEntityByID(subid, sub);
@@ -3194,7 +3197,9 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 			{
 				is_new_obj = true;
 				objid = this->allocEntityID();
+#ifdef DEBUG
 				cout << "this is a new object: " << obj << " " << objid << endl;
+#endif
 				//this->obj_num++;
 				this->kvstore->setIDByEntity(obj, objid);
 				this->kvstore->setEntityByID(objid, obj);
@@ -4026,7 +4031,6 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	return valid_num;
 }
 
-//TODO: check and improve the backup program
 bool 
 Database::backup() 
 {

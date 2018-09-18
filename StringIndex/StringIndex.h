@@ -149,7 +149,7 @@ class StringIndex
 
 		void flush()
 		{
-			//TODO: flush updates to disk to avoid missing
+			//nothing to do here
 		}
 
 		void emptyBuffer()

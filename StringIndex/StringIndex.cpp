@@ -91,33 +91,33 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, bool real)
 
 	long offset = (*this->index_table)[id].offset;
 	unsigned length = (*this->index_table)[id].length;
-	if(id == 9)
-	{
-		cout<<"check: "<<offset<<" "<<length<<endl;
-	}
+	//if(id == 9)
+	//{
+		//cout<<"check: "<<offset<<" "<<length<<endl;
+	//}
 
 	allocBuffer(length);
 
-	//DEBUG!!!!
+	//DEBUG: here a bug exists if we use pread instead of fread, the details are in BUG_StringIndex_pread of docs/BUGS.md
 	fseek(this->value_file, offset, SEEK_SET);
 	fread(this->buffer, sizeof(char), length, this->value_file);
 	//pread(fileno(value_file), this->buffer, sizeof(char)*length, offset);
 	this->buffer[length] = '\0';
 
 	*str = string(this->buffer);
-	if(id == 9)
-	{
-		cout<<"check: "<<*str<<endl;
-	}
+	//if(id == 9)
+	//{
+		//cout<<"check: "<<*str<<endl;
+	//}
 
 	if (real)
 	{
 		*str = trie->Uncompress(*str, str->length());//Uncompresss
 	}
-	if(id == 9)
-	{
-		cout<<"check: "<<*str<<endl;
-	}
+	//if(id == 9)
+	//{
+		//cout<<"check: "<<*str<<endl;
+	//}
 
 	return true;
 }
@@ -145,7 +145,7 @@ void StringIndexFile::trySequenceAccess(bool real)
 	if (this->type == Predicate)
 		cout << "Predicate StringIndex ";
 
-	long current_offset = 0;
+	//long current_offset = 0;
 	if ((max_end - min_begin) / 800000L < (long)this->request.size())
 	{
 		cout << "sequence access." << endl;
@@ -160,8 +160,8 @@ void StringIndexFile::trySequenceAccess(bool real)
 		char *block = new char[MAX_BLOCK_SIZE];
 
 		long current_block_begin = min_begin;
-		//fseek(this->value_file, current_block_begin, SEEK_SET);
-		current_offset = current_block_begin;
+		fseek(this->value_file, current_block_begin, SEEK_SET);
+		//current_offset = current_block_begin;
 
 		while (current_block_begin < max_end)
 		{
@@ -170,14 +170,14 @@ void StringIndexFile::trySequenceAccess(bool real)
 			if (current_block_end <= this->request[pos].offset)
 			{
 				current_block_begin = this->request[pos].offset;
-				//fseek(this->value_file, current_block_begin, SEEK_SET);
-				current_offset = current_block_begin;
+				fseek(this->value_file, current_block_begin, SEEK_SET);
+				//current_offset = current_block_begin;
 				current_block_end = min(current_block_begin + MAX_BLOCK_SIZE, max_end);
 			}
 
-			//fread(block, sizeof(char), current_block_end - current_block_begin, this->value_file);
-			pread(fileno(this->value_file), block, sizeof(char)*(current_block_end-current_block_begin), current_offset);
-			current_offset += sizeof(char)*(current_block_end-current_block_begin);
+			fread(block, sizeof(char), current_block_end - current_block_begin, this->value_file);
+			//pread(fileno(this->value_file), block, sizeof(char)*(current_block_end-current_block_begin), current_offset);
+			//current_offset += sizeof(char)*(current_block_end-current_block_begin);
 
 			while (pos < (int)this->request.size())
 			{
@@ -292,13 +292,13 @@ void StringIndexFile::change(unsigned id, KVstore &kv_store)
 
 	fseek(this->value_file, (*this->index_table)[id].offset, SEEK_SET);
 	fwrite(str.c_str(), sizeof(char), (*this->index_table)[id].length, this->value_file);
-	if(id == 9)
-	{
-		cout<<"check in change():9 "<<str<<endl;
-		string str2;
-		randomAccess(id, &str2);
-		cout<<str2<<endl;
-	}
+	//if(id == 9)
+	//{
+		//cout<<"check in change():9 "<<str<<endl;
+		//string str2;
+		//randomAccess(id, &str2);
+		//cout<<str2<<endl;
+	//}
 }
 
 void StringIndexFile::disable(unsigned id)
@@ -394,10 +394,10 @@ void StringIndex::addRequest(unsigned id, std::string *str, bool is_entity_or_li
 {
 	if (is_entity_or_literal)
 	{
-		if(id == 9)
-		{
-			cout<<"to search 9 in string buffer"<<endl;
-		}
+		//if(id == 9)
+		//{
+			//cout<<"to search 9 in string buffer"<<endl;
+		//}
 		//if(searchBuffer(id, str))
 		//{
 ////			*str = trie->Uncompress(*str)
