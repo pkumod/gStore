@@ -9,7 +9,7 @@
 import java.io.*;
 import java.util.*;
 import jgsc.GstoreConnector;
-
+// before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
 class MyThread extends Thread {
 	public static boolean correctness = true; 
 	//public static int cnum = 0;
@@ -30,7 +30,7 @@ class MyThread extends Thread {
 		//	DataOutputStream of = new DataOutputStream(new FileOutputStream(f));
 		//	of.writeBytes(t.getName()+" "+t.getId()+"\n");
 		//	of.writeBytes("Thread: "+num+"\n");
-			String answer = gc.query(sparql, "dbpedia", "root", "123456");
+			String answer = gc.query("root", "123456", "dbpedia", sparql);
 		//	of.writeBytes(answer);
 			int m = 0;
 			for(int i = 0; i<sparql.length(); ++i)

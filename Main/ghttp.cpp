@@ -335,7 +335,29 @@ int initialize(int argc, char *argv[])
 	//current_database = NULL;
 
 	users.insert(pair<std::string, struct User *>(ROOT_USERNAME, &root));
+	
+	//check databases that already built in the directory 
+	DIR * dir;
+	struct dirent * ptr;
+	dir = opendir("."); //open a directory
+	while((ptr = readdir(dir)) != NULL) //get the names of the files in the directory
+	{
+		//cout << "name: " << ptr->d_name << endl;
+		int nameLen = strlen(ptr->d_name);
+		//cout << "nameLen: " << nameLen << endl;
+		if(nameLen > 3 && std::string(ptr->d_name).substr(nameLen-3, nameLen) == ".db")
+		{
+        		std::string s = std::string(ptr->d_name).substr(0,nameLen-3);
+   			//cout << "already_built db_name: " << s << endl;
+			pthread_rwlock_t temp_lock;
+			pthread_rwlock_init(&temp_lock, NULL);
+			already_build.insert(pair<std::string, pthread_rwlock_t>(s, temp_lock));
+			pthread_rwlock_destroy(&temp_lock);
 
+		}
+	}
+	closedir(dir);//close the pointer of the directory
+	
 	HttpServer server;
 	string db_name;
 	if(argc == 1)
@@ -407,10 +429,6 @@ int initialize(int argc, char *argv[])
 		cout << "Database loaded successfully."<<endl;
 		//already_build.insert(db_name);
 		databases.insert(pair<std::string, Database *>(db_name, current_database));
-		pthread_rwlock_t temp_lock;
-		pthread_rwlock_init(&temp_lock, NULL);
-		already_build.insert(pair<std::string, pthread_rwlock_t>(db_name, temp_lock));
-		pthread_rwlock_destroy(&temp_lock);
 	//}
 
 	//open the query log
@@ -905,6 +923,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		return; 
 	}
 	pthread_rwlock_unlock(&already_build_map_lock);
+
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);

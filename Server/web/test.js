@@ -19,7 +19,7 @@ function query_sparql(num,dp) {
 	var encodeVal = escape(dp);
 	//alert(encodeVal);
 	format = "txt";
-	var argu = "?operation=query&format=" + format + "&sparql=" + dp;
+	var argu = "?operation=query&username=root&password=123456&db_name=dbpedia&format=" + format + "&sparql=" + dp;
 	var encodeArgu = escape(argu);
 	if(format != "html")
 	{

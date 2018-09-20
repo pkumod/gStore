@@ -48,6 +48,7 @@ private:
 	bool UpdateTime(unsigned _key);
 
 	bool PreLoad();
+	void RemoveFromLRUQueue(unsigned int);
 
 public:
 	IVArray();

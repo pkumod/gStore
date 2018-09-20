@@ -522,6 +522,8 @@ IVArray::remove(unsigned _key)
 
 	if (array[_key].inCache())
 	{
+		RemoveFromLRUQueue(_key);
+
 		char *str = NULL;
 		unsigned len = 0;
 		array[_key].getBstr(str, len, false);
@@ -544,8 +546,11 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 	}
 
 	array[_key].setDirtyFlag(true);
+
 	if (array[_key].inCache())
 	{
+		RemoveFromLRUQueue(_key);
+
 		char* str = NULL;
 		unsigned len = 0;
 		array[_key].getBstr(str, len, false);
@@ -587,6 +592,40 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 
 	return true;
 	
+}
+
+void
+IVArray::RemoveFromLRUQueue(unsigned _key)
+{
+	if (!array[_key].inCache())
+		return;
+
+	int prevID = array[_key].getPrev();
+	int nextID = array[_key].getNext();
+
+	if (prevID == -1)
+		cache_head->setNext(nextID);
+	else
+		array[prevID].setNext(nextID);
+
+	//cout << "next ID: " << nextID << endl;
+	if (nextID != -1)
+		array[nextID].setPrev(prevID); // since array[_key] is not tail, nextp will not be NULL
+	else
+		cache_tail_id = prevID;
+
+	array[_key].setCacheFlag(false);
+	array[_key].setPrev(-1);
+	array[_key].setNext(-1);
+	/*UpdateTime(_key, true);
+	unsigned PrevID = array[_key].getPrev();
+	cache_tail_id = PrevID;
+	if (PrevID == -1)
+		cache_head->setNext(-1);
+	else
+		array[PrevID].setNext(-1);*/
+
+	return;
 }
 
 
