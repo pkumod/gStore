@@ -96,6 +96,7 @@ in the sparql query can point to the same node in data graph)
 #include <boost/utility/string_ref.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/functional/hash.hpp>
+#include <unordered_set>
 #include <unordered_map>
 #include <random>
 #include <type_traits>

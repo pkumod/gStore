@@ -371,6 +371,21 @@ void QueryTree::GroupPattern::mergePatternBlockID(int x, int y)
 	this->sub_group_pattern[px].pattern.blockid = py;
 }
 
+void QueryTree::GroupPattern::getTriplePatternSpanningTree(int begin, int end)
+{
+	for (auto i = begin; i < end; i++)
+		if (this->sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		{
+			for (int j = begin; j < i; j++)
+				if (this->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+					if (this->sub_group_pattern[i].pattern.subject_object_varset.hasCommonVar(
+						this->sub_group_pattern[j].pattern.subject_object_varset))
+					{
+						this->mergePatternBlockID(i, j);
+					}
+		}
+}
+
 void QueryTree::GroupPattern::print(int dep)
 {
 	for (int t = 0; t < dep; t++)	printf("\t");	printf("{\n");

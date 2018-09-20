@@ -53,6 +53,7 @@ class QueryTree
 				void initPatternBlockid();
 				int getRootPatternBlockID(int x);
 				void mergePatternBlockID(int x, int y);
+				void getTriplePatternSpanningTree(int begin, int end);
 
 				void print(int dep);
 		};
@@ -70,8 +71,18 @@ class QueryTree
 						//std::string subTypeValue;
 
 						std::string value;
+
 						Element(){}
 						Element(const std::string &_value):value(_value){}
+
+						inline std::string getValue() const
+						{
+							return value;
+						}
+						inline bool isVariable() const
+						{
+							return value.length() > 1 && value[0] == '?';
+						}
 				};
 				Element subject, predicate, object;
 				Varset varset, subject_object_varset;
