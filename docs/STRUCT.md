@@ -1,5 +1,13 @@
 **This chapter introduce the whole structure of the gStore system project.**
 
+#### Figures
+
+The whole architecture of gStore system is presented in [Architecture](png/系统架构图_en.png).
+The thread model of 'ghttp' can be viewed in [EN](png/ghttp-thread.png) and [ZH](png/ghttp-线程.png), which shows the relationship among main process, sever thread, query thread and so on.
+The flow of answering a SPARQL query is given in [SPARQL Processing](png/查询处理过程.png), and the subprocess, which only targets at the BGP(Basic Graph Pattern) processing, is drawed in [BGP Processing](png/BGP.png).
+
+---
+
 #### The core source codes are listed below:
 
 - Database/ (calling other core parts to deal with requests from interface part)

@@ -50,7 +50,7 @@ If you want to understand the details of the gStore system, or you want to try s
 
 - [API Explanation](docs/API.md): guide you to develop applications based on our API
 
-- [Project Structure](docs/STRUCT.md): show the whole structure and sequence of this project
+- [Project Structure](docs/STRUCT.md): show the whole structure and process of this project
 
 - [Related Essays](docs/ESSAY.md): contain essays and publications related with gStore
 
