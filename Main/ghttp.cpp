@@ -778,19 +778,16 @@ void delete_thread(const shared_ptr<HttpServer::Response>& response, const share
 		if(download == "true")
 		{
 			std::string cache_control, etag;
-
 			// Uncomment the following line to enable Cache-Control
 			// cache_control="Cache-Control: max-age=86400\r\n";
 			
 			//return file in path
 			auto ifs=make_shared<ifstream>();
 			ifs->open(path.string(), ifstream::in | ios::binary | ios::ate);
-
 			if(*ifs) {
 		//cout<<"open file!!!"<<endl;
 				auto length=ifs->tellg();
 				ifs->seekg(0, ios::beg);
-
 				*response << "HTTP/1.1 200 OK\r\n" << cache_control << etag << "Content-Length: " << length << "\r\n\r\n";
 				default_resource_send(server, response, ifs);
 				//DEBUG: in fact this make no sense, result will be received by clients even if server not wait for the network transfer!  (but very slow if results are large)
@@ -820,14 +817,40 @@ void delete_thread(const shared_ptr<HttpServer::Response>& response, const share
 				cout << "file delete." << endl;
 				//Notice: if file deleted successfully, service need to response to the browser, if not the browser will not execute the call-back function.
 				string success = "file delete successfully.";
-				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+				cJson *resJson;
+				resJson=cJSON_CreateObject();   //创建根数据对象
+        		cJSON_AddStringToObject(resJson,"StatusCode",100);  
+        		cJSON_AddStringToObject(resJson,"StatusMsg",success);
+        		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+        
+        		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+        		//printf("%s\n",out);
+       			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+			
+				// 释放内存  
+				cJSON_Delete(resJson);  
+				//free(out);
+				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 			}
 		}	
 	}
 	catch(const exception &e) {
 		//cout<<"can not open file!!!"<<endl;
 		string content="Could not open path "+request->path+": "+e.what();
-		*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
+		cJson *resJson;
+				resJson=cJSON_CreateObject();   //创建根数据对象
+        		cJSON_AddStringToObject(resJson,"StatusCode",101);  
+        		cJSON_AddStringToObject(resJson,"StatusMsg",content);
+        		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+        
+        		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+        		//printf("%s\n",out);
+       			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+			
+				// 释放内存  
+				cJSON_Delete(resJson);  
+				//free(out);
+		//*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
 	}
 }
 
@@ -893,7 +916,20 @@ void download_thread(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	catch(const exception &e) {
 		//cout<<"can not open file!!!"<<endl;
 		string content="Could not open path "+request->path+": "+e.what();
-		*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",101);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",content);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
 	}
 }
 
@@ -917,7 +953,20 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	if(already_build.find(db_name) != already_build.end())
 	{
 		string error = "database already built.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",201);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&already_build_map_lock);
 		return; 
@@ -930,7 +979,20 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	if(it == users.end())
 	{
 		string error = "username not find.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",903);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&users_map_lock);
 		return; 
@@ -938,7 +1000,20 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	else if(it->second->getPassword() != password)
 	{
 		string error = "wrong password.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",902);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&users_map_lock);
 		return; 
@@ -951,7 +1026,20 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	{
 		string error = "Exactly 2 arguments required!";
 		// error = db_name + " " + db_path;
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",905);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
 
@@ -959,7 +1047,20 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	if(database.length() > 3 && database.substr(database.length()-3, 3) == ".db")
 	{
 		string error = "Your db name to be built should not end with \".db\".";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",202);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
 
@@ -1004,7 +1105,20 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		string error = "Import RDF file to database failed.";
 		string cmd = "rm -r " + database;
 		system(cmd.c_str());
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",204);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		
 	//	pthread_rwlock_unlock(&database_load_lock);
 		return;
@@ -1014,7 +1128,20 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	if(addPrivilege(username, "query", db_name) == 0 || addPrivilege(username, "load", db_name) == 0 || addPrivilege(username, "unload", db_name) == 0)
 	{
 		string error = "add query or load or unload privilege failed.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",912);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		return; 
 	}
@@ -1031,7 +1158,20 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 
 	// string success = db_name + " " + db_path;
 	string success = "Import RDF file to database done.";
-	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	cJson *resJson;
+	resJson=cJSON_CreateObject();   //创建根数据对象
+	cJSON_AddStringToObject(resJson,"StatusCode",200);  
+	cJSON_AddStringToObject(resJson,"StatusMsg",success);
+	//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+	//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+	//printf("%s\n",out);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+
+	// 释放内存  
+	cJSON_Delete(resJson);  
+	//free(out);
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 //	pthread_rwlock_unlock(&database_load_lock);
 }
 
@@ -1061,7 +1201,20 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	if(it_already_build== already_build.end())
 	{
 		string error = "Database not built yet.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",203);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&already_build_map_lock);
 		return; 
@@ -1073,7 +1226,20 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	if(databases.find(db_name) != databases.end())
 	{
 		string error = "database already load.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",301);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&databases_map_lock);
 		return; 
@@ -1085,7 +1251,20 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	if(it == users.end())
 	{
 		string error = "username not find.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",903);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&users_map_lock);
 		return; 
@@ -1093,7 +1272,20 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	else if(it->second->getPassword() != password)
 	{
 		string error = "wrong password.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",902);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&users_map_lock);
 		return; 
@@ -1106,7 +1298,20 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	if(checkPrivilege(username, "load", db_name) == 0)
 	{
 		string error = "no load privilege, operation failed.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",302);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		return; 
 	}
@@ -1116,7 +1321,20 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	if(db_name=="")
 	{
 		string error = "Exactly 1 argument is required!";
-		*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",904);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
 
@@ -1125,7 +1343,20 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		//cout << "Your db name to be built should not end with \".db\"." << endl;
 	   string error = "Your db name to be built should not end with \".db\".";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+	   cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",202);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
 
@@ -1160,7 +1391,20 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	if(pthread_rwlock_trywrlock(&(it_already_build->second)) != 0)
 	{
 		string error = "Unable to load due to loss of lock";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",303);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
 	Database *current_database = new Database(database);
@@ -1171,7 +1415,20 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	if (!flag)
 	{
 		string error = "Failed to load the database.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",305);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//pthread_rwlock_unlock(&database_load_lock);
 		return;
 	}
@@ -1190,7 +1447,20 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 
 	cout << "database insert done." << endl;
 	string success = "Database loaded successfully.";
-	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",300);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",success);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 	pthread_rwlock_unlock(&(it_already_build->second));
 }
 
@@ -1220,7 +1490,20 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	if(it == users.end())
 	{
 		string error = "username not find.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",903);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&users_map_lock);
 		return; 
@@ -1228,7 +1511,20 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	else if(it->second->getPassword() != password)
 	{
 		string error = "wrong password.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",902);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&users_map_lock);
 		return; 
@@ -1241,7 +1537,20 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	if(checkPrivilege(username, "unload", db_name) == 0)
 	{
 		string error = "no unload privilege, operation failed.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",601);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		return; 
 	}
@@ -1255,7 +1564,6 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 		return;
 	}
 	cout << database << endl;
-
 	if(current_database->getName() != database)
 	{
 		string error = "Database Name not matched.";
@@ -1263,7 +1571,6 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 		pthread_rwlock_unlock(&database_load_lock);
 		return;
 	}
-
 	pthread_rwlock_unlock(&database_load_lock);
 	if(pthread_rwlock_trywrlock(&database_load_lock) != 0)
 	{
@@ -1277,7 +1584,20 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	if(iter == databases.end())
 	{
 		string error = "Database not load yet.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",304);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&databases_map_lock);
 		return; 
@@ -1288,7 +1608,20 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	if(pthread_rwlock_trywrlock(&(it_already_build->second)) != 0)
 	{
 		string error = "Unable to unload due to loss of lock";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",602);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
 	Database *current_database = iter->second;
@@ -1296,7 +1629,20 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	current_database = NULL;
 	databases.erase(db_name);
 	string success = "Database unloaded.";
-	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",600);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 //	pthread_rwlock_unlock(&database_load_lock);
 	pthread_rwlock_unlock(&(it_already_build->second));
 	pthread_rwlock_unlock(&databases_map_lock);
@@ -1342,7 +1688,20 @@ void query_thread(string db_name, string format, string db_query, const shared_p
 	if(iter == databases.end())
 	{
 		string error = "Database not load yet.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",304);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&databases_map_lock);
 		return;
 	}
@@ -1381,7 +1740,20 @@ void query_thread(string db_name, string format, string db_query, const shared_p
 	if (sparql.empty()) {
 		cerr <<log_prefix<< "Empty SPARQL." << endl;
 		string error = "Empty SPARQL.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",401);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&(it_already_build->second));
 		return;
 	}
@@ -1465,8 +1837,62 @@ void query_thread(string db_name, string format, string db_query, const shared_p
 			outfile.open(localname);
 			outfile << success;
 			outfile.close();
+			if(rs.ansNum > 100)
+			{
+				rs.output_limit = 100;
+				success = "";
+				success = rs.to_str();
+			}
+			cJson *resJson;
+			resJson=cJSON_CreateObject();   //创建根数据对象
+			cJSON_AddStringToObject(resJson,"StatusCode",0);  
+			cJSON_AddStringToObject(resJson,"StatusMsg","success");
+			//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+			cJSON_AddStringToObject(resJson,"QueryTime", query_time_s);
+			cJSON_AddStringToObject(resJson,"AnsNum", rs.ansNum);
+			cJSON_AddStringToObject(resJson,"Filename", filename);
+			cJSON_AddStringToObject(resJson,"ResponseBody", success);
+			
+			//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+			//printf("%s\n",out);
+
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json";
+				*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
+				*response << "\r\n\r\n" << resJson;
+		
+			// 释放内存  
+			cJSON_Delete(resJson);  
+			//free(out);
+			//!Notice: remember to set no-cache in the response of query, Firefox and chrome works well even if you don't set, but IE will act strange if you don't set
+			//beacause IE will defaultly cache the query result after first query request, so the following query request of the same url will not be send if the result in cache isn't expired.
+			//then the following query will show the same result without sending a request to let the service run query
+			//so the download function will go wrong because there is no file in the service.
+			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << query_time_s.length()+ansNum_s.length()+filename.length()+success.length()+4;
+			//*response << "\r\nContent-Type: text/plain";
+			//*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
+			//*response  << "\r\n\r\n" << "0+" << query_time_s<< '+' << rs.ansNum << '+' << filename << '+' << success;
+			pthread_rwlock_unlock(&(it_already_build->second));
+			//return true;
+			return;
+			/*
 			if(rs.ansNum <= 100)
 			{
+				cJson *resJson;
+				resJson=cJSON_CreateObject();   //创建根数据对象
+				cJSON_AddStringToObject(resJson,"StatusCode",0);  
+				cJSON_AddStringToObject(resJson,"StatusMsg","success");
+				//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+				cJSON_AddStringToObject(resJson,"type", 0);
+				cJSON_AddStringToObject(resJson,"", 0);
+				cJSON_AddStringToObject(resJson,"type", 0);
+				//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+				//printf("%s\n",out);
+
+					*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+			
+				// 释放内存  
+				cJSON_Delete(resJson);  
+				//free(out);
 				//!Notice: remember to set no-cache in the response of query, Firefox and chrome works well even if you don't set, but IE will act strange if you don't set
 				//beacause IE will defaultly cache the query result after first query request, so the following query request of the same url will not be send if the result in cache isn't expired.
 				//then the following query will show the same result without sending a request to let the service run query
@@ -1492,6 +1918,7 @@ void query_thread(string db_name, string format, string db_query, const shared_p
 				//return true;
 				return;
 			}
+			*/
 		}
 		else
 		{
@@ -1520,17 +1947,33 @@ void query_thread(string db_name, string format, string db_query, const shared_p
 	else
 	{
 		string error = "";
+		int error_code;
 		if(update)
 		{
 			cout <<log_prefix<< "update query returned correctly." << endl;
 			error = "update query returns true.";
+			error_code = 402;
 		}
 		else
 		{
 			cout <<log_prefix<< "search query returned error." << endl;
 			error = "search query returns false.";
+			error_code = 403;
 		}
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",error_code);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&(it_already_build->second));
 		//return false;
 		return;
@@ -1589,14 +2032,40 @@ bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	if(it == users.end())
 	{
 		string error = "username not find.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",903);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&users_map_lock);
 		return false;
 	}
 	else if(it->second->getPassword() != password)
 	{
 		string error = "wrong password.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",902);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&users_map_lock);
 		return false;
 	}
@@ -1607,7 +2076,20 @@ bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	if(checkPrivilege(username, "query", db_name) == 0)
 	{
 		string error = "no query privilege, operation failed.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",404);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return false;
 	}
 	cout << "check privilege successfully." << endl;
@@ -1709,7 +2191,20 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	{
 		//cout << "database not loaded yet." << endl;
 		string error = "Database not load yet.\r\n";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",304);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&databases_map_lock);
 		return;
 	}
@@ -1724,7 +2219,20 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	if(pthread_rwlock_tryrdlock(&(it_already_build->second)) != 0)
 	{
 		string error = "Unable to monitor due to loss of lock";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",501);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
 	//BETTER: use JSON format to send/receive messages
@@ -1750,7 +2258,20 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	//TODO: add the info of memory and thread, operation num and IO frequency
 
 	//success = "<p>" + success + "</p>";
-	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",0);  
+		cJSON_AddStringToObject(resJson,"StatusMsg","success");
+		cJSON_AddNumberToObject(resJson,"ResponseBody",success);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 	pthread_rwlock_unlock(&(it_already_build->second));
 }
 
@@ -1854,7 +2375,20 @@ void default_thread(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	}
 	catch(const exception &e) {
 		string content="Could not open path "+request->path+": "+e.what();
-		*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",101);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",content);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
 	}
 }
 
@@ -1910,14 +2444,40 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	if(it == users.end())
 	{
 		string error = "wrong username.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",901);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&users_map_lock);
 		return false;
 	}
 	else if(it->second->getPassword() != password)
 	{
 		string error = "wrong password.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",902);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&users_map_lock);
 		return false;
 	}
@@ -1925,7 +2485,20 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	{
 		cout << "login successfully." << endl;
 		string success = "check identity successfully.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",900);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 		pthread_rwlock_unlock(&users_map_lock);
 		return true;
 	}
@@ -1948,14 +2521,40 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	if(it == users.end())
 	{
 		string error = "wrong username.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",901);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&users_map_lock);
 		return false;
 	}
 	else if(it->second->getPassword() != password)
 	{
 		string error = "wrong password.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",902);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&users_map_lock);
 		return false;
 	}
@@ -1972,23 +2571,18 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 		request->path = "/admin.html";
 		auto path=boost::filesystem::canonical(web_root_path/request->path);
 		cout << "path: " << path << endl;
-
 		std::string cache_control, etag;
-
 		// Uncomment the following line to enable Cache-Control
 		// cache_control="Cache-Control: max-age=86400\r\n";
-
 		auto ifs=make_shared<ifstream>();
 		ifs->open(path.string(), ifstream::in | ios::binary | ios::ate);
 		if(*ifs) {
 			cout << "in login 1" << endl;
 			auto length=ifs->tellg();
 			ifs->seekg(0, ios::beg);
-
 			*response << "HTTP/1.1 200 OK\r\n" << cache_control << etag << "Content-Length: " << length << "\r\n";
 			
 			*response << "Content-Type: text/html" << "\r\n\r\n";
-
 			default_resource_send(server, response, ifs);
 			cout << "in login 2" << endl;
 		}
@@ -2000,7 +2594,6 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 		string content="Could not open path "+request->path+": "+e.what();
 		*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
 	}
-
 	return true;
 */
 	try {
@@ -2053,7 +2646,20 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	}
 	catch(const exception &e) {
 		string content="Could not open path "+request->path+": "+e.what();
-		*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",101);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",content);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
 	}
 
 	return true;
@@ -2081,8 +2687,21 @@ void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const s
 	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
 	if(iter == databases.end())
 	{
-		string error = "Database named " + db_name + "haven't loaded yet.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		string error = "Database not load yet.";
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",304);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&databases_map_lock);
 		return;
 	}
@@ -2096,7 +2715,20 @@ void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const s
 	if(pthread_rwlock_trywrlock(&(it_already_build->second)) != 0)
 	{
 		string error = "Unable to monitor due to loss of lock";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",501);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
 	//For database checkpoint or log/transaction:
@@ -2107,7 +2739,20 @@ void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const s
 	//NOTICE: this info is in header
 	string success = "Database saveed successfully.";
 	//header and content are split by an empty line
-	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",700);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 
 	pthread_rwlock_unlock(&(it_already_build->second));
 }
@@ -2160,7 +2805,20 @@ void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		if(databases.empty())
 		{
 			string error = "No database.\r\n";
-			*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+			cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",801);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 			//return false;
 			pthread_rwlock_unlock(&databases_map_lock);
 			return; 
@@ -2172,7 +2830,20 @@ void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 			string database_name = it->first;
 			success = success + database_name + "\r\n";
 		}
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",0);  
+		cJSON_AddStringToObject(resJson,"StatusMsg","success");
+		cJSON_AddNumberToObject(resJson,"ResponseBody",success);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 		//return true;
 		pthread_rwlock_unlock(&databases_map_lock);
 			return; 
@@ -2230,7 +2901,20 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			else
 			{
 				string error = "username already existed, add user failed.";
-				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+				cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",907);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 				pthread_rwlock_unlock(&users_map_lock);
 				return false;
 			}
@@ -2251,11 +2935,31 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			else
 			{
 				string error;
+				int error_code;
 				if(username2 == ROOT_USERNAME)
+				{
 					error = "you cannot delete root, delete user failed.";
+					error_code = 908;
+				}
 				else
+				{
 					error = "username not exist, delete user failed.";
-				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+					error_code = 909;
+				}
+				cJson *resJson;
+				resJson=cJSON_CreateObject();   //创建根数据对象
+				cJSON_AddStringToObject(resJson,"StatusCode",error_code);  
+				cJSON_AddStringToObject(resJson,"StatusMsg",error);
+				//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+				//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+				//printf("%s\n",out);
+					*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+			
+				// 释放内存  
+				cJSON_Delete(resJson);  
+				//free(out);
+				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 				pthread_rwlock_unlock(&users_map_lock);
 				return false;
 			}
@@ -2267,7 +2971,20 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			if(username2 == ROOT_USERNAME)
 			{
 				string error = "you can't add privilege to root user.";
-				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+				cJson *resJson;
+				resJson=cJSON_CreateObject();   //创建根数据对象
+				cJSON_AddStringToObject(resJson,"StatusCode",910);  
+				cJSON_AddStringToObject(resJson,"StatusMsg",error);
+				//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+				//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+				//printf("%s\n",out);
+					*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+			
+				// 释放内存  
+				cJSON_Delete(resJson);  
+				//free(out);
+				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 				return false;
 			}
 			int len = type.length();
@@ -2277,7 +2994,20 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			if(addPrivilege(username2, subType, db_name) == 0)
 			{
 				string error = "add privilege failed.";
-				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+				cJson *resJson;
+				resJson=cJSON_CreateObject();   //创建根数据对象
+				cJSON_AddStringToObject(resJson,"StatusCode",911);  
+				cJSON_AddStringToObject(resJson,"StatusMsg",error);
+				//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+				//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+				//printf("%s\n",out);
+					*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+			
+				// 释放内存  
+				cJSON_Delete(resJson);  
+				//free(out);
+				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 				return false;
 			}
 		}
@@ -2286,7 +3016,20 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			if(username2 == ROOT_USERNAME)
 			{
 				string error = "you can't delete privilege of root user.";
-				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+				cJson *resJson;
+				resJson=cJSON_CreateObject();   //创建根数据对象
+				cJSON_AddStringToObject(resJson,"StatusCode",913);  
+				cJSON_AddStringToObject(resJson,"StatusMsg",error);
+				//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+				//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+				//printf("%s\n",out);
+					*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+			
+				// 释放内存  
+				cJSON_Delete(resJson);  
+				//free(out);
+				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 				return false;
 			}
 			int len = type.length();
@@ -2296,18 +3039,57 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			if(delPrivilege(username2, subType, db_name) == 0)
 			{
 				string error = "delete privilege failed.";
-				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+				cJson *resJson;
+				resJson=cJSON_CreateObject();   //创建根数据对象
+				cJSON_AddStringToObject(resJson,"StatusCode",914);  
+				cJSON_AddStringToObject(resJson,"StatusMsg",error);
+				//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+				//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+				//printf("%s\n",out);
+					*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+			
+				// 释放内存  
+				cJSON_Delete(resJson);  
+				//free(out);
+				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 				return false;
 			}
 		}
 		string success = "operation succeeded.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",906);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",success);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 		return true;
 	}
 	
 	//if not root user, no privilege to perform this operation
 	string error = "Not root user, no privilege to perform this operation.";
-	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+	cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",915);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 	return false;
 
 //TODO:MODIFY
@@ -2333,7 +3115,20 @@ bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 	if(users.empty())
 	{
 		string error = "No Users.\r\n";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",802);  
+		cJSON_AddStringToObject(resJson,"StatusMsg",error);
+		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
+
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&users_map_lock);
 		return false;
 	}
@@ -2367,8 +3162,20 @@ bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 		success = success + unload_db + "\n";
 		//cout << success << endl;
 	}
+		cJson *resJson;
+		resJson=cJSON_CreateObject();   //创建根数据对象
+		cJSON_AddStringToObject(resJson,"StatusCode",0);  
+		cJSON_AddStringToObject(resJson,"StatusMsg","success");
+		cJSON_AddNumberToObject(resJson,"ResponseBody",success);  
 
-	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
+		//printf("%s\n",out);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+		// 释放内存  
+		cJSON_Delete(resJson);  
+		//free(out);
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 	pthread_rwlock_unlock(&users_map_lock);
 	return true;
 }
