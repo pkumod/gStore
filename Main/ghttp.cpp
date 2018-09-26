@@ -83,6 +83,8 @@ bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 
 bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
+bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+
 void query_thread(string db_name, string format, string db_query, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 //=============================================================================
 
@@ -521,6 +523,7 @@ int main(int argc, char *argv[])
 			int status;
 			waitpid(fpid, &status, 0);
 			if (WIFEXITED(status)) {
+				//cout<<"yes!"<<endl;
 				//exit(0);
 				return 0;
 			}
@@ -641,6 +644,8 @@ int initialize(int argc, char *argv[])
 	
 		cout << database << endl;
 		Database *current_database = new Database(database);
+	if(database.length() != 0)
+	{
 		bool flag = current_database->load();
 		if (!flag)
 		{
@@ -654,7 +659,7 @@ int initialize(int argc, char *argv[])
 		//already_build.insert(db_name);
 		databases.insert(pair<std::string, Database *>(db_name, current_database));
 	//}
-
+	}
 	//open the query log
 	query_logfp = fopen(queryLog.c_str(), "a");
 	if(query_logfp == NULL)
@@ -827,7 +832,18 @@ int initialize(int argc, char *argv[])
     //         *response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << strlen(e.what()) << "\r\n\r\n" << e.what();
     //     }
     // };
-
+	
+    server.resource["^/%3[F|f]operation%3[D|d]stop$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		stop_handler(server, response, request);
+		exit(0);
+    };
+    server.resource["^/?operation=stop$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		stop_handler(server, response, request);
+		exit(0);
+    };
+	
     server.resource["^/%3[F|f]operation%3[D|d]checkpoint%26db_name%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
 		checkpoint_handler(server, response, request);
@@ -2281,6 +2297,15 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 
 	return true;
 	}
+}
+
+//to stop the ghttp server
+bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	//string success = "Server stopped.";
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	cout<<"Server stopped."<<endl;
+	return true;	
 }
 
 void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
