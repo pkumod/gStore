@@ -7,7 +7,7 @@ function build(db, ds){
 		var encodeArgu1 = escape(argu1);
 		$.get(encodeArgu1, function(data, status){
 			if(status=="success"){
-				alert(data);
+				alert(data.StatusMsg);
 			}
 		});
 	}
@@ -24,7 +24,7 @@ function load(db) {
 		var encodeArgu2 = escape(argu2);
 		$.get(encodeArgu2, function(data, status){
 			if(status=="success"){
-				alert(data);
+				alert(data.StatusMsg);
 				//load database successfully, change the database name on web page
 				//document.getElementById("_db_name_3").value = db;
 			}
@@ -86,25 +86,17 @@ function query(db, dp) {
 	{
 		$.get(encodeArgu3, function(data, status){
 			if(status == "success"){
-				if(data.indexOf('+') < 0)
-					alert(data);
+				if(data.StatusCode != 0)
+					alert(data.StatusMsg);
 				else
 				{
 				//toTxt();
 				//alert(data);
-				var parts = data.split("+");
-				var query_time = parts[1];
-				var fileName = parts[3];
-			    var lines = Number(parts[2]);
+			    var lines = data.AnsNum;
+				var fileName = data.Filename;
 				//alert(lines);
-				if(lines > 100)
-					lines = 100;
 				//alert(lines);
-				for(var ip = 5; ip < parts.length; ip++)
-				{
-					parts[4] = parts[4] + "+" + parts[ip];
-				}
-				var items = parts[4].split("\n");
+				var items = (data.ResponseBody).split("\n");
 				//alert(items[0]);
 				var valNum = items[0].split("?");
 				var rows = valNum.length - 1;
@@ -112,11 +104,11 @@ function query(db, dp) {
 				var page = '<html><div align="left"><a href="javascript:void(0);" id="back" style="font-size:16px;color:blue">Click to Return</a>';
 				page = page + '<a id="download" style="font-size:16px;margin-left:20px;color:blue">Click to Download</a>';
 				page = page + '<a id="trick" style="display: none">Click to back</a>';
-				page = page + '<p>Total answers: ' + parts[2] + '</p>';
-				page = page + '<p>Query time: ' + parts[1] + 'ms</p>';
-				if(parts[0] == "1")
+				page = page + '<p>Total answers: ' + data.AnsNum + '</p>';
+				page = page + '<p>Query time: ' + data.QueryTime + 'ms</p>';
+				if(lines > 100)
 				{
-					
+					lines = 100;
 					page = page + '<p>Number of answers is too large, show only 100 of them, click to download the full result!</p>'; 
 					
 				}
@@ -239,7 +231,7 @@ function unload(db) {
 		var encodeArgu4 = escape(argu4);
 		$.get(encodeArgu4, function(data, status){
 			if(status=="success"){
-				alert(data);
+				alert(data.StatusMsg);
 				//unload database successfully, so set the database name on web page to be NULL
 				//document.getElementById("_db_name_3").value = "NULL";
 	
@@ -274,7 +266,7 @@ function monitor() {
 			if(status=="success"){
 
 			//alert(data);
-			var ans = data.split("\n");
+			var ans = (data.ResponseBody).split("\n");
 			//alert(ans.length);
 			$("#monitorAns").empty();
 		
@@ -320,8 +312,8 @@ function addUser(username, password){
 		var encodeArgu7 = escape(argu7);
 		$.get(encodeArgu7, function(data, status){
 			if(status == "success"){
-				if(data != "operation succeeded.")
-					alert(data);
+				if(data.StatusCode != 906)
+					alert(data.StatusMsg);
 				showUsers();
 			}
 		});
@@ -338,8 +330,26 @@ function delUser(username){
 		var encodeArgu8 = escape(argu8);
 		$.get(encodeArgu8, function(data, status){
 			if(status == "success"){
-				if(data != "operation succeeded.")
-					alert(data);
+				if(data.StatusCode != 906)
+					alert(data.StatusMsg);
+				showUsers();
+			}
+		});
+	}
+	else
+		alert("input needed.");
+}
+function changePsw(username, password){
+	if(username != "" && password != "")
+	{
+		var username77 = getCookie('user');
+		var password77 = getCookie('pswd');
+		var argu77 = "?operation=user&type=change_psw&username1=" + username77 + "&password1=" + password77 + "&username2=" + username + "&addtion=" + password;
+		var encodeArgu77 = escape(argu77);
+		$.get(encodeArgu77, function(data, status){
+			if(status == "success"){
+				if(data.StatusCode != 906)
+					alert(data.StatusMsg);
 				showUsers();
 			}
 		});
@@ -357,8 +367,8 @@ function addPrivilege(username, type, db){
 		var encodeArgu9 = escape(argu9);
 		$.get(encodeArgu9, function(data, status){
 			if(status == "success"){
-				if(data != "operation succeeded.")
-					alert(data);
+				if(data.StatusCode != 906)
+					alert(data.StatusMsg);
 				showUsers();
 			}
 		});
@@ -376,8 +386,8 @@ function delPrivilege(username, type, db){
 		var encodeArgu11 = escape(argu11);
 		$.get(encodeArgu11, function(data, status){
 			if(status == "success"){
-				if(data != "operation succeeded.")
-					alert(data);
+				if(data.StatusCode != 906)
+					alert(data.StatusMsg);
 				showUsers();
 			}
 		});
@@ -407,7 +417,7 @@ function showUsers(){
 			//alert(data);
 			$("#userAns").empty();
 
-			var ans = data.split("\n");
+			var ans = (data.ResponseBody).split("\n");
 			var res = '<table border="1" style="font-size:medium">';
 			for(var ii = 0; ii < ans.length; ii++)
 			{
@@ -436,7 +446,7 @@ function showDatabases() {
 		if(status=="success"){
 
 			//alert(data);
-			var ans = data.split("\n");
+			var ans = (data.ResponseBody).split("\n");
 			//alert(ans.length);
 			$("#databasesAns").empty();
 		
