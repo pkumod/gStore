@@ -10,7 +10,11 @@
 	
 	- Join.cpp (join the node candidates to get results)
 
-	- Join.h (class, members,, and functions definitions)
+	- Join.h (class, members and functions definitions)
+
+	- Strategy.cpp 
+
+	- Strategy.h
 
 - KVstore/ (a key-value store to swap between memory and disk)
 	
@@ -18,39 +22,133 @@
 
 	- KVstore.h
 
-	- heap/ (a heap of nodes whose content are in memory)
-		
-		- Heap.cpp
+	- ISArray/
 
-		- Heap.h
+		- ISArray.cpp
+
+		- ISArray.h
+
+		- ISBlockManager.cpp
+
+		- ISBlockManager.h
+
+		- ISEntry.cpp
+
+		- ISEntry.h
+
+	- ISTree/
+
+		- ISTree.cpp
+
+		- ISTree.h
+
+		- heap/ (a heap of nodes whose content are in memory)
+		
+			- ISHeap.cpp
+
+			- ISHeap.h
 	
-	- node/ (all kinds of nodes in B+-tree)
+		- node/ (all kinds of nodes in B+-tree)
 
-		- Node.cpp (the base class of IntlNode and LeafNode)
+			- ISIntlNode.cpp
 		
-		- Node.h
+			- ISIntlNode.h
 
-		- IntlNode.cpp (internal nodes in B+-tree)
+			- ISLeafNode.cpp
 
-		- IntlNode.h
+			- ISLeafNode.h
 
-		- LeafNode.cpp (leaf nodes in B+-tree)
+			- ISNode.cpp
 
-		- LeafNode.h
+			- ISNode.h
 
-	- storage/ (swap contents between memory and disk)
+		- storage/
 
-		- file.h
+			- ISStorage.cpp
+
+			- ISStorage.h
+
+	- IVArray/
+
+		- IVArray.cpp
+
+		- IVArray.h
+
+		- IVBlockManager.cpp
+
+		- IVBlockManager.h
+
+		- IVCacheManager.cpp
+
+		- IVCacheManger.h
+
+		- IVEntry.cpp
+
+		- IVEntry.h
+
+	- IVTree/
+
+		- IVTree.cpp
+
+		- IVTree.h
+
+		- heap/ (a heap of nodes whose content are in memory)
 		
-		- Storage.cpp
+			- IVHeap.cpp
 
-		- Storage.h
+			- IVHeap.h
+	
+		- node/ (all kinds of nodes in B+-tree)
 
-	- tree/ (implement all tree operations and interfaces)
+			- IVIntlNode.cpp
 		
-		- Tree.cpp
+			- IVIntlNode.h
 
-		- Tree.h
+			- IVLeafNode.cpp
+
+			- IVLeafNode.h
+
+			- IVNode.cpp
+
+			- IVNode.h
+
+		- storage/
+
+			- IVStorage.cpp
+
+			- IVStorage.h
+
+	- SITree/
+
+		- SITree.cpp
+
+		- SITree.h
+
+		- heap/ (a heap of nodes whose content are in memory)
+		
+			- SIHeap.cpp
+
+			- SIHeap.h
+	
+		- node/ (all kinds of nodes in B+-tree)
+
+			- SIIntlNode.cpp
+		
+			- SIIntlNode.h
+
+			- SILeafNode.cpp
+
+			- SILeafNode.h
+
+			- SINode.cpp
+
+			- SINode.h
+
+		- storage/
+
+			- SIStorage.cpp
+
+			- SIStorage.h
 
 - Query/ (needed to answer SPARQL query)
 
@@ -61,6 +159,10 @@
 	- IDList.cpp (candidate list of a node/variable in query)
 
 	- IDList.h 
+
+	- ResultFilter.cpp
+
+	- ResultFilter.h
 
 	- ResultSet.cpp (keep the result set corresponding to a query)
 
@@ -74,6 +176,10 @@
 
 	- Varset.h
 
+	- QueryCache.cpp
+
+	- QueryCache.h
+
 	- QueryTree.cpp
 
 	- QueryTree.h
@@ -81,6 +187,10 @@
 	- GeneralEvaluation.cpp
 
 	- GeneralEvaluation.h
+
+	- TempResult.cpp
+
+	- TempResult.h
 
 	- RegexExpression.h
 
@@ -170,6 +280,12 @@
 
 	- BloomFilter.h
 
+	- ClassForVlistCache.h
+
+	- VList.cpp
+
+	- VList.h
+
 - - -
 
 #### The interface part is listed below:
@@ -192,21 +308,19 @@
 
 	- Socket.h
 
-- Main/ (a series of applications/main-program to operate on gStore)
+	- client_http.hpp
 
-	- gload.cpp (import a RDF dataset)
+	- server_http.hpp
 
-	- gquery.cpp (query a database)
-
-	- gserver.cpp (start up the gStore server)
-
-	- gclient.cpp (connect to a gStore server and interact)
+- web/
+	
+	-
 
 - - -
 
 #### More details
 
-To acquire a deep understanding of gStore codes, please go to [Code Detail](pdf/代码目录及概览.pdf). See [use case](pdf/Gstore2.0_useCaseDoc.pdf) to understand the design of use cases, and see [OOA](pdf/OOA_class.pdf) and [OOD](pdf/OOD_class.pdf) for OOA design and OOD design, respectively.
+To acquire a deep understanding of gStore codes, please go to [Code Detail](pdf/code_overview.pdf). See [use case](pdf/Gstore2.0_useCaseDoc.pdf) to understand the design of use cases, and see [OOA](pdf/OOA_class.pdf) and [OOD](pdf/OOD_class.pdf) for OOA design and OOD design, respectively.
 
 If you want to know the sequence of a running gStore, please view the list below:
 
