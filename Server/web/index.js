@@ -1,4 +1,25 @@
+var opts = {
 
+	lines: 13, // 花瓣数目
+	length: 20, // 花瓣长度
+	width: 10, //
+	scale: 0.45,
+	radius: 30, // 花瓣距中心半径
+	corners: 1, // 花瓣圆滑度 (0-1)
+	rotate: 0, // 花瓣旋转角度
+	direction: 1, // 花瓣旋转方向 1: 顺时针, -1: 逆时针
+	color: '#5882FA', // 花瓣颜色
+	speed: 1, // 花瓣旋转速度
+	trail: 60, // 花瓣旋转时的拖影(百分比)
+	shadow: false, // 花瓣是否显示阴影
+	hwaccel: false, //spinner 是否启用硬件加速及高速旋转
+	className: 'spinner', // spinner css 样式名称
+	zIndex: 2e9, // spinner的z轴 (默认是2000000000
+	top: '46%', // spinner 相对父容器Top定位 单位 px
+	left: '50%',// spinner 相对父容器Left定位 单位 px
+	position: 'absolute'
+};
+var spinner = new Spinner(opts);
 function query(dp) {
 	var encodeVal = escape(dp);
 	//alert(encodeVal);
@@ -47,8 +68,22 @@ function query(dp) {
 	}
 	else
 	{
+		$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
 		$.get(encodeArgu, function(data, status){
+		//	setTimeout(function(){
+		//		spinner.spin();
+		//	}, 300);
 			if(status=="success"){
+				if(data.StatusCode != 0)
+				{	
+				//	alert(data.StatusMsg);
+						spinner.spin();
+						setTimeout(function(){alert(data.StatusMsg);}, 300);
+				}
+				else
+				{
 				//toTxt();
 				//alert(data);
 				var obj = data;
@@ -62,7 +97,7 @@ function query(dp) {
 				var valNum = items[0].split("?");
 				var rows = valNum.length - 1;
 				//alert(rows);
-				var page = '<html><div align="left"><a href="javascript:void(0);" id="back" style="font-size:16px;color:blue">Click to Return</a>';
+				var page = '<html><div id="myspin2"></div><div align="left"><a href="javascript:void(0);" id="back" style="font-size:16px;color:blue">Click to Return</a>';
 				page = page + '<a id="download" style="font-size:16px;margin-left:20px">Click to Download</a>';
 				page = page + '<a href="/" id="trick" style="display: none">Click to back</a>';
 				page = page + '<p>Total answers: ' + obj.AnsNum + '</p>';
@@ -134,6 +169,10 @@ function query(dp) {
 				//!Notice: element2 is a "<a>" tag, and it has two actions, href and onclick, be careful with the executing order of these two actions.
 				//in this case, we use a call-back function to prevent strange things. we return to the origin web page after the request to delete file returns successfully.
 				element2.onclick = function(){
+						$("#myspin2").text("");
+						var target = $("#myspin2").get(0);
+						spinner.spin(target);
+
 					$.get(request2, function(data, status){
 						//alert("delete return");
 						var element3 = document.getElementById("trick");
@@ -149,7 +188,10 @@ function query(dp) {
 						}
 					});
 				};
-			}
+			
+				}
+
+		}
 		});
 	}
 }
