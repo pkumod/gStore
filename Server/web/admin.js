@@ -1,13 +1,43 @@
+var opts = {
+
+	lines: 13, // 花瓣数目
+	length: 20, // 花瓣长度
+	width: 10, //
+	scale: 0.45,
+	radius: 30, // 花瓣距中心半径
+	corners: 1, // 花瓣圆滑度 (0-1)
+	rotate: 0, // 花瓣旋转角度
+	direction: 1, // 花瓣旋转方向 1: 顺时针, -1: 逆时针
+	color: '#5882FA', // 花瓣颜色
+	speed: 1, // 花瓣旋转速度
+	trail: 60, // 花瓣旋转时的拖影(百分比)
+	shadow: false, // 花瓣是否显示阴影
+	hwaccel: false, //spinner 是否启用硬件加速及高速旋转
+	className: 'spinner', // spinner css 样式名称
+	zIndex: 2e9, // spinner的z轴 (默认是2000000000
+	top: '46%', // spinner 相对父容器Top定位 单位 px
+	left: '50%',// spinner 相对父容器Left定位 单位 px
+	position: 'absolute'
+};
+var spinner = new Spinner(opts);
+
 function build(db, ds){
 	if(db != "" && ds != "")
 	{
+		$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
+
 		var username1 = getCookie('user');
 		var password1 = getCookie('pswd');
 		var argu1 = "?operation=build&db_name=" + db + "&ds_path=" + ds + "&username=" + username1 + "&password=" + password1;
 		var encodeArgu1 = escape(argu1);
 		$.get(encodeArgu1, function(data, status){
+		//	setTimeout(function(){spinner.spin();}, 300);
 			if(status=="success"){
-				alert(data.StatusMsg);
+			spinner.spin();
+			setTimeout(function(){alert(data.StatusMsg);}, 300);
+			//alert(data.StatusMsg);
 			}
 		});
 	}
@@ -18,13 +48,22 @@ function build(db, ds){
 function load(db) {
 	if(db != "")
 	{
+			$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
+
 		var username2 = getCookie('user');
 		var password2 = getCookie('pswd');
 		var argu2 = "?operation=load&db_name=" + db + "&username=" + username2 + "&password=" + password2;
 		var encodeArgu2 = escape(argu2);
 		$.get(encodeArgu2, function(data, status){
+			//setTimeout(function(){spinner.spin();}, 300);
+		
 			if(status=="success"){
-				alert(data.StatusMsg);
+			spinner.spin();
+			setTimeout(function(){alert(data.StatusMsg);}, 300);
+			
+				//	alert(data.StatusMsg);
 				//load database successfully, change the database name on web page
 				//document.getElementById("_db_name_3").value = db;
 			}
@@ -84,12 +123,22 @@ function query(db, dp) {
 	}
 	else
 	{
+		$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
+
 		$.get(encodeArgu3, function(data, status){
+			//setTimeout(function(){spinner.spin();}, 300);
+		//	spinner.spin();
 			if(status == "success"){
 				if(data.StatusCode != 0)
-					alert(data.StatusMsg);
+				{//alert(data.StatusMsg);
+						spinner.spin();
+						setTimeout(function(){alert(data.StatusMsg);}, 300);
+				}
 				else
 				{
+					spinner.spin();
 				//toTxt();
 				//alert(data);
 			    var lines = data.AnsNum;
@@ -101,7 +150,7 @@ function query(db, dp) {
 				var valNum = items[0].split("?");
 				var rows = valNum.length - 1;
 				//alert(rows);
-				var page = '<html><div align="left"><a href="javascript:void(0);" id="back" style="font-size:16px;color:blue">Click to Return</a>';
+				var page = '<html><div id="myspin2"></div><div align="left"><a href="javascript:void(0);" id="back" style="font-size:16px;color:blue">Click to Return</a>';
 				page = page + '<a id="download" style="font-size:16px;margin-left:20px;color:blue">Click to Download</a>';
 				page = page + '<a id="trick" style="display: none">Click to back</a>';
 				page = page + '<p>Total answers: ' + data.AnsNum + '</p>';
@@ -179,6 +228,10 @@ function query(db, dp) {
 				//!Notice: element2 is a "<a>" tag, and it has two actions, href and onclick, be careful with the executing order of these two actions.
 				//in this case, we use a call-back function to prevent strange things. we return to the origin web page after the request to delete file returns successfully.
 				element2.onclick = function(){
+							$("#myspin2").text("");
+							var target = $("#myspin2").get(0);
+							spinner.spin(target);
+
 					$.get(request2, function(data, status){
 						//alert("delete return");
 						//var element3 = document.getElementById("trick");
@@ -225,13 +278,22 @@ function afterAns(file_name){
 function unload(db) {
 	if(db != "")
 	{
+		$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
+
 		var username4 = getCookie('user');
 		var password4 = getCookie('pswd');
 		var argu4 = "?operation=unload&db_name=" + db + "&username=" + username4 + "&password=" + password4;
 		var encodeArgu4 = escape(argu4);
 		$.get(encodeArgu4, function(data, status){
+			//setTimeout(function(){spinner.spin();}, 300);
+		
 			if(status=="success"){
-				alert(data.StatusMsg);
+			spinner.spin();
+			setTimeout(function(){alert(data.StatusMsg);}, 300);
+			
+				//	alert(data.StatusMsg);
 				//unload database successfully, so set the database name on web page to be NULL
 				//document.getElementById("_db_name_3").value = "NULL";
 	
@@ -260,9 +322,15 @@ function monitor() {
 	var db_name6 = document.getElementById("_db_name_monitor").value;
 	if(db_name6 != "")
 	{
+		$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
+
 		var argu6 = "?operation=monitor&db_name=" + db_name6;
 		var encodeArgu6 = escape(argu6);
 		$.get(encodeArgu6, function(data, status){
+			//setTimeout(function(){spinner.spin();}, 300);
+			spinner.spin();
 			if(status=="success"){
 
 			//alert(data);
@@ -306,15 +374,25 @@ function getCookie(name){
 function addUser(username, password){
 	if(username != "" && password != "")
 	{
+			$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
+
 		var username7 = getCookie('user');
 		var password7 = getCookie('pswd');
 		var argu7 = "?operation=user&type=add_user&username1=" + username7 + "&password1=" + password7 + "&username2=" + username + "&addtion=" + password;
 		var encodeArgu7 = escape(argu7);
 		$.get(encodeArgu7, function(data, status){
+			//setTimeout(function(){spinner.spin();}, 300);
+		
 			if(status == "success"){
-				if(data.StatusCode != 906)
-					alert(data.StatusMsg);
-				showUsers();
+				//if(data.StatusCode != 906)
+			//		alert(data.StatusMsg);
+				//showUsers();
+			//setTimeout(function(){spinner.spin();}, 300);
+				spinner.spin();
+			setTimeout(function(){alert(data.StatusMsg);}, 300);
+	
 			}
 		});
 	}
@@ -324,15 +402,25 @@ function addUser(username, password){
 function delUser(username){
 	if(username != "")
 	{
+		$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
+
 		var username8 = getCookie('user');
 		var password8 = getCookie('pswd');
 		var argu8 = "?operation=user&type=delete_user&username1=" + username8 + "&password1=" + password8 + "&username2=" + username + "&addtion=";
 		var encodeArgu8 = escape(argu8);
 		$.get(encodeArgu8, function(data, status){
+			//setTimeout(function(){spinner.spin();}, 300);
+		
 			if(status == "success"){
-				if(data.StatusCode != 906)
-					alert(data.StatusMsg);
-				showUsers();
+				//if(data.StatusCode != 906)
+			//		alert(data.StatusMsg);
+				//showUsers();
+			//setTimeout(function(){spinner.spin();}, 300);
+				spinner.spin();
+			setTimeout(function(){alert(data.StatusMsg);}, 300);
+	
 			}
 		});
 	}
@@ -342,15 +430,27 @@ function delUser(username){
 function changePsw(username, password){
 	if(username != "" && password != "")
 	{
+		$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
+
 		var username77 = getCookie('user');
 		var password77 = getCookie('pswd');
 		var argu77 = "?operation=user&type=change_psw&username1=" + username77 + "&password1=" + password77 + "&username2=" + username + "&addtion=" + password;
 		var encodeArgu77 = escape(argu77);
 		$.get(encodeArgu77, function(data, status){
+			//setTimeout(function(){spinner.spin();}, 300);
+		
 			if(status == "success"){
-				if(data.StatusCode != 906)
-					alert(data.StatusMsg);
-				showUsers();
+				//if(data.StatusCode != 906)
+		//			alert(data.StatusMsg);
+				//showUsers();
+				if(username == "root")
+					setCookie('pswd',password,7);
+		//	setTimeout(function(){spinner.spin();}, 300);
+				spinner.spin();
+			setTimeout(function(){alert(data.StatusMsg);}, 300);
+	
 			}
 		});
 	}
@@ -360,6 +460,10 @@ function changePsw(username, password){
 function addPrivilege(username, type, db){
 	if(username != "" && type != "" && db != "")
 	{
+		$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
+
 		var username9 = getCookie('user');
 		var password9 = getCookie('pswd');
 		type = "add_" + type;
@@ -367,9 +471,13 @@ function addPrivilege(username, type, db){
 		var encodeArgu9 = escape(argu9);
 		$.get(encodeArgu9, function(data, status){
 			if(status == "success"){
-				if(data.StatusCode != 906)
-					alert(data.StatusMsg);
-				showUsers();
+				//if(data.StatusCode != 906)
+		//			alert(data.StatusMsg);
+				//showUsers();
+		//	setTimeout(function(){spinner.spin();}, 300);
+				spinner.spin();
+			setTimeout(function(){alert(data.StatusMsg);}, 300);
+	
 			}
 		});
 	}
@@ -379,16 +487,26 @@ function addPrivilege(username, type, db){
 function delPrivilege(username, type, db){
 	if(username != "" && type != "" && db != "")
 	{
+		$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
+
 		var username11 = getCookie('user');
 		var password11 = getCookie('pswd');
 		type = "delete_" + type
 		var argu11 = "?operation=user&type=" + type + "&username1=" + username11 + "&password1=" + password11 + "&username2=" + username + "&addtion=" + db;
 		var encodeArgu11 = escape(argu11);
 		$.get(encodeArgu11, function(data, status){
+			//setTimeout(function(){spinner.spin();}, 300);
+		
 			if(status == "success"){
-				if(data.StatusCode != 906)
-					alert(data.StatusMsg);
-				showUsers();
+				//if(data.StatusCode != 906)
+		//			alert(data.StatusMsg);
+				//showUsers();
+		//	setTimeout(function(){spinner.spin();}, 300);
+				spinner.spin();
+			setTimeout(function(){alert(data.StatusMsg);}, 300);
+	
 			}
 		});
 	}
@@ -396,9 +514,15 @@ function delPrivilege(username, type, db){
 		alert("input needed.");
 }
 function showUsers(){
+		$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
+
 	var argu12 = "?operation=showUsers";
 	var encodeArgu12 = escape(argu12);
 	$.get(encodeArgu12, function(data, status){
+		//setTimeout(function(){spinner.spin();}, 300);
+		spinner.spin();
 		if(status == "success"){
 			/*
 			//alert(data);
@@ -438,13 +562,19 @@ function showUsers(){
 	});
 }
 function showDatabases() {
+		$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
+
 	//alert("showDatabases");
 	var argu10 = "?operation=show";
 	var encodeArgu10 = escape(argu10);
 	//alert(encodeArgu10);
 	$.get(encodeArgu10, function(data, status){
+		//setTimeout(function(){spinner.spin();}, 300);
+		
 		if(status=="success"){
-
+			spinner.spin();
 			//alert(data);
 			var ans = (data.ResponseBody).split("\n");
 			//alert(ans.length);
@@ -457,7 +587,8 @@ function showDatabases() {
 			}
 			
 			$("#databasesAns").scrollTop($("#databasesAns").height());
-	
+			//setTimeout(function(){spinner.spin();}, 300);
+		
 			//document.getElementById("monitor_text").value = data;
 		}
 	});
@@ -466,3 +597,15 @@ function databases_empty(){
 	//alert("monitor_empty");
 	$("#databasesAns").empty();
 }
+  //设置cookie
+function setCookie(name,value,day){
+    //alert("setCookie");
+    //alert(name);
+    //alert(value);
+    var date = new Date();
+    date.setDate(date.getDate() + day);
+    //alert(date);
+    document.cookie = name + '=' + value + ';expires='+ date;
+    //alert("document.cookie");
+    //alert(document.cookie);
+  }

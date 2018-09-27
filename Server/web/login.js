@@ -27,6 +27,29 @@ window.onload = function(){
       }
 };
 */
+var opts = {
+
+	lines: 13, // 花瓣数目
+	length: 20, // 花瓣长度
+	width: 10, //
+	scale: 0.45,
+	radius: 30, // 花瓣距中心半径
+	corners: 1, // 花瓣圆滑度 (0-1)
+	rotate: 0, // 花瓣旋转角度
+	direction: 1, // 花瓣旋转方向 1: 顺时针, -1: 逆时针
+	color: '#5882FA', // 花瓣颜色
+	speed: 1, // 花瓣旋转速度
+	trail: 60, // 花瓣旋转时的拖影(百分比)
+	shadow: false, // 花瓣是否显示阴影
+	hwaccel: false, //spinner 是否启用硬件加速及高速旋转
+	className: 'spinner', // spinner css 样式名称
+	zIndex: 2e9, // spinner的z轴 (默认是2000000000
+	top: '46%', // spinner 相对父容器Top定位 单位 px
+	left: '50%',// spinner 相对父容器Left定位 单位 px
+	position: 'absolute'
+};
+var spinner = new Spinner(opts);
+
 function login(){
       //验证用户名和密码
 	    var oUser = document.getElementById('user');
@@ -35,10 +58,14 @@ function login(){
 	 // alert(argu);
       var encodeArgu0 = escape(argu0);
      // alert(encodeArgu);
+		$("#myspin").text("");
+		var target = $("#myspin").get(0);
+		spinner.spin(target);
 
 	  $.get(encodeArgu0, function(data, status){
         if(status=="success"){
-			if(data == "wrong username." || data == "wrong password.")
+			spinner.spin();
+			if(data.StatusCode != 900)
 			{
 				//alert(data);
 				var oCheck = document.getElementById('checkMsg');

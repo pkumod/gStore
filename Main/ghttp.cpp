@@ -199,6 +199,7 @@ struct User{
 		{
 			password = psw;
 		}
+		
 };
 //struct User root = User(ROOT_USERNAME, ROOT_PASSWORD);
 
@@ -1457,6 +1458,7 @@ void query_thread(string db_name, string format, string db_query, const shared_p
 	if(iter == databases.end())
 	{
 		string error = "Database not load yet.";
+	//cout << error << endl;
 		string resJson = CreateJson(304, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
 		
@@ -2449,7 +2451,11 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 	cout << "password1 = " << password1 << endl;
 	
 	//if root user
-	if(username1 == ROOT_USERNAME & password1 == ROOT_PASSWORD)
+	pthread_rwlock_rdlock(&users_map_lock);
+	string root_password = (users.find(ROOT_USERNAME))->second->getPassword();
+	pthread_rwlock_unlock(&users_map_lock);
+
+	if(username1 == ROOT_USERNAME & password1 == root_password)
 	{
 		string username2 = request->path_match[4];
 		username2 = UrlDecode(username2);
