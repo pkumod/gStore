@@ -264,9 +264,9 @@ Trie::LoadDictionary()
 	ifstream _fin(this->store_path.c_str());
 	if (!_fin)
 	{
-		cout << "Trie::LoadDictionary: Fail to open " << store_path 
-			 << " but it doesn't matter if you are building a database."
-		     << endl;
+		//cout << "Trie::LoadDictionary: Fail to open " << store_path 
+			 //<< " but it doesn't matter if you are building a database."
+			 //<< endl;
 		return false;
 	}
 
@@ -398,7 +398,7 @@ Trie::LoadTrie(string dictionary_path)
 	ifstream fin(store_path.c_str());
 	if (!fin)
 	{
-		cout << "Trie::LoadTrie: Fail to open " << store_path << endl;
+		//cout << "Trie::LoadTrie: Fail to open " << store_path << endl;
 		return false;
 	}	
 	

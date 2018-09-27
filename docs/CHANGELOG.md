@@ -1,3 +1,26 @@
+## Sep 20, 2018
+
+Zongyue, Qin fixes the remaining bugs in Trie, ISArray and IVArray.
+In addition, he improves the performance of parallism by providing fine-grained locks to key-value indices instead of locking the whole KVstore.
+
+In order to support applications in Wuhan University, Li, Zeng fixes many existing bugs in parallism, 'ghttp', indices, caches(string buffers are not used now) and APIs.
+What is more, setup scripts are added for several wellknown Linux distributions(CentOS, Archlinux, Ubuntu) to ease the burden of installing softwares and setting system variables.
+
+As for documents, new figures of architecture and query processing are added by Li, Zeng and Yuyan, Chen.
+This will help other developers on Github to view our code and modify it as they wish.
+
+---
+
+## Jun 6, 2018
+
+Xunbin, Su designs a thread pool for 'ghttp' based on the SimpleWeb framework of Boost Library. 
+In addition, Xunbin, Sun and imbajin(a Github user) add a docker image(only works for Docker CE 17.06.1) to gStore, which can ease the usage of this database system.
+
+Meanwhile, Zongyue, Qin fixes several bugs in the new indices and designs caches for them.
+Chaofan, Yang adds and improves APIs(Application Program Interface) of several programming languages to 'ghttp' interface.
+
+---
+
 ## Apr 24, 2018
 
 Multithreading is enabled by zengli in ghttp, to improve the performance of this HTTP web server.
