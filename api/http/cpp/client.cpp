@@ -31,7 +31,7 @@ static const std::string UrlEncode(const std::string& s)
                         ret += ptr[i];
                 else if(int(ptr[i])==32)
                         ret += '+';
-                else
+                else if((int(ptr[i])!=10) && (int(ptr[i])!=11) && (int(ptr[i])!=13))
                 {
                         char buf[5];
                         memset(buf,0,5);
