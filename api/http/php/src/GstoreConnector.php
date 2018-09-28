@@ -31,7 +31,7 @@ class GstoreConnector {
                 $ret .= $c;
             else if (ord($c)==32)
                 $ret .= "+";
-            else 
+            else if (ord($c)!=10 and ord($c)!=11 and ord($c)!=13) 
                 $ret .= sprintf("%%%X", ord($c));        
         }
         return $ret;
