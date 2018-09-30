@@ -838,7 +838,7 @@ void delete_thread(const shared_ptr<HttpServer::Response>& response, const share
 				cJSON_Delete(resJson);  
 				//free(out);
 				*/
-				string resJson = CreateJson(100, success, 0);
+				string resJson = CreateJson(0, success, 0);
 				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
 			
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
@@ -1084,7 +1084,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 
 	// string success = db_name + " " + db_path;
 	string success = "Import RDF file to database done.";
-	string resJson = CreateJson(200, success, 0);
+	string resJson = CreateJson(0, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
 		
 	
@@ -1280,7 +1280,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 
 	cout << "database insert done." << endl;
 	string success = "Database loaded successfully.";
-	string resJson = CreateJson(300, success, 0);
+	string resJson = CreateJson(0, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
 		
 	
@@ -1408,7 +1408,7 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	current_database = NULL;
 	databases.erase(db_name);
 	string success = "Database unloaded.";
-	string resJson = CreateJson(600, success, 0);
+	string resJson = CreateJson(0, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
 		
 	
@@ -2141,7 +2141,7 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	{
 		cout << "login successfully." << endl;
 		string success = "check identity successfully.";
-		string resJson = CreateJson(900, success, 0);
+		string resJson = CreateJson(0, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
 		
 		
@@ -2341,7 +2341,7 @@ void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const s
 	//NOTICE: this info is in header
 	string success = "Database saveed successfully.";
 	//header and content are split by an empty line
-	string resJson = CreateJson(700, success, 0);
+	string resJson = CreateJson(0, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
 		
 	
@@ -2604,8 +2604,8 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 				return false;
 			}
 		}
-		string success = "operation succeeded.";
-		string resJson = CreateJson(906, success, 0);
+		string success = "operation on users succeeded.";
+		string resJson = CreateJson(0, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
 		
 		
