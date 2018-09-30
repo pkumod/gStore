@@ -102,3 +102,4 @@ node_modules
 # query results
 *.info
 
+/.vs
