@@ -1859,6 +1859,16 @@ Util::pso_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b)
 	return false;
 }
 
+bool 
+Util::equal(const ID_TUPLE& a, const ID_TUPLE& b)
+{
+	if(a.subid == b.subid && a.preid == b.preid && a.objid == b.objid)
+	{
+		return true;
+	}
+	return false;
+}
+
 void
 Util::empty_file(const char* _fname)
 {

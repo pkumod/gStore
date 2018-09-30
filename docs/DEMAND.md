@@ -62,7 +62,7 @@ NOTICE:
 # ./buildconf --force
 # ./configure --help | grep pthreads
 
-You have to see --enable-pthreads listed. If do not, clear the buidls with this commands:
+You have to see --enable-pthreads listed. If do not, clear the builds with this commands:
 
 # rm -rf aclocal.m4
 # rm -rf autom4te.cache/
