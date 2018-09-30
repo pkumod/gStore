@@ -65,7 +65,7 @@ function login(){
 	  $.get(encodeArgu0, function(data, status){
         if(status=="success"){
 			spinner.spin();
-			if(data.StatusCode != 900)
+			if(data.StatusCode != 0)
 			{
 				//alert(data);
 				var oCheck = document.getElementById('checkMsg');
