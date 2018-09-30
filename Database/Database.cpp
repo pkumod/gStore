@@ -1671,6 +1671,12 @@ Database::build(const string& _rdf_file)
 	cout << "after build, used " << (tv_build_end - tv_build_begin) << "ms." << endl;
 	cout << "finish build VS-Tree." << endl;
 
+	cout << "finish sub2id pre2id obj2id" << endl;
+	cout << "tripleNum is " << this->triples_num << endl;
+	cout << "entityNum is " << this->entity_num << endl;
+	cout << "preNum is " << this->pre_num << endl;
+	cout << "literalNum is " << this->literal_num << endl;
+
 	//this->vstree->saveTree();
 	//delete this->vstree;
 	//this->vstree = NULL;
@@ -2121,6 +2127,19 @@ Database::build_s2xx(ID_TUPLE* _p_id_tuples)
 	__gnu_parallel::sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::spo_cmp_idtuple);
 #endif
 	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_spo_cmp);
+
+	//remove duplicates from the id tables
+	int j = 1;
+	for(int i = 1; i < this->triples_num; ++i)
+	{
+		if(!Util::equal(_p_id_tuples[i], _p_id_tuples[i-1]))
+		{
+			_p_id_tuples[j] = _p_id_tuples[i];
+			++j;
+		}
+	}
+	this->triples_num = j;
+	
 	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num, this->entity_num);
 
 	//save all entity_signature into binary file
@@ -2653,12 +2672,6 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 			//delete _entity_bitset[i];
 		//}
 		//delete[] _entity_bitset;
-
-	cout << "finish sub2id pre2id obj2id" << endl;
-	cout << "tripleNum is " << this->triples_num << endl;
-	cout << "entityNum is " << this->entity_num << endl;
-	cout << "preNum is " << this->pre_num << endl;
-	cout << "literalNum is " << this->literal_num << endl;
 	
 	//{
 		//stringstream _ss;
