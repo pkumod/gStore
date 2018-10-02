@@ -63,11 +63,20 @@ bool GeneralEvaluation::doQuery()
 	}
 
 	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num, this->limitID_predicate, this->limitID_literal, this->limitID_entity);
-	if (this->query_tree.checkWellDesigned())
-	{
-		printf("=================\n");
-		printf("||well-designed||\n");
-		printf("=================\n");
+    if (this->query_tree.checkWellDesigned())
+    {
+        printf("=================\n");
+        printf("||well-designed||\n");
+        printf("=================\n");
+
+        if (this->filterRewriting(this->query_tree.getGroupPattern()))
+        {
+            printf("====================\n");
+            printf("||filter-rewriting||\n");
+            printf("====================\n");
+            this->query_tree.getGroupPattern().getVarset();
+            this->query_tree.print();
+        }
 
 		this->rewriting_evaluation_stack.clear();
 		this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
@@ -86,6 +95,220 @@ bool GeneralEvaluation::doQuery()
 	}
 
 	return true;
+}
+
+bool GeneralEvaluation::filterRewriting(QueryTree::GroupPattern &group_pattern)
+{
+    bool res = false;
+
+    vector<bool> keep(group_pattern.sub_group_pattern.size(), true);
+    QueryTree::GroupPattern new_group_pattern;
+
+    for (auto i = 0; i < group_pattern.sub_group_pattern.size(); i++)
+        if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+        {
+            QueryTree::GroupPattern::FilterTree &filter = group_pattern.sub_group_pattern[i].filter;
+
+            vector<vector<pair<string, string> > > dis_con_eq;
+            bool is_eq_dis_nf = dfsDisjunctiveNormalForm(filter.root, dis_con_eq);
+
+            if (is_eq_dis_nf)
+            {
+                for (auto &con : dis_con_eq)
+                    for (auto &eq : con)
+                    {
+                        if (eq.first[0] != '?' && eq.second[0] == '?')
+                            swap(eq.first, eq.second);
+                        if (eq.first[0] != '?' || eq.second[0] == '?')
+                            is_eq_dis_nf = false;
+                    }
+            }
+
+            if (is_eq_dis_nf)
+            {
+                for (auto &con : dis_con_eq)
+                {
+                    unordered_map<string, string> varmap;
+
+                    for (auto &eq : con)
+                        if (varmap.count(eq.first) == 0)
+                            varmap[eq.first] = eq.second;
+                        else if (varmap[eq.first] != eq.second)
+                            is_eq_dis_nf = false;
+                }
+            }
+
+            unordered_map<string, bool> occur_var;
+
+            if (is_eq_dis_nf)
+            {
+                for (auto &v : dis_con_eq[0])
+                    occur_var[v.first] = false;
+
+                for (auto j = 1; j < dis_con_eq.size(); j++)
+                {
+                    for (auto &it : occur_var)
+                        it.second = false;
+
+                    for (auto &eq : dis_con_eq[j])
+                        if (occur_var.count(eq.first) == 0)
+                            is_eq_dis_nf = false;
+                        else
+                            occur_var[eq.first] = true;
+
+                    for (auto &it : occur_var)
+                        if (!it.second)
+                            is_eq_dis_nf = false;
+                }
+            }
+
+            if (is_eq_dis_nf)
+            {
+                keep[i] = false;
+                res = true;
+
+                if (dis_con_eq.size() > 1)
+                    new_group_pattern.addOneGroupUnion();
+
+                for (auto j = 0; j < dis_con_eq.size(); j++)
+                {
+                    if (dis_con_eq.size() > 1)
+                        new_group_pattern.addOneUnion();
+
+                    QueryTree::GroupPattern &target_group_pattern = (dis_con_eq.size() == 1 ? new_group_pattern : new_group_pattern.getLastUnion());
+
+                    for (auto k = 0; k < group_pattern.sub_group_pattern.size(); k++)
+                    {
+                        if (group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+                        {
+                            QueryTree::GroupPattern::Pattern &pattern = group_pattern.sub_group_pattern[k].pattern;
+                            if ((pattern.subject.isVariable() && occur_var.count(pattern.subject.getValue()) > 0) ||
+                                (pattern.predicate.isVariable() && occur_var.count(pattern.predicate.getValue()) > 0) ||
+                                (pattern.object.isVariable() && occur_var.count(pattern.object.getValue()) > 0))
+                            {
+                                QueryTree::GroupPattern::Pattern new_pattern = pattern;
+                                int var_remain = (int)new_pattern.subject.isVariable() + (int)new_pattern.predicate.isVariable() + (int)new_pattern.object.isVariable();
+                                bool has_changed = false;
+                                //TODO var_remain == 1
+
+                                if (new_pattern.subject.isVariable())
+                                    for (auto &eq : dis_con_eq[j])
+                                        if (new_pattern.subject.getValue() == eq.first && var_remain > 1)
+                                        {
+                                            new_pattern.subject.setValue(eq.second);
+                                            var_remain--;
+                                            has_changed = true;
+                                            break;
+                                        }
+
+                                if (new_pattern.predicate.isVariable())
+                                    for (auto &eq : dis_con_eq[j])
+                                        if (new_pattern.predicate.getValue() == eq.first && var_remain > 1)
+                                        {
+                                            new_pattern.predicate.setValue(eq.second);
+                                            var_remain--;
+                                            has_changed = true;
+                                            break;
+                                        }
+
+                                if (new_pattern.object.isVariable())
+                                    for (auto &eq : dis_con_eq[j])
+                                        if (new_pattern.object.getValue() == eq.first && var_remain > 1)
+                                        {
+                                            new_pattern.object.setValue(eq.second);
+                                            var_remain--;
+                                            has_changed = true;
+                                            break;
+                                        }
+
+                                if (has_changed)
+                                {
+                                    keep[k] = false;
+                                    target_group_pattern.addOnePattern(new_pattern);
+                                }
+                            }
+                        }
+                    }
+
+                    for (auto &eq : dis_con_eq[j])
+                    {
+                        target_group_pattern.addOneBind();
+                        target_group_pattern.getLastBind() = QueryTree::GroupPattern::Bind(eq.second, eq.first);
+                    }
+                }
+            }
+        }
+
+    for (auto i = 0; i < group_pattern.sub_group_pattern.size(); i++)
+        if (keep[i])
+            new_group_pattern.sub_group_pattern.push_back(group_pattern.sub_group_pattern[i]);
+
+    group_pattern.sub_group_pattern = new_group_pattern.sub_group_pattern;
+
+    for (auto &t : group_pattern.sub_group_pattern)
+        if (t.type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
+        {
+            for (auto &u : t.unions)
+                res |= filterRewriting(u);
+        }
+        else if (t.type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+        {
+            res |= filterRewriting(t.optional);
+        }
+
+    return res;
+}
+
+bool GeneralEvaluation::dfsDisjunctiveNormalForm(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter_node, 
+    vector<vector<pair<string, string> > > &dis_con_eq)
+{
+    if (filter_node.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterOperationType::Or_type)
+    {
+        bool res = true;
+        for (auto &c : filter_node.child)
+            res &= dfsDisjunctiveNormalForm(c.node, dis_con_eq);
+        return res;
+    }
+    else if (filter_node.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterOperationType::And_type ||
+        filter_node.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterOperationType::Equal_type)
+    {
+        dis_con_eq.push_back(vector<pair<string, string> >());
+        return dfsConjunctiveNormalForm(filter_node, dis_con_eq);
+    }
+    else
+        return false;
+}
+
+bool GeneralEvaluation::dfsConjunctiveNormalForm(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter_node, 
+    vector<vector<pair<string, string> > > &dis_con_eq)
+{
+    if (filter_node.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterOperationType::And_type)
+    {
+        bool res = true;
+        for (auto &c : filter_node.child)
+            res &= dfsConjunctiveNormalForm(c.node, dis_con_eq);
+        return res;
+    }
+    else if (filter_node.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterOperationType::Equal_type)
+    {
+        vector<string> child_value;
+
+        for (auto &c : filter_node.child)
+            if (c.node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::FilterTreeChildNodeType::String_type)
+                child_value.push_back(c.str);
+            else
+                return false;
+
+        if (child_value.size() == 2)
+        {
+            dis_con_eq.back().push_back(make_pair(child_value[0], child_value[1]));
+            return true;
+        }
+        else
+            return false;
+    }
+    else
+        return false;
 }
 
 TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupPattern &group_pattern)
@@ -456,37 +679,37 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
 			for (int j = 0; j < dep; j++)
 			{
-				QueryTree::GroupPattern &parrent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
+				QueryTree::GroupPattern &parent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
 
-				for (int k = 0; k < (int)parrent_group_pattern.sub_group_pattern.size(); k++)
-					if (parrent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-						if (need_add.hasCommonVar(parrent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset) &&
-							parrent_group_pattern.sub_group_pattern[k].pattern.varset.getVarsetSize() == 1)
+				for (int k = 0; k < (int)parent_group_pattern.sub_group_pattern.size(); k++)
+					if (parent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+						if (need_add.hasCommonVar(parent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset) &&
+							parent_group_pattern.sub_group_pattern[k].pattern.varset.getVarsetSize() == 1)
 						{
 							triple_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(
-								QueryTree::GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.subject.value),
-								QueryTree::GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.predicate.value),
-								QueryTree::GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.object.value)
+								QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.subject.value),
+								QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.predicate.value),
+								QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.object.value)
 							));
-							need_add = need_add - parrent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset;
+							need_add = need_add - parent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset;
 						}
 			}
 
 			for (int j = 0; j < dep; j++)
 			{
-				QueryTree::GroupPattern &parrent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
+				QueryTree::GroupPattern &parent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
 
-				for (int k = 0; k < (int)parrent_group_pattern.sub_group_pattern.size(); k++)
-					if (parrent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-						if (need_add.hasCommonVar(parrent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset) &&
-							parrent_group_pattern.sub_group_pattern[k].pattern.varset.getVarsetSize() == 2)
+				for (int k = 0; k < (int)parent_group_pattern.sub_group_pattern.size(); k++)
+					if (parent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+						if (need_add.hasCommonVar(parent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset) &&
+							parent_group_pattern.sub_group_pattern[k].pattern.varset.getVarsetSize() == 2)
 						{
 							triple_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(
-								QueryTree::GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.subject.value),
-								QueryTree::GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.predicate.value),
-								QueryTree::GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.object.value)
+								QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.subject.value),
+								QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.predicate.value),
+								QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.object.value)
 							));
-							need_add = need_add - parrent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset;
+							need_add = need_add - parent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset;
 						}
 			}
 		}
@@ -499,14 +722,14 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 		{
 			for (int j = 0; j < dep; j++)
 			{
-				QueryTree::GroupPattern &parrent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
+				QueryTree::GroupPattern &parent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
 
-				for (int k = 0; k < (int)parrent_group_pattern.sub_group_pattern.size(); k++)
+				for (int k = 0; k < (int)parent_group_pattern.sub_group_pattern.size(); k++)
 				{
-					if (parrent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-						useful += parrent_group_pattern.sub_group_pattern[k].pattern.varset;
-					else if (parrent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
-						useful += parrent_group_pattern.sub_group_pattern[k].filter.varset;
+					if (parent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+						useful += parent_group_pattern.sub_group_pattern[k].pattern.varset;
+					else if (parent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+						useful += parent_group_pattern.sub_group_pattern[k].filter.varset;
 				}
 			}
 

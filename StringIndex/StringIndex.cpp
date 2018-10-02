@@ -350,7 +350,6 @@ bool StringIndex::randomAccess(unsigned id, string *str, bool is_entity_or_liter
 	{
 		if(searchBuffer(id, str))
 		{
-			cout << "FLAG2" << endl;
 			*str = trie->Uncompress(*str, str->length());
 			return true;
 		}

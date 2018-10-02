@@ -79,6 +79,10 @@ class QueryTree
 						{
 							return value;
 						}
+                        inline void setValue(const std::string &_value)
+						{
+                            this->value = _value;
+						}
 						inline bool isVariable() const
 						{
 							return value.length() > 1 && value[0] == '?';
