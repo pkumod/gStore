@@ -18,6 +18,7 @@ IVEntry::IVEntry()
 	usedFlag = false;
 	dirtyFlag = true;
 	cacheFlag = false;
+	CachePinFlag = false;
 	prevID = nextID = -1;
 }
 
@@ -111,6 +112,18 @@ bool
 IVEntry::inCache() const
 {
 	return cacheFlag;
+}
+
+void
+IVEntry::setCachePinFlag(bool _flag)
+{
+	CachePinFlag = _flag;
+}
+
+bool
+IVEntry::isPined()
+{
+	return CachePinFlag;
 }
 
 void

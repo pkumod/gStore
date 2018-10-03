@@ -147,6 +147,11 @@ class StringIndex
 			predicate.clear();
 		}
 
+		void flush()
+		{
+			//nothing to do here
+		}
+
 		void emptyBuffer()
 		{
 			entity.emptyBuffer();

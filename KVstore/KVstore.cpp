@@ -2738,22 +2738,29 @@ KVstore::isEntity(TYPE_ENTITY_LITERAL_ID id)
 	return id < Util::LITERAL_FIRST_ID;
 }
 
-/*void
+void
 KVstore::AddIntoPreCache(TYPE_PREDICATE_ID _pre_id)
 {
-	this->preID2values->AddIntoCache(_pre_id);
+	this->preID2values->PinCache(_pre_id);
 }
 void 
 KVstore::AddIntoSubCache(TYPE_ENTITY_LITERAL_ID _entity_id)
 {
-	this->subID2values->AddIntoCache(_entity_id);
+	this->subID2values->PinCache(_entity_id);
 }
 
 void 
 KVstore::AddIntoObjCache(TYPE_ENTITY_LITERAL_ID _entity_literal_id)
 {
-	this->objID2values->AddIntoCache(_entity_literal_id);
-}*/
+	if (Util::is_literal_ele(_entity_literal_id))
+	{
+		TYPE_ENTITY_LITERAL_ID _literal_id = _entity_literal_id
+						- Util::LITERAL_FIRST_ID;
+
+		objID2values_literal->PinCache(_literal_id);
+	}
+	this->objID2values->PinCache(_entity_literal_id);
+}
 
 unsigned
 KVstore::getSubListSize(TYPE_ENTITY_LITERAL_ID _sub_id)

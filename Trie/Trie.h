@@ -17,8 +17,11 @@ using namespace std;
 
 class Trie
 {
-	static const int SAMPLE_UPBOUND = 1000000;
-	static const int LOWBOUND = 100;//this param should change with data sets
+	//static const int SAMPLE_UPBOUND = 1000000;
+	//static const int LOWBOUND = 100;//this param should change with data sets
+	//NOTICE: set SAMPLE_UPBOUND to a tiny number to unuse the Trie structure
+	static const int SAMPLE_UPBOUND = 1;
+	static const int LOWBOUND = 1;//this param should change with data sets
 	//SAMPLE_UPBOUND = 1000000, LOWBOUND = 100 for LUBM500M
 	//SAMPLE_UPBOUND = 100000, LOWBOUND = 20 for DBpediafull
 	//SAMPLE_UPVOUND = 300000, LOWBOUND = 30 for WatDiv500M
