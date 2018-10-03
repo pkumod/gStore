@@ -4,10 +4,10 @@ all: Benchmark CppAPIExample
 #all: example Benchmark CppAPIExample
 
 Benchmark: Benchmark.o
-	$(CC) -o Benchmark.exe Benchmark.o -lcurl -L../lib -lclient -lpthread
+	$(CC) -o Benchmark.exe Benchmark.o -L../lib -lclient -lcurl -lpthread
 
 CppAPIExample: CppAPIExample.o
-	$(CC) -o CppAPIExample.exe CppAPIExample.o -I../ -lcurl  -L../lib -lgstoreconnector -lclient
+	$(CC) -o CppAPIExample.exe CppAPIExample.o -I../ -L../lib -lgstoreconnector -lclient -lcurl
 
 Benchmark.o: Benchmark.cpp
 	$(CC) -c -I../ Benchmark.cpp -o Benchmark.o

@@ -41,7 +41,7 @@ CC = g++
 
 #the optimazition level of gcc/g++
 #http://blog.csdn.net/hit_090420216/article/details/44900215
-#NOTICE: -O2 is recommended, while -O3 is dangerous
+#NOTICE: -O2 is recommended, while -O3(add loop-unroll and inline-function) is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
 CFLAGS = -c -Wall -O2 -pthread -std=c++11
@@ -50,8 +50,8 @@ EXEFLAG = -O2 -pthread -std=c++11
 #CFLAGS = -c -Wall -pthread -g -std=c++11
 #EXEFLAG = -pthread -g -std=c++11
 
-#add -lreadline -ltermcap if using readline or objs contain readline
-library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
+#add -lreadline [-ltermcap] if using readline or objs contain readline
+library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
 #used for parallelsort
 openmp = -fopenmp -march=native
 # library = -ltermcap -lreadline -L./lib -lantlr -lgcov
@@ -118,7 +118,7 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow
 
 all: $(TARGET)
-	./test/test.sh
+	bash scripts/test.sh
 test_index: test_index.cpp
 	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library) $(openmp)
 
@@ -517,7 +517,7 @@ dist: clean
 	rm -rf *.info
 
 tarball:
-	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs test docs data makefile \
+	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs scripts garbage docs data makefile \
 		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE
 
 APIexample: $(api_cpp) $(api_java)
@@ -529,8 +529,8 @@ APIexample: $(api_cpp) $(api_java)
 gtest: $(objdir)gtest.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr.a $(library) $(openmp)
 
-$(objdir)gtest.o: test/gtest.cpp
-	$(CC) $(CFLAGS) test/gtest.cpp $(inc) -o $(objdir)gtest.o $(openmp)
+$(objdir)gtest.o: scripts/gtest.cpp
+	$(CC) $(CFLAGS) scripts/gtest.cpp $(inc) -o $(objdir)gtest.o $(openmp)
 	
 $(exedir)gadd: $(objdir)gadd.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gadd $(objdir)gadd.o $(objfile) lib/libantlr.a $(library) $(openmp)
@@ -551,7 +551,7 @@ $(objdir)gsub.o: Main/gsub.cpp
 	$(CC) $(CFLAGS) Main/gsub.cpp $(inc) -o $(objdir)gsub.o $(openmp)
 
 sumlines:
-	bash test/sumline.sh
+	bash scripts/sumline.sh
 
 tag:
 	ctags -R
@@ -561,12 +561,12 @@ idx:
 	cscope -bkq #-i cscope.files
 
 cover:
-	bash test/cover.sh
+	bash scripts/cover.sh
 
 fulltest:
 	#NOTICE:compile gstore with -O2 only
 	#setup new virtuoso and configure it
-	cp test/full_test.sh ~
+	cp scripts/full_test.sh ~
 	cd ~
 	bash full_test.sh
 
