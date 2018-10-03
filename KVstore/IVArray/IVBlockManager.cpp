@@ -208,7 +208,15 @@ IVBlockManager::getWhereToWrite(unsigned _len)
 		// prepare BLockTOWrite
 		if (BlockToWrite != NULL)
 		{
-			delete BlockToWrite;
+			// delete BlockToWrite;
+			BlockInfo *p=BlockToWrite;
+			BlockInfo *nextp=p->next;
+			while(p!=NULL)
+			{
+				nextp=p->next;
+				delete p;
+				p=nextp;
+			}
 			BlockToWrite = NULL;
 		}
 
