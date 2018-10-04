@@ -205,7 +205,7 @@ IVBlockManager::getWhereToWrite(unsigned _len)
 	map <unsigned, unsigned>::iterator it = len_index_map.upper_bound(AllocNum - 1);
 	if (it != len_index_map.end())
 	{
-		// prepare BLockTOWrite
+		// prepare BLockToWrite
 		if (BlockToWrite != NULL)
 		{
 			// delete BlockToWrite;
@@ -327,20 +327,50 @@ IVBlockManager::FreeBlocks(const unsigned index)
 			map <unsigned, unsigned>::iterator it;
 
 			it = index_len_map.lower_bound(cur_index);
-			if (it->first + it->second == cur_index) // block before is free
+			if(it != index_len_map.begin())
 			{
-				cur_index = it->first;
-				curlen += it->second;
+				--it;
+				if (it->first + it->second == cur_index) // block before is free
+				{
+					cur_index = it->first;
+					curlen += it->second;
+					index_len_map.erase(it);
+					map <unsigned, unsigned>::iterator len_index_it;
+					map <unsigned, unsigned>::iterator be = len_index_map.lower_bound(make_pair(it->second,it->first));
+					map <unsigned, unsigned>::iterator en = len_index_map.upper_bound(make_pair(it->second,it->first));
+					for(len_index_it = be; len_index_it != en; it++)
+					{
+						if(*len_index_it == make_pair(it->second,it->first))
+						{
+							len_index_map.erase(len_index_it);
+							break;
+						}
+					}
+				}
 			}
 
 			it = index_len_map.upper_bound(cur_index);
-			if (curlen + cur_index == it->first) // block after is free
+			if(it != index_len_map.end())
 			{
-				curlen += it->second;
-				index_len_map.erase(it);
+				if (curlen + cur_index == it->first) // block after is free
+				{
+					curlen += it->second;
+					index_len_map.erase(it);
+					map <unsigned, unsigned>::iterator len_index_it;
+					map <unsigned, unsigned>::iterator be = len_index_map.lower_bound(make_pair(it->second,it->first));
+					map <unsigned, unsigned>::iterator en = len_index_map.upper_bound(make_pair(it->second,it->first));
+					for(len_index_it=be; len_index_it != en; it++)
+					{
+						if(*len_index_it == make_pair(it->second,it->first))
+						{
+							len_index_map.erase(len_index_it);
+							break;
+						}
+					}
+				}
 			}
 
-			index_len_map[cur_index] = curlen;
+			index_len_map.insert(make_pair(cur_index, curlen));
 			len_index_map.insert(make_pair(curlen, cur_index));
 			
 			curlen = 0;
