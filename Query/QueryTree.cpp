@@ -388,12 +388,15 @@ void QueryTree::GroupPattern::getTriplePatternSpanningTree(int begin, int end)
 
 void QueryTree::GroupPattern::print(int dep)
 {
-	for (int t = 0; t < dep; t++)	printf("\t");	printf("{\n");
+	for (int t = 0; t < dep; t++)
+        printf("\t");
+    printf("{\n");
 
 	for (int i = 0; i < (int)this->sub_group_pattern.size(); i++)
 		if (this->sub_group_pattern[i].type == SubGroupPattern::Pattern_type)
 		{
-			for (int t = 0; t <= dep; t++)	printf("\t");
+			for (int t = 0; t <= dep; t++)
+                printf("\t");
 			printf("%s\t%s\t%s.\n",	this->sub_group_pattern[i].pattern.subject.value.c_str(),
 									this->sub_group_pattern[i].pattern.predicate.value.c_str(),
 									this->sub_group_pattern[i].pattern.object.value.c_str());
@@ -404,32 +407,40 @@ void QueryTree::GroupPattern::print(int dep)
 			{
 				if (j != 0)
 				{
-					for (int t = 0; t <= dep; t++)	printf("\t");	printf("UNION\n");
+					for (int t = 0; t <= dep; t++)
+                        printf("\t");
+				    printf("UNION\n");
 				}
 				this->sub_group_pattern[i].unions[j].print(dep + 1);
 			}
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Optional_type || this->sub_group_pattern[i].type == SubGroupPattern::Minus_type)
 		{
-			for (int t = 0; t <= dep; t++)	printf("\t");
+			for (int t = 0; t <= dep; t++)
+                printf("\t");
 			if (this->sub_group_pattern[i].type == SubGroupPattern::Optional_type)	printf("OPTIONAL\n");
 			if (this->sub_group_pattern[i].type == SubGroupPattern::Minus_type)	printf("MINUS\n");
 			this->sub_group_pattern[i].optional.print(dep + 1);
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Filter_type)
 		{
-			for (int t = 0; t <= dep; t++)	printf("\t");	printf("FILTER\t");
+			for (int t = 0; t <= dep; t++)
+                printf("\t");
+		    printf("FILTER\t");
 			this->sub_group_pattern[i].filter.root.print(dep + 1);
 			printf("\n");
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Bind_type)
 		{
-			for (int t = 0; t <= dep; t++)	printf("\t");
+			for (int t = 0; t <= dep; t++)
+                printf("\t");
 			printf("BIND(%s\tAS\t%s)", this->sub_group_pattern[i].bind.str.c_str(), this->sub_group_pattern[i].bind.var.c_str());
 			printf("\n");
 		}
 
-	for (int t = 0; t < dep; t++)	printf("\t");	printf("}\n");
+	for (int t = 0; t < dep; t++)
+        printf("\t");
+    printf("}\n");
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -614,7 +625,9 @@ bool QueryTree::checkSelectAggregateFunctionGroupByValid()
 
 void QueryTree::print()
 {
-	for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
+	for (int j = 0; j < 80; j++)
+        printf("=");
+    printf("\n");
 
 	if (this->update_type == Not_Update)
 	{
@@ -709,5 +722,7 @@ void QueryTree::print()
 		}
 	}
 
-	for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
+	for (int j = 0; j < 80; j++)
+        printf("=");
+    printf("\n");
 }

@@ -23,6 +23,8 @@
 #include "TempResult.h"
 #include "QueryCache.h"
 #include "ResultSet.h"
+#include "TPSelectivity.h"
+#include "MultiQueryOptimization.h"
 
 class GeneralEvaluation
 {
@@ -34,6 +36,7 @@ class GeneralEvaluation
 		StringIndex *stringindex;
 		Strategy strategy;
 		QueryCache *query_cache;
+        TPSelectivity tp_selectivity;
 
 		TYPE_TRIPLE_NUM *pre2num;
 		TYPE_PREDICATE_ID limitID_predicate;
@@ -42,7 +45,7 @@ class GeneralEvaluation
 
 	public:
 		GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, QueryCache *_query_cache, TYPE_TRIPLE_NUM *_pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity):
-			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), pre2num(_pre2num), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), temp_result(NULL)
+			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), tp_selectivity(_kvstore), pre2num(_pre2num), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), temp_result(NULL)
 		{}
 
 		bool parseQuery(const std::string &_query);

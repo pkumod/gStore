@@ -83,7 +83,8 @@ kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarray
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o \
-		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o
+		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o \
+		   $(objdir)TPSelectivity.o $(objdir)MultiQueryOptimization.o $(objdir)GeneralEvaluation.o
 
 signatureobj = $(objdir)SigEntry.o $(objdir)Signature.o
 
@@ -351,11 +352,18 @@ $(objdir)QueryCache.o: Query/QueryCache.cpp Query/QueryCache.h $(objdir)Util.o $
 	$(objdir)TempResult.o $(objdir)Varset.o
 	$(CC) $(CFLAGS) Query/QueryCache.cpp $(inc) -o $(objdir)QueryCache.o $(openmp)
 
+$(objdir)TPSelectivity.o: Query/TPSelectivity.cpp Query/TPSelectivity.h $(objdir)Util.o $(objdir)KVstore.o $(objdir)QueryTree.o
+	$(CC) $(CFLAGS) Query/TPSelectivity.cpp $(inc) -o $(objdir)TPSelectivity.o $(openmp)
+
+$(objdir)MultiQueryOptimization.o: Query/MultiQueryOptimization.cpp Query/MultiQueryOptimization.h $(objdir)Util.o $(objdir)QueryTree.o \
+	$(objdir)TempResult.o $(objdir)TPSelectivity.o $(objdir)SPARQLquery.o $(objdir)KVstore.o $(objdir)Strategy.o $(objdir)StringIndex.o
+	$(CC) $(CFLAGS) Query/MultiQueryOptimization.cpp $(inc) -o $(objdir)MultiQueryOptimization.o $(openmp)
+
 #no more using $(objdir)Database.o
 $(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h Query/RegexExpression.h \
 	$(objdir)VSTree.o $(objdir)KVstore.o $(objdir)StringIndex.o $(objdir)Strategy.o $(objdir)QueryParser.o \
 	$(objdir)Triple.o $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)QueryTree.o $(objdir)Varset.o \
-	$(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)ResultSet.o
+	$(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)ResultSet.o $(objdir)TPSelectivity.o $(objdir)MultiQueryOptimization.o
 	$(CC) $(CFLAGS) Query/GeneralEvaluation.cpp $(inc) -o $(objdir)GeneralEvaluation.o $(openmp)
 
 #objects in Query/ end

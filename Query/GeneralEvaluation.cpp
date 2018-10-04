@@ -104,7 +104,7 @@ bool GeneralEvaluation::filterRewriting(QueryTree::GroupPattern &group_pattern)
     vector<bool> keep(group_pattern.sub_group_pattern.size(), true);
     QueryTree::GroupPattern new_group_pattern;
 
-    for (auto i = 0; i < group_pattern.sub_group_pattern.size(); i++)
+    for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
         if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
         {
             QueryTree::GroupPattern::FilterTree &filter = group_pattern.sub_group_pattern[i].filter;
@@ -145,7 +145,7 @@ bool GeneralEvaluation::filterRewriting(QueryTree::GroupPattern &group_pattern)
                 for (auto &v : dis_con_eq[0])
                     occur_var[v.first] = false;
 
-                for (auto j = 1; j < dis_con_eq.size(); j++)
+                for (int j = 1; j < (int)dis_con_eq.size(); j++)
                 {
                     for (auto &it : occur_var)
                         it.second = false;
@@ -170,14 +170,14 @@ bool GeneralEvaluation::filterRewriting(QueryTree::GroupPattern &group_pattern)
                 if (dis_con_eq.size() > 1)
                     new_group_pattern.addOneGroupUnion();
 
-                for (auto j = 0; j < dis_con_eq.size(); j++)
+                for (int j = 0; j < (int)dis_con_eq.size(); j++)
                 {
                     if (dis_con_eq.size() > 1)
                         new_group_pattern.addOneUnion();
 
                     QueryTree::GroupPattern &target_group_pattern = (dis_con_eq.size() == 1 ? new_group_pattern : new_group_pattern.getLastUnion());
 
-                    for (auto k = 0; k < group_pattern.sub_group_pattern.size(); k++)
+                    for (int k = 0; k < (int)group_pattern.sub_group_pattern.size(); k++)
                     {
                         if (group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
                         {
@@ -239,7 +239,7 @@ bool GeneralEvaluation::filterRewriting(QueryTree::GroupPattern &group_pattern)
             }
         }
 
-    for (auto i = 0; i < group_pattern.sub_group_pattern.size(); i++)
+    for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
         if (keep[i])
             new_group_pattern.sub_group_pattern.push_back(group_pattern.sub_group_pattern[i]);
 
@@ -621,326 +621,358 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
 	TempResultSet *result = new TempResultSet();
 
+    
+    vector<TempResultSet*> query_batch_result;
+    if (dep == 0)
+    {
+        vector<QueryTree::GroupPattern> query_batch;
+
+        for (int i = 0; i < (int)group_pattern_union.size(); i++)
+        {
+            query_batch.push_back(QueryTree::GroupPattern());
+            query_batch_result.push_back(new TempResultSet());
+
+            for (auto &t : group_pattern_union[i].sub_group_pattern)
+                if (t.type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+                    query_batch.back().addOnePattern(t.pattern);
+        }
+
+        MultiQueryOptimization multi_query_optimization(this->tp_selectivity, this->kvstore, this->strategy, this->stringindex);
+        multi_query_optimization.evaluate(query_batch, query_batch_result);
+    }
+
 	for (int i = 0; i < (int)group_pattern_union.size(); i++)
 	{
 		this->rewriting_evaluation_stack[dep].group_pattern = group_pattern_union[i];
 		QueryTree::GroupPattern *group_pattern = &this->rewriting_evaluation_stack[dep].group_pattern;
 		group_pattern->getVarset();
 
-		for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
+		for (int j = 0; j < 80; j++)
+            printf("=");
+	    printf("\n");
 		group_pattern->print(dep);
-		for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
+		for (int j = 0; j < 80; j++)
+            printf("=");
+	    printf("\n");
 
-		TempResultSet *sub_result = new TempResultSet();
+        TempResultSet *sub_result;
 
-		QueryTree::GroupPattern triple_pattern;
-		int group_pattern_triple_num = 0;
-		for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
-			if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-			{
-				triple_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(
-					QueryTree::GroupPattern::Pattern::Element(group_pattern->sub_group_pattern[j].pattern.subject.value),
-					QueryTree::GroupPattern::Pattern::Element(group_pattern->sub_group_pattern[j].pattern.predicate.value),
-					QueryTree::GroupPattern::Pattern::Element(group_pattern->sub_group_pattern[j].pattern.object.value)
-				));
-				group_pattern_triple_num++;
-			}
-		triple_pattern.getVarset();
+        if (dep == 0)
+            sub_result = query_batch_result[i];
+        else
+            sub_result = new TempResultSet();
 
-		/*
-		//add extra triple pattern
-		{
-			Varset need_add;
+        if (dep > 0)
+        {
+            QueryTree::GroupPattern triple_pattern;
+            int group_pattern_triple_num = 0;
+            for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
+                if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+                {
+                    triple_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(
+                        QueryTree::GroupPattern::Pattern::Element(group_pattern->sub_group_pattern[j].pattern.subject.value),
+                        QueryTree::GroupPattern::Pattern::Element(group_pattern->sub_group_pattern[j].pattern.predicate.value),
+                        QueryTree::GroupPattern::Pattern::Element(group_pattern->sub_group_pattern[j].pattern.object.value)
+                    ));
+                    group_pattern_triple_num++;
+                }
+            triple_pattern.getVarset();
 
-			map<string, int> var_count;
-			for (int j = 0; j < (int)triple_pattern.sub_group_pattern.size(); j++)
-				if (triple_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-				{
-					string subject = triple_pattern.sub_group_pattern[j].pattern.subject.value;
-					string object = triple_pattern.sub_group_pattern[j].pattern.object.value;
+            /*
+            //add extra triple pattern
+            {
+                Varset need_add;
 
-					if (subject[0] == '?')
-					{
-						if (var_count.count(subject) == 0)
-							var_count[subject] = 0;
-						var_count[subject]++;
-					}
-					if (object[0] == '?')
-					{
-						if (var_count.count(object) == 0)
-							var_count[object] = 0;
-						var_count[object]++;
-					}
-				}
+                map<string, int> var_count;
+                for (int j = 0; j < (int)triple_pattern.sub_group_pattern.size(); j++)
+                    if (triple_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+                    {
+                        string subject = triple_pattern.sub_group_pattern[j].pattern.subject.value;
+                        string object = triple_pattern.sub_group_pattern[j].pattern.object.value;
 
-			for (map<string, int>::iterator iter = var_count.begin(); iter != var_count.end(); iter++)
-				if (iter->second == 1)
-					need_add.addVar(iter->first);
+                        if (subject[0] == '?')
+                        {
+                            if (var_count.count(subject) == 0)
+                                var_count[subject] = 0;
+                            var_count[subject]++;
+                        }
+                        if (object[0] == '?')
+                        {
+                            if (var_count.count(object) == 0)
+                                var_count[object] = 0;
+                            var_count[object]++;
+                        }
+                    }
 
-			for (int j = 0; j < dep; j++)
-			{
-				QueryTree::GroupPattern &parent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
+                for (map<string, int>::iterator iter = var_count.begin(); iter != var_count.end(); iter++)
+                    if (iter->second == 1)
+                        need_add.addVar(iter->first);
 
-				for (int k = 0; k < (int)parent_group_pattern.sub_group_pattern.size(); k++)
-					if (parent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-						if (need_add.hasCommonVar(parent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset) &&
-							parent_group_pattern.sub_group_pattern[k].pattern.varset.getVarsetSize() == 1)
-						{
-							triple_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(
-								QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.subject.value),
-								QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.predicate.value),
-								QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.object.value)
-							));
-							need_add = need_add - parent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset;
-						}
-			}
+                for (int j = 0; j < dep; j++)
+                {
+                    QueryTree::GroupPattern &parent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
 
-			for (int j = 0; j < dep; j++)
-			{
-				QueryTree::GroupPattern &parent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
+                    for (int k = 0; k < (int)parent_group_pattern.sub_group_pattern.size(); k++)
+                        if (parent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+                            if (need_add.hasCommonVar(parent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset) &&
+                                parent_group_pattern.sub_group_pattern[k].pattern.varset.getVarsetSize() == 1)
+                            {
+                                triple_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(
+                                    QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.subject.value),
+                                    QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.predicate.value),
+                                    QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.object.value)
+                                ));
+                                need_add = need_add - parent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset;
+                            }
+                }
 
-				for (int k = 0; k < (int)parent_group_pattern.sub_group_pattern.size(); k++)
-					if (parent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-						if (need_add.hasCommonVar(parent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset) &&
-							parent_group_pattern.sub_group_pattern[k].pattern.varset.getVarsetSize() == 2)
-						{
-							triple_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(
-								QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.subject.value),
-								QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.predicate.value),
-								QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.object.value)
-							));
-							need_add = need_add - parent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset;
-						}
-			}
-		}
-		triple_pattern.getVarset();
-		*/
+                for (int j = 0; j < dep; j++)
+                {
+                    QueryTree::GroupPattern &parent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
 
-		//get useful varset
-		Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset();
-		if (!this->query_tree.checkProjectionAsterisk())
-		{
-			for (int j = 0; j < dep; j++)
-			{
-				QueryTree::GroupPattern &parent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
+                    for (int k = 0; k < (int)parent_group_pattern.sub_group_pattern.size(); k++)
+                        if (parent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+                            if (need_add.hasCommonVar(parent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset) &&
+                                parent_group_pattern.sub_group_pattern[k].pattern.varset.getVarsetSize() == 2)
+                            {
+                                triple_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(
+                                    QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.subject.value),
+                                    QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.predicate.value),
+                                    QueryTree::GroupPattern::Pattern::Element(parent_group_pattern.sub_group_pattern[k].pattern.object.value)
+                                ));
+                                need_add = need_add - parent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset;
+                            }
+                }
+            }
+            triple_pattern.getVarset();
+            */
 
-				for (int k = 0; k < (int)parent_group_pattern.sub_group_pattern.size(); k++)
-				{
-					if (parent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-						useful += parent_group_pattern.sub_group_pattern[k].pattern.varset;
-					else if (parent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
-						useful += parent_group_pattern.sub_group_pattern[k].filter.varset;
-				}
-			}
+            //get useful varset
+            Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset();
+            if (!this->query_tree.checkProjectionAsterisk())
+            {
+                for (int j = 0; j < dep; j++)
+                {
+                    QueryTree::GroupPattern &parent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
 
-			for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
-			{
-				if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
-					useful += group_pattern->sub_group_pattern[j].optional.group_pattern_resultset_maximal_varset;
-				else if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
-					useful += group_pattern->sub_group_pattern[j].filter.varset;
-			}
-		}
+                    for (int k = 0; k < (int)parent_group_pattern.sub_group_pattern.size(); k++)
+                    {
+                        if (parent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+                            useful += parent_group_pattern.sub_group_pattern[k].pattern.varset;
+                        else if (parent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+                            useful += parent_group_pattern.sub_group_pattern[k].filter.varset;
+                    }
+                }
 
-		SPARQLquery sparql_query;
-		vector<vector<string> > encode_varset;
-		vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
+                for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
+                {
+                    if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+                        useful += group_pattern->sub_group_pattern[j].optional.group_pattern_resultset_maximal_varset;
+                    else if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+                        useful += group_pattern->sub_group_pattern[j].filter.varset;
+                }
+            }
 
-		//get connected block
-		triple_pattern.initPatternBlockid();
+            SPARQLquery sparql_query;
+            vector<vector<string> > encode_varset;
+            vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
 
-		for (int j = 0; j < (int)triple_pattern.sub_group_pattern.size(); j++)
-			if (triple_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-			{
-				for (int k = 0; k < j; k++)
-					if (triple_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-						if (triple_pattern.sub_group_pattern[j].pattern.subject_object_varset.hasCommonVar(triple_pattern.sub_group_pattern[k].pattern.subject_object_varset))
-							triple_pattern.mergePatternBlockID(j, k);
-			}
+            //get connected block
+            triple_pattern.initPatternBlockid();
 
-		//each connected block is a BasicQuery
-		for (int j = 0; j < (int)triple_pattern.sub_group_pattern.size(); j++)
-			if (triple_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-				if (triple_pattern.getRootPatternBlockID(j) == j)
-				{
-					Varset occur;
-					vector<QueryTree::GroupPattern::Pattern> basic_query;
+            for (int j = 0; j < (int)triple_pattern.sub_group_pattern.size(); j++)
+                if (triple_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+                {
+                    for (int k = 0; k < j; k++)
+                        if (triple_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+                            if (triple_pattern.sub_group_pattern[j].pattern.subject_object_varset.hasCommonVar(triple_pattern.sub_group_pattern[k].pattern.subject_object_varset))
+                                triple_pattern.mergePatternBlockID(j, k);
+                }
 
-					for (int k = 0; k < (int)triple_pattern.sub_group_pattern.size(); k++)
-						if (triple_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-							if (triple_pattern.getRootPatternBlockID(k) == j)
-							{
-								if (k < group_pattern_triple_num)
-									occur += triple_pattern.sub_group_pattern[k].pattern.varset;
+            //each connected block is a BasicQuery
+            for (int j = 0; j < (int)triple_pattern.sub_group_pattern.size(); j++)
+                if (triple_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+                    if (triple_pattern.getRootPatternBlockID(j) == j)
+                    {
+                        Varset occur;
+                        vector<QueryTree::GroupPattern::Pattern> basic_query;
 
-								basic_query.push_back(triple_pattern.sub_group_pattern[k].pattern);
-							}
+                        for (int k = 0; k < (int)triple_pattern.sub_group_pattern.size(); k++)
+                            if (triple_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+                                if (triple_pattern.getRootPatternBlockID(k) == j)
+                                {
+                                    if (k < group_pattern_triple_num)
+                                        occur += triple_pattern.sub_group_pattern[k].pattern.varset;
 
-					//reduce return result vars
-					if (!this->query_tree.checkProjectionAsterisk() && useful.hasCommonVar(occur))
-						useful = useful * occur;
-					else
-						useful = occur;
+                                    basic_query.push_back(triple_pattern.sub_group_pattern[k].pattern);
+                                }
 
-					printf("select vars: ");
-					useful.print();
+                        //reduce return result vars
+                        if (!this->query_tree.checkProjectionAsterisk() && useful.hasCommonVar(occur))
+                            useful = useful * occur;
+                        else
+                            useful = occur;
 
-					printf("triple patterns: \n");
-					for (int k = 0; k < (int)basic_query.size(); k++)
-						printf("%s\t%s\t%s\n", 	basic_query[k].subject.value.c_str(),
-												basic_query[k].predicate.value.c_str(),
-												basic_query[k].object.value.c_str()
-						);
+                        printf("select vars: ");
+                        useful.print();
 
-					TempResultSet *temp = new TempResultSet();
-					temp->results.push_back(TempResult());
+                        printf("triple patterns: \n");
+                        for (int k = 0; k < (int)basic_query.size(); k++)
+                            printf("%s\t%s\t%s\n", basic_query[k].subject.value.c_str(),
+                                basic_query[k].predicate.value.c_str(),
+                                basic_query[k].object.value.c_str()
+                            );
 
-					bool success = false;
-					if (this->query_cache != NULL && dep == 0)
-					{
-						long tv_bfcheck = Util::get_cur_time();
-						success = this->query_cache->checkCached(basic_query, useful, temp->results[0]);
-						long tv_afcheck = Util::get_cur_time();
-						printf("after checkCache, used %ld ms.\n", tv_afcheck - tv_bfcheck);
-					}
+                        TempResultSet *temp = new TempResultSet();
+                        temp->results.push_back(TempResult());
 
-					if (success)
-					{
-						printf("QueryCache hit\n");
-						printf("Final result size: %d\n", (int)temp->results[0].result.size());
+                        bool success = false;
+                        if (this->query_cache != NULL && dep == 0)
+                        {
+                            long tv_bfcheck = Util::get_cur_time();
+                            success = this->query_cache->checkCached(basic_query, useful, temp->results[0]);
+                            long tv_afcheck = Util::get_cur_time();
+                            printf("after checkCache, used %ld ms.\n", tv_afcheck - tv_bfcheck);
+                        }
 
-						TempResultSet *new_result = new TempResultSet();
-						sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+                        if (success)
+                        {
+                            printf("QueryCache hit\n");
+                            printf("Final result size: %d\n", (int)temp->results[0].result.size());
 
-						sub_result->release();
-						delete sub_result;
+                            TempResultSet *new_result = new TempResultSet();
+                            sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
-						sub_result = new_result;
-					}
-					else
-					{
-						if (dep == 0)
-							printf("QueryCache miss\n");
+                            sub_result->release();
+                            delete sub_result;
 
-						sparql_query.addBasicQuery();
-						for (int k = 0; k < (int)basic_query.size(); k++)
-							sparql_query.addTriple(Triple(basic_query[k].subject.value,
-														  basic_query[k].predicate.value,
-														  basic_query[k].object.value));
+                            sub_result = new_result;
+                        }
+                        else
+                        {
+                            if (dep == 0)
+                                printf("QueryCache miss\n");
 
-						encode_varset.push_back(useful.vars);
-						basic_query_handle.push_back(basic_query);
-					}
+                            sparql_query.addBasicQuery();
+                            for (int k = 0; k < (int)basic_query.size(); k++)
+                                sparql_query.addTriple(Triple(basic_query[k].subject.value,
+                                    basic_query[k].predicate.value,
+                                    basic_query[k].object.value));
 
-					temp->release();
-					delete temp;
-				}
+                            encode_varset.push_back(useful.vars);
+                            basic_query_handle.push_back(basic_query);
+                        }
 
-		long tv_begin = Util::get_cur_time();
-		sparql_query.encodeQuery(this->kvstore, encode_varset);
-		long tv_encode = Util::get_cur_time();
-		printf("after Encode, used %ld ms.\n", tv_encode - tv_begin);
+                        temp->release();
+                        delete temp;
+                    }
 
-		if (dep > 0)
-		{
-			TempResultSet *&last_result = this->rewriting_evaluation_stack[dep - 1].result;
+            long tv_begin = Util::get_cur_time();
+            sparql_query.encodeQuery(this->kvstore, encode_varset);
+            long tv_encode = Util::get_cur_time();
+            printf("after Encode, used %ld ms.\n", tv_encode - tv_begin);
 
-			for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
-			{
-				BasicQuery &basic_query = sparql_query.getBasicQuery(j);
-				vector<string> &basic_query_encode_varset = encode_varset[j];
+            if (dep > 0)
+            {
+                TempResultSet *&last_result = this->rewriting_evaluation_stack[dep - 1].result;
 
-				for (int k = 0; k < (int)basic_query_encode_varset.size(); k++)
-				{
-					set<unsigned> result_set;
+                for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
+                {
+                    BasicQuery &basic_query = sparql_query.getBasicQuery(j);
+                    vector<string> &basic_query_encode_varset = encode_varset[j];
 
-					for (int t = 0; t < (int)last_result->results.size(); t++)
-					{
-						vector<TempResult::ResultPair> &result = last_result->results[t].result;
+                    for (int k = 0; k < (int)basic_query_encode_varset.size(); k++)
+                    {
+                        set<unsigned> result_set;
 
-						int pos = Varset(basic_query_encode_varset[k]).mapTo(last_result->results[t].id_varset)[0];
-						if (pos != -1)
-						{
-							for (int l = 0; l < (int)result.size(); l++)
-								result_set.insert(result[l].id[pos]);
-						}
-					}
+                        for (int t = 0; t < (int)last_result->results.size(); t++)
+                        {
+                            vector<TempResult::ResultPair> &result = last_result->results[t].result;
 
-					if (!result_set.empty())
-					{
-						vector<unsigned> result_vector;
-						result_vector.reserve(result_set.size());
+                            int pos = Varset(basic_query_encode_varset[k]).mapTo(last_result->results[t].id_varset)[0];
+                            if (pos != -1)
+                            {
+                                for (int l = 0; l < (int)result.size(); l++)
+                                    result_set.insert(result[l].id[pos]);
+                            }
+                        }
 
-						for (set<unsigned>::iterator iter = result_set.begin(); iter != result_set.end(); iter++)
-							result_vector.push_back(*iter);
+                        if (!result_set.empty())
+                        {
+                            vector<unsigned> result_vector;
+                            result_vector.reserve(result_set.size());
 
-						basic_query.getCandidateList(k).copy(result_vector);
-						basic_query.setReady(k);
+                            for (set<unsigned>::iterator iter = result_set.begin(); iter != result_set.end(); iter++)
+                                result_vector.push_back(*iter);
 
-						printf("fill var %s CandidateList size %d\n", basic_query_encode_varset[k].c_str(), (int)result_vector.size());
-					}
-				}
-			}
-		}
-		long tv_fillcand = Util::get_cur_time();
-		printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
+                            basic_query.getCandidateList(k).copy(result_vector);
+                            basic_query.setReady(k);
 
-		this->strategy.handle(sparql_query);
-		long tv_handle = Util::get_cur_time();
-		printf("after Handle, used %ld ms.\n", tv_handle - tv_fillcand);
+                            printf("fill var %s CandidateList size %d\n", basic_query_encode_varset[k].c_str(), (int)result_vector.size());
+                        }
+                    }
+                }
+            }
+            long tv_fillcand = Util::get_cur_time();
+            printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
 
-		//collect and join the result of each BasicQuery
-		for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
-		{
-			TempResultSet *temp = new TempResultSet();
-			temp->results.push_back(TempResult());
+            this->strategy.handle(sparql_query);
+            long tv_handle = Util::get_cur_time();
+            printf("after Handle, used %ld ms.\n", tv_handle - tv_fillcand);
 
-			temp->results[0].id_varset = Varset(encode_varset[j]);
-			int varnum = (int)encode_varset[j].size();
+            //collect and join the result of each BasicQuery
+            for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
+            {
+                TempResultSet *temp = new TempResultSet();
+                temp->results.push_back(TempResult());
 
-			vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
-			int basicquery_result_num = (int)basicquery_result.size();
+                temp->results[0].id_varset = Varset(encode_varset[j]);
+                int varnum = (int)encode_varset[j].size();
 
-			temp->results[0].result.reserve(basicquery_result_num);
-			for (int k = 0; k < basicquery_result_num; k++)
-			{
-				unsigned *v = new unsigned [varnum];
-				memcpy(v, basicquery_result[k], sizeof(int) * varnum);
-				temp->results[0].result.push_back(TempResult::ResultPair());
-				temp->results[0].result.back().id = v;
-			}
+                vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
+                int basicquery_result_num = (int)basicquery_result.size();
 
-			if (this->query_cache != NULL && dep == 0)
-			{
-				//if unconnected, time is incorrect
-				int time = tv_handle - tv_begin;
+                temp->results[0].result.reserve(basicquery_result_num);
+                for (int k = 0; k < basicquery_result_num; k++)
+                {
+                    unsigned *v = new unsigned[varnum];
+                    memcpy(v, basicquery_result[k], sizeof(int) * varnum);
+                    temp->results[0].result.push_back(TempResult::ResultPair());
+                    temp->results[0].result.back().id = v;
+                }
 
-				long tv_bftry = Util::get_cur_time();
-				bool success = this->query_cache->tryCaching(basic_query_handle[j], temp->results[0], time);
-				if (success)	printf("QueryCache cached\n");
-				else			printf("QueryCache didn't cache\n");
-				long tv_aftry = Util::get_cur_time();
-				printf("after tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
-			}
+                if (this->query_cache != NULL && dep == 0)
+                {
+                    //if unconnected, time is incorrect
+                    int time = tv_handle - tv_begin;
 
-			if (sub_result->results.empty())
-			{
-				delete sub_result;
-				sub_result = temp;
-			}
-			else
-			{
-				TempResultSet *new_result = new TempResultSet();
-				sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+                    long tv_bftry = Util::get_cur_time();
+                    bool success = this->query_cache->tryCaching(basic_query_handle[j], temp->results[0], time);
+                    if (success)	printf("QueryCache cached\n");
+                    else			printf("QueryCache didn't cache\n");
+                    long tv_aftry = Util::get_cur_time();
+                    printf("after tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
+                }
 
-				temp->release();
-				sub_result->release();
-				delete temp;
-				delete sub_result;
+                if (sub_result->results.empty())
+                {
+                    delete sub_result;
+                    sub_result = temp;
+                }
+                else
+                {
+                    TempResultSet *new_result = new TempResultSet();
+                    sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
-				sub_result = new_result;
-			}
-		}
+                    temp->release();
+                    sub_result->release();
+                    delete temp;
+                    delete sub_result;
+
+                    sub_result = new_result;
+                }
+            }
+        }
 
 		for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
 			if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Bind_type)

@@ -23,7 +23,7 @@ private:
     const int CLUSTER_CARDINALITY_UPPER = 10;
     const double CLUSTER_SIMILARITY_THRESHOLD = 0.5;
 
-    TPSelectivity *tp_selectivity_;
+    TPSelectivity &tp_selectivity_;
     KVstore *kv_vstore_;
     Strategy &strategy_;
     StringIndex *string_index_;
@@ -49,7 +49,7 @@ private:
         std::vector<std::vector<int> > &cluster);
 
 public:
-    explicit MultiQueryOptimization(TPSelectivity *tp_selectivity, KVstore *kv_vstore, Strategy &strategy, StringIndex *string_index)
+    explicit MultiQueryOptimization(TPSelectivity &tp_selectivity, KVstore *kv_vstore, Strategy &strategy, StringIndex *string_index)
         :tp_selectivity_(tp_selectivity), kv_vstore_(kv_vstore), strategy_(strategy), string_index_(string_index) {};
     void evaluate(std::vector<QueryTree::GroupPattern> &query_batch, 
         std::vector<TempResultSet*> &query_batch_result);

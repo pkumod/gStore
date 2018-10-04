@@ -13,12 +13,13 @@ bool MultiQueryOptimization::checkTriplePatternEquivalency(const QueryTree::Grou
 {
     bool eq = true;
     eq &= ((x.subject.isVariable() && y.subject.isVariable()) ||
-        !x.subject.isVariable() && !y.subject.isVariable() && x.subject.getValue() == y.subject.getValue());
+        (!x.subject.isVariable() && !y.subject.isVariable() && x.subject.getValue() == y.subject.getValue()));
     eq &= (!x.predicate.isVariable() && !y.predicate.isVariable() && x.predicate.getValue() == y.predicate.getValue());
     eq &= ((x.object.isVariable() && y.object.isVariable()) ||
-        !x.object.isVariable() && !y.object.isVariable() && x.object.getValue() == y.object.getValue());
+        (!x.object.isVariable() && !y.object.isVariable() && x.object.getValue() == y.object.getValue()));
     if (x.subject.isVariable() && x.object.isVariable() && y.subject.isVariable() && y.object.isVariable())
-        eq &= (x.subject.getValue() == x.object.getValue() || y.subject.getValue() == y.object.getValue());
+        eq &= ((x.subject.getValue() == x.object.getValue() && y.subject.getValue() == y.object.getValue()) ||
+            (x.subject.getValue() != x.object.getValue() && y.subject.getValue() != y.object.getValue()));
     return eq;
 }
 
@@ -28,9 +29,9 @@ void MultiQueryOptimization::enumerateSubSequenceTupleOfTriplePattern(const vect
     set<vector<vector<int> > > &sequence_tuple_of_triple_pattern_set)
 {
     unordered_set<string> varset;
-    for (auto i : select)
+    for (int x : select)
     {
-        const QueryTree::GroupPattern::Pattern &pattern = group_pattern.sub_group_pattern[i].pattern;
+        const QueryTree::GroupPattern::Pattern &pattern = group_pattern.sub_group_pattern[x].pattern;
 
         if (pattern.subject.isVariable())
             varset.insert(pattern.subject.getValue());
@@ -45,32 +46,32 @@ void MultiQueryOptimization::enumerateSubSequenceTupleOfTriplePattern(const vect
     }
     else
     {
-        for (auto i : sequence_tuple_of_triple_pattern[0])
+        for (int x : sequence_tuple_of_triple_pattern[0])
         {
-            const QueryTree::GroupPattern::Pattern &pattern = group_pattern.sub_group_pattern[i].pattern;
+            const QueryTree::GroupPattern::Pattern &pattern = group_pattern.sub_group_pattern[x].pattern;
 
-            bool has_common = (pattern.subject.isVariable() && varset.count(pattern.subject.getValue()) > 0 ||
-                pattern.object.isVariable() && varset.count(pattern.object.getValue()) > 0);
+            bool has_common = ((pattern.subject.isVariable() && varset.count(pattern.subject.getValue()) > 0) ||
+                (pattern.object.isVariable() && varset.count(pattern.object.getValue()) > 0));
 
-            if (has_common && count(select.begin(), select.end(), i) == 0)
-                cand.push_back(i);
+            if (has_common && count(select.begin(), select.end(), x) == 0)
+                cand.push_back(x);
         }
     }
 
-    for (auto i : cand)
+    for (int x : cand)
     {
-        select.push_back(i);
+        select.push_back(x);
 
         vector<vector<int> > new_sequence_tuple_of_triple_pattern(sequence_tuple_of_triple_pattern.size(), vector<int>());
 
         new_sequence_tuple_of_triple_pattern[0] = select;
         sort(new_sequence_tuple_of_triple_pattern[0].begin(), new_sequence_tuple_of_triple_pattern[0].end());
 
-        for (auto j = 0; j < new_sequence_tuple_of_triple_pattern[0].size(); j++)
-            for (auto k = 0; k < sequence_tuple_of_triple_pattern[0].size(); k++)
-                if (new_sequence_tuple_of_triple_pattern[0][j] == sequence_tuple_of_triple_pattern[0][k])
-                    for (auto p = 1; p < sequence_tuple_of_triple_pattern.size(); p++)
-                        new_sequence_tuple_of_triple_pattern[p].push_back(sequence_tuple_of_triple_pattern[p][k]);
+        for (int i = 0; i < (int)new_sequence_tuple_of_triple_pattern[0].size(); i++)
+            for (int j = 0; j < (int)sequence_tuple_of_triple_pattern[0].size(); j++)
+                if (new_sequence_tuple_of_triple_pattern[0][i] == sequence_tuple_of_triple_pattern[0][j])
+                    for (int k = 1; k < (int)sequence_tuple_of_triple_pattern.size(); k++)
+                        new_sequence_tuple_of_triple_pattern[k].push_back(sequence_tuple_of_triple_pattern[k][j]);
 
         if (sequence_tuple_of_triple_pattern_set.count(new_sequence_tuple_of_triple_pattern) == 0)
         {
@@ -86,12 +87,12 @@ bool MultiQueryOptimization::checkRemainingTriplePatternConnectivity(const vecto
     const vector<int> &query_ids,
     const unordered_map<int, vector<bool> > &cover)
 {
-    for (auto qid : query_ids)
+    for (int qid : query_ids)
     {
         const QueryTree::GroupPattern &query = query_batch[qid];
         QueryTree::GroupPattern triple_pattern;
 
-        for (auto i = 0; i < query.sub_group_pattern.size(); i++)
+        for (int i = 0; i < (int)query.sub_group_pattern.size(); i++)
             if (query.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type && !cover.find(qid)->second[i])
                 triple_pattern.addOnePattern(query.sub_group_pattern[i].pattern);
 
@@ -104,7 +105,7 @@ bool MultiQueryOptimization::checkRemainingTriplePatternConnectivity(const vecto
 
         int root = triple_pattern.getRootPatternBlockID(0);
 
-        for (auto i = 1; i < triple_pattern.sub_group_pattern.size(); i++)
+        for (int i = 1; i < (int)triple_pattern.sub_group_pattern.size(); i++)
             if (triple_pattern.getRootPatternBlockID(i) != root)
                 return false;
     }
@@ -123,8 +124,8 @@ int MultiQueryOptimization::calculateTotalCost(const vector<QueryTree::GroupPatt
         unsigned min_sel = UINT32_MAX;
 
         const QueryTree::GroupPattern &query = query_batch[stotpoq.query[0]];
-        for (auto tid : stotpoq.sequence[0])
-            min_sel = min(min_sel, this->tp_selectivity_->getTPSelectivity(query.sub_group_pattern[tid].pattern));
+        for (int tid : stotpoq.sequence[0])
+            min_sel = min(min_sel, this->tp_selectivity_.getTPSelectivity(query.sub_group_pattern[tid].pattern));
 
         total_cost += min_sel * stotpoq.sequence[0].size();
     }
@@ -135,10 +136,10 @@ int MultiQueryOptimization::calculateTotalCost(const vector<QueryTree::GroupPatt
         int count = 0;
 
         const QueryTree::GroupPattern &query = query_batch[it.first];
-        for (auto i = 0; i < it.second.size(); i++)
+        for (int i = 0; i < (int)it.second.size(); i++)
             if (!it.second[i])
             {
-                min_sel = min(min_sel, this->tp_selectivity_->getTPSelectivity(query.sub_group_pattern[i].pattern));
+                min_sel = min(min_sel, this->tp_selectivity_.getTPSelectivity(query.sub_group_pattern[i].pattern));
                 count++;
             }
 
@@ -150,21 +151,21 @@ int MultiQueryOptimization::calculateTotalCost(const vector<QueryTree::GroupPatt
 
 void MultiQueryOptimization::queryClustering(const vector<QueryTree::GroupPattern> &query_batch, vector<vector<int> > &cluster)
 {
-    for (auto i = 0; i < query_batch.size(); i++)
+    for (int i = 0; i < (int)query_batch.size(); i++)
         cluster.push_back({ i });
 
     while (true)
     {
         bool found = false;
 
-        for (auto i = 0; i < cluster.size(); i++)
-            for (auto j = i + 1; j < cluster.size(); j++)
-                if (cluster[i].size() + cluster[j].size() <= this->CLUSTER_CARDINALITY_UPPER)
+        for (int i = 0; i < (int)cluster.size(); i++)
+            for (int j = i + 1; j < (int)cluster.size(); j++)
+                if ((int)cluster[i].size() + (int)cluster[j].size() <= this->CLUSTER_CARDINALITY_UPPER)
                 {
                     double jaccard = 0;
 
-                    for (auto x : cluster[i])
-                        for (auto y : cluster[j])
+                    for (int x : cluster[i])
+                        for (int y : cluster[j])
                         {
                             unordered_set<string> predx, cap, cup;
 
@@ -192,18 +193,18 @@ void MultiQueryOptimization::queryClustering(const vector<QueryTree::GroupPatter
                     jaccard /= cluster[j].size();
 
                     {
-                        cout << "jaccard({";
-                        for (auto k = 0; k < cluster[i].size(); k++)
+                        cout << "Jaccard({";
+                        for (int k = 0; k < (int)cluster[i].size(); k++)
                         {
                             if (k != 0)
-                                cout << " ";
+                                cout << ", ";
                             cout << cluster[i][k];
                         }
-                        cout << "}, {";
-                        for (auto k = 0; k < cluster[j].size(); k++)
+                        cout << "},{";
+                        for (int k = 0; k < (int)cluster[j].size(); k++)
                         {
                             if (k != 0)
-                                cout << " ";
+                                cout << ", ";
                             cout << cluster[j][k];
                         }
                         cout << "}) = " << jaccard << endl;
@@ -214,7 +215,7 @@ void MultiQueryOptimization::queryClustering(const vector<QueryTree::GroupPatter
                         cluster[i].insert(cluster[i].end(), cluster[j].begin(), cluster[j].end());
                         sort(cluster[i].begin(), cluster[i].end());
 
-                        if (j + 1 != cluster.size())
+                        if (j + 1 != (int)cluster.size())
                             cluster[j] = cluster.back();
                         cluster.pop_back();
 
@@ -225,13 +226,13 @@ void MultiQueryOptimization::queryClustering(const vector<QueryTree::GroupPatter
         if (!found) break;
     }
 
-    for (auto c = 0; c < cluster.size(); c++)
+    for (int c = 0; c < (int)cluster.size(); c++)
     {
-        cout << "C_" << c << " = {";
-        for (auto i = 0; i < cluster[c].size(); i++)
+        cout << "Cluster[" << c << "] = {";
+        for (int i = 0; i < (int)cluster[c].size(); i++)
         {
             if (i != 0)
-                cout << " ";
+                cout << ", ";
             cout << cluster[c][i];
         }
         cout << "}" << endl;
@@ -253,8 +254,8 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
         vector<SequenceTupleOfTriplePatternOnQuery> maximal_sequence_tuple_of_triple_pattern;
         unordered_map<int, vector<SequenceTupleOfTriplePatternOnQuery> > query0_maximal_sequence_pair_of_triple_pattern;
 
-        for (auto i = 0; i < c.size(); i++)
-            for (auto j = i + 1; j < c.size(); j++)
+        for (int i = 0; i < (int)c.size(); i++)
+            for (int j = i + 1; j < (int)c.size(); j++)
             {
                 vector<SequenceTupleOfTriplePatternOnQuery> maximal_sequence_pair_of_triple_pattern;
 
@@ -264,8 +265,8 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                 QueryTree::GroupPattern &group_pattern0 = query_batch[c[i]];
                 QueryTree::GroupPattern &group_pattern1 = query_batch[c[j]];
 
-                for (auto x = 0; x < group_pattern0.sub_group_pattern.size(); x++)
-                    for (auto y = 0; y < group_pattern1.sub_group_pattern.size(); y++)
+                for (int x = 0; x < (int)group_pattern0.sub_group_pattern.size(); x++)
+                    for (int y = 0; y < (int)group_pattern1.sub_group_pattern.size(); y++)
                         if (checkTriplePatternEquivalency(group_pattern0.sub_group_pattern[x].pattern, group_pattern1.sub_group_pattern[y].pattern))
                         {
                             SequenceTupleOfTriplePatternOnQuery stotpoq;
@@ -282,43 +283,27 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                     SequenceTupleOfTriplePatternOnQuery h = queue.front();
                     queue.pop_front();
 
-                    {
-                        cout << "(";
-                        for (auto k = 0; k < h.sequence.size(); k++)
-                        {
-                            cout << "(";
-                            for (auto p = 0; p < h.sequence[k].size(); p++)
-                            {
-                                if (p != 0)
-                                    cout << " ";
-                                cout << h.sequence[k][p];
-                            }
-                            cout << ")";
-                        }
-                        cout << ")" << endl;
-                    }
-
                     vector<int> query0_cand, query1_cand;
                     {
                         unordered_set<int> used;
 
-                        for (auto x : h.sequence[0])
+                        for (int x : h.sequence[0])
                             used.insert(x);
-                        for (auto x = 0; x < group_pattern0.sub_group_pattern.size(); x++)
+                        for (int x = 0; x < (int)group_pattern0.sub_group_pattern.size(); x++)
                             if (used.count(x) == 0)
                                 query0_cand.push_back(x);
 
                         used.clear();
 
-                        for (auto x : h.sequence[1])
+                        for (int x : h.sequence[1])
                             used.insert(x);
-                        for (auto x = 0; x < group_pattern1.sub_group_pattern.size(); x++)
+                        for (int x = 0; x < (int)group_pattern1.sub_group_pattern.size(); x++)
                             if (used.count(x) == 0)
                                 query1_cand.push_back(x);
                     }
 
                     unordered_map<string, string> query0_varmap, query1_varmap;
-                    for (auto k = 0; k < h.sequence[0].size(); k++)
+                    for (int k = 0; k < (int)h.sequence[0].size(); k++)
                     {
                         QueryTree::GroupPattern::Pattern &query0_triple_pattern = group_pattern0.sub_group_pattern[h.sequence[0][k]].pattern;
                         QueryTree::GroupPattern::Pattern &query1_triple_pattern = group_pattern1.sub_group_pattern[h.sequence[1][k]].pattern;
@@ -338,8 +323,8 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
 
                     bool expended = false;
 
-                    for (auto x : query0_cand)
-                        for (auto y : query1_cand)
+                    for (int x : query0_cand)
+                        for (int y : query1_cand)
                             if (checkTriplePatternEquivalency(group_pattern0.sub_group_pattern[x].pattern, group_pattern1.sub_group_pattern[y].pattern))
                             {
                                 QueryTree::GroupPattern::Pattern &query0_triple_pattern = group_pattern0.sub_group_pattern[x].pattern;
@@ -372,7 +357,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                                     t.sequence[0].push_back(x);
                                     t.sequence[1].push_back(y);
 
-                                    for (auto k = t.sequence[0].size() - 1; k > 0; k--)
+                                    for (int k = (int)t.sequence[0].size() - 1; k > 0; k--)
                                         if (t.sequence[0][k - 1] > t.sequence[0][k])
                                         {
                                             swap(t.sequence[0][k - 1], t.sequence[0][k]);
@@ -380,13 +365,13 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                                         }
                                         else break;
 
-                                        expended = true;
+                                    expended = true;
 
-                                        if (sequence_pair_of_triple_pattern_bool.count(make_pair(t.sequence[0], t.sequence[1])) == 0)
-                                        {
-                                            sequence_pair_of_triple_pattern_bool.insert(make_pair(t.sequence[0], t.sequence[1]));
-                                            queue.push_back(t);
-                                        }
+                                    if (sequence_pair_of_triple_pattern_bool.count(make_pair(t.sequence[0], t.sequence[1])) == 0)
+                                    {
+                                        sequence_pair_of_triple_pattern_bool.insert(make_pair(t.sequence[0], t.sequence[1]));
+                                        queue.push_back(t);
+                                    }
                                 }
                             }
 
@@ -399,22 +384,22 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                     for (auto &mspotp : maximal_sequence_pair_of_triple_pattern)
                     {
                         cout << "Q(";
-                        for (auto q = 0; q < mspotp.query.size(); q++)
+                        for (int q = 0; q < (int)mspotp.query.size(); q++)
                         {
                             if (q != 0)
-                                cout << " ";
+                                cout << ", ";
                             cout << mspotp.query[q];
                         }
                         cout << ")\t(";
-                        for (auto q = 0; q < mspotp.sequence.size(); q++)
+                        for (int q = 0; q < (int)mspotp.sequence.size(); q++)
                         {
                             if (q != 0)
                                 cout << ",";
                             cout << "(";
-                            for (auto k = 0; k < mspotp.sequence[q].size(); k++)
+                            for (int k = 0; k < (int)mspotp.sequence[q].size(); k++)
                             {
                                 if (k != 0)
-                                    cout << " ";
+                                    cout << ", ";
                                 cout << mspotp.sequence[q][k];
                             }
                             cout << ")";
@@ -455,7 +440,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                 vector<bool> sequencek_comm;
 
                 bool has_comm = false;
-                for (auto x : sequencek)
+                for (int x : sequencek)
                 {
                     sequencek_comm.push_back(find(sequence0.begin(), sequence0.end(), x) != sequence0.end());
                     has_comm = has_comm || sequencek_comm.back();
@@ -468,12 +453,12 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                 t.query = h.query;
                 t.query.push_back(mspotp.query.back());
                 t.sequence.resize(h.query.size() + 1);
-                for (auto k = 0; k < h.query.size(); k++)
-                    for (auto p = 0; p < h.sequence[k].size(); p++)
+                for (int k = 0; k < (int)h.query.size(); k++)
+                    for (int p = 0; p < (int)h.sequence[k].size(); p++)
                         if (sequencek_comm[p])
                             t.sequence[k].push_back(h.sequence[k][p]);
-                for (auto k = 0; k < sequencek.size(); k++)
-                    for (auto p = 0; p < sequence0.size(); p++)
+                for (int k = 0; k < (int)sequencek.size(); k++)
+                    for (int p = 0; p < (int)sequence0.size(); p++)
                         if (sequencek[k] == sequence0[p])
                             t.sequence.back().push_back(mspotp.sequence.back()[p]);
 
@@ -494,22 +479,22 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
             for (auto &mstotpoq : maximal_sequence_tuple_of_triple_pattern)
             {
                 cout << "Q(";
-                for (auto q = 0; q < mstotpoq.query.size(); q++)
+                for (int q = 0; q < (int)mstotpoq.query.size(); q++)
                 {
                     if (q != 0)
-                        cout << " ";
+                        cout << ", ";
                     cout << mstotpoq.query[q];
                 }
                 cout << ")\t(";
-                for (auto q = 0; q < mstotpoq.sequence.size(); q++)
+                for (int q = 0; q < (int)mstotpoq.sequence.size(); q++)
                 {
                     if (q != 0)
                         cout << ",";
                     cout << "(";
-                    for (auto k = 0; k < mstotpoq.sequence[q].size(); k++)
+                    for (int k = 0; k < (int)mstotpoq.sequence[q].size(); k++)
                     {
                         if (k != 0)
-                            cout << " ";
+                            cout << ", ";
                         cout << mstotpoq.sequence[q][k];
                     }
                     cout << ")";
@@ -542,22 +527,22 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                 for (auto &stotp : it.second)
                 {
                     cout << "Q(";
-                    for (auto q = 0; q < it.first.size(); q++)
+                    for (int q = 0; q < (int)it.first.size(); q++)
                     {
                         if (q != 0)
-                            cout << " ";
+                            cout << ", ";
                         cout << it.first[q];
                     }
                     cout << ")\t(";
-                    for (auto q = 0; q < stotp.size(); q++)
+                    for (int q = 0; q < (int)stotp.size(); q++)
                     {
                         if (q != 0)
                             cout << ",";
                         cout << "(";
-                        for (auto k = 0; k < stotp[q].size(); k++)
+                        for (int k = 0; k < (int)stotp[q].size(); k++)
                         {
                             if (k != 0)
-                                cout << " ";
+                                cout << ", ";
                             cout << stotp[q][k];
                         }
                         cout << ")";
@@ -569,7 +554,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
         vector<SequenceTupleOfTriplePatternOnQuery> selected_sequence_tuple_of_triple_pattern;
 
         unordered_map<int, vector<bool> > cover;
-        for (auto queryk : c)
+        for (int queryk : c)
             cover[queryk] = vector<bool>(query_batch[queryk].sub_group_pattern.size(), false);
 
         if (!sequence_tuple_of_triple_pattern_bool.empty())
@@ -585,15 +570,15 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                         if (stotp[0].size() > 1)
                         {
                             bool valid = true;
-                            for (auto q = 0; q < stotp.size(); q++)
-                                for (auto x : stotp[q])
+                            for (int q = 0; q < (int)stotp.size(); q++)
+                                for (int x : stotp[q])
                                     if (cover[it.first[q]][x])
                                         valid = false;
 
                             if (valid)
                             {
-                                for (auto q = 0; q < stotp.size(); q++)
-                                    for (auto x : stotp[q])
+                                for (int q = 0; q < (int)stotp.size(); q++)
+                                    for (int x : stotp[q])
                                         cover[it.first[q]][x] = true;
 
                                 if (checkRemainingTriplePatternConnectivity(query_batch, it.first, cover))
@@ -614,16 +599,16 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                                     selected_sequence_tuple_of_triple_pattern.pop_back();
                                 }
 
-                                for (auto q = 0; q < stotp.size(); q++)
-                                    for (auto x : stotp[q])
+                                for (int q = 0; q < (int)stotp.size(); q++)
+                                    for (int x : stotp[q])
                                         cover[it.first[q]][x] = false;
                             }
                         }
 
                 if (min_delta < 0)
                 {
-                    for (auto q = 0; q < best_stotpoq.query.size(); q++)
-                        for (auto x : best_stotpoq.sequence[q])
+                    for (int q = 0; q < (int)best_stotpoq.query.size(); q++)
+                        for (int x : best_stotpoq.sequence[q])
                             cover[best_stotpoq.query[q]][x] = true;
 
                     selected_sequence_tuple_of_triple_pattern.push_back(best_stotpoq);
@@ -637,22 +622,22 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
             for (auto &stotpoq : selected_sequence_tuple_of_triple_pattern)
             {
                 cout << "Q(";
-                for (auto q = 0; q < stotpoq.query.size(); q++)
+                for (int q = 0; q < (int)stotpoq.query.size(); q++)
                 {
                     if (q != 0)
-                        cout << " ";
+                        cout << ", ";
                     cout << stotpoq.query[q];
                 }
                 cout << ")\t(";
-                for (auto q = 0; q < stotpoq.sequence.size(); q++)
+                for (int q = 0; q < (int)stotpoq.sequence.size(); q++)
                 {
                     if (q != 0)
                         cout << ",";
                     cout << "(";
-                    for (auto k = 0; k < stotpoq.sequence[q].size(); k++)
+                    for (int k = 0; k < (int)stotpoq.sequence[q].size(); k++)
                     {
                         if (k != 0)
-                            cout << " ";
+                            cout << ", ";
                         cout << stotpoq.sequence[q][k];
                     }
                     cout << ")";
@@ -672,7 +657,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                 sparql_query.addBasicQuery();
                 QueryTree::GroupPattern group_pattern;
 
-                for (auto x : stotpoq.sequence[0])
+                for (int x : stotpoq.sequence[0])
                 {
                     QueryTree::GroupPattern::Pattern &pattern = query_batch[query0].sub_group_pattern[x].pattern;
                     sparql_query.addTriple(Triple(
@@ -688,6 +673,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
             sparql_query.encodeQuery(this->kv_vstore_, encode_varset);
             this->strategy_.handle(sparql_query);
 
+            //TODO BasicQueryEvaluation
             for (int i = 0; i < sparql_query.getBasicQueryNum(); i++)
             {
                 TempResultSet *temp = new TempResultSet();
@@ -707,10 +693,12 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                     temp->results[0].result.push_back(TempResult::ResultPair());
                     temp->results[0].result.back().id = l;
                 }
+
+                selected_sequence_tuple_of_triple_pattern_result.push_back(temp);
             }
         }
 
-        for (auto queryk : c)
+        for (int queryk : c)
         {
             query_batch_result[queryk] = new TempResultSet();
 
@@ -722,13 +710,13 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                 if (it != stotp.query.end())
                 {
                     int k = it - stotp.query.begin();
-                    for (auto x : stotp.sequence[k])
+                    for (int x : stotp.sequence[k])
                         cover[x] = true;
                 }
             }
 
             QueryTree::GroupPattern group_pattern;
-            for (auto i = 0; i < query_batch[queryk].sub_group_pattern.size(); i++)
+            for (int i = 0; i < (int)query_batch[queryk].sub_group_pattern.size(); i++)
                 if (!cover[i])
                     group_pattern.addOnePattern(query_batch[queryk].sub_group_pattern[i].pattern);
 
@@ -738,7 +726,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                 for (auto &t : group_pattern.sub_group_pattern)
                     if (t.type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
                     {
-                        int sel = this->tp_selectivity_->getTPSelectivity(t.pattern);
+                        int sel = this->tp_selectivity_.getTPSelectivity(t.pattern);
 
                         if (t.pattern.subject.isVariable())
                         {
@@ -758,7 +746,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                     }
 
                 unordered_map<string, vector<unsigned> > var_cand;
-                for (auto i = 0; i < selected_sequence_tuple_of_triple_pattern.size(); i++)
+                for (int i = 0; i < (int)selected_sequence_tuple_of_triple_pattern.size(); i++)
                 {
                     auto &stotp = selected_sequence_tuple_of_triple_pattern[i];
                     auto &stotpr = selected_sequence_tuple_of_triple_pattern_result[i]->results[0];
@@ -773,7 +761,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
 
                         unordered_map<string, string> mapk;
 
-                        for (auto j = 0; j < stotp.sequence[0].size(); j++)
+                        for (int j = 0; j < (int)stotp.sequence[0].size(); j++)
                         {
                             QueryTree::GroupPattern::Pattern &pattern0 = group_pattern0.sub_group_pattern[stotp.sequence[0][j]].pattern;
                             QueryTree::GroupPattern::Pattern &patternk = group_patternk.sub_group_pattern[stotp.sequence[k][j]].pattern;
@@ -879,13 +867,13 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                                         vector<unsigned> &subject_cand = var_cand[subject];
                                         vector<unsigned> object_cand;
 
-                                        for (auto x : subject_cand)                                        
+                                        for (unsigned x : subject_cand)                                        
                                         {
                                             unsigned *obj_id_list = NULL, list_len;
 
                                             this->kv_vstore_->getobjIDlistBysubIDpreID(x, predicate_id, obj_id_list, list_len, false);
 
-                                            for (auto i = 0; i < list_len; i++)
+                                            for (unsigned i = 0; i < list_len; i++)
                                                 object_cand.push_back(obj_id_list[i]);
 
                                             delete[] obj_id_list;
@@ -909,13 +897,13 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                                         vector<unsigned> subject_cand;
                                         vector<unsigned> &object_cand = var_cand[object];
 
-                                        for (auto x : object_cand)
+                                        for (unsigned x : object_cand)
                                         {
                                             unsigned *sub_id_list = NULL, list_len;
 
                                             this->kv_vstore_->getsubIDlistByobjIDpreID(x, predicate_id, sub_id_list, list_len, false);
 
-                                            for (auto i = 0; i < list_len; i++)
+                                            for (unsigned i = 0; i < list_len; i++)
                                                 subject_cand.push_back(sub_id_list[i]);
 
                                             delete[] sub_id_list;
@@ -958,7 +946,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                     sparql_query.encodeQuery(this->kv_vstore_, encode_varset);
 
                     BasicQuery &basic_query = sparql_query.getBasicQuery(0);
-                    for (auto i = 0; i < encode_varset[0].size(); i++)
+                    for (int i = 0; i < (int)encode_varset[0].size(); i++)
                     {
                         string &v = encode_varset[0][i];
                         if (var_cand.count(v) > 0)
@@ -966,7 +954,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                             basic_query.getCandidateList(i).copy(var_cand[v]);
                             basic_query.setReady(i);
 
-                            printf("fill var %s CandidateList size %d\n", v.c_str(), var_cand[v].size());
+                            printf("fill var %s CandidateList size %d\n", v.c_str(), (int)var_cand[v].size());
                         }
                     }
 
@@ -999,7 +987,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
             {
                 int best = -1, min_result_num = INT_MAX;
 
-                for (auto i = 0; i < selected_sequence_tuple_of_triple_pattern.size(); i++)
+                for (int i = 0; i < (int)selected_sequence_tuple_of_triple_pattern.size(); i++)
                     if (valid[i])
                     {
                         vector<int> &queries = selected_sequence_tuple_of_triple_pattern[i].query;
@@ -1009,12 +997,13 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                         {
                             int k = it - queries.begin();
                             QueryTree::GroupPattern &group_pattern0 = query_batch[selected_sequence_tuple_of_triple_pattern[i].query[0]];
-
+                            QueryTree::GroupPattern &group_patternk = query_batch[selected_sequence_tuple_of_triple_pattern[i].query[k]];
+                            
                             unordered_map<string, string> map0, mapk;
-                            for (auto j = 0; j < selected_sequence_tuple_of_triple_pattern[i].sequence[0].size(); j++)
+                            for (int j = 0; j < (int)selected_sequence_tuple_of_triple_pattern[i].sequence[0].size(); j++)
                             {
                                 QueryTree::GroupPattern::Pattern &pattern0 = group_pattern0.sub_group_pattern[selected_sequence_tuple_of_triple_pattern[i].sequence[0][j]].pattern;
-                                QueryTree::GroupPattern::Pattern &patternk = group_pattern.sub_group_pattern[selected_sequence_tuple_of_triple_pattern[i].sequence[k][j]].pattern;
+                                QueryTree::GroupPattern::Pattern &patternk = group_patternk.sub_group_pattern[selected_sequence_tuple_of_triple_pattern[i].sequence[k][j]].pattern;
 
                                 if (pattern0.subject.isVariable() && patternk.subject.isVariable())
                                 {
@@ -1034,19 +1023,19 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                             }
 
                             TempResult &resulti = selected_sequence_tuple_of_triple_pattern_result[i]->results[0];
-                            TempResult &resultk = query_batch_result[queryk]->results[0];
+                            TempResultSet *resultk = query_batch_result[queryk];
 
-                            for (auto j = 0; j < resulti.id_varset.vars.size(); j++)
+                            for (int j = 0; j < (int)resulti.id_varset.vars.size(); j++)
                                 resulti.id_varset.vars[j] = map0[resulti.id_varset.vars[j]];
 
-                            if (resultk.result.empty() || resultk.id_varset.hasCommonVar(resulti.id_varset))
-                                if (resulti.result.size() < min_result_num)
+                            if (resultk->results.empty() || resultk->results[0].id_varset.hasCommonVar(resulti.id_varset))
+                                if ((int)resulti.result.size() < min_result_num)
                                 {
                                     best = i;
                                     min_result_num = resulti.result.size();
                                 }
 
-                            for (auto j = 0; j < resulti.id_varset.vars.size(); j++)
+                            for (int j = 0; j < (int)resulti.id_varset.vars.size(); j++)
                                 resulti.id_varset.vars[j] = mapk[resulti.id_varset.vars[j]];
                         }
                     }
@@ -1059,12 +1048,13 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                 vector<int> &queries = selected_sequence_tuple_of_triple_pattern[best].query;
                 int k = find(queries.begin(), queries.end(), queryk) - queries.begin();
                 QueryTree::GroupPattern &group_pattern0 = query_batch[selected_sequence_tuple_of_triple_pattern[best].query[0]];
+                QueryTree::GroupPattern &group_patternk = query_batch[selected_sequence_tuple_of_triple_pattern[best].query[k]];
 
                 unordered_map<string, string> map0, mapk;
-                for (auto j = 0; j < selected_sequence_tuple_of_triple_pattern[best].sequence[0].size(); j++)
+                for (int j = 0; j < (int)selected_sequence_tuple_of_triple_pattern[best].sequence[0].size(); j++)
                 {
                     QueryTree::GroupPattern::Pattern &pattern0 = group_pattern0.sub_group_pattern[selected_sequence_tuple_of_triple_pattern[best].sequence[0][j]].pattern;
-                    QueryTree::GroupPattern::Pattern &patternk = group_pattern.sub_group_pattern[selected_sequence_tuple_of_triple_pattern[best].sequence[k][j]].pattern;
+                    QueryTree::GroupPattern::Pattern &patternk = group_patternk.sub_group_pattern[selected_sequence_tuple_of_triple_pattern[best].sequence[k][j]].pattern;
 
                     if (pattern0.subject.isVariable() && patternk.subject.isVariable())
                     {
@@ -1083,7 +1073,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                     }
                 }
 
-                for (auto j = 0; j < selected_sequence_tuple_of_triple_pattern_result[best]->results[0].id_varset.vars.size(); j++)
+                for (int j = 0; j < (int)selected_sequence_tuple_of_triple_pattern_result[best]->results[0].id_varset.vars.size(); j++)
                     selected_sequence_tuple_of_triple_pattern_result[best]->results[0].id_varset.vars[j] =
                         map0[selected_sequence_tuple_of_triple_pattern_result[best]->results[0].id_varset.vars[j]];
 
@@ -1096,7 +1086,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
 
                 query_batch_result[queryk] = new_result;
 
-                for (auto j = 0; j < selected_sequence_tuple_of_triple_pattern_result[best]->results[0].id_varset.vars.size(); j++)
+                for (int j = 0; j < (int)selected_sequence_tuple_of_triple_pattern_result[best]->results[0].id_varset.vars.size(); j++)
                     selected_sequence_tuple_of_triple_pattern_result[best]->results[0].id_varset.vars[j] =
                         mapk[selected_sequence_tuple_of_triple_pattern_result[best]->results[0].id_varset.vars[j]];
             }
