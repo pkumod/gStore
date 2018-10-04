@@ -340,7 +340,7 @@ ISBlockManager::FreeBlocks(const unsigned index)
 					map <unsigned, unsigned>::iterator en = len_index_map.upper_bound(make_pair(it->second,it->first));
 					for(len_index_it = be; len_index_it != en; it++)
 					{
-						if(*len_index_it == make_pair(it->second,it->first))
+						if(len_index_it->second == it->first)
 						{
 							len_index_map.erase(len_index_it);
 							break;
@@ -361,7 +361,7 @@ ISBlockManager::FreeBlocks(const unsigned index)
 					map <unsigned, unsigned>::iterator en = len_index_map.upper_bound(make_pair(it->second,it->first));
 					for(len_index_it=be; len_index_it != en; it++)
 					{
-						if(*len_index_it == make_pair(it->second,it->first))
+						if(len_index_it->second == it->first)
 						{
 							len_index_map.erase(len_index_it);
 							break;
