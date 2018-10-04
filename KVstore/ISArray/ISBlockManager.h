@@ -32,7 +32,8 @@ private:
 	map <unsigned, unsigned> index_len_map;
 	// record Len-Index pair of a series of continuous blocks
 	// here len means number of blocks
-	multimap <unsigned, unsigned> len_index_map;
+	//multimap <unsigned, unsigned> len_index_map;
+	set <pair<unsigned, unsigned> > len_index_map;
 
 	//string dir_path;
 	string FreeBlockList_path;
