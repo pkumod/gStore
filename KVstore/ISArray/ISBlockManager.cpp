@@ -336,8 +336,8 @@ ISBlockManager::FreeBlocks(const unsigned index)
 					curlen += it->second;
 					index_len_map.erase(it);
 					map <unsigned, unsigned>::iterator len_index_it;
-					map <unsigned, unsigned>::iterator be = len_index_map.lower_bound(make_pair(it->second,it->first));
-					map <unsigned, unsigned>::iterator en = len_index_map.upper_bound(make_pair(it->second,it->first));
+					map <unsigned, unsigned>::iterator be = len_index_map.lower_bound(it->second);
+					map <unsigned, unsigned>::iterator en = len_index_map.upper_bound(it->second);
 					for(len_index_it = be; len_index_it != en; it++)
 					{
 						if(len_index_it->second == it->first)
@@ -357,8 +357,8 @@ ISBlockManager::FreeBlocks(const unsigned index)
 					curlen += it->second;
 					index_len_map.erase(it);
 					map <unsigned, unsigned>::iterator len_index_it;
-					map <unsigned, unsigned>::iterator be = len_index_map.lower_bound(make_pair(it->second,it->first));
-					map <unsigned, unsigned>::iterator en = len_index_map.upper_bound(make_pair(it->second,it->first));
+					map <unsigned, unsigned>::iterator be = len_index_map.lower_bound(it->second);
+					map <unsigned, unsigned>::iterator en = len_index_map.upper_bound(it->second);
 					for(len_index_it=be; len_index_it != en; it++)
 					{
 						if(len_index_it->second == it->first)
