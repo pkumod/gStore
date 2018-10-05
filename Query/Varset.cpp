@@ -26,6 +26,11 @@ bool Varset::empty() const
 	return this->vars.empty();
 }
 
+void Varset::clear()
+{
+    this->vars.clear();
+}
+
 int Varset::getVarsetSize() const
 {
 	return this->vars.size();

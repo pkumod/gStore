@@ -21,6 +21,7 @@ class Varset
 		Varset(const std::vector<std::string> &_vars);
 
 		bool empty() const;
+        void clear();
 		int getVarsetSize() const;
 		bool findVar(const std::string &_var) const;
 		void addVar(const std::string &_var);

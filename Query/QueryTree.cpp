@@ -209,9 +209,17 @@ QueryTree::GroupPattern::Bind& QueryTree::GroupPattern::getLastBind()
 
 void QueryTree::GroupPattern::getVarset()
 {
+    this->group_pattern_resultset_minimal_varset.clear();
+    this->group_pattern_resultset_maximal_varset.clear();
+    this->group_pattern_subject_object_maximal_varset.clear();
+    this->group_pattern_predicate_maximal_varset.clear();
+    
 	for (int i = 0; i < (int)this->sub_group_pattern.size(); i++)
 		if (this->sub_group_pattern[i].type == SubGroupPattern::Pattern_type)
 		{
+            this->sub_group_pattern[i].pattern.varset.clear();
+            this->sub_group_pattern[i].pattern.subject_object_varset.clear();
+
 			if (this->sub_group_pattern[i].pattern.subject.value[0] == '?')
 			{
 				this->sub_group_pattern[i].pattern.varset.addVar(this->sub_group_pattern[i].pattern.subject.value);
@@ -281,7 +289,7 @@ pair<Varset, Varset> QueryTree::GroupPattern::checkNoMinusAndOptionalVarAndSafeF
 
 	Varset new_ban_varset;
 
-	for (int i = 0; i < (int)this->sub_group_pattern.size(); i++)
+	for (int i = 0; (int)this->sub_group_pattern.size() > i; i++)
 		if (!check_condition)	break;
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Pattern_type)
 		{

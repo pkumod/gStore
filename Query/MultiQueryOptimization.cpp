@@ -666,6 +666,9 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                         pattern.object.getValue()));
                     group_pattern.addOnePattern(query_batch[query0].sub_group_pattern[x].pattern);
                 }
+
+                group_pattern.print(0);
+
                 group_pattern.getVarset();                
                 encode_varset.push_back(group_pattern.group_pattern_resultset_maximal_varset.vars);
             }
@@ -719,6 +722,8 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
             for (int i = 0; i < (int)query_batch[queryk].sub_group_pattern.size(); i++)
                 if (!cover[i])
                     group_pattern.addOnePattern(query_batch[queryk].sub_group_pattern[i].pattern);
+
+            group_pattern.print(0);
 
             if (!group_pattern.sub_group_pattern.empty())
             {
