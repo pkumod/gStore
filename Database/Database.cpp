@@ -3673,6 +3673,10 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		{
 			valid_num++;
 		}
+		if((i+1)%100 == 0)
+		{
+			cerr<<i<<"-th added.   And the valid_num = "<<valid_num<<"\n";
+		}
 	}
 #endif
 
@@ -4079,6 +4083,10 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		if(ret)
 		{
 			valid_num++;
+		}
+		if((i+1)%100 == 0)
+		{
+			cerr<<i<<"-th removed.   And the valid_num = "<<valid_num<<"\n";
 		}
 	}
 #endif
