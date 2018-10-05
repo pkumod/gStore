@@ -337,17 +337,6 @@ ISBlockManager::FreeBlocks(const unsigned index)
 					curlen += it->second;
 					index_len_map.erase(it);
 					len_index_map.erase(make_pair(it->second,it->first));
-					// map <unsigned, unsigned>::iterator len_index_it;
-					// map <unsigned, unsigned>::iterator be = len_index_map.lower_bound(it->second);
-					// map <unsigned, unsigned>::iterator en = len_index_map.upper_bound(it->second);
-					// for(len_index_it = be; len_index_it != en; it++)
-					// {
-					// 	if(len_index_it->second == it->first)
-					// 	{
-					// 		len_index_map.erase(len_index_it);
-					// 		break;
-					// 	}
-					// }
 				}
 			}
 
@@ -359,17 +348,6 @@ ISBlockManager::FreeBlocks(const unsigned index)
 					curlen += it->second;
 					index_len_map.erase(it);
 					len_index_map.erase(make_pair(it->second,it->first));
-					// map <unsigned, unsigned>::iterator len_index_it;
-					// map <unsigned, unsigned>::iterator be = len_index_map.lower_bound(it->second);
-					// map <unsigned, unsigned>::iterator en = len_index_map.upper_bound(it->second);
-					// for(len_index_it = be; len_index_it != en; it++)
-					// {
-					// 	if(len_index_it->second == it->first)
-					// 	{
-					// 		len_index_map.erase(len_index_it);
-					// 		break;
-					// 	}
-					// }
 				}
 			}
 
@@ -382,25 +360,6 @@ ISBlockManager::FreeBlocks(const unsigned index)
 		_index = next_index;
 	}
 
-/*	map <unsigned, unsigned>::iterator it;
-
-	it = index_len_map.lower_bound(cur_index);
-	if (it->first + it->second == cur_index) // block before is free
-	{
-		cur_index = it->first;
-		curlen += it->second;
-	}
-
-	it = index_len_map.upper_bound(cur_index);
-	if (curlen + cur_index == it->first) // block after is free
-	{
-		curlen += it->second;
-		index_len_map.erase(it);
-	}
-
-	index_len_map[cur_index] = curlen;
-	len_index_map.insert(make_pair(curlen, cur_index));
-*/
 	return true;
 }
 
