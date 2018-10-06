@@ -23,6 +23,8 @@
 using namespace std;
 //Added for the json-example:
 using namespace boost::property_tree;
+//using namespace boost::gregorian;
+//using namespace boost;
 
 typedef SimpleWeb::Server<SimpleWeb::HTTP> HttpServer;
 typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
@@ -50,6 +52,9 @@ void thread_sigterm_handler(int _signal_num);
 bool addPrivilege(string username, string type, string db_name);
 bool delPrivilege(string username, string type, string db_name);
 bool checkPrivilege(string username, string type, string db_name);
+void DB2Map();
+string querySys(string sparql);
+bool updateSys(string sparql);
 //bool doQuery(string format, string db_query, const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 //=============================================================================
@@ -105,7 +110,7 @@ pthread_rwlock_t databases_map_lock;
 pthread_rwlock_t already_build_map_lock;
 pthread_rwlock_t users_map_lock;
 
-//Database *current_database = NULL;
+Database *system_database;
 
 std::map<std::string, Database *> databases;
 //std::set<std::string> already_build;
@@ -216,7 +221,7 @@ struct User{
 //struct User root = User(ROOT_USERNAME, ROOT_PASSWORD);
 
 std::map<std::string, struct User *> users;
-struct User root = User(ROOT_USERNAME, ROOT_PASSWORD);
+//struct User root = User(ROOT_USERNAME, ROOT_PASSWORD);
 //users.insert(pair<std::string, struct User*>(ROOT_USERNAME, &root));
 //users[ROOT_USERNAME] = &root;
 //struct User temp_user = User(username2, password2);
@@ -573,8 +578,21 @@ int initialize(int argc, char *argv[])
 	//Server restarts to use the original database
 	//current_database = NULL;
 
-	users.insert(pair<std::string, struct User *>(ROOT_USERNAME, &root));
+	//users.insert(pair<std::string, struct User *>(ROOT_USERNAME, &root));
 	
+	//load system.db when initialize
+	system_database = new Database("system");
+	bool flag = system_database->load();
+	if(!flag)
+	{
+		cout << "Failed to load the database system.db."<<endl;
+		
+
+			return -1;
+	}
+	databases.insert(pair<std::string, Database *>("system", system_database));
+
+
 	//check databases that already built in the directory 
 	DIR * dir;
 	struct dirent * ptr;
@@ -604,6 +622,9 @@ int initialize(int argc, char *argv[])
 	}
 	closedir(dir);//close the pointer of the directory
 	
+	//insert user from system.db to user map
+	DB2Map();
+
 	HttpServer server;
 	string db_name;
 	if(argc == 1)
@@ -652,7 +673,11 @@ int initialize(int argc, char *argv[])
     //For instance a request GET /load/db123 will receive: db123
     //server.resource["^/load/(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 
-	string database = db_name;
+
+	//string success = db_name;
+		cout << "Database systetm.db loaded successfully."<<endl;
+	
+		string database = db_name;
 	//if(current_database == NULL && database != "")
 	//{
 		if(database.length() > 3 && database.substr(database.length()-3, 3) == ".db")
@@ -671,10 +696,11 @@ int initialize(int argc, char *argv[])
 			cout << "Failed to load the database."<<endl;
 			delete current_database;
 			current_database = NULL;
+	
 			return -1;
 		}
+	
 		//string success = db_name;
-		cout << "Database loaded successfully."<<endl;
 		//already_build.insert(db_name);
 		databases.insert(pair<std::string, Database *>(db_name, current_database));
 	//}
@@ -1122,7 +1148,7 @@ void delete_thread(const shared_ptr<HttpServer::Response>& response, const share
 				//free(out);
 				*/
 				string resJson = CreateJson(0, success, 0);
-				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
 			
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 			}
@@ -1133,7 +1159,7 @@ void delete_thread(const shared_ptr<HttpServer::Response>& response, const share
 		string content="Could not open path "+request->path+": "+e.what();
 		
 		string resJson = CreateJson(101, content, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 	
 		//*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
 	}
@@ -1202,7 +1228,7 @@ void download_thread(const HttpServer& server, const shared_ptr<HttpServer::Resp
 		//cout<<"can not open file!!!"<<endl;
 		string content="Could not open path "+request->path+": "+e.what();
 		string resJson = CreateJson(101, content, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json \r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
 			
 		//*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
 	}
@@ -1229,7 +1255,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	{
 		string error = "database already built.";
 		string resJson = CreateJson(201, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
@@ -1245,7 +1271,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	{
 		string error = "username not find.";
 		string resJson = CreateJson(903, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1257,7 +1283,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	{
 		string error = "wrong password.";
 		string resJson = CreateJson(902, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1274,7 +1300,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		string error = "Exactly 2 arguments required!";
 		// error = db_name + " " + db_path;
 		string resJson = CreateJson(905, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
@@ -1285,7 +1311,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	{
 		string error = "Your db name to be built should not end with \".db\".";
 		string resJson = CreateJson(202, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1334,7 +1360,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		string cmd = "rm -r " + database + ".db";
 		system(cmd.c_str());
 		string resJson = CreateJson(204, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		
@@ -1350,7 +1376,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	{
 		string error = "add query or load or unload privilege failed.";
 		string resJson = CreateJson(912, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1371,7 +1397,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	// string success = db_name + " " + db_path;
 	string success = "Import RDF file to database done.";
 	string resJson = CreateJson(0, success, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 	
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
@@ -1405,7 +1431,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "Database not built yet.";
 		string resJson = CreateJson(203, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1421,7 +1447,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "database already load.";
 		string resJson = CreateJson(301, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1437,7 +1463,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "username not find.";
 		string resJson = CreateJson(903, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
@@ -1448,7 +1474,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "wrong password.";
 		string resJson = CreateJson(902, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1465,7 +1491,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "no load privilege, operation failed.";
 		string resJson = CreateJson(302, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1479,7 +1505,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "Exactly 1 argument is required!";
 		string resJson = CreateJson(904, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1492,7 +1518,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		//cout << "Your db name to be built should not end with \".db\"." << endl;
 	   string error = "Your db name to be built should not end with \".db\".";
 	   string resJson = CreateJson(202, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
@@ -1530,7 +1556,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "Unable to load due to loss of lock";
 		string resJson = CreateJson(303, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1545,7 +1571,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		string error = "Failed to load the database.";
 		string resJson = CreateJson(305, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//pthread_rwlock_unlock(&database_load_lock);
@@ -1567,7 +1593,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	cout << "database insert done." << endl;
 	string success = "Database loaded successfully.";
 	string resJson = CreateJson(0, success, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 	
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
@@ -1601,7 +1627,7 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	{
 		string error = "username not find.";
 		string resJson = CreateJson(903, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1613,7 +1639,7 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	{
 		string error = "wrong password.";
 		string resJson = CreateJson(902, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1630,7 +1656,7 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	{
 		string error = "no unload privilege, operation failed.";
 		string resJson = CreateJson(601, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1668,7 +1694,7 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	{
 		string error = "Database not load yet.";
 		string resJson = CreateJson(304, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1683,7 +1709,7 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	{
 		string error = "Unable to unload due to loss of lock";
 		string resJson = CreateJson(602, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1695,7 +1721,7 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	databases.erase(db_name);
 	string success = "Database unloaded.";
 	string resJson = CreateJson(0, success, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 	
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
@@ -1844,7 +1870,7 @@ void query_thread(string db_name, string format, string db_query, const shared_p
 		string error = "Database not load yet.";
 	//cout << error << endl;
 		string resJson = CreateJson(304, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1887,7 +1913,7 @@ void query_thread(string db_name, string format, string db_query, const shared_p
 		cerr <<log_prefix<< "Empty SPARQL." << endl;
 		string error = "Empty SPARQL.";
 		string resJson = CreateJson(401, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -1991,7 +2017,7 @@ void query_thread(string db_name, string format, string db_query, const shared_p
 			stringstream ss;
 			write_json(ss, ptr);
 			string resJson = ss.str();
-			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json";
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length();
 			*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
 			*response << "\r\n\r\n" << resJson;
 	
@@ -2094,7 +2120,7 @@ void query_thread(string db_name, string format, string db_query, const shared_p
 			error_code = 403;
 		}
 		string resJson = CreateJson(error_code, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2156,7 +2182,7 @@ bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	{
 		string error = "username not find.";
 		string resJson = CreateJson(903, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2167,7 +2193,7 @@ bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	{
 		string error = "wrong password.";
 		string resJson = CreateJson(902, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2182,7 +2208,7 @@ bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	{
 		string error = "no query privilege, operation failed.";
 		string resJson = CreateJson(404, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2290,7 +2316,7 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		//cout << "database not loaded yet." << endl;
 		string error = "Database not load yet.\r\n";
 		string resJson = CreateJson(304, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&databases_map_lock);
@@ -2308,7 +2334,7 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	{
 		string error = "Unable to monitor due to loss of lock";
 		string resJson = CreateJson(501, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2338,7 +2364,7 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 
 	//success = "<p>" + success + "</p>";
 	string resJson = CreateJson(0, "success", 1, success);
-	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 	
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 	pthread_rwlock_unlock(&(it_already_build->second));
@@ -2445,7 +2471,7 @@ void default_thread(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	catch(const exception &e) {
 		string content="Could not open path "+request->path+": "+e.what();
 		string resJson = CreateJson(101, content, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
@@ -2498,14 +2524,52 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 
 	cout << "username = " << username << endl;
 	cout << "password = " << password << endl;
+//showUser_handler(server, response, request);
+/*
+	cout<<"................this is showUser"<<endl;
 
+	pthread_rwlock_rdlock(&users_map_lock);
+	if(users.empty())
+	{
+		string error = "No Users.\r\n";
+		cout << error << endl;
+		
+		
+	
+	}
+
+	std::map<std::string, struct User *>::iterator itr;
+	
+	int i = 0;
+	for(itr=users.begin(); itr != users.end(); itr++)
+	{
+		cout << i << endl;
+		i++;
+		string username = itr->second->getUsername();
+		cout << "username: " << username << endl;
+		string password = itr->second->getPassword();
+		cout << password << endl;
+
+		string query_db = itr->second->getQuery();
+		cout << query_db << endl;
+		
+		string load_db = itr->second->getLoad();
+		cout << load_db << endl;
+		
+		string unload_db = itr->second->getUnload();
+		cout << unload_db << endl;
+		
+	}
+		pthread_rwlock_unlock(&users_map_lock);
+*/
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);
 	if(it == users.end())
 	{
 		string error = "wrong username.";
+	cout << error << endl;
 		string resJson = CreateJson(901, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&users_map_lock);
@@ -2514,8 +2578,9 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	else if(it->second->getPassword() != password)
 	{
 		string error = "wrong password.";
+		cout << error << endl;
 		string resJson = CreateJson(902, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2527,7 +2592,7 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 		cout << "login successfully." << endl;
 		string success = "check identity successfully.";
 		string resJson = CreateJson(0, success, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
@@ -2554,7 +2619,7 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	{
 		string error = "wrong username.";
 		string resJson = CreateJson(901, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2565,7 +2630,7 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	{
 		string error = "wrong password.";
 		string resJson = CreateJson(902, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2661,7 +2726,7 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	catch(const exception &e) {
 		string content="Could not open path "+request->path+": "+e.what();
 		string resJson = CreateJson(101, content, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
@@ -2704,7 +2769,7 @@ void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const s
 	{
 		string error = "Database not load yet.";
 		string resJson = CreateJson(304, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2722,7 +2787,7 @@ void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const s
 	{
 		string error = "Unable to monitor due to loss of lock";
 		string resJson = CreateJson(501, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2737,7 +2802,7 @@ void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const s
 	string success = "Database saveed successfully.";
 	//header and content are split by an empty line
 	string resJson = CreateJson(0, success, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 	
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
@@ -2865,6 +2930,8 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 				cout << "user ready to add." << endl;				
 				struct User *temp_user = new User(username2, password2);
 				users.insert(pair<std::string, struct User *>(username2, temp_user));
+				string update = "INSERT DATA {<" + username2 + "> <has_password> \"" + password2 + "\".}";
+				updateSys(update);		
 				cout << "user add done." << endl;
 
 			}
@@ -2872,7 +2939,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			{
 				string error = "username already existed, add user failed.";
 				string resJson = CreateJson(907, error, 0);
-				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2892,6 +2959,9 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 				delete iter->second;
 				iter->second = NULL;
 				users.erase(username2);
+				string update = "DELETE where {<" + username2 + "> ?p ?o.}";
+				updateSys(update);
+				
 			}
 			else
 			{
@@ -2908,7 +2978,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 					error_code = 909;
 				}
 				string resJson = CreateJson(error_code, error, 0);
-				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2928,7 +2998,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			{
 				string error = "username not exist, change password failed.";
 				string resJson = CreateJson(916, error, 0);
-				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 				pthread_rwlock_unlock(&users_map_lock);
 		
 				return false;
@@ -2937,6 +3007,11 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			else
 			{
 				iter->second->setPassword(password2);
+				string update = "DELETE WHERE {<" + username2 + "> <has_password> ?o.}";
+				updateSys(update);
+				string update2 = "INSERT DATA {<" + username2 + "> <has_password>  \"" + password2 + "\".}";
+				updateSys(update2);
+				
 			}
 			pthread_rwlock_unlock(&users_map_lock);
 
@@ -2947,7 +3022,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			{
 				string error = "you can't add privilege to root user.";
 				string resJson = CreateJson(910, error, 0);
-				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2961,7 +3036,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			{
 				string error = "add privilege failed.";
 				string resJson = CreateJson(911, error, 0);
-				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2974,7 +3049,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			{
 				string error = "you can't delete privilege of root user.";
 				string resJson = CreateJson(913, error, 0);
-				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2988,7 +3063,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 			{
 				string error = "delete privilege failed.";
 				string resJson = CreateJson(914, error, 0);
-				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -2997,7 +3072,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		}
 		string success = "operation on users succeeded.";
 		string resJson = CreateJson(0, success, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
@@ -3007,7 +3082,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 	//if not root user, no privilege to perform this operation
 	string error = "Not root user, no privilege to perform this operation.";
 	string resJson = CreateJson(915, error, 0);
-	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 	
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -3037,7 +3112,7 @@ bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 	{
 		string error = "No Users.\r\n";
 		string resJson = CreateJson(802, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -3054,7 +3129,7 @@ bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 		cout << i << endl;
 		i++;
 		string username = it->second->getUsername();
-		//cout << username << endl;
+		//cout << "username: " << username << endl;
 		success = success + username + "\t";
 		//cout << success << endl;
 		string password = it->second->getPassword();
@@ -3075,7 +3150,7 @@ bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 		//cout << success << endl;
 	}
 		string resJson = CreateJson(0, "success", 1, success);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
@@ -3087,25 +3162,35 @@ bool addPrivilege(string username, string type, string db_name)
 {
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);
-	if(it != users.end())
+	if(it != users.end() && username != ROOT_USERNAME)
 	{
 		pthread_rwlock_unlock(&users_map_lock);
 		if(type == "query")
 		{
 			pthread_rwlock_wrlock(&(it->second->query_priv_set_lock));
 			it->second->query_priv.insert(db_name);
+			string update = "INSERT DATA {<" + username + "> <has_query_priv> <" + db_name + ">.}";
+			updateSys(update);
+				
 			pthread_rwlock_unlock(&(it->second->query_priv_set_lock));
+
 		}
 		else if(type == "load")
 		{
 			pthread_rwlock_wrlock(&(it->second->load_priv_set_lock));
 			it->second->load_priv.insert(db_name);
+			string update = "INSERT DATA {<" + username + "> <has_load_priv> <" + db_name + ">.}";
+			updateSys(update);
+			
 			pthread_rwlock_unlock(&(it->second->load_priv_set_lock));
 		}
 		else if(type == "unload")
 		{
 			pthread_rwlock_wrlock(&(it->second->unload_priv_set_lock));
 			it->second->unload_priv.insert(db_name);
+			string update = "INSERT DATA {<" + username + "> <has_unload_priv> <" + db_name + ">.}";
+			updateSys(update);
+			
 			pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
 		}
 		return 1;
@@ -3120,13 +3205,16 @@ bool delPrivilege(string username, string type, string db_name)
 {
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);
-	if(it != users.end())
+	if(it != users.end() && username != ROOT_USERNAME)
 	{
 		pthread_rwlock_unlock(&users_map_lock);
 		if(type == "query" && it->second->query_priv.find(db_name) != it->second->query_priv.end())
 		{
 			pthread_rwlock_wrlock(&(it->second->query_priv_set_lock));
 			it->second->query_priv.erase(db_name);
+			string update = "DELETE DATA {<" + username + "> <has_query_priv> <" + db_name + ">.}";
+			updateSys(update);
+			
 			pthread_rwlock_unlock(&(it->second->query_priv_set_lock));
 			return 1;
 		}
@@ -3134,6 +3222,9 @@ bool delPrivilege(string username, string type, string db_name)
 		{
 			pthread_rwlock_wrlock(&(it->second->load_priv_set_lock));
 			it->second->load_priv.erase(db_name);
+			string update = "DELETE DATA {<" + username + "> <has_load_priv> <" + db_name + ">.}";
+			updateSys(update);
+			
 			pthread_rwlock_unlock(&(it->second->load_priv_set_lock));
 			return 1;
 		}
@@ -3141,6 +3232,9 @@ bool delPrivilege(string username, string type, string db_name)
 		{
 			pthread_rwlock_wrlock(&(it->second->unload_priv_set_lock));
 			it->second->unload_priv.erase(db_name);
+			string update = "DELETE DATA {<" + username + "> <has_load_priv> <" + db_name + ">.}";
+			updateSys(update);
+			
 			pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
 			return 1;
 		}
@@ -3203,4 +3297,211 @@ std::string CreateJson(int StatusCode, string StatusMsg, bool body, string Respo
 	stringstream ss;
 	write_json(ss, pt);
 	return ss.str();
+}
+
+void DB2Map()
+{
+	
+	string sparql = "select ?x ?y where{?x <has_password> ?y.}";
+	string strJson = querySys(sparql);
+	cout << "DDDDDDDDDDDDDDDB2Map: strJson : " << strJson << endl;
+	stringstream ss;
+	ss << strJson;
+	ptree pt, p1, p2, pp, pp1, pp2;
+	read_json<ptree>(ss, pt);
+	p1 = pt.get_child("results");
+	p2 = p1.get_child("bindings");
+	int i = 0;
+	for(ptree::iterator it = p2.begin(); it != p2.end(); ++it)
+	{
+		pp = it->second;
+		pp1 = pp.get_child("x");
+		pp2 = pp.get_child("y");
+		string username = pp1.get<string>("value");
+		string password = pp2.get<string>("value");
+		cout << "DDDDDDDDDDDDDDDDB2Map: username: " + username << " password: " << password << endl;
+		struct User *user = new User(username, password);
+			
+		string sparql2 = "select ?x ?y where{<" + username + "> ?x ?y.}";
+		string strJson2 = querySys(sparql2);
+		cout << "strJson2: " << strJson2 << endl;
+		stringstream ss2;
+		ss2 << strJson2;
+		ptree pt2, p12, p22, binding, pp12, pp22;
+	    read_json<ptree>(ss2, pt2);
+		p12 = pt2.get_child("results");
+		p22 = p12.get_child("bindings");
+		for(ptree::iterator it2 = p22.begin(); it2 != p22.end(); ++it2)
+		{
+			binding = it2->second;
+			pp12 = binding.get_child("x");
+			pp22 = binding.get_child("y");
+			string type = pp12.get<string>("value");
+			string db_name = pp22.get<string>("value");
+			cout << "DDDDDDDDDDDDDDDDDB2Map: type: " + type << " db_name: " << db_name << endl;
+		
+			if(type == "has_query_priv")
+			{
+				cout << username << type << db_name << endl;
+				user->query_priv.insert(db_name);
+			}
+			else if(type == "has_load_priv")
+			{
+				user->load_priv.insert(db_name);
+			}
+			else if(type == "has_unload_priv")
+			{
+				user->unload_priv.insert(db_name);
+			}
+		}
+		//users.insert(pair<std::string, struct User*>(username, &user));
+		users.insert(pair<std::string, struct User *>(username, user));
+	
+		cout << ".................." << user->getUsername() << endl;
+		cout << ".................." << user->getPassword() << endl;
+		cout << ".................." << user->getLoad() << endl;
+		cout << ".................." << user->getQuery() << endl;
+		cout << ".................." << user->getUnload() << endl;
+		cout << "i: " << i << endl;
+		i++;
+	}
+	cout << "out of first ptree" << endl;
+}
+
+string querySys(string sparql)
+{
+	string db_name = "system";
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, pthread_rwlock_t>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+	
+	pthread_rwlock_rdlock(&(it_already_build->second));
+	ResultSet rs;
+	FILE* output = NULL;
+
+	int ret_val = system_database->query(sparql, rs, output);
+	bool ret = false, update = false;
+	if(ret_val < -1)   //non-update query
+	{
+		ret = (ret_val == -100);
+	}
+	else  //update query, -1 for error, non-negative for num of triples updated
+	{
+		update = true;
+	}
+
+	if(ret)
+	{
+		cout << "search query returned successfully." << endl;
+		
+		string success = rs.to_JSON();
+		pthread_rwlock_unlock(&(it_already_build->second));
+		return success;
+	}
+	else
+	{
+		string error = "";
+		int error_code;
+		if(!update)
+		{
+			cout << "search query returned error." << endl;
+			error = "search query returns false.";
+			error_code = 403;
+		}
+		
+		pthread_rwlock_unlock(&(it_already_build->second));
+
+		return error;
+	}
+	
+}
+/*
+bool updateSys(string sparql)
+{
+	string db_name = "system";
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, pthread_rwlock_t>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+	
+	pthread_rwlock_wrlock(&(it_already_build->second));
+	ResultSet rs;
+	FILE* output = NULL;
+
+	int ret_val = system_database->query(sparql, rs, output);
+	bool ret = false, update = false;
+	if(ret_val < -1)   //non-update query
+	{
+		ret = (ret_val == -100);
+	}
+	else  //update query, -1 for error, non-negative for num of triples updated
+	{
+		update = true;
+	}
+
+	if(! ret)
+	{
+		string error = "";
+		int error_code;
+		if(update)
+		{
+			cout << "update query returned correctly." << endl;
+			system_database->save();
+			pthread_rwlock_unlock(&(it_already_build->second));
+		
+			return true;
+		}
+		else
+		{
+			pthread_rwlock_unlock(&(it_already_build->second));
+			return false;
+		}
+		
+		
+	}
+	
+}
+*/
+bool updateSys(string query)
+{
+		if (query.empty())
+		{
+			return 0;
+		}
+		printf("query is:\n%s\n\n", query.c_str());
+		ResultSet _rs;
+		FILE* ofp = stdout;
+		
+		string msg;
+		int ret = system_database->query(query, _rs, ofp);
+	//cout<<"gquery ret: "<<ret<<endl;
+		if (ret <= -100)  //select query
+		{
+			if(ret == -100)
+			{
+				msg = _rs.to_str();
+			}
+			else //query error
+			{
+				msg = "query failed.";
+			}
+
+			return false;
+		}
+		else //update query
+		{
+			if(ret >= 0)
+			{
+				msg = "update num: " + Util::int2string(ret);
+				cout << msg << endl;
+				system_database->save();
+				return true;
+			}
+			else //update error
+			{
+				msg = "update failed.";
+				cout << msg << endl;
+				return false;
+			}
+		}
+
 }
