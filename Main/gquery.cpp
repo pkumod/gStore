@@ -100,7 +100,9 @@ main(int argc, char * argv[])
 		//{
 		//query = string("../") + query;
 		//}
+		
 		query = Util::getQueryFromFile(query.c_str());
+			
 		if (query.empty())
 		{
 			return 0;
@@ -114,7 +116,6 @@ main(int argc, char * argv[])
 		}
 		string msg;
 		int ret = _db.query(query, _rs, ofp);
-
 		if(argc >= 4)
 		{
 			fclose(ofp);

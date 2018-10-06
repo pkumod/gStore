@@ -1089,6 +1089,7 @@ int query_handler(const vector<string>& args) {
 
 	ResultSet rs;
 	bool ret = current_database->query(sparql, rs, output);
+	current_database->save();
 	if (ret) {
 #ifdef DEBUG_PRECISE
 		cout << "query() returns true!" << endl;
