@@ -149,6 +149,9 @@ Three scripts are placed in [setup](../scripts/setup/) to help you modify the se
 
 **If queries containing updates are sent via `ghttp`, a `checkpoint` command must be sent and done by the `ghttp` console before we shutdown the database server. Otherwise, the updates may not be synchronize to disk and will be lost if the `ghttp` server is stopped.**
 
+**Attention: you can not stop ghttp by simply type the command "Ctrl+C", because this will cause the changes of databases lost.
+
+** In order to stop the ghttp server, you can type `bin/shutdown serverPort`
 - - -
 
 

@@ -36,6 +36,7 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define ROOT_PASSWORD "123456"
 #define DEFAULT_USERNAME "a"
 #define DEFAULT_PASSWORD "1"
+#define SYSTEM_PATH "data/system/system.nt"
 
 //int initialize();
 int initialize(int argc, char *argv[]);
@@ -685,7 +686,11 @@ int initialize(int argc, char *argv[])
 			cout << "Your db name to be built should not end with \".db\"." << endl;
 			return -1;
 		}
-	
+		else if(database == "system")
+		{
+			cout << "You can not load system files." << endl;
+			return -1;
+		}
 		cout << database << endl;
 		Database *current_database = new Database(database);
 	if(database.length() != 0)
@@ -1248,7 +1253,15 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	db_path = UrlDecode(db_path);
 	username = UrlDecode(username);
 	password = UrlDecode(password);
-
+	
+	//check if the db_path is the path of system.nt
+	if(db_path == SYSTEM_PATH)
+	{
+		string error = "You has no rights to access system files";
+		string resJson = CreateJson(205, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
 	//check if database named [db_name] is already built
 	pthread_rwlock_rdlock(&already_build_map_lock);
 	if(already_build.find(db_name) != already_build.end())
@@ -1756,14 +1769,20 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	if(it == users.end())
 	{
 		string error = "username not find.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&users_map_lock);
 		return; 
 	}
 	else if(it->second->getPassword() != password)
 	{
 		string error = "wrong password.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&users_map_lock);
 		return; 
 	}
@@ -1789,7 +1808,10 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		if(pthread_rwlock_trywrlock(&(it_already_build->second)) != 0)
 		{
 			string error = "Unable to unload due to loss of lock";
-			*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+			string resJson = CreateJson(602, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 			pthread_rwlock_unlock(&databases_map_lock);
 			return;
 		}
@@ -1798,7 +1820,10 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		current_database = NULL;
 		databases.erase(db_name);
 		string success = "Database unloaded.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+		string resJson = CreateJson(0, success, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 		pthread_rwlock_unlock(&(it_already_build->second));
 	}
 	pthread_rwlock_unlock(&databases_map_lock);
@@ -1809,7 +1834,10 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	if(it_already_build== already_build.end())
 	{
 		string error = "Database not built yet.";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		string resJson = CreateJson(203, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&already_build_map_lock);
 		return; 
 	}
@@ -1818,7 +1846,10 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	pthread_rwlock_destroy(&(it_already_build->second));
 	already_build.erase(db_name);
 	string success = "Database " + db_name + " dropped.";
-	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;	
+	string resJson = CreateJson(0, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;	
 	pthread_rwlock_unlock(&already_build_map_lock);
 	string cmd;
 	if(r)
@@ -2838,14 +2869,20 @@ void checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 		if(pthread_rwlock_trywrlock(&(it_already_build->second)) != 0)
 		{
 			string error = "Unable to monitor due to loss of lock";
-			*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+			string resJson = CreateJson(501, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 			pthread_rwlock_unlock(&databases_map_lock);
 			return;
 		}
 		current_database->save();
 		cout<< "Database " << database_name << " saved successfully." <<endl;
 		success = success + "Database "+ database_name +" saved successfully.\r\n";
-		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+		string resJson = CreateJson(0, success, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 		pthread_rwlock_unlock(&(it_already_build->second));
 	}
 	pthread_rwlock_unlock(&databases_map_lock);
@@ -3160,9 +3197,13 @@ bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 
 bool addPrivilege(string username, string type, string db_name)
 {
+	if(username == ROOT_USERNAME)
+	{
+		return 1;
+	}
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);
-	if(it != users.end() && username != ROOT_USERNAME)
+	if(it != users.end() && db_name != "system")
 	{
 		pthread_rwlock_unlock(&users_map_lock);
 		if(type == "query")
@@ -3244,6 +3285,9 @@ bool delPrivilege(string username, string type, string db_name)
 }
 bool checkPrivilege(string username, string type, string db_name)
 {
+	if(db_name == "system")
+		return 0;
+
 	if(username == ROOT_USERNAME)
 		return 1;
 	pthread_rwlock_rdlock(&users_map_lock);
@@ -3304,14 +3348,14 @@ void DB2Map()
 	
 	string sparql = "select ?x ?y where{?x <has_password> ?y.}";
 	string strJson = querySys(sparql);
-	cout << "DDDDDDDDDDDDDDDB2Map: strJson : " << strJson << endl;
+	//cout << "DDDDDDDDDDDDDDDB2Map: strJson : " << strJson << endl;
 	stringstream ss;
 	ss << strJson;
 	ptree pt, p1, p2, pp, pp1, pp2;
 	read_json<ptree>(ss, pt);
 	p1 = pt.get_child("results");
 	p2 = p1.get_child("bindings");
-	int i = 0;
+	//int i = 0;
 	for(ptree::iterator it = p2.begin(); it != p2.end(); ++it)
 	{
 		pp = it->second;
@@ -3319,12 +3363,12 @@ void DB2Map()
 		pp2 = pp.get_child("y");
 		string username = pp1.get<string>("value");
 		string password = pp2.get<string>("value");
-		cout << "DDDDDDDDDDDDDDDDB2Map: username: " + username << " password: " << password << endl;
+		//cout << "DDDDDDDDDDDDDDDDB2Map: username: " + username << " password: " << password << endl;
 		struct User *user = new User(username, password);
 			
 		string sparql2 = "select ?x ?y where{<" + username + "> ?x ?y.}";
 		string strJson2 = querySys(sparql2);
-		cout << "strJson2: " << strJson2 << endl;
+		//cout << "strJson2: " << strJson2 << endl;
 		stringstream ss2;
 		ss2 << strJson2;
 		ptree pt2, p12, p22, binding, pp12, pp22;
@@ -3338,7 +3382,7 @@ void DB2Map()
 			pp22 = binding.get_child("y");
 			string type = pp12.get<string>("value");
 			string db_name = pp22.get<string>("value");
-			cout << "DDDDDDDDDDDDDDDDDB2Map: type: " + type << " db_name: " << db_name << endl;
+			//cout << "DDDDDDDDDDDDDDDDDB2Map: type: " + type << " db_name: " << db_name << endl;
 		
 			if(type == "has_query_priv")
 			{
@@ -3357,15 +3401,15 @@ void DB2Map()
 		//users.insert(pair<std::string, struct User*>(username, &user));
 		users.insert(pair<std::string, struct User *>(username, user));
 	
-		cout << ".................." << user->getUsername() << endl;
-		cout << ".................." << user->getPassword() << endl;
-		cout << ".................." << user->getLoad() << endl;
-		cout << ".................." << user->getQuery() << endl;
-		cout << ".................." << user->getUnload() << endl;
-		cout << "i: " << i << endl;
-		i++;
+		//cout << ".................." << user->getUsername() << endl;
+		//cout << ".................." << user->getPassword() << endl;
+		//cout << ".................." << user->getLoad() << endl;
+		//cout << ".................." << user->getQuery() << endl;
+		//cout << ".................." << user->getUnload() << endl;
+		//cout << "i: " << i << endl;
+		//i++;
 	}
-	cout << "out of first ptree" << endl;
+	//cout << "out of first ptree" << endl;
 }
 
 string querySys(string sparql)
@@ -3493,7 +3537,7 @@ bool updateSys(string query)
 			{
 				msg = "update num: " + Util::int2string(ret);
 				cout << msg << endl;
-				system_database->save();
+				//system_database->save();
 				return true;
 			}
 			else //update error
