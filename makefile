@@ -115,7 +115,7 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
 #gtest
 
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown
 
 all: $(TARGET)
 	bash scripts/test.sh
@@ -128,6 +128,9 @@ test_index: test_index.cpp
 #executables begin
 
 #NOTICE:not include g*.o in objfile due to multiple definitions of main()
+$(exedir)shutdown: $(lib_antlr) $(objdir)shutdown.o $(objfile) 
+	$(CC) $(EXEFLAG) -o $(exedir)shutdown $(objdir)shutdown.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient
+
 $(exedir)gmonitor: $(lib_antlr) $(objdir)gmonitor.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gmonitor $(objdir)gmonitor.o $(objfile) $(library) $(openmp)
 
@@ -160,6 +163,9 @@ $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/
 
 
 #objects in Main/ begin
+
+$(objdir)shutdown.o: Main/shutdown.cpp $(lib_antlr)
+	$(CC) $(CFLAGS)	Main/shutdown.cpp $(inc) -o $(objdir)shutdown.o $(openmp)
 
 $(objdir)gmonitor.o: Main/gmonitor.cpp $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gmonitor.cpp $(inc) -o $(objdir)gmonitor.o $(openmp)
