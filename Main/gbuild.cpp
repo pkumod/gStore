@@ -58,10 +58,15 @@ main(int argc, char * argv[])
 	if (flag)
 	{
 		cout << "import RDF file to database done." << endl;
+		ofstream f;
+		f.open("./"+ _db_path +".db/success.txt");
+		f.close();
 	}
 	else
 	{
 		cout << "import RDF file to database failed." << endl;
+		string cmd = "rm -r " + _db_path + ".db";
+		system(cmd.c_str());
 	}
 	//system("clock");
 	return 0;

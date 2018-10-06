@@ -67,6 +67,8 @@ bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 
 bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
+bool checkall_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+
 bool show_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 bool delete_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
@@ -83,7 +85,14 @@ bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 
 bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
+bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+
+bool drop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, bool r);
+
 void query_thread(string db_name, string format, string db_query, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+
+void checkall_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+
 //=============================================================================
 
 //TODO: use locak to protect logs when running in multithreading environment
@@ -526,6 +535,7 @@ int main(int argc, char *argv[])
 			int status;
 			waitpid(fpid, &status, 0);
 			if (WIFEXITED(status)) {
+				//cout<<"yes!"<<endl;
 				//exit(0);
 				return 0;
 			}
@@ -576,13 +586,20 @@ int initialize(int argc, char *argv[])
 		//cout << "nameLen: " << nameLen << endl;
 		if(nameLen > 3 && std::string(ptr->d_name).substr(nameLen-3, nameLen) == ".db")
 		{
-        		std::string s = std::string(ptr->d_name).substr(0,nameLen-3);
-   			//cout << "already_built db_name: " << s << endl;
-			pthread_rwlock_t temp_lock;
-			pthread_rwlock_init(&temp_lock, NULL);
-			already_build.insert(pair<std::string, pthread_rwlock_t>(s, temp_lock));
-			pthread_rwlock_destroy(&temp_lock);
-
+			if(boost::filesystem::exists("./"+ std::string(ptr->d_name) +"/success.txt"))
+			{
+				std::string s = std::string(ptr->d_name).substr(0,nameLen-3);
+				//cout << "already_built db_name: " << s << endl;
+				pthread_rwlock_t temp_lock;
+				pthread_rwlock_init(&temp_lock, NULL);
+				already_build.insert(pair<std::string, pthread_rwlock_t>(s, temp_lock));
+				pthread_rwlock_destroy(&temp_lock);
+			}
+			else
+			{
+				string cmd = "rm -r " + string(ptr->d_name);
+				system(cmd.c_str());
+			}
 		}
 	}
 	closedir(dir);//close the pointer of the directory
@@ -646,6 +663,8 @@ int initialize(int argc, char *argv[])
 	
 		cout << database << endl;
 		Database *current_database = new Database(database);
+	if(database.length() != 0)
+	{
 		bool flag = current_database->load();
 		if (!flag)
 		{
@@ -659,7 +678,7 @@ int initialize(int argc, char *argv[])
 		//already_build.insert(db_name);
 		databases.insert(pair<std::string, Database *>(db_name, current_database));
 	//}
-
+	}
 	//open the query log
 	query_logfp = fopen(queryLog.c_str(), "a");
 	if(query_logfp == NULL)
@@ -783,6 +802,29 @@ int initialize(int argc, char *argv[])
 		check_handler(server, response, request);
     };
 
+    //GET-example for the path /?operation=drop&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
+    server.resource["^/%3[F|f]operation%3[D|d]drop%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		drop_handler(server, response, request, false);
+    }; 
+	
+    //GET-example for the path /?operation=drop&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
+    server.resource["^/?operation=drop&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		drop_handler(server, response, request, false);
+    };
+	
+    //GET-example for the path /?operation=drop_r&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
+    server.resource["^/%3[F|f]operation%3[D|d]drop_r%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		drop_handler(server, response, request, true);
+    }; 
+	
+    //GET-example for the path /?operation=drop_r&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
+    server.resource["^/?operation=drop_r&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		drop_handler(server, response, request, true);
+    };	
 #endif
 	
 	
@@ -832,7 +874,18 @@ int initialize(int argc, char *argv[])
     //         *response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << strlen(e.what()) << "\r\n\r\n" << e.what();
     //     }
     // };
-
+	
+    server.resource["^/%3[F|f]operation%3[D|d]stop$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		stop_handler(server, response, request);
+		exit(0);
+    };
+    server.resource["^/?operation=stop$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		stop_handler(server, response, request);
+		exit(0);
+    };
+	
     server.resource["^/%3[F|f]operation%3[D|d]checkpoint%26db_name%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
 		checkpoint_handler(server, response, request);
@@ -841,7 +894,15 @@ int initialize(int argc, char *argv[])
 	{
 		checkpoint_handler(server, response, request);
     };
-
+    server.resource["^/%3[F|f]operation%3[D|d]checkall$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		checkall_handler(server, response, request);
+    };
+	server.resource["^/?operation=checkall$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	{
+		checkall_handler(server, response, request);
+    };
+	
 	//TODO: add user name as parameter, all databases availiable
     server.resource["^/%3[F|f]operation%3[D|d]show$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
@@ -849,7 +910,7 @@ int initialize(int argc, char *argv[])
     };
 
 	//TODO: add user name as parameter, all databases availiable
-    server.resource["^/?operation=show&$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/?operation=show$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
 	{
 		show_handler(server, response, request);
     };
@@ -1270,7 +1331,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	if(!flag)
 	{
 		string error = "Import RDF file to database failed.";
-		string cmd = "rm -r " + database;
+		string cmd = "rm -r " + database + ".db";
 		system(cmd.c_str());
 		string resJson = CreateJson(204, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
@@ -1281,6 +1342,9 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		return;
 	}
 
+	ofstream f;
+	f.open("./"+ database +".db/success.txt");
+	f.close();
 	//by default, one can query or load or unload the database that is built by itself, so add the database name to the privilege set of the user
 	if(addPrivilege(username, "query", db_name) == 0 || addPrivilege(username, "load", db_name) == 0 || addPrivilege(username, "unload", db_name) == 0)
 	{
@@ -1647,6 +1711,104 @@ bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	return true;
 }
 
+void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, bool r)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is drop"<<endl;
+	
+	string db_name = request->path_match[1];
+	string username = request->path_match[2];
+	string password = request->path_match[3];
+	db_name = UrlDecode(db_name);
+	username = UrlDecode(username);
+	password = UrlDecode(password);
+	
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User *>::iterator it = users.find(username);
+	if(it == users.end())
+	{
+		string error = "username not find.";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return; 
+	}
+	else if(it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return; 
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+
+	cout << "check identity successfully." << endl;
+
+	//check privilege
+	//if(checkPrivilege(username, "drop", db_name) == 0)
+	//{
+	//	string error = "no drop privilege, operation failed.";
+	//	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+	//	return; 
+	//}
+	//cout << "check privilege successfully." << endl;	
+	
+	//if database named [db_name] is loaded, unload it firstly
+	pthread_rwlock_wrlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+	if(iter != databases.end())
+	{
+		std::map<std::string, pthread_rwlock_t>::iterator it_already_build = already_build.find(db_name);
+		if(pthread_rwlock_trywrlock(&(it_already_build->second)) != 0)
+		{
+			string error = "Unable to unload due to loss of lock";
+			*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+			pthread_rwlock_unlock(&databases_map_lock);
+			return;
+		}
+		Database *current_database = iter->second;
+		delete current_database;
+		current_database = NULL;
+		databases.erase(db_name);
+		string success = "Database unloaded.";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+		pthread_rwlock_unlock(&(it_already_build->second));
+	}
+	pthread_rwlock_unlock(&databases_map_lock);
+	
+	//check if database named [db_name] is already build.
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, pthread_rwlock_t>::iterator it_already_build = already_build.find(db_name);
+	if(it_already_build== already_build.end())
+	{
+		string error = "Database not built yet.";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&already_build_map_lock);
+		return; 
+	}
+	
+	//drop database named [db_name]
+	pthread_rwlock_destroy(&(it_already_build->second));
+	already_build.erase(db_name);
+	string success = "Database " + db_name + " dropped.";
+	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;	
+	pthread_rwlock_unlock(&already_build_map_lock);
+	string cmd;
+	if(r)
+		cmd = "rm -r " + db_name + ".db";
+	else
+		cmd = "mv " + db_name + ".db " + db_name + ".bak";
+	system(cmd.c_str());
+	return;
+}
+
+bool drop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, bool r)
+{
+	thread t(&drop_thread, response, request, r);
+	t.detach();
+	return true;
+}
 
 void writeLog(FILE* fp, string _info)
 {
@@ -2509,6 +2671,16 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	}
 }
 
+//to stop the ghttp server
+bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	//string success = "Server stopped.";
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	checkall_thread(response, request);	
+	cout<<"Server stopped."<<endl;
+	return true;	
+}
+
 void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
 	string thread_id = Util::getThreadID();
@@ -2582,78 +2754,74 @@ bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::R
 	return true;
 }
 
+void checkall_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is checkall"<<endl;
+
+	pthread_rwlock_rdlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter;
+	string success;
+	for(iter=databases.begin(); iter != databases.end(); iter++)
+	{
+		Database *current_database = iter->second;
+		string database_name = iter->first;
+		pthread_rwlock_rdlock(&already_build_map_lock);
+		std::map<std::string, pthread_rwlock_t>::iterator it_already_build = already_build.find(database_name);
+		pthread_rwlock_unlock(&already_build_map_lock);
+		if(pthread_rwlock_trywrlock(&(it_already_build->second)) != 0)
+		{
+			string error = "Unable to monitor due to loss of lock";
+			*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+			pthread_rwlock_unlock(&databases_map_lock);
+			return;
+		}
+		current_database->save();
+		cout<< "Database " << database_name << " saved successfully." <<endl;
+		success = success + "Database "+ database_name +" saved successfully.\r\n";
+		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+		pthread_rwlock_unlock(&(it_already_build->second));
+	}
+	pthread_rwlock_unlock(&databases_map_lock);
+	return; 
+}
+
+bool checkall_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+{
+	thread t(&checkall_thread, response, request);
+	t.detach();
+	return true;
+}
+
 void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is show"<<endl;
 
-//TODO:MODIFY
-//	if(pthread_rwlock_tryrdlock(&database_load_lock) != 0)
-//	{
-//	    string error = "Unable to show due to loss of lock";
-//		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-//		return;
-//	}
-
-	//string type = request->path_match[1];
-	//type = UrlDecode(type);
-	//if(type == "current")
-	//{
-	//	if(current_database == NULL)
-	//	{
-	//		string error = "No database used.\r\n";
-	//		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-			//return false;
-	//		return; 
-	//	}
-
-		//NOTICE: this info is in header
-	//	string success = current_database->getName();
-	//	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
-
-		//return true;
-	//		return; 
-	//}
-	//else if(type == "all")
-	//{
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, pthread_rwlock_t>::iterator it_already_build;
+	string success;
+	for(it_already_build=already_build.begin(); it_already_build != already_build.end(); it_already_build++)
+	{
+		string database_name = it_already_build->first;
+		success = success + database_name;
 		pthread_rwlock_rdlock(&databases_map_lock);
-		if(databases.empty())
-		{
-			string error = "No database.\r\n";
-			string resJson = CreateJson(801, error, 0);
-			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
-		
-			
-			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-			//return false;
-			pthread_rwlock_unlock(&databases_map_lock);
-			return; 
-		}
-		std::map<std::string, Database *>::iterator it;
-		string success;
-		for(it=databases.begin(); it != databases.end(); it++)
-		{
-			string database_name = it->first;
-			success = success + database_name + "\r\n";
-		}
-		string resJson = CreateJson(0, "success", 1, success);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
-		
-		
-		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
-		//return true;
+		if(databases.find(database_name)== databases.end())
+			success = success + "    unloaded\r\n";
+		else
+			success = success + "    loaded\r\n";
 		pthread_rwlock_unlock(&databases_map_lock);
-			return; 
-
-	//}
-	//else
-	//{
-	//	string error = "show current database or all databases, please choose current type or all type.";
-	//	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-	//	pthread_rwlock_unlock(&database_load_lock);
-	//	return;
-	//}
+	}
+	string resJson = CreateJson(0, "success", 1, success);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+	
+	
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	//return true;
+	pthread_rwlock_unlock(&already_build_map_lock);
+	return; 
 }
 // to add, delete users or modify the privilege of a user, operation be done by the root user
 bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
