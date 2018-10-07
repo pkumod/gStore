@@ -16,6 +16,7 @@ readline-devel | need to be installed
 openjdk | needed if using Java api
 openjdk-devel | needed if using Java api
 requests | needed if using Python http api
+node | needed if using Nodejs http api and version >= 10.9.0
 pthreads | needed if using php http api 
 curl-devel | needed if using php http api
 realpath | needed if using gconsole
@@ -78,19 +79,27 @@ We will run make clear just to be sure that no other crashed build will mess our
 # make
 # make install
 
-8- Copy configuration file of PHP and add local lib to include path
+8- install node
+# wget https://npm.taobao.org/mirrors/node/v10.9.0/node-v10.9.0.tar.gz
+# tar -xvf node-v10.9.0.tar.gz
+# cd node-v10.9.0
+# ./configure
+# make
+# sudo make install
+
+9- Copy configuration file of PHP and add local lib to include path
 # cp php.ini-development /etc/php.ini
 
 Edit php.ini and set Include_path to be like this:
 
 Include_path = "/usr/local/lib/php"
 
-9- Check Modules
+10- Check Modules
 # php -m (check pthread loaded)
 
 You have to see pthreads listed
 
-10- If pthread is not listed, update php.ini
+11- If pthread is not listed, update php.ini
 # echo "extension=pthreads.so" >> /etc/php.ini
 
 ```
