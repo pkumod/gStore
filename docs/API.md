@@ -77,6 +77,18 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 
             - GstoreConnector.py
 
+    - nodejs/ (the Nodejs API)
+
+        - index.js (source code of Nodejs API)
+
+        - LICENSE
+
+        - package.json
+
+        - README.md
+
+        - example.js (small example to show the basic idea of using the Nodejs API)			
+			
     - php/ (the Php API)
 
         - example/
@@ -234,6 +246,47 @@ def unload(self, db_name, username, password):
 def query(self, username, password, db_name, sparql):
 
 def fquery(self, username, password, db_name, sparql, filename):
+
+```
+
+- - -
+
+## Nodejs API
+
+#### Interface
+
+Before using Nodejs API, type `npm install request` and `npm install request-promise` under the nodejs folder to add the required module.
+
+To use Nodejs API, please see gStore/api/http/nodejs/index.js. Functions should be called like following:
+
+```
+# start a gc with given IP and Port
+gc =  new GStoreClient(username, password, "http://127.0.0.1:9000")
+
+# build database with a RDF graph
+ret = gc.build("test", "data/lubm/lubm.nt")
+
+# load the database
+ret = gc.load("test")
+
+# query
+print (gc.query("test", sparql))
+
+# unload the database
+ret = gc.unload("test")
+```
+The original declaration of these functions are as below:
+
+```
+class GStoreClient
+
+async build(db = '', dataPath = '')
+
+async load(db = '')
+
+async unload(db = '')
+
+async query(db = '', sparql = '')
 
 ```
 

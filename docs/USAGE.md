@@ -95,18 +95,26 @@ type:
 
 `bin/ghttp db_name serverPort` or `bin/ghttp serverPort db_name` to start server with serverPort and load database named db_name initially.
 
-Attention: the argument serverPort can be left out
+Attention: the argument serverPort or db_name can be left out
 
 if you leave out the argument serverPort in the commond, then the corresponding value will be set to default as 9000.
 
+if you leave out the argument db_name in the commond, then the server will start with no database loaded.
 
-operation: build, load, unload, query, monitor, show, checkpoint, user
+
+operation: build, load, unload, query, monitor, show, checkpoint, checkall, user, drop
 
 ```
 // build a new database by a RDF file.
 gc.build("test", "data/lubm/LUBM_10.n3", "root", "123456");
 
-// load databse
+// drop a database already built but leave a backup.
+gc.drop("test", "root", "123456");
+
+// drop a database already built completely.
+gc.drop_r("test", "root", "123456");
+
+// load database
 gc.load("test", "root", "123456");
 
 // then you can execute SPARQL query on this database.
@@ -115,10 +123,16 @@ answer = gc.query("root", "123456", "test", sparql);
 // output information of a database
 cout << answer << std::endl;
 
-// unload this databse
+// unload this database
 gc.unload("lubm", "root", "123456");
 
-//add a user(with username: Jack, passwor: 2)
+// show all databases already built and if they are loaded
+gc.show();
+
+// show statistical information of a loaded database  
+gc.monitor("lubm");
+
+//add a user(with username: Jack, password: 2)
 answer = gc.user("add_user", "root", "123456", "Jack", "2");
 
 //add privilege to user Jack(add_query, add_load, add_unload)
@@ -292,10 +306,16 @@ After starting ghttp, type `bin/gshow ip port` to check loaded database.
     null--->[HTTP/1.1 200 OK]
     Content-Length--->[4]
     database: lubm
+
+- - -
+
+#### 11. shutdown
+
+After starting ghttp, type `bin/shutdown port` to stop the server.
     
 ---
 
-#### 11. test utilities
+#### 12. test utilities
 
 A series of test program are placed in the scripts/ folder, and we will introduce the two useful ones: gtest.cpp and full_test.sh
 
