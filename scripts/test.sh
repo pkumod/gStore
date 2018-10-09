@@ -142,4 +142,5 @@ else
 	echo "Test failed!"
 fi
 
+"bin/ginit" "--make"
 
