@@ -3538,6 +3538,8 @@ bool updateSys(string query)
 				msg = "update num: " + Util::int2string(ret);
 				cout << msg << endl;
 				//system_database->save();
+				//delete system_database;
+				//system_database=NULL;
 				return true;
 			}
 			else //update error
