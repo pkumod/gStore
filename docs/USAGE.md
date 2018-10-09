@@ -102,7 +102,7 @@ if you leave out the argument serverPort in the commond, then the corresponding 
 if you leave out the argument db_name in the commond, then the server will start with no database loaded.
 
 
-operation: build, load, unload, query, monitor, show, checkpoint, checkall, user, drop
+operation: build, load, unload, query, monitor, show, checkpoint, user, drop
 
 ```
 // build a new database by a RDF file.
@@ -315,7 +315,13 @@ After starting ghttp, type `bin/shutdown port` to stop the server.
     
 ---
 
-#### 12. test utilities
+#### 12. ginit
+
+If you want to restore the initial configuration of the ghttp server, type `bin/ginit` to rebuild the system.db.
+    
+---
+
+#### 13. test utilities
 
 A series of test program are placed in the scripts/ folder, and we will introduce the two useful ones: gtest.cpp and full_test.sh
 
