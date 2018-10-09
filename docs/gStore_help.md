@@ -21,7 +21,7 @@ This system is really user-friendly and you can pick it up in several minutes. R
 
 - fork this repository in your github account
 
-- type `git clone git@github.com:Caesar11/gStore.git` in your terminal or use git GUI to acquire it
+- type `git clone git@github.com:pkumod/gStore.git` in your terminal or use git GUI to acquire it
 
 Then you need to compile the project, just type `make` in the gStore root directory, and all executables will be ok. To run gStore, please type `bin/gload database_name dataset_path` to build a database named by yourself. And you can use `bin/gquery database_name` command to query a existing database. What is more, `bin/gconsole` is a wonderful tool designed for you, providing all operations you need to use gStore. Notice that all commands should be typed in the root directory of gStore. 
 
@@ -116,7 +116,7 @@ NOTICE:
 <span id="chapter02">
 ## Chapter 02: Basic Introduction
 
-**The first essay to come up with Gstore System is [gStore_VLDBJ](https://github.com/Caesar11/gStore/tree/master/docs/pdf/gStoreVLDBJ.pdf), and You can find related publications in [Publications](#chapter07).**
+**The first essay to come up with Gstore System is [gStore_VLDBJ](https://github.com/pkumod/gStore/tree/master/docs/pdf/gStoreVLDBJ.pdf), and You can find related publications in [Publications](#chapter07).**
 
 ### What Is gStore
 
@@ -177,7 +177,7 @@ gconsole is the main console of gStore, which integrates with all functions to o
     usage: start-gconsole [OPTION]
     -h,--help              print this help
     -s,--source            source the SPARQL script
-    For bug reports and suggestions, see https://github.com/Caesar11/gStore
+    For bug reports and suggestions, see https://github.com/pkumod/gStore
 
     notice that commands are a little different between native mode and remote mode!
     now is in native mode, please type your commands.
@@ -409,7 +409,7 @@ All logs produced by this program are in TSV format(separated with '\t'), you ca
 
 To use full_test.sh utility, please download the database system which you want to tats and compare, and set the exact position of database systems and datasets in this script. The name strategy should be the same as the requirements of gtest, as well as the logs strategy. 
 
-Only gStore and Jena are tested and compared in this script, but it is easy to add other database systems, if you would like to spend some time on reading this script. You may go to [test report](https://github.com/Caesar11/gStore/tree/master/docs/pdf/gstore测试报告.pdf) or [Frequently Asked Questions](#chapter13) for help if you encounter a problem.
+Only gStore and Jena are tested and compared in this script, but it is easy to add other database systems, if you would like to spend some time on reading this script. You may go to [test report](https://github.com/pkumod/gStore/tree/master/docs/pdf/gstore测试报告.pdf) or [Frequently Asked Questions](#chapter13) for help if you encounter a problem.
 
 - - -
 </span>
@@ -821,45 +821,45 @@ Then you can type `java -cp ${GSTORE}/gStore/api/java/lib/GstoreJavaAPI.jar:. te
 
 #### More details
 
-To acquire a deep understanding of gStore codes, please go to [Code Detail](https://github.com/Caesar11/gStore/tree/master/docs/pdf/代码目录及概览.pdf). See [use case](https://github.com/Caesar11/gStore/tree/master/docs/pdf/Gstore2.0_useCaseDoc.pdf) to understand the design of use cases, and see [OOA](https://github.com/Caesar11/gStore/tree/master/docs/pdf/OOA_class.pdf) and [OOD](https://github.com/Caesar11/gStore/tree/master/docs/pdf/OOD_class.pdf) for OOA design and OOD design, respectively.
+To acquire a deep understanding of gStore codes, please go to [Code Detail](https://github.com/pkumod/gStore/tree/master/docs/pdf/代码目录及概览.pdf). See [use case](https://github.com/pkumod/gStore/tree/master/docs/pdf/Gstore2.0_useCaseDoc.pdf) to understand the design of use cases, and see [OOA](https://github.com/pkumod/gStore/tree/master/docs/pdf/OOA_class.pdf) and [OOD](https://github.com/pkumod/gStore/tree/master/docs/pdf/OOD_class.pdf) for OOA design and OOD design, respectively.
 
 If you want to know the sequence of a running gStore, please view the list below:
 
-- [connect to server](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A01-连接Server.jpg)
+- [connect to server](https://github.com/pkumod/gStore/tree/master/docs/jpg/A01-连接Server.jpg)
 
-- [disconnect server](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A02-断开与Server的连接.jpg)
+- [disconnect server](https://github.com/pkumod/gStore/tree/master/docs/jpg/A02-断开与Server的连接.jpg)
 
-- [load database](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A03-加载数据库实例.jpg)
+- [load database](https://github.com/pkumod/gStore/tree/master/docs/jpg/A03-加载数据库实例.jpg)
 
-- [unload database](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A04-卸载数据库实例.jpg)
+- [unload database](https://github.com/pkumod/gStore/tree/master/docs/jpg/A04-卸载数据库实例.jpg)
 
-- [create database](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A05-创建数据库实例.jpg)
+- [create database](https://github.com/pkumod/gStore/tree/master/docs/jpg/A05-创建数据库实例.jpg)
 
-- [delete database](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A06-删除数据库实例.jpg)
+- [delete database](https://github.com/pkumod/gStore/tree/master/docs/jpg/A06-删除数据库实例.jpg)
 
-- [connect to database](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A07-连接数据库实例.jpg)
+- [connect to database](https://github.com/pkumod/gStore/tree/master/docs/jpg/A07-连接数据库实例.jpg)
 
-- [disconnect database](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A08-断开与数据库实例的连接.jpg)
+- [disconnect database](https://github.com/pkumod/gStore/tree/master/docs/jpg/A08-断开与数据库实例的连接.jpg)
 
-- [show databases](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A09-查看数据库实例列表.jpg)
+- [show databases](https://github.com/pkumod/gStore/tree/master/docs/jpg/A09-查看数据库实例列表.jpg)
 
-- [SPARQL query](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A10-查询SPARQL.jpg)
+- [SPARQL query](https://github.com/pkumod/gStore/tree/master/docs/jpg/A10-查询SPARQL.jpg)
 
-- [import RDF dataset](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A11-导入RDF数据集.jpg)
+- [import RDF dataset](https://github.com/pkumod/gStore/tree/master/docs/jpg/A11-导入RDF数据集.jpg)
 
-- [insert a triple](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A12-插入一条RDF三元组数据.jpg)
+- [insert a triple](https://github.com/pkumod/gStore/tree/master/docs/jpg/A12-插入一条RDF三元组数据.jpg)
 
-- [delete a triple](https://github.com/Caesar11/gStore/tree/master/docs/jpg/A13-删除一条RDF三元组数据.jpg)
+- [delete a triple](https://github.com/pkumod/gStore/tree/master/docs/jpg/A13-删除一条RDF三元组数据.jpg)
 
-- [create account](https://github.com/Caesar11/gStore/tree/master/docs/jpg/B01-创建账户.jpg)
+- [create account](https://github.com/pkumod/gStore/tree/master/docs/jpg/B01-创建账户.jpg)
 
-- [delete account](https://github.com/Caesar11/gStore/tree/master/docs/jpg/B02-删除账户.jpg)
+- [delete account](https://github.com/pkumod/gStore/tree/master/docs/jpg/B02-删除账户.jpg)
 
-- [modify account authority](https://github.com/Caesar11/gStore/tree/master/docs/jpg/B03-修改账户权限.jpg)
+- [modify account authority](https://github.com/pkumod/gStore/tree/master/docs/jpg/B03-修改账户权限.jpg)
 
-- [compulsively unload database](https://github.com/Caesar11/gStore/tree/master/docs/jpg/B04-强制卸载数据库实例.jpg)
+- [compulsively unload database](https://github.com/pkumod/gStore/tree/master/docs/jpg/B04-强制卸载数据库实例.jpg)
 
-- [see account authority](https://github.com/Caesar11/gStore/tree/master/docs/jpg/B05-查看账户权限信息.jpg)
+- [see account authority](https://github.com/pkumod/gStore/tree/master/docs/jpg/B05-查看账户权限信息.jpg)
 
 It is really not strange to see something different with the original design in the source code. And some designed functions may have not be achieved so far.
 
@@ -966,7 +966,7 @@ To ensure all database systems can run correctly on all datasets and queries, th
 
 Datasets used here are WatDiv, Lubm, Bsbm and DBpedia. Some of them are provided by websites, and others are generated by algorithms. Queries are generated by algorithms or written by us.
 
-The experiment environment is a CentOS server, whose memory size is 82G and disk size is 7T. We use [full_test](https://github.com/Caesar11/gStore/tree/master/test/full_test.sh) to do this test.
+The experiment environment is a CentOS server, whose memory size is 82G and disk size is 7T. We use [full_test](https://github.com/pkumod/gStore/tree/master/test/full_test.sh) to do this test.
 
 ### Result
 
@@ -999,7 +999,7 @@ Through analysing time.log/, we can find that gStore behave better than others o
 
 Generally speaking, the memory cost of gStore when answering queries is higher than others. More complicated the query is and more large the dataset is, more apparent the phenomenon is.
 
-You can find more detailed information in [test report](https://github.com/Caesar11/gStore/tree/master/docs/pdf/gstore测试报告.pdf). Notice that some questions in the test report have already be solved now.
+You can find more detailed information in [test report](https://github.com/pkumod/gStore/tree/master/docs/pdf/gstore测试报告.pdf). Notice that some questions in the test report have already be solved now.
 
 - - -
 </span>
@@ -1095,7 +1095,7 @@ In ArchLinux, you only need to use `-lreadline` to link the readline library. Pl
 
 #### Why does gStore report errors that the format of some RDF datasets are not supported?
 
-gStore does not support all RDF formats currently, please see [formats](https://github.com/Caesar11/gStore/tree/master/test/format_question.txt) for details.
+gStore does not support all RDF formats currently, please see [formats](https://github.com/pkumod/gStore/tree/master/test/format_question.txt) for details.
 
 
 #### When I read on GitHub, why are some documents unable to be opened?
@@ -1123,9 +1123,9 @@ It is valid to use "file hole" in C, and this is not an error, which means you c
 You need to unload the using database before quiting the gclient console, otherwise errors come.
 
 
-#### If query results contain null value, how can I use the [full_test](https://github.com/Caesar11/gStore/tree/master/test/full_test.sh) utility? Tab separated method will cause problem here because null value cannot be checked!
+#### If query results contain null value, how can I use the [full_test](https://github.com/pkumod/gStore/tree/master/test/full_test.sh) utility? Tab separated method will cause problem here because null value cannot be checked!
 
-You may use other programming language(for example, Python) to deal with the null value cases. For example, you can change null value in output to special character like ',', later you can use the [full_test](https://github.com/Caesar11/gStore/tree/master/test/full_test.sh) utility.
+You may use other programming language(for example, Python) to deal with the null value cases. For example, you can change null value in output to special character like ',', later you can use the [full_test](https://github.com/pkumod/gStore/tree/master/test/full_test.sh) utility.
 
 
 #### When I compile and run the API examples, it reports the "unable to connect to server" error?
