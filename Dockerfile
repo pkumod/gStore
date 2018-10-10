@@ -7,15 +7,15 @@
 #TODO: some space can be saved by using the low version of gcc mirror(e.g-gcc:5).
 #But its mobility and dependence has not been tested yet and waiting for confirmation.
 
-FROM gcc:8
+FROM registry.docker-cn.com/library/gcc:8
 
 #download all the optional installation library in gstore's document.
 RUN apt-get update && apt-get install -y --no-install-recommends realpath \
-         ccache \
-         openjdk-8-jdk \
-         libreadline-dev \
-         libboost-all-dev \
-         && rm -rf /var/lib/apt/lists/
+    ccache \
+    openjdk-8-jdk \
+    libreadline-dev \
+    libboost-all-dev \
+    && rm -rf /var/lib/apt/lists/
 
 COPY . /usr/src/gstore
 WORKDIR /usr/src/gstore
@@ -34,3 +34,6 @@ ENV LANG C.UTF-8
 #And some procedures you need can also be attached here.
 #CMD ["make"]
 RUN make
+
+RUN ./bin/gbuild lubm ./data/lubm/lubm.nt
+CMD [ "./bin/ghttp", "lubm" ]
