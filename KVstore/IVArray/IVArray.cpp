@@ -152,12 +152,6 @@ IVArray::save()
 			if (array[i].isUsed() && array[i].getBstr(str, len, false))
 			{
 				//TODO Recycle free block
-
-				//Complete the "TODO"
-				unsigned pre_store=array[i].getStore();
-				BM->FreeBlocks(pre_store);
-				//Complete the "TODO" over
-
 				_store = BM->WriteValue(str, len);
 				array[i].setStore(_store);
 			}
@@ -208,12 +202,6 @@ IVArray::SwapOut()
 	if (array[targetID].isDirty())
 	{
 		//TODO recycle free blocks
-
-		//Complete the "TODO"
-		unsigned pre_store=array[i].getStore();
-		BM->FreeBlocks(pre_store);
-		//Complete the "TODO" over
-		
 		unsigned store = BM->WriteValue(str, len);
 		if (store == 0)
 			return false;
