@@ -503,7 +503,7 @@ $(api_java):
 	$(MAKE) -C api/socket/java/src
 	$(MAKE) -C api/http/java/src
 
-.PHONY: clean dist tarball api_example gtest sumlines
+.PHONY: clean dist tarball api_example gtest sumlines contribution
 
 clean:
 	rm -rf lib/libantlr.a
@@ -587,3 +587,8 @@ fulltest:
 test-kvstore:
 	# test/kvstore_test.cpp
 	echo "TODO"
+
+# https://segmentfault.com/a/1190000008542123
+contribution:
+	bash scripts/contribution.sh
+
