@@ -503,7 +503,7 @@ $(api_java):
 	$(MAKE) -C api/socket/java/src
 	$(MAKE) -C api/http/java/src
 
-.PHONY: clean dist tarball api_example gtest sumlines
+.PHONY: clean dist tarball api_example gtest sumlines contribution
 
 clean:
 	rm -rf lib/libantlr.a
@@ -516,7 +516,7 @@ clean:
 	$(MAKE) -C api/http/java/src clean
 	$(MAKE) -C api/http/java/example clean
 	#$(MAKE) -C KVstore clean
-	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver*
+	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole*
 	rm -rf bin/*.class
 	#rm -rf .project .cproject .settings   just for eclipse
 	#rm -rf cscope* just for vim
@@ -528,10 +528,12 @@ dist: clean
 	#rm -rf Parser/SparqlLexer* Parser/SparlParser.cpp
 	rm -rf cscope* .cproject .settings tags
 	rm -rf *.info
+	rm -rf backups/*.db
 
 tarball:
-	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs scripts garbage docs data makefile \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE
+	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts garbage docs data logs \
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE \
+		Dockerfile LICENSE makefile Trie
 
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/socket/cpp/example
@@ -587,3 +589,8 @@ fulltest:
 test-kvstore:
 	# test/kvstore_test.cpp
 	echo "TODO"
+
+# https://segmentfault.com/a/1190000008542123
+contribution:
+	bash scripts/contribution.sh
+
