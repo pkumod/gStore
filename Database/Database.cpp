@@ -1266,7 +1266,7 @@ bool Database::save()
 	this->saveIDinfo();
 	this->writeIDinfo();
 	this->initIDinfo();
-	this->readIDinfo()
+	this->readIDinfo();
 
 	this->stringindex->flush();
 	this->clear_update_log();
