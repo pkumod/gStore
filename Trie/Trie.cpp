@@ -371,7 +371,7 @@ string
 Trie::Uncompress(const string &_str, const int len)
 {
 	//use this to forbid the trie
-	return _str;
+	// return _str;
 
 	return Uncompress(_str.data(), len);
 }
