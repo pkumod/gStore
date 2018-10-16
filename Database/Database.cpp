@@ -1262,11 +1262,7 @@ bool Database::save()
 	//this->vstree->saveTree();
 	this->kvstore->flush();
 	this->saveDBInfoFile();
-
 	this->saveIDinfo();
-	this->writeIDinfo();
-	this->initIDinfo();
-	this->readIDinfo()
 
 	this->stringindex->flush();
 	this->clear_update_log();
