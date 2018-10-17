@@ -3225,6 +3225,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 
 		string sub = _triples[i].getSubject();
 		subid = this->kvstore->getIDByEntity(sub);
+		cerr << "===============getEntityByID    "<<getEntityByID(subid)<<"================\n";
 		if (subid == -1)
 		{
 			is_new_sub = true;
@@ -3246,6 +3247,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 
 		string pre = _triples[i].getPredicate();
 		preid = this->kvstore->getIDByPredicate(pre);
+		cerr << "===============getPredicateByID    "<<getPredicateByID(preid)<<"================\n";
 		if (preid == -1)
 		{
 			is_new_pre = true;
@@ -3260,6 +3262,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		if (is_obj_entity)
 		{
 			objid = this->kvstore->getIDByEntity(obj);
+			cerr << "===============getEntityByID    "<<getEntityByID(objid)<<"================\n";
 			if (objid == -1)
 			{
 				is_new_obj = true;
@@ -3282,6 +3285,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		else //isObjLiteral
 		{
 			objid = this->kvstore->getIDByLiteral(obj);
+			cerr << "===============getLiteralByID    "<<getLiteralByID(objid)<<"================\n";
 			if (objid == -1)
 			{
 				is_new_obj = true;
