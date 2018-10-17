@@ -2704,7 +2704,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	long tv_kv_store_begin = Util::get_cur_time();
 
 	TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
-	cerr << "===============getEntityByID    "<<getEntityByID(_sub_id)<<"================\n";
+	cerr << "===============getEntityByID    "<<(this->kvstore)->getEntityByID(_sub_id)<<"================\n";
 	bool _is_new_sub = false;
 	//if sub does not exist
 	if (_sub_id == INVALID_ENTITY_LITERAL_ID)
@@ -2735,7 +2735,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	}
 
 	TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_triple.predicate);
-	cerr << "===============getPredicateByID    "<<getPredicateByID(_pre_id)<<"================\n";
+	cerr << "===============getPredicateByID    "<<(this->kvstore)->getPredicateByID(_pre_id)<<"================\n";
 	bool _is_new_pre = false;
 	//if pre does not exist
 	if (_pre_id == INVALID_PREDICATE_ID)
@@ -2759,7 +2759,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	if (is_obj_entity)
 	{
 		_obj_id = (this->kvstore)->getIDByEntity(_triple.object);
-		cerr << "===============getEntityByID    "<<getEntityByID(_obj_id)<<"================\n";
+		cerr << "===============getEntityByID    "<<(this->kvstore)->getEntityByID(_obj_id)<<"================\n";
 
 		//if (_obj_id == -1)
 		if (_obj_id == INVALID_ENTITY_LITERAL_ID)
@@ -2783,7 +2783,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	else
 	{
 		_obj_id = (this->kvstore)->getIDByLiteral(_triple.object);
-		cerr << "===============getLiteralByID    "<<getLiteralByID(_obj_id)<<"================\n";
+		cerr << "===============getLiteralByID    "<<(this->kvstore)->getLiteralByID(_obj_id)<<"================\n";
 
 		//if (_obj_id == -1)
 		if (_obj_id == INVALID_ENTITY_LITERAL_ID)
