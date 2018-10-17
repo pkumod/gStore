@@ -18,20 +18,16 @@
 #(also include good comments norm)
 #http://blog.csdn.net/u010740725/article/details/51387810
 
-#NOTICE: to speed up the make process, use make -j4
-#use -j8 or higher may cause error
-#http://blog.csdn.net/cscrazybing/article/details/50789482
-#http://blog.163.com/liuhonggaono1@126/blog/static/10497901201210254622141/
-
-
-#TODO:the dependences are not complete!
-
-#TODO: parallel -pthread
-
-#TODO: judge and decide using which program
 #CC=$(shell which clang 2>/dev/null || which gcc)
 #ccache, readline, gcov lcov
 #http://blog.csdn.net/u012421852/article/details/52138960
+#
+# How to speed up the compilation
+# https://blog.csdn.net/a_little_a_day/article/details/78251928
+# use make -j4, if error then use make utilizing only one thread
+#use -j8 or higher may cause error
+#http://blog.csdn.net/cscrazybing/article/details/50789482
+#http://blog.163.com/liuhonggaono1@126/blog/static/10497901201210254622141/
 
 #compile parameters
 
@@ -132,8 +128,8 @@ test_index: test_index.cpp
 $(exedir)ginit: $(lib_antlr) $(objdir)ginit.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)ginit $(objdir)ginit.o $(objfile) $(library) $(openmp)
 
-$(exedir)shutdown: $(lib_antlr) $(objdir)shutdown.o $(objfile) 
-	$(CC) $(EXEFLAG) -o $(exedir)shutdown $(objdir)shutdown.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient
+$(exedir)shutdown: $(lib_antlr) $(objdir)shutdown.o $(objfile) $(api_cpp)
+	$(CC) $(EXEFLAG) -o $(exedir)shutdown $(objdir)shutdown.o $(objfile) $(openmp) -L./api/http/cpp/lib -lclient $(library)
 
 $(exedir)gmonitor: $(lib_antlr) $(objdir)gmonitor.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gmonitor $(objdir)gmonitor.o $(objfile) $(library) $(openmp)
