@@ -155,7 +155,7 @@ private:
 
 	QueryCache *query_cache;
 
-	//Trie *trie;
+	Trie *trie;
 
 	void setStringBuffer();
 	void warmUp();
