@@ -929,7 +929,6 @@ KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _objid, const std::vector<
 	return true;
 }
 
-//TODO: TO BE IMPROVED
 bool 
 KVstore::updateRemove_o2values(TYPE_ENTITY_LITERAL_ID _objid, const std::vector<unsigned>& _pidsidlist) 
 {
@@ -1027,7 +1026,6 @@ KVstore::updateRemove_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	return true;
 }
 
-//TODO: TO BE IMPROVED
 bool 
 KVstore::updateInsert_p2values(TYPE_PREDICATE_ID _preid, const std::vector<unsigned>& _sidoidlist) 
 {
@@ -1042,7 +1040,6 @@ KVstore::updateInsert_p2values(TYPE_PREDICATE_ID _preid, const std::vector<unsig
 	return true;
 }
 
-//TODO: TO BE IMPROVED
 bool 
 KVstore::updateRemove_p2values(TYPE_PREDICATE_ID _preid, const std::vector<unsigned>& _sidoidlist) 
 {
@@ -1103,7 +1100,8 @@ KVstore::subIDByEntity(string _entity)
 	//so _entity.c_str() is a valid const char*
 	//this->load_trie();
 	_entity = trie->Compress(_entity);
-	return this->entity2id->remove(_entity.c_str(), _entity.length());
+	//return this->entity2id->remove(_entity.c_str(), _entity.length());
+	return this->removeKey(this->entity2id, _entity.c_str(), _entity.length());
 }
 
 TYPE_ENTITY_LITERAL_ID
@@ -1170,7 +1168,8 @@ KVstore::close_id2entity()
 bool 
 KVstore::subEntityByID(TYPE_ENTITY_LITERAL_ID _id) 
 {
-	return this->id2entity->remove(_id);
+	//return this->id2entity->remove(_id);
+	return this->removeKey(this->id2entity, _id);
 }
 
 string 
@@ -1262,7 +1261,8 @@ KVstore::subIDByPredicate(string _predicate)
 {
 	//this->load_trie();
 	_predicate = trie->Compress(_predicate);
-	return this->predicate2id->remove(_predicate.c_str(), _predicate.length());
+	//return this->predicate2id->remove(_predicate.c_str(), _predicate.length());
+	return this->removeKey(this->predicate2id, _predicate.c_str(), _predicate.length());
 }
 
 TYPE_PREDICATE_ID
@@ -1328,7 +1328,8 @@ KVstore::close_id2predicate()
 bool 
 KVstore::subPredicateByID(TYPE_PREDICATE_ID _id) 
 {
-	return this->id2predicate->remove(_id);
+	//return this->id2predicate->remove(_id);
+	return this->removeKey(this->id2predicate, _id);
 }
 
 string 
@@ -1402,7 +1403,8 @@ KVstore::subIDByLiteral(string _literal)
 {
 	//this->load_trie();
 	_literal = trie->Compress(_literal);
-	return this->literal2id->remove(_literal.c_str(), _literal.length());
+	//return this->literal2id->remove(_literal.c_str(), _literal.length());
+	return this->removeKey(this->literal2id, _literal.c_str(), _literal.length());
 }
 
 TYPE_ENTITY_LITERAL_ID
@@ -1473,7 +1475,8 @@ KVstore::close_id2literal()
 bool 
 KVstore::subLiteralByID(TYPE_ENTITY_LITERAL_ID _id) 
 {
-	return this->id2literal->remove(_id);
+	//return this->id2literal->remove(_id - Util::LITERAL_FIRST_ID);
+	return this->removeKey(this->id2literal, _id);
 }
 
 string 

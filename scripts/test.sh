@@ -142,5 +142,5 @@ else
 	echo "Test failed!"
 fi
 
-"bin/ginit" "--make"
+"bin/ginit" "--make" > /dev/null
 
