@@ -52,10 +52,10 @@ class StringIndexFile
 		};
 		std::vector<AccessRequest> request;
 
-//		std::string dictionary_path;
+		std::string dictionary_path;
 
 	public:
-//		Trie *trie;
+		Trie *trie;
 
 		StringIndexFile(StringIndexFileType _type, std::string _dir, unsigned _num):type(_type), num(_num), empty_offset(0), index_file(NULL), value_file(NULL), buffer_size(0), buffer(NULL)
 		{
@@ -67,8 +67,8 @@ class StringIndexFile
 				this->loc = _dir + "/predicate_";
 			this->index_table = new std::vector<IndexInfo>;
 
-//			dictionary_path = _dir + "/../dictionary.dc";
-//			trie = new Trie;
+			dictionary_path = _dir + "/../dictionary.dc";
+			trie = new Trie;
 		}
 		~StringIndexFile()
 		{
@@ -79,8 +79,8 @@ class StringIndexFile
 			if (this->buffer != NULL)
 				delete[] this->buffer;
 			delete this->index_table;
-//			if (this->trie != NULL)
-//				delete trie;
+			if (this->trie != NULL)
+				delete trie;
 		}
 
 		void clear()
@@ -88,7 +88,7 @@ class StringIndexFile
 			this->index_file = NULL;
 			this->value_file = NULL;
 			this->index_table = NULL;
-//			this->trie = NULL;
+			this->trie = NULL;
 		}
 
 		void setNum(unsigned _num);
@@ -132,12 +132,12 @@ class StringIndex
 		unsigned literal_buffer_size;
 
 	public:
-//		Trie *trie;
+		Trie *trie;
 
 		StringIndex(std::string _dir, unsigned _entity_num = 0, unsigned _literal_num = 0, unsigned _predicate_num = 0):
 			entity(StringIndexFile::Entity, _dir, _entity_num), literal(StringIndexFile::Literal, _dir, _literal_num), predicate(StringIndexFile::Predicate, _dir, _predicate_num)
 		{
-//			trie = entity.trie;
+			trie = entity.trie;
 		}
 
 		void clear()
