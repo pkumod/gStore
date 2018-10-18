@@ -12,7 +12,7 @@
 #include "../Util/Util.h"
 #include "../Util/VList.h"
 #include "Tree.h"
-#include "../Trie/Trie.h"
+//#include "../Trie/Trie.h"
 #include "IVArray/IVArray.h"
 #include "ISArray/ISArray.h"
 
@@ -169,14 +169,14 @@ public:
 	//for so2p
 	bool getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subID, TYPE_ENTITY_LITERAL_ID _objID, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 
-	bool load_trie();
+	//bool load_trie();
 
 private:
 	std::string store_path;
 
-	std::string dictionary_store_path;
+//	std::string dictionary_store_path;
 
-	Trie *trie;
+	//Trie *trie;
 
 	SITree* entity2id;
 	//ISTree* id2entity;
