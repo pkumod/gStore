@@ -1411,6 +1411,11 @@ KVstore::getIDByLiteral(string _literal) const
 	//this->load_trie();
 	_literal = trie->Compress(_literal);
 	return this->getIDByStr(this->literal2id, _literal.c_str(), _literal.length());
+	//TYPE_ENTITY_LITERAL_ID id = this->getIDByStr(this->literal2id, _literal.c_str(), _literal.length());
+	//if(id != INVALID)
+	//{
+		//id += Util::LITERAL_FIRST_ID;
+	//}
 }
 
 bool 

@@ -1119,12 +1119,18 @@ cout<<"entity num: "<<this->entity_num<<endl;
 cout<<"literal num: "<<this->literal_num<<endl;
 
 string tstr;
-unsigned lid1 = this->kvstore->getIDByLiteral("111");
+unsigned lid1 = this->kvstore->getIDByLiteral("\"111\"");
 cout<<"check: "<<lid1<<endl;
-unsigned lid2 = this->kvstore->getIDByLiteral("222");
+unsigned lid2 = this->kvstore->getIDByLiteral("\"222\"");
 cout<<"check: "<<lid2<<endl;
+unsigned lid3 = this->kvstore->getIDByLiteral("\"Bookug Lobert\"");
+cout<<"check: "<<lid3<<endl;
 unsigned eid = this->kvstore->getIDByEntity("<bookug>");
 cout<<"check: "<<eid<<endl;
+tstr = this->kvstore->getLiteralByID(2000000004);
+cout<<"check: "<<tstr<<endl;
+tstr = this->kvstore->getEntityByID(14);
+cout<<"check: "<<tstr<<endl;
 
  //unsigned pid = this->kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
  //cout<<"check: pre "<<pid<<endl;
@@ -2504,7 +2510,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 				//_id_tuples_max = _new_tuples_len;
 			//}
 
-			//TODO: use 3 threads to deal with sub, obj, pre separately
+			//BETTER: use 3 threads to deal with sub, obj, pre separately
 			//However, the cost of new /delete threads may be high
 			//We need a thread pool!
 
@@ -2781,6 +2787,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	else
 	{
 		_obj_id = (this->kvstore)->getIDByLiteral(_triple.object);
+		cout<<"check: "<<_obj_id<<" "<<INVALID_ENTITY_LITERAL_ID<<endl;
 
 		//if (_obj_id == -1)
 		if (_obj_id == INVALID_ENTITY_LITERAL_ID)
@@ -2948,6 +2955,7 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		if (obj_degree == 0)
 		{
 			this->kvstore->subLiteralByID(_obj_id);
+			cout<<"check after subLiteralByID: "<<_obj_id<<" "<<this->kvstore->getLiteralByID(_obj_id)<<endl;
 			this->kvstore->subIDByLiteral(_triple.object);
 			this->freeLiteralID(_obj_id);
 			//update the string buffer
