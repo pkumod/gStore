@@ -55,7 +55,7 @@ class StringIndexFile
 		std::string dictionary_path;
 
 	public:
-		Trie *trie;
+		//Trie *trie;
 
 		StringIndexFile(StringIndexFileType _type, std::string _dir, unsigned _num):type(_type), num(_num), empty_offset(0), index_file(NULL), value_file(NULL), buffer_size(0), buffer(NULL)
 		{
@@ -67,8 +67,8 @@ class StringIndexFile
 				this->loc = _dir + "/predicate_";
 			this->index_table = new std::vector<IndexInfo>;
 
-			dictionary_path = _dir + "/../dictionary.dc";
-			trie = new Trie;
+			//dictionary_path = _dir + "/../dictionary.dc";
+			//trie = new Trie;
 		}
 		~StringIndexFile()
 		{
