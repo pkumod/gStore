@@ -1078,7 +1078,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (!ret_result.checkUseStream())
 		{
-			cout << "flag2" << endl;
+			//cout << "flag2" << endl;
 			for (unsigned i = 0; i < ret_result.ansNum; i++)
 			{
 				ret_result.answer[i] = new string [ret_result.select_var_num];
@@ -1117,7 +1117,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		}
 		else
 		{
-			cout << "flag3" << endl;
+			//cout << "flag3" << endl;
 			for (unsigned i = 0; i < ret_result.ansNum; i++)
 				for (int j = 0; j < ret_result.select_var_num; j++)
 				{
