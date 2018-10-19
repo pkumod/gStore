@@ -2,6 +2,10 @@
 
 #set -v
 
+#initialize system.db
+"bin/ginit" "--make"
+
+#test
 db=("bbug" "lubm" "num" "small")
 op=("bin/gbuild" "bin/gquery" "bin/gadd" "bin/gsub")
 path="./data/"
@@ -142,5 +146,4 @@ else
 	echo "Test failed!"
 fi
 
-"bin/ginit" "--make"
 

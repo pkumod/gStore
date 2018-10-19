@@ -127,10 +127,13 @@ cout << answer << std::endl;
 gc.unload("lubm", "root", "123456");
 
 // show all databases already built and if they are loaded
-gc.show();
+gc.show("root", "123456");
 
 // show statistical information of a loaded database  
-gc.monitor("lubm");
+gc.monitor("lubm", "root", "123456");
+
+// save updates of a loaded database  
+gc.checkpoint("lubm", "root", "123456");
 
 //add a user(with username: Jack, password: 2)
 answer = gc.user("add_user", "root", "123456", "Jack", "2");
