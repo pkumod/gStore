@@ -145,5 +145,3 @@ then
 else
 	echo "Test failed!"
 fi
-
-

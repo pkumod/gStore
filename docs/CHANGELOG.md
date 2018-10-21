@@ -1,3 +1,23 @@
+## Oct 14, 2018
+
+Xunbin, Su adds the function of shutdowning the `ghttp` server. In addition, he addes the `ginit` command to system and prepares the nodejs API.
+What is more, `drop` command is supported in `ghttp` by Xunbin, Su.
+
+Chaofan, Yang fixes the bug in the encoder part of `ghttp` api.
+
+Li, Zeng fixes bugs in build process and in the indices module, addes some scripts for demo.
+
+Yinnian, Lin finds a way to scale the contributions of all developers and Li, Zeng adds this function in Makefile.
+
+Yuyan, Chen addes help document to the system, both in Chinese and English.
+
+Jing, Li uses JSON format in response to the request of clients, and addes `system.db` to store information of multiple users.
+
+Wenjie, Li reviews the code of gStore system, and proposes many feasible suggestions for optimization. We have made a plan to optimize the system in all aspects and all effects of the plans will be seen in the next release version.
+When the version of release rises to 1.0.0, and that is the time we will call the system a formal release rather than a pre-release.
+
+---
+
 ## Sep 20, 2018
 
 Zongyue, Qin fixes the remaining bugs in Trie, ISArray and IVArray.

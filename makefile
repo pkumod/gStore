@@ -18,20 +18,16 @@
 #(also include good comments norm)
 #http://blog.csdn.net/u010740725/article/details/51387810
 
-#NOTICE: to speed up the make process, use make -j4
-#use -j8 or higher may cause error
-#http://blog.csdn.net/cscrazybing/article/details/50789482
-#http://blog.163.com/liuhonggaono1@126/blog/static/10497901201210254622141/
-
-
-#TODO:the dependences are not complete!
-
-#TODO: parallel -pthread
-
-#TODO: judge and decide using which program
 #CC=$(shell which clang 2>/dev/null || which gcc)
 #ccache, readline, gcov lcov
 #http://blog.csdn.net/u012421852/article/details/52138960
+#
+# How to speed up the compilation
+# https://blog.csdn.net/a_little_a_day/article/details/78251928
+# use make -j4, if error then use make utilizing only one thread
+#use -j8 or higher may cause error
+#http://blog.csdn.net/cscrazybing/article/details/50789482
+#http://blog.163.com/liuhonggaono1@126/blog/static/10497901201210254622141/
 
 #compile parameters
 
@@ -44,11 +40,11 @@ CC = g++
 #NOTICE: -O2 is recommended, while -O3(add loop-unroll and inline-function) is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-#CFLAGS = -c -Wall -O2 -pthread -std=c++11
-#XEFLAG = -O2 -pthread -std=c++11
+CFLAGS = -c -Wall -O2 -pthread -std=c++11
+XEFLAG = -O2 -pthread -std=c++11
 #-coverage
-CFLAGS = -c -Wall -pthread -g -std=c++11
-EXEFLAG = -pthread -g -std=c++11
+#CFLAGS = -c -Wall -pthread -g -std=c++11 -pg
+#EXEFLAG = -pthread -g -std=c++11 -pg
 
 #add -lreadline [-ltermcap] if using readline or objs contain readline
 library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
@@ -132,8 +128,8 @@ test_index: test_index.cpp
 $(exedir)ginit: $(lib_antlr) $(objdir)ginit.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)ginit $(objdir)ginit.o $(objfile) $(library) $(openmp)
 
-$(exedir)shutdown: $(lib_antlr) $(objdir)shutdown.o $(objfile) 
-	$(CC) $(EXEFLAG) -o $(exedir)shutdown $(objdir)shutdown.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient
+$(exedir)shutdown: $(lib_antlr) $(objdir)shutdown.o $(objfile) $(api_cpp)
+	$(CC) $(EXEFLAG) -o $(exedir)shutdown $(objdir)shutdown.o $(objfile) $(openmp) -L./api/http/cpp/lib -lclient $(library)
 
 $(exedir)gmonitor: $(lib_antlr) $(objdir)gmonitor.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gmonitor $(objdir)gmonitor.o $(objfile) $(library) $(openmp)
@@ -503,7 +499,7 @@ $(api_java):
 	$(MAKE) -C api/socket/java/src
 	$(MAKE) -C api/http/java/src
 
-.PHONY: clean dist tarball api_example gtest sumlines
+.PHONY: clean dist tarball api_example gtest sumlines contribution
 
 clean:
 	rm -rf lib/libantlr.a
@@ -516,7 +512,7 @@ clean:
 	$(MAKE) -C api/http/java/src clean
 	$(MAKE) -C api/http/java/example clean
 	#$(MAKE) -C KVstore clean
-	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver*
+	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole*
 	rm -rf bin/*.class
 	#rm -rf .project .cproject .settings   just for eclipse
 	#rm -rf cscope* just for vim
@@ -528,10 +524,12 @@ dist: clean
 	#rm -rf Parser/SparqlLexer* Parser/SparlParser.cpp
 	rm -rf cscope* .cproject .settings tags
 	rm -rf *.info
+	rm -rf backups/*.db
 
 tarball:
-	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs scripts garbage docs data makefile \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE
+	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts garbage docs data logs \
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE \
+		Dockerfile LICENSE makefile Trie
 
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/socket/cpp/example
@@ -587,3 +585,8 @@ fulltest:
 test-kvstore:
 	# test/kvstore_test.cpp
 	echo "TODO"
+
+# https://segmentfault.com/a/1190000008542123
+contribution:
+	bash scripts/contribution.sh
+

@@ -1,6 +1,6 @@
 # gStoreNode
 
-Node.js client for [gStore](https://github.com/Caesar11/gStore)
+Node.js client for [gStore](https://github.com/pkumod/gStore)
 
 ## Usage
 
