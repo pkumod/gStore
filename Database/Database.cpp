@@ -1107,6 +1107,9 @@ Database::load_vstree(unsigned _vstree_size)
 	cout<<"vstree loaded"<<endl;
 }
 
+// @author bookug
+// @email bookug@qq.com
+// @function check some parameters, statues and correctness of the database
 void 
 Database::check()
 {
@@ -1116,6 +1119,19 @@ cout<<"entity num: "<<this->entity_num<<endl;
 cout<<"literal num: "<<this->literal_num<<endl;
 
 string tstr;
+//unsigned lid1 = this->kvstore->getIDByLiteral("\"111\"");
+//cout<<"check: "<<lid1<<endl;
+//unsigned lid2 = this->kvstore->getIDByLiteral("\"222\"");
+//cout<<"check: "<<lid2<<endl;
+//unsigned lid3 = this->kvstore->getIDByLiteral("\"Bookug Lobert\"");
+//cout<<"check: "<<lid3<<endl;
+//unsigned eid = this->kvstore->getIDByEntity("<bookug>");
+//cout<<"check: "<<eid<<endl;
+//tstr = this->kvstore->getLiteralByID(2000000004);
+//cout<<"check: "<<tstr<<endl;
+//tstr = this->kvstore->getEntityByID(14);
+//cout<<"check: "<<tstr<<endl;
+
  //unsigned pid = this->kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
  //cout<<"check: pre "<<pid<<endl;
  //this->stringindex->randomAccess(pid, &tstr, false);
@@ -1181,9 +1197,6 @@ string tstr;
 //}
 //delete[] thr_si;
 
-//TODO: each thread for a sparql query, support by assigning a thread for each query in ghttp(better to set timeout)
-//and test stringIndex::addRequest(), 
-//the request array maybe not right, request.clear()
 	string spq[6];
 	spq[0] = "select ?x where { ?x <ub:name> <FullProfessor0> . }";
 	spq[1] = "select distinct ?x where { ?x      <rdf:type>      <ub:GraduateStudent>. ?y      <rdf:type>      <ub:University>. ?z      <rdf:type>      <ub:Department>. ?x      <ub:memberOf>   ?z. ?z      <ub:subOrganizationOf>  ?y. ?x      <ub:undergraduateDegreeFrom>    ?y. }";
@@ -2497,7 +2510,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 				//_id_tuples_max = _new_tuples_len;
 			//}
 
-			//TODO: use 3 threads to deal with sub, obj, pre separately
+			//BETTER: use 3 threads to deal with sub, obj, pre separately
 			//However, the cost of new /delete threads may be high
 			//We need a thread pool!
 
@@ -2712,13 +2725,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		_is_new_sub = true;
 		//_sub_id = this->entity_num++;
 		_sub_id = this->allocEntityID();
-		//cout<<"this is a new sub id"<<endl;
-		//if(_sub_id == 14912)
-		//{
-		//cout<<"get the error one"<<endl;
-		//cout<<_sub_id<<endl<<_triple.subject<<endl;
-		//cout<<_triple.predicate<<endl<<_triple.object<<endl;
-		//}
+		//cout<<"this is a new sub id: "<<_sub_id<<endl;
 		this->sub_num++;
 		(this->kvstore)->setIDByEntity(_triple.subject, _sub_id);
 		(this->kvstore)->setEntityByID(_sub_id, _triple.subject);
@@ -2780,6 +2787,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	else
 	{
 		_obj_id = (this->kvstore)->getIDByLiteral(_triple.object);
+		//cout<<"check: "<<_obj_id<<" "<<INVALID_ENTITY_LITERAL_ID<<endl;
 
 		//if (_obj_id == -1)
 		if (_obj_id == INVALID_ENTITY_LITERAL_ID)
@@ -2787,8 +2795,11 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			_is_new_obj = true;
 			//_obj_id = Util::LITERAL_FIRST_ID + this->literal_num;
 			_obj_id = this->allocLiteralID();
+			//cout<<"this is a new obj id: "<<_obj_id<<endl;
 			(this->kvstore)->setIDByLiteral(_triple.object, _obj_id);
 			(this->kvstore)->setLiteralByID(_obj_id, _triple.object);
+			//cout<<this->kvstore->getLiteralByID(_obj_id)<<endl;
+			//cout<<this->kvstore->getIDByLiteral(_triple.object)<<endl;
 
 			//update the string buffer
 			//TYPE_ENTITY_LITERAL_ID tid = _obj_id - Util::LITERAL_FIRST_ID;
@@ -2944,6 +2955,7 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		if (obj_degree == 0)
 		{
 			this->kvstore->subLiteralByID(_obj_id);
+			//cout<<"check after subLiteralByID: "<<_obj_id<<" "<<this->kvstore->getLiteralByID(_obj_id)<<endl;
 			this->kvstore->subIDByLiteral(_triple.object);
 			this->freeLiteralID(_obj_id);
 			//update the string buffer
@@ -3230,7 +3242,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 			is_new_sub = true;
 			subid = this->allocEntityID();
 #ifdef DEBUG
-			cout << "this is a new subject: " << sub << " " << subid << endl;
+			//cout << "this is a new subject: " << sub << " " << subid << endl;
 #endif
 			this->sub_num++;
 			this->kvstore->setIDByEntity(sub, subid);
@@ -3265,7 +3277,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 				is_new_obj = true;
 				objid = this->allocEntityID();
 #ifdef DEBUG
-				cout << "this is a new object: " << obj << " " << objid << endl;
+				//cout << "this is a new object: " << obj << " " << objid << endl;
 #endif
 				//this->obj_num++;
 				this->kvstore->setIDByEntity(obj, objid);
@@ -3663,7 +3675,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		//SigEntry _sig(it->first, it->second);
 		//this->vstree->insertEntry(_sig);
 	//}
-#else
+#else //USE_GROUP_INSERT
 	//NOTICE:we deal with insertions one by one here
 	//Callers should save the vstree(node and info) after calling this function
 	for (TYPE_TRIPLE_NUM i = 0; i < _triple_num; ++i)
@@ -3674,7 +3686,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 			valid_num++;
 		}
 	}
-#endif
+#endif //USE_GROUP_INSERT
 
 	//update string index
 	this->stringindex->change(vertices, *this->kvstore, true);

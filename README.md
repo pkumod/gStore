@@ -14,13 +14,14 @@ Gstore System(also called gStore) is a graph database engine for managing large 
 ### Compile from Source
 This system is really user-friendly and you can pick it up in several minutes. Remember to check your platform where you want to run this system by viewing [System Requirements](docs/DEMAND.md). After all are verified, please get this project's source code. There are several ways to do this:
 
-- (suggested)type `git clone https://github.com/Caesar11/gStore.git` in your terminal or use git GUI to acquire it
+- (suggested)type `git clone https://github.com/pkumod/gStore.git` in your terminal or use git GUI to acquire it
 
 - download the zip from this repository and extract it
 
 - fork this repository in your github account
 
 Then you need to compile the project, just type `make` in the gStore root directory, then all executables will be generated.
+(For faster compiling speed, use `make -j8` instead)
 
 The first strategy is suggested to get the source code because you can easily acquire the updates of the code by typing `git pull` in the home directory of gStore repository. 
 In addition, you can directly check the version of the code by typing `git log` to see the commit logs.

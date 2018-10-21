@@ -174,7 +174,7 @@ main(int argc, char **argv)
 	cout << "usage: start-gconsole [OPTION]" << endl;
 	cout << " -h, --help              print this help" << endl;
 	cout << " -s, --source            source the SPARQL script" << endl;
-	cout << "For bug reports and suggestions, see https://github.com/Caesar11/gStore" << endl << endl << endl;
+	cout << "For bug reports and suggestions, see https://github.com/pkumod/gStore" << endl << endl << endl;
 
 	if (argc > 1)
 	{

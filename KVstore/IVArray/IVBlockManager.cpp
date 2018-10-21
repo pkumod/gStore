@@ -346,8 +346,10 @@ IVBlockManager::FreeBlocks(const unsigned index)
 				if (curlen + cur_index == it->first) // block after is free
 				{
 					curlen += it->second;
+					auto tmp_key = it->second, tmp_val = it->first;
 					index_len_map.erase(it);
-					len_index_map.erase(make_pair(it->second,it->first));
+					//len_index_map.erase(make_pair(it->second,it->first));
+					len_index_map.erase(make_pair(tmp_key,tmp_val));
 				}
 			}
 

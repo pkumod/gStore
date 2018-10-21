@@ -16,7 +16,6 @@ ISArray::ISArray()
 	dir_path = "";
 	ISfile_name = "";
 	BM = NULL;
-	CurKeyNum = 0;
 	CurEntryNum = 0;
 	CurCacheSize = 0;
 	CurEntryNumChange = false;
@@ -55,7 +54,6 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 
 		// temp is the smallest number >= _key_num and mod SET_KEY_INC = 0
 		unsigned temp = ((_key_num + (1 << 10) - 1) >> 10) << 10;
-		CurKeyNum = 0;
 		CurEntryNum = max(temp, SETKEYNUM);
 		CurEntryNumChange = true;
 
@@ -341,7 +339,6 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 	}
 
 	bool Alloc = false;
-	CurKeyNum++;
 	//if (CurKeyNum >= CurEntryNum) // need to realloc
 	if (_key >= CurEntryNum)
 	{
@@ -391,7 +388,6 @@ ISArray::remove(unsigned _key)
 		return false;
 	}
 
-	CurKeyNum--;
 
 	unsigned store = array[_key].getStore();
 	BM->FreeBlocks(store);
