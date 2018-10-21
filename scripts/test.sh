@@ -3,7 +3,7 @@
 #set -v
 
 #initialize system.db
-"bin/ginit" "--make"
+"bin/ginit" "--make" >& /dev/null
 
 #test
 db=("bbug" "lubm" "num" "small")
