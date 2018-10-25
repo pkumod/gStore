@@ -486,6 +486,12 @@ $(lib_antlr):
 	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
 	rm -rf lib/libantlr.a
 	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
+
+Parser/SparqlLexer.c Parser/SparqlLexer.h Parser/SparqlParser.h Parser/SparqlParser.c: unpack_sparql
+
+.INTERMEDIATE: unpack_sparql
+
+unpack_sparql: tools/sparql.tar.gz
 	#NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
 	rm -rf Parser/Sparql*
 	cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
