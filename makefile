@@ -59,6 +59,8 @@ objdir = .objs/
 
 exedir = bin/
 
+testdir = scripts/
+
 lib_antlr = lib/libantlr.a
 
 api_cpp = api/socket/cpp/lib/libgstoreconnector.a
@@ -111,7 +113,7 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
 #gtest
 
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(testdir)update_test
 
 all: $(TARGET)
 	bash scripts/test.sh
@@ -158,22 +160,23 @@ $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
 $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX $(openmp)
 
-
+$(testdir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
+	        $(CC) $(EXEFLAG) -o $(testdir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
 #executables end
 
 
 #objects in Main/ begin
 
-$(objdir)ginit.o: Main/ginit.cpp $(lib_antlr)
+$(objdir)ginit.o: Main/ginit.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/ginit.cpp $(inc) -o $(objdir)ginit.o $(openmp)
 
-$(objdir)shutdown.o: Main/shutdown.cpp $(lib_antlr)
+$(objdir)shutdown.o: Main/shutdown.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS)	Main/shutdown.cpp $(inc) -o $(objdir)shutdown.o $(openmp)
 
-$(objdir)gmonitor.o: Main/gmonitor.cpp $(lib_antlr)
+$(objdir)gmonitor.o: Main/gmonitor.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gmonitor.cpp $(inc) -o $(objdir)gmonitor.o $(openmp)
 
-$(objdir)gshow.o: Main/gshow.cpp $(lib_antlr)
+$(objdir)gshow.o: Main/gshow.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gshow.cpp $(inc) -o $(objdir)gshow.o $(openmp)
 
 $(objdir)gbuild.o: Main/gbuild.cpp Database/Database.h Util/Util.h $(lib_antlr)
@@ -199,6 +202,11 @@ $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp D
 	$(CC) $(CFLAGS) Main/ghttp.cpp $(inc) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
 #objects in Main/ end
+
+#objects in scripts/ begin
+$(objdir)update_test.o: scripts/update_test.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) scripts/update_test.cpp $(inc) -o $(objdir)update_test.o $(openmp)
+#objects in scripts/ end
 
 
 #objects in kvstore/ begin
