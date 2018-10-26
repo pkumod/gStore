@@ -342,12 +342,12 @@ You are advised to finish this verification each time after you add some modific
 
 **`update_test.cpp` is used to verify the correctness of repeatedly insertion/deletion.**
 
-To use this utility, you will find `update_test` executable under the `scripts/` directory after you compile the whole project with `make`.
-Run `./scripts/update_test > /dev/null` to finish this test, and you will see the output in the end indicating whether successful or not.
+To use this utility, you will find `update_test` executable under the `bin/` directory after you compile the whole project with `make`.
+Run `bin/update_test > /dev/null` to finish this test, and you will see the output in the end indicating whether successful or not.
 This command will test 10000 groups of insertions/deletions by default, to change the group number you can run in the way below:
 
 ```
-./scripts/update_test ${YOUR_GROUP_NUMBER}
+bin/update_test ${YOUR_GROUP_NUMBER}
 ```
 
 **gtest is used to test gStore with multiple datasets and queries.**

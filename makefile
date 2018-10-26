@@ -113,7 +113,7 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
 #gtest
 
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(testdir)update_test
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)update_test
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -159,8 +159,8 @@ $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
 $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX $(openmp)
 
-$(testdir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
-	        $(CC) $(EXEFLAG) -o $(testdir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
+$(exedir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
+	        $(CC) $(EXEFLAG) -o $(exedir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
 #executables end
 
 
@@ -520,7 +520,7 @@ test:
 	@echo "basic build/query/add/sub test"
 	@bash scripts/basic_test.sh
 	@echo "repeatedly insertion/deletion test"
-	@./scripts/update_test > /dev/null
+	@bin/update_test > /dev/null
 
 clean:
 	rm -rf lib/libantlr.a
@@ -535,6 +535,7 @@ clean:
 	#$(MAKE) -C KVstore clean
 	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole*
 	rm -rf bin/*.class
+	rm -rf bin/update_test
 	#rm -rf .project .cproject .settings   just for eclipse
 	#rm -rf cscope* just for vim
 	rm -rf logs/*.log
