@@ -7,6 +7,7 @@
 *.x86_64
 *.hex
 bin/g*
+scripts/update_test
 api/cpp/example/example
 
 Parser/Sparql*

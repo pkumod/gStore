@@ -63,6 +63,9 @@ If you want to understand the details of the gStore system, or you want to try s
 
 ## Other Business
 
+Bugs are recorded in [BUG REPORT](docs/BUGS.md).
+You are welcomed to submit the bugs you discover if they do not exist in this file.
+
 We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in [Recipe Book](docs/TIPS.md).
 
 You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <bookug@qq.com> to submit your suggestions and report bugs to us by emailing to <gStoreDB@gmail.com>. A full list of our whole team is in [Mailing List](docs/MAIL.md).
