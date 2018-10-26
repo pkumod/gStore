@@ -41,7 +41,7 @@ CC = g++
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
 CFLAGS = -c -Wall -O2 -pthread -std=c++11
-XEFLAG = -O2 -pthread -std=c++11
+EXEFLAG = -O2 -pthread -std=c++11
 #-coverage
 #CFLAGS = -c -Wall -pthread -g -std=c++11 -pg
 #EXEFLAG = -pthread -g -std=c++11 -pg
@@ -113,12 +113,11 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
 #gtest
 
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(testdir)update_test
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)update_test
 
 all: $(TARGET)
-	bash scripts/test.sh
-test_index: test_index.cpp
-	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library) $(openmp)
+	@echo "Compilation ends successfully!"
+	@bash scripts/init.sh
 
 #BETTER: use for loop to reduce the lines
 #NOTICE: g++ -MM will run error if linking failed, like Database.h/../SparlParser.h/../antlr3.h
@@ -160,8 +159,8 @@ $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
 $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX $(openmp)
 
-$(testdir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
-	        $(CC) $(EXEFLAG) -o $(testdir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
+$(exedir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
+	        $(CC) $(EXEFLAG) -o $(exedir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
 #executables end
 
 
@@ -494,9 +493,17 @@ $(lib_antlr):
 	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
 	rm -rf lib/libantlr.a
 	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
-	#NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
+	##NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
 	rm -rf Parser/Sparql*
 	cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
+
+# DEBUG: below not works properly
+#Parser/SparqlLexer.c Parser/SparqlLexer.h Parser/SparqlParser.h Parser/SparqlParser.c: unpack_sparql
+#.INTERMEDIATE: unpack_sparql
+#unpack_sparql: tools/sparql.tar.gz
+	##NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
+	#rm -rf Parser/Sparql*
+	#cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
 
 $(api_cpp): $(objdir)Socket.o
 	$(MAKE) -C api/socket/cpp/src 
@@ -507,7 +514,13 @@ $(api_java):
 	$(MAKE) -C api/socket/java/src
 	$(MAKE) -C api/http/java/src
 
-.PHONY: clean dist tarball api_example gtest sumlines contribution
+.PHONY: clean dist tarball api_example gtest sumlines contribution test
+
+test:
+	@echo "basic build/query/add/sub test"
+	@bash scripts/basic_test.sh
+	@echo "repeatedly insertion/deletion test"
+	@bin/update_test > /dev/null
 
 clean:
 	rm -rf lib/libantlr.a
@@ -522,6 +535,7 @@ clean:
 	#$(MAKE) -C KVstore clean
 	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole*
 	rm -rf bin/*.class
+	rm -rf bin/update_test
 	#rm -rf .project .cproject .settings   just for eclipse
 	#rm -rf cscope* just for vim
 	rm -rf logs/*.log
@@ -570,7 +584,7 @@ $(objdir)gsub.o: Main/gsub.cpp
 	$(CC) $(CFLAGS) Main/gsub.cpp $(inc) -o $(objdir)gsub.o $(openmp)
 
 sumlines:
-	bash scripts/sumline.sh
+	@bash scripts/sumline.sh
 
 tag:
 	ctags -R

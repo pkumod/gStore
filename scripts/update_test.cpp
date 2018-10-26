@@ -76,20 +76,28 @@ int main(int argc, char * argv[])
 {
 	//build update_test.db
 	Util util;
+	int test_group_num = 10000;
+	if(argc > 1)
+	{
+		test_group_num = atoi(argv[1]);
+	}
+	int test_group_size = 5;
+	int test_value_region = 10;
+
 	string db_name = "update_test";
 	string db_path = "data/update_test.nt";
 	db = new Database(db_name);
 	bool flag = db->build(db_path);
 	if (flag)
 	{
-		cout << "update_test.db is built done." << endl;
+		cerr << "update_test.db is built done." << endl;
 		ofstream f;
 		f.open("./" + db_name + ".db/success.txt");
 		f.close();
 	}
 	else //if fails, drop update_test.db and return
 	{
-		cout << "update_test.db is built failed." << endl;
+		cerr << "update_test.db is built failed." << endl;
 		string cmd = "rm -r " + db_name + ".db";
 		system(cmd.c_str());
 		delete db;
@@ -107,15 +115,15 @@ int main(int argc, char * argv[])
 	update_triples.clear();
 	triple temp(0, 0, 0);
 	update_triples.insert(temp);
-	for (int i = 0; i < 100; i++)
+	for (int i = 0; i < test_group_num; i++)
 	{
-		int a = rand() % 5 + 1;
-		int b = rand() % 5 + 1;
+		int a = rand() % test_group_size + 1;
+		int b = rand() % test_group_size + 1;
 		for (int j = 0; j < a; j++)
 		{
-			int s = rand() % 10;
-			int p = rand() % 10;
-			int o = rand() % 10;
+			int s = rand() % test_value_region;
+			int p = rand() % test_value_region;
+			int o = rand() % test_value_region;
 			triple t(s, p, o);
 			update_triples.insert(t);
 			string query = "INSERT DATA{" + t.subject + " " + t.predicate + " " + t.object + ".}";
@@ -125,9 +133,9 @@ int main(int argc, char * argv[])
 		}
 		for (int j = 0; j < b; j++)
 		{
-			int s = rand() % 10;
-			int p = rand() % 10;
-			int o = rand() % 10;
+			int s = rand() % test_value_region;
+			int p = rand() % test_value_region;
+			int o = rand() % test_value_region;
 			triple t(s, p, o);
 			std::set<triple>::iterator it = update_triples.find(t);
 			if (it != update_triples.end())
@@ -152,7 +160,7 @@ int main(int argc, char * argv[])
 		}
 		if (update_triples.size() != db_triples.size())
 		{
-			cout << "Update triples exist errors." << endl;
+			cerr << "Update triples exist errors." << endl;
 			delete db;
 			db = NULL;
 			string cmd = "rm -r " + db_name + ".db";
@@ -167,7 +175,7 @@ int main(int argc, char * argv[])
 				continue;
 			else
 			{
-				cout << "Update triples exist errors." << endl;
+				cerr << "Update triples exist errors." << endl;
 				delete db;
 				db = NULL;
 				string cmd = "rm -r " + db_name + ".db";
@@ -176,10 +184,13 @@ int main(int argc, char * argv[])
 			}
 		}
 	}
+
 	delete db;
 	db = NULL;
 	string cmd = "rm -r " + db_name + ".db";
 	system(cmd.c_str());
-	cout << "Test passed!" << endl;
+	cerr << "Test passed!" << endl;
+
 	return 0;
 }
+
