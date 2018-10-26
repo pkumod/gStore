@@ -1,3 +1,26 @@
+#### How can I redirect the output to disk files from the console, even the content is output from stderr?
+
+You can redirect the output of the whole console and use `tail -f` to see the immediate updates to the disk file.
+For example, if you are using `gquery` console, you can do it in the way below:
+
+```
+In one terminal, named x
+bin/gquery ${YOUR_DATABASE} >& log.txt
+type console commands in terminal x
+In another terminal y
+tail -f log.txt
+
+```
+
+---
+
+#### Why can not I run correctly after `make` again, even the new code has fixed bugs or added new features?
+
+Sometimes file dependency is not complete, and some objects are not re-compiled in practice.
+In this case you are advised to run `make clean` first, and then run `make`.
+
+---
+
 #### When I use the newer gStore system to query the original database, why error?
 
 The database produced by gStore contains several indexes, whose structures may have been chnaged in the new gStore version. So, please rebuild your dataset just in case.
