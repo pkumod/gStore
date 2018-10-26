@@ -22,6 +22,7 @@ This system is really user-friendly and you can pick it up in several minutes. R
 
 Then you need to compile the project, just type `make` in the gStore root directory, then all executables will be generated.
 (For faster compiling speed, use `make -j4` instead)
+To check the correctness of the program, please type `make test` command.
 
 The first strategy is suggested to get the source code because you can easily acquire the updates of the code by typing `git pull` in the home directory of gStore repository. 
 In addition, you can directly check the version of the code by typing `git log` to see the commit logs.

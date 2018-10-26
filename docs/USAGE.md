@@ -11,6 +11,11 @@ Tabs, '<' and '>' are not allowed to appear in entity, literal or predicates of 
 
 #### 1. gbuild
 
+As long as you download and compile the code of gStore system, a database named `system`(the real directory name is `system.db`) will be created automatically.
+This is the database that manages the information of system statistics, including all users and all databases.
+You can query this database using `gquery` command, but you are forbidded to modify it using editors.
+The only way to change this database is the operations on users and databases, which are sent to `ghttp` server.
+
 gbuild is used to build a new database from a RDF triple format file.
 
 `# bin/gbuild db_name rdf_triple_file_path`
