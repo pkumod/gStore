@@ -90,6 +90,8 @@ Notice:
 
 - path completion is supported for utility. (not built-in command completion)
 
+- To ouput the result to disk files, use `sparql ${YOUR_QUERY} > ${YOUR_FILE}` in the console.
+
 - - -
 
 #### 3. ghttp

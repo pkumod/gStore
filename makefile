@@ -40,11 +40,11 @@ CC = g++
 #NOTICE: -O2 is recommended, while -O3(add loop-unroll and inline-function) is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -O2 -pthread -std=c++11
-EXEFLAG = -O2 -pthread -std=c++11
+#CFLAGS = -c -Wall -O2 -pthread -std=c++11
+#EXEFLAG = -O2 -pthread -std=c++11
 #-coverage
-#CFLAGS = -c -Wall -pthread -g -std=c++11 -pg
-#EXEFLAG = -pthread -g -std=c++11 -pg
+CFLAGS = -c -Wall -pthread -g -std=c++11 -pg
+EXEFLAG = -pthread -g -std=c++11 -pg
 
 #add -lreadline [-ltermcap] if using readline or objs contain readline
 library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
@@ -522,7 +522,7 @@ $(api_java):
 
 .PHONY: clean dist tarball api_example gtest sumlines contribution test
 
-test:
+test: $(TARGET)
 	@echo "basic build/query/add/sub/drop test"
 	@bash scripts/basic_test.sh
 	@echo "repeatedly insertion/deletion test"
@@ -543,8 +543,8 @@ clean:
 	rm -rf bin/*.class
 	rm -rf bin/update_test
 	#rm -rf .project .cproject .settings   just for eclipse
-	#rm -rf cscope* just for vim
 	rm -rf logs/*.log
+	rm -rf *.out   # gmon.out for gprof with -pg
 
 dist: clean
 	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db
