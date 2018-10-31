@@ -2,7 +2,7 @@
 # Filename: update_test.cpp
 # Author: suxunbin
 # Mail: suxunbin@pku.edu.cn
-# Last Modified: 2018-10-25 21:25
+# Last Modified: 2018-10-30 17:15
 # Description: used to test the correctness of update triples
 =============================================================================*/
 
@@ -10,6 +10,17 @@
 #include "../Database/Database.h"
 
 using namespace std;
+
+bool isNum(char *str)
+{
+	for (int i = 0; i < strlen(str); i++)
+	{
+		int tmp = (int)(str[i]);
+		if (tmp < 48 || tmp > 57)
+			return false;
+	}
+	return true;
+}
 
 //triple information
 class triple{
@@ -21,7 +32,10 @@ public:
 	triple(int s, int p, int o){
 		subject = "<s" + Util::int2string(s) + ">";
 		predicate = "<p" + Util::int2string(p) + ">";
-		object = "<o" + Util::int2string(o) + ">";
+		if (rand()%2)
+			object = "<o" + Util::int2string(o) + ">";
+		else
+			object = "\"o" + Util::int2string(o) + "\"";
 	}
 	triple(string s, string p, string o){
 		subject = s;
@@ -72,18 +86,81 @@ std::set<triple> update_triples;
 std::set<triple> db_triples;
 Database* db;
 
+void print()
+{
+	cerr << "update_triples:" << endl;
+	std::set<triple>::iterator it1;
+	for (it1 = update_triples.begin(); it1 != update_triples.end(); it1++)
+		cerr << it1->subject << " " << it1->predicate << "" << it1->object << endl;
+	cerr << "db_triples:" << endl;
+	std::set<triple>::iterator it2;
+	for (it2 = db_triples.begin(); it2 != db_triples.end(); it2++)
+		cerr << it2->subject << " " << it2->predicate << "" << it2->object << endl;
+}
+
 int main(int argc, char * argv[])
 {
 	//build update_test.db
 	Util util;
 	int test_group_num = 10000;
-	if(argc > 1)
-	{
-		test_group_num = atoi(argv[1]);
-	}
 	int test_group_size = 5;
 	int test_value_region = 10;
-
+	if(argc == 2)
+	{
+		if (isNum(argv[1]))
+			test_group_num = atoi(argv[1]);
+		else
+		{
+			cout << "wrong format of test_group_num" << endl;
+			return 0;
+		}
+	}
+	else if (argc == 3)
+	{
+		if (isNum(argv[1]))
+			test_group_num = atoi(argv[1]);
+		else
+		{
+			cout << "wrong format of test_group_num" << endl;
+			return 0;
+		}
+		if (isNum(argv[2]))
+			test_group_size = atoi(argv[2]);
+		else
+		{
+			cout << "wrong format of test_group_size" << endl;
+			return 0;
+		}
+	}
+	else if (argc == 4)
+	{
+		if (isNum(argv[1]))
+			test_group_num = atoi(argv[1]);
+		else
+		{
+			cout << "wrong format of test_group_num" << endl;
+			return 0;
+		}
+		if (isNum(argv[2]))
+			test_group_size = atoi(argv[2]);
+		else
+		{
+			cout << "wrong format of test_group_size" << endl;
+			return 0;
+		}
+		if (isNum(argv[3]))
+			test_value_region = atoi(argv[3]);
+		else
+		{
+			cout << "wrong format of test_value_region" << endl;
+			return 0;
+		}
+	}
+	else if (argc > 4)
+	{
+		cout << "The number of parameters is not correct." << endl;
+		return 0;
+	}
 	string db_name = "update_test";
 	string db_path = "data/update_test.nt";
 	db = new Database(db_name);
@@ -106,14 +183,14 @@ int main(int argc, char * argv[])
 	}
 
 	//load update_test.db
+	srand((unsigned)time(NULL));
 	delete db;
 	db = new Database(db_name);
 	db->load();
 
 	//update triples test
-	srand((unsigned)time(NULL));
 	update_triples.clear();
-	triple temp(0, 0, 0);
+	triple temp("<s0>", "<p0>", "<o0>");
 	update_triples.insert(temp);
 	for (int i = 0; i < test_group_num; i++)
 	{
@@ -158,6 +235,7 @@ int main(int argc, char * argv[])
 			triple t(s, p, o);
 			db_triples.insert(t);
 		}
+		//print();
 		if (update_triples.size() != db_triples.size())
 		{
 			cerr << "Update triples exist errors." << endl;

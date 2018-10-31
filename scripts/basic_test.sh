@@ -2,12 +2,9 @@
 
 #set -v
 
-#initialize system.db
-"bin/ginit" "--make" >& /dev/null
-
 #test
 db=("bbug" "lubm" "num" "small")
-op=("bin/gbuild" "bin/gquery" "bin/gadd" "bin/gsub")
+op=("bin/gbuild" "bin/gquery" "bin/gadd" "bin/gsub" "bin/gdrop")
 path="./data/"
 bbug_sql=("0" "0d" "1" "2" "3" "4" "5" "6")
 lubm_sql=("_p0" "_p1" "_p2" "_p3" "_p4" "_q0" "_q1" "_q2" "_q3" "_q4" "_q5")
@@ -139,5 +136,18 @@ then
         exit
 fi
 "rm" "1.txt"
+
+#gdrop
+echo "gdrop......"
+for i in 0 1 2 3
+do
+	${op[4]} ${db[$i]} > "1.txt" 2>&1
+	"rm" "1.txt"
+	if test -e ${db[$i]}.db
+	then
+		echo -e "\033[43;35m drop ${db[$i]}.db fails \033[0m"
+		exit
+	fi
+done
 
 echo "Test passed!"
