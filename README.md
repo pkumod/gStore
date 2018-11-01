@@ -20,8 +20,9 @@ This system is really user-friendly and you can pick it up in several minutes. R
 
 - fork this repository in your github account
 
-Then you need to compile the project, just type `make` in the gStore root directory, then all executables will be generated.
-(For faster compiling speed, use `make -j4` instead)
+Then you need to compile the project, for the first time you need to type `make pre` to prepare the `ANTLR` library and some Lexer/Parser programs.
+Later you do not need to type this command again, just use the `make` command in the home directory of gStore, then all executables will be generated.
+(For faster compiling speed, use `make -j4` instead, using how many threads is up to your machine)
 To check the correctness of the program, please type `make test` command.
 
 The first strategy is suggested to get the source code because you can easily acquire the updates of the code by typing `git pull` in the home directory of gStore repository. 
