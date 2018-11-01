@@ -487,7 +487,7 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 #objects in Server/ end
 
 
-$(lib_antlr):
+pre:
 	rm -rf tools/libantlr3c-3.4/
 	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
 	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
