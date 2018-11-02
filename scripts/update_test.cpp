@@ -2,7 +2,7 @@
 # Filename: update_test.cpp
 # Author: suxunbin
 # Mail: suxunbin@pku.edu.cn
-# Last Modified: 2018-11-02 9:58
+# Last Modified: 2018-11-02 11:13
 # Description: used to test the correctness of update triples
 =============================================================================*/
 
@@ -118,8 +118,8 @@ int main(int argc, char * argv[])
 			test_group_num = 10;
 			test_group_size = 10000;
 			test_value_region = 10000;
-			db_name = "DBpeida170M";
-			db_path = "/home/data/DBpeida/database/dbpedia170M.nt";
+			db_name = "DBpedia170M";
+			db_path = "/home/data/DBpedia/database/dbpedia170M.nt";
 		}
 		else
 		{
