@@ -2,7 +2,7 @@
 # Filename: update_test.cpp
 # Author: suxunbin
 # Mail: suxunbin@pku.edu.cn
-# Last Modified: 2018-10-30 17:15
+# Last Modified: 2018-11-02 9:58
 # Description: used to test the correctness of update triples
 =============================================================================*/
 
@@ -100,18 +100,30 @@ void print()
 
 int main(int argc, char * argv[])
 {
-	//build update_test.db
 	Util util;
+	int test_type = 0;
 	int test_group_num = 10000;
 	int test_group_size = 5;
 	int test_value_region = 10;
+	string db_name = "update_test";
+	string db_path = "data/update_test.nt";
 	if(argc == 2)
 	{
+		string s = argv[1];
 		if (isNum(argv[1]))
 			test_group_num = atoi(argv[1]);
+		else if (s == "DBpedia170M")
+		{
+			test_type = 1;
+			test_group_num = 10;
+			test_group_size = 10000;
+			test_value_region = 10000;
+			db_name = "DBpeida170M";
+			db_path = "/home/data/DBpeida/database/dbpedia170M.nt";
+		}
 		else
 		{
-			cout << "wrong format of test_group_num" << endl;
+			cout << "wrong format of parameters" << endl;
 			return 0;
 		}
 	}
@@ -161,20 +173,22 @@ int main(int argc, char * argv[])
 		cout << "The number of parameters is not correct." << endl;
 		return 0;
 	}
-	string db_name = "update_test";
-	string db_path = "data/update_test.nt";
+
+	//build database
 	db = new Database(db_name);
 	bool flag = db->build(db_path);
 	if (flag)
 	{
-		cerr << "update_test.db is built done." << endl;
+		string msg = db_name + ".db is built done.";
+		cerr << msg << endl;
 		ofstream f;
 		f.open("./" + db_name + ".db/success.txt");
 		f.close();
 	}
-	else //if fails, drop update_test.db and return
+	else //if fails, drop database and return
 	{
-		cerr << "update_test.db is built failed." << endl;
+		string msg = db_name + ".db is built failed.";
+		cerr << msg << endl;
 		string cmd = "rm -r " + db_name + ".db";
 		system(cmd.c_str());
 		delete db;
@@ -182,76 +196,63 @@ int main(int argc, char * argv[])
 		return 0;
 	}
 
-	//load update_test.db
+	//load database
 	srand((unsigned)time(NULL));
 	delete db;
 	db = new Database(db_name);
 	db->load();
 
 	//update triples test
-	update_triples.clear();
-	triple temp("<s0>", "<p0>", "<o0>");
-	update_triples.insert(temp);
-	for (int i = 0; i < test_group_num; i++)
+	if (test_type == 0)
 	{
-		int a = rand() % test_group_size + 1;
-		int b = rand() % test_group_size + 1;
-		for (int j = 0; j < a; j++)
+		update_triples.clear();
+		triple temp("<s0>", "<p0>", "<o0>");
+		update_triples.insert(temp);
+		for (int i = 0; i < test_group_num; i++)
 		{
-			int s = rand() % test_value_region;
-			int p = rand() % test_value_region;
-			int o = rand() % test_value_region;
-			triple t(s, p, o);
-			update_triples.insert(t);
-			string query = "INSERT DATA{" + t.subject + " " + t.predicate + " " + t.object + ".}";
+			int a = rand() % test_group_size + 1;
+			int b = rand() % test_group_size + 1;
+			for (int j = 0; j < a; j++)
+			{
+				int s = rand() % test_value_region;
+				int p = rand() % test_value_region;
+				int o = rand() % test_value_region;
+				triple t(s, p, o);
+				update_triples.insert(t);
+				string query = "INSERT DATA{" + t.subject + " " + t.predicate + " " + t.object + ".}";
+				ResultSet _rs;
+				FILE* ofp = stdout;
+				int ret = db->query(query, _rs, ofp);
+			}
+			for (int j = 0; j < b; j++)
+			{
+				int s = rand() % test_value_region;
+				int p = rand() % test_value_region;
+				int o = rand() % test_value_region;
+				triple t(s, p, o);
+				std::set<triple>::iterator it = update_triples.find(t);
+				if (it != update_triples.end())
+					update_triples.erase(it);
+				string query = "DELETE DATA{" + t.subject + " " + t.predicate + " " + t.object + ".}";
+				ResultSet _rs;
+				FILE* ofp = stdout;
+				int ret = db->query(query, _rs, ofp);
+			}
+			db_triples.clear();
+			string query = "select ?s ?p ?o where{?s ?p ?o.}";
 			ResultSet _rs;
-			FILE* ofp = stdout;
+			FILE* ofp = NULL;
 			int ret = db->query(query, _rs, ofp);
-		}
-		for (int j = 0; j < b; j++)
-		{
-			int s = rand() % test_value_region;
-			int p = rand() % test_value_region;
-			int o = rand() % test_value_region;
-			triple t(s, p, o);
-			std::set<triple>::iterator it = update_triples.find(t);
-			if (it != update_triples.end())
-				update_triples.erase(it);
-			string query = "DELETE DATA{" + t.subject + " " + t.predicate + " " + t.object + ".}";
-			ResultSet _rs;
-			FILE* ofp = stdout;
-			int ret = db->query(query, _rs, ofp);
-		}
-		db_triples.clear();
-		string query = "select ?s ?p ?o where{?s ?p ?o.}";
-		ResultSet _rs;
-		FILE* ofp = NULL;
-		int ret = db->query(query, _rs, ofp);
-		for (int i = 0; i < _rs.ansNum; i++)
-		{
-			string s = _rs.answer[i][0];
-			string p = _rs.answer[i][1];
-			string o = _rs.answer[i][2];
-			triple t(s, p, o);
-			db_triples.insert(t);
-		}
-		//print();
-		if (update_triples.size() != db_triples.size())
-		{
-			cerr << "Update triples exist errors." << endl;
-			delete db;
-			db = NULL;
-			string cmd = "rm -r " + db_name + ".db";
-			system(cmd.c_str());
-			return 0;
-		}
-		std::set<triple>::iterator it1;
-		std::set<triple>::iterator it2;
-		for (it1 = update_triples.begin(), it2 = db_triples.begin(); it1 != update_triples.end(); it1++, it2++)
-		{
-			if (*it1 == *it2)
-				continue;
-			else
+			for (int i = 0; i < _rs.ansNum; i++)
+			{
+				string s = _rs.answer[i][0];
+				string p = _rs.answer[i][1];
+				string o = _rs.answer[i][2];
+				triple t(s, p, o);
+				db_triples.insert(t);
+			}
+			//print();
+			if (update_triples.size() != db_triples.size())
 			{
 				cerr << "Update triples exist errors." << endl;
 				delete db;
@@ -260,15 +261,142 @@ int main(int argc, char * argv[])
 				system(cmd.c_str());
 				return 0;
 			}
+			std::set<triple>::iterator it1;
+			std::set<triple>::iterator it2;
+			for (it1 = update_triples.begin(), it2 = db_triples.begin(); it1 != update_triples.end(); it1++, it2++)
+			{
+				if (*it1 == *it2)
+					continue;
+				else
+				{
+					cerr << "Update triples exist errors." << endl;
+					delete db;
+					db = NULL;
+					string cmd = "rm -r " + db_name + ".db";
+					system(cmd.c_str());
+					return 0;
+				}
+			}
 		}
+
+		delete db;
+		db = NULL;
+		string cmd = "rm -r " + db_name + ".db";
+		system(cmd.c_str());
 	}
+	else
+	{
+		int triple_num = db->getTripleNum();
+		string *update;
+		for (int i = 0; i < test_group_num; i++)
+		{
+			//random extract update_num triples
+			int update_num = rand() % test_group_size + 1;
+			update = new string[update_num];
+			ifstream file;
+			file.open(db_path, ios::in);
+			int update_line = rand() % test_value_region + 1;
+			int line_num = 1;
+			for (int j = 0; j < update_num; j++)
+			{
+				string s;
+				while (getline(file, s))
+				{
+					if (line_num != update_line)
+						line_num++;
+					else
+					{
+						update[j] = s;
+						update_line = update_line + rand() % test_value_region + 1;
+						line_num++;
+						break;
+					}
+				}
+			}
+			file.close();
 
-	delete db;
-	db = NULL;
-	string cmd = "rm -r " + db_name + ".db";
-	system(cmd.c_str());
+			//check the correctness of deleting and inserting triples
+			string query = "DELETE DATA{";
+			for (int j = 0; j < update_num; j++)
+				query = query + update[j];
+			query = query + "}";
+			ResultSet delete_rs;
+			FILE* delete_ofp = stdout;
+			int ret = db->query(query, delete_rs, delete_ofp);
+			if (triple_num != (update_num + db->getTripleNum()))
+			{
+				cerr << "Delete triples exist errors." << endl;
+				delete update;
+				update = NULL;
+				delete db;
+				db = NULL;
+				string cmd = "rm -r " + db_name + ".db";
+				system(cmd.c_str());
+				return 0;
+			}
+			int temp_num = triple_num - update_num;
+			for (int j = 0; j < update_num; j++)
+			{
+				query = "ASK WHERE{" + update[j] + "}";
+				ResultSet ask_rs;
+				FILE* ask_ofp = stdout;
+				int ret = db->query(query, ask_rs, ask_ofp);
+				if (ask_rs.answer[0][0] == "true")
+				{
+					cerr << "Delete triples exist errors." << endl;
+					delete update;
+					update = NULL;
+					delete db;
+					db = NULL;
+					string cmd = "rm -r " + db_name + ".db";
+					system(cmd.c_str());
+					return 0;
+				}
+			}
+			query = "INSERT DATA{";
+			for (int j = 0; j < update_num; j++)
+				query = query + update[j];
+			query = query + "}";
+			ResultSet insert_rs;
+			FILE* insert_ofp = stdout;
+			ret = db->query(query, insert_rs, insert_ofp);
+			if (temp_num != (db->getTripleNum() - update_num))
+			{
+				cerr << "Insert triples exist errors." << endl;
+				delete update;
+				update = NULL;
+				delete db;
+				db = NULL;
+				string cmd = "rm -r " + db_name + ".db";
+				system(cmd.c_str());
+				return 0;
+			}
+			query = "ASK WHERE{";
+			for (int j = 0; j < update_num; j++)
+				query = query + update[j];
+			query = query + "}";
+			ResultSet ask_rs;
+			FILE* ask_ofp = stdout;
+			ret = db->query(query, ask_rs, ask_ofp);
+			if (ask_rs.answer[0][0] == "false")
+			{
+				cerr << "Insert triples exist errors." << endl;
+				delete update;
+				update = NULL;
+				delete db;
+				db = NULL;
+				string cmd = "rm -r " + db_name + ".db";
+				system(cmd.c_str());
+				return 0;
+			}
+			delete[] update;
+			update = NULL;
+		}
+		delete db;
+		db = NULL;
+		string cmd = "rm -r " + db_name + ".db";
+		system(cmd.c_str());
+	}
 	cerr << "Test passed!" << endl;
-
 	return 0;
 }
-
