@@ -487,7 +487,7 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 #objects in Server/ end
 
 
-$(lib_antlr):
+pre:
 	rm -rf tools/libantlr3c-3.4/
 	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
 	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
@@ -523,7 +523,7 @@ test: $(TARGET)
 	@bin/update_test > /dev/null
 
 clean:
-	rm -rf lib/libantlr.a
+	#rm -rf lib/libantlr.a
 	$(MAKE) -C api/socket/cpp/src clean
 	$(MAKE) -C api/socket/cpp/example clean
 	$(MAKE) -C api/socket/java/src clean
@@ -543,7 +543,6 @@ clean:
 dist: clean
 	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db
 	rm -rf tools/libantlr3c-3.4 lib/libantlr.a Parser/Sparql*
-	#rm -rf Parser/SparqlLexer* Parser/SparlParser.cpp
 	rm -rf cscope* .cproject .settings tags
 	rm -rf *.info
 	rm -rf backups/*.db
