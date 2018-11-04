@@ -81,7 +81,7 @@ void StringIndexFile::load()
 		this->empty_offset = max(this->empty_offset, (*this->index_table)[i].offset + (long)(*this->index_table)[i].length);
 	}
 
-	trie->LoadTrie(dictionary_path);
+//	trie->LoadTrie(dictionary_path);
 }
 
 bool StringIndexFile::randomAccess(unsigned id, string *str, bool real)
@@ -110,10 +110,10 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, bool real)
 		//cout<<"check: "<<*str<<endl;
 	//}
 
-	if (real)
-	{
-		*str = trie->Uncompress(*str, str->length());//Uncompresss
-	}
+//	if (real)
+//	{
+//		*str = trie->Uncompress(*str, str->length());//Uncompresss
+//	}
 	//if(id == 9)
 	//{
 		//cout<<"check: "<<*str<<endl;
@@ -194,8 +194,8 @@ void StringIndexFile::trySequenceAccess(bool real)
 					this->buffer[length] = '\0';
 					*this->request[pos].str = string(this->buffer);
 					
-					*this->request[pos].str = trie->Uncompress(
-					*this->request[pos].str, this->request[pos].str->length());
+//					*this->request[pos].str = trie->Uncompress(
+//					*this->request[pos].str, this->request[pos].str->length());
 					
 					pos++;
 				}
@@ -216,8 +216,8 @@ void StringIndexFile::trySequenceAccess(bool real)
 					this->buffer[length] = '\0';
 					*this->request[pos].str += string(this->buffer);
 
-					*this->request[pos].str = trie->Uncompress(
-					*this->request[pos].str, this->request[pos].str->length());
+//					*this->request[pos].str = trie->Uncompress(
+//					*this->request[pos].str, this->request[pos].str->length());
 				
 					pos++;
 					while (pos < (int)this->request.size() && this->request[pos - 1].offset == this->request[pos].offset)

@@ -35,7 +35,6 @@ private:
 	string dir_path;
 	ISBlockManager *BM;
 	unsigned CurEntryNum; // how many entries are available
-	unsigned CurKeyNum; // how many keys are stored
 	bool CurEntryNumChange;
 
 	//Cache 

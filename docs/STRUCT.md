@@ -2,9 +2,9 @@
 
 #### Figures
 
-The whole architecture of gStore system is presented in [Architecture](png/系统架构图_en.png).
-The thread model of 'ghttp' can be viewed in [EN](png/ghttp-thread.png) and [ZH](png/ghttp-线程.png), which shows the relationship among main process, sever thread, query thread and so on.
-The flow of answering a SPARQL query is given in [SPARQL Processing](png/查询处理过程.png), and the subprocess, which only targets at the BGP(Basic Graph Pattern) processing, is drawed in [BGP Processing](png/BGP.png).
+The whole architecture of gStore system is presented in [Architecture](png/system_architecture_en.png).
+The thread model of 'ghttp' can be viewed in [EN](png/ghttp_thread_model_en.png) and [ZH](png/ghttp_thread_model_zh.png), which shows the relationship among main process, sever thread, query thread and so on.
+The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_processing.png), and the subprocess, which only targets at the BGP(Basic Graph Pattern) processing, is drawed in [BGP Processing](png/BGP.png).
 
 ---
 

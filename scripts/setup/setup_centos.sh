@@ -35,7 +35,7 @@ cd boost_1_54_0
 # by default: /usr/local/include and /usr/local/lib
 ./bootstrap.sh 
 ./b2
-sudo ./b2 install
+./b2 install
 echo "/usr/local/lib" >> /etc/ld.so.conf
 cd ../..
 rm -rf boost
