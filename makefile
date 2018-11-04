@@ -18,20 +18,16 @@
 #(also include good comments norm)
 #http://blog.csdn.net/u010740725/article/details/51387810
 
-#NOTICE: to speed up the make process, use make -j4
-#use -j8 or higher may cause error
-#http://blog.csdn.net/cscrazybing/article/details/50789482
-#http://blog.163.com/liuhonggaono1@126/blog/static/10497901201210254622141/
-
-
-#TODO:the dependences are not complete!
-
-#TODO: parallel -pthread
-
-#TODO: judge and decide using which program
 #CC=$(shell which clang 2>/dev/null || which gcc)
 #ccache, readline, gcov lcov
 #http://blog.csdn.net/u012421852/article/details/52138960
+#
+# How to speed up the compilation
+# https://blog.csdn.net/a_little_a_day/article/details/78251928
+# use make -j4, if error then use make utilizing only one thread
+#use -j8 or higher may cause error
+#http://blog.csdn.net/cscrazybing/article/details/50789482
+#http://blog.163.com/liuhonggaono1@126/blog/static/10497901201210254622141/
 
 #compile parameters
 
@@ -44,11 +40,11 @@ CC = g++
 #NOTICE: -O2 is recommended, while -O3(add loop-unroll and inline-function) is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-#CFLAGS = -c -Wall -O2 -pthread -std=c++11
-#XEFLAG = -O2 -pthread -std=c++11
+CFLAGS = -c -Wall -O2 -pthread -std=c++11
+EXEFLAG = -O2 -pthread -std=c++11
 #-coverage
-CFLAGS = -c -Wall -pthread -g -std=c++11
-EXEFLAG = -pthread -g -std=c++11
+#CFLAGS = -c -Wall -pthread -g -std=c++11 -pg
+#EXEFLAG = -pthread -g -std=c++11 -pg
 
 #add -lreadline [-ltermcap] if using readline or objs contain readline
 library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
@@ -62,6 +58,8 @@ def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE
 objdir = .objs/
 
 exedir = bin/
+
+testdir = scripts/
 
 lib_antlr = lib/libantlr.a
 
@@ -115,12 +113,11 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
 #gtest
 
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)update_test
 
 all: $(TARGET)
-	bash scripts/test.sh
-test_index: test_index.cpp
-	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library) $(openmp)
+	@echo "Compilation ends successfully!"
+	@bash scripts/init.sh
 
 #BETTER: use for loop to reduce the lines
 #NOTICE: g++ -MM will run error if linking failed, like Database.h/../SparlParser.h/../antlr3.h
@@ -132,8 +129,8 @@ test_index: test_index.cpp
 $(exedir)ginit: $(lib_antlr) $(objdir)ginit.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)ginit $(objdir)ginit.o $(objfile) $(library) $(openmp)
 
-$(exedir)shutdown: $(lib_antlr) $(objdir)shutdown.o $(objfile) 
-	$(CC) $(EXEFLAG) -o $(exedir)shutdown $(objdir)shutdown.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient
+$(exedir)shutdown: $(lib_antlr) $(objdir)shutdown.o $(objfile) $(api_cpp)
+	$(CC) $(EXEFLAG) -o $(exedir)shutdown $(objdir)shutdown.o $(objfile) $(openmp) -L./api/http/cpp/lib -lclient $(library)
 
 $(exedir)gmonitor: $(lib_antlr) $(objdir)gmonitor.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gmonitor $(objdir)gmonitor.o $(objfile) $(library) $(openmp)
@@ -162,22 +159,23 @@ $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
 $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX $(openmp)
 
-
+$(exedir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
+	        $(CC) $(EXEFLAG) -o $(exedir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
 #executables end
 
 
 #objects in Main/ begin
 
-$(objdir)ginit.o: Main/ginit.cpp $(lib_antlr)
+$(objdir)ginit.o: Main/ginit.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/ginit.cpp $(inc) -o $(objdir)ginit.o $(openmp)
 
-$(objdir)shutdown.o: Main/shutdown.cpp $(lib_antlr)
+$(objdir)shutdown.o: Main/shutdown.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS)	Main/shutdown.cpp $(inc) -o $(objdir)shutdown.o $(openmp)
 
-$(objdir)gmonitor.o: Main/gmonitor.cpp $(lib_antlr)
+$(objdir)gmonitor.o: Main/gmonitor.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gmonitor.cpp $(inc) -o $(objdir)gmonitor.o $(openmp)
 
-$(objdir)gshow.o: Main/gshow.cpp $(lib_antlr)
+$(objdir)gshow.o: Main/gshow.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gshow.cpp $(inc) -o $(objdir)gshow.o $(openmp)
 
 $(objdir)gbuild.o: Main/gbuild.cpp Database/Database.h Util/Util.h $(lib_antlr)
@@ -203,6 +201,11 @@ $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp D
 	$(CC) $(CFLAGS) Main/ghttp.cpp $(inc) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
 #objects in Main/ end
+
+#objects in scripts/ begin
+$(objdir)update_test.o: scripts/update_test.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) scripts/update_test.cpp $(inc) -o $(objdir)update_test.o $(openmp)
+#objects in scripts/ end
 
 
 #objects in kvstore/ begin
@@ -484,15 +487,23 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 #objects in Server/ end
 
 
-$(lib_antlr):
+pre:
 	rm -rf tools/libantlr3c-3.4/
 	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
 	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
 	rm -rf lib/libantlr.a
 	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
-	#NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
+	##NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
 	rm -rf Parser/Sparql*
 	cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
+
+# DEBUG: below not works properly
+#Parser/SparqlLexer.c Parser/SparqlLexer.h Parser/SparqlParser.h Parser/SparqlParser.c: unpack_sparql
+#.INTERMEDIATE: unpack_sparql
+#unpack_sparql: tools/sparql.tar.gz
+	##NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
+	#rm -rf Parser/Sparql*
+	#cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
 
 $(api_cpp): $(objdir)Socket.o
 	$(MAKE) -C api/socket/cpp/src 
@@ -503,10 +514,16 @@ $(api_java):
 	$(MAKE) -C api/socket/java/src
 	$(MAKE) -C api/http/java/src
 
-.PHONY: clean dist tarball api_example gtest sumlines
+.PHONY: clean dist tarball api_example gtest sumlines contribution test
+
+test: $(TARGET)
+	@echo "basic build/query/add/sub test"
+	@bash scripts/basic_test.sh
+	@echo "repeatedly insertion/deletion test"
+	@bin/update_test > /dev/null
 
 clean:
-	rm -rf lib/libantlr.a
+	#rm -rf lib/libantlr.a
 	$(MAKE) -C api/socket/cpp/src clean
 	$(MAKE) -C api/socket/cpp/example clean
 	$(MAKE) -C api/socket/java/src clean
@@ -516,22 +533,24 @@ clean:
 	$(MAKE) -C api/http/java/src clean
 	$(MAKE) -C api/http/java/example clean
 	#$(MAKE) -C KVstore clean
-	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver*
+	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole*
 	rm -rf bin/*.class
+	rm -rf bin/update_test
 	#rm -rf .project .cproject .settings   just for eclipse
-	#rm -rf cscope* just for vim
 	rm -rf logs/*.log
+	rm -rf *.out   # gmon.out for gprof with -pg
 
 dist: clean
 	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db
 	rm -rf tools/libantlr3c-3.4 lib/libantlr.a Parser/Sparql*
-	#rm -rf Parser/SparqlLexer* Parser/SparlParser.cpp
 	rm -rf cscope* .cproject .settings tags
 	rm -rf *.info
+	rm -rf backups/*.db
 
 tarball:
-	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs scripts garbage docs data makefile \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE
+	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts garbage docs data logs \
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE \
+		Dockerfile LICENSE makefile Trie
 
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/socket/cpp/example
@@ -564,7 +583,7 @@ $(objdir)gsub.o: Main/gsub.cpp
 	$(CC) $(CFLAGS) Main/gsub.cpp $(inc) -o $(objdir)gsub.o $(openmp)
 
 sumlines:
-	bash scripts/sumline.sh
+	@bash scripts/sumline.sh
 
 tag:
 	ctags -R
@@ -587,3 +606,8 @@ fulltest:
 test-kvstore:
 	# test/kvstore_test.cpp
 	echo "TODO"
+
+# https://segmentfault.com/a/1190000008542123
+contribution:
+	bash scripts/contribution.sh
+

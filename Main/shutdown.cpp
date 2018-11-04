@@ -1,7 +1,18 @@
+/*=============================================================================
+# Filename: shutdown.cpp
+# Author: suxunbin
+# Mail: suxunbin@pku.edu.cn
+# Last Modified: 2018-10-16 16:15
+# Description: used to stop the ghttp server
+=============================================================================*/
+
 #include "../api/http/cpp/client.h"
 #include "../Util/Util.h"
 
 using namespace std;
+
+#define ROOT_USERNAME "root"
+#define ROOT_PASSWORD "123456"
 
 bool isNum(char *str)
 {
@@ -49,6 +60,6 @@ int main(int argc, char *argv[])
 	CHttpClient hc;
 	string res;
 	int ret;
-	ret = hc.Get("http://127.0.0.1:"+port+"/?operation=stop", res);
+	ret = hc.Get("http://127.0.0.1:" + port + "/?operation=stop&username=" + ROOT_USERNAME + "&password=" + ROOT_PASSWORD, res);
 	return 0;
 }

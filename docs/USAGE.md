@@ -11,6 +11,11 @@ Tabs, '<' and '>' are not allowed to appear in entity, literal or predicates of 
 
 #### 1. gbuild
 
+As long as you download and compile the code of gStore system, a database named `system`(the real directory name is `system.db`) will be created automatically.
+This is the database that manages the information of system statistics, including all users and all databases.
+You can query this database using `gquery` command, but you are forbidded to modify it using editors.
+The only way to change this database is the operations on users and databases, which are sent to `ghttp` server.
+
 gbuild is used to build a new database from a RDF triple format file.
 
 `# bin/gbuild db_name rdf_triple_file_path`
@@ -85,6 +90,8 @@ Notice:
 
 - path completion is supported for utility. (not built-in command completion)
 
+- To ouput the result to disk files, use `sparql ${YOUR_QUERY} > ${YOUR_FILE}` in the console.
+
 - - -
 
 #### 3. ghttp
@@ -127,10 +134,13 @@ cout << answer << std::endl;
 gc.unload("lubm", "root", "123456");
 
 // show all databases already built and if they are loaded
-gc.show();
+gc.show("root", "123456");
 
 // show statistical information of a loaded database  
-gc.monitor("lubm");
+gc.monitor("lubm", "root", "123456");
+
+// save updates of a loaded database  
+gc.checkpoint("lubm", "root", "123456");
 
 //add a user(with username: Jack, password: 2)
 answer = gc.user("add_user", "root", "123456", "Jack", "2");
@@ -323,7 +333,29 @@ If you want to restore the initial configuration of the ghttp server, type `bin/
 
 #### 13. test utilities
 
-A series of test program are placed in the scripts/ folder, and we will introduce the two useful ones: gtest.cpp and full_test.sh
+A series of test program are placed in the `scripts/` folder, and we will introduce the several useful ones: `full_test.sh`, `basic_test.sh`, `update_test.cpp` and `gtest.cpp`.
+
+**`full_test.sh` is used to compare the performance of gStore and other database systems on multiple datasets and queries.**
+
+To use `full_test.sh` utility, please download the database system which you want to test and compare, and set the exact position of database systems and datasets in this script. The name strategy should be the same as the requirements of gtest, as well as the logs strategy. 
+
+Only gStore and Jena are tested and compared in this script, but it is easy to add other database systems, if you would like to spend some time on reading this script. You may go to [test report](pdf/gstore测试报告.pdf) or [Frequently Asked Questions](FAQ.md) for help if you encounter a problem.
+
+**`basic_test.sh` is used to verify the correctness of build/query/add/sub on several small datasets.**
+
+Just run `bash scripts/basic_test.sh` to use this script.
+In fact, `make test` will conduct `basic_test.sh` above and `update_test.cpp` below.
+You are advised to finish this verification each time after you add some modifications and compile again(including the case that you update the code using `git pull`).
+
+**`update_test.cpp` is used to verify the correctness of repeatedly insertion/deletion.**
+
+To use this utility, you will find `update_test` executable under the `bin/` directory after you compile the whole project with `make`.
+Run `bin/update_test > /dev/null` to finish this test, and you will see the output in the end indicating whether successful or not.
+This command will test 10000 groups of insertions/deletions by default, to change the group number you can run in the way below:
+
+```
+bin/update_test ${YOUR_GROUP_NUMBER}
+```
 
 **gtest is used to test gStore with multiple datasets and queries.**
 
@@ -342,10 +374,4 @@ Notice that DIR is the root directory where you place all datasets waiting to be
 Then you can run the gtest program with specified parameters, and the output will be sorted into three logs in gStore root directory: load.log/(for database loading time and size), time.log/(for query time) and result.log/(for all query results, not the entire output strings, but the information to record the selected two database systems matched or not).
 
 All logs produced by this program are in TSV format(separated with '\t'), you can load them into Calc/Excel/Gnumeric directly. Notice that time unit is ms, and space unit is kb.
-
-**full_test.sh is used to compare the performance of gStore and other database systems on multiple datasets and queries.**
-
-To use full_test.sh utility, please download the database system which you want to tats and compare, and set the exact position of database systems and datasets in this script. The name strategy should be the same as the requirements of gtest, as well as the logs strategy. 
-
-Only gStore and Jena are tested and compared in this script, but it is easy to add other database systems, if you would like to spend some time on reading this script. You may go to [test report](pdf/gstore测试报告.pdf) or [Frequently Asked Questions](FAQ.md) for help if you encounter a problem.
 
