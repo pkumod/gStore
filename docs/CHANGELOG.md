@@ -1,3 +1,16 @@
+## Nov 4, 2018
+
+Zongyue, Qin fixes several severe bugs in indices, to support the management of freebase and larger datasets.
+For example, the bug of multiple repeated insertion/deletion has been solved now.
+In addition, trie index is forbidded due to its useless optimization to `id2string` index.
+
+Zhenya, Tian modifies `makefile` to enable multithreading compilation, which has cut down the time of building executables a lot.
+
+Xunbin, Su and Haiqing, Yu collaborate with each other to propose a detailed test standard, as well as several important test scripts including build/query and insert/delete.
+Meanwhile, Xunbin, Su and Jing, Li design a `system` database to store the information of databases and users.
+
+---
+
 ## Oct 14, 2018
 
 Xunbin, Su adds the function of shutdowning the `ghttp` server. In addition, he addes the `ginit` command to system and prepares the nodejs API.
