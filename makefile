@@ -40,11 +40,11 @@ CC = g++
 #NOTICE: -O2 is recommended, while -O3(add loop-unroll and inline-function) is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-#CFLAGS = -c -Wall -O2 -pthread -std=c++11
-#EXEFLAG = -O2 -pthread -std=c++11
+CFLAGS = -c -Wall -O2 -pthread -std=c++11
+EXEFLAG = -O2 -pthread -std=c++11
 #-coverage
-CFLAGS = -c -Wall -pthread -g -std=c++11 -pg
-EXEFLAG = -pthread -g -std=c++11 -pg
+#CFLAGS = -c -Wall -pthread -g -std=c++11 -pg
+#EXEFLAG = -pthread -g -std=c++11 -pg
 
 #add -lreadline [-ltermcap] if using readline or objs contain readline
 library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
@@ -493,7 +493,7 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 #objects in Server/ end
 
 
-$(lib_antlr):
+pre:
 	rm -rf tools/libantlr3c-3.4/
 	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
 	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
@@ -529,7 +529,7 @@ test: $(TARGET)
 	@bin/update_test > /dev/null
 
 clean:
-	rm -rf lib/libantlr.a
+	#rm -rf lib/libantlr.a
 	$(MAKE) -C api/socket/cpp/src clean
 	$(MAKE) -C api/socket/cpp/example clean
 	$(MAKE) -C api/socket/java/src clean
@@ -549,7 +549,6 @@ clean:
 dist: clean
 	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db
 	rm -rf tools/libantlr3c-3.4 lib/libantlr.a Parser/Sparql*
-	#rm -rf Parser/SparqlLexer* Parser/SparlParser.cpp
 	rm -rf cscope* .cproject .settings tags
 	rm -rf *.info
 	rm -rf backups/*.db
