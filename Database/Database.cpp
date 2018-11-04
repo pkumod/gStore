@@ -2142,8 +2142,8 @@ Database::build_s2xx(ID_TUPLE* _p_id_tuples)
 	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_spo_cmp);
 
 	//remove duplicates from the id tables
-	int j = 1;
-	for(int i = 1; i < this->triples_num; ++i)
+	TYPE_TRIPLE_NUM j = 1;
+	for(TYPE_TRIPLE_NUM i = 1; i < this->triples_num; ++i)
 	{
 		if(!Util::equal(_p_id_tuples[i], _p_id_tuples[i-1]))
 		{
