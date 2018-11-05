@@ -837,7 +837,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				useful += this->temp_result->results[i].getAllVarset();
 		}
 
-		if ((int)this->temp_result->results.size() > 1)
+		if ((int)this->temp_result->results.size() > 1 || this->query_tree.getProjectionModifier() == QueryTree::Modifier_Distinct)
 		{
 			TempResultSet *new_temp_result = new TempResultSet();
 
