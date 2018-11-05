@@ -1,6 +1,6 @@
 You are advised to read init.conf file, and modify it as you wish. (this file will configure the basic options of gStore system)
 
-gStore is a green software, and you just need to compile it with two commands. Please run
+gStore is a green software, and you just need to compile it with three commands. Please run
 
 ```
 sudo ./scripts/setup/setup_$(ARCH).sh 
