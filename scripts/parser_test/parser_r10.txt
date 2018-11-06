@@ -1,0 +1,3 @@
+?title	?price
+"SPARQL Tutorial"	
+"The Semantic Web"	"23"^^<http://www.w3.org/2001/XMLSchema#integer>

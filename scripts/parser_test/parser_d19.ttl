@@ -1,0 +1,10 @@
+@prefix  foaf:  <http://xmlns.com/foaf/0.1/> .
+
+_:a    foaf:name   "Alice" .
+_:a    foaf:knows  _:b .
+_:a    foaf:knows  _:c .
+
+_:b    foaf:name   "Bob" .
+
+_:c    foaf:name   "Clare" .
+_:c    foaf:nick   "CT" .	    
