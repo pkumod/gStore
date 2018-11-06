@@ -822,8 +822,6 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
 void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 {
-	//cout << "flag1" << endl;
-
 	if (this->temp_result == NULL)
 		return;
 
@@ -1078,7 +1076,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (!ret_result.checkUseStream())
 		{
-			//cout << "flag2" << endl;
 			for (unsigned i = 0; i < ret_result.ansNum; i++)
 			{
 				ret_result.answer[i] = new string [ret_result.select_var_num];
@@ -1092,32 +1089,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						if (ans_id != INVALID)
 						{
 							this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], isel[k]);
-						//ret_result.answer[i][j] = trie->Uncompress(ret_result.answer[i][j], ret_result.answer[i][j].length());
 						}
 					}
 					else 
 					{
-				//		ret_result.answer[i][j] = trie->Uncompress(result0.result[i].str[k - id_cols], 
-				//result0.result[i].str[k - id_cols].length());
 						ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
 					}
 				}
 			}
 
 			this->stringindex->trySequenceAccess();
-
-			//Uncompress
-		/*	for (unsigned i = 0; i < ret_result.ansNum; i++)
-			{
-				for(int j = 0; j < ret_result.select_var_num; j++)
-				{
-					ret_result.answer[i][j] = trie->Uncompress(ret_result.answer[i][j], ret_result.answer[i][j].length());
-				}
-			}*/
 		}
 		else
 		{
-			//cout << "flag3" << endl;
 			for (unsigned i = 0; i < ret_result.ansNum; i++)
 				for (int j = 0; j < ret_result.select_var_num; j++)
 				{
@@ -1130,14 +1114,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						if (ans_id != INVALID)
 						{
 							this->stringindex->randomAccess(ans_id, &ans_str, isel[k]);
-			//				ans_str = trie->Uncompress(ans_str, ans_str.length());
 						}
 						ret_result.writeToStream(ans_str);
 					}
 					else
 					{
 						string ans_str = result0.result[i].str[k - id_cols];
-	//					string ans_str = trie->Uncompress(result0.result[i].str[k - id_cols], result0.result[i].str[k - id_cols].length());
 						ret_result.writeToStream(ans_str);
 					}
 				}
@@ -1148,9 +1130,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 	
 	else if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
 	{
-	//	cout << "flag4" << endl;
 		ret_result.select_var_num = 1;
-		ret_result.setVar(vector<string>(1, "?__ask_retval"));
+		ret_result.setVar(vector<string>(1, "?_askResult"));
 		ret_result.ansNum = 1;
 
 		if (!ret_result.checkUseStream())
