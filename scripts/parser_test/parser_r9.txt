@@ -1,0 +1,4 @@
+?name	?mbox
+"Alice"	<mailto:alice@example.com>
+"Alice"	<mailto:alice@work.example>
+"Bob"	

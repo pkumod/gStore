@@ -1,0 +1,2 @@
+?s	?p	?o
+<http://example/a>	<http://example/b>	<http://example/c>
