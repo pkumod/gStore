@@ -377,19 +377,19 @@ bin/update_test ${YOUR_GROUP_NUMBER} ${YOUR_GROUP_SIZE} > /dev/null
 
 If you want to test the correctness of build/query on the big datasets, you can find `dataset_test` executable under the `scripts/` directory after you compile the whole project with `make`.
 
-Run `scripts/dataset_test ${YOUR_DATA_PATH} > /dev/null` to finish this test, and you will see the output in the end indicating whether successful or not.
+Run `scripts/dataset_test ${DB_NAME} ${DATASET_PATH} ${QUERY_PATH} ${ANSWER_PATH}> /dev/null` to finish this test, and you will see the output in the end indicating whether successful or not.
 
 Notice: 
 
-- You should place the datasets, queries and answers in this way: 
+- You should place queries and answers in this way: 
 
-	${YOUR_DATA_PATH}/WatDiv/database/*.nt 
+	${YOUR_DATA_PATH}*.sql 
 
-	${YOUR_DATA_PATH}/WatDiv/query/*.sql 
+	${YOUR_DATA_PATH}*.txt
 
-	${YOUR_DATA_PATH}/WatDiv/answer/*.txt
+- ${QUERY_PATH} and ${ANSWER_PATH} need to be ended with '/'.
 
-- Five datasets will be tested. They are "watdiv500M", "LUBM500M", "bsbm500M", "dbpedia_full" and "freebase". There are 20, 21, 10, 6 and 14 sparql queries and correct answers for them.
+- Query and its answer need to have the same name, for example, q0.sql and q0.txt.
 
 **gtest is used to test gStore with multiple datasets and queries.**
 
