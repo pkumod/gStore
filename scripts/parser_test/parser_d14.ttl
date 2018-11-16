@@ -1,0 +1,12 @@
+@prefix dc10:  <http://purl.org/dc/elements/1.0/> .
+@prefix dc11:  <http://purl.org/dc/elements/1.1/> .
+
+_:a  dc10:title     "SPARQL Query Language Tutorial" .
+_:a  dc10:creator   "Alice" .
+
+_:b  dc11:title     "SPARQL Protocol Tutorial" .
+_:b  dc11:creator   "Bob" .
+
+_:c  dc10:title     "SPARQL" .
+_:c  dc11:title     "SPARQL (updated)" .
+

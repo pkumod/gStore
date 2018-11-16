@@ -1,0 +1,11 @@
+@prefix  foaf:  <http://xmlns.com/foaf/0.1/> .
+
+_:x    foaf:name   "Alice" .
+_:x    foaf:mbox   <mailto:alice@example.com> .
+
+_:y    foaf:name   "Alice" .
+_:y    foaf:mbox   <mailto:asmith@example.com> .
+
+_:z    foaf:name   "Alice" .
+_:z    foaf:mbox   <mailto:alice.smith@example.com> .
+
