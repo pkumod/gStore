@@ -113,7 +113,7 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
 #gtest
 
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)update_test $(exedir)gdrop
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -162,8 +162,11 @@ $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
 $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX $(openmp)
 
-$(exedir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
-	        $(CC) $(EXEFLAG) -o $(exedir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
+$(testdir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
+	        $(CC) $(EXEFLAG) -o $(testdir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
+
+$(testdir)dataset_test: $(lib_antlr) $(objdir)dataset_test.o $(objfile)
+	        $(CC) $(EXEFLAG) -o $(testdir)dataset_test $(objdir)dataset_test.o $(objfile) $(library) $(openmp)
 #executables end
 
 
@@ -209,8 +212,13 @@ $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp D
 #objects in Main/ end
 
 #objects in scripts/ begin
-$(objdir)update_test.o: scripts/update_test.cpp Database/Database.h Util/Util.h $(lib_antlr)
-	$(CC) $(CFLAGS) scripts/update_test.cpp $(inc) -o $(objdir)update_test.o $(openmp)
+
+$(objdir)update_test.o: $(testdir)update_test.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) $(testdir)update_test.cpp $(inc) -o $(objdir)update_test.o $(openmp)
+
+$(objdir)dataset_test.o: $(testdir)dataset_test.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) $(testdir)dataset_test.cpp $(inc) -o $(objdir)dataset_test.o $(openmp)
+
 #objects in scripts/ end
 
 
@@ -541,7 +549,7 @@ clean:
 	#$(MAKE) -C KVstore clean
 	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole*
 	rm -rf bin/*.class
-	rm -rf bin/update_test
+	rm -rf $(testdir)update_test $(testdir)dataset_test
 	#rm -rf .project .cproject .settings   just for eclipse
 	rm -rf logs/*.log
 	rm -rf *.out   # gmon.out for gprof with -pg
