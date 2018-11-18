@@ -1,0 +1,275 @@
+.node {
+    cursor: move;
+}
+
+.node.fixed text{
+    stroke: #000000;
+    stroke-width: 1px;
+}
+
+.nodetext {
+    pointer-events: none;
+    font: 15px sans-serif;
+
+}
+
+
+.link {
+    stroke: #999;
+    /*stroke-opacity: .2;*/
+}
+
+
+.linetext {
+    font: 20px sans-serif;
+    fill-opacity: 0.0;
+}
+
+.img-circle {
+    -webkit-border-radius: 50em;
+    -moz-border-radius: 50em;
+    border-radius: 50em;
+}
+
+.circular-portrait {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    overflow: hidden;
+    border-radius: 50%;
+}
+
+.circular-portrait img {
+    width: 100%;
+    height: auto;
+}
+
+
+#wrapper{
+    position: absolute;
+    left: 50%;
+}
+.demo-container.container-rounded{
+    /*width: 1000px;*/
+    /*height: 800px;*/
+    position: relative;
+    left:-50%;
+}
+.demo-container.container-rounded {
+    margin: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 5px rgba(1, 1, 1, 0.7);
+    background-color: #FFFFFF;
+}
+
+
+.tt-menu > p {
+    margin: 1px 0 0 0 ;
+}
+
+.searchbar{
+    margin: 10px;
+    right: 0px;
+    position: absolute;
+}
+
+.svg-meowth-container {
+    /*margin:200px 400px 0 400px;*/
+    margin: 0 auto;
+    left:0;
+    right:0;
+    top: 40%;
+    overflow: auto;
+    position: absolute;
+    /*display: inline-block;*/
+    /*vertical-align: middle;*/
+}
+
+.typeahead, .tt-query, .tt-hint, .tt-menu {
+    width: 350px;
+}
+
+.typeahead,
+.tt-query,
+.tt-hint {
+    height: 44px;
+    padding: 8px 12px;
+    font-size: 24px;
+    line-height: 30px;
+    border: 2px solid #ccc;
+    -webkit-border-radius: 8px;
+    -moz-border-radius: 8px;
+    border-radius: 8px;
+    outline: none;
+}
+
+.typeahead {
+    background-color: #fff;
+}
+
+.typeahead:focus {
+    border: 2px solid #cf1a32;
+    box-shadow: 0px 0px 10px #cf1a32;
+}
+
+.tt-query {
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+}
+
+.tt-hint {
+    color: #999
+}
+
+.tt-menu {
+	max-height: 500px; 
+	overflow-y: auto;
+	padding: 2px 0;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    -webkit-border-radius: 8px;
+    -moz-border-radius: 8px;
+    border-radius: 8px;
+    -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+    -moz-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+    box-shadow: 0 5px 10px rgba(0,0,0,.2);
+}
+
+
+.tt-suggestion {
+    padding: 3px 20px;
+    font-size: 18px;
+    line-height: 24px;
+}
+
+.tt-suggestion:hover {
+    cursor: pointer;
+    color: #fff;
+    background-color: #cf1a32;
+}
+
+.tt-suggestion.tt-cursor {
+    color: #fff;
+    background-color: #cf1a32;
+}
+
+.tt-suggestion p {
+    margin: 0;
+}
+
+.gist {
+    font-size: 14px;
+}
+
+/* example specific styles */
+/* ----------------------- */
+
+#multiple-datasets .empty-message {
+    margin: 0 5px 5px 5px;
+    padding: 5px 10px;
+    text-align: center;
+    color : #D32F2F;
+    border-bottom: 1px solid #ccc;
+}
+
+#multiple-datasets .cate-name {
+    margin: 0 5px 5px 5px;
+    padding: 3px 0;
+    border-bottom: 1px solid #ccc;
+}
+
+#scrollable-dropdown-menu .tt-menu {
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+#rtl-support .tt-menu {
+    text-align: right;
+}
+
+/*
+.btn{
+    white-space:normal !important;
+    max-width:100px;
+
+    transition: all 0.3s;
+    margin: 5px;
+    text-decoration: none;
+    display: inline-block;
+    //background: lightgray;
+    //height: 50px;
+    width: 100px;
+    //line-height:50px;
+    text-align: center;
+    color:black;
+}
+.btn:hover {
+    box-shadow: 0 -4px;
+    font-size: 18px;
+    font-weight:bold;
+}
+
+
+
+.btn-group {
+    margin: 1px 6px;
+}
+*/
+.panel {
+    right: 0px;
+    margin: 10px 0 0 0 ;
+    position: absolute;
+    width: 350px;
+}
+
+.textbox {
+    border-radius: 8px;
+    background: #73AD21;
+}
+
+.preloadtext {
+    position: absolute;
+    display: inline-block;
+    vertical-align: middle;
+    line-height: normal;
+    text-align: center;
+}
+
+/*下面是spinner*/
+.spinner {
+    animation: rotator 1.4s linear infinite;
+}
+@keyframes rotator {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(270deg); }
+}
+.path {
+    stroke-dasharray: 187;
+    stroke-dashoffset: 0;
+    transform-origin: center;
+    animation:
+    dash 1.4s ease-in-out infinite,
+    colors 5.6s ease-in-out infinite;
+}
+@keyframes colors {
+    0% { stroke: #FFCDD2; }
+    25% { stroke: #E57373; }
+    50% { stroke: #F44336; }
+    75% { stroke: #D32F2F; }
+    100% { stroke: #cf1a32; }
+}
+@keyframes dash {
+    0% { stroke-dashoffset: 187; }
+    50% {
+        stroke-dashoffset: 46.75;
+        transform:rotate(135deg);
+    }
+    100% {
+        stroke-dashoffset: 187;
+        transform:rotate(450deg);
+    }
+}
+
+
