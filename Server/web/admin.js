@@ -126,82 +126,60 @@ function query(db, dp) {
 		$("#myspin").text("");
 		var target = $("#myspin").get(0);
 		spinner.spin(target);
-
 		$.get(encodeArgu3, function(data, status){
-			//setTimeout(function(){spinner.spin();}, 300);
-		//	spinner.spin();
-			if(status == "success"){
+		//	setTimeout(function(){
+		//		spinner.spin();
+		//	}, 300);
+			if(status=="success"){
 				if(data.StatusCode != 0)
-				{//alert(data.StatusMsg);
+				{	
+				//	alert(data.StatusMsg);
 						spinner.spin();
 						setTimeout(function(){alert(data.StatusMsg);}, 300);
 				}
 				else
 				{
-					spinner.spin();
 				//toTxt();
 				//alert(data);
-			    var lines = data.AnsNum;
-				var fileName = data.Filename;
-				//alert(lines);
-				//alert(lines);
-				var items = (data.ResponseBody).split("\n");
-				//alert(items[0]);
-				var valNum = items[0].split("?");
-				var rows = valNum.length - 1;
-				//alert(rows);
+				var obj = data;
+				var query_time = obj.QueryTime;
+				var fileName = obj.Filename;
+				var lines = obj.AnsNum;
+				if(lines > 100)
+					lines = 100;
+				var keys = obj.head.vars;
+				var items = obj.results.bindings;
+				var rows = keys.length-1;
 				var page = '<html><div id="myspin2"></div><div align="left"><a href="javascript:void(0);" id="back" style="font-size:16px;color:blue">Click to Return</a>';
 				page = page + '<a id="download" style="font-size:16px;margin-left:20px;color:blue">Click to Download</a>';
 				page = page + '<a id="trick" style="display: none">Click to back</a>';
 				page = page + '<p>Total answers: ' + data.AnsNum + '</p>';
 				page = page + '<p>Query time: ' + data.QueryTime + 'ms</p>';
-				if(lines > 100)
+
+				if(obj.AnsNum > 100)
 				{
-					lines = 100;
+					
 					page = page + '<p>Number of answers is too large, show only 100 of them, click to download the full result!</p>'; 
 					
 				}
 				page = page + '</div><table border="1" style = "font-size:medium">';
 				page = page + "<tr>";
-				
-				for(var ii = 1; ii <= rows; ii++)
+		
+				for(var ii = 0; ii <= rows; ii++)
 				{
-					page = page + "<th>" + "?" + valNum[ii] + "</th>";
+					page = page + "<th>" + "?" + keys[ii] + "</th>";
 				}
 				page = page + "</tr>";
 				var i = 1;
 				var j = 0;
-				for (i = 1; i <= lines; i++)
+				for (i = 0; i <= items.length - 1; i++)
 				{
 					page = page + "<tr>";
-					//alert(items[i]);
-
-					/*
-					var tmpItem = items[i].replace(/"([^"]*)"/g, "<$1>");
-					//alert(tmpItem);
-					var item = tmpItem.split(">");
-					//alert(item.length);
-					for(j = 0; j < rows; j++)
-					{
-						//alert(item[j]);
-						if(j < item.length)
-							page = page + '<td>' + item[j].replace("<","") + '</td>';
-						else
-							page = page + '<td>' + " " + '</td>';
-					
-					}
-					*/
-
-					
-					//alert(items[i]);
-					var item = items[i].split("\t");
-					//alert(item.length);
-					for(j = 0; j < rows; j++)
-					{
-						//alert(item[j]);
-						if(item[j] == "")
-							item[j] = " ";
-						page = page + '<td>' + item[j].replace("<","&lt;") + '</td>';
+					var item = items[i];
+					//alert(items[i]);	
+					for(var prop in item)
+					{	
+						page = page + '<td>' + item[prop].value + '</td>';
 					}
 					
 					page = page + "</tr>";
@@ -209,8 +187,7 @@ function query(db, dp) {
 				page = page + '</table></div></html>';
 				$("#main_body").empty();
 				$("#main_body").append(page);
-				//setTimeout(afterAns(fileName), 3000);
-			
+
 				var tmp1 = "?operation=download&filepath=" + fileName;
 				var request1 = escape(tmp1);
 				var element1 = document.getElementById("download");
@@ -245,6 +222,9 @@ function query(db, dp) {
 							e1.initEvent("click", true, true);
 							element3.dispatchEvent(e1);
 						}
+				
+				
+				
 					});
 				};
 
@@ -322,11 +302,14 @@ function monitor() {
 	var db_name6 = document.getElementById("_db_name_monitor").value;
 	if(db_name6 != "")
 	{
+		var username = getCookie('user');
+		var password = getCookie('pswd');
+	
 		$("#myspin").text("");
 		var target = $("#myspin").get(0);
 		spinner.spin(target);
 
-		var argu6 = "?operation=monitor&db_name=" + db_name6;
+		var argu6 = "?operation=monitor&db_name=" + db_name6 + "&username=" + username + "&password=" + password;
 		var encodeArgu6 = escape(argu6);
 		$.get(encodeArgu6, function(data, status){
 			//setTimeout(function(){spinner.spin();}, 300);
@@ -357,20 +340,7 @@ function monitor_empty(){
 	//alert("monitor_empty");
 	$("#monitorAns").empty();
 }
-//获取cookie
-function getCookie(name){
-    //alert("getCookie");
-    //alert(name);
-    var reg = RegExp(name+'=([^;]+)');
-    var arr = document.cookie.match(reg);
-    if(arr){
-      //alert("cookie got");
-      return arr[1];
-    }else{
-      //alert("no cookie");
-      return '';
-    }
-}
+
 function addUser(username, password){
 	if(username != "" && password != "")
 	{
@@ -380,7 +350,7 @@ function addUser(username, password){
 
 		var username7 = getCookie('user');
 		var password7 = getCookie('pswd');
-		var argu7 = "?operation=user&type=add_user&username1=" + username7 + "&password1=" + password7 + "&username2=" + username + "&addtion=" + password;
+		var argu7 = "?operation=user&type=add_user&username1=" + username7 + "&password1=" + password7 + "&username2=" + username + "&addition=" + password;
 		var encodeArgu7 = escape(argu7);
 		$.get(encodeArgu7, function(data, status){
 			//setTimeout(function(){spinner.spin();}, 300);
@@ -408,7 +378,7 @@ function delUser(username){
 
 		var username8 = getCookie('user');
 		var password8 = getCookie('pswd');
-		var argu8 = "?operation=user&type=delete_user&username1=" + username8 + "&password1=" + password8 + "&username2=" + username + "&addtion=";
+		var argu8 = "?operation=user&type=delete_user&username1=" + username8 + "&password1=" + password8 + "&username2=" + username + "&addition=";
 		var encodeArgu8 = escape(argu8);
 		$.get(encodeArgu8, function(data, status){
 			//setTimeout(function(){spinner.spin();}, 300);
@@ -436,7 +406,7 @@ function changePsw(username, password){
 
 		var username77 = getCookie('user');
 		var password77 = getCookie('pswd');
-		var argu77 = "?operation=user&type=change_psw&username1=" + username77 + "&password1=" + password77 + "&username2=" + username + "&addtion=" + password;
+		var argu77 = "?operation=user&type=change_psw&username1=" + username77 + "&password1=" + password77 + "&username2=" + username + "&addition=" + password;
 		var encodeArgu77 = escape(argu77);
 		$.get(encodeArgu77, function(data, status){
 			//setTimeout(function(){spinner.spin();}, 300);
@@ -467,7 +437,7 @@ function addPrivilege(username, type, db){
 		var username9 = getCookie('user');
 		var password9 = getCookie('pswd');
 		type = "add_" + type;
-		var argu9 = "?operation=user&type=" + type + "&username1=" + username9 + "&password1=" + password9 + "&username2=" + username + "&addtion=" + db;
+		var argu9 = "?operation=user&type=" + type + "&username1=" + username9 + "&password1=" + password9 + "&username2=" + username + "&addition=" + db;
 		var encodeArgu9 = escape(argu9);
 		$.get(encodeArgu9, function(data, status){
 			if(status == "success"){
@@ -494,7 +464,7 @@ function delPrivilege(username, type, db){
 		var username11 = getCookie('user');
 		var password11 = getCookie('pswd');
 		type = "delete_" + type
-		var argu11 = "?operation=user&type=" + type + "&username1=" + username11 + "&password1=" + password11 + "&username2=" + username + "&addtion=" + db;
+		var argu11 = "?operation=user&type=" + type + "&username1=" + username11 + "&password1=" + password11 + "&username2=" + username + "&addition=" + db;
 		var encodeArgu11 = escape(argu11);
 		$.get(encodeArgu11, function(data, status){
 			//setTimeout(function(){spinner.spin();}, 300);
@@ -565,9 +535,12 @@ function showDatabases() {
 		$("#myspin").text("");
 		var target = $("#myspin").get(0);
 		spinner.spin(target);
-
+		
+		var username = getCookie('user');
+		var password = getCookie('pswd');
+	
 	//alert("showDatabases");
-	var argu10 = "?operation=show";
+	var argu10 = "?operation=show&username=" + username + "&password=" + password;
 	var encodeArgu10 = escape(argu10);
 	//alert(encodeArgu10);
 	$.get(encodeArgu10, function(data, status){
@@ -609,3 +582,17 @@ function setCookie(name,value,day){
     //alert("document.cookie");
     //alert(document.cookie);
   }
+//获取cookie
+function getCookie(name){
+    //alert("getCookie");
+    //alert(name);
+    var reg = RegExp(name+'=([^;]+)');
+    var arr = document.cookie.match(reg);
+    if(arr){
+      //alert("cookie got");
+      return arr[1];
+    }else{
+      //alert("no cookie");
+      return '';
+    }
+}
