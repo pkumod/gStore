@@ -49,7 +49,7 @@ class GstoreConnector:
     def load(self, db_name, username, password):
         cmd = self.Url + "/?operation=load&db_name=" + db_name + "&username=" + username + "&password=" + password
         res = self.Get(cmd)
-        print (res)
+        print(res)
         if res == "load database done.":
             return True
         return False
