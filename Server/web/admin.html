@@ -6,9 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Bootstrap -->
-<!--  <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
--->
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">                          
+  <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 
   <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -16,10 +14,13 @@
     <script src="https://cdn.bootcss.com/html5shiv/3.7.3/html5shiv.min.js"></script>
     <script src="https://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
   <![endif]-->
-</head>
+  <link href="../css/material-design-color-palette.min.css" rel="stylesheet">
+		 <link href="../css/d3-context-menu.css" rel="stylesheet">
+		 <link href="../css/cateIns.css" rel="stylesheet">
+  
+  </head>
 <body id="main_body">
-<div id="myspin"></div>  
-<div id="wapper" class="container">
+  <div id="wapper" class="container">
 	  <div id="img-box" style="margin:0px 150px;">
 	    <img src="logo.png" alt="gStore" height="100">
       </div>
@@ -86,8 +87,13 @@
 				
 				<div class="form-group">
 					<label for="query_text">Query text</label>
-					<textarea id="query_text" class="form-control" name="query_text" placeholder="query_text" style="height: 300px"></textarea>
+					<textarea id="element_3" class="form-control" name="query_text" placeholder="query_text" style="height: 300px" onkeyup="handlekeyup(event)"></textarea>
 				</div>
+				<div style="position: absolute;left: 400px;top:400px; display: none; z-index: 2" class="searchbar" id="multiple-datasets">
+					<input id="searchbox" class="typeahead" placeholder="搜索 实体" >		
+			</div>
+				<div id="buttonlist" class="row" style="display:none"></div>
+			
 				<div class="form-group">
 					<label for="result_format">Result format</label>
 					<select id="result_format" class="form-control" name="result_format">
@@ -99,7 +105,7 @@
 				</div>
 				<input type="hidden" name="queryAns1" id="queryAns" value="defaultAns"/>
 				<a id="hideLink" style="display: none">link</a>
-				<button id="query_button" type="button" class="btn btn-default" onclick="query(_db_name_3.value, query_text.value)">Run query</button>
+				<button id="query_button" type="button" class="btn btn-default" onclick="query(_db_name_3.value, element_3.value)">Run query</button>
 			</form>
 		</div>
         <div role="tabpanel" class="tab-pane" id="unload">
@@ -188,12 +194,18 @@
 	</div>
     
 </div>
-  <script src="https://cdn.bootcss.com/spin.js/2.3.2/spin.min.js"></script>
 
   <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
   <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
   <!-- Include all compiled plugins (below), or include individual files as needed -->
   <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
   <script src="admin.js"></script>
-</body>
+	<script src="js/handlebars.js"></script>
+		 <script src="js/progressbar.js"></script>
+		 <script src="js/typeahead.bundle.js"></script>
+		 <script src="js/search_typeahead.js"></script>
+		 <script src="js/categoryInstance.js"></script>
+		 <script src="/js/entityTriple.js"></script>
+
+  </body>
 </html>
