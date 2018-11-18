@@ -531,10 +531,12 @@ $(api_java):
 .PHONY: clean dist tarball api_example gtest sumlines contribution test
 
 test: $(TARGET)
-	@echo "basic build/query/add/sub/drop test"
+	@echo "basic build/query/add/sub/drop test......"
 	@bash scripts/basic_test.sh
-	@echo "repeatedly insertion/deletion test"
+	@echo "repeatedly insertion/deletion test......"
 	@bin/update_test > /dev/null
+	@echo "parser test......"
+	@bash scripts/parser_test.sh
 
 clean:
 	#rm -rf lib/libantlr.a

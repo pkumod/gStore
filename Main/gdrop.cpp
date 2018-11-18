@@ -39,12 +39,11 @@ int main(int argc, char * argv[])
 	{
 		cout << "The database that you want to drop does not exist." << endl;
 		return -1;
-	}
-
+	};
 	//delete database information in system.db
 	Database system_db("system");
 	system_db.load();
-	string sparql = "DELETE WHERE {<" + db_name + "> ?x ?y.";
+	string sparql = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
 	ResultSet _rs;
 	FILE* ofp = stdout;
 	string msg;
