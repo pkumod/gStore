@@ -342,7 +342,7 @@ If you want to restore the initial configuration of the ghttp server, type `bin/
 
 #### 14. test utilities
 
-A series of test program are placed in the `scripts/` folder, and we will introduce the several useful ones: `full_test.sh`, `basic_test.sh`, `update_test.cpp`, `dataset_test.cpp` and `gtest.cpp`.
+A series of test program are placed in the `scripts/` folder, and we will introduce the several useful ones: `full_test.sh`, `basic_test.sh`, `update_test.cpp`, `parser_test.sh`, `dataset_test.cpp` and `gtest.cpp`.
 
 **`full_test.sh` is used to compare the performance of gStore and other database systems on multiple datasets and queries.**
 
@@ -354,7 +354,7 @@ Only gStore and Jena are tested and compared in this script, but it is easy to a
 
 Just run `bash scripts/basic_test.sh` to use this script.
 
-In fact, `make test` will conduct `basic_test.sh` above and `update_test.cpp` below.
+In fact, `make test` will conduct `basic_test.sh` above, `update_test.cpp` and `parser_test.sh` below.
 
 You are advised to finish this verification each time after you add some modifications and compile again(including the case that you update the code using `git pull`).
 
@@ -372,6 +372,10 @@ bin/update_test ${YOUR_GROUP_NUMBER} > /dev/null
 bin/update_test ${YOUR_GROUP_NUMBER} ${YOUR_GROUP_SIZE} > /dev/null
 
 ```
+
+**`parser_test.sh` is used to verify the correctness of parser.**
+
+Just run `bash scripts/parser_test.sh` to use this script.
 
 **`dataset_test.cpp` is used to verify the correctness of build/query on several big datasets.**
 
