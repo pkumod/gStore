@@ -328,14 +328,14 @@ public class GstoreConnector {
         this.disconnect();
         return msg;
     }
-	 public String user(String type, String username1, String password1, String username2, String addtion) {
+	 public String user(String type, String username1, String password1, String username2, String addition) {
         boolean connect_return = this.connect();
         if (!connect_return) {
             System.err.println("connect to server error. @GstoreConnector.show");
             return "connect to server error.";
         }
 
-        String cmd = "?operation=user&type=" + type + "&username1=" + username1 + "&password1=" + password1 + "&username2=" + username2 + "&addtion=" + addtion;
+        String cmd = "?operation=user&type=" + type + "&username1=" + username1 + "&password1=" + password1 + "&username2=" + username2 + "&addition=" + addition;
         String msg = this.sendGet(cmd);
         
         this.disconnect();

@@ -83,8 +83,8 @@ class GstoreConnector:
         cmd = self.Url + "/?operation=show"
         return Get(cmd)
 
-    def user(self, type, username1, password1, username2, addtion):
-        cmd = self.Url + "/?operation=user&type=" + type + "&username1=" + username1+ "&password1=" + password1 + "&username2=" + username2 + "&addtion=" +addition
+    def user(self, type, username1, password1, username2, addition):
+        cmd = self.Url + "/?operation=user&type=" + type + "&username1=" + username1+ "&password1=" + password1 + "&username2=" + username2 + "&addition=" +addition
         return self.Get(cmd)
 
     def showUser(self):
