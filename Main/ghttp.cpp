@@ -20,10 +20,10 @@
 #include "../Database/Database.h"
 #include "../Util/Util.h"
 
-#include "../rapidjson/document.h"
-#include "../rapidjson/prettywriter.h"  
-#include "../rapidjson/writer.h"
-#include "../rapidjson/stringbuffer.h"
+#include "../tools/rapidjson/document.h"
+#include "../tools/rapidjson/prettywriter.h"  
+#include "../tools/rapidjson/writer.h"
+#include "../tools/rapidjson/stringbuffer.h"
 using namespace rapidjson;
 using namespace std;
 //Added for the json-example:
