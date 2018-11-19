@@ -1,0 +1,3 @@
+?nameX	?nameY	?nickY
+"Alice"	"Bob"	
+"Alice"	"Clare"	"CT"
