@@ -536,7 +536,7 @@ test: $(TARGET)
 	@echo "basic build/query/add/sub/drop test......"
 	@bash scripts/basic_test.sh
 	@echo "repeatedly insertion/deletion test......"
-	@bin/update_test > /dev/null
+	@scripts/update_test > /dev/null
 	@echo "parser test......"
 	@bash scripts/parser_test.sh
 

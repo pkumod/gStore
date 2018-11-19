@@ -25,8 +25,8 @@ do
     if [ -s "equal.txt" ]; then
         echo "parser test #"$i" failed"
         all_passed=false
-    else
-        echo "parser test #"$i" passed"
+    #else
+        #echo "parser test #"$i" passed"
     fi
 
 	$gdrop "parser_test" > "tmp.txt"
