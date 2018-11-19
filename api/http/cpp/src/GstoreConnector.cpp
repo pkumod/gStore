@@ -215,11 +215,11 @@ GstoreConnector::disconnect()
 }
 */
 string
-GstoreConnector::user(string type, string username1, string password1, string username2, string addtion)
+GstoreConnector::user(string type, string username1, string password1, string username2, string addition)
 {
 	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
 
-	string cmd = url + "/?operation=user&type=" + type + "&username1=" + username1 + "&password1=" + password1 + "&username2=" + username2 + "&addtion=" + addtion; 
+	string cmd = url + "/?operation=user&type=" + type + "&username1=" + username1 + "&password1=" + password1 + "&username2=" + username2 + "&addition=" + addition; 
 	string recv_msg;
 	int ret = hc.Get(cmd, recv_msg);
 	return recv_msg;

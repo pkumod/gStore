@@ -51,7 +51,7 @@ public:
 	bool load();
 	bool unload();
 	void clear();
-	int query(const string _query, ResultSet& _result_set, FILE* _fp = stdout);
+	int query(const string _query, ResultSet& _result_set, FILE* _fp = stdout, bool update_flag = true);
 
 	//1. if subject of _triple doesn't exist,
 	//then assign a new subid, and insert a new SigEntry

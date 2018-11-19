@@ -1393,7 +1393,7 @@ Database::get_query_parse_lock()
 }
 
 int
-Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
+Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool update_flag)
 {
 	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
 
@@ -1414,7 +1414,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 	//for update, non-negative means true(and the num is updated triples num), -1 means error
 	int success_num = -100;  
 	bool need_output_answer = false;
-
+	
 	//Query
 	if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Not_Update)
 	{
@@ -1466,9 +1466,16 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp)
 		//tmpsi.clear();
 		pthread_rwlock_unlock(&(this->update_lock));
 	}
-	//Update
+	//Update 
 	else
 	{
+		if(update_flag == 0)
+		{
+			//if update_flag == 0, means no privilege to do update query, so we throw an error.
+			string exception_msg = "no update prvilege, update query failed.";
+			cout << exception_msg << endl;
+			throw exception_msg;
+		}
 #ifdef ONLY_READ
 		cout<<"this database is only read";
 		//invalid query because updates are not allowed in ONLY_READ mode

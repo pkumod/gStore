@@ -502,6 +502,8 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 
 
 pre:
+	rm -rf tools/rapidjson/
+	cd tools; tar -xzvf rapidjson.tar.gz;
 	rm -rf tools/libantlr3c-3.4/
 	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
 	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
