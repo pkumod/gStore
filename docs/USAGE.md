@@ -1,4 +1,4 @@
-## gStore currently includes five executables and others.
+## gStore currently includes thirteen executables and others.
 
 **All the commands of gStore should be used in the root directory of gStore like bin/gconsole, because executables are placed in bin/, and they may use some files whose paths are indicated in the code, not absolute paths. We will ensure that all paths are absolute later by asking users to give the absolute path in their own systems to really install/configure the gStore. However, you must do as we told now to avoid errors.**
 
@@ -14,18 +14,21 @@ Tabs, '<' and '>' are not allowed to appear in entity, literal or predicates of 
 As long as you download and compile the code of gStore system, a database named `system`(the real directory name is `system.db`) will be created automatically.
 This is the database that manages the information of system statistics, including all users and all databases.
 You can query this database using `gquery` command, but you are forbidded to modify it using editors.
-The only way to change this database is the operations on users and databases, which are sent to `ghttp` server.
 
 gbuild is used to build a new database from a RDF triple format file.
 
 `# bin/gbuild db_name rdf_triple_file_path`
 
-For example, we build a database from lubm.nt which can be found in example folder.
+For example, we build a database from lubm.nt which can be found in data folder.
 
     [bookug@localhost gStore]$ bin/gbuild lubm ./data/lubm/lubm.nt 
     gbuild...
     argc: 3 DB_store:lubm      RDF_data: ./data/lubm/lubm.nt  
     begin encode RDF from : ./data/lubm/lubm.nt ...
+
+Notice: 
+
+- You should not build a empty database because this will cause problems.
 
 - - -
 
@@ -171,7 +174,7 @@ The number of concurrent running queries is suggest to be lower than 300 on a ma
 To use the concurrency feature, you had better modify the system settings of 'open files' and 'maximum processes' to 65535 or larger.
 Three scripts are placed in [setup](../scripts/setup/) to help you modify the settings in different Linux distributions.
 
-**If queries containing updates are sent via `ghttp`, a `checkpoint` command must be sent and done by the `ghttp` console before we shutdown the database server. Otherwise, the updates may not be synchronize to disk and will be lost if the `ghttp` server is stopped.**
+**If queries containing updates are sent via `ghttp`, you'd better often send a `checkpoint` command to the `ghttp` console. Otherwise, the updates may not be synchronize to disk and will be lost if the `ghttp` server is stopped abnormally.(For example, type "Ctrl+C")**
 
 **Attention: you can not stop ghttp by simply type the command "Ctrl+C", because this will cause the changes of databases lost.
 
@@ -319,21 +322,27 @@ After starting ghttp, type `bin/gshow ip port` to check loaded database.
 
 - - -
 
-#### 11. shutdown
+#### 11. gdrop
 
-After starting ghttp, type `bin/shutdown port` to stop the server.
+In order to drop the database, you should not simply type `rm -r db_name.db` because this will not update the built-in database named `system`. Instead, you should type `bin/gdrop db_name`.
+
+---
+
+#### 12. shutdown
+
+After starting ghttp, type `bin/shutdown port` to stop the server instead of simply typing the command "Ctrl+C".
     
 ---
 
-#### 12. ginit
+#### 13. ginit
 
 If you want to restore the initial configuration of the ghttp server, type `bin/ginit` to rebuild the system.db.
     
 ---
 
-#### 13. test utilities
+#### 14. test utilities
 
-A series of test program are placed in the `scripts/` folder, and we will introduce the several useful ones: `full_test.sh`, `basic_test.sh`, `update_test.cpp` and `gtest.cpp`.
+A series of test program are placed in the `scripts/` folder, and we will introduce the several useful ones: `full_test.sh`, `basic_test.sh`, `update_test.cpp`, `parser_test.sh`, `dataset_test.cpp` and `gtest.cpp`.
 
 **`full_test.sh` is used to compare the performance of gStore and other database systems on multiple datasets and queries.**
 
@@ -341,21 +350,50 @@ To use `full_test.sh` utility, please download the database system which you wan
 
 Only gStore and Jena are tested and compared in this script, but it is easy to add other database systems, if you would like to spend some time on reading this script. You may go to [test report](pdf/gstore测试报告.pdf) or [Frequently Asked Questions](FAQ.md) for help if you encounter a problem.
 
-**`basic_test.sh` is used to verify the correctness of build/query/add/sub on several small datasets.**
+**`basic_test.sh` is used to verify the correctness of build/query/add/sub/drop on several small datasets.**
 
 Just run `bash scripts/basic_test.sh` to use this script.
-In fact, `make test` will conduct `basic_test.sh` above and `update_test.cpp` below.
+
+In fact, `make test` will conduct `basic_test.sh` above, `update_test.cpp` and `parser_test.sh` below.
+
 You are advised to finish this verification each time after you add some modifications and compile again(including the case that you update the code using `git pull`).
 
 **`update_test.cpp` is used to verify the correctness of repeatedly insertion/deletion.**
 
-To use this utility, you will find `update_test` executable under the `bin/` directory after you compile the whole project with `make`.
-Run `bin/update_test > /dev/null` to finish this test, and you will see the output in the end indicating whether successful or not.
-This command will test 10000 groups of insertions/deletions by default, to change the group number you can run in the way below:
+To use this utility, you will find `update_test` executable under the `scripts/` directory after you compile the whole project with `make`.
+
+Run `scripts/update_test > /dev/null` to finish this test, and you will see the output in the end indicating whether successful or not.
+
+This command will test 10000 groups of insertions/deletions and 1-5 triples for each group by default. In order to change the group number and the group size you can run in the way below:
 
 ```
-bin/update_test ${YOUR_GROUP_NUMBER}
+bin/update_test ${YOUR_GROUP_NUMBER} > /dev/null
+
+bin/update_test ${YOUR_GROUP_NUMBER} ${YOUR_GROUP_SIZE} > /dev/null
+
 ```
+
+**`parser_test.sh` is used to verify the correctness of parser.**
+
+Just run `bash scripts/parser_test.sh` to use this script.
+
+**`dataset_test.cpp` is used to verify the correctness of build/query on several big datasets.**
+
+If you want to test the correctness of build/query on the big datasets, you can find `dataset_test` executable under the `scripts/` directory after you compile the whole project with `make`.
+
+Run `scripts/dataset_test ${DB_NAME} ${DATASET_PATH} ${QUERY_PATH} ${ANSWER_PATH}> /dev/null` to finish this test, and you will see the output in the end indicating whether successful or not.
+
+Notice: 
+
+- You should place queries and answers in this way: 
+
+	${YOUR_DATA_PATH}*.sql 
+
+	${YOUR_DATA_PATH}*.txt
+
+- ${QUERY_PATH} and ${ANSWER_PATH} need to be ended with '/'.
+
+- Query and its answer need to have the same name, for example, q0.sql and q0.txt.
 
 **gtest is used to test gStore with multiple datasets and queries.**
 
