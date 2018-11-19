@@ -30,11 +30,11 @@ img, iframe {
 iframe {
     max-height: 100%;
 }
-
+/*
 img {
     height:auto;
 }
-
+*/
 .btn {background:#135571;color:#fff;
 
 		-webkit-transition: all 250ms;
@@ -337,7 +337,7 @@ input {
     display: block;
     vertical-align: middle;
     line-height: 30px;
-    margin: 0 auto;
+    //margin: 0 auto;
     width: 100%;
     max-width: 400px;
 
