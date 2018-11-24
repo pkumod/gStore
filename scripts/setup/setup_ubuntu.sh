@@ -5,29 +5,29 @@ echo -e "\033[43;35m run this script in bash using root priviledge \033[0m \n"
 # TODO: check versions of system software, disk size and memory
 sleep 5s
 
-apt install aptitude
+apt install -y aptitude
 echo -e "aptitude installed to search softwares conveniently \n"
 
-apt install gcc g++
+apt install -y gcc g++
 echo -e "g++ installed \n"
 
-apt install make
+apt install -y make
 echo -e "make installed \n"
 
-apt install libreadline-dev
+apt install -y libreadline-dev
 echo -e "readline-devel installed \n"
 
-apt install openjdk-8-jdk
+apt install -y openjdk-8-jdk
 echo -e "openjdk 8 installed \n"
 
-apt install curl libcurl4 libcurl4-openssl-dev
+apt install -y curl libcurl4 libcurl4-openssl-dev
 echo -e "libcurl-devel installed \n"
 
 echo -e "Optional: requests for python api, pthreads and curl-devel for php api, realpath for gconsole, ccache for faster compilation\n"
 echo -e "For help: https://github.com/pkumod/gStore/blob/master/docs/DEMAND.md \n"
 sleep 5s
 
-apt install libboost-all-dev
+apt install -y libboost-all-dev
 echo -e "libboost-all-dev installed \n"
 
 ldconfig -v
