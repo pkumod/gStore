@@ -1083,17 +1083,20 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				for (int j = 0; j < ret_result.select_var_num; j++)
 				{
 					int k = proj2temp[j];
-					if (k < id_cols)
+					if (k != -1)
 					{
-						unsigned ans_id = result0.result[i].id[k];
-						if (ans_id != INVALID)
+						if (k < id_cols)
 						{
-							this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], isel[k]);
+							unsigned ans_id = result0.result[i].id[k];
+							if (ans_id != INVALID)
+							{
+								this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], isel[k]);
+							}
 						}
-					}
-					else 
-					{
-						ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
+						else 
+						{
+							ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
+						}
 					}
 				}
 			}
@@ -1106,21 +1109,24 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				for (int j = 0; j < ret_result.select_var_num; j++)
 				{
 					int k = proj2temp[j];
-					if (k < id_cols)
+					if (k != -1)
 					{
-						string ans_str;
-
-						unsigned ans_id = result0.result[i].id[k];
-						if (ans_id != INVALID)
+						if (k < id_cols)
 						{
-							this->stringindex->randomAccess(ans_id, &ans_str, isel[k]);
+							string ans_str;
+
+							unsigned ans_id = result0.result[i].id[k];
+							if (ans_id != INVALID)
+							{
+								this->stringindex->randomAccess(ans_id, &ans_str, isel[k]);
+							}
+							ret_result.writeToStream(ans_str);
 						}
-						ret_result.writeToStream(ans_str);
-					}
-					else
-					{
-						string ans_str = result0.result[i].str[k - id_cols];
-						ret_result.writeToStream(ans_str);
+						else
+						{
+							string ans_str = result0.result[i].str[k - id_cols];
+							ret_result.writeToStream(ans_str);
+						}
 					}
 				}
 
