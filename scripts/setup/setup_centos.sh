@@ -5,19 +5,19 @@ echo -e "\033[43;35m run this script in bash using root priviledge \033[0m \n"
 # TODO: check versions of system software, disk size and memory
 sleep 5s
 
-yum install gcc gcc-c++
+yum install -y gcc gcc-c++
 echo -e "g++ installed \n"
 
-yum install make
+yum install -y make
 echo -e "make installed \n"
 
-yum install readline readline-devel
+yum install -y readline readline-devel
 echo -e "readline-devel installed \n"
 
-yum install java-1.8.0-openjdk-devel
+yum install -y java-1.8.0-openjdk-devel
 echo -e "openjdk 8 installed \n"
 
-yum install libcurl-devel
+yum install -y libcurl-devel
 echo -e "libcurl-devel installed \n"
 
 echo -e "Optional: requests for python api, pthreads and curl-devel for php api, realpath for gconsole, ccache for faster compilation\n"

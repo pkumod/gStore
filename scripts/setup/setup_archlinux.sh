@@ -5,26 +5,26 @@ echo -e "\033[43;35m run this script in bash using root priviledge \033[0m \n"
 # TODO: check versions of system software, disk size and memory
 sleep 5s
 
-pacman -S gcc gcc
+pacman -S --noconfirm gcc gcc
 echo -e "g++ installed \n"
 
-pacman -S make
+pacman -S --noconfirm make
 echo -e "make installed \n"
 
-pacman -S readline
+pacman -S --noconfirm readline
 echo -e "readline-devel installed \n"
 
-pacman -S jdk8-openjdk
+pacman -S --noconfirm jdk8-openjdk
 echo -e "openjdk 8 installed \n"
 
-pacman -S curl
+pacman -S --noconfirm curl
 echo -e "libcurl-devel installed \n"
 
 echo -e "Optional: requests for python api, pthreads and curl-devel for php api, realpath for gconsole, ccache for faster compilation\n"
 echo -e "For help: https://github.com/pkumod/gStore/blob/master/docs/DEMAND.md \n"
 sleep 5s
 
-pacman -S boost boost-libs
+pacman -S --noconfirm boost boost-libs
 echo -e "boost-libs installed \n"
 
 ldconfig -v
