@@ -33,7 +33,7 @@ class GstoreConnector:
                 ret += c
             elif (ord(c)>=256):
                 ret += chr(ord(c))
-            elif ((ord(c)!=10) and (ord(c)!=11) and (ord(c)!=13)):
+            elif ((ord(c)!=9) and (ord(c)!=10) and (ord(c)!=13)):
                 ret += "{}{:X}".format("%", ord(c))
         return ret
 
