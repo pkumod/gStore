@@ -37,4 +37,20 @@ echo $gc->query($username, $password, "lubm", $sparql) . PHP_EOL;
 // fquery--make a SPARQL query and save the result in the file     
 $gc->fquery($username, $password, "lubm", $sparql, $filename);
 
+// show user information
+$ret = $gc->showUser();
+echo $ret. PHP_EOL;
+
+// show 
+$ret = $gc->show($username, $password);
+echo $ret. PHP_EOL;
+
+// monitor the database
+$ret = $gc->monitor("lubm", $username, $password);
+echo $ret. PHP_EOL;
+
+// save the database
+$ret = $gc->checkpoint("lubm", $username, $password);
+echo $ret. PHP_EOL;
+
 ?>
