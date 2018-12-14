@@ -35,8 +35,20 @@ ret = gc.build("lubm", "data/lubm/lubm.nt", username, password)
 # load the database 
 ret = gc.load("lubm", username, password)
 
+# show 
+print(gc.show(username, password))
+
+# show information of all users
+print(gc.showUser())
+
+# monitor the database status
+print(gc.monitor('lubm', username, password))
+
+# save the database 
+print(gc.checkpoint('lubm', username, password))
+
 # query
-print (gc.query(username, password, "lubm", sparql))
+print(gc.query(username, password, "lubm", sparql))
 
 # query and save the result in a file
 gc.fquery(username, password, "lubm", sparql, filename)
