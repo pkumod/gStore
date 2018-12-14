@@ -81,8 +81,8 @@ class GstoreConnector:
         self.fGet(cmd, filename)
         return
 
-    def show(self):
-        cmd = self.Url + "/?operation=show"
+    def show(self, username, password):
+        cmd = self.Url + "/?operation=show&username=" + username + "&password=" + password
         return self.Get(cmd)
 
     def user(self, type, username1, password1, username2, addition):
@@ -93,10 +93,10 @@ class GstoreConnector:
         cmd = self.Url + "/?operation=showUser"
         return self.Get(cmd)
 
-    def monitor(self, db_name):
-        cmd = self.Url + "/?operation=monitor&db_name=" + db_name;
+    def monitor(self, db_name, username, password):
+        cmd = self.Url + "/?operation=monitor&db_name=" + db_name + "&username=" + username + "&password=" + password
         return self.Get(cmd)
     
-    def checkpoint(self, db_name):
-        cmd = self.Url + "/?operation=checkpoint&db_name=" + db_name
+    def checkpoint(self, db_name, username, password):
+        cmd = self.Url + "/?operation=checkpoint&db_name=" + db_name + "&username=" + username + "&password=" + password
         return self.Get(cmd)
