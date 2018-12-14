@@ -315,14 +315,14 @@ public class GstoreConnector {
   //  }
 
 	//show all databases
-    public String show() {
+    public String show(String _username, String _password) {
         boolean connect_return = this.connect();
         if (!connect_return) {
             System.err.println("connect to server error. @GstoreConnector.show");
             return "connect to server error.";
         }
 
-        String cmd = "?operation=show";
+        String cmd = "?operation=show&username=" + _username + "&password=" + _password;
         String msg = this.sendGet(cmd);
         
         this.disconnect();
@@ -354,27 +354,27 @@ public class GstoreConnector {
         this.disconnect();
         return msg;
     }
-	 public String monitor(String db_name) {
+	 public String monitor(String db_name, String _username, String _password) {
         boolean connect_return = this.connect();
         if (!connect_return) {
             System.err.println("connect to server error. @GstoreConnector.show");
             return "connect to server error.";
         }
 
-        String cmd = "?operation=monitor&db_name=" + db_name;
+        String cmd = "?operation=monitor&db_name=" + db_name + "&username=" + _username + "&password=" + _password;
         String msg = this.sendGet(cmd);
         
         this.disconnect();
         return msg;
     }
-	 public String checkpoint(String db_name) {
+	 public String checkpoint(String db_name, String _username, String _password) {
         boolean connect_return = this.connect();
         if (!connect_return) {
             System.err.println("connect to server error. @GstoreConnector.show");
             return "connect to server error.";
         }
 
-        String cmd = "?operation=checkpoint&db_name=" + db_name;
+        String cmd = "?operation=checkpoint&db_name=" + db_name + "&username=" + _username + "&password=" + _password;
         String msg = this.sendGet(cmd);
         
         this.disconnect();
