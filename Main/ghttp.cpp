@@ -2,7 +2,7 @@
 # Filename: ghttp.cpp
 # Author: Bookug Lobert 
 # Mail: zengli-bookug@pku.edu.cn
-# Last Modified: 2018-10-19 20:27
+# Last Modified: 2018-12-24 17:00
 # Description: created by lvxin, improved by lijing and suxunbin
 =============================================================================*/
 
@@ -779,13 +779,18 @@ int initialize(int argc, char *argv[])
 		Database *current_database = new Database(database);
 	if(database.length() != 0)
 	{
+		if (!boost::filesystem::exists(database + ".db"))
+		{
+			cout << "Database " << database << ".db has not been built." << endl;
+			return -1;
+		}
+
 		bool flag = current_database->load();
 		if (!flag)
 		{
 			cout << "Failed to load the database."<<endl;
 			delete current_database;
 			current_database = NULL;
-	
 			return -1;
 		}
 	
@@ -810,6 +815,23 @@ int initialize(int argc, char *argv[])
 	//cout << "Util::get_cur_time: " << Util::get_cur_time() << endl;
 	//cout << "Util::getTimeString: " << Util::getTimeString() << endl;
 	cout << "Util::get_date_time: " << Util::get_date_time() << endl;
+
+	string cmd = "lsof -i:" + Util::int2string(server.config.port) + " > system.db/ep.txt";
+	system(cmd.c_str());
+	fstream ofp;
+	ofp.open("system.db/ep.txt", ios::in);
+	int ch = ofp.get();
+	if (!ofp.eof())
+	{
+		ofp.close();
+		cout << "Port " << server.config.port << " is already in use." << endl;
+		string cmd = "rm system.db/ep.txt";
+		system(cmd.c_str());
+		return -1;
+	}
+	ofp.close();
+	cmd = "rm system.db/ep.txt";
+	system(cmd.c_str());
 
 	//time_t cur_time = time(NULL);
 	//long time_backup = Util::read_backup_time();
