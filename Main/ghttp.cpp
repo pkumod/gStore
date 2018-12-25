@@ -44,6 +44,7 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define SYSTEM_PATH "data/system/system.nt"
 #define	MAX_QUERYLOG_size 800000000 
 #define QUERYLOG_PATH "logs/endpoint/"
+#define SYSTEM_USERNAME "system"
 
 //int initialize();
 int initialize(int argc, char *argv[]);
@@ -112,6 +113,7 @@ bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 FILE* query_logfp = NULL;
 string queryLog = "logs/endpoint/query.log";
 mutex query_log_lock;
+string system_password;
 //pthread_rwlock_t database_load_lock;
 
 pthread_rwlock_t databases_map_lock;
@@ -832,6 +834,11 @@ int initialize(int argc, char *argv[])
 	ofp.close();
 	cmd = "rm system.db/ep.txt";
 	system(cmd.c_str());
+
+	system_password = Util::int2string(rand()) + Util::int2string(rand());
+	ofp.open("system.db/password" + Util::int2string(server.config.port) + ".txt", ios::out);
+	ofp << system_password;
+	ofp.close();
 
 	//time_t cur_time = time(NULL);
 	//long time_backup = Util::read_backup_time();
@@ -3149,7 +3156,7 @@ bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 	password = UrlDecode(password);
 
 	//check identity.
-	if (username != ROOT_USERNAME)
+	if (username != SYSTEM_USERNAME)
 	{
 		string error = "You have no rights to stop the server.";
 		string resJson = CreateJson(702, error, 0);
@@ -3157,18 +3164,14 @@ bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		cout << "Stop server failed." << endl;
 		return false;
 	}
-	pthread_rwlock_rdlock(&users_map_lock);
-	std::map<std::string, struct User *>::iterator it = users.find(ROOT_USERNAME);
-	if(it->second->getPassword() != password)
+	if(system_password != password)
 	{
 		string error = "wrong password.";
 		string resJson = CreateJson(902, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		pthread_rwlock_unlock(&users_map_lock);
 		cout << "Stop server failed." << endl;
 		return false;
 	}
-	pthread_rwlock_unlock(&users_map_lock);
 	cout << "check identity successfully." << endl;
 
 	//string success = "Server stopped.";
@@ -3179,6 +3182,8 @@ bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		cout << "Stop server failed." << endl;
 		return false;
 	}
+	string cmd = "rm system.db/password" + Util::int2string(server.config.port) + ".txt";
+	system(cmd.c_str());
 	cout<<"Server stopped."<<endl;
 	return true;	
 }
