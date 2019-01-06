@@ -7,10 +7,246 @@
 =============================================================================*/
 
 #include "GeneralEvaluation.h"
-
+#include<set>
 using namespace std;
 
-void 
+
+void *preread_from_index(void *argv)
+{
+	vector<StringIndexFile*> * indexfile = (vector<StringIndexFile*> *)*(long*)argv;
+	ResultSet *ret_result = (ResultSet*)*((long*)argv + 1);
+	vector<int>* proj2temp = (vector<int>*)*((long*)argv + 2);
+	int id_cols = *((long*)argv + 3);
+	TempResult* result0 = (TempResult*)*((long*)argv + 4);
+	vector<bool>* isel = (vector<bool>*)*((long*)argv + 5);
+	StringIndexFile* 	entity = (*indexfile)[0];
+	StringIndexFile* 	literal = (*indexfile)[1];
+	StringIndexFile* 	predicate = (*indexfile)[2];
+	/*
+	FILE* entityFile = fopen( (entity->get_loc() + "value").c_str(), "rb+");
+	FILE* literalFile = fopen( (literal->get_loc() + "value").c_str(), "rb+");
+	FILE* predicateFile = fopen( (predicate->get_loc() + "value").c_str(), "rb+");
+	*/
+	/*
+	long maxblocksize = entity->MAX_BLOCK_SIZE;
+
+	char *buffer = new char[maxblocksize];
+
+	FILE* entityFile = fopen((entity->get_loc() + "value").c_str(), "rb+");
+	fseek(entityFile, 0L, SEEK_END);
+	long entityFileSize = ftell(entityFile);
+
+	if (entityFileSize == 0 || ret_result->ansNum <= 10000)
+	{
+		delete[] buffer;
+		fclose(entityFile);
+		return NULL;
+	}
+	FILE* literalFile = fopen((literal->get_loc() + "value").c_str(), "rb+");
+	fseek(literalFile, 0L, SEEK_END);
+	long literalFileSize = ftell(literalFile);
+
+	FILE* predicateFile = fopen((predicate->get_loc() + "value").c_str(), "rb+");
+	fseek(predicateFile, 0L, SEEK_END);
+	long predicateFileSize = ftell(predicateFile);
+
+	unsigned total = ret_result->ansNum;
+	int var_num = ret_result->select_var_num;
+
+	*/
+	/*
+	block size = 33554432  read disk for 39 times
+	block size = 16777216  read disk for 77 times
+	block size = 8388608  read disk for 154 times
+	block size = 4194304  read disk for 307 times
+	block size = 2097152  read disk for 613 times
+	block size = 1048576  read disk for 1226 times
+	block size = 524288  read disk for 2452 times
+	block size = 262144  read disk for 4903 times
+	block size = 131072  read disk for 9806 times
+	block size = 65536  read disk for 19611 times
+	block size = 32768  read disk for 39221 times
+	block size = 16384  read disk for 78441 times
+	block size = 8192  read disk for 134127 times
+	block size = 4096  read disk for 188249 times
+	block size = 2048  read disk for 296643 times
+	*/
+//	unsigned thelta = total / maxblocksize ;	
+	//long preid = 0;
+	//int flag = 0;
+	//set<long> entityPPN, literalPPN, prePPN;
+	unsigned total = ret_result->ansNum;
+	int var_num = ret_result->select_var_num;
+	unsigned thelta = total / 4096;
+	char tmp;
+	char *entityc = entity->Mmap;
+	char *literalc = literal->Mmap;
+	char *prec = predicate->Mmap;
+	for (unsigned i = 0; i < total; i ++)
+	{
+	//	if (flag)
+//			break;
+		for (int j = 0; j < var_num; j++)
+		{
+			int k = (*proj2temp)[j];
+			long offset = -1;
+			if (k != -1)
+			{
+				if (k < id_cols)
+				{
+					unsigned ans_id = result0->result[i].id[k];
+					if (ans_id != INVALID)
+					{
+						if ((*isel)[k])
+						{
+							if (ans_id < Util::LITERAL_FIRST_ID)
+							{
+				//				preid = (entity->GetOffsetbyID(ans_id) / 4096);
+								offset = entity->GetOffsetbyID(ans_id);
+				//				if (entityPPN.count(preid) != 0)
+				//					continue;
+				//				entityPPN.insert(preid);
+								if (offset != -1)
+								{
+									tmp = entityc[offset];
+								}
+				//				if (entityPPN.size() > thelta)
+				///				{
+				//					flag = 1;
+				//					break;
+				//				}
+							}
+							else
+							{
+				//				preid = (literal->GetOffsetbyID(ans_id - Util::LITERAL_FIRST_ID));
+								offset = literal->GetOffsetbyID(ans_id - Util::LITERAL_FIRST_ID);
+				//				if (literalPPN.count(preid) != 0)
+				//					continue;
+				//				literalPPN.insert(preid);
+								if (offset != -1)
+								{
+									tmp = literalc[offset];
+								}
+				//				if (literalPPN.size() > thelta)
+				//				{
+				//					flag = 1;
+				////					break;
+				//				}
+							}
+						}
+						else
+						{
+				//			preid = (predicate->GetOffsetbyID(ans_id) / 4096);
+							offset = predicate->GetOffsetbyID(ans_id);
+				//			if (prePPN.count(preid) != 0)
+				//				continue;
+				//			prePPN.insert(preid);
+							if (offset != -1)
+							{
+								tmp = prec[offset];
+							}
+				//			if (prePPN.size() > thelta)
+				//			{
+				//				flag = 1;
+				//				break;
+				//			}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	/*
+	for (unsigned i = 0; i < total; i += 100)
+	{
+		if (flag)
+			break;
+		for (int j = 0; j < var_num; j++)
+		{
+			int k = (*proj2temp)[j];
+			long offset = -1;
+			if (k != -1)
+			{
+				if (k < id_cols)
+				{
+					unsigned ans_id = result0->result[i].id[k];
+					if (ans_id != INVALID)
+					{
+						if ((*isel)[k])
+						{
+							if (ans_id < Util::LITERAL_FIRST_ID)
+							{
+								preid = (entity->GetOffsetbyID(ans_id) / maxblocksize);
+								offset = (entity->GetOffsetbyID(ans_id) / maxblocksize)* maxblocksize;
+								if (entityPPN.count(preid) != 0)
+									continue;
+								entityPPN.insert(preid);
+								if (offset != -1)
+								{
+									fseek(entityFile, offset, SEEK_SET);
+									fread(buffer, sizeof(char), min(maxblocksize, entityFileSize - offset), entityFile);
+								}
+								if (entityPPN.size() > thelta)
+								{
+									flag = 1;
+									break;
+								}
+							}
+							else
+							{
+								preid = (literal->GetOffsetbyID(ans_id - Util::LITERAL_FIRST_ID));
+								offset = (literal->GetOffsetbyID(ans_id - Util::LITERAL_FIRST_ID) / maxblocksize)* maxblocksize;
+								if (literalPPN.count(preid) != 0)
+									continue;
+								literalPPN.insert(preid);
+								if (offset != -1)
+								{
+									fseek(literalFile, offset, SEEK_SET);
+									fread(buffer, sizeof(char), min(maxblocksize, literalFileSize - offset), literalFile);
+								}
+								if (literalPPN.size() > thelta)
+								{
+									flag = 1;
+									break;
+								}
+							}
+						}
+						else
+						{
+							preid = (predicate->GetOffsetbyID(ans_id) / maxblocksize);
+							offset = (predicate->GetOffsetbyID(ans_id) / maxblocksize)* maxblocksize;
+							if (prePPN.count(preid) != 0)
+								continue;
+							prePPN.insert(preid);
+							if (offset != -1)
+							{
+								fseek(predicateFile, offset, SEEK_SET);
+								fread(buffer, sizeof(char), min(maxblocksize, predicateFileSize - offset), predicateFile);
+							}
+							if (prePPN.size() > thelta)
+							{
+								flag = 1;
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	*/
+	//delete[] buffer;
+	//fclose(entityFile);
+	//fclose(literalFile);
+	//fclose(predicateFile);
+
+	return NULL;
+
+}
+
+
+void
 GeneralEvaluation::setStringIndexPointer(StringIndex* _tmpsi)
 {
 	this->stringindex = _tmpsi;
@@ -22,7 +258,7 @@ bool GeneralEvaluation::parseQuery(const string &_query)
 	{
 		this->query_parser.SPARQLParse(_query, this->query_tree);
 	}
-	catch(const char *e)
+	catch (const char *e)
 	{
 		printf("%s\n", e);
 		return false;
@@ -137,9 +373,9 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 
 								printf("triple patterns: \n");
 								for (int k = 0; k < (int)basic_query.size(); k++)
-									printf("%s\t%s\t%s\n", 	basic_query[k].subject.value.c_str(),
-															basic_query[k].predicate.value.c_str(),
-															basic_query[k].object.value.c_str()
+									printf("%s\t%s\t%s\n", basic_query[k].subject.value.c_str(),
+										basic_query[k].predicate.value.c_str(),
+										basic_query[k].object.value.c_str()
 									);
 
 								TempResultSet *temp = new TempResultSet();
@@ -174,8 +410,8 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 									sparql_query.addBasicQuery();
 									for (int k = 0; k < (int)basic_query.size(); k++)
 										sparql_query.addTriple(Triple(basic_query[k].subject.value,
-																	  basic_query[k].predicate.value,
-																	  basic_query[k].object.value));
+											basic_query[k].predicate.value,
+											basic_query[k].object.value));
 
 									encode_varset.push_back(occur.vars);
 									basic_query_handle.push_back(basic_query);
@@ -210,7 +446,7 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 					temp->results[0].result.reserve(basicquery_result_num);
 					for (int k = 0; k < basicquery_result_num; k++)
 					{
-						unsigned *v = new unsigned [varnum];
+						unsigned *v = new unsigned[varnum];
 						memcpy(v, basicquery_result[k], sizeof(int) * varnum);
 						temp->results[0].result.push_back(TempResult::ResultPair());
 						temp->results[0].result.back().id = v;
@@ -562,9 +798,9 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
 					printf("triple patterns: \n");
 					for (int k = 0; k < (int)basic_query.size(); k++)
-						printf("%s\t%s\t%s\n", 	basic_query[k].subject.value.c_str(),
-												basic_query[k].predicate.value.c_str(),
-												basic_query[k].object.value.c_str()
+						printf("%s\t%s\t%s\n", basic_query[k].subject.value.c_str(),
+							basic_query[k].predicate.value.c_str(),
+							basic_query[k].object.value.c_str()
 						);
 
 					TempResultSet *temp = new TempResultSet();
@@ -600,8 +836,8 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 						sparql_query.addBasicQuery();
 						for (int k = 0; k < (int)basic_query.size(); k++)
 							sparql_query.addTriple(Triple(basic_query[k].subject.value,
-														  basic_query[k].predicate.value,
-														  basic_query[k].object.value));
+								basic_query[k].predicate.value,
+								basic_query[k].object.value));
 
 						encode_varset.push_back(useful.vars);
 						basic_query_handle.push_back(basic_query);
@@ -679,7 +915,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 			temp->results[0].result.reserve(basicquery_result_num);
 			for (int k = 0; k < basicquery_result_num; k++)
 			{
-				unsigned *v = new unsigned [varnum];
+				unsigned *v = new unsigned[varnum];
 				memcpy(v, basicquery_result[k], sizeof(int) * varnum);
 				temp->results[0].result.push_back(TempResult::ResultPair());
 				temp->results[0].result.back().id = v;
@@ -757,30 +993,30 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 		if (!sub_result->results[0].result.empty())
 		{
 			for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
-			if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
-			{
-				if ((int)this->rewriting_evaluation_stack.size() == dep + 1)
+				if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
 				{
-					this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
-					this->rewriting_evaluation_stack.back().result = NULL;
-					group_pattern = &this->rewriting_evaluation_stack[dep].group_pattern;
+					if ((int)this->rewriting_evaluation_stack.size() == dep + 1)
+					{
+						this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
+						this->rewriting_evaluation_stack.back().result = NULL;
+						group_pattern = &this->rewriting_evaluation_stack[dep].group_pattern;
+					}
+
+					this->rewriting_evaluation_stack[dep].result = sub_result;
+					this->rewriting_evaluation_stack[dep + 1].group_pattern = group_pattern->sub_group_pattern[j].optional;
+
+					TempResultSet *temp = rewritingBasedQueryEvaluation(dep + 1);
+
+					TempResultSet *new_result = new TempResultSet();
+					sub_result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+
+					temp->release();
+					sub_result->release();
+					delete temp;
+					delete sub_result;
+
+					sub_result = new_result;
 				}
-
-				this->rewriting_evaluation_stack[dep].result = sub_result;
-				this->rewriting_evaluation_stack[dep + 1].group_pattern = group_pattern->sub_group_pattern[j].optional;
-
-				TempResultSet *temp = rewritingBasedQueryEvaluation(dep + 1);
-
-				TempResultSet *new_result = new TempResultSet();
-				sub_result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
-
-				temp->release();
-				sub_result->release();
-				delete temp;
-				delete sub_result;
-
-				sub_result = new_result;
-			}
 		}
 
 		for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
@@ -822,16 +1058,19 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
 void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 {
+
 	if (this->temp_result == NULL)
 		return;
 
 	if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
 	{
+		long t0 = Util::get_cur_time();
+
 		Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset();
 
 		if (this->query_tree.checkProjectionAsterisk())
 		{
-			for (int i = 0 ; i < (int)this->temp_result->results.size(); i++)
+			for (int i = 0; i < (int)this->temp_result->results.size(); i++)
 				useful += this->temp_result->results[i].getAllVarset();
 		}
 
@@ -913,7 +1152,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					end = result0.findRightBounder(group2temp, result0.result[begin], result0_id_cols, group2temp);
 
 				new_result0.result.push_back(TempResult::ResultPair());
-				new_result0.result.back().id = new unsigned [new_result0_id_cols];
+				new_result0.result.back().id = new unsigned[new_result0_id_cols];
 				new_result0.result.back().str.resize(new_result0_str_cols);
 
 				for (int i = 0; i < new_result0_id_cols; i++)
@@ -939,7 +1178,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								{
 									set<int> count_set;
 									for (int j = begin; j <= end; j++)
-										if(result0.result[j].id[proj2temp[i]] != INVALID)
+										if (result0.result[j].id[proj2temp[i]] != INVALID)
 											count_set.insert(result0.result[j].id[proj2temp[i]]);
 									count = (int)count_set.size();
 								}
@@ -957,7 +1196,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								if (proj2temp[i] < result0_id_cols)
 								{
 									for (int j = begin; j <= end; j++)
-										if(result0.result[j].id[proj2temp[i]] != INVALID)
+										if (result0.result[j].id[proj2temp[i]] != INVALID)
 											count++;
 								}
 								else
@@ -973,7 +1212,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							if (proj[i].distinct)
 							{
 								count = temp_result_distinct->results[0].findRightBounder(group2distinct, result0.result[begin], result0_id_cols, group2temp) -
-										temp_result_distinct->results[0].findLeftBounder(group2distinct, result0.result[begin], result0_id_cols, group2temp) + 1;
+									temp_result_distinct->results[0].findLeftBounder(group2distinct, result0.result[begin], result0_id_cols, group2temp) + 1;
 							}
 							else
 							{
@@ -1038,7 +1277,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 #ifdef STREAM_ON
 		long long ret_result_size = (long long)ret_result.ansNum * (long long)ret_result.select_var_num * 100 / Util::GB;
-    	if(Util::memoryLeft() < ret_result_size || !this->query_tree.getOrderVarVector().empty())
+		if (Util::memoryLeft() < ret_result_size || !this->query_tree.getOrderVarVector().empty())
 		{
 			ret_result.setUseStream();
 			printf("set use Stream\n");
@@ -1047,7 +1286,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (!ret_result.checkUseStream())
 		{
-			ret_result.answer = new string* [ret_result.ansNum];
+			ret_result.answer = new string*[ret_result.ansNum];
 			for (unsigned i = 0; i < ret_result.ansNum; i++)
 				ret_result.answer[i] = NULL;
 		}
@@ -1076,32 +1315,136 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (!ret_result.checkUseStream())
 		{
-			for (unsigned i = 0; i < ret_result.ansNum; i++)
-			{
-				ret_result.answer[i] = new string [ret_result.select_var_num];
 
-				for (int j = 0; j < ret_result.select_var_num; j++)
+			//pthread_t tidp;
+			//long arg[6];
+			vector<StringIndexFile* > a = this->stringindex->get_three_StringIndexFile();
+			/*arg[0] = (long)&a;
+			arg[1] = (long)&ret_result;
+			arg[2] = (long)&proj2temp;
+			arg[3] = (long)id_cols;
+			arg[4] = (long)&result0;
+			arg[5] = (long)&isel;
+			pthread_create(&tidp, NULL, &preread_from_index, arg);*/
+
+			unsigned retAnsNum = ret_result.ansNum;
+			unsigned selectVar = ret_result.select_var_num;
+			/*
+			int counterEntity = 0;
+			int counterLiteral = 0;
+			int counterPredicate = 0;
+
+			for (int j = 0; j < selectVar; j++)
+			{
+				int k = proj2temp[j];
+				if (k != -1)
 				{
-					int k = proj2temp[j];
-					if (k != -1)
+					if (k < id_cols)
 					{
-						if (k < id_cols)
+						if (isel[k])
 						{
-							unsigned ans_id = result0.result[i].id[k];
-							if (ans_id != INVALID)
+							for (unsigned i = 0; i < retAnsNum; i++)
 							{
-								this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], isel[k]);
+								unsigned ans_id = result0.result[i].id[k];
+								if (ans_id == INVALID)
+									continue;
+								if (ans_id < Util::LITERAL_FIRST_ID)
+									counterEntity++;
+								else
+									counterLiteral++;
 							}
 						}
-						else 
-						{
-							ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
-						}
+						else
+							for (unsigned i = 0; i < retAnsNum; i++)
+							{
+								unsigned ans_id = result0.result[i].id[k];
+								if (ans_id == INVALID)
+									continue;
+								counterPredicate++;
+							}
 					}
 				}
 			}
+			a[0]->request_reserve(counterEntity);
+			a[1]->request_reserve(counterLiteral);
+			a[2]->request_reserve(counterPredicate);*/
+			
+			ret_result.delete_another_way = 1;
+			string *t = new string[retAnsNum*selectVar];
+			for (unsigned int i = 0,off =0 ; i < retAnsNum; i++, off += selectVar)
+				ret_result.answer[i] = t + off;
 
-			this->stringindex->trySequenceAccess();
+			a[0]->set_string_base(t);
+			a[1]->set_string_base(t);
+			a[2]->set_string_base(t);
+
+			for (int j = 0; j < selectVar; j++)
+			{
+				int k = proj2temp[j];
+				if (k != -1)
+				{
+					if (k < id_cols)
+					{
+						if (isel[k])
+						{
+							for (unsigned i = 0; i < retAnsNum; i++)
+							{
+								unsigned ans_id = result0.result[i].id[k];
+								if (ans_id != INVALID)
+								{
+									if (ans_id < Util::LITERAL_FIRST_ID)
+										a[0]->addRequest(ans_id, i*selectVar + j);
+									else
+										a[1]->addRequest(ans_id - Util::LITERAL_FIRST_ID , i*selectVar + j);
+								}
+							}
+						}
+						else
+						{
+							for (unsigned i = 0; i < retAnsNum; i++)
+							{
+								unsigned ans_id = result0.result[i].id[k];
+								if (ans_id != INVALID)
+									a[2]->addRequest(ans_id, i*selectVar + j);
+							}
+						}
+					}
+					else
+					{
+						for (unsigned i = 0; i < retAnsNum; i++)
+							ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
+					}
+				}
+			}
+			cout << "in getFinal Result the first half use " << Util::get_cur_time() - t0 << "  ms" << endl;
+			//pthread_join(tidp, NULL);
+			this->stringindex->trySequenceAccess(true, -1);
+			/*
+			cerr << "Get Final Result" << endl;
+			{
+				pid_t p = getpid();
+				char file[64] = { 0 };//文件名
+				FILE *fd;         //定义文件指针fd
+				char line_buff[256] = { 0 };  //读取行的缓冲区
+				sprintf(file, "/proc/%d/status", p);
+				fprintf(stderr, "current pid:%d\n", p);
+				fd = fopen(file, "r"); //以R读的方式打开文件再赋给指针fd
+
+				int i; //获取vmrss:实际物理内存占用
+				char name[32];//存放项目名称
+				int vmrss;//存放内存
+				for (i = 0; i<17; i++)  //读取VmRSS这一行的数据
+				{
+					char* ret = fgets(line_buff, sizeof(line_buff), fd);
+					if (i == 11 || i == 12 || i == 15 || i == 16)
+					{
+						sscanf(line_buff, "%s %d", name, &vmrss);
+						fprintf(stderr, "%s\t%d kb\n", name, vmrss);
+					}
+				}
+				fclose(fd);     //关闭文件fd
+			}
+			*/
 		}
 		else
 		{
@@ -1133,7 +1476,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			ret_result.resetStream();
 		}
 	}
-	
+
 	else if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
 	{
 		ret_result.select_var_num = 1;
@@ -1142,7 +1485,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (!ret_result.checkUseStream())
 		{
-			ret_result.answer = new string* [ret_result.ansNum];
+			ret_result.answer = new string*[ret_result.ansNum];
 			ret_result.answer[0] = new string[ret_result.select_var_num];
 
 			ret_result.answer[0][0] = "false";
@@ -1183,18 +1526,18 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 	for (int i = 0; i < (int)update_pattern.sub_group_pattern.size(); i++)
 		if (update_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 		{
-			for (int j = 0 ; j < (int)this->temp_result->results.size(); j++)
+			for (int j = 0; j < (int)this->temp_result->results.size(); j++)
 				if (update_pattern.sub_group_pattern[i].pattern.varset.belongTo(this->temp_result->results[j].getAllVarset()))
 					update_triple_num += this->temp_result->results[j].result.size();
 		}
 
-	update_triple  = new TripleWithObjType[update_triple_num];
+	update_triple = new TripleWithObjType[update_triple_num];
 
 	int update_triple_count = 0;
 	for (int i = 0; i < (int)update_pattern.sub_group_pattern.size(); i++)
 		if (update_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 		{
-			for (int j = 0 ; j < (int)this->temp_result->results.size(); j++)
+			for (int j = 0; j < (int)this->temp_result->results.size(); j++)
 			{
 				int id_cols = this->temp_result->results[j].id_varset.getVarsetSize();
 
