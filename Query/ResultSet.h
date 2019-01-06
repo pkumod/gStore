@@ -24,7 +24,7 @@ public:
 	unsigned ansNum;
 	std::string** answer;
 	int output_offset, output_limit;
-
+	int delete_another_way;
 	ResultSet();
 	~ResultSet();
 	ResultSet(int _v_num, const std::string* _v_names);
