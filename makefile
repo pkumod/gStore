@@ -40,8 +40,8 @@ CC = g++
 #NOTICE: -O2 is recommended, while -O3(add loop-unroll and inline-function) is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -O2 -pthread -std=c++11
-EXEFLAG = -O2 -pthread -std=c++11
+CFLAGS = -c -Wall -O3 -pthread -std=c++11
+EXEFLAG = -O3 -pthread -std=c++11
 #-coverage
 #CFLAGS = -c -Wall -pthread -g -std=c++11 -pg
 #EXEFLAG = -pthread -g -std=c++11 -pg
