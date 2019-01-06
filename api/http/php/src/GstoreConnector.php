@@ -31,7 +31,7 @@ class GstoreConnector {
                 $ret .= $c;
             else if (ord($c)==32)
                 $ret .= "+";
-            else if (ord($c)!=10 and ord($c)!=11 and ord($c)!=13) 
+            else if (ord($c)!=9 and ord($c)!=10 and ord($c)!=13) 
                 $ret .= sprintf("%%%X", ord($c));        
         }
         return $ret;
@@ -105,5 +105,30 @@ class GstoreConnector {
         $this->fGet($cmd, $filename);
         return;
     }
+
+    function show($username, $password) {
+        $cmd = $this->Url . "/?operation=show&username=" . $username . "&password=" . $password;
+        return $this->Get($cmd);
+    }
+
+    function user($type, $username1, $password1, $username2, $addition) {
+        $cmd = $this->Url . "/?operation=user&type=" . $type . "&username1=" . $username1 . "&password1=" . $password1 . "&username2" . $username2 . "&addition=" . $addition; 
+        return $this->Get($cmd);
+     }
+
+     function showUser() {
+        $cmd = $this->Url . "/?operation=showUser";
+        return $this->Get($cmd);
+     }
+
+     function monitor($db_name, $username, $password) {
+        $cmd = $this->Url . "/?operation=monitor&db_name=" . $db_name . "&username=" . $username . "&password=" . $password;
+        return $this->Get($cmd);
+     }
+
+     function checkpoint($db_name, $username, $password) {
+        $cmd = $this->Url . "/?operation=checkpoint&db_name=" . $db_name . "&username=" . $username . "&password=" . $password;
+        return $this->Get($cmd);
+     }
 }
 ?>

@@ -7,12 +7,30 @@
 =============================================================================*/
 
 #include "StringIndex.h"
-
+#include <pthread.h>
+#include <unistd.h>
 using namespace std;
 
 void StringIndexFile::setNum(unsigned _num)
 {
 	this->num = _num;
+}
+void StringIndexFile::SetTrie(Trie *trie0)
+{
+	this->trie = trie0;
+}
+string  StringIndexFile::get_loc()
+{
+	return this->loc;
+}
+long StringIndexFile::GetOffsetbyID(unsigned _id)
+{
+	return (*this->index_table)[_id].offset;
+}
+
+long StringIndexFile::GetLengthbyID(unsigned _id)
+{
+	return (*this->index_table)[_id].length;
 }
 
 void StringIndexFile::save(KVstore &kv_store)
@@ -33,17 +51,18 @@ void StringIndexFile::save(KVstore &kv_store)
 	fwrite(&this->num, sizeof(unsigned), 1, this->index_file);
 
 	long offset = 0;
+	cout << "String index save num=" << num << endl;
 	for (unsigned i = 0; i < this->num; i++)
 	{
 		string str;
 		if (this->type == Entity)
-			str = kv_store.getEntityByID(i);
+			str = kv_store.getEntityByID(i,false);
 		if (this->type == Literal)
-			str = kv_store.getLiteralByID(Util::LITERAL_FIRST_ID + i);
+			str = kv_store.getLiteralByID(Util::LITERAL_FIRST_ID + i,false);
 		if (this->type == Predicate)
-			str = kv_store.getPredicateByID(i);
-
+			str = kv_store.getPredicateByID(i,false);
 		unsigned length = str.length();
+
 		fwrite(&offset, sizeof(long), 1, this->index_file);
 		fwrite(&length, sizeof(unsigned), 1, this->index_file);
 		offset += length;
@@ -81,7 +100,7 @@ void StringIndexFile::load()
 		this->empty_offset = max(this->empty_offset, (*this->index_table)[i].offset + (long)(*this->index_table)[i].length);
 	}
 
-//	trie->LoadTrie(dictionary_path);
+	//	trie->LoadTrie(dictionary_path);
 }
 
 bool StringIndexFile::randomAccess(unsigned id, string *str, bool real)
@@ -93,7 +112,7 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, bool real)
 	unsigned length = (*this->index_table)[id].length;
 	//if(id == 9)
 	//{
-		//cout<<"check: "<<offset<<" "<<length<<endl;
+	//cout<<"check: "<<offset<<" "<<length<<endl;
 	//}
 
 	allocBuffer(length);
@@ -104,40 +123,84 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, bool real)
 	//pread(fileno(value_file), this->buffer, sizeof(char)*length, offset);
 	this->buffer[length] = '\0';
 
-	*str = string(this->buffer);
+	trie->Uncompress(this->buffer, length, *str, this->UncompressBuffer);
+
+	//*str = string(this->buffer);
+
 	//if(id == 9)
 	//{
-		//cout<<"check: "<<*str<<endl;
+	//cout<<"check: "<<*str<<endl;
 	//}
 
-//	if (real)
-//	{
-//		*str = trie->Uncompress(*str, str->length());//Uncompresss
-//	}
+	//	if (real)
+	//	{
+	//		*str = trie->Uncompress(*str, str->length());//Uncompresss
+	//	}
 	//if(id == 9)
 	//{
-		//cout<<"check: "<<*str<<endl;
+	//cout<<"check: "<<*str<<endl;
 	//}
 
 	return true;
 }
 
-void StringIndexFile::trySequenceAccess(bool real)
+
+void* StringIndexFile::thread_read(void * argv)
 {
+	int begin = (int)*(long*)argv;
+	int end = (int)*((long*)argv + 1);
+	StringIndexFile *thisp=(StringIndexFile *)(*((long*)argv + 2));
+	long offset, length;
+	unsigned id;
+	char *Mmap = thisp->Mmap;
+	char *Buffer = new char[MAX_BLOCK_SIZE * 8];
+	string *base = thisp->base;
+	for (int pos = begin; pos <= end; pos++)
+	{
+		id = thisp->request[pos].id;
+		offset = (*thisp->index_table)[id].offset;
+		length = (*thisp->index_table)[id].length;
+		thisp->trie->Uncompress(&Mmap[offset], length, *(base+ thisp->request[pos].off_str), Buffer);
+	}
+	delete[] Buffer;
+	return NULL;
+}
+
+void StringIndexFile::trySequenceAccess(bool real, pthread_t tidp)
+{
+	long t0 = Util::get_cur_time();
 	if (this->request.empty())
 		return;
 
-	long min_begin = -1, max_end = 0;
-	for (int i = 0; i < (int)this->request.size(); i++)
+	int requestsize = (int)this->request.size();
+	unsigned minid = this->request[0].id;
+	unsigned maxid = 0;
+	for (int i = 0; i < requestsize; i++)
 	{
-		if (min_begin == -1)
-			min_begin = this->request[i].offset;
-		else
-			min_begin = min(min_begin, this->request[i].offset);
-
-		max_end = max(max_end, this->request[i].offset + long(this->request[i].length));
+		if (minid > this->request[i].id)
+			minid = this->request[i].id;
+		if (maxid < this->request[i].id)
+			maxid = this->request[i].id;
 	}
 
+	long min_begin = (*this->index_table)[minid].offset;
+	long max_end = (*this->index_table)[maxid].offset + (*this->index_table)[maxid].length;
+
+	/*
+	long min_begin = this->request[0].offset; 
+	long max_end = 0;
+
+	int requestsize = (int)this->request.size();
+	//cout << "size=" << requestsize << endl;
+
+	for (int i = 0; i < requestsize; i++)
+	{
+		if (min_begin > this->request[i].offset)
+			min_begin = this->request[i].offset;
+		if (max_end < this->request[i].offset + long(this->request[i].length))
+			max_end = this->request[i].offset + long(this->request[i].length);
+	}
+	*/
 	if (this->type == Entity)
 		cout << "Entity StringIndex ";
 	if (this->type == Literal)
@@ -145,108 +208,70 @@ void StringIndexFile::trySequenceAccess(bool real)
 	if (this->type == Predicate)
 		cout << "Predicate StringIndex ";
 
-	//long current_offset = 0;
 	if ((max_end - min_begin) / 800000L < (long)this->request.size())
 	{
 		cout << "sequence access." << endl;
-
+		
 #ifndef PARALLEL_SORT
 		sort(this->request.begin(), this->request.end());
 #else
 		omp_set_num_threads(thread_num);
 		__gnu_parallel::sort(this->request.begin(), this->request.end());
 #endif
-		int pos = 0;
-		char *block = new char[MAX_BLOCK_SIZE];
-
-		long current_block_begin = min_begin;
-		fseek(this->value_file, current_block_begin, SEEK_SET);
-		//current_offset = current_block_begin;
-
-		while (current_block_begin < max_end)
+		if (tidp != (pthread_t) -1)
 		{
-			long current_block_end = min(current_block_begin + MAX_BLOCK_SIZE, max_end);
-
-			if (current_block_end <= this->request[pos].offset)
-			{
-				current_block_begin = this->request[pos].offset;
-				fseek(this->value_file, current_block_begin, SEEK_SET);
-				//current_offset = current_block_begin;
-				current_block_end = min(current_block_begin + MAX_BLOCK_SIZE, max_end);
-			}
-
-			fread(block, sizeof(char), current_block_end - current_block_begin, this->value_file);
-			//pread(fileno(this->value_file), block, sizeof(char)*(current_block_end-current_block_begin), current_offset);
-			//current_offset += sizeof(char)*(current_block_end-current_block_begin);
-
-			while (pos < (int)this->request.size())
-			{
-				long offset = this->request[pos].offset;
-				long length = this->request[pos].length;
-
-				if (offset >= current_block_end)
-					break;
-
-				if (current_block_begin <= offset && offset + length <= current_block_end)
-				{
-					allocBuffer(length);
-					memcpy(this->buffer, &block[offset - current_block_begin], length);
-					this->buffer[length] = '\0';
-					*this->request[pos].str = string(this->buffer);
-					
-//					*this->request[pos].str = trie->Uncompress(
-//					*this->request[pos].str, this->request[pos].str->length());
-					
-					pos++;
-				}
-				else if (current_block_begin <= offset)
-				{
-					length = current_block_end - offset;
-					allocBuffer(length);
-					memcpy(this->buffer, &block[offset - current_block_begin], length);
-					this->buffer[length] = '\0';
-					*this->request[pos].str = string(this->buffer);
-					break;
-				}
-				else if (offset + length <= current_block_end)
-				{
-					length = offset + length - current_block_begin;
-					allocBuffer(length);
-					memcpy(this->buffer, block, length);
-					this->buffer[length] = '\0';
-					*this->request[pos].str += string(this->buffer);
-
-//					*this->request[pos].str = trie->Uncompress(
-//					*this->request[pos].str, this->request[pos].str->length());
-				
-					pos++;
-					while (pos < (int)this->request.size() && this->request[pos - 1].offset == this->request[pos].offset)
-					{
-						*this->request[pos].str = *this->request[pos - 1].str;
-						pos++;
-					}
-				}
-				else
-				{
-					length = current_block_end - current_block_begin;
-					allocBuffer(length);
-					memcpy(this->buffer, block, length);
-					this->buffer[length] = '\0';
-					*this->request[pos].str += string(this->buffer);
-					break;
-				}
-			}
-
-			current_block_begin = current_block_end;
+			pthread_join(tidp, NULL);
+			cout << "after get sort and wait for thread used " << Util::get_cur_time() - t0 << " ms" << endl;
 		}
-		delete[] block;
+		else
+			cout << "after get sort  used " << Util::get_cur_time() - t0 << "ms" << endl;
+		long t1 = Util::get_cur_time();
+
+
+		long offset, length;
+		unsigned id;
+		char *Mmap = this->Mmap;
+		string *base = this->base;
+		for (int pos = 0; pos < requestsize; pos++)
+		{
+			id = this->request[pos].id;
+			offset = (*this->index_table)[id].offset;
+			length = (*this->index_table)[id].length;
+			this->trie->Uncompress(&Mmap[offset], length, *(base + this->request[pos].off_str), UncompressBuffer);
+		}
+
+		/*
+		this is the abondomed code for multi threads
+		int p_num = 4;
+		if ((int)this->request.size()  < 1000000)
+			p_num = 1;
+		cout << "thread num:" << p_num << endl;
+		long arg[p_num][3];
+		long loc = 0;
+		long step = (int)this->request.size() / p_num;
+		for (int i = 0; i < p_num; i++)
+		{
+			arg[i][0] = loc;
+			if (i != p_num - 1)
+				arg[i][1] = loc + step - 1;
+			else
+				arg[i][1] = ((int)this->request.size() - 1);
+			arg[i][2] = (long)this;
+			loc += step;
+		}
+		pthread_t tidp[p_num];
+		for (int i = 0; i <p_num; i++)
+			pthread_create(&tidp[i], NULL, &StringIndexFile::thread_read, (void*)arg[i]);
+		for (int i = 0; i<p_num; i++)
+			pthread_join(tidp[i], NULL);
+		*/
+		cout << "after thread read used " << Util::get_cur_time() - t1 << " ms" << endl;
 	}
 	else
 	{
 		cout << "random access." << endl;
-
 		for (int i = 0; i < (int)this->request.size(); i++)
-			this->randomAccess(this->request[i].id, this->request[i].str, real);
+			this->randomAccess(this->request[i].id, (this->request[i].off_str + base), real);
 	}
 	this->request.clear();
 }
@@ -294,17 +319,17 @@ void StringIndexFile::change(unsigned id, KVstore &kv_store)
 	fwrite(str.c_str(), sizeof(char), (*this->index_table)[id].length, this->value_file);
 	//if(id == 9)
 	//{
-		//cout<<"check in change():9 "<<str<<endl;
-		//string str2;
-		//randomAccess(id, &str2);
-		//cout<<str2<<endl;
+	//cout<<"check in change():9 "<<str<<endl;
+	//string str2;
+	//randomAccess(id, &str2);
+	//cout<<str2<<endl;
 	//}
 }
 
 void StringIndexFile::disable(unsigned id)
 {
 	//DEBUG: for predicate, -1 when invalid
-	if (id >= this->num)	return ;
+	if (id >= this->num)	return;
 
 	(*this->index_table)[id] = IndexInfo();
 
@@ -338,12 +363,12 @@ void StringIndex::load()
 	this->predicate.load();
 }
 
-bool 
+bool
 StringIndex::searchBuffer(unsigned _id, string* _str)
 {
-	if(_id < Util::LITERAL_FIRST_ID) //entity
+	if (_id < Util::LITERAL_FIRST_ID) //entity
 	{
-		if(_id < this->entity_buffer_size)
+		if (_id < this->entity_buffer_size)
 		{
 			*_str = this->entity_buffer->get(_id);
 			return true;
@@ -353,7 +378,7 @@ StringIndex::searchBuffer(unsigned _id, string* _str)
 	else //literal
 	{
 		_id -= Util::LITERAL_FIRST_ID;
-		if(_id < this->literal_buffer_size)
+		if (_id < this->literal_buffer_size)
 		{
 			*_str = this->literal_buffer->get(_id);
 			return true;
@@ -364,15 +389,15 @@ StringIndex::searchBuffer(unsigned _id, string* _str)
 
 bool StringIndex::randomAccess(unsigned id, string *str, bool is_entity_or_literal, bool real)
 {
-	if(id < 0) return false;
+	if (id < 0) return false;
 
 	if (is_entity_or_literal)
 	{
 		//if(searchBuffer(id, str))
 		//{
-			//cout << "FLAG2" << endl;
-			//*str = trie->Uncompress(*str, str->length());
-			//return true;
+		//cout << "FLAG2" << endl;
+		//*str = trie->Uncompress(*str, str->length());
+		//return true;
 		//}
 
 		if (id < Util::LITERAL_FIRST_ID)
@@ -389,37 +414,54 @@ bool StringIndex::randomAccess(unsigned id, string *str, bool is_entity_or_liter
 		return this->predicate.randomAccess(id, str, real);
 	}
 }
-
-void StringIndex::addRequest(unsigned id, std::string *str, bool is_entity_or_literal)
+void 
+StringIndex::addRequest(unsigned id, unsigned off_base, bool is_entity_or_literal)
 {
 	if (is_entity_or_literal)
 	{
 		//if(id == 9)
 		//{
-			//cout<<"to search 9 in string buffer"<<endl;
+		//cout<<"to search 9 in string buffer"<<endl;
 		//}
 		//if(searchBuffer(id, str))
 		//{
-////			*str = trie->Uncompress(*str)
-			//cout<<"found in string buffer"<<endl;
-			//return;
+		////			*str = trie->Uncompress(*str)
+		//cout<<"found in string buffer"<<endl;
+		//return;
 		//}
 		if (id < Util::LITERAL_FIRST_ID)
-			this->entity.addRequest(id, str);
+			this->entity.addRequest(id, off_base);
 		else
-			this->literal.addRequest(id - Util::LITERAL_FIRST_ID, str);
+			this->literal.addRequest(id - Util::LITERAL_FIRST_ID, off_base);
 	}
 	else
 	{
-		this->predicate.addRequest(id, str);
+		this->predicate.addRequest(id, off_base);
 	}
 }
 
-void StringIndex::trySequenceAccess(bool real)
+void StringIndex::trySequenceAccess(bool real, pthread_t tidp)
 {
-	this->entity.trySequenceAccess(real);
-	this->literal.trySequenceAccess(real);
-	this->predicate.trySequenceAccess(real);
+	this->entity.trySequenceAccess(real,tidp);
+	this->literal.trySequenceAccess(real, tidp);
+	this->predicate.trySequenceAccess(real, tidp);
+}
+
+void StringIndex::SetTrie(Trie* trie)
+{
+	this->entity.SetTrie(trie);
+	this->literal.SetTrie(trie);
+	this->predicate.SetTrie(trie);
+}
+
+vector<StringIndexFile*>
+StringIndex::get_three_StringIndexFile()
+{
+	vector<StringIndexFile*> ret;
+	ret.push_back(&this->entity);
+	ret.push_back(&this->literal);
+	ret.push_back(&this->predicate);
+	return ret;
 }
 
 void StringIndex::change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_entity_or_literal)
