@@ -14,12 +14,19 @@
 #include "../Query/SPARQLquery.h"
 #include "../KVstore/KVstore.h"
 #include "../Util/Util.h"
-
+#include <stdlib.h>
+// head files below are used for parallel join
+/*
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
+#include <thrust/sort.h>
+#include <thrust/functional.h>
+*/
 typedef vector<unsigned> RecordType;
 typedef vector<unsigned>::iterator RecordIterator;
 typedef list<RecordType> TableType;
-typedef list<RecordType>::iterator TableIterator;
-typedef list<RecordType>::reverse_iterator TableReverseIterator;
+typedef TableType::iterator TableIterator;
+typedef TableType::reverse_iterator TableReverseIterator;
 //typedef list< vector<int> > TableType;
 //typedef list< vector<int> >::iterator TableIterator;
 //typedef list< vector<int> >::reverse_iterator TableReverseIterator;
@@ -42,7 +49,9 @@ typedef struct Satellite
 //Database new Join and pass something like kvstore
 class Join
 {
-private:
+//private:
+// used by parallelJoin
+protected:
 	int start_id;
 	int var_num;
 	BasicQuery* basic_query;
@@ -143,6 +152,14 @@ public:
 	bool join_basic(BasicQuery* _basic_query, bool* d_triple);
 	~Join();
 };
-
+void cudaInit();
+void disp(const char* name, unsigned *arr,unsigned length,unsigned line);
+// start a monotonic clock
+void start_clock(struct timespec& start);
+// get time period from start and set starrt to current time
+void gettime_and_reset_clock(struct timespec& start, const char*info);
+// get time period from start
+void gettime(struct timespec& start,const char* info);
+void calc(unsigned *head,unsigned *arr,unsigned join_length,unsigned table_width,unsigned item_num,unsigned *can_list,unsigned can_list_size);
 #endif //_JOIN_JOIN_H
 

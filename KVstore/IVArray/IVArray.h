@@ -47,7 +47,8 @@ private:
 	bool SwapOut();
 	bool UpdateTime(unsigned _key);
 
-	bool PreLoad();
+	// bool PreLoad();
+	void PreLoad();
 	void RemoveFromLRUQueue(unsigned int);
 
 public:

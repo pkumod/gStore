@@ -38,20 +38,22 @@
 # WARN: maybe difficult to install ccache in some systems
 #CC = ccache g++
 CC = g++
-
+NVCC = nvcc
 #the optimazition level of gcc/g++
 #http://blog.csdn.net/hit_090420216/article/details/44900215
 #NOTICE: -O2 is recommended, while -O3 is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -O2 -pthread -std=c++11
-EXEFLAG = -O2 -pthread -std=c++11
+CFLAGS = -c -O2 -Wall -pthread -std=c++11
+NVCCFLAGS = -c -O2 -std=c++11 -arch=sm_20 -Xcompiler -Wall -Xcompiler -Wextra -m64
+EXEFLAG = -O2  -pthread -std=c++11
 #-coverage
 #CFLAGS = -c -Wall -pthread -g -std=c++11
+#NVCCFLAGS = -c -g -std=c++11 -arch=sm_20 -Xcompiler -Wall -Xcompiler -Wextra -m64
 #EXEFLAG = -pthread -g -std=c++11
 
 #add -lreadline -ltermcap if using readline or objs contain readline
-library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
+library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -L/usr/local/cuda/lib64 -lcudart
 #used for parallelsort
 openmp = -fopenmp -march=native
 # library = -ltermcap -lreadline -L./lib -lantlr -lgcov
@@ -98,14 +100,14 @@ serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)So
 
 # httpobj = $(objdir)client_http.hpp.gch $(objdir)server_http.hpp.gch
 
-databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o
+databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o $(objdir)JoinIntersect.o
 
 trieobj = $(objdir)Trie.o $(objdir)TrieNode.o
 
 objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj) $(httpobj) $(databaseobj) \
 		  $(utilobj) $(signatureobj) $(queryobj) $(trieobj)
 	 
-inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
+inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include -I/usr/local/cuda/include
 #-I./usr/local/include/boost/
 
 
@@ -309,17 +311,19 @@ $(objdir)Database.o: Database/Database.cpp Database/Database.h \
 	$(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
 	$(objdir)BasicQuery.o $(objdir)Triple.o $(objdir)SigEntry.o \
 	$(objdir)KVstore.o $(objdir)VSTree.o $(objdir)DBparser.o \
-	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o $(objdir)GeneralEvaluation.o $(objdir)StringIndex.o
+	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o $(objdir)GeneralEvaluation.o $(objdir)StringIndex.o $(objdir)JoinIntersect.o
 	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o $(openmp)
 
 $(objdir)Join.o: Database/Join.cpp Database/Join.h $(objdir)IDList.o $(objdir)BasicQuery.o $(objdir)Util.o\
-	$(objdir)KVstore.o $(objdir)Util.o $(objdir)SPARQLquery.o
+	$(objdir)KVstore.o $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)JoinIntersect.o
+	#nvcc -g -std=c++11 Database/Join.cu -o $(objdir)Join.o 
 	$(CC) $(CFLAGS) Database/Join.cpp $(inc) -o $(objdir)Join.o $(openmp)
-
 $(objdir)Strategy.o: Database/Strategy.cpp Database/Strategy.h $(objdir)SPARQLquery.o $(objdir)BasicQuery.o \
-	$(objdir)Triple.o $(objdir)IDList.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Util.o $(objdir)Join.o
+	$(objdir)Triple.o $(objdir)IDList.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Util.o $(objdir)Join.o $(objdir)JoinIntersect.o
 	$(CC) $(CFLAGS) Database/Strategy.cpp $(inc) -o $(objdir)Strategy.o $(openmp)
-
+$(objdir)JoinIntersect.o: Database/JoinIntersect.cu
+	$(NVCC) $(NVCCFLAGS) Database/JoinIntersect.cu $(inc) -o $(objdir)JoinIntersect.o
+	#$(CC) $(CFLAGS) Database/JoinIntersect.cpp $(inc) -o $(objdir)JoinIntersect.o $(openmp)
 #objects in Database/ end
 
 
