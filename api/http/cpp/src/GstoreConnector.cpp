@@ -175,11 +175,11 @@ void GstoreConnector::query(string username, string password, string db_name, st
 }
 
 string
-GstoreConnector::show()
+GstoreConnector::show(string username, string password)
 {
 	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
 
-	string cmd = url + "/?operation=show";
+	string cmd = url + "/?operation=show&username="  + username + "&password=" + password;
 	string recv_msg;
 	int ret = hc.Get(cmd, recv_msg);
 	return recv_msg;
@@ -215,11 +215,11 @@ GstoreConnector::disconnect()
 }
 */
 string
-GstoreConnector::user(string type, string username1, string password1, string username2, string addtion)
+GstoreConnector::user(string type, string username1, string password1, string username2, string addition)
 {
 	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
 
-	string cmd = url + "/?operation=user&type=" + type + "&username1=" + username1 + "&password1=" + password1 + "&username2=" + username2 + "&addtion=" + addtion; 
+	string cmd = url + "/?operation=user&type=" + type + "&username1=" + username1 + "&password1=" + password1 + "&username2=" + username2 + "&addition=" + addition; 
 	string recv_msg;
 	int ret = hc.Get(cmd, recv_msg);
 	return recv_msg;
@@ -235,21 +235,21 @@ GstoreConnector::showUser()
 	return recv_msg;
 }
 string
-GstoreConnector::monitor(string db_name)
+GstoreConnector::monitor(string db_name, string username, string password)
 {
 	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
 
-	string cmd = url + "/?operation=monitor&db_name=" + db_name; 
+	string cmd = url + "/?operation=monitor&db_name=" + db_name + "&username=" + username + "&password=" + password; 
 	string recv_msg;
 	int ret = hc.Get(cmd, recv_msg);
 	return recv_msg;
 }
 string
-GstoreConnector::checkpoint(string db_name)
+GstoreConnector::checkpoint(string db_name, string username, string password)
 {
 	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
 
-	string cmd = url + "/?operation=checkpoint&db_name=" + db_name;
+	string cmd = url + "/?operation=checkpoint&db_name=" + db_name + "&username=" + username + "&password=" + password;
 	string recv_msg;
 	int ret = hc.Get(cmd, recv_msg);
 	return recv_msg;

@@ -16,7 +16,6 @@ ISArray::ISArray()
 	dir_path = "";
 	ISfile_name = "";
 	BM = NULL;
-	CurKeyNum = 0;
 	CurEntryNum = 0;
 	CurCacheSize = 0;
 	CurEntryNumChange = false;
@@ -55,7 +54,6 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 
 		// temp is the smallest number >= _key_num and mod SET_KEY_INC = 0
 		unsigned temp = ((_key_num + (1 << 10) - 1) >> 10) << 10;
-		CurKeyNum = 0;
 		CurEntryNum = max(temp, SETKEYNUM);
 		CurEntryNumChange = true;
 
@@ -285,17 +283,20 @@ ISArray::UpdateTime(unsigned _key)
 bool
 ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 {
+//	this->AccessLock.lock();
 //	printf("%s search %d: \n", filename.c_str(), _key);
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
 		_str = NULL;
 		_len = 0;
+//		this->AccessLock.unlock();
 		return false;
 	}
 	// try to read in main memory
 	if (array[_key].inCache())
 	{
 		UpdateTime(_key);
+//		this->AccessLock.unlock();
 		return array[_key].getBstr(_str, _len);
 	}
 //	printf(" need to read disk ");
@@ -305,6 +306,7 @@ ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 //	printf("stored in block %d, ", store);
 	if (!BM->ReadValue(store, _str, _len))
 	{
+//		this->AccessLock.unlock();
 		return false;
 	}
 
@@ -314,15 +316,17 @@ ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 	_str = debug;
 
 //	printf("str = %s, len = %d\n", _str, _len);
-
+//	this->AccessLock.unlock();
 	return true;
 }
 
 bool
 ISArray::insert(unsigned _key, char *_str, unsigned _len)
 {
+//	this->AccessLock.lock();
 	if (_key < CurEntryNum && array[_key].isUsed())
 	{
+//		this->AccessLock.unlock();
 		return false;
 	}
 	
@@ -330,11 +334,11 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 	{
 		cout << _key << ' ' << MAX_KEY_NUM << endl;
 		cout << "ISArray insert error: Key is bigger than MAX_KEY_NUM" << endl;
+//		this->AccessLock.unlock();
 		return false;
 	}
 
 	bool Alloc = false;
-	CurKeyNum++;
 	//if (CurKeyNum >= CurEntryNum) // need to realloc
 	if (_key >= CurEntryNum)
 	{
@@ -350,6 +354,7 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 		if (newp == NULL)
 		{
 			cout << "ISArray insert error: main memory full" << endl;
+//			this->AccessLock.unlock();
 			return false;
 		}
 		else
@@ -369,18 +374,20 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 	AddInCache(_key, _str, _len);
 	array[_key].setUsedFlag(true);
 	array[_key].setDirtyFlag(true);
+//	this->AccessLock.unlock();
 	return true;
 }
 
 bool
 ISArray::remove(unsigned _key)
 {
+//	this->AccessLock.lock();
 	if (_key >= CurEntryNum || !array[_key].isUsed())
 	{
+//		this->AccessLock.unlock();
 		return false;
 	}
 
-	CurKeyNum--;
 
 	unsigned store = array[_key].getStore();
 	BM->FreeBlocks(store);
@@ -391,6 +398,8 @@ ISArray::remove(unsigned _key)
 
 	if (array[_key].inCache())
 	{
+		RemoveFromLRUQueue(_key);
+
 		char *str = NULL;
 		unsigned len = 0;
 		array[_key].getBstr(str, len, false);
@@ -400,6 +409,7 @@ ISArray::remove(unsigned _key)
 
 	array[_key].release();
 
+//	this->AccessLock.unlock();
 	return true;
 
 }
@@ -407,14 +417,18 @@ ISArray::remove(unsigned _key)
 bool
 ISArray::modify(unsigned _key, char *_str, unsigned _len)
 {
+//	this->AccessLock.lock();
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
+//		this->AccessLock.unlock();
 		return false;
 	}
 
 	array[_key].setDirtyFlag(true);
 	if (array[_key].inCache())
 	{
+		RemoveFromLRUQueue(_key);
+
 		char* str = NULL;
 		unsigned len = 0;
 		array[_key].getBstr(str, len, false);
@@ -431,8 +445,41 @@ ISArray::modify(unsigned _key, char *_str, unsigned _len)
 	BM->FreeBlocks(store);
 	AddInCache(_key, _str, _len);
 
+//	this->AccessLock.unlock();
 	return true;
 	
 }
 
+void
+ISArray::RemoveFromLRUQueue(unsigned _key)
+{
+	if (!array[_key].inCache())
+		return;
+	int prevID = array[_key].getPrev();
+	int nextID = array[_key].getNext();
 
+	if (prevID == -1)
+		cache_head->setNext(nextID);
+	else
+		array[prevID].setNext(nextID);
+
+	//cout << "next ID: " << nextID << endl;
+	if (nextID != -1)
+		array[nextID].setPrev(prevID); // since array[_key] is not tail, nextp will not be NULL
+	else
+		cache_tail_id = prevID;
+
+	array[_key].setCacheFlag(false);
+	array[_key].setPrev(-1);
+	array[_key].setNext(-1);
+
+/*	UpdateTime(_key);
+	unsigned PrevID = array[_key].getPrev();
+	cache_tail_id = PrevID;
+	if (PrevID == -1)
+		cache_head->setNext(-1);
+	else
+		array[PrevID].setNext(-1);
+*/
+	return;
+}

@@ -18,20 +18,16 @@
 #(also include good comments norm)
 #http://blog.csdn.net/u010740725/article/details/51387810
 
-#NOTICE: to speed up the make process, use make -j4
-#use -j8 or higher may cause error
-#http://blog.csdn.net/cscrazybing/article/details/50789482
-#http://blog.163.com/liuhonggaono1@126/blog/static/10497901201210254622141/
-
-
-#TODO:the dependences are not complete!
-
-#TODO: parallel -pthread
-
-#TODO: judge and decide using which program
 #CC=$(shell which clang 2>/dev/null || which gcc)
 #ccache, readline, gcov lcov
 #http://blog.csdn.net/u012421852/article/details/52138960
+#
+# How to speed up the compilation
+# https://blog.csdn.net/a_little_a_day/article/details/78251928
+# use make -j4, if error then use make utilizing only one thread
+#use -j8 or higher may cause error
+#http://blog.csdn.net/cscrazybing/article/details/50789482
+#http://blog.163.com/liuhonggaono1@126/blog/static/10497901201210254622141/
 
 #compile parameters
 
@@ -41,18 +37,18 @@ CC = g++
 NVCC = nvcc
 #the optimazition level of gcc/g++
 #http://blog.csdn.net/hit_090420216/article/details/44900215
-#NOTICE: -O2 is recommended, while -O3 is dangerous
+#NOTICE: -O2 is recommended, while -O3(add loop-unroll and inline-function) is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
 CFLAGS = -c -O2 -Wall -pthread -std=c++11
 NVCCFLAGS = -c -O2 -std=c++11 -arch=sm_20 -Xcompiler -Wall -Xcompiler -Wextra -m64
 EXEFLAG = -O2  -pthread -std=c++11
 #-coverage
-#CFLAGS = -c -Wall -pthread -g -std=c++11
+#CFLAGS = -c -Wall -pthread -g -std=c++11 -pg
 #NVCCFLAGS = -c -g -std=c++11 -arch=sm_20 -Xcompiler -Wall -Xcompiler -Wextra -m64
-#EXEFLAG = -pthread -g -std=c++11
+#EXEFLAG = -pthread -g -std=c++11 -pg
 
-#add -lreadline -ltermcap if using readline or objs contain readline
+#add -lreadline [-ltermcap] if using readline or objs contain readline
 library = -ltermcap -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -L/usr/local/cuda/lib64 -lcudart
 #used for parallelsort
 openmp = -fopenmp -march=native
@@ -64,6 +60,8 @@ def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE
 objdir = .objs/
 
 exedir = bin/
+
+testdir = scripts/
 
 lib_antlr = lib/libantlr.a
 
@@ -117,12 +115,11 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include -I/usr/local/cu
 
 #gtest
 
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow
+TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test
 
 all: $(TARGET)
-	./test/test.sh
-test_index: test_index.cpp
-	$(CC) $(EXEFLAG) -o test_index test_index.cpp $(objfile) $(library) $(openmp)
+	@echo "Compilation ends successfully!"
+	@bash scripts/init.sh
 
 #BETTER: use for loop to reduce the lines
 #NOTICE: g++ -MM will run error if linking failed, like Database.h/../SparlParser.h/../antlr3.h
@@ -130,6 +127,16 @@ test_index: test_index.cpp
 #executables begin
 
 #NOTICE:not include g*.o in objfile due to multiple definitions of main()
+
+$(exedir)gdrop: $(lib_antlr) $(objdir)gdrop.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)gdrop $(objdir)gdrop.o $(objfile) $(library) $(openmp)
+
+$(exedir)ginit: $(lib_antlr) $(objdir)ginit.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)ginit $(objdir)ginit.o $(objfile) $(library) $(openmp)
+
+$(exedir)shutdown: $(lib_antlr) $(objdir)shutdown.o $(objfile) $(api_cpp)
+	$(CC) $(EXEFLAG) -o $(exedir)shutdown $(objdir)shutdown.o $(objfile) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+
 $(exedir)gmonitor: $(lib_antlr) $(objdir)gmonitor.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gmonitor $(objdir)gmonitor.o $(objfile) $(library) $(openmp)
 
@@ -157,16 +164,29 @@ $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
 $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX $(openmp)
 
+$(testdir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
+	        $(CC) $(EXEFLAG) -o $(testdir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
 
+$(testdir)dataset_test: $(lib_antlr) $(objdir)dataset_test.o $(objfile)
+	        $(CC) $(EXEFLAG) -o $(testdir)dataset_test $(objdir)dataset_test.o $(objfile) $(library) $(openmp)
 #executables end
 
 
 #objects in Main/ begin
 
-$(objdir)gmonitor.o: Main/gmonitor.cpp $(lib_antlr)
+$(objdir)gdrop.o: Main/gdrop.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gdrop.cpp $(inc) -o $(objdir)gdrop.o $(openmp)
+
+$(objdir)ginit.o: Main/ginit.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/ginit.cpp $(inc) -o $(objdir)ginit.o $(openmp)
+
+$(objdir)shutdown.o: Main/shutdown.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS)	Main/shutdown.cpp $(inc) -o $(objdir)shutdown.o $(openmp)
+
+$(objdir)gmonitor.o: Main/gmonitor.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gmonitor.cpp $(inc) -o $(objdir)gmonitor.o $(openmp)
 
-$(objdir)gshow.o: Main/gshow.cpp $(lib_antlr)
+$(objdir)gshow.o: Main/gshow.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gshow.cpp $(inc) -o $(objdir)gshow.o $(openmp)
 
 $(objdir)gbuild.o: Main/gbuild.cpp Database/Database.h Util/Util.h $(lib_antlr)
@@ -192,6 +212,16 @@ $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp D
 	$(CC) $(CFLAGS) Main/ghttp.cpp $(inc) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
 #objects in Main/ end
+
+#objects in scripts/ begin
+
+$(objdir)update_test.o: $(testdir)update_test.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) $(testdir)update_test.cpp $(inc) -o $(objdir)update_test.o $(openmp)
+
+$(objdir)dataset_test.o: $(testdir)dataset_test.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) $(testdir)dataset_test.cpp $(inc) -o $(objdir)dataset_test.o $(openmp)
+
+#objects in scripts/ end
 
 
 #objects in kvstore/ begin
@@ -475,15 +505,25 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 #objects in Server/ end
 
 
-$(lib_antlr):
+pre:
+	rm -rf tools/rapidjson/
+	cd tools; tar -xzvf rapidjson.tar.gz;
 	rm -rf tools/libantlr3c-3.4/
 	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
 	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
 	rm -rf lib/libantlr.a
 	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
-	#NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
+	##NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
 	rm -rf Parser/Sparql*
 	cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
+
+# DEBUG: below not works properly
+#Parser/SparqlLexer.c Parser/SparqlLexer.h Parser/SparqlParser.h Parser/SparqlParser.c: unpack_sparql
+#.INTERMEDIATE: unpack_sparql
+#unpack_sparql: tools/sparql.tar.gz
+	##NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
+	#rm -rf Parser/Sparql*
+	#cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
 
 $(api_cpp): $(objdir)Socket.o
 	$(MAKE) -C api/socket/cpp/src 
@@ -494,10 +534,18 @@ $(api_java):
 	$(MAKE) -C api/socket/java/src
 	$(MAKE) -C api/http/java/src
 
-.PHONY: clean dist tarball api_example gtest sumlines
+.PHONY: clean dist tarball api_example gtest sumlines contribution test
+
+test: $(TARGET)
+	@echo "basic build/query/add/sub/drop test......"
+	@bash scripts/basic_test.sh
+	@echo "repeatedly insertion/deletion test......"
+	@scripts/update_test > /dev/null
+	@echo "parser test......"
+	@bash scripts/parser_test.sh
 
 clean:
-	rm -rf lib/libantlr.a
+	#rm -rf lib/libantlr.a
 	$(MAKE) -C api/socket/cpp/src clean
 	$(MAKE) -C api/socket/cpp/example clean
 	$(MAKE) -C api/socket/java/src clean
@@ -507,22 +555,24 @@ clean:
 	$(MAKE) -C api/http/java/src clean
 	$(MAKE) -C api/http/java/example clean
 	#$(MAKE) -C KVstore clean
-	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver*
+	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole*
 	rm -rf bin/*.class
+	rm -rf $(testdir)update_test $(testdir)dataset_test
 	#rm -rf .project .cproject .settings   just for eclipse
-	#rm -rf cscope* just for vim
 	rm -rf logs/*.log
+	rm -rf *.out   # gmon.out for gprof with -pg
 
 dist: clean
 	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db
 	rm -rf tools/libantlr3c-3.4 lib/libantlr.a Parser/Sparql*
-	#rm -rf Parser/SparqlLexer* Parser/SparlParser.cpp
 	rm -rf cscope* .cproject .settings tags
 	rm -rf *.info
+	rm -rf backups/*.db
 
 tarball:
-	tar -czvf devGstore.tar.gz api bin lib tools .debug .tmp .objs test docs data makefile \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE
+	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts garbage docs data logs \
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE \
+		Dockerfile LICENSE makefile Trie
 
 APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/socket/cpp/example
@@ -533,8 +583,8 @@ APIexample: $(api_cpp) $(api_java)
 gtest: $(objdir)gtest.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr.a $(library) $(openmp)
 
-$(objdir)gtest.o: test/gtest.cpp
-	$(CC) $(CFLAGS) test/gtest.cpp $(inc) -o $(objdir)gtest.o $(openmp)
+$(objdir)gtest.o: scripts/gtest.cpp
+	$(CC) $(CFLAGS) scripts/gtest.cpp $(inc) -o $(objdir)gtest.o $(openmp)
 	
 $(exedir)gadd: $(objdir)gadd.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gadd $(objdir)gadd.o $(objfile) lib/libantlr.a $(library) $(openmp)
@@ -555,7 +605,7 @@ $(objdir)gsub.o: Main/gsub.cpp
 	$(CC) $(CFLAGS) Main/gsub.cpp $(inc) -o $(objdir)gsub.o $(openmp)
 
 sumlines:
-	bash test/sumline.sh
+	@bash scripts/sumline.sh
 
 tag:
 	ctags -R
@@ -565,12 +615,12 @@ idx:
 	cscope -bkq #-i cscope.files
 
 cover:
-	bash test/cover.sh
+	bash scripts/cover.sh
 
 fulltest:
 	#NOTICE:compile gstore with -O2 only
 	#setup new virtuoso and configure it
-	cp test/full_test.sh ~
+	cp scripts/full_test.sh ~
 	cd ~
 	bash full_test.sh
 
@@ -578,3 +628,8 @@ fulltest:
 test-kvstore:
 	# test/kvstore_test.cpp
 	echo "TODO"
+
+# https://segmentfault.com/a/1190000008542123
+contribution:
+	bash scripts/contribution.sh
+

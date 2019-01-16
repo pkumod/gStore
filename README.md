@@ -2,7 +2,7 @@
 
 Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
 
-**The formal help document is in [English(EN)](docs/help/gStore_help.pdf) and [中文(CN)](docs/help/gStore_help_CN.pdf).**
+**The formal help document is in [English(EN)](docs/help/gStore_help.pdf) and [中文(ZH)](docs/help/gStore_help_CN.pdf).**
 
 **The formal experiment result is in [Experiment](docs/test/formal_experiment.pdf).**
 
@@ -14,13 +14,24 @@ Gstore System(also called gStore) is a graph database engine for managing large 
 ### Compile from Source
 This system is really user-friendly and you can pick it up in several minutes. Remember to check your platform where you want to run this system by viewing [System Requirements](docs/DEMAND.md). After all are verified, please get this project's source code. There are several ways to do this:
 
+- (suggested)type `git clone https://github.com/pkumod/gStore.git` in your terminal or use git GUI to acquire it
+
 - download the zip from this repository and extract it
 
 - fork this repository in your github account
 
-- type `git clone https://github.com/Caesar11/gStore.git` in your terminal or use git GUI to acquire it
+Then you need to compile the project, for the first time you need to type `make pre` to prepare the `ANTLR` library and some Lexer/Parser programs.
+Later you do not need to type this command again, just use the `make` command in the home directory of gStore, then all executables will be generated.
+(For faster compiling speed, use `make -j4` instead, using how many threads is up to your machine)
+To check the correctness of the program, please type `make test` command.
 
-Then you need to compile the project, just type `make` in the gStore root directory, then all executables will be generated.
+The first strategy is suggested to get the source code because you can easily acquire the updates of the code by typing `git pull` in the home directory of gStore repository. 
+In addition, you can directly check the version of the code by typing `git log` to see the commit logs.
+If you want to use code from other branches instead of master branch, like 'dev' branch, then:
+
+- clone the master branch and type `git checkout dev` in your terminal
+
+- clone the dev branch directly by typing `git clone -b dev`
 
 ### Deploy via Docker
 You can easily deploy gStore via Docker. We provide both of Dockerfile and docker image. Please see our [Docker Deployment Doc(EN)](docs/DOCKER_DEPLOY_EN.md) or [Docker部署文档(中文)](docs/DOCKER_DEPLOY_CN.md) for details.
@@ -42,7 +53,7 @@ If you want to understand the details of the gStore system, or you want to try s
 
 - [API Explanation](docs/API.md): guide you to develop applications based on our API
 
-- [Project Structure](docs/STRUCT.md): show the whole structure and sequence of this project
+- [Project Structure](docs/STRUCT.md): show the whole structure and process of this project
 
 - [Related Essays](docs/ESSAY.md): contain essays and publications related with gStore
 
@@ -54,9 +65,12 @@ If you want to understand the details of the gStore system, or you want to try s
 
 ## Other Business
 
+Bugs are recorded in [BUG REPORT](docs/BUGS.md).
+You are welcomed to submit the bugs you discover if they do not exist in this file.
+
 We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in [Recipe Book](docs/TIPS.md).
 
-You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <zengli@bookug.cc> to submit your suggestions and report bugs to us by emailing to <gStoreDB@gmail.com>. A full list of our whole team is in [Mailing List](docs/MAIL.md).
+You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <bookug@qq.com> to submit your suggestions and report bugs to us by emailing to <gStoreDB@gmail.com>. A full list of our whole team is in [Mailing List](docs/MAIL.md).
 
 There are some restrictions when you use the current gStore project, you can see them on [Limit Description](docs/LIMIT.md).
 

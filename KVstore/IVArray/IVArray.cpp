@@ -16,7 +16,6 @@ IVArray::IVArray()
 	dir_path = "";
 	IVfile_name = "";
 	BM = NULL;
-	CurKeyNum = 0;
 	CurEntryNum = 0;
 	CurCacheSize = 0;
 	CurEntryNumChange = false;
@@ -52,6 +51,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 	//index_time_map.clear();
 	//time_index_map.clear();
 	MAX_CACHE_SIZE = buffer_size;
+//	MAX_CACHE_SIZE = 10 * (1 << 30);
 	cache_head = new IVEntry;
 	cache_tail_id = -1;
 
@@ -63,7 +63,6 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 
 		// temp is the smallest number >= _key_num and mod SET_KEY_INC = 0
 		unsigned temp = ((_key_num + (1 << 10) - 1) >> 10) << 10;
-		CurKeyNum = 0;
 		CurEntryNum = max(temp, SETKEYNUM);
 		CurEntryNumChange = true;
 
@@ -259,33 +258,7 @@ IVArray::SwapOut()
 	}
 	array[targetID].release();
 	array[targetID].setCacheFlag(false);
-/*	if (time_index_map.empty())
-	{
-		return false;
-	}
 
-	multimap <long, unsigned>::iterator it = time_index_map.begin();
-
-	unsigned key = it->second;
-	char *str = NULL;
-	unsigned len = 0;
-	array[key].getBstr(str, len, false);
-	
-	if (array[key].isDirty() && array[key].inCache())
-	{
-		unsigned store = BM->WriteValue(str, len);
-		array[key].setStore(store);
-	}
-
-	CurCacheSize -= len;
-
-	array[key].release();
-	array[key].setCacheFlag(false);
-
-	//array[key].setTime(0);
-	//index_time_map.erase(key);
-	time_index_map.erase(it);
-*/
 	return true;
 }
 
@@ -297,6 +270,8 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 	{
 		return false;
 	}
+
+//	this->CacheLock.lock();
 	// ensure there is enough room in main memory
 	while (CurCacheSize + _len > MAX_CACHE_SIZE)
 	{
@@ -307,9 +282,6 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 		}
 	}
 
-	CurCacheSize += _len;
-	array[_key].setBstr(_str, _len);
-	array[_key].setCacheFlag(true);
 
 	if (cache_tail_id == -1)
 		cache_head->setNext(_key);
@@ -320,21 +292,26 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 	array[_key].setNext(-1);
 	cache_tail_id = _key;
 
-	//modify maps
-//	long time = Util::get_cur_time();
-//	array[_key].setTime(time);
-//	time_index_map.insert(make_pair(time, _key));
+	CurCacheSize += _len;
+	array[_key].setBstr(_str, _len);
+	array[_key].setCacheFlag(true);
 
+//	this->CacheLock.unlock();
 	return true;
 }
 
 //Update last used time of array[_key]
 bool
-IVArray::UpdateTime(unsigned _key)
+IVArray::UpdateTime(unsigned _key, bool HasLock)
 {
+	if (array[_key].isPined()) // the cache pined should not be swaped out
+		return true;
+
 	if (_key == (unsigned) cache_tail_id)// already most recent
 		return true;
 
+//	if (!HasLock)
+//		this->CacheLock.lock();
 //	cout << "UpdateTime: " << _key << endl;
 	int prevID = array[_key].getPrev();
 	int nextID = array[_key].getNext();
@@ -350,115 +327,55 @@ IVArray::UpdateTime(unsigned _key)
 	array[_key].setNext(-1);
 	array[cache_tail_id].setNext(_key);
 	cache_tail_id = _key;
-	/*
-	//map <unsigned, long>::iterator it;
-	unsigned oldtime;
-	if ((oldtime = array[_key].getTime()) == 0)
-	{
-		return false;
-	}
 
-	//unsigned oldtime = it->second;
-	long time = Util::get_cur_time();
-	array[_key].setTime(time);
-	//it->second = time;
-
-//	pair < multimap<long, unsigned>::iterator, multimap<long, unsigned>::iterator > ret;
-//	ret = time_index_map.equal_range(oldtime);
-
-	multimap <long, unsigned>::iterator p = time_index_map.lower_bound(oldtime);
-	//for(p = ret.first; p != ret.second; p++)
-	for(p; p->first == oldtime; p++)
-	{
-		if (p->second == _key)
-			break;
-	}
-
-	//if (p == ret.second)
-	if (p->first != oldtime)
-	{
-		return false;
-	}
-	time_index_map.erase(p);
-	time_index_map.insert(make_pair(time, _key));
-	*/
+//	if (!HasLock)
+//		this->CacheLock.unlock();
 	return true;
 }
 
 bool
 IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 {
+	this->CacheLock.lock();
 	//printf("%s search %d: ", filename.c_str(), _key);
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
-//		cout << "IVArray " << filename << "  Search Error: Key " << _key << " is not available." << endl;
 		_str = NULL;
 		_len = 0;
+		this->CacheLock.unlock();
 		return false;
 	}
 	// try to read in main memory
 	if (array[_key].inCache())
 	{
 		UpdateTime(_key);
-		return array[_key].getBstr(_str, _len);
+		bool ret = array[_key].getBstr(_str, _len);
+		this->CacheLock.unlock();
+		return ret;
 	}
-//	printf(" need to read disk ");
 	// read in disk
 	unsigned store = array[_key].getStore();
-//	cout << "store: " << store << endl;
-//	printf("stored in block %d, ", store);
 	if (!BM->ReadValue(store, _str, _len))
 	{
+		this->CacheLock.unlock();
 		return false;
 	}
-	// try to add the entry into cache
-/*	if (VList::isLongList(_len) && _len + CurCacheSize <= IVArray::MAX_CACHE_SIZE)
+	if(!VList::isLongList(_len))
 	{
-		array[_key].setBstr(_str, _len);
-		array[_key].setCacheFlag(true);
-
-		CurCacheSize += _len;
-	}*/
-	if (!VList::isLongList(_len))
-	{
-		AddInCache(_key, _str, _len);
-		char *debug = new char [_len];
-		memcpy(debug, _str, _len);
-		_str = debug;
-	}
-//	printf(" value is %s, length: %d\n", _str, _len);
+//		if (array[_key].Lock.try_lock())
+//		{
+//			if (array[_key].inCache())
+//				return true;
+			AddInCache(_key, _str, _len);
+			char *debug = new char [_len];
+			memcpy(debug, _str, _len);
+			_str = debug;
+	//		array[_key].Lock.unlock();
 	
-	// also read values near it so that we can take advantage of spatial locality
-/*	unsigned start = (_key / SEG_LEN) * SEG_LEN;
-	unsigned end = start + SEG_LEN;
-	for(unsigned i = start; i < end; i++)
-	{
-		unsigned store = array[i].getStore();
-		if (i == _key)
-		{
-			if (!BM->ReadValue(store, _str, _len))
-				return false;
-			//if (!VList::isLongList(_len))
-				AddInCache(_key, _str, _len);
-			//else
-			if (VList::isLongList(_len))
-				array[_key].setLongListFlag(true);
-		}
-		else if (!array[i].isLongList() && array[i].isUsed() && !array[i].inCache())
-		{
-			char *temp_str;
-			unsigned temp_len;
-			if (!BM->ReadValue(store, temp_str, temp_len))
-				continue;
-			if (!VList::isLongList(temp_len))
-				AddInCache(i, temp_str, temp_len);
-			else
-				array[_key].setLongListFlag(true);
-			
-			delete [] temp_str;
-		}
-	}*/
+//		}
+	}
 
+	this->CacheLock.unlock();
 	return true;
 }
 
@@ -477,7 +394,6 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 		return false;
 	}
 
-	CurKeyNum++;
 	//if (CurKeyNum >= CurEntryNum) // need to realloc
 	if (_key >= CurEntryNum)
 	{
@@ -533,7 +449,6 @@ IVArray::remove(unsigned _key)
 		return false;
 	}
 
-	CurKeyNum--;
 
 	unsigned store = array[_key].getStore();
 	BM->FreeBlocks(store);
@@ -545,6 +460,8 @@ IVArray::remove(unsigned _key)
 	if (array[_key].inCache())
 	{
 		RemoveFromLRUQueue(_key);
+		if(array[_key].isPined())
+			array[_key].setCachePinFlag(false);
 
 		char *str = NULL;
 		unsigned len = 0;
@@ -552,6 +469,9 @@ IVArray::remove(unsigned _key)
 		CurCacheSize += len;
 		array[_key].setCacheFlag(false);
 	}
+
+	if (array[_key].isPined())
+		array[_key].setCachePinFlag(false);
 
 	array[_key].release();
 
@@ -572,26 +492,13 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 	if (array[_key].inCache())
 	{
 		RemoveFromLRUQueue(_key);
+		if(array[_key].isPined())
+			array[_key].setCachePinFlag(false);
 
 		char* str = NULL;
 		unsigned len = 0;
 		array[_key].getBstr(str, len, false);
 
-/*		if (!VList::isLongList(_len))
-		{
-			CurCacheSize -= len;
-			CurCacheSize += _len;
-			array[_key].setBstr(_str, _len);
-		}
-		else
-		{
-			CurCacheSize -= len;
-			array[_key].release();
-			array[_key].setCacheFlag(false);
-			unsigned store = BM->WriteValue(_str, _len);
-			array[_key].setStore(store);
-		}
-*/
 		array[_key].release();
 		CurCacheSize -= len;
 		AddInCache(_key, _str, _len);
@@ -600,15 +507,6 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 	{
 		unsigned store = array[_key].getStore();
 		BM->FreeBlocks(store);
-		/*if (VList::isLongList(_len))
-		{
-			unsigned store = BM->WriteValue(_str, _len);
-			array[_key].setStore(store);
-		}
-		else
-		{
-			AddInCache(_key, _str, _len);
-		}*/
 		AddInCache(_key, _str, _len);
 	}
 
@@ -616,12 +514,47 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 	
 }
 
+//Pin an entry in cache and never swap out
+void
+IVArray::PinCache(unsigned _key)
+{
+	//printf("%s search %d: ", filename.c_str(), _key);
+	if (_key >= CurEntryNum ||!array[_key].isUsed())
+	{
+		return;
+	}
+	// try to read in main memory
+	if (array[_key].inCache())
+	{
+		RemoveFromLRUQueue(_key);
+
+		array[_key].setCachePinFlag(true);
+	
+		return;
+	}
+	// read in disk
+	unsigned store = array[_key].getStore();
+	char *_str = NULL;
+	unsigned _len = 0;
+	if (!BM->ReadValue(store, _str, _len))
+	{
+		return;
+	}
+
+	array[_key].setBstr(_str, _len);
+	array[_key].setCacheFlag(true);
+	array[_key].setCachePinFlag(true);
+
+	return;
+}
+
 void
 IVArray::RemoveFromLRUQueue(unsigned _key)
 {
-	if (!array[_key].inCache())
+	if (!array[_key].inCache() || array[_key].isPined())
 		return;
 
+	//this->CacheLock.lock();
 	int prevID = array[_key].getPrev();
 	int nextID = array[_key].getNext();
 
@@ -647,7 +580,6 @@ IVArray::RemoveFromLRUQueue(unsigned _key)
 	else
 		array[PrevID].setNext(-1);*/
 
+	//this->CacheLock.unlock();
 	return;
 }
-
-

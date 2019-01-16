@@ -1,3 +1,59 @@
+## Nov 4, 2018
+
+Zongyue, Qin fixes several severe bugs in indices, to support the management of freebase and larger datasets.
+For example, the bug of multiple repeated insertion/deletion has been solved now.
+In addition, trie index is forbidded due to its useless optimization to `id2string` index.
+
+Zhenya, Tian modifies `makefile` to enable multithreading compilation, which has cut down the time of building executables a lot.
+
+Xunbin, Su and Haiqing, Yu collaborate with each other to propose a detailed test standard, as well as several important test scripts including build/query and insert/delete.
+Meanwhile, Xunbin, Su and Jing, Li design a `system` database to store the information of databases and users.
+
+---
+
+## Oct 14, 2018
+
+Xunbin, Su adds the function of shutdowning the `ghttp` server. In addition, he addes the `ginit` command to system and prepares the nodejs API.
+What is more, `drop` command is supported in `ghttp` by Xunbin, Su.
+
+Chaofan, Yang fixes the bug in the encoder part of `ghttp` api.
+
+Li, Zeng fixes bugs in build process and in the indices module, addes some scripts for demo.
+
+Yinnian, Lin finds a way to scale the contributions of all developers and Li, Zeng adds this function in Makefile.
+
+Yuyan, Chen addes help document to the system, both in Chinese and English.
+
+Jing, Li uses JSON format in response to the request of clients, and addes `system.db` to store information of multiple users.
+
+Wenjie, Li reviews the code of gStore system, and proposes many feasible suggestions for optimization. We have made a plan to optimize the system in all aspects and all effects of the plans will be seen in the next release version.
+When the version of release rises to 1.0.0, and that is the time we will call the system a formal release rather than a pre-release.
+
+---
+
+## Sep 20, 2018
+
+Zongyue, Qin fixes the remaining bugs in Trie, ISArray and IVArray.
+In addition, he improves the performance of parallism by providing fine-grained locks to key-value indices instead of locking the whole KVstore.
+
+In order to support applications in Wuhan University, Li, Zeng fixes many existing bugs in parallism, 'ghttp', indices, caches(string buffers are not used now) and APIs.
+What is more, setup scripts are added for several wellknown Linux distributions(CentOS, Archlinux, Ubuntu) to ease the burden of installing softwares and setting system variables.
+
+As for documents, new figures of architecture and query processing are added by Li, Zeng and Yuyan, Chen.
+This will help other developers on Github to view our code and modify it as they wish.
+
+---
+
+## Jun 6, 2018
+
+Xunbin, Su designs a thread pool for 'ghttp' based on the SimpleWeb framework of Boost Library. 
+In addition, Xunbin, Sun and imbajin(a Github user) add a docker image(only works for Docker CE 17.06.1) to gStore, which can ease the usage of this database system.
+
+Meanwhile, Zongyue, Qin fixes several bugs in the new indices and designs caches for them.
+Chaofan, Yang adds and improves APIs(Application Program Interface) of several programming languages to 'ghttp' interface.
+
+---
+
 ## Apr 24, 2018
 
 Multithreading is enabled by zengli in ghttp, to improve the performance of this HTTP web server.

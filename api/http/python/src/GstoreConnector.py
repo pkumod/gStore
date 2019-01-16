@@ -31,7 +31,9 @@ class GstoreConnector:
                 ret += c
             elif ((ord(c)>=97) and (ord(c)<=122)):
                 ret += c
-            else:
+            elif (ord(c)>=256):
+                ret += chr(ord(c))
+            elif ((ord(c)!=9) and (ord(c)!=10) and (ord(c)!=13)):
                 ret += "{}{:X}".format("%", ord(c))
         return ret
 
@@ -49,7 +51,7 @@ class GstoreConnector:
     def load(self, db_name, username, password):
         cmd = self.Url + "/?operation=load&db_name=" + db_name + "&username=" + username + "&password=" + password
         res = self.Get(cmd)
-        print res
+        print(res)
         if res == "load database done.":
             return True
         return False
@@ -79,22 +81,22 @@ class GstoreConnector:
         self.fGet(cmd, filename)
         return
 
-    def show(self):
-        cmd = self.Url + "/?operation=show"
-        return Get(cmd)
+    def show(self, username, password):
+        cmd = self.Url + "/?operation=show&username=" + username + "&password=" + password
+        return self.Get(cmd)
 
-    def user(self, type, username1, password1, username2, addtion):
-        cmd = self.Url + "/?operation=user&type=" + type + "&username1=" + username1+ "&password1=" + password1 + "&username2=" + username2 + "&addtion=" +addition
+    def user(self, type, username1, password1, username2, addition):
+        cmd = self.Url + "/?operation=user&type=" + type + "&username1=" + username1+ "&password1=" + password1 + "&username2=" + username2 + "&addition=" +addition
         return self.Get(cmd)
 
     def showUser(self):
         cmd = self.Url + "/?operation=showUser"
         return self.Get(cmd)
 
-    def monitor(self, db_name):
-        cmd = self.Url + "/?operation=monitor&db_name=" + db_name;
+    def monitor(self, db_name, username, password):
+        cmd = self.Url + "/?operation=monitor&db_name=" + db_name + "&username=" + username + "&password=" + password
         return self.Get(cmd)
     
-    def checkpoint(self, db_name):
-        cmd = self.Url + "/?operation=checkpoint&db_name=" + db_name
+    def checkpoint(self, db_name, username, password):
+        cmd = self.Url + "/?operation=checkpoint&db_name=" + db_name + "&username=" + username + "&password=" + password
         return self.Get(cmd)

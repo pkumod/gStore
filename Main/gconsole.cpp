@@ -174,7 +174,7 @@ main(int argc, char **argv)
 	cout << "usage: start-gconsole [OPTION]" << endl;
 	cout << " -h, --help              print this help" << endl;
 	cout << " -s, --source            source the SPARQL script" << endl;
-	cout << "For bug reports and suggestions, see https://github.com/Caesar11/gStore" << endl << endl << endl;
+	cout << "For bug reports and suggestions, see https://github.com/pkumod/gStore" << endl << endl << endl;
 
 	if (argc > 1)
 	{
@@ -1089,6 +1089,7 @@ int query_handler(const vector<string>& args) {
 
 	ResultSet rs;
 	bool ret = current_database->query(sparql, rs, output);
+	current_database->save();
 	if (ret) {
 #ifdef DEBUG_PRECISE
 		cout << "query() returns true!" << endl;
