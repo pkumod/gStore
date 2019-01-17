@@ -166,6 +166,10 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	int triple_num = basic_query->getTripleNum();
 
 	int var_num = basic_query->getVarNum();
+
+        vector<bool> skip_pre_filter(var_num,false);
+	int threshold = 10; // if a variable has candidates less than threshold, then other variables will skip pre_filter
+
 	cout << "start constant filter here " << endl << endl;
 	for (int _var_i = 0; _var_i < var_num; _var_i++)
 	{
@@ -268,8 +272,12 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	            return false;
 	        }
 	    }
-
-	    cout << "\t\t[" << _var_i << "] after constant filter, candidate size = " << _list.size() << endl << endl << endl;
+            
+            if (_list.size() < threshold)
+	        for (int j = 0; j < var_num; j++)
+		    skip_pre_filter[j] = true;
+	
+            cout << "\t\t[" << _var_i << "] after constant filter, candidate size = " << _list.size() << endl << endl << endl;
 	}
 
 	cout << "pre filter start here" << endl;
@@ -278,7 +286,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	{
 	    if(basic_query->isSatelliteInJoin(_var))
 	        continue;
-	    
+            
 	    cout << "\tVar" << _var << " " << basic_query->getVarName(_var) << endl;
 	    IDList& cans = basic_query->getCandidateList(_var);
 	    unsigned size = basic_query->getCandidateSize(_var);
@@ -372,7 +380,12 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	    unsigned len = 0;
 	    for(it = in_edge_pre_id.begin(); it != in_edge_pre_id.end(); ++it)
 	    {
-	    	if(pre2num[*it] < 1000000 || cans.size() > 1000000 || cans.size() == 0)
+	    	// if there exists a variable with limited matches in the query, then skip the filter of other
+	    	// variables as soon as possible
+		if(cans.size() != 0 && skip_pre_filter[_var])
+			continue;
+
+		if(pre2num[*it] < 1000000 || cans.size() > 1000000 || cans.size() == 0)
         	{
 		        kvstore->getobjIDlistBypreID(*it, list, len, true);
 		        if(cans.size() == 0)
@@ -427,7 +440,13 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
         }
         for(it = out_edge_pre_id.begin(); it != out_edge_pre_id.end(); ++it)
 	{
-        	if(pre2num[*it] < 1000000 || cans.size() > 1000000  || cans.size() == 0)
+                
+	    	// if there exists a variable with limited matches in the query, then skip the filter of other
+	    	// variables as soon as possible
+		if(cans.size() != 0 && skip_pre_filter[_var])
+			continue;
+        	
+  		if(pre2num[*it] < 1000000 || cans.size() > 1000000  || cans.size() == 0)
         	{
 	            kvstore->getsubIDlistBypreID(*it, list, len, true);
 	            if(cans.size() == 0)
