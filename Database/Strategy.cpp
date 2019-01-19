@@ -169,7 +169,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 
         vector<bool> skip_pre_filter(var_num,false);
 	int threshold = 10; // if a variable has candidates less than threshold, then other variables will skip pre_filter
-
+	bool no_pre_filter = false;
 	cout << "start constant filter here " << endl << endl;
 	for (int _var_i = 0; _var_i < var_num; _var_i++)
 	{
@@ -274,13 +274,22 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	    }
             
             if (_list.size() < threshold)
+	    {
 	        for (int j = 0; j < var_num; j++)
 		    skip_pre_filter[j] = true;
+		no_pre_filter = true;
+	    }
 	
             cout << "\t\t[" << _var_i << "] after constant filter, candidate size = " << _list.size() << endl << endl << endl;
 	}
 
 	cout << "pre filter start here" << endl;
+	if(no_pre_filter)
+	{
+	    cout << "skip pre filter" << endl;
+	    return true;	
+	}
+
 	//TODO:use vector instead of set
 	for(int _var = 0; _var < var_num; _var++)
 	{
