@@ -591,12 +591,14 @@ Database::setPreMap()
 			this->pre2obj[i] = 0;
 		}
 	}
+	/*
 	for(int i = 0;i < this->pre_num;i++)
 	{
 		cout <<"pre2num["<<i<<"]: "<<this->pre2num[i]<<endl;
 		cout <<"pre2sub["<<i<<"]: "<<this->pre2sub[i]<<endl;
 		cout <<"pre2obj["<<i<<"]: "<<this->pre2obj[i]<<endl;
 	}
+	*/
 
 }
 
@@ -1444,7 +1446,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 {
 	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
 
-	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
+	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 
 	long tv_begin = Util::get_cur_time();
 

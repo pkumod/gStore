@@ -18,12 +18,16 @@ Strategy::Strategy()
 	//this->prepare_handler();
 }
 
-Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,TYPE_ENTITY_LITERAL_ID _limitID_entity)
+Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num, TYPE_TRIPLE_NUM* _pre2sub,
+ 	TYPE_TRIPLE_NUM* _pre2obj, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
+	TYPE_ENTITY_LITERAL_ID _limitID_entity)
 {
 	this->method = 0;
 	this->kvstore = _kvstore;
 	this->vstree = _vstree;
 	this->pre2num = _pre2num;
+	this->pre2sub = _pre2sub;
+	this->pre2obj = _pre2obj;
 	this->limitID_predicate = _limitID_predicate;
 	this->limitID_literal = _limitID_literal;
 	this->limitID_entity = _limitID_entity;
@@ -161,15 +165,15 @@ Strategy::handle(SPARQLquery& _query)
 
 
 bool 
-Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_NUM* pre2num, bool * dealed_triple)
+Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_NUM* pre2num, 
+	TYPE_TRIPLE_NUM* pre2sub, TYPE_TRIPLE_NUM* pre2obj, bool * dealed_triple)
 {
 	int triple_num = basic_query->getTripleNum();
 
 	int var_num = basic_query->getVarNum();
+	// use constant filter to estimate now many ffits exist
+        vector<int> estimate_num(var_num,10000000);
 
-        vector<bool> skip_pre_filter(var_num,false);
-	int threshold = 10; // if a variable has candidates less than threshold, then other variables will skip pre_filter
-	bool no_pre_filter = false;
 	cout << "start constant filter here " << endl << endl;
 	for (int _var_i = 0; _var_i < var_num; _var_i++)
 	{
@@ -274,22 +278,34 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	    }
             // skip pre_filter when the candidate of a variable is small
             // enough after constant_filter
-            if (_list.size() > 0 && _list.size() < threshold)
+            if (_list.size() > 0)
 	    {
-	        for (int j = 0; j < var_num; j++)
-		    skip_pre_filter[j] = true;
-		no_pre_filter = true;
+	    	 for (int j = 0; j < var_degree; j++)
+	    	{
+	        	int neighbor_id = basic_query->getEdgeNeighborID(_var_i, j);
+			//-1: constant or variable not in join; otherwise, variable in join
+	 	        if (neighbor_id == -1)   
+	        	{
+	            	    continue;
+	        	}
+	        	TYPE_PREDICATE_ID pre_id = basic_query->getEdgePreID(_var_i, j);
+	        	char edge_type = basic_query->getEdgeType(_var_i, j);
+			int estimate_val;
+			if (edge_type == Util::EDGE_OUT)				
+			    estimate_val= _list.size()*pre2num[pre_id]/pre2sub[pre_id];
+			else
+			    estimate_val = _list.size()*pre2num[pre_id]/pre2obj[pre_id];
+			if(estimate_val < estimate_num[neighbor_id])
+			    estimate_num[neighbor_id] = estimate_val;
+			
+		}
+    
 	    }
 	
             cout << "\t\t[" << _var_i << "] after constant filter, candidate size = " << _list.size() << endl << endl << endl;
 	}
 
 	cout << "pre filter start here" << endl;
-	if(no_pre_filter)
-	{
-	    cout << "skip pre filter" << endl;
-	    return true;	
-	}
 
 	//TODO:use vector instead of set
 	for(int _var = 0; _var < var_num; _var++)
@@ -352,7 +368,6 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	        //The latter time is computed due to the unnecessary copy cost if not using this p
 	        //TYPE_TRIPLE_NUM border = size / (Util::logarithm(2, size) + 1);
 	        //not use inefficient pre to filter
-
 	        if(dealed_triple[triple_id])
 	        {
 	            continue;
@@ -361,9 +376,19 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	        double border = size / (Util::logarithm(2, size) + 1);
 	        if(pre2num[pre_id] > border)
 	        {
-	        	//cout << "skip the prefilter because the pre var is not efficent enough" << endl;
+	        	cout << "skip the prefilter because the pre var is not efficent enough" << endl;
 	        	continue;
 	        }
+
+	        int prefilter_num;
+		if((edge_type == Util::EDGE_OUT && (prefilter_num = pre2obj[pre_id]) > estimate_num[_var]) ||
+			(edge_type == Util::EDGE_IN && (prefilter_num = pre2sub[pre_id]) > estimate_num[_var]))
+		{
+			cout << "skip the prefilter because the constant filter is strong enough" << endl;
+			// cout << "estimate_num:" << estimate_num[_var] << endl;
+			// cout << "prefilter_num:" << prefilter_num << endl;
+			continue;
+		}
 
 	        if(basic_query->isOneDegreeVar(neighbor))
 	        {
@@ -392,8 +417,6 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	    {
 	    	// if there exists a variable with limited matches in the query, then skip the filter of other
 	    	// variables as soon as possible
-		if(cans.size() != 0 && skip_pre_filter[_var])
-			continue;
 
 		if(pre2num[*it] < 1000000 || cans.size() > 1000000 || cans.size() == 0)
         	{
@@ -453,8 +476,6 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
                 
 	    	// if there exists a variable with limited matches in the query, then skip the filter of other
 	    	// variables as soon as possible
-		if(cans.size() != 0 && skip_pre_filter[_var])
-			continue;
         	
   		if(pre2num[*it] < 1000000 || cans.size() > 1000000  || cans.size() == 0)
         	{
@@ -564,7 +585,7 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 
 	bool * d_triple = (bool*)calloc(_bq->getTripleNum(), sizeof(bool));
 
-	bool ret2 = pre_handler(_bq, kvstore, pre2num, d_triple);
+	bool ret2 = pre_handler(_bq, kvstore, pre2num,pre2sub,pre2obj, d_triple);
 	long after_prehandler = Util::get_cur_time();
 	cout << "after prehandler: used " << (after_prehandler - tv_retrieve) << " ms" << endl;
 	if(!ret2){
