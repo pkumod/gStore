@@ -272,8 +272,9 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	            return false;
 	        }
 	    }
-            
-            if (_list.size() < threshold)
+            // skip pre_filter when the candidate of a variable is small
+            // enough after constant_filter
+            if (_list.size() > 0 && _list.size() < threshold)
 	    {
 	        for (int j = 0; j < var_num; j++)
 		    skip_pre_filter[j] = true;
