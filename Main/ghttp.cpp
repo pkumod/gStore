@@ -45,6 +45,7 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define	MAX_QUERYLOG_size 800000000 
 #define QUERYLOG_PATH "logs/endpoint/"
 #define SYSTEM_USERNAME "system"
+#define MAX_OUTPUT_SIZE 100000
 
 //int initialize();
 int initialize(int argc, char *argv[]);
@@ -114,6 +115,8 @@ FILE* query_logfp = NULL;
 string queryLog = "logs/endpoint/query.log";
 mutex query_log_lock;
 string system_password;
+string NAMELOG_PATH  = "name.log";
+
 //pthread_rwlock_t database_load_lock;
 
 pthread_rwlock_t databases_map_lock;
@@ -128,11 +131,11 @@ std::map<std::string, Database *> databases;
 struct DBInfo{
 	private:
 		std::string db_name;
-		std::string creator; 
-		std::string built_time; 
+		std::string creator;
+		std::string built_time;
 	public:
 		pthread_rwlock_t db_lock;
-		
+
 		DBInfo(){
 			pthread_rwlock_init(&db_lock, NULL);
 		}
@@ -154,7 +157,7 @@ struct DBInfo{
 		}
 		std::string getCreator(){
 			return creator;
-		}	
+		}
 		void setCreator(string _creator){
 			creator = _creator;
 		}
@@ -176,7 +179,7 @@ struct User{
 		std::set<std::string> update_priv;
 		std::set<std::string> load_priv;
 		std::set<std::string> unload_priv;
-		
+
 		pthread_rwlock_t query_priv_set_lock;
 		pthread_rwlock_t update_priv_set_lock;
 		pthread_rwlock_t load_priv_set_lock;
@@ -258,7 +261,7 @@ struct User{
 				load_db = "all";
 				return load_db;
 			}
-		
+
 			std::set<std::string>::iterator it = load_priv.begin();
 			while(it != load_priv.end())
 			{
@@ -274,7 +277,7 @@ struct User{
 				unload_db = "all";
 				return unload_db;
 			}
-		
+
 			std::set<std::string>::iterator it = unload_priv.begin();
 			while(it != unload_priv.end())
 			{
@@ -287,7 +290,7 @@ struct User{
 		{
 			password = psw;
 		}
-		
+
 };
 //struct User root = User(ROOT_USERNAME, ROOT_PASSWORD);
 std::map<std::string, struct DBInfo *> already_build;
@@ -296,7 +299,7 @@ std::map<std::string, struct User *> users;
 //users.insert(pair<std::string, struct User*>(ROOT_USERNAME, &root));
 //users[ROOT_USERNAME] = &root;
 //struct User temp_user = User(username2, password2);
-		
+
 int connection_num = 0;
 
 long next_backup = 0;
@@ -323,7 +326,7 @@ void test_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 
 //BETTER: How about change HttpConnector into a console?
 //TODO: we need a route
-//JSON parser: http://www.tuicool.com/articles/yUJb6f     
+//JSON parser: http://www.tuicool.com/articles/yUJb6f
 //(or use boost spirit to generate parser when compiling)
 //
 //NOTICE: no need to close connection here due to the usage of shared_ptr
@@ -436,7 +439,7 @@ Thread::Thread()
 }
 Thread::~Thread()
 {
-	
+
 }
 int Thread::GetThreadID()
 {
@@ -547,7 +550,7 @@ void ThreadPool::start()
 			busy_mutex.unlock();
 			break;
 		}
-		
+
 		free_mutex.lock();
 		if (freethreads.size() == 0)
 		{
@@ -555,18 +558,18 @@ void ThreadPool::start()
 			continue;
 		}
 		free_mutex.unlock();
-		
+
 		task_mutex.lock();
 		if (tasklines.size() == 0)
 		{
 			task_mutex.unlock();
 			continue;
 		}
-		
+
 		Task *job = tasklines.front();
 		tasklines.pop();
 		task_mutex.unlock();
-		
+
 		free_mutex.lock();
 		Thread *t = freethreads.back();
 		freethreads.pop_back();
@@ -576,9 +579,9 @@ void ThreadPool::start()
 		busy_mutex.lock();
 		busythreads.push_back(t);
 		busy_mutex.unlock();
-		
+
 		t->start();
-	}			
+	}
 }
 void ThreadPool::close()
 {
@@ -593,7 +596,7 @@ int main(int argc, char *argv[])
 	srand(time(NULL));
 
 	//Notice that current_database is assigned in the child process, not in the father process
-	//when used as endpoint, or when the database is indicated in command line, we can assign 
+	//when used as endpoint, or when the database is indicated in command line, we can assign
 	//current_database in father process(but this is resource consuming)
 	//TODO+DEBUG: when will the restarting error?
 	while (true) {
@@ -645,23 +648,23 @@ bool isNum(char *str)
 	return true;
 }
 
-int initialize(int argc, char *argv[]) 
+int initialize(int argc, char *argv[])
 {
     cout << "enter initialize." << endl;
 	//Server restarts to use the original database
 	//current_database = NULL;
 
 	//users.insert(pair<std::string, struct User *>(ROOT_USERNAME, &root));
-	
+
 	//load system.db when initialize
 	if(!boost::filesystem::exists("system.db"))
 	{
 		cout << "Can not find system.db."<<endl;
 		return -1;
-	}				
+	}
 	struct DBInfo *temp_db = new DBInfo("system");
 	temp_db->setCreator("root");
-	already_build.insert(pair<std::string, struct DBInfo *>("system", temp_db));	
+	already_build.insert(pair<std::string, struct DBInfo *>("system", temp_db));
 	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find("system");
 	if(pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
 	{
@@ -673,14 +676,14 @@ int initialize(int argc, char *argv[])
 	if(!flag)
 	{
 		cout << "Failed to load the database system.db."<<endl;
-		
+
 
 			return -1;
 	}
 	databases.insert(pair<std::string, Database *>("system", system_database));
 	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-	
-	/*//check databases that already built in the directory 
+
+	/*//check databases that already built in the directory
 	DIR * dir;
 	struct dirent * ptr;
 	dir = opendir("."); //open a directory
@@ -708,10 +711,10 @@ int initialize(int argc, char *argv[])
 		}
 	}
 	closedir(dir);//close the pointer of the directory*/
-	
+
 	//insert user from system.db to user map
 	DB2Map();
-		
+
 	HttpServer server;
 	string db_name;
 	if(argc == 1)
@@ -763,7 +766,7 @@ int initialize(int argc, char *argv[])
 
 	//string success = db_name;
 		cout << "Database system.db loaded successfully."<<endl;
-	
+
 		string database = db_name;
 	//if(current_database == NULL && database != "")
 	//{
@@ -795,17 +798,36 @@ int initialize(int argc, char *argv[])
 			current_database = NULL;
 			return -1;
 		}
-	
+
 		//string success = db_name;
 		//already_build.insert(db_name);
 		databases.insert(pair<std::string, Database *>(db_name, current_database));
 	//}
 	}
+	//get the log name
+	string namelog_name = QUERYLOG_PATH + NAMELOG_PATH;
+	FILE *name_logfp = fopen(namelog_name.c_str(), "r+");
+	string querylog_name;
+	if(name_logfp == NULL)   //file not exist, create one
+	{
+		name_logfp = fopen(namelog_name.c_str(), "w");
+		querylog_name = Util::get_date_time();
+		int index_space = querylog_name.find(' ');
+		querylog_name = querylog_name.replace(index_space,1, 1, '_');
+		fprintf(name_logfp, "%s", querylog_name.c_str());
+	}
+	else
+	{
+		char name_char[100];
+		fscanf(name_logfp,"%s",&name_char);
+		querylog_name = name_char;
+	}
+	fclose(name_logfp);
+	//cout << "querylog_name: " << querylog_name << endl;
 	//open the query log
-	string querylog_name = QUERYLOG_PATH + Util::getTimeName() + ".log";
-	//queryLog = querylog_name;
-	cout << "querylog_name: " << querylog_name << endl;
-	query_logfp = fopen(querylog_name.c_str(), "a");
+	queryLog = QUERYLOG_PATH + querylog_name + ".log";
+	cout << "queryLog: " << queryLog << endl;
+	query_logfp = fopen(queryLog.c_str(), "a");
 	if(query_logfp == NULL)
 	{
 		cerr << "open query log error"<<endl;
@@ -816,7 +838,7 @@ int initialize(int argc, char *argv[])
 	//cout << "Util::getTimeName: " << Util::getTimeName() << endl;
 	//cout << "Util::get_cur_time: " << Util::get_cur_time() << endl;
 	//cout << "Util::getTimeString: " << Util::getTimeString() << endl;
-	cout << "Util::get_date_time: " << Util::get_date_time() << endl;
+	//cout << "Util::get_date_time: " << Util::get_date_time() << endl;
 
 	string cmd = "lsof -i:" + Util::int2string(server.config.port) + " > system.db/ep.txt";
 	system(cmd.c_str());
@@ -855,141 +877,141 @@ int initialize(int argc, char *argv[])
 #ifndef SPARQL_ENDPOINT
 	//GET-example for the path /?operation=build&db_name=[db_name]&ds_path=[ds_path]&username=[username]&password=[password], responds with the matched string in path
 	//i.e. database name and dataset path
-	server.resource["^/%3[F|f]operation%3[D|d]build%26db_name%3[D|d](.*)%26ds_path%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/%3[F|f]operation%3[D|d]build%26db_name%3[D|d](.*)%26ds_path%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		build_handler(server, response, request);
     };
 
 	//GET-example for the path /?operation=load&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]load%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/%3[F|f]operation%3[D|d]load%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		load_handler(server, response, request);
 	};
 
     //GET-example for the path /?operation=unload&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]unload%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/%3[F|f]operation%3[D|d]unload%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		unload_handler(server, response, request);
-    }; 
+    };
 
     //GET-example for the path /?operation=login&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]login%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/%3[F|f]operation%3[D|d]login%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		login_handler(server, response, request);
     };
 
 	//GET-example for the path /?operation=user&type=[type]&username1=[username1]&password1=[password1]&username2=[username2]&addition=[password2 || db_name], responds with the matched string in path
-	server.resource["^/%3[F|f]operation%3[D|d]user%26type%3[D|d](.*)%26username1%3[D|d](.*)%26password1%3[D|d](.*)%26username2%3[D|d](.*)%26addition%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/%3[F|f]operation%3[D|d]user%26type%3[D|d](.*)%26username1%3[D|d](.*)%26password1%3[D|d](.*)%26username2%3[D|d](.*)%26addition%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		user_handler(server, response, request);
-    }; 
+    };
 
 	//GET-example for the path /?operation=user&type=[type]&username1=[username1]&password1=[password1]&username2=[username2]&addition=[password2 || db_name], responds with the matched string in path
-	server.resource["^/?operation=user&type=(.*)&username1=(.*)&password1=(.*)&username2=(.*)&addition=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/?operation=user&type=(.*)&username1=(.*)&password1=(.*)&username2=(.*)&addition=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		user_handler(server, response, request);
     };
 
 	//GET-example for the path /?operation=login&username=[username]&password=[password], responds with the matched string in path
-	server.resource["^/?operation=login&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/?operation=login&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		login_handler(server, response, request);
     };
 
 	//GET-example for the path /?operation=build&db_name=[db_name]&ds_path=[ds_path]&username=[username]&password=[password], responds with the matched string in path
 	//i.e. database name and dataset path
-	server.resource["^/?operation=build&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/?operation=build&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		build_handler(server, response, request);
     };
 
 	//GET-example for the path /?operation=load&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/?operation=load&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/?operation=load&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		load_handler(server, response, request);
 	};
 
     //GET-example for the path /?operation=unload&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/?operation=unload&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/?operation=unload&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		unload_handler(server, response, request);
     };
-   
+
 	//NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
 	//In programming language, do URL encode first and then call server, then all is ok
-	server.resource["^/%3[F|f]operation%3[D|d]showUser(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/%3[F|f]operation%3[D|d]showUser(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		showUser_handler(server, response, request);
     };
- 
+
     //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
 	//In programming language, do URL encode first and then call server, then all is ok
-	server.resource["^/?operation=showUser$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/?operation=showUser$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		showUser_handler(server, response, request);
     };
-   
+
 	//GET-example for the path /?operation=query&username=[username]&password=[password]&db_name=[db_name]&format=[format]&sparql=[sparql], responds with the matched string in path
-	 server.resource["^/%3[F|f]operation%3[D|d]query%26username%3[D|d](.*)%26password%3[D|d](.*)%26db_name%3[D|d](.*)%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	 server.resource["^/%3[F|f]operation%3[D|d]query%26username%3[D|d](.*)%26password%3[D|d](.*)%26db_name%3[D|d](.*)%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	 {
 		query_handler1(server, response, request);
 		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     };
 
 	 //GET-example for the path /?operation=query&username=[username]&password=[password]&db_name=[db_name]&format=[format]&sparql=[sparql], responds with the matched string in path
-	 server.resource["^/?operation=query&username=(.*)&password=(.*)&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	 server.resource["^/?operation=query&username=(.*)&password=(.*)&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	 {
 		query_handler1(server, response, request);
 		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     };
 	//GET-example for the path /?operation=check&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]check%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/%3[F|f]operation%3[D|d]check%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		check_handler(server, response, request);
     };
 	//GET-example for the path /?operation=check&username=[username]&password=[password], responds with the matched string in path
-	server.resource["^/?operation=check&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/?operation=check&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		check_handler(server, response, request);
     };
 
     //GET-example for the path /?operation=drop&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]drop%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
-	{
-		drop_handler(server, response, request, false);
-    }; 
-	
-    //GET-example for the path /?operation=drop&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/?operation=drop&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/%3[F|f]operation%3[D|d]drop%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		drop_handler(server, response, request, false);
     };
-	
+
+    //GET-example for the path /?operation=drop&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
+    server.resource["^/?operation=drop&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		drop_handler(server, response, request, false);
+    };
+
     //GET-example for the path /?operation=drop_r&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]drop_r%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/%3[F|f]operation%3[D|d]drop_r%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		drop_handler(server, response, request, true);
-    }; 
-	
+    };
+
     //GET-example for the path /?operation=drop_r&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/?operation=drop_r&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/?operation=drop_r&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		drop_handler(server, response, request, true);
-    };	
+    };
 #endif
-	
-	
+
+
 	//GET-example for the path /?operation=query&db_name=[db_name]&format=[format]&sparql=[sparql], responds with the matched string in path
-	 server.resource["^/%3[F|f]operation%3[D|d]query%26db_name%3[D|d](.*)%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	 server.resource["^/%3[F|f]operation%3[D|d]query%26db_name%3[D|d](.*)%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	 {
 		query_handler0(server, response, request);
 		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     };
 
 	 //GET-example for the path /?operation=query&db_name=[db_name]&format=[format]&sparql=[sparql], responds with the matched string in path
-	 server.resource["^/?operation=query&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	 server.resource["^/?operation=query&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	 {
 		query_handler0(server, response, request);
 		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
@@ -997,20 +1019,20 @@ int initialize(int argc, char *argv[])
 
     //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
 	//In programming language, do URL encode first and then call server, then all is ok
-	server.resource["^/%3[F|f]operation%3[D|d]monitor%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/%3[F|f]operation%3[D|d]monitor%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		monitor_handler(server, response, request);
     };
- 
+
     //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
 	//In programming language, do URL encode first and then call server, then all is ok
-	server.resource["^/?operation=monitor&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/?operation=monitor&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		monitor_handler(server, response, request);
     };
-   
+
     // server.resource["^/json$"]["POST"]=[](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     //     try {
     //         ptree pt;
@@ -1027,45 +1049,45 @@ int initialize(int argc, char *argv[])
     //         *response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << strlen(e.what()) << "\r\n\r\n" << e.what();
     //     }
     // };
-	
-    server.resource["^/%3[F|f]operation%3[D|d]stop%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+
+    server.resource["^/%3[F|f]operation%3[D|d]stop%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		bool flag = stop_handler(server, response, request);
 		if(flag)
 			exit(0);
     };
-    server.resource["^/?operation=stop&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/?operation=stop&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		bool flag = stop_handler(server, response, request);
 		if(flag)
 			exit(0);
     };
-	
-    server.resource["^/%3[F|f]operation%3[D|d]checkpoint%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+
+    server.resource["^/%3[F|f]operation%3[D|d]checkpoint%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		checkpoint_handler(server, response, request);
     };
-	server.resource["^/?operation=checkpoint&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/?operation=checkpoint&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		checkpoint_handler(server, response, request);
     };
-    server.resource["^/%3[F|f]operation%3[D|d]checkall$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/%3[F|f]operation%3[D|d]checkall$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		checkall_handler(server, response, request);
     };
-	server.resource["^/?operation=checkall$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/?operation=checkall$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		checkall_handler(server, response, request);
     };
-	
+
 	//TODO: add user name as parameter, all databases availiable
-    server.resource["^/%3[F|f]operation%3[D|d]show%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/%3[F|f]operation%3[D|d]show%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		show_handler(server, response, request);
     };
 
 	//TODO: add user name as parameter, all databases availiable
-    server.resource["^/?operation=show&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.resource["^/?operation=show&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		show_handler(server, response, request);
     };
@@ -1082,12 +1104,12 @@ int initialize(int argc, char *argv[])
 	//BETTER+TODO: associate the thread/session ID with download fileName, otherwise error may come in parallism
 	//
 	//GET-example for the path /?operation=delete&filepath=[filepath], responds with the matched string in path
-	server.resource["^/%3[F|f]operation%3[D|d]delete%26filepath%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/%3[F|f]operation%3[D|d]delete%26filepath%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		delete_handler(server, response, request);
     };
 	//GET-example for the path /?operation=delete&filepath=[filepath], responds with the matched string in path
-	server.resource["^/%3[F|f]operation%3[D|d]download%26filepath%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+	server.resource["^/%3[F|f]operation%3[D|d]download%26filepath%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		download_handler(server, response, request);
     };
@@ -1095,7 +1117,7 @@ int initialize(int argc, char *argv[])
     //Will respond with content in the web/-directory, and its subdirectories.
     //Default file: index.html
     //Can for instance be used to retrieve an HTML 5 client that uses REST-resources on this server
-    server.default_resource["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) 
+    server.default_resource["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		default_handler(server, response, request);
     };
@@ -1176,7 +1198,7 @@ void* func_timer(void* _args) {
 	sleep(Util::gserver_query_timeout);
 	cerr << "Query out of time." << endl;
 	//TODO: not use SIGTERM and abort() here, which will cause process to quit abnormally
-	//here shoudl just end the timer thread 
+	//here shoudl just end the timer thread
 	abort();
 }
 /*
@@ -1217,32 +1239,7 @@ void delete_thread(const shared_ptr<HttpServer::Response>& response, const share
 		if(distance(root_path.begin(), root_path.end())>distance(path.begin(), path.end()) ||
 				!equal(root_path.begin(), root_path.end(), path.begin()))
 			throw invalid_argument("path must be within root path.");
-		/*
-		if(download == "true")
-		{
-			std::string cache_control, etag;
-			// Uncomment the following line to enable Cache-Control
-			// cache_control="Cache-Control: max-age=86400\r\n";
-			
-			//return file in path
-			auto ifs=make_shared<ifstream>();
-			ifs->open(path.string(), ifstream::in | ios::binary | ios::ate);
-			if(*ifs) {
-		//cout<<"open file!!!"<<endl;
-				auto length=ifs->tellg();
-				ifs->seekg(0, ios::beg);
-				*response << "HTTP/1.1 200 OK\r\n" << cache_control << etag << "Content-Length: " << length << "\r\n\r\n";
-				default_resource_send(server, response, ifs);
-				//DEBUG: in fact this make no sense, result will be received by clients even if server not wait for the network transfer!  (but very slow if results are large)
-				//sleep(10);  //seconds
-				//cout<<"sleep ends"<<endl;
-				//DEBUG: this will close the stream, and the info received by client may be incomplete
-				//ifs->close();
-			}
-			else
-				throw invalid_argument("could not read file.");
-		}
-		*/
+
 		if((boost::filesystem::exists(path) && boost::filesystem::is_regular_file(path)))
 		{
 			//delete file in delpath.
@@ -1260,36 +1257,20 @@ void delete_thread(const shared_ptr<HttpServer::Response>& response, const share
 				cout << "file delete." << endl;
 				//Notice: if file deleted successfully, service need to response to the browser, if not the browser will not execute the call-back function.
 				string success = "file delete successfully.";
-				
-				/*
-				cJson *resJson;
-				resJson=cJSON_CreateObject();   //创建根数据对象
-        		cJSON_AddStringToObject(resJson,"StatusCode",100);  
-        		cJSON_AddStringToObject(resJson,"StatusMsg",success);
-        		//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
-        
-        		//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
-        		//printf("%s\n",out);
-       			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
-			
-				// 释放内存  
-				cJSON_Delete(resJson);  
-				//free(out);
-				*/
 				string resJson = CreateJson(0, success, 0);
 				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
-			
+
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 			}
-		}	
+		}
 	}
 	catch(const exception &e) {
 		//cout<<"can not open file!!!"<<endl;
 		string content="Could not open path "+request->path+": "+e.what();
-		
+
 		string resJson = CreateJson(101, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-	
+
 		//*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
 	}
 }
@@ -1319,7 +1300,7 @@ void download_thread(const HttpServer& server, const shared_ptr<HttpServer::Resp
 
 		// Uncomment the following line to enable Cache-Control
 		// cache_control="Cache-Control: max-age=86400\r\n";
-			
+
 		//return file in path
 		auto ifs=make_shared<ifstream>();
 		ifs->open(path.string(), ifstream::in | ios::binary | ios::ate);
@@ -1336,29 +1317,14 @@ void download_thread(const HttpServer& server, const shared_ptr<HttpServer::Resp
 		}
 		else
 			throw invalid_argument("could not read file.");
-		/*
-		if((boost::filesystem::exists(path) && boost::filesystem::is_regular_file(path)))
-		{
-			//delete file in delpath.
-			char name[60];
-			strcpy(name, path.c_str());
-			cout << "name: " << name << endl;
-			if(remove(name) == -1)
-			{
-				cout << "could not delete file." << endl;
-				perror("remove");
-			}
-			else
-				cout << "file delete." << endl;
-		}
-		*/
+
 	}
 	catch(const exception &e) {
 		//cout<<"can not open file!!!"<<endl;
 		string content="Could not open path "+request->path+": "+e.what();
 		string resJson = CreateJson(101, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json \r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
-			
+
 		//*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
 	}
 }
@@ -1377,7 +1343,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	db_path = UrlDecode(db_path);
 	username = UrlDecode(username);
 	password = UrlDecode(password);
-	
+
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);
@@ -1433,7 +1399,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		// error = db_name + " " + db_path;
 		string resJson = CreateJson(905, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
@@ -1444,8 +1410,8 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		string error = "Your db name to be built should not end with \".db\".";
 		string resJson = CreateJson(202, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
@@ -1507,9 +1473,9 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		system(cmd.c_str());
 		string resJson = CreateJson(204, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		
+
 	//	pthread_rwlock_unlock(&database_load_lock);
 		return;
 	}
@@ -1517,21 +1483,21 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	ofstream f;
 	f.open("./"+ database +".db/success.txt");
 	f.close();
-	
+
 	//by default, one can query or load or unload the database that is built by itself, so add the database name to the privilege set of the user
 	if(addPrivilege(username, "query", db_name) == 0 || addPrivilege(username, "load", db_name) == 0 || addPrivilege(username, "unload", db_name) == 0)
 	{
 		string error = "add query or load or unload privilege failed.";
 		string resJson = CreateJson(912, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
-		return; 
+		return;
 	}
 	cout << "add query and load and unload privilege succeed after build." << endl;
-	
+
 	//add database information to system.db
 	pthread_rwlock_wrlock(&already_build_map_lock);
 	cout << "already_build_map_lock acquired." << endl;
@@ -1539,16 +1505,16 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	struct DBInfo *temp_db = new DBInfo(db_name, username, time);
 	already_build.insert(pair<std::string, struct DBInfo *>(db_name, temp_db));
 	pthread_rwlock_unlock(&already_build_map_lock);
-	string update = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." + 
+	string update = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." +
 		"<" + db_name + "> <built_by> <" + username + "> ." + "<" + db_name + "> <built_time> \"" + time + "\".}";
-	updateSys(update);		
+	updateSys(update);
 	cout << "database add done." << endl;
 	// string success = db_name + " " + db_path;
 	string success = "Import RDF file to database done.";
 	string resJson = CreateJson(0, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-	
+
+
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 //	pthread_rwlock_unlock(&database_load_lock);
 }
@@ -1643,12 +1609,12 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		string error = "Database not built yet.";
 		string resJson = CreateJson(203, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&already_build_map_lock);
-		return; 
+		return;
 	}
 	pthread_rwlock_unlock(&already_build_map_lock);
 
@@ -1659,12 +1625,12 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		string error = "database already load.";
 		string resJson = CreateJson(301, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&databases_map_lock);
-		return; 
+		return;
 	}
 	pthread_rwlock_unlock(&databases_map_lock);
 
@@ -1674,11 +1640,11 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		string error = "no load privilege, operation failed.";
 		string resJson = CreateJson(302, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
-		return; 
+		return;
 	}
 	cout << "check privilege successfully." << endl;
 
@@ -1715,8 +1681,8 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		string error = "Unable to load due to loss of lock";
 		string resJson = CreateJson(303, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
@@ -1730,7 +1696,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		string error = "Failed to load the database.";
 		string resJson = CreateJson(305, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//pthread_rwlock_unlock(&database_load_lock);
 		return;
@@ -1741,7 +1707,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	//long time_backup = Util::read_backup_time();
 	//long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
 	//scheduler = start_thread(func_scheduler);
-	
+
 //string success = db_name;
 //cout << "Database loaded successfully." << endl;
 	pthread_rwlock_wrlock(&databases_map_lock);
@@ -1752,8 +1718,8 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	string success = "Database loaded successfully.";
 	string resJson = CreateJson(0, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-	
+
+
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 }
@@ -1786,24 +1752,24 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 		string error = "username not find.";
 		string resJson = CreateJson(903, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&users_map_lock);
-		return; 
+		return;
 	}
 	else if(it->second->getPassword() != password)
 	{
 		string error = "wrong password.";
 		string resJson = CreateJson(902, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&users_map_lock);
-		return; 
+		return;
 	}
 	pthread_rwlock_unlock(&users_map_lock);
 
@@ -1824,11 +1790,11 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 		string error = "no unload privilege, operation failed.";
 		string resJson = CreateJson(601, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
-		return; 
+		return;
 	}
 	cout << "check privilege successfully." << endl;
 /*
@@ -1862,23 +1828,23 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 		string error = "Database not load yet.";
 		string resJson = CreateJson(304, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		//return false;
 		pthread_rwlock_unlock(&databases_map_lock);
-		return; 
+		return;
 	}
 	pthread_rwlock_rdlock(&already_build_map_lock);
 	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
-	pthread_rwlock_unlock(&already_build_map_lock);	
+	pthread_rwlock_unlock(&already_build_map_lock);
 	if(pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
 	{
 		string error = "Unable to unload due to loss of lock";
 		string resJson = CreateJson(602, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
@@ -1889,8 +1855,8 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	string success = "Database unloaded.";
 	string resJson = CreateJson(0, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-	
+
+
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 //	pthread_rwlock_unlock(&database_load_lock);
 	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
@@ -1909,14 +1875,14 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is drop"<<endl;
-	
+
 	string db_name = request->path_match[1];
 	string username = request->path_match[2];
 	string password = request->path_match[3];
 	db_name = UrlDecode(db_name);
 	username = UrlDecode(username);
 	password = UrlDecode(password);
-	
+
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);
@@ -1964,10 +1930,10 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&already_build_map_lock);
-		return; 
+		return;
 	}
 	pthread_rwlock_unlock(&already_build_map_lock);
-	
+
 	//check privilege
 	string creator = it_already_build->second->getCreator();
 	if (creator != username)
@@ -1981,7 +1947,7 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		}
 	}
 	cout << "check privilege successfully." << endl;
-	
+
 	//if database named [db_name] is loaded, unload it firstly
 	pthread_rwlock_wrlock(&databases_map_lock);
 	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
@@ -2009,7 +1975,7 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 	}
 	pthread_rwlock_unlock(&databases_map_lock);
-	
+
 	//drop database named [db_name]
 	pthread_rwlock_rdlock(&already_build_map_lock);
 	struct DBInfo *temp_db = it_already_build->second;
@@ -2020,7 +1986,7 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	string success = "Database " + db_name + " dropped.";
 	string resJson = CreateJson(0, success, 0);
 	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;	
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 	pthread_rwlock_unlock(&already_build_map_lock);
 
 	string update = "DELETE DATA {<" + db_name + "> <database_status> \"already_built\"." +
@@ -2055,11 +2021,18 @@ void writeLog(FILE* fp, string _info)
 	{
 		//close the old query log file
 		fclose(query_logfp);
-		//create and open a new query log file
-		string querylog_name = QUERYLOG_PATH + Util::getTimeName() + ".log";
+		//create and open a new query log file, then save the log name to name.log
+		string querylog_name = Util::get_date_time();
+		int index_space = querylog_name.find(' ');
+		querylog_name = querylog_name.replace(index_space, 1, 1, '_');
+		string namelog_name = QUERYLOG_PATH + NAMELOG_PATH;
+		FILE *name_logfp = fopen(namelog_name.c_str(), "w");
+		fprintf(name_logfp, "%s", querylog_name.c_str());
+
+		queryLog = QUERYLOG_PATH + querylog_name + ".log";
 		//queryLog = querylog_name;
-		cout << "querylog_name: " << querylog_name << endl;
-		query_logfp = fopen(querylog_name.c_str(), "a");
+		cout << "querLog: " << queryLog << endl;
+		query_logfp = fopen(queryLog.c_str(), "a");
 		if(query_logfp == NULL)
 		{
 			cerr << "open query log error"<<endl;
@@ -2213,35 +2186,20 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 		gettimeofday(&tv, NULL);
 		int s = tv.tv_usec/1000;
 		int y = tv.tv_usec%1000;
-		//cout << "s: " << s << "y: " << y << endl;
-//		string ssss = Util::int2string(s);
-//		cout << "ssss: " << ssss << endl;
 
 		string query_start_time = Util::get_date_time() + ":" + Util::int2string(s) + "ms" + ":" + Util::int2string(y) + "microseconds";
-
-
 		string remote_ip = request->remote_endpoint_address;
 		cout << "remote_ip: " << remote_ip << endl;
-/*	
-		ptree log_ptr;
-		log_ptr.put("QueryDateTime", query_start_time);
-		log_ptr.put("RemoteIP", remote_ip);
-		log_ptr.put("Sparql", sparql);
-		log_ptr.put("AnswerNum", Util::int2string(rs.ansNum));
-		log_ptr.put("QueryTime", Util::int2string(query_time) + "ms");
-		stringstream log_ss;
-		write_json(log_ss, log_ptr);
-		writeLog(query_logfp, log_ss.str());
 
-*/
 		Document doc;
 		doc.SetObject();
-		doc.AddMember("QueryDateTime", StringRef(query_start_time.c_str()), doc.GetAllocator());
-		doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc.GetAllocator());
-		doc.AddMember("Sparql", StringRef(sparql.c_str()), doc.GetAllocator());
-		doc.AddMember("AnsNum", rs.ansNum, doc.GetAllocator());
+		Document::AllocatorType &doc_allocator = doc.GetAllocator();
+		doc.AddMember("QueryDateTime", StringRef(query_start_time.c_str()), doc_allocator);
+		doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
+		doc.AddMember("Sparql", StringRef(sparql.c_str()), doc_allocator);
+		doc.AddMember("AnsNum", rs.ansNum, doc_allocator);
 		string QueryTime = Util::int2string(query_time) + "ms";
-		doc.AddMember("QueryTime", StringRef(QueryTime.c_str()), doc.GetAllocator());
+		doc.AddMember("QueryTime", StringRef(QueryTime.c_str()), doc_allocator);
 		StringBuffer buffer;
 		PrettyWriter<StringBuffer> writer(buffer);
 		doc.Accept(writer);
@@ -2251,9 +2209,13 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	
 		//to void someone downloading all the data file by sparql query on purpose and to protect the data
 		//if the ansNum too large, for example, larger than 100000, we limit the return ans.
-		if(rs.ansNum > 100000)
-			rs.output_limit = 100000;
-
+		//cout << "rs.output_limit: " << rs.output_limit << endl;
+		if(rs.ansNum > MAX_OUTPUT_SIZE)
+		{
+		 if(rs.output_limit == -1 || rs.output_limit > MAX_OUTPUT_SIZE )
+				rs.output_limit = MAX_OUTPUT_SIZE;
+		}
+		//cout << "rs.output_limit: " << rs.output_limit << endl;
 		ofstream outfile;
 		string ans = "";
 		string success = "";
@@ -2261,23 +2223,12 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	//BETTER: divide and transfer, in multiple times, getNext()
 		if(format == "json")
 		{
-		//	cout << "query success, transfer to json." << endl;
-		/*
-			success = rs.to_JSON();
-			stringstream ss, ss2;
-			ptree pt;
-			ss << success;
-			read_json<ptree>(ss, pt);
-			pt.put("StatusCode", 0);
-			pt.put("StatusMsg", "success");
-			write_json(ss2, pt);
-			success = ss2.str();
-		*/
 			success = rs.to_JSON();
 			Document resDoc;
+			Document::AllocatorType &allocator = resDoc.GetAllocator();
 			resDoc.Parse(success.c_str());
-			resDoc.AddMember("StatusCode", 0, resDoc.GetAllocator());
-			resDoc.AddMember("StatusMsg", "success", resDoc.GetAllocator());
+			resDoc.AddMember("StatusCode", 0, allocator);
+			resDoc.AddMember("StatusMsg", "success", allocator);
 			StringBuffer resBuffer;
 			PrettyWriter<StringBuffer> resWriter(resBuffer);
 			resDoc.Accept(resWriter);
@@ -2293,12 +2244,11 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 			localname = localname + ".txt";
 			filename = filename + ".txt";
 		}
-		else
-		{
+		else {
 			localname = localname + "." + format;
 			filename = filename + "." + format;
 		}
-		cout <<log_prefix<< "filename: " << filename << endl;
+		cout << log_prefix << "filename: " << filename << endl;
 		if(format == "html")
 		{
 			outfile.open(localname);
@@ -2309,30 +2259,16 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 				rs.output_limit = 100;
 			}
 			success = rs.to_JSON();
-		/*
-			stringstream  ss2;
-			ptree ptr;
-			ss2 << success;
-			read_json<ptree>(ss2, ptr);
-			ptr.put<int>("StatusCode", 0);
-			ptr.put("StatusMsg", "success");
-			ptr.put("QueryTime", query_time_s);
-			ptr.put("AnsNum", rs.ansNum);
-			ptr.put("Filename", filename);
-			//ptr.put("ResponseBody", rs.to_JSON());
-			
-			stringstream ss;
-			write_json(ss, ptr);
-			string resJson = ss.str();
-		*/
+
 			Document resDoc;
+			Document::AllocatorType &allocator = resDoc.GetAllocator();
 			resDoc.Parse(success.c_str());
-			resDoc.AddMember("StatusCode", 0, resDoc.GetAllocator());
-			resDoc.AddMember("StatusMsg", "success", resDoc.GetAllocator());
-			resDoc.AddMember("AnsNum", rs.ansNum, doc.GetAllocator());
+			resDoc.AddMember("StatusCode", 0, allocator);
+			resDoc.AddMember("StatusMsg", "success", allocator);
+			resDoc.AddMember("AnsNum", rs.ansNum, allocator);
 			string QueryTime = Util::int2string(query_time) + "ms";
-			resDoc.AddMember("QueryTime", StringRef(QueryTime.c_str()), doc.GetAllocator());
-			resDoc.AddMember("Filename", StringRef(filename.c_str()), doc.GetAllocator());
+			resDoc.AddMember("QueryTime", StringRef(QueryTime.c_str()), allocator);
+			resDoc.AddMember("Filename", StringRef(filename.c_str()), allocator);
 	
 			StringBuffer resBuffer;
 			PrettyWriter<StringBuffer> resWriter(resBuffer);
@@ -2355,51 +2291,6 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 			pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 			//return true;
 			return;
-			/*
-			if(rs.ansNum <= 100)
-			{
-				cJson *resJson;
-				resJson=cJSON_CreateObject();   //创建根数据对象
-				cJSON_AddStringToObject(resJson,"StatusCode",0);  
-				cJSON_AddStringToObject(resJson,"StatusMsg","success");
-				//cJSON_AddNumberToObject(resJson,"ResponseBody",1);  
-				cJSON_AddStringToObject(resJson,"type", 0);
-				cJSON_AddStringToObject(resJson,"", 0);
-				cJSON_AddStringToObject(resJson,"type", 0);
-				//char *out = cJSON_Print(resJson);   //将json形式打印成正常字符串形式
-				//printf("%s\n",out);
-
-					*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
-			
-				// 释放内存  
-				cJSON_Delete(resJson);  
-				//free(out);
-				//!Notice: remember to set no-cache in the response of query, Firefox and chrome works well even if you don't set, but IE will act strange if you don't set
-				//beacause IE will defaultly cache the query result after first query request, so the following query request of the same url will not be send if the result in cache isn't expired.
-				//then the following query will show the same result without sending a request to let the service run query
-				//so the download function will go wrong because there is no file in the service.
-				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << query_time_s.length()+ansNum_s.length()+filename.length()+success.length()+4;
-				*response << "\r\nContent-Type: text/plain";
-				*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
-				*response  << "\r\n\r\n" << "0+" << query_time_s<< '+' << rs.ansNum << '+' << filename << '+' << success;
-				pthread_rwlock_unlock(&(it_already_build->second));
-				//return true;
-				return;
-			}
-			else
-			{
-				rs.output_limit = 100;
-				success = "";
-				success = rs.to_str();
-				*response << "HTTP/1.1 200 OK\r\nContent-Length: " << query_time_s.length()+ansNum_s.length()+filename.length()+success.length()+4;
-				*response << "\r\nContent-Type: text/plain";
-				*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
-				*response << "\r\n\r\n" << "1+" <<query_time_s << '+' << rs.ansNum << '+' << filename << '+' << success;
-				pthread_rwlock_unlock(&(it_already_build->second));
-				//return true;
-				return;
-			}
-			*/
 		}
 		else
 		{
@@ -2410,15 +2301,7 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 			*response << "\r\nContent-Type: application/octet-stream";
 			*response << "\r\nContent-Disposition: attachment; filename=\"" << filename << '"';
 			*response << "\r\n\r\n" << success;
-			
-			//outfile.open(localname);
-			//outfile << success;
-			//outfile.close();
 
-			//download_result(server, response, request, "true", filename);
-			//
-			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ansNum_s.length()+filename.length()+3;
-			//*response << "\r\n\r\n" << "2+" << rs.ansNum << '+' << filename;
 			pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 			return;
 			//return true;
@@ -2473,16 +2356,7 @@ bool query_handler0(const HttpServer& server, const shared_ptr<HttpServer::Respo
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
 		return false;
 	}
-//	cout<<"check: "<<db_query<<endl;
-//	string str = db_query;
 
-//	if(current_database == NULL)
-//	{
-//		string error = "No database in use!";
-//		*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-//		return false;
-//	}
-	//doQuery(format, db_query, server, response, request);
 	query_num++;
 	Task* task = new Task(0, db_name, format, db_query, response, request);
 	pool.AddTask(task);
@@ -2738,32 +2612,29 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
-	//BETTER: use JSON format to send/receive messages
-	//C++ can not deal with JSON directly, JSON2string string2JSON
-	string success;
+	//use JSON format to send message
+	Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "success", allocator);
 	string name = _database->getName();
-	success = success + "database: " + name + "\r\n";
-	success = success + "creator: " + creator + "\r\n";
-	success = success + "built_time: " + time + "\r\n";
-	TYPE_TRIPLE_NUM triple_num = _database->getTripleNum();
-	success = success + "triple num: " + Util::int2string(triple_num) + "\r\n";
-	TYPE_ENTITY_LITERAL_ID entity_num = _database->getEntityNum();
-	success = success + "entity num: " + Util::int2string(entity_num) + "\r\n";
-	TYPE_ENTITY_LITERAL_ID literal_num = _database->getLiteralNum();
-	success = success + "literal num: " + Util::int2string(literal_num) + "\r\n";
-	TYPE_ENTITY_LITERAL_ID sub_num = _database->getSubNum();
-	success = success + "subject num: " + Util::int2string(sub_num) + "\r\n";
-	TYPE_PREDICATE_ID pre_num = _database->getPreNum();
-	success = success + "predicate num: " + Util::int2string(pre_num) + "\r\n";
-	//BETTER: how to compute the connection num in Boost::asio?
+	resDoc.AddMember("database", StringRef(name.c_str()), allocator);
+	resDoc.AddMember("creator", StringRef(creator.c_str()), allocator);
+	resDoc.AddMember("built_time", StringRef(time.c_str()), allocator);
+	resDoc.AddMember("triple num", _database->getTripleNum(), allocator);
+	resDoc.AddMember("entity num", _database->getEntityNum(), allocator);
+	resDoc.AddMember("literal num", _database->getLiteralNum(), allocator);
+	resDoc.AddMember("subject num", _database->getSubNum(), allocator);
+	resDoc.AddMember("predicate num", _database->getPreNum(), allocator);
 	int conn_num = connection_num / 2;
-	//int conn_num = 3;    //currectly connected sessions
-	//this connection num is countint the total(no break)
-	success = success + "connection num: " + Util::int2string(conn_num) + "\r\n";
-	//TODO: add the info of memory and thread, operation num and IO frequency
+	resDoc.AddMember("connection num", conn_num, allocator);
 
-	//success = "<p>" + success + "</p>";
-	string resJson = CreateJson(0, "success", 1, success);
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
 	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 	
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
@@ -2799,19 +2670,7 @@ void default_thread(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is default"<<endl;
 
-//	string req_url = request->path;
-//	cout << "request url: " << req_url << endl;
-	//if request matches /?operation=monitor, then do monitor_handler
-	//because if the user visit through the browser by using url /?operation=monitor
-	//it can not match directly to monitor_handler, and will match this default get
-	//so we need to check here to do monitor_handler, although the implementation is not perfect enough.
-	//it is also used in /?operation=show    /?operation=checkpoint
-//	if(req_url == "/?operation=monitor")
-//		monitor_handler(server, response, request);
-//	else if(req_url == "/?operation=show")
-//		show_handler(server, response, request);
-//	else if(req_url == "/?operation=checkpoint")
-//		checkpoint_handler(server, response, request);
+
 	//BETTER: use lock to ensure thread safe
 	if(request->path == "/admin.html" || request->path == "/admin_root.html")
 	{
@@ -2890,26 +2749,6 @@ bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	connection_num++;
 	string req_url = request->path;
 	cout << "request url: " << req_url << endl;
-	//if request matches /?operation=monitor, then do monitor_handler
-	//because if the user visit through the browser by using url /?operation=monitor
-	//it can not match directly to monitor_handler, and will match this default get
-	//so we need to check here to do monitor_handler, although the implementation is not perfect enough.
-	//it is also used in /?operation=show    /?operation=checkpoint
-	//if(req_url == "/?operation=monitor")
-	//{
-	//	monitor_handler(server, response, request);
-	//	return true;
-	//}
-	if(req_url == "/?operation=show")
-	{
-		show_handler(server, response, request);
-		return true;
-	}
-	else if(req_url == "/?operation=checkpoint")
-	{
-		checkpoint_handler(server, response, request);
-		return true;
-	}
 
 	default_thread(server, response, request);
 	//thread t(&default_thread, response, request);
@@ -2928,44 +2767,7 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 
 	cout << "username = " << username << endl;
 	cout << "password = " << password << endl;
-//showUser_handler(server, response, request);
-/*
-	cout<<"................this is showUser"<<endl;
 
-	pthread_rwlock_rdlock(&users_map_lock);
-	if(users.empty())
-	{
-		string error = "No Users.\r\n";
-		cout << error << endl;
-		
-		
-	
-	}
-
-	std::map<std::string, struct User *>::iterator itr;
-	
-	int i = 0;
-	for(itr=users.begin(); itr != users.end(); itr++)
-	{
-		cout << i << endl;
-		i++;
-		string username = itr->second->getUsername();
-		cout << "username: " << username << endl;
-		string password = itr->second->getPassword();
-		cout << password << endl;
-
-		string query_db = itr->second->getQuery();
-		cout << query_db << endl;
-		
-		string load_db = itr->second->getLoad();
-		cout << load_db << endl;
-		
-		string unload_db = itr->second->getUnload();
-		cout << unload_db << endl;
-		
-	}
-		pthread_rwlock_unlock(&users_map_lock);
-*/
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);
 	if(it == users.end())
@@ -3045,40 +2847,7 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	{
 		cout << "login successfully." << endl;
 		pthread_rwlock_unlock(&users_map_lock);
-	//NOTICE: it seems a visit will output twice times
-	//And different pages in a browser is viewed as two connections here
-	//cout<<"new connection"<<endl;
-/*
-	try {
-		auto web_root_path=boost::filesystem::canonical("./Server/web");
-		request->path = "/admin.html";
-		auto path=boost::filesystem::canonical(web_root_path/request->path);
-		cout << "path: " << path << endl;
-		std::string cache_control, etag;
-		// Uncomment the following line to enable Cache-Control
-		// cache_control="Cache-Control: max-age=86400\r\n";
-		auto ifs=make_shared<ifstream>();
-		ifs->open(path.string(), ifstream::in | ios::binary | ios::ate);
-		if(*ifs) {
-			cout << "in login 1" << endl;
-			auto length=ifs->tellg();
-			ifs->seekg(0, ios::beg);
-			*response << "HTTP/1.1 200 OK\r\n" << cache_control << etag << "Content-Length: " << length << "\r\n";
-			
-			*response << "Content-Type: text/html" << "\r\n\r\n";
-			default_resource_send(server, response, ifs);
-			cout << "in login 2" << endl;
-		}
-		else
-			throw invalid_argument("could not read file");
-	}
-	catch(const exception &e) {
-		cout << "in login 3" << endl;
-		string content="Could not open path "+request->path+": "+e.what();
-		*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
-	}
-	return true;
-*/
+
 	try {
 		auto web_root_path=boost::filesystem::canonical("./Server/web");
 		if(username == ROOT_USERNAME)
@@ -3422,6 +3191,14 @@ void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	pthread_rwlock_rdlock(&already_build_map_lock);
 	std::map<std::string, struct DBInfo *>::iterator it_already_build;
 	string success;
+	Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "success",  allocator);
+	Value jsonArray(kArrayType);
+
 	for(it_already_build=already_build.begin(); it_already_build != already_build.end(); it_already_build++)
 	{
 		string database_name = it_already_build->first;
@@ -3429,17 +3206,33 @@ void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		string time = it_already_build->second->getTime();
 		if((database_name == "system")&&(username != ROOT_USERNAME))
 			continue;
-		success = success + "database: " + database_name + "\r\n";
-		success = success + "creator: " + creator + "\r\n";	
-		success = success + "built_time: " + time + "\r\n";
+		Value obj(kObjectType);
+
+		Value _database_name;
+		_database_name.SetString(database_name.c_str(), database_name.length(), allocator);
+		obj.AddMember("database", _database_name, allocator);
+
+		Value _creator;
+		_creator.SetString(creator.c_str(), creator.length(), allocator);
+		obj.AddMember("creator", _creator, allocator);
+
+		Value _time;
+		_time.SetString(time.c_str(), time.length(), allocator);
+		obj.AddMember("built_time", _time, allocator);
 		pthread_rwlock_rdlock(&databases_map_lock);
 		if(databases.find(database_name)== databases.end())
-			success = success + "status: unloaded\r\n\r\n";
+			obj.AddMember("status", "unloaded", allocator);
 		else
-			success = success + "status: loaded\r\n\r\n";
+			obj.AddMember("status", "loaded", allocator);
 		pthread_rwlock_unlock(&databases_map_lock);
+		jsonArray.PushBack(obj, allocator);
 	}
-	string resJson = CreateJson(0, "success", 1, success);
+	resDoc.AddMember("ResponseBody", jsonArray, allocator);
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
 	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
 	
 	
@@ -3681,36 +3474,55 @@ bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 	}
 	std::map<std::string, struct User *>::iterator it;
 	string success;
-	success = "username\tpassword\tquery privilege\tload privilege\tunload privilege\n";
 
-	int i = 0;
+	Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "success", allocator);
+	Value json_array(kArrayType);
 	for(it=users.begin(); it != users.end(); it++)
 	{
-		cout << i << endl;
-		i++;
+		Value obj(kObjectType);
 		string username = it->second->getUsername();
-		//cout << "username: " << username << endl;
-		success = success + username + "\t";
-		//cout << success << endl;
+		Value _username;
+		_username.SetString(username.c_str(), username.length(), allocator);
+		obj.AddMember("username", _username, allocator);
+
 		string password = it->second->getPassword();
-		//cout << password << endl;
-		success = success + password + "\t";
-		//cout << success << endl;
+		Value _password;
+		_password.SetString(password.c_str(), password.length(), allocator);
+		obj.AddMember("password", _password, allocator);
+
 		string query_db = it->second->getQuery();
-		//cout << query_db << endl;
-		success = success + query_db + "\t";
-		//cout << success << endl;
+		Value _query_db;
+		_query_db.SetString(query_db.c_str(), query_db.length(), allocator);
+		obj.AddMember("query privilege", _query_db, allocator);
+
+		string update_db = it->second->getUpdate();
+		Value _update_db;
+		_update_db.SetString(update_db.c_str(), update_db.length(), allocator);
+		obj.AddMember("update privilege", _update_db, allocator);
+
 		string load_db = it->second->getLoad();
-		//cout << load_db << endl;
-		success = success + load_db + "\t";
-		//cout << success << endl;
+		Value _load_db;
+		_load_db.SetString(load_db.c_str(), load_db.length(), allocator);
+		obj.AddMember("load privilege", _load_db, allocator);
+
 		string unload_db = it->second->getUnload();
-		//cout << unload_db << endl;
-		success = success + unload_db + "\n";
-		//cout << success << endl;
+		Value _unload_db;
+		_unload_db.SetString(unload_db.c_str(), unload_db.length(), allocator);
+		obj.AddMember("unload privilege", _unload_db, allocator);
+
+		json_array.PushBack(obj, allocator);
 	}
-		string resJson = CreateJson(0, "success", 1, success);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+	resDoc.AddMember("ResponseBody", json_array, allocator);
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
@@ -3900,18 +3712,7 @@ std::string CreateJson(int StatusCode, string StatusMsg, bool body, string Respo
 	}
 	writer.EndObject();
 	return s.GetString();
-	/*
-	ptree pt;
-	pt.put<int>("StatusCode", StatusCode);
-	pt.put("StatusMsg", StatusMsg);
-	if(body)
-	{
-		pt.put("ResponseBody", ResponseBody);
-	}
-	stringstream ss;
-	write_json(ss, pt);
-	return ss.str();
-	*/
+
 }
 void DB2Map()
 {	
@@ -4035,134 +3836,7 @@ void DB2Map()
 		already_build.find("system")->second->setTime(built_time);
 	}
 }
-/*
-void DB2Map()
-{	
-	string sparql = "select ?x ?y where{?x <has_password> ?y.}";
-	string strJson = querySys(sparql);
-	//cout << "DDDDDDDDDDDDDDDB2Map: strJson : " << strJson << endl;
-	stringstream ss;
-	ss << strJson;
-	ptree pt, p1, p2, pp, pp1, pp2;
-	read_json<ptree>(ss, pt);
-	p1 = pt.get_child("results");
-	p2 = p1.get_child("bindings");
-	//int i = 0;
-	for(ptree::iterator it = p2.begin(); it != p2.end(); ++it)
-	{
-		pp = it->second;
-		pp1 = pp.get_child("x");
-		pp2 = pp.get_child("y");
-		string username = pp1.get<string>("value");
-		string password = pp2.get<string>("value");
-		//cout << "DDDDDDDDDDDDDDDDB2Map: username: " + username << " password: " << password << endl;
-		struct User *user = new User(username, password);
-			
-		string sparql2 = "select ?x ?y where{<" + username + "> ?x ?y.}";
-		string strJson2 = querySys(sparql2);
-		//cout << "strJson2: " << strJson2 << endl;
-		stringstream ss2;
-		ss2 << strJson2;
-		ptree pt2, p12, p22, binding, pp12, pp22;
-	    read_json<ptree>(ss2, pt2);
-		p12 = pt2.get_child("results");
-		p22 = p12.get_child("bindings");
-		for(ptree::iterator it2 = p22.begin(); it2 != p22.end(); ++it2)
-		{
-			binding = it2->second;
-			pp12 = binding.get_child("x");
-			pp22 = binding.get_child("y");
-			string type = pp12.get<string>("value");
-			string db_name = pp22.get<string>("value");
-			//cout << "DDDDDDDDDDDDDDDDDB2Map: type: " + type << " db_name: " << db_name << endl;
-		
-			if(type == "has_query_priv")
-			{
-				//cout << username << type << db_name << endl;
-				user->query_priv.insert(db_name);
-			}
-			else if(type == "has_update_priv")
-			{
-				//cout << username << type << db_name << endl;
-				user->update_priv.insert(db_name);
-			}
-			else if(type == "has_load_priv")
-			{
-				user->load_priv.insert(db_name);
-			}
-			else if(type == "has_unload_priv")
-			{
-				user->unload_priv.insert(db_name);
-			}
-		}
-		//users.insert(pair<std::string, struct User*>(username, &user));
-		users.insert(pair<std::string, struct User *>(username, user));
-	
-		//cout << ".................." << user->getUsername() << endl;
-		//cout << ".................." << user->getPassword() << endl;
-		//cout << ".................." << user->getLoad() << endl;
-		//cout << ".................." << user->getQuery() << endl;
-		//cout << ".................." << user->getUnload() << endl;
-		//cout << "i: " << i << endl;
-		//i++;
-	}
-	//cout << "out of first ptree" << endl;
-	
-	//insert already_built database from system.db to already_build map
-	sparql = "select ?x where{?x <database_status> \"already_built\".}";
-	strJson = querySys(sparql);
-	stringstream ss1;
-	ss1 << strJson;
-	read_json<ptree>(ss1, pt);
-	p1 = pt.get_child("results");
-	p2 = p1.get_child("bindings");
-	for(ptree::iterator it = p2.begin(); it != p2.end(); ++it)
-	{
-		pp = it->second;
-		pp1 = pp.get_child("x");
-		string db_name = pp1.get<string>("value");
-		struct DBInfo *temp_db = new DBInfo(db_name);
 
-		string sparql2 = "select ?x ?y where{<" + db_name + "> ?x ?y.}";
-		string strJson2 = querySys(sparql2);
-		stringstream ss2;
-		ss2 << strJson2;
-		ptree pt2, p12, p22, binding, pp12, pp22;
-	    read_json<ptree>(ss2, pt2);
-		p12 = pt2.get_child("results");
-		p22 = p12.get_child("bindings");
-		for(ptree::iterator it2 = p22.begin(); it2 != p22.end(); ++it2)
-		{
-			binding = it2->second;
-			pp12 = binding.get_child("x");
-			pp22 = binding.get_child("y");
-			string type = pp12.get<string>("value");
-			string info = pp22.get<string>("value");
-			if (type == "built_by")
-				temp_db->setCreator(info);
-			else if (type == "built_time")
-				temp_db->setTime(info);
-		}
-		already_build.insert(pair<std::string, struct DBInfo *>(db_name, temp_db));		
-	}	
-
-	//add bulit_time of system.db to already_build map
-	sparql = "select ?x where{<system> <built_time> ?x.}";
-	strJson = querySys(sparql);
-	stringstream ss2;
-	ss2 << strJson;
-	read_json<ptree>(ss2, pt);
-	p1 = pt.get_child("results");
-	p2 = p1.get_child("bindings");
-	for (ptree::iterator it = p2.begin(); it != p2.end(); ++it)
-	{
-		pp = it->second;
-		pp1 = pp.get_child("x");
-		string built_time = pp1.get<string>("value");
-		already_build.find("system")->second->setTime(built_time);
-	}
-}
-*/
 string querySys(string sparql)
 {
 	string db_name = "system";
@@ -4210,52 +3884,7 @@ string querySys(string sparql)
 	}
 	
 }
-/*
-bool updateSys(string sparql)
-{
-	string db_name = "system";
-	pthread_rwlock_rdlock(&already_build_map_lock);
-	std::map<std::string, pthread_rwlock_t>::iterator it_already_build = already_build.find(db_name);
-	pthread_rwlock_unlock(&already_build_map_lock);
-	
-	pthread_rwlock_wrlock(&(it_already_build->second));
-	ResultSet rs;
-	FILE* output = NULL;
 
-	int ret_val = system_database->query(sparql, rs, output);
-	bool ret = false, update = false;
-	if(ret_val < -1)   //non-update query
-	{
-		ret = (ret_val == -100);
-	}
-	else  //update query, -1 for error, non-negative for num of triples updated
-	{
-		update = true;
-	}
-
-	if(! ret)
-	{
-		string error = "";
-		int error_code;
-		if(update)
-		{
-			cout << "update query returned correctly." << endl;
-			system_database->save();
-			pthread_rwlock_unlock(&(it_already_build->second));
-		
-			return true;
-		}
-		else
-		{
-			pthread_rwlock_unlock(&(it_already_build->second));
-			return false;
-		}
-		
-		
-	}
-	
-}
-*/
 bool updateSys(string query)
 {
 		if (query.empty())
