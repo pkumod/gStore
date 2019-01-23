@@ -154,7 +154,7 @@ function query(db, dp) {
 				page = page + '<a id="download" style="font-size:16px;margin-left:20px;color:blue">Click to Download</a>';
 				page = page + '<a id="trick" style="display: none">Click to back</a>';
 				page = page + '<p>Total answers: ' + data.AnsNum + '</p>';
-				page = page + '<p>Query time: ' + data.QueryTime + 'ms</p>';
+				page = page + '<p>Query time: ' + data.QueryTime + '</p>';
 
 				if(obj.AnsNum > 100)
 				{
@@ -315,18 +315,16 @@ function monitor() {
 			//setTimeout(function(){spinner.spin();}, 300);
 			spinner.spin();
 			if(status=="success"){
-
-			//alert(data);
-			var ans = (data.ResponseBody).split("\n");
-			//alert(ans.length);
-			$("#monitorAns").empty();
-		
-			for(var i = 0; i < ans.length - 1; i++)
-			{
-				var res = $("<p></p>").text(ans[i]);
-				$("#monitorAns").append(res);
-			}
-			
+				var obj = data;
+                $("#monitorAns").empty();
+				for(var item in obj)
+				{
+					if(item != "StatusCode" && item != "StatusMsg")
+					{
+                        var res = $("<p></p>").text(item + ":\t" + obj[item]);
+                        $("#monitorAns").append(res);
+					}
+				}
 			$("#monitorAns").scrollTop($("#monitorAns").height());
 	
 			//document.getElementById("monitor_text").value = data;
@@ -494,37 +492,28 @@ function showUsers(){
 		//setTimeout(function(){spinner.spin();}, 300);
 		spinner.spin();
 		if(status == "success"){
-			/*
-			//alert(data);
-			var ans = data.split("\n");
-			//alert(ans.length);
 			$("#userAns").empty();
-		
-			for(var i = 0; i < ans.length - 1; i++)
-			{
-				var res = $("<p></p>").text(ans[i]);
-				$("#userAns").append(res);
-			}
-			
-			$("#userAns").scrollTop($("#userAns").height());
-			*/
-			//alert(data);
-			$("#userAns").empty();
+			var obj = data.ResponseBody;
+            var res = '<table border="1" style="font-size:medium">';
+			res = res + "<tr>";
+            for(var item in obj[0])
+            {
+                res = res + "<th>" + item + "</th>";
+            }
+            res = res + "</tr>";
 
-			var ans = (data.ResponseBody).split("\n");
-			var res = '<table border="1" style="font-size:medium">';
-			for(var ii = 0; ii < ans.length; ii++)
-			{
-				res = res + "<tr>";
-				var item = ans[ii].split("\t");
-				//alert(item.length);
-				for(jj = 0; jj < item.length; jj++)
-				{
-					res = res + '<td>' + item[jj] + '</td>';
-				}
-				res = res + "<tr>";
-			}
+            for (var i = 0; i < obj.length; i++)
+            {
+            	var one_user = obj[i];
+                res = res + "<tr>";
+                for(var one_user_key in one_user)
+                {
+                    res = res + '<td>' + one_user[one_user_key] + '</td>';
+                }
+                res = res + "</tr>";
+            }
 			res = res + '</table>';
+
 			$("#userAns").append(res);
 			$("#userAns").scrollTop($("#userAns").height());
 
@@ -548,18 +537,27 @@ function showDatabases() {
 		
 		if(status=="success"){
 			spinner.spin();
-			//alert(data);
-			var ans = (data.ResponseBody).split("\n");
-			//alert(ans.length);
-			$("#databasesAns").empty();
-		
-			for(var i = 0; i < ans.length - 1; i++)
+            var obj = data;
+            var body = obj.ResponseBody;
+            $("#databaseAns").empty();
+            for(var i = 0; i < body.length; i++)
 			{
-				var res = $("<p></p>").text(ans[i]);
-				$("#databasesAns").append(res);
+				var info = body[i];
+				//alert(info);
+                for(var item in info)
+                {
+                	//alert(item);
+					var res = $("<p></p>").text(item + ":\t" + info[item]);
+					$("#databasesAns").append(res);
+
+                }
+                var space_line = $("<p></p>").text("-------------------------");
+                $("#databasesAns").append(space_line);
 			}
-			
-			$("#databasesAns").scrollTop($("#databasesAns").height());
+
+            $("#databasesAns").scrollTop($("#databasesAns").height());
+
+
 			//setTimeout(function(){spinner.spin();}, 300);
 		
 			//document.getElementById("monitor_text").value = data;
