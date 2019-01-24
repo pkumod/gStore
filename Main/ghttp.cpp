@@ -46,6 +46,7 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define QUERYLOG_PATH "logs/endpoint/"
 #define SYSTEM_USERNAME "system"
 #define MAX_OUTPUT_SIZE 100000
+#define TEST_IP "106.13.13.193"
 
 //int initialize();
 int initialize(int argc, char *argv[]);
@@ -2188,34 +2189,47 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 		int y = tv.tv_usec%1000;
 
 		string query_start_time = Util::get_date_time() + ":" + Util::int2string(s) + "ms" + ":" + Util::int2string(y) + "microseconds";
-		string remote_ip = request->remote_endpoint_address;
+		string remote_ip;
+		//get the real IP of the client, because we use nginx here
+		unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals> m=request->header;
+		string map_key = "X-Real-IP";
+		//for (auto it = m.begin(); it != m.end(); it ++){
+		pair<std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator,std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator> lu = m.equal_range(map_key);
+		if(lu.first != lu.second)
+			remote_ip = lu.first->second;
+		else
+			remote_ip = request->remote_endpoint_address;
 		cout << "remote_ip: " << remote_ip << endl;
 
-		Document doc;
-		doc.SetObject();
-		Document::AllocatorType &doc_allocator = doc.GetAllocator();
-		doc.AddMember("QueryDateTime", StringRef(query_start_time.c_str()), doc_allocator);
-		doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
-		doc.AddMember("Sparql", StringRef(sparql.c_str()), doc_allocator);
-		doc.AddMember("AnsNum", rs.ansNum, doc_allocator);
-		string QueryTime = Util::int2string(query_time) + "ms";
-		doc.AddMember("QueryTime", StringRef(QueryTime.c_str()), doc_allocator);
-		StringBuffer buffer;
-		PrettyWriter<StringBuffer> writer(buffer);
-		doc.Accept(writer);
-		writeLog(query_logfp, buffer.GetString());
+		//filter the IP from the test server
+		if(remote_ip != TEST_IP)
+		{
+			Document doc;
+			doc.SetObject();
+			Document::AllocatorType &doc_allocator = doc.GetAllocator();
+			doc.AddMember("QueryDateTime", StringRef(query_start_time.c_str()), doc_allocator);
+			doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
+			doc.AddMember("Sparql", StringRef(sparql.c_str()), doc_allocator);
+			doc.AddMember("AnsNum", rs.ansNum, doc_allocator);
+			string QueryTime = Util::int2string(query_time) + "ms";
+			doc.AddMember("QueryTime", StringRef(QueryTime.c_str()), doc_allocator);
+			StringBuffer buffer;
+			PrettyWriter<StringBuffer> writer(buffer);
+			doc.Accept(writer);
+			writeLog(query_logfp, buffer.GetString());
+		}
+
 
 		//string log_info = Util::get_date_time() + "\n" + sparql + "\n\nanswer num: " + Util::int2string(rs.ansNum)+"\nquery time: "+Util::int2string(query_time) +" ms\n-----------------------------------------------------------\n";
 	
 		//to void someone downloading all the data file by sparql query on purpose and to protect the data
 		//if the ansNum too large, for example, larger than 100000, we limit the return ans.
-		//cout << "rs.output_limit: " << rs.output_limit << endl;
 		if(rs.ansNum > MAX_OUTPUT_SIZE)
 		{
-		 if(rs.output_limit == -1 || rs.output_limit > MAX_OUTPUT_SIZE )
+			if(rs.output_limit == -1 || rs.output_limit > MAX_OUTPUT_SIZE )
 				rs.output_limit = MAX_OUTPUT_SIZE;
 		}
-		//cout << "rs.output_limit: " << rs.output_limit << endl;
+
 		ofstream outfile;
 		string ans = "";
 		string success = "";
@@ -2256,7 +2270,8 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 			outfile.close();
 			if(rs.ansNum > 100)
 			{
-				rs.output_limit = 100;
+				if(rs.output_limit == -1 || rs.output_limit > 100 )
+					rs.output_limit = 100;
 			}
 			success = rs.to_JSON();
 
