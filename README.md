@@ -2,7 +2,7 @@
 
 Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
 
-**The formal help document is in [English(EN)](docs/help/gStore_help.pdf) and [中文(ZH)](docs/help/gStore_help_CN.pdf).**
+**The formal help document is in [English(EN)](docs/help/gStore_help.pdf) and [中文(ZH)](docs/help/gStore_help_ZH.pdf).**
 
 **The formal experiment result is in [Experiment](docs/test/formal_experiment.pdf).**
 
