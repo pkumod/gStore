@@ -1679,16 +1679,18 @@ void TempResultSet::doUnion(TempResultSet &x, TempResultSet &r)
 	long tv_begin = Util::get_cur_time();
 
 	for (int i = 0; i < (int)this->results.size(); i++)
-	{
-		int pos = r.findCompatibleResult(this->results[i].id_varset, this->results[i].str_varset);
-		this->results[i].doUnion(r.results[pos]);
-	}
+        if (!this->results[i].result.empty())
+	    {
+		    int pos = r.findCompatibleResult(this->results[i].id_varset, this->results[i].str_varset);
+		    this->results[i].doUnion(r.results[pos]);
+    	}
 
 	for (int i = 0; i < (int)x.results.size(); i++)
-	{
-		int pos = r.findCompatibleResult(x.results[i].id_varset, x.results[i].str_varset);
-		x.results[i].doUnion(r.results[pos]);
-	}
+        if (!x.results[i].result.empty())
+	    {
+		    int pos = r.findCompatibleResult(x.results[i].id_varset, x.results[i].str_varset);
+		    x.results[i].doUnion(r.results[pos]);
+	    }
 
 	long tv_end = Util::get_cur_time();
 	printf("after doUnion, used %ld ms.\n", tv_end - tv_begin);
