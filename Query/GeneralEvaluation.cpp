@@ -7,10 +7,79 @@
 =============================================================================*/
 
 #include "GeneralEvaluation.h"
-
+#include<set>
 using namespace std;
 
-void 
+
+void *preread_from_index(void *argv)
+{
+	vector<StringIndexFile*> * indexfile = (vector<StringIndexFile*> *)*(long*)argv;
+	ResultSet *ret_result = (ResultSet*)*((long*)argv + 1);
+	vector<int>* proj2temp = (vector<int>*)*((long*)argv + 2);
+	int id_cols = *((long*)argv + 3);
+	TempResult* result0 = (TempResult*)*((long*)argv + 4);
+	vector<bool>* isel = (vector<bool>*)*((long*)argv + 5);
+	StringIndexFile* 	entity = (*indexfile)[0];
+	StringIndexFile* 	literal = (*indexfile)[1];
+	StringIndexFile* 	predicate = (*indexfile)[2];
+	unsigned total = ret_result->ansNum;
+	int var_num = ret_result->select_var_num;
+	unsigned thelta = total / 4096;
+	char tmp;
+	char *entityc = entity->Mmap;
+	char *literalc = literal->Mmap;
+	char *prec = predicate->Mmap;
+	for (unsigned i = 0; i < total; i ++)
+	{
+		for (int j = 0; j < var_num; j++)
+		{
+			int k = (*proj2temp)[j];
+			long offset = -1;
+			if (k != -1)
+			{
+				if (k < id_cols)
+				{
+					unsigned ans_id = result0->result[i].id[k];
+					if (ans_id != INVALID)
+					{
+						if ((*isel)[k])
+						{
+							if (ans_id < Util::LITERAL_FIRST_ID)
+							{
+								offset = entity->GetOffsetbyID(ans_id);
+								if (offset != -1)
+								{
+									tmp = entityc[offset];
+								}
+							}
+							else
+							{
+								offset = literal->GetOffsetbyID(ans_id - Util::LITERAL_FIRST_ID);
+								if (offset != -1)
+								{
+									tmp = literalc[offset];
+								}
+							}
+						}
+						else
+						{
+							offset = predicate->GetOffsetbyID(ans_id);	
+							if (offset != -1)
+							{
+								tmp = prec[offset];
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	return NULL;
+}
+
+
+void
 GeneralEvaluation::setStringIndexPointer(StringIndex* _tmpsi)
 {
 	this->stringindex = _tmpsi;
@@ -22,7 +91,7 @@ bool GeneralEvaluation::parseQuery(const string &_query)
 	{
 		this->query_parser.SPARQLParse(_query, this->query_tree);
 	}
-	catch(const char *e)
+	catch (const char *e)
 	{
 		printf("%s\n", e);
 		return false;
@@ -137,9 +206,9 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 
 								printf("triple patterns: \n");
 								for (int k = 0; k < (int)basic_query.size(); k++)
-									printf("%s\t%s\t%s\n", 	basic_query[k].subject.value.c_str(),
-															basic_query[k].predicate.value.c_str(),
-															basic_query[k].object.value.c_str()
+									printf("%s\t%s\t%s\n", basic_query[k].subject.value.c_str(),
+										basic_query[k].predicate.value.c_str(),
+										basic_query[k].object.value.c_str()
 									);
 
 								TempResultSet *temp = new TempResultSet();
@@ -174,8 +243,8 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 									sparql_query.addBasicQuery();
 									for (int k = 0; k < (int)basic_query.size(); k++)
 										sparql_query.addTriple(Triple(basic_query[k].subject.value,
-																	  basic_query[k].predicate.value,
-																	  basic_query[k].object.value));
+											basic_query[k].predicate.value,
+											basic_query[k].object.value));
 
 									encode_varset.push_back(occur.vars);
 									basic_query_handle.push_back(basic_query);
@@ -210,7 +279,7 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 					temp->results[0].result.reserve(basicquery_result_num);
 					for (int k = 0; k < basicquery_result_num; k++)
 					{
-						unsigned *v = new unsigned [varnum];
+						unsigned *v = new unsigned[varnum];
 						memcpy(v, basicquery_result[k], sizeof(int) * varnum);
 						temp->results[0].result.push_back(TempResult::ResultPair());
 						temp->results[0].result.back().id = v;
@@ -562,9 +631,9 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
 					printf("triple patterns: \n");
 					for (int k = 0; k < (int)basic_query.size(); k++)
-						printf("%s\t%s\t%s\n", 	basic_query[k].subject.value.c_str(),
-												basic_query[k].predicate.value.c_str(),
-												basic_query[k].object.value.c_str()
+						printf("%s\t%s\t%s\n", basic_query[k].subject.value.c_str(),
+							basic_query[k].predicate.value.c_str(),
+							basic_query[k].object.value.c_str()
 						);
 
 					TempResultSet *temp = new TempResultSet();
@@ -600,8 +669,8 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 						sparql_query.addBasicQuery();
 						for (int k = 0; k < (int)basic_query.size(); k++)
 							sparql_query.addTriple(Triple(basic_query[k].subject.value,
-														  basic_query[k].predicate.value,
-														  basic_query[k].object.value));
+								basic_query[k].predicate.value,
+								basic_query[k].object.value));
 
 						encode_varset.push_back(useful.vars);
 						basic_query_handle.push_back(basic_query);
@@ -679,7 +748,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 			temp->results[0].result.reserve(basicquery_result_num);
 			for (int k = 0; k < basicquery_result_num; k++)
 			{
-				unsigned *v = new unsigned [varnum];
+				unsigned *v = new unsigned[varnum];
 				memcpy(v, basicquery_result[k], sizeof(int) * varnum);
 				temp->results[0].result.push_back(TempResult::ResultPair());
 				temp->results[0].result.back().id = v;
@@ -754,33 +823,33 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 					sub_result = new_result;
 				}
 
-		if (sub_result->results.empty() || !sub_result->results[0].result.empty())
+		if (!sub_result->results[0].result.empty())
 		{
 			for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
-			if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
-			{
-				if ((int)this->rewriting_evaluation_stack.size() == dep + 1)
+				if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
 				{
-					this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
-					this->rewriting_evaluation_stack.back().result = NULL;
-					group_pattern = &this->rewriting_evaluation_stack[dep].group_pattern;
+					if ((int)this->rewriting_evaluation_stack.size() == dep + 1)
+					{
+						this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
+						this->rewriting_evaluation_stack.back().result = NULL;
+						group_pattern = &this->rewriting_evaluation_stack[dep].group_pattern;
+					}
+
+					this->rewriting_evaluation_stack[dep].result = sub_result;
+					this->rewriting_evaluation_stack[dep + 1].group_pattern = group_pattern->sub_group_pattern[j].optional;
+
+					TempResultSet *temp = rewritingBasedQueryEvaluation(dep + 1);
+
+					TempResultSet *new_result = new TempResultSet();
+					sub_result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+
+					temp->release();
+					sub_result->release();
+					delete temp;
+					delete sub_result;
+
+					sub_result = new_result;
 				}
-
-				this->rewriting_evaluation_stack[dep].result = sub_result;
-				this->rewriting_evaluation_stack[dep + 1].group_pattern = group_pattern->sub_group_pattern[j].optional;
-
-				TempResultSet *temp = rewritingBasedQueryEvaluation(dep + 1);
-
-				TempResultSet *new_result = new TempResultSet();
-				sub_result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
-
-				temp->release();
-				sub_result->release();
-				delete temp;
-				delete sub_result;
-
-				sub_result = new_result;
-			}
 		}
 
 		for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
@@ -822,22 +891,19 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
 void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 {
+
 	if (this->temp_result == NULL)
 		return;
 
 	if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
 	{
-        if (this->temp_result->results.empty())
-        {
-            this->temp_result->results.push_back(TempResult());
-            this->temp_result->results[0].id_varset += this->query_tree.getGroupPattern().group_pattern_resultset_maximal_varset;
-        }
+		long t0 = Util::get_cur_time();
 
 		Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset();
 
 		if (this->query_tree.checkProjectionAsterisk())
 		{
-			for (int i = 0 ; i < (int)this->temp_result->results.size(); i++)
+			for (int i = 0; i < (int)this->temp_result->results.size(); i++)
 				useful += this->temp_result->results[i].getAllVarset();
 		}
 
@@ -919,7 +985,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					end = result0.findRightBounder(group2temp, result0.result[begin], result0_id_cols, group2temp);
 
 				new_result0.result.push_back(TempResult::ResultPair());
-				new_result0.result.back().id = new unsigned [new_result0_id_cols];
+				new_result0.result.back().id = new unsigned[new_result0_id_cols];
 				new_result0.result.back().str.resize(new_result0_str_cols);
 
 				for (int i = 0; i < new_result0_id_cols; i++)
@@ -945,7 +1011,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								{
 									set<int> count_set;
 									for (int j = begin; j <= end; j++)
-										if(result0.result[j].id[proj2temp[i]] != INVALID)
+										if (result0.result[j].id[proj2temp[i]] != INVALID)
 											count_set.insert(result0.result[j].id[proj2temp[i]]);
 									count = (int)count_set.size();
 								}
@@ -963,7 +1029,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								if (proj2temp[i] < result0_id_cols)
 								{
 									for (int j = begin; j <= end; j++)
-										if(result0.result[j].id[proj2temp[i]] != INVALID)
+										if (result0.result[j].id[proj2temp[i]] != INVALID)
 											count++;
 								}
 								else
@@ -979,7 +1045,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							if (proj[i].distinct)
 							{
 								count = temp_result_distinct->results[0].findRightBounder(group2distinct, result0.result[begin], result0_id_cols, group2temp) -
-										temp_result_distinct->results[0].findLeftBounder(group2distinct, result0.result[begin], result0_id_cols, group2temp) + 1;
+									temp_result_distinct->results[0].findLeftBounder(group2distinct, result0.result[begin], result0_id_cols, group2temp) + 1;
 							}
 							else
 							{
@@ -1044,7 +1110,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 #ifdef STREAM_ON
 		long long ret_result_size = (long long)ret_result.ansNum * (long long)ret_result.select_var_num * 100 / Util::GB;
-    	if(Util::memoryLeft() < ret_result_size || !this->query_tree.getOrderVarVector().empty())
+		if (Util::memoryLeft() < ret_result_size || !this->query_tree.getOrderVarVector().empty())
 		{
 			ret_result.setUseStream();
 			printf("set use Stream\n");
@@ -1053,7 +1119,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (!ret_result.checkUseStream())
 		{
-			ret_result.answer = new string* [ret_result.ansNum];
+			ret_result.answer = new string*[ret_result.ansNum];
 			for (unsigned i = 0; i < ret_result.ansNum; i++)
 				ret_result.answer[i] = NULL;
 		}
@@ -1082,32 +1148,111 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (!ret_result.checkUseStream())
 		{
-			for (unsigned i = 0; i < ret_result.ansNum; i++)
-			{
-				ret_result.answer[i] = new string [ret_result.select_var_num];
 
-				for (int j = 0; j < ret_result.select_var_num; j++)
+			//pthread_t tidp;
+			//long arg[6];
+			vector<StringIndexFile* > a = this->stringindex->get_three_StringIndexFile();
+			/*arg[0] = (long)&a;
+			arg[1] = (long)&ret_result;
+			arg[2] = (long)&proj2temp;
+			arg[3] = (long)id_cols;
+			arg[4] = (long)&result0;
+			arg[5] = (long)&isel;
+			pthread_create(&tidp, NULL, &preread_from_index, arg);*/
+
+			unsigned retAnsNum = ret_result.ansNum;
+			unsigned selectVar = ret_result.select_var_num;
+			/*
+			int counterEntity = 0;
+			int counterLiteral = 0;
+			int counterPredicate = 0;
+
+			for (int j = 0; j < selectVar; j++)
+			{
+				int k = proj2temp[j];
+				if (k != -1)
 				{
-					int k = proj2temp[j];
-					if (k != -1)
+					if (k < id_cols)
 					{
-						if (k < id_cols)
+						if (isel[k])
 						{
-							unsigned ans_id = result0.result[i].id[k];
-							if (ans_id != INVALID)
+							for (unsigned i = 0; i < retAnsNum; i++)
 							{
-								this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], isel[k]);
+								unsigned ans_id = result0.result[i].id[k];
+								if (ans_id == INVALID)
+									continue;
+								if (ans_id < Util::LITERAL_FIRST_ID)
+									counterEntity++;
+								else
+									counterLiteral++;
 							}
 						}
-						else 
-						{
-							ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
-						}
+						else
+							for (unsigned i = 0; i < retAnsNum; i++)
+							{
+								unsigned ans_id = result0.result[i].id[k];
+								if (ans_id == INVALID)
+									continue;
+								counterPredicate++;
+							}
 					}
 				}
 			}
+			a[0]->request_reserve(counterEntity);
+			a[1]->request_reserve(counterLiteral);
+			a[2]->request_reserve(counterPredicate);*/
+			
+			ret_result.delete_another_way = 1;
+			string *t = new string[retAnsNum*selectVar];
+			for (unsigned int i = 0,off =0 ; i < retAnsNum; i++, off += selectVar)
+				ret_result.answer[i] = t + off;
 
-			this->stringindex->trySequenceAccess();
+			a[0]->set_string_base(t);
+			a[1]->set_string_base(t);
+			a[2]->set_string_base(t);
+
+
+			for (int j = 0; j < selectVar; j++)
+			{
+				int k = proj2temp[j];
+				if (k != -1)
+				{
+					if (k < id_cols)
+					{
+						if (isel[k])
+						{
+							for (unsigned i = 0; i < retAnsNum; i++)
+							{
+								unsigned ans_id = result0.result[i].id[k];
+								if (ans_id != INVALID)
+								{
+									if (ans_id < Util::LITERAL_FIRST_ID)
+										a[0]->addRequest(ans_id, i*selectVar + j);
+									else
+										a[1]->addRequest(ans_id - Util::LITERAL_FIRST_ID , i*selectVar + j);
+								}
+							}
+						}
+						else
+						{
+							for (unsigned i = 0; i < retAnsNum; i++)
+							{
+								unsigned ans_id = result0.result[i].id[k];
+								if (ans_id != INVALID)
+									a[2]->addRequest(ans_id, i*selectVar + j);
+							}
+						}
+					}
+					else
+					{
+						for (unsigned i = 0; i < retAnsNum; i++)
+							ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
+					}
+				}
+			}
+			cout << "in getFinal Result the first half use " << Util::get_cur_time() - t0 << "  ms" << endl;
+			//pthread_join(tidp, NULL);
+			this->stringindex->trySequenceAccess(true, -1);
 		}
 		else
 		{
@@ -1139,7 +1284,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			ret_result.resetStream();
 		}
 	}
-	
+
 	else if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
 	{
 		ret_result.select_var_num = 1;
@@ -1148,7 +1293,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (!ret_result.checkUseStream())
 		{
-			ret_result.answer = new string* [ret_result.ansNum];
+			ret_result.answer = new string*[ret_result.ansNum];
 			ret_result.answer[0] = new string[ret_result.select_var_num];
 
 			ret_result.answer[0][0] = "false";
@@ -1189,18 +1334,18 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 	for (int i = 0; i < (int)update_pattern.sub_group_pattern.size(); i++)
 		if (update_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 		{
-			for (int j = 0 ; j < (int)this->temp_result->results.size(); j++)
+			for (int j = 0; j < (int)this->temp_result->results.size(); j++)
 				if (update_pattern.sub_group_pattern[i].pattern.varset.belongTo(this->temp_result->results[j].getAllVarset()))
 					update_triple_num += this->temp_result->results[j].result.size();
 		}
 
-	update_triple  = new TripleWithObjType[update_triple_num];
+	update_triple = new TripleWithObjType[update_triple_num];
 
 	int update_triple_count = 0;
 	for (int i = 0; i < (int)update_pattern.sub_group_pattern.size(); i++)
 		if (update_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 		{
-			for (int j = 0 ; j < (int)this->temp_result->results.size(); j++)
+			for (int j = 0; j < (int)this->temp_result->results.size(); j++)
 			{
 				int id_cols = this->temp_result->results[j].id_varset.getVarsetSize();
 
@@ -1229,7 +1374,7 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 						if (subject_id != -1)
 						{
 							if (subject_id < id_cols)
-								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[subject_id], &subject, true);
+								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[subject_id], &subject, true, false);
 							else
 								subject = this->temp_result->results[j].result[k].str[subject_id - id_cols];
 						}
@@ -1237,7 +1382,7 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 						if (predicate_id != -1)
 						{
 							if (predicate_id < id_cols)
-								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[predicate_id], &predicate, false);
+								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[predicate_id], &predicate, false,false);
 							else
 								predicate = this->temp_result->results[j].result[k].str[predicate_id - id_cols];
 						}
@@ -1245,7 +1390,7 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 						if (object_id != -1)
 						{
 							if (object_id < id_cols)
-								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[object_id], &object, true);
+								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[object_id], &object, true, false);
 							else
 								object = this->temp_result->results[j].result[k].str[object_id - id_cols];
 						}
