@@ -107,7 +107,7 @@ public:
 	bool open_id2entity(int _mode);
 	bool close_id2entity();
 	bool subEntityByID(TYPE_ENTITY_LITERAL_ID _id);
-	std::string getEntityByID(TYPE_ENTITY_LITERAL_ID _id) const;
+	std::string getEntityByID(TYPE_ENTITY_LITERAL_ID _id, bool needUnCompress = true) const;
 	bool setEntityByID(TYPE_ENTITY_LITERAL_ID _id, std::string _entity);
 
 	//for predicate2id 
@@ -121,7 +121,7 @@ public:
 	bool open_id2predicate(int _mode);
 	bool close_id2predicate();
 	bool subPredicateByID(TYPE_PREDICATE_ID _id);
-	std::string getPredicateByID(TYPE_PREDICATE_ID _id) const;
+	std::string getPredicateByID(TYPE_PREDICATE_ID _id, bool needUnCompress = true) const;
 	bool setPredicateByID(TYPE_PREDICATE_ID _id, std::string _predicate);
 
 	//for literal2id 
@@ -135,7 +135,7 @@ public:
 	bool open_id2literal(int _mode);
 	bool close_id2literal();
 	bool subLiteralByID(TYPE_ENTITY_LITERAL_ID _id);
-	std::string getLiteralByID(TYPE_ENTITY_LITERAL_ID _id) const;
+	std::string getLiteralByID(TYPE_ENTITY_LITERAL_ID _id, bool needUnCompress = true) const;
 	bool setLiteralByID(TYPE_ENTITY_LITERAL_ID _id, std::string _literal);
 
 	//===============================================================================
@@ -169,8 +169,9 @@ public:
 	//for so2p
 	bool getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subID, TYPE_ENTITY_LITERAL_ID _objID, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false) const;
 
-	bool load_trie();
+	bool load_trie(int _mode);
 
+	Trie *getTrie();
 private:
 	std::string store_path;
 
