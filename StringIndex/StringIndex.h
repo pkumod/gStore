@@ -85,10 +85,10 @@ class StringIndexFile
 			struct stat statbuf;
 			int fd;
 			stat((this->get_loc() + "value").c_str(), &statbuf);
-			//fd = open((this->get_loc() + "value").c_str(), O_RDONLY);
+			fd = open((this->get_loc() + "value").c_str(), O_RDONLY);
 			this->mmapLength = (statbuf.st_size / 4096 + 1) * 4096;
 			this->Mmap = (char*)mmap(NULL, this->mmapLength, PROT_READ, MAP_POPULATE | MAP_SHARED, fd, 0);
-			//close(fd);
+			close(fd);
 
 		}
 		void set_string_base(string *_base)
