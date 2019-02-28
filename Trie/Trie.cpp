@@ -1,471 +1,376 @@
 /*=============================================================================
- * Filename: Trie.h
- * Author: Zongyue Qin
- * Mail: qinzongyue@pku.edu.cn
- * Last modified: 2018-01-15
- * Description: Implementing functions in Trie.h
- ==============================================================================*/
+* Filename: Trie.h
+* Author: Zongyue Qin
+* Mail: qinzongyue@pku.edu.cn
+* Last modified: 2018-01-15
+* Description: Implementing functions in Trie.h
+==============================================================================*/
 #include "Trie.h"
 
 using namespace std;
 
 Trie::Trie()
 {
-	root = new TrieNode;
-	curID = 0;
-	dictionary.clear();
+	this->TrieBuffer = new char[8388608];
+	this->treeMap = map<string, int>();
+	this->treeMap.insert(make_pair("<http://www.", 0));
+	this->s2int = map<string, int>();
+	this->prefixnum = 0;
+	this->int2s = new string[32768];
+	this->going = true;
 }
 
-/* choose first SAMPLE_UPBOUND triples in _rdf_file as a sample, builind Trie
- */
-Trie::Trie(const string _rdf_file, string _store_path)
+void
+Trie::SetStorePath(string _path)
 {
-	cout << "begin building Trie..." << endl;
+	this->store_path = _path;
+}
 
-	long t1 = Util::get_cur_time();
-	
-	dictionary.clear();
-
-	ifstream _fin(_rdf_file.c_str());
-	if (!_fin)
+Trie::~Trie()
+{
+	saveStringPrefix();
+	this->treeMap.clear();
+	this->s2int.clear();
+	if (going == true)
+		delete[] this->int2s;
+	delete[] this->TrieBuffer;
+}
+void
+Trie::Addstring(string& _str)
+{
+	map<string, int>::iterator it;
+	string tmp;
+	int start = 0;
+	int end = -1;
+	if (_str.substr(0, 12) == string("<http://www."))
 	{
-		cout << "Trie::Trie: Fail to open : " << _rdf_file << endl;
-		root = NULL;
-		return;
+		start = 12;
+		(this->treeMap.find(string("<http://www."))->second)++;
 	}
-	
-	store_path = _store_path;
-	root = new TrieNode;
-	curID = 0;
-	TripleWithObjType* triple_array = new TripleWithObjType[Trie::SAMPLE_UPBOUND];
-	RDFParser _parser(_fin);
-	int total_parse_triple_num = 0;
-
-	while (total_parse_triple_num < Trie::SAMPLE_UPBOUND)
+	for (int i = start; i < _str.length(); i++)
 	{
-		int parse_triple_num = 0;
-
-		_parser.parseFileSample(triple_array, parse_triple_num, SAMPLE_UPBOUND);
-
-		if (parse_triple_num == 0)
+		if (_str[i] == '.' || _str[i] == '/' || _str[i] == '<' || _str[i] == '>' || _str[i] == '#'|| _str[i] == '\n')
 		{
-			break;
-		}
-		
-		for (int i = 0; i < parse_triple_num; i++)
-		{
-			string _sub = triple_array[i].getSubject();
-			root->addString(_sub, -1);
-
-			string _pre = triple_array[i].getPredicate();
-			root->addString(_pre, -1);
-
-			string _obj = triple_array[i].getObject();
-			if (triple_array[i].isObjEntity())
+			end = i - 1;
+			if (start != i)
 			{
-				root->addString(_obj, -1);
+				/*tmp = _str.substr(start, end - start + 1);*/
+				tmp = _str.substr(start, end - start + 2);
+				if (tmp.size() <= 4)
+				{
+					start = i + 1;
+					continue;
+				}
+				it = this->treeMap.find(tmp);
+				if (it == this->treeMap.end())
+					this->treeMap.insert(make_pair(tmp, 1));
+				else
+					(it->second)++;
 			}
-			// ignore object if it's literal
+			start = i + 1;
 		}
-		
-		total_parse_triple_num += parse_triple_num;
 	}
-
-	_fin.close();
-	delete [] triple_array;
-	triple_array = NULL;
-
-	long t2 = Util::get_cur_time();
-	cout << "Finish building trie, cost " << t2 - t1 << "ms." << endl;
-}
-
-/* return if the trie is built successfully */
-bool
-Trie::isInitialized()
-{
-	return this->root != NULL;
-}
-
-/* Write down dictionary */
-bool
-Trie::WriteDown()
-{
-	ofstream dictionary_out(store_path.c_str());
-	if (!dictionary_out)
+	if (start != _str.length())
 	{
-		cout << "Trie::WriteDown: Fail to open " << store_path << endl;
-		return false;
-	}
-
-//	WriteDownNode(root, dictionary_out, "/");
-	stack <TrieNode*> stk;
-	stack <string> Prefix;
-	stk.push(root);
-	Prefix.push("/");
-	while (!stk.empty())
-	{
-		TrieNode* p = stk.top();
-		stk.pop();
-		string str = Prefix.top();
-		Prefix.pop();
-
-		TrieNode* tp;
-		if ((tp = p->getRbro()) != NULL)
-		{
-			stk.push(tp);
-			Prefix.push(str);
-		}
-
-		if(WriteDownNode(p, dictionary_out, str) != 0)
-		{
-			delete p;
-		}
+		tmp = _str.substr(start, _str.length() - start);
+		if (tmp.size() == 1)
+			return;
+		it = this->treeMap.find(tmp);
+		if (it == this->treeMap.end())
+			this->treeMap.insert(make_pair(tmp, 1));
 		else
-		{
-			if ((tp = p->getLchd()) != NULL)
-			{
-				stk.push(tp);
-				Prefix.push(str + p->getString());
-			}
-		}
+			(it->second)++;
 	}
-
-	dictionary_out.close();
-
-	cout << "Finish writing trie." << endl;
-
-	return true;
 }
 
-/* Write Down node whose count is larger than LOWBOUND, recursively */
-int
-Trie::WriteDownNode(TrieNode *_node, ofstream& _fout, string _str)
+void
+Trie::BuildPrefix()
 {
-	string curString = _node->getString();
-	int curCount;
-	bool deleteFlag = false;
+	this->FindPrefixSet();
+	return;
+}
 
-	if ((curCount = _node->getCount()) > Trie::LOWBOUND || _node == root)
-	{
-		_node->ID = curID++;
-
-		_fout << _node->ID << ' ' << _str + curString;
-		
-		/*if (curString == "") // root node
-		{
-			_fout << "/";
-		} */
-		_fout << endl;
-		return 0;
-	}
-	else  // delete unqualified node 
-	{
-		Release(_node->getLchd());
-		_node->setLchd(NULL);
-
-		TrieNode *lbro = _node->getLbro();
-		TrieNode *rbro = _node->getRbro();
-		TrieNode *father = _node->getFather();
-		if (lbro != NULL)
-			lbro->setRbro(rbro);
-		if (rbro != NULL)
-			rbro->setLbro(lbro);
-
-		if (lbro == NULL && father != NULL) // _node is the most left child
-		{
-			father->setLchd(rbro);
-		}
-
-		return -1;
-		//deleteFlag = true;
-	}
-
-//	TrieNode *pointer;
-//	
-//	if ((pointer = _node->getRbro()) != NULL)
-//	{
-//		WriteDownNode(pointer, _fout, _str);
-//	}
-
-	/* if it has no child or the count of itself is lower than LOWBOUND, 
- 	 * no need to visit its children
- 	 */
-//	if ((pointer = _node->getLchd()) != NULL && curCount > Trie::LOWBOUND)
-//	{
-//		WriteDownNode(pointer, _fout, _str + curString);
-//	}	
-//
-//	if (deleteFlag)
-//		delete _node;
-//	return;
-} 
-
-/* Return compressed Triple */
-TripleWithObjType 
-Trie::Compress(const TripleWithObjType &_in_triple, int MODE)
+void
+Trie::FindPrefixSet()
 {
-	//use this to forbid the trie
-	return _in_triple;
-
-	int lowbound = (MODE == BUILDMODE) ? Trie::LOWBOUND : 0;
-	
-	string _in_sub = _in_triple.getSubject();
-	string _sub = root->compress(_in_sub, lowbound);
-
-	string _in_pre = _in_triple.getPredicate();
-	string _pre = root->compress(_in_pre, lowbound);
-
-	string _in_obj = _in_triple.getObject();
-	string _obj;
-
-	if (_in_triple.isObjEntity())
+	multimap<long long, string> t;
+	map<string, int>::iterator it1;
+	long long tq;
+	long long totalsize = 0;
+	long long total_pattern_size = 0;
+	for (it1 = this->treeMap.begin(); it1 != this->treeMap.end(); it1++)
 	{
-		_obj = root->compress(_in_obj, lowbound);
-	}
-	else /* object is literal, no compression */
-	{
-		_obj = "-1/" + _in_obj;
+		if (it1->first.length() > this->PREFIX_UPBOUND)
+			continue;
+		tq = it1->second * (it1->first.length() - 2);
+		totalsize += it1->second * (it1->first.length());
+		total_pattern_size += 2 * it1->second;
+		t.insert(make_pair(tq, it1->first));
 	}
 
-	TripleWithObjType _out_triple = _in_triple;
-	
-	_out_triple.setSubject(_sub);
-	_out_triple.setPredicate(_pre);
-	_out_triple.setObject(_obj);
+	multimap<long long, string>::iterator it2;
+	long long save_size = 0;
+	it2 = t.end();
+	it2--;
 
-	return _out_triple;
+	for (int i = 0; i < 32768 && (t.size()  - i > 0); i++, it2--)
+	{
+		if (it2->first <= 0)
+			break;
+		save_size += it2->first / (it2->second.length() - 2) * (it2->second.length());
+		int2s[i] = it2->second;
+		this->s2int.insert(make_pair(it2->second, i));
+	}
+
+	if (totalsize==0||(save_size - total_pattern_size)*1.0 / totalsize < 0.3 )
+	{
+		cout <<"Compressed Ratio: "<< (save_size - total_pattern_size)*1.0 / totalsize << " , Decide not to use Trie" << endl;
+		going = false;
+		prefixnum = 0;
+		s2int.clear();
+		delete[] int2s;
+		int2s = NULL;
+	}
+	else
+	{
+		cout << "Compressed Ratio: " << (save_size - total_pattern_size)*1.0 / totalsize << " , Decide to use Trie" << endl;
+		going = true;
+		prefixnum = s2int.size();
+	}
+
+
+	this->treeMap.clear();
+	return;
+}
+
+void
+Trie::append(string &ret, string _str)
+{
+	short substr_len;
+	int t_start;
+	map<string, int>::iterator it;
+	it = this->s2int.find(_str);
+	if (it == this->s2int.end())//not find
+	{
+		substr_len = -_str.length();
+		t_start = ret.size();
+		/* append 2 char , the size of short
+		[-size][str] */
+		ret.append("00");
+		ret[t_start] = (char)((substr_len >> 8) & 0xFF);
+		ret[t_start + 1] = (char)(substr_len & 0xFF);
+		ret.append(_str);
+	}
+	else//find  [order]
+	{
+		t_start = ret.size();
+		ret.append("00");
+		int order = it->second;
+		ret[t_start] = (char)((order >> 8) & 0xFF);
+		ret[t_start + 1] = (char)(order & 0xFF);
+	}
 }
 
 string
-Trie::Compress(string _str)
+Trie::Compress(string &_str)
 {
-	//use this to forbid the trie
-	return _str;
-
-	int lowbound = 0;
-
-	if (Util::isLiteral(_str))
-	{
-		return "-1/" + _str;
-	}
-
-	if ((_str[0] >= '0' && _str[0] <= '9') || (_str[0] == '-' && 
-	     _str[1] == '1'))	// already been compressed
+	if (going == false)
 		return _str;
-	
-	string ret =  root->compress(_str, lowbound);
+	string ret;
+	map<string, int>::iterator it;
+	vector<string> vstring;
+	vector<int> vint;
+	int start = 0;
+	int end = -1;
+	if (_str.substr(0, 12) == string("<http://www."))
+	{
+		vstring.push_back(string("<http://www."));
+		vint.push_back(0);
+		start = 12;
+	}
+	for (int i = start; i < _str.length(); i++)
+	{
+		if (_str[i] == '.' || _str[i] == '/' || _str[i] == '<' || _str[i] == '>' || _str[i] == '#' || _str[i] == '\n')
+		{
+			end = i - 1;
+			if (start != i)
+			{
+				vstring.push_back(_str.substr(start, end - start + 2));
+				it = this->s2int.find(_str.substr(start, end - start + 2));
+				if (it == this->s2int.end())
+					vint.push_back(-(end - start + 2));
+				else
+					vint.push_back(it->second);
+			}
+			else
+			{
+				vstring.push_back(_str.substr(i, 1));
+				vint.push_back(-1);
+			}
+			start = i + 1;
+		}
+	}
+	if (start != _str.length())
+	{
+		vstring.push_back(_str.substr(start, _str.length() - start));
+		it = this->s2int.find(_str.substr(start, _str.length() - start));
+		if (it == this->s2int.end())
+			vint.push_back(-(_str.length() - start));
+		else
+			vint.push_back(it->second);
+	}
+	int j;
+	string tmp;
+	for (int i = 0; i < vstring.size(); i++)
+	{
+		if (vint[i] >= 0)
+			append(ret, vstring[i]);
+		else
+		{
+			tmp = vstring[i];
+			j = i + 1;
+			while (j < vstring.size() && vint[j] < 0)
+			{
+				tmp += vstring[j];
+				j++;
+			}
+			append(ret, tmp);
+			i = j - 1;
+		}
+	}
 	return ret;
 }
 
-/* Load dictionary to uncompress */
-bool 
-Trie::LoadDictionary()
+
+/* save String Prefix to file, return true if succeed */
+bool
+Trie::saveStringPrefix()
 {
-	ifstream _fin(this->store_path.c_str());
-	if (!_fin)
+	FILE *StringPrefix = fopen(this->store_path.c_str(), "w");
+
+	if (StringPrefix == NULL)
 	{
-		//cout << "Trie::LoadDictionary: Fail to open " << store_path 
-			 //<< " but it doesn't matter if you are building a database."
-			 //<< endl;
+		cout << "Save String Prefixes ERROR" << endl;
 		return false;
 	}
 
-	int dictionaryID, cnt = 0;
-	string dictionaryEntry;
-	dictionary.clear();
+	int nPrefix = s2int.size();
 
-	while (_fin >> dictionaryID)
+	char int2c[this->PREFIX_UPBOUND];
+	sprintf(int2c, "%d", nPrefix);
+	fputs(int2c, StringPrefix);
+	fputc('\n', StringPrefix);
+
+	if (nPrefix == 0)
 	{
-		getline(_fin, dictionaryEntry);
-		if (dictionaryID != cnt++)
-		{
-			cout << "DictionaryID mismatch: " << dictionaryID << endl;
-			return false;
-		}
-		if (dictionaryEntry.length() == 1)	// root
-		{
-			dictionary.push_back("/");
-		}
-		else
-		{
-			dictionary.push_back(dictionaryEntry.substr(2, //2
-						dictionaryEntry.length() - 2)); //2
-		}
+		fclose(StringPrefix);
+		return true;
 	}
 
-	_fin.close();
+	map<string, int>::iterator iter;
+
+	for (iter = s2int.begin(); iter != s2int.end(); ++iter)
+	{
+		fputs(iter->first.c_str(), StringPrefix);
+		fputc('\n', StringPrefix);
+		sprintf(int2c, "%d", iter->second);
+		fputs(int2c, StringPrefix);
+		fputc('\n', StringPrefix);
+	}
+	/*
+	sprintf(int2c, "%d", prefixnum);
+	fputs(int2c, StringPrefix);
+	fputc('\n', StringPrefix);
+
+	for (int i = 0; i < prefixnum; ++i)
+	{
+		fputs(int2s[i].c_str(), StringPrefix);
+		fputc('\n', StringPrefix);
+	}
+	*/
+	fclose(StringPrefix);
 	return true;
 }
 
-string
-Trie::Uncompress(const char *_str, const int len)
+/* load String Prefix file, return true if succeed */
+bool
+Trie::loadStringPrefix()
 {
-	//use this to forbid the trie
-	return string(_str);
-
-	if (len == 0)
-		return "";
-
-	if ((_str[0] < '0' || _str[0] > '9') && 
-	   !(_str[0] == '-' && _str[1] == '1'))	// _str is not compressed
+	cout << "load Stirng Prefix" << endl;
+	FILE *StringPrefix = fopen(this->store_path.c_str(), "r");
+	if (StringPrefix == NULL)
 	{
-		string ret = _str;
-		return ret;
+		cout << "Open String Prefix File ERROR" << endl;
+		return false;
 	}
+	char tmp[this->PREFIX_UPBOUND + 1];
 
-	//cout << "Uncompress: original str = " << _str << ' ' << len << endl;
-	if (dictionary.empty())
+	fgets(tmp, this->PREFIX_UPBOUND, StringPrefix);
+	int nPrefix = atoi(tmp);
+
+	this->prefixnum = nPrefix;
+	int2s = new string[prefixnum + 1];
+
+	if (nPrefix == 0)
 	{
-		if(!LoadDictionary())
-		{
-			exit(0);
-		}
+		going = false;
+		fclose(StringPrefix);
+		return true;
 	}
-
-	int dictionaryID;
-	char buf[10000];
-	char *tmp_str = buf;
-	if (len >= 10000)
-	{
-		tmp_str = new char [len + 1];
-	}
-
-	if (tmp_str == NULL)
-	{
-		cout << "Trie::Uncompress Error, failed new " << endl;
-		exit(0);
-	}
-
-	sscanf(_str, "%d %s", &dictionaryID, tmp_str);
-	string strPiece = string(tmp_str + 1);
 	
-	if (len >= 10000)
-		delete [] tmp_str;
-
-	if (dictionaryID < 0) /* _str is literal */
+	for (int i = 0; i < nPrefix; ++i)
 	{
-		return string(_str + 3);
-	}		
-	else
-	{
-		int strLen = strPiece.length();
-
-		if (dictionaryID == 0)
+		fgets(tmp, this->PREFIX_UPBOUND + 1, StringPrefix);
+		string tmpPrefix = tmp;
+		tmpPrefix = tmpPrefix.substr(0, (int)tmpPrefix.length() - 1);
+		fgets(tmp, this->PREFIX_UPBOUND + 1, StringPrefix);
+		int tmpprefixnum;
+		if (tmp[0] == '\n')
 		{
-			return strPiece;
-		}
-
-		if (strLen > 1)
-		{
-			return dictionary[dictionaryID] + strPiece;
+			tmpPrefix += "\n";
+			fgets(tmp, this->PREFIX_UPBOUND + 1, StringPrefix);
+			tmpprefixnum = atoi(tmp);
 		}
 		else
 		{
-			return dictionary[dictionaryID];
+			tmpprefixnum = atoi(tmp);
 		}
+		int2s[tmpprefixnum] = tmpPrefix;
+		s2int.insert(pair<string, int>(tmpPrefix, tmpprefixnum));
 	}
 
+	/*
+	fgets(tmp, PREFIX_UPBOUND, StringPrefix);
+	this->prefixnum = atoi(tmp);
+	int2s = new string[ prefixnum + 1];
+	for (int i = 0; i < prefixnum; ++i)
+	{
+		fgets(tmp, PREFIX_UPBOUND, StringPrefix);
+		if (tmp[0] == '\n')
+		{
+			i--;
+			int2s[i] += "\n";
+			continue;
+		}
+		int2s[i] = tmp;
+		int2s[i] = int2s[i].substr(0, (int)int2s[i].length() - 1);
+	}*/
+	cout << "load String Prefix end" << endl;
+	fclose(StringPrefix);
+	return true;
+}
+
+void
+Trie::Uncompress(const char *_str, const int len, string &target_string)
+{
+	this->Uncompress(_str, len, target_string, this->TrieBuffer);
+	return;
 }
 
 string
 Trie::Uncompress(const string &_str, const int len)
 {
-	//use this to forbid the trie
-	return _str;
-
-	return Uncompress(_str.data(), len);
-}
-
-/* addstring:
- * Insert a string into Trie
- */
-void
-Trie::addString(string _str, int _ID)
-{
-	root->addString(_str, _ID);
-}
-
-/* LoadTrie:
- * Load Trie into main memory
- */
-bool
-Trie::LoadTrie(string dictionary_path)
-{
-	this->Release();
-	root = new TrieNode;	
-	store_path = dictionary_path;
-	
-	ifstream fin(store_path.c_str());
-	if (!fin)
-	{
-		//cout << "Trie::LoadTrie: Fail to open " << store_path << endl;
-		return false;
-	}	
-	
-	int dictionaryID;
-	string dictionaryEntry;
-
-	while (fin >> dictionaryID)
-	{
-		getline(fin, dictionaryEntry);
-
-		if (dictionaryEntry == "/")	// corresponding to root node
-		{
-			dictionaryEntry = "";
-		}
-		else
-		{
-			dictionaryEntry = dictionaryEntry.substr(2, 
-				  dictionaryEntry.length() - 2);
-		}
-
-		addString(dictionaryEntry, dictionaryID);
-	}
-
-	return true;
-}
-
-void
-Trie::Release()
-{
-	dictionary.clear();
-	Release(root);
-}
-
-void
-Trie::Release(TrieNode *node)
-{
-	if (node == NULL)
-		return;
-	TrieNode *p;
-	if ((p = node->getLchd()) == NULL)
-	{
-		delete node;
-		return;
-	}
-
-	delete node;
-	stack <TrieNode*> stk;
-	stk.push(p);
-	while (!stk.empty())
-	{
-		TrieNode *tp = stk.top();
-		stk.pop();
-		if ((p = tp->getLchd()) != NULL)
-			stk.push(p);
-		if ((p = tp->getRbro()) != NULL)
-			stk.push(p);
-		delete tp;
-	}
-//	if (node == NULL) return;
-	
-//	Release(node->getLchd());
-//	Release(node->getRbro());
-
-//	delete node;
-}
-
-Trie::~Trie()
-{
-	this->Release();
+	string _ret;
+	this->Uncompress(_str.c_str(), len, _ret);
+	return _ret;
 }

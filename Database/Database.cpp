@@ -30,7 +30,7 @@ Database::Database()
 
 	string stringindex_store_path = store_path + "/stringindex_store";
 	this->stringindex = new StringIndex(stringindex_store_path);
-
+	this->stringindex->SetTrie(this->kvstore->getTrie());
 	//this->encode_mode = Database::STRING_MODE;
 	this->encode_mode = Database::ID_MODE;
 	this->is_active = false;
@@ -51,7 +51,7 @@ Database::Database()
 
 	this->if_loaded = false;
 
-	this->trie = NULL;
+	//this->trie = NULL;
 
 	//this->resetIDinfo();
 	this->initIDinfo();
@@ -83,6 +83,7 @@ Database::Database(string _name)
 	this->vstree = NULL;
 	string stringindex_store_path = store_path + "/stringindex_store";
 	this->stringindex = new StringIndex(stringindex_store_path);
+	this->stringindex->SetTrie(this->kvstore->getTrie());
 	//this->encode_mode = Database::STRING_MODE;
 	this->encode_mode = Database::ID_MODE;
 	this->is_active = false;
@@ -103,7 +104,7 @@ Database::Database(string _name)
 
 	this->query_cache = new QueryCache();
 
-	this->trie = NULL;
+	//this->trie = NULL;
 
 	//this->resetIDinfo();
 	this->initIDinfo();
@@ -685,9 +686,10 @@ Database::load()
 		return false;
 	}
 
-	if(!(this->kvstore)->load_trie())
+	if(!(this->kvstore)->load_trie(kv_mode))
 		return false;
 
+	this->stringindex->SetTrie(this->kvstore->getTrie());
 	//NOTICE: we should also run some heavy work in the main thread
 	this->stringindex->load();
 	this->readIDinfo();
@@ -738,7 +740,7 @@ Database::load()
 
 	// Load trie
 
-	if (trie != NULL)
+	/*if (trie != NULL)
 		delete trie;
 	trie = new Trie;
 
@@ -746,7 +748,7 @@ Database::load()
 	if (!trie->LoadTrie(dictionary_path))
 	{
 		return false;
-	}
+	}*/
 
 	this->if_loaded = true;
 
@@ -781,6 +783,75 @@ Database::load_cache()
 	this->load_candidate_pre2values();
 	this->load_important_sub2values();
 	this->load_important_obj2values();
+	
+	long t0 = Util::get_cur_time();
+	vector<StringIndexFile*> indexfile = this->stringindex->get_three_StringIndexFile();
+
+	StringIndexFile* 	entity = indexfile[0];
+	StringIndexFile* 	literal = indexfile[1];
+	StringIndexFile* 	predicate = indexfile[2];
+
+	struct stat statbuf;
+	int fd;
+	char tmp;
+	long end;
+	
+	stat((entity->get_loc() + "value").c_str(), &statbuf);
+	fd = open((entity->get_loc() + "value").c_str(), O_RDONLY);
+	entity->mmapLength = (statbuf.st_size/4096 + 1)*4096;
+	entity->Mmap = (char*)mmap(NULL, entity->mmapLength, PROT_READ, MAP_POPULATE|MAP_SHARED, fd, 0);
+	close(fd);
+	end = entity->mmapLength - 4096;
+	for (long off = 0; off < end; off += 4096)
+	{	
+		tmp = entity->Mmap[off];
+	}
+	stat((literal->get_loc() + "value").c_str(), &statbuf);
+	fd = open((literal->get_loc() + "value").c_str(), O_RDONLY);
+	literal->mmapLength = (statbuf.st_size / 4096 + 1) * 4096;
+	literal->Mmap = (char*)mmap(NULL, literal->mmapLength, PROT_READ, MAP_POPULATE | MAP_SHARED , fd, 0);
+	close(fd);
+	end = literal->mmapLength - 4096;
+	for (long off = 0; off < end; off += 4096)
+	{
+		tmp = literal->Mmap[off];
+	}
+	stat((predicate->get_loc() + "value").c_str(), &statbuf);
+	fd = open((predicate->get_loc() + "value").c_str(), O_RDONLY);
+	predicate->mmapLength = (statbuf.st_size / 4096 + 1) * 4096;
+	predicate->Mmap = (char*)mmap(NULL, predicate->mmapLength, PROT_READ, MAP_POPULATE | MAP_SHARED, fd, 0);
+	close(fd);
+	end = predicate->mmapLength - 4096;
+	for (long off = 0; off < end; off += 4096)
+	{
+		tmp = predicate->Mmap[off];
+	}
+	cout << "Value File Preload used " << Util::get_cur_time() - t0 << " ms" << endl;
+	/*
+	cerr << "Get in" << endl;
+	{
+		pid_t p = getpid();
+		char file[64] = { 0 };//文件名
+		FILE *fd;         //定义文件指针fd
+		char line_buff[256] = { 0 };  //读取行的缓冲区
+		sprintf(file, "/proc/%d/status", p);
+		fprintf(stderr, "current pid:%d\n", p);
+		fd = fopen(file, "r"); //以R读的方式打开文件再赋给指针fd
+
+		int i; //获取vmrss:实际物理内存占用
+		char name[32];//存放项目名称
+		int vmrss;//存放内存
+		for (i = 0; i<17; i++)  //读取VmRSS这一行的数据
+		{
+			char* ret = fgets(line_buff, sizeof(line_buff), fd);
+			if (i == 11 || i == 12 || i == 15 || i == 16)
+			{
+				sscanf(line_buff, "%s %d", name, &vmrss);
+				fprintf(stderr, "%s\t%d kb\n", name, vmrss);
+			}
+		}
+		fclose(fd);     //关闭文件fd
+	}*/
 }
 
 void
@@ -1259,11 +1330,11 @@ Database::unload()
 	this->if_loaded = false;
 	this->clear_update_log();
 
-	if (this->trie != NULL)
+	/*if (this->trie != NULL)
 	{
 		delete this->trie;
 		trie = NULL;
-	}
+	}*/
 
 	return true;
 }
@@ -1397,6 +1468,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 {
 	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
 
+	this->stringindex->SetTrie(this->kvstore->getTrie());
 	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 
 	long tv_begin = Util::get_cur_time();
@@ -1444,6 +1516,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		long tv_bfget = Util::get_cur_time();
 		//NOTICE: this lock lock ensures that StringIndex is visited sequentially
 		this->getFinalResult_lock.lock();
+		/*
 		if (trie == NULL)
 		{
 			trie = new Trie;
@@ -1453,7 +1526,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 				exit(0);
 			}
 			trie->LoadDictionary();
-		}
+		}*/
 		general_evaluation.getFinalResult(_result_set);
 		this->getFinalResult_lock.unlock();
 		long tv_afget = Util::get_cur_time();
@@ -1491,8 +1564,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
 		TYPE_TRIPLE_NUM update_triple_num = 0;
-	
-		if (trie == NULL)
+		/*if (trie == NULL)
 		{
 			trie = new Trie;
 			string dictionary_path = this->store_path + "/dictionary.dc";
@@ -1501,7 +1573,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 				exit(0);
 			}
 			trie->LoadDictionary();
-		}
+		}*/
 
 
 		if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
@@ -1526,7 +1598,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 														 update_pattern.sub_group_pattern[i].pattern.object.value, object_type);
 
 					// Compress
-					update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
+					// update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
 				}
 				else 
 				{
@@ -1552,19 +1624,19 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Where || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
 			{
 				general_evaluation.prepareUpdateTriple(general_evaluation.getQueryTree().getDeletePatterns(), update_triple, update_triple_num);
-				for(int i = 0; i < update_triple_num; i++)
-				{
-					update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
-				}
+				//for(int i = 0; i < update_triple_num; i++)
+				//{
+					//update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
+				//}
 				success_num = remove(update_triple, update_triple_num);
 			}
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
 			{
 				general_evaluation.prepareUpdateTriple(general_evaluation.getQueryTree().getInsertPatterns(), update_triple, update_triple_num);
-				for(int i = 0; i < update_triple_num; i++)
-				{
-					update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
-				}
+				//for(int i = 0; i < update_triple_num; i++)
+				//{
+					//update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
+				//}
 				success_num = insert(update_triple, update_triple_num);
 			}
 		}
@@ -2420,7 +2492,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 		(this->kvstore)->open_id2predicate(KVstore::CREATE_MODE);
 		(this->kvstore)->open_literal2id(KVstore::CREATE_MODE);
 		(this->kvstore)->open_id2literal(KVstore::CREATE_MODE);
-		(this->kvstore)->load_trie();
+		(this->kvstore)->load_trie(KVstore::CREATE_MODE);
 	}
 
 	//Util::logging("finish initial sub2id_pre2id_obj2id");
@@ -2460,25 +2532,44 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	//}
 	//EntityBitSet _tmp_bitset;
 
-	//parse a file
+	{
+		cout << "begin build Prefix" << endl;
+		long begin = Util::get_cur_time();
+		ifstream _fin0(_rdf_file.c_str());
+		//parse a file
+		RDFParser _parser0(_fin0);
+
+		// Initialize trie
+
+		Trie *trie = kvstore->getTrie();
+		while (true)
+		{
+			int parse_triple_num = 0;
+			_parser0.parseFile(triple_array, parse_triple_num);
+			if (parse_triple_num == 0)
+			{
+				break;
+			}
+
+			//Process the Triple one by one
+			for (int i = 0; i < parse_triple_num; i++)
+			{
+				string t = triple_array[i].getSubject();
+				trie->Addstring(t);
+				t = triple_array[i].getPredicate();
+				trie->Addstring(t);
+				t = triple_array[i].getObject();
+				trie->Addstring(t);
+			}
+		}
+
+		trie->BuildPrefix();
+		cout << "BuildPrefix done. used" <<Util::get_cur_time() - begin<< endl;
+	}
+
 	RDFParser _parser(_fin);
-
-	// Initialize trie
-	string dictionary_store_path = this->store_path + "/dictionary.dc"; 
-	this->trie = new Trie (_rdf_file, dictionary_store_path);
-	if (!trie->isInitialized())
-	{
-		cout << "Fail to initialize trie" << endl;
-		exit(0);
-	}
-	
-	if(!trie->WriteDown())
-	{
-		cout << "Fail to write down dictionary" << endl;
-		exit(0);
-	}
 	//Util::logging("==> while(true)");
-
+	
 	while (true)
 	{
 		int parse_triple_num = 0;
@@ -2520,11 +2611,6 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 			//BETTER: use 3 threads to deal with sub, obj, pre separately
 			//However, the cost of new /delete threads may be high
 			//We need a thread pool!
-
-			// Compress triple begin
-			TripleWithObjType compressed_triple = trie->Compress(triple_array[i], Trie::BUILDMODE);
-			triple_array[i] = compressed_triple;
-			//Compress triple end
 
 			// For subject
 			// (all subject is entity, some object is entity, the other is literal)
@@ -3043,11 +3129,11 @@ Database::insert(std::string _rdf_file, bool _is_restore)
 		}
 
 		//Compress triple here
-		for(int i = 0; i < parse_triple_num; i++)
-		{
-			TripleWithObjType compressed_triple = trie->Compress(triple_array[i], Trie::QUERYMODE);
-			triple_array[i] = compressed_triple;
-		}
+		//for(int i = 0; i < parse_triple_num; i++)
+		//{
+			//TripleWithObjType compressed_triple = trie->Compress(triple_array[i], Trie::QUERYMODE);
+			//triple_array[i] = compressed_triple;
+		//}
 
 		//Process the Triple one by one
 		success_num += this->insert(triple_array, parse_triple_num, _is_restore);
@@ -3143,11 +3229,11 @@ Database::remove(std::string _rdf_file, bool _is_restore)
 		}
 
 		//Compress triple
-		for(int i = 0; i < parse_triple_num; i++)
-		{
-			TripleWithObjType compressed_triple = trie->Compress(triple_array[i], Trie::QUERYMODE);
-			triple_array[i] = compressed_triple;
-		}
+		//for(int i = 0; i < parse_triple_num; i++)
+		//{
+			//TripleWithObjType compressed_triple = trie->Compress(triple_array[i], Trie::QUERYMODE);
+			//triple_array[i] = compressed_triple;
+		//}
 
 
 		success_num += this->remove(triple_array, parse_triple_num, _is_restore);
@@ -3695,6 +3781,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	}
 #endif //USE_GROUP_INSERT
 
+	this->stringindex->SetTrie(kvstore->getTrie());
 	//update string index
 	this->stringindex->change(vertices, *this->kvstore, true);
 	this->stringindex->change(predicates, *this->kvstore, false);
@@ -4101,7 +4188,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		}
 	}
 #endif
-
+	this->stringindex->SetTrie(kvstore->getTrie());
 	//update string index
 	this->stringindex->disable(vertices, true);
 	this->stringindex->disable(predicates, false);
