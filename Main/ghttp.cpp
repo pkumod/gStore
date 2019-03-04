@@ -419,6 +419,7 @@ vector<Thread*> freethreads;
 mutex busy_mutex;
 mutex free_mutex;
 mutex task_mutex;
+condition_variable task_cond;
 
 void BackToFree(Thread *t)
 {
@@ -532,9 +533,10 @@ int ThreadPool::GetThreadNum()
 }
 void ThreadPool::AddTask(Task* t)
 {
-	task_mutex.lock();
+	unique_lock<mutex> locker(task_mutex);
 	tasklines.push(t);
-	task_mutex.unlock();
+	locker.unlock();
+	task_cond.notify_one();
 }
 void ThreadPool::start()
 {
@@ -560,16 +562,13 @@ void ThreadPool::start()
 		}
 		free_mutex.unlock();
 
-		task_mutex.lock();
-		if (tasklines.size() == 0)
-		{
-			task_mutex.unlock();
-			continue;
-		}
+		unique_lock<mutex> locker(task_mutex);
+		while (tasklines.size() == 0)
+			task_cond.wait(locker);
 
 		Task *job = tasklines.front();
 		tasklines.pop();
-		task_mutex.unlock();
+		locker.unlock();
 
 		free_mutex.lock();
 		Thread *t = freethreads.back();
