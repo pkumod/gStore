@@ -789,6 +789,13 @@ int initialize(int argc, char *argv[])
 			cout << "Database " << database << ".db has not been built." << endl;
 			return -1;
 		}
+		if (!boost::filesystem::exists(database + ".db/success.txt"))
+		{
+			cout << "Database " << database << ".db has not been built successfully." << endl;
+			string cmd = "rm -r " + database + ".db";
+			system(cmd.c_str());
+			return -1;
+		}
 
 		bool flag = current_database->load();
 		if (!flag)
