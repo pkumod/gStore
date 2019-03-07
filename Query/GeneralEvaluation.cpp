@@ -131,7 +131,8 @@ bool GeneralEvaluation::doQuery()
 		return false;
 	}
 
-	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num, this->limitID_predicate, this->limitID_literal, this->limitID_entity);
+	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num,this->pre2sub, this->pre2obj, 
+		this->limitID_predicate, this->limitID_literal, this->limitID_entity);
 	if (this->query_tree.checkWellDesigned())
 	{
 		printf("=================\n");
@@ -1374,7 +1375,7 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 						if (subject_id != -1)
 						{
 							if (subject_id < id_cols)
-								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[subject_id], &subject, true, false);
+								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[subject_id], &subject, true);
 							else
 								subject = this->temp_result->results[j].result[k].str[subject_id - id_cols];
 						}
@@ -1382,7 +1383,7 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 						if (predicate_id != -1)
 						{
 							if (predicate_id < id_cols)
-								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[predicate_id], &predicate, false,false);
+								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[predicate_id], &predicate, false);
 							else
 								predicate = this->temp_result->results[j].result[k].str[predicate_id - id_cols];
 						}
@@ -1390,7 +1391,7 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 						if (object_id != -1)
 						{
 							if (object_id < id_cols)
-								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[object_id], &object, true, false);
+								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[object_id], &object, true);
 							else
 								object = this->temp_result->results[j].result[k].str[object_id - id_cols];
 						}
