@@ -42,6 +42,8 @@ Database::Database()
 
 	this->join = NULL;
 	this->pre2num = NULL;
+	this->pre2sub = NULL;
+	this->pre2obj = NULL;
 	this->entity_buffer = NULL;
 	this->entity_buffer_size = 0;
 	this->literal_buffer = NULL;
@@ -97,6 +99,8 @@ Database::Database(string _name)
 
 	this->join = NULL;
 	this->pre2num = NULL;
+	this->pre2sub = NULL;
+	this->pre2obj = NULL;
 	this->entity_buffer = NULL;
 	this->entity_buffer_size = 0;
 	this->literal_buffer = NULL;
@@ -538,12 +542,14 @@ Database::~Database()
 void
 Database::setPreMap()
 {
-	//this->maxNumPID = this->minNumPID = -1;
+	//this->maxNumPID = this->minNumPID = -1;a
 	this->maxNumPID = this->minNumPID = INVALID_PREDICATE_ID;
 	//int max = 0, min = this->triples_num + 1;
 	TYPE_TRIPLE_NUM max = 0, min = this->triples_num + 1;
 
 	this->pre2num = new TYPE_TRIPLE_NUM[this->limitID_predicate];
+	this->pre2sub = new TYPE_TRIPLE_NUM[this->limitID_predicate];
+	this->pre2obj = new TYPE_TRIPLE_NUM[this->limitID_predicate];
 	TYPE_PREDICATE_ID valid = 0, i, t;
 
 	for (i = 0; i < this->limitID_predicate; ++i)
@@ -570,8 +576,31 @@ Database::setPreMap()
 			{
 				this->minNumPID = i;
 			}
+
+			unsigned *list = NULL;
+			unsigned len = 0;
+			this->kvstore->getsubIDlistBypreID(i,list,len,true);
+			this->pre2sub[i] = len;
+			free(list);
+			this->kvstore->getobjIDlistBypreID(i,list,len,true);
+			this->pre2obj[i] = len;
+			free(list);
+		}
+		else
+		{
+			this->pre2sub[i] = 0;
+			this->pre2obj[i] = 0;
 		}
 	}
+	/*
+	for(int i = 0;i < this->pre_num;i++)
+	{
+		cout <<"pre2num["<<i<<"]: "<<this->pre2num[i]<<endl;
+		cout <<"pre2sub["<<i<<"]: "<<this->pre2sub[i]<<endl;
+		cout <<"pre2obj["<<i<<"]: "<<this->pre2obj[i]<<endl;
+	}
+	*/
+
 }
 
 void
@@ -1306,6 +1335,10 @@ Database::unload()
 	//cout << "delete pre2num" << endl;
 	delete[] this->pre2num;
 	this->pre2num = NULL;
+	delete[] this->pre2sub;
+	this->pre2sub = NULL;
+	delete[] this->pre2obj;
+	this->pre2obj = NULL;
 	//cout << "delete entity buffer" << endl;
 	delete this->entity_buffer;
 	this->entity_buffer = NULL;
@@ -1360,6 +1393,10 @@ void Database::clear()
 {
 	delete[] this->pre2num;
 	this->pre2num = NULL;
+	delete[] this->pre2sub;
+	this->pre2sub = NULL;
+	delete[] this->pre2obj;
+	this->pre2obj = NULL;
 	delete this->entity_buffer;
 	this->entity_buffer = NULL;
 	delete this->literal_buffer;
@@ -1439,6 +1476,18 @@ Database::getpre2num()
 	return this->pre2num;
 }
 
+TYPE_TRIPLE_NUM*
+Database::getpre2sub()
+{
+	return this->pre2sub;
+}
+
+TYPE_TRIPLE_NUM*
+Database::getpre2obj()
+{
+	return this->pre2obj;
+}
+
 TYPE_ENTITY_LITERAL_ID&
 Database::getlimitID_literal()
 {
@@ -1469,7 +1518,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
-	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
+	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
 
 	long tv_begin = Util::get_cur_time();
 
@@ -1575,7 +1624,6 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 			trie->LoadDictionary();
 		}*/
 
-
 		if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
 		{
 			QueryTree::GroupPattern &update_pattern = general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data ?
@@ -1629,6 +1677,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 					//update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
 				//}
 				success_num = remove(update_triple, update_triple_num);
+
 			}
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
 			{
@@ -1655,7 +1704,6 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 
 	long tv_final = Util::get_cur_time();
 	cout << "Total time used: " << (tv_final - tv_begin) << "ms." << endl;
-
 	//if (general_evaluation.needOutputAnswer())
 	if (need_output_answer)
 	{

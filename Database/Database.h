@@ -92,6 +92,8 @@ public:
 	StringIndex* getStringIndex();
 	QueryCache* getQueryCache();
 	TYPE_TRIPLE_NUM* getpre2num();
+	TYPE_TRIPLE_NUM* getpre2sub();
+	TYPE_TRIPLE_NUM* getpre2obj();
 	TYPE_ENTITY_LITERAL_ID& getlimitID_literal();
 	TYPE_ENTITY_LITERAL_ID& getlimitID_entity();
 	TYPE_PREDICATE_ID& getlimitID_predicate();
@@ -141,6 +143,10 @@ private:
 
 	//pre2num mapping
 	TYPE_TRIPLE_NUM* pre2num;
+	//pre2subnum mapping
+	TYPE_TRIPLE_NUM* pre2sub;
+	//pre2objnum mapping
+	TYPE_TRIPLE_NUM* pre2obj;
 	//valid: check from minNumPID to maxNumPID
 	TYPE_PREDICATE_ID maxNumPID, minNumPID;
 	void setPreMap();
