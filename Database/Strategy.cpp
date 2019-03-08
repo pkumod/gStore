@@ -658,7 +658,7 @@ Strategy::handler3(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		return;
 	}
 
-	if (_bq->isReady(var1_id))
+	if (_bq->getCandidateSize(var1_id) > 0)
 	{
 		IDList &var1_candidate_list = _bq->getCandidateList(var1_id);
 
@@ -680,7 +680,7 @@ Strategy::handler3(BasicQuery* _bq, vector<unsigned*>& _result_list)
 			delete[] obj_id_list;
 		}
 	}
-	else if (_bq->isReady(var2_id))
+    else if (_bq->getCandidateSize(var2_id) > 0)
 	{
 		IDList &var2_candidate_list = _bq->getCandidateList(var2_id);
 

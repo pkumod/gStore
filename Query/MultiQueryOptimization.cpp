@@ -192,6 +192,7 @@ void MultiQueryOptimization::queryClustering(const vector<QueryTree::GroupPatter
                     jaccard /= cluster[i].size();
                     jaccard /= cluster[j].size();
 
+                    /*
                     {
                         cout << "Jaccard({";
                         for (int k = 0; k < (int)cluster[i].size(); k++)
@@ -209,6 +210,7 @@ void MultiQueryOptimization::queryClustering(const vector<QueryTree::GroupPatter
                         }
                         cout << "}) = " << jaccard << endl;
                     }
+                    */
 
                     if (jaccard > this->CLUSTER_SIMILARITY_THRESHOLD)
                     {
@@ -379,6 +381,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                         maximal_sequence_pair_of_triple_pattern.push_back(h);
                 }
 
+                /*
                 {
                     cout << "MaximalSequencePairOfTriplePattern:" << endl;
                     for (auto &mspotp : maximal_sequence_pair_of_triple_pattern)
@@ -407,6 +410,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                         cout << ")" << endl;
                     }
                 }
+                */
 
                 maximal_sequence_tuple_of_triple_pattern.insert(maximal_sequence_tuple_of_triple_pattern.end(),
                     maximal_sequence_pair_of_triple_pattern.begin(), maximal_sequence_pair_of_triple_pattern.end());
@@ -474,6 +478,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
             }
         }
 
+        /*
         {
             cout << "MaximalSequenceTupleOfTriplePattern:" << endl;
             for (auto &mstotpoq : maximal_sequence_tuple_of_triple_pattern)
@@ -502,6 +507,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                 cout << ")" << endl;
             }
         }
+        */
 
         sequence_tuple_of_triple_pattern_bool.clear();
         for (auto &mstotpoq : maximal_sequence_tuple_of_triple_pattern)
@@ -521,6 +527,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                 enumerateSubSequenceTupleOfTriplePattern(mstotp, group_pattern0, select, it.second);
         }
 
+        /*
         {
             cout << "SequenceTupleOfTriplePattern:" << endl;
             for (auto &it : sequence_tuple_of_triple_pattern_bool)
@@ -550,6 +557,7 @@ void MultiQueryOptimization::evaluate(vector<QueryTree::GroupPattern> &query_bat
                     cout << ")" << endl;
                 }
         }
+        */
 
         vector<SequenceTupleOfTriplePatternOnQuery> selected_sequence_tuple_of_triple_pattern;
 
