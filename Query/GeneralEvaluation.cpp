@@ -946,7 +946,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
                             if (!satellite_varset.findVar(var))
                                 basic_query.setReady(k);
 
-                            printf("fill var %s CandidateList size %d\n", var.c_str(), (int)result_vector.size()); 
+                            printf("fill var %s CandidateList size %d\n", var.c_str(), (int)result_vector.size());
                         }
                     }
 
@@ -1161,7 +1161,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
                     sub_result = new_result;
                 }
 
-        if (!sub_result->results[0].result.empty())
+        if (sub_result->results.empty() || !sub_result->results[0].result.empty())
             for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
                 if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
                 {
@@ -1237,6 +1237,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
     if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
     {
+        if (this->temp_result->results.empty())
+        {
+            this->temp_result->results.push_back(TempResult());
+            this->temp_result->results[0].id_varset += this->query_tree.getGroupPattern().group_pattern_resultset_maximal_varset;
+        }
+
         Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset();
 
         if (this->query_tree.checkProjectionAsterisk())
@@ -1245,7 +1251,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
                 useful += this->temp_result->results[i].getAllVarset();
         }
 
-        if ((int)this->temp_result->results.size() > 1)
+        if ((int)this->temp_result->results.size() > 1 || this->query_tree.getProjectionModifier() == QueryTree::Modifier_Distinct)
         {
             TempResultSet *new_temp_result = new TempResultSet();
 
@@ -1493,17 +1499,20 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
                 for (int j = 0; j < ret_result.select_var_num; j++)
                 {
                     int k = proj2temp[j];
-                    if (k < id_cols)
+                    if (k != -1)
                     {
-                        unsigned ans_id = result0.result[i].id[k];
-                        if (ans_id != INVALID)
+                        if (k < id_cols)
                         {
-                            this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], isel[k]);
+                            unsigned ans_id = result0.result[i].id[k];
+                            if (ans_id != INVALID)
+                            {
+                                this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], isel[k]);
+                            }
                         }
-                    }
-                    else
-                    {
-                        ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
+                        else
+                        {
+                            ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
+                        }
                     }
                 }
             }
@@ -1516,21 +1525,23 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
                 for (int j = 0; j < ret_result.select_var_num; j++)
                 {
                     int k = proj2temp[j];
-                    if (k < id_cols)
+                    if (k != -1)
                     {
-                        string ans_str;
-
-                        unsigned ans_id = result0.result[i].id[k];
-                        if (ans_id != INVALID)
+                        if (k < id_cols)
                         {
-                            this->stringindex->randomAccess(ans_id, &ans_str, isel[k]);
+                            string ans_str;
+                            unsigned ans_id = result0.result[i].id[k];
+                            if (ans_id != INVALID)
+                            {
+                                this->stringindex->randomAccess(ans_id, &ans_str, isel[k]);
+                            }
+                            ret_result.writeToStream(ans_str);
                         }
-                        ret_result.writeToStream(ans_str);
-                    }
-                    else
-                    {
-                        string ans_str = result0.result[i].str[k - id_cols];
-                        ret_result.writeToStream(ans_str);
+                        else
+                        {
+                            string ans_str = result0.result[i].str[k - id_cols];
+                            ret_result.writeToStream(ans_str);
+                        }
                     }
                 }
 
@@ -1540,7 +1551,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
     else if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
     {
         ret_result.select_var_num = 1;
-        ret_result.setVar(vector<string>(1, "?__ask_retval"));
+        ret_result.setVar(vector<string>(1, "?_askResult"));
         ret_result.ansNum = 1;
 
         if (!ret_result.checkUseStream())
