@@ -824,7 +824,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 					sub_result = new_result;
 				}
 
-		if (!sub_result->results[0].result.empty())
+		if (sub_result->results.empty() || !sub_result->results[0].result.empty())
 		{
 			for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
 				if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
@@ -899,6 +899,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 	if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
 	{
 		long t0 = Util::get_cur_time();
+
+		if (this->temp_result->results.empty())
+		{
+			this->temp_result->results.push_back(TempResult());
+			this->temp_result->results[0].id_varset += this->query_tree.getGroupPattern().group_pattern_resultset_maximal_varset;
+		}
 
 		Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset();
 
