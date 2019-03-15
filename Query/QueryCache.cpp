@@ -95,6 +95,8 @@ bool QueryCache::getMinimalRepresentation(const Patterns &triple_pattern, Patter
 
 bool QueryCache::tryCaching(const Patterns &triple_pattern, const TempResult &temp_result, int eva_time)
 {
+	lock_guard<mutex> (this->query_cache_lock);  //when quit this scope the lock will be released
+
 	Patterns minimal_repre;
 	map<string, string> minimal_mapping;
 
@@ -176,8 +178,12 @@ bool QueryCache::tryCaching(const Patterns &triple_pattern, const TempResult &te
 	return true;
 }
 
+//NOTICE: in this function we also modify some contents, so we must use mutex instead of rwlock
 bool QueryCache::checkCached(const Patterns &triple_pattern, const Varset &varset, TempResult &temp_result)
 {
+	//this->query_cache_lock.lock();
+	lock_guard<mutex> (this->query_cache_lock);  //when quit this scope the lock will be released
+
 	Patterns minimal_repre;
 	map<string, string> minimal_mapping;
 

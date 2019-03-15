@@ -20,6 +20,7 @@ ResultSet::ResultSet()
 	this->useStream = false;
 	this->output_offset = 0;
 	this->output_limit = -1;
+	this->delete_another_way = 0;
 }
 
 ResultSet::~ResultSet()
@@ -27,10 +28,19 @@ ResultSet::~ResultSet()
 	delete[] this->var_name;
 	if (!this->useStream)
 	{
-		for(unsigned i = 0; i < this->ansNum; i++)
+		if (this ->delete_another_way == 0)
 		{
-			delete[] this->answer[i];
+			for (unsigned i = 0; i < this->ansNum; i++)
+			{
+				delete[] this->answer[i];
+			}
 		}
+		else 
+		{
+			if(this->ansNum>0)
+				delete[] this->answer[0];
+		}
+
 		delete[] this->answer;
 	}
 	else

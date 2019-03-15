@@ -999,6 +999,8 @@ Util::getItemsFromDir(string _path)
 //
 //http://www.cnblogs.com/wuchanming/p/3784862.html
 //http://www.cnblogs.com/sky-heaven/p/4687489.html
+//
+//BETTER: sysytem() may have some risks, using popen() instead?
 string
 Util::getSystemOutput(string cmd)
 {
@@ -1007,7 +1009,7 @@ Util::getSystemOutput(string cmd)
     file += "ans.txt";
     cmd += " > ";
     cmd += file;
-    cerr << cmd << endl;
+    //cerr << cmd << endl;
     int ret = system(cmd.c_str());
     cmd = "rm -rf " + file;
     if(ret < 0)
@@ -1856,6 +1858,16 @@ Util::pso_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b)
 	}
 
 	//all are equal, no need to sort this two
+	return false;
+}
+
+bool 
+Util::equal(const ID_TUPLE& a, const ID_TUPLE& b)
+{
+	if(a.subid == b.subid && a.preid == b.preid && a.objid == b.objid)
+	{
+		return true;
+	}
 	return false;
 }
 

@@ -16,6 +16,7 @@ readline-devel | need to be installed
 openjdk | needed if using Java api
 openjdk-devel | needed if using Java api
 requests | needed if using Python http api
+node | needed if using Nodejs http api and version >= 10.9.0
 pthreads | needed if using php http api 
 curl-devel | needed if using php http api
 realpath | needed if using gconsole
@@ -23,6 +24,8 @@ ccache | optional, used to speed up the compilation
 libcurl-devel | needed to be installed
 
 NOTICE:
+
+**To help ease the burden of setting environments, several scripts are provided in [setup](../scripts/setup/) for different Linux distributions. Please select the setup script corresponding to your system and run it with root(or sudo) priviledge. (As for CentOS system, you need to install boost-devel by yourselves.)**
 
 1. The name of some packages may be different in different platforms, just install the corresponding one in your own operation system.
 
@@ -60,7 +63,7 @@ NOTICE:
 # ./buildconf --force
 # ./configure --help | grep pthreads
 
-You have to see --enable-pthreads listed. If do not, clear the buidls with this commands:
+You have to see --enable-pthreads listed. If do not, clear the builds with this commands:
 
 # rm -rf aclocal.m4
 # rm -rf autom4te.cache/
@@ -76,19 +79,27 @@ We will run make clear just to be sure that no other crashed build will mess our
 # make
 # make install
 
-8- Copy configuration file of PHP and add local lib to include path
+8- install node
+# wget https://npm.taobao.org/mirrors/node/v10.9.0/node-v10.9.0.tar.gz
+# tar -xvf node-v10.9.0.tar.gz
+# cd node-v10.9.0
+# ./configure
+# make
+# sudo make install
+
+9- Copy configuration file of PHP and add local lib to include path
 # cp php.ini-development /etc/php.ini
 
 Edit php.ini and set Include_path to be like this:
 
 Include_path = "/usr/local/lib/php"
 
-9- Check Modules
+10- Check Modules
 # php -m (check pthread loaded)
 
 You have to see pthreads listed
 
-10- If pthread is not listed, update php.ini
+11- If pthread is not listed, update php.ini
 # echo "extension=pthreads.so" >> /etc/php.ini
 
 ```

@@ -51,7 +51,7 @@ public:
 	bool load();
 	bool unload();
 	void clear();
-	int query(const string _query, ResultSet& _result_set, FILE* _fp = stdout);
+	int query(const string _query, ResultSet& _result_set, FILE* _fp = stdout, bool update_flag = true);
 
 	//1. if subject of _triple doesn't exist,
 	//then assign a new subid, and insert a new SigEntry
@@ -87,6 +87,18 @@ public:
 	//id tuples file
 	string getIDTuplesFile();
 
+	VSTree* getVSTree();
+	KVstore* getKVstore();
+	StringIndex* getStringIndex();
+	QueryCache* getQueryCache();
+	TYPE_TRIPLE_NUM* getpre2num();
+	TYPE_TRIPLE_NUM* getpre2sub();
+	TYPE_TRIPLE_NUM* getpre2obj();
+	TYPE_ENTITY_LITERAL_ID& getlimitID_literal();
+	TYPE_ENTITY_LITERAL_ID& getlimitID_entity();
+	TYPE_PREDICATE_ID& getlimitID_predicate();
+	mutex& get_query_parse_lock();
+
 private:
 	string name;
 	string store_path;
@@ -107,6 +119,8 @@ private:
 	pthread_rwlock_t update_lock;
 	//just for debug a block of code
 	mutex debug_lock;
+	// for getFinalResult
+	mutex getFinalResult_lock;
 
 	VSTree* vstree;
 	KVstore* kvstore;
@@ -129,6 +143,10 @@ private:
 
 	//pre2num mapping
 	TYPE_TRIPLE_NUM* pre2num;
+	//pre2subnum mapping
+	TYPE_TRIPLE_NUM* pre2sub;
+	//pre2objnum mapping
+	TYPE_TRIPLE_NUM* pre2obj;
 	//valid: check from minNumPID to maxNumPID
 	TYPE_PREDICATE_ID maxNumPID, minNumPID;
 	void setPreMap();
@@ -143,7 +161,7 @@ private:
 
 	QueryCache *query_cache;
 
-	Trie *trie;
+	//Trie *trie;
 
 	void setStringBuffer();
 	void warmUp();

@@ -424,6 +424,7 @@ public:
 	static bool spo_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);
 	static bool ops_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);
 	static bool pso_cmp_idtuple(const ID_TUPLE& a, const ID_TUPLE& b);
+	static bool equal(const ID_TUPLE& a, const ID_TUPLE& b);
 
 	static std::string tmp_path;
 	// this are for debugging

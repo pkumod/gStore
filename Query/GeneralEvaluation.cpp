@@ -10,8 +10,74 @@
 
 using namespace std;
 
-void
-GeneralEvaluation::setStringIndexPointer(StringIndex* _tmpsi)
+void *preread_from_index(void *argv)
+{
+    vector<StringIndexFile*> * indexfile = (vector<StringIndexFile*> *)*(long*)argv;
+    ResultSet *ret_result = (ResultSet*)*((long*)argv + 1);
+    vector<int>* proj2temp = (vector<int>*)*((long*)argv + 2);
+    int id_cols = *((long*)argv + 3);
+    TempResult* result0 = (TempResult*)*((long*)argv + 4);
+    vector<bool>* isel = (vector<bool>*)*((long*)argv + 5);
+    StringIndexFile* 	entity = (*indexfile)[0];
+    StringIndexFile* 	literal = (*indexfile)[1];
+    StringIndexFile* 	predicate = (*indexfile)[2];
+    unsigned total = ret_result->ansNum;
+    int var_num = ret_result->select_var_num;
+    unsigned thelta = total / 4096;
+    char tmp;
+    char *entityc = entity->Mmap;
+    char *literalc = literal->Mmap;
+    char *prec = predicate->Mmap;
+    for (unsigned i = 0; i < total; i++)
+    {
+        for (int j = 0; j < var_num; j++)
+        {
+            int k = (*proj2temp)[j];
+            long offset = -1;
+            if (k != -1)
+            {
+                if (k < id_cols)
+                {
+                    unsigned ans_id = result0->result[i].id[k];
+                    if (ans_id != INVALID)
+                    {
+                        if ((*isel)[k])
+                        {
+                            if (ans_id < Util::LITERAL_FIRST_ID)
+                            {
+                                offset = entity->GetOffsetbyID(ans_id);
+                                if (offset != -1)
+                                {
+                                    tmp = entityc[offset];
+                                }
+                            }
+                            else
+                            {
+                                offset = literal->GetOffsetbyID(ans_id - Util::LITERAL_FIRST_ID);
+                                if (offset != -1)
+                                {
+                                    tmp = literalc[offset];
+                                }
+                            }
+                        }
+                        else
+                        {
+                            offset = predicate->GetOffsetbyID(ans_id);
+                            if (offset != -1)
+                            {
+                                tmp = prec[offset];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
+void GeneralEvaluation::setStringIndexPointer(StringIndex* _tmpsi)
 {
     this->stringindex = _tmpsi;
 }
@@ -62,7 +128,8 @@ bool GeneralEvaluation::doQuery()
         return false;
     }
 
-    this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num, this->limitID_predicate, this->limitID_literal, this->limitID_entity);
+    this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num, this->pre2sub, this->pre2obj,
+        this->limitID_predicate, this->limitID_literal, this->limitID_entity);
     if (this->query_tree.checkWellDesigned())
     {
         printf("=================\n");
@@ -1232,7 +1299,6 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
 void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 {
-
     if (this->temp_result == NULL)
         return;
 
@@ -1356,7 +1422,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
                             {
                                 if (proj2temp[i] < result0_id_cols)
                                 {
-                                    set<int> count_set;
+                                    unordered_set<int> count_set;
                                     for (int j = begin; j <= end; j++)
                                         if (result0.result[j].id[proj2temp[i]] != INVALID)
                                             count_set.insert(result0.result[j].id[proj2temp[i]]);
@@ -1364,7 +1430,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
                                 }
                                 else
                                 {
-                                    set<string> count_set;
+                                    unordered_set<string> count_set;
                                     for (int j = begin; j <= end; j++)
                                         if (result0.result[j].str[proj2temp[i] - result0_id_cols].length() > 0)
                                             count_set.insert(result0.result[j].str[proj2temp[i] - result0_id_cols]);
@@ -1495,20 +1561,22 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
         if (!ret_result.checkUseStream())
         {
-
             //pthread_t tidp;
             //long arg[6];
             vector<StringIndexFile* > a = this->stringindex->get_three_StringIndexFile();
-            /*arg[0] = (long)&a;
+            /*
+            arg[0] = (long)&a;
             arg[1] = (long)&ret_result;
             arg[2] = (long)&proj2temp;
             arg[3] = (long)id_cols;
             arg[4] = (long)&result0;
             arg[5] = (long)&isel;
-            pthread_create(&tidp, NULL, &preread_from_index, arg);*/
+            pthread_create(&tidp, NULL, &preread_from_index, arg);
+            */
 
             unsigned retAnsNum = ret_result.ansNum;
             unsigned selectVar = ret_result.select_var_num;
+
             /*
             int counterEntity = 0;
             int counterLiteral = 0;
@@ -1546,7 +1614,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
             }
             a[0]->request_reserve(counterEntity);
             a[1]->request_reserve(counterLiteral);
-            a[2]->request_reserve(counterPredicate);*/
+            a[2]->request_reserve(counterPredicate);
+            */
 
             ret_result.delete_another_way = 1;
             string *t = new string[retAnsNum*selectVar];
@@ -1556,7 +1625,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
             a[0]->set_string_base(t);
             a[1]->set_string_base(t);
             a[2]->set_string_base(t);
-
 
             for (int j = 0; j < selectVar; j++)
             {
@@ -1573,9 +1641,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
                                 if (ans_id != INVALID)
                                 {
                                     if (ans_id < Util::LITERAL_FIRST_ID)
-                                        a[0]->addRequest(ans_id, i*selectVar + j);
+                                        a[0]->addRequest(ans_id, i * selectVar + j);
                                     else
-                                        a[1]->addRequest(ans_id - Util::LITERAL_FIRST_ID, i*selectVar + j);
+                                        a[1]->addRequest(ans_id - Util::LITERAL_FIRST_ID, i * selectVar + j);
                                 }
                             }
                         }
@@ -1585,7 +1653,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
                             {
                                 unsigned ans_id = result0.result[i].id[k];
                                 if (ans_id != INVALID)
-                                    a[2]->addRequest(ans_id, i*selectVar + j);
+                                    a[2]->addRequest(ans_id, i * selectVar + j);
                             }
                         }
                     }
@@ -1630,7 +1698,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
             ret_result.resetStream();
         }
     }
-
     else if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
     {
         ret_result.select_var_num = 1;

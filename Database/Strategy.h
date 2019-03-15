@@ -22,17 +22,23 @@ class Strategy
 {
 public:
 	Strategy();
-	Strategy(KVstore*, VSTree*, TYPE_TRIPLE_NUM*, TYPE_PREDICATE_ID, TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID);
+	    	// if there exists a variable with limited matches in the query, then skip the filter of other
+	    	// variables as soon as possible
+	Strategy(KVstore*, VSTree*, TYPE_TRIPLE_NUM*, TYPE_TRIPLE_NUM*,TYPE_TRIPLE_NUM*, TYPE_PREDICATE_ID, 
+		TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID);
 	~Strategy();
 	//select efficient strategy to do the sparql query
 	bool handle(SPARQLquery&);
-	bool pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_NUM* pre2num, bool* dealed_triple);
+	bool pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_NUM* pre2num,
+		TYPE_TRIPLE_NUM* pre2sub, TYPE_TRIPLE_NUM* pre2obj, bool* dealed_triple);
 
 private:
 	int method;
 	KVstore* kvstore;
 	VSTree* vstree;
 	TYPE_TRIPLE_NUM* pre2num;
+	TYPE_TRIPLE_NUM* pre2sub;
+	TYPE_TRIPLE_NUM* pre2obj;
 	TYPE_PREDICATE_ID limitID_predicate;
 	TYPE_ENTITY_LITERAL_ID limitID_literal;
 	TYPE_ENTITY_LITERAL_ID limitID_entity;
