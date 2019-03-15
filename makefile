@@ -546,6 +546,7 @@ clean:
 	$(MAKE) -C api/socket/cpp/example clean
 	$(MAKE) -C api/socket/java/src clean
 	$(MAKE) -C api/socket/java/example clean
+	$(MAKE) -C api/http/cpp clean
 	$(MAKE) -C api/http/cpp/src clean
 	$(MAKE) -C api/http/cpp/example clean
 	$(MAKE) -C api/http/java/src clean
