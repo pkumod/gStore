@@ -178,5 +178,8 @@ main(int argc, char * argv[])
 			cout << msg << endl;
 	}
 	cout << "insert successfully" << endl;
+
+	cout<<endl<<endl<<endl<< "import RDF file to database done." << endl;
 	return 0;
 }
+
