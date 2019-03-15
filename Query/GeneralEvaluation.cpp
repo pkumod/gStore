@@ -1232,11 +1232,14 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
 void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 {
+
     if (this->temp_result == NULL)
         return;
 
     if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
     {
+        long t0 = Util::get_cur_time();
+
         if (this->temp_result->results.empty())
         {
             this->temp_result->results.push_back(TempResult());
@@ -1353,7 +1356,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
                             {
                                 if (proj2temp[i] < result0_id_cols)
                                 {
-                                    unordered_set<unsigned> count_set;
+                                    set<int> count_set;
                                     for (int j = begin; j <= end; j++)
                                         if (result0.result[j].id[proj2temp[i]] != INVALID)
                                             count_set.insert(result0.result[j].id[proj2temp[i]]);
@@ -1361,7 +1364,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
                                 }
                                 else
                                 {
-                                    unordered_set<string> count_set;
+                                    set<string> count_set;
                                     for (int j = begin; j <= end; j++)
                                         if (result0.result[j].str[proj2temp[i] - result0_id_cols].length() > 0)
                                             count_set.insert(result0.result[j].str[proj2temp[i] - result0_id_cols]);
@@ -1492,32 +1495,110 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
         if (!ret_result.checkUseStream())
         {
-            for (unsigned i = 0; i < ret_result.ansNum; i++)
-            {
-                ret_result.answer[i] = new string[ret_result.select_var_num];
 
-                for (int j = 0; j < ret_result.select_var_num; j++)
+            //pthread_t tidp;
+            //long arg[6];
+            vector<StringIndexFile* > a = this->stringindex->get_three_StringIndexFile();
+            /*arg[0] = (long)&a;
+            arg[1] = (long)&ret_result;
+            arg[2] = (long)&proj2temp;
+            arg[3] = (long)id_cols;
+            arg[4] = (long)&result0;
+            arg[5] = (long)&isel;
+            pthread_create(&tidp, NULL, &preread_from_index, arg);*/
+
+            unsigned retAnsNum = ret_result.ansNum;
+            unsigned selectVar = ret_result.select_var_num;
+            /*
+            int counterEntity = 0;
+            int counterLiteral = 0;
+            int counterPredicate = 0;
+            for (int j = 0; j < selectVar; j++)
+            {
+                int k = proj2temp[j];
+                if (k != -1)
                 {
-                    int k = proj2temp[j];
-                    if (k != -1)
+                    if (k < id_cols)
                     {
-                        if (k < id_cols)
+                        if (isel[k])
                         {
-                            unsigned ans_id = result0.result[i].id[k];
-                            if (ans_id != INVALID)
+                            for (unsigned i = 0; i < retAnsNum; i++)
                             {
-                                this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], isel[k]);
+                                unsigned ans_id = result0.result[i].id[k];
+                                if (ans_id == INVALID)
+                                    continue;
+                                if (ans_id < Util::LITERAL_FIRST_ID)
+                                    counterEntity++;
+                                else
+                                    counterLiteral++;
+                            }
+                        }
+                        else
+                            for (unsigned i = 0; i < retAnsNum; i++)
+                            {
+                                unsigned ans_id = result0.result[i].id[k];
+                                if (ans_id == INVALID)
+                                    continue;
+                                counterPredicate++;
+                            }
+                    }
+                }
+            }
+            a[0]->request_reserve(counterEntity);
+            a[1]->request_reserve(counterLiteral);
+            a[2]->request_reserve(counterPredicate);*/
+
+            ret_result.delete_another_way = 1;
+            string *t = new string[retAnsNum*selectVar];
+            for (unsigned int i = 0, off = 0; i < retAnsNum; i++, off += selectVar)
+                ret_result.answer[i] = t + off;
+
+            a[0]->set_string_base(t);
+            a[1]->set_string_base(t);
+            a[2]->set_string_base(t);
+
+
+            for (int j = 0; j < selectVar; j++)
+            {
+                int k = proj2temp[j];
+                if (k != -1)
+                {
+                    if (k < id_cols)
+                    {
+                        if (isel[k])
+                        {
+                            for (unsigned i = 0; i < retAnsNum; i++)
+                            {
+                                unsigned ans_id = result0.result[i].id[k];
+                                if (ans_id != INVALID)
+                                {
+                                    if (ans_id < Util::LITERAL_FIRST_ID)
+                                        a[0]->addRequest(ans_id, i*selectVar + j);
+                                    else
+                                        a[1]->addRequest(ans_id - Util::LITERAL_FIRST_ID, i*selectVar + j);
+                                }
                             }
                         }
                         else
                         {
-                            ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
+                            for (unsigned i = 0; i < retAnsNum; i++)
+                            {
+                                unsigned ans_id = result0.result[i].id[k];
+                                if (ans_id != INVALID)
+                                    a[2]->addRequest(ans_id, i*selectVar + j);
+                            }
                         }
+                    }
+                    else
+                    {
+                        for (unsigned i = 0; i < retAnsNum; i++)
+                            ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
                     }
                 }
             }
-
-            this->stringindex->trySequenceAccess();
+            cout << "in getFinal Result the first half use " << Util::get_cur_time() - t0 << "  ms" << endl;
+            //pthread_join(tidp, NULL);
+            this->stringindex->trySequenceAccess(true, -1);
         }
         else
         {
@@ -1530,6 +1611,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
                         if (k < id_cols)
                         {
                             string ans_str;
+
                             unsigned ans_id = result0.result[i].id[k];
                             if (ans_id != INVALID)
                             {
@@ -1548,6 +1630,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
             ret_result.resetStream();
         }
     }
+
     else if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
     {
         ret_result.select_var_num = 1;
