@@ -117,7 +117,7 @@ TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(ex
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
-	@bash scripts/init.sh
+	@${SHELL} scripts/init.sh
 
 #BETTER: use for loop to reduce the lines
 #NOTICE: g++ -MM will run error if linking failed, like Database.h/../SparlParser.h/../antlr3.h
@@ -163,10 +163,10 @@ $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/
 	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX $(openmp)
 
 $(testdir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
-	        $(CC) $(EXEFLAG) -o $(testdir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
+	$(CC) $(EXEFLAG) -o $(testdir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
 
 $(testdir)dataset_test: $(lib_antlr) $(objdir)dataset_test.o $(objfile)
-	        $(CC) $(EXEFLAG) -o $(testdir)dataset_test $(objdir)dataset_test.o $(objfile) $(library) $(openmp)
+	$(CC) $(EXEFLAG) -o $(testdir)dataset_test $(objdir)dataset_test.o $(objfile) $(library) $(openmp)
 #executables end
 
 
