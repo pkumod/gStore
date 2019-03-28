@@ -40,7 +40,7 @@ public class GstoreConnector {
 		String url = "http://" + this.serverIP + ":" + this.serverPort;
         StringBuffer result = new StringBuffer();
         BufferedReader in = null;
-		System.out.println("parameter: "+param);
+		//System.out.println("parameter: "+param);
 
 		try {
 			param = URLEncoder.encode(param, "UTF-8");
@@ -51,7 +51,7 @@ public class GstoreConnector {
 
         try {
             String urlNameString = url + "/" + param;
-            System.out.println("request: "+urlNameString);
+            //System.out.println("request: "+urlNameString);
             URL realUrl = new URL(urlNameString);
             // open the connection with the URL
             URLConnection connection = realUrl.openConnection();

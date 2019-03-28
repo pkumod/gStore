@@ -117,7 +117,7 @@ TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(ex
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
-	@${SHELL} scripts/init.sh
+	@bash scripts/init.sh
 
 #BETTER: use for loop to reduce the lines
 #NOTICE: g++ -MM will run error if linking failed, like Database.h/../SparlParser.h/../antlr3.h
