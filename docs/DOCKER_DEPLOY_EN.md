@@ -12,26 +12,19 @@
 
 Official doc of Docker has explained how to download and use it on common Liunx release version in details. And here is the link: [English doc](https://docs.docker.com/install/linux/docker-ce/ubuntu/), [中文文档](https://docs.docker-cn.com/engine/installation/linux/docker-ce/centos/#%E5%85%88%E5%86%B3%E6%9D%A1%E4%BB%B6)
 
-It's worth noting that the Docker with too high version may lead to some problems. Please read the precautions carefully. The current version of test environment is <u>Docker CE 17.06.1</u>
+It's worth noting that the Docker with too high version may lead to some problems. Please read the precautions carefully. The current version of test environment is <u>Docker CE 18.06.1</u>
 
 ## 0x01. Build the mirror via Dockerfile
 
-After having the correct Docker environment and network, use `git clone` to download the project firstly.  After inputting command `docker build -t gstore` it's available to start building. In the default case, it will use the Dockerfile in the root directory. More specific explanation has been written in the Dockerfile.
+After having the correct Docker environment and network, use `git clone` to download the project firstly. Then enter the root directory and input command `make pre ` to unzip some toolkits.  After inputting command `docker build -t gstore` it's available to start building. In the default case, it will use the Dockerfile in the root directory. More specific explanation has been written in the Dockerfile.
 
-After the building, using `docker run -it gstore` directly to enter the container and execute other operations. 
+After the building, using `docker run -p 9000:80 -it gstore` directly to start and enter the container and execute other operations. 
 
-## 0x02. pulling the mirror directly to run
+## 0x02. pulling the mirror directly to run(recommendation)
 
-Instead of downloading project or building on your own, input `docker pull suxunbin/auto_gstore:latest` to pull the mirror which has been automatically built well on the docker hub.  Then input `docker run -it suxunbin/auto_gstore:latest` to enter the container and execute other operations. 
+Instead of downloading project or building on your own, input `docker pull pkumod/gstore:latest` to pull the mirror which has been automatically built well on the docker hub.  Then input `docker run -p 9000:80 -it pkumod/gstore:latest` to start and enter the container and execute other operations. 
 
-## 0x03. Problems that exist
-
-Owing to the uncertain influence accompanying the containerization, including but not limited to some problems about network, lock, caching, rights and so on, it's quite difficult to locate the problem when debugging. It has been known that the following problems may exist: (The host is Centos 7.4)
-
-1. If add the environment `ENV CC="ccache g++"` in the process of Dockerfile building, it will lead to compile error. The reason is still unknown and it may affect the mirror cache layer, which results in repeated errors in the later process of building.
-2. The case of shutdown automatically as soon as its reboot may occur after starting the container via docker run.
-
-## 0x04. Follow-up
+## 0x03. Follow-up
 
 ### A. Performance testing
 
