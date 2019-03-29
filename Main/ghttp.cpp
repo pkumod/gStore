@@ -109,6 +109,7 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 
 bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
+void signalHandler(int signum);
 //=============================================================================
 
 //TODO: use locak to protect logs when running in multithreading environment
@@ -117,6 +118,7 @@ string queryLog = "logs/endpoint/query.log";
 mutex query_log_lock;
 string system_password;
 string NAMELOG_PATH  = "name.log";
+int port;
 
 //pthread_rwlock_t database_load_lock;
 
@@ -753,6 +755,7 @@ int initialize(int argc, char *argv[])
 			return -1;
 		}
 	}
+	port = server.config.port;
 	cout << "server port: " << server.config.port << " database name: " << db_name << endl;
 	//USAGE: then user can use http://localhost:port/ to visit the server or coding with RESTful API
     //HTTP-server at port 9000 using 1 thread
@@ -1060,7 +1063,7 @@ int initialize(int argc, char *argv[])
     server.resource["^/%3[F|f]operation%3[D|d]stop%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		bool flag = stop_handler(server, response, request);
-		if(flag)
+		if (flag)
 			exit(0);
     };
     server.resource["^/?operation=stop&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
@@ -1130,6 +1133,8 @@ int initialize(int argc, char *argv[])
     };
 
     thread server_thread([&server](){
+			//handle the Ctrl+C signal
+		    signal(SIGINT, signalHandler);
             //Start server
             server.start();
 			cout<<"check: server started"<<endl;
@@ -1158,6 +1163,55 @@ int initialize(int argc, char *argv[])
 	pthread_rwlock_destroy(&users_map_lock);
 
     return 0;
+}
+
+void signalHandler(int signum)
+{
+	pthread_rwlock_rdlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter;
+	for (iter = databases.begin(); iter != databases.end(); iter++)
+	{
+		string database_name = iter->first;
+		if (database_name == "system")
+			continue;
+		Database *current_database = iter->second;
+		pthread_rwlock_rdlock(&already_build_map_lock);
+		std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(database_name);
+		pthread_rwlock_unlock(&already_build_map_lock);
+		if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+		{
+			string error = "Unable to checkpoint due to loss of lock";
+			cout << error << endl;
+			pthread_rwlock_unlock(&databases_map_lock);
+			//cout << "Stop server failed." << endl;
+			exit(signum);
+		}
+		current_database->save();
+		delete current_database;
+		current_database = NULL;
+		//cout << "Database " << database_name << " saved successfully." << endl;
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	}
+	system_database->save();
+	delete system_database;
+	system_database = NULL;
+	//cout << "Database system saved successfully." << endl;
+	pthread_rwlock_unlock(&databases_map_lock);
+
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build;
+	for (it_already_build = already_build.begin(); it_already_build != already_build.end(); it_already_build++)
+	{
+		struct DBInfo *temp_db = it_already_build->second;
+		delete temp_db;
+		temp_db = NULL;
+	}
+	pthread_rwlock_unlock(&already_build_map_lock);
+
+	string cmd = "rm system.db/password" + Util::int2string(port) + ".txt";
+	system(cmd.c_str());
+	//cout << "Server stopped." << endl;
+	exit(signum);
 }
 
 //QUERY: can server.send() in default_resource_send run in parallism?

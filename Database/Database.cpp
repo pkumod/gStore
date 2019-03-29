@@ -1384,7 +1384,7 @@ bool Database::save()
 	this->stringindex->flush();
 	this->clear_update_log();
 
-	cerr<<"database checkpoint: "<<this->getName()<<endl;
+	//cerr<<"database checkpoint: "<<this->getName()<<endl;
 
 	return true;
 }
