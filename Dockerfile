@@ -13,6 +13,7 @@ FROM registry.docker-cn.com/library/gcc:8
 RUN apt-get update && apt-get install -y --no-install-recommends realpath \
          ccache \
          vim \
+	 lsof \
          openjdk-8-jdk \
          libreadline-dev \
          libboost-all-dev \
