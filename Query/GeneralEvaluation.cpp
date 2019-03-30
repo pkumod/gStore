@@ -136,15 +136,6 @@ bool GeneralEvaluation::doQuery()
         printf("||well-designed||\n");
         printf("=================\n");
 
-        if (this->filterRewriting(this->query_tree.getGroupPattern()))
-        {
-            printf("====================\n");
-            printf("||filter-rewriting||\n");
-            printf("====================\n");
-            this->query_tree.getGroupPattern().getVarset();
-            this->query_tree.print();
-        }
-
         this->rewriting_evaluation_stack.clear();
         this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
         this->rewriting_evaluation_stack.back().group_pattern = this->query_tree.getGroupPattern();
@@ -164,15 +155,20 @@ bool GeneralEvaluation::doQuery()
     return true;
 }
 
-bool GeneralEvaluation::filterRewriting(QueryTree::GroupPattern &group_pattern)
+bool GeneralEvaluation::filterRewriting(QueryTree::GroupPattern &group_pattern, vector<QueryTree::GroupPattern> &union_group_pattern)
 {
-    bool res = false;
+    bool result = false;
 
-    vector<bool> keep(group_pattern.sub_group_pattern.size(), true);
-    QueryTree::GroupPattern new_group_pattern;
+    group_pattern.getVarset();
+
+    Varset triple_varset;
+    for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
+        if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+            triple_varset += group_pattern.sub_group_pattern[i].pattern.varset;
 
     for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
-        if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+        if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type &&
+            group_pattern.sub_group_pattern[i].filter.varset.belongTo(triple_varset))
         {
             QueryTree::GroupPattern::FilterTree &filter = group_pattern.sub_group_pattern[i].filter;
 
@@ -180,7 +176,6 @@ bool GeneralEvaluation::filterRewriting(QueryTree::GroupPattern &group_pattern)
             bool is_eq_dis_nf = dfsDisjunctiveNormalForm(filter.root, dis_con_eq);
 
             if (is_eq_dis_nf)
-            {
                 for (auto &con : dis_con_eq)
                     for (auto &eq : con)
                     {
@@ -189,10 +184,8 @@ bool GeneralEvaluation::filterRewriting(QueryTree::GroupPattern &group_pattern)
                         if (eq.first[0] != '?' || eq.second[0] == '?')
                             is_eq_dis_nf = false;
                     }
-            }
 
             if (is_eq_dis_nf)
-            {
                 for (auto &con : dis_con_eq)
                 {
                     unordered_map<string, string> varmap;
@@ -203,127 +196,98 @@ bool GeneralEvaluation::filterRewriting(QueryTree::GroupPattern &group_pattern)
                         else if (varmap[eq.first] != eq.second)
                             is_eq_dis_nf = false;
                 }
-            }
 
-            unordered_map<string, bool> occur_var;
+            if (is_eq_dis_nf)
+                for (int j = 0; j < (int)dis_con_eq.size(); j++)
+                    for (int k = j + 1; k < (int)dis_con_eq.size(); k++)
+                    {
+                        unordered_map<string, string> var_map;
+                        bool compatible = true;
+
+                        for (auto it : dis_con_eq[j])
+                            if (var_map.count(it.first) == 0)
+                                var_map[it.first] = it.second;
+
+                        for (auto it : dis_con_eq[k])
+                            if (var_map.count(it.first) == 0)
+                                var_map[it.first] = it.second;
+                            else if (var_map[it.first] != it.second)
+                                compatible = false;
+
+                        if (compatible)
+                            is_eq_dis_nf = false;
+                    }
 
             if (is_eq_dis_nf)
             {
-                for (auto &v : dis_con_eq[0])
-                    occur_var[v.first] = false;
+                result = true;
 
-                for (int j = 1; j < (int)dis_con_eq.size(); j++)
-                {
-                    for (auto &it : occur_var)
-                        it.second = false;
-
-                    for (auto &eq : dis_con_eq[j])
-                        if (occur_var.count(eq.first) == 0)
-                            is_eq_dis_nf = false;
-                        else
-                            occur_var[eq.first] = true;
-
-                    for (auto &it : occur_var)
-                        if (!it.second)
-                            is_eq_dis_nf = false;
-                }
-            }
-
-            if (is_eq_dis_nf)
-            {
-                keep[i] = false;
-                res = true;
-
-                if (dis_con_eq.size() > 1)
-                    new_group_pattern.addOneGroupUnion();
+                group_pattern.print(0);
+                printf("==(filter-rewriting)==>\n");
 
                 for (int j = 0; j < (int)dis_con_eq.size(); j++)
                 {
-                    if (dis_con_eq.size() > 1)
-                        new_group_pattern.addOneUnion();
-
-                    QueryTree::GroupPattern &target_group_pattern = (dis_con_eq.size() == 1 ? new_group_pattern : new_group_pattern.getLastUnion());
+                    QueryTree::GroupPattern new_group_pattern;
 
                     for (int k = 0; k < (int)group_pattern.sub_group_pattern.size(); k++)
-                    {
                         if (group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
                         {
-                            QueryTree::GroupPattern::Pattern &pattern = group_pattern.sub_group_pattern[k].pattern;
-                            if ((pattern.subject.isVariable() && occur_var.count(pattern.subject.getValue()) > 0) ||
-                                (pattern.predicate.isVariable() && occur_var.count(pattern.predicate.getValue()) > 0) ||
-                                (pattern.object.isVariable() && occur_var.count(pattern.object.getValue()) > 0))
-                            {
-                                QueryTree::GroupPattern::Pattern new_pattern = pattern;
-                                int var_remain = (int)new_pattern.subject.isVariable() + (int)new_pattern.predicate.isVariable() + (int)new_pattern.object.isVariable();
-                                bool has_changed = false;
-                                //TODO var_remain == 1
+                            const QueryTree::GroupPattern::Pattern &pattern = group_pattern.sub_group_pattern[k].pattern;
+                            QueryTree::GroupPattern::Pattern new_pattern = pattern;
+                            int var_remain = (int)new_pattern.subject.isVariable() + (int)new_pattern.predicate.isVariable() + (int)new_pattern.object.isVariable();
+                            //TODO var_remain == 1
 
-                                if (new_pattern.subject.isVariable())
-                                    for (auto &eq : dis_con_eq[j])
-                                        if (new_pattern.subject.getValue() == eq.first && var_remain > 1)
-                                        {
-                                            new_pattern.subject.setValue(eq.second);
-                                            var_remain--;
-                                            has_changed = true;
-                                            break;
-                                        }
+                            if (new_pattern.subject.isVariable())
+                                for (auto &eq : dis_con_eq[j])
+                                    if (new_pattern.subject.getValue() == eq.first && var_remain > 1)
+                                    {
+                                        new_pattern.subject.setValue(eq.second);
+                                        var_remain--;
+                                        break;
+                                    }
 
-                                if (new_pattern.predicate.isVariable())
-                                    for (auto &eq : dis_con_eq[j])
-                                        if (new_pattern.predicate.getValue() == eq.first && var_remain > 1)
-                                        {
-                                            new_pattern.predicate.setValue(eq.second);
-                                            var_remain--;
-                                            has_changed = true;
-                                            break;
-                                        }
+                            if (new_pattern.predicate.isVariable())
+                                for (auto &eq : dis_con_eq[j])
+                                    if (new_pattern.predicate.getValue() == eq.first && var_remain > 1)
+                                    {
+                                        new_pattern.predicate.setValue(eq.second);
+                                        var_remain--;
+                                        break;
+                                    }
 
-                                if (new_pattern.object.isVariable())
-                                    for (auto &eq : dis_con_eq[j])
-                                        if (new_pattern.object.getValue() == eq.first && var_remain > 1)
-                                        {
-                                            new_pattern.object.setValue(eq.second);
-                                            var_remain--;
-                                            has_changed = true;
-                                            break;
-                                        }
+                            if (new_pattern.object.isVariable())
+                                for (auto &eq : dis_con_eq[j])
+                                    if (new_pattern.object.getValue() == eq.first && var_remain > 1)
+                                    {
+                                        new_pattern.object.setValue(eq.second);
+                                        var_remain--;
+                                        break;
+                                    }
 
-                                if (has_changed)
-                                {
-                                    keep[k] = false;
-                                    target_group_pattern.addOnePattern(new_pattern);
-                                }
-                            }
+                            new_group_pattern.addOnePattern(new_pattern);
                         }
-                    }
 
                     for (auto &eq : dis_con_eq[j])
                     {
-                        target_group_pattern.addOneBind();
-                        target_group_pattern.getLastBind() = QueryTree::GroupPattern::Bind(eq.second, eq.first);
+                        new_group_pattern.addOneBind();
+                        new_group_pattern.getLastBind() = QueryTree::GroupPattern::Bind(eq.second, eq.first);
                     }
+
+                    for (int k = 0; k < (int)group_pattern.sub_group_pattern.size(); k++)
+                        if (k != i && group_pattern.sub_group_pattern[k].type != QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+                        {
+                            new_group_pattern.sub_group_pattern.push_back(group_pattern.sub_group_pattern[k]);
+                        }
+
+                    new_group_pattern.print(0);
+                    union_group_pattern.push_back(new_group_pattern);
                 }
+
+                break;
             }
         }
 
-    for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
-        if (keep[i])
-            new_group_pattern.sub_group_pattern.push_back(group_pattern.sub_group_pattern[i]);
-
-    group_pattern.sub_group_pattern = new_group_pattern.sub_group_pattern;
-
-    for (auto &t : group_pattern.sub_group_pattern)
-        if (t.type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
-        {
-            for (auto &u : t.unions)
-                res |= filterRewriting(u);
-        }
-        else if (t.type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
-        {
-            res |= filterRewriting(t.optional);
-        }
-
-    return res;
+    return result;
 }
 
 bool GeneralEvaluation::dfsDisjunctiveNormalForm(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter_node,
@@ -331,10 +295,10 @@ bool GeneralEvaluation::dfsDisjunctiveNormalForm(QueryTree::GroupPattern::Filter
 {
     if (filter_node.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterOperationType::Or_type)
     {
-        bool res = true;
+        bool result = true;
         for (auto &c : filter_node.child)
-            res &= dfsDisjunctiveNormalForm(c.node, dis_con_eq);
-        return res;
+            result &= dfsDisjunctiveNormalForm(c.node, dis_con_eq);
+        return result;
     }
     else if (filter_node.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterOperationType::And_type ||
         filter_node.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterOperationType::Equal_type)
@@ -351,10 +315,10 @@ bool GeneralEvaluation::dfsConjunctiveNormalForm(QueryTree::GroupPattern::Filter
 {
     if (filter_node.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterOperationType::And_type)
     {
-        bool res = true;
+        bool result = true;
         for (auto &c : filter_node.child)
-            res &= dfsConjunctiveNormalForm(c.node, dis_con_eq);
-        return res;
+            result &= dfsConjunctiveNormalForm(c.node, dis_con_eq);
+        return result;
     }
     else if (filter_node.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterOperationType::Equal_type)
     {
@@ -677,26 +641,42 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 {
     deque<QueryTree::GroupPattern> queue;
     queue.push_back(this->rewriting_evaluation_stack[dep].group_pattern);
-    vector<QueryTree::GroupPattern> group_pattern_union;
+    vector<QueryTree::GroupPattern> union_group_pattern;
 
     while (!queue.empty())
     {
         if (!this->expanseFirstOuterUnionGroupPattern(queue.front(), queue))
-            group_pattern_union.push_back(queue.front());
+            union_group_pattern.push_back(queue.front());
         queue.pop_front();
     }
 
-    TempResultSet *result = new TempResultSet();
+    while (true)
+    {
+        vector<QueryTree::GroupPattern> new_union_group_pattern;
+        bool has_rewrited = false;
 
+        for (auto u : union_group_pattern)
+            if (!filterRewriting(u, new_union_group_pattern))
+                new_union_group_pattern.push_back(u);
+            else
+                has_rewrited = true;
+
+        union_group_pattern = new_union_group_pattern;
+        if (!has_rewrited)
+            break;
+    }
+
+    TempResultSet *result = new TempResultSet();
+    /*
     vector<TempResultSet*> query_batch_result;
     if (dep == 0)
     {
-        vector<QueryTree::GroupPattern> query_batch(group_pattern_union.size());
-        query_batch_result.resize(group_pattern_union.size(), NULL);
+        vector<QueryTree::GroupPattern> query_batch(union_group_pattern.size());
+        query_batch_result.resize(union_group_pattern.size(), NULL);
 
-        for (int i = 0; i < (int)group_pattern_union.size(); i++)
+        for (int i = 0; i < (int)union_group_pattern.size(); i++)
         {
-            for (auto &t : group_pattern_union[i].sub_group_pattern)
+            for (auto &t : union_group_pattern[i].sub_group_pattern)
                 if (t.type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
                     query_batch[i].addOnePattern(t.pattern);
 
@@ -706,10 +686,11 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
         MultiQueryOptimization multi_query_optimization(this->tp_selectivity, this->kvstore, this->strategy, this->stringindex);
         multi_query_optimization.evaluate(query_batch, query_batch_result);
     }
+    */
 
-    for (int i = 0; i < (int)group_pattern_union.size(); i++)
+    for (int i = 0; i < (int)union_group_pattern.size(); i++)
     {
-        this->rewriting_evaluation_stack[dep].group_pattern = group_pattern_union[i];
+        this->rewriting_evaluation_stack[dep].group_pattern = union_group_pattern[i];
         QueryTree::GroupPattern *group_pattern = &this->rewriting_evaluation_stack[dep].group_pattern;
         group_pattern->getVarset();
 
@@ -723,15 +704,17 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
         TempResultSet *sub_result;
 
+        /*
         if (dep == 0)
         {
             sub_result = query_batch_result[i];
             query_batch_result[i] = NULL;
         }
         else
-            sub_result = new TempResultSet();
+        */
+        sub_result = new TempResultSet();
 
-        if (dep > 0)
+        //if (dep > 0)
         {
             QueryTree::GroupPattern triple_pattern;
             int group_pattern_triple_num = 0;
@@ -989,12 +972,31 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
                         {
                             vector<TempResult::ResultPair> &result = last_result->results[t].result;
 
-                            int pos = Varset(var).mapTo(last_result->results[t].id_varset)[0];
-                            if (pos != -1)
+                            if (last_result->results[t].id_varset.findVar(var))
                             {
+                                int pos = Varset(var).mapTo(last_result->results[t].id_varset)[0];
                                 for (int l = 0; l < (int)result.size(); l++)
                                     result_set.insert(result[l].id[pos]);
                                 result_set_valid = true;
+                            }
+                            else if (last_result->results[t].str_varset.findVar(var))
+                            {
+                                int pos = Varset(var).mapTo(last_result->results[t].str_varset)[0];
+
+                                if (this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.findVar(var))
+                                {
+                                    pair<string, int> str2id_cache("", -1);
+                                    for (int l = 0; l < (int)result.size(); l++)
+                                    {
+                                        if (result[l].str[pos] != str2id_cache.first)
+                                        {
+                                            str2id_cache.first = result[l].str[pos];
+                                            str2id_cache.second = this->kvstore->getIDByString(result[l].str[pos]);
+                                        }
+                                        result_set.insert(str2id_cache.second);
+                                    }
+                                    result_set_valid = true;
+                                }
                             }
                         }
 

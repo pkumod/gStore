@@ -67,7 +67,7 @@ class GeneralEvaluation
 		};
 		std::vector<EvaluationStackStruct> rewriting_evaluation_stack;
 
-        bool filterRewriting(QueryTree::GroupPattern &group_pattern);
+        bool filterRewriting(QueryTree::GroupPattern &group_pattern, std::vector<QueryTree::GroupPattern> &union_group_pattern);
         bool dfsDisjunctiveNormalForm(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter_node, 
             std::vector<std::vector<std::pair<std::string, std::string> > > &dis_con_eq);
         bool dfsConjunctiveNormalForm(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter_node, 
