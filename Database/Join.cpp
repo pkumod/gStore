@@ -1001,6 +1001,58 @@ Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* i
 	}
 }
 
+// This function is used by join_two to do binary search. 
+void calc(unsigned *head, unsigned *arr, unsigned join_width, unsigned table_length,
+	unsigned item_num, unsigned *can_list, unsigned can_list_size)
+{
+	unsigned ans = 0;
+	for (unsigned i = 0; i < table_length; i++)
+		for (unsigned idx = head[i]; idx < head[i + 1]; idx++)
+		{
+			unsigned key = arr[idx];
+			unsigned l, r, m;
+			bool found = true;
+			for (unsigned j = 1; j < join_width; j++)
+			{
+				l = head[j*table_length + i];
+				r = head[j*table_length + i + 1];
+				while (l + 1 < r)
+				{
+					m = (l + r) / 2;
+					if (arr[m] <= key)
+						l = m;
+					else
+						r = m;
+				}
+				if ((l == r) || (arr[l] != key))
+				{
+					found = false;
+					break;
+				}
+			}
+			if (found && can_list != NULL)
+			{
+				l = 0;
+				r = can_list_size;
+				while (l + 1 < r)
+				{
+					m = (l + r) / 2;
+					if (can_list[m] <= key)
+						l = m;
+					else
+						r = m;
+				}
+				if ((l == r) || (can_list[l] != key))
+				{
+					found = false;
+				}
+			}
+			if (!found)
+				arr[idx] = -1;
+			else
+				ans++;
+		}
+}
 //TODO: multiple lists intersect, how about sort and intersect from small to big?
 //but this need to generate all first, I think sort by pre2num if better!
 //
@@ -1015,224 +1067,178 @@ Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* i
 //which causes too many redunt linking operations.
 //However, the case is really rare in our test(the reason may be that the web graph is always very sparse)
 //If we add a buffer for this case, will cause worse performance
+
 bool
-Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_list_size, int _id, bool _is_ready)
+Join::join_two(vector< vector<int> >& _edges, IDList& _can_list,
+	unsigned _can_list_size, int _id, bool _is_ready)
 {
-	//if(_can_list_size == 0 && !_is_literal)
-	if(_can_list_size == 0 && _is_ready)
-	{
-		return false;   //empty result
-	}
-	bool found = false;
-	bool if_new_start = false; //the first to add to end in while
-	for(TableIterator it0 = this->current_table.begin(); it0 != this->new_start;)
-	{
-#ifdef DEBUG_JOIN
-		if (this->new_start != this->current_table.end())
-		{
-			//printf("now the new_start is:");
-			cout << "now the new_start is:";
-			for (RecordIterator it1 = this->new_start->begin(); it1 != this->new_start->end(); ++it1)
-			{
-				//printf(" %d", *it1);
-				cout << " " << *it1;
-			}
-			//printf("\n");
-			cout << endl;
-		}
+	// the candidate list is empty and valid for the current node
+	// (i.e. current node is not a satellite)
+	unsigned *can_list = NULL;
+	if (_is_ready)
+		if (_can_list_size == 0)
+			return false;
 		else
-			//printf("new_start still in end?!\n");
-			cout << "new_start still in end?!" << endl;
-		//printf("now the record is:");
-		cout << "now the record is:";
-		for (RecordIterator it1 = it0->begin(); it1 != it0->end(); ++it1)
-		{
-			//printf(" %d", *it1);
-			cout << " " << *it1;
-		}
-		//printf("\n");
+			can_list = &_can_list[0];
+	// current table is empty, then no valid answer exists
+	if (current_table.begin() == current_table.end())
+		return false;
+#ifdef DEBUG_JOIN
+	cout << "before join_two, current table is:" << endl;
+	for (TableIterator it = current_table.begin(); it != current_table.end();
+		it++)
+	{
+		unsigned len = it->size();
+		for (unsigned i = 0; i < len; i++)
+			cout << (*it)[i] << " ";
 		cout << endl;
+	}
 #endif
-
-		int cnt = 0;
-		//update the valid id num according to restrictions by multi vars
-		//also ordered while id_list and can_list are ordered
-		//IDList valid_ans_list;
-		IDList* valid_ans_list = NULL;
-		//list<int> valid_ans_list;
-		bool matched = true;
-		//NOTICE:we can generate cans from either direction, but this way is convenient and better
-		for (RecordIterator it1 = it0->begin(); it1 != it0->end(); ++it1, ++cnt)
+	unsigned table_length = 0, row = 0;
+	unsigned table_width = current_table.begin()->size();
+	this->new_start = this->current_table.end();
+	vector<unsigned> v_id_list_len;
+	vector<unsigned*> v_id_list;
+	v_id_list_len.clear();
+	v_id_list.clear();
+	for (TableIterator it = current_table.begin(); it != current_table.end();
+		it++, row++)
+	{
+		unsigned start_pos = v_id_list_len.size();
+		for (unsigned col = 0; col < table_width; col++)
 		{
-#ifdef DEBUG_JOIN
-			//printf("cnt is: %d\n", cnt);
-			cout << "cnt is: " << cnt << endl;
-#endif
-			vector<int> edge_index = _edges[cnt];
-			if (edge_index.size() == 0)
+			unsigned ele = (*it)[col];
+			vector<int>& edge_index = _edges[col];
+			int edge_num = edge_index.size();
+			for (int i = 0; i < edge_num; i++)
 			{
-				continue;
-			}
-#ifdef DEBUG_JOIN
-			cout << "edge exists!" << endl;
-#endif
-			unsigned ele = *it1;
-			bool exist_constant_pre = false;
-			bool s2o_pre_var = false;
-			bool o2s_pre_var = false;
-			for(vector<int>::iterator it2 = edge_index.begin(); it2 != edge_index.end(); ++it2)
-			{
-				int edge_type = this->basic_query->getEdgeType(_id, *it2);
-				TYPE_PREDICATE_ID pre_id = this->basic_query->getEdgePreID(_id, *it2);
-
-				if (pre_id == -2)    //predicate var
+				int edge_type = this->basic_query->getEdgeType(_id,
+					edge_index[i]);
+				TYPE_PREDICATE_ID pre_id = this->basic_query->getEdgePreID(_id,
+					edge_index[i]);
+				unsigned *id_list;
+				unsigned id_list_len;
+				// retrieve the current list
+				if (pre_id == -1) // invalid predicate
 				{
-					if (edge_type == Util::EDGE_IN)
-					{
-						s2o_pre_var = true;
-					}
-					else
-					{
-						o2s_pre_var = true;
-					}
+					id_list = NULL;
+					id_list_len = 0;
+				}
+				else if (pre_id == -2) // arbitrary predicate (?x ?p ?y)
+				{
 #ifdef DEBUG_JOIN
 					cout << "this is a predicate var!" << endl;
 #endif
-					continue;
-				}
-				else if(pre_id >= 0)
-				{
-					if(!exist_constant_pre)
+					if (edge_type == Util::EDGE_IN) // Util::EDGE_IN
 					{
-						exist_constant_pre = true;
+#ifdef DEBUG_JOIN
+						cout << "this is an edge to our id to join!" << endl;
+#endif 
+						this->kvstore->getobjIDlistBysubID(ele, id_list,
+							id_list_len, true);
+					}
+					else //Util::EDGE_OUT
+					{
+#ifdef DEBUG_JOIN
+						cout << "this is an edge from our id to join! " << endl;
+#endif
+
+						this->kvstore->getsubIDlistByobjID(ele, id_list,
+							id_list_len, true);
 					}
 				}
-				else   //-1
+				else // predicate is constant
 				{
-					cout << "invalid pre found in join_two!!!" << endl;
-					matched = false;
-					break;
-				}
-
-				unsigned* id_list;
-				unsigned id_list_len;
-				if (edge_type == Util::EDGE_IN)
-				{
+					if (edge_type == Util::EDGE_IN) // Util::EDGE_IN
+					{
 #ifdef DEBUG_JOIN
-					cout << "this is an edge to our id to join!" << endl;
+						cout << "this is an edge to our id to join!" << endl;
 #endif
-					this->kvstore->getobjIDlistBysubIDpreID(ele, pre_id, id_list, id_list_len, true);
+						this->kvstore->getobjIDlistBysubIDpreID(ele, pre_id,
+							id_list, id_list_len, true);
+					}
+					else //Util::EDGE_OUT
+					{
+#ifdef DEBUG_JOIN
+
+						cout << "this is an edge from our id to join! " << endl;
+#endif
+						this->kvstore->getsubIDlistByobjIDpreID(ele, pre_id,
+							id_list, id_list_len, true);
+					}
+				}
+				v_id_list_len.push_back(id_list_len);
+				v_id_list.push_back(id_list);
+				if (id_list_len > v_id_list_len[start_pos])
+				{
+					unsigned cur_pos = v_id_list_len.size() - 1;
+					swap(v_id_list_len[cur_pos], v_id_list_len[start_pos]);
+					swap(v_id_list[cur_pos], v_id_list[start_pos]);
+				}
+			}
+		}
+	}
+	table_length = row;
+	unsigned list_num = v_id_list_len.size();
+	unsigned join_width = list_num / table_length;
+	unsigned *head = (unsigned*)malloc(sizeof(unsigned)*(list_num + 1));
+	head[0] = 0;
+	// switch the row and column of table for coalecsed fetch
+	for (unsigned i = 0; i < join_width; i++)
+	 	for (unsigned j = 0; j < table_length; j++)
+	 		head[i*table_length + j + 1] = head[i*table_length + j] + v_id_list_len[j*join_width + i];
+	unsigned item_num = head[list_num];
+	unsigned *array = (unsigned*)malloc(sizeof(unsigned)*item_num);
+	for (unsigned i = 0; i < join_width; i++)
+		for (unsigned j = 0; j < table_length; j++)
+		{
+			memcpy(array + head[i*table_length + j], v_id_list[j*join_width + i],
+				sizeof(unsigned)*v_id_list_len[j*join_width + i]);
+			delete[] v_id_list[j*join_width + i];
+		}
+	calc(head, array, join_width, table_length, item_num, can_list, _can_list_size);
+
+	bool if_new_start = false;
+	row = 0;
+	for (TableIterator it = current_table.begin(); it != this->new_start; row++)
+	{
+		bool matched = false;
+		for (unsigned i = head[row]; i < head[row + 1]; i++)
+			if (array[i] != -1)
+			{
+				if (!matched)
+				{
+					matched = true;
+					it->push_back(array[i]);
 				}
 				else
 				{
-#ifdef DEBUG_JOIN
-					cout << "this is an edge from our id to join!" << endl;
-#endif
-					this->kvstore->getsubIDlistByobjIDpreID(ele, pre_id, id_list, id_list_len, true);
-				}
-				if (id_list_len == 0)
-				{
-					//id_list == NULL in this case, no need to free
-					matched = false;
-#ifdef DEBUG_JOIN
-					cout << "this id_list is empty!" << endl;
-#endif
-					break;
-				}
-
-				//NOTICE:using so2p to filter is not good
-				//The cost to join two ordered lists is the basic operation
-				//of the whole join process!(O(klogn) < O(k+n) gennerally, for k < n)
-				//Notice that n is the candidate list size just retrieved from vstree
-
-				//only can occur the first time, means cnt == 0
-				//if(valid_ans_list.size() == 0)
-				update_answer_list(valid_ans_list, _can_list, id_list, id_list_len, _is_ready);
-				delete[] id_list;
-				if (valid_ans_list->size() == 0)
-				{
-					matched = false;
-					break;
+					this->add_new_to_results(it, array[i]);
+					if (!if_new_start)
+					{
+						if_new_start = true;
+						this->new_start = this->current_table.end();
+						this->new_start--;
+					}
 				}
 			}
-
-			if(!matched)
-			{
-				break;
-			}
-			if(exist_constant_pre)
-			{
-				//NOTICE: this means there exists constant pre in parallel edges, so update_answer_list has already been used
-				//in this case, later we needn't do s2o_pre_var or o2s_pre_var because sp2o and op2s is more precise
-				continue;
-			}
-			//all pres are variable, so use s2o or o2s to add
-			if(s2o_pre_var)
-			{
-				unsigned* id_list2;
-				unsigned id_list2_len;
-				this->kvstore->getobjIDlistBysubID(ele, id_list2, id_list2_len, true);
-				update_answer_list(valid_ans_list, _can_list, id_list2, id_list2_len, _is_ready);
-				delete[] id_list2;
-				if (valid_ans_list->size() == 0)
-				{
-					matched = false;
-					break;
-				}
-			}
-			if(o2s_pre_var)
-			{
-				unsigned* id_list2;
-				unsigned id_list2_len;
-				this->kvstore->getsubIDlistByobjID(ele, id_list2, id_list2_len, true);
-				update_answer_list(valid_ans_list, _can_list, id_list2, id_list2_len, _is_ready);
-				delete[] id_list2;
-				if (valid_ans_list->size() == 0)
-				{
-					matched = false;
-					break;
-				}
-			}
-		}
-
 		if (matched)
-		{
-#ifdef DEBUG_JOIN
-			cout << "this record is matched!!" << endl;
-#endif
-			found = true;
-			unsigned size = valid_ans_list->size();
-
-			it0->push_back((*valid_ans_list)[0]);
-			unsigned begin = 1;
-			if (!if_new_start && size > 1)
-			{
-				this->add_new_to_results(it0, (*valid_ans_list)[1]);
-				if_new_start = true;
-				//this->new_start = this->current_table.rbegin().base();
-				this->new_start = this->current_table.end();
-				this->new_start--; //-1 is not allowed
-				begin = 2;
-			}
-
-			for (unsigned i = begin; i < size; ++i)
-			{
-				//WARN+NOTICE:this strategy may cause that duplicates are not together!
-				this->add_new_to_results(it0, (*valid_ans_list)[i]);
-			}
-			it0++;
-		}
+			it++;
 		else
-		{
-			it0 = this->current_table.erase(it0);
-#ifdef DEBUG_JOIN
-			cout << "this record is not matched!" << endl;
-#endif
-		}
-		delete valid_ans_list;
-		valid_ans_list = NULL;
+			it = this->current_table.erase(it);
 	}
-	return found;
+#ifdef DEBUG_JOIN
+	cout << "after join_two, current table is:" << endl;
+	for (TableIterator it = current_table.begin(); it != current_table.end();
+		it++)
+	{
+		unsigned len = it->size();
+		for (unsigned i = 0; i < len; i++)
+			cout << (*it)[i] << " ";
+		cout << endl;
+	}
+#endif
+	return true;
 }
 
 void
