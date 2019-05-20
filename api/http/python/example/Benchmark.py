@@ -1,19 +1,24 @@
 """
 # Filename: Benchmark.py
-# Author: yangchaofan
-# Last Modified: 2018-7-18 15:13
+# Author: suxunbin
+# Last Modified: 2019-5-15 20:11
 # Description: a simple example of multi-thread query
 """
-# before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
-
 import threading
 import sys
 sys.path.append('../src')
 import GstoreConnector
 
-# variables definition
-tnum = 3000
+# before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
+# default db_name: lubm(must be built in advance)
+
+IP = "127.0.0.1"
+Port = 9000
+username = "root"
+password = "123456"
+tnum = 1000
 correctness = True
+RequestType = "POST"
 
 threads = []
 result = [15, 0, 828, 27, 27, 5916]
@@ -62,19 +67,18 @@ sparql5 = "select distinct ?x where\
             }"
 
 # thread function
-def Mythread(rnum, sparql, filename):
+def Mythread(rnum, sparql, filename, RequestType):
     global correctness
     
     # query
-    gc = GstoreConnector.GstoreConnector("172.31.222.94", 9000)
-    #gc.build("test", "data/lubm/lubm.nt", "root", "123456")
-    #gc.load("test", "root", "123456")
-    gc.fquery("root", "123456", "lubm", sparql, filename)
-    #res = gc.query("root", "123456", "test", sparql)
+    gc = GstoreConnector.GstoreConnector(IP, Port, username, password)
+    res = gc.query("lubm", "json", sparql, RequestType)
 
-    # read the file to a str
-    with open(filename, "r") as f:
-        res = f.read()
+    # fquery
+    #gc = GstoreConnector.GstoreConnector(IP, Port, username, password)
+    #gc.fquery("lubm", "json", sparql, filename, RequestType)
+    #with open(filename, "r") as f:
+    #    res = f.read()
 
     # count the nums
     m = 0
@@ -106,7 +110,7 @@ sparql.append(sparql5)
 #create the threads
 for i in range(tnum):
     filename = "result/res" + str(i) + ".txt"
-    t = threading.Thread(target=Mythread, args=(result[i%6],sparql[i%6],filename,))
+    t = threading.Thread(target=Mythread, args=(result[i%6],sparql[i%6],filename, RequestType,))
     threads.append(t)
 
 # start threads
@@ -121,5 +125,3 @@ if (correctness == True):
     print("The answers are correct!")
 else:
     print("The answers exist errors!")
-
-print("Main thread exit")

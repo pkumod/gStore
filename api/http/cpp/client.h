@@ -1,3 +1,10 @@
+/*
+# Filename: client.h
+# Author: suxunbin
+# Last Modified: 2019-5-17 14:56
+# Description: http api for C++
+*/
+
 #ifndef __HTTP_CURL_H__
 #define __HTTP_CURL_H__
 
@@ -9,11 +16,17 @@
 
 #include <string>
 
-class CHttpClient
+class GstoreConnector
 {
 public:
-	CHttpClient(void);
-	~CHttpClient(void);
+	std::string serverIP;
+	int serverPort;
+	std::string Url;
+	std::string username;
+	std::string password;
+	GstoreConnector(void);
+	GstoreConnector(std::string _ip, int _port, std::string _user, std::string _passwd);
+	~GstoreConnector(void);
 
 public:
 	/**
@@ -23,6 +36,9 @@ public:
 	* @param strResponse 输出参数,返回的内容
 	* @return 返回是否Post成功
 	*/
+
+	int Post(const std::string & strUrl, const std::string & strPost, const std::string & filename, bool SavedOnFile);
+
 	int Post(const std::string & strUrl, const std::string & strPost, std::string & strResponse);
 
 	/**
@@ -56,6 +72,17 @@ public:
 	int Gets(const std::string & strUrl, std::string & strResponse, const char * pCaPath = NULL);
 
 public:
+	std::string build(std::string db_name, std::string rdf_file_path, std::string request_type = "GET");
+	std::string load(std::string db_name, std::string request_type = "GET");
+	std::string unload(std::string db_name, std::string request_type = "GET");
+	std::string user(std::string type, std::string username2, std::string addition, std::string request_type = "GET");
+	std::string showUser(std::string request_type = "GET");
+	std::string query(std::string db_name, std::string format, std::string sparql, std::string request_type = "GET");
+	void fquery(std::string db_name, std::string format, std::string sparql, std::string filename, std::string request_type = "GET");
+	std::string drop(std::string db_name, bool is_backup, std::string request_type = "GET");
+	std::string monitor(std::string db_name, std::string request_type = "GET");
+	std::string checkpoint(std::string db_name, std::string request_type = "GET");
+	std::string show(std::string request_type = "GET");
 	void SetDebug(bool bDebug);
 
 private:

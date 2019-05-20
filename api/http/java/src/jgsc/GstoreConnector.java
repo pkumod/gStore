@@ -1,3 +1,9 @@
+/*
+# Filename: GstoreConnector.java
+# Author: suxunbin
+# Last Modified: 2019-5-16 21:00
+# Description: http api for java
+*/
 package jgsc;
 
 import java.io.*;
@@ -16,84 +22,66 @@ public class GstoreConnector {
 
     private String serverIP;
     private int serverPort;
-    //private Socket socket = null;
+	private String Url;
+	private String username;
+    private String password;
 
-    public GstoreConnector() {
-        this.serverIP = GstoreConnector.defaultServerIP;
-        this.serverPort = GstoreConnector.defaultServerPort;
-    }
-
-    public GstoreConnector(int _port) {
-        this.serverIP = GstoreConnector.defaultServerIP;
+    public GstoreConnector(String _ip, int _port, String _user, String _passwd) {
+	    if (_ip.equals("localhost")) {
+            this.serverIP = GstoreConnector.defaultServerIP;
+        }
+		else{
+		    this.serverIP = _ip;
+		}
         this.serverPort = _port;
-    }
-
-    public GstoreConnector(String _ip, int _port) {
-        this.serverIP = _ip;
-        this.serverPort = _port;
+		this.Url = "http://" + this.serverIP + ":" + this.serverPort;
+		this.username = _user;
+		this.password = _passwd;
     }
 
 	//PERFORMANCE: what if the query result is too large?  receive and save to file directly at once
 	//In addition, set the -Xmx larger(maybe in scale of Gs) if the query result could be very large, 
 	//this may help to reduce the GC cost
-    public String sendGet(String param) {
-		String url = "http://" + this.serverIP + ":" + this.serverPort;
+    public String sendGet(String strUrl) {
         StringBuffer result = new StringBuffer();
         BufferedReader in = null;
-		//System.out.println("parameter: "+param);
 
 		try {
-			param = URLEncoder.encode(param, "UTF-8");
+			strUrl = URLEncoder.encode(strUrl, "UTF-8");
 		}
 		catch (UnsupportedEncodingException ex) {
 			throw new RuntimeException("Broken VM does not support UTF-8");
 		}
 
         try {
-            String urlNameString = url + "/" + param;
-            //System.out.println("request: "+urlNameString);
-            URL realUrl = new URL(urlNameString);
+		    strUrl = this.Url + "/" + strUrl;
+            URL realUrl = new URL(strUrl);
+
             // open the connection with the URL
             URLConnection connection = realUrl.openConnection();
+
             // set request properties
             connection.setRequestProperty("accept", "*/*");
             connection.setRequestProperty("connection", "Keep-Alive");
-			//set agent to avoid: speed limited by server if server think the client not a browser
-            connection.setRequestProperty("user-agent",
-                    "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+            connection.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+
             // create the real connection
             connection.connect();
 
-			long t0 = System.currentTimeMillis(); //ms
-
             // get all response header fields
             Map<String, List<String>> map = connection.getHeaderFields();
-            // traverse all response header fields
-            //for (String key : map.keySet()) {
-            //    System.out.println(key + "--->" + map.get(key));
-            //}
-
-			long t1 = System.currentTimeMillis(); //ms
-			//System.out.println("Time to get header: "+(t1 - t0)+" ms");
-			//System.out.println("============================================");
 
             // define BufferedReader to read the response of the URL
             in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
             String line;
             while ((line = in.readLine()) != null) {
-				//PERFORMANCE: this can be very costly if result is very large, because many temporary Strings are produced
-				//In this case, just print the line directly will be much faster
 				result.append(line+"\n");
-				//System.out.println("get data size: " + line.length());
-				//System.out.println(line);
             }
-
-			long t2 = System.currentTimeMillis(); //ms
-			//System.out.println("Time to get data: "+(t2 - t1)+" ms");
         } catch (Exception e) {
             System.out.println("error in get request: " + e);
             e.printStackTrace();
         }
+
         // use finally to close the input stream
         finally {
             try {
@@ -107,11 +95,68 @@ public class GstoreConnector {
         return result.toString();
     }
 
-    public void sendGet(String param, String filename) {
-        String url = "http://" + this.serverIP + ":" + this.serverPort;
+    public String sendPost(String strUrl, String strPost) {
+	    PrintWriter out = null;
+        StringBuffer result = new StringBuffer();
         BufferedReader in = null;
-        System.out.println("parameter: "+param);
-        
+
+		try {
+			strUrl = URLEncoder.encode(strUrl, "UTF-8");
+		}
+		catch (UnsupportedEncodingException ex) {
+			throw new RuntimeException("Broken VM does not support UTF-8");
+		}
+
+        try {
+		    strUrl = this.Url + "/" + strUrl;
+            URL realUrl = new URL(strUrl);
+
+            // open the connection with the URL
+            URLConnection connection = realUrl.openConnection();
+
+            // set request properties
+            connection.setRequestProperty("accept", "*/*");
+            connection.setRequestProperty("connection", "Keep-Alive");
+            connection.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+
+            connection.setDoOutput(true);
+			connection.setDoInput(true);
+			out = new PrintWriter(connection.getOutputStream());
+			out.print(strPost);
+			out.flush();
+
+            // get all response header fields
+            Map<String, List<String>> map = connection.getHeaderFields();
+
+            // define BufferedReader to read the response of the URL
+            in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
+            String line;
+            while ((line = in.readLine()) != null) {
+				result.append(line+"\n");
+            }
+        } catch (Exception e) {
+            System.out.println("error in post request: " + e);
+            e.printStackTrace();
+        }
+
+        // use finally to close the input stream
+        finally {
+            try {
+			    if (out != null) {
+                    out.close();
+                }
+                if (in != null) {
+                    in.close();
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+        return result.toString();
+    }
+
+    public void sendGet(String strUrl, String filename) {
+        BufferedReader in = null;      
         if (filename == null)
             return;
 
@@ -123,36 +168,28 @@ public class GstoreConnector {
         }
 
         try {
-            param = URLEncoder.encode(param, "UTF-8");
+            strUrl = URLEncoder.encode(strUrl, "UTF-8");
         } catch (UnsupportedEncodingException ex) {
             throw new RuntimeException("Broken VM does not support UTF-8");
         }
 
         try {
-            String urlNameString = url + "/" + param;
-            System.out.println("request: "+urlNameString);
-            URL realUrl = new URL(urlNameString);
+		    strUrl = this.Url + "/" + strUrl;
+            URL realUrl = new URL(strUrl);
+
             // open the connection with the URL
             URLConnection connection = realUrl.openConnection();
+
             // set request properties
             connection.setRequestProperty("accept", "*/*");
             connection.setRequestProperty("connection", "Keep-Alive");
-            //set agent to avoid: speed limited by server if server think the client not a browser
-            connection.setRequestProperty("user-agent","Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+            connection.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+
             // create the real connection
-            connection.connect();
-            
-            long t0 = System.currentTimeMillis(); //ms
+            connection.connect();         
             
             // get all response header fields
             Map<String, List<String>> map = connection.getHeaderFields();
-            // traverse all response header fields
-            //for (String key : map.keySet()) {
-            //   System.out.println(key + "--->" + map.get(key));
-            //}
-
-            long t1 = System.currentTimeMillis(); // ms
-            //System.out.println("Time to get header: "+(t1 - t0)+" ms");
 
             // define BufferedReader to read the response of the URL
             in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
@@ -163,13 +200,11 @@ public class GstoreConnector {
                     fw.write(chars);
                 chars = new char[2048];
             }
-
-            long t2 = System.currentTimeMillis(); //ms
-            //System.out.println("Time to get data: "+(t2 - t1)+" ms");
         } catch (Exception e) {
-            //System.out.println("error in get request: " + e);
+            System.out.println("error in get request: " + e);
             e.printStackTrace();
         }
+
         // use finally to close the input stream
         finally {
             try {
@@ -186,223 +221,298 @@ public class GstoreConnector {
         return;
     }
 
+    public void sendPost(String strUrl, String strPost, String filename) {
+	    PrintWriter out = null;
+        BufferedReader in = null;      
 
-//NOTICE: no need to connect now, HTTP connection is kept by default
-    public boolean load(String _db_name, String _username, String _password) {
-		boolean connect_return = this.connect();
-		if (!connect_return) {
-			System.err.println("connect to server error. @GstoreConnector.load");
-			return false;
-		}
+        if (filename == null)
+            return;
 
-        String cmd = "?operation=load&db_name=" + _db_name + "&username=" + _username + "&password=" + _password;
-        String msg = this.sendGet(cmd);
-        //if (!send_return) {
-            //System.err.println("send load command error. @GstoreConnector.load");
-            //return false;
-        //}
-
-        this.disconnect();
-
-        System.out.println(msg);	
-        if (msg.equals("load database done.")) {
-            return true;
+        FileWriter fw = null;
+        try {
+            fw = new FileWriter(filename);
+        } catch (IOException e) {
+            System.out.println("can not open " + filename + "!");
         }
 
-        return false;
-    }
-
-    public boolean unload(String _db_name,String _username, String _password) {
-        boolean connect_return = this.connect();
-        if (!connect_return) {
-            System.err.println("connect to server error. @GstoreConnector.unload");
-            return false;
+        try {
+            strUrl = URLEncoder.encode(strUrl, "UTF-8");
+        } catch (UnsupportedEncodingException ex) {
+            throw new RuntimeException("Broken VM does not support UTF-8");
         }
 
-		String cmd = "?operation=unload&db_name=" + _db_name + "&username=" + _username + "&password=" + _password;
-        String msg = this.sendGet(cmd);
+        try {
+		    strUrl = this.Url + "/" + strUrl;
+            URL realUrl = new URL(strUrl);
 
-        this.disconnect();
+            // open the connection with the URL
+            URLConnection connection = realUrl.openConnection();
 
-        System.out.println(msg);	
-        if (msg.equals("unload database done.")) {
-            return true;
+            // set request properties
+            connection.setRequestProperty("accept", "*/*");
+            connection.setRequestProperty("connection", "Keep-Alive");
+            connection.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+
+            connection.setDoOutput(true);
+			connection.setDoInput(true);
+			out = new PrintWriter(connection.getOutputStream());
+			out.print(strPost);
+			out.flush();      
+            
+            // get all response header fields
+            Map<String, List<String>> map = connection.getHeaderFields();
+
+            // define BufferedReader to read the response of the URL
+            in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
+            char chars[] = new char[2048];
+            int b;
+            while ((b = in.read(chars, 0, 2048)) != -1) {
+                if (fw != null)
+                    fw.write(chars);
+                chars = new char[2048];
+            }
+        } catch (Exception e) {
+            System.out.println("error in post request: " + e);
+            e.printStackTrace();
         }
 
-        return false;
-    }
-
-    public boolean build(String _db_name, String _rdf_file_path, String _username, String _password) {
-        boolean connect_return = this.connect();
-        if (!connect_return) {
-            System.err.println("connect to server error. @GstoreConnector.build");
-            return false;
+        // use finally to close the input stream
+        finally {
+            try {
+			    if (out != null) {
+                    out.close();
+                }
+                if (in != null) {
+                    in.close();
+                }
+                if (fw != null) {
+                    fw.close();
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
-
-		//TODO: also use encode to support spaces?
-		//Consider change format into ?name=DBname
-        String cmd = "?operation=build&db_name=" + _db_name + "&ds_path=" + _rdf_file_path  + "&username=" + _username + "&password=" + _password;;
-        String msg = this.sendGet(cmd);
-
-        this.disconnect();
-
-        System.out.println(msg);
-        if (msg.equals("import RDF file to database done.")) {
-            return true;
-        }
-
-        return false;
-    }
-
-	//TODO: not implemented
-    public boolean drop(String _db_name) {
-        boolean connect_return = this.connect();
-        if (!connect_return) {
-            System.err.println("connect to server error. @GstoreConnector.drop");
-            return false;
-        }
-
-        String cmd = "drop/" + _db_name;
-        String msg = this.sendGet(cmd);
-
-        this.disconnect();
-
-        System.out.println(msg);
-        return msg.equals("drop database done.");
-    }
-
-    public String query(String _username, String _password, String _db_name, String _sparql) {
-        boolean connect_return = this.connect();
-        if (!connect_return) {
-            System.err.println("connect to server error. @GstoreConnector.query");
-            return "connect to server error.";
-        }
-
-		//URL encode should be used here
-		//try {
-		//_sparql = URLEncoder.encode("\""+_sparql+"\"", "UTF-8");
-		//}
-		//catch (UnsupportedEncodingException ex) {
-			//throw new RuntimeException("Broken VM does not support UTF-8");
-		//}
-
-		String cmd = "?operation=query&username=" + _username + "&password=" + _password + "&db_name=" + _db_name + "&format=json&sparql=" + _sparql;
-        //String cmd = "query/\"" + _sparql + "\"";
-        String msg = this.sendGet(cmd);
-
-        this.disconnect();
-
-        return msg;
-    }
-    
-    public void query(String _username, String _password, String _db_name, String _sparql, String _filename) {
-        boolean connect_return = this.connect();
-        if (!connect_return) {
-            System.err.println("connect to server error. @GstoreConnector.query");
-        }
-
-        String cmd = "?operation=query&username=" + _username + "&password=" + _password + "&db_name=" + _db_name + "&format=json&sparql=" + _sparql;
-        this.sendGet(cmd, _filename);
-      
-        this.disconnect();
-        
         return;
     }
 
-
- //   public String show() {
-  //      return this.show(false);
-  //  }
-
-	//show all databases
-    public String show(String _username, String _password) {
-        boolean connect_return = this.connect();
-        if (!connect_return) {
-            System.err.println("connect to server error. @GstoreConnector.show");
-            return "connect to server error.";
+    public String build(String db_name, String rdf_file_path, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=build&db_name=" + db_name + "&ds_path=" + rdf_file_path + "&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "build";
+			String strPost = "{\"db_name\": \"" + db_name + "\", \"ds_path\": \"" + rdf_file_path + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strUrl, strPost);
         }
-
-        String cmd = "?operation=show&username=" + _username + "&password=" + _password;
-        String msg = this.sendGet(cmd);
-        
-        this.disconnect();
-        return msg;
-    }
-	 public String user(String type, String username1, String password1, String username2, String addition) {
-        boolean connect_return = this.connect();
-        if (!connect_return) {
-            System.err.println("connect to server error. @GstoreConnector.show");
-            return "connect to server error.";
-        }
-
-        String cmd = "?operation=user&type=" + type + "&username1=" + username1 + "&password1=" + password1 + "&username2=" + username2 + "&addition=" + addition;
-        String msg = this.sendGet(cmd);
-        
-        this.disconnect();
-        return msg;
-    }
-	 public String showUser() {
-        boolean connect_return = this.connect();
-        if (!connect_return) {
-            System.err.println("connect to server error. @GstoreConnector.show");
-            return "connect to server error.";
-        }
-
-        String cmd = "?operation=showUser";
-        String msg = this.sendGet(cmd);
-        
-        this.disconnect();
-        return msg;
-    }
-	 public String monitor(String db_name, String _username, String _password) {
-        boolean connect_return = this.connect();
-        if (!connect_return) {
-            System.err.println("connect to server error. @GstoreConnector.show");
-            return "connect to server error.";
-        }
-
-        String cmd = "?operation=monitor&db_name=" + db_name + "&username=" + _username + "&password=" + _password;
-        String msg = this.sendGet(cmd);
-        
-        this.disconnect();
-        return msg;
-    }
-	 public String checkpoint(String db_name, String _username, String _password) {
-        boolean connect_return = this.connect();
-        if (!connect_return) {
-            System.err.println("connect to server error. @GstoreConnector.show");
-            return "connect to server error.";
-        }
-
-        String cmd = "?operation=checkpoint&db_name=" + db_name + "&username=" + _username + "&password=" + _password;
-        String msg = this.sendGet(cmd);
-        
-        this.disconnect();
-        return msg;
-    }
-	public String test_download(String filepath)
-	{
-        boolean connect_return = this.connect();
-        if (!connect_return) {
-            System.err.println("connect to server error. @GstoreConnector.query");
-            return "connect to server error.";
-        }
-
-		//TEST: a small file, a large file
-		String cmd = "?operation=delete&download=true&filepath=" + filepath;
-        String msg = this.sendGet(cmd);
-
-        this.disconnect();
-
-        return msg;
-	}
-
-    private boolean connect() {
-		return true;
+        return res;
     }
 
-    private boolean disconnect() {
-		return true;
+    public String build(String db_name, String rdf_file_path) {
+	    String res = this.build(db_name, rdf_file_path, "GET");
+        return res;
+    }
+
+    public String load(String db_name, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=load&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "load";
+			String strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strUrl, strPost);
+        }
+        return res;
+    }
+
+    public String load(String db_name) {
+	    String res = this.load(db_name, "GET");
+        return res;
+    }
+
+    public String unload(String db_name, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=unload&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "unload";
+			String strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strUrl, strPost);
+        }
+        return res;
+    }
+
+    public String unload(String db_name) {
+	    String res = this.unload(db_name, "GET");
+        return res;
+    }
+
+    public String user(String type, String username2, String addition, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=user&type=" + type + "&username1=" + this.username + "&password1=" + this.password + "&username2=" + username2 + "&addition=" + addition;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "user";
+			String strPost = "{\"type\": \"" + type + "\", \"username1\": \"" + this.username + "\", \"password1\": \"" + this.password + "\", \"username2\": \"" + username2 + "\", \"addition\": \"" + addition + "\"}";
+            res = this.sendPost(strUrl, strPost);
+        }
+        return res;
+    }
+
+    public String user(String type, String username2, String addition) {
+	    String res = this.user(type, username2, addition, "GET");
+        return res;
+    }
+
+    public String showUser(String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=showUser&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "showUser";
+			String strPost = "{\"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strUrl, strPost);
+        }
+        return res;
+    }
+
+    public String showUser() {
+	    String res = this.showUser("GET");
+        return res;
+    }
+
+    public String query(String db_name, String format, String sparql, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=query&username=" + this.username + "&password=" + this.password + "&db_name=" + db_name + "&format=" + format + "&sparql=" + sparql;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "query";
+			String strPost = "{\"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"format\": \"" + format + "\", \"sparql\": \"" + sparql + "\"}";
+            res = this.sendPost(strUrl, strPost);
+        }
+        return res;
+    }
+
+    public String query(String db_name, String format, String sparql) {
+	    String res = this.query(db_name, format, sparql, "GET");
+        return res;
+    }
+
+    public void fquery(String db_name, String format, String sparql, String filename, String request_type) {
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=query&username=" + this.username + "&password=" + this.password + "&db_name=" + db_name + "&format=" + format + "&sparql=" + sparql;
+            this.sendGet(strUrl, filename);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "query";
+			String strPost = "{\"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"format\": \"" + format + "\", \"sparql\": \"" + sparql + "\"}";
+            this.sendPost(strUrl, strPost, filename);
+        }
+        return;
+    }
+
+    public void fquery(String db_name, String format, String sparql, String filename) {
+	    this.fquery(db_name, format, sparql, filename, "GET");
+        return;
+    }
+
+    public String drop(String db_name, boolean is_backup, String request_type) {
+	   String res = "";
+        if (request_type.equals("GET")) {
+		    String strUrl;
+		    if (is_backup) {
+                strUrl = "?operation=drop&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password + "&is_backup=true";
+            }
+			else{
+			    strUrl = "?operation=drop&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password + "&is_backup=false";
+			}
+			res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "drop";
+			String strPost;
+			if (is_backup) {
+			    strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"is_backup\": \"true\"}";
+            }
+			else{
+			    strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"is_backup\": \"false\"}";
+			}
+			res = this.sendPost(strUrl, strPost);
+        }
+        return res;
+    }
+
+    public String drop(String db_name, boolean is_backup) {
+	    String res = this.drop(db_name, is_backup, "GET");
+        return res;
+    }
+
+    public String monitor(String db_name, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=monitor&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "monitor";
+			String strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strUrl, strPost);
+        }
+        return res;
+    }
+
+    public String monitor(String db_name) {
+	    String res = this.monitor(db_name, "GET");
+        return res;
+    }
+
+    public String checkpoint(String db_name, String request_type) {
+	   String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=checkpoint&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "checkpoint";
+			String strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strUrl, strPost);
+        }
+        return res;
+    }
+
+    public String checkpoint(String db_name) {
+	    String res = this.checkpoint(db_name, "GET");
+        return res;
+    }
+
+    public String show(String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=show&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "show";
+			String strPost = "{\"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strUrl, strPost);
+        }
+        return res;
+    }
+
+    public String show() {
+	    String res = this.show("GET");
+        return res;
     }
 
     private static byte[] packageMsgData(String _msg) {
@@ -455,39 +565,5 @@ public class GstoreConnector {
         return ret;
     }
 
-    public static void main(String[] args) {
-        // initialize the GStore server's IP address and port.
-        GstoreConnector gc = new GstoreConnector("172.31.222.93", 9016);
-
-        // build a new database by a RDF file.
-        // note that the relative path is related to gserver.
-        //gc.build("db_LUBM10", "example/rdf_triple/LUBM_10_GStore.n3");
-        String sparql = "select ?x where {"
-                + "?x	<rdf:type>	<cdblp.cn/class/Paper>. "
-                + "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/wangshan>. "
-                + "}";
-
-        boolean flag = gc.load("lubm", "root", "123456");
-        System.out.println(flag);
-        String answer = gc.query("root", "123456", "lubm", sparql);
-        System.out.println(answer);
-
-        answer = gc.query("root", "123456", "lubm", sparql);
-        System.out.println(answer);
-
-        sparql = "select ?x where {"
-                + "?x	<rdf:type>	<cdblp.cn/class/Paper>. "
-                + "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/yuge>. "
-                + "}";
-        answer = gc.query("root", "123456", "lubm", sparql);
-        System.out.println(answer);
-
-		//To count the time cost
-		//long startTime=System.nanoTime();   //ns
-		//long startTime=System.currentTimeMillis();   //ms
-		//doSomeThing();  //test code
-		//long endTime=System.currentTimeMillis(); //get end time
-		//System.out.println("run time： "+(end-start)+"ms");
-    }
 }
 

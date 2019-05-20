@@ -1,25 +1,25 @@
-all: JavaAPIExample.class Benchmark.class Benchmark1.class
-
-JavaAPIExample.class: JavaAPIExample.java
-	javac -cp ../lib/GstoreJavaAPI.jar JavaAPIExample.java
+all: POSTexample.class GETexample.class Benchmark.class
 
 Benchmark.class: Benchmark.java
-	javac -cp ../lib/GstoreJavaAPI.jar Benchmark.java
+	javac -encoding gbk -cp ../lib/GstoreJavaAPI.jar Benchmark.java
 
-Benchmark1.class: Benchmark1.java
-	javac -cp ../lib/GstoreJavaAPI.jar Benchmark1.java
+POSTexample.class: POSTexample.java
+	javac -encoding gbk -cp ../lib/GstoreJavaAPI.jar POSTexample.java
 
-.PHONY: clean run
+GETexample.class: GETexample.java
+	javac -encoding gbk -cp ../lib/GstoreJavaAPI.jar GETexample.java
 
-run: JavaAPIExample.class
-	java -cp ../lib/GstoreJavaAPI.jar:. JavaAPIExample
-test: Benchmark.class
+.PHONY: clean POST-example GET-example Benchmark
+
+POST-example: POSTexample.class
+	java -cp ../lib/GstoreJavaAPI.jar:. POSTexample
+
+GET-example: GETexample.class
+	java -cp ../lib/GstoreJavaAPI.jar:. GETexample
+
+Benchmark: Benchmark.class
 	java -XX:-UseGCOverheadLimit -Xmx64G -cp ../lib/GstoreJavaAPI.jar:. Benchmark
-test1: Benchmark1.class
-	java -XX:-UseGCOverheadLimit -Xmx64G -cp ../lib/GstoreJavaAPI.jar:. Benchmark1
 
-#test: Benchmark.class
-	#java -XX:-UseGCOverheadLimit -Xmx64G -cp ../lib/GstoreJavaAPI.jar:. Benchmark >> time.txt
 clean:
-	rm -f JavaAPIExample.class
+	rm -rf *.class
 

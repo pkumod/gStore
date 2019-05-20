@@ -61,9 +61,9 @@ int main(int argc, char *argv[])
 	ofp.open("system.db/password" + port + ".txt", ios::in);
 	ofp >> system_password;
 	ofp.close();
-	CHttpClient hc;
+	GstoreConnector gc;
 	string res;
 	int ret;
-	ret = hc.Get("http://127.0.0.1:" + port + "/?operation=stop&username=" + SYSTEM_USERNAME + "&password=" + system_password, res);
+	ret = gc.Get("http://127.0.0.1:" + port + "/?operation=stop&username=" + SYSTEM_USERNAME + "&password=" + system_password, res);
 	return 0;
 }

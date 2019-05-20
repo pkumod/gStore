@@ -6,9 +6,9 @@ Compired with socket API, HTTP API is more stable and more standard, and can mai
 
 ## Easy Examples
 
-We provide JAVA and C++ API for ghttp now. Please refer to example codes in `api/http/cpp` and `api/http/java`. To use these examples, please make sure that executables have already been generated.
+We provide C++, java, python and php API for ghttp now. Please refer to example codes in `api/http/cpp`, `api/http/java`, `api/http/python` and `api/http/php`. To use these examples, please make sure that executables have already been generated.
 
-Next, **start up ghttp service by using \texttt{./ghttp} command.** It is ok if you know a running usable ghttp server and try to connect to it. (you do not need to change anything if using examples, just by default). Then, for Java and C++ code, you need to compile the example codes in the directory gStore/api/http/. 
+Next, **start up ghttp service by using \texttt{bin/ghttp} command.** It is ok if you know a running usable ghttp server and try to connect to it. (you do not need to change anything if using examples, just by default). Then, for C++ and java code, you need to compile the example codes in the directory `api/http/cpp/example` and `api/http/java/example`. 
 
 Finally, go to the example directory and run the corresponding executables. All these four executables will connect to a specified ghttp server and do some load or query operations. Be sure that you see the query results in the terminal where you run the examples, otherwise please go to [Frequently Asked Questions](FAQ.md) for help or report it to us.(the report approach is described in [README](../README.md))
 
@@ -29,13 +29,11 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 		- client.h
 
 		- example/ (small example program to show the basic idea of using the C++ API)
-			- example.cpp
+			- GET-example.cpp
 
 			- Benchmark.cpp
 
-            - Benchmark1.cpp
-
-			- CppAPIExample.cpp
+			- POST-example.cpp
 
 			- Makefile
 
@@ -59,9 +57,9 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 
 			- Benckmark.java
 
-            - Benchmark1.java
+            - GETexample.java
 
-			- JavaAPIExample.java
+			- POSTexample.java
 
 			- Makefile
 
@@ -71,7 +69,9 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 
             - Benchmark.py
 
-            - PyAPIExample.py
+            - GET-example.py
+
+            - POST-example.py
 
         - src/ 
 
@@ -95,7 +95,9 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 
             - Benchmark.php
 
-            - phpAPIExample.php
+            - POST-example.php
+
+            - GET-example.php
 
         - src/
             
@@ -106,35 +108,55 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 
 #### Interface
 
-To use the C++ API, please place the phrase `#include "GstoreConnector.h"` in your cpp code. Functions in GstoreConnector.h should be called like below:
+To use the C++ API, please place the phrase `#include "client.h"` in your cpp code. Functions in client.h should be called like below:
 
 ```
 // initialize 
-GstoreConnector gc("172.31.222.93", 9016);
+GstoreConnector gc("127.0.0.1", 9000, "root", "123456");
 
 // build a new database by a RDF file.
-// note that the relative path is related to gserver
-gc.build("test", "data/lubm/LUBM_10.n3", "root", "123456");
+// note that the relative path is related to the server
+gc.build("lubm", "data/lubm/lubm.nt");
 
 // load the database that you built.
-gc.load("test", "root", "123456");
+gc.load("lubm");
 
-// then you can execute SPARQL query on this database.
-std::string answer = gc.query("root", "123456", "test", sparql);
-std::cout << answer << std::endl;
+// to add, delete a user or modify the privilege of a user, operation must be done by the root user
+gc.user("add_user", "user1", "111111");
 
-// make a SPARQL query and save the result in ans.txt
-gc.query("root", "123456", "test", sparql, "ans.txt");
+// show all users
+gc.showUser();
+
+// query
+std::string res = gc.query("lubm", "json", sparql);
+std::cout << res << std::endl;
+
+// query and save the result in a file called "ans.txt"
+gc.fquery("lubm", "json", sparql, "ans.txt");
+
+// save the database if you have changed the database
+gc.checkpoint("lubm");
+
+// show information of the database
+gc.monitor("lubm");
+
+// show all databases
+gc.show();
 
 // unload this database.
-gc.unload("test", "root", "123456");
+gc.unload("lubm");
 
 // also, you can load some exist database directly and then query.
-gc.load("lubm", "root", "123456");
-answer = gc.query("root", "123456", "lubm", sparql);
+gc.load("lubm");
+res = gc.query("lubm", "json", sparql);
+std::cout << res << std::endl;
+gc.unload("lubm");
 
-std::cout << answer << std::endl;
-gc.unload("lubm", "root", "123456");
+// drop the database directly
+gc.drop("lubm", false);
+
+// drop the database and leave a backup
+gc.drop("lubm", true);
 
 ```
 The original declaration of these functions are as below:
@@ -142,15 +164,27 @@ The original declaration of these functions are as below:
 ```
 GstoreConnector();
 
-bool build(std::string _db_name, std::string _rdf_file_path, std::string username, std::string password);
+std::string build(std::string db_name, std::string rdf_file_path, std::string request_type);
 
-bool load(std::string _db_name, std::string username, std::string password);
+std::string load(std::string db_name, std::string request_type);
 
-bool unload(std::string _db_name, std::string username, std::string password);
+std::string unload(std::string db_name, std::string request_type);
 
-void query(std::string username, std::string password, std::string db_name, std::string sparql, std::string filename);
+std::string user(std::string type, std::string username2, std::string addition, std::string request_type);
 
-std::string query(std::string username, std::string password, std::string db_name, std::string sparql);
+std::string showUser(std::string request_type);
+
+std::string query(std::string db_name, std::string format, std::string sparql, std::string request_type);
+
+std::string drop(std::string db_name, bool is_backup, std::string request_type);
+
+std::string monitor(std::string db_name, std::string request_type);
+
+std::string checkpoint(std::string db_name, std::string request_type);
+
+std::string show(std::string request_type);
+
+void fquery(std::string db_name, std::string format, std::string sparql, std::string filename, std::string request_type);
 
 ```
 
@@ -163,28 +197,52 @@ std::string query(std::string username, std::string password, std::string db_nam
 To use the Java API, please see gStore/api/http/java/src/jgsc/GstoreConnector.java. Functions should be called like below:
 
 ```
-
 // initialize
-GstoreConnector gc = new GstoreConnector("172.31.222.78", 3305);
+GstoreConnector gc = new GstoreConnector("127.0.0.1", 9000, "root", "123456");
 
-// build the database
-gc.build("LUBM10", "data/lubm/lubm.nt", "root", "123456");
+// build a new database by a RDF file.
+// note that the relative path is related to the server
+gc.build("lubm", "data/lubm/lubm.nt");
 
-// load the database you built
-gc.load("LUBM10", "root", "123456");
+// load the database that you built.
+gc.load("lubm");
+
+// to add, delete a user or modify the privilege of a user, operation must be done by the root user
+gc.user("add_user", "user1", "111111");
+
+// show all users
+gc.showUser();
+
+// query
+String res = gc.query("lubm", "json", sparql);
+System.out.println(res);
+
+// query and save the result in a file called "ans.txt"
+gc.fquery("lubm", "json", sparql, "ans.txt");
+
+// save the database if you have changed the database
+gc.checkpoint("lubm");
+
+// show information of the database
+gc.monitor("lubm");
+
+// show all databases
+gc.show();
+
+// unload this database.
+gc.unload("lubm");
 
 // also, you can load some exist database directly and then query.
-gc.load("LUBM10", "root", "123456");
+gc.load("lubm");
+res = gc.query("lubm", "json", sparql);
+System.out.println(res);
+gc.unload("lubm");
 
-// make a SPARQL query
-answer = gc.query("root", "123456", "LUBM10", sparql);
-System.out.println(answer);
+// drop the database directly
+gc.drop("lubm", false);
 
-// make a SPARQL query and save the result in ans.txt
-gc.query("root", "123456", "LUBM10", sparql, "ans.txt");
-
-// unload the database
-gc.unload("LUBM10", "root", "123456");
+// drop the database and leave a backup
+gc.drop("lubm", true);
 
 ```
 
@@ -194,15 +252,28 @@ The original declaration of these functions are as below:
 ```
 public class GstoreConnector();
 
-public boolean build(String _db_name, String _rdf_file_path, String _username, String _password);
+public String build(String db_name, String rdf_file_path, String request_type);
 
-public boolean load(String _db_name, String _username, String _password);
+public String load(String db_name, String request_type);
 
-public boolean unload(String _db_name,String _username, String _password);
+public String unload(String db_name, String request_type);
 
-public String query(String _username, String _password, String _db_name, String _sparql);
+public String user(String type, String username2, String addition, String request_type);
 
-public void query(String _username, String _password, String _db_name, String _sparql, String _filename);
+public String showUser(String request_type);
+
+public String query(String db_name, String format, String sparql, String request_type);
+
+public void fquery(String db_name, String format, String sparql, String filename, String request_type);
+
+public String drop(String db_name, boolean is_backup, String request_type);
+
+public String monitor(String db_name, String request_type);
+
+public String checkpoint(String db_name, String request_type);
+
+public String show(String request_type);
+
 ```
 
 - - -
@@ -214,38 +285,73 @@ public void query(String _username, String _password, String _db_name, String _s
 To use Python API, please see gStore/api/http/python/src/GstoreConnector.py. Functions should be called like following:
 
 ```
-# start a gc with given IP and Port
-gc =  GstoreConnector.GstoreConnector("172.31.222.78", 3305)
+# start a gc with given IP, Port, username and password
+gc =  GstoreConnector.GstoreConnector("127.0.0.1", 9000, "root", "123456")
 
-# build database with a RDF graph
-ret = gc.build("test", "data/lubm/lubm.nt", username, password)
+# build a database with a RDF graph
+res = gc.build("lubm", "data/lubm/lubm.nt")
 
-# load the database
-ret = gc.load("test", username, password)
+# load the database 
+res = gc.load("lubm")
+
+# to add, delete a user or modify the privilege of a user, operation must be done by the root user
+res = gc.user("add_user", "user1", "111111")
+
+# show all users
+res = gc.showUser()
 
 # query
-print (gc.query(username, password, "test", sparql))
+res = gc.query("lubm", "json", sparql)
+print(res)
 
-# query and save the result in a file
-gc.fquery(username, password, "test", sparql, filename)
+# query and save the result in a file called "ans.txt"
+gc.fquery("lubm", "json", sparql, "ans.txt")
+
+# save the database if you have changed the database
+res = gc.checkpoint("lubm")
+
+# show information of the database
+res = gc.monitor("lubm")
+
+# show all databases
+res = gc.show()
 
 # unload the database
-ret = gc.unload("test", username, password)
+res = gc.unload("lubm")
+
+# drop the database directly
+res = gc.drop("lubm", False)
+
+# drop the database and leave a backup
+res = gc.drop("lubm", True)
+
 ```
 The original declaration of these functions are as below:
 
 ```
 public class GstoreConnector()
 
-def build(self, db_name, rdf_file_path, username, password):
+def build(self, db_name, rdf_file_path, request_type):
 
-def load(self, db_name, username, password):
+def load(self, db_name, request_type):
 
-def unload(self, db_name, username, password):
+def unload(self, db_name, request_type):
 
-def query(self, username, password, db_name, sparql):
+def user(self, type, username2, addition, request_type):
 
-def fquery(self, username, password, db_name, sparql, filename):
+def showUser(self, request_type):
+
+def query(self, db_name, format, sparql, request_type):
+
+def fquery(self, db_name, format, sparql, filename, request_type):
+
+def drop(self, db_name, is_backup, request_type):
+
+def monitor(self, db_name, request_type):    
+
+def checkpoint(self, db_name, request_type):
+
+def show(self, request_type):
 
 ```
 
@@ -299,26 +405,55 @@ async query(db = '', sparql = '')
 To use Php API, please see gStore/api/http/php/src/GstoreConnector.php. Functions should be called like following:
 
 ```
-// start a gc
-$gc = new GstoreConnector("172.31.222.78", 3305);
+// start a gc with given IP, Port, username and password
+$gc = new GstoreConnector("127.0.0.1", 9000, "root", "123456");
 
-// build database
-$ret = $gc->build("test", "data/lubm/lubm.nt", $username, $password);
-echo $ret . PHP_EOL;
+// build a database with a RDF graph
+$res = $gc->build("lubm", "data/lubm/lubm.nt");
+echo $res . PHP_EOL;
 
 // load rdf
 $ret = $gc->load("test", $username, $password);
 echo $ret . PHP_EOL;
 
+// to add, delete a user or modify the privilege of a user, operation must be done by the root user
+//$res = $gc->user("add_user", "user1", "111111");
+//echo $res . PHP_EOL;
+
+// show all users
+$res = $gc->showUser();
+echo $res. PHP_EOL;
+
 // query
-echo $gc->query($username, $password, "test", $sparql) . PHP_EOL;
+$res = $gc->query("lubm", "json", $sparql);
+echo $res. PHP_EOL;
 
-// fquery--make a SPARQL query and save the result in the file
-$gc->fquery($username, $password, "test", $sparql, $filename);
+// query and save the result in a file called "ans.txt"
+$gc->fquery("lubm", "json", $sparql, "ans.txt");
 
-// unload rdf
-$ret = $gc->unload("test", $username, $password);
-echo $ret . PHP_EOL;
+// save the database if you have changed the database
+$res = $gc->checkpoint("lubm");
+echo $res. PHP_EOL;
+
+// show information of the database
+$res = $gc->monitor("lubm");
+echo $res. PHP_EOL;
+
+// show all databases
+$res = $gc->show();
+echo $res. PHP_EOL;
+
+// unload the database
+$res = $gc->unload("lubm");
+echo $res. PHP_EOL;
+
+// drop the database directly
+$res = $gc->drop("lubm", false);
+echo $res. PHP_EOL;
+
+// drop the database and leave a backup
+$res = $gc->drop("lubm", true);
+echo $res. PHP_EOL;
 
 ```
 
@@ -327,15 +462,28 @@ The original declaration of these functions are as below:
 ```
 class GstoreConnector
 
-function build($db_name, $rdf_file_path, $username, $password)
+function build($db_name, $rdf_file_path, $request_type)
 
-function load($db_name, $username, $password)
+function load($db_name, $request_type)
 
-function unload($db_name, $username, $password)
+function unload($db_name, $request_type)
 
-function query($username, $password, $db_name, $sparql)
+function user($type, $username2, $addition, $request_type)
 
-function fquery($username, $password, $db_name, $sparql, $filename)
+function showUser($request_type)
+
+function query($db_name, $format, $sparql, $request_type)
+
+function fquery($db_name, $format, $sparql, $filename, $request_type)
+
+function drop($db_name, $is_backup, $request_type)
+
+function monitor($db_name, $request_type)
+
+function checkpoint($db_name, $request_type)
+
+function show($request_type)
+
 ```
 
 ---
