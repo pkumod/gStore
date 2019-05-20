@@ -1,3 +1,10 @@
+/*=============================================================================
+# Filename: Benchmark.cpp
+# Author: suxunbin
+# Last Modified: 2019-5-17 21:02
+# Description: a simple example of multi-thread query
+=============================================================================*/
+
 #include "client.h"
 #include <pthread.h>
 #include <iostream>
@@ -6,113 +13,132 @@
 #include <cstring>
 #include <fstream>
 using namespace std;
-//#define tnum 12000
-#define tnum 3000
-bool correctness = true;
-bool lcorrectness = true;
-bool ucorrectness = true;
 
 // before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
+// default db_name: lubm(must be built in advance)
+#define IP "127.0.0.1"
+#define Port 9000
+#define username "root"
+#define password "123456"
+#define tnum 1000
+#define RequestType "POST"
 
-pthread_mutex_t mutex;
-
-string int2string(int n)
-{
-    string s;
-    stringstream ss;
-    ss<<n;
-    ss>>s;
-    return s;
-}
-
+bool correctness = true;
 
 struct MyThread_args{
 	int num;
-	string sparql;
 	int rnum;
+	string sparql;
+	string filename;
+	string request_type;
 };
 
 void* MyThread_run(void* thread_args)
 {
 	struct MyThread_args *args;
 	args = (struct MyThread_args *)thread_args;
-	CHttpClient hc;
-	string res;
-	int ret;
-	ret = hc.Get("http://172.31.222.94:9000/?operation=query&username=root&password=123456&db_name=dbpedia&format=json&sparql="+args->sparql,res);
+	GstoreConnector gc(IP, Port, username, password);
+
+	// query
+	string res = gc.query("lubm", "json", args->sparql, args->request_type);
+
+	// fquery
+	//gc.fquery("lubm", "json", args->sparql, args->filename, args->request_type);
+	//ifstream f(args->filename);
+	//stringstream buffer;
+	//buffer << f.rdbuf();
+	//string res = buffer.str();
+	//f.close();
+
+	//count the num
 	int m = 0;
-	for(int i = 0; i<args->sparql.length(); ++i)
+	for (int i = 0; i<args->sparql.length(); ++i)
 	{
-		if(args->sparql[i]=='?')
+		if (args->sparql[i] == '?')
 			++m;
-		if(args->sparql[i]=='{')
+		if (args->sparql[i] == '{')
 			break;
 	}
 	int n = 0;
-	for(int i = 0; i<res.length(); ++i)
+	for (int i = 0; i<res.length(); ++i)
 	{
-		if(res[i]=='{')
+		if (res[i] == '{')
 			++n;
 	}
-	int Num = (n-3)/(m+1);
-	//if(Num<=10)
-	//{
-	//	ofstream f("result/"+int2string(args->num)+".txt");
-	//	f<<res<<endl;
-	//	f.close();
-	//}	
-	
-	if(args->rnum != Num)
+	int Num = (n - 3) / (m + 1);
+
+	// compare the result
+	if (args->rnum != Num)
+	{
 		correctness = false;
+		cout << "sparql: " << args->sparql << endl;
+		cout << "Num: " << Num << endl;
+	}
 	pthread_exit(NULL);
 }
 int main()
 {
-	int result[6] = {10, 14, 14, 199424, 33910, 1039};
+	int result[6] = {15, 0, 828, 27, 27, 5916};
 	string* sparql = new string[6];
-        sparql[0] = "select ?v0 where\
-                   {\
-                   ?v0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/class/yago/LanguagesOfBotswana> .\
-                   ?v0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>    <http://dbpedia.org/class/yago/LanguagesOfNamibia> .\
-                   ?v0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Language> .\
-                   }";
-        sparql[1] = "select ?v0 where\
-                   {\
-                   ?v0 <http://dbpedia.org/ontology/associatedBand> <http://dbpedia.org/resource/LCD_Soundsystem> .\
-                   }";
-        sparql[2] = "select ?v2 where\
-                   {\
-                   <http://dbpedia.org/resource/!!Destroy-Oh-Boy!!> <http://dbpedia.org/property/title> ?v2 .\
-                   }";
-        sparql[3] = "select ?v0 ?v2 where\
-                   {\
-                   ?v0 <http://dbpedia.org/ontology/activeYearsStartYear> ?v2 .\
-                   }";
-        sparql[4] = "select ?v0 ?v1 ?v2 where\
-                   {\
-                   ?v0 <http://dbpedia.org/property/dateOfBirth> ?v2 .\
-                   ?v1 <http://dbpedia.org/property/genre> ?v2 .\
-                   }";
-        sparql[5] = "select ?v0 ?v1 ?v2 ?v3 where\
-                   {\
-                   ?v0 <http://dbpedia.org/property/familycolor> ?v1 .\
-                   ?v0 <http://dbpedia.org/property/glotto> ?v2 .\
-                   ?v0 <http://dbpedia.org/property/lc> ?v3 .\
-                   }";
+	sparql[0] = "select ?x where \
+                { \
+                ?x    <ub:name>    <FullProfessor0>. \
+                }";
+	sparql[1] = "select distinct ?x where\
+                { \
+                ?x <rdf:type>  <ub:GraduateStudent>.\
+                ?y <rdf:type>  <ub:GraduateStudent>.\
+                ?z <rdf:type>  <ub:GraduateStudent>.\
+                ?x <ub:memberOf>  ?z.\
+                ?z <ub:subOrganizationOf> ?y.\
+                ?x <ub:undergaduateDegreeFrom> ?y.\
+                }";
+	sparql[2] = "select distinct ?x where\
+                { \
+                ?x   <rdf:type>  <ub:Course>.\
+                ?x   <ub:name>   ?y.\
+                }";
+	sparql[3] = "select ?x where \
+                { \
+                ?x    <rdf:type>    <ub:UndergraduateStudent>. \
+                ?y    <ub:name> <Course1>. \
+                ?x    <ub:takesCourse>  ?y. \
+                ?z    <ub:teacherOf>    ?y. \
+                ?z    <ub:name> <FullProfessor1>. \
+                ?z    <ub:worksFor>    ?w. \
+                ?w    <ub:name>    <Department0>. \
+                }";
+	sparql[4] = "select distinct ?x where\
+                { \
+                ?x    <rdf:type>    <ub:UndergraduateStudent>. \
+                ?y    <ub:name> <Course1>. \
+                ?x    <ub:takesCourse>  ?y. \
+                ?z    <ub:teacherOf>    ?y. \
+                ?z    <ub:name> <FullProfessor1>. \
+                ?z    <ub:worksFor>    ?w. \
+                ?w    <ub:name>    <Department0>. \
+                }";
+	sparql[5] = "select distinct ?x where\
+                { \
+                ?x    <rdf:type>    <ub:UndergraduateStudent>.\
+                }";
+
 	pthread_t qt[tnum];
 	void *status;
 	struct MyThread_args args[tnum];
 	for(int i = 0;i<tnum;i++)
 	{
-		args[i].num=i;
-		args[i].sparql=sparql[i%6];
-		args[i].rnum=result[i%6];
+		string filename = "result/res" + to_string(i) + ".txt";
+		args[i].num = i;
+		args[i].rnum = result[i%6];
+		args[i].sparql = sparql[i%6];
+		args[i].filename = filename;
+		args[i].request_type = RequestType;
 		pthread_create(&qt[i],NULL,MyThread_run,(void *)&args[i]);
 	}
 	for(int i = 0;i<tnum;i++)
 	{
 		pthread_join(qt[i],&status);
-		
 	}
 	if(correctness == true)
 		cout<< "The answers are correct!" <<endl;

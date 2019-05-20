@@ -1,24 +1,23 @@
 CC=g++ -std=c++11
 #CC=ccache g++
-all: Benchmark CppAPIExample
-#all: example Benchmark CppAPIExample
+all: POST-example GET-example Benchmark
 
 Benchmark: Benchmark.o
-	$(CC) -o Benchmark.exe Benchmark.o -L../lib -lclient -lcurl -lpthread
+	$(CC) -o Benchmark Benchmark.o -L../lib -lclient -lcurl -lpthread
 
-CppAPIExample: CppAPIExample.o
-	$(CC) -o CppAPIExample.exe CppAPIExample.o -I../ -L../lib -lgstoreconnector -lclient -lcurl
+GET-example: GET-example.o
+	$(CC) -o GET-example GET-example.o -I../ -lcurl -L../lib -lclient
 
-Benchmark.o: Benchmark.cpp
+POST-example: POST-example.o
+	$(CC) -o POST-example POST-example.o -I../ -lcurl -L../lib -lclient
+
+GET-example.o: GET-example.cpp ../client.cpp ../client.h
+	$(CC) -c -I../ GET-example.cpp -o GET-example.o
+
+Benchmark.o: Benchmark.cpp ../client.cpp ../client.h
 	$(CC) -c -I../ Benchmark.cpp -o Benchmark.o
+POST-example.o: POST-example.cpp ../client.cpp ../client.h
+	$(CC) -c -I../ POST-example.cpp -o POST-example.o
 
-#example: example.o
-	#$(CC) -o example example.o -I../ -lcurl -L../lib -lclient
-
-#example.o: example.cpp
-	#$(CC) -c -I../ example.cpp -o example.o
-
-CppAPIExample.o: CppAPIExample.cpp
-	$(CC) -c -I../ -I../src CppAPIExample.cpp -o CppAPIExample.o
 clean:
-	rm -rf *.o *.exe
+	rm -rf *.o POST-example GET-example Benchmark

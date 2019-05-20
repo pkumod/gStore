@@ -1,8 +1,8 @@
 /*=============================================================================
 # Filename: ghttp.cpp
-# Author: Bookug Lobert 
+# Author: Bookug Lober suxunbint 
 # Mail: zengli-bookug@pku.edu.cn
-# Last Modified: 2018-12-24 17:00
+# Last Modified: 2019-5-9 17:00
 # Description: created by lvxin, improved by lijing and suxunbin
 =============================================================================*/
 
@@ -12,7 +12,6 @@
 
 //TODO: to add db_name to all URLs, and change the index.js using /show to get name, save and set
 //TODO: use gzip for network transfer, it is ok to download a gzip file instead of the original one
-//DEBUG: if port has already been occupied, the server will be restarted endlessly, here we should stop
 
 #include "../Server/server_http.hpp"
 #include "../Server/client_http.hpp"
@@ -28,8 +27,6 @@ using namespace rapidjson;
 using namespace std;
 //Added for the json-example:
 using namespace boost::property_tree;
-//using namespace boost::gregorian;
-//using namespace boost;
 
 typedef SimpleWeb::Server<SimpleWeb::HTTP> HttpServer;
 typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
@@ -48,7 +45,6 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define MAX_OUTPUT_SIZE 100000
 #define TEST_IP "106.13.13.193"
 
-//int initialize();
 int initialize(int argc, char *argv[]);
 //Added for the default_resource example
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
@@ -69,41 +65,39 @@ bool updateSys(string sparql);
 //bool doQuery(string format, string db_query, const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 //=============================================================================
-bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
-bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
-bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
-bool query_handler0(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool query_handler0(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
-bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
-bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
-bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
-bool checkall_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool show_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
-bool show_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool delete_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
-bool delete_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
-
-bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
-bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
-bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
-bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
-bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
-bool drop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, bool r);
+bool drop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 void query_thread(bool update_flag, string db_name, string format, string db_query, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
@@ -112,15 +106,13 @@ bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 void signalHandler(int signum);
 //=============================================================================
 
-//TODO: use locak to protect logs when running in multithreading environment
+//TODO: use lock to protect logs when running in multithreading environment
 FILE* query_logfp = NULL;
 string queryLog = "logs/endpoint/query.log";
 mutex query_log_lock;
 string system_password;
 string NAMELOG_PATH  = "name.log";
 int port;
-
-//pthread_rwlock_t database_load_lock;
 
 pthread_rwlock_t databases_map_lock;
 pthread_rwlock_t already_build_map_lock;
@@ -607,19 +599,15 @@ int main(int argc, char *argv[])
 		pid_t fpid = fork();
 
 		if (fpid == 0) {
-			//int ret = initialize();
 			int ret = initialize(argc, argv);
 			//TODO: which to use here!
 			exit(ret);
-			//return ret;
 		}
 
 		else if (fpid > 0) {
 			int status;
 			waitpid(fpid, &status, 0);
 			if (WIFEXITED(status)) {
-				//cout<<"yes!"<<endl;
-				//exit(0);
 				return 0;
 			}
 			else
@@ -889,176 +877,191 @@ int initialize(int argc, char *argv[])
 	//i.e. database name and dataset path
 	server.resource["^/%3[F|f]operation%3[D|d]build%26db_name%3[D|d](.*)%26ds_path%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		build_handler(server, response, request);
+		build_handler(server, response, request, "GET");
     };
+
+	server.resource["^/?operation=build&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		build_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /build, responds with the matched string in path
+	server.resource["/build"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		build_handler(server, response, request, "POST");
+	};
 
 	//GET-example for the path /?operation=load&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
     server.resource["^/%3[F|f]operation%3[D|d]load%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		load_handler(server, response, request);
+		load_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=load&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		load_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /load, responds with the matched string in path
+	server.resource["/load"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		load_handler(server, response, request, "POST");
 	};
 
     //GET-example for the path /?operation=unload&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
     server.resource["^/%3[F|f]operation%3[D|d]unload%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		unload_handler(server, response, request);
+		unload_handler(server, response, request, "GET");
     };
+
+	server.resource["^/?operation=unload&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		unload_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /unload, responds with the matched string in path
+	server.resource["/unload"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		unload_handler(server, response, request, "POST");
+	};
 
     //GET-example for the path /?operation=login&username=[username]&password=[password], responds with the matched string in path
     server.resource["^/%3[F|f]operation%3[D|d]login%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		login_handler(server, response, request);
+		login_handler(server, response, request, "GET");
     };
+
+	server.resource["^/?operation=login&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		login_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /login, responds with the matched string in path
+	server.resource["/login"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		login_handler(server, response, request, "POST");
+	};
 
 	//GET-example for the path /?operation=user&type=[type]&username1=[username1]&password1=[password1]&username2=[username2]&addition=[password2 || db_name], responds with the matched string in path
 	server.resource["^/%3[F|f]operation%3[D|d]user%26type%3[D|d](.*)%26username1%3[D|d](.*)%26password1%3[D|d](.*)%26username2%3[D|d](.*)%26addition%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		user_handler(server, response, request);
+		user_handler(server, response, request, "GET");
     };
 
-	//GET-example for the path /?operation=user&type=[type]&username1=[username1]&password1=[password1]&username2=[username2]&addition=[password2 || db_name], responds with the matched string in path
 	server.resource["^/?operation=user&type=(.*)&username1=(.*)&password1=(.*)&username2=(.*)&addition=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		user_handler(server, response, request);
+		user_handler(server, response, request, "GET");
     };
 
-	//GET-example for the path /?operation=login&username=[username]&password=[password], responds with the matched string in path
-	server.resource["^/?operation=login&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//POST-example for the path /user, responds with the matched string in path
+	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		login_handler(server, response, request);
-    };
-
-	//GET-example for the path /?operation=build&db_name=[db_name]&ds_path=[ds_path]&username=[username]&password=[password], responds with the matched string in path
-	//i.e. database name and dataset path
-	server.resource["^/?operation=build&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		build_handler(server, response, request);
-    };
-
-	//GET-example for the path /?operation=load&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/?operation=load&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		load_handler(server, response, request);
+		user_handler(server, response, request, "POST");
 	};
 
-    //GET-example for the path /?operation=unload&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/?operation=unload&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//GET-example for the path /?operation=showUser&username=[username]&password=[password], responds with the matched string in path
+	server.resource["^/%3[F|f]operation%3[D|d]showUser%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		unload_handler(server, response, request);
-    };
+		showUser_handler(server, response, request, "GET");
+	};
 
-	//NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
-	//In programming language, do URL encode first and then call server, then all is ok
-	server.resource["^/%3[F|f]operation%3[D|d]showUser(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	server.resource["^/?operation=showUser&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		showUser_handler(server, response, request);
-    };
+		showUser_handler(server, response, request, "GET");
+	};
 
-    //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
-	//In programming language, do URL encode first and then call server, then all is ok
-	server.resource["^/?operation=showUser$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//POST-example for the path /showUser, responds with the matched string in path
+	server.resource["/showUser"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		showUser_handler(server, response, request);
-    };
+		showUser_handler(server, response, request, "POST");
+	};
 
 	//GET-example for the path /?operation=query&username=[username]&password=[password]&db_name=[db_name]&format=[format]&sparql=[sparql], responds with the matched string in path
-	 server.resource["^/%3[F|f]operation%3[D|d]query%26username%3[D|d](.*)%26password%3[D|d](.*)%26db_name%3[D|d](.*)%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	 {
-		query_handler1(server, response, request);
-		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	server.resource["^/%3[F|f]operation%3[D|d]query%26username%3[D|d](.*)%26password%3[D|d](.*)%26db_name%3[D|d](.*)%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		query_handler1(server, response, request, "GET");
     };
 
-	 //GET-example for the path /?operation=query&username=[username]&password=[password]&db_name=[db_name]&format=[format]&sparql=[sparql], responds with the matched string in path
-	 server.resource["^/?operation=query&username=(.*)&password=(.*)&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	 {
-		query_handler1(server, response, request);
-		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	server.resource["^/?operation=query&username=(.*)&password=(.*)&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		query_handler1(server, response, request, "GET");
     };
+
+	//POST-example for the path /query, responds with the matched string in path
+	server.resource["/query"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		query_handler1(server, response, request, "POST");
+	};
+
 	//GET-example for the path /?operation=check&username=[username]&password=[password], responds with the matched string in path
     server.resource["^/%3[F|f]operation%3[D|d]check%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		check_handler(server, response, request);
+		check_handler(server, response, request, "GET");
     };
-	//GET-example for the path /?operation=check&username=[username]&password=[password], responds with the matched string in path
+
 	server.resource["^/?operation=check&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		check_handler(server, response, request);
+		check_handler(server, response, request, "GET");
     };
 
-    //GET-example for the path /?operation=drop&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]drop%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//POST-example for the path /check, responds with the matched string in path
+	server.resource["/check"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		drop_handler(server, response, request, false);
+		check_handler(server, response, request, "POST");
+	};
+
+    //GET-example for the path /?operation=drop&db_name=[db_name]&username=[username]&password=[password]&is_backup=[true|false], responds with the matched string in path
+    server.resource["^/%3[F|f]operation%3[D|d]drop%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26is_backup%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		drop_handler(server, response, request, "GET");
     };
 
-    //GET-example for the path /?operation=drop&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/?operation=drop&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+    server.resource["^/?operation=drop&db_name=(.*)&username=(.*)&password=(.*)&is_backup=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		drop_handler(server, response, request, false);
+		drop_handler(server, response, request, "GET");
     };
 
-    //GET-example for the path /?operation=drop_r&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]drop_r%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//POST-example for the path /drop, responds with the matched string in path
+	server.resource["/drop"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		drop_handler(server, response, request, true);
-    };
-
-    //GET-example for the path /?operation=drop_r&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/?operation=drop_r&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		drop_handler(server, response, request, true);
-    };
+		drop_handler(server, response, request, "POST");
+	};
 #endif
 
 
 	//GET-example for the path /?operation=query&db_name=[db_name]&format=[format]&sparql=[sparql], responds with the matched string in path
-	 server.resource["^/%3[F|f]operation%3[D|d]query%26db_name%3[D|d](.*)%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	 {
-		query_handler0(server, response, request);
-		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	server.resource["^/%3[F|f]operation%3[D|d]query%26db_name%3[D|d](.*)%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		query_handler0(server, response, request, "GET");
     };
 
-	 //GET-example for the path /?operation=query&db_name=[db_name]&format=[format]&sparql=[sparql], responds with the matched string in path
-	 server.resource["^/?operation=query&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	 {
-		query_handler0(server, response, request);
-		// server.resource["^/query/(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	server.resource["^/?operation=query&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		query_handler0(server, response, request, "GET");
     };
 
-    //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
-	//In programming language, do URL encode first and then call server, then all is ok
+	//POST-example for the path /query0, responds with the matched string in path
+	server.resource["/query0"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		query_handler0(server, response, request, "POST");
+	};
+
+	 //GET-example for the path /?operation=monitor&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
 	server.resource["^/%3[F|f]operation%3[D|d]monitor%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		monitor_handler(server, response, request);
+		monitor_handler(server, response, request, "GET");
     };
 
-    //NOTICE:this may not be visited by browser directly if the browser does not do URL encode automatically!
-	//In programming language, do URL encode first and then call server, then all is ok
 	server.resource["^/?operation=monitor&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-	 //server.resource["^/monitor$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		monitor_handler(server, response, request);
+		monitor_handler(server, response, request, "GET");
     };
 
-    // server.resource["^/json$"]["POST"]=[](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-    //     try {
-    //         ptree pt;
-    //         read_json(request->content, pt);
-
-    //         string sparql=pt.get<string>("queryContent");
-
-    //         *response << "HTTP/1.1 200 OK\r\n"
-    //             << "Content-Type: application/json\r\n"
-    //             << "Content-Length: " << name.length() << "\r\n\r\n"
-    //             << name;
-    //     }
-    //     catch(exception& e) {
-    //         *response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << strlen(e.what()) << "\r\n\r\n" << e.what();
-    //     }
-    // };
+	//POST-example for the path /monitor, responds with the matched string in path
+	server.resource["/monitor"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		monitor_handler(server, response, request, "POST");
+	};
 
     server.resource["^/%3[F|f]operation%3[D|d]stop%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
@@ -1073,34 +1076,39 @@ int initialize(int argc, char *argv[])
 			exit(0);
     };
 
+	//GET-example for the path /?operation=checkpoint&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
     server.resource["^/%3[F|f]operation%3[D|d]checkpoint%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		checkpoint_handler(server, response, request);
+		checkpoint_handler(server, response, request, "GET");
     };
+
 	server.resource["^/?operation=checkpoint&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		checkpoint_handler(server, response, request);
-    };
-    server.resource["^/%3[F|f]operation%3[D|d]checkall$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		checkall_handler(server, response, request);
-    };
-	server.resource["^/?operation=checkall$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		checkall_handler(server, response, request);
+		checkpoint_handler(server, response, request, "GET");
     };
 
-	//TODO: add user name as parameter, all databases availiable
+	//POST-example for the path /checkpoint, responds with the matched string in path
+	server.resource["/checkpoint"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		checkpoint_handler(server, response, request, "POST");
+	};
+
+	//GET-example for the path /?operation=show&username=[username]&password=[password], responds with the matched string in path
     server.resource["^/%3[F|f]operation%3[D|d]show%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		show_handler(server, response, request);
+		show_handler(server, response, request, "GET");
     };
 
-	//TODO: add user name as parameter, all databases availiable
     server.resource["^/?operation=show&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		show_handler(server, response, request);
+		show_handler(server, response, request, "GET");
     };
+
+	//POST-example for the path /show, responds with the matched string in path
+	server.resource["/show"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		show_handler(server, response, request, "POST");
+	};
 
 	//USAGE: in endpoint, if user choose to display via html, but not display all because the result's num is too large.
 	//Then, user can choose to download all results in TXT format, and this URL is used for download in this case
@@ -1112,17 +1120,41 @@ int initialize(int argc, char *argv[])
 	//We do not have the http session ID here and can not provide best safety, but we can set the filePath complicated.
 	//(then attacker is hard to guess, and the directory is restricted)
 	//BETTER+TODO: associate the thread/session ID with download fileName, otherwise error may come in parallism
-	//
+
 	//GET-example for the path /?operation=delete&filepath=[filepath], responds with the matched string in path
 	server.resource["^/%3[F|f]operation%3[D|d]delete%26filepath%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		delete_handler(server, response, request);
+		delete_handler(server, response, request, "GET");
     };
-	//GET-example for the path /?operation=delete&filepath=[filepath], responds with the matched string in path
+
+	server.resource["^/?operation=delete&filepath=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		delete_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /delete, responds with the matched string in path
+	server.resource["/delete"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		delete_handler(server, response, request, "POST");
+	};
+
+	//GET-example for the path /?operation=download&filepath=[filepath], responds with the matched string in path
 	server.resource["^/%3[F|f]operation%3[D|d]download%26filepath%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		download_handler(server, response, request);
+		download_handler(server, response, request, "GET");
     };
+
+	server.resource["^/?operation=download&filepath=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		download_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /download, responds with the matched string in path
+	server.resource["/download"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		download_handler(server, response, request, "POST");
+	};
+
     //Default GET-example. If no other matches, this anonymous function will be called.
     //Will respond with content in the web/-directory, and its subdirectories.
     //Default file: index.html
@@ -1131,6 +1163,11 @@ int initialize(int argc, char *argv[])
 	{
 		default_handler(server, response, request);
     };
+
+	server.default_resource["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		default_handler(server, response, request);
+	};
 
     thread server_thread([&server](){
 			//handle the Ctrl+C signal
@@ -1143,17 +1180,18 @@ int initialize(int argc, char *argv[])
     //Wait for server to start so that the client can connect
     this_thread::sleep_for(chrono::seconds(1));
 
-    // //Client examples
-    // HttpClient client("localhost:9000");
-    // auto r1=client.request("GET", "/match/123");
-    // cout << r1->content.rdbuf() << endl;
+     //Client examples
+     //HttpClient client("localhost:9000");
+     //auto r1=client.request("GET", "/match/123");
+     //cout << r1->content.rdbuf() << endl;
 
     // string json_string="{\"firstName\": \"John\",\"lastName\": \"Smith\",\"age\": 25}";
-    // auto r2=client.request("POST", "/string", json_string);
-    // cout << r2->content.rdbuf() << endl;
+     //auto r2=client.request("POST", "/string", json_string);
+    
+	//cout << r2->content.rdbuf() << endl;
 
-    // auto r3=client.request("POST", "/json", json_string);
-    // cout << r3->content.rdbuf() << endl;
+     //auto r3=client.request("POST", "/json", json_string);
+     //cout << r3->content.rdbuf() << endl;
 
     server_thread.join();
 	cout<<"check: server stoped"<<endl;
@@ -1282,14 +1320,27 @@ void thread_sigterm_handler(int _signal_num) {
 }
 
 //NOTICE: what if several requests to delete the same file? we assume all are valid and no attackers
-void delete_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void delete_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<< "HTTP: this is delete" << endl;
 
-	string filepath = request->path_match[1];
-	filepath = UrlDecode(filepath);
+	string filepath;
+
+	if (RequestType == "GET")
+	{
+		filepath = request->path_match[1];
+		filepath = UrlDecode(filepath);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		filepath = document["filepath"].GetString();
+	}
+
 	try {
 		//set the home directory of the web server
 		//NOTICE: we use .tmp/web instead of . to avoid attack: delete other files rather than the download one
@@ -1336,14 +1387,35 @@ void delete_thread(const shared_ptr<HttpServer::Response>& response, const share
 	}
 }
 
-void download_thread(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+bool delete_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&delete_thread, response, request, RequestType);
+	t.detach();
+	//delete_thread(response, request);
+	return true;
+}
+
+void download_thread(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
-	cout<<log_prefix<< "HTTP: this is download" << endl;
+	cout << log_prefix << "HTTP: this is download" << endl;
 
-	string filepath = request->path_match[1];
-	filepath = UrlDecode(filepath);
+	string filepath;
+
+	if (RequestType == "GET")
+	{
+		filepath = request->path_match[1];
+		filepath = UrlDecode(filepath);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		filepath = document["filepath"].GetString();
+	}
+
 	try {
 		//set the home directory of the web server
 		//NOTICE: we use .tmp/web instead of . to avoid attack: delete other files rather than the download one
@@ -1390,20 +1462,46 @@ void download_thread(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	}
 }
 
-void build_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	download_thread(server, response, request, RequestType);
+	//thread t(&download_thread, server, response, request);
+	//t.detach();
+	return true;
+}
+
+void build_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is build"<<endl;
 
-	string db_name=request->path_match[1];
-	string db_path=request->path_match[2];
-	string username = request->path_match[3];
-	string password = request->path_match[4];
-	db_name = UrlDecode(db_name);
-	db_path = UrlDecode(db_path);
-	username = UrlDecode(username);
-	password = UrlDecode(password);
+	string db_name;
+	string db_path;
+	string username;
+	string password;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		db_path = request->path_match[2];
+		username = request->path_match[3];
+		password = request->path_match[4];
+		db_name = UrlDecode(db_name);
+		db_path = UrlDecode(db_path);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		db_path = document["ds_path"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
 
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
@@ -1580,25 +1678,41 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 //	pthread_rwlock_unlock(&database_load_lock);
 }
 
-bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	thread t(&build_thread, response, request);
+	thread t(&build_thread, response, request, RequestType);
 	t.detach();
 	return true;
 }
 
-void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is load"<<endl;
 
-	string db_name = request->path_match[1];
-	string username = request->path_match[2];
-	string password = request->path_match[3];
-	db_name = UrlDecode(db_name);
-	username = UrlDecode(username);
-	password = UrlDecode(password);
+	string db_name;
+	string username;
+	string password;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
 
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
@@ -1785,25 +1899,41 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 }
 
-bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	thread t(&load_thread, response, request);
+	thread t(&load_thread, response, request, RequestType);
 	t.detach();
 	return true;
 }
 
-void unload_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void unload_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is unload"<<endl;
 
-	string db_name = request->path_match[1];
-	string username = request->path_match[2];
-	string password = request->path_match[3];
-	db_name = UrlDecode(db_name);
-	username = UrlDecode(username);
-	password = UrlDecode(password);
+	string db_name;
+	string username;
+	string password;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
 
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
@@ -1924,25 +2054,45 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	pthread_rwlock_unlock(&databases_map_lock);
 }
 
-bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	thread t(&unload_thread, response, request);
+	thread t(&unload_thread, response, request, RequestType);
 	t.detach();
 	return true;
 }
 
-void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, bool r)
+void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is drop"<<endl;
 
-	string db_name = request->path_match[1];
-	string username = request->path_match[2];
-	string password = request->path_match[3];
-	db_name = UrlDecode(db_name);
-	username = UrlDecode(username);
-	password = UrlDecode(password);
+	string db_name;
+	string username;
+	string password;
+	string is_backup;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		is_backup = request->path_match[4];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		is_backup = UrlDecode(is_backup);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		is_backup = document["is_backup"].GetString();
+	}
 
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
@@ -2054,17 +2204,17 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		"<" + db_name + "> <built_by> <" + creator + "> ." + "<" + db_name + "> <built_time> \"" + time + "\".}";
 	updateSys(update);
 	string cmd;
-	if(r)
+	if (is_backup == "false")
 		cmd = "rm -r " + db_name + ".db";
-	else
+	else if (is_backup == "true")
 		cmd = "mv " + db_name + ".db " + db_name + ".bak";
 	system(cmd.c_str());
 	return;
 }
 
-bool drop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, bool r)
+bool drop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	thread t(&drop_thread, response, request, r);
+	thread t(&drop_thread, response, request, RequestType);
 	t.detach();
 	return true;
 }
@@ -2411,17 +2561,36 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 
 	//return true;
 }
-bool query_handler0(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+
+bool query_handler0(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	cout<<"HTTP: this is query_handler0"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is query_handler0" << endl;
 	cout << "request->path: " << request->path << endl;
-	string db_name = request->path_match[1];
-	string format = request->path_match[2];
-	//string format = "html";
-	string db_query=request->path_match[3];
-	db_name = UrlDecode(db_name);
-	format = UrlDecode(format);
-	db_query = UrlDecode(db_query);
+
+	string db_name;
+	string format;
+	string db_query;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		format = request->path_match[2];
+		db_query = request->path_match[3];
+		db_name = UrlDecode(db_name);
+		format = UrlDecode(format);
+		db_query = UrlDecode(db_query);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		format = document["format"].GetString();
+		db_query = document["sparql"].GetString();
+	}
 	
 	//check if the db_name is system
 	if (db_name == "system")
@@ -2437,21 +2606,44 @@ bool query_handler0(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	pool.AddTask(task);
 }
 
-bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	cout<<"HTTP: this is query_handler1"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is query_handler1" << endl;
 	cout << "request->path: " << request->path << endl;
-	string username = request->path_match[1];
-	string password = request->path_match[2];
-	string db_name = request->path_match[3];
-	string format = request->path_match[4];
-	//string format = "html";
-	string db_query=request->path_match[5];
-	db_name = UrlDecode(db_name);
-	username = UrlDecode(username);
-	password = UrlDecode(password);
-	format = UrlDecode(format);
-	db_query = UrlDecode(db_query);
+
+	string username;
+	string password;
+	string db_name;
+	string format;
+	string db_query;
+
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		db_name = request->path_match[3];
+		format = request->path_match[4];
+		db_query = request->path_match[5];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		format = UrlDecode(format);
+		db_query = UrlDecode(db_query);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		db_name = document["db_name"].GetString();
+		format = document["format"].GetString();
+		db_query = document["sparql"].GetString();
+	}
+
 	cout<<"check: "<<db_query<<endl;
 	string str = db_query;
 
@@ -2596,7 +2788,7 @@ bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Respo
 //}
 
 
-void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -2609,12 +2801,28 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 //		return;
 //	}
 
-	string db_name = request->path_match[1];
-	string username = request->path_match[2];
-	string password = request->path_match[3];
-	db_name = UrlDecode(db_name);
-	username = UrlDecode(username);
-	password = UrlDecode(password);
+	string db_name;
+	string username;
+	string password;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
 
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
@@ -2716,26 +2924,10 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 }
 
-bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	thread t(&monitor_thread, response, request);
+	thread t(&monitor_thread, response, request, RequestType);
 	t.detach();
-	return true;
-}
-
-bool delete_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
-{
-	thread t(&delete_thread, response, request);
-	t.detach();
-	//delete_thread(response, request);
-	return true;
-}
-
-bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
-{
-	download_thread(server, response, request);
-	//thread t(&download_thread, server, response, request);
-	//t.detach();
 	return true;
 }
 
@@ -2827,19 +3019,36 @@ bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 
 	default_thread(server, response, request);
 	//thread t(&default_thread, response, request);
-	//t.detach();
+	//t.detach();S
 	return true;
 }
-bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+
+bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	cout<<"HTTP: this is check"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is check" << endl;
+
 	string req_url = request->path;
 	cout << "request url: " << req_url << endl;
-	string username = request->path_match[1];
-	username = UrlDecode(username);
-	string password = request->path_match[2];
-	password = UrlDecode(password);
+	string username;
+	string password;
 
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
 	cout << "username = " << username << endl;
 	cout << "password = " << password << endl;
 
@@ -2881,16 +3090,33 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 		return true;
 	}
 }
-bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+
+bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	cout<<"HTTP: this is login"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is login" << endl;
+
 	string req_url = request->path;
 	cout << "request url: " << req_url << endl;
-	string username = request->path_match[1];
-	username = UrlDecode(username);
-	string password = request->path_match[2];
-	password = UrlDecode(password);
+	string username;
+	string password;
 
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
 	cout << "username = " << username << endl;
 	cout << "password = " << password << endl;
 
@@ -3032,7 +3258,7 @@ bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 	return true;	
 }
 
-void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -3046,12 +3272,28 @@ void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const s
 //		return;
 //	}
 
-	string db_name = request->path_match[1];
-	string username = request->path_match[2];
-	string password = request->path_match[3];
-	db_name = UrlDecode(db_name);
-	username = UrlDecode(username);
-	password = UrlDecode(password);
+	string db_name;
+	string username;
+	string password;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
 
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
@@ -3152,9 +3394,9 @@ void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const s
 
 //TODO+BETTER: server choose to save a database when system is not busy
 //If user send this command too frequently, the performance may be awful if updates are large
-bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	thread t(&checkpoint_thread, response, request);
+	thread t(&checkpoint_thread, response, request, RequestType);
 	t.detach();
 	return true;
 }
@@ -3217,118 +3459,46 @@ bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 	return true; 
 }
 
-bool checkall_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+// to add, delete users or modify the privilege of a user, operation be done by the root user
+void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	thread t(&checkall_thread, response, request);
-	t.detach();
-	return true;
-}
 
-void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
-{
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
-	cout<<log_prefix<<"HTTP: this is show"<<endl;
-
-	string username = request->path_match[1];
-	string password = request->path_match[2];
-	username = UrlDecode(username);
-	password = UrlDecode(password);
-
-	//check identity.
-	pthread_rwlock_rdlock(&users_map_lock);
-	std::map<std::string, struct User *>::iterator it = users.find(username);
-	if(it == users.end())
-	{
-		string error = "username not find.";
-		string resJson = CreateJson(903, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
-		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		pthread_rwlock_unlock(&users_map_lock);
-		return;
-	}
-	else if(it->second->getPassword() != password)
-	{
-		string error = "wrong password.";
-		string resJson = CreateJson(902, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
-		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		pthread_rwlock_unlock(&users_map_lock);
-		return;
-	}
-	pthread_rwlock_unlock(&users_map_lock);
-	cout << "check identity successfully." << endl;
-	
-	pthread_rwlock_rdlock(&already_build_map_lock);
-	std::map<std::string, struct DBInfo *>::iterator it_already_build;
-	string success;
-	Document resDoc;
-	resDoc.SetObject();
-	Document::AllocatorType &allocator = resDoc.GetAllocator();
-
-	resDoc.AddMember("StatusCode", 0, allocator);
-	resDoc.AddMember("StatusMsg", "success",  allocator);
-	Value jsonArray(kArrayType);
-
-	for(it_already_build=already_build.begin(); it_already_build != already_build.end(); it_already_build++)
-	{
-		string database_name = it_already_build->first;
-		string creator = it_already_build->second->getCreator();
-		string time = it_already_build->second->getTime();
-		if((database_name == "system")&&(username != ROOT_USERNAME))
-			continue;
-		Value obj(kObjectType);
-
-		Value _database_name;
-		_database_name.SetString(database_name.c_str(), database_name.length(), allocator);
-		obj.AddMember("database", _database_name, allocator);
-
-		Value _creator;
-		_creator.SetString(creator.c_str(), creator.length(), allocator);
-		obj.AddMember("creator", _creator, allocator);
-
-		Value _time;
-		_time.SetString(time.c_str(), time.length(), allocator);
-		obj.AddMember("built_time", _time, allocator);
-		pthread_rwlock_rdlock(&databases_map_lock);
-		if(databases.find(database_name)== databases.end())
-			obj.AddMember("status", "unloaded", allocator);
-		else
-			obj.AddMember("status", "loaded", allocator);
-		pthread_rwlock_unlock(&databases_map_lock);
-		jsonArray.PushBack(obj, allocator);
-	}
-	resDoc.AddMember("ResponseBody", jsonArray, allocator);
-	StringBuffer resBuffer;
-	PrettyWriter<StringBuffer> resWriter(resBuffer);
-	resDoc.Accept(resWriter);
-	string resJson = resBuffer.GetString();
-
-	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
-	
-	
-	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
-	//return true;
-	pthread_rwlock_unlock(&already_build_map_lock);
-	return; 
-}
-// to add, delete users or modify the privilege of a user, operation be done by the root user
-bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
-{
-	cout << "HTTP: this is user" << endl;
+	cout << log_prefix << "HTTP: this is user" << endl;
 
 	string req_url = request->path;
 	cout << "request url: " << req_url << endl;
-	string type = request->path_match[1];
-	type = UrlDecode(type);
-	string username1 = request->path_match[2];
-	username1 = UrlDecode(username1);
-	string password1 = request->path_match[3];
-	password1 = UrlDecode(password1);
+	string type;
+	string username1;
+	string password1;
+	string username2;
+	string addition;
+
+	if (RequestType == "GET")
+	{
+		type = request->path_match[1];
+		username1 = request->path_match[2];
+		password1 = request->path_match[3];
+		username2 = request->path_match[4];
+		addition = request->path_match[5];
+		type = UrlDecode(type);
+		username1 = UrlDecode(username1);
+		password1 = UrlDecode(password1);
+		username2 = UrlDecode(username2);
+		addition = UrlDecode(addition);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		type = document["type"].GetString();
+		username1 = document["username1"].GetString();
+		password1 = document["password1"].GetString();
+		username2 = document["username2"].GetString();
+		addition = document["addition"].GetString();
+	}
 
 	cout << "type = " << type << endl;
 	cout << "username1 = " << username1 << endl;
@@ -3341,10 +3511,6 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 
 	if(username1 == ROOT_USERNAME & password1 == root_password)
 	{
-		string username2 = request->path_match[4];
-		username2 = UrlDecode(username2);
-		string addition = request->path_match[5];
-		addition = UrlDecode(addition);
 		string password2 = addition;
 			
 		cout << "username2 = " << username2 << endl;
@@ -3372,7 +3538,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 				pthread_rwlock_unlock(&users_map_lock);
-				return false;
+				return;
 			}
 			pthread_rwlock_unlock(&users_map_lock);
 
@@ -3411,7 +3577,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 				pthread_rwlock_unlock(&users_map_lock);
-				return false;
+				return;
 			}
 			pthread_rwlock_unlock(&users_map_lock);
 
@@ -3429,7 +3595,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 				pthread_rwlock_unlock(&users_map_lock);
 		
-				return false;
+				return;
 				
 			}
 			else
@@ -3454,7 +3620,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-				return false;
+				return;
 			}
 			int len = type.length();
 			string subType = type.substr(4, len-4);
@@ -3468,7 +3634,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-				return false;
+				return;
 			}
 		}
 		else if(type == "delete_query" || type == "delete_load" || type == "delete_unload" || type == "delete_update")
@@ -3481,7 +3647,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-				return false;
+				return;
 			}
 			int len = type.length();
 			string subType = type.substr(7, len-7);
@@ -3495,7 +3661,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-				return false;
+				return;
 			}
 		}
 		string success = "operation on users succeeded.";
@@ -3504,7 +3670,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
-		return true;
+		return;
 	}
 	
 	//if not root user, no privilege to perform this operation
@@ -3514,7 +3680,7 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		
 	
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-	return false;
+	return;
 
 //TODO:MODIFY
 	//NOTICE: this info is in header
@@ -3523,31 +3689,193 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 	//pthread_rwlock_unlock(&database_load_lock);
 }
 
-//BETTER: indicate the db_name when query
-bool show_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	thread t(&show_thread, response, request);
+	thread t(&user_thread, response, request, RequestType);
 	t.detach();
 	return true;
 }
 
-bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
+//BETTER: indicate the db_name when query
+void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	cout<<"HTTP: this is showUser"<<endl;
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is show" << endl;
+
+	string username;
+	string password;
+
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User *>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+	cout << "check identity successfully." << endl;
+
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build;
+	string success;
+	Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "success", allocator);
+	Value jsonArray(kArrayType);
+
+	for (it_already_build = already_build.begin(); it_already_build != already_build.end(); it_already_build++)
+	{
+		string database_name = it_already_build->first;
+		string creator = it_already_build->second->getCreator();
+		string time = it_already_build->second->getTime();
+		if ((database_name == "system") && (username != ROOT_USERNAME))
+			continue;
+		Value obj(kObjectType);
+
+		Value _database_name;
+		_database_name.SetString(database_name.c_str(), database_name.length(), allocator);
+		obj.AddMember("database", _database_name, allocator);
+
+		Value _creator;
+		_creator.SetString(creator.c_str(), creator.length(), allocator);
+		obj.AddMember("creator", _creator, allocator);
+
+		Value _time;
+		_time.SetString(time.c_str(), time.length(), allocator);
+		obj.AddMember("built_time", _time, allocator);
+		pthread_rwlock_rdlock(&databases_map_lock);
+		if (databases.find(database_name) == databases.end())
+			obj.AddMember("status", "unloaded", allocator);
+		else
+			obj.AddMember("status", "loaded", allocator);
+		pthread_rwlock_unlock(&databases_map_lock);
+		jsonArray.PushBack(obj, allocator);
+	}
+	resDoc.AddMember("ResponseBody", jsonArray, allocator);
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+
+
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	//return true;
+	pthread_rwlock_unlock(&already_build_map_lock);
+	return;
+}
+
+bool show_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&show_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+void showUser_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is showUser" << endl;
+
+	string username;
+	string password;
+
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User *>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+	cout << "check identity successfully." << endl;
 
 	pthread_rwlock_rdlock(&users_map_lock);
-	if(users.empty())
+	if (users.empty())
 	{
 		string error = "No Users.\r\n";
 		string resJson = CreateJson(802, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&users_map_lock);
-		return false;
+		return;
 	}
-	std::map<std::string, struct User *>::iterator it;
 	string success;
 
 	Document resDoc;
@@ -3556,7 +3884,8 @@ bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 	resDoc.AddMember("StatusCode", 0, allocator);
 	resDoc.AddMember("StatusMsg", "success", allocator);
 	Value json_array(kArrayType);
-	for(it=users.begin(); it != users.end(); it++)
+
+	for (it = users.begin(); it != users.end(); it++)
 	{
 		Value obj(kObjectType);
 		string username = it->second->getUsername();
@@ -3597,11 +3926,17 @@ bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 	resDoc.Accept(resWriter);
 	string resJson = resBuffer.GetString();
 
-	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
-		
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 	pthread_rwlock_unlock(&users_map_lock);
+	return;
+}
+
+bool showUser_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&showUser_thread, response, request, RequestType);
+	t.detach();
 	return true;
 }
 

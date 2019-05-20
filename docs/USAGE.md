@@ -112,50 +112,55 @@ if you leave out the argument serverPort in the commond, then the corresponding 
 if you leave out the argument db_name in the commond, then the server will start with no database loaded.
 
 
-operation: build, load, unload, query, monitor, show, checkpoint, user, drop
+operation: build, load, unload, user, showUser, query, drop, monitor, show, checkpoint
 
 ```
+// initialize 
+GstoreConnector gc("127.0.0.1", 9000, "root", "123456");
+
 // build a new database by a RDF file.
-gc.build("test", "data/lubm/LUBM_10.n3", "root", "123456");
+gc.build("lubm", "data/lubm/lubm.nt");
 
-// drop a database already built but leave a backup.
-gc.drop("test", "root", "123456");
-
-// drop a database already built completely.
-gc.drop_r("test", "root", "123456");
-
-// load database
-gc.load("test", "root", "123456");
-
-// then you can execute SPARQL query on this database.
-answer = gc.query("root", "123456", "test", sparql);
-
-// output information of a database
-cout << answer << std::endl;
-
-// unload this database
-gc.unload("lubm", "root", "123456");
-
-// show all databases already built and if they are loaded
-gc.show("root", "123456");
-
-// show statistical information of a loaded database  
-gc.monitor("lubm", "root", "123456");
-
-// save updates of a loaded database  
-gc.checkpoint("lubm", "root", "123456");
+// load the database that you built.
+gc.load("lubm");
 
 //add a user(with username: Jack, password: 2)
-answer = gc.user("add_user", "root", "123456", "Jack", "2");
+gc.user("add_user", "Jack", "2");
 
 //add privilege to user Jack(add_query, add_load, add_unload)
-answer = gc.user("add_query", "root", "123456", "Jack", "lubm");
+gc.user("add_query", "Jack", "lubm");
 
 //delete privilege of a user Jack(delete_query, delete_load, delete_unload)
-answer = gc.user("delete_query", "root", "123456", "Jack", "lubm");
+gc.user("delete_query", "Jack", "lubm");
 
 //delete user(with username: Jack, password: 2)
-answer = gc.user("delete_user", "root", "123456", "Jack", "2");
+gc.user("delete_user", "Jack", "2");
+
+// show all users
+gc.showUser();
+
+// query
+res = gc.query("lubm", "json", sparql);
+std::cout << res << std::endl;
+
+// save updates of a loaded database  
+gc.checkpoint("lubm");
+
+// show statistical information of a loaded database
+gc.monitor("lubm");
+
+// show all databases already built and if they are loaded
+gc.show();
+
+// unload this database.
+gc.unload("lubm");
+
+// drop a database already built completely.
+gc.drop("lubm", false);
+
+// drop a database already built but leave a backup.
+gc.drop("lubm", true);
+
 ```
 
 ```
@@ -169,6 +174,7 @@ username: the username of the user that execute the operation
 password: the password of the user that execute the operation
 ```
 
+`ghttp` support both GET and POST request-type.
 `ghttp` support concurrent read-only queries, but when queries containing updates come, the whole database will be locked.
 The number of concurrent running queries is suggest to be lower than 300 on a machine with dozens of kernel threads, though we can run 13000 queries concurrently in our experiments.
 To use the concurrency feature, you had better modify the system settings of 'open files' and 'maximum processes' to 65535 or larger.
@@ -176,7 +182,7 @@ Three scripts are placed in [setup](../scripts/setup/) to help you modify the se
 
 **If queries containing updates are sent via `ghttp`, you'd better often send a `checkpoint` command to the `ghttp` console. Otherwise, the updates may not be synchronize to disk and will be lost if the `ghttp` server is stopped abnormally.(For example, type "Ctrl+C")**
 
-**Attention: you can not stop ghttp by simply type the command "Ctrl+C", because this will cause the changes of databases lost.
+**Attention: you had better not stop ghttp by simply type the command "Ctrl+C", because this is not safe.
 
 ** In order to stop the ghttp server, you can type `bin/shutdown serverPort`
 - - -
