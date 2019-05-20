@@ -6,7 +6,7 @@ Compired with socket API, HTTP API is more stable and more standard, and can mai
 
 ## Easy Examples
 
-We provide C++, java, python and php API for ghttp now. Please refer to example codes in `api/http/cpp`, `api/http/java`, `api/http/python` and `api/http/php`. To use these examples, please make sure that executables have already been generated.
+We provide C++, java, python, php and nodejs API for ghttp now. Please refer to example codes in `api/http/cpp`, `api/http/java`, `api/http/python`, `api/http/php` and `api/http/nodejs`. To use these examples, please make sure that executables have already been generated.
 
 Next, **start up ghttp service by using \texttt{bin/ghttp} command.** It is ok if you know a running usable ghttp server and try to connect to it. (you do not need to change anything if using examples, just by default). Then, for C++ and java code, you need to compile the example codes in the directory `api/http/cpp/example` and `api/http/java/example`. 
 
@@ -79,7 +79,7 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 
     - nodejs/ (the Nodejs API)
 
-        - index.js (source code of Nodejs API)
+        - GstoreConnector.js (source code of Nodejs API)
 
         - LICENSE
 
@@ -87,7 +87,11 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 
         - README.md
 
-        - example.js (small example to show the basic idea of using the Nodejs API)			
+        - example/ (small example to show the basic idea of using the Nodejs API)		
+
+            - POST-example.js
+
+            - GET-example.js		
 			
     - php/ (the Php API)
 
@@ -162,7 +166,9 @@ gc.drop("lubm", true);
 The original declaration of these functions are as below:
 
 ```
-GstoreConnector();
+If request_type is "GET", the last parameter can be omitted:
+
+GstoreConnector(std::string serverIP, int serverPort, std::string username, std::string password);
 
 std::string build(std::string db_name, std::string rdf_file_path, std::string request_type);
 
@@ -250,7 +256,9 @@ gc.drop("lubm", true);
 The original declaration of these functions are as below:
 
 ```
-public class GstoreConnector();
+If request_type is "GET", the last parameter can be omitted:
+
+public class GstoreConnector(String serverIP, int serverPort, String username, String password);
 
 public String build(String db_name, String rdf_file_path, String request_type);
 
@@ -329,7 +337,9 @@ res = gc.drop("lubm", True)
 The original declaration of these functions are as below:
 
 ```
-public class GstoreConnector()
+If request_type is "GET", the last parameter can be omitted:
+
+public class GstoreConnector(self, serverIP, serverPort, username, password):
 
 def build(self, db_name, rdf_file_path, request_type):
 
@@ -363,36 +373,73 @@ def show(self, request_type):
 
 Before using Nodejs API, type `npm install request` and `npm install request-promise` under the nodejs folder to add the required module.
 
-To use Nodejs API, please see gStore/api/http/nodejs/index.js. Functions should be called like following:
+To use Nodejs API, please see gStore/api/http/nodejs/GstoreConnector.js. Functions should be called like following:
 
 ```
-# start a gc with given IP and Port
-gc =  new GStoreClient(username, password, "http://127.0.0.1:9000")
+// start a gc with given IP, Port, username and password
+gc =  new GstoreConnector("127.0.0.1", 9000, "root", "123456");
 
-# build database with a RDF graph
-ret = gc.build("test", "data/lubm/lubm.nt")
+// build a database with a RDF graph
+res = gc.build("lubm", "data/lubm/lubm.nt");
 
-# load the database
-ret = gc.load("test")
+// load the database 
+res = gc.load("lubm");
 
-# query
-print (gc.query("test", sparql))
+// to add, delete a user or modify the privilege of a user, operation must be done by the root user
+res = gc.user("add_user", "user1", "111111");
 
-# unload the database
-ret = gc.unload("test")
+// show all users
+res = gc.showUser();
+
+// query
+res = gc.query("lubm", "json", sparql);
+console.log(JSON.stringify(res,","));
+
+// save the database if you have changed the database
+res = gc.checkpoint("lubm");
+
+// show information of the database
+res = gc.monitor("lubm");
+
+// show all databases
+res = gc.show();
+
+// unload the database
+res = gc.unload("lubm");
+
+// drop the database directly
+res = gc.drop("lubm", false);
+
+// drop the database and leave a backup
+res = gc.drop("lubm", true);
+
 ```
 The original declaration of these functions are as below:
 
 ```
-class GStoreClient
+If request_type is "GET", the last parameter can be omitted:
 
-async build(db = '', dataPath = '')
+class GstoreConnector(ip = '', port, username = '', password = '');
 
-async load(db = '')
+async build(db_name = '', rdf_file_path = '', request_type);
 
-async unload(db = '')
+async load(db_name = '', request_type);
 
-async query(db = '', sparql = '')
+async unload(db_name = '', request_type);
+
+async user(type = '', username2 = '' , addition = '' , request_type);
+
+async showUser(request_type);
+
+async query(db_name = '', format = '' , sparql = '' , request_type);
+
+async drop(db_name = '', is_backup , request_type);
+
+async monitor(db_name = '', request_type);    
+
+async checkpoint(db_name = '', request_type);
+
+async show(request_type);
 
 ```
 
@@ -460,7 +507,9 @@ echo $res. PHP_EOL;
 The original declaration of these functions are as below:
 
 ```
-class GstoreConnector
+If request_type is "GET", the last parameter can be omitted:
+
+class GstoreConnector($ip, $port, $username, $password)
 
 function build($db_name, $rdf_file_path, $request_type)
 

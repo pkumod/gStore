@@ -4,22 +4,17 @@ Node.js client for [gStore](https://github.com/pkumod/gStore)
 
 ## Usage
 
-`npm install https://github.com/FrontMage/gStoreNode`
-
-or
-
-`npm install gstore-whu --save`
-
 ```javascript
-const GStoreClient = require("gstore-whu");
-const client = new GStoreClient(
-  "username",
-  "password",
-  "http://localhost:9000"
+const GstoreConnector = require("GstoreConnector.js");
+const gc = new GstoreConnector(
+  "localhost",
+  9000,
+  "root",
+  "123456"
 );
 
 (async function() {
-  const result = await client.query("lubm", "select * where {?s ?p ?o}");
-  console.log(result);
+  const res = await gc.query("lubm", "json", "select * where {?s ?p ?o}");
+  console.log(JSON.stringify(res,","));
 })();
 ```
