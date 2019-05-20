@@ -70,7 +70,7 @@ You are welcomed to submit the bugs you discover if they do not exist in this fi
 
 We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in [Recipe Book](docs/TIPS.md).
 
-You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <bookug@qq.com> to submit your suggestions and report bugs to us by emailing to <gStoreDB@gmail.com>. A full list of our whole team is in [Mailing List](docs/MAIL.md).
+You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <gjsjdbgroup@pku.edu.cn> to submit your suggestions and report bugs. A full list of our whole team is in [Mailing List](docs/MAIL.md).
 
 There are some restrictions when you use the current gStore project, you can see them on [Limit Description](docs/LIMIT.md).
 
