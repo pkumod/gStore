@@ -17,7 +17,7 @@ using namespace std;
 int main(int argc, char * argv[])
 {
 	std::string IP = "127.0.0.1";
-	int Port = 9000;
+	int Port = 9100;
 	std::string username = "root";
 	std::string password = "123456";
     std::string sparql = "select ?x where \

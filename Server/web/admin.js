@@ -486,7 +486,12 @@ function showUsers(){
 		var target = $("#myspin").get(0);
 		spinner.spin(target);
 
-	var argu12 = "?operation=showUsers";
+		var username = getCookie('user');
+		var password = getCookie('pswd');
+	
+	//alert("showDatabases");
+
+	var argu12 = "?operation=showUser&username=" + username + "&password=" + password;
 	var encodeArgu12 = escape(argu12);
 	$.get(encodeArgu12, function(data, status){
 		//setTimeout(function(){spinner.spin();}, 300);
