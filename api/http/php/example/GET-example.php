@@ -64,6 +64,11 @@ $res = $gc->drop("lubm", false); #delete the database directly
 //$res = $gc->drop("lubm", true); #leave a backup
 echo $res. PHP_EOL;
 
+// get CoreVersion and APIVersion
+$res = $gc->getCoreVersion();
+echo $res. PHP_EOL;
+$res = $gc->getAPIVersion();
+echo $res. PHP_EOL;
 ?>
 
 

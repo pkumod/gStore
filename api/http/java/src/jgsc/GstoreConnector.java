@@ -515,6 +515,44 @@ public class GstoreConnector {
         return res;
     }
 
+    public String getCoreVersion(String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=getCoreVersion&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "getCoreVersion";
+			String strPost = "{\"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strUrl, strPost);
+        }
+        return res;
+    }
+
+    public String getCoreVersion() {
+	    String res = this.getCoreVersion("GET");
+        return res;
+    }
+
+    public String getAPIVersion(String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=getAPIVersion&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+		    String strUrl = "getAPIVersion";
+			String strPost = "{\"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strUrl, strPost);
+        }
+        return res;
+    }
+
+    public String getAPIVersion() {
+	    String res = this.getAPIVersion("GET");
+        return res;
+    }
+
     private static byte[] packageMsgData(String _msg) {
         //byte[] data_context = _msg.getBytes();
         byte[] data_context = null;

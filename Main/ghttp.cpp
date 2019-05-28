@@ -1,6 +1,6 @@
 /*=============================================================================
 # Filename: ghttp.cpp
-# Author: Bookug Lober suxunbint 
+# Author: Bookug Lober suxunbin
 # Mail: zengli-bookug@pku.edu.cn
 # Last Modified: 2019-5-9 17:00
 # Description: created by lvxin, improved by lijing and suxunbin
@@ -99,6 +99,10 @@ bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 
 bool drop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
+bool getCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool getAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
 void query_thread(bool update_flag, string db_name, string format, string db_query, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
@@ -110,6 +114,8 @@ void signalHandler(int signum);
 FILE* query_logfp = NULL;
 string queryLog = "logs/endpoint/query.log";
 mutex query_log_lock;
+string CoreVersion;
+string APIVersion;
 string system_password;
 string NAMELOG_PATH  = "name.log";
 int port;
@@ -1108,6 +1114,40 @@ int initialize(int argc, char *argv[])
 	server.resource["/show"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		show_handler(server, response, request, "POST");
+	};
+
+	//GET-example for the path /?operation=getCoreVersion&username=[username]&password=[password], responds with the matched string in path
+	server.resource["^/%3[F|f]operation%3[D|d]getCoreVersion%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		getCoreVersion_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=getCoreVersion&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		getCoreVersion_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /getCoreVersion, responds with the matched string in path
+	server.resource["/getCoreVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		getCoreVersion_handler(server, response, request, "POST");
+	};
+
+	//GET-example for the path /?operation=getAPIVersion&username=[username]&password=[password], responds with the matched string in path
+	server.resource["^/%3[F|f]operation%3[D|d]getAPIVersion%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		getAPIVersion_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=getAPIVersion&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		getAPIVersion_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /getAPIVersion, responds with the matched string in path
+	server.resource["/getAPIVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		getAPIVersion_handler(server, response, request, "POST");
 	};
 
 	//USAGE: in endpoint, if user choose to display via html, but not display all because the result's num is too large.
@@ -3811,6 +3851,170 @@ bool show_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 	return true;
 }
 
+void getCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is getCoreVersion" << endl;
+
+	string username;
+	string password;
+
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User *>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+	cout << "check identity successfully." << endl;
+
+	Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "success", allocator);
+	Value jsonArray(kArrayType);
+	Value obj(kObjectType);
+	Value _CoreVersion;
+	_CoreVersion.SetString(CoreVersion.c_str(), CoreVersion.length(), allocator);
+	obj.AddMember("CoreVersion", _CoreVersion, allocator);
+	jsonArray.PushBack(obj, allocator);
+	resDoc.AddMember("ResponseBody", jsonArray, allocator);
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+
+	return;
+}
+
+bool getCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&getCoreVersion_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+void getAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is getAPIVersion" << endl;
+
+	string username;
+	string password;
+
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User *>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+	cout << "check identity successfully." << endl;
+
+	Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "success", allocator);
+	Value jsonArray(kArrayType);
+	Value obj(kObjectType);
+	Value _APIVersion;
+	_APIVersion.SetString(APIVersion.c_str(), APIVersion.length(), allocator);
+	obj.AddMember("APIVersion", _APIVersion, allocator);
+	jsonArray.PushBack(obj, allocator);
+	resDoc.AddMember("ResponseBody", jsonArray, allocator);
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+
+	return;
+}
+
+bool getAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&getAPIVersion_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
 void showUser_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	string thread_id = Util::getThreadID();
@@ -4244,6 +4448,30 @@ void DB2Map()
 		Value &pp1 = pp["x"];
 		string built_time = pp1["value"].GetString();
 		already_build.find("system")->second->setTime(built_time);
+	}
+
+	//get CoreVersion and APIVersion
+	sparql = "select ?x where{<CoreVersion> <value> ?x.}";
+	strJson = querySys(sparql);
+	document.Parse(strJson.c_str());
+	p1 = document["results"];
+	p2 = p1["bindings"];
+	for (int i = 0; i < p2.Size(); i++)
+	{
+		Value &pp = p2[i];
+		Value &pp1 = pp["x"];
+		CoreVersion = pp1["value"].GetString();
+	}
+	sparql = "select ?x where{<APIVersion> <value> ?x.}";
+	strJson = querySys(sparql);
+	document.Parse(strJson.c_str());
+	p1 = document["results"];
+	p2 = p1["bindings"];
+	for (int i = 0; i < p2.Size(); i++)
+	{
+		Value &pp = p2[i];
+		Value &pp1 = pp["x"];
+		APIVersion = pp1["value"].GetString();
 	}
 }
 

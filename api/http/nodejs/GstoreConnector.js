@@ -221,6 +221,39 @@ class GstoreConnector {
         }
     }
 
+    async getCoreVersion(request_type = 'GET') 
+    {
+        if (request_type == 'GET')
+        {
+            const strUrl = "?operation=getCoreVersion&username=" + this.username + "&password=" + this.password;
+            const res = this.Get(strUrl);
+            return res;
+        }
+        else if (request_type == 'POST')
+        {
+            const strUrl = "getCoreVersion";
+            const strPost = '{\"username\": \"' + this.username + '\", \"password\": \"' + this.password + '\"}';
+            const res = this.Post(strUrl, strPost);
+            return res;
+        }
+    }
+
+    async getAPIVersion(request_type = 'GET') 
+    {
+        if (request_type == 'GET')
+        {
+            const strUrl = "?operation=getAPIVersion&username=" + this.username + "&password=" + this.password;
+            const res = this.Get(strUrl);
+            return res;
+        }
+        else if (request_type == 'POST')
+        {
+            const strUrl = "getAPIVersion";
+            const strPost = '{\"username\": \"' + this.username + '\", \"password\": \"' + this.password + '\"}';
+            const res = this.Post(strUrl, strPost);
+            return res;
+        }
+    }
 }
 
 module.exports = GstoreConnector;

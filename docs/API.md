@@ -162,6 +162,10 @@ gc.drop("lubm", false);
 // drop the database and leave a backup
 gc.drop("lubm", true);
 
+// get CoreVersion and APIVersion
+gc.getCoreVersion();
+gc.getAPIVersion();
+
 ```
 The original declaration of these functions are as below:
 
@@ -189,6 +193,10 @@ std::string monitor(std::string db_name, std::string request_type);
 std::string checkpoint(std::string db_name, std::string request_type);
 
 std::string show(std::string request_type);
+
+std::string getCoreVersion(std::string request_type);
+
+std::string getAPIVersion(std::string request_type);
 
 void fquery(std::string db_name, std::string format, std::string sparql, std::string filename, std::string request_type);
 
@@ -250,6 +258,10 @@ gc.drop("lubm", false);
 // drop the database and leave a backup
 gc.drop("lubm", true);
 
+// get CoreVersion and APIVersion
+gc.getCoreVersion();
+gc.getAPIVersion();
+
 ```
 
 
@@ -281,6 +293,10 @@ public String monitor(String db_name, String request_type);
 public String checkpoint(String db_name, String request_type);
 
 public String show(String request_type);
+
+public String getCoreVersion(String request_type);
+
+public String getAPIVersion(String request_type);
 
 ```
 
@@ -333,6 +349,10 @@ res = gc.drop("lubm", False)
 # drop the database and leave a backup
 res = gc.drop("lubm", True)
 
+# get CoreVersion and APIVersion
+res = gc.getCoreVersion();
+res = gc.getAPIVersion();
+
 ```
 The original declaration of these functions are as below:
 
@@ -362,6 +382,10 @@ def monitor(self, db_name, request_type):
 def checkpoint(self, db_name, request_type):
 
 def show(self, request_type):
+
+def getCoreVersion(self, request_type):
+
+def getAPIVersion(self, request_type):
 
 ```
 
@@ -413,6 +437,10 @@ res = gc.drop("lubm", false);
 // drop the database and leave a backup
 res = gc.drop("lubm", true);
 
+// get CoreVersion and APIVersion
+res = gc.getCoreVersion();
+res = gc.getAPIVersion();
+
 ```
 The original declaration of these functions are as below:
 
@@ -440,6 +468,10 @@ async monitor(db_name = '', request_type);
 async checkpoint(db_name = '', request_type);
 
 async show(request_type);
+
+async getCoreVersion(request_type);
+
+async getAPIVersion(request_type);
 
 ```
 
@@ -502,6 +534,12 @@ echo $res. PHP_EOL;
 $res = $gc->drop("lubm", true);
 echo $res. PHP_EOL;
 
+// get CoreVersion and APIVersion
+$res = $gc->getCoreVersion();
+echo $res. PHP_EOL;
+$res = $gc->getAPIVersion();
+echo $res. PHP_EOL;
+
 ```
 
 The original declaration of these functions are as below:
@@ -532,6 +570,10 @@ function monitor($db_name, $request_type)
 function checkpoint($db_name, $request_type)
 
 function show($request_type)
+
+function getCoreVersion($request_type)
+
+function getAPIVersion($request_type)
 
 ```
 

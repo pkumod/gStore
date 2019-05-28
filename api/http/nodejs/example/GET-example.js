@@ -67,4 +67,10 @@ const gc = new GstoreConnector(
     res = await gc.drop("lubm", false); //delete the database directly
     //res = await gc.drop("lubm", true) //leave a backup
     console.log(JSON.stringify(res,","));
+
+    // get CoreVersion and APIVersion
+    res = await gc.getCoreVersion();
+    console.log(JSON.stringify(res,","));
+    res = await gc.getAPIVersion();
+    console.log(JSON.stringify(res,","));
 })();
