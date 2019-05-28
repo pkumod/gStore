@@ -80,6 +80,12 @@ int main(int argc, char * argv[])
 	//res = gc.drop("lubm", true); //leave a backup
 	cout << res << endl;  
 
+	// get CoreVersion and APIVersion
+	res = gc.getCoreVersion();
+	cout << res << endl;
+	res = gc.getAPIVersion();
+	cout << res << endl;
+
     return 0;
 }
 

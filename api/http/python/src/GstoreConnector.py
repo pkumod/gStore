@@ -176,3 +176,23 @@ class GstoreConnector:
             strPost = '{\"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
             res = self.Post(strUrl, strPost)
         return res
+
+    def getCoreVersion(self, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = self.Url + "/?operation=getCoreVersion&username=" + self.username + "&password=" + self.password
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strUrl = self.Url + "/getCoreVersion"
+            strPost = '{\"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
+            res = self.Post(strUrl, strPost)
+        return res
+
+    def getAPIVersion(self, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = self.Url + "/?operation=getAPIVersion&username=" + self.username + "&password=" + self.password
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strUrl = self.Url + "/getAPIVersion"
+            strPost = '{\"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
+            res = self.Post(strUrl, strPost)
+        return res

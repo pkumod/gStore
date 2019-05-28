@@ -73,6 +73,12 @@ public class POSTexample{
 		res = gc.drop("lubm", false, "POST"); //delete the database directly
 		//res = gc.drop("lubm", true, "POST"); //leave a backup
 		System.out.println(res);
+
+		// get CoreVersion and APIVersion
+		res = gc.getCoreVersion("POST");
+		System.out.println(res);
+		res = gc.getAPIVersion("POST");
+		System.out.println(res);
 	}
 }
 

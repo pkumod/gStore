@@ -281,5 +281,34 @@ class GstoreConnector {
         return $res;
     }
 
+    function getCoreVersion($request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "/?operation=getCoreVersion&username=" . $this->username . "&password=" . $this->password; 
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strUrl = $this->Url . "/getCoreVersion";
+            $strPost = "{\"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
+            $res = $this->Post($strUrl, $strPost);
+        }
+        return $res;
+    }
+    
+    function getAPIVersion($request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "/?operation=getAPIVersion&username=" . $this->username . "&password=" . $this->password; 
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strUrl = $this->Url . "/getAPIVersion";
+            $strPost = "{\"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
+            $res = $this->Post($strUrl, $strPost);
+        }
+        return $res;
+    }
 }
 ?>

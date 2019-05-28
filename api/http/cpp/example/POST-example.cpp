@@ -79,6 +79,12 @@ int main(int argc, char * argv[])
 	//res = gc.drop("lubm", true, "POST"); //leave a backup
 	cout << res << endl;  
 
+	// get CoreVersion and APIVersion
+	res = gc.getCoreVersion("POST");
+	cout << res << endl;
+	res = gc.getAPIVersion("POST");
+	cout << res << endl;
+
     return 0;
 }
 

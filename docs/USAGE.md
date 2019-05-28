@@ -112,7 +112,7 @@ if you leave out the argument serverPort in the commond, then the corresponding 
 if you leave out the argument db_name in the commond, then the server will start with no database loaded.
 
 
-operation: build, load, unload, user, showUser, query, drop, monitor, show, checkpoint
+operation: build, load, unload, user, showUser, query, drop, monitor, show, checkpoint, getCoreVersion, getAPIVersion
 
 ```
 // initialize 
@@ -160,6 +160,10 @@ gc.drop("lubm", false);
 
 // drop a database already built but leave a backup.
 gc.drop("lubm", true);
+
+// get CoreVersion and APIVersion
+gc.getCoreVersion();
+gc.getAPIVersion();
 
 ```
 

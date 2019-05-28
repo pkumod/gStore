@@ -72,3 +72,9 @@ print(res);
 res = gc.drop("lubm", False) #delete the database directly
 #res = gc.drop("lubm", True) #leave a backup
 print(res);
+
+# get CoreVersion and APIVersion
+res = gc.getCoreVersion()
+print(res)
+res = gc.getAPIVersion()
+print(res)

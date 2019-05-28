@@ -497,6 +497,40 @@ std::string GstoreConnector::show(std::string request_type)
 	return res;
 }
 
+std::string GstoreConnector::getCoreVersion(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "/?operation=getCoreVersion&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strUrl = this->Url + "/getCoreVersion";
+		std::string strPost = "{\"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(strUrl, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::getAPIVersion(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "/?operation=getAPIVersion&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strUrl = this->Url + "/getAPIVersion";
+		std::string strPost = "{\"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(strUrl, strPost, res);
+	}
+	return res;
+}
+
 void GstoreConnector::SetDebug(bool bDebug)
 {
 	m_bDebug = bDebug;

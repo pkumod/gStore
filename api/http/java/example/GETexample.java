@@ -74,6 +74,12 @@ public class GETexample{
 		res = gc.drop("lubm", false); //delete the database directly
 		//res = gc.drop("lubm", true); //leave a backup
 		System.out.println(res);
+
+		// get CoreVersion and APIVersion
+		res = gc.getCoreVersion();
+		System.out.println(res);
+		res = gc.getAPIVersion();
+		System.out.println(res);
 	}
 }
 
