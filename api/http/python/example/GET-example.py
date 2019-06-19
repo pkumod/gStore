@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 """
 # Filename: GET-example.py
 # Author: suxunbin
