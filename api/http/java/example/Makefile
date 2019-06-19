@@ -1,13 +1,13 @@
 all: POSTexample.class GETexample.class Benchmark.class
 
 Benchmark.class: Benchmark.java
-	javac -encoding gbk -cp ../lib/GstoreJavaAPI.jar Benchmark.java
+	javac -encoding utf8 -cp ../lib/GstoreJavaAPI.jar Benchmark.java
 
 POSTexample.class: POSTexample.java
-	javac -encoding gbk -cp ../lib/GstoreJavaAPI.jar POSTexample.java
+	javac -encoding utf8 -cp ../lib/GstoreJavaAPI.jar POSTexample.java
 
 GETexample.class: GETexample.java
-	javac -encoding gbk -cp ../lib/GstoreJavaAPI.jar GETexample.java
+	javac -encoding utf8 -cp ../lib/GstoreJavaAPI.jar GETexample.java
 
 .PHONY: clean POST-example GET-example Benchmark
 
