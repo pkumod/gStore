@@ -1871,11 +1871,11 @@ Database::saveDBInfoFile()
 
 	fseek(filePtr, 0, SEEK_SET);
 
-	fwrite(&this->triples_num, sizeof(int), 1, filePtr);
-	fwrite(&this->entity_num, sizeof(int), 1, filePtr);
-	fwrite(&this->sub_num, sizeof(int), 1, filePtr);
-	fwrite(&this->pre_num, sizeof(int), 1, filePtr);
-	fwrite(&this->literal_num, sizeof(int), 1, filePtr);
+	fwrite(&this->triples_num, sizeof(TYPE_TRIPLE_NUM), 1, filePtr);
+	fwrite(&this->entity_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fwrite(&this->sub_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fwrite(&this->pre_num, sizeof(TYPE_PREDICATE_ID), 1, filePtr);
+	fwrite(&this->literal_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
 	fwrite(&this->encode_mode, sizeof(int), 1, filePtr);
 
 	Util::Csync(filePtr);
@@ -1902,11 +1902,11 @@ Database::loadDBInfoFile()
 
 	fseek(filePtr, 0, SEEK_SET);
 
-	fread(&this->triples_num, sizeof(int), 1, filePtr);
-	fread(&this->entity_num, sizeof(int), 1, filePtr);
-	fread(&this->sub_num, sizeof(int), 1, filePtr);
-	fread(&this->pre_num, sizeof(int), 1, filePtr);
-	fread(&this->literal_num, sizeof(int), 1, filePtr);
+	fread(&this->triples_num, sizeof(TYPE_TRIPLE_NUM), 1, filePtr);
+	fread(&this->entity_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fread(&this->sub_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fread(&this->pre_num, sizeof(TYPE_PREDICATE_ID), 1, filePtr);
+	fread(&this->literal_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
 	fread(&this->encode_mode, sizeof(int), 1, filePtr);
 	fclose(filePtr);
 
@@ -2678,7 +2678,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 			string _pre = triple_array[i].getPredicate();
 			TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_pre);
 			if (_pre_id == INVALID_PREDICATE_ID)
-			//if (_pre_id == -1)
+			// if (_pre_id == -1)
 			{
 				//_pre_id = this->pre_num;
 				_pre_id = this->allocPredicateID();
