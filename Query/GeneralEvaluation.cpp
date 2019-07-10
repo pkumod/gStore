@@ -1323,7 +1323,7 @@ void GeneralEvaluation::releaseResult()
 	this->temp_result = NULL;
 }
 
-void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, unsigned &update_triple_num)
+void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, TYPE_TRIPLE_NUM &update_triple_num)
 {
 	update_pattern.getVarset();
 
