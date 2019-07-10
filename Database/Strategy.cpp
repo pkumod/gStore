@@ -282,13 +282,14 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	    {
 	    	 for (int j = 0; j < var_degree; j++)
 	    	{
-	        	int neighbor_id = basic_query->getEdgeNeighborID(_var_i, j);
+	        	int neighbor_id = basic_query->getEdgeNeighborID(_var_i, j);//1 1
 			//-1: constant or variable not in join; otherwise, variable in join
 	 	        if (neighbor_id == -1)   
 	        	{
 	            	    continue;
 	        	}
 	        	TYPE_PREDICATE_ID pre_id = basic_query->getEdgePreID(_var_i, j);
+				if (pre_id < 0) continue;
 	        	char edge_type = basic_query->getEdgeType(_var_i, j);
 			int estimate_val;
 			if (edge_type == Util::EDGE_OUT)				
