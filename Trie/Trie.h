@@ -21,8 +21,8 @@ class Trie
 	bool going;
 	string store_path;
 	vector <string> dictionary;
-	map<string, int> treeMap;
-	map<string, int> s2int;
+	map<string, TYPE_TRIPLE_NUM> treeMap;
+	map<string, TYPE_TRIPLE_NUM> s2int;
 	string *int2s;
 	char *TrieBuffer;
 	int prefixnum;
