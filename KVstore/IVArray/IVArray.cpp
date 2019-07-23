@@ -50,7 +50,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 	//index_time_map.clear();
 	//time_index_map.clear();
 	MAX_CACHE_SIZE = buffer_size;
-//	MAX_CACHE_SIZE = 10 * (1 << 30);
+//	MAX_CACHE_SIZE = 10 * (1 << 18);
 	cache_head = new IVEntry;
 	cache_tail_id = -1;
 
@@ -112,8 +112,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 			pread(fd, &_store, 1 * sizeof(unsigned), offset);
 
 //			if (i % 1000000 == 0)
-//			cout << _filename << ": Key " << i << " stored in block " << _store << endl;
-
+//cout << _filename << ": Key " << i << " stored in block " << _store << endl;
 			array[i].setStore(_store);
 			array[i].setDirtyFlag(false);
 		
@@ -151,6 +150,8 @@ IVArray::save()
 			{
 				//TODO Recycle free block
 				_store = BM->WriteValue(str, len);
+
+				//cout << ": Key " << i << " stored in block " << _store << endl;
 				array[i].setStore(_store);
 			}
 
@@ -179,6 +180,7 @@ IVArray::SwapOut()
 	int targetID;
 	if ((targetID = cache_head->getNext()) == -1) // cache is empty
 	{
+		cout << "cache is empty" << endl;
 		return false;
 	}
 
@@ -201,8 +203,12 @@ IVArray::SwapOut()
 	{
 		//TODO recycle free blocks
 		unsigned store = BM->WriteValue(str, len);
+	//	cout << "SwapOut:" << len << endl;
 		if (store == 0)
+		{
+			cout<< "writeValue return wrong store"<<endl;
 			return false;
+		}
 		array[targetID].setStore(store);
 	//	array[targetID].setDirtyFlag(false);
 	}
@@ -296,20 +302,32 @@ IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 		return false;
 	}
 	// try to read in main memory
+	
+	
+	//char *tmpStr=NULL;
+	
 	if (array[_key].inCache())
 	{
 		UpdateTime(_key);
 		bool ret = array[_key].getBstr(_str, _len);
 		this->CacheLock.unlock();
+
+		//_str=new char[_len-24];
+		//memcpy(_str,tmpStr,_len-24);
+		_len -= 24;
+		//delete[] tmpStr;	
+	
 		return ret;
 	}
 	// read in disk
 	unsigned store = array[_key].getStore();
+	//cout << "search:" << store << endl;
 	if (!BM->ReadValue(store, _str, _len))
 	{
 		this->CacheLock.unlock();
 		return false;
 	}
+	//cout << "search:" << _key << "---" << _len << endl;	
 	if(!VList::isLongList(_len))
 	{
 //		if (array[_key].Lock.try_lock())
@@ -317,13 +335,81 @@ IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 //			if (array[_key].inCache())
 //				return true;
 			AddInCache(_key, _str, _len);
-			char *debug = new char [_len];
-			memcpy(debug, _str, _len);
-			_str = debug;
+		        char *debug = new char[_len];
+		        memcpy(debug, _str, _len);
+			//_len -= 24;
+        		_str = debug;
 	//		array[_key].Lock.unlock();
 	
 //		}
 	}
+        //char *debug = new char[_len-24];
+        //memcpy(debug, tmpStr, _len-24);
+        //_str = debug;
+        _len -= 24;
+	//delete[] tmpStr;
+	
+	this->CacheLock.unlock();
+	return true;
+}
+
+bool
+IVArray::search(unsigned _key, char *&_str, unsigned &_len, unsigned &_index,int &_in_cache)
+{
+	this->CacheLock.lock();
+	if (_key >= CurEntryNum ||!array[_key].isUsed())
+	{
+		_str = NULL;
+		_len = 0;
+		this->CacheLock.unlock();
+		return false;
+	}
+
+	//char *tmpStr=NULL;
+	
+	if (array[_key].inCache())
+	{
+		
+		_in_cache=1;
+		
+		UpdateTime(_key);
+		bool ret = array[_key].getBstr(_str, _len);
+		_index = *((unsigned*)_str + _len / 4 - 2);
+		this->CacheLock.unlock();
+		
+		//_str=new char[_len-24];
+		//memcpy(_str,tmpStr,_len-24);
+		_len -= 24;
+		//delete[] tmpStr;
+		return ret;
+	}
+
+	_in_cache=0;	
+	
+	unsigned store = array[_key].getStore();
+
+        //cout << "new search,store:" << store<<",_key:" <<_key<< endl;
+	if (!BM->ReadValue(store, _str, _len))
+	{
+		this->CacheLock.unlock();
+		return false;
+	}
+	//cout << "new search:" << _key << "---" << _len << endl;
+	if(!VList::isLongList(_len))
+	{
+		AddInCache(_key, _str, _len);
+        	char *debug = new char[_len];
+        	memcpy(debug, _str, _len);
+        	_str = debug;
+		//_len -= 24;
+		//_index = store;
+	}
+        //char *debug = new char[_len-24];
+        //memcpy(debug, tmpStr, _len-24);
+        //_str = debug;
+        _len -= 24;
+        _index = store;
+	//delete[] tmpStr;
 
 	this->CacheLock.unlock();
 	return true;
@@ -339,7 +425,6 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 	
 	if (_key >= IVArray::MAX_KEY_NUM)
 	{
-		cout << _key << ' ' << MAX_KEY_NUM << endl;
 		cout << "IVArray insert error: Key is bigger than MAX_KEY_NUM" << endl;
 		return false;
 	}
@@ -375,6 +460,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 		unsigned store = BM->WriteValue(_str, _len);
 		if (store == 0)
 		{
+//cout<<"writevalue return wrong store"<<endl;
 			return false;
 		}
 		array[_key].setStore(store);
@@ -405,6 +491,9 @@ IVArray::remove(unsigned _key)
 
 	array[_key].setUsedFlag(false);
 	array[_key].setDirtyFlag(true);
+
+//cout<<"the store of key:"<<_key<<"is set to 0"<<endl;
+
 	array[_key].setStore(0);
 
 	if (array[_key].inCache())
@@ -416,7 +505,7 @@ IVArray::remove(unsigned _key)
 		char *str = NULL;
 		unsigned len = 0;
 		array[_key].getBstr(str, len, false);
-		CurCacheSize += len;
+		CurCacheSize -= len;
 		array[_key].setCacheFlag(false);
 	}
 
@@ -451,12 +540,14 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 
 		array[_key].release();
 		CurCacheSize -= len;
+
 		AddInCache(_key, _str, _len);
 	}
 	else
 	{
 		unsigned store = array[_key].getStore();
-		BM->FreeBlocks(store);
+		//BM->FreeBlocks(store);
+		*((unsigned*)_str + _len / 4 - 2) = store;
 		AddInCache(_key, _str, _len);
 	}
 
@@ -490,7 +581,7 @@ IVArray::PinCache(unsigned _key)
 	{
 		return;
 	}
-
+	
 	array[_key].setBstr(_str, _len);
 	array[_key].setCacheFlag(true);
 	array[_key].setCachePinFlag(true);

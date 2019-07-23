@@ -132,45 +132,67 @@ IVBlockManager::ReadValue(unsigned _blk_index, char *&_str, unsigned &_len)
 	}
 
 	unsigned next_blk = _blk_index; // index of next block
-	unsigned Len_left; // how many bits left to read
+	unsigned pre_left; // how many bits left to read
+	unsigned obj_left;
 	int fd = fileno(ValueFile);
 
-	//fseek(ValueFile, (off_t)BLOCK_SIZE * (_blk_index - 1) + sizeof(unsigned), SEEK_SET);
-	off_t offset = (off_t)BLOCK_SIZE * (_blk_index - 1) + sizeof(unsigned);
-	pread(fd, &Len_left, 1 * sizeof(unsigned), offset);
-//	fread(&Len_left, sizeof(unsigned), 1, ValueFile);
+	// read first x list
+	off_t offset = (off_t)(BLOCK_SIZE) * (_blk_index - 1);
+	offset += 1 * sizeof(unsigned);
+	pread(fd, &pre_left, 1 * sizeof(unsigned), offset);
+	pread(fd, &obj_left, 1 * sizeof(unsigned), offset + 1 * sizeof(unsigned));
+	obj_left = obj_left * 4 + 24;
+	_str = new char[pre_left + obj_left];
+	unsigned len1 = pre_left;
+	
+	while(pre_left > 0 && next_blk > 0)
+	{
+		unsigned Bits2read = BLOCK_DATA_SIZE < pre_left ? BLOCK_DATA_SIZE : pre_left;
+		offset = (off_t)(BLOCK_SIZE) * (next_blk - 1);
+		pread(fd, &next_blk, 1 * sizeof(unsigned), offset);
+		offset += sizeof(unsigned) + sizeof(unsigned);
+		pread(fd, _str + (len1 - pre_left), Bits2read * sizeof(char), offset);
+		pre_left -= Bits2read;
+	}
 
-	_str = new char [Len_left];
-	_len = Len_left;
-	//cout << "Read Value: _len = " << _len << endl;
-	//char *pstr = _str; // pointer to where data in next reading is stored
+	// read second x list
+	//offset = (off_t)(BLOCK_SIZE) * (next_blk - 1);
+	//offset += 1 * sizeof(unsigned);
+	//pread(fd, &obj_left, 1 * sizeof(unsigned), offset);
+	//char *_str2 = new char[obj_left];
+	unsigned len2 = obj_left;
 
+	while(obj_left > 0 && next_blk > 0)
+	{
+		unsigned Bits2read = BLOCK_DATA_SIZE < obj_left ? BLOCK_DATA_SIZE : obj_left;
+		offset = (off_t)(BLOCK_SIZE) * (next_blk - 1);
+		pread(fd, &next_blk, 1 * sizeof(unsigned), offset);
+		offset += sizeof(unsigned) + sizeof(unsigned);
+		pread(fd, _str + (len2 - obj_left) + len1, Bits2read * sizeof(char), offset);
+		obj_left -= Bits2read;
+	}
+
+	//char buff[1024];
+	//char filepath[1024];
+	//memset(buff, 0, 1024);
+	//memset(filepath, 0, 1024);
+	//sprintf(buff, "/proc/%d/fd/%d", getpid(), fd);
+	//readlink(buff, filepath, 1024);
+
+
+	//_str = new char[len1 + len2];
+	_len = len1 + len2;
+	//memcpy(_str, _str1, len1);
+	//memcpy(_str + len1, _str2, len2);
+	
 	if (_str == NULL)
 	{
 		cout << "IVBlockManager Error: fail when new" << endl;
 		return false;
 	}
-
-	do
-	{
-		unsigned Bits2read = BLOCK_DATA_SIZE < Len_left ? BLOCK_DATA_SIZE : Len_left;
-
-		offset = (off_t)BLOCK_SIZE * (next_blk - 1);
-		pread(fd, &next_blk, 1 * sizeof(unsigned), offset);
-//		fseek(ValueFile, (off_t)BLOCK_SIZE * (next_blk - 1), SEEK_SET);
-//		fread(&next_blk, sizeof(unsigned), 1, ValueFile);
-		offset += sizeof(unsigned) + sizeof(unsigned);
-		pread(fd, _str + (_len - Len_left), Bits2read * sizeof(char), offset);
-///		pread(fd, pstr, Bits2read * sizeof(char), offset);
-//		fseek(ValueFile, sizeof(unsigned), SEEK_CUR);
-//		fread(_str + (_len - Len_left), sizeof(char), Bits2read, ValueFile);
-
-//		pstr += Bits2read;
-		Len_left -= Bits2read;
-
-	}while(next_blk > 0 && Len_left > 0);
-
-	//cout << "Read Value Check: _len = " << _len << endl;
+	
+	//delete[] _str1;
+	//delete[] _str2;
 	return true;
 }
 
@@ -254,50 +276,211 @@ IVBlockManager::getWhereToWrite(unsigned _len)
 unsigned
 IVBlockManager::WriteValue(const char *_str, const unsigned _len)
 {
-	if (!getWhereToWrite(_len))
-	{
-		return false;
-	}
-	
-	// write _str
-	int fd = fileno(ValueFile);
-	BlockInfo *p = BlockToWrite;
-	char *pstr = (char *)_str; // pointer to buffer of where to write next
-	unsigned len_left = _len; // how many bytes left to write
+	unsigned _pre_Size = *((unsigned*)_str + _len / 4 - 6);
+	unsigned _pre_Pos = *((unsigned*)_str + _len / 4 - 5);
+	unsigned _obj_Size = *((unsigned*)_str + _len / 4 - 4);
+	unsigned _obj_Pos = *((unsigned*)_str + _len / 4 - 3);
+	unsigned _add_type = *((unsigned*)_str + _len / 4 - 1);
 
-	while (p != NULL)
+        int fd = fileno(ValueFile);
+
+        unsigned blockToSkip = _pre_Pos / BLOCK_DATA_SIZE;
+        unsigned pre_left = _len - _obj_Size * 4 - 24;	
+
+        char *_str1 = new char[pre_left];
+	char *_bak1 = _str1;
+        memcpy(_str1, _str, pre_left);
+        unsigned obj_left = _obj_Size * 4 + 24;
+        char *_str2 = new char[obj_left];
+	char *_bak2 = _str2;
+        memcpy(_str2, _str + pre_left, obj_left);
+
+        char buff[1024];        
+	char filepath[1024];
+        memset(buff, 0, 1024);
+        memset(filepath, 0, 1024);
+        sprintf(buff, "/proc/%d/fd/%d", getpid(), fd);
+        readlink(buff, filepath, 1024);
+
+//cout << "writevalue:" << _add_type << endl;
+//cout << "writevalue" << filepath << "-" << _add_type << "-" << pre_left << "-" << obj_left << endl;
+	if (_add_type == 0)
 	{
-		BlockInfo *nextp = p->next;
-		unsigned Bits2Write = BLOCK_DATA_SIZE < len_left ? BLOCK_DATA_SIZE:len_left;
-		off_t offset = (off_t)(BLOCK_SIZE) * (p->num - 1);
-		unsigned NextIndex = 0;
-		if (nextp != NULL)
+		unsigned add_block = pre_left / BLOCK_DATA_SIZE + obj_left / BLOCK_DATA_SIZE + (pre_left % BLOCK_DATA_SIZE != 0) + (obj_left % BLOCK_DATA_SIZE != 0);
+		if (!getWhereToWrite(add_block * BLOCK_DATA_SIZE))
 		{
-			NextIndex = nextp->num;
+			return false;
 		}
-		// write down next block's index
-		pwrite(fd, &NextIndex, 1 * sizeof(unsigned), offset);
-		offset += sizeof(unsigned);
-		// write down how many bits left
-		pwrite(fd, &len_left, 1 * sizeof(unsigned), offset);
-		offset += sizeof(unsigned);
-		// write down value
-		pwrite(fd, pstr, Bits2Write * sizeof(char), offset);
-
-		len_left -= Bits2Write;
-		pstr += Bits2Write;
-		p = nextp;
+		int fd = fileno(ValueFile);
 		
+		BlockInfo *p = BlockToWrite;
+		*((unsigned*)_str + _len / 4 - 2) = p->num;
+		*((unsigned*)_str2 + obj_left / 4 - 2) = p->num;
+		//cout << "write - add" << p->num << endl;
+		while (p != NULL && pre_left > 0)
+		{
+			BlockInfo *nextp = p->next;
+			unsigned Bits2Write = BLOCK_DATA_SIZE < pre_left ? BLOCK_DATA_SIZE:pre_left;
+			off_t offset = (off_t)(BLOCK_SIZE) * (p->num - 1);
+			unsigned NextIndex = 0;
+			if (nextp != NULL)
+			{
+				NextIndex = nextp->num;
+			}
+			pwrite(fd, &NextIndex, 1 * sizeof(unsigned), offset);
+			offset += sizeof(unsigned);	
+			pwrite(fd, &pre_left, 1 * sizeof(unsigned), offset);
+			offset += sizeof(unsigned);
+			pwrite(fd, _str1, Bits2Write * sizeof(char), offset);
+			pre_left -= Bits2Write;
+			_str1 += Bits2Write;
+			p = nextp;
+		}
+                while (p != NULL && obj_left > 0)
+                {
+                        BlockInfo *nextp = p->next;
+                        unsigned Bits2Write = BLOCK_DATA_SIZE < obj_left ? BLOCK_DATA_SIZE:obj_left;
+                        off_t offset = (off_t)(BLOCK_SIZE) * (p->num - 1);
+                        unsigned NextIndex = 0;
+                        if (nextp != NULL)
+                        {
+                                NextIndex = nextp->num;
+                        }
+                        pwrite(fd, &NextIndex, 1 * sizeof(unsigned), offset);
+                        offset += sizeof(unsigned);
+                        pwrite(fd, &obj_left, 1 * sizeof(unsigned), offset);
+                        offset += sizeof(unsigned);
+                        pwrite(fd, _str2, Bits2Write * sizeof(char), offset);
+                        obj_left -= Bits2Write;
+                        _str2 += Bits2Write;
+                        p = nextp;
+                }
+
+		if (pre_left > 0 || obj_left > 0)
+		{
+			cout << "Get Where To Write error: space is not enough" << endl;
+			return 0;
+		}
+		
+		delete[] _bak1;
+		delete[] _bak2;
+		
+		return BlockToWrite->num;
 	}
 
-	if (len_left > 0)
+	_add_type = _add_type & 0x7fffffff;
+	int free_num = int((pre_left + _add_type * 4) / BLOCK_DATA_SIZE) - int(pre_left / BLOCK_DATA_SIZE);
+
+	unsigned _blk_Index = *((unsigned*)_str + _len / 4 - 2);
+	unsigned next_blk = _blk_Index;
+	off_t offset = (off_t)(BLOCK_SIZE) * (next_blk - 1);
+	if (_pre_Pos >= 0)
 	{
-		cout << "Get Where To Write error: space is not enough" << endl;
-		return 0;
+		offset = (off_t)BLOCK_SIZE * (next_blk - 1);
+                pwrite(fd, _str1, 12 * sizeof(char), offset + 2 * sizeof(unsigned));
+
+        	while (blockToSkip > 0 && next_blk > 0)
+        	{
+                	offset = (off_t)BLOCK_SIZE * (next_blk - 1);
+                	pread(fd, &next_blk, 1 * sizeof(unsigned), offset);
+                	pwrite(fd, &pre_left, 1 * sizeof(unsigned), offset + 1 * sizeof(unsigned));
+	         	pre_left -= BLOCK_DATA_SIZE;
+                	_str1 += BLOCK_DATA_SIZE;
+                	blockToSkip--;
+        	}
+	
+	        while (pre_left > 0 && next_blk > 0)
+        	{
+                	unsigned Bits2Write = BLOCK_DATA_SIZE < pre_left ? BLOCK_DATA_SIZE:pre_left;
+               		offset = (off_t)BLOCK_SIZE * (next_blk - 1);
+                	pread(fd, &next_blk, 1 * sizeof(unsigned), offset);
+			pwrite(fd, &pre_left, 1 * sizeof(unsigned), offset + 1 * sizeof(unsigned));
+                	pwrite(fd, _str1, Bits2Write * sizeof(char), offset + 2 * sizeof(unsigned));
+                	pre_left -= Bits2Write;
+                	_str1 += Bits2Write;
+       		}	
+
+        	if (pre_left > 0)
+        	{
+                	if (!getWhereToWrite(pre_left))
+                	{
+                        	return false;
+                	}
+                	BlockInfo *p = BlockToWrite;
+                	pwrite(fd, &(p->num), 1 * sizeof(unsigned), offset + 1 * sizeof(unsigned));
+                	unsigned NextIndex = next_blk;
+                	offset = (off_t)(BLOCK_SIZE) * (p->num - 1);
+                	pwrite(fd, &NextIndex, 1 * sizeof(unsigned), offset);
+                	pwrite(fd, &pre_left, 1 * sizeof(unsigned), offset + 1 * sizeof(unsigned));
+                	pwrite(fd, _str1, pre_left, offset + 2 * sizeof(unsigned));
+        	}
 	}
 
-	return BlockToWrite->num;
+	// cout << "free:" << free_num << endl;
+	if (free_num > 0)
+	{
+		unsigned tmp_blk, tmp_off;
+		for (int i = 0; i < free_num; ++i)
+		{
+			tmp_blk = next_blk;
+			tmp_off = (off_t)BLOCK_SIZE * (tmp_blk - 1);
+			pread(fd, &tmp_blk, 1 * sizeof(unsigned), tmp_off);
+		}
+		pwrite(fd, 0, 1 * sizeof(unsigned), tmp_off);
+		FreeBlocks(next_blk);
+		pwrite(fd, &tmp_blk, 1 * sizeof(unsigned), offset);
+	}
 
+
+        offset = (off_t)(BLOCK_SIZE) * (next_blk - 1);
+        blockToSkip = _obj_Pos / BLOCK_DATA_SIZE;
+
+        while (blockToSkip > 0 && next_blk > 0)
+        {
+                offset = (off_t)BLOCK_SIZE * (next_blk - 1);
+                pread(fd, &next_blk, 1 * sizeof(unsigned), offset);
+                pwrite(fd, &obj_left, 1 * sizeof(unsigned), offset + 1 * sizeof(unsigned));
+                obj_left -= BLOCK_DATA_SIZE;
+                _str2 += BLOCK_DATA_SIZE;
+                blockToSkip--;
+        }
+
+        while (obj_left > 0 && next_blk > 0)
+        {
+                unsigned Bits2Write = BLOCK_DATA_SIZE < obj_left ? BLOCK_DATA_SIZE:obj_left;
+                offset = (off_t)BLOCK_SIZE * (next_blk - 1);
+                pread(fd, &next_blk, 1 * sizeof(unsigned), offset);
+                pwrite(fd, &obj_left, 1 * sizeof(unsigned), offset + 1 * sizeof(unsigned));
+                pwrite(fd, _str2, Bits2Write * sizeof(char), offset + 2 * sizeof(unsigned));
+                obj_left -= Bits2Write;
+                _str2 += Bits2Write;
+        }
+
+        if (obj_left > 0)
+        {
+                if (!getWhereToWrite(obj_left))
+                {
+                        return false;
+                }
+                BlockInfo *p = BlockToWrite;
+                pwrite(fd, &(p->num), 1 * sizeof(unsigned), offset + 1 * sizeof(unsigned));
+		unsigned NextIndex = 0;
+                offset = (off_t)(BLOCK_SIZE) * (p->num - 1);
+                pwrite(fd, &NextIndex, 1 * sizeof(unsigned), offset);
+                pwrite(fd, &obj_left, 1 * sizeof(unsigned), offset + 1 * sizeof(unsigned));
+                pwrite(fd, _str2, obj_left, offset + 2 * sizeof(unsigned));
+	}
+
+	if (next_blk > 0)
+	{
+		pwrite(fd, 0, 1 * sizeof(unsigned), offset);
+		FreeBlocks(next_blk);
+	}
+
+	delete[] _bak1;
+	delete[] _bak2;
+
+	return _blk_Index;
 }
 
 // the key is deleted, so free series of blocks, maybe useless if using SSD

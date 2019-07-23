@@ -57,6 +57,7 @@ public:
 	~IVArray();
 
 	bool search(unsigned _key, char *& _str, unsigned& _len);
+	bool search(unsigned _key, char *&_str, unsigned &_len, unsigned &_index,int &_in_cache);
 	bool modify(unsigned _key, char *_str, unsigned _len);
 	bool remove(unsigned _key);
 	bool insert(unsigned _key, char *_str, unsigned _len);

@@ -274,7 +274,9 @@ private:
 	//insert and delete, notice that modify is not needed here
 	//we can read from file or use sparql syntax
 	bool insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL);
+	unsigned insertTripleByGroup(const TripleWithObjType* _triple, TYPE_TRIPLE_NUM _triple_num, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL);
 	bool removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL);
+	unsigned removeTripleByGroup(const TripleWithObjType* _triple, TYPE_TRIPLE_NUM _triple_num, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL);
 	//NOTICE:one by one is too costly, sort and insert/delete at a time will be better
 	unsigned insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false);
 	//bool insert(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);

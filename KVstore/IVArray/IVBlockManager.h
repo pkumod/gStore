@@ -60,6 +60,7 @@ public:
 
 	bool ReadValue(unsigned _blk_index, char *&_str, unsigned &_len);
 
+
 	void SaveFreeBlockList();
 
 	bool FreeBlocks(const unsigned index);
