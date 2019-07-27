@@ -15,6 +15,8 @@ Strategy::Strategy()
 	this->method = 0;
 	this->kvstore = NULL;
 	this->vstree = NULL;
+	this->fp = NULL;
+	this->export_flag = false;
 	//this->prepare_handler();
 }
 
@@ -31,7 +33,8 @@ Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num
 	this->limitID_predicate = _limitID_predicate;
 	this->limitID_literal = _limitID_literal;
 	this->limitID_entity = _limitID_entity;
-
+	this->fp = NULL;
+	this->export_flag = false;
 	//this->prepare_handler();
 }
 
@@ -83,7 +86,10 @@ Strategy::handle(SPARQLquery& _query)
 		}
 		else if ((*iter)->getTripleNum() == 1 && pre_varNum == 1)
 		{
-			this->method = 4;
+			if(this->export_flag)
+				this->method = 6;
+			else
+				this->method = 4;
 		}
 
 		if (this->method < 0 && pre_varNum == 0 && (*iter)->getTripleNum() == 1)    //only one triple and no predicates
@@ -138,11 +144,22 @@ Strategy::handle(SPARQLquery& _query)
 		case 5:
 			this->handler5(*iter, result_list);
 			break;
+		case 6:
+			this->handler6(*iter, result_list);
+			break;			
 		default:
 			cout << "not support this method" << endl;
 
 		}
-		cout << "BasicQuery -- Final result size: " << (*iter)->getResultList().size() << endl;
+		if(this->method == 6)
+		{
+			cout << "BasicQuery -- Final result size: " << (*iter)->getResultList()[0][0] << endl;
+			(*iter)->getResultList().clear();
+		}
+		else
+		{
+			cout << "BasicQuery -- Final result size: " << (*iter)->getResultList().size() << endl;
+		}
 	}
 #else
 	cout << "this BasicQuery use original query strategy" << endl;
@@ -904,3 +921,54 @@ Strategy::handler5(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	delete[] id_list;
 }
 
+void
+Strategy::handler6(BasicQuery* _bq, vector<unsigned*>& _result_list)
+{
+  cout << "Special Case:select * and write to stream" << endl;
+  int varNum = _bq->getVarNum();
+  //all variables(not including pre vars)
+  int total_num = _bq->getTotalVarNum();
+  int pre_varNum = _bq->getPreVarNum();
+  int selected_pre_var_num = _bq->getSelectedPreVarNum();
+  int selected_var_num = _bq->getSelectVarNum();
+  Triple triple = _bq->getTriple(0);
+  int pvpos = _bq->getSelectedPreVarPosition(triple.predicate);  
+
+  unsigned* id_list = NULL;
+  unsigned id_list_len = 0;
+  _result_list.clear();
+
+  int svpos = _bq->getSelectedVarPosition(triple.subject);
+  int ovpos = _bq->getSelectedVarPosition(triple.object);
+  cout<<"subject: "<<triple.subject<<" "<<svpos<<endl;
+  cout<<"object: "<<triple.object<<" "<<ovpos<<endl;
+  cout<<"predicate: "<<triple.predicate<<" "<<pvpos<<endl;
+  //very special case, to find all triples, select ?s (?p) ?o where { ?s ?p ?o . }
+  //filter and join is too costly, should enum all predicates and use p2so
+  unsigned* rsize = new unsigned[1];
+  rsize[0] = 0;
+  for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate; ++i)
+  {
+    TYPE_PREDICATE_ID pid = i;
+    string p = this->kvstore->getPredicateByID(pid);
+    string pre = Util::node2string(p.c_str());
+    this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len);
+    for (unsigned j = 0; j < id_list_len; j += 2)
+    {
+   		string s = this->kvstore->getEntityByID(id_list[j]);
+   	    string sub = Util::node2string(s.c_str());
+   		string o;
+   		if(id_list[j + 1] >= Util::LITERAL_FIRST_ID)
+   			o = this->kvstore->getLiteralByID(id_list[j + 1]);
+   		else
+   			o = this->kvstore->getEntityByID(id_list[j + 1]);
+   	    string obj = Util::node2string(o.c_str());
+   		string record = sub + "\t" + pre + "\t" + obj + ".\n";
+    	fprintf(this->fp, "%s", record.c_str());
+	rsize[0] += 1;
+    }
+    delete[] id_list;
+  }
+  id_list = NULL;
+  _result_list.push_back(rsize);
+}
