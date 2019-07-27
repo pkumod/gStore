@@ -21,6 +21,9 @@
 class Strategy
 {
 public:
+	FILE* fp;
+	bool export_flag;
+
 	Strategy();
 	    	// if there exists a variable with limited matches in the query, then skip the filter of other
 	    	// variables as soon as possible
@@ -51,6 +54,7 @@ private:
 	void handler3(BasicQuery*, vector<unsigned*>&);
 	void handler4(BasicQuery*, vector<unsigned*>&);
 	void handler5(BasicQuery*, vector<unsigned*>&);
+	void handler6(BasicQuery*, vector<unsigned*>&);
 	//QueryHandler *dispatch;
 	//void prepare_handler();
 };
