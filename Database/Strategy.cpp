@@ -757,7 +757,7 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		cout<<"object: "<<triple.object<<" "<<ovpos<<endl;
 		cout<<"predicate: "<<triple.predicate<<" "<<pvpos<<endl;
 		
-		bool only_get_distinct_pre = (ovpos < 0 && svpos < 0 && pvpos < 0 && this->isDistinct);
+		bool only_get_distinct_pre = (ovpos < 0 && svpos < 0 && pvpos >= 0 && this->isDistinct);
 		if(only_get_distinct_pre)
 			for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate; ++i)
 			{
