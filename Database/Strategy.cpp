@@ -20,7 +20,7 @@ Strategy::Strategy()
 
 Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num, TYPE_TRIPLE_NUM* _pre2sub,
  	TYPE_TRIPLE_NUM* _pre2obj, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
-	TYPE_ENTITY_LITERAL_ID _limitID_entity)
+	TYPE_ENTITY_LITERAL_ID _limitID_entity,bool _is_distinct)
 {
 	this->method = 0;
 	this->kvstore = _kvstore;
@@ -31,7 +31,7 @@ Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num
 	this->limitID_predicate = _limitID_predicate;
 	this->limitID_literal = _limitID_literal;
 	this->limitID_entity = _limitID_entity;
-
+	this->isDistinct = _is_distinct;
 	//this->prepare_handler();
 }
 
@@ -756,10 +756,21 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		cout<<"subject: "<<triple.subject<<" "<<svpos<<endl;
 		cout<<"object: "<<triple.object<<" "<<ovpos<<endl;
 		cout<<"predicate: "<<triple.predicate<<" "<<pvpos<<endl;
-		//very special case, to find all triples, select ?s (?p) ?o where { ?s ?p ?o . }
-		//filter and join is too costly, should enum all predicates and use p2so
+		
+		bool only_get_distinct_pre = (ovpos < 0 && svpos < 0 && pvpos < 0 && this->isDistinct);
+		if(only_get_distinct_pre)
+			for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate; ++i)
+			{
+				TYPE_PREDICATE_ID pid = i;
+				unsigned* record = new unsigned;
+				*record = pid;
+				_result_list.push_back(record);
+			}
+		else
 		for(TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate; ++i)
 		{
+		//very special case, to find all triples, select ?s (?p) ?o where { ?s ?p ?o . }
+		//filter and join is too costly, should enum all predicates and use p2so
 			TYPE_PREDICATE_ID pid = i;
 			this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len);
 			int rsize = selected_var_num;
@@ -790,6 +801,8 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 			}
 			delete[] id_list;
 		}
+		
+
 		id_list = NULL;
 	}
 	else if (total_num == 1)
