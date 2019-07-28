@@ -132,7 +132,10 @@ bool GeneralEvaluation::doQuery()
 	}
 
 	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num,this->pre2sub, this->pre2obj, 
-		this->limitID_predicate, this->limitID_literal, this->limitID_entity);
+		this->limitID_predicate, this->limitID_literal, this->limitID_entity,
+		this->query_tree.Modifier_Distinct== QueryTree::Modifier_Distinct);
+	
+
 	if (this->query_tree.checkWellDesigned())
 	{
 		printf("=================\n");
