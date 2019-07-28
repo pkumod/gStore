@@ -317,7 +317,7 @@ public:
 #endif
 	
 	static std::string backup_path;
-	static const long gserver_backup_interval = 86400;
+	static const long gserver_backup_interval = 120;
 	static const long gserver_backup_time = 72000; // Default backup time (UTC)
 
 	static std::string getThreadID();
@@ -345,8 +345,11 @@ public:
 
 	static std::string getTimeName();
 	static std::string getTimeString();
+	static std::string get_folder_name(const std::string path, const std::string db_name);
+	static std::string get_backup_time(const std::string path, const std::string db_name);
 	static long get_cur_time();
 	static std::string get_date_time();
+	static std::string get_timestamp();
 	static bool save_to_file(const char*, const std::string _content);
 	static bool isValidPort(std::string);
 	static bool isValidIP(std::string);
