@@ -71,6 +71,10 @@ int main(int argc, char * argv[])
 	res = gc.show();
 	cout << res << endl;
 
+	// export the database
+	res = gc.exportDB("lubm", "export/lubm/get");
+	cout << res << endl;
+
 	// unload the database
 	res = gc.unload("lubm");
 	cout << res << endl;

@@ -58,6 +58,10 @@ const gc = new GstoreConnector(
     res = await gc.show("POST");
     console.log(JSON.stringify(res,","));
 
+    // export the database
+    res = await gc.exportDB("lubm", "export/lubm/post", "POST");
+    console.log(JSON.stringify(res,","));
+
     // unload the database
     res = await gc.unload("lubm", "POST");
     console.log(JSON.stringify(res,","));

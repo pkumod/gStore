@@ -71,6 +71,8 @@ bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 
 bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
+bool export_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
 bool query_handler0(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
@@ -997,6 +999,23 @@ int initialize(int argc, char *argv[])
 	server.resource["/query"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		query_handler1(server, response, request, "POST");
+	};
+
+	//GET-example for the path /?operation=export&db_name=[db_name]&ds_path=[ds_path]&username=[username]&password=[password], responds with the matched string in path
+	server.resource["^/%3[F|f]operation%3[D|d]export%26db_name%3[D|d](.*)%26ds_path%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		export_handler(server, response, request, "GET");
+    };
+
+	server.resource["^/?operation=export&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		export_handler(server, response, request, "GET");
+    };
+
+	//POST-example for the path /export, responds with the matched string in path
+	server.resource["/export"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		export_handler(server, response, request, "POST");
 	};
 
 	//GET-example for the path /?operation=check&username=[username]&password=[password], responds with the matched string in path
@@ -2297,6 +2316,179 @@ void writeLog(FILE* fp, string _info)
 	cout << "logSize in statbuf: " << size << endl;
 	*/
 	query_log_lock.unlock();
+}
+
+void export_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is export" << endl;
+
+	string db_name;
+	string db_path;
+	string username;
+	string password;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		db_path = request->path_match[2];
+		username = request->path_match[3];
+		password = request->path_match[4];
+		db_name = UrlDecode(db_name);
+		db_path = UrlDecode(db_path);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		db_path = document["ds_path"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User *>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+	cout << "check identity successfully." << endl;
+
+	//check if the db_name is system
+	if (db_name == "system")
+	{
+		string error = "You can not export the system database.";
+		string resJson = CreateJson(206, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+
+	if(db_name=="" || db_path=="")
+	{
+		string error = "Exactly 2 arguments required!";
+		string resJson = CreateJson(905, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+
+	string database = db_name;
+	if(database.length() > 3 && database.substr(database.length()-3, 3) == ".db")
+	{
+		string error = "Your db name to be built should not end with \".db\".";
+		string resJson = CreateJson(202, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+
+	//check if database named [db_name] is already built
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
+	if (it_already_build == already_build.end())
+	{
+		string error = "Database not built yet.";
+		string resJson = CreateJson(203, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		pthread_rwlock_unlock(&already_build_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&already_build_map_lock);
+
+	if(db_path[db_path.length()-1] != '/')
+		db_path = db_path + "/";
+	if(!boost::filesystem::exists(db_path))
+		boost::filesystem::create_directories(db_path);
+	db_path = db_path + db_name + ".nt";
+
+	//check if database named [db_name] is already load
+	Database *current_database;
+	pthread_rwlock_rdlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+	if(iter == databases.end())
+	{
+		pthread_rwlock_unlock(&databases_map_lock);
+
+		//check privilege
+		if(checkPrivilege(username, "load", db_name) == 0)
+		{
+			string error = "no load privilege, operation failed.";
+			string resJson = CreateJson(302, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+			return;
+		}
+		cout << "check privilege successfully." << endl;
+
+		if(pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+		{
+			string error = "Unable to load due to loss of lock";
+			string resJson = CreateJson(303, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+			return;
+		}
+		current_database = new Database(db_name);
+		bool flag = current_database->load();
+
+		if (!flag)
+		{
+			string error = "Failed to load the database.";
+			string resJson = CreateJson(305, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+			return;
+		}
+
+		pthread_rwlock_wrlock(&databases_map_lock);
+		databases.insert(pair<std::string, Database *>(db_name, current_database));
+		pthread_rwlock_unlock(&databases_map_lock);
+
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	}
+	else
+	{
+		current_database = iter->second;
+		pthread_rwlock_unlock(&databases_map_lock);
+	}
+
+	pthread_rwlock_rdlock(&(it_already_build->second->db_lock));
+
+	string sparql = "select * where{?x ?y ?z.}";
+	ResultSet rs;
+	FILE* ofp = fopen(db_path.c_str(), "w");
+    int ret = current_database->query(sparql, rs, ofp, true, true);
+    fflush(ofp);
+	fclose(ofp);
+	ofp = NULL;
+
+	string success = "Export the database successfully.";
+	string resJson = CreateJson(0, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+	
+	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	return;
+}
+
+bool export_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&export_thread, response, request, RequestType);
+	t.detach();
+	return true;
 }
 
 void query_thread(bool update_flag, string db_name, string format, string db_query, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
