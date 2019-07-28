@@ -65,6 +65,10 @@ print(res)
 res = gc.show()
 print(res)
 
+# export the database
+res = gc.exportDB("lubm", "export/lubm/get")
+print(res)
+
 # unload the database
 res = gc.unload("lubm")
 print(res);
