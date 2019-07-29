@@ -1,186 +1,752 @@
-/*=============================================================================
-# Filename: QueryParser.cpp
-# Author: Jiaqi, Chen
-# Mail: chenjiaqi93@163.com
-# Last Modified: 2017-03-13
-# Description: implement functions in QueryParser.h
-=============================================================================*/
-
 #include "QueryParser.h"
 
 using namespace std;
 
-void QueryParser::SPARQLParse(const string &query, QueryTree &querytree)
+void SPARQLErrorListener::syntaxError(antlr4::Recognizer *recognizer, antlr4::Token * offendingSymbol, \
+	size_t line, size_t charPositionInLine, const std::string &msg, std::exception_ptr e)
 {
-	//uncompress before use
-	dfa34_Table_uncompress();
-
-	pANTLR3_INPUT_STREAM input = antlr3StringStreamNew((ANTLR3_UINT8 *)(query.c_str()), ANTLR3_ENC_UTF8, query.length(), (ANTLR3_UINT8 *) "QueryString");
-	//input = antlr3FileStreamNew((pANTLR3_UINT8)filePath,ANTLR3_ENC_8BIT);
-
-	pSparqlLexer lex = SparqlLexerNew(input);
-	pANTLR3_COMMON_TOKEN_STREAM tokens = antlr3CommonTokenStreamSourceNew(ANTLR3_SIZE_HINT,TOKENSOURCE(lex));
-	pSparqlParser parser = SparqlParserNew(tokens);
-
-	SparqlParser_workload_return workload_ret = parser->workload(parser);
-	pANTLR3_BASE_TREE root = workload_ret.tree;
-
-	if (printNode(root) > 0)
-		throw "[ERROR]	Some errors are found in the SPARQL query request.";
-
-	parseWorkload(root, querytree);
-
-	querytree.print();
-
-	parser->free(parser);
-	tokens->free(tokens);
-	lex->free(lex);
-	input->close(input);
+	throw runtime_error("line " + to_string(line) + ":" + to_string(charPositionInLine) + " " + msg);
 }
 
-int QueryParser::printNode(pANTLR3_BASE_TREE node, int dep)
+void QueryParser::SPARQLParse(const string &query)
 {
-	const char *s = (const char *) node->getText(node)->chars;
-	ANTLR3_UINT32 treeType = node->getType(node);
+	istringstream ifs(query);
 
-	int hasErrorNode = (treeType == 0 ? 1 : 0);
+	SPARQLErrorListener lstnr;
 
-	for (int t = 0; t < dep; t++)		printf("\t");
-	printf("%d: %s\n", treeType, s);
+	antlr4::ANTLRInputStream input(ifs);
+	SPARQLLexer lexer(&input);
+	lexer.removeErrorListeners();
+	lexer.addErrorListener(&lstnr);
 
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-		hasErrorNode += printNode(childNode, dep + 1);
-	}
+	antlr4::CommonTokenStream tokens(&lexer);
+	SPARQLParser parser(&tokens);
+	parser.removeErrorListeners();
+	parser.addErrorListener(&lstnr);
 
-	return hasErrorNode;
+	SPARQLParser::EntryContext *tree = parser.entry();
+	visitEntry(tree);
 }
 
-void QueryParser::parseWorkload(pANTLR3_BASE_TREE node, QueryTree &querytree)
+void QueryParser::printNode(antlr4::ParserRuleContext *ctx, 
+	const char *nodeTypeName)
 {
-	printf("parseWorkload\n");
+	int dep = ctx->depth();
 
-	pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, 0);
+	// Print tabs according to node's depth in tree
+	for (int i = 0; i < dep; i++)
+		cout << '\t';
 
-	//query 145
-	if (childNode->getType(childNode) == 145)
+	// Print node type
+	cout << "Type: " << nodeTypeName << ' ';
+
+	// Print what text a node has matched
+	cout << "Text: " << ctx->getText() << endl;
+
+}
+
+void QueryParser::printTree(antlr4::tree::ParseTree *root, int dep)
+{
+	// Print tabs according to node's depth in tree
+	for (int i = 0; i < dep; i++)
+		cout << '-';
+
+	string nodeTypeName = typeid(*root).name();
+	size_t n = root->children.size();
+	cout << "Type: " << nodeTypeName << ' ';
+	cout << "Text: " << root->getText() << ' ';
+	cout << "#Children: " << n << endl;
+
+	for (size_t i = 0; i < n; i++)
 	{
-		parseQuery(childNode, querytree);
-	}
-	//update 196
-	else if (childNode->getType(childNode) == 196)
-	{
-		parseUpdate(childNode, querytree);
+		antlr4::tree::ParseTree *childNode = root->children[i];
+		printTree(childNode, dep + 1);
 	}
 }
 
-void QueryParser::parseQuery(pANTLR3_BASE_TREE node, QueryTree &querytree)
+void QueryParser::printQueryTree()
 {
-	printf("parseQuery\n");
-
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//prologue	144
-		if (childNode->getType(childNode) == 144)
-		{
-			parsePrologue(childNode);
-		}
-		//select 155
-		else if (childNode->getType(childNode) == 155)
-		{
-			querytree.setQueryForm(QueryTree::Select_Query);
-			parseQuery(childNode, querytree);
-		}
-		//ask 13
-		else if (childNode->getType(childNode) == 13)
-		{
-			querytree.setQueryForm(QueryTree::Ask_Query);
-			querytree.setProjectionAsterisk();
-			parseQuery(childNode, querytree);
-		}
-		//select clause 156
-		else if (childNode->getType(childNode) == 156)
-		{
-			parseSelectClause(childNode, querytree);
-		}
-		//group graph pattern 77
-		else if (childNode->getType(childNode) == 77)
-		{
-			parseGroupPattern(childNode, querytree.getGroupPattern());
-		}
-		//group by 75
-		else if (childNode->getType(childNode) == 75)
-		{
-			parseGroupBy(childNode, querytree);
-		}
-		//order by 127
-		else if (childNode->getType(childNode) == 127)
-		{
-			parseOrderBy(childNode, querytree);
-		}
-		//offset 120	limit 102
-		else if (childNode->getType(childNode) == 120 || childNode->getType(childNode) == 102)
-		{
-			pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
-
-			//integer 83
-			if (gchildNode->getType(gchildNode) == 83)
-			{
-				string str;
-				parseString(gchildNode, str, 0);
-
-				stringstream str2int;
-				int num;
-				str2int << str;
-				str2int >> num;
-
-				if (childNode->getType(childNode) == 120 && num >= 0)
-					querytree.setOffset(num);
-				if (childNode->getType(childNode) == 102 && num >= 0)
-					querytree.setLimit(num);
-			}
-		}
-		else	parseQuery(childNode, querytree);
-	}
+	query_tree_ptr->print();
 }
 
-void QueryParser::parsePrologue(pANTLR3_BASE_TREE node)
+antlrcpp::Any QueryParser::visitQueryUnit(SPARQLParser::QueryUnitContext *ctx)
 {
-	printf("parsePrologue\n");
+	// printNode(ctx, "queryUnit");
 
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
+	visit(ctx->query());
 
-		//prefix 143
-		if (childNode->getType(childNode) == 143)
-			parsePrefix(childNode);
-	}
+	return antlrcpp::Any();
 }
 
-void QueryParser::parsePrefix(pANTLR3_BASE_TREE node)
+antlrcpp::Any QueryParser::visitQuery(SPARQLParser::QueryContext *ctx)
 {
-	printf("parsePrefix\n");
+	// printNode(ctx, "query");
 
+	visit(ctx->prologue());
+
+	// Only one of the following children is valid
+	if (ctx->selectquery())
+	{
+		query_tree_ptr->setQueryForm(QueryTree::Select_Query);
+		visit(ctx->selectquery());
+	}
+	if (ctx->constructquery())	// Not supported?
+		visit(ctx->constructquery());
+	if (ctx->describequery())	// Not supported?
+		visit(ctx->describequery());
+	if (ctx->askquery())
+	{
+		query_tree_ptr->setQueryForm(QueryTree::Ask_Query);
+		visit(ctx->askquery());
+	}
+
+	visit(ctx->valuesClause());
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitSelectquery(SPARQLParser::SelectqueryContext *ctx)
+{
+	visit(ctx->selectClause());
+
+	// datasetClause not supported
+
+	// Call explictly to pass group_pattern as a parameter
+	visitWhereClause(ctx->whereClause(), query_tree_ptr->getGroupPattern());
+
+	visit(ctx->solutionModifier());
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitAskquery(SPARQLParser::AskqueryContext *ctx)
+{
+	query_tree_ptr->setQueryForm(QueryTree::Ask_Query);
+	query_tree_ptr->setProjectionAsterisk();
+
+	// datasetClause not supported
+
+	// Call explictly to pass group_pattern as a parameter
+	visitWhereClause(ctx->whereClause(), query_tree_ptr->getGroupPattern());
+
+	visit(ctx->solutionModifier());
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitWhereClause(SPARQLParser::WhereClauseContext *ctx, QueryTree::GroupPattern &group_pattern)
+{
+	// Call explictly to pass group_pattern as a parameter
+	visitGroupGraphPattern(ctx->groupGraphPattern(), group_pattern);
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitLimitClause(SPARQLParser::LimitClauseContext *ctx)
+{
+	query_tree_ptr->setLimit(stoi(ctx->children[1]->getText()));
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitOffsetClause(SPARQLParser::OffsetClauseContext *ctx)
+{
+	query_tree_ptr->setOffset(stoi(ctx->children[1]->getText()));
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitPrefixDecl(SPARQLParser::PrefixDeclContext *ctx)
+{
 	string key, value;
 
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
+	key = ctx->PNAME_NS()->getText();
+	value = ctx->IRIREF()->getText();
+
+	prefix_map[key] = value;
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitSelectClause(SPARQLParser::SelectClauseContext *ctx)
+{
+	// printNode(ctx, "selectClause");
+
+	if (ctx->children[1]->children.size() == 0)
 	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//prefix namespace 136
-		if (childNode->getType(childNode) == 136)
-			parseString(childNode, key, 0);
-
-		//prefix IRI 89
-		if (childNode->getType(childNode) == 89)
-			parseString(childNode, value, 0);
+		string tmp = ctx->children[1]->getText();
+		transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+		if (ctx->children[1]->getText() == "DISTINCT")
+			query_tree_ptr->setProjectionModifier(QueryTree::Modifier_Distinct);
+		else if (ctx->children[1]->getText() == "REDUCED")
+			throw runtime_error("[ERROR]	REDUCED is currently not supported.");
+		else if (ctx->children[1]->getText() == "*")
+			query_tree_ptr->setProjectionAsterisk();
 	}
 
-	this->prefix_map[key] = value;
+	if (ctx->children.size() == 3 && ctx->children[2]->children.size() == 0)	// '*'
+		query_tree_ptr->setProjectionAsterisk();
+	else
+	{
+		// Order of selected elements does not matter
+		for (auto var : ctx->var())
+		{
+			query_tree_ptr->addProjectionVar();
+			QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+			proj_var.aggregate_type = QueryTree::ProjectionVar::None_type;
+			proj_var.var = var->getText();
+		}
+		for (auto expressionAsVar : ctx->expressionAsVar())
+			parseSelectAggregateFunction(expressionAsVar->expression(), \
+				expressionAsVar->var());
+	}
+
+	return antlrcpp::Any();
+}
+
+void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *expCtx, \
+	SPARQLParser::VarContext *varCtx)
+{
+	// Sanity checks
+	SPARQLParser::BuiltInCallContext *bicCtx = expCtx->conditionalOrexpression()-> \
+		conditionalAndexpression(0)->valueLogical(0)->relationalexpression()-> \
+		numericexpression(0)->additiveexpression()->multiplicativeexpression(0)-> \
+		unaryexpression(0)->primaryexpression()->builtInCall();
+	if (!bicCtx)
+		throw runtime_error("[ERROR]	Currently only support selecting variables and "
+			"the aggregate function COUNT");
+	antlr4::tree::ParseTree *curr = expCtx;
+	for (int i = 0; i < 11; i++)
+	{
+		// Make sure only one children along the way
+		if (curr->children.size() > 1)
+			throw runtime_error("[ERROR]	Currently only support selecting variables and "
+				"the aggregate function COUNT");
+		curr = curr->children[0];
+	}
+	SPARQLParser::AggregateContext *aggCtx = bicCtx->aggregate();
+	if (!aggCtx)
+		throw runtime_error("[ERROR]	Currently only support selecting variables and "
+			"the aggregate function COUNT");
+	string tmp = aggCtx->children[0]->getText();
+	transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+	if (aggCtx->children[0]->getText() != "COUNT")
+		throw runtime_error("[ERROR]	The supported aggregate function now is COUNT only");
+
+	query_tree_ptr->addProjectionVar();
+	QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+	proj_var.aggregate_type = QueryTree::ProjectionVar::Count_type;
+	proj_var.aggregate_var = aggCtx->expression()->getText();	// Error would have been dealt with
+	tmp = aggCtx->children[2]->getText();
+	transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+	proj_var.distinct = aggCtx->children[2]->children.size() == 0 && tmp == "DISTINCT";
+	proj_var.var = varCtx->getText();
+}
+
+antlrcpp::Any QueryParser::visitGroupGraphPattern(SPARQLParser::GroupGraphPatternContext *ctx, \
+	QueryTree::GroupPattern &group_pattern)
+{
+	// subSelect not supported
+
+	visitGroupGraphPatternSub(ctx->groupGraphPatternSub(), group_pattern);
+
+	return antlrcpp::Any(); 
+}
+
+antlrcpp::Any QueryParser::visitGroupGraphPatternSub(SPARQLParser::GroupGraphPatternSubContext *ctx, \
+	QueryTree::GroupPattern &group_pattern)
+{
+	if (ctx->triplesBlock())
+		visitTriplesBlock(ctx->triplesBlock(), group_pattern);
+	for (auto graphPatternTriplesBlock : ctx->graphPatternTriplesBlock())
+	{
+		visitGraphPatternNotTriples(graphPatternTriplesBlock->graphPatternNotTriples(), \
+			group_pattern);
+		if (graphPatternTriplesBlock->triplesBlock())
+			visitTriplesBlock(graphPatternTriplesBlock->triplesBlock(), group_pattern);
+	}
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitTriplesBlock(SPARQLParser::TriplesBlockContext *ctx, QueryTree::GroupPattern &group_pattern)
+{
+	visitTriplesSameSubjectpath(ctx->triplesSameSubjectpath(), group_pattern);
+	if (ctx->triplesBlock())
+		visitTriplesBlock(ctx->triplesBlock(), group_pattern);
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitGraphPatternNotTriples(SPARQLParser::GraphPatternNotTriplesContext *ctx, \
+	QueryTree::GroupPattern &group_pattern)
+{
+	if (ctx->groupOrUnionGraphPattern())
+		visitGroupOrUnionGraphPattern(ctx->groupOrUnionGraphPattern(), group_pattern);
+	else if (ctx->optionalGraphPattern())
+		visitOptionalGraphPattern(ctx->optionalGraphPattern(), group_pattern);
+	else if (ctx->minusGraphPattern())
+		visitMinusGraphPattern(ctx->minusGraphPattern(), group_pattern);
+	// graphGraphPattern not supported
+	// serviceGraphPattern not supported
+	else if (ctx->filter())
+		visitFilter(ctx->filter(), group_pattern);
+	else if (ctx->bind())
+		visitBind(ctx->bind(), group_pattern);
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitGroupOrUnionGraphPattern(SPARQLParser::GroupOrUnionGraphPatternContext *ctx, \
+	QueryTree::GroupPattern &group_pattern)
+{
+	if (ctx->children.size() == 1)
+		visitGroupGraphPattern(ctx->groupGraphPattern(0), group_pattern);
+	else
+	{
+		group_pattern.addOneGroupUnion();
+		for (auto groupGraphPattern : ctx->groupGraphPattern())
+		{
+			group_pattern.addOneUnion();
+			visitGroupGraphPattern(groupGraphPattern, group_pattern.getLastUnion());
+		}
+	}
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitOptionalGraphPattern(SPARQLParser::OptionalGraphPatternContext *ctx, \
+	QueryTree::GroupPattern &group_pattern)
+{
+	group_pattern.addOneOptional(QueryTree::GroupPattern::SubGroupPattern::Optional_type);
+	visitGroupGraphPattern(ctx->groupGraphPattern(), group_pattern.getLastOptional());
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitMinusGraphPattern(SPARQLParser::MinusGraphPatternContext *ctx, \
+	QueryTree::GroupPattern &group_pattern)
+{
+	group_pattern.addOneOptional(QueryTree::GroupPattern::SubGroupPattern::Minus_type);
+	visitGroupGraphPattern(ctx->groupGraphPattern(), group_pattern.getLastOptional());
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitFilter(SPARQLParser::FilterContext *ctx, \
+	QueryTree::GroupPattern &group_pattern)
+{
+	if (ctx->constraint()->functionCall())
+		throw runtime_error("[ERROR]	Function call currently not supported in filter.");
+
+	group_pattern.addOneFilter();
+
+	if (ctx->constraint()->brackettedexpression())
+		buildFilterTree(ctx->constraint()->brackettedexpression()->expression()->conditionalOrexpression(), \
+			NULL, group_pattern.getLastFilter().root, "conditionalOrexpression");
+	else if (ctx->constraint()->builtInCall())
+		buildFilterTree(ctx->constraint()->builtInCall(), NULL, \
+			group_pattern.getLastFilter().root, "builtInCall");
+
+	return antlrcpp::Any();
+}
+
+void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
+	QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild *currChild, \
+	QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, string tp)
+{
+	string tmp;
+
+	// Passing argument like so lose will type info; therefore needs string tp
+	if (tp == "conditionalOrexpression")
+	{
+		if (root->children.size() == 1)
+			buildFilterTree(((SPARQLParser::ConditionalOrexpressionContext *)root)->conditionalAndexpression(0), \
+				currChild, filter, "conditionalAndexpression");
+		else
+		{
+			filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Or_type;
+			if (currChild)
+				currChild->node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type;
+
+			int numChild = 0;
+			for (auto conditionalAndexpression : \
+				((SPARQLParser::ConditionalOrexpressionContext *)root)->conditionalAndexpression())
+			{
+				filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
+				buildFilterTree(conditionalAndexpression, &(filter.child[numChild]), \
+					filter.child[numChild].node, "conditionalAndexpression");
+				numChild++;
+			}
+		}
+	}
+	else if (tp == "conditionalAndexpression")
+	{
+		if (root->children.size() == 1)
+			buildFilterTree(((SPARQLParser::ConditionalAndexpressionContext *)root) \
+				->valueLogical(0)->relationalexpression(), currChild, filter, "relationalexpression");
+		else
+		{
+			filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::And_type;
+			if (currChild)
+				currChild->node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type;
+
+			int numChild = 0;
+			for (auto valueLogical : \
+				((SPARQLParser::ConditionalAndexpressionContext *)root)->valueLogical())
+			{
+				filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
+				buildFilterTree(valueLogical->relationalexpression(), &(filter.child[numChild]), \
+					filter.child[numChild].node, "relationalexpression");
+				numChild++;
+			}
+		}
+	}
+	else if (tp == "relationalexpression")
+	{
+		if (root->children.size() == 1)
+			buildFilterTree(((SPARQLParser::RelationalexpressionContext *)root)->numericexpression(0), \
+				currChild, filter, "numericexpression");
+		else
+		{
+			string op = root->children[1]->getText();
+			transform(op.begin(), op.end(), op.begin(), ::toupper);
+			if (op == "=")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Equal_type;
+			else if (op == "!=")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::NotEqual_type;
+			else if (op == "<")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Less_type;
+			else if (op == ">")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Greater_type;
+			else if (op == "<=")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::LessOrEqual_type;
+			else if (op == ">=")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::GreaterOrEqual_type;
+			else if (op == "IN")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_in_type;
+			else if (op == "NOT")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Not_type;
+
+			if (currChild)
+				currChild->node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type;
+
+			tmp = root->children[1]->getText();
+			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+			if (tmp == "NOT")	// NOT IN
+			{
+				filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
+				filter.child[0].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type;
+				filter.child[0].node.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_in_type;
+				
+				filter = filter.child[0].node;
+				int numChild = 0;
+				for (auto expression : \
+					((SPARQLParser::RelationalexpressionContext *)root)->expressionList()->expression())
+				{
+					filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
+					buildFilterTree(expression->conditionalOrexpression(), &(filter.child[numChild]), \
+						filter.child[numChild].node, "conditionalOrexpression");
+					numChild++;
+				}
+			}
+			else if (tmp == "IN")	// IN
+			{
+				int numChild = 0;
+				for (auto expression : \
+					((SPARQLParser::RelationalexpressionContext *)root)->expressionList()->expression())
+				{
+					filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
+					buildFilterTree(expression->conditionalOrexpression(), &(filter.child[numChild]), \
+						filter.child[numChild].node, "conditionalOrexpression");
+					numChild++;
+				}
+			}
+			else
+			{
+				int numChild = 0;
+				for (auto numericexpression : \
+					((SPARQLParser::RelationalexpressionContext *)root)->numericexpression())
+				{
+					filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
+					buildFilterTree(numericexpression, &(filter.child[numChild]), \
+						filter.child[numChild].node, "numericexpression");
+					numChild++;
+				}
+			}
+		}
+	}
+	else if (tp == "numericexpression")
+	{
+		if (((SPARQLParser::NumericexpressionContext *)root)->additiveexpression()->children.size() > 1
+			|| ((SPARQLParser::NumericexpressionContext *)root)->additiveexpression() \
+			->multiplicativeexpression(0)->children.size() > 1)
+			throw runtime_error("[ERROR]	Filter currently does not support numeric computation.");
+		auto unaryexpression = ((SPARQLParser::NumericexpressionContext *)root)-> \
+			additiveexpression()->multiplicativeexpression(0)->unaryexpression(0);
+		buildFilterTree(unaryexpression, currChild, filter, "unaryexpression");
+	}
+	else if (tp == "unaryexpression")
+	{
+		if (root->children.size() == 2)
+		{
+			if (root->children[0]->getText() == "!")
+			{
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Not_type;
+				if (currChild)
+					currChild->node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type;
+				filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
+				buildFilterTree(((SPARQLParser::UnaryexpressionContext *)root)->primaryexpression(), \
+					&(filter.child[0]), filter.child[0].node, "primaryexpression");
+			}
+			else
+				throw runtime_error("[ERROR]	Filter currently does not support numeric computation.");
+		}
+		else
+			buildFilterTree(((SPARQLParser::UnaryexpressionContext *)root)->primaryexpression(), \
+				currChild, filter, "primaryexpression");
+	}
+	else if (tp == "primaryexpression")
+	{
+		if (((SPARQLParser::PrimaryexpressionContext *)root)->brackettedexpression())
+			buildFilterTree(((SPARQLParser::PrimaryexpressionContext *)root)->brackettedexpression()-> \
+				expression()->conditionalOrexpression(), currChild, filter, "conditionalOrexpression");
+		else if (((SPARQLParser::PrimaryexpressionContext *)root)->builtInCall())
+			buildFilterTree(((SPARQLParser::PrimaryexpressionContext *)root)->builtInCall(), \
+				currChild, filter, "builtInCall");
+		else	// iriOrFunction | rDFLiteral | numericLiteral | booleanLiteral | var
+		{
+			if (currChild)	// This SHOULD hold true, unless someone only writes one var or literal 
+				// inside brackets to constitute brackettedexpression, which is meaningless
+			{
+				currChild->node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
+				currChild->str = root->getText();
+				replacePrefix(currChild->str);
+			}
+		}
+	}
+	else if (tp == "builtInCall")
+	{
+		if (((SPARQLParser::BuiltInCallContext *)root)->regexexpression())
+		{
+			filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_regex_type;
+			if (currChild)
+				currChild->node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type;
+			
+			int numChild = 0;
+			for (auto expression : \
+				((SPARQLParser::BuiltInCallContext *)root)->regexexpression()->expression())
+			{
+				filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
+				buildFilterTree(expression->conditionalOrexpression(), &(filter.child[numChild]), \
+					filter.child[numChild].node, "conditionalOrexpression");
+				numChild++;
+			}
+		}
+		else if (root->children[0]->children.size() == 0)
+		{
+			string funcName = root->children[0]->getText();
+			transform(funcName.begin(), funcName.end(), funcName.begin(), ::toupper);
+			if (funcName == "STR")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_str_type;
+			else if (funcName == "ISIRI")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isiri_type;
+			else if (funcName == "ISURI")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isuri_type;
+			else if (funcName == "ISLITERAL")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isliteral_type;
+			else if (funcName == "ISNUMERIC")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isnumeric_type;
+			else if (funcName == "LANG")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_lang_type;
+			else if (funcName == "LANGMATCHES")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_langmatches_type;
+			else if (funcName == "BOUND")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_bound_type;
+			else
+				throw runtime_error("[ERROR] Filter currently does not support this built-in call.");
+
+			if (currChild)
+				currChild->node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type;
+
+			tmp = root->children[0]->getText();
+			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+			if (tmp != "BOUND")
+			{
+				int numChild = 0;
+				for (auto expression : ((SPARQLParser::BuiltInCallContext *)root)->expression())
+				{
+					filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
+					buildFilterTree(expression->conditionalOrexpression(), &(filter.child[numChild]), \
+						filter.child[numChild].node, "conditionalOrexpression");
+					numChild++;
+				}
+			}
+			else
+			{
+				filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
+				filter.child[0].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
+				filter.child[0].str = ((SPARQLParser::BuiltInCallContext *)root)->var()->getText();
+				replacePrefix(filter.child[0].str);
+			}
+		}
+		else
+			throw runtime_error("[ERROR]	Filter currently does not support this built-in call.");
+	}
+	else
+		throw runtime_error("[ERROR]	Unaccounted for route when parsing filter.");
+}
+
+antlrcpp::Any QueryParser::visitBind(SPARQLParser::BindContext *ctx, \
+	QueryTree::GroupPattern &group_pattern)
+{
+	SPARQLParser::RDFLiteralContext *rdflCtx = ctx->expression()->conditionalOrexpression()-> \
+		conditionalAndexpression(0)->valueLogical(0)->relationalexpression()-> \
+		numericexpression(0)->additiveexpression()->multiplicativeexpression(0)-> \
+		unaryexpression(0)->primaryexpression()->rDFLiteral();
+	if (!rdflCtx)
+		throw runtime_error("[ERROR]	Currently BIND only supports assigning a string to a var.");
+	antlr4::tree::ParseTree *curr = ctx;
+	for (int i = 0; i < 10; i++)
+	{
+		// Make sure only one children along the way
+		if (curr->children.size() > 1)
+			throw runtime_error("[ERROR]	Currently BIND only supports assigning a string to a var.");
+		curr = curr->children[0];
+	}
+
+	string str, var;
+	str = rdflCtx->string()->getText();
+	var = ctx->var()->getText();
+
+	group_pattern.addOneBind();
+	group_pattern.getLastBind() = QueryTree::GroupPattern::Bind(str, var);
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSameSubjectpathContext *ctx, \
+	QueryTree::GroupPattern &group_pattern)
+{
+	string subject, predicate, object;
+
+	subject = ctx->varOrTerm()->getText();
+	replacePrefix(subject);
+
+	// Assume triplesSameSubjectpath : varOrTerm propertyListpathNotEmpty ;
+	auto propertyListpathNotEmpty = ctx->propertyListpathNotEmpty();
+	int numChild = propertyListpathNotEmpty->verbpathOrSimple().size();
+	for (int i = 0; i < numChild; i++)
+	{
+		auto verbpathOrSimple = propertyListpathNotEmpty->verbpathOrSimple(i);
+		predicate = verbpathOrSimple->getText();
+		if (predicate == "a")
+			predicate = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>";
+		replacePrefix(predicate);
+
+		if (i == 0)
+		{
+			for (auto objectpath : propertyListpathNotEmpty->objectListpath()->objectpath())
+			{
+				object = objectpath->getText();
+				replacePrefix(object);
+				addTriple(subject, predicate, object, group_pattern);
+			}
+		}
+		else
+		{
+			auto objectList = propertyListpathNotEmpty->objectList(i - 1);
+			for (auto object_ptr : objectList->object())
+			{
+				object = object_ptr->getText();
+				replacePrefix(object);
+				addTriple(subject, predicate, object, group_pattern);
+			}
+		}
+	}
+
+	return antlrcpp::Any();
+}
+
+void QueryParser::addTriple(string subject, string predicate, string object, \
+	QueryTree::GroupPattern &group_pattern)
+{
+	// Add one pattern
+	group_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(QueryTree::GroupPattern::Pattern::Element(subject), \
+		QueryTree::GroupPattern::Pattern::Element(predicate), \
+		QueryTree::GroupPattern::Pattern::Element(object)));
+
+	// Scope of filter
+	for (int j = (int)group_pattern.sub_group_pattern.size() - 1; j > 0; j--)
+	{
+		if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type &&
+			group_pattern.sub_group_pattern[j - 1].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+		{
+			QueryTree::GroupPattern::SubGroupPattern tmp(group_pattern.sub_group_pattern[j - 1]);
+			group_pattern.sub_group_pattern[j - 1] = group_pattern.sub_group_pattern[j];
+			group_pattern.sub_group_pattern[j] = tmp;
+		}
+		else
+			break;
+	}
+}
+
+antlrcpp::Any QueryParser::visitGroupClause(SPARQLParser::GroupClauseContext *ctx)
+{
+	for (auto groupCondition : ctx->groupCondition())
+	{
+		if (groupCondition->children.size() > 1 || !groupCondition->var())
+			throw runtime_error("[ERROR]	The supported GROUP BY key is var only.");
+		string var = groupCondition->getText();
+		query_tree_ptr->addGroupByVar(var);
+	}
+
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitOrderClause(SPARQLParser::OrderClauseContext *ctx)
+{
+	for (auto orderCondition : ctx->orderCondition())
+	{
+		bool descending = false;
+		string var;
+
+		// ( 'ASC' | 'DESC' ) brackettedexpression
+		if (orderCondition->children[0]->children.size() == 0)
+		{
+			string tmp = orderCondition->children[0]->getText();
+			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+			if (tmp == "DESC")
+				descending = true;
+
+			SPARQLParser::VarContext *varCtx = orderCondition->brackettedexpression()->expression()-> \
+				conditionalOrexpression()->conditionalAndexpression(0)->valueLogical(0)-> \
+				relationalexpression()->numericexpression(0)->additiveexpression()-> \
+				multiplicativeexpression(0)->unaryexpression(0)->primaryexpression()->var();
+			if (!varCtx)
+				throw runtime_error("[ERROR]	The supported ORDER BY key is var only.");
+			antlr4::tree::ParseTree *curr = orderCondition->brackettedexpression()->expression();
+			for (int i = 0; i < 10; i++)
+			{
+				// Make sure only one children along the way
+				if (curr->children.size() > 1)
+					throw runtime_error("[ERROR]	The supported ORDER BY key is var only.");
+				curr = curr->children[0];
+			}
+			var = varCtx->getText();
+		}
+		// constraint | var
+		else
+		{
+			if (!orderCondition->var())
+				throw runtime_error("[ERROR]	The supported ORDER BY key is var only.");
+			var = orderCondition->var()->getText();
+		}
+
+		query_tree_ptr->addOrderVar(var, descending);
+	}
+
+	return antlrcpp::Any();
 }
 
 void QueryParser::replacePrefix(string &str)
@@ -204,840 +770,94 @@ void QueryParser::replacePrefix(string &str)
 		else
 		{
 			printf("prefix not found...\n");
-			throw "[ERROR]	Prefix is not found, please define it before use.";
+			throw runtime_error("[ERROR]	Prefix is not found, please define it before use.");
 		}
 	}
 }
 
-void QueryParser::parseSelectClause(pANTLR3_BASE_TREE node, QueryTree &querytree)
+//------------------------------------------------------------------------------------------
+
+antlrcpp::Any QueryParser::visitInsertData(SPARQLParser::InsertDataContext *ctx)
 {
-	printf("parseSelectClause\n");
+	query_tree_ptr->setUpdateType(QueryTree::Insert_Data);
 
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//distinct 52
-		if (childNode->getType(childNode) == 52)
-			querytree.setProjectionModifier(QueryTree::Modifier_Distinct);
-
-		//var 199
-		if (childNode->getType(childNode) == 199)
-			parseSelectVar(childNode, querytree);
-
-		//as 11
-		if (childNode->getType(childNode) == 11)
-			parseSelectAggregateFunction(childNode, querytree);
-
-		//asterisk 14
-		if (childNode->getType(childNode) == 14)
-			querytree.setProjectionAsterisk();
-	}
+	return antlrcpp::Any();
 }
 
-void QueryParser::parseSelectVar(pANTLR3_BASE_TREE node, QueryTree &querytree)
+antlrcpp::Any QueryParser::visitDeleteData(SPARQLParser::DeleteDataContext *ctx)
 {
-	printf("parseSelectVar\n");
+	query_tree_ptr->setUpdateType(QueryTree::Delete_Data);
 
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		if (childNode->getType(childNode) == 200)
-		{
-			querytree.addProjectionVar();
-			QueryTree::ProjectionVar &proj_var = querytree.getLastProjectionVar();
-			proj_var.aggregate_type = QueryTree::ProjectionVar::None_type;
-
-			parseString(childNode, proj_var.var, 0);
-		}
-	}
+	return antlrcpp::Any();
 }
 
-void QueryParser::parseSelectAggregateFunction(pANTLR3_BASE_TREE node, QueryTree &querytree)
+antlrcpp::Any QueryParser::visitDeleteWhere(SPARQLParser::DeleteWhereContext *ctx)
 {
-	printf("parseSelectAggregateFunction\n");
+	query_tree_ptr->setUpdateType(QueryTree::Delete_Where);
 
-	//AS
-		//UNARY
-			//COUNT
-				//DISTINCT
-				//UNARY
-					//var 200
-				//asterisk 14
-		//var 200
-
-	pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, 0);
-
-	//unary 190
-	while (childNode->getType(childNode) == 190)
-		childNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
-	//count 39
-	if (childNode->getType(childNode) != 39)
-		throw "[ERROR]	The supported aggregate function now is COUNT only.";
-
-	bool distinct = false;
-	pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
-
-	//distinct 52
-	if (gchildNode->getType(gchildNode) == 52)
-	{
-		distinct = true;
-		gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 1);
-	}
-
-	//unary 190
-	while (gchildNode->getType(gchildNode) == 190)
-		gchildNode = (pANTLR3_BASE_TREE) gchildNode->getChild(gchildNode, 0);
-	if (gchildNode->getType(gchildNode) != 200 && gchildNode->getType(gchildNode) != 14)
-		throw "[ERROR]	The aggregate function COUNT can accept only one var or *.";
-
-	querytree.addProjectionVar();
-	QueryTree::ProjectionVar &proj_var = querytree.getLastProjectionVar();
-	proj_var.aggregate_type = QueryTree::ProjectionVar::Count_type;
-	proj_var.distinct = distinct;
-
-	if (gchildNode->getType(gchildNode) == 200)
-	{
-		parseString(gchildNode, proj_var.aggregate_var, 0);
-	}
-	if (gchildNode->getType(gchildNode) == 14)
-	{
-		parseString(gchildNode, proj_var.aggregate_var, 0);		//for convenience, set aggregate_var *
-		querytree.setProjectionAsterisk();
-	}
-
-	childNode = (pANTLR3_BASE_TREE) node->getChild(node, 1);
-	parseString(childNode, proj_var.var, 0);
+	return antlrcpp::Any();
 }
 
-void QueryParser::parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
+antlrcpp::Any QueryParser::visitModify(SPARQLParser::ModifyContext *ctx)
 {
-	printf("parseGroupPattern\n");
+	// ( 'WITH' iri )? not supported
 
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
+	if (ctx->deleteClause() && ctx->insertClause())
 	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//triples same subject 185
-		if (childNode->getType(childNode) == 185)
-		{
-			parsePattern(childNode, group_pattern);
-		}
-
-		//optional	124		minus	108
-		if (childNode->getType(childNode) == 124 || childNode->getType(childNode) == 108)
-		{
-			parseOptionalOrMinus(childNode, group_pattern);
-		}
-
-		//union  195
-		if (childNode->getType(childNode) == 195)
-		{
-			group_pattern.addOneGroupUnion();
-			parseUnion(childNode, group_pattern);
-		}
-
-		//filter 67
-		if (childNode->getType(childNode) == 67)
-		{
-			parseFilter(childNode, group_pattern);
-		}
-
-		//bind 17
-		if (childNode->getType(childNode) == 17)
-		{
-			parseBind(childNode, group_pattern);
-		}
-
-		//group graph pattern 77
-		//redundant {}
-		if (childNode->getType(childNode) == 77)
-		{
-			parseGroupPattern(childNode, group_pattern);
-		}
+		query_tree_ptr->setUpdateType(QueryTree::Modify_Clause);
+		visit(ctx->deleteClause());
+		visit(ctx->insertClause());
 	}
+	else if (ctx->deleteClause())
+	{
+		query_tree_ptr->setUpdateType(QueryTree::Delete_Clause);
+		visit(ctx->deleteClause());
+	}
+	else if (ctx->insertClause())
+	{
+		query_tree_ptr->setUpdateType(QueryTree::Insert_Clause);
+		visit(ctx->insertClause());
+	}
+
+	// usingClause not supported
+
+	visitGroupGraphPattern(ctx->groupGraphPattern(), query_tree_ptr->getGroupPattern());
+
+	return antlrcpp::Any();
 }
 
-void QueryParser::parsePattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
+antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubjectContext *ctx)
 {
-	printf("parsePattern\n");
+	QueryTree::GroupPattern &group_pattern = query_tree_ptr->getInsertPatterns();
+	if (query_tree_ptr->getUpdateType() == QueryTree::Delete_Data
+		|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Where
+		|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Clause)
+		group_pattern = query_tree_ptr->getDeletePatterns();
+	// QueryTree::Insert_Data, QueryTree::Insert_Clause, QueryTree::Modify_Clause
 
 	string subject, predicate, object;
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
+
+	subject = ctx->varOrTerm()->getText();
+	replacePrefix(subject);
+
+	// Assume triplesSameSubject : varOrTerm propertyListNotEmpty ;
+	auto propertyListNotEmpty = ctx->propertyListNotEmpty();
+	int numChild = propertyListNotEmpty->verb().size();
+	for (int i = 0; i < numChild; i++)
 	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//subject 177
-		if (childNode->getType(childNode) == 177)
+		predicate = propertyListNotEmpty->verb(i)->getText();
+		auto objectList = propertyListNotEmpty->objectList(i);
+		for (auto object_ptr : objectList->object())
 		{
-			parseString(childNode, subject, 1);
-			replacePrefix(subject);
-		}
-
-		//predicate 142
-		if (childNode->getType(childNode) == 142)
-		{
-			pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
-
-			//var 200
-			if (gchildNode->getType(gchildNode) == 200)
-			{
-				parseString(childNode, predicate, 1);
-			}
-			else
-			{
-				parseString(childNode, predicate, 4);
-				if (predicate == "a")
-					predicate = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>";
-			}
-			replacePrefix(predicate);
-		}
-
-		//object 119
-		if (childNode->getType(childNode) == 119)
-		{
-			parseString(childNode, object, 1);
+			object = object_ptr->getText();
 			replacePrefix(object);
-		}
-
-		if (i != 0 && i % 2 == 0)		//triples same subject
-		{
-			group_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(QueryTree::GroupPattern::Pattern::Element(subject),
-																		QueryTree::GroupPattern::Pattern::Element(predicate),
-																		QueryTree::GroupPattern::Pattern::Element(object)));
-
-			//scope of filter
-			for (int j = (int)group_pattern.sub_group_pattern.size() - 1; j > 0; j--)
-				if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type &&
-					group_pattern.sub_group_pattern[j - 1].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
-				{
-					QueryTree::GroupPattern::SubGroupPattern tmp(group_pattern.sub_group_pattern[j - 1]);
-					group_pattern.sub_group_pattern[j - 1] = group_pattern.sub_group_pattern[j];
-					group_pattern.sub_group_pattern[j] = tmp;
-				}
-				else break;
+			addTriple(subject, predicate, object, group_pattern);
 		}
 	}
+
+	if (query_tree_ptr->getUpdateType() == QueryTree::Delete_Where)
+		query_tree_ptr->getGroupPattern() = query_tree_ptr->getDeletePatterns();
+
+	return antlrcpp::Any();
 }
 
-void QueryParser::parseOptionalOrMinus(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
-{
-	//optional 124
-	if (node->getType(node) == 124)
-		printf("parseOptional\n");
-	//minus	108
-	else if (node->getType(node) == 108)
-		printf("parseMinus\n");
-
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//group graph pattern 77
-		if (childNode->getType(childNode) == 77)
-		{
-			if (node->getType(node) == 124)
-				group_pattern.addOneOptional(QueryTree::GroupPattern::SubGroupPattern::Optional_type);
-			else if (node->getType(node) == 108)
-				group_pattern.addOneOptional(QueryTree::GroupPattern::SubGroupPattern::Minus_type);
-
-			parseGroupPattern(childNode, group_pattern.getLastOptional());
-		}
-	}
-}
-
-void QueryParser::parseUnion(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
-{
-	printf("parseUnion\n");
-
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//group graph pattern 77
-		if (childNode->getType(childNode) == 77)
-		{
-			group_pattern.addOneUnion();
-			parseGroupPattern(childNode, group_pattern.getLastUnion());
-		}
-
-		//union  195
-		if (childNode->getType(childNode) == 195)
-		{
-			parseUnion(childNode, group_pattern);
-		}
-	}
-}
-
-void QueryParser::parseFilter(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
-{
-	printf("parseFilter\n");
-
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//unary 190
-		while (childNode->getType(childNode) == 190)
-			childNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
-
-		group_pattern.addOneFilter();
-		parseFilterTree(childNode, group_pattern.getLastFilter().root);
-	}
-}
-
-void QueryParser::parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter)
-{
-	printf("parseFilterTree\n");
-
-	switch (node->getType(node))
-	{
-		//! 192
-		case 192:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Not_type;		break;
-		//not 115
-		case 115:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Not_type;		break;
-		//or 125
-		case 125:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Or_type;		break;
-		//and 8
-		case 8:		filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::And_type;		break;
-		//equal 62
-		case 62:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Equal_type;		break;
-		//not equal 116
-		case 116:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::NotEqual_type;	break;
-		//less 100
-		case 100:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Less_type;		break;
-		//less equal 101
-		case 101:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::LessOrEqual_type;	break;
-		//greater 72
-		case 72:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Greater_type;		break;
-		//greater equal 73
-		case 73:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::GreaterOrEqual_type;	break;
-
-		//regex 150
-		case 150:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_regex_type;		break;
-		//str 167
-		case 167:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_str_type;		break;
-		//isIRI 92
-		case 92:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isiri_type;		break;
-		//isURI 95
-		case 95:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isuri_type;		break;
-		//isLiteral 93
-		case 93:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isliteral_type;	break;
-		//isNumeric 94
-		case 94:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isnumeric_type;	break;
-		//lang 96
-		case 96:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_lang_type;		break;
-		//langMatches 97
-		case 97:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_langmatches_type;	break;
-		//bound 23
-		case 23:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_bound_type;		break;
-		//in 81
-		case 81:	filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_in_type;		break;
-
-		default:
-			return;
-	}
-
-	//in the "NOT IN" case, in, var and expression list is on the same layer.
-	//not 115
-	if (node->getType(node) == 115)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, 0);
-
-		//in 81
-		if (childNode->getType(childNode) == 81)
-		{
-			filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
-			filter.child[0].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type;
-			filter.child[0].node.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_in_type;
-			parseVarInExpressionList(node, filter.child[0].node);
-
-			return;
-		}
-	}
-
-	//in 81
-	if (node->getType(node) == 81)
-	{
-		parseVarInExpressionList(node, filter);
-
-		return;
-	}
-
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//unary 190
-		while (childNode->getType(childNode) == 190)
-		{
-			pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
-
-			if (gchildNode->getChildCount(gchildNode) != 0)
-				childNode = gchildNode;
-			else break;
-		}
-
-		filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
-
-		//unary 190
-		if (childNode->getType(childNode) == 190)
-		{
-			filter.child[i].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
-			parseString(childNode, filter.child[i].str, 1);
-			replacePrefix(filter.child[i].str);
-		}
-		else if (childNode->getChildCount(childNode) == 0)
-		{
-			filter.child[i].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
-			parseString(childNode, filter.child[i].str, 0);
-			replacePrefix(filter.child[i].str);
-		}
-		else
-		{
-			filter.child[i].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type;
-			parseFilterTree(childNode, filter.child[i].node);
-		}
-	}
-}
-
-void QueryParser::parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter)
-{
-	printf("parseVarInExpressionList\n");
-
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//in 81
-		if (childNode->getType(childNode) == 81)
-			continue;
-
-		//unary 190
-		if (childNode->getType(childNode) == 190)
-		{
-			//unary 190
-			while (childNode->getType(childNode) == 190)
-			{
-				pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
-
-				if (gchildNode->getChildCount(gchildNode) != 0)
-					childNode = gchildNode;
-				else break;
-			}
-
-			int last = filter.child.size();
-			filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
-
-			//unary 190
-			if (childNode->getType(childNode) == 190)
-			{
-				filter.child[last].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
-				parseString(childNode, filter.child[last].str, 1);
-				replacePrefix(filter.child[last].str);
-			}
-			else if (childNode->getChildCount(childNode) == 0)
-			{
-				filter.child[last].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
-				parseString(childNode, filter.child[last].str, 0);
-				replacePrefix(filter.child[last].str);
-			}
-			else
-			{
-				filter.child[last].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type;
-				parseFilterTree(childNode, filter.child[last].node);
-			}
-		}
-
-		//expression list 65
-		if (childNode->getType(childNode) == 65)
-		{
-			for (unsigned int j = 0; j < childNode->getChildCount(childNode); j++)
-			{
-				pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, j);
-
-				//unary 190
-				while (gchildNode->getType(gchildNode) == 190)
-				{
-					pANTLR3_BASE_TREE ggchildNode = (pANTLR3_BASE_TREE) gchildNode->getChild(gchildNode, 0);
-
-					if (ggchildNode->getChildCount(ggchildNode) != 0)
-						gchildNode = ggchildNode;
-					else break;
-				}
-
-				int last = filter.child.size();
-				filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
-
-				//unary 190
-				if (gchildNode->getType(gchildNode) == 190)
-				{
-					filter.child[last].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
-					parseString(gchildNode, filter.child[last].str, 1);
-					replacePrefix(filter.child[last].str);
-				}
-				else if (gchildNode->getChildCount(gchildNode) == 0)
-				{
-					filter.child[last].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
-					parseString(gchildNode, filter.child[last].str, 0);
-					replacePrefix(filter.child[last].str);
-				}
-				else
-				{
-					filter.child[last].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type;
-					parseFilterTree(gchildNode, filter.child[last].node);
-				}
-			}
-		}
-	}
-}
-
-void QueryParser::parseBind(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
-{
-	printf("parseBind\n");
-
-	string str, var;
-
-	pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, 0);
-
-	//unary 190
-	while (childNode->getType(childNode) == 190)
-	{
-		pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
-
-		if (gchildNode->getChildCount(gchildNode) != 0)
-			childNode = gchildNode;
-		else break;
-	}
-
-	//unary 190
-	if (childNode->getType(childNode) == 190)
-	{
-		parseString(childNode, str, 1);
-		replacePrefix(str);
-	}
-	else if (childNode->getChildCount(childNode) == 0)
-	{
-		parseString(childNode, str, 0);
-		replacePrefix(str);
-	}
-	else
-	{
-		throw "[ERROR]	The BIND operator can't assign an expression to a var.";
-	}
-
-	childNode = (pANTLR3_BASE_TREE) node->getChild(node, 1);
-	//as 11
-	if (childNode->getType(childNode) == 11)
-	{
-		parseString(childNode, var, 1);
-	}
-
-	group_pattern.addOneBind();
-	group_pattern.getLastBind() = QueryTree::GroupPattern::Bind(str, var);
-}
-
-void QueryParser::parseGroupBy(pANTLR3_BASE_TREE node, QueryTree &querytree)
-{
-	printf("parseGroupBy\n");
-
-
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//var 200
-		if (childNode->getType(childNode) == 200)
-		{
-			string var;
-			parseString(childNode, var, 0);
-
-			querytree.addGroupByVar(var);
-		}
-		else
-			throw "[ERROR]	The supported GROUP BY key is var only.";
-	}
-}
-
-void QueryParser::parseOrderBy(pANTLR3_BASE_TREE node, QueryTree &querytree)
-{
-	printf("parseOrderBy\n");
-
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//order by condition
-		if (childNode->getType(childNode) == 128)
-		{
-			string var;
-			bool desending = false;
-
-			for (unsigned int j = 0; j < childNode->getChildCount(childNode); j++)
-			{
-				pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, j);
-
-				//unary 190
-				while (gchildNode->getType(gchildNode) == 190)
-					gchildNode = (pANTLR3_BASE_TREE) gchildNode->getChild(gchildNode, 0);
-
-				//var 200
-				if (gchildNode->getType(gchildNode) == 200)
-					parseString(gchildNode, var, 0);
-
-				//asend 12
-				if (gchildNode->getType(gchildNode) == 12)
-					desending = false;
-
-				//desend 49
-				if (gchildNode->getType(gchildNode) == 49)
-					desending = true;
-			}
-
-			if (var.length() > 0)
-				querytree.addOrderVar(var, desending);
-		}
-	}
-}
-
-void QueryParser::parseString(pANTLR3_BASE_TREE node, string &str, int dep)
-{
-	if (dep == 0)
-	{
-		str = (const char *) node->getText(node)->chars;
-		return;
-	}
-
-	while (dep > 1 && node != NULL)
-	{
-		node = (pANTLR3_BASE_TREE) node->getChild(node, 0);
-		dep--;
-	}
-
-	if (node == NULL || node->getChildCount(node) == 0)
-		throw "[ERROR]	Some errors are found in the SPARQL query request.";
-	else
-	{
-		str = "";
-		for (unsigned int i = 0; i < node->getChildCount(node); i++)
-		{
-			pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-			//var 200
-			//string literal 170(single quotation marks)	171(double quotation marks)
-			//IRI 89
-			//PNAME_LN 135
-			//custom language 98
-
-			//'' 170
-			//"" 171
-			//'''''' 172
-			//"""""" 173
-
-			string substr = (const char *) childNode->getText(childNode)->chars;
-			if (childNode->getType(childNode) == 170)
-				substr = "\"" + substr.substr(1, substr.length() - 2) + "\"";
-			if (childNode->getType(childNode) == 172)
-				substr = "\"" + substr.substr(3, substr.length() - 6) + "\"";
-			if (childNode->getType(childNode) == 173)
-				substr = "\"" + substr.substr(3, substr.length() - 6) + "\"";
-
-			if (i > 0)
-			{
-				pANTLR3_BASE_TREE preChildNode = (pANTLR3_BASE_TREE) node->getChild(node, i - 1);
-
-				//xsd:*
-				//reference	149
-				if (preChildNode->getType(preChildNode) == 149)
-					replacePrefix(substr);
-			}
-
-			str += substr;
-		}
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------
-
-void QueryParser::parseUpdate(pANTLR3_BASE_TREE node, QueryTree &querytree)
-{
-	printf("parseUpdate\n");
-
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//prologue	144
-		if (childNode->getType(childNode) == 144)
-		{
-			parsePrologue(childNode);
-		}
-		//insert 82
-		else if (childNode->getType(childNode) == 82)
-		{
-			//INSERT
-				//DATA
-				//TRIPLES_TEMPLATE
-
-			querytree.setUpdateType(QueryTree::Insert_Data);
-
-			pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 1);
-
-			//triples template 186
-			if (gchildNode->getType(gchildNode) == 186)
-				parseTripleTemplate(gchildNode, querytree.getInsertPatterns());
-		}
-		//delete 48
-		else if (childNode->getType(childNode) == 48 && childNode->getChildCount(childNode) > 0)
-		{
-			//DELETE
-			//DELETE
-				//DATA or WHERE
-				//TRIPLES_TEMPLATE
-
-			pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
-
-			//data 41
-			if (gchildNode->getType(gchildNode) == 41)
-			{
-				querytree.setUpdateType(QueryTree::Delete_Data);
-
-				gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 1);
-				//triples template 186
-				if (gchildNode->getType(gchildNode) == 186)
-					parseTripleTemplate(gchildNode, querytree.getDeletePatterns());
-			}
-			//where 203
-			else if (gchildNode->getType(gchildNode) == 203)
-			{
-				querytree.setUpdateType(QueryTree::Delete_Where);
-
-				gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 1);
-				//triples template 186
-				if (gchildNode->getType(gchildNode) == 186)
-				{
-					parseTripleTemplate(gchildNode, querytree.getDeletePatterns());
-					querytree.getGroupPattern() = querytree.getDeletePatterns();
-				}
-			}
-		}
-		//modify 110
-		else if (childNode->getType(childNode) == 110)
-		{
-			parseModify(childNode, querytree);
-		}
-	}
-}
-
-void QueryParser::parseTripleTemplate(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern)
-{
-	printf("parseTripleTemplate\n");
-
-	//TRIPLES_TEMPLATE
-		//TRIPLES_SAME_SUBJECT
-			//SUBJECT
-				//...
-			//PREDICATE
-				//...
-			//OBJECT
-				//...
-
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//triples same subject 185
-		if (childNode->getType(childNode) == 185)
-		{
-			string subject, predicate, object;
-
-			for (unsigned int j = 0; j < childNode->getChildCount(childNode); j++)
-			{
-				pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, j);
-
-				//subject 177
-				if (gchildNode->getType(gchildNode) == 177)
-				{
-					parseString(gchildNode, subject, 1);
-					replacePrefix(subject);
-				}
-
-				//predicate 142
-				if (gchildNode->getType(gchildNode) == 142)
-				{
-					parseString(gchildNode, predicate, 1);
-					if (predicate == "a")
-						predicate = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>";
-					replacePrefix(predicate);
-				}
-
-				//object 119
-				if (gchildNode->getType(gchildNode) == 119)
-				{
-					parseString(gchildNode, object, 1);
-					replacePrefix(object);
-				}
-
-				if (j != 0 && j % 2 == 0)		//triples same subject
-				{
-					group_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(QueryTree::GroupPattern::Pattern::Element(subject),
-																				QueryTree::GroupPattern::Pattern::Element(predicate),
-																				QueryTree::GroupPattern::Pattern::Element(object)));
-				}
-			}
-		}
-	}
-}
-
-void QueryParser::parseModify(pANTLR3_BASE_TREE node, QueryTree &querytree)
-{
-	printf("parseModify\n");
-
-	//DELETE
-	//TRIPLES_TEMPLATE
-		//TRIPLES_SAME_SUBJECT
-	//INSERT
-	//TRIPLES_TEMPLATE
-		//TRIPLES_SAME_SUBJECT
-	//WHERE
-		//GROUP_GRAPH_PATTERN
-
-	for (unsigned int i = 0; i < node->getChildCount(node); i++)
-	{
-		pANTLR3_BASE_TREE childNode = (pANTLR3_BASE_TREE) node->getChild(node, i);
-
-		//delete 48
-		if (childNode->getType(childNode) == 48)
-		{
-			querytree.setUpdateType(QueryTree::Delete_Clause);
-		}
-		//insert 82
-		else if (childNode->getType(childNode) == 82)
-		{
-			if (querytree.getUpdateType() == QueryTree::Not_Update)
-				querytree.setUpdateType(QueryTree::Insert_Clause);
-			else if (querytree.getUpdateType() == QueryTree::Delete_Clause)
-				querytree.setUpdateType(QueryTree::Modify_Clause);
-		}
-		//triples template 186
-		else if (childNode->getType(childNode) == 186)
-		{
-			if (querytree.getUpdateType() == QueryTree::Delete_Clause)
-				parseTripleTemplate(childNode, querytree.getDeletePatterns());
-			else if (querytree.getUpdateType() == QueryTree::Insert_Clause || querytree.getUpdateType() == QueryTree::Modify_Clause)
-				parseTripleTemplate(childNode, querytree.getInsertPatterns());
-		}
-		//where 203
-		else if (childNode->getType(childNode) == 203)
-		{
-			//WHERE
-				//GROUP_GRAPH_PATTERN
-
-			pANTLR3_BASE_TREE gchildNode = (pANTLR3_BASE_TREE) childNode->getChild(childNode, 0);
-			//group graph pattern 77
-			if (gchildNode->getType(gchildNode) == 77)
-				parseGroupPattern(gchildNode, querytree.getGroupPattern());
-		}
-	}
-}

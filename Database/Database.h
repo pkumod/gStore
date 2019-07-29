@@ -22,7 +22,8 @@
 #include "../StringIndex/StringIndex.h"
 #include "../Parser/DBparser.h"
 #include "../Parser/RDFParser.h"
-#include "../Parser/SparqlParser.h"
+// #include "../Parser/SparqlParser.h"
+#include "../Parser/SPARQL/SPARQLParser.h"
 #include "../Query/QueryCache.h"
 #include "../Query/GeneralEvaluation.h"
 

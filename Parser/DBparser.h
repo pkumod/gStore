@@ -11,22 +11,24 @@
 #include "../Util/Util.h"
 #include "../Util/Triple.h"
 #include "../Query/SPARQLquery.h"
-#include "SparqlParser.h"
-#include "SparqlLexer.h"
+// #include "SparqlParser.h"
+// #include "SparqlLexer.h"
+#include "SPARQL/SPARQLLexer.h"
+#include "SPARQL/SPARQLParser.h"
 
 using namespace std;
 
 class DBparser{
 private:
 
-	void printNode(pANTLR3_BASE_TREE node,int depth=0);
-	int parseNode(pANTLR3_BASE_TREE node, SPARQLquery& query,int depth=0);
-	int parsePrefix(pANTLR3_BASE_TREE node,std::pair<std::string,std::string>& prefixPair);
-	int parseString(pANTLR3_BASE_TREE node,std::string& str,int depth=0);
-	int parseTriple(pANTLR3_BASE_TREE node,Triple& triple);
-	int parseBasicQuery(pANTLR3_BASE_TREE node,BasicQuery& basicQuery);
-	int parseVar(pANTLR3_BASE_TREE node,SPARQLquery& query);
-	void replacePrefix(string& str);
+	// void printNode(pANTLR3_BASE_TREE node,int depth=0);
+	// int parseNode(pANTLR3_BASE_TREE node, SPARQLquery& query,int depth=0);
+	// int parsePrefix(pANTLR3_BASE_TREE node,std::pair<std::string,std::string>& prefixPair);
+	// int parseString(pANTLR3_BASE_TREE node,std::string& str,int depth=0);
+	// int parseTriple(pANTLR3_BASE_TREE node,Triple& triple);
+	// int parseBasicQuery(pANTLR3_BASE_TREE node,BasicQuery& basicQuery);
+	// int parseVar(pANTLR3_BASE_TREE node,SPARQLquery& query);
+	// void replacePrefix(string& str);
 
 	std::map<std::string,std::string> _prefix_map;
 
@@ -40,7 +42,7 @@ public:
 
 	/* input sparql query string and parse query into SPARQLquery
 	 * the returned string is set for log when error happen */
-	string sparqlParser(const string& _sparql, SPARQLquery& _sparql_query);
+	// string sparqlParser(const string& _sparql, SPARQLquery& _sparql_query);
 
 	/* file stream _fin points to rdfFile
 	 * that was opened previously in Database::encodeRDF

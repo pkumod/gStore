@@ -1,53 +1,74 @@
-/*=============================================================================
-# Filename: QueryParser.h
-# Author: Jiaqi, Chen
-# Mail: chenjiaqi93@163.com
-# Last Modified: 2017-03-13
-# Description:
-=============================================================================*/
+#include <typeinfo>
 
-#ifndef QUERYPARSER_H_
-#define QUERYPARSER_H_
-
-#include "../Util/Util.h"
+#include "antlr4-runtime.h"
+#include "SPARQL/SPARQLLexer.h"
+#include "SPARQL/SPARQLParser.h"
+#include "SPARQL/SPARQLBaseVisitor.h"
 #include "../Query/QueryTree.h"
-#include "SparqlParser.h"
-#include "SparqlLexer.h"
+#include "../Util/Util.h"
 
-class QueryParser
+class QueryParser: public SPARQLBaseVisitor
 {
-	public:
-		void SPARQLParse(const std::string &query, QueryTree &querytree);
+private:
+	QueryTree *query_tree_ptr;
+	std::map<std::string, std::string> prefix_map;
 
-	private:
-		std::map<std::string, std::string> prefix_map;
+public:
+	QueryParser() {}
+	QueryParser(QueryTree *qtp): query_tree_ptr(qtp) {}
+	void setQueryTree(QueryTree *qtp) { query_tree_ptr = qtp; }
+	void SPARQLParse(const std::string &query);	// Overall driver function
 
-		int printNode(pANTLR3_BASE_TREE node, int dep = 0);
+	antlrcpp::Any visitQueryUnit(SPARQLParser::QueryUnitContext *ctx);
+	antlrcpp::Any visitQuery(SPARQLParser::QueryContext *ctx);
+	antlrcpp::Any visitSelectquery(SPARQLParser::SelectqueryContext *ctx);
+	antlrcpp::Any visitAskquery(SPARQLParser::AskqueryContext *ctx);
+	antlrcpp::Any visitWhereClause(SPARQLParser::WhereClauseContext *ctx, QueryTree::GroupPattern &group_pattern);
+	antlrcpp::Any visitLimitClause(SPARQLParser::LimitClauseContext *ctx);
+	antlrcpp::Any visitOffsetClause(SPARQLParser::OffsetClauseContext *ctx);
+	antlrcpp::Any visitPrefixDecl(SPARQLParser::PrefixDeclContext *ctx);
+	antlrcpp::Any visitSelectClause(SPARQLParser::SelectClauseContext *ctx);
+	void parseSelectAggregateFunction(SPARQLParser::ExpressionContext *expCtx, \
+		SPARQLParser::VarContext *varCtx);
+	antlrcpp::Any visitGroupGraphPattern(SPARQLParser::GroupGraphPatternContext *ctx, \
+		QueryTree::GroupPattern &group_pattern);
+	antlrcpp::Any visitGroupGraphPatternSub(SPARQLParser::GroupGraphPatternSubContext *ctx, \
+		QueryTree::GroupPattern &group_pattern);
+	antlrcpp::Any visitTriplesBlock(SPARQLParser::TriplesBlockContext *ctx, QueryTree::GroupPattern &group_pattern);
+	antlrcpp::Any visitGraphPatternNotTriples(SPARQLParser::GraphPatternNotTriplesContext *ctx, \
+		QueryTree::GroupPattern &group_pattern);
+	antlrcpp::Any visitGroupOrUnionGraphPattern(SPARQLParser::GroupOrUnionGraphPatternContext *ctx, \
+		QueryTree::GroupPattern &group_pattern);
+	antlrcpp::Any visitOptionalGraphPattern(SPARQLParser::OptionalGraphPatternContext *ctx, \
+		QueryTree::GroupPattern &group_pattern);
+	antlrcpp::Any visitMinusGraphPattern(SPARQLParser::MinusGraphPatternContext *ctx, \
+		QueryTree::GroupPattern &group_pattern);
+	antlrcpp::Any visitFilter(SPARQLParser::FilterContext *ctx, QueryTree::GroupPattern &group_pattern);
+	void buildFilterTree(antlr4::tree::ParseTree *root, \
+		QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild *currChild, \
+		QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, std::string tp);
+	antlrcpp::Any visitBind(SPARQLParser::BindContext *ctx, QueryTree::GroupPattern &group_pattern);
+	antlrcpp::Any visitTriplesSameSubjectpath(SPARQLParser::TriplesSameSubjectpathContext *ctx, \
+		QueryTree::GroupPattern &group_pattern);
+	void addTriple(std::string subject, std::string predicate, std::string object, QueryTree::GroupPattern &group_pattern);
+	antlrcpp::Any visitGroupClause(SPARQLParser::GroupClauseContext *ctx);
+	antlrcpp::Any visitOrderClause(SPARQLParser::OrderClauseContext *ctx);
+	void replacePrefix(std::string &str);
+	
+	antlrcpp::Any visitInsertData(SPARQLParser::InsertDataContext *ctx);
+	antlrcpp::Any visitDeleteData(SPARQLParser::DeleteDataContext *ctx);
+	antlrcpp::Any visitDeleteWhere(SPARQLParser::DeleteWhereContext *ctx);
+	antlrcpp::Any visitModify(SPARQLParser::ModifyContext *ctx);
+	antlrcpp::Any visitTriplesSameSubject(SPARQLParser::TriplesSameSubjectContext *ctx);
 
-		void parseWorkload(pANTLR3_BASE_TREE node, QueryTree &querytree);
-
-		void parseQuery(pANTLR3_BASE_TREE node, QueryTree &querytree);
-		void parsePrologue(pANTLR3_BASE_TREE node);
-		void parsePrefix(pANTLR3_BASE_TREE node);
-		void replacePrefix(std::string &str);
-		void parseSelectClause(pANTLR3_BASE_TREE node, QueryTree &querytree);
-		void parseSelectVar(pANTLR3_BASE_TREE node, QueryTree &querytree);
-		void parseSelectAggregateFunction(pANTLR3_BASE_TREE node, QueryTree &querytree);
-		void parseGroupPattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
-		void parsePattern(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
-		void parseOptionalOrMinus(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
-		void parseUnion(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
-		void parseFilter(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
-		void parseFilterTree(pANTLR3_BASE_TREE node, QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter);
-		void parseVarInExpressionList(pANTLR3_BASE_TREE node, QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter);
-		void parseBind(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
-		void parseGroupBy(pANTLR3_BASE_TREE node, QueryTree &querytree);
-		void parseOrderBy(pANTLR3_BASE_TREE node, QueryTree &querytree);
-		void parseString(pANTLR3_BASE_TREE node, std::string &str, int dep);
-
-		void parseUpdate(pANTLR3_BASE_TREE node, QueryTree &querytree);
-		void parseTripleTemplate(pANTLR3_BASE_TREE node, QueryTree::GroupPattern &group_pattern);
-		void parseModify(pANTLR3_BASE_TREE node, QueryTree &querytree);
+	void printNode(antlr4::ParserRuleContext *ctx, const char *nodeTypeName);
+	void printTree(antlr4::tree::ParseTree *root, int dep);
+	void printQueryTree();
 };
 
-#endif /* QUERYPARSER_H_ */
+class SPARQLErrorListener: public antlr4::BaseErrorListener
+{
+public:
+	void syntaxError(antlr4::Recognizer *recognizer, antlr4::Token * offendingSymbol, \
+		size_t line, size_t charPositionInLine, const std::string &msg, std::exception_ptr e);
+};
