@@ -42,9 +42,13 @@ class GeneralEvaluation
 		TYPE_ENTITY_LITERAL_ID limitID_literal;
 		TYPE_ENTITY_LITERAL_ID limitID_entity;
 
+    public:
+    	FILE* fp;
+    	bool export_flag;
+
 	public:
 		GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, QueryCache *_query_cache, TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub, TYPE_TRIPLE_NUM *_pre2obj, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity):
-			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), pre2num(_pre2num), pre2sub(_pre2sub), pre2obj(_pre2obj), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), temp_result(NULL)
+			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), pre2num(_pre2num), pre2sub(_pre2sub), pre2obj(_pre2obj), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), temp_result(NULL), fp(NULL), export_flag(false)
 		{}
 
 		bool parseQuery(const std::string &_query);

@@ -1,73 +1,85 @@
-#include <curl/curl.h>
-#include <string>
-#include <cstring>
-#include <iostream>
+/*=============================================================================
+# Filename: gshow.cpp
+# Author: suxunbin
+# Mail: suxunbin@pku.edu.cn
+# Last Modified: 2019-07-25 17:00
+# Description: used to show all the databases that have already been built
+=============================================================================*/
+
+#include "../Util/Util.h"
+#include "../Database/Database.h"
 
 using namespace std;
 
-const string UrlEncode(const string& s)
-{
-        string ret;
-        unsigned char *ptr = (unsigned char *)s.c_str();
-        ret.reserve(s.length());
+struct DBInfo{
+        public:
+                string db_name;
+                string creator;
+                string built_time;
+                DBInfo(){
+                }
+                DBInfo(string _db_name){
+                        db_name = _db_name;
+                }
+                ~DBInfo(){
+                }
+};
 
-        for(int i=0;i<s.length();++i)
+string Getstr(string s)
+{
+        int len = s.length();
+        return s.substr(1,len-2);
+}
+
+int main(int argc, char * argv[])
+{
+        Util util;
+
+        Database system_db("system");
+        system_db.load();
+        string sparql = "select ?s where{?s <database_status> \"already_built\".}";
+        ResultSet _rs;
+        FILE* ofp = stdout;
+        int ret = system_db.query(sparql, _rs, ofp);
+        DBInfo* databases = new DBInfo[_rs.ansNum+1];
+        databases[0].db_name = "<system>";
+        for (int i = 0; i < _rs.ansNum; i++)
         {
-                if((int(ptr[i])==42) || (int(ptr[i])==45) || (int(ptr[i])==46) || (int(ptr[i])==47) || (int(ptr[i])==58) ||(int(ptr[i])==95))
-                        ret += ptr[i];
-                else if((int(ptr[i])>=48) && (int(ptr[i])<=57))
-                        ret += ptr[i];
-                else if((int(ptr[i])>=65) && (int(ptr[i])<=90))
-                        ret += ptr[i];
-                else if((int(ptr[i])>=97) && (int(ptr[i])<=122))
-                        ret += ptr[i];
-                else if(int(ptr[i])==32)
-                        ret += '+';
-                else
+                databases[i+1].db_name = _rs.answer[i][0];
+                string sparql1 = "select ?p ?o where{" + _rs.answer[i][0] + " ?p ?o.}";
+                ResultSet _rs1;
+                FILE* ofp1 = stdout;
+                int ret1 = system_db.query(sparql1, _rs1, ofp1);
+                for (int j = 0; j < _rs1.ansNum; j++)
                 {
-                        char buf[5];
-                        memset(buf,0,5);
-                        snprintf(buf,5,"%%%X",ptr[i]);
-                        ret.append(buf);
+                        string p = _rs1.answer[j][0];
+                        string o = _rs1.answer[j][1];
+                        if(p == "<built_by>")
+                                databases[i+1].creator = o;
+                        else if(p == "<built_time>")
+                                databases[i+1].built_time = o;
                 }
         }
-        return ret;
-}
-size_t OnWriteData(void* buffer, size_t size, size_t nmemb, void* lpVoid)
-{
-        string* str = dynamic_cast<string*>((string *)lpVoid);
-        if( NULL == str || NULL == buffer )
-                return -1;
-	char* pData = (char*)buffer;
-        str->append(pData, size * nmemb);
-        return nmemb;
-}
-int
-main(int argc, char * argv[])
-{
-        cout << "argc: " << argc << endl;
-        cout << "ip: " << argv[1] << endl;
-        cout << "port: " << argv[2] << endl;
-
-        string serverIP = string(argv[1]);
-        string serverPort = string(argv[2]);
-        const string strUrl = "http://"+serverIP+":"+serverPort+"/?operation=show";
-        string res;
-        res.clear();
-        CURLcode ret;
-        CURL* curl = curl_easy_init();
-        if(NULL == curl)
-                return CURLE_FAILED_INIT;
-        curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
-        curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&res);
-        curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
-        ret = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-        cout<< "database: "<< res <<endl;
+        string sparql1 = "select ?p ?o where{<system> ?p ?o.}";
+        ResultSet _rs1;
+        FILE* ofp1 = stdout;
+        int ret1 = system_db.query(sparql1, _rs1, ofp1);
+        for (int j = 0; j < _rs1.ansNum; j++)
+        {
+                string p = _rs1.answer[j][0];
+                string o = _rs1.answer[j][1];
+                if(p == "<built_by>")
+                        databases[0].creator = o;
+                else if(p == "<built_time>")
+                        databases[0].built_time = o;
+        }
+        cout<<"\n========================================\n";
+        for (int i = 0; i < _rs.ansNum+1; i++)
+        {      
+                string output = "database: " + Getstr(databases[i].db_name) + "\ncreator: " + Getstr(databases[i].creator) + 
+                                "\nbuilt_time: " + databases[i].built_time + "\n========================================\n"; 
+                cout<<output;
+        }    
         return 0;
 }
 
