@@ -89,7 +89,8 @@ bool GeneralEvaluation::parseQuery(const string &_query)
 {
 	try
 	{
-		this->query_parser.SPARQLParse(_query, this->query_tree);
+		this->query_parser.setQueryTree(&(this->query_tree));
+		this->query_parser.SPARQLParse(_query);
 	}
 	catch (const char *e)
 	{

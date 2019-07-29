@@ -47,7 +47,8 @@ EXEFLAG = -O2 -pthread -std=c++11
 #EXEFLAG = -pthread -g -std=c++11 -pg
 
 #add -lreadline [-ltermcap] if using readline or objs contain readline
-library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
+# library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
+library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
 #used for parallelsort
 openmp = -fopenmp -march=native
 # library = -ltermcap -lreadline -L./lib -lantlr -lgcov
@@ -61,7 +62,7 @@ exedir = bin/
 
 testdir = scripts/
 
-lib_antlr = lib/libantlr.a
+lib_antlr = lib/libantlr4-runtime.a
 
 api_cpp = api/socket/cpp/lib/libgstoreconnector.a
 
@@ -89,8 +90,8 @@ vstreeobj = $(objdir)VSTree.o $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdi
 
 stringindexobj = $(objdir)StringIndex.o
 
-parserobj = $(objdir)RDFParser.o $(objdir)SparqlParser.o $(objdir)DBparser.o \
-			$(objdir)SparqlLexer.o $(objdir)TurtleParser.o $(objdir)QueryParser.o
+parserobj = $(objdir)RDFParser.o $(objdir)SPARQLParser.o $(objdir)DBparser.o \
+			$(objdir)SPARQLLexer.o $(objdir)TurtleParser.o $(objdir)QueryParser.o
 
 serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)Socket.o
 
@@ -103,7 +104,7 @@ trieobj = $(objdir)Trie.o $(objdir)TrieNode.o
 objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj) $(httpobj) $(databaseobj) \
 		  $(utilobj) $(signatureobj) $(queryobj) $(trieobj)
 	 
-inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
+inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
 #-I./usr/local/include/boost/
 
 
@@ -450,14 +451,20 @@ $(objdir)StringIndex.o: StringIndex/StringIndex.cpp StringIndex/StringIndex.h $(
 
 #objects in Parser/ begin
 
-$(objdir)DBparser.o: Parser/DBparser.cpp Parser/DBparser.h $(objdir)SparqlParser.o $(objdir)SparqlLexer.o $(objdir)Triple.o
+$(objdir)DBparser.o: Parser/DBparser.cpp Parser/DBparser.h $(objdir)SPARQLParser.o $(objdir)SPARQLLexer.o $(objdir)Triple.o
 	$(CC) $(CFLAGS) Parser/DBparser.cpp $(inc) -o $(objdir)DBparser.o $(openmp)
 
-$(objdir)SparqlParser.o: Parser/SparqlParser.c Parser/SparqlParser.h
-	gcc  $(CFLAGS) Parser/SparqlParser.c $(inc) -o $(objdir)SparqlParser.o $(openmp)
+# $(objdir)SparqlParser.o: Parser/SparqlParser.c Parser/SparqlParser.h
+# 	gcc  $(CFLAGS) Parser/SparqlParser.c $(inc) -o $(objdir)SparqlParser.o $(openmp)
 
-$(objdir)SparqlLexer.o: Parser/SparqlLexer.c Parser/SparqlLexer.h
-	gcc  $(CFLAGS) Parser/SparqlLexer.c $(inc) -o $(objdir)SparqlLexer.o $(openmp)
+$(objdir)SPARQLParser.o: Parser/SPARQL/SPARQLParser.cpp Parser/SPARQL/SPARQLParser.h
+	$(CC)  $(CFLAGS) Parser/SPARQL/SPARQLParser.cpp $(inc) -o $(objdir)SPARQLParser.o $(openmp)
+
+# $(objdir)SparqlLexer.o: Parser/SparqlLexer.c Parser/SparqlLexer.h
+# 	gcc  $(CFLAGS) Parser/SparqlLexer.c $(inc) -o $(objdir)SparqlLexer.o $(openmp)
+
+$(objdir)SPARQLLexer.o: Parser/SPARQL/SPARQLLexer.cpp Parser/SPARQL/SPARQLLexer.h
+	$(CC)  $(CFLAGS) Parser/SPARQL/SPARQLLexer.cpp $(inc) -o $(objdir)SPARQLLexer.o $(openmp)
 
 $(objdir)TurtleParser.o: Parser/TurtleParser.cpp Parser/TurtleParser.h Parser/Type.h
 	gcc  $(CFLAGS) Parser/TurtleParser.cpp $(inc) -o $(objdir)TurtleParser.o $(openmp)
@@ -465,7 +472,7 @@ $(objdir)TurtleParser.o: Parser/TurtleParser.cpp Parser/TurtleParser.h Parser/Ty
 $(objdir)RDFParser.o: Parser/RDFParser.cpp Parser/RDFParser.h $(objdir)TurtleParser.o $(objdir)Triple.o
 	gcc  $(CFLAGS) Parser/RDFParser.cpp $(inc) -o $(objdir)RDFParser.o $(openmp)
 
-$(objdir)QueryParser.o: Parser/QueryParser.cpp Parser/QueryParser.h $(objdir)SparqlParser.o $(objdir)SparqlLexer.o $(objdir)QueryTree.o
+$(objdir)QueryParser.o: Parser/QueryParser.cpp Parser/QueryParser.h $(objdir)SPARQLParser.o $(objdir)SPARQLLexer.o $(objdir)QueryTree.o
 	$(CC) $(CFLAGS) Parser/QueryParser.cpp $(inc) -o $(objdir)QueryParser.o $(openmp)
 
 #objects in Parser/ end
@@ -504,22 +511,16 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 pre:
 	rm -rf tools/rapidjson/
 	cd tools; tar -xzvf rapidjson.tar.gz;
-	rm -rf tools/libantlr3c-3.4/
-	cd tools; tar -xzvf libantlr3c-3.4.tar.gz;
-	cd tools; cd libantlr3c-3.4/; ./configure -enable-64bit; make;
-	rm -rf lib/libantlr.a
-	ar -crv lib/libantlr.a tools/libantlr3c-3.4/*.o 
-	##NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
-	rm -rf Parser/Sparql*
-	cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
+	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
+	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
 
 # DEBUG: below not works properly
 #Parser/SparqlLexer.c Parser/SparqlLexer.h Parser/SparqlParser.h Parser/SparqlParser.c: unpack_sparql
 #.INTERMEDIATE: unpack_sparql
 #unpack_sparql: tools/sparql.tar.gz
-	##NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
-	#rm -rf Parser/Sparql*
-	#cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
+##NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
+#rm -rf Parser/Sparql*
+#cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
 
 $(api_cpp): $(objdir)Socket.o
 	$(MAKE) -C api/socket/cpp/src 
@@ -540,7 +541,7 @@ test: $(TARGET)
 	@bash scripts/parser_test.sh
 
 clean:
-	#rm -rf lib/libantlr.a
+	#rm -rf lib/libantlr4-runtime.a
 	$(MAKE) -C api/socket/cpp/src clean
 	$(MAKE) -C api/socket/cpp/example clean
 	$(MAKE) -C api/socket/java/src clean
@@ -557,10 +558,12 @@ clean:
 	#rm -rf .project .cproject .settings   just for eclipse
 	rm -rf logs/*.log
 	rm -rf *.out   # gmon.out for gprof with -pg
+	cd tools/antlr4.7.2/antlr4-cpp-runtime-4/; make clean
+
 
 dist: clean
 	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db
-	rm -rf tools/libantlr3c-3.4 lib/libantlr.a Parser/Sparql*
+	rm -rf lib/libantlr4-runtime.a
 	rm -rf cscope* .cproject .settings tags
 	rm -rf *.info
 	rm -rf backups/*.db
@@ -577,25 +580,25 @@ APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/http/java/example
 
 gtest: $(objdir)gtest.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr.a $(library) $(openmp)
+	$(CC) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp)
 
 $(objdir)gtest.o: scripts/gtest.cpp
 	$(CC) $(CFLAGS) scripts/gtest.cpp $(inc) -o $(objdir)gtest.o $(openmp)
 	
 $(exedir)gadd: $(objdir)gadd.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gadd $(objdir)gadd.o $(objfile) lib/libantlr.a $(library) $(openmp)
+	$(CC) $(EXEFLAG) -o $(exedir)gadd $(objdir)gadd.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp)
 
 $(objdir)gadd.o: Main/gadd.cpp
 	$(CC) $(CFLAGS) Main/gadd.cpp $(inc) -o $(objdir)gadd.o $(openmp)
 
 #$(objdir)HttpConnector: $(objdir)HttpConnector.o $(objfile)
-	#$(CC) $(CFLAGS) -o $(exedir)HttpConnector $(objdir)HttpConnector.o $(objfile) lib/libantlr.a $(library) $(inc) -DUSE_BOOST_REGEX
+	#$(CC) $(CFLAGS) -o $(exedir)HttpConnector $(objdir)HttpConnector.o $(objfile) lib/libantlr4-runtime.a $(library) $(inc) -DUSE_BOOST_REGEX
 
 #$(objdir)HttpConnector.o: Main/HttpConnector.cpp
 	#$(CC) $(CFLAGS) Main/HttpConnector.cpp $(inc) -o $(objdir)HttpConnector.o $(library) -DUSE_BOOST_REGEX
 
 $(exedir)gsub: $(objdir)gsub.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gsub $(objdir)gsub.o $(objfile) lib/libantlr.a $(library) $(openmp)
+	$(CC) $(EXEFLAG) -o $(exedir)gsub $(objdir)gsub.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp)
 
 $(objdir)gsub.o: Main/gsub.cpp
 	$(CC) $(CFLAGS) Main/gsub.cpp $(inc) -o $(objdir)gsub.o $(openmp)
