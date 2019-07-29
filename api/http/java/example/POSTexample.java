@@ -65,6 +65,12 @@ public class POSTexample{
 		res = gc.show("POST");
 		System.out.println(res);
 
+
+		// export the database
+		res = gc.exportDB("lubm", "export/lubm/post", "POST");
+		System.out.println(res);
+
+
 		// unload the database
 		res = gc.unload("lubm", "POST");
 		System.out.println(res);

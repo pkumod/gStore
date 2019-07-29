@@ -310,5 +310,20 @@ class GstoreConnector {
         }
         return $res;
     }
+
+    function exportDB($db_name, $dir_path, $request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "/?operation=export&db_name=" . $db_name . "&ds_path=" . $dir_path . "&username=" . $this->username . "&password=" . $this->password;
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strUrl = $this->Url . "/export";
+            $strPost = "{\"db_name\": \"" . $db_name . "\", \"ds_path\": \"" . $dir_path . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
+            $res = $this->Post($strUrl, $strPost);
+        }
+        return $res;    
+    }
 }
 ?>

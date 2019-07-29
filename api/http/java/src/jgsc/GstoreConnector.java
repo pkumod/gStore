@@ -553,6 +553,25 @@ public class GstoreConnector {
         return res;
     }
 
+    public String exportDB(String db_name, String dir_path, String request_type) {
+        String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=export&db_name=" + db_name + "&ds_path=" + dir_path + "&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+        }
+        else if (request_type.equals("POST")) {
+            String strUrl = "export";
+            String strPost = "{\"db_name\": \"" + db_name + "\", \"ds_path\": \"" + dir_path + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strUrl, strPost);
+        }
+        return res;
+    }
+
+    public String exportDB(String db_name, String dir_path) {
+        String res = this.exportDB(db_name, dir_path, "GET");
+        return res;
+    }
+
     private static byte[] packageMsgData(String _msg) {
         //byte[] data_context = _msg.getBytes();
         byte[] data_context = null;
