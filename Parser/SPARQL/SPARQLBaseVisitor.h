@@ -415,10 +415,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitInteger(SPARQLParser::IntegerContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual antlrcpp::Any visitTriplesNode(SPARQLParser::TriplesNodeContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -560,6 +556,42 @@ public:
   }
 
   virtual antlrcpp::Any visitNumericLiteralNegative(SPARQLParser::NumericLiteralNegativeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitNum_integer(SPARQLParser::Num_integerContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitNum_decimal(SPARQLParser::Num_decimalContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitNum_double(SPARQLParser::Num_doubleContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitInteger_positive(SPARQLParser::Integer_positiveContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitDecimal_positive(SPARQLParser::Decimal_positiveContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitDouble_positive(SPARQLParser::Double_positiveContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitInteger_negative(SPARQLParser::Integer_negativeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitDecimal_negative(SPARQLParser::Decimal_negativeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitDouble_negative(SPARQLParser::Double_negativeContext *ctx) override {
     return visitChildren(ctx);
   }
 

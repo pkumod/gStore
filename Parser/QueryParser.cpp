@@ -514,13 +514,69 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 		else if (((SPARQLParser::PrimaryexpressionContext *)root)->builtInCall())
 			buildFilterTree(((SPARQLParser::PrimaryexpressionContext *)root)->builtInCall(), \
 				currChild, filter, "builtInCall");
-		else	// iriOrFunction | rDFLiteral | numericLiteral | booleanLiteral | var
+		else if (((SPARQLParser::PrimaryexpressionContext *)root)->iriOrFunction())
+			throw runtime_error("[ERROR]	Filter currently does not support custom function call.");
+		else	// rDFLiteral | numericLiteral | booleanLiteral | var
 		{
 			if (currChild)	// This SHOULD hold true, unless someone only writes one var or literal 
 				// inside brackets to constitute brackettedexpression, which is meaningless
 			{
 				currChild->node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
-				currChild->str = root->getText();
+				
+				string baseText = root->getText();
+				if (((SPARQLParser::PrimaryexpressionContext *)root)->rDFLiteral())
+					currChild->str = baseText;
+				else if (((SPARQLParser::PrimaryexpressionContext *)root)->numericLiteral())
+				{
+					auto numericLiteral = ((SPARQLParser::PrimaryexpressionContext *)root)->numericLiteral();
+					int numType = -1;	// 0 for integer, 1 for decimal, 2 for double
+					if (numericLiteral->numericLiteralUnsigned())
+					{
+						if (numericLiteral->numericLiteralUnsigned()->num_integer())
+							numType = 0;
+						else if (numericLiteral->numericLiteralUnsigned()->num_decimal())
+							numType = 1;
+						else if (numericLiteral->numericLiteralUnsigned()->num_double())
+							numType = 2;
+					}
+					else if (numericLiteral->numericLiteralPositive())
+					{
+						if (numericLiteral->numericLiteralPositive()->integer_positive())
+							numType = 0;
+						else if (numericLiteral->numericLiteralPositive()->decimal_positive())
+							numType = 1;
+						else if (numericLiteral->numericLiteralPositive()->double_positive())
+							numType = 2;
+					}
+					else if (numericLiteral->numericLiteralNegative())
+					{
+						if (numericLiteral->numericLiteralNegative()->integer_negative())
+							numType = 0;
+						else if (numericLiteral->numericLiteralNegative()->decimal_negative())
+							numType = 1;
+						else if (numericLiteral->numericLiteralNegative()->double_negative())
+							numType = 2;
+					}
+					switch (numType)
+					{
+						case 0:
+						currChild->str = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#integer>";
+						break;
+
+						case 1:
+						currChild->str = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#decimal>";
+						break;
+
+						case 2:
+						currChild->str = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#double>";
+						break;
+					}
+				}
+				else if (((SPARQLParser::PrimaryexpressionContext *)root)->booleanLiteral())
+					currChild->str = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
+				else if (((SPARQLParser::PrimaryexpressionContext *)root)->var())
+					currChild->str = baseText;
+				
 				replacePrefix(currChild->str);
 			}
 		}

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-query_num=30
+query_num=31
 data_dir="scripts/parser_test/"
 gbuild='bin/gbuild '
 gquery='bin/gquery '
