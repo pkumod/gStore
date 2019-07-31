@@ -77,20 +77,23 @@ public:
     RuleVerbpathOrSimple = 86, RuleVerbpath = 87, RuleVerbSimple = 88, RuleObjectListpath = 89, 
     RuleObjectpath = 90, RulePath = 91, RulePathAlternative = 92, RulePathSequence = 93, 
     RulePathElt = 94, RulePathEltOrInverse = 95, RulePathMod = 96, RulePathPrimary = 97, 
-    RulePathNegatedPropertySet = 98, RulePathOneInPropertySet = 99, RuleInteger = 100, 
-    RuleTriplesNode = 101, RuleBlankNodepropertyList = 102, RuleTriplesNodepath = 103, 
-    RuleBlankNodepropertyListpath = 104, RuleCollection = 105, RuleCollectionpath = 106, 
-    RuleGraphNode = 107, RuleGraphNodepath = 108, RuleVarOrTerm = 109, RuleVarOrIri = 110, 
-    RuleVar = 111, RuleGraphTerm = 112, RuleExpression = 113, RuleConditionalOrexpression = 114, 
-    RuleConditionalAndexpression = 115, RuleValueLogical = 116, RuleRelationalexpression = 117, 
-    RuleNumericexpression = 118, RuleAdditiveexpression = 119, RuleMultiplicativeexpression = 120, 
-    RuleUnaryexpression = 121, RulePrimaryexpression = 122, RuleBrackettedexpression = 123, 
-    RuleBuiltInCall = 124, RuleRegexexpression = 125, RuleSubstringexpression = 126, 
-    RuleStrReplaceexpression = 127, RuleExistsFunc = 128, RuleNotexistsFunc = 129, 
-    RuleAggregate = 130, RuleIriOrFunction = 131, RuleRDFLiteral = 132, 
-    RuleNumericLiteral = 133, RuleNumericLiteralUnsigned = 134, RuleNumericLiteralPositive = 135, 
-    RuleNumericLiteralNegative = 136, RuleBooleanLiteral = 137, RuleString = 138, 
-    RuleIri = 139, RulePrefixedName = 140, RuleBlankNode = 141
+    RulePathNegatedPropertySet = 98, RulePathOneInPropertySet = 99, RuleTriplesNode = 100, 
+    RuleBlankNodepropertyList = 101, RuleTriplesNodepath = 102, RuleBlankNodepropertyListpath = 103, 
+    RuleCollection = 104, RuleCollectionpath = 105, RuleGraphNode = 106, 
+    RuleGraphNodepath = 107, RuleVarOrTerm = 108, RuleVarOrIri = 109, RuleVar = 110, 
+    RuleGraphTerm = 111, RuleExpression = 112, RuleConditionalOrexpression = 113, 
+    RuleConditionalAndexpression = 114, RuleValueLogical = 115, RuleRelationalexpression = 116, 
+    RuleNumericexpression = 117, RuleAdditiveexpression = 118, RuleMultiplicativeexpression = 119, 
+    RuleUnaryexpression = 120, RulePrimaryexpression = 121, RuleBrackettedexpression = 122, 
+    RuleBuiltInCall = 123, RuleRegexexpression = 124, RuleSubstringexpression = 125, 
+    RuleStrReplaceexpression = 126, RuleExistsFunc = 127, RuleNotexistsFunc = 128, 
+    RuleAggregate = 129, RuleIriOrFunction = 130, RuleRDFLiteral = 131, 
+    RuleNumericLiteral = 132, RuleNumericLiteralUnsigned = 133, RuleNumericLiteralPositive = 134, 
+    RuleNumericLiteralNegative = 135, RuleNum_integer = 136, RuleNum_decimal = 137, 
+    RuleNum_double = 138, RuleInteger_positive = 139, RuleDecimal_positive = 140, 
+    RuleDouble_positive = 141, RuleInteger_negative = 142, RuleDecimal_negative = 143, 
+    RuleDouble_negative = 144, RuleBooleanLiteral = 145, RuleString = 146, 
+    RuleIri = 147, RulePrefixedName = 148, RuleBlankNode = 149
   };
 
   SPARQLParser(antlr4::TokenStream *input);
@@ -203,7 +206,6 @@ public:
   class PathPrimaryContext;
   class PathNegatedPropertySetContext;
   class PathOneInPropertySetContext;
-  class IntegerContext;
   class TriplesNodeContext;
   class BlankNodepropertyListContext;
   class TriplesNodepathContext;
@@ -240,6 +242,15 @@ public:
   class NumericLiteralUnsignedContext;
   class NumericLiteralPositiveContext;
   class NumericLiteralNegativeContext;
+  class Num_integerContext;
+  class Num_decimalContext;
+  class Num_doubleContext;
+  class Integer_positiveContext;
+  class Decimal_positiveContext;
+  class Double_positiveContext;
+  class Integer_negativeContext;
+  class Decimal_negativeContext;
+  class Double_negativeContext;
   class BooleanLiteralContext;
   class StringContext;
   class IriContext;
@@ -1946,21 +1957,6 @@ public:
 
   PathOneInPropertySetContext* pathOneInPropertySet();
 
-  class  IntegerContext : public antlr4::ParserRuleContext {
-  public:
-    IntegerContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *INTEGER();
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  IntegerContext* integer();
-
   class  TriplesNodeContext : public antlr4::ParserRuleContext {
   public:
     TriplesNodeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -2577,9 +2573,9 @@ public:
   public:
     NumericLiteralUnsignedContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *INTEGER();
-    antlr4::tree::TerminalNode *DECIMAL();
-    antlr4::tree::TerminalNode *DOUBLE();
+    Num_integerContext *num_integer();
+    Num_decimalContext *num_decimal();
+    Num_doubleContext *num_double();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -2594,9 +2590,9 @@ public:
   public:
     NumericLiteralPositiveContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *INTEGER_POSITIVE();
-    antlr4::tree::TerminalNode *DECIMAL_POSITIVE();
-    antlr4::tree::TerminalNode *DOUBLE_POSITIVE();
+    Integer_positiveContext *integer_positive();
+    Decimal_positiveContext *decimal_positive();
+    Double_positiveContext *double_positive();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -2611,9 +2607,9 @@ public:
   public:
     NumericLiteralNegativeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *INTEGER_NEGATIVE();
-    antlr4::tree::TerminalNode *DECIMAL_NEGATIVE();
-    antlr4::tree::TerminalNode *DOUBLE_NEGATIVE();
+    Integer_negativeContext *integer_negative();
+    Decimal_negativeContext *decimal_negative();
+    Double_negativeContext *double_negative();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -2623,6 +2619,141 @@ public:
   };
 
   NumericLiteralNegativeContext* numericLiteralNegative();
+
+  class  Num_integerContext : public antlr4::ParserRuleContext {
+  public:
+    Num_integerContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *INTEGER();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Num_integerContext* num_integer();
+
+  class  Num_decimalContext : public antlr4::ParserRuleContext {
+  public:
+    Num_decimalContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *DECIMAL();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Num_decimalContext* num_decimal();
+
+  class  Num_doubleContext : public antlr4::ParserRuleContext {
+  public:
+    Num_doubleContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *DOUBLE();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Num_doubleContext* num_double();
+
+  class  Integer_positiveContext : public antlr4::ParserRuleContext {
+  public:
+    Integer_positiveContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *INTEGER_POSITIVE();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Integer_positiveContext* integer_positive();
+
+  class  Decimal_positiveContext : public antlr4::ParserRuleContext {
+  public:
+    Decimal_positiveContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *DECIMAL_POSITIVE();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Decimal_positiveContext* decimal_positive();
+
+  class  Double_positiveContext : public antlr4::ParserRuleContext {
+  public:
+    Double_positiveContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *DOUBLE_POSITIVE();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Double_positiveContext* double_positive();
+
+  class  Integer_negativeContext : public antlr4::ParserRuleContext {
+  public:
+    Integer_negativeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *INTEGER_NEGATIVE();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Integer_negativeContext* integer_negative();
+
+  class  Decimal_negativeContext : public antlr4::ParserRuleContext {
+  public:
+    Decimal_negativeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *DECIMAL_NEGATIVE();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Decimal_negativeContext* decimal_negative();
+
+  class  Double_negativeContext : public antlr4::ParserRuleContext {
+  public:
+    Double_negativeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *DOUBLE_NEGATIVE();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Double_negativeContext* double_negative();
 
   class  BooleanLiteralContext : public antlr4::ParserRuleContext {
   public:

@@ -219,8 +219,6 @@ public:
 
     virtual antlrcpp::Any visitPathOneInPropertySet(SPARQLParser::PathOneInPropertySetContext *context) = 0;
 
-    virtual antlrcpp::Any visitInteger(SPARQLParser::IntegerContext *context) = 0;
-
     virtual antlrcpp::Any visitTriplesNode(SPARQLParser::TriplesNodeContext *context) = 0;
 
     virtual antlrcpp::Any visitBlankNodepropertyList(SPARQLParser::BlankNodepropertyListContext *context) = 0;
@@ -292,6 +290,24 @@ public:
     virtual antlrcpp::Any visitNumericLiteralPositive(SPARQLParser::NumericLiteralPositiveContext *context) = 0;
 
     virtual antlrcpp::Any visitNumericLiteralNegative(SPARQLParser::NumericLiteralNegativeContext *context) = 0;
+
+    virtual antlrcpp::Any visitNum_integer(SPARQLParser::Num_integerContext *context) = 0;
+
+    virtual antlrcpp::Any visitNum_decimal(SPARQLParser::Num_decimalContext *context) = 0;
+
+    virtual antlrcpp::Any visitNum_double(SPARQLParser::Num_doubleContext *context) = 0;
+
+    virtual antlrcpp::Any visitInteger_positive(SPARQLParser::Integer_positiveContext *context) = 0;
+
+    virtual antlrcpp::Any visitDecimal_positive(SPARQLParser::Decimal_positiveContext *context) = 0;
+
+    virtual antlrcpp::Any visitDouble_positive(SPARQLParser::Double_positiveContext *context) = 0;
+
+    virtual antlrcpp::Any visitInteger_negative(SPARQLParser::Integer_negativeContext *context) = 0;
+
+    virtual antlrcpp::Any visitDecimal_negative(SPARQLParser::Decimal_negativeContext *context) = 0;
+
+    virtual antlrcpp::Any visitDouble_negative(SPARQLParser::Double_negativeContext *context) = 0;
 
     virtual antlrcpp::Any visitBooleanLiteral(SPARQLParser::BooleanLiteralContext *context) = 0;
 

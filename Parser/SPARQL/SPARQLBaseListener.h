@@ -316,9 +316,6 @@ public:
   virtual void enterPathOneInPropertySet(SPARQLParser::PathOneInPropertySetContext * /*ctx*/) override { }
   virtual void exitPathOneInPropertySet(SPARQLParser::PathOneInPropertySetContext * /*ctx*/) override { }
 
-  virtual void enterInteger(SPARQLParser::IntegerContext * /*ctx*/) override { }
-  virtual void exitInteger(SPARQLParser::IntegerContext * /*ctx*/) override { }
-
   virtual void enterTriplesNode(SPARQLParser::TriplesNodeContext * /*ctx*/) override { }
   virtual void exitTriplesNode(SPARQLParser::TriplesNodeContext * /*ctx*/) override { }
 
@@ -426,6 +423,33 @@ public:
 
   virtual void enterNumericLiteralNegative(SPARQLParser::NumericLiteralNegativeContext * /*ctx*/) override { }
   virtual void exitNumericLiteralNegative(SPARQLParser::NumericLiteralNegativeContext * /*ctx*/) override { }
+
+  virtual void enterNum_integer(SPARQLParser::Num_integerContext * /*ctx*/) override { }
+  virtual void exitNum_integer(SPARQLParser::Num_integerContext * /*ctx*/) override { }
+
+  virtual void enterNum_decimal(SPARQLParser::Num_decimalContext * /*ctx*/) override { }
+  virtual void exitNum_decimal(SPARQLParser::Num_decimalContext * /*ctx*/) override { }
+
+  virtual void enterNum_double(SPARQLParser::Num_doubleContext * /*ctx*/) override { }
+  virtual void exitNum_double(SPARQLParser::Num_doubleContext * /*ctx*/) override { }
+
+  virtual void enterInteger_positive(SPARQLParser::Integer_positiveContext * /*ctx*/) override { }
+  virtual void exitInteger_positive(SPARQLParser::Integer_positiveContext * /*ctx*/) override { }
+
+  virtual void enterDecimal_positive(SPARQLParser::Decimal_positiveContext * /*ctx*/) override { }
+  virtual void exitDecimal_positive(SPARQLParser::Decimal_positiveContext * /*ctx*/) override { }
+
+  virtual void enterDouble_positive(SPARQLParser::Double_positiveContext * /*ctx*/) override { }
+  virtual void exitDouble_positive(SPARQLParser::Double_positiveContext * /*ctx*/) override { }
+
+  virtual void enterInteger_negative(SPARQLParser::Integer_negativeContext * /*ctx*/) override { }
+  virtual void exitInteger_negative(SPARQLParser::Integer_negativeContext * /*ctx*/) override { }
+
+  virtual void enterDecimal_negative(SPARQLParser::Decimal_negativeContext * /*ctx*/) override { }
+  virtual void exitDecimal_negative(SPARQLParser::Decimal_negativeContext * /*ctx*/) override { }
+
+  virtual void enterDouble_negative(SPARQLParser::Double_negativeContext * /*ctx*/) override { }
+  virtual void exitDouble_negative(SPARQLParser::Double_negativeContext * /*ctx*/) override { }
 
   virtual void enterBooleanLiteral(SPARQLParser::BooleanLiteralContext * /*ctx*/) override { }
   virtual void exitBooleanLiteral(SPARQLParser::BooleanLiteralContext * /*ctx*/) override { }

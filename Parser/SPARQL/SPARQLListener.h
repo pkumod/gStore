@@ -314,9 +314,6 @@ public:
   virtual void enterPathOneInPropertySet(SPARQLParser::PathOneInPropertySetContext *ctx) = 0;
   virtual void exitPathOneInPropertySet(SPARQLParser::PathOneInPropertySetContext *ctx) = 0;
 
-  virtual void enterInteger(SPARQLParser::IntegerContext *ctx) = 0;
-  virtual void exitInteger(SPARQLParser::IntegerContext *ctx) = 0;
-
   virtual void enterTriplesNode(SPARQLParser::TriplesNodeContext *ctx) = 0;
   virtual void exitTriplesNode(SPARQLParser::TriplesNodeContext *ctx) = 0;
 
@@ -424,6 +421,33 @@ public:
 
   virtual void enterNumericLiteralNegative(SPARQLParser::NumericLiteralNegativeContext *ctx) = 0;
   virtual void exitNumericLiteralNegative(SPARQLParser::NumericLiteralNegativeContext *ctx) = 0;
+
+  virtual void enterNum_integer(SPARQLParser::Num_integerContext *ctx) = 0;
+  virtual void exitNum_integer(SPARQLParser::Num_integerContext *ctx) = 0;
+
+  virtual void enterNum_decimal(SPARQLParser::Num_decimalContext *ctx) = 0;
+  virtual void exitNum_decimal(SPARQLParser::Num_decimalContext *ctx) = 0;
+
+  virtual void enterNum_double(SPARQLParser::Num_doubleContext *ctx) = 0;
+  virtual void exitNum_double(SPARQLParser::Num_doubleContext *ctx) = 0;
+
+  virtual void enterInteger_positive(SPARQLParser::Integer_positiveContext *ctx) = 0;
+  virtual void exitInteger_positive(SPARQLParser::Integer_positiveContext *ctx) = 0;
+
+  virtual void enterDecimal_positive(SPARQLParser::Decimal_positiveContext *ctx) = 0;
+  virtual void exitDecimal_positive(SPARQLParser::Decimal_positiveContext *ctx) = 0;
+
+  virtual void enterDouble_positive(SPARQLParser::Double_positiveContext *ctx) = 0;
+  virtual void exitDouble_positive(SPARQLParser::Double_positiveContext *ctx) = 0;
+
+  virtual void enterInteger_negative(SPARQLParser::Integer_negativeContext *ctx) = 0;
+  virtual void exitInteger_negative(SPARQLParser::Integer_negativeContext *ctx) = 0;
+
+  virtual void enterDecimal_negative(SPARQLParser::Decimal_negativeContext *ctx) = 0;
+  virtual void exitDecimal_negative(SPARQLParser::Decimal_negativeContext *ctx) = 0;
+
+  virtual void enterDouble_negative(SPARQLParser::Double_negativeContext *ctx) = 0;
+  virtual void exitDouble_negative(SPARQLParser::Double_negativeContext *ctx) = 0;
 
   virtual void enterBooleanLiteral(SPARQLParser::BooleanLiteralContext *ctx) = 0;
   virtual void exitBooleanLiteral(SPARQLParser::BooleanLiteralContext *ctx) = 0;
