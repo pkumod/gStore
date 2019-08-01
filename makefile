@@ -576,7 +576,6 @@ clean:
 	#rm -rf .project .cproject .settings   just for eclipse
 	rm -rf logs/*.log
 	rm -rf *.out   # gmon.out for gprof with -pg
-	cd tools/antlr4.7.2/antlr4-cpp-runtime-4/; make clean
 
 
 dist: clean

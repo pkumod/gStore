@@ -191,6 +191,7 @@ struct User{
 		std::set<std::string> unload_priv;
 		std::set<std::string> backup_priv;
 		std::set<std::string> restore_priv;
+		std::set<std::string> export_priv;
 
 		pthread_rwlock_t query_priv_set_lock;
 		pthread_rwlock_t update_priv_set_lock;
@@ -198,7 +199,7 @@ struct User{
 		pthread_rwlock_t unload_priv_set_lock;
 		pthread_rwlock_t backup_priv_set_lock;
 		pthread_rwlock_t restore_priv_set_lock;
-
+		pthread_rwlock_t export_priv_set_lock;
 		/*
 		Database *build_priv[MAX_DATABASE_NUM];
 		Database *load_priv[MAX_DATABASE_NUM];
@@ -212,6 +213,7 @@ struct User{
 			pthread_rwlock_init(&unload_priv_set_lock, NULL);
 			pthread_rwlock_init(&backup_priv_set_lock, NULL);
 			pthread_rwlock_init(&restore_priv_set_lock, NULL);
+			pthread_rwlock_init(&export_priv_set_lock, NULL);
 		}
 		User(string _username, string _password){
 			if(_username == "")
@@ -229,6 +231,7 @@ struct User{
 			pthread_rwlock_init(&unload_priv_set_lock, NULL);
 			pthread_rwlock_init(&backup_priv_set_lock, NULL);
 			pthread_rwlock_init(&restore_priv_set_lock, NULL);
+			pthread_rwlock_init(&export_priv_set_lock, NULL);
 		}
 		~User(){
 			pthread_rwlock_destroy(&query_priv_set_lock);
@@ -237,6 +240,7 @@ struct User{
 			pthread_rwlock_destroy(&unload_priv_set_lock);
 			pthread_rwlock_destroy(&backup_priv_set_lock);
 			pthread_rwlock_destroy(&restore_priv_set_lock);
+			pthread_rwlock_destroy(&export_priv_set_lock);
 		}
 		std::string getPassword(){
 			return password;
@@ -335,6 +339,21 @@ struct User{
 				++it;
 			}
 			return backup_db;
+		}
+		std::string getexport(){
+			std::string export_db;
+			if(username == ROOT_USERNAME)
+			{
+				export_db = "all";
+				return export_db;
+			}
+			std::set<std::string>::iterator it = export_priv.begin();
+			while(it != export_priv.end())
+			{
+				export_db = export_db + *it + " ";
+				++it;
+			}
+			return export_db;
 		}
 		void setPassword(string psw)
 		{
@@ -1782,7 +1801,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	f.close();
 
 	//by default, one can query or load or unload the database that is built by itself, so add the database name to the privilege set of the user
-	if(addPrivilege(username, "query", db_name) == 0 || addPrivilege(username, "load", db_name) == 0 || addPrivilege(username, "unload", db_name) == 0 || addPrivilege(username, "backup", db_name) == 0 || addPrivilege(username, "restore", db_name) == 0)
+	if(addPrivilege(username, "query", db_name) == 0 || addPrivilege(username, "load", db_name) == 0 || addPrivilege(username, "unload", db_name) == 0 || addPrivilege(username, "backup", db_name) == 0 || addPrivilege(username, "restore", db_name) == 0 || addPrivilege(username, "export", db_name) == 0)
 	{
 		string error = "add query or load or unload privilege failed.";
 		string resJson = CreateJson(912, error, 0);
@@ -2259,6 +2278,19 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 
 	cout << "check identity successfully." << endl;
 
+	if(checkPrivilege(username, "drop", db_name) == 0)
+	{
+		string error = "no load privilege, operation failed.";
+		string resJson = CreateJson(302, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		return;
+	}
+	cout << "check privilege successfully." << endl;
+
 	//check if the db_name is system
 	if (db_name == "system")
 	{
@@ -2451,6 +2483,19 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 	}
 	pthread_rwlock_unlock(&users_map_lock);
 	cout << "check identity successfully." << endl;
+
+	if(checkPrivilege(username, "export", db_name) == 0)
+	{
+		string error = "no load privilege, operation failed.";
+		string resJson = CreateJson(302, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		return;
+	}
+	cout << "check privilege successfully." << endl;
 
 	//check if the db_name is system
 	if (db_name == "system")
@@ -3921,8 +3966,7 @@ void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 			pthread_rwlock_unlock(&users_map_lock);
 
 		}
-		else if(type == "add_query" || type == "add_load" || type == "add_unload" || type == "add_update" || type == "add_backup" || type == 
-			"add_restore")
+		else if(type == "add_query" || type == "add_load" || type == "add_unload" || type == "add_update" || type == "add_backup" || type == "add_restore" || "add_export")
 		{
 			if(username2 == ROOT_USERNAME)
 			{
@@ -3949,7 +3993,7 @@ void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 				return;
 			}
 		}
-		else if(type == "delete_query" || type == "delete_load" || type == "delete_unload" || type == "delete_update" || type == "delete_backup" || type == "delete_restore")
+		else if(type == "delete_query" || type == "delete_load" || type == "delete_unload" || type == "delete_update" || type == "delete_backup" || type == "delete_restore" || type == "delete_export" )
 		{
 			if(username2 == ROOT_USERNAME)
 			{
@@ -4493,6 +4537,15 @@ bool addPrivilege(string username, string type, string db_name)
 
 			pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
 		}
+		else if(type == "export")
+		{
+			pthread_rwlock_wrlock(&(it->second->export_priv_set_lock));
+			it->second->export_priv.insert(db_name);
+			string update = "INSERT DATA {<" + username + "> <has _export_priv> <" + db_name + ">.}";
+			updateSys(update);
+
+			pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
+		}
 		return 1;
 	}
 	else
@@ -4569,7 +4622,16 @@ bool delPrivilege(string username, string type, string db_name)
 			pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
 			return 1;
 		}
-
+		else if(type == "export" && it->second->export_priv.find(db_name) != it->second->export_priv.end())
+		{
+			pthread_rwlock_wrlock(&(it->second->export_priv_set_lock));
+			it->second->export_priv.erase(db_name);
+			string update = "DELETE DATA {<" + username + "> <has_export_priv> <" + db_name + ">.}";
+			updateSys(update);
+			
+			pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
+			return 1;
+		}
 	}
 	pthread_rwlock_unlock(&users_map_lock);
 	return 0;
@@ -4649,6 +4711,17 @@ bool checkPrivilege(string username, string type, string db_name)
 			return 1;
 		}
 		pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
+	}
+	else if(type == "export")
+	{
+		pthread_rwlock_rdlock(&(it->second->export_priv_set_lock));
+		if(it->second->export_priv.find(db_name) != it->second->export_priv.end())
+		{
+			pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
+			pthread_rwlock_unlock(&users_map_lock);
+			return 1;
+		}
+		pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
 	}
 	pthread_rwlock_unlock(&users_map_lock);
 	return 0;
@@ -5001,6 +5074,19 @@ void backup_thread(const shared_ptr<HttpServer::Response>& response, const share
 
 	cout << "check identity successfully." << endl;
 
+	if(checkPrivilege(username, "backup", db_name) == 0)
+	{
+		string error = "no unload privilege, operation failed.";
+		string resJson = CreateJson(601, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		return;
+	}
+	cout << "check privilege successfully." << endl;
+
 	//check if the db_name is system
 	if (db_name == "system")
 	{
@@ -5045,22 +5131,6 @@ void backup_thread(const shared_ptr<HttpServer::Response>& response, const share
 	}
 	pthread_rwlock_unlock(&already_build_map_lock);
 
-	//check if database named [db_name] is already load
-	/*
-	//check privilege
-	if(checkPrivilege(username, "restore", db_name) == 0)
-	{
-		string error = "no restore privilege, operation failed.";
-		string resJson = CreateJson(302, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-
-
-		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		//return false;
-		return;
-	}
-	cout << "check privilege successfully." << endl;
-	*/
 	cout << database << endl;
 
 
@@ -5187,6 +5257,19 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 
 	cout << "check identity successfully." << endl;
 
+	if(checkPrivilege(username, "restore", db_name) == 0)
+	{
+		string error = "no unload privilege, operation failed.";
+		string resJson = CreateJson(601, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		return;
+	}
+	cout << "check privilege successfully." << endl;
+
 	//check if the db_name is system
 	if (db_name == "system")
 	{
@@ -5226,22 +5309,6 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		return;
 	}
 	
-
-	/*
-	//check privilege
-	if(checkPrivilege(username, "restore", db_name) == 0)
-	{
-		string error = "no restore privilege, operation failed.";
-		string resJson = CreateJson(302, error, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-
-
-		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
-		//return false;
-		return;
-	}
-	cout << "check privilege successfully." << endl;
-	*/
 	cout << database << endl;
 
 	pthread_rwlock_rdlock(&already_build_map_lock);
