@@ -41,7 +41,7 @@ main(int argc, char * argv[])
 	int len = _db_path.length();
 	if(_db_path.length() > 3 && _db_path.substr(len-3, 3) == ".db")
 	{
-		cout<<"your database can not end with .db"<<endl;
+		cout<<"your database can not end with .db or less than 3 characters"<<endl;
 		return -1;
 	}
 
