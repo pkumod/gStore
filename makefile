@@ -79,7 +79,8 @@ isarrayobj = $(objdir)ISArray.o $(objdir)ISEntry.o $(objdir)ISBlockManager.o
 
 kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarrayobj) $(isarrayobj) #$(sstreeobj)
 
-utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o
+utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o \
+			$(objdir)EvalMultitypeValue.o
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o \
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o
@@ -393,7 +394,7 @@ $(objdir)QueryTree.o: Query/QueryTree.cpp Query/QueryTree.h $(objdir)Varset.o
 	$(CC) $(CFLAGS) Query/QueryTree.cpp $(inc) -o $(objdir)QueryTree.o $(openmp)
 
 $(objdir)TempResult.o: Query/TempResult.cpp Query/TempResult.h Query/RegexExpression.h $(objdir)Util.o \
-	$(objdir)StringIndex.o $(objdir)QueryTree.o $(objdir)Varset.o
+	$(objdir)StringIndex.o $(objdir)QueryTree.o $(objdir)Varset.o $(objdir)EvalMultitypeValue.o
 	$(CC) $(CFLAGS) Query/TempResult.cpp $(inc) -o $(objdir)TempResult.o $(openmp)
 
 $(objdir)QueryCache.o: Query/QueryCache.cpp Query/QueryCache.h $(objdir)Util.o $(objdir)QueryTree.o \
@@ -441,6 +442,8 @@ $(objdir)BloomFilter.o:  Util/BloomFilter.cpp Util/BloomFilter.h $(objdir)Util.o
 $(objdir)VList.o:  Util/VList.cpp Util/VList.h
 	$(CC) $(CFLAGS) Util/VList.cpp -o $(objdir)VList.o $(openmp)
 
+$(objdir)EvalMultitypeValue.o: Util/EvalMultitypeValue.cpp Util/EvalMultitypeValue.h
+	$(CC) $(CFLAGS) Util/EvalMultitypeValue.cpp -o $(objdir)EvalMultitypeValue.o $(openmp)
 #objects in util/ end
 
 
@@ -576,7 +579,6 @@ clean:
 	#rm -rf .project .cproject .settings   just for eclipse
 	rm -rf logs/*.log
 	rm -rf *.out   # gmon.out for gprof with -pg
-	cd tools/antlr4.7.2/antlr4-cpp-runtime-4/; make clean
 
 
 dist: clean
