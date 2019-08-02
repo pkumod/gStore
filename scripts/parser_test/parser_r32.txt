@@ -1,0 +1,4 @@
+?name	?h
+"Bob"	"171.9"^^<http://www.w3.org/2001/XMLSchema#double>
+"Alice"	"163.1"^^<http://www.w3.org/2001/XMLSchema#double>
+"Carol"	"159.5"^^<http://www.w3.org/2001/XMLSchema#double>

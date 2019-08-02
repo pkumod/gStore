@@ -16,6 +16,7 @@
 
 #include "Util.h"
 #include "Bstr.h"
+#include "EvalMultitypeValue.h"
 
 //BETTER: use vector instead of table with fixed size, no need to indicate the rownum first(colnum required)
 //It is really a question to use Bstr[] or string[] to store a record
@@ -62,12 +63,39 @@ struct ResultCmp
 		for(unsigned i = 0; i < size; ++i)
 		{
 			int t = this->keys[i];		
+
+			EvalMultitypeValue a_emv, b_emv;
+			a_emv.term_value = std::string(a[t].getStr());
+			a_emv.deduceTypeValue();
+			// printf("a_emv datatype: %d\n", a_emv.datatype);
+			b_emv.term_value = std::string(b[t].getStr());
+			b_emv.deduceTypeValue();
+			// printf("b_emv datatype: %d\n", b_emv.datatype);
+
+			// std::cout << a[t].getStr() << std::endl << b[t].getStr() << std::endl;
+
+			EvalMultitypeValue res;
 			if(a[t] != b[t])
 			{
 				if(!this->desc[i])
-					return (a[t] < b[t]);
+				{
+					res = a_emv < b_emv;
+					// return (a[t] < b[t]);
+				}
 				else
-					return (a[t] > b[t]);
+				{
+					res = a_emv > b_emv;
+					// return (a[t] > b[t]);
+				}
+				if (res.bool_value.getValue() == 1)
+					return true;
+				else if (res.bool_value.getValue() == 0)
+					return false;
+				else	// error_value
+				{
+					printf("[ERROR]	Incomparable datatypes, result order is invalid.\n");
+					return true;	// Arbitrary
+				}
 			}
 		}
         return true;
