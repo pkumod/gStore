@@ -5003,7 +5003,7 @@ int copy(string src_path, string dest_path)
 	}
 	if(!boost::filesystem::exists(dest_path)){
 		//check the destnation path 
-		sys_cmd = "mkdir ./" + dest_path;
+		sys_cmd = "mkdir -p ./" + dest_path;
 		system(sys_cmd.c_str());
 	}
 	
@@ -5146,8 +5146,6 @@ void backup_thread(const shared_ptr<HttpServer::Response>& response, const share
 	}
 	//backup
 	if(path == "") path = BACKUP_PATH;
-	if(path[0] == '/') path = path.substr(1, path.length() - 1);
-	if(path[path.length() - 1] == '/') path = path.substr(0, path.length() - 1);
 	if(path == "." ){
 		cout << "Backup Path Can not be root or empty, Backup Failed!" << endl;
 		string error = "Failed to backup the database. Backup Path Can not be root or empty.";
@@ -5156,6 +5154,9 @@ void backup_thread(const shared_ptr<HttpServer::Response>& response, const share
 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 		return;
 	}
+	if(path[0] == '.') path = path.substr(1, path.length() - 1);
+	if(path[0] == '/') path = path.substr(1, path.length() - 1);
+	if(path[path.length() - 1] == '/') path = path.substr(0, path.length() - 1);
 	string db_path = db_name + ".db";
 	pthread_rwlock_wrlock(&databases_map_lock);
 	int ret = copy(db_path, path);
