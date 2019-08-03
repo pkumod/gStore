@@ -890,11 +890,15 @@ antlrcpp::Any QueryParser::visitModify(SPARQLParser::ModifyContext *ctx)
 
 antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubjectContext *ctx)
 {
-	QueryTree::GroupPattern &group_pattern = query_tree_ptr->getInsertPatterns();
-	if (query_tree_ptr->getUpdateType() == QueryTree::Delete_Data
-		|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Where
-		|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Clause)
-		group_pattern = query_tree_ptr->getDeletePatterns();
+	QueryTree::GroupPattern &group_pattern_insert = query_tree_ptr->getInsertPatterns();
+	QueryTree::GroupPattern &group_pattern_delete = query_tree_ptr->getDeletePatterns();
+	// if (query_tree_ptr->getUpdateType() == QueryTree::Delete_Data
+	// 	|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Where
+	// 	|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Clause)
+	// {
+	// 	printf("HERE!!!!!!!\n");
+	// 	group_pattern = query_tree_ptr->getDeletePatterns();
+	// }
 	// QueryTree::Insert_Data, QueryTree::Insert_Clause, QueryTree::Modify_Clause
 
 	string subject, predicate, object;
@@ -913,7 +917,13 @@ antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubj
 		{
 			object = object_ptr->getText();
 			replacePrefix(object);
-			addTriple(subject, predicate, object, group_pattern);
+
+			if (query_tree_ptr->getUpdateType() == QueryTree::Delete_Data
+				|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Where
+				|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Clause)
+				addTriple(subject, predicate, object, group_pattern_delete);
+			else
+				addTriple(subject, predicate, object, group_pattern_insert);
 		}
 	}
 
