@@ -38,30 +38,25 @@ int
 main(int argc, char * argv[])
 {
 	Util util;
-	string db_name, backup_path, db_path;
+	string db_name, backup_path, db_path, path;
 
 	if(argc < 2)  
 	{
 		//output help info here
 		cout << "the usage of grestore: " << endl;
-		cout << "./bin/restore your_database_name your_backup_path(optional) your_database_path(optional)" << endl;
-		cout << "defalut backup_path = ./backups" << endl;
-		cout << "defalut database_path  = ./ " << endl;
-		cout << "the path should not include your database's name!" << endl;
+		cout << "./bin/restore your_database_name your_backup_path" << endl;
+		cout << "the path should include your database folder name!" << endl;
 		return 0;
 	}
 
 	db_name = string(argv[1]);
 	if(argc > 2)
 		backup_path = string(argv[2]);
-	if(argc > 3)
-		db_path = string(argv[3]);
 
 	cout << "gbackup..." << endl;
 	{
 		cout << "argc: " << argc << "\t";
 		cout << "DB_name:" << db_name << "\t";
-		cout << "Build_path: " << db_path << "\t";
 		cout << "Backup_path: " << backup_path << "\t";
 		cout << endl;
 	}
@@ -78,37 +73,67 @@ main(int argc, char * argv[])
 	{
 		cout<< "Your database's name can not be system."<<endl;
 		return -1;
+	}	
+
+	if(backup_path[0] == '/') backup_path = '.' + backup_path;
+	if(backup_path[backup_path.length() - 1] == '/') backup_path = backup_path.substr(0, backup_path.length()-1);
+
+	if(!boost::filesystem::exists(backup_path)){
+		cout << "Backup Path Error, Restore Failed"  << endl;
+		return 0;
 	}
 
-//TODO1: We need a column in system.db : 
-//last restore time;
-//TODO2: 
-//We can restore a deleted database
-//if we insert the new database's info into the system.db 
-//then we restore the files and we rebuild it 
+	//system.db
+	Database system_db("system");
+	system_db.load();
 
-	//copy
+	string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
+	ResultSet ask_rs;
+	FILE* ask_ofp = stdout;
+	system_db.query(sparql, ask_rs, ask_ofp);
+	if (ask_rs.answer[0][0] == "false")
+	{
+		cout << "The database does not exist. Rebuild" << endl;
+		string time = Util::get_backup_time(backup_path, db_name);
+		if(time.size() == 0){
+			cout << "Backup Path Does not Match DataBase Name, Restore Failed" << endl;
+			return 0;
+		}
+		string sparql = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." + "<" + db_name + "> <built_by> <root>."
+			+ "<" + db_name + "> <built_time> \"" + time + "\".}";
+		ResultSet _rs;
+		FILE* ofp = stdout;
+		string msg;
+		int ret = system_db.query(sparql, _rs, ofp);
 
-	if(backup_path == "")
-		backup_path = DEFALUT_BACKUP_PATH;
-	backup_path = backup_path + "/" + db_name + ".db";
-	if(db_path == "") db_path = DEFALUT_BUILD_PATH;
+		if (ret >= 0)
+			msg = "update num : " + Util::int2string(ret);
+		else {
+			//update error
+			cout << "Rebuild Error, Restore Failed" << endl;
+			return 0;
+		}
+		cout << msg << endl;
+	}
+	
+	int ret = copy(backup_path, DEFALUT_BUILD_PATH);
 
-	//delete
-	string _db_path = db_path + "/" + db_name + ".db";
-	string sys_cmd = "rm -rf " + _db_path;
-	system(sys_cmd.c_str());
-
-	int ret = copy(backup_path, db_path);
 	if(ret == 1){
 		cout << "Backup Path Error, Restore Failed!" << endl;
-	}else if(ret == -1){
-		cout << "Database Path Error, Restore Failed!" << endl;
 	}else{
 		//TODO update the in system.db
 		string time = Util::get_date_time();
 		cout << "Time:" + time << endl;
 		cout << "DB:" + db_name + " Restore done!" << endl;
 	}
+
+	db_path = db_name + ".db";
+	string sys_cmd = "rm -rf " + db_path;
+	system(sys_cmd.c_str());
+
+	path = Util::get_folder_name(backup_path, db_name);
+	sys_cmd = "mv " + path + ' ' + db_path;
+	system(sys_cmd.c_str());
+
 	return 0;
 }
