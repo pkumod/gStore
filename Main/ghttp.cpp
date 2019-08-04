@@ -108,6 +108,8 @@ bool backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 
 bool restore_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
+bool auto_backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
 bool getCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 bool getAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
@@ -3966,7 +3968,7 @@ void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 			pthread_rwlock_unlock(&users_map_lock);
 
 		}
-		else if(type == "add_query" || type == "add_load" || type == "add_unload" || type == "add_update" || type == "add_backup" || type == "add_restore" || "add_export")
+		else if(type == "add_query" || type == "add_load" || type == "add_unload" || type == "add_update" || type == "add_backup" || type == "add_restore" || type == "add_export")
 		{
 			if(username2 == ROOT_USERNAME)
 			{
@@ -4448,6 +4450,11 @@ void showUser_thread(const shared_ptr<HttpServer::Response>& response, const sha
 		_restore_db.SetString(restore_db.c_str(), restore_db.length(), allocator);
 		obj.AddMember("restore privilege", _restore_db, allocator);
 
+		string export_db = it->second->getexport();
+		Value _export_db;
+		_export_db.SetString(export_db.c_str(), export_db.length(), allocator);
+		obj.AddMember("export privilege", _export_db, allocator);
+
 		json_array.PushBack(obj, allocator);
 	}
 	resDoc.AddMember("ResponseBody", json_array, allocator);
@@ -4523,7 +4530,7 @@ bool addPrivilege(string username, string type, string db_name)
 		{
 			pthread_rwlock_wrlock(&(it->second->restore_priv_set_lock));
 			it->second->restore_priv.insert(db_name);
-			string update = "INSERT DATA {<" + username + "> <has _restore_priv> <" + db_name + ">.}";
+			string update = "INSERT DATA {<" + username + "> <has_restore_priv> <" + db_name + ">.}";
 			updateSys(update);
 
 			pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
@@ -4532,7 +4539,7 @@ bool addPrivilege(string username, string type, string db_name)
 		{
 			pthread_rwlock_wrlock(&(it->second->backup_priv_set_lock));
 			it->second->backup_priv.insert(db_name);
-			string update = "INSERT DATA {<" + username + "> <has _backup_priv> <" + db_name + ">.}";
+			string update = "INSERT DATA {<" + username + "> <has_backup_priv> <" + db_name + ">.}";
 			updateSys(update);
 
 			pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
@@ -4541,7 +4548,7 @@ bool addPrivilege(string username, string type, string db_name)
 		{
 			pthread_rwlock_wrlock(&(it->second->export_priv_set_lock));
 			it->second->export_priv.insert(db_name);
-			string update = "INSERT DATA {<" + username + "> <has _export_priv> <" + db_name + ">.}";
+			string update = "INSERT DATA {<" + username + "> <has_export_priv> <" + db_name + ">.}";
 			updateSys(update);
 
 			pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
@@ -4805,6 +4812,9 @@ void DB2Map()
 			}else if(type == "has_backup_priv")
 			{
 				user->backup_priv.insert(db_name);
+			}else if(type == "has_export_priv")
+			{
+				user->export_priv.insert(db_name);
 			}
 		}
 		//users.insert(pair<std::string, struct User*>(username, &user));
@@ -5302,7 +5312,9 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		return;
 	}
 
-	//check if database named [db_name] is already build.
+	if(path[0] == '/') path = '.' + path;
+	if(path[path.length() - 1] == '/') path = path.substr(0, path.length()-1);
+
 	if(!boost::filesystem::exists(path)){
 		string error = "Backup Path Error, Restore Failed";
 		string resJson = CreateJson(307, error, 0);
@@ -5325,7 +5337,7 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 			pthread_rwlock_unlock(&already_build_map_lock);
 			return;
 		}
-		if(addPrivilege(username, "query", db_name) == 0 || addPrivilege(username, "load", db_name) == 0 || addPrivilege(username, "unload", db_name) == 0 || addPrivilege(username, "backup", db_name) == 0 || addPrivilege(username, "restore", db_name) == 0)
+		if(addPrivilege(username, "query", db_name) == 0 || addPrivilege(username, "load", db_name) == 0 || addPrivilege(username, "unload", db_name) == 0 || addPrivilege(username, "backup", db_name) == 0 || addPrivilege(username, "restore", db_name) == 0 || addPrivilege(username, "export", db_name) == 0)
 		{
 			string error = "add query or load or unload or backup or restore privilege failed.";
 			string resJson = CreateJson(912, error, 0);
@@ -5359,6 +5371,8 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		return;
 	}
 	//restore
+	string sys_cmd = "rm -rf " + db_name + ".db";
+	system(sys_cmd.c_str());
 	
 	pthread_rwlock_wrlock(&databases_map_lock);
 	int ret  = copy(path, DB_PATH);
@@ -5387,9 +5401,8 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 
 	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 	path = Util::get_folder_name(path, db_name);
-	string sys_cmd = "mv " + path + " " + db_name + ".db";
+	sys_cmd = "mv " + path + " " + db_name + ".db";
 	system(sys_cmd.c_str());
-	
 
 	cout << "database restore done." << endl;
 	string success = "Database restore successfully.";
@@ -5404,4 +5417,10 @@ bool restore_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	thread t(&restore_thread, response, request, RequestType);
 	t.detach();
 	return true;
+}
+
+
+bool auto_backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	
 }

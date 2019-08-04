@@ -17,10 +17,11 @@
 
 using namespace std;
 #define SYSTEM_PATH "data/system/system.nt"
-#define DEFALUT_BACKUP_PATH "./backups"
+#define DEFALUT_BACKUP_PATH "backups"
 
 int copy(string src_path, string dest_path)
 {
+	string sys_cmd;
 	if(!boost::filesystem::exists(src_path)){
 		//check the source path
 		cout << "Source Path Error, Please Check It Again!" << endl;
@@ -28,11 +29,11 @@ int copy(string src_path, string dest_path)
 	}
 	if(!boost::filesystem::exists(dest_path)){
 		//check the destnation path 
-		cout << "Destnation Path Error, Please Check It Again!" << endl;
-		return -1;
+		sys_cmd = "mkdir -p ./" + dest_path;
+		system(sys_cmd.c_str());
 	}
-	string sys_cmd;
-	sys_cmd = "cp -r " + src_path + ' ' +  dest_path ;
+	
+	sys_cmd = "cp -r " + src_path + " ./" +  dest_path ;
 	system(sys_cmd.c_str());
     return 0;// success 
 }
@@ -41,13 +42,12 @@ int
 main(int argc, char * argv[])
 {
 	Util util;
-	string db_name, db_path, backup_path, build_path;
+	string db_name, backup_path;
 	if(argc < 2)  
 	{
 		//output help info here
 		cout << "the usage of gbackup: " << endl;
-		cout << "./bin/gbackup your_database_name your_backup_path(optional) your_database_path(optional)" << endl;
-		cout << "defalut database_path  = ./ " << endl;
+		cout << "./bin/gbackup your_database_name your_backup_path(optional) "<< endl;
 		cout << "defalut backup_path = ./backups" << endl;
 		cout << "the path should not include your database's name!" << endl;
 		return 0;
@@ -55,13 +55,11 @@ main(int argc, char * argv[])
 	db_name = string(argv[1]);
 	if(argc > 2)
 		backup_path = string(argv[2]);
-	if(argc > 3)
-		build_path = string(argv[3]);
+
 	cout << "gbackup..." << endl;
 	{
 		cout << "argc: " << argc << "\t";
 		cout << "DB_name:" << db_name << "\t";
-		cout << "Build_path: " << db_path << "\t";
 		cout << "Backup_path: " << backup_path << "\t";
 		cout << endl;
 	}
@@ -85,17 +83,30 @@ main(int argc, char * argv[])
 //query database_name build_path
 //insert database_name backup_path
 
+	if(backup_path == "") backup_path = DEFALUT_BACKUP_PATH;
+	if(backup_path == "." || backup_path == "./" ){
+		cout << "Backup Path Can not be root, Backup Failed!" << endl;
+		return 0;
+	}
+	if(backup_path[0] == '/') backup_path = '.' + backup_path;
+	if(backup_path[backup_path.length() - 1] == '/') backup_path = backup_path.substr(0, backup_path.length() - 1);
+	
+	backup_path = "./" + backup_path;
+	string db_path = db_name + ".db";
+
 	//copy
-	if(db_path == "")
-		db_path = db_name + ".db";
 	if(backup_path == "") backup_path = DEFALUT_BACKUP_PATH;
 	int ret = copy(db_path, backup_path);
 	if(ret == 1){
-		cout << "Database Path Error, Backup Failed!" << endl;
-	}else if(ret == -1){
-		cout << "Backup Path Error, Backup Failed!" << endl;
-	}else{
+		cout << "Database Name Error, Backup Failed!" << endl;
+	}
+	else{
 		string time = Util::get_date_time();
+		string timestamp = Util::get_timestamp();
+		backup_path = backup_path + "/" + db_path;
+		string _backup_path = backup_path + "_" + timestamp;
+		string sys_cmd = "mv " + backup_path + " " + _backup_path;
+		system(sys_cmd.c_str());
 		cout << "Time:" + time << endl;
 		cout << "DB:" + db_name + " Backup done!" << endl;
 	}
