@@ -109,7 +109,7 @@ ResultSet::to_str()
 
 	stringstream _buf;
 
-	for(int i = 0; i < this->select_var_num; i++)
+	for(int i = 0; i < this->true_select_var_num; i++)
 	{
 		if (i != 0)
 			_buf << "\t";
@@ -131,7 +131,7 @@ ResultSet::to_str()
 
 		if (i >= this->output_offset)
 		{
-			for(int j = 0; j < this->select_var_num; j++)
+			for(int j = 0; j < this->true_select_var_num; j++)
 			{
 				if (j != 0)
 					_buf << "\t";
@@ -154,7 +154,7 @@ ResultSet::to_JSON()
 	stringstream _buf;
 
 	_buf << "{ \"head\": { \"link\": [], \"vars\": [";
-	for (int i = 0; i < this->select_var_num; i++)
+	for (int i = 0; i < this->true_select_var_num; i++)
 	{
 		if (i != 0)
 			_buf << ", ";
@@ -187,7 +187,7 @@ ResultSet::to_JSON()
 			_buf << "\t\t\t{ ";
 
 			bool list_empty = true;
-			for(int j = 0; j < this->select_var_num; j++)
+			for(int j = 0; j < this->true_select_var_num; j++)
 			{
 				string ans_type, ans_str;
 
@@ -253,7 +253,7 @@ ResultSet::output(FILE* _fp)
 		}
 
 		fprintf(_fp, "%s", this->var_name[0].c_str());
-		for(int i = 1; i < this->select_var_num; i++)
+		for(int i = 1; i < this->true_select_var_num; i++)
 		{
 			fprintf(_fp, "\t%s", this->var_name[i].c_str());
 		}
@@ -269,7 +269,7 @@ ResultSet::output(FILE* _fp)
 			if (i >= this->output_offset)
 			{
 				fprintf(_fp, "%s", Util::node2string(bp[0].getStr()).c_str());
-				for(int j = 1; j < this->select_var_num; j++)
+				for(int j = 1; j < this->true_select_var_num; j++)
 				{
 					fprintf(_fp, "\t%s", Util::node2string(bp[j].getStr()).c_str());
 				}
