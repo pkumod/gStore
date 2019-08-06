@@ -1118,9 +1118,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (this->query_tree.checkProjectionAsterisk() && this->query_tree.getProjectionVarset().empty())
 		{
-			ret_result.select_var_num = result0.getAllVarset().getVarsetSize();
 			ret_result.setVar(result0.getAllVarset().vars);
 			ret_result_varset = result0.getAllVarset();
+			ret_result.select_var_num = result0.getAllVarset().getVarsetSize();
+			ret_result.true_select_var_num = ret_result.select_var_num;
 		}
 		else
 		{
