@@ -11,26 +11,27 @@ echo -e "g++ installed \n"
 yum install -y make
 echo -e "make installed \n"
 
-yum install -y readline readline-devel
-echo -e "readline-devel installed \n"
-
 yum install -y java-1.8.0-openjdk-devel
 echo -e "openjdk 8 installed \n"
+
+yum install -y readline readline-devel
+echo -e "readline-devel installed \n"
 
 yum install -y libcurl-devel
 echo -e "libcurl-devel installed \n"
 
-echo -e "Optional: requests for python api, pthreads and curl-devel for php api, realpath for gconsole, ccache for faster compilation\n"
-echo -e "For help: https://github.com/pkumod/gStore/blob/master/docs/DEMAND.md \n"
-sleep 5s
+yum install pkgconfig.x86_64
+echo -e "pkg-config installed \n"
+
+yum install libuuid-devel
+echo -e "uuid installed \n"
 
 # boost-devel 1.54(or larger) can not be installed by `yum`, so we install it from source code.
 #echo -e "\033[43;35m Please install boost-devel 1.54(or larger by yourself) \033[0m \n"
 mkdir boost
 cd boost
-wget -c https://sourceforge.net/projects/boost/files/boost/1.54.0/boost_1_54_0.tar.gz
-tar -xzvf boost_1_54_0.tar.gz
-cd boost_1_54_0
+wget https://dl.bintray.com/boostorg/release/1.66.0/source/boost_1_66_0.tar.gz
+tar -xzvf boost_1_66_0.tar.gz && cd boost_1_54_0
 #./bootstrap.sh --prefix=/home/usrname/boost_1_43_0/boost_install
 # by default: /usr/local/include and /usr/local/lib
 ./bootstrap.sh 
@@ -40,6 +41,22 @@ echo "/usr/local/lib" >> /etc/ld.so.conf
 cd ../..
 rm -rf boost
 echo -e "boost-devel 1.54 installed \n"
+sleep 5s
+
+mkdir cmake
+cd cmake
+wget https://cmake.org/files/v3.6/cmake-3.6.2.tar.gz
+tar -xvf cmake-3.6.2.tar.gz && cd cmake-3.6.2/
+./bootstrap
+make
+make install
+echo -e "cmake 3.6.2 installed \n"
+cd ../..
+rm -rf cmake
+sleep 5s
+
+echo -e "Optional: requests for python api, pthreads and curl-devel for php api, realpath for gconsole, ccache for faster compilation\n"
+echo -e "For help: https://github.com/pkumod/gStore/blob/master/docs/DEMAND.md \n"
 sleep 5s
 
 ldconfig -v
