@@ -64,6 +64,10 @@ print(res)
 res = gc.show("POST")
 print(res)
 
+# export the database
+res = gc.exportDB("lubm", "export/lubm/post", "POST")
+print(res)
+
 # unload the database
 res = gc.unload("lubm", "POST")
 print(res);

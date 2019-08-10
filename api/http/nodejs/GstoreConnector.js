@@ -254,6 +254,23 @@ class GstoreConnector {
             return res;
         }
     }
+
+    async exportDB(db_name = '', dir_path = '', request_type = 'GET') 
+    {
+        if (request_type == 'GET')
+        {
+            const strUrl = "?operation=export&db_name=" + db_name + "&ds_path=" + dir_path + "&username=" + this.username + "&password=" + this.password;
+            const res = this.Get(strUrl);
+            return res;
+        }
+        else if (request_type == 'POST')
+        {
+            const strUrl = "export";
+            const strPost = '{\"db_name\": \"' + db_name + '\", \"ds_path\": \"' + dir_path + '\", \"username\": \"' + this.username + '\", \"password\": \"' + this.password + '\"}';
+            const res = this.Post(strUrl, strPost);
+            return res;
+        }
+    }
 }
 
 module.exports = GstoreConnector;
