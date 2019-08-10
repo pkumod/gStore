@@ -649,6 +649,13 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 						printf("after checkCache, used %ld ms.\n", tv_afcheck - tv_bfcheck);
 					}
 
+        			if(this->export_flag)
+        			{
+        				this->strategy.fp = this->fp;
+        				this->strategy.export_flag = this->export_flag;
+        				success = false;
+        			}
+
 					if (success)
 					{
 						printf("QueryCache hit\n");
@@ -730,11 +737,6 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 		long tv_fillcand = Util::get_cur_time();
 		printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
 
-        if(this->export_flag)
-        {
-        	this->strategy.fp = this->fp;
-        	this->strategy.export_flag = this->export_flag;
-        }
 		this->strategy.handle(sparql_query);
 		long tv_handle = Util::get_cur_time();
 		printf("after Handle, used %ld ms.\n", tv_handle - tv_fillcand);
