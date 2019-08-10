@@ -1588,7 +1588,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		general_evaluation.getFinalResult(_result_set);
 		this->getFinalResult_lock.unlock();
 		long tv_afget = Util::get_cur_time();
-		cout << "after getFinalResult, used " << (tv_afget - tv_bfget) << "ms." << endl;
+		cout << "during getFinalResult, used " << (tv_afget - tv_bfget) << "ms." << endl;
 
 		if(_fp != NULL)
 			need_output_answer = true;

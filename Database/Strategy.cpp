@@ -598,7 +598,7 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	delete join;
 
 	long tv_join = Util::get_cur_time();
-	cout << "after Join, used " << (tv_join - tv_retrieve) << "ms." << endl;
+	cout << "during Join, used " << (tv_join - tv_retrieve) << "ms." << endl;
 }
 
 void
