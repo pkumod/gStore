@@ -1316,7 +1316,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 	else if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
 	{
-		ret_result.select_var_num = 1;
+		ret_result.true_select_var_num = ret_result.select_var_num = 1;
 		ret_result.setVar(vector<string>(1, "?_askResult"));
 		ret_result.ansNum = 1;
 
