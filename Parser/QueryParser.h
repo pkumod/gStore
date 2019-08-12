@@ -28,8 +28,6 @@ public:
 	antlrcpp::Any visitOffsetClause(SPARQLParser::OffsetClauseContext *ctx);
 	antlrcpp::Any visitPrefixDecl(SPARQLParser::PrefixDeclContext *ctx);
 	antlrcpp::Any visitSelectClause(SPARQLParser::SelectClauseContext *ctx);
-	void parseSelectAggregateFunction(SPARQLParser::ExpressionContext *expCtx, \
-		SPARQLParser::VarContext *varCtx);
 	antlrcpp::Any visitGroupGraphPattern(SPARQLParser::GroupGraphPatternContext *ctx, \
 		QueryTree::GroupPattern &group_pattern);
 	antlrcpp::Any visitGroupGraphPatternSub(SPARQLParser::GroupGraphPatternSubContext *ctx, \
@@ -44,22 +42,27 @@ public:
 	antlrcpp::Any visitMinusGraphPattern(SPARQLParser::MinusGraphPatternContext *ctx, \
 		QueryTree::GroupPattern &group_pattern);
 	antlrcpp::Any visitFilter(SPARQLParser::FilterContext *ctx, QueryTree::GroupPattern &group_pattern);
-	void buildFilterTree(antlr4::tree::ParseTree *root, \
-		QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild *currChild, \
-		QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, std::string tp);
 	antlrcpp::Any visitBind(SPARQLParser::BindContext *ctx, QueryTree::GroupPattern &group_pattern);
 	antlrcpp::Any visitTriplesSameSubjectpath(SPARQLParser::TriplesSameSubjectpathContext *ctx, \
 		QueryTree::GroupPattern &group_pattern);
-	void addTriple(std::string subject, std::string predicate, std::string object, QueryTree::GroupPattern &group_pattern);
 	antlrcpp::Any visitGroupClause(SPARQLParser::GroupClauseContext *ctx);
 	antlrcpp::Any visitOrderClause(SPARQLParser::OrderClauseContext *ctx);
-	void replacePrefix(std::string &str);
 	
 	antlrcpp::Any visitInsertData(SPARQLParser::InsertDataContext *ctx);
 	antlrcpp::Any visitDeleteData(SPARQLParser::DeleteDataContext *ctx);
 	antlrcpp::Any visitDeleteWhere(SPARQLParser::DeleteWhereContext *ctx);
 	antlrcpp::Any visitModify(SPARQLParser::ModifyContext *ctx);
 	antlrcpp::Any visitTriplesSameSubject(SPARQLParser::TriplesSameSubjectContext *ctx);
+
+	void parseSelectAggregateFunction(SPARQLParser::ExpressionContext *expCtx, \
+		SPARQLParser::VarContext *varCtx);
+	void buildFilterTree(antlr4::tree::ParseTree *root, \
+		QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild *currChild, \
+		QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, std::string tp);
+	void addTriple(std::string subject, std::string predicate, std::string object, \
+		QueryTree::GroupPattern &group_pattern);
+	void replacePrefix(std::string &str);
+	std::string getNumeric(SPARQLParser::NumericLiteralContext *ctx);
 
 	void printNode(antlr4::ParserRuleContext *ctx, const char *nodeTypeName);
 	void printTree(antlr4::tree::ParseTree *root, int dep);

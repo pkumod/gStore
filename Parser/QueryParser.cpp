@@ -529,48 +529,7 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 				else if (((SPARQLParser::PrimaryexpressionContext *)root)->numericLiteral())
 				{
 					auto numericLiteral = ((SPARQLParser::PrimaryexpressionContext *)root)->numericLiteral();
-					int numType = -1;	// 0 for integer, 1 for decimal, 2 for double
-					if (numericLiteral->numericLiteralUnsigned())
-					{
-						if (numericLiteral->numericLiteralUnsigned()->num_integer())
-							numType = 0;
-						else if (numericLiteral->numericLiteralUnsigned()->num_decimal())
-							numType = 1;
-						else if (numericLiteral->numericLiteralUnsigned()->num_double())
-							numType = 2;
-					}
-					else if (numericLiteral->numericLiteralPositive())
-					{
-						if (numericLiteral->numericLiteralPositive()->integer_positive())
-							numType = 0;
-						else if (numericLiteral->numericLiteralPositive()->decimal_positive())
-							numType = 1;
-						else if (numericLiteral->numericLiteralPositive()->double_positive())
-							numType = 2;
-					}
-					else if (numericLiteral->numericLiteralNegative())
-					{
-						if (numericLiteral->numericLiteralNegative()->integer_negative())
-							numType = 0;
-						else if (numericLiteral->numericLiteralNegative()->decimal_negative())
-							numType = 1;
-						else if (numericLiteral->numericLiteralNegative()->double_negative())
-							numType = 2;
-					}
-					switch (numType)
-					{
-						case 0:
-						currChild->str = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#integer>";
-						break;
-
-						case 1:
-						currChild->str = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#decimal>";
-						break;
-
-						case 2:
-						currChild->str = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#double>";
-						break;
-					}
+					currChild->str = getNumeric(numericLiteral);
 				}
 				else if (((SPARQLParser::PrimaryexpressionContext *)root)->booleanLiteral())
 					currChild->str = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
@@ -704,7 +663,16 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 		{
 			for (auto objectpath : propertyListpathNotEmpty->objectListpath()->objectpath())
 			{
-				object = objectpath->getText();
+				if (objectpath->graphNodepath()->varOrTerm() \
+					&& objectpath->graphNodepath()->varOrTerm()->graphTerm() \
+					&& objectpath->graphNodepath()->varOrTerm()->graphTerm()->numericLiteral())
+					object = getNumeric(objectpath->graphNodepath()->varOrTerm()->graphTerm()->numericLiteral());
+				else if (objectpath->graphNodepath()->varOrTerm() \
+					&& objectpath->graphNodepath()->varOrTerm()->graphTerm() \
+					&& objectpath->graphNodepath()->varOrTerm()->graphTerm()->booleanLiteral())
+					object = "\"" + (objectpath->getText()) + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
+				else
+					object = objectpath->getText();
 				replacePrefix(object);
 				addTriple(subject, predicate, object, group_pattern);
 			}
@@ -714,7 +682,16 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 			auto objectList = propertyListpathNotEmpty->objectList(i - 1);
 			for (auto object_ptr : objectList->object())
 			{
-				object = object_ptr->getText();
+				if (object_ptr->graphNode()->varOrTerm() \
+					&& object_ptr->graphNode()->varOrTerm()->graphTerm() \
+					&& object_ptr->graphNode()->varOrTerm()->graphTerm()->numericLiteral())
+					object = getNumeric(object_ptr->graphNode()->varOrTerm()->graphTerm()->numericLiteral());
+				else if (object_ptr->graphNode()->varOrTerm() \
+					&& object_ptr->graphNode()->varOrTerm()->graphTerm() \
+					&& object_ptr->graphNode()->varOrTerm()->graphTerm()->booleanLiteral())
+					object = "\"" + (object_ptr->getText()) + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
+				else
+					object = object_ptr->getText();
 				replacePrefix(object);
 				addTriple(subject, predicate, object, group_pattern);
 			}
@@ -892,14 +869,6 @@ antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubj
 {
 	QueryTree::GroupPattern &group_pattern_insert = query_tree_ptr->getInsertPatterns();
 	QueryTree::GroupPattern &group_pattern_delete = query_tree_ptr->getDeletePatterns();
-	// if (query_tree_ptr->getUpdateType() == QueryTree::Delete_Data
-	// 	|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Where
-	// 	|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Clause)
-	// {
-	// 	printf("HERE!!!!!!!\n");
-	// 	group_pattern = query_tree_ptr->getDeletePatterns();
-	// }
-	// QueryTree::Insert_Data, QueryTree::Insert_Clause, QueryTree::Modify_Clause
 
 	string subject, predicate, object;
 
@@ -915,7 +884,16 @@ antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubj
 		auto objectList = propertyListNotEmpty->objectList(i);
 		for (auto object_ptr : objectList->object())
 		{
-			object = object_ptr->getText();
+			if (object_ptr->graphNode()->varOrTerm() \
+				&& object_ptr->graphNode()->varOrTerm()->graphTerm() \
+				&& object_ptr->graphNode()->varOrTerm()->graphTerm()->numericLiteral())
+				object = getNumeric(object_ptr->graphNode()->varOrTerm()->graphTerm()->numericLiteral());
+			else if (object_ptr->graphNode()->varOrTerm() \
+				&& object_ptr->graphNode()->varOrTerm()->graphTerm() \
+				&& object_ptr->graphNode()->varOrTerm()->graphTerm()->booleanLiteral())
+				object = "\"" + (object_ptr->getText()) + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
+			else
+				object = object_ptr->getText();
 			replacePrefix(object);
 
 			if (query_tree_ptr->getUpdateType() == QueryTree::Delete_Data
@@ -933,3 +911,52 @@ antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubj
 	return antlrcpp::Any();
 }
 
+string QueryParser::getNumeric(SPARQLParser::NumericLiteralContext *ctx)
+{
+	int numType = -1;	// 0 for integer, 1 for decimal, 2 for double
+	string ret, baseText = ctx->getText();
+	
+	if (ctx->numericLiteralUnsigned())
+	{
+		if (ctx->numericLiteralUnsigned()->num_integer())
+			numType = 0;
+		else if (ctx->numericLiteralUnsigned()->num_decimal())
+			numType = 1;
+		else if (ctx->numericLiteralUnsigned()->num_double())
+			numType = 2;
+	}
+	else if (ctx->numericLiteralPositive())
+	{
+		if (ctx->numericLiteralPositive()->integer_positive())
+			numType = 0;
+		else if (ctx->numericLiteralPositive()->decimal_positive())
+			numType = 1;
+		else if (ctx->numericLiteralPositive()->double_positive())
+			numType = 2;
+	}
+	else if (ctx->numericLiteralNegative())
+	{
+		if (ctx->numericLiteralNegative()->integer_negative())
+			numType = 0;
+		else if (ctx->numericLiteralNegative()->decimal_negative())
+			numType = 1;
+		else if (ctx->numericLiteralNegative()->double_negative())
+			numType = 2;
+	}
+	switch (numType)
+	{
+		case 0:
+		ret = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#integer>";
+		break;
+
+		case 1:
+		ret = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#decimal>";
+		break;
+
+		case 2:
+		ret = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#double>";
+		break;
+	}
+
+	return ret;
+}
