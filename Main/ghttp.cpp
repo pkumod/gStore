@@ -2237,9 +2237,9 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		delete current_database;
 		current_database = NULL;
 		databases.erase(db_name);
-		string success = "Database unloaded.";
-		string resJson = CreateJson(0, success, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		//string success = "Database unloaded.";
+		//string resJson = CreateJson(0, success, 0);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
@@ -4101,13 +4101,7 @@ void getCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 	Document::AllocatorType &allocator = resDoc.GetAllocator();
 	resDoc.AddMember("StatusCode", 0, allocator);
 	resDoc.AddMember("StatusMsg", "success", allocator);
-	Value jsonArray(kArrayType);
-	Value obj(kObjectType);
-	Value _CoreVersion;
-	_CoreVersion.SetString(CoreVersion.c_str(), CoreVersion.length(), allocator);
-	obj.AddMember("CoreVersion", _CoreVersion, allocator);
-	jsonArray.PushBack(obj, allocator);
-	resDoc.AddMember("ResponseBody", jsonArray, allocator);
+	resDoc.AddMember("CoreVersion", StringRef(CoreVersion.c_str()), allocator);
 	StringBuffer resBuffer;
 	PrettyWriter<StringBuffer> resWriter(resBuffer);
 	resDoc.Accept(resWriter);
@@ -4183,13 +4177,7 @@ void getAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, cons
 	Document::AllocatorType &allocator = resDoc.GetAllocator();
 	resDoc.AddMember("StatusCode", 0, allocator);
 	resDoc.AddMember("StatusMsg", "success", allocator);
-	Value jsonArray(kArrayType);
-	Value obj(kObjectType);
-	Value _APIVersion;
-	_APIVersion.SetString(APIVersion.c_str(), APIVersion.length(), allocator);
-	obj.AddMember("APIVersion", _APIVersion, allocator);
-	jsonArray.PushBack(obj, allocator);
-	resDoc.AddMember("ResponseBody", jsonArray, allocator);
+	resDoc.AddMember("APIVersion", StringRef(APIVersion.c_str()), allocator);
 	StringBuffer resBuffer;
 	PrettyWriter<StringBuffer> resWriter(resBuffer);
 	resDoc.Accept(resWriter);
