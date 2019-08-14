@@ -130,6 +130,7 @@ unaryexpression : '!' primaryexpression|	'+' primaryexpression
  ;
 primaryexpression : brackettedexpression | builtInCall | iriOrFunction | rDFLiteral | numericLiteral | booleanLiteral | var ;
 brackettedexpression : '(' expression ')' ;
+predSet : '{' iri ( ',' iri )* '}' ;
 builtInCall : aggregate|	K_STR '(' expression ')' 
 |	K_LANG '(' expression ')' 
 |	K_LANGMATCHES '(' expression ',' expression ')' 
@@ -184,6 +185,14 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |	regexexpression 
 |	existsFunc 
 |	notexistsFunc
+|   K_SIMPLECYCLEPATH '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
+|   K_SIMPLECYCLEBOOLEAN '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
+|   K_CYCLEPATH '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
+|   K_CYCLEBOOLEAN '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
+|   K_SHORTESTPATH '(' varOrIri ',' varOrIri ',' predSet ')'
+|   K_SHORTESTPATHLEN '(' varOrIri ',' varOrIri ',' predSet ')'
+|   K_KHOPREACHABLE '(' varOrIri ',' varOrIri ',' num_integer ',' predSet (',' numericLiteral)? ')'
+|   K_KHOPENUMERATE '(' varOrIri ',' varOrIri ',' num_integer ',' predSet (',' numericLiteral)? ')'
  ;
 regexexpression : K_REGEX '(' expression ',' expression ( ',' expression )? ')' ;
 substringexpression : K_SUBSTR '(' expression ',' expression ( ',' expression )? ')' ;
@@ -324,6 +333,14 @@ K_LCASE : L C A S E ;
 K_OPTIONAL : O P T I O N A L ;
 K_LIMIT : L I M I T ;
 K_SUBSTR : S U B S T R ;
+K_SIMPLECYCLEPATH : S I M P L E C Y C L E P A T H ;
+K_SIMPLECYCLEBOOLEAN : S I M P L E C Y C L E B O O L E A N ;
+K_CYCLEPATH : C Y C L E P A T H ;
+K_CYCLEBOOLEAN : C Y C L E B O O L E A N ;
+K_SHORTESTPATH : S H O R T E S T P A T H ;
+K_SHORTESTPATHLEN : S H O R T E S T P A T H L E N ;
+K_KHOPREACHABLE : K H O P R E A C H A B L E ;
+K_KHOPENUMERATE : K H O P E N U M E R A T E ;
 KK_INSERTDATA : I N S E R T ' ' D A T A ;
 KK_DELETEDATA : D E L E T E ' ' D A T A ;
 KK_DELETEWHERE : D E L E T E ' ' W H E R E ;

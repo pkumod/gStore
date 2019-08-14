@@ -385,6 +385,9 @@ public:
   virtual void enterBrackettedexpression(SPARQLParser::BrackettedexpressionContext * /*ctx*/) override { }
   virtual void exitBrackettedexpression(SPARQLParser::BrackettedexpressionContext * /*ctx*/) override { }
 
+  virtual void enterPredSet(SPARQLParser::PredSetContext * /*ctx*/) override { }
+  virtual void exitPredSet(SPARQLParser::PredSetContext * /*ctx*/) override { }
+
   virtual void enterBuiltInCall(SPARQLParser::BuiltInCallContext * /*ctx*/) override { }
   virtual void exitBuiltInCall(SPARQLParser::BuiltInCallContext * /*ctx*/) override { }
 

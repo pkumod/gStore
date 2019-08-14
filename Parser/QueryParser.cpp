@@ -25,6 +25,7 @@ void QueryParser::SPARQLParse(const string &query)
 	parser.addErrorListener(&lstnr);
 
 	SPARQLParser::EntryContext *tree = parser.entry();
+	// printTree(tree, 0);
 	visitEntry(tree);
 }
 
@@ -213,34 +214,92 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		numericexpression(0)->additiveexpression()->multiplicativeexpression(0)-> \
 		unaryexpression(0)->primaryexpression()->builtInCall();
 	if (!bicCtx)
-		throw runtime_error("[ERROR]	Currently only support selecting variables and "
-			"the aggregate function COUNT");
+		throw runtime_error("[ERROR]	Currently only support selecting variables, "
+			"the aggregate function COUNT, and path-associated built-in calls");
 	antlr4::tree::ParseTree *curr = expCtx;
-	for (int i = 0; i < 11; i++)
+	for (int i = 0; i < 10; i++)
 	{
 		// Make sure only one children along the way
 		if (curr->children.size() > 1)
-			throw runtime_error("[ERROR]	Currently only support selecting variables and "
-				"the aggregate function COUNT");
+			throw runtime_error("[ERROR]	Currently only support selecting variables, "
+				"the aggregate function COUNT, and path-associated built-in calls");
 		curr = curr->children[0];
 	}
 	SPARQLParser::AggregateContext *aggCtx = bicCtx->aggregate();
-	if (!aggCtx)
-		throw runtime_error("[ERROR]	Currently only support selecting variables and "
-			"the aggregate function COUNT");
-	string tmp = aggCtx->children[0]->getText();
-	transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-	if (aggCtx->children[0]->getText() != "COUNT")
-		throw runtime_error("[ERROR]	The supported aggregate function now is COUNT only");
+	if (aggCtx)
+	{
+		string tmp = aggCtx->children[0]->getText();
+		transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+		if (tmp != "COUNT")
+			throw runtime_error("[ERROR]	The supported aggregate function now is COUNT only");
 
-	query_tree_ptr->addProjectionVar();
-	QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
-	proj_var.aggregate_type = QueryTree::ProjectionVar::Count_type;
-	proj_var.aggregate_var = aggCtx->expression()->getText();	// Error would have been dealt with
-	tmp = aggCtx->children[2]->getText();
-	transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-	proj_var.distinct = aggCtx->children[2]->children.size() == 0 && tmp == "DISTINCT";
-	proj_var.var = varCtx->getText();
+		query_tree_ptr->addProjectionVar();
+		QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+		proj_var.aggregate_type = QueryTree::ProjectionVar::Count_type;
+		proj_var.aggregate_var = aggCtx->expression()->getText();	// Error would have been dealt with
+		tmp = aggCtx->children[2]->getText();
+		transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+		proj_var.distinct = aggCtx->children[2]->children.size() == 0 && tmp == "DISTINCT";
+		proj_var.var = varCtx->getText();
+	}
+	else
+	{
+		string tmp = bicCtx->children[0]->getText();
+		transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+		if (tmp != "SIMPLECYCLEPATH" && tmp != "SIMPLECYCLEBOOLEAN"
+			&& tmp != "CYCLEPATH" && tmp != "CYCLEBOOLEAN"
+			&& tmp != "SHORTESTPATH" && tmp != "SHORTESTPATHLEN"
+			&& tmp != "KHOPREACHABLE" && tmp != "KHOPENUMERATE")
+			throw runtime_error("[ERROR]	Currently only support selecting variables, "
+				"the aggregate function COUNT, and path-associated built-in calls");
+		
+		query_tree_ptr->addProjectionVar();
+		QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+		if (tmp == "SIMPLECYCLEPATH")
+			proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCyclePath_type;
+		else if (tmp == "SIMPLECYCLEBOOLEAN")
+			proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCycleBoolean_type;
+		else if (tmp == "CYCLEPATH")
+			proj_var.aggregate_type = QueryTree::ProjectionVar::cyclePath_type;
+		else if (tmp == "CYCLEBOOLEAN")
+			proj_var.aggregate_type = QueryTree::ProjectionVar::cycleBoolean_type;
+		else if (tmp == "SHORTESTPATH")
+			proj_var.aggregate_type = QueryTree::ProjectionVar::shortestPath_type;
+		else if (tmp == "SHORTESTPATHLEN")
+			proj_var.aggregate_type = QueryTree::ProjectionVar::shortestPathLen_type;
+		else if (tmp == "KHOPREACHABLE")
+			proj_var.aggregate_type = QueryTree::ProjectionVar::kHopReachable_type;
+		else if (tmp == "KHOPENUMERATE")
+			proj_var.aggregate_type = QueryTree::ProjectionVar::kHopEnumerate_type;
+
+		proj_var.path_args.src = bicCtx->varOrIri(0)->getText();
+		replacePrefix(proj_var.path_args.src);
+		proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
+		replacePrefix(proj_var.path_args.dst);
+		auto predSet = bicCtx->predSet()->iri();
+		for (auto pred : predSet)
+		{
+			string prefixedPred = pred->getText();
+			replacePrefix(prefixedPred);
+			proj_var.path_args.pred_set.push_back(prefixedPred);
+		}
+
+		if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE")
+		{
+			proj_var.path_args.k = stoi(bicCtx->num_integer()->getText());
+			proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
+		}
+		else if (tmp == "SIMPLECYCLEPATH" || tmp == "SIMPLECYCLEBOOLEAN"
+			|| tmp == "CYCLEPATH" || tmp == "CYCLEBOOLEAN")
+		{
+			if (bicCtx->booleanLiteral()->getText() == "true")
+				proj_var.path_args.directed = true;
+			else
+				proj_var.path_args.directed = false;
+		}
+
+		proj_var.var = varCtx->getText();
+	}
 }
 
 antlrcpp::Any QueryParser::visitGroupGraphPattern(SPARQLParser::GroupGraphPatternContext *ctx, \
@@ -578,6 +637,14 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_langmatches_type;
 			else if (funcName == "BOUND")
 				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_bound_type;
+			else if (funcName == "SIMPLECYCLEBOOLEAN")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_simpleCycle_type;
+			else if (funcName == "CYCLEBOOLEAN")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_cycle_type;
+			else if (funcName == "SHORTESTPATHLEN")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_sp_type;
+			else if (funcName == "KHOPREACHABLE")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_khop_type;
 			else
 				throw runtime_error("[ERROR] Filter currently does not support this built-in call.");
 
@@ -586,7 +653,46 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 
 			tmp = root->children[0]->getText();
 			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-			if (tmp != "BOUND")
+			if (tmp == "BOUND")
+			{
+				filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
+				filter.child[0].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
+				filter.child[0].str = ((SPARQLParser::BuiltInCallContext *)root)->var()->getText();
+				replacePrefix(filter.child[0].str);
+			}
+			else if (tmp == "SIMPLECYCLEBOOLEAN" || tmp == "CYCLEBOOLEAN" \
+				|| tmp == "SHORTESTPATHLEN" || tmp == "KHOPREACHABLE")
+			{
+				filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
+				filter.child[0].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
+				filter.child[0].path_args.src = ((SPARQLParser::BuiltInCallContext *)root)->varOrIri(0)->getText();
+				replacePrefix(filter.child[0].path_args.src);
+				filter.child[0].path_args.dst = ((SPARQLParser::BuiltInCallContext *)root)->varOrIri(1)->getText();
+				replacePrefix(filter.child[0].path_args.dst);
+				auto predSet = ((SPARQLParser::BuiltInCallContext *)root)->predSet()->iri();
+				for (auto pred : predSet)
+				{
+					string prefixedPred = pred->getText();
+					replacePrefix(prefixedPred);
+					filter.child[0].path_args.pred_set.push_back(prefixedPred);
+				}
+
+				if (tmp == "KHOPREACHABLE")
+				{
+					filter.child[0].path_args.k = \
+						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer()->getText());
+					filter.child[0].path_args.confidence = \
+						stof(((SPARQLParser::BuiltInCallContext *)root)->numericLiteral()->getText());
+				}
+				else if (tmp == "SIMPLECYCLEBOOLEAN" || tmp == "CYCLEBOOLEAN")
+				{
+					if (((SPARQLParser::BuiltInCallContext *)root)->booleanLiteral()->getText() == "true")
+						filter.child[0].path_args.directed = true;
+					else
+						filter.child[0].path_args.directed = false;
+				}
+			}
+			else
 			{
 				int numChild = 0;
 				for (auto expression : ((SPARQLParser::BuiltInCallContext *)root)->expression())
@@ -596,13 +702,6 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 						filter.child[numChild].node, "conditionalOrexpression");
 					numChild++;
 				}
-			}
-			else
-			{
-				filter.child.push_back(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild());
-				filter.child[0].node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
-				filter.child[0].str = ((SPARQLParser::BuiltInCallContext *)root)->var()->getText();
-				replacePrefix(filter.child[0].str);
 			}
 		}
 		else
