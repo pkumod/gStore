@@ -265,6 +265,8 @@ public:
 
     virtual antlrcpp::Any visitBrackettedexpression(SPARQLParser::BrackettedexpressionContext *context) = 0;
 
+    virtual antlrcpp::Any visitPredSet(SPARQLParser::PredSetContext *context) = 0;
+
     virtual antlrcpp::Any visitBuiltInCall(SPARQLParser::BuiltInCallContext *context) = 0;
 
     virtual antlrcpp::Any visitRegexexpression(SPARQLParser::RegexexpressionContext *context) = 0;

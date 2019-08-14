@@ -36,17 +36,20 @@ public:
     K_REDUCED = 116, K_FROM = 117, K_LANGMATCHES = 118, K_ISURI = 119, K_TO = 120, 
     K_ISIRI = 121, K_RAND = 122, K_STRDT = 123, K_COUNT = 124, K_DESCRIBE = 125, 
     K_VALUES = 126, K_LCASE = 127, K_OPTIONAL = 128, K_LIMIT = 129, K_SUBSTR = 130, 
-    KK_INSERTDATA = 131, KK_DELETEDATA = 132, KK_DELETEWHERE = 133, KK_ENCODE_FOR_URI = 134, 
-    KK_MD5 = 135, KK_SHA1 = 136, KK_SHA256 = 137, KK_SHA384 = 138, KK_SHA512 = 139, 
-    KK_GROUP_CONCAT = 140, IRIREF = 141, PNAME_NS = 142, PNAME_LN = 143, 
-    BLANK_NODE_LABEL = 144, VAR1 = 145, VAR2 = 146, LANGTAG = 147, INTEGER = 148, 
-    DECIMAL = 149, DOUBLE = 150, INTEGER_POSITIVE = 151, DECIMAL_POSITIVE = 152, 
-    DOUBLE_POSITIVE = 153, INTEGER_NEGATIVE = 154, DECIMAL_NEGATIVE = 155, 
-    DOUBLE_NEGATIVE = 156, EXPONENT = 157, STRING_LITERAL1 = 158, STRING_LITERAL2 = 159, 
-    STRING_LITERAL_LONG1 = 160, STRING_LITERAL_LONG2 = 161, ECHAR = 162, 
-    NIL = 163, WS = 164, ANON = 165, PN_CHARS_BASE = 166, PN_CHARS_U = 167, 
-    VARNAME = 168, PN_CHARS = 169, PN_PREFIX = 170, PN_LOCAL = 171, PLX = 172, 
-    PERCENT = 173, HEX = 174, PN_LOCAL_ESC = 175
+    K_SIMPLECYCLEPATH = 131, K_SIMPLECYCLEBOOLEAN = 132, K_CYCLEPATH = 133, 
+    K_CYCLEBOOLEAN = 134, K_SHORTESTPATH = 135, K_SHORTESTPATHLEN = 136, 
+    K_KHOPREACHABLE = 137, K_KHOPENUMERATE = 138, KK_INSERTDATA = 139, KK_DELETEDATA = 140, 
+    KK_DELETEWHERE = 141, KK_ENCODE_FOR_URI = 142, KK_MD5 = 143, KK_SHA1 = 144, 
+    KK_SHA256 = 145, KK_SHA384 = 146, KK_SHA512 = 147, KK_GROUP_CONCAT = 148, 
+    IRIREF = 149, PNAME_NS = 150, PNAME_LN = 151, BLANK_NODE_LABEL = 152, 
+    VAR1 = 153, VAR2 = 154, LANGTAG = 155, INTEGER = 156, DECIMAL = 157, 
+    DOUBLE = 158, INTEGER_POSITIVE = 159, DECIMAL_POSITIVE = 160, DOUBLE_POSITIVE = 161, 
+    INTEGER_NEGATIVE = 162, DECIMAL_NEGATIVE = 163, DOUBLE_NEGATIVE = 164, 
+    EXPONENT = 165, STRING_LITERAL1 = 166, STRING_LITERAL2 = 167, STRING_LITERAL_LONG1 = 168, 
+    STRING_LITERAL_LONG2 = 169, ECHAR = 170, NIL = 171, WS = 172, ANON = 173, 
+    PN_CHARS_BASE = 174, PN_CHARS_U = 175, VARNAME = 176, PN_CHARS = 177, 
+    PN_PREFIX = 178, PN_LOCAL = 179, PLX = 180, PERCENT = 181, HEX = 182, 
+    PN_LOCAL_ESC = 183
   };
 
   enum {
@@ -85,15 +88,16 @@ public:
     RuleConditionalAndexpression = 114, RuleValueLogical = 115, RuleRelationalexpression = 116, 
     RuleNumericexpression = 117, RuleAdditiveexpression = 118, RuleMultiplicativeexpression = 119, 
     RuleUnaryexpression = 120, RulePrimaryexpression = 121, RuleBrackettedexpression = 122, 
-    RuleBuiltInCall = 123, RuleRegexexpression = 124, RuleSubstringexpression = 125, 
-    RuleStrReplaceexpression = 126, RuleExistsFunc = 127, RuleNotexistsFunc = 128, 
-    RuleAggregate = 129, RuleIriOrFunction = 130, RuleRDFLiteral = 131, 
-    RuleNumericLiteral = 132, RuleNumericLiteralUnsigned = 133, RuleNumericLiteralPositive = 134, 
-    RuleNumericLiteralNegative = 135, RuleNum_integer = 136, RuleNum_decimal = 137, 
-    RuleNum_double = 138, RuleInteger_positive = 139, RuleDecimal_positive = 140, 
-    RuleDouble_positive = 141, RuleInteger_negative = 142, RuleDecimal_negative = 143, 
-    RuleDouble_negative = 144, RuleBooleanLiteral = 145, RuleString = 146, 
-    RuleIri = 147, RulePrefixedName = 148, RuleBlankNode = 149
+    RulePredSet = 123, RuleBuiltInCall = 124, RuleRegexexpression = 125, 
+    RuleSubstringexpression = 126, RuleStrReplaceexpression = 127, RuleExistsFunc = 128, 
+    RuleNotexistsFunc = 129, RuleAggregate = 130, RuleIriOrFunction = 131, 
+    RuleRDFLiteral = 132, RuleNumericLiteral = 133, RuleNumericLiteralUnsigned = 134, 
+    RuleNumericLiteralPositive = 135, RuleNumericLiteralNegative = 136, 
+    RuleNum_integer = 137, RuleNum_decimal = 138, RuleNum_double = 139, 
+    RuleInteger_positive = 140, RuleDecimal_positive = 141, RuleDouble_positive = 142, 
+    RuleInteger_negative = 143, RuleDecimal_negative = 144, RuleDouble_negative = 145, 
+    RuleBooleanLiteral = 146, RuleString = 147, RuleIri = 148, RulePrefixedName = 149, 
+    RuleBlankNode = 150
   };
 
   SPARQLParser(antlr4::TokenStream *input);
@@ -229,6 +233,7 @@ public:
   class UnaryexpressionContext;
   class PrimaryexpressionContext;
   class BrackettedexpressionContext;
+  class PredSetContext;
   class BuiltInCallContext;
   class RegexexpressionContext;
   class SubstringexpressionContext;
@@ -2337,6 +2342,22 @@ public:
 
   BrackettedexpressionContext* brackettedexpression();
 
+  class  PredSetContext : public antlr4::ParserRuleContext {
+  public:
+    PredSetContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<IriContext *> iri();
+    IriContext* iri(size_t i);
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PredSetContext* predSet();
+
   class  BuiltInCallContext : public antlr4::ParserRuleContext {
   public:
     BuiltInCallContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -2401,6 +2422,20 @@ public:
     RegexexpressionContext *regexexpression();
     ExistsFuncContext *existsFunc();
     NotexistsFuncContext *notexistsFunc();
+    antlr4::tree::TerminalNode *K_SIMPLECYCLEPATH();
+    std::vector<VarOrIriContext *> varOrIri();
+    VarOrIriContext* varOrIri(size_t i);
+    BooleanLiteralContext *booleanLiteral();
+    PredSetContext *predSet();
+    antlr4::tree::TerminalNode *K_SIMPLECYCLEBOOLEAN();
+    antlr4::tree::TerminalNode *K_CYCLEPATH();
+    antlr4::tree::TerminalNode *K_CYCLEBOOLEAN();
+    antlr4::tree::TerminalNode *K_SHORTESTPATH();
+    antlr4::tree::TerminalNode *K_SHORTESTPATHLEN();
+    antlr4::tree::TerminalNode *K_KHOPREACHABLE();
+    Num_integerContext *num_integer();
+    NumericLiteralContext *numericLiteral();
+    antlr4::tree::TerminalNode *K_KHOPENUMERATE();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
