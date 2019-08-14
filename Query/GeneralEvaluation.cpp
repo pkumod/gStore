@@ -652,6 +652,13 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 						printf("after checkCache, used %ld ms.\n", tv_afcheck - tv_bfcheck);
 					}
 
+        			if(this->export_flag)
+        			{
+        				this->strategy.fp = this->fp;
+        				this->strategy.export_flag = this->export_flag;
+        				success = false;
+        			}
+
 					if (success)
 					{
 						printf("QueryCache hit\n");

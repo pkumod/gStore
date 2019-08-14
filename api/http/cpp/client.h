@@ -85,6 +85,7 @@ public:
 	std::string show(std::string request_type = "GET");
 	std::string getCoreVersion(std::string request_type = "GET");
 	std::string getAPIVersion(std::string request_type = "GET");
+	std::string exportDB(std::string db_name, std::string dir_path, std::string request_type = "GET");
 	void SetDebug(bool bDebug);
 
 private:

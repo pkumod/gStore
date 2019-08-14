@@ -204,3 +204,13 @@ class GstoreConnector:
             strPost = '{\"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
             res = self.Post(strUrl, strPost)
         return res
+
+    def exportDB(self, db_name, dir_path, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "/?operation=export&db_name=" + db_name + "&ds_path=" + dir_path + "&username=" + self.username + "&password=" + self.password
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strUrl = "/export"
+            strPost = '{\"db_name\": \"' + db_name + '\", \"ds_path\": \"' + dir_path + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
+            res = self.Post(strUrl, strPost)
+        return res
