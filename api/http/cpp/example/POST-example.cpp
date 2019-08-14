@@ -70,6 +70,10 @@ int main(int argc, char * argv[])
 	res = gc.show("POST");
 	cout << res << endl;
 
+	// export the database
+	res = gc.exportDB("lubm", "export/lubm/post", "POST");
+	cout << res << endl;
+
 	// unload the database
 	res = gc.unload("lubm", "POST");
 	cout << res << endl;

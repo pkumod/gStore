@@ -113,7 +113,7 @@ inc = -I./tools/libantlr3c-3.4/ -I./tools/libantlr3c-3.4/include
 
 #gtest
 
-TARGET = $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -125,6 +125,9 @@ all: $(TARGET)
 #executables begin
 
 #NOTICE:not include g*.o in objfile due to multiple definitions of main()
+
+$(exedir)gexport: $(lib_antlr) $(objdir)gexport.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)gexport $(objdir)gexport.o $(objfile) $(library) $(openmp)
 
 $(exedir)gdrop: $(lib_antlr) $(objdir)gdrop.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gdrop $(objdir)gdrop.o $(objfile) $(library) $(openmp)
@@ -171,6 +174,9 @@ $(testdir)dataset_test: $(lib_antlr) $(objdir)dataset_test.o $(objfile)
 
 
 #objects in Main/ begin
+
+$(objdir)gexport.o: Main/gexport.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gexport.cpp $(inc) -o $(objdir)gexport.o $(openmp)
 
 $(objdir)gdrop.o: Main/gdrop.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gdrop.cpp $(inc) -o $(objdir)gdrop.o $(openmp)

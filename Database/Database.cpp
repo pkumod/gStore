@@ -1522,7 +1522,7 @@ Database::get_query_parse_lock()
 }
 
 int
-Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool update_flag)
+Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool update_flag, bool export_flag)
 {
 	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
 
@@ -1564,6 +1564,11 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		//general_evaluation.setStringIndexPointer(&tmpsi);
 
 	//	this->debug_lock.lock();
+		if(export_flag)
+		{
+			general_evaluation.fp = _fp;
+			general_evaluation.export_flag = export_flag;
+		}
 		bool query_ret = general_evaluation.doQuery();
 		if(!query_ret)
 		{
@@ -1714,16 +1719,19 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	long tv_final = Util::get_cur_time();
 	cout << "Total time used: " << (tv_final - tv_begin) << "ms." << endl;
 	//if (general_evaluation.needOutputAnswer())
-	if (need_output_answer)
+	if(!export_flag)
 	{
-		long long ans_num = max((long long)_result_set.ansNum - _result_set.output_offset, 0LL);
-		if (_result_set.output_limit != -1)
-			ans_num = min(ans_num, (long long)_result_set.output_limit);
-		cout << "There has answer: " << ans_num << endl;
-		cout << "final result is : " << endl;
-		_result_set.output(_fp);
-		fprintf(_fp, "\n");
-		fflush(_fp);       //to empty the output buffer in C (fflush(stdin) not work in GCC)
+		if (need_output_answer)
+		{
+			long long ans_num = max((long long)_result_set.ansNum - _result_set.output_offset, 0LL);
+			if (_result_set.output_limit != -1)
+				ans_num = min(ans_num, (long long)_result_set.output_limit);
+			cout << "There has answer: " << ans_num << endl;
+			cout << "final result is : " << endl;
+			_result_set.output(_fp);
+			fprintf(_fp, "\n");
+			fflush(_fp);       //to empty the output buffer in C (fflush(stdin) not work in GCC)
+		}
 	}
 
 #ifdef DEBUG

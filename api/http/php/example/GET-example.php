@@ -55,6 +55,10 @@ echo $res. PHP_EOL;
 $res = $gc->show();
 echo $res. PHP_EOL;
 
+// export the database
+$res = $gc->exportDB("lubm", "export/lubm/get");
+echo $res . PHP_EOL;
+
 // unload the database
 $res = $gc->unload("lubm");
 echo $res. PHP_EOL;

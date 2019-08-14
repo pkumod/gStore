@@ -1,75 +1,84 @@
-#include <curl/curl.h>
-#include <string>
-#include <cstring>
-#include <iostream>
+/*=============================================================================
+# Filename: gmonitor.cpp
+# Author: suxunbin
+# Mail: suxunbin@pku.edu.cn
+# Last Modified: 2019-07-26 16:00
+# Description: used to show information of the database
+=============================================================================*/
+
+#include "../Util/Util.h"
+#include "../Database/Database.h"
 
 using namespace std;
 
-const string UrlEncode(const string& s)
+int main(int argc, char * argv[])
 {
-        string ret;
-        unsigned char *ptr = (unsigned char *)s.c_str();
-        ret.reserve(s.length());
+		Util util;
+		string db_name;
+		if (argc == 1)
+		{
+			cout << "You need to input the database name that you want to show." << endl;
+			return 0;
+		}
+		else if (argc == 2)
+		{
+			db_name = argv[1];
+			int len = db_name.length();
+			if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
+			{
+				cout << "The database name can not end with .db" << endl;
+				return 0;
+			}
+		}
+		else
+		{
+			cout << "The number of parameters is not correct." << endl;
+			return 0;
+		}
 
-        for(int i=0;i<s.length();++i)
+		Database system_db("system");
+		system_db.load();
+
+		string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
+		ResultSet ask_rs;
+		FILE* ask_ofp = stdout;
+		int ret = system_db.query(sparql, ask_rs, ask_ofp);
+		if (ask_rs.answer[0][0] == "false")
+		{
+			cout << "The database does not exist." << endl;
+			return 0;
+		}
+
+		cout << "start loading the database......" << endl;
+		Database _db(db_name);
+		_db.load();
+		cout << "finish loading" << endl;
+
+        sparql = "select ?p ?o where{<" + db_name + "> ?p ?o.}";
+        ResultSet _rs;
+        FILE* ofp = stdout;
+        ret = system_db.query(sparql, _rs, ofp);
+        string creator;
+        string built_time;
+        for (int i = 0; i < _rs.ansNum; i++)
         {
-                if((int(ptr[i])==42) || (int(ptr[i])==45) || (int(ptr[i])==46) || (int(ptr[i])==47) || (int(ptr[i])==58) ||(int(ptr[i])==95))
-                        ret += ptr[i];
-                else if((int(ptr[i])>=48) && (int(ptr[i])<=57))
-                        ret += ptr[i];
-                else if((int(ptr[i])>=65) && (int(ptr[i])<=90))
-                        ret += ptr[i];
-                else if((int(ptr[i])>=97) && (int(ptr[i])<=122))
-                        ret += ptr[i];
-                else if(int(ptr[i])==32)
-                        ret += '+';
-                else
-                {
-                        char buf[5];
-                        memset(buf,0,5);
-                        snprintf(buf,5,"%%%X",ptr[i]);
-                        ret.append(buf);
-                }
+        	string p = _rs.answer[i][0];
+            string o = _rs.answer[i][1];
+            if(p == "<built_by>")
+                creator = o.substr(1,o.length()-2);
+            else if(p == "<built_time>")
+                built_time = o;
         }
-        return ret;
-}
-size_t OnWriteData(void* buffer, size_t size, size_t nmemb, void* lpVoid)
-{
-	string* str = dynamic_cast<string*>((string *)lpVoid);
-	if( NULL == str || NULL == buffer )
-		return -1;
-	char* pData = (char*)buffer;
-	str->append(pData, size * nmemb);
-	return nmemb;
-}
-int
-main(int argc, char * argv[])
-{
-	cout << "argc: " << argc << endl;
-	cout << "ip: " << argv[1] << endl;
-	cout << "port: " << argv[2] << endl;
-	cout << "db_name: " << argv[3] << endl;
+		unsigned triple_num = _db.getTripleNum();
+		unsigned entity_num = _db.getEntityNum();
+		unsigned literal_num = _db.getLiteralNum();
+		unsigned subject_num = _db.getSubNum();
+		unsigned predicate_num = _db.getPreNum();
 
-	string serverIP = string(argv[1]);
-	string serverPort = string(argv[2]);
-	string db_name = string(argv[3]);
-
-	const string strUrl = "http://"+serverIP+":"+serverPort+"/?operation=monitor&db_name="+db_name;
-	string res;
-	res.clear();
-	CURLcode ret;
-	CURL* curl = curl_easy_init();
-	if(NULL == curl)
-		return CURLE_FAILED_INIT;
-	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
-	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&res);
-	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
-	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
-	ret = curl_easy_perform(curl);
-	curl_easy_cleanup(curl);
-	cout<< res <<endl;
-	return 0;
+		cout<<"\n========================================\n";
+		string output = "database: " + db_name + "\ncreator: " + creator + "\nbuilt_time: " + built_time + "\n";
+		output = output + "triple num: " + Util::int2string(triple_num) + "\nentity num: " + Util::int2string(entity_num) + "\nliteral num: " + Util::int2string(literal_num) + "\nsubject num: " + Util::int2string(subject_num) + "\npredicate num: " + Util::int2string(predicate_num) 
+				+ "\n========================================\n";
+        cout<<output;   
+        return 0;
 }

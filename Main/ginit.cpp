@@ -13,10 +13,28 @@ using namespace std;
 
 int main(int argc, char * argv[])
 {
+	string op;
 	if(argc > 1)
 	{
-		if(boost::filesystem::exists("system.db"))
-			return 0;
+		op = argv[1];
+		if(op == "-make")
+		{
+			if(boost::filesystem::exists("system.db"))
+				return 0;			
+		}
+		else if(op == "-d")
+		{
+			if(argc == 2)
+			{
+				cout << "You need to input at least one database name." << endl;
+				return 0;
+			}
+		}
+		else
+		{
+			cout << "The initialization option is not correct." << endl;
+			return 0;			
+		}
 	}
 
 	//build system.db
@@ -47,7 +65,22 @@ int main(int argc, char * argv[])
 	_db = new Database(_db_path);
 	_db->load();
 	string time = Util::get_date_time();
-	string sparql = "INSERT DATA {<system> <built_time> \"" + time + "\".}";
+	string sparql = "INSERT DATA {<system> <built_time> \"" + time + "\".";
+	if(argc > 1)
+	{
+		op = argv[1];
+		if(op == "-d")
+		{
+			for(int i=2; i<argc; i++)
+			{
+				string db_name = argv[i];
+				sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
+				sparql = sparql + "<" + db_name + "> <built_by> <root>.";
+				sparql = sparql + "<" + db_name + "> <built_time> \"" + time + "\".";
+			}		
+		}
+	}
+	sparql = sparql + "}";
 	ResultSet _rs;
 	FILE* ofp = stdout;
 	string msg;
