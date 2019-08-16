@@ -323,7 +323,6 @@ public:
 	static std::string getThreadID();
 	static int memUsedPercentage();
 	static int memoryLeft();
-	//static int compare(const char* _str1, unsigned _len1, const char* _str2, unsigned _len2); //QUERY(how to use default args)
 	static int compare(const char* _str1, unsigned long _len1, const char* _str2, unsigned long _len2);
 	static int string2int(std::string s);
 	static std::string int2string(long n);
