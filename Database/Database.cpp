@@ -1538,6 +1538,8 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		return -101;
 	long tv_parse = Util::get_cur_time();
 	cout << "after Parsing, used " << (tv_parse - tv_begin) << "ms." << endl;
+	// cout << "QueryTree:" << endl;
+	// general_evaluation.getQueryTree().print();
 	//return -100;
 
 	//for select, -100 by default, -101 means error

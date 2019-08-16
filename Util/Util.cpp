@@ -790,6 +790,53 @@ Util::get_date_time()
 	return tmp;
 }
 
+string 
+Util::get_timestamp()
+{
+    string timestamp;
+    time_t timep;
+    time(&timep);
+    char year[5];
+    char tmp[64];
+    strftime(year, sizeof(year), "%Y", localtime(&timep));
+    timestamp += year[2]; timestamp += year[3];
+    strftime(tmp, sizeof(tmp), "%m%d%H%M%S",localtime(&timep) );
+    timestamp += tmp;
+    return timestamp;
+}
+
+string
+Util::get_backup_time(const string path, const string db_name)
+{
+    string _db_name = db_name + ".db";
+    string::size_type position;
+    position = path.find(_db_name);
+
+    if(position == path.npos)
+        return "";
+    string db_folder = path.substr(position, path.length());
+    string timestamp = db_folder.substr(_db_name.length() + 1, db_folder.length());
+    string year, month, day, hour, minute, second;
+    year = "20" + timestamp.substr(0, 2);
+    month = timestamp.substr(2, 2);
+    day = timestamp.substr(4, 2);
+    hour = timestamp.substr(6, 2);
+    minute = timestamp.substr(8, 2);
+    second = timestamp.substr(10, 2);
+    string time = year + '-' + month + '-' + day + ' ' + hour + ":" + minute + ":" + second;
+    return time;
+}
+
+string
+Util::get_folder_name(const string path, const string db_name){
+    string _db_name = db_name + ".db";
+    string::size_type position;
+    position = path.find(_db_name);
+
+    string db_folder = path.substr(position, path.length());
+    return db_folder;
+}
+
 bool
 Util::save_to_file(const char* _dir, const string _content)
 {
@@ -911,6 +958,7 @@ Util::compare(const char* _str1, unsigned long _len1, const char* _str2, unsigne
 	else
 		return -1 * ifswap;
 }
+
 int
 Util::string2int(string s)
 {
@@ -1984,4 +2032,3 @@ Util::read_backup_time()
 	in.close();
 	return Util::gserver_backup_time;
 }
-
