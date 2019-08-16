@@ -8,27 +8,36 @@ sleep 5s
 apt install -y aptitude
 echo -e "aptitude installed to search softwares conveniently \n"
 
-apt install -y gcc g++
+apt install -y gcc-5 g++-5
 echo -e "g++ installed \n"
 
 apt install -y make
 echo -e "make installed \n"
 
+apt install -y openjdk-8-jdk
+echo -e "openjdk 8 installed \n"
+
 apt install -y libreadline-dev
 echo -e "readline-devel installed \n"
 
-apt install -y openjdk-8-jdk
-echo -e "openjdk 8 installed \n"
+apt install -y libboost-all-dev
+echo -e "libboost-all-dev installed \n"
 
 apt install -y curl libcurl4 libcurl4-openssl-dev
 echo -e "libcurl-devel installed \n"
 
+apt install -y cmake
+echo -e "cmake installed \n"
+
+apt install -y pkg-config
+echo -e "pkg-config installed \n"
+
+apt install -y uuid-dev
+echo -e "uuid installed \n"
+
 echo -e "Optional: requests for python api, pthreads and curl-devel for php api, realpath for gconsole, ccache for faster compilation\n"
 echo -e "For help: https://github.com/pkumod/gStore/blob/master/docs/DEMAND.md \n"
 sleep 5s
-
-apt install -y libboost-all-dev
-echo -e "libboost-all-dev installed \n"
 
 ldconfig -v
 echo -e "dynamic libraries path set \n"

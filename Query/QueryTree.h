@@ -91,6 +91,16 @@ class QueryTree
 				}
 		};
 
+		class PathArgs
+		{
+		public:
+			std::string src, dst;
+			bool directed;
+			std::vector<std::string> pred_set;
+			int k;
+			float confidence;
+		};
+
 		class GroupPattern::FilterTree
 		{
 			public:
@@ -103,7 +113,8 @@ class QueryTree
 							Plus_type, Minus_type, Mul_type, Div_type, Not_type, UnaryPlus_type, UnaryMinus_type, Literal_type, Variable_type, IRI_type,
 							Function_type, ArgumentList_type, Builtin_str_type, Builtin_lang_type, Builtin_langmatches_type, Builtin_datatype_type, Builtin_bound_type,
 							Builtin_sameterm_type, Builtin_isiri_type, Builtin_isuri_type, Builtin_isblank_type, Builtin_isliteral_type, Builtin_isnumeric_type,
-							Builtin_regex_type, Builtin_in_type, Builtin_exists_type
+							Builtin_regex_type, Builtin_in_type, Builtin_exists_type,
+							Builtin_simpleCycle_type, Builtin_cycle_type, Builtin_sp_type, Builtin_khop_type
 						};
 						FilterOperationType oper_type;
 
@@ -135,6 +146,8 @@ class QueryTree
 					std::string str;
 					int pos;
 					bool isel;
+
+					PathArgs path_args;
 
 					FilterTreeChild():node_type(None_type), pos(-1), isel(true){}
 			};
@@ -174,11 +187,15 @@ class QueryTree
 		class ProjectionVar
 		{
 			public:
-				enum AggregateType{None_type, Count_type, Sum_type, Min_type, Max_type, Avg_type};
+				enum AggregateType {None_type, Count_type, Sum_type, Min_type, Max_type, Avg_type, 
+					simpleCyclePath_type, simpleCycleBoolean_type, cyclePath_type, cycleBoolean_type, 
+					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type};
 				AggregateType aggregate_type;
 
 				std::string var, aggregate_var;
 				bool distinct;
+
+				PathArgs path_args;
 
 				ProjectionVar():aggregate_type(None_type), distinct(false){}
 		};

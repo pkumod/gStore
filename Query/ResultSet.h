@@ -19,7 +19,8 @@ private:
 	Stream* stream;
 	bool useStream;
 public:
-	int select_var_num;
+	int select_var_num;	// Include order by keys
+	int true_select_var_num;	// Exclude order by keys
 	std::string* var_name;
 	unsigned ansNum;
 	std::string** answer;

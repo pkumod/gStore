@@ -11,21 +11,30 @@ echo -e "g++ installed \n"
 pacman -S --noconfirm make
 echo -e "make installed \n"
 
+pacman -S --noconfirm jdk8-openjdk
+echo -e "openjdk 8 installed \n"
+
 pacman -S --noconfirm readline
 echo -e "readline-devel installed \n"
 
-pacman -S --noconfirm jdk8-openjdk
-echo -e "openjdk 8 installed \n"
+pacman -S --noconfirm boost boost-libs
+echo -e "boost-libs installed \n"
 
 pacman -S --noconfirm curl
 echo -e "libcurl-devel installed \n"
 
+pacman -S --noconfirm cmake
+echo -e "cmake installed \n"
+
+pacman -S --noconfirm pkgconf
+echo -e "pkgconf installed \n"
+
+pacman -S --noconfirm uuid
+echo -e "uuid installed \n"
+
 echo -e "Optional: requests for python api, pthreads and curl-devel for php api, realpath for gconsole, ccache for faster compilation\n"
 echo -e "For help: https://github.com/pkumod/gStore/blob/master/docs/DEMAND.md \n"
 sleep 5s
-
-pacman -S --noconfirm boost boost-libs
-echo -e "boost-libs installed \n"
 
 ldconfig -v
 echo -e "dynamic libraries path set \n"

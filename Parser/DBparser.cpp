@@ -16,32 +16,32 @@ DBparser::DBparser()
 /* input sparql query string and parse query into SPARQLquery
  * the returned string is set for log when error happen
  * */
-string DBparser::sparqlParser(const string& _sparql, SPARQLquery& _sparql_query)
-{
-	pANTLR3_INPUT_STREAM input;
-	pSparqlLexer lex;
-	pANTLR3_COMMON_TOKEN_STREAM tokens;
-	pSparqlParser parser;
-	input = antlr3StringStreamNew((ANTLR3_UINT8 *)(_sparql.c_str()),ANTLR3_ENC_UTF8,_sparql.length(),(ANTLR3_UINT8 *)"QueryString");
-	//input = antlr3FileStreamNew((pANTLR3_UINT8)filePath,ANTLR3_ENC_8BIT);
-	lex = SparqlLexerNew(input);
+// string DBparser::sparqlParser(const string& _sparql, SPARQLquery& _sparql_query)
+// {
+// 	pANTLR3_INPUT_STREAM input;
+// 	pSparqlLexer lex;
+// 	pANTLR3_COMMON_TOKEN_STREAM tokens;
+// 	pSparqlParser parser;
+// 	input = antlr3StringStreamNew((ANTLR3_UINT8 *)(_sparql.c_str()),ANTLR3_ENC_UTF8,_sparql.length(),(ANTLR3_UINT8 *)"QueryString");
+// 	//input = antlr3FileStreamNew((pANTLR3_UINT8)filePath,ANTLR3_ENC_8BIT);
+// 	lex = SparqlLexerNew(input);
 
-	tokens = antlr3CommonTokenStreamSourceNew(ANTLR3_SIZE_HINT,TOKENSOURCE(lex));
-	parser = SparqlParserNew(tokens);
+// 	tokens = antlr3CommonTokenStreamSourceNew(ANTLR3_SIZE_HINT,TOKENSOURCE(lex));
+// 	parser = SparqlParserNew(tokens);
 
 
-	SparqlParser_workload_return r = parser->workload(parser);
-	pANTLR3_BASE_TREE root = r.tree;
-	//pANTLR3_BASE_TREE treeNode;
+// 	SparqlParser_workload_return r = parser->workload(parser);
+// 	pANTLR3_BASE_TREE root = r.tree;
+// 	//pANTLR3_BASE_TREE treeNode;
 
-	printNode(root);
-	parseNode(root,_sparql_query,0);
-	parser->free(parser);
-	tokens->free(tokens);
-	lex->free(lex);
-	input->close(input);
-	return "";
-}
+// 	printNode(root);
+// 	parseNode(root,_sparql_query,0);
+// 	parser->free(parser);
+// 	tokens->free(tokens);
+// 	lex->free(lex);
+// 	input->close(input);
+// 	return "";
+// }
 
 /* file pointer _fp points to rdfFile
  * that was opened previously in Database::encodeRDF
@@ -152,165 +152,165 @@ string DBparser::rdfParser(ifstream& _fin, Triple* _triple_array, int& _triple_n
 char* DBparser::line_buf = new char[100*1000];
 int   DBparser::buf_len = 100*1000;
 
-int DBparser::parseString(pANTLR3_BASE_TREE node,std::string& str,int depth){
-	const char* s =(const char*) node->getText(node)->chars;
-	//std::cout<<"parseString: "<<s<<std::endl;
-	if (depth==0){
-		str = s;
-	}
-	else{
-		parseString((pANTLR3_BASE_TREE) node->getChild(node,0),str,depth-1);
-	}
-	return 0;
-}
+// int DBparser::parseString(pANTLR3_BASE_TREE node,std::string& str,int depth){
+// 	const char* s =(const char*) node->getText(node)->chars;
+// 	//std::cout<<"parseString: "<<s<<std::endl;
+// 	if (depth==0){
+// 		str = s;
+// 	}
+// 	else{
+// 		parseString((pANTLR3_BASE_TREE) node->getChild(node,0),str,depth-1);
+// 	}
+// 	return 0;
+// }
 
-int DBparser::parsePrefix(pANTLR3_BASE_TREE node,std::pair<std::string,std::string>& prefixPair){
-	//const char* s =(const char*) node->getText(node)->chars;
-	std::string key;
-	std::string value;
-	for (unsigned int j=0;j<node->getChildCount(node);j++){
-		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
-		//prefix key string 136
-		if (childNode->getType(childNode)==136){
-			parseString(childNode,key);
-		}
-		//prefix value URL 89
-		if (childNode->getType(childNode)==89){
-			parseString(childNode,value);
-		}
-	}
-	prefixPair = make_pair(key,value);
-	return 0;
-}
+// int DBparser::parsePrefix(pANTLR3_BASE_TREE node,std::pair<std::string,std::string>& prefixPair){
+// 	//const char* s =(const char*) node->getText(node)->chars;
+// 	std::string key;
+// 	std::string value;
+// 	for (unsigned int j=0;j<node->getChildCount(node);j++){
+// 		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
+// 		//prefix key string 136
+// 		if (childNode->getType(childNode)==136){
+// 			parseString(childNode,key);
+// 		}
+// 		//prefix value URL 89
+// 		if (childNode->getType(childNode)==89){
+// 			parseString(childNode,value);
+// 		}
+// 	}
+// 	prefixPair = make_pair(key,value);
+// 	return 0;
+// }
 
-void DBparser::replacePrefix(string& str){
-	if (str[0]!='<'){
-		int sep=str.find(":");
-		std::string prefix=str.substr(0,sep+1);
-		std::cout<<"prefix: "<<prefix<<std::endl;
-		if (_prefix_map.find(prefix)!=_prefix_map.end()){
-			str=_prefix_map[prefix].substr(0,_prefix_map[prefix].length()-1)+str.substr(sep+1,str.length()-sep-1)+">";
-			std::cout<<"str: "<<str<<std::endl;
-		}
-		else{
-			std::cout<<"prefix not found..."<<std::endl;
-		}
-	}
-}
+// void DBparser::replacePrefix(string& str){
+// 	if (str[0]!='<'){
+// 		int sep=str.find(":");
+// 		std::string prefix=str.substr(0,sep+1);
+// 		std::cout<<"prefix: "<<prefix<<std::endl;
+// 		if (_prefix_map.find(prefix)!=_prefix_map.end()){
+// 			str=_prefix_map[prefix].substr(0,_prefix_map[prefix].length()-1)+str.substr(sep+1,str.length()-sep-1)+">";
+// 			std::cout<<"str: "<<str<<std::endl;
+// 		}
+// 		else{
+// 			std::cout<<"prefix not found..."<<std::endl;
+// 		}
+// 	}
+// }
 
-int DBparser::parseTriple(pANTLR3_BASE_TREE node,Triple& triple){
-	//const char* s =(const char*) node->getText(node)->chars;
-	std::string subject="";
-	std::string predicate="";
-	std::string object="";
-	for (unsigned int j=0;j<node->getChildCount(node);j++){
-		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
-		//subject 177
-		if (childNode->getType(childNode)==177){
-			parseString(childNode,subject,1);
-			replacePrefix(subject);
-		}
-		//predicate 142
-		if (childNode->getType(childNode)==142){
-			parseString(childNode,predicate,4);
-			replacePrefix(predicate);
-		}
-		//object 119
-		if (childNode->getType(childNode)==119){
-			parseString(childNode,object,1);
-			replacePrefix(object);
-		}
-	}
-	triple=Triple(subject,predicate,object);
-	std::cout<<"Triple: \n\ts|"<<subject<<"|\n\tp|"<<predicate<<"|\n\to|"<<object<<"|"<<std::endl;
-	return 0;
-}
+// int DBparser::parseTriple(pANTLR3_BASE_TREE node,Triple& triple){
+// 	//const char* s =(const char*) node->getText(node)->chars;
+// 	std::string subject="";
+// 	std::string predicate="";
+// 	std::string object="";
+// 	for (unsigned int j=0;j<node->getChildCount(node);j++){
+// 		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
+// 		//subject 177
+// 		if (childNode->getType(childNode)==177){
+// 			parseString(childNode,subject,1);
+// 			replacePrefix(subject);
+// 		}
+// 		//predicate 142
+// 		if (childNode->getType(childNode)==142){
+// 			parseString(childNode,predicate,4);
+// 			replacePrefix(predicate);
+// 		}
+// 		//object 119
+// 		if (childNode->getType(childNode)==119){
+// 			parseString(childNode,object,1);
+// 			replacePrefix(object);
+// 		}
+// 	}
+// 	triple=Triple(subject,predicate,object);
+// 	std::cout<<"Triple: \n\ts|"<<subject<<"|\n\tp|"<<predicate<<"|\n\to|"<<object<<"|"<<std::endl;
+// 	return 0;
+// }
 
-int DBparser::parseBasicQuery(pANTLR3_BASE_TREE node,BasicQuery& basicQuery){
-	//const char* s =(const char*) node->getText(node)->chars;
-	Triple triple;
-	for (unsigned int j=0;j<node->getChildCount(node);j++){
-		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
-		//basicQuery 185
-		std::cout<<"Child type: "<<childNode->getType(childNode)<<endl;
-		if (childNode->getType(childNode)==185){
-				parseTriple(childNode,triple);
-				basicQuery.addTriple(triple);
-		}
-		if (childNode->getType(childNode)==195){
-				//Union part here!!
-				//parseUnion(childNode,U);
-				//basicQuery.addTriple(triple);
-		}
-	}
-	return 0;
-}
+// int DBparser::parseBasicQuery(pANTLR3_BASE_TREE node,BasicQuery& basicQuery){
+// 	//const char* s =(const char*) node->getText(node)->chars;
+// 	Triple triple;
+// 	for (unsigned int j=0;j<node->getChildCount(node);j++){
+// 		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
+// 		//basicQuery 185
+// 		std::cout<<"Child type: "<<childNode->getType(childNode)<<endl;
+// 		if (childNode->getType(childNode)==185){
+// 				parseTriple(childNode,triple);
+// 				basicQuery.addTriple(triple);
+// 		}
+// 		if (childNode->getType(childNode)==195){
+// 				//Union part here!!
+// 				//parseUnion(childNode,U);
+// 				//basicQuery.addTriple(triple);
+// 		}
+// 	}
+// 	return 0;
+// }
 
-int DBparser::parseVar(pANTLR3_BASE_TREE node,SPARQLquery& query){
-	//const char* s =(const char*) node->getText(node)->chars;
-	std::string var="";
-	for (unsigned int j=0;j<node->getChildCount(node);j++){
-		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
-		//var 200
-		if (childNode->getType(childNode)==200){
-			parseString(childNode,var,0);
-			query.addQueryVar(var);
-		}
+// int DBparser::parseVar(pANTLR3_BASE_TREE node,SPARQLquery& query){
+// 	//const char* s =(const char*) node->getText(node)->chars;
+// 	std::string var="";
+// 	for (unsigned int j=0;j<node->getChildCount(node);j++){
+// 		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
+// 		//var 200
+// 		if (childNode->getType(childNode)==200){
+// 			parseString(childNode,var,0);
+// 			query.addQueryVar(var);
+// 		}
 
-	}
-	return 0;
-}
+// 	}
+// 	return 0;
+// }
 
-int DBparser::parseNode(pANTLR3_BASE_TREE node, SPARQLquery& query,int depth){
-	const char* s =(const char*) node->getText(node)->chars;
-	ANTLR3_UINT32 treeType = node->getType(node);
+// int DBparser::parseNode(pANTLR3_BASE_TREE node, SPARQLquery& query,int depth){
+// 	const char* s =(const char*) node->getText(node)->chars;
+// 	ANTLR3_UINT32 treeType = node->getType(node);
 
-	for (int i=0;i<depth;i++){
-		printf("    ");
-	}
-	printf("%d: %s\n",treeType,s);
+// 	for (int i=0;i<depth;i++){
+// 		printf("    ");
+// 	}
+// 	printf("%d: %s\n",treeType,s);
 
-	for (unsigned int j=0;j<node->getChildCount(node);j++){
-		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
-		int childNodeType = childNode->getType(childNode);
-		switch (childNodeType){
-			//prefix
-			case 199:{
-				parseVar(childNode,query);
-				break;
-			}
-			//var
-			case 143:{
-				std::pair<std::string,std::string> prefixPair;
-				parsePrefix(childNode,prefixPair);
-				_prefix_map.insert(prefixPair);
-				break;
-			}
-			//BasicQuery
-			case 77:{
-				BasicQuery* basicQuery=new BasicQuery();
-				parseBasicQuery(childNode,*basicQuery);
-				query.addBasicQuery(basicQuery);
-				break;
-			}
-		default:
-			parseNode(childNode,query,depth+1);
-		}
-	}
-	return 0;
-}
+// 	for (unsigned int j=0;j<node->getChildCount(node);j++){
+// 		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
+// 		int childNodeType = childNode->getType(childNode);
+// 		switch (childNodeType){
+// 			//prefix
+// 			case 199:{
+// 				parseVar(childNode,query);
+// 				break;
+// 			}
+// 			//var
+// 			case 143:{
+// 				std::pair<std::string,std::string> prefixPair;
+// 				parsePrefix(childNode,prefixPair);
+// 				_prefix_map.insert(prefixPair);
+// 				break;
+// 			}
+// 			//BasicQuery
+// 			case 77:{
+// 				BasicQuery* basicQuery=new BasicQuery();
+// 				parseBasicQuery(childNode,*basicQuery);
+// 				query.addBasicQuery(basicQuery);
+// 				break;
+// 			}
+// 		default:
+// 			parseNode(childNode,query,depth+1);
+// 		}
+// 	}
+// 	return 0;
+// }
 
-void DBparser::printNode(pANTLR3_BASE_TREE node, int depth){
-	const char* s =(const char*) node->getText(node)->chars;
-	ANTLR3_UINT32 treeType = node->getType(node);
+// void DBparser::printNode(pANTLR3_BASE_TREE node, int depth){
+// 	const char* s =(const char*) node->getText(node)->chars;
+// 	ANTLR3_UINT32 treeType = node->getType(node);
 
-	for (int i=0;i<depth;i++){
-		printf("    ");
-	}
-	printf("%d: %s\n",treeType,s);
-	for (unsigned int j=0;j<node->getChildCount(node);j++){
-		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
-		//int childNodeType = childNode->getType(childNode);
-		printNode(childNode,depth+1);
-	}
-}
+// 	for (int i=0;i<depth;i++){
+// 		printf("    ");
+// 	}
+// 	printf("%d: %s\n",treeType,s);
+// 	for (unsigned int j=0;j<node->getChildCount(node);j++){
+// 		pANTLR3_BASE_TREE childNode=(pANTLR3_BASE_TREE) node->getChild(node,j);
+// 		//int childNodeType = childNode->getType(childNode);
+// 		printNode(childNode,depth+1);
+// 	}
+// }

@@ -10,565 +10,6 @@
 
 using namespace std;
 
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::EffectiveBooleanValue::operator ! ()
-{
-	if (this->value == true_value)	return false_value;
-	if (this->value == false_value)	return true_value;
-	if (this->value == error_value)	return error_value;
-
-	return error_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::EffectiveBooleanValue::operator || (const EffectiveBooleanValue &x)
-{
-	if (this->value == true_value && x.value == true_value)		return true_value;
-	if (this->value == true_value && x.value == false_value)	return true_value;
-	if (this->value == false_value && x.value == true_value)	return true_value;
-	if (this->value == false_value && x.value == false_value)	return false_value;
-	if (this->value == true_value && x.value == error_value)	return true_value;
-	if (this->value == error_value && x.value == true_value)	return true_value;
-	if (this->value == false_value && x.value == error_value)	return error_value;
-	if (this->value == error_value && x.value == false_value)	return error_value;
-	if (this->value == error_value && x.value == error_value)	return error_value;
-
-	return error_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::EffectiveBooleanValue::operator && (const EffectiveBooleanValue &x)
-{
-	if (this->value == true_value && x.value == true_value)		return true_value;
-	if (this->value == true_value && x.value == false_value)	return false_value;
-	if (this->value == false_value && x.value == true_value)	return false_value;
-	if (this->value == false_value && x.value == false_value)	return false_value;
-	if (this->value == true_value && x.value == error_value)	return error_value;
-	if (this->value == error_value && x.value == true_value)	return error_value;
-	if (this->value == false_value && x.value == error_value)	return false_value;
-	if (this->value == error_value && x.value == false_value)	return false_value;
-	if (this->value == error_value && x.value == error_value)	return error_value;
-
-	return error_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::EffectiveBooleanValue::operator == (const EffectiveBooleanValue &x)
-{
-	if (this->value == true_value && x.value == true_value)		return true_value;
-	if (this->value == true_value && x.value == false_value)	return false_value;
-	if (this->value == false_value && x.value == true_value)	return false_value;
-	if (this->value == false_value && x.value == false_value)	return true_value;
-
-	return error_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::EffectiveBooleanValue::operator != (const EffectiveBooleanValue &x)
-{
-	if (this->value == true_value && x.value == true_value)		return false_value;
-	if (this->value == true_value && x.value == false_value)	return true_value;
-	if (this->value == false_value && x.value == true_value)	return true_value;
-	if (this->value == false_value && x.value == false_value)	return false_value;
-
-	return error_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::EffectiveBooleanValue::operator < (const EffectiveBooleanValue &x)
-{
-	if (this->value == true_value && x.value == true_value)		return false_value;
-	if (this->value == true_value && x.value == false_value)	return false_value;
-	if (this->value == false_value && x.value == true_value)	return true_value;
-	if (this->value == false_value && x.value == false_value)	return false_value;
-
-	return error_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::EffectiveBooleanValue::operator <= (const EffectiveBooleanValue &x)
-{
-	if (this->value == true_value && x.value == true_value)		return true_value;
-	if (this->value == true_value && x.value == false_value)	return false_value;
-	if (this->value == false_value && x.value == true_value)	return true_value;
-	if (this->value == false_value && x.value == false_value)	return true_value;
-
-	return error_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::EffectiveBooleanValue::operator > (const EffectiveBooleanValue &x)
-{
-	if (this->value == true_value && x.value == true_value)		return false_value;
-	if (this->value == true_value && x.value == false_value)	return true_value;
-	if (this->value == false_value && x.value == true_value)	return false_value;
-	if (this->value == false_value && x.value == false_value)	return false_value;
-
-	return error_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::EffectiveBooleanValue::operator >= (const EffectiveBooleanValue &x)
-{
-	if (this->value == true_value && x.value == true_value)		return true_value;
-	if (this->value == true_value && x.value == false_value)	return true_value;
-	if (this->value == false_value && x.value == true_value)	return false_value;
-	if (this->value == false_value && x.value == false_value)	return true_value;
-
-	return error_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::DateTime::operator == (const DateTime &x)
-{
-	if (this->date == x.date)	return FilterEvaluationMultitypeValue::EffectiveBooleanValue::true_value;
-	else	return FilterEvaluationMultitypeValue::EffectiveBooleanValue::false_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::DateTime::operator != (const DateTime &x)
-{
-	if (this->date != x.date)	return FilterEvaluationMultitypeValue::EffectiveBooleanValue::true_value;
-	else	return FilterEvaluationMultitypeValue::EffectiveBooleanValue::false_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::DateTime::operator < (const DateTime &x)
-{
-	if (this->date < x.date)	return FilterEvaluationMultitypeValue::EffectiveBooleanValue::true_value;
-	else	return FilterEvaluationMultitypeValue::EffectiveBooleanValue::false_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::DateTime::operator <= (const DateTime &x)
-{
-	if (this->date <= x.date)	return FilterEvaluationMultitypeValue::EffectiveBooleanValue::true_value;
-	else	return FilterEvaluationMultitypeValue::EffectiveBooleanValue::false_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::DateTime::operator > (const DateTime &x)
-{
-	if (this->date > x.date)	return FilterEvaluationMultitypeValue::EffectiveBooleanValue::true_value;
-	else	return FilterEvaluationMultitypeValue::EffectiveBooleanValue::false_value;
-}
-
-FilterEvaluationMultitypeValue::EffectiveBooleanValue
-	FilterEvaluationMultitypeValue::DateTime::operator >= (const DateTime &x)
-{
-	if (this->date >= x.date)	return FilterEvaluationMultitypeValue::EffectiveBooleanValue::true_value;
-	else	return FilterEvaluationMultitypeValue::EffectiveBooleanValue::false_value;
-}
-
-
-bool FilterEvaluationMultitypeValue::isSimpleLiteral()
-{
-	if (this->datatype == literal)
-	{
-		int length = this->str_value.length();
-		if (length >= 2 && this->str_value[0] == '"' && this->str_value[length - 1] == '"')
-			return true;
-	}
-	return false;
-}
-
-void FilterEvaluationMultitypeValue::getSameNumericType (FilterEvaluationMultitypeValue &x)
-{
-	DataType to_type = max(this->datatype, x.datatype);
-
-	if (this->datatype == xsd_integer && to_type == xsd_decimal)
-		this->flt_value = this->int_value;
-	if (this->datatype == xsd_integer && to_type == xsd_float)
-		this->flt_value = this->int_value;
-	if (this->datatype == xsd_integer && to_type == xsd_double)
-		this->dbl_value = this->int_value;
-	if (this->datatype == xsd_decimal && to_type == xsd_double)
-		this->dbl_value = this->flt_value;
-	if (this->datatype == xsd_float && to_type == xsd_double)
-		this->dbl_value = this->flt_value;
-	this->datatype = to_type;
-
-	if (x.datatype == xsd_integer && to_type == xsd_decimal)
-		x.flt_value = x.int_value;
-	if (x.datatype == xsd_integer && to_type == xsd_float)
-		x.flt_value = x.int_value;
-	if (x.datatype == xsd_integer && to_type == xsd_double)
-		x.dbl_value = x.int_value;
-	if (x.datatype == xsd_decimal && to_type == xsd_double)
-		x.dbl_value = x.flt_value;
-	if (x.datatype == xsd_float && to_type == xsd_double)
-		x.dbl_value = x.flt_value;
-	x.datatype = to_type;
-}
-
-FilterEvaluationMultitypeValue
-	FilterEvaluationMultitypeValue::operator !()
-{
-	FilterEvaluationMultitypeValue ret_femv;
-	ret_femv.datatype = xsd_boolean;
-	ret_femv.bool_value = EffectiveBooleanValue::error_value;
-
-	if (this->datatype != xsd_boolean)
-		return ret_femv;
-
-	ret_femv.bool_value = !this->bool_value;
-	return ret_femv;
-}
-
-FilterEvaluationMultitypeValue
-	FilterEvaluationMultitypeValue::operator || (FilterEvaluationMultitypeValue &x)
-{
-	FilterEvaluationMultitypeValue ret_femv;
-	ret_femv.datatype = xsd_boolean;
-	ret_femv.bool_value = EffectiveBooleanValue::error_value;
-
-	if (this->datatype != xsd_boolean && x.datatype != xsd_boolean)
-		return ret_femv;
-
-	ret_femv.bool_value = (this->bool_value || x.bool_value);
-	return ret_femv;
-}
-
-FilterEvaluationMultitypeValue
-	FilterEvaluationMultitypeValue::operator && (FilterEvaluationMultitypeValue &x)
-{
-	FilterEvaluationMultitypeValue ret_femv;
-	ret_femv.datatype = xsd_boolean;
-	ret_femv.bool_value = EffectiveBooleanValue::error_value;
-
-	if (this->datatype != xsd_boolean && x.datatype != xsd_boolean)
-		return ret_femv;
-
-	ret_femv.bool_value = (this->bool_value && x.bool_value);
-	return ret_femv;
-}
-
-FilterEvaluationMultitypeValue
-	FilterEvaluationMultitypeValue::operator == (FilterEvaluationMultitypeValue &x)
-{
-	FilterEvaluationMultitypeValue ret_femv;
-	ret_femv.datatype = xsd_boolean;
-	ret_femv.bool_value = EffectiveBooleanValue::error_value;
-
-	if (this->datatype == xsd_boolean && x.datatype == xsd_boolean)
-	{
-		ret_femv.bool_value = (this->bool_value == x.bool_value);
-		return ret_femv;
-	}
-
-	if ((this->datatype == xsd_boolean) ^ (x.datatype == xsd_boolean))
-	{
-		if (this->datatype == xsd_boolean && this->bool_value.value == EffectiveBooleanValue::error_value)
-			return ret_femv;
-		if (x.datatype == xsd_boolean && x.bool_value.value == EffectiveBooleanValue::error_value)
-			return ret_femv;
-
-		ret_femv.bool_value = EffectiveBooleanValue::false_value;
-		return ret_femv;
-	}
-
-	if (xsd_integer <= this->datatype && this->datatype <= xsd_double && xsd_integer <= x.datatype && x.datatype <= xsd_double)
-	{
-		this->getSameNumericType(x);
-
-		if (this->datatype == xsd_integer && x.datatype == xsd_integer)
-			ret_femv.bool_value = (this->int_value == x.int_value);
-		if (this->datatype == xsd_decimal && x.datatype == xsd_decimal)
-			ret_femv.bool_value = (this->flt_value == x.flt_value);
-		if (this->datatype == xsd_float && x.datatype == xsd_float)
-			ret_femv.bool_value = (this->flt_value == x.flt_value);
-		if (this->datatype == xsd_double && x.datatype == xsd_double)
-			ret_femv.bool_value = (this->dbl_value == x.dbl_value);
-
-		return ret_femv;
-	}
-
-	if (this->isSimpleLiteral() && x.isSimpleLiteral())
-	{
-		ret_femv.bool_value = (this->str_value == x.str_value);
-		return ret_femv;
-	}
-
-	if (this->datatype == xsd_string && x.datatype == xsd_string)
-	{
-		ret_femv.bool_value = (this->str_value == x.str_value);
-		return ret_femv;
-	}
-
-	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
-	{
-		ret_femv.bool_value = (this->dt_value == x.dt_value);
-		return ret_femv;
-	}
-
-	ret_femv.bool_value = (this->term_value == x.term_value);
-	return ret_femv;
-}
-
-FilterEvaluationMultitypeValue
-	FilterEvaluationMultitypeValue::operator != (FilterEvaluationMultitypeValue &x)
-{
-	FilterEvaluationMultitypeValue ret_femv;
-	ret_femv.datatype = xsd_boolean;
-	ret_femv.bool_value = EffectiveBooleanValue::error_value;
-
-	if (this->datatype == xsd_boolean && x.datatype == xsd_boolean)
-	{
-		ret_femv.bool_value = (this->bool_value != x.bool_value);
-		return ret_femv;
-	}
-
-	if ((this->datatype == xsd_boolean) ^ (x.datatype == xsd_boolean))
-	{
-		if (this->datatype == xsd_boolean && this->bool_value.value == EffectiveBooleanValue::error_value)
-			return ret_femv;
-		if (x.datatype == xsd_boolean && x.bool_value.value == EffectiveBooleanValue::error_value)
-			return ret_femv;
-
-		ret_femv.bool_value = EffectiveBooleanValue::true_value;
-		return ret_femv;
-	}
-
-	if (xsd_integer <= this->datatype && this->datatype <= xsd_double && xsd_integer <= x.datatype && x.datatype <= xsd_double)
-	{
-		this->getSameNumericType(x);
-
-		if (this->datatype == xsd_integer && x.datatype == xsd_integer)
-			ret_femv.bool_value = (this->int_value != x.int_value);
-		if (this->datatype == xsd_decimal && x.datatype == xsd_decimal)
-			ret_femv.bool_value = (this->flt_value != x.flt_value);
-		if (this->datatype == xsd_float && x.datatype == xsd_float)
-			ret_femv.bool_value = (this->flt_value != x.flt_value);
-		if (this->datatype == xsd_double && x.datatype == xsd_double)
-			ret_femv.bool_value = (this->dbl_value != x.dbl_value);
-
-		return ret_femv;
-	}
-
-	if (this->isSimpleLiteral() && x.isSimpleLiteral())
-	{
-		ret_femv.bool_value = (this->str_value != x.str_value);
-		return ret_femv;
-	}
-
-	if (this->datatype == xsd_string && x.datatype == xsd_string)
-	{
-		ret_femv.bool_value = (this->str_value != x.str_value);
-		return ret_femv;
-	}
-
-	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
-	{
-		ret_femv.bool_value = (this->dt_value != x.dt_value);
-		return ret_femv;
-	}
-
-	ret_femv.bool_value = (this->term_value != x.term_value);
-	return ret_femv;
-}
-
-FilterEvaluationMultitypeValue
-	FilterEvaluationMultitypeValue::operator < (FilterEvaluationMultitypeValue &x)
-{
-	FilterEvaluationMultitypeValue ret_femv;
-	ret_femv.datatype = xsd_boolean;
-	ret_femv.bool_value = EffectiveBooleanValue::error_value;
-
-	if (this->datatype == xsd_boolean && x.datatype == xsd_boolean)
-	{
-		ret_femv.bool_value = (this->bool_value < x.bool_value);
-		return ret_femv;
-	}
-
-	if (xsd_integer <= this->datatype && this->datatype <= xsd_double && xsd_integer <= x.datatype && x.datatype <= xsd_double)
-	{
-		this->getSameNumericType(x);
-
-		if (this->datatype == xsd_integer && x.datatype == xsd_integer)
-			ret_femv.bool_value = (this->int_value < x.int_value);
-		if (this->datatype == xsd_decimal && x.datatype == xsd_decimal)
-			ret_femv.bool_value = (this->flt_value < x.flt_value);
-		if (this->datatype == xsd_float && x.datatype == xsd_float)
-			ret_femv.bool_value = (this->flt_value < x.flt_value);
-		if (this->datatype == xsd_double && x.datatype == xsd_double)
-			ret_femv.bool_value = (this->dbl_value < x.dbl_value);
-
-		return ret_femv;
-	}
-
-	if (this->isSimpleLiteral() && x.isSimpleLiteral())
-	{
-		ret_femv.bool_value = (this->str_value < x.str_value);
-		return ret_femv;
-	}
-
-	if (this->datatype == xsd_string && x.datatype == xsd_string)
-	{
-		ret_femv.bool_value = (this->str_value < x.str_value);
-		return ret_femv;
-	}
-
-	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
-	{
-		ret_femv.bool_value = (this->dt_value < x.dt_value);
-		return ret_femv;
-	}
-
-	return ret_femv;
-}
-
-FilterEvaluationMultitypeValue
-	FilterEvaluationMultitypeValue::operator <= (FilterEvaluationMultitypeValue &x)
-{
-	FilterEvaluationMultitypeValue ret_femv;
-	ret_femv.datatype = xsd_boolean;
-	ret_femv.bool_value = EffectiveBooleanValue::error_value;
-
-	if (this->datatype == xsd_boolean && x.datatype == xsd_boolean)
-	{
-		ret_femv.bool_value = (this->bool_value <= x.bool_value);
-		return ret_femv;
-	}
-
-	if (xsd_integer <= this->datatype && this->datatype <= xsd_double && xsd_integer <= x.datatype && x.datatype <= xsd_double)
-	{
-		this->getSameNumericType(x);
-
-		if (this->datatype == xsd_integer && x.datatype == xsd_integer)
-			ret_femv.bool_value = (this->int_value <= x.int_value);
-		if (this->datatype == xsd_decimal && x.datatype == xsd_decimal)
-			ret_femv.bool_value = (this->flt_value <= x.flt_value);
-		if (this->datatype == xsd_float && x.datatype == xsd_float)
-			ret_femv.bool_value = (this->flt_value <= x.flt_value);
-		if (this->datatype == xsd_double && x.datatype == xsd_double)
-			ret_femv.bool_value = (this->dbl_value <= x.dbl_value);
-
-		return ret_femv;
-	}
-
-	if (this->isSimpleLiteral() && x.isSimpleLiteral())
-	{
-		ret_femv.bool_value = (this->str_value <= x.str_value);
-		return ret_femv;
-	}
-
-	if (this->datatype == xsd_string && x.datatype == xsd_string)
-	{
-		ret_femv.bool_value = (this->str_value <= x.str_value);
-		return ret_femv;
-	}
-
-	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
-	{
-		ret_femv.bool_value = (this->dt_value <= x.dt_value);
-		return ret_femv;
-	}
-
-	return ret_femv;
-}
-
-FilterEvaluationMultitypeValue
-	FilterEvaluationMultitypeValue::operator > (FilterEvaluationMultitypeValue &x)
-{
-	FilterEvaluationMultitypeValue ret_femv;
-	ret_femv.datatype = xsd_boolean;
-	ret_femv.bool_value = EffectiveBooleanValue::error_value;
-
-	if (this->datatype == xsd_boolean && x.datatype == xsd_boolean)
-	{
-		ret_femv.bool_value = (this->bool_value > x.bool_value);
-		return ret_femv;
-	}
-
-	if (xsd_integer <= this->datatype && this->datatype <= xsd_double && xsd_integer <= x.datatype && x.datatype <= xsd_double)
-	{
-		this->getSameNumericType(x);
-
-		if (this->datatype == xsd_integer && x.datatype == xsd_integer)
-			ret_femv.bool_value = (this->int_value > x.int_value);
-		if (this->datatype == xsd_decimal && x.datatype == xsd_decimal)
-			ret_femv.bool_value = (this->flt_value > x.flt_value);
-		if (this->datatype == xsd_float && x.datatype == xsd_float)
-			ret_femv.bool_value = (this->flt_value > x.flt_value);
-		if (this->datatype == xsd_double && x.datatype == xsd_double)
-			ret_femv.bool_value = (this->dbl_value > x.dbl_value);
-
-		return ret_femv;
-	}
-
-	if (this->isSimpleLiteral() && x.isSimpleLiteral())
-	{
-		ret_femv.bool_value = (this->str_value > x.str_value);
-		return ret_femv;
-	}
-
-	if (this->datatype == xsd_string && x.datatype == xsd_string)
-	{
-		ret_femv.bool_value = (this->str_value > x.str_value);
-		return ret_femv;
-	}
-
-	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
-	{
-		ret_femv.bool_value = (this->dt_value > x.dt_value);
-		return ret_femv;
-	}
-
-	return ret_femv;
-}
-
-FilterEvaluationMultitypeValue
-	FilterEvaluationMultitypeValue::operator >= (FilterEvaluationMultitypeValue &x)
-{
-	FilterEvaluationMultitypeValue ret_femv;
-	ret_femv.datatype = xsd_boolean;
-	ret_femv.bool_value = EffectiveBooleanValue::error_value;
-
-	if (this->datatype == xsd_boolean && x.datatype == xsd_boolean)
-	{
-		ret_femv.bool_value = (this->bool_value >= x.bool_value);
-		return ret_femv;
-	}
-
-	if (xsd_integer <= this->datatype && this->datatype <= xsd_double && xsd_integer <= x.datatype && x.datatype <= xsd_double)
-	{
-		this->getSameNumericType(x);
-
-		if (this->datatype == xsd_integer && x.datatype == xsd_integer)
-			ret_femv.bool_value = (this->int_value >= x.int_value);
-		if (this->datatype == xsd_decimal && x.datatype == xsd_decimal)
-			ret_femv.bool_value = (this->flt_value >= x.flt_value);
-		if (this->datatype == xsd_float && x.datatype == xsd_float)
-			ret_femv.bool_value = (this->flt_value >= x.flt_value);
-		if (this->datatype == xsd_double && x.datatype == xsd_double)
-			ret_femv.bool_value = (this->dbl_value >= x.dbl_value);
-
-		return ret_femv;
-	}
-
-	if (this->isSimpleLiteral() && x.isSimpleLiteral())
-	{
-		ret_femv.bool_value = (this->str_value >= x.str_value);
-		return ret_femv;
-	}
-
-	if (this->datatype == xsd_string && x.datatype == xsd_string)
-	{
-		ret_femv.bool_value = (this->str_value >= x.str_value);
-		return ret_femv;
-	}
-
-	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
-	{
-		ret_femv.bool_value = (this->dt_value >= x.dt_value);
-		return ret_femv;
-	}
-
-	return ret_femv;
-}
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------
-
 Varset TempResult::getAllVarset()
 {
 	return this->id_varset + this->str_varset;
@@ -1020,18 +461,18 @@ void TempResult::doMinus(TempResult &x, TempResult &r)
 	}
 }
 
-void TempResult::getFilterString(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild &child, FilterEvaluationMultitypeValue &femv, ResultPair &row, int id_cols, StringIndex *stringindex)
+void TempResult::getFilterString(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild &child, EvalMultitypeValue &femv, ResultPair &row, int id_cols, StringIndex *stringindex)
 {
 	if (child.node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 	{
-		femv.datatype = FilterEvaluationMultitypeValue::rdf_term;
+		femv.datatype = EvalMultitypeValue::rdf_term;
 
 		if (child.str[0] == '?')
 		{
 			if (child.pos == -1)
 			{
-				femv.datatype = FilterEvaluationMultitypeValue::xsd_boolean;
-				femv.bool_value = FilterEvaluationMultitypeValue::EffectiveBooleanValue::error_value;
+				femv.datatype = EvalMultitypeValue::xsd_boolean;
+				femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
 
 				return;
 			}
@@ -1055,126 +496,20 @@ void TempResult::getFilterString(QueryTree::GroupPattern::FilterTree::FilterTree
 			femv.term_value = child.str;
 		}
 
-		if (femv.term_value[0] == '<' && femv.term_value[femv.term_value.length() - 1] == '>')
-		{
-			femv.datatype = FilterEvaluationMultitypeValue::iri;
-			femv.str_value = femv.term_value;
-		}
-
-		if (femv.term_value[0] == '"' && femv.term_value.find("\"^^<") == string::npos && femv.term_value[femv.term_value.length() - 1] != '>' )
-		{
-			femv.datatype = FilterEvaluationMultitypeValue::literal;
-			femv.str_value = femv.term_value;
-		}
-
-		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#string>") != string::npos)
-		{
-			femv.datatype = FilterEvaluationMultitypeValue::xsd_string;
-			femv.str_value = femv.term_value.substr(0, femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#string>"));
-		}
-
-		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#boolean>") != string::npos)
-		{
-			femv.datatype = FilterEvaluationMultitypeValue::xsd_boolean;
-
-			string value = femv.term_value.substr(0, femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#boolean>"));
-			if (value == "\"true\"")
-				femv.bool_value = FilterEvaluationMultitypeValue::EffectiveBooleanValue::true_value;
-			else if (value == "\"false\"")
-				femv.bool_value = FilterEvaluationMultitypeValue::EffectiveBooleanValue::false_value;
-			else
-				femv.bool_value = FilterEvaluationMultitypeValue::EffectiveBooleanValue::error_value;
-		}
-
-		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#integer>") != string::npos)
-		{
-			femv.datatype = FilterEvaluationMultitypeValue::xsd_integer;
-
-			string value = femv.term_value.substr(1, femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#integer>") - 2);
-			stringstream ss;
-			ss << value;
-			ss >> femv.int_value;
-		}
-
-		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#decimal>") != string::npos)
-		{
-			femv.datatype = FilterEvaluationMultitypeValue::xsd_decimal;
-
-			string value = femv.term_value.substr(1, femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#decimal>") - 2);
-			stringstream ss;
-			ss << value;
-			ss >> femv.flt_value;
-		}
-
-		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#float>") != string::npos)
-		{
-			femv.datatype = FilterEvaluationMultitypeValue::xsd_float;
-
-			string value = femv.term_value.substr(1, femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#float>") - 2);
-			stringstream ss;
-			ss << value;
-			ss >> femv.flt_value;
-		}
-
-		if (femv.term_value[0] == '"' && femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#double>") != string::npos)
-		{
-			femv.datatype = FilterEvaluationMultitypeValue::xsd_double;
-
-			string value = femv.term_value.substr(1, femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#double>") - 2);
-			stringstream ss;
-			ss << value;
-			ss >> femv.dbl_value;
-		}
-
-		if (femv.term_value[0] == '"' &&
-				(femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") != string::npos || femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") != string::npos))
-		{
-			femv.datatype = FilterEvaluationMultitypeValue::xsd_datetime;
-
-			string value;
-			if (femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") != string::npos)
-				value = femv.term_value.substr(1, femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") - 2);
-			if (femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") != string::npos)
-				value = femv.term_value.substr(1, femv.term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") - 2);
-
-			vector <int> date;
-			for (int i = 0; i < 6; i++)
-				if (value.length() > 0)
-				{
-					int p = 0;
-					stringstream ss;
-					while (p < (int)value.length() && '0' <= value[p] && value[p] <= '9')
-					{
-						ss << value[p];
-						p++;
-					}
-
-					int x;
-					ss >> x;
-					date.push_back(x);
-
-					while (p < (int)value.length() && (value[p] < '0' || value[p] > '9'))
-						p++;
-					value = value.substr(p);
-				}
-				else
-					date.push_back(0);
-
-			femv.dt_value = FilterEvaluationMultitypeValue::DateTime(date[0], date[1], date[2], date[3], date[4], date[5]);
-		}
+		femv.deduceTypeValue();
 	}
 }
 
-FilterEvaluationMultitypeValue
+EvalMultitypeValue
 	TempResult::matchFilterTree(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, ResultPair &row, int id_cols, StringIndex *stringindex)
 {
-	FilterEvaluationMultitypeValue ret_femv;
-	ret_femv.datatype = FilterEvaluationMultitypeValue::xsd_boolean;
-	ret_femv.bool_value = FilterEvaluationMultitypeValue::EffectiveBooleanValue::error_value;
+	EvalMultitypeValue ret_femv;
+	ret_femv.datatype = EvalMultitypeValue::xsd_boolean;
+	ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Not_type)
 	{
-		FilterEvaluationMultitypeValue x;
+		EvalMultitypeValue x;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
@@ -1186,7 +521,7 @@ FilterEvaluationMultitypeValue
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Or_type)
 	{
-		FilterEvaluationMultitypeValue x, y;
+		EvalMultitypeValue x, y;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
@@ -1203,7 +538,7 @@ FilterEvaluationMultitypeValue
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::And_type)
 	{
-		FilterEvaluationMultitypeValue x, y;
+		EvalMultitypeValue x, y;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
@@ -1220,7 +555,7 @@ FilterEvaluationMultitypeValue
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Equal_type)
 	{
-		FilterEvaluationMultitypeValue x, y;
+		EvalMultitypeValue x, y;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
@@ -1237,7 +572,7 @@ FilterEvaluationMultitypeValue
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::NotEqual_type)
 	{
-		FilterEvaluationMultitypeValue x, y;
+		EvalMultitypeValue x, y;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
@@ -1254,7 +589,7 @@ FilterEvaluationMultitypeValue
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Less_type)
 	{
-		FilterEvaluationMultitypeValue x, y;
+		EvalMultitypeValue x, y;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
@@ -1271,7 +606,7 @@ FilterEvaluationMultitypeValue
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::LessOrEqual_type)
 	{
-		FilterEvaluationMultitypeValue x, y;
+		EvalMultitypeValue x, y;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
@@ -1288,7 +623,7 @@ FilterEvaluationMultitypeValue
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Greater_type)
 	{
-		FilterEvaluationMultitypeValue x, y;
+		EvalMultitypeValue x, y;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
@@ -1305,7 +640,7 @@ FilterEvaluationMultitypeValue
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::GreaterOrEqual_type)
 	{
-		FilterEvaluationMultitypeValue x, y;
+		EvalMultitypeValue x, y;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
@@ -1322,14 +657,14 @@ FilterEvaluationMultitypeValue
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_regex_type)
 	{
-		FilterEvaluationMultitypeValue x, y, z;
+		EvalMultitypeValue x, y, z;
 		string t, p, f;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
 		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
 			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
-		if (x.datatype == FilterEvaluationMultitypeValue::literal || x.datatype == FilterEvaluationMultitypeValue::xsd_string)
+		if (x.datatype == EvalMultitypeValue::literal || x.datatype == EvalMultitypeValue::xsd_string)
 		{
 			t = x.str_value;
 			t = t.substr(1, t.rfind('"') - 1);
@@ -1366,7 +701,7 @@ FilterEvaluationMultitypeValue
 
 		RegexExpression re;
 		if (!re.compile(p, f))
-			ret_femv.bool_value = FilterEvaluationMultitypeValue::EffectiveBooleanValue::false_value;
+			ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
 		else
 			ret_femv.bool_value = re.match(t);
 
@@ -1375,32 +710,32 @@ FilterEvaluationMultitypeValue
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_str_type)
 	{
-		FilterEvaluationMultitypeValue x;
+		EvalMultitypeValue x;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
 		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
 			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		if (x.datatype == FilterEvaluationMultitypeValue::literal)
+		if (x.datatype == EvalMultitypeValue::literal)
 		{
-			ret_femv.datatype = FilterEvaluationMultitypeValue::literal;
+			ret_femv.datatype = EvalMultitypeValue::literal;
 
 			ret_femv.str_value = x.str_value.substr(0, x.str_value.rfind('"') + 1);
 
 			return ret_femv;
 		}
-		else if (x.datatype == FilterEvaluationMultitypeValue::iri)
+		else if (x.datatype == EvalMultitypeValue::iri)
 		{
-			ret_femv.datatype = FilterEvaluationMultitypeValue::literal;
+			ret_femv.datatype = EvalMultitypeValue::literal;
 
 			ret_femv.str_value = "\"" + x.str_value.substr(1, x.str_value.length() - 2) + "\"";
 
 			return ret_femv;
 		}
-		else if (x.datatype == FilterEvaluationMultitypeValue::xsd_string)
+		else if (x.datatype == EvalMultitypeValue::xsd_string)
 		{
-			ret_femv.datatype = FilterEvaluationMultitypeValue::literal;
+			ret_femv.datatype = EvalMultitypeValue::literal;
 
 			ret_femv.str_value = x.str_value;
 
@@ -1413,68 +748,68 @@ FilterEvaluationMultitypeValue
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isiri_type ||
 		filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isuri_type)
 	{
-		FilterEvaluationMultitypeValue x;
+		EvalMultitypeValue x;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
 		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
 			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		ret_femv.bool_value = (x.datatype == FilterEvaluationMultitypeValue::iri);
+		ret_femv.bool_value = (x.datatype == EvalMultitypeValue::iri);
 
 		return ret_femv;
 	}
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isliteral_type)
 	{
-		FilterEvaluationMultitypeValue x;
+		EvalMultitypeValue x;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
 		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
 			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		ret_femv.bool_value = (x.datatype == FilterEvaluationMultitypeValue::literal ||
-							   x.datatype == FilterEvaluationMultitypeValue::xsd_string ||
-							   x.datatype == FilterEvaluationMultitypeValue::xsd_boolean ||
-							   x.datatype == FilterEvaluationMultitypeValue::xsd_integer ||
-							   x.datatype == FilterEvaluationMultitypeValue::xsd_decimal ||
-							   x.datatype == FilterEvaluationMultitypeValue::xsd_float ||
-							   x.datatype == FilterEvaluationMultitypeValue::xsd_double ||
-							   x.datatype == FilterEvaluationMultitypeValue::xsd_datetime);
+		ret_femv.bool_value = (x.datatype == EvalMultitypeValue::literal ||
+							   x.datatype == EvalMultitypeValue::xsd_string ||
+							   x.datatype == EvalMultitypeValue::xsd_boolean ||
+							   x.datatype == EvalMultitypeValue::xsd_integer ||
+							   x.datatype == EvalMultitypeValue::xsd_decimal ||
+							   x.datatype == EvalMultitypeValue::xsd_float ||
+							   x.datatype == EvalMultitypeValue::xsd_double ||
+							   x.datatype == EvalMultitypeValue::xsd_datetime);
 
 		return ret_femv;
 	}
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isnumeric_type)
 	{
-		FilterEvaluationMultitypeValue x;
+		EvalMultitypeValue x;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
 		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
 			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		ret_femv.bool_value = (x.datatype == FilterEvaluationMultitypeValue::xsd_integer ||
-							   x.datatype == FilterEvaluationMultitypeValue::xsd_decimal ||
-							   x.datatype == FilterEvaluationMultitypeValue::xsd_float ||
-							   x.datatype == FilterEvaluationMultitypeValue::xsd_double);
+		ret_femv.bool_value = (x.datatype == EvalMultitypeValue::xsd_integer ||
+							   x.datatype == EvalMultitypeValue::xsd_decimal ||
+							   x.datatype == EvalMultitypeValue::xsd_float ||
+							   x.datatype == EvalMultitypeValue::xsd_double);
 
 		return ret_femv;
 	}
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_lang_type)
 	{
-		FilterEvaluationMultitypeValue x;
+		EvalMultitypeValue x;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
 		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
 			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
 
-		if (x.datatype == FilterEvaluationMultitypeValue::literal)
+		if (x.datatype == EvalMultitypeValue::literal)
 		{
-			ret_femv.datatype = FilterEvaluationMultitypeValue::literal;
+			ret_femv.datatype = EvalMultitypeValue::literal;
 
 			int p = x.str_value.rfind('@');
 			if (p != -1)
@@ -1490,7 +825,7 @@ FilterEvaluationMultitypeValue
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_langmatches_type)
 	{
-		FilterEvaluationMultitypeValue x, y;
+		EvalMultitypeValue x, y;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
@@ -1520,7 +855,7 @@ FilterEvaluationMultitypeValue
 
 	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_in_type)
 	{
-		FilterEvaluationMultitypeValue x;
+		EvalMultitypeValue x;
 
 		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 			getFilterString(filter.child[0], x, row, id_cols, stringindex);
@@ -1529,20 +864,20 @@ FilterEvaluationMultitypeValue
 
 		for (int i = 1; i < (int)filter.child.size(); i++)
 		{
-			FilterEvaluationMultitypeValue y;
+			EvalMultitypeValue y;
 
 			if (filter.child[i].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
 				getFilterString(filter.child[i], y, row, id_cols, stringindex);
 			else if (filter.child[i].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
 				y = matchFilterTree(filter.child[i].node, row, id_cols, stringindex);
 
-			FilterEvaluationMultitypeValue equal = (x == y);
+			EvalMultitypeValue equal = (x == y);
 			if (i == 1)
 				ret_femv = equal;
 			else
 				ret_femv = (ret_femv || equal);
 
-			if (ret_femv.datatype == FilterEvaluationMultitypeValue::xsd_boolean && ret_femv.bool_value.value == FilterEvaluationMultitypeValue::EffectiveBooleanValue::true_value)
+			if (ret_femv.datatype == EvalMultitypeValue::xsd_boolean && ret_femv.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
 				return ret_femv;
 		}
 
@@ -1569,9 +904,9 @@ void TempResult::doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &f
 
 	for (int i = 0; i < (int)this->result.size(); i++)
 	{
-		FilterEvaluationMultitypeValue ret_femv = matchFilterTree(filter, this->result[i], this_id_cols, stringindex);
+		EvalMultitypeValue ret_femv = matchFilterTree(filter, this->result[i], this_id_cols, stringindex);
 
-		if (ret_femv.datatype == FilterEvaluationMultitypeValue::xsd_boolean && ret_femv.bool_value.value == FilterEvaluationMultitypeValue::EffectiveBooleanValue::true_value)
+		if (ret_femv.datatype == EvalMultitypeValue::xsd_boolean && ret_femv.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
 		{
 			r.result.push_back(ResultPair());
 

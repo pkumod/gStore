@@ -83,6 +83,10 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::print(int dep)
 	if (this->oper_type == Builtin_lang_type)			printf("LANG");
 	if (this->oper_type == Builtin_langmatches_type)	printf("LANGMATCHES");
 	if (this->oper_type == Builtin_bound_type)			printf("BOUND");
+	if (this->oper_type == Builtin_simpleCycle_type)	printf("simpleCycleBoolean");
+	if (this->oper_type == Builtin_cycle_type)			printf("cycleBoolean");
+	if (this->oper_type == Builtin_sp_type)				printf("shortestPathLen");
+	if (this->oper_type == Builtin_khop_type)			printf("kHopReachable");
 
 	if (this->oper_type == Builtin_in_type)
 	{
@@ -97,6 +101,38 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::print(int dep)
 			if (this->child[i].node_type == FilterTreeChild::Tree_type)		this->child[i].node.print(dep);
 		}
 		printf("))");
+
+		return;
+	}
+
+	if (this->oper_type == Builtin_simpleCycle_type || this->oper_type == Builtin_cycle_type
+		|| this->oper_type == Builtin_sp_type || this->oper_type == Builtin_khop_type)
+	{
+		printf("(");
+
+		printf("%s, ", this->child[0].path_args.src.c_str());
+		printf("%s, ", this->child[0].path_args.dst.c_str());
+		if (this->oper_type == Builtin_simpleCycle_type || this->oper_type == Builtin_cycle_type)
+		{
+			if (this->child[0].path_args.directed)
+				printf("true, ");
+			else
+				printf("false, ");
+		}
+		if (this->oper_type == Builtin_khop_type)
+			printf("%d, ", this->child[0].path_args.k);
+		printf("{");
+		for (int i = 0; i < this->child[0].path_args.pred_set.size(); i++)
+		{
+			printf("%s", this->child[0].path_args.pred_set[i].c_str());
+			if (i != this->child[0].path_args.pred_set.size() - 1)
+				printf(", ");
+		}
+		printf("}");
+		if (this->oper_type == Builtin_khop_type)
+			printf(", %f", this->child[0].path_args.confidence);
+
+		printf(")");
 
 		return;
 	}
@@ -628,9 +664,63 @@ void QueryTree::print()
 						printf("MAX(");
 					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
 						printf("AVG(");
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::simpleCyclePath_type)
+						printf("simpleCyclePath(");
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::simpleCycleBoolean_type)
+						printf("simpleCycleBoolean(");
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::cyclePath_type)
+						printf("cyclePath(");
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+						printf("cycleBoolean(");
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::shortestPath_type)
+						printf("shortestPath(");
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::shortestPathLen_type)
+						printf("shortestPathLen(");
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::kHopReachable_type)
+						printf("kHopReachable(");
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::kHopEnumerate_type)
+						printf("kHopEnumerate(");
+					
 					if (this->projection[i].distinct)
 						printf("DISTINCT ");
-					printf("%s) AS %s)\t", this->projection[i].aggregate_var.c_str(), this->projection[i].var.c_str());
+
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::Count_type
+						|| this->projection[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
+						|| this->projection[i].aggregate_type == QueryTree::ProjectionVar::Min_type
+						|| this->projection[i].aggregate_type == QueryTree::ProjectionVar::Max_type
+						|| this->projection[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+						printf("%s", this->projection[i].aggregate_var.c_str());
+					else
+					{
+						printf("%s, ", this->projection[i].path_args.src.c_str());
+						printf("%s, ", this->projection[i].path_args.dst.c_str());
+						if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::simpleCyclePath_type
+							|| this->projection[i].aggregate_type == QueryTree::ProjectionVar::simpleCycleBoolean_type
+							|| this->projection[i].aggregate_type == QueryTree::ProjectionVar::cyclePath_type
+							|| this->projection[i].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+						{
+							if (this->projection[i].path_args.directed)
+								printf("true, ");
+							else
+								printf("false, ");
+						}
+						else if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::kHopReachable_type
+							|| this->projection[i].aggregate_type == QueryTree::ProjectionVar::kHopEnumerate_type)
+							printf("%d, ", this->projection[i].path_args.k);
+						printf("{");
+						for (int j = 0; j < this->projection[i].path_args.pred_set.size(); j++)
+						{
+							printf("%s", this->projection[i].path_args.pred_set[j].c_str());
+							if (j != this->projection[i].path_args.pred_set.size() - 1)
+								printf(", ");
+						}
+						printf("}");
+						if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::kHopReachable_type
+							|| this->projection[i].aggregate_type == QueryTree::ProjectionVar::kHopEnumerate_type)
+							printf(", %f", this->projection[i].path_args.confidence);
+					}
+
+					printf(") AS %s)\t", this->projection[i].var.c_str());
 				}
 			}
 			if (this->projection_asterisk && !this->checkAtLeastOneAggregateFunction())

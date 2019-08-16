@@ -1,0 +1,14 @@
+@prefix dt:   <http://example.org/datatype#> .
+@prefix ns:   <http://example.org/ns#> .
+@prefix :     <http://example.org/ns#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+:x ns:name "Carol" .
+:x ns:height "159.5"^^xsd:double .
+:x ns:age "23"^^xsd:integer .
+:y ns:name "Alice" .
+:y ns:height "163.1"^^xsd:double .
+:y ns:age "16"^^xsd:integer .
+:z ns:name "Bob" .
+:z ns:height "171.9"^^xsd:double .
+:z ns:age "16"^^xsd:integer .

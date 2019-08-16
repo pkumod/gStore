@@ -89,7 +89,8 @@ bool GeneralEvaluation::parseQuery(const string &_query)
 {
 	try
 	{
-		this->query_parser.SPARQLParse(_query, this->query_tree);
+		this->query_parser.setQueryTree(&(this->query_tree));
+		this->query_parser.SPARQLParse(_query);
 	}
 	catch (const char *e)
 	{
@@ -565,7 +566,8 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 		triple_pattern.getVarset();
 
 		//get useful varset
-		Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset();
+		Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset() \
+						+ this->query_tree.getOrderByVarset();
 		if (!this->query_tree.checkProjectionAsterisk())
 		{
 			for (int j = 0; j < dep; j++)
@@ -916,7 +918,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			this->temp_result->results[0].id_varset += this->query_tree.getGroupPattern().group_pattern_resultset_maximal_varset;
 		}
 
-		Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset();
+		Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset() \
+						+ this->query_tree.getOrderByVarset();
 
 		if (this->query_tree.checkProjectionAsterisk())
 		{
@@ -938,7 +941,16 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (this->query_tree.checkAtLeastOneAggregateFunction() || !this->query_tree.getGroupByVarset().empty())
 		{
-			vector<QueryTree::ProjectionVar> &proj = this->query_tree.getProjection();
+			// vector<QueryTree::ProjectionVar> &proj = this->query_tree.getProjection();
+			vector<QueryTree::ProjectionVar> proj = this->query_tree.getProjection();
+			vector<string> order_vars = query_tree.getOrderByVarset().vars;
+			for (string var : order_vars)
+			{
+				QueryTree::ProjectionVar proj_var;
+				proj_var.aggregate_type = QueryTree::ProjectionVar::None_type;
+				proj_var.var = var;
+				proj.push_back(proj_var);
+			}
 
 			TempResultSet *new_temp_result = new TempResultSet();
 			new_temp_result->results.push_back(TempResult());
@@ -1111,15 +1123,20 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (this->query_tree.checkProjectionAsterisk() && this->query_tree.getProjectionVarset().empty())
 		{
-			ret_result.select_var_num = result0.getAllVarset().getVarsetSize();
 			ret_result.setVar(result0.getAllVarset().vars);
 			ret_result_varset = result0.getAllVarset();
+			ret_result.select_var_num = result0.getAllVarset().getVarsetSize();
+			ret_result.true_select_var_num = ret_result.select_var_num;
 		}
 		else
 		{
-			ret_result.select_var_num = this->query_tree.getProjectionVarset().getVarsetSize();
-			ret_result.setVar(this->query_tree.getProjectionVarset().vars);
-			ret_result_varset = this->query_tree.getProjectionVarset();
+			vector<string> proj_vars = query_tree.getProjectionVarset().vars;
+			vector<string> order_vars = query_tree.getOrderByVarset().vars;
+			proj_vars.insert(proj_vars.end(), order_vars.begin(), order_vars.end());
+			ret_result.setVar(proj_vars);
+			ret_result_varset = query_tree.getProjectionVarset() + query_tree.getOrderByVarset();
+			ret_result.select_var_num = ret_result_varset.getVarsetSize();
+			ret_result.true_select_var_num = query_tree.getProjectionVarset().getVarsetSize();
 		}
 
 		ret_result.ansNum = (int)result0.result.size();
@@ -1304,7 +1321,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 	else if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
 	{
-		ret_result.select_var_num = 1;
+		ret_result.true_select_var_num = ret_result.select_var_num = 1;
 		ret_result.setVar(vector<string>(1, "?_askResult"));
 		ret_result.ansNum = 1;
 
