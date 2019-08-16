@@ -754,6 +754,7 @@ Join::toStartJoin()
 	int var_id = maxi;
 	int var_degree = this->basic_query->getVarDegree(var_id);
 	//cout<<"var id: "<<var_id<<"   "<<"var degree: "<<var_degree<<endl;
+	
 	IDList &literal_candidate_list = this->basic_query->getCandidateList(var_id);
 	bool flag = false;
 	for (int j = 0; j < var_degree; ++j)
