@@ -43,7 +43,7 @@ private:
 	//map <unsigned, long> index_time_map;
 	//multimap <long, unsigned> time_index_map;
 
-	bool AddInCache(unsigned _key, char *_str, unsigned _len);
+	bool AddInCache(unsigned _key, char *_str, unsigned long _len);
 	bool SwapOut();
 	bool UpdateTime(unsigned _key, bool HasLock = false);
 
@@ -56,10 +56,10 @@ public:
 	IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num = 0);
 	~IVArray();
 
-	bool search(unsigned _key, char *& _str, unsigned& _len);
-	bool modify(unsigned _key, char *_str, unsigned _len);
+	bool search(unsigned _key, char *& _str, unsigned long & _len);
+	bool modify(unsigned _key, char *_str, unsigned long _len);
 	bool remove(unsigned _key);
-	bool insert(unsigned _key, char *_str, unsigned _len);
+	bool insert(unsigned _key, char *_str, unsigned long _len);
 	bool save();
 	void PinCache(unsigned _key);
 };
