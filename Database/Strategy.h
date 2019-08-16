@@ -28,7 +28,7 @@ public:
 	    	// if there exists a variable with limited matches in the query, then skip the filter of other
 	    	// variables as soon as possible
 	Strategy(KVstore*, VSTree*, TYPE_TRIPLE_NUM*, TYPE_TRIPLE_NUM*,TYPE_TRIPLE_NUM*, TYPE_PREDICATE_ID, 
-		TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID);
+		TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID,bool);
 	~Strategy();
 	//select efficient strategy to do the sparql query
 	bool handle(SPARQLquery&);
@@ -37,6 +37,7 @@ public:
 
 private:
 	int method;
+	bool isDistinct;
 	KVstore* kvstore;
 	VSTree* vstree;
 	TYPE_TRIPLE_NUM* pre2num;
@@ -44,8 +45,7 @@ private:
 	TYPE_TRIPLE_NUM* pre2obj;
 	TYPE_PREDICATE_ID limitID_predicate;
 	TYPE_ENTITY_LITERAL_ID limitID_literal;
-	TYPE_ENTITY_LITERAL_ID limitID_entity;
-
+	TYPE_ENTITY_LITERAL_ID limitID_entity; 
 	//NOTICE: even the ID type is int, it is no problem and no waste that we use unsigned in answer
 	//(because -1, -2 or other invalid IDs can not be in answer)
 	void handler0(BasicQuery*, vector<unsigned*>&);

@@ -239,7 +239,7 @@ Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 	*/
 	bool ret3 = this->join();
 	long after_joinbasic = Util::get_cur_time();
-	cout << "after join_basic: used " << (after_joinbasic - begin) << " ms" << endl;
+	cout << "during join_basic: used " << (after_joinbasic - begin) << " ms" << endl;
 	if (!ret3)
 	{
 		this->clear();
@@ -248,7 +248,7 @@ Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 
 	bool ret4 = this->only_pre_filter_after_join();
 	long after_only_pre_filter = Util::get_cur_time();
-	cout << "after only pre filter: used " << (after_only_pre_filter - after_joinbasic) << " ms" << endl;
+	cout << "during only pre filter: used " << (after_only_pre_filter - after_joinbasic) << " ms" << endl;
 	if (!ret4)
 	{
 		this->clear();
@@ -264,11 +264,11 @@ Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 	this->pre_var_handler();
 	//BETTER:maybe also reduce to empty, return false
 	long after_pre_var = Util::get_cur_time();
-	cout << "after pre var: used " << (after_pre_var - after_only_pre_filter) << " ms" << endl;
+	cout << "during pre var: used " << (after_pre_var - after_only_pre_filter) << " ms" << endl;
 
 	this->copyToResult();
 	long after_copy = Util::get_cur_time();
-	cout << "after copy to result list: used " << (after_copy - after_pre_var) << " ms" << endl;
+	cout << "during copy to result list: used " << (after_copy - after_pre_var) << " ms" << endl;
 
 	cout << "Final result size: " << this->basic_query->getResultList().size() << endl;
 	this->clear();
@@ -754,7 +754,8 @@ Join::toStartJoin()
 	int var_id = maxi;
 	int var_degree = this->basic_query->getVarDegree(var_id);
 	//cout<<"var id: "<<var_id<<"   "<<"var degree: "<<var_degree<<endl;
-	IDList literal_candidate_list;
+	
+	IDList &literal_candidate_list = this->basic_query->getCandidateList(var_id);
 	bool flag = false;
 	for (int j = 0; j < var_degree; ++j)
 	{

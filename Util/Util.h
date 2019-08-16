@@ -217,7 +217,7 @@ typedef unsigned(*HashFunction)(const char*);
 
 //type for the triple num
 //NOTICE: this should use unsigned (triple num may > 2500000000)
-typedef unsigned TYPE_TRIPLE_NUM;
+typedef unsigned long long TYPE_TRIPLE_NUM;
 //NOTICE: we do not use long long because it will consume more spaces in pre2num of Database
 //For single machines, we aim to support 4.2B triples, and that's enough
 //typedef long long TYPE_TRIPLE_NUM;
@@ -276,7 +276,7 @@ public:
 	static const unsigned MB = 1048576;
 	static const unsigned GB = 1073741824;
 	//static const int TRIPLE_NUM_MAX = 1000*1000*1000;
-	static const TYPE_TRIPLE_NUM TRIPLE_NUM_MAX = INVALID;
+	static const TYPE_TRIPLE_NUM TRIPLE_NUM_MAX = (unsigned long long)-1;
 	//static const TYPE_TRIPLE_NUM TRIPLE_NUM_MAX = (long long)10000*1000*1000;
 	static const char EDGE_IN = 'i';
 	static const char EDGE_OUT= 'o';
@@ -323,7 +323,7 @@ public:
 	static std::string getThreadID();
 	static int memUsedPercentage();
 	static int memoryLeft();
-	static int compare(const char* _str1, unsigned _len1, const char* _str2, unsigned _len2); //QUERY(how to use default args)
+	static int compare(const char* _str1, unsigned long _len1, const char* _str2, unsigned long _len2);
 	static int string2int(std::string s);
 	static std::string int2string(long n);
 	static char* itoa(int num, char* str, int radix);
