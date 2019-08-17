@@ -41,6 +41,7 @@ CC = g++
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
 CFLAGS = -c -Wall -O2 -pthread -std=c++11
+# CFLAGS = -c -Wall -pthread -std=c++11 -g -gdwarf-2	# For debugging
 EXEFLAG = -O2 -pthread -std=c++11
 #-coverage
 #CFLAGS = -c -Wall -pthread -g -std=c++11 -pg
