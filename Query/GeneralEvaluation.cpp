@@ -10,7 +10,6 @@
 #include<set>
 using namespace std;
 
-
 void *preread_from_index(void *argv)
 {
 	vector<StringIndexFile*> * indexfile = (vector<StringIndexFile*> *)*(long*)argv;
@@ -475,24 +474,22 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 	for (int i = 0; i < (int)group_pattern_union.size(); i++)
 	{
 		this->rewriting_evaluation_stack[dep].group_pattern = group_pattern_union[i];
-		QueryTree::GroupPattern *group_pattern = &this->rewriting_evaluation_stack[dep].group_pattern;
-		group_pattern->getVarset();
 
 		for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
-		group_pattern->print(dep);
+		rewriting_evaluation_stack[dep].group_pattern.print(dep);
 		for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
 
 		TempResultSet *sub_result = new TempResultSet();
 
 		QueryTree::GroupPattern triple_pattern;
 		int group_pattern_triple_num = 0;
-		for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
-			if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
+			if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 			{
 				triple_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(
-					QueryTree::GroupPattern::Pattern::Element(group_pattern->sub_group_pattern[j].pattern.subject.value),
-					QueryTree::GroupPattern::Pattern::Element(group_pattern->sub_group_pattern[j].pattern.predicate.value),
-					QueryTree::GroupPattern::Pattern::Element(group_pattern->sub_group_pattern[j].pattern.object.value)
+					QueryTree::GroupPattern::Pattern::Element(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].pattern.subject.value),
+					QueryTree::GroupPattern::Pattern::Element(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].pattern.predicate.value),
+					QueryTree::GroupPattern::Pattern::Element(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].pattern.object.value)
 				));
 				group_pattern_triple_num++;
 			}
@@ -583,12 +580,12 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 				}
 			}
 
-			for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
+			for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
 			{
-				if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
-					useful += group_pattern->sub_group_pattern[j].optional.group_pattern_resultset_maximal_varset;
-				else if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
-					useful += group_pattern->sub_group_pattern[j].filter.varset;
+				if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+					useful += rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].optional.group_pattern_resultset_maximal_varset;
+				else if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+					useful += rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.varset;
 			}
 		}
 
@@ -799,16 +796,16 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 			}
 		}
 
-		for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
-			if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Bind_type)
+		for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
+			if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Bind_type)
 			{
 				TempResultSet *temp = new TempResultSet();
 				temp->results.push_back(TempResult());
 
-				temp->results[0].str_varset = group_pattern->sub_group_pattern[j].bind.varset;
+				temp->results[0].str_varset = rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].bind.varset;
 
 				temp->results[0].result.push_back(TempResult::ResultPair());
-				temp->results[0].result[0].str.push_back(group_pattern->sub_group_pattern[j].bind.str);
+				temp->results[0].result[0].str.push_back(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].bind.str);
 
 				TempResultSet *new_result = new TempResultSet();
 				sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
@@ -821,14 +818,17 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 				sub_result = new_result;
 			}
 
-		for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
-			if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
-				if (!group_pattern->sub_group_pattern[j].filter.done && group_pattern->sub_group_pattern[j].filter.varset.belongTo(group_pattern->group_pattern_resultset_minimal_varset))
+		for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
+			if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+				if (!rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done && \
+					rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.varset. \
+					belongTo(rewriting_evaluation_stack[dep].group_pattern.group_pattern_resultset_minimal_varset))
 				{
-					group_pattern->sub_group_pattern[j].filter.done = true;
+					rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done = true;
 
 					TempResultSet *new_result = new TempResultSet();
-					sub_result->doFilter(group_pattern->sub_group_pattern[j].filter.root, *new_result, this->stringindex, group_pattern->group_pattern_subject_object_maximal_varset);
+					sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.root, *new_result, \
+						this->stringindex, rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
 
 					sub_result->release();
 					delete sub_result;
@@ -838,18 +838,21 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
 		if (sub_result->results.empty() || !sub_result->results[0].result.empty())
 		{
-			for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
-				if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+			for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
+			{
+				if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
 				{
 					if ((int)this->rewriting_evaluation_stack.size() == dep + 1)
 					{
 						this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
 						this->rewriting_evaluation_stack.back().result = NULL;
-						group_pattern = &this->rewriting_evaluation_stack[dep].group_pattern;
+						// group_pattern = &this->rewriting_evaluation_stack[dep].group_pattern;
 					}
 
 					this->rewriting_evaluation_stack[dep].result = sub_result;
-					this->rewriting_evaluation_stack[dep + 1].group_pattern = group_pattern->sub_group_pattern[j].optional;
+					this->rewriting_evaluation_stack[dep + 1].group_pattern = \
+						this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].optional;
+					this->rewriting_evaluation_stack[dep + 1].group_pattern.print(0);
 
 					TempResultSet *temp = rewritingBasedQueryEvaluation(dep + 1);
 
@@ -863,22 +866,28 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
 					sub_result = new_result;
 				}
+			}
 		}
 
-		for (int j = 0; j < (int)group_pattern->sub_group_pattern.size(); j++)
-			if (group_pattern->sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
-				if (!group_pattern->sub_group_pattern[j].filter.done)
+		for (int j = 0; j < (int)rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size(); j++)
+		{
+			if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+			{
+				if (!rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done)
 				{
-					group_pattern->sub_group_pattern[j].filter.done = true;
+					rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done = true;
 
 					TempResultSet *new_result = new TempResultSet();
-					sub_result->doFilter(group_pattern->sub_group_pattern[j].filter.root, *new_result, this->stringindex, group_pattern->group_pattern_subject_object_maximal_varset);
+					sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.root, *new_result, \
+						this->stringindex, rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
 
 					sub_result->release();
 					delete sub_result;
 
 					sub_result = new_result;
 				}
+			}
+		}
 
 		if (result->results.empty())
 		{
