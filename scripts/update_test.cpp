@@ -286,18 +286,18 @@ int main(int argc, char * argv[])
 	}
 	else
 	{
-		TYPE_TRIPLE_NUM triple_num = db->getTripleNum();
+		int triple_num = db->getTripleNum();
 		string *update;
 		for (int i = 0; i < test_group_num; i++)
 		{
 			//random extract update_num triples
-			TYPE_TRIPLE_NUM update_num = rand() % test_group_size + 1;
+			int update_num = rand() % test_group_size + 1;
 			update = new string[update_num];
 			ifstream file;
 			file.open(db_path, ios::in);
 			int update_line = rand() % test_value_region + 1;
 			int line_num = 1;
-			for (TYPE_TRIPLE_NUM j = 0; j < update_num; j++)
+			for (int j = 0; j < update_num; j++)
 			{
 				string s;
 				while (getline(file, s))
@@ -317,7 +317,7 @@ int main(int argc, char * argv[])
 
 			//check the correctness of deleting and inserting triples
 			string query = "DELETE DATA{";
-			for (TYPE_TRIPLE_NUM j = 0; j < update_num; j++)
+			for (int j = 0; j < update_num; j++)
 				query = query + update[j];
 			query = query + "}";
 			ResultSet delete_rs;
@@ -334,8 +334,8 @@ int main(int argc, char * argv[])
 				system(cmd.c_str());
 				return 0;
 			}
-			TYPE_TRIPLE_NUM temp_num = triple_num - update_num;
-			for (TYPE_TRIPLE_NUM j = 0; j < update_num; j++)
+			int temp_num = triple_num - update_num;
+			for (int j = 0; j < update_num; j++)
 			{
 				query = "ASK WHERE{" + update[j] + "}";
 				ResultSet ask_rs;
@@ -354,7 +354,7 @@ int main(int argc, char * argv[])
 				}
 			}
 			query = "INSERT DATA{";
-			for (TYPE_TRIPLE_NUM j = 0; j < update_num; j++)
+			for (int j = 0; j < update_num; j++)
 				query = query + update[j];
 			query = query + "}";
 			ResultSet insert_rs;
@@ -372,7 +372,7 @@ int main(int argc, char * argv[])
 				return 0;
 			}
 			query = "ASK WHERE{";
-			for (TYPE_TRIPLE_NUM j = 0; j < update_num; j++)
+			for (int j = 0; j < update_num; j++)
 				query = query + update[j];
 			query = query + "}";
 			ResultSet ask_rs;

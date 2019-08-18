@@ -17,7 +17,7 @@ Bstr::Bstr()
 	this->str = NULL;
 }
 
-Bstr::Bstr(const char* _str, unsigned long _len, bool _nocopy)
+Bstr::Bstr(const char* _str, unsigned _len, bool _nocopy)
 {
 	//WARN: if need a string .please add '\0' in your own!
 	this->length = _len;
@@ -120,7 +120,7 @@ Bstr::operator != (const Bstr& _bstr)
 		return false;
 }
 
-unsigned long
+unsigned
 Bstr::getLen() const
 {
 //WARN: we should not include too complicate logic here!!!!
@@ -136,7 +136,7 @@ Bstr::getLen() const
 }
 
 void
-Bstr::setLen(unsigned long _len)
+Bstr::setLen(unsigned _len)
 {
 	this->length = _len;
 }
@@ -169,7 +169,7 @@ Bstr::copy(const Bstr* _bp)
 }
 
 void
-Bstr::copy(const char* _str, unsigned long _len)
+Bstr::copy(const char* _str, unsigned _len)
 {
 	this->length = _len;
 	//this->str = (char*)malloc(this->length);
