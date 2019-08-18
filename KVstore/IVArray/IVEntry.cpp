@@ -31,7 +31,7 @@ IVEntry::setBstr(const Bstr* _value)
 }
 
 void
-IVEntry::setBstr(char *_str, unsigned long _len)
+IVEntry::setBstr(char *_str, unsigned _len)
 {
 	if (value != NULL)
 		delete value;
@@ -42,7 +42,7 @@ IVEntry::setBstr(char *_str, unsigned long _len)
 }
 
 bool
-IVEntry::getBstr(char *& _str, unsigned long &_len, bool if_copy) const
+IVEntry::getBstr(char *& _str, unsigned &_len, bool if_copy) const
 {
 	if (value == NULL)
 	{
