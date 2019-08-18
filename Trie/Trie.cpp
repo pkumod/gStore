@@ -12,9 +12,9 @@ using namespace std;
 Trie::Trie()
 {
 	this->TrieBuffer = new char[8388608];
-	this->treeMap = map<string, TYPE_TRIPLE_NUM>();
+	this->treeMap = map<string, int>();
 	this->treeMap.insert(make_pair("<http://www.", 0));
-	this->s2int = map<string, TYPE_TRIPLE_NUM>();
+	this->s2int = map<string, int>();
 	this->prefixnum = 0;
 	this->int2s = new string[32768];
 	this->going = true;
@@ -38,7 +38,7 @@ Trie::~Trie()
 void
 Trie::Addstring(string& _str)
 {
-	map<string, TYPE_TRIPLE_NUM>::iterator it;
+	map<string, int>::iterator it;
 	string tmp;
 	int start = 0;
 	int end = -1;
@@ -93,8 +93,8 @@ Trie::BuildPrefix()
 void
 Trie::FindPrefixSet()
 {
-	multimap<TYPE_TRIPLE_NUM, string> t;
-	map<string, TYPE_TRIPLE_NUM>::iterator it1;
+	multimap<long long, string> t;
+	map<string, int>::iterator it1;
 	long long tq;
 	long long totalsize = 0;
 	long long total_pattern_size = 0;
@@ -108,7 +108,7 @@ Trie::FindPrefixSet()
 		t.insert(make_pair(tq, it1->first));
 	}
 
-	multimap<TYPE_TRIPLE_NUM, string>::iterator it2;
+	multimap<long long, string>::iterator it2;
 	long long save_size = 0;
 	it2 = t.end();
 	it2--;
@@ -148,7 +148,7 @@ Trie::append(string &ret, string _str)
 {
 	short substr_len;
 	int t_start;
-	map<string, TYPE_TRIPLE_NUM>::iterator it;
+	map<string, int>::iterator it;
 	it = this->s2int.find(_str);
 	if (it == this->s2int.end())//not find
 	{
@@ -177,7 +177,7 @@ Trie::Compress(string &_str)
 	if (going == false)
 		return _str;
 	string ret;
-	map<string, TYPE_TRIPLE_NUM>::iterator it;
+	map<string, int>::iterator it;
 	vector<string> vstring;
 	vector<int> vint;
 	int start = 0;
@@ -267,7 +267,7 @@ Trie::saveStringPrefix()
 		return true;
 	}
 
-	map<string, TYPE_TRIPLE_NUM>::iterator iter;
+	map<string, int>::iterator iter;
 
 	for (iter = s2int.begin(); iter != s2int.end(); ++iter)
 	{
