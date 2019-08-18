@@ -132,10 +132,7 @@ bool GeneralEvaluation::doQuery()
 	}
 
 	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num,this->pre2sub, this->pre2obj, 
-		this->limitID_predicate, this->limitID_literal, this->limitID_entity,
-		this->query_tree.Modifier_Distinct== QueryTree::Modifier_Distinct);
-	
-
+		this->limitID_predicate, this->limitID_literal, this->limitID_entity);
 	if (this->query_tree.checkWellDesigned())
 	{
 		printf("=================\n");
@@ -262,11 +259,11 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 				long tv_begin = Util::get_cur_time();
 				sparql_query.encodeQuery(this->kvstore, encode_varset);
 				long tv_encode = Util::get_cur_time();
-				printf("during Encode, used %ld ms.\n", tv_encode - tv_begin);
+				printf("after Encode, used %ld ms.\n", tv_encode - tv_begin);
 
 				this->strategy.handle(sparql_query);
 				long tv_handle = Util::get_cur_time();
-				printf("during Handle, used %ld ms.\n", tv_handle - tv_encode);
+				printf("after Handle, used %ld ms.\n", tv_handle - tv_encode);
 
 				//collect and join the result of each BasicQuery
 				for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
@@ -299,7 +296,7 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 						if (success)	printf("QueryCache cached\n");
 						else			printf("QueryCache didn't cache\n");
 						long tv_aftry = Util::get_cur_time();
-						printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
+						printf("after tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
 					}
 
 					if (result->results.empty())
@@ -651,13 +648,6 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 						printf("after checkCache, used %ld ms.\n", tv_afcheck - tv_bfcheck);
 					}
 
-        			if(this->export_flag)
-        			{
-        				this->strategy.fp = this->fp;
-        				this->strategy.export_flag = this->export_flag;
-        				success = false;
-        			}
-
 					if (success)
 					{
 						printf("QueryCache hit\n");
@@ -739,6 +729,11 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 		long tv_fillcand = Util::get_cur_time();
 		printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
 
+        if(this->export_flag)
+        {
+        	this->strategy.fp = this->fp;
+        	this->strategy.export_flag = this->export_flag;
+        }
 		this->strategy.handle(sparql_query);
 		long tv_handle = Util::get_cur_time();
 		printf("after Handle, used %ld ms.\n", tv_handle - tv_fillcand);
@@ -774,7 +769,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 				if (success)	printf("QueryCache cached\n");
 				else			printf("QueryCache didn't cache\n");
 				long tv_aftry = Util::get_cur_time();
-				printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
+				printf("after tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
 			}
 
 			if (sub_result->results.empty())
@@ -1293,7 +1288,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					}
 				}
 			}
-			//cout << "in getFinal Result the first half use " << Util::get_cur_time() - t0 << "  ms" << endl;
+			cout << "in getFinal Result the first half use " << Util::get_cur_time() - t0 << "  ms" << endl;
 			//pthread_join(tidp, NULL);
 			this->stringindex->trySequenceAccess(true, -1);
 		}
@@ -1359,7 +1354,7 @@ void GeneralEvaluation::releaseResult()
 	this->temp_result = NULL;
 }
 
-void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, TYPE_TRIPLE_NUM &update_triple_num)
+void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, unsigned &update_triple_num)
 {
 	update_pattern.getVarset();
 

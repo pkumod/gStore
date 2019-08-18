@@ -8,14 +8,6 @@
  * each block's size is 4K, the first unsigned records the index of next block,
  * the second unsigned record the length of string
  * so each block stores 4096- 2 * sizeof(unsigned) bits value
- * ======================================================================
- * Modified by: Yuqi Zhou 
- * Date: 2019-08-02
- * Description: 
- * Change the structure of each block, each block's size is 4K, the first
- * unsigned records the index of next block, the next two unsigned(
- * (unsigned long) records the length of string
- * so each block stores 4096- sizeof(unsigned) - sizeof(unsigned long) bits value
  * ======================================================================*/
 
 #include "../../Util/Util.h"
@@ -28,7 +20,7 @@ private:
 	// size of block, 4K, unit is byte
 	static const unsigned BLOCK_SIZE = 1 << 8;//1 << 12;
 	// size of data stored in block, unit is byte
-	static const unsigned BLOCK_DATA_SIZE = BLOCK_SIZE -  sizeof(unsigned int)- sizeof(unsigned long);
+	static const unsigned BLOCK_DATA_SIZE = BLOCK_SIZE - 2 * sizeof(unsigned);
 	// minimum initial blocks
 	static const unsigned SET_BLOCK_NUM = 1 << 8;
 	// minimum blocks-num inc
@@ -57,16 +49,16 @@ private:
 
 	bool AllocBlock(unsigned len);
 	
-	bool getWhereToWrite(unsigned long _len);
+	bool getWhereToWrite(unsigned _len);
 
 public:
 	IVBlockManager();
 	IVBlockManager(string& _filename, string &_mode, unsigned _keynum = 0);
 	~IVBlockManager();
 
-	unsigned WriteValue(const char *_str, const unsigned long _len);
+	unsigned WriteValue(const char *_str, const unsigned _len);
 
-	bool ReadValue(unsigned _blk_index, char *&_str, unsigned long &_len);
+	bool ReadValue(unsigned _blk_index, char *&_str, unsigned &_len);
 
 	void SaveFreeBlockList();
 

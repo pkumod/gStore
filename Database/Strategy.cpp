@@ -22,7 +22,7 @@ Strategy::Strategy()
 
 Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num, TYPE_TRIPLE_NUM* _pre2sub,
  	TYPE_TRIPLE_NUM* _pre2obj, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
-	TYPE_ENTITY_LITERAL_ID _limitID_entity,bool _is_distinct)
+	TYPE_ENTITY_LITERAL_ID _limitID_entity)
 {
 	this->method = 0;
 	this->kvstore = _kvstore;
@@ -33,11 +33,8 @@ Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num
 	this->limitID_predicate = _limitID_predicate;
 	this->limitID_literal = _limitID_literal;
 	this->limitID_entity = _limitID_entity;
-
-	this->isDistinct = _is_distinct;
 	this->fp = NULL;
 	this->export_flag = false;
-
 	//this->prepare_handler();
 }
 
@@ -302,14 +299,13 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	    {
 	    	 for (int j = 0; j < var_degree; j++)
 	    	{
-	        	int neighbor_id = basic_query->getEdgeNeighborID(_var_i, j);//1 1
+	        	int neighbor_id = basic_query->getEdgeNeighborID(_var_i, j);
 			//-1: constant or variable not in join; otherwise, variable in join
 	 	        if (neighbor_id == -1)   
 	        	{
 	            	    continue;
 	        	}
 	        	TYPE_PREDICATE_ID pre_id = basic_query->getEdgePreID(_var_i, j);
-				if (pre_id < 0) continue;
 	        	char edge_type = basic_query->getEdgeType(_var_i, j);
 			int estimate_val;
 			if (edge_type == Util::EDGE_OUT)				
@@ -618,7 +614,7 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	delete join;
 
 	long tv_join = Util::get_cur_time();
-	cout << "during Join, used " << (tv_join - tv_retrieve) << "ms." << endl;
+	cout << "after Join, used " << (tv_join - tv_retrieve) << "ms." << endl;
 }
 
 void
@@ -776,21 +772,10 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		cout<<"subject: "<<triple.subject<<" "<<svpos<<endl;
 		cout<<"object: "<<triple.object<<" "<<ovpos<<endl;
 		cout<<"predicate: "<<triple.predicate<<" "<<pvpos<<endl;
-		
-		bool only_get_distinct_pre = (ovpos < 0 && svpos < 0 && pvpos >= 0 && this->isDistinct);
-		if(only_get_distinct_pre)
-			for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate; ++i)
-			{
-				TYPE_PREDICATE_ID pid = i;
-				unsigned* record = new unsigned;
-				*record = pid;
-				_result_list.push_back(record);
-			}
-		else
-		for(TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate; ++i)
-		{
 		//very special case, to find all triples, select ?s (?p) ?o where { ?s ?p ?o . }
 		//filter and join is too costly, should enum all predicates and use p2so
+		for(TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate; ++i)
+		{
 			TYPE_PREDICATE_ID pid = i;
 			this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len);
 			int rsize = selected_var_num;
@@ -821,8 +806,6 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 			}
 			delete[] id_list;
 		}
-		
-
 		id_list = NULL;
 	}
 	else if (total_num == 1)
