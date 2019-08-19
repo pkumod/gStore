@@ -11,8 +11,10 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
+#include "../api/http/cpp/client.h"
 
 using namespace std;
+using namespace rapidjson;
 #define DEFALUT_BUILD_PATH "."
 #define DEFALUT_BACKUP_PATH "./backups"
 
@@ -83,57 +85,26 @@ main(int argc, char * argv[])
 		return 0;
 	}
 
-	//system.db
-	Database system_db("system");
-	system_db.load();
-
-	string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
-	ResultSet ask_rs;
-	FILE* ask_ofp = stdout;
-	system_db.query(sparql, ask_rs, ask_ofp);
-	if (ask_rs.answer[0][0] == "false")
-	{
-		cout << "The database does not exist. Rebuild" << endl;
-		string time = Util::get_backup_time(backup_path, db_name);
-		if(time.size() == 0){
-			cout << "Backup Path Does not Match DataBase Name, Restore Failed" << endl;
-			return 0;
-		}
-		string sparql = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." + "<" + db_name + "> <built_by> <root>."
-			+ "<" + db_name + "> <built_time> \"" + time + "\".}";
-		ResultSet _rs;
-		FILE* ofp = stdout;
-		string msg;
-		int ret = system_db.query(sparql, _rs, ofp);
-
-		if (ret >= 0)
-			msg = "update num : " + Util::int2string(ret);
-		else {
-			//update error
-			cout << "Rebuild Error, Restore Failed" << endl;
-			return 0;
-		}
-		cout << msg << endl;
+	fstream ofp;
+	ofp.open("./system.db/port.txt", ios::in);
+	int ch = ofp.get();
+	if(ofp.eof()){
+		cout << "ghttp is not running!" << endl;
+		return 0;
 	}
-	
-	int ret = copy(backup_path, DEFALUT_BUILD_PATH);
-
-	if(ret == 1){
-		cout << "Backup Path Error, Restore Failed!" << endl;
-	}else{
-		//TODO update the in system.db
-		string time = Util::get_date_time();
-		cout << "Time:" + time << endl;
-		cout << "DB:" + db_name + " Restore done!" << endl;
-	}
-
-	db_path = db_name + ".db";
-	string sys_cmd = "rm -rf " + db_path;
-	system(sys_cmd.c_str());
-
-	path = Util::get_folder_name(backup_path, db_name);
-	sys_cmd = "mv " + path + ' ' + db_path;
-	system(sys_cmd.c_str());
-
+	ofp.close();
+	ofp.open("./system.db/port.txt", ios::in);
+	int port;
+	ofp >> port;
+	GstoreConnector gc;
+	string res;
+	string username = "root";
+	string password = "123456";
+	int ret;
+	ret = gc.Get("http://127.0.0.1:" + Util::int2string(port) + "/?operation=restore&db_name=" + db_name + "&username=" + username + "&password=" + password + "&path=" + backup_path, res);
+	Document document;
+	document.Parse(res.c_str());
+	cout << "StatusCode: " << document["StatusCode"].GetInt() << endl;
+	cout << "StatusMsg: " << document["StatusMsg"].GetString() << endl;
 	return 0;
 }

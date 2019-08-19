@@ -8,8 +8,10 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
+#include "../api/http/cpp/client.h"
 
 using namespace std;
+using namespace rapidjson;
 
 int main(int argc, char * argv[])
 {
@@ -40,32 +42,27 @@ int main(int argc, char * argv[])
 		cout << "The database that you want to drop does not exist." << endl;
 		return -1;
 	};
-	//delete database information in system.db
-	Database system_db("system");
-	system_db.load();
-	string sparql = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
-	ResultSet _rs;
-	FILE* ofp = stdout;
-	string msg;
-	int ret = system_db.query(sparql, _rs, ofp);
-	if (ret <= -100) // select query
-	{
-		if (ret == -100)
-			msg = _rs.to_str();
-		else //query error
-			msg = "query failed";
+
+	fstream ofp;
+	ofp.open("./system.db/port.txt", ios::in);
+	int ch = ofp.get();
+	if(ofp.eof()){
+		cout << "ghttp is not running!" << endl;
+		return 0;
 	}
-	else //update query
-	{
-		if (ret >= 0)
-			msg = "update num : " + Util::int2string(ret);
-		else //update error
-			msg = "update failed.";
-		if (ret != -100)
-			cout << msg << endl;
-	}
-	string cmd = "rm -r " + db_name + ".db";
-	system(cmd.c_str());
-	cout << db_name + ".db is dropped successfully!" << endl;
+	ofp.close();
+	ofp.open("./system.db/port.txt", ios::in);
+	int port;
+	ofp >> port;
+	ofp.close();
+	string username = "root";
+	string password = "123456";
+	string IP = "127.0.0.1";
+	GstoreConnector gc(IP, port, username, password);
+	string res = gc.drop(db_name, false);
+	Document document;
+	document.Parse(res.c_str());
+	cout << "StatusCode: " << document["StatusCode"].GetInt() << endl;
+	cout << "StatusMsg: " << document["StatusMsg"].GetString() << endl;
 	return 0;
 }

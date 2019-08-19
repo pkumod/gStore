@@ -11,7 +11,7 @@
 #include "Util.h"
 
 using namespace std;
-
+using namespace rapidjson;
 //==================================================================================================================
 //configure() to config the basic options of gStore system
 //==================================================================================================================
@@ -20,6 +20,12 @@ using namespace std;
 string Util::profile = "init.conf";
 
 map<string, string> Util::global_config;
+pthread_rwlock_t backuplog_lock;
+#define BACKUP_PATH "./backups"
+#define BACKUP_LOG_PATH "./backup.json"
+#define BACKUP_LOG_TMEP_PATH "./temp.json"
+#define DEFALUT_BACKUP_INTERVAL "6" //hour
+#define DEFALUT_BACKUP_TIMER "6" //hour
 
 //database home directory, which is an absolute path by config
 //TODO:everywhere using database, the prefix should be it
@@ -805,6 +811,14 @@ Util::get_timestamp()
     return timestamp;
 }
 
+int 
+Util::time_to_stamp(string time){
+    struct tm* tm = (struct tm*)malloc(sizeof(struct tm));
+    strptime(time.c_str() , "%Y-%m-%d %H:%M:%S", tm);
+    time_t stamp = mktime(tm);
+    return stamp;
+}
+
 string
 Util::get_backup_time(const string path, const string db_name)
 {
@@ -903,6 +917,30 @@ Util::compare(const char* _str1, unsigned _len1, const char* _str2, unsigned _le
         return 0;
     else
         return -1 * ifswap;
+}
+
+string
+Util::string_replace(string rec, const string src, const string des)
+{
+    string::size_type pos = 0;
+    string::size_type a = src.size();
+    string::size_type b = des.size();
+    while ((pos = rec.find(src, pos)) != string::npos)
+    {
+        rec.replace(pos, a, des);
+        pos += b;
+    }
+    return rec;
+}
+
+bool
+Util::is_number(string s)
+{
+    string::size_type pos = 0;
+    for(; pos < s.size(); pos++){
+        if(!isdigit(s[pos])) return false;
+    }
+    return true;
 }
 
 int
@@ -1979,3 +2017,231 @@ Util::read_backup_time()
 	return Util::gserver_backup_time;
 }
 
+void
+Util::split(string str, string pattern, vector<string> &res){
+    string::size_type pos = 0;
+    str += pattern;
+    for(int i = 0; i < str.size(); i++)
+    {
+        pos = str.find(pattern, i);
+        if(pos < str.size()){
+            res.push_back(str.substr(i, pos-i));
+            i = pos + pattern.size() - 1;
+        }
+    }
+}
+
+void 
+Util::init_backuplog()
+{
+    pthread_rwlock_wrlock(&backuplog_lock);
+    FILE* fp = fopen(BACKUP_LOG_PATH, "w");
+    Document document;
+    document.SetObject();
+    Document::AllocatorType &allocator = document.GetAllocator();
+
+    document.AddMember("db_name", "system", allocator);
+    document.AddMember("backup_timer", DEFALUT_BACKUP_INTERVAL, allocator);
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    document.Accept(writer);
+    string rec = buffer.GetString();
+    rec = Util::string_replace(rec, "\n", "");
+    rec = Util::string_replace(rec, "    ", "");
+    rec.push_back('\n');
+    fputs(rec.c_str(), fp);
+
+    fclose(fp);
+    pthread_rwlock_unlock(&backuplog_lock);
+}
+
+int 
+Util::add_backuplog(string db_name)
+{
+    if(db_name == "system"){
+        cout << "system can not be duplicated" << endl;
+        return -1;
+    }
+    if(has_record_backuplog(db_name)) return 1;
+    pthread_rwlock_wrlock(&backuplog_lock);
+    FILE* fp = fopen(BACKUP_LOG_PATH, "a");
+    Document document;
+    document.SetObject();
+    Document::AllocatorType &allocator = document.GetAllocator();
+
+    string time = Util::get_date_time();
+
+    document.AddMember("db_name", StringRef(db_name.c_str()), allocator);
+    document.AddMember("backup_interval", DEFALUT_BACKUP_INTERVAL, allocator);
+    document.AddMember("last_backup_time", StringRef(time.c_str()), allocator);
+    document.AddMember("is_backup", "false", allocator);
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    document.Accept(writer);
+    string rec = buffer.GetString();
+    rec = Util::string_replace(rec, "\n", "");
+    rec = Util::string_replace(rec, "    ", "");
+    rec.push_back('\n');
+    fputs(rec.c_str(), fp);
+
+    fclose(fp);
+    pthread_rwlock_unlock(&backuplog_lock);
+    return 0;
+}
+
+int 
+Util::delete_backuplog(string db_name)
+{
+    if(db_name == "system"){
+        cout << "system can not be deleted!" << endl;
+        return -1;
+    }
+    pthread_rwlock_wrlock(&backuplog_lock);
+    FILE* fp = fopen(BACKUP_LOG_PATH, "r");
+    FILE* fp1 = fopen(BACKUP_LOG_TMEP_PATH, "w");
+    char readBuffer[0xffff];
+    int ret = 1;
+    while(fgets(readBuffer, 1024, fp)) {
+        string rec = readBuffer;
+        StringStream is(readBuffer);
+        Document d;
+        d.ParseStream(is);
+        if(d["db_name"].GetString() == db_name){
+            ret = 0;
+            continue;
+        }
+        fputs(readBuffer, fp1);
+    }
+    fclose(fp);
+    fclose(fp1);
+    string cmd = "rm ";
+    cmd += BACKUP_LOG_PATH;
+    system(cmd.c_str());
+    cmd = "mv ";
+    cmd += BACKUP_LOG_TMEP_PATH;
+    cmd += ' ';
+    cmd += BACKUP_LOG_PATH;
+    system(cmd.c_str());
+    pthread_rwlock_unlock(&backuplog_lock);
+    return ret;
+}
+
+int 
+Util::update_backuplog(string db_name, string parameter, string value)
+{
+    if(parameter == "db_name"){
+        cout << "parameter can not be db_name!" << endl;
+        return -1;
+    }
+    pthread_rwlock_wrlock(&backuplog_lock);
+    FILE* fp = fopen(BACKUP_LOG_PATH, "r");
+    FILE* fp1 = fopen(BACKUP_LOG_TMEP_PATH, "w");
+    char readBuffer[0xffff];
+    int ret = 0;
+    while(fgets(readBuffer, 1024, fp)){
+        string rec = readBuffer;
+        StringStream is(readBuffer);
+        Document d;
+        d.ParseStream(is);
+        if(d["db_name"].GetString() != db_name){
+            fputs(readBuffer, fp1);
+            continue;
+        }
+        if(d.HasMember(parameter.c_str())){
+            Value& S = d[parameter.c_str()];
+            S.SetString(value.c_str(), value.length());
+            StringBuffer buffer;
+            Writer<StringBuffer> writer(buffer);
+            d.Accept(writer);
+            string line = buffer.GetString();
+            line.push_back('\n');
+            fputs(line.c_str(), fp1);
+        }
+        else{
+            fputs(readBuffer, fp1);
+            cout << "wrong parameter!" << endl;
+            ret = 1;
+        }
+    }
+    fclose(fp);
+    fclose(fp1);
+    string cmd = "rm ";
+    cmd += BACKUP_LOG_PATH;
+    system(cmd.c_str());
+    cmd = "mv ";
+    cmd += BACKUP_LOG_TMEP_PATH;
+    cmd += ' ';
+    cmd += BACKUP_LOG_PATH;
+    system(cmd.c_str());
+    pthread_rwlock_unlock(&backuplog_lock);
+    return ret;
+}
+
+string 
+Util::query_backuplog(string db_name, string parameter)
+{
+    pthread_rwlock_rdlock(&backuplog_lock);
+    FILE* fp = fopen(BACKUP_LOG_PATH, "r");
+    char readBuffer[0xffff];
+    while(fgets(readBuffer, 1024, fp)){
+        string rec = readBuffer;
+        StringStream is(readBuffer);
+        Document d;
+        d.ParseStream(is);
+        if(d["db_name"].GetString() != db_name) continue;
+        if(d.HasMember(parameter.c_str())){
+            fclose(fp);
+            pthread_rwlock_unlock(&backuplog_lock);
+            return d[parameter.c_str()].GetString();
+
+        }
+        else{
+            cout << "wrong parameter!" << endl;
+        }
+    }
+    fclose(fp);
+    pthread_rwlock_unlock(&backuplog_lock);
+    return " ";
+}
+
+void 
+Util::search_backuplog(vector<string> &res, string parameter, string value)
+{
+    pthread_rwlock_rdlock(&backuplog_lock);
+    FILE* fp = fopen(BACKUP_LOG_PATH, "r");
+    char readBuffer[0xffff];
+    while(fgets(readBuffer, 1024, fp)) {
+        string rec = readBuffer;
+        StringStream is(readBuffer);
+        Document d;
+        d.ParseStream(is);
+        if(d.HasMember(parameter.c_str()) && d[parameter.c_str()].GetString() == value)
+            res.push_back(d["db_name"].GetString());
+    }
+    fclose(fp);
+    pthread_rwlock_unlock(&backuplog_lock);
+}
+
+bool 
+Util::has_record_backuplog(string db_name)
+{
+    pthread_rwlock_rdlock(&backuplog_lock);
+    if(db_name == "system") return true;
+    FILE* fp = fopen(BACKUP_LOG_PATH, "r");
+    char readBuffer[0xffff];
+    while(fgets(readBuffer, 1024, fp)) {
+        string rec = readBuffer;
+        StringStream is(readBuffer);
+        Document d;
+        d.ParseStream(is);
+        if (d["db_name"].GetString() == db_name){
+            cout << rec << endl;
+            pthread_rwlock_unlock(&backuplog_lock);
+            return true;
+        }
+    }
+    fclose(fp);
+    pthread_rwlock_unlock(&backuplog_lock);
+
+    return false;
+}
