@@ -31,7 +31,7 @@ echo -e "uuid installed \n"
 mkdir boost
 cd boost
 wget https://dl.bintray.com/boostorg/release/1.66.0/source/boost_1_66_0.tar.gz
-tar -xzvf boost_1_66_0.tar.gz && cd boost_1_54_0
+tar -xzvf boost_1_66_0.tar.gz && cd boost_1_66_0
 #./bootstrap.sh --prefix=/home/usrname/boost_1_43_0/boost_install
 # by default: /usr/local/include and /usr/local/lib
 ./bootstrap.sh 
