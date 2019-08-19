@@ -179,6 +179,20 @@ void QueryTree::GroupPattern::addOnePattern(Pattern _pattern)
 	this->sub_group_pattern.back().pattern = _pattern;
 }
 
+void QueryTree::GroupPattern::addOneGroup()
+{
+	sub_group_pattern.push_back(SubGroupPattern(SubGroupPattern::Group_type));
+}
+
+QueryTree::GroupPattern& QueryTree::GroupPattern::getLastGroup()
+{
+	if (sub_group_pattern.size() == 0 \
+		|| sub_group_pattern.back().type != SubGroupPattern::Group_type)
+		throw "QueryTree::GroupPattern::getLastGroup failed";
+
+	return sub_group_pattern.back().group_pattern;
+}
+
 void QueryTree::GroupPattern::addOneGroupUnion()
 {
 	this->sub_group_pattern.push_back(SubGroupPattern(SubGroupPattern::Union_type));
@@ -246,7 +260,16 @@ QueryTree::GroupPattern::Bind& QueryTree::GroupPattern::getLastBind()
 void QueryTree::GroupPattern::getVarset()
 {
 	for (int i = 0; i < (int)this->sub_group_pattern.size(); i++)
-		if (this->sub_group_pattern[i].type == SubGroupPattern::Pattern_type)
+		if (sub_group_pattern[i].type == SubGroupPattern::Group_type)
+		{
+			sub_group_pattern[i].group_pattern.getVarset();
+
+			group_pattern_resultset_minimal_varset += sub_group_pattern[i].group_pattern.group_pattern_resultset_minimal_varset;
+			group_pattern_resultset_maximal_varset += sub_group_pattern[i].group_pattern.group_pattern_resultset_maximal_varset;
+			group_pattern_subject_object_maximal_varset += sub_group_pattern[i].group_pattern.group_pattern_subject_object_maximal_varset;
+			group_pattern_predicate_maximal_varset += sub_group_pattern[i].group_pattern.group_pattern_predicate_maximal_varset;
+		}
+		else if (this->sub_group_pattern[i].type == SubGroupPattern::Pattern_type)
 		{
 			if (this->sub_group_pattern[i].pattern.subject.value[0] == '?')
 			{
@@ -319,6 +342,8 @@ pair<Varset, Varset> QueryTree::GroupPattern::checkNoMinusAndOptionalVarAndSafeF
 
 	for (int i = 0; i < (int)this->sub_group_pattern.size(); i++)
 		if (!check_condition)	break;
+		else if (sub_group_pattern[i].type == SubGroupPattern::Group_type)
+			check_condition = false;
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Pattern_type)
 		{
 			if (this->sub_group_pattern[i].pattern.varset.hasCommonVar(ban_varset))
@@ -412,7 +437,9 @@ void QueryTree::GroupPattern::print(int dep)
 	for (int t = 0; t < dep; t++)	printf("\t");	printf("{\n");
 
 	for (int i = 0; i < (int)this->sub_group_pattern.size(); i++)
-		if (this->sub_group_pattern[i].type == SubGroupPattern::Pattern_type)
+		if (sub_group_pattern[i].type == SubGroupPattern::Group_type)
+			sub_group_pattern[i].group_pattern.print(dep + 1);
+		else if (this->sub_group_pattern[i].type == SubGroupPattern::Pattern_type)
 		{
 			for (int t = 0; t <= dep; t++)	printf("\t");
 			printf("%s\t%s\t%s.\n",	this->sub_group_pattern[i].pattern.subject.value.c_str(),

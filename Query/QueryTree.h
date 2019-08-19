@@ -33,6 +33,9 @@ class QueryTree
 
 				void addOnePattern(Pattern _pattern);
 
+				void addOneGroup();
+				GroupPattern& getLastGroup();
+				
 				void addOneGroupUnion();
 				void addOneUnion();
 				GroupPattern& getLastUnion();
@@ -164,9 +167,10 @@ class QueryTree
 		class GroupPattern::SubGroupPattern
 		{
 			public:
-				enum SubGroupPatternType{Pattern_type, Union_type, Optional_type, Minus_type, Filter_type, Bind_type};
+				enum SubGroupPatternType{Group_type, Pattern_type, Union_type, Optional_type, Minus_type, Filter_type, Bind_type};
 				SubGroupPatternType type;
 
+				GroupPattern group_pattern;
 				Pattern pattern;
 				std::vector<GroupPattern> unions;
 				GroupPattern optional;
