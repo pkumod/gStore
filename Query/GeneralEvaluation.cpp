@@ -107,6 +107,8 @@ QueryTree& GeneralEvaluation::getQueryTree()
 
 bool GeneralEvaluation::doQuery()
 {
+	query_tree.print();
+
 	if (!this->query_tree.checkProjectionAsterisk() && this->query_tree.getProjection().empty())
 		return false;
 
@@ -133,40 +135,70 @@ bool GeneralEvaluation::doQuery()
 
 	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num,this->pre2sub, this->pre2obj, 
 		this->limitID_predicate, this->limitID_literal, this->limitID_entity);
-	if (this->query_tree.checkWellDesigned())
-	{
-		printf("=================\n");
-		printf("||well-designed||\n");
-		printf("=================\n");
+	// if (this->query_tree.checkWellDesigned())
+	// {
+	// 	printf("=================\n");
+	// 	printf("||well-designed||\n");
+	// 	printf("=================\n");
 
-		this->rewriting_evaluation_stack.clear();
-		this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
-		this->rewriting_evaluation_stack.back().group_pattern = this->query_tree.getGroupPattern();
-		this->rewriting_evaluation_stack.back().result = NULL;
+	// 	this->rewriting_evaluation_stack.clear();
+	// 	this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
+	// 	this->rewriting_evaluation_stack.back().group_pattern = this->query_tree.getGroupPattern();
+	// 	this->rewriting_evaluation_stack.back().result = NULL;
 
-		this->temp_result = this->rewritingBasedQueryEvaluation(0);
-	}
-	else
-	{
-		printf("=====================\n");
-		printf("||not well-designed||\n");
-		printf("=====================\n");
+	// 	this->temp_result = this->rewritingBasedQueryEvaluation(0);
+	// }
+	// else
+	// {
+	// 	printf("=====================\n");
+	// 	printf("||not well-designed||\n");
+	// 	printf("=====================\n");
 
-		this->temp_result = this->semanticBasedQueryEvaluation(this->query_tree.getGroupPattern());
-	}
+	// 	this->temp_result = this->semanticBasedQueryEvaluation(this->query_tree.getGroupPattern());
+	// }
+	this->temp_result = this->semanticBasedQueryEvaluation(this->query_tree.getGroupPattern());
 
 	return true;
 }
 
 TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupPattern &group_pattern)
 {
+	// group_pattern.print(0);
+
 	TempResultSet *result = new TempResultSet();
 
 	group_pattern.initPatternBlockid();
 
 	for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
-		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Group_type)
 		{
+			group_pattern.sub_group_pattern[i].group_pattern.print(0);
+			// group_pattern.sub_group_pattern[i].group_pattern.getVarset();
+			TempResultSet *temp = semanticBasedQueryEvaluation(group_pattern.sub_group_pattern[i].group_pattern);
+
+			if (result->results.empty())
+			{
+				delete result;
+				result = temp;
+			}
+			else
+			{
+				TempResultSet *new_result = new TempResultSet();
+				result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+
+				temp->release();
+				result->release();
+				delete temp;
+				delete result;
+
+				result = new_result;
+			}
+		}
+		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		{
+			// printf("Pattern: %s %s %s\n", group_pattern.sub_group_pattern[i].pattern.subject.value.c_str(), \
+			// 	group_pattern.sub_group_pattern[i].pattern.predicate.value.c_str(), \
+			// 	group_pattern.sub_group_pattern[i].pattern.object.value.c_str());
 			int st = i;
 			while (st > 0 && (group_pattern.sub_group_pattern[st - 1].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type || group_pattern.sub_group_pattern[st - 1].type == QueryTree::GroupPattern::SubGroupPattern::Union_type))
 				st--;
@@ -187,6 +219,7 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 
 				for (int j = st; j <= i; j++)
 					if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+					{
 						if (!group_pattern.sub_group_pattern[j].pattern.varset.empty())
 						{
 							if (group_pattern.getRootPatternBlockID(j) == j)		//root node
@@ -255,6 +288,7 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 								delete temp;
 							}
 						}
+					}
 
 				long tv_begin = Util::get_cur_time();
 				sparql_query.encodeQuery(this->kvstore, encode_varset);
@@ -317,6 +351,8 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 						result = new_result;
 					}
 				}
+				// printf("Pattern_type result: \n");
+				// result->print();
 			}
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
@@ -366,7 +402,11 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type || group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
 		{
+			// printf("Optional_type\n");
+
 			TempResultSet *temp = semanticBasedQueryEvaluation(group_pattern.sub_group_pattern[i].optional);
+			// printf("Optional_type result: \n");
+			// temp->print();
 
 			{
 				TempResultSet *new_result = new TempResultSet();
@@ -417,6 +457,7 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 			}
 		}
 
+	// result->print();
 	return result;
 }
 
@@ -847,7 +888,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 					this->rewriting_evaluation_stack[dep].result = sub_result;
 					this->rewriting_evaluation_stack[dep + 1].group_pattern = \
 						this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].optional;
-					this->rewriting_evaluation_stack[dep + 1].group_pattern.print(0);
+					// this->rewriting_evaluation_stack[dep + 1].group_pattern.print(0);
 
 					TempResultSet *temp = rewritingBasedQueryEvaluation(dep + 1);
 

@@ -4,8 +4,14 @@
 :alice  foaf:givenName "Alice" ;
         foaf:familyName "Smith" .
 
-:bob    foaf:givenName "Bob" ;
+:bob1    foaf:givenName "Bob" ;
         foaf:familyName "Jones" .
+
+:bob2    foaf:givenName "Bob" ;
+        foaf:familyName "Smith" .
 
 :carol  foaf:givenName "Carol" ;
         foaf:familyName "Smith" .
+
+:dave   foaf:givenName "Dave" ;
+        foaf:familyName "Jones" .

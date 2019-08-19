@@ -360,7 +360,11 @@ antlrcpp::Any QueryParser::visitGroupOrUnionGraphPattern(SPARQLParser::GroupOrUn
 	QueryTree::GroupPattern &group_pattern)
 {
 	if (ctx->children.size() == 1)
-		visitGroupGraphPattern(ctx->groupGraphPattern(0), group_pattern);
+	{
+		group_pattern.addOneGroup();
+		// visitGroupGraphPattern(ctx->groupGraphPattern(0), group_pattern);
+		visitGroupGraphPattern(ctx->groupGraphPattern(0), group_pattern.getLastGroup());
+	}
 	else
 	{
 		group_pattern.addOneGroupUnion();
