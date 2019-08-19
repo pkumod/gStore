@@ -71,7 +71,7 @@ int main(int argc, char * argv[])
 	cout << res << endl;
 
 	// export the database
-	res = gc.exportDB("lubm", "export/lubm/post", "POST");
+	res = gc.exportDB("lubm", "export/lubm/lubm_post.nt", "POST");
 	cout << res << endl;
 
 	// unload the database

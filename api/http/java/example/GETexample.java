@@ -67,7 +67,7 @@ public class GETexample{
 		System.out.println(res);
 
 		// export the database
-		res = gc.exportDB("lubm", "export/lubm/get");
+		res = gc.exportDB("lubm", "export/lubm/lubm_get.nt");
 		System.out.println(res);
 
 		// unload the database

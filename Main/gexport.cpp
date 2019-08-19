@@ -43,11 +43,9 @@ main(int argc, char * argv[])
 			return 0;
 		}
 		filepath = argv[2];
-		if(filepath[filepath.length()-1] != '/')
-			filepath = filepath + "/";
-		if(!boost::filesystem::exists(filepath))
-				boost::filesystem::create_directories(filepath);
-		filepath = filepath + db_name + ".nt";
+		boost::filesystem::path filePath(filepath);
+		if(!boost::filesystem::exists(filePath.parent_path()))
+				boost::filesystem::create_directories(filePath.parent_path());
 	}
 
 	cout << "gexport..." << endl;

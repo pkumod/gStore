@@ -66,7 +66,7 @@ res = gc.show()
 print(res)
 
 # export the database
-res = gc.exportDB("lubm", "export/lubm/get")
+res = gc.exportDB("lubm", "export/lubm/lubm_get.nt")
 print(res)
 
 # unload the database

@@ -55,7 +55,7 @@ $res = $gc->show("POST");
 echo $res. PHP_EOL;
 
 // export the database
-$res = $gc->exportDB("lubm", "export/lubm/post", "POST");
+$res = $gc->exportDB("lubm", "export/lubm/lubm_post.nt", "POST");
 echo $res . PHP_EOL;
 
 // unload the database

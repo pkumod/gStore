@@ -2412,11 +2412,9 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 	}
 	pthread_rwlock_unlock(&already_build_map_lock);
 
-	if(db_path[db_path.length()-1] != '/')
-		db_path = db_path + "/";
-	if(!boost::filesystem::exists(db_path))
-		boost::filesystem::create_directories(db_path);
-	db_path = db_path + db_name + ".nt";
+	boost::filesystem::path filePath(db_path);
+	if(!boost::filesystem::exists(filePath.parent_path()))
+		boost::filesystem::create_directories(filePath.parent_path());
 
 	//check if database named [db_name] is already load
 	Database *current_database;
