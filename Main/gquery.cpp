@@ -12,7 +12,9 @@
 
 #include "../Database/Database.h"
 #include "../Util/Util.h"
+#include "../api/http/cpp/client.h"
 
+using namespace rapidjson;
 using namespace std;
 
 //WARN:cannot support soft links!
@@ -71,8 +73,24 @@ main(int argc, char * argv[])
 	//{
 	//db_folder = string("../") + db_folder;
 	//}
-	Database _db(db_folder);
-	_db.load();
+	fstream ofp;
+	ofp.open("./system.db/port.txt", ios::in);
+	int ch = ofp.get();
+	if(ofp.eof()){
+		cout << "ghttp is not running!" << endl;
+		return 0;
+	}
+	ofp.close();
+	ofp.open("./system.db/port.txt", ios::in);
+	int port;
+	ofp >> port;
+	ofp.close();
+	string username = "root";
+	string password = "123456";
+	string IP = "127.0.0.1";
+	GstoreConnector gc(IP, port, username, password);
+
+	gc.load(db_folder);
 	cout << "finish loading" << endl;
 
 	// read query from file.
@@ -108,48 +126,19 @@ main(int argc, char * argv[])
 			return 0;
 		}
 		printf("query is:\n%s\n\n", query.c_str());
-		ResultSet _rs;
-		FILE* ofp = stdout;
-		if (argc >= 4)
-		{
-			ofp = fopen(argv[3], "w");
-		}
-		string msg;
-		int ret = _db.query(query, _rs, ofp);
 		if(argc >= 4)
 		{
-			fclose(ofp);
-			ofp = NULL;
+			string filename = argv[3];
+			gc.fquery(db_folder, "text", query, filename);
+			return 0;
 		}
-
-		//cout<<"gquery ret: "<<ret<<endl;
-		if (ret <= -100)  //select query
-		{
-			if(ret == -100)
-			{
-				msg = _rs.to_str();
-			}
-			else //query error
-			{
-				msg = "query failed.";
-			}
+		string res = gc.query(db_folder, "text", query);
+		if(res.find("StatusCode") != string::npos){
+				Document document;
+				document.Parse(res.c_str());
+				res = document["StatusMsg"].GetString();
 		}
-		else //update query
-		{
-			if(ret >= 0)
-			{
-				msg = "update num: " + Util::int2string(ret);
-			}
-			else //update error
-			{
-				msg = "update failed.";
-			}
-		}
-		if(ret != -100)
-		{
-			cout << msg <<endl;
-		}
-
+		cout << res << endl;
 		return 0;
 	}
 
@@ -264,43 +253,21 @@ main(int argc, char * argv[])
 		}
 		printf("query is:\n");
 		printf("%s\n\n", query.c_str());
-		ResultSet _rs;
-		int ret = _db.query(query, _rs, fp);
-		//int ret = _db.query(query, _rs, NULL);
-		string msg;
-
-		//cout<<"gquery ret: "<<ret<<endl;
-		if (ret <= -100)  //select query
+		if(fp == stdout)
 		{
-			if(ret == -100)
-			{
-				msg = "";
+			string res = gc.query(db_folder, "json", query);
+			if(res.find("StatusCode") != string::npos){
+				Document document;
+				document.Parse(res.c_str());
+				res = document["StatusMsg"].GetString();
 			}
-			else //query error
-			{
-				msg = "query failed.";
-			}
+			cout << res << endl;
 		}
-		else //update query
+		else
 		{
-			if(ret >= 0)
-			{
-				msg = "update num: " + Util::int2string(ret);
-			}
-			else //update error
-			{
-				msg = "update failed.";
-			}
+			string filename = q;
+			gc.fquery(db_folder, "json", query, filename);
 		}
-
-		if(ret != -100)
-		{
-			cout << msg << endl;
-		}
-
-		//test...
-		//string answer_file = query_file+".out";
-		//Util::save_to_file(answer_file.c_str(), _rs.to_str());
 		free(q);
 		//free(resolved_path);
 		free(buf);

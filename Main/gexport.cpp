@@ -7,8 +7,10 @@
 
 #include "../Database/Database.h"
 #include "../Util/Util.h"
+#include "../api/http/cpp/client.h"
 
 using namespace std;
+using namespace rapidjson;
 
 int
 main(int argc, char * argv[])
@@ -52,32 +54,27 @@ main(int argc, char * argv[])
 
 	cout << "gexport..." << endl;
 
-	Database system_db("system");
-	system_db.load();
-
-	string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
-	ResultSet ask_rs;
-	FILE* ask_ofp = stdout;
-	int ret = system_db.query(sparql, ask_rs, ask_ofp);
-	if (ask_rs.answer[0][0] == "false")
-	{
-		cout << "The database does not exist." << endl;
+	fstream ofp;
+	ofp.open("./system.db/port.txt", ios::in);
+	int ch = ofp.get();
+	if(ofp.eof()){
+		cout << "ghttp is not running!" << endl;
 		return 0;
 	}
-
-	cout << "start exporting the database......" << endl;
-	Database _db(db_name);
-	_db.load();
-	cout << "finish loading" << endl;
-
-	sparql = "select * where{?x ?y ?z.}";
-	ResultSet _rs;
-	FILE* ofp = fopen(filepath.c_str(), "w");
-    ret = _db.query(sparql, _rs, ofp, true, true);
-    fflush(ofp);
-	fclose(ofp);
-	ofp = NULL;
-	cout << "finish exporting the database." << endl;
+	ofp.close();
+	ofp.open("./system.db/port.txt", ios::in);
+	int port;
+	ofp >> port;
+	ofp.close();
+	string username = "root";
+	string password = "123456";
+	string IP = "127.0.0.1";
+	GstoreConnector gc(IP, port, username, password);
+	string res = gc.exportDB(db_name, filepath);
+	Document document;
+	document.Parse(res.c_str());
+	cout << "StatusCode: " << document["StatusCode"].GetInt() << endl;
+	cout << "StatusMsg: " << document["StatusMsg"].GetString() << endl;
 
 	return 0;
 }

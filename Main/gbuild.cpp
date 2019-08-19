@@ -9,8 +9,10 @@ TODO: add -h/--help for help message
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
+#include "../api/http/cpp/client.h"
 
 using namespace std;
+using namespace rapidjson;
 #define SYSTEM_PATH "data/system/system.nt"
 
 //[0]./gbuild [1]data_folder_path  [2]rdf_file_path
@@ -77,109 +79,33 @@ main(int argc, char * argv[])
 	else
 		isbuilt = 0;
 
-	//build database
-	Database _db(_db_path);
-	bool flag = _db.build(_rdf);
-	if (flag)
-	{
-		cout << "import RDF file to database done." << endl;
-		ofstream f;
-		f.open("./"+ _db_path +".db/success.txt");
-		f.close();
-	}
-	else //if fails, drop database and return
-	{
-		cout << "import RDF file to database failed." << endl;
-		string cmd = "rm -r " + _db_path + ".db";
-		system(cmd.c_str());
+	
+	if (!boost::filesystem::exists("system.db")){
+		cout << "system.db not found! please run bin/ginit" << endl;
 		return 0;
 	}
-	if (!boost::filesystem::exists("system.db"))
-		return 0;
-	//system("clock");
 
-	Database system_db("system");
-	system_db.load();
-
-	//if isbuilt is false, add database information to system.db
-	if (isbuilt == 0)
-	{
-		string time = Util::get_date_time();
-		string sparql = "INSERT DATA {<" + _db_path + "> <database_status> \"already_built\"." + "<" + _db_path + "> <built_by> <root>."
-			+ "<" + _db_path + "> <built_time> \"" + time + "\".}";
-		ResultSet _rs;
-		FILE* ofp = stdout;
-		string msg;
-		int ret = system_db.query(sparql, _rs, ofp);
-		if (ret <= -100) // select query
-		{
-			if (ret == -100)
-				msg = _rs.to_str();
-			else //query error
-				msg = "query failed";
-		}
-		else //update query
-		{
-			if (ret >= 0)
-				msg = "update num : " + Util::int2string(ret);
-			else //update error
-				msg = "update failed.";
-			if (ret != -100)
-				cout << msg << endl;
-		}
+	fstream ofp;
+	ofp.open("./system.db/port.txt", ios::in);
+	int ch = ofp.get();
+	if(ofp.eof()){
+		cout << "ghttp is not running!" << endl;
 		return 0;
 	}
-	else //if isbuilt is true, update built_time of the database
-	{
-		string sparql = "DELETE {<" + _db_path + "> <built_time> ?t .}"
-			+ "WHERE{<" + _db_path + "> <built_time> ?t .}";
-		ResultSet _rs;
-		FILE* ofp = stdout;
-		string msg;
-		int ret = system_db.query(sparql, _rs, ofp);
-		if (ret <= -100) // select query
-		{
-			if (ret == -100)
-				msg = _rs.to_str();
-			else //query error
-				msg = "query failed";
-		}
-		else //update query
-		{
-			if (ret >= 0)
-				msg = "update num : " + Util::int2string(ret);
-			else //update error
-				msg = "update failed.";
-			if (ret != -100)
-				cout << msg << endl;
-		}
-		cout << "delete successfully" << endl;
-	}
-	string time = Util::get_date_time();
-	string sparql = "INSERT DATA {<" + _db_path + "> <built_time> \"" + time + "\".}";
-	ResultSet _rs;
-	FILE* ofp = stdout;
-	string msg;
-	int ret = system_db.query(sparql, _rs, ofp);
-	if (ret <= -100) // select query
-	{
-		if (ret == -100)
-			msg = _rs.to_str();
-		else //query error
-			msg = "query failed";
-	}
-	else //update query
-	{
-		if (ret >= 0)
-			msg = "update num : " + Util::int2string(ret);
-		else //update error
-			msg = "update failed.";
-		if (ret != -100)
-			cout << msg << endl;
-	}
-	cout << "insert successfully" << endl;
-
-	cout<<endl<<endl<<endl<< "import RDF file to database done." << endl;
+	ofp.close();
+	ofp.open("./system.db/port.txt", ios::in);
+	int port;
+	ofp >> port;
+	ofp.close();
+	string username = "root";
+	string password = "123456";
+	string IP = "127.0.0.1";
+	GstoreConnector gc(IP, port, username, password);
+	string res = gc.build(_db_path, _rdf);
+	Document document;
+	document.Parse(res.c_str());
+	cout << "StatusCode: " << document["StatusCode"].GetInt() << endl;
+	cout << "StatusMsg: " << document["StatusMsg"].GetString() << endl;
 	return 0;
 }
 
