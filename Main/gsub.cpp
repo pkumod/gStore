@@ -1,6 +1,5 @@
 #include "../Database/Database.h"
 #include "../Util/Util.h"
-#include "../api/http/cpp/client.h"
 
 //NOTICE+WARN:
 //ok to remove the whole tree
@@ -8,7 +7,6 @@
 //TODO:deal with empty tree and add eles
 
 using namespace std;
-using namespace rapidjson;
 
 int
 main(int argc, char * argv[])
@@ -30,42 +28,26 @@ main(int argc, char * argv[])
 		return -1;
 	}
 
-	fstream ofp;
-	ofp.open("./system.db/port.txt", ios::in);
-	int ch = ofp.get();
-	if(ofp.eof()){
-		cout << "ghttp is not running!" << endl;
-		return 0;
-	}
-	ofp.close();
-	ofp.open("./system.db/port.txt", ios::in);
-	int port;
-	ofp >> port;
-	string username = "root";
-	string password = "123456";
-	string IP = "127.0.0.1";
-	ofp.close();
-	GstoreConnector gc(IP, port, username, password);
-	gc.load(db_folder);
-	string filename = argv[2];
-    ofp.open(filename, ios::in);
-    string line;
-    int delete_cnt = 0;
-    int cnt = 0;
-    while(getline(ofp, line))
-    {
-    	string res;
-    	string newline = "DELETE DATA {";
-        newline += line;
-        newline += "}";
-        res = gc.query(db_folder, "json", newline);
-        Document document;
-		document.Parse(res.c_str());
-		cnt++;
-		if(document["StatusCode"].GetInt() == 402) delete_cnt++;
-    }
-    ofp.close();
-    cout << "triple num: " << cnt << endl;
-    cout << "delete triple num: " <<  delete_cnt << endl;
+	Database _db(db_folder);
+	_db.load();
+	cout << "finish loading" << endl;
+	//_db.insert(argv[2]);
+	//_db.remove(argv[2]);
+	_db.remove(argv[2]);
+
+	//string query = string(argv[2]);
+	//query = Util::getQueryFromFile(query.c_str());
+	//if (query.empty())
+	//{
+	//return 0;
+	//}
+	//printf("query is:\n%s\n\n", query.c_str());
+
+	//ResultSet _rs;
+	//_db.query(query, _rs, stdout);
+
+	//TODO:to test insert, delete and modify
+	//read from file or just several triples written here
+
 	return 0;
 }

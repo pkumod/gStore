@@ -14,10 +14,8 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
-#include "../api/http/cpp/client.h"
 
 using namespace std;
-using namespace rapidjson;
 #define SYSTEM_PATH "data/system/system.nt"
 #define DEFALUT_BACKUP_PATH "backups"
 
@@ -94,28 +92,24 @@ main(int argc, char * argv[])
 	if(backup_path[backup_path.length() - 1] == '/') backup_path = backup_path.substr(0, backup_path.length() - 1);
 	
 	backup_path = "./" + backup_path;
-	fstream ofp;
-	ofp.open("./system.db/port.txt", ios::in);
-	int ch = ofp.get();
-	if(ofp.eof()){
-		cout << "ghttp is not running!" << endl;
-		return 0;
+	string db_path = db_name + ".db";
+
+	//copy
+	if(backup_path == "") backup_path = DEFALUT_BACKUP_PATH;
+	int ret = copy(db_path, backup_path);
+	if(ret == 1){
+		cout << "Database Name Error, Backup Failed!" << endl;
 	}
-	ofp.close();
-	ofp.open("./system.db/port.txt", ios::in);
-	int port;
-	ofp >> port;
-	ofp.close();
-	GstoreConnector gc;
-	string res;
-	string username = "root";
-	string password = "123456";
-	int ret;
-	ret = gc.Get("http://127.0.0.1:" + Util::int2string(port) + "/?operation=backup&db_name=" + db_name + "&username=" + username + "&password=" + password + "&path=" + backup_path, res);
-	Document document;
-	document.Parse(res.c_str());
-	cout << "StatusCode: " << document["StatusCode"].GetInt() << endl;
-	cout << "StatusMsg: " << document["StatusMsg"].GetString() << endl;
+	else{
+		string time = Util::get_date_time();
+		string timestamp = Util::get_timestamp();
+		backup_path = backup_path + "/" + db_path;
+		string _backup_path = backup_path + "_" + timestamp;
+		string sys_cmd = "mv " + backup_path + " " + _backup_path;
+		system(sys_cmd.c_str());
+		cout << "Time:" + time << endl;
+		cout << "DB:" + db_name + " Backup done!" << endl;
+	}
 	return 0;
 }
 

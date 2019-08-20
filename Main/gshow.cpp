@@ -8,20 +8,14 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
-#include "../api/http/cpp/client.h"
 
 using namespace std;
-using namespace rapidjson;
 
 struct DBInfo{
         public:
                 string db_name;
                 string creator;
                 string built_time;
-                string is_backup;
-                string backup_interval;
-                string backup_timer;
-                string last_backup_time;
                 DBInfo(){
                 }
                 DBInfo(string _db_name){
@@ -39,39 +33,53 @@ string Getstr(string s)
 
 int main(int argc, char * argv[])
 {
-        fstream ofp;
-        ofp.open("./system.db/port.txt", ios::in);
-        int ch = ofp.get();
-        if(ofp.eof()){
-                cout << "ghttp is not running!" << endl;
-                return 0;
-        }
-        ofp.close();
-        ofp.open("./system.db/port.txt", ios::in);
-        int port;
-        ofp >> port;
-        ofp.close();
-        string username = "root";
-        string password = "123456";
-        string IP = "127.0.0.1";
-        GstoreConnector gc(IP, port, username, password);
-        string res = gc.show();
-        Document document;
-        document.Parse(res.c_str());
-        cout << "StatusCode: " << document["StatusCode"].GetInt() << endl;
-        cout << "StatusMsg: " << document["StatusMsg"].GetString() << endl;
-        Value &dbs = document["ResponseBody"];
+        Util util;
 
-        for (size_t i = 0; i < dbs.Size(); i++)
+        Database system_db("system");
+        system_db.load();
+        string sparql = "select ?s where{?s <database_status> \"already_built\".}";
+        ResultSet _rs;
+        FILE* ofp = stdout;
+        int ret = system_db.query(sparql, _rs, ofp);
+        DBInfo* databases = new DBInfo[_rs.ansNum+1];
+        databases[0].db_name = "<system>";
+        for (int i = 0; i < _rs.ansNum; i++)
         {
-           Value &v = dbs[i];
-           cout << "==================================================================" << endl;
-           cout << "database: " << v["database"].GetString() << endl;
-           cout << "creator: " << v["creator"].GetString() << endl;
-           cout << "built_time: " << v["built_time"].GetString() << endl;
-           cout << "status: " << v["status"].GetString() << endl;
+                databases[i+1].db_name = _rs.answer[i][0];
+                string sparql1 = "select ?p ?o where{" + _rs.answer[i][0] + " ?p ?o.}";
+                ResultSet _rs1;
+                FILE* ofp1 = stdout;
+                int ret1 = system_db.query(sparql1, _rs1, ofp1);
+                for (int j = 0; j < _rs1.ansNum; j++)
+                {
+                        string p = _rs1.answer[j][0];
+                        string o = _rs1.answer[j][1];
+                        if(p == "<built_by>")
+                                databases[i+1].creator = o;
+                        else if(p == "<built_time>")
+                                databases[i+1].built_time = o;
+                }
         }
-        cout << "==================================================================" << endl;
+        string sparql1 = "select ?p ?o where{<system> ?p ?o.}";
+        ResultSet _rs1;
+        FILE* ofp1 = stdout;
+        int ret1 = system_db.query(sparql1, _rs1, ofp1);
+        for (int j = 0; j < _rs1.ansNum; j++)
+        {
+                string p = _rs1.answer[j][0];
+                string o = _rs1.answer[j][1];
+                if(p == "<built_by>")
+                        databases[0].creator = o;
+                else if(p == "<built_time>")
+                        databases[0].built_time = o;
+        }
+        cout<<"\n========================================\n";
+        for (int i = 0; i < _rs.ansNum+1; i++)
+        {      
+                string output = "database: " + Getstr(databases[i].db_name) + "\ncreator: " + Getstr(databases[i].creator) + 
+                                "\nbuilt_time: " + databases[i].built_time + "\n========================================\n"; 
+                cout<<output;
+        }    
         return 0;
 }
 
