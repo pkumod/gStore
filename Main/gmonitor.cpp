@@ -8,10 +8,8 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
-#include "../api/http/cpp/client.h"
 
 using namespace std;
-using namespace rapidjson;
 
 int main(int argc, char * argv[])
 {
@@ -38,38 +36,49 @@ int main(int argc, char * argv[])
 			return 0;
 		}
 
-		fstream ofp;
-        ofp.open("./system.db/port.txt", ios::in);
-        int ch = ofp.get();
-        if(ofp.eof()){
-                cout << "ghttp is not running!" << endl;
-                return 0;
+		Database system_db("system");
+		system_db.load();
+
+		string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
+		ResultSet ask_rs;
+		FILE* ask_ofp = stdout;
+		int ret = system_db.query(sparql, ask_rs, ask_ofp);
+		if (ask_rs.answer[0][0] == "false")
+		{
+			cout << "The database does not exist." << endl;
+			return 0;
+		}
+
+		cout << "start loading the database......" << endl;
+		Database _db(db_name);
+		_db.load();
+		cout << "finish loading" << endl;
+
+        sparql = "select ?p ?o where{<" + db_name + "> ?p ?o.}";
+        ResultSet _rs;
+        FILE* ofp = stdout;
+        ret = system_db.query(sparql, _rs, ofp);
+        string creator;
+        string built_time;
+        for (int i = 0; i < _rs.ansNum; i++)
+        {
+        	string p = _rs.answer[i][0];
+            string o = _rs.answer[i][1];
+            if(p == "<built_by>")
+                creator = o.substr(1,o.length()-2);
+            else if(p == "<built_time>")
+                built_time = o;
         }
-		ofp.close();
-        ofp.open("./system.db/port.txt", ios::in);
-        int port;
-        ofp >> port;
-        ofp.close();
-        string username = "root";
-        string password = "123456";
-        string IP = "127.0.0.1";
-        GstoreConnector gc(IP, port, username, password);
-        string res = gc.load(db_name);
-        res = gc.monitor(db_name);
-        Document document;
-		document.Parse(res.c_str());
-		cout << "StatusCode: " << document["StatusCode"].GetInt() << endl;
-		cout << "StatusMsg: " << document["StatusMsg"].GetString() << endl;
-		cout << "=============================================================" << endl;
-		cout << "database: " << document["database"].GetString() << endl;
-		cout << "creator: " << document["creator"].GetString() << endl;
-		cout << "built_time: " << document["built_time"].GetString() << endl;
-		cout << "triple num: " << document["triple num"].GetInt() << endl;
-		cout << "entity num: " << document["entity num"].GetInt() << endl;
-		cout << "literal num: " << document["literal num"].GetInt() << endl;
-		cout << "subject num: " << document["subject num"].GetInt() << endl;
-		cout << "predicate num: " << document["predicate num"].GetInt() << endl;
-		cout << "connection num: " << document["connection num"].GetInt() << endl;
-		cout << "=============================================================" << endl;
+		unsigned triple_num = _db.getTripleNum();
+		unsigned entity_num = _db.getEntityNum();
+		unsigned literal_num = _db.getLiteralNum();
+		unsigned subject_num = _db.getSubNum();
+		unsigned predicate_num = _db.getPreNum();
+
+		cout<<"\n========================================\n";
+		string output = "database: " + db_name + "\ncreator: " + creator + "\nbuilt_time: " + built_time + "\n";
+		output = output + "triple num: " + Util::int2string(triple_num) + "\nentity num: " + Util::int2string(entity_num) + "\nliteral num: " + Util::int2string(literal_num) + "\nsubject num: " + Util::int2string(subject_num) + "\npredicate num: " + Util::int2string(predicate_num) 
+				+ "\n========================================\n";
+        cout<<output;   
         return 0;
 }

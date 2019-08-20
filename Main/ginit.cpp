@@ -38,20 +38,6 @@ int main(int argc, char * argv[])
 	}
 
 	//build system.db
-	fstream ofp1;
-	ofp1.open("./system.db/port.txt", ios::in);
-	int ch = ofp1.get();
-	if(!ofp1.eof()){
-		cout << "ghttp is running at port ";
-		ofp1.close();
-		ofp1.open("./system.db/port.txt", ios::in);
-		ofp1 >> ch;
-		cout << ch << ". please stop ghttp first and try again!" << endl;
-		ofp1.close();
-		return 0;
-	}
-	ofp1.close();
-
 	Util util;
 	string _db_path = "system";
 	string _rdf = "data/system/system.nt";
@@ -73,7 +59,7 @@ int main(int argc, char * argv[])
 		_db = NULL;
 		return 0;
 	}
-	Util::init_backuplog();
+
 	//insert built_time of system.db
 	delete _db;
 	_db = new Database(_db_path);
@@ -91,7 +77,6 @@ int main(int argc, char * argv[])
 				sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
 				sparql = sparql + "<" + db_name + "> <built_by> <root>.";
 				sparql = sparql + "<" + db_name + "> <built_time> \"" + time + "\".";
-				Util::add_backuplog(db_name);
 			}		
 		}
 	}

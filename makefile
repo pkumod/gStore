@@ -116,7 +116,7 @@ inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
 
 #gtest
 
-TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(exedir)gbackup $(exedir)grestore
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -130,10 +130,10 @@ all: $(TARGET)
 #NOTICE:not include g*.o in objfile due to multiple definitions of main()
 
 $(exedir)gexport: $(lib_antlr) $(objdir)gexport.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gexport $(objdir)gexport.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gexport $(objdir)gexport.o $(objfile) $(library) $(openmp)
 
 $(exedir)gdrop: $(lib_antlr) $(objdir)gdrop.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gdrop $(objdir)gdrop.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gdrop $(objdir)gdrop.o $(objfile) $(library) $(openmp)
 
 $(exedir)ginit: $(lib_antlr) $(objdir)ginit.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)ginit $(objdir)ginit.o $(objfile) $(library) $(openmp)
@@ -142,16 +142,16 @@ $(exedir)shutdown: $(lib_antlr) $(objdir)shutdown.o $(objfile) $(api_cpp)
 	$(CC) $(EXEFLAG) -o $(exedir)shutdown $(objdir)shutdown.o $(objfile) $(openmp) -L./api/http/cpp/lib -lclient $(library)
 
 $(exedir)gmonitor: $(lib_antlr) $(objdir)gmonitor.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gmonitor $(objdir)gmonitor.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gmonitor $(objdir)gmonitor.o $(objfile) $(library) $(openmp)
 
 $(exedir)gshow: $(lib_antlr) $(objdir)gshow.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gshow $(objdir)gshow.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gshow $(objdir)gshow.o $(objfile) $(library) $(openmp)
 
 $(exedir)gbuild: $(lib_antlr) $(objdir)gbuild.o $(objfile) 
-	$(CC) $(EXEFLAG) -o $(exedir)gbuild $(objdir)gbuild.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gbuild $(objdir)gbuild.o $(objfile) $(library) $(openmp)
 
 $(exedir)gquery: $(lib_antlr) $(objdir)gquery.o $(objfile) 
-	$(CC) $(EXEFLAG) -o $(exedir)gquery $(objdir)gquery.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gquery $(objdir)gquery.o $(objfile) $(library) $(openmp)
 
 $(exedir)gserver: $(lib_antlr) $(objdir)gserver.o $(objfile) 
 	$(CC) $(EXEFLAG) -o $(exedir)gserver $(objdir)gserver.o $(objfile) $(library) $(openmp)
@@ -169,13 +169,10 @@ $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/
 	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX $(openmp)
 
 $(exedir)gbackup: $(lib_antlr) $(objdir)gbackup.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gbackup $(objdir)gbackup.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gbackup $(objdir)gbackup.o $(objfile) $(library) $(openmp)
 
 $(exedir)grestore: $(lib_antlr) $(objdir)grestore.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)grestore $(objdir)grestore.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
-
-$(exedir)gpara: $(lib_antlr) $(objdir)gpara.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gpara $(objdir)gpara.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)grestore $(objdir)grestore.o $(objfile) $(library) $(openmp)
 
 $(testdir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(testdir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
@@ -232,9 +229,7 @@ $(objdir)gbackup.o: Main/gbackup.cpp Database/Database.h Util/Util.h $(lib_antlr
 
 $(objdir)grestore.o: Main/grestore.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/grestore.cpp $(inc) -o $(objdir)grestore.o $(openmp)
-
-$(objdir)gpara.o: Main/gpara.cpp Database/Database.h Util/Util.h $(lib_antlr)
-	$(CC) $(CFLAGS) Main/gpara.cpp $(inc) -o $(objdir)gpara.o $(openmp)
+	
 #objects in Main/ end
 
 #objects in scripts/ begin
@@ -612,7 +607,7 @@ $(objdir)gtest.o: scripts/gtest.cpp
 	$(CC) $(CFLAGS) scripts/gtest.cpp $(inc) -o $(objdir)gtest.o $(openmp)
 	
 $(exedir)gadd: $(objdir)gadd.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gadd $(objdir)gadd.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gadd $(objdir)gadd.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp)
 
 $(objdir)gadd.o: Main/gadd.cpp
 	$(CC) $(CFLAGS) Main/gadd.cpp $(inc) -o $(objdir)gadd.o $(openmp)
@@ -624,7 +619,7 @@ $(objdir)gadd.o: Main/gadd.cpp
 	#$(CC) $(CFLAGS) Main/HttpConnector.cpp $(inc) -o $(objdir)HttpConnector.o $(library) -DUSE_BOOST_REGEX
 
 $(exedir)gsub: $(objdir)gsub.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gsub $(objdir)gsub.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gsub $(objdir)gsub.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp)
 
 $(objdir)gsub.o: Main/gsub.cpp
 	$(CC) $(CFLAGS) Main/gsub.cpp $(inc) -o $(objdir)gsub.o $(openmp)
