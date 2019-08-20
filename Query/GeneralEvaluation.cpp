@@ -135,28 +135,28 @@ bool GeneralEvaluation::doQuery()
 
 	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num,this->pre2sub, this->pre2obj, 
 		this->limitID_predicate, this->limitID_literal, this->limitID_entity);
-	// if (this->query_tree.checkWellDesigned())
-	// {
-	// 	printf("=================\n");
-	// 	printf("||well-designed||\n");
-	// 	printf("=================\n");
+	if (this->query_tree.checkWellDesigned())
+	{
+		printf("=================\n");
+		printf("||well-designed||\n");
+		printf("=================\n");
 
-	// 	this->rewriting_evaluation_stack.clear();
-	// 	this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
-	// 	this->rewriting_evaluation_stack.back().group_pattern = this->query_tree.getGroupPattern();
-	// 	this->rewriting_evaluation_stack.back().result = NULL;
+		this->rewriting_evaluation_stack.clear();
+		this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
+		this->rewriting_evaluation_stack.back().group_pattern = this->query_tree.getGroupPattern();
+		this->rewriting_evaluation_stack.back().result = NULL;
 
-	// 	this->temp_result = this->rewritingBasedQueryEvaluation(0);
-	// }
-	// else
-	// {
-	// 	printf("=====================\n");
-	// 	printf("||not well-designed||\n");
-	// 	printf("=====================\n");
+		this->temp_result = this->rewritingBasedQueryEvaluation(0);
+	}
+	else
+	{
+		printf("=====================\n");
+		printf("||not well-designed||\n");
+		printf("=====================\n");
 
-	// 	this->temp_result = this->semanticBasedQueryEvaluation(this->query_tree.getGroupPattern());
-	// }
-	this->temp_result = this->semanticBasedQueryEvaluation(this->query_tree.getGroupPattern());
+		this->temp_result = this->semanticBasedQueryEvaluation(this->query_tree.getGroupPattern());
+	}
+	// this->temp_result = this->semanticBasedQueryEvaluation(this->query_tree.getGroupPattern());
 
 	return true;
 }
