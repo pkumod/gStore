@@ -4,7 +4,7 @@
 
 - Lei Zou, Jinghui Mo, Lei Chen,M. Tamer Özsu, Dongyan Zhao, [gStore: Answering SPARQL Queries Via Subgraph Matching](http://www.icst.pku.edu.cn/intro/leizou/projects/papers/p482-zou.pdf), Proc. VLDB 4(8): 482-493, 2011.
 
-- Xuchuan Shen, Lei Zou, M. Tamer Özsu, Lei Chen, Youhuan Li, Shuo Han, Dongyan Zhao, [A Graph-based RDF Triple Store](http://www.icst.pku.edu.cn/intro/leizou/projects/papers/demo.pdf), in Proc. 31st International Conference on Data Engineering (ICDE), 2015; To appear (demo).
+- Xuchuan Shen, Lei Zou, M. Tamer Özsu, Lei Chen, Youhuan Li, Shuo Han, Dongyan Zhao, [A Graph-based RDF Triple Store](https://jszx6.pku.edu.cn/pub/sjglsys/docs/20190909213425677387.pdf), in Proc. 31st International Conference on Data Engineering (ICDE), 2015; To appear (demo).
 
 - Dong Wang, Lei Zou, Yansong Feng, Xuchuan Shen, Jilei Tian, and Dongyan Zhao, [S-store: An Engine for Large RDF Graph Integrating Spatial Information](http://www.icst.pku.edu.cn/intro/leizou/projects/papers/Store.pdf), in Proc. 18th International Conference on Database Systems for Advanced Applications (DASFAA), pages 31-47, 2013.
 
