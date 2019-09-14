@@ -20,7 +20,7 @@ echo -e "readline-devel installed \n"
 apt install -y openjdk-8-jdk
 echo -e "openjdk 8 installed \n"
 
-apt install -y curl libcurl4 libcurl4-openssl-dev
+apt install -y curl libcurl4-openssl-dev
 echo -e "libcurl-devel installed \n"
 
 echo -e "Optional: requests for python api, pthreads and curl-devel for php api, realpath for gconsole, ccache for faster compilation\n"
