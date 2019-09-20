@@ -44,8 +44,11 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define SYSTEM_USERNAME "system"
 #define MAX_OUTPUT_SIZE 100000
 #define TEST_IP "106.13.13.193"
+#define DB_PATH "."
+#define BACKUP_PATH "./backups"
 
 int initialize(int argc, char *argv[]);
+int copy(string src_path, string dest_path);
 //Added for the default_resource example
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
         const shared_ptr<ifstream> &ifs);
@@ -100,6 +103,12 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 bool drop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool restore_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool auto_backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 bool getCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
@@ -182,12 +191,17 @@ struct User{
 		std::set<std::string> update_priv;
 		std::set<std::string> load_priv;
 		std::set<std::string> unload_priv;
+		std::set<std::string> backup_priv;
+		std::set<std::string> restore_priv;
+		std::set<std::string> export_priv;
 
 		pthread_rwlock_t query_priv_set_lock;
 		pthread_rwlock_t update_priv_set_lock;
 		pthread_rwlock_t load_priv_set_lock;
 		pthread_rwlock_t unload_priv_set_lock;
-
+		pthread_rwlock_t backup_priv_set_lock;
+		pthread_rwlock_t restore_priv_set_lock;
+		pthread_rwlock_t export_priv_set_lock;
 		/*
 		Database *build_priv[MAX_DATABASE_NUM];
 		Database *load_priv[MAX_DATABASE_NUM];
@@ -199,6 +213,9 @@ struct User{
 			pthread_rwlock_init(&update_priv_set_lock, NULL);
 			pthread_rwlock_init(&load_priv_set_lock, NULL);
 			pthread_rwlock_init(&unload_priv_set_lock, NULL);
+			pthread_rwlock_init(&backup_priv_set_lock, NULL);
+			pthread_rwlock_init(&restore_priv_set_lock, NULL);
+			pthread_rwlock_init(&export_priv_set_lock, NULL);
 		}
 		User(string _username, string _password){
 			if(_username == "")
@@ -214,12 +231,18 @@ struct User{
 			pthread_rwlock_init(&update_priv_set_lock, NULL);
 			pthread_rwlock_init(&load_priv_set_lock, NULL);
 			pthread_rwlock_init(&unload_priv_set_lock, NULL);
+			pthread_rwlock_init(&backup_priv_set_lock, NULL);
+			pthread_rwlock_init(&restore_priv_set_lock, NULL);
+			pthread_rwlock_init(&export_priv_set_lock, NULL);
 		}
 		~User(){
 			pthread_rwlock_destroy(&query_priv_set_lock);
 			pthread_rwlock_destroy(&update_priv_set_lock);
 			pthread_rwlock_destroy(&load_priv_set_lock);
 			pthread_rwlock_destroy(&unload_priv_set_lock);
+			pthread_rwlock_destroy(&backup_priv_set_lock);
+			pthread_rwlock_destroy(&restore_priv_set_lock);
+			pthread_rwlock_destroy(&export_priv_set_lock);
 		}
 		std::string getPassword(){
 			return password;
@@ -288,6 +311,51 @@ struct User{
 				++it;
 			}
 			return unload_db;
+		}
+		std::string getrestore(){
+			std::string restore_db;
+			if(username == ROOT_USERNAME)
+			{
+				restore_db = "all";
+				return restore_db;
+			}
+			std::set<std::string>::iterator it = restore_priv.begin();
+			while(it != restore_priv.end())
+			{
+				restore_db = restore_db + *it + " ";
+				++it;
+			}
+			return restore_db;
+		}
+		std::string getbackup(){
+			std::string backup_db;
+			if(username == ROOT_USERNAME)
+			{
+				backup_db = "all";
+				return backup_db;
+			}
+			std::set<std::string>::iterator it = backup_priv.begin();
+			while(it != backup_priv.end())
+			{
+				backup_db = backup_db + *it + " ";
+				++it;
+			}
+			return backup_db;
+		}
+		std::string getexport(){
+			std::string export_db;
+			if(username == ROOT_USERNAME)
+			{
+				export_db = "all";
+				return export_db;
+			}
+			std::set<std::string>::iterator it = export_priv.begin();
+			while(it != export_priv.end())
+			{
+				export_db = export_db + *it + " ";
+				++it;
+			}
+			return export_db;
 		}
 		void setPassword(string psw)
 		{
@@ -1228,6 +1296,38 @@ int initialize(int argc, char *argv[])
 		default_handler(server, response, request);
 	};
 
+	server.resource["^/%3[F|f]operation%3[D|d]backup%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26path%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		backup_handler(server, response, request, "GET");
+    };
+
+	server.resource["^/?operation=backup&db_name=(.*)&username=(.*)&password=(.*)&path=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		backup_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /unload, responds with the matched string in path
+	server.resource["/restore"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		backup_handler(server, response, request, "POST");
+	};
+
+	server.resource["^/%3[F|f]operation%3[D|d]restore%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26path%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		restore_handler(server, response, request, "GET");
+    };
+
+	server.resource["^/?operation=restore&db_name=(.*)&username=(.*)&password=(.*)&path=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		restore_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /unload, responds with the matched string in path
+	server.resource["/restore"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		restore_handler(server, response, request, "POST");
+	};
+
     thread server_thread([&server](){
 			//handle the Ctrl+C signal
 		    signal(SIGINT, signalHandler);
@@ -1703,7 +1803,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	f.close();
 
 	//by default, one can query or load or unload the database that is built by itself, so add the database name to the privilege set of the user
-	if(addPrivilege(username, "query", db_name) == 0 || addPrivilege(username, "load", db_name) == 0 || addPrivilege(username, "unload", db_name) == 0)
+	if(addPrivilege(username, "query", db_name) == 0 || addPrivilege(username, "load", db_name) == 0 || addPrivilege(username, "unload", db_name) == 0 || addPrivilege(username, "backup", db_name) == 0 || addPrivilege(username, "restore", db_name) == 0 || addPrivilege(username, "export", db_name) == 0)
 	{
 		string error = "add query or load or unload privilege failed.";
 		string resJson = CreateJson(912, error, 0);
@@ -2180,6 +2280,19 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 
 	cout << "check identity successfully." << endl;
 
+	if(checkPrivilege(username, "drop", db_name) == 0)
+	{
+		string error = "no load privilege, operation failed.";
+		string resJson = CreateJson(302, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		return;
+	}
+	cout << "check privilege successfully." << endl;
+
 	//check if the db_name is system
 	if (db_name == "system")
 	{
@@ -2372,6 +2485,19 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 	}
 	pthread_rwlock_unlock(&users_map_lock);
 	cout << "check identity successfully." << endl;
+
+	if(checkPrivilege(username, "export", db_name) == 0)
+	{
+		string error = "no load privilege, operation failed.";
+		string resJson = CreateJson(302, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		return;
+	}
+	cout << "check privilege successfully." << endl;
 
 	//check if the db_name is system
 	if (db_name == "system")
@@ -3840,7 +3966,7 @@ void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 			pthread_rwlock_unlock(&users_map_lock);
 
 		}
-		else if(type == "add_query" || type == "add_load" || type == "add_unload" || type == "add_update")
+		else if(type == "add_query" || type == "add_load" || type == "add_unload" || type == "add_update" || type == "add_backup" || type == "add_restore" || type == "add_export")
 		{
 			if(username2 == ROOT_USERNAME)
 			{
@@ -3867,7 +3993,7 @@ void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 				return;
 			}
 		}
-		else if(type == "delete_query" || type == "delete_load" || type == "delete_unload" || type == "delete_update")
+		else if(type == "delete_query" || type == "delete_load" || type == "delete_unload" || type == "delete_update" || type == "delete_backup" || type == "delete_restore" || type == "delete_export" )
 		{
 			if(username2 == ROOT_USERNAME)
 			{
@@ -4300,6 +4426,21 @@ void showUser_thread(const shared_ptr<HttpServer::Response>& response, const sha
 		_unload_db.SetString(unload_db.c_str(), unload_db.length(), allocator);
 		obj.AddMember("unload privilege", _unload_db, allocator);
 
+		string backup_db = it->second->getbackup();
+		Value _backup_db;
+		_backup_db.SetString(backup_db.c_str(), backup_db.length(), allocator);
+		obj.AddMember("backup privilege", _backup_db, allocator);
+
+		string restore_db = it->second->getrestore();
+		Value _restore_db;
+		_restore_db.SetString(restore_db.c_str(), restore_db.length(), allocator);
+		obj.AddMember("restore privilege", _restore_db, allocator);
+
+		string export_db = it->second->getexport();
+		Value _export_db;
+		_export_db.SetString(export_db.c_str(), export_db.length(), allocator);
+		obj.AddMember("export privilege", _export_db, allocator);
+
 		json_array.PushBack(obj, allocator);
 	}
 	resDoc.AddMember("ResponseBody", json_array, allocator);
@@ -4371,6 +4512,33 @@ bool addPrivilege(string username, string type, string db_name)
 			
 			pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
 		}
+		else if(type == "restore")
+		{
+			pthread_rwlock_wrlock(&(it->second->restore_priv_set_lock));
+			it->second->restore_priv.insert(db_name);
+			string update = "INSERT DATA {<" + username + "> <has_restore_priv> <" + db_name + ">.}";
+			updateSys(update);
+
+			pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
+		}
+		else if(type == "backup")
+		{
+			pthread_rwlock_wrlock(&(it->second->backup_priv_set_lock));
+			it->second->backup_priv.insert(db_name);
+			string update = "INSERT DATA {<" + username + "> <has_backup_priv> <" + db_name + ">.}";
+			updateSys(update);
+
+			pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
+		}
+		else if(type == "export")
+		{
+			pthread_rwlock_wrlock(&(it->second->export_priv_set_lock));
+			it->second->export_priv.insert(db_name);
+			string update = "INSERT DATA {<" + username + "> <has_export_priv> <" + db_name + ">.}";
+			updateSys(update);
+
+			pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
+		}
 		return 1;
 	}
 	else
@@ -4425,6 +4593,36 @@ bool delPrivilege(string username, string type, string db_name)
 			updateSys(update);
 			
 			pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
+			return 1;
+		}
+		else if(type == "backup" && it->second->backup_priv.find(db_name) != it->second->backup_priv.end())
+		{
+			pthread_rwlock_wrlock(&(it->second->backup_priv_set_lock));
+			it->second->backup_priv.erase(db_name);
+			string update = "DELETE DATA {<" + username + "> <has_backup_priv> <" + db_name + ">.}";
+			updateSys(update);
+			
+			pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
+			return 1;
+		}
+		else if(type == "restore" && it->second->restore_priv.find(db_name) != it->second->restore_priv.end())
+		{
+			pthread_rwlock_wrlock(&(it->second->restore_priv_set_lock));
+			it->second->restore_priv.erase(db_name);
+			string update = "DELETE DATA {<" + username + "> <has_restore_priv> <" + db_name + ">.}";
+			updateSys(update);
+			
+			pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
+			return 1;
+		}
+		else if(type == "export" && it->second->export_priv.find(db_name) != it->second->export_priv.end())
+		{
+			pthread_rwlock_wrlock(&(it->second->export_priv_set_lock));
+			it->second->export_priv.erase(db_name);
+			string update = "DELETE DATA {<" + username + "> <has_export_priv> <" + db_name + ">.}";
+			updateSys(update);
+			
+			pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
 			return 1;
 		}
 	}
@@ -4484,6 +4682,39 @@ bool checkPrivilege(string username, string type, string db_name)
 			return 1;
 		}
 		pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
+	}
+	else if(type == "restore")
+	{
+		pthread_rwlock_rdlock(&(it->second->restore_priv_set_lock));
+		if(it->second->restore_priv.find(db_name) != it->second->restore_priv.end())
+		{
+			pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
+			pthread_rwlock_unlock(&users_map_lock);
+			return 1;
+		}
+		pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
+	}
+	else if(type == "backup")
+	{
+		pthread_rwlock_rdlock(&(it->second->backup_priv_set_lock));
+		if(it->second->backup_priv.find(db_name) != it->second->backup_priv.end())
+		{
+			pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
+			pthread_rwlock_unlock(&users_map_lock);
+			return 1;
+		}
+		pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
+	}
+	else if(type == "export")
+	{
+		pthread_rwlock_rdlock(&(it->second->export_priv_set_lock));
+		if(it->second->export_priv.find(db_name) != it->second->export_priv.end())
+		{
+			pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
+			pthread_rwlock_unlock(&users_map_lock);
+			return 1;
+		}
+		pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
 	}
 	pthread_rwlock_unlock(&users_map_lock);
 	return 0;
@@ -4560,6 +4791,16 @@ void DB2Map()
 			else if(type == "has_unload_priv")
 			{
 				user->unload_priv.insert(db_name);
+			}
+			else if(type == "has_restore_priv")
+			{
+				user->restore_priv.insert(db_name);
+			}else if(type == "has_backup_priv")
+			{
+				user->backup_priv.insert(db_name);
+			}else if(type == "has_export_priv")
+			{
+				user->export_priv.insert(db_name);
 			}
 		}
 		//users.insert(pair<std::string, struct User*>(username, &user));
@@ -4746,4 +4987,426 @@ bool updateSys(string query)
 			}
 		}
 
+}
+
+int copy(string src_path, string dest_path)
+{
+	string sys_cmd;
+	if(!boost::filesystem::exists(src_path)){
+		//check the source path
+		cout << "Source Path Error, Please Check It Again!" << endl;
+		return 1;
+	}
+	if(!boost::filesystem::exists(dest_path)){
+		//check the destnation path 
+		sys_cmd = "mkdir -p ./" + dest_path;
+		system(sys_cmd.c_str());
+	}
+	
+	sys_cmd = "cp -r " + src_path + ' ' +  dest_path ;
+	system(sys_cmd.c_str());
+    return 0;// success 
+}
+
+void backup_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is backup"<<endl;
+
+	//get parameter
+	string db_name;
+	string username;
+	string password;
+	string path, _path;
+	string timestamp;
+	string sys_cmd;
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		path = request->path_match[4];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		path = UrlDecode(path);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		path = document["path"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User *>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+
+	cout << "check identity successfully." << endl;
+
+	if(checkPrivilege(username, "backup", db_name) == 0)
+	{
+		string error = "no unload privilege, operation failed.";
+		string resJson = CreateJson(601, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		return;
+	}
+	cout << "check privilege successfully." << endl;
+
+	//check if the db_name is system
+	if (db_name == "system")
+	{
+		string error = "no backup privilege, operation failed.";
+		string resJson = CreateJson(302, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+
+	//	string db_name = argv[1];
+	if (db_name == "")
+	{
+		string error = "Exactly 1 argument is required!";
+		string resJson = CreateJson(904, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	string database = db_name;
+	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db")
+	{
+		//cout << "Your db name to be built should not end with \".db\"." << endl;
+		string error = "Your db name to be built should not end with \".db\".";
+		string resJson = CreateJson(202, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		return;
+	}
+
+	//check if database named [db_name] is already build.
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
+	if(it_already_build == already_build.end())
+	{
+		string error = "Database not built yet.";
+		string resJson = CreateJson(203, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		pthread_rwlock_unlock(&already_build_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&already_build_map_lock);
+
+	cout << database << endl;
+
+
+	if(pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+	{
+		string error = "Unable backup  due to loss of lock";
+		string resJson = CreateJson(303, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+	//backup
+	if(path == "") path = BACKUP_PATH;
+	if(path == "." ){
+		cout << "Backup Path Can not be root or empty, Backup Failed!" << endl;
+		string error = "Failed to backup the database. Backup Path Can not be root or empty.";
+		string resJson = CreateJson(304, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		return;
+	}
+	if(path[0] == '.') path = path.substr(1, path.length() - 1);
+	if(path[0] == '/') path = path.substr(1, path.length() - 1);
+	if(path[path.length() - 1] == '/') path = path.substr(0, path.length() - 1);
+	string db_path = db_name + ".db";
+	pthread_rwlock_wrlock(&databases_map_lock);
+	int ret = copy(db_path, path);
+	pthread_rwlock_unlock(&databases_map_lock);
+	if(ret == 1){
+		cout << "Database Folder Misssing, Backup Failed!" << endl;
+		string error = "Failed to backup the database. Database Folder Misssing.";
+		string resJson = CreateJson(305, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		return;
+	}
+	else{
+		string time = Util::get_date_time();
+		timestamp = Util::get_timestamp();
+		cout << "Time:" + time << endl;
+		cout << "DB:" + db_name + " Backup done!" << endl;
+	}
+	path = path + "/" + db_path;
+	_path = path + "_" + timestamp;
+	sys_cmd = "mv " + path + " " + _path;
+	system(sys_cmd.c_str());
+
+	cout << "database backup done." << endl;
+	string success = "Database backup successfully.";
+	string resJson = CreateJson(0, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+}
+
+bool backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&backup_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+void restore_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is restore"<<endl;
+
+	//get parameter
+	string db_name;
+	string username;
+	string password;
+	string path;
+	string _path;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		path = request->path_match[4];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		path = UrlDecode(path);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		path = document["path"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User *>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+
+	cout << "check identity successfully." << endl;
+
+	if(checkPrivilege(username, "restore", db_name) == 0)
+	{
+		string error = "no unload privilege, operation failed.";
+		string resJson = CreateJson(601, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		return;
+	}
+	cout << "check privilege successfully." << endl;
+
+	//check if the db_name is system
+	if (db_name == "system")
+	{
+		string error = "no restore privilege, operation failed.";
+		string resJson = CreateJson(302, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+
+	//	string db_name = argv[1];
+	if (db_name == "")
+	{
+		string error = "Exactly 1 argument is required!";
+		string resJson = CreateJson(904, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	string database = db_name;
+	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db")
+	{
+		//cout << "Your db name to be built should not end with \".db\"." << endl;
+		string error = "Your db name to be built should not end with \".db\".";
+		string resJson = CreateJson(202, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		return;
+	}
+
+	if(path[0] == '/') path = '.' + path;
+	if(path[path.length() - 1] == '/') path = path.substr(0, path.length()-1);
+
+	if(!boost::filesystem::exists(path)){
+		string error = "Backup Path Error, Restore Failed";
+		string resJson = CreateJson(307, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	
+	cout << database << endl;
+
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
+	if(it_already_build == already_build.end())
+	{
+		string error = "Database not built yet. Rebuild Now";
+		string time = Util::get_backup_time(path, db_name);
+		if(time.size() == 0){
+			string error = "Backup Path Does not Match DataBase Name, Restore Failed";
+			string resJson = CreateJson(308, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+			pthread_rwlock_unlock(&already_build_map_lock);
+			return;
+		}
+		if(addPrivilege(username, "query", db_name) == 0 || addPrivilege(username, "load", db_name) == 0 || addPrivilege(username, "unload", db_name) == 0 || addPrivilege(username, "backup", db_name) == 0 || addPrivilege(username, "restore", db_name) == 0 || addPrivilege(username, "export", db_name) == 0)
+		{
+			string error = "add query or load or unload or backup or restore privilege failed.";
+			string resJson = CreateJson(912, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+			//return false;
+			pthread_rwlock_unlock(&already_build_map_lock);
+			return;
+		}
+
+		cout << "add query and load and unload and backup and restore privilege succeed after build." << endl;
+		struct DBInfo *temp_db = new DBInfo(db_name, username, time);
+		already_build.insert(pair<std::string, struct DBInfo *>(db_name, temp_db));
+		string update = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." +
+		"<" + db_name + "> <built_by> <" + username + "> ." + "<" + db_name + "> <built_time> \"" + time + "\".}";
+		updateSys(update);
+		it_already_build = already_build.find(db_name);
+	}
+	pthread_rwlock_unlock(&already_build_map_lock);
+
+	if(pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+	{
+		string error = "Unable to restore due to loss of lock";
+		string resJson = CreateJson(303, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+	//restore
+	string sys_cmd = "rm -rf " + db_name + ".db";
+	system(sys_cmd.c_str());
+	
+	pthread_rwlock_wrlock(&databases_map_lock);
+	int ret  = copy(path, DB_PATH);
+	pthread_rwlock_unlock(&databases_map_lock);
+
+	if(ret == 1){
+		string error = "Failed to restore the database. Backup Path Error";
+		string resJson = CreateJson(307, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		cout << "Backup Path Error, Restore Failed!" << endl;
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		return;
+	}else if(ret == -1){
+		string error = "Failed to restore the database. Database Path Error";
+		string resJson = CreateJson(308, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		cout << "Database Path Error, Restore Failed!" << endl;
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		return;
+	}else{
+		//TODO update the in system.db
+		string time = Util::get_date_time();
+		cout << "Time:" + time << endl;
+		cout << "DB:" + db_name + " Restore done!" << endl;
+	}
+
+	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	path = Util::get_folder_name(path, db_name);
+	sys_cmd = "mv " + path + " " + db_name + ".db";
+	system(sys_cmd.c_str());
+
+	cout << "database restore done." << endl;
+	string success = "Database restore successfully.";
+	string resJson = CreateJson(0, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+		
+}
+
+bool restore_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&restore_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+
+bool auto_backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	
 }
