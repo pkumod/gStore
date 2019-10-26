@@ -143,6 +143,10 @@ public:
 	bool join_basic(BasicQuery* _basic_query, bool* d_triple);
 	~Join();
 };
-
+void cudaInit();
+void start_clock(struct timespec &start);
+void gettime_and_reset_clock(struct timespec &start, const char *info);
+void gettime(struct timespec &start,const char* info);
+void calc(unsigned *head,unsigned *arr,unsigned join_length,unsigned table_width,unsigned item_num,unsigned *can_list,unsigned can_list_size);
 #endif //_JOIN_JOIN_H
 

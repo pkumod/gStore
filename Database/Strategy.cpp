@@ -398,6 +398,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	        }
 
 	        int prefilter_num;
+                 
 		if((edge_type == Util::EDGE_OUT && (prefilter_num = pre2obj[pre_id]) > estimate_num[_var]) ||
 			(edge_type == Util::EDGE_IN && (prefilter_num = pre2sub[pre_id]) > estimate_num[_var]))
 		{
@@ -406,7 +407,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 			// cout << "prefilter_num:" << prefilter_num << endl;
 			continue;
 		}
-
+                
 	        if(basic_query->isOneDegreeVar(neighbor))
 	        {
 	            dealed_triple[triple_id] = true;

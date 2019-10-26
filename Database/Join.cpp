@@ -14,6 +14,7 @@ Join::Join()
 {
 	this->kvstore = NULL;
 	this->result_list = NULL;
+	cudaInit();
 }
 
 Join::Join(KVstore* _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
@@ -25,6 +26,7 @@ Join::Join(KVstore* _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limi
 	this->limitID_predicate = _limitID_predicate;
 	this->limitID_literal = _limitID_literal;
 	this->limitID_entity = _limitID_entity;
+	cudaInit();
 }
 
 Join::~Join()
@@ -1002,7 +1004,8 @@ Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* i
 }
 
 
-// This function is used by join_two to do binary search. 
+// This function is used by join_two to do binary search.
+/* 
 void calc(unsigned *head, unsigned *arr, unsigned join_width, unsigned table_length,
 	unsigned item_num, unsigned *can_list, unsigned can_list_size)
 {
@@ -1053,7 +1056,8 @@ void calc(unsigned *head, unsigned *arr, unsigned join_width, unsigned table_len
 			else
 				ans++;
 		}
-}
+}*/
+
 
 //TODO: multiple lists intersect, how about sort and intersect from small to big?
 //but this need to generate all first, I think sort by pre2num if better!
@@ -1076,6 +1080,8 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list,
 {
 	// the candidate list is empty and valid for the current node
 	// (i.e. current node is not a satellite)
+	struct timespec start;
+	start_clock(start);
 	unsigned *can_list = NULL;
 	if (_is_ready)
 		if (_can_list_size == 0)
@@ -1180,6 +1186,7 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list,
 			}
 		}
 	}
+	gettime_and_reset_clock(start,"retrieve lists");
 	table_length = row;
 	unsigned list_num = v_id_list_len.size();
 	unsigned join_width = list_num / table_length;
@@ -1198,8 +1205,10 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list,
 				sizeof(unsigned)*v_id_list_len[j*join_width + i]);
 			delete[] v_id_list[j*join_width + i];
 		}
+	gettime_and_reset_clock(start,"merge lists");
 	calc(head, array, join_width, table_length, item_num, can_list, _can_list_size);
 
+	gettime_and_reset_clock(start,"calc");
 	bool if_new_start = false;
 	row = 0;
 	for (TableIterator it = current_table.begin(); it != this->new_start; row++)
@@ -1229,6 +1238,7 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list,
 		else
 			it = this->current_table.erase(it);
 	}
+	gettime_and_reset_clock(start,"update join table");
 #ifdef DEBUG_JOIN
 	cout << "after join_two, current table is:" << endl;
 	for (TableIterator it = current_table.begin(); it != current_table.end();
