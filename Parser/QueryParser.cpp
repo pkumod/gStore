@@ -2,12 +2,20 @@
 
 using namespace std;
 
+/**
+	Throw a runtime error when lexical and syntactic errors are detected in the query.
+*/
 void SPARQLErrorListener::syntaxError(antlr4::Recognizer *recognizer, antlr4::Token * offendingSymbol, \
 	size_t line, size_t charPositionInLine, const std::string &msg, std::exception_ptr e)
 {
 	throw runtime_error("line " + to_string(line) + ":" + to_string(charPositionInLine) + " " + msg);
 }
 
+/**
+	Overall driver function for query parsing.
+
+	@param query the query string.
+*/
 void QueryParser::SPARQLParse(const string &query)
 {
 	istringstream ifs(query);
@@ -29,6 +37,12 @@ void QueryParser::SPARQLParse(const string &query)
 	visitEntry(tree);
 }
 
+/**
+	Print the info of the parse tree node pointed to by ctx.
+
+	@param ctx pointer to the requested parse tree node's context.
+	@param nodeTypeName type of the parse tree node.
+*/
 void QueryParser::printNode(antlr4::ParserRuleContext *ctx, 
 	const char *nodeTypeName)
 {
@@ -46,6 +60,12 @@ void QueryParser::printNode(antlr4::ParserRuleContext *ctx,
 
 }
 
+/**
+	Print the sub-parse-tree rooted at root.
+
+	@param root pointer to the root of the sub-parse-tree.
+	@param dep depth of the sub-parse-tree's root.
+*/
 void QueryParser::printTree(antlr4::tree::ParseTree *root, int dep)
 {
 	// Print tabs according to node's depth in tree
@@ -65,11 +85,22 @@ void QueryParser::printTree(antlr4::tree::ParseTree *root, int dep)
 	}
 }
 
+/**
+	Print the QueryTree associated with this query.
+*/
 void QueryParser::printQueryTree()
 {
 	query_tree_ptr->print();
 }
 
+/**
+	queryUnit : query ;
+	Visit node queryUnit: recursively call visit on its only child node query.
+	(Redundant, can be removed without affecting QueryParser's function)
+
+	@param ctx pointer to queryUnit's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitQueryUnit(SPARQLParser::QueryUnitContext *ctx)
 {
 	// printNode(ctx, "queryUnit");
@@ -79,6 +110,14 @@ antlrcpp::Any QueryParser::visitQueryUnit(SPARQLParser::QueryUnitContext *ctx)
 	return antlrcpp::Any();
 }
 
+/**
+	query : prologue( selectquery | constructquery | describequery | askquery )valuesClause ;
+	Visit node query: recursively call visit on each of its children.
+	(Redundant, can be removed without affecting QueryParser's function)
+
+	@param ctx pointer to query's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitQuery(SPARQLParser::QueryContext *ctx)
 {
 	// printNode(ctx, "query");
@@ -106,6 +145,15 @@ antlrcpp::Any QueryParser::visitQuery(SPARQLParser::QueryContext *ctx)
 	return antlrcpp::Any();
 }
 
+/**
+	selectquery : selectClause datasetClause* whereClause solutionModifier ;
+	Visit node selectquery: recursively call visit on each of its children, except
+	datasetClause (currently not supported). When visiting whereClause, pass the 
+	reference to QueryTree's outermost group graph pattern for it to be filled.
+
+	@param ctx pointer to selectquery's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitSelectquery(SPARQLParser::SelectqueryContext *ctx)
 {
 	visit(ctx->selectClause());
@@ -120,6 +168,17 @@ antlrcpp::Any QueryParser::visitSelectquery(SPARQLParser::SelectqueryContext *ct
 	return antlrcpp::Any();
 }
 
+/**
+	askquery : K_ASK datasetClause* whereClause solutionModifier ;
+	Visit node askquery: recursively call visit on each of its children, except
+	datasetClause (currently not supported). When visiting whereClause, pass the 
+	reference to QueryTree's outermost group graph pattern for it to be filled.
+	Also set the query form as ASK, and set the projection asterisk (equivalent
+	to SELECT * without returning actual results).
+
+	@param ctx pointer to askquery's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitAskquery(SPARQLParser::AskqueryContext *ctx)
 {
 	query_tree_ptr->setQueryForm(QueryTree::Ask_Query);
@@ -135,6 +194,16 @@ antlrcpp::Any QueryParser::visitAskquery(SPARQLParser::AskqueryContext *ctx)
 	return antlrcpp::Any();
 }
 
+/**
+	whereClause : K_WHERE? groupGraphPattern ;
+	Visit node whereClause: recursively call visit on its child groupGraphPattern, 
+	passing on the reference to QueryTree's outermost group graph pattern for it to 
+	be filled.
+
+	@param ctx pointer to whereClause's context.
+	@param group_pattern the reference to QueryTree's outermost group graph pattern.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitWhereClause(SPARQLParser::WhereClauseContext *ctx, QueryTree::GroupPattern &group_pattern)
 {
 	// Call explictly to pass group_pattern as a parameter
@@ -143,6 +212,13 @@ antlrcpp::Any QueryParser::visitWhereClause(SPARQLParser::WhereClauseContext *ct
 	return antlrcpp::Any();
 }
 
+/**
+	limitClause : K_LIMIT INTEGER ;
+	Visit node limitClause: call setLimit with parameter as limitClause's child INTEGER.
+
+	@param ctx pointer to limitClause's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitLimitClause(SPARQLParser::LimitClauseContext *ctx)
 {
 	query_tree_ptr->setLimit(stoi(ctx->children[1]->getText()));
@@ -150,6 +226,13 @@ antlrcpp::Any QueryParser::visitLimitClause(SPARQLParser::LimitClauseContext *ct
 	return antlrcpp::Any();
 }
 
+/**
+	offsetClause : K_OFFSET INTEGER ;
+	Visit node offsetClause: call setOffset with parameter as offsetClause's child INTEGER.
+
+	@param ctx pointer to offsetClause's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitOffsetClause(SPARQLParser::OffsetClauseContext *ctx)
 {
 	query_tree_ptr->setOffset(stoi(ctx->children[1]->getText()));
@@ -157,6 +240,14 @@ antlrcpp::Any QueryParser::visitOffsetClause(SPARQLParser::OffsetClauseContext *
 	return antlrcpp::Any();
 }
 
+/**
+	prefixDecl : K_PREFIX PNAME_NS IRIREF ;
+	Visit node prefixDecl: construct the mapping between the prefix key (PNAME_NS) 
+	and value (IRIREF) in prefix_map.
+
+	@param ctx pointer to prefixDecl's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitPrefixDecl(SPARQLParser::PrefixDeclContext *ctx)
 {
 	string key, value;
@@ -169,6 +260,14 @@ antlrcpp::Any QueryParser::visitPrefixDecl(SPARQLParser::PrefixDeclContext *ctx)
 	return antlrcpp::Any();
 }
 
+/**
+	selectClause : K_SELECT ( K_DISTINCT | K_REDUCED )? ( ( var | expressionAsVar )+ | '*' ) ;
+	Visit node selectClause: set corresponding projection modifier if DISTINCT (REDUCED is 
+	currently not supported); gather the variables to project.
+
+	@param ctx pointer to selectClause's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitSelectClause(SPARQLParser::SelectClauseContext *ctx)
 {
 	// printNode(ctx, "selectClause");
@@ -205,6 +304,14 @@ antlrcpp::Any QueryParser::visitSelectClause(SPARQLParser::SelectClauseContext *
 	return antlrcpp::Any();
 }
 
+/**
+	Deal with expressionAsVar in selectClause: get the type of built-in call, its arguments, 
+	and the variable following AS.
+
+	@param expCtx pointer to expression's context (in expressionAsVar).
+	@param varCtx pointer to var's context (in expressionAsVar).
+	@return a dummy antlrcpp::Any object.
+*/
 void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *expCtx, \
 	SPARQLParser::VarContext *varCtx)
 {
@@ -302,6 +409,15 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 	}
 }
 
+/**
+	groupGraphPattern : '{' ( subSelect | groupGraphPatternSub ) '}' ;
+	Visit node groupGraphPattern: recursively visit its child groupGraphPatternSub (subSelect
+	is currently not supported), passing the reference to a group graph pattern as parameter.
+
+	@param ctx pointer to groupGraphPattern's context.
+	@param group_pattern a group graph pattern.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitGroupGraphPattern(SPARQLParser::GroupGraphPatternContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
@@ -312,6 +428,17 @@ antlrcpp::Any QueryParser::visitGroupGraphPattern(SPARQLParser::GroupGraphPatter
 	return antlrcpp::Any(); 
 }
 
+/**
+	groupGraphPatternSub : triplesBlock? graphPatternTriplesBlock* ;
+	graphPatternTriplesBlock : graphPatternNotTriples '.'? triplesBlock? ;
+	Visit node groupGraphPattern: recursively visit its descendants triplesBlock and 
+	graphPatternTriplesBlock in order, passing the reference to a group graph pattern 
+	as parameter.
+
+	@param ctx pointer to groupGraphPatternSub's context.
+	@param group_pattern a group graph pattern.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitGroupGraphPatternSub(SPARQLParser::GroupGraphPatternSubContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
@@ -328,6 +455,15 @@ antlrcpp::Any QueryParser::visitGroupGraphPatternSub(SPARQLParser::GroupGraphPat
 	return antlrcpp::Any();
 }
 
+/**
+	triplesBlock : triplesSameSubjectpath ( '.' triplesBlock? )? ;
+	Visit node triplesBlock: recursively visit its children triplesSameSubjectpath and 
+	triplesBlock in order, passing the reference to a group graph pattern as parameter.
+
+	@param ctx pointer to triplesBlock's context.
+	@param group_pattern a group graph pattern.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitTriplesBlock(SPARQLParser::TriplesBlockContext *ctx, QueryTree::GroupPattern &group_pattern)
 {
 	visitTriplesSameSubjectpath(ctx->triplesSameSubjectpath(), group_pattern);
@@ -337,6 +473,16 @@ antlrcpp::Any QueryParser::visitTriplesBlock(SPARQLParser::TriplesBlockContext *
 	return antlrcpp::Any();
 }
 
+/**
+	graphPatternNotTriples : groupOrUnionGraphPattern | optionalGraphPattern | 
+	minusGraphPattern | graphGraphPattern | serviceGraphPattern | filter | bind | inlineData ;
+	Visit node graphPatternNotTriples: recursively visit its child, passing the reference to 
+	a group graph pattern as parameter.
+
+	@param ctx pointer to graphPatternNotTriples's context.
+	@param group_pattern a group graph pattern.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitGraphPatternNotTriples(SPARQLParser::GraphPatternNotTriplesContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
@@ -356,13 +502,23 @@ antlrcpp::Any QueryParser::visitGraphPatternNotTriples(SPARQLParser::GraphPatter
 	return antlrcpp::Any();
 }
 
+/**
+	groupOrUnionGraphPattern : groupGraphPattern ( K_UNION groupGraphPattern )* ;
+	Visit node groupOrUnionGraphPattern: if there is only one child, it is an individual 
+	nested group graph pattern; if there are multiple children, they are connected by UNION.
+	Add corresponding components to group_pattern, and fill them by recursively visiting
+	the children.
+
+	@param ctx pointer to groupOrUnionGraphPattern's context.
+	@param group_pattern a group graph pattern.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitGroupOrUnionGraphPattern(SPARQLParser::GroupOrUnionGraphPatternContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
 	if (ctx->children.size() == 1)
 	{
 		group_pattern.addOneGroup();
-		// visitGroupGraphPattern(ctx->groupGraphPattern(0), group_pattern);
 		visitGroupGraphPattern(ctx->groupGraphPattern(0), group_pattern.getLastGroup());
 	}
 	else
@@ -378,6 +534,15 @@ antlrcpp::Any QueryParser::visitGroupOrUnionGraphPattern(SPARQLParser::GroupOrUn
 	return antlrcpp::Any();
 }
 
+/**
+	optionalGraphPattern : K_OPTIONAL groupGraphPattern ;
+	Visit node optionalGraphPattern: Add an OPTIONAL to group_pattern, and fill its following
+	group graph pattern by recursively visiting the child groupGraphPattern.
+
+	@param ctx pointer to optionalGraphPattern's context.
+	@param group_pattern a group graph pattern.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitOptionalGraphPattern(SPARQLParser::OptionalGraphPatternContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
@@ -387,6 +552,15 @@ antlrcpp::Any QueryParser::visitOptionalGraphPattern(SPARQLParser::OptionalGraph
 	return antlrcpp::Any();
 }
 
+/**
+	minusGraphPattern : K_MINUS groupGraphPattern ;
+	Visit node minusGraphPattern: Add a MINUS to group_pattern, and fill its following
+	group graph pattern by recursively visiting the child groupGraphPattern.
+
+	@param ctx pointer to minusGraphPattern's context.
+	@param group_pattern a group graph pattern.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitMinusGraphPattern(SPARQLParser::MinusGraphPatternContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
@@ -396,6 +570,15 @@ antlrcpp::Any QueryParser::visitMinusGraphPattern(SPARQLParser::MinusGraphPatter
 	return antlrcpp::Any();
 }
 
+/**
+	filter : K_FILTER constraint ;
+	Visit node filter: Add a FILTER to group_pattern, and construct the filter tree by
+	calling buildFilterTree.
+
+	@param ctx pointer to filter's context.
+	@param group_pattern a group graph pattern.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitFilter(SPARQLParser::FilterContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
@@ -414,6 +597,16 @@ antlrcpp::Any QueryParser::visitFilter(SPARQLParser::FilterContext *ctx, \
 	return antlrcpp::Any();
 }
 
+/**
+	Construct FilterTree by DFS on FILTER's constraint.
+
+	@param root pointer to the root of the sub-constraint-tree.
+	@param currChild pointer to the current FilterTreeChild (NULL if at the root of 
+	the FilterTree; the parameter filter is needed because of this).
+	@param filter reference to the current FilterTreeNode (attribute of the current 
+	FilterTreeChild except when at the root of the FilterTree).
+	@param tp type of the current level of constraint (see grammar).
+*/
 void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 	QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild *currChild, \
 	QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, string tp)
@@ -715,6 +908,15 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 		throw runtime_error("[ERROR]	Unaccounted for route when parsing filter.");
 }
 
+/**
+	bind : K_BIND '(' expression K_AS var ')' ;
+	Visit node bind: Add a BIND to group_pattern, and fill in the string and variable 
+	to be bound.
+
+	@param ctx pointer to bind's context.
+	@param group_pattern a group graph pattern.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitBind(SPARQLParser::BindContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
@@ -743,6 +945,22 @@ antlrcpp::Any QueryParser::visitBind(SPARQLParser::BindContext *ctx, \
 	return antlrcpp::Any();
 }
 
+/**
+	triplesSameSubjectpath : varOrTerm propertyListpathNotEmpty | triplesNodepath 
+	propertyListpath ;
+	propertyListpath : propertyListpathNotEmpty? ;
+	propertyListpathNotEmpty : verbpathOrSimple objectListpath ( ';' ( verbpathOrSimple 
+	objectList )? )* ;
+	Visit node triplesSameSubjectpath: Add triples to group_pattern.
+	Assumptions:
+	1) No triplesNodepath in triplesSameSubjectpath;
+	2) The child of verbpathOrSimple is verbSimple (no property path, only simple predicate);
+	3) The descendant of objectListpath/objectList is varOrTerm (only simple object).
+
+	@param ctx pointer to triplesSameSubjectpath's context.
+	@param group_pattern a group graph pattern.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSameSubjectpathContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
@@ -804,6 +1022,16 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 	return antlrcpp::Any();
 }
 
+/**
+	Helper function that adds a triple to group_pattern given its subject, predicate, 
+	and object; and reorders triples so that FILTER is moved to the back of its scope.
+	Called from visitTriplesSameSubjectpath and visitTriplesSameSubject.
+
+	@param subject subject string.
+	@param predicate predicate string.
+	@param object object string.
+	@param group_pattern a group graph pattern.
+*/
 void QueryParser::addTriple(string subject, string predicate, string object, \
 	QueryTree::GroupPattern &group_pattern)
 {
@@ -827,6 +1055,16 @@ void QueryParser::addTriple(string subject, string predicate, string object, \
 	}
 }
 
+/**
+	groupClause : K_GROUP K_BY groupCondition+ ;
+	groupCondition : builtInCall | functionCall | '(' expression ( K_AS var )? ')' | var ;
+	Visit node groupClause: Collect GROUP BY variables.
+	Assumptions:
+	1) The child of groupCondition is var.
+
+	@param ctx pointer to groupClause's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitGroupClause(SPARQLParser::GroupClauseContext *ctx)
 {
 	for (auto groupCondition : ctx->groupCondition())
@@ -840,6 +1078,17 @@ antlrcpp::Any QueryParser::visitGroupClause(SPARQLParser::GroupClauseContext *ct
 	return antlrcpp::Any();
 }
 
+/**
+	orderClause : K_ORDER K_BY orderCondition+ ;
+	orderCondition : ( ( K_ASC | K_DESC ) brackettedexpression )| ( constraint | var ) ;
+	Visit node orderClause: Collect ORDER BY variables, and whether the order should be 
+	ASC or DESC.
+	Assumptions:
+	1) ORDER BY key can only be var.
+
+	@param ctx pointer to orderClause's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitOrderClause(SPARQLParser::OrderClauseContext *ctx)
 {
 	for (auto orderCondition : ctx->orderCondition())
@@ -885,6 +1134,11 @@ antlrcpp::Any QueryParser::visitOrderClause(SPARQLParser::OrderClauseContext *ct
 	return antlrcpp::Any();
 }
 
+/**
+	Helper function that replaces prefixes in triples with their corresponding IRIs.
+
+	@param str a subject/predicate/object that may contain a prefix.
+*/
 void QueryParser::replacePrefix(string &str)
 {
 	if (str[0] != '<' && str[0] != '\"' && str[0] != '?')
@@ -913,6 +1167,18 @@ void QueryParser::replacePrefix(string &str)
 
 //------------------------------------------------------------------------------------------
 
+/**
+	insertData : KK_INSERTDATA quadData ;
+	quadData : '{' quads '}' ;
+	quads : triplesTemplate? ( quadsNotTriples '.'? triplesTemplate? )* ;
+	triplesTemplate : triplesSameSubject ( '.' triplesTemplate? )? ;
+	Visit node insertData: set update type as Insert_Data.
+	Assumptions:
+	1) No quadsNotTriples in quads.
+
+	@param ctx pointer to insertData's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitInsertData(SPARQLParser::InsertDataContext *ctx)
 {
 	query_tree_ptr->setUpdateType(QueryTree::Insert_Data);
@@ -922,6 +1188,15 @@ antlrcpp::Any QueryParser::visitInsertData(SPARQLParser::InsertDataContext *ctx)
 	return antlrcpp::Any();
 }
 
+/**
+	deleteData : KK_DELETEDATA quadData ;
+	Visit node deleteData: set update type as Delete_Data.
+	Assumptions:
+	1) No quadsNotTriples in quads.
+
+	@param ctx pointer to deleteData's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitDeleteData(SPARQLParser::DeleteDataContext *ctx)
 {
 	query_tree_ptr->setUpdateType(QueryTree::Delete_Data);
@@ -931,6 +1206,16 @@ antlrcpp::Any QueryParser::visitDeleteData(SPARQLParser::DeleteDataContext *ctx)
 	return antlrcpp::Any();
 }
 
+/**
+	deleteWhere : KK_DELETEWHERE quadPattern ;
+	quadPattern : '{' quads '}' ;
+	Visit node deleteWhere: set update type as Delete_Where.
+	Assumptions:
+	1) No quadsNotTriples in quads.
+
+	@param ctx pointer to deleteWhere's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitDeleteWhere(SPARQLParser::DeleteWhereContext *ctx)
 {
 	query_tree_ptr->setUpdateType(QueryTree::Delete_Where);
@@ -940,6 +1225,18 @@ antlrcpp::Any QueryParser::visitDeleteWhere(SPARQLParser::DeleteWhereContext *ct
 	return antlrcpp::Any();
 }
 
+/**
+	modify : ( K_WITH iri )? ( deleteClause insertClause? | insertClause ) 
+	usingClause* K_WHERE groupGraphPattern ;
+	Visit node deleteWhere: set update type according to the presence of deleteClause or 
+	insertClause, and recursively visit its child groupGraphPattern.
+	Assumptions:
+	1) No ( K_WITH iri ) in modify.
+	2) No usingClause in modify.
+
+	@param ctx pointer to modify's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitModify(SPARQLParser::ModifyContext *ctx)
 {
 	// ( 'WITH' iri )? not supported
@@ -968,6 +1265,19 @@ antlrcpp::Any QueryParser::visitModify(SPARQLParser::ModifyContext *ctx)
 	return antlrcpp::Any();
 }
 
+/**
+	triplesSameSubject : varOrTerm propertyListNotEmpty | triplesNode propertyList ;
+	propertyList : propertyListNotEmpty? ;
+	propertyListNotEmpty : verb objectList ( ';' ( verb objectList )? )* ;
+	Visit node triplesSameSubject: Add triples to insert patterns or delete patterns 
+	according to the query's update type.
+	Assumptions:
+	1) No triplesNode in triplesSameSubject;
+	2) The descendant of objectList is varOrTerm (only simple object).
+
+	@param ctx pointer to triplesSameSubject's context.
+	@return a dummy antlrcpp::Any object.
+*/
 antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubjectContext *ctx)
 {
 	QueryTree::GroupPattern &group_pattern_insert = query_tree_ptr->getInsertPatterns();
@@ -1014,6 +1324,13 @@ antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubj
 	return antlrcpp::Any();
 }
 
+/**
+	Helper function that gets a numeric literal from triples and add suffix according 
+	to its datatype before storing.
+
+	@param ctx pointer to numericLiteral's context.
+	@return string of the numeric literal with suffix added.
+*/
 string QueryParser::getNumeric(SPARQLParser::NumericLiteralContext *ctx)
 {
 	int numType = -1;	// 0 for integer, 1 for decimal, 2 for double

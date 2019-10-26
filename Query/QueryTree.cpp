@@ -10,6 +10,11 @@
 
 using namespace std;
 
+/**
+	Get varset of the sub-FilterTree rooted at this FilterTreeNode.
+
+	@param varset the output varset.
+*/
 void QueryTree::GroupPattern::FilterTree::FilterTreeNode::getVarset(Varset &varset)
 {
 	for (int i = 0; i < (int)this->child.size(); i++)
@@ -21,6 +26,14 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::getVarset(Varset &vars
 	}
 }
 
+/**
+	Set pos and isel of each leaf node of the sub-FilterTree rooted at this FilterTreeNode.
+	pos is the position of the leaf node's variable in the parameter varset. isel indicates
+	whether the leaf node's variable is in the variable entity_literal_varset.
+
+	@param varset the query's complete varset.
+	@param entity_literal_varset the varset that includes all subjects and objects in the query.
+*/
 void QueryTree::GroupPattern::FilterTree::FilterTreeNode::mapVarPos2Varset(Varset &varset, Varset &entity_literal_varset)
 {
 	if (this->oper_type == Not_type)
@@ -71,6 +84,11 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::mapVarPos2Varset(Varse
 	}
 }
 
+/**
+	Print the sub-FilterTree rooted at this FilterTreeNode.
+
+	@param dep the depth of this FilterTreeNode.
+*/
 void QueryTree::GroupPattern::FilterTree::FilterTreeNode::print(int dep)
 {
 	if (this->oper_type == Not_type)					printf("!");
@@ -173,17 +191,32 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::print(int dep)
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
 
+/**
+	Add a triple to this group graph pattern.
+
+	@param _pattern the triple to add.
+*/
 void QueryTree::GroupPattern::addOnePattern(Pattern _pattern)
 {
 	this->sub_group_pattern.push_back(SubGroupPattern(SubGroupPattern::Pattern_type));
 	this->sub_group_pattern.back().pattern = _pattern;
 }
 
+/**
+	Add a nested group graph pattern to this group graph pattern.
+*/
 void QueryTree::GroupPattern::addOneGroup()
 {
 	sub_group_pattern.push_back(SubGroupPattern(SubGroupPattern::Group_type));
 }
 
+/**
+	Get the nested group graph pattern at the back of this group graph pattern.
+	If the component at the back of this group graph pattern is not a nested group
+	graph pattern, throw an exception.
+
+	@return the requested group graph pattern.
+*/
 QueryTree::GroupPattern& QueryTree::GroupPattern::getLastGroup()
 {
 	if (sub_group_pattern.size() == 0 \
@@ -193,11 +226,19 @@ QueryTree::GroupPattern& QueryTree::GroupPattern::getLastGroup()
 	return sub_group_pattern.back().group_pattern;
 }
 
+/**
+	Add a UNION to this group graph pattern.
+*/
 void QueryTree::GroupPattern::addOneGroupUnion()
 {
 	this->sub_group_pattern.push_back(SubGroupPattern(SubGroupPattern::Union_type));
 }
 
+/**
+	Add a group graph pattern to the UNION at the back of this group graph pattern.
+	If the component at the back of this group graph pattern is not a UNION, throw 
+	an exception.
+*/
 void QueryTree::GroupPattern::addOneUnion()
 {
 	if (this->sub_group_pattern.back().type != SubGroupPattern::Union_type)
@@ -206,6 +247,14 @@ void QueryTree::GroupPattern::addOneUnion()
 	this->sub_group_pattern.back().unions.push_back(GroupPattern());
 }
 
+/**
+	Get the group graph pattern at the back of the UNION at the back of this
+	group graph pattern.
+	If the component at the back of this group graph pattern is not a UNION, throw an 
+	exception.
+
+	@return the requested group graph pattern.
+*/
 QueryTree::GroupPattern& QueryTree::GroupPattern::getLastUnion()
 {
 	if (this->sub_group_pattern.back().type != SubGroupPattern::Union_type || this->sub_group_pattern.back().unions.empty())
@@ -214,6 +263,12 @@ QueryTree::GroupPattern& QueryTree::GroupPattern::getLastUnion()
 	return this->sub_group_pattern.back().unions.back();
 }
 
+/**
+	Add an OPTIONAL or a MINUS to this group graph pattern, according to the parameter _type.
+	If _type is neither OPTIONAL nor MINUS, throw an exception.
+
+	@param _type the type of the component to add.
+*/
 void QueryTree::GroupPattern::addOneOptional(int _type)
 {
 	SubGroupPattern::SubGroupPatternType type = (SubGroupPattern::SubGroupPatternType)_type;
@@ -223,6 +278,13 @@ void QueryTree::GroupPattern::addOneOptional(int _type)
 	this->sub_group_pattern.push_back(SubGroupPattern(type));
 }
 
+/**
+	Get the OPTIONAL or MINUS at the back of this group graph pattern.
+	If the component at the back of this group graph pattern is not an OPTIONAL
+	or a MINUS, throw an exception.
+
+	@return the requested OPTIONAL or MINUS.
+*/
 QueryTree::GroupPattern& QueryTree::GroupPattern::getLastOptional()
 {
 	if (this->sub_group_pattern.back().type != SubGroupPattern::Optional_type && this->sub_group_pattern.back().type != SubGroupPattern::Minus_type)
@@ -231,11 +293,21 @@ QueryTree::GroupPattern& QueryTree::GroupPattern::getLastOptional()
 	return this->sub_group_pattern.back().optional;
 }
 
+/**
+	Add a FILTER to this group graph pattern.
+*/
 void QueryTree::GroupPattern::addOneFilter()
 {
 	this->sub_group_pattern.push_back(SubGroupPattern(SubGroupPattern::Filter_type));
 }
 
+/**
+	Get the FILTER at the back of this group graph pattern.
+	If the component at the back of this group graph pattern is not a FILTER, throw
+	an exception.
+
+	@return the requested FILTER.
+*/
 QueryTree::GroupPattern::FilterTree& QueryTree::GroupPattern::getLastFilter()
 {
 	if (this->sub_group_pattern.back().type != SubGroupPattern::Filter_type)
@@ -244,11 +316,21 @@ QueryTree::GroupPattern::FilterTree& QueryTree::GroupPattern::getLastFilter()
 	return this->sub_group_pattern.back().filter;
 }
 
+/**
+	Add a BIND to this group graph pattern.
+*/
 void QueryTree::GroupPattern::addOneBind()
 {
 	this->sub_group_pattern.push_back(SubGroupPattern(SubGroupPattern::Bind_type));
 }
 
+/**
+	Get the BIND at the back of this group graph pattern.
+	If the component at the back of this group graph pattern is not a BIND, throw
+	an exception.
+
+	@return the requested BIND.
+*/
 QueryTree::GroupPattern::Bind& QueryTree::GroupPattern::getLastBind()
 {
 	if (this->sub_group_pattern.back().type != SubGroupPattern::Bind_type)
@@ -257,6 +339,9 @@ QueryTree::GroupPattern::Bind& QueryTree::GroupPattern::getLastBind()
 	return this->sub_group_pattern.back().bind;
 }
 
+/**
+	Recursively compute the varset of each component of this group graph pattern.
+*/
 void QueryTree::GroupPattern::getVarset()
 {
 	for (int i = 0; i < (int)this->sub_group_pattern.size(); i++)
@@ -333,8 +418,16 @@ void QueryTree::GroupPattern::getVarset()
 		}
 }
 
+/**
+	If check_condition is initially true, check whether the query is well-designed
+	(no nested group graph pattern, no MINUS, no OPTIONAL, safe filter) and store the 
+	result in check_condition.
+
+	@param occur_varset ?
+	@param ban_varset ?
+	@return pair of occur varset and ban varset.
+*/
 pair<Varset, Varset> QueryTree::GroupPattern::checkNoMinusAndOptionalVarAndSafeFilter(Varset occur_varset, Varset ban_varset, bool &check_condition)
-//return occur varset and ban varset
 {
 	if (!check_condition)	return make_pair(Varset(), Varset());
 
@@ -406,6 +499,9 @@ pair<Varset, Varset> QueryTree::GroupPattern::checkNoMinusAndOptionalVarAndSafeF
 	return make_pair(occur_varset, new_ban_varset);
 }
 
+/**
+	Initialize the blockid of triples in this group graph pattern.
+*/
 void QueryTree::GroupPattern::initPatternBlockid()
 {
 	for (int i = 0; i < (int)this->sub_group_pattern.size(); i++)
@@ -413,6 +509,12 @@ void QueryTree::GroupPattern::initPatternBlockid()
 			this->sub_group_pattern[i].pattern.blockid = i;
 }
 
+/**
+	Get the blockid of the root triple of the triple indexed by x.
+	
+	@param x the index of this triple.
+	@return the requested blockid.
+*/
 int QueryTree::GroupPattern::getRootPatternBlockID(int x)
 {
 	if (this->sub_group_pattern[x].type != SubGroupPattern::Pattern_type)
@@ -425,6 +527,12 @@ int QueryTree::GroupPattern::getRootPatternBlockID(int x)
 	return this->sub_group_pattern[x].pattern.blockid;
 }
 
+/**
+	Merge the two triple blocks containing the triples indexed by x and y.
+	
+	@param x the index of a triple to merge.
+	@param y the index of another triple to merge.
+*/
 void QueryTree::GroupPattern::mergePatternBlockID(int x, int y)
 {
 	int px = this->getRootPatternBlockID(x);
@@ -432,6 +540,11 @@ void QueryTree::GroupPattern::mergePatternBlockID(int x, int y)
 	this->sub_group_pattern[px].pattern.blockid = py;
 }
 
+/**
+	Print this group graph pattern.
+	
+	@param dep the depth of this group graph pattern.
+*/
 void QueryTree::GroupPattern::print(int dep)
 {
 	for (int t = 0; t < dep; t++)	printf("\t");	printf("{\n");
@@ -482,41 +595,80 @@ void QueryTree::GroupPattern::print(int dep)
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
 
+/**
+	Set the query's form (SELECT or ASK).
+	
+	@param _queryform the query's form.
+*/
 void QueryTree::setQueryForm(QueryForm _queryform)
 {
 	this->query_form = _queryform;
 }
 
+/**
+	Get the query's form (SELECT or ASK).
+	
+	@return the query's form.
+*/
 QueryTree::QueryForm QueryTree::getQueryForm()
 {
 	return this->query_form;
 }
 
+/**
+	Set the query's projection modifier (REDUCED or DISTINCT).
+	
+	@param _projection_modifier the query's projection modifier.
+*/
 void QueryTree::setProjectionModifier(ProjectionModifier _projection_modifier)
 {
 	this->projection_modifier = _projection_modifier;
 }
 
+/**
+	Get the query's projection modifier (REDUCED or DISTINCT).
+	
+	@return the query's projection modifier.
+*/
 QueryTree::ProjectionModifier QueryTree::getProjectionModifier()
 {
 	return this->projection_modifier;
 }
 
+/**
+	Add a SELECT variable.
+*/
 void QueryTree::addProjectionVar()
 {
 	this->projection.push_back(ProjectionVar());
 }
 
+/**
+	Get the last SELECT variable.
+	
+	@return the last SELECT variable.
+*/
 QueryTree::ProjectionVar& QueryTree::getLastProjectionVar()
 {
 	return this->projection.back();
 }
 
+/**
+	Get the vector of all SELECT variables.
+	
+	@return the vector of all SELECT variables.
+*/
 vector<QueryTree::ProjectionVar>& QueryTree::getProjection()
 {
 	return this->projection;
 }
 
+/**
+	Get the varset of all SELECT variables.
+	In the case of expressionAsVar, get the variable inside the aggregate function.
+	
+	@return the varset of all SELECT variables.
+*/
 Varset QueryTree::getProjectionVarset()
 {
 	Varset varset;
@@ -527,6 +679,12 @@ Varset QueryTree::getProjectionVarset()
 	return varset;
 }
 
+/**
+	Get the varset of all SELECT variables.
+	In the case of expressionAsVar, get the variable following AS.
+	
+	@return the varset of all SELECT variables.
+*/
 Varset QueryTree::getResultProjectionVarset()
 {
 	Varset varset;
@@ -540,36 +698,68 @@ Varset QueryTree::getResultProjectionVarset()
 	return varset;
 }
 
+/**
+	Mark the query as SELECT *.
+*/
 void QueryTree::setProjectionAsterisk()
 {
 	this->projection_asterisk = true;
 }
 
+/**
+	Check if the query is SELECT *.
+*/
 bool QueryTree::checkProjectionAsterisk()
 {
 	return this->projection_asterisk;
 }
 
+/**
+	Add a GROUP BY variable.
+	
+	@param _var the GROUP BY variable to add.
+*/
 void QueryTree::addGroupByVar(string &_var)
 {
 	this->group_by.addVar(_var);
 }
 
+/**
+	Get the varset of all GROUP BY variables.
+	
+	@return the varset of all GROUP BY variables.
+*/
 Varset& QueryTree::getGroupByVarset()
 {
 	return this->group_by;
 }
 
+/**
+	Add a ORDER BY variable, and mark if it is DESC or ASC.
+	
+	@param _var the ORDER BY variable to add.
+	@param _descending the boolean indicating whether the order should be descending.
+*/
 void QueryTree::addOrderVar(string &_var, bool _descending)
 {
 	this->order_by.push_back(Order(_var, _descending));
 }
 
+/**
+	Get the vector of all ORDER BY variables.
+	
+	@return the vector of all ORDER BY variables.
+*/
 vector<QueryTree::Order>& QueryTree::getOrderVarVector()
 {
 	return this->order_by;
 }
 
+/**
+	Get the varset of all ORDER BY variables.
+	
+	@return the varset of all ORDER BY variables.
+*/
 Varset QueryTree::getOrderByVarset()
 {
 	Varset varset;
@@ -580,51 +770,100 @@ Varset QueryTree::getOrderByVarset()
 	return varset;
 }
 
+/**
+	Set OFFSET number of query.
+	
+	@param _offset OFFSET number of query.
+*/
 void QueryTree::setOffset(int _offset)
 {
 	this->offset = _offset;
 }
 
+/**
+	Get OFFSET number of query.
+	
+	@return OFFSET number of query.
+*/
 int QueryTree::getOffset()
 {
 	return this->offset;
 }
 
+/**
+	Set LIMIT number of query.
+	
+	@param _offset LIMIT number of query.
+*/
 void QueryTree::setLimit(int _limit)
 {
 	this->limit = _limit;
 }
 
+/**
+	Get LIMIT number of query.
+	
+	@return LIMIT number of query.
+*/
 int QueryTree::getLimit()
 {
 	return this->limit;
 }
 
+/**
+	Get the outermost group graph pattern of this query.
+	
+	@return the outermost group graph pattern of this query.
+*/
 QueryTree::GroupPattern& QueryTree::getGroupPattern()
 {
 	return this->group_pattern;
 }
 
+/**
+	Set the update type of this query.
+*/
 void QueryTree::setUpdateType(UpdateType _updatetype)
 {
 	this->update_type = _updatetype;
 }
 
+/**
+	Get the update type of this query.
+	
+	@return the update type of this query.
+*/
 QueryTree::UpdateType QueryTree::getUpdateType()
 {
 	return this->update_type;
 }
 
+/**
+	Get the insert patterns of this query.
+	
+	@return the insert patterns of this query.
+*/
 QueryTree::GroupPattern& QueryTree::getInsertPatterns()
 {
 	return this->insert_patterns;
 }
 
+/**
+	Get the delete patterns of this query.
+	
+	@return the delete patterns of this query.
+*/
 QueryTree::GroupPattern& QueryTree::getDeletePatterns()
 {
 	return this->delete_patterns;
 }
 
+/**
+	Check whether the query is well-designed. If so, can use rewriting-based
+	query evaluation.
+	
+	@return true if the query is well-designed, false otherwise.
+*/
 bool QueryTree::checkWellDesigned()
 {
 	bool check_condition = true;
@@ -632,6 +871,11 @@ bool QueryTree::checkWellDesigned()
 	return check_condition;
 }
 
+/**
+	Check whether there is at least one aggregate function in the SELECT clause.
+	
+	@return true if there is at least one aggregate function, false otherwise.
+*/
 bool QueryTree::checkAtLeastOneAggregateFunction()
 {
 	for (int i = 0; i < (int)this->projection.size(); i++)
@@ -641,6 +885,12 @@ bool QueryTree::checkAtLeastOneAggregateFunction()
 	return false;
 }
 
+/**
+	Check whether aggregates in the SELECT clause and GROUP BY variables match.
+	
+	@return true if aggregates in the SELECT clause and GROUP BY variables match,
+	false otherwise.
+*/
 bool QueryTree::checkSelectAggregateFunctionGroupByValid()
 {
 	if (this->checkAtLeastOneAggregateFunction() && this->group_by.empty())
@@ -660,6 +910,9 @@ bool QueryTree::checkSelectAggregateFunctionGroupByValid()
 	return true;
 }
 
+/**
+	Print QueryTree.
+*/
 void QueryTree::print()
 {
 	for (int j = 0; j < 80; j++)			printf("=");	printf("\n");

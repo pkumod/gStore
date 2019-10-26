@@ -170,12 +170,14 @@ class QueryTree
 				enum SubGroupPatternType{Group_type, Pattern_type, Union_type, Optional_type, Minus_type, Filter_type, Bind_type};
 				SubGroupPatternType type;
 
+				Pattern pattern;	// triplesBlock
+
+				// graphPatternNotTriples
 				GroupPattern group_pattern;
-				Pattern pattern;
-				std::vector<GroupPattern> unions;
-				GroupPattern optional;
-				FilterTree filter;
-				Bind bind;
+				std::vector<GroupPattern> unions;	// groupOrUnionGraphPattern
+				GroupPattern optional;	// optionalGraphPattern, minusGraphPattern
+				FilterTree filter;	// filter
+				Bind bind;	// bind
 
 				SubGroupPattern(SubGroupPatternType _type):type(_type){}
 				SubGroupPattern(const SubGroupPattern& _sgp):type(_sgp.type)
