@@ -225,6 +225,12 @@ ResultSet::to_JSON()
 					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
 					_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
 				}
+				else if(ans_str == "true" || ans_str == "false")
+				{
+					ans_type = "bool";
+					_buf << "\"" + this->var_name[j].substr(2) + "\": { ";
+					_buf << "\"type\": \"" + ans_type + "\", \"value\": " + ans_str.c_str() + " }";
+				}
 				list_empty = false;
 			}
 			_buf << "}";
