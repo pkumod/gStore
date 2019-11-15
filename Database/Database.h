@@ -115,7 +115,7 @@ private:
 
 	//locks
 	mutex query_parse_lock;
-	//for read/write, we should use rwlock to improve parallism
+	//for read/write, we should use rw_lock to improve parallism
 	pthread_rwlock_t update_lock;
 	//just for debug a block of code
 	mutex debug_lock;

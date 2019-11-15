@@ -2625,7 +2625,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 
 	RDFParser _parser(_fin);
 	//Util::logging("==> while(true)");
-	
+	this->kvstore->set_if_single_thread(true);
 	while (true)
 	{
 		int parse_triple_num = 0;
@@ -2819,7 +2819,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 			//}
 		}
 	}
-
+	this->kvstore->set_if_single_thread(false);
 	//cout<<"==> end while(true)"<<endl;
 
 	delete[] triple_array;
@@ -3168,6 +3168,7 @@ Database::insert(std::string _rdf_file, bool _is_restore)
 #ifdef DEBUG
 	Util::logging("==> while(true)");
 #endif
+	this->kvstore->set_if_single_thread(true);
 	while (true)
 	{
 		int parse_triple_num = 0;
@@ -3234,7 +3235,7 @@ Database::insert(std::string _rdf_file, bool _is_restore)
 	//int t = this->kvstore->getIDByEntity("<node5>");
 	//cout<<t<<endl;
 	//cout<<this->kvstore->getEntityByID(0)<<endl;
-
+	this->kvstore->set_if_single_thread(false);
 	return true;
 }
 
@@ -3268,6 +3269,7 @@ Database::remove(std::string _rdf_file, bool _is_restore)
 #ifdef DEBUG
 	Util::logging("==> while(true)");
 #endif
+	this->kvstore->set_if_single_thread(true);
 	while (true)
 	{
 		int parse_triple_num = 0;
@@ -3324,7 +3326,7 @@ Database::remove(std::string _rdf_file, bool _is_restore)
 	{
 		this->resetIDinfo();
 	}
-
+	this->kvstore->set_if_single_thread(false);
 	return true;
 }
 

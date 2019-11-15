@@ -156,6 +156,14 @@ KVstore::getTrie()
 	return this->trie;
 }
 
+bool
+KVstore::set_if_single_thread(bool _single)
+{
+	this->entity2id->setSingleThread(_single);
+	this->predicate2id->setSingleThread(_single);
+	this->literal2id->setSingleThread(_single);
+}
+
 string 
 KVstore::getStringByID(TYPE_ENTITY_LITERAL_ID _id)
 {

@@ -172,6 +172,8 @@ public:
 	bool load_trie(int _mode);
 
 	Trie *getTrie();
+
+	bool set_if_single_thread(bool _single);
 private:
 	std::string store_path;
 
@@ -226,7 +228,6 @@ private:
 	static unsigned short buffer_sID2values_query;
 	static unsigned short buffer_oID2values_query;
 	static unsigned short buffer_pID2values_query;
-
 
 	//===============================================================================
 
