@@ -79,6 +79,7 @@ in the sparql query can point to the same node in data graph)
 #include <math.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <exception>
 
 //Below are for boost
 //Added for the json-example
