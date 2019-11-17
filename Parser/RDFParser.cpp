@@ -16,7 +16,7 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 {
 	string _subject, _predicate, _object, _objectSubType;
 	Type::Type_ID _objectType;
-
+	cout<<"begin parseFile,triplenum="<<_triple_num<<",RDFnum="<< RDFParser::TRIPLE_NUM_PER_GROUP<<endl;
 	while (_triple_num < RDFParser::TRIPLE_NUM_PER_GROUP)
 	{
 		try
@@ -25,10 +25,12 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 		}
 		catch (const TurtleParser::Exception& _e) 
 		{
-			cerr << _e.message << endl;
+			cout << _e.message << endl;
 			this->_TurtleParser.discardLine();
 			continue;
 		}
+		cout<<"triple content:"<<_subject<<_predicate<<_object<<endl;
+
 
 		_subject = "<" + _subject + ">";
 		_predicate = "<" + _predicate + ">";
