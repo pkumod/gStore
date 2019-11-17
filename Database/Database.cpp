@@ -2593,7 +2593,9 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 		long begin = Util::get_cur_time();
 		ifstream _fin0(_rdf_file.c_str());
 		//parse a file
+		cout<<"parse a file..."<<_rdf_file.c_str()<<endl;
 		RDFParser _parser0(_fin0);
+		cout<<"parse a file done!"<<endl;
 
 		// Initialize trie
 
@@ -2601,7 +2603,9 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 		try {
             while (true) {
                 int parse_triple_num = 0;
+				cout<<"parse a file to triple array"<<endl;
                 _parser0.parseFile(triple_array, parse_triple_num);
+				cout<<"parse a file to triple array done!"<<endl;
                 if (parse_triple_num == 0) {
                     break;
                 }
