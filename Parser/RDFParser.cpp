@@ -29,7 +29,7 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 			this->_TurtleParser.discardLine();
 			continue;
 		}
-		cout<<"triple content:"<<_subject<<_predicate<<_object<<endl;
+		//cout<<"triple content:"<<_subject<<_predicate<<_object<<endl;
 
 
 		_subject = "<" + _subject + ">";
@@ -64,6 +64,7 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 
 		_triple_array[_triple_num++] = TripleWithObjType(_subject, _predicate, _object, _object_type);
 	}
+	cout<<"RDFParser parseFile done!"<<endl;
 	return "";
 }
 
