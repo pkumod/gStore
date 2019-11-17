@@ -2608,7 +2608,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 
                 //Process the Triple one by one
                 for (int i = 0; i < parse_triple_num; i++) {
-                    if (i > parse_triple_num || i < 0) throw string("out of range")
+                    if (i > parse_triple_num || i < 0) throw string("out of range");
                     string t = triple_array[i].getSubject();
                     trie->Addstring(t);
                     t = triple_array[i].getPredicate();
@@ -2618,7 +2618,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
                 }
             }
         }catch(exception &e){
-		    cout << "error:" << s << endl;
+		    cout << "error:" << e.what() << endl;
 		}
         cout<<"Add triples to Trie to prepare for BuildPrefix"<<endl;
 		trie->BuildPrefix();
