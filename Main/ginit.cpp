@@ -49,6 +49,7 @@ int main(int argc, char * argv[])
 		ofstream f;
 		f.open("./"+ _db_path +".db/success.txt");
 		f.close();
+		Util::init_backuplog();
 	}
 	else //if fails, drop system.db and return
 	{
@@ -77,6 +78,7 @@ int main(int argc, char * argv[])
 				sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
 				sparql = sparql + "<" + db_name + "> <built_by> <root>.";
 				sparql = sparql + "<" + db_name + "> <built_time> \"" + time + "\".";
+				Util::add_backuplog(db_name);
 			}		
 		}
 	}
