@@ -38,11 +38,13 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 		TripleWithObjType::ObjectType _object_type = TripleWithObjType::None;
 		if (_objectType == Type::Type_URI)
 		{
+			cout << "not change object :" << _object << endl;
 			_object = "<" + _object + ">";
 			_object_type = TripleWithObjType::Entity;
 		}
 		else
 		{
+			
 			if (_objectType == Type::Type_Literal)
 				_object = "\"" + _object + "\"";
 			else if (_objectType == Type::Type_CustomLanguage)
@@ -60,6 +62,7 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 			else if (_objectType == Type::Type_CustomType)
 				_object = "\"" + _object + "\"^^<" + _objectSubType + ">";
 			_object_type = TripleWithObjType::Literal;
+			cout << "change object :"<<_object << endl;
 		}
 
 		_triple_array[_triple_num++] = TripleWithObjType(_subject, _predicate, _object, _object_type);
