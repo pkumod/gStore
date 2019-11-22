@@ -1,4 +1,5 @@
 #include "RDFParser.h"
+//#include <cctype>
 /*	if you want to parse a triple file, you need to create a RDFParser object
 *	and run parseFile several times until all the triple is processed
 *	for example:
@@ -12,6 +13,21 @@
 *			......
 *		}		
 */
+
+//bool RDFParser::isNumber(string _str)
+//{
+//	bool flag = true;
+//	len = str.length();
+//	for (int j = 0;j < len;j++) {
+//		if (isdigit(str[j])==false) { //ÅÐ¶Ï×Ö·ûÊÇ·ñÊÇÊý×Ö
+//			flag = false;
+//			break;
+//		}
+//	}
+//	return flag;
+//   
+//}
+
 string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 {
 	string _subject, _predicate, _object, _objectSubType;
@@ -38,31 +54,38 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 		TripleWithObjType::ObjectType _object_type = TripleWithObjType::None;
 		if (_objectType == Type::Type_URI)
 		{
-			cout << "not change object :" << _object << endl;
+			//cout << "not change object :" << _object << endl;
 			_object = "<" + _object + ">";
 			_object_type = TripleWithObjType::Entity;
 		}
 		else
 		{
 			
-			if (_objectType == Type::Type_Literal)
-				_object = "\"" + _object + "\"";
-			else if (_objectType == Type::Type_CustomLanguage)
-				_object = "\"" + _object + "\"@" + _objectSubType;
-			else if (_objectType == Type::Type_String)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#string>";
-			else if (_objectType == Type::Type_Integer)
+			/*if (isNumber(_objectType))
+			{
 				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
-			else if (_objectType == Type::Type_Decimal)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
-			else if (_objectType == Type::Type_Double)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
-			else if (_objectType == Type::Type_Boolean)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
-			else if (_objectType == Type::Type_CustomType)
-				_object = "\"" + _object + "\"^^<" + _objectSubType + ">";
-			_object_type = TripleWithObjType::Literal;
-			cout << "change object :"<<_objectType<<":"<<_object << endl;
+			}
+			else
+			{*/
+				if (_objectType == Type::Type_Literal)
+					_object = "\"" + _object + "\"";
+				else if (_objectType == Type::Type_CustomLanguage)
+					_object = "\"" + _object + "\"@" + _objectSubType;
+				else if (_objectType == Type::Type_String)
+					_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#string>";
+				else if (_objectType == Type::Type_Integer)
+					_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+				else if (_objectType == Type::Type_Decimal)
+					_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
+				else if (_objectType == Type::Type_Double)
+					_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
+				else if (_objectType == Type::Type_Boolean)
+					_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+				else if (_objectType == Type::Type_CustomType)
+					_object = "\"" + _object + "\"^^<" + _objectSubType + ">";
+				_object_type = TripleWithObjType::Literal;
+				//cout << "change object :" << _objectType << ":" << _object << endl;
+			//}
 		}
 
 		_triple_array[_triple_num++] = TripleWithObjType(_subject, _predicate, _object, _object_type);

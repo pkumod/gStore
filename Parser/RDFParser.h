@@ -5,6 +5,7 @@
 #include "../Util/Triple.h"
 #include "TurtleParser.h"
 
+
 using namespace std;
 
 class RDFParser
@@ -25,5 +26,7 @@ public:
     string parseFile(TripleWithObjType* _triple_array, int& _triple_num);
     string parseFileSample(TripleWithObjType* _triple_array, int& _triple_num, int UPBOUND);
    string parseString(string _str, TripleWithObjType* _triple_array, int& _triple_num);
+
+   /*bool isNumber(string _str);*/
 };
 #endif
