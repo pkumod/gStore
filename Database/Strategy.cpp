@@ -968,7 +968,7 @@ Strategy::handler6(BasicQuery* _bq, vector<unsigned*>& _result_list)
    			o = this->kvstore->getEntityByID(id_list[j + 1]);
    	    string obj = Util::node2string(o.c_str());
    		string record = sub + "\t" + pre + "\t" + obj + ".\n";
-		cout << "debug handler 6 record:" << record << endl;
+		cout << "debug handler 6 record:" << record <<"."<< endl;
     	fprintf(this->fp, "%s", record.c_str());
 	rsize[0] += 1;
     }
