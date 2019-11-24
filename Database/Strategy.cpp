@@ -957,16 +957,21 @@ Strategy::handler6(BasicQuery* _bq, vector<unsigned*>& _result_list)
     string pre = Util::node2string(p.c_str());
 	cout << "debug handler 6 predicate pre:" << pre << endl;
     this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len);
+	cout << "debug handler 6 length:" << id_list_len << "." << endl;
     for (unsigned j = 0; j < id_list_len; j += 2)
     {
    		string s = this->kvstore->getEntityByID(id_list[j]);
+		cout << "debug handler 6 s:" << s << "." << endl;
    	    string sub = Util::node2string(s.c_str());
+		cout << "debug handler 6 sub:" << sub << "." << endl;
    		string o;
    		if(id_list[j + 1] >= Util::LITERAL_FIRST_ID)
    			o = this->kvstore->getLiteralByID(id_list[j + 1]);
    		else
    			o = this->kvstore->getEntityByID(id_list[j + 1]);
+		cout << "debug handler 6 o:" << o << "." << endl;
    	    string obj = Util::node2string(o.c_str());
+		cout << "debug handler 6 obj:" << obj << "." << endl;
    		string record = sub + "\t" + pre + "\t" + obj + ".\n";
 		cout << "debug handler 6 record:" << record <<"."<< endl;
     	fprintf(this->fp, "%s", record.c_str());
