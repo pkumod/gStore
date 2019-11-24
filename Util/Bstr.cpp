@@ -158,10 +158,10 @@ Bstr::copy(const Bstr* _bp)
 {
 	//DEBUG!!!
 	//if(_bp == NULL)
-		//cerr<<"fatal error is Bstr::copy() -- null pointer"<<endl;
+		//cout<<"fatal error is Bstr::copy() -- null pointer"<<endl;
 	this->length = _bp->getLen();
 	//DEBUG!!!
-	//cerr<<"bstr length: "<<this->length<<endl;
+	//cout<<"bstr length: "<<this->length<<endl;
 
 	//this->str = (char*)malloc(this->length);
 	this->str = new char[this->length];

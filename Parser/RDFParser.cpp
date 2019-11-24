@@ -107,7 +107,7 @@ string RDFParser::parseFileSample(TripleWithObjType* _triple_array, int& _triple
 		}
 		catch (const TurtleParser::Exception& _e) 
 		{
-			cerr << _e.message << endl;
+			cout << _e.message << endl;
 			this->_TurtleParser.discardLine();
 			continue;
 		}

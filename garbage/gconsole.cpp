@@ -144,7 +144,7 @@ main(int argc, char **argv)
 		{
 			cout << "Type \"?\" or \"help\" in the console to see info of all commands" << endl;
 			if (argc > 2) {
-				cerr << "Nonsense to add more parameters!" << endl;
+				cout << "Nonsense to add more parameters!" << endl;
 			}
 			return 0;
 		}
@@ -152,14 +152,14 @@ main(int argc, char **argv)
 		{
 			if (argc != 3)
 			{
-				cerr << "You should just add one script file to be sourced!" << endl;
+				cout << "You should just add one script file to be sourced!" << endl;
 				return 1;
 			}
 			return deal_with_script(argv[2]);
 		}
 		else
 		{
-			cerr << "Wrong option used, please see the help info first!" << endl;
+			cout << "Wrong option used, please see the help info first!" << endl;
 			return 1;
 		}
 	}
@@ -189,7 +189,7 @@ main(int argc, char **argv)
 		{
 			if (current_database != NULL)
 			{
-				cerr << endl << "Please unload your database before quiting!" << endl << endl;
+				cout << endl << "Please unload your database before quiting!" << endl << endl;
 				continue;
 			}
 			cout << endl << endl;
@@ -368,7 +368,7 @@ int deal_with_script(char* file) {
 	FILE* fp = NULL;
 	if ((fp = fopen(file, "r")) == NULL)
 	{
-		cerr << "Open error: " << file << endl;
+		cout << "Open error: " << file << endl;
 		return -1;
 	}
 
@@ -391,12 +391,12 @@ int deal_with_script(char* file) {
 	//end of file
 	if (current_database != NULL)
 	{
-		cerr << endl << "Please unload your database before quitting!" << endl << endl;
+		cout << endl << "Please unload your database before quitting!" << endl << endl;
 		//TODO
 	}
 	if (gc != NULL)
 	{
-		cerr << endl << "Please return to native mode before quitting!" << endl << endl;
+		cout << endl << "Please return to native mode before quitting!" << endl << endl;
 		//TODO
 	}
 
@@ -430,7 +430,7 @@ bool parse_arguments(char* word, vector<string>& args) {
 				continue;
 			}
 			else {
-				cerr << "Invalid arguments!" << endl;
+				cout << "Invalid arguments!" << endl;
 				return false;
 			}
 		}
@@ -604,7 +604,7 @@ int help_handler(const vector<string>& args) {
 		}
 
 		if (printed == 0) {
-			cerr << "No commands match \"" << args[0] << "\". Possibilities are:" << endl;
+			cout << "No commands match \"" << args[0] << "\". Possibilities are:" << endl;
 
 			for (i = 0; current_commands[i].name; i++)
 			{
@@ -627,7 +627,7 @@ int help_handler(const vector<string>& args) {
 	}
 	default:
 	{
-		cerr << "Too many arguments!" << endl;
+		cout << "Too many arguments!" << endl;
 		return -1;
 	}
 	}
@@ -637,7 +637,7 @@ int help_handler(const vector<string>& args) {
 //NOTICE:the SPARQL file to be used should be placed in the local machine even when in remote mode
 int source_handler(const vector<string>& args) {
 	if (args.size() != 1) {
-		cerr << "Exactly 1 argument required!" << endl;
+		cout << "Exactly 1 argument required!" << endl;
 		return -1;
 	}
 
@@ -649,17 +649,17 @@ int source_handler(const vector<string>& args) {
 
 int quit_handler(const vector<string>& args) {
 	if (!args.empty()) {
-		cerr << "Too many arguments!" << endl;
+		cout << "Too many arguments!" << endl;
 		return -1;
 	}
 
 	if (gc != NULL) {
-		cerr << "This command cannot be used when in remote mode." << endl;
+		cout << "This command cannot be used when in remote mode." << endl;
 		return -1;
 	}
 
 	if (current_database != NULL) {
-		cerr << "Please unload your database before quitting." << endl;
+		cout << "Please unload your database before quitting." << endl;
 		return -1;
 	}
 
@@ -669,17 +669,17 @@ int quit_handler(const vector<string>& args) {
 
 int connect_handler(const vector<string>& args) {
 	if (args.size() > 2) {
-		cerr << "Too many arguments!" << endl;
+		cout << "Too many arguments!" << endl;
 		return -1;
 	}
 
 	if (gc != NULL) {
-		cerr << "This command cannot be used when in remote mode." << endl;
+		cout << "This command cannot be used when in remote mode." << endl;
 		return -1;
 	}
 
 	if (current_database != NULL) {
-		cerr << "Please unload your database before entering remote mode." << endl;
+		cout << "Please unload your database before entering remote mode." << endl;
 		return -1;
 	}
 
@@ -688,12 +688,12 @@ int connect_handler(const vector<string>& args) {
 
 	if (args.size() == 2) {
 		if (!Util::isValidIP(args[0])) {
-			cerr << "Invalid IP: " << args[0] << endl;
+			cout << "Invalid IP: " << args[0] << endl;
 			return -1;
 		}
 
 		if (!Util::isValidPort(args[1])) {
-			cerr << "Invalid Port: " << args[1] << endl;
+			cout << "Invalid Port: " << args[1] << endl;
 			return -1;
 		}
 
@@ -708,7 +708,7 @@ int connect_handler(const vector<string>& args) {
 			stringstream(args[0]) >> port;
 		}
 		else {
-			cerr << "Invalid argument, neither IP nor port: " << args[0] << endl;
+			cout << "Invalid argument, neither IP nor port: " << args[0] << endl;
 			return -1;
 		}
 	}
@@ -717,7 +717,7 @@ int connect_handler(const vector<string>& args) {
 	gc = new GstoreConnector(ip, port);
 
 	if (!gc->test()) {
-		cerr << "Failed to connect to server at " << ip << ':' << port << endl;
+		cout << "Failed to connect to server at " << ip << ':' << port << endl;
 		delete gc;
 		gc = NULL;
 		return -1;
@@ -731,12 +731,12 @@ int connect_handler(const vector<string>& args) {
 
 int disconnect_handler(const vector<string>& args) {
 	if (!args.empty()) {
-		cerr << "Too many arguments!" << endl;
+		cout << "Too many arguments!" << endl;
 		return -1;
 	}
 
 	if (gc == NULL) {
-		cerr << "This command cannot be used when in native mode." << endl;
+		cout << "This command cannot be used when in native mode." << endl;
 		return -1;
 	}
 
@@ -744,7 +744,7 @@ int disconnect_handler(const vector<string>& args) {
 	if (show_ret != "connect to server error"
 		&& show_ret != "send show command error."
 		&& show_ret != "\n[empty]\n") {
-		cerr << "Please unload your server database before entering native mode." << endl;
+		cout << "Please unload your server database before entering native mode." << endl;
 		return -1;
 	}
 
@@ -759,7 +759,7 @@ int disconnect_handler(const vector<string>& args) {
 int show_handler(const vector<string>& args)
 {
 	if (args.size() > 1) {
-		cerr << "Too many arguments!" << endl;
+		cout << "Too many arguments!" << endl;
 		return -1;
 	}
 
@@ -769,7 +769,7 @@ int show_handler(const vector<string>& args)
 			flag = true;
 		}
 		else {
-			cerr << "Invalid argument: " << args[0] << endl;
+			cout << "Invalid argument: " << args[0] << endl;
 			return -1;
 		}
 	}
@@ -803,7 +803,7 @@ int show_handler(const vector<string>& args)
 //NOTICE: for build() and load(), always keep database in the root of gStore
 int build_handler(const vector<string>& args) {
 	if (args.size() != 2) {
-		cerr << "Exactly 2 arguments required!" << endl;
+		cout << "Exactly 2 arguments required!" << endl;
 		return -1;
 	}
 
@@ -811,7 +811,7 @@ int build_handler(const vector<string>& args) {
 	//WARN:user better not end with ".db" by themselves!!!
 	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db")
 	{
-		cerr << "Your db name to be built should not end with \".db\"." << endl;
+		cout << "Your db name to be built should not end with \".db\"." << endl;
 		return -1;
 	}
 	database += ".db";
@@ -835,7 +835,7 @@ int build_handler(const vector<string>& args) {
 	}
 
 	if (current_database != NULL) {
-		cerr << "Please unload your database first." << endl;
+		cout << "Please unload your database first." << endl;
 		return -1;
 	}
 
@@ -847,7 +847,7 @@ int build_handler(const vector<string>& args) {
 	current_database = NULL;
 
 	if (!flag) {
-		cerr << "Import RDF file to database failed." << endl;
+		cout << "Import RDF file to database failed." << endl;
 		string cmd = "rm -rf " + database;
 		system(cmd.c_str());
 		return -1;
@@ -859,14 +859,14 @@ int build_handler(const vector<string>& args) {
 
 int drop_handler(const vector<string>& args) {
 	if (args.size() != 1) {
-		cerr << "Exactly 1 argument required!" << endl;
+		cout << "Exactly 1 argument required!" << endl;
 		return -1;
 	}
 
 	//only drop when *.db, avoid other files be removed
 	string database = args[0];
 	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db") {
-		cerr << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
+		cout << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
 		return -1;
 	}
 	database += ".db";
@@ -882,7 +882,7 @@ int drop_handler(const vector<string>& args) {
 	}
 
 	if (current_database != NULL) {
-		cerr << "Please do not use this command when you are using a database." << endl;
+		cout << "Please do not use this command when you are using a database." << endl;
 		return -1;
 	}
 
@@ -899,13 +899,13 @@ int drop_handler(const vector<string>& args) {
 
 int load_handler(const vector<string>& args) {
 	if (args.size() != 1) {
-		cerr << "Exactly 1 argument is required!" << endl;
+		cout << "Exactly 1 argument is required!" << endl;
 		return -1;
 	}
 
 	string database = args[0];
 	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db") {
-		cerr << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
+		cout << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
 		return -1;
 	}
 	database += ".db";
@@ -921,14 +921,14 @@ int load_handler(const vector<string>& args) {
 	}
 
 	if (current_database != NULL) {
-		cerr << "Please unload your database first!" << endl;
+		cout << "Please unload your database first!" << endl;
 		return -1;
 	}
 
 	current_database = new Database(database);
 	bool flag = current_database->load();
 	if (!flag) {
-		cerr << "Failed to load the database." << endl;
+		cout << "Failed to load the database." << endl;
 		delete current_database;
 		current_database = NULL;
 		return -1;
@@ -941,7 +941,7 @@ int load_handler(const vector<string>& args) {
 
 int unload_handler(const vector<string>& args) {
 	if (!args.empty()) {
-		cerr << "Too many arguments!" << endl;
+		cout << "Too many arguments!" << endl;
 		return -1;
 	}
 
@@ -951,7 +951,7 @@ int unload_handler(const vector<string>& args) {
 		string database = gc->show();
 		if (database == "\n[empty]\n")
 		{
-			cerr << "No database used now." << endl;
+			cout << "No database used now." << endl;
 			return -1;
 		}
 		if (gc->unload(database.substr(1, database.length() - 2))) {
@@ -964,7 +964,7 @@ int unload_handler(const vector<string>& args) {
 
 	if (current_database == NULL)
 	{
-		cerr << "No database used now." << endl;
+		cout << "No database used now." << endl;
 		return -1;
 	}
 
@@ -978,16 +978,16 @@ int unload_handler(const vector<string>& args) {
 int query_handler(const vector<string>& args) {
 	if (gc == NULL) {
 		if (args.size() != 1) {
-			cerr << "Exactly 1 argument required!" << endl;
+			cout << "Exactly 1 argument required!" << endl;
 			return -1;
 		}
 		if (current_database == NULL) {
-			cerr << "No database in use!" << endl;
+			cout << "No database in use!" << endl;
 			return -1;
 		}
 	}
 	else if (args.size() != 1 && !(args.size() == 3 && args[1] == "-r")) {
-		cerr << "Invalid arguments!" << endl;
+		cout << "Invalid arguments!" << endl;
 		return -1;
 	}
 
@@ -1002,7 +1002,7 @@ int query_handler(const vector<string>& args) {
 		const char *path = ret.c_str();
 		if (path == NULL)
 		{
-			cerr << "Invalid path of query." << endl;
+			cout << "Invalid path of query." << endl;
 			return -1;
 		}
 #ifdef DEBUG
@@ -1012,7 +1012,7 @@ int query_handler(const vector<string>& args) {
 	}
 
 	if (sparql.empty()) {
-		cerr << "Empty SPARQL." << endl;
+		cout << "Empty SPARQL." << endl;
 		return -1;
 	}
 
@@ -1053,22 +1053,22 @@ int query_handler(const vector<string>& args) {
 
 int add_handler(const vector<string>& args) {
 	if (args.size() != 2) {
-		cerr << "Exactly 2 arguments required!" << endl;
+		cout << "Exactly 2 arguments required!" << endl;
 		return -1;
 	}
 	if (current_database != NULL) {
-		cerr << "Please unload your database first!" << endl;
+		cout << "Please unload your database first!" << endl;
 		return -1;
 	}
 	string database = args[0];
 	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db") {
-		cerr << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
+		cout << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
 		return -1;
 	}
 	database += ".db";
 	Database _db(database);
 	if (!_db.insert(args[1])) {
-		cerr << "Failed to insert!" << endl;
+		cout << "Failed to insert!" << endl;
 		return -1;
 	}
 	return 0;
@@ -1076,21 +1076,21 @@ int add_handler(const vector<string>& args) {
 
 int sub_handler(const vector<string>& args) {
 	if (args.size() != 2) {
-		cerr << "Exactly 2 arguments required!" << endl;
+		cout << "Exactly 2 arguments required!" << endl;
 		return -1;
 	}
 	if (current_database != NULL) {
-		cerr << "Please unload your database first!" << endl;
+		cout << "Please unload your database first!" << endl;
 		return -1;
 	}
 	string database = args[0];
 	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db") {
-		cerr << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
+		cout << "You should use exactly the same db name as building, which should not end with \".db\"" << endl;
 		return -1;
 	}
 	database += ".db";
 	Database _db(database);	if (!_db.remove(args[1])) {
-		cerr << "Failed to remove!" << endl;
+		cout << "Failed to remove!" << endl;
 		return -1;
 	}
 	return 0;
@@ -1098,7 +1098,7 @@ int sub_handler(const vector<string>& args) {
 
 int start_handler(const vector<string>& args) {
 	if (!args.empty()) {
-		cerr << "Too many arguments!" << endl;
+		cout << "Too many arguments!" << endl;
 		return -1;
 	}
 	return system("bin/gserver -s");
@@ -1106,7 +1106,7 @@ int start_handler(const vector<string>& args) {
 
 int stop_handler(const vector<string>& args) {
 	if (!args.empty()) {
-		cerr << "Too many arguments!" << endl;
+		cout << "Too many arguments!" << endl;
 		return -1;
 	}
 	return system("bin/gserver -t");
@@ -1114,7 +1114,7 @@ int stop_handler(const vector<string>& args) {
 
 int restart_handler(const vector<string>& args) {
 	if (!args.empty()) {
-		cerr << "Too many arguments!" << endl;
+		cout << "Too many arguments!" << endl;
 		return -1;
 	}
 	return system("bin/gserver -r");
@@ -1122,14 +1122,14 @@ int restart_handler(const vector<string>& args) {
 
 int port_handler(const vector<string>& args) {
 	if (args.size() > 1) {
-		cerr << "Too many arguments!" << endl;
+		cout << "Too many arguments!" << endl;
 		return -1;
 	}
 	if (args.empty()) {
 		return system("bin/gserver -p");
 	}
 	if (!Util::isValidPort(args[0])) {
-		cerr << "Invalid port: " << args[0] << endl;
+		cout << "Invalid port: " << args[0] << endl;
 		return -1;
 	}
 	string cmd = "bin/gserver -p " + args[0];
@@ -1138,7 +1138,7 @@ int port_handler(const vector<string>& args) {
 
 int printport_handler(const vector<string>& args) {
 	if (!args.empty()) {
-		cerr << "Too many arguments!" << endl;
+		cout << "Too many arguments!" << endl;
 		return -1;
 	}
 	return system("bin/gserver -P");

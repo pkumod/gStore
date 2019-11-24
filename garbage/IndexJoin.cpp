@@ -126,7 +126,7 @@ Join::select()
 	}
 #ifdef DEBUG_JOIN
 	//printf("the start id is: %d\n", this->start_id);
-	cerr << "the start id is: " << this->start_id << endl;
+	cout << "the start id is: " << this->start_id << endl;
 #endif
 }
 
@@ -140,10 +140,10 @@ Join::join_sparql(SPARQLquery& _sparql_query)
 	for (int i = 0; i < basic_query_num; i++)
 	{
 		//fprintf(stderr, "Basic query %d\n", i);
-		cerr << "Basic query " << i << endl;
+		cout << "Basic query " << i << endl;
 		bool ret = this->join_basic(&(_sparql_query.getBasicQuery(i)));
 		if (!ret)
-			cerr << "end directly for this basic query: " << i << endl;
+			cout << "end directly for this basic query: " << i << endl;
 	}
 
 	return true;
@@ -157,7 +157,7 @@ Join::join_basic(BasicQuery* _basic_query)
 	bool ret1 = this->filter_before_join();
 	long after_constant_filter = Util::get_cur_time();
 	//fprintf(stderr, "after filter_before_join: used %ld ms\n", after_filter - begin);
-	cerr << "after filter_before_join: used " << (after_constant_filter - begin) << " ms" << endl;
+	cout << "after filter_before_join: used " << (after_constant_filter - begin) << " ms" << endl;
 	if (!ret1)
 	{
 		this->clear();
@@ -166,12 +166,12 @@ Join::join_basic(BasicQuery* _basic_query)
 
 	this->add_literal_candidate();
 	long after_add_literal = Util::get_cur_time();
-	cerr << "after add_literal_candidate: used " << (after_add_literal - after_constant_filter) << " ms" << endl;
+	cout << "after add_literal_candidate: used " << (after_add_literal - after_constant_filter) << " ms" << endl;
 
 	bool ret2 = this->allFilterByPres();
 	//bool ret2 = true;
 	long after_pre_filter = Util::get_cur_time();
-	cerr << "after allFilterByPres: used " << (after_pre_filter - after_add_literal) << " ms" << endl;
+	cout << "after allFilterByPres: used " << (after_pre_filter - after_add_literal) << " ms" << endl;
 	if (!ret2)
 	{
 		this->clear();
@@ -180,7 +180,7 @@ Join::join_basic(BasicQuery* _basic_query)
 
 	bool ret3 = this->join();
 	long after_joinbasic = Util::get_cur_time();
-	cerr << "after join_basic: used " << (after_joinbasic - after_pre_filter) << " ms" << endl;
+	cout << "after join_basic: used " << (after_joinbasic - after_pre_filter) << " ms" << endl;
 	if (!ret3)
 	{
 		this->clear();
@@ -196,7 +196,7 @@ Join::join_basic(BasicQuery* _basic_query)
 	//
 	//this->generateAllSatellites();
 	//long after_generate_satellite = Util::get_cur_time();
-	//cerr<<"after generate satellite: used "<<(after_generate_satellite - after_joinbasic)<<" ms"<<endl;
+	//cout<<"after generate satellite: used "<<(after_generate_satellite - after_joinbasic)<<" ms"<<endl;
 
 	//BETTER+QUERY: consider satellite with pre var, which first?
 	//I think s2p first is better but s2o is also ok
@@ -207,13 +207,13 @@ Join::join_basic(BasicQuery* _basic_query)
 	this->pre_var_handler();
 	//TODO+BETTER:maybe also reduce to empty, return false
 	long after_pre_var = Util::get_cur_time();
-	cerr << "after pre var: used " << (after_pre_var - after_joinbasic) << " ms" << endl;
+	cout << "after pre var: used " << (after_pre_var - after_joinbasic) << " ms" << endl;
 
 	this->copyToResult();
 	long after_copy = Util::get_cur_time();
-	cerr << "after copy to result list: used " << (after_copy - after_pre_var) << " ms" << endl;
+	cout << "after copy to result list: used " << (after_copy - after_pre_var) << " ms" << endl;
 
-	cerr << "Final result size: " << this->basic_query->getResultList().size() << endl;
+	cout << "Final result size: " << this->basic_query->getResultList().size() << endl;
 	this->clear();
 	return true;
 }
@@ -251,18 +251,18 @@ Join::pre_var_handler()
 	//int core_var_num = this->basic_query->getRetrievedVarNum();
 	unsigned pre_var_num = this->basic_query->getPreVarNum();
 #ifdef DEBUG_JOIN
-	cerr << "pre var num: " << pre_var_num << endl;
+	cout << "pre var num: " << pre_var_num << endl;
 #endif
 	//QUERY+BETTER:filter by pre vars one by one or each record together?
 	for (unsigned i = 0; i < pre_var_num; ++i)
 	{
 #ifdef DEBUG_JOIN
-		cerr << "current pre var id: " << i << endl;
+		cout << "current pre var id: " << i << endl;
 #endif
 		const PreVar& pre_var = this->basic_query->getPreVarByID(i);
 
 #ifdef DEBUG_JOIN
-		cerr << "current table size: " << this->current_table.size() << endl;
+		cout << "current table size: " << this->current_table.size() << endl;
 #endif
 
 		//WARN:do not conflict with original var id
@@ -280,7 +280,7 @@ Join::pre_var_handler()
 			//bool ok = true;
 			unsigned triple_num = pre_var.triples.size();
 #ifdef DEBUG_JOIN
-			//cerr<<"triple num for this var: "<<triple_num<<endl;
+			//cout<<"triple num for this var: "<<triple_num<<endl;
 #endif
 			for (unsigned j = 0; j < triple_num; ++j)
 			{
@@ -288,7 +288,7 @@ Join::pre_var_handler()
 				string sub_name = triple.subject;
 				string obj_name = triple.object;
 #ifdef DEBUG_JOIN
-				//cerr << sub_name << endl << triple.predicate << endl << obj_name << endl;
+				//cout << sub_name << endl << triple.predicate << endl << obj_name << endl;
 #endif
 				int sub_id = -1, obj_id = -1, var1 = -1, var2 = -1;
 
@@ -369,8 +369,8 @@ Join::pre_var_handler()
 						//this->kvstore->getobjIDlistBysubID((*it)[this->id2pos[var1]], oid_list, oid_list_len);
 						//this->kvstore->getpreIDlistBysubID((*it)[this->id2pos[var1]], id_list, id_list_len);
 						//}
-						//cerr<<"sub str: "<<this->kvstore->getEntityByID((*it)[this->id2pos[var1]])<<endl;
-						//cerr<<"obj str: "<<this->kvstore->getEntityByID((*it)[this->id2pos[var2]])<<endl;
+						//cout<<"sub str: "<<this->kvstore->getEntityByID((*it)[this->id2pos[var1]])<<endl;
+						//cout<<"obj str: "<<this->kvstore->getEntityByID((*it)[this->id2pos[var2]])<<endl;
 						//this->kvstore->getpreIDlistBysubIDobjID((*it)[this->id2pos[var1]], (*it)[this->id2pos[var2]], id_list, id_list_len);
 						int sid = (*it)[this->id2pos[var1]], oid = (*it)[this->id2pos[var2]];
 						this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len, true);
@@ -428,7 +428,7 @@ Join::pre_var_handler()
 				if (valid_ans.size() == 0)
 				{
 #ifdef DEBUG_JOIN
-					cerr << "already empty!" << endl;
+					cout << "already empty!" << endl;
 #endif
 					//ok = false;
 					break;
@@ -437,7 +437,7 @@ Join::pre_var_handler()
 				{
 #ifdef DEBUG_JOIN
 					//for(int k = 0; k < valid_ans.size(); ++k)
-					//cerr << this->kvstore->getPredicateByID(valid_ans[k])<<endl;
+					//cout << this->kvstore->getPredicateByID(valid_ans[k])<<endl;
 #endif
 				}
 			}
@@ -494,12 +494,12 @@ Join::copyToResult()
 	int selected_pre_var_num = pre_var_num;
 	if (this->id_pos != core_var_num + selected_pre_var_num)
 	{
-		cerr << "terrible error in copyToResult!" << endl;
+		cout << "terrible error in copyToResult!" << endl;
 		return;
 	}
 
 #ifdef DEBUG_JOIN
-	cerr << "core var num: " << core_var_num << " select var num: " << select_var_num << endl;
+	cout << "core var num: " << core_var_num << " select var num: " << select_var_num << endl;
 #endif
 	this->record_len = select_var_num + pre_var_num;
 	this->record = new int[this->record_len];
@@ -515,7 +515,7 @@ Join::copyToResult()
 		}
 
 #ifdef DEBUG_JOIN
-		//cerr<<"current id_pos: "<<this->id_pos<<endl;
+		//cout<<"current id_pos: "<<this->id_pos<<endl;
 #endif
 		//below are for selected pre vars
 		while (i < this->id_pos)
@@ -543,7 +543,7 @@ Join::copyToResult()
 				if (this->basic_query->isSatelliteInJoin(id2) == false)
 					continue;
 #ifdef DEBUG_JOIN
-				//cerr << "to generate "<<id2<<endl;
+				//cout << "to generate "<<id2<<endl;
 #endif
 				int* idlist = NULL;
 				int idlist_len = 0;
@@ -573,17 +573,17 @@ Join::copyToResult()
 				}
 				this->satellites.push_back(Satellite(id2, idlist, idlist_len));
 #ifdef DEBUG_JOIN
-				//cerr<<"push a new satellite in"<<endl;
+				//cout<<"push a new satellite in"<<endl;
 #endif
 			}
 		}
 #ifdef DEBUG_JOIN
-		//cerr<<"satellites all prepared!"<<endl;
+		//cout<<"satellites all prepared!"<<endl;
 #endif
 		int size = satellites.size();
 		this->cartesian(0, size);
 #ifdef DEBUG_JOIN
-		//cerr<<"after cartesian"<<endl;
+		//cout<<"after cartesian"<<endl;
 #endif
 		for (int k = 0; k < size; ++k)
 		{
@@ -593,12 +593,12 @@ Join::copyToResult()
 		//WARN:use this to avoid influence on the next loop
 		this->satellites.clear();
 #ifdef DEBUG_JOIN
-		//cerr<<"after clear the satellites"<<endl;
+		//cout<<"after clear the satellites"<<endl;
 #endif
 	}
 	delete[] this->record;
 #ifdef DEBUG_JOIN
-	//cerr<<"after delete the record"<<endl;
+	//cout<<"after delete the record"<<endl;
 #endif
 	this->record = NULL;
 	this->record_len = 0;
@@ -723,17 +723,17 @@ Join::join()
 	{
 	case 0:
 		//printf("use multi-join here!\n");
-		cerr << "use multi-join here!" << endl;
+		cout << "use multi-join here!" << endl;
 		ret = this->multi_join();
 		break;
 	case 1:
 		//printf("use index-join here!\n");
-		cerr << "use index-join here!" << endl;
+		cout << "use index-join here!" << endl;
 		ret = this->index_join();
 		break;
 	default:
 		//printf("ERROR: no method found!\n");
-		cerr << "ERROR: no method found!" << endl;
+		cout << "ERROR: no method found!" << endl;
 		break;
 	}
 
@@ -938,27 +938,27 @@ Join::new_join_with_multi_vars_not_prepared(vector<int>& _edges, IDList& _can_li
 		if (this->new_start != this->current_table.end())
 		{
 			//printf("now the new_start is:");
-			cerr << "now the new_start is:";
+			cout << "now the new_start is:";
 			for (RecordIterator it1 = this->new_start->begin(); it1 != this->new_start->end(); ++it1)
 			{
 				//printf(" %d", *it1);
-				cerr << " " << *it1;
+				cout << " " << *it1;
 			}
 			//printf("\n");
-			cerr << endl;
+			cout << endl;
 		}
 		else
 			//printf("new_start still in end?!\n");
-			cerr << "new_start still in end?!" << endl;
+			cout << "new_start still in end?!" << endl;
 		//printf("now the record is:");
-		cerr << "now the record is:";
+		cout << "now the record is:";
 		for (RecordIterator it1 = it0->begin(); it1 != it0->end(); ++it1)
 		{
 			//printf(" %d", *it1);
-			cerr << " " << *it1;
+			cout << " " << *it1;
 		}
 		//printf("\n");
-		cerr << endl;
+		cout << endl;
 #endif
 
 		int cnt = 0;
@@ -973,7 +973,7 @@ Join::new_join_with_multi_vars_not_prepared(vector<int>& _edges, IDList& _can_li
 		{
 #ifdef DEBUG_JOIN
 			//printf("cnt is: %d\n", cnt);
-			cerr << "cnt is: " << cnt << endl;
+			cout << "cnt is: " << cnt << endl;
 #endif
 			int edge_index = _edges[cnt];
 			if (edge_index == -1)
@@ -981,7 +981,7 @@ Join::new_join_with_multi_vars_not_prepared(vector<int>& _edges, IDList& _can_li
 				continue;
 			}
 #ifdef DEBUG_JOIN
-			cerr << "edge exists!" << endl;
+			cout << "edge exists!" << endl;
 #endif
 			int ele = *it1;
 			int edge_type = this->basic_query->getEdgeType(_id, edge_index);
@@ -990,7 +990,7 @@ Join::new_join_with_multi_vars_not_prepared(vector<int>& _edges, IDList& _can_li
 			if (pre_id == -2)    //predicate var
 			{
 #ifdef DEBUG_JOIN
-				cerr << "this is a predicate var!" << endl;
+				cout << "this is a predicate var!" << endl;
 #endif
 				//if(valid_ans_list == NULL)
 				//{
@@ -1008,7 +1008,7 @@ Join::new_join_with_multi_vars_not_prepared(vector<int>& _edges, IDList& _can_li
 			{
 #ifdef DEBUG_JOIN
 				//printf("this is an edge to our id to join!\n");
-				cerr << "this is an edge to our id to join!" << endl;
+				cout << "this is an edge to our id to join!" << endl;
 #endif
 				if (pre_id == -2)
 					this->kvstore->getobjIDlistBysubID(ele, id_list, id_list_len, true);
@@ -1020,7 +1020,7 @@ Join::new_join_with_multi_vars_not_prepared(vector<int>& _edges, IDList& _can_li
 			{
 #ifdef DEBUG_JOIN
 				//printf("this is an edge from our id to join!\n");
-				cerr << "this is an edge from our id to join!" << endl;
+				cout << "this is an edge from our id to join!" << endl;
 #endif
 				if (pre_id == -2)
 					this->kvstore->getsubIDlistByobjID(ele, id_list, id_list_len, true);
@@ -1033,7 +1033,7 @@ Join::new_join_with_multi_vars_not_prepared(vector<int>& _edges, IDList& _can_li
 				matched = false;
 #ifdef DEBUG_JOIN
 				//printf("this id_list is empty!\n");
-				cerr << "this id_list is empty!" << endl;
+				cout << "this id_list is empty!" << endl;
 #endif
 				break;
 			}
@@ -1126,7 +1126,7 @@ Join::new_join_with_multi_vars_not_prepared(vector<int>& _edges, IDList& _can_li
 		{
 #ifdef DEBUG_JOIN
 			//printf("this record is matched!!\n");
-			cerr << "this record is matched!!" << endl;
+			cout << "this record is matched!!" << endl;
 #endif
 			found = true;
 			//bool added = false;
@@ -1158,7 +1158,7 @@ Join::new_join_with_multi_vars_not_prepared(vector<int>& _edges, IDList& _can_li
 			it0 = this->current_table.erase(it0);
 #ifdef DEBUG_JOIN
 			//printf("this record is not matched!\n");
-			cerr << "this record is not matched!" << endl;
+			cout << "this record is not matched!" << endl;
 #endif
 		}
 		delete valid_ans_list;
@@ -1225,7 +1225,7 @@ Join::multi_join()
 	IDList& start_table = this->basic_query->getCandidateList(this->start_id);
 	int start_size = this->basic_query->getCandidateSize(this->start_id);
 #ifdef DEBUG_JOIN
-	cerr << "the start size " << start_size << endl;
+	cout << "the start size " << start_size << endl;
 #endif
 	for (int i = 0; i < start_size; ++i)
 	{
@@ -1253,7 +1253,7 @@ Join::multi_join()
 	this->mystack.push(this->start_id);
 #ifdef DEBUG_JOIN
 	//fprintf(stderr, "now to start the stack loop\n");
-	cerr << "now to start the stack loop" << endl;
+	cout << "now to start the stack loop" << endl;
 #endif
 	while (!this->mystack.empty())
 	{
@@ -1261,7 +1261,7 @@ Join::multi_join()
 
 #ifdef DEBUG_JOIN
 		//fprintf(stderr, "the current id: %d\n", id);
-		cerr << "the current id: " << id << endl;
+		cout << "the current id: " << id << endl;
 #endif
 		//int id = mystack[top];
 		int maxi = this->choose_next_node(id);
@@ -1269,7 +1269,7 @@ Join::multi_join()
 		{
 #ifdef DEBUG_JOIN
 			//fprintf(stderr, "the node is totally dealed: %d\n", id);
-			cerr << "the node is totally dealed: " << id << endl;
+			cout << "the node is totally dealed: " << id << endl;
 #endif
 			//top--;
 			this->mystack.pop();
@@ -1278,11 +1278,11 @@ Join::multi_join()
 		int id2 = this->basic_query->getEdgeNeighborID(id, maxi);
 #ifdef DEBUG_JOIN
 		//fprintf(stderr, "the next node id to join: %d\n", id2);
-		cerr << "the next node id to join: " << id2 << endl;
+		cout << "the next node id to join: " << id2 << endl;
 #endif
 		//this->filterBySatellites(id2);
 #ifdef DEBUG_JOIN
-		cerr << "the start size " << this->basic_query->getCandidateSize(id2) << endl;
+		cout << "the start size " << this->basic_query->getCandidateSize(id2) << endl;
 #endif
 
 		//pre_id == -1 means we cannot find such predicate in rdf file, so the result set of this sparql should be empty.
@@ -1329,7 +1329,7 @@ Join::multi_join()
 		{
 #ifdef DEBUG_PRECISE
 			//fprintf(stderr, "this var may contain literals: %d\n", id2);
-			cerr << "this var may contain literals: " << id2 << endl;
+			cout << "this var may contain literals: " << id2 << endl;
 #endif
 			this->basic_query->setReady(id2);
 		}
@@ -1337,7 +1337,7 @@ Join::multi_join()
 		{
 #ifdef DEBUG_PRECISE
 			//fprintf(stderr, "this var not contain literals: %d\n", id2);
-			cerr << "this var not contain literals: " << id2 << endl;
+			cout << "this var not contain literals: " << id2 << endl;
 #endif
 		}
 
@@ -1351,7 +1351,7 @@ Join::multi_join()
 		{
 #ifdef DEBUG_PRECISE
 			//fprintf(stderr, "this edge uses prepared-join way\n");
-			cerr << "this edge uses prepared-join way" << endl;
+			cout << "this edge uses prepared-join way" << endl;
 #endif
 			this->acquire_all_id_lists(id_lists, id_lists_len, can_list, edges, id2, can_list_size);
 			flag = this->new_join_with_multi_vars_prepared(id_lists, id_lists_len, edges, can_list, can_list_size);
@@ -1368,7 +1368,7 @@ Join::multi_join()
 		{
 #ifdef DEBUG_PRECISE
 			//fprintf(stderr, "this edge uses not-prepared-join way\n");
-			cerr << "this edge uses not-prepared-join way" << endl;
+			cout << "this edge uses not-prepared-join way" << endl;
 #endif
 			flag = this->new_join_with_multi_vars_not_prepared(edges, can_list, can_list_size, id2, is_literal);
 		}
@@ -1378,7 +1378,7 @@ Join::multi_join()
 		{
 #ifdef DEBUG_JOIN
 			//fprintf(stderr, "the result is already empty!!\n");
-			cerr << "the result is already empty!!" << endl;
+			cout << "the result is already empty!!" << endl;
 #endif
 			//break;
 			return false; //to avoid later invalid copy
@@ -1400,7 +1400,7 @@ Join::multi_join()
 	}
 #ifdef DEBUG_JOIN
 	//fprintf(stderr, "now end the stack loop\n");
-	cerr << "now end the stack loop" << endl;
+	cout << "now end the stack loop" << endl;
 #endif
 
 	//BETTER?:though the whole current_table is ordered here, the
@@ -1465,7 +1465,7 @@ Join::index_link(int _nid, int _idx)
 		{
 #ifdef DEBUG_JOIN
 			//fprintf(stderr, "this is an edge to our id to join!\n");
-			cerr << "this is an edge to our id to join!" << endl;
+			cout << "this is an edge to our id to join!" << endl;
 #endif
 			this->kvstore->getobjIDlistBysubIDpreID(it->value, pre_id, id_list, id_list_len, true);
 		}
@@ -1473,7 +1473,7 @@ Join::index_link(int _nid, int _idx)
 		{
 #ifdef DEBUG_JOIN
 			//fprintf(stderr, "this is an edge from our id to join!\n");
-			cerr << "this is an edge from our id to join!" << endl;
+			cout << "this is an edge from our id to join!" << endl;
 #endif
 			this->kvstore->getsubIDlistByobjIDpreID(it->value, pre_id, id_list, id_list_len, true);
 		}
@@ -1482,7 +1482,7 @@ Join::index_link(int _nid, int _idx)
 			//id_list is NULL in this case
 #ifdef DEBUG_JOIN
 			//fprintf(stderr, "this id_list is empty!\n");
-			cerr << "this id_list is empty!" << endl;
+			cout << "this id_list is empty!" << endl;
 #endif
 			continue;
 		}
@@ -1506,7 +1506,7 @@ Join::index_link(int _nid, int _idx)
 					ret = --can2.end();
 #ifdef DEBUG_JOIN
 					//fprintf(stderr, "to add literal for free variable!\n");
-					cerr << "to add literal for free variable!" << endl;
+					cout << "to add literal for free variable!" << endl;
 #endif
 				}
 			}
@@ -1679,22 +1679,22 @@ Join::index_travel_two()
 
 
 	//fprintf(stderr, "now to travel and store in current table\n");
-	cerr << "now to travel and store in current table" << endl;
+	cout << "now to travel and store in current table" << endl;
 	while (!this->mystack.empty())
 	{
 		int id = this->mystack.top();
 		//fprintf(stderr, "the current id: %d\n", id);
-		cerr << "the current id: " << id << endl;
+		cout << "the current id: " << id << endl;
 		if (this->index_lists[id].end())         //all linking of this index list are travelled
 		{
 			//fprintf(stderr, "the list is totally dealed: %d\n", id);
-			cerr << "the list is totally dealed: " << id << endl;
+			cout << "the list is totally dealed: " << id << endl;
 			this->mystack.pop();
 			continue;
 		}
 		int id2 = this->index_lists[id].next();
 		//fprintf(stderr, "the next list id to travel: %d\n", id2);
-		cerr << "the next list id to travel: " << id2 << endl;
+		cout << "the next list id to travel: " << id2 << endl;
 
 		bool flag = true;
 		//NOTICE: we assume that the former node is all ok, scanning it to border
@@ -1703,7 +1703,7 @@ Join::index_travel_two()
 		if (!flag)
 		{
 			//fprintf(stderr, "the result is already empty!!\n");
-			cerr << "the result is already empty!!" << endl;
+			cout << "the result is already empty!!" << endl;
 			return false;			//to avoid later invalid copy
 		}
 		int size = this->index_lists[id2].check_map.size();
@@ -1713,7 +1713,7 @@ Join::index_travel_two()
 			if (!flag)
 			{
 				//fprintf(stderr, "the result is already empty!!\n");
-				cerr << "the result is already empty!!" << endl;
+				cout << "the result is already empty!!" << endl;
 				return false;			//to avoid later invalid copy
 			}
 		}
@@ -1747,23 +1747,23 @@ Join::index_join()
 	this->add_id_pos_mapping(this->start_id);
 
 	//fprintf(stderr, "now to start the stack loop\n");
-	cerr << "now to start the stack loop" << endl;
+	cout << "now to start the stack loop" << endl;
 	while (!this->mystack.empty())
 	{
 		int id = this->mystack.top();
 		//fprintf(stderr, "the current id: %d\n", id);
-		cerr << "the current id: " << id << endl;
+		cout << "the current id: " << id << endl;
 		int maxi = this->choose_next_node(id);
 		if (maxi == -1) //all edges of this node are dealed
 		{
 			//fprintf(stderr, "the node is totally dealed: %d\n", id);
-			cerr << "theh node is totally dealed: " << id << endl;
+			cout << "theh node is totally dealed: " << id << endl;
 			this->mystack.pop();
 			continue;
 		}
 		int id2 = this->basic_query->getEdgeNeighborID(id, maxi);
 		//fprintf(stderr, "the next node id to join: %d\n", id2);
-		cerr << "the next node id to join: " << id2 << endl;
+		cout << "the next node id to join: " << id2 << endl;
 
 		IDList& can_list = this->basic_query->getCandidateList(id2);
 		//int can_list_size = can_list.size();
@@ -1771,10 +1771,10 @@ Join::index_join()
 		bool is_literal = this->is_literal_var(id2);
 		if (is_literal)
 			//fprintf(stderr, "this var may contain literals: %d\n", id2);
-			cerr << "this var may contain literals: " << id2 << endl;
+			cout << "this var may contain literals: " << id2 << endl;
 		else
 			//fprintf(stderr, "this var not contain literals: %d\n", id2);
-			cerr << "this var not contain literals: " << id2 << endl;
+			cout << "this var not contain literals: " << id2 << endl;
 
 		bool flag = true;
 		//NOTICE: we assume that the former node is all ok, scanning it to border
@@ -1784,7 +1784,7 @@ Join::index_join()
 		if (!flag)
 		{
 			//fprintf(stderr, "the result is already empty!!\n");
-			cerr << "the result is already empty!!" << endl;
+			cout << "the result is already empty!!" << endl;
 			return false;			//to avoid later invalid copy
 		}
 		int edge_index, edge_id = this->basic_query->getEdgeID(id, maxi);
@@ -1801,7 +1801,7 @@ Join::index_join()
 			if (!flag)
 			{
 				//fprintf(stderr, "the result is already empty!!\n");
-				cerr << "the result is already empty!!" << endl;
+				cout << "the result is already empty!!" << endl;
 				return false;			//to avoid later invalid copy
 			}
 
@@ -1813,13 +1813,13 @@ Join::index_join()
 		this->mystack.push(id2);
 	}
 	//fprintf(stderr, "now end the stack loop\n");
-	cerr << "now end the stack loop" << endl;
+	cout << "now end the stack loop" << endl;
 
 	// To travel and store in current_table, then do the last filter
 	if (this->index_travel() == false)
 		return false;
 	//printf("now to filter through only_pre_filter_after_join\n");
-	cerr << "now to filter through only_pre_filter_after_join" << endl;
+	cout << "now to filter through only_pre_filter_after_join" << endl;
 	this->only_pre_filter_after_join();
 
 	//copy to result list, adjust the vars order
@@ -1853,16 +1853,16 @@ bool
 Join::filter_before_join()
 {
 	//fprintf(stderr, "*****IIIIIIN filter_before_join\n");
-	cerr << "*****IN filter_before_join" << endl;
+	cout << "*****IN filter_before_join" << endl;
 
 	for (int i = 0; i < this->var_num; i++)
 	{
 		bool flag = this->basic_query->isLiteralVariable(i);
 		//fprintf(stderr, "\tVar%d %s\n", i, this->basic_query->getVarName(i).c_str());
-		cerr << "\tVar" << i << " " << this->basic_query->getVarName(i) << endl;
+		cout << "\tVar" << i << " " << this->basic_query->getVarName(i) << endl;
 		IDList &can_list = this->basic_query->getCandidateList(i);
 		//fprintf(stderr, "\t\tsize of canlist before filter: %d\n", can_list.size());
-		cerr << "\t\tsize of canlist before filter: " << can_list.size() << endl;
+		cout << "\t\tsize of canlist before filter: " << can_list.size() << endl;
 		//NOTICE:must sort before using binary search.
 		can_list.sort();
 
@@ -1870,12 +1870,12 @@ Join::filter_before_join()
 		bool ret = this->constant_edge_filter(i);
 		long after_constant_edge_filter = Util::get_cur_time();
 		//fprintf(stderr, "\t\tconstant_edge_filter: used %ld ms\n", after_constant_edge_filter - begin);
-		cerr << "\t\tconstant_edge_filter: used " << (after_constant_edge_filter - begin) << " ms" << endl;
+		cout << "\t\tconstant_edge_filter: used " << (after_constant_edge_filter - begin) << " ms" << endl;
 		//		this->preid_filter(this->basic_query, i);
 		//		long after_preid_filter = Util::get_cur_time();
 		//cout << "\t\tafter_preid_filter: used " << (after_preid_filter-after_literal_edge_filter) << " ms" << endl;
 		//fprintf(stderr, "\t\t[%d] after filter, candidate size = %d\n\n\n", i, can_list.size());
-		cerr << "\t\t[" << i << "] after filter, candidate size= " << can_list.size() << endl << endl << endl;
+		cout << "\t\t[" << i << "] after filter, candidate size= " << can_list.size() << endl << endl << endl;
 
 		//debug
 		//		{
@@ -1895,7 +1895,7 @@ Join::filter_before_join()
 		}
 	}
 	//fprintf(stderr, "OOOOOOUT filter_before_join\n");
-	cerr << "OUT filter_before_join" << endl;
+	cout << "OUT filter_before_join" << endl;
 	return true;
 }
 
@@ -1911,7 +1911,7 @@ Join::constant_edge_filter(int _var_i)
 	{
 		int neighbor_id = this->basic_query->getEdgeNeighborID(_var_i, j);
 		//fprintf(stderr, "\t\t\tneighbor_id=%d\n", neighbor_id);
-		cerr << "\t\t\tneighbor_id=" << neighbor_id << endl;
+		cout << "\t\t\tneighbor_id=" << neighbor_id << endl;
 		if (neighbor_id != -1)   //variables in join not considered here
 		{
 			continue;
@@ -2259,11 +2259,11 @@ Join::filterBySatellites(int _var)
 		//not consider edge with constant neighbors here
 		if (neighbor[0] != '?')
 		{
-			//cerr << "not to filter: " << neighbor_name << endl;
+			//cout << "not to filter: " << neighbor_name << endl;
 			continue;
 		}
 		//else
-		//cerr << "need to filter: " << neighbor_name << endl;
+		//cout << "need to filter: " << neighbor_name << endl;
 
 		int pre_id = this->basic_query->getEdgePreID(_var, i);
 		//WARN+BETTER:invalid(should be discarded in Query) or ?p(should not be considered here)
@@ -2368,7 +2368,7 @@ Join::filterBySatellites(int _var)
 
 	//if (!is_literal_var(_var) && valid_list != NULL && valid_list->empty())
 	//{
-	//	//cerr << "quit when empty in edge"<<endl;
+	//	//cout << "quit when empty in edge"<<endl;
 	//	return false;
 	//}
 
@@ -2379,7 +2379,7 @@ Join::filterBySatellites(int _var)
 	//	{
 	//		int preid = out_edge_pre_id[i];
 	//		this->kvstore->getsubIDlistBypreID(preid, list, len);
-	//		//cerr<<"p2s len "<<len<<endl;
+	//		//cout<<"p2s len "<<len<<endl;
 	//		if (valid_list == NULL && i == 0)
 	//		{
 	//			if (size > len)
@@ -2433,7 +2433,7 @@ Join::filterBySatellites(int _var)
 
 	//if (!is_literal_var(_var) && valid_list->empty())
 	//{
-	//	//cerr << "quit when empty out edge"<<endl;
+	//	//cout << "quit when empty out edge"<<endl;
 	//	return false;
 	//}
 	//cans.copy(valid_list);
@@ -2502,7 +2502,7 @@ Join::filterBySatellites(int _var)
 	}
 	cans.copy(valid_idlist);
 
-	cerr << "var " << _var << "size after pre_filter " << cans.size() << endl;
+	cout << "var " << _var << "size after pre_filter " << cans.size() << endl;
 	return true;
 }
 
@@ -2543,11 +2543,11 @@ Join::only_pre_filter_after_join()
 			bool only_preid_filter = (this->basic_query->isOneDegreeNotJoinVar(neighbor_name));
 			if (!only_preid_filter)
 			{
-				//cerr << "not to filter: " << neighbor_name << endl;
+				//cout << "not to filter: " << neighbor_name << endl;
 				continue;
 			}
 			//else
-			//cerr << "need to filter: " << neighbor_name << endl;
+			//cout << "need to filter: " << neighbor_name << endl;
 
 			int pre_id = this->basic_query->getEdgePreID(var_id, i);
 			if (pre_id < 0)

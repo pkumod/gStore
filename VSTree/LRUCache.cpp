@@ -96,7 +96,7 @@ bool LRUCache::loadCache(string _filePath)
 	FILE* filePtr = fopen(this->dataFilePath.c_str(), "rb");
 	if (filePtr == NULL)
 	{
-		cerr << "error, can not load an exist data file. @LRUCache::loadCache" << endl;
+		cout << "error, can not load an exist data file. @LRUCache::loadCache" << endl;
 		return false;
 	}
 
@@ -111,7 +111,7 @@ bool LRUCache::loadCache(string _filePath)
 
 	if (flag != 0)
 	{
-		cerr << "error,can't seek to the fileLine. @LRUCache::loadCache" << endl;
+		cout << "error,can't seek to the fileLine. @LRUCache::loadCache" << endl;
 		return false;
 	}
 
@@ -175,7 +175,7 @@ bool LRUCache::createCache(string _filePath)
 	FILE* filePtr = fopen(this->dataFilePath.c_str(), "wb");
 	if (filePtr == NULL)
 	{
-		cerr << "error, can not create a new data file. @LRUCache::createCache" << endl;
+		cout << "error, can not create a new data file. @LRUCache::createCache" << endl;
 		return false;
 	}
 	fclose(filePtr);
@@ -404,10 +404,10 @@ bool LRUCache::update(int _key, VNode* _value)
 	if (valuePtr != NULL)
 	{
 		int pos = this->key2pos[_key];
-		//BETTER:remove the below cerr
+		//BETTER:remove the below cout
 		if (this->keys[pos] != _key)
 		{
-			cerr << "error, the pos is wrong. @LRUCache::update" << endl;
+			cout << "error, the pos is wrong. @LRUCache::update" << endl;
 
 #ifdef THREAD_VSTREE_ON
 			pthread_rwlock_unlock(&(this->cache_lock));
@@ -425,7 +425,7 @@ bool LRUCache::update(int _key, VNode* _value)
 		return true;
 	}
 
-	cerr << "error:the key not exist!"<<endl;
+	cout << "error:the key not exist!"<<endl;
 #ifdef THREAD_VSTREE_ON
 	pthread_rwlock_unlock(&(this->cache_lock));
 #endif
@@ -513,7 +513,7 @@ void LRUCache::freeElem(int _pos)
 {
 	if(_pos < LRUCache::DEFAULT_NUM || _pos >= LRUCache::DEFAULT_NUM + this->size)
 	{
-		cerr << "error in LRUCache::freeElem() -- invalid pos" << endl;
+		cout << "error in LRUCache::freeElem() -- invalid pos" << endl;
 		return;
 	}
 
@@ -612,12 +612,12 @@ LRUCache::freeDisk(int _pos)
 
 	if (nodePtr == NULL)
 	{
-		cerr << "error, VNode do not exist. @LRUCache::freeDisk" << endl;
+		cout << "error, VNode do not exist. @LRUCache::freeDisk" << endl;
 		return false;
 	}
 	if (filePtr == NULL)
 	{
-		cerr << "error, can't open file. @LRUCache::freeDisk" << endl;
+		cout << "error, can't open file. @LRUCache::freeDisk" << endl;
 		return false;
 	}
 
@@ -631,7 +631,7 @@ LRUCache::freeDisk(int _pos)
 
 	if (flag != 0)
 	{
-		cerr << "error, can't seek to the fileLine. @LRUCache::writeOut" << endl;
+		cout << "error, can't seek to the fileLine. @LRUCache::writeOut" << endl;
 		return false;
 	}
 
@@ -653,18 +653,18 @@ LRUCache::writeOut(int _pos, int _fileLine)
 
 	if (nodePtr == NULL)
 	{
-		cerr << "error, VNode do not exist. @LRUCache::writeOut" << endl;
+		cout << "error, VNode do not exist. @LRUCache::writeOut" << endl;
 		return false;
 	}
 	if (filePtr == NULL)
 	{
-		cerr << "error, can't open file. @LRUCache::writeOut" << endl;
+		cout << "error, can't open file. @LRUCache::writeOut" << endl;
 		return false;
 	}
 
 	if (nodePtr->getFileLine() != _fileLine)
 	{
-		cerr << "error, fileLine " << _fileLine <<" "<< nodePtr->getFileLine() << " wrong. @LRUCache::writeOut" << endl;
+		cout << "error, fileLine " << _fileLine <<" "<< nodePtr->getFileLine() << " wrong. @LRUCache::writeOut" << endl;
 	}
 
 	if(!nodePtr->isDirty())
@@ -688,7 +688,7 @@ LRUCache::writeOut(int _pos, int _fileLine)
 
 	if (flag != 0)
 	{
-		cerr << "error, can't seek to the fileLine. @LRUCache::writeOut" << endl;
+		cout << "error, can't seek to the fileLine. @LRUCache::writeOut" << endl;
 		return false;
 	}
 
@@ -712,13 +712,13 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 
 	//if (nodePtr == NULL)
 	//{
-		//cerr << "error, can not new a VNode. @LRUCache::readIn" << endl;
+		//cout << "error, can not new a VNode. @LRUCache::readIn" << endl;
 		//return false;
 	//}
 
 	if (filePtr == NULL)
 	{
-		cerr << "error, can't open " <<
+		cout << "error, can't open " <<
 			"[" << this->dataFilePath << "]" <<
 			". @LRUCache::readIn" << endl;
 		return false;
@@ -734,7 +734,7 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 
 	if (flag != 0)
 	{
-		cerr << "error,can't seek to the fileLine. @LRUCache::readIn" << endl;
+		cout << "error,can't seek to the fileLine. @LRUCache::readIn" << endl;
 		return false;
 	}
 
@@ -746,7 +746,7 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 	if (nodePtr == NULL || nodePtr->getFileLine() != _fileLine)
 	{
 		cout<<"node file line: "<<nodePtr->getFileLine()<<endl;
-		cerr << "error,node fileLine error. @LRUCache::readIn" << endl;
+		cout << "error,node fileLine error. @LRUCache::readIn" << endl;
 	}
 
 	this->setElem(_pos, _fileLine, nodePtr);
@@ -765,7 +765,7 @@ bool LRUCache::flush()
 
 	if (filePtr == NULL)
 	{
-		cerr << "error, can't open file. @LRUCache::flush" << endl;
+		cout << "error, can't open file. @LRUCache::flush" << endl;
 		return false;
 	}
 
@@ -790,7 +790,7 @@ bool LRUCache::flush()
 
 		if (nodePtr == NULL)
 		{
-			cerr << "error, VNode do not exist. @LRUCache::flush" << endl;
+			cout << "error, VNode do not exist. @LRUCache::flush" << endl;
 			return false;
 		}
 
@@ -805,7 +805,7 @@ bool LRUCache::flush()
 
 		if (flag != 0)
 		{
-			cerr << "error, can't seek to the fileLine. @LRUCache::flush" << endl;
+			cout << "error, can't seek to the fileLine. @LRUCache::flush" << endl;
 			return false;
 		}
 

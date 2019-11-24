@@ -37,7 +37,7 @@ bool Client::connectServer()
 	bool flag = this->socket.create();
 	if (!flag)
 	{
-		cerr << "cannot create socket. @Client::connectServer" << endl;
+		cout << "cannot create socket. @Client::connectServer" << endl;
 		return false;
 	}
 
@@ -45,7 +45,7 @@ bool Client::connectServer()
 
 	if (!flag)
 	{
-		cerr << "cannot connect to server. @Client::connectServer" << endl;
+		cout << "cannot connect to server. @Client::connectServer" << endl;
 		return false;
 	}
 
@@ -244,7 +244,7 @@ void Client::run()
 		bool flag = this->connectServer();
 		if(!flag)
 		{
-			cerr << "connect server error. @Client::run" << endl;
+			cout << "connect server error. @Client::run" << endl;
 			if(ifredirect)
 				fclose(fp);
 			continue;
@@ -253,7 +253,7 @@ void Client::run()
 		flag = this->send(cmd);
 		if(!flag)
 		{
-			cerr << "sent message error. @Client::run" << endl;
+			cout << "sent message error. @Client::run" << endl;
 			if(ifredirect)
 				fclose(fp);
 			continue;
@@ -267,7 +267,7 @@ void Client::run()
 		this->disconnectServer();
 		if(!flag)
 		{
-			cerr << "disconnect server error. @Client::run" << endl;
+			cout << "disconnect server error. @Client::run" << endl;
 			if(ifredirect)
 				fclose(fp);
 			continue;
@@ -302,14 +302,14 @@ void Client::run()
 	//        bool flag = this->connectServer();
 	//        if (!flag)
 	//        {
-	//            cerr << "connect server error. @Client::run" << endl;
+	//            cout << "connect server error. @Client::run" << endl;
 	//            continue;
 	//        }
 	//
 	//        flag = this->send(cmd);
 	//        if (!flag)
 	//        {
-	//            cerr << "sent message error. @Client::run" << endl;
+	//            cout << "sent message error. @Client::run" << endl;
 	//            continue;
 	//        }
 	//
@@ -320,7 +320,7 @@ void Client::run()
 	//        this->disconnectServer();
 	//        if (!flag)
 	//        {
-	//            cerr << "disconnect server error. @Client::run" << endl;
+	//            cout << "disconnect server error. @Client::run" << endl;
 	//            continue;
 	//        }
 	//}

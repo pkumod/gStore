@@ -53,7 +53,7 @@ bool EntryBuffer::insert(const SigEntry& _entry)
 {
     if (this->isFull())
     {
-        cerr << "error, entry buffer is full, can not insert now in EntryBuffer::insert." << endl;
+        cout << "error, entry buffer is full, can not insert now in EntryBuffer::insert." << endl;
         return false;
     }
 

@@ -48,14 +48,14 @@ GstoreConnector::~GstoreConnector()
 bool GstoreConnector::test() {
 	bool connect_return = this->connect();
 	if (!connect_return) {
-		cerr << "failed to connect to server. @GstoreConnector::test" << endl;
+		cout << "failed to connect to server. @GstoreConnector::test" << endl;
 		return false;
 	}
 
 	string cmd = "test";
 	bool send_return = this->socket.send(cmd);
 	if (!send_return) {
-		cerr << "send test command error. @GstoreConnector::test" << endl;
+		cout << "send test command error. @GstoreConnector::test" << endl;
 		return false;
 	}
 
@@ -115,7 +115,7 @@ GstoreConnector::build(string _db_name, string _rdf_file_path, string username, 
 	string cmd = url + "/?operation=build&db_name=" + _db_name + "&ds_path=" + _rdf_file_path + "&username=" + username + "&password=" + password;
 	string recv_msg;
 	int ret = hc.Get(cmd, recv_msg);
-	cerr << recv_msg << endl;
+	cout << recv_msg << endl;
 	if (recv_msg == "import RDF file to database done.")
 	{
 		return true;
@@ -130,7 +130,7 @@ GstoreConnector::drop(string _db_name)
 	bool connect_return = this->connect();
 	if (!connect_return)
 	{
-		cerr << "connect to server error. @GstoreConnector::unload" << endl;
+		cout << "connect to server error. @GstoreConnector::unload" << endl;
 		return false;
 	}
 
@@ -138,7 +138,7 @@ GstoreConnector::drop(string _db_name)
 	bool send_return = this->socket.send(cmd);
 	if (!send_return)
 	{
-		cerr << "send unload command error. @GstoreConnector::unload" << endl;
+		cout << "send unload command error. @GstoreConnector::unload" << endl;
 		return false;
 	}
 
@@ -191,7 +191,7 @@ GstoreConnector::connect()
 	bool flag = this->socket.create();
 	if (!flag)
 	{
-		cerr << "cannot create socket. @GstoreConnector::connect" << endl;
+		cout << "cannot create socket. @GstoreConnector::connect" << endl;
 		return false;
 	}
 
@@ -199,7 +199,7 @@ GstoreConnector::connect()
 
 	if (!flag)
 	{
-		cerr << "cannot connect to server. @GstoreConnector::connect" << endl;
+		cout << "cannot connect to server. @GstoreConnector::connect" << endl;
 		return false;
 	}
 

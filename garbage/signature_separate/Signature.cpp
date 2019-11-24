@@ -139,7 +139,7 @@ Signature::encodeStr2Entity(const char* _str, EntityBitSet& _entity_bs)
 		else if (_str[0] != '<')
 		{
 #ifdef DEBUG_VSTREE
-			cerr << "error in encodeStr2Entity(): neighbor is neither a literal or entity!" << endl;
+			cout << "error in encodeStr2Entity(): neighbor is neither a literal or entity!" << endl;
 #endif
 		}
 		_entity_bs.set(pos);

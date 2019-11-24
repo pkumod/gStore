@@ -69,8 +69,8 @@ public:
 				loc += 2;
 				if (t >= this->prefixnum)
 				{
-					cerr << "t=" << t << "  prefix=" << prefixnum << endl;
-					cerr << "err" << endl;
+					cout << "t=" << t << "  prefix=" << prefixnum << endl;
+					cout << "err" << endl;
 					target_string = "";
 					return;
 				}

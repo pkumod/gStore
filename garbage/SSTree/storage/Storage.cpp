@@ -205,7 +205,7 @@ Storage::AllocBlock()
 		}
 		if(this->cur_block_num >= Storage::MAX_BLOCK_NUM)
 		{
-			cerr << "Error in ISStorage::AllocBlock() - cur_block_num overflow" << endl;
+			cout << "Error in ISStorage::AllocBlock() - cur_block_num overflow" << endl;
 		}
 		p = this->freelist->next;
 	}

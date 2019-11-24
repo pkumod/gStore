@@ -70,7 +70,7 @@ VSTree::getNode(int _line)
     if (_line >= this->max_nid_alloc)
     {
 		//cout<<_line <<" "<<this->max_nid_alloc<<endl;
-        cerr << "error, the parameter:_line is bigger than the tree node_num. @VSTree::getNode" << endl;
+        cout << "error, the parameter:_line is bigger than the tree node_num. @VSTree::getNode" << endl;
         return NULL;
     }
 
@@ -191,7 +191,7 @@ VSTree::buildTree(std::string _entry_file_path, int _cache_size)
     FILE* filePtr = fopen(_entry_file_path.c_str(), "rb");
     if (filePtr == NULL)
     {
-        cerr << "error, can not open file. @VSTree::buildTree" << endl;
+        cout << "error, can not open file. @VSTree::buildTree" << endl;
         return false;
     }
 
@@ -287,8 +287,8 @@ bool VSTree::updateEntry(int _entity_id, const EntityBitSet& _bitset)
     VNode* leafNodePtr = this->getLeafNodeByEntityID(_entity_id);
     if (leafNodePtr == NULL)
     {
-        cerr << "error, can not find the mapping leaf node. @VSTree::updateEntry" << endl;
-		cerr << "the entity id: "<<_entity_id << endl;
+        cout << "error, can not find the mapping leaf node. @VSTree::updateEntry" << endl;
+		cout << "the entity id: "<<_entity_id << endl;
         return false;
     }
 
@@ -328,7 +328,7 @@ bool VSTree::updateEntry(int _entity_id, const EntityBitSet& _bitset)
 
     if (!findFlag)
     {
-        cerr<< "error, can not find the mapping child entry in the leaf node. @VSTree::updateEntry" << endl;
+        cout<< "error, can not find the mapping child entry in the leaf node. @VSTree::updateEntry" << endl;
 #ifdef THREAD_VSTREE_ON
 		pthread_mutex_unlock(&(leafNodePtr->node_lock));
 #endif
@@ -359,7 +359,7 @@ VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
 
     if (leafNodePtr == NULL)
     {
-        cerr << "error, can not find the mapping leaf node. @VSTree::replaceEntry" << endl;
+        cout << "error, can not find the mapping leaf node. @VSTree::replaceEntry" << endl;
         return false;
     }
 
@@ -396,7 +396,7 @@ VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
 
     if (!findFlag)
     {
-        cerr << "error, can not find the mapping child entry in the leaf node. @VSTree::replaceEntry" << endl;
+        cout << "error, can not find the mapping child entry in the leaf node. @VSTree::replaceEntry" << endl;
 #ifdef THREAD_VSTREE_ON
 		pthread_mutex_unlock(&(leafNodePtr->node_lock));
 #endif
@@ -455,7 +455,7 @@ VSTree::insertEntry(const SigEntry& _entry)
 
     if(choosedNodePtr == NULL)
     {
-        cerr << "error, can not choose a leaf node to insert entry. @VSTree::insert" << endl;
+        cout << "error, can not choose a leaf node to insert entry. @VSTree::insert" << endl;
         return false;
     }
 
@@ -522,7 +522,7 @@ VSTree::removeEntry(int _entity_id)
 
     if (leafNodePtr == NULL)
     {
-        cerr<< "error, can not find the mapping leaf node. @VSTree::removeEntry" << endl;
+        cout<< "error, can not find the mapping leaf node. @VSTree::removeEntry" << endl;
         return false;
     }
 
@@ -544,7 +544,7 @@ VSTree::removeEntry(int _entity_id)
 
     if(entryIndex == -1)
     {
-        cerr << "error, can not find the entry in leaf node. @VSTree::removeEntry" << endl;
+        cout << "error, can not find the entry in leaf node. @VSTree::removeEntry" << endl;
         return false;
     }
 
@@ -584,7 +584,7 @@ VSTree::removeEntry(int _entity_id)
 	{
 		if(childNum <= VNode::MIN_CHILD_NUM)
 		{
-			//cerr << "In VSTree::remove() -- the node is invalid" << endl;
+			//cout << "In VSTree::remove() -- the node is invalid" << endl;
 			//TODO+BETTER:this may search again, too costly
 			//VNode* fatherNodePtr = leafNodePtr->getFather(*(this->node_buffer));
 			////int index = leafNodePtr->getIndexInFatherNode(*(this->node_buffer));
@@ -1197,7 +1197,7 @@ VSTree::coalesce(VNode*& _child, int _entry_index)
 	}
 	if(i == fn)
 	{
-		cerr << "not found the leaf node in VSTree::coalesce()" << endl;
+		cout << "not found the leaf node in VSTree::coalesce()" << endl;
 		return;
 	}
 	else
@@ -1547,7 +1547,7 @@ VSTree::saveTreeInfo()
 
     if (filePtr == NULL)
     {
-        //cerr << "error, can not create tree info file. @VSTree::saveTreeInfo"  << endl;
+        //cout << "error, can not create tree info file. @VSTree::saveTreeInfo"  << endl;
         return false;
     }
 
@@ -1599,7 +1599,7 @@ VSTree::loadTreeInfo()
 
     if (filePtr == NULL)
     {
-        cerr << "error, can not open tree  file:[" <<
+        cout << "error, can not open tree  file:[" <<
         		VSTree::tree_info_file_path <<
         		"]@VSTree::loadTreeInfo"  << endl;
 		fclose(filePtr);
@@ -1622,7 +1622,7 @@ VSTree::loadTreeInfo()
 
     if (sigLength > Signature::ENTITY_SIG_LENGTH)
     {
-        cerr << "WARNING: signature length is too short. @VSTree::loadTreeInfo" << endl;
+        cout << "WARNING: signature length is too short. @VSTree::loadTreeInfo" << endl;
     }
 
     fread(&this->entry_num, sizeof(int), 1, filePtr);
@@ -1631,7 +1631,7 @@ VSTree::loadTreeInfo()
 
     if (nodeBufferSize > this->node_buffer->getCapacity())
     {
-        cerr << "WARNING: node buffer size may be too small. @VSTree::loadTreeInfo" << endl;
+        cout << "WARNING: node buffer size may be too small. @VSTree::loadTreeInfo" << endl;
     }
 
 	//read max id and free id list
@@ -1670,7 +1670,7 @@ VSTree::loadEntityID2FileLineMap()
 
     if (filePtr == NULL)
     {
-        cerr << "error, can not open tree node file. @VSTree::loadEntityID2FileLineMap"  << endl;
+        cout << "error, can not open tree node file. @VSTree::loadEntityID2FileLineMap"  << endl;
         return false;
     }
 
@@ -1682,7 +1682,7 @@ VSTree::loadEntityID2FileLineMap()
 
     if (flag != 0)
     {
-        cerr << "error,can't seek to the fileLine. @VSTree::loadEntityID2FileLineMap" << endl;
+        cout << "error,can't seek to the fileLine. @VSTree::loadEntityID2FileLineMap" << endl;
         return false;
     }
 
@@ -1757,7 +1757,7 @@ VSTree::getLeafNodeByEntityID(int _entityID)
 
     if (iter == this->entityID2FileLineMap.end())
     {
-        cerr << "error,can not find the _entityID's mapping fileLine. @VSTree::getLeafNodeByEntityID" << endl;
+        cout << "error,can not find the _entityID's mapping fileLine. @VSTree::getLeafNodeByEntityID" << endl;
         return NULL;
     }
 
@@ -1779,7 +1779,7 @@ VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
 	//Util::logging("IN retrieveEntity");
     EntitySig filterSig(_entity_bit_set);
 #ifdef DEBUG_VSTREE
-	cerr << "the filter signature: " << filterSig.to_str() << endl;
+	cout << "the filter signature: " << filterSig.to_str() << endl;
 #endif
     queue<int> nodeQueue; //searching node file line queue.
 
@@ -1842,7 +1842,7 @@ VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
             const SigEntry& entry = currentNodePtr->getChildEntry(i);
 
 #ifdef DEBUG_VSTREE
-			//cerr << "current entry: " << entry.to_str() << endl;
+			//cout << "current entry: " << entry.to_str() << endl;
 #endif
 
             if (entry.cover(filterSig))
@@ -1885,7 +1885,7 @@ VSTree::retrieveEntity(const EntityBitSet& _entity_bit_set, IDList* _p_id_list)
             }
         }
 #ifdef DEBUG_VSTREE
-		//cerr << "child num: " << childNum << "   valid num: " << valid << endl;
+		//cout << "child num: " << childNum << "   valid num: " << valid << endl;
 #endif
 
 #ifdef THREAD_VSTREE_ON

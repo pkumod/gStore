@@ -688,13 +688,13 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				cerr << "Server stopped abnormally, restarting server..." << endl;
+				cout << "Server stopped abnormally, restarting server..." << endl;
 				//break;
 			}
 		}
 
 		else {
-			cerr << "Failed to start server: deamon fork failure." << endl;
+			cout << "Failed to start server: deamon fork failure." << endl;
 			return -1;
 		}
 
@@ -904,7 +904,7 @@ int initialize(int argc, char *argv[])
 	query_logfp = fopen(queryLog.c_str(), "a");
 	if(query_logfp == NULL)
 	{
-		cerr << "open query log error"<<endl;
+		cout << "open query log error"<<endl;
 		return -1;
 	}
 	long querylog_size = ftell(query_logfp);
@@ -1431,7 +1431,7 @@ void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer
                     if(!ec)
                     default_resource_send(server, response, ifs);
                     else
-                    cerr << "Connection interrupted" << endl;
+                    cout << "Connection interrupted" << endl;
                     });
         }
     }
@@ -1454,7 +1454,7 @@ bool stop_thread(pthread_t _thread) {
 void* func_timer(void* _args) {
 	signal(SIGTERM, thread_sigterm_handler);
 	sleep(Util::gserver_query_timeout);
-	cerr << "Query out of time." << endl;
+	cout << "Query out of time." << endl;
 	//TODO: not use SIGTERM and abort() here, which will cause process to quit abnormally
 	//here shoudl just end the timer thread
 	abort();
@@ -2418,7 +2418,7 @@ void writeLog(FILE* fp, string _info)
 		query_logfp = fopen(queryLog.c_str(), "a");
 		if(query_logfp == NULL)
 		{
-			cerr << "open query log error"<<endl;
+			cout << "open query log error"<<endl;
 		}
 	}
 	//another way to get the log file size
@@ -2680,7 +2680,7 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	string sparql;
 	sparql = db_query;
 	if (sparql.empty()) {
-		cerr <<log_prefix<< "Empty SPARQL." << endl;
+		cout <<log_prefix<< "Empty SPARQL." << endl;
 		string error = "Empty SPARQL.";
 		string resJson = CreateJson(401, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -2701,7 +2701,7 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	//TODO+DEBUG: manage the timer, not causing the db to restart
 	//pthread_t timer = start_thread(func_timer);
 	//if (timer == 0) {
-		//cerr <<log_prefix<< "Failed to start timer." << endl;
+		//cout <<log_prefix<< "Failed to start timer." << endl;
 	//}
 
 	ResultSet rs;
@@ -2732,7 +2732,7 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	string query_time_s = Util::int2string(query_time);
 	//if (timer != 0 && !stop_thread(timer)) 
 	//{
-		//cerr <<log_prefix<< "Failed to stop timer." << endl;
+		//cout <<log_prefix<< "Failed to stop timer." << endl;
 	//}
 
 	ostringstream stream;

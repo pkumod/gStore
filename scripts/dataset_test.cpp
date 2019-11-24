@@ -52,7 +52,7 @@ int main(int argc, char * argv[])
 		if (flag)
 		{
 			string msg = db_name + ".db is built done.";
-			cerr << msg << endl;
+			cout << msg << endl;
 			ofstream f;
 			f.open("./" + db_name + ".db/success.txt");
 			f.close();
@@ -62,7 +62,7 @@ int main(int argc, char * argv[])
 		else //if fails, drop databsase and return
 		{
 			string msg = db_name + ".db is built failed.";
-			cerr << msg << endl;
+			cout << msg << endl;
 			string cmd = "rm -r " + db_name + ".db";
 			system(cmd.c_str());
 			delete db;
@@ -95,7 +95,7 @@ int main(int argc, char * argv[])
 		if (!file.eof())
 		{
 			string msg = "query " + sparql.top() + " in " + db_name + ".db exists errors";
-			cerr << msg << endl;
+			cout << msg << endl;
 			string cmd = "rm ans_sorted.txt diff.txt";
 			system(cmd.c_str());
 			sparql.pop();
@@ -107,7 +107,7 @@ int main(int argc, char * argv[])
 		else
 		{
 			string msg = "query " + sparql.top() + " in " + db_name + ".db has passed";
-			cerr << msg << endl;
+			cout << msg << endl;
 			string cmd = "rm ans_sorted.txt diff.txt";
 			system(cmd.c_str());
 			sparql.pop();
@@ -119,6 +119,6 @@ int main(int argc, char * argv[])
 	string cmd = "rm -r " + db_name + ".db";
 	system(cmd.c_str());
 	string msg = db_name + ".db test passed";
-	cerr << msg << endl;
+	cout << msg << endl;
 	return 0;
 }

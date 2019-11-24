@@ -88,14 +88,14 @@ Database* db;
 
 void print()
 {
-	cerr << "update_triples:" << endl;
+	cout << "update_triples:" << endl;
 	std::set<triple>::iterator it1;
 	for (it1 = update_triples.begin(); it1 != update_triples.end(); it1++)
-		cerr << it1->subject << " " << it1->predicate << "" << it1->object << endl;
-	cerr << "db_triples:" << endl;
+		cout << it1->subject << " " << it1->predicate << "" << it1->object << endl;
+	cout << "db_triples:" << endl;
 	std::set<triple>::iterator it2;
 	for (it2 = db_triples.begin(); it2 != db_triples.end(); it2++)
-		cerr << it2->subject << " " << it2->predicate << "" << it2->object << endl;
+		cout << it2->subject << " " << it2->predicate << "" << it2->object << endl;
 }
 
 int main(int argc, char * argv[])
@@ -180,7 +180,7 @@ int main(int argc, char * argv[])
 	if (flag)
 	{
 		string msg = db_name + ".db is built done.";
-		cerr << msg << endl;
+		cout << msg << endl;
 		ofstream f;
 		f.open("./" + db_name + ".db/success.txt");
 		f.close();
@@ -188,7 +188,7 @@ int main(int argc, char * argv[])
 	else //if fails, drop database and return
 	{
 		string msg = db_name + ".db is built failed.";
-		cerr << msg << endl;
+		cout << msg << endl;
 		string cmd = "rm -r " + db_name + ".db";
 		system(cmd.c_str());
 		delete db;
@@ -254,7 +254,7 @@ int main(int argc, char * argv[])
 			//print();
 			if (update_triples.size() != db_triples.size())
 			{
-				cerr << "Update triples exist errors." << endl;
+				cout << "Update triples exist errors." << endl;
 				delete db;
 				db = NULL;
 				string cmd = "rm -r " + db_name + ".db";
@@ -269,7 +269,7 @@ int main(int argc, char * argv[])
 					continue;
 				else
 				{
-					cerr << "Update triples exist errors." << endl;
+					cout << "Update triples exist errors." << endl;
 					delete db;
 					db = NULL;
 					string cmd = "rm -r " + db_name + ".db";
@@ -325,7 +325,7 @@ int main(int argc, char * argv[])
 			int ret = db->query(query, delete_rs, delete_ofp);
 			if (triple_num != (update_num + db->getTripleNum()))
 			{
-				cerr << "Delete triples exist errors." << endl;
+				cout << "Delete triples exist errors." << endl;
 				delete update;
 				update = NULL;
 				delete db;
@@ -343,7 +343,7 @@ int main(int argc, char * argv[])
 				int ret = db->query(query, ask_rs, ask_ofp);
 				if (ask_rs.answer[0][0] == "true")
 				{
-					cerr << "Delete triples exist errors." << endl;
+					cout << "Delete triples exist errors." << endl;
 					delete update;
 					update = NULL;
 					delete db;
@@ -362,7 +362,7 @@ int main(int argc, char * argv[])
 			ret = db->query(query, insert_rs, insert_ofp);
 			if (temp_num != (db->getTripleNum() - update_num))
 			{
-				cerr << "Insert triples exist errors." << endl;
+				cout << "Insert triples exist errors." << endl;
 				delete update;
 				update = NULL;
 				delete db;
@@ -380,7 +380,7 @@ int main(int argc, char * argv[])
 			ret = db->query(query, ask_rs, ask_ofp);
 			if (ask_rs.answer[0][0] == "false")
 			{
-				cerr << "Insert triples exist errors." << endl;
+				cout << "Insert triples exist errors." << endl;
 				delete update;
 				update = NULL;
 				delete db;
@@ -397,6 +397,6 @@ int main(int argc, char * argv[])
 		string cmd = "rm -r " + db_name + ".db";
 		system(cmd.c_str());
 	}
-	cerr << "Test passed!" << endl;
+	cout << "Test passed!" << endl;
 	return 0;
 }
