@@ -260,7 +260,7 @@ bool VNode::addChildEntry(const SigEntry _entry, bool _is_splitting)
 {
     //if (this->isFull() && !_is_splitting)
     //{
-        //cout<< "error, can not add child entry when the node is full, in VNode::addChildEntry." << endl;
+        //cerr<< "error, can not add child entry when the node is full, in VNode::addChildEntry." << endl;
         //return false;
     //}
 
@@ -277,13 +277,13 @@ bool VNode::addChildNode(VNode* _p_child_node, bool _is_splitting)
 {
 	//if (this->isFull() && !_is_splitting)
 	//{
-		//cout<< "error, can not add child when the node is full. @VNode::addChildNode" << endl;
+		//cerr<< "error, can not add child when the node is full. @VNode::addChildNode" << endl;
 		//return false;
 	//}
 
     //if (_p_child_node == NULL)
     //{
-        //cout<< "error, can not add child when the child node pointer is NULL. @VNode::addChildNode" << endl;
+        //cerr<< "error, can not add child when the child node pointer is NULL. @VNode::addChildNode" << endl;
         //return false;
     //}
 
@@ -303,7 +303,7 @@ bool VNode::removeChild(int _i)
 	int child_num = this->getChildNum();
     if (_i < 0 || _i >= child_num)
     {
-        cout<< "error, illegal child index. @VNode::removeChild" << endl;
+        cerr<< "error, illegal child index. @VNode::removeChild" << endl;
         return false;
     }
 
@@ -354,7 +354,7 @@ int VNode::getIndexInFatherNode(LRUCache& _nodeBuffer)
 #ifdef THREAD_VSTREE_ON
 	pthread_mutex_unlock(&(fatherNodePtr->node_lock));
 #endif
-    cout << "error, can not find rank in father node. @VNode::getIndexInFatherNode" << endl;
+    cerr << "error, can not find rank in father node. @VNode::getIndexInFatherNode" << endl;
     return 0;
 }
 
@@ -390,7 +390,7 @@ void VNode::refreshAncestorSignature(LRUCache& _nodeBuffer)
     if (fatherNodePtr == NULL)
     {
         if (!this->isRoot())
-            cout << "error, can not find father node. @VNode::refreshSignature" << endl;
+            cerr << "error, can not find father node. @VNode::refreshSignature" << endl;
         return;
     }
 
@@ -410,7 +410,7 @@ bool VNode::retrieveChild(vector<VNode*>& _child_vec, const EntitySig _filter_si
 {
     if (this->isLeaf())
     {
-        cout << "error, can not retrieve children from a leaf node.@VNode::retrieveChild" << endl;
+        cerr << "error, can not retrieve children from a leaf node.@VNode::retrieveChild" << endl;
         return false;
     }
 
@@ -430,7 +430,7 @@ bool VNode::retrieveEntry(vector<SigEntry>& _entry_vec, const EntitySig _filter_
 {
     if (!this->isLeaf())
     {
-        cout << "error, can not retrieve entries from a non-leaf node. @VNode::retrieveEntry" << endl;
+        cerr << "error, can not retrieve entries from a non-leaf node. @VNode::retrieveEntry" << endl;
         return false;
     }
 

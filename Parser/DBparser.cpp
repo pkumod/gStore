@@ -88,8 +88,8 @@ string DBparser::rdfParser(ifstream& _fin, Triple* _triple_array, int& _triple_n
 		/* check the '.' */
 		if(! _end_with_dot)
 		{
-			cout << "'.' is expected at line:" << line_buf << endl;
-			cout << " line_length = " << _line_len << endl;
+			cerr << "'.' is expected at line:" << line_buf << endl;
+			cerr << " line_length = " << _line_len << endl;
 			continue;
 		}
 
@@ -108,7 +108,7 @@ string DBparser::rdfParser(ifstream& _fin, Triple* _triple_array, int& _triple_n
 		}
 		if(_first_tab == -1)
 		{
-			cout << "First TAB is expected at line:" << line_buf << endl;
+			cerr << "First TAB is expected at line:" << line_buf << endl;
 			continue;
 		}
 
@@ -124,7 +124,7 @@ string DBparser::rdfParser(ifstream& _fin, Triple* _triple_array, int& _triple_n
 		}
 		if(_second_tab == -1)
 		{
-			cout << "Second TAB is expected at line:" << line_buf << endl;
+			cerr << "Second TAB is expected at line:" << line_buf << endl;
 		}
 
 		/* get sub, pre, obj and add new triple */

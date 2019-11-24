@@ -32,7 +32,7 @@ bool Socket::create()
 
 	if (!this->isValid())
 	{
-		std::cout << "create socket failed. @Socket::create" << std::endl;
+		std::cerr << "create socket failed. @Socket::create" << std::endl;
 		return false;
 	}
 
@@ -49,7 +49,7 @@ bool Socket::create()
 		setsockopt_RCVBUF_return == -1 ||
 		setsockopt_SNDBUF_return == -1)
 	{
-		std::cout << "set socket options failed. @Socket::create" << std::endl;
+		std::cerr << "set socket options failed. @Socket::create" << std::endl;
 		return false;
 	}
 
@@ -133,7 +133,7 @@ bool Socket::send(const std::string& _msg)const
 	int send_return = ::send(this->sock, &msg_len, sizeof(msg_len), 0);
 	if (send_return == -1)
 	{
-		std::cout << "send message length error. @Socket::send" << std::endl;
+		std::cerr << "send message length error. @Socket::send" << std::endl;
 		return false;
 	}
 
@@ -146,7 +146,7 @@ bool Socket::send(const std::string& _msg)const
 
 	if (send_return == -1)
 	{
-		std::cout << "send message context error. @Socket::send" << std::endl;
+		std::cerr << "send message context error. @Socket::send" << std::endl;
 		return false;
 	}
 
@@ -165,7 +165,7 @@ int Socket::recv(std::string& _msg)const
 
 	if (recv_return == -1)
 	{
-		std::cout << "receive message length error, errno=" << errno << ".@Socket::recv" << std::endl;
+		std::cerr << "receive message length error, errno=" << errno << ".@Socket::recv" << std::endl;
 		return 0;
 	}
 
@@ -183,7 +183,7 @@ int Socket::recv(std::string& _msg)const
 
 		if (cur_len == -1)
 		{
-			std::cout << "receive message context error, errno=" << errno << ".@Socket::recv" << std::endl;
+			std::cerr << "receive message context error, errno=" << errno << ".@Socket::recv" << std::endl;
 			delete[] buf;
 
 			return 0;
@@ -213,7 +213,7 @@ bool Socket::connect(const std::string _hostname, const unsigned short _port)
 	int status = inet_aton(_hostname.c_str(), &(this->addr).sin_addr);
 	if (status == 0)
 	{
-		std::cout << "bad IP address. @Socket::connect" << std::endl;
+		std::cerr << "bad IP address. @Socket::connect" << std::endl;
 		return false;
 	}
 

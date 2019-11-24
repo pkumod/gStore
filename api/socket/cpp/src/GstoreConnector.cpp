@@ -48,14 +48,14 @@ GstoreConnector::~GstoreConnector()
 bool GstoreConnector::test() {
 	bool connect_return = this->connect();
 	if (!connect_return) {
-		cout << "failed to connect to server. @GstoreConnector::test" << endl;
+		cerr << "failed to connect to server. @GstoreConnector::test" << endl;
 		return false;
 	}
 
 	string cmd = "test";
 	bool send_return = this->socket.send(cmd);
 	if (!send_return) {
-		cout << "send test command error. @GstoreConnector::test" << endl;
+		cerr << "send test command error. @GstoreConnector::test" << endl;
 		return false;
 	}
 
@@ -77,7 +77,7 @@ GstoreConnector::load(string _db_name)
 	bool connect_return = this->connect();
 	if (!connect_return)
 	{
-		cout << "connect to server error. @GstoreConnector::load" << endl;
+		cerr << "connect to server error. @GstoreConnector::load" << endl;
 		return false;
 	}
 
@@ -85,7 +85,7 @@ GstoreConnector::load(string _db_name)
 	bool send_return = this->socket.send(cmd);
 	if (!send_return)
 	{
-		cout << "send load command error. @GstoreConnector.load" << endl;
+		cerr << "send load command error. @GstoreConnector.load" << endl;
 		return false;
 	}
 
@@ -109,7 +109,7 @@ GstoreConnector::unload(string _db_name)
 	bool connect_return = this->connect();
 	if (!connect_return)
 	{
-		cout << "connect to server error. @GstoreConnector::unload" << endl;
+		cerr << "connect to server error. @GstoreConnector::unload" << endl;
 		return false;
 	}
 
@@ -117,7 +117,7 @@ GstoreConnector::unload(string _db_name)
 	bool send_return = this->socket.send(cmd);
 	if (!send_return)
 	{
-		cout << "send unload command error. @GstoreConnector::unload" << endl;
+		cerr << "send unload command error. @GstoreConnector::unload" << endl;
 		return false;
 	}
 
@@ -141,7 +141,7 @@ GstoreConnector::build(string _db_name, string _rdf_file_path)
 	bool connect_return = this->connect();
 	if (!connect_return)
 	{
-		cout << "connect to server error. @GstoreConnector::build" << endl;
+		cerr << "connect to server error. @GstoreConnector::build" << endl;
 		return false;
 	}
 
@@ -149,7 +149,7 @@ GstoreConnector::build(string _db_name, string _rdf_file_path)
 	bool send_return = this->socket.send(cmd);
 	if (!send_return)
 	{
-		cout << "send import command error. @GstoreConnector::build" << endl;
+		cerr << "send import command error. @GstoreConnector::build" << endl;
 		return false;
 	}
 
@@ -158,7 +158,7 @@ GstoreConnector::build(string _db_name, string _rdf_file_path)
 
 	this->disconnect();
 
-	cout << recv_msg << endl;
+	cerr << recv_msg << endl;
 	if (recv_msg == "import RDF file to database done.")
 	{
 		return true;
@@ -173,7 +173,7 @@ GstoreConnector::drop(string _db_name)
 	bool connect_return = this->connect();
 	if (!connect_return)
 	{
-		cout << "connect to server error. @GstoreConnector::unload" << endl;
+		cerr << "connect to server error. @GstoreConnector::unload" << endl;
 		return false;
 	}
 
@@ -181,7 +181,7 @@ GstoreConnector::drop(string _db_name)
 	bool send_return = this->socket.send(cmd);
 	if (!send_return)
 	{
-		cout << "send unload command error. @GstoreConnector::unload" << endl;
+		cerr << "send unload command error. @GstoreConnector::unload" << endl;
 		return false;
 	}
 
@@ -204,7 +204,7 @@ GstoreConnector::query(string _sparql, string _output)
 	bool connect_return = this->connect();
 	if (!connect_return)
 	{
-		cout << "connect to server error. @GstoreConnector::query" << endl;
+		cerr << "connect to server error. @GstoreConnector::query" << endl;
 		return "connect to server error.";
 	}
 
@@ -212,7 +212,7 @@ GstoreConnector::query(string _sparql, string _output)
 	bool send_return = this->socket.send(cmd);
 	if (!send_return)
 	{
-		cout << "send query command error. @GstoreConnector::query";
+		cerr << "send query command error. @GstoreConnector::query";
 		return "send query command error.";
 	}
 
@@ -230,7 +230,7 @@ GstoreConnector::show(bool _type)
 	bool connect_return = this->connect();
 	if (!connect_return)
 	{
-		cout << "connect to server error. @GstoreConnector::show" << endl;
+		cerr << "connect to server error. @GstoreConnector::show" << endl;
 		return "connect to server error.";
 	}
 
@@ -246,7 +246,7 @@ GstoreConnector::show(bool _type)
 	bool send_return = this->socket.send(cmd);
 	if (!send_return)
 	{
-		cout << "send show command error. @GstoreConnector::show";
+		cerr << "send show command error. @GstoreConnector::show";
 		return "send show command error.";
 	}
 
@@ -263,7 +263,7 @@ GstoreConnector::connect()
 	bool flag = this->socket.create();
 	if (!flag)
 	{
-		cout << "cannot create socket. @GstoreConnector::connect" << endl;
+		cerr << "cannot create socket. @GstoreConnector::connect" << endl;
 		return false;
 	}
 
@@ -271,7 +271,7 @@ GstoreConnector::connect()
 
 	if (!flag)
 	{
-		cout << "cannot connect to server. @GstoreConnector::connect" << endl;
+		cerr << "cannot connect to server. @GstoreConnector::connect" << endl;
 		return false;
 	}
 

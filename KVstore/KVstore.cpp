@@ -1093,7 +1093,7 @@ KVstore::open_entity2id(int _mode)
 	}
 	else 
 	{
-		cout << "Invalid open mode in open_entity2id, mode = " << _mode << endl;
+		cerr << "Invalid open mode in open_entity2id, mode = " << _mode << endl;
 		return false;
 	}
 
@@ -1166,7 +1166,7 @@ KVstore::open_id2entity(int _mode)
 	}
 	else 
 	{
-		cout << "Invalid open mode in open_id2entity, mode = " << _mode << endl;
+		cerr << "Invalid open mode in open_id2entity, mode = " << _mode << endl;
 		return false;
 	}
 
@@ -1265,7 +1265,7 @@ KVstore::open_predicate2id(int _mode)
 	}
 	else 
 	{
-		cout << "Invalid open mode in open_predicate2id, mode = " << _mode << endl;
+		cerr << "Invalid open mode in open_predicate2id, mode = " << _mode << endl;
 		return false;
 	}
 
@@ -1332,7 +1332,7 @@ KVstore::open_id2predicate(int _mode)
 	}
 	else 
 	{
-		cout << "Invalid open mode in open_id2predicate, mode = " << _mode << endl;
+		cerr << "Invalid open mode in open_id2predicate, mode = " << _mode << endl;
 		return false;
 	}
 
@@ -1413,7 +1413,7 @@ KVstore::open_literal2id(int _mode)
 	}
 	else 
 	{
-		cout << "Invalid open mode in open_literal2id, mode = " << _mode << endl;
+		cerr << "Invalid open mode in open_literal2id, mode = " << _mode << endl;
 		return false;
 	}
 
@@ -1488,7 +1488,7 @@ KVstore::open_id2literal(int _mode)
 	}
 	else 
 	{
-		cout << "Invalid open mode in open_id2literal, mode = " << _mode << endl;
+		cerr << "Invalid open mode in open_id2literal, mode = " << _mode << endl;
 		return false;
 	}
 
@@ -1567,7 +1567,7 @@ KVstore::open_subID2values(int _mode, TYPE_ENTITY_LITERAL_ID _entity_num)
 	}
 	else 
 	{
-		cout << "Invalid open mode in open_subID2values, mode = " << _mode << endl;
+		cerr << "Invalid open mode in open_subID2values, mode = " << _mode << endl;
 		return false;
 	}
 
@@ -1871,7 +1871,7 @@ KVstore::open_objID2values(int _mode, TYPE_ENTITY_LITERAL_ID _entity_num, TYPE_E
 	}
 	else 
 	{
-		cout << "Invalid open mode in open_objID2values, mode = " << _mode << endl;
+		cerr << "Invalid open mode in open_objID2values, mode = " << _mode << endl;
 		return false;
 	}
 
@@ -2132,7 +2132,7 @@ KVstore::open_preID2values(int _mode, TYPE_PREDICATE_ID _pre_num)
 		buffer_size = Util::MAX_BUFFER_SIZE * buffer_pID2values_query;
 	}
 	else {
-		cout << "Invalid open mode in open_preID2values, mode = " << _mode << endl;
+		cerr << "Invalid open mode in open_preID2values, mode = " << _mode << endl;
 		return false;
 	}
 	return this->open(this->preID2values, KVstore::s_pID2values, _mode, buffer_size, _pre_num);
@@ -2419,7 +2419,7 @@ KVstore::open(SITree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 		smode = "open";
 	}
 	else {
-		cout << "Invalid open mode of: " << _tree_name << " mode = " << _mode << endl;
+		cerr << "Invalid open mode of: " << _tree_name << " mode = " << _mode << endl;
 		return false;
 	}
 	_p_btree = new SITree(this->store_path, _tree_name, smode, _buffer_size);
@@ -2440,7 +2440,7 @@ KVstore::open(ISTree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 		smode = "open";
 	}
 	else {
-		cout << "Invalid open mode of: " << _tree_name << " mode = " << _mode << endl;
+		cerr << "Invalid open mode of: " << _tree_name << " mode = " << _mode << endl;
 		return false;
 	}
 	_p_btree = new ISTree(this->store_path, _tree_name, smode, _buffer_size);
@@ -2461,7 +2461,7 @@ KVstore::open(ISArray*& _array, string _name, int _mode, unsigned long long _buf
 		smode = "open";
 	}
 	else {
-		cout << "Invalid open mode of: " << _name << " mode = " << _mode << endl;
+		cerr << "Invalid open mode of: " << _name << " mode = " << _mode << endl;
 		return false;
 	}
 	_array = new ISArray(this->store_path, _name, smode, _buffer_size, _key_num);
@@ -2482,7 +2482,7 @@ KVstore::open(IVTree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 		smode = "open";
 	}
 	else {
-		cout << "Invalid open mode of: " << _tree_name << " mode = " << _mode << endl;
+		cerr << "Invalid open mode of: " << _tree_name << " mode = " << _mode << endl;
 		return false;
 	}
 	_p_btree = new IVTree(this->store_path, _tree_name, smode, _buffer_size);
@@ -2508,7 +2508,7 @@ KVstore::open(IVArray*& _array, string _name, int _mode, unsigned long long _buf
 	}
 	else
 	{
-		cout << "Invalid open mode of: " << _name << " mode = " << _mode << endl;
+		cerr << "Invalid open mode of: " << _name << " mode = " << _mode << endl;
 		return false;
 	}
 	_array = new IVArray(this->store_path, _name, smode, _buffer_size, _key_num);

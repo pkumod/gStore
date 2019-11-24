@@ -38,13 +38,13 @@ void StringIndexFile::save(KVstore &kv_store)
 	this->index_file = fopen((this->loc + "index").c_str(), "wb");
 	if (this->index_file == NULL)
 	{
-		cout << "save " << this->loc + "index" << " for wb error." << endl;
+		cerr << "save " << this->loc + "index" << " for wb error." << endl;
 		return;
 	}
 	this->value_file = fopen((this->loc + "value").c_str(), "wb");
 	if (this->value_file == NULL)
 	{
-		cout << "save " << this->loc + "value" << " for wb error." << endl;
+		cerr << "save " << this->loc + "value" << " for wb error." << endl;
 		return;
 	}
 
@@ -80,13 +80,13 @@ void StringIndexFile::load()
 	this->index_file = fopen((this->loc + "index").c_str(), "rb+");
 	if (this->index_file == NULL)
 	{
-		cout << "load " << this->loc + "index" << " for rb+ error." << endl;
+		cerr << "load " << this->loc + "index" << " for rb+ error." << endl;
 		return;
 	}
 	this->value_file = fopen((this->loc + "value").c_str(), "rb+");
 	if (this->value_file == NULL)
 	{
-		cout << "load " << this->loc + "value" << " for rb+ error." << endl;
+		cerr << "load " << this->loc + "value" << " for rb+ error." << endl;
 		return;
 	}
 

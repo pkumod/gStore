@@ -354,7 +354,7 @@ Util::Util()
         this->debug_kvstore = fopen(s.c_str(), "w+");
         if(this->debug_kvstore == NULL)
         {
-            cout << "open error: kv.log\n";
+            cerr << "open error: kv.log\n";
             this->debug_kvstore = stderr;
         }
     }
@@ -366,7 +366,7 @@ Util::Util()
         this->debug_database = fopen(s.c_str(), "w+");
         if(this->debug_database == NULL)
         {
-            cout << "open error: db.log\n";
+            cerr << "open error: db.log\n";
             this->debug_database = stderr;
         }
     }
@@ -378,7 +378,7 @@ Util::Util()
         this->debug_vstree = fopen(s.c_str(), "w+");
         if(this->debug_vstree == NULL)
         {
-            cout << "open error: vs.log\n";
+            cerr << "open error: vs.log\n";
             this->debug_vstree = stderr;
         }
     }
@@ -972,7 +972,7 @@ string
 Util::getQueryFromFile(const char* _file_path)
 {
 #ifdef DEBUG_PRECISE
-    cout << "file to open: " << _file_path <<endl;
+    cerr << "file to open: " << _file_path <<endl;
 #endif
     char buf[10000];
     std::string query_file;
@@ -1056,7 +1056,7 @@ Util::getSystemOutput(string cmd)
     file += "ans.txt";
     cmd += " > ";
     cmd += file;
-    //cout << cmd << endl;
+    //cerr << cmd << endl;
     int ret = system(cmd.c_str());
     cmd = "rm -rf " + file;
     if(ret < 0)
@@ -1069,7 +1069,7 @@ Util::getSystemOutput(string cmd)
     ifstream fin(file.c_str());
     if(!fin)
     {
-        cout << "getSystemOutput: Fail to open : " << file << endl;
+        cerr << "getSystemOutput: Fail to open : " << file << endl;
         return NULL;
     }
 
@@ -1100,7 +1100,7 @@ Util::getSystemOutput(string cmd)
     //fclose(fp);
     //}
     system(cmd.c_str());
-	//cout<<"ans: "<<ans<<endl;
+	//cerr<<"ans: "<<ans<<endl;
     return ans;
 }
 
@@ -1498,7 +1498,7 @@ Util::intersect(unsigned*& _id_list, unsigned& _id_list_len, const unsigned* _li
 		break;
 	}
 	default:
-		cout << "no such method in Util::intersect()" << endl;
+		cerr << "no such method in Util::intersect()" << endl;
 		break;
 	}
 

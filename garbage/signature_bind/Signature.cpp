@@ -139,7 +139,7 @@ Signature::BitSet2str(const EntityBitSet& _bitset)
 		//else if (_str[0] != '<')
 		//{
 //#ifdef DEBUG_VSTREE
-			//cout << "error in encodeStr2Entity(): neighbor is neither a literal or entity!" << endl;
+			//cerr << "error in encodeStr2Entity(): neighbor is neither a literal or entity!" << endl;
 //#endif
 		//}
 		//_entity_bs.set(pos);

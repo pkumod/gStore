@@ -56,7 +56,7 @@ std::string Operation::getParameter(int _idx)
 	}
 	else
 	{
-		std::cout << "beyond index error. @Operation::getParameter" << std::endl;
+		std::cerr << "beyond index error. @Operation::getParameter" << std::endl;
 		return *this->parameters.end();
 	}
 }

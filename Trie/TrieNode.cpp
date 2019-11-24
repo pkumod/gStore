@@ -102,10 +102,10 @@ TrieNode::compress(string& _str, const int& lowbound)
 
 	if (this->ID < 0)
 	{
-		cout << "TrieNode::compress error. ID = " << ID << " str = " << 
+		cerr << "TrieNode::compress error. ID = " << ID << " str = " << 
 		strPiece << endl;
-		cout << this->getString() << endl;
-		cout << this->getCount() << endl;
+		cerr << this->getString() << endl;
+		cerr << this->getCount() << endl;
 		return "";
 	}
 

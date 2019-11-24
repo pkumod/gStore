@@ -857,7 +857,7 @@ Database::load_cache()
 	}
 	cout << "Value File Preload used " << Util::get_cur_time() - t0 << " ms" << endl;
 	/*
-	cout << "Get in" << endl;
+	cerr << "Get in" << endl;
 	{
 		pid_t p = getpid();
 		char file[64] = { 0 };//�ļ���
@@ -1384,7 +1384,7 @@ bool Database::save()
 	this->stringindex->flush();
 	this->clear_update_log();
 
-	//cout<<"database checkpoint: "<<this->getName()<<endl;
+	//cerr<<"database checkpoint: "<<this->getName()<<endl;
 
 	return true;
 }
@@ -3348,7 +3348,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		out.open(path.c_str(), ios::out | ios::app);
 		out_all.open(path_all.c_str(), ios::out | ios::app);
 		if (!out || !out_all) {
-			cout << "Failed to open update log. Insertion aborted." << endl;
+			cerr << "Failed to open update log. Insertion aborted." << endl;
 			return 0;
 		}
 		for (int i = 0; i < _triple_num; i++) {
@@ -3865,7 +3865,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		out.open(path.c_str(), ios::out | ios::app);
 		out_all.open(path_all.c_str(), ios::out | ios::app);
 		if (!out || !out_all) {
-			cout << "Failed to open update log. Removal aborted." << endl;
+			cerr << "Failed to open update log. Removal aborted." << endl;
 			return 0;
 		}
 		for (int i = 0; i < _triple_num; i++) {
@@ -4318,7 +4318,7 @@ Database::restore()
 		string backup_path = Util::backup_path + this->store_path;
 		if (!Util::dir_exist(Util::backup_path)) 
 		{
-			cout << "Failed to restore!" << endl;
+			cerr << "Failed to restore!" << endl;
 			return false;
 		}
 
@@ -4340,7 +4340,7 @@ Database::restore()
 		if (!this->load()) 
 		{
 			this->clear();
-			cout << "Failed to restore from backup file." << endl;
+			cerr << "Failed to restore from backup file." << endl;
 			return false;
 		}
 
@@ -4355,7 +4355,7 @@ Database::restore()
 
 	if (!this->restore_update(insertions, removals)) 
 	{
-		cout << "Failed to restore updates" << endl;
+		cerr << "Failed to restore updates" << endl;
 		return false;
 	}
 
@@ -4373,7 +4373,7 @@ Database::read_update_log(const string _path, multiset<string>& _i, multiset<str
 #endif
 	in.open(_path.c_str(), ios::in);
 	if (!in) {
-		cout << "Failed to read update log." << endl;
+		cerr << "Failed to read update log." << endl;
 		return 0;
 	}
 	
@@ -4395,7 +4395,7 @@ Database::read_update_log(const string _path, multiset<string>& _i, multiset<str
 			_r.insert(triple);
 			break;
 		default:
-			cout << "Bad line in update log!" << endl;
+			cerr << "Bad line in update log!" << endl;
 		}
 		in.getline(buffer, buffer_size);
 	}
@@ -4432,7 +4432,7 @@ Database::restore_update(multiset<string>& _i, multiset<string>& _r)
 	ofstream out_i;
 	out_i.open(tmp_path.c_str(), ios::out);
 	if (!out_i) {
-		cout << "Failed to open temp file, restore failed!" << endl;
+		cerr << "Failed to open temp file, restore failed!" << endl;
 		return false;
 	}
 	for (multiset<string>::iterator it = _i.begin(); it != _i.end(); it++) {
@@ -4448,7 +4448,7 @@ Database::restore_update(multiset<string>& _i, multiset<string>& _r)
 	ofstream out_r;
 	out_r.open(tmp_path.c_str(), ios::out);
 	if (!out_r) {
-		cout << "Failed to open temp file!" << endl;
+		cerr << "Failed to open temp file!" << endl;
 		return false;
 	}
 	for (multiset<string>::iterator it = _r.begin(); it != _r.end(); it++) {

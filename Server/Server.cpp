@@ -45,21 +45,21 @@ Server::createConnection()
 	flag = this->socket.create();
 	if (!flag)
 	{
-		cout << Util::getTimeString() << "cannot create socket. @Server::createConnection" << endl;
+		cerr << Util::getTimeString() << "cannot create socket. @Server::createConnection" << endl;
 		return false;
 	}
 
 	flag = this->socket.bind(this->connectionPort);
 	if (!flag)
 	{
-		cout << Util::getTimeString() << "cannot bind to port " << this->connectionPort << ". @Server::createConnection" << endl;
+		cerr << Util::getTimeString() << "cannot bind to port " << this->connectionPort << ". @Server::createConnection" << endl;
 		return false;
 	}
 
 	flag = this->socket.listen();
 	if (!flag)
 	{
-		cout << Util::getTimeString() << "cannot listen to port" << this->connectionPort << ". @Server::createConnection" << endl;
+		cerr << Util::getTimeString() << "cannot listen to port" << this->connectionPort << ". @Server::createConnection" << endl;
 		return false;
 	}
 
@@ -99,7 +99,7 @@ Server::listen()
 		bool recv_return = new_server_socket.recv(recv_cmd);
 		if (!recv_return)
 		{
-			cout << Util::getTimeString() << "receive command from client error. @Server::listen" << endl;
+			cerr << Util::getTimeString() << "receive command from client error. @Server::listen" << endl;
 			continue;
 		}
 
@@ -157,11 +157,11 @@ Server::listen()
 			string query = operation.getParameter(0);
 			pthread_t timer = Server::start_timer();
 			if (timer == 0) {
-				cout << Util::getTimeString() << "Failed to start timer." << endl;
+				cerr << Util::getTimeString() << "Failed to start timer." << endl;
 			}
 			this->query(query, ret_msg);
 			if (timer != 0 && !Server::stop_timer(timer)) {
-				cout << Util::getTimeString() << "Failed to stop timer." << endl;
+				cerr << Util::getTimeString() << "Failed to stop timer." << endl;
 			}
 			break;
 		}
@@ -211,7 +211,7 @@ Server::listen()
 			break;
 		}
 		default:
-			cout << Util::getTimeString() << "this command is not supported by now. @Server::listen" << endl;
+			cerr << Util::getTimeString() << "this command is not supported by now. @Server::listen" << endl;
 		}
 
 		this->response(new_server_socket, ret_msg);
@@ -445,7 +445,7 @@ Server::loadDatabase(std::string _db_name, std::string _ac_name, std::string& _r
 	}
 	// fork failure
 	else if (fpid < 0) {
-		cout << Util::getTimeString() << "Database will not be backed-up automatically." << endl;
+		cerr << Util::getTimeString() << "Database will not be backed-up automatically." << endl;
 	}
 
 	//_ret_msg = "load database done.";
@@ -651,7 +651,7 @@ bool Server::stop_timer(pthread_t _timer) {
 void* Server::timer(void* _args) {
 	signal(SIGTERM, Server::timer_sigterm_handler);
 	sleep(Util::gserver_query_timeout);
-	cout << Util::getTimeString() << "Query out of time." << endl;
+	cerr << Util::getTimeString() << "Query out of time." << endl;
 	abort();
 }
 
