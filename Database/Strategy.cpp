@@ -976,7 +976,7 @@ Strategy::handler6(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		
     	fprintf(this->fp, "%s", record.c_str());
 	     rsize[0] += 1;
-	  cout << "debug handler 6 record:" << record << "." << endl;
+	  cout << "debug handler 6 record:" << record << endl;
     }
     delete[] id_list;
   }
