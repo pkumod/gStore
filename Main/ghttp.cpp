@@ -688,13 +688,13 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				cerr << "Server stopped abnormally, restarting server..." << endl;
+				cout << "Server stopped abnormally, restarting server..." << endl;
 				//break;
 			}
 		}
 
 		else {
-			cerr << "Failed to start server: deamon fork failure." << endl;
+			cout << "Failed to start server: deamon fork failure." << endl;
 			return -1;
 		}
 
@@ -2536,12 +2536,13 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 		pthread_rwlock_unlock(&already_build_map_lock);
 		return;
 	}
+	cout << log_prefix << "HTTP: this is export check success." << endl;
 	pthread_rwlock_unlock(&already_build_map_lock);
 
 	boost::filesystem::path filePath(db_path);
 	if(!boost::filesystem::exists(filePath.parent_path()))
 		boost::filesystem::create_directories(filePath.parent_path());
-
+	cout << log_prefix << "export: build file success." << endl;
 	//check if database named [db_name] is already load
 	Database *current_database;
 	pthread_rwlock_rdlock(&databases_map_lock);
@@ -2558,7 +2559,7 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 			return;
 		}
-		cout << "check privilege successfully." << endl;
+		cout << "export:check privilege successfully." << endl;
 
 		if(pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
 		{
@@ -2589,7 +2590,7 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 		current_database = iter->second;
 		pthread_rwlock_unlock(&databases_map_lock);
 	}
-
+	cout << "begin export the data by query function" << endl;
 	pthread_rwlock_rdlock(&(it_already_build->second->db_lock));
 
 	string sparql = "select * where{?x ?y ?z.}";
@@ -2599,7 +2600,7 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
     fflush(ofp);
 	fclose(ofp);
 	ofp = NULL;
-
+	cout << "begin export the data by query function" << endl;
 	string success = "Export the database successfully.";
 	string resJson = CreateJson(0, success, 0);
 	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;

@@ -122,6 +122,7 @@ Strategy::handle(SPARQLquery& _query)
 
 		//QueryHandler dispatch;
 		//dispatch[0] = handler0;
+		cout << "run the method:" << this->method << endl;
 		switch (this->method)
 		{
 		//BETTER: use function pointer array in C++ class
@@ -947,11 +948,14 @@ Strategy::handler6(BasicQuery* _bq, vector<unsigned*>& _result_list)
   //filter and join is too costly, should enum all predicates and use p2so
   unsigned* rsize = new unsigned[1];
   rsize[0] = 0;
+  cout << "debug handler 6:" << limitID_predicate << endl;
   for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate; ++i)
   {
     TYPE_PREDICATE_ID pid = i;
     string p = this->kvstore->getPredicateByID(pid);
+	cout << "debug handler 6 predicate:" << p << endl;
     string pre = Util::node2string(p.c_str());
+	cout << "debug handler 6 predicate pre:" << pre << endl;
     this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len);
     for (unsigned j = 0; j < id_list_len; j += 2)
     {
@@ -964,6 +968,7 @@ Strategy::handler6(BasicQuery* _bq, vector<unsigned*>& _result_list)
    			o = this->kvstore->getEntityByID(id_list[j + 1]);
    	    string obj = Util::node2string(o.c_str());
    		string record = sub + "\t" + pre + "\t" + obj + ".\n";
+		cout << "debug handler 6 record:" << record << endl;
     	fprintf(this->fp, "%s", record.c_str());
 	rsize[0] += 1;
     }
