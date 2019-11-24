@@ -973,9 +973,10 @@ Strategy::handler6(BasicQuery* _bq, vector<unsigned*>& _result_list)
    	    string obj = Util::node2string(o.c_str());
 		cout << "debug handler 6 obj:" << obj << "." << endl;
    		string record = sub + "\t" + pre + "\t" + obj + ".\n";
-		cout << "debug handler 6 record:" << record <<"."<< endl;
+		
     	fprintf(this->fp, "%s", record.c_str());
-	rsize[0] += 1;
+	     rsize[0] += 1;
+	  cout << "debug handler 6 record:" << record << "." << endl;
     }
     delete[] id_list;
   }
