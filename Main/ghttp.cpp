@@ -2595,7 +2595,10 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 
 	string sparql = "select * where{?x ?y ?z.}";
 	ResultSet rs;
-	FILE* ofp = fopen(db_path.c_str(), "w");
+	string db_path2 = db_path + "/" + db_name + ".nt";
+	cout << "open the result file:" << db_path2 << endl;
+	
+	FILE* ofp = fopen(db_path2.c_str(), "w");
     int ret = current_database->query(sparql, rs, ofp, true, true);
     fflush(ofp);
 	fclose(ofp);
