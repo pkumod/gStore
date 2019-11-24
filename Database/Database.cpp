@@ -1557,6 +1557,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	//	this->debug_lock.lock();
 		if(export_flag)
 		{
+			cout << "export:open the file" << endl;
 			general_evaluation.fp = _fp;
 			general_evaluation.export_flag = export_flag;
 		}
