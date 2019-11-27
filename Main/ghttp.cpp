@@ -114,6 +114,10 @@ bool getCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServe
 
 bool getAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
+bool setCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool setAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
 void query_thread(bool update_flag, string db_name, string format, string db_query, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
@@ -1203,7 +1207,6 @@ int initialize(int argc, char *argv[])
 		show_handler(server, response, request, "POST");
 	};
 
-	//GET-example for the path /?operation=getCoreVersion&username=[username]&password=[password], responds with the matched string in path
 	server.resource["^/%3[F|f]operation%3[D|d]getCoreVersion%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		getCoreVersion_handler(server, response, request, "GET");
@@ -1218,6 +1221,23 @@ int initialize(int argc, char *argv[])
 	server.resource["/getCoreVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		getCoreVersion_handler(server, response, request, "POST");
+	};
+
+	//GET-example for the path /?operation=setCoreVersion&username=[username]&password=[password]&version=[version], responds with the matched string in path
+	server.resource["^/%3[F|f]operation%3[D|d]setCoreVersion%26username%3[D|d](.*)%26password%3[D|d](.*)%26version%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		setCoreVersion_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=setCoreVersion&username=(.*)&password=(.*)&version=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		setCoreVersion_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /setCoreVersion, responds with the matched string in path
+	server.resource["/setCoreVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		setCoreVersion_handler(server, response, request, "POST");
 	};
 
 	//GET-example for the path /?operation=getAPIVersion&username=[username]&password=[password], responds with the matched string in path
@@ -1235,6 +1255,23 @@ int initialize(int argc, char *argv[])
 	server.resource["/getAPIVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		getAPIVersion_handler(server, response, request, "POST");
+	};
+
+	//GET-example for the path /?operation=setAPIVersion&username=[username]&password=[password]&version=[version], responds with the matched string in path
+	server.resource["^/%3[F|f]operation%3[D|d]setAPIVersion%26username%3[D|d](.*)%26password%3[D|d](.*)%26version%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		setAPIVersion_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=setAPIVersion&username=(.*)&password=(.*)&version=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		setAPIVersion_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /setAPIVersion, responds with the matched string in path
+	server.resource["/setAPIVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		setAPIVersion_handler(server, response, request, "POST");
 	};
 
 	//USAGE: in endpoint, if user choose to display via html, but not display all because the result's num is too large.
@@ -4175,7 +4212,7 @@ void getCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 {
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
-	cout << log_prefix << "HTTP: this is getCoreVersion" << endl;
+	cout << log_prefix << "HTTP: this is setCoreVersion" << endl;
 
 	string username;
 	string password;
@@ -4194,6 +4231,169 @@ void getCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 		document.Parse(strJson.c_str());
 		username = document["username"].GetString();
 		password = document["password"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User*>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+	cout << "check identity successfully." << endl;
+
+	Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType& allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "success", allocator);
+	resDoc.AddMember("CoreVersion", StringRef(CoreVersion.c_str()), allocator);
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+
+	return;
+}
+
+bool getCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&getCoreVersion_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+void setAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is setAPIVersion" << endl;
+
+	string username;
+	string password;
+	string version;
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		version = request->path_match[3];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		version = UrlDecode(version);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		version = document["version"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User*>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+	cout << "check identity successfully." << endl;
+
+	string update = "Delete DATA { <APIVersion> <value> \"" + APIVersion + "\"}";
+	if (updateSys(update) == false) {
+		string error = "APIVersion Set failed";
+		string resJson = CreateJson(979, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	APIVersion = version;
+	update = "INSERT DATA { <APIVersion> <value> \"" + APIVersion + "\"}";
+	if (updateSys(update) == false) {
+		string error = "APIVersion Set failed";
+		string resJson = CreateJson(979, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	string success = "APIVersion Set success";
+	string resJson = CreateJson(975, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+	return;
+}
+
+bool setAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&setAPIVersion_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+void setCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is setCoreVersion" << endl;
+
+	string username;
+	string password;
+	string version;
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		version = request->path_match[3];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		version = UrlDecode(version);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		version = document["version"].GetString();
 	}
 
 	//check identity.
@@ -4224,25 +4424,30 @@ void getCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 	pthread_rwlock_unlock(&users_map_lock);
 	cout << "check identity successfully." << endl;
 
-	Document resDoc;
-	resDoc.SetObject();
-	Document::AllocatorType &allocator = resDoc.GetAllocator();
-	resDoc.AddMember("StatusCode", 0, allocator);
-	resDoc.AddMember("StatusMsg", "success", allocator);
-	resDoc.AddMember("CoreVersion", StringRef(CoreVersion.c_str()), allocator);
-	StringBuffer resBuffer;
-	PrettyWriter<StringBuffer> resWriter(resBuffer);
-	resDoc.Accept(resWriter);
-	string resJson = resBuffer.GetString();
-
-	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
-
+	string update = "Delete DATA { <CoreVersion> <value> \"" + CoreVersion + "\"}";
+	if (updateSys(update) == false) {
+		string error = "CoreVersion Set failed";
+		string resJson = CreateJson(977, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	CoreVersion = version;
+	update = "INSERT DATA { <CoreVersion> <value> \"" + CoreVersion + "\"}";
+	if (updateSys(update) == false) {
+		string error = "CoreVersion Set failed";
+		string resJson = CreateJson(977, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	string success = "CoreVersion Set success";
+	string resJson = CreateJson(976, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
 	return;
 }
 
-bool getCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+bool setCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	thread t(&getCoreVersion_thread, response, request, RequestType);
+	thread t(&setCoreVersion_thread, response, request, RequestType);
 	t.detach();
 	return true;
 }
@@ -4280,8 +4485,6 @@ void getAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, cons
 		string error = "username not find.";
 		string resJson = CreateJson(903, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
-
-
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&users_map_lock);
 		return;
