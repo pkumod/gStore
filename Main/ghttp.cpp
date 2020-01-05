@@ -5,7 +5,6 @@
 # Last Modified: 2019-5-9 17:00
 # Description: created by lvxin, improved by lijing and suxunbin
 =============================================================================*/
-
 //SPARQL Endpoint:  log files in logs/endpoint/
 //operation.log: not used
 //query.log: query string, result num, and time of answering
@@ -65,6 +64,7 @@ bool checkPrivilege(string username, string type, string db_name);
 void DB2Map();
 string querySys(string sparql);
 bool updateSys(string sparql);
+int db_reload(string db_name);
 //bool doQuery(string format, string db_query, const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 //=============================================================================
@@ -121,6 +121,8 @@ bool setAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer
 void query_thread(bool update_flag, string db_name, string format, string db_query, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+
+bool refresh_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 void signalHandler(int signum);
 //=============================================================================
@@ -1123,6 +1125,23 @@ int initialize(int argc, char *argv[])
 	{
 		drop_handler(server, response, request, "POST");
 	};
+
+	server.resource["^/%3[F|f]operation%3[D|d]refresh%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		refresh_handler(server, response, request, "GET");
+    };
+
+    server.resource["^/?operation=refresh&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		refresh_handler(server, response, request, "GET");
+    };
+
+	//POST-example for the path /drop, responds with the matched string in path
+	server.resource["/refresh"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		refresh_handler(server, response, request, "POST");
+	};
+
 #endif
 
 
@@ -3906,7 +3925,7 @@ void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	string root_password = (users.find(ROOT_USERNAME))->second->getPassword();
 	pthread_rwlock_unlock(&users_map_lock);
 
-	if(username1 == ROOT_USERNAME & password1 == root_password)
+	if(username1 == ROOT_USERNAME && password1 == root_password)
 	{
 		string password2 = addition;
 			
@@ -5616,4 +5635,107 @@ bool restore_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 bool auto_backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	
+
+}
+
+void refresh_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is refresh"<<endl;
+
+	//get parameter
+	string db_name;
+	string username;
+	string password;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
+	//check the username and password
+	pthread_rwlock_rdlock(&users_map_lock);
+	string root_password = (users.find(ROOT_USERNAME))->second->getPassword();
+	pthread_rwlock_unlock(&users_map_lock);
+	//check the identity of root
+	if(username == ROOT_USERNAME && password == root_password){
+		if(db_reload(db_name) == 0){
+			string success = "database refresh success!";
+			string resJson = CreateJson(908, success, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		}else{
+			string error = "database refresh failed";
+			string resJson = CreateJson(909, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		}
+
+	}
+	else
+	{
+		string error = "Root User Only!";
+		string resJson = CreateJson(907, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+	}
+}
+
+bool refresh_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&refresh_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+int db_reload(string db_name)
+{
+	pthread_rwlock_rdlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+	if(iter == databases.end())
+	{
+		cout << "Database not load yet." << endl;
+		pthread_rwlock_unlock(&databases_map_lock);
+		return -1;
+	}
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+	if(pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+	{
+		cout << "Unable to reload due to loss of lock";
+		pthread_rwlock_unlock(&databases_map_lock);
+		return -1;
+	}
+	Database *current_database = iter->second;
+	delete current_database;
+	cout << "Database unloaded." << endl;
+
+	current_database = new Database(db_name);
+	iter->second = current_database;
+	bool flag = current_database->load();
+
+	if(!flag)
+	{
+		cout << "Database loaded failed" << endl;
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		pthread_rwlock_unlock(&databases_map_lock);
+		return -1;
+	}
+	cout << "database " << db_name << " reloaded" << endl;
+	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	pthread_rwlock_unlock(&databases_map_lock);
+	return 0;
 }
