@@ -63,6 +63,7 @@ bool delPrivilege(string username, string type, string db_name);
 bool checkPrivilege(string username, string type, string db_name);
 void DB2Map();
 string querySys(string sparql);
+bool sysrefresh();
 bool updateSys(string sparql);
 int db_reload(string db_name);
 //bool doQuery(string format, string db_query, const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
@@ -5168,6 +5169,19 @@ string querySys(string sparql)
 	
 }
 
+bool sysrefresh()
+{
+	pthread_rwlock_rdlock(&databases_map_lock);
+	system_database->save();
+	delete system_database;
+	system_database = NULL;
+	system_database = new Database("system");
+	bool flag = system_database->load();
+	cout << "system database refresh" << endl;
+	pthread_rwlock_unlock(&databases_map_lock);
+	return flag;
+}
+
 bool updateSys(string query)
 {
 		if (query.empty())
@@ -5200,6 +5214,7 @@ bool updateSys(string query)
 			{
 				msg = "update num: " + Util::int2string(ret);
 				cout << msg << endl;
+				sysrefresh();
 				//system_database->save();
 				//delete system_database;
 				//system_database=NULL;
@@ -5212,6 +5227,7 @@ bool updateSys(string query)
 				return false;
 			}
 		}
+		
 
 }
 
@@ -5739,3 +5755,4 @@ int db_reload(string db_name)
 	pthread_rwlock_unlock(&databases_map_lock);
 	return 0;
 }
+
