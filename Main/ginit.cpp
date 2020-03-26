@@ -6,7 +6,7 @@
 # Description: used to initialize the system.db
 # Modified by liwenjie
 # Modified Date: 2020-03-26 10:33
-# Description£ºAdd the args "-cv" for updating the coreversion and the args "-av" for updating the apiversion
+# Description£ºAdd the args "-cv" for updating the coreversion and the args "-av" for updating the apiversion in ginit function
 =============================================================================*/
 
 #include "../Util/Util.h"
@@ -46,6 +46,7 @@ int main(int argc, char * argv[])
 				string sparql = "INSERT DATA {<CoreVersion>	<value>	\"" + version + "\".}";
 				string _db_path = "system";
 				Database* _db = new Database(_db_path);
+				_db->load();
 				ResultSet _rs;
 				FILE* ofp = stdout;
 				string msg;
@@ -85,6 +86,7 @@ int main(int argc, char * argv[])
 				string sparql="INSERT DATA {<APIVersion>	<value>	\""+version+"\".}";
 				string _db_path = "system";
 				Database* _db = new Database(_db_path);
+				_db->load();
 				ResultSet _rs;
 				FILE* ofp = stdout;
 				string msg;
