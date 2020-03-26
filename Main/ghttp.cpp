@@ -962,72 +962,98 @@ int initialize(int argc, char *argv[])
 	//pthread_rwlock_init(&database_load_lock, NULL);
 
 #ifndef SPARQL_ENDPOINT
+
+	
 	//GET-example for the path /?operation=build&db_name=[db_name]&ds_path=[ds_path]&username=[username]&password=[password], responds with the matched string in path
 	//i.e. database name and dataset path
 	server.resource["^/%3[F|f]operation%3[D|d]build%26db_name%3[D|d](.*)%26ds_path%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		build_handler(server, response, request, "GET");
     };
 
 	server.resource["^/?operation=build&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		build_handler(server, response, request, "GET");
 	};
 
 	//POST-example for the path /build, responds with the matched string in path
 	server.resource["/build"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		build_handler(server, response, request, "POST");
 	};
 
 	//GET-example for the path /?operation=load&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
     server.resource["^/%3[F|f]operation%3[D|d]load%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		load_handler(server, response, request, "GET");
 	};
 
 	server.resource["^/?operation=load&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		load_handler(server, response, request, "GET");
 	};
 
 	//POST-example for the path /load, responds with the matched string in path
 	server.resource["/load"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		load_handler(server, response, request, "POST");
 	};
 
     //GET-example for the path /?operation=unload&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
     server.resource["^/%3[F|f]operation%3[D|d]unload%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		unload_handler(server, response, request, "GET");
     };
 
 	server.resource["^/?operation=unload&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		unload_handler(server, response, request, "GET");
 	};
 
 	//POST-example for the path /unload, responds with the matched string in path
 	server.resource["/unload"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		unload_handler(server, response, request, "POST");
 	};
 
     //GET-example for the path /?operation=login&username=[username]&password=[password], responds with the matched string in path
     server.resource["^/%3[F|f]operation%3[D|d]login%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		login_handler(server, response, request, "GET");
     };
 
 	server.resource["^/?operation=login&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		login_handler(server, response, request, "GET");
 	};
 
 	//POST-example for the path /login, responds with the matched string in path
 	server.resource["/login"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		login_handler(server, response, request, "POST");
 	};
 
@@ -1277,7 +1303,7 @@ int initialize(int argc, char *argv[])
 		initVersion_handler(server, response, request, "GET");
 	};
 
-	//POST-example for the path /setCoreVersion, responds with the matched string in path
+	//POST-example for the path /initVersion, responds with the matched string in path
 	server.resource["/initVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		initVersion_handler(server, response, request, "POST");
@@ -1286,17 +1312,23 @@ int initialize(int argc, char *argv[])
 	//GET-example for the path /?operation=getAPIVersion&username=[username]&password=[password], responds with the matched string in path
 	server.resource["^/%3[F|f]operation%3[D|d]getAPIVersion%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		getAPIVersion_handler(server, response, request, "GET");
 	};
 
 	server.resource["^/?operation=getAPIVersion&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		getAPIVersion_handler(server, response, request, "GET");
 	};
 
 	//POST-example for the path /getAPIVersion, responds with the matched string in path
 	server.resource["/getAPIVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		getAPIVersion_handler(server, response, request, "POST");
 	};
 
