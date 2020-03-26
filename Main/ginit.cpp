@@ -46,6 +46,7 @@ int main(int argc, char * argv[])
 				string sparql = "INSERT DATA {<CoreVersion>	<value>	\"" + version + "\".}";
 				string _db_path = "system";
 				Database* _db = new Database(_db_path);
+				cout << "DBINFOFile:"<<_db->getDBInfoFile() << endl;
 				_db->load();
 				ResultSet _rs;
 				FILE* ofp = stdout;
