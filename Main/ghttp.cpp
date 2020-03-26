@@ -3,7 +3,9 @@
 # Author: Bookug Lober suxunbin
 # Mail: zengli-bookug@pku.edu.cn
 # Last Modified: 2019-5-9 17:00
-# Description: created by lvxin, improved by lijing and suxunbin
+# Description: created by lvxin, improved by lijing and suxunbin and liwenjie
+# Last Modified:2020-03-26 14:16
+# Description: add the initVersion function to init the version info by data/system/version.nt
 =============================================================================*/
 //SPARQL Endpoint:  log files in logs/endpoint/
 //operation.log: not used
@@ -22,6 +24,8 @@
 #include "../tools/rapidjson/prettywriter.h"  
 #include "../tools/rapidjson/writer.h"
 #include "../tools/rapidjson/stringbuffer.h"
+#include <iostream>
+#include <fstream>
 using namespace rapidjson;
 using namespace std;
 //Added for the json-example:
@@ -116,6 +120,8 @@ bool getCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServe
 bool getAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 bool setCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool initVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 bool setAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
@@ -1258,6 +1264,23 @@ int initialize(int argc, char *argv[])
 	server.resource["/setCoreVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		setCoreVersion_handler(server, response, request, "POST");
+	};
+
+	//initVersion
+	server.resource["^/%3[F|f]operation%3[D|d]initVersion%26username%3[D|d](.*)%26password%3[D|d](.*)%26version%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		initVersion_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=initVersion&username=(.*)&password=(.*)&version=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		initVersion_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /setCoreVersion, responds with the matched string in path
+	server.resource["/initVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		initVersion_handler(server, response, request, "POST");
 	};
 
 	//GET-example for the path /?operation=getAPIVersion&username=[username]&password=[password], responds with the matched string in path
@@ -4360,7 +4383,7 @@ void setAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, cons
 	pthread_rwlock_unlock(&users_map_lock);
 	cout << "check identity successfully." << endl;
 
-	string update = "Delete DATA { <APIVersion> <value> \"" + APIVersion + "\"}";
+	string update = "Delete WHERE { <APIVersion> ?x ?y.}";
 	if (updateSys(update) == false) {
 		string error = "APIVersion Set failed";
 		string resJson = CreateJson(979, error, 0);
@@ -4444,7 +4467,7 @@ void setCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 	pthread_rwlock_unlock(&users_map_lock);
 	cout << "check identity successfully." << endl;
 
-	string update = "Delete DATA { <CoreVersion> <value> \"" + CoreVersion + "\"}";
+	string update = "Delete WHERE { <CoreVersion> ?x ?y.}";
 	if (updateSys(update) == false) {
 		string error = "CoreVersion Set failed";
 		string resJson = CreateJson(977, error, 0);
@@ -4465,9 +4488,115 @@ void setCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 	return;
 }
 
+
+void initVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is initVersion" << endl;
+
+	string username;
+	string password;
+	//string version;
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		//version = request->path_match[3];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		//version = UrlDecode(version);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		//version = document["version"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User*>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+	cout << "check identity successfully." << endl;
+
+	string update = "Delete WHERE { <CoreVersion> ?x ?y. <APIVersion> ?x1 ?y1.}";
+	if (updateSys(update) == false) {
+		string error = "Version Set failed";
+		string resJson = CreateJson(977, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	//CoreVersion = version;
+	string file="data/system/version.nt";
+	if (boost::filesystem::exists(file)==false)
+	{
+		string error = "version.nt is not found";
+		string resJson = CreateJson(977, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	ifstream infile;
+	infile.open(file.data());   //将文件流对象与文件连接起来 
+	string s;
+	update = "INSERT DATA {";
+	while (getline(infile, s))
+	{
+		if(s!="")
+		update = update + s;
+	}
+	infile.close();
+	update = update + "}";
+	cout << "the sparql of initversion is:" << update << endl;
+
+	//update = "INSERT DATA { <CoreVersion> <value> \"" + CoreVersion + "\"}";
+	if (updateSys(update) == false) {
+		string error = "Version Init failed";
+		string resJson = CreateJson(977, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	string success = "Version Init success";
+	string resJson = CreateJson(976, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+	return;
+}
+
 bool setCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	thread t(&setCoreVersion_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+bool initVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&initVersion_thread, response, request, RequestType);
 	t.detach();
 	return true;
 }

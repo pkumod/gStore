@@ -11,7 +11,6 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
-
 using namespace std;
 
 int main(int argc, char * argv[])
@@ -48,7 +47,7 @@ int main(int argc, char * argv[])
 				{
 					versionname = "<APIVersion>";
 				}
-				string sparql = "DELETE DATA {"+versionname+" <value> ?x.}";
+				string sparql = "DELETE where {"+versionname+" <value> ?x.}";
 			    
 				string _db_path = "system";
 				Util util;
@@ -83,7 +82,6 @@ int main(int argc, char * argv[])
 				return 0;
 			}
 		}
-	 
 		else
 		{
 			cout << "The initialization option is not correct." << endl;
