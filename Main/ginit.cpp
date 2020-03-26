@@ -4,6 +4,9 @@
 # Mail: suxunbin@pku.edu.cn
 # Last Modified: 2018-10-17 14:59
 # Description: used to initialize the system.db
+# Modified by liwenjie
+# Modified Date: 2020-03-26 10:33
+# Description£ºAdd the args "-cv" for updating the coreversion and the args "-av" for updating the apiversion
 =============================================================================*/
 
 #include "../Util/Util.h"
@@ -30,12 +33,91 @@ int main(int argc, char * argv[])
 				return 0;
 			}
 		}
+		else if (op == "-cv")
+		{
+			if (argc == 2)
+			{
+				cout << "You need to input the value of coreversion." << endl;
+				return 0;
+			}
+			else
+			{
+				string version = argc[2];
+				string sparql="INSERT DATA {<CoreVersion>	<value>	\""+version+"\."}"
+				string _db_path = "system";
+				Database* _db = new Database(_db_path);
+				ResultSet _rs;
+				FILE* ofp = stdout;
+				string msg;
+				int ret = _db->query(sparql, _rs, ofp);
+				if (ret <= -100) // select query
+				{
+					if (ret == -100)
+						msg = _rs.to_str();
+					else //query error
+						msg = "query failed";
+				}
+				else //update query
+				{
+					if (ret >= 0)
+						msg = "update num : " + Util::int2string(ret);
+					else //update error
+						msg = "update failed.";
+					if (ret != -100)
+						cout << msg << endl;
+				}
+				delete _db;
+				_db = NULL;
+				cout << "the coreversion is updated successfully!" << endl;
+				return 0;
+			}
+		}
+	   else if (op == "-av")
+		{
+			if (argc == 2)
+			{
+				cout << "You need to input the value of apiversion." << endl;
+				return 0;
+			}
+			else
+			{
+				string version = argc[2];
+				string sparql="INSERT DATA {<APIVersion>	<value>	\""+version+"\."}"
+				string _db_path = "system";
+				Database* _db = new Database(_db_path);
+				ResultSet _rs;
+				FILE* ofp = stdout;
+				string msg;
+				int ret = _db->query(sparql, _rs, ofp);
+				if (ret <= -100) // select query
+				{
+					if (ret == -100)
+						msg = _rs.to_str();
+					else //query error
+						msg = "query failed";
+				}
+				else //update query
+				{
+					if (ret >= 0)
+						msg = "update num : " + Util::int2string(ret);
+					else //update error
+						msg = "update failed.";
+					if (ret != -100)
+						cout << msg << endl;
+				}
+				delete _db;
+				_db = NULL;
+				cout << "the apiversion is updated successfully!" << endl;
+				return 0;
+			}
+		}
 		else
 		{
 			cout << "The initialization option is not correct." << endl;
 			return 0;			
 		}
 	}
+
 
 	//build system.db
 	Util util;
@@ -79,6 +161,7 @@ int main(int argc, char * argv[])
 				sparql = sparql + "<" + db_name + "> <built_time> \"" + time + "\".";
 			}		
 		}
+		
 	}
 	sparql = sparql + "}";
 	ResultSet _rs;
