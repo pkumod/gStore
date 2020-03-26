@@ -3344,6 +3344,8 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	if (!_is_restore) {
 		string path = this->getStorePath() + '/' + this->update_log;
 		string path_all = this->getStorePath() + '/' + this->update_log_since_backup;
+		cout << "insert path:" << path << endl;
+		cout << "insert path_all:" << path << endl;
 		ofstream out;
 		ofstream out_all;
 		out.open(path.c_str(), ios::out | ios::app);
