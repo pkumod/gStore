@@ -7,10 +7,13 @@
 # Modified by liwenjie
 # Modified Date: 2020-03-26 10:33
 # Description：Add the args "-cv" for updating the coreversion and the args "-av" for updating the apiversion in ginit function
+# Description：Add the args "-u" for updating the version information when updating the gstore.
 =============================================================================*/
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
+#include <iostream>
+#include <fstream>
 using namespace std;
 
 int main(int argc, char * argv[])
@@ -52,7 +55,7 @@ int main(int argc, char * argv[])
 				string _db_path = "system";
 				Util util;
 				Database* _db = new Database(_db_path);
-				//cout << "DBINFOFile:"<<_db->getDBInfoFile() << endl;
+			
 				_db->load();
 				ResultSet _rs;
 				FILE* ofp = stdout;
@@ -81,6 +84,65 @@ int main(int argc, char * argv[])
 				cout << "the "<<versionname<<" is updated successfully!" << endl;
 				return 0;
 			}
+		}
+		else if (op == "-u")
+		{
+			//update the gstore, and init the version info 
+			string file = "data/system/version.nt";
+			if (boost::filesystem::exists(file) == false)
+			{
+				cout << "the file of version information is not found!" << endl;
+				
+				return 0;
+			}
+			string sparql = "Delete WHERE { <CoreVersion> ?x ?y. <APIVersion> ?x1 ?y1.}";
+
+
+			string _db_path = "system";
+			Util util;
+			Database* _db = new Database(_db_path);
+
+			_db->load();
+			ResultSet _rs;
+			FILE* ofp = stdout;
+			string msg;
+			int ret = _db->query(sparql, _rs, ofp);
+			ifstream infile;
+			infile.open(file.data());   //将文件流对象与文件连接起来 
+			string s;
+			sparql = "INSERT DATA {";
+			while (getline(infile, s))
+			{
+				if (s != "")
+					sparql = sparql + s;
+			}
+			infile.close();
+			sparql = sparql + "}";
+			cout << "the sparql of initversion is:" << sparql << endl;
+
+
+			//sparql = "INSERT DATA {" + versionname + " <value>	\"" + version + "\".}";
+			ret = _db->query(sparql, _rs, ofp);
+			if (ret <= -100) // select query
+			{
+				if (ret == -100)
+					msg = _rs.to_str();
+				else //query error
+					msg = "query failed";
+			}
+			else //update query
+			{
+				if (ret >= 0)
+					msg = "update num : " + Util::int2string(ret);
+				else //update error
+					msg = "update failed.";
+				if (ret != -100)
+					cout << msg << endl;
+			}
+			delete _db;
+			_db = NULL;
+			cout << "the value of version is updated successfully!" << endl;
+			return 0;
 		}
 		else
 		{
