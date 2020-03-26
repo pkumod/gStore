@@ -1293,19 +1293,25 @@ int initialize(int argc, char *argv[])
 	};
 
 	//initVersion
-	server.resource["^/%3[F|f]operation%3[D|d]initVersion%26username%3[D|d](.*)%26password%3[D|d](.*)%26version%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	server.resource["^/%3[F|f]operation%3[D|d]initVersion%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		initVersion_handler(server, response, request, "GET");
 	};
 
-	server.resource["^/?operation=initVersion&username=(.*)&password=(.*)&version=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	server.resource["^/?operation=initVersion&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		initVersion_handler(server, response, request, "GET");
 	};
 
-	//POST-example for the path /initVersion, responds with the matched string in path
+	//POST-example for the path /getAPIVersion, responds with the matched string in path
 	server.resource["/initVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
 		initVersion_handler(server, response, request, "POST");
 	};
 
