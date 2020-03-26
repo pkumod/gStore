@@ -42,7 +42,7 @@ int main(int argc, char * argv[])
 			}
 			else
 			{
-				string version = argc[2];
+				string version = argv[2];
 				string sparql = "INSERT DATA {<CoreVersion>	<value>	\"" + version + "\".}";
 				string _db_path = "system";
 				Database* _db = new Database(_db_path);
@@ -81,7 +81,7 @@ int main(int argc, char * argv[])
 			}
 			else
 			{
-				string version = argc[2];
+				string version = argv[2];
 				string sparql="INSERT DATA {<APIVersion>	<value>	\""+version+""\.}";
 				string _db_path = "system";
 				Database* _db = new Database(_db_path);
