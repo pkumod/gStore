@@ -1,2 +1,6 @@
-<CoreVersion> <value> "v0.8.0" .
-<APIVersion> <value> "v1.0" .
+<CoreVersion> <value> "v0.8.4" .
+<CoreVersion> <modified_time> "2020-03-26" .
+<CoreVersion> <modified_by> "liwenjie" .
+<APIVersion> <value> "v1.2" .
+<APIVersion> <modified_time> "2020-03-26".
+<APIVersion> <modified_by> "liwenjie" .
