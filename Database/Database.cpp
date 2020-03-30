@@ -21,6 +21,7 @@ Database::Database()
 	this->id_tuples_file = "id_tuples";
 	this->update_log = "update.log";
 	this->update_log_since_backup = "update_since_backup.log";
+	// this->csr = new CSR[2];
 
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = new KVstore(kv_store_path);
@@ -77,6 +78,7 @@ Database::Database(string _name)
 	this->id_tuples_file = "id_tuples";
 	this->update_log = "update.log";
 	this->update_log_since_backup = "update_since_backup.log";
+	// this->csr = new CSR[2];
 
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = new KVstore(kv_store_path);
@@ -793,6 +795,120 @@ Database::load()
 	this->kvstore->close_id2entity();
 	this->kvstore->close_id2literal();
 #endif
+
+	this->csr = new CSR[2];
+	unsigned pre_num = this->getStringIndex()->getNum(StringIndexFile::Predicate);
+	this->csr[0].init(pre_num);
+	this->csr[1].init(pre_num);	
+	cout<<"pre_num: "<<pre_num<<endl;
+	long begin_time = Util::get_cur_time();
+
+	// Process out-edges (csr[0])
+	// i: predicate; j: subject; k: object
+	for(unsigned i = 0;i<pre_num;i++)
+	{
+		string pre = (this->getKVstore())->getPredicateByID(i);
+		cout<<"pid: "<<i<<"    pre: "<<pre<<endl;
+		unsigned* sublist = NULL;
+		unsigned sublist_len = 0;
+		bool ret = (this->getKVstore())->getsubIDlistBypreID(i, sublist, sublist_len, true);
+		//cout<<"    sub_num: "<<sublist_len<<endl;
+		unsigned offset = 0;
+		unsigned index = 0;
+		for(unsigned j=0;j<sublist_len;j++)
+		{
+			string sub = (this->getKVstore())->getEntityByID(sublist[j]);
+			//cout<<"    sid: "<<sublist[j]<<"    sub: "<<sub<<endl;
+			unsigned* objlist = NULL;
+			unsigned objlist_len = 0;
+			bool ret = (this->getKVstore())->getobjIDlistBysubIDpreID(sublist[j], i, objlist, objlist_len); 
+			unsigned len = objlist_len;	// the real object list length
+			for(unsigned k=0;k<objlist_len;k++)
+			{
+				if(objlist[k]>=2000000000)
+				{
+					--len;
+					continue;
+				}
+				string obj = (this->getKVstore())->getEntityByID(objlist[k]);
+				//cout<<"        oid: "<<objlist[k]<<"    obj: "<<obj<<endl;
+				this->csr[0].adjacency_list[i].push_back(objlist[k]);
+			}
+			//cout<<"        obj_num: "<<len<<endl;
+			if(len > 0)
+			{
+				this->csr[0].id2vid[i].push_back(sublist[j]);
+				this->csr[0].vid2id[i].insert(pair<unsigned, unsigned>(sublist[j], index));
+				this->csr[0].offset_list[i].push_back(offset);
+				index++;
+				offset += len;
+			}
+		}
+		// if(this->csr[0].offset_list[i].size() == 0)
+		// 	this->csr[0].valid[i] = false;
+		// else
+		// {
+		// 	if((i==3)||(i==4))
+		// 		this->csr[0].valid[i] = true;
+		// 	else
+		// 		this->csr[0].valid[i] = false;
+		// }
+		cout<<this->csr[0].offset_list[i].size()<<endl;	// # of this predicate's subjects
+		cout<<this->csr[0].adjacency_list[i].size()<<endl;	// # of this predicate's objects
+	}
+
+	// Process out-edges (csr[1])
+	// i: predicate; j: object; k: subject
+	for(unsigned i = 0;i<pre_num;i++)
+	{
+		string pre = (this->getKVstore())->getPredicateByID(i);
+		cout<<"pid: "<<i<<"    pre: "<<pre<<endl;
+		unsigned* objlist = NULL;
+		unsigned objlist_len = 0;
+		bool ret = (this->getKVstore())->getobjIDlistBypreID(i, objlist, objlist_len, true);
+		//cout<<"    obj_num: "<<objlist_len<<endl;
+		unsigned offset = 0;
+		unsigned index = 0;
+		for(unsigned j=0;j<objlist_len;j++)
+		{
+			if(objlist[j]>=2000000000)
+				continue;
+			string obj = (this->getKVstore())->getEntityByID(objlist[j]);
+			//cout<<"    oid: "<<objlist[j]<<"    obj: "<<obj<<endl;
+			unsigned* sublist = NULL;
+			unsigned sublist_len = 0;
+			bool ret = (this->getKVstore())->getsubIDlistByobjIDpreID(objlist[j], i, sublist, sublist_len); 
+			unsigned len = sublist_len;
+			for(unsigned k=0;k<sublist_len;k++)
+			{
+				string sub = (this->getKVstore())->getEntityByID(sublist[k]);
+				//cout<<"        sid: "<<sublist[k]<<"    sub: "<<sub<<endl;
+				this->csr[1].adjacency_list[i].push_back(sublist[k]);
+			}
+			//cout<<"        sub_num: "<<len<<endl;
+			if(len > 0)
+			{
+				this->csr[1].id2vid[i].push_back(objlist[j]);
+				this->csr[1].vid2id[i].insert(pair<unsigned, unsigned>(objlist[j], index));
+				this->csr[1].offset_list[i].push_back(offset);
+				index++;
+				offset += len;
+			}
+		}
+		// if(this->csr[1].offset_list[i].size() == 0)
+		// 	this->csr[1].valid[i] = false;
+		// else
+		// {
+		// 	if((i==5)||(i==13)||(i==14)||(i==15))
+		// 		this->csr[1].valid[i] = true;
+		// 	else
+		// 		this->csr[1].valid[i] = false;
+		// }
+		cout<<this->csr[1].offset_list[i].size()<<endl;
+		cout<<this->csr[1].adjacency_list[i].size()<<endl;
+	}
+	long end_time = Util::get_cur_time();
+	cout << "after creating CSR, used " << (end_time - begin_time) << "ms" << endl;
 
 	return true;
 }
@@ -1518,7 +1634,9 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
-	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
+	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, \
+		this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, \
+		this->limitID_entity, this->csr);
 
 	long tv_begin = Util::get_cur_time();
 

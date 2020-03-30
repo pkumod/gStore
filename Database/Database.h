@@ -26,6 +26,7 @@
 #include "../Parser/SPARQL/SPARQLParser.h"
 #include "../Query/QueryCache.h"
 #include "../Query/GeneralEvaluation.h"
+#include "CSR.h"
 
 class Database
 {
@@ -43,6 +44,7 @@ public:
 	//depending on this->encode_mode  
 	static const int STRING_MODE = 1;
 	static const int ID_MODE = 2;
+	CSR *csr;
 	Database();
 	Database(std::string _name);
 	void release(FILE* fp0);

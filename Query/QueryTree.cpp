@@ -868,6 +868,17 @@ bool QueryTree::checkWellDesigned()
 {
 	bool check_condition = true;
 	this->group_pattern.checkNoMinusAndOptionalVarAndSafeFilter(Varset(), Varset(), check_condition);
+	for (auto proj : projection)
+	{
+		if (proj.aggregate_type == ProjectionVar::cyclePath_type
+			|| proj.aggregate_type == ProjectionVar::cycleBoolean_type
+			|| proj.aggregate_type == ProjectionVar::shortestPath_type
+			|| proj.aggregate_type == ProjectionVar::shortestPathLen_type)
+		{
+			check_condition = false;
+			break;
+		}
+	}
 	return check_condition;
 }
 

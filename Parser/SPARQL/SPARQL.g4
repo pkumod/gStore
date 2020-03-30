@@ -130,7 +130,7 @@ unaryexpression : '!' primaryexpression|	'+' primaryexpression
  ;
 primaryexpression : brackettedexpression | builtInCall | iriOrFunction | rDFLiteral | numericLiteral | booleanLiteral | var ;
 brackettedexpression : '(' expression ')' ;
-predSet : '{' iri ( ',' iri )* '}' ;
+predSet : '{' iri ( ',' iri )* '}' | '{' '}' ;
 builtInCall : aggregate|	K_STR '(' expression ')' 
 |	K_LANG '(' expression ')' 
 |	K_LANGMATCHES '(' expression ',' expression ')' 
@@ -191,8 +191,8 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_CYCLEBOOLEAN '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_SHORTESTPATH '(' varOrIri ',' varOrIri ',' predSet ')'
 |   K_SHORTESTPATHLEN '(' varOrIri ',' varOrIri ',' predSet ')'
-|   K_KHOPREACHABLE '(' varOrIri ',' varOrIri ',' num_integer ',' predSet (',' numericLiteral)? ')'
-|   K_KHOPENUMERATE '(' varOrIri ',' varOrIri ',' num_integer ',' predSet (',' numericLiteral)? ')'
+|   K_KHOPREACHABLE '(' varOrIri ',' varOrIri ',' (num_integer | integer_positive | integer_negative) ',' predSet (',' numericLiteral)? ')'
+|   K_KHOPENUMERATE '(' varOrIri ',' varOrIri ',' (num_integer | integer_positive | integer_negative) ',' predSet (',' numericLiteral)? ')'
  ;
 regexexpression : K_REGEX '(' expression ',' expression ( ',' expression )? ')' ;
 substringexpression : K_SUBSTR '(' expression ',' expression ( ',' expression )? ')' ;

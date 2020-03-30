@@ -1,5 +1,5 @@
 
-// Generated from SPARQL.g4 by ANTLR 4.7.2
+// Generated from ./SPARQL.g4 by ANTLR 4.7.2
 
 #pragma once
 
@@ -2434,6 +2434,8 @@ public:
     antlr4::tree::TerminalNode *K_SHORTESTPATHLEN();
     antlr4::tree::TerminalNode *K_KHOPREACHABLE();
     Num_integerContext *num_integer();
+    Integer_positiveContext *integer_positive();
+    Integer_negativeContext *integer_negative();
     NumericLiteralContext *numericLiteral();
     antlr4::tree::TerminalNode *K_KHOPENUMERATE();
 

@@ -13,6 +13,7 @@
 #include "../KVstore/KVstore.h"
 #include "../StringIndex/StringIndex.h"
 #include "../Database/Strategy.h"
+#include "../Database/CSR.h"
 #include "../Parser/QueryParser.h"
 #include "../Util/Triple.h"
 #include "../Util/Util.h"
@@ -23,6 +24,7 @@
 #include "TempResult.h"
 #include "QueryCache.h"
 #include "ResultSet.h"
+#include "PathQueryHandler.h"
 
 class GeneralEvaluation
 {
@@ -34,6 +36,8 @@ class GeneralEvaluation
 		StringIndex *stringindex;
 		Strategy strategy;
 		QueryCache *query_cache;
+		PathQueryHandler *pqHandler;
+		CSR *csr;
 
 		TYPE_TRIPLE_NUM *pre2num;
 		TYPE_TRIPLE_NUM *pre2sub;
@@ -47,9 +51,12 @@ class GeneralEvaluation
     	bool export_flag;
 
 	public:
-		GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, QueryCache *_query_cache, TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub, TYPE_TRIPLE_NUM *_pre2obj, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity):
-			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), pre2num(_pre2num), pre2sub(_pre2sub), pre2obj(_pre2obj), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), temp_result(NULL), fp(NULL), export_flag(false)
-		{}
+		GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, QueryCache *_query_cache, \
+			TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub, TYPE_TRIPLE_NUM *_pre2obj, \
+			TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, \
+			TYPE_ENTITY_LITERAL_ID _limitID_entity, CSR *_csr);
+
+		~GeneralEvaluation();
 
 		bool parseQuery(const std::string &_query);
 		QueryTree& getQueryTree();
@@ -78,6 +85,11 @@ class GeneralEvaluation
 		void releaseResult();
 
 		void prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, unsigned &update_triple_num);
+
+	private:
+		void loadCSR();
+		void prepPathQuery();
+		void pathVec2JSON(int src, int dst, const std::vector<int> &v, std::stringstream &ss);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H

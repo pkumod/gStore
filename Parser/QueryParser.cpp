@@ -393,8 +393,17 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 
 		if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE")
 		{
-			proj_var.path_args.k = stoi(bicCtx->num_integer()->getText());
-			proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
+			if (bicCtx->num_integer())
+				proj_var.path_args.k = stoi(bicCtx->num_integer()->getText());
+			else if (bicCtx->integer_positive())
+				proj_var.path_args.k = stoi(bicCtx->integer_positive()->getText());
+			else if (bicCtx->integer_negative())
+				proj_var.path_args.k = stoi(bicCtx->integer_negative()->getText());
+			
+			if (bicCtx->numericLiteral())
+				proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
+			else
+				proj_var.path_args.confidence = 1;
 		}
 		else if (tmp == "SIMPLECYCLEPATH" || tmp == "SIMPLECYCLEBOOLEAN"
 			|| tmp == "CYCLEPATH" || tmp == "CYCLEBOOLEAN")
