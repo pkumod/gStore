@@ -312,7 +312,9 @@ void TempResult::doOptional(vector<bool> &binding, TempResult &x, TempResult &rn
 	{
 		this->doJoin(x, ra);
 
-		binding.resize((int)this->result.size(), true);
+		binding.resize((int)this->result.size());
+		for (int i = 0; i < (int)this->result.size(); i++)
+			binding[i] = true;	// val in resize is only for new insertions
 	}
 	else if (!x.result.empty())
 	{
@@ -942,8 +944,14 @@ void TempResult::print(int no)
 
 	for (int i = 0; i < (int)this->result.size(); i++)
 	{
+		printf("[%d]\n", i);
+		printf("id_varset: ");
+		id_varset.print();
 		for (int j = 0; j < this->id_varset.getVarsetSize(); j++)
 			printf("%d\t", this->result[i].id[j]);
+		printf("\n");
+		printf("str_varset: ");
+		str_varset.print();
 		for (int j = 0; j < this->str_varset.getVarsetSize(); j++)
 			printf("%s\t", this->result[i].str[j].c_str());
 		printf("\n");
@@ -1048,6 +1056,7 @@ void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, StringIndex *
 	for (int i = 0; i < (int)x.results.size(); i++)
 		x_str_varset += x.results[i].str_varset;
 
+	// Align this and x's str varset
 	for (int i = 0; i < (int)this->results.size(); i++)
 		if (this->results[i].id_varset.hasCommonVar(x_str_varset))
 			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, stringindex, entity_literal_varset);

@@ -141,6 +141,7 @@ class StringIndexFile
 		}
 
 		void setNum(unsigned _num);
+		unsigned getNum();
 		void save(KVstore &kv_store);
 		void load();
 		static void *thread_read(void * argv);
@@ -221,6 +222,7 @@ class StringIndex
 		bool searchBuffer(unsigned _id, std::string* _str);
 
 		void setNum(StringIndexFile::StringIndexFileType _type, unsigned _num);
+		unsigned getNum(StringIndexFile::StringIndexFileType _type);
 
 		void save(KVstore &kv_store);
 		void load();

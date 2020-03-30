@@ -172,7 +172,6 @@ KVstore::getStringByID(TYPE_ENTITY_LITERAL_ID _id)
 TYPE_ENTITY_LITERAL_ID
 KVstore::getIDByString(string _str)
 {
-	cout << "KVSTORE::GETIDBYSTRING" << endl;
 	//load kv_trie
 /*	if (kv_trie == NULL)
 	{

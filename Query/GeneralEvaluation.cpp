@@ -78,6 +78,140 @@ void *preread_from_index(void *argv)
 }
 
 
+GeneralEvaluation::GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, QueryCache *_query_cache, \
+	TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub, TYPE_TRIPLE_NUM *_pre2obj, \
+	TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, \
+	TYPE_ENTITY_LITERAL_ID _limitID_entity, CSR *_csr):
+	vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), pre2num(_pre2num), \
+	pre2sub(_pre2sub), pre2obj(_pre2obj), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), \
+	limitID_entity(_limitID_entity), temp_result(NULL), fp(NULL), export_flag(false), csr(_csr)
+{
+	if (csr)
+		pqHandler = new PathQueryHandler(csr);
+	else
+		pqHandler = NULL;
+}
+
+GeneralEvaluation::~GeneralEvaluation()
+{
+	if (pqHandler)
+		delete pqHandler;
+}
+
+void
+GeneralEvaluation::loadCSR()
+{
+	cout << "GeneralEvaluation::loadCSR" << endl;
+
+	if (csr)
+		delete csr;
+	csr = new CSR[2];
+
+	unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
+	csr[0].init(pre_num);
+	csr[1].init(pre_num);	
+	cout << "pre_num: " << pre_num << endl;
+	long begin_time = Util::get_cur_time();
+
+	// Process out-edges (csr[0])
+	// i: predicate; j: subject; k: object
+	for(unsigned i = 0; i < pre_num; i++)
+	{
+		string pre = kvstore->getPredicateByID(i);
+		cout<<"pid: "<<i<<"    pre: "<<pre<<endl;
+		unsigned* sublist = NULL;
+		unsigned sublist_len = 0;
+		bool ret = kvstore->getsubIDlistBypreID(i, sublist, sublist_len, true);
+		//cout<<"    sub_num: "<<sublist_len<<endl;
+		unsigned offset = 0;
+		unsigned index = 0;
+		for(unsigned j=0;j<sublist_len;j++)
+		{
+			string sub = kvstore->getEntityByID(sublist[j]);
+			//cout<<"    sid: "<<sublist[j]<<"    sub: "<<sub<<endl;
+			unsigned* objlist = NULL;
+			unsigned objlist_len = 0;
+			bool ret = kvstore->getobjIDlistBysubIDpreID(sublist[j], i, objlist, objlist_len); 
+			unsigned len = objlist_len;	// the real object list length
+			for(unsigned k=0;k<objlist_len;k++)
+			{
+				if(objlist[k]>=2000000000)
+				{
+					--len;
+					continue;
+				}
+				string obj = kvstore->getEntityByID(objlist[k]);
+				//cout<<"        oid: "<<objlist[k]<<"    obj: "<<obj<<endl;
+				csr[0].adjacency_list[i].push_back(objlist[k]);
+			}
+			//cout<<"        obj_num: "<<len<<endl;
+			if(len > 0)
+			{
+				csr[0].id2vid[i].push_back(sublist[j]);
+				csr[0].vid2id[i].insert(pair<unsigned, unsigned>(sublist[j], index));
+				csr[0].offset_list[i].push_back(offset);
+				index++;
+				offset += len;
+			}
+		}
+		cout<<csr[0].offset_list[i].size()<<endl;	// # of this predicate's subjects
+		cout<<csr[0].adjacency_list[i].size()<<endl;	// # of this predicate's objects
+	}
+
+	// Process out-edges (csr[1])
+	// i: predicate; j: object; k: subject
+	for(unsigned i = 0;i<pre_num;i++)
+	{
+		string pre = kvstore->getPredicateByID(i);
+		cout<<"pid: "<<i<<"    pre: "<<pre<<endl;
+		unsigned* objlist = NULL;
+		unsigned objlist_len = 0;
+		bool ret = kvstore->getobjIDlistBypreID(i, objlist, objlist_len, true);
+		//cout<<"    obj_num: "<<objlist_len<<endl;
+		unsigned offset = 0;
+		unsigned index = 0;
+		for(unsigned j=0;j<objlist_len;j++)
+		{
+			if(objlist[j]>=2000000000)
+				continue;
+			string obj = kvstore->getEntityByID(objlist[j]);
+			//cout<<"    oid: "<<objlist[j]<<"    obj: "<<obj<<endl;
+			unsigned* sublist = NULL;
+			unsigned sublist_len = 0;
+			bool ret = kvstore->getsubIDlistByobjIDpreID(objlist[j], i, sublist, sublist_len); 
+			unsigned len = sublist_len;
+			for(unsigned k=0;k<sublist_len;k++)
+			{
+				string sub = kvstore->getEntityByID(sublist[k]);
+				//cout<<"        sid: "<<sublist[k]<<"    sub: "<<sub<<endl;
+				csr[1].adjacency_list[i].push_back(sublist[k]);
+			}
+			//cout<<"        sub_num: "<<len<<endl;
+			if(len > 0)
+			{
+				csr[1].id2vid[i].push_back(objlist[j]);
+				csr[1].vid2id[i].insert(pair<unsigned, unsigned>(objlist[j], index));
+				csr[1].offset_list[i].push_back(offset);
+				index++;
+				offset += len;
+			}
+		}
+		cout<<csr[1].offset_list[i].size()<<endl;
+		cout<<csr[1].adjacency_list[i].size()<<endl;
+	}
+	long end_time = Util::get_cur_time();
+	cout << "Loading CSR in GeneralEvaluation takes " << (end_time - begin_time) << "ms" << endl;
+}
+
+void
+GeneralEvaluation::prepPathQuery()
+{
+	if (!csr)
+		loadCSR();
+	if (!pqHandler)
+		pqHandler = new PathQueryHandler(csr);
+}
+
 void
 GeneralEvaluation::setStringIndexPointer(StringIndex* _tmpsi)
 {
@@ -951,7 +1085,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 {
 
 	if (this->temp_result == NULL)
+	{
 		return;
+	}
 
 	if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
 	{
@@ -1050,6 +1186,161 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			int result0_id_cols = result0.id_varset.getVarsetSize();
 			int new_result0_id_cols = new_result0.id_varset.getVarsetSize();
 			int new_result0_str_cols = new_result0.str_varset.getVarsetSize();
+
+			if (result0_size == 0 && proj.size() == 1 && \
+				proj[0].aggregate_type != QueryTree::ProjectionVar::None_type && \
+				proj[0].aggregate_type != QueryTree::ProjectionVar::Count_type)
+			{
+				// Path query, both nodes are IRI
+
+				new_result0.result.push_back(TempResult::ResultPair());
+				new_result0.result.back().id = new unsigned[new_result0_id_cols];
+				new_result0.result.back().str.resize(new_result0_str_cols);
+
+				for (int i = 0; i < new_result0_id_cols; i++)
+					new_result0.result.back().id[i] = INVALID;
+
+				prepPathQuery();
+				vector<int> uid_ls, vid_ls;
+				vector<int> pred_id_set;
+				uid_ls.push_back(kvstore->getIDByString(proj[0].path_args.src));
+				vid_ls.push_back(kvstore->getIDByString(proj[0].path_args.dst));
+				if (!proj[0].path_args.pred_set.empty())
+				{
+					for (auto pred : proj[0].path_args.pred_set)
+						pred_id_set.push_back(kvstore->getIDByPredicate(pred));
+				}
+				else
+				{
+					// Allow all predicates
+					unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
+					for (unsigned j = 0; j < pre_num; j++)
+						pred_id_set.push_back(j);
+				}
+
+				// For each u-v pair, query
+				bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
+				stringstream ss;
+				bool notFirstOutput = 0;	// For outputting commas
+				ss << "\"{\"paths\":[";
+				for (int uid : uid_ls)
+				{
+					for (int vid : vid_ls)
+					{
+						if (proj[0].aggregate_type == QueryTree::ProjectionVar::cyclePath_type)
+						{
+							if (uid == vid)
+								continue;
+							vector<int> path = pqHandler->cycle(uid, vid, proj[0].path_args.directed, pred_id_set);
+							if (path.size() != 0)
+							{
+								if (notFirstOutput)
+									ss << ",";
+								else
+									notFirstOutput = 1;
+								pathVec2JSON(uid, vid, path, ss);
+							}
+						}
+						else if (proj[0].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+						{
+							if (uid == vid)
+								continue;
+							if (pqHandler->cycle(uid, vid, proj[0].path_args.directed, pred_id_set).size() != 0)
+							{
+								exist = 1;
+								earlyBreak = 1;
+								break;
+							}
+						}
+						else if (proj[0].aggregate_type == QueryTree::ProjectionVar::shortestPath_type)
+						{
+							if (uid == vid)
+							{
+								if (notFirstOutput)
+									ss << ",";
+								else
+									notFirstOutput = 1;
+								vector<int> path;	// Empty path
+								pathVec2JSON(uid, vid, path, ss);
+								continue;
+							}
+							vector<int> path = pqHandler->shortestPath(uid, vid, pred_id_set);
+							if (path.size() != 0)
+							{
+								if (notFirstOutput)
+									ss << ",";
+								else
+									notFirstOutput = 1;
+								pathVec2JSON(uid, vid, path, ss);
+							}
+						}
+						else if (proj[0].aggregate_type == QueryTree::ProjectionVar::shortestPathLen_type)
+						{
+							if (uid == vid)
+							{
+								if (notFirstOutput)
+									ss << ",";
+								else
+									notFirstOutput = 1;
+								ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
+									<< "\",\"dst\":\"" << kvstore->getStringByID(vid) \
+									<< "\",\"length\":0}";
+								continue;
+							}
+							vector<int> path = pqHandler->shortestPath(uid, vid, pred_id_set);
+							if (path.size() != 0)
+							{
+								if (notFirstOutput)
+									ss << ",";
+								else
+									notFirstOutput = 1;
+								ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
+									<< "\",\"dst\":\"" << kvstore->getStringByID(vid) << "\",\"length\":";
+								ss << (path.size() - 1) / 2;
+								ss << "}";
+							}
+						}
+						else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachable_type)
+						{
+							if (uid == vid)
+							{
+								if (notFirstOutput)
+									ss << ",";
+								else
+									notFirstOutput = 1;
+								ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
+									<< "\",\"dst\":\"" << kvstore->getStringByID(vid) \
+									<< "\",\"value\":\"true\"}";
+								continue;
+							}
+							int hopConstraint = proj[0].path_args.k;
+							if (hopConstraint < 0)
+								hopConstraint = 999;
+							bool reachRes = pqHandler->kHopReachable(uid, vid, hopConstraint, pred_id_set);
+							ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"dst\":\"" \
+								<< kvstore->getStringByID(vid) << "\",\"value\":";
+							if (reachRes)
+								ss << "\"true\"}";
+							else
+								ss << "\"false\"}";
+						}
+					}
+					if (earlyBreak)
+						break;
+				}
+				ss << "]}\"";
+				if (proj[0].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+				{
+					if (exist)
+						new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = "true";
+					else
+						new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = "false";
+				}
+				else
+					ss >> new_result0.result.back().str[proj2new[0] - new_result0_id_cols];
+			}
+
+			// Exclusive with the if branch above
 			for (int begin = 0; begin < result0_size;)
 			{
 				int end;
@@ -1066,6 +1357,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					new_result0.result.back().id[i] = INVALID;
 
 				for (int i = 0; i < (int)proj.size(); i++)
+				{
 					if (proj[i].aggregate_type == QueryTree::ProjectionVar::None_type)
 					{
 						if (proj2temp[i] < result0_id_cols)
@@ -1133,7 +1425,183 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						ss << "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
 						ss >> new_result0.result.back().str[proj2new[i] - new_result0_id_cols];
 					}
+					else	// Path query
+					{
+						prepPathQuery();
 
+						vector<int> uid_ls, vid_ls;
+						vector<int> pred_id_set;
+
+						// uid
+						if (proj[i].path_args.src[0] == '?')	// src is a variable
+						{
+							int var2temp = Varset(proj[i].path_args.src).mapTo(result0.getAllVarset())[0];
+							if (var2temp >= result0_id_cols)
+								cout << "[ERROR] src must be an entity!" << endl;	// TODO: throw exception
+							else
+							{
+								for (int j = begin; j <= end; j++)
+								{
+									if (result0.result[j].id[var2temp] != INVALID)
+										uid_ls.push_back(result0.result[j].id[var2temp]);
+								}
+							}
+						}
+						else	// src is an IRI
+							uid_ls.push_back(kvstore->getIDByString(proj[i].path_args.src));
+
+						// vid
+						if (proj[i].path_args.dst[0] == '?')	// dst is a variable
+						{
+							int var2temp = Varset(proj[i].path_args.dst).mapTo(result0.getAllVarset())[0];
+							if (var2temp >= result0_id_cols)
+								cout << "[ERROR] dst must be an entity!" << endl;	// TODO: throw exception
+							else
+							{
+								for (int j = begin; j <= end; j++)
+								{
+									if (result0.result[j].id[var2temp] != INVALID)
+										vid_ls.push_back(result0.result[j].id[var2temp]);
+								}
+							}
+						}
+						else	// dst is an IRI
+							vid_ls.push_back(kvstore->getIDByString(proj[i].path_args.dst));
+
+						// pred_id_set: convert from IRI to integer ID
+						if (!proj[i].path_args.pred_set.empty())
+						{
+							for (auto pred : proj[i].path_args.pred_set)
+								pred_id_set.push_back(kvstore->getIDByPredicate(pred));
+						}
+						else
+						{
+							// Allow all predicates
+							unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
+							for (unsigned j = 0; j < pre_num; j++)
+								pred_id_set.push_back(j);
+						}
+
+						// For each u-v pair, query
+						bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
+						stringstream ss;
+						bool notFirstOutput = 0;	// For outputting commas
+						ss << "\"{\"paths\":[";
+						for (int uid : uid_ls)
+						{
+							for (int vid : vid_ls)
+							{
+								if (proj[i].aggregate_type == QueryTree::ProjectionVar::cyclePath_type)
+								{
+									if (uid == vid)
+										continue;
+									vector<int> path = pqHandler->cycle(uid, vid, proj[i].path_args.directed, pred_id_set);
+									if (path.size() != 0)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										pathVec2JSON(uid, vid, path, ss);
+									}
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+								{
+									if (uid == vid)
+										continue;
+									if (pqHandler->cycle(uid, vid, proj[i].path_args.directed, pred_id_set).size() != 0)
+									{
+										exist = 1;
+										earlyBreak = 1;
+										break;
+									}
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::shortestPath_type)
+								{
+									if (uid == vid)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										vector<int> path;	// Empty path
+										pathVec2JSON(uid, vid, path, ss);
+									}
+									vector<int> path = pqHandler->shortestPath(uid, vid, pred_id_set);
+									if (path.size() != 0)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										pathVec2JSON(uid, vid, path, ss);
+									}
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::shortestPathLen_type)
+								{
+									if (uid == vid)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
+											<< "\",\"dst\":\"" << kvstore->getStringByID(vid) \
+											<< "\",\"length\":0}";
+									}
+									vector<int> path = pqHandler->shortestPath(uid, vid, pred_id_set);
+									if (path.size() != 0)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
+											<< "\",\"dst\":\"" << kvstore->getStringByID(vid) << "\",\"length\":";
+										ss << (path.size() - 1) / 2;
+										ss << "}";
+									}
+								}
+								else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachable_type)
+								{
+									if (uid == vid)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
+											<< "\",\"dst\":\"" << kvstore->getStringByID(vid) \
+											<< "\",\"value\":\"true\"}";
+										continue;
+									}
+									int hopConstraint = proj[0].path_args.k;
+									if (hopConstraint < 0)
+										hopConstraint = 999;
+									bool reachRes = pqHandler->kHopReachable(uid, vid, hopConstraint, pred_id_set);
+									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"dst\":\"" \
+										<< kvstore->getStringByID(vid) << "\",\"value\":";
+									if (reachRes)
+										ss << "\"true\"}";
+									else
+										ss << "\"false\"}";
+								}
+									}
+									if (earlyBreak)
+										break;
+								}
+								ss << "]}\"";
+								if (proj[i].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+								{
+									if (exist)
+										new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "true";
+									else
+										new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "false";
+								}
+								else
+									ss >> new_result0.result.back().str[proj2new[i] - new_result0_id_cols];
+							}
+				}
 				begin = end + 1;
 			}
 
@@ -1325,7 +1793,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					else
 					{
 						for (unsigned i = 0; i < retAnsNum; i++)
+						{
 							ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
+							// Up to this point the backslashes are hidden
+						}
 					}
 				}
 			}
@@ -1484,6 +1955,38 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 				}
 			}
 		}
+}
+
+void
+GeneralEvaluation::pathVec2JSON(int src, int dst, const vector<int> &v, stringstream &ss)
+{
+	unordered_map<int, string> nodeIRI;
+	ss << "{\"src\":\"" << kvstore->getStringByID(src) \
+		<< "\",\"dst\":\"" << kvstore->getStringByID(dst) << "\",";
+	ss << "\"edges\":[";
+	int vLen = v.size();
+	for (int i = 0; i < vLen; i++)
+	{
+		if (i % 2 == 0)	// Node
+			nodeIRI[v[i]] = kvstore->getStringByID(v[i]);
+		else	// Edge
+		{
+			ss << "{\"fromNode\":" << v[i - 1] << ",\"toNode\":" << v[i + 1] \
+				<< ",\"predIRI\":\"" << kvstore->getPredicateByID(v[i]) << "\"}";
+			if (i != vLen - 1)	// Not the last edge
+				ss << ",";
+		}
+	}
+	ss << "],\"nodes\":[";	// End of edges, start of nodes
+	for (auto it = nodeIRI.begin(); it != nodeIRI.end(); ++it)
+	{
+		ss << "{\"nodeIndex\":" << it->first << ",\"nodeIRI\":\"" << it->second << "\"}";
+		// if (it != nodeIRI.end() - 1)
+		// 	ss << ",";
+		if (next(it) != nodeIRI.end())
+			ss << ",";
+	}
+	ss << "]}";
 }
 
 

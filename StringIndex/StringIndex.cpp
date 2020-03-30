@@ -15,6 +15,10 @@ void StringIndexFile::setNum(unsigned _num)
 {
 	this->num = _num;
 }
+unsigned StringIndexFile::getNum()
+{
+        return this->num;
+}
 void StringIndexFile::SetTrie(Trie *trie0)
 {
 	this->trie = trie0;
@@ -351,6 +355,16 @@ void StringIndex::setNum(StringIndexFile::StringIndexFileType _type, unsigned _n
 		this->literal.setNum(_num);
 	if (_type == StringIndexFile::Predicate)
 		this->predicate.setNum(_num);
+}
+
+unsigned StringIndex::getNum(StringIndexFile::StringIndexFileType _type)
+{
+        if (_type == StringIndexFile::Entity)
+                return this->entity.getNum();
+        if (_type == StringIndexFile::Literal)
+                return this->literal.getNum();
+        if (_type == StringIndexFile::Predicate)
+                return this->predicate.getNum();
 }
 
 void StringIndex::save(KVstore &kv_store)
