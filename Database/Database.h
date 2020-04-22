@@ -51,7 +51,7 @@ public:
 	~Database();
 
 	bool save();
-	bool load();
+	bool load(bool loadCSR=false);
 	bool unload();
 	void clear();
 	int query(const string _query, ResultSet& _result_set, FILE* _fp = stdout, bool update_flag = true, bool export_flag = false);

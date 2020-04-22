@@ -333,8 +333,8 @@ std::vector<int> PathQueryHandler::cycle(int uid, int vid, bool directed,
 	if(directed)
 	{
 		vector<int> ans1, ans2;
-		ans1 = shortestPath(uid, vid, pred_set);
-		ans2 = shortestPath(vid, uid, pred_set);
+		ans1 = shortestPath(uid, vid, true, pred_set);
+		ans2 = shortestPath(vid, uid, true, pred_set);
 		if(ans1.size() == 0 || ans2.size() == 0) return ans;
 		else
 		{
@@ -346,96 +346,97 @@ std::vector<int> PathQueryHandler::cycle(int uid, int vid, bool directed,
 	}
 	else	//use BFS to get the smallest cycle. since every edge is undirected, just need to find the route from u to v.
 	{
-		int num_of_pred = pred_set.size();
-		queue<int> q;
-		q.push(uid);
-		map<int, int> dis;
-		dis[uid] = 0;
-		bool finished = 0;
-		while(!q.empty() && !finished)
-		{
-			int temp = q.front();
-			q.pop();
-			for(int i = 0; i < num_of_pred; ++i)
-			{
-				int x = pred_set[i];
-				int num_out = getOutSize(temp, x);
-				for(int j = 0; j < num_out; ++j)
-				{
-					int t = getOutVertID(temp, x, j); //get the node
-					if(dis.find(t) != dis.end())
-						continue;						
-					q.push(t);
-					dis[t] = dis[temp] + 1;
-					if(t == vid)
-					{
-						finished = 1;
-						break;
-					}
-				}
-				if(finished) break;
-				int num_in = getInSize(temp, x);
-				for(int j = 0; j < num_in; ++j)
-				{
-					int t = getInVertID(temp, x, j);
-					if(dis.find(t) != dis.end())
-						continue;
-					q.push(t);
-					dis[t] = dis[temp] + 1;
-					if(t == vid)
-					{
-						finished = 1;
-						break;
-					}
-				}
-				if(finished) break;
-			}
+		// int num_of_pred = pred_set.size();
+		// queue<int> q;
+		// q.push(uid);
+		// map<int, int> dis;
+		// dis[uid] = 0;
+		// bool finished = 0;
+		// while(!q.empty() && !finished)
+		// {
+		// 	int temp = q.front();
+		// 	q.pop();
+		// 	for(int i = 0; i < num_of_pred; ++i)
+		// 	{
+		// 		int x = pred_set[i];
+		// 		int num_out = getOutSize(temp, x);
+		// 		for(int j = 0; j < num_out; ++j)
+		// 		{
+		// 			int t = getOutVertID(temp, x, j); //get the node
+		// 			if(dis.find(t) != dis.end())
+		// 				continue;						
+		// 			q.push(t);
+		// 			dis[t] = dis[temp] + 1;
+		// 			if(t == vid)
+		// 			{
+		// 				finished = 1;
+		// 				break;
+		// 			}
+		// 		}
+		// 		if(finished) break;
+		// 		int num_in = getInSize(temp, x);
+		// 		for(int j = 0; j < num_in; ++j)
+		// 		{
+		// 			int t = getInVertID(temp, x, j);
+		// 			if(dis.find(t) != dis.end())
+		// 				continue;
+		// 			q.push(t);
+		// 			dis[t] = dis[temp] + 1;
+		// 			if(t == vid)
+		// 			{
+		// 				finished = 1;
+		// 				break;
+		// 			}
+		// 		}
+		// 		if(finished) break;
+		// 	}
 
-		}
-		if(!finished) return ans;
-		stack<int> s;
-		s.push(vid);
-		while(1)
-		{
-			int temp = s.top();
-			if(temp == uid) break;
-			int flag0 = 0;
-			for(int i = 0; i < num_of_pred; ++i)
-			{
-				int x = pred_set[i];
-				int num_in = getInSize(temp, x);
-				for(int j = 0; j < num_in; ++j)
-				{
-					int t = getInVertID(temp, x, j); 
-					if(dis.find(t) != dis.end() && dis[t] == dis[temp] - 1)
-					{
-						s.push(x);
-						s.push(t);
-						flag0 = 1;
-						break;
-					}
-				}
-				if(flag0) break;
-				int num_out = getOutSize(temp, x);
-				for(int j = 0; j < num_out; ++j)
-				{
-					int t = getOutVertID(temp, x, j); 
-					if(dis.find(t) != dis.end() && dis[t] == dis[temp] - 1)
-					{
-						s.push(x);
-						s.push(t);
-						flag0 = 1;
-						break;
-					}
-				}
-				if(flag0) break;
-			}
-		}
-		while(!s.empty())
-		{
-			ans.push_back(s.top());
-			s.pop();
-		}
+		// }
+		// if(!finished) return ans;
+		// stack<int> s;
+		// s.push(vid);
+		// while(1)
+		// {
+		// 	int temp = s.top();
+		// 	if(temp == uid) break;
+		// 	int flag0 = 0;
+		// 	for(int i = 0; i < num_of_pred; ++i)
+		// 	{
+		// 		int x = pred_set[i];
+		// 		int num_in = getInSize(temp, x);
+		// 		for(int j = 0; j < num_in; ++j)
+		// 		{
+		// 			int t = getInVertID(temp, x, j); 
+		// 			if(dis.find(t) != dis.end() && dis[t] == dis[temp] - 1)
+		// 			{
+		// 				s.push(x);
+		// 				s.push(t);
+		// 				flag0 = 1;
+		// 				break;
+		// 			}
+		// 		}
+		// 		if(flag0) break;
+		// 		int num_out = getOutSize(temp, x);
+		// 		for(int j = 0; j < num_out; ++j)
+		// 		{
+		// 			int t = getOutVertID(temp, x, j); 
+		// 			if(dis.find(t) != dis.end() && dis[t] == dis[temp] - 1)
+		// 			{
+		// 				s.push(x);
+		// 				s.push(t);
+		// 				flag0 = 1;
+		// 				break;
+		// 			}
+		// 		}
+		// 		if(flag0) break;
+		// 	}
+		// }
+		// while(!s.empty())
+		// {
+		// 	ans.push_back(s.top());
+		// 	s.pop();
+		// }
+		ans = shortestPath0(uid, vid, false, pred_set);
 		int lens = ans.size();
 		for(int i = lens - 2; i > 0; --i)
 			ans.push_back(ans[i]);
@@ -450,6 +451,7 @@ std::vector<int> PathQueryHandler::cycle(int uid, int vid, bool directed,
 
 	@param uid the vertex u's ID.
 	@param vid the vertex v's ID.
+	@param directed if false, treat all edges in the graph as bidirectional.
 	@param pred_set the set of edge labels allowed.
 	@return a vector of vertex IDs representing the shortest path, shaped like
 	[v0, pred0, v1, pred1, ..., vk, predk, vk+1], where v0 = u, vk+1 = v, 
@@ -459,7 +461,7 @@ std::vector<int> PathQueryHandler::cycle(int uid, int vid, bool directed,
 	use the map route_v[q] to store the route from v to q.
 **/
 
-vector<int> PathQueryHandler::shortestPath0(int uid, int vid, const vector<int> &pred_set)//cost more space and more time?
+vector<int> PathQueryHandler::shortestPath0(int uid, int vid, bool directed, const vector<int> &pred_set)//cost more space and more time?
 {
 	//cout << "BFS1" << endl;
 	map<int, vector<int> > route_u, route_v;
@@ -487,6 +489,31 @@ vector<int> PathQueryHandler::shortestPath0(int uid, int vid, const vector<int> 
 				for(int j = 0; j < num; ++j)
 				{
 					int t = getOutVertID(temp_u, x, j); 
+					
+					if(route_v.find(t) != route_v.end())
+					{
+						flag = 1;
+						meet_node = t;
+						route_u[t] = route_u[temp_u];
+						route_u[t].push_back(x);
+						break;
+					}									//get the meet_node
+
+					if(route_u.find(t) != route_u.end()) continue;		//have already visited the node
+					
+					new_q_u.push(t);
+					route_u[t] = route_u[temp_u];
+					route_u[t].push_back(x);
+					route_u[t].push_back(t);
+				}
+				if(flag) break;
+				
+				if(directed) continue;
+				//undirected: need to visit the in-neighbours
+				num = getInSize(temp_u, x);
+				for(int j = 0; j < num; ++j)
+				{
+					int t = getInVertID(temp_u, x, j); 
 					
 					if(route_v.find(t) != route_v.end())
 					{
@@ -539,6 +566,31 @@ vector<int> PathQueryHandler::shortestPath0(int uid, int vid, const vector<int> 
 					route_v[t].push_back(t);
 				}
 				if(flag) break;
+				
+				if(directed) continue;
+
+				num = getOutSize(temp_v, x);
+				for(int j = 0; j < num; ++j)
+				{
+					int t = getOutVertID(temp_v, x, j); 
+					
+					if(route_u.find(t) != route_u.end())
+					{
+						flag = 1;
+						meet_node = t;
+						route_v[t] = route_v[temp_v];
+						route_v[t].push_back(x);
+						break;
+					}							
+
+					if(route_v.find(t) != route_v.end()) continue;		
+					
+					new_q_v.push(t);
+					route_v[t] = route_v[temp_v];
+					route_v[t].push_back(x);
+					route_v[t].push_back(t);
+				}
+				if(flag) break;
 			}
 		}
 		q_v = new_q_v;	
@@ -562,6 +614,7 @@ vector<int> PathQueryHandler::shortestPath0(int uid, int vid, const vector<int> 
 
 	@param uid the vertex u's ID.
 	@param vid the vertex v's ID.
+	@param directed if false, treat all edges in the graph as bidirectional.
 	@param pred_set the set of edge labels allowed.
 	@return a vector of vertex IDs representing the shortest path, shaped like
 	[v0, pred0, v1, pred1, ..., vk, predk, vk+1], where v0 = u, vk+1 = v, 
@@ -572,7 +625,7 @@ vector<int> PathQueryHandler::shortestPath0(int uid, int vid, const vector<int> 
 	use bbfs to get the meet node.
 	get the route through searching the distance and meet node.
 */
-vector<int> PathQueryHandler::shortestPath(int uid, int vid, const vector<int> &pred_set) //cost less space and less time.
+vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, const vector<int> &pred_set) //cost less space and less time.
 {
 	//cout << "BFS2" << endl;
 	map<int, int> dis_u, dis_v;//store the distance to u and v
@@ -601,6 +654,27 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, const vector<int> &
 				for(int j = 0; j < num; ++j)
 				{
 					int t = getOutVertID(temp_u, x, j); //get the node
+					
+					if(dis_v.find(t) != dis_v.end())
+					{
+						flag = 1;
+						meet_node = t;
+						dis_u[t] = dis_u[temp_u] + 1;
+						break;
+					}									//get the meet node
+
+					if(dis_u.find(t) != dis_u.end()) continue;		//has visited before
+					
+					new_q_u.push(t);
+					dis_u[t] = dis_u[temp_u] + 1;
+				}
+				if(flag) break;
+				if(directed) continue;
+
+				num = getInSize(temp_u, x);
+				for(int j = 0; j < num; ++j)
+				{
+					int t = getInVertID(temp_u, x, j); //get the node
 					
 					if(dis_v.find(t) != dis_v.end())
 					{
@@ -650,6 +724,29 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, const vector<int> &
 					
 				}
 				if(flag) break;
+
+				if(directed) continue;
+
+				num = getOutSize(temp_v, x);
+				for(int j = 0; j < num; ++j)
+				{
+					int t = getOutVertID(temp_v, x, j); 
+					
+					if(dis_u.find(t) != dis_u.end())
+					{
+						flag = 1;
+						meet_node = t;
+						dis_v[t] = dis_v[temp_v] + 1;
+						break;
+					}									
+
+					if(dis_v.find(t) != dis_v.end()) continue;	// Already in	
+					
+					new_q_v.push(t);
+					dis_v[t] = dis_v[temp_v] + 1;
+
+				}
+				if(flag) break;
 			}
 		}
 		
@@ -674,6 +771,21 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, const vector<int> &
 			for(int j = 0; j < num; ++j)
 			{
 				int t = getOutVertID(temp, x, j); 
+				if(dis_v.find(t) != dis_v.end() && dis_v[t] == dis_v[temp] - 1)
+				{
+					s.push(x);
+					s.push(t);
+					flag0 = 1;
+					break;
+				}
+			}
+			if(flag0) break;
+
+			if(directed) continue;
+			num = getInSize(temp, x);
+			for(int j = 0; j < num; ++j)
+			{
+				int t = getInVertID(temp, x, j); 
 				if(dis_v.find(t) != dis_v.end() && dis_v[t] == dis_v[temp] - 1)
 				{
 					s.push(x);
@@ -719,6 +831,22 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, const vector<int> &
 				}
 			}
 			if(flag0) break;
+
+			if(directed) continue;
+
+			num = getOutSize(temp, x);
+			for(int j = 0; j < num; ++j)
+			{
+				int t = getOutVertID(temp, x, j); 
+				if(dis_u.find(t) != dis_u.end() && dis_u[t] == dis_u[temp] - 1)
+				{
+					s_new.push(x);
+					s_new.push(t);
+					flag0 = 1;
+					break;
+				}
+			}
+			if(flag0) break;
 		}
 	}//get the route from u to meet_node.
 
@@ -738,11 +866,12 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, const vector<int> &
 
 	@param uid the vertex u's ID.
 	@param vid the vertex v's ID.
+	@param directed if false, treat all edges in the graph as bidirectional.
 	@param k the hop constraint.
 	@param pred_set the set of edge labels allowed.
 	@return true if v is reachable from u within k hops, false otherwise.
 */
-bool PathQueryHandler::kHopReachable(int uid, int vid, int k, const std::vector<int> &pred_set)
+bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set)
 {
 	if (uid == vid)
 		return true;
@@ -751,6 +880,11 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, int k, const std::vector<
 	{
 		uOutTotal += getOutSize(uid, pred);
 		vInTotal += getInSize(vid, pred);
+		if(!directed)
+		{
+			uOutTotal += getInSize(uid, pred);
+			vInTotal += getOutSize(vid, pred);
+		}
 	}
 	if (uOutTotal == 0 || vInTotal == 0)
 		return false;
@@ -785,7 +919,20 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, int k, const std::vector<
 	    				fwdQ_next.push(outNode);
 	    				fSetMark[outNode] = level;
 	    			}
-	    		} 
+	    		}
+	    		if(directed) continue;
+
+	    		int num_in = getInSize(curNode, pred);
+	    		for (int i = 0; i < num_in; i++)
+	    		{
+	    			int inNode = getInVertID(curNode, pred, i);
+	    			if (fSetMark.find(inNode) == fSetMark.end())
+	    			{
+	    				fwdQ_next.push(inNode);
+	    				fSetMark[inNode] = level;
+	    			}
+	    		}
+
     		}
     	}
     	while (!bwdQ.empty())
@@ -806,7 +953,22 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, int k, const std::vector<
 	    					fSetMark.end() && fSetMark[inNode] + bSetMark[inNode] <= k)
 	    					return true;
 	    			}
-	    		} 
+	    		}
+
+	    		if(directed) continue;
+	    		int num_out = getOutSize(curNode, pred);
+	    		for (int i = 0; i < num_out; i++)
+	    		{
+	    			int outNode = getOutVertID(curNode, pred, i);
+	    			if (bSetMark.find(outNode) == bSetMark.end())
+	    			{
+	    				bwdQ_next.push(outNode);
+	    				bSetMark[outNode] = level;
+	    				if (fSetMark.find(outNode) != \
+	    					fSetMark.end() && fSetMark[outNode] + bSetMark[outNode] <= k)
+	    					return true;
+	    			}
+	    		}
     		}
     	}
     	if (fwdQ_next.empty() || bwdQ_next.empty())
@@ -1004,4 +1166,26 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, int k, const std::vector<
 //         init_rmax /= 2;
 //     }
 //     return -1;
+// }
+
+/**
+	Generate an equal number of positive and negative queries for a given query type,
+	and storing them in the queries vector.
+	Note: Treat pred_set as full (allow all possible predicates) for now.
+	Note: To deal with the problem that all vertex IDs cannot be accessed at once for
+	graphs with multiple predicates, you may employ a two-level strategy when picking
+	srcID and dstID: first randomly pick a predicate, then randomly pick a vertexID in
+	that predicate's id2vid list.
+
+	@param queryType the type of queries (0 for cycle, 1 for shortestPath).
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param numQueries the number of positive (negative) queries to generate.
+	@param queries vector to store the generated queries. Each element will be ((srcID, dstID), result).
+	Result for cycle will be 0 for non-existence of cycles and 1 for existence. Result for shortestPath
+	will be the length of the shortest path; negative queries for this category will be UNREACHABLE pairs,
+	where result will be -1.
+*/
+// void PathQueryHandler::generateQueries(int queryType, bool directed, int numQueries, vector<pair<int, int>, int>& queries)
+// {
+
 // }

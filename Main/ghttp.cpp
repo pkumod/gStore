@@ -782,7 +782,9 @@ int initialize(int argc, char *argv[])
 	DB2Map();
 
 	HttpServer server;
-	string db_name;
+	string db_name = "";
+	server.config.port = 9000;
+	bool loadCSR = 1;	// Load CSR by default
 	if(argc == 1)
 	{
 		server.config.port = 9000;
@@ -798,26 +800,183 @@ int initialize(int argc, char *argv[])
 		else
 		{
 			server.config.port = 9000;
-			db_name = argv[1];
+			if (strcmp(argv[1], "--advanced=true") == 0)
+			{
+				loadCSR = 1;
+				db_name = "";
+			}
+			else if (strcmp(argv[1], "--advanced=false") == 0)
+			{
+				loadCSR = 0;
+				db_name = "";
+			}
+			else
+				db_name = argv[1];
 		}
 	}
-	else
+	else if (argc == 3)
+	{
+		if (isNum(argv[1]))
+		{
+			server.config.port = atoi(argv[1]);
+			if (strcmp(argv[2], "--advanced=true") == 0)
+			{
+				loadCSR = 1;
+				db_name = "";
+			}
+			else if (strcmp(argv[2], "--advanced=false") == 0)
+			{
+				loadCSR = 0;
+				db_name = "";
+			}
+			else
+				db_name = argv[2];
+		}
+		else if (isNum(argv[2]))
+		{
+			server.config.port = atoi(argv[2]);
+			if (strcmp(argv[1], "--advanced=true") == 0)
+			{
+				loadCSR = 1;
+				db_name = "";
+			}
+			else if (strcmp(argv[1], "--advanced=false") == 0)
+			{
+				loadCSR = 0;
+				db_name = "";
+			}
+			else
+				db_name = argv[1];
+		}
+		else
+		{
+			if (strcmp(argv[1], "--advanced=true") == 0)
+			{
+				loadCSR = 1;
+				db_name = argv[2];
+			}
+			else if (strcmp(argv[1], "--advanced=false") == 0)
+			{
+				loadCSR = 0;
+				db_name = argv[2];
+			}
+			else if (strcmp(argv[2], "--advanced=true") == 0)
+			{
+				loadCSR = 1;
+				db_name = argv[1];
+			}
+			else if (strcmp(argv[2], "--advanced=false") == 0)
+			{
+				loadCSR = 0;
+				db_name = argv[1];
+			}
+			else
+			{
+				cout << "wrong format of parameters, please input the server port and the database." << endl;
+				return -1;
+			}
+		}
+	}
+	else if (argc == 4)
 	{
 		if(isNum(argv[1]))
 		{
 			server.config.port = atoi(argv[1]);
-			db_name = argv[2];
+			if (strcmp(argv[2], "--advanced=true") == 0)
+			{
+				loadCSR = 1;
+				db_name = argv[3];
+			}
+			else if (strcmp(argv[2], "--advanced=false") == 0)
+			{
+				loadCSR = 0;
+				db_name = argv[3];
+			}
+			else if (strcmp(argv[3], "--advanced=true") == 0)
+			{
+				loadCSR = 1;
+				db_name = argv[2];
+			}
+			else if (strcmp(argv[3], "--advanced=false") == 0)
+			{
+				loadCSR = 0;
+				db_name = argv[2];
+			}
+			else
+			{
+				cout << "wrong format of parameters, please input the server port and the database." << endl;
+				return -1;
+			}
+
 		}
 		else if(isNum(argv[2]))
 		{
 			server.config.port = atoi(argv[2]);
-			db_name = argv[1];
+			if (strcmp(argv[1], "--advanced=true") == 0)
+			{
+				loadCSR = 1;
+				db_name = argv[3];
+			}
+			else if (strcmp(argv[1], "--advanced=false") == 0)
+			{
+				loadCSR = 0;
+				db_name = argv[3];
+			}
+			else if (strcmp(argv[3], "--advanced=true") == 0)
+			{
+				loadCSR = 1;
+				db_name = argv[1];
+			}
+			else if (strcmp(argv[3], "--advanced=false") == 0)
+			{
+				loadCSR = 0;
+				db_name = argv[1];
+			}
+			else
+			{
+				cout << "wrong format of parameters, please input the server port and the database." << endl;
+				return -1;
+			}
+		}
+		else if (isNum(argv[3]))
+		{
+			server.config.port = atoi(argv[3]);
+			if (strcmp(argv[1], "--advanced=true") == 0)
+			{
+				loadCSR = 1;
+				db_name = argv[2];
+			}
+			else if (strcmp(argv[1], "--advanced=false") == 0)
+			{
+				loadCSR = 0;
+				db_name = argv[2];
+			}
+			else if (strcmp(argv[2], "--advanced=true") == 0)
+			{
+				loadCSR = 1;
+				db_name = argv[1];
+			}
+			else if (strcmp(argv[2], "--advanced=false") == 0)
+			{
+				loadCSR = 0;
+				db_name = argv[1];
+			}
+			else
+			{
+				cout << "wrong format of parameters, please input the server port and the database." << endl;
+				return -1;
+			}
 		}
 		else
 		{
 			cout << "wrong format of parameters, please input the server port and the database." << endl;
 			return -1;
 		}
+	}
+	else
+	{
+		cout << "wrong format of parameters, please input the server port and the database." << endl;
+		return -1;
 	}
 	port = server.config.port;
 	cout << "server port: " << server.config.port << " database name: " << db_name << endl;
@@ -864,7 +1023,7 @@ int initialize(int argc, char *argv[])
 			return -1;
 		}
 
-		bool flag = current_database->load();
+		bool flag = current_database->load(loadCSR);
 		if (!flag)
 		{
 			cout << "Failed to load the database."<<endl;

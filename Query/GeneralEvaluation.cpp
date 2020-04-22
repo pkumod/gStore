@@ -1264,7 +1264,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								pathVec2JSON(uid, vid, path, ss);
 								continue;
 							}
-							vector<int> path = pqHandler->shortestPath(uid, vid, pred_id_set);
+							vector<int> path = pqHandler->shortestPath(uid, vid, proj[0].path_args.directed, pred_id_set);
 							if (path.size() != 0)
 							{
 								if (notFirstOutput)
@@ -1287,7 +1287,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									<< "\",\"length\":0}";
 								continue;
 							}
-							vector<int> path = pqHandler->shortestPath(uid, vid, pred_id_set);
+							vector<int> path = pqHandler->shortestPath(uid, vid, proj[0].path_args.directed, pred_id_set);
 							if (path.size() != 0)
 							{
 								if (notFirstOutput)
@@ -1316,7 +1316,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							int hopConstraint = proj[0].path_args.k;
 							if (hopConstraint < 0)
 								hopConstraint = 999;
-							bool reachRes = pqHandler->kHopReachable(uid, vid, hopConstraint, pred_id_set);
+							bool reachRes = pqHandler->kHopReachable(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
 							ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"dst\":\"" \
 								<< kvstore->getStringByID(vid) << "\",\"value\":";
 							if (reachRes)
@@ -1527,7 +1527,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										vector<int> path;	// Empty path
 										pathVec2JSON(uid, vid, path, ss);
 									}
-									vector<int> path = pqHandler->shortestPath(uid, vid, pred_id_set);
+									vector<int> path = pqHandler->shortestPath(uid, vid, proj[0].path_args.directed, pred_id_set);
 									if (path.size() != 0)
 									{
 										if (notFirstOutput)
@@ -1549,7 +1549,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											<< "\",\"dst\":\"" << kvstore->getStringByID(vid) \
 											<< "\",\"length\":0}";
 									}
-									vector<int> path = pqHandler->shortestPath(uid, vid, pred_id_set);
+									vector<int> path = pqHandler->shortestPath(uid, vid, proj[0].path_args.directed, pred_id_set);
 									if (path.size() != 0)
 									{
 										if (notFirstOutput)
@@ -1578,7 +1578,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									int hopConstraint = proj[0].path_args.k;
 									if (hopConstraint < 0)
 										hopConstraint = 999;
-									bool reachRes = pqHandler->kHopReachable(uid, vid, hopConstraint, pred_id_set);
+									bool reachRes = pqHandler->kHopReachable(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
 									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"dst\":\"" \
 										<< kvstore->getStringByID(vid) << "\",\"value\":";
 									if (reachRes)
@@ -1973,7 +1973,7 @@ GeneralEvaluation::pathVec2JSON(int src, int dst, const vector<int> &v, stringst
 		{
 			ss << "{\"fromNode\":" << v[i - 1] << ",\"toNode\":" << v[i + 1] \
 				<< ",\"predIRI\":\"" << kvstore->getPredicateByID(v[i]) << "\"}";
-			if (i != vLen - 1)	// Not the last edge
+			if (i != vLen - 2)	// Not the last edge
 				ss << ",";
 		}
 	}
