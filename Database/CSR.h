@@ -22,6 +22,7 @@ public:
 	// void compress(unsigned w);
 
 	void print();	// Feel free to modify this for testing
+	long long sizeInBytes();
 };
 
 #endif //_DATABASE_CSR_H

@@ -405,14 +405,10 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			else
 				proj_var.path_args.confidence = 1;
 		}
-		else if (tmp == "SIMPLECYCLEPATH" || tmp == "SIMPLECYCLEBOOLEAN"
-			|| tmp == "CYCLEPATH" || tmp == "CYCLEBOOLEAN")
-		{
-			if (bicCtx->booleanLiteral()->getText() == "true")
-				proj_var.path_args.directed = true;
-			else
-				proj_var.path_args.directed = false;
-		}
+		if (bicCtx->booleanLiteral()->getText() == "true")
+			proj_var.path_args.directed = true;
+		else
+			proj_var.path_args.directed = false;
 
 		proj_var.var = varCtx->getText();
 	}
@@ -890,13 +886,10 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 					filter.child[0].path_args.confidence = \
 						stof(((SPARQLParser::BuiltInCallContext *)root)->numericLiteral()->getText());
 				}
-				else if (tmp == "SIMPLECYCLEBOOLEAN" || tmp == "CYCLEBOOLEAN")
-				{
-					if (((SPARQLParser::BuiltInCallContext *)root)->booleanLiteral()->getText() == "true")
-						filter.child[0].path_args.directed = true;
-					else
-						filter.child[0].path_args.directed = false;
-				}
+				if (((SPARQLParser::BuiltInCallContext *)root)->booleanLiteral()->getText() == "true")
+					filter.child[0].path_args.directed = true;
+				else
+					filter.child[0].path_args.directed = false;
 			}
 			else
 			{

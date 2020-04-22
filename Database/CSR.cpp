@@ -113,3 +113,12 @@ void CSR::print()
 		cout << endl;
 	}
 }
+
+long long CSR::sizeInBytes()
+{
+	long long sz = 0;
+	for (int i = 0; i < pre_num; i++)
+		sz += 2 * id2vid[i].size() + offset_list[i].size() + adjacency_list[i].size();
+	sz *= 8;
+	return sz;
+}

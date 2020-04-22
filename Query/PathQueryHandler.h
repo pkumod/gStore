@@ -17,6 +17,7 @@ public:
 						// First line: #vertices #labels
 						// Each following line: u v label
 	void printCSR();	// Feel free to modify this for testing
+	// void generateQueries(int queryType, bool directed, int numQueries, vector<pair<int, int>, int>& queries);
 
 	// Labeled graph interface: edge (u, v, pred)
 
@@ -39,9 +40,9 @@ public:
 	
 	std::vector<int> simpleCycle(int uid, int vid, bool directed, const std::vector<int> &pred_set);
 	std::vector<int> cycle(int uid, int vid, bool directed, const std::vector<int> &pred_set);
-	std::vector<int> shortestPath(int uid, int vid, const std::vector<int> &pred_set);
-	std::vector<int> shortestPath0(int uid, int vid, const std::vector<int> &pred_set);
-	bool kHopReachable(int uid, int vid, int k, const std::vector<int> &pred_set);
+	std::vector<int> shortestPath(int uid, int vid, bool directed, const std::vector<int> &pred_set);
+	std::vector<int> shortestPath0(int uid, int vid, bool directed, const std::vector<int> &pred_set);
+	bool kHopReachable(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 };
 
 #endif //_QUERY_PATH_H
