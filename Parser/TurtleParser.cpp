@@ -737,7 +737,10 @@ void TurtleParser::parseTriple(Lexer::Token token,std::string& subject,std::stri
    parseSubject(token,subject);
    parsePredicateObjectList(subject,predicate,object,objectType,objectSubType);
    if (lexer.next()!=Lexer::Token_Dot)
-      parseError("'.' expected after triple");
+   { 
+      
+      parseError("'.' expected after triple."+subject+"."+predicate+"."+object);
+    }
 }
 //---------------------------------------------------------------------------
 bool TurtleParser::parse(std::string& subject,std::string& predicate,std::string& object,Type::Type_ID& objectType,std::string& objectSubType)
