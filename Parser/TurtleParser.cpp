@@ -332,7 +332,7 @@ TurtleParser::Lexer::Token TurtleParser::Lexer::next(std::string& token)
          case '^':
             if ((!read(c))||(c!='^')) {
                stringstream msg;
-               msg << "lexer error in line " << line << ": '^' expected";
+               msg << "lexer error in line " << line << ": '^' expected"<<token;
                throw Exception(msg.str());
             }
             return Token_Type;
@@ -351,7 +351,7 @@ TurtleParser::Lexer::Token TurtleParser::Lexer::next(std::string& token)
                return Token_Name;
             } else {
                stringstream msg;
-               msg << "lexer error in line " << line << ": unexpected character " << c;
+               msg << "lexer error in line " << line << ": unexpected character " << c<<token;
                throw Exception(msg.str());
             }
       }
