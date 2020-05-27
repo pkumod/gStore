@@ -259,7 +259,7 @@ private:
 	bool getValueByKey(ISArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const;
 //	bool getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
 	bool getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const;
-
+	bool getValueAndIndexByKey(IVArray* _array, unsigned _key, char*& _val, unsigned& _vlen, unsigned& _vindex,int &_in_cache) const;
 
 	TYPE_ENTITY_LITERAL_ID getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const;
 
