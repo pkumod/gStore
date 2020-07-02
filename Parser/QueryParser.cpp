@@ -276,11 +276,11 @@ antlrcpp::Any QueryParser::visitSelectClause(SPARQLParser::SelectClauseContext *
 	{
 		string tmp = ctx->children[1]->getText();
 		transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-		if (ctx->children[1]->getText() == "DISTINCT")
+		if (tmp == "DISTINCT")
 			query_tree_ptr->setProjectionModifier(QueryTree::Modifier_Distinct);
-		else if (ctx->children[1]->getText() == "REDUCED")
+		else if (tmp == "REDUCED")
 			throw runtime_error("[ERROR]	REDUCED is currently not supported.");
-		else if (ctx->children[1]->getText() == "*")
+		else if (tmp == "*")
 			query_tree_ptr->setProjectionAsterisk();
 	}
 
