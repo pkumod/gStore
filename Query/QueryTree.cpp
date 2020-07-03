@@ -873,7 +873,9 @@ bool QueryTree::checkWellDesigned()
 		if (proj.aggregate_type == ProjectionVar::cyclePath_type
 			|| proj.aggregate_type == ProjectionVar::cycleBoolean_type
 			|| proj.aggregate_type == ProjectionVar::shortestPath_type
-			|| proj.aggregate_type == ProjectionVar::shortestPathLen_type)
+			|| proj.aggregate_type == ProjectionVar::shortestPathLen_type
+			|| proj.aggregate_type == ProjectionVar::kHopReachable_type
+			|| proj.aggregate_type == ProjectionVar::kHopEnumerate_type)
 		{
 			check_condition = false;
 			break;
