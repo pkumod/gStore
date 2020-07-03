@@ -1539,6 +1539,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											notFirstOutput = 1;
 										vector<int> path;	// Empty path
 										pathVec2JSON(uid, vid, path, ss);
+										continue;
 									}
 									vector<int> path = pqHandler->shortestPath(uid, vid, proj[0].path_args.directed, pred_id_set);
 									if (path.size() != 0)
@@ -1561,6 +1562,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
 											<< "\",\"dst\":\"" << kvstore->getStringByID(vid) \
 											<< "\",\"length\":0}";
+										continue;
 									}
 									vector<int> path = pqHandler->shortestPath(uid, vid, proj[0].path_args.directed, pred_id_set);
 									if (path.size() != 0)
