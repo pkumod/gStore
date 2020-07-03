@@ -247,6 +247,7 @@ bool GeneralEvaluation::doQuery()
 		return false;
 
 	this->query_tree.getGroupPattern().getVarset();
+
 	this->query_tree.getGroupByVarset() = this->query_tree.getGroupByVarset() * this->query_tree.getGroupPattern().group_pattern_resultset_maximal_varset;
 
 	if (this->query_tree.checkProjectionAsterisk() && this->query_tree.getProjection().empty() && !this->query_tree.getGroupByVarset().empty())
@@ -1323,6 +1324,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								ss << "\"true\"}";
 							else
 								ss << "\"false\"}";
+							cout << "src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid) << endl;
 						}
 					}
 					if (earlyBreak)
@@ -1450,10 +1452,16 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						else	// src is an IRI
 							uid_ls.push_back(kvstore->getIDByString(proj[i].path_args.src));
 
+						cout << "uid: ";
+						for (int uid : uid_ls)
+							cout << uid << ' ';
+						cout << endl;
+
 						// vid
 						if (proj[i].path_args.dst[0] == '?')	// dst is a variable
 						{
 							int var2temp = Varset(proj[i].path_args.dst).mapTo(result0.getAllVarset())[0];
+							cout << "vid var2temp = " << var2temp << endl;
 							if (var2temp >= result0_id_cols)
 								cout << "[ERROR] dst must be an entity!" << endl;	// TODO: throw exception
 							else
@@ -1467,6 +1475,11 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						}
 						else	// dst is an IRI
 							vid_ls.push_back(kvstore->getIDByString(proj[i].path_args.dst));
+
+						cout << "vid: ";
+						for (int vid : vid_ls)
+							cout << vid << ' ';
+						cout << endl;
 
 						// pred_id_set: convert from IRI to integer ID
 						if (!proj[i].path_args.pred_set.empty())
@@ -1562,7 +1575,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										ss << "}";
 									}
 								}
-								else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachable_type)
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::kHopReachable_type)
 								{
 									if (uid == vid)
 									{
@@ -1581,6 +1594,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									bool reachRes = pqHandler->kHopReachable(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
 									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"dst\":\"" \
 										<< kvstore->getStringByID(vid) << "\",\"value\":";
+									cout << "src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid) << endl;
 									if (reachRes)
 										ss << "\"true\"}";
 									else
@@ -1621,6 +1635,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (this->query_tree.getProjectionModifier() == QueryTree::Modifier_Distinct)
 		{
+			// cout << "Modifier_Distinct!!!" << endl;
+
 			TempResultSet *new_temp_result = new TempResultSet();
 
 			this->temp_result->doDistinct1(*new_temp_result);
