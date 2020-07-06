@@ -66,6 +66,7 @@ int main(int argc, char * argv[])
 	}
 	string cmd = "rm -r " + db_name + ".db";
 	system(cmd.c_str());
+	Util::delete_backuplog(db_name);
 	cout << db_name + ".db is dropped successfully!" << endl;
 	return 0;
 }

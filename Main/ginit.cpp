@@ -4,11 +4,16 @@
 # Mail: suxunbin@pku.edu.cn
 # Last Modified: 2018-10-17 14:59
 # Description: used to initialize the system.db
+# Modified by liwenjie
+# Modified Date: 2020-03-26 10:33
+# Description£ºAdd the args "-cv" for updating the coreversion and the args "-av" for updating the apiversion in ginit function
+# Description£ºAdd the args "-u" for updating the version information when updating the gstore.
 =============================================================================*/
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
-
+#include <iostream>
+#include <fstream>
 using namespace std;
 
 int main(int argc, char * argv[])
@@ -30,6 +35,115 @@ int main(int argc, char * argv[])
 				return 0;
 			}
 		}
+		else if (op == "-cv"||op=="-av")
+		{
+			if (argc == 2)
+			{
+				cout << "You need to input the value of version." << endl;
+				return 0;
+			}
+			else
+			{
+				string version = argv[2];
+				string versionname = "<CoreVersion>";
+				if (op == "-av")
+				{
+					versionname = "<APIVersion>";
+				}
+				string sparql = "DELETE where {"+versionname+" <value> ?x.}";
+			    
+				string _db_path = "system";
+				Util util;
+				Database* _db = new Database(_db_path);
+			
+				_db->load();
+				ResultSet _rs;
+				FILE* ofp = stdout;
+				string msg;
+				int ret = _db->query(sparql, _rs, ofp);
+				sparql = "INSERT DATA {"+versionname+" <value>	\"" + version + "\".}";
+				ret = _db->query(sparql, _rs, ofp);
+				if (ret <= -100) // select query
+				{
+					if (ret == -100)
+						msg = _rs.to_str();
+					else //query error
+						msg = "query failed";
+				}
+				else //update query
+				{
+					if (ret >= 0)
+						msg = "update num : " + Util::int2string(ret);
+					else //update error
+						msg = "update failed.";
+					if (ret != -100)
+						cout << msg << endl;
+				}
+				delete _db;
+				_db = NULL;
+				cout << "the "<<versionname<<" is updated successfully!" << endl;
+				return 0;
+			}
+		}
+		else if (op == "-u")
+		{
+			//update the gstore, and init the version info 
+			string file = "data/system/version.nt";
+			if (boost::filesystem::exists(file) == false)
+			{
+				cout << "the file of version information is not found!" << endl;
+				
+				return 0;
+			}
+			string sparql = "Delete WHERE { <CoreVersion> ?x ?y. <APIVersion> ?x1 ?y1.}";
+
+
+			string _db_path = "system";
+			Util util;
+			Database* _db = new Database(_db_path);
+
+			_db->load();
+			ResultSet _rs;
+			FILE* ofp = stdout;
+			string msg;
+			int ret = _db->query(sparql, _rs, ofp);
+			ifstream infile;
+			infile.open(file.data());   //½«ÎÄ¼þÁ÷¶ÔÏóÓëÎÄ¼þÁ¬½ÓÆðÀ´ 
+			string s;
+			sparql = "INSERT DATA {";
+			while (getline(infile, s))
+			{
+				if (s != "")
+					sparql = sparql + s;
+			}
+			infile.close();
+			sparql = sparql + "}";
+			cout << "the sparql of initversion is:" << sparql << endl;
+
+
+			//sparql = "INSERT DATA {" + versionname + " <value>	\"" + version + "\".}";
+			ret = _db->query(sparql, _rs, ofp);
+			if (ret <= -100) // select query
+			{
+				if (ret == -100)
+					msg = _rs.to_str();
+				else //query error
+					msg = "query failed";
+			}
+			else //update query
+			{
+				if (ret >= 0)
+					msg = "update num : " + Util::int2string(ret);
+				else //update error
+					msg = "update failed.";
+				if (ret != -100)
+					cout << msg << endl;
+			}
+			delete _db;
+			_db = NULL;
+			cout << "the value of version is updated successfully!" << endl;
+			return 0;
+		}
 		else
 		{
 			cout << "The initialization option is not correct." << endl;
@@ -49,6 +163,7 @@ int main(int argc, char * argv[])
 		ofstream f;
 		f.open("./"+ _db_path +".db/success.txt");
 		f.close();
+		Util::init_backuplog();
 	}
 	else //if fails, drop system.db and return
 	{
@@ -77,6 +192,7 @@ int main(int argc, char * argv[])
 				sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
 				sparql = sparql + "<" + db_name + "> <built_by> <root>.";
 				sparql = sparql + "<" + db_name + "> <built_time> \"" + time + "\".";
+				Util::add_backuplog(db_name);
 			}		
 		}
 	}

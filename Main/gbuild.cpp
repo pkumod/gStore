@@ -127,6 +127,7 @@ main(int argc, char * argv[])
 			if (ret != -100)
 				cout << msg << endl;
 		}
+		Util::add_backuplog(_db_path);
 		return 0;
 	}
 	else //if isbuilt is true, update built_time of the database
@@ -177,6 +178,8 @@ main(int argc, char * argv[])
 		if (ret != -100)
 			cout << msg << endl;
 	}
+	cout << "backuplog" << endl;
+	
 	cout << "insert successfully" << endl;
 
 	cout<<endl<<endl<<endl<< "import RDF file to database done." << endl;

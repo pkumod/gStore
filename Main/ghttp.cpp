@@ -3,7 +3,9 @@
 # Author: Bookug Lober suxunbin
 # Mail: zengli-bookug@pku.edu.cn
 # Last Modified: 2019-5-9 17:00
-# Description: created by lvxin, improved by lijing and suxunbin
+# Description: created by lvxin, improved by lijing and suxunbin and liwenjie
+# Last Modified:2020-03-26 14:16
+# Description: add the initVersion function to init the version info by data/system/version.nt
 =============================================================================*/
 
 //SPARQL Endpoint:  log files in logs/endpoint/
@@ -23,6 +25,8 @@
 #include "../tools/rapidjson/prettywriter.h"  
 #include "../tools/rapidjson/writer.h"
 #include "../tools/rapidjson/stringbuffer.h"
+#include <iostream>
+#include <fstream>
 using namespace rapidjson;
 using namespace std;
 //Added for the json-example:
@@ -57,14 +61,19 @@ std::string CreateJson(int StatusCode, string StatusMsg, bool body, string Respo
 pthread_t start_thread(void *(*_function)(void*));
 bool stop_thread(pthread_t _thread);
 void* func_timer(void* _args);
-void* func_scheduler(void* _args);
+void* backup_scheduler(void* _args);
+void backup_auto(int backup_interval, string backup_path);
 void thread_sigterm_handler(int _signal_num);
 bool addPrivilege(string username, string type, string db_name);
 bool delPrivilege(string username, string type, string db_name);
 bool checkPrivilege(string username, string type, string db_name);
 void DB2Map();
 string querySys(string sparql);
+bool sysrefresh();
 bool updateSys(string sparql);
+bool initSys();
+bool refreshSys();
+int db_reload(string db_name);
 //bool doQuery(string format, string db_query, const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 //=============================================================================
@@ -108,15 +117,27 @@ bool backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 
 bool restore_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
+bool init_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool parameter_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
 bool auto_backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 bool getCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 bool getAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
+bool setCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool initVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool setAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
 void query_thread(bool update_flag, string db_name, string format, string db_query, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+
+bool refresh_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 void signalHandler(int signum);
 //=============================================================================
@@ -129,7 +150,9 @@ string CoreVersion;
 string APIVersion;
 string system_password;
 string NAMELOG_PATH  = "name.log";
+string backup_path;
 int port;
+int backup_interval;
 
 pthread_rwlock_t databases_map_lock;
 pthread_rwlock_t already_build_map_lock;
@@ -1094,14 +1117,16 @@ int initialize(int argc, char *argv[])
 	ofp.open("system.db/password" + Util::int2string(server.config.port) + ".txt", ios::out);
 	ofp << system_password;
 	ofp.close();
-
+	ofp.open("system.db/port.txt", ios::out);
+        ofp << server.config.port;
+        ofp.close();
 	//time_t cur_time = time(NULL);
 	//long time_backup = Util::read_backup_time();
 	//long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
 	//NOTICE: no need to backup for endpoint
 //TODO: we give up the backup function here
 #ifndef ONLY_READ
-	//scheduler = start_thread(func_scheduler);
+	scheduler = start_thread(backup_scheduler);
 #endif
 
 	pool.create();
@@ -1262,6 +1287,22 @@ int initialize(int argc, char *argv[])
 		check_handler(server, response, request, "POST");
 	};
 
+	server.resource["^/%3[F|f]operation%3[D|d]init%26db_list%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26is_backup%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		init_handler(server, response, request, "GET");
+    };
+
+	server.resource["^/?operation=init&db_list=(.*)&username=(.*)&password=(.*)&is_backup=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		init_handler(server, response, request, "GET");
+    };
+
+	//POST-example for the path /check, responds with the matched string in path
+	server.resource["/check"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		init_handler(server, response, request, "POST");
+	};
+
     //GET-example for the path /?operation=drop&db_name=[db_name]&username=[username]&password=[password]&is_backup=[true|false], responds with the matched string in path
     server.resource["^/%3[F|f]operation%3[D|d]drop%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26is_backup%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
@@ -1278,6 +1319,39 @@ int initialize(int argc, char *argv[])
 	{
 		drop_handler(server, response, request, "POST");
 	};
+
+	server.resource["^/%3[F|f]operation%3[D|d]refresh%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		refresh_handler(server, response, request, "GET");
+    };
+
+    server.resource["^/?operation=refresh&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		refresh_handler(server, response, request, "GET");
+    };
+
+	//POST-example for the path /drop, responds with the matched string in path
+	server.resource["/refresh"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		refresh_handler(server, response, request, "POST");
+	};
+
+	server.resource["^/%3[F|f]operation%3[D|d]parameter%26db_name%3[D|d](.*)%26type%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26value%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		parameter_handler(server, response, request, "GET");
+    };
+
+	server.resource["^/?operation=parameter&db_name=(.*)&type=(.*)&username=(.*)&password=(.*)&value=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		parameter_handler(server, response, request, "GET");
+    };
+
+	//POST-example for the path /user, responds with the matched string in path
+	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		parameter_handler(server, response, request, "POST");
+	};
+
 #endif
 
 
@@ -1379,6 +1453,46 @@ int initialize(int argc, char *argv[])
 		getCoreVersion_handler(server, response, request, "POST");
 	};
 
+	//GET-example for the path /?operation=setCoreVersion&username=[username]&password=[password]&version=[version], responds with the matched string in path
+	server.resource["^/%3[F|f]operation%3[D|d]setCoreVersion%26username%3[D|d](.*)%26password%3[D|d](.*)%26version%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		setCoreVersion_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=setCoreVersion&username=(.*)&password=(.*)&version=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		setCoreVersion_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /setCoreVersion, responds with the matched string in path
+	server.resource["/setCoreVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		setCoreVersion_handler(server, response, request, "POST");
+	};
+
+	//initVersion
+	server.resource["^/%3[F|f]operation%3[D|d]initVersion%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
+		initVersion_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=initVersion&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
+		initVersion_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /getAPIVersion, responds with the matched string in path
+	server.resource["/initVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		string req_url = request->path;
+		cout << "request url: " << req_url << endl;
+		initVersion_handler(server, response, request, "POST");
+	};
+
 	//GET-example for the path /?operation=getAPIVersion&username=[username]&password=[password], responds with the matched string in path
 	server.resource["^/%3[F|f]operation%3[D|d]getAPIVersion%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
@@ -1394,6 +1508,23 @@ int initialize(int argc, char *argv[])
 	server.resource["/getAPIVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		getAPIVersion_handler(server, response, request, "POST");
+	};
+
+	//GET-example for the path /?operation=setAPIVersion&username=[username]&password=[password]&version=[version], responds with the matched string in path
+	server.resource["^/%3[F|f]operation%3[D|d]setAPIVersion%26username%3[D|d](.*)%26password%3[D|d](.*)%26version%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		setAPIVersion_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=setAPIVersion&username=(.*)&password=(.*)&version=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		setAPIVersion_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /setAPIVersion, responds with the matched string in path
+	server.resource["/setAPIVersion"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		setAPIVersion_handler(server, response, request, "POST");
 	};
 
 	//USAGE: in endpoint, if user choose to display via html, but not display all because the result's num is too large.
@@ -1566,6 +1697,8 @@ void signalHandler(int signum)
 
 	string cmd = "rm system.db/password" + Util::int2string(port) + ".txt";
 	system(cmd.c_str());
+	cmd = "rm system.db/port.txt";
+        system(cmd.c_str());
 	//cout << "Server stopped." << endl;
 	exit(signum);
 }
@@ -1596,6 +1729,12 @@ void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer
     }
 }
 
+void backup_auto(int _backup_interval, string _backup_path){
+	backup_interval = _backup_interval;
+	backup_path = _backup_path;
+	start_thread(backup_scheduler);
+}
+
 pthread_t start_thread(void *(*_function)(void*)) {
 	pthread_t thread;
 	if (pthread_create(&thread, NULL, _function, NULL) == 0) {
@@ -1618,21 +1757,50 @@ void* func_timer(void* _args) {
 	//here shoudl just end the timer thread
 	abort();
 }
-/*
-void* func_scheduler(void* _args) {
+
+void* backup_scheduler(void* _args) {
 	signal(SIGTERM, thread_sigterm_handler);
-	while (true) {
-		time_t cur_time = time(NULL);
-		while (cur_time >= next_backup) {
-			next_backup += Util::gserver_backup_interval;
+	backup_path = BACKUP_PATH;
+	cout << "backup path: " << backup_path << endl;
+	time_t cur_time;
+    while (true) {
+		int timer = Util::string2int(Util::query_backuplog("system", "backup_timer"));
+		sleep(timer);
+        cur_time = time(NULL);
+        cout << "Time Now: " << cur_time << endl;
+        vector<string> db_names;
+        Util::search_backuplog(db_names, "is_backup", "true");
+		for(int i = 0; i < db_names.size(); i++)
+		{
+			string db_name = db_names[i];
+			int backup_interval = Util::string2int(Util::query_backuplog(db_name, "backup_interval"));
+			int last_backup_time = Util::time_to_stamp(Util::query_backuplog(db_name, "last_backup_time"));
+			if(last_backup_time + backup_interval > cur_time) continue;
+			// db_name should be saved befor backup
+			//save(reload) the loaded db and skip the unload db
+			if(db_reload(db_name) != 0){
+				cout << "Backup Failed" << endl;
+				continue;
+			}
+			string db_path = db_name + ".db";
+			int ret = copy(db_path, backup_path);
+			if(ret == 1){
+				cout << "DB: " << db_name << " backup failed due to loss of file" << endl;
+				continue;
+			}
+			db_path = backup_path + '/' + db_path;
+		
+			string _db_path = db_path + '_' +  Util::get_timestamp();
+			Util::update_backuplog(db_name, "last_backup_time", Util::get_date_time());
+			string sys_cmd = "mv " + db_path + ' ' + _db_path;
+			system(sys_cmd.c_str());
+			cout << "DB: " << db_name << " backup success" << endl;
+			cout << "Backup Time: " << Util::get_date_time() << endl;
 		}
-		sleep(next_backup - cur_time);
-		if (!current_database->backup()) {
-			return NULL;
-		}
-	}
+		cout << "auto backup done!" << endl;
+    }
 }
-*/
+
 void thread_sigterm_handler(int _signal_num) {
 	pthread_exit(0);
 }
@@ -1991,7 +2159,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	string resJson = CreateJson(0, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 
-
+	Util::add_backuplog(db_name);
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 //	pthread_rwlock_unlock(&database_load_lock);
 }
@@ -2540,6 +2708,7 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	else if (is_backup == "true")
 		cmd = "mv " + db_name + ".db " + db_name + ".bak";
 	system(cmd.c_str());
+	Util::delete_backuplog(db_name);
 	return;
 }
 
@@ -4026,7 +4195,7 @@ void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	string root_password = (users.find(ROOT_USERNAME))->second->getPassword();
 	pthread_rwlock_unlock(&users_map_lock);
 
-	if(username1 == ROOT_USERNAME & password1 == root_password)
+	if(username1 == ROOT_USERNAME && password1 == root_password)
 	{
 		string password2 = addition;
 			
@@ -4409,6 +4578,281 @@ bool getCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServe
 	t.detach();
 	return true;
 }
+
+void setAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is setAPIVersion" << endl;
+
+	string username;
+	string password;
+	string version;
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		version = request->path_match[3];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		version = UrlDecode(version);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		version = document["version"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User*>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+	cout << "check identity successfully." << endl;
+
+	string update = "Delete WHERE { <APIVersion> ?x ?y.}";
+	if (updateSys(update) == false) {
+		string error = "APIVersion Set failed";
+		string resJson = CreateJson(979, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	APIVersion = version;
+	update = "INSERT DATA { <APIVersion> <value> \"" + APIVersion + "\"}";
+	if (updateSys(update) == false) {
+		string error = "APIVersion Set failed";
+		string resJson = CreateJson(979, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	string success = "APIVersion Set success";
+	string resJson = CreateJson(975, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+	return;
+}
+
+bool setAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&setAPIVersion_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+void setCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is setCoreVersion" << endl;
+
+	string username;
+	string password;
+	string version;
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		version = request->path_match[3];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		version = UrlDecode(version);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		version = document["version"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User *>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+	cout << "check identity successfully." << endl;
+
+	string update = "Delete WHERE { <CoreVersion> ?x ?y.}";
+	if (updateSys(update) == false) {
+		string error = "CoreVersion Set failed";
+		string resJson = CreateJson(977, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	CoreVersion = version;
+	update = "INSERT DATA { <CoreVersion> <value> \"" + CoreVersion + "\"}";
+	if (updateSys(update) == false) {
+		string error = "CoreVersion Set failed";
+		string resJson = CreateJson(977, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	string success = "CoreVersion Set success";
+	string resJson = CreateJson(976, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+	return;
+}
+
+
+void initVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is initVersion" << endl;
+
+	string username;
+	string password;
+	//string version;
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		//version = request->path_match[3];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		//version = UrlDecode(version);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		//version = document["version"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User*>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+	cout << "check identity successfully." << endl;
+
+	string update = "Delete WHERE { <CoreVersion> ?x ?y. <APIVersion> ?x1 ?y1.}";
+	if (updateSys(update) == false) {
+		string error = "Version Set failed";
+		string resJson = CreateJson(977, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	//CoreVersion = version;
+	string file="data/system/version.nt";
+	if (boost::filesystem::exists(file)==false)
+	{
+		string error = "version.nt is not found";
+		string resJson = CreateJson(977, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	ifstream infile;
+	infile.open(file.data());   //½«ÎÄ¼þÁ÷¶ÔÏóÓëÎÄ¼þÁ¬½ÓÆðÀ´ 
+	string s;
+	update = "INSERT DATA {";
+	while (getline(infile, s))
+	{
+		if(s!="")
+		update = update + s;
+	}
+	infile.close();
+	update = update + "}";
+	cout << "the sparql of initversion is:" << update << endl;
+
+	//update = "INSERT DATA { <CoreVersion> <value> \"" + CoreVersion + "\"}";
+	if (updateSys(update) == false) {
+		string error = "Version Init failed";
+		string resJson = CreateJson(977, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	string success = "Version Init success";
+	string resJson = CreateJson(976, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+	return;
+}
+
+bool setCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&setCoreVersion_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+bool initVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&initVersion_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
 
 void getAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
@@ -5115,6 +5559,19 @@ string querySys(string sparql)
 	
 }
 
+bool sysrefresh()
+{
+	pthread_rwlock_rdlock(&databases_map_lock);
+	system_database->save();
+	delete system_database;
+	system_database = NULL;
+	system_database = new Database("system");
+	bool flag = system_database->load();
+	cout << "system database refresh" << endl;
+	pthread_rwlock_unlock(&databases_map_lock);
+	return flag;
+}
+
 bool updateSys(string query)
 {
 		if (query.empty())
@@ -5147,6 +5604,7 @@ bool updateSys(string query)
 			{
 				msg = "update num: " + Util::int2string(ret);
 				cout << msg << endl;
+				sysrefresh();
 				//system_database->save();
 				//delete system_database;
 				//system_database=NULL;
@@ -5160,6 +5618,46 @@ bool updateSys(string query)
 			}
 		}
 
+}
+
+bool initSys()
+{
+	//rebuild system.db
+
+	system_database = new Database("system");
+	bool flag = system_database->build(SYSTEM_PATH);
+	cout << "rebuild success" << endl;
+	if(flag)
+	{
+		cout << "import RDF file to database done." << endl;
+		ofstream f;
+		f.open("./system.db/success.txt");
+		f.close();
+	}
+	else //if fails, drop system.db and return
+	{
+		cout << "import RDF file to database failed." << endl;
+		string cmd = "rm -r system.db";
+		system(cmd.c_str());
+		delete system_database;
+		system_database = NULL;
+		return false;
+	}
+	delete system_database;
+	system_database = new Database("system");
+	system_database->load();
+	cout << "system_database load" << endl;
+	Util::init_backuplog();
+	return true;
+}
+
+bool refreshSys()
+{
+	delete system_database;
+	system_database = NULL;
+	system_database = new Database("system");
+	int flag = system_database->load();
+	return flag;
 }
 
 int copy(string src_path, string dest_path)
@@ -5515,6 +6013,7 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		string update = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." +
 		"<" + db_name + "> <built_by> <" + username + "> ." + "<" + db_name + "> <built_time> \"" + time + "\".}";
 		updateSys(update);
+		Util::add_backuplog(db_name);
 		it_already_build = already_build.find(db_name);
 	}
 	pthread_rwlock_unlock(&already_build_map_lock);
@@ -5579,7 +6078,384 @@ bool restore_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 }
 
 
+void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is init"<<endl;
+
+	//get parameter
+	string db_list;
+	string username;
+	string password;
+	string is_backup;
+
+	if (RequestType == "GET")
+	{
+		db_list = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		is_backup = request->path_match[4];
+		db_list = UrlDecode(db_list);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		is_backup = UrlDecode(is_backup);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_list = document["db_list"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		is_backup = document["is_backup"].GetString();
+	}
+
+	cout << "db_list: " << db_list << endl;
+	cout << "username: " << username << endl;
+	cout << "password: " << password << endl;
+	cout << "is_backup: " << is_backup << endl;
+	//check indentity
+
+	pthread_rwlock_wrlock(&users_map_lock);
+	string root_password = (users.find(ROOT_USERNAME))->second->getPassword();
+
+	if(username == ROOT_USERNAME && password == root_password){
+		users.clear();
+		//rebuild system.db
+		pthread_rwlock_unlock(&users_map_lock);
+
+		vector<string> db_names;
+		Util::split(db_list, " ", db_names);
+	
+		pthread_rwlock_wrlock(&(databases_map_lock));
+		pthread_rwlock_wrlock(&(already_build_map_lock));
+
+		std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.begin();
+		//check the db_names
+		vector<string>::iterator it;
+		for(it = db_names.begin(); it != db_names.end(); it++){
+			string db_name = *it;
+			if(already_build.find(db_name) == already_build.end())
+			{
+				it = db_names.erase(it);
+				if(it == db_names.end()) break;
+			}
+		}
+
+		//delete files
+		for(it_already_build = already_build.begin(); it_already_build != already_build.end(); it_already_build++)
+		{
+			string db_name = it_already_build->first;
+			if(db_name == "system") continue;
+			if(find(db_names.begin(), db_names.end(), db_name) == db_names.end())
+			{
+				string cmd;
+				if(is_backup == "true"){
+					cmd = "mv " + db_name + ".db " + db_name + ".bak";
+				}else{
+					cmd = "rm -r " + db_name + ".db";
+				}
+				system(cmd.c_str());
+			}
+		}
+
+		cout << "check success" << endl;
+		//clear already build
+		already_build.clear();
+		//clear loaded databases
+		databases.clear();
+		
+		int flag = initSys();
+		struct DBInfo *temp_db = new DBInfo("system");
+		temp_db->setCreator("root");
+		already_build.insert(pair<std::string, struct DBInfo *>("system", temp_db));
+		databases.insert(pair<std::string, Database *>("system", system_database));
+		
+		if(!flag){
+			cout << "system.db rebuild failed " << endl;
+			return;
+		}
+		string time = Util::get_date_time();
+		//TODO: we need not delete all users
+
+		//rebuild system.db
+		string sparql = "INSERT DATA {<system> <built_time> \"" + time + "\".";
+		for(int i = 0; i < db_names.size(); i++)
+		{
+			string db_name = db_names[i];
+			if(db_name == "") continue;
+			Util::add_backuplog(db_name);
+			sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
+			sparql = sparql + "<" + db_name + "> <built_by> <root>.";
+			sparql = sparql + "<" + db_name + "> <built_time> \"" + time + "\".";
+		}
+		
+		sparql += "}";
+		updateSys(sparql);
+		//reload system.db
+		refreshSys();
+		//rebuild datastructure
+		DB2Map();
+		pthread_rwlock_unlock(&already_build_map_lock);
+		pthread_rwlock_unlock(&(databases_map_lock));
+		string success = "system.db initialize success.";
+		string resJson = CreateJson(918, success, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	else{
+		string error = "Not root user, no privilege to perform initialize.";
+		string resJson = CreateJson(917, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+}
+
+bool init_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&init_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+void parameter_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is parameter"<<endl;
+
+	//get parameter
+	string db_name;
+	string type;
+	string username;
+	string password;
+	string value;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		type = request->path_match[2];
+		username = request->path_match[3];
+		password = request->path_match[4];
+		value = request->path_match[5];
+		db_name = UrlDecode(db_name);
+		type = UrlDecode(type);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		value = UrlDecode(value);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		type = document["type"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		value = document["value"].GetString();
+	}
+
+	// cout << "db_name: " << db_name << endl;
+	// cout << "type: " << type << endl;
+	// cout << "username: " << username << endl;
+	// cout << "password: " << password << endl;
+	// cout << "value: " << value << endl;
+
+	if(db_name == ""){
+		string error = "db name can not be empty!";
+		string resJson = CreateJson(215, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+
+
+	if(type != "is_backup" && type != "backup_interval" && type != "backup_timer"){
+		string error = "parameter supported: is_backup\r\nbackup_interval\r\nbackup_timer\r\n";
+		string resJson = CreateJson(213, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	else
+	{
+		if(type == "is_backup" && (value != "false" && value != "true"))
+		{
+			string error = "is_backup is defiend within true or false.";
+			string resJson = CreateJson(214, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+			return;
+		}
+		else if(type == "backup_timer" || type == "backup_interval"){
+			if(!Util::is_number(value)){
+				string error = "backup_interval or backup_timer must be a number.";
+				string resJson = CreateJson(214, error, 0);
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+				return;
+			}
+			else
+			{
+				int interval = Util::string2int(value);
+				if(interval <= 0){
+					string error = "backup_interval or backup_timer must be more than zero.";
+					string resJson = CreateJson(214, error, 0);
+					*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+					return;
+				}
+			}
+		}
+	}
+	pthread_rwlock_rdlock(&users_map_lock);
+	string root_password = (users.find(ROOT_USERNAME))->second->getPassword();
+	pthread_rwlock_unlock(&users_map_lock);
+	if(username == ROOT_USERNAME && password == root_password){
+		int ret = Util::update_backuplog(db_name, type, value);
+		if(ret == 0)
+		{
+			string success = "parameter modify success!";
+			string resJson = CreateJson(211, success, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+			return;
+		}
+		else if(ret == -1)
+		{
+			string error = "your parameter can not be db_name";
+			string resJson = CreateJson(212, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+			return;
+		}
+		else
+		{
+			string error = "parameter error";
+			string resJson = CreateJson(213, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+			return;
+		}
+	}
+	else{
+		string error = "no privilege or password error";
+		string resJson = CreateJson(214, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		pthread_rwlock_unlock(&users_map_lock);
+	}
+}
+
+bool parameter_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&parameter_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
 bool auto_backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	
+
 }
+
+void refresh_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is refresh"<<endl;
+
+	//get parameter
+	string db_name;
+	string username;
+	string password;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
+	//check the username and password
+	pthread_rwlock_rdlock(&users_map_lock);
+	string root_password = (users.find(ROOT_USERNAME))->second->getPassword();
+	pthread_rwlock_unlock(&users_map_lock);
+	//check the identity of root
+	if(username == ROOT_USERNAME && password == root_password){
+		if(db_reload(db_name) == 0){
+			string success = "database refresh success!";
+			string resJson = CreateJson(908, success, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		}else{
+			string error = "database refresh failed";
+			string resJson = CreateJson(909, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		}
+
+	}
+	else
+	{
+		string error = "Root User Only!";
+		string resJson = CreateJson(907, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+	}
+}
+
+bool refresh_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&refresh_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+int db_reload(string db_name)
+{
+	pthread_rwlock_rdlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+	if(iter == databases.end())
+	{
+		cout << "Database not load yet." << endl;
+		pthread_rwlock_unlock(&databases_map_lock);
+		return -1;
+	}
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+	if(pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+	{
+		cout << "Unable to reload due to loss of lock";
+		pthread_rwlock_unlock(&databases_map_lock);
+		return -1;
+	}
+	Database *current_database = iter->second;
+	delete current_database;
+	cout << "Database unloaded." << endl;
+
+	current_database = new Database(db_name);
+	iter->second = current_database;
+	bool flag = current_database->load();
+
+	if(!flag)
+	{
+		cout << "Database loaded failed" << endl;
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		pthread_rwlock_unlock(&databases_map_lock);
+		return -1;
+	}
+	cout << "database " << db_name << " reloaded" << endl;
+	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	pthread_rwlock_unlock(&databases_map_lock);
+	return 0;
+}
+

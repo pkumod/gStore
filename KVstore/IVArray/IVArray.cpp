@@ -332,8 +332,10 @@ IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 bool
 IVArray::insert(unsigned _key, char *_str, unsigned _len)
 {
+	this->CacheLock.lock();
 	if (_key < CurEntryNum && array[_key].isUsed())
 	{
+		this->CacheLock.unlock();
 		return false;
 	}
 	
@@ -341,6 +343,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 	{
 		cout << _key << ' ' << MAX_KEY_NUM << endl;
 		cout << "IVArray insert error: Key is bigger than MAX_KEY_NUM" << endl;
+		this->CacheLock.unlock();
 		return false;
 	}
 
@@ -358,6 +361,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 		if (newp == NULL)
 		{
 			cout << "IVArray insert error: main memory full" << endl;
+			this->CacheLock.unlock();
 			return false;
 		}
 
@@ -387,7 +391,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned _len)
 	
 	array[_key].setUsedFlag(true);
 	array[_key].setDirtyFlag(true);
-
+	this->CacheLock.unlock();
 	return true;
 }
 
@@ -399,7 +403,7 @@ IVArray::remove(unsigned _key)
 		return false;
 	}
 
-
+	this->CacheLock.lock();
 	unsigned store = array[_key].getStore();
 	BM->FreeBlocks(store);
 
@@ -424,7 +428,7 @@ IVArray::remove(unsigned _key)
 		array[_key].setCachePinFlag(false);
 
 	array[_key].release();
-
+	this->CacheLock.unlock();
 	return true;
 
 }
@@ -432,8 +436,10 @@ IVArray::remove(unsigned _key)
 bool
 IVArray::modify(unsigned _key, char *_str, unsigned _len)
 {
+	this->CacheLock.lock();
 	if (!array[_key].isUsed())
 	{
+		this->CacheLock.unlock();
 		return false;
 	}
 
@@ -459,7 +465,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 		BM->FreeBlocks(store);
 		AddInCache(_key, _str, _len);
 	}
-
+	this->CacheLock.unlock();
 	return true;
 	
 }

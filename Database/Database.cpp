@@ -2944,7 +2944,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 			//}
 		}
 	}
-
+	this->kvstore->set_if_single_thread(false);
 	//cout<<"==> end while(true)"<<endl;
 
 	delete[] triple_array;
@@ -3359,7 +3359,7 @@ Database::insert(std::string _rdf_file, bool _is_restore)
 	//int t = this->kvstore->getIDByEntity("<node5>");
 	//cout<<t<<endl;
 	//cout<<this->kvstore->getEntityByID(0)<<endl;
-
+	this->kvstore->set_if_single_thread(false);
 	return true;
 }
 
@@ -3449,7 +3449,7 @@ Database::remove(std::string _rdf_file, bool _is_restore)
 	{
 		this->resetIDinfo();
 	}
-
+	this->kvstore->set_if_single_thread(false);
 	return true;
 }
 
@@ -3477,7 +3477,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 			stringstream ss;
 			ss << "I\t" << Util::node2string(_triples[i].getSubject().c_str()) << '\t';
 			ss << Util::node2string(_triples[i].getPredicate().c_str()) << '\t';
-			ss << Util::node2string(_triples[i].getObject().c_str()) << '.' << endl;
+			ss << Util::node2string(_triples[i].getObject().c_str()) << '\t' << Util::get_cur_time() << '.' << endl;
 			out << ss.str();
 			out_all << ss.str();
 		}
@@ -3994,7 +3994,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 			stringstream ss;
 			ss << "R\t" << Util::node2string(_triples[i].getSubject().c_str()) << '\t';
 			ss << Util::node2string(_triples[i].getPredicate().c_str()) << '\t';
-			ss << Util::node2string(_triples[i].getObject().c_str()) << '.' << endl;
+			ss << Util::node2string(_triples[i].getObject().c_str()) << '\t' << Util::get_cur_time() << '.' << endl;
 			out << ss.str();
 			out_all << ss.str();
 		}

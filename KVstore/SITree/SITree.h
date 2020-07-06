@@ -27,7 +27,7 @@ private:
 	SINode* leaves_tail;			//the tail of LeafNode-list
 	std::string mode;           //BETTER(to use enum)
 	SIStorage* TSM;           	//Tree-Storage-Manage
-
+	bool if_single_thread; 
 	//always alloc one more byte than length, then user can add a '\0'
 	//to get a real string, instead of new and copy
 	//other operations will be harmful to search, so store value in
@@ -75,6 +75,7 @@ public:
 	bool save(); 			
 	~SITree();
 	void print(std::string s);			//DEBUG(print the tree)
+	void setSingleThread(bool _single);
 };
 //NOTICE: need to save tree manually before delete, otherwise will cause problem. 
 //(problem range between two extremes: not-modified, totally-modified)

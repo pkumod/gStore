@@ -117,7 +117,7 @@ inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
 
 #gtest
 
-TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(exedir)gbackup $(exedir)grestore
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback 
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -175,6 +175,12 @@ $(exedir)gbackup: $(lib_antlr) $(objdir)gbackup.o $(objfile)
 $(exedir)grestore: $(lib_antlr) $(objdir)grestore.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)grestore $(objdir)grestore.o $(objfile) $(library) $(openmp)
 
+$(exedir)gpara: $(lib_antlr) $(objdir)gpara.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)gpara $(objdir)gpara.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+
+$(exedir)rollback: $(lib_antlr) $(objdir)rollback.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)rollback $(objdir)rollback.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+
 $(testdir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(testdir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
 
@@ -230,7 +236,12 @@ $(objdir)gbackup.o: Main/gbackup.cpp Database/Database.h Util/Util.h $(lib_antlr
 
 $(objdir)grestore.o: Main/grestore.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/grestore.cpp $(inc) -o $(objdir)grestore.o $(openmp)
-	
+
+$(objdir)gpara.o: Main/gpara.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gpara.cpp $(inc) -o $(objdir)gpara.o $(openmp)
+
+$(objdir)rollback.o: Main/rollback.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/rollback.cpp $(inc) -o $(objdir)rollback.o $(openmp)
 #objects in Main/ end
 
 #objects in scripts/ begin
@@ -581,7 +592,7 @@ clean:
 	$(MAKE) -C api/http/java/src clean
 	$(MAKE) -C api/http/java/example clean
 	#$(MAKE) -C KVstore clean
-	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole*
+	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole* $(exedir)rollback
 	rm -rf bin/*.class
 	rm -rf $(testdir)update_test $(testdir)dataset_test
 	#rm -rf .project .cproject .settings   just for eclipse
