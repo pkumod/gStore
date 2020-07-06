@@ -114,6 +114,7 @@ main(int argc, char * argv[])
 			return 0;
 		}
 		cout << msg << endl;
+		Util::add_backuplog(db_name);
 	}
 	
 	int ret = copy(backup_path, DEFALUT_BUILD_PATH);

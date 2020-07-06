@@ -283,20 +283,20 @@ ISArray::UpdateTime(unsigned _key)
 bool
 ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 {
-//	this->AccessLock.lock();
-//	printf("%s search %d: \n", filename.c_str(), _key);
-	if (_key >= CurEntryNum ||!array[_key].isUsed())
+	this->AccessLock.lock();
+	//	printf("%s search %d: \n", filename.c_str(), _key);
+	if (_key >= CurEntryNum || !array[_key].isUsed())
 	{
 		_str = NULL;
 		_len = 0;
-//		this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 	// try to read in main memory
 	if (array[_key].inCache())
 	{
 		UpdateTime(_key);
-//		this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return array[_key].getBstr(_str, _len);
 	}
 //	printf(" need to read disk ");
@@ -306,7 +306,7 @@ ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 //	printf("stored in block %d, ", store);
 	if (!BM->ReadValue(store, _str, _len))
 	{
-//		this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 
@@ -315,18 +315,18 @@ ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 	memcpy(debug, _str, _len);
 	_str = debug;
 
-//	printf("str = %s, len = %d\n", _str, _len);
-//	this->AccessLock.unlock();
+	//	printf("str = %s, len = %d\n", _str, _len);
+	this->AccessLock.unlock();
 	return true;
 }
 
 bool
 ISArray::insert(unsigned _key, char *_str, unsigned _len)
 {
-//	this->AccessLock.lock();
+	this->AccessLock.lock();
 	if (_key < CurEntryNum && array[_key].isUsed())
 	{
-//		this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 	
@@ -334,7 +334,7 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 	{
 		cout << _key << ' ' << MAX_KEY_NUM << endl;
 		cout << "ISArray insert error: Key is bigger than MAX_KEY_NUM" << endl;
-//		this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 
@@ -354,7 +354,7 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 		if (newp == NULL)
 		{
 			cout << "ISArray insert error: main memory full" << endl;
-//			this->AccessLock.unlock();
+			this->AccessLock.unlock();
 			return false;
 		}
 		else
@@ -374,17 +374,17 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 	AddInCache(_key, _str, _len);
 	array[_key].setUsedFlag(true);
 	array[_key].setDirtyFlag(true);
-//	this->AccessLock.unlock();
+	this->AccessLock.unlock();
 	return true;
 }
 
 bool
 ISArray::remove(unsigned _key)
 {
-//	this->AccessLock.lock();
+	this->AccessLock.lock();
 	if (_key >= CurEntryNum || !array[_key].isUsed())
 	{
-//		this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 
@@ -409,7 +409,7 @@ ISArray::remove(unsigned _key)
 
 	array[_key].release();
 
-//	this->AccessLock.unlock();
+	this->AccessLock.unlock();
 	return true;
 
 }
@@ -417,10 +417,10 @@ ISArray::remove(unsigned _key)
 bool
 ISArray::modify(unsigned _key, char *_str, unsigned _len)
 {
-//	this->AccessLock.lock();
-	if (_key >= CurEntryNum ||!array[_key].isUsed())
+	this->AccessLock.lock();
+	if (_key >= CurEntryNum || !array[_key].isUsed())
 	{
-//		this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 
@@ -445,7 +445,7 @@ ISArray::modify(unsigned _key, char *_str, unsigned _len)
 	BM->FreeBlocks(store);
 	AddInCache(_key, _str, _len);
 
-//	this->AccessLock.unlock();
+	this->AccessLock.unlock();
 	return true;
 	
 }

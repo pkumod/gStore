@@ -79,6 +79,7 @@ in the sparql query can point to the same node in data graph)
 #include <math.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <exception>
 
 //Below are for boost
 //Added for the json-example
@@ -103,6 +104,11 @@ in the sparql query can point to the same node in data graph)
 //Added for __gnu_parallel::sort
 #include <omp.h>
 #include <parallel/algorithm>
+#include "../tools/rapidjson/document.h"
+#include "../tools/rapidjson/prettywriter.h"  
+#include "../tools/rapidjson/writer.h"
+#include "../tools/rapidjson/stringbuffer.h"
+
 #define thread_num 1
 //below is used to control if using the parallelable sort()
 //#define PARALLEL_SORT 1
@@ -326,6 +332,8 @@ public:
 	static int compare(const char* _str1, unsigned _len1, const char* _str2, unsigned _len2); //QUERY(how to use default args)
 	static int string2int(std::string s);
 	static std::string int2string(long n);
+	static std::string string_replace(std::string rec, const std::string src, const std::string des);
+	static bool is_number(std::string s);
 	static char* itoa(int num, char* str, int radix);
 	//string2str: s.c_str()
 	//str2string: string(str)
@@ -348,8 +356,11 @@ public:
 	static std::string get_folder_name(const std::string path, const std::string db_name);
 	static std::string get_backup_time(const std::string path, const std::string db_name);
 	static long get_cur_time();
+	static int get_time();
+	static int str2time();
 	static std::string get_date_time();
 	static std::string get_timestamp();
+	static int time_to_stamp(std::string time);
 	static bool save_to_file(const char*, const std::string _content);
 	static bool isValidPort(std::string);
 	static bool isValidIP(std::string);
@@ -400,6 +411,7 @@ public:
 	static char* r_trim(char *szOutput, const char *szInput);
 	static char* a_trim(char *szOutput, const char * szInput);
 
+	static void split(const std::string str, const std::string pat, std::vector<std::string>& res);
 	//NOTICE: this function must be called at the beginning of executing!
 	Util();
 	~Util();
@@ -436,8 +448,13 @@ public:
 	static FILE* debug_database;
 	static FILE* debug_vstree;
 
-
-
+	static void init_backuplog();
+	static int add_backuplog(std::string db_name);
+	static int delete_backuplog(std::string db_name);
+	static int update_backuplog(std::string db_name, std::string parameter, std::string value);
+	static std::string query_backuplog(std::string db_name, std::string parameter);
+	static void search_backuplog(std::vector<std::string> &res, std::string parameter, std::string value);
+	static bool has_record_backuplog(std::string db_name);
 private:
 	static bool isValidIPV4(std::string);
 	static bool isValidIPV6(std::string);
