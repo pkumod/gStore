@@ -4,10 +4,10 @@
 # Last Modified: 2019-5-15 20:11
 # Description: a simple example of multi-thread query
 """
+import GstoreConnector
 import threading
 import sys
 sys.path.append('../src')
-import GstoreConnector
 
 # before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
 # default db_name: lubm(must be built in advance)
@@ -67,9 +67,11 @@ sparql5 = "select distinct ?x where\
             }"
 
 # thread function
+
+
 def Mythread(rnum, sparql, filename, RequestType):
     global correctness
-    
+
     # query
     gc = GstoreConnector.GstoreConnector(IP, Port, username, password)
     res = gc.query("lubm", "json", sparql, RequestType)
@@ -77,14 +79,14 @@ def Mythread(rnum, sparql, filename, RequestType):
     # fquery
     #gc = GstoreConnector.GstoreConnector(IP, Port, username, password)
     #gc.fquery("lubm", "json", sparql, filename, RequestType)
-    #with open(filename, "r") as f:
+    # with open(filename, "r") as f:
     #    res = f.read()
 
     # count the nums
     m = 0
     for i in range(len(sparql)):
         if (sparql[i] == "?"):
-            m = m + 1        
+            m = m + 1
         if (sparql[i] == "{"):
             break
     n = 0
@@ -92,13 +94,14 @@ def Mythread(rnum, sparql, filename, RequestType):
         if (res[i] == "{"):
             n = n + 1
     Num = (n-3)/(m+1)
-    
+
     # compare the result
     if (rnum != Num):
         correctness = False
         print("sparql: "+sparql)
         print("Num: "+str(Num))
-    
+
+
 # create sparql
 sparql.append(sparql0)
 sparql.append(sparql1)
@@ -107,15 +110,16 @@ sparql.append(sparql3)
 sparql.append(sparql4)
 sparql.append(sparql5)
 
-#create the threads
+# create the threads
 for i in range(tnum):
     filename = "result/res" + str(i) + ".txt"
-    t = threading.Thread(target=Mythread, args=(result[i%6],sparql[i%6],filename, RequestType,))
+    t = threading.Thread(target=Mythread, args=(
+        result[i % 6], sparql[i % 6], filename, RequestType,))
     threads.append(t)
 
 # start threads
 for i in threads:
-    i.start()  
+    i.start()
 
 # wait for the threads
 for i in threads:

@@ -13,97 +13,140 @@
 #include "../../../Util/Bstr.h"
 #include "../../../Util/VList.h"
 
-class IVNode       				//abstract basic class 
-{
-public:
-	static const unsigned DEGREE = 2 * 63;	//the degree of B+ tree
-	static const unsigned MAX_CHILD_NUM = DEGREE;
-	static const unsigned MIN_CHILD_NUM = DEGREE >> 1;
-	static const unsigned MAX_KEY_NUM = MAX_CHILD_NUM - 1;	//max key-num
-	static const unsigned MIN_KEY_NUM = MIN_CHILD_NUM - 1;	//min key-num
-	/* diffrent flags for tree-nodes, 32-bit put rank in low-bits means no need to move*/
-	static const unsigned NF_IL = 0x80000000;	//is leaf
-	static const unsigned NF_ID = 0x00080000;	//is dirty, in rank-area
-	static const unsigned NF_IM = 0x20000000;	//in memory, not virtual
-	//static const unsigned NF_IV = 0x10000000;	//is virtual
-	static const unsigned NF_RK = 0x00ffffff;	//select-rank, in Storage
-	static const unsigned NF_HT = 0xf00000;		//height area in rank
-	static const unsigned NF_KN = 0x07f000;		//NOTICE: decided by DEGREE
-	static const unsigned INTL_SIZE = sizeof(int) * MAX_KEY_NUM;
-	static const unsigned LEAF_SIZE = INTL_SIZE + sizeof(Bstr) * MAX_KEY_NUM;
-protected:
-	unsigned store;			//store address, the BLock index
-	unsigned flag;			//NF_RK, NF_IL,NF_ID, NF_IV, propety
-							//int num; 			//totle keys num
-							//Node* father;		//point to father-node, which must be IntlNode
-	unsigned* keys;
-	void AllocKeys();
-	//void FreeKeys();
-public:
-	IVNode();
-	IVNode(bool isVirtual);
-	bool isLeaf() const;
-	bool isDirty() const;
-	void setDirty();
-	void delDirty();
-	bool inMem() const;
-	void setMem();
-	void delMem();
-	//bool isVirtual() const;
-	//void setVirtual();
-	//void delVirtual();
-	unsigned getRank() const;
-	void setRank(unsigned _rank);
-	unsigned getHeight() const;
-	void setHeight(unsigned _h);
-	unsigned getNum() const;
-	bool setNum(int _num);
-	bool addNum();
-	bool subNum();
-	unsigned getStore() const;
-	void setStore(unsigned _store);
-	unsigned getFlag() const;
-	void setFlag(unsigned _flag);
-	unsigned getKey(int _index) const;	//need to check the index
-	bool setKey(unsigned _key, int _index);
-	bool addKey(unsigned _key, int _index);
-	bool subKey(int _index);
+//abstract basic class
+class IVNode {
+  public:
+  static const unsigned DEGREE = 2 * 63; //the degree of B+ tree
+  static const unsigned MAX_CHILD_NUM = DEGREE;
+  static const unsigned MIN_CHILD_NUM = DEGREE >> 1;
+  static const unsigned MAX_KEY_NUM = MAX_CHILD_NUM - 1; //max key-num
+  static const unsigned MIN_KEY_NUM = MIN_CHILD_NUM - 1; //min key-num
+  /* diffrent flags for tree-nodes, 32-bit put rank in low-bits means no need to move*/
+  static const unsigned NF_IL = 0x80000000; //is leaf
+  static const unsigned NF_ID = 0x00080000; //is dirty, in rank-area
+  static const unsigned NF_IM = 0x20000000; //in memory, not virtual
+  //static const unsigned NF_IV = 0x10000000;	//is virtual
+  static const unsigned NF_RK = 0x00ffffff; //select-rank, in Storage
+  static const unsigned NF_HT = 0xf00000;   //height area in rank
+  static const unsigned NF_KN = 0x07f000;   //NOTICE: decided by DEGREE
+  static const unsigned INTL_SIZE = sizeof(int) * MAX_KEY_NUM;
+  static const unsigned LEAF_SIZE = INTL_SIZE + sizeof(Bstr) * MAX_KEY_NUM;
 
-	//several binary key search utilities
-	int searchKey_less(unsigned _key) const;
-	int searchKey_equal(unsigned _key) const;
-	int searchKey_lessEqual(unsigned _key) const;
+  protected:
+  unsigned store; //store address, the BLock index
+  unsigned flag;  //NF_RK, NF_IL,NF_ID, NF_IV, propety
+                  //int num; 			//totle keys num
+                  //Node* father;		//point to father-node, which must be IntlNode
+  unsigned* keys;
+  void AllocKeys();
+  //void FreeKeys();
+  public:
+  IVNode();
+  IVNode(bool isVirtual);
+  bool isLeaf() const;
+  bool isDirty() const;
+  void setDirty();
+  void delDirty();
+  bool inMem() const;
+  void setMem();
+  void delMem();
+  //bool isVirtual() const;
+  //void setVirtual();
+  //void delVirtual();
+  unsigned getRank() const;
+  void setRank(unsigned _rank);
+  unsigned getHeight() const;
+  void setHeight(unsigned _h);
+  unsigned getNum() const;
+  bool setNum(int _num);
+  bool addNum();
+  bool subNum();
+  unsigned getStore() const;
+  void setStore(unsigned _store);
+  unsigned getFlag() const;
+  void setFlag(unsigned _flag);
+  unsigned getKey(int _index) const; //need to check the index
+  bool setKey(unsigned _key, int _index);
+  bool addKey(unsigned _key, int _index);
+  bool subKey(int _index);
 
-	//virtual functions: polymorphic
-	virtual IVNode* getChild(int _index) const { return NULL; };
-	virtual bool setChild(IVNode* _child, int _index) { return true; };
-	virtual bool addChild(IVNode* _child, int _index) { return true; };
-	virtual bool subChild(int _index) { return true; };
-	virtual IVNode* getPrev() const { return NULL; };
-	virtual IVNode* getNext() const { return NULL; };
+  //several binary key search utilities
+  int searchKey_less(unsigned _key) const;
+  int searchKey_equal(unsigned _key) const;
+  int searchKey_lessEqual(unsigned _key) const;
 
-	virtual const Bstr* getValue(int _index) const { return NULL; };
-	virtual bool setValue(const Bstr* _value, int _index, bool _ifcopy=false) { return true; };
-	virtual bool getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) const { return NULL; };
-	virtual bool setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy = false) { return true; };
+  //virtual functions: polymorphic
+  virtual IVNode* getChild(int _index) const
+  {
+    return NULL;
+  };
+  virtual bool setChild(IVNode* _child, int _index)
+  {
+    return true;
+  };
+  virtual bool addChild(IVNode* _child, int _index)
+  {
+    return true;
+  };
+  virtual bool subChild(int _index)
+  {
+    return true;
+  };
+  virtual IVNode* getPrev() const
+  {
+    return NULL;
+  };
+  virtual IVNode* getNext() const
+  {
+    return NULL;
+  };
 
-	virtual bool addValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy = false) { return true; };
-	virtual bool subValue(VList* _vlist, int _index, bool ifdel = false) { return true; };
-	virtual bool addValue(const Bstr* _val, int _index, bool ifcopy = false) { return true; };
-	virtual bool subValue(int _index, bool ifdel = false) { return true; };
+  virtual const Bstr* getValue(int _index) const
+  {
+    return NULL;
+  };
+  virtual bool setValue(const Bstr* _value, int _index, bool _ifcopy = false)
+  {
+    return true;
+  };
+  virtual bool getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) const
+  {
+    return NULL;
+  };
+  virtual bool setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy = false)
+  {
+    return true;
+  };
 
-	virtual void setPrev(IVNode* _prev) {};
-	virtual void setNext(IVNode* _next) {};
+  virtual bool addValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy = false)
+  {
+    return true;
+  };
+  virtual bool subValue(VList* _vlist, int _index, bool ifdel = false)
+  {
+    return true;
+  };
+  virtual bool addValue(const Bstr* _val, int _index, bool ifcopy = false)
+  {
+    return true;
+  };
+  virtual bool subValue(int _index, bool ifdel = false)
+  {
+    return true;
+  };
 
-	//pure virtual functions
-	virtual void Virtual() = 0;
-	virtual void Normal() = 0;
-	virtual unsigned getSize() const = 0;		//return all memory owned
-	virtual IVNode* split(IVNode* _father, int _index) = 0;
-	virtual IVNode* coalesce(IVNode* _father, int _index) = 0;
-	virtual void release() = 0;		//release the node, only remain necessary information
-	virtual ~IVNode() {};
-	virtual void print(std::string s) = 0;		//DEBUG(print the Node)
+  virtual void setPrev(IVNode* _prev) {};
+  virtual void setNext(IVNode* _next) {};
+
+  //pure virtual functions
+  virtual void Virtual() = 0;
+  virtual void Normal() = 0;
+  virtual unsigned getSize() const = 0; //return all memory owned
+  virtual IVNode* split(IVNode* _father, int _index) = 0;
+  virtual IVNode* coalesce(IVNode* _father, int _index) = 0;
+  virtual void release() = 0; //release the node, only remain necessary information
+  virtual ~IVNode() {};
+  virtual void print(std::string s) = 0; //DEBUG(print the Node)
 };
 
 /*NOTICE(operations in release())

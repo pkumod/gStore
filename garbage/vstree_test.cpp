@@ -14,15 +14,14 @@ using namespace std;
 int main()
 {
 #ifdef DEBUG
-	Util util;
+  Util util;
 #endif
-	cout << "vstree_test" << endl;
-	string _yago_example = "/media/wip/common/data/yago_example";
-	string _rdf = _yago_example;
-	Database _db("db_test");
-	_db.build(_rdf);
-	Database::log("finish build");
+  cout << "vstree_test" << endl;
+  string _yago_example = "/media/wip/common/data/yago_example";
+  string _rdf = _yago_example;
+  Database _db("db_test");
+  _db.build(_rdf);
+  Database::log("finish build");
 
-	return 0;
+  return 0;
 }
-

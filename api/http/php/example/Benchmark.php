@@ -4,7 +4,7 @@
 # Author: suxunbin
 # Last Modified: 2019-5-16 16:05
 # Description: a simple example of multi-thread query
-*/
+ */
 
 // before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
 // default db_name: lubm(must be built in advance)
@@ -56,7 +56,7 @@ class Mythread extends Thread {
                 $m = $m + 1;
             if ($this->sparql[$i] == "{")
                 break;
-        }   
+        }
         $n = 0;
         for ($i = 0; $i < strlen($res); $i++) {
             if ($res[$i] == "{")
@@ -74,7 +74,7 @@ class Mythread extends Thread {
             $this->correctness = true;
     }
 }
-    
+
 // create sparql
 array_push($sparql, $sparql0, $sparql1, $sparql2);
 array_push($sparql, $sparql3, $sparql4, $sparql5);
@@ -86,7 +86,7 @@ for ($i = 0; $i < $tnum; $i++) {
 }
 
 // start threads
-foreach ($threads as $i) 
+foreach ($threads as $i)
     $i->start();
 
 $correctness = true;
@@ -95,7 +95,7 @@ foreach ($threads as $i)
 {
     $i->join();
     $correctness = $correctness && $i->correctness;
- }
+}
 
 if ($correctness == true)
     echo "The answers are correct!" . PHP_EOL;

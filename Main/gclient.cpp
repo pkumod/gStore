@@ -9,33 +9,30 @@
 #include "../Server/Client.h"
 #include "../Util/Util.h"
 
-int main(int argc, char * argv[])
+int main(int argc, char* argv[])
 {
-	//chdir(dirname(argv[0]));
-//#ifdef DEBUG
-	Util util;
-//#endif
+  //chdir(dirname(argv[0]));
+  //#ifdef DEBUG
+  Util util;
+  //#endif
 
-	std::string ip = Socket::DEFAULT_SERVER_IP;
-	unsigned short port = Socket::DEFAULT_CONNECT_PORT;
+  std::string ip = Socket::DEFAULT_SERVER_IP;
+  unsigned short port = Socket::DEFAULT_CONNECT_PORT;
 
-	if (argc == 2)
-	{
-		std::stringstream ss;
-		ss << argv[1];
-		ss >> port;
-	}
-	else if (argc >= 3)
-	{
-		std::stringstream ss;
-		ss << argv[1] << " " << argv[2];
-		ss >> ip >> port;
-	}
+  if (argc == 2) {
+    std::stringstream ss;
+    ss << argv[1];
+    ss >> port;
+  } else if (argc >= 3) {
+    std::stringstream ss;
+    ss << argv[1] << " " << argv[2];
+    ss >> ip >> port;
+  }
 
-	std::cout << "ip=" << ip << " port=" << port << std::endl; //debug
-	Client client(ip, port);
+  std::cout << "ip=" << ip << " port=" << port << std::endl; //debug
+  Client client(ip, port);
 
-	client.run();
+  client.run();
 
-	return 0;
+  return 0;
 }
