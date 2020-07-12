@@ -72,7 +72,7 @@ string querySys(string sparql);
 bool sysrefresh();
 bool updateSys(string sparql);
 bool initSys();
-bool refreshSys();
+//bool refreshSys();
 int db_reload(string db_name);
 //bool doQuery(string format, string db_query, const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
@@ -5626,7 +5626,6 @@ bool initSys()
 
 	system_database = new Database("system");
 	bool flag = system_database->build(SYSTEM_PATH);
-	cout << "rebuild success" << endl;
 	if(flag)
 	{
 		cout << "import RDF file to database done." << endl;
@@ -5646,11 +5645,12 @@ bool initSys()
 	delete system_database;
 	system_database = new Database("system");
 	system_database->load();
-	cout << "system_database load" << endl;
+	cout << "system_database loaded" << endl;
 	Util::init_backuplog();
 	return true;
 }
 
+/*
 bool refreshSys()
 {
 	delete system_database;
@@ -5659,6 +5659,7 @@ bool refreshSys()
 	int flag = system_database->load();
 	return flag;
 }
+*/
 
 int copy(string src_path, string dest_path)
 {
@@ -6126,14 +6127,13 @@ void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		users.clear();
 		//rebuild system.db
 		pthread_rwlock_unlock(&users_map_lock);
-
 		vector<string> db_names;
 		Util::split(db_list, " ", db_names);
-	
-		pthread_rwlock_wrlock(&(databases_map_lock));
+		db_names.push_back("system");
+		pthread_rwlock_wrlock(&databases_map_lock);
 		pthread_rwlock_wrlock(&(already_build_map_lock));
 
-		std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.begin();
+		
 		//check the db_names
 		vector<string>::iterator it;
 		for(it = db_names.begin(); it != db_names.end(); it++){
@@ -6144,12 +6144,19 @@ void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 				if(it == db_names.end()) break;
 			}
 		}
-
+		//unload all databases
+		for(std::map<std::string, Database *>::iterator iter = databases.begin(); iter != databases.end(); iter++){
+			Database *current_database = iter->second;
+		    delete current_database;
+			current_database = NULL;
+			databases.erase(iter->first);
+		}
+		std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.begin();
+		
 		//delete files
 		for(it_already_build = already_build.begin(); it_already_build != already_build.end(); it_already_build++)
 		{
 			string db_name = it_already_build->first;
-			if(db_name == "system") continue;
 			if(find(db_names.begin(), db_names.end(), db_name) == db_names.end())
 			{
 				string cmd;
@@ -6160,20 +6167,19 @@ void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 				}
 				system(cmd.c_str());
 			}
+			already_build.erase(db_name);
 		}
-
-		cout << "check success" << endl;
-		//clear already build
-		already_build.clear();
-		//clear loaded databases
-		databases.clear();
+		
+		//clear already_build
+		cout << "clear success" << endl;
 		
 		int flag = initSys();
 		struct DBInfo *temp_db = new DBInfo("system");
 		temp_db->setCreator("root");
 		already_build.insert(pair<std::string, struct DBInfo *>("system", temp_db));
 		databases.insert(pair<std::string, Database *>("system", system_database));
-		
+		pthread_rwlock_unlock(&databases_map_lock);
+		pthread_rwlock_unlock(&(already_build_map_lock));
 		if(!flag){
 			cout << "system.db rebuild failed " << endl;
 			return;
@@ -6195,12 +6201,11 @@ void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		
 		sparql += "}";
 		updateSys(sparql);
-		//reload system.db
-		refreshSys();
 		//rebuild datastructure
 		DB2Map();
-		pthread_rwlock_unlock(&already_build_map_lock);
-		pthread_rwlock_unlock(&(databases_map_lock));
+		sysrefresh();
+		cout << "DB2Map success " << endl;
+		
 		string success = "system.db initialize success.";
 		string resJson = CreateJson(918, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
