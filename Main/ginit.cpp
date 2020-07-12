@@ -150,11 +150,54 @@ int main(int argc, char * argv[])
 			return 0;			
 		}
 	}
-
-	//build system.db
 	Util util;
+	ResultSet _rs;
+	{
+	Database system_db("system");
+	system_db.load();
+	string sparql = "select ?s where{?s <database_status> \"already_built\".}";
+	FILE* ofp = stdout;
+	int ret = system_db.query(sparql, _rs, ofp);
+	}
+	if(argc > 2){
+	cout << "db reserved db reserved db reserved db reserved db reserved " << endl;
+	vector<string> db_names;
+	for(int i = 2; i < argc; i++){
+		cout << argv[i] << endl;
+		db_names.push_back(argv[i]);
+	}
+	for (int i = 0; i < _rs.ansNum; i++)
+	{
+		string db_name = _rs.answer[i][0];
+		db_name.erase(0,1);
+		db_name.pop_back();
+		//cout << "db num:db num:db num:db num:db num:db num:db num:db num:" << db_name << endl;
+		if(find(db_names.begin(), db_names.end(), db_name) == db_names.end() || db_name == "system")
+		{
+			string cmd;
+			cmd = "rm -r " + db_name + ".db";
+			system(cmd.c_str());
+		}
+	}
+	}
+	else{
+		string cmd;
+		cmd = "rm -r system.db";
+		system(cmd.c_str());
+		cout << _rs.ansNum << endl;
+		for (int i = 0; i < _rs.ansNum; i++)
+		{
+			string db_name = _rs.answer[i][0];
+			db_name.erase(0,1);
+			db_name.pop_back();
+			string cmd;
+			cmd = "rm -r " + db_name + ".db";
+			system(cmd.c_str());
+		}
+	}
+	//build system.db
 	string _db_path = "system";
-	string _rdf = "data/system/system.nt";
+	string _rdf = "./data/system/system.nt";
 	Database* _db = new Database(_db_path);
 	bool flag = _db->build(_rdf);
 	if (flag)
@@ -197,7 +240,6 @@ int main(int argc, char * argv[])
 		}
 	}
 	sparql = sparql + "}";
-	ResultSet _rs;
 	FILE* ofp = stdout;
 	string msg;
 	int ret = _db->query(sparql, _rs, ofp);
