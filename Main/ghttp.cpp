@@ -807,7 +807,7 @@ int initialize(int argc, char *argv[])
 	HttpServer server;
 	string db_name = "";
 	server.config.port = 9000;
-	bool loadCSR = 1;	// Load CSR by default
+	bool loadCSR = 0;	// DO NOT load CSR by default
 	if(argc == 1)
 	{
 		server.config.port = 9000;
