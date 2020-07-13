@@ -72,7 +72,7 @@ string querySys(string sparql);
 bool sysrefresh();
 bool updateSys(string sparql);
 bool initSys();
-bool refreshSys();
+//bool refreshSys();
 int db_reload(string db_name);
 //bool doQuery(string format, string db_query, const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
@@ -1118,8 +1118,8 @@ int initialize(int argc, char *argv[])
 	ofp << system_password;
 	ofp.close();
 	ofp.open("system.db/port.txt", ios::out);
-        ofp << server.config.port;
-        ofp.close();
+    ofp << server.config.port;
+    ofp.close();
 	//time_t cur_time = time(NULL);
 	//long time_backup = Util::read_backup_time();
 	//long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
@@ -5626,7 +5626,6 @@ bool initSys()
 
 	system_database = new Database("system");
 	bool flag = system_database->build(SYSTEM_PATH);
-	cout << "rebuild success" << endl;
 	if(flag)
 	{
 		cout << "import RDF file to database done." << endl;
@@ -5646,11 +5645,16 @@ bool initSys()
 	delete system_database;
 	system_database = new Database("system");
 	system_database->load();
-	cout << "system_database load" << endl;
-	Util::init_backuplog();
+	cout << "system_database loaded" << endl;
+	string cmd;
+	cmd = "mv ./port.txt ./system.db/";
+	system(cmd.c_str());
+	cmd = "mv ./password"  + Util::int2string(port) + ".txt ./system.db/";
+	system(cmd.c_str());
 	return true;
 }
 
+/*
 bool refreshSys()
 {
 	delete system_database;
@@ -5659,6 +5663,7 @@ bool refreshSys()
 	int flag = system_database->load();
 	return flag;
 }
+*/
 
 int copy(string src_path, string dest_path)
 {
@@ -6123,17 +6128,16 @@ void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	string root_password = (users.find(ROOT_USERNAME))->second->getPassword();
 
 	if(username == ROOT_USERNAME && password == root_password){
+		cout << "init begin....." << endl;
 		users.clear();
 		//rebuild system.db
-		pthread_rwlock_unlock(&users_map_lock);
-
 		vector<string> db_names;
+		db_names.push_back("system");
 		Util::split(db_list, " ", db_names);
-	
-		pthread_rwlock_wrlock(&(databases_map_lock));
+		pthread_rwlock_wrlock(&databases_map_lock);
 		pthread_rwlock_wrlock(&(already_build_map_lock));
 
-		std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.begin();
+		cout << "check the db_names" << endl;
 		//check the db_names
 		vector<string>::iterator it;
 		for(it = db_names.begin(); it != db_names.end(); it++){
@@ -6144,15 +6148,37 @@ void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 				if(it == db_names.end()) break;
 			}
 		}
-
+		cout << "unload all databases" << endl;
+		cout << "loaded databases num: " << databases.size() << endl;
+		//unload all databases
+		for(std::map<std::string, Database *>::iterator iter = databases.begin(); iter != databases.end(); iter++){
+			if(iter->first == "system") continue;
+			Database *current_database = iter->second;
+		    delete current_database;
+			current_database = NULL;
+			databases.erase(iter->first);
+		}
+		cout << "unload all databases done" << endl;
+		std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.begin();
+		
+		//backup
+		cout << "backup server_files" << endl;
+		string cmd;
+		cmd = "mv ./system.db/port.txt ./";
+		system(cmd.c_str());
+		cmd = "mv ./system.db/password"  + Util::int2string(port) + ".txt ./";
+		system(cmd.c_str());
 		//delete files
 		for(it_already_build = already_build.begin(); it_already_build != already_build.end(); it_already_build++)
 		{
 			string db_name = it_already_build->first;
-			if(db_name == "system") continue;
-			if(find(db_names.begin(), db_names.end(), db_name) == db_names.end())
+			//if(db_name == "system") cout << "system system system" << endl;
+			if(find(db_names.begin(), db_names.end(), db_name) == db_names.end() || db_name == "system")
 			{
-				string cmd;
+				if(db_name == "system"){
+					delete system_database;
+					system_database = NULL;
+				}
 				if(is_backup == "true"){
 					cmd = "mv " + db_name + ".db " + db_name + ".bak";
 				}else{
@@ -6160,20 +6186,19 @@ void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 				}
 				system(cmd.c_str());
 			}
+			already_build.erase(db_name);
 		}
-
-		cout << "check success" << endl;
-		//clear already build
-		already_build.clear();
-		//clear loaded databases
-		databases.clear();
+		
+		//clear already_build
+		cout << "clear success" << endl;
 		
 		int flag = initSys();
 		struct DBInfo *temp_db = new DBInfo("system");
 		temp_db->setCreator("root");
 		already_build.insert(pair<std::string, struct DBInfo *>("system", temp_db));
 		databases.insert(pair<std::string, Database *>("system", system_database));
-		
+		pthread_rwlock_unlock(&databases_map_lock);
+		pthread_rwlock_unlock(&(already_build_map_lock));
 		if(!flag){
 			cout << "system.db rebuild failed " << endl;
 			return;
@@ -6182,11 +6207,11 @@ void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		//TODO: we need not delete all users
 
 		//rebuild system.db
-		string sparql = "INSERT DATA {<system> <built_time> \"" + time + "\".";
+		string sparql = "INSERT DATA { <system> <built_time> \"" + time + "\".";
 		for(int i = 0; i < db_names.size(); i++)
 		{
 			string db_name = db_names[i];
-			if(db_name == "") continue;
+			if(db_name == "" || db_name == "system") continue;
 			Util::add_backuplog(db_name);
 			sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
 			sparql = sparql + "<" + db_name + "> <built_by> <root>.";
@@ -6195,12 +6220,12 @@ void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		
 		sparql += "}";
 		updateSys(sparql);
-		//reload system.db
-		refreshSys();
-		//rebuild datastructure
+		////rebuild datastructure
+		sysrefresh();
 		DB2Map();
-		pthread_rwlock_unlock(&already_build_map_lock);
-		pthread_rwlock_unlock(&(databases_map_lock));
+		pthread_rwlock_unlock(&users_map_lock);
+		cout << "DB2Map success " << endl;
+		
 		string success = "system.db initialize success.";
 		string resJson = CreateJson(918, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
