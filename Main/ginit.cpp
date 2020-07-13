@@ -152,6 +152,8 @@ int main(int argc, char * argv[])
 	}
 	Util util;
 	ResultSet _rs;
+	bool no_sysdb = false;
+	if(boost::filesystem::exists("system.db"))
 	{
 	Database system_db("system");
 	system_db.load();
@@ -159,6 +161,8 @@ int main(int argc, char * argv[])
 	FILE* ofp = stdout;
 	int ret = system_db.query(sparql, _rs, ofp);
 	}
+	else
+	   no_sysdb = true;
 	if(argc > 2){
 	cout << "db reserved db reserved db reserved db reserved db reserved " << endl;
 	vector<string> db_names;
