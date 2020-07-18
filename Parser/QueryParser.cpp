@@ -320,98 +320,188 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		conditionalAndexpression(0)->valueLogical(0)->relationalexpression()-> \
 		numericexpression(0)->additiveexpression()->multiplicativeexpression(0)-> \
 		unaryexpression(0)->primaryexpression()->builtInCall();
-	if (!bicCtx)
-		throw runtime_error("[ERROR]	Currently only support selecting variables, "
-			"the aggregate function COUNT, and path-associated built-in calls");
-	antlr4::tree::ParseTree *curr = expCtx;
-	for (int i = 0; i < 10; i++)
-	{
-		// Make sure only one children along the way
-		if (curr->children.size() > 1)
-			throw runtime_error("[ERROR]	Currently only support selecting variables, "
-				"the aggregate function COUNT, and path-associated built-in calls");
-		curr = curr->children[0];
-	}
-	SPARQLParser::AggregateContext *aggCtx = bicCtx->aggregate();
-	if (aggCtx)
-	{
-		string tmp = aggCtx->children[0]->getText();
-		transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-		if (tmp != "COUNT")
-			throw runtime_error("[ERROR]	The supported aggregate function now is COUNT only");
+	// if (!bicCtx)
+	// 	throw runtime_error("[ERROR]	Currently only support selecting variables, "
+	// 		"the aggregate function COUNT, and path-associated built-in calls");
+	if (bicCtx)
+	{	
+		antlr4::tree::ParseTree *curr = expCtx;
+		for (int i = 0; i < 10; i++)
+		{
+			// Make sure only one children along the way
+			if (curr->children.size() > 1)
+				throw runtime_error("[ERROR]	Currently only support selecting variables, "
+					"the aggregate function COUNT, and path-associated built-in calls");
+			curr = curr->children[0];
+		}
+		SPARQLParser::AggregateContext *aggCtx = bicCtx->aggregate();
+		if (aggCtx)
+		{
+			string tmp = aggCtx->children[0]->getText();
+			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+			if (tmp != "COUNT")
+				throw runtime_error("[ERROR]	The supported aggregate function now is COUNT only");
 
+			query_tree_ptr->addProjectionVar();
+			QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+			proj_var.aggregate_type = QueryTree::ProjectionVar::Count_type;
+			proj_var.aggregate_var = aggCtx->expression()->getText();	// Error would have been dealt with
+			tmp = aggCtx->children[2]->getText();
+			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+			proj_var.distinct = aggCtx->children[2]->children.size() == 0 && tmp == "DISTINCT";
+			proj_var.var = varCtx->getText();
+		}
+		else
+		{
+			string tmp = bicCtx->children[0]->getText();
+			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+			if (tmp != "SIMPLECYCLEPATH" && tmp != "SIMPLECYCLEBOOLEAN"
+				&& tmp != "CYCLEPATH" && tmp != "CYCLEBOOLEAN"
+				&& tmp != "SHORTESTPATH" && tmp != "SHORTESTPATHLEN"
+				&& tmp != "KHOPREACHABLE" && tmp != "KHOPENUMERATE")
+				throw runtime_error("[ERROR]	Currently only support selecting variables, "
+					"the aggregate function COUNT, and path-associated built-in calls");
+			
+			query_tree_ptr->addProjectionVar();
+			QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+			if (tmp == "SIMPLECYCLEPATH")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCyclePath_type;
+			else if (tmp == "SIMPLECYCLEBOOLEAN")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCycleBoolean_type;
+			else if (tmp == "CYCLEPATH")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::cyclePath_type;
+			else if (tmp == "CYCLEBOOLEAN")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::cycleBoolean_type;
+			else if (tmp == "SHORTESTPATH")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::shortestPath_type;
+			else if (tmp == "SHORTESTPATHLEN")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::shortestPathLen_type;
+			else if (tmp == "KHOPREACHABLE")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::kHopReachable_type;
+			else if (tmp == "KHOPENUMERATE")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::kHopEnumerate_type;
+
+			proj_var.path_args.src = bicCtx->varOrIri(0)->getText();
+			replacePrefix(proj_var.path_args.src);
+			proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
+			replacePrefix(proj_var.path_args.dst);
+			auto predSet = bicCtx->predSet()->iri();
+			for (auto pred : predSet)
+			{
+				string prefixedPred = pred->getText();
+				replacePrefix(prefixedPred);
+				proj_var.path_args.pred_set.push_back(prefixedPred);
+			}
+
+			if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE")
+			{
+				if (bicCtx->num_integer())
+					proj_var.path_args.k = stoi(bicCtx->num_integer()->getText());
+				else if (bicCtx->integer_positive())
+					proj_var.path_args.k = stoi(bicCtx->integer_positive()->getText());
+				else if (bicCtx->integer_negative())
+					proj_var.path_args.k = stoi(bicCtx->integer_negative()->getText());
+				
+				if (bicCtx->numericLiteral())
+					proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
+				else
+					proj_var.path_args.confidence = 1;
+			}
+			if (bicCtx->booleanLiteral()->getText() == "true")
+				proj_var.path_args.directed = true;
+			else
+				proj_var.path_args.directed = false;
+
+			proj_var.var = varCtx->getText();
+		}
+	}
+	else 	// For multi-layer computation, only consider vars, literals, and bracketted expressions for now
+	{
 		query_tree_ptr->addProjectionVar();
 		QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
-		proj_var.aggregate_type = QueryTree::ProjectionVar::Count_type;
-		proj_var.aggregate_var = aggCtx->expression()->getText();	// Error would have been dealt with
-		tmp = aggCtx->children[2]->getText();
-		transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-		proj_var.distinct = aggCtx->children[2]->children.size() == 0 && tmp == "DISTINCT";
+		proj_var.aggregate_type = QueryTree::ProjectionVar::CompTree_type;
 		proj_var.var = varCtx->getText();
+		proj_var.comp_tree_root = new QueryTree::CompTreeNode;
+		buildCompTree(expCtx, -1, proj_var.comp_tree_root);
+	}
+}
+
+void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode *curr_node)
+{
+	cout << root->getText() << endl;
+	cout << "#children = " << root->children.size() << endl;
+
+	if (root->children.size() == 1)
+	{
+		if (((SPARQLParser::PrimaryexpressionContext *)root)->rDFLiteral())
+		{
+			curr_node->oprt = "";
+			curr_node->lchild = NULL;
+			curr_node->rchild = NULL;
+			curr_node->val = root->getText();
+		}
+		else if (((SPARQLParser::PrimaryexpressionContext *)root)->numericLiteral())
+		{
+			curr_node->oprt = "";
+			curr_node->lchild = NULL;
+			curr_node->rchild = NULL;
+			auto numericLiteral = ((SPARQLParser::PrimaryexpressionContext *)root)->numericLiteral();
+			curr_node->val = getNumeric(numericLiteral);
+		}
+		else if (((SPARQLParser::PrimaryexpressionContext *)root)->booleanLiteral())
+		{
+			curr_node->oprt = "";
+			curr_node->lchild = NULL;
+			curr_node->rchild = NULL;
+			curr_node->val = "\"" + root->getText() + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
+		}
+		else if (((SPARQLParser::PrimaryexpressionContext *)root)->var())
+		{
+			curr_node->oprt = "";
+			curr_node->lchild = NULL;
+			curr_node->rchild = NULL;
+			curr_node->val = root->getText();
+		}
+		else
+			buildCompTree(root->children[0], -1, curr_node);
+	}
+	else if (root->children.size() == 2)
+	{
+		if (root->children[0]->getText()[0] != '!' \
+			&& root->children[0]->getText()[0] != '+' \
+			&& root->children[0]->getText()[0] != '-')
+			throw runtime_error("[ERROR]	Unary operator not supported");
+		curr_node->oprt = root->children[0]->getText();
+		curr_node->lchild = new QueryTree::CompTreeNode;
+		curr_node->rchild = NULL;
+		curr_node->val = "";
+		buildCompTree(root->children[1], -1, curr_node->lchild);
+	}
+	else if (root->children.size() % 2 == 1)	// >= 3, odd #children
+	{
+		if (root->children[0]->getText() == "(")
+			buildCompTree(root->children[1], -1, curr_node);
+		else
+		{
+			int rightmostOprtPos = (root->children.size() - 1) / 2;
+			// if (oper_pos == -1)
+			// 	oper_pos = 1;
+			if (oper_pos < rightmostOprtPos)
+			{
+				int new_oper_pos = oper_pos + 2;
+				curr_node->oprt = root->children[oper_pos + 2]->getText();
+				curr_node->lchild = new QueryTree::CompTreeNode;
+				curr_node->rchild = new QueryTree::CompTreeNode;
+				curr_node->val = "";
+				buildCompTree(root->children[oper_pos + 1], -1, curr_node->lchild);
+				buildCompTree(root, oper_pos + 2, curr_node->rchild);
+			}
+			else 	// oper_pos == rightmostOprtPos, the last operator on this level has been handled
+				buildCompTree(root->children[oper_pos + 1], -1, curr_node);
+		}
 	}
 	else
-	{
-		string tmp = bicCtx->children[0]->getText();
-		transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-		if (tmp != "SIMPLECYCLEPATH" && tmp != "SIMPLECYCLEBOOLEAN"
-			&& tmp != "CYCLEPATH" && tmp != "CYCLEBOOLEAN"
-			&& tmp != "SHORTESTPATH" && tmp != "SHORTESTPATHLEN"
-			&& tmp != "KHOPREACHABLE" && tmp != "KHOPENUMERATE")
-			throw runtime_error("[ERROR]	Currently only support selecting variables, "
-				"the aggregate function COUNT, and path-associated built-in calls");
-		
-		query_tree_ptr->addProjectionVar();
-		QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
-		if (tmp == "SIMPLECYCLEPATH")
-			proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCyclePath_type;
-		else if (tmp == "SIMPLECYCLEBOOLEAN")
-			proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCycleBoolean_type;
-		else if (tmp == "CYCLEPATH")
-			proj_var.aggregate_type = QueryTree::ProjectionVar::cyclePath_type;
-		else if (tmp == "CYCLEBOOLEAN")
-			proj_var.aggregate_type = QueryTree::ProjectionVar::cycleBoolean_type;
-		else if (tmp == "SHORTESTPATH")
-			proj_var.aggregate_type = QueryTree::ProjectionVar::shortestPath_type;
-		else if (tmp == "SHORTESTPATHLEN")
-			proj_var.aggregate_type = QueryTree::ProjectionVar::shortestPathLen_type;
-		else if (tmp == "KHOPREACHABLE")
-			proj_var.aggregate_type = QueryTree::ProjectionVar::kHopReachable_type;
-		else if (tmp == "KHOPENUMERATE")
-			proj_var.aggregate_type = QueryTree::ProjectionVar::kHopEnumerate_type;
-
-		proj_var.path_args.src = bicCtx->varOrIri(0)->getText();
-		replacePrefix(proj_var.path_args.src);
-		proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
-		replacePrefix(proj_var.path_args.dst);
-		auto predSet = bicCtx->predSet()->iri();
-		for (auto pred : predSet)
-		{
-			string prefixedPred = pred->getText();
-			replacePrefix(prefixedPred);
-			proj_var.path_args.pred_set.push_back(prefixedPred);
-		}
-
-		if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE")
-		{
-			if (bicCtx->num_integer())
-				proj_var.path_args.k = stoi(bicCtx->num_integer()->getText());
-			else if (bicCtx->integer_positive())
-				proj_var.path_args.k = stoi(bicCtx->integer_positive()->getText());
-			else if (bicCtx->integer_negative())
-				proj_var.path_args.k = stoi(bicCtx->integer_negative()->getText());
-			
-			if (bicCtx->numericLiteral())
-				proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
-			else
-				proj_var.path_args.confidence = 1;
-		}
-		if (bicCtx->booleanLiteral()->getText() == "true")
-			proj_var.path_args.directed = true;
-		else
-			proj_var.path_args.directed = false;
-
-		proj_var.var = varCtx->getText();
-	}
+		throw runtime_error("[ERROR]	Computation type not supported (an even #children > 2)");
 }
 
 /**

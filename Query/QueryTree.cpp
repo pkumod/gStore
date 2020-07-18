@@ -875,7 +875,8 @@ bool QueryTree::checkWellDesigned()
 			|| proj.aggregate_type == ProjectionVar::shortestPath_type
 			|| proj.aggregate_type == ProjectionVar::shortestPathLen_type
 			|| proj.aggregate_type == ProjectionVar::kHopReachable_type
-			|| proj.aggregate_type == ProjectionVar::kHopEnumerate_type)
+			|| proj.aggregate_type == ProjectionVar::kHopEnumerate_type
+			|| proj.aggregate_type == ProjectionVar::CompTree_type)
 		{
 			check_condition = false;
 			break;
@@ -973,6 +974,11 @@ void QueryTree::print()
 						printf("kHopReachable(");
 					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::kHopEnumerate_type)
 						printf("kHopEnumerate(");
+					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::CompTree_type)
+					{
+						cout << endl;
+						projection[i].comp_tree_root->print(0);
+					}
 					
 					if (this->projection[i].distinct)
 						printf("DISTINCT ");
@@ -1078,4 +1084,34 @@ void QueryTree::print()
 	}
 
 	for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
+}
+
+void QueryTree::CompTreeNode::print(int dep)
+{
+	if (!lchild && !rchild)
+	{
+		for (int i = 0; i < dep; i++)
+			cout << '\t';
+		cout << "Value: " << val << endl;
+	}
+	else
+	{
+		for (int i = 0; i < dep; i++)
+			cout << '\t';
+		cout << "Operator " << oprt << endl;
+		if (lchild)
+		{
+			for (int i = 0; i < dep; i++)
+				cout << '\t';
+			cout << "lchild:" << endl;
+			lchild->print(dep + 1);
+		}
+		if (rchild)
+		{
+			for (int i = 0; i < dep; i++)
+				cout << '\t';
+			cout << "rchild:" << endl;
+			rchild->print(dep + 1);
+		}
+	}
 }

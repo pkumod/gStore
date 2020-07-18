@@ -1190,7 +1190,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 			if (result0_size == 0 && proj.size() == 1 && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::None_type && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::Count_type)
+				proj[0].aggregate_type != QueryTree::ProjectionVar::Count_type && \
+				proj[0].aggregate_type != QueryTree::ProjectionVar::CompTree_type)
 			{
 				// Path query, both nodes are IRI
 
@@ -1426,6 +1427,22 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						ss << count;
 						ss << "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
 						ss >> new_result0.result.back().str[proj2new[i] - new_result0_id_cols];
+					}
+					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::CompTree_type)
+					{
+						// Strictly speaking, not an aggregate; each original line will produce a line of results
+						for (int j = begin; j <= end; j++)
+						{
+							new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
+								result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, stringindex, \
+								query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset).term_value;
+							if (j < end)
+							{
+								new_result0.result.push_back(TempResult::ResultPair());
+								new_result0.result.back().id = new unsigned[new_result0_id_cols];
+								new_result0.result.back().str.resize(new_result0_str_cols);
+							}
+						}
 					}
 					else	// Path query
 					{

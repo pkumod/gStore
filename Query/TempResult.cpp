@@ -889,6 +889,85 @@ EvalMultitypeValue
 	return ret_femv;
 }
 
+EvalMultitypeValue
+TempResult::doComp(QueryTree::CompTreeNode *root, ResultPair &row, int id_cols, StringIndex *stringindex, Varset &entity_literal_varset)
+{
+	if (root->lchild == NULL && root->rchild == NULL)	// leaf node
+	{
+		EvalMultitypeValue x;
+		x.datatype = EvalMultitypeValue::rdf_term;
+		if (root->val[0] == '?')	// variable
+		{
+			int pos;
+			pos = Varset(root->val).mapTo(entity_literal_varset)[0];
+			if (pos == -1)
+			{
+				x.datatype = EvalMultitypeValue::xsd_boolean;
+				x.bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
+				return x;
+			}
+			if (pos < id_cols)
+			{
+				int id = row.id[pos];
+				bool isel = entity_literal_varset.findVar(root->val);
+				stringindex->randomAccess(id, &x.term_value, isel);
+			}
+			else
+				x.term_value = row.str[pos - id_cols];
+		}
+		else  	// literal
+			x.term_value = root->val;
+		x.deduceTypeValue();
+		cout << "x.term_value = " << x.term_value << endl;
+		return x;
+	}
+	else
+	{
+		EvalMultitypeValue lRes, rRes;
+		if (root->lchild)
+			lRes = doComp(root->lchild, row, id_cols, stringindex, entity_literal_varset);
+		if (root->rchild)
+			rRes = doComp(root->rchild, row, id_cols, stringindex, entity_literal_varset);
+
+		if (root->oprt == "||")
+			return lRes || rRes;
+		else if (root->oprt == "&&")
+			return lRes && rRes;
+		else if (root->oprt == "=")
+			return lRes == rRes;
+		else if (root->oprt == "!=")
+			return lRes != rRes;
+		else if (root->oprt == "<")
+			return lRes < rRes;
+		else if (root->oprt == ">")
+			return lRes > rRes;
+		else if (root->oprt == "<=")
+			return lRes <= rRes;
+		else if (root->oprt == ">=")
+			return lRes >= rRes;
+		else if (root->oprt == "+")
+		{
+			if (!root->rchild)	// unary
+				return lRes;
+			else 	// binary
+				return lRes + rRes;
+		}
+		else if (root->oprt == "-")
+		{
+			if (!root->rchild)	// unary
+				return -lRes;
+			else 	// binary
+				return lRes - rRes;
+		}
+		else if (root->oprt == "*")
+			return lRes * rRes;
+		else if (root->oprt == "/")
+			return lRes / rRes;
+		else if (root->oprt == "!")
+			return !lRes;
+	}
+}
+
 void TempResult::doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset)
 {
 	Varset this_varset = this->getAllVarset();

@@ -104,6 +104,17 @@ class QueryTree
 			float confidence;
 		};
 
+		class CompTreeNode
+		{
+		public:
+			std::string oprt;	// operator
+			CompTreeNode *lchild;
+			CompTreeNode *rchild;	// child nodes
+			std::string val;	// variable, or literal followed by datatype suffix
+
+			void print(int dep);	// Print subtree rooted at this node
+		};
+
 		class GroupPattern::FilterTree
 		{
 			public:
@@ -195,13 +206,16 @@ class QueryTree
 			public:
 				enum AggregateType {None_type, Count_type, Sum_type, Min_type, Max_type, Avg_type, 
 					simpleCyclePath_type, simpleCycleBoolean_type, cyclePath_type, cycleBoolean_type, 
-					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type};
+					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type,
+					CompTree_type};
 				AggregateType aggregate_type;
 
 				std::string var, aggregate_var;
 				bool distinct;
 
 				PathArgs path_args;
+
+				CompTreeNode *comp_tree_root;
 
 				ProjectionVar():aggregate_type(None_type), distinct(false){}
 		};
