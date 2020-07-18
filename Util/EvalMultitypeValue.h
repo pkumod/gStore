@@ -69,7 +69,7 @@ class EvalMultitypeValue
 		std::string str_value;
 		EffectiveBooleanValue bool_value;
 		int int_value;
-		float flt_value;
+		float flt_value;	// xsd_decimal and xsd_float
 		double dbl_value;
 		DateTime dt_value;
 
@@ -85,9 +85,16 @@ class EvalMultitypeValue
 		EvalMultitypeValue operator > (EvalMultitypeValue &x);
 		EvalMultitypeValue operator >= (EvalMultitypeValue &x);
 
+		EvalMultitypeValue operator + (EvalMultitypeValue &x);
+		EvalMultitypeValue operator - ();
+		EvalMultitypeValue operator - (EvalMultitypeValue &x);
+		EvalMultitypeValue operator * (EvalMultitypeValue &x);
+		EvalMultitypeValue operator / (EvalMultitypeValue &x);
+
 		EvalMultitypeValue():datatype(rdf_term), int_value(0), flt_value(0), dbl_value(0){}
 
-		void deduceTypeValue();	// Set datatype and value according to term_value
+		void deduceTermValue();	// Set term value according to datatype and essential value
+		void deduceTypeValue();	// Set datatype and value according to term_value, for numeric & boolean
 };
 
 #endif //_UTIL_EVALMULTITYPEVALUE_H
