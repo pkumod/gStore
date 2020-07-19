@@ -2539,8 +2539,9 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
   //	db_query = UrlDecode(db_query);
   cout << log_prefix << "check: " << db_query << endl;
   string str = db_query;
-
+      cout << "begin lock databases_map_lock" << endl;
 	pthread_rwlock_rdlock(&databases_map_lock);
+    cout << " lock databases_map_lock successful " << endl;
 	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
 	if(iter == databases.end())
 	{
@@ -2556,7 +2557,7 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	}
 	Database *current_database = iter->second;
 	pthread_rwlock_unlock(&databases_map_lock);
-    cout << "debug lock databases_map_lock" << endl;
+    cout << "unlock databases_map_lock successful" << endl;
 	pthread_rwlock_rdlock(&already_build_map_lock);
 	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
 	pthread_rwlock_unlock(&already_build_map_lock);
