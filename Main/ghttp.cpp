@@ -2556,10 +2556,11 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	}
 	Database *current_database = iter->second;
 	pthread_rwlock_unlock(&databases_map_lock);
-
+    cout << "debug lock databases_map_lock" << endl;
 	pthread_rwlock_rdlock(&already_build_map_lock);
 	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
 	pthread_rwlock_unlock(&already_build_map_lock);
+    cout << "debug lock already_build_map_lock" << endl;
 	//if(pthread_rwlock_tryrdlock(&(it_already_build->second)) != 0)
 	//{
 	//	string error = "Unable to query due to loss of lock";
@@ -2597,6 +2598,8 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 		return;
 	}
+
+    cout << "debug lock it_already_build->second->db_lock" << endl;
 	FILE* output = NULL;
 
   //just for DEBUG
@@ -2616,6 +2619,7 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	int ret_val;
 	//catch exception when this is an update query and has no update privilege
 	try{
+        cout << "begin query" << endl;
 		ret_val = current_database->query(sparql, rs, output, update_flag);
 	}catch(string exception_msg){
 	
