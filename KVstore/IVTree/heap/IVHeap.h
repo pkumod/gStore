@@ -18,24 +18,23 @@
 //TODO: to solve this probem, use another hash: (pointer, pos), to find the right position of
 //given p in O(lgn) time
 
-class IVHeap
-{
-private:
-	IVNode** heap;			//dynamic array
-	unsigned length;		//valid elements num
-	unsigned size;			//max-size of heap
-public:
-	IVHeap();
-	IVHeap(unsigned _size);
-	IVNode* getTop() const;			//return the top element
-	unsigned getLen() const;
-	unsigned getSize() const;
-	bool isEmpty() const;
-	bool insert(IVNode* _np);	//insert and adjust
-	bool remove();			//remove top and adjust
-	bool modify(IVNode* _np, bool _flag);			//searech modified element and adjust
-	~IVHeap();
-	void print(std::string s);			//DEBUG
+class IVHeap {
+  private:
+  IVNode** heap;   //dynamic array
+  unsigned length; //valid elements num
+  unsigned size;   //max-size of heap
+  public:
+  IVHeap();
+  IVHeap(unsigned _size);
+  IVNode* getTop() const; //return the top element
+  unsigned getLen() const;
+  unsigned getSize() const;
+  bool isEmpty() const;
+  bool insert(IVNode* _np);             //insert and adjust
+  bool remove();                        //remove top and adjust
+  bool modify(IVNode* _np, bool _flag); //searech modified element and adjust
+  ~IVHeap();
+  void print(std::string s); //DEBUG
 };
 
 #endif

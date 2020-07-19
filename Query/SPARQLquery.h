@@ -11,47 +11,45 @@
 
 #include "BasicQuery.h"
 
-class SPARQLquery
-{
-private:
-	vector<BasicQuery*> query_union;
-	vector<string>	query_var;
+class SPARQLquery {
+  private:
+  vector<BasicQuery*> query_union;
+  vector<string> query_var;
 
-public:
-	SPARQLquery(const string& _query);
+  public:
+  SPARQLquery(const string& _query);
 
-	SPARQLquery();
-	~SPARQLquery();
+  SPARQLquery();
+  ~SPARQLquery();
 
-	void addQueryVar(const string& _var);
+  void addQueryVar(const string& _var);
 
-	void addTriple(const Triple& _triple);
+  void addTriple(const Triple& _triple);
 
-	void addBasicQuery(BasicQuery* _basic_q);
+  void addBasicQuery(BasicQuery* _basic_q);
 
-	void addBasicQuery();
+  void addBasicQuery();
 
-	const int getBasicQueryNum();
+  const int getBasicQueryNum();
 
-	BasicQuery& getBasicQuery(int _basic_query_id);
+  BasicQuery& getBasicQuery(int _basic_query_id);
 
-	const int getQueryVarNum();
+  const int getQueryVarNum();
 
-	const vector<string>& getQueryVar()const;
+  const vector<string>& getQueryVar() const;
 
-	const string& getQueryVar(int _id);
+  const string& getQueryVar(int _id);
 
-	void encodeQuery(KVstore* _p_kv_store);
-	void encodeQuery(KVstore* _p_kv_store, vector< vector<string> > sparql_query_varset);
+  void encodeQuery(KVstore* _p_kv_store);
+  void encodeQuery(KVstore* _p_kv_store, vector<vector<string> > sparql_query_varset);
 
-	vector<BasicQuery*>& getBasicQueryVec();
+  vector<BasicQuery*>& getBasicQueryVec();
 
-	void print(ostream& _out_stream);
-	std::string triple_str();
-	std::string candidate_str();
-	std::string result_str();
-	std::string to_str();
+  void print(ostream& _out_stream);
+  std::string triple_str();
+  std::string candidate_str();
+  std::string result_str();
+  std::string to_str();
 };
 
 #endif //_QUERY_SPARQLQUERY_H
-

@@ -33,7 +33,7 @@ tar -xzvf boost_1_54_0.tar.gz
 cd boost_1_54_0
 #./bootstrap.sh --prefix=/home/usrname/boost_1_43_0/boost_install
 # by default: /usr/local/include and /usr/local/lib
-./bootstrap.sh 
+./bootstrap.sh
 ./b2
 ./b2 install
 echo "/usr/local/lib" >> /etc/ld.so.conf

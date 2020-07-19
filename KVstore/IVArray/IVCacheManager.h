@@ -12,22 +12,21 @@
 
 using namespace std;
 
-class IVCacheManager
-{
-public:
-	// Maximum size of cache
-	static const unsigned MAX_CACHE_SIZE = 1 << 30; // 1G
+class IVCacheManager {
+  public:
+  // Maximum size of cache
+  static const unsigned MAX_CACHE_SIZE = 1 << 30; // 1G
 
-private:
-	unsigned cur_cache_size;
-    IVEntry *array;	
-	// Record the last used time of each value in cache
-	map <unsigned, unsigned long> index_time_map;
-    // Record time-index pair 
-	multimap <unsigned long, unsigned> time_index_map;
+  private:
+  unsigned cur_cache_size;
+  IVEntry* array;
+  // Record the last used time of each value in cache
+  map<unsigned, unsigned long> index_time_map;
+  // Record time-index pair
+  multimap<unsigned long, unsigned> time_index_map;
 
-public:
-	IVCacheManager(IVEntry *p);
-	bool CacheAdd(const unsigned &_index, const char* _str, const unsigned &_len);
-	bool CacheSub(const unsigned &_index, const unsigned &_len);
+  public:
+  IVCacheManager(IVEntry* p);
+  bool CacheAdd(const unsigned& _index, const char* _str, const unsigned& _len);
+  bool CacheSub(const unsigned& _index, const unsigned& _len);
 };
