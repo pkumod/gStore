@@ -1443,6 +1443,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
   {
       cout << "the general_evaluation is null ! ." << endl;
   }*/
+  cout << _query << endl;
   bool parse_ret = general_evaluation.parseQuery(_query);
   cout << "parse query  successfully! ." << endl;
   this->query_parse_lock.unlock();
