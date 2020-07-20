@@ -73,11 +73,13 @@ bool GeneralEvaluation::parseQuery(const string& _query)
 {
   try
   {
+      printf("begin parse query");
     this->query_parser.SPARQLParse(_query, this->query_tree);
   }
   catch (const char* e)
   {
     printf("%s\n", e);
+    printf(" parse query error");
     return false;
   }
 
