@@ -73,7 +73,9 @@ bool GeneralEvaluation::parseQuery(const string& _query)
 {
   try
   {
+      
       printf("begin parse query");
+      fflush(stdout);
     this->query_parser.SPARQLParse(_query, this->query_tree);
   }
   catch (const char* e)

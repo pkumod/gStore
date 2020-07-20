@@ -692,6 +692,7 @@ int main(int argc, char* argv[])
       if (WIFEXITED(status)) {
         return 0;
       } else {
+          cout << "Status Code:" << status << endl;
         cout << "Server stopped abnormally, restarting server..." << endl;
         //break;
       }

@@ -1433,7 +1433,10 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
   string dictionary_store_path = this->store_path + "/dictionary.dc";
 
   this->stringindex->SetTrie(this->kvstore->getTrie());
-  GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, this->limitID_entity);
+  //GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num, 
+  //    this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, this->limitID_entity);
+  GeneralEvaluation general_evaluation = new GeneralEvaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num,
+      this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, this->limitID_entity);
 
   long tv_begin = Util::get_cur_time();
   cout << "lock the query_parse_lock ." << endl;
