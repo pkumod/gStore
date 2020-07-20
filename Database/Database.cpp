@@ -1439,10 +1439,10 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
   cout << "lock the query_parse_lock ." << endl;
   this->query_parse_lock.lock();
   cout << "lock the query_parse_lock successfully! ." << endl;
-  if (general_evaluation == NULL)
+  /*if (general_evaluation == NULL)
   {
       cout << "the general_evaluation is null ! ." << endl;
-  }
+  }*/
   bool parse_ret = general_evaluation.parseQuery(_query);
   cout << "parse query  successfully! ." << endl;
   this->query_parse_lock.unlock();
