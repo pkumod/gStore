@@ -1436,10 +1436,11 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
   GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, this->limitID_entity);
 
   long tv_begin = Util::get_cur_time();
-
+  cout << "lock the query_parse_lock ." << endl;
   this->query_parse_lock.lock();
   bool parse_ret = general_evaluation.parseQuery(_query);
   this->query_parse_lock.unlock();
+  cout << "unlock the query_parse_lock ." << endl;
   if (!parse_ret)
     return -101;
   long tv_parse = Util::get_cur_time();
