@@ -26,7 +26,12 @@ void QueryParser::SPARQLParse(const string& query, QueryTree& querytree)
   pANTLR3_BASE_TREE root = workload_ret.tree;
 
   if (printNode(root) > 0)
-    throw "[ERROR]	Some errors are found in the SPARQL query request.";
+  {
+
+      printf("[ERROR]	Some errors are found in the SPARQL query request.");
+      fflush(stdout);
+      throw "[ERROR]	Some errors are found in the SPARQL query request.";
+  }
 
   parseWorkload(root, querytree);
 

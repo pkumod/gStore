@@ -82,6 +82,7 @@ bool GeneralEvaluation::parseQuery(const string& _query)
   {
     printf("%s\n", e);
     printf(" parse query error");
+    fflush(stdout);
     return false;
   }
 
