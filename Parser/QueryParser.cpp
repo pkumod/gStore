@@ -13,16 +13,28 @@ using namespace std;
 void QueryParser::SPARQLParse(const string& query, QueryTree& querytree)
 {
   //uncompress before use
+    printf("[Info]	test step 1 \n");
+    fflush(stdout);
   dfa34_Table_uncompress();
-
+  printf("[Info]	test step 2 \n");
+  fflush(stdout);
   pANTLR3_INPUT_STREAM input = antlr3StringStreamNew((ANTLR3_UINT8*)(query.c_str()), ANTLR3_ENC_UTF8, query.length(), (ANTLR3_UINT8*)"QueryString");
   //input = antlr3FileStreamNew((pANTLR3_UINT8)filePath,ANTLR3_ENC_8BIT);
-
+  printf("[Info]	test step 3 \n");
+  fflush(stdout);
   pSparqlLexer lex = SparqlLexerNew(input);
+  printf("[Info]	test step 4 \n");
+  fflush(stdout);
   pANTLR3_COMMON_TOKEN_STREAM tokens = antlr3CommonTokenStreamSourceNew(ANTLR3_SIZE_HINT, TOKENSOURCE(lex));
+  printf("[Info]	test step 5 \n");
+  fflush(stdout);
   pSparqlParser parser = SparqlParserNew(tokens);
+  printf("[Info]	test step 6 \n");
+  fflush(stdout);
 
   SparqlParser_workload_return workload_ret = parser->workload(parser);
+  printf("[Info]	test step 7 \n");
+  fflush(stdout);
   pANTLR3_BASE_TREE root = workload_ret.tree;
 
   if (printNode(root) > 0)
