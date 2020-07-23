@@ -221,7 +221,7 @@ antlrcpp::Any QueryParser::visitWhereClause(SPARQLParser::WhereClauseContext *ct
 */
 antlrcpp::Any QueryParser::visitLimitClause(SPARQLParser::LimitClauseContext *ctx)
 {
-	query_tree_ptr->setLimit(stoi(ctx->children[1]->getText()));
+	query_tree_ptr->setLimit(stoi(getTextWithRange(ctx->children[1])));
 
 	return antlrcpp::Any();
 }
@@ -235,7 +235,7 @@ antlrcpp::Any QueryParser::visitLimitClause(SPARQLParser::LimitClauseContext *ct
 */
 antlrcpp::Any QueryParser::visitOffsetClause(SPARQLParser::OffsetClauseContext *ctx)
 {
-	query_tree_ptr->setOffset(stoi(ctx->children[1]->getText()));
+	query_tree_ptr->setOffset(stoi(getTextWithRange(ctx->children[1])));
 
 	return antlrcpp::Any();
 }
@@ -396,11 +396,11 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE")
 			{
 				if (bicCtx->num_integer())
-					proj_var.path_args.k = stoi(bicCtx->num_integer()->getText());
+					proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer()));
 				else if (bicCtx->integer_positive())
-					proj_var.path_args.k = stoi(bicCtx->integer_positive()->getText());
+					proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_positive()));
 				else if (bicCtx->integer_negative())
-					proj_var.path_args.k = stoi(bicCtx->integer_negative()->getText());
+					proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_negative()));
 				
 				if (bicCtx->numericLiteral())
 					proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
@@ -874,18 +874,17 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 			{
 				currChild->node_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type;
 				
-				string baseText = root->getText();
 				if (((SPARQLParser::PrimaryexpressionContext *)root)->rDFLiteral())
-					currChild->str = baseText;
+					currChild->str = getTextWithRange(root);
 				else if (((SPARQLParser::PrimaryexpressionContext *)root)->numericLiteral())
 				{
 					auto numericLiteral = ((SPARQLParser::PrimaryexpressionContext *)root)->numericLiteral();
 					currChild->str = getNumeric(numericLiteral);
 				}
 				else if (((SPARQLParser::PrimaryexpressionContext *)root)->booleanLiteral())
-					currChild->str = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
+					currChild->str = "\"" + root->getText() + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
 				else if (((SPARQLParser::PrimaryexpressionContext *)root)->var())
-					currChild->str = baseText;
+					currChild->str = root->getText();
 				
 				replacePrefix(currChild->str);
 			}
@@ -1085,7 +1084,7 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 					&& objectpath->graphNodepath()->varOrTerm()->graphTerm()->booleanLiteral())
 					object = "\"" + (objectpath->getText()) + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
 				else
-					object = objectpath->getText();
+					object = getTextWithRange(objectpath);
 				replacePrefix(object);
 				addTriple(subject, predicate, object, group_pattern);
 			}
@@ -1104,7 +1103,7 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 					&& object_ptr->graphNode()->varOrTerm()->graphTerm()->booleanLiteral())
 					object = "\"" + (object_ptr->getText()) + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
 				else
-					object = object_ptr->getText();
+					object = getTextWithRange(object_ptr);
 				replacePrefix(object);
 				addTriple(subject, predicate, object, group_pattern);
 			}
@@ -1398,7 +1397,7 @@ antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubj
 				&& object_ptr->graphNode()->varOrTerm()->graphTerm()->booleanLiteral())
 				object = "\"" + (object_ptr->getText()) + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
 			else
-				object = object_ptr->getText();
+				object = getTextWithRange(object_ptr);
 			replacePrefix(object);
 
 			if (query_tree_ptr->getUpdateType() == QueryTree::Delete_Data
@@ -1458,8 +1457,22 @@ string QueryParser::getNumeric(SPARQLParser::NumericLiteralContext *ctx)
 	switch (numType)
 	{
 		case 0:
-		ret = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#integer>";
-		break;
+		{
+			long long ll;
+			bool succ = 1;
+			try
+			{
+				ll = stoll(baseText);
+			}
+			catch (out_of_range &e)
+			{
+				succ = 0;
+				throw "[ERROR] xsd:integer out of range.";
+			}
+			if (succ)
+				ret = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#integer>";
+			break;
+		}
 
 		case 1:
 		ret = "\"" + baseText + "\"" + "^^<http://www.w3.org/2001/XMLSchema#decimal>";
@@ -1470,5 +1483,100 @@ string QueryParser::getNumeric(SPARQLParser::NumericLiteralContext *ctx)
 		break;
 	}
 
+	return ret;
+}
+
+/**
+	Helper function that checks ranges for integer types, and get rids of NaN for float types.
+	Wrapper of getText.
+
+	@param ctx pointer to the requested parse tree node's context.
+	@return string of the resulting text.
+*/
+
+string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
+{
+	string ret, baseText = ctx->getText();
+	long long ll;
+	if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#integer>") != string::npos)
+	{
+		string val = baseText.substr(1, baseText.find("^^<http://www.w3.org/2001/XMLSchema#integer>") - 2);
+		try
+		{
+			ll = stoll(val);
+		}
+		catch (out_of_range &e)
+		{
+			throw "[ERROR] xsd:integer out of range.";
+		}
+	}
+	else if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#long>") != string::npos)
+	{
+		string val = baseText.substr(1, baseText.find("^^<http://www.w3.org/2001/XMLSchema#long>") - 2);
+		try
+		{
+			ll = stoll(val);
+		}
+		catch (out_of_range &e)
+		{
+			throw "[ERROR] xsd:long out of range.";
+		}
+	}
+	else if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#int>") != string::npos)
+	{
+		string val = baseText.substr(1, baseText.find("^^<http://www.w3.org/2001/XMLSchema#int>") - 2);
+		bool succ = 1;
+		try
+		{
+			ll = stoll(val);
+		}
+		catch (out_of_range &e)
+		{
+			succ = 0;
+			throw "[ERROR] xsd:int out of range.";
+		}
+		if (succ && (ll < (long long)INT_MIN || ll > (long long)INT_MAX))
+			throw "[ERROR] xsd:int out of range.";
+	}
+	else if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#short>") != string::npos)
+	{
+		string val = baseText.substr(1, baseText.find("^^<http://www.w3.org/2001/XMLSchema#short>") - 2);
+		bool succ = 1;
+		try
+		{
+			ll = stoll(val);
+		}
+		catch (out_of_range &e)
+		{
+			succ = 0;
+			throw "[ERROR] xsd:short out of range.";
+		}
+		if (succ && (ll < (long long)SHRT_MIN || ll > (long long)SHRT_MAX))
+			throw "[ERROR] xsd:short out of range.";
+	}
+	else if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#byte>") != string::npos)
+	{
+		string val = baseText.substr(1, baseText.find("^^<http://www.w3.org/2001/XMLSchema#byte>") - 2);
+		bool succ = 1;
+		try
+		{
+			ll = stoll(val);
+		}
+		catch (out_of_range &e)
+		{
+			succ = 0;
+			throw "[ERROR] xsd:byte out of range.";
+		}
+		if (succ && (ll < (long long)SCHAR_MIN || ll > (long long)SCHAR_MAX))	// signed char
+			throw "[ERROR] xsd:byte out of range.";
+	}
+	else if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#float>") != string::npos
+		|| baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#double>") != string::npos)
+	{
+		if (baseText.substr(1, 3) == "NaN")
+			throw "[ERROR] NaN for xsd:float or xsd:double.";
+	}
+
+	ret = baseText;
 	return ret;
 }
