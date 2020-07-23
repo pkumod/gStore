@@ -64,6 +64,7 @@ public:
 		QueryTree::GroupPattern &group_pattern);
 	void replacePrefix(std::string &str);
 	std::string getNumeric(SPARQLParser::NumericLiteralContext *ctx);
+	std::string getTextWithRange(antlr4::tree::ParseTree *ctx);
 
 	void printNode(antlr4::ParserRuleContext *ctx, const char *nodeTypeName);
 	void printTree(antlr4::tree::ParseTree *root, int dep);
