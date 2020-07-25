@@ -100,7 +100,7 @@ serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)So
 
 # httpobj = $(objdir)client_http.hpp.gch $(objdir)server_http.hpp.gch
 
-databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o $(objdir)CSR.o
+databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o $(objdir)CSR.o $(objdir)Transaction.o $(objdir)Txn_manager.o
 
 trieobj = $(objdir)Trie.o $(objdir)TrieNode.o
 
@@ -117,7 +117,7 @@ inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
 
 #gtest
 
-TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback 
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback 
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -186,6 +186,9 @@ $(testdir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
 
 $(testdir)dataset_test: $(lib_antlr) $(objdir)dataset_test.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(testdir)dataset_test $(objdir)dataset_test.o $(objfile) $(library) $(openmp)
+
+$(testdir)transaction_test: $(lib_antlr) $(objdir)transaction_test.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(testdir)transaction_test $(objdir)transaction_test.o $(objfile) $(library) $(openmp)
 #executables end
 
 
@@ -228,7 +231,7 @@ $(objdir)gclient.o: Main/gclient.cpp Server/Client.h Util/Util.h $(lib_antlr)
 $(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/socket/cpp/src/GstoreConnector.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gconsole.cpp $(inc) -o $(objdir)gconsole.o -I./api/socket/cpp/src/ $(openmp) #-DREADLINE_ON
 
-$(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/ghttp.cpp $(inc) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
 $(objdir)gbackup.o: Main/gbackup.cpp Database/Database.h Util/Util.h $(lib_antlr)
@@ -252,6 +255,8 @@ $(objdir)update_test.o: $(testdir)update_test.cpp Database/Database.h Util/Util.
 $(objdir)dataset_test.o: $(testdir)dataset_test.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) $(testdir)dataset_test.cpp $(inc) -o $(objdir)dataset_test.o $(openmp)
 
+$(objdir)transaction_test.o: $(testdir)transaction_test.cpp Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) $(testdir)transaction_test.cpp $(inc) -o $(objdir)transaction_test.o $(openmp)
 #objects in scripts/ end
 
 
@@ -385,6 +390,12 @@ $(objdir)Strategy.o: Database/Strategy.cpp Database/Strategy.h $(objdir)SPARQLqu
 
 $(objdir)CSR.o: Database/CSR.cpp Database/CSR.h $(objdir)Util.o
 	$(CC) $(CFLAGS) Database/CSR.cpp $(inc) -o $(objdir)CSR.o $(openmp)
+
+$(objdir)Transaction.o: Database/Transaction.cpp Database/Transaction.h $(objdir)Util.o $(objdir)Database.o
+	$(CC) $(CFLAGS) Database/Transaction.cpp $(inc) -o $(objdir)Transaction.o $(openmp)
+
+$(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(objdir)Util.o $(objdir)Transaction.o 
+	$(CC) $(CFLAGS) Database/Txn_manager.cpp $(inc) -o $(objdir)Txn_manager.o $(openmp)
 
 #objects in Database/ end
 
@@ -594,7 +605,7 @@ clean:
 	#$(MAKE) -C KVstore clean
 	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole* $(exedir)rollback
 	rm -rf bin/*.class
-	rm -rf $(testdir)update_test $(testdir)dataset_test
+	rm -rf $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test
 	#rm -rf .project .cproject .settings   just for eclipse
 	rm -rf logs/*.log
 	rm -rf *.out   # gmon.out for gprof with -pg

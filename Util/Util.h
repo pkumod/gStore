@@ -455,6 +455,15 @@ public:
 	static std::string query_backuplog(std::string db_name, std::string parameter);
 	static void search_backuplog(std::vector<std::string> &res, std::string parameter, std::string value);
 	static bool has_record_backuplog(std::string db_name);
+
+	static void init_transactionlog();
+	static int add_transactionlog(std::string db_name, std::string user, std::string TID,  std::string begin_time, std::string status = "RUNNING",  std::string end_time = "inf");
+	static int delete_transactionlog(std::string db_name, std::string TID);
+	static int update_transactionlog(std::string db_name, std::string status, std::string end_time);
+	static std::string get_transactionlog();
+	static void abort_transactionlog(long end_time);
+
+	static long int get_timestamp(std::string& line);
 private:
 	static bool isValidIPV4(std::string);
 	static bool isValidIPV6(std::string);
