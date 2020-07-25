@@ -155,40 +155,42 @@ int main(int argc, char * argv[])
 	bool no_sysdb = false;
 	if(boost::filesystem::exists("system.db"))
 	{
-	Database system_db("system");
-	system_db.load();
-	string sparql = "select ?s where{?s <database_status> \"already_built\".}";
-	FILE* ofp = stdout;
-	int ret = system_db.query(sparql, _rs, ofp);
+		Database system_db("system");
+		system_db.load();
+		string sparql = "select ?s where{?s <database_status> \"already_built\".}";
+		FILE* ofp = stdout;
+		int ret = system_db.query(sparql, _rs, ofp);
 	}
 	else
 	   no_sysdb = true;
 	if(argc > 2){
-	cout << "db reserved db reserved db reserved db reserved db reserved " << endl;
-	vector<string> db_names;
-	for(int i = 2; i < argc; i++){
-		cout << argv[i] << endl;
-		db_names.push_back(argv[i]);
-	}
-	for (int i = 0; i < _rs.ansNum; i++)
-	{
-		string db_name = _rs.answer[i][0];
-		db_name.erase(0,1);
-		db_name.pop_back();
-		//cout << "db num:db num:db num:db num:db num:db num:db num:db num:" << db_name << endl;
-		if(find(db_names.begin(), db_names.end(), db_name) == db_names.end() || db_name == "system")
+		cout << "db reserved db reserved db reserved db reserved db reserved " << endl;
+		vector<string> db_names;
+		for(int i = 2; i < argc; i++){
+			cout << argv[i] << endl;
+			db_names.push_back(argv[i]);
+		}
+		for (int i = 0; i < _rs.ansNum; i++)
 		{
-			string cmd;
-			cmd = "rm -r " + db_name + ".db";
-			system(cmd.c_str());
+			string db_name = _rs.answer[i][0];
+			db_name.erase(0,1);
+			db_name.pop_back();
+			//cout << "db num:db num:db num:db num:db num:db num:db num:db num:" << db_name << endl;
+			if(find(db_names.begin(), db_names.end(), db_name) == db_names.end() || db_name == "system")
+			{
+				string cmd;
+				cmd = "rm -r " + db_name + ".db";
+				system(cmd.c_str()); //maybe failed
+			}
 		}
 	}
-	}
 	else{
-		string cmd;
-		cmd = "rm -r system.db";
-		system(cmd.c_str());
-		cout << _rs.ansNum << endl;
+		if (!no_sysdb) {
+			string cmd;
+			cmd = "rm -r system.db";
+			system(cmd.c_str());
+			cout << _rs.ansNum << endl;
+		}
 		for (int i = 0; i < _rs.ansNum; i++)
 		{
 			string db_name = _rs.answer[i][0];

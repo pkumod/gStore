@@ -19,6 +19,7 @@
 #include "../Server/client_http.hpp"
 //db
 #include "../Database/Database.h"
+#include "../Database/Txn_manager.h"
 #include "../Util/Util.h"
 
 #include "../tools/rapidjson/document.h"
@@ -74,6 +75,8 @@ bool updateSys(string sparql);
 bool initSys();
 //bool refreshSys();
 int db_reload(string db_name);
+bool abort_all_transaction(string db_name);
+txn_id_t get_txn_id(string db_name, string user);
 //bool doQuery(string format, string db_query, const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 //=============================================================================
@@ -139,6 +142,14 @@ bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 
 bool refresh_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
+bool begin_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool commit_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool rollback_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool txnlog_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
 void signalHandler(int signum);
 //=============================================================================
 
@@ -161,7 +172,8 @@ pthread_rwlock_t users_map_lock;
 Database *system_database;
 
 std::map<std::string, Database *> databases;
-
+std::map<std::string, Txn_manager*> txn_managers;
+std::map<std::string, txn_id_t> running_txn;
 //database information
 struct DBInfo{
 	private:
@@ -1054,12 +1066,15 @@ int initialize(int argc, char *argv[])
 			current_database = NULL;
 			return -1;
 		}
-
+		Txn_manager* txn_m = new Txn_manager(current_database, database);
+		txn_managers.insert(pair<string, Txn_manager*>(database, txn_m));
 		//string success = db_name;
 		//already_build.insert(db_name);
 		databases.insert(pair<std::string, Database *>(db_name, current_database));
 	//}
 	}
+	//init transaction log
+	Util::init_transactionlog();
 	//get the log name
 	string namelog_name = QUERYLOG_PATH + NAMELOG_PATH;
 	FILE *name_logfp = fopen(namelog_name.c_str(), "r+");
@@ -1350,6 +1365,70 @@ int initialize(int argc, char *argv[])
 	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		parameter_handler(server, response, request, "POST");
+	};
+
+	server.resource["^/%3[F|f]operation%3[D|d]begin%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		begin_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=begin&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		begin_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /user, responds with the matched string in path
+	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		begin_handler(server, response, request, "POST");
+	};
+
+	server.resource["^/%3[F|f]operation%3[D|d]commit%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26TID%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		commit_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=commit&db_name=(.*)&username=(.*)&password=(.*)&TID=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		commit_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /user, responds with the matched string in path
+	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		commit_handler(server, response, request, "POST");
+	};
+
+	server.resource["^/%3[F|f]operation%3[D|d]rollback%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26TID%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		rollback_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=rollback&db_name=(.*)&username=(.*)&password=(.*)&TID=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		rollback_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /user, responds with the matched string in path
+	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		rollback_handler(server, response, request, "POST");
+	};
+
+	server.resource["^/%3[F|f]operation%3[D|d]txnlog%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		txnlog_handler(server, response, request, "GET");
+	};
+
+	server.resource["^/?operation=txnlog&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		txnlog_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /user, responds with the matched string in path
+	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		txnlog_handler(server, response, request, "POST");
 	};
 
 #endif
@@ -1656,11 +1735,13 @@ void signalHandler(int signum)
 {
 	pthread_rwlock_rdlock(&databases_map_lock);
 	std::map<std::string, Database *>::iterator iter;
+	Util::abort_transactionlog(Util::get_cur_time());
 	for (iter = databases.begin(); iter != databases.end(); iter++)
 	{
 		string database_name = iter->first;
 		if (database_name == "system")
 			continue;
+		abort_all_transaction(database_name);
 		Database *current_database = iter->second;
 		pthread_rwlock_rdlock(&already_build_map_lock);
 		std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(database_name);
@@ -2349,6 +2430,8 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	}
 	Database *current_database = new Database(database);
 	bool flag = current_database->load();
+	Txn_manager* txn_m = new Txn_manager(current_database, database);
+	txn_managers.insert(pair<string, Txn_manager*>(database, txn_m));
 	//delete current_database;
 	//current_database = NULL;
 	//cout << "load done." << endl;
@@ -2529,6 +2612,20 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	delete current_database;
 	current_database = NULL;
 	databases.erase(db_name);
+	if (txn_managers.find(db_name) == txn_managers.end())
+	{
+		string error = "transaction manager error! Database unloaded!";
+		string resJson = CreateJson(990, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+	abort_all_transaction(db_name);
+	delete txn_managers[db_name];
+	txn_managers.erase(db_name);
+	
 	string success = "Database unloaded.";
 	string resJson = CreateJson(0, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -4087,6 +4184,12 @@ bool checkpoint_handler(const HttpServer& server, const shared_ptr<HttpServer::R
 	return true;
 }
 
+bool abort_all_transaction(string db_name)
+{
+	Txn_manager* txn_m = txn_managers[db_name];
+	txn_m->abort_all_running();
+}
+
 bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
 	string thread_id = Util::getThreadID();
@@ -4096,11 +4199,14 @@ bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 	pthread_rwlock_rdlock(&databases_map_lock);
 	std::map<std::string, Database *>::iterator iter;
 	string success;
+	Util::abort_transactionlog(Util::get_cur_time());
 	for(iter=databases.begin(); iter != databases.end(); iter++)
 	{
 		string database_name = iter->first;
 		if (database_name == "system")
 			continue;
+		//abort all transaction
+		abort_all_transaction(database_name);
 		Database *current_database = iter->second;
 		pthread_rwlock_rdlock(&already_build_map_lock);
 		std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(database_name);
@@ -6393,7 +6499,6 @@ void refresh_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	string db_name;
 	string username;
 	string password;
-
 	if (RequestType == "GET")
 	{
 		db_name = request->path_match[1];
@@ -6444,6 +6549,635 @@ bool refresh_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	return true;
 }
 
+void begin_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is begin" << endl;
+
+	//get parameter
+	string db_name;
+	string username;
+	string password;
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
+	
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User*>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+
+	cout << "check identity successfully." << endl;
+
+	//check if the db_name is system
+	if (db_name == "system")
+	{
+		string error = "no load privilege, operation failed.";
+		string resJson = CreateJson(302, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+
+	//	string db_name = argv[1];
+	if (db_name == "")
+	{
+		string error = "db name is required!";
+		string resJson = CreateJson(904, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	string database = db_name;
+	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db")
+	{
+		//cout << "Your db name to be built should not end with \".db\"." << endl;
+		string error = "Your db name to be built should not end with \".db\".";
+		string resJson = CreateJson(202, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	//check if database named [db_name] is already build.
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
+	if (it_already_build == already_build.end())
+	{
+		string error = "Database not built yet.";
+		string resJson = CreateJson(203, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		pthread_rwlock_unlock(&already_build_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&already_build_map_lock);
+
+	pthread_rwlock_wrlock(&databases_map_lock);
+	std::map<std::string, Database*>::iterator iter = databases.find(db_name);
+	if (iter == databases.end())
+	{
+		string error = "Database not load yet.";
+		string resJson = CreateJson(304, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		pthread_rwlock_unlock(&databases_map_lock);
+		return;
+	}
+	Database* current_database = iter->second;
+	pthread_rwlock_unlock(&databases_map_lock);
+
+	if (txn_managers.find(db_name) == txn_managers.end())
+	{
+		string error = "Database transaction manager error.";
+		string resJson = CreateJson(990, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+
+	Txn_manager* txn_m = txn_managers[db_name];
+	txn_id_t TID = txn_m->Begin();
+	cout << to_string(TID) << endl;
+	cout << to_string(txn_m->Get_Transaction(TID)->GetStartTime()) << endl;
+	Util::add_transactionlog(db_name, username, to_string(TID), to_string(txn_m->Get_Transaction(TID)->GetStartTime()), "RUNNING", "INF");
+	if (TID == 0)
+	{
+		string error = "transaction begin failed.";
+		string resJson = CreateJson(991, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	//TODO: write the transaction log
+	string idx = db_name + "_" + username;
+	running_txn.insert(pair<string, txn_id_t>(idx, TID));
+	string TID_s = Util::int2string(TID);
+	string success = "transaction begin success. The TID is: " + TID_s;
+	string resJson = CreateJson(992, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+}
+
+bool begin_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&begin_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+void commit_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is commit" << endl;
+
+	//get parameter
+	string db_name;
+	string username;
+	string password;
+	string TID_s;
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		TID_s = request->path_match[4];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		TID_s = UrlDecode(TID_s);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		TID_s = document["TID"].GetString();
+	}
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User*>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+
+	cout << "check identity successfully." << endl;
+
+	//check if the db_name is system
+	if (db_name == "system")
+	{
+		string error = "no load privilege, operation failed.";
+		string resJson = CreateJson(302, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+
+	//	string db_name = argv[1];
+	if (db_name == "")
+	{
+		string error = "db name is required!";
+		string resJson = CreateJson(904, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	string database = db_name;
+	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db")
+	{
+		//cout << "Your db name to be built should not end with \".db\"." << endl;
+		string error = "Your db name to be built should not end with \".db\".";
+		string resJson = CreateJson(202, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	//check if database named [db_name] is already build.
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
+	if (it_already_build == already_build.end())
+	{
+		string error = "Database not built yet.";
+		string resJson = CreateJson(203, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		pthread_rwlock_unlock(&already_build_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&already_build_map_lock);
+
+	pthread_rwlock_wrlock(&databases_map_lock);
+	std::map<std::string, Database*>::iterator iter = databases.find(db_name);
+	if (iter == databases.end())
+	{
+		string error = "Database not load yet. No transction is running in this database";
+		string resJson = CreateJson(304, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		pthread_rwlock_unlock(&databases_map_lock);
+		return;
+	}
+	Database* current_database = iter->second;
+	pthread_rwlock_unlock(&databases_map_lock);
+
+	if (txn_managers.find(db_name) == txn_managers.end())
+	{
+		string error = "Database transaction manager error.";
+		string resJson = CreateJson(990, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	Txn_manager* txn_m = txn_managers[db_name];
+	txn_id_t TID;
+	if (TID_s == "")
+	{
+		string idx = db_name + "_" + username;
+		if (running_txn.find(idx) == running_txn.end())
+		{
+			cout << "commit latest transaction" << endl;
+			TID = txn_m->find_latest_txn();
+			if (TID == 0)
+			{
+				string error = "no running transaction avaliable!" ;
+				string resJson = CreateJson(992, error, 0);
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+				return;
+			}
+		}
+		else
+		{
+			cout << "commit current users' transaction" << endl;
+			TID = running_txn[idx];
+		}
+		TID_s = Util::int2string(TID);
+	}
+	else {
+		if (Util::is_number(TID_s))
+			TID = stoull(TID_s);
+		else 
+		{
+			string error = "TID is not a pure number. TID: " + TID_s;
+			string resJson = CreateJson(999, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+			return;
+		}
+	}
+		
+	int ret = txn_m->Commit(TID);
+	string idx = db_name + "_" + username;
+	running_txn.erase(idx);
+	if (ret == 1)
+	{
+		string error = "transaction not in running state! commit failed. TID: " + TID_s;
+		string resJson = CreateJson(992, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	else if (ret == -1)
+	{
+		string error = "transaction not found, commit failed. TID: " + TID_s;
+		string resJson = CreateJson(993, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	else
+	{
+		Util::update_transactionlog(to_string(TID), "COMMITED", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
+		string success = "transaction commit success. TID: " + TID_s;
+		string resJson = CreateJson(994, success, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+}
+
+bool commit_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&commit_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+void rollback_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is rollback" << endl;
+
+	//get parameter
+	string db_name;
+	string username;
+	string password;
+	string TID_s;
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		TID_s = request->path_match[4];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		TID_s = UrlDecode(TID_s);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		TID_s = document["TID"].GetString();
+	}
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User*>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+
+	cout << "check identity successfully." << endl;
+
+	//check if the db_name is system
+	if (db_name == "system")
+	{
+		string error = "no load privilege, operation failed.";
+		string resJson = CreateJson(302, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+
+	//	string db_name = argv[1];
+	if (db_name == "")
+	{
+		string error = "db name is required!";
+		string resJson = CreateJson(904, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	string database = db_name;
+	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db")
+	{
+		//cout << "Your db name to be built should not end with \".db\"." << endl;
+		string error = "Your db name to be built should not end with \".db\".";
+		string resJson = CreateJson(202, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	//check if database named [db_name] is already build.
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
+	if (it_already_build == already_build.end())
+	{
+		string error = "Database not built yet.";
+		string resJson = CreateJson(203, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		pthread_rwlock_unlock(&already_build_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&already_build_map_lock);
+
+	pthread_rwlock_wrlock(&databases_map_lock);
+	std::map<std::string, Database*>::iterator iter = databases.find(db_name);
+	if (iter == databases.end())
+	{
+		string error = "Database not load yet. No transction is running in this database";
+		string resJson = CreateJson(304, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		pthread_rwlock_unlock(&databases_map_lock);
+		return;
+	}
+	Database* current_database = iter->second;
+	pthread_rwlock_unlock(&databases_map_lock);
+
+	if (txn_managers.find(db_name) == txn_managers.end())
+	{
+		string error = "Database transaction manager error.";
+		string resJson = CreateJson(990, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	Txn_manager* txn_m = txn_managers[db_name];
+	txn_id_t TID;
+	if (TID_s == "")
+	{
+		string idx = db_name + "_" + username;
+		if (running_txn.find(idx) == running_txn.end())
+		{
+			cout << "rollback latest transaction" << endl;
+			TID = txn_m->find_latest_txn();
+			cout << "latest transaction id: " << TID << endl;
+			if (TID == 0)
+			{
+				string error = "no running transaction avaliable!";
+				string resJson = CreateJson(995, error, 0);
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+				return;
+			}
+		}
+		else
+		{
+			cout << "rollback users' current transaction" << endl;
+			TID = running_txn[idx];
+			running_txn.erase(idx);
+		}
+		TID_s = Util::int2string(TID);
+	}
+	else {
+		if (Util::is_number(TID_s))
+			TID = stoull(TID_s);
+		else
+		{
+			string error = "TID is not a pure number. TID: " + TID_s;
+			string resJson = CreateJson(999, error, 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+			return;
+		}
+	}
+	//txn_id_t _TID;
+	//string idx = db_name + "_" + username;
+	//_TID = running_txn[idx];
+	int ret = txn_m->Abort(TID);
+	//TID_s = to_string(_TID);
+	//TODO: write to transaciton log
+	if (ret == 1)
+	{
+		string error = "transaction not in running state! rollback failed. TID: " + TID_s;
+		string resJson = CreateJson(996, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	else if (ret == -1)
+	{
+		string error = "transaction not found, rollback failed. TID: " + TID_s;
+		string resJson = CreateJson(997, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	else
+	{
+		Util::update_transactionlog(to_string(TID), "ROLLBACK", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
+		string success = "transaction rollback success. TID: " + TID_s;
+		string resJson = CreateJson(998, success, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+}
+
+bool rollback_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&rollback_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+void txnlog_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is txnlog" << endl;
+
+	//get parameter
+	string db_name;
+	string username;
+	string password;
+	if (RequestType == "GET")
+	{
+		username = request->path_match[1];
+		password = request->path_match[2];
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+	}
+	//check the username and password
+	pthread_rwlock_rdlock(&users_map_lock);
+	string root_password = (users.find(ROOT_USERNAME))->second->getPassword();
+	pthread_rwlock_unlock(&users_map_lock);
+	//check the identity of root
+	if (username == ROOT_USERNAME && password == root_password) {
+		string resJson = Util::get_transactionlog();
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+	}
+	else
+	{
+		string error = "Root User Only!";
+		string resJson = CreateJson(514, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+	}
+	return;
+}
+
+bool txnlog_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&txnlog_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
 int db_reload(string db_name)
 {
 	pthread_rwlock_rdlock(&databases_map_lock);
@@ -6484,3 +7218,12 @@ int db_reload(string db_name)
 	return 0;
 }
 
+txn_id_t get_txn_id(string db_name, string user)
+{
+	string idx = db_name + "_" + user;
+	if (running_txn.find(idx) == running_txn.end()) {
+		return 0;
+	}
+	else
+		return running_txn[idx];
+}
