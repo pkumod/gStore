@@ -54,6 +54,11 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 				{
 					ll = stoll(_object);
 				}
+				catch (invalid_argument &e)
+				{
+					cout << "Triple " << _triple_num << " integer value invalid, _object = " << _object << endl;
+					continue;
+				}
 				catch (out_of_range &e)
 				{
 					cout << "Triple " << _triple_num << " integer out of range." << endl;
@@ -95,6 +100,11 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 					{
 						ll = stoll(_object);
 					}
+					catch (invalid_argument &e)
+					{
+						cout << "Triple " << _triple_num << " long value invalid, _object = " << _object << endl;
+						continue;
+					}
 					catch (out_of_range &e)
 					{
 						cout << "Triple " << _triple_num << " xsd:long out of range." << endl;
@@ -107,6 +117,11 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 					try
 					{
 						ll = stoll(_object);
+					}
+					catch (invalid_argument &e)
+					{
+						cout << "Triple " << _triple_num << " int value invalid, _object = " << _object << endl;
+						continue;
 					}
 					catch (out_of_range &e)
 					{
@@ -126,6 +141,11 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 					{
 						ll = stoll(_object);
 					}
+					catch (invalid_argument &e)
+					{
+						cout << "Triple " << _triple_num << " short value invalid, _object = " << _object << endl;
+						continue;
+					}
 					catch (out_of_range &e)
 					{
 						cout << "Triple " << _triple_num << " xsd:short out of range." << endl;
@@ -143,6 +163,11 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 					try
 					{
 						ll = stoll(_object);
+					}
+					catch (invalid_argument &e)
+					{
+						cout << "Triple " << _triple_num << " byte value invalid, _object = " << _object << endl;
+						continue;
 					}
 					catch (out_of_range &e)
 					{
