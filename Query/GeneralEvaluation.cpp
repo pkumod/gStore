@@ -1866,38 +1866,72 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							if (arg1[0] == '?')
 							{
 								pos1 = Varset(arg1).mapTo(query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset)[0];
-								if (pos1 < result0_id_cols)
+								if (pos1 == -1)
+								{
+									cout << "[ERROR] Cannot get arg1 in CONTAINS." << endl;
 									break;
+								}
+								isel1 = query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.findVar(arg1);
 							}
 							else if (arg1[0] == '\"')
+							{
 								big_str = arg1;
+								int idx = big_str.length() - 1;
+								while (idx >= 0 && big_str[idx] != '"')
+									idx--;
+								if (idx >= 1)
+									big_str = big_str.substr(1, idx - 1);
+							}
+							
 							if (arg2[0] == '?')
 							{
 								pos2 = Varset(arg2).mapTo(query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset)[0];
-								if (pos2 < result0_id_cols)
+								if (pos2 == -1)
+								{
+									cout << "[ERROR] Cannot get arg2 in CONTAINS." << endl;
 									break;
+								}
+								isel2 = query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.findVar(arg2);
 							}
 							else if (arg2[0] == '\"')
+							{
 								small_str = arg2;
+								int idx = small_str.length() - 1;
+								while (idx >= 0 && small_str[idx] != '"')
+									idx--;
+								if (idx >= 1)
+									small_str = small_str.substr(1, idx - 1);
+							}
 
 							for (int j = begin; j <= end; j++)
 							{
 								if (pos1 >= 0)
-									big_str = result0.result[j].str[pos1 - result0_id_cols];
+								{
+									if (pos1 < result0_id_cols)
+										stringindex->randomAccess(result0.result[j].id[pos1], &big_str, isel1);
+									else
+										big_str = result0.result[j].str[pos1 - result0_id_cols];
+									int idx = big_str.length() - 1;
+									while (idx >= 0 && big_str[idx] != '"')
+										idx--;
+									if (idx >= 1)
+										big_str = big_str.substr(1, idx - 1);
+								}
 								if (pos2 >= 0)
-									small_str = result0.result[j].str[pos2 - result0_id_cols];
+								{
+									if (pos2 < result0_id_cols)
+										stringindex->randomAccess(result0.result[j].id[pos2], &small_str, isel2);
+									else
+										small_str = result0.result[j].str[pos2 - result0_id_cols];
+									int idx = small_str.length() - 1;
+									while (idx >= 0 && small_str[idx] != '"')
+										idx--;
+									if (idx >= 1)
+										small_str = small_str.substr(1, idx - 1);
+								}
 
-								// Strip the parts after the last double quote
-								int idx = big_str.length() - 1;
-								while (idx >= 0 && big_str[idx] != '"')
-									idx--;
-								if (idx != big_str.length() - 1)
-									big_str = big_str.substr(0, idx + 1);
-								idx = small_str.length() - 1;
-								while (idx >= 0 && small_str[idx] != '"')
-									idx--;
-								if (idx != small_str.length() - 1)
-								small_str = small_str.substr(0, idx + 1);
+								cout << "big_str = " << big_str << endl;
+								cout << "small_str = " << small_str << endl;
 
 								if (big_str.find(small_str) != string::npos)
 									new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
