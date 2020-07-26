@@ -330,8 +330,9 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		{
 			// Make sure only one children along the way
 			if (curr->children.size() > 1)
-				throw runtime_error("[ERROR]	Currently only support selecting variables, "
-					"the aggregate function COUNT, and path-associated built-in calls");
+				throw runtime_error("[ERROR] Currently only support selecting variables; "
+					"the aggregate functions COUNT, MIN, MAX, SUM, AVG; "
+					"the built-in call CONTAINS; and path-associated built-in calls");
 			curr = curr->children[0];
 		}
 		SPARQLParser::AggregateContext *aggCtx = bicCtx->aggregate();
@@ -339,12 +340,21 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		{
 			string tmp = aggCtx->children[0]->getText();
 			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-			if (tmp != "COUNT")
-				throw runtime_error("[ERROR]	The supported aggregate function now is COUNT only");
+			if (tmp != "COUNT" && tmp != "MIN" && tmp != "MAX" && tmp != "AVG" && tmp != "SUM")
+				throw runtime_error("[ERROR] The supported aggregate function now is COUNT, MIN, MAX, AVG, SUM only");
 
 			query_tree_ptr->addProjectionVar();
 			QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
-			proj_var.aggregate_type = QueryTree::ProjectionVar::Count_type;
+			if (tmp == "COUNT")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::Count_type;
+			else if (tmp == "MIN")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::Min_type;
+			else if (tmp == "MAX")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::Max_type;
+			else if (tmp == "AVG")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::Avg_type;
+			else if (tmp == "SUM")
+				proj_var.aggregate_type = QueryTree::ProjectionVar::Sum_type;
 			proj_var.aggregate_var = aggCtx->expression()->getText();	// Error would have been dealt with
 			tmp = aggCtx->children[2]->getText();
 			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
@@ -355,64 +365,78 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		{
 			string tmp = bicCtx->children[0]->getText();
 			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-			if (tmp != "SIMPLECYCLEPATH" && tmp != "SIMPLECYCLEBOOLEAN"
-				&& tmp != "CYCLEPATH" && tmp != "CYCLEBOOLEAN"
-				&& tmp != "SHORTESTPATH" && tmp != "SHORTESTPATHLEN"
-				&& tmp != "KHOPREACHABLE" && tmp != "KHOPENUMERATE")
-				throw runtime_error("[ERROR]	Currently only support selecting variables, "
-					"the aggregate function COUNT, and path-associated built-in calls");
-			
-			query_tree_ptr->addProjectionVar();
-			QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
-			if (tmp == "SIMPLECYCLEPATH")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCyclePath_type;
-			else if (tmp == "SIMPLECYCLEBOOLEAN")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCycleBoolean_type;
-			else if (tmp == "CYCLEPATH")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::cyclePath_type;
-			else if (tmp == "CYCLEBOOLEAN")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::cycleBoolean_type;
-			else if (tmp == "SHORTESTPATH")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::shortestPath_type;
-			else if (tmp == "SHORTESTPATHLEN")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::shortestPathLen_type;
-			else if (tmp == "KHOPREACHABLE")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::kHopReachable_type;
-			else if (tmp == "KHOPENUMERATE")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::kHopEnumerate_type;
-
-			proj_var.path_args.src = bicCtx->varOrIri(0)->getText();
-			replacePrefix(proj_var.path_args.src);
-			proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
-			replacePrefix(proj_var.path_args.dst);
-			auto predSet = bicCtx->predSet()->iri();
-			for (auto pred : predSet)
+			if (tmp == "SIMPLECYCLEPATH" || tmp == "SIMPLECYCLEBOOLEAN"
+				|| tmp == "CYCLEPATH" || tmp == "CYCLEBOOLEAN"
+				|| tmp == "SHORTESTPATH" || tmp == "SHORTESTPATHLEN"
+				|| tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE")	// Path calls
 			{
-				string prefixedPred = pred->getText();
-				replacePrefix(prefixedPred);
-				proj_var.path_args.pred_set.push_back(prefixedPred);
-			}
+				query_tree_ptr->addProjectionVar();
+				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+				if (tmp == "SIMPLECYCLEPATH")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCyclePath_type;
+				else if (tmp == "SIMPLECYCLEBOOLEAN")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCycleBoolean_type;
+				else if (tmp == "CYCLEPATH")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::cyclePath_type;
+				else if (tmp == "CYCLEBOOLEAN")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::cycleBoolean_type;
+				else if (tmp == "SHORTESTPATH")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::shortestPath_type;
+				else if (tmp == "SHORTESTPATHLEN")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::shortestPathLen_type;
+				else if (tmp == "KHOPREACHABLE")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopReachable_type;
+				else if (tmp == "KHOPENUMERATE")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopEnumerate_type;
 
-			if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE")
-			{
-				if (bicCtx->num_integer())
-					proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer()));
-				else if (bicCtx->integer_positive())
-					proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_positive()));
-				else if (bicCtx->integer_negative())
-					proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_negative()));
-				
-				if (bicCtx->numericLiteral())
-					proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
+				proj_var.path_args.src = bicCtx->varOrIri(0)->getText();
+				replacePrefix(proj_var.path_args.src);
+				proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
+				replacePrefix(proj_var.path_args.dst);
+				auto predSet = bicCtx->predSet()->iri();
+				for (auto pred : predSet)
+				{
+					string prefixedPred = pred->getText();
+					replacePrefix(prefixedPred);
+					proj_var.path_args.pred_set.push_back(prefixedPred);
+				}
+
+				if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE")
+				{
+					if (bicCtx->num_integer())
+						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer()));
+					else if (bicCtx->integer_positive())
+						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_positive()));
+					else if (bicCtx->integer_negative())
+						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_negative()));
+					
+					if (bicCtx->numericLiteral())
+						proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
+					else
+						proj_var.path_args.confidence = 1;
+				}
+				if (bicCtx->booleanLiteral()->getText() == "true")
+					proj_var.path_args.directed = true;
 				else
-					proj_var.path_args.confidence = 1;
-			}
-			if (bicCtx->booleanLiteral()->getText() == "true")
-				proj_var.path_args.directed = true;
-			else
-				proj_var.path_args.directed = false;
+					proj_var.path_args.directed = false;
 
-			proj_var.var = varCtx->getText();
+				proj_var.var = varCtx->getText();
+				
+			}
+			else if (tmp == "CONTAINS")	// Original built-in calls, may add others later
+			{
+				query_tree_ptr->addProjectionVar();
+				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+				proj_var.aggregate_type = QueryTree::ProjectionVar::Contains_type;
+				proj_var.builtin_args.push_back(bicCtx->expression(0)->getText());
+				proj_var.builtin_args.push_back(bicCtx->expression(1)->getText());
+			}
+			else
+				throw runtime_error("[ERROR] Currently only support selecting variables; "
+					"the aggregate functions COUNT, MIN, MAX, SUM, AVG; "
+					"the built-in call CONTAINS; and path-associated built-in calls");
+				
+			
 		}
 	}
 	else 	// For multi-layer computation, only consider vars, literals, and bracketted expressions for now
@@ -1464,6 +1488,11 @@ string QueryParser::getNumeric(SPARQLParser::NumericLiteralContext *ctx)
 			{
 				ll = stoll(baseText);
 			}
+			catch (invalid_argument &e)
+			{
+				succ = 0;
+				throw "[ERROR] xsd:integer value invalid.";
+			}
 			catch (out_of_range &e)
 			{
 				succ = 0;
@@ -1505,6 +1534,10 @@ string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 		{
 			ll = stoll(val);
 		}
+		catch (invalid_argument &e)
+		{
+			throw "[ERROR] xsd:integer value invalid.";
+		}
 		catch (out_of_range &e)
 		{
 			throw "[ERROR] xsd:integer out of range.";
@@ -1516,6 +1549,10 @@ string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 		try
 		{
 			ll = stoll(val);
+		}
+		catch (invalid_argument &e)
+		{
+			throw "[ERROR] xsd:long value invalid.";
 		}
 		catch (out_of_range &e)
 		{
@@ -1529,6 +1566,11 @@ string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 		try
 		{
 			ll = stoll(val);
+		}
+		catch (invalid_argument &e)
+		{
+			succ = 0;
+			throw "[ERROR] xsd:int value invalid.";
 		}
 		catch (out_of_range &e)
 		{
@@ -1546,6 +1588,11 @@ string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 		{
 			ll = stoll(val);
 		}
+		catch (invalid_argument &e)
+		{
+			succ = 0;
+			throw "[ERROR] xsd:short value invalid.";
+		}
 		catch (out_of_range &e)
 		{
 			succ = 0;
@@ -1561,6 +1608,11 @@ string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 		try
 		{
 			ll = stoll(val);
+		}
+		catch (invalid_argument &e)
+		{
+			succ = 0;
+			throw "[ERROR] xsd:byte value invalid.";
 		}
 		catch (out_of_range &e)
 		{

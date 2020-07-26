@@ -1368,9 +1368,23 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						else
 							new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = result0.result[begin].str[proj2temp[i] - result0_id_cols];
 					}
-					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
+					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type
+						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
+						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type
+						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type
+						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
 					{
 						int count = 0;
+						bool numeric = false, datetime = false, succ = true;
+						EvalMultitypeValue numeric_sum, numeric_min, numeric_max, datetime_min, datetime_max, tmp, res;
+						numeric_sum.datatype = EvalMultitypeValue::xsd_integer;
+						numeric_sum.int_value = 0;
+						numeric_min.datatype = EvalMultitypeValue::xsd_integer;
+						numeric_min.int_value = INT_MAX;
+						numeric_max.datatype = EvalMultitypeValue::xsd_integer;
+						numeric_max.int_value = INT_MIN;
+						datetime_min.datatype = EvalMultitypeValue::xsd_datetime;
+						datetime_max.datatype = EvalMultitypeValue::xsd_datetime;
 
 						if (proj[i].aggregate_var != "*")
 						{
@@ -1378,38 +1392,402 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								if (proj2temp[i] < result0_id_cols)
 								{
-									set<int> count_set;
+									// set<int> count_set;
+									set<string> count_set;
 									for (int j = begin; j <= end; j++)
+									{
 										if (result0.result[j].id[proj2temp[i]] != INVALID)
-											count_set.insert(result0.result[j].id[proj2temp[i]]);
+										{
+											bool isel = query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.findVar(proj[i].aggregate_var);
+											stringindex->randomAccess(result0.result[j].id[proj2temp[i]], &tmp.term_value, isel);
+											tmp.deduceTypeValue();
+											if (tmp.datatype != EvalMultitypeValue::xsd_integer
+												&& tmp.datatype != EvalMultitypeValue::xsd_decimal
+												&& tmp.datatype != EvalMultitypeValue::xsd_float
+												&& tmp.datatype != EvalMultitypeValue::xsd_double)
+											{
+												if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
+													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+												{
+													cout << "[ERROR] Invalid type for SUM or AVG." << endl;
+													continue;
+												}
+												else if ((proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type
+													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+													&& tmp.datatype != EvalMultitypeValue::xsd_datetime)
+												{
+													cout << "[ERROR] Invalid type for MIN or MAX." << endl;
+													continue; 
+												}
+											}
+											if (tmp.datatype == EvalMultitypeValue::xsd_datetime)
+											{
+												if (!datetime)
+													datetime = true;
+											}
+											else
+											{
+												if (!numeric)
+													numeric = true;
+											}
+											if (datetime && numeric && proj[i].aggregate_type != QueryTree::ProjectionVar::Count_type)
+											{
+												succ = false;
+												break;
+											}
+
+											if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
+												count_set.insert(result0.result[j].str[proj2temp[i] - result0_id_cols]);
+											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
+											{
+												if (numeric)
+												{
+													res = numeric_min > tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														numeric_min = tmp;
+												}
+												else if (datetime)
+												{
+													res = datetime_min > tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														datetime_min = tmp;
+												}
+											}
+											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+											{
+												if (numeric)
+												{
+													res = numeric_max < tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														numeric_max = tmp;
+												}
+												else if (datetime)
+												{
+													res = datetime_max < tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														datetime_max = tmp;
+												}
+											}
+
+
+											// count_set.insert(result0.result[j].id[proj2temp[i]]);
+											count_set.insert(tmp.term_value);
+										}
+									}
+									
+									// Obtained count_set
 									count = (int)count_set.size();
+									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
+										|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									{
+										for (string elem : count_set)
+										{
+											tmp.term_value = elem;
+											tmp.deduceTypeValue();
+
+											numeric_sum = numeric_sum + tmp;
+										}
+									}
+									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									{
+										tmp.term_value = "\"" + to_string(count) + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+										tmp.deduceTypeValue();
+
+										numeric_sum = numeric_sum / tmp;
+									}
 								}
 								else
 								{
 									set<string> count_set;
 									for (int j = begin; j <= end; j++)
+									{
 										if (result0.result[j].str[proj2temp[i] - result0_id_cols].length() > 0)
+										{
+											tmp.term_value = result0.result[j].str[proj2temp[i] - result0_id_cols];
+											tmp.deduceTypeValue();
+											if (tmp.datatype != EvalMultitypeValue::xsd_integer
+												&& tmp.datatype != EvalMultitypeValue::xsd_decimal
+												&& tmp.datatype != EvalMultitypeValue::xsd_float
+												&& tmp.datatype != EvalMultitypeValue::xsd_double)
+											{
+												if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
+													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+												{
+													cout << "[ERROR] Invalid type for SUM or AVG." << endl;
+													continue;
+												}
+												else if ((proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type
+													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+													&& tmp.datatype != EvalMultitypeValue::xsd_datetime)
+												{
+													cout << "[ERROR] Invalid type for MIN or MAX." << endl;
+													continue; 
+												}
+											}
+											if (tmp.datatype == EvalMultitypeValue::xsd_datetime)
+											{
+												if (!datetime)
+													datetime = true;
+											}
+											else
+											{
+												if (!numeric)
+													numeric = true;
+											}
+											if (datetime && numeric && proj[i].aggregate_type != QueryTree::ProjectionVar::Count_type)
+											{
+												succ = false;
+												break;
+											}
+
+											if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
+												count_set.insert(result0.result[j].str[proj2temp[i] - result0_id_cols]);
+											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
+											{
+												if (numeric)
+												{
+													res = numeric_min > tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														numeric_min = tmp;
+												}
+												else if (datetime)
+												{
+													res = datetime_min > tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														datetime_min = tmp;
+												}
+											}
+											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+											{
+												if (numeric)
+												{
+													res = numeric_max < tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														numeric_max = tmp;
+												}
+												else if (datetime)
+												{
+													res = datetime_max < tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														datetime_max = tmp;
+												}
+											}
+
 											count_set.insert(result0.result[j].str[proj2temp[i] - result0_id_cols]);
+										}
+									}
+
+									// Obtained count_set
 									count = (int)count_set.size();
+									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
+										|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									{
+										for (string elem : count_set)
+										{
+											tmp.term_value = elem;
+											tmp.deduceTypeValue();
+
+											numeric_sum = numeric_sum + tmp;
+										}
+									}
+									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									{
+										tmp.term_value = "\"" + to_string(count) + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+										tmp.deduceTypeValue();
+
+										numeric_sum = numeric_sum / tmp;
+									}
 								}
 							}
-							else
+							else 	// No DISTINCT
 							{
 								if (proj2temp[i] < result0_id_cols)
 								{
 									for (int j = begin; j <= end; j++)
+									{
 										if (result0.result[j].id[proj2temp[i]] != INVALID)
+										{
+											bool isel = query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.findVar(proj[i].aggregate_var);
+											stringindex->randomAccess(result0.result[j].id[proj2temp[i]], &tmp.term_value, isel);
+											tmp.deduceTypeValue();
+											if (tmp.datatype != EvalMultitypeValue::xsd_integer
+												&& tmp.datatype != EvalMultitypeValue::xsd_decimal
+												&& tmp.datatype != EvalMultitypeValue::xsd_float
+												&& tmp.datatype != EvalMultitypeValue::xsd_double)
+											{
+												if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
+													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+												{
+													cout << "[ERROR] Invalid type for SUM or AVG." << endl;
+													continue;
+												}
+												else if ((proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type
+													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+													&& tmp.datatype != EvalMultitypeValue::xsd_datetime)
+												{
+													cout << "[ERROR] Invalid type for MIN or MAX." << endl;
+													continue; 
+												}
+											}
+											if (tmp.datatype == EvalMultitypeValue::xsd_datetime)
+											{
+												if (!datetime)
+													datetime = true;
+											}
+											else
+											{
+												if (!numeric)
+													numeric = true;
+											}
+											if (datetime && numeric && proj[i].aggregate_type != QueryTree::ProjectionVar::Count_type)
+											{
+												succ = false;
+												break;
+											}
+
+											if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
+												|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+											{
+												numeric_sum = numeric_sum + tmp;
+												cout << "numeric_sum.term_value = " << numeric_sum.term_value << endl;
+											}
+											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
+											{
+												if (numeric)
+												{
+													res = numeric_min > tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														numeric_min = tmp;
+												}
+												else if (datetime)
+												{
+													res = datetime_min > tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														datetime_min = tmp;
+												}
+											}
+											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+											{
+												if (numeric)
+												{
+													res = numeric_max < tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														numeric_max = tmp;
+												}
+												else if (datetime)
+												{
+													res = datetime_max < tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														datetime_max = tmp;
+												}
+											}
+
 											count++;
+										}
+									}
+									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									{
+										tmp.term_value = "\"" + to_string(count) + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+										tmp.deduceTypeValue();
+
+										numeric_sum = numeric_sum / tmp;
+									}
 								}
 								else
 								{
 									for (int j = begin; j <= end; j++)
+									{
 										if (result0.result[j].str[proj2temp[i] - result0_id_cols].length() > 0)
+										{
+											tmp.term_value = result0.result[j].str[proj2temp[i] - result0_id_cols];
+											tmp.deduceTypeValue();
+											if (tmp.datatype != EvalMultitypeValue::xsd_integer
+												&& tmp.datatype != EvalMultitypeValue::xsd_decimal
+												&& tmp.datatype != EvalMultitypeValue::xsd_float
+												&& tmp.datatype != EvalMultitypeValue::xsd_double)
+											{
+												if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
+													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+												{
+													cout << "[ERROR] Invalid type for SUM or AVG." << endl;
+													continue;
+												}
+												else if ((proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type
+													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+													&& tmp.datatype != EvalMultitypeValue::xsd_datetime)
+												{
+													cout << "[ERROR] Invalid type for MIN or MAX." << endl;
+													continue; 
+												}
+											}
+											if (tmp.datatype == EvalMultitypeValue::xsd_datetime)
+											{
+												if (!datetime)
+													datetime = true;
+											}
+											else
+											{
+												if (!numeric)
+													numeric = true;
+											}
+											if (datetime && numeric && proj[i].aggregate_type != QueryTree::ProjectionVar::Count_type)
+											{
+												succ = false;
+												break;
+											}
+
+											if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
+												|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+											{
+												numeric_sum = numeric_sum + tmp;
+												cout << "numeric_sum.term_value = " << numeric_sum.term_value << endl;
+											}
+											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
+											{
+												if (numeric)
+												{
+													res = numeric_min > tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														numeric_min = tmp;
+												}
+												else if (datetime)
+												{
+													res = datetime_min > tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														datetime_min = tmp;
+												}
+											}
+											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+											{
+												if (numeric)
+												{
+													res = numeric_max < tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														numeric_max = tmp;
+												}
+												else if (datetime)
+												{
+													res = datetime_max < tmp;
+													if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+														datetime_max = tmp;
+												}
+											}
+
 											count++;
+										}
+									}
+
+									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									{
+										tmp.term_value = "\"" + to_string(count) + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+										tmp.deduceTypeValue();
+
+										numeric_sum = numeric_sum / tmp;
+									}
 								}
 							}
 						}
-						else
+						else 	// Only COUNT is possible
 						{
 							if (proj[i].distinct)
 							{
@@ -1422,10 +1800,42 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							}
 						}
 
+						// Write aggregate result
 						stringstream ss;
-						ss << "\"";
-						ss << count;
-						ss << "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+
+						if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
+						{
+							ss << "\"";
+							ss << count;
+							ss << "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+						}
+						else if (succ)
+						{
+							if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
+								|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+							{
+								cout << "numeric_sum.term_value = " << numeric_sum.term_value << endl;
+								ss << numeric_sum.term_value;
+							}
+							else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
+							{
+								if (numeric)
+									ss << numeric_min.term_value;
+								else if (datetime)
+									ss << datetime_min.term_value;
+							}
+							else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+							{
+								if (numeric)
+									ss << numeric_max.term_value;
+								else if (datetime)
+									ss << datetime_max.term_value;
+							}
+							
+						}
+						else 	// Failed
+							ss << "";
+
 						ss >> new_result0.result.back().str[proj2new[i] - new_result0_id_cols];
 					}
 					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::CompTree_type)
@@ -1441,6 +1851,67 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								new_result0.result.push_back(TempResult::ResultPair());
 								new_result0.result.back().id = new unsigned[new_result0_id_cols];
 								new_result0.result.back().str.resize(new_result0_str_cols);
+							}
+						}
+					}
+					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Contains_type)
+					{
+						if (proj[i].builtin_args.size() == 2)
+						{
+							string arg1 = proj[i].builtin_args[0], arg2 = proj[i].builtin_args[1];
+							int pos1 = -2, pos2 = -2;	// -2 for string, -1 for error var, others for correct var
+														// But < result0_id_cols is impossible, because must be string
+							bool isel1 = false, isel2 = false;
+							string big_str = "", small_str = "";
+							if (arg1[0] == '?')
+							{
+								pos1 = Varset(arg1).mapTo(query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset)[0];
+								if (pos1 < result0_id_cols)
+									break;
+							}
+							else if (arg1[0] == '\"')
+								big_str = arg1;
+							if (arg2[0] == '?')
+							{
+								pos2 = Varset(arg2).mapTo(query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset)[0];
+								if (pos2 < result0_id_cols)
+									break;
+							}
+							else if (arg2[0] == '\"')
+								small_str = arg2;
+
+							for (int j = begin; j <= end; j++)
+							{
+								if (pos1 >= 0)
+									big_str = result0.result[j].str[pos1 - result0_id_cols];
+								if (pos2 >= 0)
+									small_str = result0.result[j].str[pos2 - result0_id_cols];
+
+								// Strip the parts after the last double quote
+								int idx = big_str.length() - 1;
+								while (idx >= 0 && big_str[idx] != '"')
+									idx--;
+								if (idx != big_str.length() - 1)
+									big_str = big_str.substr(0, idx + 1);
+								idx = small_str.length() - 1;
+								while (idx >= 0 && small_str[idx] != '"')
+									idx--;
+								if (idx != small_str.length() - 1)
+								small_str = small_str.substr(0, idx + 1);
+
+								if (big_str.find(small_str) != string::npos)
+									new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
+										"\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+								else
+									new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
+										"\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+
+								if (j < end)
+								{
+									new_result0.result.push_back(TempResult::ResultPair());
+									new_result0.result.back().id = new unsigned[new_result0_id_cols];
+									new_result0.result.back().str.resize(new_result0_str_cols);
+								}
 							}
 						}
 					}
