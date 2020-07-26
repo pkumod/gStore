@@ -17,6 +17,7 @@
 #include "../Parser/QueryParser.h"
 #include "../Util/Triple.h"
 #include "../Util/Util.h"
+#include "../Util/EvalMultitypeValue.h"
 #include "SPARQLquery.h"
 #include "QueryTree.h"
 #include "Varset.h"
