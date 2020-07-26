@@ -47,7 +47,7 @@ string undo_sparql(string line)
 {
     string undo_sparql;
     if(line[0] == 'I'){
-        undo_sparql = "REMOVE DATA{";
+        undo_sparql = "Delete DATA{";
     }else{
         undo_sparql = "INSERT DATA{";
     }
@@ -170,12 +170,13 @@ main(int argc, char * argv[])
     while(getline(ofp, rec))
     {
         //TODO: remove divide 1000
-        int _timestamp = get_timestamp(rec)/1000;
+        int _timestamp = Util::get_timestamp(rec)/1000;
         if(_timestamp < timestamp) continue;
         if(!flag){
             undo_point = _timestamp;
             flag = 1;
         }
+        if (rec[0] != 'I' || rec[0] != 'D') continue;
         rec = undo_sparql(rec);
         cout << rec << endl;
         ResultSet rs;
