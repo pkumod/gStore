@@ -430,6 +430,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				proj_var.aggregate_type = QueryTree::ProjectionVar::Contains_type;
 				proj_var.builtin_args.push_back(bicCtx->expression(0)->getText());
 				proj_var.builtin_args.push_back(bicCtx->expression(1)->getText());
+				proj_var.var = varCtx->getText();
 			}
 			else
 				throw runtime_error("[ERROR] Currently only support selecting variables; "
