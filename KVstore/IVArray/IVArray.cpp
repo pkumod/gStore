@@ -144,8 +144,8 @@ IVArray::save()
 		if (array[i].isDirty())
 		{
 			char *str = NULL;
-			unsigned len = 0;
-			unsigned _store;
+			unsigned long len = 0;
+			unsigned int _store;
 			// probably value has been written but store has not	
 			if (array[i].isUsed() && array[i].getBstr(str, len, false))
 			{
@@ -194,7 +194,7 @@ IVArray::SwapOut()
 	}
 
 	char *str = NULL;
-	unsigned len = 0;
+	unsigned long len = 0;
 	array[targetID].getBstr(str, len, false);
 	CurCacheSize -= len;
 	if (array[targetID].isDirty())
@@ -214,7 +214,7 @@ IVArray::SwapOut()
 
 // Add an entry into main memory
 bool
-IVArray::AddInCache(unsigned _key, char *_str, unsigned _len)
+IVArray::AddInCache(unsigned _key, char *_str, unsigned long _len)
 {
 	if (_len > MAX_CACHE_SIZE)
 	{
@@ -284,7 +284,7 @@ IVArray::UpdateTime(unsigned _key, bool HasLock)
 }
 
 bool
-IVArray::search(unsigned _key, char *&_str, unsigned &_len)
+IVArray::search(unsigned _key, char *&_str, unsigned long & _len)
 {
 	this->CacheLock.lock();
 	//printf("%s search %d: ", filename.c_str(), _key);
@@ -330,7 +330,7 @@ IVArray::search(unsigned _key, char *&_str, unsigned &_len)
 }
 
 bool
-IVArray::insert(unsigned _key, char *_str, unsigned _len)
+IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 {
 	this->CacheLock.lock();
 	if (_key < CurEntryNum && array[_key].isUsed())
@@ -418,7 +418,7 @@ IVArray::remove(unsigned _key)
 			array[_key].setCachePinFlag(false);
 
 		char *str = NULL;
-		unsigned len = 0;
+		unsigned long len = 0;
 		array[_key].getBstr(str, len, false);
 		CurCacheSize += len;
 		array[_key].setCacheFlag(false);
@@ -434,7 +434,7 @@ IVArray::remove(unsigned _key)
 }
 
 bool
-IVArray::modify(unsigned _key, char *_str, unsigned _len)
+IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 {
 	this->CacheLock.lock();
 	if (!array[_key].isUsed())
@@ -452,7 +452,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned _len)
 			array[_key].setCachePinFlag(false);
 
 		char* str = NULL;
-		unsigned len = 0;
+		unsigned long len = 0;
 		array[_key].getBstr(str, len, false);
 
 		array[_key].release();
@@ -491,7 +491,7 @@ IVArray::PinCache(unsigned _key)
 	// read in disk
 	unsigned store = array[_key].getStore();
 	char *_str = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	if (!BM->ReadValue(store, _str, _len))
 	{
 		return;

@@ -19,13 +19,13 @@ class Bstr
 private:
 	char* str;		//pointers consume 8 byte in 64-bit system
 	//TODO: the length maybe not needed
-	unsigned length;
+	unsigned long length;
 
 public:
 	Bstr();
 	//if copy memory, then use const char*, but slow
 	//else, can not use const char* -> char*
-	Bstr(const char* _str, unsigned _len, bool _nocopy = false);
+	Bstr(const char* _str, unsigned long _len, bool _nocopy = false);
 	//Bstr(char* _str, unsigned _len);
 	Bstr(const Bstr& _bstr);
 	//Bstr& operate = (const Bstr& _bstr);
@@ -36,14 +36,14 @@ public:
 	bool operator <= (const Bstr& _bstr);
 	bool operator >= (const Bstr& _bstr);
 	bool operator != (const Bstr& _bstr);
-	unsigned getLen() const;
-	void setLen(unsigned _len);
+	unsigned long getLen() const;
+	void setLen(unsigned long _len);
 	char* getStr() const;
 	void setStr(char* _str);		//reuse a TBstr
 	void release();					//release memory
 	void clear();					//set str/length to 0
 	void copy(const Bstr* _bp);
-	void copy(const char* _str, unsigned _len);
+	void copy(const char* _str, unsigned long _len);
 	//bool read(FILE* _fp);
 	//int write(FILE* _fp);
 	~Bstr();

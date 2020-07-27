@@ -217,7 +217,7 @@ KVstore::getEntityInDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const
 {
 	//cout << "In getEntityInDegree " << _entity_id << endl;
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _entity_id, (char*&)_tmp, _len);
 
 	int ret = 0;
@@ -239,7 +239,7 @@ KVstore::getEntityOutDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const
 {
 	//cout << "In getEntityOutDegree " << _entity_id << endl;
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->subID2values, _entity_id, (char*&)_tmp, _len);
 
 	int ret = 0;
@@ -261,7 +261,7 @@ KVstore::getLiteralDegree(TYPE_ENTITY_LITERAL_ID _literal_id) const
 {
 	//cout << "In getLiteralDegree " << _literal_id << endl;
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _literal_id, (char*&)_tmp, _len);
 
 	int ret = 0;
@@ -281,7 +281,7 @@ KVstore::getPredicateDegree(TYPE_PREDICATE_ID _predicate_id) const
 {
 	//cout << "In getPredicate Degree " << _predicate_id << endl;
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->preID2values, _predicate_id, (char*&)_tmp, _len);
 
 	int ret = 0;
@@ -303,7 +303,7 @@ KVstore::getSubjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE
 {
 	//cout << "In getSubjectPredicateDegree " << _subid << ' ' << _preid << endl;
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
 
 	int ret = 0;
@@ -339,7 +339,7 @@ KVstore::getObjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 {
 	//cout << "In getObjectPredicateDegree " << _objid << _preid << endl;
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
 
 	int ret = 0;
@@ -542,7 +542,7 @@ bool
 KVstore::updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->subID2values, _sub_id, (char*&)_tmp, _len);
 	bool _is_entity = Util::is_entity_ele(_obj_id);
 
@@ -565,7 +565,7 @@ KVstore::updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	else 
 	{
 		unsigned* _values;
-		unsigned _values_len;
+		unsigned long _values_len;
 		unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 3, _tmp[1], 2);
 
 		//preID doesn't exist
@@ -649,7 +649,7 @@ bool
 KVstore::updateRemove_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->subID2values, _sub_id, (char*&)_tmp, _len);
 	bool _is_entity = Util::is_entity_ele(_obj_id);
 
@@ -667,7 +667,7 @@ KVstore::updateRemove_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	else 
 	{
 		unsigned* _values;
-		unsigned _values_len;
+		unsigned long _values_len;
 		unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 3, _tmp[1], 2);
 		unsigned _oidlen_sp;
 		//DEBUG: if _tmp[1] -1 < 0??
@@ -771,7 +771,7 @@ bool
 KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len);
 
 	//objID doesn't exist
@@ -789,7 +789,7 @@ KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	//objID exists
 	else {
 		unsigned* _values;
-		unsigned _values_len;
+		unsigned long _values_len;
 		unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 2, _tmp[1], 2);
 
 		//preID doesn't exist
@@ -869,7 +869,7 @@ bool
 KVstore::updateRemove_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len);
 
 	if (!_get) {
@@ -884,7 +884,7 @@ KVstore::updateRemove_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	//objID still exists after removal
 	else {
 		unsigned* _values;
-		unsigned _values_len;
+		unsigned long _values_len;
 		unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 2, _tmp[1], 2);
 		unsigned _sidlen_op;
 		if (_position == _tmp[1] - 1) {
@@ -978,7 +978,7 @@ bool
 KVstore::updateInsert_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->preID2values, _pre_id, (char*&)_tmp, _len);
 
 	//preid doesn't exist
@@ -993,7 +993,7 @@ KVstore::updateInsert_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 
 	//preid exists
 	else {
-		unsigned _values_len = _len / sizeof(unsigned) + 2;
+		unsigned long  _values_len = _len / sizeof(unsigned) + 2;
 		unsigned* _values = new unsigned[_values_len];
 		unsigned i, j;
 		_values[0] = _tmp[0] + 1;
@@ -1021,7 +1021,7 @@ bool
 KVstore::updateRemove_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->preID2values, _pre_id, (char*&)_tmp, _len);
 
 	if (!_get) {
@@ -1035,7 +1035,7 @@ KVstore::updateRemove_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 
 	//preid still exists after removal
 	else {
-		unsigned _values_len = _len / sizeof(unsigned) - 2;
+		unsigned long _values_len = _len / sizeof(unsigned) - 2;
 		unsigned* _values = new unsigned[_values_len];
 		unsigned i, j;
 		_values[0] = _tmp[0] - 1;
@@ -1702,7 +1702,7 @@ KVstore::getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlis
 		return false;
 	}
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
 
 	if (!_get) 
@@ -1739,7 +1739,7 @@ KVstore::getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlis
 		return false;
 	}
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
 	if (!_get) 
 	{
@@ -1778,7 +1778,7 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 	}
 	unsigned* _tmp = NULL;
 
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
 	if (!_get) {
 		_objidlist = NULL;
@@ -1829,7 +1829,7 @@ KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _pre
 	}
 	unsigned* _tmp = NULL;
 
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
 	if (!_get) {
 		_preid_objidlist = NULL;
@@ -1992,7 +1992,7 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 {
 	//cout << "In getpreIDlistByobjID " << _objid << endl;
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
 	if (!_get) {
 		_preidlist = NULL;
@@ -2021,7 +2021,7 @@ KVstore::getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlis
 {
 	//cout << "In getsubIDlistByobjID " << _objid << endl;
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
 	if (!_get) {
 		_subidlist = NULL;
@@ -2053,7 +2053,7 @@ KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 {
 	//cout << "In getsubIDlistByobjIDpreID " << _objid << ' ' << _preid << endl;
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
 	if (!_get) {
 		_subidlist = NULL;
@@ -2093,7 +2093,7 @@ KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _pre
 {
 	//cout << "In getpreIDsubIDlistByobjID " << _objid << endl;
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
 	if (!_get) {
 		_preid_subidlist = NULL;
@@ -2223,7 +2223,7 @@ KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, un
 {
 	//cout << "In getsubIDlistBypreID " << _preid << endl;
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len);
 	if (!_get) {
 		_subidlist = NULL;
@@ -2253,7 +2253,7 @@ bool
 KVstore::getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate) const {
 	//cout << "In getobjIDlistBypreID " << _preid << endl;
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len);
 	if (!_get) {
 		_objidlist = NULL;
@@ -2287,7 +2287,7 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 	cout << "In getsubIDobjIDlistBypreID " << _preid << endl;
 #endif
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len);
 #ifdef DEBUG_KVSTORE
 	cout<<"the length of list: "<<_len<<endl;
@@ -2350,7 +2350,7 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 		return false;
 	}
 	unsigned* _tmp = NULL;
-	unsigned _len = 0;
+	unsigned long _len = 0;
 	this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
 	_list_len = len;
 	unsigned _result = 0;
@@ -2601,7 +2601,7 @@ KVstore::addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vl
 }*/
 
 bool
-KVstore::addValueByKey(IVArray *_array, unsigned _key, char* _val, unsigned _vlen)
+KVstore::addValueByKey(IVArray *_array, unsigned _key, char* _val, unsigned long _vlen)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -2641,7 +2641,7 @@ KVstore::setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vl
 }*/
 
 bool
-KVstore::setValueByKey(IVArray* _array, unsigned _key, char* _val, unsigned _vlen)
+KVstore::setValueByKey(IVArray* _array, unsigned _key, char* _val, unsigned long _vlen)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -2682,7 +2682,7 @@ KVstore::getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _
 }*/
 
 bool
-KVstore::getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const
+KVstore::getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned long & _vlen) const
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -2823,31 +2823,31 @@ KVstore::AddIntoObjCache(TYPE_ENTITY_LITERAL_ID _entity_literal_id)
 	this->objID2values->PinCache(_entity_literal_id);
 }
 
-unsigned
+unsigned long
 KVstore::getSubListSize(TYPE_ENTITY_LITERAL_ID _sub_id)
 {
 	unsigned* _tmp = NULL;
-	unsigned _ret;
+	unsigned long _ret;
 	this->getValueByKey(this->subID2values, _sub_id, (char*&) _tmp, _ret);
 	delete [] _tmp;
 	return _ret;
 }
 
-unsigned
+unsigned long
 KVstore::getObjListSize(TYPE_ENTITY_LITERAL_ID _obj_id)
 {
 	unsigned* _tmp = NULL;
-	unsigned _ret;
+	unsigned long _ret;
 	this->getValueByKey(this->objID2values, _obj_id, (char*&) _tmp, _ret);
 	delete [] _tmp;
 	return _ret;
 }
 
-unsigned
+unsigned long
 KVstore::getPreListSize(TYPE_PREDICATE_ID _pre_id)
 {
 	unsigned* _tmp = NULL;
-	unsigned _ret;
+	unsigned long _ret;
 	this->getValueByKey(this->preID2values, _pre_id, (char*&) _tmp, _ret);
 	delete [] _tmp;
 	return _ret;
