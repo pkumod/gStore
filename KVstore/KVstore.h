@@ -56,9 +56,9 @@ public:
 	void AddIntoSubCache(TYPE_ENTITY_LITERAL_ID _entity_id);
 	void AddIntoObjCache(TYPE_ENTITY_LITERAL_ID _entity_literal_id);
 	void AddIntoPreCache(TYPE_PREDICATE_ID _pre_id);
-	unsigned getPreListSize(TYPE_PREDICATE_ID _pre_id);
-	unsigned getSubListSize(TYPE_ENTITY_LITERAL_ID _sub_id);
-	unsigned getObjListSize(TYPE_ENTITY_LITERAL_ID _obj_id);
+	unsigned long getPreListSize(TYPE_PREDICATE_ID _pre_id);
+	unsigned long getSubListSize(TYPE_ENTITY_LITERAL_ID _sub_id);
+	unsigned long getObjListSize(TYPE_ENTITY_LITERAL_ID _obj_id);
 	
 	//===============================================================================
 
@@ -248,19 +248,19 @@ private:
 	//bool addValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 	bool addValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen);
 	//bool addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
-	bool addValueByKey(IVArray* _array, unsigned _key, char *_val, unsigned _vlen);
+	bool addValueByKey(IVArray* _array, unsigned _key, char *_val, unsigned long _vlen);
 
 	bool setValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val);
 	//bool setValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 	bool setValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen);
 //	bool setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
-	bool setValueByKey(IVArray* _array, unsigned _key, char* _val, unsigned _vlen);
+	bool setValueByKey(IVArray* _array, unsigned _key, char* _val, unsigned long _vlen);
 
 	bool getValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsigned* _val) const;
 	//bool getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
 	bool getValueByKey(ISArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const;
 //	bool getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
-	bool getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const;
+	bool getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned long & _vlen) const;
 
 
 	TYPE_ENTITY_LITERAL_ID getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const;

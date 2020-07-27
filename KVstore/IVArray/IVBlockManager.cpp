@@ -121,7 +121,7 @@ IVBlockManager::SaveFreeBlockList()
 }
 
 bool
-IVBlockManager::ReadValue(unsigned _blk_index, char *&_str, unsigned &_len)
+IVBlockManager::ReadValue(unsigned _blk_index, char *&_str, unsigned long&_len)
 {
 	if (_blk_index <= 0)
 	{
@@ -132,12 +132,12 @@ IVBlockManager::ReadValue(unsigned _blk_index, char *&_str, unsigned &_len)
 	}
 
 	unsigned next_blk = _blk_index; // index of next block
-	unsigned Len_left; // how many bits left to read
+	unsigned long Len_left; // how many bits left to read
 	int fd = fileno(ValueFile);
 
 	//fseek(ValueFile, (off_t)BLOCK_SIZE * (_blk_index - 1) + sizeof(unsigned), SEEK_SET);
 	off_t offset = (off_t)BLOCK_SIZE * (_blk_index - 1) + sizeof(unsigned);
-	pread(fd, &Len_left, 1 * sizeof(unsigned), offset);
+	pread(fd, &Len_left, 1 * sizeof(unsigned long), offset);
 //	fread(&Len_left, sizeof(unsigned), 1, ValueFile);
 
 	_str = new char [Len_left];
@@ -153,13 +153,13 @@ IVBlockManager::ReadValue(unsigned _blk_index, char *&_str, unsigned &_len)
 
 	do
 	{
-		unsigned Bits2read = BLOCK_DATA_SIZE < Len_left ? BLOCK_DATA_SIZE : Len_left;
+		unsigned long Bits2read = BLOCK_DATA_SIZE < Len_left ? BLOCK_DATA_SIZE : Len_left;
 
 		offset = (off_t)BLOCK_SIZE * (next_blk - 1);
 		pread(fd, &next_blk, 1 * sizeof(unsigned), offset);
 //		fseek(ValueFile, (off_t)BLOCK_SIZE * (next_blk - 1), SEEK_SET);
 //		fread(&next_blk, sizeof(unsigned), 1, ValueFile);
-		offset += sizeof(unsigned) + sizeof(unsigned);
+		offset += sizeof(unsigned) + sizeof(unsigned long);
 		pread(fd, _str + (_len - Len_left), Bits2read * sizeof(char), offset);
 ///		pread(fd, pstr, Bits2read * sizeof(char), offset);
 //		fseek(ValueFile, sizeof(unsigned), SEEK_CUR);
@@ -195,12 +195,13 @@ IVBlockManager::AllocBlock(unsigned len)
 }
 
 // Get Free Blocks which can fit _len bits and records them in BlockToWrite 
+// the max value of _len should be BLOCK_DATA_SIZE^(2^32-1) = 1065,151,889,160 ~= 1 TB
 bool
-IVBlockManager::getWhereToWrite(unsigned _len)
+IVBlockManager::getWhereToWrite(unsigned long _len)
 {
 	// try to find suitable free blocks in current free block lists
 	// AllocNum is number of blocks which can fit in _len bits
-	unsigned AllocNum = (unsigned) ((_len + BLOCK_DATA_SIZE - 1) / BLOCK_DATA_SIZE);
+	unsigned int AllocNum = (unsigned int) ((_len + BLOCK_DATA_SIZE - 1) / BLOCK_DATA_SIZE);
 
 	// map <unsigned, unsigned>::iterator it = len_index_map.upper_bound(AllocNum - 1);
 	set <pair<unsigned, unsigned> >::iterator it = len_index_map.lower_bound(make_pair(AllocNum, (unsigned)0));
@@ -252,7 +253,7 @@ IVBlockManager::getWhereToWrite(unsigned _len)
 }
 
 unsigned
-IVBlockManager::WriteValue(const char *_str, const unsigned _len)
+IVBlockManager::WriteValue(const char *_str, const unsigned long _len)
 {
 	if (!getWhereToWrite(_len))
 	{
@@ -263,12 +264,12 @@ IVBlockManager::WriteValue(const char *_str, const unsigned _len)
 	int fd = fileno(ValueFile);
 	BlockInfo *p = BlockToWrite;
 	char *pstr = (char *)_str; // pointer to buffer of where to write next
-	unsigned len_left = _len; // how many bytes left to write
+	unsigned long len_left = _len; // how many bytes left to write
 
 	while (p != NULL)
 	{
 		BlockInfo *nextp = p->next;
-		unsigned Bits2Write = BLOCK_DATA_SIZE < len_left ? BLOCK_DATA_SIZE:len_left;
+		unsigned long Bits2Write = BLOCK_DATA_SIZE < len_left ? BLOCK_DATA_SIZE:len_left;
 		off_t offset = (off_t)(BLOCK_SIZE) * (p->num - 1);
 		unsigned NextIndex = 0;
 		if (nextp != NULL)
@@ -279,8 +280,8 @@ IVBlockManager::WriteValue(const char *_str, const unsigned _len)
 		pwrite(fd, &NextIndex, 1 * sizeof(unsigned), offset);
 		offset += sizeof(unsigned);
 		// write down how many bits left
-		pwrite(fd, &len_left, 1 * sizeof(unsigned), offset);
-		offset += sizeof(unsigned);
+		pwrite(fd, &len_left, 1 * sizeof(unsigned long), offset);
+		offset += sizeof(unsigned long);
 		// write down value
 		pwrite(fd, pstr, Bits2Write * sizeof(char), offset);
 

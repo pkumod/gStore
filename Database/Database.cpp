@@ -1064,9 +1064,10 @@ Database::get_candidate_preID()
 	{
 		unsigned _value = 0;
 		unsigned _size;
-		
-		_size = this->kvstore->getPreListSize(i);
-		
+		unsigned long _tmp_size;
+		_tmp_size = this->kvstore->getPreListSize(i);
+		if (_tmp_size > (1 << 31)) continue;
+		_size = (unsigned)_tmp_size;
 		if (!VList::isLongList(_size) || _size >= max_total_size) continue; // only long list need to be stored in cache
 
 		_value = pre2num[i];
@@ -1155,9 +1156,11 @@ Database::get_important_subID()
 	for(TYPE_ENTITY_LITERAL_ID i = 0; i < limitID_entity; ++i)
 	{
 		unsigned _value = 0;
-		unsigned _size = 0;
+		unsigned long _tmp_size = 0;
 		if (this->kvstore->getEntityByID(i) == invalid) continue;	
-		_size = this->kvstore->getSubListSize(i);
+		_tmp_size = this->kvstore->getSubListSize(i);
+		if (_tmp_size >= (1 << 31)) continue;
+		unsigned _size = (unsigned)_tmp_size;
 		if (!VList::isLongList(_size) || _size >= max_total_size) continue; // only long list need to be stored in cache
 
 		for(unsigned j = 0; j < important_preID.size(); ++j)
@@ -1220,7 +1223,13 @@ Database::get_important_objID()
 		else _tmp = this->kvstore->getLiteralByID(i);
 		if (_tmp == invalid) continue;
 
-		_size = this->kvstore->getObjListSize(i);
+		unsigned long _tmp_size = 0;
+		_tmp_size = this->kvstore->getSubListSize(i);
+		
+		_tmp_size = this->kvstore->getObjListSize(i);
+		if (_tmp_size >= (1 << 31)) continue;
+		_size = (unsigned)_tmp_size;
+
 		if (!VList::isLongList(_size) || _size >= max_total_size) continue; // only long list need to be stored in cache
 		
 		for(unsigned j = 0; j < important_preID.size(); ++j)
@@ -1708,7 +1717,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		general_evaluation.getFinalResult(_result_set);
 		this->getFinalResult_lock.unlock();
 		long tv_afget = Util::get_cur_time();
-		cout << "after getFinalResult, used " << (tv_afget - tv_bfget) << "ms." << endl;
+		cout << "during getFinalResult, used " << (tv_afget - tv_bfget) << "ms." << endl;
 
 		if(_fp != NULL)
 			need_output_answer = true;
@@ -2004,11 +2013,11 @@ Database::saveDBInfoFile()
 
 	fseek(filePtr, 0, SEEK_SET);
 
-	fwrite(&this->triples_num, sizeof(int), 1, filePtr);
-	fwrite(&this->entity_num, sizeof(int), 1, filePtr);
-	fwrite(&this->sub_num, sizeof(int), 1, filePtr);
-	fwrite(&this->pre_num, sizeof(int), 1, filePtr);
-	fwrite(&this->literal_num, sizeof(int), 1, filePtr);
+	fwrite(&this->triples_num, sizeof(TYPE_TRIPLE_NUM), 1, filePtr);
+	fwrite(&this->entity_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fwrite(&this->sub_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fwrite(&this->pre_num, sizeof(TYPE_PREDICATE_ID), 1, filePtr);
+	fwrite(&this->literal_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
 	fwrite(&this->encode_mode, sizeof(int), 1, filePtr);
 
 	Util::Csync(filePtr);
@@ -2035,11 +2044,11 @@ Database::loadDBInfoFile()
 
 	fseek(filePtr, 0, SEEK_SET);
 
-	fread(&this->triples_num, sizeof(int), 1, filePtr);
-	fread(&this->entity_num, sizeof(int), 1, filePtr);
-	fread(&this->sub_num, sizeof(int), 1, filePtr);
-	fread(&this->pre_num, sizeof(int), 1, filePtr);
-	fread(&this->literal_num, sizeof(int), 1, filePtr);
+	fread(&this->triples_num, sizeof(TYPE_TRIPLE_NUM), 1, filePtr);
+	fread(&this->entity_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fread(&this->sub_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fread(&this->pre_num, sizeof(TYPE_PREDICATE_ID), 1, filePtr);
+	fread(&this->literal_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
 	fread(&this->encode_mode, sizeof(int), 1, filePtr);
 	fclose(filePtr);
 
@@ -2811,7 +2820,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 			string _pre = triple_array[i].getPredicate();
 			TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_pre);
 			if (_pre_id == INVALID_PREDICATE_ID)
-			//if (_pre_id == -1)
+			// if (_pre_id == -1)
 			{
 				//_pre_id = this->pre_num;
 				_pre_id = this->allocPredicateID();
