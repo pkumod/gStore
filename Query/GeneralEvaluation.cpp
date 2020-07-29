@@ -1196,7 +1196,11 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			if (result0_size == 0 && proj.size() == 1 && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::None_type && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::Count_type && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::CompTree_type)
+				proj[0].aggregate_type != QueryTree::ProjectionVar::CompTree_type && \
+				proj[0].aggregate_type != QueryTree::ProjectionVar::Sum_type && \
+				proj[0].aggregate_type != QueryTree::ProjectionVar::Avg_type && \
+				proj[0].aggregate_type != QueryTree::ProjectionVar::Min_type && \
+				proj[0].aggregate_type != QueryTree::ProjectionVar::Max_type)
 			{
 				// Path query, both nodes are IRI
 
@@ -1441,8 +1445,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												break;
 											}
 
-											if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
-												count_set.insert(result0.result[j].str[proj2temp[i] - result0_id_cols]);
+											if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type
+												|| proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
+												|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+												count_set.insert(tmp.term_value);
 											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
 											{
 												if (numeric)
@@ -1473,10 +1479,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 														datetime_max = tmp;
 												}
 											}
-
-
-											// count_set.insert(result0.result[j].id[proj2temp[i]]);
-											count_set.insert(tmp.term_value);
 										}
 									}
 									
