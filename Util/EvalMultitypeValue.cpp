@@ -660,8 +660,8 @@ EvalMultitypeValue
 	ret_femv.datatype = xsd_boolean;
 	ret_femv.bool_value = EffectiveBooleanValue::error_value;
 
-	if (datatype != xsd_integer && datatype != xsd_decimal && datatype != xsd_float && datatype != xsd_double \
-		&& x.datatype != xsd_integer && x.datatype != xsd_decimal && x.datatype != xsd_float && x.datatype != xsd_double)
+	if ((datatype != xsd_integer && datatype != xsd_decimal && datatype != xsd_float && datatype != xsd_double) \
+			|| (x.datatype != xsd_integer && x.datatype != xsd_decimal && x.datatype != xsd_float && x.datatype != xsd_double))
 		return ret_femv;
 
 	this->getSameNumericType(x);
@@ -732,8 +732,8 @@ EvalMultitypeValue
 	ret_femv.datatype = xsd_boolean;
 	ret_femv.bool_value = EffectiveBooleanValue::error_value;
 
-	if (datatype != xsd_integer && datatype != xsd_decimal && datatype != xsd_float && datatype != xsd_double \
-		&& x.datatype != xsd_integer && x.datatype != xsd_decimal && x.datatype != xsd_float && x.datatype != xsd_double)
+	if ((datatype != xsd_integer && datatype != xsd_decimal && datatype != xsd_float && datatype != xsd_double) \
+			|| (x.datatype != xsd_integer && x.datatype != xsd_decimal && x.datatype != xsd_float && x.datatype != xsd_double))
 		return ret_femv;
 
 	this->getSameNumericType(x);
@@ -769,8 +769,8 @@ EvalMultitypeValue
 	ret_femv.datatype = xsd_boolean;
 	ret_femv.bool_value = EffectiveBooleanValue::error_value;
 
-	if (datatype != xsd_integer && datatype != xsd_decimal && datatype != xsd_float && datatype != xsd_double \
-		&& x.datatype != xsd_integer && x.datatype != xsd_decimal && x.datatype != xsd_float && x.datatype != xsd_double)
+	if ((datatype != xsd_integer && datatype != xsd_decimal && datatype != xsd_float && datatype != xsd_double) \
+			|| (x.datatype != xsd_integer && x.datatype != xsd_decimal && x.datatype != xsd_float && x.datatype != xsd_double))
 		return ret_femv;
 
 	this->getSameNumericType(x);
@@ -806,8 +806,8 @@ EvalMultitypeValue
 	ret_femv.datatype = xsd_boolean;
 	ret_femv.bool_value = EffectiveBooleanValue::error_value;
 
-	if (datatype != xsd_integer && datatype != xsd_decimal && datatype != xsd_float && datatype != xsd_double \
-		&& x.datatype != xsd_integer && x.datatype != xsd_decimal && x.datatype != xsd_float && x.datatype != xsd_double)
+	if ((datatype != xsd_integer && datatype != xsd_decimal && datatype != xsd_float && datatype != xsd_double) \
+			|| (x.datatype != xsd_integer && x.datatype != xsd_decimal && x.datatype != xsd_float && x.datatype != xsd_double))
 		return ret_femv;
 
 	this->getSameNumericType(x);
