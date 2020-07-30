@@ -1,4 +1,4 @@
-/*
+ï»¿/*
 # Filename: client.h
 # Author: suxunbin
 # Last Modified: 2019-5-17 14:56
@@ -30,46 +30,46 @@ public:
 
 public:
 	/**
-	* @brief HTTP POSTÇëÇó
-	* @param strUrl ÊäÈë²ÎÊı,ÇëÇóµÄUrlµØÖ·,Èç:http://www.baidu.com
-	* @param strPost ÊäÈë²ÎÊı,Ê¹ÓÃÈçÏÂ¸ñÊ½para1=val1?2=val2&¡­
-	* @param strResponse Êä³ö²ÎÊı,·µ»ØµÄÄÚÈİ
-	* @return ·µ»ØÊÇ·ñPost³É¹¦
+	* @brief HTTP POSTè¯·æ±‚
+	* @param strUrl è¾“å…¥å‚æ•°,è¯·æ±‚çš„Urlåœ°å€,å¦‚:http://www.baidu.com
+	* @param strPost è¾“å…¥å‚æ•°,ä½¿ç”¨å¦‚ä¸‹æ ¼å¼para1=val1?2=val2&â€¦
+	* @param strResponse è¾“å‡ºå‚æ•°,è¿”å›çš„å†…å®¹
+	* @return è¿”å›æ˜¯å¦PostæˆåŠŸ
 	*/
 
-	int Post(const std::string & strUrl, const std::string & strPost, const std::string & filename, bool SavedOnFile);
+	int Post(const std::string& strUrl, const std::string& strPost, const std::string& filename, bool SavedOnFile);
 
-	int Post(const std::string & strUrl, const std::string & strPost, std::string & strResponse);
+	int Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse);
 
 	/**
-	* @brief HTTP GETÇëÇó
-	* @param strUrl ÊäÈë²ÎÊı,ÇëÇóµÄUrlµØÖ·,Èç:http://www.baidu.com
-	* @param strResponse Êä³ö²ÎÊı,·µ»ØµÄÄÚÈİ
-	* @return ·µ»ØÊÇ·ñPost³É¹¦
+	* @brief HTTP GETè¯·æ±‚
+	* @param strUrl è¾“å…¥å‚æ•°,è¯·æ±‚çš„Urlåœ°å€,å¦‚:http://www.baidu.com
+	* @param strResponse è¾“å‡ºå‚æ•°,è¿”å›çš„å†…å®¹
+	* @return è¿”å›æ˜¯å¦PostæˆåŠŸ
 	*/
 
-	int Get(const std::string & strUrl, const std::string & filename, bool SavedOnFile);
-	
-	int Get(const std::string & strUrl, std::string & strResponse);
+	int Get(const std::string& strUrl, const std::string& filename, bool SavedOnFile);
 
-	/**
-	* @brief HTTPS POSTÇëÇó,ÎŞÖ¤Êé°æ±¾
-	* @param strUrl ÊäÈë²ÎÊı,ÇëÇóµÄUrlµØÖ·,Èç:https://www.alipay.com
-	* @param strPost ÊäÈë²ÎÊı,Ê¹ÓÃÈçÏÂ¸ñÊ½para1=val1?2=val2&¡­
-	* @param strResponse Êä³ö²ÎÊı,·µ»ØµÄÄÚÈİ
-	* @param pCaPath ÊäÈë²ÎÊı,ÎªCAÖ¤ÊéµÄÂ·¾¶.Èç¹ûÊäÈëÎªNULL,Ôò²»ÑéÖ¤·şÎñÆ÷¶ËÖ¤ÊéµÄÓĞĞ§ĞÔ.
-	* @return ·µ»ØÊÇ·ñPost³É¹¦
-	*/
-	int Posts(const std::string & strUrl, const std::string & strPost, std::string & strResponse, const char * pCaPath = NULL);
+	int Get(const std::string& strUrl, std::string& strResponse);
 
 	/**
-	* @brief HTTPS GETÇëÇó,ÎŞÖ¤Êé°æ±¾
-	* @param strUrl ÊäÈë²ÎÊı,ÇëÇóµÄUrlµØÖ·,Èç:https://www.alipay.com
-	* @param strResponse Êä³ö²ÎÊı,·µ»ØµÄÄÚÈİ
-	* @param pCaPath ÊäÈë²ÎÊı,ÎªCAÖ¤ÊéµÄÂ·¾¶.Èç¹ûÊäÈëÎªNULL,Ôò²»ÑéÖ¤·şÎñÆ÷¶ËÖ¤ÊéµÄÓĞĞ§ĞÔ.
-	* @return ·µ»ØÊÇ·ñPost³É¹¦
+	* @brief HTTPS POSTè¯·æ±‚,æ— è¯ä¹¦ç‰ˆæœ¬
+	* @param strUrl è¾“å…¥å‚æ•°,è¯·æ±‚çš„Urlåœ°å€,å¦‚:https://www.alipay.com
+	* @param strPost è¾“å…¥å‚æ•°,ä½¿ç”¨å¦‚ä¸‹æ ¼å¼para1=val1?2=val2&â€¦
+	* @param strResponse è¾“å‡ºå‚æ•°,è¿”å›çš„å†…å®¹
+	* @param pCaPath è¾“å…¥å‚æ•°,ä¸ºCAè¯ä¹¦çš„è·¯å¾„.å¦‚æœè¾“å…¥ä¸ºNULL,åˆ™ä¸éªŒè¯æœåŠ¡å™¨ç«¯è¯ä¹¦çš„æœ‰æ•ˆæ€§.
+	* @return è¿”å›æ˜¯å¦PostæˆåŠŸ
 	*/
-	int Gets(const std::string & strUrl, std::string & strResponse, const char * pCaPath = NULL);
+	int Posts(const std::string& strUrl, const std::string& strPost, std::string& strResponse, const char* pCaPath = NULL);
+
+	/**
+	* @brief HTTPS GETè¯·æ±‚,æ— è¯ä¹¦ç‰ˆæœ¬
+	* @param strUrl è¾“å…¥å‚æ•°,è¯·æ±‚çš„Urlåœ°å€,å¦‚:https://www.alipay.com
+	* @param strResponse è¾“å‡ºå‚æ•°,è¿”å›çš„å†…å®¹
+	* @param pCaPath è¾“å…¥å‚æ•°,ä¸ºCAè¯ä¹¦çš„è·¯å¾„.å¦‚æœè¾“å…¥ä¸ºNULL,åˆ™ä¸éªŒè¯æœåŠ¡å™¨ç«¯è¯ä¹¦çš„æœ‰æ•ˆæ€§.
+	* @return è¿”å›æ˜¯å¦PostæˆåŠŸ
+	*/
+	int Gets(const std::string& strUrl, std::string& strResponse, const char* pCaPath = NULL);
 
 public:
 	std::string build(std::string db_name, std::string rdf_file_path, std::string request_type = "GET");
@@ -86,6 +86,10 @@ public:
 	std::string getCoreVersion(std::string request_type = "GET");
 	std::string getAPIVersion(std::string request_type = "GET");
 	std::string exportDB(std::string db_name, std::string dir_path, std::string request_type = "GET");
+	std::string begin(std::string db_name, std::string request_type = "GET");
+	std::string commit(std::string db_name, std::string TID = "", std::string request_type = "GET");
+	std::string rollback(std::string db_name, std::string TID = "", std::string request_type = "GET");
+	std::string getTransLog(std::string request_type = "GET");
 	void SetDebug(bool bDebug);
 
 private:
@@ -93,5 +97,3 @@ private:
 };
 
 #endif
-
-
