@@ -1,4 +1,4 @@
-#include "client.h"
+ï»¿#include "client.h"
 #include <curl/curl.h>
 #include <string>
 #include <cstring>
@@ -9,12 +9,12 @@ using namespace std;
 #define defaultServerPort 9000
 
 GstoreConnector::GstoreConnector(void) :
-m_bDebug(false)
+	m_bDebug(false)
 {
 
 }
 GstoreConnector::GstoreConnector(std::string _ip, int _port, std::string _user, std::string _passwd) :
-m_bDebug(false)
+	m_bDebug(false)
 {
 	if (_ip == "localhost")
 		this->serverIP = defaultServerIP;
@@ -32,52 +32,52 @@ GstoreConnector::~GstoreConnector(void)
 
 static const std::string UrlEncode(const std::string& s)
 {
-        std::string ret;
-        unsigned char *ptr = (unsigned char *)s.c_str();
-        ret.reserve(s.length());
+	std::string ret;
+	unsigned char* ptr = (unsigned char*)s.c_str();
+	ret.reserve(s.length());
 
-        for(int i=0;i<s.length();++i)
-        {
-                if((int(ptr[i])==42) || (int(ptr[i])==45) || (int(ptr[i])==46) || (int(ptr[i])==47) || (int(ptr[i])==58) ||(int(ptr[i])==95))
-                        ret += ptr[i];
-                else if((int(ptr[i])>=48) && (int(ptr[i])<=57))
-                        ret += ptr[i];
-                else if((int(ptr[i])>=65) && (int(ptr[i])<=90))
-                        ret += ptr[i];
-                else if((int(ptr[i])>=97) && (int(ptr[i])<=122))
-                        ret += ptr[i];
-                else if(int(ptr[i])==32)
-                        ret += '+';
-                else if((int(ptr[i])!=9)&& (int(ptr[i])!=10) && (int(ptr[i])!=13))
-                {
-                        char buf[5];
-                        memset(buf,0,5);
-                        snprintf(buf,5,"%%%X",ptr[i]);
-                        ret.append(buf);
-                }
-        }
-        return ret;
+	for (int i = 0; i < s.length(); ++i)
+	{
+		if ((int(ptr[i]) == 42) || (int(ptr[i]) == 45) || (int(ptr[i]) == 46) || (int(ptr[i]) == 47) || (int(ptr[i]) == 58) || (int(ptr[i]) == 95))
+			ret += ptr[i];
+		else if ((int(ptr[i]) >= 48) && (int(ptr[i]) <= 57))
+			ret += ptr[i];
+		else if ((int(ptr[i]) >= 65) && (int(ptr[i]) <= 90))
+			ret += ptr[i];
+		else if ((int(ptr[i]) >= 97) && (int(ptr[i]) <= 122))
+			ret += ptr[i];
+		else if (int(ptr[i]) == 32)
+			ret += '+';
+		else if ((int(ptr[i]) != 9) && (int(ptr[i]) != 10) && (int(ptr[i]) != 13))
+		{
+			char buf[5];
+			memset(buf, 0, 5);
+			snprintf(buf, 5, "%%%X", ptr[i]);
+			ret.append(buf);
+		}
+	}
+	return ret;
 }
 
-static int OnDebug(CURL *, curl_infotype itype, char * pData, size_t size, void *)
+static int OnDebug(CURL*, curl_infotype itype, char* pData, size_t size, void*)
 {
-	if(itype == CURLINFO_TEXT)
+	if (itype == CURLINFO_TEXT)
 	{
 		//printf("[TEXT]%s\n", pData);
 	}
-	else if(itype == CURLINFO_HEADER_IN)
+	else if (itype == CURLINFO_HEADER_IN)
 	{
 		printf("[HEADER_IN]%s\n", pData);
 	}
-	else if(itype == CURLINFO_HEADER_OUT)
+	else if (itype == CURLINFO_HEADER_OUT)
 	{
 		printf("[HEADER_OUT]%s\n", pData);
 	}
-	else if(itype == CURLINFO_DATA_IN)
+	else if (itype == CURLINFO_DATA_IN)
 	{
 		printf("[DATA_IN]%s\n", pData);
 	}
-	else if(itype == CURLINFO_DATA_OUT)
+	else if (itype == CURLINFO_DATA_OUT)
 	{
 		printf("[DATA_OUT]%s\n", pData);
 	}
@@ -86,18 +86,18 @@ static int OnDebug(CURL *, curl_infotype itype, char * pData, size_t size, void 
 
 static size_t OnWriteData(void* buffer, size_t size, size_t nmemb, void* lpVoid)
 {
-	std::string* str = dynamic_cast<std::string*>((std::string *)lpVoid);
-	if( NULL == str || NULL == buffer )
+	std::string* str = dynamic_cast<std::string*>((std::string*)lpVoid);
+	if (NULL == str || NULL == buffer)
 	{
 		return -1;
 	}
 
-    char* pData = (char*)buffer;
-    str->append(pData, size * nmemb);
+	char* pData = (char*)buffer;
+	str->append(pData, size * nmemb);
 	return nmemb;
 }
 
-int GstoreConnector::Get(const std::string & strUrl, std::string & strResponse)
+int GstoreConnector::Get(const std::string& strUrl, std::string& strResponse)
 {
 	strResponse.clear();
 	CURLcode res;
@@ -114,10 +114,10 @@ int GstoreConnector::Get(const std::string & strUrl, std::string & strResponse)
 	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
 	/**
-	* µ±¶à¸öÏß³Ì¶¼Ê¹ÓÃ³¬Ê±´¦ÀíµÄÊ±ºò£¬Í¬Ê±Ö÷Ïß³ÌÖÐÓÐsleep»òÊÇwaitµÈ²Ù×÷¡£
-	* Èç¹û²»ÉèÖÃÕâ¸öÑ¡Ïî£¬libcurl½«»á·¢ÐÅºÅ´ò¶ÏÕâ¸öwait´Ó¶øµ¼ÖÂ³ÌÐòÍË³ö¡£
+	* å½“å¤šä¸ªçº¿ç¨‹éƒ½ä½¿ç”¨è¶…æ—¶å¤„ç†çš„æ—¶å€™ï¼ŒåŒæ—¶ä¸»çº¿ç¨‹ä¸­æœ‰sleepæˆ–æ˜¯waitç­‰æ“ä½œã€‚
+	* å¦‚æžœä¸è®¾ç½®è¿™ä¸ªé€‰é¡¹ï¼Œlibcurlå°†ä¼šå‘ä¿¡å·æ‰“æ–­è¿™ä¸ªwaitä»Žè€Œå¯¼è‡´ç¨‹åºé€€å‡ºã€‚
 	*/
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
@@ -127,7 +127,7 @@ int GstoreConnector::Get(const std::string & strUrl, std::string & strResponse)
 	return res;
 }
 
-int GstoreConnector::Get(const std::string &strUrl, const std::string &filename, bool SavedOnFile) {
+int GstoreConnector::Get(const std::string& strUrl, const std::string& filename, bool SavedOnFile) {
 	if (!SavedOnFile)
 		return -1;
 
@@ -163,7 +163,7 @@ int GstoreConnector::Get(const std::string &strUrl, const std::string &filename,
 	return res;
 }
 
-int GstoreConnector::Post(const std::string & strUrl, const std::string & strPost, std::string & strResponse)
+int GstoreConnector::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse)
 {
 	strResponse.clear();
 	CURLcode res;
@@ -182,7 +182,7 @@ int GstoreConnector::Post(const std::string & strUrl, const std::string & strPos
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
 	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
@@ -191,7 +191,7 @@ int GstoreConnector::Post(const std::string & strUrl, const std::string & strPos
 	return res;
 }
 
-int GstoreConnector::Post(const std::string &strUrl, const std::string & strPost, const std::string &filename, bool SavedOnFile)
+int GstoreConnector::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename, bool SavedOnFile)
 {
 
 	if (!SavedOnFile)
@@ -227,7 +227,7 @@ int GstoreConnector::Post(const std::string &strUrl, const std::string & strPost
 	return res;
 }
 
-int GstoreConnector::Gets(const std::string & strUrl, std::string & strResponse, const char * pCaPath)
+int GstoreConnector::Gets(const std::string& strUrl, std::string& strResponse, const char* pCaPath)
 {
 	strResponse.clear();
 	CURLcode res;
@@ -244,7 +244,7 @@ int GstoreConnector::Gets(const std::string & strUrl, std::string & strResponse,
 	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	if (NULL == pCaPath)
 	{
@@ -263,16 +263,16 @@ int GstoreConnector::Gets(const std::string & strUrl, std::string & strResponse,
 	return res;
 }
 
-int GstoreConnector::Posts(const std::string & strUrl, const std::string & strPost, std::string & strResponse, const char * pCaPath)
+int GstoreConnector::Posts(const std::string& strUrl, const std::string& strPost, std::string& strResponse, const char* pCaPath)
 {
 	strResponse.clear();
 	CURLcode res;
 	CURL* curl = curl_easy_init();
-	if(NULL == curl)
+	if (NULL == curl)
 	{
 		return CURLE_FAILED_INIT;
 	}
-	if(m_bDebug)
+	if (m_bDebug)
 	{
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
@@ -282,16 +282,16 @@ int GstoreConnector::Posts(const std::string & strUrl, const std::string & strPo
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-	if(NULL == pCaPath)
+	if (NULL == pCaPath)
 	{
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, false);
 	}
 	else
 	{
-		//È±Ê¡Çé¿ö¾ÍÊÇPEM£¬ËùÒÔÎÞÐèÉèÖÃ£¬ÁíÍâÖ§³ÖDER
+		//ç¼ºçœæƒ…å†µå°±æ˜¯PEMï¼Œæ‰€ä»¥æ— éœ€è®¾ç½®ï¼Œå¦å¤–æ”¯æŒDER
 		//curl_easy_setopt(curl,CURLOPT_SSLCERTTYPE,"PEM");
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, true);
 		curl_easy_setopt(curl, CURLOPT_CAINFO, pCaPath);
@@ -543,6 +543,74 @@ std::string GstoreConnector::exportDB(std::string db_name, std::string dir_path,
 	{
 		std::string strUrl = this->Url + "/export";
 		std::string strPost = "{\"db_name\": \"" + db_name + "\", \"ds_path\": \"" + dir_path + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(strUrl, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::begin(std::string db_name, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "/?operation=begin&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strUrl = this->Url + "/begin";
+		std::string strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(strUrl, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::commit(std::string db_name, std::string TID, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "/?operation=commit&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password + "&TID=" + TID;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strUrl = this->Url + "/export";
+		std::string strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"TID\": \"" + TID + "\"}";
+		int ret = this->Post(strUrl, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::rollback(std::string db_name, std::string TID, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "/?operation=rollback&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password + "&TID=" + TID;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strUrl = this->Url + "/rollback";
+		std::string strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"TID\": \"" + TID + "\"}";
+		int ret = this->Post(strUrl, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::getTransLog(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "/?operation=txnlog&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strUrl = this->Url + "/txnlog";
+		std::string strPost = "{\"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
 		int ret = this->Post(strUrl, strPost, res);
 	}
 	return res;
