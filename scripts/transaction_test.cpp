@@ -1,7 +1,7 @@
-#include "../Database/Txn_manager.h"
+﻿#include "../Database/Txn_manager.h"
 #include "../Util/Util.h"
 #include "../Database/Database.h"
-bool do_query(Database *db, string sparql)
+bool do_query(Database* db, string sparql)
 {
 	int ret_val;
 	ResultSet rs;
@@ -16,7 +16,7 @@ bool do_query(Database *db, string sparql)
 	return true;
 }
 
-void txn1(Txn_manager * txn_m)
+void txn1(Txn_manager* txn_m)
 {
 	string query1 = "select ?x where { ?x <mingzhi> ?y}";
 	string update1 = "insert data { <me> <mingzhi> <zhangzhe>}";
@@ -33,9 +33,11 @@ void txn1(Txn_manager * txn_m)
 
 void txn2(Txn_manager* txn_m)
 {
-	/*string query = "select ?x where { ?x <born> ?y}";
-	string update1 = "insert data { <me> <born> \"jjjj\"}";
-	string update2 = "delete where {?x <born> ?y}";*/
+	/*
+	string query = "select ?x where { ?x <born> ?y}";
+	string update1 = "insert data { <me> <born> <jjjj>}";
+	string update2 = "delete where {?x <born> ?y}";
+	*/
 	string query, update1, update2;
 	ifstream in;
 	in.open("q1.sql", ios::in);
@@ -94,7 +96,7 @@ int main(int argc, char* argv[])
 	ret_val = _db.query(query1, rs, output);
 	ret_val = _db.query(update1, rs, output);
 	ret_val = _db.query(query1, rs, output);
-	
+
 	ret_val = _db.query(query1, rs, output);*/
 	//ret_val = _db.query(update2, rs, output);
 
