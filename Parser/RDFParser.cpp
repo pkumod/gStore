@@ -92,7 +92,7 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
 			else if (_objectType == Type::Type_CustomType)
 			{
-				cout << "Triple " << _triple_num << " is custom type." << endl;
+				// cout << "Triple " << _triple_num << " is custom type." << endl;
 				if (_objectSubType == "http://www.w3.org/2001/XMLSchema#long")
 				{
 					long long ll;
