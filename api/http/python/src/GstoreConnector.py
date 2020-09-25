@@ -50,14 +50,17 @@ class GstoreConnector:
 
     def Get(self, strUrl):
         r = requests.get(self.Url + self.UrlEncode(strUrl))
+        r.encoding = "utf-8"
         return r.text
 
     def Post(self, strUrl, strPost):
         r = requests.post(self.Url + self.UrlEncode(strUrl), strPost)
+        r.encoding = "utf-8"
         return r.text
 
     def fGet(self, strUrl, filename):
         r = requests.get(self.Url + self.UrlEncode(strUrl), stream=True)
+        r.encoding = "utf-8"
         with open(filename, 'wb') as fd:
             for chunk in r.iter_content(4096):
                 fd.write(chunk)
@@ -66,6 +69,7 @@ class GstoreConnector:
     def fPost(self, strUrl, strPost, filename):
         r = requests.post(self.Url + self.UrlEncode(strUrl),
                           strPost, stream=True)
+        r.encoding = "utf-8"
         with open(filename, 'wb') as fd:
             for chunk in r.iter_content(4096):
                 fd.write(chunk)
