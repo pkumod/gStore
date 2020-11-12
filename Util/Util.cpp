@@ -27,8 +27,8 @@ pthread_rwlock_t transactionlog_lock;
 #define TRANSACTION_LOG_PATH "./logs/transaction.json"
 #define TRANSACTION_LOG_TEMP_PATH "./logs/transaction_temp.json"
 #define BACKUP_LOG_TMEP_PATH "./temp.json"
-#define DEFALUT_BACKUP_INTERVAL "6" //hour
-#define DEFALUT_BACKUP_TIMER "6" //hour
+#define DEFALUT_BACKUP_INTERVAL "600" //hour
+#define DEFALUT_BACKUP_TIMER "600" //hour
 
 //database home directory, which is an absolute path by config
 //TODO:everywhere using database, the prefix should be it

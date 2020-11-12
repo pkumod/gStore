@@ -1848,7 +1848,7 @@ void* backup_scheduler(void* _args) {
 		int timer = Util::string2int(Util::query_backuplog("system", "backup_timer"));
 		sleep(timer);
         cur_time = time(NULL);
-        cout << "Time Now: " << cur_time << endl;
+        //cout << "Time Now: " << cur_time << endl;
         vector<string> db_names;
         Util::search_backuplog(db_names, "is_backup", "true");
 		for(int i = 0; i < db_names.size(); i++)
@@ -1878,7 +1878,7 @@ void* backup_scheduler(void* _args) {
 			cout << "DB: " << db_name << " backup success" << endl;
 			cout << "Backup Time: " << Util::get_date_time() << endl;
 		}
-		cout << "auto backup done!" << endl;
+		//cout << "auto backup done!" << endl;
     }
 }
 
