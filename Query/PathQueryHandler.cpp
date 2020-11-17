@@ -4,13 +4,21 @@ using namespace std;
 
 PathQueryHandler::PathQueryHandler(CSR *_csr)
 {
-	csr = _csr;
+	if (_csr)
+		csr = _csr;
+	else
+		csr = new CSR[2];
+	cacheMaxSize = 10000;
+	srand(time(NULL));
 }
 
-// int PathQueryHandler::getVertNum()
-// {
-
-// }
+int PathQueryHandler::getVertNum()
+{
+	set<int> vertices;
+	for (int i = 0; i < csr[1].pre_num; i++)
+		vertices.insert(csr[1].adjacency_list[i].begin(), csr[1].adjacency_list[i].end());
+	return vertices.size();
+}
 
 int PathQueryHandler::getEdgeNum()
 {
@@ -47,6 +55,17 @@ int PathQueryHandler::getInVertID(int vid, int pred, int pos)
 	return csr[1].adjacency_list[pred][offset + pos];
 }
 
+int PathQueryHandler::getInVertID(int vid, int pos)
+{
+	if (distinctInEdges.find(vid) == distinctInEdges.end())
+		getTotalInSize(vid, true);	// Load into cache
+
+	if (pos < distinctInEdges[vid].size())
+		return *next(distinctInEdges[vid].begin(), pos);
+	else
+		return -1;
+}
+
 int PathQueryHandler::getSetInSize(int vid, const std::vector<int> &pred_set)
 {
 	int ret = 0;
@@ -55,11 +74,42 @@ int PathQueryHandler::getSetInSize(int vid, const std::vector<int> &pred_set)
 	return ret;
 }
 
-int PathQueryHandler::getTotalInSize(int vid)
+int PathQueryHandler::getTotalInSize(int vid, bool distinct)
 {
 	int ret = 0;
-	for (int i = 0; i < csr[1].pre_num; i++)
-		ret += getInSize(vid, i);
+	if (!distinct)
+	{
+		for (int i = 0; i < csr[1].pre_num; i++)
+			ret += getInSize(vid, i);
+	}
+	else
+	{
+		if (distinctInEdges.find(vid) == distinctInEdges.end())
+		{
+			if (distinctInEdges.size() == cacheMaxSize)
+			{
+				int replacement = rand() % cacheMaxSize;
+				distinctInEdges.erase(next(distinctInEdges.begin(), replacement));
+				// cout << "distinctInEdges replaced entry " << replacement << endl;
+			}
+
+			distinctInEdges[vid] = set<int>();
+			for (int pred = 0; pred < csr[1].pre_num; pred++)
+			{
+				int vIndex = getInIndexByID(vid, pred);
+				if (vIndex == -1)	// This vertex does not participate in this pred's relations
+					continue;
+				else if (vIndex == csr[1].offset_list[pred].size() - 1 \
+					&& csr[1].adjacency_list[pred].size() > csr[1].offset_list[pred][vIndex])
+					distinctInEdges[vid].insert(next(csr[1].adjacency_list[pred].begin(), csr[1].offset_list[pred][vIndex]), \
+						csr[1].adjacency_list[pred].end());
+				else if (csr[1].offset_list[pred][vIndex + 1] > csr[1].offset_list[pred][vIndex])
+					distinctInEdges[vid].insert(next(csr[1].adjacency_list[pred].begin(), csr[1].offset_list[pred][vIndex]), \
+						next(csr[1].adjacency_list[pred].begin(), csr[1].offset_list[pred][vIndex + 1]));
+			}
+		}
+		ret = distinctInEdges[vid].size();
+	}
 	return ret;
 }
 
@@ -90,6 +140,17 @@ int PathQueryHandler::getOutVertID(int vid, int pred, int pos)
 	return csr[0].adjacency_list[pred][offset + pos];
 }
 
+int PathQueryHandler::getOutVertID(int vid, int pos)
+{
+	if (distinctOutEdges.find(vid) == distinctOutEdges.end())
+		getTotalOutSize(vid, true);	// Load into cache
+
+	if (pos < distinctOutEdges[vid].size())
+		return *next(distinctOutEdges[vid].begin(), pos);
+	else
+		return -1;
+}
+
 int PathQueryHandler::getSetOutSize(int vid, const std::vector<int> &pred_set)
 {
 	int ret = 0;
@@ -98,11 +159,42 @@ int PathQueryHandler::getSetOutSize(int vid, const std::vector<int> &pred_set)
 	return ret;
 }
 
-int PathQueryHandler::getTotalOutSize(int vid)
+int PathQueryHandler::getTotalOutSize(int vid, bool distinct)
 {
 	int ret = 0;
-	for (int i = 0; i < csr[1].pre_num; i++)
-		ret += getOutSize(vid, i);
+	if (!distinct)
+	{
+		for (int i = 0; i < csr[1].pre_num; i++)
+			ret += getOutSize(vid, i);
+	}
+	else
+	{
+		if (distinctOutEdges.find(vid) == distinctOutEdges.end())
+		{
+			if (distinctOutEdges.size() == cacheMaxSize)
+			{
+				int replacement = rand() % cacheMaxSize;
+				distinctOutEdges.erase(next(distinctOutEdges.begin(), replacement));
+				// cout << "distinctInEdges replaced entry " << replacement << endl;
+			}
+
+			distinctOutEdges[vid] = set<int>();
+			for (int pred = 0; pred < csr[1].pre_num; pred++)
+			{
+				int vIndex = getOutIndexByID(vid, pred);
+				if (vIndex == -1)	// This vertex does not participate in this pred's relations
+					continue;
+				else if (vIndex == csr[0].offset_list[pred].size() - 1 \
+					&& csr[0].adjacency_list[pred].size() > csr[0].offset_list[pred][vIndex])
+					distinctOutEdges[vid].insert(next(csr[0].adjacency_list[pred].begin(), csr[0].offset_list[pred][vIndex]), \
+						csr[0].adjacency_list[pred].end());
+				else if (csr[0].offset_list[pred][vIndex + 1] > csr[0].offset_list[pred][vIndex])
+					distinctOutEdges[vid].insert(next(csr[0].adjacency_list[pred].begin(), csr[0].offset_list[pred][vIndex]), \
+						next(csr[0].adjacency_list[pred].begin(), csr[0].offset_list[pred][vIndex + 1]));
+			}
+		}
+		ret = distinctOutEdges[vid].size();
+	}
 	return ret;
 }
 
