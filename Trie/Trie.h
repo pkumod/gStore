@@ -7,6 +7,10 @@
 * This data structure is used to extract common prefixes from a given dataset,
 * and compress/uncompress the dataset according to those prefixes.
 ==============================================================================*/
+#ifndef TRIE_FORBIDDEN
+#define TRIE_FORBIDDEN 
+#endif
+
 #include "TrieNode.h"
 #include "../Util/Triple.h"
 #include "../Util/Util.h"
@@ -41,8 +45,12 @@ public:
 	void FindPrefixSet();
 	void append(string &ret, string _str);
 	void Uncompress(const char *_str, const int len, string &target_string);
-	inline void Uncompress(const char *_str, const int len, string &target_string, char* buffer)
+	void Uncompress(const char *_str, const int len, string &target_string, char* buffer)
 	{
+		#ifdef TRIE_FORBIDDEN
+		target_string.assign(_str,len);
+		return;
+		#endif
 		if (going == false)
 		{
 			target_string = string(_str, len);
@@ -85,3 +93,4 @@ public:
 	void SetStorePath(string _path);
 	string Uncompress(const string &_str, const int len);
 };
+
