@@ -972,6 +972,10 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 			}
 		}
 
+		// TRY!!!
+		for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
+			rewriting_evaluation_stack[dep].group_pattern.getVarset();
+
 		for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
 			if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Bind_type)
 			{
@@ -999,6 +1003,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 				if (!rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done && \
 					rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.varset. \
 					belongTo(rewriting_evaluation_stack[dep].group_pattern.group_pattern_resultset_minimal_varset))
+				// if (!rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done)
 				{
 					rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done = true;
 
@@ -1061,6 +1066,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 					delete sub_result;
 
 					sub_result = new_result;
+					printf("IN SECOND doFilter\n");
 				}
 			}
 		}
@@ -2535,6 +2541,7 @@ GeneralEvaluation::pathVec2JSON(int src, int dst, const vector<int> &v, stringst
 	}
 	ss << "]}";
 }
+
 
 
 
