@@ -11,6 +11,9 @@ using namespace std;
 
 Trie::Trie()
 {
+	#ifdef TRIE_FORBIDDEN
+	return;
+	#endif 
 	this->TrieBuffer = new char[8388608];
 	this->treeMap = map<string, TYPE_TRIPLE_NUM>();
 	this->treeMap.insert(make_pair("<http://www.", 0));
@@ -23,11 +26,17 @@ Trie::Trie()
 void
 Trie::SetStorePath(string _path)
 {
+	#ifdef TRIE_FORBIDDEN
+	return;
+	#endif 	
 	this->store_path = _path;
 }
 
 Trie::~Trie()
 {
+	#ifdef TRIE_FORBIDDEN
+	return;
+	#endif 
 	saveStringPrefix();
 	this->treeMap.clear();
 	this->s2int.clear();
@@ -38,6 +47,9 @@ Trie::~Trie()
 void
 Trie::Addstring(string& _str)
 {
+	#ifdef TRIE_FORBIDDEN
+	return;
+	#endif 
 	map<string, TYPE_TRIPLE_NUM>::iterator it;
 	string tmp;
 	int start = 0;
@@ -86,6 +98,9 @@ Trie::Addstring(string& _str)
 void
 Trie::BuildPrefix()
 {
+	#ifdef TRIE_FORBIDDEN
+	return;
+	#endif 
 	this->FindPrefixSet();
 	return;
 }
@@ -93,6 +108,9 @@ Trie::BuildPrefix()
 void
 Trie::FindPrefixSet()
 {
+	#ifdef TRIE_FORBIDDEN
+	return;
+	#endif 
 	multimap<TYPE_TRIPLE_NUM, string> t;
 	map<string, TYPE_TRIPLE_NUM>::iterator it1;
 	long long tq;
@@ -146,6 +164,9 @@ Trie::FindPrefixSet()
 void
 Trie::append(string &ret, string _str)
 {
+	#ifdef TRIE_FORBIDDEN
+	return;
+	#endif 
 	short substr_len;
 	int t_start;
 	map<string, TYPE_TRIPLE_NUM>::iterator it;
@@ -174,6 +195,9 @@ Trie::append(string &ret, string _str)
 string
 Trie::Compress(string &_str)
 {
+	#ifdef TRIE_FORBIDDEN
+	return _str;
+	#endif 
 	if (going == false)
 		return _str;
 	string ret;
@@ -246,6 +270,10 @@ Trie::Compress(string &_str)
 bool
 Trie::saveStringPrefix()
 {
+	#ifdef TRIE_FORBIDDEN
+	return true;
+	#endif 
+
 	FILE *StringPrefix = fopen(this->store_path.c_str(), "w");
 
 	if (StringPrefix == NULL)
@@ -296,6 +324,9 @@ Trie::saveStringPrefix()
 bool
 Trie::loadStringPrefix()
 {
+	#ifdef TRIE_FORBIDDEN
+	return true;
+	#endif 
 	cout << "load Stirng Prefix" << endl;
 	FILE *StringPrefix = fopen(this->store_path.c_str(), "r");
 	if (StringPrefix == NULL)
@@ -363,6 +394,10 @@ Trie::loadStringPrefix()
 void
 Trie::Uncompress(const char *_str, const int len, string &target_string)
 {
+	#ifdef TRIE_FORBIDDEN
+	target_string.assign(_str,len);
+	return;
+	#endif 
 	this->Uncompress(_str, len, target_string, this->TrieBuffer);
 	return;
 }
@@ -370,7 +405,11 @@ Trie::Uncompress(const char *_str, const int len, string &target_string)
 string
 Trie::Uncompress(const string &_str, const int len)
 {
+	#ifdef TRIE_FORBIDDEN
+	return _str;
+	#endif 
 	string _ret;
 	this->Uncompress(_str.c_str(), len, _ret);
 	return _ret;
 }
+
