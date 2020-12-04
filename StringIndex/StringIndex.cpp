@@ -460,16 +460,20 @@ StringIndex::addRequest(unsigned id, unsigned off_base, bool is_entity_or_litera
 
 void StringIndex::trySequenceAccess(bool real, pthread_t tidp)
 {
+	AccessLock.lock();
 	this->entity.trySequenceAccess(real,tidp);
 	this->literal.trySequenceAccess(real, tidp);
 	this->predicate.trySequenceAccess(real, tidp);
+	AccessLock.unlock();
 }
 
 void StringIndex::SetTrie(Trie* trie)
 {
+	AccessLock.lock();
 	this->entity.SetTrie(trie);
 	this->literal.SetTrie(trie);
 	this->predicate.SetTrie(trie);
+	AccessLock.unlock();
 }
 
 vector<StringIndexFile*>
@@ -484,6 +488,7 @@ StringIndex::get_three_StringIndexFile()
 
 void StringIndex::change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_entity_or_literal)
 {
+	AccessLock.lock();
 	if (is_entity_or_literal)
 	{
 		if (this->entity.mmapLength != 0)
@@ -509,10 +514,12 @@ void StringIndex::change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_
 			this->predicate.change(ids[i], kv_store);
 		this->predicate.flush_file();
 	}
+	AccessLock.unlock();
 }
 
 void StringIndex::disable(std::vector<unsigned> &ids, bool is_entity_or_literal)
 {
+	AccessLock.lock();
 	if (is_entity_or_literal)
 	{
 		if (this->entity.mmapLength != 0)
@@ -538,5 +545,6 @@ void StringIndex::disable(std::vector<unsigned> &ids, bool is_entity_or_literal)
 			this->predicate.disable(ids[i]);
 		this->predicate.flush_file();
 	}
+	AccessLock.unlock();
 }
 

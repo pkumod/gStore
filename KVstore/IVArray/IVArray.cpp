@@ -286,28 +286,27 @@ IVArray::UpdateTime(unsigned _key, bool HasLock)
 bool
 IVArray::search(unsigned _key, char *&_str, unsigned long & _len)
 {
-	this->CacheLock.lock();
 	//printf("%s search %d: ", filename.c_str(), _key);
 	if (_key >= CurEntryNum ||!array[_key].isUsed())
 	{
 		_str = NULL;
 		_len = 0;
-		this->CacheLock.unlock();
 		return false;
 	}
 	// try to read in main memory
+	this->CacheLock.lock();
 	if (array[_key].inCache())
 	{
 		UpdateTime(_key);
-		bool ret = array[_key].getBstr(_str, _len);
 		this->CacheLock.unlock();
+		bool ret = array[_key].getBstr(_str, _len);
 		return ret;
 	}
+	this->CacheLock.unlock();
 	// read in disk
 	unsigned store = array[_key].getStore();
 	if (!BM->ReadValue(store, _str, _len))
 	{
-		this->CacheLock.unlock();
 		return false;
 	}
 	if(!VList::isLongList(_len))
@@ -316,7 +315,9 @@ IVArray::search(unsigned _key, char *&_str, unsigned long & _len)
 //		{
 //			if (array[_key].inCache())
 //				return true;
+			this->CacheLock.lock();
 			AddInCache(_key, _str, _len);
+			this->CacheLock.unlock();
 			char *debug = new char [_len];
 			memcpy(debug, _str, _len);
 			_str = debug;
@@ -325,7 +326,6 @@ IVArray::search(unsigned _key, char *&_str, unsigned long & _len)
 //		}
 	}
 
-	this->CacheLock.unlock();
 	return true;
 }
 
@@ -361,6 +361,8 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 		if (newp == NULL)
 		{
 			cout << "IVArray insert error: main memory full" << endl;
+			CurEntryNum = OldEntryNum;
+			delete[] newp;
 			this->CacheLock.unlock();
 			return false;
 		}
@@ -436,18 +438,18 @@ IVArray::remove(unsigned _key)
 bool
 IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 {
-	this->CacheLock.lock();
+	//cout << "this IVArray::modify " << endl;
 	if (!array[_key].isUsed())
 	{
-		this->CacheLock.unlock();
+		
 		return false;
 	}
-
 	array[_key].setDirtyFlag(true);
-
+	this->CacheLock.lock();
 	if (array[_key].inCache())
 	{
 		RemoveFromLRUQueue(_key);
+		
 		if(array[_key].isPined())
 			array[_key].setCachePinFlag(false);
 
@@ -461,9 +463,11 @@ IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 	}
 	else
 	{
+		//cout << "free disk and set" << endl;
 		unsigned store = array[_key].getStore();
 		BM->FreeBlocks(store);
 		AddInCache(_key, _str, _len);
+		
 	}
 	this->CacheLock.unlock();
 	return true;
@@ -538,4 +542,221 @@ IVArray::RemoveFromLRUQueue(unsigned _key)
 
 	//this->CacheLock.unlock();
 	return;
+}
+
+
+//MVCC
+
+bool 
+IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& AddSet, VDataSet& DelSet, shared_ptr<Transaction> txn, bool is_firstread )
+{
+	ArraySharedLock();
+	//printf("%s search %d: ", filename.c_str(), _key);
+	if (_key >= CurEntryNum ||!array[_key].isUsed())
+	{
+		_str = NULL;
+		_len = 0;
+		//cout << "_key >= CurEntryNum ||!array[_key].isUsed()......................................................" << endl;
+		ArrayUnlock();
+		return false;
+	}
+	// try to read in main memory
+	bool ret = array[_key].readVersion(AddSet, DelSet, txn, is_firstread);
+	if(ret == false) txn->SetState(TransactionState::ABORTED);
+	this->CacheLock.lock();
+	if (array[_key].inCache())
+	{
+		UpdateTime(_key);
+		this->CacheLock.unlock();
+		bool ret = array[_key].getBstr(_str, _len);
+		cout << ret << endl;
+		//_str maybe nullptr
+		//cout << "get base str success......................................................" << endl;
+		ArrayUnlock();
+		return true;
+	}
+	this->CacheLock.unlock();
+	// read in disk
+	unsigned store = array[_key].getStore();
+	if (!BM->ReadValue(store, _str, _len))
+	{
+		ArrayUnlock();
+		//cout << "base str is null......................................................" << endl;
+		return true;
+	}
+	if(!VList::isLongList(_len) )
+	{
+//		if (array[_key].Lock.try_lock())
+//		{
+//			if (array[_key].inCache())
+//				return true;
+			this->CacheLock.lock();
+			AddInCache(_key, _str, _len);
+			this->CacheLock.unlock();
+			char *debug = new char [_len];
+			memcpy(debug, _str, _len);
+			_str = debug;
+	//		array[_key].Lock.unlock();
+	
+//		}
+	}
+	ArrayUnlock();
+	return true;
+}
+
+bool 
+IVArray::AddNewVersion(unsigned _key, VData value, shared_ptr<Transaction> txn)
+{
+	
+}
+
+bool 
+IVArray::remove(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn)
+{
+	ArraySharedLock();
+	if (_key < CurEntryNum && array[_key].isUsed())
+	{
+		//check if first remove
+		VDataSet addset;
+		addset.clear();
+		
+		bool ret = array[_key].writeVersion(addset, delta, txn);
+		if(ret == false) txn->SetState(TransactionState::ABORTED);
+		ArrayUnlock();
+		return ret;
+	}
+	else
+	{
+		ArrayUnlock();
+		return false;
+	}
+}
+
+bool 
+IVArray::insert(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn)
+{
+	ArraySharedLock();
+	if(_key >= CurEntryNum) return false; //not happen
+	VDataSet delset;
+	delset.clear();
+	//check if first insert 
+	//array[_key].setDirtyFlag(true);
+	array[_key].setVersionFlag();
+	int ret = array[_key].writeVersion(delta, delset, txn);
+	if(ret != 1) {
+		cerr << "write version failed!" << endl;
+		txn->SetState(TransactionState::ABORTED);
+	}
+	if(!array[_key].isUsed()) 
+		array[_key].setUsedFlag(true);
+	//cout << "array[_key].inCache()" << array[_key].inCache() << endl;
+	ArrayUnlock();
+	return ret;
+}
+
+
+int 
+IVArray::TryExclusiveLock(unsigned _key, shared_ptr<Transaction> txn, bool has_read )
+{
+	ArraySharedLock();
+	if(_key >= CurEntryNum) //expand
+	{
+		cout << "expanding..............." << endl;
+		if (_key >= IVArray::MAX_KEY_NUM)
+		{
+			cerr << _key << ' ' << MAX_KEY_NUM << endl;
+			cerr << "IVArray insert error: Key is bigger than MAX_KEY_NUM" << endl;
+			ArrayUnlock();
+			return 0;
+		}
+		ArrayUnlock();
+		ArrayExclusiveLock();
+		if(_key >= CurEntryNum) //recheck
+		{
+			CurEntryNumChange = true;
+			//assuming one expand is enough
+			unsigned OldEntryNum = CurEntryNum;
+			CurEntryNum = IVMIN(OldEntryNum << 1, IVMAXKEYNUM);
+
+			IVEntry* newp = new IVEntry[CurEntryNum];
+			if (newp == NULL)
+			{
+				cerr << "IVArray insert error: main memory full" << endl;
+				CurEntryNum = OldEntryNum;
+				delete[] newp;
+				ArrayUnlock();
+				return 0;
+			}
+
+			for(int i = 0; i < OldEntryNum; i++)
+				newp[i].Copy(array[i]);
+
+			delete [] array;
+			array = newp;
+		}
+		ArrayUnlock();
+	}
+	ArraySharedLock();
+	assert(_key < CurEntryNum);
+	int ret = array[_key].getExclusiveLatch(txn, has_read);
+	ArrayUnlock();
+	return ret;
+}
+
+/*
+bool 
+IVArray::ReleaseExclusiveLock(unsigned _key, shared_ptr<Transaction> txn, bool has_read)
+{
+	if (_key >= CurEntryNum || !array[_key].isUsed() )
+	{
+		return false;
+	}
+	return array[_key].releaseExlusiveLatch(txn, has_read);
+}
+*/
+
+bool 
+IVArray::ReleaseLatch(unsigned _key, shared_ptr<Transaction> txn, IVEntry::LatchType type)
+{
+	if (_key >= CurEntryNum || !array[_key].isUsed() )
+	{
+		return false;
+	}
+	return array[_key].unLatch(txn, type);
+}
+
+bool
+IVArray::rollback(unsigned _key, shared_ptr<Transaction> txn, bool has_read)
+{
+	if (_key >= CurEntryNum || !array[_key].isUsed() || !array[_key].isVersioned())
+	{
+		return false;
+	}
+	//bool delete_ret = array[_key].deleteUnCommittedVersion(txn);
+	bool delete_ret = array[_key].invalidExlusiveLatch(txn, has_read);
+	//bool unlock_ret = array[_key].releaseExlusiveLock(txn);
+	return delete_ret;
+}
+
+//gc
+bool
+IVArray::GetDirtyKeys(vector<unsigned> &lists)const
+{
+	for(int i = 0; i < CurEntryNum; i++)
+	{
+		if(array[i].isUsed() && array[i].isVersioned())
+			lists.push_back(i);
+	}
+}
+
+bool
+IVArray::CleanDirtyKey(unsigned _key)
+{
+	if (_key >= CurEntryNum || !array[_key].isUsed() || !array[_key].isVersioned())
+	{
+		return false;
+	}
+	array[_key].cleanAllVersion();
+	return true;
+
 }

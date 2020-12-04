@@ -8,7 +8,7 @@
 
 #include "../../Util/Util.h"
 #include "../../Util/VList.h"
-
+#include "../../Util/Latch.h"
 using namespace std;
 
 class ISEntry

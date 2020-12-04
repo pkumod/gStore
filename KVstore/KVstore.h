@@ -76,8 +76,8 @@ public:
 	//===============================================================================
 	//Before calling these functions, we are sure that the triples doesn't exist.
 
-	bool updateTupleslist_insert(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
-	bool updateTupleslist_remove(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
+	bool updateTupleslist_insert(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn = nullptr);
+	bool updateTupleslist_remove(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn = nullptr);
 
 	bool updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
 	bool updateRemove_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
@@ -93,7 +93,70 @@ public:
 	bool updateRemove_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
 	bool updateInsert_p2values(TYPE_PREDICATE_ID _preid, const std::vector<unsigned>& _sidoidlist);
 	bool updateRemove_p2values(TYPE_PREDICATE_ID _preid, const std::vector<unsigned>& _sidoidlist);
+	
+	
+	//===============================================================================
+	//for MVCC
+	//merge versions when query 
+	void Insert_s2values(VDataSet &addset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const;
+	void Remove_s2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const;
+	
+	void Insert_o2values(VDataSet &addset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const;
+	void Remove_o2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const;
+	
+	void Insert_p2values(VDataSet &addset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const;
+	void Remove_p2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const;
+	
+	
+	
+	//MVCC update
+	//batch update 
+	bool updateTupleslist_insert(vector<IDTriple> &Triples, shared_ptr<Transaction> txn);
+	bool updateTupleslist_remove(vector<IDTriple> &Triples, shared_ptr<Transaction> txn);
+	
+	//basic update
+	bool updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
+	bool updateRemove_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
+	bool updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
+	bool updateRemove_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
+	bool updateInsert_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
+	bool updateRemove_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
 
+	//MVCC
+	//Growing
+	//called before update operation
+	bool getExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
+	bool releaseExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
+	
+	//Shrinking(commit)
+	//write set: releaseExclusiveLocks->releaseAllLatches(both exclusive latches and shared latches)
+	bool releaseAllLatches(shared_ptr<Transaction> txn) const;
+
+	bool releaseAllExclusiveLocks(shared_ptr<Transaction> txn) const;
+	
+	//individual lock release 
+	//bool releaseExclusiveLock(TYPE_ENTITY_LITERAL_ID id, Transaction::IDType type, shared_ptr<Transaction> txn);
+	
+	//rollback(abort)
+	//write set: releaseExclusiveLocks->updateTupleslist_invalid(releaseAllExclusiveLatches)
+	//read set(if any): releaseAllSharedLatches
+	bool transaction_invalid(shared_ptr<Transaction> txn);
+	
+	//not implement
+	bool releaseAllSharedLatches(shared_ptr<Transaction> txn) const;
+	bool updateInvalid_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, shared_ptr<Transaction> txn);
+	bool updateInvalid_o2values(TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
+	bool updateInvalid_p2values(TYPE_ENTITY_LITERAL_ID _pre_id, shared_ptr<Transaction> txn);
+	
+	//garbage clean
+	//No Transaction should be running!
+	void IVArray_Vacuum(vector<unsigned>& sub_ids , vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned>& pre_ids) ;
+	void s2values_Vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn) ;
+	void o2values_Vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn) ;
+	void o2values_literal_Vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<Transaction> txn) ;
+	void p2values_Vacuum(vector<unsigned>& pre_ids,shared_ptr<Transaction> txn) ;
+	void dictionary_Vacuum() ;
+	
 	//===============================================================================
 
 	//for entity2id 
@@ -144,30 +207,30 @@ public:
 	bool open_subID2values(int _mode, TYPE_ENTITY_LITERAL_ID _entity_num = 0);
 	bool close_subID2values();
 	bool build_subID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num);
-	bool getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false) const;
-	bool getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
-	bool getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
-	bool getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preid_objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
+	bool getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
+	bool getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
+	bool getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
+	bool getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preid_objidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
 
 	//for objID2values
 	bool open_objID2values(int _mode, TYPE_ENTITY_LITERAL_ID _entitynum = 0, TYPE_ENTITY_LITERAL_ID _literal_num = 0);
 	bool close_objID2values();
 	bool build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num, TYPE_ENTITY_LITERAL_ID total_literal_num);
-	bool getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false) const;
-	bool getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false) const;
-	bool getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false) const;
-	bool getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preid_subidlist, unsigned& _list_len, bool _no_duplicate = false) const;
+	bool getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
+	bool getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
+	bool getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
+	bool getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preid_subidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
 
 	//for preID2values
 	bool open_preID2values(int _mode, TYPE_PREDICATE_ID _pre_num = 0);
 	bool close_preID2values();
 	bool build_preID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID total_pre_num);
-	bool getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false) const;
-	bool getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
-	bool getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_objidlist, unsigned& _list_len, bool _no_duplicate = false) const;
+	bool getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
+	bool getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
+	bool getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_objidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
 
 	//for so2p
-	bool getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subID, TYPE_ENTITY_LITERAL_ID _objID, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false) const;
+	bool getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subID, TYPE_ENTITY_LITERAL_ID _objID, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
 
 	bool load_trie(int _mode);
 
@@ -274,6 +337,22 @@ private:
 	static std::vector<unsigned> intersect(const unsigned* _list1, const unsigned* _list2, unsigned _len1, unsigned _len2);
 	static unsigned binarySearch(unsigned key, const unsigned* _list, unsigned _list_len, int step = 1);
 	static bool isEntity(TYPE_ENTITY_LITERAL_ID id);
+	
+	//mvcc
+	//read
+	bool getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned long & _vlen, VDataSet& AddSet, VDataSet& DelSet, shared_ptr<Transaction> txn = nullptr, bool FirstRead = false) const;
+	//write
+	bool Insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_ptr<Transaction> txn);
+	bool Remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_ptr<Transaction> txn);
+	int getExclusiveLock(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read) const;
+	//commit or abort
+	bool Invalid_values(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read);
+	bool releaseExclusiveLock(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const;
+	bool releaseExclusiveLatch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const;
+	bool releaseSharedLatch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const;
+	//GC
+	bool getDirtyKeys(IVArray* _array, vector<unsigned>& lists);
+	bool cleanDirtyKey(IVArray* _array, unsigned _key) ;
 };
 
 #endif //_KVSTORE_KVSTORE_H

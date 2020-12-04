@@ -383,6 +383,7 @@ Database::saveIDinfo()
 TYPE_ENTITY_LITERAL_ID
 Database::allocEntityID()
 {
+	allocEntityID_lock.lock();
 	//int t;
 	TYPE_ENTITY_LITERAL_ID t = INVALID_ENTITY_LITERAL_ID;
 
@@ -393,6 +394,7 @@ Database::allocEntityID()
 		{
 			cout << "fail to alloc id for entity" << endl;
 			//return -1;
+			allocEntityID_lock.unlock();
 			return INVALID;
 		}
 	}
@@ -405,12 +407,14 @@ Database::allocEntityID()
 	}
 
 	this->entity_num++;
+	allocEntityID_lock.unlock();
 	return t;
 }
 
 void
 Database::freeEntityID(TYPE_ENTITY_LITERAL_ID _id)
 {
+	allocEntityID_lock.lock();
 	if (_id == this->limitID_entity - 1)
 	{
 		this->limitID_entity--;
@@ -422,12 +426,14 @@ Database::freeEntityID(TYPE_ENTITY_LITERAL_ID _id)
 	}
 
 	this->entity_num--;
+	allocEntityID_lock.unlock();
 }
 
 TYPE_ENTITY_LITERAL_ID
 Database::allocLiteralID()
 {
 	//int t;
+	allocLiteralID_lock.lock();
 	TYPE_ENTITY_LITERAL_ID t = INVALID_ENTITY_LITERAL_ID;
 
 	if (this->freelist_literal == NULL)
@@ -437,6 +443,7 @@ Database::allocLiteralID()
 		{
 			cout << "fail to alloc id for literal" << endl;
 			//return -1;
+			allocLiteralID_lock.unlock();
 			return INVALID;
 		}
 	}
@@ -449,12 +456,14 @@ Database::allocLiteralID()
 	}
 
 	this->literal_num++;
+	allocLiteralID_lock.unlock();
 	return t + Util::LITERAL_FIRST_ID;
 }
 
 void
 Database::freeLiteralID(TYPE_ENTITY_LITERAL_ID _id)
 {
+	allocLiteralID_lock.lock();
 	_id -= Util::LITERAL_FIRST_ID;
 
 	if (_id == this->limitID_literal - 1)
@@ -468,12 +477,14 @@ Database::freeLiteralID(TYPE_ENTITY_LITERAL_ID _id)
 	}
 
 	this->literal_num--;
+	allocLiteralID_lock.unlock();
 }
 
 TYPE_PREDICATE_ID
 Database::allocPredicateID()
 {
 	//int t;
+	allocPredicateID_lock.lock();
 	TYPE_PREDICATE_ID t = INVALID_PREDICATE_ID;
 
 	if (this->freelist_predicate == NULL)
@@ -483,6 +494,7 @@ Database::allocPredicateID()
 		{
 			cout << "fail to alloc id for predicate" << endl;
 			//WARN:if pid is changed to unsigned type, this must be changed
+			allocPredicateID_lock.unlock();
 			return -1;
 		}
 	}
@@ -495,12 +507,14 @@ Database::allocPredicateID()
 	}
 
 	this->pre_num++;
+	allocPredicateID_lock.unlock();
 	return t;
 }
 
 void
 Database::freePredicateID(TYPE_PREDICATE_ID _id)
 {
+	allocPredicateID_lock.lock();
 	if (_id == this->limitID_predicate - 1)
 	{
 		this->limitID_predicate--;
@@ -512,6 +526,7 @@ Database::freePredicateID(TYPE_PREDICATE_ID _id)
 	}
 
 	this->pre_num--;
+	allocPredicateID_lock.unlock();
 }
 
 void
@@ -1642,15 +1657,16 @@ Database::get_query_parse_lock()
 }
 
 int
-Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool update_flag, bool export_flag)
+Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool update_flag, bool export_flag, shared_ptr<Transaction> txn)
 {
 	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
 	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, \
 		this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, \
-		this->limitID_entity, this->csr);
-
+		this->limitID_entity, this->csr, txn);
+	//if(txn != nullptr)
+	//	cout << "query in transaction............................................" << endl;
 	long tv_begin = Util::get_cur_time();
 
 	this->query_parse_lock.lock();
@@ -1676,11 +1692,12 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		//unique_guard<mutex> updateLCK(this->update_lock);
 		//if(!unique_guard.try_lock())
 		//BETTER: use timed lock
-		if(pthread_rwlock_tryrdlock(&(this->update_lock)) != 0)
+		if(txn == nullptr && pthread_rwlock_tryrdlock(&(this->update_lock)) != 0)
 		{
 			return -101;
 		}
-		cout<<"read priviledge of update lock acquired"<<endl;
+		if(txn == nullptr)
+			cout<<"read priviledge of update lock acquired"<<endl;
 
 		//copy the string index for each query thread
 		//StringIndex tmpsi = *this->stringindex;
@@ -1724,7 +1741,8 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 			//general_evaluation.setNeedOutputAnswer();
 
 		//tmpsi.clear();
-		pthread_rwlock_unlock(&(this->update_lock));
+		if(txn == nullptr)
+			pthread_rwlock_unlock(&(this->update_lock));
 	}
 	//Update 
 	else
@@ -1741,12 +1759,13 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		//invalid query because updates are not allowed in ONLY_READ mode
 		return -101;
 #endif
-		if(pthread_rwlock_trywrlock(&(this->update_lock)) != 0)
+		if(txn == nullptr && pthread_rwlock_trywrlock(&(this->update_lock)) != 0)
 		{
 			cout<<"unable to write lock"<<endl;
 			return -101;
 		}
-		cout<<"write priviledge of update lock acquired"<<endl;
+		if(txn == nullptr)
+			cout<<"write priviledge of update lock acquired"<<endl;
 
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
@@ -1788,17 +1807,20 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 				}
 				else 
 				{
-					pthread_rwlock_unlock(&(this->update_lock));
-					throw "Database::query failed";
+					if(txn == nullptr)
+					{
+						pthread_rwlock_unlock(&(this->update_lock));
+						throw "Database::query failed";
+					}
 				}
 
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data)
 			{
-				success_num = insert(update_triple, update_triple_num);
+				success_num = insert(update_triple, update_triple_num, false, txn);
 			}
 			else if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
 			{
-				success_num = remove(update_triple, update_triple_num);
+				success_num = remove(update_triple, update_triple_num, false, txn);
 			}
 		}
 		else if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Where || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause ||
@@ -1814,7 +1836,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 				//{
 					//update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
 				//}
-				success_num = remove(update_triple, update_triple_num);
+				success_num = remove(update_triple, update_triple_num, false, txn);
 
 			}
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
@@ -1824,7 +1846,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 				//{
 					//update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
 				//}
-				success_num = insert(update_triple, update_triple_num);
+				success_num = insert(update_triple, update_triple_num, false, txn);
 			}
 		}
 
@@ -1837,7 +1859,8 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 			this->query_cache->clear();
 			cout<<"QueryCache cleared"<<endl;
 		}
-		pthread_rwlock_unlock(&(this->update_lock));
+		if(txn == nullptr)
+			pthread_rwlock_unlock(&(this->update_lock));
 	}
 
 	long tv_final = Util::get_cur_time();
@@ -2198,11 +2221,12 @@ Database::encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID 
 
 //check whether the relative 3-tuples exist usually, through sp2olist
 bool
-Database::exist_triple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id)
+Database::exist_triple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	unsigned* _objidlist = NULL;
 	unsigned _list_len = 0;
-	(this->kvstore)->getobjIDlistBysubIDpreID(_sub_id, _pre_id, _objidlist, _list_len);
+	//get exclusive before update!
+	(this->kvstore)->getobjIDlistBysubIDpreID(_sub_id, _pre_id, _objidlist, _list_len, true, txn);
 
 	bool is_exist = false;
 	//	for(unsigned i = 0; i < _list_len; i ++)
@@ -2223,7 +2247,7 @@ Database::exist_triple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id
 	return is_exist;
 }
 
-bool Database::exist_triple(const TripleWithObjType& _triple) {
+bool Database::exist_triple(const TripleWithObjType& _triple, shared_ptr<Transaction> txn) {
 	int sub_id = this->kvstore->getIDByEntity(_triple.getSubject());
 	if (sub_id == -1) {
 		return false;
@@ -2245,7 +2269,7 @@ bool Database::exist_triple(const TripleWithObjType& _triple) {
 		return false;
 	}
 
-	return exist_triple(sub_id, pre_id, obj_id);
+	return exist_triple(sub_id, pre_id, obj_id, txn);
 }
 
 //NOTICE: all constants are transfered to ids in memory
@@ -2984,7 +3008,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 }
 
 bool
-Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices, vector<unsigned>* _predicates)
+Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices, vector<unsigned>* _predicates, shared_ptr<Transaction> txn)
 {
 	//cout<<endl<<"the new triple is:"<<endl;
 	//cout<<_triple.subject<<endl;
@@ -3000,6 +3024,8 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	long tv_kv_store_begin = Util::get_cur_time();
 
 	TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
+	if(txn != nullptr)
+		cout << "Update in Transaction...................................................." << endl;
 	bool _is_new_sub = false;
 	//if sub does not exist
 	if (_sub_id == INVALID_ENTITY_LITERAL_ID)
@@ -3096,11 +3122,21 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		}
 	}
 
+	
+	if(txn != nullptr && (this->kvstore)->getExclusiveLocks(_sub_id, _pre_id, _obj_id, txn) == false)
+	{
+		//conflict
+		//abort
+		txn->SetState(TransactionState::ABORTED);
+		cout << "getExclusiveLocks failed, Abort" << endl;
+		return false;
+	}
+	
 	//if this is not a new triple, return directly
 	bool _triple_exist = false;
 	if (!_is_new_sub && !_is_new_pre && !_is_new_obj)
 	{
-		_triple_exist = this->exist_triple(_sub_id, _pre_id, _obj_id);
+		_triple_exist = this->exist_triple(_sub_id, _pre_id, _obj_id, txn);
 	}
 
 	//debug
@@ -3113,6 +3149,14 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 
 	if (_triple_exist)
 	{
+		//unlock items that not locked before
+		if(txn != nullptr){
+			bool ret  = (this->kvstore)->releaseExclusiveLocks(_sub_id, _pre_id, _obj_id, txn);
+			if(ret == false)
+			{
+				cerr << "...........................releaseExclusiveLocks failed!" << endl;
+			}
+		}
 		cout << "this triple already exist" << endl;
 		return false;
 	}
@@ -3123,8 +3167,18 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	//cout<<"the triple spo ids: "<<_sub_id<<" "<<_pre_id<<" "<<_obj_id<<endl;
 
 	//update sp2o op2s s2po o2ps s2o o2s etc.
-	unsigned updateLen = (this->kvstore)->updateTupleslist_insert(_sub_id, _pre_id, _obj_id);
-
+	bool ret = (this->kvstore)->updateTupleslist_insert(_sub_id, _pre_id, _obj_id, txn);
+	if(txn) 
+	{
+		cout << "WriteSetInsert......." << endl;
+		if(ret)
+			txn->WriteSetInsert(IDTriple(_sub_id, _pre_id, _obj_id));
+		else{
+			cout << "insert failed" << endl;
+			txn->SetState(TransactionState::ABORTED);
+			(this->kvstore)->releaseExclusiveLocks(_sub_id, _pre_id, _obj_id, txn);
+		}
+	}
 	//int* list = NULL;
 	//int len = 0;
 	//int root = this->kvstore->getIDByEntity("<root>");
@@ -3145,7 +3199,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 }
 
 bool
-Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices, vector<unsigned>* _predicates)
+Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices, vector<unsigned>* _predicates, shared_ptr<Transaction> txn)
 {
 	long tv_kv_store_begin = Util::get_cur_time();
 
@@ -3172,9 +3226,22 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	{
 		return false;
 	}
-	bool _exist_triple = this->exist_triple(_sub_id, _pre_id, _obj_id);
+	if(txn != nullptr && (this->kvstore)->getExclusiveLocks(_sub_id, _pre_id, _obj_id, txn) == false)
+	{
+		//conflict
+		//abort
+		cout << "getExclusiveLocks...................... failed" << endl;
+		txn->SetState(TransactionState::ABORTED);
+		return false;
+	}
+	
+	bool _exist_triple = this->exist_triple(_sub_id, _pre_id, _obj_id, txn);
 	if (!_exist_triple)
 	{
+		//unlock items that not locked before
+		cout << "triple is not exsited! " << endl;
+		if(txn != nullptr)
+			(this->kvstore)->releaseExclusiveLocks(_sub_id, _pre_id, _obj_id, txn);
 		return false;
 	}
 	else
@@ -3186,89 +3253,101 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 
 	//remove from sp2o op2s s2po o2ps s2o o2s
 	//sub2id, pre2id and obj2id will not be updated
-	(this->kvstore)->updateTupleslist_remove(_sub_id, _pre_id, _obj_id);
+	bool ret = (this->kvstore)->updateTupleslist_remove(_sub_id, _pre_id, _obj_id, txn);
+	if(txn) 
+	{
+		if(ret)
+			txn->WriteSetInsert(IDTriple(_sub_id, _pre_id, _obj_id));
+		else{
+			cout << " updateTupleslist_remove failed ..............................................." << endl;
+			txn->SetState(TransactionState::ABORTED);
+			(this->kvstore)->releaseExclusiveLocks(_sub_id, _pre_id, _obj_id, txn);
+		}
+	}
 	//cout << "11 trees updated" << endl;
 
 	long tv_kv_store_end = Util::get_cur_time();
-
-	int sub_degree = (this->kvstore)->getEntityDegree(_sub_id);
-	//if subject become an isolated point, remove its corresponding entry
-	if (sub_degree == 0)
+	if(txn == nullptr)
 	{
-		//cout<<"to remove entry for sub"<<endl;
-		//cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-		this->kvstore->subEntityByID(_sub_id);
-		this->kvstore->subIDByEntity(_triple.subject);
-		this->freeEntityID(_sub_id);
-		this->sub_num--;
-		//update the string buffer
-		//if (_sub_id < this->entity_buffer_size)
-		//{
-			//this->entity_buffer->del(_sub_id);
-		//}
-		if (_vertices != NULL)
-			_vertices->push_back(_sub_id);
-	}
-	//cout<<"subject dealed"<<endl;
-
-	bool is_obj_entity = _triple.isObjEntity();
-	int obj_degree;
-	if (is_obj_entity)
-	{
-		obj_degree = this->kvstore->getEntityDegree(_obj_id);
-		if (obj_degree == 0)
+		int sub_degree = (this->kvstore)->getEntityDegree(_sub_id);
+		//if subject become an isolated point, remove its corresponding entry
+		if (sub_degree == 0)
 		{
-			//cout<<"to remove entry for obj"<<endl;
-			//cout<<_obj_id << " "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			this->kvstore->subEntityByID(_obj_id);
-			this->kvstore->subIDByEntity(_triple.object);
-			this->freeEntityID(_obj_id);
+			//cout<<"to remove entry for sub"<<endl;
+			//cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
+			this->kvstore->subEntityByID(_sub_id);
+			this->kvstore->subIDByEntity(_triple.subject);
+			this->freeEntityID(_sub_id);
+			this->sub_num--;
 			//update the string buffer
-			//if (_obj_id < this->entity_buffer_size)
+			//if (_sub_id < this->entity_buffer_size)
 			//{
-				//this->entity_buffer->del(_obj_id);
+				//this->entity_buffer->del(_sub_id);
 			//}
 			if (_vertices != NULL)
-				_vertices->push_back(_obj_id);
+				_vertices->push_back(_sub_id);
 		}
-	}
-	else
-	{
-		obj_degree = this->kvstore->getLiteralDegree(_obj_id);
-		if (obj_degree == 0)
+		//cout<<"subject dealed"<<endl;
+	
+		bool is_obj_entity = _triple.isObjEntity();
+		int obj_degree;
+		if (is_obj_entity)
 		{
-			this->kvstore->subLiteralByID(_obj_id);
-			//cout<<"check after subLiteralByID: "<<_obj_id<<" "<<this->kvstore->getLiteralByID(_obj_id)<<endl;
-			this->kvstore->subIDByLiteral(_triple.object);
-			this->freeLiteralID(_obj_id);
-			//update the string buffer
-			//TYPE_ENTITY_LITERAL_ID tid = _obj_id - Util::LITERAL_FIRST_ID;
-			//if (tid < this->literal_buffer_size)
-			//{
-				//this->literal_buffer->del(tid);
-			//}
-			if (_vertices != NULL)
-				_vertices->push_back(_obj_id);
+			obj_degree = this->kvstore->getEntityDegree(_obj_id);
+			if (obj_degree == 0)
+			{
+				//cout<<"to remove entry for obj"<<endl;
+				//cout<<_obj_id << " "<<this->kvstore->getEntityByID(_obj_id)<<endl;
+				this->kvstore->subEntityByID(_obj_id);
+				this->kvstore->subIDByEntity(_triple.object);
+				this->freeEntityID(_obj_id);
+				//update the string buffer
+				//if (_obj_id < this->entity_buffer_size)
+				//{
+					//this->entity_buffer->del(_obj_id);
+				//}
+				if (_vertices != NULL)
+					_vertices->push_back(_obj_id);
+			}
 		}
-	}
-	//cout<<"object dealed"<<endl;
+		else
+		{
+			obj_degree = this->kvstore->getLiteralDegree(_obj_id);
+			if (obj_degree == 0)
+			{
+				this->kvstore->subLiteralByID(_obj_id);
+				//cout<<"check after subLiteralByID: "<<_obj_id<<" "<<this->kvstore->getLiteralByID(_obj_id)<<endl;
+				this->kvstore->subIDByLiteral(_triple.object);
+				this->freeLiteralID(_obj_id);
+				//update the string buffer
+				//TYPE_ENTITY_LITERAL_ID tid = _obj_id - Util::LITERAL_FIRST_ID;
+				//if (tid < this->literal_buffer_size)
+				//{
+					//this->literal_buffer->del(tid);
+				//}
+				if (_vertices != NULL)
+					_vertices->push_back(_obj_id);
+			}
+		}
+		//cout<<"object dealed"<<endl;
 
-	int pre_degree = this->kvstore->getPredicateDegree(_pre_id);
-	if (pre_degree == 0)
-	{
-		this->kvstore->subPredicateByID(_pre_id);
-		this->kvstore->subIDByPredicate(_triple.predicate);
-		this->freePredicateID(_pre_id);
-		if (_predicates != NULL)
-			_predicates->push_back(_pre_id);
+		int pre_degree = this->kvstore->getPredicateDegree(_pre_id);
+		if (pre_degree == 0)
+		{
+			this->kvstore->subPredicateByID(_pre_id);
+			this->kvstore->subIDByPredicate(_triple.predicate);
+			this->freePredicateID(_pre_id);
+			if (_predicates != NULL)
+				_predicates->push_back(_pre_id);
+		}
+		//cout<<"predicate dealed"<<endl;
 	}
-	//cout<<"predicate dealed"<<endl;
-
+	
 	return true;
 }
 
 bool
-Database::insert(std::string _rdf_file, bool _is_restore)
+Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction> txn )
 {
 	bool flag = _is_restore || this->load();
 	//bool flag = this->load();
@@ -3326,7 +3405,7 @@ Database::insert(std::string _rdf_file, bool _is_restore)
 		//}
 
 		//Process the Triple one by one
-		success_num += this->insert(triple_array, parse_triple_num, _is_restore);
+		success_num += this->insert(triple_array, parse_triple_num, _is_restore, txn);
 		//some maybe invalid or duplicate
 		//triple_num += parse_triple_num;
 	}
@@ -3373,7 +3452,7 @@ Database::insert(std::string _rdf_file, bool _is_restore)
 }
 
 bool
-Database::remove(std::string _rdf_file, bool _is_restore)
+Database::remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction> txn)
 {
 	bool flag = _is_restore || this->load();
 	//bool flag = this->load();
@@ -3426,7 +3505,7 @@ Database::remove(std::string _rdf_file, bool _is_restore)
 		//}
 
 
-		success_num += this->remove(triple_array, parse_triple_num, _is_restore);
+		success_num += this->remove(triple_array, parse_triple_num, _is_restore, txn);
 		//some maybe invalid or duplicate
 		//triple_num -= parse_triple_num;
 	}
@@ -3463,7 +3542,7 @@ Database::remove(std::string _rdf_file, bool _is_restore)
 }
 
 unsigned
-Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore)
+Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
 {
 	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
 	TYPE_TRIPLE_NUM valid_num = 0;
@@ -3480,7 +3559,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 			return 0;
 		}
 		for (int i = 0; i < _triple_num; i++) {
-			if (exist_triple(_triples[i])) {
+			if (exist_triple(_triples[i], txn)) {
 				continue;
 			}
 			stringstream ss;
@@ -3963,7 +4042,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	//Callers should save the vstree(node and info) after calling this function
 	for (TYPE_TRIPLE_NUM i = 0; i < _triple_num; ++i)
 	{
-		bool ret = this->insertTriple(_triples[i], &vertices, &predicates);
+		bool ret = this->insertTriple(_triples[i], &vertices, &predicates, txn);
 		if(ret)
 		{
 			valid_num++;
@@ -3980,7 +4059,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 }
 
 unsigned
-Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore)
+Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
 {
 	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
 	TYPE_TRIPLE_NUM valid_num = 0;
@@ -3997,7 +4076,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 			return 0;
 		}
 		for (int i = 0; i < _triple_num; i++) {
-			if (!exist_triple(_triples[i])) {
+			if (!exist_triple(_triples[i], txn)) {
 				continue;
 			}
 			stringstream ss;
@@ -4371,18 +4450,20 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	//Callers should save the vstree(node and info) after calling this function
 	for (TYPE_TRIPLE_NUM i = 0; i < _triple_num; ++i)
 	{
-		bool ret = this->removeTriple(_triples[i], &vertices, &predicates);
+		bool ret = this->removeTriple(_triples[i], &vertices, &predicates, txn);
 		if(ret)
 		{
 			valid_num++;
 		}
 	}
 #endif
-	this->stringindex->SetTrie(kvstore->getTrie());
-	//update string index
-	this->stringindex->disable(vertices, true);
-	this->stringindex->disable(predicates, false);
-
+	if(txn != nullptr)
+	{
+		this->stringindex->SetTrie(kvstore->getTrie());
+		//update string index
+		this->stringindex->disable(vertices, true);
+		this->stringindex->disable(predicates, false);
+	}
 	//BETTER+TODO:this will require us to lock all when remove process not ends(in multiple threads cases)
 	//An considerable idea is to check if empty after every triple removed
 	//if(this->vstree->isEmpty())
@@ -4955,3 +5036,121 @@ Database::getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set)
 //this->getFinalResult(_q, _rs);
 //cout << _rs.to_str() << endl;
 //}
+
+
+//garbage clean 
+void
+Database::version_clean()
+{
+	vector<unsigned> sub_ids , obj_ids, obj_literal_ids, pre_ids;
+	(this->kvstore)->IVArray_Vacuum(sub_ids, obj_ids, obj_literal_ids, pre_ids);
+	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
+	//update
+	int sub_degree, obj_degree, pre_degree;
+	for(auto &_sub_id: sub_ids)
+	{
+		sub_degree = (this->kvstore)->getEntityDegree(_sub_id);
+		//if subject become an isolated point, remove its corresponding entry
+		if (sub_degree == 0)
+		{
+			//cout<<"to remove entry for sub"<<endl;
+			//cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
+			this->kvstore->subIDByEntity(this->kvstore->getEntityByID(_sub_id));
+			this->kvstore->subEntityByID(_sub_id);			
+			this->freeEntityID(_sub_id);
+			this->sub_num--;
+			//update the string buffer
+			//if (_sub_id < this->entity_buffer_size)
+			//{
+				//this->entity_buffer->del(_sub_id);
+			//}
+			vertices.push_back(_sub_id);
+		}
+		//cout<<"subject dealed"<<endl;
+	}
+	
+	for(auto &_obj_id: obj_ids)
+	{
+		obj_degree = this->kvstore->getEntityDegree(_obj_id);
+		if (obj_degree == 0)
+		{
+			//cout<<"to remove entry for obj"<<endl;
+			//cout<<_obj_id << " "<<this->kvstore->getEntityByID(_obj_id)<<endl;
+			this->kvstore->subIDByEntity(this->kvstore->getEntityByID(_obj_id));
+			this->kvstore->subEntityByID(_obj_id);			
+			this->freeEntityID(_obj_id);
+			//update the string buffer
+			//if (_obj_id < this->entity_buffer_size)
+			//{
+				//this->entity_buffer->del(_obj_id);
+			//}
+			vertices.push_back(_obj_id);
+		}
+	}
+	
+	for(auto &_obj_id: obj_literal_ids)
+	{
+		obj_degree = this->kvstore->getLiteralDegree(_obj_id);
+		if (obj_degree == 0)
+		{
+			this->kvstore->subIDByLiteral(this->kvstore->getLiteralByID(_obj_id));
+			this->kvstore->subLiteralByID(_obj_id);
+			//cout<<"check after subLiteralByID: "<<_obj_id<<" "<<this->kvstore->getLiteralByID(_obj_id)<<endl;		
+			this->freeLiteralID(_obj_id);
+			//update the string buffer
+			//TYPE_ENTITY_LITERAL_ID tid = _obj_id - Util::LITERAL_FIRST_ID;
+			//if (tid < this->literal_buffer_size)
+			//{
+			//this->literal_buffer->del(tid);
+			//}
+			vertices.push_back(_obj_id);
+		}
+	}
+		//cout<<"object dealed"<<endl;
+	for(auto &_pre_id: pre_ids)
+	{
+		pre_degree = this->kvstore->getPredicateDegree(_pre_id);
+		if (pre_degree == 0)
+		{
+			this->kvstore->subIDByPredicate(this->kvstore->getPredicateByID(_pre_id));
+			this->kvstore->subPredicateByID(_pre_id);
+			this->freePredicateID(_pre_id);
+			predicates.push_back(_pre_id);
+		}
+		//cout<<"predicate dealed"<<endl;
+	}
+	
+	//cerr << "vertices.size()" << vertices.size() << endl;
+	//cerr << "predicates.size()" << predicates.size() << endl;
+	this->stringindex->SetTrie(kvstore->getTrie());
+	//update string index
+	this->stringindex->disable(vertices, true);
+	this->stringindex->disable(predicates, false);
+	
+}
+
+void 
+Database::transaction_rollback(shared_ptr<Transaction> txn)
+{
+	if((this->kvstore)->transaction_invalid(txn) == false)
+	{
+		cerr << "WARNING: transaction rollback exception! " << endl;
+		cerr << "Please REBOOT service!" << endl;
+	}
+}
+
+void 
+Database::transaction_commit(shared_ptr<Transaction> txn)
+{
+	//cout << "transaction_commit ........" << endl;
+	if((this->kvstore)->releaseAllLatches(txn) == false)
+	{
+		cerr << "WARNING: not all latches get unlatched! " << endl;
+		cerr << "Please REBOOT service!" << endl;
+	}
+	// if((this->kvstore)->releaseAllExclusiveLocks(txn) == false)
+	// {
+	// 	cerr << "WARNING: not all lockes get unlocked! " << endl;
+	// 	cerr << "Please REBOOT service!" << endl;
+	// }
+}

@@ -46,7 +46,7 @@ class GeneralEvaluation
 		TYPE_PREDICATE_ID limitID_predicate;
 		TYPE_ENTITY_LITERAL_ID limitID_literal;
 		TYPE_ENTITY_LITERAL_ID limitID_entity;
-
+		shared_ptr<Transaction> txn;
     public:
     	FILE* fp;
     	bool export_flag;
@@ -55,7 +55,7 @@ class GeneralEvaluation
 		GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, QueryCache *_query_cache, \
 			TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub, TYPE_TRIPLE_NUM *_pre2obj, \
 			TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, \
-			TYPE_ENTITY_LITERAL_ID _limitID_entity, CSR *_csr);
+			TYPE_ENTITY_LITERAL_ID _limitID_entity, CSR *_csr, shared_ptr<Transaction> txn = nullptr);
 
 		~GeneralEvaluation();
 

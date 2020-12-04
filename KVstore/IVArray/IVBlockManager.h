@@ -58,7 +58,8 @@ private:
 	bool AllocBlock(unsigned len);
 	
 	bool getWhereToWrite(unsigned long _len);
-
+	
+	mutex indexlock;
 public:
 	IVBlockManager();
 	IVBlockManager(string& _filename, string &_mode, unsigned _keynum = 0);

@@ -50,7 +50,7 @@ private:
 	bool PreLoad();
 
 	mutex AccessLock;
-
+	Latch ArrayLatch;
 public:
 	ISArray();
 	ISArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num = 0);

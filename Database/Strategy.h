@@ -28,7 +28,7 @@ public:
 	    	// if there exists a variable with limited matches in the query, then skip the filter of other
 	    	// variables as soon as possible
 	Strategy(KVstore*, VSTree*, TYPE_TRIPLE_NUM*, TYPE_TRIPLE_NUM*,TYPE_TRIPLE_NUM*, TYPE_PREDICATE_ID, 
-		TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID,bool);
+		TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID,bool, shared_ptr<Transaction> _txn = nullptr);
 	~Strategy();
 	//select efficient strategy to do the sparql query
 	bool handle(SPARQLquery&);
@@ -57,6 +57,7 @@ private:
 	void handler6(BasicQuery*, vector<unsigned*>&);
 	//QueryHandler *dispatch;
 	//void prepare_handler();
+	shared_ptr<Transaction> txn;
 };
 
 //function pointer array

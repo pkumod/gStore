@@ -54,8 +54,7 @@ public:
 	bool load(bool loadCSR=false);
 	bool unload();
 	void clear();
-	int query(const string _query, ResultSet& _result_set, FILE* _fp = stdout, bool update_flag = true, bool export_flag = false);
-
+	int query(const string _query, ResultSet& _result_set, FILE* _fp = stdout, bool update_flag = true, bool export_flag = false, shared_ptr<Transaction> txn = nullptr);
 	//1. if subject of _triple doesn't exist,
 	//then assign a new subid, and insert a new SigEntry
 	//2. assign new tuple_id to tuple, if predicate or object doesn't exist before too;
@@ -63,8 +62,8 @@ public:
 
 	bool build(const string& _rdf_file);
 	//interfaces to insert/delete from given rdf file
-	bool insert(std::string _rdf_file, bool _is_restore = false);
-	bool remove(std::string _rdf_file, bool _is_restore = false);
+	bool insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
+	bool remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 
 	bool backup();
 	bool restore();
@@ -101,14 +100,18 @@ public:
 	TYPE_ENTITY_LITERAL_ID& getlimitID_entity();
 	TYPE_PREDICATE_ID& getlimitID_predicate();
 	mutex& get_query_parse_lock();
-
+	
+	//MVCC
+	void transaction_rollback(shared_ptr<Transaction> txn);
+	void transaction_commit(shared_ptr<Transaction> txn);
+	void version_clean();
 private:
 	string name;
 	string store_path;
 	bool is_active;
-	TYPE_TRIPLE_NUM triples_num;
+	atomic<TYPE_TRIPLE_NUM> triples_num;
 	TYPE_ENTITY_LITERAL_ID entity_num;
-	TYPE_ENTITY_LITERAL_ID sub_num;
+	atomic<TYPE_ENTITY_LITERAL_ID> sub_num;
 	//BETTER: add object num
 	TYPE_PREDICATE_ID pre_num;
 	TYPE_ENTITY_LITERAL_ID literal_num;
@@ -124,7 +127,13 @@ private:
 	mutex debug_lock;
 	// for getFinalResult
 	mutex getFinalResult_lock;
-
+	// for allocEntityID
+	mutex allocEntityID_lock;
+	//for allocLiteralID
+	mutex allocLiteralID_lock;
+	//for allocPredicateID
+	mutex allocPredicateID_lock;
+	
 	VSTree* vstree;
 	KVstore* kvstore;
 	StringIndex* stringindex;
@@ -256,8 +265,8 @@ private:
 
 	//check whether the relative 3-tuples exist
 	//usually, through sp2olist 
-	bool exist_triple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
-	bool exist_triple(const TripleWithObjType& _triple);
+	bool exist_triple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn = nullptr);
+	bool exist_triple(const TripleWithObjType& _triple, shared_ptr<Transaction> txn = nullptr);
 
 	//* _rdf_file denotes the path of the RDF file, where stores the rdf data
 	//* there are many step in this function, each one responds to an sub-function
@@ -276,12 +285,12 @@ private:
 
 	//insert and delete, notice that modify is not needed here
 	//we can read from file or use sparql syntax
-	bool insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL);
-	bool removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL);
+	bool insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL, shared_ptr<Transaction> txn  = nullptr);
+	bool removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL, shared_ptr<Transaction> txn = nullptr);
 	//NOTICE:one by one is too costly, sort and insert/delete at a time will be better
-	unsigned insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false);
+	unsigned insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false , shared_ptr<Transaction> txn = nullptr);
 	//bool insert(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
-	unsigned remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false);
+	unsigned remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false, shared_ptr<Transaction> txn = nullptr);
 
 	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file);
 	//bool literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, TYPE_TRIPLE_NUM _id_tuples_max);

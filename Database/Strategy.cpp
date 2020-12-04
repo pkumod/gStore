@@ -17,12 +17,13 @@ Strategy::Strategy()
 	this->vstree = NULL;
 	this->fp = NULL;
 	this->export_flag = false;
+	this->txn = nullptr;
 	//this->prepare_handler();
 }
 
 Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num, TYPE_TRIPLE_NUM* _pre2sub,
  	TYPE_TRIPLE_NUM* _pre2obj, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
-	TYPE_ENTITY_LITERAL_ID _limitID_entity,bool _is_distinct)
+	TYPE_ENTITY_LITERAL_ID _limitID_entity,bool _is_distinct, shared_ptr<Transaction> _txn)
 {
 	this->method = 0;
 	this->kvstore = _kvstore;
@@ -37,7 +38,7 @@ Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num
 	this->isDistinct = _is_distinct;
 	this->fp = NULL;
 	this->export_flag = false;
-
+	this->txn = _txn;
 	//this->prepare_handler();
 }
 
@@ -254,22 +255,22 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	        {
 	            if (edge_type == Util::EDGE_OUT)
 	            {
-	                kvstore->getsubIDlistByobjIDpreID(lit_id, pre_id, id_list, id_list_len, true);
+	                kvstore->getsubIDlistByobjIDpreID(lit_id, pre_id, id_list, id_list_len, true, txn);
 	            }
 	            else
 	            {
-	                kvstore->getobjIDlistBysubIDpreID(lit_id, pre_id, id_list, id_list_len, true);
+	                kvstore->getobjIDlistBysubIDpreID(lit_id, pre_id, id_list, id_list_len, true, txn);
 	            }
 	        }
 	        else if (pre_id == -2)
 	        {
 	            if (edge_type == Util::EDGE_OUT)
 	            {
-	                kvstore->getsubIDlistByobjID(lit_id, id_list, id_list_len, true);
+	                kvstore->getsubIDlistByobjID(lit_id, id_list, id_list_len, true, txn);
 	            }
 	            else
 	            {
-	                kvstore->getobjIDlistBysubID(lit_id, id_list, id_list_len, true);
+	                kvstore->getobjIDlistBysubID(lit_id, id_list, id_list_len, true, txn);
 	            }
 	        }
 	        else
@@ -441,7 +442,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 
 		if(pre2num[*it] < 1000000 || cans.size() > 1000000 || cans.size() == 0)
         	{
-		        kvstore->getobjIDlistBypreID(*it, list, len, true);
+		        kvstore->getobjIDlistBypreID(*it, list, len, true, txn);
 		        if(cans.size() == 0)
 		            cans.unionList(list,len);
 		        else
@@ -456,7 +457,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 				int can_size = cans.size();
 				for(std::vector<unsigned>::iterator i = cans.begin(); i != cans.end();)
 				{
-					kvstore->getpreIDlistByobjID(*i, list, len, true);
+					kvstore->getpreIDlistByobjID(*i, list, len, true, txn);
 					bool can_matched = false;
 					int s = 0, e = len - 1;
 					int mid = (s + e)/2;
@@ -500,7 +501,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
         	
   		if(pre2num[*it] < 1000000 || cans.size() > 1000000  || cans.size() == 0)
         	{
-	            kvstore->getsubIDlistBypreID(*it, list, len, true);
+	            kvstore->getsubIDlistBypreID(*it, list, len, true, txn);
 	            if(cans.size() == 0)
 	                cans.unionList(list,len);
 	            else
@@ -515,7 +516,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 				int can_size = cans.size();
 				for(std::vector<unsigned>::iterator i = cans.begin(); i != cans.end();)
 				{
-					kvstore->getpreIDlistBysubID(*i, list, len, true);
+					kvstore->getpreIDlistBysubID(*i, list, len, true, txn);
 					bool can_matched = false;
 					int s = 0, e = len - 1;
 					int mid = (s + e)/2;
@@ -613,7 +614,7 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		cout << "after the prehandler, the canlist size is 0." << endl;
 	}
 
-	Join *join = new Join(kvstore, pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity);
+	Join *join = new Join(kvstore, pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity, txn);
 	join->join_basic(_bq,d_triple);
 	delete join;
 
@@ -642,12 +643,12 @@ Strategy::handler1(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		{
 			nid = (this->kvstore)->getIDByLiteral(triple.object);
 		}
-		this->kvstore->getsubIDlistByobjIDpreID(nid, pre_id, id_list, id_list_len);
+		this->kvstore->getsubIDlistByobjIDpreID(nid, pre_id, id_list, id_list_len, true, txn);
 	}
 	else
 	{
 		//cout<<"edge in!!!"<<endl;
-		this->kvstore->getobjIDlistBysubIDpreID(this->kvstore->getIDByEntity(triple.subject), pre_id, id_list, id_list_len);
+		this->kvstore->getobjIDlistBysubIDpreID(this->kvstore->getIDByEntity(triple.subject), pre_id, id_list, id_list_len, true, txn);
 	}
 
 	long after_filter = Util::get_cur_time();
@@ -685,12 +686,12 @@ Strategy::handler2(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	if (var1_id == 0)   //subject var selected
 	{
 		//use p2s directly
-		this->kvstore->getsubIDlistBypreID(pre_id, id_list, id_list_len);
+		this->kvstore->getsubIDlistBypreID(pre_id, id_list, id_list_len, true, txn);
 	}
-	else if (var2_id == 0) //object var selected
+	else if (var2_id == 0) //object var selcted
 	{
 		//use p2o directly
-		this->kvstore->getobjIDlistBypreID(pre_id, id_list, id_list_len);
+		this->kvstore->getobjIDlistBypreID(pre_id, id_list, id_list_len, true, txn);
 	}
 	else
 	{
@@ -723,7 +724,7 @@ Strategy::handler3(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	unsigned id_list_len = 0;
 
 	_result_list.clear();
-	this->kvstore->getsubIDobjIDlistBypreID(pre_id, id_list, id_list_len);
+	this->kvstore->getsubIDobjIDlistBypreID(pre_id, id_list, id_list_len, true, txn);
 	int var1_id = _bq->getSelectedVarPosition(triple.subject);
 	int var2_id = _bq->getSelectedVarPosition(triple.object);
 
@@ -792,7 +793,7 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		//very special case, to find all triples, select ?s (?p) ?o where { ?s ?p ?o . }
 		//filter and join is too costly, should enum all predicates and use p2so
 			TYPE_PREDICATE_ID pid = i;
-			this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len);
+			this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len, true, txn);
 			int rsize = selected_var_num;
 			if(selected_pre_var_num == 1)
 			{
@@ -832,7 +833,7 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		if(triple.subject[0] != '?')  //constant
 		{
 			TYPE_ENTITY_LITERAL_ID sid = (this->kvstore)->getIDByEntity(triple.subject);
-			this->kvstore->getpreIDobjIDlistBysubID(sid, id_list, id_list_len);
+			this->kvstore->getpreIDobjIDlistBysubID(sid, id_list, id_list_len, true, txn);
 			vpos = _bq->getSelectedVarPosition(triple.object);
 		}
 		else if(triple.object[0] != '?')  //constant
@@ -843,7 +844,7 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 			{
 				oid = (this->kvstore)->getIDByLiteral(triple.object);
 			}
-			this->kvstore->getpreIDsubIDlistByobjID(oid, id_list, id_list_len);
+			this->kvstore->getpreIDsubIDlistByobjID(oid, id_list, id_list_len, true, txn);
 			vpos = _bq->getSelectedVarPosition(triple.subject);
 		}
 
@@ -878,7 +879,7 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 			oid = (this->kvstore)->getIDByLiteral(triple.object);
 		}
 
-		this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len);
+		this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len, true, txn);
 		//copy to result list
 		for (unsigned i = 0; i < id_list_len; ++i)
 		{
@@ -926,7 +927,7 @@ Strategy::handler5(BasicQuery* _bq, vector<unsigned*>& _result_list)
 
 	unsigned* id_list = NULL;
 	unsigned id_list_len = 0;
-	(this->kvstore)->getobjIDlistBysubIDpreID(subid, preid, id_list, id_list_len);
+	(this->kvstore)->getobjIDlistBysubIDpreID(subid, preid, id_list, id_list_len, true, txn);
 	if (Util::bsearch_int_uporder(objid, id_list, id_list_len) != INVALID)
 	{
 		unsigned* record = new unsigned[3];
@@ -969,7 +970,7 @@ Strategy::handler6(BasicQuery* _bq, vector<unsigned*>& _result_list)
     TYPE_PREDICATE_ID pid = i;
     string p = this->kvstore->getPredicateByID(pid);
     string pre = Util::node2string(p.c_str());
-    this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len);
+    this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len, true, txn);
     for (unsigned j = 0; j < id_list_len; j += 2)
     {
    		string s = this->kvstore->getEntityByID(id_list[j]);

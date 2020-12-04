@@ -50,7 +50,11 @@ private:
 	void RemoveFromLRUQueue(unsigned _key);
 	
 	mutex CacheLock;
-
+	Latch ArrayLock;
+	
+	void ArraySharedLock(){ArrayLock.lockShared();}
+	void ArrayExclusiveLock(){ArrayLock.lockExclusive();};
+	void ArrayUnlock(){ArrayLock.unlock();}
 public:
 	IVArray();
 	IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num = 0);
@@ -62,4 +66,27 @@ public:
 	bool insert(unsigned _key, char *_str, unsigned long _len);
 	bool save();
 	void PinCache(unsigned _key);
+	
+	//MVCC
+	//read 
+	bool search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& AddSet, VDataSet& DelSet, shared_ptr<Transaction> txn, bool is_firstread = false);
+	//write
+	bool remove(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn);
+	bool insert(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn);
+	
+	bool AddNewVersion(unsigned _key, VData value, shared_ptr<Transaction> txn);
+	//lock(growing)
+	int TryExclusiveLock(unsigned _key, shared_ptr<Transaction> txn, bool has_read = false);
+	//unlock(commit)
+	bool ReleaseLatch(unsigned _key, shared_ptr<Transaction> txn, IVEntry::LatchType type);
+	
+	//abort
+	//clean invalid version(release exclusive latch along) and release exclusive lock
+	bool rollback(unsigned _key, shared_ptr<Transaction> txn, bool has_read );
+	//unlock(abort)
+	bool ReleaseExclusiveLock(unsigned _key, shared_ptr<Transaction> txn);
+
+	//garbage clean
+	bool GetDirtyKeys(vector<unsigned> &lists) const; 
+	bool CleanDirtyKey(unsigned _key) ;
 };
