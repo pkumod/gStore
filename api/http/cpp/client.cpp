@@ -548,18 +548,36 @@ std::string GstoreConnector::exportDB(std::string db_name, std::string dir_path,
 	return res;
 }
 
-std::string GstoreConnector::begin(std::string db_name, std::string request_type)
+std::string GstoreConnector::begin(std::string db_name, std::string isolevel, std::string request_type)
 {
 	std::string res;
 	if (request_type == "GET")
 	{
-		std::string strUrl = this->Url + "/?operation=begin&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password;
+		std::string strUrl = this->Url + "/?operation=begin&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password + "&isolevel=" + isolevel;
 		int ret = this->Get(strUrl, res);
 	}
 	else if (request_type == "POST")
 	{
 		std::string strUrl = this->Url + "/begin";
-		std::string strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		std::string strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"isolevel\": \"" + isolevel + "\"}";
+		int ret = this->Post(strUrl, strPost, res);
+	}
+	
+	return res;
+}
+
+std::string GstoreConnector::tquery(std::string db_name, std::string TID, std::string sparql, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "/?operation=tquery&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password + "&TID=" + TID + "&sparql=" + sparql;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strUrl = this->Url + "/export";
+		std::string strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"TID\": \"" + TID+ "\", \"sparql\": \"" + sparql  + "\"}";
 		int ret = this->Post(strUrl, strPost, res);
 	}
 	return res;

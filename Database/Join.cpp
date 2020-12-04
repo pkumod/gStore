@@ -14,10 +14,11 @@ Join::Join()
 {
 	this->kvstore = NULL;
 	this->result_list = NULL;
+	this->txn = nullptr;
 }
 
 Join::Join(KVstore* _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
-	TYPE_ENTITY_LITERAL_ID _limitID_entity)
+	TYPE_ENTITY_LITERAL_ID _limitID_entity, shared_ptr<Transaction> _txn)
 {
 	this->kvstore = _kvstore;
 	this->result_list = NULL;
@@ -25,6 +26,7 @@ Join::Join(KVstore* _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limi
 	this->limitID_predicate = _limitID_predicate;
 	this->limitID_literal = _limitID_literal;
 	this->limitID_entity = _limitID_entity;
+	this->txn = _txn;
 }
 
 Join::~Join()
@@ -401,11 +403,11 @@ Join::pre_var_handler()
 						//Otherwise, predicates are all variables, and this is a star graph:
 						//if it connected with other parts(not included in this star), either ?si or ?o(as subject), then join can be started
 						//else, this can be pasred as a single BGP, and we shall deal with this special star graph in toStartJoin()
-						this->kvstore->getpreIDlistByobjID((*it)[this->id2pos[var2]], id_list, id_list_len, true);
+						this->kvstore->getpreIDlistByobjID((*it)[this->id2pos[var2]], id_list, id_list_len, true, txn);
 					}
 					else if (var1 != -1 && var2 == -1)
 					{
-						this->kvstore->getpreIDlistBysubID((*it)[this->id2pos[var1]], id_list, id_list_len, true);
+						this->kvstore->getpreIDlistBysubID((*it)[this->id2pos[var1]], id_list, id_list_len, true, txn);
 					}
 					else if (var1 != -1 && var2 != -1)
 					{
@@ -420,7 +422,7 @@ Join::pre_var_handler()
 						//cout<<"obj str: "<<this->kvstore->getEntityByID((*it)[this->id2pos[var2]])<<endl;
 						//this->kvstore->getpreIDlistBysubIDobjID((*it)[this->id2pos[var1]], (*it)[this->id2pos[var2]], id_list, id_list_len);
 						int sid = (*it)[this->id2pos[var1]], oid = (*it)[this->id2pos[var2]];
-						this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len, true);
+						this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len, true, txn);
 						//NOTICE:no need to add literals here because they are added when join using s2o
 					}
 				}
@@ -430,20 +432,20 @@ Join::pre_var_handler()
 					//just use so2p in query graph to find predicates
 					//this->kvstore->getpreIDlistBysubIDobjID(sub_id, obj_id, id_list, id_list_len);
 					TYPE_ENTITY_LITERAL_ID sid = sub_id, oid = obj_id;
-					this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len, true);
+					this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len, true, txn);
 				}
 				//sub is var while obj is constant
 				else if (sub_id == INVALID_ENTITY_LITERAL_ID && obj_id != INVALID_ENTITY_LITERAL_ID)
 				{
 					if (var1 == -1)
 					{
-						this->kvstore->getpreIDlistByobjID(obj_id, id_list, id_list_len, true);
+						this->kvstore->getpreIDlistByobjID(obj_id, id_list, id_list_len, true, txn);
 					}
 					else
 					{
-						this->kvstore->getpreIDlistBysubIDobjID((*it)[this->id2pos[var1]], obj_id, id_list, id_list_len, true);
+						this->kvstore->getpreIDlistBysubIDobjID((*it)[this->id2pos[var1]], obj_id, id_list, id_list_len, true, txn);
 						TYPE_ENTITY_LITERAL_ID sid = (*it)[this->id2pos[var1]], oid = obj_id;
-						this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len, true);
+						this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len, true, txn);
 					}
 				}
 				//sub is constant while obj is var
@@ -451,14 +453,14 @@ Join::pre_var_handler()
 				{
 					if (var2 == -1)
 					{
-						this->kvstore->getpreIDlistBysubID(sub_id, id_list, id_list_len, true);
+						this->kvstore->getpreIDlistBysubID(sub_id, id_list, id_list_len, true, txn);
 					}
 					else
 					{
 						//NOTICE:no need to add literals here because they are added in add_literal_candidate using s2o
 						//this->kvstore->getpreIDlistBysubIDobjID(sub_id, (*it)[this->id2pos[var2]], id_list, id_list_len);
 						TYPE_ENTITY_LITERAL_ID sid = sub_id, oid = (*it)[this->id2pos[var2]];
-						this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len, true);
+						this->kvstore->getpreIDlistBysubIDobjID(sid, oid, id_list, id_list_len, true, txn);
 					}
 				}
 
@@ -638,7 +640,7 @@ Join::copyToResult()
 					//}
 					//else
 					//{
-					this->kvstore->getobjIDlistBysubIDpreID(ele, preid, idlist, idlist_len, true);
+					this->kvstore->getobjIDlistBysubIDpreID(ele, preid, idlist, idlist_len, true, txn);
 					//}
 				}
 				else
@@ -649,7 +651,7 @@ Join::copyToResult()
 					//}
 					//else
 					//{
-					this->kvstore->getsubIDlistByobjIDpreID(ele, preid, idlist, idlist_len, true);
+					this->kvstore->getsubIDlistByobjIDpreID(ele, preid, idlist, idlist_len, true, txn);
 					//}
 				}
 
@@ -771,7 +773,7 @@ Join::toStartJoin()
 		if (predicate_id >= 0)
 		{
 			flag = true;
-			(this->kvstore)->getobjIDlistBypreID(predicate_id, object_list, object_list_len, true);
+			(this->kvstore)->getobjIDlistBypreID(predicate_id, object_list, object_list_len, true, txn);
 		}
 		else
 		{
@@ -1122,14 +1124,14 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_l
 #ifdef DEBUG_JOIN
 					cout << "this is an edge to our id to join!" << endl;
 #endif
-					this->kvstore->getobjIDlistBysubIDpreID(ele, pre_id, id_list, id_list_len, true);
+					this->kvstore->getobjIDlistBysubIDpreID(ele, pre_id, id_list, id_list_len, true, txn);
 				}
 				else
 				{
 #ifdef DEBUG_JOIN
 					cout << "this is an edge from our id to join!" << endl;
 #endif
-					this->kvstore->getsubIDlistByobjIDpreID(ele, pre_id, id_list, id_list_len, true);
+					this->kvstore->getsubIDlistByobjIDpreID(ele, pre_id, id_list, id_list_len, true, txn);
 				}
 				if (id_list_len == 0)
 				{
@@ -1172,7 +1174,7 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_l
 			{
 				unsigned* id_list2;
 				unsigned id_list2_len;
-				this->kvstore->getobjIDlistBysubID(ele, id_list2, id_list2_len, true);
+				this->kvstore->getobjIDlistBysubID(ele, id_list2, id_list2_len, true, txn);
 				update_answer_list(valid_ans_list, _can_list, id_list2, id_list2_len, _is_ready);
 				delete[] id_list2;
 				if (valid_ans_list->size() == 0)
@@ -1185,7 +1187,7 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_l
 			{
 				unsigned* id_list2;
 				unsigned id_list2_len;
-				this->kvstore->getsubIDlistByobjID(ele, id_list2, id_list2_len, true);
+				this->kvstore->getsubIDlistByobjID(ele, id_list2, id_list2_len, true, txn);
 				update_answer_list(valid_ans_list, _can_list, id_list2, id_list2_len, _is_ready);
 				delete[] id_list2;
 				if (valid_ans_list->size() == 0)
@@ -1556,22 +1558,22 @@ Join::constant_edge_filter(int _var_i)
 		{
 			if (edge_type == Util::EDGE_OUT)
 			{
-				(this->kvstore)->getsubIDlistByobjIDpreID(lit_id, pre_id, id_list, id_list_len, true);
+				(this->kvstore)->getsubIDlistByobjIDpreID(lit_id, pre_id, id_list, id_list_len, true, txn);
 			}
 			else
 			{
-				(this->kvstore)->getobjIDlistBysubIDpreID(lit_id, pre_id, id_list, id_list_len, true);
+				(this->kvstore)->getobjIDlistBysubIDpreID(lit_id, pre_id, id_list, id_list_len, true, txn);
 			}
 		}
 		else if (pre_id == -2)
 		{
 			if (edge_type == Util::EDGE_OUT)
 			{
-				(this->kvstore)->getsubIDlistByobjID(lit_id, id_list, id_list_len, true);
+				(this->kvstore)->getsubIDlistByobjID(lit_id, id_list, id_list_len, true, txn);
 			}
 			else
 			{
-				(this->kvstore)->getobjIDlistBysubID(lit_id, id_list, id_list_len, true);
+				(this->kvstore)->getobjIDlistBysubID(lit_id, id_list, id_list_len, true, txn);
 			}
 		}
 		else
@@ -1686,11 +1688,11 @@ Join::add_literal_candidate()
 
 				if (predicate_id >= 0)
 				{
-					(this->kvstore)->getobjIDlistBysubIDpreID(subject_id, predicate_id, object_list, object_list_len, true);
+					(this->kvstore)->getobjIDlistBysubIDpreID(subject_id, predicate_id, object_list, object_list_len, true, txn);
 				}
 				else if (predicate_id == -2)
 				{
-					this->kvstore->getobjIDlistBysubID(subject_id, object_list, object_list_len, true);
+					this->kvstore->getobjIDlistBysubID(subject_id, object_list, object_list_len, true, txn);
 				}
 				//NOTICE:only literals should be unioned
 				this_edge_literal_list.unionList(object_list, object_list_len, true);
@@ -1892,7 +1894,7 @@ Join::preFilter(int _var)
 	unsigned len = 0;
 	for(it = in_edge_pre_id.begin(); it != in_edge_pre_id.end(); ++it)
 	{
-		this->kvstore->getobjIDlistBypreID(*it, list, len, true);
+		this->kvstore->getobjIDlistBypreID(*it, list, len, true, txn);
 		cans.intersectList(list, len);
 		delete[] list;
 	}
@@ -1900,7 +1902,7 @@ Join::preFilter(int _var)
 	{
 		for(it = out_edge_pre_id.begin(); it != out_edge_pre_id.end(); ++it)
 		{
-			this->kvstore->getsubIDlistBypreID(*it, list, len, true);
+			this->kvstore->getsubIDlistBypreID(*it, list, len, true, txn);
 			cans.intersectList(list, len);
 			delete[] list;
 		}
@@ -2010,8 +2012,7 @@ Join::only_pre_filter_after_join()
 			if (exist_preid && !in_edge_pre_id.empty())
 			{
 				//(this->kvstore)->getpreIDsubIDlistByobjID(entity_id, pair_list, pair_len);
-				(this->kvstore)->getpreIDlistByobjID(entity_id, pair_list, pair_len, true);
-
+				(this->kvstore)->getpreIDlistByobjID(entity_id, pair_list, pair_len, true, txn);
 				for (vector<TYPE_PREDICATE_ID>::iterator itr_pre = in_edge_pre_id.begin(); itr_pre != in_edge_pre_id.end(); itr_pre++)
 				{
 					TYPE_PREDICATE_ID pre_id = (*itr_pre);
@@ -2030,7 +2031,7 @@ Join::only_pre_filter_after_join()
 			if (exist_preid && !out_edge_pre_id.empty())
 			{
 				//(this->kvstore)->getpreIDobjIDlistBysubID(entity_id, pair_list, pair_len);
-				(this->kvstore)->getpreIDlistBysubID(entity_id, pair_list, pair_len, true);
+				(this->kvstore)->getpreIDlistBysubID(entity_id, pair_list, pair_len, true, txn);
 
 				for (vector<TYPE_PREDICATE_ID>::iterator itr_pre = out_edge_pre_id.begin(); itr_pre != out_edge_pre_id.end(); itr_pre++)
 				{

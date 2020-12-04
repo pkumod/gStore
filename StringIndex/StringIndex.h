@@ -182,7 +182,8 @@ class StringIndex
 		unsigned entity_buffer_size;
 		Buffer* literal_buffer;
 		unsigned literal_buffer_size;
-
+		
+		mutex AccessLock;
 	public:
 //		Trie *trie;
 		void SetTrie(Trie* trie);

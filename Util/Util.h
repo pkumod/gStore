@@ -98,6 +98,7 @@ in the sparql query can point to the same node in data graph)
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/functional/hash.hpp>
 #include <unordered_map>
+#include <unordered_set>
 #include <random>
 #include <type_traits>
 
@@ -108,6 +109,8 @@ in the sparql query can point to the same node in data graph)
 #include "../tools/rapidjson/prettywriter.h"  
 #include "../tools/rapidjson/writer.h"
 #include "../tools/rapidjson/stringbuffer.h"
+
+#include "Latch.h"
 
 #define thread_num 1
 //below is used to control if using the parallelable sort()
@@ -244,6 +247,15 @@ static const TYPE_PREDICATE_ID INVALID_PREDICATE_ID = -1;
 //type for block index in IVArray
 typedef unsigned TYPE_IVBLOCK_ID;
 static const TYPE_IVBLOCK_ID INVALID_BLOCK_ID = 0;
+
+//type for concurrecy control
+typedef unsigned long long TYPE_TS;
+typedef unsigned long long TYPE_TXN_ID;
+typedef unsigned int TYPE_READ_CNT;
+const int INVALID_TYPE_ID = 0;
+const unsigned long long INVALID_TS = -1;
+const unsigned long long INVALID_ID = -1;
+const unsigned long long  MAX_TS = -1;
 
 //TODO:typedef several ID types and new a ID module
 

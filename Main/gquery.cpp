@@ -115,7 +115,12 @@ main(int argc, char * argv[])
 			ofp = fopen(argv[3], "w");
 		}
 		string msg;
-		int ret = _db.query(query, _rs, ofp);
+		shared_ptr<Transaction> ptxn = make_shared<Transaction>(db_folder, 1, 1);
+		//cout << ptxn << endl;
+		int ret = _db.query(query, _rs, ofp, true, false, nullptr);
+		//string query_gstore = "select ?x ?y where {<gStore> ?x ?y.} ";
+		//_db.query(query_gstore, _rs, ofp, true, false, ptxn);
+		//ptxn->print_all();
 		if(argc >= 4)
 		{
 			fclose(ofp);
@@ -265,7 +270,8 @@ main(int argc, char * argv[])
 		printf("query is:\n");
 		printf("%s\n\n", query.c_str());
 		ResultSet _rs;
-		int ret = _db.query(query, _rs, fp);
+		shared_ptr<Transaction> ptxn = make_shared<Transaction>(db_folder, 1, 1);
+		int ret = _db.query(query, _rs, fp, true, false, nullptr);
 		//int ret = _db.query(query, _rs, NULL);
 		string msg;
 

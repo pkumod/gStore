@@ -14,6 +14,7 @@
 #include "../Query/SPARQLquery.h"
 #include "../KVstore/KVstore.h"
 #include "../Util/Util.h"
+#include "../Util/Transaction.h"
 
 typedef vector<unsigned> RecordType;
 typedef vector<unsigned>::iterator RecordIterator;
@@ -134,10 +135,11 @@ private:
 	//NOTICE:this is only used to join a BasicQuery
 	bool join();
 
+	shared_ptr<Transaction> txn;
 public:
 	Join();
 	Join(KVstore* _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
-		TYPE_ENTITY_LITERAL_ID _limitID_entity);
+		TYPE_ENTITY_LITERAL_ID _limitID_entity, shared_ptr<Transaction> txn = nullptr);
 	//these functions can be called by Database
 	bool join_sparql(SPARQLquery& _sparql_query);
 	bool join_basic(BasicQuery* _basic_query, bool* d_triple);

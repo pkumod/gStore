@@ -81,10 +81,10 @@ void *preread_from_index(void *argv)
 GeneralEvaluation::GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, QueryCache *_query_cache, \
 	TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub, TYPE_TRIPLE_NUM *_pre2obj, \
 	TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, \
-	TYPE_ENTITY_LITERAL_ID _limitID_entity, CSR *_csr):
+	TYPE_ENTITY_LITERAL_ID _limitID_entity, CSR *_csr, shared_ptr<Transaction> _txn):
 	vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), pre2num(_pre2num), \
 	pre2sub(_pre2sub), pre2obj(_pre2obj), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), \
-	limitID_entity(_limitID_entity), temp_result(NULL), fp(NULL), export_flag(false), csr(_csr)
+	limitID_entity(_limitID_entity), temp_result(NULL), fp(NULL), export_flag(false), csr(_csr), txn(_txn)
 {
 	if (csr)
 		pqHandler = new PathQueryHandler(csr);
@@ -270,7 +270,7 @@ bool GeneralEvaluation::doQuery()
 
 	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num,this->pre2sub, this->pre2obj, 
 		this->limitID_predicate, this->limitID_literal, this->limitID_entity,
-		this->query_tree.Modifier_Distinct== QueryTree::Modifier_Distinct);
+		this->query_tree.Modifier_Distinct== QueryTree::Modifier_Distinct, txn);
 	
 
 	if (this->query_tree.checkWellDesigned())

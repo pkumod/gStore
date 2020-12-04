@@ -81,7 +81,7 @@ isarrayobj = $(objdir)ISArray.o $(objdir)ISEntry.o $(objdir)ISBlockManager.o
 kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarrayobj) $(isarrayobj) #$(sstreeobj)
 
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o \
-			$(objdir)EvalMultitypeValue.o
+			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o 
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o \
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
@@ -100,7 +100,7 @@ serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)So
 
 # httpobj = $(objdir)client_http.hpp.gch $(objdir)server_http.hpp.gch
 
-databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o $(objdir)CSR.o $(objdir)Transaction.o $(objdir)Txn_manager.o
+databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o $(objdir)CSR.o $(objdir)Txn_manager.o
 
 trieobj = $(objdir)Trie.o $(objdir)TrieNode.o
 
@@ -117,7 +117,7 @@ inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
 
 #gtest
 
-TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback 
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback 
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -189,6 +189,9 @@ $(testdir)dataset_test: $(lib_antlr) $(objdir)dataset_test.o $(objfile)
 
 $(testdir)transaction_test: $(lib_antlr) $(objdir)transaction_test.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(testdir)transaction_test $(objdir)transaction_test.o $(objfile) $(library) $(openmp)
+
+$(testdir)run_transaction: $(lib_antlr) $(objdir)run_transaction.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(testdir)run_transaction $(objdir)run_transaction.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
 #executables end
 
 
@@ -257,6 +260,9 @@ $(objdir)dataset_test.o: $(testdir)dataset_test.cpp Database/Database.h Util/Uti
 
 $(objdir)transaction_test.o: $(testdir)transaction_test.cpp Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) $(testdir)transaction_test.cpp $(inc) -o $(objdir)transaction_test.o $(openmp)
+
+$(objdir)run_transaction.o: $(testdir)run_transaction.cpp Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) $(testdir)run_transaction.cpp $(inc) -o $(objdir)run_transaction.o $(openmp)
 #objects in scripts/ end
 
 
@@ -354,13 +360,13 @@ $(objdir)IVHeap.o: KVstore/IVTree/heap/IVHeap.cpp KVstore/IVTree/heap/IVHeap.h $
 #objects in ivtree/ end
 
 #objects in ivarray/ begin
-$(objdir)IVArray.o: KVstore/IVArray/IVArray.cpp KVstore/IVArray/IVArray.h $(objdir)VList.o 
+$(objdir)IVArray.o: KVstore/IVArray/IVArray.cpp KVstore/IVArray/IVArray.h $(objdir)VList.o  $(objdir)Transaction.o 
 	$(CC) $(CFLAGS) KVstore/IVArray/IVArray.cpp -o $(objdir)IVArray.o
 
 $(objdir)IVBlockManager.o: KVstore/IVArray/IVBlockManager.cpp KVstore/IVArray/IVBlockManager.h 
 	$(CC) $(CFLAGS) KVstore/IVArray/IVBlockManager.cpp -o $(objdir)IVBlockManager.o
 
-$(objdir)IVEntry.o: KVstore/IVArray/IVEntry.cpp KVstore/IVArray/IVEntry.h
+$(objdir)IVEntry.o: KVstore/IVArray/IVEntry.cpp KVstore/IVArray/IVEntry.h $(objdir)Version.o
 	$(CC) $(CFLAGS) KVstore/IVArray/IVEntry.cpp -o $(objdir)IVEntry.o
 
 #objects in ivarray/ end
@@ -377,24 +383,22 @@ $(objdir)Database.o: Database/Database.cpp Database/Database.h \
 	$(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
 	$(objdir)BasicQuery.o $(objdir)Triple.o $(objdir)SigEntry.o \
 	$(objdir)KVstore.o $(objdir)VSTree.o $(objdir)DBparser.o \
-	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o $(objdir)GeneralEvaluation.o $(objdir)StringIndex.o
+	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o $(objdir)GeneralEvaluation.o $(objdir)StringIndex.o $(objdir)Transaction.o
 	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o $(openmp)
 
 $(objdir)Join.o: Database/Join.cpp Database/Join.h $(objdir)IDList.o $(objdir)BasicQuery.o $(objdir)Util.o\
-	$(objdir)KVstore.o $(objdir)Util.o $(objdir)SPARQLquery.o
+	$(objdir)KVstore.o $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)Transaction.o
 	$(CC) $(CFLAGS) Database/Join.cpp $(inc) -o $(objdir)Join.o $(openmp)
 
 $(objdir)Strategy.o: Database/Strategy.cpp Database/Strategy.h $(objdir)SPARQLquery.o $(objdir)BasicQuery.o \
-	$(objdir)Triple.o $(objdir)IDList.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Util.o $(objdir)Join.o
+	$(objdir)Triple.o $(objdir)IDList.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Util.o $(objdir)Join.o $(objdir)Transaction.o
 	$(CC) $(CFLAGS) Database/Strategy.cpp $(inc) -o $(objdir)Strategy.o $(openmp)
 
 $(objdir)CSR.o: Database/CSR.cpp Database/CSR.h $(objdir)Util.o
 	$(CC) $(CFLAGS) Database/CSR.cpp $(inc) -o $(objdir)CSR.o $(openmp)
 
-$(objdir)Transaction.o: Database/Transaction.cpp Database/Transaction.h $(objdir)Util.o $(objdir)Database.o
-	$(CC) $(CFLAGS) Database/Transaction.cpp $(inc) -o $(objdir)Transaction.o $(openmp)
 
-$(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(objdir)Util.o $(objdir)Transaction.o 
+$(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(objdir)Util.o $(objdir)Transaction.o $(objdir)Database.o
 	$(CC) $(CFLAGS) Database/Txn_manager.cpp $(inc) -o $(objdir)Txn_manager.o $(openmp)
 
 #objects in Database/ end
@@ -474,6 +478,18 @@ $(objdir)VList.o:  Util/VList.cpp Util/VList.h
 
 $(objdir)EvalMultitypeValue.o: Util/EvalMultitypeValue.cpp Util/EvalMultitypeValue.h
 	$(CC) $(CFLAGS) Util/EvalMultitypeValue.cpp -o $(objdir)EvalMultitypeValue.o $(openmp)
+
+$(objdir)Version.o: Util/Version.cpp Util/Version.h
+	$(CC) $(CFLAGS) Util/Version.cpp -o $(objdir)Version.o $(openmp)
+
+$(objdir)Transaction.o: Util/Transaction.cpp Util/Transaction.h $(objdir)Util.o $(objdir)IDTriple.o
+	$(CC) $(CFLAGS) Util/Transaction.cpp $(inc) -o $(objdir)Transaction.o $(openmp)
+
+$(objdir)IDTriple.o: Util/IDTriple.cpp Util/IDTriple.h
+	$(CC) $(CFLAGS) Util/IDTriple.cpp -o $(objdir)IDTriple.o $(openmp)
+
+$(objdir)Latch.o: Util/Latch.cpp Util/Latch.h
+	$(CC) $(CFLAGS) Util/Latch.cpp -o $(objdir)Latch.o $(openmp)
 #objects in util/ end
 
 
@@ -605,7 +621,7 @@ clean:
 	#$(MAKE) -C KVstore clean
 	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole* $(exedir)rollback
 	rm -rf bin/*.class
-	rm -rf $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test
+	rm -rf $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction
 	#rm -rf .project .cproject .settings   just for eclipse
 	rm -rf logs/*.log
 	rm -rf *.out   # gmon.out for gprof with -pg

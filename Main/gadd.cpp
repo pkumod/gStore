@@ -29,7 +29,7 @@ main(int argc, char * argv[])
 	cout << "finish loading" << endl;
 	//_db.insert(argv[2]);
 	//_db.remove(argv[2]);
-	_db.insert(argv[2]);
+	_db.insert(argv[2], false, nullptr);
 
 	//string query = string(argv[2]);
 	//query = Util::getQueryFromFile(query.c_str());

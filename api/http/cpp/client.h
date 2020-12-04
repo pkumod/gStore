@@ -86,9 +86,10 @@ public:
 	std::string getCoreVersion(std::string request_type = "GET");
 	std::string getAPIVersion(std::string request_type = "GET");
 	std::string exportDB(std::string db_name, std::string dir_path, std::string request_type = "GET");
-	std::string begin(std::string db_name, std::string request_type = "GET");
-	std::string commit(std::string db_name, std::string TID = "", std::string request_type = "GET");
-	std::string rollback(std::string db_name, std::string TID = "", std::string request_type = "GET");
+	std::string begin(std::string db_name, std::string isolevel, std::string request_type = "GET");
+	std::string tquery(std::string db_name, std::string TID, std::string sparql, std::string request_type = "GET");
+	std::string commit(std::string db_name, std::string TID, std::string request_type = "GET");
+	std::string rollback(std::string db_name, std::string TID, std::string request_type = "GET");
 	std::string getTransLog(std::string request_type = "GET");
 	void SetDebug(bool bDebug);
 

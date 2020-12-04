@@ -204,6 +204,7 @@ IVBlockManager::getWhereToWrite(unsigned long _len)
 	unsigned int AllocNum = (unsigned int) ((_len + BLOCK_DATA_SIZE - 1) / BLOCK_DATA_SIZE);
 
 	// map <unsigned, unsigned>::iterator it = len_index_map.upper_bound(AllocNum - 1);
+	indexlock.lock();
 	set <pair<unsigned, unsigned> >::iterator it = len_index_map.lower_bound(make_pair(AllocNum, (unsigned)0));
 	if (it != len_index_map.end())
 	{
@@ -241,6 +242,7 @@ IVBlockManager::getWhereToWrite(unsigned long _len)
 		len_index_map.erase(it);
 		index_len_map.erase(BaseIndex);
 		
+		indexlock.unlock();
 		return true;
 	}
 	// if can't. alloc new free blocks
@@ -248,6 +250,8 @@ IVBlockManager::getWhereToWrite(unsigned long _len)
 	{
 		//TODO maybe use fragment?
 		AllocBlock(AllocNum);
+		
+		indexlock.unlock(); // unlock here
 		return getWhereToWrite(_len);
 	}
 }
@@ -312,7 +316,8 @@ IVBlockManager::FreeBlocks(const unsigned index)
 	int fd = fileno(ValueFile);
 	unsigned curlen = 1;
 	unsigned cur_index = index;
-
+	
+	indexlock.lock();
 	while (_index > 0)
 	{
 		off_t offset = (off_t)(_index - 1) * BLOCK_SIZE;
@@ -362,7 +367,7 @@ IVBlockManager::FreeBlocks(const unsigned index)
 		}
 		_index = next_index;
 	}
-	
+	indexlock.unlock();
 	return true;
 }
 
