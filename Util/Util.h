@@ -372,7 +372,7 @@ public:
 	static int str2time();
 	static std::string get_date_time();
 	static std::string get_timestamp();
-	static int time_to_stamp(std::string time);
+	static time_t time_to_stamp(std::string time);
 	static bool save_to_file(const char*, const std::string _content);
 	static bool isValidPort(std::string);
 	static bool isValidIP(std::string);
@@ -476,6 +476,8 @@ public:
 	static void abort_transactionlog(long end_time);
 
 	static long int get_timestamp(std::string& line);
+	static std::string stamp2time(int timestamp);
+	static std::vector<std::string> GetFiles(const char *src_dir, const char *ext);
 private:
 	static bool isValidIPV4(std::string);
 	static bool isValidIPV6(std::string);

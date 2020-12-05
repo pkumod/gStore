@@ -814,7 +814,7 @@ Util::get_timestamp()
     return timestamp;
 }
 
-int 
+time_t 
 Util::time_to_stamp(string time){
     struct tm* tm = (struct tm*)malloc(sizeof(struct tm));
     strptime(time.c_str() , "%Y-%m-%d %H:%M:%S", tm);
@@ -2265,6 +2265,19 @@ Util::get_timestamp(string& line)
     return timestamp;
 }
 
+string 
+Util::stamp2time(int timestamp)
+{
+    time_t tick = (time_t)timestamp;
+    struct tm tm;
+    char s[100];
+    tm = *localtime(&tick);
+    strftime(s, sizeof(s), "%Y-%m-%d %H:%M:%S", &tm);
+
+    return s;
+}
+
+
 void
 Util::init_transactionlog()
 {
@@ -2502,4 +2515,47 @@ Util::abort_transactionlog(long end_time)
     cmd += TRANSACTION_LOG_PATH;
     system(cmd.c_str());
     pthread_rwlock_unlock(&transactionlog_lock);
+}
+
+
+//get all specific file type files in a directory
+vector<string> 
+Util::GetFiles(const char *src_dir, const char *ext)
+{
+    vector<string> result;
+    string directory(src_dir);
+    string m_ext(ext);
+
+    DIR *dir = opendir(src_dir);
+    if ( dir == NULL )
+    {
+        printf("[ERROR] %s is not a directory or not exist!", src_dir);
+        return result;
+    }
+ 
+    struct dirent* d_ent = NULL;
+ 
+    char dot[3] = ".";
+    char dotdot[6] = "..";
+ 
+    while ( (d_ent = readdir(dir)) != NULL )
+    {
+        if ( (strcmp(d_ent->d_name, dot) != 0) && (strcmp(d_ent->d_name, dotdot) != 0) )
+        {
+            if ( d_ent->d_type != DT_DIR)
+            {
+                string d_name(d_ent->d_name);
+                if (strcmp(d_name.c_str () + d_name.length () - m_ext.length(), m_ext.c_str ()) == 0)
+                {
+                    result.push_back(string(d_ent->d_name));
+                }
+            }
+        }
+    }
+ 
+    // sort the returned files
+    std::sort(result.begin(), result.end());
+ 
+    closedir(dir);
+    return result;
 }

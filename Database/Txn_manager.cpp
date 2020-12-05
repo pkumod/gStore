@@ -141,7 +141,7 @@ txn_id_t Txn_manager::Begin(IsolationLevelType isolationlevel)
 		checkpoint_lock.unlock();
 		return -1;
 	}
-	writelog(log_str);
+	//writelog(log_str);
 	txn_table[TID]->SetState(TransactionState::RUNNING);
 	return TID;
 }
@@ -166,7 +166,7 @@ int Txn_manager::Commit(txn_id_t TID)
 		cout << "error! database has been flushed or removed" << endl;
 		return -1;
 	}
-	writelog(log_str);
+	//writelog(log_str);
 	txn_table[TID]->SetState(TransactionState::COMMITTED);
 	txn_table[TID]->SetEndTime(Util::get_cur_time());
 	checkpoint_lock.unlock();
@@ -187,7 +187,7 @@ int Txn_manager::Abort(txn_id_t TID)
 		cout << "error! database has been flushed or removed" << endl;
 		return -1;
 	}
-	writelog(log_str);
+	//writelog(log_str);
 	txn_table[TID]->SetState(TransactionState::ABORTED);
 	txn_table[TID]->SetEndTime(Util::get_cur_time());
 	checkpoint_lock.unlock();

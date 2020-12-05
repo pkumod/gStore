@@ -120,6 +120,10 @@ bool backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 
 bool restore_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
+bool incbackup_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
+bool increstore_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
 bool init_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 bool parameter_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
@@ -1697,7 +1701,7 @@ int initialize(int argc, char *argv[])
 	};
 
 	//POST-example for the path /unload, responds with the matched string in path
-	server.resource["/restore"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	server.resource["/backup"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		backup_handler(server, response, request, "POST");
 	};
@@ -1716,6 +1720,38 @@ int initialize(int argc, char *argv[])
 	server.resource["/restore"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		restore_handler(server, response, request, "POST");
+	};
+
+	server.resource["^/%3[F|f]operation%3[D|d]incbackup%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26time%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		incbackup_handler(server, response, request, "GET");
+    };
+
+	server.resource["^/?operation=incbackup&db_name=(.*)&username=(.*)&password=(.*)&time=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		incbackup_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /unload, responds with the matched string in path
+	server.resource["/incbackup"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		incbackup_handler(server, response, request, "POST");
+	};
+
+	server.resource["^/%3[F|f]operation%3[D|d]increstore%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26time%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		increstore_handler(server, response, request, "GET");
+    };
+
+	server.resource["^/?operation=increstore&db_name=(.*)&username=(.*)&password=(.*)&time=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		increstore_handler(server, response, request, "GET");
+	};
+
+	//POST-example for the path /unload, responds with the matched string in path
+	server.resource["/increstore"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		increstore_handler(server, response, request, "POST");
 	};
 
     thread server_thread([&server](){
@@ -1876,7 +1912,7 @@ void* backup_scheduler(void* _args) {
 		{
 			string db_name = db_names[i];
 			int backup_interval = Util::string2int(Util::query_backuplog(db_name, "backup_interval"));
-			int last_backup_time = Util::time_to_stamp(Util::query_backuplog(db_name, "last_backup_time"));
+			long last_backup_time = Util::time_to_stamp(Util::query_backuplog(db_name, "last_backup_time"));
 			if(last_backup_time + backup_interval > cur_time) continue;
 			// db_name should be saved befor backup
 			//save(reload) the loaded db and skip the unload db
@@ -6012,6 +6048,8 @@ bool backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	return true;
 }
 
+
+
 void restore_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	string thread_id = Util::getThreadID();
@@ -6227,6 +6265,381 @@ bool restore_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	return true;
 }
 
+void incbackup_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is restore"<<endl;
+
+	//get parameter
+	string db_name;
+	string username;
+	string password;
+	string time;
+	string _path;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		time = request->path_match[4];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		time = UrlDecode(time);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		time = document["time"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User *>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+
+	cout << "check identity successfully." << endl;
+
+	if(checkPrivilege(username, "restore", db_name) == 0)
+	{
+		string error = "no unload privilege, operation failed.";
+		string resJson = CreateJson(601, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		return;
+	}
+	cout << "check privilege successfully." << endl;
+
+	//check if the db_name is system
+	if (db_name == "system")
+	{
+		string error = "no restore privilege, operation failed.";
+		string resJson = CreateJson(302, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+
+	//	string db_name = argv[1];
+	if (db_name == "")
+	{
+		string error = "Exactly 1 argument is required!";
+		string resJson = CreateJson(904, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	string database = db_name;
+	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db")
+	{
+		//cout << "Your db name to be built should not end with \".db\"." << endl;
+		string error = "Your db name to be built should not end with \".db\".";
+		string resJson = CreateJson(202, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		return;
+	}
+
+	long start_timestamp  = Util::time_to_stamp(time);
+	string file_timestamp;
+	for(int i = 2; i < time.length() ; i++)
+	{
+		if(time[i] != ':' || time[i] != '-' || time[i] != ' ')
+		{
+			file_timestamp.push_back(time[i]);
+		}
+	}
+	cout << file_timestamp << endl;
+	string update_log_file = db_name + ".db/update_since_backup.log";
+	cerr << update_log_file << endl;
+	string rec;
+	fstream ifp;
+	ifp.open(update_log_file, ios::in);
+	if(!ifp)
+	{
+		string error = "target database error! log file open failed!";
+		string resJson = CreateJson(306, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		return;
+	}
+	
+	string file_name = db_name + "_" + file_timestamp + ".log";
+	string new_log_path = BACKUP_PATH ;
+	new_log_path += "/logs/";
+	new_log_path += file_name;
+	fstream ofp;
+	ofp.open(new_log_path, ios::out);
+	while(getline(ifp, rec))
+	{
+	    //TODO: remove divide 1000
+	    string line = rec;
+	    long _timestamp = Util::get_timestamp(rec)/1000;
+	    if(_timestamp > start_timestamp) {
+	        ofp << line << endl;
+	       };
+	        
+	}
+	ofp.close();
+	ifp.close();
+
+	cout << "database inc backup done." << endl;
+	string success = "Database incremental backup successfully.";
+	string resJson = CreateJson(315, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+}
+
+bool incbackup_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&incbackup_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
+
+void increstore_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	string thread_id = Util::getThreadID();
+
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout<<log_prefix<<"HTTP: this is restore"<<endl;
+
+	//get parameter
+	string db_name;
+	string username;
+	string password;
+	string time;
+	string _path;
+
+	if (RequestType == "GET")
+	{
+		db_name = request->path_match[1];
+		username = request->path_match[2];
+		password = request->path_match[3];
+		time = request->path_match[4];
+		db_name = UrlDecode(db_name);
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		time = UrlDecode(time);
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		Document document;
+		document.Parse(strJson.c_str());
+		db_name = document["db_name"].GetString();
+		username = document["username"].GetString();
+		password = document["password"].GetString();
+		time = document["time"].GetString();
+	}
+
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User *>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		string resJson = CreateJson(903, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		string resJson = CreateJson(902, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+
+	cout << "check identity successfully." << endl;
+
+	if(checkPrivilege(username, "restore", db_name) == 0)
+	{
+		string error = "no unload privilege, operation failed.";
+		string resJson = CreateJson(601, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		//return false;
+		return;
+	}
+	cout << "check privilege successfully." << endl;
+
+	//check if the db_name is system
+	if (db_name == "system")
+	{
+		string error = "no restore privilege, operation failed.";
+		string resJson = CreateJson(302, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+
+	//	string db_name = argv[1];
+	if (db_name == "")
+	{
+		string error = "Exactly 1 argument is required!";
+		string resJson = CreateJson(904, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		//*response << "HTTP/1.1 200 ok\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	string database = db_name;
+	if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db")
+	{
+		//cout << "Your db name to be built should not end with \".db\"." << endl;
+		string error = "Your db name to be built should not end with \".db\".";
+		string resJson = CreateJson(202, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		return;
+	}
+
+	pthread_rwlock_rdlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+	if(iter == databases.end())
+	{
+		string error = "Database not load yet.";
+		string resJson = CreateJson(304, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		pthread_rwlock_unlock(&databases_map_lock);
+		return;
+	}
+	Database *current_database = iter->second;
+	pthread_rwlock_unlock(&databases_map_lock);
+
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+
+	pthread_rwlock_rdlock(&(it_already_build->second->db_lock));
+	
+
+	long start_timestamp  = Util::time_to_stamp(time);
+	string file_timestamp;
+	for(int i = 2; i < time.length() ; i++)
+	{
+		if(time[i] != ':' || time[i] != '-' || time[i] != ' ')
+		{
+			file_timestamp.push_back(time[i]);
+		}
+	}
+	cout << file_timestamp << endl;
+	string file_name = db_name + "_" + file_timestamp + ".log";
+	string new_log_path = BACKUP_PATH ;
+	new_log_path += "/logs/";
+	vector<string> log_files = Util::GetFiles(new_log_path.c_str(), file_name.c_str());
+	int idx = lower_bound(log_files.begin(), log_files.end(), file_name) - log_files.begin();
+	if(idx >= log_files.size()){
+        string error ="No proper inc backup log for Database ";
+        error += db_name;
+        error += "!";
+        string resJson = CreateJson(316, error, 0);
+        *response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		return;
+    }
+
+    fstream ifp;
+    new_log_path += log_files[idx];
+    ifp.open(new_log_path.c_str(), ios::in);
+    if(!ifp)
+    {
+    	string error ="open inc backup log failed";
+        string resJson = CreateJson(316, error, 0);
+        *response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+		return;
+    }
+    string rec;
+    bool flag = 0;
+    int undo_point;
+    cout << new_log_path << endl;
+    cout << start_timestamp << endl;
+    while(getline(ifp, rec))
+    {
+        //TODO: remove divide 1000
+        //cout << rec << endl;
+        long _timestamp = Util::get_timestamp(rec)/1000;
+        cout << _timestamp << endl;
+
+        if(_timestamp < start_timestamp) continue;
+        if(!flag){
+            undo_point = _timestamp;
+            flag = 1;
+        }
+        cout << rec[0] << endl;
+        if (rec[0] != 'I' && rec[0] != 'R') continue;
+        string undo_sparql;
+	    if(rec[0] == 'I'){
+	        undo_sparql = "Delete DATA{";
+	    }else{
+	        undo_sparql = "INSERT DATA{";
+	    }
+	    undo_sparql += rec.substr(2, rec.length());
+	    undo_sparql += '}';
+	    cerr << undo_sparql << endl;
+	    FILE* output = NULL;
+		ResultSet rs;
+	    int ret_val;
+		ret_val = current_database->query(undo_sparql, rs, output);
+    }
+    ;
+    string restore_point = Util::stamp2time(undo_point);
+    pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+    cout << "database inc restore done." << endl;
+	string success = "Database incremental restore successfully. restore point: " + restore_point;
+	string resJson = CreateJson(317, success, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+	return;
+}
+
+bool increstore_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&increstore_thread, response, request, RequestType);
+	t.detach();
+	return true;
+}
 
 void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
