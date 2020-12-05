@@ -176,7 +176,7 @@ main(int argc, char * argv[])
             undo_point = _timestamp;
             flag = 1;
         }
-        if (rec[0] != 'I' || rec[0] != 'D') continue;
+        if (rec[0] != 'I' && rec[0] != 'R') continue;
         rec = undo_sparql(rec);
         cout << rec << endl;
         ResultSet rs;
