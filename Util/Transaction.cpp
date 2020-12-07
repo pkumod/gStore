@@ -74,16 +74,6 @@ bool Transaction::WriteSetFind(TYPE_ENTITY_LITERAL_ID _ID, Transaction::IDType _
 	return this->WriteSet[(unsigned)_type].count(_ID) != 0; //true is not write before!
 }
 
-void Transaction::DelSetInsert(IDTriple _Triple)
-{
-	this->DelSet.insert(_Triple);
-}
-
-void Transaction::DelSetDelete(IDTriple _Triple)
-{
-	this->DelSet.erase(_Triple);
-}
-
 void Transaction::print_ReadSet()
 {
 	cout << "IDType: SUBJECT: " << ReadSet[(unsigned)IDType::SUBJECT].size() << endl << endl;
@@ -122,13 +112,6 @@ void Transaction::print_WriteSet()
 	cout << "-----------------------------------------------------------------" << endl << endl;
 }
 
-void Transaction::print_DelSet()
-{
-	cout << "DelSet: " << DelSet.size() << endl << endl;
-	for(auto& it: DelSet)
-		cout << it.get_subject() << " " << it.get_predicate() << " " << it.get_object() << endl;
-	cout << endl << endl;
-}
 
 void Transaction::print_all()
 {
@@ -137,12 +120,3 @@ void Transaction::print_all()
 	print_WriteSet();
 }
 
-void Transaction::DependedTXNSetInsert(TYPE_TXN_ID _TID)
-{
-	this->DependedTXNSet.insert(_TID);
-}
-
-void Transaction::DependedTXNSetDelete(TYPE_TXN_ID _TID)
-{
-	this->DependedTXNSet.erase(_TID);
-}

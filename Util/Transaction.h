@@ -26,6 +26,7 @@ private:
 
 	TransactionState state;
 	TYPE_TS timestamp;
+
 	long int start_time;
 	long int end_time;
 	
@@ -33,9 +34,7 @@ private:
 	vector<IDSet> ReadSet; //shared latches
 	vector<IDSet> WriteSet; //exclusive locks and latchess
 	
-	TripleSet AddSet;
-	TripleSet DelSet;
-	TXNSet DependedTXNSet;
+	//TXNSet DependedTXNSet;
 	
 	vector<string> sparqls;
 	IsolationLevelType isolation;
@@ -77,13 +76,13 @@ public:
 	void DelSetInsert(IDTriple _Triple);
 	void DelSetDelete(IDTriple _Triple);
 	
-	void DependedTXNSetInsert(TYPE_TXN_ID _TID);
-	void DependedTXNSetDelete(TYPE_TXN_ID _TID);
+	//void DependedTXNSetInsert(TYPE_TXN_ID _TID);
+	//void DependedTXNSetDelete(TYPE_TXN_ID _TID);
 	
 	IsolationLevelType GetIsolationLevelType() {return this->isolation; }
 	
-	inline TripleSet& Get_AddSet() { return this->AddSet; }
-	inline TripleSet& Get_DelSet() { return this->DelSet; }
+	//inline TripleSet& Get_AddSet() { return this->AddSet; }
+	//inline TripleSet& Get_DelSet() { return this->DelSet; }
 	inline vector<IDSet>& Get_WriteSet() {return this->WriteSet; }
 	inline vector<IDSet>& Get_ReadSet() {return this->ReadSet; }
 	
