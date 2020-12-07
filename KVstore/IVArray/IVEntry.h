@@ -28,18 +28,31 @@ private:
 	
 	//MVCC
 	atomic<bool> is_versioned;
-	atomic<TYPE_TXN_ID> txnId;
+	atomic<TYPE_TXN_ID> txnID;
 	
-	//not used
-	atomic<TYPE_READ_CNT> readCnt;
+	//LCV = latest committed version
+	atomic<TYPE_READ_CNT> readLCVcnt;
 	
 	//Version List head point always point to the newest.
 	list<shared_ptr<Version>> vList; 
 	//protect Version list. TODO: use free-locked list for better concurrency
 	Latch rwLatch;
-	
-	int TryEntryLock(shared_ptr<Transaction> txn);
-	bool UnEntryLock(shared_ptr<Transaction> txn);
+
+
+	bool get_shared_latch();
+	bool get_exclusive_latch(TYPE_TXN_ID TID, bool is_SI);
+	//SI only
+	bool upgrade_latch(TYPE_TXN_ID TID);
+	bool downgrade_latch(TYPE_TXN_ID TID); //abort
+	//unlatch(commit)
+	bool shared_unlatch();
+	bool exclusive_unlatch(TYPE_TXN_ID TID, bool is_SI);
+	//get status
+	bool is_exclusive_latched();
+	bool is_shared_latched();
+	bool is_latched();
+	TYPE_READ_CNT get_readers();
+	bool is_owned_exclusive_latched(TYPE_TXN_ID TID);
 public:
 	IVEntry();
 	enum class LatchType { SHARED, EXCLUSIVE};
@@ -77,8 +90,8 @@ public:
 	void setVersionFlag();
 	void clearVersionFlag();
 	bool isVersioned() { return is_versioned.load();}
-	shared_ptr<Version> searchVersion(shared_ptr<Transaction> txn);
-	shared_ptr<Version> getLatestVersion(shared_ptr<Transaction> txn);
+	shared_ptr<Version> searchVersion(TYPE_TXN_ID TID);
+	shared_ptr<Version> getLatestVersion(TYPE_TXN_ID TID);
 	
 	//get exclusive lock before update
 	int getExclusiveLatch(shared_ptr<Transaction> txn, bool has_read); 
@@ -87,13 +100,8 @@ public:
 
 	bool unLatch(shared_ptr<Transaction> txn, LatchType latch_type); //commit
 
-	//int tryExclusiveLock(shared_ptr<Transaction> txn);
-	//bool releaseExlusiveLock(shared_ptr<Transaction> txn); 
-	//int getExclusiveLock(shared_ptr<Transaction> txn);
-
 	bool readVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn, bool repeated_read = false); //read
 	int  writeVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn);
-	bool addVersion(VDataSet &AddArray, VDataSet &DelArray, shared_ptr<Transaction> txn, bool has_read = false); //write
 	
 	void cleanAllVersion();
 	~IVEntry();

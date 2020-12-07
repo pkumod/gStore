@@ -4438,7 +4438,7 @@ KVstore::releaseExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	}
 	if(txn != nullptr && txn->WriteSetFind(_obj_id, Transaction::IDType::OBJECT) == false){		
 		if(Invalid_values(this->objID2values, _obj_id, txn, obj_has_read) == false){
-			cerr << "..................................obj id release failed!" << endl;
+			cerr << "..................................obj id release failed!" << obj_has_read << endl;
 			ret = false;
 		}
 	}
@@ -4656,6 +4656,14 @@ KVstore::transaction_invalid(shared_ptr<Transaction> txn)
 	for(auto &it: objWset)
 		if(this->Invalid_values(this->objID2values, it, txn, false) == false) ret2 = false;	
 	
+	if(ret1 == false)
+	{
+		cerr << "shared unlock failed !" << endl;
+	}
+	if(ret2 == false)
+	{
+		cerr << "exclusive unlock failed !" << endl;
+	}
 	return ret1 && ret2;
 }
 

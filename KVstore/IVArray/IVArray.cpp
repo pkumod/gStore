@@ -562,7 +562,10 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 	}
 	// try to read in main memory
 	bool ret = array[_key].readVersion(AddSet, DelSet, txn, is_firstread);
-	if(ret == false) txn->SetState(TransactionState::ABORTED);
+	if(ret == false) {
+		cerr << "read version failed, query abort" << endl;
+		txn->SetState(TransactionState::ABORTED);
+	}
 	this->CacheLock.lock();
 	if (array[_key].inCache())
 	{

@@ -131,6 +131,30 @@ void test(Txn_manager* txn_m)
 	txn_m->Commit(id);
 
 }
+
+
+void test2(Txn_manager* txn_m)
+{
+	string query = "select ?v {<V1> <R1> ?v.}";
+	string delete1  = "delete data { <V1> <R1> \"0\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+	string insert1 = "insert data { <V1> <R1> \"1\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+	string delete2 = "delete data { <V1> <R1> \"1\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+	string insert2 = "insert data { <V1> <R1> \"2\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+	string res;
+	txn_id_t id = txn_m->Begin();
+	txn_m->print_txn_dataset(id);
+	txn_m->Query(id, query, res);
+	txn_m->print_txn_dataset(id);
+	txn_m->Query(id, delete1, res);
+	txn_m->print_txn_dataset(id);
+	txn_m->Query(id, insert1, res);
+	txn_m->Query(id, query, res);
+	txn_m->Query(id, delete2, res);
+	txn_m->Query(id, insert2, res);
+	txn_m->Query(id, query, res);
+	txn_m->print_txn_dataset(id);
+	txn_m->Commit(id);
+}
 int main(int argc, char* argv[])
 {
 	Util util;
@@ -164,6 +188,6 @@ int main(int argc, char* argv[])
 	//t1.join();
 	//t2.join();
 	//t3.join();
-	txn4(&txn_m);
+	test2(&txn_m);
 	return 0;
 }
