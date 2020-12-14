@@ -55,7 +55,7 @@ Server::createConnection()
 		cerr << Util::getTimeString() << "cannot bind to port " << this->connectionPort << ". @Server::createConnection" << endl;
 		return false;
 	}
-
+	//gc = new GstoreConnector(IP, Port, username, password);
 	flag = this->socket.listen();
 	if (!flag)
 	{
@@ -127,23 +127,27 @@ Server::listen()
 			ret_msg = "OK";
 			break;
 		}
+		
 		case CMD_LOAD:
 		{
 			string db_name = operation.getParameter(0);
 			this->loadDatabase(db_name, "", ret_msg);
+			//ret_msg = gc->load(db_name);
 			break;
 		}
 		case CMD_UNLOAD:
 		{
 			string db_name = operation.getParameter(0);
 			this->unloadDatabase(db_name, "", ret_msg);
+			//ret_msg = this->gc->load(db_name);
 			break;
 		}
-		case CMD_IMPORT:
+
+		case CMD_BUILD:
 		{
 			string db_name = operation.getParameter(0);
 			string rdf_path = operation.getParameter(1);
-			this->importRDF(db_name, "", rdf_path, ret_msg);
+			this->buildDatabase(db_name, "", rdf_path, ret_msg);
 			break;
 		}
 		case CMD_DROP:
@@ -152,19 +156,25 @@ Server::listen()
 			this->dropDatabase(db_name, "", ret_msg);
 			break;
 		}
+
 		case CMD_QUERY:
 		{
-			string query = operation.getParameter(0);
+			//string db_name = operation.getParameter(0);
+			//string format = operation.getParameter(1);
+			string sparql = operation.getParameter(0);
+
 			pthread_t timer = Server::start_timer();
 			if (timer == 0) {
 				cerr << Util::getTimeString() << "Failed to start timer." << endl;
 			}
-			this->query(query, ret_msg);
+			this->query(sparql, ret_msg);
+			//ret_msg = this->gc->query(db_name, format, sparql);
 			if (timer != 0 && !Server::stop_timer(timer)) {
 				cerr << Util::getTimeString() << "Failed to stop timer." << endl;
 			}
 			break;
 		}
+
 		case CMD_SHOW:
 		{
 			string para = operation.getParameter(0);
@@ -178,13 +188,15 @@ Server::listen()
 			}
 			break;
 		}
-		//case CMD_INSERT:
-		//{
-			//string db_name = operation.getParameter(0);
-			//string rdf_path = operation.getParameter(1);
-			//this->insertTriple(db_name, "", rdf_path, ret_msg);
-			//break;
-		//}
+		/*
+		case CMD_INSERT:
+		{
+			string db_name = operation.getParameter(0);
+			string rdf_path = operation.getParameter(1);
+			this->insertTriple(db_name, "", rdf_path, ret_msg);
+		    break;
+		}
+		 */
 		case CMD_STOP:
 		{
 			this->stopServer(ret_msg);
@@ -210,6 +222,7 @@ Server::listen()
 			}
 			break;
 		}
+
 		default:
 			cerr << Util::getTimeString() << "this command is not supported by now. @Server::listen" << endl;
 		}
@@ -278,9 +291,9 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 		_ret_oprt.setCommand(CMD_UNLOAD);
 		para_cnt = 1;
 	}
-	else if (cmd == "import")
+	else if (cmd == "build")
 	{
-		_ret_oprt.setCommand(CMD_IMPORT);
+		_ret_oprt.setCommand(CMD_BUILD);
 		para_cnt = 2;
 	}
 	else if (cmd == "query")
@@ -477,7 +490,7 @@ Server::unloadDatabase(std::string _db_name, std::string _ac_name, std::string& 
 }
 
 bool
-Server::importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
+Server::buildDatabase(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
 {
 	//if (this->database != NULL && this->database->getName() != _db_name)
 	if (this->database != NULL)
