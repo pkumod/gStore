@@ -28,6 +28,9 @@
 #include "../tools/rapidjson/stringbuffer.h"
 #include <iostream>
 #include <fstream>
+#include "../Util/IPWhiteList.h"
+#include "../Util/IPBlackList.h"
+
 using namespace rapidjson;
 using namespace std;
 //Added for the json-example:
@@ -170,7 +173,12 @@ string NAMELOG_PATH  = "name.log";
 string backup_path;
 int port;
 int backup_interval;
-
+int blackList = 0;
+int whiteList = 0;
+string ipBlackFile = "ipDeny.config";
+string ipWhiteFile = "ipAllow.config";
+IPWhiteList* ipWhiteList;
+IPBlackList* ipBlackList;
 pthread_rwlock_t databases_map_lock;
 pthread_rwlock_t already_build_map_lock;
 pthread_rwlock_t users_map_lock;
@@ -478,6 +486,27 @@ string UrlDecode(string& SRC)
 		}
 	}
 	return (ret);
+}
+bool ipCheck(const shared_ptr<HttpServer::Request>& request){
+	//get the real IP of the client, because we use nginx here
+	string remote_ip;
+	unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals> m=request->header;
+	string map_key = "X-Real-IP";
+	//for (auto it = m.begin(); it != m.end(); it ++){
+	pair<std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator,std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator> lu = m.equal_range(map_key);
+	if(lu.first != lu.second)
+		remote_ip = lu.first->second;
+	else
+		remote_ip = request->remote_endpoint_address;
+	cout << "remote_ip: " << remote_ip << endl;
+	//check if the ip is allow or denied
+	if(whiteList == 1){
+		return ipWhiteList->Check(remote_ip);
+	}
+	else if(blackList == 1){
+		return ipBlackList->Check(remote_ip);
+	}
+	return true;
 }
 
 class Task
@@ -842,7 +871,18 @@ int initialize(int argc, char *argv[])
 		else
 		{
 			server.config.port = 9000;
-			if (strcmp(argv[1], "--advanced=true") == 0)
+			string para = argv[1];
+			if(para.substr(0, 10) == "--ipAllow="){
+				whiteList = 1;
+				ipWhiteFile = para.substr(10);
+				db_name = "";
+			}
+			else if(para.substr(0, 9) == "--ipDeny="){
+				blackList = 1;
+				ipBlackFile = para.substr(9);
+				db_name = "";
+			}
+			else if (strcmp(argv[1], "--advanced=true") == 0)
 			{
 				loadCSR = 1;
 				db_name = "";
@@ -861,6 +901,17 @@ int initialize(int argc, char *argv[])
 		if (isNum(argv[1]))
 		{
 			server.config.port = atoi(argv[1]);
+			string para = argv[2];
+			if(para.substr(0, 10) == "--ipAllow="){
+				whiteList = 1;
+				ipWhiteFile = para.substr(10);
+				db_name = "";
+			}
+			else if(para.substr(0, 9) == "--ipDeny="){
+				blackList = 1;
+				ipBlackFile = para.substr(9);
+				db_name = "";
+			}
 			if (strcmp(argv[2], "--advanced=true") == 0)
 			{
 				loadCSR = 1;
@@ -877,7 +928,18 @@ int initialize(int argc, char *argv[])
 		else if (isNum(argv[2]))
 		{
 			server.config.port = atoi(argv[2]);
-			if (strcmp(argv[1], "--advanced=true") == 0)
+			string para = argv[1];
+			if(para.substr(0, 10) == "--ipAllow="){
+				whiteList = 1;
+				ipWhiteFile = para.substr(10);
+				db_name = "";
+			}
+			else if(para.substr(0, 9) == "--ipDeny="){
+				blackList = 1;
+				ipBlackFile = para.substr(9);
+				db_name = "";
+			}
+			else if (strcmp(argv[1], "--advanced=true") == 0)
 			{
 				loadCSR = 1;
 				db_name = "";
@@ -892,7 +954,29 @@ int initialize(int argc, char *argv[])
 		}
 		else
 		{
-			if (strcmp(argv[1], "--advanced=true") == 0)
+			string para1 = argv[1];
+			string para2 = argv[2];
+			if(para1.substr(0, 10) == "--ipAllow="){
+				whiteList = 1;
+				ipWhiteFile = para1.substr(10);
+				db_name = argv[2];
+			}
+			else if(para1.substr(0, 9) == "--ipDeny="){
+				blackList = 1;
+				ipBlackFile = para1.substr(9);
+				db_name = argv[2];
+			}
+			else if(para2.substr(0, 10) == "--ipAllow="){
+				whiteList = 1;
+				ipWhiteFile = para2.substr(10);
+				db_name = argv[1];
+			}
+			else if(para2.substr(0, 9) == "--ipDeny="){
+				blackList = 1;
+				ipBlackFile = para2.substr(9);
+				db_name = argv[1];
+			}
+			else if (strcmp(argv[1], "--advanced=true") == 0)
 			{
 				loadCSR = 1;
 				db_name = argv[2];
@@ -924,6 +1008,8 @@ int initialize(int argc, char *argv[])
 		if(isNum(argv[1]))
 		{
 			server.config.port = atoi(argv[1]);
+			string para2 = argv[2];
+			string para3 = argv[3];
 			if (strcmp(argv[2], "--advanced=true") == 0)
 			{
 				loadCSR = 1;
@@ -944,6 +1030,26 @@ int initialize(int argc, char *argv[])
 				loadCSR = 0;
 				db_name = argv[2];
 			}
+			else if(para2.substr(0, 10) == "--ipAllow="){
+				whiteList = 1;
+				ipWhiteFile = para2.substr(10);
+				db_name = argv[3];
+			}
+			else if(para2.substr(0, 9) == "--ipDeny="){
+				blackList = 1;
+				ipBlackFile = para2.substr(9);
+				db_name = argv[3];
+			}
+			else if(para3.substr(0, 10) == "--ipAllow="){
+				whiteList = 1;
+				ipWhiteFile = para3.substr(10);
+				db_name = argv[2];
+			}
+			else if(para3.substr(0, 9) == "--ipDeny="){
+				blackList = 1;
+				ipBlackFile = para3.substr(9);
+				db_name = argv[2];
+			}
 			else
 			{
 				cout << "wrong format of parameters, please input the server port and the database." << endl;
@@ -954,6 +1060,8 @@ int initialize(int argc, char *argv[])
 		else if(isNum(argv[2]))
 		{
 			server.config.port = atoi(argv[2]);
+			string para1 = argv[1];
+			string para3 = argv[3];
 			if (strcmp(argv[1], "--advanced=true") == 0)
 			{
 				loadCSR = 1;
@@ -974,6 +1082,26 @@ int initialize(int argc, char *argv[])
 				loadCSR = 0;
 				db_name = argv[1];
 			}
+			else if(para1.substr(0, 10) == "--ipAllow="){
+				whiteList = 1;
+				ipWhiteFile = para1.substr(10);
+				db_name = argv[3];
+			}
+			else if(para1.substr(0, 9) == "--ipDeny="){
+				blackList = 1;
+				ipBlackFile = para1.substr(9);
+				db_name = argv[3];
+			}
+			else if(para3.substr(0, 10) == "--ipAllow="){
+				whiteList = 1;
+				ipWhiteFile = para3.substr(10);
+				db_name = argv[1];
+			}
+			else if(para3.substr(0, 9) == "--ipDeny="){
+				blackList = 1;
+				ipBlackFile = para3.substr(9);
+				db_name = argv[1];
+			}
 			else
 			{
 				cout << "wrong format of parameters, please input the server port and the database." << endl;
@@ -983,6 +1111,8 @@ int initialize(int argc, char *argv[])
 		else if (isNum(argv[3]))
 		{
 			server.config.port = atoi(argv[3]);
+			string para1 = argv[1];
+			string para2 = argv[2];
 			if (strcmp(argv[1], "--advanced=true") == 0)
 			{
 				loadCSR = 1;
@@ -1001,6 +1131,26 @@ int initialize(int argc, char *argv[])
 			else if (strcmp(argv[2], "--advanced=false") == 0)
 			{
 				loadCSR = 0;
+				db_name = argv[1];
+			}
+			else if(para1.substr(0, 10) == "--ipAllow="){
+				whiteList = 1;
+				ipWhiteFile = para1.substr(10);
+				db_name = argv[2];
+			}
+			else if(para1.substr(0, 9) == "--ipDeny="){
+				blackList = 1;
+				ipBlackFile = para1.substr(9);
+				db_name = argv[2];
+			}
+			else if(para2.substr(0, 10) == "--ipAllow="){
+				whiteList = 1;
+				ipWhiteFile = para2.substr(10);
+				db_name = argv[1];
+			}
+			else if(para2.substr(0, 9) == "--ipDeny="){
+				blackList = 1;
+				ipBlackFile = para2.substr(9);
 				db_name = argv[1];
 			}
 			else
@@ -1022,6 +1172,17 @@ int initialize(int argc, char *argv[])
 	}
 	port = server.config.port;
 	cout << "server port: " << server.config.port << " database name: " << db_name << endl;
+
+	if(whiteList){
+		cout << "IP white List enabled." << endl;
+		ipWhiteList = new IPWhiteList();
+		ipWhiteList->Load(ipWhiteFile);
+	}
+	else if(blackList){
+		cout << "IP black list enabled." << endl;
+		ipBlackList = new IPBlackList();
+		ipBlackList->Load(ipBlackFile);
+	}
 	//USAGE: then user can use http://localhost:port/ to visit the server or coding with RESTful API
     //HTTP-server at port 9000 using 1 thread
     //Unless you do more heavy non-threaded processing in the resources,
@@ -1157,6 +1318,7 @@ int initialize(int argc, char *argv[])
 	//pthread_rwlock_init(&database_load_lock, NULL);
 
 #ifndef SPARQL_ENDPOINT
+
 	//GET-example for the path /?operation=build&db_name=[db_name]&ds_path=[ds_path]&username=[username]&password=[password], responds with the matched string in path
 	//i.e. database name and dataset path
 	server.resource["^/%3[F|f]operation%3[D|d]build%26db_name%3[D|d](.*)%26ds_path%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
@@ -1847,6 +2009,7 @@ void signalHandler(int signum)
 //http://blog.csdn.net/javaniuniu/article/details/51419348
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
         const shared_ptr<ifstream> &ifs) {
+
     //read and send 128 KB at a time
     static vector<char> buffer(131072); // Safe when server is running on one thread
     streamsize read_length;
@@ -1946,6 +2109,14 @@ void thread_sigterm_handler(int _signal_num) {
 //NOTICE: what if several requests to delete the same file? we assume all are valid and no attackers
 void delete_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<< "HTTP: this is delete" << endl;
@@ -2021,6 +2192,14 @@ bool delete_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 
 void download_thread(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is download" << endl;
@@ -2096,6 +2275,14 @@ bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 
 void build_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is build"<<endl;
@@ -2311,6 +2498,14 @@ bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 
 void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is load"<<endl;
@@ -2536,6 +2731,14 @@ bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 
 void unload_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is unload"<<endl;
@@ -2707,6 +2910,14 @@ bool unload_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 
 void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is drop"<<endl;
@@ -2919,6 +3130,14 @@ void writeLog(FILE* fp, string _info)
 
 void export_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is export" << endl;
@@ -3105,6 +3324,14 @@ bool export_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 
 void query_thread(bool update_flag, string db_name, string format, string db_query, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	//Notice: update the log in mutithreading environment
 	//1. add therad ID to each line
 	//2. combine information in a therad then write
@@ -3634,6 +3861,14 @@ bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Respo
 
 void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is monitor"<<endl;
@@ -3779,6 +4014,14 @@ bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 
 void default_thread(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is default"<<endl;
@@ -3871,6 +4114,14 @@ bool default_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 
 bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is check" << endl;
@@ -3939,6 +4190,14 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 
 bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is login" << endl;
@@ -4062,6 +4321,14 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 //to stop the ghttp server
 bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is stop"<<endl;
@@ -4106,6 +4373,14 @@ bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 
 void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is checkpoint"<<endl;
@@ -4266,6 +4541,14 @@ bool db_checkpoint(string db_name)
 
 bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is checkall"<<endl;
@@ -4329,7 +4612,14 @@ bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 // to add, delete users or modify the privilege of a user, operation be done by the root user
 void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
 
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is user" << endl;
@@ -4566,6 +4856,14 @@ bool user_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 //BETTER: indicate the db_name when query
 void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is show" << endl;
@@ -4680,6 +4978,14 @@ bool show_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 
 void getCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is getCoreVersion" << endl;
@@ -4762,6 +5068,14 @@ bool getCoreVersion_handler(const HttpServer& server, const shared_ptr<HttpServe
 
 void setAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is setAPIVersion" << endl;
@@ -4846,6 +5160,14 @@ bool setAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer
 
 void setCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is setCoreVersion" << endl;
@@ -4924,6 +5246,14 @@ void setCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 
 void initVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is initVersion" << endl;
@@ -5037,6 +5367,14 @@ bool initVersion_handler(const HttpServer& server, const shared_ptr<HttpServer::
 
 void getAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is getAPIVersion" << endl;
@@ -5119,6 +5457,14 @@ bool getAPIVersion_handler(const HttpServer& server, const shared_ptr<HttpServer
 
 void showUser_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is showUser" << endl;
@@ -5867,6 +6213,14 @@ int copy(string src_path, string dest_path)
 
 void backup_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -6052,6 +6406,14 @@ bool backup_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 
 void restore_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -6267,6 +6629,14 @@ bool restore_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 
 void incbackup_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -6430,6 +6800,14 @@ bool incbackup_handler(const HttpServer& server, const shared_ptr<HttpServer::Re
 
 void increstore_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -6643,6 +7021,14 @@ bool increstore_handler(const HttpServer& server, const shared_ptr<HttpServer::R
 
 void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -6807,6 +7193,14 @@ bool init_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 
 void parameter_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -6942,6 +7336,14 @@ bool auto_backup_handler(const HttpServer& server, const shared_ptr<HttpServer::
 
 void refresh_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -7003,6 +7405,14 @@ bool refresh_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 
 void tquery_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -7234,6 +7644,14 @@ bool tquery_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 
 void begin_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -7415,6 +7833,14 @@ bool begin_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 
 void commit_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -7608,6 +8034,14 @@ bool commit_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 
 void rollback_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -7802,6 +8236,14 @@ bool rollback_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 
 void txnlog_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
+	if(!ipCheck(request)){
+		cout<<"IP Blocked!"<<endl;
+		string content="IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";

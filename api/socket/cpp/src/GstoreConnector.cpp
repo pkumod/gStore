@@ -34,7 +34,7 @@ GstoreConnector::GstoreConnector(unsigned short _port)
 GstoreConnector::GstoreConnector(string _ip, unsigned short _port)
 {
 	if (_ip == "localhost")
-		this->serverIP = "127.0.0.1";
+		this->serverIP = GstoreConnector::defaultServerIP;
 	else
 		this->serverIP = _ip;
 	this->serverPort = _port;
@@ -145,7 +145,7 @@ GstoreConnector::build(string _db_name, string _rdf_file_path)
 		return false;
 	}
 
-	string cmd = "import " + _db_name + " " + _rdf_file_path;
+	string cmd = "build " + _db_name + " " + _rdf_file_path;
 	bool send_return = this->socket.send(cmd);
 	if (!send_return)
 	{
@@ -256,6 +256,7 @@ GstoreConnector::show(bool _type)
 
 	return recv_msg;
 }
+
 
 bool
 GstoreConnector::connect()

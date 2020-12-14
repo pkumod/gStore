@@ -65,7 +65,7 @@ class GstoreConnector:
                 return False
 
             if f.__name__ == 'build':
-                cmd = 'import'
+                cmd = 'build'
             elif f.__name__ == 'show':
                 if args[0]:
                     cmd = 'show all'
@@ -99,7 +99,7 @@ class GstoreConnector:
                 'test': 'OK',
                 'load': 'load database done.',
                 'unload': 'unload database done.',
-                'import': 'import RDF file to database done.',
+                'build': 'import RDF file to database done.',
                 'drop': 'drop database done.',
                 'stop': 'server stopped.',
                 'query': None,

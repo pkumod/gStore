@@ -34,7 +34,7 @@ class Connector {
     }
 
     public function build($db_name, $rdf_file_path) {
-        $data = "import " . $db_name . " " . $rdf_file_path;
+        $data = "build " . $db_name . " " . $rdf_file_path;
         self::send($data);
         $result = self::recv();
         return $result;
