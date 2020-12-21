@@ -35,8 +35,8 @@ public:
 private:
 	std::string serverIP;
 	unsigned short serverPort;
-	//    std::string username;
-	//    std::string password;
+	std::string username;
+	std::string password;
 	Socket socket;
 
 	bool connect();
