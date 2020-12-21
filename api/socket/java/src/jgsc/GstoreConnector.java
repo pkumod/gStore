@@ -105,7 +105,7 @@ public class GstoreConnector {
             return false;
         }
 
-        String cmd = "import " + _db_name + " " + _rdf_file_path;
+        String cmd = "build " + _db_name + " " + _rdf_file_path;
         boolean send_return = this.send(cmd);
         if (!send_return) {
             System.err.println("send import command error. @GstoreConnector.build");

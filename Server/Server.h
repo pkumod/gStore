@@ -47,7 +47,7 @@ public:
     bool loadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg);
     bool unloadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg);
     bool showDatabases(std::string _para, std::string _ac_name, std::string& _ret_msg);
-    bool importRDF(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg);
+    bool buildDatabase(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg);
     //bool insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg);
 	bool query(const std::string _query, std::string& _ret_msg);
 	bool stopServer(std::string& _ret_msg);
@@ -69,6 +69,7 @@ private:
 
 	long next_backup;
 	pid_t scheduler_pid;
+	//GstoreConnector *gc;
 };
 
 #endif // _SERVER_SERVER_H
