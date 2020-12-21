@@ -2399,10 +2399,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			ret_result.answer = new string*[ret_result.ansNum];
 			ret_result.answer[0] = new string[ret_result.select_var_num];
 
-			ret_result.answer[0][0] = "false";
+			ret_result.answer[0][0] = "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
 			for (int i = 0; i < (int)this->temp_result->results.size(); i++)
 				if (!this->temp_result->results[i].result.empty())
-					ret_result.answer[0][0] = "true";
+					ret_result.answer[0][0] = "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
 		}
 	}
 
