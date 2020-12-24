@@ -4,7 +4,7 @@
 # Author: suxunbin
 # Last Modified: 2019-5-16 15:30
 # Description: a simple GET-example of php API
- */
+*/
 
 // before you run this example, make sure that you have started up ghttp service (using bin/ghttp port)
 // "GET" is a default parameter that can be omitted
@@ -24,7 +24,7 @@ $gc = new GstoreConnector($IP, $Port, $username, $password);
 $res = $gc->build("lubm", "data/lubm/lubm.nt");
 echo $res . PHP_EOL;
 
-// load the database
+// load the database 
 $res = $gc->load("lubm");
 echo $res . PHP_EOL;
 

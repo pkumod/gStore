@@ -14,18 +14,18 @@ using namespace std;
 
 TrieNode::TrieNode()
 {
-  father = lbro = lchd = rbro = NULL;
-  str = "";
-  count = 0;
-  ID = -1;
+	father = lbro = lchd = rbro = NULL;
+	str = "";
+	count = 0;
+	ID = -1;
 }
 
-TrieNode::TrieNode(const string& _str)
+TrieNode::TrieNode(const string &_str)
 {
-  father = lbro = lchd = rbro = NULL;
-  str = _str;
-  count = 0;
-  ID = -1;
+	father = lbro = lchd = rbro = NULL;
+	str = _str;
+	count = 0;
+	ID = -1;
 }
 
 /* Addstring
@@ -34,39 +34,42 @@ TrieNode::TrieNode(const string& _str)
 void
 TrieNode::addString(string& _str, int _ID)
 {
-  count++;
+	count++;
 
-  if (_str.length() == 0) // the whole string is inserted
-  {
-    this->ID = _ID;
-    return;
-  }
+	if (_str.length() == 0)		// the whole string is inserted
+	{
+		this->ID = _ID;
+		return;
+	}
 
-  string strPiece = split(_str);
-  TrieNode* child = this->lchd;
+	string strPiece = split(_str);
+	TrieNode* child = this->lchd;
 
-  while (child != NULL) {
-    if (strPiece == child->str) {
-      child->addString(_str, _ID);
-      return;
-    }
-    child = child->rbro;
-  }
+	while (child != NULL)
+	{
+		if (strPiece == child->str)
+		{
+			child->addString(_str, _ID);
+			return;
+		}
+		child = child->rbro;
+	}
 
-  /* no child matching strPiece */
-  TrieNode* p = new TrieNode(strPiece);
+	/* no child matching strPiece */
+	TrieNode *p = new TrieNode(strPiece);
 
-  p->father = (TrieNode*)this;
-  child = this->lchd;
-  p->rbro = child;
-  this->lchd = p;
-  if (child != NULL) {
-    child->lbro = p;
-  }
+	p->father = (TrieNode *) this;
+	child = this->lchd;
+	p->rbro = child;
+	this->lchd = p;
+	if (child != NULL)
+	{
+		child->lbro = p;
+	}
 
-  p->addString(_str, _ID);
-
-  return;
+	p->addString(_str, _ID);
+	
+	return;	
 }
 
 /* compress:
@@ -74,39 +77,44 @@ TrieNode::addString(string& _str, int _ID)
 string
 TrieNode::compress(string& _str, const int& lowbound)
 {
-  string strPiece = split(_str);
-  TrieNode* child = this->lchd;
+	string strPiece = split(_str);
+	TrieNode *child = this->lchd;
 
-  while (child != NULL) {
-    if (strPiece == child->str) {
-      if (child->count > lowbound) {
-        return child->compress(_str, lowbound);
-      } else
-        break;
-    }
-    child = child->rbro;
-  }
+	while (child != NULL)
+	{
+		if (strPiece == child->str)
+		{
+			if (child->count > lowbound)
+			{
+				return child->compress(_str, lowbound);
+			}
+			else break;
+		}
+		child = child->rbro;
+	}
 
-  /* Compressing ends here */
+	/* Compressing ends here */
 
-  /* recover _str */
-  if (_str != "")
-    strPiece = strPiece + _str;
-  //strPiece = strPiece + "/" + _str;
+	/* recover _str */
+	if (_str != "")
+	strPiece = strPiece + _str;
+	//strPiece = strPiece + "/" + _str;
 
-  if (this->ID < 0) {
-    cerr << "TrieNode::compress error. ID = " << ID << " str = " << strPiece << endl;
-    cerr << this->getString() << endl;
-    cerr << this->getCount() << endl;
-    return "";
-  }
+	if (this->ID < 0)
+	{
+		cerr << "TrieNode::compress error. ID = " << ID << " str = " << 
+		strPiece << endl;
+		cerr << this->getString() << endl;
+		cerr << this->getCount() << endl;
+		return "";
+	}
 
-  char buf[10];
-  sprintf(buf, "%d", this->ID);
-
-  string retval = buf;
-  retval += ("/" + strPiece);
-  /*
+	char buf[10];
+	sprintf(buf, "%d", this->ID);
+	
+	string retval = buf;
+	retval += ("/" + strPiece);
+/*
 	if (strPiece.length() > 0)	// still has strings uncompressed
 	{
 		if (this->str != "")
@@ -118,7 +126,7 @@ TrieNode::compress(string& _str, const int& lowbound)
 	else
 		retval += "/";
 */
-  return retval;
+	return retval;
 }
 
 /* split:
@@ -128,100 +136,106 @@ TrieNode::compress(string& _str, const int& lowbound)
 string
 TrieNode::split(string& _str)
 {
-  int len = _str.length();
-  int i = 0;
-  bool divide_flag = false;
+	int len = _str.length();
+	int i = 0;
+	bool divide_flag = false;
+	
+	while (i < len)
+	{
+		if (_str[i] == '/' || _str[i] == '.'
+			|| (_str[i] >= '0' && _str[i] <= '9'))
+		{
+			// ignore first char because it's '.' or '/'
+			// and there might be "//"
+			if (divide_flag ||
+				(_str[i] == '.' && i > 0)) break;
+		}
+		else
+		{
+			divide_flag = true;
+		}
+		i++;
+	}
 
-  while (i < len) {
-    if (_str[i] == '/' || _str[i] == '.'
-        || (_str[i] >= '0' && _str[i] <= '9')) {
-      // ignore first char because it's '.' or '/'
-      // and there might be "//"
-      if (divide_flag || (_str[i] == '.' && i > 0))
-        break;
-    } else {
-      divide_flag = true;
-    }
-    i++;
-  }
+	string ret = _str.substr(0, i);
+	if (i < len)
+		_str = _str.substr(i, len - i);
+	else
+ 		_str = "";
 
-  string ret = _str.substr(0, i);
-  if (i < len)
-    _str = _str.substr(i, len - i);
-  else
-    _str = "";
-
-  return ret;
+	return ret;
 }
 
 void
 TrieNode::addCount()
 {
-  count++;
+	count++;
 }
 
 void
-TrieNode::setLchd(const TrieNode* _lchd)
+TrieNode::setLchd(const TrieNode *_lchd)
 {
-  lchd = (TrieNode*)_lchd;
+	lchd = (TrieNode *) _lchd;
 }
 
 void
-TrieNode::setRbro(const TrieNode* _rbro)
+TrieNode::setRbro(const TrieNode *_rbro)
 {
-  rbro = (TrieNode*)_rbro;
+	rbro = (TrieNode *) _rbro;
 }
 
 void
-TrieNode::setLbro(const TrieNode* _lbro)
+TrieNode::setLbro(const TrieNode *_lbro)
 {
-  lbro = (TrieNode*)_lbro;
+	lbro = (TrieNode *) _lbro;
 }
 
 void
-TrieNode::setFather(const TrieNode* _father)
+TrieNode::setFather(const TrieNode *_father)
 {
-  father = (TrieNode*)_father;
+	father = (TrieNode *) _father;
 }
 
 void
-TrieNode::setString(const string& _str)
+TrieNode::setString(const string &_str)
 {
-  str = _str;
+	str = _str;
 }
 
 int
 TrieNode::getCount()
 {
-  return count;
+	return count;
 }
 
 TrieNode*
 TrieNode::getLchd()
 {
-  return lchd;
+	return lchd;
 }
 
 TrieNode*
 TrieNode::getRbro()
 {
-  return rbro;
+	return rbro;
 }
 
 TrieNode*
 TrieNode::getLbro()
 {
-  return lbro;
+	return lbro;
 }
 
 TrieNode*
 TrieNode::getFather()
 {
-  return father;
+	return father;
 }
 
 string
 TrieNode::getString()
 {
-  return str;
+	return str;
 }
+
+

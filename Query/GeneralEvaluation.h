@@ -24,71 +24,61 @@
 #include "QueryCache.h"
 #include "ResultSet.h"
 
-class GeneralEvaluation {
-  private:
-  QueryParser query_parser;
-  QueryTree query_tree;
-  VSTree* vstree;
-  KVstore* kvstore;
-  StringIndex* stringindex;
-  Strategy strategy;
-  QueryCache* query_cache;
+class GeneralEvaluation
+{
+	private:
+		QueryParser query_parser;
+		QueryTree query_tree;
+		VSTree *vstree;
+		KVstore *kvstore;
+		StringIndex *stringindex;
+		Strategy strategy;
+		QueryCache *query_cache;
 
-  TYPE_TRIPLE_NUM* pre2num;
-  TYPE_TRIPLE_NUM* pre2sub;
-  TYPE_TRIPLE_NUM* pre2obj;
-  TYPE_PREDICATE_ID limitID_predicate;
-  TYPE_ENTITY_LITERAL_ID limitID_literal;
-  TYPE_ENTITY_LITERAL_ID limitID_entity;
+		TYPE_TRIPLE_NUM *pre2num;
+		TYPE_TRIPLE_NUM *pre2sub;
+		TYPE_TRIPLE_NUM *pre2obj;
+		TYPE_PREDICATE_ID limitID_predicate;
+		TYPE_ENTITY_LITERAL_ID limitID_literal;
+		TYPE_ENTITY_LITERAL_ID limitID_entity;
 
-  public:
-  FILE* fp;
-  bool export_flag;
+    public:
+    	FILE* fp;
+    	bool export_flag;
 
-  public:
-  GeneralEvaluation(VSTree* _vstree, KVstore* _kvstore, StringIndex* _stringindex, QueryCache* _query_cache, TYPE_TRIPLE_NUM* _pre2num, TYPE_TRIPLE_NUM* _pre2sub, TYPE_TRIPLE_NUM* _pre2obj, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity)
-      : vstree(_vstree)
-      , kvstore(_kvstore)
-      , stringindex(_stringindex)
-      , query_cache(_query_cache)
-      , pre2num(_pre2num)
-      , pre2sub(_pre2sub)
-      , pre2obj(_pre2obj)
-      , limitID_predicate(_limitID_predicate)
-      , limitID_literal(_limitID_literal)
-      , limitID_entity(_limitID_entity)
-      , temp_result(NULL)
-      , fp(NULL)
-      , export_flag(false)
-  {
-  }
+	public:
+		GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, StringIndex *_stringindex, QueryCache *_query_cache, TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub, TYPE_TRIPLE_NUM *_pre2obj, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity):
+			vstree(_vstree), kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), pre2num(_pre2num), pre2sub(_pre2sub), pre2obj(_pre2obj), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), temp_result(NULL), fp(NULL), export_flag(false)
+		{}
 
-  bool parseQuery(const std::string& _query);
-  QueryTree& getQueryTree();
+		bool parseQuery(const std::string &_query);
+		QueryTree& getQueryTree();
 
-  bool doQuery();
+		bool doQuery();
 
-  void setStringIndexPointer(StringIndex* _tmpsi);
+		void setStringIndexPointer(StringIndex* _tmpsi);
+		
+	private:
+		TempResultSet *temp_result;
 
-  private:
-  TempResultSet* temp_result;
+		struct EvaluationStackStruct
+		{
+			QueryTree::GroupPattern group_pattern;
+			TempResultSet *result;
+		};
+		std::vector<EvaluationStackStruct> rewriting_evaluation_stack;
 
-  struct EvaluationStackStruct {
-    QueryTree::GroupPattern group_pattern;
-    TempResultSet* result;
-  };
-  std::vector<EvaluationStackStruct> rewriting_evaluation_stack;
+	public:
+		TempResultSet* semanticBasedQueryEvaluation(QueryTree::GroupPattern &group_pattern);
 
-  public:
-  TempResultSet* semanticBasedQueryEvaluation(QueryTree::GroupPattern& group_pattern);
+		bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &group_pattern, std::deque<QueryTree::GroupPattern> &queue);
+		TempResultSet* rewritingBasedQueryEvaluation(int dep);
 
-  bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern& group_pattern, std::deque<QueryTree::GroupPattern>& queue);
-  TempResultSet* rewritingBasedQueryEvaluation(int dep);
+		void getFinalResult(ResultSet &ret_result);
+		void releaseResult();
 
-  void getFinalResult(ResultSet& ret_result);
-  void releaseResult();
-
-  void prepareUpdateTriple(QueryTree::GroupPattern& update_pattern, TripleWithObjType*& update_triple, unsigned& update_triple_num);
+		void prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, unsigned &update_triple_num);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H
+

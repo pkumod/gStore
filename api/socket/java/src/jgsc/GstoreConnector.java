@@ -65,7 +65,7 @@ public class GstoreConnector {
 
         this.disconnect();
 
-        System.out.println(recv_msg);
+        System.out.println(recv_msg);	
         if (recv_msg.equals("load database done.")) {
             return true;
         }
@@ -90,7 +90,7 @@ public class GstoreConnector {
 
         this.disconnect();
 
-        System.out.println(recv_msg);
+        System.out.println(recv_msg);	
         if (recv_msg.equals("unload database done.")) {
             return true;
         }
@@ -191,7 +191,7 @@ public class GstoreConnector {
             return "send show command error.";
         }
         String recv_msg = this.recv();
-
+        
         this.disconnect();
         return recv_msg;
     }
@@ -297,7 +297,8 @@ public class GstoreConnector {
         return data;
     }
 
-    private static byte[] intToByte4(int _x) { // with Little Endian format.
+    private static byte[] intToByte4(int _x) // with Little Endian format.
+    {
         byte[] ret = new byte[4];
         ret[0] = (byte) (_x);
         ret[1] = (byte) (_x >>> 8);
@@ -307,7 +308,8 @@ public class GstoreConnector {
         return ret;
     }
 
-    private static int byte4ToInt(byte[] _b) { // with Little Endian format.
+    private static int byte4ToInt(byte[] _b) // with Little Endian format.
+    {
         int byte0 = _b[0] & 0xFF, byte1 = _b[1] & 0xFF, byte2 = _b[2] & 0xFF, byte3 = _b[3] & 0xFF;
         int ret = (byte0) | (byte1 << 8) | (byte2 << 16) | (byte3 << 24);
 
@@ -322,9 +324,9 @@ public class GstoreConnector {
         // note that the relative path is related to gserver.
         //gc.build("db_LUBM10", "example/rdf_triple/LUBM_10_GStore.n3");
         String sparql = "select ?x where {"
-                        + "?x	<rdf:type>	<cdblp.cn/class/Paper>. "
-                        + "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/wangshan>. "
-                        + "}";
+                + "?x	<rdf:type>	<cdblp.cn/class/Paper>. "
+                + "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/wangshan>. "
+                + "}";
 
         boolean flag = gc.load("db_cdblp");
         System.out.println(flag);
@@ -335,9 +337,9 @@ public class GstoreConnector {
         System.out.println(answer);
 
         sparql = "select ?x where {"
-                 + "?x	<rdf:type>	<cdblp.cn/class/Paper>. "
-                 + "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/yuge>. "
-                 + "}";
+                + "?x	<rdf:type>	<cdblp.cn/class/Paper>. "
+                + "?x	<cdblp.cn/schema/property/has_author>	<cdblp.cn/author/yuge>. "
+                + "}";
         answer = gc.query(sparql);
         System.out.println(answer);
     }

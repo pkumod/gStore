@@ -9,9 +9,9 @@
 #define _SERVER_SOCKET_H
 
 //#include "../Util/Util.h"
-#include <iostream>
-#include <string>
-#include <string.h>
+#include <iostream> 
+#include <string> 
+#include <string.h> 
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/file.h>
@@ -42,31 +42,33 @@
 #include <libgen.h>
 #include <signal.h>
 
-class Socket {
-  public:
-  Socket();
-  ~Socket();
+class Socket
+{
+public:
+    Socket();
+    ~Socket();
 
-  bool create();
-  bool close();
-  bool bind(const unsigned short _port); //0~65535
-  bool listen() const;
-  bool accept(Socket& _new_socket) const;
+    bool create();
+    bool close();
+    bool bind(const unsigned short _port); //0~65535
+    bool listen()const;
+    bool accept(Socket& _new_socket)const;
 
-  bool connect(const std::string _hostname, const unsigned short _port);
+    bool connect(const std::string _hostname, const unsigned short _port);
 
-  bool send(const std::string& _msg) const;
-  int recv(std::string& _msg) const;
+    bool send(const std::string& _msg)const;
+    int recv(std::string& _msg)const;
 
-  bool isValid() const;
+    bool isValid()const;
 
-  static const int MAX_CONNECTIONS = 20;
-  static const unsigned short DEFAULT_CONNECT_PORT = 3305;
-  static const std::string DEFAULT_SERVER_IP;
+    static const int MAX_CONNECTIONS = 20;
+    static const unsigned short DEFAULT_CONNECT_PORT = 3305;
+    static const std::string DEFAULT_SERVER_IP;
 
-  private:
-  int sock;
-  sockaddr_in addr;
+private:
+    int sock;
+    sockaddr_in addr;
 };
 
 #endif // _SERVER_SOCKET_H
+
