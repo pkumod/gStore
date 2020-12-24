@@ -11,40 +11,41 @@
 
 #include "SINode.h"
 
-class SILeafNode : public SINode {
-  protected:
-  SINode* prev; //LeafNode
-  SINode* next;
-  unsigned* values;
-  void AllocValues();
-  //void FreeValues();
-  public:
-  SILeafNode();
-  SILeafNode(bool isVirtual);
-  //LeafNode(Storage* TSM);
-  void Virtual();
-  void Normal();
-  SINode* getPrev() const;
-  SINode* getNext() const;
-  unsigned getValue(int _index) const;
-  bool setValue(unsigned _val, int _index);
-  bool addValue(unsigned _val, int _index);
+class SILeafNode : public SINode
+{
+protected:
+	SINode* prev;	//LeafNode
+	SINode* next;
+	unsigned* values;
+	void AllocValues();
+	//void FreeValues();
+public:
+	SILeafNode();
+	SILeafNode(bool isVirtual);
+	//LeafNode(Storage* TSM);
+	void Virtual();
+	void Normal();
+	SINode* getPrev() const;
+	SINode* getNext() const;
+	unsigned getValue(int _index) const;
+	bool setValue(unsigned _val, int _index);
+	bool addValue(unsigned _val, int _index);
 
-  bool subValue(int _index);
+	bool subValue(int _index);
 
-  void setPrev(SINode* _prev);
-  void setNext(SINode* _next);
+	void setPrev(SINode* _prev);
+	void setNext(SINode* _next);
 
-  unsigned getSize() const;
+	unsigned getSize() const;
 
-  SINode* split(SINode* _father, int _index);
-  SINode* coalesce(SINode* _father, int _index);
+	SINode* split(SINode* _father, int _index);
+	SINode* coalesce(SINode* _father, int _index);
 
-  void release();
-  ~SILeafNode();
-  void print(std::string s); //DEBUG
+	void release();
+	~SILeafNode();
+	void print(std::string s);			//DEBUG
 
-  /*non-sense virtual function
+	/*non-sense virtual function
 	Node* getChild(int _index) const;
 	bool addChild(Node* _child, int _index);
 	bool subChild(int _index);
@@ -53,3 +54,4 @@ class SILeafNode : public SINode {
 //BETTER: prev isn't a must, and reverse-range can be achieved using recursive-next
 
 #endif
+

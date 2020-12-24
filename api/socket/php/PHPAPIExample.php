@@ -6,7 +6,7 @@ $dbname = "LUBM10";
 $dbpath = "./data/lubm/lubm.nt";
 $query1 = "select ?x where
 {
-    ?x  <ub:name>   <FullProfessor0>.
+	?x	<ub:name>	<FullProfessor0>.
 }";
 $build= new Connector($host,$port);
 $build->build($dbname, $dbpath);

@@ -18,23 +18,25 @@
 //TODO: to solve this probem, use another hash: (pointer, pos), to find the right position of
 //given p in O(lgn) time
 
-class ISHeap {
-  private:
-  ISNode** heap;   //dynamic array
-  unsigned length; //valid elements num
-  unsigned size;   //max-size of heap
-  public:
-  ISHeap();
-  ISHeap(unsigned _size);
-  ISNode* getTop() const; //return the top element
-  unsigned getLen() const;
-  unsigned getSize() const;
-  bool isEmpty() const;
-  bool insert(ISNode* _np);             //insert and adjust
-  bool remove();                        //remove top and adjust
-  bool modify(ISNode* _np, bool _flag); //searech modified element and adjust
-  ~ISHeap();
-  void print(std::string s); //DEBUG
+class ISHeap
+{
+private:
+	ISNode** heap;			//dynamic array
+	unsigned length;		//valid elements num
+	unsigned size;			//max-size of heap
+public:
+	ISHeap();
+	ISHeap(unsigned _size);
+	ISNode* getTop() const;			//return the top element
+	unsigned getLen() const;
+	unsigned getSize() const;
+	bool isEmpty() const;
+	bool insert(ISNode* _np);	//insert and adjust
+	bool remove();			//remove top and adjust
+	bool modify(ISNode* _np, bool _flag);			//searech modified element and adjust
+	~ISHeap();
+	void print(std::string s);			//DEBUG
 };
 
 #endif
+

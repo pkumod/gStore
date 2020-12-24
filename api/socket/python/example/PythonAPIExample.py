@@ -2,9 +2,9 @@
 # zhangxiaoyang.hit#gmail.com
 # github.com/zhangxiaoyang
 
-from GstoreConnector import GstoreConnector
 import sys
 sys.path.append('../src')
+from GstoreConnector import GstoreConnector
 
 if __name__ == '__main__':
     gc = GstoreConnector('127.0.0.1', 3305)

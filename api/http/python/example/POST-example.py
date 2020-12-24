@@ -5,9 +5,9 @@
 # Last Modified: 2019-5-15 18:26
 # Description: a simple POST-example of python API
 """
-import GstoreConnector
 import sys
 sys.path.append('../src')
+import GstoreConnector
 
 # before you run this example, make sure that you have started up ghttp service (using bin/ghttp port)
 IP = "127.0.0.1"
@@ -27,19 +27,19 @@ sparql = "select ?x where \
 filename = "res.txt"
 
 # start a gc with given IP, Port, username and password
-gc = GstoreConnector.GstoreConnector(IP, Port, username, password)
+gc =  GstoreConnector.GstoreConnector(IP, Port, username, password)
 
 # build a database with a RDF graph
 res = gc.build("lubm", "data/lubm/lubm.nt", "POST")
 print(res)
 
-# load the database
+# load the database 
 res = gc.load("lubm", "POST")
-print(res)
+print(res);
 
 # to add, delete a user or modify the privilege of a user, operation must be done by the root user
 #res = gc.user("add_user", "user1", "111111", "POST")
-# print(res);
+#print(res);
 
 # show all users
 res = gc.showUser("POST")
@@ -70,15 +70,18 @@ print(res)
 
 # unload the database
 res = gc.unload("lubm", "POST")
-print(res)
+print(res);
 
 # drop the database
-res = gc.drop("lubm", False, "POST")  # delete the database directly
-# res = gc.drop("lubm", True, "POST") #leave a backup
-print(res)
+res = gc.drop("lubm", False, "POST") #delete the database directly
+#res = gc.drop("lubm", True, "POST") #leave a backup
+print(res);
 
 # get CoreVersion and APIVersion
 res = gc.getCoreVersion("POST")
 print(res)
 res = gc.getAPIVersion("POST")
 print(res)
+
+
+

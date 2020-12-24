@@ -27,6 +27,4 @@ ENV LANG C.UTF-8
 
 EXPOSE 80
 
-RUN make pre
-
 RUN make

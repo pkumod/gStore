@@ -4,7 +4,7 @@
 # Author: yangchaofan suxunbin
 # Last Modified: 2019-5-16 11:00
 # Description: http api for php
- */
+*/
 
 class GstoreConnector {
     var $serverIP;
@@ -23,7 +23,7 @@ class GstoreConnector {
         $this->username = $user;
         $this->password = $passwd;
     }
-
+    
     function Encode($url) {
         $ret = "";
         for ($i = 0; $i < strlen($url); $i++) {
@@ -38,8 +38,8 @@ class GstoreConnector {
                 $ret .= $c;
             else if (ord($c)==32)
                 $ret .= "+";
-            else if (ord($c)!=9 and ord($c)!=10 and ord($c)!=13)
-                $ret .= sprintf("%%%X", ord($c));
+            else if (ord($c)!=9 and ord($c)!=10 and ord($c)!=13) 
+                $ret .= sprintf("%%%X", ord($c));        
         }
         return $ret;
     }
@@ -122,7 +122,7 @@ class GstoreConnector {
             $strPost = "{\"db_name\": \"" . $db_name . "\", \"ds_path\": \"" . $rdf_file_path . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
             $res = $this->Post($strUrl, $strPost);
         }
-        return $res;
+        return $res;    
     }
 
     function load($db_name, $request_type="GET") {
@@ -158,7 +158,7 @@ class GstoreConnector {
     function user($type, $username2, $addition, $request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=user&type=" . $type . "&username1=" . $this->username . "&password1=" . $this->password . "&username2=" . $username2 . "&addition=" . $addition;
+            $strUrl = $this->Url . "/?operation=user&type=" . $type . "&username1=" . $this->username . "&password1=" . $this->password . "&username2=" . $username2 . "&addition=" . $addition; 
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
@@ -168,12 +168,12 @@ class GstoreConnector {
             $res = $this->Post($strUrl, $strPost);
         }
         return $res;
-    }
+     }
 
-    function showUser($request_type="GET") {
+     function showUser($request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=showUser&username=" . $this->username . "&password=" . $this->password;
+            $strUrl = $this->Url . "/?operation=showUser&username=" . $this->username . "&password=" . $this->password; 
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
@@ -183,12 +183,12 @@ class GstoreConnector {
             $res = $this->Post($strUrl, $strPost);
         }
         return $res;
-    }
+     }
 
     function query($db_name, $format, $sparql, $request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=query&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&format=" . $format . "&sparql=" . $sparql;
+            $strUrl = $this->Url . "/?operation=query&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&format=" . $format . "&sparql=" . $sparql; 
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
@@ -197,13 +197,13 @@ class GstoreConnector {
             $strPost = "{\"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"format\": \"" . $format . "\", \"sparql\": \"" . $sparql . "\"}";
             $res = $this->Post($strUrl, $strPost);
         }
-        return $res;
+        return $res;    
     }
 
     function fquery($db_name, $format, $sparql, $filename, $request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=query&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&format=" . $format . "&sparql=" . $sparql;
+            $strUrl = $this->Url . "/?operation=query&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&format=" . $format . "&sparql=" . $sparql; 
             $this->fGet($strUrl, $filename);
         }
         elseif ($request_type == "POST")
@@ -212,7 +212,7 @@ class GstoreConnector {
             $strPost = "{\"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"format\": \"" . $format . "\", \"sparql\": \"" . $sparql . "\"}";
             $this->fPost($strUrl, $strPost, $filename);
         }
-        return;
+        return;     
     }
 
     function drop($db_name, $is_backup, $request_type="GET") {
@@ -221,7 +221,7 @@ class GstoreConnector {
             if ($is_backup)
                 $strUrl = $this->Url . "/?operation=drop&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password . "&is_backup=true";
             else
-                $strUrl = $this->Url . "/?operation=drop&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password . "&is_backup=false";
+                $strUrl = $this->Url . "/?operation=drop&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password . "&is_backup=false";           
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
@@ -233,7 +233,7 @@ class GstoreConnector {
                 $strPost = "{\"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"is_backup\": \"false\"}";
             $res = $this->Post($strUrl, $strPost);
         }
-        return $res;
+        return $res;    
     }
 
     function monitor($db_name, $request_type="GET") {
@@ -269,7 +269,7 @@ class GstoreConnector {
     function show($request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=show&username=" . $this->username . "&password=" . $this->password;
+            $strUrl = $this->Url . "/?operation=show&username=" . $this->username . "&password=" . $this->password; 
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
@@ -284,7 +284,7 @@ class GstoreConnector {
     function getCoreVersion($request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=getCoreVersion&username=" . $this->username . "&password=" . $this->password;
+            $strUrl = $this->Url . "/?operation=getCoreVersion&username=" . $this->username . "&password=" . $this->password; 
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
@@ -295,11 +295,11 @@ class GstoreConnector {
         }
         return $res;
     }
-
+    
     function getAPIVersion($request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=getAPIVersion&username=" . $this->username . "&password=" . $this->password;
+            $strUrl = $this->Url . "/?operation=getAPIVersion&username=" . $this->username . "&password=" . $this->password; 
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
@@ -323,7 +323,7 @@ class GstoreConnector {
             $strPost = "{\"db_name\": \"" . $db_name . "\", \"ds_path\": \"" . $dir_path . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
             $res = $this->Post($strUrl, $strPost);
         }
-        return $res;
+        return $res;    
     }
 }
 ?>

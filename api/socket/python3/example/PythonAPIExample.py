@@ -1,6 +1,6 @@
-from GstoreConnector import GstoreConnector
 import sys
 sys.path.append('../src')
+from GstoreConnector import GstoreConnector
 # print(sys.path)
 
 if __name__ == '__main__':
