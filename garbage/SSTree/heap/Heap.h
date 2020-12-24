@@ -18,25 +18,23 @@
 //TODO: to solve this probem, use another hash: (pointer, pos), to find the right position of
 //given p in O(lgn) time
 
-class Heap
-{
-private:
-	Node** heap;			//dynamic array
-	unsigned length;			//valid elements num
-	unsigned size;			//max-size of heap
-public:
-	Heap();
-	Heap(unsigned _size);
-	Node* getTop() const;			//return the top element
-	unsigned getLen() const;
-	unsigned getSize() const;
-	bool isEmpty() const;
-	bool insert(Node* _np);	//insert and adjust
-	bool remove();			//remove top and adjust
-	bool modify(Node* _np, bool _flag);			//searech modified element and adjust
-	~Heap();
-	void print(std::string s);			//DEBUG
+class Heap {
+  private:
+  Node** heap;     //dynamic array
+  unsigned length; //valid elements num
+  unsigned size;   //max-size of heap
+  public:
+  Heap();
+  Heap(unsigned _size);
+  Node* getTop() const; //return the top element
+  unsigned getLen() const;
+  unsigned getSize() const;
+  bool isEmpty() const;
+  bool insert(Node* _np);             //insert and adjust
+  bool remove();                      //remove top and adjust
+  bool modify(Node* _np, bool _flag); //searech modified element and adjust
+  ~Heap();
+  void print(std::string s); //DEBUG
 };
 
 #endif
-

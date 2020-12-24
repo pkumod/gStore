@@ -8,7 +8,7 @@
 const request = require('request-promise');
 
 class GstoreConnector {
-    constructor(ip = '', port, username = '', password = '') 
+    constructor(ip = '', port, username = '', password = '')
     {
         if (ip == 'localhost')
             this.serverIP = '127.0.0.1';
@@ -20,21 +20,21 @@ class GstoreConnector {
         this.password = password;
     }
 
-    async Get(strUrl = '') 
+    async Get(strUrl = '')
     {
         strUrl = this.Url + "/" + encodeURIComponent(strUrl);
         const res = await request({uri: strUrl, method: 'GET', json: true});
         return res;
     }
 
-    async Post(strUrl = '', strPost = '') 
+    async Post(strUrl = '', strPost = '')
     {
         strUrl = this.Url + "/" + encodeURIComponent(strUrl);
         const res = await request({
-            uri: strUrl, 
-            method: 'POST', 
-            json: true, 
-            body: strPost,  
+            uri: strUrl,
+            method: 'POST',
+            json: true,
+            body: strPost,
             headers:{
                 'Content-Type':'application/x-www-form-urlencoded',
                 'Content-Length':strPost.length
@@ -43,7 +43,7 @@ class GstoreConnector {
         return res;
     }
 
-    async build(db_name = '', rdf_file_path = '', request_type = 'GET') 
+    async build(db_name = '', rdf_file_path = '', request_type = 'GET')
     {
         if (request_type == 'GET')
         {
@@ -60,7 +60,7 @@ class GstoreConnector {
         }
     }
 
-    async load(db_name = '', request_type = 'GET') 
+    async load(db_name = '', request_type = 'GET')
     {
         if (request_type == 'GET')
         {
@@ -77,7 +77,7 @@ class GstoreConnector {
         }
     }
 
-    async unload(db_name = '', request_type = 'GET') 
+    async unload(db_name = '', request_type = 'GET')
     {
         if (request_type == 'GET')
         {
@@ -94,7 +94,7 @@ class GstoreConnector {
         }
     }
 
-    async user(type = '', username2 = '' , addition = '' , request_type = 'GET') 
+    async user(type = '', username2 = '' , addition = '' , request_type = 'GET')
     {
         if (request_type == 'GET')
         {
@@ -111,7 +111,7 @@ class GstoreConnector {
         }
     }
 
-    async showUser(request_type = 'GET') 
+    async showUser(request_type = 'GET')
     {
         if (request_type == 'GET')
         {
@@ -128,7 +128,7 @@ class GstoreConnector {
         }
     }
 
-    async query(db_name = '', format = '' , sparql = '' , request_type = 'GET') 
+    async query(db_name = '', format = '' , sparql = '' , request_type = 'GET')
     {
         if (request_type == 'GET')
         {
@@ -145,7 +145,7 @@ class GstoreConnector {
         }
     }
 
-    async drop(db_name = '', is_backup , request_type = 'GET') 
+    async drop(db_name = '', is_backup , request_type = 'GET')
     {
         if (request_type == 'GET')
         {
@@ -170,7 +170,7 @@ class GstoreConnector {
         }
     }
 
-    async monitor(db_name = '', request_type = 'GET') 
+    async monitor(db_name = '', request_type = 'GET')
     {
         if (request_type == 'GET')
         {
@@ -187,7 +187,7 @@ class GstoreConnector {
         }
     }
 
-    async checkpoint(db_name = '', request_type = 'GET') 
+    async checkpoint(db_name = '', request_type = 'GET')
     {
         if (request_type == 'GET')
         {
@@ -204,7 +204,7 @@ class GstoreConnector {
         }
     }
 
-    async show(request_type = 'GET') 
+    async show(request_type = 'GET')
     {
         if (request_type == 'GET')
         {
@@ -221,7 +221,7 @@ class GstoreConnector {
         }
     }
 
-    async getCoreVersion(request_type = 'GET') 
+    async getCoreVersion(request_type = 'GET')
     {
         if (request_type == 'GET')
         {
@@ -238,7 +238,7 @@ class GstoreConnector {
         }
     }
 
-    async getAPIVersion(request_type = 'GET') 
+    async getAPIVersion(request_type = 'GET')
     {
         if (request_type == 'GET')
         {
@@ -255,7 +255,7 @@ class GstoreConnector {
         }
     }
 
-    async exportDB(db_name = '', dir_path = '', request_type = 'GET') 
+    async exportDB(db_name = '', dir_path = '', request_type = 'GET')
     {
         if (request_type == 'GET')
         {

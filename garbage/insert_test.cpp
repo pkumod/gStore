@@ -10,18 +10,16 @@
 
 using namespace std;
 
-int main(int argc, char * argv[])
+int main(int argc, char* argv[])
 {
 #ifdef DEBUG
-	Util util;
+  Util util;
 #endif
-    string db_folder = string(argv[1]);
-    string insert_rdf_file = string(argv[2]);
-    Database _db(db_folder);
+  string db_folder = string(argv[1]);
+  string insert_rdf_file = string(argv[2]);
+  Database _db(db_folder);
 
-    _db.insert(insert_rdf_file);
+  _db.insert(insert_rdf_file);
 
-    return 0;
+  return 0;
 }
-
-

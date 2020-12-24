@@ -69,22 +69,20 @@ struct Node						//may use several blocks, not must continuously
 //(a bit indicates whether a leaf!),
 //and char* should be changed to the real string.
 
-class BlockInfo
-{
-public:
-	unsigned num;			
-	BlockInfo* next;
-	BlockInfo()
-	{
-		num = 0;
-		next = NULL;
-	}
-	BlockInfo(unsigned _num, BlockInfo* _bp)
-	{
-		num = _num;
-		next = _bp;
-	}
+class BlockInfo {
+  public:
+  unsigned num;
+  BlockInfo* next;
+  BlockInfo()
+  {
+    num = 0;
+    next = NULL;
+  }
+  BlockInfo(unsigned _num, BlockInfo* _bp)
+  {
+    num = _num;
+    next = _bp;
+  }
 };
 
 #endif
-

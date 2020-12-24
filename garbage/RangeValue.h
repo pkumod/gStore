@@ -12,20 +12,19 @@
 #include "../../Util/Util.h"
 #include "../../Bstr/Bstr.h"
 
-class RangeValue
-{
-private:
-	FILE* fp;
-	Bstr transfer;
-	unsigned transfer_size;
-public:
-	RangeValue();
-	void reset();
-	bool open();
-	bool write(const Bstr* _bp);
-	const Bstr* read();
-	~RangeValue();
+class RangeValue {
+  private:
+  FILE* fp;
+  Bstr transfer;
+  unsigned transfer_size;
+
+  public:
+  RangeValue();
+  void reset();
+  bool open();
+  bool write(const Bstr* _bp);
+  const Bstr* read();
+  ~RangeValue();
 };
 
 #endif
-

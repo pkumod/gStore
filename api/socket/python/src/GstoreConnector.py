@@ -5,12 +5,13 @@
 import socket
 import traceback
 
+
 class GstoreConnector:
 
     def _connect(self):
         try:
-            self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
-            self._sock.connect((self.ip, self.port))  
+            self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._sock.connect((self.ip, self.port))
             return True
         except Exception, e:
             print 'socket connection error. @GstoreConnector.connect'
@@ -19,7 +20,7 @@ class GstoreConnector:
 
     def _disconnect(self):
         try:
-            self._sock.close()  
+            self._sock.close()
             return True
         except Exception, e:
             print 'socket disconnection error. @GstoreConnector.disconnect'
@@ -75,13 +76,13 @@ class GstoreConnector:
             else:
                 cmd = f.__name__
             if f.__name__ == 'query':
-                #DEBUG:only sparql query should be used, output should not be included in parameters
+                # DEBUG:only sparql query should be used, output should not be included in parameters
                 print "the first argument:"
                 print args[0]
                 # print args[1]
                 params = ' '.join([args[0]])
             else:
-                params = ' '.join(map(lambda x:str(x), args))
+                params = ' '.join(map(lambda x: str(x), args))
             full_cmd = ' '.join([
                 cmd,
                 params
@@ -115,7 +116,7 @@ class GstoreConnector:
             return False
         return wrapper
 
-    def __init__(self, ip = '127.0.0.1', port = 3305):
+    def __init__(self, ip='127.0.0.1', port=3305):
         self.ip = ip
         self.port = port
 
@@ -140,9 +141,9 @@ class GstoreConnector:
         pass
 
     @_communicate
-    def query(self, sparql, output = '/'):
+    def query(self, sparql, output='/'):
         pass
 
     @_communicate
-    def show(self, _type = False):
+    def show(self, _type=False):
         pass

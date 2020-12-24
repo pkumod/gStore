@@ -8,21 +8,21 @@
 // before you run this example, make sure that you have started up ghttp service (using bin/ghttp port)
 const GstoreConnector = require("../GstoreConnector.js");
 
-const sparql = "select ?x where{" + 
-               "?x  <rdf:type> <ub:UndergraduateStudent>. " +
-               "?y    <ub:name> <Course1>. " +
-               "?x    <ub:takesCourse>  ?y. " +
-               "?z   <ub:teacherOf>    ?y. " +
-               "?z    <ub:name> <FullProfessor1>. " +
-               "?z    <ub:worksFor>    ?w. " +
-               "?w    <ub:name>    <Department0>. }";
+const sparql = "select ?x where{" +
+    "?x  <rdf:type> <ub:UndergraduateStudent>. " +
+    "?y    <ub:name> <Course1>. " +
+    "?x    <ub:takesCourse>  ?y. " +
+    "?z   <ub:teacherOf>    ?y. " +
+    "?z    <ub:name> <FullProfessor1>. " +
+    "?z    <ub:worksFor>    ?w. " +
+    "?w    <ub:name>    <Department0>. }";
 
 // start a gc with given IP, Port, username and password
 const gc = new GstoreConnector(
     "127.0.0.1",
     9000,
-	"root",
-	"123456"
+    "root",
+    "123456"
 );
 
 (async function() {
