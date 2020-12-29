@@ -160,6 +160,15 @@ bool tquery_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 bool txnlog_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 void signalHandler(int signum);
+
+//added by liangjianming in 2020.12.08
+void writeLog1(FILE* fp, string _info, string log_type);
+
+void writeLog(FILE* fp, string _info);
+
+// added by liangjianming in 2020.12.21
+void writeJobLog(FILE* fp, string _info);
+
 //=============================================================================
 
 //TODO: use lock to protect logs when running in multithreading environment
@@ -173,6 +182,24 @@ string NAMELOG_PATH  = "name.log";
 string backup_path;
 int port;
 int backup_interval;
+
+// added by liangjianming in 2020.12.08
+mutex build_log_lock;
+FILE* build_logfp = NULL;
+mutex export_log_lock;
+FILE* export_logfp = NULL;
+mutex backup_log_lock;
+FILE* backup_logfp = NULL;
+mutex restore_log_lock;
+FILE* restore_logfp = NULL;
+mutex drop_log_lock;
+FILE* drop_logfp = NULL;
+// added by liangjianming in 2020.12.21
+mutex job_log_lock;
+FILE* job_logfp = NULL;
+string jobLog = "logs/endpoint/job.log";
+
+
 int blackList = 0;
 int whiteList = 0;
 string ipBlackFile = "ipDeny.config";
@@ -1281,6 +1308,15 @@ int initialize(int argc, char *argv[])
 	//cout << "Util::getTimeString: " << Util::getTimeString() << endl;
 	//cout << "Util::get_date_time: " << Util::get_date_time() << endl;
 
+	//added by liangjianming in 2020.12.21
+	cout << "jobLog: "  << jobLog << endl;
+	job_logfp = fopen(jobLog.c_str(), "a");
+	if (job_logfp == NULL)
+	{
+		cerr << "open job log error" << endl;
+		return -1;
+	}
+
 	string cmd = "lsof -i:" + Util::int2string(server.config.port) + " > system.db/ep.txt";
 	system(cmd.c_str());
 	fstream ofp;
@@ -2314,6 +2350,27 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		password = document["password"].GetString();
 	}
 
+	//added by liangjianming in 2020.12.23
+	string job_name = "HTTP: this is build";
+	string status = "已提交";
+	int id = rand()%(999-100+1)+100;
+	string job_id = Util::get_timestamp() + Util::int2string(id);
+	string start_time = Util::get_date_time();
+	int build_time = Util::get_cur_time();
+	Document doc2;
+	doc2.SetObject();
+	Document::AllocatorType & doc_allocator2 = doc2.GetAllocator();
+	doc2.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator2);
+	doc2.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator2);
+	doc2.AddMember("创建数据库名称", StringRef(db_name.c_str()), doc_allocator2);
+	doc2.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator2);
+	doc2.AddMember("完成状态", StringRef(status.c_str()), doc_allocator2);
+	StringBuffer buffer2;
+	PrettyWriter<StringBuffer> writer2(buffer2);
+	doc2.Accept(writer2);
+	writeJobLog(job_logfp, buffer2.GetString());
+
+
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);
@@ -2444,6 +2501,23 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		string resJson = CreateJson(204, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 
+		//added by liangjianming in 2020.12.23
+		Document doc3;
+		doc3.SetObject();
+		Document::AllocatorType& doc_allocator3 = doc3.GetAllocator();
+		status = "未完成，" + error;
+		string end_time = Util::get_date_time();
+		doc3.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator3);
+		doc3.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator3);
+		doc3.AddMember("创建数据库名称", StringRef(db_name.c_str()), doc_allocator3);
+		doc3.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator3);
+		doc3.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator3);
+		doc3.AddMember("完成状态", StringRef(status.c_str()), doc_allocator3);
+		StringBuffer buffer3;
+		PrettyWriter<StringBuffer> writer3(buffer3);
+		doc3.Accept(writer3);
+		writeJobLog(job_logfp, buffer3.GetString());
+
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 
 	//	pthread_rwlock_unlock(&database_load_lock);
@@ -2487,6 +2561,61 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	Util::add_backuplog(db_name);
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 //	pthread_rwlock_unlock(&database_load_lock);
+
+
+	// added by liangjianming in 2020.12.08
+	build_time = Util::get_cur_time()-build_time;
+
+	string remote_ip;
+	//get the real IP of the client, because we use nginx here
+	unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals> m=request->header;
+	string map_key = "X-Real-IP";
+	//for (auto it = m.begin(); it != m.end(); it ++){
+	pair<std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator,std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator> lu = m.equal_range(map_key);
+	if(lu.first != lu.second)
+		remote_ip = lu.first->second;
+	else
+		remote_ip = request->remote_endpoint_address;
+	cout << "remote_ip: " << remote_ip << endl;
+
+	if(remote_ip != TEST_IP){
+		Document doc;
+		doc.SetObject();
+		string operation = "builddb";
+		string build_log_type = "build_log";
+		string BuildTime = Util::int2string(build_time) + "ms";
+		Document::AllocatorType &doc_allocator = doc.GetAllocator();
+		doc.AddMember("operation",StringRef(operation.c_str()),doc_allocator);
+		doc.AddMember("username",StringRef(username.c_str()),doc_allocator);
+		doc.AddMember("db_name",StringRef(db_name.c_str()),doc_allocator);
+		doc.AddMember("nt_file_path",StringRef(db_path.c_str()),doc_allocator);
+		doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
+		doc.AddMember("buildDateTime", StringRef(time.c_str()), doc_allocator);
+		doc.AddMember("BuildTime",StringRef(BuildTime.c_str()),doc_allocator);
+		//doc.AddMember("QueryTime", StringRef(QueryTime.c_str()), doc_allocator);
+		StringBuffer buffer;
+		PrettyWriter<StringBuffer> writer(buffer);
+		doc.Accept(writer);
+		writeLog(query_logfp, buffer.GetString());
+
+		//added by liangjianming in 2020.12.21
+		Document doc1;
+		doc1.SetObject();
+		string end_time = Util::get_date_time();
+		status = "已完成";
+		Document::AllocatorType &doc_allocator1 = doc1.GetAllocator();
+		doc1.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator1);
+		doc1.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator1);
+		doc1.AddMember("创建数据库名称", StringRef(db_name.c_str()), doc_allocator1);
+		doc1.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator1);
+		doc1.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator1);
+		doc1.AddMember("总耗时", StringRef(BuildTime.c_str()),doc_allocator1);
+		doc1.AddMember("完成状态", StringRef(status.c_str()),doc_allocator1);
+		StringBuffer buffer1;
+		PrettyWriter<StringBuffer> writer1(buffer1);
+		doc1.Accept(writer1);
+		writeJobLog(job_logfp, buffer1.GetString());
+	}
 }
 
 bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
@@ -2949,6 +3078,26 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		is_backup = document["is_backup"].GetString();
 	}
 
+	//added by liangjianming in 2020.12.23
+	string job_name = "HTTP: this is drop";
+	string status = "已提交";
+	int id = rand() % (999 - 100 + 1) + 100;
+	string job_id = Util::get_timestamp() + Util::int2string(id);
+	string start_time = Util::get_date_time();
+	int drop_time = Util::get_cur_time();
+	Document doc2;
+	doc2.SetObject();
+	Document::AllocatorType& doc_allocator2 = doc2.GetAllocator();
+	doc2.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator2);
+	doc2.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator2);
+	doc2.AddMember("删除数据库名称", StringRef(db_name.c_str()), doc_allocator2);
+	doc2.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator2);
+	doc2.AddMember("完成状态", StringRef(status.c_str()), doc_allocator2);
+	StringBuffer buffer2;
+	PrettyWriter<StringBuffer> writer2(buffer2);
+	doc2.Accept(writer2);
+	writeJobLog(job_logfp, buffer2.GetString());
+
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);
@@ -2988,6 +3137,10 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		return;
 	}
 	cout << "check privilege successfully." << endl;
+
+	// added by liangjianming in 2020.12.08
+	//int drop_start_time = Util::get_cur_time();
+	//string startTime = Util::get_date_time();
 
 	//check if the db_name is system
 	if (db_name == "system")
@@ -3078,6 +3231,60 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		cmd = "mv " + db_name + ".db " + db_name + ".bak";
 	system(cmd.c_str());
 	Util::delete_backuplog(db_name);
+
+	// added by liangjianming in 2020.12.08
+	drop_time = Util::get_cur_time()-drop_time;
+	string end_time = Util::get_date_time();
+
+	string remote_ip;
+	//get the real IP of the client, because we use nginx here
+	unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals> m=request->header;
+	string map_key = "X-Real-IP";
+	//for (auto it = m.begin(); it != m.end(); it ++){
+	pair<std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator,std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator> lu = m.equal_range(map_key);
+	if(lu.first != lu.second)
+		remote_ip = lu.first->second;
+	else
+		remote_ip = request->remote_endpoint_address;
+	cout << "remote_ip: " << remote_ip << endl;
+
+	if(remote_ip != TEST_IP){
+		Document doc;
+		doc.SetObject();
+		string operation = "dropdb";
+		string drop_log_type = "drop_log";
+		string DropTime = Util::int2string(drop_time) + "ms";
+		Document::AllocatorType &doc_allocator = doc.GetAllocator();
+		doc.AddMember("operation",StringRef(operation.c_str()),doc_allocator);
+		doc.AddMember("username",StringRef(username.c_str()),doc_allocator);
+		doc.AddMember("db_name",StringRef(db_name.c_str()),doc_allocator);
+		doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
+		doc.AddMember("DropDateTime", StringRef(start_time.c_str()), doc_allocator);
+		doc.AddMember("DropTime",StringRef(DropTime.c_str()),doc_allocator);
+		//doc.AddMember("QueryTime", StringRef(QueryTime.c_str()), doc_allocator);
+		StringBuffer buffer;
+		PrettyWriter<StringBuffer> writer(buffer);
+		doc.Accept(writer);
+		writeLog(query_logfp, buffer.GetString());
+
+		//added by liangjianing in 2020.12.23
+		Document doc1;
+		doc1.SetObject();
+		status = "已完成";
+		Document::AllocatorType& doc_allocator1 = doc1.GetAllocator();
+		doc1.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator1);
+		doc1.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator1);
+		doc1.AddMember("删除数据库名称", StringRef(db_name.c_str()), doc_allocator1);
+		doc1.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator1);
+		doc1.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator1);
+		doc1.AddMember("总耗时", StringRef(DropTime.c_str()), doc_allocator1);
+		doc1.AddMember("完成状态", StringRef(status.c_str()), doc_allocator1);
+		StringBuffer buffer1;
+		PrettyWriter<StringBuffer> writer1(buffer1);
+		doc1.Accept(writer1);
+		writeJobLog(job_logfp, buffer1.GetString());
+	}
+
 	return;
 }
 
@@ -3128,6 +3335,151 @@ void writeLog(FILE* fp, string _info)
 	query_log_lock.unlock();
 }
 
+// added by liangjianming in 2020.12.21
+void writeJobLog(FILE* fp, string _info)
+{
+	//Another way to locka many: lock(lk1, lk2...)
+	//query_log_lock.lock();
+	job_log_lock.lock();
+	fprintf(fp, "%s", _info.c_str());
+	Util::Csync(fp);
+	long logSize = ftell(fp);
+	cout << "logSize: " << logSize << endl;
+	//if log size too big, we create a new log file
+	if(logSize > MAX_QUERYLOG_size)
+	{
+		//close the old query log file
+		//fclose(query_logfp);
+		fclose(job_logfp);
+		//create and open a new query log file, then save the log name to name.log
+		string joblog_name = Util::get_date_time();
+		int index_space = joblog_name.find(' ');
+		joblog_name = joblog_name.replace(index_space, 1, 1, '_');
+		// string namelog_name = QUERYLOG_PATH + NAMELOG_PATH;
+		// FILE *name_logfp = fopen(namelog_name.c_str(), "w");
+		// fprintf(name_logfp, "%s", querylog_name.c_str());
+
+		jobLog = QUERYLOG_PATH + joblog_name + "job_log" +".log";
+		//queryLog = querylog_name;
+		cout << "jobLog: " << jobLog << endl;
+		job_logfp = fopen(jobLog.c_str(), "a");
+		if(job_logfp == NULL)
+		{
+			cerr << "open job log error"<<endl;
+		}
+	}
+	//another way to get the log file size
+	/*
+	struct stat statbuf;
+	stat(queryLog.c_str(), &statbuf);
+	int size = statbuf.st_size;
+	cout << "logSize in statbuf: " << size << endl;
+	*/
+	job_log_lock.unlock();
+}
+
+// added by liangjianming in 2020.12.08
+void writeLog1(FILE* fp, string _info, string log_type)
+{
+	//Another way to locka many: lock(lk1, lk2...)
+	//query_log_lock.lock();
+	if (log_type=="build_log"){
+		build_log_lock.lock();
+	}else if (log_type=="export_log"){
+		build_log_lock.lock();
+	}else if (log_type=="backup_log"){
+		backup_log_lock.lock();
+	}else if (log_type=="restore_log"){
+		restore_log_lock.lock();
+	}else if(log_type=="drop_log"){
+		drop_log_lock.lock();
+	}
+	fprintf(fp, "%s", _info.c_str());
+	Util::Csync(fp);
+	long logSize = ftell(fp);
+	cout << "logSize: " << logSize << endl;
+	//if log size too big, we create a new log file
+	if(logSize > MAX_QUERYLOG_size)
+	{
+		//close the old query log file
+		// fclose(query_logfp);
+		if (log_type=="build_log"){
+			fclose(build_logfp);
+		}else if (log_type=="export_log"){
+			fclose(export_logfp);
+		}else if (log_type=="backup_log"){
+			fclose(backup_logfp);
+		}else if (log_type=="restore_log"){
+			fclose(restore_logfp);
+		}else if(log_type=="drop_log"){
+			fclose(drop_logfp);
+		}
+		
+		//create and open a new query log file, then save the log name to name.log
+		string log_name = Util::get_date_time();
+		int index_space = log_name.find(' ');
+		log_name = log_name.replace(index_space, 1, 1, '_') + + "_" +log_type + ".log";
+		string namelog_name = QUERYLOG_PATH + NAMELOG_PATH;
+		FILE *name_logfp = fopen(namelog_name.c_str(), "w");
+		fprintf(name_logfp, "%s", log_name.c_str());
+
+		//queryLog = QUERYLOG_PATH + buildlog_name + log_type + ".log";
+		log_name = QUERYLOG_PATH + log_name;
+		////queryLog = querylog_name;
+		//cout << "querLog: " << queryLog << endl;
+		cout << log_type <<":"<<log_name<<endl;
+		//query_logfp = fopen(queryLog.c_str(), "a");
+		// 分类判断
+		if (log_type=="build_log"){
+			build_logfp=fopen(log_name.c_str(),"a");
+		}else if (log_type=="export_log"){
+			export_logfp=fopen(log_name.c_str(),"a");
+		}else if (log_type=="backup_log"){
+			backup_logfp=fopen(log_name.c_str(),"a");
+		}else if (log_type=="restore_log"){
+			restore_logfp=fopen(log_name.c_str(),"a");
+		}else if(log_type=="drop_log"){
+			drop_logfp=fopen(log_name.c_str(),"a");
+		}
+
+
+		// if(query_logfp == NULL)
+		// {
+		// 	cerr << "open query log error"<<endl;
+		// }
+		if (log_type=="build_log" && build_logfp == NULL){
+			cerr << "open build log error"<<endl;
+		}else if (log_type=="export_log" && export_logfp == NULL){
+			cerr << "open export log error"<<endl;
+		}else if (log_type=="backup_log" && backup_logfp == NULL){
+			cerr << "open backup log error"<<endl;
+		}else if (log_type=="restore_log" && restore_logfp == NULL){
+			cerr << "open restore log error"<<endl;
+		}else if(log_type=="drop_log" && drop_logfp == NULL){
+			cerr << "open delete log error"<<endl;
+		}
+	}
+	//another way to get the log file size
+	/*
+	struct stat statbuf;
+	stat(queryLog.c_str(), &statbuf);
+	int size = statbuf.st_size;
+	cout << "logSize in statbuf: " << size << endl;
+	*/
+	//query_log_lock.unlock();
+	if (log_type=="build_log"){
+		build_log_lock.unlock();
+	}else if (log_type=="export_log"){
+		build_log_lock.unlock();
+	}else if (log_type=="backup_log"){
+		backup_log_lock.unlock();
+	}else if (log_type=="restore_log"){
+		restore_log_lock.unlock();
+	}else if(log_type=="drop_log"){
+		drop_log_lock.unlock();
+	}
+}
+
 void export_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	if(!ipCheck(request)){
@@ -3168,6 +3520,26 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 		username = document["username"].GetString();
 		password = document["password"].GetString();
 	}
+
+	//added by liangjianming in 2020.12.23
+	string job_name = "HTTP: this is export";
+	string status = "已提交";
+	int id = rand() % (999 - 100 + 1) + 100;
+	string job_id = Util::get_timestamp() + Util::int2string(id);
+	string start_time = Util::get_date_time();
+	int export_time = Util::get_cur_time();
+	Document doc2;
+	doc2.SetObject();
+	Document::AllocatorType& doc_allocator2 = doc2.GetAllocator();
+	doc2.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator2);
+	doc2.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator2);
+	doc2.AddMember("导出数据库名称", StringRef(db_name.c_str()), doc_allocator2);
+	doc2.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator2);
+	doc2.AddMember("完成状态", StringRef(status.c_str()), doc_allocator2);
+	StringBuffer buffer2;
+	PrettyWriter<StringBuffer> writer2(buffer2);
+	doc2.Accept(writer2);
+	writeJobLog(job_logfp, buffer2.GetString());
 
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
@@ -3310,6 +3682,60 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 	string success = "Export the database successfully.";
 	string resJson = CreateJson(0, success, 0);
 	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+	// added by liangjianming in 2020.12.08
+	export_time = Util::get_cur_time()-export_time;
+	string time = Util::get_date_time();
+
+	string remote_ip;
+	//get the real IP of the client, because we use nginx here
+	unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals> m=request->header;
+	string map_key = "X-Real-IP";
+	//for (auto it = m.begin(); it != m.end(); it ++){
+	pair<std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator,std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator> lu = m.equal_range(map_key);
+	if(lu.first != lu.second)
+		remote_ip = lu.first->second;
+	else
+		remote_ip = request->remote_endpoint_address;
+	cout << "remote_ip: " << remote_ip << endl;
+
+	if(remote_ip != TEST_IP){
+		Document doc;
+		doc.SetObject();
+		string operation = "exportdb";
+		string export_log_type = "export_log";
+		string ExportTime = Util::int2string(export_time) + "ms";
+		Document::AllocatorType &doc_allocator = doc.GetAllocator();
+		doc.AddMember("operation",StringRef(operation.c_str()),doc_allocator);
+		doc.AddMember("username",StringRef(username.c_str()),doc_allocator);
+		doc.AddMember("db_name",StringRef(db_name.c_str()),doc_allocator);
+		doc.AddMember("export_nt_file_path",StringRef(db_path.c_str()),doc_allocator);
+		doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
+		doc.AddMember("ExportDateTime", StringRef(time.c_str()), doc_allocator);
+		doc.AddMember("ExportTime",StringRef(ExportTime.c_str()),doc_allocator);
+		//doc.AddMember("QueryTime", StringRef(QueryTime.c_str()), doc_allocator);
+		StringBuffer buffer;
+		PrettyWriter<StringBuffer> writer(buffer);
+		doc.Accept(writer);
+		writeLog(query_logfp, buffer.GetString());
+
+		//add by liangjianmimg in 2020.12.23
+		Document doc1;
+		doc1.SetObject();
+		status = "已完成";
+		Document::AllocatorType& doc_allocator1 = doc1.GetAllocator();
+		doc1.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator1);
+		doc1.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator1);
+		doc1.AddMember("导出数据库名称", StringRef(db_name.c_str()), doc_allocator1);
+		doc1.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator1);
+		doc1.AddMember("结束时间", StringRef(time.c_str()), doc_allocator1);
+		doc1.AddMember("总耗时", StringRef(ExportTime.c_str()), doc_allocator1);
+		doc1.AddMember("完成状态", StringRef(status.c_str()), doc_allocator1);
+		StringBuffer buffer1;
+		PrettyWriter<StringBuffer> writer1(buffer1);
+		doc1.Accept(writer1);
+		writeJobLog(job_logfp, buffer1.GetString());
+	}
 	
 	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 	return;
@@ -3339,6 +3765,26 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is query"<<endl;
 	//sleep(5);
+
+	//added by liangjianming in 2020.12.24
+	string job_name = "HTTP: this is query";
+	string status = "已提交";
+	int id = rand() % (999 - 100 + 1) + 100;
+	string job_id = Util::get_timestamp() + Util::int2string(id);
+	string start_time = Util::get_date_time();
+	int startTime = Util::get_cur_time();
+	Document doc2;
+	doc2.SetObject();
+	Document::AllocatorType& doc_allocator2 = doc2.GetAllocator();
+	doc2.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator2);
+	doc2.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator2);
+	doc2.AddMember("查询数据库名称", StringRef(db_name.c_str()), doc_allocator2);
+	doc2.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator2);
+	doc2.AddMember("完成状态", StringRef(status.c_str()), doc_allocator2);
+	StringBuffer buffer2;
+	PrettyWriter<StringBuffer> writer2(buffer2);
+	doc2.Accept(writer2);
+	writeJobLog(job_logfp, buffer2.GetString());
 
 //	string format = request->path_match[1];
 	//string format = "html";
@@ -3431,6 +3877,56 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 		cout << exception_msg;
 		string resJson = CreateJson(405, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+		//added by liangjianming in 2020.12.14
+		//string query_start_time = Util::get_date_time();
+		string remote_ip;
+		//get the real IP of the client, because we use nginx here
+		unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals> m=request->header;
+		string map_key = "X-Real-IP";
+		//for (auto it = m.begin(); it != m.end(); it ++){
+		pair<std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator,std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator> lu = m.equal_range(map_key);
+		if(lu.first != lu.second)
+			remote_ip = lu.first->second;
+		else
+			remote_ip = request->remote_endpoint_address;
+		cout << "remote_ip: " << remote_ip << endl;
+
+		//filter the IP from the test server
+		if(remote_ip != TEST_IP)
+		{
+			Document doc;
+			doc.SetObject();
+			Document::AllocatorType &doc_allocator = doc.GetAllocator();
+			doc.AddMember("QueryDateTime", StringRef(start_time.c_str()), doc_allocator);
+			doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
+			doc.AddMember("Sparql", StringRef(sparql.c_str()), doc_allocator);
+			doc.AddMember("db_name", StringRef(db_name.c_str()),doc_allocator);
+			doc.AddMember("Status", StringRef(content.c_str()),doc_allocator);
+			StringBuffer buffer;
+			PrettyWriter<StringBuffer> writer(buffer);
+			doc.Accept(writer);
+			writeLog(query_logfp, buffer.GetString());
+
+			//added by liangjianming in 2020.12.24
+			Document doc3;
+			doc3.SetObject();
+			status = "未完成，" + content;
+			string end_time = Util::get_date_time();
+			Document::AllocatorType& doc_allocator3 = doc3.GetAllocator();
+			doc3.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator3);
+			doc3.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator3);
+			doc3.AddMember("查询数据库名称", StringRef(db_name.c_str()), doc_allocator3);
+			doc3.AddMember("查询语句", StringRef(sparql.c_str()), doc_allocator3);
+			doc3.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator3);
+			doc3.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator3);
+			doc3.AddMember("完成状态", StringRef(status.c_str()), doc_allocator3);
+			StringBuffer buffer3;
+			PrettyWriter<StringBuffer> writer3(buffer3);
+			doc3.Accept(writer3);
+			writeJobLog(job_logfp, buffer3.GetString());
+		}
+
 		return;	
 	}
 	bool ret = false, update = false;
@@ -3498,6 +3994,28 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 			PrettyWriter<StringBuffer> writer(buffer);
 			doc.Accept(writer);
 			writeLog(query_logfp, buffer.GetString());
+
+			//added by liangjianming in 2020.12.24
+			Document doc4;
+			doc4.SetObject();
+			status = "已完成";
+			string end_time = Util::get_date_time();
+			startTime = Util::get_cur_time()- startTime;
+			string total = Util::int2string(startTime) + "ms";
+			Document::AllocatorType& doc_allocator4 = doc4.GetAllocator();
+			doc4.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator4);
+			doc4.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator4);
+			doc4.AddMember("查询数据库名称", StringRef(db_name.c_str()), doc_allocator4);
+			doc4.AddMember("查询语句", StringRef(sparql.c_str()), doc_allocator4);
+			doc4.AddMember("结果集数量", rs.ansNum, doc_allocator4);
+			doc4.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator4);
+			doc4.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator4);
+			doc4.AddMember("耗时", StringRef(total.c_str()) , doc_allocator4);
+			doc4.AddMember("完成状态", StringRef(status.c_str()), doc_allocator4);
+			StringBuffer buffer4;
+			PrettyWriter<StringBuffer> writer4(buffer4);
+			doc4.Accept(writer4);
+			writeJobLog(job_logfp, buffer4.GetString());
 		}
 
 
@@ -3622,6 +4140,62 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 		}
 		string resJson = CreateJson(error_code, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+		// add by liangjianming in 2020.12.08
+		string update_start_time = Util::get_date_time();
+		string remote_ip;
+		//get the real IP of the client, because we use nginx here
+		unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals> m=request->header;
+		string map_key = "X-Real-IP";
+		//for (auto it = m.begin(); it != m.end(); it ++){
+		pair<std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator,std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator> lu = m.equal_range(map_key);
+		if(lu.first != lu.second)
+			remote_ip = lu.first->second;
+		else
+			remote_ip = request->remote_endpoint_address;
+		cout << "remote_ip: " << remote_ip << endl;
+
+		//filter the IP from the test server
+		if(remote_ip != TEST_IP)
+		{
+			Document doc;
+			doc.SetObject();
+			Document::AllocatorType &doc_allocator = doc.GetAllocator();
+			doc.AddMember("UpdateDateTime", StringRef(update_start_time.c_str()), doc_allocator);
+			doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
+			doc.AddMember("UpdateDBName",StringRef(db_name.c_str()),doc_allocator);
+			doc.AddMember("Sparql", StringRef(sparql.c_str()), doc_allocator);
+			doc.AddMember("ExecutResult", StringRef(error.c_str()), doc_allocator);
+			doc.AddMember("UpdateNum", ret_val, doc_allocator);
+			string QueryTime = Util::int2string(query_time) + "ms";
+			doc.AddMember("UpdateTime", StringRef(QueryTime.c_str()), doc_allocator);
+			StringBuffer buffer;
+			PrettyWriter<StringBuffer> writer(buffer);
+			doc.Accept(writer);
+			writeLog(query_logfp, buffer.GetString());
+
+			//added by liangjianming in 2020.12.24
+			Document doc5;
+			doc5.SetObject();
+			status = "已完成";
+			string end_time = Util::get_date_time();
+			startTime = Util::get_cur_time() - startTime;
+			string total = Util::int2string(startTime) + "ms";
+			Document::AllocatorType& doc_allocator5 = doc5.GetAllocator();
+			doc5.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator5);
+			doc5.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator5);
+			doc5.AddMember("查询数据库名称", StringRef(db_name.c_str()), doc_allocator5);
+			doc5.AddMember("查询语句", StringRef(sparql.c_str()), doc_allocator5);
+			doc5.AddMember("更新数量", ret_val, doc_allocator5);
+			doc5.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator5);
+			doc5.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator5);
+			doc5.AddMember("耗时", StringRef(total.c_str()), doc_allocator5);
+			doc5.AddMember("完成状态", StringRef(status.c_str()), doc_allocator5);
+			StringBuffer buffer5;
+			PrettyWriter<StringBuffer> writer5(buffer5);
+			doc5.Accept(writer5);
+			writeJobLog(job_logfp, buffer5.GetString());
+		}
 		
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -3762,6 +4336,37 @@ bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Respo
 		string resJson = CreateJson(404, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
+		// added by liangjianming in 2020.12.14
+		string query_start_time = Util::get_date_time();
+		string remote_ip;
+		//get the real IP of the client, because we use nginx here
+		unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals> m=request->header;
+		string map_key = "X-Real-IP";
+		//for (auto it = m.begin(); it != m.end(); it ++){
+		pair<std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator,std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator> lu = m.equal_range(map_key);
+		if(lu.first != lu.second)
+			remote_ip = lu.first->second;
+		else
+			remote_ip = request->remote_endpoint_address;
+		cout << "remote_ip: " << remote_ip << endl;
+
+		//filter the IP from the test server
+		if(remote_ip != TEST_IP)
+		{
+			Document doc;
+			doc.SetObject();
+			Document::AllocatorType &doc_allocator = doc.GetAllocator();
+			doc.AddMember("QueryDateTime", StringRef(query_start_time.c_str()), doc_allocator);
+			doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
+			doc.AddMember("username", StringRef(username.c_str()),doc_allocator);
+			doc.AddMember("dbname", StringRef(db_name.c_str()),doc_allocator);
+			doc.AddMember("Sparql", StringRef(db_query.c_str()), doc_allocator);
+			doc.AddMember("Status", StringRef(error.c_str()), doc_allocator);
+			StringBuffer buffer;
+			PrettyWriter<StringBuffer> writer(buffer);
+			doc.Accept(writer);
+			writeLog(query_logfp, buffer.GetString());
+		}
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return false;
@@ -6255,6 +6860,26 @@ void backup_thread(const shared_ptr<HttpServer::Response>& response, const share
 		path = document["path"].GetString();
 	}
 
+	//added by liangjianming in 2020.12.23
+	string job_name = "HTTP: this is backup";
+	string status = "已提交";
+	int id = rand() % (999 - 100 + 1) + 100;
+	string job_id = Util::get_timestamp() + Util::int2string(id);
+	string start_time = Util::get_date_time();
+	int backup_time = Util::get_cur_time();
+	Document doc2;
+	doc2.SetObject();
+	Document::AllocatorType& doc_allocator2 = doc2.GetAllocator();
+	doc2.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator2);
+	doc2.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator2);
+	doc2.AddMember("备份数据库名称", StringRef(db_name.c_str()), doc_allocator2);
+	doc2.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator2);
+	doc2.AddMember("完成状态", StringRef(status.c_str()), doc_allocator2);
+	StringBuffer buffer2;
+	PrettyWriter<StringBuffer> writer2(buffer2);
+	doc2.Accept(writer2);
+	writeJobLog(job_logfp, buffer2.GetString());
+
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);
@@ -6293,6 +6918,10 @@ void backup_thread(const shared_ptr<HttpServer::Response>& response, const share
 		return;
 	}
 	cout << "check privilege successfully." << endl;
+
+	//added by liangjianming in 2020.12.08
+	//int backup_start_time = Util::get_cur_time();
+	//string startTime = Util::get_date_time();
 
 	//check if the db_name is system
 	if (db_name == "system")
@@ -6392,6 +7021,60 @@ void backup_thread(const shared_ptr<HttpServer::Response>& response, const share
 	string resJson = CreateJson(0, success, 0);
 	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 
+	// added by liangjianming in 2020.12.08
+	backup_time = Util::get_cur_time()-backup_time;
+	string end_time = Util::get_date_time();
+
+	string remote_ip;
+	//get the real IP of the client, because we use nginx here
+	unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals> m=request->header;
+	string map_key = "X-Real-IP";
+	//for (auto it = m.begin(); it != m.end(); it ++){
+	pair<std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator,std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator> lu = m.equal_range(map_key);
+	if(lu.first != lu.second)
+		remote_ip = lu.first->second;
+	else
+		remote_ip = request->remote_endpoint_address;
+	cout << "remote_ip: " << remote_ip << endl;
+
+	if(remote_ip != TEST_IP){
+		Document doc;
+		doc.SetObject();
+		string operation = "backupdb";
+		string drop_log_type = "backup_log";
+		string BackupTime = Util::int2string(backup_time) + "ms";
+		Document::AllocatorType &doc_allocator = doc.GetAllocator();
+		doc.AddMember("operation",StringRef(operation.c_str()),doc_allocator);
+		doc.AddMember("username",StringRef(username.c_str()),doc_allocator);
+		doc.AddMember("backup_db_name",StringRef(db_name.c_str()),doc_allocator);
+		doc.AddMember("backup_path",StringRef(path.c_str()),doc_allocator);
+		doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
+		doc.AddMember("BackupDateTime", StringRef(start_time.c_str()), doc_allocator);
+		doc.AddMember("BackupTime",StringRef(BackupTime.c_str()),doc_allocator);
+		//doc.AddMember("QueryTime", StringRef(QueryTime.c_str()), doc_allocator);
+		StringBuffer buffer;
+		PrettyWriter<StringBuffer> writer(buffer);
+		doc.Accept(writer);
+		writeLog(query_logfp, buffer.GetString());
+
+		// added by liangjianming in 2020.12.23
+		Document doc1;
+		doc1.SetObject();
+		status = "已完成";
+		Document::AllocatorType& doc_allocator1 = doc1.GetAllocator();
+		doc1.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator1);
+		doc1.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator1);
+		doc1.AddMember("备份数据库名称", StringRef(db_name.c_str()), doc_allocator1);
+		doc1.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator1);
+		doc1.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator1);
+		doc1.AddMember("总耗时", StringRef(BackupTime.c_str()), doc_allocator1);
+		doc1.AddMember("完成状态", StringRef(status.c_str()), doc_allocator1);
+		StringBuffer buffer1;
+		PrettyWriter<StringBuffer> writer1(buffer1);
+		doc1.Accept(writer1);
+		writeJobLog(job_logfp, buffer1.GetString());
+	}
+
 	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 }
 
@@ -6448,6 +7131,26 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		path = document["path"].GetString();
 	}
 
+	//added by liangjianming in 2020.12.23
+	string job_name = "HTTP: this is restore";
+	string status = "已提交";
+	int id = rand() % (999 - 100 + 1) + 100;
+	string job_id = Util::get_timestamp() + Util::int2string(id);
+	string start_time = Util::get_date_time();
+	int restore_time = Util::get_cur_time();
+	Document doc2;
+	doc2.SetObject();
+	Document::AllocatorType& doc_allocator2 = doc2.GetAllocator();
+	doc2.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator2);
+	doc2.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator2);
+	doc2.AddMember("还原数据库名称", StringRef(db_name.c_str()), doc_allocator2);
+	doc2.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator2);
+	doc2.AddMember("完成状态", StringRef(status.c_str()), doc_allocator2);
+	StringBuffer buffer2;
+	PrettyWriter<StringBuffer> writer2(buffer2);
+	doc2.Accept(writer2);
+	writeJobLog(job_logfp, buffer2.GetString());
+
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);
@@ -6487,6 +7190,10 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		return;
 	}
 	cout << "check privilege successfully." << endl;
+
+	//added by liangjianming in 2020.12.08
+	//int restore_start_time = Util::get_cur_time();
+	//string startTime = Util::get_date_time();
 
 	//check if the db_name is system
 	if (db_name == "system")
@@ -6616,6 +7323,60 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	string success = "Database restore successfully.";
 	string resJson = CreateJson(0, success, 0);
 	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+
+	//added by liangjianming in 2020.12.08
+	restore_time = Util::get_cur_time()-restore_time;
+	string end_time = Util::get_date_time();
+
+	string remote_ip;
+	//get the real IP of the client, because we use nginx here
+	unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals> m=request->header;
+	string map_key = "X-Real-IP";
+	//for (auto it = m.begin(); it != m.end(); it ++){
+	pair<std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator,std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator> lu = m.equal_range(map_key);
+	if(lu.first != lu.second)
+		remote_ip = lu.first->second;
+	else
+		remote_ip = request->remote_endpoint_address;
+	cout << "remote_ip: " << remote_ip << endl;
+
+	if(remote_ip != TEST_IP){
+		Document doc;
+		doc.SetObject();
+		string operation = "restoredb";
+		string restore_log_type = "restore_log";
+		string RestoreTime = Util::int2string(restore_time) + "ms";
+		Document::AllocatorType &doc_allocator = doc.GetAllocator();
+		doc.AddMember("operation",StringRef(operation.c_str()),doc_allocator);
+		doc.AddMember("username",StringRef(username.c_str()),doc_allocator);
+		doc.AddMember("restore_db_name",StringRef(db_name.c_str()),doc_allocator);
+		doc.AddMember("backup_db_name",StringRef(path.c_str()),doc_allocator);
+		doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
+		doc.AddMember("RestoreDateTime", StringRef(start_time.c_str()), doc_allocator);
+		doc.AddMember("RestoreTime",StringRef(RestoreTime.c_str()),doc_allocator);
+		//doc.AddMember("QueryTime", StringRef(QueryTime.c_str()), doc_allocator);
+		StringBuffer buffer;
+		PrettyWriter<StringBuffer> writer(buffer);
+		doc.Accept(writer);
+		writeLog(query_logfp, buffer.GetString());
+
+		//added by liangjianmimg in 2020.12.23
+		Document doc1;
+		doc1.SetObject();
+		status = "已完成";
+		Document::AllocatorType& doc_allocator1 = doc1.GetAllocator();
+		doc1.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator1);
+		doc1.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator1);
+		doc1.AddMember("还原数据库名称", StringRef(db_name.c_str()), doc_allocator1);
+		doc1.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator1);
+		doc1.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator1);
+		doc1.AddMember("总耗时", StringRef(RestoreTime.c_str()), doc_allocator1);
+		doc1.AddMember("完成状态", StringRef(status.c_str()), doc_allocator1);
+		StringBuffer buffer2;
+		PrettyWriter<StringBuffer> writer2(buffer2);
+		doc1.Accept(writer2);
+		writeJobLog(job_logfp, buffer2.GetString());
+	}
 
 		
 }
