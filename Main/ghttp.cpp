@@ -28,6 +28,9 @@
 #include "../tools/rapidjson/stringbuffer.h"
 #include <iostream>
 #include <fstream>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "../Util/IPWhiteList.h"
 #include "../Util/IPBlackList.h"
 
@@ -54,6 +57,8 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define TEST_IP "106.13.13.193"
 #define DB_PATH "."
 #define BACKUP_PATH "./backups"
+#define MEM_THRESHOLD 0.1
+#define CPU_THRESHOLD 0.95
 
 int initialize(int argc, char *argv[]);
 int copy(string src_path, string dest_path);
@@ -189,6 +194,9 @@ Database *system_database;
 std::map<std::string, Database *> databases;
 std::map<std::string, shared_ptr<Txn_manager>> txn_managers;
 std::map<std::string, txn_id_t> running_txn;
+
+atomic<double> cpu_occupy_ratio;
+
 //database information
 struct DBInfo{
 	private:
@@ -425,6 +433,7 @@ int connection_num = 0;
 
 long next_backup = 0;
 pthread_t scheduler = 0;
+pthread_t cpu_query_scheduler = 0;
 
 int query_num = 0;
 //WARN: if the response or request is freed by main thread
@@ -507,6 +516,177 @@ bool ipCheck(const shared_ptr<HttpServer::Request>& request){
 		return ipBlackList->Check(remote_ip);
 	}
 	return true;
+}
+
+typedef struct MEMPACKED
+{
+	char name1[20];
+	unsigned long MemTotal;
+	char name2[20];
+	unsigned long MemFree;
+	char name3[20];
+	unsigned long Buffers;
+	char name4[20];
+	unsigned long Cached;
+	char name5[20];
+	unsigned long MemAvailable;
+
+}MEM_OCCUPY;
+
+typedef struct CPUPACKED         //定义一个cpu occupy的结构体
+{
+	char name[20];      //定义一个char类型的数组名name有20个元素
+	unsigned int user; //定义一个无符号的int类型的user
+	unsigned int nice; //定义一个无符号的int类型的nice
+	unsigned int system;//定义一个无符号的int类型的system
+	unsigned int idle; //定义一个无符号的int类型的idle
+	unsigned int iowait;
+	unsigned int irq;
+	unsigned int softirq;
+}CPU_OCCUPY;
+
+typedef struct os_line_data
+{
+	char * val;
+	int    len;
+} os_line_data;
+
+static char * os_getline(char *sin, os_line_data * line, char delim)
+{
+	char *out = sin;
+	if (*out == '\0') return NULL;
+	line->val = out;
+	while (*out && (*out != delim)) { out++; }
+	line->len = out - line->val;
+	if (*out && (*out == delim)) { out++; }
+	if (*out == '\0') return NULL;
+	return out;
+}
+int Parser_EnvInfo(char * buffer,int size ,MEM_OCCUPY * lpMemory)
+{
+	int    state = 0;
+	char * p     = buffer;
+	while (p)
+	{
+		os_line_data       line = { 0 };
+		p = os_getline(p, &line, ':');
+		if (p == NULL || line.len <= 0) continue;
+
+		if (line.len == 8&& strncmp(line.val, "MemTotal", 8) == 0)
+		{
+			char *point = strtok(p," ");
+			memcpy(lpMemory->name1,"MemTotal",8);
+			lpMemory->MemTotal = atol(point);
+
+		}
+		else if(line.len == 7&& strncmp(line.val, "MemFree", 7) == 0)
+		{
+			char *point = strtok(p," ");
+			memcpy(lpMemory->name2,"MemFree",7);
+			lpMemory->MemFree = atol(point);
+		}
+		else if(line.len == 7&& strncmp(line.val, "Buffers", 7) == 0)
+		{
+			char *point = strtok(p," ");
+			memcpy(lpMemory->name3,"Buffers",7);
+			lpMemory->Buffers = atol(point);
+		}
+		else if(line.len == 6&& strncmp(line.val, "Cached", 6) == 0)
+		{
+			char *point = strtok(p," ");
+			memcpy(lpMemory->name4,"Cached",6);
+			lpMemory->Cached = atol(point);
+		}
+		else if(line.len == 12&& strncmp(line.val, "MemAvailable", 12) == 0)
+		{
+			char *point = strtok(p," ");
+			memcpy(lpMemory->name5,"MemAvailable",12);
+			lpMemory->MemAvailable = atol(point);
+		}
+
+	}
+}
+
+int  get_procmeminfo(MEM_OCCUPY * lpMemory)
+{
+	FILE *fd;
+	char buff[128]={0};
+	fd = fopen("/proc/meminfo", "r");
+	if(fd <0) return -1;
+	fgets(buff, sizeof(buff), fd);
+	Parser_EnvInfo(buff,sizeof(buff),lpMemory);
+
+	fgets(buff, sizeof(buff), fd);
+	Parser_EnvInfo(buff,sizeof(buff),lpMemory);
+
+	fgets(buff, sizeof(buff), fd);
+	Parser_EnvInfo(buff,sizeof(buff),lpMemory);
+
+	fgets(buff, sizeof(buff), fd);
+	Parser_EnvInfo(buff,sizeof(buff),lpMemory);
+
+	fgets(buff, sizeof(buff), fd);
+	Parser_EnvInfo(buff,sizeof(buff),lpMemory);
+
+	fclose(fd);
+
+}
+
+int get_cpuoccupy(CPU_OCCUPY *cpust) //对无类型get函数含有一个形参结构体类弄的指针O
+{
+	FILE *fd;
+	char buff[256];
+	CPU_OCCUPY *cpu_occupy;
+	cpu_occupy = cpust;
+
+	fd = fopen("/proc/stat", "r");
+	fgets(buff, sizeof(buff), fd);
+
+	sscanf(buff, "%s %u %u %u %u %u %u %u", cpu_occupy->name, &cpu_occupy->user, &cpu_occupy->nice, &cpu_occupy->system, &cpu_occupy->idle, &cpu_occupy->iowait, &cpu_occupy->irq, &cpu_occupy->softirq);
+
+
+	fclose(fd);
+
+	return 0;
+}
+
+
+double cal_cpuoccupy(CPU_OCCUPY *o, CPU_OCCUPY *n)
+{
+	unsigned long od, nd, id, sd;
+	double cpu_use = 0.0;
+
+	od = (unsigned long)(o->user + o->nice + o->system + o->idle + o->iowait + o->irq + o->softirq);//第一次(用户+优先级+系统+空闲)的时间再赋给od
+	nd = (unsigned long)(n->user + n->nice + n->system + n->idle + n->iowait + n->irq + n->softirq);//第二次(用户+优先级+系统+空闲)的时间再赋给od
+
+	id = (unsigned long)(n->user - o->user);
+	sd = (unsigned long)(n->system - o->system);
+	if ((nd - od)!=0)
+		cpu_use = (double)(sd+id) / (double)(nd - od);
+	return cpu_use;
+}
+void* get_cpu_occupy_ratio(void* _args)
+{
+	while (true) {
+		CPU_OCCUPY cpu_stat1;
+		CPU_OCCUPY cpu_stat2;
+		//第一次获取cpu使用情况
+		get_cpuoccupy((CPU_OCCUPY *) &cpu_stat1);
+		sleep(2);
+
+		//第二次获取cpu使用情况
+		get_cpuoccupy((CPU_OCCUPY *) &cpu_stat2);
+
+		//计算cpu使用率
+		cpu_occupy_ratio = cal_cpuoccupy((CPU_OCCUPY *) &cpu_stat1, (CPU_OCCUPY *) &cpu_stat2);
+	}
+}
+
+double get_Memory_available_ratio()
+{
+	MEM_OCCUPY * lpMemory = new MEM_OCCUPY();
+	get_procmeminfo(lpMemory);
+	return lpMemory->MemAvailable * 1.0 / ( lpMemory->MemTotal * 1.0  );
 }
 
 class Task
@@ -1312,6 +1492,7 @@ int initialize(int argc, char *argv[])
 //TODO: we give up the backup function here
 #ifndef ONLY_READ
 	scheduler = start_thread(backup_scheduler);
+	cpu_query_scheduler = start_thread(get_cpu_occupy_ratio);
 #endif
 
 	pool.create();
@@ -2117,6 +2298,25 @@ void delete_thread(const shared_ptr<HttpServer::Response>& response, const share
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<< "HTTP: this is delete" << endl;
@@ -2200,6 +2400,25 @@ void download_thread(const HttpServer& server, const shared_ptr<HttpServer::Resp
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is download" << endl;
@@ -2280,6 +2499,25 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -2503,6 +2741,25 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -2739,6 +2996,25 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is unload"<<endl;
@@ -2915,6 +3191,25 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -3138,6 +3433,25 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is export" << endl;
@@ -3329,6 +3643,25 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -3869,6 +4202,25 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is monitor"<<endl;
@@ -4022,6 +4374,25 @@ void default_thread(const HttpServer& server, const shared_ptr<HttpServer::Respo
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is default"<<endl;
@@ -4122,6 +4493,25 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return false;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is check" << endl;
@@ -4195,6 +4585,25 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return false;
 	}
@@ -4329,6 +4738,25 @@ bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return false;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is stop"<<endl;
@@ -4378,6 +4806,25 @@ void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const s
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -4549,6 +4996,25 @@ bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return false;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is checkall"<<endl;
@@ -4617,6 +5083,25 @@ void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -4864,6 +5349,25 @@ void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is show" << endl;
@@ -4986,6 +5490,25 @@ void getCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is getCoreVersion" << endl;
@@ -5073,6 +5596,25 @@ void setAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, cons
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -5168,6 +5710,25 @@ void setCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is setCoreVersion" << endl;
@@ -5251,6 +5812,25 @@ void initVersion_thread(const shared_ptr<HttpServer::Response>& response, const 
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -5375,6 +5955,25 @@ void getAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, cons
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is getAPIVersion" << endl;
@@ -5462,6 +6061,25 @@ void showUser_thread(const shared_ptr<HttpServer::Response>& response, const sha
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -6221,6 +6839,25 @@ void backup_thread(const shared_ptr<HttpServer::Response>& response, const share
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -6411,6 +7048,25 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -6637,6 +7293,25 @@ void incbackup_thread(const shared_ptr<HttpServer::Response>& response, const sh
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -6805,6 +7480,25 @@ void increstore_thread(const shared_ptr<HttpServer::Response>& response, const s
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -7029,6 +7723,25 @@ void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -7201,6 +7914,25 @@ void parameter_thread(const shared_ptr<HttpServer::Response>& response, const sh
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -7344,6 +8076,25 @@ void refresh_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -7410,6 +8161,25 @@ void tquery_thread(const shared_ptr<HttpServer::Response>& response, const share
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -7652,6 +8422,25 @@ void begin_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -7838,6 +8627,25 @@ void commit_thread(const shared_ptr<HttpServer::Response>& response, const share
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
@@ -8042,6 +8850,25 @@ void rollback_thread(const shared_ptr<HttpServer::Response>& response, const sha
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -8241,6 +9068,25 @@ void txnlog_thread(const shared_ptr<HttpServer::Response>& response, const share
 		string content="IP Blocked!";
 
 		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	double mem_avail = get_Memory_available_ratio();
+	if(mem_avail<MEM_THRESHOLD)
+	{
+		cout<<"Low Memory available ratio: "<<mem_avail<<endl;
+		string content="Low Memory available ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(cpu_occupy_ratio > CPU_THRESHOLD)
+	{
+		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
+		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
