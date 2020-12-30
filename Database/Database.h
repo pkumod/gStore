@@ -133,6 +133,8 @@ private:
 	mutex allocLiteralID_lock;
 	//for allocPredicateID
 	mutex allocPredicateID_lock;
+	//for log file
+	mutex log_lock;
 	
 	VSTree* vstree;
 	KVstore* kvstore;
@@ -310,6 +312,7 @@ private:
 	static int read_update_log(const string _path, multiset<string>& _i, multiset<string>& _r);
 	bool restore_update(multiset<string>& _i, multiset<string>& _r);
 	void clear_update_log();
+	bool write_update_log(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, int type, shared_ptr<Transaction> txn);
 };
 
 #endif //_DATABASE_DATABASE_H

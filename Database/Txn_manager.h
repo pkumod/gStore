@@ -36,11 +36,14 @@ private:
 	//locks
 	mutex log_lock;
 	Latch checkpoint_lock;
+	Latch table_lock;
 	//not used
 	mutex db_lock;
 	
+	vector<IDSet> DirtyKeys;
 	bool add_transaction(txn_id_t TID, shared_ptr<Transaction> txn);
-	
+	shared_ptr<Transaction> get_transaction(txn_id_t TID);
+
 	inline txn_id_t ArrangeTID();
 	inline txn_id_t ArrangeCommitID();
 	
@@ -55,6 +58,7 @@ private:
 	inline void lock_db() { db_lock.lock(); }
 	inline void unlock_db() { db_lock.unlock(); }
 	
+	void add_dirty_keys(shared_ptr<Transaction> txn);
 public:
 	Txn_manager(Txn_manager const&) = delete;
 	Txn_manager(Database* db, string db_name);

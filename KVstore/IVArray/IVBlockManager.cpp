@@ -125,7 +125,7 @@ IVBlockManager::ReadValue(unsigned _blk_index, char *&_str, unsigned long&_len)
 {
 	if (_blk_index <= 0)
 	{
-		cout << "ReadValue Error: Block index <= 0." << endl; 
+		//cout << "ReadValue Error: Block index <= 0." << endl; 
 		_str = NULL;
 		_len = 0;
 		return false;

@@ -552,7 +552,7 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 {
 	ArraySharedLock();
 	//printf("%s search %d: ", filename.c_str(), _key);
-	if (_key >= CurEntryNum ||!array[_key].isUsed())
+	if (_key >= CurEntryNum)
 	{
 		_str = NULL;
 		_len = 0;
@@ -562,9 +562,18 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 	}
 	// try to read in main memory
 	bool ret = array[_key].readVersion(AddSet, DelSet, txn, is_firstread);
+	bool is_empty = AddSet.size() == 0 && DelSet.size() == 0;
+	if(is_empty && !array[_key].isUsed())
+	{
+		//cerr << "empty entry!" << endl;
+		ArrayUnlock();
+		return false;
+	}
 	if(ret == false) {
 		cerr << "read version failed, query abort" << endl;
 		txn->SetState(TransactionState::ABORTED);
+		ArrayUnlock();
+		return false;
 	}
 	this->CacheLock.lock();
 	if (array[_key].inCache())
@@ -572,7 +581,7 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 		UpdateTime(_key);
 		this->CacheLock.unlock();
 		bool ret = array[_key].getBstr(_str, _len);
-		cout << ret << endl;
+		//cout << ret << endl;
 		//_str maybe nullptr
 		//cout << "get base str success......................................................" << endl;
 		ArrayUnlock();
@@ -617,7 +626,7 @@ bool
 IVArray::remove(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn)
 {
 	ArraySharedLock();
-	if (_key < CurEntryNum && array[_key].isUsed())
+	if (_key < CurEntryNum)
 	{
 		//check if first remove
 		VDataSet addset;
@@ -639,19 +648,19 @@ bool
 IVArray::insert(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn)
 {
 	ArraySharedLock();
-	if(_key >= CurEntryNum) return false; //not happen
+	if(_key >= CurEntryNum) {
+		ArrayUnlock();
+		return false; //not happen
+	}
 	VDataSet delset;
 	delset.clear();
 	//check if first insert 
 	//array[_key].setDirtyFlag(true);
-	array[_key].setVersionFlag();
 	int ret = array[_key].writeVersion(delta, delset, txn);
 	if(ret != 1) {
 		cerr << "write version failed!" << endl;
 		txn->SetState(TransactionState::ABORTED);
 	}
-	if(!array[_key].isUsed()) 
-		array[_key].setUsedFlag(true);
 	//cout << "array[_key].inCache()" << array[_key].inCache() << endl;
 	ArrayUnlock();
 	return ret;
@@ -673,7 +682,7 @@ IVArray::TryExclusiveLock(unsigned _key, shared_ptr<Transaction> txn, bool has_r
 			return 0;
 		}
 		ArrayUnlock();
-		ArrayExclusiveLock();
+ 		ArrayExclusiveLock(); 
 		if(_key >= CurEntryNum) //recheck
 		{
 			CurEntryNumChange = true;
@@ -698,9 +707,11 @@ IVArray::TryExclusiveLock(unsigned _key, shared_ptr<Transaction> txn, bool has_r
 			array = newp;
 		}
 		ArrayUnlock();
+		//cerr << "Array lock downgrade !" << endl;
+		ArraySharedLock();
 	}
-	ArraySharedLock();
 	assert(_key < CurEntryNum);
+	
 	int ret = array[_key].getExclusiveLatch(txn, has_read);
 	ArrayUnlock();
 	return ret;
@@ -721,7 +732,7 @@ IVArray::ReleaseExclusiveLock(unsigned _key, shared_ptr<Transaction> txn, bool h
 bool 
 IVArray::ReleaseLatch(unsigned _key, shared_ptr<Transaction> txn, IVEntry::LatchType type)
 {
-	if (_key >= CurEntryNum || !array[_key].isUsed() )
+	if (_key >= CurEntryNum)
 	{
 		return false;
 	}
@@ -731,12 +742,13 @@ IVArray::ReleaseLatch(unsigned _key, shared_ptr<Transaction> txn, IVEntry::Latch
 bool
 IVArray::rollback(unsigned _key, shared_ptr<Transaction> txn, bool has_read)
 {
-	if (_key >= CurEntryNum || !array[_key].isUsed() || !array[_key].isVersioned())
+	if (_key >= CurEntryNum)
 	{
 		return false;
 	}
 	//bool delete_ret = array[_key].deleteUnCommittedVersion(txn);
 	bool delete_ret = array[_key].invalidExlusiveLatch(txn, has_read);
+	//cerr << "delete_retdelete_ret TID:" << txn->GetTID() << " " << _key << "    " << delete_ret << endl;
 	//bool unlock_ret = array[_key].releaseExlusiveLock(txn);
 	return delete_ret;
 }
