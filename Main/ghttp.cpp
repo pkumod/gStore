@@ -2600,6 +2600,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	Document::AllocatorType & doc_allocator2 = doc2.GetAllocator();
 	doc2.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator2);
 	doc2.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator2);
+	doc2.AddMember("用户", StringRef(username.c_str()), doc_allocator2);
 	doc2.AddMember("创建数据库名称", StringRef(db_name.c_str()), doc_allocator2);
 	doc2.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator2);
 	doc2.AddMember("完成状态", StringRef(status.c_str()), doc_allocator2);
@@ -2747,6 +2748,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		string end_time = Util::get_date_time();
 		doc3.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator3);
 		doc3.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator3);
+		doc3.AddMember("用户", StringRef(username.c_str()), doc_allocator3);
 		doc3.AddMember("创建数据库名称", StringRef(db_name.c_str()), doc_allocator3);
 		doc3.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator3);
 		doc3.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator3);
@@ -2844,6 +2846,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		Document::AllocatorType &doc_allocator1 = doc1.GetAllocator();
 		doc1.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator1);
 		doc1.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator1);
+		doc1.AddMember("用户", StringRef(username.c_str()), doc_allocator1);
 		doc1.AddMember("创建数据库名称", StringRef(db_name.c_str()), doc_allocator1);
 		doc1.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator1);
 		doc1.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator1);
@@ -3385,6 +3388,7 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	Document::AllocatorType& doc_allocator2 = doc2.GetAllocator();
 	doc2.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator2);
 	doc2.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator2);
+	doc2.AddMember("用户", StringRef(username.c_str()), doc_allocator2);
 	doc2.AddMember("删除数据库名称", StringRef(db_name.c_str()), doc_allocator2);
 	doc2.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator2);
 	doc2.AddMember("完成状态", StringRef(status.c_str()), doc_allocator2);
@@ -3569,6 +3573,7 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		Document::AllocatorType& doc_allocator1 = doc1.GetAllocator();
 		doc1.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator1);
 		doc1.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator1);
+		doc1.AddMember("用户", StringRef(username.c_str()), doc_allocator1);
 		doc1.AddMember("删除数据库名称", StringRef(db_name.c_str()), doc_allocator1);
 		doc1.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator1);
 		doc1.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator1);
@@ -3847,6 +3852,7 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 	Document::AllocatorType& doc_allocator2 = doc2.GetAllocator();
 	doc2.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator2);
 	doc2.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator2);
+	doc2.AddMember("用户", StringRef(username.c_str()), doc_allocator2);
 	doc2.AddMember("导出数据库名称", StringRef(db_name.c_str()), doc_allocator2);
 	doc2.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator2);
 	doc2.AddMember("完成状态", StringRef(status.c_str()), doc_allocator2);
@@ -4040,7 +4046,9 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 		Document::AllocatorType& doc_allocator1 = doc1.GetAllocator();
 		doc1.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator1);
 		doc1.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator1);
+		doc1.AddMember("用户", StringRef(username.c_str()), doc_allocator1);
 		doc1.AddMember("导出数据库名称", StringRef(db_name.c_str()), doc_allocator1);
+		doc1.AddMember("导出文件路径", StringRef(db_path.c_str()), doc_allocator1);
 		doc1.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator1);
 		doc1.AddMember("结束时间", StringRef(time.c_str()), doc_allocator1);
 		doc1.AddMember("总耗时", StringRef(ExportTime.c_str()), doc_allocator1);
@@ -7509,6 +7517,7 @@ void backup_thread(const shared_ptr<HttpServer::Response>& response, const share
 	Document::AllocatorType& doc_allocator2 = doc2.GetAllocator();
 	doc2.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator2);
 	doc2.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator2);
+	doc2.AddMember("用户", StringRef(username.c_str()), doc_allocator2);
 	doc2.AddMember("备份数据库名称", StringRef(db_name.c_str()), doc_allocator2);
 	doc2.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator2);
 	doc2.AddMember("完成状态", StringRef(status.c_str()), doc_allocator2);
@@ -7701,7 +7710,9 @@ void backup_thread(const shared_ptr<HttpServer::Response>& response, const share
 		Document::AllocatorType& doc_allocator1 = doc1.GetAllocator();
 		doc1.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator1);
 		doc1.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator1);
+		doc1.AddMember("用户", StringRef(username.c_str()), doc_allocator1);
 		doc1.AddMember("备份数据库名称", StringRef(db_name.c_str()), doc_allocator1);
+		doc1.AddMember("备份路径", StringRef(path.c_str()), doc_allocator1);
 		doc1.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator1);
 		doc1.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator1);
 		doc1.AddMember("总耗时", StringRef(BackupTime.c_str()), doc_allocator1);
@@ -7799,6 +7810,7 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	Document::AllocatorType& doc_allocator2 = doc2.GetAllocator();
 	doc2.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator2);
 	doc2.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator2);
+	doc2.AddMember("用户", StringRef(username.c_str()), doc_allocator2);
 	doc2.AddMember("还原数据库名称", StringRef(db_name.c_str()), doc_allocator2);
 	doc2.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator2);
 	doc2.AddMember("完成状态", StringRef(status.c_str()), doc_allocator2);
@@ -8023,6 +8035,7 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		Document::AllocatorType& doc_allocator1 = doc1.GetAllocator();
 		doc1.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator1);
 		doc1.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator1);
+		doc1.AddMember("用户", StringRef(username.c_str()), doc_allocator1);
 		doc1.AddMember("还原数据库名称", StringRef(db_name.c_str()), doc_allocator1);
 		doc1.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator1);
 		doc1.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator1);
