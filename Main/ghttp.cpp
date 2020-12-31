@@ -4633,6 +4633,28 @@ bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	cout<<"check: "<<db_query<<endl;
 	string str = db_query;
 
+	//added by liangjianming in 2020.12.31
+	string job_name = "HTTP: this is query";
+	string status = "已提交";
+	int id = rand() % (999 - 100 + 1) + 100;
+	string job_id = Util::get_timestamp() + Util::int2string(id);
+	string start_time = Util::get_date_time();
+	int startTime = Util::get_cur_time();
+	Document doc2;
+	doc2.SetObject();
+	Document::AllocatorType& doc_allocator2 = doc2.GetAllocator();
+	doc2.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator2);
+	doc2.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator2);
+	doc2.AddMember("用户", StringRef(username.c_str()), doc_allocator2);
+	doc2.AddMember("查询数据库名称", StringRef(db_name.c_str()), doc_allocator2);
+	doc2.AddMember("查询语句", StringRef(db_query.c_str()), doc_allocator2);
+	doc2.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator2);
+	doc2.AddMember("完成状态", StringRef(status.c_str()), doc_allocator2);
+	StringBuffer buffer2;
+	PrettyWriter<StringBuffer> writer2(buffer2);
+	doc2.Accept(writer2);
+	writeJobLog(job_logfp, buffer2.GetString());
+
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct User *>::iterator it = users.find(username);
@@ -4707,6 +4729,26 @@ bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Respo
 			PrettyWriter<StringBuffer> writer(buffer);
 			doc.Accept(writer);
 			writeLog(query_logfp, buffer.GetString());
+
+			//added by liangjianming in 2020.12.31
+			Document doc3;
+			doc3.SetObject();
+			status = "未完成，" + error;
+			string end_time = Util::get_date_time();
+			Document::AllocatorType& doc_allocator3 = doc3.GetAllocator();
+			doc3.AddMember("作业id", StringRef(job_id.c_str()), doc_allocator3);
+			doc3.AddMember("作业名称", StringRef(job_name.c_str()), doc_allocator3);
+			doc3.AddMember("用户", StringRef(username.c_str()), doc_allocator3);
+			doc3.AddMember("查询数据库名称", StringRef(db_name.c_str()), doc_allocator3);
+			doc3.AddMember("查询语句", StringRef(db_query.c_str()), doc_allocator3);
+			doc3.AddMember("开始时间", StringRef(start_time.c_str()), doc_allocator3);
+			doc3.AddMember("结束时间", StringRef(end_time.c_str()), doc_allocator3);
+			doc3.AddMember("完成状态", StringRef(status.c_str()), doc_allocator3);
+			StringBuffer buffer3;
+			PrettyWriter<StringBuffer> writer3(buffer3);
+			doc3.Accept(writer3);
+			writeJobLog(job_logfp, buffer3.GetString());
+
 		}
 		
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
@@ -5881,16 +5923,45 @@ void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 			string subType = type.substr(4, len-4);
 			cout << "subType: " << subType << endl;
 			string db_name = addition;
+
+			// added by liangjianming in 2020.12.31
+			Document doc;
+			doc.SetObject();
+			string status = "success";
+			string operation = "addPrivilege";
+			string export_log_type = "addPrivilege_log";
+			string addTime = Util::get_date_time();
+			Document::AllocatorType& doc_allocator = doc.GetAllocator();
+			doc.AddMember("operation", StringRef(operation.c_str()), doc_allocator);
+			doc.AddMember("admin", StringRef(username1.c_str()), doc_allocator);
+			doc.AddMember("username2", StringRef(username2.c_str()), doc_allocator);
+			doc.AddMember("db_name", StringRef(db_name.c_str()), doc_allocator);
+			doc.AddMember("type", StringRef(type.c_str()), doc_allocator);
+			doc.AddMember("addTime", StringRef(addTime.c_str()), doc_allocator);
+
 			if(addPrivilege(username2, subType, db_name) == 0)
 			{
 				string error = "add privilege failed.";
 				string resJson = CreateJson(911, error, 0);
 				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
+				
+				//added by liangjianming in 2020.12.31
+				status = error;
+				doc.AddMember("status", StringRef(status.c_str()), doc_allocator);
+				StringBuffer buffer;
+				PrettyWriter<StringBuffer> writer(buffer);
+				doc.Accept(writer);
+				writeLog(query_logfp, buffer.GetString());
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 				return;
 			}
+			// added by liangjianming in 2020.12.31
+			doc.AddMember("status", StringRef(status.c_str()), doc_allocator);
+			StringBuffer buffer;
+			PrettyWriter<StringBuffer> writer(buffer);
+			doc.Accept(writer);
+			writeLog(query_logfp, buffer.GetString());
 		}
 		else if(type == "delete_query" || type == "delete_load" || type == "delete_unload" || type == "delete_update" || type == "delete_backup" || type == "delete_restore" || type == "delete_export" )
 		{
@@ -5908,16 +5979,45 @@ void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 			string subType = type.substr(7, len-7);
 			cout << "subType: " << subType << endl;
 			string db_name = addition;
+
+			// added by liangjianming in 2020.12.31
+			Document doc;
+			doc.SetObject();
+			string status = "success";
+			string operation = "deletePrivilege";
+			string export_log_type = "deletePrivilege_log";
+			string deleteTime = Util::get_date_time();
+			Document::AllocatorType& doc_allocator = doc.GetAllocator();
+			doc.AddMember("operation", StringRef(operation.c_str()), doc_allocator);
+			doc.AddMember("admin", StringRef(username1.c_str()), doc_allocator);
+			doc.AddMember("username2", StringRef(username2.c_str()), doc_allocator);
+			doc.AddMember("db_name", StringRef(db_name.c_str()), doc_allocator);
+			doc.AddMember("type", StringRef(type.c_str()), doc_allocator);
+			doc.AddMember("deleteTime", StringRef(deleteTime.c_str()), doc_allocator);
+
 			if(delPrivilege(username2, subType, db_name) == 0)
 			{
 				string error = "delete privilege failed.";
 				string resJson = CreateJson(914, error, 0);
 				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-		
+				
+				//added by liangjianming in 2020.12.31
+				status = error;
+				doc.AddMember("status", StringRef(status.c_str()), doc_allocator);
+				StringBuffer buffer;
+				PrettyWriter<StringBuffer> writer(buffer);
+				doc.Accept(writer);
+				writeLog(query_logfp, buffer.GetString());
 				
 				//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 				return;
 			}
+			// added by liangjianming in 2020.12.31
+			doc.AddMember("status", StringRef(status.c_str()), doc_allocator);
+			StringBuffer buffer;
+			PrettyWriter<StringBuffer> writer(buffer);
+			doc.Accept(writer);
+			writeLog(query_logfp, buffer.GetString());
 		}
 		string success = "operation on users succeeded.";
 		string resJson = CreateJson(0, success, 0);
