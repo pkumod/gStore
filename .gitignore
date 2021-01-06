@@ -105,3 +105,8 @@ node_modules
 *.info
 
 /.vs
+backup.json
+.vscode/settings.json
+scripts/run_transaction
+scripts/transaction_test
+api/socket/cpp/example/example

@@ -2283,7 +2283,7 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 	if(txn == nullptr)
 	{
 		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
-		if (_get == 1) {
+		if (!_get) {
 			
 			_preidlist = NULL;
 			_list_len = 0;

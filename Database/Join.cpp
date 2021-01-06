@@ -7,7 +7,7 @@
 =============================================================================*/
 
 #include "Join.h"
-
+#define DEBUG_JOIN
 using namespace std;
 
 Join::Join()

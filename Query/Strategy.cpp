@@ -542,7 +542,7 @@ void
 Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	//long before_filter = Util::get_cur_time();
-	cout << "this BasicQuery use query strategy 0" << endl;
+	cout << "this BasicQuery use query strategy 0 query" << endl;
 
 	//BETTER:not all vars in join filtered by vstree
 	//(A)-B-c: B should by vstree, then by c, but A should be generated in join(first set A as not)
