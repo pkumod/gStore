@@ -105,5 +105,8 @@ node_modules
 *.info
 
 /.vs
-/VSTree/LRUCache2.h
-/VSTree/LRUCache2.cpp
+backup.json
+.vscode/settings.json
+scripts/run_transaction
+scripts/transaction_test
+api/socket/cpp/example/example

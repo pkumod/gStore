@@ -14,6 +14,7 @@
 #include "../StringIndex/StringIndex.h"
 #include "../Database/Strategy.h"
 #include "../Database/CSR.h"
+#include "../Database/Optimizer.h"
 #include "../Parser/QueryParser.h"
 #include "../Util/Triple.h"
 #include "../Util/Util.h"
