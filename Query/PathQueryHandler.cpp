@@ -9,23 +9,31 @@ PathQueryHandler::PathQueryHandler(CSR *_csr)
 	else
 		csr = new CSR[2];
 	cacheMaxSize = 10000;
+	n = -1;
+	m = -1;
 	srand(time(NULL));
 }
 
 int PathQueryHandler::getVertNum()
 {
+	if (n != -1)
+		return n;	// Only consider static graphs for now
 	set<int> vertices;
 	for (int i = 0; i < csr[1].pre_num; i++)
 		vertices.insert(csr[1].adjacency_list[i].begin(), csr[1].adjacency_list[i].end());
-	return vertices.size();
+	n = vertices.size();
+	return n;
 }
 
 int PathQueryHandler::getEdgeNum()
 {
+	if (m != -1)
+		return m;	// Only consider static graphs for now
 	int ret = 0;
 	for (int i = 0; i < csr[1].pre_num; i++)
 		ret += csr[1].adjacency_list[i].size();
-	return ret;
+	m = ret;
+	return m;
 }
 
 int PathQueryHandler::getInIndexByID(int vid, int pred)
