@@ -34,12 +34,12 @@ private:
 	atomic<TYPE_READ_CNT> readLCVcnt;
 	
 	//Version List head point always point to the newest.
-	list<shared_ptr<Version>> vList; 
+	deque<shared_ptr<Version>> vList; 
 	//protect Version list. TODO: use free-locked list for better concurrency
 	Latch rwLatch;
 
 
-	bool get_shared_latch();
+	bool get_shared_latch(TYPE_TXN_ID TID);
 	bool get_exclusive_latch(TYPE_TXN_ID TID, bool is_SI);
 	//SI only
 	bool upgrade_latch(TYPE_TXN_ID TID);
@@ -91,8 +91,10 @@ public:
 	void clearVersionFlag();
 	bool isVersioned() { return is_versioned.load();}
 	shared_ptr<Version> searchVersion(TYPE_TXN_ID TID);
-	shared_ptr<Version> getLatestVersion(TYPE_TXN_ID TID);
+	shared_ptr<Version> getProperVersion(TYPE_TXN_ID TID, VDataArray &addarray, VDataArray &delarray, bool IS_SI);
+	shared_ptr<Version> getLatestVersion(TYPE_TXN_ID TID, VDataArray &addarray, VDataArray &delarray);
 	
+	void version_merge(VDataArray &addarray, VDataArray &delarray, VDataSet &AddSet, VDataSet &DelSet);
 	//get exclusive lock before update
 	int getExclusiveLatch(shared_ptr<Transaction> txn, bool has_read); 
 	bool releaseExlusiveLatch(shared_ptr<Transaction> txn, bool has_read); //different from unlock

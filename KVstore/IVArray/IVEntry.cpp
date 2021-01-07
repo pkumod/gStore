@@ -161,7 +161,9 @@ IVEntry::Copy(const IVEntry& _entry)
 	this->prevID = _entry.prevID;
 	this->nextID = _entry.nextID;
 	this->vList = move(_entry.vList);
-	this->is_versioned.store(_entry.is_versioned);
+	this->is_versioned.store(_entry.is_versioned.load());
+	this->txnID.store(_entry.txnID.load());
+	this->readLCVcnt.store(_entry.readLCVcnt.load());
 }
 
 void
@@ -197,8 +199,9 @@ IVEntry::~IVEntry()
 
 //basic latch function
 bool 
-IVEntry::get_shared_latch()
+IVEntry::get_shared_latch(TYPE_TXN_ID TID)
 {
+	if(txnID.load() == TID) return true;
 	if(txnID.load() != INVALID_ID) return false;
 	readLCVcnt++;
 	return true;
@@ -210,7 +213,15 @@ IVEntry::get_exclusive_latch(TYPE_TXN_ID TID, bool is_SI)
 	TYPE_TXN_ID expected = INVALID_ID;
 	if(txnID.compare_exchange_strong(expected, TID))
 	{
-		if(is_SI)readLCVcnt++;
+		if(is_SI){
+			unsigned expected_cnt = 0;
+			if(readLCVcnt.compare_exchange_strong(expected_cnt, 1) == false)
+			{
+				cerr << "read cnt is not equal to zero!" << endl;
+				txnID.store(INVALID_ID);
+				return false;
+			}
+		}
 		return true;
 	}
 	else
@@ -220,7 +231,10 @@ IVEntry::get_exclusive_latch(TYPE_TXN_ID TID, bool is_SI)
 bool
 IVEntry::upgrade_latch(TYPE_TXN_ID TID)
 {
-	if(readLCVcnt.load() != 1) return false;
+	if(readLCVcnt.load() != 1) {
+		cerr << "read cnt is not equal to one!" << endl;
+		return false;
+	}
 	TYPE_TXN_ID expected = INVALID_ID;
 	return txnID.compare_exchange_strong(expected, TID);
 }
@@ -228,7 +242,10 @@ IVEntry::upgrade_latch(TYPE_TXN_ID TID)
 bool
 IVEntry::downgrade_latch(TYPE_TXN_ID TID)
 {
-	if(readLCVcnt.load() == 0) return false;
+	if(readLCVcnt.load() != 1) {
+		cerr << "read cnt is not equal to one!" << endl;
+		return false;
+	}
 	return txnID.compare_exchange_strong(TID, INVALID_ID);
 	
 }
@@ -247,11 +264,11 @@ IVEntry::exclusive_unlatch(TYPE_TXN_ID TID, bool is_SI)
 	if(txnID.compare_exchange_strong(TID, INVALID_ID)) {
 		if(is_SI)
 		{
-			if(readLCVcnt.load() == 0){
-				cerr << "exclusive latch error, read count equal to zero!" << endl;
+			unsigned expected_cnt = 1;
+			if(readLCVcnt.compare_exchange_strong(expected_cnt, 0) == false){
+				cerr << "exclusive latch error, read count not equal to one!" << endl;
 				return false;
 			}
-			else  readLCVcnt--;
 		}
 		return true;
 	}
@@ -291,45 +308,88 @@ IVEntry::is_owned_exclusive_latched(TYPE_TXN_ID TID)
 }
 
 shared_ptr<Version> 
-IVEntry::getLatestVersion(TYPE_TXN_ID TID)
+IVEntry::getLatestVersion(TYPE_TXN_ID TID, VDataArray &addarray, VDataArray &delarray)
 {
-	auto head_ver = *vList.begin();
+	auto start_iter = vList.begin();
+	//cerr << "vList.size():  " << vList.size() << endl;
 	if(is_exclusive_latched() && txnID.load() != TID) // uncommitted but not owned head version
 	{
-		auto begin_it = vList.begin();
-		return *(++begin_it); //next version
+		start_iter++;
 	}
-	else return head_ver;
+	for(auto it = start_iter; it != vList.end(); it++)
+	{
+		auto addvec = (*it)->get_add_set();
+		auto delvec = (*it)->get_del_set();
+		addarray.insert(addarray.end(), addvec.begin(), addvec.end());
+		delarray.insert(delarray.end(), delvec.begin(), delvec.end());
+	}
+	return *start_iter;
 }
 
 //read proper version following the version list
 shared_ptr<Version>
 IVEntry::searchVersion(TYPE_TXN_ID TID)
 {
-	auto head_version = *vList.begin();
-	//cout << "vList.size():             " << vList.size() << endl;
-	for(auto it: vList)
+	auto start_iter = vList.begin();
+	//cerr << "vList.size():  " << vList.size() << endl;
+	if(is_exclusive_latched() && txnID.load() != TID) // uncommitted but not owned head version
 	{
-		//txn_ts in [begin_ts, end_ts)
-		if(TID >= it->get_begin_ts() && TID < it->get_end_ts())
+		start_iter++;
+	}
+
+	for(; start_iter != vList.end(); start_iter++)
+	{
+		if(TID >= (*start_iter)->get_begin_ts() && TID < (*start_iter)->get_end_ts())
 		{
-			//cout << "txn->GetTID()                 " << txn->GetTID() << endl;
-			//not owned uncommitted version then skip
-			//cerr << "[" << it->get_begin_ts() << "," <<  it->get_end_ts() << ")" << endl;
-			if(is_exclusive_latched() && !is_owned_exclusive_latched(TID) && it == head_version)
-			{
-				continue;
-			}
-			if(is_owned_exclusive_latched(TID))
-			{
-				//owned version must be head_version
-				assert(head_version == it);
-				//cout << "get owned version: " <<  txn->GetTID() << endl;
-			}
-			return it;
+			return *start_iter;
 		}
 	}
-	return nullptr;
+	if(start_iter == vList.end()) return nullptr;
+}
+
+shared_ptr<Version>
+IVEntry::getProperVersion(TYPE_TXN_ID TID, VDataArray &addarray, VDataArray &delarray, bool IS_SI)
+{
+	auto start_iter = vList.begin();
+	if(!IS_SI && is_exclusive_latched() && txnID.load() != TID) // uncommitted but not owned head version
+	{
+		start_iter++;
+	}
+
+	for(; start_iter != vList.end(); start_iter++)
+	{
+		if(TID >= (*start_iter)->get_begin_ts() && TID < (*start_iter)->get_end_ts())
+		{
+			break;
+		}
+	}
+	if(start_iter == vList.end()) return nullptr;
+	auto ret = *start_iter;
+	for(auto it = start_iter; it != vList.end(); it++)
+	{
+		auto addvec = (*it)->get_add_set();
+		auto delvec = (*it)->get_del_set();
+		addarray.insert(addarray.end(), addvec.begin(), addvec.end());
+		delarray.insert(delarray.end(), delvec.begin(), delvec.end());
+	}
+	return ret;
+}
+
+void 
+IVEntry::version_merge(VDataArray &addarray, VDataArray &delarray, VDataSet &AddSet, VDataSet &DelSet)
+{
+	sort(addarray.begin(), addarray.end());
+	sort(delarray.begin(), delarray.end());
+	//cerr << "addarray.size():  " << addarray.size() << "delarray.size():  " << delarray.size() << endl;
+	VDataArray interarray, _addarray, _delarray;
+	set_intersection(addarray.begin(), addarray.end(), delarray.begin(), delarray.end(), inserter(interarray, interarray.end()));
+	set_difference(addarray.begin(), addarray.end(), interarray.begin(), interarray.end(), inserter(_addarray, _addarray.end()));
+	set_difference(delarray.begin(), delarray.end(), interarray.begin(), interarray.end(), inserter(_delarray, _delarray.end()));
+	AddSet.insert(_addarray.begin(), _addarray.end());
+	DelSet.insert(_delarray.begin(), _delarray.end());
+	//no duplicate check
+	assert(AddSet.size() == _addarray.size());
+	assert(DelSet.size() == _delarray.size());
 }
 
 bool 
@@ -338,19 +398,17 @@ IVEntry::readVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction>
 	rwLatch.lockShared();
 	shared_ptr<Version> cur_version;
 	//cout << "this is readVersion" << endl;
+	//if(vList.size() == 1) return false;
+	VDataArray addarry, delarray;
 	if(txn->GetIsolationLevelType() == IsolationLevelType::READ_COMMITTED)
 	{
-		cur_version = getLatestVersion(txn->GetTID()); //get latest committed version or owned uncommitted version
-		if(cur_version == nullptr)
-		{
-			rwLatch.unlock();
-			return false;
-		}
+		cur_version = getLatestVersion(txn->GetTID(), addarry, delarray); //get latest committed version or owned uncommitted version
+		if(cur_version == *vList.end()) return false;
 	}
 	else if (txn->GetIsolationLevelType() == IsolationLevelType::SNAPSHOT)
 	{
-		cur_version = searchVersion(txn->GetTID()); //get version according to timestamp
-		if(cur_version == nullptr)
+		auto start_version = getProperVersion(txn->GetTID(), addarry, delarray, false); //get version according to timestamp
+		if(start_version == nullptr)
 		{
 			rwLatch.unlock();
 			return false;
@@ -358,9 +416,10 @@ IVEntry::readVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction>
 	}
 	else if (txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
 	{
-		//cout << "this is readVersion !!!!!!!!!!!!" << endl;
+		//cerr << "this is readVersion !!!!!!!!!!!!" << endl;
+		//cerr << "first_read................................" << first_read << endl;
 		auto head_version = *vList.begin();
-		cur_version = searchVersion(txn->GetTID()); //get version according to timestamp
+		auto cur_version = getProperVersion(txn->GetTID(), addarry, delarray, true); //get version according to timestamp
 		if(cur_version == nullptr) // no proper version
 		{
 			cerr << "no proper version found!" << endl;
@@ -384,7 +443,7 @@ IVEntry::readVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction>
 			else if(first_read)
 			{
 				//not exclusive latched and first read
-				bool ret = get_shared_latch();
+				bool ret = get_shared_latch(txn->GetTID());
 				if(ret == false)
 				{
 					cerr << "shared latch failed!(NEVER happen)" << endl;
@@ -399,8 +458,7 @@ IVEntry::readVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction>
 		rwLatch.unlock();
 		return false;
 	}
-	cur_version->get_add_set(AddSet);
-	cur_version->get_del_set(DelSet);
+	version_merge(addarry, delarray, AddSet, DelSet);
 	rwLatch.unlock();
 	return true;
 }
@@ -426,19 +484,21 @@ IVEntry::invalidExlusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 		return false; // not match
 	} 
 
-	vList.erase(vList.begin());
+	vList.pop_front();
 	if(vList.size() == 1) clearVersionFlag(); //dummy version left
 	
 	bool ret;
 	bool is_SI = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
-	if(has_read && is_versioned)
+	if(is_SI && has_read)
 	{
 		//SI only
 		ret = downgrade_latch(txn->GetTID());
 	}
 	else
 	{
+		
 		ret = exclusive_unlatch(txn->GetTID(), is_SI);
+		//cerr << "................exclusive_unlatch. TID:" << txn->GetTID() <<  "  ret: " << ret << endl;
 	}
 
 	rwLatch.unlock();
@@ -507,10 +567,15 @@ IVEntry::unLatch(shared_ptr<Transaction> txn, LatchType latch_type)
 		(*next)->set_end_ts(txn->GetCommitID());
 		//unlatch
 		bool ret = exclusive_unlatch(txn->GetTID(), is_SI);
-		rwLatch.unlock();
+		
 		if(ret == false){
 			cerr << "head version unLatch failed" << endl;
 		}
+		if(this->usedFlag == false){
+			this->usedFlag = true;
+		}
+		setVersionFlag();
+		rwLatch.unlock();
 		return ret;
 	}
 	else
@@ -560,7 +625,7 @@ IVEntry::getExclusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 		if(is_exclusive_latched() == true)
 		{
 			if(is_owned_exclusive_latched(txn->GetTID()) == false){
-				cerr << "head version has been exclusive latched now" << endl;
+				// cerr << "head version has been exclusive latched now" << txnID.load() << endl;
 				rwLatch.unlock();
 				return 0;
 			}
@@ -573,28 +638,21 @@ IVEntry::getExclusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 		else
 		{
 			new_version = make_shared<Version>();
-			*new_version = *head_version;
 			new_version->set_begin_ts(txn->GetTID());
+			new_version->set_end_ts(INVALID_TS);
 			get_exclusive_latch(txn->GetTID(), false);
 			vList.push_front(new_version);
-			setVersionFlag();
 			rwLatch.unlock();
 			return 1;
 		}
 	}
 	else if(txn->GetIsolationLevelType() == IsolationLevelType::SNAPSHOT)
 	{
-		cur_version = searchVersion(txn->GetTID());
-		if(cur_version != head_version)
-		{
-			cerr << "updated by the newer transaction!";
-			rwLatch.unlock();
-			return 0;
-		}
+		
 		if(is_exclusive_latched() == true)
 		{
 			if(is_owned_exclusive_latched(txn->GetTID()) == false){
-				cerr << "head version has been exclusive latched now" << endl;
+				// cerr << "head version has been exclusive latched now" << endl;
 				rwLatch.unlock();
 				return 0;
 			}
@@ -607,30 +665,30 @@ IVEntry::getExclusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 		}
 		else
 		{
-			new_version = make_shared<Version>();
-			*new_version = *head_version;
-			new_version->set_begin_ts(txn->GetTID());
+			cur_version = searchVersion(txn->GetTID());
+			if(cur_version != head_version)
+			{
+				//cerr << "updated by the newer transaction! Not locked!" << endl;
+				rwLatch.unlock();
+				return 0;
+			}
 			get_exclusive_latch(txn->GetTID(), false);
+			new_version = make_shared<Version>();
+			new_version->set_end_ts(INVALID_TS);
+			new_version->set_begin_ts(txn->GetTID());
 			vList.push_front(new_version);
-			setVersionFlag();
 			rwLatch.unlock();
 			return 1;
 		}
 	}
 	else if(txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
 	{
-		cur_version = searchVersion(txn->GetTID());
-		if(cur_version != head_version)
-		{
-			cerr << "updated by the newer transaction!";
-			rwLatch.unlock();
-			return 0;
-		}
+		//cerr << "this is IsolationLevelType::SERIALIZABLE getExclusivelocks" << endl;
+		
 		if(is_exclusive_latched() == true)
 		{
-			cerr << "is_exclusive_latched() == true .......... " << endl;
 			if(is_owned_exclusive_latched(txn->GetTID()) == false){
-				cerr << "head version has been exclusive latched now" << endl;
+				// cerr << "head version has been exclusive latched now" << endl;
 				rwLatch.unlock();
 				return 0;
 			}
@@ -644,31 +702,43 @@ IVEntry::getExclusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 		else if(is_shared_latched() == true) //shared latched
 		{
 			//only has read(get shared latch) and upgrade success
+			cur_version = searchVersion(txn->GetTID());
+			if(cur_version != head_version)
+			{
+				cerr << "updated by the newer transaction! shared locked!" << endl;
+				rwLatch.unlock();
+				return 0;
+			}
 			if(has_read && upgrade_latch(txn->GetTID()) == true)
 			{
 				new_version = make_shared<Version>();
-				*new_version = *head_version;
+				new_version->set_end_ts(INVALID_TS);
 				new_version->set_begin_ts(txn->GetTID());
 				vList.push_front(new_version);
-				setVersionFlag();
 				rwLatch.unlock();
 				return 1;
 			}
 			else
 			{
-				cerr << "shared locked or upgrade latch failed!" << endl;
+				cerr << "shared locked or upgrade latch failed!   " << has_read <<  endl;
 				rwLatch.unlock();
 				return 0;
 			}
 		}
 		else //not locked
 		{
-			new_version = make_shared<Version>();
-			*new_version = *head_version;
-			new_version->set_begin_ts(txn->GetTID());
+			cur_version = searchVersion(txn->GetTID());
+			if(cur_version != head_version)
+			{
+				//cerr << "updated by the newer transaction! Not locked!" << endl;;
+				rwLatch.unlock();
+				return 0;
+			}
 			get_exclusive_latch(txn->GetTID(), true);
+			new_version = make_shared<Version>();
+			new_version->set_end_ts(INVALID_TS);
+			new_version->set_begin_ts(txn->GetTID());	
 			vList.push_front(new_version);
-			setVersionFlag();
 			rwLatch.unlock();
 			return 1;
 		}
