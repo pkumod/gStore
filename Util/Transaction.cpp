@@ -7,25 +7,27 @@ Transaction::Transaction(string name, TYPE_TS time, txn_id_t _TID, IsolationLeve
 	this->TID = _TID;
 	this->state = TransactionState::WAITING;
 	this->update_num = 0;
+	this->wait_lock_time = 1; // 1ns
+	this->retry_times = 1; // up to 32ns
 	if(unsigned(_isolation) > 0 && unsigned(_isolation) <= 3) //valid value
 		this->isolation = _isolation;
 	else this->isolation = IsolationLevelType::SNAPSHOT; //default;
-	if(_isolation == IsolationLevelType::READ_COMMITTED)
-	{
-		cerr << "isolation level: READ_COMMITTED" << endl;
-	}
-	else if(_isolation == IsolationLevelType::SNAPSHOT)
-	{
-		cerr << "isolation level: SNAPSHOT" << endl;
-	}
-	else if(_isolation == IsolationLevelType::SERIALIZABLE)
-	{
-		cerr << "isolation level: SERIALIZABLE" << endl;
-	}
-	else
-	{
-		cerr << "Wrong isolation level!     " << unsigned(_isolation) << endl;
-	}
+	// if(_isolation == IsolationLevelType::READ_COMMITTED)
+	// {
+	// 	cerr << "isolation level: READ_COMMITTED" << endl;
+	// }
+	// else if(_isolation == IsolationLevelType::SNAPSHOT)
+	// {
+	// 	cerr << "isolation level: SNAPSHOT" << endl;
+	// }
+	// else if(_isolation == IsolationLevelType::SERIALIZABLE)
+	// {
+	// 	cerr << "isolation level: SERIALIZABLE" << endl;
+	// }
+	// else
+	// {
+	// 	cerr << "Wrong isolation level!     " << unsigned(_isolation) << endl;
+	// }
 	for(int i = 0; i < 3; i++)
 	{
 		IDSet s;
@@ -52,7 +54,7 @@ void Transaction::ReadSetDelete(TYPE_ENTITY_LITERAL_ID _ID, Transaction::IDType 
 
 bool Transaction::ReadSetFind(TYPE_ENTITY_LITERAL_ID _ID, Transaction::IDType _type )
 {
-	return this->ReadSet[(unsigned)_type].count(_ID) != 0; //true is not read before!
+	return this->ReadSet[(unsigned)_type].count(_ID) != 0; //true is read before!
 }
 
 void Transaction::WriteSetInsert(IDTriple _Triple)
@@ -115,6 +117,7 @@ void Transaction::print_WriteSet()
 
 void Transaction::print_all()
 {
+	cout << "TID:................................................" << this->TID << endl;
 	print_ReadSet();
 	//print_AddSet();
 	print_WriteSet();

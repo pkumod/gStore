@@ -995,17 +995,17 @@ Database::load_cache()
 	cerr << "Get in" << endl;
 	{
 		pid_t p = getpid();
-		char file[64] = { 0 };//ÎÄ¼þÃû
-		FILE *fd;         //¶¨ÒåÎÄ¼þÖ¸Õëfd
-		char line_buff[256] = { 0 };  //¶ÁÈ¡ÐÐµÄ»º³åÇø
+		char file[64] = { 0 };//ï¿½Ä¼ï¿½ï¿½ï¿½
+		FILE *fd;         //ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ö¸ï¿½ï¿½fd
+		char line_buff[256] = { 0 };  //ï¿½ï¿½È¡ï¿½ÐµÄ»ï¿½ï¿½ï¿½ï¿½ï¿½
 		sprintf(file, "/proc/%d/status", p);
 		fprintf(stderr, "current pid:%d\n", p);
-		fd = fopen(file, "r"); //ÒÔR¶ÁµÄ·½Ê½´ò¿ªÎÄ¼þÔÙ¸³¸øÖ¸Õëfd
+		fd = fopen(file, "r"); //ï¿½ï¿½Rï¿½ï¿½ï¿½Ä·ï¿½Ê½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ù¸ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½fd
 
-		int i; //»ñÈ¡vmrss:Êµ¼ÊÎïÀíÄÚ´æÕ¼ÓÃ
-		char name[32];//´æ·ÅÏîÄ¿Ãû³Æ
-		int vmrss;//´æ·ÅÄÚ´æ
-		for (i = 0; i<17; i++)  //¶ÁÈ¡VmRSSÕâÒ»ÐÐµÄÊý¾Ý
+		int i; //ï¿½ï¿½È¡vmrss:Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½Õ¼ï¿½ï¿½
+		char name[32];//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½
+		int vmrss;//ï¿½ï¿½ï¿½ï¿½Ú´ï¿½
+		for (i = 0; i<17; i++)  //ï¿½ï¿½È¡VmRSSï¿½ï¿½Ò»ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½
 		{
 			char* ret = fgets(line_buff, sizeof(line_buff), fd);
 			if (i == 11 || i == 12 || i == 15 || i == 16)
@@ -1014,7 +1014,7 @@ Database::load_cache()
 				fprintf(stderr, "%s\t%d kb\n", name, vmrss);
 			}
 		}
-		fclose(fd);     //¹Ø±ÕÎÄ¼þfd
+		fclose(fd);     //ï¿½Ø±ï¿½ï¿½Ä¼ï¿½fd
 	}*/
 }
 
@@ -3024,8 +3024,8 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	long tv_kv_store_begin = Util::get_cur_time();
 
 	TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
-	if(txn != nullptr)
-		cout << "Update in Transaction...................................................." << endl;
+	// if(txn != nullptr)
+	// 	cout << "Update in Transaction...................................................." << endl;
 	bool _is_new_sub = false;
 	//if sub does not exist
 	if (_sub_id == INVALID_ENTITY_LITERAL_ID)
@@ -3128,7 +3128,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		//conflict
 		//abort
 		txn->SetState(TransactionState::ABORTED);
-		cout << "getExclusiveLocks failed, Abort" << endl;
+		cout << "getExclusiveLocks failed, Abort. TID:" << this_thread::get_id() << endl;
 		return false;
 	}
 	
@@ -3170,9 +3170,11 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	bool ret = (this->kvstore)->updateTupleslist_insert(_sub_id, _pre_id, _obj_id, txn);
 	if(txn) 
 	{
-		cout << "WriteSetInsert......." << endl;
-		if(ret)
+		
+		if(ret){
+			//cout << "WriteSetInsert......." << endl;
 			txn->WriteSetInsert(IDTriple(_sub_id, _pre_id, _obj_id));
+		}
 		else{
 			cout << "insert failed" << endl;
 			txn->SetState(TransactionState::ABORTED);
@@ -3230,7 +3232,8 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	{
 		//conflict
 		//abort
-		cout << "getExclusiveLocks...................... failed" << endl;
+		cout << "getExclusiveLocks...................... failed. TID:" << this_thread::get_id() << endl;
+		//cout << "getExclusiveLocks failed, Abort. TID:" << this_thread::get_id() << endl;
 		txn->SetState(TransactionState::ABORTED);
 		return false;
 	}
@@ -3548,29 +3551,30 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	TYPE_TRIPLE_NUM valid_num = 0;
 
 	if (!_is_restore) {
-		string path = this->getStorePath() + '/' + this->update_log;
-		string path_all = this->getStorePath() + '/' + this->update_log_since_backup;
-		ofstream out;
-		ofstream out_all;
-		out.open(path.c_str(), ios::out | ios::app);
-		out_all.open(path_all.c_str(), ios::out | ios::app);
-		if (!out || !out_all) {
-			cerr << "Failed to open update log. Insertion aborted." << endl;
-			return 0;
-		}
-		for (int i = 0; i < _triple_num; i++) {
-			if (exist_triple(_triples[i], txn)) {
-				continue;
-			}
-			stringstream ss;
-			ss << "I\t" << Util::node2string(_triples[i].getSubject().c_str()) << '\t';
-			ss << Util::node2string(_triples[i].getPredicate().c_str()) << '\t';
-			ss << Util::node2string(_triples[i].getObject().c_str()) << '\t' << Util::get_cur_time() << '.' << endl;
-			out << ss.str();
-			out_all << ss.str();
-		}
-		out.close();
-		out_all.close();
+		write_update_log(_triples, _triple_num, 1, txn);
+		// string path = this->getStorePath() + '/' + this->update_log;
+		// string path_all = this->getStorePath() + '/' + this->update_log_since_backup;
+		// ofstream out;
+		// ofstream out_all;
+		// out.open(path.c_str(), ios::out | ios::app);
+		// out_all.open(path_all.c_str(), ios::out | ios::app);
+		// if (!out || !out_all) {
+		// 	cerr << "Failed to open update log. Insertion aborted." << endl;
+		// 	return 0;
+		// }
+		// for (int i = 0; i < _triple_num; i++) {
+		// 	if (exist_triple(_triples[i], txn)) {
+		// 		continue;
+		// 	}
+		// 	stringstream ss;
+		// 	ss << "I\t" << Util::node2string(_triples[i].getSubject().c_str()) << '\t';
+		// 	ss << Util::node2string(_triples[i].getPredicate().c_str()) << '\t';
+		// 	ss << Util::node2string(_triples[i].getObject().c_str()) << '\t' << Util::get_cur_time() << '.' << endl;
+		// 	out << ss.str();
+		// 	out_all << ss.str();
+		// }
+		// out.close();
+		// out_all.close();
 	}
 
 #ifdef USE_GROUP_INSERT
@@ -4065,29 +4069,30 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	TYPE_TRIPLE_NUM valid_num = 0;
 
 	if (!_is_restore) {
-		string path = this->getStorePath() + '/' + this->update_log;
-		string path_all = this->getStorePath() + '/' + this->update_log_since_backup;
-		ofstream out;
-		ofstream out_all;
-		out.open(path.c_str(), ios::out | ios::app);
-		out_all.open(path_all.c_str(), ios::out | ios::app);
-		if (!out || !out_all) {
-			cerr << "Failed to open update log. Removal aborted." << endl;
-			return 0;
-		}
-		for (int i = 0; i < _triple_num; i++) {
-			if (!exist_triple(_triples[i], txn)) {
-				continue;
-			}
-			stringstream ss;
-			ss << "R\t" << Util::node2string(_triples[i].getSubject().c_str()) << '\t';
-			ss << Util::node2string(_triples[i].getPredicate().c_str()) << '\t';
-			ss << Util::node2string(_triples[i].getObject().c_str()) << '\t' << Util::get_cur_time() << '.' << endl;
-			out << ss.str();
-			out_all << ss.str();
-		}
-		out.close();
-		out_all.close();
+		write_update_log(_triples, _triple_num, 0, txn);
+		// string path = this->getStorePath() + '/' + this->update_log;
+		// string path_all = this->getStorePath() + '/' + this->update_log_since_backup;
+		// ofstream out;
+		// ofstream out_all;
+		// out.open(path.c_str(), ios::out | ios::app);
+		// out_all.open(path_all.c_str(), ios::out | ios::app);
+		// if (!out || !out_all) {
+		// 	cerr << "Failed to open update log. Removal aborted." << endl;
+		// 	return 0;
+		// }
+		// for (int i = 0; i < _triple_num; i++) {
+		// 	if (!exist_triple(_triples[i], txn)) {
+		// 		continue;
+		// 	}
+		// 	stringstream ss;
+		// 	ss << "R\t" << Util::node2string(_triples[i].getSubject().c_str()) << '\t';
+		// 	ss << Util::node2string(_triples[i].getPredicate().c_str()) << '\t';
+		// 	ss << Util::node2string(_triples[i].getObject().c_str()) << '\t' << Util::get_cur_time() << '.' << endl;
+		// 	out << ss.str();
+		// 	out_all << ss.str();
+		// }
+		// out.close();
+		// out_all.close();
 	}
 
 #ifdef USE_GROUP_DELETE
@@ -4679,8 +4684,52 @@ void
 Database::clear_update_log() 
 {
 	string cmd = "rm " + this->store_path + '/' + this->update_log;
-	system(cmd.c_str());
+	cout << "update.log remove begin" << endl;
+	//system(cmd.c_str());
+	cout << "update.log remove finished" << endl;
 	Util::create_file(this->store_path + '/' + this->update_log);
+}
+
+bool 
+Database::write_update_log(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, int type, shared_ptr<Transaction> txn)
+{
+	log_lock.lock();
+	string path = this->getStorePath() + '/' + this->update_log;
+	string path_all = this->getStorePath() + '/' + this->update_log_since_backup;
+	ofstream out;
+	ofstream out_all;
+	out.open(path.c_str(), ios::out | ios::app);
+	out_all.open(path_all.c_str(), ios::out | ios::app);
+	if (!out || !out_all) {
+		cerr << "Failed to open update log. Insertion aborted." << endl;
+		log_lock.unlock();
+		return false;
+	}
+	
+	for (int i = 0; i < _triple_num; i++) {
+		if (type == 1 && exist_triple(_triples[i], txn)) {
+			continue;
+		}
+		else if(type == 0 && !exist_triple(_triples[i], txn))
+		{
+			continue;
+		}
+		stringstream ss;
+		if(type == 1){
+			ss << "I\t" << Util::node2string(_triples[i].getSubject().c_str()) << '\t';
+		}
+		else{
+			ss << "R\t" << Util::node2string(_triples[i].getSubject().c_str()) << '\t';
+		}
+		ss << Util::node2string(_triples[i].getPredicate().c_str()) << '\t';
+		ss << Util::node2string(_triples[i].getObject().c_str()) << '\t' << Util::get_cur_time() << '.' << endl;
+		out << ss.str();
+		out_all << ss.str();
+	}
+	out.close();
+	out_all.close();
+	log_lock.unlock();
+	return true;
 }
 
 bool
@@ -5055,7 +5104,9 @@ Database::version_clean()
 		{
 			//cout<<"to remove entry for sub"<<endl;
 			//cout<<_sub_id << " "<<this->kvstore->getEntityByID(_sub_id)<<endl;
-			this->kvstore->subIDByEntity(this->kvstore->getEntityByID(_sub_id));
+			string sub_str = this->kvstore->getEntityByID(_sub_id);
+			//cerr << "sub_str" << sub_str << endl;
+			this->kvstore->subIDByEntity(sub_str);
 			this->kvstore->subEntityByID(_sub_id);			
 			this->freeEntityID(_sub_id);
 			this->sub_num--;
@@ -5076,7 +5127,9 @@ Database::version_clean()
 		{
 			//cout<<"to remove entry for obj"<<endl;
 			//cout<<_obj_id << " "<<this->kvstore->getEntityByID(_obj_id)<<endl;
-			this->kvstore->subIDByEntity(this->kvstore->getEntityByID(_obj_id));
+			string obj_str = this->kvstore->getEntityByID(_obj_id);
+			//cerr << "obj_str" << obj_str << endl;
+			this->kvstore->subIDByEntity(obj_str);
 			this->kvstore->subEntityByID(_obj_id);			
 			this->freeEntityID(_obj_id);
 			//update the string buffer
@@ -5090,10 +5143,13 @@ Database::version_clean()
 	
 	for(auto &_obj_id: obj_literal_ids)
 	{
+		//cout << _obj_id << endl;
 		obj_degree = this->kvstore->getLiteralDegree(_obj_id);
 		if (obj_degree == 0)
 		{
-			this->kvstore->subIDByLiteral(this->kvstore->getLiteralByID(_obj_id));
+			string obj_str = this->kvstore->getLiteralByID(_obj_id+ Util::LITERAL_FIRST_ID);
+			//cerr << "obj_str" << obj_str << "_obj_id" << _obj_id << endl;
+			this->kvstore->subIDByLiteral(obj_str);
 			this->kvstore->subLiteralByID(_obj_id);
 			//cout<<"check after subLiteralByID: "<<_obj_id<<" "<<this->kvstore->getLiteralByID(_obj_id)<<endl;		
 			this->freeLiteralID(_obj_id);
@@ -5112,7 +5168,9 @@ Database::version_clean()
 		pre_degree = this->kvstore->getPredicateDegree(_pre_id);
 		if (pre_degree == 0)
 		{
-			this->kvstore->subIDByPredicate(this->kvstore->getPredicateByID(_pre_id));
+			string pre_str = this->kvstore->getPredicateByID(_pre_id);
+			//cerr << "pre_str" << pre_str << endl;
+			this->kvstore->subIDByPredicate(pre_str);
 			this->kvstore->subPredicateByID(_pre_id);
 			this->freePredicateID(_pre_id);
 			predicates.push_back(_pre_id);

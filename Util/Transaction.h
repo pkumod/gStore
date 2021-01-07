@@ -38,6 +38,9 @@ private:
 	
 	vector<string> sparqls;
 	IsolationLevelType isolation;
+
+	int wait_lock_time;
+	int retry_times;
 public:
 	unsigned long long int update_num;
 	enum class IDType{SUBJECT, PREDICATE, OBJECT};
@@ -83,8 +86,11 @@ public:
 	
 	//inline TripleSet& Get_AddSet() { return this->AddSet; }
 	//inline TripleSet& Get_DelSet() { return this->DelSet; }
-	inline vector<IDSet>& Get_WriteSet() {return this->WriteSet; }
-	inline vector<IDSet>& Get_ReadSet() {return this->ReadSet; }
+	inline const vector<IDSet>& Get_WriteSet() {return this->WriteSet; }
+	inline const vector<IDSet>& Get_ReadSet() {return this->ReadSet; }
+	
+	int get_wait_lock_time() { return this->wait_lock_time;}
+	int get_retry_times() { return this->retry_times; }
 	
 	void print_ReadSet();
 	void print_WriteSet();

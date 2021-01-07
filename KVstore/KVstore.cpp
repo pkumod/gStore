@@ -457,7 +457,7 @@ KVstore::updateTupleslist_insert(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_
 	}
 	else
 	{
-		cout << "transaction update" << endl;
+		// cout << "transaction update" << endl;
 		return this->updateInsert_s2values(_sub_id, _pre_id, _obj_id, txn)
 		&& this->updateInsert_o2values(_sub_id, _pre_id, _obj_id, txn)
 		&& this->updateInsert_p2values(_sub_id, _pre_id, _obj_id, txn);
@@ -1910,7 +1910,7 @@ KVstore::getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlis
 bool 
 KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const 
 {
-	//cout << "In getobjIDlistBysubIDpreID " << _subid << ' ' << _preid << endl;
+	cout << "In getobjIDlistBysubIDpreID " << _subid << ' ' << _preid << endl;
 	if (!Util::is_entity_ele(_subid)) {
 		_objidlist = NULL;
 		_list_len = 0;
@@ -1962,8 +1962,10 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 	{
 		bool FirstRead;
 		//check if get shared-lock
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
+		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE){
 			FirstRead = !txn->ReadSetFind(_subid, Transaction::IDType::SUBJECT);
+			if(FirstRead) txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
+		}
 		
 		VDataSet addset, delset;
 		
@@ -2035,8 +2037,6 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 			for(int i = 0; i < _list_len; i++)
 				_objidlist[i] = _objidvec[i];
 		}
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE && FirstRead)
-				txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
 		if(_tmp != NULL) delete[] _tmp;
 		return ret;
 	}
@@ -2282,8 +2282,9 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 	unsigned long _len = 0;
 	if(txn == nullptr)
 	{
+		//cerr << "In getpreIDlistByobjID no transaction! " << endl;
 		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
-		if (_get == 1) {
+		if (!_get) {
 			
 			_preidlist = NULL;
 			_list_len = 0;
@@ -3864,6 +3865,7 @@ KVstore::Remove_s2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, 
 		{
 			_values = nullptr;
 			_values_len = 0;
+			if(first_remove) first_remove = false;
 			break;
 		}
 		//subID still exists after removal
@@ -4073,13 +4075,16 @@ void
 KVstore::Remove_o2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len)const
 {
 	bool first_remove = true;
+	int cnt = 0;
+	//cerr << "_tmp[0]: " << _tmp[0] << "_tmp[1]: " << _tmp[1]  << endl;
 	for(auto it:delset)
 	{
+		//cerr << "times: cnt" << cnt << endl;
 		unsigned _pre_id = it.first;
 		unsigned _sub_id = it.second;
 		if(!first_remove)
 		{
-			delete[] _tmp;
+			delete _tmp;
 			_tmp = _values;
 			_len = _values_len * sizeof(unsigned);
 		}
@@ -4087,6 +4092,7 @@ KVstore::Remove_o2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, 
 		if (_tmp[0] == 1) {
 			_values = nullptr;
 			_values_len = 0;
+			if(first_remove) first_remove = false;
 			break;
 		}
 		//objID still exists after removal
@@ -4149,7 +4155,9 @@ KVstore::Remove_o2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, 
 	}
 	if(!first_remove)
 	{
-		if(_tmp != nullptr) delete[] _tmp;
+		//cerr << "_values[0]: " << _values[0] << "_values[1]: " << _values[1]  << endl;
+		//cerr << "_tmp[0]: " << _tmp[0] << "_tmp[1]: " << _tmp[1]  << endl;
+		if(_tmp != nullptr) delete _tmp;
 		_tmp = nullptr;
 		_values_len = _values_len * sizeof(unsigned);
 	}
@@ -4239,6 +4247,7 @@ KVstore::Remove_p2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, 
 		if (_tmp[0] == 1) {
 			_values = nullptr;
 			_values_len = 0;
+			if(first_remove) first_remove = false;
 			break;
 		}
 
@@ -4344,9 +4353,23 @@ KVstore::Remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_
 	return _array->remove(_key, delset, txn);
 }
 
-//get exclusive lock and create new version atomicly for write operation
 bool 
 KVstore::getExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
+{
+	int base_timer = txn->get_wait_lock_time();
+	int times = txn->get_retry_times();
+	for(int i = 0; i < times; i++)
+	{
+		if(getExclusiveLatches(_sub_id, _pre_id, _obj_id, txn)) return true;
+		usleep(base_timer);
+		base_timer = base_timer*2;
+	}
+	return false;
+}
+
+//get exclusive lock and create new version atomicly for write operation
+bool 
+KVstore::getExclusiveLatches(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	//may unlock first locked item
 	//cout << "getExclusiveLocks....................................................." << endl;
@@ -4365,19 +4388,25 @@ KVstore::getExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pr
 		//cerr << "Try to get SUBJECT exclusive lock................." << endl;
 		sub_ret = getExclusiveLock(this->subID2values, _sub_id, txn, sub_has_read);
 		if(sub_ret == 0){
-			cerr << "sub id latch get failed!" << endl;
+			//cerr << this_thread::get_id() << " :sub id latch get failed!   " << _sub_id << endl;
+			//cerr << txn->GetTID() << endl;
+			//txn->print_all();
 			return false;
 		}
 	}
-	
+
+
 	if(!obj_has_write){
 		//cerr << "Try to get OBJECT exclusive lock................." << endl;
 		obj_ret = getExclusiveLock(this->objID2values, _obj_id, txn, obj_has_read);
 		if(obj_ret == 0)
 		{
+			bool invalid;
 			if(!sub_has_write && sub_ret == 1) 
-				Invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
-			cerr << "obj id latch get failed!" << endl;
+				invalid = Invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
+			if(invalid == false)
+				cerr << "invalid error, latch not release! TID:" << txn->GetTID() << endl;
+			//cerr << this_thread::get_id() << "obj id latch get failed!" << endl;
 			return false;
 		}
 	}
@@ -4387,16 +4416,23 @@ KVstore::getExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pr
 		pre_ret = getExclusiveLock(this->preID2values, _pre_id,txn, pre_has_read);
 		if(pre_ret == 0)
 		{
+			bool invalid1 = true, invalid2 = true;
 			if(!sub_has_write && sub_ret == 1)
-				Invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
+				invalid1 = Invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
+			if(invalid1 == false){
+				cerr << "invalid error, subject latch not release! TID:" << txn->GetTID() << "  "  <<  _sub_id << endl;
+			}
 			if(!obj_has_write && obj_ret == 1)
-				Invalid_values(this->objID2values, _obj_id, txn, obj_has_read);
-			cerr << "pre id latch get failed!" << endl;
+				invalid2 = Invalid_values(this->objID2values, _obj_id, txn, obj_has_read);
+			if(invalid2 == false){
+				cerr << "invalid error, object latch not release! TID:" << txn->GetTID() << endl;
+			}
+			//cerr << this_thread::get_id() << "pre id latch get failed!" << endl;
 			return false;
 		}
 	}
 	
-	//cerr << "getExclusiveLocks success!" << endl;
+	//cout << "getExclusiveLocks success! TID:" << txn->GetTID() << endl;
 	return true;
 }
 
@@ -4533,7 +4569,7 @@ KVstore::releaseSharedLatch(IVArray* _array, unsigned _key, shared_ptr<Transacti
 bool 
 KVstore::releaseAllLatches(shared_ptr<Transaction> txn) const
 {
-	vector<IDSet>& WriteSet = txn->Get_WriteSet();
+	auto& WriteSet = txn->Get_WriteSet();
 	auto& subWset = WriteSet[(unsigned)Transaction::IDType::SUBJECT];
 	auto& preWset = WriteSet[(unsigned)Transaction::IDType::PREDICATE];
 	auto& objWset = WriteSet[(unsigned)Transaction::IDType::OBJECT];
@@ -4542,7 +4578,7 @@ KVstore::releaseAllLatches(shared_ptr<Transaction> txn) const
 	//shared Latch
 	if(txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
 	{
-		vector<IDSet>& ReadSet = txn->Get_ReadSet();
+		auto& ReadSet = txn->Get_ReadSet();
 		auto& subRset = ReadSet[(unsigned)Transaction::IDType::SUBJECT];
 		auto& preRset = ReadSet[(unsigned)Transaction::IDType::PREDICATE];
 		auto& objRset = ReadSet[(unsigned)Transaction::IDType::OBJECT];
@@ -4607,7 +4643,7 @@ KVstore::releaseAllLatches(shared_ptr<Transaction> txn) const
 bool
 KVstore::transaction_invalid(shared_ptr<Transaction> txn)
 {
-	vector<IDSet>& WriteSet = txn->Get_WriteSet();
+	auto& WriteSet = txn->Get_WriteSet();
 	auto& subWset = WriteSet[(unsigned)Transaction::IDType::SUBJECT];
 	auto& preWset = WriteSet[(unsigned)Transaction::IDType::PREDICATE];
 	auto& objWset = WriteSet[(unsigned)Transaction::IDType::OBJECT];
@@ -4616,7 +4652,7 @@ KVstore::transaction_invalid(shared_ptr<Transaction> txn)
 	if(txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
 	{
 		//cout << "releaseSharedLatch................." << endl; 
-		vector<IDSet>& ReadSet = txn->Get_ReadSet();
+		auto& ReadSet = txn->Get_ReadSet();
 		auto& subRset = ReadSet[(unsigned)Transaction::IDType::SUBJECT];
 		auto& preRset = ReadSet[(unsigned)Transaction::IDType::PREDICATE];
 		auto& objRset = ReadSet[(unsigned)Transaction::IDType::OBJECT];
@@ -4698,7 +4734,7 @@ KVstore::s2values_Vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn)
 	bool FirstRead = false;
 	unsigned* _tmp = NULL;
 	unsigned long _len = 0;
-	cout << sub_ids.size() << endl;
+	cout << "sub_ids.size():" << sub_ids.size() << endl;
 	for(auto _subid:  sub_ids)
 	{
 		VDataSet addset, delset;
@@ -4717,6 +4753,7 @@ KVstore::s2values_Vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn)
 		_len = _values_len;
 		//cerr << ".........._len:                                                 " <<  _len << endl;
 		if(_len == 0) {
+			//cerr << "delete keys" << endl;
 			this->cleanDirtyKey(this->subID2values, _subid);
 			this->removeKey(this->subID2values, _subid);
 			continue;
@@ -4738,7 +4775,7 @@ KVstore::o2values_Vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn)
 	bool FirstRead = false;
 	unsigned* _tmp = NULL;
 	unsigned long _len = 0;
-	cout << obj_ids.size() << endl;
+	//cerr << "obj_ids.size()" << obj_ids.size() << endl;
 	for(auto _obj_id:  obj_ids)
 	{
 		VDataSet addset, delset;
@@ -4747,16 +4784,17 @@ KVstore::o2values_Vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn)
 		unsigned * _values = nullptr;
 		unsigned long _values_len = 0;
 		//cout << "_len:                                                 " <<  _len << endl;
-		//cout << "addset.size():           " << addset.size() << "   delset.size()                      " << delset.size() << endl;
+		//cerr << "addset.size():           " << addset.size() << "   delset.size()                      " << delset.size() << endl;
 		this->Insert_o2values(addset, _tmp, _len, _values, _values_len);
 		_tmp = _values;
 		_len = _values_len;
-		//cout << "_len:                                                 " <<  _len << endl;
+		//cerr << "_len:                                                 " <<  _len << endl;
 		this->Remove_o2values(delset, _tmp, _len, _values, _values_len);
 		_tmp = _values;
 		_len = _values_len;
 		//cout << "_len:                                                 " <<  _len << endl;
 		if(_len == 0) {
+			//cerr << "delete keys" << endl;
 			this->cleanDirtyKey(this->objID2values, _obj_id);
 			this->removeKey(this->objID2values, _obj_id);
 			continue;
@@ -4779,6 +4817,7 @@ KVstore::o2values_literal_Vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<T
 	bool FirstRead = false;
 	unsigned* _tmp = NULL;
 	unsigned long _len = 0;
+	//cerr << "o2values_literal.size()" << obj_literal_ids.size() << endl;
 	for(auto _obj_id:  obj_literal_ids)
 	{
 		VDataSet addset, delset;
@@ -4787,7 +4826,7 @@ KVstore::o2values_literal_Vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<T
 		unsigned * _values = nullptr;
 		unsigned long _values_len;
 		//cout << "_len:                                                 " <<  _len << endl;
-		//cout << "addset.size():           " << addset.size() << "    delset.size()                      " << delset.size() << endl;
+		//cerr << "addset.size():           " << addset.size() << "    delset.size()                      " << delset.size() << endl;
 		this->Insert_o2values(addset, _tmp, _len, _values, _values_len);
 		_tmp = _values;
 		_len = _values_len;
@@ -4819,7 +4858,7 @@ KVstore::p2values_Vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn)
 	bool FirstRead = false;
 	unsigned* _tmp = NULL;
 	unsigned long _len = 0;
-	cout << pre_ids.size() << endl;
+	//cerr << "pre_ids.size():" << pre_ids.size() << endl;
 	for(auto _pre_id:  pre_ids)
 	{
 		VDataSet addset, delset;
@@ -4828,7 +4867,7 @@ KVstore::p2values_Vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn)
 		unsigned * _values = nullptr;
 		unsigned long _values_len;
 		//cout << "_len:                                                 " <<  _len << endl;
-		//cout << "addset.size():           " << addset.size() << "   delset.size()                      " << delset.size() << endl;
+		//cerr << "addset.size():           " << addset.size() << "   delset.size()                      " << delset.size() << endl;
 		this->Insert_p2values(addset, _tmp, _len, _values, _values_len);
 		_tmp = _values;
 		_len = _values_len;

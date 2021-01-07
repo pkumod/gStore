@@ -118,7 +118,7 @@ inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
 
 #gtest
 
-TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback 
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback 
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -193,6 +193,9 @@ $(testdir)transaction_test: $(lib_antlr) $(objdir)transaction_test.o $(objfile)
 
 $(testdir)run_transaction: $(lib_antlr) $(objdir)run_transaction.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(testdir)run_transaction $(objdir)run_transaction.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
+
+$(testdir)workload: $(lib_antlr) $(objdir)workload.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(testdir)workload $(objdir)workload.o $(objfile) $(library) $(openmp)
 #executables end
 
 
@@ -264,6 +267,9 @@ $(objdir)transaction_test.o: $(testdir)transaction_test.cpp Database/Database.h 
 
 $(objdir)run_transaction.o: $(testdir)run_transaction.cpp Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) $(testdir)run_transaction.cpp $(inc) -o $(objdir)run_transaction.o $(openmp)
+
+$(objdir)workload.o: $(testdir)workload.cpp Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) $(testdir)workload.cpp $(inc) -o $(objdir)workload.o $(openmp)
 #objects in scripts/ end
 
 
@@ -629,7 +635,7 @@ clean:
 	#$(MAKE) -C KVstore clean
 	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole* $(exedir)rollback
 	rm -rf bin/*.class
-	rm -rf $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction
+	rm -rf $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload
 	#rm -rf .project .cproject .settings   just for eclipse
 	rm -rf logs/*.log
 	rm -rf *.out   # gmon.out for gprof with -pg
