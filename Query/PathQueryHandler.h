@@ -13,6 +13,7 @@ private:
 	std::unordered_map<int, std::set<int> > distinctInEdges;
 	std::unordered_map<int, std::set<int> > distinctOutEdges;
 	int cacheMaxSize;
+	int n, m;	// #vertices, #edges
 public:
 	PathQueryHandler(CSR *_csr);
 
