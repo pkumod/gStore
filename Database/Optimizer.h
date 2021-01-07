@@ -61,7 +61,7 @@ public:
         map<BasicQuery*,vector<unsigned*> > _current_result,  vector<QueryPlan>);
     //TODO: re-choose plan in every iteration
     
-    bool execution(vector<BasicQuery*>, vector<int*>, vector<bool*>, vector<unsigned*> _result_list);
+    bool execution(vector<BasicQuery*>, vector<QueryPlan>, vector<unsigned*> _result_list);
 
 
 private:
