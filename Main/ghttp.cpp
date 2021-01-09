@@ -1119,7 +1119,7 @@ int initialize(int argc, char *argv[])
 				ipBlackFile = para.substr(9);
 				db_name = "";
 			}
-			if (strcmp(argv[2], "--advanced=true") == 0)
+			else if (strcmp(argv[2], "--advanced=true") == 0)
 			{
 				loadCSR = 1;
 				db_name = "";
