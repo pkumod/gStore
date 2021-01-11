@@ -59,6 +59,7 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define BACKUP_PATH "./backups"
 #define MEM_THRESHOLD 0.1
 #define CPU_THRESHOLD 0.95
+#define IO_THRESHOLD 0.95
 
 int initialize(int argc, char *argv[]);
 int copy(string src_path, string dest_path);
@@ -706,6 +707,7 @@ void* get_cpu_occupy_ratio(void* _args)
 
 		//计算cpu使用率
 		cpu_occupy_ratio = cal_cpuoccupy((CPU_OCCUPY *) &cpu_stat1, (CPU_OCCUPY *) &cpu_stat2);
+//		printf("CPU occupy ratio: %.3f\n", cpu_occupy_ratio);
 	}
 }
 
@@ -713,8 +715,36 @@ double get_Memory_available_ratio()
 {
 	MEM_OCCUPY * lpMemory = new MEM_OCCUPY();
 	get_procmeminfo(lpMemory);
-	return lpMemory->MemAvailable * 1.0 / ( lpMemory->MemTotal * 1.0  );
+	double mem_ratio = lpMemory->MemAvailable * 1.0 / ( lpMemory->MemTotal * 1.0  );
+	printf("Memory_available_ratio: %.3f\n", mem_ratio);
+	return mem_ratio;
 }
+
+
+bool check_IO_occupy_ratio()
+{
+	system("sar -d 1 1 > logs/io.txt");
+	FILE *fd;
+	char buff[128]={0};
+	fd = fopen("logs/io.txt", "r");
+	fgets(buff, sizeof(buff), fd);
+	fgets(buff, sizeof(buff), fd);
+	fgets(buff, sizeof(buff), fd);
+	char temp[20];
+	float tf, util;
+	while(fgets(buff, sizeof(buff), fd))
+	{
+		if(buff[0] == '\n') break;
+		char dev_name[20]={0};
+		sscanf(buff, "%s %s %f %f %f %f %f %f %f %f", &temp, &dev_name, &tf, &tf, &tf, &tf, &tf, &tf, &tf, &util);
+		printf("IO occupy ratio of %s: %.3f\n",dev_name, util);
+		if (util > IO_THRESHOLD)
+			return false;
+	}
+	fclose(fd);
+	return true;
+}
+
 
 class Task
 {
@@ -2353,6 +2383,16 @@ void delete_thread(const shared_ptr<HttpServer::Response>& response, const share
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<< "HTTP: this is delete" << endl;
@@ -2455,6 +2495,15 @@ void download_thread(const HttpServer& server, const shared_ptr<HttpServer::Resp
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is download" << endl;
@@ -2552,6 +2601,15 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -2892,6 +2950,15 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is load"<<endl;
@@ -3144,6 +3211,15 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is unload"<<endl;
@@ -3337,6 +3413,15 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -3804,6 +3889,15 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is export" << endl;
@@ -4086,6 +4180,15 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -4826,6 +4929,15 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is monitor"<<endl;
@@ -4998,6 +5110,15 @@ void default_thread(const HttpServer& server, const shared_ptr<HttpServer::Respo
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is default"<<endl;
@@ -5117,6 +5238,15 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return false;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is check" << endl;
@@ -5207,6 +5337,15 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -5362,6 +5501,15 @@ bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return false;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is stop"<<endl;
@@ -5428,6 +5576,15 @@ void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const s
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -5620,6 +5777,15 @@ bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return false;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return false;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout<<log_prefix<<"HTTP: this is checkall"<<endl;
@@ -5705,6 +5871,15 @@ void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -5973,6 +6148,15 @@ void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is show" << endl;
@@ -6114,6 +6298,15 @@ void getCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is getCoreVersion" << endl;
@@ -6218,6 +6411,15 @@ void setAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, cons
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -6334,6 +6536,15 @@ void setCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is setCoreVersion" << endl;
@@ -6434,6 +6645,15 @@ void initVersion_thread(const shared_ptr<HttpServer::Response>& response, const 
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -6579,6 +6799,15 @@ void getAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, cons
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	cout << log_prefix << "HTTP: this is getAPIVersion" << endl;
@@ -6683,6 +6912,15 @@ void showUser_thread(const shared_ptr<HttpServer::Response>& response, const sha
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -7463,6 +7701,15 @@ void backup_thread(const shared_ptr<HttpServer::Response>& response, const share
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -7748,6 +7995,15 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -8073,6 +8329,15 @@ void incbackup_thread(const shared_ptr<HttpServer::Response>& response, const sh
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -8258,6 +8523,15 @@ void increstore_thread(const shared_ptr<HttpServer::Response>& response, const s
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -8503,6 +8777,15 @@ void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -8694,6 +8977,15 @@ void parameter_thread(const shared_ptr<HttpServer::Response>& response, const sh
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -8856,6 +9148,15 @@ void refresh_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -8939,6 +9240,15 @@ void tquery_thread(const shared_ptr<HttpServer::Response>& response, const share
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -9202,6 +9512,15 @@ void begin_thread(const shared_ptr<HttpServer::Response>& response, const shared
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -9405,6 +9724,15 @@ void commit_thread(const shared_ptr<HttpServer::Response>& response, const share
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -9630,6 +9958,15 @@ void rollback_thread(const shared_ptr<HttpServer::Response>& response, const sha
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
 	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
 	string thread_id = Util::getThreadID();
 
 	string log_prefix = "thread " + thread_id + " -- ";
@@ -9846,6 +10183,15 @@ void txnlog_thread(const shared_ptr<HttpServer::Response>& response, const share
 	{
 		cout<<"High cpu occupy ratio: "<<cpu_occupy_ratio<<endl;
 		string content="High cpu occupy ratio!";
+
+		string resJson = CreateJson(917, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		return;
+	}
+	if(!check_IO_occupy_ratio())
+	{
+		cout<<"High IO occupy ratio"<<endl;
+		string content="High IO occupy ratio!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
