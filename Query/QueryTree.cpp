@@ -72,7 +72,14 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::mapVarPos2Varset(Varse
 			 this->oper_type == Builtin_lang_type ||
 			 this->oper_type == Builtin_langmatches_type ||
 			 this->oper_type == Builtin_bound_type ||
-			 this->oper_type == Builtin_in_type)
+			 this->oper_type == Builtin_in_type ||
+			 this->oper_type == Builtin_datatype_type ||
+			 this->oper_type == Builtin_ucase_type ||
+			 this->oper_type == Builtin_lcase_type ||
+			 this->oper_type == Builtin_year_type ||
+			 this->oper_type == Builtin_month_type ||
+			 this->oper_type == Builtin_day_type ||
+			 this->oper_type == Builtin_abs_type)
 	{
 		if (this->child[0].node_type == FilterTreeChild::Tree_type)
 			this->child[0].node.mapVarPos2Varset(varset, entity_literal_varset);
@@ -80,6 +87,24 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::mapVarPos2Varset(Varse
 		{
 			this->child[0].pos = Varset(this->child[0].str).mapTo(varset)[0];
 			this->child[0].isel = entity_literal_varset.findVar(this->child[0].str);
+		}
+	}
+	else if (this->oper_type == Builtin_contains_type || this->oper_type == Builtin_strstarts_type)
+	{
+		if (this->child[0].node_type == FilterTreeChild::Tree_type)
+			this->child[0].node.mapVarPos2Varset(varset, entity_literal_varset);
+		else if (this->child[0].node_type == FilterTreeChild::String_type && this->child[0].str[0] == '?')
+		{
+			this->child[0].pos = Varset(this->child[0].str).mapTo(varset)[0];
+			this->child[0].isel = entity_literal_varset.findVar(this->child[0].str);
+		}
+
+		if (this->child[1].node_type == FilterTreeChild::Tree_type)
+			this->child[1].node.mapVarPos2Varset(varset, entity_literal_varset);
+		else if (this->child[1].node_type == FilterTreeChild::String_type && this->child[1].str[0] == '?')
+		{
+			this->child[1].pos = Varset(this->child[1].str).mapTo(varset)[0];
+			this->child[1].isel = entity_literal_varset.findVar(this->child[1].str);
 		}
 	}
 }
@@ -105,6 +130,16 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::print(int dep)
 	if (this->oper_type == Builtin_cycle_type)			printf("cycleBoolean");
 	if (this->oper_type == Builtin_sp_type)				printf("shortestPathLen");
 	if (this->oper_type == Builtin_khop_type)			printf("kHopReachable");
+	if (this->oper_type == Builtin_datatype_type)		printf("DATATYPE");
+	if (this->oper_type == Builtin_contains_type)		printf("CONTAINS");
+	if (this->oper_type == Builtin_ucase_type)			printf("UCASE");
+	if (this->oper_type == Builtin_lcase_type)			printf("LCASE");
+	if (this->oper_type == Builtin_strstarts_type)		printf("STRSTARTS");
+	if (this->oper_type == Builtin_now_type)			printf("NOW");
+	if (this->oper_type == Builtin_year_type)			printf("YEAR");
+	if (this->oper_type == Builtin_month_type)    		printf("MONTH");
+	if (this->oper_type == Builtin_day_type)			printf("DAY");
+	if (this->oper_type == Builtin_abs_type)			printf("ABS");
 
 	if (this->oper_type == Builtin_in_type)
 	{
@@ -172,7 +207,9 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::print(int dep)
 	if (this->oper_type == Greater_type)		printf(" > ");
 	if (this->oper_type == GreaterOrEqual_type)	printf(" >= ");
 
-	if (this->oper_type == Builtin_regex_type || this->oper_type == Builtin_langmatches_type)	printf(", ");
+	if (this->oper_type == Builtin_regex_type || this->oper_type == Builtin_langmatches_type \
+		|| this->oper_type == Builtin_contains_type || this->oper_type == Builtin_strstarts_type)
+		printf(", ");
 
 	if ((int)this->child.size() >= 2)
 	{

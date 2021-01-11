@@ -31,7 +31,8 @@ class EvalMultitypeValue
 
 		class DateTime
 		{
-			private:
+			// private:
+		public:
 				std::vector<int> date;
 				//year = date[0]
 				//month = date[1]
@@ -40,7 +41,7 @@ class EvalMultitypeValue
 				//minute = date[4]
 				//second = date[5]
 
-			public:
+			// public:
 				DateTime(int _year = 0, int _month = 0, int _day = 0, int _hour = 0, int _minute = 0, int _second = 0)
 				{
 					this->date.reserve(6);
@@ -95,6 +96,11 @@ class EvalMultitypeValue
 
 		void deduceTermValue();	// Set term value according to datatype and essential value
 		void deduceTypeValue();	// Set datatype and value according to term_value, for numeric & boolean
+
+		std::string getLangTag();	// Return language tag of literal
+		bool argCompatible(EvalMultitypeValue &x);	// Check argument compatibility
+													// (for string funcs that takes two arguments)
+		std::string getStrContent();	// Return string content of literal/xsd_string
 };
 
 #endif //_UTIL_EVALMULTITYPEVALUE_H

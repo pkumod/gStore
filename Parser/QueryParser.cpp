@@ -890,9 +890,10 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 		else if (((SPARQLParser::PrimaryexpressionContext *)root)->builtInCall())
 			buildFilterTree(((SPARQLParser::PrimaryexpressionContext *)root)->builtInCall(), \
 				currChild, filter, "builtInCall");
-		else if (((SPARQLParser::PrimaryexpressionContext *)root)->iriOrFunction())
+		else if (((SPARQLParser::PrimaryexpressionContext *)root)->iriOrFunction() \
+			&& ((SPARQLParser::PrimaryexpressionContext *)root)->iriOrFunction()->argList())
 			throw runtime_error("[ERROR]	Filter currently does not support custom function call.");
-		else	// rDFLiteral | numericLiteral | booleanLiteral | var
+		else	// rDFLiteral | numericLiteral | booleanLiteral | var | iri (w/o ArgList)
 		{
 			if (currChild)	// This SHOULD hold true, unless someone only writes one var or literal 
 				// inside brackets to constitute brackettedexpression, which is meaningless
@@ -908,7 +909,8 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 				}
 				else if (((SPARQLParser::PrimaryexpressionContext *)root)->booleanLiteral())
 					currChild->str = "\"" + root->getText() + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
-				else if (((SPARQLParser::PrimaryexpressionContext *)root)->var())
+				else if (((SPARQLParser::PrimaryexpressionContext *)root)->var() \
+					|| ((SPARQLParser::PrimaryexpressionContext *)root)->iriOrFunction())
 					currChild->str = root->getText();
 				
 				replacePrefix(currChild->str);
@@ -961,6 +963,27 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_sp_type;
 			else if (funcName == "KHOPREACHABLE")
 				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_khop_type;
+			
+			else if (funcName == "DATATYPE")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_datatype_type;
+			else if (funcName == "CONTAINS")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_contains_type;
+			else if (funcName == "UCASE")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_ucase_type;
+			else if (funcName == "LCASE")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_lcase_type;
+			else if (funcName == "STRSTARTS")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_strstarts_type;
+			else if (funcName == "NOW")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_now_type;
+			else if (funcName == "YEAR")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_year_type;
+			else if (funcName == "MONTH")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_month_type;
+			else if (funcName == "DAY")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_day_type;
+			else if (funcName == "ABS")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_abs_type;
 			else
 				throw runtime_error("[ERROR] Filter currently does not support this built-in call.");
 

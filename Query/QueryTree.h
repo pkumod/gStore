@@ -128,6 +128,9 @@ class QueryTree
 							Function_type, ArgumentList_type, Builtin_str_type, Builtin_lang_type, Builtin_langmatches_type, Builtin_datatype_type, Builtin_bound_type,
 							Builtin_sameterm_type, Builtin_isiri_type, Builtin_isuri_type, Builtin_isblank_type, Builtin_isliteral_type, Builtin_isnumeric_type,
 							Builtin_regex_type, Builtin_in_type, Builtin_exists_type,
+							Builtin_contains_type, Builtin_ucase_type, Builtin_lcase_type, Builtin_strstarts_type,
+							Builtin_now_type, Builtin_year_type, Builtin_month_type, Builtin_day_type,
+							Builtin_abs_type,
 							Builtin_simpleCycle_type, Builtin_cycle_type, Builtin_sp_type, Builtin_khop_type
 						};
 						FilterOperationType oper_type;
