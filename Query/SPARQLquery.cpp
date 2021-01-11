@@ -22,6 +22,10 @@ SPARQLquery::SPARQLquery()
 
 }
 
+SPARQLquery::SPARQLquery(const SPARQLquery &other):query_union(other.query_union),query_var(other.query_var) {
+
+}
+
 SPARQLquery::~SPARQLquery()
 {
 	for(unsigned i = 0; i < this->query_union.size(); i ++)
