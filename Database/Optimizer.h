@@ -1,11 +1,11 @@
 /*=============================================================================
 # Filename: Optimizer.h
-# Author: Lei Yang
-# Mail: yangop8@pku.edu.cn
+# Author: Lei Yang, Yuqi Zhou
+# Mail: yangop8@pku.edu.cn. zhouyuqi@pku.edu.cn
 =============================================================================*/
 
 #ifndef _DATABASE_OPTIMIZER_H
-#define _DATABASE_OPTIMIZER_H 
+#define _DATABASE_OPTIMIZER_H
 
 #include "../Util/Util.h"
 #include "Strategy.h"
@@ -14,66 +14,93 @@
 #include "../Query/IDList.h"
 #include "../KVstore/KVstore.h"
 
-typedef struct QueryPlan
+class QueryPlan
 {
-	int* idlist; //join order
-	bool* methodlist; // vertex join or edge join
-	QueryPlan(int* _idlist, bool* _methodlist)
-	{
-		this->idlist = _idlist;
-		this->methodlist = _methodlist;
-	}
-}QueryPlan;
+  struct OneStepJoin{
+    TYPE_ENTITY_LITERAL_ID s_;
+    TYPE_ENTITY_LITERAL_ID p_;
+    TYPE_ENTITY_LITERAL_ID o_;
+    enum JoinMethod{s2p,s2o,p2s,p2o,o2s,o2p,so2p,sp2o,po2s} join_method_;
+    OneStepJoin(TYPE_ENTITY_LITERAL_ID s,TYPE_ENTITY_LITERAL_ID p,TYPE_ENTITY_LITERAL_ID o,JoinMethod method):s_(s),
+    o_(o),p_(p),join_method_(method){
+    }
+  };
+
+  shared_ptr<vector<OneStepJoin>> join_order_; //join order
+  shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> ids_after_join_;
+
+  QueryPlan(shared_ptr<vector<OneStepJoin>> ,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>);
+};
 
 
 class Optimizer
 {
-public:
-    Optimizer();
-    Optimizer(KVstore*, Strategy, SPARQLquery&);
-    ~Optimizer();
-    bool do_query(SPARQLquery&); // the whole process
-    bool is_topk_query; // general query or topk query
-    bool is_edge_case; //Strategy 1-6 or Strategy 0
-    IDList gen_filter(unsigned _id, KVstore* kvstore, TYPE_TRIPLE_NUM* pre2num, 
-	TYPE_TRIPLE_NUM* pre2sub, TYPE_TRIPLE_NUM* pre2obj, bool * dealed_triple); // Strategy::pre_handler()
-    unsigned cardinality_estimator(BasicQuery*, KVstore* kvstore, vector<map<BasicQuery*,unsigned*> > _cardinality_cache);
-    unsigned cost_model(BasicQuery*, QueryPlan); // TODO: other parameters used in cost model
-    
-    // all following functions have input and output parameters
-    // and return status
-    
-    // two join ways update current result
-    bool vertex_join(BasicQuery*, map<BasicQuery*,vector<unsigned*> > _current_result, 
-        vector< vector<int> >& _edges, unsigned _id); // Join::join_two()
-    bool edge_join(BasicQuery*, map<BasicQuery*,vector<unsigned*> > _current_result, 
-        vector< vector<int> >& _edges, unsigned _id); // Join::only_pre_filter_after_join()
-        // Join::pre_var_handler()
-    
+ public:
+  Optimizer();
+  Optimizer(KVstore* kv_store, VSTree* vs_tree, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
+             TYPE_TRIPLE_NUM* pre2obj, TYPE_PREDICATE_ID limitID_predicate, TYPE_ENTITY_LITERAL_ID limitID_literal,
+             TYPE_ENTITY_LITERAL_ID limitID_entity,bool is_distinct, shared_ptr<Transaction> txn,SPARQLquery& sparql_query,
+             shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list,TYPE_ENTITY_LITERAL_ID limit_num);
+  ~Optimizer();
+  bool do_query(SPARQLquery&); // the whole process
+  IDList gen_filter(unsigned _id, KVstore* kvstore, shared_ptr<TYPE_TRIPLE_NUM*> pre2num,
+                    shared_ptr<TYPE_TRIPLE_NUM*> pre2sub, shared_ptr<TYPE_TRIPLE_NUM*> pre2obj, shared_ptr<bool*> dealed_triple); // Strategy::pre_handler()
+  unsigned cardinality_estimator(shared_ptr<BasicQuery>, KVstore* kvstore, vector<map<shared_ptr<BasicQuery>,unsigned*> > _cardinality_cache);
+  unsigned cost_model(shared_ptr<BasicQuery>, shared_ptr<QueryPlan>); // TODO: other parameters used in cost model
 
-    bool update_cardinality_cache(BasicQuery*,vector<map<BasicQuery*,unsigned*> >);
-    bool enum_query_plan(vector<BasicQuery*>, KVstore* kvstore, bool _is_topk_query);// Join::multi_join() BFS
-    bool choose_exec_plan(vector<map<BasicQuery*, QueryPlan*> > _candidate_plans, 
-        vector<QueryPlan> _execution_plan);     //TODO: DP
+  // all following functions have input and output parameters
+  // and return status
 
-    // change exec_plan if |real cardinality - estimated cardinality| > eps
-    bool choose_exec_plan(vector<map<BasicQuery*, QueryPlan*> > _candidate_plans, 
-        map<BasicQuery*,vector<unsigned*> > _current_result,  vector<QueryPlan>);
-    //TODO: re-choose plan in every iteration
-    
-    bool execution(vector<BasicQuery*>, vector<QueryPlan>, vector<unsigned*> _result_list);
+  // two join ways update current result
+  bool vertex_join(shared_ptr<BasicQuery>, map<shared_ptr<BasicQuery>,shared_ptr<vector<unsigned*>>> _current_result,
+                   shared_ptr< vector< vector<int> >> _edges, unsigned _id); // Join::join_two()
+  bool edge_join(shared_ptr<BasicQuery>, map<shared_ptr<BasicQuery>,shared_ptr<vector<unsigned*>>> _current_result,
+                 shared_ptr<vector< vector<int> >> _edges, unsigned _id); // Join::only_pre_filter_after_join()
+  // Join::pre_var_handler()
 
 
-private:
-    Strategy strategy;
-    KVstore* kvstore;
-    unsigned current_basic_query; // updated by result_list.size()
-    vector<BasicQuery*> basic_query_list; //fork from SPARQLQuery, I dont know why
-    vector<map<BasicQuery*, QueryPlan*> > candidate_plans;
-    vector<QueryPlan> execution_plan;
-    vector<unsigned*> result_list; // vector<unsigned*>* result_list;
-    vector<map<BasicQuery*,vector<unsigned*> > > join_cache; // map(sub-structure, result_list)
-    vector<map<BasicQuery*,unsigned*> > cardinality_cache; // map(sub-structure, cardinality), not in statistics
+  bool update_cardinality_cache(shared_ptr<BasicQuery>,vector<map<shared_ptr<BasicQuery>,unsigned*> >);
+  bool enum_query_plan(vector<shared_ptr<BasicQuery>>, KVstore* kvstore, bool _is_topk_query);// Join::multi_join() BFS
+  bool choose_exec_plan(vector<map<shared_ptr<BasicQuery>, QueryPlan*> > _candidate_plans,
+                        vector<QueryPlan> _execution_plan);     //TODO: DP
+
+  // change exec_plan if |real cardinality - estimated cardinality| > eps
+  bool choose_exec_plan(vector<map<shared_ptr<BasicQuery>, QueryPlan*> > _candidate_plans,
+                        map<shared_ptr<BasicQuery>,vector<unsigned*> > _current_result,  vector<QueryPlan>);
+  //TODO: re-choose plan in every iteration
+
+  bool execution(vector<shared_ptr<BasicQuery>>, vector<QueryPlan>, vector<unsigned*> _result_list);
+
+
+ private:
+  KVstore* kv_store_;
+
+  shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list_; // empty if not using 'orderby'
+  TYPE_ENTITY_LITERAL_ID limit_num_; // -1 if not limit result size
+
+  bool is_edge_case; //Strategy 1-6 or Strategy 0
+  int current_basic_query_; // updated by result_list.size()
+
+  shared_ptr<vector<shared_ptr<BasicQuery>>> basic_query_list_; //fork from SPARQLQuery, I dont know why
+  shared_ptr<vector<tuple<shared_ptr<BasicQuery>, shared_ptr<vector<QueryPlan>>>>> candidate_plans_;
+  shared_ptr<vector<QueryPlan>> execution_plan_;
+  shared_ptr<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>> result_list_; // vector<unsigned*>* result_list;
+
+  //TODO: shared_ptr<BasicQuery> may brings wrong matching
+  shared_ptr<vector<map<shared_ptr<BasicQuery>,vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>> join_cache_; // map(sub-structure, result_list)
+  shared_ptr<vector<map<shared_ptr<BasicQuery>,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>> cardinality_cache_; // map(sub-structure, cardinality), not in statistics
+
+  FILE* fp_;
+  bool export_flag_;
+  bool is_distinct_;
+  VSTree* vstree_;
+  TYPE_TRIPLE_NUM* pre2num_;
+  TYPE_TRIPLE_NUM* pre2sub_;
+  TYPE_TRIPLE_NUM* pre2obj_;
+  TYPE_PREDICATE_ID limitID_predicate_;
+  TYPE_ENTITY_LITERAL_ID limitID_literal_;
+  TYPE_ENTITY_LITERAL_ID limitID_entity_;
+  shared_ptr<Transaction> txn_;
 
 };
 

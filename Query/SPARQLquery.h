@@ -21,6 +21,8 @@ public:
 	SPARQLquery(const string& _query);
 
 	SPARQLquery();
+
+    SPARQLquery(const SPARQLquery &other);
 	~SPARQLquery();
 
 	void addQueryVar(const string& _var);
