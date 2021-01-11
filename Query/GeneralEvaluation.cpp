@@ -351,6 +351,7 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 			if (i + 1 == (int)group_pattern.sub_group_pattern.size() ||
 				(group_pattern.sub_group_pattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Pattern_type && group_pattern.sub_group_pattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Union_type))
 			{
+				// Reach the end of this BGP, start merging
 				SPARQLquery sparql_query;
 				vector<vector<string> > encode_varset;
 				vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
@@ -360,7 +361,7 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 					{
 						if (!group_pattern.sub_group_pattern[j].pattern.varset.empty())
 						{
-							if (group_pattern.getRootPatternBlockID(j) == j)		//root node
+							if (group_pattern.getRootPatternBlockID(j) == j)		//root node, coming from mergePatternBlockID
 							{
 								Varset occur;
 								vector<QueryTree::GroupPattern::Pattern> basic_query;

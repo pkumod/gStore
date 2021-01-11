@@ -476,6 +476,8 @@ void TempResult::getFilterString(QueryTree::GroupPattern::FilterTree::FilterTree
 				femv.datatype = EvalMultitypeValue::xsd_boolean;
 				femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
 
+				cout << "SUSPECT??" << endl;
+
 				return;
 			}
 
@@ -521,7 +523,7 @@ EvalMultitypeValue
 		return !x;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Or_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Or_type)
 	{
 		EvalMultitypeValue x, y;
 
@@ -538,7 +540,7 @@ EvalMultitypeValue
 		return x || y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::And_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::And_type)
 	{
 		EvalMultitypeValue x, y;
 
@@ -555,7 +557,7 @@ EvalMultitypeValue
 		return x && y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Equal_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Equal_type)
 	{
 		EvalMultitypeValue x, y;
 
@@ -572,7 +574,7 @@ EvalMultitypeValue
 		return x == y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::NotEqual_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::NotEqual_type)
 	{
 		EvalMultitypeValue x, y;
 
@@ -589,7 +591,7 @@ EvalMultitypeValue
 		return x != y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Less_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Less_type)
 	{
 		EvalMultitypeValue x, y;
 
@@ -606,7 +608,7 @@ EvalMultitypeValue
 		return x < y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::LessOrEqual_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::LessOrEqual_type)
 	{
 		EvalMultitypeValue x, y;
 
@@ -623,7 +625,7 @@ EvalMultitypeValue
 		return x <= y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Greater_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Greater_type)
 	{
 		EvalMultitypeValue x, y;
 
@@ -640,7 +642,7 @@ EvalMultitypeValue
 		return x > y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::GreaterOrEqual_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::GreaterOrEqual_type)
 	{
 		EvalMultitypeValue x, y;
 
@@ -657,7 +659,7 @@ EvalMultitypeValue
 		return x >= y;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_regex_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_regex_type)
 	{
 		EvalMultitypeValue x, y, z;
 		string t, p, f;
@@ -710,7 +712,7 @@ EvalMultitypeValue
 		return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_str_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_str_type)
 	{
 		EvalMultitypeValue x;
 
@@ -747,7 +749,7 @@ EvalMultitypeValue
 			return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isiri_type ||
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isiri_type ||
 		filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isuri_type)
 	{
 		EvalMultitypeValue x;
@@ -762,7 +764,7 @@ EvalMultitypeValue
 		return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isliteral_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isliteral_type)
 	{
 		EvalMultitypeValue x;
 
@@ -783,7 +785,7 @@ EvalMultitypeValue
 		return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isnumeric_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_isnumeric_type)
 	{
 		EvalMultitypeValue x;
 
@@ -800,7 +802,7 @@ EvalMultitypeValue
 		return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_lang_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_lang_type)
 	{
 		EvalMultitypeValue x;
 
@@ -825,7 +827,247 @@ EvalMultitypeValue
 			return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_langmatches_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_datatype_type)
+	{
+		EvalMultitypeValue x;
+
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
+
+		if (x.datatype == EvalMultitypeValue::rdf_term)
+		{
+			int p = x.str_value.rfind("^^");
+			if (p != string::npos)
+			{
+				ret_femv.datatype = EvalMultitypeValue::iri;
+				ret_femv.term_value = x.str_value.substr(p + 2);
+			}
+		}
+		else if (x.datatype == EvalMultitypeValue::literal)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			int p = x.str_value.rfind('@');
+			if (p != string::npos)
+				ret_femv.term_value = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>";
+			else
+				ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#string>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_string)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#string>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_boolean)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#boolean>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_integer)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#integer>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_decimal)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#decimal>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_float)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#float>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_double)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#double>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_datetime)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#dateTime>";
+		}
+
+		return ret_femv;
+	}
+
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_now_type)
+	{
+		time_t now = time(0);
+		tm *lctm = localtime(&now);
+		ret_femv.datatype = EvalMultitypeValue::xsd_datetime;
+		ret_femv.dt_value = EvalMultitypeValue::DateTime(1900 + lctm->tm_year, 1 + lctm->tm_mon, \
+			lctm->tm_mday, 5+lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
+		// ret_femv.deduceTermValue();
+		return ret_femv;
+	}
+
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_year_type)
+	{
+		EvalMultitypeValue x;
+
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
+
+		if (x.datatype == EvalMultitypeValue::xsd_datetime)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
+			ret_femv.int_value = x.dt_value.date[0];
+
+			return ret_femv;
+		}
+		else
+			return ret_femv;
+	}
+
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_month_type)
+	{
+		EvalMultitypeValue x;
+
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
+
+		if (x.datatype == EvalMultitypeValue::xsd_datetime)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
+			ret_femv.int_value = x.dt_value.date[1];
+
+			return ret_femv;
+		}
+		else
+			return ret_femv;
+	}
+
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_day_type)
+	{
+		EvalMultitypeValue x;
+
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
+
+		if (x.datatype == EvalMultitypeValue::xsd_datetime)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
+			ret_femv.int_value = x.dt_value.date[2];
+
+			return ret_femv;
+		}
+		else
+			return ret_femv;
+	}
+
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_ucase_type \
+		|| filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_lcase_type)
+	{
+		EvalMultitypeValue x;
+
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
+
+		string langTag = "";
+		if (x.datatype == EvalMultitypeValue::xsd_string)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_string;
+			ret_femv.str_value = x.str_value;
+		}
+		else if (x.datatype == EvalMultitypeValue::literal)
+		{
+			ret_femv.datatype = EvalMultitypeValue::literal;
+			int p = x.str_value.rfind('@');
+			if (p != -1)
+			{
+				ret_femv.str_value = x.str_value.substr(0, p);	// ADD lang tag!
+				langTag = x.str_value.substr(p + 1);
+			}
+			else
+				ret_femv.str_value = x.str_value;
+		}
+
+		// Will this deal with punctuation automatically?
+		if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_ucase_type)
+			transform(ret_femv.str_value.begin(), ret_femv.str_value.end(), \
+				ret_femv.str_value.begin(), ::toupper);
+		else 	// Builtin_lcase_type
+			transform(ret_femv.str_value.begin(), ret_femv.str_value.end(), \
+				ret_femv.str_value.begin(), ::tolower);
+		if (langTag != "")
+			ret_femv.str_value += "@" + langTag;
+		
+		return ret_femv;
+	}
+
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_contains_type \
+		|| filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_strstarts_type)
+	{
+		EvalMultitypeValue x, y;
+
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
+		if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[1], y, row, id_cols, stringindex);
+		else if (filter.child[1].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			y = matchFilterTree(filter.child[1].node, row, id_cols, stringindex);
+
+		if(x.argCompatible(y))
+		{
+			string x_content = x.getStrContent(), y_content = y.getStrContent();
+			int p = x_content.find(y_content);
+			if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_contains_type && p != string::npos \
+				|| filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_strstarts_type && p == 0)
+				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
+			else
+				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
+		}
+
+		return ret_femv;
+	}
+
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_abs_type)
+	{
+		EvalMultitypeValue x;
+
+		if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::String_type)
+			getFilterString(filter.child[0], x, row, id_cols, stringindex);
+		else if (filter.child[0].node_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild::Tree_type)
+			x = matchFilterTree(filter.child[0].node, row, id_cols, stringindex);
+
+		if (x.datatype == EvalMultitypeValue::xsd_integer)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
+			ret_femv.int_value = abs(x.int_value);
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_decimal)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_decimal;
+			ret_femv.flt_value = fabs(x.flt_value);
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_float)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_float;
+			ret_femv.flt_value = fabs(x.flt_value);
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_double)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_double;
+			ret_femv.dbl_value = fabs(x.dbl_value);
+		}
+
+		return ret_femv;
+	}
+
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_langmatches_type)
 	{
 		EvalMultitypeValue x, y;
 
@@ -848,14 +1090,14 @@ EvalMultitypeValue
 		return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_bound_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_bound_type)
 	{
 		ret_femv.bool_value = (filter.child[0].pos != -1);
 
 		return ret_femv;
 	}
 
-	if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_in_type)
+	else if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_in_type)
 	{
 		EvalMultitypeValue x;
 

@@ -308,8 +308,10 @@ EvalMultitypeValue
 		return ret_femv;
 	}
 
-	if (this->isSimpleLiteral() && x.isSimpleLiteral())
+	// if (this->isSimpleLiteral() && x.isSimpleLiteral())
+	if (this->datatype == literal && x.datatype == literal)
 	{
+		// Include those with lang tags; require lang tags to be equal
 		ret_femv.bool_value = (this->str_value == x.str_value);
 
 		ret_femv.deduceTermValue();
@@ -853,6 +855,28 @@ void EvalMultitypeValue::deduceTermValue()
 		else if (bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::false_value)
 			term_value = "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
 	}
+	else if (datatype == xsd_datetime)
+	{
+		stringstream ss;
+		// 2002-10-10T12:00:00Z
+		ss << '\"' << dt_value.date[0] << '-';
+		if (dt_value.date[1] < 10)
+			ss << '0';
+		ss << dt_value.date[1] << '-';
+		if (dt_value.date[2] < 10)
+			ss << '0';
+		ss << dt_value.date[2] << 'T';
+		if (dt_value.date[3] < 10)
+			ss << '0';
+		ss << dt_value.date[3] << ':';
+		if (dt_value.date[4] < 10)
+			ss << '0';
+		ss << dt_value.date[4] << ':';
+		if (dt_value.date[5] < 10)
+			ss << '0';
+		ss << dt_value.date[5] << "\"^^<http://www.w3.org/2001/XMLSchema#dateTime>";
+		ss >> term_value;
+	}
 }
 
 void EvalMultitypeValue::deduceTypeValue()
@@ -979,4 +1003,52 @@ void EvalMultitypeValue::deduceTypeValue()
 
 		dt_value = EvalMultitypeValue::DateTime(date[0], date[1], date[2], date[3], date[4], date[5]);
 	}
+}
+
+string EvalMultitypeValue::getLangTag()
+{
+	if (datatype == EvalMultitypeValue::literal)
+	{
+		int p = str_value.rfind('@');
+		if (p != -1)
+			return "\"" + str_value.substr(p + 1) + "\"";
+		else
+			return "";
+	}
+	return "";
+}
+
+bool EvalMultitypeValue::argCompatible(EvalMultitypeValue &x)
+{
+	if (datatype == EvalMultitypeValue::xsd_string)
+	{
+		if (x.datatype == EvalMultitypeValue::xsd_string \
+			|| x.datatype == EvalMultitypeValue::literal && x.isSimpleLiteral())
+			return true;
+	}
+	else if (datatype == EvalMultitypeValue::literal)
+	{
+		if (x.datatype == EvalMultitypeValue::xsd_string)
+			return true;
+		else if (x.datatype == EvalMultitypeValue::literal \
+			&& (x.isSimpleLiteral() || getLangTag() == x.getLangTag()))
+			return true;
+	}
+
+	return false;
+}
+
+string EvalMultitypeValue::getStrContent()
+{
+	if (datatype == EvalMultitypeValue::xsd_string || datatype == EvalMultitypeValue::literal)
+	{
+		if (str_value[0] != '"')
+			return "";
+		int p = str_value.rfind('"');
+		if (p == 0)
+			return "";
+		return str_value.substr(1, p - 1);
+	}
+
+	return "";
 }

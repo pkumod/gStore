@@ -1,6 +1,6 @@
 #!/bin/bash
 
-query_num=32
+query_num=47
 data_dir="scripts/parser_test/"
 gbuild='bin/gbuild '
 gquery='bin/gquery '
@@ -19,14 +19,16 @@ do
     $gbuild "parser_test" $data > "tmp.txt"
     $gquery "parser_test" $query | "grep" "-A" "10000" "final result is :" > "tmp.txt"
     "sed" "-i" "1d" "tmp.txt"
+    "sed" "-i" "\$d" "tmp.txt"
+    "sed" "-i" "\$d" "tmp.txt"
     "grep" "." "tmp.txt" | "sort" > "result_b.txt"
     
     "diff" "result_a.txt" "result_b.txt" > "equal.txt"
     if [ -s "equal.txt" ]; then
         echo "parser test #"$i" failed"
         all_passed=false
-    #else
-        #echo "parser test #"$i" passed"
+    else
+        echo "parser test #"$i" passed"
     fi
 
 	$gdrop "parser_test" > "tmp.txt"

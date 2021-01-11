@@ -460,7 +460,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 	//NOTICE: we append the candidates for selected pre_var to original select_var_num columns
     this->select_var_num = this->selected_pre_var_num = 0;
 	cout<<"now to check the query var list order:"<<endl;
-	for(unsigned i = 0; i < _query_var.size(); ++i)
+	for(unsigned i = 0; i < _query_var.size(); ++i)    // _query_var is passed-in param
 	{
 		//NOTICE:not place pre var in join
 		string var = _query_var[i];
@@ -477,6 +477,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 			this->select_var_num++;
 			continue;
 		}
+        // is pre var
 		this->selected_var_position[-1-pid] = i;
 		this->pre_var[pid].selected = true;
 		this->selected_pre_var_num++;
@@ -503,9 +504,11 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
     }
     else
     {
+        // I believe this path is chosen, otherwise var_str2id will not be modified
         this->addInVarNotInSelect();
     }
     // assign the this->var_num, all need to join
+    // (var_str2id is modified)
     this->graph_var_num = this->var_str2id.size();
 
     cout<< "graph variables: ";
@@ -923,6 +926,7 @@ void BasicQuery::addInVarNotInSelect()
 
 // map id 2 var_name : this->var_name[]
 // map var_name 2 id : this->var_str2id
+// vars that are not in var_str2id are placed in var_not_in_select
 // invalid, because var has two type: var_in_select  var_not_in_select
 // QUERY:called if encode_method is just select, then why this is 
 // the same as addInVarNotInSelect?
