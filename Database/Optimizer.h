@@ -13,18 +13,11 @@
 #include "../Query/BasicQuery.h"
 #include "../Query/IDList.h"
 #include "../KVstore/KVstore.h"
+#include "TableOperator.h"
+
 
 class QueryPlan
 {
-  struct OneStepJoin{
-    TYPE_ENTITY_LITERAL_ID s_;
-    TYPE_ENTITY_LITERAL_ID p_;
-    TYPE_ENTITY_LITERAL_ID o_;
-    enum JoinMethod{s2p,s2o,p2s,p2o,o2s,o2p,so2p,sp2o,po2s} join_method_;
-    OneStepJoin(TYPE_ENTITY_LITERAL_ID s,TYPE_ENTITY_LITERAL_ID p,TYPE_ENTITY_LITERAL_ID o,JoinMethod method):s_(s),
-    o_(o),p_(p),join_method_(method){
-    }
-  };
 
   shared_ptr<vector<OneStepJoin>> join_order_; //join order
   shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> ids_after_join_;
@@ -32,6 +25,18 @@ class QueryPlan
   QueryPlan(shared_ptr<vector<OneStepJoin>> ,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>);
 };
 
+struct IntermediateResult{
+  shared_ptr<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>> values_;
+  shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> id_to_position_;
+  shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_id;
+  shared_ptr<vector<bool>> dealed_triple_;
+};
+
+
+class ResultTrigger{
+  int estimate_upper_bound;
+  int estimate_lower_bound;
+};
 
 class Optimizer
 {
@@ -51,6 +56,7 @@ class Optimizer
   // all following functions have input and output parameters
   // and return status
 
+  bool JoinOneStep(shared_ptr<QueryPlan>,shared_ptr<IntermediateResult>,shared_ptr<ResultTrigger>);
   // two join ways update current result
   bool vertex_join(shared_ptr<BasicQuery>, map<shared_ptr<BasicQuery>,shared_ptr<vector<unsigned*>>> _current_result,
                    shared_ptr< vector< vector<int> >> _edges, unsigned _id); // Join::join_two()
