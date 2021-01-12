@@ -46,3 +46,14 @@ Optimizer::Optimizer(KVstore *kv_store,
   this->cardinality_cache_ = make_shared<vector<map<shared_ptr<BasicQuery>,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>(); // map(sub-structure, cardinality), not in statistics
 
 }
+
+// Inherit from Join::join_two
+bool Optimizer::JoinOneStep(shared_ptr<QueryPlan> query_plan, shared_ptr<IntermediateResult> intermediate_result, shared_ptr<ResultTrigger> result_trigger) {
+
+
+
+
+
+
+  return false;
+}
