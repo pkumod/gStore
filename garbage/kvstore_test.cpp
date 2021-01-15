@@ -606,6 +606,66 @@ Database::encodeRDF_new(const string _rdf_file)
 	return true;
 }
 
+bool
+Database::encodeRDF_new(const string _rdf_file, const string _error_file)
+{
+#ifdef DEBUG
+	//cout<< "now to log!!!" << endl;
+	Util::logging("In encodeRDF_new");
+	//cout<< "end log!!!" << endl;
+#endif
+	int** _p_id_tuples = NULL;
+	int _id_tuples_max = 0;
+
+	long t1 = Util::get_cur_time();
+
+	//map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature
+	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _p_id_tuples, _id_tuples_max))
+	{
+		return false;
+	}
+
+	long t2 = Util::get_cur_time();
+	cout << "after encode, used " << (t2 - t1) << "ms." << endl;
+
+	//NOTICE:close these trees now to save memory
+	this->kvstore->close_entity2id();
+	this->kvstore->close_id2entity();
+	this->kvstore->close_literal2id();
+	this->kvstore->close_id2literal();
+	this->kvstore->close_predicate2id();
+	this->kvstore->close_id2predicate();
+
+	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num);
+	long t3 = Util::get_cur_time();
+	cout << "after s2xx, used " << (t3 - t2) << "ms." << endl;
+
+	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num);
+	long t4 = Util::get_cur_time();
+	cout << "after o2xx, used " << (t4 - t3) << "ms." << endl;
+
+	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num);
+	long t5 = Util::get_cur_time();
+	cout << "after p2xx, used " << (t5 - t4) << "ms." << endl;
+
+	//WARN:we must free the memory for id_tuples array
+	for (int i = 0; i < this->triples_num; ++i)
+	{
+		delete[] _p_id_tuples[i];
+	}
+	delete[] _p_id_tuples;
+
+	bool flag = this->saveDBInfoFile();
+	if (!flag)
+	{
+		return false;
+	}
+
+	Util::logging("finish encodeRDF_new");
+
+	return true;
+}
+
 //NOTICE:in here and there in the insert/delete, we may get the maxium tuples num first
 //and so we can avoid the cost of memcpy(scan quickly or use wc -l)
 //However, if use compressed RDF format, how can we do it fi not using parser?

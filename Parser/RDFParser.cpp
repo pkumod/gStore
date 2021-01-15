@@ -209,6 +209,208 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
 	return "";
 }
 
+string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num,string _error_log)
+{
+	string _subject, _predicate, _object, _objectSubType;
+	Type::Type_ID _objectType;
+	ofstream ofile;               //定义输出文件
+	ofile.open(_error_log);
+	while (_triple_num < RDFParser::TRIPLE_NUM_PER_GROUP)
+	{
+		try
+		{
+			if (!this->_TurtleParser.parse(_subject, _predicate, _object, _objectType, _objectSubType))		break;
+		}
+		catch (const TurtleParser::Exception& _e)
+		{
+			//cerr << _e.message << endl;
+			ofile << _subject << "||" << _predicate << "||" << _object << "||" << _e.message << endl;
+			this->_TurtleParser.discardLine();
+			continue;
+		}
+
+		_subject = "<" + _subject + ">";
+		_predicate = "<" + _predicate + ">";
+
+		TripleWithObjType::ObjectType _object_type = TripleWithObjType::None;
+		if (_objectType == Type::Type_URI)
+		{
+			_object = "<" + _object + ">";
+			_object_type = TripleWithObjType::Entity;
+		}
+		else
+		{
+			if (_objectType == Type::Type_Literal)
+				_object = "\"" + _object + "\"";
+			else if (_objectType == Type::Type_CustomLanguage)
+				_object = "\"" + _object + "\"@" + _objectSubType;
+			else if (_objectType == Type::Type_String)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#string>";
+			else if (_objectType == Type::Type_Integer)
+			{
+				long long ll;
+				try
+				{
+					ll = stoll(_object);
+				}
+				catch (invalid_argument& e)
+				{
+					cout << "Triple " << _triple_num << " integer value invalid, _object = " << _object << endl;
+					continue;
+				}
+				catch (out_of_range& e)
+				{
+					cout << "Triple " << _triple_num << " integer out of range." << endl;
+					continue;
+				}
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+			}
+			else if (_objectType == Type::Type_Decimal)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
+			else if (_objectType == Type::Type_Double)
+			{
+				double d;
+				try
+				{
+					d = stod(_object);
+				}
+				catch (invalid_argument& e)
+				{
+					cout << "Triple " << _triple_num << " double value invalid." << endl;
+					continue;
+				}
+				if (_object.length() == 3 && toupper(_object[0]) == 'N' && toupper(_object[1]) == 'A'
+					&& toupper(_object[2]) == 'N')
+				{
+					cout << "Triple " << _triple_num << " double value is NaN." << endl;
+					continue;
+				}
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
+			}
+			else if (_objectType == Type::Type_Boolean)
+				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+			else if (_objectType == Type::Type_CustomType)
+			{
+				// cout << "Triple " << _triple_num << " is custom type." << endl;
+				if (_objectSubType == "http://www.w3.org/2001/XMLSchema#long")
+				{
+					long long ll;
+					try
+					{
+						ll = stoll(_object);
+					}
+					catch (invalid_argument& e)
+					{
+						cout << "Triple " << _triple_num << " long value invalid, _object = " << _object << endl;
+						continue;
+					}
+					catch (out_of_range& e)
+					{
+						cout << "Triple " << _triple_num << " xsd:long out of range." << endl;
+						continue;
+					}
+				}
+				else if (_objectSubType == "http://www.w3.org/2001/XMLSchema#int")
+				{
+					long long ll;
+					try
+					{
+						ll = stoll(_object);
+					}
+					catch (invalid_argument& e)
+					{
+						cout << "Triple " << _triple_num << " int value invalid, _object = " << _object << endl;
+						continue;
+					}
+					catch (out_of_range& e)
+					{
+						cout << "Triple " << _triple_num << " xsd:int out of range." << endl;
+						continue;
+					}
+					if (ll < (long long)INT_MIN || ll >(long long)INT_MAX)
+					{
+						cout << "Triple " << _triple_num << " xsd:int out of range." << endl;
+						continue;
+					}
+				}
+				else if (_objectSubType == "http://www.w3.org/2001/XMLSchema#short")
+				{
+					long long ll;
+					try
+					{
+						ll = stoll(_object);
+					}
+					catch (invalid_argument& e)
+					{
+						cout << "Triple " << _triple_num << " short value invalid, _object = " << _object << endl;
+						continue;
+					}
+					catch (out_of_range& e)
+					{
+						cout << "Triple " << _triple_num << " xsd:short out of range." << endl;
+						continue;
+					}
+					if (ll < (long long)SHRT_MIN || ll >(long long)SHRT_MAX)
+					{
+						cout << "Triple " << _triple_num << " xsd:short out of range." << endl;
+						continue;
+					}
+				}
+				else if (_objectSubType == "http://www.w3.org/2001/XMLSchema#byte")
+				{
+					long long ll;
+					try
+					{
+						ll = stoll(_object);
+					}
+					catch (invalid_argument& e)
+					{
+						cout << "Triple " << _triple_num << " byte value invalid, _object = " << _object << endl;
+						continue;
+					}
+					catch (out_of_range& e)
+					{
+						cout << "Triple " << _triple_num << " xsd:byte out of range." << endl;
+						continue;
+					}
+					if (ll < (long long)SCHAR_MIN || ll >(long long)SCHAR_MAX)
+					{
+						cout << "Triple " << _triple_num << " xsd:byte out of range." << endl;
+						continue;
+					}
+				}
+				else if (_objectSubType == "http://www.w3.org/2001/XMLSchema#float")
+				{
+					float f;
+					try
+					{
+						f = stof(_object);
+					}
+					catch (invalid_argument& e)
+					{
+						cout << "Triple " << _triple_num << " float value invalid." << endl;
+						continue;
+					}
+					if (_object.length() == 3 && toupper(_object[0]) == 'N' && toupper(_object[1]) == 'A'
+						&& toupper(_object[2]) == 'N')
+					{
+						cout << "Triple " << _triple_num << " float value is NaN." << endl;
+						continue;
+					}
+				}
+				_object = "\"" + _object + "\"^^<" + _objectSubType + ">";
+			}
+			_object_type = TripleWithObjType::Literal;
+		}
+
+		_triple_array[_triple_num++] = TripleWithObjType(_subject, _predicate, _object, _object_type);
+
+	}
+	cout << "RDFParser parseFile done!" << endl;
+	ofile.close();
+	return "";
+}
+
 string RDFParser::parseFileSample(TripleWithObjType* _triple_array, int& _triple_num, int UPBOUND)
 {
 	string _subject, _predicate, _object, _objectSubType;
