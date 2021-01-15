@@ -223,7 +223,8 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num,s
 		}
 		catch (const TurtleParser::Exception& _e)
 		{
-			cout <<"³ö´íÁË:"<< _e.message << endl;
+			cout <<"error:"<< _e.message << endl;
+			cout << _subject << "||" << _predicate << "||" << _object << "||" << _e.message << endl;
 			this->_TurtleParser.discardLine();
 			ofile << _subject << "||" << _predicate << "||" << _object << "||" << _e.message << endl;
 		
