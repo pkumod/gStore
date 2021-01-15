@@ -213,8 +213,8 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num,s
 {
 	string _subject, _predicate, _object, _objectSubType;
 	Type::Type_ID _objectType;
-	ofstream ofile(_error_log,ios::app);  :             //定义输出文件
-	//ofile.open(_error_log);
+	ofstream ofile;             //定义输出文件
+	ofile.open(_error_log,ios::app);
 	if (!ofile)
 	{
 		cout << " file can not be opened." << endl;
