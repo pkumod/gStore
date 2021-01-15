@@ -2520,8 +2520,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
     }
     cout << "Add triples to Trie to prepare for BuildPrefix" << endl;
     trie->BuildPrefix();
-    cout << "BuildPrefix done. 
-        used" << Util::get_cur_time() - begin << endl;
+    cout << "BuildPrefix done. used " << Util::get_cur_time() - begin <<" ms"<< endl;
   }
 
   RDFParser _parser(_fin);
@@ -2864,7 +2863,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
         }
         cout << "Add triples to Trie to prepare for BuildPrefix" << endl;
         trie->BuildPrefix();
-        cout << "BuildPrefix done. used" << Util::get_cur_time() - begin << endl;
+        cout << "BuildPrefix done. used " << Util::get_cur_time() - begin <<" ms"<< endl;
     }
 
     RDFParser _parser(_fin);
