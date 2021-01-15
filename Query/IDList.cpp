@@ -487,3 +487,7 @@ std::vector<unsigned>::iterator
 IDList::eraseAt(std::vector<unsigned>::iterator  it){
 	return id_list.erase( it);
 }
+
+void IDList::reserve(size_t size) {
+  id_list.reserve(size);
+}

@@ -14,28 +14,14 @@
 #include "../Query/IDList.h"
 #include "../KVstore/KVstore.h"
 #include "TableOperator.h"
-
+#include "ResultTrigger.h"
 
 class QueryPlan
 {
-
   shared_ptr<vector<OneStepJoin>> join_order_; //join order
   shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> ids_after_join_;
 
   QueryPlan(shared_ptr<vector<OneStepJoin>> ,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>);
-};
-
-struct IntermediateResult{
-  shared_ptr<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>> values_;
-  shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> id_to_position_;
-  shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_id;
-  shared_ptr<vector<bool>> dealed_triple_;
-};
-
-
-class ResultTrigger{
-  int estimate_upper_bound;
-  int estimate_lower_bound;
 };
 
 class Optimizer
@@ -65,6 +51,11 @@ class Optimizer
   // Join::pre_var_handler()
 
 
+  tuple<bool,shared_ptr<IntermediateResult>> JoinANode(shared_ptr<OneStepJoinNode>,shared_ptr<IntermediateResult>,shared_ptr<ResultTrigger>);
+  tuple<bool,shared_ptr<IntermediateResult>> JoinTwoTable(shared_ptr<OneStepJoinTable>,shared_ptr<IntermediateResult>,shared_ptr<IntermediateResult>,shared_ptr<ResultTrigger>);
+  tuple<bool,shared_ptr<IntermediateResult>> EdgeConstraintFilter(shared_ptr<EdgeInfo>,EdgeInTableInfo,shared_ptr<IntermediateResult>,shared_ptr<ResultTrigger>);
+  tuple<bool,shared_ptr<IntermediateResult>> FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>,TYPE_ENTITY_LITERAL_ID ,shared_ptr<IntermediateResult>,shared_ptr<ResultTrigger>);
+
   bool update_cardinality_cache(shared_ptr<BasicQuery>,vector<map<shared_ptr<BasicQuery>,unsigned*> >);
   bool enum_query_plan(vector<shared_ptr<BasicQuery>>, KVstore* kvstore, bool _is_topk_query);// Join::multi_join() BFS
   bool choose_exec_plan(vector<map<shared_ptr<BasicQuery>, QueryPlan*> > _candidate_plans,
@@ -77,6 +68,7 @@ class Optimizer
 
   bool execution(vector<shared_ptr<BasicQuery>>, vector<QueryPlan>, vector<unsigned*> _result_list);
 
+  static void UpdateIDList(shared_ptr<IDList>, unsigned*, unsigned,bool);
 
  private:
   KVstore* kv_store_;
