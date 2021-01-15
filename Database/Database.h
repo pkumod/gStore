@@ -280,6 +280,8 @@ private:
 	//* 4. build: objID2subIDlist, <objIDpreID>2subIDlist objID2<preIDsubID>list
 	//encodeRDF_new invoke new rdfParser to solve task 1 & 2 in one time scan.
 	bool encodeRDF_new(const string _rdf_file);
+	//add param to store the parse error tuple
+	bool encodeRDF_new(const string _rdf_file, const string _error_log);
 	void readIDTuples(ID_TUPLE*& _p_id_tuples);
 	void build_s2xx(ID_TUPLE*);
 	void build_o2xx(ID_TUPLE*);
@@ -295,6 +297,7 @@ private:
 	unsigned remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false, shared_ptr<Transaction> txn = nullptr);
 
 	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file);
+	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const string _error_log);
 	//bool literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, TYPE_TRIPLE_NUM _id_tuples_max);
 
 	bool objIDIsEntityID(TYPE_ENTITY_LITERAL_ID _id);

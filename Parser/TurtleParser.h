@@ -93,6 +93,10 @@ class TurtleParser
       void ungetIgnored(Token t) { putBack=t; if (t>=Token_Integer) putBackValue=ignored; }
       /// Get the line
       unsigned getLine() const { return line; }
+      void nextLine()
+      {
+          line++;
+      }
 
       void readUntilSep(std::string& value);
 	  void discardLine() { char c; while (read(c) && c!='\n'); }
