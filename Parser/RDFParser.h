@@ -28,6 +28,7 @@ class RDFParser {
   }
 
   string parseFile(TripleWithObjType* _triple_array, int& _triple_num);
+  string parseFile(TripleWithObjType* _triple_array, int& _triple_num,string _error_log);
   string parseFileSample(TripleWithObjType* _triple_array, int& _triple_num, int UPBOUND);
   string parseString(string _str, TripleWithObjType* _triple_array, int& _triple_num);
 };
