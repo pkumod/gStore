@@ -140,6 +140,11 @@ public:
       return line;
     }
 
+    void nextLine()
+    {
+        line++;
+    }
+
     void readUntilSep(std::string& value);
     void discardLine()
     {

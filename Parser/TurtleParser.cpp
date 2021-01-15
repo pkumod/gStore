@@ -488,6 +488,7 @@ void TurtleParser::parseError(const string& message)
 {
   stringstream msg;
   msg << "parse error in line " << lexer.getLine() << ": " << message;
+  lexer.nextLine();
   throw Exception(msg.str());
 }
 //---------------------------------------------------------------------------
