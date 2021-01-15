@@ -2034,7 +2034,7 @@ Database::encodeRDF_new(const string _rdf_file,const string _error_file)
   //(one way is to add a more structure to tell us which is entity, but this is costly)
 
   //map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature
-  if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file)) {
+  if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file,_error_file)) {
     return false;
   }
 
