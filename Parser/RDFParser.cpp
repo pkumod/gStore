@@ -213,7 +213,7 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num,s
 {
 	string _subject, _predicate, _object, _objectSubType;
 	Type::Type_ID _objectType;
-	ofstream ofile(_error_log);               //定义输出文件
+	ofstream ofile(_error_log,ios::app);  :             //定义输出文件
 	//ofile.open(_error_log);
 	if (!ofile)
 	{
@@ -229,10 +229,10 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num,s
 		catch (const TurtleParser::Exception& _e)
 		{
 			cout <<"error:"<< _e.message << endl;
-			cout << _subject << "||" << _predicate << "||" << _object << "||" << _e.message << endl;
-			this->_TurtleParser.discardLine();
+			//cout << _subject << "||" << _predicate << "||" << _object << "||" << _e.message << endl;
+			
 			ofile << _subject << "||" << _predicate << "||" << _object << "||" << _e.message << endl;
-		
+			this->_TurtleParser.discardLine();
 			continue;
 		}
 
