@@ -3210,7 +3210,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 	//EntityBitSet _tmp_bitset;
 
 	{
-		cout << "begin build Prefix" << endl;
+		cout << "begin build Prefix new." << endl;
 		long begin = Util::get_cur_time();
 		ifstream _fin0(_rdf_file.c_str());
 		//parse a file
