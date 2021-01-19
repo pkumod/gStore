@@ -23,15 +23,24 @@ class QueryPlan
   shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> ids_after_join_;
 
   QueryPlan(shared_ptr<vector<OneStepJoin>> ,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>);
+
+  QueryPlan(BasicQuery*,KVstore*);
 };
 
+enum class BasicQueryStrategy{
+  Normal,
+  Special// method 1-5
+};
 /*
 1. Optimizer类在generalevaluation里面初始化，并且在generalevaluation调用do_query()
-2. do_query()首先判断handler0或者handler1-5
+----------
+ 2. do_query()首先判断handler0或者handler1-5
 3. 在handler0里面首先调用enum_query_plan()，按照BFS或者DFS生成所有执行计划
 4. 生成完执行计划后调用choose_exec_plan()选择一个计划执行
 5. 在choose_exec_plan()中每一个执行计划需要层次调用cost_model()->cardinality_estimator()->update_cardinality_cache()
-6. 按照点的顺序首先需要对起始点调用gen_filter获得该点的候选集，而后的每一个点调用join_one_step()
+ ----------
+6. 按照点的顺序首先需要对起始点调用gen_filter获得该点的候选集 [done]
+    而后的每一个点调用join_one_step()
 7. 在每一步的join_one_step()中需要根据queryplan调用三种基本join之一，同时需要update中间结果，并且每一步的开始需要check一下中间结果能不能利用
 8. 每一步都做完之后，copytoResult()
 */
@@ -51,23 +60,14 @@ class Optimizer
   unsigned cardinality_estimator(shared_ptr<BasicQuery>, KVstore* kvstore, vector<map<shared_ptr<BasicQuery>,unsigned*> > _cardinality_cache);
   unsigned cost_model(shared_ptr<BasicQuery>, shared_ptr<QueryPlan>); // TODO: other parameters used in cost model
 
-  // all following functions have input and output parameters
-  // and return status
-
-  bool JoinOneStep(shared_ptr<QueryPlan>,shared_ptr<IntermediateResult>,shared_ptr<ResultTrigger>);
-  // two join ways update current result
-  bool vertex_join(shared_ptr<BasicQuery>, map<shared_ptr<BasicQuery>,shared_ptr<vector<unsigned*>>> _current_result,
-                   shared_ptr< vector< vector<int> >> _edges, unsigned _id); // Join::join_two()
-  bool edge_join(shared_ptr<BasicQuery>, map<shared_ptr<BasicQuery>,shared_ptr<vector<unsigned*>>> _current_result,
-                 shared_ptr<vector< vector<int> >> _edges, unsigned _id); // Join::only_pre_filter_after_join()
-  // Join::pre_var_handler()
+  tuple<bool,shared_ptr<IntermediateResult>> GenerateColdCandidateList(vector<shared_ptr<EdgeInfo>>,vector<shared_ptr<EdgeConstantInfo>>);
+  tuple<bool,shared_ptr<IntermediateResult>> JoinANode(shared_ptr<OneStepJoinNode>,shared_ptr<IntermediateResult>);
+  tuple<bool,shared_ptr<IntermediateResult>> JoinTwoTable(shared_ptr<OneStepJoinTable>,shared_ptr<IntermediateResult>,shared_ptr<IntermediateResult>);
+  tuple<bool,shared_ptr<IntermediateResult>> EdgeConstraintFilter(shared_ptr<EdgeInfo>, EdgeConstantInfo, shared_ptr<IntermediateResult>);
+  tuple<bool,shared_ptr<IntermediateResult>> FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>,TYPE_ENTITY_LITERAL_ID ,shared_ptr<IntermediateResult>);
 
 
-  tuple<bool,shared_ptr<IntermediateResult>> JoinANode(shared_ptr<OneStepJoinNode>,shared_ptr<IntermediateResult>,shared_ptr<ResultTrigger>);
-  tuple<bool,shared_ptr<IntermediateResult>> JoinTwoTable(shared_ptr<OneStepJoinTable>,shared_ptr<IntermediateResult>,shared_ptr<IntermediateResult>,shared_ptr<ResultTrigger>);
-  tuple<bool,shared_ptr<IntermediateResult>> EdgeConstraintFilter(shared_ptr<EdgeInfo>,EdgeInTableInfo,shared_ptr<IntermediateResult>,shared_ptr<ResultTrigger>);
-  tuple<bool,shared_ptr<IntermediateResult>> FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>,TYPE_ENTITY_LITERAL_ID ,shared_ptr<IntermediateResult>,shared_ptr<ResultTrigger>);
-
+  shared_ptr<IntermediateResult> NormalJoin(shared_ptr<BasicQuery>,shared_ptr<QueryPlan>);
   bool update_cardinality_cache(shared_ptr<BasicQuery>,vector<map<shared_ptr<BasicQuery>,unsigned*> >);
   bool enum_query_plan(vector<shared_ptr<BasicQuery>>, KVstore* kvstore, bool _is_topk_query);// Join::multi_join() BFS
   bool choose_exec_plan(vector<map<shared_ptr<BasicQuery>, QueryPlan*> > _candidate_plans,
@@ -78,6 +78,9 @@ class Optimizer
                         map<shared_ptr<BasicQuery>,vector<unsigned*> > _current_result,  vector<QueryPlan>);
   //TODO: re-choose plan in every iteration
 
+
+
+  BasicQueryStrategy ChooseStrategy(BasicQuery*);
   bool execution(vector<shared_ptr<BasicQuery>>, vector<QueryPlan>, vector<unsigned*> _result_list);
 
   static void UpdateIDList(shared_ptr<IDList>, unsigned*, unsigned,bool);
