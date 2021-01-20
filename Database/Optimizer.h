@@ -19,6 +19,7 @@
 using namespace std;
 class QueryPlan
 {
+ public:
   shared_ptr<vector<OneStepJoin>> join_order_; //join order
   shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> ids_after_join_;
 
@@ -30,6 +31,13 @@ class QueryPlan
 enum class BasicQueryStrategy{
   Normal,
   Special// method 1-5
+};
+
+struct QueryInfo{
+  bool limit_;
+  int limit_num_;
+  bool top_;
+  shared_ptr<TYPE_ENTITY_LITERAL_ID> ordered_by_vars_;
 };
 /*
 1. Optimizer类在generalevaluation里面初始化，并且在generalevaluation调用do_query()
@@ -54,16 +62,18 @@ class Optimizer
              TYPE_ENTITY_LITERAL_ID limitID_entity,bool is_distinct, shared_ptr<Transaction> txn,SPARQLquery& sparql_query,
              shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list,TYPE_ENTITY_LITERAL_ID limit_num);
   ~Optimizer();
-  bool do_query(SPARQLquery&); // the whole process
+  tuple<bool,shared_ptr<IntermediateResult>> DoQuery(SPARQLquery&); // the whole process
+  tuple<bool,shared_ptr<IntermediateResult>> MergeBasicQuery(vector<BasicQuery*>,vector<shared_ptr<IntermediateResult>>);
   IDList gen_filter(unsigned _id, KVstore* kvstore, shared_ptr<TYPE_TRIPLE_NUM*> pre2num,
                     shared_ptr<TYPE_TRIPLE_NUM*> pre2sub, shared_ptr<TYPE_TRIPLE_NUM*> pre2obj, shared_ptr<bool*> dealed_triple); // Strategy::pre_handler()
   unsigned cardinality_estimator(shared_ptr<BasicQuery>, KVstore* kvstore, vector<map<shared_ptr<BasicQuery>,unsigned*> > _cardinality_cache);
   unsigned cost_model(shared_ptr<BasicQuery>, shared_ptr<QueryPlan>); // TODO: other parameters used in cost model
 
-  tuple<bool,shared_ptr<IntermediateResult>> GenerateColdCandidateList(vector<shared_ptr<EdgeInfo>>,vector<shared_ptr<EdgeConstantInfo>>);
+  tuple<bool,shared_ptr<IntermediateResult>> GenerateColdCandidateList(shared_ptr<vector<EdgeInfo>>,shared_ptr<vector<EdgeConstantInfo>>);
   tuple<bool,shared_ptr<IntermediateResult>> JoinANode(shared_ptr<OneStepJoinNode>,shared_ptr<IntermediateResult>);
   tuple<bool,shared_ptr<IntermediateResult>> JoinTwoTable(shared_ptr<OneStepJoinTable>,shared_ptr<IntermediateResult>,shared_ptr<IntermediateResult>);
-  tuple<bool,shared_ptr<IntermediateResult>> EdgeConstraintFilter(shared_ptr<EdgeInfo>, EdgeConstantInfo, shared_ptr<IntermediateResult>);
+  tuple<bool,shared_ptr<IntermediateResult>> ANodeEdgesConstraintFilter(shared_ptr<OneStepJoinNode>, shared_ptr<IntermediateResult>);
+  tuple<bool,shared_ptr<IntermediateResult>> OneEdgeConstraintFilter(EdgeInfo, EdgeConstantInfo, shared_ptr<IntermediateResult>);
   tuple<bool,shared_ptr<IntermediateResult>> FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>,TYPE_ENTITY_LITERAL_ID ,shared_ptr<IntermediateResult>);
 
 
@@ -81,8 +91,9 @@ class Optimizer
 
 
   BasicQueryStrategy ChooseStrategy(BasicQuery*);
-  bool execution(vector<shared_ptr<BasicQuery>>, vector<QueryPlan>, vector<unsigned*> _result_list);
+  tuple<bool,shared_ptr<IntermediateResult>> execution(BasicQuery*, shared_ptr<QueryPlan>);
 
+  tuple<bool,shared_ptr<IntermediateResult>> execution_depth_first(BasicQuery*, shared_ptr<QueryPlan>,QueryInfo);
   static void UpdateIDList(shared_ptr<IDList>, unsigned*, unsigned,bool);
 
  private:

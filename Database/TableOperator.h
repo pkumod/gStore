@@ -48,7 +48,7 @@ class EdgeConstantInfo{
   EdgeConstantInfo(bool s_constant, bool p_constant, bool o_constant):
       s_constant_(s_constant), p_constant_(p_constant), o_constant_(o_constant){
   }
-  bool ConstantToVar(shared_ptr<EdgeInfo> edge_info);
+  bool ConstantToVar(EdgeInfo edge_info);
 };
 
 /* Extend One Table, add a new Node.
@@ -58,7 +58,58 @@ class OneStepJoinNode{
   TYPE_ENTITY_LITERAL_ID node_to_join_;
   shared_ptr<vector<EdgeInfo>> edges_;
   shared_ptr<vector<EdgeConstantInfo>> edges_constant_info_;
-  void changeOrder(vector<TYPE_ENTITY_LITERAL_ID>* already_in);
+  void ChangeOrder(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> already_in){
+    struct ConstantNumberInfo
+    {
+      int constant_number;
+      int already_in_number;
+      int old_index;
+    };
+    set<TYPE_ENTITY_LITERAL_ID> in_vars;
+    for(auto in_id:*already_in)
+      in_vars.insert(in_id);
+
+    vector<ConstantNumberInfo> number_info_vec;
+
+    for(auto i =0;i<this->edges_->size();i++)
+    {
+      ConstantNumberInfo t;
+      t.already_in_number = t.constant_number = 0;
+      t.old_index = i;
+
+      if((*this->edges_constant_info_)[i].s_constant_)
+        t.constant_number += 1;
+      if((*this->edges_constant_info_)[i].p_constant_)
+        t.constant_number += 1;
+      if((*this->edges_constant_info_)[i].o_constant_)
+        t.constant_number += 1;
+
+      if(in_vars.find((*this->edges_)[i].s_) != in_vars.end())
+        t.already_in_number += 1;
+      if(in_vars.find((*this->edges_)[i].p_) != in_vars.end())
+        t.already_in_number += 1;
+      if(in_vars.find((*this->edges_)[i].o_) != in_vars.end())
+        t.already_in_number += 1;
+
+      number_info_vec.push_back(t);
+    }
+
+    /* decreasing order */
+    sort(number_info_vec.begin(),number_info_vec.end(),[](const ConstantNumberInfo& a,const ConstantNumberInfo& b){
+      return ( (a.already_in_number+1) * (a.constant_number + 1)) >  ((b.already_in_number+1)* (b.constant_number + 1));
+    });
+
+    auto new_edge_info = make_shared<vector<EdgeInfo>>();
+    auto new_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+    for(auto& number_info:number_info_vec)
+    {
+      new_edge_info->push_back((*this->edges_)[number_info.old_index]);
+      new_edge_constant_info->push_back((*this->edges_constant_info_)[number_info.old_index]);
+    }
+
+    this->edges_ = new_edge_info;
+    this->edges_constant_info_ = new_edge_constant_info;
+  }
 };
 
 
