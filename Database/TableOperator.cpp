@@ -65,8 +65,8 @@ IntermediateResult::IntermediateResult(){
 };
 
 
-bool EdgeConstantInfo::ConstantToVar(shared_ptr<EdgeInfo> edge_info) {
-  switch (edge_info->join_method_) {
+bool EdgeConstantInfo::ConstantToVar(EdgeInfo edge_info) {
+  switch (edge_info.join_method_) {
     case JoinMethod::s2p:
     case JoinMethod::s2o:
       return this->s_constant_;
@@ -134,6 +134,3 @@ TYPE_ENTITY_LITERAL_ID EdgeInfo::getVarToFilter() {
  * Last: not in and variable
  * @param already_in
  */
-void OneStepJoinNode::changeOrder(vector<TYPE_ENTITY_LITERAL_ID>* already_in) {
-
-}
