@@ -72,7 +72,7 @@ main(int argc, char * argv[])
 	//db_folder = string("../") + db_folder;
 	//}
 	Database _db(db_folder);
-	_db.load(true);
+	_db.load();
 	cout << "finish loading" << endl;
 
 	// read query from file.
