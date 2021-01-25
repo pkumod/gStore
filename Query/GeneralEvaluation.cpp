@@ -1343,6 +1343,31 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								ss << "\"false\"}";
 							cout << "src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid) << endl;
 						}
+						else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
+						{
+							if (uid == vid)
+							{
+								if (notFirstOutput)
+									ss << ",";
+								else
+									notFirstOutput = 1;
+								vector<int> path;	// Empty path
+								pathVec2JSON(uid, vid, path, ss);
+								continue;
+							}
+							int hopConstraint = proj[0].path_args.k;
+							if (hopConstraint < 0)
+								hopConstraint = 999;
+							vector<int> path = pqHandler->kHopReachablePath(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
+							if (path.size() != 0)
+							{
+								if (notFirstOutput)
+									ss << ",";
+								else
+									notFirstOutput = 1;
+								pathVec2JSON(uid, vid, path, ss);
+							}
+						}
 					}
 					if (earlyBreak)
 						break;
@@ -2138,21 +2163,46 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									else
 										ss << "\"false\"}";
 								}
-									}
-									if (earlyBreak)
-										break;
-								}
-								ss << "]}\"";
-								if (proj[i].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
 								{
-									if (exist)
-										new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "true";
-									else
-										new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "false";
+									if (uid == vid)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										vector<int> path;	// Empty path
+										pathVec2JSON(uid, vid, path, ss);
+										continue;
+									}
+									int hopConstraint = proj[0].path_args.k;
+									if (hopConstraint < 0)
+										hopConstraint = 999;
+									vector<int> path = pqHandler->kHopReachablePath(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
+									if (path.size() != 0)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										pathVec2JSON(uid, vid, path, ss);
+									}
 								}
-								else
-									ss >> new_result0.result.back().str[proj2new[i] - new_result0_id_cols];
 							}
+							if (earlyBreak)
+								break;
+						}
+						ss << "]}\"";
+						if (proj[i].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+						{
+							if (exist)
+								new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "true";
+							else
+								new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "false";
+						}
+						else
+							ss >> new_result0.result.back().str[proj2new[i] - new_result0_id_cols];
+					}
 				}
 				begin = end + 1;
 			}

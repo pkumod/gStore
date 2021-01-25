@@ -368,7 +368,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			if (tmp == "SIMPLECYCLEPATH" || tmp == "SIMPLECYCLEBOOLEAN"
 				|| tmp == "CYCLEPATH" || tmp == "CYCLEBOOLEAN"
 				|| tmp == "SHORTESTPATH" || tmp == "SHORTESTPATHLEN"
-				|| tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE")	// Path calls
+				|| tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -388,6 +388,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopReachable_type;
 				else if (tmp == "KHOPENUMERATE")
 					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopEnumerate_type;
+				else if (tmp == "KHOPREACHABLEPATH")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopReachablePath_type;
 
 				proj_var.path_args.src = bicCtx->varOrIri(0)->getText();
 				replacePrefix(proj_var.path_args.src);
@@ -401,7 +403,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.path_args.pred_set.push_back(prefixedPred);
 				}
 
-				if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE")
+				if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH")
 				{
 					if (bicCtx->num_integer())
 						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer()));
