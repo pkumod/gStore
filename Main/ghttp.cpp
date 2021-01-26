@@ -3985,10 +3985,17 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	resDoc.AddMember("creator", StringRef(creator.c_str()), allocator);
 	resDoc.AddMember("built_time", StringRef(time.c_str()), allocator);
 	char tripleNumString[128];
-	sprintf(tripleNumString, "%u", _database->getTripleNum());
-	resDoc.AddMember("triple num", StringRef( tripleNumString), allocator);
+
+	//sprintf(tripleNumString, "%u", _database->getTripleNum());
+	//resDoc.AddMember("triple num", StringRef( tripleNumString), allocator);
 	/*不知道为什么要做这种处理？显示不下吗？*/
 	/*resDoc.AddMember("triple num", _database->getTripleNum(), allocator);*/
+
+	sprintf(tripleNumString, "%ulld", _database->getTripleNum());
+	string triplenumstr = tripleNumString;
+	cout << "triple num:" << triplenumstr << endl;
+
+	resDoc.AddMember("triple num", StringRef(tripleNumString), allocator);
 	resDoc.AddMember("entity num", _database->getEntityNum(), allocator);
 	resDoc.AddMember("literal num", _database->getLiteralNum(), allocator);
 	resDoc.AddMember("subject num", _database->getSubNum(), allocator);
