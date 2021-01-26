@@ -3991,7 +3991,7 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	/*不知道为什么要做这种处理？显示不下吗？*/
 	/*resDoc.AddMember("triple num", _database->getTripleNum(), allocator);*/
 
-	sprintf(tripleNumString, "%ulld", _database->getTripleNum());
+	sprintf(tripleNumString, "%lld", _database->getTripleNum());
 	string triplenumstr = tripleNumString;
 	cout << "triple num:" << triplenumstr << endl;
 
