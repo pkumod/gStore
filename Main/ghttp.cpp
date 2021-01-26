@@ -3992,8 +3992,8 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	/*resDoc.AddMember("triple num", _database->getTripleNum(), allocator);*/
 
 	sprintf(tripleNumString, "%lld", _database->getTripleNum());
-	string triplenumstr = tripleNumString;
-	cout << "triple num:" << triplenumstr << endl;
+	//string triplenumstr = tripleNumString;
+	//cout << "triple num:" << triplenumstr << endl;
 
 	resDoc.AddMember("triple num", StringRef(tripleNumString), allocator);
 	resDoc.AddMember("entity num", _database->getEntityNum(), allocator);
