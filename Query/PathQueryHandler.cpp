@@ -1460,6 +1460,13 @@ bool PathQueryHandler::kHopReachableTest(int uid, int vid, bool directed, int k,
     return false;
 }
 
+vector<int> PathQueryHandler::kHopReachablePath(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set)
+{
+	vector<int> ret = shortestPath(uid, vid, directed, pred_set);
+	if ((ret.size() - 1) / 2 > k)
+		ret.clear();
+	return ret;
+}
 
 /**
 	Generate an equal number of positive and negative queries for a given query type,

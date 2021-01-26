@@ -54,6 +54,7 @@ public:
 	std::vector<int> shortestPath0(int uid, int vid, bool directed, const std::vector<int> &pred_set);
 	bool kHopReachable(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	bool kHopReachableTest(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
+	std::vector<int> kHopReachablePath(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 };
 
 #endif //_QUERY_PATH_H

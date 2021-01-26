@@ -209,7 +209,7 @@ class QueryTree
 			public:
 				enum AggregateType {None_type, Count_type, Sum_type, Min_type, Max_type, Avg_type, 
 					simpleCyclePath_type, simpleCycleBoolean_type, cyclePath_type, cycleBoolean_type, 
-					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type,
+					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type, kHopReachablePath_type,
 					CompTree_type, Contains_type};
 				AggregateType aggregate_type;
 
