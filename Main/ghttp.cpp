@@ -60,6 +60,7 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define MEM_THRESHOLD 0.1
 #define CPU_THRESHOLD 0.95
 #define IO_THRESHOLD 0.95
+#define DISK_THRESHOLD 0.99
 
 int initialize(int argc, char *argv[]);
 int copy(string src_path, string dest_path);
@@ -724,6 +725,7 @@ double get_Memory_available_ratio()
 bool check_IO_occupy_ratio()
 {
 	system("sar -d 1 1 > logs/io.txt");
+	system("df -h > logs/disk.txt");
 	FILE *fd;
 	char buff[128]={0};
 	fd = fopen("logs/io.txt", "r");
@@ -742,6 +744,28 @@ bool check_IO_occupy_ratio()
 			return false;
 	}
 	fclose(fd);
+	fd = fopen("logs/disk.txt", "r");
+    	fgets(buff, sizeof(buff), fd);
+    	while(fgets(buff, sizeof(buff), fd))
+    	{	
+        	if(buff[0] == '\n') break;
+        	char dev_name[20]={0};
+        	char disk_occupy[20]={0};
+        	sscanf(buff, "%s %s %s %s %s %s", &dev_name, &temp, &temp, &temp, &disk_occupy, &temp);
+        	printf("disk occupy ratio of %s: %s\n",dev_name, disk_occupy);
+        	const char *delim = "%";
+        	char * occupy_str = strtok(disk_occupy, delim);
+        	int occupy_int;
+        	sscanf(occupy_str, "%d", &occupy_int);
+        	float occupy_ratio = occupy_int/100.0;
+        	if(occupy_ratio > DISK_THRESHOLD)
+		{
+            		printf("Warning, Disk occupy ratio is too high!\n");
+			return false;
+		}
+    	}
+
+ 	fclose(fd);
 	return true;
 }
 
