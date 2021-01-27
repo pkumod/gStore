@@ -741,7 +741,10 @@ bool check_IO_occupy_ratio()
 		sscanf(buff, "%s %s %s %f %f %f %f %f %f %f %f", &temp,&temp, &dev_name, &tf, &tf, &tf, &tf, &tf, &tf, &tf, &util);
 		printf("IO occupy ratio of %s: %.3f\n",dev_name, util);
 		if (util > IO_THRESHOLD)
+		{
+			printf("Warning, IO occupy ratio is too high!\n");
 			return false;
+		}
 	}
 	fclose(fd);
 	fd = fopen("logs/disk.txt", "r");
@@ -2410,9 +2413,7 @@ void delete_thread(const shared_ptr<HttpServer::Response>& response, const share
 
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
-
+		string content="Disk Error!";
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;
@@ -2521,8 +2522,7 @@ void download_thread(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -2632,8 +2632,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -2979,8 +2978,7 @@ void load_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -3240,8 +3238,7 @@ void unload_thread(const shared_ptr<HttpServer::Response>& response, const share
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -3447,8 +3444,7 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -3920,8 +3916,7 @@ void export_thread(const shared_ptr<HttpServer::Response>& response, const share
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -4219,8 +4214,7 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -5005,8 +4999,7 @@ void monitor_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -5186,8 +5179,7 @@ void default_thread(const HttpServer& server, const shared_ptr<HttpServer::Respo
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -5314,8 +5306,7 @@ bool check_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -5418,8 +5409,7 @@ bool login_handler(const HttpServer& server, const shared_ptr<HttpServer::Respon
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -5577,8 +5567,7 @@ bool stop_handler(const HttpServer& server, const shared_ptr<HttpServer::Respons
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -5657,8 +5646,7 @@ void checkpoint_thread(const shared_ptr<HttpServer::Response>& response, const s
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -5853,8 +5841,7 @@ bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -5952,8 +5939,7 @@ void user_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -6282,8 +6268,7 @@ void show_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -6432,8 +6417,7 @@ void getCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -6550,8 +6534,7 @@ void setAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, cons
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -6670,8 +6653,7 @@ void setCoreVersion_thread(const shared_ptr<HttpServer::Response>& response, con
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -6784,8 +6766,7 @@ void initVersion_thread(const shared_ptr<HttpServer::Response>& response, const 
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -6933,8 +6914,7 @@ void getAPIVersion_thread(const shared_ptr<HttpServer::Response>& response, cons
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -7051,8 +7031,7 @@ void showUser_thread(const shared_ptr<HttpServer::Response>& response, const sha
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -7835,8 +7814,7 @@ void backup_thread(const shared_ptr<HttpServer::Response>& response, const share
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -8137,8 +8115,7 @@ void restore_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -8468,8 +8445,7 @@ void incbackup_thread(const shared_ptr<HttpServer::Response>& response, const sh
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -8667,8 +8643,7 @@ void increstore_thread(const shared_ptr<HttpServer::Response>& response, const s
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -8916,8 +8891,7 @@ void init_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -9116,8 +9090,7 @@ void parameter_thread(const shared_ptr<HttpServer::Response>& response, const sh
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -9287,8 +9260,7 @@ void refresh_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -9384,8 +9356,7 @@ void tquery_thread(const shared_ptr<HttpServer::Response>& response, const share
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -9651,8 +9622,7 @@ void begin_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -9868,8 +9838,7 @@ void commit_thread(const shared_ptr<HttpServer::Response>& response, const share
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -10097,8 +10066,7 @@ void rollback_thread(const shared_ptr<HttpServer::Response>& response, const sha
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
@@ -10327,8 +10295,7 @@ void txnlog_thread(const shared_ptr<HttpServer::Response>& response, const share
 	}
 	if(!check_IO_occupy_ratio())
 	{
-		cout<<"High IO occupy ratio"<<endl;
-		string content="High IO occupy ratio!";
+		string content="Disk Error!";
 
 		string resJson = CreateJson(917, content, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
