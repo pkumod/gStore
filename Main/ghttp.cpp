@@ -738,7 +738,7 @@ bool check_IO_occupy_ratio()
 	{
 		if(buff[0] == '\n') break;
 		char dev_name[20]={0};
-		sscanf(buff, "%s %s %f %f %f %f %f %f %f %f", &temp, &dev_name, &tf, &tf, &tf, &tf, &tf, &tf, &tf, &util);
+		sscanf(buff, "%s %s %s %f %f %f %f %f %f %f %f", &temp,&temp, &dev_name, &tf, &tf, &tf, &tf, &tf, &tf, &tf, &util);
 		printf("IO occupy ratio of %s: %.3f\n",dev_name, util);
 		if (util > IO_THRESHOLD)
 			return false;
