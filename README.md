@@ -6,7 +6,24 @@ Gstore System(also called gStore) is a graph database engine for managing large 
 
 **The formal experiment result is in [Experiment](docs/test/formal_experiment.pdf).**
 
-**We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore](http://gstore-pku.com).**
+**We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore](http://gstore.cn).**
+
+## change log
+
+**0.9（beta）：2021-02-10**
+
+The version is a beta version, you can get it by :
+```
+git clone https://github.com/pkumod/gStore.git
+```
+
+**0.8（Stable）**
+
+The version is a stable version ,you can get it by 
+```
+ git clone -d 0.8 https://github.com/pkumod/gStore.git
+```
+
 
 <!--**You can write your information in [survey](http://59.108.48.38/survey) if you like.**-->
 
