@@ -8,7 +8,7 @@ Gstore System(also called gStore) is a graph database engine for managing large 
 
 **We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore](http://gstore.cn).**
 
-## change log
+## Change log
 
 **0.9（beta）：2021-02-10**
 
