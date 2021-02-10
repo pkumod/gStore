@@ -1,4 +1,4 @@
-# Gstore System
+# gStore System
 
 Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
 
@@ -11,6 +11,19 @@ Gstore System(also called gStore) is a graph database engine for managing large 
 ## Change log
 
 **0.9（beta）：2021-02-10**
+
+New features in version 0.9 include:
+
+- Upgrade of the SPARQL parser generator from ANTLR v3 to the newest, well-documented and well-maintained v4;
+- Support for writing numeric literals without datatype suffixes in SPARQL queries;
+- Support for arithmetic and logical operators in SELECT clause;
+- Support for the aggregates SUM, AVG, MIN and MAX in SELECT clause;
+- Additional support for built-in functions functions in FILTERs, including `datatype`, `contains`, `ucase`, `lcase`, `strstarts`, `now`, `year`, `month`, `day`, and `abs`;
+- Support for path-related functions as an extension of SPARQL 1.1, including cycle detection, shortest paths and K-hop reachability;
+- Support for full & incremental backup and recovery of databases, and automatic full backup can be enabled upon admin configuration;
+- Support for log-based rollback opertions;
+- Support for transactions with three levels of isolation: *read committed*, *snapshot isolation* and *serializable*;
+- Expanding data structures to hold large-scale graphs of up to five billion triples.
 
 The version is a beta version, you can get it by :
 ```
