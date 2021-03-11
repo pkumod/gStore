@@ -174,6 +174,8 @@ private:
 	//positive key id for normal var, -1-id for pre var
 	map<int, int> selected_var_position;
 
+	// refer to
+	shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>> intermediate_result_values_;
 public:
 	static const int MAX_VAR_NUM = 20;
 	static const int MAX_PRE_VAR_NUM = 20;
