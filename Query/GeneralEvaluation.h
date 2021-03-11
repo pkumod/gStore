@@ -37,6 +37,7 @@ class GeneralEvaluation
 		KVstore *kvstore;
 		StringIndex *stringindex;
 		Strategy strategy;
+		shared_ptr<Optimizer> optimizer_;
 		QueryCache *query_cache;
 		PathQueryHandler *pqHandler;
 		int well_designed;

@@ -5,6 +5,8 @@
 =============================================================================*/
 
 #include "../Util/Util.h"
+#include "../Query/BasicQuery.h"
+
 
 #ifndef GSTORELIMITK_DATABASE_TABLEOPERATOR_H_
 #define GSTORELIMITK_DATABASE_TABLEOPERATOR_H_
@@ -12,24 +14,64 @@
 /* only consider extend 1 node per step */
 enum class JoinMethod{s2p,s2o,p2s,p2o,o2s,o2p,so2p,sp2o,po2s};
 
+std::string JoinMethodToString(JoinMethod x);
+// Not fully used, maybe abandoned
+class VarDescriptor{
+ public:
+  enum class VarType{EntityType,PredicateType};
+  bool selected_;
+  int degree_;
+  int rewriting_position_;
+  // -1 if not allocated a id in BasicQuery
+  int basic_query_id;
+  VarType var_type_;
+  std::string var_name_;
+
+  bool IsSatellite(){return this->degree_ == 1 && (!selected_);};
+  int RewritingPosition(){return this->rewriting_position_;};
+  // calculate the exact position in final result
+
+  VarDescriptor(VarType var_type,std::string var_name,BasicQuery* basic_query):
+  var_type_(var_type),var_name_(var_name)
+  {
+    this->basic_query_id = basic_query->getIDByVarName(var_name);
+    this->selected_ = basic_query->isVarSelected(var_name);
+    this->degree_ = basic_query->getVarDegree(basic_query_id);
+
+    if(!this->selected_)
+      this->rewriting_position_ = -1;
+    // record_len = select_var_num + selected_pre_var_num;
+    if(this->var_type_ == VarType::EntityType)
+      this->rewriting_position_ = basic_query->getSelectedVarPosition(this->var_name_);
+
+    if(this->var_type_ == VarType::PredicateType)
+      this->rewriting_position_ = basic_query->getSelectedPreVarPosition(this->var_name_);
+  };
+};
+
 class IntermediateResult{
  private:
  public:
-  shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>> values_;
-  shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> id_to_position_;
-  shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_id_;
-  shared_ptr<vector<bool>> dealed_triple_;
-  IntermediateResult(shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> id_to_position,
-                     shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_id,
-                     shared_ptr<vector<bool>> dealed_triple);
+  std::shared_ptr<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>> values_;
+  // VarDescriptor ID, not BasicQuery ID
+  std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> var_des_to_position_;
+  // VarDescriptor ID, not BasicQuery ID
+  std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_var_des_;
+
+  std::shared_ptr<std::vector<bool>> dealed_triple_;
+  IntermediateResult(std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> id_to_position,
+                     std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_id,
+                     std::shared_ptr<std::vector<bool>> dealed_triple);
+
   IntermediateResult();
-  static shared_ptr<IntermediateResult> JoinTwoStructure(shared_ptr<IntermediateResult> result_a,shared_ptr<IntermediateResult> result_b,
-      shared_ptr< vector<TYPE_ENTITY_LITERAL_ID> > public_variables);
+  static std::shared_ptr<IntermediateResult> JoinTwoStructure(std::shared_ptr<IntermediateResult> result_a,std::shared_ptr<IntermediateResult> result_b,
+                                                              std::shared_ptr< std::vector<TYPE_ENTITY_LITERAL_ID> > public_variables);
 };
 
 
 class EdgeInfo{
  public:
+  // VarDescriptor ID
   TYPE_ENTITY_LITERAL_ID s_;
   TYPE_ENTITY_LITERAL_ID p_;
   TYPE_ENTITY_LITERAL_ID o_;
@@ -38,6 +80,7 @@ class EdgeInfo{
   }
   JoinMethod join_method_;
   TYPE_ENTITY_LITERAL_ID getVarToFilter();
+  std::string toString();
 };
 
 class EdgeConstantInfo{
@@ -49,82 +92,35 @@ class EdgeConstantInfo{
       s_constant_(s_constant), p_constant_(p_constant), o_constant_(o_constant){
   }
   bool ConstantToVar(EdgeInfo edge_info);
+  EdgeConstantInfo():s_constant_(false), p_constant_(false), o_constant_(false){};
+  std::string toString();
 };
 
 /* Extend One Table, add a new Node.
- * The Node can have a candidate list */
+ * The Node can have a candidate list
+ * or to check if a variable has a certain edge */
 class OneStepJoinNode{
  public:
   TYPE_ENTITY_LITERAL_ID node_to_join_;
-  shared_ptr<vector<EdgeInfo>> edges_;
-  shared_ptr<vector<EdgeConstantInfo>> edges_constant_info_;
-  void ChangeOrder(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> already_in){
-    struct ConstantNumberInfo
-    {
-      int constant_number;
-      int already_in_number;
-      int old_index;
-    };
-    set<TYPE_ENTITY_LITERAL_ID> in_vars;
-    for(auto in_id:*already_in)
-      in_vars.insert(in_id);
-
-    vector<ConstantNumberInfo> number_info_vec;
-
-    for(auto i =0;i<this->edges_->size();i++)
-    {
-      ConstantNumberInfo t;
-      t.already_in_number = t.constant_number = 0;
-      t.old_index = i;
-
-      if((*this->edges_constant_info_)[i].s_constant_)
-        t.constant_number += 1;
-      if((*this->edges_constant_info_)[i].p_constant_)
-        t.constant_number += 1;
-      if((*this->edges_constant_info_)[i].o_constant_)
-        t.constant_number += 1;
-
-      if(in_vars.find((*this->edges_)[i].s_) != in_vars.end())
-        t.already_in_number += 1;
-      if(in_vars.find((*this->edges_)[i].p_) != in_vars.end())
-        t.already_in_number += 1;
-      if(in_vars.find((*this->edges_)[i].o_) != in_vars.end())
-        t.already_in_number += 1;
-
-      number_info_vec.push_back(t);
-    }
-
-    /* decreasing order */
-    sort(number_info_vec.begin(),number_info_vec.end(),[](const ConstantNumberInfo& a,const ConstantNumberInfo& b){
-      return ( (a.already_in_number+1) * (a.constant_number + 1)) >  ((b.already_in_number+1)* (b.constant_number + 1));
-    });
-
-    auto new_edge_info = make_shared<vector<EdgeInfo>>();
-    auto new_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
-    for(auto& number_info:number_info_vec)
-    {
-      new_edge_info->push_back((*this->edges_)[number_info.old_index]);
-      new_edge_constant_info->push_back((*this->edges_constant_info_)[number_info.old_index]);
-    }
-
-    this->edges_ = new_edge_info;
-    this->edges_constant_info_ = new_edge_constant_info;
-  }
+  std::shared_ptr<std::vector<EdgeInfo>> edges_;
+  std::shared_ptr<std::vector<EdgeConstantInfo>> edges_constant_info_;
+  void ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> already_in);
 };
 
 
 /* Join Two Table on Public Variables*/
 struct OneStepJoinTable{
-  shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> public_variables_;
-  OneStepJoinTable(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> public_variables):public_variables_(public_variables){};
-  OneStepJoinTable(){this->public_variables_=make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();};
+  // VarDescriptor ID
+  std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> public_variables_;
+  OneStepJoinTable(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> public_variables):public_variables_(public_variables){};
+  OneStepJoinTable(){this->public_variables_=std::make_shared<std::vector<TYPE_ENTITY_LITERAL_ID>>();};
 };
 
 class OneStepJoin{
  public:
-  shared_ptr<OneStepJoinNode> join_node_;
-  shared_ptr<OneStepJoinTable> join_table_;
-  shared_ptr<OneStepJoinNode> edge_filter_; // GenFilter & EdgeCheck use this filed
+  std::shared_ptr<OneStepJoinNode> join_node_;
+  std::shared_ptr<OneStepJoinTable> join_table_;
+  std::shared_ptr<OneStepJoinNode> edge_filter_; // GenFilter & EdgeCheck use this filed
   enum class JoinType{JoinNode,JoinTable,GenFilter,EdgeCheck} join_type_;
 };
 
@@ -136,7 +132,7 @@ class OneStepJoin{
  */
 struct IndexedRecordResultCompare
 {
-  bool operator()(const vector<TYPE_ENTITY_LITERAL_ID> &a, const vector<TYPE_ENTITY_LITERAL_ID> &b)
+  bool operator()(const std::vector<TYPE_ENTITY_LITERAL_ID> &a, const std::vector<TYPE_ENTITY_LITERAL_ID> &b)
   {
     for(auto i = 0;i<a.size();i++)
     {

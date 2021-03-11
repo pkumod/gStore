@@ -8,25 +8,19 @@
 #define _DATABASE_OPTIMIZER_H
 
 #include "../Util/Util.h"
-#include "Strategy.h"
 #include "../Query/SPARQLquery.h"
 #include "../Query/BasicQuery.h"
 #include "../Query/IDList.h"
 #include "../KVstore/KVstore.h"
+#include "../VSTree/VSTree.h"
 #include "TableOperator.h"
 #include "ResultTrigger.h"
+#include "../Query/QueryPlan.h"
+#include "../Query/QueryTree.h"
+#include "Join.h"
+
 
 using namespace std;
-class QueryPlan
-{
- public:
-  shared_ptr<vector<OneStepJoin>> join_order_; //join order
-  shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> ids_after_join_;
-
-  QueryPlan(shared_ptr<vector<OneStepJoin>> ,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>);
-
-  QueryPlan(BasicQuery*,KVstore*);
-};
 
 enum class BasicQueryStrategy{
   Normal,
@@ -36,10 +30,13 @@ enum class BasicQueryStrategy{
 struct QueryInfo{
   bool limit_;
   int limit_num_;
-  bool top_;
-  shared_ptr<TYPE_ENTITY_LITERAL_ID> ordered_by_vars_;
+  bool is_distinct_;
+  shared_ptr<vector<QueryTree::Order>> ordered_by_vars_;
 };
 /*
+ *
+ * 还差一个 copyToResult 的操作
+ *
 1. Optimizer类在generalevaluation里面初始化，并且在generalevaluation调用do_query()
 ----------
  2. do_query()首先判断handler0或者handler1-5
@@ -56,18 +53,16 @@ struct QueryInfo{
 class Optimizer
 {
  public:
-  Optimizer();
+
   Optimizer(KVstore* kv_store, VSTree* vs_tree, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
              TYPE_TRIPLE_NUM* pre2obj, TYPE_PREDICATE_ID limitID_predicate, TYPE_ENTITY_LITERAL_ID limitID_literal,
-             TYPE_ENTITY_LITERAL_ID limitID_entity,bool is_distinct, shared_ptr<Transaction> txn,SPARQLquery& sparql_query,
-             shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list,TYPE_ENTITY_LITERAL_ID limit_num);
+             TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn
+             // ,SPARQLquery& sparql_query,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list,TYPE_ENTITY_LITERAL_ID limit_num
+             );
   ~Optimizer();
-  tuple<bool,shared_ptr<IntermediateResult>> DoQuery(SPARQLquery&); // the whole process
-  tuple<bool,shared_ptr<IntermediateResult>> MergeBasicQuery(vector<BasicQuery*>,vector<shared_ptr<IntermediateResult>>);
-  IDList gen_filter(unsigned _id, KVstore* kvstore, shared_ptr<TYPE_TRIPLE_NUM*> pre2num,
-                    shared_ptr<TYPE_TRIPLE_NUM*> pre2sub, shared_ptr<TYPE_TRIPLE_NUM*> pre2obj, shared_ptr<bool*> dealed_triple); // Strategy::pre_handler()
-  unsigned cardinality_estimator(shared_ptr<BasicQuery>, KVstore* kvstore, vector<map<shared_ptr<BasicQuery>,unsigned*> > _cardinality_cache);
-  unsigned cost_model(shared_ptr<BasicQuery>, shared_ptr<QueryPlan>); // TODO: other parameters used in cost model
+  tuple<bool,shared_ptr<IntermediateResult>> DoQuery(SPARQLquery&,QueryInfo); // the whole process
+  tuple<bool,shared_ptr<IntermediateResult>> MergeBasicQuery(SPARQLquery &sparql_query);
+
 
   tuple<bool,shared_ptr<IntermediateResult>> GenerateColdCandidateList(shared_ptr<vector<EdgeInfo>>,shared_ptr<vector<EdgeConstantInfo>>);
   tuple<bool,shared_ptr<IntermediateResult>> JoinANode(shared_ptr<OneStepJoinNode>,shared_ptr<IntermediateResult>);
@@ -75,26 +70,40 @@ class Optimizer
   tuple<bool,shared_ptr<IntermediateResult>> ANodeEdgesConstraintFilter(shared_ptr<OneStepJoinNode>, shared_ptr<IntermediateResult>);
   tuple<bool,shared_ptr<IntermediateResult>> OneEdgeConstraintFilter(EdgeInfo, EdgeConstantInfo, shared_ptr<IntermediateResult>);
   tuple<bool,shared_ptr<IntermediateResult>> FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>,TYPE_ENTITY_LITERAL_ID ,shared_ptr<IntermediateResult>);
-
-
   shared_ptr<IntermediateResult> NormalJoin(shared_ptr<BasicQuery>,shared_ptr<QueryPlan>);
+
+  /*以下代码暂且不写
   bool update_cardinality_cache(shared_ptr<BasicQuery>,vector<map<shared_ptr<BasicQuery>,unsigned*> >);
-  bool enum_query_plan(vector<shared_ptr<BasicQuery>>, KVstore* kvstore, bool _is_topk_query);// Join::multi_join() BFS
+  bool enum_query_plan(shared_ptr<BasicQuery>, KVstore* kvstore, bool _is_topk_query);// Join::multi_join() BFS
   bool choose_exec_plan(vector<map<shared_ptr<BasicQuery>, QueryPlan*> > _candidate_plans,
                         vector<QueryPlan> _execution_plan);     //TODO: DP
-
+  IDList gen_filter(unsigned _id, KVstore* kvstore, shared_ptr<TYPE_TRIPLE_NUM*> pre2num,
+                    shared_ptr<TYPE_TRIPLE_NUM*> pre2sub, shared_ptr<TYPE_TRIPLE_NUM*> pre2obj, shared_ptr<bool*> dealed_triple); // Strategy::pre_handler()
+  unsigned cardinality_estimator(shared_ptr<BasicQuery>, KVstore* kvstore, vector<map<shared_ptr<BasicQuery>,unsigned*> > _cardinality_cache);
+  unsigned cost_model(shared_ptr<BasicQuery>, shared_ptr<QueryPlan>); // TODO: other parameters used in cost model
   // change exec_plan if |real cardinality - estimated cardinality| > eps
   bool choose_exec_plan(vector<map<shared_ptr<BasicQuery>, QueryPlan*> > _candidate_plans,
                         map<shared_ptr<BasicQuery>,vector<unsigned*> > _current_result,  vector<QueryPlan>);
   //TODO: re-choose plan in every iteration
-
+  // 先实现手动喂计划的方案
+  tuple<bool,shared_ptr<IntermediateResult>> execution(BasicQuery*, shared_ptr<QueryPlan>);*/
 
 
   BasicQueryStrategy ChooseStrategy(BasicQuery*);
-  tuple<bool,shared_ptr<IntermediateResult>> execution(BasicQuery*, shared_ptr<QueryPlan>);
 
-  tuple<bool,shared_ptr<IntermediateResult>> execution_depth_first(BasicQuery*, shared_ptr<QueryPlan>,QueryInfo);
+
+  tuple<bool,shared_ptr<IntermediateResult>> ExecutionDepthFirst(BasicQuery*, shared_ptr<QueryPlan>, QueryInfo);
+
+  tuple<bool,shared_ptr<IntermediateResult>> DepthSearchOneLayer(shared_ptr<QueryPlan> query_plan,
+                                                                 TYPE_ENTITY_LITERAL_ID layer_count,
+                                                                 int &result_number_till_now,
+                                                                 int limit_number,
+                                                                 shared_ptr<IntermediateResult> tmp_result);
   static void UpdateIDList(shared_ptr<IDList>, unsigned*, unsigned,bool);
+
+  /*copy the result to vector<unsigned*> & */
+  bool CopyToResult(vector<unsigned*> *target, BasicQuery *basic_query, shared_ptr<IntermediateResult> result);
+  void Cartesian(int, int,int,unsigned*,shared_ptr<vector<Satellite>>,vector<unsigned*>*,BasicQuery *);
 
  private:
   KVstore* kv_store_;
@@ -116,7 +125,6 @@ class Optimizer
 
   FILE* fp_;
   bool export_flag_;
-  bool is_distinct_;
   VSTree* vstree_;
   TYPE_TRIPLE_NUM* pre2num_;
   TYPE_TRIPLE_NUM* pre2sub_;
@@ -126,6 +134,8 @@ class Optimizer
   TYPE_ENTITY_LITERAL_ID limitID_entity_;
   shared_ptr<Transaction> txn_;
 
+  // 因为BasicQuery不给谓词变量编码，所以搞了一个抽象的类
+  shared_ptr<vector<VarDescriptor>> var_descriptors_;
 };
 
 #endif

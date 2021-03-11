@@ -40,12 +40,12 @@ CC = g++
 #NOTICE: -O2 is recommended, while -O3(add loop-unroll and inline-function) is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -O2 -pthread -std=c++11
+# ORI CFLAGS = -c -Wall -O2 -pthread -std=c++11
 # CFLAGS = -c -Wall -pthread -std=c++11 -g -gdwarf-2	# For debugging
-EXEFLAG = -O2 -pthread -std=c++11
+# ORI EXEFLAG = -O2 -pthread -std=c++11
 #-coverage
-#CFLAGS = -c -Wall -pthread -g -std=c++11 -pg
-#EXEFLAG = -pthread -g -std=c++11 -pg
+CFLAGS = -c -Wall -pthread -g -std=c++11 -pg
+EXEFLAG = -pthread -g -std=c++11 -pg
 
 #add -lreadline [-ltermcap] if using readline or objs contain readline
 # library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
@@ -95,7 +95,7 @@ utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(
 
 
 
-queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o \
+queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o $(objdir)QueryPlan.o\
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
 		   $(objdir)PathQueryHandler.o
 
@@ -112,7 +112,7 @@ serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Socket.o
 
 # httpobj = $(objdir)client_http.hpp.gch $(objdir)server_http.hpp.gch
 
-databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o $(objdir)CSR.o $(objdir)Txn_manager.o
+databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o $(objdir)CSR.o $(objdir)Txn_manager.o $(objdir)Optimizer.o $(objdir)ResultTrigger.o $(objdir)TableOperator.o
 
 trieobj = $(objdir)Trie.o $(objdir)TrieNode.o
 
@@ -424,6 +424,15 @@ $(objdir)Strategy.o: Database/Strategy.cpp Database/Strategy.h $(objdir)SPARQLqu
 $(objdir)CSR.o: Database/CSR.cpp Database/CSR.h $(objdir)Util.o
 	$(CC) $(CFLAGS) Database/CSR.cpp $(inc) -o $(objdir)CSR.o $(openmp)
 
+$(objdir)TableOperator.o: Database/TableOperator.cpp Database/TableOperator.h $(objdir)Util.o $(objdir)BasicQuery.o
+	$(CC) $(CFLAGS) Database/TableOperator.cpp $(inc) -o $(objdir)TableOperator.o $(openmp)
+
+$(objdir)ResultTrigger.o: Database/ResultTrigger.cpp Database/ResultTrigger.h $(objdir)Util.o
+	$(CC) $(CFLAGS) Database/ResultTrigger.cpp $(inc) -o $(objdir)ResultTrigger.o $(openmp)
+
+$(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)IDList.o \
+	$(objdir)KVstore.o  $(objdir)VSTree.o $(objdir)Join.o $(objdir)Transaction.o $(objdir)TableOperator.o $(objdir)ResultTrigger.o $(objdir)QueryPlan.o
+	$(CC) $(CFLAGS) Database/Optimizer.cpp $(inc) -o $(objdir)Optimizer.o $(openmp)
 
 $(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(objdir)Util.o $(objdir)Transaction.o $(objdir)Database.o
 	$(CC) $(CFLAGS) Database/Txn_manager.cpp $(inc) -o $(objdir)Txn_manager.o $(openmp)
@@ -448,6 +457,9 @@ $(objdir)ResultSet.o: Query/ResultSet.cpp Query/ResultSet.h $(objdir)Stream.o
 $(objdir)Varset.o: Query/Varset.cpp Query/Varset.h
 	$(CC) $(CFLAGS) Query/Varset.cpp $(inc) -o $(objdir)Varset.o $(openmp)
 
+$(objdir)QueryPlan.o: Query/QueryPlan.cpp Query/QueryPlan.h $(objdir)BasicQuery.o $(objdir)TableOperator.o $(objdir)ResultTrigger.o
+	$(CC) $(CFLAGS) Query/QueryPlan.cpp $(inc) -o $(objdir)QueryPlan.o $(openmp)
+
 $(objdir)QueryTree.o: Query/QueryTree.cpp Query/QueryTree.h $(objdir)Varset.o
 	$(CC) $(CFLAGS) Query/QueryTree.cpp $(inc) -o $(objdir)QueryTree.o $(openmp)
 
@@ -466,7 +478,7 @@ $(objdir)PathQueryHandler.o: Query/PathQueryHandler.cpp Query/PathQueryHandler.h
 $(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h Query/RegexExpression.h \
 	$(objdir)VSTree.o $(objdir)KVstore.o $(objdir)StringIndex.o $(objdir)Strategy.o $(objdir)QueryParser.o \
 	$(objdir)Triple.o $(objdir)Util.o $(objdir)EvalMultitypeValue.o $(objdir)SPARQLquery.o $(objdir)QueryTree.o $(objdir)Varset.o \
-	$(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)ResultSet.o $(objdir)PathQueryHandler.o
+	$(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)ResultSet.o $(objdir)PathQueryHandler.o $(objdir)Optimizer.o
 	$(CC) $(CFLAGS) Query/GeneralEvaluation.cpp $(inc) -o $(objdir)GeneralEvaluation.o $(openmp)
 
 #objects in Query/ end

@@ -541,6 +541,9 @@ Join::pre_var_handler()
 //NOTICE:we must save the results of pre var, because we may need to use it to generate the results of satellites
 //s2o and o2s to generate satellites maybe cause error, because some pre var may exist in several triples!!!
 //NOTICE:in this way, all triple counts maybe right(except satellites which may also cause duplicates num not right)
+// Detail: record_len = select_var_num + selected_pre_var_num;
+// New Table columns:
+//    select_var_num first
 
 void
 Join::copyToResult()
@@ -570,7 +573,7 @@ Join::copyToResult()
 		int i = 0;
 		for (; i < core_var_num; ++i)
 		{
-			//This is because sleect var id is always smaller
+			//This is because select var id is always smaller
 			if (this->pos2id[i] < select_var_num)
 			{
 				int vpos = this->basic_query->getSelectedVarPosition(this->pos2id[i]);

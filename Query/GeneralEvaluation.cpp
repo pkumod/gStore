@@ -212,10 +212,20 @@ bool GeneralEvaluation::doQuery()
 		this->limitID_predicate, this->limitID_literal, this->limitID_entity,
 		this->query_tree.Modifier_Distinct== QueryTree::Modifier_Distinct, txn);
 
-	this->rewriting_evaluation_stack.clear();
-	this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
-	this->rewriting_evaluation_stack.back().group_pattern = this->query_tree.getGroupPattern();
-	this->rewriting_evaluation_stack.back().result = NULL;
+    this->optimizer_ = make_shared<Optimizer>(kvstore,vstree,pre2num,pre2sub,pre2obj,limitID_predicate,
+                                      limitID_literal,limitID_entity,txn);
+
+
+	if (this->query_tree.checkWellDesigned())
+	{
+		printf("=================\n");
+		printf("||well-designed||\n");
+		printf("=================\n");
+
+		this->rewriting_evaluation_stack.clear();
+		this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
+		this->rewriting_evaluation_stack.back().group_pattern = this->query_tree.getGroupPattern();
+		this->rewriting_evaluation_stack.back().result = NULL;
 
 	this->temp_result = this->queryEvaluation(0);
 
@@ -312,6 +322,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				SPARQLquery sparql_query;
 				vector<vector<string> > encode_varset;
 				vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
+
+				auto limit_num = query_tree.getLimit();
+				auto order_var_vec = query_tree.getOrderVarVector();
 
 				for (int j = st; j <= i; j++)
 					if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
@@ -1003,6 +1016,36 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
       //   query_info.ordered_by_vars_->push_back(order_item);
 
       // this->optimizer_->DoQuery(sparql_query,query_info);
+
+						basic_query.getCandidateList(k).copy(result_vector);
+						basic_query.setReady(k);
+
+						printf("fill var %s CandidateList size %d\n", basic_query_encode_varset[k].c_str(), (int)result_vector.size());
+					}
+				}
+			}
+		}
+		long tv_fillcand = Util::get_cur_time();
+		printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
+
+		// replace this class to the new 'optimizer'
+		//  this->strategy.handle(sparql_query);
+
+      QueryInfo query_info;
+
+      query_info.limit_ = false;
+      if(this->query_tree.getLimit()!=-1) {
+        query_info.limit_ = true;
+        query_info.limit_num_ = this->query_tree.getLimit();
+      }
+
+      query_info.is_distinct_ = this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct;
+
+      query_info.ordered_by_vars_ = make_shared<vector<QueryTree::Order>>();
+      for(auto order_item:this->query_tree.getOrderVarVector())
+        query_info.ordered_by_vars_->push_back(order_item);
+
+      this->optimizer_->DoQuery(sparql_query,query_info);
 
 		long tv_handle = Util::get_cur_time();
 		printf("after Handle, used %ld ms.\n", tv_handle - tv_fillcand);
