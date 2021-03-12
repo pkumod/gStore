@@ -156,7 +156,6 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::GenerateColdCandidateList
       case JoinMethod::po2s: {
         auto p_var_constant_id = edge_info.p_;
         auto o_var_constant_id = edge_info.o_;
-        cout<<"ID p:"<<p_var_constant_id<<"\t o: "<<o_var_constant_id<<endl;
         this->kv_store_->getsubIDlistByobjIDpreID(o_var_constant_id,
                                                   p_var_constant_id,
                                                   edge_candidate_list,
@@ -512,7 +511,9 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::ANodeEdgesConstraintFilte
   {
     auto edge_info = (*edge_info_vec)[i];
     auto edge_constant_info = (*edge_constant_info_vec)[i];
-    this->OneEdgeConstraintFilter(edge_info,edge_constant_info,intermediate_result);
+    auto step_result = this->OneEdgeConstraintFilter(edge_info,edge_constant_info,intermediate_result);
+    if(get<0>(step_result))
+      intermediate_result = get<1>(step_result);
   }
   // cout<<"ANodeEdgesConstraintFilter:: result_record_len = "<<intermediate_result->values_->front()->size()<<endl;
   return make_tuple(true,intermediate_result);
@@ -531,7 +532,6 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::OneEdgeConstraintFilter(E
                                                                                EdgeConstantInfo edge_table_info,
                                                                                shared_ptr<IntermediateResult> intermediate_result) {
   TYPE_ENTITY_LITERAL_ID var_to_filter= edge_info.getVarToFilter();
-
   if(edge_table_info.ConstantToVar(edge_info))
   {
 
@@ -875,7 +875,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::ExecutionDepthFirst(Basic
                                                                            shared_ptr<QueryPlan> query_plan,
                                                                            QueryInfo query_info) {
   auto limit_num = query_info.limit_num_;
-
+cout<<"Optimizer::ExecutionDepthFirst query_info.limit_num_="<<query_info.limit_num_<<endl;
   auto first_result = this->GenerateColdCandidateList((*query_plan->join_order_)[0].edge_filter_->edges_,
                                                       (*query_plan->join_order_)[0].edge_filter_->edges_constant_info_);
   auto first_var_candidates_inter_result = get<1>(first_result);
@@ -889,8 +889,8 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::ExecutionDepthFirst(Basic
   if( query_plan->join_order_->size()==1)
     return make_tuple(true, first_var_candidates_inter_result);
 
-  TYPE_ENTITY_LITERAL_ID now_result = 0;
-  TYPE_ENTITY_LITERAL_ID now_offset = 0;
+  int now_result = 0;
+  int now_offset = 0;
   vector<shared_ptr<IntermediateResult>> result_container;
 
   cout<<"ExecutionDepthFirst:"<<endl;
@@ -903,18 +903,17 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::ExecutionDepthFirst(Basic
                                                                                 first_var_candidates_inter_result->dealed_triple_);
     tmp_result->values_->push_back(first_var_candidates_list->front());
     first_var_candidates_list->pop_front();
-    auto first_var_one_point_result = this->DepthSearchOneLayer(query_plan, 1, limit_num, now_result, tmp_result);
+    auto first_var_one_point_result = this->DepthSearchOneLayer(query_plan, 1, now_result,limit_num, tmp_result);
 
     if(!get<0>(first_var_one_point_result))
       continue;
 
     auto one_point_inter_result = get<1>(first_var_one_point_result);
     if(one_point_inter_result->values_->size()>0)
-    {
       result_container.push_back(one_point_inter_result);
-      now_result += tmp_result->values_->size();
-    }
-    if(now_offset>=first_var_candidates_vec->size())
+    if(now_result >= limit_num)
+      break;
+    if(now_offset >= first_var_candidates_vec->size())
       break;
     if(first_var_candidates_list->empty())
       break;
@@ -924,11 +923,15 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::ExecutionDepthFirst(Basic
     return make_tuple(true,make_shared<IntermediateResult>(first_var_candidates_inter_result->var_des_to_position_,
                                                            first_var_candidates_inter_result->position_to_var_des_,
                                                            first_var_candidates_inter_result->dealed_triple_));
+  int counter = 0;
   /* merge result */
   auto final_result = result_container[0];
   for(int i=1;i<result_container.size();i++)
-    for(auto record:*(result_container[i]->values_))
+    for(auto record:*(result_container[i]->values_)) {
       final_result->values_->push_back(record);
+      if( ++counter == limit_num)
+        break;
+    }
 
   cout<<"Optimizer::ExecutionDepthFirst final_result.size()="<<final_result->values_->size()<<endl;
   return make_tuple(true,final_result);
@@ -971,14 +974,7 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DepthSearchOneLayer(shared
     return make_tuple(false, t);
   }
 
-  /* deep in bottom */
-  if(layer_count + 1 == query_plan->join_order_->size()) {
-    auto inter_result = get<1>(step_result);inter_result->values_->front()->size();
-    result_number_till_now += get<1>(step_result)->values_->size();
-    return step_result;
-  }
 
-  /* go deeper */
   /* go deeper */
   if(try_result->values_->size() == 0)
   {
@@ -986,9 +982,18 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DepthSearchOneLayer(shared
     return make_tuple(false, t);
   }
 
+  /* deep in bottom */
+  if(layer_count + 1 == query_plan->join_order_->size()) {
+    auto inter_result = get<1>(step_result);inter_result->values_->front()->size();
+    result_number_till_now += get<1>(step_result)->values_->size();
+    return step_result;
+  }
+
   shared_ptr<IntermediateResult> all_result = make_shared<IntermediateResult>(try_result->var_des_to_position_,
                                                                               try_result->position_to_var_des_,
                                                                               try_result->dealed_triple_);
+
+
 
   /* fill a node */
   for(auto one_result:*try_result->values_) {
@@ -1021,7 +1026,7 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DepthSearchOneLayer(shared
 tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparql_query,QueryInfo query_info) {
 
   cout<<"set query_info = limit 2 begin"<<endl;
-  query_info.limit_num_ = 1;
+  query_info.limit_num_ = 30;
   cout<<"set query_info = limit 2 end"<<endl;
   vector<BasicQuery*> basic_query_vec;
   vector<shared_ptr<QueryPlan>> query_plan_vec;

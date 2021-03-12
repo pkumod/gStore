@@ -83,6 +83,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
       {
         if(p_constant)
         {
+          predicate_id = kv_store->getIDByPredicate(triple_string_type.getPredicate());
           if(o_constant)
             join_method = JoinMethod::po2s;
           else
@@ -98,6 +99,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
       }
       else{ // max_j is object
         if(p_constant) {
+          predicate_id = kv_store->getIDByPredicate(triple_string_type.getPredicate());
           if(s_constant)
             join_method = JoinMethod::sp2o;
           else
@@ -184,14 +186,18 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
           bool o_constant = triple_string_type.getObject().at(0) != '?';
           // max_j_basicqueryID is subject
           if (j_name == triple_string_type.getSubject()) {
-            if (p_constant)
+            if (p_constant) {
               join_method = JoinMethod::po2s;
+              predicate_id = kv_store->getIDByPredicate(triple_string_type.getPredicate());
+            }
             else
               join_method = JoinMethod::o2s;
             join_edge_info->emplace_back(max_j_basicqueryID, predicate_id, nei_id, join_method);
           } else { // max_j_basicqueryID is object
-            if (s_constant)
+            if (p_constant) {
               join_method = JoinMethod::sp2o;
+              predicate_id = kv_store->getIDByPredicate(triple_string_type.getPredicate());
+            }
             else
               join_method = JoinMethod::s2o;
             join_edge_info->emplace_back(nei_id, predicate_id, max_j_basicqueryID, join_method);
@@ -241,7 +247,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
 
         if (!s_constant) {
           sid = max_j_basicqueryID;
-          pid = predicate_id;
+          pid = kv_store->getIDByPredicate(triple_string_type.getPredicate());
           oid = kv_store->getIDByString(triple_string_type.getObject());
           join_method = JoinMethod::po2s;
         }
@@ -253,9 +259,9 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
         }
         if (!o_constant) {
           sid = kv_store->getIDByString(triple_string_type.getSubject());
-          pid = predicate_id;
+          pid = kv_store->getIDByPredicate(triple_string_type.getPredicate());
           oid = max_j_basicqueryID;
-          join_method = JoinMethod::po2s;
+          join_method = JoinMethod::sp2o;
         }
         check_edge_info->emplace_back(sid,pid,oid,join_method);
         check_edge_constant_info->emplace_back(s_constant, p_constant,o_constant);
@@ -307,7 +313,10 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
         continue;
       }
       else if(p_constant) // ?o already in table,if not, the BGP is not Connective
+      {
         join_method = JoinMethod::po2s;
+        predicate_id = kv_store->getIDByPredicate(triple_string_type.getPredicate());
+      }
       else
       {
         // ?s ?p ?o and ?p links to the other part
@@ -325,8 +334,10 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
         leave_behind_satellite_vec.push_back(satellite_id);
         continue;
       }// ?s already in table
-      else if(p_constant)
+      else if(p_constant) {
         join_method = JoinMethod::sp2o;
+        predicate_id = kv_store->getIDByPredicate(triple_string_type.getPredicate());
+      }
       else // ?s ?p ?o and ?p links to the other part
       {
         // ?s ?p ?o and ?p links to the other part
@@ -506,4 +517,16 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
     vars_used_vec[left_id] = true;
     this->ids_after_join_->push_back(left_id);
   }
+}
+std::string QueryPlan::toString() {
+  stringstream ss;
+  ss<<"QueryPlan:"<<endl;
+
+  for(int i=0;i<this->join_order_->size();i++)
+  {
+
+  }
+
+
+  return std::__cxx11::string();
 }

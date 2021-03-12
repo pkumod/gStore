@@ -22,6 +22,8 @@ class QueryPlan
   QueryPlan(std::shared_ptr<std::vector<OneStepJoin>> ,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>,std::shared_ptr<std::vector<VarDescriptor>>);
 
   QueryPlan(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
+
+  std::string toString();
 };
 
 #endif //GSTORELIMITK_QUERY_QUERYPLAN_H_
