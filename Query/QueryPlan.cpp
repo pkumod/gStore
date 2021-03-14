@@ -518,15 +518,63 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
     this->ids_after_join_->push_back(left_id);
   }
 }
-std::string QueryPlan::toString() {
-  stringstream ss;
-  ss<<"QueryPlan:"<<endl;
 
+std::string QueryPlan::toString(KVstore* kv_store) {
+  stringstream ss;
+  ss<<"QueryPlan:\n";
+  ss<<"join order size "<<this->join_order_->size()<<endl;
   for(int i=0;i<this->join_order_->size();i++)
   {
+    auto step_n = (*this->join_order_)[i];
 
+    ss<<"\tstep["<<i<<"]: "<<OneStepJoin::JoinTypeToString(step_n.join_type_)<<" \t ";
+    shared_ptr<OneStepJoinNode> step_descriptor;
+    switch (step_n.join_type_) {
+      case OneStepJoin::JoinType::JoinNode:
+        step_descriptor = step_n.join_node_;
+        break;
+      case OneStepJoin::JoinType::GenFilter:
+      case OneStepJoin::JoinType::EdgeCheck:
+        step_descriptor = step_n.edge_filter_;
+        break;
+    }
+    ss<<" node["<<step_descriptor->node_to_join_<<"]\n";
+
+    // describe edge info
+    for(int i =0;i<step_descriptor->edges_->size();i++)
+      ss<< "\t \t "<<EdgeToString(kv_store,(*step_descriptor->edges_)[i],(*step_descriptor->edges_constant_info_)[i])<<"\n";
+  }
+  return ss.str();
+}
+std::tuple<std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>,
+           std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>> QueryPlan::PositionIDMappings() {
+
+  auto var_to_position = make_shared<map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>();
+  auto position_to_var = make_shared<map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>();
+
+  for(const auto &one_step: *this->join_order_)
+  {
+    bool node_added = false;
+    TYPE_ENTITY_LITERAL_ID node_i = -1;
+    switch (one_step.join_type_) {
+      case  OneStepJoin::JoinType::JoinNode:
+        node_i = one_step.join_node_->node_to_join_;
+        node_added =true;
+        break;
+      case  OneStepJoin::JoinType::GenFilter:
+        node_i = one_step.edge_filter_->node_to_join_;
+        node_added =true;
+        break;
+      case  OneStepJoin::JoinType::JoinTable: break;
+      case  OneStepJoin::JoinType::EdgeCheck : break;
+    }
+    if(node_added)
+    {
+      auto map_size = var_to_position->size();
+      (*var_to_position)[node_i] = map_size;
+      (*position_to_var)[map_size] = node_i;
+    }
   }
 
-
-  return std::__cxx11::string();
+  return make_tuple(var_to_position,position_to_var);
 }

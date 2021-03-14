@@ -58,10 +58,9 @@ class IntermediateResult{
   // VarDescriptor ID, not BasicQuery ID
   std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_var_des_;
 
-  std::shared_ptr<std::vector<bool>> dealed_triple_;
   IntermediateResult(std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> id_to_position,
                      std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_id,
-                     std::shared_ptr<std::vector<bool>> dealed_triple);
+                     std::shared_ptr<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>> values);
 
   IntermediateResult();
   static std::shared_ptr<IntermediateResult> JoinTwoStructure(std::shared_ptr<IntermediateResult> result_a,std::shared_ptr<IntermediateResult> result_b,
@@ -81,6 +80,7 @@ class EdgeInfo{
   JoinMethod join_method_;
   TYPE_ENTITY_LITERAL_ID getVarToFilter();
   std::string toString();
+
 };
 
 class EdgeConstantInfo{
@@ -95,6 +95,8 @@ class EdgeConstantInfo{
   EdgeConstantInfo():s_constant_(false), p_constant_(false), o_constant_(false){};
   std::string toString();
 };
+
+std::string EdgeToString(KVstore *kv_store,EdgeInfo edge_info,EdgeConstantInfo edge_constant_info);
 
 /* Extend One Table, add a new Node.
  * The Node can have a candidate list
@@ -122,6 +124,16 @@ class OneStepJoin{
   std::shared_ptr<OneStepJoinTable> join_table_;
   std::shared_ptr<OneStepJoinNode> edge_filter_; // GenFilter & EdgeCheck use this filed
   enum class JoinType{JoinNode,JoinTable,GenFilter,EdgeCheck} join_type_;
+
+  std::string static JoinTypeToString(JoinType x){
+    switch (x) {
+      case JoinType::JoinNode: return "JoinType::JoinNode";
+      case JoinType::JoinTable: return "JoinType::JoinTable";
+      case JoinType::GenFilter: return "JoinType::GenFilter";
+      case JoinType::EdgeCheck: return "JoinType::EdgeCheck";
+    }
+    return "err in JoinTypeToString";
+  };
 };
 
 /**

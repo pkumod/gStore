@@ -21,6 +21,9 @@
 
 
 using namespace std;
+using TableContent = list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>;
+using TableContentShardPtr = shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>;
+using PositionValueSharedPtr = std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>;
 
 enum class BasicQueryStrategy{
   Normal,
@@ -64,12 +67,12 @@ class Optimizer
   tuple<bool,shared_ptr<IntermediateResult>> MergeBasicQuery(SPARQLquery &sparql_query);
 
 
-  tuple<bool,shared_ptr<IntermediateResult>> GenerateColdCandidateList(shared_ptr<vector<EdgeInfo>>,shared_ptr<vector<EdgeConstantInfo>>);
-  tuple<bool,shared_ptr<IntermediateResult>> JoinANode(shared_ptr<OneStepJoinNode>,shared_ptr<IntermediateResult>);
-  tuple<bool,shared_ptr<IntermediateResult>> JoinTwoTable(shared_ptr<OneStepJoinTable>,shared_ptr<IntermediateResult>,shared_ptr<IntermediateResult>);
-  tuple<bool,shared_ptr<IntermediateResult>> ANodeEdgesConstraintFilter(shared_ptr<OneStepJoinNode>, shared_ptr<IntermediateResult>);
-  tuple<bool,shared_ptr<IntermediateResult>> OneEdgeConstraintFilter(EdgeInfo, EdgeConstantInfo, shared_ptr<IntermediateResult>);
-  tuple<bool,shared_ptr<IntermediateResult>> FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>,TYPE_ENTITY_LITERAL_ID ,shared_ptr<IntermediateResult>);
+  tuple<bool,TableContentShardPtr> GenerateColdCandidateList(shared_ptr<vector<EdgeInfo>>,shared_ptr<vector<EdgeConstantInfo>>);
+  tuple<bool,TableContentShardPtr> JoinANode(shared_ptr<OneStepJoinNode>,TableContentShardPtr,PositionValueSharedPtr);
+  tuple<bool,TableContentShardPtr> JoinTwoTable(shared_ptr<OneStepJoinTable>,TableContentShardPtr,PositionValueSharedPtr,TableContentShardPtr,PositionValueSharedPtr);
+  tuple<bool,TableContentShardPtr> ANodeEdgesConstraintFilter(shared_ptr<OneStepJoinNode>, TableContentShardPtr,PositionValueSharedPtr);
+  tuple<bool,TableContentShardPtr> OneEdgeConstraintFilter(EdgeInfo, EdgeConstantInfo, TableContentShardPtr,PositionValueSharedPtr);
+  tuple<bool,TableContentShardPtr> FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>,TYPE_ENTITY_LITERAL_ID ,TableContentShardPtr,PositionValueSharedPtr);
   shared_ptr<IntermediateResult> NormalJoin(shared_ptr<BasicQuery>,shared_ptr<QueryPlan>);
 
   /*以下代码暂且不写
@@ -92,13 +95,14 @@ class Optimizer
   BasicQueryStrategy ChooseStrategy(BasicQuery*);
 
 
-  tuple<bool,shared_ptr<IntermediateResult>> ExecutionDepthFirst(BasicQuery*, shared_ptr<QueryPlan>, QueryInfo);
+  tuple<bool,TableContentShardPtr> ExecutionDepthFirst(BasicQuery* basic_query, shared_ptr<QueryPlan> query_plan,
+                                                                 QueryInfo query_info,PositionValueSharedPtr id_pos_mapping);
 
-  tuple<bool,shared_ptr<IntermediateResult>> DepthSearchOneLayer(shared_ptr<QueryPlan> query_plan,
-                                                                 TYPE_ENTITY_LITERAL_ID layer_count,
+  tuple<bool,TableContentShardPtr> DepthSearchOneLayer(shared_ptr<QueryPlan> query_plan,
+                                                                 int layer_count,
                                                                  int &result_number_till_now,
                                                                  int limit_number,
-                                                                 shared_ptr<IntermediateResult> tmp_result);
+                                                                 TableContentShardPtr tmp_result, PositionValueSharedPtr id_pos_mapping);
   static void UpdateIDList(shared_ptr<IDList>, unsigned*, unsigned,bool);
 
   /*copy the result to vector<unsigned*> & */
