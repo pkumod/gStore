@@ -23,7 +23,14 @@ class QueryPlan
 
   QueryPlan(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
 
-  std::string toString();
+  std::string toString(KVstore* kv_store);
+
+  /*  The return value are:
+   *  [0] var_to_position_,
+   *  [1] position_to_var
+   * */
+  std::tuple<std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>,std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>>
+  PositionIDMappings();
 };
 
 #endif //GSTORELIMITK_QUERY_QUERYPLAN_H_

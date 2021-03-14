@@ -63,24 +63,22 @@ IntermediateResult::JoinTwoStructure(shared_ptr<IntermediateResult> result_a,
     (*r_id_to_position)[kv.second] = kv.first;
   }
   auto r_dealed_triple = make_shared<vector<bool>>();
-  return make_shared<IntermediateResult>(r_id_to_position,r_position_to_id,r_dealed_triple);
+  return make_shared<IntermediateResult>(r_id_to_position,r_position_to_id,make_shared<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>>());
 }
 
 IntermediateResult::IntermediateResult(
     shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> id_to_position,
 shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_id,
-shared_ptr<vector<bool>> dealed_triple){
-  this->values_ = make_shared<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
+    std::shared_ptr<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>> values){
+  this->values_ = values;
   this->var_des_to_position_ = make_shared<map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>(*id_to_position);
   this->position_to_var_des_ = make_shared<map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>(*position_to_id);
-  this->dealed_triple_ = make_shared<vector<bool>>(*dealed_triple);
 }
 
 IntermediateResult::IntermediateResult(){
   this->values_ = make_shared<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
   this->var_des_to_position_ = make_shared<map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>();
   this->position_to_var_des_ = make_shared<map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>();
-  this->dealed_triple_ = make_shared<vector<bool>>();
 };
 
 
@@ -151,20 +149,39 @@ string EdgeInfo::toString() {
 
   stringstream ss;
   ss<<" EdgeInfo: \t s["<<this->s_<<"] \t p["<<this->p_<<"]"<<" \t o["<<this->o_<<"]";
-  string t;
-  ss>>t;
-  return t;
+  return ss.str();
 }
+
 
 std::string EdgeConstantInfo::toString() {
   stringstream ss;
   vector<string> wrong_right = {"variable","constant"};
   ss<<" EdgeConstantInfo: \t s["<<wrong_right[this->s_constant_]
-    <<"] \t p["<<this->p_constant_<<"]"
-    <<" \t o["<<this->o_constant_<<"]";
-  string t;
-  ss >> t;
-  return t;
+    <<"] \t p["<<wrong_right[this->p_constant_]<<"]"
+    <<" \t o["<<wrong_right[this->o_constant_]<<"]";
+  return ss.str();
+}
+
+string EdgeToString(KVstore *kv_store,EdgeInfo edge_info,EdgeConstantInfo edge_constant_info)
+{
+  stringstream ss;
+  ss<< edge_constant_info.toString() << "\n\t \t ";
+  ss<<" EdgeInfo: \t ";
+  if(edge_constant_info.s_constant_)
+    ss<<"|"<<kv_store->getEntityByID(edge_info.s_);
+  else
+    ss<<"|"<<edge_info.s_;
+
+  if(edge_constant_info.p_constant_)
+    ss<<"|"<<kv_store->getPredicateByID(edge_info.p_);
+  else
+    ss<<"|"<<edge_info.p_;
+
+  if(edge_constant_info.o_constant_)
+    ss<<"|"<<kv_store->getStringByID(edge_info.o_)<<"|";
+  else
+    ss<<"|"<<edge_info.o_<<"|";
+  return ss.str();
 }
 
 /**
