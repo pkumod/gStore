@@ -6,8 +6,6 @@
 
 #include "Optimizer.h"
 
-
-
 Optimizer::Optimizer(KVstore *kv_store,
                      VSTree *vs_tree,
                      TYPE_TRIPLE_NUM *pre2num,
@@ -17,15 +15,11 @@ Optimizer::Optimizer(KVstore *kv_store,
                      TYPE_ENTITY_LITERAL_ID limitID_literal,
                      TYPE_ENTITY_LITERAL_ID limitID_entity,
                      shared_ptr<Transaction> txn
-    // ,SPARQLquery &sparql_query,
-    // shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list,
-    // TYPE_ENTITY_LITERAL_ID limit_num
 ):
-    kv_store_(kv_store),vstree_(vs_tree),pre2num_(pre2num),
+    kv_store_(kv_store),pre2num_(pre2num),
     pre2sub_(pre2obj),pre2obj_(pre2obj),limitID_predicate_(limitID_predicate),
     limitID_literal_(limitID_literal),limitID_entity_(limitID_entity),
-    txn_(txn)
-//,order_by_list_(order_by_list),limit_num_(limit_num)
+    txn_(std::move(txn))
 {
 /*
   this->current_basic_query_ = -1; // updated by result_list.size()
@@ -57,8 +51,8 @@ Optimizer::Optimizer(KVstore *kv_store,
  * @param edge_table_info_vector
  * @return
  */
-tuple<bool, TableContentShardPtr> Optimizer::GenerateColdCandidateList(shared_ptr<vector<EdgeInfo>> edge_info_vector,
-                                                                       shared_ptr<vector<EdgeConstantInfo>> edge_table_info_vector) {
+tuple<bool, TableContentShardPtr> Optimizer::GenerateColdCandidateList(const shared_ptr<vector<EdgeInfo>>& edge_info_vector,
+                                                                       const shared_ptr<vector<EdgeConstantInfo>>& edge_table_info_vector) {
 
   if(edge_info_vector->empty())
     return make_tuple(false, nullptr);
@@ -191,7 +185,10 @@ tuple<bool, TableContentShardPtr> Optimizer::GenerateColdCandidateList(shared_pt
  * @param intermediate_result The Result in previous step
  * @return bool: the function is done; IntermediateResult: the new IntermediateResult
  */
-tuple<bool,TableContentShardPtr> Optimizer::JoinANode(shared_ptr<OneStepJoinNode> one_step_join_node_, TableContentShardPtr table_content_ptr, PositionValueSharedPtr id_pos_mapping)
+tuple<bool,TableContentShardPtr> Optimizer::JoinANode(const shared_ptr<OneStepJoinNode>& one_step_join_node_,
+                                                      const TableContentShardPtr& table_content_ptr,
+                                                      const PositionValueSharedPtr& id_pos_mapping,
+                                                      const IDCachesSharePtr& id_caches)
 {
 
 
@@ -364,6 +361,12 @@ tuple<bool,TableContentShardPtr> Optimizer::JoinANode(shared_ptr<OneStepJoinNode
       record_candidate_prepared = true;
     }
 
+    if(id_caches->find(new_id)!=id_caches->end())
+    {
+      auto caches_ptr = (*(id_caches->find(new_id))).second;
+      record_candidate_list->intersectList(*caches_ptr);
+    }
+
     /* write to the new table */
     auto record = *record_iterator;
     for (auto new_element:*(record_candidate_list->getList())) {
@@ -388,12 +391,12 @@ tuple<bool,TableContentShardPtr> Optimizer::JoinANode(shared_ptr<OneStepJoinNode
  * @return new table, columns are made up of
  * [ common vars ][ small table vars ][ larger table vars]
  */
-tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(shared_ptr<OneStepJoinTable> one_step_join_table,
-                                                          TableContentShardPtr table_a,
-                                                          PositionValueSharedPtr table_a_id_pos,
-                                                          TableContentShardPtr table_b,
-                                                          PositionValueSharedPtr table_b_id_pos) {
-  if(table_a->size()==0 || table_b->size()==0)
+tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneStepJoinTable>& one_step_join_table,
+                                                          const TableContentShardPtr& table_a,
+                                                          const PositionValueSharedPtr& table_a_id_pos,
+                                                          const TableContentShardPtr& table_b,
+                                                          const PositionValueSharedPtr& table_b_id_pos) {
+  if(table_a->empty() || table_b->empty())
     return make_tuple(false,make_shared<TableContent>());
 
   auto join_nodes = one_step_join_table->public_variables_;
@@ -434,7 +437,7 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(shared_ptr<OneStepJoin
   }
 
   auto common_variables_size = one_step_join_table->public_variables_->size();
-  for(auto small_record:*(small_table))
+  for(const auto& small_record:*(small_table))
   {
     vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
     for(auto common_position:common_variables_position_small)
@@ -450,7 +453,7 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(shared_ptr<OneStepJoin
       auto tmp_vector = make_shared<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
       tmp_vector->push_back(small_record);
       indexed_result[result_index] = tmp_vector;
-    };
+    }
   }
 
 
@@ -471,7 +474,7 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(shared_ptr<OneStepJoin
 
   auto result_contents = result_table;
   /* do the matching */
-  for(auto large_record:*large_table)
+  for(const auto& large_record:*large_table)
   {
     vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
     for(auto common_position:common_variables_position_lager)
@@ -487,7 +490,7 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(shared_ptr<OneStepJoin
         large_record_inserted.push_back((*large_record)[large_position]);
       }
       auto matched_content = indexed_result[result_index];
-      for(auto matched_small_record:*matched_content)
+      for(const auto& matched_small_record:*matched_content)
       {
         auto result_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*matched_small_record);
         for(auto large_inserted_element:large_record_inserted)
@@ -504,16 +507,17 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(shared_ptr<OneStepJoin
 
 }
 
-tuple<bool, TableContentShardPtr> Optimizer::ANodeEdgesConstraintFilter(shared_ptr<OneStepJoinNode> one_step_join_table,
+tuple<bool, TableContentShardPtr> Optimizer::ANodeEdgesConstraintFilter(const shared_ptr<OneStepJoinNode>& one_step_join_table,
                                                                         TableContentShardPtr table_content_ptr,
-                                                                        PositionValueSharedPtr id_pos_mapping) {
+                                                                        const PositionValueSharedPtr& id_pos_mapping,
+                                                                        const IDCachesSharePtr& id_caches) {
   auto edge_info_vec = one_step_join_table->edges_;
   auto edge_constant_info_vec = one_step_join_table->edges_constant_info_;
   for(int i=0;i<one_step_join_table->edges_->size();i++)
   {
     auto edge_info = (*edge_info_vec)[i];
     auto edge_constant_info = (*edge_constant_info_vec)[i];
-    auto step_result = this->OneEdgeConstraintFilter(edge_info,edge_constant_info,table_content_ptr,id_pos_mapping);
+    auto step_result = this->OneEdgeConstraintFilter(edge_info,edge_constant_info,table_content_ptr,id_pos_mapping,id_caches);
     if(get<0>(step_result))
       table_content_ptr = get<1>(step_result);
   }
@@ -531,8 +535,9 @@ tuple<bool, TableContentShardPtr> Optimizer::ANodeEdgesConstraintFilter(shared_p
  */
 tuple<bool, TableContentShardPtr> Optimizer::OneEdgeConstraintFilter(EdgeInfo edge_info,
                                                                      EdgeConstantInfo edge_table_info,
-                                                                     TableContentShardPtr table_content_ptr,
-                                                                     PositionValueSharedPtr id_pos_mapping) {
+                                                                     const TableContentShardPtr& table_content_ptr,
+                                                                     const PositionValueSharedPtr& id_pos_mapping,
+                                                                     const IDCachesSharePtr& id_caches) {
   TYPE_ENTITY_LITERAL_ID var_to_filter= edge_info.getVarToFilter();
   if(edge_table_info.ConstantToVar(edge_info))
   {
@@ -814,16 +819,16 @@ tuple<bool, TableContentShardPtr> Optimizer::OneEdgeConstraintFilter(EdgeInfo ed
 
 }
 
-tuple<bool, TableContentShardPtr> Optimizer::FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> candidate_list,
+tuple<bool, TableContentShardPtr> Optimizer::FilterAVariableOnIDList(const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& candidate_list,
                                                                      TYPE_ENTITY_LITERAL_ID var_id,
-                                                                     TableContentShardPtr table_content_ptr,
-                                                                     PositionValueSharedPtr id_posing_mapping) {
+                                                                     const TableContentShardPtr& table_content_ptr,
+                                                                     const PositionValueSharedPtr& id_posing_mapping) {
 
   auto new_intermediate_table = make_shared<TableContent>();
   auto var_position = (*id_posing_mapping)[var_id];
 
   /* : each record */
-  for (auto record_sp : *table_content_ptr){
+  for (const auto& record_sp : *table_content_ptr){
     auto var_to_filter_id_this_record=(*record_sp)[var_position];
     if(binary_search(candidate_list->begin(),candidate_list->end(),var_to_filter_id_this_record))
     {
@@ -835,6 +840,126 @@ tuple<bool, TableContentShardPtr> Optimizer::FilterAVariableOnIDList(shared_ptr<
 
 }
 
+bool Optimizer::CacheConstantCandidates(const shared_ptr<OneStepJoinNode>& one_step, const IDCachesSharePtr& id_caches) {
+  auto node_t = one_step->node_to_join_;
+  auto edges = one_step->edges_;
+  auto edges_constant = one_step->edges_constant_info_;
+  for(int i =0 ;i<edges->size();i++) {
+    AddConstantCandidates((*edges)[i],(*edges_constant)[i],node_t,id_caches);
+  }
+  return true;
+}
+
+bool Optimizer::AddConstantCandidates(EdgeInfo edge_info,EdgeConstantInfo edge_table_info,TYPE_ENTITY_LITERAL_ID targetID,
+                                                                     const IDCachesSharePtr& id_caches)
+{
+  TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
+  TYPE_ENTITY_LITERAL_ID this_edge_list_len;
+  switch (edge_info.join_method_) {
+    case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
+      auto s_var_constant_id = edge_info.s_;
+      this->kv_store_->getpreIDlistBysubID(s_var_constant_id,
+                                           edge_candidate_list,
+                                           this_edge_list_len,
+                                           true,
+                                           this->txn_);
+      break;
+    }
+    case JoinMethod::s2o: {
+      auto s_var_constant_id = edge_info.s_;
+      this->kv_store_->getobjIDlistBysubID(s_var_constant_id,
+                                           edge_candidate_list,
+                                           this_edge_list_len,
+                                           true,
+                                           this->txn_);
+      break;
+    }
+    case JoinMethod::p2s: {
+      auto p_var_constant_id = edge_info.p_;
+      this->kv_store_->getsubIDlistBypreID(p_var_constant_id,
+                                           edge_candidate_list,
+                                           this_edge_list_len,
+                                           true,
+                                           this->txn_);
+      break;
+    }
+    case JoinMethod::p2o: {
+      auto p_var_constant_id = edge_info.p_;
+      this->kv_store_->getobjIDlistBypreID(p_var_constant_id,
+                                           edge_candidate_list,
+                                           this_edge_list_len,
+                                           true,
+                                           this->txn_);
+      break;
+    }
+    case JoinMethod::o2s: {
+      auto o_var_constant_id = edge_info.o_;
+      this->kv_store_->getsubIDlistByobjID(o_var_constant_id,
+                                           edge_candidate_list,
+                                           this_edge_list_len,
+                                           true,
+                                           this->txn_);
+      break;
+    }
+    case JoinMethod::o2p: {
+      auto o_var_constant_id = edge_info.o_;
+      this->kv_store_->getpreIDlistByobjID(o_var_constant_id,
+                                           edge_candidate_list,
+                                           this_edge_list_len,
+                                           true,
+                                           this->txn_);
+      break;
+    }
+    case JoinMethod::so2p: {
+      auto s_var_constant_id = edge_info.s_;
+      auto o_var_constant_id = edge_info.o_;
+      this->kv_store_->getpreIDlistBysubIDobjID(s_var_constant_id,
+                                                o_var_constant_id,
+                                                edge_candidate_list,
+                                                this_edge_list_len,
+                                                true,
+                                                this->txn_);
+      break;
+    }
+    case JoinMethod::sp2o: {
+      auto s_var_constant_id = edge_info.s_;
+      auto p_var_constant_id = edge_info.p_;
+      this->kv_store_->getobjIDlistBysubIDpreID(s_var_constant_id,
+                                                p_var_constant_id,
+                                                edge_candidate_list,
+                                                this_edge_list_len,
+                                                true,
+                                                this->txn_);
+      break;
+    }
+    case JoinMethod::po2s: {
+      auto p_var_constant_id = edge_info.p_;
+      auto o_var_constant_id = edge_info.o_;
+      this->kv_store_->getsubIDlistByobjIDpreID(o_var_constant_id,
+                                                p_var_constant_id,
+                                                edge_candidate_list,
+                                                this_edge_list_len,
+                                                true,
+                                                this->txn_);
+      break;
+    }
+  }
+  auto validate_list = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(edge_candidate_list,edge_candidate_list+this_edge_list_len);
+  if(id_caches->find(targetID) == id_caches->end())
+  {
+    auto new_ids = make_shared<IDList>();
+    UpdateIDList(new_ids,edge_candidate_list,this_edge_list_len,false);
+    (*id_caches)[targetID] = new_ids;
+  }
+  else
+  {
+    auto prepared_IDs = (*id_caches->find(targetID)).second;
+    UpdateIDList(prepared_IDs,edge_candidate_list,this_edge_list_len,true);
+  }
+  delete [] edge_candidate_list;
+
+  return true;
+}
 
 /**
  * a simple version of Join::update_answer_list
@@ -844,7 +969,7 @@ tuple<bool, TableContentShardPtr> Optimizer::FilterAVariableOnIDList(shared_ptr<
  * @param id_list_prepared : valid_id_list is initialed
  */
 void
-Optimizer::UpdateIDList(shared_ptr<IDList> valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared)
+Optimizer::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared)
 {
   if(id_list_prepared)
   {
@@ -868,22 +993,24 @@ shared_ptr<IntermediateResult> Optimizer::NormalJoin(shared_ptr<BasicQuery>, sha
 
 /* This is One layer, need more*/
 tuple<bool, TableContentShardPtr> Optimizer::ExecutionDepthFirst(BasicQuery* basic_query,
-                                                                 shared_ptr<QueryPlan> query_plan,
-                                                                 QueryInfo query_info,
-                                                                 PositionValueSharedPtr id_pos_mapping) {
+                                                                 const shared_ptr<QueryPlan>& query_plan,
+                                                                 const QueryInfo& query_info,
+                                                                 const PositionValueSharedPtr& id_pos_mapping) {
   auto limit_num = query_info.limit_num_;
   cout<<"Optimizer::ExecutionDepthFirst query_info.limit_num_="<<query_info.limit_num_<<endl;
   auto first_result = this->GenerateColdCandidateList((*query_plan->join_order_)[0].edge_filter_->edges_,
                                                       (*query_plan->join_order_)[0].edge_filter_->edges_constant_info_);
-  auto first_var_candidates_inter_result_list = get<1>(first_result);
+
+  auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
+  auto first_candidates_list = get<1>(first_result);
 
 
-  auto first_var_candidates_vec = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(first_var_candidates_inter_result_list->size());
-  for(auto var_can_vec:*first_var_candidates_inter_result_list)
+  auto first_var_candidates_vec = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(first_candidates_list->size());
+  for(const auto& var_can_vec:*first_candidates_list)
     first_var_candidates_vec->push_back((*var_can_vec)[0]);
 
-  if( query_plan->join_order_->size()==1)
-    return make_tuple(true, first_var_candidates_inter_result_list);
+  if( query_plan->join_order_->size()==1 || first_candidates_list->empty())
+    return make_tuple(true, first_candidates_list);
 
   int now_result = 0;
   int now_offset = 0;
@@ -891,29 +1018,32 @@ tuple<bool, TableContentShardPtr> Optimizer::ExecutionDepthFirst(BasicQuery* bas
 
   cout<<"ExecutionDepthFirst:"<<endl;
 
+  for(auto& constant_generating_step: *(query_plan->constant_generating_lists_))
+  {
+    CacheConstantCandidates(constant_generating_step,var_candidates_cache);
+  };
 
-
+  cout<<"first_candidates_list.size()="<<first_candidates_list->size()<<endl;
   /* #TODO 特殊情况：只有一个点，这个还没写
    * */
   if(limit_num != -1) {
     while (now_result <= limit_num) {
       auto tmp_result = make_shared<TableContent>();
-      tmp_result->push_back(first_var_candidates_inter_result_list->front());
-      first_var_candidates_inter_result_list->pop_front();
+      tmp_result->push_back(first_candidates_list->front());
+      first_candidates_list->pop_front();
       auto first_var_one_point_result =
-          this->DepthSearchOneLayer(query_plan, 1, now_result, limit_num, tmp_result, id_pos_mapping);
+          this->DepthSearchOneLayer(query_plan, 1, now_result, limit_num, tmp_result, id_pos_mapping,var_candidates_cache);
 
-      if (!get<0>(first_var_one_point_result))
-        continue;
-
-      auto one_point_inter_result = get<1>(first_var_one_point_result);
-      if (one_point_inter_result->size() > 0)
-        result_container.push_back(one_point_inter_result);
-      if (now_result >= limit_num)
-        break;
-      if (now_offset >= first_var_candidates_vec->size())
-        break;
-      if (first_var_candidates_inter_result_list->empty())
+      if (get<0>(first_var_one_point_result)) {
+        auto one_point_inter_result = get<1>(first_var_one_point_result);
+        if (!one_point_inter_result->empty())
+          result_container.push_back(one_point_inter_result);
+        if (now_result >= limit_num)
+          break;
+        if (now_offset >= first_var_candidates_vec->size())
+          break;
+      }
+      if (first_candidates_list->empty())
         break;
     }
   }
@@ -921,30 +1051,31 @@ tuple<bool, TableContentShardPtr> Optimizer::ExecutionDepthFirst(BasicQuery* bas
   {
     while (true) {
       auto tmp_result = make_shared<TableContent>();
-      tmp_result->push_back(first_var_candidates_inter_result_list->front());
-      first_var_candidates_inter_result_list->pop_front();
+      tmp_result->push_back(first_candidates_list->front());
+      first_candidates_list->pop_front();
       auto first_var_one_point_result =
-          this->DepthSearchOneLayer(query_plan, 1, now_result, limit_num, tmp_result, id_pos_mapping);
-      if (!get<0>(first_var_one_point_result))
-        continue;
+          this->DepthSearchOneLayer(query_plan, 1, now_result, limit_num, tmp_result, id_pos_mapping,var_candidates_cache);
+      if (get<0>(first_var_one_point_result))
+      {
       auto one_point_inter_result = get<1>(first_var_one_point_result);
-      if (one_point_inter_result->size() > 0)
+      if (!one_point_inter_result->empty())
         result_container.push_back(one_point_inter_result);
       if (now_offset >= first_var_candidates_vec->size())
         break;
-      if (first_var_candidates_inter_result_list->empty())
+      }
+      if (first_candidates_list->empty())
         break;
     }
   }
   cout<<"Optimizer::ExecutionDepthFirst result_container.size()="<<result_container.size()<<endl;
-  if(result_container.size()==0)
+  if(result_container.empty())
     return make_tuple(true,make_shared<TableContent>());
   int counter = 0;
   /* merge result */
 
   auto final_result = result_container[0];
   for(int i=1;i<result_container.size();i++)
-    for(auto record:*(result_container[i])) {
+    for(const auto& record:*(result_container[i])) {
       final_result->push_back(record);
       if( ++counter == limit_num)
         break;
@@ -955,30 +1086,31 @@ tuple<bool, TableContentShardPtr> Optimizer::ExecutionDepthFirst(BasicQuery* bas
 }
 
 // #TODO, just return list<shared_ptr<vector< ID_TYPE >>>
-tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPlan> query_plan,
+tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(const shared_ptr<QueryPlan>& query_plan,
                                                                 int layer_count,
                                                                 int &result_number_till_now,
                                                                 int limit_number,
-                                                                TableContentShardPtr table_content_ptr,
-                                                                PositionValueSharedPtr id_pos_mapping) {
+                                                                const TableContentShardPtr& table_content_ptr,
+                                                                const PositionValueSharedPtr& id_pos_mapping,
+                                                                const IDCachesSharePtr& id_caches) {
 
   auto one_step = (*(query_plan->join_order_))[layer_count];
   tuple<bool,TableContentShardPtr> step_result;
   switch (one_step.join_type_) {
     case OneStepJoin::JoinType::JoinNode: { // 要注意这里的指针会不会传丢掉
-      step_result = JoinANode(one_step.join_node_, table_content_ptr,id_pos_mapping);
+      step_result = JoinANode(one_step.join_node_, table_content_ptr,id_pos_mapping,id_caches);
       break;
     }
     case OneStepJoin::JoinType::JoinTable: {
       break;
     }
-    case OneStepJoin::JoinType::GenFilter : {
-      // Now Only The first element can be GenFilter
+    case OneStepJoin::JoinType::GenerateCandidates : {
+      // Now Only The first element can be GenerateCandidates
       // We have processed it before
       return make_tuple(false, nullptr);
     }
     case OneStepJoin::JoinType::EdgeCheck: {
-      step_result = ANodeEdgesConstraintFilter(one_step.edge_filter_, table_content_ptr,id_pos_mapping);
+      step_result = ANodeEdgesConstraintFilter(one_step.edge_filter_, table_content_ptr,id_pos_mapping,id_caches);
       break;
     }
   }
@@ -986,13 +1118,8 @@ tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(shared_ptr<Query
 
   auto try_result = get<1>(step_result);
 
-  if(try_result->size() == 0)
-    return make_tuple(false, nullptr);
-
-
-
   /* go deeper */
-  if(try_result->size() == 0)
+  if(try_result->empty())
     return make_tuple(false, nullptr);
 
 
@@ -1008,12 +1135,12 @@ tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(shared_ptr<Query
 
 
   /* fill a node */
-  for(auto one_result:*try_result) {
+  for(const auto& one_result:*try_result) {
     auto table_content_ptr = make_shared<TableContent>();
 
     table_content_ptr->push_back(one_result);
     auto next_layer_result  =
-        this->DepthSearchOneLayer(query_plan, layer_count + 1, result_number_till_now, limit_number, table_content_ptr,id_pos_mapping);
+        this->DepthSearchOneLayer(query_plan, layer_count + 1, result_number_till_now, limit_number, table_content_ptr,id_pos_mapping,id_caches);
     /* if not success */
     if(!get<0>(next_layer_result))
       continue;
@@ -1037,7 +1164,7 @@ tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(shared_ptr<Query
 tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparql_query,QueryInfo query_info) {
 
   cout<<"set query_info = limit 2 begin"<<endl;
-  query_info.limit_num_ = -1;
+  query_info.limit_num_ = 3;
   cout<<"set query_info = limit 2 end"<<endl;
   vector<BasicQuery*> basic_query_vec;
   vector<shared_ptr<QueryPlan>> query_plan_vec;
@@ -1052,7 +1179,7 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       case BasicQueryStrategy::Special:
         printf("BasicQueryStrategy::Special not supported yet\n");
         break;
-    };
+    }
     cout<<query_plan->toString(kv_store_)<<endl;
     basic_query_vec.push_back(basic_query_pointer);
     query_plan_vec.push_back(query_plan);
@@ -1083,7 +1210,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::MergeBasicQuery(SPARQLque
  */
 bool Optimizer::CopyToResult(vector<unsigned int *> *target,
                              BasicQuery* basic_query,
-                             shared_ptr<IntermediateResult> result) {
+                             const shared_ptr<IntermediateResult>& result) {
 
   assert(target->empty());
 
@@ -1108,7 +1235,7 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
   auto id_position_map_ptr = result->var_des_to_position_;
 
   int var_num =  basic_query->getVarNum();
-  for (auto  record_ptr : *(result->values_))
+  for (const auto&  record_ptr : *(result->values_))
   {
     int column_index = 0;
     for (; column_index < core_var_num; ++column_index)
@@ -1151,7 +1278,7 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
         if (basic_query->isSatelliteInJoin(id2) == false)
           continue;
 
-        unsigned* idlist = NULL;
+        unsigned* idlist = nullptr;
         unsigned idlist_len = 0;
         int triple_id = basic_query->getEdgeID(id, j);
         Triple triple = basic_query->getTriple(triple_id);
@@ -1219,13 +1346,13 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
 
 void
 Optimizer::Cartesian(int pos, int end,int record_len,unsigned* record,
-                     shared_ptr<vector<Satellite>> satellites,
+                     const shared_ptr<vector<Satellite>>& satellites,
                      vector<unsigned*>* result_list,
                      BasicQuery *basic_query)
 {
   if (pos == end)
   {
-    unsigned* new_record = new unsigned[record_len];
+    auto new_record = new unsigned[record_len];
     memcpy(new_record, record, sizeof(unsigned) * record_len);
     result_list->push_back(new_record);
     return;
@@ -1240,8 +1367,4 @@ Optimizer::Cartesian(int pos, int end,int record_len,unsigned* record,
     record[vpos] = list[i];
     Cartesian(pos + 1, end,record_len,record,satellites,result_list,basic_query);
   }
-}
-
-Optimizer::~Optimizer() {
-  //noting to do necessarily
 }

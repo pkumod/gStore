@@ -6,12 +6,13 @@
 
 #include "QueryPlan.h"
 
-QueryPlan::QueryPlan(shared_ptr<vector<OneStepJoin>> join_order, shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> ids_after_join,shared_ptr<vector<VarDescriptor>> var_infos) {
+
+QueryPlan::QueryPlan(const shared_ptr<vector<OneStepJoin>>& join_order, const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& ids_after_join,shared_ptr<vector<VarDescriptor>> var_infos) {
   // Copy Construction function of Vector
   // To avoid join_order_ and ids_after_join_ be adjusted by outer env
   this->join_order_ = make_shared<vector<OneStepJoin>>(*join_order);
   this->ids_after_join_ = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*ids_after_join);
-  this->var_descriptors_=var_infos;
+  this->var_descriptors_=std::move(var_infos);
 }
 
 /**
@@ -29,6 +30,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
    * 2. not selected  but degree > 1  vars
    * no predicate counted
   */
+  this->constant_generating_lists_ = make_shared<vector<shared_ptr<OneStepJoinNode>>>();
   auto total_var_num = basic_query->getTotalVarNum();
   vector<bool> vars_used_vec(total_var_num,false);
   // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
@@ -116,7 +118,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
       generate_edge_constant_info->emplace_back(s_constant,p_constant,o_constant);
     }
     OneStepJoin one_step_join;
-    one_step_join.join_type_ = OneStepJoin::JoinType::GenFilter;
+    one_step_join.join_type_ = OneStepJoin::JoinType::GenerateCandidates;
     auto one_step_join_node = make_shared<OneStepJoinNode>();
     one_step_join_node->node_to_join_ = max_i_basic_queryID;
     one_step_join_node->edges_ = generate_edge_info;
@@ -144,13 +146,6 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
       for (auto selected_var:*this->ids_after_join_)
         edges_with_selected_vars_count += basic_query->getEdgeIndex(selected_var, j).size();
       int j_score = edges_with_selected_vars_count * (*var_descriptors_)[j].degree_;
-      printf("j_score = edges_with_selected_vars_count * vars_degree_vec[j] \n");
-      printf("j:%d j_score:%d edges_with_selected_vars_count:%d vars_degree_vec_j:%d\n",
-             j,
-             j_score,
-             edges_with_selected_vars_count,
-             (*var_descriptors_)[j].degree_);
-      cout << endl;
       if (j_score > max_score) {
         max_j_basicqueryID = j;
         max_score = j_score;
@@ -159,8 +154,6 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
 
     auto join_edge_info = make_shared<vector<EdgeInfo>>();
     auto join_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
-
-    cout << " choose [" << max_j_basicqueryID << "] as next node" << endl;
 
     // add the max to selected vars
     vars_used_vec[max_j_basicqueryID] = true;
@@ -176,8 +169,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
           auto nei_id = basic_query->getEdgeNeighborID(max_j_basicqueryID, i_th_edge);
           auto predicate_id = basic_query->getEdgePreID(max_j_basicqueryID, i_th_edge);
           auto triple_string_type = basic_query->getTriple(edge_id);
-          cout << "\tedge[" << edge_id << "] \t neighbour_id=" << nei_id << " \t predicate_id=" << predicate_id << endl;
-          cout << "\t %s:" << triple_string_type.toString() << endl;
+
           JoinMethod join_method;
           auto j_name = basic_query->getVarName(max_j_basicqueryID);
 
@@ -219,62 +211,77 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
 
     }
 
-    // If the chosen one have a constant edge, that is , neighbour and predicate are both constant
+    // If the chosen one have a constant edge, that is ,
+    // 1. neighbour and predicate are both constant , or
+    // 2. have a not-selected predicate var and a constant neighbour
     {
       auto check_edge_info = make_shared<vector<EdgeInfo>>();
       auto check_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
 
       auto j_degree = basic_query->getVarDegree(max_j_basicqueryID);
       for (int i_th_edge = 0; i_th_edge < j_degree; i_th_edge++) {
-        TYPE_ENTITY_LITERAL_ID sid,oid,pid;
+        TYPE_ENTITY_LITERAL_ID sid, oid, pid;
         JoinMethod join_method;
         auto edge_id = basic_query->getEdgeID(max_j_basicqueryID, i_th_edge);
         auto nei_id = basic_query->getEdgeNeighborID(max_j_basicqueryID, i_th_edge);
         auto predicate_id = basic_query->getEdgePreID(max_j_basicqueryID, i_th_edge);
         auto triple_string_type = basic_query->getTriple(edge_id);
 
-        bool s_constant = triple_string_type.getSubject().at(0)!='?';
-        bool p_constant = triple_string_type.getPredicate().at(0)!='?';
-        bool o_constant = triple_string_type.getObject().at(0)!='?';
+        bool s_constant = triple_string_type.getSubject().at(0) != '?';
+        bool p_constant = triple_string_type.getPredicate().at(0) != '?';
+        bool o_constant = triple_string_type.getObject().at(0) != '?';
 
         int const_number = 0;
         if (s_constant) const_number++;
         if (p_constant) const_number++;
         if (o_constant) const_number++;
-        if (const_number != 2)
-          continue;
 
 
-        if (!s_constant) {
-          sid = max_j_basicqueryID;
-          pid = kv_store->getIDByPredicate(triple_string_type.getPredicate());
-          oid = kv_store->getIDByString(triple_string_type.getObject());
-          join_method = JoinMethod::po2s;
+        if (const_number == 2) {
+          if (!s_constant) {
+            sid = max_j_basicqueryID;
+            pid = kv_store->getIDByPredicate(triple_string_type.getPredicate());
+            oid = kv_store->getIDByString(triple_string_type.getObject());
+            join_method = JoinMethod::po2s;
+          }
+          if (!p_constant) {
+            sid = kv_store->getIDByString(triple_string_type.getSubject());
+            pid = max_j_basicqueryID;
+            oid = kv_store->getIDByString(triple_string_type.getObject());
+            join_method = JoinMethod::so2p;
+          }
+          if (!o_constant) {
+            sid = kv_store->getIDByString(triple_string_type.getSubject());
+            pid = kv_store->getIDByPredicate(triple_string_type.getPredicate());
+            oid = max_j_basicqueryID;
+            join_method = JoinMethod::sp2o;
+          }
+          check_edge_info->emplace_back(sid, pid, oid, join_method);
+          check_edge_constant_info->emplace_back(s_constant, p_constant, o_constant);
         }
-        if (!p_constant) {
-          sid = kv_store->getIDByString(triple_string_type.getSubject());;
-          pid = max_j_basicqueryID;
-          oid = kv_store->getIDByString(triple_string_type.getObject());
-          join_method = JoinMethod::so2p;
+        else if(const_number == 1 && (!p_constant))
+        {
+          if (!s_constant) {
+            sid = max_j_basicqueryID;
+            oid = kv_store->getIDByString(triple_string_type.getObject());
+            join_method = JoinMethod::o2s;
+          }
+          if (!o_constant) {
+            sid = kv_store->getIDByString(triple_string_type.getSubject());
+            oid = max_j_basicqueryID;
+            join_method = JoinMethod::s2o;
+          }
+          check_edge_info->emplace_back(sid, pid, oid, join_method);
+          check_edge_constant_info->emplace_back(s_constant, p_constant, o_constant);
         }
-        if (!o_constant) {
-          sid = kv_store->getIDByString(triple_string_type.getSubject());
-          pid = kv_store->getIDByPredicate(triple_string_type.getPredicate());
-          oid = max_j_basicqueryID;
-          join_method = JoinMethod::sp2o;
-        }
-        check_edge_info->emplace_back(sid,pid,oid,join_method);
-        check_edge_constant_info->emplace_back(s_constant, p_constant,o_constant);
       }
-      OneStepJoin one_step_join;
-      one_step_join.join_type_ = OneStepJoin::JoinType::EdgeCheck;
+
+
       auto one_step_join_node = make_shared<OneStepJoinNode>();
       one_step_join_node->node_to_join_ = max_j_basicqueryID;
       one_step_join_node->edges_ = check_edge_info;
       one_step_join_node->edges_constant_info_ = check_edge_constant_info;
-      one_step_join_node->ChangeOrder(this->ids_after_join_);
-      one_step_join.edge_filter_ = one_step_join_node;
-      this->join_order_->push_back(one_step_join);
+      this->constant_generating_lists_->push_back(one_step_join_node);
     }
   }
 
@@ -533,7 +540,7 @@ std::string QueryPlan::toString(KVstore* kv_store) {
       case OneStepJoin::JoinType::JoinNode:
         step_descriptor = step_n.join_node_;
         break;
-      case OneStepJoin::JoinType::GenFilter:
+      case OneStepJoin::JoinType::GenerateCandidates:
       case OneStepJoin::JoinType::EdgeCheck:
         step_descriptor = step_n.edge_filter_;
         break;
@@ -561,7 +568,7 @@ std::tuple<std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_
         node_i = one_step.join_node_->node_to_join_;
         node_added =true;
         break;
-      case  OneStepJoin::JoinType::GenFilter:
+      case  OneStepJoin::JoinType::GenerateCandidates:
         node_i = one_step.edge_filter_->node_to_join_;
         node_added =true;
         break;

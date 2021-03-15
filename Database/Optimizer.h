@@ -24,7 +24,7 @@ using namespace std;
 using TableContent = list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>;
 using TableContentShardPtr = shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>;
 using PositionValueSharedPtr = std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>;
-
+using IDCachesSharePtr = shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>;
 enum class BasicQueryStrategy{
   Normal,
   Special// method 1-5
@@ -62,18 +62,20 @@ class Optimizer
              TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn
              // ,SPARQLquery& sparql_query,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list,TYPE_ENTITY_LITERAL_ID limit_num
              );
-  ~Optimizer();
+  ~Optimizer()=default;
   tuple<bool,shared_ptr<IntermediateResult>> DoQuery(SPARQLquery&,QueryInfo); // the whole process
   tuple<bool,shared_ptr<IntermediateResult>> MergeBasicQuery(SPARQLquery &sparql_query);
 
 
-  tuple<bool,TableContentShardPtr> GenerateColdCandidateList(shared_ptr<vector<EdgeInfo>>,shared_ptr<vector<EdgeConstantInfo>>);
-  tuple<bool,TableContentShardPtr> JoinANode(shared_ptr<OneStepJoinNode>,TableContentShardPtr,PositionValueSharedPtr);
-  tuple<bool,TableContentShardPtr> JoinTwoTable(shared_ptr<OneStepJoinTable>,TableContentShardPtr,PositionValueSharedPtr,TableContentShardPtr,PositionValueSharedPtr);
-  tuple<bool,TableContentShardPtr> ANodeEdgesConstraintFilter(shared_ptr<OneStepJoinNode>, TableContentShardPtr,PositionValueSharedPtr);
-  tuple<bool,TableContentShardPtr> OneEdgeConstraintFilter(EdgeInfo, EdgeConstantInfo, TableContentShardPtr,PositionValueSharedPtr);
-  tuple<bool,TableContentShardPtr> FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>,TYPE_ENTITY_LITERAL_ID ,TableContentShardPtr,PositionValueSharedPtr);
+  tuple<bool,TableContentShardPtr> GenerateColdCandidateList(const shared_ptr<vector<EdgeInfo>>&,const shared_ptr<vector<EdgeConstantInfo>>&);
+  tuple<bool,TableContentShardPtr> JoinANode(const shared_ptr<OneStepJoinNode>&,const TableContentShardPtr&,const PositionValueSharedPtr&,const IDCachesSharePtr&);
+  tuple<bool,TableContentShardPtr> JoinTwoTable(const shared_ptr<OneStepJoinTable>&,const TableContentShardPtr&,const PositionValueSharedPtr&,const TableContentShardPtr&,const PositionValueSharedPtr&);
+  tuple<bool,TableContentShardPtr> ANodeEdgesConstraintFilter(const shared_ptr<OneStepJoinNode>&, TableContentShardPtr,const PositionValueSharedPtr&,const IDCachesSharePtr&);
+  tuple<bool,TableContentShardPtr> OneEdgeConstraintFilter(EdgeInfo, EdgeConstantInfo, const TableContentShardPtr&,const PositionValueSharedPtr&,const IDCachesSharePtr&);
+  tuple<bool,TableContentShardPtr> FilterAVariableOnIDList(const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>&,TYPE_ENTITY_LITERAL_ID ,const TableContentShardPtr&,const PositionValueSharedPtr&);
   shared_ptr<IntermediateResult> NormalJoin(shared_ptr<BasicQuery>,shared_ptr<QueryPlan>);
+  bool CacheConstantCandidates(const shared_ptr<OneStepJoinNode>& one_step, const IDCachesSharePtr& id_caches);
+  bool AddConstantCandidates(EdgeInfo edge_info,EdgeConstantInfo edge_table_info,TYPE_ENTITY_LITERAL_ID targetID, const IDCachesSharePtr& id_caches);
 
   /*以下代码暂且不写
   bool update_cardinality_cache(shared_ptr<BasicQuery>,vector<map<shared_ptr<BasicQuery>,unsigned*> >);
@@ -95,19 +97,20 @@ class Optimizer
   BasicQueryStrategy ChooseStrategy(BasicQuery*);
 
 
-  tuple<bool,TableContentShardPtr> ExecutionDepthFirst(BasicQuery* basic_query, shared_ptr<QueryPlan> query_plan,
-                                                                 QueryInfo query_info,PositionValueSharedPtr id_pos_mapping);
+  tuple<bool,TableContentShardPtr> ExecutionDepthFirst(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan,
+                                                                 const QueryInfo& query_info,const PositionValueSharedPtr& id_pos_mapping);
 
-  tuple<bool,TableContentShardPtr> DepthSearchOneLayer(shared_ptr<QueryPlan> query_plan,
+  tuple<bool,TableContentShardPtr> DepthSearchOneLayer(const shared_ptr<QueryPlan>& query_plan,
                                                                  int layer_count,
                                                                  int &result_number_till_now,
                                                                  int limit_number,
-                                                                 TableContentShardPtr tmp_result, PositionValueSharedPtr id_pos_mapping);
-  static void UpdateIDList(shared_ptr<IDList>, unsigned*, unsigned,bool);
+                                                                 const TableContentShardPtr& tmp_result, const PositionValueSharedPtr& id_pos_mapping,
+                                                                 const IDCachesSharePtr& id_caches);
+  static void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
 
   /*copy the result to vector<unsigned*> & */
-  bool CopyToResult(vector<unsigned*> *target, BasicQuery *basic_query, shared_ptr<IntermediateResult> result);
-  void Cartesian(int, int,int,unsigned*,shared_ptr<vector<Satellite>>,vector<unsigned*>*,BasicQuery *);
+  bool CopyToResult(vector<unsigned*> *target, BasicQuery *basic_query, const shared_ptr<IntermediateResult>& result);
+  void Cartesian(int, int,int,unsigned*,const shared_ptr<vector<Satellite>>&,vector<unsigned*>*,BasicQuery *);
 
  private:
   KVstore* kv_store_;
@@ -128,8 +131,6 @@ class Optimizer
   shared_ptr<vector<map<shared_ptr<BasicQuery>,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>> cardinality_cache_; // map(sub-structure, cardinality), not in statistics
 
   FILE* fp_;
-  bool export_flag_;
-  VSTree* vstree_;
   TYPE_TRIPLE_NUM* pre2num_;
   TYPE_TRIPLE_NUM* pre2sub_;
   TYPE_TRIPLE_NUM* pre2obj_;
