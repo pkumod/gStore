@@ -18,8 +18,8 @@ class QueryPlan
   std::shared_ptr<std::vector<OneStepJoin>> join_order_; //join order
   std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> ids_after_join_;
   std::shared_ptr<std::vector<VarDescriptor>> var_descriptors_;
-
-  QueryPlan(std::shared_ptr<std::vector<OneStepJoin>> ,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>,std::shared_ptr<std::vector<VarDescriptor>>);
+  std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> constant_generating_lists_;
+  QueryPlan(const std::shared_ptr<std::vector<OneStepJoin>>& ,const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>&,std::shared_ptr<std::vector<VarDescriptor>>);
 
   QueryPlan(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
 

@@ -6,6 +6,8 @@
 
 #include "../Util/Util.h"
 #include "TableOperator.h"
+
+#include <utility>
 using namespace std;
 
 std::string JoinMethodToString(JoinMethod x){
@@ -35,8 +37,8 @@ std::string JoinMethodToString(JoinMethod x){
  */
 
 shared_ptr<IntermediateResult>
-IntermediateResult::JoinTwoStructure(shared_ptr<IntermediateResult> result_a,
-    shared_ptr<IntermediateResult> result_b,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> public_variables) {
+IntermediateResult::JoinTwoStructure(const shared_ptr<IntermediateResult>& result_a,
+    const shared_ptr<IntermediateResult>& result_b,const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& public_variables) {
 
   set<TYPE_ENTITY_LITERAL_ID> public_variables_set;
   for(auto id:*public_variables)
@@ -67,10 +69,10 @@ IntermediateResult::JoinTwoStructure(shared_ptr<IntermediateResult> result_a,
 }
 
 IntermediateResult::IntermediateResult(
-    shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> id_to_position,
-shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_id,
+    const shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>& id_to_position,
+const shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>& position_to_id,
     std::shared_ptr<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>> values){
-  this->values_ = values;
+  this->values_ = std::move(values);
   this->var_des_to_position_ = make_shared<map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>(*id_to_position);
   this->position_to_var_des_ = make_shared<map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>(*position_to_id);
 }

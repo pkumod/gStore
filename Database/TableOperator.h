@@ -58,13 +58,13 @@ class IntermediateResult{
   // VarDescriptor ID, not BasicQuery ID
   std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_var_des_;
 
-  IntermediateResult(std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> id_to_position,
-                     std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_id,
+  IntermediateResult(const std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>& id_to_position,
+                     const std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>& position_to_id,
                      std::shared_ptr<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>> values);
 
   IntermediateResult();
-  static std::shared_ptr<IntermediateResult> JoinTwoStructure(std::shared_ptr<IntermediateResult> result_a,std::shared_ptr<IntermediateResult> result_b,
-                                                              std::shared_ptr< std::vector<TYPE_ENTITY_LITERAL_ID> > public_variables);
+  static std::shared_ptr<IntermediateResult> JoinTwoStructure(const std::shared_ptr<IntermediateResult>& result_a,const std::shared_ptr<IntermediateResult>& result_b,
+                                                              const std::shared_ptr< std::vector<TYPE_ENTITY_LITERAL_ID> >& public_variables);
 };
 
 
@@ -122,14 +122,15 @@ class OneStepJoin{
  public:
   std::shared_ptr<OneStepJoinNode> join_node_;
   std::shared_ptr<OneStepJoinTable> join_table_;
-  std::shared_ptr<OneStepJoinNode> edge_filter_; // GenFilter & EdgeCheck use this filed
-  enum class JoinType{JoinNode,JoinTable,GenFilter,EdgeCheck} join_type_;
+  std::shared_ptr<OneStepJoinNode> edge_filter_; // GenerateCandidates & EdgeCheck use this filed
+  // ConstCandidatesCheck
+  enum class JoinType{JoinNode,GenerateCandidates,JoinTable,EdgeCheck} join_type_;
 
   std::string static JoinTypeToString(JoinType x){
     switch (x) {
       case JoinType::JoinNode: return "JoinType::JoinNode";
       case JoinType::JoinTable: return "JoinType::JoinTable";
-      case JoinType::GenFilter: return "JoinType::GenFilter";
+      case JoinType::GenerateCandidates: return "JoinType::GenerateCandidates";
       case JoinType::EdgeCheck: return "JoinType::EdgeCheck";
     }
     return "err in JoinTypeToString";
