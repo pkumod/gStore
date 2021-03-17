@@ -2993,40 +2993,40 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	//}
 	//EntityBitSet _tmp_bitset;
 
-	{
-		cout << "begin build Prefix" << endl;
-		long begin = Util::get_cur_time();
-		ifstream _fin0(_rdf_file.c_str());
-		//parse a file
-		RDFParser _parser0(_fin0);
-
-		// Initialize trie
-
-		Trie *trie = kvstore->getTrie();
-		while (true)
-		{
-			int parse_triple_num = 0;
-			_parser0.parseFile(triple_array, parse_triple_num);
-			if (parse_triple_num == 0)
-			{
-				break;
-			}
-
-			//Process the Triple one by one
-			for (int i = 0; i < parse_triple_num; i++)
-			{
-				string t = triple_array[i].getSubject();
-				trie->Addstring(t);
-				t = triple_array[i].getPredicate();
-				trie->Addstring(t);
-				t = triple_array[i].getObject();
-				trie->Addstring(t);
-			}
-		}
-        cout<<"Add triples to Trie to prepare for BuildPrefix"<<endl;
-		trie->BuildPrefix();
-		cout << "BuildPrefix done. used" <<Util::get_cur_time() - begin<< endl;
-	}
+    //	{
+    //		cout << "begin build Prefix" << endl;
+    //		long begin = Util::get_cur_time();
+    //		ifstream _fin0(_rdf_file.c_str());
+    //		//parse a file
+    //		RDFParser _parser0(_fin0);
+    //
+    //		// Initialize trie
+    //
+    //		Trie *trie = kvstore->getTrie();
+    //		while (true)
+    //		{
+    //			int parse_triple_num = 0;
+    //			_parser0.parseFile(triple_array, parse_triple_num);
+    //			if (parse_triple_num == 0)
+    //			{
+    //				break;
+    //			}
+    //
+    //			//Process the Triple one by one
+    //			for (int i = 0; i < parse_triple_num; i++)
+    //			{
+    //				string t = triple_array[i].getSubject();
+    //				trie->Addstring(t);
+    //				t = triple_array[i].getPredicate();
+    //				trie->Addstring(t);
+    //				t = triple_array[i].getObject();
+    //				trie->Addstring(t);
+    //			}
+    //		}
+    //        cout<<"Add triples to Trie to prepare for BuildPrefix"<<endl;
+    //		trie->BuildPrefix();
+    //		cout << "BuildPrefix done. used" <<Util::get_cur_time() - begin<< endl;
+    //	}
 
 	RDFParser _parser(_fin);
 	//Util::logging("==> while(true)");
