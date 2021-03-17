@@ -414,11 +414,11 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneSt
    *
    * So, we build index in smaller table
    * */
-  auto small_table = table_a->size() < table_b->size()? table_a:table_b;
-  auto small_id_pos = table_a->size() < table_b->size()? table_a_id_pos:table_b_id_pos;
+  auto big_table = table_a->size() > table_b->size() ? table_a : table_b;
+  auto big_id_pos = table_a->size() > table_b->size() ? table_a_id_pos : table_b_id_pos;
 
-  auto large_table = table_a->size() > table_b->size()? table_a:table_b;
-  auto large_id_pos = table_a->size() > table_b->size()? table_a_id_pos:table_b_id_pos;
+  auto small_table = table_a->size() < table_b->size() ? table_a : table_b;
+  auto small_id_pos = table_a->size() < table_b->size() ? table_a_id_pos : table_b_id_pos;
 
   auto result_table = make_shared<TableContent>();
 
@@ -427,75 +427,75 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneSt
       /*value*/ shared_ptr<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>,
       /*compare*/ IndexedRecordResultCompare
   >();
-
+  // # TODO 先建立大表的索引 ，再建立小表的索引
+  vector<TYPE_ENTITY_LITERAL_ID> common_variables_position_big;
   vector<TYPE_ENTITY_LITERAL_ID> common_variables_position_small;
-  vector<TYPE_ENTITY_LITERAL_ID> common_variables_position_lager;
   for(auto common_variable:*(one_step_join_table->public_variables_))
   {
+    common_variables_position_big.push_back((*big_id_pos)[common_variable]);
     common_variables_position_small.push_back((*small_id_pos)[common_variable]);
-    common_variables_position_lager.push_back((*large_id_pos)[common_variable]);
   }
 
   auto common_variables_size = one_step_join_table->public_variables_->size();
-  for(const auto& small_record:*(small_table))
+  for(const auto& big_record:*(big_table))
   {
     vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
-    for(auto common_position:common_variables_position_small)
+    for(auto common_position:common_variables_position_big)
     {
-      result_index.push_back((*small_record)[common_position]);
+      result_index.push_back((*big_record)[common_position]);
     }
     if(indexed_result.find(result_index)!=indexed_result.end())
     {
-      indexed_result[result_index]->push_back(small_record);
+      indexed_result[result_index]->push_back(big_record);
     }
     else
     {
       auto tmp_vector = make_shared<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
-      tmp_vector->push_back(small_record);
+      tmp_vector->push_back(big_record);
       indexed_result[result_index] = tmp_vector;
     }
   }
 
 
-  /* Now Do the Matching , first calculate which ids in table large should be add
+  /* Now Do the Matching , first calculate which ids in table small should be add
    * */
   set<TYPE_ENTITY_LITERAL_ID> public_variables;
   for(auto variable_id:*join_nodes)
   {
     public_variables.insert(variable_id);
   }
-  vector<TYPE_ENTITY_LITERAL_ID> large_table_inserted_variables_position;
-  for(auto b_kv:*large_id_pos)
+  vector<TYPE_ENTITY_LITERAL_ID> small_table_inserted_variables_position;
+  for(auto b_kv:*small_id_pos)
   {
     if (public_variables.find(b_kv.second)!=public_variables.end())
       continue;
-    large_table_inserted_variables_position.push_back(b_kv.first);
+    small_table_inserted_variables_position.push_back(b_kv.first);
   }
 
   auto result_contents = result_table;
   /* do the matching */
-  for(const auto& large_record:*large_table)
+  for(const auto& small_record:*small_table)
   {
     vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
-    for(auto common_position:common_variables_position_lager)
+    for(auto common_position:common_variables_position_small)
     {
-      result_index.push_back((*large_record)[common_position]);
+      result_index.push_back((*small_record)[common_position]);
     }
-    /* the index is in the small table */
+    /* the index is in the big table */
     if(indexed_result.find(result_index)!=indexed_result.end())
     {
-      vector<TYPE_ENTITY_LITERAL_ID> large_record_inserted;
-      for(auto large_position:large_table_inserted_variables_position)
+      vector<TYPE_ENTITY_LITERAL_ID> small_record_inserted;
+      for(auto small_position:small_table_inserted_variables_position)
       {
-        large_record_inserted.push_back((*large_record)[large_position]);
+        small_record_inserted.push_back((*small_record)[small_position]);
       }
       auto matched_content = indexed_result[result_index];
       for(const auto& matched_small_record:*matched_content)
       {
         auto result_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*matched_small_record);
-        for(auto large_inserted_element:large_record_inserted)
+        for(auto small_inserted_element:small_record_inserted)
         {
-          result_record->push_back(large_inserted_element);
+          result_record->push_back(small_inserted_element);
         }
         result_contents->push_back(result_record);
       }
@@ -1164,7 +1164,7 @@ tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(const shared_ptr
 tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparql_query,QueryInfo query_info) {
 
   cout<<"set query_info = limit 2 begin"<<endl;
-  query_info.limit_num_ = 3;
+  query_info.limit_num_ = 30;
   cout<<"set query_info = limit 2 end"<<endl;
   vector<BasicQuery*> basic_query_vec;
   vector<shared_ptr<QueryPlan>> query_plan_vec;

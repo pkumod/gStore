@@ -995,17 +995,17 @@ Database::load_cache()
 	cerr << "Get in" << endl;
 	{
 		pid_t p = getpid();
-		char file[64] = { 0 };//ÎÄ¼þÃû
-		FILE *fd;         //¶¨ÒåÎÄ¼þÖ¸Õëfd
-		char line_buff[256] = { 0 };  //¶ÁÈ¡ÐÐµÄ»º³åÇø
+		char file[64] = { 0 };//ï¿½Ä¼ï¿½ï¿½ï¿½
+		FILE *fd;         //ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ö¸ï¿½ï¿½fd
+		char line_buff[256] = { 0 };  //ï¿½ï¿½È¡ï¿½ÐµÄ»ï¿½ï¿½ï¿½ï¿½ï¿½
 		sprintf(file, "/proc/%d/status", p);
 		fprintf(stderr, "current pid:%d\n", p);
-		fd = fopen(file, "r"); //ÒÔR¶ÁµÄ·½Ê½´ò¿ªÎÄ¼þÔÙ¸³¸øÖ¸Õëfd
+		fd = fopen(file, "r"); //ï¿½ï¿½Rï¿½ï¿½ï¿½Ä·ï¿½Ê½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ù¸ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½fd
 
-		int i; //»ñÈ¡vmrss:Êµ¼ÊÎïÀíÄÚ´æÕ¼ÓÃ
-		char name[32];//´æ·ÅÏîÄ¿Ãû³Æ
-		int vmrss;//´æ·ÅÄÚ´æ
-		for (i = 0; i<17; i++)  //¶ÁÈ¡VmRSSÕâÒ»ÐÐµÄÊý¾Ý
+		int i; //ï¿½ï¿½È¡vmrss:Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½Õ¼ï¿½ï¿½
+		char name[32];//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½
+		int vmrss;//ï¿½ï¿½ï¿½ï¿½Ú´ï¿½
+		for (i = 0; i<17; i++)  //ï¿½ï¿½È¡VmRSSï¿½ï¿½Ò»ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½
 		{
 			char* ret = fgets(line_buff, sizeof(line_buff), fd);
 			if (i == 11 || i == 12 || i == 15 || i == 16)
@@ -1014,7 +1014,7 @@ Database::load_cache()
 				fprintf(stderr, "%s\t%d kb\n", name, vmrss);
 			}
 		}
-		fclose(fd);     //¹Ø±ÕÎÄ¼þfd
+		fclose(fd);     //ï¿½Ø±ï¿½ï¿½Ä¼ï¿½fd
 	}*/
 }
 
@@ -2746,40 +2746,40 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	//}
 	//EntityBitSet _tmp_bitset;
 
-	{
-		cout << "begin build Prefix" << endl;
-		long begin = Util::get_cur_time();
-		ifstream _fin0(_rdf_file.c_str());
-		//parse a file
-		RDFParser _parser0(_fin0);
-
-		// Initialize trie
-
-		Trie *trie = kvstore->getTrie();
-		while (true)
-		{
-			int parse_triple_num = 0;
-			_parser0.parseFile(triple_array, parse_triple_num);
-			if (parse_triple_num == 0)
-			{
-				break;
-			}
-
-			//Process the Triple one by one
-			for (int i = 0; i < parse_triple_num; i++)
-			{
-				string t = triple_array[i].getSubject();
-				trie->Addstring(t);
-				t = triple_array[i].getPredicate();
-				trie->Addstring(t);
-				t = triple_array[i].getObject();
-				trie->Addstring(t);
-			}
-		}
-        cout<<"Add triples to Trie to prepare for BuildPrefix"<<endl;
-		trie->BuildPrefix();
-		cout << "BuildPrefix done. used" <<Util::get_cur_time() - begin<< endl;
-	}
+    //	{
+    //		cout << "begin build Prefix" << endl;
+    //		long begin = Util::get_cur_time();
+    //		ifstream _fin0(_rdf_file.c_str());
+    //		//parse a file
+    //		RDFParser _parser0(_fin0);
+    //
+    //		// Initialize trie
+    //
+    //		Trie *trie = kvstore->getTrie();
+    //		while (true)
+    //		{
+    //			int parse_triple_num = 0;
+    //			_parser0.parseFile(triple_array, parse_triple_num);
+    //			if (parse_triple_num == 0)
+    //			{
+    //				break;
+    //			}
+    //
+    //			//Process the Triple one by one
+    //			for (int i = 0; i < parse_triple_num; i++)
+    //			{
+    //				string t = triple_array[i].getSubject();
+    //				trie->Addstring(t);
+    //				t = triple_array[i].getPredicate();
+    //				trie->Addstring(t);
+    //				t = triple_array[i].getObject();
+    //				trie->Addstring(t);
+    //			}
+    //		}
+    //        cout<<"Add triples to Trie to prepare for BuildPrefix"<<endl;
+    //		trie->BuildPrefix();
+    //		cout << "BuildPrefix done. used" <<Util::get_cur_time() - begin<< endl;
+    //	}
 
 	RDFParser _parser(_fin);
 	//Util::logging("==> while(true)");

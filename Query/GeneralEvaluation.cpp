@@ -443,7 +443,7 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 				// I will change this segment
 				//
 				// * //
-				this->strategy.handle(sparql_query);
+				// this->strategy.handle(sparql_query);
 				long tv_handle = Util::get_cur_time();
 				printf("during Handle, used %ld ms.\n", tv_handle - tv_encode);
 
