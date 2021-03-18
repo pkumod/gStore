@@ -605,6 +605,13 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	long tv_retrieve = Util::get_cur_time();
 	cout << "after Retrieve, used " << (tv_retrieve - tv_handle) << "ms." << endl;
 
+	/*
+		pre_handler()主要是对谓词过滤做一些预处理，对量级有一定要求，要求使用二分搜索；
+		量级判断的条件和初始化部分有一定的问题；
+		这部分代码可以考虑直接删除;
+		对于谓词来说，我们尽可能直接调用pre2num来采用lazy initialization的方法获取，或者使用statistics进行获取。
+	*/
+
 	bool * d_triple = (bool*)calloc(_bq->getTripleNum(), sizeof(bool));
 
 	bool ret2 = pre_handler(_bq, kvstore, pre2num,pre2sub,pre2obj, d_triple);
