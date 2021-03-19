@@ -25,6 +25,8 @@ using TableContent = list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>;
 using TableContentShardPtr = shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>;
 using PositionValueSharedPtr = std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>;
 using IDCachesSharePtr = shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>;
+using QueryPlanSharedPtr = shared_ptr<QueryPlan>;
+
 enum class BasicQueryStrategy{
   Normal,
   Special// method 1-5
@@ -112,6 +114,14 @@ class Optimizer
   bool CopyToResult(vector<unsigned*> *target, BasicQuery *basic_query, const shared_ptr<IntermediateResult>& result);
   void Cartesian(int, int,int,unsigned*,const shared_ptr<vector<Satellite>>&,vector<unsigned*>*,BasicQuery *);
 
+  /*greedy method used in version 0.9 */
+  double ScoreNode(int var);
+  void SelectANode(BasicQuery *basic_query); //include select the start node and choose next node;
+  //tuple<bool,TableContentShardPtr> BreathSearch(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan, 
+  //                                                              const PositionValueSharedPtr& id_pos_mapping, shared_ptr<vector<double>>& weight_list);
+  tuple<bool,QueryPlanSharedPtr> ExecutionBreathFirst(BasicQuery* basic_query, const PositionValueSharedPtr& id_pos_mapping);
+
+
  private:
   KVstore* kv_store_;
 
@@ -141,6 +151,9 @@ class Optimizer
 
   // 因为BasicQuery不给谓词变量编码，所以搞了一个抽象的类
   shared_ptr<vector<VarDescriptor>> var_descriptors_;
+
+  //静态情况下可以存储weight
+  shared_ptr<vector<double>> weight_list_;
 };
 
 #endif
