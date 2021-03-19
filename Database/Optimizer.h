@@ -25,6 +25,8 @@ using TableContent = list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>;
 using TableContentShardPtr = shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>;
 using PositionValueSharedPtr = std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>;
 using IDCachesSharePtr = shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>;
+using QueryPlanSharedPtr = shared_ptr<QueryPlan>;
+
 enum class BasicQueryStrategy{
   Normal,
   Special// method 1-5
@@ -115,9 +117,9 @@ class Optimizer
   /*greedy method used in version 0.9 */
   double ScoreNode(int var);
   void SelectANode(BasicQuery *basic_query); //include select the start node and choose next node;
-  tuple<bool,TableContentShardPtr> BreathSearch(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan, 
-                                                                const PositionValueSharedPtr& id_pos_mapping, shared_ptr<vector<double>>& weight_list);
-  tuple<bool,TableContentShardPtr> ExecutionBreathFirst(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan, const PositionValueSharedPtr& id_pos_mapping);
+  //tuple<bool,TableContentShardPtr> BreathSearch(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan, 
+  //                                                              const PositionValueSharedPtr& id_pos_mapping, shared_ptr<vector<double>>& weight_list);
+  tuple<bool,QueryPlanSharedPtr> ExecutionBreathFirst(BasicQuery* basic_query, const PositionValueSharedPtr& id_pos_mapping);
 
 
  private:
