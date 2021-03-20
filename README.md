@@ -34,7 +34,7 @@ git clone https://github.com/pkumod/gStore.git
 
 The version is a stable version ,you can get it by 
 ```
- git clone -d 0.8 https://github.com/pkumod/gStore.git
+ git clone -b 0.8 https://github.com/pkumod/gStore.git
 ```
 
 
