@@ -83,6 +83,8 @@ bool export_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 
 bool query_handler0(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
+bool query_handler0_sparql_conform(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
 bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 bool monitor_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
@@ -930,7 +932,7 @@ int initialize(int argc, char* argv[])
 		build_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=build&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=build&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		string req_url = request->path;
 		cout << "request url: " << req_url << endl;
 		build_handler(server, response, request, "GET");
@@ -950,7 +952,7 @@ int initialize(int argc, char* argv[])
 		load_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=load&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=load&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		string req_url = request->path;
 		cout << "request url: " << req_url << endl;
 		load_handler(server, response, request, "GET");
@@ -970,7 +972,7 @@ int initialize(int argc, char* argv[])
 		unload_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=unload&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=unload&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		string req_url = request->path;
 		cout << "request url: " << req_url << endl;
 		unload_handler(server, response, request, "GET");
@@ -990,7 +992,7 @@ int initialize(int argc, char* argv[])
 		login_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=login&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=login&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		string req_url = request->path;
 		cout << "request url: " << req_url << endl;
 		login_handler(server, response, request, "GET");
@@ -1008,7 +1010,7 @@ int initialize(int argc, char* argv[])
 		user_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=user&type=(.*)&username1=(.*)&password1=(.*)&username2=(.*)&addition=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=user&type=(.*)&username1=(.*)&password1=(.*)&username2=(.*)&addition=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		user_handler(server, response, request, "GET");
   };
 
@@ -1022,7 +1024,7 @@ int initialize(int argc, char* argv[])
 		showUser_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=showUser&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=showUser&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		showUser_handler(server, response, request, "GET");
   };
 
@@ -1036,7 +1038,7 @@ int initialize(int argc, char* argv[])
 		query_handler1(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=query&username=(.*)&password=(.*)&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=query&username=(.*)&password=(.*)&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		query_handler1(server, response, request, "GET");
   };
 
@@ -1050,7 +1052,7 @@ int initialize(int argc, char* argv[])
 		export_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=export&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=export&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		export_handler(server, response, request, "GET");
   };
 
@@ -1064,7 +1066,7 @@ int initialize(int argc, char* argv[])
 		check_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=check&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=check&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		check_handler(server, response, request, "GET");
   };
 
@@ -1078,7 +1080,7 @@ int initialize(int argc, char* argv[])
 		drop_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=drop&db_name=(.*)&username=(.*)&password=(.*)&is_backup=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=drop&db_name=(.*)&username=(.*)&password=(.*)&is_backup=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		drop_handler(server, response, request, "GET");
   };
 
@@ -1091,7 +1093,7 @@ int initialize(int argc, char* argv[])
 		refresh_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=refresh&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=refresh&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		refresh_handler(server, response, request, "GET");
   };
 
@@ -1107,9 +1109,13 @@ int initialize(int argc, char* argv[])
 		query_handler0(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=query&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=query&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		query_handler0(server, response, request, "GET");
   };
+
+    server.resource["^/\\?db_name=(.*)&query=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+        query_handler0_sparql_conform(server, response, request, "GET");
+    };
 
   //POST-example for the path /query0, responds with the matched string in path
   server.resource["/query0"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
@@ -1121,7 +1127,7 @@ int initialize(int argc, char* argv[])
 		monitor_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=monitor&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=monitor&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		monitor_handler(server, response, request, "GET");
   };
 
@@ -1135,7 +1141,7 @@ int initialize(int argc, char* argv[])
 		if (flag)
 			exit(0);
   };
-  server.resource["^/?operation=stop&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=stop&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		bool flag = stop_handler(server, response, request);
 		if(flag)
 			exit(0);
@@ -1146,7 +1152,7 @@ int initialize(int argc, char* argv[])
 		checkpoint_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=checkpoint&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=checkpoint&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		checkpoint_handler(server, response, request, "GET");
   };
 
@@ -1160,7 +1166,7 @@ int initialize(int argc, char* argv[])
 		show_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=show&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=show&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		show_handler(server, response, request, "GET");
   };
 
@@ -1173,7 +1179,7 @@ int initialize(int argc, char* argv[])
 		getCoreVersion_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=getCoreVersion&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=getCoreVersion&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		getCoreVersion_handler(server, response, request, "GET");
   };
 
@@ -1187,7 +1193,7 @@ int initialize(int argc, char* argv[])
 		setCoreVersion_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=setCoreVersion&username=(.*)&password=(.*)&version=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=setCoreVersion&username=(.*)&password=(.*)&version=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		setCoreVersion_handler(server, response, request, "GET");
   };
 
@@ -1203,7 +1209,7 @@ int initialize(int argc, char* argv[])
 		initVersion_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=initVersion&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=initVersion&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		string req_url = request->path;
 		cout << "request url: " << req_url << endl;
 		initVersion_handler(server, response, request, "GET");
@@ -1223,7 +1229,7 @@ int initialize(int argc, char* argv[])
 		getAPIVersion_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=getAPIVersion&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=getAPIVersion&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		string req_url = request->path;
 		cout << "request url: " << req_url << endl;
 		getAPIVersion_handler(server, response, request, "GET");
@@ -1241,7 +1247,7 @@ int initialize(int argc, char* argv[])
 		setAPIVersion_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=setAPIVersion&username=(.*)&password=(.*)&version=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=setAPIVersion&username=(.*)&password=(.*)&version=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		setAPIVersion_handler(server, response, request, "GET");
   };
 
@@ -1266,7 +1272,7 @@ int initialize(int argc, char* argv[])
 		delete_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=delete&filepath=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=delete&filepath=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		delete_handler(server, response, request, "GET");
   };
 
@@ -1280,7 +1286,7 @@ int initialize(int argc, char* argv[])
 		download_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=download&filepath=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=download&filepath=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		download_handler(server, response, request, "GET");
   };
 
@@ -1305,7 +1311,7 @@ int initialize(int argc, char* argv[])
 		backup_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=backup&db_name=(.*)&username=(.*)&password=(.*)&path=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=backup&db_name=(.*)&username=(.*)&password=(.*)&path=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		backup_handler(server, response, request, "GET");
   };
 
@@ -1318,7 +1324,7 @@ int initialize(int argc, char* argv[])
 		restore_handler(server, response, request, "GET");
   };
 
-  server.resource["^/?operation=restore&db_name=(.*)&username=(.*)&password=(.*)&path=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/\\?operation=restore&db_name=(.*)&username=(.*)&password=(.*)&path=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		restore_handler(server, response, request, "GET");
   };
 
@@ -2721,6 +2727,8 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
       PrettyWriter<StringBuffer> resWriter(resBuffer);
       resDoc.Accept(resWriter);
       success = resBuffer.GetString();
+    } else if (format == "sparql-results+json") {
+      success = rs.to_JSON(); // convert the result to json
     } else {
       //	cout << "query success, transfer to str." << endl;
       success = rs.to_str();
@@ -2728,6 +2736,8 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
     if (format == "html") {
       localname = localname + ".txt";
       filename = filename + ".txt";
+    } else if (format == "sparql-results+json") {
+      // file is not stored locally
     } else {
       localname = localname + "." + format;
       filename = filename + "." + format;
@@ -2774,6 +2784,18 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
       //*response  << "\r\n\r\n" << "0+" << query_time_s<< '+' << rs.ansNum << '+' << filename << '+' << success;
       pthread_rwlock_unlock(&(it_already_build->second->db_lock));
       //return true;
+      return;
+    } else if (format == "sparql-results+json") {
+      // write the result to the response
+      // headers taken from html-format, modified Content-Type
+      *response << "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: " << success.length();
+      *response << "\r\nCache-Control: no-cache"
+                << "\r\nPragma: no-cache"
+                << "\r\nExpires: 0";
+      *response << "\r\n\r\n" << success; // success contains the json-encoded result
+
+      pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+
       return;
     } else {
       string filename = "";
@@ -2851,6 +2873,39 @@ bool query_handler0(const HttpServer& server, const shared_ptr<HttpServer::Respo
   query_num++;
   Task* task = new Task(0, db_name, format, db_query, response, request);
   pool.AddTask(task);
+  return true;
+}
+
+bool query_handler0_sparql_conform(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+    string thread_id = Util::getThreadID();
+    string log_prefix = "thread " + thread_id + " -- ";
+    cout << log_prefix << "HTTP: this is query_handler0_sparql_conform" << endl;
+    cout << "request->path: " << request->path << endl;
+
+    if (RequestType != "GET") {
+        cout << log_prefix << "Implementation is currently limited to requests sent via GET." << endl;
+        return false;
+    }
+
+    string db_name = request->path_match[1];
+    db_name = UrlDecode(db_name);
+    string db_query = request->path_match[2];
+    db_query = UrlDecode(db_query);
+    string format = "sparql-results+json";
+
+    //check if the db_name is system
+    if (db_name == "system") {
+        string error = "no query privilege, operation failed.";
+        string resJson = CreateJson(404, error, 0);
+        *response << "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+        return false;
+    }
+
+    query_num++;
+    Task* task = new Task(0, db_name, format, db_query, response, request);
+    pool.AddTask(task);
+    return true;
 }
 
 bool query_handler1(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
