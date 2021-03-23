@@ -18,10 +18,17 @@ class QueryPlan
   std::shared_ptr<std::vector<OneStepJoin>> join_order_; //join order
   std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> ids_after_join_;
   std::shared_ptr<std::vector<VarDescriptor>> var_descriptors_;
+  // Do Before the process begin
   std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> constant_generating_lists_;
+
   QueryPlan(const std::shared_ptr<std::vector<OneStepJoin>>& ,const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>&,std::shared_ptr<std::vector<VarDescriptor>>);
 
   QueryPlan(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
+  QueryPlan()=default;
+
+  /* greedy method used in version 0.9 */
+  static double ScoreNode(int var);
+  static TYPE_ENTITY_LITERAL_ID SelectANode(BasicQuery *basic_query,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>); //include select the start node and choose next node;
 
   std::string toString(KVstore* kv_store);
 
@@ -31,6 +38,25 @@ class QueryPlan
    * */
   std::tuple<std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>,std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>>
   PositionIDMappings();
+
+  static shared_ptr<QueryPlan> DefaultBFS(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
+
+  static OneStepJoin LinkWithPreviousNodes(BasicQuery *basic_query,
+                                           const KVstore *kv_store,
+                                           TYPE_ENTITY_LITERAL_ID added_id,
+                                           const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> &table_ids);
+  static std::shared_ptr<OneStepJoinNode> FilterNodeOnConstantEdge(BasicQuery *basic_query,
+                                           KVstore *kv_store,
+                                           TYPE_ENTITY_LITERAL_ID target_node);
+  static OneStepJoin FilterFirstNode(BasicQuery *basic_query, KVstore *kv_store, TYPE_ENTITY_LITERAL_ID start_node,
+                                     const shared_ptr<vector<VarDescriptor>> &var_list);
+  static void ProcessPredicateAndSatellites(BasicQuery *basic_query,
+                                     KVstore *kv_store,
+                                     vector<bool> &vars_used_vec,
+                                     int graph_var_num,
+                                     unsigned int pre_var_num,
+                                     std::shared_ptr<std::vector<OneStepJoin>> &join_order,
+                                     std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> &ids_after_join);
 };
 
 #endif //GSTORELIMITK_QUERY_QUERYPLAN_H_
