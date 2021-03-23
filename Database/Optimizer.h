@@ -18,6 +18,7 @@
 #include "../Query/QueryPlan.h"
 #include "../Query/QueryTree.h"
 #include "Join.h"
+#include <unordered_map>
 
 
 using namespace std;

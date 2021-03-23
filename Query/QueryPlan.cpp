@@ -109,6 +109,69 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
   ProcessPredicateAndSatellites(basic_query, kv_store, vars_used_vec, graph_var_num, pre_var_num,this->join_order_,this->ids_after_join_);
 
 }
+/*
+ *  Node weight in the greedy method
+ */
+double QueryPlan::ScoreNode(BasicQuery *basic_query, int var){
+  unsigned degree = basic_query->getVarDegree(var);
+	unsigned size = basic_query->getCandidateSize(var);
+	double wt = 1;
+	for(unsigned i = 0; i < degree; i++) {
+		int edge_id = basic_query->getEdgeID(var, i);
+		int nei_id = basic_query->getEdgeNeighborID(var, i);
+		if(nei_id < 0 || nei_id >= basic_query->getVarNum() || basic_query->isSatelliteInJoin(nei_id)) {
+		  continue;
+		}
+		//CHECK:if the pre id is valid (0<=p<limit_predicateID)
+		// TYPE_PREDICATE_ID pid = basic_query->getEdgePreID(var, i);
+		// if(pid < 0 || pid >= this->limitID_predicate)
+		// {
+		// 	continue;
+		// }
+		//wt += 10000 / (double)(this->pre2num[pid]+1); // neighbours
+	}
+		wt += 1000000 / ((double)size+1);
+
+	return wt;
+}
+
+/**
+ *  Greedy method to choose the next node for processing through scores
+ * @param basic_query   BasicQueryPointer
+ * @param processed_nodes  NodeIDs which are processed by join
+ * @return
+ */
+TYPE_ENTITY_LITERAL_ID QueryPlan::SelectANode(BasicQuery *basic_query,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> processed_nodes) {
+  int max_id = -1;
+  double max_score = 0;
+  if (processed_nodes->empty()) {
+    for (int i = 0; i < basic_query->getVarNum(); ++i) {
+      if (!basic_query->isSatelliteInJoin(i)) {
+        double tmp_score = ScoreNode(basic_query, i);
+        if (tmp_score >= max_score) {
+          max_score = tmp_score;
+          max_id = i;
+        }
+      }
+    }
+  } else {
+    for (auto node =  processed_nodes->begin(); node != processed_nodes->end(); node++){
+      int var_id = *node;
+      int var_degree = basic_query->getVarDegree(var_id);
+      for (int i = 0; i < var_degree; i++){
+        int nei_id = basic_query->getEdgeNeighborID(var_id,i);
+        if (!basic_query->isSatelliteInJoin(nei_id)) {
+          double tmp_score = ScoreNode(basic_query, nei_id);
+          if (tmp_score >= max_score) {
+            max_score = tmp_score;
+            max_id = nei_id;
+          }
+        }
+      }
+    }
+  }
+  return max_id;
+}
 
 
 /**

@@ -422,7 +422,7 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneSt
 
   auto result_table = make_shared<TableContent>();
 
-  auto indexed_result =map<
+  auto indexed_result = unordered_map<
       /*key*/ vector<TYPE_ENTITY_LITERAL_ID>,
       /*value*/ shared_ptr<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>,
       /*compare*/ IndexedRecordResultCompare
