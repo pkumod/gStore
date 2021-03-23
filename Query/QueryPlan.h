@@ -27,8 +27,8 @@ class QueryPlan
   QueryPlan()=default;
 
   /* greedy method used in version 0.9 */
-  static double ScoreNode(int var);
-  static TYPE_ENTITY_LITERAL_ID SelectANode(BasicQuery *basic_query,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>); //include select the start node and choose next node;
+  static double ScoreNode(BasicQuery *basic_query, int var);
+  static TYPE_ENTITY_LITERAL_ID SelectANode(BasicQuery *basic_query,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> processed_nodes); //include select the start node and choose next node;
 
   std::string toString(KVstore* kv_store);
 
