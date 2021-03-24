@@ -425,7 +425,7 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneSt
   auto indexed_result = unordered_map<
       /*key*/ vector<TYPE_ENTITY_LITERAL_ID>,
       /*value*/ shared_ptr<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>,
-      /*compare*/ IndexedRecordResultCompare
+      /*hash function*/ container_hash<vector<TYPE_ENTITY_LITERAL_ID>>
   >();
   // # TODO 先建立大表的索引 ，再建立小表的索引
   vector<TYPE_ENTITY_LITERAL_ID> common_variables_position_big;
