@@ -453,8 +453,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 
 void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode *curr_node)
 {
-	cout << root->getText() << endl;
-	cout << "#children = " << root->children.size() << endl;
+	// cout << root->getText() << endl;
+	// cout << "#children = " << root->children.size() << endl;
 
 	if (root->children.size() == 1)
 	{
@@ -488,7 +488,18 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 			curr_node->val = root->getText();
 		}
 		else
-			buildCompTree(root->children[0], -1, curr_node);
+		{
+			if (root->children[0]->children.size() != 0)
+				buildCompTree(root->children[0], -1, curr_node);
+			else
+			{
+				// var from varCtx
+				curr_node->oprt = "";
+				curr_node->lchild = NULL;
+				curr_node->rchild = NULL;
+				curr_node->val = root->getText();
+			}
+		}
 	}
 	else if (root->children.size() == 2)
 	{
@@ -890,7 +901,8 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 		else if (((SPARQLParser::PrimaryexpressionContext *)root)->builtInCall())
 			buildFilterTree(((SPARQLParser::PrimaryexpressionContext *)root)->builtInCall(), \
 				currChild, filter, "builtInCall");
-		else if (((SPARQLParser::PrimaryexpressionContext *)root)->iriOrFunction())
+		else if (((SPARQLParser::PrimaryexpressionContext *)root)->iriOrFunction() \
+			&& ((SPARQLParser::PrimaryexpressionContext *)root)->iriOrFunction()->argList())
 			throw runtime_error("[ERROR]	Filter currently does not support custom function call.");
 		else	// rDFLiteral | numericLiteral | booleanLiteral | var
 		{
@@ -908,7 +920,8 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 				}
 				else if (((SPARQLParser::PrimaryexpressionContext *)root)->booleanLiteral())
 					currChild->str = "\"" + root->getText() + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
-				else if (((SPARQLParser::PrimaryexpressionContext *)root)->var())
+				else if (((SPARQLParser::PrimaryexpressionContext *)root)->var() \
+					|| ((SPARQLParser::PrimaryexpressionContext *)root)->iriOrFunction())
 					currChild->str = root->getText();
 				
 				replacePrefix(currChild->str);
@@ -961,6 +974,27 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_sp_type;
 			else if (funcName == "KHOPREACHABLE")
 				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_khop_type;
+			
+			else if (funcName == "DATATYPE")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_datatype_type;
+			else if (funcName == "CONTAINS")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_contains_type;
+			else if (funcName == "UCASE")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_ucase_type;
+			else if (funcName == "LCASE")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_lcase_type;
+			else if (funcName == "STRSTARTS")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_strstarts_type;
+			else if (funcName == "NOW")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_now_type;
+			else if (funcName == "YEAR")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_year_type;
+			else if (funcName == "MONTH")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_month_type;
+			else if (funcName == "DAY")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_day_type;
+			else if (funcName == "ABS")
+				filter.oper_type = QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_abs_type;
 			else
 				throw runtime_error("[ERROR] Filter currently does not support this built-in call.");
 
@@ -1228,8 +1262,10 @@ antlrcpp::Any QueryParser::visitOrderClause(SPARQLParser::OrderClauseContext *ct
 		else if (orderCondition->constraint())	// constraint | var
 			expOrVarCtx = orderCondition->constraint()->brackettedexpression()->expression();
 		else
+		{
 			expOrVarCtx = orderCondition->var();
-
+			query_tree_ptr->getLastOrderVar().var = orderCondition->var()->getText();
+		}
 		buildCompTree(expOrVarCtx, -1, query_tree_ptr->getLastOrderVar().comp_tree_root);
 	}
 

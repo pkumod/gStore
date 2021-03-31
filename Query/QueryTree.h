@@ -112,6 +112,10 @@ class QueryTree
 			CompTreeNode *rchild;	// child nodes
 			std::string val;	// variable, or literal followed by datatype suffix
 
+			CompTreeNode();
+			CompTreeNode(const CompTreeNode& that);
+			CompTreeNode& operator=(const CompTreeNode& that);
+			~CompTreeNode();
 			void print(int dep);	// Print subtree rooted at this node
 			Varset getCompTreeVarset();
 		};
@@ -129,6 +133,9 @@ class QueryTree
 							Function_type, ArgumentList_type, Builtin_str_type, Builtin_lang_type, Builtin_langmatches_type, Builtin_datatype_type, Builtin_bound_type,
 							Builtin_sameterm_type, Builtin_isiri_type, Builtin_isuri_type, Builtin_isblank_type, Builtin_isliteral_type, Builtin_isnumeric_type,
 							Builtin_regex_type, Builtin_in_type, Builtin_exists_type,
+							Builtin_contains_type, Builtin_ucase_type, Builtin_lcase_type, Builtin_strstarts_type,
+							Builtin_now_type, Builtin_year_type, Builtin_month_type, Builtin_day_type,
+							Builtin_abs_type,
 							Builtin_simpleCycle_type, Builtin_cycle_type, Builtin_sp_type, Builtin_khop_type
 						};
 						FilterOperationType oper_type;
@@ -226,12 +233,14 @@ class QueryTree
 		class Order
 		{
 			public:
-				// std::string var;	// Don't remove for backward compatibility
+				std::string var;	// Don't remove for backward compatibility
 				CompTreeNode *comp_tree_root;	// Support expression
 				bool descending;
 				// Order(std::string &_var, bool _descending): var(_var), descending(_descending) { comp_tree_root = new CompTreeNode(); }
-				Order(bool _descending): descending(_descending) { comp_tree_root = new CompTreeNode(); }
-				~Order() { delete comp_tree_root; }
+				Order(bool _descending);
+				Order(const Order& that);
+				Order& operator=(const Order& that);
+				~Order();
 		};
 
 		enum UpdateType {Not_Update, Insert_Data, Delete_Data, Delete_Where, Insert_Clause, Delete_Clause, Modify_Clause};
