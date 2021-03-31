@@ -737,12 +737,16 @@ Varset& QueryTree::getGroupByVarset()
 /**
 	Add a ORDER BY variable, and mark if it is DESC or ASC.
 	
-	@param _var the ORDER BY variable to add.
+	@param _var the ORDER BY variable to add. [ARCHAIC: now use CompTreeNode to incorporate expressions]
 	@param _descending the boolean indicating whether the order should be descending.
 */
-void QueryTree::addOrderVar(string &_var, bool _descending)
+// void QueryTree::addOrderVar(string &_var, bool _descending)
+// {
+// 	this->order_by.push_back(Order(_var, _descending));
+// }
+void QueryTree::addOrderVar(bool _descending)
 {
-	this->order_by.push_back(Order(_var, _descending));
+	this->order_by.push_back(Order(_descending));
 }
 
 /**
@@ -755,6 +759,11 @@ vector<QueryTree::Order>& QueryTree::getOrderVarVector()
 	return this->order_by;
 }
 
+QueryTree::Order& QueryTree::getLastOrderVar()
+{
+	return order_by.back();
+}
+
 /**
 	Get the varset of all ORDER BY variables.
 	
@@ -765,7 +774,11 @@ Varset QueryTree::getOrderByVarset()
 	Varset varset;
 
 	for (int i = 0; i < (int)this->order_by.size(); i++)
-		varset.addVar(this->order_by[i].var);
+	{
+		// if (this->order_by[i].var != "")
+		// 	varset.addVar(this->order_by[i].var);
+		varset += order_by[i].comp_tree_root->getCompTreeVarset();
+	}
 
 	return varset;
 }
@@ -1051,7 +1064,9 @@ void QueryTree::print()
 				{
 					if (!this->order_by[i].descending)	printf("ASC(");
 					else printf("DESC(");
-					printf("%s)\t", this->order_by[i].var.c_str());
+					// printf("%s)\t", this->order_by[i].var.c_str());
+					order_by[i].comp_tree_root->print(0);
+					printf(")\t");
 				}
 				printf("\n");
 			}
@@ -1114,4 +1129,15 @@ void QueryTree::CompTreeNode::print(int dep)
 			rchild->print(dep + 1);
 		}
 	}
+}
+
+Varset QueryTree::CompTreeNode::getCompTreeVarset()
+{
+	if (!lchild && !rchild)
+	{
+		if (val[0] == '?')
+			return Varset(val);
+	}
+	else
+		return lchild->getCompTreeVarset() + rchild->getCompTreeVarset();
 }
