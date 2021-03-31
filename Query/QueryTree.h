@@ -112,7 +112,12 @@ class QueryTree
 			CompTreeNode *rchild;	// child nodes
 			std::string val;	// variable, or literal followed by datatype suffix
 
+			CompTreeNode();
+			CompTreeNode(const CompTreeNode& that);
+			CompTreeNode& operator=(const CompTreeNode& that);
+			~CompTreeNode();
 			void print(int dep);	// Print subtree rooted at this node
+			Varset getCompTreeVarset();
 		};
 
 		class GroupPattern::FilterTree
@@ -228,9 +233,14 @@ class QueryTree
 		class Order
 		{
 			public:
-				std::string var;
+				std::string var;	// Don't remove for backward compatibility
+				CompTreeNode *comp_tree_root;	// Support expression
 				bool descending;
-				Order(std::string &_var, bool _descending):var(_var), descending(_descending){}
+				// Order(std::string &_var, bool _descending): var(_var), descending(_descending) { comp_tree_root = new CompTreeNode(); }
+				Order(bool _descending);
+				Order(const Order& that);
+				Order& operator=(const Order& that);
+				~Order();
 		};
 
 		enum UpdateType {Not_Update, Insert_Data, Delete_Data, Delete_Where, Insert_Clause, Delete_Clause, Modify_Clause};
@@ -277,8 +287,10 @@ class QueryTree
 			void addGroupByVar(std::string &_var);
 			Varset& getGroupByVarset();
 
-			void addOrderVar(std::string &_var, bool _descending);
+			// void addOrderVar(std::string &_var, bool _descending);
+			void addOrderVar(bool _descending);
 			std::vector<Order>& getOrderVarVector();
+			Order& getLastOrderVar();
 			Varset getOrderByVarset();
 
 			void setOffset(int _offset);

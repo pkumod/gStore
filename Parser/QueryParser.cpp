@@ -455,8 +455,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 
 void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode *curr_node)
 {
-	cout << root->getText() << endl;
-	cout << "#children = " << root->children.size() << endl;
+	// cout << root->getText() << endl;
+	// cout << "#children = " << root->children.size() << endl;
 
 	if (root->children.size() == 1)
 	{
@@ -490,7 +490,18 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 			curr_node->val = root->getText();
 		}
 		else
-			buildCompTree(root->children[0], -1, curr_node);
+		{
+			if (root->children[0]->children.size() != 0)
+				buildCompTree(root->children[0], -1, curr_node);
+			else
+			{
+				// var from varCtx
+				curr_node->oprt = "";
+				curr_node->lchild = NULL;
+				curr_node->rchild = NULL;
+				curr_node->val = root->getText();
+			}
+		}
 	}
 	else if (root->children.size() == 2)
 	{
@@ -1225,7 +1236,7 @@ antlrcpp::Any QueryParser::visitGroupClause(SPARQLParser::GroupClauseContext *ct
 	Visit node orderClause: Collect ORDER BY variables, and whether the order should be 
 	ASC or DESC.
 	Assumptions:
-	1) ORDER BY key can only be var.
+	1) ORDER BY key can only be var or brackettedexpression.
 
 	@param ctx pointer to orderClause's context.
 	@return a dummy antlrcpp::Any object.
@@ -1236,6 +1247,7 @@ antlrcpp::Any QueryParser::visitOrderClause(SPARQLParser::OrderClauseContext *ct
 	{
 		bool descending = false;
 		string var;
+		antlr4::tree::ParseTree *expOrVarCtx;
 
 		// ( 'ASC' | 'DESC' ) brackettedexpression
 		if (orderCondition->children[0]->children.size() == 0)
@@ -1244,32 +1256,19 @@ antlrcpp::Any QueryParser::visitOrderClause(SPARQLParser::OrderClauseContext *ct
 			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
 			if (tmp == "DESC")
 				descending = true;
-
-			SPARQLParser::VarContext *varCtx = orderCondition->brackettedexpression()->expression()-> \
-				conditionalOrexpression()->conditionalAndexpression(0)->valueLogical(0)-> \
-				relationalexpression()->numericexpression(0)->additiveexpression()-> \
-				multiplicativeexpression(0)->unaryexpression(0)->primaryexpression()->var();
-			if (!varCtx)
-				throw runtime_error("[ERROR]	The supported ORDER BY key is var only.");
-			antlr4::tree::ParseTree *curr = orderCondition->brackettedexpression()->expression();
-			for (int i = 0; i < 10; i++)
-			{
-				// Make sure only one children along the way
-				if (curr->children.size() > 1)
-					throw runtime_error("[ERROR]	The supported ORDER BY key is var only.");
-				curr = curr->children[0];
-			}
-			var = varCtx->getText();
 		}
-		// constraint | var
+		query_tree_ptr->addOrderVar(descending);
+
+		if (orderCondition->children[0]->children.size() == 0)	// ( 'ASC' | 'DESC' ) brackettedexpression
+			expOrVarCtx = orderCondition->brackettedexpression()->expression();
+		else if (orderCondition->constraint())	// constraint | var
+			expOrVarCtx = orderCondition->constraint()->brackettedexpression()->expression();
 		else
 		{
-			if (!orderCondition->var())
-				throw runtime_error("[ERROR]	The supported ORDER BY key is var only.");
-			var = orderCondition->var()->getText();
+			expOrVarCtx = orderCondition->var();
+			query_tree_ptr->getLastOrderVar().var = orderCondition->var()->getText();
 		}
-
-		query_tree_ptr->addOrderVar(var, descending);
+		buildCompTree(expOrVarCtx, -1, query_tree_ptr->getLastOrderVar().comp_tree_root);
 	}
 
 	return antlrcpp::Any();
