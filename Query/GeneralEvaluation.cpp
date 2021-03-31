@@ -2741,9 +2741,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			vector <bool> desc;
 			for (int i = 0; i < (int)this->query_tree.getOrderVarVector().size(); i++)
 			{
-				int var_id = Varset(this->query_tree.getOrderVarVector()[i].var).mapTo(ret_result_varset)[0];
+				// int var_id = Varset(this->query_tree.getOrderVarVector()[i].var).mapTo(ret_result_varset)[0];
 				// Temporary, to be changed to allow for more than one var in one ORDER BY condition
-				// int var_id = this->query_tree.getOrderVarVector()[i].comp_tree_root->getCompTreeVarset().mapTo(ret_result_varset)[0];
+				int var_id = this->query_tree.getOrderVarVector()[i].comp_tree_root->getCompTreeVarset().mapTo(ret_result_varset)[0];
 				if (var_id != -1)
 				{
 					keys.push_back(var_id);
