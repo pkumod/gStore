@@ -91,6 +91,11 @@ class GeneralEvaluation
 		void loadCSR();
 		void prepPathQuery();
 		void pathVec2JSON(int src, int dst, const std::vector<int> &v, std::stringstream &ss);
+
+		int constructTriplePattern(QueryTree::GroupPattern& triple_pattern, int dep);
+		void getUsefulVarset(Varset& useful, int dep);
+		bool checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *sub_result, Varset& useful);
+		void fillCandList(SPARQLquery& sparql_query, int dep, vector<vector<string> >& encode_varset);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H
