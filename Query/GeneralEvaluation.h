@@ -33,6 +33,7 @@ class GeneralEvaluation
 	private:
 		QueryParser query_parser;
 		QueryTree query_tree;
+		int well_designed;
 		VSTree *vstree;
 		KVstore *kvstore;
 		StringIndex *stringindex;
@@ -84,6 +85,8 @@ class GeneralEvaluation
 		bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &group_pattern, std::deque<QueryTree::GroupPattern> &queue);
 		TempResultSet* rewritingBasedQueryEvaluation(int dep);
 
+		TempResultSet* queryEvaluation(int dep);
+
 		void getFinalResult(ResultSet &ret_result);
 		void releaseResult();
 
@@ -93,6 +96,13 @@ class GeneralEvaluation
 		void loadCSR();
 		void prepPathQuery();
 		void pathVec2JSON(int src, int dst, const std::vector<int> &v, std::stringstream &ss);
+
+		int constructTriplePattern(QueryTree::GroupPattern& triple_pattern, int dep);
+		void getUsefulVarset(Varset& useful, int dep);
+		bool checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *sub_result, Varset& useful);
+		void fillCandList(SPARQLquery& sparql_query, int dep, vector<vector<string> >& encode_varset);
+		void joinBasicQueryResult(SPARQLquery& sparql_query, TempResultSet *new_result, TempResultSet *sub_result, vector<vector<string> >& encode_varset, \
+			vector<vector<QueryTree::GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep=0);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H
