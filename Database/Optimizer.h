@@ -61,7 +61,7 @@ class Optimizer
 {
  public:
 
-  Optimizer(KVstore* kv_store, VSTree* vs_tree, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
+  Optimizer(KVstore* kv_store, VSTree* vs_tree, Statistics *statistics, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
              TYPE_TRIPLE_NUM* pre2obj, TYPE_PREDICATE_ID limitID_predicate, TYPE_ENTITY_LITERAL_ID limitID_literal,
              TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn
              // ,SPARQLquery& sparql_query,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list,TYPE_ENTITY_LITERAL_ID limit_num
@@ -145,6 +145,7 @@ class Optimizer
 
  private:
   KVstore* kv_store_;
+  Statistics* statistics;
 
   shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list_; // empty if not using 'orderby'
   TYPE_ENTITY_LITERAL_ID limit_num_; // -1 if not limit result size
