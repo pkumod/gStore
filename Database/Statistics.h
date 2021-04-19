@@ -13,7 +13,6 @@
 #include <string>
 #include "../Util/Util.h"
 #include "../KVstore/KVstore.h"
-#include "./Strategy.h"
 
 
 //    Statistics 类主要考虑了一条边和两条边的信息,
