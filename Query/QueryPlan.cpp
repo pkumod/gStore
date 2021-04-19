@@ -746,14 +746,6 @@ QueryPlan::WrapEdgeInfo_i_th_Edge(BasicQuery *basic_query,
   return make_tuple(edge_info,edge_constant_info);
 }
 
-tuple<EdgeInfo,EdgeConstantInfo>
-QueryPlan::WrapEdgeInfo_i_th_Edge(BasicQuery *basic_query,
-                                  const KVstore *kv_store,
-                                  TYPE_ENTITY_LITERAL_ID added_id,
-                                  TYPE_ENTITY_LITERAL_ID i_th_edge)
-{
-
-}
 std::string QueryPlan::toString(KVstore* kv_store) {
   stringstream ss;
   ss<<"QueryPlan:\n";
