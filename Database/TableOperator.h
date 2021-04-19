@@ -80,7 +80,7 @@ class EdgeInfo{
   JoinMethod join_method_;
   TYPE_ENTITY_LITERAL_ID getVarToFilter();
   std::string toString();
-
+  EdgeInfo() = default;
 };
 
 class EdgeConstantInfo{
