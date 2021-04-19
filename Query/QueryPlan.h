@@ -41,6 +41,12 @@ class QueryPlan
 
   static shared_ptr<QueryPlan> DefaultBFS(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
 
+  static tuple<shared_ptr<vector<EdgeInfo>>,
+  shared_ptr<vector<EdgeConstantInfo>>> LinkTwoNode(BasicQuery *basic_query,
+                                                      const KVstore *kv_store,
+                                                      TYPE_ENTITY_LITERAL_ID added_id,
+                                                      TYPE_ENTITY_LITERAL_ID d_already_in_table);
+
   static OneStepJoin LinkWithPreviousNodes(BasicQuery *basic_query,
                                            const KVstore *kv_store,
                                            TYPE_ENTITY_LITERAL_ID added_id,
@@ -57,6 +63,9 @@ class QueryPlan
                                      unsigned int pre_var_num,
                                      std::shared_ptr<std::vector<OneStepJoin>> &join_order,
                                      std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> &ids_after_join);
+  static tuple<EdgeInfo,EdgeConstantInfo> WrapEdgeInfo_i_th_Edge(BasicQuery *basic_query,
+                           const KVstore *kv_store,
+                           TYPE_ENTITY_LITERAL_ID added_id,int edge_id);
 };
 
 #endif //GSTORELIMITK_QUERY_QUERYPLAN_H_
