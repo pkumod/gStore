@@ -60,109 +60,10 @@ tuple<bool, TableContentShardPtr> Optimizer::GenerateColdCandidateList(const sha
 
 
   auto var_to_filter = (*edge_info_vector)[0].getVarToFilter();
-  auto id_candidate = make_shared<IDList>();
 
   assert(edge_info_vector->size()==edge_table_info_vector->size());
 
-  for(int i = 0;i<edge_info_vector->size();i++)
-  {
-
-    auto edge_info = (*edge_info_vector)[i];
-    TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
-    TYPE_ENTITY_LITERAL_ID this_edge_list_len;
-    cout<<"edge["<<i<<"] \n\t"<< edge_info.toString() << "\n\t join method:"<<JoinMethodToString(edge_info.join_method_)<<endl;
-    switch (edge_info.join_method_) {
-      case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
-        auto s_var_constant_id = edge_info.s_;
-        this->kv_store_->getpreIDlistBysubID(s_var_constant_id,
-                                             edge_candidate_list,
-                                             this_edge_list_len,
-                                             true,
-                                             this->txn_);
-        break;
-      }
-      case JoinMethod::s2o: {
-        auto s_var_constant_id = edge_info.s_;
-        this->kv_store_->getobjIDlistBysubID(s_var_constant_id,
-                                             edge_candidate_list,
-                                             this_edge_list_len,
-                                             true,
-                                             this->txn_);
-        break;
-      }
-      case JoinMethod::p2s: {
-        auto p_var_constant_id = edge_info.p_;
-        this->kv_store_->getsubIDlistBypreID(p_var_constant_id,
-                                             edge_candidate_list,
-                                             this_edge_list_len,
-                                             true,
-                                             this->txn_);
-        break;
-      }
-      case JoinMethod::p2o: {
-        auto p_var_constant_id = edge_info.p_;
-        this->kv_store_->getobjIDlistBypreID(p_var_constant_id,
-                                             edge_candidate_list,
-                                             this_edge_list_len,
-                                             true,
-                                             this->txn_);
-        break;
-      }
-      case JoinMethod::o2s: {
-        auto o_var_constant_id = edge_info.o_;
-        this->kv_store_->getsubIDlistByobjID(o_var_constant_id,
-                                             edge_candidate_list,
-                                             this_edge_list_len,
-                                             true,
-                                             this->txn_);
-        break;
-      }
-      case JoinMethod::o2p: {
-        auto o_var_constant_id = edge_info.o_;
-        this->kv_store_->getpreIDlistByobjID(o_var_constant_id,
-                                             edge_candidate_list,
-                                             this_edge_list_len,
-                                             true,
-                                             this->txn_);
-        break;
-      }
-      case JoinMethod::so2p: {
-        auto s_var_constant_id = edge_info.s_;
-        auto o_var_constant_id = edge_info.o_;
-        this->kv_store_->getpreIDlistBysubIDobjID(s_var_constant_id,
-                                                  o_var_constant_id,
-                                                  edge_candidate_list,
-                                                  this_edge_list_len,
-                                                  true,
-                                                  this->txn_);
-        break;
-      }
-      case JoinMethod::sp2o: {
-        auto s_var_constant_id = edge_info.s_;
-        auto p_var_constant_id = edge_info.p_;
-        this->kv_store_->getobjIDlistBysubIDpreID(s_var_constant_id,
-                                                  p_var_constant_id,
-                                                  edge_candidate_list,
-                                                  this_edge_list_len,
-                                                  true,
-                                                  this->txn_);
-        break;
-      }
-      case JoinMethod::po2s: {
-        auto p_var_constant_id = edge_info.p_;
-        auto o_var_constant_id = edge_info.o_;
-        this->kv_store_->getsubIDlistByobjIDpreID(o_var_constant_id,
-                                                  p_var_constant_id,
-                                                  edge_candidate_list,
-                                                  this_edge_list_len,
-                                                  true,
-                                                  this->txn_);
-        break;
-      }
-    }
-    cout<<"get "<<this_edge_list_len<<" result in this edge "<<endl;
-    UpdateIDList(id_candidate,edge_candidate_list,this_edge_list_len,i > 0);
-  }
+  auto id_candidate = CandidatesWithConstantEdge(edge_info_vector);
 
   auto result = make_shared<TableContent>();
   auto id_candidate_vec = id_candidate->getList();
@@ -178,7 +79,108 @@ tuple<bool, TableContentShardPtr> Optimizer::GenerateColdCandidateList(const sha
 }
 
 
-
+shared_ptr<IDList> Optimizer::CandidatesWithConstantEdge(const shared_ptr<vector<EdgeInfo>> &edge_info_vector) const {
+  auto id_candidate = make_shared<IDList>();
+  for(int i = 0; i<edge_info_vector->size(); i++)
+  {
+    auto edge_info = (*edge_info_vector)[i];
+    TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
+    TYPE_ENTITY_LITERAL_ID this_edge_list_len;
+    cout<<"edge["<<i<<"] \n\t"<< edge_info.toString() << "\n\t join method:"<<JoinMethodToString(edge_info.join_method_)<<endl;
+    switch (edge_info.join_method_) {
+      case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
+        auto s_var_constant_id = edge_info.s_;
+        kv_store_->getpreIDlistBysubID(s_var_constant_id,
+                                       edge_candidate_list,
+                                       this_edge_list_len,
+                                       true,
+                                       txn_);
+        break;
+      }
+      case JoinMethod::s2o: {
+        auto s_var_constant_id = edge_info.s_;
+        kv_store_->getobjIDlistBysubID(s_var_constant_id,
+                                       edge_candidate_list,
+                                       this_edge_list_len,
+                                       true,
+                                       txn_);
+        break;
+      }
+      case JoinMethod::p2s: {
+        auto p_var_constant_id = edge_info.p_;
+        kv_store_->getsubIDlistBypreID(p_var_constant_id,
+                                       edge_candidate_list,
+                                       this_edge_list_len,
+                                       true,
+                                       txn_);
+        break;
+      }
+      case JoinMethod::p2o: {
+        auto p_var_constant_id = edge_info.p_;
+        kv_store_->getobjIDlistBypreID(p_var_constant_id,
+                                       edge_candidate_list,
+                                       this_edge_list_len,
+                                       true,
+                                       txn_);
+        break;
+      }
+      case JoinMethod::o2s: {
+        auto o_var_constant_id = edge_info.o_;
+        kv_store_->getsubIDlistByobjID(o_var_constant_id,
+                                       edge_candidate_list,
+                                       this_edge_list_len,
+                                       true,
+                                       txn_);
+        break;
+      }
+      case JoinMethod::o2p: {
+        auto o_var_constant_id = edge_info.o_;
+        kv_store_->getpreIDlistByobjID(o_var_constant_id,
+                                       edge_candidate_list,
+                                       this_edge_list_len,
+                                       true,
+                                       txn_);
+        break;
+      }
+      case JoinMethod::so2p: {
+        auto s_var_constant_id = edge_info.s_;
+        auto o_var_constant_id = edge_info.o_;
+        kv_store_->getpreIDlistBysubIDobjID(s_var_constant_id,
+                                            o_var_constant_id,
+                                            edge_candidate_list,
+                                            this_edge_list_len,
+                                            true,
+                                            txn_);
+        break;
+      }
+      case JoinMethod::sp2o: {
+        auto s_var_constant_id = edge_info.s_;
+        auto p_var_constant_id = edge_info.p_;
+        kv_store_->getobjIDlistBysubIDpreID(s_var_constant_id,
+                                            p_var_constant_id,
+                                            edge_candidate_list,
+                                            this_edge_list_len,
+                                            true,
+                                            txn_);
+        break;
+      }
+      case JoinMethod::po2s: {
+        auto p_var_constant_id = edge_info.p_;
+        auto o_var_constant_id = edge_info.o_;
+        kv_store_->getsubIDlistByobjIDpreID(o_var_constant_id,
+                                            p_var_constant_id,
+                                            edge_candidate_list,
+                                            this_edge_list_len,
+                                            true,
+                                            txn_);
+        break;
+      }
+    }
+    cout<<"get "<<this_edge_list_len<<" result in this edge "<<endl;
+    UpdateIDList(id_candidate,edge_candidate_list,this_edge_list_len,i > 0);
+  }
+  return id_candidate;
+}
 
 /**
  * add a node to the table
@@ -204,169 +206,11 @@ tuple<bool,TableContentShardPtr> Optimizer::JoinANode(const shared_ptr<OneStepJo
   for (auto record_iterator = table_content_ptr->begin();
        record_iterator != table_content_ptr->end();
        record_iterator++) {
-    auto record_candidate_list = make_shared<IDList>();
-    auto record_candidate_prepared = false;
-    /* for each edge */
-    for (int edge_i = 0;edge_i<edges_info->size();edge_i++) {
-      auto edge_info = (*edges_info)[edge_i];
-      auto edge_constant_info = one_step_join_node_->edges_constant_info_->operator[](edge_i);
-      if (record_candidate_prepared && record_candidate_list->empty())
-        continue;
-      TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
-      TYPE_ENTITY_LITERAL_ID edge_list_len;
-      /* through this edge get candidate */
-      switch (edge_info.join_method_) {
-        case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
-          /* if s is constant, it is edge constraint check, and should not appear in the function*/
-          auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-          auto s_var_id_this_record = (**record_iterator)[s_var_position];
-          this->kv_store_->getpreIDlistBysubID(s_var_id_this_record,
-                                               edge_candidate_list,
-                                               edge_list_len,
-                                               true,
-                                               this->txn_);
-          break;
-        }
-        case JoinMethod::s2o: {
-          auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-          auto s_var_id_this_record = (**record_iterator)[s_var_position];
-          this->kv_store_->getobjIDlistBysubID(s_var_id_this_record,
-                                               edge_candidate_list,
-                                               edge_list_len,
-                                               true,
-                                               this->txn_);
-          break;
-        }
-        case JoinMethod::p2s: {
-          auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-          auto p_var_id_this_record = (**record_iterator)[p_var_position];
-          this->kv_store_->getsubIDlistBypreID(p_var_id_this_record,
-                                               edge_candidate_list,
-                                               edge_list_len,
-                                               true,
-                                               this->txn_);
-          break;
-        }
-        case JoinMethod::p2o: {
-          auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-          auto p_var_id_this_record = (**record_iterator)[p_var_position];
-          this->kv_store_->getobjIDlistBypreID(p_var_id_this_record,
-                                               edge_candidate_list,
-                                               edge_list_len,
-                                               true,
-                                               this->txn_);
-          break;
-        }
-        case JoinMethod::o2s: {
-          auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-          auto o_var_id_this_record = (**record_iterator)[o_var_position];
-          this->kv_store_->getsubIDlistByobjID(o_var_id_this_record,
-                                               edge_candidate_list,
-                                               edge_list_len,
-                                               true,
-                                               this->txn_);
-          break;
-        }
-        case JoinMethod::o2p: {
-          auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-          auto o_var_id_this_record = (**record_iterator)[o_var_position];
-          this->kv_store_->getpreIDlistByobjID(o_var_id_this_record,
-                                               edge_candidate_list,
-                                               edge_list_len,
-                                               true,
-                                               this->txn_);
-          break;
-        }
-        case JoinMethod::so2p: {
-          TYPE_ENTITY_LITERAL_ID s_var_position,s_var_id_this_record;
-          if(edge_constant_info.s_constant_)
-            s_var_id_this_record = edge_info.s_;
-          else {
-            auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-            s_var_id_this_record = (**record_iterator)[s_var_position];
-          }
-
-          TYPE_ENTITY_LITERAL_ID o_var_position,o_var_id_this_record;
-          if(edge_constant_info.o_constant_)
-            o_var_id_this_record = edge_info.o_;
-          else {
-            auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-            o_var_id_this_record = (**record_iterator)[o_var_position];
-          }
-
-          this->kv_store_->getpreIDlistBysubIDobjID(s_var_id_this_record,
-                                                    o_var_id_this_record,
-                                                    edge_candidate_list,
-                                                    edge_list_len,
-                                                    true,
-                                                    this->txn_);
-          break;
-        }
-        case JoinMethod::sp2o: {
-          TYPE_ENTITY_LITERAL_ID s_var_position,s_var_id_this_record;
-          if(edge_constant_info.s_constant_)
-            s_var_id_this_record = edge_info.s_;
-          else {
-            auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-            s_var_id_this_record = (**record_iterator)[s_var_position];
-          }
-
-          TYPE_ENTITY_LITERAL_ID p_var_position,p_var_id_this_record;
-          if(edge_constant_info.p_constant_)
-            p_var_id_this_record = edge_info.p_;
-          else {
-            auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-            p_var_id_this_record = (**record_iterator)[p_var_position];
-          }
-          this->kv_store_->getobjIDlistBysubIDpreID(s_var_id_this_record,
-                                                    p_var_id_this_record,
-                                                    edge_candidate_list,
-                                                    edge_list_len,
-                                                    true,
-                                                    this->txn_);
-          break;
-        }
-        case JoinMethod::po2s: {
-          TYPE_ENTITY_LITERAL_ID o_var_position,o_var_id_this_record;
-          if(edge_constant_info.o_constant_)
-            o_var_id_this_record = edge_info.o_;
-          else {
-            auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-            o_var_id_this_record = (**record_iterator)[o_var_position];
-          }
-
-          TYPE_ENTITY_LITERAL_ID p_var_position,p_var_id_this_record;
-          if(edge_constant_info.p_constant_)
-            p_var_id_this_record = edge_info.p_;
-          else {
-            auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-            p_var_id_this_record = (**record_iterator)[p_var_position];
-          }
-
-          this->kv_store_->getsubIDlistByobjIDpreID(o_var_id_this_record,
-                                                    p_var_id_this_record,
-                                                    edge_candidate_list,
-                                                    edge_list_len,
-                                                    true,
-                                                    this->txn_);
-          break;
-        }
-      }
-
-      Optimizer::UpdateIDList(record_candidate_list,
-                              edge_candidate_list,
-                              edge_list_len,
-                              record_candidate_prepared);
-      delete [] edge_candidate_list;
-      /* If candidate is not prepared, then we ues the first edge as candidate */
-      record_candidate_prepared = true;
-    }
-
-    if(id_caches->find(new_id)!=id_caches->end())
-    {
-      auto caches_ptr = (*(id_caches->find(new_id))).second;
-      record_candidate_list->intersectList(*caches_ptr);
-    }
+    shared_ptr<IDList> record_candidate_list = ExtendRecord(one_step_join_node_,
+                 id_pos_mapping,
+                 id_caches,
+                 new_id,
+                 record_iterator);
 
     /* write to the new table */
     auto record = *record_iterator;
@@ -383,6 +227,179 @@ tuple<bool,TableContentShardPtr> Optimizer::JoinANode(const shared_ptr<OneStepJo
 
 }
 
+shared_ptr<IDList> Optimizer::ExtendRecord(const shared_ptr<OneStepJoinNode> &one_step_join_node_,
+                             const PositionValueSharedPtr &id_pos_mapping,
+                             const IDCachesSharePtr &id_caches,
+                             TYPE_ENTITY_LITERAL_ID new_id,
+                             list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const {
+
+  auto record_candidate_list= make_shared<IDList>();
+  auto record_candidate_prepared = false;
+  auto edges_info = one_step_join_node_->edges_;
+  /* for each edge */
+  for (int edge_i = 0;edge_i<edges_info->size();edge_i++) {
+    auto edge_info = (*edges_info)[edge_i];
+    auto edge_constant_info = one_step_join_node_->edges_constant_info_->operator[](edge_i);
+    if (record_candidate_prepared && record_candidate_list->empty())
+      continue;
+    TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
+    TYPE_ENTITY_LITERAL_ID edge_list_len;
+    /* through this edge get candidate */
+    switch (edge_info.join_method_) {
+      case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
+        /* if s is constant, it is edge constraint check, and should not appear in the function*/
+        auto s_var_position = (*id_pos_mapping)[edge_info.s_];
+        auto s_var_id_this_record = (**record_iterator)[s_var_position];
+        kv_store_->getpreIDlistBysubID(s_var_id_this_record,
+                                       edge_candidate_list,
+                                       edge_list_len,
+                                       true,
+                                       txn_);
+        break;
+      }
+      case JoinMethod::s2o: {
+        auto s_var_position = (*id_pos_mapping)[edge_info.s_];
+        auto s_var_id_this_record = (**record_iterator)[s_var_position];
+        kv_store_->getobjIDlistBysubID(s_var_id_this_record,
+                                       edge_candidate_list,
+                                       edge_list_len,
+                                       true,
+                                       txn_);
+        break;
+      }
+      case JoinMethod::p2s: {
+        auto p_var_position = (*id_pos_mapping)[edge_info.p_];
+        auto p_var_id_this_record = (**record_iterator)[p_var_position];
+        kv_store_->getsubIDlistBypreID(p_var_id_this_record,
+                                       edge_candidate_list,
+                                       edge_list_len,
+                                       true,
+                                       txn_);
+        break;
+      }
+      case JoinMethod::p2o: {
+        auto p_var_position = (*id_pos_mapping)[edge_info.p_];
+        auto p_var_id_this_record = (**record_iterator)[p_var_position];
+        kv_store_->getobjIDlistBypreID(p_var_id_this_record,
+                                       edge_candidate_list,
+                                       edge_list_len,
+                                       true,
+                                       txn_);
+        break;
+      }
+      case JoinMethod::o2s: {
+        auto o_var_position = (*id_pos_mapping)[edge_info.o_];
+        auto o_var_id_this_record = (**record_iterator)[o_var_position];
+        kv_store_->getsubIDlistByobjID(o_var_id_this_record,
+                                       edge_candidate_list,
+                                       edge_list_len,
+                                       true,
+                                       txn_);
+        break;
+      }
+      case JoinMethod::o2p: {
+        auto o_var_position = (*id_pos_mapping)[edge_info.o_];
+        auto o_var_id_this_record = (**record_iterator)[o_var_position];
+        kv_store_->getpreIDlistByobjID(o_var_id_this_record,
+                                       edge_candidate_list,
+                                       edge_list_len,
+                                       true,
+                                       txn_);
+        break;
+      }
+      case JoinMethod::so2p: {
+        TYPE_ENTITY_LITERAL_ID s_var_position,s_var_id_this_record;
+        if(edge_constant_info.s_constant_)
+          s_var_id_this_record = edge_info.s_;
+        else {
+          auto s_var_position = (*id_pos_mapping)[edge_info.s_];
+          s_var_id_this_record = (**record_iterator)[s_var_position];
+        }
+
+        TYPE_ENTITY_LITERAL_ID o_var_position,o_var_id_this_record;
+        if(edge_constant_info.o_constant_)
+          o_var_id_this_record = edge_info.o_;
+        else {
+          auto o_var_position = (*id_pos_mapping)[edge_info.o_];
+          o_var_id_this_record = (**record_iterator)[o_var_position];
+        }
+
+        kv_store_->getpreIDlistBysubIDobjID(s_var_id_this_record,
+                                            o_var_id_this_record,
+                                            edge_candidate_list,
+                                            edge_list_len,
+                                            true,
+                                            txn_);
+        break;
+      }
+      case JoinMethod::sp2o: {
+        TYPE_ENTITY_LITERAL_ID s_var_position,s_var_id_this_record;
+        if(edge_constant_info.s_constant_)
+          s_var_id_this_record = edge_info.s_;
+        else {
+          auto s_var_position = (*id_pos_mapping)[edge_info.s_];
+          s_var_id_this_record = (**record_iterator)[s_var_position];
+        }
+
+        TYPE_ENTITY_LITERAL_ID p_var_position,p_var_id_this_record;
+        if(edge_constant_info.p_constant_)
+          p_var_id_this_record = edge_info.p_;
+        else {
+          auto p_var_position = (*id_pos_mapping)[edge_info.p_];
+          p_var_id_this_record = (**record_iterator)[p_var_position];
+        }
+        kv_store_->getobjIDlistBysubIDpreID(s_var_id_this_record,
+                                            p_var_id_this_record,
+                                            edge_candidate_list,
+                                            edge_list_len,
+                                            true,
+                                            txn_);
+        break;
+      }
+      case JoinMethod::po2s: {
+        TYPE_ENTITY_LITERAL_ID o_var_position,o_var_id_this_record;
+        if(edge_constant_info.o_constant_)
+          o_var_id_this_record = edge_info.o_;
+        else {
+          auto o_var_position = (*id_pos_mapping)[edge_info.o_];
+          o_var_id_this_record = (**record_iterator)[o_var_position];
+        }
+
+        TYPE_ENTITY_LITERAL_ID p_var_position,p_var_id_this_record;
+        if(edge_constant_info.p_constant_)
+          p_var_id_this_record = edge_info.p_;
+        else {
+          auto p_var_position = (*id_pos_mapping)[edge_info.p_];
+          p_var_id_this_record = (**record_iterator)[p_var_position];
+        }
+
+        kv_store_->getsubIDlistByobjIDpreID(o_var_id_this_record,
+                                            p_var_id_this_record,
+                                            edge_candidate_list,
+                                            edge_list_len,
+                                            true,
+                                            txn_);
+        break;
+      }
+    }
+
+    UpdateIDList(record_candidate_list,
+                            edge_candidate_list,
+                            edge_list_len,
+                            record_candidate_prepared);
+    delete [] edge_candidate_list;
+    /* If candidate is not prepared, then we ues the first edge as candidate */
+    record_candidate_prepared = true;
+  }
+
+  if(id_caches->find(new_id)!=id_caches->end())
+  {
+    auto caches_ptr = (*(id_caches->find(new_id))).second;
+    record_candidate_list->intersectList(*caches_ptr);
+  }
+
+  return record_candidate_list;
+}
 
 /**
  * join two table with vars in one_step_join_table
