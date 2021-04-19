@@ -91,7 +91,7 @@ kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarray
 
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o \
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
-			$(objdir)IPBlackList.o  $(objdir)SpinLock.o $(objdir)GraphLock.o $(objdir)WebUrl.o $(objdir)INIParser.o 
+			$(objdir)IPBlackList.o  $(objdir)SpinLock.o $(objdir)GraphLock.o $(objdir)WebUrl.o $(objdir)INIParser.o
 
 
 
@@ -112,15 +112,15 @@ serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Socket.o
 
 # httpobj = $(objdir)client_http.hpp.gch $(objdir)server_http.hpp.gch
 
-databaseobj = $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o $(objdir)CSR.o $(objdir)Txn_manager.o $(objdir)Optimizer.o $(objdir)ResultTrigger.o $(objdir)TableOperator.o
+databaseobj = $(objdir)Statistics.o $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o $(objdir)CSR.o $(objdir)Txn_manager.o $(objdir)Optimizer.o $(objdir)ResultTrigger.o $(objdir)TableOperator.o
 
 trieobj = $(objdir)Trie.o $(objdir)TrieNode.o
 
 objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj) $(httpobj) $(databaseobj) \
 		  $(utilobj) $(signatureobj) $(queryobj) $(trieobj)
 	 
-inc = -I./tools/antlr4-cpp-runtime-4/runtime/src 
-inc_workflow=-I./tools/workflow-master/_include 
+inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
+inc_workflow=-I./tools/workflow-master/_include
 #-I./usr/local/include/boost/
 
 
@@ -130,7 +130,7 @@ inc_workflow=-I./tools/workflow-master/_include
 
 #gtest
 
-TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gquery $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback  
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gquery $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -177,10 +177,10 @@ $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/
 	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX $(openmp)
 
 #$(exedir)gapiserver: $(lib_antlr) $(lib_workflow) $(objdir)gapiserver.o  $(objfile)
-#	$(CC) $(EXEFLAG) -o $(exedir)gapiserver $(objdir)gapiserver.o $(objfile) $(library) $(openmp) 
+#	$(CC) $(EXEFLAG) -o $(exedir)gapiserver $(objdir)gapiserver.o $(objfile) $(library) $(openmp)
 
 #$(exedir)grpc: $(lib_antlr) $(lib_workflow) $(objdir)grpc.o  $(objfile)
-#	$(CC) $(EXEFLAG) -o $(exedir)grpc ./Main/grpc.cpp ./GRPC/grpc.pb.cc  $(library) -lsrpc $(openmp) 
+#	$(CC) $(EXEFLAG) -o $(exedir)grpc ./Main/grpc.cpp ./GRPC/grpc.pb.cc  $(library) -lsrpc $(openmp)
 
 $(exedir)gbackup: $(lib_antlr) $(objdir)gbackup.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gbackup $(objdir)gbackup.o $(objfile) $(library) $(openmp)
@@ -289,7 +289,7 @@ $(objdir)workload.o: $(testdir)workload.cpp Util/Util.h $(lib_antlr)
 
 $(objdir)debug_test.o: $(testdir)debug_test.cpp Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) $(testdir)debug_test.cpp $(inc) -o $(objdir)debug_test.o $(openmp)
-	
+
 #objects in scripts/ end
 
 
@@ -406,10 +406,13 @@ $(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h KVstore/Tree.h
 
 #objects in Database/ begin
 
+#(objdir)Statistics.o: Database/Statistics.cpp Database/Statistics.h $(objdir)Util.o $(objdir)KVstore.o
+	$(CC) $(CFLAGS) Database/Statistics.cpp $(inc) -o $(objdir)Statistics.o $(openmp)
+
 $(objdir)Database.o: Database/Database.cpp Database/Database.h \
 	$(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
 	$(objdir)BasicQuery.o $(objdir)Triple.o $(objdir)SigEntry.o \
-	$(objdir)KVstore.o $(objdir)VSTree.o \
+	$(objdir)KVstore.o $(objdir)VSTree.o $(objdir)DBparser.o $(objdir)Statistics.o \
 	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o $(objdir)GeneralEvaluation.o $(objdir)StringIndex.o $(objdir)Transaction.o
 	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o $(openmp)
 
@@ -431,7 +434,8 @@ $(objdir)ResultTrigger.o: Database/ResultTrigger.cpp Database/ResultTrigger.h $(
 	$(CC) $(CFLAGS) Database/ResultTrigger.cpp $(inc) -o $(objdir)ResultTrigger.o $(openmp)
 
 $(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)IDList.o \
-	$(objdir)KVstore.o  $(objdir)VSTree.o $(objdir)Join.o $(objdir)Transaction.o $(objdir)TableOperator.o $(objdir)ResultTrigger.o $(objdir)QueryPlan.o
+	$(objdir)KVstore.o  $(objdir)VSTree.o $(objdir)Join.o $(objdir)Transaction.o $(objdir)TableOperator.o $(objdir)ResultTrigger.o \
+	$(objdir)QueryPlan.o $(objdir)Statistics.o
 	$(CC) $(CFLAGS) Database/Optimizer.cpp $(inc) -o $(objdir)Optimizer.o $(openmp)
 
 $(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(objdir)Util.o $(objdir)Transaction.o $(objdir)Database.o
@@ -477,7 +481,7 @@ $(objdir)PathQueryHandler.o: Query/PathQueryHandler.cpp Query/PathQueryHandler.h
 #no more using $(objdir)Database.o
 $(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h Query/RegexExpression.h \
 	$(objdir)VSTree.o $(objdir)KVstore.o $(objdir)StringIndex.o $(objdir)Strategy.o $(objdir)QueryParser.o \
-	$(objdir)Triple.o $(objdir)Util.o $(objdir)EvalMultitypeValue.o $(objdir)SPARQLquery.o $(objdir)QueryTree.o $(objdir)Varset.o \
+	$(objdir)Triple.o $(objdir)Util.o $(objdir)EvalMultitypeValue.o $(objdir)SPARQLquery.o $(objdir)QueryTree.o $(objdir)Varset.o  $(objdir)Statistics.o \
 	$(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)ResultSet.o $(objdir)PathQueryHandler.o $(objdir)Optimizer.o
 	$(CC) $(CFLAGS) Query/GeneralEvaluation.cpp $(inc) -o $(objdir)GeneralEvaluation.o $(openmp)
 
@@ -512,7 +516,7 @@ $(objdir)INIParser.o:  Util/INIParser.cpp Util/INIParser.h
 #	$(CC) $(CFLAGS) Util/Slog.cpp -o $(objdir)Slog.o $(openmp)
 
 #$(objdir)grpc.srpc.o:   GRPC/grpc.srpc.h $(lib_workflow)
-#	$(CC) $(CFLAGS)  GRPC/grpc.srpc.h -o $(objdir)grpc.srpc.o $(openmp) 
+#	$(CC) $(CFLAGS)  GRPC/grpc.srpc.h -o $(objdir)grpc.srpc.o $(openmp)
 
 $(objdir)Stream.o:  Util/Stream.cpp Util/Stream.h $(objdir)Util.o $(objdir)Bstr.o
 	$(CC) $(CFLAGS) Util/Stream.cpp -o $(objdir)Stream.o $(def64IO) $(openmp)
@@ -643,9 +647,9 @@ pre:
 	# cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;sudo make install;
 	# cd ../../;
 	#cd tools;unzip -o workflow-master.zip;cd workflow-master;make;
-	#cd tools;unzip -o srpc.zip; cd srpc;make;make install; 
+	#cd tools;unzip -o srpc.zip; cd srpc;make;make install;
 	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
-	
+
 
 $(api_cpp):
 	$(MAKE) -C api/http/cpp/src

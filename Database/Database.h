@@ -26,6 +26,7 @@
 #include "../Query/GeneralEvaluation.h"
 #include "../Server/Socket.h"
 #include "CSR.h"
+#include "./Statistics.h"
 
 class Database
 {
@@ -139,14 +140,17 @@ private:
 	mutex allocPredicateID_lock;
 	//for log file
 	mutex log_lock;
-	
+
 	VSTree* vstree;
 	KVstore* kvstore;
 	StringIndex* stringindex;
 	Join* join;
 
 	enum class UPDATE_TYPE{ SUBJECT_INSERT, SUBJECT_REMOVE, PREDICATE_INSERT, PREDICATE_REMOVE, OBJECT_INSERT, OBJECT_REMOVE};
-	//metadata of this database: sub_num, pre_num, obj_num, literal_num, etc. 
+	//metadata of this database: sub_num, pre_num, obj_num, literal_num, etc.
+    Statistics *statistics;
+
+    //metadata of this database: sub_num, pre_num, obj_num, literal_num, etc.
 	string db_info_file;
 
 	//six tuples: <sub pre obj sid pid oid> 
@@ -292,7 +296,9 @@ private:
 	void build_o2xx(ID_TUPLE*);
 	void build_p2xx(ID_TUPLE*);
 
-	//insert and delete, notice that modify is not needed here
+    void load_statistics();
+
+    //insert and delete, notice that modify is not needed here
 	//we can read from file or use sparql syntax
 	bool insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL, shared_ptr<Transaction> txn  = nullptr);
 	bool removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL, shared_ptr<Transaction> txn = nullptr);
@@ -304,7 +310,7 @@ private:
 
 	unsigned batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false , shared_ptr<Transaction> txn = nullptr);
 	unsigned batch_remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false , shared_ptr<Transaction> txn = nullptr);
-	
+
 	void sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
 	static void run_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
 

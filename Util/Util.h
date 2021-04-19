@@ -280,9 +280,11 @@ static const unsigned int INVALID = UINT_MAX;
 typedef struct TYPE_ID_TUPLE
 {
 	TYPE_ENTITY_LITERAL_ID subid;
-	TYPE_ENTITY_LITERAL_ID preid;
+//	use int_type for preid
+//  TODO: need to check
+	TYPE_PREDICATE_ID preid;
 	TYPE_ENTITY_LITERAL_ID objid;
-	TYPE_ID_TUPLE(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LITERAL_ID _preid, TYPE_ENTITY_LITERAL_ID _objid): \
+	TYPE_ID_TUPLE(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_ID _preid, TYPE_ENTITY_LITERAL_ID _objid): \
 		subid(_subid), preid(_preid), objid(_objid)
 	{
 
@@ -659,7 +661,7 @@ public:
             re_allocate( m_size*2 );
         }
         m_data[m_num] = d ;
-        m_num++;        
+        m_num++;
     }
     void push_back( const _T* p, unsigned int len )
     {
@@ -812,12 +814,12 @@ public:
  */
 template <typename _T>
 struct iMap
-{   
+{
     _T* m_data;
     int m_num;
     int cur;
     iVector<int> occur;
-    _T nil; 
+    _T nil;
     iMap()
     {
         m_data = NULL;
@@ -853,7 +855,7 @@ struct iMap
         occur.clean();
         cur = 0;
     }
-    
+
     //init keys 0-n, value as 0
     void init_keys(int n){
         occur.re_allocate(n);
@@ -920,7 +922,7 @@ struct iMap
     {
         m_data[p]--;
     }
-    //close range check when release!!!!!!!!!!!!!!!!!!!!    
+    //close range check when release!!!!!!!!!!!!!!!!!!!!
 };
 // md5 class
 class MD5
@@ -1000,7 +1002,7 @@ class MD5
         {
             update((const unsigned char*)input, length);
         }
-        
+
         // MD5 finalization. Ends an MD5 message-digest operation, writing the
         // the message digest and zeroizing the context.
         MD5& finalize()
@@ -1036,7 +1038,7 @@ class MD5
 
             return *this;
         }
-        
+
         // return hex representation of digest as string
         std::string hexdigest() const
         {
@@ -1050,18 +1052,18 @@ class MD5
 
             return std::string(buf);
         }
-        
+
         std::string md5() const
         {
             return hexdigest();
         }
-        
+
         friend std::ostream& operator<<(std::ostream& out, MD5 md5)
         {
             return out << md5.hexdigest();
         }
     private:
-        
+
         typedef unsigned char uint1; //  8bit
         typedef unsigned int uint4;  // 32bit
         enum {blocksize = 64}; // VC6 won't eat a const static int here
@@ -1085,7 +1087,7 @@ class MD5
             state[2] = 0x98badcfe;
             state[3] = 0x10325476;
         }
-        
+
         static void decode(uint4 output[], const uint1 input[], size_type len)
         {
             for (unsigned int i = 0, j = 0; j < len; i++, j += 4)
@@ -1102,7 +1104,7 @@ class MD5
                 output[j+3] = (input[i] >> 24) & 0xff;
             }
         }
-        
+
         // low level logic operations
         static inline uint4 F(uint4 x, uint4 y, uint4 z)
         {

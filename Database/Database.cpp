@@ -692,17 +692,17 @@ Database::warmUp()
 bool
 Database::load(bool loadCSR)
 {
-	
+
 	if(this->if_loaded)
 	{
 		return true;
 	}
-	
+
 	//TODO: acquire this arg from memory manager
 	//BETTER: get return value from subthread(using ref or file as hub)
 	unsigned vstree_cache = LRUCache::DEFAULT_CAPACITY;
 	bool flag;
-	
+
 #ifndef THREAD_ON
 	//flag = (this->vstree)->loadTree(vstree_cache);
 	//if (!flag)
@@ -726,7 +726,7 @@ Database::load(bool loadCSR)
 	thread obj2values_thread(&Database::load_obj2values, this, kv_mode);
 	thread pre2values_thread(&Database::load_pre2values, this, kv_mode);
 #endif
-	
+
 	//this is very fast
 	flag = this->loadDBInfoFile();
 	if (!flag)
@@ -744,7 +744,7 @@ Database::load(bool loadCSR)
 	else{
 		cout<<"load kvstore successfully!"<<endl;
 	}
-		
+
 
 	//this->stringindex->SetTrie(this->kvstore->getTrie());
 	//cout<<"set Trie for stringIndex  successfully!"<<endl;
@@ -820,7 +820,9 @@ Database::load(bool loadCSR)
 		return false;
 	}*/
 
-	this->if_loaded = true;
+    this->load_statistics();
+
+    this->if_loaded = true;
 
 	cout << "finish load" << endl;
 
@@ -1708,7 +1710,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
-	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, \
+	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->statistics, this->stringindex, this->query_cache, \
 		this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, \
 		this->limitID_entity, this->csr, txn);
 	if(txn != nullptr)
@@ -1732,9 +1734,9 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	{
 		std::cerr << e.what() << '\n';
 	}
-	
-	
-	
+
+
+
 	//this->query_parse_lock.unlock();
 	if (!parse_ret)
 		return -101;
@@ -2425,7 +2427,7 @@ Database::encodeRDF_new(const string _rdf_file)
 		return false;
 	}
 
-	//TODO+BETTER:after encode, we can know the exact entity num, so we can decide if our system can run this dataset 
+	//TODO+BETTER:after encode, we can know the exact entity num, so we can decide if our system can run this dataset
 	//based on the current available memory(need a memory manager globally)
 	//If unbale to run, should exit and give a prompt
 	//User can modify the config file to run anyway, but gStore will not ensure correctness
@@ -2467,7 +2469,7 @@ Database::encodeRDF_new(const string _rdf_file)
 	//(if copy the 6 id2string trees, no need to parse each time)
 	this->readIDTuples(_p_id_tuples);
 
-	//NOTICE: we can also build the signature when we are reading triples, and 
+	//NOTICE: we can also build the signature when we are reading triples, and
 	//update to the corresponding position in the signature file
 	//However, this may be costly due to frequent read/write
 
@@ -2534,7 +2536,7 @@ Database::encodeRDF_new(const string _rdf_file,const string _error_log)
 
 	long t1 = Util::get_cur_time();
 
-	//NOTICE: in encode process, we should not divide ID of entity and literal totally apart, i.e. entity is a system 
+	//NOTICE: in encode process, we should not divide ID of entity and literal totally apart, i.e. entity is a system
 	//while literal is another system
 	//The reason is that if we divide entity and literal, then in triple_array and final_result we can not decide a given
 	//ID is entity or not
@@ -2546,7 +2548,7 @@ Database::encodeRDF_new(const string _rdf_file,const string _error_log)
 		return false;
 	}
 
-	//TODO+BETTER:after encode, we can know the exact entity num, so we can decide if our system can run this dataset 
+	//TODO+BETTER:after encode, we can know the exact entity num, so we can decide if our system can run this dataset
 	//based on the current available memory(need a memory manager globally)
 	//If unbale to run, should exit and give a prompt
 	//User can modify the config file to run anyway, but gStore will not ensure correctness
@@ -2578,7 +2580,7 @@ Database::encodeRDF_new(const string _rdf_file,const string _error_log)
 	this->kvstore->close_literal2id();
 	this->kvstore->close_id2literal();
 	this->kvstore->close_predicate2id();
-	this->kvstore->close_id2predicate();
+
 
 	long t4 = Util::get_cur_time();
 	cout << "id2string and string2id closed, used " << (t4 - t3) << "ms." << endl;
@@ -2637,7 +2639,37 @@ Database::encodeRDF_new(const string _rdf_file,const string _error_log)
 
 	//Util::logging("finish encodeRDF_new");
 
-	return true;
+    if(!this->kvstore->open_preID2values(KVstore::READ_WRITE_MODE) ||
+       !this->kvstore->open_subID2values(KVstore::READ_WRITE_MODE) ||
+       !this->kvstore->open_objID2values(KVstore::READ_WRITE_MODE) ){
+        cout << "false" << endl;
+    }
+
+    Statistics *statistics = new Statistics(this->getStorePath(), this->getlimitID_predicate());
+    long t10 = Util::get_cur_time();
+    cout << "init statistics done， used " << (t10 - t9) << "ms" << endl;
+
+    if(!statistics->build_Statistics(this->kvstore)){
+        cout << "statistics info build failed" << endl;
+        return false;
+    }
+
+    long t11 = Util::get_cur_time();
+    cout << "statistics info build succeeded, used " << (t11 - t10) << "ms." << endl;
+
+    statistics->save_Statistics();
+    long t12 = Util::get_cur_time();
+    cout << "statistics info saved, used " << (t12 - t11) << "ms." << endl;
+
+    delete statistics;
+    this->kvstore->close_preID2values();
+    this->kvstore->close_objID2values();
+    this->kvstore->close_subID2values();
+
+    this->kvstore->close_id2predicate();
+
+
+    return true;
 }
 
 void 
@@ -3178,7 +3210,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 			//not encoded with string but all IDs(not using encode for string regex matching, then this is ok!)
 			//Because we encode with ID, then Signature has to be changed(and dynamic sig length)
 			//use same encode strategy for entity/literal/predicate, and adjust the rate of the 3 parts according to real case
-			//What is more, if the system memory is enough(precisely, the memory you want to assign to gstore - to vstree/entity_sig_array), 
+			//What is more, if the system memory is enough(precisely, the memory you want to assign to gstore - to vstree/entity_sig_array),
 			//we can also set the sig length larger(which should be included in config file)
 
 			//_entity_bitset is used up, double the space
@@ -3239,7 +3271,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 			//delete _entity_bitset[i];
 		//}
 		//delete[] _entity_bitset;
-	
+
 	//{
 		//stringstream _ss;
 		//_ss << "finish sub2id pre2id obj2id" << endl;
@@ -3400,7 +3432,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 		for (int i = 0; i < parse_triple_num; i++)
 		{
 			//BETTER: assume that no duplicate triples in RDF for building
-			//should judge first? using exist_triple() 
+			//should judge first? using exist_triple()
 			//or sub triples_num in build_subID2values(judge if two neighbor triples are same)
 			this->triples_num++;	// NOTE: triples_num set here
 
@@ -3424,7 +3456,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 			string _sub = triple_array[i].getSubject();
 			TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_sub);
 			if (_sub_id == INVALID_ENTITY_LITERAL_ID)
-				//if (_sub_id == -1)
+			//if (_sub_id == -1)
 			{
 				//_sub_id = this->entity_num;
 				_sub_id = this->allocEntityID();
@@ -3437,7 +3469,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 			string _pre = triple_array[i].getPredicate();
 			TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_pre);
 			if (_pre_id == INVALID_PREDICATE_ID)
-				// if (_pre_id == -1)
+			// if (_pre_id == -1)
 			{
 				//_pre_id = this->pre_num;
 				_pre_id = this->allocPredicateID();
@@ -3455,7 +3487,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 			{
 				_obj_id = (this->kvstore)->getIDByEntity(_obj);
 				if (_obj_id == INVALID_ENTITY_LITERAL_ID)
-					//if (_obj_id == -1)
+				//if (_obj_id == -1)
 				{
 					//_obj_id = this->entity_num;
 					_obj_id = this->allocEntityID();
@@ -3469,7 +3501,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 			{
 				_obj_id = (this->kvstore)->getIDByLiteral(_obj);
 				if (_obj_id == INVALID_ENTITY_LITERAL_ID)
-					//if (_obj_id == -1)
+				//if (_obj_id == -1)
 				{
 					//_obj_id = Util::LITERAL_FIRST_ID + (this->literal_num);
 					_obj_id = this->allocLiteralID();
@@ -3599,7 +3631,6 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 
 	return true;
 }
-
 
 bool
 Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices, vector<unsigned>* _predicates, shared_ptr<Transaction> txn)
@@ -3746,9 +3777,9 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 
 	//update sp2o op2s s2po o2ps s2o o2s etc.
 	bool ret = (this->kvstore)->updateTupleslist_insert(_sub_id, _pre_id, _obj_id, txn);
-	if(txn != nullptr) 
+	if(txn != nullptr)
 	{
-		
+
 		if(ret){
 			//cout << "WriteSetInsert......." << endl;
 			txn->WriteSetInsert(IDTriple(_sub_id, _pre_id, _obj_id));
@@ -3834,7 +3865,7 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	//remove from sp2o op2s s2po o2ps s2o o2s
 	//sub2id, pre2id and obj2id will not be updated
 	bool ret = (this->kvstore)->updateTupleslist_remove(_sub_id, _pre_id, _obj_id, txn);
-	if(txn != nullptr) 
+	if(txn != nullptr)
 	{
 		if(ret)
 			txn->WriteSetInsert(IDTriple(_sub_id, _pre_id, _obj_id));
@@ -5178,7 +5209,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 }
 
 //WARNING: TRANSACTIONAL batch insert is not completed yet!
-unsigned 
+unsigned
 Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
 {
 	if(_triple_num == 0) return 0;
@@ -5187,7 +5218,7 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 	unsigned update_num_s = 0;
 	unsigned update_num_p = 0;
 	unsigned update_num_o = 0;
-	
+
 	if (!_is_restore) {
 		write_update_log(_triples, _triple_num, 1, txn);
 	}
@@ -5241,7 +5272,7 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 
 		id_tuples[i].subid = _sub_id;
 		id_tuples[i].preid = _pre_id;
-		id_tuples[i].objid = _obj_id; 
+		id_tuples[i].objid = _obj_id;
 	}
 
 
@@ -5280,7 +5311,7 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 	//ps inserts
 	//sub_batch_update(id_tuples, valid_num, update_num_o, UPDATE_TYPE::OBJECT_INSERT, txn);
 	thread obj_t = thread(&Database::sub_batch_update, this, id_tuples, valid_num, ref(update_num_o), UPDATE_TYPE::OBJECT_INSERT, txn);
-	
+
 
 	sub_t.join();
 	pre_t.join();
@@ -5299,7 +5330,7 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 }
 
 //WARNING: TRANSACTIONAL batch remove is not completed yet!
-unsigned 
+unsigned
 Database::batch_remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
 {
 	if(_triple_num == 0) return 0;
@@ -5440,7 +5471,7 @@ Database::batch_remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 	return update_num_s;
 }
 
-void 
+void
 Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn)
 {
 	vector<unsigned> data;
@@ -5556,7 +5587,7 @@ Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_n
 	}
 }
 
-bool 
+bool
 Database::backup() 
 {
 	if (!Util::dir_exist(Util::backup_path)) 
@@ -5765,7 +5796,7 @@ Database::clear_update_log()
 	out.close();
 }
 
-bool 
+bool
 Database::write_update_log(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, int type, shared_ptr<Transaction> txn)
 {
 	log_lock.lock();
@@ -5780,7 +5811,7 @@ Database::write_update_log(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _t
 		log_lock.unlock();
 		return false;
 	}
-	
+
 	for (int i = 0; i < _triple_num; i++) {
 		// if (type == 1 && exist_triple(_triples[i], txn)) {
 		//	continue;
@@ -6227,10 +6258,10 @@ Database::VersionClean(vector<unsigned> &sub_ids ,vector<unsigned>& obj_ids, vec
 			string obj_str = this->kvstore->getLiteralByID(_obj_id);
 			cerr << "obj_str" <<  obj_str << "     _obj_id" << _obj_id << endl;
 			if(obj_str == "") continue;
-			
+
 			this->kvstore->subLiteralByID(_obj_id);
 			this->kvstore->subIDByLiteral(obj_str);
-			//cout<<"check after subLiteralByID: "<<_obj_id<<" "<<this->kvstore->getLiteralByID(_obj_id)<<endl;		
+			//cout<<"check after subLiteralByID: "<<_obj_id<<" "<<this->kvstore->getLiteralByID(_obj_id)<<endl;
 			this->freeLiteralID(_obj_id);
 			//update the string buffer
 			//TYPE_ENTITY_LITERAL_ID tid = _obj_id - Util::LITERAL_FIRST_ID;
@@ -6307,4 +6338,9 @@ Database::CreateJson(int StatusCode, std::string StatusMsg, std::string Response
 	writer.EndObject();
 	std::string res = s.GetString();
 	return res;
+}
+
+void Database::load_statistics() {
+    this->statistics = new Statistics(this->getStorePath(), this->getlimitID_predicate());
+    this->statistics->load_Statistics();
 }

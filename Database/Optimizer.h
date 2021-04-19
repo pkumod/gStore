@@ -18,6 +18,7 @@
 #include "../Query/QueryPlan.h"
 #include "../Query/QueryTree.h"
 #include "Join.h"
+#include "./Statistics.h"
 #include <unordered_map>
 
 
@@ -45,7 +46,7 @@ struct QueryInfo{
  *
 1. Optimizer类在generalevaluation里面初始化，并且在generalevaluation调用do_query()
 ----------
- 2. do_query()首先判断handler0或者handler1-5
+2. do_query()首先判断handler0或者handler1-5
 3. 在handler0里面首先调用enum_query_plan()，按照BFS或者DFS生成所有执行计划
 4. 生成完执行计划后调用choose_exec_plan()选择一个计划执行
 5. 在choose_exec_plan()中每一个执行计划需要层次调用cost_model()->cardinality_estimator()->update_cardinality_cache()
@@ -60,7 +61,7 @@ class Optimizer
 {
  public:
 
-  Optimizer(KVstore* kv_store, VSTree* vs_tree, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
+  Optimizer(KVstore* kv_store, VSTree* vs_tree, Statistics* statistics, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
              TYPE_TRIPLE_NUM* pre2obj, TYPE_PREDICATE_ID limitID_predicate, TYPE_ENTITY_LITERAL_ID limitID_literal,
              TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn
              // ,SPARQLquery& sparql_query,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list,TYPE_ENTITY_LITERAL_ID limit_num
@@ -80,7 +81,11 @@ class Optimizer
   bool CacheConstantCandidates(const shared_ptr<OneStepJoinNode>& one_step, const IDCachesSharePtr& id_caches);
   bool AddConstantCandidates(EdgeInfo edge_info,EdgeConstantInfo edge_table_info,TYPE_ENTITY_LITERAL_ID targetID, const IDCachesSharePtr& id_caches);
 
-  /*以下代码暂且不写
+
+
+  unsigned cardinality_estimator(shared_ptr<BasicQuery>, KVstore* kvstore, vector<map<shared_ptr<BasicQuery>, unsigned* > > _cardinality_cache, int var_num_last);
+
+    /*以下代码暂且不写
   bool update_cardinality_cache(shared_ptr<BasicQuery>,vector<map<shared_ptr<BasicQuery>,unsigned*> >);
   bool enum_query_plan(shared_ptr<BasicQuery>, KVstore* kvstore, bool _is_topk_query);// Join::multi_join() BFS
   bool choose_exec_plan(vector<map<shared_ptr<BasicQuery>, QueryPlan*> > _candidate_plans,
@@ -122,6 +127,7 @@ class Optimizer
 
  private:
   KVstore* kv_store_;
+  Statistics* statistics;
 
   shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list_; // empty if not using 'orderby'
   TYPE_ENTITY_LITERAL_ID limit_num_; // -1 if not limit result size
