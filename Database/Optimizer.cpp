@@ -8,6 +8,7 @@
 
 Optimizer::Optimizer(KVstore *kv_store,
                      VSTree *vs_tree,
+                     Statistics *statistics,
                      TYPE_TRIPLE_NUM *pre2num,
                      TYPE_TRIPLE_NUM *pre2sub,
                      TYPE_TRIPLE_NUM *pre2obj,
@@ -16,7 +17,7 @@ Optimizer::Optimizer(KVstore *kv_store,
                      TYPE_ENTITY_LITERAL_ID limitID_entity,
                      shared_ptr<Transaction> txn
 ):
-    kv_store_(kv_store),pre2num_(pre2num),
+    kv_store_(kv_store), statistics(statistics), pre2num_(pre2num),
     pre2sub_(pre2obj),pre2obj_(pre2obj),limitID_predicate_(limitID_predicate),
     limitID_literal_(limitID_literal),limitID_entity_(limitID_entity),
     txn_(std::move(txn))
@@ -402,7 +403,7 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneSt
   auto join_nodes = one_step_join_table->public_variables_;
   /* build index in a
    * cost(a) = a log a + b log a
-   * build index i b
+   * build index in b
    * cost(b) = b log b + a log b
    *
    * if a < b
@@ -1367,4 +1368,45 @@ Optimizer::Cartesian(int pos, int end,int record_len,unsigned* record,
     record[vpos] = list[i];
     Cartesian(pos + 1, end,record_len,record,satellites,result_list,basic_query);
   }
+}
+
+
+
+
+//  Linglin Yang add:
+
+
+//  TODO: 要不要加上 literal 的判断 ?
+//  query_need_estimator 的最后一个 triple 是要拓展的三元组
+//  假设当前 _cardinality_cache 中存储了 2 - var_num_last 个节点子查询的基数估计
+//  输入的 query_need_estimator 为 var_num_last+1 个节点的子查询信息
+//  需要注意的是: 传进来的所有节点, 都假设在 cardinality_estimator 上层判断了是否有 type_pre, 且在当前步有与其他点有 join 操作
+//  也就是说, 没有 type 谓词的节点(包括 literal)不会被传入这个函数, 所以 Statistics 中的信息可以帮助完成基数估计
+//  _cardinality_cache 中 unsighed* 存储:
+//  当前空间大小(分配 unsighed 数组的大小), 存储了多少大小(实际占用多大空间), 当前存储了多少条抽样,
+//  抽样 1, 抽样 2, 抽样 3,...
+//  注意: 每条抽样 抽样 i 实际大小根据 BasicQuery 中传入的变量数确定, 并根据分配的 id 排序
+//  例如: BasicQuery 中传入要 join 的变量分别是 ?student, ?friend, ?teacher. id 分别为 0, 2, 1
+//  则抽样 i 实际上是: ?student对应抽样的id, ?teacher对应抽样的id, ?friend 对应抽样的id
+unsigned Optimizer::cardinality_estimator(shared_ptr<BasicQuery> query_need_estimator, KVstore *kvstore,
+                                          vector<map<shared_ptr<BasicQuery>, unsigned*>> _cardinality_cache, int var_num_last) {
+//    取出最后一个 triple, 这是这一步需要拓展的一条边, 将要对它做估计
+Triple need_to_join_triple = query_need_estimator->getTriple(query_need_estimator->getTripleNum() - 1);
+//    直接读 one_edge_type_num, 并将抽样推入 cache
+if(var_num_last == 0){
+
+}else if(var_num_last == 1){
+//    直接读 two_edges_type_num, 并将抽样推入 cache
+
+
+} else{
+//        直接从 cache 中抽样并拓展
+}
+
+
+
+
+
+return 0;
+
 }
