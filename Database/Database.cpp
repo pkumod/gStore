@@ -2400,21 +2400,22 @@ Database::encodeRDF_new(const string _rdf_file)
         cout << "false" << endl;
     }
 
-    Statistics *statistics = new Statistics(this->getStorePath(), this->getlimitID_predicate());
     long t10 = Util::get_cur_time();
-    cout << "init statistics done， used " << (t10 - t9) << "ms" << endl;
+    Statistics *statistics = new Statistics(this->getStorePath(), this->getlimitID_predicate());
+    long t11 = Util::get_cur_time();
+    cout << "init statistics done， used " << (t11 - t10) << "ms" << endl;
 
     if(!statistics->build_Statistics(this->kvstore)){
         cout << "statistics info build failed" << endl;
         return false;
     }
 
-    long t11 = Util::get_cur_time();
-    cout << "statistics info build succeeded, used " << (t11 - t10) << "ms." << endl;
+    long t12 = Util::get_cur_time();
+    cout << "statistics info build succeeded, used " << (t12 - t11) << "ms." << endl;
 
     statistics->save_Statistics();
-    long t12 = Util::get_cur_time();
-    cout << "statistics info saved, used " << (t12 - t11) << "ms." << endl;
+    long t13 = Util::get_cur_time();
+    cout << "statistics info saved, used " << (t13 - t12) << "ms." << endl;
 
     delete statistics;
     this->kvstore->close_preID2values();

@@ -32,10 +32,7 @@ struct S_to_O_id{
     TYPE_ENTITY_LITERAL_ID o_type_id;
 
     S_to_O_id(){}
-    S_to_O_id(TYPE_ENTITY_LITERAL_ID type1, TYPE_ENTITY_LITERAL_ID type2){
-        this->s_type_id = type1;
-        this->o_type_id = type2;
-    }
+    S_to_O_id(TYPE_ENTITY_LITERAL_ID type1, TYPE_ENTITY_LITERAL_ID type2):s_type_id(type1), o_type_id(type2){}
 
     bool operator==(const S_to_O_id &p) const {
         return (s_type_id == p.s_type_id) && (o_type_id == p.o_type_id);
@@ -54,10 +51,7 @@ struct TWO_PRE_ID{
     TYPE_PREDICATE_ID p1_id;
     TYPE_PREDICATE_ID p2_id;
 
-    TWO_PRE_ID(TYPE_PREDICATE_ID p1, TYPE_PREDICATE_ID p2){
-        this->p1_id = p1;
-        this->p2_id = p2;
-    }
+    TWO_PRE_ID(TYPE_PREDICATE_ID p1, TYPE_PREDICATE_ID p2):p1_id(p1), p2_id(p2){}
 
     bool operator==(const TWO_PRE_ID &p) const {
         return (p1_id == p.p1_id) && (p2_id == p.p2_id);
@@ -78,11 +72,8 @@ struct  TWO_EDGES_ENTITY_TYPE_ID{
     TYPE_ENTITY_LITERAL_ID s3_type_id;
 
     TWO_EDGES_ENTITY_TYPE_ID(){}
-    TWO_EDGES_ENTITY_TYPE_ID(TYPE_ENTITY_LITERAL_ID s1, TYPE_ENTITY_LITERAL_ID s2, TYPE_ENTITY_LITERAL_ID s3){
-        this->s1_type_id = s1;
-        this->s2_type_id = s2;
-        this->s3_type_id = s3;
-    }
+    TWO_EDGES_ENTITY_TYPE_ID(TYPE_ENTITY_LITERAL_ID s1, TYPE_ENTITY_LITERAL_ID s2, TYPE_ENTITY_LITERAL_ID s3):
+                                s1_type_id(s1),s2_type_id(s2),s3_type_id(s3){}
 
     bool operator==(const TWO_EDGES_ENTITY_TYPE_ID &p) const {
         return (s1_type_id == p.s1_type_id) && (s2_type_id == p.s2_type_id) && (s3_type_id == p.s3_type_id);
@@ -118,6 +109,8 @@ private:
 //    unordered_map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID> entityid_to_typeid_map;
     unordered_multimap<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID> entityid_to_typeid_map;
 
+
+    unordered_map<TYPE_ENTITY_LITERAL_ID , unsigned int> type_to_num_map;
 
 //    单边的统计信息和抽样
 //    实验中 59 种 stype_preid_otype 只有 2 种实际数目小于 1000
