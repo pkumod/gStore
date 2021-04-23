@@ -664,39 +664,11 @@ OneStepJoin QueryPlan::LinkWithPreviousNodes(BasicQuery *basic_query,
   for (auto selected_var:*table_ids) {
     if(selected_var == added_id) continue;
     auto i_th_edge_orders = basic_query->getEdgeIndex(added_id, selected_var);
-    for (auto i_th_edge:i_th_edge_orders) {
-      auto edge_id = basic_query->getEdgeID(added_id, i_th_edge);
-      auto nei_id = basic_query->getEdgeNeighborID(added_id, i_th_edge);
-      auto predicate_id = basic_query->getEdgePreID(added_id, i_th_edge);
-      auto triple_string_type = basic_query->getTriple(edge_id);
-
-      JoinMethod join_method;
-      auto j_name = basic_query->getVarName(added_id);
-
-      bool s_constant = triple_string_type.getSubject().at(0) != '?';
-      bool p_constant = triple_string_type.getPredicate().at(0) != '?';
-      bool o_constant = triple_string_type.getObject().at(0) != '?';
-      // added_id is subject
-      if (j_name == triple_string_type.getSubject()) {
-        if (p_constant) {
-          join_method = JoinMethod::po2s;
-          predicate_id = kv_store->getIDByPredicate(triple_string_type.getPredicate());
-        }
-        else
-          join_method = JoinMethod::o2s;
-        join_edge_info->emplace_back(added_id, predicate_id, nei_id, join_method);
-      } else { // added_id is object
-        if (p_constant) {
-          join_method = JoinMethod::sp2o;
-          predicate_id = kv_store->getIDByPredicate(triple_string_type.getPredicate());
-        }
-        else
-          join_method = JoinMethod::s2o;
-        join_edge_info->emplace_back(nei_id, predicate_id, added_id, join_method);
-      }
-
-      join_edge_constant_info->emplace_back(s_constant, p_constant, o_constant);
-    }
+    auto result = LinkTwoNode(basic_query, kv_store, added_id, selected_var);
+    auto r_edge_info = get<0>(result);
+    auto r_edge_constant_info = get<1>(result);
+    join_edge_info->insert(join_edge_info->end(),r_edge_info->begin(),r_edge_info->end());
+    join_edge_constant_info->insert(join_edge_constant_info->end(),r_edge_constant_info->begin(),r_edge_constant_info->end());
   }
 
   OneStepJoin one_step_join;
@@ -708,6 +680,70 @@ OneStepJoin QueryPlan::LinkWithPreviousNodes(BasicQuery *basic_query,
   one_step_join_node->ChangeOrder(table_ids);
   one_step_join.join_node_ = one_step_join_node;
   return one_step_join;
+}
+
+/**
+ *
+ * @param basic_query BasicQuery Instance Pointer
+ * @param kv_store
+ * @param added_id
+ * @param id_already_in_table
+ * @return Edge Info list & its corresponding constant info
+ */
+tuple<shared_ptr<vector<EdgeInfo>>,shared_ptr<vector<EdgeConstantInfo>>>
+    QueryPlan::LinkTwoNode(BasicQuery *basic_query,
+                            const KVstore *kv_store,
+                            TYPE_ENTITY_LITERAL_ID added_id,
+                            TYPE_ENTITY_LITERAL_ID id_already_in_table) {
+  TYPE_ENTITY_LITERAL_ID selected_var = id_already_in_table;
+  auto join_edge_info = make_shared<vector<EdgeInfo>>();
+  auto join_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+  auto i_th_edge_orders = basic_query->getEdgeIndex(added_id, selected_var);
+  for (auto i_th_edge:i_th_edge_orders) {
+    auto i_th_edge_result = WrapEdgeInfo_i_th_Edge(basic_query, kv_store, added_id, i_th_edge);
+    join_edge_info->push_back(get<0>(i_th_edge_result));
+    join_edge_constant_info->push_back(get<1>(i_th_edge_result));
+  }
+  return make_tuple(join_edge_info,join_edge_constant_info);
+}
+
+
+tuple<EdgeInfo,EdgeConstantInfo>
+QueryPlan::WrapEdgeInfo_i_th_Edge(BasicQuery *basic_query,
+                             const KVstore *kv_store,
+                             TYPE_ENTITY_LITERAL_ID added_id,
+                             int i_th_edge) {
+  auto edge_id = basic_query->getEdgeID(added_id, i_th_edge);
+  auto nei_id = basic_query->getEdgeNeighborID(added_id, i_th_edge);
+  auto predicate_id = basic_query->getEdgePreID(added_id, i_th_edge);
+  auto triple_string_type = basic_query->getTriple(edge_id);
+  EdgeInfo edge_info;
+  EdgeConstantInfo edge_constant_info;
+  JoinMethod join_method;
+  auto j_name = basic_query->getVarName(added_id);
+
+  bool s_constant = triple_string_type.getSubject().at(0) != '?';
+  bool p_constant = triple_string_type.getPredicate().at(0) != '?';
+  bool o_constant = triple_string_type.getObject().at(0) != '?';
+  // added_id is subject
+  if (j_name == triple_string_type.getSubject()) {
+    if (p_constant) {
+      join_method = JoinMethod::po2s;
+      predicate_id = kv_store->getIDByPredicate(triple_string_type.getPredicate());
+    } else
+      join_method = JoinMethod::o2s;
+    edge_info = EdgeInfo(added_id, predicate_id, nei_id, join_method);
+  } else { // added_id is object
+    if (p_constant) {
+      join_method = JoinMethod::sp2o;
+      predicate_id = kv_store->getIDByPredicate(triple_string_type.getPredicate());
+    } else
+      join_method = JoinMethod::s2o;
+    edge_info = EdgeInfo(nei_id, predicate_id, added_id, join_method);
+  }
+
+  edge_constant_info = EdgeConstantInfo(s_constant, p_constant, o_constant);
+  return make_tuple(edge_info,edge_constant_info);
 }
 
 std::string QueryPlan::toString(KVstore* kv_store) {

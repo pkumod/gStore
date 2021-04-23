@@ -796,7 +796,9 @@ Database::load(bool loadCSR)
 		return false;
 	}*/
 
-	this->if_loaded = true;
+    this->load_statistics();
+
+    this->if_loaded = true;
 
 	cout << "finish load" << endl;
 
@@ -1662,7 +1664,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
-	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, \
+	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->statistics, this->stringindex, this->query_cache, \
 		this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, \
 		this->limitID_entity, this->csr, txn);
 	//if(txn != nullptr)
@@ -2333,7 +2335,7 @@ Database::encodeRDF_new(const string _rdf_file)
 	this->kvstore->close_literal2id();
 	this->kvstore->close_id2literal();
 	this->kvstore->close_predicate2id();
-	this->kvstore->close_id2predicate();
+
 
 	long t4 = Util::get_cur_time();
 	cout << "id2string and string2id closed, used " << (t4 - t3) << "ms." << endl;
@@ -2392,7 +2394,38 @@ Database::encodeRDF_new(const string _rdf_file)
 
 	//Util::logging("finish encodeRDF_new");
 
-	return true;
+    if(!this->kvstore->open_preID2values(KVstore::READ_WRITE_MODE) ||
+       !this->kvstore->open_subID2values(KVstore::READ_WRITE_MODE) ||
+       !this->kvstore->open_objID2values(KVstore::READ_WRITE_MODE) ){
+        cout << "false" << endl;
+    }
+
+    long t10 = Util::get_cur_time();
+    Statistics *statistics = new Statistics(this->getStorePath(), this->getlimitID_predicate());
+    long t11 = Util::get_cur_time();
+    cout << "init statistics done， used " << (t11 - t10) << "ms" << endl;
+
+    if(!statistics->build_Statistics(this->kvstore)){
+        cout << "statistics info build failed" << endl;
+        return false;
+    }
+
+    long t12 = Util::get_cur_time();
+    cout << "statistics info build succeeded, used " << (t12 - t11) << "ms." << endl;
+
+    statistics->save_Statistics();
+    long t13 = Util::get_cur_time();
+    cout << "statistics info saved, used " << (t13 - t12) << "ms." << endl;
+
+    delete statistics;
+    this->kvstore->close_preID2values();
+    this->kvstore->close_objID2values();
+    this->kvstore->close_subID2values();
+
+    this->kvstore->close_id2predicate();
+
+
+    return true;
 }
 
 void 
@@ -5153,4 +5186,9 @@ Database::transaction_commit(shared_ptr<Transaction> txn)
 	// 	cerr << "WARNING: not all lockes get unlocked! " << endl;
 	// 	cerr << "Please REBOOT service!" << endl;
 	// }
+}
+
+void Database::load_statistics() {
+    this->statistics = new Statistics(this->getStorePath(), this->getlimitID_predicate());
+    this->statistics->load_Statistics();
 }

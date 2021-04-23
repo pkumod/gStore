@@ -18,6 +18,7 @@
 #include "../Query/QueryPlan.h"
 #include "../Query/QueryTree.h"
 #include "Join.h"
+#include "./Statistics.h"
 #include <unordered_map>
 
 
@@ -60,7 +61,7 @@ class Optimizer
 {
  public:
 
-  Optimizer(KVstore* kv_store, VSTree* vs_tree, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
+  Optimizer(KVstore* kv_store, VSTree* vs_tree, Statistics *statistics, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
              TYPE_TRIPLE_NUM* pre2obj, TYPE_PREDICATE_ID limitID_predicate, TYPE_ENTITY_LITERAL_ID limitID_literal,
              TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn
              // ,SPARQLquery& sparql_query,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list,TYPE_ENTITY_LITERAL_ID limit_num
@@ -79,6 +80,28 @@ class Optimizer
   shared_ptr<IntermediateResult> NormalJoin(shared_ptr<BasicQuery>,shared_ptr<QueryPlan>);
   bool CacheConstantCandidates(const shared_ptr<OneStepJoinNode>& one_step, const IDCachesSharePtr& id_caches);
   bool AddConstantCandidates(EdgeInfo edge_info,EdgeConstantInfo edge_table_info,TYPE_ENTITY_LITERAL_ID targetID, const IDCachesSharePtr& id_caches);
+
+
+
+  unsigned cardinality_estimator(shared_ptr<BasicQuery>, KVstore* kvstore, vector<map<shared_ptr<BasicQuery>, unsigned* > > _cardinality_cache, int var_num_last);
+
+  std::shared_ptr<IDList> ExtendRecord(const shared_ptr<OneStepJoinNode> &one_step_join_node_,
+                    const PositionValueSharedPtr &id_pos_mapping,
+                    const IDCachesSharePtr &id_caches,
+                    TYPE_ENTITY_LITERAL_ID new_id,
+                    list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const;
+
+  shared_ptr<IDList> CandidatesWithConstantEdge(const shared_ptr<vector<EdgeInfo>> &edge_info_vector) const;
+
+
+    /*以下代码暂且不写
+  std::shared_ptr<IDList> ExtendRecord(const shared_ptr<OneStepJoinNode> &one_step_join_node_,
+                    const PositionValueSharedPtr &id_pos_mapping,
+                    const IDCachesSharePtr &id_caches,
+                    TYPE_ENTITY_LITERAL_ID new_id,
+                    list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const;
+
+  shared_ptr<IDList> CandidatesWithConstantEdge(const shared_ptr<vector<EdgeInfo>> &edge_info_vector) const;
 
   /*以下代码暂且不写
   bool update_cardinality_cache(shared_ptr<BasicQuery>,vector<map<shared_ptr<BasicQuery>,unsigned*> >);
@@ -122,6 +145,7 @@ class Optimizer
 
  private:
   KVstore* kv_store_;
+  Statistics* statistics;
 
   shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list_; // empty if not using 'orderby'
   TYPE_ENTITY_LITERAL_ID limit_num_; // -1 if not limit result size

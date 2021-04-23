@@ -27,6 +27,7 @@
 #include "../Query/QueryCache.h"
 #include "../Query/GeneralEvaluation.h"
 #include "CSR.h"
+#include "./Statistics.h"
 
 class Database
 {
@@ -139,7 +140,9 @@ private:
 	StringIndex* stringindex;
 	Join* join;
 
-	//metadata of this database: sub_num, pre_num, obj_num, literal_num, etc. 
+    Statistics *statistics;
+
+    //metadata of this database: sub_num, pre_num, obj_num, literal_num, etc.
 	string db_info_file;
 
 	//six tuples: <sub pre obj sid pid oid> 
@@ -283,7 +286,9 @@ private:
 	void build_o2xx(ID_TUPLE*);
 	void build_p2xx(ID_TUPLE*);
 
-	//insert and delete, notice that modify is not needed here
+    void load_statistics();
+
+    //insert and delete, notice that modify is not needed here
 	//we can read from file or use sparql syntax
 	bool insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL, shared_ptr<Transaction> txn  = nullptr);
 	bool removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL, shared_ptr<Transaction> txn = nullptr);

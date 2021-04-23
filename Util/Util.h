@@ -276,7 +276,9 @@ static const unsigned INVALID = UINT_MAX;
 typedef struct TYPE_ID_TUPLE
 {
 	TYPE_ENTITY_LITERAL_ID subid;
-	TYPE_ENTITY_LITERAL_ID preid;
+//	use int_type for preid
+//  TODO: need to check
+	TYPE_PREDICATE_ID preid;
 	TYPE_ENTITY_LITERAL_ID objid;
 }ID_TUPLE;
 
