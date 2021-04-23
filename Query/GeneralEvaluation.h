@@ -39,6 +39,7 @@ class GeneralEvaluation
 		QueryCache *query_cache;
 		PathQueryHandler *pqHandler;
 		CSR *csr;
+		int well_designed;
 
 		TYPE_TRIPLE_NUM *pre2num;
 		TYPE_TRIPLE_NUM *pre2sub;
@@ -81,6 +82,7 @@ class GeneralEvaluation
 
 		bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &group_pattern, std::deque<QueryTree::GroupPattern> &queue);
 		TempResultSet* rewritingBasedQueryEvaluation(int dep);
+		TempResultSet* queryEvaluation(int dep);
 
 		void getFinalResult(ResultSet &ret_result);
 		void releaseResult();
@@ -96,6 +98,8 @@ class GeneralEvaluation
 		void getUsefulVarset(Varset& useful, int dep);
 		bool checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *sub_result, Varset& useful);
 		void fillCandList(SPARQLquery& sparql_query, int dep, vector<vector<string> >& encode_varset);
+		void joinBasicQueryResult(SPARQLquery& sparql_query, TempResultSet *new_result, TempResultSet *sub_result, vector<vector<string> >& encode_varset, \
+			vector<vector<QueryTree::GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H
