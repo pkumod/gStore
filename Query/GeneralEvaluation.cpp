@@ -319,9 +319,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		well_designed = (int)query_tree.checkWellDesigned();
 
 	if (well_designed == 0)	// Not well-designed, semantic-based evaluation
+	{
+		printf("=================================\n");
+		printf("||not well-designed at dep = %d||\n", dep);
+		printf("=================================\n");
 		group_pattern = rewriting_evaluation_stack[dep].group_pattern;
+	}
 	else if (well_designed == 1)	// Well-designed, rewriting-based evaluation
 	{
+		printf("=============================\n");
+		printf("||well-designed at dep = %d||\n", dep);
+		printf("=============================\n");
+
 		/// Construct group_pattern_union, which will consist of all expansion results ///
 		/// (group-patterns without UNIONs, whose results will have to be UNION'ed to get ///
 		/// the original result) ///
@@ -632,7 +641,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					long tv_fillcand = Util::get_cur_time();
 					printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
 
-
+					/* PLEASE REPLACE WITH OPTIMIZER */
 					this->strategy.handle(sparql_query);
 					long tv_handle = Util::get_cur_time();
 					printf("after Handle, used %ld ms.\n", tv_handle - tv_fillcand);
@@ -757,7 +766,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 									this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].optional;
 								// this->rewriting_evaluation_stack[dep + 1].group_pattern.print(0);
 
-								TempResultSet *temp = rewritingBasedQueryEvaluation(dep + 1);
+								// TempResultSet *temp = rewritingBasedQueryEvaluation(dep + 1);
+								TempResultSet *temp = queryEvaluation(dep + 1);
 
 								TempResultSet *new_result = new TempResultSet();
 								sub_result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
