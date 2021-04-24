@@ -20,6 +20,8 @@
 #include "Join.h"
 #include "./Statistics.h"
 #include <unordered_map>
+#include <map>
+#include <cstring>
 
 
 using namespace std;
@@ -83,7 +85,21 @@ class Optimizer
 
 
 
-  unsigned cardinality_estimator(shared_ptr<BasicQuery>, KVstore* kvstore, vector<map<shared_ptr<BasicQuery>, unsigned* > > _cardinality_cache, int var_num_last);
+  unsigned check_already_have(int s_o_id, int last_query_var_num, unsigned *last_query_sample_cache);
+  unsigned getlast_card_estimation(shared_ptr<BasicQuery> query_need_estimator, shared_ptr<BasicQuery> last_query,
+                                     vector<map<shared_ptr<BasicQuery>, unsigned >> _cardinality_cache,
+                                     int triple_num_last);
+  unsigned cardinality_estimator(shared_ptr<BasicQuery> query_need_estimator, shared_ptr<BasicQuery> last_query,
+                                              KVstore *kvstore,
+//  when deal with the biggest basic_query,
+//  read all var and there type,
+//  build var_type_map and var_num_cache(var_num need to read statistics->type_to_num_map)
+                                              map<string, TYPE_ENTITY_LITERAL_ID> var_type_map,
+//                                          map<int, unsigned > var_num_cache,
+                                              vector<map<shared_ptr<BasicQuery>, unsigned>> &_cardinality_cache,
+                                              vector<map<shared_ptr<BasicQuery>, unsigned *>> &sample_cache,
+                                              int triple_num_last,
+                                              int last_query_var_num, int this_query_var_num);
 
   std::shared_ptr<IDList> ExtendRecord(const shared_ptr<OneStepJoinNode> &one_step_join_node_,
                     const PositionValueSharedPtr &id_pos_mapping,

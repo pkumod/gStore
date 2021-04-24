@@ -1003,6 +1003,14 @@ int Statistics::get_type_one_edge_typeid_num_by_id(TYPE_ENTITY_LITERAL_ID s_type
 //        如果找不到, 则这样的 (s_type_id, pre_id, o_type_id) 数目为 0
     return 0;
 }
+int Statistics::get_type_one_edge_typeid_num_by_id(TYPE_PREDICATE_ID p_type, S_to_O_id s_o_type_id) {
+    if(one_edge_typeid_to_num.find(p_type) != one_edge_typeid_to_num.end()){
+        if(one_edge_typeid_to_num[p_type].find(s_o_type_id) != one_edge_typeid_to_num[p_type].end()){
+            return one_edge_typeid_to_num[p_type][s_o_type_id];
+        }
+    }
+    return 0;
+}
 
 int Statistics::get_type_two_edges_type1id_num_by_id(TYPE_ENTITY_LITERAL_ID s1_type, TYPE_PREDICATE_ID p1_type,
                                                      TYPE_ENTITY_LITERAL_ID s2_type, TYPE_PREDICATE_ID p2_type,
@@ -1012,6 +1020,14 @@ int Statistics::get_type_two_edges_type1id_num_by_id(TYPE_ENTITY_LITERAL_ID s1_t
         TWO_EDGES_ENTITY_TYPE_ID this_two_edges_entity_id(s1_type, s2_type, s3_type);
         if(two_edges_type1id_to_num[this_two_pre_id].find(this_two_edges_entity_id) != two_edges_type1id_to_num[this_two_pre_id].end()){
             return two_edges_type1id_to_num[this_two_pre_id][this_two_edges_entity_id];
+        }
+    }
+    return 0;
+}
+int Statistics::get_type_two_edges_type1id_num_by_id(TWO_PRE_ID p1_p2_id, TWO_EDGES_ENTITY_TYPE_ID s1_s2_s3_type_id) {
+    if(two_edges_type1id_to_num.find(p1_p2_id) != two_edges_type1id_to_num.end()){
+        if(two_edges_type1id_to_num[p1_p2_id].find(s1_s2_s3_type_id) != two_edges_type1id_to_num[p1_p2_id].end()){
+            return two_edges_type1id_to_num[p1_p2_id][s1_s2_s3_type_id];
         }
     }
     return 0;
@@ -1030,6 +1046,14 @@ int Statistics::get_type_two_edges_type2id_num_by_id(TYPE_ENTITY_LITERAL_ID s1_t
     return 0;
 
 }
+int Statistics::get_type_two_edges_type2id_num_by_id(TWO_PRE_ID p1_p2_id, TWO_EDGES_ENTITY_TYPE_ID s1_s2_s3_type_id) {
+    if(two_edges_type2id_to_num.find(p1_p2_id) != two_edges_type2id_to_num.end()){
+        if(two_edges_type2id_to_num[p1_p2_id].find(s1_s2_s3_type_id) != two_edges_type2id_to_num[p1_p2_id].end()){
+            return two_edges_type2id_to_num[p1_p2_id][s1_s2_s3_type_id];
+        }
+    }
+    return 0;
+}
 
 int Statistics::get_type_two_edges_type3id_num_by_id(TYPE_ENTITY_LITERAL_ID s1_type, TYPE_PREDICATE_ID p1_type,
                                                      TYPE_ENTITY_LITERAL_ID s2_type, TYPE_PREDICATE_ID p2_type,
@@ -1039,6 +1063,14 @@ int Statistics::get_type_two_edges_type3id_num_by_id(TYPE_ENTITY_LITERAL_ID s1_t
         TWO_EDGES_ENTITY_TYPE_ID this_two_edges_entity_id(s1_type, s2_type, s3_type);
         if(two_edges_type3id_to_num[this_two_pre_id].find(this_two_edges_entity_id) != two_edges_type3id_to_num[this_two_pre_id].end()){
             return two_edges_type3id_to_num[this_two_pre_id][this_two_edges_entity_id];
+        }
+    }
+    return 0;
+}
+int Statistics::get_type_two_edges_type3id_num_by_id(TWO_PRE_ID p1_p2_id, TWO_EDGES_ENTITY_TYPE_ID s1_s2_s3_type_id) {
+    if(two_edges_type3id_to_num.find(p1_p2_id) != two_edges_type3id_to_num.end()){
+        if(two_edges_type3id_to_num[p1_p2_id].find(s1_s2_s3_type_id) != two_edges_type3id_to_num[p1_p2_id].end()){
+            return two_edges_type3id_to_num[p1_p2_id][s1_s2_s3_type_id];
         }
     }
     return 0;

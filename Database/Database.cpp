@@ -796,7 +796,10 @@ Database::load(bool loadCSR)
 		return false;
 	}*/
 
+	long t1 = Util::get_cur_time();
     this->load_statistics();
+    long t2 = Util::get_cur_time();
+    cout << "load statistics, used " << (t2 - t1) << "ms." << endl;
 
     this->if_loaded = true;
 
