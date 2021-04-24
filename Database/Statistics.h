@@ -96,7 +96,7 @@ const int SAMPLE_NUM_UPBOUND = 1000;
 
 class Statistics {
 
-private:
+public:
     string filename;
 
     TYPE_PREDICATE_ID pre_num;
@@ -129,7 +129,7 @@ private:
     unordered_map<TWO_PRE_ID, unordered_map<TWO_EDGES_ENTITY_TYPE_ID, vector<TWO_EDGES_ENTITY_TYPE_ID>, TWO_EDGES_ENTITY_TYPE_ID::TWO_EDGES_ENTITY_TYPE_ID_Hash>, TWO_PRE_ID::TWO_PRE_ID_Hash> two_edges_type1id_sample;
 
 //    type2:
-//    (s1)<-[p1]-(s2)-[p2]->(s3)
+//    (s2)<-[p1]-(s1)-[p2]->(s3)
     int two_edges_type2_num;
     int two_edges_type2_pre_num;
     unordered_map<TWO_PRE_ID, unordered_map<TWO_EDGES_ENTITY_TYPE_ID, int, TWO_EDGES_ENTITY_TYPE_ID::TWO_EDGES_ENTITY_TYPE_ID_Hash>, TWO_PRE_ID::TWO_PRE_ID_Hash> two_edges_type2id_to_num;
@@ -144,7 +144,6 @@ private:
 
 
 
-public:
 
 
     Statistics(const string& path, int limitID_pre);
@@ -184,6 +183,11 @@ public:
     int get_type_two_edges_type3id_num_by_id(TYPE_ENTITY_LITERAL_ID s1_type, TYPE_PREDICATE_ID p1_type,
                                              TYPE_ENTITY_LITERAL_ID s2_type, TYPE_PREDICATE_ID p2_type,
                                              TYPE_ENTITY_LITERAL_ID s3_type);
+
+    int get_type_one_edge_typeid_num_by_id(TYPE_PREDICATE_ID p_id, S_to_O_id s_o_type_id);
+    int get_type_two_edges_type1id_num_by_id(TWO_PRE_ID p1_p2_id, TWO_EDGES_ENTITY_TYPE_ID s1_s2_s3_type_id);
+    int get_type_two_edges_type2id_num_by_id(TWO_PRE_ID p1_p2_id, TWO_EDGES_ENTITY_TYPE_ID s1_s2_s3_type_id);
+    int get_type_two_edges_type3id_num_by_id(TWO_PRE_ID p1_p2_id, TWO_EDGES_ENTITY_TYPE_ID s1_s2_s3_type_id);
 
 //    bool insert_one_edge_type(TYPE_ENTITY_LITERAL_ID s_type,
 //                              TYPE_PREDICATE_ID p_type, TYPE_ENTITY_LITERAL_ID o_type);
