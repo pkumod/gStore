@@ -39,8 +39,22 @@ bool Statistics::build_entity_to_type_unorder_map(KVstore *kv_store) {
 
         if(type_to_num_map.find(type_s_o_id_list[i+1]) == type_to_num_map.end()){
             type_to_num_map.insert(make_pair(type_s_o_id_list[i+1], 1));
+
+            vector<TYPE_ENTITY_LITERAL_ID> this_type_sample_vector;
+            this_type_sample_vector.push_back(type_s_o_id_list[i]);
+            type_to_sample_map.insert(make_pair(type_s_o_id_list[i+1], this_type_sample_vector));
         }else{
             type_to_num_map[type_s_o_id_list[i+1]] += 1;
+
+            if(type_to_sample_map[type_s_o_id_list[i+1]].size() < SAMPLE_NUM_UPBOUND) {
+                type_to_sample_map[type_s_o_id_list[i+1]].push_back(type_s_o_id_list[i]);
+            } else{
+                if((double )rand() / (double)RAND_MAX < 1.0/type_to_num_map[type_s_o_id_list[i+1]]){
+//                                    超出部分做替换
+                    int index_to_replace = rand() % SAMPLE_NUM_UPBOUND;
+                    type_to_sample_map[type_s_o_id_list[i+1]][index_to_replace] = type_s_o_id_list[i];
+                }
+            }
         }
     }
 
@@ -510,7 +524,7 @@ bool Statistics::build_Statistics_for_twe_edges_type3(KVstore *kv_store) {
     unsigned p1_so_id_list_len = 0;
     for(TYPE_PREDICATE_ID pre_id = 0; pre_id < pre_num; pre_id++) {
         kv_store->getsubIDobjIDlistBypreID(pre_id, p1_so_id_list, p1_so_id_list_len, true);
-        unsigned up_bound = (p1_so_id_list_len > 4000 ? (p1_so_id_list_len/20) : p1_so_id_list_len);
+        unsigned up_bound = (p1_so_id_list_len > 4000 ? (p1_so_id_list_len/25) : p1_so_id_list_len);
         if (up_bound < p1_so_id_list_len) {
             int now_num = 0;
             int increase_num = p1_so_id_list_len/(2*up_bound);
@@ -719,10 +733,53 @@ bool Statistics::build_Statistics(KVstore *kv_store) {
     return true;
 }
 
+bool Statistics::save_type_statistics(){
+
+    long t1 = Util::get_cur_time();
+    string type_num_file = filename + "type_num_map";
+    string type_sample_file = filename + "type_sample";
+
+    FILE *num_file = fopen(type_num_file.c_str(), "wb");
+    FILE *sample_file = fopen(type_sample_file.c_str(), "wb");
+
+    if(num_file == nullptr || sample_file == nullptr){
+        cout << "error, cannot create type statistics save file" << endl;
+        return false;
+    }
+
+    fwrite(&pre_num, sizeof(TYPE_PREDICATE_ID), 1, num_file);
+    cout << pre_num << endl;
+    fwrite(&type_pre_id, sizeof(TYPE_PREDICATE_ID), 1, num_file);
+
+    int size = type_to_num_map.size();
+    fwrite(&size, sizeof(int), 1, num_file);
+
+
+    for(auto & x : type_to_num_map){
+
+        fwrite(&x.first, sizeof(TYPE_ENTITY_LITERAL_ID), 1, num_file);
+        unsigned this_type_num = x.second;
+        unsigned this_sample_size = type_to_sample_map[x.first].size();
+        fwrite(&this_type_num, sizeof(unsigned ), 1, num_file);
+        fwrite(&this_sample_size, sizeof(unsigned ), 1, num_file);
+
+        for(unsigned y = 0; y < this_sample_size; ++y) {
+            fwrite(&type_to_sample_map[x.first][y], sizeof(TYPE_ENTITY_LITERAL_ID), 1, sample_file);
+        }
+
+    }
+
+    fclose(num_file);
+    fclose(sample_file);
+    long t2 = Util::get_cur_time();
+    cout << "save statistics for type, used " << (t2 - t1) << "ms." << endl;
+    return true;
+}
+
 bool Statistics::save_one_edge_type_statistics() {
 
 //    ./statistics/one_edge_type_num_map文件内容：
-//    pre_num, type_pre_id, one_edge_type_num, one_edge_type_pre_num;
+//    one_edge_type_num, one_edge_type_pre_num;
 //    pre1_id, pre1_edge_n,
 //    s1_type_id,  o1_type_id, s1_p1_o1_num, sample_num
 //    s2_type_id,  o2_type_id, s2_p1_o2_num, ...
@@ -745,8 +802,7 @@ bool Statistics::save_one_edge_type_statistics() {
         return false;
     }
 
-    fwrite(&pre_num, sizeof(TYPE_PREDICATE_ID), 1, num_file);
-    fwrite(&type_pre_id, sizeof(TYPE_PREDICATE_ID), 1, num_file);
+
     fwrite(&one_edge_type_num, sizeof(int), 1, num_file);
     fwrite(&one_edge_type_pre_num, sizeof(int), 1, num_file);
 
@@ -969,6 +1025,11 @@ bool Statistics::save_Statistics() {
 
     Util::create_dir(filename);
 
+    if(!save_type_statistics()){
+        cout << "save type statistics false!" << endl;
+        return false;
+    }
+
     if(!save_one_edge_type_statistics()){
 //if(!save_one_edge_type_statistics(kv_store)){
         cout << "save one edge type statistics false!" << endl;
@@ -990,6 +1051,14 @@ bool Statistics::save_Statistics() {
         return false;
     }
     return true;
+}
+
+unsigned Statistics::get_type_num_by_type_id(TYPE_ENTITY_LITERAL_ID type_id) {
+    if(type_to_num_map.find(type_id) != type_to_num_map.end()){
+        return type_to_num_map[type_id];
+    } else{
+        return 0;
+    }
 }
 
 int Statistics::get_type_one_edge_typeid_num_by_id(TYPE_ENTITY_LITERAL_ID s_type, TYPE_PREDICATE_ID p_type,
@@ -1076,14 +1145,49 @@ int Statistics::get_type_two_edges_type3id_num_by_id(TWO_PRE_ID p1_p2_id, TWO_ED
     return 0;
 }
 
+void Statistics::load_Statistics_for_type(){
+
+    string type_num_map = filename + "type_num_map";
+    string type_sample = filename + "type_sample";
+    FILE *num_file = fopen(type_num_map.c_str(), "rb");
+    FILE *sample_file = fopen(type_sample.c_str(), "rb");
+
+    fread(&pre_num, sizeof(int), 1, num_file);
+    fread(&type_pre_id, sizeof(TYPE_PREDICATE_ID), 1, num_file);
+
+    int type_num;
+    fread(&type_num, sizeof(int), 1, num_file);
+
+    for(int i = 0; i < type_num; ++i){
+
+        TYPE_ENTITY_LITERAL_ID now_type[3];
+        fread(now_type, sizeof(TYPE_ENTITY_LITERAL_ID), 3, num_file);
+
+        type_to_num_map[now_type[0]] = now_type[1];
+
+        vector<TYPE_ENTITY_LITERAL_ID> this_type_sample(now_type[2]);
+        for(unsigned j = 0; j < now_type[2]; ++j){
+            unsigned this_sample;
+            fread(&this_sample, sizeof(unsigned ), 1, sample_file);
+            this_type_sample.push_back(this_sample);
+        }
+        type_to_sample_map[now_type[0]] = this_type_sample;
+
+    }
+
+
+    fclose(num_file);
+    fclose(sample_file);
+}
+
 void Statistics::load_Statistics_for_one_edge_type() {
     string one_edge_num_map = filename + "one_edge_type_num_map";
     string one_edge_sample = filename + "one_edge_type_sample";
     FILE *num_file = fopen(one_edge_num_map.c_str(), "rb");
     FILE *sample_file = fopen(one_edge_sample.c_str(), "rb");
 
-    fread(&pre_num, sizeof(TYPE_PREDICATE_ID), 1, num_file);
-    fread(&type_pre_id, sizeof(TYPE_PREDICATE_ID), 1, num_file);
+//    fread(&pre_num, sizeof(TYPE_PREDICATE_ID), 1, num_file);
+//    fread(&type_pre_id, sizeof(TYPE_PREDICATE_ID), 1, num_file);
     fread(&one_edge_type_num, sizeof(int), 1, num_file);
     fread(&one_edge_type_pre_num, sizeof(int), 1, num_file);
 
@@ -1255,6 +1359,7 @@ void Statistics::load_Statistics_for_two_edge_type3() {
 }
 
 void Statistics::load_Statistics() {
+    this->load_Statistics_for_type();
     this->load_Statistics_for_one_edge_type();
     this->load_Statistics_for_two_edge_type1();
     this->load_Statistics_for_two_edge_type2();
