@@ -111,6 +111,7 @@ public:
 
 
     unordered_map<TYPE_ENTITY_LITERAL_ID , unsigned int> type_to_num_map;
+    unordered_map<TYPE_ENTITY_LITERAL_ID, vector<TYPE_ENTITY_LITERAL_ID>> type_to_sample_map;
 
 //    单边的统计信息和抽样
 //    实验中 59 种 stype_preid_otype 只有 2 种实际数目小于 1000
@@ -150,6 +151,7 @@ public:
 
 
     bool save_Statistics();
+    bool save_type_statistics();
     bool save_one_edge_type_statistics();
     bool save_two_edges_type1_statistics();
     bool save_two_edges_type2_statistics();
@@ -165,6 +167,7 @@ public:
 
 //    在 Database::load 中调用
     void load_Statistics();
+    void load_Statistics_for_type();
     void load_Statistics_for_one_edge_type();
     void load_Statistics_for_two_edge_type1();
     void load_Statistics_for_two_edge_type2();
@@ -172,6 +175,7 @@ public:
 
 
     //    如何使用 Statistics 的接口
+    unsigned get_type_num_by_type_id(TYPE_ENTITY_LITERAL_ID);
     int get_type_one_edge_typeid_num_by_id(TYPE_ENTITY_LITERAL_ID s_type,
                                            TYPE_PREDICATE_ID p_type, TYPE_ENTITY_LITERAL_ID o_type);
     int get_type_two_edges_type1id_num_by_id(TYPE_ENTITY_LITERAL_ID s1_type, TYPE_PREDICATE_ID p1_type,
