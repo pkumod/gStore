@@ -3020,6 +3020,7 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 	//if database named [db_name] is loaded, unload it firstly
 	pthread_rwlock_wrlock(&databases_map_lock);
 	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+	string time = "";
 	if(iter != databases.end())
 	{
 		if(pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
@@ -3033,33 +3034,38 @@ void drop_thread(const shared_ptr<HttpServer::Response>& response, const shared_
 			return;
 		}
 		Database *current_database = iter->second;
+		time = "";//没有啥用
 		delete current_database;
 		current_database = NULL;
 		databases.erase(db_name);
-		string success = "Database unloaded.";
+		string success = "Database ls.";
 		string resJson = CreateJson(0, success, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 	}
-	pthread_rwlock_unlock(&databases_map_lock);
+	else
+	{
 
-	//drop database named [db_name]
-	pthread_rwlock_rdlock(&already_build_map_lock);
-	struct DBInfo *temp_db = it_already_build->second;
-	string time = temp_db->getTime();
-	delete temp_db;
-	temp_db = NULL;
-	already_build.erase(db_name);
-	string success = "Database " + db_name + " dropped.";
-	string resJson = CreateJson(0, success, 0);
-	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
-	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
-	pthread_rwlock_unlock(&already_build_map_lock);
+		pthread_rwlock_unlock(&databases_map_lock);
 
-	string update = "DELETE DATA {<" + db_name + "> <database_status> \"already_built\"." +
-		"<" + db_name + "> <built_by> <" + creator + "> ." + "<" + db_name + "> <built_time> \"" + time + "\".}";
+		//drop database named [db_name]
+		pthread_rwlock_rdlock(&already_build_map_lock);
+		struct DBInfo* temp_db = it_already_build->second;
+		time = temp_db->getTime();//没有啥用
+		delete temp_db;
+		temp_db = NULL;
+		already_build.erase(db_name);
+		string success = "Database " + db_name + " dropped.";
+		string resJson = CreateJson(0, success, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+		pthread_rwlock_unlock(&already_build_map_lock);
+	}
+	
+
+	string update = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
 	updateSys(update);
 	string cmd;
 	if (is_backup == "false")
