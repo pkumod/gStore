@@ -92,36 +92,36 @@ class Optimizer
   static const int SAMPLE_CACHE_MAX = 500;
 
   bool check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDICATE_ID p_id, TYPE_ENTITY_LITERAL_ID o_id);
-  bool check_past(shared_ptr<BasicQuery> basicquery, vector<int> &join_need_estimator,
+  bool check_past(BasicQuery* basicquery, vector<int> &join_need_estimator,
                   unsigned *last_sample, unsigned this_var_sample, int this_join_var_num);
-  unsigned get_small_query_card_estimation(shared_ptr<BasicQuery> basicquery, map<int, unsigned > var_to_num_map,
+  unsigned get_small_query_card_estimation(BasicQuery* basicquery, map<int, unsigned > var_to_num_map,
                                            map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
                                            map<int, vector<TYPE_ENTITY_LITERAL_ID >> &var_to_sample_cache,
                                            vector<int> &join_need_estimator, int this_join_var_num,
                                            vector<map<vector<int>, unsigned >> &_cardinality_cache,
                                            vector<map<vector<int>, vector<unsigned *> >> &_sample_cache);
 
-  unsigned cardinality_estimator(shared_ptr<BasicQuery> basicquery, vector<vector<int>> join_need_estimator,
+  unsigned cardinality_estimator(BasicQuery* basicquery, vector<vector<int>> join_need_estimator,
                                  map<int, unsigned> var_to_num_map, map<int, vector<TYPE_ENTITY_LITERAL_ID >> var_to_sample_cache,
                                  map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
                                  vector<map<vector<int>, unsigned >> &_cardinality_cache,
                                  vector<map<vector<int>, vector<unsigned*> >> &_sample_cache);
-  unsigned card_estimator(shared_ptr<BasicQuery> basicquery, vector<int> last_plan, int this_join_node,
+  unsigned card_estimator(BasicQuery* basicquery, vector<int> last_plan, int this_join_node,
                             vector<map<vector<int>, unsigned>> &_card_cache);
-  void get_nei_by_subplan(shared_ptr<BasicQuery> basicquery, vector<int> &last_plan_node,
+  void get_nei_by_subplan(BasicQuery* basicquery, vector<int> &last_plan_node,
                             set<int> &nei_node);
   void get_last_plan_node(vector<vector<int>> last_plan, vector<int> &last_plan_node);
 
-  void considerallscan(shared_ptr<BasicQuery> basicquery,
+  void considerallscan(BasicQuery* basicquery,
                        vector<map<vector<int>, unsigned >> &card_cache_ref,
                        vector<map<vector<vector<int>>, unsigned >> &cost_cache_ref,
                        map<int, unsigned > &var_to_num_map_ref,
                        map<int, TYPE_ENTITY_LITERAL_ID> &var_to_type_map_ref);
 
-  void considerwcojoin(shared_ptr<BasicQuery> basicquery,
+  void considerwcojoin(BasicQuery* basicquery,
                          int node_num, vector<map<vector<int>, unsigned >> &card_cache,
                          vector<map<vector<vector<int>>, unsigned>> &cost_cache);
-  void cost_model_for_wco(shared_ptr<BasicQuery> basicquery, vector<vector<int>> &new_plan, int next_node,
+  void cost_model_for_wco(BasicQuery* basicquery, vector<vector<int>> &new_plan, int next_node,
                             vector<int> last_plan_node, const vector<vector<int>> &last_plan,
                             vector<map<vector<int>, unsigned>> &card_cache, vector<map<vector<vector<int>>, unsigned>> &cost_cache);
   int check_two_plan_could_binary_join(vector<int> &last_plan_node,
@@ -129,17 +129,17 @@ class Optimizer
                                          vector<map<vector<int>, unsigned>> &card_cache);
   vector<vector<int>> get_binary_plan(const vector<vector<int>> &small_plan, const vector<vector<int>> &another_small_plan);
 
-  void considerbinaryjoin(shared_ptr<BasicQuery> basicquery, int node_num,
+  void considerbinaryjoin(BasicQuery* basicquery, int node_num,
                           vector<map<vector<int>, unsigned>> &card_cache,
                           vector<map<vector<vector<int>>, unsigned>> &cost_cache);
   unsigned cost_model_for_binary(int small_plan_node_num, const vector<vector<int>> small_plan,
                                    int another_small_plan_node_num, const vector<vector<int>> another_small_plan,
                                    vector<map<vector<vector<int>>, unsigned >> &cost_cache);
 
-  void enum_query_plan(shared_ptr<BasicQuery> basicquery, KVstore *kvstore,
+  void enum_query_plan(BasicQuery* basicquery, KVstore *kvstore,
                          vector<map<vector<vector<int>>, unsigned>> &cost_cache);
   vector<vector<int>> get_best_plan(int var_num, vector<map<vector<vector<int>>, unsigned>> &cost_cache);
-  vector<vector<int>> get_plan(shared_ptr<BasicQuery> basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches);
+  vector<vector<int>> get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches);
 
 
   std::shared_ptr<IDList> ExtendRecord(const shared_ptr<OneStepJoinNode> &one_step_join_node_,
@@ -210,14 +210,14 @@ class Optimizer
   bool is_edge_case; //Strategy 1-6 or Strategy 0
   int current_basic_query_; // updated by result_list.size()
 
-  shared_ptr<vector<shared_ptr<BasicQuery>>> basic_query_list_; //fork from SPARQLQuery, I dont know why
-  shared_ptr<vector<tuple<shared_ptr<BasicQuery>, shared_ptr<vector<QueryPlan>>>>> candidate_plans_;
+  shared_ptr<vector<BasicQuery*>> basic_query_list_; //fork from SPARQLQuery, I dont know why
+  shared_ptr<vector<tuple<BasicQuery*, shared_ptr<vector<QueryPlan>>>>> candidate_plans_;
   shared_ptr<vector<QueryPlan>> execution_plan_;
   shared_ptr<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>> result_list_; // vector<unsigned*>* result_list;
 
   //TODO: shared_ptr<BasicQuery> may brings wrong matching
-  shared_ptr<vector<map<shared_ptr<BasicQuery>,vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>> join_cache_; // map(sub-structure, result_list)
-  shared_ptr<vector<map<shared_ptr<BasicQuery>,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>> cardinality_cache_; // map(sub-structure, cardinality), not in statistics
+  shared_ptr<vector<map<BasicQuery*,vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>> join_cache_; // map(sub-structure, result_list)
+  shared_ptr<vector<map<BasicQuery*,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>> cardinality_cache_; // map(sub-structure, cardinality), not in statistics
 
   FILE* fp_;
   TYPE_TRIPLE_NUM* pre2num_;
