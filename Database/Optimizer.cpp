@@ -1,7 +1,7 @@
 /*=============================================================================
-# Filename: TableOperator.h
-# Author: Yuqi Zhou
-# Mail: zhouyuqi@pku.edu.cn
+# Filename: Optimizer.cpp
+# Author: Yuqi Zhou, Linglin Yang
+# Mail: zhouyuqi@pku.edu.cn, fyulingi@gmail.com
 =============================================================================*/
 
 #include "Optimizer.h"
@@ -2161,7 +2161,7 @@ vector<vector<int>> Optimizer::get_best_plan(int var_num, vector<map<vector<vect
 }
 
 
-vector<vector<int>> Optimizer::get_plan(shared_ptr<BasicQuery> basicquery, KVstore *kvstore){
+vector<vector<int>> Optimizer::get_plan(shared_ptr<BasicQuery> basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches){
 
     vector<map<vector<vector<int>>, unsigned>> cost_cache;
 
