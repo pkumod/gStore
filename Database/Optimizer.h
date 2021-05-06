@@ -19,6 +19,7 @@
 #include "../Query/QueryTree.h"
 #include "Join.h"
 #include "./Statistics.h"
+#include "./PlanTree.h"
 #include <unordered_map>
 #include <map>
 #include <cstring>
@@ -139,7 +140,7 @@ class Optimizer
   void enum_query_plan(BasicQuery* basicquery, KVstore *kvstore,
                          vector<map<vector<vector<int>>, unsigned>> &cost_cache);
   vector<vector<int>> get_best_plan(int var_num, vector<map<vector<vector<int>>, unsigned>> &cost_cache);
-  vector<vector<int>> get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches);
+  PlanTree get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches);
 
 
   std::shared_ptr<IDList> ExtendRecord(const shared_ptr<OneStepJoinNode> &one_step_join_node_,

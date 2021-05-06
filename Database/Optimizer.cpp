@@ -2174,11 +2174,13 @@ vector<vector<int>> Optimizer::get_best_plan(int var_num, vector<map<vector<vect
 }
 
 
-vector<vector<int>> Optimizer::get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches){
+PlanTree Optimizer::get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches){
 
     vector<map<vector<vector<int>>, unsigned>> cost_cache;
 
     enum_query_plan(basicquery, kvstore, cost_cache);
 
-    return get_best_plan(basicquery->getVarNum(), cost_cache);
+    vector<vector<int>> best_plan_vector = get_best_plan(basicquery->getVarNum(), cost_cache);
+
+    return PlanTree(best_plan_vector);
 }
