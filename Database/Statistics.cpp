@@ -7,15 +7,17 @@
 #include "Statistics.h"
 
 Statistics::Statistics(const string &path, int limitID_pre):
-                        one_edge_type_num(0), one_edge_type_pre_num(0),
-                        two_edges_type1_num(0), two_edges_type1_pre_num(0),
-                        two_edges_type2_num(0), two_edges_type2_pre_num(0),
-                        two_edges_type3_num(0), two_edges_type3_pre_num(0),
-                        pre_num(limitID_pre), filename(path + "/statistics/"){}
+        one_edge_type_num(0), one_edge_type_pre_num(0),
+        two_edges_type1_num(0), two_edges_type1_pre_num(0),
+        two_edges_type2_num(0), two_edges_type2_pre_num(0),
+        two_edges_type3_num(0), two_edges_type3_pre_num(0),
+        pre_num(limitID_pre), filename(path + "/statistics/"){}
 
 // multimap 版本
 bool Statistics::build_entity_to_type_unorder_map(KVstore *kv_store) {
 //    先找到 <type> 这个谓词
+
+    long t1 = Util::get_cur_time();
     unsigned *type_s_o_id_list = nullptr;
     unsigned type_s_o_id_list_len = 0;
     string type_pre = "type";
@@ -59,6 +61,9 @@ bool Statistics::build_entity_to_type_unorder_map(KVstore *kv_store) {
     }
 
     delete[] type_s_o_id_list;
+    long t2 = Util::get_cur_time();
+
+    cout << "build statistics for type, used " << (t2 - t1) << "ms." << endl;
     return true;
 }
 
@@ -146,7 +151,7 @@ bool Statistics::build_Statistics_for_twe_edges_type1(KVstore *kv_store) {
     unsigned p1_so_id_list_len = 0;
     for(TYPE_PREDICATE_ID pre_id = 0; pre_id < pre_num; pre_id++) {
         kv_store->getsubIDobjIDlistBypreID(pre_id, p1_so_id_list, p1_so_id_list_len, true);
-        unsigned up_bound = (p1_so_id_list_len > 4000 ? (p1_so_id_list_len/20) : p1_so_id_list_len);
+        unsigned up_bound = (p1_so_id_list_len > 4000 ? (p1_so_id_list_len/25) : p1_so_id_list_len);
         if (up_bound < p1_so_id_list_len) {
             int now_num = 0;
             int increase_num = p1_so_id_list_len/(2*up_bound);
@@ -335,7 +340,7 @@ bool Statistics::build_Statistics_for_twe_edges_type2(KVstore *kv_store) {
     unsigned p1_so_id_list_len = 0;
     for(TYPE_PREDICATE_ID pre_id = 0; pre_id < pre_num; pre_id++) {
         kv_store->getsubIDobjIDlistBypreID(pre_id, p1_so_id_list, p1_so_id_list_len, true);
-        unsigned up_bound = (p1_so_id_list_len > 4000 ? (p1_so_id_list_len/20) : p1_so_id_list_len);
+        unsigned up_bound = (p1_so_id_list_len > 4000 ? (p1_so_id_list_len/25) : p1_so_id_list_len);
         if (up_bound < p1_so_id_list_len) {
             int now_num = 0;
             int increase_num = p1_so_id_list_len/(2*up_bound);
@@ -708,6 +713,8 @@ bool Statistics::build_Statistics(KVstore *kv_store) {
 //    TODO: 这个东西可能很占内存, 直接读 sp2o 会不会比这个好？
     this->build_entity_to_type_unorder_map(kv_store);
 
+    cout << "type to num map size: " << type_to_num_map.size() << endl;
+
 //    cout << "build_entity_to_type_map success" << endl;
 
     if(!this->build_Statistics_for_one_edge_type(kv_store)){
@@ -748,7 +755,6 @@ bool Statistics::save_type_statistics(){
     }
 
     fwrite(&pre_num, sizeof(TYPE_PREDICATE_ID), 1, num_file);
-    cout << pre_num << endl;
     fwrite(&type_pre_id, sizeof(TYPE_PREDICATE_ID), 1, num_file);
 
     int size = type_to_num_map.size();
