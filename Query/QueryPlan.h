@@ -26,6 +26,8 @@ class QueryPlan
   QueryPlan(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
   QueryPlan()=default;
 
+  static std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> OnlyConstFilter(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
+
   /* greedy method used in version 0.9 */
   static double ScoreNode(BasicQuery *basic_query, int var);
   static TYPE_ENTITY_LITERAL_ID SelectANode(BasicQuery *basic_query,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> processed_nodes); //include select the start node and choose next node;

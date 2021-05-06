@@ -40,8 +40,8 @@ Optimizer::Optimizer(KVstore *kv_store,
 */
 
   // TODO: join_cache_ & cardinality_cache_ not implemented yet.
-  this->join_cache_ = make_shared<vector<map<shared_ptr<BasicQuery>,vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>>(); // map(sub-structure, result_list)
-  this->cardinality_cache_ = make_shared<vector<map<shared_ptr<BasicQuery>,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>(); // map(sub-structure, cardinality), not in statistics
+  this->join_cache_ = make_shared<vector<map<BasicQuery*,vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>>(); // map(sub-structure, result_list)
+  this->cardinality_cache_ = make_shared<vector<map<BasicQuery*,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>(); // map(sub-structure, cardinality), not in statistics
   this->var_descriptors_ = make_shared<vector<VarDescriptor>>();
 }
 
@@ -1187,17 +1187,30 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
   vector<BasicQuery*> basic_query_vec;
   vector<shared_ptr<QueryPlan>> query_plan_vec;
 
+
+
   for(auto basic_query_pointer:sparql_query.getBasicQueryVec())
   {
+
+    auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
     shared_ptr<QueryPlan> query_plan;
-    switch (this->ChooseStrategy(basic_query_pointer)) {
-      case BasicQueryStrategy::Normal:
-        query_plan = make_shared<QueryPlan>(basic_query_pointer,this->kv_store_,this->var_descriptors_);
-        break;
-      case BasicQueryStrategy::Special:
-        printf("BasicQueryStrategy::Special not supported yet\n");
-        break;
+    auto strategy = this->ChooseStrategy(basic_query_pointer);
+    if(strategy == BasicQueryStrategy::Normal)
+    {
+
+      auto const_candidates = QueryPlan::OnlyConstFilter(basic_query_pointer, this->kv_store_, this->var_descriptors_);
+      for (auto &constant_generating_step: *const_candidates) {
+        CacheConstantCandidates(constant_generating_step, var_candidates_cache);
+      };
+
+      auto best_plan = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
+      query_plan = make_shared<QueryPlan>(basic_query_pointer, this->kv_store_, this->var_descriptors_);
+
     }
+    else if(strategy ==BasicQueryStrategy::Special){
+        printf("BasicQueryStrategy::Special not supported yet\n");
+    }
+
     cout<<query_plan->toString(kv_store_)<<endl;
     basic_query_vec.push_back(basic_query_pointer);
     query_plan_vec.push_back(query_plan);
@@ -1412,7 +1425,7 @@ bool Optimizer::check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDIC
     return is_exist;
 }
 
-bool Optimizer::check_past(shared_ptr<BasicQuery> basicquery, vector<int> &join_need_estimator,
+bool Optimizer::check_past(BasicQuery* basicquery, vector<int> &join_need_estimator,
                            unsigned *last_sample, unsigned this_var_sample, int this_join_var_num){
     int need_join_id = join_need_estimator[this_join_var_num-1];
     int can_join = true;
@@ -1446,7 +1459,7 @@ bool Optimizer::check_past(shared_ptr<BasicQuery> basicquery, vector<int> &join_
 
 // TODO： basicquery 中的id?
 // TODO: 要做一个从最大传入的接口
-unsigned Optimizer::get_small_query_card_estimation(shared_ptr<BasicQuery> basicquery, map<int, unsigned > var_to_num_map,
+unsigned Optimizer::get_small_query_card_estimation(BasicQuery* basicquery, map<int, unsigned > var_to_num_map,
                                                     map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
                                                     map<int, vector<TYPE_ENTITY_LITERAL_ID >> &var_to_sample_cache,
                                                     vector<int> &join_need_estimator, int this_join_var_num,
@@ -1760,7 +1773,7 @@ unsigned Optimizer::get_small_query_card_estimation(shared_ptr<BasicQuery> basic
 
 }
 
-unsigned Optimizer::cardinality_estimator(shared_ptr<BasicQuery> basicquery, vector<vector<int>> join_need_estimator,
+unsigned Optimizer::cardinality_estimator(BasicQuery* basicquery, vector<vector<int>> join_need_estimator,
                                           map<int, unsigned> var_to_num_map, map<int, vector<TYPE_ENTITY_LITERAL_ID >> var_to_sample_cache,
                                           map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
                                           vector<map<vector<int>, unsigned >> &_cardinality_cache,
@@ -1783,14 +1796,14 @@ unsigned Optimizer::cardinality_estimator(shared_ptr<BasicQuery> basicquery, vec
     return card_estimation;
 }
 
-unsigned Optimizer::card_estimator(shared_ptr<BasicQuery> basicquery, vector<int> last_plan, int this_join_node,
+unsigned Optimizer::card_estimator(BasicQuery* basicquery, vector<int> last_plan, int this_join_node,
                         vector<map<vector<int>, unsigned>> &_card_cache){
     ;
 }
 
 
 //    save every nei_id of now_in_plan_node in nei_node
-void Optimizer::get_nei_by_subplan(shared_ptr<BasicQuery> basicquery, vector<int> &last_plan_node,
+void Optimizer::get_nei_by_subplan(BasicQuery* basicquery, vector<int> &last_plan_node,
                                set<int> &nei_node){
     ;
     for(int node_in_plan : last_plan_node){
@@ -1841,7 +1854,7 @@ void Optimizer::get_last_plan_node(vector<vector<int>> last_plan, vector<int> &l
 //}
 
 // first node
-void Optimizer::considerallscan(shared_ptr<BasicQuery> basicquery,
+void Optimizer::considerallscan(BasicQuery* basicquery,
                      vector<map<vector<int>, unsigned >> &card_cache_ref,
                      vector<map<vector<vector<int>>, unsigned >> &cost_cache_ref,
                      map<int, unsigned > &var_to_num_map_ref,
@@ -1877,7 +1890,7 @@ void Optimizer::considerallscan(shared_ptr<BasicQuery> basicquery,
 }
 
 // add one node, the added node need to be linked by nodes in plan before
-void Optimizer::considerwcojoin(shared_ptr<BasicQuery> basicquery,
+void Optimizer::considerwcojoin(BasicQuery* basicquery,
                      int node_num, vector<map<vector<int>, unsigned >> &card_cache,
                      vector<map<vector<vector<int>>, unsigned>> &cost_cache){
 
@@ -1918,7 +1931,7 @@ void Optimizer::considerwcojoin(shared_ptr<BasicQuery> basicquery,
 
 }
 
-void Optimizer::cost_model_for_wco(shared_ptr<BasicQuery> basicquery, vector<vector<int>> &new_plan, int next_node,
+void Optimizer::cost_model_for_wco(BasicQuery* basicquery, vector<vector<int>> &new_plan, int next_node,
                         vector<int> last_plan_node, const vector<vector<int>> &last_plan,
                         vector<map<vector<int>, unsigned>> &card_cache, vector<map<vector<vector<int>>, unsigned>> &cost_cache){
     int last_plan_node_size = last_plan_node.size();
@@ -1994,7 +2007,7 @@ vector<vector<int>> Optimizer::get_binary_plan(const vector<vector<int>> &small_
 }
 
 // not add nodes, but to consider if binaryjoin could decrease cost
-void Optimizer::considerbinaryjoin(shared_ptr<BasicQuery> basicquery, int node_num,
+void Optimizer::considerbinaryjoin(BasicQuery* basicquery, int node_num,
                      vector<map<vector<int>, unsigned>> &card_cache,
                      vector<map<vector<vector<int>>, unsigned>> &cost_cache){
 
@@ -2122,7 +2135,7 @@ unsigned Optimizer::cost_model_for_binary(int small_plan_node_num, const vector<
 
 
 //  enumerate all execution plan, and build cost_cache
-void Optimizer::enum_query_plan(shared_ptr<BasicQuery> basicquery, KVstore *kvstore,
+void Optimizer::enum_query_plan(BasicQuery* basicquery, KVstore *kvstore,
                      vector<map<vector<vector<int>>, unsigned>> &cost_cache){
 
     vector<map<vector<int>, unsigned>> card_cache;
@@ -2161,7 +2174,7 @@ vector<vector<int>> Optimizer::get_best_plan(int var_num, vector<map<vector<vect
 }
 
 
-vector<vector<int>> Optimizer::get_plan(shared_ptr<BasicQuery> basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches){
+vector<vector<int>> Optimizer::get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches){
 
     vector<map<vector<vector<int>>, unsigned>> cost_cache;
 
