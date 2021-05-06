@@ -1392,628 +1392,780 @@ Optimizer::Cartesian(int pos, int end,int record_len,unsigned* record,
 
 //  Linglin Yang add:
 
-//  To check if s_o_id exist in last_query_var_num;
-//  if exist, return the index of its position in last_query_sample_cache
-//  else, return -1
-unsigned Optimizer::check_already_have(int s_o_id, int last_query_var_num, unsigned *last_query_sample_cache){
-    for(int i = 0; i < last_query_var_num; ++i){
-        if(last_query_sample_cache[2+i] == (unsigned )s_o_id){
-            return i;
-        }
-    }
-    return -1;
 
-//    vector<int> index_of_triple;
-//    vector<int> sub_or_ob;
-//    for(int i = 0; i < triple_num_last; ++i){
-//        if(query_need_to_check->getIDByVarName(query_need_to_check->getTriple(i).getSubject()) == s_o_id){
-//            index_of_triple.push_back(i);
-//            sub_or_ob.push_back(0);   // if s_o_id is sub of i-th triple, push back 0
-//        }
-//        if(query_need_to_check->getIDByVarName(query_need_to_check->getTriple(i).getObject()) == s_o_id){
-//            index_of_triple.push_back(i);
-//            sub_or_ob.push_back(1);   // if s_o_id is sub of i-th triple, push back 1
-//        }
-//    }
-//
-//    int size = index_of_triple.size();
-//
-//    if(size > 0){
-//        int* array_return = new int[size*2 + 1];
-//        array_return[0] = size;
-//        for(int i = 0; i < size; ++i){
-//            array_return[2*i+1] = index_of_triple[i];
-//            array_return[i*i+2] = sub_or_ob[i];
-//        }
-//        index_of_triple.clear();
-//        sub_or_ob.clear();
-//
-//        return array_return;
-//    }else{
-//        return nullptr;
-//    }
+//  Copied from Database::exist_triple in Database.cpp
+//  If there exist a triple (s_id, p_id, o_id) in db, return true;
+//  else, return false
+bool Optimizer::check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDICATE_ID p_id, TYPE_ENTITY_LITERAL_ID o_id){
+
+    unsigned* _objidlist = nullptr;
+    unsigned _list_len = 0;
+    bool is_exist = false;
+    //get exclusive before update!
+    kv_store_->getobjIDlistBysubIDpreID(s_id, p_id, _objidlist, _list_len, true);
+
+    if (Util::bsearch_int_uporder(o_id, _objidlist, _list_len) != INVALID){
+        is_exist = true;
+    }
+    delete[] _objidlist;
+
+    return is_exist;
 }
 
+bool Optimizer::check_past(shared_ptr<BasicQuery> basicquery, vector<int> &join_need_estimator,
+                           unsigned *last_sample, unsigned this_var_sample, int this_join_var_num){
+    int need_join_id = join_need_estimator[this_join_var_num-1];
+    int can_join = true;
+    for(int i = 0; i < basicquery->getVarDegree(need_join_id) && can_join; ++i ){
+        for(int j = 0; j < this_join_var_num - 1; ++j){
+            if(basicquery->getEdgeNeighborID(need_join_id, i) == join_need_estimator[j]){
+                char edge_type = basicquery->getEdgeType(need_join_id, i);
+                TYPE_PREDICATE_ID p_id = basicquery->getEdgePreID(need_join_id, i);
 
-//  TODO: 要不要加上 literal 的判断 ?
-//  query_need_estimator 的最后一个 triple 是要拓展的三元组
-//  假设当前 _cardinality_cache 中存储了 2 - var_num_last 个节点子查询的基数估计
-//  输入的 query_need_estimator 为 var_num_last+1 个节点的子查询信息
-//  需要注意的是: 传进来的所有节点, 都假设在 cardinality_estimator 上层判断了是否有 type_pre, 且在当前步有与其他点有 join 操作
-//  也就是说, 没有 type 谓词的节点(包括 literal)不会被传入这个函数, 所以 Statistics 中的信息可以帮助完成基数估计
-//  _cardinality_cache 中 unsighed* 存储:
-//  当前空间大小(分配 unsighed 数组的大小), 存储了多少大小(实际占用多大空间), 当前存储了多少条抽样,
-//  抽样 1, 抽样 2, 抽样 3,...
-//  注意: 每条抽样 抽样 i 实际大小根据 BasicQuery 中传入的变量数确定, 并根据分配的 id 排序
-//  例如: BasicQuery 中传入要 join 的变量分别是 ?student, ?friend, ?teacher. id 分别为 0, 2, 1
-//  则抽样 i 实际上是: ?student对应抽样的id, ?teacher对应抽样的id, ?friend 对应抽样的id
+                if(edge_type == Util::EDGE_IN){
+                    if(!check_exist_this_triple(last_sample[j], p_id, this_join_var_num)){
+                        can_join = false;
+                        break;
+                    }
+                } else{
+                    if(!check_exist_this_triple(this_var_sample, p_id, last_sample[j])){
+                        can_join = false;
+                        break;
+                    }
+                }
 
-
-unsigned Optimizer::getlast_card_estimation(shared_ptr<BasicQuery> query_need_estimator, shared_ptr<BasicQuery> last_query,
-                                 vector<map<shared_ptr<BasicQuery>, unsigned >> _cardinality_cache,
-                                 int triple_num_last){
-    auto last_card = _cardinality_cache[triple_num_last].find(last_query);
-    if(last_card == _cardinality_cache[triple_num_last].end()){
-        cout << "error, could not get last query's card estimation." << endl;
-        exit(0);
-    } else{
-        return last_card->second;
-    }
-}
-
-
-//  You can change this,
-//  but to make sure SAMPLE_CACHE_MAX <= SAMPLE_NUM_UPBOUND (in Statistics.h)
-const int SAMPLE_CACHE_MAX = 500;
-
-
-//  sample_cache:
-//  sample_size, var_num,
-//  var1_id, var2_id, ...,
-//  var1_sample1, var2_sample1, ...
-//  var1_sample2, var2_sample2, ...
-unsigned Optimizer::cardinality_estimator(shared_ptr<BasicQuery> query_need_estimator, shared_ptr<BasicQuery> last_query,
-                                          KVstore *kvstore,
-//  when deal with the biggest basic_query,
-//  read all var and there type,
-//  build var_type_map and var_num_cache(var_num need to read statistics->type_to_num_map)
-                                          map<string, TYPE_ENTITY_LITERAL_ID> var_type_map,
-//                                          map<int, unsigned > var_num_cache,
-                                          vector<map<shared_ptr<BasicQuery>, unsigned>> &_cardinality_cache,
-                                          vector<map<shared_ptr<BasicQuery>, unsigned *>> &sample_cache,
-                                          int triple_num_last,
-                                          int last_query_var_num, int this_query_var_num) {
-    TYPE_PREDICATE_ID p_id = kvstore->getIDByPredicate(query_need_estimator->getTriple(triple_num_last).getPredicate());
-
-    if(triple_num_last == 0){
-        string s = query_need_estimator->getTriple(0).getSubject();
-        string o = query_need_estimator->getTriple(0).getObject();
-        S_to_O_id s_o_type(var_type_map[s], var_type_map[o]);
-
-        unsigned card_estimation = statistics->get_type_one_edge_typeid_num_by_id(p_id, s_o_type);
-
-        unsigned *this_sample;
-        int statistics_sample_size = statistics->one_edge_typeid_sample[p_id][s_o_type].size();
-
-        if(statistics_sample_size < SAMPLE_CACHE_MAX) {
-            this_sample = new unsigned[2 * statistics_sample_size + 4];
-            this_sample[0] = statistics_sample_size;
-            this_sample[1] = 2;
-            this_sample[2] = query_need_estimator->getIDByVarName(s);
-            this_sample[3] = query_need_estimator->getIDByVarName(o);
-            for(int i = 0; i < statistics_sample_size; ++i){
-                this_sample[2*i+4] = statistics->one_edge_typeid_sample[p_id][s_o_type][i].s_type_id;
-                this_sample[2*i+5] = statistics->one_edge_typeid_sample[p_id][s_o_type][i].o_type_id;
             }
+        }
+
+    }
+
+    return can_join;
+}
+
+
+
+// TODO： basicquery 中的id?
+// TODO: 要做一个从最大传入的接口
+unsigned Optimizer::get_small_query_card_estimation(shared_ptr<BasicQuery> basicquery, map<int, unsigned > var_to_num_map,
+                                                    map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
+                                                    map<int, vector<TYPE_ENTITY_LITERAL_ID >> &var_to_sample_cache,
+                                                    vector<int> &join_need_estimator, int this_join_var_num,
+                                                    vector<map<vector<int>, unsigned >> &_cardinality_cache,
+                                                    vector<map<vector<int>, vector<unsigned *> >> &_sample_cache){
+
+//    _sample_cache begin when var_num >= 2 (var_num =1 cache in var_to_sample_cache)
+
+//    int this_join_var_num = join_need_estimator.size();
+    int need_to_join_var_id = join_need_estimator[this_join_var_num-1];
+    unsigned card_estimation;
+    vector<unsigned *> now_sample;
+
+//    TODO: maybe not used, just read var_to_num_map
+    if(this_join_var_num == 1){
+//        if(var_to_num_map.find(join_need_estimator[0]) == var_to_num_map.end()){
+//            card_estimation = statistics->get_type_num_by_type_id(var_to_type_map[join_need_estimator[0]]);
+//            return card_estimation;
+//        }
+        card_estimation = var_to_num_map[join_need_estimator[0]];
+
+        return card_estimation;
+    }
+
+    if(this_join_var_num == 2){
+        for(int i = 0; i < basicquery->getVarDegree(join_need_estimator[1]); ++i){
+            if(basicquery->getEdgeNeighborID(join_need_estimator[1], i) == join_need_estimator[0]){
+                char in_or_out = basicquery->getEdgeType(join_need_estimator[1], i);
+                TYPE_PREDICATE_ID p_id = basicquery->getEdgePreID(join_need_estimator[1], i);
+
+                unsigned all_num = statistics->get_type_num_by_type_id(var_to_type_map[join_need_estimator[0]])*
+                                   statistics->get_type_num_by_type_id(var_to_type_map[join_need_estimator[1]]);
+                double selectivity = var_to_num_map[join_need_estimator[0]]*var_to_num_map[join_need_estimator[1]]/((double )all_num);
+
+
+                if(in_or_out == Util::EDGE_IN){
+
+
+                    card_estimation = (unsigned) (statistics->get_type_one_edge_typeid_num_by_id(
+                            var_to_type_map[join_need_estimator[0]], p_id, var_to_type_map[join_need_estimator[1]]) * selectivity);
+
+                    int now_sample_num = 0;
+
+
+                    for(int s_index = 0; s_index < var_to_sample_cache[join_need_estimator[0]].size(); ++s_index){
+                        for(int o_index = 0; o_index < var_to_sample_cache[join_need_estimator[1]].size(); ++o_index){
+                            if(check_exist_this_triple(var_to_sample_cache[join_need_estimator[0]][s_index],
+                                                       p_id, var_to_sample_cache[join_need_estimator[1]][o_index])){
+                                now_sample_num += 1;
+                                if(now_sample.size()<SAMPLE_CACHE_MAX){
+
+                                    unsigned *this_sample = new unsigned[2];
+                                    this_sample[0] = var_to_sample_cache[join_need_estimator[0]][s_index];
+                                    this_sample[1] = var_to_sample_cache[join_need_estimator[1]][o_index];
+
+                                    now_sample.push_back(this_sample);
+                                } else{
+                                    if((double )rand() / (double)RAND_MAX < 1.0/now_sample_num){
+                                        int index_to_replace = rand() % SAMPLE_CACHE_MAX;
+
+                                        now_sample[index_to_replace][0] = var_to_sample_cache[join_need_estimator[0]][s_index];
+                                        now_sample[index_to_replace][1] = var_to_sample_cache[join_need_estimator[1]][o_index];
+
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+
+                } else{
+                    card_estimation = (unsigned) (statistics->get_type_one_edge_typeid_num_by_id(
+                            var_to_type_map[join_need_estimator[1]], p_id, var_to_type_map[join_need_estimator[0]]) * selectivity);
+
+                    int now_sample_num = 0;
+
+
+                    for(int s_index = 0; s_index < var_to_sample_cache[join_need_estimator[1]].size(); ++s_index){
+                        for(int o_index = 0; o_index < var_to_sample_cache[join_need_estimator[0]].size(); ++o_index){
+                            if(check_exist_this_triple(var_to_sample_cache[join_need_estimator[1]][s_index],
+                                                       p_id, var_to_sample_cache[join_need_estimator[0]][o_index])){
+                                now_sample_num += 1;
+                                if(now_sample.size()<SAMPLE_CACHE_MAX){
+
+                                    unsigned *this_sample = new unsigned[2];
+                                    this_sample[0] = var_to_sample_cache[join_need_estimator[0]][o_index];
+                                    this_sample[1] = var_to_sample_cache[join_need_estimator[1]][s_index];
+
+                                    now_sample.push_back(this_sample);
+                                } else{
+                                    if((double )rand() / (double)RAND_MAX < 1.0/now_sample_num){
+                                        int index_to_replace = rand() % SAMPLE_CACHE_MAX;
+
+                                        now_sample[index_to_replace][0] = var_to_sample_cache[join_need_estimator[0]][o_index];
+                                        now_sample[index_to_replace][1] = var_to_sample_cache[join_need_estimator[1]][s_index];
+
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                }
+
+                if(_cardinality_cache.size() < 1){
+                    map<vector<int>, unsigned> this_var_num_card_map;
+                    this_var_num_card_map.insert(make_pair(join_need_estimator, card_estimation));
+                    _cardinality_cache.push_back(this_var_num_card_map);
+
+                    map<vector<int>, vector<unsigned*>> this_var_num_sample_map;
+                    this_var_num_sample_map.insert(make_pair(join_need_estimator, now_sample));
+                    _sample_cache.push_back(this_var_num_sample_map);
+                } else{
+                    _cardinality_cache[0].insert(make_pair(join_need_estimator, card_estimation));
+                    _sample_cache[0].insert((make_pair(join_need_estimator, now_sample)));
+                }
+
+
+            }
+
+        }
+
+        return card_estimation;
+    }
+
+    if(this_join_var_num >= 3){
+
+        vector<int> last_query(join_need_estimator.begin(), join_need_estimator.end()-1);
+//        for(int i = 0; i < this_join_var_num - 1; i++){
+//            last_query.push_back(join_need_estimator[i]);
+//        }
+
+        unsigned last_card_estimation = _cardinality_cache[this_join_var_num-3][last_query];
+
+        vector<unsigned *> last_sample = _sample_cache[this_join_var_num-3][last_query];
+//        vector<unsigned> this_var_sample = var_to_sample_cache[join_need_estimator[this_join_var_num-1]];
+
+        unsigned now_sample_num = 0;
+
+        double smallest_multiplier;
+        double selectivity;
+
+        vector<int> edge_link;
+        vector<int> node_link;
+        vector<TYPE_PREDICATE_ID> p_list;
+
+//        get which node link and edge link to need_to_join_var_id
+        for(int i = 0; i < basicquery->getVarDegree(need_to_join_var_id); ++i){
+            for(int j = 0; j < this_join_var_num-1; ++j){
+                if(basicquery->getEdgeNeighborID(need_to_join_var_id, i) == join_need_estimator[j]){
+                    edge_link.push_back(i);
+                    node_link.push_back(j);
+                    p_list.push_back(basicquery->getEdgePreID(need_to_join_var_id, i));
+                }
+            }
+        }
+
+
+
+        TYPE_PREDICATE_ID p1_id = basicquery->getEdgePreID(need_to_join_var_id, edge_link[0]);
+        char edge1_type = basicquery->getEdgeType(need_to_join_var_id, edge_link[0]);
+
+
+        if(edge1_type == Util::EDGE_IN){
+
+            for(int i = 0; i < last_sample.size(); ++i) {
+
+                unsigned *s_o_list = nullptr;
+                unsigned s_o_list_len = 0;
+                kv_store_->getobjIDlistBysubIDpreID(last_sample[i][node_link[0]], p_list[0], s_o_list, s_o_list_len, true);
+
+                for(int sample_index = 0; sample_index < s_o_list_len; ++sample_index){
+                    if(check_exist_this_triple(s_o_list[sample_index], statistics->type_pre_id, var_to_type_map[need_to_join_var_id])){
+                        int j;
+                        for(j = 1; j < edge_link.size(); ++j){
+                            if(basicquery->getEdgeType(need_to_join_var_id, edge_link[j]) == Util::EDGE_IN){
+                                if(!check_exist_this_triple(last_sample[i][node_link[j]], p_list[j], s_o_list[sample_index])){
+                                    break;
+                                }
+                            } else{
+                                if(!check_exist_this_triple(s_o_list[sample_index], p_list[j], last_sample[i][node_link[j]])){
+                                    break;
+                                }
+                            }
+                        }
+
+                        if(j == edge_link.size()){
+                            now_sample_num += 1;
+
+                            if(now_sample.size() < SAMPLE_CACHE_MAX){
+                                unsigned *need_insert_sample = new unsigned[this_join_var_num];
+                                memcpy(need_insert_sample, last_sample[i], sizeof(unsigned )*(this_join_var_num-1));
+                                need_insert_sample[this_join_var_num-1] = s_o_list[sample_index];
+
+                                now_sample.push_back(need_insert_sample);
+                            } else{
+                                if((double )rand() / (double)RAND_MAX < 1.0/now_sample_num){
+                                    int index_to_replace = rand()%SAMPLE_CACHE_MAX;
+
+//                                    for(int k = 0; k < this_join_var_num - 1; ++k){
+//                                        now_sample[index_to_replace][k] = last_sample[i][k];
+//                                    }
+                                    memcpy(now_sample[index_to_replace], last_sample[i], this_join_var_num - 1);
+                                    now_sample[index_to_replace][this_join_var_num-1] = s_o_list[sample_index];
+                                };
+                            }
+                        }
+                    }
+                }
+
+                delete[] s_o_list;
+
+            }
+            selectivity = (double)now_sample_num/(statistics->get_type_one_edge_typeid_num_by_id(var_to_type_map[node_link[0]],
+                                                                                                 p_list[0], var_to_type_map[need_to_join_var_id])
+                                                                                                         *last_sample.size());
+
+
+        } else {
+
+            for (int i = 0; i < last_sample.size(); ++i) {
+
+                unsigned *s_o_list = nullptr;
+                unsigned s_o_list_len = 0;
+                kv_store_->getsubIDlistByobjIDpreID(last_sample[i][node_link[0]], p_list[0], s_o_list, s_o_list_len,
+                                                    true);
+
+                for (int sample_index = 0; sample_index < s_o_list_len; ++sample_index) {
+                    if (check_exist_this_triple(s_o_list[sample_index], statistics->type_pre_id,
+                                                var_to_type_map[node_link[0]])) {
+                        int j;
+                        for (j = 1; j < edge_link.size(); ++j) {
+                            if (basicquery->getEdgeType(need_to_join_var_id, edge_link[j]) == Util::EDGE_IN) {
+                                if (!check_exist_this_triple(last_sample[i][node_link[j]], p_list[j],
+                                                             s_o_list[sample_index])) {
+                                    break;
+                                }
+                            } else {
+                                if (!check_exist_this_triple(s_o_list[sample_index], p_list[j],
+                                                             last_sample[i][node_link[j]])) {
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (j == edge_link.size()) {
+                            now_sample_num += 1;
+
+                            if (now_sample.size() < SAMPLE_CACHE_MAX) {
+                                unsigned *need_insert_sample = new unsigned[this_join_var_num];
+                                memcpy(need_insert_sample, last_sample[i], sizeof(unsigned) * (this_join_var_num - 1));
+                                need_insert_sample[this_join_var_num - 1] = s_o_list[sample_index];
+
+                                now_sample.push_back(need_insert_sample);
+                            } else {
+                                if ((double) rand() / (double) RAND_MAX < 1.0 / now_sample_num) {
+                                    int index_to_replace = rand() % SAMPLE_CACHE_MAX;
+
+//                                    for(int k = 0; k < this_join_var_num - 1; ++k){
+//                                        now_sample[index_to_replace][k] = last_sample[i][k];
+//                                    }
+                                    memcpy(now_sample[index_to_replace], last_sample[i], this_join_var_num - 1);
+                                    now_sample[index_to_replace][this_join_var_num - 1] = s_o_list[sample_index];
+                                };
+                            }
+                        }
+                    }
+                }
+
+                delete[] s_o_list;
+
+
+
+            }
+            selectivity = (double)now_sample_num/(statistics->get_type_one_edge_typeid_num_by_id(var_to_type_map[need_to_join_var_id],
+                                                                                                 p_list[0], var_to_type_map[node_link[0]])
+                                                                                                         *last_sample.size());
+
+
+        }
+
+
+
+        if(now_sample_num == 0){
+//            TODO：可以传入一个Int, 如果这种情况赋值 1
+            card_estimation = 1;
         } else{
-            this_sample = new unsigned[2*SAMPLE_CACHE_MAX+4];
-            this_sample[0] = SAMPLE_CACHE_MAX;
-            this_sample[1] = 2;
-            this_sample[2] = query_need_estimator->getIDByVarName(s);
-            this_sample[3] = query_need_estimator->getIDByVarName(o);
-            for(int i = 0; i < SAMPLE_CACHE_MAX; ++i){
-//                有放回抽样
-                int index = rand() % statistics_sample_size;
-                this_sample[2*i+4] = statistics->one_edge_typeid_sample[p_id][s_o_type][index].s_type_id;
-                this_sample[2*i+5] = statistics->one_edge_typeid_sample[p_id][s_o_type][index].o_type_id;
-            }
+//            double selectivity = (double)now_sample_num/(last_sample.size()*var_to_num_map[join_need_estimator[this_join_var_num-1]]);
+            card_estimation = max((unsigned )(last_card_estimation * selectivity), (unsigned )1);
+
         }
-        if(_cardinality_cache.size() == 0){
-//            cache is empty
-            map<shared_ptr<BasicQuery>, unsigned> this_card_map;
-            this_card_map.insert(make_pair(query_need_estimator, card_estimation));
-            _cardinality_cache.push_back(this_card_map);
-            map<shared_ptr<BasicQuery>, unsigned *> this_sample_map;
-            this_sample_map.insert(make_pair(query_need_estimator, this_sample));
-            sample_cache.push_back(this_sample_map);
-        }else{
-            _cardinality_cache[0].insert(make_pair(query_need_estimator, card_estimation));
-            sample_cache[0].insert(make_pair(query_need_estimator, this_sample));
+
+        if(_cardinality_cache.size() < this_join_var_num-1){
+            map<vector<int>, unsigned> this_size_card_cache;
+            this_size_card_cache.insert(make_pair(join_need_estimator, card_estimation));
+            _cardinality_cache.push_back(this_size_card_cache);
+
+            map<vector<int>, vector<unsigned *>> this_size_sample_cache;
+            this_size_sample_cache.insert(make_pair(join_need_estimator, now_sample));
+            _sample_cache.push_back(this_size_sample_cache);
+        } else{
+            _cardinality_cache[this_join_var_num-2].insert(make_pair(join_need_estimator, card_estimation));
+            _sample_cache[this_join_var_num-2].insert(make_pair(join_need_estimator, now_sample));
         }
 
         return card_estimation;
 
-    }else if(triple_num_last == 1){
-//        need to assume the query_need_estimator is not (s1) -> (s2), (s2) -> (s1)
-//        but (s1) (s2) (s3) in the two triple may be different
-
-//        (s1) -> (s2), (s2) -> (s3)
-        if(query_need_estimator->getTriple(0).getObject() == query_need_estimator->getTriple(1).getSubject()){
-            TWO_EDGES_ENTITY_TYPE_ID s1_s2_s3_type_id(var_type_map[query_need_estimator->getTriple(0).getSubject()],
-                                                  var_type_map[query_need_estimator->getTriple(0).getObject()],
-                                                  var_type_map[query_need_estimator->getTriple(1).getObject()]);
-            TWO_PRE_ID p1_p2_id(kvstore->getIDByPredicate(query_need_estimator->getTriple(0).getPredicate()),
-                                kvstore->getIDByPredicate(query_need_estimator->getTriple(1).getPredicate()));
-
-            unsigned card_estimation = statistics->get_type_two_edges_type1id_num_by_id(p1_p2_id, s1_s2_s3_type_id);
-
-            unsigned *this_sample;
-            int statistics_sample_size = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id].size();
-
-            if(statistics_sample_size<SAMPLE_CACHE_MAX){
-                this_sample = new unsigned[3*statistics_sample_size+5];
-                this_sample[0] = statistics_sample_size;
-                this_sample[1] = 3;
-                this_sample[2] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getSubject());
-                this_sample[3] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getObject());
-                this_sample[4] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(1).getObject());
-
-                for(int i = 0; i < statistics_sample_size; i+=2){
-                    this_sample[3*i+5] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][i].s1_type_id;
-                    this_sample[3*i+6] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][i].s2_type_id;
-                    this_sample[3*i+7] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][i].s3_type_id;
-
-                }
-            } else{
-                this_sample = new unsigned[3*SAMPLE_CACHE_MAX+5];
-                this_sample[0] = SAMPLE_CACHE_MAX;
-                this_sample[1] = 3;
-                this_sample[2] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getSubject());
-                this_sample[3] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getObject());
-                this_sample[4] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(1).getObject());
-                for(int i = 0; i < SAMPLE_CACHE_MAX; ++i){
-//                有放回抽样
-                    int index = rand() % statistics_sample_size;
-                    this_sample[3*i+5] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][index].s1_type_id;
-                    this_sample[3*i+6] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][index].s2_type_id;
-                    this_sample[3*i+7] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][index].s3_type_id;
-
-                }
-            }
-
-            if(_cardinality_cache.size() < 2) {
-                map<shared_ptr<BasicQuery>, unsigned> this_card_map;
-                this_card_map.insert(make_pair(query_need_estimator, card_estimation));
-                _cardinality_cache.push_back(this_card_map);
-                map<shared_ptr<BasicQuery>, unsigned *> this_sample_map;
-                this_sample_map.insert(make_pair(query_need_estimator, this_sample));
-                sample_cache.push_back(this_sample_map);
-            }else{
-                _cardinality_cache[1].insert(make_pair(query_need_estimator, card_estimation));
-                sample_cache[1].insert(make_pair(query_need_estimator, this_sample));
-            }
-
-            return card_estimation;
-        }
-
-//        (s1) -> (s2), (s1) -> (s3)
-        if(query_need_estimator->getTriple(0).getSubject() == query_need_estimator->getTriple(1).getSubject()){
-
-            TWO_EDGES_ENTITY_TYPE_ID s1_s2_s3_type_id(var_type_map[query_need_estimator->getTriple(0).getSubject()],
-                                                     var_type_map[query_need_estimator->getTriple(0).getObject()],
-                                                     var_type_map[query_need_estimator->getTriple(1).getObject()]);
-            TWO_PRE_ID p1_p2_id(kvstore->getIDByPredicate(query_need_estimator->getTriple(0).getPredicate()),
-                                kvstore->getIDByPredicate(query_need_estimator->getTriple(1).getPredicate()));
-
-            unsigned card_estimation = statistics->get_type_two_edges_type2id_num_by_id(p1_p2_id, s1_s2_s3_type_id);
-
-            unsigned *this_sample;
-            int statistics_sample_size = statistics->two_edges_type2id_sample[p1_p2_id][s1_s2_s3_type_id].size();
-
-            if(statistics_sample_size<SAMPLE_CACHE_MAX){
-                this_sample = new unsigned[3*statistics_sample_size+5];
-                this_sample[0] = statistics_sample_size;
-                this_sample[1] = 3;
-                this_sample[2] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getSubject());
-                this_sample[3] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getObject());
-                this_sample[4] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(1).getObject());
-
-                for(int i = 0; i < statistics_sample_size; i+=2){
-                    this_sample[3*i+5] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][i].s1_type_id;
-                    this_sample[3*i+6] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][i].s2_type_id;
-                    this_sample[3*i+7] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][i].s3_type_id;
-
-                }
-            } else{
-                this_sample = new unsigned[3*SAMPLE_CACHE_MAX+5];
-                this_sample[0] = SAMPLE_CACHE_MAX;
-                this_sample[1] = 3;
-                this_sample[2] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getSubject());
-                this_sample[3] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getObject());
-                this_sample[4] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(1).getObject());
-
-                for(int i = 0; i < SAMPLE_CACHE_MAX; ++i){
-//                有放回抽样
-                    int index = rand() % statistics_sample_size;
-                    this_sample[3*i+5] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][index].s1_type_id;
-                    this_sample[3*i+6] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][index].s2_type_id;
-                    this_sample[3*i+7] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][index].s3_type_id;
-
-                }
-            }
-
-            if(_cardinality_cache.size() < 2) {
-                map<shared_ptr<BasicQuery>, unsigned> this_card_map;
-                this_card_map.insert(make_pair(query_need_estimator, card_estimation));
-                _cardinality_cache.push_back(this_card_map);
-                map<shared_ptr<BasicQuery>, unsigned *> this_sample_map;
-                this_sample_map.insert(make_pair(query_need_estimator, this_sample));
-                sample_cache.push_back(this_sample_map);
-            }else{
-                _cardinality_cache[1].insert(make_pair(query_need_estimator, card_estimation));
-                sample_cache[1].insert(make_pair(query_need_estimator, this_sample));
-            }
-
-            return card_estimation;
-        }
-
-//        (s1) -> (s2), (s3) -> (s2)
-        if(query_need_estimator->getTriple(0).getObject() == query_need_estimator->getTriple(1).getObject()){
-            TWO_EDGES_ENTITY_TYPE_ID s1_s2_s3_type_id(var_type_map[query_need_estimator->getTriple(0).getSubject()],
-                                                      var_type_map[query_need_estimator->getTriple(0).getObject()],
-                                                      var_type_map[query_need_estimator->getTriple(1).getSubject()]);
-            TWO_PRE_ID p1_p2_id(kvstore->getIDByPredicate(query_need_estimator->getTriple(0).getPredicate()),
-                                kvstore->getIDByPredicate(query_need_estimator->getTriple(1).getPredicate()));
-
-            unsigned card_estimation = statistics->get_type_two_edges_type1id_num_by_id(p1_p2_id, s1_s2_s3_type_id);
-
-            unsigned *this_sample;
-            int statistics_sample_size = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id].size();
-
-            if(statistics_sample_size<SAMPLE_CACHE_MAX){
-                this_sample = new unsigned[3*statistics_sample_size+5];
-                this_sample[0] = statistics_sample_size;
-                this_sample[1] = 3;
-                this_sample[2] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getSubject());
-                this_sample[3] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getObject());
-                this_sample[4] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(1).getSubject());
-
-                for(int i = 0; i < statistics_sample_size; i+=2){
-                    this_sample[3*i+5] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][i].s1_type_id;
-                    this_sample[3*i+6] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][i].s2_type_id;
-                    this_sample[3*i+7] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][i].s3_type_id;
-
-                }
-            } else{
-                this_sample = new unsigned[3*SAMPLE_CACHE_MAX+5];
-                this_sample[0] = SAMPLE_CACHE_MAX;
-                this_sample[1] = 3;
-                this_sample[2] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getSubject());
-                this_sample[3] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getObject());
-                this_sample[4] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(1).getSubject());
-                for(int i = 0; i < SAMPLE_CACHE_MAX; ++i){
-//                有放回抽样
-                    int index = rand() % statistics_sample_size;
-                    this_sample[3*i+5] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][index].s1_type_id;
-                    this_sample[3*i+6] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][index].s2_type_id;
-                    this_sample[3*i+7] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][index].s3_type_id;
-
-                }
-            }
-
-            if(_cardinality_cache.size() < 2) {
-                map<shared_ptr<BasicQuery>, unsigned> this_card_map;
-                this_card_map.insert(make_pair(query_need_estimator, card_estimation));
-                _cardinality_cache.push_back(this_card_map);
-                map<shared_ptr<BasicQuery>, unsigned *> this_sample_map;
-                this_sample_map.insert(make_pair(query_need_estimator, this_sample));
-                sample_cache.push_back(this_sample_map);
-            }else{
-                _cardinality_cache[1].insert(make_pair(query_need_estimator, card_estimation));
-                sample_cache[1].insert(make_pair(query_need_estimator, this_sample));
-            }
-
-            return card_estimation;
-        }
-
-//        (s1) -> (s2), (s3) -> (s1). also type1
-        if(query_need_estimator->getTriple(0).getSubject() == query_need_estimator->getTriple(1).getObject()){
-            TWO_EDGES_ENTITY_TYPE_ID s1_s2_s3_type_id(var_type_map[query_need_estimator->getTriple(1).getSubject()],
-                                                      var_type_map[query_need_estimator->getTriple(1).getObject()],
-                                                      var_type_map[query_need_estimator->getTriple(0).getObject()]);
-            TWO_PRE_ID p1_p2_id(kvstore->getIDByPredicate(query_need_estimator->getTriple(1).getPredicate()),
-                                kvstore->getIDByPredicate(query_need_estimator->getTriple(0).getPredicate()));
-
-            unsigned card_estimation = statistics->get_type_two_edges_type1id_num_by_id(p1_p2_id, s1_s2_s3_type_id);
-
-            unsigned *this_sample;
-            int statistics_sample_size = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id].size();
-
-            if(statistics_sample_size<SAMPLE_CACHE_MAX){
-                this_sample = new unsigned[3*statistics_sample_size+5];
-                this_sample[0] = statistics_sample_size;
-                this_sample[1] = 3;
-                this_sample[2] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(1).getSubject());
-                this_sample[3] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(1).getObject());
-                this_sample[4] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getObject());
-
-                for(int i = 0; i < statistics_sample_size; i+=2){
-                    this_sample[3*i+5] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][i].s1_type_id;
-                    this_sample[3*i+6] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][i].s2_type_id;
-                    this_sample[3*i+7] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][i].s3_type_id;
-
-                }
-            } else{
-                this_sample = new unsigned[3*SAMPLE_CACHE_MAX+5];
-                this_sample[0] = SAMPLE_CACHE_MAX;
-                this_sample[1] = 3;
-                this_sample[2] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(1).getSubject());
-                this_sample[3] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(1).getObject());
-                this_sample[4] = query_need_estimator->getIDByVarName(query_need_estimator->getTriple(0).getObject());
-                for(int i = 0; i < SAMPLE_CACHE_MAX; ++i){
-//                有放回抽样
-                    int index = rand() % statistics_sample_size;
-                    this_sample[3*i+5] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][index].s1_type_id;
-                    this_sample[3*i+6] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][index].s2_type_id;
-                    this_sample[3*i+7] = statistics->two_edges_type1id_sample[p1_p2_id][s1_s2_s3_type_id][index].s3_type_id;
-
-                }
-            }
-
-            if(_cardinality_cache.size() < 2) {
-                map<shared_ptr<BasicQuery>, unsigned> this_card_map;
-                this_card_map.insert(make_pair(query_need_estimator, card_estimation));
-                _cardinality_cache.push_back(this_card_map);
-                map<shared_ptr<BasicQuery>, unsigned *> this_sample_map;
-                this_sample_map.insert(make_pair(query_need_estimator, this_sample));
-                sample_cache.push_back(this_sample_map);
-            }else{
-                _cardinality_cache[1].insert(make_pair(query_need_estimator, card_estimation));
-                sample_cache[1].insert(make_pair(query_need_estimator, this_sample));
-            }
-
-            return card_estimation;
-        }
-
-
-
-    }else{
-//        If there is no ring in the query_need_estimator(var_num = triple_num + 1),
-//        only need to multipy a selectivity (a num larger than 1).
-//        If there is a ring in the query_need_estimator, and is the edge add recently bring the ring,
-//        we need to check the cache to determine the selectivity.
-//        So we need a function to check whether the recently added edge bring a ring or not.
-
-//  TODO: exist_ring
-//        if(!exist_ring(query_need_estimator, triple_num_last)){
-//            unsigned selectivity = statistics->get_type_one_edge_typeid_num_by_id(
-//                    var_type_map[query_need_estimator->getTriple(triple_num_last).getSubject()],
-//                    kvstore->getIDByPredicate(query_need_estimator->getTriple(triple_num_last).getPredicate()),
-//                    var_type_map[query_need_estimator->getTriple(triple_num_last).getObject()]);
-//
-////            TODO: getlast_card-estimation()
-//            unsigned card_estimation = getlast_card_estimation(query_need_estimator) * selectivity;
-//
-//
-//        }
-
-        unsigned last_card = getlast_card_estimation(query_need_estimator, last_query, _cardinality_cache, triple_num_last);
-
-
-//        TODO: check_already_have_only_need_to_get_id
-        unsigned s_already_index = check_already_have(query_need_estimator->getIDByVarName(query_need_estimator->getTriple(triple_num_last).getSubject()),
-                                                      last_query_var_num, sample_cache[triple_num_last-1][last_query]);
-        unsigned o_already_index = check_already_have(query_need_estimator->getIDByVarName(query_need_estimator->getTriple(triple_num_last).getObject()),
-                                                      last_query_var_num, sample_cache[triple_num_last-1][last_query]);
-//        the new added edge bring a ring
-        if(s_already_index != -1){
-            if(o_already_index != -1){
-                auto this_last_sample = sample_cache[triple_num_last-1][last_query];
-
-                int checked_pass_num = 0;
-                vector<unsigned*> this_sample;
-                for(int i = 0; i < this_last_sample[0]; ++i){
-//                    copy from Database::exist_triple
-                    unsigned* _objidlist = nullptr;
-                    unsigned _list_len = 0;
-                    //get exclusive before update!
-                    kvstore->getobjIDlistBysubIDpreID(this_last_sample[(i+1)*last_query_var_num+2+s_already_index],
-                                                      p_id, _objidlist, _list_len, true);
-
-                    if (Util::bsearch_int_uporder(this_last_sample[(i+1)*last_query_var_num+2+o_already_index], _objidlist, _list_len) != INVALID){
-                        checked_pass_num++;
-                        unsigned* this_checked_sample = new unsigned[last_query_var_num];
-                        memcpy(this_checked_sample, this_last_sample+(i+1)*last_query_var_num+2, sizeof(unsigned) * last_query_var_num);
-                        this_sample.push_back(this_checked_sample);
-                    }
-                    delete[] _objidlist;
-                }
-
-//                TODO: maybe wrong
-                double selectivity = (double)checked_pass_num/this_last_sample[0];
-
-                unsigned card_estimation = (unsigned)(selectivity * this_last_sample[0]);
-                unsigned *this_sample_cache = new unsigned[2+last_query_var_num*(checked_pass_num+1)];
-                this_sample_cache[0] = checked_pass_num;
-                memcpy(this_sample_cache+1, this_last_sample+1, sizeof(unsigned) * (1+last_query_var_num));
-
-//                because last_query_sample_cache.size <= SAMPLE_CACHE_MAX,
-//                checked_pass_num <= last_query_sample_cache.size <= SAMPLE_CACHE_MAX,
-//                no need to check checked_pass_num <= SAMPLE_CACHE_MAX or not
-                for(int i = 0; i < checked_pass_num; i++){
-                    memcpy(this_sample_cache+2+last_query_var_num*(i+1), this_sample[i], sizeof(unsigned ) * last_query_var_num);
-                }
-
-                if(_cardinality_cache.size() <= triple_num_last) {
-                    map<shared_ptr<BasicQuery>, unsigned> this_card_map;
-                    this_card_map.insert(make_pair(query_need_estimator, card_estimation));
-                    _cardinality_cache.push_back(this_card_map);
-                    map<shared_ptr<BasicQuery>, unsigned *> this_sample_map;
-                    this_sample_map.insert(make_pair(query_need_estimator, this_sample_cache));
-                    sample_cache.push_back(this_sample_map);
-                }else{
-                    _cardinality_cache[triple_num_last].insert(make_pair(query_need_estimator, card_estimation));
-                    sample_cache[triple_num_last].insert(make_pair(query_need_estimator, this_sample_cache));
-                }
-
-                return card_estimation;
-            }
-        }
-
-
-//        just a chain, multiply the one_edge_statistics_selectivity (usually larger than 1)
-        int selectivity = statistics->get_type_one_edge_typeid_num_by_id(
-                var_type_map[query_need_estimator->getTriple(triple_num_last).getSubject()],
-                p_id,
-                var_type_map[query_need_estimator->getTriple(triple_num_last).getObject()]);
-
-        unsigned card_estimation = selectivity * last_card;
-
-//        first do all expend, than sample from it
-        vector<unsigned *> last_sample_output;
-
-        unsigned *last_sample = sample_cache[triple_num_last][last_query];
-
-        unsigned size = last_sample[0];
-        unsigned *s_or_o_list = nullptr;
-        unsigned s_or_o_list_len = 0;
-        unsigned index = 0;
-
-        for(int i = 0; i < last_query_var_num; ++i){
-//            need to read sp2o
-            if(last_sample[i+1] == query_need_estimator->getIDByVarName(query_need_estimator->getTriple(triple_num_last).getSubject())){
-                vector<unsigned *> after_expend;
-
-                for(unsigned j = 0; j < size; ++j) {
-                    kvstore->getobjIDlistBysubIDpreID(last_sample[2 + last_query_var_num * (j + 1) + i],
-                                                      p_id, s_or_o_list, s_or_o_list_len, true);
-                    for (unsigned k = 0; k < s_or_o_list_len; ++k) {
-                        unsigned *this_sample = new unsigned[last_query_var_num + 1];
-                        memcpy(this_sample, last_sample + 2 + last_query_var_num * (j + 1),
-                               sizeof(unsigned) * last_query_var_num);
-                        this_sample[last_query_var_num] = s_or_o_list[k];
-                        after_expend.push_back(this_sample);
-                        index++;
-                    }
-                }
-
-                if(index < SAMPLE_CACHE_MAX){
-                    unsigned *now_cache_sample = new unsigned[index*(last_query_var_num+1)+2];
-                    now_cache_sample[0] = index;
-                    now_cache_sample[1] = last_query_var_num+1;
-                    for(unsigned k = 0; k < index; ++k){
-                        memcpy(now_cache_sample + k*(last_query_var_num+1)+2, after_expend[k], sizeof(unsigned )*(last_query_var_num+1));
-                    }
-                    if(_cardinality_cache.size() < triple_num_last) {
-                        map<shared_ptr<BasicQuery>, unsigned> this_card_map;
-                        this_card_map.insert(make_pair(query_need_estimator, card_estimation));
-                        _cardinality_cache.push_back(this_card_map);
-
-//                            TODO: now_cache_sample 会不会丢失？
-                        map<shared_ptr<BasicQuery>, unsigned *> this_sample_map;
-                        this_sample_map.insert(make_pair(query_need_estimator, now_cache_sample));
-                        sample_cache.push_back(this_sample_map);
-                    }else{
-                        _cardinality_cache[triple_num_last].insert(make_pair(query_need_estimator, card_estimation));
-                        sample_cache[triple_num_last].insert(make_pair(query_need_estimator, now_cache_sample));
-                    }
-
-                }else{
-//                        need to sample SAMPLE_CACHE_MAX
-                    unsigned *now_cache_sample = new unsigned[SAMPLE_CACHE_MAX*(last_query_var_num+1)+2];
-                    for(int now_sample_num = 0; now_sample_num < SAMPLE_CACHE_MAX; ++now_sample_num){
-                        int sample_index = rand() % index;
-                        memcpy(now_cache_sample + now_sample_num*(last_query_var_num+1)+2, after_expend[sample_index], sizeof(unsigned )*(last_query_var_num+1));
-                    }
-
-                    if(_cardinality_cache.size() < triple_num_last) {
-                        map<shared_ptr<BasicQuery>, unsigned> this_card_map;
-                        this_card_map.insert(make_pair(query_need_estimator, card_estimation));
-                        _cardinality_cache.push_back(this_card_map);
-
-//                            TODO: now_cache_sample 会不会丢失？
-                        map<shared_ptr<BasicQuery>, unsigned *> this_sample_map;
-                        this_sample_map.insert(make_pair(query_need_estimator, now_cache_sample));
-                        sample_cache.push_back(this_sample_map);
-                    }else{
-                        _cardinality_cache[triple_num_last].insert(make_pair(query_need_estimator, card_estimation));
-                        sample_cache[triple_num_last].insert(make_pair(query_need_estimator, now_cache_sample));
-                    }
-                }
-
-                return card_estimation;
-            }
-//            need to read op2s
-            if(last_sample[i+1] == query_need_estimator->getIDByVarName(query_need_estimator->getTriple(triple_num_last).getObject())){
-                vector<unsigned *> after_expend;
-
-                for(unsigned j = 0; j < size; ++j) {
-                    kvstore->getsubIDlistByobjIDpreID(last_sample[2 + last_query_var_num * (j + 1) + i],
-                                                      p_id, s_or_o_list, s_or_o_list_len, true);
-                    for (unsigned k = 0; k < s_or_o_list_len; ++k) {
-                        unsigned *this_sample = new unsigned[last_query_var_num + 1];
-                        memcpy(this_sample, last_sample + 2 + last_query_var_num * (j + 1),
-                               sizeof(unsigned) * last_query_var_num);
-                        this_sample[last_query_var_num] = s_or_o_list[k];
-                        after_expend.push_back(this_sample);
-                        index++;
-                    }
-                }
-
-                if(index < SAMPLE_CACHE_MAX){
-                    unsigned *now_cache_sample = new unsigned[index*(last_query_var_num+1)+2];
-                    now_cache_sample[0] = index;
-                    now_cache_sample[1] = last_query_var_num+1;
-                    for(unsigned k = 0; k < index; ++k){
-                        memcpy(now_cache_sample + k*(last_query_var_num+1)+2, after_expend[k], sizeof(unsigned )*(last_query_var_num+1));
-                    }
-                    if(_cardinality_cache.size() < triple_num_last) {
-                        map<shared_ptr<BasicQuery>, unsigned> this_card_map;
-                        this_card_map.insert(make_pair(query_need_estimator, card_estimation));
-                        _cardinality_cache.push_back(this_card_map);
-
-//                            TODO: now_cache_sample 会不会丢失？
-                        map<shared_ptr<BasicQuery>, unsigned *> this_sample_map;
-                        this_sample_map.insert(make_pair(query_need_estimator, now_cache_sample));
-                        sample_cache.push_back(this_sample_map);
-                    }else{
-                        _cardinality_cache[triple_num_last].insert(make_pair(query_need_estimator, card_estimation));
-                        sample_cache[triple_num_last].insert(make_pair(query_need_estimator, now_cache_sample));
-                    }
-
-                }else{
-//                        need to sample SAMPLE_CACHE_MAX
-                    unsigned *now_cache_sample = new unsigned[SAMPLE_CACHE_MAX*(last_query_var_num+1)+2];
-                    for(int now_sample_num = 0; now_sample_num < SAMPLE_CACHE_MAX; ++now_sample_num){
-                        int sample_index = rand() % index;
-                        memcpy(now_cache_sample + now_sample_num*(last_query_var_num+1)+2, after_expend[sample_index], sizeof(unsigned )*(last_query_var_num+1));
-                    }
-
-                    if(_cardinality_cache.size() < triple_num_last) {
-                        map<shared_ptr<BasicQuery>, unsigned> this_card_map;
-                        this_card_map.insert(make_pair(query_need_estimator, card_estimation));
-                        _cardinality_cache.push_back(this_card_map);
-
-//                            TODO: now_cache_sample 会不会丢失？
-                        map<shared_ptr<BasicQuery>, unsigned *> this_sample_map;
-                        this_sample_map.insert(make_pair(query_need_estimator, now_cache_sample));
-                        sample_cache.push_back(this_sample_map);
-                    }else{
-                        _cardinality_cache[triple_num_last].insert(make_pair(query_need_estimator, card_estimation));
-                        sample_cache[triple_num_last].insert(make_pair(query_need_estimator, now_cache_sample));
-                    }
-                }
-
-                return card_estimation;
-            }
-        }
-
     }
 
 
 
+}
+
+unsigned Optimizer::cardinality_estimator(shared_ptr<BasicQuery> basicquery, vector<vector<int>> join_need_estimator,
+                                          map<int, unsigned> var_to_num_map, map<int, vector<TYPE_ENTITY_LITERAL_ID >> var_to_sample_cache,
+                                          map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
+                                          vector<map<vector<int>, unsigned >> &_cardinality_cache,
+                                          vector<map<vector<int>, vector<unsigned*> >> &_sample_cache) {
+
+    unsigned card_estimation = 0;
+
+    for(auto small_query : join_need_estimator){
+
+        int small_query_var_num = small_query.size();
+
+        if(_cardinality_cache[small_query_var_num-2].find(small_query) != _cardinality_cache[small_query_var_num-2].end()){
+            card_estimation += _cardinality_cache[small_query_var_num-2][small_query];
+        } else{
+            card_estimation += get_small_query_card_estimation(basicquery,var_to_num_map, var_to_type_map, var_to_sample_cache,
+                                                               small_query, small_query_var_num, _cardinality_cache, _sample_cache);
+        }
+    }
+
+    return card_estimation;
+}
+
+unsigned Optimizer::card_estimator(shared_ptr<BasicQuery> basicquery, vector<int> last_plan, int this_join_node,
+                        vector<map<vector<int>, unsigned>> &_card_cache){
+    ;
+}
 
 
-return 0;
+//    save every nei_id of now_in_plan_node in nei_node
+void Optimizer::get_nei_by_subplan(shared_ptr<BasicQuery> basicquery, vector<int> &last_plan_node,
+                               set<int> &nei_node){
+    ;
+    for(int node_in_plan : last_plan_node){
+        for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
+            if(find(last_plan_node.begin(), last_plan_node.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
+                        == last_plan_node.end()){
+                nei_node.insert(basicquery->getEdgeNeighborID(node_in_plan, i));
+            }
+        }
+    }
+}
 
+void Optimizer::get_last_plan_node(vector<vector<int>> last_plan, vector<int> &last_plan_node){
+
+    for(int i = 1; i < last_plan.size(); ++i){
+        for(int node_in_plan : last_plan[i]){
+            if(find(last_plan_node.begin(), last_plan_node.end(), node_in_plan) == last_plan_node.end()){
+                last_plan_node.push_back(node_in_plan);
+            }
+        }
+    }
+
+    sort(last_plan_node.begin(), last_plan_node.end());
+}
+
+
+//// not complete, maybe not used
+//void get_nei_by_subplan(shared_ptr<BasicQuery> basicquery, vector<vector<int>> last_plan,
+//                               set<int> &nei_node_ref){
+//    ;
+////    vector<int>
+//    for(auto small_plan : last_plan){
+//        for(int node_in_plan : small_plan){
+//            for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
+//                if(find(now_in_plan_node.begin(), now_in_plan_node.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
+//                   == now_in_plan_node.end()){
+//                    nei_node.insert(basicquery->getEdgeNeighborID(node_in_plan, i));
+//                }
+//            }
+//        }
+//        for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
+//            if(find(now_in_plan_node.begin(), now_in_plan_node.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
+//               == now_in_plan_node.end()){
+//                nei_node.insert(basicquery->getEdgeNeighborID(node_in_plan, i));
+//            }
+//        }
+//    }
+//}
+
+// first node
+void Optimizer::considerallscan(shared_ptr<BasicQuery> basicquery,
+                     vector<map<vector<int>, unsigned >> &card_cache_ref,
+                     vector<map<vector<vector<int>>, unsigned >> &cost_cache_ref,
+                     map<int, unsigned > &var_to_num_map_ref,
+                     map<int, TYPE_ENTITY_LITERAL_ID> &var_to_type_map_ref){
+
+    for(int i = 0 ; i < basicquery->getTotalVarNum(); ++i){
+
+        vector<int> this_scan{i};
+        vector<vector<int>> this_plan{this_scan};
+
+        for(int j = 0; j < basicquery->getVarDegree(i); ++j){
+            if(basicquery->getEdgePreID(i, j) == statistics->type_pre_id){
+                var_to_type_map_ref[i] = basicquery->getEdgeNeighborID(i, j);
+                var_to_num_map_ref[i] = statistics->get_type_num_by_type_id(basicquery->getEdgeNeighborID(i, j));
+            }
+        }
+
+        if(card_cache_ref.size() < 1){
+            map<vector<int>, unsigned > one_node_card_map;
+            map<vector<vector<int>>, unsigned > one_node_cost_map;
+
+            one_node_card_map.insert(make_pair(this_scan, var_to_num_map_ref[i]));
+            one_node_cost_map.insert(make_pair(this_plan, var_to_num_map_ref[i]));
+
+            card_cache_ref.push_back(one_node_card_map);
+            cost_cache_ref.push_back(one_node_cost_map);
+        } else{
+            card_cache_ref[0].insert(make_pair(this_scan, var_to_num_map_ref[i]));
+            cost_cache_ref[0].insert(make_pair(this_plan, var_to_num_map_ref[i]));
+        }
+    }
+
+}
+
+// add one node, the added node need to be linked by nodes in plan before
+void Optimizer::considerwcojoin(shared_ptr<BasicQuery> basicquery,
+                     int node_num, vector<map<vector<int>, unsigned >> &card_cache,
+                     vector<map<vector<vector<int>>, unsigned>> &cost_cache){
+
+    for(auto last_plan : cost_cache[node_num - 1]){
+
+        set<int> nei_node;
+        vector<int> last_plan_node;
+
+        get_last_plan_node(last_plan.first, last_plan_node);
+        get_nei_by_subplan(basicquery, last_plan_node, nei_node);
+
+        for(int next_node : nei_node) {
+
+            if (last_plan.first.size() == 2) {
+//            直接接在第一行后面
+
+                vector<vector<int>> new_plan(last_plan.first);
+                new_plan[1].push_back(next_node);
+
+                cost_model_for_wco(basicquery, new_plan, next_node,
+                                   last_plan_node, last_plan.first,
+                                    card_cache, cost_cache);
+            } else {
+//            需要另起一行
+
+                vector<vector<int>> new_plan(last_plan.first);
+                vector<int> next_small_plan{next_node};
+
+                new_plan.push_back(next_small_plan);
+                new_plan[0].push_back(new_plan.size()-2);
+
+                cost_model_for_wco(basicquery, new_plan, next_node,
+                                   last_plan_node, last_plan.first,
+                                   card_cache, cost_cache);
+            }
+        }
+    }
+
+}
+
+void Optimizer::cost_model_for_wco(shared_ptr<BasicQuery> basicquery, vector<vector<int>> &new_plan, int next_node,
+                        vector<int> last_plan_node, const vector<vector<int>> &last_plan,
+                        vector<map<vector<int>, unsigned>> &card_cache, vector<map<vector<vector<int>>, unsigned>> &cost_cache){
+    int last_plan_node_size = last_plan_node.size();
+
+    unsigned wco_cost = cost_cache[last_plan_node_size-1][last_plan];
+    wco_cost += card_estimator(basicquery, last_plan_node, next_node, card_cache);
+
+
+    if(cost_cache.size() <= last_plan_node_size){
+        map<vector<vector<int>>, unsigned> new_plan_cost_map;
+        new_plan_cost_map.insert(make_pair(new_plan, wco_cost));
+        cost_cache.push_back(new_plan_cost_map);
+    } else{
+        cost_cache[last_plan_node_size].insert(make_pair(new_plan, wco_cost));
+    }
+}
+
+//  0: cannot do binary join
+//  1: small_plan is the small table
+//  2: another_small_plan is the small table
+int Optimizer::check_two_plan_could_binary_join(vector<int> &last_plan_node,
+                                     const vector<vector<int>> &small_plan, const vector<vector<int>> &another_small_plan,
+                                     vector<map<vector<int>, unsigned>> &card_cache){
+
+    vector<int> small_plan_node_vec;
+    vector<int> another_samll_plan_node_vec;
+    get_last_plan_node(small_plan, small_plan_node_vec);
+    get_last_plan_node(another_small_plan, another_samll_plan_node_vec);
+
+    bool union_is_not_empty = false;
+    int which_table_small = (card_cache[small_plan_node_vec.size()-1][small_plan_node_vec]
+                            < card_cache[another_samll_plan_node_vec.size()-1][another_samll_plan_node_vec]) ? 1 : 2;
+
+    for(int j = 0; j < another_samll_plan_node_vec.size(); ++j){
+        if(find(small_plan_node_vec.begin(), small_plan_node_vec.end(), another_samll_plan_node_vec[j]) == small_plan_node_vec.end()){
+            small_plan_node_vec.push_back(another_samll_plan_node_vec[j]);
+        }else{
+            union_is_not_empty = true;
+        }
+    }
+
+    if(union_is_not_empty){
+
+        sort(small_plan_node_vec.begin(), small_plan_node_vec.end());
+
+        if(small_plan_node_vec == last_plan_node){
+            return which_table_small;
+        } else{
+            return 0;
+        }
+    } else{
+        return 0;
+    }
+}
+
+
+//  get binary join plan from small_plan and another_samll_plan
+//  small_plan is the smaller plan (in the sense of cardinality)
+vector<vector<int>> Optimizer::get_binary_plan(const vector<vector<int>> &small_plan, const vector<vector<int>> &another_small_plan){
+    vector<vector<int>> binary_plan(small_plan);
+
+    for(int i = 1; i < another_small_plan.size(); ++i){
+        binary_plan.push_back(another_small_plan[i]);
+    }
+
+    binary_plan[0].push_back(small_plan.size() + another_small_plan.size() - 3);
+
+    for(int i = 0; i < another_small_plan[0].size(); ++i){
+        binary_plan[0].push_back(another_small_plan[0][i] + small_plan.size()-2);
+    }
+
+    return binary_plan;
+}
+
+// not add nodes, but to consider if binaryjoin could decrease cost
+void Optimizer::considerbinaryjoin(shared_ptr<BasicQuery> basicquery, int node_num,
+                     vector<map<vector<int>, unsigned>> &card_cache,
+                     vector<map<vector<vector<int>>, unsigned>> &cost_cache){
+
+    int min_size = 3;
+    int max_size = min(min_size, node_num - min_size);
+
+
+    for(auto need_considerbinaryjoin_plan : cost_cache[node_num - 1]){
+        vector<int> last_plan_node;
+        get_last_plan_node(need_considerbinaryjoin_plan.first, last_plan_node);
+
+        for(int small_plan_node_num = min_size; small_plan_node_num <= max_size; ++small_plan_node_num){
+            for(auto small_plan_cost_pair : cost_cache[small_plan_node_num - 1]){
+                for(int another_small_plan_node_num = node_num - small_plan_node_num + 1;
+                    another_small_plan_node_num < node_num; ++another_small_plan_node_num){
+
+                    for(auto another_small_plan_cost_pair : cost_cache[another_small_plan_node_num - 1]){
+
+                        int could_binary_join = check_two_plan_could_binary_join(last_plan_node,
+                                                                                 small_plan_cost_pair.first, another_small_plan_cost_pair.first, card_cache);
+                        if(could_binary_join != 0){
+
+                            if(could_binary_join == 1){
+                                unsigned binary_cost = cost_model_for_binary(small_plan_node_num, small_plan_cost_pair.first,
+                                                                             another_small_plan_node_num, another_small_plan_cost_pair.first, cost_cache);
+
+                                if(binary_cost < need_considerbinaryjoin_plan.second){
+                                    vector<vector<int>> binary_plan = get_binary_plan(small_plan_cost_pair.first, another_small_plan_cost_pair.first);
+                                    cost_cache[node_num - 1].insert(make_pair(binary_plan, binary_cost));
+
+                                }
+                            } else{
+                                unsigned binary_cost = cost_model_for_binary(another_small_plan_node_num, another_small_plan_cost_pair.first,
+                                                                             small_plan_node_num, small_plan_cost_pair.first, cost_cache);
+                                if(binary_cost < need_considerbinaryjoin_plan.second){
+                                    vector<vector<int>> binary_plan = get_binary_plan(another_small_plan_cost_pair.first, small_plan_cost_pair.first);
+                                    cost_cache[node_num - 1].insert(make_pair(binary_plan, binary_cost));
+
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+        }
+    }
+}
+
+//bool check_vector_set_same(set<int> set_need_check, vector<int> vector_need_check){
+//    if(set_need_check.size() == vector_need_check.size()){
+//        for(int x : vector_need_check){
+//            if(set_need_check.find(x) == set_need_check.end()){
+//                return false;
+//            }
+//        }
+//    } else{
+//        return false;
+//    }
+//
+//    return true;
+//}
+//
+//bool check_vector_set_same(set<int> set_need_check, vector<vector<int>> vector_need_check){
+//    set<int> vector_to_set;
+//    for(auto x: vector_need_check){
+//        for(auto y:x){
+//            vector_to_set.insert(y);
+//        }
+//    }
+//
+//    if(set_need_check.size() == vector_to_set.size()){
+//        for(int x : vector_to_set){
+//            if(set_need_check.find(x) == set_need_check.end()){
+//                return false;
+//            }
+//        }
+//    } else{
+//        return false;
+//    }
+//    return true;
+//
+//}
+
+unsigned Optimizer::cost_model_for_binary(int small_plan_node_num, const vector<vector<int>> small_plan,
+                               int another_small_plan_node_num, const vector<vector<int>> another_small_plan,
+                               vector<map<vector<vector<int>>, unsigned >> &cost_cache){
+
+    return 2*cost_cache[small_plan_node_num][small_plan] + cost_cache[another_small_plan_node_num][another_small_plan];
+
+}
+
+//unsigned Optimizer::cost_model(vector<vector<int>> plan_need_cost,
+//                               int var_num, map<int, unsigned > var_to_num_map,
+//                               vector<map<vector<int>, unsigned >> &card_cache_ref,
+//                               vector<map<vector<vector<int>>, unsigned >> &cost_cache_ref){
+//
+//    if(cost_cache_ref[var_num - 1].find(plan_need_cost) != cost_cache_ref[var_num - 1].end()){
+//        return cost_cache_ref[var_num - 1][plan_need_cost];
+//    }
+//    unsigned cost = 0;
+//    for(int row = 0; row < plan_need_cost.size(); ++row){
+//        vector<int> plan;
+//        plan.push_back(plan_need_cost[row][0]);
+//
+////        TODO
+//        unsigned row_cost = var_to_num_map[plan_need_cost[row][0]];
+//
+//        for(int col = 1; col < plan_need_cost[row].size(); ++col){
+//            plan.push_back(plan_need_cost[row][col]);
+////            TODO
+//            row_cost += get_small_query_card_estimation(plan);
+//        }
+//
+//        if(row == 0){
+//            cost = row_cost;
+//        } else{
+//            unsigned small_card = min(row_cost, cost);
+//            unsigned large_card = max(row_cost, cost);
+//            cost = 2*small_card + large_card;
+//        }
+//    }
+//
+//    return cost;
+//}
+
+
+//  enumerate all execution plan, and build cost_cache
+void Optimizer::enum_query_plan(shared_ptr<BasicQuery> basicquery, KVstore *kvstore,
+                     vector<map<vector<vector<int>>, unsigned>> &cost_cache){
+
+    vector<map<vector<int>, unsigned>> card_cache;
+
+    map<int, unsigned > var_to_num_map;
+    map<int, TYPE_ENTITY_LITERAL_ID > var_to_type_map;
+
+    int total_var = basicquery->getTotalVarNum();
+
+    considerallscan(basicquery, card_cache, cost_cache,
+                    var_to_num_map, var_to_type_map);
+
+    for(int i = 1; i < total_var; ++i){
+        considerwcojoin(basicquery, i+1, card_cache, cost_cache);
+
+        if(i >= 3){
+            considerbinaryjoin(basicquery, i+1, card_cache, cost_cache);
+        }
+    }
+
+}
+
+vector<vector<int>> Optimizer::get_best_plan(int var_num, vector<map<vector<vector<int>>, unsigned>> &cost_cache){
+
+    vector<vector<int>> best_plan;
+    unsigned min_cost = UINT_MAX;
+
+    for(auto plan_cost_pair : cost_cache[var_num - 1]){
+        if(plan_cost_pair.second < min_cost){
+            best_plan = plan_cost_pair.first;
+            min_cost = plan_cost_pair.second;
+        }
+    }
+
+    return best_plan;
+}
+
+
+vector<vector<int>> Optimizer::get_plan(shared_ptr<BasicQuery> basicquery, KVstore *kvstore){
+
+    vector<map<vector<vector<int>>, unsigned>> cost_cache;
+
+    enum_query_plan(basicquery, kvstore, cost_cache);
+
+    return get_best_plan(basicquery->getVarNum(), cost_cache);
 }

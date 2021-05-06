@@ -22,6 +22,8 @@
 #include <unordered_map>
 #include <map>
 #include <cstring>
+#include <climits>
+#include <algorithm>
 
 
 using namespace std;
@@ -85,21 +87,60 @@ class Optimizer
 
 
 
-  unsigned check_already_have(int s_o_id, int last_query_var_num, unsigned *last_query_sample_cache);
-  unsigned getlast_card_estimation(shared_ptr<BasicQuery> query_need_estimator, shared_ptr<BasicQuery> last_query,
-                                     vector<map<shared_ptr<BasicQuery>, unsigned >> _cardinality_cache,
-                                     int triple_num_last);
-  unsigned cardinality_estimator(shared_ptr<BasicQuery> query_need_estimator, shared_ptr<BasicQuery> last_query,
-                                              KVstore *kvstore,
-//  when deal with the biggest basic_query,
-//  read all var and there type,
-//  build var_type_map and var_num_cache(var_num need to read statistics->type_to_num_map)
-                                              map<string, TYPE_ENTITY_LITERAL_ID> var_type_map,
-//                                          map<int, unsigned > var_num_cache,
-                                              vector<map<shared_ptr<BasicQuery>, unsigned>> &_cardinality_cache,
-                                              vector<map<shared_ptr<BasicQuery>, unsigned *>> &sample_cache,
-                                              int triple_num_last,
-                                              int last_query_var_num, int this_query_var_num);
+//  You can change this,
+//  but to make sure SAMPLE_CACHE_MAX <= SAMPLE_NUM_UPBOUND (in Statistics.h)
+  static const int SAMPLE_CACHE_MAX = 500;
+
+  bool check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDICATE_ID p_id, TYPE_ENTITY_LITERAL_ID o_id);
+  bool check_past(shared_ptr<BasicQuery> basicquery, vector<int> &join_need_estimator,
+                  unsigned *last_sample, unsigned this_var_sample, int this_join_var_num);
+  unsigned get_small_query_card_estimation(shared_ptr<BasicQuery> basicquery, map<int, unsigned > var_to_num_map,
+                                           map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
+                                           map<int, vector<TYPE_ENTITY_LITERAL_ID >> &var_to_sample_cache,
+                                           vector<int> &join_need_estimator, int this_join_var_num,
+                                           vector<map<vector<int>, unsigned >> &_cardinality_cache,
+                                           vector<map<vector<int>, vector<unsigned *> >> &_sample_cache);
+
+  unsigned cardinality_estimator(shared_ptr<BasicQuery> basicquery, vector<vector<int>> join_need_estimator,
+                                 map<int, unsigned> var_to_num_map, map<int, vector<TYPE_ENTITY_LITERAL_ID >> var_to_sample_cache,
+                                 map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
+                                 vector<map<vector<int>, unsigned >> &_cardinality_cache,
+                                 vector<map<vector<int>, vector<unsigned*> >> &_sample_cache);
+  unsigned card_estimator(shared_ptr<BasicQuery> basicquery, vector<int> last_plan, int this_join_node,
+                            vector<map<vector<int>, unsigned>> &_card_cache);
+  void get_nei_by_subplan(shared_ptr<BasicQuery> basicquery, vector<int> &last_plan_node,
+                            set<int> &nei_node);
+  void get_last_plan_node(vector<vector<int>> last_plan, vector<int> &last_plan_node);
+
+  void considerallscan(shared_ptr<BasicQuery> basicquery,
+                       vector<map<vector<int>, unsigned >> &card_cache_ref,
+                       vector<map<vector<vector<int>>, unsigned >> &cost_cache_ref,
+                       map<int, unsigned > &var_to_num_map_ref,
+                       map<int, TYPE_ENTITY_LITERAL_ID> &var_to_type_map_ref);
+
+  void considerwcojoin(shared_ptr<BasicQuery> basicquery,
+                         int node_num, vector<map<vector<int>, unsigned >> &card_cache,
+                         vector<map<vector<vector<int>>, unsigned>> &cost_cache);
+  void cost_model_for_wco(shared_ptr<BasicQuery> basicquery, vector<vector<int>> &new_plan, int next_node,
+                            vector<int> last_plan_node, const vector<vector<int>> &last_plan,
+                            vector<map<vector<int>, unsigned>> &card_cache, vector<map<vector<vector<int>>, unsigned>> &cost_cache);
+  int check_two_plan_could_binary_join(vector<int> &last_plan_node,
+                                         const vector<vector<int>> &small_plan, const vector<vector<int>> &another_small_plan,
+                                         vector<map<vector<int>, unsigned>> &card_cache);
+  vector<vector<int>> get_binary_plan(const vector<vector<int>> &small_plan, const vector<vector<int>> &another_small_plan);
+
+  void considerbinaryjoin(shared_ptr<BasicQuery> basicquery, int node_num,
+                          vector<map<vector<int>, unsigned>> &card_cache,
+                          vector<map<vector<vector<int>>, unsigned>> &cost_cache);
+  unsigned cost_model_for_binary(int small_plan_node_num, const vector<vector<int>> small_plan,
+                                   int another_small_plan_node_num, const vector<vector<int>> another_small_plan,
+                                   vector<map<vector<vector<int>>, unsigned >> &cost_cache);
+
+  void enum_query_plan(shared_ptr<BasicQuery> basicquery, KVstore *kvstore,
+                         vector<map<vector<vector<int>>, unsigned>> &cost_cache);
+  vector<vector<int>> get_best_plan(int var_num, vector<map<vector<vector<int>>, unsigned>> &cost_cache);
+  vector<vector<int>> get_plan(shared_ptr<BasicQuery> basicquery, KVstore *kvstore);
+
 
   std::shared_ptr<IDList> ExtendRecord(const shared_ptr<OneStepJoinNode> &one_step_join_node_,
                     const PositionValueSharedPtr &id_pos_mapping,
