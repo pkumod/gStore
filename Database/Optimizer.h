@@ -30,7 +30,8 @@
 using namespace std;
 using TableContent = list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>;
 using TableContentShardPtr = shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>;
-using PositionValueSharedPtr = std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>;
+using PositionValue = std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>;
+using PositionValueSharedPtr = std::shared_ptr<PositionValue>;
 using IDCachesSharePtr = shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>;
 using QueryPlanSharedPtr = shared_ptr<QueryPlan>;
 
@@ -78,15 +79,14 @@ class Optimizer
 
   tuple<bool,TableContentShardPtr> GenerateColdCandidateList(const shared_ptr<vector<EdgeInfo>>&,const shared_ptr<vector<EdgeConstantInfo>>&);
   tuple<bool,TableContentShardPtr> JoinANode(const shared_ptr<OneStepJoinNode>&,const TableContentShardPtr&,const PositionValueSharedPtr&,const IDCachesSharePtr&);
-  tuple<bool,TableContentShardPtr> JoinTwoTable(const shared_ptr<OneStepJoinTable>&,const TableContentShardPtr&,const PositionValueSharedPtr&,const TableContentShardPtr&,const PositionValueSharedPtr&);
+  tuple<bool,PositionValueSharedPtr,TableContentShardPtr> JoinTwoTable(const shared_ptr<OneStepJoinTable>&,const TableContentShardPtr&,const PositionValueSharedPtr&,const TableContentShardPtr&,const PositionValueSharedPtr&);
   tuple<bool,TableContentShardPtr> ANodeEdgesConstraintFilter(const shared_ptr<OneStepJoinNode>&, TableContentShardPtr,const PositionValueSharedPtr&,const IDCachesSharePtr&);
   tuple<bool,TableContentShardPtr> OneEdgeConstraintFilter(EdgeInfo, EdgeConstantInfo, const TableContentShardPtr&,const PositionValueSharedPtr&,const IDCachesSharePtr&);
   tuple<bool,TableContentShardPtr> FilterAVariableOnIDList(const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>&,TYPE_ENTITY_LITERAL_ID ,const TableContentShardPtr&,const PositionValueSharedPtr&);
   shared_ptr<IntermediateResult> NormalJoin(shared_ptr<BasicQuery>,shared_ptr<QueryPlan>);
   bool CacheConstantCandidates(const shared_ptr<OneStepJoinNode>& one_step, const IDCachesSharePtr& id_caches);
   bool AddConstantCandidates(EdgeInfo edge_info,EdgeConstantInfo edge_table_info,TYPE_ENTITY_LITERAL_ID targetID, const IDCachesSharePtr& id_caches);
-
-
+  tuple<bool, TableContentShardPtr> getAllSubObjID();
 
 //  You can change this,
 //  but to make sure SAMPLE_CACHE_MAX <= SAMPLE_NUM_UPBOUND (in Statistics.h)
@@ -140,7 +140,7 @@ class Optimizer
   void enum_query_plan(BasicQuery* basicquery, KVstore *kvstore,
                          vector<map<vector<vector<int>>, unsigned>> &cost_cache);
   vector<vector<int>> get_best_plan(int var_num, vector<map<vector<vector<int>>, unsigned>> &cost_cache);
-  PlanTree get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches);
+  PlanTree* get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches);
 
 
   std::shared_ptr<IDList> ExtendRecord(const shared_ptr<OneStepJoinNode> &one_step_join_node_,
@@ -198,7 +198,7 @@ class Optimizer
 
   //tuple<bool,TableContentShardPtr> BreathSearch(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan, 
   //                                                              const PositionValueSharedPtr& id_pos_mapping, shared_ptr<vector<double>>& weight_list);
-  tuple<bool,QueryPlanSharedPtr> ExecutionBreathFirst(BasicQuery* basic_query, const PositionValueSharedPtr& id_pos_mapping);
+  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionBreathFirst(BasicQuery* basic_query,const QueryInfo& query_info,Tree_node* plan_tree,IDCachesSharePtr id_caches);
 
 
  private:

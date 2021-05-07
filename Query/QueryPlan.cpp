@@ -109,6 +109,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
   ProcessPredicateAndSatellites(basic_query, kv_store, vars_used_vec, graph_var_num, pre_var_num,this->join_order_,this->ids_after_join_);
 
 }
+
 /*
  *  Node weight in the greedy method
  */
@@ -830,4 +831,3 @@ std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> QueryPlan::OnlyCo
   }
   return constant_generating_lists;
 }
-

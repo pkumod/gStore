@@ -8,6 +8,7 @@
 #include "../Query/BasicQuery.h"
 #include "../Database/TableOperator.h"
 #include "../Database/ResultTrigger.h"
+#include "../Database/PlanTree.h"
 
 #ifndef GSTORELIMITK_QUERY_QUERYPLAN_H_
 #define GSTORELIMITK_QUERY_QUERYPLAN_H_
@@ -21,9 +22,11 @@ class QueryPlan
   // Do Before the process begin
   std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> constant_generating_lists_;
 
-  QueryPlan(const std::shared_ptr<std::vector<OneStepJoin>>& ,const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>&,std::shared_ptr<std::vector<VarDescriptor>>);
+  QueryPlan(const std::shared_ptr<std::vector<OneStepJoin>>& join_order,
+            const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>&ids_after_join,
+            std::shared_ptr<std::vector<VarDescriptor>> var_infos);
 
-  QueryPlan(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
+  QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector<VarDescriptor>> var_infos);
   QueryPlan()=default;
 
   static std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> OnlyConstFilter(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
@@ -44,7 +47,7 @@ class QueryPlan
   static shared_ptr<QueryPlan> DefaultBFS(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
 
   static tuple<shared_ptr<vector<EdgeInfo>>,
-  shared_ptr<vector<EdgeConstantInfo>>> LinkTwoNode(BasicQuery *basic_query,
+  static shared_ptr<vector<EdgeConstantInfo>>> LinkTwoNode(BasicQuery *basic_query,
                                                       const KVstore *kv_store,
                                                       TYPE_ENTITY_LITERAL_ID added_id,
                                                       TYPE_ENTITY_LITERAL_ID d_already_in_table);
