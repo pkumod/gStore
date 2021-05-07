@@ -1202,22 +1202,28 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       };
       this->var_descriptors_->clear();
       auto best_plan_tree = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
+      auto bfs_result = this->ExecutionBreathFirst(basic_query_pointer,query_info,best_plan_tree->root_node,var_candidates_cache);
 
+      // cout<<query_plan->toString(kv_store_)<<endl;
+      basic_query_vec.push_back(basic_query_pointer);
+      query_plan_vec.push_back(query_plan);
+      auto var_pos_mapping = get<1>(bfs_result);
+      //auto mapping_tuple = query_plan->PositionIDMappings();
+      //auto var_pos_mapping = get<0>(mapping_tuple);
+      // auto pos_var_mapping = get<1>(mapping_tuple);
+      auto pos_var_mapping = make_shared<PositionValue>();
+      for(const auto& id_pos_pair:*var_pos_mapping)
+        (*pos_var_mapping)[id_pos_pair.second] = id_pos_pair.first;
+      // auto basic_query_result = this->ExecutionDepthFirst(basic_query_pointer, query_plan, query_info,var_pos_mapping);
+      CopyToResult(basic_query_pointer->getResultListPointer(), basic_query_pointer, make_shared<IntermediateResult>(
+          var_pos_mapping,pos_var_mapping,get<2>(bfs_result)
+      ));
     }
     else if(strategy ==BasicQueryStrategy::Special){
         printf("BasicQueryStrategy::Special not supported yet\n");
     }
 
-    // cout<<query_plan->toString(kv_store_)<<endl;
-    basic_query_vec.push_back(basic_query_pointer);
-    query_plan_vec.push_back(query_plan);
-    auto mapping_tuple = query_plan->PositionIDMappings();
-    auto var_pos_mapping = get<0>(mapping_tuple);
-    auto pos_var_mapping = get<1>(mapping_tuple);
-    auto basic_query_result = this->ExecutionDepthFirst(basic_query_pointer, query_plan, query_info,var_pos_mapping);
-    CopyToResult(basic_query_pointer->getResultListPointer(), basic_query_pointer, make_shared<IntermediateResult>(
-        var_pos_mapping,pos_var_mapping,get<1>(basic_query_result)
-    ));
+
   }
   return MergeBasicQuery(sparql_query);
 }
