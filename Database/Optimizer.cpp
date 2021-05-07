@@ -73,8 +73,6 @@ tuple<bool, TableContentShardPtr> Optimizer::GenerateColdCandidateList(const sha
     record->push_back(var_id);
     result->push_back(record);
   }
-  cout<<" GenerateColdCandidateList result size:"<<result->size()<<endl;
-  cout<<"GenerateColdCandidateList:: result_record_len = "<<result->front()->size()<<endl;
   return make_tuple(true,result);
 }
 
@@ -407,30 +405,20 @@ shared_ptr<IDList> Optimizer::ExtendRecord(const shared_ptr<OneStepJoinNode> &on
  * @param table_a
  * @param table_b
  * @return new table, columns are made up of
- * [ common vars ][ small table vars ][ larger table vars]
+ * [ big table vars ][ small table vars - common vars]
  */
-tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneStepJoinTable>& one_step_join_table,
+tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneStepJoinTable>& one_step_join_table,
                                                           const TableContentShardPtr& table_a,
                                                           const PositionValueSharedPtr& table_a_id_pos,
                                                           const TableContentShardPtr& table_b,
                                                           const PositionValueSharedPtr& table_b_id_pos) {
   if(table_a->empty() || table_b->empty())
-    return make_tuple(false,make_shared<TableContent>());
+    return make_tuple(false,nullptr,make_shared<TableContent>());
+
+  auto new_mapping = make_shared<PositionValue>();
 
   auto join_nodes = one_step_join_table->public_variables_;
-  /* build index in a
-   * cost(a) = a log a + b log a
-   * build index in b
-   * cost(b) = b log b + a log b
-   *
-   * if a < b
-   * cost(b) - cost(a)
-   * = b log b - a log a + a log b - b log a
-   * > b log b - a log b + a log b - b log a
-   * = b (logb - log a)
-   * > 0
-   *
-   * So, we build index in smaller table
+  /* build index in big table
    * */
   auto big_table = table_a->size() > table_b->size() ? table_a : table_b;
   auto big_id_pos = table_a->size() > table_b->size() ? table_a_id_pos : table_b_id_pos;
@@ -453,6 +441,16 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneSt
     common_variables_position_big.push_back((*big_id_pos)[common_variable]);
     common_variables_position_small.push_back((*small_id_pos)[common_variable]);
   }
+
+  for(const auto& big_id_pos_pair:*big_id_pos)
+    (*new_mapping)[new_mapping->size()]= big_id_pos_pair.first;
+  for(const auto&small_id_pos_pair:*small_id_pos) {
+    if(new_mapping->find(small_id_pos_pair.first)==new_mapping->end())
+      continue;
+    (*new_mapping)[new_mapping->size()] = small_id_pos_pair.first;
+  }
+
+
 
   auto common_variables_size = one_step_join_table->public_variables_->size();
   for(const auto& big_record:*(big_table))
@@ -508,9 +506,9 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneSt
         small_record_inserted.push_back((*small_record)[small_position]);
       }
       auto matched_content = indexed_result[result_index];
-      for(const auto& matched_small_record:*matched_content)
+      for(const auto& matched_big_record:*matched_content)
       {
-        auto result_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*matched_small_record);
+        auto result_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*matched_big_record);
         for(auto small_inserted_element:small_record_inserted)
         {
           result_record->push_back(small_inserted_element);
@@ -521,7 +519,7 @@ tuple<bool, TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneSt
     /* if not, ignore */
   }
 
-  return make_tuple(true,result_table);
+  return make_tuple(true,new_mapping,result_table);
 
 }
 
@@ -1202,16 +1200,15 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       for (auto &constant_generating_step: *const_candidates) {
         CacheConstantCandidates(constant_generating_step, var_candidates_cache);
       };
-
-      auto best_plan = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
-      query_plan = make_shared<QueryPlan>(basic_query_pointer, this->kv_store_, this->var_descriptors_);
+      this->var_descriptors_->clear();
+      auto best_plan_tree = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
 
     }
     else if(strategy ==BasicQueryStrategy::Special){
         printf("BasicQueryStrategy::Special not supported yet\n");
     }
 
-    cout<<query_plan->toString(kv_store_)<<endl;
+    // cout<<query_plan->toString(kv_store_)<<endl;
     basic_query_vec.push_back(basic_query_pointer);
     query_plan_vec.push_back(query_plan);
     auto mapping_tuple = query_plan->PositionIDMappings();
@@ -2174,7 +2171,7 @@ vector<vector<int>> Optimizer::get_best_plan(int var_num, vector<map<vector<vect
 }
 
 
-PlanTree Optimizer::get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches){
+PlanTree* Optimizer::get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches){
 
     vector<map<vector<vector<int>>, unsigned>> cost_cache;
 
@@ -2182,5 +2179,108 @@ PlanTree Optimizer::get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesS
 
     vector<vector<int>> best_plan_vector = get_best_plan(basicquery->getVarNum(), cost_cache);
 
-    return PlanTree(best_plan_vector);
+    return &PlanTree(best_plan_vector);
+}
+
+tuple<bool, TableContentShardPtr> Optimizer::getAllSubObjID()
+{
+  set<TYPE_ENTITY_LITERAL_ID> ids;
+  for (TYPE_PREDICATE_ID i = 0; i < this->limitID_entity_; ++i) {
+    auto entity_str = this->kv_store_->getEntityByID(i);
+    if(entity_str!="")
+      ids.insert(i);
+  }
+  for (TYPE_PREDICATE_ID i = Util::LITERAL_FIRST_ID; i < this->limitID_literal_; ++i) {
+    auto entity_str = this->kv_store_->getLiteralByID(i);
+    if(entity_str!="")
+      ids.insert(i);
+  }
+  auto result = make_shared<TableContent>();
+  for(auto var_id: ids)
+  {
+    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+    record->push_back(var_id);
+    result->push_back(record);
+  }
+  return make_tuple(true,result);
+}
+
+tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBreathFirst(BasicQuery* basic_query,
+                                                                                         const QueryInfo& query_info,
+                                                                                         Tree_node* plan_tree_node,
+                                                                                         IDCachesSharePtr id_caches)
+{
+  auto limit_num = query_info.limit_num_;
+  // leaf node
+  if( plan_tree_node->joinType == NodeJoinType::LeafNode)
+  {
+    auto node_added = plan_tree_node->node_to_join;
+    auto id_cache_it = id_caches->find(node_added);
+    PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
+    (*pos_mapping)[0] = node_added;
+    if(id_cache_it!=id_caches->end())
+    {
+      auto result = make_shared<TableContent>();
+      auto id_candidate_vec = id_cache_it->second->getList();
+      for(auto var_id: *id_candidate_vec)
+      {
+        auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+        record->push_back(var_id);
+        result->push_back(record);
+      }
+      return make_tuple(true,pos_mapping,result);
+    }
+    else // No Constant Constraint,Return All IDs
+    {
+      auto all_nodes_table = get<1>(getAllSubObjID());
+      PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
+      (*pos_mapping)[0] = node_added;
+      return make_tuple(true,pos_mapping,all_nodes_table);
+    }
+  }
+  else // inner node
+  {
+    tuple<bool,PositionValueSharedPtr, TableContentShardPtr> left_r;
+    tuple<bool,PositionValueSharedPtr, TableContentShardPtr> right_r;
+
+    if(plan_tree_node->joinType == NodeJoinType::JoinANode)
+    {
+      left_r = this->ExecutionBreathFirst(basic_query,query_info,plan_tree_node->left_node,id_caches);
+      auto left_table = get<2>(left_r);
+      auto left_id_mapping = get<1>(left_r);
+
+      auto left_ids = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+      for(const auto& id_pos_pair:* left_id_mapping)
+        left_ids->push_back(id_pos_pair.first);
+
+      auto one_step_join = QueryPlan::LinkWithPreviousNodes(basic_query, this->kv_store_, plan_tree_node->node_to_join,left_ids);
+      auto step_result = JoinANode(one_step_join.join_node_, left_table,left_id_mapping,id_caches);
+
+      (*left_id_mapping)[left_id_mapping->size()] = plan_tree_node->node_to_join;
+      return make_tuple(true,left_id_mapping,get<1>(step_result));
+    }
+    else if(plan_tree_node->joinType == NodeJoinType::JoinTwoTable)
+    {
+
+      left_r = this->ExecutionBreathFirst(basic_query,query_info,plan_tree_node->left_node,id_caches);
+      auto left_table = get<2>(left_r);
+      auto left_id_mapping = get<1>(left_r);
+
+
+      right_r = this->ExecutionBreathFirst(basic_query,query_info,plan_tree_node->right_node,id_caches);
+      auto right_table = get<2>(left_r);
+      auto right_id_mapping = get<1>(left_r);
+
+      set<TYPE_ENTITY_LITERAL_ID> public_var_set;
+      for(const auto& left_id_pos_pair:*left_id_mapping)
+        public_var_set.insert(left_id_pos_pair.first);
+      for(const auto& right_id_pos_pair:*right_id_mapping)
+        public_var_set.insert(right_id_pos_pair.first);
+
+      auto one_step_join_table = make_shared<OneStepJoinTable>();
+      for(const auto public_var:public_var_set)
+        one_step_join_table->public_variables_->push_back(public_var);
+      return this->JoinTwoTable(one_step_join_table,left_table,left_id_mapping,right_table,right_id_mapping);
+    }
+  }
 }
