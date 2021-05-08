@@ -518,7 +518,7 @@ tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTabl
     }
     /* if not, ignore */
   }
-
+  cout<<"Optimizer::JoinTwoTable result size "<<result_table->size()<<endl;
   return make_tuple(true,new_mapping,result_table);
 
 }
@@ -2192,8 +2192,10 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
   // leaf node
   if( plan_tree_node->joinType == NodeJoinType::LeafNode)
   {
-    cout<<"ExecutionBreathFirst 0"<<endl;
+    cout<<"ExecutionBreathFirst 0" ;
     auto node_added = plan_tree_node->node_to_join;
+    cout<<" node to join "<<node_added;
+    cout<<"["<<basic_query->getVarName(node_added)<<"]"<<endl;
     auto id_cache_it = id_caches->find(node_added);
     PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
     (*pos_mapping)[0] = node_added;
@@ -2208,6 +2210,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
         result->push_back(record);
       }
       cout<<"ExecutionBreathFirst 1"<<endl;
+      cout<<"result size "<<result->size()<<endl;
       return make_tuple(true,pos_mapping,result);
     }
     else // No Constant Constraint,Return All IDs
@@ -2216,6 +2219,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
       (*pos_mapping)[0] = node_added;
       cout<<"ExecutionBreathFirst 2"<<endl;
+      cout<<"result size "<<all_nodes_table->size()<<endl;
       return make_tuple(true,pos_mapping,all_nodes_table);
     }
   }
@@ -2225,8 +2229,6 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
     tuple<bool,PositionValueSharedPtr, TableContentShardPtr> right_r;
     cout<<"ExecutionBreathFirst 3"<<endl;
     cout<<"plan_tree_node->joinType" << NodeJoinTypeStr(plan_tree_node->joinType)<<endl;
-    cout<<"plan_tree_node->left_node" << plan_tree_node->left_node<<endl;
-    cout<<"plan_tree_node->right_node" << plan_tree_node->right_node<<endl;
 
     if(plan_tree_node->joinType == NodeJoinType::JoinANode)
     {
@@ -2238,11 +2240,13 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       for(const auto& id_pos_pair:* left_id_mapping)
         left_ids->push_back(id_pos_pair.first);
 
+      cout<<"join node ["<<basic_query->getVarName(plan_tree_node->node_to_join)<<"]"<<endl;
       auto one_step_join = QueryPlan::LinkWithPreviousNodes(basic_query, this->kv_store_, plan_tree_node->node_to_join,left_ids);
       auto step_result = JoinANode(one_step_join.join_node_, left_table,left_id_mapping,id_caches);
 
       (*left_id_mapping)[left_id_mapping->size()] = plan_tree_node->node_to_join;
       cout<<"ExecutionBreathFirst 4"<<endl;
+      cout<<"result size "<<get<1>(step_result)->size()<<endl;
       return make_tuple(true,left_id_mapping,get<1>(step_result));
     }
     else if(plan_tree_node->joinType == NodeJoinType::JoinTwoTable)
