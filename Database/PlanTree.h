@@ -22,7 +22,7 @@ struct Tree_node{
     Tree_node *left_node;
     Tree_node *right_node;
 
-    Tree_node();
+    Tree_node(){};
 
     Tree_node(int next_node){
         joinType = NodeJoinType::LeafNode;
