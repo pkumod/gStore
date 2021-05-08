@@ -380,7 +380,22 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				printf("during Encode, used %ld ms.\n", tv_encode - tv_begin);
 
 				/* PLEASE REPLACE WITH OPTIMIZER */
-				this->strategy.handle(sparql_query);
+				QueryInfo query_info;
+
+				query_info.limit_ = false;
+				if(this->query_tree.getLimit()!=-1) {
+					query_info.limit_ = true;
+					query_info.limit_num_ = this->query_tree.getLimit();
+				}
+
+				query_info.is_distinct_ = this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct;
+
+				query_info.ordered_by_vars_ = make_shared<vector<QueryTree::Order>>();
+				for(auto order_item:this->query_tree.getOrderVarVector())
+					query_info.ordered_by_vars_->push_back(order_item);
+
+				this->optimizer_->DoQuery(sparql_query,query_info);
+
 				long tv_handle = Util::get_cur_time();
 				printf("during Handle, used %ld ms.\n", tv_handle - tv_encode);
 
@@ -564,7 +579,22 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
 
 					/* PLEASE REPLACE WITH OPTIMIZER */
-					this->strategy.handle(sparql_query);
+					QueryInfo query_info;
+
+					query_info.limit_ = false;
+					if(this->query_tree.getLimit()!=-1) {
+						query_info.limit_ = true;
+						query_info.limit_num_ = this->query_tree.getLimit();
+					}
+
+					query_info.is_distinct_ = this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct;
+
+					query_info.ordered_by_vars_ = make_shared<vector<QueryTree::Order>>();
+					for(auto order_item:this->query_tree.getOrderVarVector())
+						query_info.ordered_by_vars_->push_back(order_item);
+
+					this->optimizer_->DoQuery(sparql_query,query_info);
+
 					long tv_handle = Util::get_cur_time();
 					printf("after Handle, used %ld ms.\n", tv_handle - tv_fillcand);
 

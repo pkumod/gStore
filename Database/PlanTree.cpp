@@ -26,3 +26,16 @@ PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan) {
     root_node->right_node = new Tree_node(right_plan->root_node);
 }
 
+void PlanTree::delete_tree_node(Tree_node *root_node) {
+    if(root_node == nullptr){
+        return;
+    }
+
+    delete_tree_node(root_node->left_node);
+    delete_tree_node(root_node->right_node);
+    delete root_node;
+}
+
+PlanTree::~PlanTree() {
+    delete_tree_node(root_node);
+}

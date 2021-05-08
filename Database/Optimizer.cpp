@@ -1780,7 +1780,7 @@ unsigned Optimizer::card_estimator(BasicQuery* basicquery,
                                    vector<map<vector<int>, vector<vector<unsigned>> >> &sample_cache,
                                    bool use_sample){
     int now_plan_node_num = now_plan_nodes.size();
-    if(card_cache[now_plan_node_num-2].find(now_plan_nodes) != card_cache[now_plan_node_num-2].end()){
+    if(card_cache.size() >= now_plan_node_num-1 && card_cache[now_plan_node_num-2].find(now_plan_nodes) != card_cache[now_plan_node_num-2].end()){
         return card_cache[now_plan_node_num-2][now_plan_nodes];
     }
 
@@ -1909,7 +1909,7 @@ void Optimizer::get_nei_by_subplan_nodes(BasicQuery* basicquery, const vector<in
     for(int node_in_plan : last_plan_node){
         for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
             if(find(last_plan_node.begin(), last_plan_node.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
-               == last_plan_node.end()){
+               == last_plan_node.end() && basicquery->getEdgeNeighborID(node_in_plan, i) != -1){
                 nei_node.insert(basicquery->getEdgeNeighborID(node_in_plan, i));
             }
         }
@@ -1939,7 +1939,9 @@ void Optimizer::considerallscan(BasicQuery* basicquery, IDCachesSharePtr &id_cac
 
         for(int j = 0; j < basicquery->getVarDegree(i); ++j){
             if(basicquery->getEdgePreID(i, j) == statistics->type_pre_id){
-                var_to_type_map[i] = basicquery->getEdgeNeighborID(i, j);
+                int triple_id = basicquery->getEdgeID(i, j);
+                string type_name = basicquery->getTriple(triple_id).object;
+                var_to_type_map[i] = kv_store_->getIDByEntity(type_name);
             }
         }
         var_to_num_map[i] = (*id_caches)[i]->size();
@@ -1973,7 +1975,8 @@ void Optimizer::considerwcojoin(BasicQuery* basicquery, int node_num,
                                 vector<map<vector<int>, unsigned>> &card_cache,
                                 vector<map<vector<int>, vector<vector<unsigned>> >> &sample_cache){
 
-    for(auto last_node_plan : plan_cache[node_num - 1]){
+	cout << "last size: " << plan_cache[node_num-2].size() << endl;
+    for(auto last_node_plan : plan_cache[node_num - 2]){
 
         set<int> nei_node;
 //        vector<int> last_plan_node;
@@ -2014,8 +2017,10 @@ void Optimizer::considerwcojoin(BasicQuery* basicquery, int node_num,
             }
 
         }
+        cout << "this done" << endl;
     }
 
+    cout << "error here" << endl;
 }
 
 // not add nodes, but to consider if binaryjoin could decrease cost
