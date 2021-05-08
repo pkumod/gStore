@@ -46,8 +46,7 @@ class QueryPlan
 
   static shared_ptr<QueryPlan> DefaultBFS(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
 
-  static tuple<shared_ptr<vector<EdgeInfo>>,
-  static shared_ptr<vector<EdgeConstantInfo>> LinkTwoNode(BasicQuery *basic_query,
+  static tuple<shared_ptr<vector<EdgeInfo>>,shared_ptr<vector<EdgeConstantInfo>>> LinkTwoNode(BasicQuery *basic_query,
                                                       const KVstore *kv_store,
                                                       TYPE_ENTITY_LITERAL_ID added_id,
                                                       TYPE_ENTITY_LITERAL_ID d_already_in_table);
