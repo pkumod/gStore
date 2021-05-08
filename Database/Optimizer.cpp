@@ -2239,12 +2239,12 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       auto left_ids = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
       for(const auto& id_pos_pair:* left_id_mapping)
         left_ids->push_back(id_pos_pair.first);
-
-      cout<<"join node ["<<basic_query->getVarName(plan_tree_node->node_to_join)<<"]"<<endl;
-      auto one_step_join = QueryPlan::LinkWithPreviousNodes(basic_query, this->kv_store_, plan_tree_node->node_to_join,left_ids);
+      auto node_to_join = plan_tree_node->right_node->node_to_join;
+      cout<<"join node ["<<basic_query->getVarName(node_to_join)<<"]"<<endl;
+      auto one_step_join = QueryPlan::LinkWithPreviousNodes(basic_query, this->kv_store_, node_to_join,left_ids);
       auto step_result = JoinANode(one_step_join.join_node_, left_table,left_id_mapping,id_caches);
 
-      (*left_id_mapping)[left_id_mapping->size()] = plan_tree_node->node_to_join;
+      (*left_id_mapping)[left_id_mapping->size()] = node_to_join;
       cout<<"ExecutionBreathFirst 4"<<endl;
       cout<<"result size "<<get<1>(step_result)->size()<<endl;
       return make_tuple(true,left_id_mapping,get<1>(step_result));
