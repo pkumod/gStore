@@ -82,7 +82,7 @@ kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarray
 
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o \
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
-			$(objdir)IPBlackList.o
+			$(objdir)IPBlackList.o $(objdir)OrderedVector.o
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o $(objdir)QueryPlan.o\
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
@@ -412,7 +412,7 @@ $(objdir)PlanTree.o: Database/PlanTree.cpp Database/PlanTree.h
 
 $(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)IDList.o \
 	$(objdir)KVstore.o  $(objdir)VSTree.o $(objdir)Join.o $(objdir)Transaction.o $(objdir)TableOperator.o $(objdir)ResultTrigger.o \
-	$(objdir)QueryPlan.o $(objdir)Statistics.o $(objdir)PlanTree.o
+	$(objdir)QueryPlan.o $(objdir)Statistics.o $(objdir)PlanTree.o $(objdir)OrderedVector.o
 	$(CC) $(CFLAGS) Database/Optimizer.cpp $(inc) -o $(objdir)Optimizer.o $(openmp)
 
 $(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(objdir)Util.o $(objdir)Transaction.o $(objdir)Database.o
@@ -516,6 +516,9 @@ $(objdir)IPWhiteList.o:  Util/IPWhiteList.cpp Util/IPWhiteList.h $(objdir)Util.o
 
 $(objdir)IPBlackList.o:  Util/IPBlackList.cpp Util/IPBlackList.h $(objdir)Util.o
 	$(CC) $(CFLAGS) Util/IPBlackList.cpp -o $(objdir)IPBlackList.o $(def64IO) $(openmp)
+
+$(objdir)OrderedVector.o: Util/OrderedVector.cpp Util/OrderedVector.h
+	$(CC) $(CFLAGS) Util/OrderedVector.cpp -o $(objdir)OrderedVector.o $(openmp)
 
 #objects in util/ end
 
