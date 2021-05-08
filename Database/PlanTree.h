@@ -8,10 +8,14 @@
 #define GSTORE_PLANTREE_H
 
 #include <vector>
+#include <string>
 
 using namespace std;
 
 enum class NodeJoinType{ JoinANode, JoinTwoTable, LeafNode };
+
+std::string NodeJoinTypeStr(NodeJoinType node_join_type);
+
 
 struct Tree_node{
     NodeJoinType joinType;

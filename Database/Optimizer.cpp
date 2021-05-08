@@ -1212,8 +1212,10 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       //auto var_pos_mapping = get<0>(mapping_tuple);
       // auto pos_var_mapping = get<1>(mapping_tuple);
       auto pos_var_mapping = make_shared<PositionValue>();
-      for(const auto& id_pos_pair:*var_pos_mapping)
+      for(const auto& id_pos_pair:*var_pos_mapping) {
+        cout<<"[id_pos_pair.second] = "<<id_pos_pair.second<<"= id_pos_pair.first;"<<id_pos_pair.first<<endl;
         (*pos_var_mapping)[id_pos_pair.second] = id_pos_pair.first;
+      }
       // auto basic_query_result = this->ExecutionDepthFirst(basic_query_pointer, query_plan, query_info,var_pos_mapping);
       CopyToResult(basic_query_pointer->getResultListPointer(), basic_query_pointer, make_shared<IntermediateResult>(
           var_pos_mapping,pos_var_mapping,get<2>(bfs_result)
@@ -1974,10 +1976,10 @@ void Optimizer::considerwcojoin(BasicQuery* basicquery, int node_num,
                                 map<int, unsigned> var_to_num_map, map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
                                 vector<map<vector<int>, unsigned>> &card_cache,
                                 vector<map<vector<int>, vector<vector<unsigned>> >> &sample_cache){
-
 	cout << "last size: " << plan_cache[node_num-2].size() << endl;
-    for(auto last_node_plan : plan_cache[node_num - 2]){
-
+	auto plan_tree_list = plan_cache[node_num - 2]; int c = 0;
+    for(auto last_node_plan : plan_tree_list){
+cout<<"enter "<<c++<<" times"<<endl;
         set<int> nei_node;
 //        vector<int> last_plan_node;
 //        get_last_plan_node(last_plan.first, last_plan_node);
@@ -2176,6 +2178,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
   // leaf node
   if( plan_tree_node->joinType == NodeJoinType::LeafNode)
   {
+    cout<<"ExecutionBreathFirst 0"<<endl;
     auto node_added = plan_tree_node->node_to_join;
     auto id_cache_it = id_caches->find(node_added);
     PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
@@ -2190,6 +2193,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
         record->push_back(var_id);
         result->push_back(record);
       }
+      cout<<"ExecutionBreathFirst 1"<<endl;
       return make_tuple(true,pos_mapping,result);
     }
     else // No Constant Constraint,Return All IDs
@@ -2197,6 +2201,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       auto all_nodes_table = get<1>(getAllSubObjID());
       PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
       (*pos_mapping)[0] = node_added;
+      cout<<"ExecutionBreathFirst 2"<<endl;
       return make_tuple(true,pos_mapping,all_nodes_table);
     }
   }
@@ -2204,6 +2209,10 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
   {
     tuple<bool,PositionValueSharedPtr, TableContentShardPtr> left_r;
     tuple<bool,PositionValueSharedPtr, TableContentShardPtr> right_r;
+    cout<<"ExecutionBreathFirst 3"<<endl;
+    cout<<"plan_tree_node->joinType" << NodeJoinTypeStr(plan_tree_node->joinType)<<endl;
+    cout<<"plan_tree_node->left_node" << plan_tree_node->left_node<<endl;
+    cout<<"plan_tree_node->right_node" << plan_tree_node->right_node<<endl;
 
     if(plan_tree_node->joinType == NodeJoinType::JoinANode)
     {
@@ -2219,6 +2228,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       auto step_result = JoinANode(one_step_join.join_node_, left_table,left_id_mapping,id_caches);
 
       (*left_id_mapping)[left_id_mapping->size()] = plan_tree_node->node_to_join;
+      cout<<"ExecutionBreathFirst 4"<<endl;
       return make_tuple(true,left_id_mapping,get<1>(step_result));
     }
     else if(plan_tree_node->joinType == NodeJoinType::JoinTwoTable)
@@ -2242,6 +2252,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       auto one_step_join_table = make_shared<OneStepJoinTable>();
       for(const auto public_var:public_var_set)
         one_step_join_table->public_variables_->push_back(public_var);
+      cout<<"ExecutionBreathFirst 5"<<endl;
       return this->JoinTwoTable(one_step_join_table,left_table,left_id_mapping,right_table,right_id_mapping);
     }
   }
