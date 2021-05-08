@@ -51,3 +51,31 @@ void PlanTree::delete_tree_node(Tree_node *root_node) {
 PlanTree::~PlanTree() {
     delete_tree_node(root_node);
 }
+
+
+void PlanTree::print_tree_node(Tree_node* node){
+	if(node == nullptr){
+		return;
+	}
+
+	switch (node->joinType) {
+		case NodeJoinType::LeafNode:
+			cout << node->node_to_join;
+			break;
+		case NodeJoinType::JoinTwoTable:
+			cout << "Binary join ";
+			break;
+		case NodeJoinType::JoinANode:
+			cout << "WCO join ";
+			break;
+	}
+
+	print_tree_node(node->left_node);
+	print_tree_node(node->right_node);
+}
+
+void PlanTree::print() {
+	cout << "Plan: ";
+	print_tree_node(root_node);
+	cout << endl;
+}
