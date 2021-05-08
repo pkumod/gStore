@@ -6,6 +6,18 @@
 
 
 #include "PlanTree.h"
+using namespace std;
+
+string NodeJoinTypeStr(NodeJoinType node_join_type)
+{
+  switch (node_join_type) {
+    case NodeJoinType::JoinANode: return "JoinANode";
+    case NodeJoinType::JoinTwoTable: return "JoinTwoTable";
+    case NodeJoinType::LeafNode: return "LeafNode";
+  }
+  return "NodeJoinType::No Exist";
+}
+
 
 PlanTree::PlanTree(int first_node) {
     root_node = new Tree_node(first_node);
