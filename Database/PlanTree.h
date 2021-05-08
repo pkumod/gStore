@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 
 using namespace std;
 
@@ -53,6 +54,8 @@ struct Tree_node{
             right_node = nullptr;
         }
     }
+
+
 };
 
 class PlanTree {
@@ -61,12 +64,16 @@ public:
     Tree_node *root_node;
     unsigned plan_cost;
 
+    PlanTree()= default;;
     PlanTree(int first_node);
     PlanTree(PlanTree *last_plantree, int next_node);
     PlanTree(PlanTree *left_plan, PlanTree *right_plan);
 
     void delete_tree_node(Tree_node* root_node);
     ~PlanTree();
+
+    void print_tree_node(Tree_node* node);
+    void print();
 };
 
 

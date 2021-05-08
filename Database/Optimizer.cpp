@@ -1202,6 +1202,8 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       };
       this->var_descriptors_->clear();
       auto best_plan_tree = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
+      cout << "plan get" << endl;
+      best_plan_tree->print();
       auto bfs_result = this->ExecutionBreathFirst(basic_query_pointer,query_info,best_plan_tree->root_node,var_candidates_cache);
 
       // cout<<query_plan->toString(kv_store_)<<endl;
@@ -1977,9 +1979,10 @@ void Optimizer::considerwcojoin(BasicQuery* basicquery, int node_num,
                                 vector<map<vector<int>, unsigned>> &card_cache,
                                 vector<map<vector<int>, vector<vector<unsigned>> >> &sample_cache){
 	cout << "last size: " << plan_cache[node_num-2].size() << endl;
-	auto plan_tree_list = plan_cache[node_num - 2]; int c = 0;
+	auto plan_tree_list = plan_cache[node_num - 2];
+	int c = 0;
     for(auto last_node_plan : plan_tree_list){
-cout<<"enter "<<c++<<" times"<<endl;
+		cout<<"enter "<<c++<<" times"<<endl;
         set<int> nei_node;
 //        vector<int> last_plan_node;
 //        get_last_plan_node(last_plan.first, last_plan_node);
@@ -2019,10 +2022,8 @@ cout<<"enter "<<c++<<" times"<<endl;
             }
 
         }
-        cout << "this done" << endl;
     }
 
-    cout << "error here" << endl;
 }
 
 // not add nodes, but to consider if binaryjoin could decrease cost
@@ -2093,9 +2094,20 @@ void Optimizer::enum_query_plan(BasicQuery* basicquery, KVstore *kvstore, IDCach
     considerallscan(basicquery, id_caches, plan_cache,
                     var_to_num_map, var_to_type_map);
 
+    for(auto x: plan_cache[0]){
+    	for(auto y : x.second){
+    		y->print();
+    	}
+    }
     for(int i = 1; i < total_var; ++i){
         considerwcojoin(basicquery, i+1, plan_cache, var_to_num_map, var_to_type_map,
                         card_cache, sample_cache);
+
+        for(auto x : plan_cache[i]){
+        	for(auto y : x.second){
+        		y->print();
+        	}
+        }
 
         if(i >= 4){
 //            begin when nodes_num >= 5
@@ -2121,7 +2133,7 @@ PlanTree* Optimizer::get_best_plan(const vector<int> &nodes,
 }
 
 // only used when get best plan for all nodes in basicquery
-PlanTree* get_best_plan_by_num(int total_var_num, vector<map<vector<int>, list<PlanTree*>>> &plan_cache){
+PlanTree* Optimizer::get_best_plan_by_num(int total_var_num, vector<map<vector<int>, list<PlanTree*>>> &plan_cache){
 
     PlanTree* best_plan;
     unsigned min_cost = UINT_MAX;
@@ -2134,6 +2146,8 @@ PlanTree* get_best_plan_by_num(int total_var_num, vector<map<vector<int>, list<P
             }
         }
     }
+    cout << " get best plan!" << endl;
+    return best_plan;
 }
 
 

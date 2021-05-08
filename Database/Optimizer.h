@@ -138,6 +138,7 @@ class Optimizer
     void enum_query_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches,
                          vector<map<vector<int>, list<PlanTree*>>> &plan_cache);
     PlanTree* get_best_plan(const vector<int> &nodes, vector<map<vector<int>, list<PlanTree*>>> &plan_cache);
+	PlanTree* get_best_plan_by_num(int total_var_num, vector<map<vector<int>, list<PlanTree*>>> &plan_cache);
     PlanTree* get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches);
 
 
