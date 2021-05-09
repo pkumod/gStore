@@ -1196,10 +1196,13 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
     if(strategy == BasicQueryStrategy::Normal)
     {
 
+    	long t6 =Util::get_cur_time();
       auto const_candidates = QueryPlan::OnlyConstFilter(basic_query_pointer, this->kv_store_, this->var_descriptors_);
       for (auto &constant_generating_step: *const_candidates) {
         CacheConstantCandidates(constant_generating_step, var_candidates_cache);
       };
+      long t7 = Util::get_cur_time();
+      cout << "get var cache, used " << (t7 - t6) << "ms." << endl;
       this->var_descriptors_->clear();
       long t1 = Util::get_cur_time();
       auto best_plan_tree = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
@@ -1208,6 +1211,8 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       best_plan_tree->print(basic_query_pointer);
       auto bfs_result = this->ExecutionBreathFirst(basic_query_pointer,query_info,best_plan_tree->root_node,var_candidates_cache);
 
+      long t3 = Util::get_cur_time();
+      cout << "execution, used " << (t3 - t2) << "ms." << endl;
       // cout<<query_plan->toString(kv_store_)<<endl;
       basic_query_vec.push_back(basic_query_pointer);
       query_plan_vec.push_back(query_plan);
@@ -1220,9 +1225,12 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
         (*var_pos_mapping)[pos_var_pair.second] = pos_var_pair.first;
       }
       // auto basic_query_result = this->ExecutionDepthFirst(basic_query_pointer, query_plan, query_info,var_pos_mapping);
+      long t4 = Util::get_cur_time();
       CopyToResult(basic_query_pointer->getResultListPointer(), basic_query_pointer, make_shared<IntermediateResult>(
-          var_pos_mapping,pos_var_mapping,get<2>(bfs_result)
+			  pos_var_mapping,var_pos_mapping,get<2>(bfs_result)
       ));
+      long t5 = Util::get_cur_time();
+      cout << "copy to result, used " << (t5-t4) <<"ms." <<endl;
     }
     else if(strategy ==BasicQueryStrategy::Special){
         printf("BasicQueryStrategy::Special not supported yet\n");
@@ -2092,6 +2100,10 @@ void Optimizer::enum_query_plan(BasicQuery* basicquery, KVstore *kvstore, IDCach
     considerallscan(basicquery, id_caches, plan_cache,
                     var_to_num_map, var_to_type_map);
 
+    for(auto x: var_to_num_map){
+    	cout <<x.first << "  " << x.second << endl;
+    }
+
     for(int i = 1; i < total_var; ++i){
         considerwcojoin(basicquery, i+1, plan_cache, var_to_num_map, var_to_type_map,
                         card_cache, sample_cache);
@@ -2235,12 +2247,13 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       auto node_to_join = plan_tree_node->right_node->node_to_join;
       cout<<"join node ["<<basic_query->getVarName(node_to_join)<<"]"<<endl;
       auto one_step_join = QueryPlan::LinkWithPreviousNodes(basic_query, this->kv_store_, node_to_join,left_ids);
-      auto step_result = JoinANode(one_step_join.join_node_, left_table,left_id_mapping,id_caches);
+		(*left_pos_id_mapping)[left_pos_id_mapping->size()] = node_to_join;
 
-      (*left_id_mapping)[left_id_mapping->size()] = node_to_join;
+		auto step_result = JoinANode(one_step_join.join_node_, left_table,left_pos_id_mapping,id_caches);
+
       cout<<"ExecutionBreathFirst 4"<<endl;
       cout<<"result size "<<get<1>(step_result)->size()<<endl;
-      return make_tuple(true,left_id_mapping,get<1>(step_result));
+      return make_tuple(true,left_pos_id_mapping,get<1>(step_result));
     }
     else if(plan_tree_node->joinType == NodeJoinType::JoinTwoTable)
     {
