@@ -1227,7 +1227,7 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       // auto basic_query_result = this->ExecutionDepthFirst(basic_query_pointer, query_plan, query_info,var_pos_mapping);
       long t4 = Util::get_cur_time();
       CopyToResult(basic_query_pointer->getResultListPointer(), basic_query_pointer, make_shared<IntermediateResult>(
-			  pos_var_mapping,var_pos_mapping,get<2>(bfs_result)
+			  var_pos_mapping,pos_var_mapping,get<2>(bfs_result)
       ));
       long t5 = Util::get_cur_time();
       cout << "copy to result, used " << (t5-t4) <<"ms." <<endl;
@@ -1267,7 +1267,13 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
 
   // A little different with that in Join::CopyToResult
   // may basic query don't allocate an id for not selected var so selected_pre_var_num = pre_var_num?
-  if (result->position_to_var_des_->size() != core_var_num + selected_pre_var_num)
+  cout << "position to var des size: " << result->position_to_var_des_->size() << endl;
+  cout << "selected var num: " << select_var_num<<endl;
+  cout << "core var num: " << core_var_num<<endl;
+  cout << "selected pre var num: " << selected_pre_var_num<<endl;
+//  Linglin Yang fix it to total_var_num,
+//  maybe change it to core_var_num + selected_pre_var_num in the future
+  if (result->position_to_var_des_->size() != basic_query->getTotalVarNum())
   {
     cout << "terrible error in Optimizer::CopyToResult!" << endl;
     return false;
