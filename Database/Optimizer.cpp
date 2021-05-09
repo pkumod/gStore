@@ -2210,9 +2210,10 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
     auto id_cache_it = id_caches->find(node_added);
     PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
     (*pos_mapping)[0] = node_added;
-    if(id_cache_it!=id_caches->end())
+	  auto result = make_shared<TableContent>();
+
+	  if(id_cache_it!=id_caches->end())
     {
-      auto result = make_shared<TableContent>();
       auto id_candidate_vec = id_cache_it->second->getList();
       for(auto var_id: *id_candidate_vec)
       {
@@ -2270,14 +2271,45 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
 
 
       right_r = this->ExecutionBreathFirst(basic_query,query_info,plan_tree_node->right_node,id_caches);
-      auto right_table = get<2>(left_r);
-      auto right_id_mapping = get<1>(left_r);
+      auto right_table = get<2>(right_r);
+      auto right_id_mapping = get<1>(right_r);
 
+      cout << "this done" << endl;
+      for(auto x : *left_id_mapping){
+      	cout << x.first<<":"<<x.second << "  ";
+      }
+      cout << endl;
+      for(auto x :*right_id_mapping){
+      	cout << x.first<<":"<<x.second << "  " ;
+      }
+      cout << endl;
       set<TYPE_ENTITY_LITERAL_ID> public_var_set;
-      for(const auto& left_id_pos_pair:*left_id_mapping)
-        public_var_set.insert(left_id_pos_pair.first);
-      for(const auto& right_id_pos_pair:*right_id_mapping)
-        public_var_set.insert(right_id_pos_pair.first);
+      set<TYPE_ENTITY_LITERAL_ID> right_table_var_id;
+	  for(const auto& right_pos_id_pair:*right_id_mapping)
+	  	right_table_var_id.insert(right_pos_id_pair.second);
+	  for(const auto& left_pos_id_pair:*left_id_mapping){
+	  	if(find(right_table_var_id.begin(), right_table_var_id.end(), left_pos_id_pair.second)
+	  		!= right_table_var_id.end()){
+	  		public_var_set.insert(left_pos_id_pair.second);
+	  	}
+      }
+	  	cout << "public var:" << endl;
+		for(auto x : public_var_set)
+			  cout << x << endl;
+
+		cout << endl;
+
+		cout << "left table num:" << left_table->size()<< endl;
+		for(auto x : *left_table){
+			cout << x->size()<<endl;
+		}
+		cout <<endl;
+		cout << "right table num:" << right_table->size()<< endl;
+		for(auto x : *right_table){
+			cout << x->size()<<endl;
+		}
+		cout <<endl;
+
 
       auto one_step_join_table = make_shared<OneStepJoinTable>();
       for(const auto public_var:public_var_set)
