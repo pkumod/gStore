@@ -53,29 +53,36 @@ PlanTree::~PlanTree() {
 }
 
 
-void PlanTree::print_tree_node(Tree_node* node){
+void PlanTree::print_tree_node(Tree_node* node, BasicQuery* basicquery){
 	if(node == nullptr){
 		return;
 	}
 
 	switch (node->joinType) {
 		case NodeJoinType::LeafNode:
-			cout << node->node_to_join;
+			cout << basicquery->getVarName(node->node_to_join);
 			break;
 		case NodeJoinType::JoinTwoTable:
-			cout << "Binary join ";
+			cout << "Binary join(";
 			break;
 		case NodeJoinType::JoinANode:
-			cout << "WCO join ";
+			cout << "WCO join(";
 			break;
 	}
 
-	print_tree_node(node->left_node);
-	print_tree_node(node->right_node);
+	if(node->left_node!= nullptr){
+		print_tree_node(node->left_node, basicquery);
+		cout << ",";
+		print_tree_node(node->right_node, basicquery);
+	}
+
+	if(node->joinType!=NodeJoinType::LeafNode){
+		cout << ")";
+	}
 }
 
-void PlanTree::print() {
+void PlanTree::print(BasicQuery* basicquery) {
 	cout << "Plan: ";
-	print_tree_node(root_node);
+	print_tree_node(root_node, basicquery);
 	cout << endl;
 }

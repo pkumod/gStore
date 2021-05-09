@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include "../Query/BasicQuery.h"
 
 using namespace std;
 
@@ -72,8 +73,8 @@ public:
     void delete_tree_node(Tree_node* root_node);
     ~PlanTree();
 
-    void print_tree_node(Tree_node* node);
-    void print();
+    void print_tree_node(Tree_node* node, BasicQuery* basicquery);
+    void print(BasicQuery* basicquery);
 };
 
 
