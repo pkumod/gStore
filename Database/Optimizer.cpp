@@ -1211,14 +1211,13 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       // cout<<query_plan->toString(kv_store_)<<endl;
       basic_query_vec.push_back(basic_query_pointer);
       query_plan_vec.push_back(query_plan);
-      auto var_pos_mapping = get<1>(bfs_result);
+      auto pos_var_mapping = get<1>(bfs_result);
       //auto mapping_tuple = query_plan->PositionIDMappings();
       //auto var_pos_mapping = get<0>(mapping_tuple);
       // auto pos_var_mapping = get<1>(mapping_tuple);
-      auto pos_var_mapping = make_shared<PositionValue>();
-      for(const auto& id_pos_pair:*var_pos_mapping) {
-        cout<<"[id_pos_pair.second] = "<<id_pos_pair.second<<"= id_pos_pair.first;"<<id_pos_pair.first<<endl;
-        (*pos_var_mapping)[id_pos_pair.second] = id_pos_pair.first;
+      auto var_pos_mapping = make_shared<PositionValue>();
+      for(const auto& pos_var_pair:*pos_var_mapping) {
+        (*var_pos_mapping)[pos_var_pair.second] = pos_var_pair.first;
       }
       // auto basic_query_result = this->ExecutionDepthFirst(basic_query_pointer, query_plan, query_info,var_pos_mapping);
       CopyToResult(basic_query_pointer->getResultListPointer(), basic_query_pointer, make_shared<IntermediateResult>(
@@ -2228,11 +2227,11 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
     {
       left_r = this->ExecutionBreathFirst(basic_query,query_info,plan_tree_node->left_node,id_caches);
       auto left_table = get<2>(left_r);
-      auto left_id_mapping = get<1>(left_r);
+      auto left_pos_id_mapping = get<1>(left_r);
 
       auto left_ids = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
-      for(const auto& id_pos_pair:* left_id_mapping)
-        left_ids->push_back(id_pos_pair.first);
+      for(const auto& pos_id_pair:* left_pos_id_mapping)
+        left_ids->push_back(pos_id_pair.second);
       auto node_to_join = plan_tree_node->right_node->node_to_join;
       cout<<"join node ["<<basic_query->getVarName(node_to_join)<<"]"<<endl;
       auto one_step_join = QueryPlan::LinkWithPreviousNodes(basic_query, this->kv_store_, node_to_join,left_ids);
