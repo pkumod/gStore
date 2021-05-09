@@ -431,7 +431,7 @@ $(objdir)TableOperator.o: Database/TableOperator.cpp Database/TableOperator.h $(
 $(objdir)ResultTrigger.o: Database/ResultTrigger.cpp Database/ResultTrigger.h $(objdir)Util.o
 	$(CC) $(CFLAGS) Database/ResultTrigger.cpp $(inc) -o $(objdir)ResultTrigger.o $(openmp)
 
-$(objdir)PlanTree.o: Database/PlanTree.cpp Database/PlanTree.h
+$(objdir)PlanTree.o: Database/PlanTree.cpp Database/PlanTree.h $(objdir)BasicQuery.o
 	$(CC) $(CFLAGS) Database/PlanTree.cpp $(inc) -o $(objdir)PlanTree.o  $(openmp)
 
 $(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)IDList.o \
