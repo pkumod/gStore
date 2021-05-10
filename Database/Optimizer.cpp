@@ -420,11 +420,11 @@ tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTabl
   auto join_nodes = one_step_join_table->public_variables_;
   /* build index in big table
    * */
-  auto big_table = table_a->size() > table_b->size() ? table_a : table_b;
-  auto big_id_pos = table_a->size() > table_b->size() ? table_a_id_pos : table_b_id_pos;
+  auto& big_table = table_a->size() > table_b->size() ? table_a : table_b;
+  auto& big_id_pos = table_a->size() > table_b->size() ? table_a_id_pos : table_b_id_pos;
 
-  auto small_table = table_a->size() < table_b->size() ? table_a : table_b;
-  auto small_id_pos = table_a->size() < table_b->size() ? table_a_id_pos : table_b_id_pos;
+  auto& small_table = table_a->size() < table_b->size() ? table_a : table_b;
+  auto& small_id_pos = table_a->size() < table_b->size() ? table_a_id_pos : table_b_id_pos;
 
   auto result_table = make_shared<TableContent>();
 
@@ -1334,6 +1334,9 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
       {
         int id2 = basic_query->getEdgeNeighborID(id, j);
         if (basic_query->isSatelliteInJoin(id2) == false)
+          continue;
+
+        if(id_position_map_ptr->find(id2)!=id_position_map_ptr->end())
           continue;
 
         unsigned* idlist = nullptr;
