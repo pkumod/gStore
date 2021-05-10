@@ -1268,6 +1268,8 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
   // A little different with that in Join::CopyToResult
   // may basic query don't allocate an id for not selected var so selected_pre_var_num = pre_var_num?
   cout << "position to var des size: " << result->position_to_var_des_->size() << endl;
+  cout << "totalvar_num: " << basic_query->getTotalVarNum()<<endl;
+  cout << "varnum: " << basic_query->getVarNum()<<endl;
   cout << "selected var num: " << select_var_num<<endl;
   cout << "core var num: " << core_var_num<<endl;
   cout << "selected pre var num: " << selected_pre_var_num<<endl;
@@ -1918,7 +1920,7 @@ unsigned Optimizer::cost_model_for_binary(vector<map<vector<int>, unsigned >> &c
     unsigned min_card = min(plan_a_card, plan_b_card);
     unsigned max_card = max(plan_a_card, plan_b_card);
 
-    return 2*min_card + max_card + plan_a->plan_cost + plan_b->plan_cost;
+    return 200*min_card + 1000*max_card + plan_a->plan_cost + plan_b->plan_cost;
 }
 
 //    save every nei_id of now_in_plan_node in nei_node
