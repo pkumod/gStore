@@ -410,8 +410,10 @@ shared_ptr<IDList> Optimizer::ExtendRecord(const shared_ptr<OneStepJoinNode> &on
 tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneStepJoinTable>& one_step_join_table,
                                                                                   const TableContentShardPtr& table_a,
                                                                                   const PositionValueSharedPtr& table_a_id_pos,
+                                                                                  const PositionValueSharedPtr& table_a_pos_id,
                                                                                   const TableContentShardPtr& table_b,
-                                                                                  const PositionValueSharedPtr& table_b_id_pos) {
+                                                                                  const PositionValueSharedPtr& table_b_id_pos,
+                                                                                  const PositionValueSharedPtr& table_b_pos_id) {
   if(table_a->empty() || table_b->empty())
     return make_tuple(false,nullptr,make_shared<TableContent>());
 
@@ -422,9 +424,11 @@ tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTabl
    * */
   auto& big_table = table_a->size() > table_b->size() ? table_a : table_b;
   auto& big_id_pos = table_a->size() > table_b->size() ? table_a_id_pos : table_b_id_pos;
+  auto& big_pos_id = table_a->size() > table_b->size() ? table_a_pos_id : table_b_pos_id;
 
   auto& small_table = table_a->size() < table_b->size() ? table_a : table_b;
   auto& small_id_pos = table_a->size() < table_b->size() ? table_a_id_pos : table_b_id_pos;
+  auto& small_pos_id = table_a->size() < table_b->size() ? table_a_pos_id : table_b_pos_id;
 
   auto result_table = make_shared<TableContent>();
 
@@ -443,12 +447,16 @@ tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTabl
   }
   auto &public_vars = one_step_join_table->public_variables_;
 
-  for(const auto& big_id_pos_pair:*big_id_pos)
-    (*new_position_id_mapping)[new_position_id_mapping->size()]= big_id_pos_pair.first;
-  for(const auto&small_id_pos_pair:*small_id_pos) {
-    if(find(public_vars->begin(),public_vars->end(),small_id_pos_pair.first)!=public_vars->end())
+  auto big_table_record_len = big_id_pos->size();
+  for(int i =0;i<big_table_record_len;i++)
+    (*new_position_id_mapping)[i]= (*big_pos_id)[i];
+
+  auto small_table_record_len = small_pos_id->size();
+  for(int i =0;i<small_table_record_len;i++) {
+    auto small_id = (*small_pos_id)[i];
+    if(find(public_vars->begin(),public_vars->end(),small_id)!=public_vars->end())
       continue;
-    (*new_position_id_mapping)[new_position_id_mapping->size()] = small_id_pos_pair.first;
+    (*new_position_id_mapping)[new_position_id_mapping->size()] = small_id;
   }
 
   cout << "JoinTwoTable::new_mapping = " << new_position_id_mapping->size() << endl;
@@ -1225,6 +1233,7 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       cout<<"Doquery : var_pos_mapping="<<var_pos_mapping->size()<<endl;
       for(const auto& pos_var_pair:*pos_var_mapping) {
         (*var_pos_mapping)[pos_var_pair.second] = pos_var_pair.first;
+        cout<<"var ["<< pos_var_pair.second<< "]   pos["<<pos_var_pair.first<<"]"<<endl;
       }
       cout<<"Doquery : var_pos_mapping="<<var_pos_mapping->size()<<endl;
       // auto basic_query_result = this->ExecutionDepthFirst(basic_query_pointer, query_plan, query_info,var_pos_mapping);
@@ -2339,7 +2348,8 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
         (*right_id_pos_mapping)[pos_id_pair.second] = pos_id_pair.first;
 
 
-      return this->JoinTwoTable(one_step_join_table, left_table, left_id_pos_mapping, right_table, right_id_pos_mapping);
+      return this->JoinTwoTable(one_step_join_table, left_table, left_id_pos_mapping,left_pos_id_mapping,
+                                right_table, right_id_pos_mapping,right_pos_id_mapping);
     }
   }
 }

@@ -82,7 +82,13 @@ class Optimizer
 
   tuple<bool,TableContentShardPtr> GenerateColdCandidateList(const shared_ptr<vector<EdgeInfo>>&,const shared_ptr<vector<EdgeConstantInfo>>&);
   tuple<bool,TableContentShardPtr> JoinANode(const shared_ptr<OneStepJoinNode>&,const TableContentShardPtr&,const PositionValueSharedPtr&,const IDCachesSharePtr&);
-  tuple<bool,PositionValueSharedPtr,TableContentShardPtr> JoinTwoTable(const shared_ptr<OneStepJoinTable>&,const TableContentShardPtr&,const PositionValueSharedPtr&,const TableContentShardPtr&,const PositionValueSharedPtr&);
+  tuple<bool,PositionValueSharedPtr,TableContentShardPtr> JoinTwoTable(const shared_ptr<OneStepJoinTable>& one_step_join_table,
+       const TableContentShardPtr& table_a,
+       const PositionValueSharedPtr& table_a_id_pos,
+       const PositionValueSharedPtr& table_a_pos_id,
+       const TableContentShardPtr& table_b,
+       const PositionValueSharedPtr& table_b_id_pos,
+       const PositionValueSharedPtr& table_b_pos_id);
   tuple<bool,TableContentShardPtr> ANodeEdgesConstraintFilter(const shared_ptr<OneStepJoinNode>&, TableContentShardPtr,const PositionValueSharedPtr&,const IDCachesSharePtr&);
   tuple<bool,TableContentShardPtr> OneEdgeConstraintFilter(EdgeInfo, EdgeConstantInfo, const TableContentShardPtr&,const PositionValueSharedPtr&,const IDCachesSharePtr&);
   tuple<bool,TableContentShardPtr> FilterAVariableOnIDList(const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>&,TYPE_ENTITY_LITERAL_ID ,const TableContentShardPtr&,const PositionValueSharedPtr&);
