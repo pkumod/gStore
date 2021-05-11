@@ -83,12 +83,12 @@ class Optimizer
   tuple<bool,TableContentShardPtr> GenerateColdCandidateList(const shared_ptr<vector<EdgeInfo>>&,const shared_ptr<vector<EdgeConstantInfo>>&);
   tuple<bool,TableContentShardPtr> JoinANode(const shared_ptr<OneStepJoinNode>&,const TableContentShardPtr&,const PositionValueSharedPtr&,const IDCachesSharePtr&);
   tuple<bool,PositionValueSharedPtr,TableContentShardPtr> JoinTwoTable(const shared_ptr<OneStepJoinTable>& one_step_join_table,
-       const TableContentShardPtr& table_a,
-       const PositionValueSharedPtr& table_a_id_pos,
-       const PositionValueSharedPtr& table_a_pos_id,
-       const TableContentShardPtr& table_b,
-       const PositionValueSharedPtr& table_b_id_pos,
-       const PositionValueSharedPtr& table_b_pos_id);
+  																	 const TableContentShardPtr& table_a,
+  																	 const PositionValueSharedPtr& table_a_id_pos,
+  																	 const PositionValueSharedPtr& table_a_pos_id,
+  																	 const TableContentShardPtr& table_b,
+  																	 const PositionValueSharedPtr& table_b_id_pos,
+  																	 const PositionValueSharedPtr& table_b_pos_id);
   tuple<bool,TableContentShardPtr> ANodeEdgesConstraintFilter(const shared_ptr<OneStepJoinNode>&, TableContentShardPtr,const PositionValueSharedPtr&,const IDCachesSharePtr&);
   tuple<bool,TableContentShardPtr> OneEdgeConstraintFilter(EdgeInfo, EdgeConstantInfo, const TableContentShardPtr&,const PositionValueSharedPtr&,const IDCachesSharePtr&);
   tuple<bool,TableContentShardPtr> FilterAVariableOnIDList(const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>&,TYPE_ENTITY_LITERAL_ID ,const TableContentShardPtr&,const PositionValueSharedPtr&);
@@ -101,6 +101,9 @@ class Optimizer
 //  but to make sure SAMPLE_CACHE_MAX <= SAMPLE_NUM_UPBOUND (in Statistics.h)
   static const int SAMPLE_CACHE_MAX = 500;
 
+  bool check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDICATE_ID p_id, TYPE_ENTITY_LITERAL_ID o_id);
+  bool check_past(BasicQuery* basicquery, const vector<int> &last_join_nodes,int next_join_node,
+				  vector<unsigned> &last_sample, unsigned this_var_sample);
     unsigned card_estimator(BasicQuery* basicquery,
                             map<int, unsigned> var_to_num_map, map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
                             const vector<int> &last_plan_nodes, int next_join_node, const vector<int> &now_plan_nodes,
@@ -120,8 +123,8 @@ class Optimizer
                                    const vector<int> &plan_a_nodes, const vector<int> &plan_b_nodes,
                                    PlanTree* plan_a, PlanTree* plan_b);
 
-    void get_nei_by_subplan_nodes(BasicQuery* basicquery, const vector<int> &last_plan_node,
-                                  set<int> &nei_node);
+    void get_nei_by_subplan_nodes(BasicQuery* basicquery, const vector<int> &need_join_nodes,
+								  const vector<int> &last_plan_node, set<int> &nei_node);
 
     void get_join_nodes(BasicQuery* basicquery, const vector<int> &plan_a_nodes,
                         vector<int> &other_nodes, set<int> &join_nodes);
@@ -129,9 +132,9 @@ class Optimizer
     void considerallscan(BasicQuery* basicquery, IDCachesSharePtr &id_caches,
                          vector<map<vector<int>, list<PlanTree*>>> &plan_cache,
                          map<int, unsigned > &var_to_num_map,
-                         map<int, TYPE_ENTITY_LITERAL_ID> &var_to_type_map);
+                         map<int, TYPE_ENTITY_LITERAL_ID> &var_to_type_map, vector<int> &need_join_nodes);
 
-    void considerwcojoin(BasicQuery* basicquery, int node_num,
+    void considerwcojoin(BasicQuery* basicquery, int node_num, const vector<int> &need_join_nodes,
                          vector<map<vector<int>, list<PlanTree*>>> &plan_cache,
                          map<int, unsigned> var_to_num_map, map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
                          vector<map<vector<int>, unsigned>> &card_cache,
@@ -141,8 +144,9 @@ class Optimizer
                             vector<map<vector<int>, unsigned>> &card_cache,
                             vector<map<vector<int>, list<PlanTree*>>> &plan_cache);
 
-    void enum_query_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches,
-                         vector<map<vector<int>, list<PlanTree*>>> &plan_cache);
+    int enum_query_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches,
+						vector<int> &need_join_nodes,
+						vector<map<vector<int>, list<PlanTree*>>> &plan_cache);
     PlanTree* get_best_plan(const vector<int> &nodes, vector<map<vector<int>, list<PlanTree*>>> &plan_cache);
 	PlanTree* get_best_plan_by_num(int total_var_num, vector<map<vector<int>, list<PlanTree*>>> &plan_cache);
     PlanTree* get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches);

@@ -70,6 +70,9 @@ public:
     PlanTree(PlanTree *last_plantree, int next_node);
     PlanTree(PlanTree *left_plan, PlanTree *right_plan);
 
+//    for create plan manually
+    PlanTree(const vector<int> nodes_order);
+
     void delete_tree_node(Tree_node* root_node);
     ~PlanTree();
 
