@@ -408,12 +408,13 @@ shared_ptr<IDList> Optimizer::ExtendRecord(const shared_ptr<OneStepJoinNode> &on
  * [ big table vars ][ small table vars - common vars]
  */
 tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneStepJoinTable>& one_step_join_table,
-                                                                                  const TableContentShardPtr& table_a,
-                                                                                  const PositionValueSharedPtr& table_a_id_pos,
-                                                                                  const PositionValueSharedPtr& table_a_pos_id,
-                                                                                  const TableContentShardPtr& table_b,
-                                                                                  const PositionValueSharedPtr& table_b_id_pos,
-                                                                                  const PositionValueSharedPtr& table_b_pos_id) {
+																				  const TableContentShardPtr& table_a,
+																				  const PositionValueSharedPtr& table_a_id_pos,
+																				  const PositionValueSharedPtr& table_a_pos_id,
+																				  const TableContentShardPtr& table_b,
+																				  const PositionValueSharedPtr& table_b_id_pos,
+																				  const PositionValueSharedPtr& table_b_pos_id)  {
+  long t1 = Util::get_cur_time();
   if(table_a->empty() || table_b->empty())
     return make_tuple(false,nullptr,make_shared<TableContent>());
 
@@ -459,7 +460,7 @@ tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTabl
     (*new_position_id_mapping)[new_position_id_mapping->size()] = small_id;
   }
 
-  cout << "JoinTwoTable::new_mapping = " << new_position_id_mapping->size() << endl;
+//  cout << "JoinTwoTable::new_mapping = " << new_position_id_mapping->size() << endl;
 
   auto common_variables_size = one_step_join_table->public_variables_->size();
   for(const auto& big_record:*(big_table))
@@ -527,7 +528,9 @@ tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTabl
     }
     /* if not, ignore */
   }
-  cout<<"Optimizer::JoinTwoTable result size "<<result_table->size()<<endl;
+  cout<<"binary join,  result size "<<result_table->size()<<endl;
+  long t2 = Util::get_cur_time();
+  cout << "binary join used " << (t2-t1) << "ms." <<endl;
   return make_tuple(true, new_position_id_mapping, result_table);
 
 }
@@ -1214,6 +1217,8 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       cout << "get var cache, used " << (t7 - t6) << "ms." << endl;
       this->var_descriptors_->clear();
       long t1 = Util::get_cur_time();
+//      vector<int> nodes_order = {3,1,0,4,5,2};
+//      auto best_plan_tree = new PlanTree(nodes_order);
       auto best_plan_tree = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
       long t2 = Util::get_cur_time();
       cout << "plan get, used " << (t2-t1) << "ms." << endl;
@@ -1230,12 +1235,9 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       //auto var_pos_mapping = get<0>(mapping_tuple);
       // auto pos_var_mapping = get<1>(mapping_tuple);
       auto var_pos_mapping = make_shared<PositionValue>();
-      cout<<"Doquery : var_pos_mapping="<<var_pos_mapping->size()<<endl;
       for(const auto& pos_var_pair:*pos_var_mapping) {
         (*var_pos_mapping)[pos_var_pair.second] = pos_var_pair.first;
-        cout<<"var ["<< pos_var_pair.second<< "]   pos["<<pos_var_pair.first<<"]"<<endl;
       }
-      cout<<"Doquery : var_pos_mapping="<<var_pos_mapping->size()<<endl;
       // auto basic_query_result = this->ExecutionDepthFirst(basic_query_pointer, query_plan, query_info,var_pos_mapping);
       long t4 = Util::get_cur_time();
       CopyToResult(basic_query_pointer->getResultListPointer(), basic_query_pointer, make_shared<IntermediateResult>(
@@ -1243,6 +1245,7 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       ));
       long t5 = Util::get_cur_time();
       cout << "copy to result, used " << (t5-t4) <<"ms." <<endl;
+      cout << "total execution, used " << (t5-t2) <<"ms."<<endl;
     }
     else if(strategy ==BasicQueryStrategy::Special){
       printf("BasicQueryStrategy::Special not supported yet\n");
@@ -1287,7 +1290,7 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
   cout << "selected pre var num: " << selected_pre_var_num<<endl;
 //  Linglin Yang fix it to total_var_num,
 //  maybe change it to core_var_num + selected_pre_var_num in the future
-  if (result->position_to_var_des_->size() != basic_query->getTotalVarNum())
+  if (result->position_to_var_des_->size() != core_var_num)
   {
     cout << "terrible error in Optimizer::CopyToResult!" << endl;
     return false;
@@ -1448,51 +1451,49 @@ Optimizer::Cartesian(int pos, int end,int record_len,unsigned* record,
 ////  Copied from Database::exist_triple in Database.cpp
 ////  If there exist a triple (s_id, p_id, o_id) in db, return true;
 ////  else, return false
-//bool Optimizer::check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDICATE_ID p_id, TYPE_ENTITY_LITERAL_ID o_id){
-//
-//    unsigned* _objidlist = nullptr;
-//    unsigned _list_len = 0;
-//    bool is_exist = false;
-//    //get exclusive before update!
-//    kv_store_->getobjIDlistBysubIDpreID(s_id, p_id, _objidlist, _list_len, true);
-//
-//    if (Util::bsearch_int_uporder(o_id, _objidlist, _list_len) != INVALID){
-//        is_exist = true;
-//    }
-//    delete[] _objidlist;
-//
-//    return is_exist;
-//}
-//
-//bool Optimizer::check_past(BasicQuery* basicquery, vector<int> &join_need_estimator,
-//                           unsigned *last_sample, unsigned this_var_sample, int this_join_var_num){
-//    int need_join_id = join_need_estimator[this_join_var_num-1];
-//    int can_join = true;
-//    for(int i = 0; i < basicquery->getVarDegree(need_join_id) && can_join; ++i ){
-//        for(int j = 0; j < this_join_var_num - 1; ++j){
-//            if(basicquery->getEdgeNeighborID(need_join_id, i) == join_need_estimator[j]){
-//                char edge_type = basicquery->getEdgeType(need_join_id, i);
-//                TYPE_PREDICATE_ID p_id = basicquery->getEdgePreID(need_join_id, i);
-//
-//                if(edge_type == Util::EDGE_IN){
-//                    if(!check_exist_this_triple(last_sample[j], p_id, this_join_var_num)){
-//                        can_join = false;
-//                        break;
-//                    }
-//                } else{
-//                    if(!check_exist_this_triple(this_var_sample, p_id, last_sample[j])){
-//                        can_join = false;
-//                        break;
-//                    }
-//                }
-//
-//            }
-//        }
-//
-//    }
-//
-//    return can_join;
-//}
+bool Optimizer::check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDICATE_ID p_id, TYPE_ENTITY_LITERAL_ID o_id){
+
+    unsigned* _objidlist = nullptr;
+    unsigned _list_len = 0;
+    bool is_exist = false;
+    //get exclusive before update!
+    kv_store_->getobjIDlistBysubIDpreID(s_id, p_id, _objidlist, _list_len, true);
+
+    if (Util::bsearch_int_uporder(o_id, _objidlist, _list_len) != INVALID){
+        is_exist = true;
+    }
+    delete[] _objidlist;
+
+    return is_exist;
+}
+
+bool Optimizer::check_past(BasicQuery* basicquery, const vector<int> &last_join_nodes,int next_join_node,
+                           vector<unsigned> &last_sample, unsigned this_var_sample){
+    bool can_join = true;
+    for(int i = 0; i < basicquery->getVarDegree(next_join_node) && can_join; ++i ){
+        for(int j = 0; j < last_join_nodes.size(); ++j){
+            if(basicquery->getEdgeNeighborID(next_join_node, i) == last_join_nodes[j]){
+                char edge_type = basicquery->getEdgeType(next_join_node, i);
+                TYPE_PREDICATE_ID p_id = basicquery->getEdgePreID(next_join_node, i);
+
+                if(edge_type == Util::EDGE_IN){
+                    if(!check_exist_this_triple(last_sample[j], p_id, this_var_sample)){
+                        return false;
+                    }
+                } else{
+                    if(!check_exist_this_triple(this_var_sample, p_id, last_sample[j])){
+                        return false;
+                    }
+                }
+
+            }
+        }
+
+    }
+
+    return can_join;
+}
+
 //
 //unsigned Optimizer::get_small_query_card_estimation(BasicQuery* basicquery, map<int, unsigned > var_to_num_map,
 //                                                    map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
@@ -1811,6 +1812,7 @@ Optimizer::Cartesian(int pos, int end,int record_len,unsigned* record,
 // TODO: use_sample to static const in optimizer.h
 unsigned Optimizer::card_estimator(BasicQuery* basicquery,
                                    map<int, unsigned> var_to_num_map, map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
+//                                   map<int, vector<TYPE_ENTITY_LITERAL_ID >> var_to_sample_map,
                                    const vector<int> &last_plan_nodes, int next_join_node, const vector<int> &now_plan_nodes,
                                    vector<map<vector<int>, unsigned>> &card_cache,
                                    vector<map<vector<int>, vector<vector<unsigned>> >> &sample_cache,
@@ -1867,6 +1869,8 @@ unsigned Optimizer::card_estimator(BasicQuery* basicquery,
       unsigned card_estimation = UINT_MAX;
 
       unsigned last_plan_card = card_cache[now_plan_node_num-3][last_plan_nodes];
+      if(now_plan_node_num==3)
+      	cout << "last_plan_card for " << last_plan_nodes[0] << " " << last_plan_nodes[1] << " " << next_join_node<<"  "<< last_plan_card<<endl;
 
       for (int i = 0; i < basicquery->getVarDegree(next_join_node); ++i) {
         if (find(last_plan_nodes.begin(), last_plan_nodes.end(),
@@ -1881,22 +1885,23 @@ unsigned Optimizer::card_estimator(BasicQuery* basicquery,
 
           if(in_or_out == Util::EDGE_IN){
             card_estimation = min(card_estimation,
-                                  (unsigned )(selectivity*statistics->get_type_one_edge_typeid_num_by_id(var_to_type_map[basicquery->getEdgeNeighborID(next_join_node, i)], p_id, var_to_type_map[next_join_node])));
+                                  (unsigned )(last_plan_card*selectivity*statistics->get_type_one_edge_typeid_num_by_id(var_to_type_map[basicquery->getEdgeNeighborID(next_join_node, i)], p_id, var_to_type_map[next_join_node])));
           } else{
             card_estimation = min(card_estimation,
-                                  (unsigned )(selectivity*statistics->get_type_one_edge_typeid_num_by_id(var_to_type_map[next_join_node], p_id, var_to_type_map[basicquery->getEdgeNeighborID(next_join_node, i)])));
+                                  (unsigned )(last_plan_card*selectivity*statistics->get_type_one_edge_typeid_num_by_id(var_to_type_map[next_join_node], p_id, var_to_type_map[basicquery->getEdgeNeighborID(next_join_node, i)])));
           }
         }
       }
+      cout << "now card estimation: "<<card_estimation<<endl;
 
       if(card_estimation == UINT_MAX){
         cout << "error when estimate cardinality when var_num = 2" << endl;
         exit(-1);
       } else{
         if(card_cache.size() < now_plan_node_num-1){
-          map<vector<int>, unsigned> two_var_card_map;
-          two_var_card_map.insert(make_pair(now_plan_nodes, card_estimation));
-          card_cache.push_back(two_var_card_map);
+          map<vector<int>, unsigned> this_var_num_card_map;
+          this_var_num_card_map.insert(make_pair(now_plan_nodes, card_estimation));
+          card_cache.push_back(this_var_num_card_map);
 
         } else{
           card_cache[now_plan_node_num-2].insert(make_pair(now_plan_nodes, card_estimation));
@@ -1907,8 +1912,74 @@ unsigned Optimizer::card_estimator(BasicQuery* basicquery,
 
   } else{
 //        if use sample when estimate card
-//        TODO: need to complete
-    ;
+//         TODO: need to complete
+//	unsigned card_estimation;
+//    if(sample_cache[now_plan_node_num-3][last_plan_nodes].empty()){
+//      	card_estimation = 1;
+//		if(card_cache.size() < now_plan_node_num-1){
+//			map<vector<int>, unsigned> this_var_num_card_map;
+//			this_var_num_card_map.insert(make_pair(now_plan_nodes, card_estimation));
+//			card_cache.push_back(this_var_num_card_map);
+//
+//			map<vector<int>, vector<vector<unsigned>>> this_var_num_sample_map;
+//			vector<vector<unsigned>> null_sample_vec;
+//			this_var_num_sample_map.insert(make_pair(now_plan_nodes, null_sample_vec));
+//			sample_cache.push_back(this_var_num_sample_map);
+//
+//		} else{
+//		  card_cache[now_plan_node_num-2].insert(make_pair(now_plan_nodes, card_estimation));
+//		  vector<vector<unsigned >> null_sample_vec;
+//		  sample_cache[now_plan_node_num-2].insert(make_pair(now_plan_nodes, null_sample_vec));
+//		}
+//		return card_estimation;
+//    }
+//
+//    unsigned now_sample_num = 0;
+//    vector<vector<int>> now_sample;
+//    map<int, int> id_pos_map;
+//    for(int i = 0, index = 0; i < now_plan_node_num; ++i){
+//      if(index == now_plan_node_num-1 || next_join_node < last_plan_nodes[index]){
+//        id_pos_map[next_join_node] = index;
+//      } else{
+//        id_pos_map[last_plan_nodes[index]] = i;
+//        index++;
+//      }
+//    }
+//
+//	for(int i = 0; i < sample_cache[now_plan_node_num-3][last_plan_nodes].size(); ++i){
+//	  for(int j = 0; j < var_to_sample_map[next_join_node].size(); ++j){
+//		if(check_past(basicquery, last_plan_nodes, next_join_node,
+//					  sample_cache[now_plan_node_num-3][last_plan_nodes][i],var_to_sample_map[next_join_node][j])){
+//		  now_sample_num += 1;
+//
+//		  if(now_sample.size() < SAMPLE_CACHE_MAX){
+//			unsigned *need_insert_sample = new unsigned[this_join_var_num];
+//			vector<unsigned > need_insert_sample(now_plan_node_num);
+//			for(int k = 0, index = 0; k < now_plan_node_num; ++k){
+//			  if(index == now_plan_node_num-1 || next_join_node < last_plan_nodes[index]){
+//
+//			  }
+//			  need_insert_sample[k] =
+//			}
+//			memcpy(need_insert_sample, last_sample[i], sizeof(unsigned )*(this_join_var_num-1));
+//			need_insert_sample[this_join_var_num-1] = this_var_sample[j];
+//
+//			now_sample.push_back(need_insert_sample);
+//		  } else{
+//			if((double )rand() / (double)RAND_MAX < 1.0/now_sample_num){
+//			  int index_to_replace = rand()%SAMPLE_CACHE_MAX;
+//
+//			  for(int k = 0; k < this_join_var_num - 1; ++k){
+//				now_sample[index_to_replace][k] = last_sample[i][k];
+//			  }
+//			  now_sample[index_to_replace][this_join_var_num-1] = this_var_sample[j];
+//			};
+//		  }
+//
+//		}
+//	  }
+//	}
+
   }
 }
 
@@ -1939,13 +2010,15 @@ unsigned Optimizer::cost_model_for_binary(vector<map<vector<int>, unsigned >> &c
 }
 
 //    save every nei_id of now_in_plan_node in nei_node
-void Optimizer::get_nei_by_subplan_nodes(BasicQuery* basicquery, const vector<int> &last_plan_node,
-                                         set<int> &nei_node){
+void Optimizer::get_nei_by_subplan_nodes(BasicQuery* basicquery, const vector<int> &need_join_nodes,
+										 const vector<int> &last_plan_node, set<int> &nei_node){
   ;
   for(int node_in_plan : last_plan_node){
     for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
       if(find(last_plan_node.begin(), last_plan_node.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
-          == last_plan_node.end() && basicquery->getEdgeNeighborID(node_in_plan, i) != -1){
+          == last_plan_node.end() && basicquery->getEdgeNeighborID(node_in_plan, i) != -1 &&
+          find(need_join_nodes.begin(), need_join_nodes.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
+          != need_join_nodes.end()){
         nei_node.insert(basicquery->getEdgeNeighborID(node_in_plan, i));
       }
     }
@@ -1966,57 +2039,62 @@ void Optimizer::get_join_nodes(BasicQuery* basicquery, const vector<int> &plan_a
 void Optimizer::considerallscan(BasicQuery* basicquery, IDCachesSharePtr &id_caches,
                                 vector<map<vector<int>, list<PlanTree*>>> &plan_cache,
                                 map<int, unsigned > &var_to_num_map,
-                                map<int, TYPE_ENTITY_LITERAL_ID> &var_to_type_map){
+                                map<int, TYPE_ENTITY_LITERAL_ID> &var_to_type_map, vector<int> &need_join_nodes){
 
-  for(int i = 0 ; i < basicquery->getTotalVarNum(); ++i){
+  for(int i = 0 ; i < basicquery->getVarNum(); ++i){
 
-    vector<int> this_node{i};
-    PlanTree *new_scan = new PlanTree(i);
 
-    for(int j = 0; j < basicquery->getVarDegree(i); ++j){
-      if(basicquery->getEdgePreID(i, j) == statistics->type_pre_id){
-        int triple_id = basicquery->getEdgeID(i, j);
-        string type_name = basicquery->getTriple(triple_id).object;
-        var_to_type_map[i] = kv_store_->getIDByEntity(type_name);
-      }
-    }
-    var_to_num_map[i] = (*id_caches)[i]->size();
-    new_scan->plan_cost = var_to_num_map[i];
 
-    list<PlanTree*> this_node_plan;
-    this_node_plan.push_back(new_scan);
+	for(int j = 0; j < basicquery->getVarDegree(i); ++j){
+	  if(basicquery->getEdgePreID(i, j) == statistics->type_pre_id){
 
-    if(plan_cache.size() < 1){
+	    need_join_nodes.push_back(i);
+		vector<int> this_node{i};
+		PlanTree *new_scan = new PlanTree(i);
+
+		int triple_id = basicquery->getEdgeID(i, j);
+		string type_name = basicquery->getTriple(triple_id).object;
+		var_to_type_map[i] = kv_store_->getIDByEntity(type_name);
+
+		var_to_num_map[i] = (*id_caches)[i]->size();
+		new_scan->plan_cost = var_to_num_map[i];
+
+		list<PlanTree*> this_node_plan;
+		this_node_plan.push_back(new_scan);
+
+		if(plan_cache.size() < 1){
 //            card_cache begin when node_num >= 2
 //            map<vector<int>, unsigned > one_node_card_map;
-      map<vector<int>, list<PlanTree*>> one_node_plan_map;
+		  map<vector<int>, list<PlanTree*>> one_node_plan_map;
 
 //            one_node_card_map.insert(make_pair(this_node, var_to_num_map[i]));
-      one_node_plan_map.insert(make_pair(this_node, this_node_plan));
+		  one_node_plan_map.insert(make_pair(this_node, this_node_plan));
 
 //            card_cache.push_back(one_node_card_map);
-      plan_cache.push_back(one_node_plan_map);
-    } else{
+		  plan_cache.push_back(one_node_plan_map);
+		} else{
 //            card_cache[0].insert(make_pair(this_node, var_to_num_map[i]));
-      plan_cache[0].insert(make_pair(this_node, this_node_plan));
-    }
+		  plan_cache[0].insert(make_pair(this_node, this_node_plan));
+		}
+	  }
+	}
   }
 
 }
 
 // add one node, the added node need to be linked by nodes in plan before
-void Optimizer::considerwcojoin(BasicQuery* basicquery, int node_num,
-                                vector<map<vector<int>, list<PlanTree*>>> &plan_cache,
+void Optimizer::considerwcojoin(BasicQuery* basicquery, int node_num, const vector<int> &need_join_nodes,
+								vector<map<vector<int>, list<PlanTree*>>> &plan_cache,
                                 map<int, unsigned> var_to_num_map, map<int, TYPE_ENTITY_LITERAL_ID> var_to_type_map,
                                 vector<map<vector<int>, unsigned>> &card_cache,
                                 vector<map<vector<int>, vector<vector<unsigned>> >> &sample_cache){
   auto plan_tree_list = plan_cache[node_num - 2];
-  for(auto last_node_plan : plan_tree_list){
+  for(const auto &last_node_plan : plan_tree_list){
     set<int> nei_node;
 //        vector<int> last_plan_node;
 //        get_last_plan_node(last_plan.first, last_plan_node);
 
-    get_nei_by_subplan_nodes(basicquery, last_node_plan.first, nei_node);
+    get_nei_by_subplan_nodes(basicquery, need_join_nodes, last_node_plan.first, nei_node);
 
     PlanTree* last_best_plan = get_best_plan(last_node_plan.first, plan_cache);
 
@@ -2064,12 +2142,12 @@ void Optimizer::considerbinaryjoin(BasicQuery* basicquery, int node_num,
   int max_size = min(min_size, node_num - 2);
 
 
-  for(auto need_considerbinaryjoin_nodes_plan : plan_cache[node_num - 1]){
+  for(const auto &need_considerbinaryjoin_nodes_plan : plan_cache[node_num - 1]){
 
     unsigned last_plan_smallest_cost = get_best_plan(need_considerbinaryjoin_nodes_plan.first, plan_cache)->plan_cost;
 
     for(int small_plan_nodes_num = min_size; small_plan_nodes_num <= max_size; ++ small_plan_nodes_num){
-      for(auto small_nodes_plan : plan_cache[small_plan_nodes_num-1]){
+      for(const auto &small_nodes_plan : plan_cache[small_plan_nodes_num-1]){
         if(OrderedVector::contain_sub_vec(need_considerbinaryjoin_nodes_plan.first, small_nodes_plan.first)) {
           vector<int> other_nodes;
           OrderedVector::subtract(need_considerbinaryjoin_nodes_plan.first, small_nodes_plan.first,other_nodes);
@@ -2109,7 +2187,8 @@ void Optimizer::considerbinaryjoin(BasicQuery* basicquery, int node_num,
 
 
 //  enumerate all execution plan, and build cost_cache
-void Optimizer::enum_query_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches,
+int Optimizer::enum_query_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches,
+                                vector<int> &need_join_nodes,
                                 vector<map<vector<int>, list<PlanTree*>>> &plan_cache){
 
   vector<map<vector<int>, unsigned>> card_cache;
@@ -2118,32 +2197,39 @@ void Optimizer::enum_query_plan(BasicQuery* basicquery, KVstore *kvstore, IDCach
   map<int, unsigned > var_to_num_map;
   map<int, TYPE_ENTITY_LITERAL_ID > var_to_type_map;
 
-  int total_var = basicquery->getTotalVarNum();
+//  int total_var = basicquery->getTotalVarNum();
 
   considerallscan(basicquery, id_caches, plan_cache,
-                  var_to_num_map, var_to_type_map);
+                  var_to_num_map, var_to_type_map, need_join_nodes);
 
   for(auto x: var_to_num_map){
     cout <<x.first << "  " << x.second << endl;
   }
 
-  for(int i = 1; i < total_var; ++i){
-    considerwcojoin(basicquery, i+1, plan_cache, var_to_num_map, var_to_type_map,
+  for(int i = 1; i < need_join_nodes.size(); ++i){
+    considerwcojoin(basicquery, i+1, need_join_nodes, plan_cache, var_to_num_map, var_to_type_map,
                     card_cache, sample_cache);
-
-//        for(auto x : plan_cache[i]){
-//        	for(auto y : x.second){
-//        		y->print();
-//        	}
-//        }
 
     if(i >= 4){
 //            begin when nodes_num >= 5
       considerbinaryjoin(basicquery, i+1, card_cache, plan_cache);
-      cout << "binary join consider here" << endl;
+//      cout << "binary join consider here" << endl;
     }
   }
 
+  int nodes = 2;
+  for(auto &x:card_cache){
+    cout << "card for " << nodes++ <<" nodes" << endl;
+    for(auto y:x){
+      for(int node:y.first){
+        cout << node << " ";
+      }
+      cout << ", card estimation: " << y.second << endl;
+    }
+  }
+
+
+  return need_join_nodes.size();
 }
 
 PlanTree* Optimizer::get_best_plan(const vector<int> &nodes,
@@ -2152,7 +2238,7 @@ PlanTree* Optimizer::get_best_plan(const vector<int> &nodes,
   PlanTree* best_plan;
   unsigned min_cost = UINT_MAX;
 
-  for(auto plan : plan_cache[nodes.size()-1][nodes]){
+  for(const auto &plan : plan_cache[nodes.size()-1][nodes]){
     if(plan->plan_cost < min_cost){
       best_plan = plan;
     }
@@ -2167,14 +2253,17 @@ PlanTree* Optimizer::get_best_plan_by_num(int total_var_num, vector<map<vector<i
   PlanTree* best_plan;
   unsigned min_cost = UINT_MAX;
 
-  for(auto nodes_plan : plan_cache[total_var_num-1]){
-    for(auto plan_tree : nodes_plan.second){
+  int count = 0;
+  for(const auto &nodes_plan : plan_cache[total_var_num-1]){
+    for(const auto &plan_tree : nodes_plan.second){
+    	count ++;
       if(plan_tree->plan_cost < min_cost){
         best_plan = plan_tree;
         min_cost = plan_tree->plan_cost;
       }
     }
   }
+  cout << "during enumerate plans, get " << count << " possible best plans." << endl;
   return best_plan;
 }
 
@@ -2182,10 +2271,19 @@ PlanTree* Optimizer::get_best_plan_by_num(int total_var_num, vector<map<vector<i
 PlanTree* Optimizer::get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCachesSharePtr& id_caches){
 
   vector<map<vector<int>, list<PlanTree*>>> plan_cache;
+  vector<int> need_join_nodes;
+  int join_nodes_num = enum_query_plan(basicquery, kvstore, id_caches, need_join_nodes, plan_cache);
 
-  enum_query_plan(basicquery, kvstore, id_caches, plan_cache);
+  PlanTree* best_plan = get_best_plan_by_num(join_nodes_num, plan_cache);
 
-  return get_best_plan_by_num(basicquery->getVarNum(), plan_cache);
+  for(int i = 0; i < basicquery->getVarNum(); ++i){
+    if(find(need_join_nodes.begin(), need_join_nodes.end(), i) == need_join_nodes.end()
+    	&& !basicquery->isSatelliteInJoin(i)){
+      best_plan = new PlanTree(best_plan, i);
+    }
+  }
+
+  return best_plan;
 }
 
 tuple<bool, TableContentShardPtr> Optimizer::getAllSubObjID()
@@ -2228,10 +2326,10 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
   // leaf node
   if( plan_tree_node->joinType == NodeJoinType::LeafNode)
   {
-    cout<<"ExecutionBreathFirst 0" ;
+//    cout<<"ExecutionBreathFirst 0" ;
     auto node_added = plan_tree_node->node_to_join;
-    cout<<" node to join "<<node_added;
-    cout<<"["<<basic_query->getVarName(node_added)<<"]"<<endl;
+//    cout<<" node to join "<<node_added;
+    cout<<"leafnode ["<<basic_query->getVarName(node_added)<<"]"<<endl;
     auto id_cache_it = id_caches->find(node_added);
     PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
     (*pos_mapping)[0] = node_added;
@@ -2246,16 +2344,16 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
         record->push_back(var_id);
         result->push_back(record);
       }
-      cout<<"ExecutionBreathFirst 1"<<endl;
-      cout<<"result size "<<result->size()<<endl;
+//      cout<<"ExecutionBreathFirst 1"<<endl;
+//      cout<<"result size "<<result->size()<<endl;
       return make_tuple(true,pos_mapping,result);
     }
     else // No Constant Constraint,Return All IDs
     {
       auto all_nodes_table = get<1>(getAllSubObjID());
       PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
-      cout<<"ExecutionBreathFirst 2"<<endl;
-      cout<<"result size "<<all_nodes_table->size()<<endl;
+//      cout<<"ExecutionBreathFirst 2"<<endl;
+//      cout<<"result size "<<all_nodes_table->size()<<endl;
       return make_tuple(true,pos_mapping,all_nodes_table);
     }
   }
@@ -2263,8 +2361,8 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
   {
     tuple<bool,PositionValueSharedPtr, TableContentShardPtr> left_r;
     tuple<bool,PositionValueSharedPtr, TableContentShardPtr> right_r;
-    cout<<"ExecutionBreathFirst 3"<<endl;
-    cout<<"plan_tree_node->joinType" << NodeJoinTypeStr(plan_tree_node->joinType)<<endl;
+//    cout<<"ExecutionBreathFirst 3"<<endl;
+//    cout<<"plan_tree_node->joinType" << NodeJoinTypeStr(plan_tree_node->joinType)<<endl;
 
     if(plan_tree_node->joinType == NodeJoinType::JoinANode)
     {
@@ -2281,20 +2379,14 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       }
       auto node_to_join = plan_tree_node->right_node->node_to_join;
 
-      cout<<"join node ["<<basic_query->getVarName(node_to_join)<<"]"<<endl;
+      cout<<"join node ["<<basic_query->getVarName(node_to_join)<<"]"<<",  ";
       auto one_step_join = QueryPlan::LinkWithPreviousNodes(basic_query, this->kv_store_, node_to_join,left_ids);
       (*left_pos_id_mapping)[left_pos_id_mapping->size()] = node_to_join;
       (*left_id_position)[node_to_join] = left_pos_id_mapping->size();
 
       auto step_result = JoinANode(one_step_join.join_node_, left_table,left_id_position,id_caches);
 
-      cout<<"ExecutionBreathFirst 4"<<endl;
       cout<<"result size "<<get<1>(step_result)->size()<<endl;
-      for(const auto& pos_id_pair:*left_pos_id_mapping)
-      {
-        cout<<" pos["<<pos_id_pair.first<<"] = id["<<pos_id_pair.second<<"]"<<endl;
-      }
-      cout<<"NodeJoinType::JoinANode left_pos_id_mapping "<< left_pos_id_mapping->size()<<endl;
       return make_tuple(true,left_pos_id_mapping,get<1>(step_result));
     }
     else if(plan_tree_node->joinType == NodeJoinType::JoinTwoTable)
@@ -2309,15 +2401,6 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       auto right_table = get<2>(right_r);
       auto right_pos_id_mapping = get<1>(right_r);
 
-      cout << "this done" << endl;
-      for(auto x : *left_pos_id_mapping){
-        cout << x.first<<":"<<x.second << "  ";
-      }
-      cout << endl;
-      for(auto x :*right_pos_id_mapping){
-        cout << x.first<<":"<<x.second << "  " ;
-      }
-      cout << endl;
       set<TYPE_ENTITY_LITERAL_ID> public_var_set;
       set<TYPE_ENTITY_LITERAL_ID> right_table_var_id;
 
@@ -2329,14 +2412,14 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
           public_var_set.insert(left_pos_id_pair.second);
         }
       }
-      cout << "public var:" << endl;
-      for(auto x : public_var_set)
-        cout << x << endl;
+//      cout << "public var:" << endl;
+//      for(auto x : public_var_set)
+//        cout << x << endl;
 
       auto one_step_join_table = make_shared<OneStepJoinTable>();
       for(const auto public_var:public_var_set)
         one_step_join_table->public_variables_->push_back(public_var);
-      cout<<"ExecutionBreathFirst 5"<<endl;
+//      cout<<"ExecutionBreathFirst 5"<<endl;
 
       auto left_id_pos_mapping = make_shared<PositionValue>();
       auto right_id_pos_mapping = make_shared<PositionValue>();
