@@ -491,11 +491,12 @@ tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTabl
     public_variables.insert(variable_id);
   }
   vector<TYPE_ENTITY_LITERAL_ID> small_table_inserted_variables_position;
-  for(auto b_kv:*small_id_pos)
+  for(int i =0;i<small_pos_id->size();i++)
   {
-    if (public_variables.find(b_kv.second)!=public_variables.end())
+    auto small_node = (*small_pos_id)[i];
+    if (public_variables.find(small_node)!=public_variables.end())
       continue;
-    small_table_inserted_variables_position.push_back(b_kv.first);
+    small_table_inserted_variables_position.push_back(i);
   }
 
   auto result_contents = result_table;
@@ -531,6 +532,7 @@ tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTabl
   cout<<"binary join,  result size "<<result_table->size()<<endl;
   long t2 = Util::get_cur_time();
   cout << "binary join used " << (t2-t1) << "ms." <<endl;
+  auto first_r = result_table->front();
   return make_tuple(true, new_position_id_mapping, result_table);
 
 }
@@ -2736,6 +2738,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       for(const auto& pos_id_pair:* left_pos_id_mapping) {
         left_ids->push_back(pos_id_pair.second);
         (*left_id_position)[pos_id_pair.second]= pos_id_pair.first;
+        cout<<"["<< pos_id_pair.first <<"]" << " var ["<<pos_id_pair.second<<"] "<<basic_query->getVarName(pos_id_pair.second)<<endl;
       }
       auto node_to_join = plan_tree_node->right_node->node_to_join;
 
@@ -2743,7 +2746,14 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       auto one_step_join = QueryPlan::LinkWithPreviousNodes(basic_query, this->kv_store_, node_to_join,left_ids);
       (*left_pos_id_mapping)[left_pos_id_mapping->size()] = node_to_join;
       (*left_id_position)[node_to_join] = left_pos_id_mapping->size();
+      auto join_node = one_step_join.join_node_;
+      auto edges = *join_node->edges_;
+      auto edge_c = *join_node->edges_constant_info_;
 
+      for(const auto& id_pos_pair:* left_id_position) {
+        cout<<"var["<< id_pos_pair.first <<"]" << " pos ["<<id_pos_pair.second<<"] "<<basic_query->getVarName(id_pos_pair.first)<<endl;
+
+      }
       auto step_result = JoinANode(one_step_join.join_node_, left_table,left_id_position,id_caches);
 
       cout<<"result size "<<get<1>(step_result)->size()<<endl;
