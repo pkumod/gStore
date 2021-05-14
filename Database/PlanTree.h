@@ -63,7 +63,7 @@ class PlanTree {
 
 public:
     Tree_node *root_node;
-    unsigned plan_cost;
+    unsigned long plan_cost;
 
     PlanTree()= default;;
     PlanTree(int first_node);
