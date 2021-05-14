@@ -1219,7 +1219,7 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       cout << "get var cache, used " << (t7 - t6) << "ms." << endl;
       this->var_descriptors_->clear();
       long t1 = Util::get_cur_time();
-//      vector<int> nodes_order = {3,1,0,4,5,2};
+//      vector<int> nodes_order = {4,2,0,5,6,1,3};
 //      auto best_plan_tree = new PlanTree(nodes_order);
       auto best_plan_tree = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
       long t2 = Util::get_cur_time();
@@ -2728,6 +2728,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
 
     if(plan_tree_node->joinType == NodeJoinType::JoinANode)
     {
+    	long t1 = Util::get_cur_time();
       left_r = this->ExecutionBreathFirst(basic_query,query_info,plan_tree_node->left_node,id_caches);
       auto left_table = get<2>(left_r);
       auto left_pos_id_mapping = get<1>(left_r);
@@ -2738,7 +2739,6 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       for(const auto& pos_id_pair:* left_pos_id_mapping) {
         left_ids->push_back(pos_id_pair.second);
         (*left_id_position)[pos_id_pair.second]= pos_id_pair.first;
-        cout<<"["<< pos_id_pair.first <<"]" << " var ["<<pos_id_pair.second<<"] "<<basic_query->getVarName(pos_id_pair.second)<<endl;
       }
       auto node_to_join = plan_tree_node->right_node->node_to_join;
 
@@ -2750,13 +2750,11 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       auto edges = *join_node->edges_;
       auto edge_c = *join_node->edges_constant_info_;
 
-      for(const auto& id_pos_pair:* left_id_position) {
-        cout<<"var["<< id_pos_pair.first <<"]" << " pos ["<<id_pos_pair.second<<"] "<<basic_query->getVarName(id_pos_pair.first)<<endl;
-
-      }
       auto step_result = JoinANode(one_step_join.join_node_, left_table,left_id_position,id_caches);
 
-      cout<<"result size "<<get<1>(step_result)->size()<<endl;
+      cout<<"result size "<<get<1>(step_result)->size();
+      long t2 = Util::get_cur_time();
+      cout<< "  used " << (t2 - t1) << "ms." <<endl;
       return make_tuple(true,left_pos_id_mapping,get<1>(step_result));
     }
     else if(plan_tree_node->joinType == NodeJoinType::JoinTwoTable)
