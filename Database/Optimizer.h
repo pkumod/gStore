@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <list>
 #include <cstdlib>
+#include <cmath>
 
 
 using namespace std;
@@ -108,7 +109,7 @@ class Optimizer
 				  vector<TYPE_PREDICATE_ID> &p_list, vector<unsigned> &last_sample, unsigned this_var_sample);
     unsigned long card_estimator(BasicQuery* basicquery, IDCachesSharePtr &id_caches,
 							map<int, unsigned> &var_to_num_map, map<int, TYPE_ENTITY_LITERAL_ID> &var_to_type_map,
-							map<int, vector<TYPE_ENTITY_LITERAL_ID >> &var_to_sample_map,
+							map<int, vector<TYPE_ENTITY_LITERAL_ID >> &var_to_sample_map,map<int, map<int, unsigned >> &s_o_list_average_size,
 							const vector<int> &last_plan_nodes, int next_join_node, const vector<int> &now_plan_nodes,
 							vector<map<vector<int>, unsigned long>> &card_cache,
 							vector<map<vector<int>, vector<vector<unsigned>> >> &sample_cache,
@@ -119,8 +120,8 @@ class Optimizer
     unsigned long cost_model_for_wco(BasicQuery* basicquery, IDCachesSharePtr &id_caches, PlanTree* last_plan,
 								const vector<int> &last_plan_node, int next_node, const vector<int> &now_plan_node,
 								map<int, unsigned> &var_to_num_map, map<int, TYPE_ENTITY_LITERAL_ID> &var_to_type_map,
-								map<int, vector<unsigned>> &var_to_sample_cache, vector<map<vector<int>, unsigned long>> &card_cache,
-								vector<map<vector<int>, vector<vector<unsigned>> >> &sample_cache);
+								map<int, vector<unsigned>> &var_to_sample_cache, map<int, map<int, unsigned >> &s_o_list_average_size,
+								vector<map<vector<int>, unsigned long>> &card_cache, vector<map<vector<int>, vector<vector<unsigned>> >> &sample_cache);
 
     unsigned long cost_model_for_binary(vector<map<vector<int>, unsigned long>> &card_cache,
                                    const vector<int> &plan_a_nodes, const vector<int> &plan_b_nodes,
@@ -141,8 +142,8 @@ class Optimizer
     void considerwcojoin(BasicQuery* basicquery, IDCachesSharePtr &id_caches, int node_num, const vector<int> &need_join_nodes,
 						 vector<map<vector<int>, list<PlanTree*>>> &plan_cache,
 						 map<int, unsigned> &var_to_num_map, map<int, TYPE_ENTITY_LITERAL_ID> &var_to_type_map,
-						 map<int, vector<unsigned>> &var_to_sample_cache, vector<map<vector<int>, unsigned long>> &card_cache,
-						 vector<map<vector<int>, vector<vector<unsigned>> >> &sample_cache);
+						 map<int, vector<unsigned>> &var_to_sample_cache, map<int, map<int, unsigned >> &s_o_list_average_size,
+						 vector<map<vector<int>, unsigned long>> &card_cache, vector<map<vector<int>, vector<vector<unsigned>> >> &sample_cache);
 
     void considerbinaryjoin(BasicQuery* basicquery, int node_num,
                             vector<map<vector<int>, unsigned long>> &card_cache,

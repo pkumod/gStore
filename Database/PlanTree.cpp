@@ -95,5 +95,6 @@ void PlanTree::print_tree_node(Tree_node* node, BasicQuery* basicquery){
 void PlanTree::print(BasicQuery* basicquery) {
 	cout << "Plan: ";
 	print_tree_node(root_node, basicquery);
+	cout << ", cost: "<<this->plan_cost;
 	cout << endl;
 }
