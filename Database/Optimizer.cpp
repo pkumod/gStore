@@ -407,7 +407,7 @@ shared_ptr<IDList> Optimizer::ExtendRecord(const shared_ptr<OneStepJoinNode> &on
  * @return new table, columns are made up of
  * [ big table vars ][ small table vars - common vars]
  */
-tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTable(const shared_ptr<OneStepJoinTable>& one_step_join_table,
+tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer:: JoinTwoTable(const shared_ptr<OneStepJoinTable>& one_step_join_table,
 																				  const TableContentShardPtr& table_a,
 																				  const PositionValueSharedPtr& table_a_id_pos,
 																				  const PositionValueSharedPtr& table_a_pos_id,
@@ -427,9 +427,9 @@ tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer::JoinTwoTabl
   auto& big_id_pos = table_a->size() > table_b->size() ? table_a_id_pos : table_b_id_pos;
   auto& big_pos_id = table_a->size() > table_b->size() ? table_a_pos_id : table_b_pos_id;
 
-  auto& small_table = table_a->size() < table_b->size() ? table_a : table_b;
-  auto& small_id_pos = table_a->size() < table_b->size() ? table_a_id_pos : table_b_id_pos;
-  auto& small_pos_id = table_a->size() < table_b->size() ? table_a_pos_id : table_b_pos_id;
+  auto& small_table = table_a->size() <= table_b->size() ? table_a : table_b;
+  auto& small_id_pos = table_a->size() <= table_b->size() ? table_a_id_pos : table_b_id_pos;
+  auto& small_pos_id = table_a->size() <= table_b->size() ? table_a_pos_id : table_b_pos_id;
 
   auto result_table = make_shared<TableContent>();
 
@@ -1308,7 +1308,7 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
 
   auto position_id_map_ptr = result->position_to_var_des_;
   auto id_position_map_ptr = result->var_des_to_position_;
-
+  
   int var_num =  basic_query->getVarNum();
   for (const auto&  record_ptr : *(result->values_))
   {
