@@ -237,7 +237,7 @@ public:
 
 	Trie *getTrie();
 
-	bool set_if_single_thread(bool _single);
+	void set_if_single_thread(bool _single);
 private:
 	std::string store_path;
 
