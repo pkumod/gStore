@@ -156,7 +156,7 @@ KVstore::getTrie()
 	return this->trie;
 }
 
-bool
+void
 KVstore::set_if_single_thread(bool _single)
 {
 	this->entity2id->setSingleThread(_single);
@@ -1910,7 +1910,7 @@ KVstore::getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlis
 bool 
 KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const 
 {
-	cout << "In getobjIDlistBysubIDpreID " << _subid << ' ' << _preid << endl;
+//	cout << "In getobjIDlistBysubIDpreID " << _subid << ' ' << _preid << endl;
 	if (!Util::is_entity_ele(_subid)) {
 		_objidlist = NULL;
 		_list_len = 0;
