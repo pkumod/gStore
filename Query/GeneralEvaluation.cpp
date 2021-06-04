@@ -317,6 +317,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 	// If well-designed, split and refill group_pattern according to rewriting //
 	if (well_designed == -1)
 		well_designed = (int)query_tree.checkWellDesigned();
+	// well_designed = 0;	// Force semantic-based evaluation
 
 	if (well_designed == 0)	// Not well-designed, semantic-based evaluation
 	{
@@ -526,13 +527,13 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 			for (int j = 0; j < (int)group_pattern.sub_group_pattern[i].unions.size(); j++)
 			{
-				TempResultSet *sub_result;
+				TempResultSet *sub_result = new TempResultSet();
 				if (well_designed == 0)
 				{
 					this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
 					this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].unions[j];
 					this->rewriting_evaluation_stack.back().result = NULL;
-					TempResultSet *sub_result = queryEvaluation(dep + 1);
+					sub_result = queryEvaluation(dep + 1);
 				}
 				else if (well_designed == 1)
 				{			
@@ -543,7 +544,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					rewriting_evaluation_stack[dep].group_pattern.print(dep);
 					for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
 
-					sub_result = new TempResultSet();
+					// sub_result = new TempResultSet();
 
 					// Construct triple_pattern //
 					QueryTree::GroupPattern triple_pattern;
@@ -3317,3 +3318,4 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResu
 	sub_result->results[0].getAllVarset();
 	printf("11111\n");
 }
+
