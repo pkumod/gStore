@@ -325,6 +325,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		printf("||not well-designed at dep = %d||\n", dep);
 		printf("=================================\n");
 		group_pattern = rewriting_evaluation_stack[dep].group_pattern;
+		// group_pattern.print(0);
+		// rewriting_evaluation_stack[dep].group_pattern.print(0);
+		// this->query_tree.getGroupPattern().print(0);
 	}
 	else if (well_designed == 1)	// Well-designed, rewriting-based evaluation
 	{
@@ -360,19 +363,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 	for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
 		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Group_type)
 		{
-			group_pattern.sub_group_pattern[i].group_pattern.print(0);
 			this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
 			this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].group_pattern;
 			this->rewriting_evaluation_stack.back().result = NULL;
 			TempResultSet *temp = queryEvaluation(dep + 1);
 
-			if (result->results.empty())
-			{
-				delete result;
-				result = temp;
-			}
-			else
-			{
+			// if (result->results.empty())
+			// {
+			// 	delete result;
+			// 	result = temp;
+			// }
+			// else
+			// {
 				TempResultSet *new_result = new TempResultSet();
 				result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
@@ -382,7 +384,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				delete result;
 
 				result = new_result;
-			}
+				result->initial = false;
+			// }
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 		{
@@ -498,13 +501,13 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
 					}
 
-					if (result->results.empty())
-					{
-						delete result;
-						result = temp;
-					}
-					else
-					{
+					// if (result->results.empty())
+					// {
+					// 	delete result;
+					// 	result = temp;
+					// }
+					// else
+					// {
 						TempResultSet *new_result = new TempResultSet();
 						result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
@@ -514,11 +517,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						delete result;
 
 						result = new_result;
-					}
+						result->initial = false;
+					// }
 				}
-				
-				// printf("Pattern_type result: \n");
-				// result->print();
 			}
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
@@ -826,13 +827,13 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				}
 			}
 
-			if (result->results.empty())
-			{
-				delete result;
-				result = sub_result_outer;
-			}
-			else
-			{
+			// if (result->results.empty())
+			// {
+			// 	delete result;
+			// 	result = sub_result_outer;
+			// }
+			// else
+			// {
 				TempResultSet *new_result = new TempResultSet();
 				result->doJoin(*sub_result_outer, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
@@ -842,7 +843,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				delete result;
 
 				result = new_result;
-			}
+				result->initial = false;
+			// }
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type || group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
 		{
@@ -864,6 +866,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				delete result;
 
 				result = new_result;
+				result->initial = false;
 			}
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
@@ -875,6 +878,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			delete result;
 
 			result = new_result;
+			result->initial = false;
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Bind_type)
 		{
@@ -896,6 +900,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				delete result;
 
 				result = new_result;
+				result->initial = false;
 			}
 		}
 
