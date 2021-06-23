@@ -59,6 +59,10 @@ class TempResultSet
 {
 	public:
 		std::vector<TempResult> results;
+		bool initial;	// If true -- has never been filled, any result will overwrite it
+						// If false -- has been filled by some executed query, even if empty,
+						// will join normally
+		TempResultSet() { initial = true; }
 
 		void release();
 

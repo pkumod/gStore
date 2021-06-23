@@ -244,6 +244,7 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 			}
 		}
 	}
+	// If x.result.empty(), do nothing
 }
 
 void TempResult::doUnion(TempResult &r)
@@ -1304,8 +1305,10 @@ void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stri
 {
 	long tv_begin = Util::get_cur_time();
 
-	if (this->results.empty() || x.results.empty())
+	// if (this->results.empty() || x.results.empty())
+	if (this->results.empty() && this->initial)
 	{
+		this->initial = false;
 		this->doUnion(x, r);
 		return;
 	}
@@ -1364,8 +1367,10 @@ void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, StringIndex *
 {
 	long tv_begin = Util::get_cur_time();
 
-	if (this->results.empty() || x.results.empty())
+	// if (this->results.empty() || x.results.empty())
+	if (this->results.empty() && this->initial)
 	{
+		this->initial = false;
 		this->doUnion(x, r);
 		return;
 	}
