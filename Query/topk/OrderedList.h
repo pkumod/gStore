@@ -58,8 +58,8 @@ class FQIterator:OrderedList{
   DPB::DynamicTrie dynamic_trie_;
  public:
   TYPE_ENTITY_LITERAL_ID node_id_;
-  explicit FQIterator(TYPE_ENTITY_LITERAL_ID node_id,int child_type_num,double node_score):
-  node_id_(node_id), dynamic_trie_(child_type_num),node_score_(node_score)
+  explicit FQIterator(int k,TYPE_ENTITY_LITERAL_ID node_id,int child_type_num,double node_score):
+  node_id_(node_id), dynamic_trie_(k,child_type_num),node_score_(node_score)
   {this->FR_OW_iterators.reserve(child_type_num);};
   OrderedListType Type() override {return OrderedListType::FQ;};
   void TryGetNext(int k) override;
