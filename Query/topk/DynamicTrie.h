@@ -18,10 +18,13 @@ class DynamicTrie {
  private:
   TrieEntry* root;
   int depth_;
+  int k_;
  public:
-  explicit DynamicTrie(int depth);
+  DPB::TrieEntry* newEntry(int k);
+  explicit DynamicTrie(int depth,int k );
   ~DynamicTrie();
-  void insert(const sequence &seq);
+  void deleteEntry(TrieEntry *trie_entry,int depth);
+  TrieEntry* insert(const sequence &seq);
   bool detect(const sequence &seq);
 };
 
