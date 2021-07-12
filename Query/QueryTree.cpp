@@ -72,7 +72,14 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::mapVarPos2Varset(Varse
 			 this->oper_type == Builtin_lang_type ||
 			 this->oper_type == Builtin_langmatches_type ||
 			 this->oper_type == Builtin_bound_type ||
-			 this->oper_type == Builtin_in_type)
+			 this->oper_type == Builtin_in_type ||
+			 this->oper_type == Builtin_datatype_type ||
+			 this->oper_type == Builtin_ucase_type ||
+			 this->oper_type == Builtin_lcase_type ||
+			 this->oper_type == Builtin_year_type ||
+			 this->oper_type == Builtin_month_type ||
+			 this->oper_type == Builtin_day_type ||
+			 this->oper_type == Builtin_abs_type)
 	{
 		if (this->child[0].node_type == FilterTreeChild::Tree_type)
 			this->child[0].node.mapVarPos2Varset(varset, entity_literal_varset);
@@ -80,6 +87,24 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::mapVarPos2Varset(Varse
 		{
 			this->child[0].pos = Varset(this->child[0].str).mapTo(varset)[0];
 			this->child[0].isel = entity_literal_varset.findVar(this->child[0].str);
+		}
+	}
+	else if (this->oper_type == Builtin_contains_type || this->oper_type == Builtin_strstarts_type)
+	{
+		if (this->child[0].node_type == FilterTreeChild::Tree_type)
+			this->child[0].node.mapVarPos2Varset(varset, entity_literal_varset);
+		else if (this->child[0].node_type == FilterTreeChild::String_type && this->child[0].str[0] == '?')
+		{
+			this->child[0].pos = Varset(this->child[0].str).mapTo(varset)[0];
+			this->child[0].isel = entity_literal_varset.findVar(this->child[0].str);
+		}
+
+		if (this->child[1].node_type == FilterTreeChild::Tree_type)
+			this->child[1].node.mapVarPos2Varset(varset, entity_literal_varset);
+		else if (this->child[1].node_type == FilterTreeChild::String_type && this->child[1].str[0] == '?')
+		{
+			this->child[1].pos = Varset(this->child[1].str).mapTo(varset)[0];
+			this->child[1].isel = entity_literal_varset.findVar(this->child[1].str);
 		}
 	}
 }
@@ -105,6 +130,16 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::print(int dep)
 	if (this->oper_type == Builtin_cycle_type)			printf("cycleBoolean");
 	if (this->oper_type == Builtin_sp_type)				printf("shortestPathLen");
 	if (this->oper_type == Builtin_khop_type)			printf("kHopReachable");
+	if (this->oper_type == Builtin_datatype_type)		printf("DATATYPE");
+	if (this->oper_type == Builtin_contains_type)		printf("CONTAINS");
+	if (this->oper_type == Builtin_ucase_type)			printf("UCASE");
+	if (this->oper_type == Builtin_lcase_type)			printf("LCASE");
+	if (this->oper_type == Builtin_strstarts_type)		printf("STRSTARTS");
+	if (this->oper_type == Builtin_now_type)			printf("NOW");
+	if (this->oper_type == Builtin_year_type)			printf("YEAR");
+	if (this->oper_type == Builtin_month_type)    		printf("MONTH");
+	if (this->oper_type == Builtin_day_type)			printf("DAY");
+	if (this->oper_type == Builtin_abs_type)			printf("ABS");
 
 	if (this->oper_type == Builtin_in_type)
 	{
@@ -172,7 +207,9 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::print(int dep)
 	if (this->oper_type == Greater_type)		printf(" > ");
 	if (this->oper_type == GreaterOrEqual_type)	printf(" >= ");
 
-	if (this->oper_type == Builtin_regex_type || this->oper_type == Builtin_langmatches_type)	printf(", ");
+	if (this->oper_type == Builtin_regex_type || this->oper_type == Builtin_langmatches_type \
+		|| this->oper_type == Builtin_contains_type || this->oper_type == Builtin_strstarts_type)
+		printf(", ");
 
 	if ((int)this->child.size() >= 2)
 	{
@@ -735,6 +772,54 @@ Varset& QueryTree::getGroupByVarset()
 }
 
 /**
+	The constructor of class Order.
+	@param _descending the boolean indicating whether the order should be descending.
+*/
+QueryTree::Order::Order(bool _descending)
+{
+	descending = _descending;
+	comp_tree_root = new CompTreeNode();
+}
+
+/**
+	The copy constructor of class Order.
+	@param that the object to copy from.
+*/
+QueryTree::Order::Order(const QueryTree::Order& that)
+{
+	var = that.var;
+	comp_tree_root = new CompTreeNode();
+	*comp_tree_root = *(that.comp_tree_root);
+	descending = that.descending;
+}
+
+/**
+	The copy assignment operator of class Order.
+	@param that the object to copy from.
+*/
+QueryTree::Order& QueryTree::Order::operator=(const QueryTree::Order& that)
+{
+	CompTreeNode *local_root = new CompTreeNode();
+	// If the above statement throws,
+    // the object is still in the same state as before.
+    // None of the following statements will throw an exception :)
+    *local_root = *(that.comp_tree_root);
+    delete comp_tree_root;
+    comp_tree_root = local_root;
+    var = that.var;
+    descending = that.descending;
+    return *this;
+}
+
+/**
+	The destructor of class Order.
+*/
+QueryTree::Order::~Order()
+{
+	delete comp_tree_root;
+}
+
+/**
 	Add a ORDER BY variable, and mark if it is DESC or ASC.
 	
 	@param _var the ORDER BY variable to add. [ARCHAIC: now use CompTreeNode to incorporate expressions]
@@ -1101,6 +1186,87 @@ void QueryTree::print()
 	for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
 }
 
+/**
+	The constructor of class CompTreeNode.
+*/
+QueryTree::CompTreeNode::CompTreeNode()
+{
+	lchild = NULL;
+	rchild = NULL;
+}
+
+/**
+	The copy constructor of class CompTreeNode.
+	@param that the object to copy from.
+*/
+QueryTree::CompTreeNode::CompTreeNode(const QueryTree::CompTreeNode& that)
+{
+	oprt = that.oprt;
+	if (that.lchild)
+	{
+		lchild = new QueryTree::CompTreeNode();
+		*lchild = *(that.lchild);
+	}
+	else
+		lchild = NULL;
+	if (that.rchild)
+	{
+		rchild = new QueryTree::CompTreeNode();
+		*rchild = *(that.rchild);
+	}
+	else
+		rchild = NULL;
+	val = that.val;
+}
+
+/**
+	The copy assignment operator of class CompTreeNode.
+	@param that the object to copy from.
+*/
+QueryTree::CompTreeNode& QueryTree::CompTreeNode::operator=(const QueryTree::CompTreeNode& that)
+{
+	if (that.lchild)
+	{
+		QueryTree::CompTreeNode *local_lchild = new QueryTree::CompTreeNode();
+	    *local_lchild = *(that.lchild);
+	    if (lchild)
+	    	delete lchild;
+	    lchild = local_lchild;
+	}
+	else if (lchild)
+	{
+		delete lchild;
+		lchild = NULL;
+	}
+	if (that.rchild)
+	{
+		QueryTree::CompTreeNode *local_rchild = new QueryTree::CompTreeNode();
+	    *local_rchild = *(that.rchild);
+	    if (rchild)
+	    	delete rchild;
+	    rchild = local_rchild;
+	}
+	else if (rchild)
+	{
+		delete rchild;
+		rchild = NULL;
+	}
+    oprt = that.oprt;
+    val = that.val;
+    return *this;
+}
+
+/**
+	The destructor of class CompTreeNode.
+*/
+QueryTree::CompTreeNode::~CompTreeNode()
+{
+	if (lchild)
+		delete lchild;
+	if (rchild)
+		delete rchild;
+}
+
 void QueryTree::CompTreeNode::print(int dep)
 {
 	if (!lchild && !rchild)
@@ -1133,11 +1299,13 @@ void QueryTree::CompTreeNode::print(int dep)
 
 Varset QueryTree::CompTreeNode::getCompTreeVarset()
 {
-	if (!lchild && !rchild)
-	{
-		if (val[0] == '?')
-			return Varset(val);
-	}
-	else
+	if (lchild && rchild)
 		return lchild->getCompTreeVarset() + rchild->getCompTreeVarset();
+	if (lchild)
+		return lchild->getCompTreeVarset();
+	if (rchild)
+		return rchild->getCompTreeVarset();
+	// !lchild && !rchild
+	if (val[0] == '?')
+		return Varset(val);
 }
