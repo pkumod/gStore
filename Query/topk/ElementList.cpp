@@ -2,7 +2,7 @@
 // Created by Yuqi Zhou on 2021/7/4.
 //
 
-#include "OrderedList.h"
+#include "ElementList.h"
 
 // getFirst() also implemented here
 void FRIterator::TryGetNext(int k) {
@@ -53,7 +53,7 @@ double FRIterator::DeltaCost(OrderedList* node_pointer, int index) {
   return node_pointer->pool_[index+1].cost - node_pointer->pool_[index].cost;
 }
 
-bool FRIterator::NextEPoolElement(int k,OrderedList* node_pointer, unsigned int index) {
+bool FRIterator::NextEPoolElement(int k, OrderedList* node_pointer, unsigned int index) {
   if(index == node_pointer->pool_.size())
     node_pointer->TryGetNext(k);
   if(index < node_pointer->pool_.size())
@@ -160,7 +160,7 @@ void FQIterator::Insert(std::vector<OrderedList *> FR_OW_iterators) {
 }
 
 
-double FQIterator::DeltaCost(OrderedList* FR_OW_iterator,int index) {
+double FQIterator::DeltaCost(OrderedList* FR_OW_iterator, int index) {
   return FR_OW_iterator->pool_[index+1].cost - FR_OW_iterator->pool_[index].cost;
 }
 

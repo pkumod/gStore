@@ -1193,14 +1193,11 @@ tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(const shared_ptr
 
 tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparql_query,QueryInfo query_info) {
 
-  cout<<"set query_info = limit 2 begin"<<endl;
   query_info.limit_num_ = 30;
-  cout<<"set query_info = limit 2 end"<<endl;
   vector<BasicQuery*> basic_query_vec;
   vector<shared_ptr<QueryPlan>> query_plan_vec;
 
-
-
+  // We Don't think too complex SPARQL now
   for(auto basic_query_pointer:sparql_query.getBasicQueryVec())
   {
 
@@ -1219,11 +1216,6 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       cout << "get var cache, used " << (t7 - t6) << "ms." << endl;
       this->var_descriptors_->clear();
       long t1 = Util::get_cur_time();
-//      vector<int> nodes_order = {4,2,0,5,6,1,3}; //0.9 plan
-//      vector<int> nodes_order = {6,5,0,2,4,1,3}; // 这个计划比较好
-//	    vector<int> nodes_order = {2,1,0,3,4};//0.9
-//	    vector<int> nodes_order = {4,3,0,1,2};//my plan, quick than 0.9
-//      auto best_plan_tree = new PlanTree(nodes_order);
       auto best_plan_tree = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
       long t2 = Util::get_cur_time();
       cout << "plan get, used " << (t2-t1) << "ms." << endl;
@@ -1232,18 +1224,16 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
 
       long t3 = Util::get_cur_time();
       cout << "execution, used " << (t3 - t2) << "ms." << endl;
-      // cout<<query_plan->toString(kv_store_)<<endl;
+
       basic_query_vec.push_back(basic_query_pointer);
       query_plan_vec.push_back(query_plan);
       auto pos_var_mapping = get<1>(bfs_result);
-      //auto mapping_tuple = query_plan->PositionIDMappings();
-      //auto var_pos_mapping = get<0>(mapping_tuple);
-      // auto pos_var_mapping = get<1>(mapping_tuple);
+
       auto var_pos_mapping = make_shared<PositionValue>();
       for(const auto& pos_var_pair:*pos_var_mapping) {
         (*var_pos_mapping)[pos_var_pair.second] = pos_var_pair.first;
       }
-      // auto basic_query_result = this->ExecutionDepthFirst(basic_query_pointer, query_plan, query_info,var_pos_mapping);
+
       long t4 = Util::get_cur_time();
       CopyToResult(basic_query_pointer->getResultListPointer(), basic_query_pointer, make_shared<IntermediateResult>(
           var_pos_mapping,pos_var_mapping,get<2>(bfs_result)
@@ -1254,6 +1244,10 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
     }
     else if(strategy ==BasicQueryStrategy::Special){
       printf("BasicQueryStrategy::Special not supported yet\n");
+    }
+    else if(strategy == BasicQueryStrategy::TopK)
+    {
+
     }
 
 
@@ -2873,3 +2867,4 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
     }
   }
 }
+
