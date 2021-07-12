@@ -419,7 +419,13 @@ BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY
     this->var_degree[_obj_var_id] ++;
 }
 
-// encode relative signature data of the query graph
+/**
+ * encode relative signature data of the query graph
+ * two parts: predicate var id & entity id , both start from 0
+ * @param _p_kvstore the KV Store instance to query the node id
+ * @param _query_var
+ * @return
+ */
 bool
 BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_var)
 {

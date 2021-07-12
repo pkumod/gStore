@@ -468,9 +468,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 				query_info.is_distinct_ = this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct;
 
-				query_info.ordered_by_vars_ = make_shared<vector<QueryTree::Order>>();
+				query_info.ordered_by_expressions_ = make_shared<vector<QueryTree::Order>>();
 				for(auto order_item:this->query_tree.getOrderVarVector())
-					query_info.ordered_by_vars_->push_back(order_item);
+					query_info.ordered_by_expressions_->push_back(order_item);
 
 				this->optimizer_->DoQuery(sparql_query,query_info);
 
@@ -667,9 +667,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 					query_info.is_distinct_ = this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct;
 
-					query_info.ordered_by_vars_ = make_shared<vector<QueryTree::Order>>();
+					query_info.ordered_by_expressions_ = make_shared<vector<QueryTree::Order>>();
 					for(auto order_item:this->query_tree.getOrderVarVector())
-						query_info.ordered_by_vars_->push_back(order_item);
+						query_info.ordered_by_expressions_->push_back(order_item);
 
 					this->optimizer_->DoQuery(sparql_query,query_info);
 
@@ -1439,9 +1439,9 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 
       query_info.is_distinct_ = this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct;
 
-      query_info.ordered_by_vars_ = make_shared<vector<QueryTree::Order>>();
+      query_info.ordered_by_expressions_ = make_shared<vector<QueryTree::Order>>();
       for(auto order_item:this->query_tree.getOrderVarVector())
-        query_info.ordered_by_vars_->push_back(order_item);
+        query_info.ordered_by_expressions_->push_back(order_item);
 
       this->optimizer_->DoQuery(sparql_query,query_info);
 

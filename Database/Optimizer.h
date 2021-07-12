@@ -21,6 +21,7 @@
 #include "./Statistics.h"
 #include "./PlanTree.h"
 #include "../Util/OrderedVector.h"
+#include "../Query/topk/TopKTreeSearchPlan.h"
 #include <unordered_map>
 #include <map>
 #include <cstring>
@@ -40,15 +41,16 @@ using IDCachesSharePtr = shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList
 using QueryPlanSharedPtr = shared_ptr<QueryPlan>;
 
 enum class BasicQueryStrategy{
-  Normal,
-  Special// method 1-5
+  Normal, // method 0
+  Special,// method 1-5
+  TopK
 };
 
 struct QueryInfo{
   bool limit_;
   int limit_num_;
   bool is_distinct_;
-  shared_ptr<vector<QueryTree::Order>> ordered_by_vars_;
+  shared_ptr<vector<QueryTree::Order>> ordered_by_expressions_;
 };
 /*
  *
@@ -198,6 +200,9 @@ class Optimizer
   tuple<bool,TableContentShardPtr> ExecutionDepthFirst(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan,
                                                                  const QueryInfo& query_info,const PositionValueSharedPtr& id_pos_mapping);
 
+  tuple<bool,TableContentShardPtr> ExecutionTopK(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan,
+                                                       const QueryInfo& query_info,const PositionValueSharedPtr& id_pos_mapping);
+
   tuple<bool,TableContentShardPtr> DepthSearchOneLayer(const shared_ptr<QueryPlan>& query_plan,
                                                                  int layer_count,
                                                                  int &result_number_till_now,
@@ -215,6 +220,10 @@ class Optimizer
   tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionBreathFirst(BasicQuery* basic_query,const QueryInfo& query_info,Tree_node* plan_tree,IDCachesSharePtr id_caches);
 
 
+  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionTopK(BasicQuery* basic_query,
+                                                                                           const QueryInfo& query_info,
+                                                                                           TopKTreeSearchPlan& plan_tree_node,
+                                                                                           IDCachesSharePtr id_caches);
  private:
   KVstore* kv_store_;
   Statistics* statistics;
