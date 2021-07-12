@@ -2,7 +2,7 @@
 // Created by Yuqi Zhou on 2021/7/10.
 //
 
-#include "TopKTreeSearchPlan.h"
+#include "TopKUtil.h"
 
 
 std::size_t TopKTreeSearchPlan::count_depth(std::map<int, set<int>>& neighbours,
@@ -101,8 +101,6 @@ TopKTreeSearchPlan::TopKTreeSearchPlan(BasicQuery *basic_query, Statistics *stat
 }
 
 
-
-
 TopKTreeSearchPlan::~TopKTreeSearchPlan() {
   std::stack<TopKTreeNode*> to_delete;
   to_delete.push(this->tree_root_);
@@ -117,4 +115,60 @@ TopKTreeSearchPlan::~TopKTreeSearchPlan() {
     to_delete.pop();
     delete tree_node;
   }
+}
+
+void TopKUtil::getVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
+                                                                  std::map<std::string,double>& coefficients,
+                                                                  stringstream &ss)
+{
+  // if both of the child are leaves
+  if(comp_tree_node->lchild->lchild==NULL&&
+      comp_tree_node->lchild->lchild==NULL&&
+      comp_tree_node->lchild->lchild==NULL&&
+      comp_tree_node->lchild->lchild==NULL)
+  {
+    if (comp_tree_node->lchild->val.at(0) == '?') // ?x * 0.1
+    {
+      double coef;
+      ss<<comp_tree_node->rchild->val;
+      ss>>coef;
+      ss.clear();
+      coefficients[comp_tree_node->lchild->val] = coef;
+    }
+    else // 0.1 * ?x
+    {
+      double coef;
+      ss<<comp_tree_node->lchild->val;
+      ss>>coef;
+      ss.clear();
+      coefficients[comp_tree_node->rchild->val] = coef;
+    }
+  }
+  else
+  {
+    getVarCoefficientsTreeNode(comp_tree_node->lchild,coefficients,ss);
+    getVarCoefficientsTreeNode(comp_tree_node->rchild,coefficients,ss);
+  }
+}
+
+/**
+ * Suppose the SPARQL is simple, base unit is like '0.1 * ?x'
+ * And the expression is like the sum of base units
+ * @param order
+ * @return
+ */
+std::map<std::string,double> TopKUtil::getVarCoefficients(QueryTree::Order order)
+{
+  stringstream ss;
+  std::map<std::string,double> r;
+  getVarCoefficientsTreeNode(order.comp_tree_root,r,ss);
+  return std::move(r);
+}
+
+OrderedList *TopKUtil::BuildIteratorTree(KVstore* kv_store,BasicQuery* basic_query,
+                                         const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
+                                         map<TYPE_ENTITY_LITERAL_ID, OrderedList *> &iterators,
+                                         map<TYPE_ENTITY_LITERAL_ID, TreeResultSet *> &elements_lists,
+                                         map<std::string, double> &coefficients) {
+  return nullptr;
 }

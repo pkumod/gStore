@@ -2867,4 +2867,19 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
     }
   }
 }
+tuple<bool, TableContentShardPtr> Optimizer::ExecutionTopK(BasicQuery *basic_query,
+                                                           const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
+                                                           const QueryInfo &query_info,
+                                                           const PositionValueSharedPtr &id_pos_mapping) {
+  auto k = query_info.limit_num_;
+  auto first_item = (*query_info.ordered_by_expressions_)[0];
+  auto var_coefficients = TopKUtil::getVarCoefficients(first_item);
+
+  // Build Iterator tree
+
+
+
+  //
+  return tuple<bool, TableContentShardPtr>();
+}
 
