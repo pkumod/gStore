@@ -21,7 +21,7 @@
 #include "./Statistics.h"
 #include "./PlanTree.h"
 #include "../Util/OrderedVector.h"
-#include "../Query/topk/TopKTreeSearchPlan.h"
+#include "../Query/topk/TopKUtil.h"
 #include <unordered_map>
 #include <map>
 #include <cstring>
@@ -200,15 +200,17 @@ class Optimizer
   tuple<bool,TableContentShardPtr> ExecutionDepthFirst(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan,
                                                                  const QueryInfo& query_info,const PositionValueSharedPtr& id_pos_mapping);
 
-  tuple<bool,TableContentShardPtr> ExecutionTopK(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan,
-                                                       const QueryInfo& query_info,const PositionValueSharedPtr& id_pos_mapping);
-
   tuple<bool,TableContentShardPtr> DepthSearchOneLayer(const shared_ptr<QueryPlan>& query_plan,
                                                                  int layer_count,
                                                                  int &result_number_till_now,
                                                                  int limit_number,
                                                                  const TableContentShardPtr& tmp_result, const PositionValueSharedPtr& id_pos_mapping,
                                                                  const IDCachesSharePtr& id_caches);
+
+  tuple<bool,TableContentShardPtr> ExecutionTopK(BasicQuery* basic_query, const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
+                                                 const QueryInfo& query_info,const PositionValueSharedPtr& id_pos_mapping);
+
+
   static void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
 
   /*copy the result to vector<unsigned*> & */
