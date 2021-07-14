@@ -12,24 +12,27 @@ enum class OrderedListType{UnDefined,FR,OW,FQ};
 
 /* This structure is designed for
   selecting limit-k elements */
-class TreeResultSet{
+struct TreeResultSet{
   TYPE_ENTITY_LITERAL_ID node_id_;
   // estimated children number, may over-estimated
   // 0 means it is the leaf node
   size_t child_num_;
-  std::vector<TreeResultSet*> child_elements_;
+  // fathers only useful during bottom to top refinement
+  std::set<TreeResultSet*> fathers_;
+  std::set<TreeResultSet*> child_elements_;
 };
 
 /* This structure is designed for
   selecting top-k min element */
 class OrderedList{
  public:
+  TreeResultSet* tree_result_set_;// only useful during constructing and refine
   DPB::Pool pool_;
   virtual OrderedListType Type(){return OrderedListType::UnDefined;};
   virtual void TryGetNext(int k)=0;
 };
 
-class FRIterator: OrderedList {
+class FRIterator:public OrderedList {
  private:
   minmax::MinMaxHeap<DPB::element> queue_;
  public:
@@ -37,14 +40,20 @@ class FRIterator: OrderedList {
   OrderedListType Type() override {return OrderedListType::FR;};
   void TryGetNext(int k) override;
 
+
+
   // Insert a bulk of FQ iterator, all the same type
-  void Insert(int k,std::vector<OrderedList*> FQ_iterators);
+  void Insert(int k,OrderedList* FQ_iterator);
+
+  // Insert a bulk of FQ iterator, all the same type
+  void Insert(int k,const std::vector<OrderedList*>& FQ_iterators);
+  void Insert(int k,const std::set<OrderedList*>& FQ_iterators);
 
   double DeltaCost(OrderedList* node_pointer, int index);
   bool NextEPoolElement(int k, OrderedList* node_pointer, unsigned int index);
 };
 
-class OWIterator: OrderedList{
+class OWIterator: public OrderedList{
  private:
   // sorting right after building, so don't need a heap to get top-k
   // the top-k result already in the pool
@@ -59,7 +68,7 @@ class OWIterator: OrderedList{
 };
 
 // FQ may have cost itself
-class FQIterator: OrderedList{
+class FQIterator: public OrderedList{
  private:
   double node_score_;
   minmax::MinMaxHeap<DPB::FqElement> queue_;
@@ -77,6 +86,7 @@ class FQIterator: OrderedList{
   // inserting one certain type each time each time
   // certain type [i] specified by it's the i-th child of its father
   void Insert(std::vector<OrderedList*> FR_OW_iterators);
+  void Insert(OrderedList* FR_OW_iterator);
   bool NextEPoolElement(int k, OrderedList* node_pointer, unsigned int index);
   double DeltaCost(OrderedList* FR_OW_iterator, int index);
 };
