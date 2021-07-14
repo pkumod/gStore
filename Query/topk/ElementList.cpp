@@ -33,19 +33,29 @@ void FRIterator::TryGetNext(int k) {
 }
 
 
-void FRIterator::Insert(int k,std::vector<OrderedList *> FQ_iterators) {
+void FRIterator::Insert(int k, OrderedList* fq_pointer) {
+  auto cost = fq_pointer->pool_[0].cost;
+  if(queue_.size()>=k && cost>queue_.findMax().cost)
+    return;
+  DPB::element e{};
+  e.cost = cost;
+  e.index = 0;
+  e.identity.pointer = fq_pointer;
+  queue_.push(e);
+  if(queue_.size()>=k)
+    queue_.popMax();
+}
+
+void FRIterator::Insert(int k,const std::vector<OrderedList *>& FQ_iterators) {
   for(auto fq_pointer : FQ_iterators)
   {
-    auto cost = fq_pointer->pool_[0].cost;
-    if(queue_.size()>=k && cost>queue_.findMax().cost)
-      continue;
-    DPB::element e{};
-    e.cost = cost;
-    e.index = 0;
-    e.identity.pointer = fq_pointer;
-    queue_.push(e);
-    if(queue_.size()>=k)
-      queue_.popMax();
+    Insert(k,fq_pointer);
+  }
+}
+void FRIterator::Insert(int k,const std::set<OrderedList *>& FQ_iterators) {
+  for(auto fq_pointer : FQ_iterators)
+  {
+    Insert(k,fq_pointer);
   }
 }
 
@@ -155,6 +165,10 @@ bool FQIterator::NextEPoolElement(int k, OrderedList *node_pointer, unsigned int
     return false;
 }
 
+void FQIterator::Insert(OrderedList *FR_OW_iterator) {
+  this->FR_OW_iterators.push_back(FR_OW_iterator);
+}
+
 void FQIterator::Insert(std::vector<OrderedList *> FR_OW_iterators) {
   this->FR_OW_iterators = std::move(FR_OW_iterators);
 }
@@ -163,5 +177,6 @@ void FQIterator::Insert(std::vector<OrderedList *> FR_OW_iterators) {
 double FQIterator::DeltaCost(OrderedList* FR_OW_iterator, int index) {
   return FR_OW_iterator->pool_[index+1].cost - FR_OW_iterator->pool_[index].cost;
 }
+
 
 

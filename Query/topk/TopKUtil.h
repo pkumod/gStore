@@ -12,6 +12,7 @@
 #include "../../Query/BasicQuery.h"
 #include "../../Database/Statistics.h"
 #include "../../Query/QueryTree.h"
+#include "../../Query/IDList.h"
 #include "../../Database/TableOperator.h"
 
 // only Vars
@@ -36,14 +37,38 @@ class TopKTreeSearchPlan {
 
 namespace TopKUtil{
 
-void getVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
-                                          std::map<std::string,double>& coefficients,
-                                          stringstream &ss);
+double GetScore(string &v, stringstream &ss);
+void GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
+                                std::map<std::string,double>& coefficients,
+                                stringstream &ss);
 std::map<std::string,double> getVarCoefficients(QueryTree::Order order);
-OrderedList* BuildIteratorTree(KVstore* kv_store,BasicQuery* basic_query,
-                              const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
-                               std::map<TYPE_ENTITY_LITERAL_ID,OrderedList*>& iterators,
-                               std::map<TYPE_ENTITY_LITERAL_ID,TreeResultSet*>& elements_lists,
-                               std::map<std::string,double>& coefficients);
+
+struct Env{
+  KVstore *kv_store;
+  BasicQuery *basic_query;
+  shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches;
+  int k;
+  std::vector<std::map<TYPE_ENTITY_LITERAL_ID,OrderedList*>> *global_iterators;
+  map<std::string, double> *coefficients;
+  shared_ptr<Transaction> txn;
+  stringstream *ss;
+};
+
+std::map<TYPE_ENTITY_LITERAL_ID,FQIterator*>  inline AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
+                                                                    std::map<TYPE_ENTITY_LITERAL_ID,double>* node_scores, int k,
+                                                                    vector<std::map<TYPE_ENTITY_LITERAL_ID, OrderedList *>> &descendents_FRs);
+
+void inline AddRelation(TYPE_ENTITY_LITERAL_ID x,TYPE_ENTITY_LITERAL_ID y, std::map<TYPE_ENTITY_LITERAL_ID ,std::set<TYPE_ENTITY_LITERAL_ID >>& mapping);
+
+std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*>  GenerateIteratorNode(int parent_var,int child_var,std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
+                                                                     std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
+                                                                TopKTreeNode *child_tree_node,Env *env);
+
+FRIterator* BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,Env *env);
+
+
+void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
+
+
 }
 #endif //GSTORELIMITK_QUERY_TOPK_TOPKUTIL_H_
