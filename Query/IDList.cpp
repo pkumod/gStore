@@ -16,17 +16,17 @@ IDList::IDList()
 }
 
 //return the _i-th id of the list if _i exceeds, return -1 
-unsigned
-IDList::getID(unsigned _i) const
-{
-	if (this->size() > _i)
-	{
-		return this->id_list[_i];
-	}
-
-	//return -1;
-	return INVALID;
-}
+//inline unsigned
+//IDList::getID(unsigned _i) const
+//{
+//	if (this->size() > _i)
+//	{
+//		return this->id_list[_i];
+//	}
+//
+//	//return -1;
+//	return INVALID;
+//}
 
 bool
 IDList::addID(unsigned _id)

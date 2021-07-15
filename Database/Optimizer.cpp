@@ -216,7 +216,7 @@ tuple<bool,TableContentShardPtr> Optimizer::JoinANode(const shared_ptr<OneStepJo
       auto new_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*record);
       new_record->push_back(new_element);
       //cout<<"new_record_len="<<new_record->size()<<endl;
-      new_intermediate_table->push_back(new_record);
+      new_intermediate_table->push_back(std::move(new_record));
     }
   }
 
@@ -393,7 +393,7 @@ shared_ptr<IDList> Optimizer::ExtendRecord(const shared_ptr<OneStepJoinNode> &on
   if(id_caches->find(new_id)!=id_caches->end())
   {
     auto caches_ptr = (*(id_caches->find(new_id))).second;
-    record_candidate_list->intersectList(*caches_ptr);
+    record_candidate_list->intersectList(caches_ptr->getList()->data(),caches_ptr->size());
   }
 
   return record_candidate_list;
@@ -2888,7 +2888,7 @@ tuple<bool, TableContentShardPtr> Optimizer::ExecutionTopK(BasicQuery *basic_que
   auto var_coefficients = TopKUtil::getVarCoefficients(first_item);
 
   // Build Iterator tree
-
+  // TopKUtil::
 
 
   //
