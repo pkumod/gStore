@@ -15,7 +15,20 @@ class IDList
 {
 public:
 	IDList();
-	unsigned getID(unsigned _i) const;
+	//inline unsigned getID(unsigned _i) const;
+
+	inline unsigned
+  getID(unsigned _i) const
+  {
+    if (this->size() > _i)
+    {
+      return this->id_list[_i];
+    }
+
+    //return -1;
+    return INVALID;
+  }
+
 	bool addID(unsigned _id);
 
 	//check whether _id exists in this IDList.
