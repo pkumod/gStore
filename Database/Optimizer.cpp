@@ -2867,6 +2867,18 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
     }
   }
 }
+
+
+
+#ifdef TOPK_SUPPORT
+/**
+ *
+ * @param basic_query
+ * @param tree_search_plan
+ * @param query_info
+ * @param id_pos_mapping
+ * @return
+*/
 tuple<bool, TableContentShardPtr> Optimizer::ExecutionTopK(BasicQuery *basic_query,
                                                            const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
                                                            const QueryInfo &query_info,
@@ -2882,4 +2894,4 @@ tuple<bool, TableContentShardPtr> Optimizer::ExecutionTopK(BasicQuery *basic_que
   //
   return tuple<bool, TableContentShardPtr>();
 }
-
+#endif

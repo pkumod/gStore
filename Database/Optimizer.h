@@ -7,6 +7,7 @@
 #ifndef _DATABASE_OPTIMIZER_H
 #define _DATABASE_OPTIMIZER_H
 
+
 #include "../Util/Util.h"
 #include "../Query/SPARQLquery.h"
 #include "../Query/BasicQuery.h"
@@ -21,7 +22,9 @@
 #include "./Statistics.h"
 #include "./PlanTree.h"
 #include "../Util/OrderedVector.h"
+#ifdef TOPK_SUPPORT
 #include "../Query/topk/TopKUtil.h"
+#endif // TOPK_SUPPORT
 #include <unordered_map>
 #include <map>
 #include <cstring>
@@ -206,11 +209,11 @@ class Optimizer
                                                                  int limit_number,
                                                                  const TableContentShardPtr& tmp_result, const PositionValueSharedPtr& id_pos_mapping,
                                                                  const IDCachesSharePtr& id_caches);
-
+#ifdef TOPK_SUPPORT
   tuple<bool,TableContentShardPtr> ExecutionTopK(BasicQuery* basic_query, const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
                                                  const QueryInfo& query_info,const PositionValueSharedPtr& id_pos_mapping);
 
-
+#endif
   static void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
 
   /*copy the result to vector<unsigned*> & */
@@ -221,11 +224,6 @@ class Optimizer
   //                                                              const PositionValueSharedPtr& id_pos_mapping, shared_ptr<vector<double>>& weight_list);
   tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionBreathFirst(BasicQuery* basic_query,const QueryInfo& query_info,Tree_node* plan_tree,IDCachesSharePtr id_caches);
 
-
-  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionTopK(BasicQuery* basic_query,
-                                                                                           const QueryInfo& query_info,
-                                                                                           TopKTreeSearchPlan& plan_tree_node,
-                                                                                           IDCachesSharePtr id_caches);
  private:
   KVstore* kv_store_;
   Statistics* statistics;
