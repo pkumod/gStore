@@ -1013,8 +1013,20 @@ Optimizer::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_li
   }
 }
 
-BasicQueryStrategy Optimizer::ChooseStrategy(BasicQuery *basic_query) {
-  return BasicQueryStrategy::Normal;
+BasicQueryStrategy Optimizer::ChooseStrategy(BasicQuery *basic_query,QueryInfo *query_info) {
+  if (!query_info->limit_) {
+    if(basic_query.getTripleNum()!=1)
+      return BasicQueryStrategy::Normal;
+    else
+      return BasicQueryStrategy::Special;
+  }
+  else
+  {
+  if(query_info->ordered_by_expressions_->size())
+    return BasicQueryStrategy::TopK;
+  else
+    return BasicQueryStrategy::limitK;
+  }
 }
 
 shared_ptr<IntermediateResult> Optimizer::NormalJoin(shared_ptr<BasicQuery>, shared_ptr<QueryPlan>) {
@@ -1203,7 +1215,7 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
 
     auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
     shared_ptr<QueryPlan> query_plan;
-    auto strategy = this->ChooseStrategy(basic_query_pointer);
+    auto strategy = this->ChooseStrategy(basic_query_pointer,&query_info);
     if(strategy == BasicQueryStrategy::Normal)
     {
 
@@ -1247,10 +1259,18 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
     }
     else if(strategy == BasicQueryStrategy::TopK)
     {
+      auto const_candidates = QueryPlan::OnlyConstFilter(basic_query_pointer, this->kv_store_, this->var_descriptors_);
+      for (auto &constant_generating_step: *const_candidates) {
+        CacheConstantCandidates(constant_generating_step, var_candidates_cache);
+      };
+      //(BasicQuery* basic_query, Statistics *statistics, QueryTree::Order expression);
+      auto search_plan = make_shared<TopKTreeSearchPlan>(basic_query_pointer,this->statistics,(*query_info.ordered_by_expressions_)[0]);
+      this->ExecutionTopK(basic_query_pointer,search_plan,query_info,);
+    }
+    else if(strategy == BasicQueryStrategy::limitK)
+    {
 
     }
-
-
   }
   return MergeBasicQuery(sparql_query);
 }
@@ -1309,7 +1329,7 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
     int column_index = 0;
     for (; column_index < core_var_num; ++column_index)
     {
-      //This is because sleect var id is always smaller
+      //This is because selected var id is always smaller
       if ( (*position_id_map_ptr)[column_index] < select_var_num)
       {
         int vpos = basic_query->getSelectedVarPosition((*position_id_map_ptr)[column_index]);
@@ -2883,14 +2903,28 @@ tuple<bool, TableContentShardPtr> Optimizer::ExecutionTopK(BasicQuery *basic_que
                                                            const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
                                                            const QueryInfo &query_info,
                                                            const PositionValueSharedPtr &id_pos_mapping) {
+
   auto k = query_info.limit_num_;
   auto first_item = (*query_info.ordered_by_expressions_)[0];
   auto var_coefficients = TopKUtil::getVarCoefficients(first_item);
 
   // Build Iterator tree
-  // TopKUtil::
+  auto env = new TopKUtil::Env();
 
+  env->kv_store= this->kv_store_;
+  env->basic_query = basic_query;
+  env->id_caches = nullptr;
+  env->k = query_info.limit_num_;
+  auto coefficients_map = TopKUtil::getVarCoefficients((*query_info.ordered_by_expressions_)[0]);
+  env->coefficients= &coefficients_map;
+  env->txn = this->txn_;
+  env->ss = new stringstream();
 
+  auto root_fr = TopKUtil::BuildIteratorTree(tree_search_plan,env);
+  for(int i =0;i<query_info.limit_num_;i++)
+  {
+
+  }
   //
   return tuple<bool, TableContentShardPtr>();
 }

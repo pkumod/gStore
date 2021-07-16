@@ -37,6 +37,9 @@ class TopKTreeSearchPlan {
 
 namespace TopKUtil{
 
+void CalculatePosVarMappingNode(TopKTreeNode* top_k_tree_node,shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>> pos_var_mapping);
+shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>> CalculatePosVarMapping(TopKTreeSearchPlan &search_plan);
+
 double GetScore(string &v, stringstream &ss);
 void GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
                                 std::map<std::string,double>& coefficients,
