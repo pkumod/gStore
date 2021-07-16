@@ -117,6 +117,26 @@ TopKTreeSearchPlan::~TopKTreeSearchPlan() {
   }
 }
 
+void TopKUtil::CalculatePosVarMappingNode(TopKTreeNode* top_k_tree_node,
+                                          shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>> pos_var_mapping)
+{
+  auto now_position = pos_var_mapping->size();
+  (*pos_var_mapping)[now_position] = top_k_tree_node->var_id;
+  for(auto descendent:top_k_tree_node->descendents_)
+  {
+    CalculatePosVarMappingNode(descendent,pos_var_mapping);
+  }
+}
+
+shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>
+TopKUtil::CalculatePosVarMapping(TopKTreeSearchPlan &search_plan)
+{
+  auto r = make_shared<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>();
+  CalculatePosVarMappingNode(search_plan.tree_root_,r);
+  return r;
+}
+
+
 double TopKUtil::GetScore(string &v, stringstream &ss)
 {
   double double_v;

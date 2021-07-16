@@ -46,6 +46,7 @@ using QueryPlanSharedPtr = shared_ptr<QueryPlan>;
 enum class BasicQueryStrategy{
   Normal, // method 0
   Special,// method 1-5
+  limitK,
   TopK
 };
 
@@ -197,7 +198,7 @@ class Optimizer
   tuple<bool,shared_ptr<IntermediateResult>> execution(BasicQuery*, shared_ptr<QueryPlan>);*/
 
 
-  BasicQueryStrategy ChooseStrategy(BasicQuery*);
+  BasicQueryStrategy ChooseStrategy(BasicQuery *basic_query,QueryInfo *query_info);
 
 
   tuple<bool,TableContentShardPtr> ExecutionDepthFirst(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan,
