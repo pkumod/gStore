@@ -129,10 +129,10 @@ void TopKUtil::CalculatePosVarMappingNode(TopKTreeNode* top_k_tree_node,
 }
 
 shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>
-TopKUtil::CalculatePosVarMapping(TopKTreeSearchPlan &search_plan)
+TopKUtil::CalculatePosVarMapping(shared_ptr<TopKTreeSearchPlan> search_plan)
 {
   auto r = make_shared<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>();
-  CalculatePosVarMappingNode(search_plan.tree_root_,r);
+  CalculatePosVarMappingNode(search_plan->tree_root_,r);
   return r;
 }
 
