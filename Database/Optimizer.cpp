@@ -1015,7 +1015,7 @@ Optimizer::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_li
 
 BasicQueryStrategy Optimizer::ChooseStrategy(BasicQuery *basic_query,QueryInfo *query_info) {
   if (!query_info->limit_) {
-    if(basic_query.getTripleNum()!=1)
+    if(basic_query->getTripleNum()!=1)
       return BasicQueryStrategy::Normal;
     else
       return BasicQueryStrategy::Special;
@@ -1259,13 +1259,28 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
     }
     else if(strategy == BasicQueryStrategy::TopK)
     {
+#ifdef TOPK_SUPPORT
       auto const_candidates = QueryPlan::OnlyConstFilter(basic_query_pointer, this->kv_store_, this->var_descriptors_);
       for (auto &constant_generating_step: *const_candidates) {
         CacheConstantCandidates(constant_generating_step, var_candidates_cache);
       };
       //(BasicQuery* basic_query, Statistics *statistics, QueryTree::Order expression);
       auto search_plan = make_shared<TopKTreeSearchPlan>(basic_query_pointer,this->statistics,(*query_info.ordered_by_expressions_)[0]);
-      this->ExecutionTopK(basic_query_pointer,search_plan,query_info,);
+
+      auto top_k_result = this->ExecutionTopK(basic_query_pointer,search_plan,query_info);
+
+      auto pos_var_mapping = get<1>(top_k_result);
+
+      auto var_pos_mapping = make_shared<PositionValue>();
+
+      for(const auto& pos_var_pair:*pos_var_mapping) {
+        (*var_pos_mapping)[pos_var_pair.second] = pos_var_pair.first;
+      }
+
+      CopyToResult(basic_query_pointer->getResultListPointer(), basic_query_pointer, make_shared<IntermediateResult>(
+          var_pos_mapping,pos_var_mapping,get<2>(top_k_result)
+      ));
+#endif
     }
     else if(strategy == BasicQueryStrategy::limitK)
     {
@@ -2891,19 +2906,12 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
 
 
 #ifdef TOPK_SUPPORT
-/**
- *
- * @param basic_query
- * @param tree_search_plan
- * @param query_info
- * @param id_pos_mapping
- * @return
-*/
-tuple<bool, TableContentShardPtr> Optimizer::ExecutionTopK(BasicQuery *basic_query,
-                                                           const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
-                                                           const QueryInfo &query_info,
-                                                           const PositionValueSharedPtr &id_pos_mapping) {
 
+tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTopK(BasicQuery* basic_query,
+                                                                                   shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
+                                                                                   const QueryInfo& query_info) {
+
+  auto pos_var_mapping = TopKUtil::CalculatePosVarMapping(tree_search_plan);
   auto k = query_info.limit_num_;
   auto first_item = (*query_info.ordered_by_expressions_)[0];
   auto var_coefficients = TopKUtil::getVarCoefficients(first_item);
@@ -2921,11 +2929,16 @@ tuple<bool, TableContentShardPtr> Optimizer::ExecutionTopK(BasicQuery *basic_que
   env->ss = new stringstream();
 
   auto root_fr = TopKUtil::BuildIteratorTree(tree_search_plan,env);
-  for(int i =0;i<query_info.limit_num_;i++)
+  for(int i =1;i<=query_info.limit_num_;i++)
   {
 
+    root_fr->TryGetNext(k);
+    if(root_fr->pool_.size()!=i)
+      break;
   }
+
+
   //
-  return tuple<bool, TableContentShardPtr>();
+  return tuple<bool,decltype(pos_var_mapping), TableContentShardPtr>();
 }
 #endif

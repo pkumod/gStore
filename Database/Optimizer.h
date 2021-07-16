@@ -211,8 +211,8 @@ class Optimizer
                                                                  const TableContentShardPtr& tmp_result, const PositionValueSharedPtr& id_pos_mapping,
                                                                  const IDCachesSharePtr& id_caches);
 #ifdef TOPK_SUPPORT
-  tuple<bool,TableContentShardPtr> ExecutionTopK(BasicQuery* basic_query, const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
-                                                 const QueryInfo& query_info,const PositionValueSharedPtr& id_pos_mapping);
+  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionTopK(BasicQuery* basic_query, shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
+                                                 const QueryInfo& query_info);
 
 #endif
   static void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
