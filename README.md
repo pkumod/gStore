@@ -118,5 +118,7 @@ Graph database engine is a new area and we are still trying to go further. Thing
 
 People who inspire us or contribute to this project will be listed in the [Thanks List](docs/THANK.md) chapter.
 
+
+
 <!--This whole document is divided into different pieces, and each them is stored in a markdown file. You can see/download the combined markdown file in [help_markdown](docs/gStore_help.md), and for html file, please go to [help_html](docs/gStore_help.html). What is more, we also provide help file in pdf format, and you can visit it in [help_pdf](docs/latex/gStore_help.pdf).-->
 
