@@ -2,10 +2,10 @@
 // Created by Yuqi Zhou on 2021/7/4.
 //
 
-#include "ElementList.h"
+#include "OrderedList.h"
 
 // getFirst() also implemented here
-void FRIterator::TryGetNext(int k) {
+void FRIterator::TryGetNext(unsigned int k) {
   // get first
   if(this->pool_.size()==0)
   {
@@ -33,7 +33,7 @@ void FRIterator::TryGetNext(int k) {
 }
 
 
-void FRIterator::Insert(int k, OrderedList* fq_pointer) {
+void FRIterator::Insert(unsigned int k, OrderedList* fq_pointer) {
   auto cost = fq_pointer->pool_[0].cost;
   if(queue_.size()>=k && cost>queue_.findMax().cost)
     return;
@@ -46,13 +46,13 @@ void FRIterator::Insert(int k, OrderedList* fq_pointer) {
     queue_.popMax();
 }
 
-void FRIterator::Insert(int k,const std::vector<OrderedList *>& FQ_iterators) {
+void FRIterator::Insert(unsigned int k,const std::vector<OrderedList *>& FQ_iterators) {
   for(auto fq_pointer : FQ_iterators)
   {
     Insert(k,fq_pointer);
   }
 }
-void FRIterator::Insert(int k,const std::set<OrderedList *>& FQ_iterators) {
+void FRIterator::Insert(unsigned int k,const std::set<OrderedList *>& FQ_iterators) {
   for(auto fq_pointer : FQ_iterators)
   {
     Insert(k,fq_pointer);
@@ -63,7 +63,7 @@ double FRIterator::DeltaCost(OrderedList* node_pointer, int index) {
   return node_pointer->pool_[index+1].cost - node_pointer->pool_[index].cost;
 }
 
-bool FRIterator::NextEPoolElement(int k, OrderedList* node_pointer, unsigned int index) {
+bool FRIterator::NextEPoolElement(unsigned int k, OrderedList* node_pointer, unsigned int index) {
   if(index == node_pointer->pool_.size())
     node_pointer->TryGetNext(k);
   if(index < node_pointer->pool_.size())
@@ -72,21 +72,27 @@ bool FRIterator::NextEPoolElement(int k, OrderedList* node_pointer, unsigned int
     return false;
 }
 
-void OWIterator::TryGetNext(int k) {
+void FRIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record) {
+  auto fq = this->pool_[i_th];
+  auto fq_i_th = fq.index;
+  fq.identity.pointer->GetResult(fq_i_th,record);
+}
+
+void OWIterator::TryGetNext(unsigned int k) {
   return;
 }
 
-void OWIterator::Insert(int k,const std::vector<TYPE_ENTITY_LITERAL_ID>& ids, const std::vector<double>& scores) {
+void OWIterator::Insert(unsigned int k,const std::vector<TYPE_ENTITY_LITERAL_ID>& ids, const std::vector<double>& scores) {
   struct ScorePair{
     TYPE_ENTITY_LITERAL_ID id;
     double cost;
     bool operator<(const ScorePair& other){return this->cost<other.cost;};
   };
   std::vector<ScorePair> ranks(ids.size());
-  for(int i=0;i<ids.size();i++)
+  for(unsigned int  i=0;i<ids.size();i++)
     ranks.push_back(ScorePair{ids[i],scores[i]});
   std::sort(ranks.begin(),ranks.end());
-  for(int i=0;i<k && i < ranks.size();i++)
+  for(unsigned int i=0;i<k && i < ranks.size();i++)
   {
     DPB::element e{};
     e.index = 0;
@@ -96,12 +102,18 @@ void OWIterator::Insert(int k,const std::vector<TYPE_ENTITY_LITERAL_ID>& ids, co
   }
 }
 
-void FQIterator::TryGetNext(int k) {
+void OWIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record) {
+  auto i_th_element = this->pool_[i_th];
+  auto node_id = i_th_element.identity.node;
+  record->push_back(node_id);
+}
+
+void FQIterator::TryGetNext(unsigned int k) {
   // get first
   if(this->pool_.size()==0)
   {
     double cost = 0;
-    for(int j =0;j<this->FR_OW_iterators.size();j++)
+    for(unsigned int j =0;j<this->FR_OW_iterators.size();j++)
     {
       if(!this->NextEPoolElement(k,this->FR_OW_iterators[j],0))
         return;
@@ -119,6 +131,7 @@ void FQIterator::TryGetNext(int k) {
     ipool_e.cost = e.cost;
     ipool_e.index = this->pool_.size();
     ipool_e.identity.pointer = this;
+    this->seq_list_.push_back(e.seq);
     this->pool_.push_back(ipool_e);
     return;
   }
@@ -126,7 +139,7 @@ void FQIterator::TryGetNext(int k) {
   auto em = this->e_pool_.back();
   queue_.popMin();
   auto seq = em.seq;
-  for( int j=0;j<this->FR_OW_iterators.size();j++)
+  for( unsigned int j=0;j<this->FR_OW_iterators.size();j++)
   {
     seq[j] += 1;
     if(this->dynamic_trie_.detect(seq))
@@ -152,11 +165,12 @@ void FQIterator::TryGetNext(int k) {
     e.cost = inserted.cost;
     e.index = this->pool_.size();
     e.identity.pointer = this;
+    this->seq_list_.push_back(std::move(inserted.seq));
     this->pool_.push_back(e);
   }
 }
 
-bool FQIterator::NextEPoolElement(int k, OrderedList *node_pointer, unsigned int index) {
+bool FQIterator::NextEPoolElement(unsigned int k, OrderedList *node_pointer, unsigned int index) {
   if(index == node_pointer->pool_.size())
     node_pointer->TryGetNext(k);
   if(index < node_pointer->pool_.size())
@@ -176,6 +190,12 @@ void FQIterator::Insert(std::vector<OrderedList *> FR_OW_iterators) {
 
 double FQIterator::DeltaCost(OrderedList* FR_OW_iterator, int index) {
   return FR_OW_iterator->pool_[index+1].cost - FR_OW_iterator->pool_[index].cost;
+}
+
+void FQIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record) {
+  auto seq = this->seq_list_[i_th];
+  for(unsigned int i =0;i<this->FR_OW_iterators.size();i++)
+    FR_OW_iterators[i]->GetResult(seq[i],record);
 }
 
 
