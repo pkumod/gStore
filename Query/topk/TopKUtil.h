@@ -7,7 +7,7 @@
 
 #include "../../Util/Util.h"
 #include "../../KVstore/KVstore.h"
-#include "./ElementList.h"
+#include "./OrderedList.h"
 #include "../../Query/SPARQLquery.h"
 #include "../../Query/BasicQuery.h"
 #include "../../Database/Statistics.h"
@@ -38,7 +38,7 @@ class TopKTreeSearchPlan {
 namespace TopKUtil{
 
 void CalculatePosVarMappingNode(TopKTreeNode* top_k_tree_node,shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>> pos_var_mapping);
-shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>> CalculatePosVarMapping(TopKTreeSearchPlan &search_plan);
+shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>> CalculatePosVarMapping(shared_ptr<TopKTreeSearchPlan> search_plan);
 
 double GetScore(string &v, stringstream &ss);
 void GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
@@ -68,7 +68,6 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*>  GenerateIteratorNode(int parent_
                                                                 TopKTreeNode *child_tree_node,Env *env);
 
 FRIterator* BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,Env *env);
-
 
 void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
 

@@ -1264,15 +1264,10 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       for (auto &constant_generating_step: *const_candidates) {
         CacheConstantCandidates(constant_generating_step, var_candidates_cache);
       };
-      //(BasicQuery* basic_query, Statistics *statistics, QueryTree::Order expression);
       auto search_plan = make_shared<TopKTreeSearchPlan>(basic_query_pointer,this->statistics,(*query_info.ordered_by_expressions_)[0]);
-
       auto top_k_result = this->ExecutionTopK(basic_query_pointer,search_plan,query_info);
-
       auto pos_var_mapping = get<1>(top_k_result);
-
       auto var_pos_mapping = make_shared<PositionValue>();
-
       for(const auto& pos_var_pair:*pos_var_mapping) {
         (*var_pos_mapping)[pos_var_pair.second] = pos_var_pair.first;
       }
@@ -2937,8 +2932,14 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
       break;
   }
 
+  auto result_list = make_shared<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
 
-  //
-  return tuple<bool,decltype(pos_var_mapping), TableContentShardPtr>();
+  for(int i =0;i<root_fr->pool_.size();i++)
+  {
+    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+    root_fr->GetResult(i,record);
+    result_list->emplace_back(std::move(record));
+  }
+  return std::make_tuple(true,pos_var_mapping, result_list);
 }
 #endif

@@ -18,7 +18,7 @@ struct element{
   Identity identity;
   unsigned int index;
   double cost;
-  bool operator<(const element &other){return this->cost < other.cost;}
+  bool operator<(const element &other) const {return this->cost < other.cost;}
 };
 
 using  Pool = std::vector<element>;
@@ -26,9 +26,11 @@ using  sequence =  std::vector<unsigned int>;
 
 // For FQ heap
 struct FqElement{
+ public:
   sequence seq;
   double cost;
-  bool operator<(const FqElement &other){return this->cost < other.cost;}
+  //bool operator<(const FqElement &other) const {return this->cost < other.cost;}
+  bool operator<(const FqElement& other) const {return this->cost < other.cost;}
 };
 
 using  ePool = std::vector<FqElement>;

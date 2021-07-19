@@ -13,7 +13,7 @@ in the sparql query can point to the same node in data graph)
 
 #ifndef _UTIL_UTIL_H
 #define _UTIL_UTIL_H
-
+#define TOPK_SUPPORT
 //basic macros and types are defined here, including common headers 
 
 #include <stdio.h>
