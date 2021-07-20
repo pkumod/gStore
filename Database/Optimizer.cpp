@@ -7,7 +7,6 @@
 #include "Optimizer.h"
 
 Optimizer::Optimizer(KVstore *kv_store,
-                     VSTree *vs_tree,
                      Statistics *statistics,
                      TYPE_TRIPLE_NUM *pre2num,
                      TYPE_TRIPLE_NUM *pre2sub,
@@ -1219,23 +1218,25 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
     if(strategy == BasicQueryStrategy::Normal)
     {
 
-      long t6 =Util::get_cur_time();
+      long t1 =Util::get_cur_time();
       auto const_candidates = QueryPlan::OnlyConstFilter(basic_query_pointer, this->kv_store_, this->var_descriptors_);
       for (auto &constant_generating_step: *const_candidates) {
         CacheConstantCandidates(constant_generating_step, var_candidates_cache);
       };
-      long t7 = Util::get_cur_time();
-      cout << "get var cache, used " << (t7 - t6) << "ms." << endl;
-      this->var_descriptors_->clear();
-      long t1 = Util::get_cur_time();
-      auto best_plan_tree = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
       long t2 = Util::get_cur_time();
-      cout << "plan get, used " << (t2-t1) << "ms." << endl;
+      cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
+      this->var_descriptors_->clear();
+      long t3 = Util::get_cur_time();
+//      vector<int> node_order = {1,2,0,3,4};
+//      auto best_plan_tree = new PlanTree(node_order);
+      auto best_plan_tree = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
+      long t4 = Util::get_cur_time();
+      cout << "plan get, used " << (t4 - t3) << "ms." << endl;
       best_plan_tree->print(basic_query_pointer);
       auto bfs_result = this->ExecutionBreathFirst(basic_query_pointer,query_info,best_plan_tree->root_node,var_candidates_cache);
 
-      long t3 = Util::get_cur_time();
-      cout << "execution, used " << (t3 - t2) << "ms." << endl;
+      long t5 = Util::get_cur_time();
+      cout << "execution, used " << (t5 - t3) << "ms." << endl;
 
       basic_query_vec.push_back(basic_query_pointer);
       query_plan_vec.push_back(query_plan);
@@ -1246,13 +1247,13 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
         (*var_pos_mapping)[pos_var_pair.second] = pos_var_pair.first;
       }
 
-      long t4 = Util::get_cur_time();
+      long t6 = Util::get_cur_time();
       CopyToResult(basic_query_pointer->getResultListPointer(), basic_query_pointer, make_shared<IntermediateResult>(
           var_pos_mapping,pos_var_mapping,get<2>(bfs_result)
       ));
-      long t5 = Util::get_cur_time();
-      cout << "copy to result, used " << (t5-t4) <<"ms." <<endl;
-      cout << "total execution, used " << (t5-t2) <<"ms."<<endl;
+      long t7 = Util::get_cur_time();
+      cout << "copy to result, used " << (t7 - t6) <<"ms." <<endl;
+      cout << "total execution, used " << (t7 - t1) <<"ms."<<endl;
     }
     else if(strategy ==BasicQueryStrategy::Special){
       printf("BasicQueryStrategy::Special not supported yet\n");
@@ -2710,7 +2711,7 @@ PlanTree* Optimizer::get_best_plan_by_num(BasicQuery* basicquery, int total_var_
 	int count = 0;
 	for(const auto &nodes_plan : plan_cache[total_var_num-1]){
 		for(const auto &plan_tree : nodes_plan.second){
-    	plan_tree->print(basicquery);
+//    	plan_tree->print(basicquery);
 			count ++;
 			if(plan_tree->plan_cost < min_cost){
 				best_plan = plan_tree;
@@ -2821,7 +2822,6 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
 
     if(plan_tree_node->joinType == NodeJoinType::JoinANode)
     {
-    	long t1 = Util::get_cur_time();
       left_r = this->ExecutionBreathFirst(basic_query,query_info,plan_tree_node->left_node,id_caches);
       auto left_table = get<2>(left_r);
       auto left_pos_id_mapping = get<1>(left_r);
@@ -2843,6 +2843,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       auto edges = *join_node->edges_;
       auto edge_c = *join_node->edges_constant_info_;
 
+      long t1 = Util::get_cur_time();
       auto step_result = JoinANode(one_step_join.join_node_, left_table,left_id_position,id_caches);
 
       cout<<"result size "<<get<1>(step_result)->size();

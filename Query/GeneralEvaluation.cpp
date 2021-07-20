@@ -208,11 +208,12 @@ bool GeneralEvaluation::doQuery()
 		return false;
 	}
 
+//	TODO:maybe delete this
 	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num,this->pre2sub, this->pre2obj, 
 		this->limitID_predicate, this->limitID_literal, this->limitID_entity,
 		this->query_tree.Modifier_Distinct== QueryTree::Modifier_Distinct, txn);
 
-    this->optimizer_ = make_shared<Optimizer>(kvstore,vstree,statistics,pre2num,pre2sub,pre2obj,limitID_predicate,
+    this->optimizer_ = make_shared<Optimizer>(kvstore,statistics,pre2num,pre2sub,pre2obj,limitID_predicate,
                                       limitID_literal,limitID_entity,txn);
 
 

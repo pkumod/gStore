@@ -7,11 +7,11 @@
 #include "Statistics.h"
 
 Statistics::Statistics(const string &path, int limitID_pre):
+		filename(path + "/statistics/"), pre_num(limitID_pre),
         one_edge_type_num(0), one_edge_type_pre_num(0),
         two_edges_type1_num(0), two_edges_type1_pre_num(0),
         two_edges_type2_num(0), two_edges_type2_pre_num(0),
-        two_edges_type3_num(0), two_edges_type3_pre_num(0),
-        pre_num(limitID_pre), filename(path + "/statistics/"){}
+        two_edges_type3_num(0), two_edges_type3_pre_num(0){}
 
 // multimap 版本
 bool Statistics::build_entity_to_type_unorder_map(KVstore *kv_store) {

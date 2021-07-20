@@ -1779,7 +1779,12 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 			general_evaluation.fp = _fp;
 			general_evaluation.export_flag = export_flag;
 		}
+
+		long t1 = Util::get_cur_time();
 		bool query_ret = general_evaluation.doQuery();
+		long t2 = Util::get_cur_time();
+		cout << "GeneralEvaluation::doQuery used " << (t2 - t1) << "ms." << endl;
+
 		if(!query_ret)
 		{
 			success_num = -101;
