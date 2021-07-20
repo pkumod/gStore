@@ -519,7 +519,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 			buildCompTree(root->children[1], -1, curr_node);
 		else
 		{
-			int rightmostOprtPos = (root->children.size() - 1) / 2;
+			int rightmostOprtPos = root->children.size() - 2;
 			// if (oper_pos == -1)
 			// 	oper_pos = 1;
 			if (oper_pos < rightmostOprtPos)
