@@ -156,7 +156,7 @@ KVstore::getTrie()
 	return this->trie;
 }
 
-bool
+void
 KVstore::set_if_single_thread(bool _single)
 {
 	this->entity2id->setSingleThread(_single);

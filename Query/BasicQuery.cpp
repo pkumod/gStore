@@ -466,6 +466,15 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 	//NOTICE: we append the candidates for selected pre_var to original select_var_num columns
     this->select_var_num = this->selected_pre_var_num = 0;
 	cout<<"now to check the query var list order:"<<endl;
+
+
+
+//	I want to see what is _query_var
+	for(int i = 0; i < _query_var.size(); ++i){
+		cout << "_query_var[" << i << "] = " << _query_var[i] << endl;
+	}
+
+
 	for(unsigned i = 0; i < _query_var.size(); ++i)
 	{
 		//NOTICE:not place pre var in join
@@ -503,14 +512,8 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 	//BETTER:ouput the selected pre vars
 
 	this->total_var_num = this->select_var_num;
-    if(this->encode_method == BasicQuery::SELECT_VAR)
-    {
-        this->findVarNotInSelect();
-    }
-    else
-    {
-        this->addInVarNotInSelect();
-    }
+	this->addInVarNotInSelect();
+
     // assign the this->var_num, all need to join
     this->graph_var_num = this->var_str2id.size();
 
@@ -520,7 +523,6 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         cout << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
     }
     cout << endl;
-	cout << "before new IDList!" << endl;	//just for debug
 
     this->candidate_list = new IDList[this->graph_var_num];
 
@@ -529,6 +531,9 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         string& sub = this->triple_vt[i].subject;
         string& pre = this->triple_vt[i].predicate;
         string& obj = this->triple_vt[i].object;
+
+//		cout << endl << sub << "  " << pre << "  " << obj << endl;
+
 
 		//int pre_id = -1;    //not found
 		TYPE_PREDICATE_ID pre_id = INVALID_PREDICATE_ID;    //not found
@@ -582,8 +587,10 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 					obj_id = _p_kvstore->getIDByLiteral(obj);
 				}
 			}
-			//cout<<"to update sub: "<<sub<<endl<<sub_var_id<<" "<<pre_id<<" "<<obj_id<<" "<<obj<<endl<<obj_var_id<<endl;
-            this->updateSubSig(sub_var_id, pre_id, obj_id, i, obj_var_id);
+//			cout << obj <<"    new id = " << obj_id << endl;
+//			cout << "sub_var_id = " << sub_var_id << ", pre_id = " << pre_id << ", obj_id = " << obj_id << ", i = " << i << ", obj_var_id = " << obj_var_id << endl;
+
+			this->updateSubSig(sub_var_id, pre_id, obj_id, i, obj_var_id);
 
             //debug
             {
@@ -808,32 +815,10 @@ BasicQuery::getTriple(int _i_th_triple)
     return triple_vt.at(_i_th_triple);
 }
 
-void 
-BasicQuery::null_initial()
-{
-    this->triple_vt.clear();
-    this->var_str2id.clear();
-    this->var_degree = NULL;
-    //this->is_literal_candidate_added = NULL;
-	this->ready = NULL;
-	this->need_retrieve = NULL;
-    this->edge_id = NULL;
-    this->edge_nei_id = NULL;
-    this->edge_pre_id = NULL;
-    this->edge_type = NULL;
-    this->var_sig = NULL;
-    //this->edge_sig = NULL;
-    this->encode_method = BasicQuery::NOT_JUST_SELECT;
-    this->candidate_list = NULL;
-    this->graph_var_num = 0;
-    this->select_var_num = 0;
-    this->var_name = 0;
-}
 
 void 
 BasicQuery::initial()
 {
-	//this->null_initial();
 	//initial 
     this->encode_method = BasicQuery::NOT_JUST_SELECT;
     this->encode_result = false;
@@ -927,42 +912,6 @@ void BasicQuery::addInVarNotInSelect()
     }
 }
 
-// map id 2 var_name : this->var_name[]
-// map var_name 2 id : this->var_str2id
-// invalid, because var has two type: var_in_select  var_not_in_select
-// QUERY:called if encode_method is just select, then why this is 
-// the same as addInVarNotInSelect?
-void 
-BasicQuery::findVarNotInSelect()
-{
-    int _v_n_i_s_next_id = this->var_str2id.size() + 0;
-    for(unsigned i = 0; i < this->triple_vt.size(); i ++)
-    {
-        string& sub = this->triple_vt[i].subject;
-        if(sub.at(0) == '?')
-        {
-            map<string, int>::iterator find_sub_itr = this->var_str2id.find(sub);
-            if(find_sub_itr == this->var_str2id.end())
-            {
-                this->var_not_in_select[sub] = _v_n_i_s_next_id;
-                this->var_name[_v_n_i_s_next_id] = sub;
-                _v_n_i_s_next_id++;
-            }
-        }
-
-        string& obj = this->triple_vt[i].object;
-        if(obj.at(0) == '?')
-        {
-            map<string, int>::iterator find_obj_itr = this->var_str2id.find(obj);
-            if(find_obj_itr == this->var_str2id.end())
-            {
-                this->var_not_in_select[obj] = _v_n_i_s_next_id;
-                this->var_name[_v_n_i_s_next_id] = obj;
-                _v_n_i_s_next_id ++;
-            }
-        }
-    }
-}
 
 void 
 BasicQuery::buildTuple2Freq()
