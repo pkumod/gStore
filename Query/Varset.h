@@ -19,6 +19,7 @@ class Varset
 		Varset(){};
 		Varset(const std::string &_var);
 		Varset(const std::vector<std::string> &_vars);
+		Varset(const Varset& that);
 
 		bool empty() const;
 		int getVarsetSize() const;

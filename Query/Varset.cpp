@@ -21,6 +21,11 @@ Varset::Varset(const vector<string> &_vars)
 		this->addVar(_vars[i]);
 }
 
+Varset::Varset(const Varset& that)
+{
+	vars = that.vars;
+}
+
 bool Varset::empty() const
 {
 	return this->vars.empty();

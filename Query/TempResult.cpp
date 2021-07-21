@@ -10,6 +10,82 @@
 
 using namespace std;
 
+TempResult::ResultPair::ResultPair()
+{
+	id = NULL;
+	sz = 0;
+}
+
+TempResult::ResultPair::ResultPair(const ResultPair& that)
+{
+	if (that.id)
+	{
+		id = new unsigned[that.sz];
+		// TODO: ResultPair cannot access id_varset of its parent TempResult
+		memcpy(id, that.id, (that.sz) * sizeof(unsigned));
+	}
+	sz = that.sz;
+	str = that.str;
+}
+
+TempResult::ResultPair& TempResult::ResultPair::operator=(const ResultPair& that)
+{
+	if (that.id)
+	{
+		// unsigned *local_id = new unsigned[that.id_varset.getVarsetSize()];
+		unsigned *local_id = new unsigned[that.sz];
+		memcpy(local_id, that.id, (that.sz) * sizeof(unsigned));
+		if (id)
+			delete[] id;	// Prevent exception leaving original id in limbo
+		id = local_id;
+	}
+	else
+	{
+		if (id)
+			delete[] id;
+		id = NULL;
+	}
+	sz = that.sz;
+	str = that.str;
+
+	return *this;
+}
+
+TempResult::TempResult(const TempResult& that)
+{
+	id_varset = that.id_varset;
+	str_varset = that.str_varset;
+	result = that.result;
+}
+
+TempResult& TempResult::operator=(const TempResult& that)
+{
+	id_varset = that.id_varset;
+	str_varset = that.str_varset;
+	result = that.result;
+
+	return *this;
+}
+
+TempResultSet::TempResultSet()
+{
+	initial = true;
+}
+
+TempResultSet::TempResultSet(const TempResultSet& that)
+{
+	results = that.results;
+	initial = that.initial;
+}
+
+TempResultSet& TempResultSet::operator=(const TempResultSet& that)
+{
+	results = that.results;
+	initial = that.initial;
+
+	return *this;
+}
+
 Varset TempResult::getAllVarset()
 {
 	return this->id_varset + this->str_varset;
@@ -183,6 +259,7 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 				if (r_id_cols > 0)
 				{
 					r.result.back().id = new unsigned [r_id_cols];
+					r.result.back().sz = r_id_cols;
 					unsigned *v = r.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -223,6 +300,7 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 				if (r_id_cols > 0)
 				{
 					r.result.back().id = new unsigned [r_id_cols];
+					r.result.back().sz = r_id_cols;
 					unsigned *v = r.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -266,6 +344,7 @@ void TempResult::doUnion(TempResult &r)
 		if (r_id_cols > 0)
 		{
 			r.result.back().id = new unsigned [r_id_cols];
+			r.result.back().sz = r_id_cols;
 			unsigned *v = r.result.back().id;
 
 			for (int k = 0; k < this_id_cols; k++)
@@ -339,6 +418,7 @@ void TempResult::doOptional(vector<bool> &binding, TempResult &x, TempResult &rn
 				if (ra_id_cols > 0)
 				{
 					ra.result.back().id = new unsigned [ra_id_cols];
+					ra.result.back().sz = ra_id_cols;
 					unsigned *v = ra.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -371,6 +451,7 @@ void TempResult::doOptional(vector<bool> &binding, TempResult &x, TempResult &rn
 				if (rn_id_cols > 0)
 				{
 					rn.result.back().id = new unsigned [rn_id_cols];
+					rn.result.back().sz = rn_id_cols;
 					unsigned *v = rn.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -412,6 +493,7 @@ void TempResult::doMinus(TempResult &x, TempResult &r)
 			if (r_id_cols > 0)
 			{
 				r.result.back().id = new unsigned [r_id_cols];
+				r.result.back().sz = r_id_cols;
 				unsigned *v = r.result.back().id;
 
 				for (int k = 0; k < this_id_cols; k++)
@@ -445,6 +527,7 @@ void TempResult::doMinus(TempResult &x, TempResult &r)
 				if (r_id_cols > 0)
 				{
 					r.result.back().id = new unsigned [r_id_cols];
+					r.result.back().sz = r_id_cols;
 					unsigned *v = r.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -1237,6 +1320,7 @@ void TempResult::doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &f
 			if (r_id_cols > 0)
 			{
 				r.result.back().id = new unsigned [r_id_cols];
+				r.result.back().sz = r_id_cols;
 				unsigned *v = r.result.back().id;
 
 				for (int k = 0; k < this_id_cols; k++)
@@ -1525,6 +1609,7 @@ void TempResultSet::doProjection1(Varset &proj, TempResultSet &r, StringIndex *s
 				if (r_id_cols > 0)
 				{
 					r.results[0].result.back().id = new unsigned [r_id_cols];
+					r.results[0].result.back().sz = r_id_cols;
 					unsigned *v = r.results[0].result.back().id;
 
 					for (int k = 0; k < r_id_cols; k++)
@@ -1589,6 +1674,7 @@ void TempResultSet::doDistinct1(TempResultSet &r)
 				if (r_id_cols > 0)
 				{
 					r_results0.result.back().id = new unsigned [r_id_cols];
+					r_results0.result.back().sz = r_id_cols;
 					unsigned *v = r_results0.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
