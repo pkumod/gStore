@@ -14,20 +14,20 @@ Strategy::Strategy()
 {
 	this->method = 0;
 	this->kvstore = NULL;
-	this->vstree = NULL;
+	// this->vstree = NULL;
 	this->fp = NULL;
 	this->export_flag = false;
 	this->txn = nullptr;
 	//this->prepare_handler();
 }
 
-Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num, TYPE_TRIPLE_NUM* _pre2sub,
+Strategy::Strategy(KVstore* _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_TRIPLE_NUM* _pre2sub,
  	TYPE_TRIPLE_NUM* _pre2obj, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
 	TYPE_ENTITY_LITERAL_ID _limitID_entity,bool _is_distinct, shared_ptr<Transaction> _txn)
 {
 	this->method = 0;
 	this->kvstore = _kvstore;
-	this->vstree = _vstree;
+	// this->vstree = _vstree;
 	this->pre2num = _pre2num;
 	this->pre2sub = _pre2sub;
 	this->pre2obj = _pre2obj;
