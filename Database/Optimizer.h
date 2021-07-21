@@ -62,7 +62,7 @@ struct QueryInfo{
  *
 1. Optimizer类在generalevaluation里面初始化，并且在generalevaluation调用do_query()
 ----------
- 2. do_query()首先判断handler0或者handler1-5
+2. do_query()首先判断handler0或者handler1-5
 3. 在handler0里面首先调用enum_query_plan()，按照BFS或者DFS生成所有执行计划
 4. 生成完执行计划后调用choose_exec_plan()选择一个计划执行
 5. 在choose_exec_plan()中每一个执行计划需要层次调用cost_model()->cardinality_estimator()->update_cardinality_cache()
