@@ -31,6 +31,11 @@ class QueryTree
 				Varset group_pattern_resultset_minimal_varset, group_pattern_resultset_maximal_varset;
 				Varset group_pattern_subject_object_maximal_varset, group_pattern_predicate_maximal_varset;
 
+				GroupPattern() { }
+				GroupPattern(const GroupPattern& that);
+				GroupPattern& operator=(const GroupPattern& that);
+				~GroupPattern() { }
+
 				void addOnePattern(Pattern _pattern);
 
 				void addOneGroup();
@@ -202,6 +207,7 @@ class QueryTree
 				SubGroupPattern(const SubGroupPattern& _sgp):type(_sgp.type)
 				{
 					pattern = _sgp.pattern;
+					group_pattern = _sgp.group_pattern;
 					unions = _sgp.unions;
 					optional = _sgp.optional;
 					filter = _sgp.filter;
