@@ -12,6 +12,39 @@ using namespace std;
 
 #define TEST_BGPQUERY
 
+GeneralEvaluation::EvaluationStackStruct::EvaluationStackStruct()
+{
+	// result = new TempResultSet();
+	result = NULL;
+}
+
+GeneralEvaluation::EvaluationStackStruct::EvaluationStackStruct(const EvaluationStackStruct& that)
+{
+	result = new TempResultSet();
+	group_pattern = that.group_pattern;
+	if (that.result)
+		*result = *(that.result);
+}
+
+GeneralEvaluation::EvaluationStackStruct& GeneralEvaluation::EvaluationStackStruct::operator=(const EvaluationStackStruct& that)
+{
+	TempResultSet *local_result = new TempResultSet();
+	if (that.result)
+		*local_result = *(that.result);
+	if (result)
+		delete result;
+	result = local_result;
+	group_pattern = that.group_pattern;
+
+	return *this;
+}
+
+GeneralEvaluation::EvaluationStackStruct::~EvaluationStackStruct()
+{
+	// if (result)
+	// 	delete result;
+}
+
 void *preread_from_index(void *argv)
 {
 	vector<StringIndexFile*> * indexfile = (vector<StringIndexFile*> *)*(long*)argv;
@@ -403,6 +436,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				delete result;
 
 				result = new_result;
+				result->initial = false;
 			}
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
@@ -1110,9 +1144,6 @@ bool GeneralEvaluation::expanseFirstOuterUnionGroupPattern(QueryTree::GroupPatte
 
 void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 {
-	// printf("-----PRINTING-----\n");
-	// temp_result->print();
-	// printf("-----PRINTING-----\n");
 
 	if (this->temp_result == NULL)
 	{
@@ -1375,6 +1406,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				else
 					ss >> new_result0.result.back().str[proj2new[0] - new_result0_id_cols];
 			}
+
+			printf("Out of for loop\n");
 
 			// Exclusive with the if branch above
 			for (int begin = 0; begin < result0_size;)

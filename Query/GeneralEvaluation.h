@@ -78,6 +78,10 @@ class GeneralEvaluation
 		{
 			QueryTree::GroupPattern group_pattern;
 			TempResultSet *result;
+			EvaluationStackStruct();
+			EvaluationStackStruct(const EvaluationStackStruct& that);
+			EvaluationStackStruct& operator=(const EvaluationStackStruct& that);
+			~EvaluationStackStruct();
 		};
 		std::vector<EvaluationStackStruct> rewriting_evaluation_stack;
 
