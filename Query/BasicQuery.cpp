@@ -426,7 +426,7 @@ BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY
  * @param _query_var
  * @return
  */
-/*bool
+bool
 BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_var)
 {
 	//WARN:?p is ok to exist in both s/o or p position
@@ -656,7 +656,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
     this->encode_result = true;
 	return true;
 }
-*/
+
 int 
 BasicQuery::getSelectedVarPosition(int _var)
 {
