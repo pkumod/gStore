@@ -11,11 +11,11 @@
 using namespace std;
 
 
-GeneralEvaluation::GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, Statistics *_statistics, StringIndex *_stringindex, QueryCache *_query_cache, \
+GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, Statistics *_statistics, StringIndex *_stringindex, QueryCache *_query_cache, \
 	TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub, TYPE_TRIPLE_NUM *_pre2obj, \
 	TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, \
 	TYPE_ENTITY_LITERAL_ID _limitID_entity, CSR *_csr, shared_ptr<Transaction> _txn):
-	vstree(_vstree), kvstore(_kvstore), statistics(_statistics), stringindex(_stringindex), query_cache(_query_cache), pre2num(_pre2num), \
+	kvstore(_kvstore), statistics(_statistics), stringindex(_stringindex), query_cache(_query_cache), pre2num(_pre2num), \
 	pre2sub(_pre2sub), pre2obj(_pre2obj), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), \
 	limitID_entity(_limitID_entity), csr(_csr), txn(_txn), fp(NULL), export_flag(false), temp_result(nullptr)
 {
@@ -209,7 +209,7 @@ bool GeneralEvaluation::doQuery()
 	}
 
 //	TODO:maybe delete this
-	this->strategy = Strategy(this->kvstore, this->vstree, this->pre2num,this->pre2sub, this->pre2obj, 
+	this->strategy = Strategy(this->kvstore, this->pre2num,this->pre2sub, this->pre2obj, 
 		this->limitID_predicate, this->limitID_literal, this->limitID_entity,
 		this->query_tree.Modifier_Distinct== QueryTree::Modifier_Distinct, txn);
 
