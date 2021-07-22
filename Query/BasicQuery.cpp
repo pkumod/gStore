@@ -27,6 +27,7 @@ BasicQuery::clear()
     delete[] this->var_degree;
     delete[] this->var_sig;
     delete[] this->var_name;
+    delete[] this->link_with_constant;
 
     for(int i = 0; i < BasicQuery::MAX_VAR_NUM; i ++)
     {
@@ -340,32 +341,9 @@ BasicQuery::setReady(int _var)
 }
 
 void 
-BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, int _line_id, int _obj_var_id)
+BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, int _line_id, int _obj_var_id)
 {
 	cout<<"sub var id: "<<_sub_var_id<<endl;
-    // update var(sub)_signature according this triple
-    //bool obj_is_str = (_obj_id == -1) && (_obj.at(0) != '?');
-    //if(obj_is_str)
-	if(_obj_id != INVALID_ENTITY_LITERAL_ID)
-	//if(_obj_id >= 0)
-    {
-        //Signature::encodeStr2Entity(_obj.c_str(), this->var_sig[_sub_id]);
-        //Signature::encodeStr2Entity(this->var_sig[_sub_var_id], _obj_id, Util::EDGE_OUT);
-		if(_pre_id >= 0)
-		{
-			Signature::encodeEdge2Entity(this->var_sig[_sub_var_id], _pre_id, _obj_id, Util::EDGE_OUT);
-		}
-		else
-		{
-			Signature::encodeStr2Entity(this->var_sig[_sub_var_id], _obj_id, Util::EDGE_OUT);
-		} 
-    }
-	//DEBUG: if type of pre id is changed to usnigned, this will cause error
-	else if(_pre_id >= 0)
-    {
-		Signature::encodePredicate2Entity(this->var_sig[_sub_var_id], _pre_id, Util::EDGE_OUT);
-    }
-
     // update var(sub)_degree & edge_id according to this triple
     int sub_degree = this->var_degree[_sub_var_id];
     // edge_id[var_id][i] : the ID of the i-th edge of the var
@@ -377,38 +355,9 @@ BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY
 }
 
 void 
-BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _sub_id, int _line_id, int _sub_var_id)
+BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, int _line_id, int _sub_var_id)
 {
 	cout<<"obj var id: "<<_obj_var_id<<endl;
-    // update var(obj)_signature
-    //bool sub_is_str = (_sub_id == -1) && (_sub.at(0) != '?');
-    //if(sub_is_str)
-	if(_sub_id != INVALID_ENTITY_LITERAL_ID)
-	//if(_sub_id >= 0)
-    {
-        //cout << "str2entity" << endl;
-        //Signature::encodeStr2Entity(this->var_sig[_obj_var_id], _sub_id, Util::EDGE_IN);
-		 if(_pre_id >= 0)
-		 {
-			 Signature::encodeEdge2Entity(this->var_sig[_obj_var_id], _pre_id, _sub_id, Util::EDGE_IN);
-		 }
-		 else
-		 {
-			Signature::encodeStr2Entity(this->var_sig[_obj_var_id], _sub_id, Util::EDGE_IN);
-		 }
-    }
-	else if(_pre_id >= 0)
-    {
-        //cout << "pre2entity" << endl;
-		Signature::encodePredicate2Entity(this->var_sig[_obj_var_id], _pre_id, Util::EDGE_IN);
-#ifdef DEBUG
-		//if(_obj_var_id == 1)
-		//{
-			//cout<<"yy: "<<Signature::BitSet2str(this->var_sig[1])<<endl;
-		//}
-#endif
-    }
-
     // update var(sub)_degree & edge_id according to this triple
     int obj_degree = this->var_degree[_obj_var_id];
     // edge_id[var_id][i] : the ID of the i-th edge of the var 
@@ -479,7 +428,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 	{
 		//NOTICE:not place pre var in join
 		string var = _query_var[i];
-		cout<<i<<" "<<var<<endl;
+//		cout<<i<<" "<<var<<endl;
 		int pid = this->getPreVarID(var);
 		if(pid == -1) // not pre var
 		{
@@ -583,22 +532,10 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 			TYPE_ENTITY_LITERAL_ID obj_id = INVALID_ENTITY_LITERAL_ID;
 			if(obj.at(0) != '?')
 			{
-				obj_id = _p_kvstore->getIDByEntity(obj);
-				if(obj_id == INVALID_ENTITY_LITERAL_ID)
-				{
-					obj_id = _p_kvstore->getIDByLiteral(obj);
-				}
+				this->link_with_constant[sub_var_id] = true;
 			}
+			this->updateSubSig(sub_var_id, pre_id, i, obj_var_id);
 			//cout<<"to update sub: "<<sub<<endl<<sub_var_id<<" "<<pre_id<<" "<<obj_id<<" "<<obj<<endl<<obj_var_id<<endl;
-            this->updateSubSig(sub_var_id, pre_id, obj_id, i, obj_var_id);
-
-            //debug
-            {
-                //stringstream _ss;
-                //_ss << "updateSubSig:\tsub:" << sub_var_id << "; pre:" << pre_id << "; obj:" << obj_var_id;
-                //_ss << "; [" << obj << "]";
-                //Util::logging(_ss.str());
-            }
         }
 
         // obj is either a var or a string
@@ -609,31 +546,10 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 			TYPE_ENTITY_LITERAL_ID sub_id = INVALID_ENTITY_LITERAL_ID;
 			if(sub.at(0) != '?')
 			{
-				sub_id = _p_kvstore->getIDByEntity(sub);
+				this->link_with_constant[obj_var_id] = true;
 			}
-			//cout<<"to update obj: "<<obj<<endl<<obj_var_id<<" "<<pre_id<<" "<<sub_id<<" "<<sub<<endl<<sub_var_id<<endl;
-            this->updateObjSig(obj_var_id, pre_id, sub_id, i, sub_var_id);
-
-            //debug
-            {
-                //stringstream _ss;
-                //_ss << "updateObjSig:\tobj:" << obj_var_id << "; pre:" << pre_id << "; sub:" << sub_var_id;
-                //_ss << "; [" << sub << "]";
-                //Util::logging(_ss.str());
-            }
+            this->updateObjSig(obj_var_id, pre_id, i, sub_var_id);
         }
-
-        // if both end points are variables
-        //bool two_var_edge = (sub_is_var && obj_is_var);
-        //if(two_var_edge)
-        //{
-            //if(pre_id >= 0)
-            //{
-                //cout << "pre2edge" << endl;
-                //Signature::encodePredicate2Edge(pre_id, this->edge_sig[sub_id][obj_id]);
-				////this->edge_pre_id[sub_id][obj_id] = pre_id;
-            //}
-        //}
     }
 
 #ifdef DEBUG
@@ -654,6 +570,15 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 
     cout << "OUT encodeBasicQuery" << endl;
     this->encode_result = true;
+
+    cout << endl << "test linkwithconstant" << endl << endl;
+    for(int i = 0; i < var_str2id.size(); ++i) {
+    	if(this->link_with_constant[i]){
+    		cout << "var[" << i <<"]: " << var_name[i] <<" is linked with constant: " << "true" << endl;
+    	} else{
+			cout << "var[" << i <<"]: " << var_name[i] <<" is linked with constant: " << "false" << endl;
+		}
+    }
 	return true;
 }
 
@@ -819,13 +744,13 @@ BasicQuery::getTriple(int _i_th_triple)
 void 
 BasicQuery::initial()
 {
-	//initial 
-    this->encode_method = BasicQuery::NOT_JUST_SELECT;
+	//initial
     this->encode_result = false;
     this->graph_var_num = 0;
     this->var_degree = new int[BasicQuery::MAX_VAR_NUM];
     this->var_sig = new EntityBitSet[BasicQuery::MAX_VAR_NUM];
     this->var_name = new string[BasicQuery::MAX_VAR_NUM];
+    this->link_with_constant = new bool[BasicQuery::MAX_VAR_NUM];
 
     //this->edge_sig = new EdgeBitSet*[BasicQuery::MAX_VAR_NUM];
     this->edge_id = new int*[BasicQuery::MAX_VAR_NUM];
@@ -842,6 +767,7 @@ BasicQuery::initial()
         this->var_degree[i] = 0;
         this->var_sig[i].reset();
         this->var_name[i] = "";
+        this->link_with_constant[i] = false;
         //this->is_literal_candidate_added[i] = false;
 		this->ready[i] = false;
         this->need_retrieve[i] = false;
@@ -1071,7 +997,7 @@ string BasicQuery::triple_str()
 
     _ss<<"Triple num:"<<this->getTripleNum()<<endl;
 
-    for (unsigned i = 0; i < getTripleNum(); i++)
+    for (int i = 0; i < getTripleNum(); i++)
     {
         _ss<<(this->getTriple(i).toString())<<endl;
     }
