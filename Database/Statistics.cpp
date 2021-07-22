@@ -8,6 +8,7 @@
 
 Statistics::Statistics(const string &path, int limitID_pre):
 		filename(path + "/statistics/"), pre_num(limitID_pre),
+		type_pre_id(-1),
         one_edge_type_num(0), one_edge_type_pre_num(0),
         two_edges_type1_num(0), two_edges_type1_pre_num(0),
         two_edges_type2_num(0), two_edges_type2_pre_num(0),

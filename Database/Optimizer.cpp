@@ -1227,7 +1227,12 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
       this->var_descriptors_->clear();
       long t3 = Util::get_cur_time();
-//      vector<int> node_order = {1,2,0,3,4};
+
+      cout << "id_list.size = " << var_candidates_cache->size() << endl;
+      for (auto x : *var_candidates_cache){
+      	cout << "var[" << x.first << "] = " << basic_query_pointer->getVarName(x.first) << "  , var_candidate list size = " << x.second->size() << endl;
+      }
+//      vector<int> node_order = {0,1,2,3};
 //      auto best_plan_tree = new PlanTree(node_order);
       auto best_plan_tree = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
       long t4 = Util::get_cur_time();
@@ -1320,7 +1325,7 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
   cout << "selected pre var num: " << selected_pre_var_num<<endl;
 //  Linglin Yang fix it to total_var_num,
 //  maybe change it to core_var_num + selected_pre_var_num in the future
-  if (result->position_to_var_des_->size() != core_var_num)
+  if (result->position_to_var_des_->size() != basic_query->getVarNum())
   {
     cout << "terrible error in Optimizer::CopyToResult!" << endl;
     return false;
@@ -2445,83 +2450,89 @@ void Optimizer::considerallscan(BasicQuery* basicquery, IDCachesSharePtr &id_cac
 								map<int, TYPE_ENTITY_LITERAL_ID> &var_to_type_map,
 								map<int, vector<unsigned>> &var_to_sample_cache, vector<int> &need_join_nodes, bool use_sample){
 
-	for(int i = 0 ; i < basicquery->getVarNum(); ++i){
+	for(int i = 0 ; i < basicquery->getVarNum(); ++i) {
 
-		need_join_nodes.push_back(i);
-		vector<int> this_node{i};
-		PlanTree *new_scan = new PlanTree(i);
+		if (basicquery->if_need_retrieve(i)) {
+
+			need_join_nodes.push_back(i);
+			vector<int> this_node{i};
+			PlanTree *new_scan = new PlanTree(i);
 
 
-		var_to_num_map[i] = (*id_caches)[i]->size();
-		new_scan->plan_cost = var_to_num_map[i];
+			var_to_num_map[i] = (*id_caches)[i]->size();
+			new_scan->plan_cost = var_to_num_map[i];
 
-		list<PlanTree*> this_node_plan;
-		this_node_plan.push_back(new_scan);
+			list<PlanTree *> this_node_plan;
+			this_node_plan.push_back(new_scan);
 
-		if(plan_cache.size() < 1){
-			map<vector<int>, list<PlanTree*>> one_node_plan_map;
+			if (plan_cache.size() < 1) {
+				map<vector<int>, list<PlanTree *>> one_node_plan_map;
 
-			one_node_plan_map.insert(make_pair(this_node, this_node_plan));
+				one_node_plan_map.insert(make_pair(this_node, this_node_plan));
 
-			plan_cache.push_back(one_node_plan_map);
-		} else{
-			plan_cache[0].insert(make_pair(this_node, this_node_plan));
-		}
-
-		if(use_sample) {
-
-			unsigned sample_num = 0;
-
-			int strategy = get_strategy((*id_caches)[i]->size());
-
-			vector<unsigned> need_insert_vec;
-
-			switch (strategy) {
-				case 1:
-					for(int index = 0; index < (*id_caches)[i]->size(); ++index){
-						need_insert_vec.push_back((*id_caches)[i]->getID(index));
-					}
-					break;
-				case 2:
-					for(int index = 0; index < SAMPLE_CACHE_MAX; ++index){
-						need_insert_vec.push_back((*id_caches)[i]->getID(index));
-					}
-					for(int index = SAMPLE_CACHE_MAX; index < (*id_caches)[i]->size(); ++index){
-						if((double)rand()/RAND_MAX < 1.0/index){
-							int index_to_replace = rand()%SAMPLE_CACHE_MAX;
-							need_insert_vec[index_to_replace] = (*id_caches)[i]->getID(index);
-						}
-					}
-					break;
-				case 3:
-					for(int index = 0; index < SAMPLE_CACHE_MAX; ++index){
-						need_insert_vec.push_back((*id_caches)[i]->getID(index));
-					}
-					for(int index = SAMPLE_CACHE_MAX; index < 1000; ++index){
-						if((double)rand()/RAND_MAX < 1.0/index){
-							int index_to_replace = rand()%SAMPLE_CACHE_MAX;
-							need_insert_vec[index_to_replace] = (*id_caches)[i]->getID(index);
-						}
-					}
-					for(unsigned index = 1000; index < (*id_caches)[i]->size(); ++index){
-						if((double) rand()/RAND_MAX < SAMPLE_PRO){
-							need_insert_vec.push_back((*id_caches)[i]->getID(index));
-						}
-					}
-					break;
-
+				plan_cache.push_back(one_node_plan_map);
+			} else {
+				plan_cache[0].insert(make_pair(this_node, this_node_plan));
 			}
 
-			var_to_sample_cache.insert(make_pair(i, need_insert_vec));
-		}
+			if (use_sample) {
 
-		for(int j = 0; j < basicquery->getVarDegree(i); ++j){
-			if(basicquery->getEdgePreID(i, j) == statistics->type_pre_id){
+				unsigned sample_num = 0;
 
-				int triple_id = basicquery->getEdgeID(i, j);
-				string type_name = basicquery->getTriple(triple_id).object;
-				var_to_type_map[i] = kv_store_->getIDByEntity(type_name);
+				int strategy = get_strategy((*id_caches)[i]->size());
 
+				vector<unsigned> need_insert_vec;
+
+				switch (strategy) {
+					case 1:
+						for (int index = 0; index < (*id_caches)[i]->size(); ++index) {
+							need_insert_vec.push_back((*id_caches)[i]->getID(index));
+						}
+						break;
+					case 2:
+						for (int index = 0; index < SAMPLE_CACHE_MAX; ++index) {
+							need_insert_vec.push_back((*id_caches)[i]->getID(index));
+						}
+						for (int index = SAMPLE_CACHE_MAX; index < (*id_caches)[i]->size(); ++index) {
+							if ((double) rand() / RAND_MAX < 1.0 / index) {
+								int index_to_replace = rand() % SAMPLE_CACHE_MAX;
+								need_insert_vec[index_to_replace] = (*id_caches)[i]->getID(index);
+							}
+						}
+						break;
+					case 3:
+						for (int index = 0; index < SAMPLE_CACHE_MAX; ++index) {
+							need_insert_vec.push_back((*id_caches)[i]->getID(index));
+						}
+						for (int index = SAMPLE_CACHE_MAX; index < 1000; ++index) {
+							if ((double) rand() / RAND_MAX < 1.0 / index) {
+								int index_to_replace = rand() % SAMPLE_CACHE_MAX;
+								need_insert_vec[index_to_replace] = (*id_caches)[i]->getID(index);
+							}
+						}
+						for (unsigned index = 1000; index < (*id_caches)[i]->size(); ++index) {
+							if ((double) rand() / RAND_MAX < SAMPLE_PRO) {
+								need_insert_vec.push_back((*id_caches)[i]->getID(index));
+							}
+						}
+						break;
+
+				}
+
+				var_to_sample_cache.insert(make_pair(i, need_insert_vec));
+			}
+
+			cout << "degree: " << basicquery->getVarDegree(i) << endl;
+			for (int j = 0; j < basicquery->getVarDegree(i); ++j) {
+				cout << "type pre id: " << statistics->type_pre_id << endl;
+				if (basicquery->getEdgePreID(i, j) == statistics->type_pre_id) {
+
+					int triple_id = basicquery->getEdgeID(i, j);
+					string type_name = basicquery->getTriple(triple_id).object;
+					cout << "type_name: " << type_name << endl;
+					var_to_type_map[i] = kv_store_->getIDByEntity(type_name);
+
+				}
 			}
 		}
 	}
@@ -2643,14 +2654,27 @@ int Optimizer::enum_query_plan(BasicQuery* basicquery, KVstore *kvstore, IDCache
 	map<int, map<int, unsigned >> s_o_list_average_size;
 
 
+	long t1 = Util::get_cur_time();
 	considerallscan(basicquery, id_caches, plan_cache,
 					var_to_num_map, var_to_type_map, var_to_sample_cache, need_join_nodes);
+	long t2 = Util::get_cur_time();
+	cout << "consider all scan, used " << (t2 - t1) << "ms." << endl;
+	for(auto x : var_to_num_map){
+		cout << "var: " << basicquery->getVarName(x.first) << ", num: " << x.second << endl;
+	}
+	for(auto x : var_to_sample_cache){
+		cout << "var: " << basicquery->getVarName(x.first) << ", sample num: " << x.second.size() << endl;
+	}
+
 
 
 
 	for(int i = 1; i < need_join_nodes.size(); ++i){
+		long t3 = Util::get_cur_time();
 		considerwcojoin(basicquery, id_caches, i+1, need_join_nodes, plan_cache, var_to_num_map, var_to_type_map, var_to_sample_cache,
 						s_o_list_average_size,card_cache, sample_cache);
+		long t4 = Util::get_cur_time();
+		cout << "i = " << i << ", considerwcojoin, used " << (t4 - t3) << "ms." << endl;
 
 		if(i >= 4){
 //            begin when nodes_num >= 5
@@ -2728,9 +2752,15 @@ PlanTree* Optimizer::get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCaches
 
 	vector<map<vector<int>, list<PlanTree*>>> plan_cache;
 	vector<int> need_join_nodes;
+
+	long t1 = Util::get_cur_time();
 	int join_nodes_num = enum_query_plan(basicquery, kvstore, id_caches, need_join_nodes, plan_cache);
+	long t2 = Util::get_cur_time();
+	cout << "enum query plan, used " << (t2 - t1) << "ms." << endl;
 
 	PlanTree* best_plan = get_best_plan_by_num(basicquery, join_nodes_num, plan_cache);
+	long t3 = Util::get_cur_time();
+	cout << "get best plan by num, used " << (t2 - t1) << "ms." << endl;
 
 	for(int i = 0; i < basicquery->getVarNum(); ++i){
 		if(find(need_join_nodes.begin(), need_join_nodes.end(), i) == need_join_nodes.end()
@@ -2739,8 +2769,19 @@ PlanTree* Optimizer::get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCaches
 		}
 	}
 
+	//  selected, and not need_retrieve
+	for(int i = 0; i < basicquery->getSelectVarNum(); ++i){
+		if(!basicquery->if_need_retrieve(i)){
+			best_plan = new PlanTree(best_plan, i);
+		}
+	}
+
 	return best_plan;
 }
+
+
+//现在的想法是，生成只含Join node 的plan，如果变量需要select, 则添加
+//做法：找到所有需要连接的变量节点（这一定是联通的），然后添加进入所有被select的单度变量节点
 
 tuple<bool, TableContentShardPtr> Optimizer::getAllSubObjID()
 {

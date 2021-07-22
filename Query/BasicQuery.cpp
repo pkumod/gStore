@@ -27,6 +27,7 @@ BasicQuery::clear()
     delete[] this->var_degree;
     delete[] this->var_sig;
     delete[] this->var_name;
+    delete[] this->link_with_constant;
 
     for(int i = 0; i < BasicQuery::MAX_VAR_NUM; i ++)
     {
@@ -340,7 +341,7 @@ BasicQuery::setReady(int _var)
 }
 
 void 
-BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, int _line_id, int _obj_var_id)
+BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, int _line_id, int _obj_var_id)
 {
 	cout<<"sub var id: "<<_sub_var_id<<endl;
     // update var(sub)_degree & edge_id according to this triple
@@ -354,7 +355,7 @@ BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY
 }
 
 void 
-BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _sub_id, int _line_id, int _sub_var_id)
+BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, int _line_id, int _sub_var_id)
 {
 	cout<<"obj var id: "<<_obj_var_id<<endl;
     // update var(sub)_degree & edge_id according to this triple
@@ -525,17 +526,11 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         bool sub_is_var = (sub_var_id != -1);
         if(sub_is_var)
         {
-			//int obj_id = -1;
-			TYPE_ENTITY_LITERAL_ID obj_id = INVALID_ENTITY_LITERAL_ID;
 			if(obj.at(0) != '?')
 			{
-				obj_id = _p_kvstore->getIDByEntity(obj);
-				if(obj_id == INVALID_ENTITY_LITERAL_ID)
-				{
-					obj_id = _p_kvstore->getIDByLiteral(obj);
-				}
+				this->link_with_constant[sub_var_id] = true;
 			}
-			this->updateSubSig(sub_var_id, pre_id, obj_id, i, obj_var_id);
+			this->updateSubSig(sub_var_id, pre_id, i, obj_var_id);
 
         }
 
@@ -543,13 +538,11 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         bool obj_is_var = (obj_var_id != -1);
         if(obj_is_var)
         {
-			//int sub_id = -1;
-			TYPE_ENTITY_LITERAL_ID sub_id = INVALID_ENTITY_LITERAL_ID;
 			if(sub.at(0) != '?')
 			{
-				sub_id = _p_kvstore->getIDByEntity(sub);
+				this->link_with_constant[obj_var_id] = true;
 			}
-            this->updateObjSig(obj_var_id, pre_id, sub_id, i, sub_var_id);
+            this->updateObjSig(obj_var_id, pre_id, i, sub_var_id);
         }
     }
 
@@ -571,6 +564,15 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 
     cout << "OUT encodeBasicQuery" << endl;
     this->encode_result = true;
+
+    cout << endl << "test linkwithconstant" << endl << endl;
+    for(int i = 0; i < var_str2id.size(); ++i) {
+    	if(this->link_with_constant[i]){
+    		cout << "var[" << i <<"]: " << var_name[i] <<" is linked with constant: " << "true" << endl;
+    	} else{
+			cout << "var[" << i <<"]: " << var_name[i] <<" is linked with constant: " << "false" << endl;
+		}
+    }
 	return true;
 }
 
@@ -737,12 +739,12 @@ void
 BasicQuery::initial()
 {
 	//initial 
-    this->encode_method = BasicQuery::NOT_JUST_SELECT;
     this->encode_result = false;
     this->graph_var_num = 0;
     this->var_degree = new int[BasicQuery::MAX_VAR_NUM];
     this->var_sig = new EntityBitSet[BasicQuery::MAX_VAR_NUM];
     this->var_name = new string[BasicQuery::MAX_VAR_NUM];
+    this->link_with_constant = new bool[BasicQuery::MAX_VAR_NUM];
 
     //this->edge_sig = new EdgeBitSet*[BasicQuery::MAX_VAR_NUM];
     this->edge_id = new int*[BasicQuery::MAX_VAR_NUM];
@@ -759,6 +761,7 @@ BasicQuery::initial()
         this->var_degree[i] = 0;
         this->var_sig[i].reset();
         this->var_name[i] = "";
+        this->link_with_constant[i] = false;
         //this->is_literal_candidate_added[i] = false;
 		this->ready[i] = false;
         this->need_retrieve[i] = false;
