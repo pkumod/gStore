@@ -1208,7 +1208,8 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
   vector<shared_ptr<QueryPlan>> query_plan_vec;
 
 #ifdef TOPK_DEBUG_INFO
-  std::cout<<"Optimizer::DoQuery limit num:"<<query_info.limit_num_<<endl;
+  std::cout<<"Optimizer:: limit used:"<<query_info.limit_<<std::endl;
+  std::cout<<"Optimizer::DoQuery limit num:"<<query_info.limit_num_<<std::endl;
 #endif
   // We Don't think too complex SPARQL now
   for(auto basic_query_pointer:sparql_query.getBasicQueryVec())
@@ -1234,9 +1235,12 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       for (auto x : *var_candidates_cache){
       	cout << "var[" << x.first << "] = " << basic_query_pointer->getVarName(x.first) << "  , var_candidate list size = " << x.second->size() << endl;
       }
-//      vector<int> node_order = {0,1,2,3};
-//      auto best_plan_tree = new PlanTree(node_order);
+#ifdef FEED_PLAN
+      vector<int> node_order = {2,1,0};
+      auto best_plan_tree = new PlanTree(node_order);
+#else
       auto best_plan_tree = this->get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
+#endif
       long t4 = Util::get_cur_time();
       cout << "plan get, used " << (t4 - t3) << "ms." << endl;
       best_plan_tree->print(basic_query_pointer);
@@ -2879,9 +2883,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
        }
       }
       auto all_nodes_table = get<1>(getAllSubObjID(has_in_edge));
-      PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
-//      cout<<"ExecutionBreathFirst 2"<<endl;
-//      cout<<"result size "<<all_nodes_table->size()<<endl;
+      cout<<"result size "<<all_nodes_table->size()<<endl;
       return make_tuple(true,pos_mapping,all_nodes_table);
     }
   }
@@ -2907,14 +2909,20 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       }
       auto node_to_join = plan_tree_node->right_node->node_to_join;
 
-      cout<<"join node ["<<basic_query->getVarName(node_to_join)<<"]"<<",  ";
+      cout<<"join node ["<<basic_query->getVarName(node_to_join)<<"]"<<",  "<<endl;
       auto one_step_join = QueryPlan::LinkWithPreviousNodes(basic_query, this->kv_store_, node_to_join,left_ids);
       (*left_pos_id_mapping)[left_pos_id_mapping->size()] = node_to_join;
       (*left_id_position)[node_to_join] = left_pos_id_mapping->size();
       auto join_node = one_step_join.join_node_;
       auto edges = *join_node->edges_;
       auto edge_c = *join_node->edges_constant_info_;
-
+#ifdef TABLE_OPERATOR_DEBUG_INFO
+      for(int i=0;i<edges.size();i++)
+      {
+        std::cout<<"edge["<<i<<"] "<<edges[i].toString()<<std::endl;
+        std::cout<<"constant["<<i<<"] "<<edge_c[i].toString()<<std::endl;
+      }
+#endif
       long t1 = Util::get_cur_time();
       auto step_result = JoinANode(one_step_join.join_node_, left_table,left_id_position,id_caches);
 
