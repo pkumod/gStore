@@ -1772,7 +1772,6 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		//StringIndex tmpsi = *this->stringindex;
 		//tmpsi.emptyBuffer();
 		//general_evaluation.setStringIndexPointer(&tmpsi);
-
 	//	this->debug_lock.lock();
 		if(export_flag)
 		{
