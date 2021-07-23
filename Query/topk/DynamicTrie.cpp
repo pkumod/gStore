@@ -4,21 +4,38 @@
 
 #include "DynamicTrie.h"
 
-
-
+/**
+ * alloc A TrieEntry*, which has k children
+ * @param k ,children number
+ * @return the pointer to the TrieEntry instance
+ */
 DPB::TrieEntry* DPB::DynamicTrie::newEntry(int k) {
-  auto r = new TrieEntry[k];
-  memset(r,0,k*sizeof(TrieEntry*));
+  auto r = new TrieEntry;
+  r->nexts = new TrieEntry*[k];
+  memset(r->nexts ,0,k*sizeof(TrieEntry*));
   return r;
 }
 
+/**
+ * union TrieEntry {
+  TrieEntry** nexts;
+  size_t count;
+};
+ */
+
+/**
+ * build a DynamicTrie
+ * @param depth  the depth of this Trie, the same as child type number of FQ
+ * @param k
+ */
 DPB::DynamicTrie::DynamicTrie(int depth,int k ):depth_(depth),k_(k) {
   this->root = newEntry(k);
 }
+
 void DPB::DynamicTrie::deleteEntry(DPB::TrieEntry *trie_entry, int depth) {
   if(depth != this->depth_-1)
     for(int i=0;i<this->k_;i++)
-      deleteEntry(trie_entry[i].next,depth+1);
+      deleteEntry(trie_entry->nexts[i],depth+1);
   delete[] trie_entry;
 }
 
@@ -33,7 +50,7 @@ DPB::TrieEntry* DPB::DynamicTrie::insert(const DPB::sequence &seq) {
   bool new_created = false;
   for(int i=0;i<depth_-1;i++)
   {
-    p_next = p[seq[i]].next;
+    p_next = p->nexts[seq[i-1]];
     if(p_next == NULL) {
       p_next = newEntry(this->k_);
       new_created = true;

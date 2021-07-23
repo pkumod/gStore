@@ -1204,10 +1204,12 @@ tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(const shared_ptr
 
 tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparql_query,QueryInfo query_info) {
 
-  query_info.limit_num_ = 30;
   vector<BasicQuery*> basic_query_vec;
   vector<shared_ptr<QueryPlan>> query_plan_vec;
 
+#ifdef TOPK_DEBUG_INFO
+  std::cout<<"Optimizer::DoQuery limit num:"<<query_info.limit_num_<<endl;
+#endif
   // We Don't think too complex SPARQL now
   for(auto basic_query_pointer:sparql_query.getBasicQueryVec())
   {
@@ -1270,8 +1272,20 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       for (auto &constant_generating_step: *const_candidates) {
         CacheConstantCandidates(constant_generating_step, var_candidates_cache);
       };
-      auto search_plan = make_shared<TopKTreeSearchPlan>(basic_query_pointer,this->statistics,(*query_info.ordered_by_expressions_)[0]);
-      auto top_k_result = this->ExecutionTopK(basic_query_pointer,search_plan,query_info);
+
+#ifdef TOPK_DEBUG_INFO
+      std::cout<<"Top-k Constant Filtering Candidates Info"<<std::endl;
+      for(const auto& pair:*var_candidates_cache)
+        std::cout<<"var["<<pair.first<<"]  "<<pair.second->size()<<std::endl;
+      std::cout<<"Top-k Constant Filtering Candidates Info End"<<std::endl;
+#endif
+
+      auto search_plan = make_shared<TopKTreeSearchPlan>(basic_query_pointer,this->statistics,(*query_info.ordered_by_expressions_)[0],var_candidates_cache);
+#ifdef TOPK_DEBUG_INFO
+      std::cout<<"Top-k Search Plan"<<std::endl;
+      std::cout<<search_plan->DebugInfo()<<std::endl;
+#endif
+      auto top_k_result = this->ExecutionTopK(basic_query_pointer,search_plan,query_info,var_candidates_cache);
       auto pos_var_mapping = get<1>(top_k_result);
       auto var_pos_mapping = make_shared<PositionValue>();
       for(const auto& pos_var_pair:*pos_var_mapping) {
@@ -1323,6 +1337,13 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
   cout << "selected var num: " << select_var_num<<endl;
   cout << "core var num: " << core_var_num<<endl;
   cout << "selected pre var num: " << selected_pre_var_num<<endl;
+
+#ifdef OPTIMIZER_DEBUG_INFO
+  for(auto &pos_id:*result->position_to_var_des_)
+  {
+    cout<<"pos["<<pos_id.first<<"] "<<pos_id.second<<endl;
+  }
+#endif
 //  Linglin Yang fix it to total_var_num,
 //  maybe change it to core_var_num + selected_pre_var_num in the future
   if (result->position_to_var_des_->size() != basic_query->getVarNum())
@@ -1338,7 +1359,7 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
 
   auto position_id_map_ptr = result->position_to_var_des_;
   auto id_position_map_ptr = result->var_des_to_position_;
-  
+  cout<<"fir_var_position"<<basic_query->getSelectedVarPosition((*position_id_map_ptr)[0])<<endl;
   int var_num =  basic_query->getVarNum();
   for (const auto&  record_ptr : *(result->values_))
   {
@@ -2780,10 +2801,8 @@ PlanTree* Optimizer::get_plan(BasicQuery* basicquery, KVstore *kvstore, IDCaches
 }
 
 
-//现在的想法是，生成只含Join node 的plan，如果变量需要select, 则添加
-//做法：找到所有需要连接的变量节点（这一定是联通的），然后添加进入所有被select的单度变量节点
 
-tuple<bool, TableContentShardPtr> Optimizer::getAllSubObjID()
+tuple<bool, TableContentShardPtr> Optimizer::getAllSubObjID(bool need_literal)
 {
   set<TYPE_ENTITY_LITERAL_ID> ids;
   for (TYPE_PREDICATE_ID i = 0; i < this->limitID_entity_; ++i) {
@@ -2791,10 +2810,12 @@ tuple<bool, TableContentShardPtr> Optimizer::getAllSubObjID()
     if(entity_str!="")
       ids.insert(i);
   }
-  for (TYPE_PREDICATE_ID i = Util::LITERAL_FIRST_ID; i < this->limitID_literal_; ++i) {
-    auto entity_str = this->kv_store_->getLiteralByID(i);
-    if(entity_str!="")
-      ids.insert(i);
+  if(need_literal) {
+    for (TYPE_PREDICATE_ID i = Util::LITERAL_FIRST_ID; i < this->limitID_literal_; ++i) {
+      auto entity_str = this->kv_store_->getLiteralByID(i);
+      if (entity_str != "")
+        ids.insert(i);
+    }
   }
   auto result = make_shared<TableContent>();
   for(auto var_id: ids)
@@ -2847,7 +2868,17 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
     }
     else // No Constant Constraint,Return All IDs
     {
-      auto all_nodes_table = get<1>(getAllSubObjID());
+      auto leaf_var_id = plan_tree_node->node_to_join;
+      bool has_in_edge = false;
+      for (int edge_i = 0; edge_i < basic_query->getVarDegree(leaf_var_id); edge_i++)
+      {
+       if(basic_query->getEdgeType(leaf_var_id,edge_i)==Util::EDGE_IN)
+       {
+         has_in_edge = true;
+         break;
+       }
+      }
+      auto all_nodes_table = get<1>(getAllSubObjID(has_in_edge));
       PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
 //      cout<<"ExecutionBreathFirst 2"<<endl;
 //      cout<<"result size "<<all_nodes_table->size()<<endl;
@@ -2946,35 +2977,38 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
 
 tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTopK(BasicQuery* basic_query,
                                                                                    shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
-                                                                                   const QueryInfo& query_info) {
+                                                                                   const QueryInfo& query_info,
+                                                                                   IDCachesSharePtr id_caches) {
 
   auto pos_var_mapping = TopKUtil::CalculatePosVarMapping(tree_search_plan);
   auto k = query_info.limit_num_;
   auto first_item = (*query_info.ordered_by_expressions_)[0];
   auto var_coefficients = TopKUtil::getVarCoefficients(first_item);
-
   // Build Iterator tree
   auto env = new TopKUtil::Env();
 
   env->kv_store= this->kv_store_;
   env->basic_query = basic_query;
-  env->id_caches = nullptr;
+  env->id_caches = id_caches;
+  cout<<" Optimizer::ExecutionTopK  env->id_caches "<<  env->id_caches->size()<<endl;
   env->k = query_info.limit_num_;
-  auto coefficients_map = TopKUtil::getVarCoefficients((*query_info.ordered_by_expressions_)[0]);
-  env->coefficients= &coefficients_map;
+  env->coefficients= &var_coefficients;
   env->txn = this->txn_;
   env->ss = new stringstream();
 
   auto root_fr = TopKUtil::BuildIteratorTree(tree_search_plan,env);
-  for(int i =1;i<=query_info.limit_num_;i++)
+  for(int i =0;i<query_info.limit_num_;i++)
   {
-
     root_fr->TryGetNext(k);
     if(root_fr->pool_.size()!=i)
       break;
   }
 
   auto result_list = make_shared<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
+
+#ifdef TOPK_DEBUG_INFO
+  cout<<" the top score "<<root_fr->pool_[0].cost<<"  pool size "<<root_fr->pool_.size()<<endl;
+#endif
 
   for(int i =0;i<root_fr->pool_.size();i++)
   {

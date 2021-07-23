@@ -102,7 +102,7 @@ class Optimizer
   shared_ptr<IntermediateResult> NormalJoin(shared_ptr<BasicQuery>,shared_ptr<QueryPlan>);
   bool CacheConstantCandidates(const shared_ptr<OneStepJoinNode>& one_step, const IDCachesSharePtr& id_caches);
   bool AddConstantCandidates(EdgeInfo edge_info,EdgeConstantInfo edge_table_info,TYPE_ENTITY_LITERAL_ID targetID, const IDCachesSharePtr& id_caches);
-  tuple<bool, TableContentShardPtr> getAllSubObjID();
+  tuple<bool, TableContentShardPtr> getAllSubObjID(bool need_literal);
 
 //  You can change this,
 //  but to make sure SAMPLE_CACHE_MAX <= SAMPLE_NUM_UPBOUND (in Statistics.h)
@@ -212,7 +212,7 @@ class Optimizer
                                                                  const IDCachesSharePtr& id_caches);
 #ifdef TOPK_SUPPORT
   tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionTopK(BasicQuery* basic_query, shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
-                                                 const QueryInfo& query_info);
+                                                 const QueryInfo& query_info,IDCachesSharePtr id_caches);
 
 #endif
   static void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);

@@ -15,7 +15,7 @@ using namespace std;
 KVstore::KVstore(string _store_path) 
 {
 	this->store_path = _store_path;
-	
+
 	this->dictionary_store_path = _store_path + "/StringPrefix.dc";
 	this->trie = NULL;
 

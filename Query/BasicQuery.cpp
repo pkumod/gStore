@@ -343,7 +343,7 @@ BasicQuery::setReady(int _var)
 void 
 BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, int _line_id, int _obj_var_id)
 {
-	cout<<"sub var id: "<<_sub_var_id<<endl;
+	//cout<<"sub var id: "<<_sub_var_id<<endl;
     // update var(sub)_degree & edge_id according to this triple
     int sub_degree = this->var_degree[_sub_var_id];
     // edge_id[var_id][i] : the ID of the i-th edge of the var
@@ -357,7 +357,7 @@ BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, int _line_i
 void 
 BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, int _line_id, int _sub_var_id)
 {
-	cout<<"obj var id: "<<_obj_var_id<<endl;
+	//cout<<"obj var id: "<<_obj_var_id<<endl;
     // update var(sub)_degree & edge_id according to this triple
     int obj_degree = this->var_degree[_obj_var_id];
     // edge_id[var_id][i] : the ID of the i-th edge of the var 
