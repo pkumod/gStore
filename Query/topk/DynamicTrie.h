@@ -9,8 +9,23 @@
 
 namespace DPB {
 
+/**
+ * The basic unit of the DynamicTrie.
+ * If we insert two sequences into the Trie: 1-1-1, 1-2-1:
+ * the trie will have 6 TrieEntry:
+ * root
+ * |
+ * 1
+ * | \
+ * 1 2
+ * | |
+ * 1 1
+ * the upper 4 TrieEntry has filed 'nexts' with size k
+ * the bottom 2 TrieEntry has filed 'count'
+ * count means how many its parents has been met
+ */
 union TrieEntry {
-  TrieEntry* next;
+  TrieEntry** nexts;
   size_t count;
 };
 
