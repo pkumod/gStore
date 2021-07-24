@@ -55,7 +55,8 @@ struct Env{
   BasicQuery *basic_query;
   shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches;
   int k;
-  std::vector<std::map<TYPE_ENTITY_LITERAL_ID,OrderedList*>> *global_iterators;
+  // we assume the var id ranges in [0, var_num)
+  std::vector<std::shared_ptr<std::set<OrderedList*>>> *global_iterators;
   map<std::string, double> *coefficients;
   shared_ptr<Transaction> txn;
   stringstream *ss;
@@ -75,6 +76,6 @@ FRIterator* BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> &tree_search_
 
 void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
 
-
+void FreeGlobalIterators(std::vector<std::shared_ptr<std::set<OrderedList*>>> *global_iterators);
 }
 #endif //GSTORELIMITK_QUERY_TOPK_TOPKUTIL_H_
