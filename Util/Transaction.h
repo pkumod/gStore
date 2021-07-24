@@ -8,9 +8,9 @@ using namespace std;
 
 typedef unsigned long long txn_id_t;
 typedef set<IDTriple> TripleSet;
-typedef set<TYPE_ENTITY_LITERAL_ID> IDSet;
+typedef unordered_set<TYPE_ENTITY_LITERAL_ID> IDSet;
 typedef set<TYPE_TXN_ID> TXNSet;
-enum class TransactionState{ WAITING, RUNNING, COMMITTED, ABORTED};
+enum class TransactionState{ WAITING = 0, RUNNING, COMMITTED, ABORTED};
 enum class IsolationLevelType {
 	INVALID = INVALID_TYPE_ID,
 	SERIALIZABLE = 1,      // serializable

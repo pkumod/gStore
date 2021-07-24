@@ -9,6 +9,7 @@
 
 #include "ISEntry.h"
 #include "ISBlockManager.h"
+#include "../../Util/SpinLock.h"
 
 using namespace std;
 
@@ -49,7 +50,8 @@ private:
 
 	bool PreLoad();
 
-	mutex AccessLock;
+	//mutex AccessLock;
+	spinlock AccessLock;
 	Latch ArrayLatch;
 public:
 	ISArray();
@@ -61,4 +63,5 @@ public:
 	bool remove(unsigned _key);
 	bool insert(unsigned _key, char *_str, unsigned _len);
 	bool save();
+	bool batch_id2str(vector<unsigned>& ids, vector<unsigned>& strs);
 };

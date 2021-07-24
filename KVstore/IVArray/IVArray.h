@@ -8,6 +8,7 @@
  * =======================================================================*/
 
 #include "../../Util/Util.h"
+#include "../../Util/SpinLock.h"
 #include "IVEntry.h"
 #include "IVBlockManager.h"
 
@@ -49,12 +50,16 @@ private:
 
 	void RemoveFromLRUQueue(unsigned _key);
 	
-	mutex CacheLock;
+	//mutex CacheLock;
+	spinlock CacheLock;
 	Latch ArrayLock;
-	
-	void ArraySharedLock(){ArrayLock.lockShared();}
-	void ArrayExclusiveLock(){ArrayLock.lockExclusive();};
-	void ArrayUnlock(){ArrayLock.unlock();}
+	//spinrwlock ArrayLock;
+	inline void ArraySharedLock(){ ArrayLock.lockShared();}
+	inline void ArrayExclusiveLock(){ArrayLock.lockExclusive();};
+	inline void ArrayUnlock(){ArrayLock.unlock();}
+	//inline void ArrayUnlock(){ArrayLock.unlock(false);}
+	//inline void ArraySharedUnLock(){ArrayLock.unlock(false);}
+	//inline void ArrayExclusiveUnLock(){ArrayLock.unlock(true);}
 public:
 	IVArray();
 	IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num = 0);
@@ -69,7 +74,7 @@ public:
 	
 	//MVCC
 	//read 
-	bool search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& AddSet, VDataSet& DelSet, shared_ptr<Transaction> txn, bool is_firstread = false);
+	bool search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& AddSet, VDataSet& DelSet, shared_ptr<Transaction> txn, bool &latched, bool is_firstread = false);
 	//write
 	bool remove(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn);
 	bool insert(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn);
@@ -87,6 +92,6 @@ public:
 	bool ReleaseExclusiveLock(unsigned _key, shared_ptr<Transaction> txn);
 
 	//garbage clean
-	bool GetDirtyKeys(vector<unsigned> &lists) const; 
+	bool GetDirtyKeys(vector<unsigned> &lists);
 	bool CleanDirtyKey(unsigned _key) ;
 };

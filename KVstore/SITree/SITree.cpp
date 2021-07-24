@@ -110,12 +110,12 @@ SITree::prepare(SINode* _np)
 bool
 SITree::search(const char* _str, unsigned _len, unsigned* _val)
 {
-	if(!this->if_single_thread) this->AccessLock.lock();
+	this->AccessLock.lock();
 	if (_str == NULL || _len == 0)
 	{
 		printf("error in SITree-search: empty string\n");
 		//*_val = -1;
-		if(!this->if_single_thread) this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 	//this->CopyToTransfer(_str, _len, 1);
@@ -128,31 +128,31 @@ SITree::search(const char* _str, unsigned _len, unsigned* _val)
 	if (ret == NULL || store == -1)	//tree is empty or not found
 	{
 		//bstr.clear();
-		if(!this->if_single_thread) this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 	const Bstr* tmp = ret->getKey(store);
 	if (Util::compare(_str, _len, tmp->getStr(), tmp->getLen()) != 0)	//tree is empty or not found
 	{
-		if(!this->if_single_thread) this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 	*_val = ret->getValue(store);
 	this->TSM->request(request);
 
 	//bstr.clear();
-	if(!this->if_single_thread) this->AccessLock.unlock();
+	this->AccessLock.unlock();
 	return true;
 }
 
 bool
 SITree::insert(char* _str, unsigned _len, unsigned _val)
 {
-	if(!this->if_single_thread) this->AccessLock.lock();
+	this->AccessLock.lock();
 	if (_str == NULL || _len == 0)
 	{
 		printf("error in SITree-insert: empty string\n");
-		if(!this->if_single_thread) this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 	//this->CopyToTransfer(_str, _len, 1);
@@ -263,18 +263,18 @@ SITree::insert(char* _str, unsigned _len, unsigned _val)
 
 	this->TSM->request(request);
 	//bstr.clear();		//NOTICE: must be cleared!
-	if(!this->if_single_thread) this->AccessLock.unlock();
+	this->AccessLock.unlock();
 	return !ifexist;		//QUERY(which case:return false)
 }
 
 bool
 SITree::modify(const char* _str, unsigned _len, unsigned _val)
 {
-	if(!this->if_single_thread) this->AccessLock.lock();
+	this->AccessLock.lock();
 	if (_str == NULL || _len == 0)
 	{
 		printf("error in SITree-modify: empty string\n");
-		if(!this->if_single_thread) this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 	//this->CopyToTransfer(_str, _len, 1);
@@ -287,13 +287,13 @@ SITree::modify(const char* _str, unsigned _len, unsigned _val)
 	if (ret == NULL || store == -1)	//tree is empty or not found
 	{
 		//bstr.clear();
-		if(!this->if_single_thread) this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 	const Bstr* tmp = ret->getKey(store);
 	if (Util::compare(_str, _len, tmp->getStr(), tmp->getLen()) != 0)	//tree is empty or not found
 	{
-		if(!this->if_single_thread) this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 
@@ -301,7 +301,7 @@ SITree::modify(const char* _str, unsigned _len, unsigned _val)
 	ret->setDirty();
 	this->TSM->request(request);
 	//bstr.clear();
-	if(!this->if_single_thread) this->AccessLock.unlock();
+	this->AccessLock.unlock();
 	return true;
 }
 
@@ -355,11 +355,11 @@ SITree::find(unsigned _len, const char* _str, int* store) const
 bool
 SITree::remove(const char* _str, unsigned _len)
 {
-	if(!this->if_single_thread) this->AccessLock.lock();
+	this->AccessLock.lock();
 	if (_str == NULL || _len == 0)
 	{
 		printf("error in SITree-remove: empty string\n");
-		if(!this->if_single_thread) this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 	//this->CopyToTransfer(_str, _len, 1);
@@ -369,7 +369,7 @@ SITree::remove(const char* _str, unsigned _len)
 	SINode* ret;
 	if (this->root == NULL)	//tree is empty
 	{
-		if(!this->if_single_thread) this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 	SINode* p = this->root;
@@ -442,25 +442,25 @@ SITree::remove(const char* _str, unsigned _len)
 
 	this->TSM->request(request);
 	//bstr.clear();
-	if(!this->if_single_thread) this->AccessLock.unlock();
+	this->AccessLock.unlock();
 	return flag;		//i == j, not found		
 }
 
 bool
 SITree::save()	//save the whole tree to disk
 {
-	if(!this->if_single_thread) this->AccessLock.lock();
+	this->AccessLock.lock();
 #ifdef DEBUG_KVSTORE
 	printf("now to save tree!\n");
 #endif
 	if (TSM->writeTree(this->root))
 	{
-		if(!this->if_single_thread) this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return true;
 	}
 	else
 	{
-		if(!this->if_single_thread) this->AccessLock.unlock();
+		this->AccessLock.unlock();
 		return false;
 	}
 }

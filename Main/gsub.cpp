@@ -33,8 +33,10 @@ main(int argc, char * argv[])
 	cout << "finish loading" << endl;
 	//_db.insert(argv[2]);
 	//_db.remove(argv[2]);
+	long tv_begin = Util::get_cur_time();
 	_db.remove(argv[2], false, nullptr);
-
+	long tv_end = Util::get_cur_time();
+	cout << "after remove, used " << (tv_end - tv_begin) << " ms" << endl;
 	//string query = string(argv[2]);
 	//query = Util::getQueryFromFile(query.c_str());
 	//if (query.empty())
