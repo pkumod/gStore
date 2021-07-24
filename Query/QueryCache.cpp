@@ -95,8 +95,8 @@ bool QueryCache::getMinimalRepresentation(const Patterns &triple_pattern, Patter
 
 bool QueryCache::tryCaching(const Patterns &triple_pattern, const TempResult &temp_result, int eva_time)
 {
-	lock_guard<mutex> (this->query_cache_lock);  //when quit this scope the lock will be released
-
+	lock_guard<mutex> lck(this->query_cache_lock);  //when quit this scope the lock will be released
+	//query_cache_lock.lock();
 	Patterns minimal_repre;
 	map<string, string> minimal_mapping;
 
@@ -182,8 +182,8 @@ bool QueryCache::tryCaching(const Patterns &triple_pattern, const TempResult &te
 bool QueryCache::checkCached(const Patterns &triple_pattern, const Varset &varset, TempResult &temp_result)
 {
 	//this->query_cache_lock.lock();
-	lock_guard<mutex> (this->query_cache_lock);  //when quit this scope the lock will be released
-
+	lock_guard<mutex> lck(this->query_cache_lock);  //when quit this scope the lock will be released
+	//query_cache_lock.lock();
 	Patterns minimal_repre;
 	map<string, string> minimal_mapping;
 
@@ -236,6 +236,8 @@ bool QueryCache::checkCached(const Patterns &triple_pattern, const Varset &varse
 
 void QueryCache::clear()
 {
+	lock_guard<mutex> lck(this->query_cache_lock);  //when quit this scope the 
+	//query_cache_lock.lock();
 	time_now = 0;
 	total_memory_used = 0;
 

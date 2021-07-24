@@ -24,13 +24,15 @@ main(int argc, char * argv[])
 		return -1;
 	}
 
-	Database _db(db_folder);
-	_db.load();
+	Database *_db = new Database(db_folder);
+	_db->load();
 	cout << "finish loading" << endl;
 	//_db.insert(argv[2]);
 	//_db.remove(argv[2]);
-	_db.insert(argv[2], false, nullptr);
-
+	long tv_begin = Util::get_cur_time();
+	_db->insert(argv[2], false, nullptr);
+	long tv_end = Util::get_cur_time();
+	cout << "after insert, used " << (tv_end - tv_begin) << " ms" << endl;
 	//string query = string(argv[2]);
 	//query = Util::getQueryFromFile(query.c_str());
 	//if (query.empty())
@@ -44,6 +46,8 @@ main(int argc, char * argv[])
 
 	//TODO:to test insert, delete and modify
 	//read from file or just several triples written here
-
+	delete _db;
+	long tv_end1 = Util::get_cur_time();
+	cout << "persistence on disk" << (tv_end1 - tv_end) << " ms" << endl;
 	return 0;
 }

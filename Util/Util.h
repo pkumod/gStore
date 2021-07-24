@@ -278,6 +278,12 @@ typedef struct TYPE_ID_TUPLE
 	TYPE_ENTITY_LITERAL_ID subid;
 	TYPE_ENTITY_LITERAL_ID preid;
 	TYPE_ENTITY_LITERAL_ID objid;
+	TYPE_ID_TUPLE(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LITERAL_ID _preid, TYPE_ENTITY_LITERAL_ID _objid): \
+		subid(_subid), preid(_preid), objid(_objid)
+	{
+
+	}
+	TYPE_ID_TUPLE(){}
 }ID_TUPLE;
 
 //===================================================================================================================

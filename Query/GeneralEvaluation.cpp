@@ -2741,9 +2741,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			vector <bool> desc;
 			for (int i = 0; i < (int)this->query_tree.getOrderVarVector().size(); i++)
 			{
-				// int var_id = Varset(this->query_tree.getOrderVarVector()[i].var).mapTo(ret_result_varset)[0];
-				// Temporary, to be changed to allow for more than one var in one ORDER BY condition
-				int var_id = this->query_tree.getOrderVarVector()[i].comp_tree_root->getCompTreeVarset().mapTo(ret_result_varset)[0];
+				int var_id = Varset(this->query_tree.getOrderVarVector()[i].var).mapTo(ret_result_varset)[0];
 				if (var_id != -1)
 				{
 					keys.push_back(var_id);
@@ -2766,6 +2764,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			//pthread_t tidp;
 			//long arg[6];
 			vector<StringIndexFile* > a = this->stringindex->get_three_StringIndexFile();
+			std::vector<StringIndexFile::AccessRequest> requestVectors[3];
 			/*arg[0] = (long)&a;
 			arg[1] = (long)&ret_result;
 			arg[2] = (long)&proj2temp;
@@ -2821,11 +2820,11 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			for (unsigned int i = 0,off =0 ; i < retAnsNum; i++, off += selectVar)
 				ret_result.answer[i] = t + off;
 
-			a[0]->set_string_base(t);
-			a[1]->set_string_base(t);
-			a[2]->set_string_base(t);
+			//a[0]->set_string_base(t);
+			//a[1]->set_string_base(t);
+			//a[2]->set_string_base(t);
 
-
+			//write index lock
 			for (int j = 0; j < selectVar; j++)
 			{
 				int k = proj2temp[j];
@@ -2841,9 +2840,11 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								if (ans_id != INVALID)
 								{
 									if (ans_id < Util::LITERAL_FIRST_ID)
-										a[0]->addRequest(ans_id, i*selectVar + j);
+										//a[0]->addRequest
+										requestVectors[0].push_back(StringIndexFile::AccessRequest(ans_id, i*selectVar + j));
 									else
-										a[1]->addRequest(ans_id - Util::LITERAL_FIRST_ID , i*selectVar + j);
+										//a[1]->addRequest(ans_id - Util::LITERAL_FIRST_ID , i*selectVar + j);
+										requestVectors[1].push_back(StringIndexFile::AccessRequest(ans_id - Util::LITERAL_FIRST_ID, i*selectVar + j));
 								}
 							}
 						}
@@ -2852,8 +2853,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							for (unsigned i = 0; i < retAnsNum; i++)
 							{
 								unsigned ans_id = result0.result[i].id[k];
-								if (ans_id != INVALID)
-									a[2]->addRequest(ans_id, i*selectVar + j);
+								if (ans_id != INVALID){
+									//a[2]->addRequest(ans_id, i*selectVar + j);
+									requestVectors[2].push_back(StringIndexFile::AccessRequest(ans_id, i*selectVar + j));
+								}
 							}
 						}
 					}
@@ -2869,7 +2872,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			}
 			//cout << "in getFinal Result the first half use " << Util::get_cur_time() - t0 << "  ms" << endl;
 			//pthread_join(tidp, NULL);
-			this->stringindex->trySequenceAccess(true, -1);
+			this->stringindex->trySequenceAccess(requestVectors,t, true, -1);
+			//write index unlock
 		}
 		else
 		{

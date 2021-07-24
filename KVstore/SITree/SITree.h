@@ -11,6 +11,7 @@
 
 #include "../../Util/Util.h"
 #include "../../Util/Stream.h"
+#include "../../Util/SpinLock.h"
 #include "node/SINode.h"
 #include "node/SIIntlNode.h"
 #include "node/SILeafNode.h"
@@ -58,7 +59,7 @@ private:
 	void prepare(SINode* _np);
 
 	std::mutex AccessLock;
-
+	// spinlock AccessLock;
 	unsigned getHeight() const;
 	void setHeight(unsigned _h);
 	SINode* getRoot() const;
