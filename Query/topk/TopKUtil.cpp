@@ -291,6 +291,38 @@ void TopKUtil::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* i
   }
 }
 
+void TopKUtil::FreeGlobalIterators(std::vector<std::shared_ptr<std::set<OrderedList*>>> *global_iterators)
+{
+  for(auto layer_iterators:*global_iterators)
+  {
+    if(layer_iterators->size())
+    {
+      auto iterator_type =  (*layer_iterators->begin())->Type();
+      switch (iterator_type)
+      {
+        case OrderedListType::FR:
+          for(auto iterator:*layer_iterators)
+          {
+            delete (FRIterator*)iterator;
+          }
+          break;
+        case OrderedListType::OW:
+          for(auto iterator:*layer_iterators)
+          {
+            delete (OWIterator*)iterator;
+          }
+          break;
+        case OrderedListType::FQ:
+          for(auto iterator:*layer_iterators)
+          {
+            delete (FQIterator*)iterator;
+          }
+          break;
+      };
+    }
+  }
+}
+
 FRIterator *TopKUtil::BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,Env *env){
 
   auto root_plan = tree_search_plan->tree_root_;
@@ -337,11 +369,20 @@ FRIterator *TopKUtil::BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> &tr
   // constructing children' FQs
   auto child_fqs = AssemblingFrOw(root_candidate, node_score,env->k,descendents_FRs);
 
+  auto layer_child_fqs = make_shared<set<OrderedList*>>();
+  env->global_iterators->push_back(layer_child_fqs);
+
   auto fr = new FRIterator();
   // constructing parents' FRs
   for(auto root_id:child_fqs) {
-      fr->Insert(env->k,root_id.second);
+    auto fq_pointer = root_id.second;
+      fr->Insert(env->k,fq_pointer);
+      layer_child_fqs->insert(fq_pointer);
   }
+  auto layer_iterators = make_shared<set<OrderedList*>>();
+  layer_iterators->insert(fr);
+  env->global_iterators->push_back(layer_iterators);
+
 #ifdef TOPK_DEBUG_INFO
   cout<<"ROOT has"<< root_candidate.size()<<"ids "<<", FR has "<<child_fqs.size()<<" FQs"<<endl;
 #endif
@@ -409,7 +450,8 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
   auto coefficient_it = env->coefficients->find(env->basic_query->getVarName(child_var));
   bool has_coefficient = coefficient_it != env->coefficients->end();
   double coefficient = has_coefficient ? (*coefficient_it).second : 0.0;
-
+  auto layer_child_iterators = make_shared<set<OrderedList*>>();
+  env->global_iterators->push_back(layer_child_iterators);
   int separator_num;
 
   // [0,separator_num) are the predicates parent to child
@@ -498,7 +540,12 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
                    edge_list_len,
                    record_candidate_prepared);
 #ifdef TOPK_DEBUG_INFO
-      cout<<"result size "<< record_candidate_list->size()<<endl;
+      cout<<"result size "<< record_candidate_list->size();
+      for(auto id :*record_candidate_list)
+      {
+        cout<<" "<<id;
+      }
+      cout<<endl;
 #endif
       delete[] edge_candidate_list;
       record_candidate_prepared = true;
@@ -567,7 +614,7 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
       for(auto child_id:parent_child[parent_id])
       {
 #ifdef TOPK_DEBUG_INFO
-        cout<<" "<<(*node_score)[child_id];
+        cout<<"["<<child_id<<"]"<<" "<<(*node_score)[child_id];
 #endif
         children_ids.push_back(child_id);
         children_scores.push_back((*node_score)[child_id]);
@@ -578,7 +625,7 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
 #endif
       ow->Insert(env->k, children_ids, children_scores);
       parents_FRs[parent_id] = ow;
-
+      layer_child_iterators->insert(ow);
       children_ids.clear();
       children_scores.clear();
     }
@@ -599,6 +646,12 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
 
   // constructing children' FQs
   auto child_fqs = AssemblingFrOw(child_candidates, node_score,env->k,descendents_FRs);
+
+  for(const auto& id_fq_pair:child_fqs)
+  {
+    layer_child_iterators->insert(id_fq_pair.second);
+  }
+
 
   // calculate which parent to be deleted
   for(auto deleted_child_id:deleted_children)

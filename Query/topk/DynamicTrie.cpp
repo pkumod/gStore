@@ -35,7 +35,9 @@ DPB::DynamicTrie::DynamicTrie(int depth,int k ):depth_(depth),k_(k) {
 void DPB::DynamicTrie::deleteEntry(DPB::TrieEntry *trie_entry, int depth) {
   if(depth != this->depth_-1)
     for(int i=0;i<this->k_;i++)
-      deleteEntry(trie_entry->nexts[i],depth+1);
+      if(trie_entry->nexts[i] != nullptr)
+        deleteEntry(trie_entry->nexts[i],depth+1);
+
   delete[] trie_entry;
 }
 
@@ -50,16 +52,18 @@ DPB::TrieEntry* DPB::DynamicTrie::insert(const DPB::sequence &seq) {
   bool new_created = false;
   for(int i=0;i<depth_-1;i++)
   {
-    p_next = p->nexts[seq[i-1]];
+    p_next = p->nexts[seq[i]-1];
     if(p_next == NULL) {
       p_next = newEntry(this->k_);
+      p->nexts[seq[i]-1] = p_next;
       new_created = true;
     }
+    p = p_next;
   }
   if(new_created) {
-    int father_count = std::count_if(seq.begin(),
+    auto father_count = static_cast<size_t>(std::count_if(seq.begin(),
                                      seq.end(),
-                                     [](decltype(*seq.begin()) x) { return x != 1; }
+                                     [](decltype(*seq.begin()) x) { return x != 1; })
     );
     p_next->count = father_count;
   }

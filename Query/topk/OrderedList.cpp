@@ -41,7 +41,7 @@ void FRIterator::Insert(unsigned int k, OrderedList* fq_pointer) {
   e.index = 0;
   e.identity.pointer = fq_pointer;
   queue_.push(e);
-  if(queue_.size()>=k)
+  if(queue_.size()>k)
     queue_.popMax();
 }
 
@@ -63,9 +63,9 @@ double FRIterator::DeltaCost(OrderedList* node_pointer, int index) {
 }
 
 bool FRIterator::NextEPoolElement(unsigned int k, OrderedList* node_pointer, unsigned int index) {
-  if(index == node_pointer->pool_.size())
+  if(index + 1 == node_pointer->pool_.size())
     node_pointer->TryGetNext(k);
-  if(index < node_pointer->pool_.size())
+  if(index + 1< node_pointer->pool_.size())
     return true;
   else
     return false;
@@ -104,7 +104,7 @@ void OWIterator::Insert(unsigned int k,const std::vector<TYPE_ENTITY_LITERAL_ID>
 }
 
 void OWIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record) {
-  auto i_th_element = this->pool_[i_th];
+  auto &i_th_element = this->pool_[i_th];
   auto node_id = i_th_element.identity.node;
   record->push_back(node_id);
 }
@@ -194,9 +194,10 @@ double FQIterator::DeltaCost(OrderedList* FR_OW_iterator, int index) {
 }
 
 void FQIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record) {
-  auto seq = this->seq_list_[i_th];
+  record->push_back(this->node_id_);
+  auto &seq = this->seq_list_[i_th];
   for(unsigned int i =0;i<this->FR_OW_iterators.size();i++)
-    FR_OW_iterators[i]->GetResult(seq[i],record);
+    FR_OW_iterators[i]->GetResult(seq[i]-1,record);
 }
 
 
