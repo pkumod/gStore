@@ -15,6 +15,8 @@
 #include "../../Query/IDList.h"
 #include "../../Database/TableOperator.h"
 
+#define TOPK_DEBUG_INFO
+
 // only Vars
 struct TopKTreeNode{
   int var_id;
@@ -23,16 +25,18 @@ struct TopKTreeNode{
 
 class TopKTreeSearchPlan {
  private:
-  std::size_t count_depth(std::map<int,set<int>>& neighbours,TYPE_ENTITY_LITERAL_ID root_id,std::size_t total_vars_num);
+  std::size_t CountDepth(std::map<int, set<int>>& neighbours, TYPE_ENTITY_LITERAL_ID root_id, std::size_t total_vars_num);
  public:
   // Choose A shortest tree to do top-k
-  explicit TopKTreeSearchPlan(BasicQuery* basic_query, Statistics *statistics, QueryTree::Order expression);
+  explicit TopKTreeSearchPlan(BasicQuery* basic_query, Statistics *statistics, QueryTree::Order expression,
+                              shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
   // The first tree to search
   TopKTreeNode* tree_root_;
   // Recursive delete
   ~TopKTreeSearchPlan();
   // The Edges that left behind
   std::vector<std::pair<int,int>> postponed_edges_;
+  std::string DebugInfo();
 };
 
 namespace TopKUtil{
@@ -51,7 +55,8 @@ struct Env{
   BasicQuery *basic_query;
   shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches;
   int k;
-  std::vector<std::map<TYPE_ENTITY_LITERAL_ID,OrderedList*>> *global_iterators;
+  // we assume the var id ranges in [0, var_num)
+  std::vector<std::shared_ptr<std::set<OrderedList*>>> *global_iterators;
   map<std::string, double> *coefficients;
   shared_ptr<Transaction> txn;
   stringstream *ss;
@@ -71,6 +76,6 @@ FRIterator* BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> &tree_search_
 
 void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
 
-
+void FreeGlobalIterators(std::vector<std::shared_ptr<std::set<OrderedList*>>> *global_iterators);
 }
 #endif //GSTORELIMITK_QUERY_TOPK_TOPKUTIL_H_

@@ -82,7 +82,7 @@ public:
 	string getSixTuplesFile();
 
 	//root Path of this DB + signatureBFile
-	string getSignatureBFile();
+	// string getSignatureBFile();
 
 	//root Path of this DB + DBInfoFile
 	string getDBInfoFile();
@@ -90,7 +90,7 @@ public:
 	//id tuples file
 	string getIDTuplesFile();
 
-	VSTree* getVSTree();
+	// VSTree* getVSTree();
 	KVstore* getKVstore();
 	StringIndex* getStringIndex();
 	QueryCache* getQueryCache();
@@ -135,7 +135,7 @@ private:
 	//for allocPredicateID
 	mutex allocPredicateID_lock;
 	
-	VSTree* vstree;
+	// VSTree* vstree;
 	KVstore* kvstore;
 	StringIndex* stringindex;
 	Join* join;
@@ -186,7 +186,7 @@ private:
 	void query_stringIndex(int id);
 	void check();
 	//used for multiple threads
-	void load_vstree(unsigned _vstree_size);
+	// void load_vstree(unsigned _vstree_size);
 	void load_entity2id(int _mode);
 	void load_id2entity(int _mode);
 	void load_literal2id(int _mode);
@@ -216,7 +216,7 @@ private:
 	
 	//triple num per group for insert/delete
 	//can not be too high, otherwise the heap will over
-	static const int GROUP_SIZE = 1000;
+	// static const int GROUP_SIZE = 1000;
 	//manage the ID allocate and garbage
 	static const TYPE_ENTITY_LITERAL_ID START_ID_NUM = 0;
 	//static const int START_ID_NUM = 1000;
@@ -254,17 +254,17 @@ private:
 	string getStorePath();
 
 	//encode relative signature data of all Basic Graph Query, who union together into SPARQLquery 
-	void buildSparqlSignature(SPARQLquery & _sparql_q);
+	// void buildSparqlSignature(SPARQLquery & _sparql_q);
 
 	//encode Triple into Subject EntityBitSet 
-	bool encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
+	// bool encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
 	//NOTICE: the encodeTriple with Triple* is invalid now(not enocde the linkage of neighbor-predicate)
-	bool encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
+	// bool encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
 	//encode Triple into Object EntityBitSet 
-	bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
-	bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _sub_id);
+	// bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
+	// bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _sub_id);
 
-	bool calculateEntityBitSet(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet & _bitset);
+	// bool calculateEntityBitSet(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet & _bitset);
 
 	//check whether the relative 3-tuples exist
 	//usually, through sp2olist 

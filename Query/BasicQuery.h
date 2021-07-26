@@ -126,8 +126,8 @@ private:
 	bool* ready;
 	//if need to be retrieved by vstree or generate when join(first is graph var)
 	bool* need_retrieve;
+	bool* link_with_constant;
 
-	char encode_method;
 
 	//save the result of encodeBasicQuery
 	bool encode_result;
@@ -158,8 +158,8 @@ private:
 
 	//void updateSubSig(int _sub_id, int _pre_id, int _obj_id, std::string _obj, int _line_id);
 	//void updateObjSig(int _obj_id, int _pre_id, int _sub_id, std::string _sub, int _line_id);
-	void updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, int _line_id, int _obj_var_id);
-	void updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _sub_id, int _line_id, int _sub_var_id);
+	void updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, int _line_id, int _obj_var_id);
+	void updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, int _line_id, int _sub_var_id);
 
 	//infos for predicate variables
 	vector<PreVar> pre_var;

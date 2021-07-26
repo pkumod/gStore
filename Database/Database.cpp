@@ -26,8 +26,8 @@ Database::Database()
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = new KVstore(kv_store_path);
 
-	string vstree_store_path = store_path + "/vs_store";
-	this->vstree = new VSTree(vstree_store_path);
+	// string vstree_store_path = store_path + "/vs_store";
+	// this->vstree = new VSTree(vstree_store_path);
 
 	string stringindex_store_path = store_path + "/stringindex_store";
 	this->stringindex = new StringIndex(stringindex_store_path);
@@ -82,9 +82,9 @@ Database::Database(string _name)
 
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = new KVstore(kv_store_path);
-	string vstree_store_path = store_path + "/vs_store";
+	// string vstree_store_path = store_path + "/vs_store";
 	//this->vstree = new VSTree(vstree_store_path);
-	this->vstree = NULL;
+	// this->vstree = NULL;
 	string stringindex_store_path = store_path + "/stringindex_store";
 	this->stringindex = new StringIndex(stringindex_store_path);
 	this->stringindex->SetTrie(this->kvstore->getTrie());
@@ -1349,12 +1349,12 @@ Database::load_pre2values(int _mode)
 	this->kvstore->open_preID2values(_mode);
 }
 
-void 
-Database::load_vstree(unsigned _vstree_size)
-{
-	(this->vstree)->loadTree(_vstree_size);
-	cout<<"vstree loaded"<<endl;
-}
+// void 
+// Database::load_vstree(unsigned _vstree_size)
+// {
+// 	(this->vstree)->loadTree(_vstree_size);
+// 	cout<<"vstree loaded"<<endl;
+// }
 
 // @author bookug
 // @email bookug@qq.com
@@ -1595,11 +1595,11 @@ Database::getPreNum()
 	return this->pre_num;
 }
 
-VSTree*
-Database::getVSTree()
-{
-	return this->vstree;
-}
+// VSTree*
+// Database::getVSTree()
+// {
+// 	return this->vstree;
+// }
 
 KVstore*
 Database::getKVstore()
@@ -1667,7 +1667,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
-	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->statistics, this->stringindex, this->query_cache, \
+	GeneralEvaluation general_evaluation(this->kvstore, this->statistics, this->stringindex, this->query_cache, \
 		this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, \
 		this->limitID_entity, this->csr, txn);
 	//if(txn != nullptr)
@@ -1708,7 +1708,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		//StringIndex tmpsi = *this->stringindex;
 		//tmpsi.emptyBuffer();
 		//general_evaluation.setStringIndexPointer(&tmpsi);
-
+	
 	//	this->debug_lock.lock();
 		if(export_flag)
 		{
@@ -2014,11 +2014,11 @@ Database::getSixTuplesFile()
 }
 
 //root Path of this DB + signatureBFile 
-string
-Database::getSignatureBFile()
-{
-	return this->getStorePath() + "/" + this->signature_binary_file;
-}
+// string
+// Database::getSignatureBFile()
+// {
+// 	return this->getStorePath() + "/" + this->signature_binary_file;
+// }
 
 //root Path of this DB + DBInfoFile 
 string
@@ -2100,18 +2100,18 @@ Database::getStorePath()
 }
 
 //encode relative signature data of the query graph
-void
-Database::buildSparqlSignature(SPARQLquery & _sparql_q)
-{
-	vector<BasicQuery*>& _query_union = _sparql_q.getBasicQueryVec();
-	for (unsigned i_bq = 0; i_bq < _query_union.size(); i_bq++)
-	{
-		BasicQuery* _basic_q = _query_union[i_bq];
-		_basic_q->encodeBasicQuery(this->kvstore, _sparql_q.getQueryVar());
-	}
-}
+// void
+// Database::buildSparqlSignature(SPARQLquery & _sparql_q)
+// {
+// 	vector<BasicQuery*>& _query_union = _sparql_q.getBasicQueryVec();
+// 	for (unsigned i_bq = 0; i_bq < _query_union.size(); i_bq++)
+// 	{
+// 		BasicQuery* _basic_q = _query_union[i_bq];
+// 		_basic_q->encodeBasicQuery(this->kvstore, _sparql_q.getQueryVar());
+// 	}
+// }
 
-bool
+/*bool
 Database::calculateEntityBitSet(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet & _bitset)
 {
 	unsigned _list_len = 0;
@@ -2153,9 +2153,9 @@ Database::calculateEntityBitSet(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet 
 
 	return true;
 }
-
+*/
 //encode Triple into subject SigEntry
-bool
+/*bool
 Database::encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple)
 {
 	TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_p_triple->predicate);
@@ -2228,7 +2228,7 @@ Database::encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID 
 
 	return true;
 }
-
+*/
 //check whether the relative 3-tuples exist usually, through sp2olist
 bool
 Database::exist_triple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
