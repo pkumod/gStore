@@ -2764,15 +2764,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		{
 			vector <unsigned> keys;
 			vector <bool> desc;
-			for (int i = 0; i < (int)this->query_tree.getOrderVarVector().size(); i++)
+			if (!query_tree.getSingleBGP())
 			{
-				// int var_id = Varset(this->query_tree.getOrderVarVector()[i].var).mapTo(ret_result_varset)[0];
-				// Temporary, to be changed to allow for more than one var in one ORDER BY condition
-				int var_id = this->query_tree.getOrderVarVector()[i].comp_tree_root->getCompTreeVarset().mapTo(ret_result_varset)[0];
-				if (var_id != -1)
+				// Else, ORDER BY will already have been processed at the BGP level
+				for (int i = 0; i < (int)this->query_tree.getOrderVarVector().size(); i++)
 				{
-					keys.push_back(var_id);
-					desc.push_back(this->query_tree.getOrderVarVector()[i].descending);
+					// int var_id = Varset(this->query_tree.getOrderVarVector()[i].var).mapTo(ret_result_varset)[0];
+					// Temporary, to be changed to allow for more than one var in one ORDER BY condition
+					int var_id = this->query_tree.getOrderVarVector()[i].comp_tree_root->getCompTreeVarset().mapTo(ret_result_varset)[0];
+					if (var_id != -1)
+					{
+						keys.push_back(var_id);
+						desc.push_back(this->query_tree.getOrderVarVector()[i].descending);
+					}
 				}
 			}
 			ret_result.openStream(keys, desc);

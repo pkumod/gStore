@@ -12,10 +12,11 @@ class QueryParser: public SPARQLBaseVisitor
 private:
 	QueryTree *query_tree_ptr;
 	std::map<std::string, std::string> prefix_map;
+	bool firstVisitGroupGraphPatternSub;
 
 public:
-	QueryParser() {}
-	QueryParser(QueryTree *qtp): query_tree_ptr(qtp) {}
+	QueryParser(): firstVisitGroupGraphPatternSub(true) {}
+	QueryParser(QueryTree *qtp): firstVisitGroupGraphPatternSub(true), query_tree_ptr(qtp) {}
 	void setQueryTree(QueryTree *qtp) { query_tree_ptr = qtp; }
 	void SPARQLParse(const std::string &query);	// Overall driver function
 

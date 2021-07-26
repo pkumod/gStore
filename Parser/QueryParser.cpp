@@ -573,6 +573,9 @@ antlrcpp::Any QueryParser::visitGroupGraphPattern(SPARQLParser::GroupGraphPatter
 antlrcpp::Any QueryParser::visitGroupGraphPatternSub(SPARQLParser::GroupGraphPatternSubContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
+	if (firstVisitGroupGraphPatternSub && ctx->graphPatternTriplesBlock().empty())
+		query_tree_ptr->setSingleBGP(true);
+	firstVisitGroupGraphPatternSub = false;
 	if (ctx->triplesBlock())
 		visitTriplesBlock(ctx->triplesBlock(), group_pattern);
 	for (auto graphPatternTriplesBlock : ctx->graphPatternTriplesBlock())

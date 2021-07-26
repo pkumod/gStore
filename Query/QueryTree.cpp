@@ -1053,6 +1053,8 @@ void QueryTree::print()
 	{
 		if (this->query_form == Select_Query)
 		{
+			if (singleBGP)
+				printf("Single BGP\n");
 			printf("SELECT");
 			if (this->projection_modifier == Modifier_Distinct)
 				printf(" DISTINCT");
@@ -1330,4 +1332,14 @@ Varset QueryTree::CompTreeNode::getCompTreeVarset()
 		return Varset(val);
 	else
 		return Varset();
+}
+
+void QueryTree::setSingleBGP(bool val)
+{
+	singleBGP = val;
+}
+
+bool QueryTree::getSingleBGP()
+{
+	return singleBGP;
 }
