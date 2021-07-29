@@ -1,3 +1,11 @@
+/*=============================================================================
+# Filename:	QueryParser.h
+# Author: Yue Pang
+# Mail: michelle.py@pku.edu.cn
+# Last Modified:	2021-07-28 10:05 CST
+# Description: defines the class for parsing SPARQL queries based on ANTLR4
+=============================================================================*/
+
 #include <typeinfo>
 
 #include "antlr4-runtime.h"
@@ -7,11 +15,18 @@
 #include "../Query/QueryTree.h"
 #include "../Util/Util.h"
 
+/**
+	Parser for SPARQL queries, inherited from SPARQLBaseVisitor, which is
+	automatically generated from the SPARQL grammar by ANTLR. Implements
+	visiting important grammatical units, extracts relevant information,
+	and stores in QueryTree (pointed to by query_tree_ptr).
+*/
 class QueryParser: public SPARQLBaseVisitor
 {
 private:
 	QueryTree *query_tree_ptr;
-	std::map<std::string, std::string> prefix_map;
+	std::map<std::string, std::string> prefix_map;	// Stores mapping from
+		// the short form of prefixes to their full URIs
 
 public:
 	QueryParser() {}
@@ -71,6 +86,10 @@ public:
 	void printQueryTree();
 };
 
+/**
+	Listener for errors during SPARQL query parsing, which throws a 
+	corresponding exception when an error arises.
+*/
 class SPARQLErrorListener: public antlr4::BaseErrorListener
 {
 public:

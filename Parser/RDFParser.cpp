@@ -1,319 +1,176 @@
+/*=============================================================================
+# Filename: RDFParser.cpp
+# Author: Yue Pang
+# Mail: michelle.py@pku.edu.cn
+# Last Modified:    2021-07-29 11:51 CST
+# Description: implements the class for parsing RDF data during build based on 
+RDF-3X's TurtleParser
+=============================================================================*/
 #include "RDFParser.h"
-/*	if you want to parse a triple file, you need to create a RDFParser object
-*	and run parseFile several times until all the triple is processed
-*	for example:
-*		RDFParser _RDFParser(filename);
-*		triple_array = new Triple_with_objtype[RDFParser::RDFParser::TRIPLE_NUM_PER_GROUP];
-*		while (true)
-*		{
-*			triple_num = 0;
-*			_RDFParser.parseFile();
-*			if (triple_num == 0)	break;
-*			......
-*		}		
-*/
-string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num)
+
+/** Constructor for parseString. Passes the member stringstream to 
+ * TurtleParser, which can later be fed other strings containing RDF
+ * data in parseString.
+ */
+RDFParser::RDFParser():_TurtleParser(_sin)
+{}
+
+/** Constructor for parseFile. Takes in an ifstream of an RDF file 
+ * and passes to TurtleParser.
+ * @param _fin the ifstream of the input RDF file.
+ */
+RDFParser::RDFParser(ifstream& _fin):_TurtleParser(_fin)
+{}
+
+/** Parses an RDF file. More rigorous numeric checks on top of TurtleParser.
+ * If you want to parse a triple file, you need to create a RDFParser object
+ * and run parseFile several times until all the triple is processed. For each
+ * run, the number of parsed triples won't exceed RDFParser::TRIPLE_NUM_PER_GROUP.
+ * For example:
+ * RDFParser _RDFParser(filename);
+ * triple_array = new Triple_with_objtype[RDFParser::RDFParser::TRIPLE_NUM_PER_GROUP];
+ * while (true)
+ * {
+ * 	triple_num = 0;
+ * 	_RDFParser.parseFile();
+ * 	if (triple_num == 0)    break;
+ * 	......
+ * }       
+ * 
+ * @param _triple_array stores the parsed triples.
+ * @param _triple_num the number of successfully parsed triples.
+ * @param _error_log the file name for outputting parse error log; if left
+ * blank, output will be redirected to stdout. Each line of output is in the
+ * format of: Line x (subject predicate object): error message.
+ */
+string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, string _error_log)
 {
+	string rawSubject, rawPredicate, rawObject;
 	string _subject, _predicate, _object, _objectSubType;
+	string errorMsg;
 	Type::Type_ID _objectType;
+	streambuf *coutbuf = cout.rdbuf();
+	ofstream ofile;
 
-	while (_triple_num < RDFParser::TRIPLE_NUM_PER_GROUP)
+	if (!_error_log.empty())
 	{
-		try
+		ofile.open(_error_log,ios::app);
+		if (ofile)
 		{
-			if (!this->_TurtleParser.parse(_subject, _predicate, _object, _objectType, _objectSubType))		break;
-		}
-		catch (const TurtleParser::Exception& _e) 
-		{
-			cout <<"args 2:"<< _e.message << endl;
-			this->_TurtleParser.discardLine();
-			continue;
-		}
-
-		_subject = "<" + _subject + ">";
-		_predicate = "<" + _predicate + ">";
-
-		TripleWithObjType::ObjectType _object_type = TripleWithObjType::None;
-		if (_objectType == Type::Type_URI)
-		{
-			_object = "<" + _object + ">";
-			_object_type = TripleWithObjType::Entity;
+			cout << "Error log file: " << _error_log << endl;
+			cout.rdbuf(ofile.rdbuf());
 		}
 		else
-		{
-			if (_objectType == Type::Type_Literal)
-				_object = "\"" + _object + "\"";
-			else if (_objectType == Type::Type_CustomLanguage)
-				_object = "\"" + _object + "\"@" + _objectSubType;
-			else if (_objectType == Type::Type_String)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#string>";
-			else if (_objectType == Type::Type_Integer)
-			{
-				long long ll;
-				try
-				{
-					ll = stoll(_object);
-				}
-				catch (invalid_argument &e)
-				{
-					cout << "Triple " << _triple_num << " integer value invalid, _object = " << _object << endl;
-					continue;
-				}
-				catch (out_of_range &e)
-				{
-					cout << "Triple " << _triple_num << " integer out of range." << endl;
-					continue;
-				}
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
-			}
-			else if (_objectType == Type::Type_Decimal)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
-			else if (_objectType == Type::Type_Double)
-			{
-				double d;
-				try
-				{
-					d = stod(_object);
-				}
-				catch (invalid_argument &e)
-				{
-					cout << "Triple " << _triple_num << " double value invalid." << endl;
-					continue;
-				}
-				if (_object.length() == 3 && toupper(_object[0]) == 'N' && toupper(_object[1]) == 'A'
-					&& toupper(_object[2]) == 'N')
-				{
-					cout << "Triple " << _triple_num << " double value is NaN." << endl;
-					continue;
-				}
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
-			}
-			else if (_objectType == Type::Type_Boolean)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
-			else if (_objectType == Type::Type_CustomType)
-			{
-				// cout << "Triple " << _triple_num << " is custom type." << endl;
-				if (_objectSubType == "http://www.w3.org/2001/XMLSchema#long")
-				{
-					long long ll;
-					try
-					{
-						ll = stoll(_object);
-					}
-					catch (invalid_argument &e)
-					{
-						cout << "Triple " << _triple_num << " long value invalid, _object = " << _object << endl;
-						continue;
-					}
-					catch (out_of_range &e)
-					{
-						cout << "Triple " << _triple_num << " xsd:long out of range." << endl;
-						continue;
-					}
-				}
-				else if (_objectSubType == "http://www.w3.org/2001/XMLSchema#int")
-				{
-					long long ll;
-					try
-					{
-						ll = stoll(_object);
-					}
-					catch (invalid_argument &e)
-					{
-						cout << "Triple " << _triple_num << " int value invalid, _object = " << _object << endl;
-						continue;
-					}
-					catch (out_of_range &e)
-					{
-						cout << "Triple " << _triple_num << " xsd:int out of range." << endl;
-						continue;
-					}
-					if (ll < (long long)INT_MIN || ll > (long long)INT_MAX)
-					{
-						cout << "Triple " << _triple_num << " xsd:int out of range." << endl;
-						continue;
-					}
-				}
-				else if (_objectSubType == "http://www.w3.org/2001/XMLSchema#short")
-				{
-					long long ll;
-					try
-					{
-						ll = stoll(_object);
-					}
-					catch (invalid_argument &e)
-					{
-						cout << "Triple " << _triple_num << " short value invalid, _object = " << _object << endl;
-						continue;
-					}
-					catch (out_of_range &e)
-					{
-						cout << "Triple " << _triple_num << " xsd:short out of range." << endl;
-						continue;
-					}
-					if (ll < (long long)SHRT_MIN || ll > (long long)SHRT_MAX)
-					{
-						cout << "Triple " << _triple_num << " xsd:short out of range." << endl;
-						continue;
-					}
-				}
-				else if (_objectSubType == "http://www.w3.org/2001/XMLSchema#byte")
-				{
-					long long ll;
-					try
-					{
-						ll = stoll(_object);
-					}
-					catch (invalid_argument &e)
-					{
-						cout << "Triple " << _triple_num << " byte value invalid, _object = " << _object << endl;
-						continue;
-					}
-					catch (out_of_range &e)
-					{
-						cout << "Triple " << _triple_num << " xsd:byte out of range." << endl;
-						continue;
-					}
-					if (ll < (long long)SCHAR_MIN || ll > (long long)SCHAR_MAX)
-					{
-						cout << "Triple " << _triple_num << " xsd:byte out of range." << endl;
-						continue;
-					}
-				}
-				else if (_objectSubType == "http://www.w3.org/2001/XMLSchema#float")
-				{
-					float f;
-					try
-					{
-						f = stof(_object);
-					}
-					catch (invalid_argument &e)
-					{
-						cout << "Triple " << _triple_num << " float value invalid." << endl;
-						continue;
-					}
-					if (_object.length() == 3 && toupper(_object[0]) == 'N' && toupper(_object[1]) == 'A'
-						&& toupper(_object[2]) == 'N')
-					{
-						cout << "Triple " << _triple_num << " float value is NaN." << endl;
-						continue;
-					}
-				}
-				_object = "\"" + _object + "\"^^<" + _objectSubType + ">";
-			}
-			_object_type = TripleWithObjType::Literal;
-		}
-
-		_triple_array[_triple_num++] = TripleWithObjType(_subject, _predicate, _object, _object_type);
+			cout << "Error log file cannot be opened." << endl;
 	}
-	return "";
-}
 
-string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num,string _error_log)
-{
-	string _subject, _predicate, _object, _objectSubType;
-	Type::Type_ID _objectType;
-	ofstream ofile;             //定义输出文件
-	ofile.open(_error_log,ios::app);
-	if (!ofile)
-	{
-		cout << " file can not be opened." << endl;
-	}
-	cout << "_error_log:" << _error_log << endl;
+	int numLines = 0;
 	while (_triple_num < RDFParser::TRIPLE_NUM_PER_GROUP)
 	{
+		numLines++;
 		try
 		{
-			if (!this->_TurtleParser.parse(_subject, _predicate, _object, _objectType, _objectSubType))		break;
+			if (!this->_TurtleParser.parse(rawSubject, rawPredicate, rawObject, _objectType, _objectSubType))		break;
 		}
 		catch (const TurtleParser::Exception& _e)
 		{
-			cout <<"error:"<< _e.message << endl;
-			//cout << _subject << "||" << _predicate << "||" << _object << "||" << _e.message << endl;
-			
-			ofile << _subject << "||" << _predicate << "||" << _object << "||" << _e.message << endl;
+			errorMsg = _e.message;
+			cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+				<< " " << rawObject << "): " << errorMsg << endl;
 			this->_TurtleParser.discardLine();
 			continue;
 		}
 
-		_subject = "<" + _subject + ">";
-		_predicate = "<" + _predicate + ">";
+		_subject = "<" + rawSubject + ">";
+		_predicate = "<" + rawPredicate + ">";
 
 		TripleWithObjType::ObjectType _object_type = TripleWithObjType::None;
 		if (_objectType == Type::Type_URI)
 		{
-			_object = "<" + _object + ">";
+			_object = "<" + rawObject + ">";
 			_object_type = TripleWithObjType::Entity;
 		}
 		else
 		{
 			if (_objectType == Type::Type_Literal)
-				_object = "\"" + _object + "\"";
+				_object = "\"" + rawObject + "\"";
 			else if (_objectType == Type::Type_CustomLanguage)
-				_object = "\"" + _object + "\"@" + _objectSubType;
+				_object = "\"" + rawObject + "\"@" + _objectSubType;
 			else if (_objectType == Type::Type_String)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#string>";
+				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#string>";
 			else if (_objectType == Type::Type_Integer)
 			{
 				long long ll;
 				try
 				{
-					ll = stoll(_object);
+					ll = stoll(rawObject);
 				}
 				catch (invalid_argument& e)
 				{
-					cout << "Triple " << _triple_num << " integer value invalid, _object = " << _object << endl;
+					errorMsg = "Object integer value invalid";
+					cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+						<< " " << rawObject << "): " << errorMsg << endl;
 					continue;
 				}
 				catch (out_of_range& e)
 				{
-					cout << "Triple " << _triple_num << " integer out of range." << endl;
+					errorMsg = "Object integer out of range";
+					cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+						<< " " << rawObject << "): " << errorMsg << endl;
 					continue;
 				}
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
 			}
 			else if (_objectType == Type::Type_Decimal)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
+				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
 			else if (_objectType == Type::Type_Double)
 			{
 				double d;
 				try
 				{
-					d = stod(_object);
+					d = stod(rawObject);
 				}
 				catch (invalid_argument& e)
 				{
-					cout << "Triple " << _triple_num << " double value invalid." << endl;
+					errorMsg = "Object double value invalid";
+					cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+						<< " " << rawObject << "): " << errorMsg << endl;
 					continue;
 				}
-				if (_object.length() == 3 && toupper(_object[0]) == 'N' && toupper(_object[1]) == 'A'
-					&& toupper(_object[2]) == 'N')
+				if (rawObject.length() == 3 && toupper(rawObject[0]) == 'N' && toupper(rawObject[1]) == 'A'
+					&& toupper(rawObject[2]) == 'N')
 				{
-					cout << "Triple " << _triple_num << " double value is NaN." << endl;
+					errorMsg = "Object double value is NaN";
+					cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+						<< " " << rawObject << "): " << errorMsg << endl;
 					continue;
 				}
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
+				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
 			}
 			else if (_objectType == Type::Type_Boolean)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
 			else if (_objectType == Type::Type_CustomType)
 			{
-				// cout << "Triple " << _triple_num << " is custom type." << endl;
 				if (_objectSubType == "http://www.w3.org/2001/XMLSchema#long")
 				{
 					long long ll;
 					try
 					{
-						ll = stoll(_object);
+						ll = stoll(rawObject);
 					}
 					catch (invalid_argument& e)
 					{
-						cout << "Triple " << _triple_num << " long value invalid, _object = " << _object << endl;
+						errorMsg = "Object long value invalid";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
 					catch (out_of_range& e)
 					{
-						cout << "Triple " << _triple_num << " xsd:long out of range." << endl;
+						
+						errorMsg = "Object long value out of range";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
 				}
@@ -322,21 +179,27 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num,s
 					long long ll;
 					try
 					{
-						ll = stoll(_object);
+						ll = stoll(rawObject);
 					}
 					catch (invalid_argument& e)
 					{
-						cout << "Triple " << _triple_num << " int value invalid, _object = " << _object << endl;
+						errorMsg = "Object int value invalid";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
 					catch (out_of_range& e)
 					{
-						cout << "Triple " << _triple_num << " xsd:int out of range." << endl;
+						errorMsg = "Object int value out of range";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
 					if (ll < (long long)INT_MIN || ll >(long long)INT_MAX)
 					{
-						cout << "Triple " << _triple_num << " xsd:int out of range." << endl;
+						errorMsg = "Object int value out of range";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
 				}
@@ -345,21 +208,27 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num,s
 					long long ll;
 					try
 					{
-						ll = stoll(_object);
+						ll = stoll(rawObject);
 					}
 					catch (invalid_argument& e)
 					{
-						cout << "Triple " << _triple_num << " short value invalid, _object = " << _object << endl;
+						errorMsg = "Object short value invalid";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
 					catch (out_of_range& e)
 					{
-						cout << "Triple " << _triple_num << " xsd:short out of range." << endl;
+						errorMsg = "Object short value out of range";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
 					if (ll < (long long)SHRT_MIN || ll >(long long)SHRT_MAX)
 					{
-						cout << "Triple " << _triple_num << " xsd:short out of range." << endl;
+						errorMsg = "Object short value out of range";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
 				}
@@ -368,21 +237,27 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num,s
 					long long ll;
 					try
 					{
-						ll = stoll(_object);
+						ll = stoll(rawObject);
 					}
 					catch (invalid_argument& e)
 					{
-						cout << "Triple " << _triple_num << " byte value invalid, _object = " << _object << endl;
+						errorMsg = "Object byte value invalid";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
 					catch (out_of_range& e)
 					{
-						cout << "Triple " << _triple_num << " xsd:byte out of range." << endl;
+						errorMsg = "Object byte value out of range";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
 					if (ll < (long long)SCHAR_MIN || ll >(long long)SCHAR_MAX)
 					{
-						cout << "Triple " << _triple_num << " xsd:byte out of range." << endl;
+						errorMsg = "Object byte value out of range";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
 				}
@@ -391,21 +266,25 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num,s
 					float f;
 					try
 					{
-						f = stof(_object);
+						f = stof(rawObject);
 					}
 					catch (invalid_argument& e)
 					{
-						cout << "Triple " << _triple_num << " float value invalid." << endl;
+						errorMsg = "Object float value invalid";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
-					if (_object.length() == 3 && toupper(_object[0]) == 'N' && toupper(_object[1]) == 'A'
-						&& toupper(_object[2]) == 'N')
+					if (rawObject.length() == 3 && toupper(rawObject[0]) == 'N' && toupper(rawObject[1]) == 'A'
+						&& toupper(rawObject[2]) == 'N')
 					{
-						cout << "Triple " << _triple_num << " float value is NaN." << endl;
+						errorMsg = "Object float value is NaN";
+						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
+							<< " " << rawObject << "): " << errorMsg << endl;
 						continue;
 					}
 				}
-				_object = "\"" + _object + "\"^^<" + _objectSubType + ">";
+				_object = "\"" + rawObject + "\"^^<" + _objectSubType + ">";
 			}
 			_object_type = TripleWithObjType::Literal;
 		}
@@ -414,76 +293,38 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num,s
 
 	}
 	cout << "RDFParser parseFile done!" << endl;
-	ofile.close();
-	return "";
-}
-
-string RDFParser::parseFileSample(TripleWithObjType* _triple_array, int& _triple_num, int UPBOUND)
-{
-	string _subject, _predicate, _object, _objectSubType;
-	Type::Type_ID _objectType;
-
-	while (_triple_num < UPBOUND)
+	if (!_error_log.empty())
 	{
-		try
-		{
-			if (!this->_TurtleParser.parse(_subject, _predicate, _object, _objectType, _objectSubType))		break;
-		}
-		catch (const TurtleParser::Exception& _e) 
-		{
-			cout <<"args sample"<< _e.message << endl;
-			this->_TurtleParser.discardLine();
-			continue;
-		}
-
-		_subject = "<" + _subject + ">";
-		_predicate = "<" + _predicate + ">";
-
-		TripleWithObjType::ObjectType _object_type = TripleWithObjType::None;
-		if (_objectType == Type::Type_URI)
-		{
-			_object = "<" + _object + ">";
-			_object_type = TripleWithObjType::Entity;
-		}
-		else
-		{
-			if (_objectType == Type::Type_Literal)
-				_object = "\"" + _object + "\"";
-			else if (_objectType == Type::Type_CustomLanguage)
-				_object = "\"" + _object + "\"@" + _objectSubType;
-			else if (_objectType == Type::Type_String)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#string>";
-			else if (_objectType == Type::Type_Integer)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
-			else if (_objectType == Type::Type_Decimal)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
-			else if (_objectType == Type::Type_Double)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
-			else if (_objectType == Type::Type_Boolean)
-				_object = "\"" + _object + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
-			else if (_objectType == Type::Type_CustomType)
-				_object = "\"" + _object + "\"^^<" + _objectSubType + ">";
-			_object_type = TripleWithObjType::Literal;
-		}
-
-		_triple_array[_triple_num++] = TripleWithObjType(_subject, _predicate, _object, _object_type);
+		ofile.close();
+		cout.rdbuf(coutbuf);
 	}
 	return "";
 }
-/*	if you want to parse a string, you need to create a RDFParser object with no parameter, if the triple has prefix, you also need to provide it.
-*	the whole string must be processed in one time of invoking parseString, pay attention to the triples in the string won't exceed the limit of RDFParser::TRIPLE_NUM_PER_GROUP.
-*	for example:
-*		RDFParser _RDFParser;
-*		_RDFParser.parseString(prefix, ..);
-*		_RDFParser.parseString(triple string 1, ..);
-*		_RDFParser.parseString(triple string 2, ..);
-*
-*		triple string 1 & 2 will share the common prefix, if you don't want this, create a new RDFParser object.
-*		_RDFParser.parseString(prefix + "\n" + triple string 1 + "\n" + triple string 2, ..); is also acceptable.
+
+/** Parses a string containing RDF data. Based on parseFile.
+ * if you want to parse a string, you need to create a RDFParser object with 
+ * no parameter, if the triple has prefix, you also need to provide it.
+ * The whole string must be processed in one time of invoking parseString.
+ * For example:
+ * RDFParser _RDFParser;
+ * _RDFParser.parseString(prefix, ..);
+ * _RDFParser.parseString(triple string 1, ..);
+ * _RDFParser.parseString(triple string 2, ..);
+ * Note: triple string 1 & 2 will share the common prefix. If you don't 
+ * want this, create a new RDFParser object.
+ * _RDFParser.parseString(prefix + "\n" + triple string 1 + "\n" + \
+ * triple string 2, ..); is also acceptable.
+ * 
+ * @param _str the input string containing RDF data.
+ * @param _triple_array stores the parsed triples.
+ * @param _triple_num the number of successfully parsed triples.
+ */
+/*	
 */
 string RDFParser::parseString(string _str, TripleWithObjType* _triple_array, int& _triple_num)
 {
 	//clear in each time invoking
+	// The same thing: just a string stream instead of a file stream.
 	this->_sin.clear();
 	this->_sin << _str;
 	
