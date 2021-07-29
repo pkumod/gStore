@@ -1,3 +1,11 @@
+/*=============================================================================
+# Filename:	QueryParser.cpp
+# Author: Yue Pang
+# Mail: michelle.py@pku.edu.cn
+# Last Modified:	2021-07-28 10:30 CST
+# Description: implements the class for parsing SPARQL queries based on ANTLR4
+=============================================================================*/
+
 #include "QueryParser.h"
 
 using namespace std;
@@ -33,7 +41,6 @@ void QueryParser::SPARQLParse(const string &query)
 	parser.addErrorListener(&lstnr);
 
 	SPARQLParser::EntryContext *tree = parser.entry();
-	// printTree(tree, 0);
 	visitEntry(tree);
 }
 
@@ -103,8 +110,6 @@ void QueryParser::printQueryTree()
 */
 antlrcpp::Any QueryParser::visitQueryUnit(SPARQLParser::QueryUnitContext *ctx)
 {
-	// printNode(ctx, "queryUnit");
-
 	visit(ctx->query());
 
 	return antlrcpp::Any();
@@ -120,8 +125,6 @@ antlrcpp::Any QueryParser::visitQueryUnit(SPARQLParser::QueryUnitContext *ctx)
 */
 antlrcpp::Any QueryParser::visitQuery(SPARQLParser::QueryContext *ctx)
 {
-	// printNode(ctx, "query");
-
 	visit(ctx->prologue());
 
 	// Only one of the following children is valid
@@ -320,9 +323,6 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		conditionalAndexpression(0)->valueLogical(0)->relationalexpression()-> \
 		numericexpression(0)->additiveexpression()->multiplicativeexpression(0)-> \
 		unaryexpression(0)->primaryexpression()->builtInCall();
-	// if (!bicCtx)
-	// 	throw runtime_error("[ERROR]	Currently only support selecting variables, "
-	// 		"the aggregate function COUNT, and path-associated built-in calls");
 	if (bicCtx)
 	{	
 		antlr4::tree::ParseTree *curr = expCtx;
@@ -453,11 +453,17 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 	}
 }
 
+/**
+	Build a CompTree (i.e., a tree structure denoting the operand-operator
+	relations in an expression), in SELECT/FILTER/ORDER BY.
+
+	@param root pointer to the expression or var's context.
+	@param oper_pos the starting position to look at for the current node, 
+	used to branch out the right child node.
+	@param curr_node pointer to the current CompTree node.
+*/
 void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode *curr_node)
 {
-	// cout << root->getText() << endl;
-	// cout << "#children = " << root->children.size() << endl;
-
 	if (root->children.size() == 1)
 	{
 		if (((SPARQLParser::PrimaryexpressionContext *)root)->rDFLiteral())
@@ -521,9 +527,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 			buildCompTree(root->children[1], -1, curr_node);
 		else
 		{
-			int rightmostOprtPos = (root->children.size() - 1) / 2;
-			// if (oper_pos == -1)
-			// 	oper_pos = 1;
+			int rightmostOprtPos = root->children.size() - 2;
 			if (oper_pos < rightmostOprtPos)
 			{
 				int new_oper_pos = oper_pos + 2;

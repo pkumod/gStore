@@ -2,12 +2,11 @@
 # Filename: SPARQLquery.cpp
 # Author: Bookug Lobert 
 # Mail: 1181955272@qq.com
-# Last Modified: 2015-10-31 19:15
+# Last Modified: 2021-07-29 09:58 CST (Yue Pang)
 # Description: implement functions in SPARQLquery.h
 =============================================================================*/
 
 #include "SPARQLquery.h"
-#include "../Parser/DBparser.h"
 #include "../Database/Database.h"
 
 using namespace std;

@@ -49,7 +49,7 @@ EXEFLAG = -O2 -pthread -std=c++11
 
 #add -lreadline [-ltermcap] if using readline or objs contain readline
 # library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
-library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -latomic
+library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
 #used for parallelsort
 openmp = -fopenmp -march=native
 # library = -ltermcap -lreadline -L./lib -lantlr -lgcov
@@ -82,7 +82,7 @@ kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarray
 
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o \
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
-			$(objdir)IPBlackList.o $(objdir)SpinLock.o $(objdir)GraphLock.o
+			$(objdir)IPBlackList.o
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o \
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
@@ -94,7 +94,7 @@ vstreeobj = $(objdir)VSTree.o $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdi
 
 stringindexobj = $(objdir)StringIndex.o
 
-parserobj = $(objdir)RDFParser.o $(objdir)SPARQLParser.o $(objdir)DBparser.o \
+parserobj = $(objdir)RDFParser.o $(objdir)SPARQLParser.o \
 			$(objdir)SPARQLLexer.o $(objdir)TurtleParser.o $(objdir)QueryParser.o
 
 serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)Socket.o
@@ -373,7 +373,7 @@ $(objdir)IVArray.o: KVstore/IVArray/IVArray.cpp KVstore/IVArray/IVArray.h $(objd
 $(objdir)IVBlockManager.o: KVstore/IVArray/IVBlockManager.cpp KVstore/IVArray/IVBlockManager.h 
 	$(CC) $(CFLAGS) KVstore/IVArray/IVBlockManager.cpp -o $(objdir)IVBlockManager.o
 
-$(objdir)IVEntry.o: KVstore/IVArray/IVEntry.cpp KVstore/IVArray/IVEntry.h $(objdir)Version.o $(objdir)GraphLock.o
+$(objdir)IVEntry.o: KVstore/IVArray/IVEntry.cpp KVstore/IVArray/IVEntry.h $(objdir)Version.o
 	$(CC) $(CFLAGS) KVstore/IVArray/IVEntry.cpp -o $(objdir)IVEntry.o
 
 #objects in ivarray/ end
@@ -389,7 +389,7 @@ $(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h KVstore/Tree.h
 $(objdir)Database.o: Database/Database.cpp Database/Database.h \
 	$(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
 	$(objdir)BasicQuery.o $(objdir)Triple.o $(objdir)SigEntry.o \
-	$(objdir)KVstore.o $(objdir)VSTree.o $(objdir)DBparser.o \
+	$(objdir)KVstore.o $(objdir)VSTree.o \
 	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o $(objdir)GeneralEvaluation.o $(objdir)StringIndex.o $(objdir)Transaction.o
 	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o $(openmp)
 
@@ -489,15 +489,6 @@ $(objdir)EvalMultitypeValue.o: Util/EvalMultitypeValue.cpp Util/EvalMultitypeVal
 $(objdir)Version.o: Util/Version.cpp Util/Version.h
 	$(CC) $(CFLAGS) Util/Version.cpp -o $(objdir)Version.o $(openmp)
 
-$(objdir)SpinLock.o: Util/SpinLock.h Util/SpinLock.cpp
-	$(CC) $(CFLAGS) Util/SpinLock.cpp -o $(objdir)SpinLock.o $(openmp)
-
-$(objdir)SpinRWLock.o: Util/SpinRWLock.h Util/SpinRWLock.cpp
-	$(CC) $(CFLAGS) Util/SpinRWLock.cpp -o $(objdir)SpinRWLock.o $(openmp)
-
-$(objdir)GraphLock.o: Util/GraphLock.h Util/GraphLock.cpp
-	$(CC) $(CFLAGS) Util/GraphLock.cpp -o $(objdir)GraphLock.o $(openmp)
-
 $(objdir)Transaction.o: Util/Transaction.cpp Util/Transaction.h $(objdir)Util.o $(objdir)IDTriple.o
 	$(CC) $(CFLAGS) Util/Transaction.cpp $(inc) -o $(objdir)Transaction.o $(openmp)
 
@@ -541,17 +532,8 @@ $(objdir)StringIndex.o: StringIndex/StringIndex.cpp StringIndex/StringIndex.h $(
 
 #objects in Parser/ begin
 
-$(objdir)DBparser.o: Parser/DBparser.cpp Parser/DBparser.h $(objdir)SPARQLParser.o $(objdir)SPARQLLexer.o $(objdir)Triple.o
-	$(CC) $(CFLAGS) Parser/DBparser.cpp $(inc) -o $(objdir)DBparser.o $(openmp)
-
-# $(objdir)SparqlParser.o: Parser/SparqlParser.c Parser/SparqlParser.h
-# 	gcc  $(CFLAGS) Parser/SparqlParser.c $(inc) -o $(objdir)SparqlParser.o $(openmp)
-
 $(objdir)SPARQLParser.o: Parser/SPARQL/SPARQLParser.cpp Parser/SPARQL/SPARQLParser.h
 	$(CC)  $(CFLAGS) Parser/SPARQL/SPARQLParser.cpp $(inc) -o $(objdir)SPARQLParser.o $(openmp)
-
-# $(objdir)SparqlLexer.o: Parser/SparqlLexer.c Parser/SparqlLexer.h
-# 	gcc  $(CFLAGS) Parser/SparqlLexer.c $(inc) -o $(objdir)SparqlLexer.o $(openmp)
 
 $(objdir)SPARQLLexer.o: Parser/SPARQL/SPARQLLexer.cpp Parser/SPARQL/SPARQLLexer.h
 	$(CC)  $(CFLAGS) Parser/SPARQL/SPARQLLexer.cpp $(inc) -o $(objdir)SPARQLLexer.o $(openmp)
@@ -603,14 +585,6 @@ pre:
 	cd tools; tar -xzvf rapidjson.tar.gz;
 	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
 	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
-
-# DEBUG: below not works properly
-#Parser/SparqlLexer.c Parser/SparqlLexer.h Parser/SparqlParser.h Parser/SparqlParser.c: unpack_sparql
-#.INTERMEDIATE: unpack_sparql
-#unpack_sparql: tools/sparql.tar.gz
-##NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
-#rm -rf Parser/Sparql*
-#cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
 
 $(api_cpp): $(objdir)Socket.o
 	$(MAKE) -C api/socket/cpp/src 
