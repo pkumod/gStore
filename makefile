@@ -82,7 +82,7 @@ kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarray
 
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o \
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
-			$(objdir)IPBlackList.o
+			$(objdir)IPBlackList.o $(objdir)SpinLock.o $(objdir)GraphLock.o
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o \
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
@@ -373,7 +373,7 @@ $(objdir)IVArray.o: KVstore/IVArray/IVArray.cpp KVstore/IVArray/IVArray.h $(objd
 $(objdir)IVBlockManager.o: KVstore/IVArray/IVBlockManager.cpp KVstore/IVArray/IVBlockManager.h 
 	$(CC) $(CFLAGS) KVstore/IVArray/IVBlockManager.cpp -o $(objdir)IVBlockManager.o
 
-$(objdir)IVEntry.o: KVstore/IVArray/IVEntry.cpp KVstore/IVArray/IVEntry.h $(objdir)Version.o
+$(objdir)IVEntry.o: KVstore/IVArray/IVEntry.cpp KVstore/IVArray/IVEntry.h $(objdir)Version.o $(objdir)GraphLock.o
 	$(CC) $(CFLAGS) KVstore/IVArray/IVEntry.cpp -o $(objdir)IVEntry.o
 
 #objects in ivarray/ end
@@ -488,6 +488,12 @@ $(objdir)EvalMultitypeValue.o: Util/EvalMultitypeValue.cpp Util/EvalMultitypeVal
 
 $(objdir)Version.o: Util/Version.cpp Util/Version.h
 	$(CC) $(CFLAGS) Util/Version.cpp -o $(objdir)Version.o $(openmp)
+
+$(objdir)SpinLock.o: Util/SpinLock.h Util/SpinLock.cpp
+	$(CC) $(CFLAGS) Util/SpinLock.cpp -o $(objdir)SpinLock.o $(openmp)
+
+$(objdir)GraphLock.o: Util/GraphLock.h Util/GraphLock.cpp
+	$(CC) $(CFLAGS) Util/GraphLock.cpp -o $(objdir)GraphLock.o $(openmp)
 
 $(objdir)Transaction.o: Util/Transaction.cpp Util/Transaction.h $(objdir)Util.o $(objdir)IDTriple.o
 	$(CC) $(CFLAGS) Util/Transaction.cpp $(inc) -o $(objdir)Transaction.o $(openmp)
