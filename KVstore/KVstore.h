@@ -94,6 +94,7 @@ public:
 	unsigned updateInsert_p2values(TYPE_PREDICATE_ID _preid, const std::vector<unsigned>& _sidoidlist);
 	unsigned updateRemove_p2values(TYPE_PREDICATE_ID _preid, const std::vector<unsigned>& _sidoidlist);
 	
+	//subfunction batch insert and remove
 	unsigned Insert_s2values(const std::vector<unsigned>& _pidoidlist, unsigned* _tmp,  unsigned long _len, unsigned*& values, unsigned long& values_len) const;
 	unsigned Remove_s2values(const std::vector<unsigned>& _pidoidlist, unsigned* _tmp,  unsigned long _len, unsigned*& values, unsigned long& values_len) const;
 
@@ -102,22 +103,15 @@ public:
 
 	unsigned Insert_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tmp,  unsigned long _len, unsigned*& values, unsigned long& values_len) const;
 	unsigned Remove_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tmp,  unsigned long _len, unsigned*& values, unsigned long& values_len) const;
+	
 	//===============================================================================
-	//for MVCC
-	//merge versions when query 
-	void Insert_s2values(VDataSet &addset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const;
-	void Remove_s2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const;
 	
-	void Insert_o2values(VDataSet &addset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const;
-	void Remove_o2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const;
-	
-	void Insert_p2values(VDataSet &addset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const;
-	void Remove_p2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const;
-	
-	
-	
-	//MVCC update
-	//batch update 
+	/*
+	================
+	|MVCC Functions|
+	================
+	*/
+	//batch update(no implementation) 
 	bool updateTupleslist_insert(vector<IDTriple> &Triples, shared_ptr<Transaction> txn);
 	bool updateTupleslist_remove(vector<IDTriple> &Triples, shared_ptr<Transaction> txn);
 	
@@ -129,44 +123,22 @@ public:
 	bool updateInsert_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
 	bool updateRemove_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
 
-	//MVCC
-	//Growing
+	//Growing Locking
 	//called before update operation
-	bool getExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
-	bool getExclusiveLocks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENTITY_LITERAL_ID>& oids, vector<TYPE_PREDICATE_ID>& pids, shared_ptr<Transaction> txn);
-	bool getExclusiveLatches(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
-	bool getExclusiveLatches(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENTITY_LITERAL_ID>& oids, vector<TYPE_PREDICATE_ID>& pids, shared_ptr<Transaction> txn);
-	bool releaseExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
-	
-	//Shrinking(commit)
-	//write set: releaseExclusiveLocks->releaseAllLatches(both exclusive latches and shared latches)
-	bool releaseAllLatches(shared_ptr<Transaction> txn) const;
+	bool GetExclusiveLock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
+	bool GetExclusiveLocks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENTITY_LITERAL_ID>& oids, vector<TYPE_PREDICATE_ID>& pids, shared_ptr<Transaction> txn);
 
-	bool releaseAllExclusiveLocks(shared_ptr<Transaction> txn) const;
-	
-	//individual lock release 
-	//bool releaseExclusiveLock(TYPE_ENTITY_LITERAL_ID id, Transaction::IDType type, shared_ptr<Transaction> txn);
-	
-	//rollback(abort)
-	//write set: releaseExclusiveLocks->updateTupleslist_invalid(releaseAllExclusiveLatches)
-	//read set(if any): releaseAllSharedLatches
-	bool transaction_invalid(shared_ptr<Transaction> txn);
-	
-	//not implement
-	bool releaseAllSharedLatches(shared_ptr<Transaction> txn) const;
-	bool updateInvalid_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, shared_ptr<Transaction> txn);
-	bool updateInvalid_o2values(TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
-	bool updateInvalid_p2values(TYPE_ENTITY_LITERAL_ID _pre_id, shared_ptr<Transaction> txn);
+	//Shrinking(commit)
+	bool ReleaseAllLocks(shared_ptr<Transaction> txn) const;
+
+	//Shrinking(Abort)
+	bool ReleaseExclusiveLock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
+	bool TransactionInvalid(shared_ptr<Transaction> txn);
 	
 	//garbage clean
 	//No Transaction should be running!
-	void IVArray_Vacuum(vector<unsigned>& sub_ids , vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned>& pre_ids) ;
-	void s2values_Vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn) ;
-	void o2values_Vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn) ;
-	void o2values_literal_Vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<Transaction> txn) ;
-	void p2values_Vacuum(vector<unsigned>& pre_ids,shared_ptr<Transaction> txn) ;
-	void dictionary_Vacuum() ;
-	
+	void IVArrayVacuum(vector<unsigned>& sub_ids , vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned>& pre_ids) ;
+
 	//===============================================================================
 
 	//for entity2id 
@@ -348,21 +320,36 @@ private:
 	static unsigned binarySearch(unsigned key, const unsigned* _list, unsigned _list_len, int step = 1);
 	static bool isEntity(TYPE_ENTITY_LITERAL_ID id);
 	
-	//mvcc
-	//read
+	/*
+	===================
+	|MVCC SubFunctions|
+	===================
+	*/
+
+	//read (overload getValueByKey here)
 	bool getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned long & _vlen, VDataSet& AddSet, VDataSet& DelSet, shared_ptr<Transaction> txn, bool &latched,  bool FirstRead = false) const;
+
 	//write
-	bool Insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_ptr<Transaction> txn);
-	bool Remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_ptr<Transaction> txn);
-	int getExclusiveLock(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read) const;
-	//commit or abort
-	bool Invalid_values(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read);
-	bool releaseExclusiveLock(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const;
-	bool releaseExclusiveLatch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const;
-	bool releaseSharedLatch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const;
-	//GC
-	bool getDirtyKeys(IVArray* _array, vector<unsigned>& lists);
-	bool cleanDirtyKey(IVArray* _array, unsigned _key) ;
+	bool insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_ptr<Transaction> txn);
+	bool remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_ptr<Transaction> txn);
+
+	//abort
+	bool invalid_values(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read);
+
+	//locks and latches operation
+	bool try_exclusive_lock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
+	bool try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENTITY_LITERAL_ID>& oids, vector<TYPE_PREDICATE_ID>& pids, shared_ptr<Transaction> txn);
+
+	int get_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read) const;
+	bool release_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const;
+	bool release_shared_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const;
+
+	//Garbage Collection
+	bool clean_dirty_key(IVArray* _array, unsigned _key) ;
+	void s2values_vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn) ;
+	void o2values_vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn) ;
+	void o2values_literal_vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<Transaction> txn) ;
+	void p2values_vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn) ;
 };
 
 #endif //_KVSTORE_KVSTORE_H

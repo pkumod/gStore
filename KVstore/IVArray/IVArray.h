@@ -79,19 +79,17 @@ public:
 	bool remove(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn);
 	bool insert(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn);
 	
-	bool AddNewVersion(unsigned _key, VData value, shared_ptr<Transaction> txn);
 	//lock(growing)
-	int TryExclusiveLock(unsigned _key, shared_ptr<Transaction> txn, bool has_read = false);
+	int TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_read = false);
 	//unlock(commit)
 	bool ReleaseLatch(unsigned _key, shared_ptr<Transaction> txn, IVEntry::LatchType type);
 	
 	//abort
 	//clean invalid version(release exclusive latch along) and release exclusive lock
-	bool rollback(unsigned _key, shared_ptr<Transaction> txn, bool has_read );
+	bool Rollback(unsigned _key, shared_ptr<Transaction> txn, bool has_read );
 	//unlock(abort)
 	bool ReleaseExclusiveLock(unsigned _key, shared_ptr<Transaction> txn);
 
 	//garbage clean
-	bool GetDirtyKeys(vector<unsigned> &lists);
 	bool CleanDirtyKey(unsigned _key) ;
 };

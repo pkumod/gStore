@@ -3587,7 +3587,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	}
 
 	
-	if(txn != nullptr && (this->kvstore)->getExclusiveLocks(_sub_id, _pre_id, _obj_id, txn) == false)
+	if(txn != nullptr && (this->kvstore)->GetExclusiveLock(_sub_id, _pre_id, _obj_id, txn) == false)
 	{
 		//conflict
 		//abort
@@ -3643,7 +3643,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		else{
 			cerr << "insert failed" << endl;
 			txn->SetState(TransactionState::ABORTED);
-			(this->kvstore)->releaseExclusiveLocks(_sub_id, _pre_id, _obj_id, txn);
+			(this->kvstore)->ReleaseExclusiveLock(_sub_id, _pre_id, _obj_id, txn);
 			return false;
 		}
 	}
@@ -3694,7 +3694,7 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	{
 		return false;
 	}
-	if(txn != nullptr && (this->kvstore)->getExclusiveLocks(_sub_id, _pre_id, _obj_id, txn) == false)
+	if(txn != nullptr && (this->kvstore)->GetExclusiveLock(_sub_id, _pre_id, _obj_id, txn) == false)
 	{
 		//conflict
 		//abort
@@ -3730,7 +3730,7 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		else{
 			cout << " updateTupleslist_remove failed ..............................................." << endl;
 			txn->SetState(TransactionState::ABORTED);
-			(this->kvstore)->releaseExclusiveLocks(_sub_id, _pre_id, _obj_id, txn);
+			(this->kvstore)->ReleaseExclusiveLock(_sub_id, _pre_id, _obj_id, txn);
 			return false;
 		}
 	}
@@ -4955,6 +4955,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	return valid_num;
 }
 
+//WARNING: TRANSACTIONAL batch insert is not completed yet!
 unsigned 
 Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
 {
@@ -5041,7 +5042,7 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 		SLATCHES.insert(SLATCHES.begin(), sids.begin(), sids.end());
 		OLATCHES.insert(OLATCHES.begin(), oids.begin(), oids.end());
 		PLATCHES.insert(PLATCHES.begin(), pids.begin(), pids.end());
-		bool ret = (this->kvstore)->getExclusiveLatches(SLATCHES, OLATCHES, PLATCHES, txn);
+		bool ret = (this->kvstore)->GetExclusiveLocks(SLATCHES, OLATCHES, PLATCHES, txn);
 		if(ret == false){
 			return -1;
 		}
@@ -5075,6 +5076,7 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 	return update_num_s;
 }
 
+//WARNING: TRANSACTIONAL batch remove is not completed yet!
 unsigned 
 Database::batch_remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
 {
@@ -5943,7 +5945,7 @@ void
 Database::version_clean(vector<unsigned> &sub_ids ,vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned> &pre_ids)
 {
 	//vector<unsigned> sub_ids , obj_ids, obj_literal_ids, pre_ids;
-	(this->kvstore)->IVArray_Vacuum(sub_ids, obj_ids, obj_literal_ids, pre_ids);
+	(this->kvstore)->IVArrayVacuum(sub_ids, obj_ids, obj_literal_ids, pre_ids);
 	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
 	//update
 	int sub_degree, obj_degree, pre_degree;
@@ -6045,7 +6047,7 @@ Database::version_clean(vector<unsigned> &sub_ids ,vector<unsigned>& obj_ids, ve
 void 
 Database::transaction_rollback(shared_ptr<Transaction> txn)
 {
-	if((this->kvstore)->transaction_invalid(txn) == false)
+	if((this->kvstore)->TransactionInvalid(txn) == false)
 	{
 		cerr << "WARNING: transaction rollback exception! " << endl;
 		cerr << "Please REBOOT service!" << endl;
@@ -6056,7 +6058,7 @@ void
 Database::transaction_commit(shared_ptr<Transaction> txn)
 {
 	//cout << "transaction_commit ........" << endl;
-	if((this->kvstore)->releaseAllLatches(txn) == false)
+	if((this->kvstore)->ReleaseAllLocks(txn) == false)
 	{
 		cerr << "WARNING: not all latches get unlatched! " << endl;
 		cerr << "Please REBOOT service!" << endl;
