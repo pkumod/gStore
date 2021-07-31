@@ -624,12 +624,6 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 }
 
 bool 
-IVArray::AddNewVersion(unsigned _key, VData value, shared_ptr<Transaction> txn)
-{
-	
-}
-
-bool 
 IVArray::remove(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn)
 {
 	ArraySharedLock();
@@ -677,7 +671,7 @@ IVArray::insert(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn)
 
 
 int 
-IVArray::TryExclusiveLock(unsigned _key, shared_ptr<Transaction> txn, bool has_read )
+IVArray::TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_read )
 {
 	ArraySharedLock();
 	if(_key >= CurEntryNum) //expand
@@ -753,7 +747,7 @@ IVArray::ReleaseLatch(unsigned _key, shared_ptr<Transaction> txn, IVEntry::Latch
 }
 
 bool
-IVArray::rollback(unsigned _key, shared_ptr<Transaction> txn, bool has_read)
+IVArray::Rollback(unsigned _key, shared_ptr<Transaction> txn, bool has_read)
 {
 	ArraySharedLock();
 	if (_key >= CurEntryNum)
@@ -770,18 +764,6 @@ IVArray::rollback(unsigned _key, shared_ptr<Transaction> txn, bool has_read)
 }
 
 //gc
-bool
-IVArray::GetDirtyKeys(vector<unsigned> &lists)
-{
-	ArraySharedLock();
-	for(int i = 0; i < CurEntryNum; i++)
-	{
-		if(array[i].isVersioned())
-			lists.push_back(i);
-	}
-	ArrayUnlock();
-	return true;
-}
 
 bool
 IVArray::CleanDirtyKey(unsigned _key)

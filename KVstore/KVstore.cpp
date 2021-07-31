@@ -3334,7 +3334,6 @@ KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _pre
 
 		unsigned * _values = nullptr;
 		unsigned long _values_len;
-		//cout << ".........._tmp:                                                 " <<  _tmp << endl;
 		if(add_pidoidlist.size() != 0){
 			_len = _len / sizeof(unsigned);
 			this->Insert_s2values(add_pidoidlist, _tmp, _len, _values, _values_len);
@@ -4112,14 +4111,36 @@ KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, un
 			return false;
 		}
 		
+		vector<unsigned> add_sidoidlist, del_sidoidlist;
+		for(auto so: addset)
+		{
+			add_sidoidlist.push_back(so.first);
+			add_sidoidlist.push_back(so.second);
+		}
+
+		for(auto so: delset)
+		{
+			del_sidoidlist.push_back(so.first);
+			del_sidoidlist.push_back(so.second);
+		}
+		
 		unsigned * _values = nullptr;
 		unsigned long _values_len;
-		this->Insert_p2values(addset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
-		this->Remove_p2values(delset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		//cout << "_len:                                                 " <<  _len << endl;
+		//cerr << "addset.size():           " << addset.size() << "   delset.size()                      " << delset.size() << endl;
+		if(add_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_p2values(add_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cout << "_len:                                                 " <<  _len << endl;
+		if(del_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_p2values(del_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
 
 		if(_len == 0){
 			_subidlist = NULL;
@@ -4193,14 +4214,36 @@ KVstore::getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, un
 			return false;
 		}
 		
+		vector<unsigned> add_sidoidlist, del_sidoidlist;
+		for(auto so: addset)
+		{
+			add_sidoidlist.push_back(so.first);
+			add_sidoidlist.push_back(so.second);
+		}
+
+		for(auto so: delset)
+		{
+			del_sidoidlist.push_back(so.first);
+			del_sidoidlist.push_back(so.second);
+		}
+		
 		unsigned * _values = nullptr;
 		unsigned long _values_len;
-		this->Insert_p2values(addset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
-		this->Remove_p2values(delset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		//cout << "_len:                                                 " <<  _len << endl;
+		//cerr << "addset.size():           " << addset.size() << "   delset.size()                      " << delset.size() << endl;
+		if(add_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_p2values(add_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cout << "_len:                                                 " <<  _len << endl;
+		if(del_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_p2values(del_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
 
 		if(_len == 0){
 			_objidlist = NULL;
@@ -4285,14 +4328,36 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 			return false;
 		}
 		
+		vector<unsigned> add_sidoidlist, del_sidoidlist;
+		for(auto so: addset)
+		{
+			add_sidoidlist.push_back(so.first);
+			add_sidoidlist.push_back(so.second);
+		}
+
+		for(auto so: delset)
+		{
+			del_sidoidlist.push_back(so.first);
+			del_sidoidlist.push_back(so.second);
+		}
+		
 		unsigned * _values = nullptr;
 		unsigned long _values_len;
-		this->Insert_p2values(addset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
-		this->Remove_p2values(delset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		//cout << "_len:                                                 " <<  _len << endl;
+		//cerr << "addset.size():           " << addset.size() << "   delset.size()                      " << delset.size() << endl;
+		if(add_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_p2values(add_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cout << "_len:                                                 " <<  _len << endl;
+		if(del_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_p2values(del_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
 		//bool ret = true;
 		if(_len == 0) {
 			_subid_objidlist = NULL;
@@ -4435,14 +4500,38 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 		bool latched = false; 
 		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched,  false);		
 		
+		vector<unsigned> add_pidoidlist, del_pidoidlist;
+		for(auto po: addset)
+		{
+			add_pidoidlist.push_back(po.first);
+			add_pidoidlist.push_back(po.second);
+		}
+
+		for(auto po: delset)
+		{
+			del_pidoidlist.push_back(po.first);
+			del_pidoidlist.push_back(po.second);
+		}
+
 		unsigned * _values = nullptr;
 		unsigned long _values_len;
-		this->Insert_s2values(addset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
-		this->Remove_s2values(delset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		if(add_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_s2values(add_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		if(del_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_s2values(del_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		if(_len == 0) {
+			_preidlist = NULL;
+			_list_len = 0;
+			return false;
+		}
 		
 		_list_len = len;
 		unsigned _result = 0;
@@ -4998,599 +5087,19 @@ KVstore::getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned lon
 	return _array->search(_key, _val, _vlen, AddSet, DelSet, txn, FirstRead);
 }
 
-void 
-KVstore::Insert_s2values(VDataSet &addset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len)const
-{
-	bool first_insert = true;
-	//cout << "KVstore::Insert_s2values size: " << addset.size() << endl;
-	//if(_tmp == nullptr)
-	//	cout << "_tmp: ..............." << _len << endl;
-	for(auto it: addset)
-	{
-		unsigned _pre_id = it.first;
-		unsigned _obj_id = it.second;
-		bool _is_entity = Util::is_entity_ele(_obj_id);
-		
-		if(!first_insert)
-		{
-			if(_tmp != nullptr) delete[] _tmp;
-			_tmp = _values;
-			_len = _values_len * sizeof(unsigned);
-		}
-		
-		if (_tmp == nullptr) 
-		{
-			//unsigned _values[6];
-			_values = new unsigned[6];
-			_values[0] = 1;
-			_values[1] = 1;
-			_values[2] = _is_entity ? 1 : 0;
-			_values[3] = _pre_id;
-			_values[4] = 5;
-			_values[5] = _obj_id;
-			//NOTICE: not use array in stack here, otherwise it will be freed, and data in B+Tree, too
-			_values_len = 6;
-		}
-
-		//subID exists
-		else 
-		{
-			unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 3, _tmp[1], 2);
-
-			//preID doesn't exist
-			if (_position == INVALID) 
-				//if (_position == -1) 
-			{
-				_values_len = _len / sizeof(unsigned) + 3;
-				_values = new unsigned[_values_len];
-				_values[0] = _tmp[0] + 1;
-				_values[1] = _tmp[1] + 1;
-				_values[2] = _tmp[2] + (_is_entity ? 1 : 0);
-				unsigned i, j;
-				for (i = 0, j = 3; i < _tmp[1] && _tmp[3 + 2 * i] < _pre_id; i++, j += 2) {
-					_values[j] = _tmp[3 + 2 * i];
-					_values[j + 1] = _tmp[4 + 2 * i] + 2;
-				}
-				_values[j] = _pre_id;
-				unsigned _offset_old;
-				if (i == _tmp[1]) {
-					_offset_old = 3 + 2 * _tmp[1] + _tmp[0];
-				}
-				else {
-					_offset_old = _tmp[4 + 2 * i];
-				}
-				_values[j + 1] = _offset_old + 2;
-				j += 2;
-				for (; i < _tmp[1]; i++, j += 2) {
-					_values[j] = _tmp[3 + 2 * i];
-					_values[j + 1] = _tmp[4 + 2 * i] + 3;
-				}
-				for (i = 3 + 2 * _tmp[1]; i < 3 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					if (i == _offset_old) {
-						_values[j] = _obj_id;
-						j++;
-					}
-					_values[j] = _tmp[i];
-				}
-				if (i == _offset_old) {
-					_values[j] = _obj_id;
-				}
-			}
-
-			//preID exists
-			else 
-			{
-				//cout << "preID exists......................................." << _len <<  endl;
-				_values_len = _len / sizeof(unsigned) + 1;
-				_values = new unsigned[_values_len];
-				memcpy(_values, _tmp, sizeof(unsigned) * _tmp[4 + 2 * _position]);
-				_values[0]++;
-				if (_is_entity) {
-					_values[2]++;
-				}
-				for (unsigned i = _position + 1; i < _tmp[1]; i++) {
-					_values[4 + 2 * i]++;
-				}
-				unsigned i, j;
-				unsigned right;
-				if (_position == _tmp[1] - 1) {
-					right = 3 + 2 * _tmp[1] + _tmp[0];
-				}
-				else {
-					right = _tmp[6 + 2 * _position];
-				}
-				for (i = _tmp[4 + 2 * _position], j = _tmp[4 + 2 * _position]; i < right && _tmp[i] < _obj_id; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-				_values[j] = _obj_id;
-				j++;
-				for (; i < 3 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-			}
-			//delete[] _values;
-		}
-		
-		if(first_insert) first_insert = false;
-	}
-	if(!first_insert)
-	{
-		if(_tmp != nullptr) delete[] _tmp;
-		_tmp = nullptr;
-		_values_len = _values_len * sizeof(unsigned);
-	}
-	else
-	{
-		_values = _tmp;
-		_values_len = _len;
-	}
-}
-
-void 
-KVstore::Remove_s2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len)const
-{
-	bool first_remove = true;
-	for(auto it: delset)
-	{
-		if(!first_remove)
-		{
-			if(_tmp != nullptr) delete[] _tmp;
-			_tmp = _values;
-			_len = _values_len * sizeof(unsigned);
-		
-		}
-		if (_tmp[0] == 1) 
-		{
-			_values = nullptr;
-			_values_len = 0;
-			if(first_remove) first_remove = false;
-			break;
-		}
-		//subID still exists after removal
-		else 
-		{
-			unsigned _pre_id = it.first;
-			unsigned _obj_id = it.second;
-			bool _is_entity = Util::is_entity_ele(_obj_id);
-			
-			unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 3, _tmp[1], 2);
-			if (_position == INVALID) {
-				cerr << "merge error!" << endl;
-				continue;
-			}
-			unsigned _oidlen_sp;
-			//DEBUG: if _tmp[1] -1 < 0??
-			if (_position == _tmp[1] - 1) 
-			{
-				_oidlen_sp = 3 + 2 * _tmp[1] + _tmp[0] - _tmp[4 + 2 * _position];
-			}
-			else 
-			{
-				_oidlen_sp = _tmp[6 + 2 * _position] - _tmp[4 + 2 * _position];
-			}
-
-			//preID doesn't exist after removal
-			if (_oidlen_sp == 1) {
-				_values_len = _len / sizeof(unsigned) - 3;
-				_values = new unsigned[_values_len];
-				memcpy(_values, _tmp, sizeof(unsigned) * (3 + 2 * _position));
-				_values[0]--;
-				_values[1]--;
-				if (_is_entity) {
-					_values[2]--;
-				}
-				for (unsigned i = 0; i < _position; i++) {
-					_values[4 + 2 * i] -= 2;
-				}
-				unsigned i, j;
-				for (i = 5 + 2 * _position, j = 3 + 2 * _position; i < 3 + 2 * _tmp[1]; i += 2, j += 2) {
-					_values[j] = _tmp[i];
-					_values[j + 1] = _tmp[i + 1] - 3;
-				}
-				for (; i < 3 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					if (i == _tmp[4 + 2 * _position]) {
-						j--;
-						continue;
-					}
-					_values[j] = _tmp[i];
-				}
-			}
-
-			//preID still exists after removal
-			else {
-				_values_len = _len / sizeof(unsigned) - 1;
-				_values = new unsigned[_values_len];
-				memcpy(_values, _tmp, sizeof(unsigned) * _tmp[4 + 2 * _position]);
-				_values[0]--;
-				if (_is_entity) {
-					_values[2]--;
-				}
-				for (unsigned i = _position + 1; i < _tmp[1]; i++) {
-					_values[4 + 2 * i]--;
-				}
-				unsigned i, j;
-				for (i = _tmp[4 + 2 * _position], j = _tmp[4 + 2 * _position];
-					i < 3 + 2 * _tmp[1] + _tmp[0] && _tmp[i] < _obj_id; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-				i++;
-				for (; i < 3 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-			}
-			if(first_remove) first_remove = false;
-		}
-	}
-	if(!first_remove)
-	{
-		if(_tmp != nullptr) delete[] _tmp;
-		_tmp = nullptr;
-		_values_len = _values_len * sizeof(unsigned);
-	}
-	else
-	{
-		if(_values == nullptr){
-			_values_len = 0;
-			return;
-		}
-		_values = _tmp;
-		_values_len = _len;
-	}
-}
-
-void 
-KVstore::Insert_o2values(VDataSet &addset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len)const
-{
-	bool first_insert = true;
-	for(auto it: addset)
-	{
-		unsigned _pre_id = it.first;
-		unsigned _sub_id = it.second;
-		
-		if(!first_insert)
-		{
-			if(_tmp != nullptr) delete[] _tmp;
-			_tmp = _values;
-			_len = _values_len * sizeof(unsigned);
-		}
-		
-		if (_tmp == nullptr) {
-			//unsigned _values[5];
-			//cout << "new _values" << endl;
-			_values = new unsigned[5];
-			_values[0] = 1;
-			_values[1] = 1;
-			_values[2] = _pre_id;
-			_values[3] = 4;
-			_values[4] = _sub_id;
-			_values_len = 5 ;
-		}
-
-		//objID exists
-		else {
-			
-			unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 2, _tmp[1], 2);
-
-			//preID doesn't exist
-			if (_position == INVALID) 
-			{
-				_values_len = _len / sizeof(unsigned) + 3;
-				_values = new unsigned[_values_len];
-				_values[0] = _tmp[0] + 1;
-				_values[1] = _tmp[1] + 1;
-				unsigned i, j;
-				for (i = 0, j = 2; i < _tmp[1] && _tmp[2 + 2 * i] < _pre_id; i++, j += 2) {
-					_values[j] = _tmp[2 + 2 * i];
-					_values[j + 1] = _tmp[3 + 2 * i] + 2;
-				}
-				_values[j] = _pre_id;
-				unsigned _offset_old;
-				if (i == _tmp[1]) {
-					_offset_old = 2 + 2 * _tmp[1] + _tmp[0];
-				}
-				else {
-					_offset_old = _tmp[3 + 2 * i];
-				}
-				_values[j + 1] = _offset_old + 2;
-				j += 2;
-				for (; i < _tmp[1]; i++, j += 2) {
-					_values[j] = _tmp[2 + 2 * i];
-					_values[j + 1] = _tmp[3 + 2 * i] + 3;
-				}
-				for (i = 2 + 2 * _tmp[1]; i < 2 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					if (i == _offset_old) {
-						_values[j] = _sub_id;
-						j++;
-					}
-					_values[j] = _tmp[i];
-				}
-				if (i == _offset_old) {
-					_values[j] = _sub_id;
-					j++;
-				}
-			}
-
-			//preID exists
-			else {
-				_values_len = _len / sizeof(unsigned) + 1;
-				_values = new unsigned[_values_len];
-				memcpy(_values, _tmp, sizeof(unsigned) * _tmp[3 + 2 * _position]);
-				_values[0]++;
-				for (unsigned i = _position + 1; i < _tmp[1]; i++) {
-					_values[3 + 2 * i]++;
-				}
-				unsigned i, j;
-				unsigned right;
-				if (_position == _tmp[1] - 1) {
-					right = 2 + 2 * _tmp[1] + _tmp[0];
-				}
-				else {
-					right = _tmp[5 + 2 * _position];
-				}
-				for (i = _tmp[3 + 2 * _position], j = _tmp[3 + 2 * _position]; i < right && _tmp[i] < _sub_id; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-				_values[j] = _sub_id;
-				j++;
-				for (; i < 2 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-			}
-
-		}
-		if(first_insert) first_insert = false;
-	}
-	if(!first_insert)
-	{
-		if(_tmp != nullptr) delete[] _tmp;
-		_tmp = nullptr;
-		_values_len = _values_len * sizeof(unsigned);
-	}
-	else
-	{
-		_values = _tmp;
-		_values_len = _len;
-		_tmp = nullptr;
-		_len = 0;
-		//if(_values == nullptr) cerr << "_values error " << endl;
-	}
-}
-
-void 
-KVstore::Remove_o2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len)const
-{
-	bool first_remove = true;
-	int cnt = 0;
-	//cerr << "_tmp[0]: " << _tmp[0] << "_tmp[1]: " << _tmp[1]  << endl;
-	for(auto it:delset)
-	{
-		//cerr << "times: cnt" << cnt << endl;
-		unsigned _pre_id = it.first;
-		unsigned _sub_id = it.second;
-		if(!first_remove)
-		{
-			delete _tmp;
-			_tmp = _values;
-			_len = _values_len * sizeof(unsigned);
-		}
-		
-		if (_tmp[0] == 1) {
-			_values = nullptr;
-			_values_len = 0;
-			if(first_remove) first_remove = false;
-			break;
-		}
-		//objID still exists after removal
-		else {
-			
-			unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 2, _tmp[1], 2);
-			unsigned _sidlen_op;
-			if (_position == _tmp[1] - 1) {
-				_sidlen_op = 2 + 2 * _tmp[1] + _tmp[0] - _tmp[3 + 2 * _position];
-			}
-			else {
-				_sidlen_op = _tmp[5 + 2 * _position] - _tmp[3 + 2 * _position];
-			}
-
-			//preID doesn't exist after removal
-			if (_sidlen_op == 1) {
-				_values_len = _len / sizeof(unsigned) - 3;
-				_values = new unsigned[_values_len];
-				memcpy(_values, _tmp, sizeof(unsigned) * (2 + 2 * _position));
-				_values[0]--;
-				_values[1]--;
-				for (unsigned i = 0; i < _position; i++) {
-					_values[3 + 2 * i] -= 2;
-				}
-				unsigned i, j;
-				for (i = 4 + 2 * _position, j = 2 + 2 * _position; i < 2 + 2 * _tmp[1]; i += 2, j += 2) {
-					_values[j] = _tmp[i];
-					_values[j + 1] = _tmp[i + 1] - 3;
-				}
-				for (; i < 2 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					if (i == _tmp[3 + 2 * _position]) {
-						j--;
-						continue;
-					}
-					_values[j] = _tmp[i];
-				}
-			}
-
-			//preID still exists after removal
-			else {
-				_values_len = _len / sizeof(unsigned) - 1;
-				_values = new unsigned[_values_len];
-				memcpy(_values, _tmp, sizeof(unsigned) * _tmp[3 + 2 * _position]);
-				_values[0]--;
-				for (unsigned i = _position + 1; i < _tmp[1]; i++) {
-					_values[3 + 2 * i]--;
-				}
-				unsigned i, j;
-				for (i = _tmp[3 + 2 * _position], j = _tmp[3 + 2 * _position];
-					i < 2 + 2 * _tmp[1] + _tmp[0] && _tmp[i] < _sub_id; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-				i++;
-				for (; i < 2 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-			}
-		}
-		if(first_remove) first_remove = false;
-	}
-	if(!first_remove)
-	{
-		//cerr << "_values[0]: " << _values[0] << "_values[1]: " << _values[1]  << endl;
-		//cerr << "_tmp[0]: " << _tmp[0] << "_tmp[1]: " << _tmp[1]  << endl;
-		if(_tmp != nullptr) delete _tmp;
-		_tmp = nullptr;
-		_values_len = _values_len * sizeof(unsigned);
-	}
-	else
-	{
-		if(_values == nullptr){
-			_values_len = 0;
-			return;
-		}
-		_values = _tmp;
-		_values_len = _len;
-	}
-}
-	
-void 
-KVstore::Insert_p2values(VDataSet &addset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const
-{
-	bool first_insert = true;
-	for(auto it: addset)
-	{
-		unsigned _sub_id = it.first;
-		unsigned _obj_id = it.second;
-		
-		if(!first_insert)
-		{
-			if(_tmp != nullptr) delete[] _tmp;
-			_tmp = _values;
-			_len = _values_len * sizeof(unsigned);
-		}
-		
-		if (_tmp == nullptr) {
-			//unsigned _values[3];
-			_values = new unsigned[3];
-			_values[0] = 1;
-			_values[1] = _sub_id;
-			_values[2] = _obj_id;
-			_values_len = 3 ;
-		}
-
-		//preid exists
-		else {
-			_values_len = _len / sizeof(unsigned) + 2;
-			_values = new unsigned[_values_len];
-			unsigned i, j;
-			_values[0] = _tmp[0] + 1;
-			for (i = 1, j = 1;
-				i < 1 + _tmp[0] && (_tmp[i] < _sub_id || (_tmp[i] == _sub_id && _tmp[i + _tmp[0]] < _obj_id));
-				i++, j++) {
-				_values[j] = _tmp[i];
-				_values[j + _tmp[0] + 1] = _tmp[i + _tmp[0]];
-			}
-			_values[j] = _sub_id;
-			_values[j + _tmp[0] + 1] = _obj_id;
-			j++;
-			for (; i < 1 + _tmp[0]; i++, j++) {
-				_values[j] = _tmp[i];
-				_values[j + _tmp[0] + 1] = _tmp[i + _tmp[0]];
-			}
-		}
-		if(first_insert) first_insert = false;
-	}
-	if(!first_insert)
-	{
-		if(_tmp != nullptr) delete[] _tmp;
-		_tmp = nullptr;
-		_values_len = _values_len * sizeof(unsigned);
-	}
-	else
-	{
-		_values = _tmp;
-		_values_len = _len;
-	}
-}
-
-void 
-KVstore::Remove_p2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const
-{
-	bool first_remove = true;
-	for(auto it: delset)
-	{
-		unsigned _sub_id = it.first;
-		unsigned _obj_id = it.second;
-		
-		if(!first_remove)
-		{
-			delete[] _tmp;
-			_tmp = _values;
-			_len = _values_len * sizeof(unsigned);
-		}
-		
-		if (_tmp[0] == 1) {
-			_values = nullptr;
-			_values_len = 0;
-			if(first_remove) first_remove = false;
-			break;
-		}
-
-		//preid still exists after removal
-		else {
-			_values_len = _len / sizeof(unsigned) - 2;
-			_values = new unsigned[_values_len];
-			unsigned i, j;
-			_values[0] = _tmp[0] - 1;
-			for (i = 1, j = 1;
-				i < 1 + _tmp[0] && (_tmp[i] < _sub_id || (_tmp[i] == _sub_id && _tmp[i + _tmp[0]] < _obj_id));
-				i++, j++) {
-				_values[j] = _tmp[i];
-				_values[j + _tmp[0] - 1] = _tmp[i + _tmp[0]];
-			}
-			i++;
-			for (; i < 1 + _tmp[0]; i++, j++) {
-				_values[j] = _tmp[i];
-				_values[j + _tmp[0] - 1] = _tmp[i + _tmp[0]];
-			}
-			//delete[] _values;
-		}
-		if(first_remove) first_remove = false;
-	}
-	if(!first_remove)
-	{
-		if(_tmp != nullptr) delete[] _tmp;
-		_tmp = nullptr;
-		_values_len = _values_len * sizeof(unsigned);
-	}
-	else
-	{
-		if(_values == nullptr){
-			_values_len = 0;
-			return;
-		}
-		_values = _tmp;
-		_values_len = _len;
-	}
-}
-
 bool 
 KVstore::updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	VDataSet addset;
 	addset.insert(VData{_pre_id, _obj_id});
-	return Insert_values(this->subID2values, _sub_id, addset, txn);
+	return insert_values(this->subID2values, _sub_id, addset, txn);
 }
 bool 
 KVstore::updateRemove_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	VDataSet delset;
 	delset.insert(VData{_pre_id, _obj_id});
-	return Remove_values(this->subID2values, _sub_id, delset, txn);
+	return remove_values(this->subID2values, _sub_id, delset, txn);
 }
 bool 
 KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
@@ -5598,14 +5107,14 @@ KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	//cout << "updateInsert_o2values......................" << endl;
 	VDataSet addset;
 	addset.insert(VData{_pre_id, _sub_id});
-	return Insert_values(this->objID2values, _obj_id, addset, txn);
+	return insert_values(this->objID2values, _obj_id, addset, txn);
 }
 bool 
 KVstore::updateRemove_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	VDataSet delset;
 	delset.insert(VData{_pre_id, _sub_id});
-	return Remove_values(this->objID2values, _obj_id, delset, txn);
+	return remove_values(this->objID2values, _obj_id, delset, txn);
 }
 bool 
 KVstore::updateInsert_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
@@ -5613,23 +5122,21 @@ KVstore::updateInsert_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	//cout << "updateInsert_p2values......................" << endl;
 	VDataSet addset;
 	addset.insert(VData{_sub_id, _obj_id});
-	return Insert_values(this->preID2values, _pre_id, addset, txn);
+	return insert_values(this->preID2values, _pre_id, addset, txn);
 }
 bool 
 KVstore::updateRemove_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	VDataSet delset;
 	delset.insert(VData{_sub_id, _obj_id});
-	return Remove_values(this->preID2values, _pre_id, delset, txn);
+	return remove_values(this->preID2values, _pre_id, delset, txn);
 }
 	
 bool
-KVstore::Insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_ptr<Transaction> txn)
+KVstore::insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_ptr<Transaction> txn)
 {
-	//cout << "this is Insert_values................: " << _key <<  endl;
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
-		//cerr << "this is Insert_values in objID2values_literal" << endl;
 		unsigned key = _key - Util::LITERAL_FIRST_ID;
 		return objID2values_literal->insert(key, addset, txn);
 	}
@@ -5637,7 +5144,7 @@ KVstore::Insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_
 }
 
 bool 
-KVstore::Remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_ptr<Transaction> txn)
+KVstore::remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_ptr<Transaction> txn)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -5648,21 +5155,37 @@ KVstore::Remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_
 }
 
 bool 
-KVstore::getExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
+KVstore::GetExclusiveLock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	int base_timer = txn->get_wait_lock_time();
 	int times = txn->get_retry_times();
 	// for(int i = 0; i < times; i++)
 	// {
-		if(getExclusiveLatches(_sub_id, _pre_id, _obj_id, txn)) return true;
+		if(try_exclusive_lock(_sub_id, _pre_id, _obj_id, txn)) return true;
 		//usleep(base_timer);
 		//base_timer = base_timer*2;
+	//}
+	return false;
+}
+
+
+bool 
+KVstore::GetExclusiveLocks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENTITY_LITERAL_ID>& oids, vector<TYPE_PREDICATE_ID>& pids, shared_ptr<Transaction> txn)
+{
+	int base_timer = txn->get_wait_lock_time();
+	int times = txn->get_retry_times();
+	// for(int i = 0; i < times; i++)
+	// {
+		if(try_exclusive_locks(sids, oids, pids, txn)) return true;
+		//usleep(base_timer);
+		//base_timer = base_timer*2;
+	//}
 	return false;
 }
 
 //get exclusive lock and create new version atomicly for write operation
 bool 
-KVstore::getExclusiveLatches(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
+KVstore::try_exclusive_lock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	//may unlock first locked item
 	//cout << "getExclusiveLocks....................................................." << endl;
@@ -5678,7 +5201,7 @@ KVstore::getExclusiveLatches(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _
 
 	if(!sub_has_write){
 		//cerr << "Try to get SUBJECT exclusive lock................." << endl;
-		sub_ret = getExclusiveLock(this->subID2values, _sub_id, txn, sub_has_read);
+		sub_ret = get_exclusive_latch(this->subID2values, _sub_id, txn, sub_has_read);
 		if(sub_ret == 0){
 			//cerr << this_thread::get_id() << " :sub id latch get failed!   " << _sub_id << endl;
 			//cerr << txn->GetTID() << endl;
@@ -5690,12 +5213,12 @@ KVstore::getExclusiveLatches(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _
 
 	if(!obj_has_write){
 		//cerr << "Try to get OBJECT exclusive lock................." << endl;
-		obj_ret = getExclusiveLock(this->objID2values, _obj_id, txn, obj_has_read);
+		obj_ret = get_exclusive_latch(this->objID2values, _obj_id, txn, obj_has_read);
 		if(obj_ret == 0)
 		{
 			bool invalid = true;
 			if(!sub_has_write && sub_ret == 1) 
-				invalid = Invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
+				invalid = invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
 			if(invalid == false)
 				cerr << "invalid error, latch not release! TID:" << txn->GetTID() << endl;
 			//cerr << this_thread::get_id() << "obj id latch get failed!" << endl;
@@ -5705,17 +5228,17 @@ KVstore::getExclusiveLatches(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _
 
 	if(!pre_has_write){
 		cerr << "Try to get PREDICATE exclusive lock................." << endl;
-	 	pre_ret = getExclusiveLock(this->preID2values, _pre_id,txn, pre_has_read);
+	 	pre_ret = get_exclusive_latch(this->preID2values, _pre_id,txn, pre_has_read);
 	 	if(pre_ret == 0)
 		{
 	 		bool invalid1 = true, invalid2 = true;
 	 		if(!sub_has_write && sub_ret == 1)
-	 			invalid1 = Invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
+	 			invalid1 = invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
 	 		if(invalid1 == false){
 	 			cerr << "invalid error, subject latch not release! TID:" << txn->GetTID() << "  "  <<  _sub_id << endl;
 	 		}
 	 		if(!obj_has_write && obj_ret == 1)
-	 			invalid2 = Invalid_values(this->objID2values, _obj_id, txn, obj_has_read);
+	 			invalid2 = invalid_values(this->objID2values, _obj_id, txn, obj_has_read);
 	 		if(invalid2 == false){
 	 			cerr << "invalid error, object latch not release! TID:" << txn->GetTID() << endl;
 	 		}
@@ -5728,22 +5251,9 @@ KVstore::getExclusiveLatches(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _
 	return true;
 }
 
-bool 
-KVstore::getExclusiveLocks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENTITY_LITERAL_ID>& oids, vector<TYPE_PREDICATE_ID>& pids, shared_ptr<Transaction> txn)
-{
-	int base_timer = txn->get_wait_lock_time();
-	int times = txn->get_retry_times();
-	for(int i = 0; i < times; i++)
-	{
-		if(getExclusiveLatches(sids, oids, pids, txn)) return true;
-		usleep(base_timer);
-		base_timer = base_timer*2;
-	}
-	return false;
-}
 
 bool 
-KVstore::getExclusiveLatches(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENTITY_LITERAL_ID>& oids, vector<TYPE_PREDICATE_ID>& pids, shared_ptr<Transaction> txn)
+KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENTITY_LITERAL_ID>& oids, vector<TYPE_PREDICATE_ID>& pids, shared_ptr<Transaction> txn)
 {
 	int s_num = sids.size(), p_num = pids.size(), o_num = oids.size();
 	vector<bool> sub_has_write(s_num), pre_has_write(p_num), obj_has_write(o_num);
@@ -5768,14 +5278,14 @@ KVstore::getExclusiveLatches(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 	for(; k < s_num; k++)
 	{
 		if(!sub_has_write[k]){
-			sub_ret = getExclusiveLock(this->subID2values, sids[k], txn, sub_has_read[k]);
+			sub_ret = get_exclusive_latch(this->subID2values, sids[k], txn, sub_has_read[k]);
 		}
 		if(sub_ret == 0){
 			for(int i = 0; i < k; i++)
 			{
 				bool invalid = true;
 				if(!sub_has_write[i]){
-					invalid = Invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
+					invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
 				}
 				if(invalid == false){
 					sub_invalid = false;
@@ -5790,7 +5300,7 @@ KVstore::getExclusiveLatches(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 	for(; k < o_num; k++)
 	{
 		if(!obj_has_write[k]){
-			obj_ret = getExclusiveLock(this->objID2values, oids[k], txn, obj_has_read[k]);
+			obj_ret = get_exclusive_latch(this->objID2values, oids[k], txn, obj_has_read[k]);
 		}
 		if(obj_ret == 0)
 		{
@@ -5798,7 +5308,7 @@ KVstore::getExclusiveLatches(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 			{
 				bool invalid = true;
 				if(!obj_has_write[i]){
-					invalid = Invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
+					invalid = invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
 				}
 				if(invalid == false){
 					obj_invalid = false;
@@ -5810,7 +5320,7 @@ KVstore::getExclusiveLatches(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 			{
 				bool invalid = true;
 				if(!sub_has_write[i]){
-					invalid = Invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
+					invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
 				}
 				if(invalid == false){
 					sub_invalid = false;
@@ -5825,7 +5335,7 @@ KVstore::getExclusiveLatches(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 	 for(; k < p_num; k++)
 	 {
 	 	if(!pre_has_write[k]){
-	 		pre_ret = getExclusiveLock(this->preID2values, pids[k], txn, pre_has_read[k]);
+	 		pre_ret = get_exclusive_latch(this->preID2values, pids[k], txn, pre_has_read[k]);
 	 	}
 	 	if(pre_ret == 0)
 	 	{
@@ -5833,7 +5343,7 @@ KVstore::getExclusiveLatches(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 	 		{
 	 			bool invalid = true;
 	 			if(!pre_has_write[i]){
-	 				invalid = Invalid_values(this->preID2values, pids[i], txn, pre_has_read[i]);
+	 				invalid = invalid_values(this->preID2values, pids[i], txn, pre_has_read[i]);
 	 			}
 	 			if(invalid == false){
 	 				obj_invalid = false;
@@ -5845,7 +5355,7 @@ KVstore::getExclusiveLatches(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 	 		{
 	 			bool invalid = true;
 	 			if(!sub_has_write[i]){
-	 				invalid = Invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
+	 				invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
 	 			}
 	 			if(invalid == false){
 	 				sub_invalid = false;
@@ -5857,7 +5367,7 @@ KVstore::getExclusiveLatches(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 			{
 	 			bool invalid = true;
 	 			if(!obj_has_write[i]){
-	 				invalid = Invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
+	 				invalid = invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
 				}
 				if(invalid == false){
 	 				obj_invalid = false;
@@ -5872,29 +5382,19 @@ KVstore::getExclusiveLatches(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 }
 
 int 
-KVstore::getExclusiveLock(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read) const
+KVstore::get_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read) const
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
 		unsigned key = _key - Util::LITERAL_FIRST_ID;
-		return objID2values_literal->TryExclusiveLock(key, txn, has_read);
+		return objID2values_literal->TryExclusiveLatch(key, txn, has_read);
 	}
-	return _array->TryExclusiveLock(_key, txn, has_read);
+	return _array->TryExclusiveLatch(_key, txn, has_read);
 }
 
-/*
+//abort
 bool
-KVstore::releaseExclusiveLock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
-{
-	return releaseExclusiveLock(this->subID2values, _sub_id, txn)&& 
-	releaseExclusiveLock(this->objID2values, _obj_id, txn)&&
-	releaseExclusiveLock(this->preID2values, _pre_id, txn);
-}
-*/
-
-//undo
-bool
-KVstore::releaseExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
+KVstore::ReleaseExclusiveLock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	bool ret = true;
 	//we can not unlatch exsited exclusive latch
@@ -5902,85 +5402,40 @@ KVstore::releaseExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	bool pre_has_read = txn->ReadSetFind(_pre_id, Transaction::IDType::PREDICATE);
 	bool obj_has_read = txn->ReadSetFind(_obj_id, Transaction::IDType::OBJECT);
 	if(txn != nullptr && txn->WriteSetFind(_sub_id, Transaction::IDType::SUBJECT) == false){
-		if(Invalid_values(this->subID2values, _sub_id, txn, sub_has_read) == false) {
+		if(invalid_values(this->subID2values, _sub_id, txn, sub_has_read) == false) {
 			cerr << "..................................sub id release failed!" << endl;
 			ret = false;
 		}
 	}
 	if(txn != nullptr && txn->WriteSetFind(_obj_id, Transaction::IDType::OBJECT) == false){		
-		if(Invalid_values(this->objID2values, _obj_id, txn, obj_has_read) == false){
+		if(invalid_values(this->objID2values, _obj_id, txn, obj_has_read) == false){
 			cerr << "..................................obj id release failed!" << obj_has_read << endl;
 			ret = false;
 		}
 	}
 	if(txn != nullptr && txn->WriteSetFind(_pre_id, Transaction::IDType::PREDICATE) == false){ 
-		if(Invalid_values(this->preID2values, _pre_id, txn,pre_has_read) == false) {
+		if(invalid_values(this->preID2values, _pre_id, txn,pre_has_read) == false) {
 			cerr << ".................................._pre_id id release failed!" << endl;
 			ret = false;
 		}
 	}
 	return ret;
 }
-/*
-bool 
-KVstore::releaseAllExclusiveLocks(shared_ptr<Transaction> txn) const
-{
-	vector<IDSet>& WriteSet = txn->Get_WriteSet();
-	auto& subWset = WriteSet[(unsigned)Transaction::IDType::SUBJECT];
-	auto& preWset = WriteSet[(unsigned)Transaction::IDType::PREDICATE];
-	auto& objWset = WriteSet[(unsigned)Transaction::IDType::OBJECT];
-	
-	bool ret = true;
-	//release exclusive latch
-	for(auto &it: subWset)
-	{
-		if(this->releaseExclusiveLock(this->subID2values, it, txn) == false)
-			ret = false;
-	}
-	for(auto &it: preWset)
-	{
-		if(this->releaseExclusiveLock(this->preID2values, it, txn) == false)
-			ret = false;
-	}
-	for(auto &it: objWset)
-	{
-		if(this->releaseExclusiveLock(this->objID2values, it, txn) == false)
-			ret = false;
-	}
-	
-	return ret;
-}
-*/
 
-/*
-//abort
 bool 
-KVstore::releaseExclusiveLock(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const
+KVstore::invalid_values(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
 		unsigned key = _key - Util::LITERAL_FIRST_ID;
-		return objID2values_literal->ReleaseExclusiveLock(key, txn);
+		return objID2values_literal->Rollback(key, txn, has_read);
 	}
-	return _array->ReleaseExclusiveLock(_key, txn);
-}
-*/
-
-//abort
-bool 
-KVstore::Invalid_values(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read)
-{
-	if (Util::is_literal_ele(_key) && _array == objID2values)
-	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
-		return objID2values_literal->rollback(key, txn, has_read);
-	}
-	return _array->rollback(_key, txn, has_read);
+	return _array->Rollback(_key, txn, has_read);
 }
 
 
 bool 
-KVstore::releaseExclusiveLatch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const
+KVstore::release_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -5991,7 +5446,7 @@ KVstore::releaseExclusiveLatch(IVArray* _array, unsigned _key, shared_ptr<Transa
 }
 
 bool 
-KVstore::releaseSharedLatch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const
+KVstore::release_shared_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -6002,7 +5457,7 @@ KVstore::releaseSharedLatch(IVArray* _array, unsigned _key, shared_ptr<Transacti
 }
 
 bool 
-KVstore::releaseAllLatches(shared_ptr<Transaction> txn) const
+KVstore::ReleaseAllLocks(shared_ptr<Transaction> txn) const
 {
 	auto& WriteSet = txn->Get_WriteSet();
 	auto& subWset = WriteSet[(unsigned)Transaction::IDType::SUBJECT];
@@ -6022,7 +5477,7 @@ KVstore::releaseAllLatches(shared_ptr<Transaction> txn) const
 		{
 			if(subWset.find(it) == subWset.end())//not exclusive latched
 			{	
-				if(this->releaseSharedLatch(this->subID2values, it, txn) == false) {
+				if(this->release_shared_latch(this->subID2values, it, txn) == false) {
 					cerr << "SUBJECT:    " << it << "shared latch release failed!" << endl;
 					ret1 = false;//release shared latch
 				}
@@ -6032,7 +5487,7 @@ KVstore::releaseAllLatches(shared_ptr<Transaction> txn) const
 		{
 			if(preWset.find(it) == preWset.end())
 			{
-				if(this->releaseSharedLatch(this->preID2values, it, txn) == false){
+				if(this->release_shared_latch(this->preID2values, it, txn) == false){
 					cerr << "PREDICATE:    " << it << "shared latch release failed!" << endl;
 					ret1 = false;//release shared latch
 				}
@@ -6042,7 +5497,7 @@ KVstore::releaseAllLatches(shared_ptr<Transaction> txn) const
 		{
 			if(objWset.find(it) == objWset.end())
 			{
-				if(this->releaseSharedLatch(this->objID2values, it, txn) == false){
+				if(this->release_shared_latch(this->objID2values, it, txn) == false){
 					cerr << "OBJECT:    " << it << "shared latch release failed!" << endl;
 					ret1 = false;//release shared latch
 				}
@@ -6057,17 +5512,17 @@ KVstore::releaseAllLatches(shared_ptr<Transaction> txn) const
 	bool ret2 = true;
 	//release exclusive latch
 	for(auto &it: subWset)
-		if(this->releaseExclusiveLatch(this->subID2values, it, txn) == false) {
+		if(this->release_exclusive_latch(this->subID2values, it, txn) == false) {
 				cerr << "SUBJECT:       " << it << "exclusive latch release failed" << endl;
 				ret2 = false;
 		}
 	for(auto &it: preWset)
-		if(this->releaseExclusiveLatch(this->preID2values, it, txn) == false){
+		if(this->release_exclusive_latch(this->preID2values, it, txn) == false){
 				cerr << "PREDICATE:       " << it << "exclusive latch release failed" << endl;
 				ret2 = false;
 		}
 	for(auto &it: objWset)
-		if(this->releaseExclusiveLatch(this->objID2values, it, txn) == false){
+		if(this->release_exclusive_latch(this->objID2values, it, txn) == false){
 				cerr << "OBJECT:       " << it << "exclusive latch release failed" << endl;
 				ret2 = false;
 		}
@@ -6076,7 +5531,7 @@ KVstore::releaseAllLatches(shared_ptr<Transaction> txn) const
 }
 
 bool
-KVstore::transaction_invalid(shared_ptr<Transaction> txn)
+KVstore::TransactionInvalid(shared_ptr<Transaction> txn)
 {
 	auto& WriteSet = txn->Get_WriteSet();
 	auto& subWset = WriteSet[(unsigned)Transaction::IDType::SUBJECT];
@@ -6086,7 +5541,6 @@ KVstore::transaction_invalid(shared_ptr<Transaction> txn)
 	int ret1 = true;
 	if(txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
 	{
-		//cout << "releaseSharedLatch................." << endl; 
 		auto& ReadSet = txn->Get_ReadSet();
 		auto& subRset = ReadSet[(unsigned)Transaction::IDType::SUBJECT];
 		auto& preRset = ReadSet[(unsigned)Transaction::IDType::PREDICATE];
@@ -6096,7 +5550,7 @@ KVstore::transaction_invalid(shared_ptr<Transaction> txn)
 		{
 			if(subWset.find(it) == subWset.end())//shared lock only
 			{			
-				if(this->releaseSharedLatch(this->subID2values, it, txn) == false) {
+				if(this->release_shared_latch(this->subID2values, it, txn) == false) {
 					cout << "release shared latch of subject failed " << it << endl;
 					ret1 = false;//release shared latch
 				}
@@ -6106,14 +5560,14 @@ KVstore::transaction_invalid(shared_ptr<Transaction> txn)
 		{
 			if(preWset.find(it) == preWset.end())
 			{
-				if(this->releaseSharedLatch(this->preID2values, it, txn) == false) ret1 = false;
+				if(this->release_shared_latch(this->preID2values, it, txn) == false) ret1 = false;
 			}
 		}
 		for(auto &it: objRset)
 		{
 			if(objWset.find(it) == objWset.end())
 			{
-				if(this->releaseSharedLatch(this->objID2values, it, txn) == false){
+				if(this->release_shared_latch(this->objID2values, it, txn) == false){
 					cout << "release shared latch of object failed " << it << endl;
 					ret1 = false;
 				} 
@@ -6127,12 +5581,12 @@ KVstore::transaction_invalid(shared_ptr<Transaction> txn)
 	bool ret2 = true;
 	//invalid all updates and release latches
 	for(auto &it: subWset){
-		if(this->Invalid_values(this->subID2values, it, txn, false) == false) ret2 = false;
+		if(this->invalid_values(this->subID2values, it, txn, false) == false) ret2 = false;
 	}
 	for(auto &it: preWset)
-	 	if(this->Invalid_values(this->preID2values, it, txn, false) == false) ret2 = false;
+	 	if(this->invalid_values(this->preID2values, it, txn, false) == false) ret2 = false;
 	for(auto &it: objWset){
-		if(this->Invalid_values(this->objID2values, it, txn, false) == false) ret2 = false;	
+		if(this->invalid_values(this->objID2values, it, txn, false) == false) ret2 = false;	
 	}
 	
 	if(ret1 == false)
@@ -6154,24 +5608,24 @@ void print_merge_tmp(unsigned* _tmp, unsigned long _len)
 }
 
 void 
-KVstore::IVArray_Vacuum(vector<unsigned>& sub_ids , vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned>& pre_ids) 
+KVstore::IVArrayVacuum(vector<unsigned>& sub_ids , vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned>& pre_ids) 
 {
 	//no transaction is running in this database!
 	//we can use four thread to clean three(four) index!
 	string name("clean");
 	shared_ptr<Transaction> clean_txn = make_shared<Transaction>(name, (INVALID_TS - 1), 1, IsolationLevelType::READ_COMMITTED);
 	//vector<unsigned> sub_ids, obj_ids, obj_literal_ids, pre_ids;
-	s2values_Vacuum(sub_ids, clean_txn);
-	o2values_Vacuum(obj_ids, clean_txn);
-	o2values_literal_Vacuum(obj_literal_ids, clean_txn);
-	p2values_Vacuum(pre_ids, clean_txn);
+	s2values_vacuum(sub_ids, clean_txn);
+	o2values_vacuum(obj_ids, clean_txn);
+	o2values_literal_vacuum(obj_literal_ids, clean_txn);
+	p2values_vacuum(pre_ids, clean_txn);
 	
 	//join here	
 	//dictionary_Vacuum();
 }
 
 void 
-KVstore::s2values_Vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn) 
+KVstore::s2values_vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn) 
 {
 	//cerr << "KVstore::s2values_Vacuum................................." << endl;
 	//getDirtyKeys(this->subID2values, sub_ids);
@@ -6223,7 +5677,7 @@ KVstore::s2values_Vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn)
 
 		// for(int i = 0; i < _len / sizeof(unsigned); i++) cout << _tmp[i] << " ";
 		// cout << endl;
-		this->cleanDirtyKey(this->subID2values, _subid);
+		this->clean_dirty_key(this->subID2values, _subid);
 
 		if(_len == 0 ) {
 			if(base_empty == false){
@@ -6246,7 +5700,7 @@ KVstore::s2values_Vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn)
 }
 
 void 
-KVstore::o2values_Vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn) 
+KVstore::o2values_vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn) 
 {
 	//cerr << "KVstore::o2values_Vacuum..............................................." << endl;
 	//getDirtyKeys(this->objID2values, obj_ids);
@@ -6289,7 +5743,7 @@ KVstore::o2values_Vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn)
 		//cout << "_len:                                                 " <<  _len << endl;
 		// for(int i = 0; i < _len; i++) cout << _tmp[i] << " ";
 		// cout << endl;
-		this->cleanDirtyKey(this->objID2values, _obj_id);
+		this->clean_dirty_key(this->objID2values, _obj_id);
 
 		if(_len == 0) {
 			if(base_empty == false){
@@ -6311,7 +5765,7 @@ KVstore::o2values_Vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn)
 }
 
 void 
-KVstore::o2values_literal_Vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<Transaction> txn) 
+KVstore::o2values_literal_vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<Transaction> txn) 
 {
 	//cerr << "KVstore::o2values_literal_Vacuum.............................................." << endl;
 	//getDirtyKeys(this->objID2values_literal, obj_literal_ids);
@@ -6358,7 +5812,7 @@ KVstore::o2values_literal_Vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<T
 		//cout << "_len:                                                 " <<  _len << endl;
 		//for(int i = 0; i < _len / sizeof(unsigned); i++) cout << _tmp[i] << " ";
 		//cout << endl;
-		this->cleanDirtyKey(this->objID2values, _obj_id);
+		this->clean_dirty_key(this->objID2values, _obj_id);
 		if(_len == 0) {
 			if(base_empty == false)
 			{
@@ -6382,7 +5836,7 @@ KVstore::o2values_literal_Vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<T
 }
 
 void 
-KVstore::p2values_Vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn) 
+KVstore::p2values_vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn) 
 {
 	//cerr << "KVstore::p2values_Vacuum....................................................." << endl;
 	//getDirtyKeys(this->preID2values, pre_ids);
@@ -6427,7 +5881,7 @@ KVstore::p2values_Vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn)
 			_len = _values_len * sizeof(unsigned);
 		}
 		//cout << "_len:                                                 " <<  _len << endl;
-		this->cleanDirtyKey(this->preID2values, _pre_id);
+		this->clean_dirty_key(this->preID2values, _pre_id);
 
 		if(_len == 0) {
 			if(base_empty == false){
@@ -6450,19 +5904,9 @@ KVstore::p2values_Vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn)
 	}
 }
 
-void 
-KVstore::dictionary_Vacuum() 
-{
-}
 
 bool 
-KVstore::getDirtyKeys(IVArray* _array, vector<unsigned>& lists)
-{
-	return _array->GetDirtyKeys(lists);
-}
-
-bool 
-KVstore::cleanDirtyKey(IVArray* _array, unsigned _key)
+KVstore::clean_dirty_key(IVArray* _array, unsigned _key)
 {
 	return _array->CleanDirtyKey(_key);
 }
