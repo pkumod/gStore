@@ -33,7 +33,7 @@
 #include "WebUrl.h"
 
 using namespace std;
-void parse_uri()
+
 
 void process(WFHttpTask *server_task)
 {
