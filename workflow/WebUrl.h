@@ -2,7 +2,7 @@
 # #ifndef WEB_URL_H_
 
 #endif // !WEB_URL_H_
-
+#include <regex>
 #include <string>
 class WebUrl {
 public:
