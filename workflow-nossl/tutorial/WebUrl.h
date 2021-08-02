@@ -1,7 +1,7 @@
 #pragma once
-# #ifndef WEB_URL_H_
+#ifndef WEB_URL_H_
+#define WEB_URL_H)
 
-#endif // !WEB_URL_H_
 
 #include <string>
 using namespace std;
@@ -14,3 +14,4 @@ public:
 private:
 	string _url;
 };
+#endif //WEB_URL_H_
