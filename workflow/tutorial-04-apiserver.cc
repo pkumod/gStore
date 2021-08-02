@@ -33,8 +33,6 @@
 #include "WebUrl.h"
 
 using namespace std;
-
-
 void process(WFHttpTask *server_task)
 {
 	protocol::HttpRequest *req = server_task->get_req();
