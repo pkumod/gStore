@@ -53,8 +53,7 @@ void process(WFHttpTask *server_task)
 	WebUrl web(uri);
 	string value = web.Request("dbname");
 
-	len = snprintf(buf, 8192, value);
-
+	len = snprintf(buf, 8192,"dbname=%s",web.Request("dbname"));
 	resp->append_output_body(buf, len);
 	while (cursor.next(name, value))
 	{
