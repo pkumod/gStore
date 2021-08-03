@@ -8,7 +8,7 @@ project(tutorial
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 
-set(library "-lreadline -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov   -lpthread  -lcurl")
+set(library "-L../lib -lreadline -L/usr/local/lib -L/usr/lib/ -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov   -lpthread  -lcurl")
 
 
 find_library(LIBRT rt)
