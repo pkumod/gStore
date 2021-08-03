@@ -31,6 +31,7 @@
 #include "workflow/WFHttpServer.h"
 #include "workflow/WFFacilities.h"
 #include "WebUrl.h"
+#include <iostream>
 //#include "../../Util/IPWhiteList.h"
 //#include "../../Util/IPBlackList.h"
 
@@ -147,7 +148,7 @@ string getArgValue(int argc, char* argv[], string argname, string default_value)
 {
 	for (int i = 0; i < argc; i++)
 	{
-		if (argv[i] == "-" + argnme)
+		if (argv[i] == "-" + argname)
 		{
 			if (i + 1 >= argc)
 			{
