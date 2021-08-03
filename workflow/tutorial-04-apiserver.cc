@@ -142,19 +142,6 @@ void sig_handler(int signo)
 	wait_group.done();
 }
 
-/// <summary>
-/// 启动API Server 启动命令 apiserver -p 9999 -ipallow y -ipdeny y -db lubm -advanced y
-/// 其中参数如下：
-///    -p（必须)：端口
-///    -db(可选):默认为system
-///    -ipallow(可选):ip白名单
-///    -ipdeny(可选):ip黑名单
-///    -advanced(可选):是否启用高级功能（load CSR)
-///    
-/// </summary>
-/// <param name="argc"></param>
-/// <param name="argv"></param>
-/// <returns></returns>
 
 string getArgValue(int argc,char* argv[],string argname,string default_value)
 {
@@ -179,6 +166,19 @@ string getArgValue(int argc,char* argv[],string argname,string default_value)
 
 }
 
+/// <summary>
+/// 启动API Server 启动命令 apiserver -p 9999 -ipallow y -ipdeny y -db lubm -advanced y
+/// 其中参数如下：
+///    -p（必须)：端口
+///    -db(可选):默认为system
+///    -ipallow(可选):ip白名单
+///    -ipdeny(可选):ip黑名单
+///    -advanced(可选):是否启用高级功能（load CSR)
+///    
+/// </summary>
+/// <param name="argc"></param>
+/// <param name="argv"></param>
+/// <returns></returns>
 int main(int argc, char *argv[])
 {
 	unsigned short port;
