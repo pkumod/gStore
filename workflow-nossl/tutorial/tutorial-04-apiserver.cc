@@ -162,7 +162,7 @@ string getArgValue(int argc, char* argv[], string argname, string default_value)
 		}
 
 	}
-	printf("the param is not exist,using the default value:" + default_value);
+	cout<<"the param is not exist,using the default value:"<<default_value<<endl;
 	return default_value;
 
 }
