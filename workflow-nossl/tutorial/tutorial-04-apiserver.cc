@@ -189,7 +189,7 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-	string portstr = getArgValue(argc, argv, "p", 9999);
+	string portstr = getArgValue(argc, argv, "p", "9999");
 
 	string ipallow = getArgValue(argc, argv, "ipallow", "n");
 
