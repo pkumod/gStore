@@ -31,8 +31,8 @@
 #include "workflow/WFHttpServer.h"
 #include "workflow/WFFacilities.h"
 #include "WebUrl.h"
-#include "../Util/IPWhiteList.h"
-#include "../Util/IPBlackList.h"
+#include "../../Util/IPWhiteList.h"
+#include "../../Util/IPBlackList.h"
 
 using namespace std;
 int loadCSR = 0;
