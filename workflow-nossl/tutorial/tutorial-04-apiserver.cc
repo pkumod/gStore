@@ -225,7 +225,7 @@ int main(int argc, char* argv[])
 	signal(SIGINT, sig_handler);
 
 	WFHttpServer server(process);
-	port = atoi(portstr);
+	port = atoi(portstr.c_str());
 	if (server.start(port) == 0)
 	{
 		wait_group.wait();
