@@ -13,313 +13,348 @@ using namespace std;
 void
 SILeafNode::AllocValues()
 {
-	values = new unsigned[MAX_KEY_NUM];
+  values = new unsigned[MAX_KEY_NUM];
 }
-
-/*
-void
-SILeafNode::FreeValues()
-{
-delete[] values;
-}
-*/
 
 SILeafNode::SILeafNode()
 {
-	flag |= NF_IL;		//leaf flag
-	prev = next = NULL;
-	AllocValues();
+  node_flag_ |= NF_IL;		//leaf node_flag_
+  prev = next = NULL;
+  AllocValues();
 }
 
 SILeafNode::SILeafNode(bool isVirtual)
 {
-	flag |= NF_IL;
-	prev = next = NULL;
-	if (!isVirtual)
-		AllocValues();
+  node_flag_ |= NF_IL;
+  prev = next = NULL;
+  if (!isVirtual)
+    AllocValues();
 }
-
-/*
-SILeafNode::LeafNode(Storage* TSM)
-{
-AllocValues();
-TSM->readNode(this, Storage::OVER);
-}
-*/
 
 void
 SILeafNode::Virtual()
 {
-	//this->FreeKeys();
-	//this->FreeValues();
-	this->release();
-	this->delMem();
+  this->Release();
+  this->SetMemFlagFalse();
 }
 
 void
 SILeafNode::Normal()
 {
-	this->AllocKeys();
-	this->AllocValues();
-	this->setMem();
+  this->AllocKeys();
+  this->AllocValues();
+  this->SetInMem();
 }
 
 SINode*
-SILeafNode::getPrev() const
+SILeafNode::GetPrev() const
 {
-	return prev;
+  return prev;
 }
 
 SINode*
-SILeafNode::getNext() const
+SILeafNode::GetNext() const
 {
-	return next;
+  return next;
 }
 
+/**
+ * get key[_index] corresponding ID
+ * @param _index
+ * @return ID if _index is legal, -1 if illegal
+ */
 unsigned
-SILeafNode::getValue(int _index) const
+SILeafNode::GetValue(int _index) const
 {
-	int num = this->getNum();
-	if (_index < 0 || _index >= num)
-	{
-		//print(string("error in getValue: Invalid index ") + Util::int2string(_index));
-		return -1;
-	}
-	else
-		return this->values[_index];
+  int num = this->GetKeyNum();
+  if (_index < 0 || _index >= num)
+  {
+    //print(string("error in GetValue: Invalid index ") + Util::int2string(_index));
+    return -1;
+  }
+  else
+    return this->values[_index];
 }
 
+/**
+ * set key[_index] corresponding ID
+ * @param _val corresponding ID
+ * @param _index key's position
+ * @return bool
+ */
 bool
-SILeafNode::setValue(unsigned _val, int _index)
+SILeafNode::SetValue(unsigned _val, int _index)
 {
-	int num = this->getNum();
-	if (_index < 0 || _index >= num)
-	{
-		print(string("error in setValue: Invalid index ") + Util::int2string(_index));
-		return false;
-	}
-	this->values[_index] = _val;
+  int num = this->GetKeyNum();
+  if (_index < 0 || _index >= num)
+  {
+    print(string("error in SetValue: Invalid index ") + Util::int2string(_index));
+    return false;
+  }
+  this->values[_index] = _val;
 
-	return true;
+  return true;
 }
 
+/**
+ * move values[>= _index] one position rightward
+ * and set key[_index] as _val
+ * @param _val the corresponding ID
+ * @param _index the position
+ */
 bool
-SILeafNode::addValue(unsigned _val, int _index)
+SILeafNode::AddValue(unsigned _val, int _index)
 {
-	int num = this->getNum();
-	if (_index < 0 || _index > num)
-	{
-		print(string("error in addValue: Invalid index ") + Util::int2string(_index));
-		return false;
-	}
-	int i;
-	for (i = num - 1; i >= _index; --i)
-		this->values[i + 1] = this->values[i];
-	this->values[_index] = _val;
+  int num = this->GetKeyNum();
+  if (_index < 0 || _index > num)
+  {
+    print(string("error in AddValue: Invalid index ") + Util::int2string(_index));
+    return false;
+  }
+  int i;
+  for (i = num - 1; i >= _index; --i)
+    this->values[i + 1] = this->values[i];
+  this->values[_index] = _val;
 
-	return true;
+  return true;
 }
 
+/**
+ * key[>index] one step leftward
+ * @param _index the deleted position
+ */
 bool
-SILeafNode::subValue(int _index)
+SILeafNode::SubValue(int _index)
 {
-	int num = this->getNum();
-	if (_index < 0 || _index >= num)
-	{
-		print(string("error in subValue: Invalid index ") + Util::int2string(_index));
-		return false;
-	}
-	int i;
-	for (i = _index; i < num - 1; ++i)
-		this->values[i] = this->values[i + 1];
+  int num = this->GetKeyNum();
+  if (_index < 0 || _index >= num)
+  {
+    print(string("error in SubValue: Invalid index ") + Util::int2string(_index));
+    return false;
+  }
+  int i;
+  for (i = _index; i < num - 1; ++i)
+    this->values[i] = this->values[i + 1];
 
-	return true;
+  return true;
 }
 
 void
 SILeafNode::setPrev(SINode* _prev)
 {
-	this->prev = _prev;
+  this->prev = _prev;
 }
 
 void
-SILeafNode::setNext(SINode* _next)
+SILeafNode::SetNext(SINode* _next)
 {
-	this->next = _next;
+  this->next = _next;
 }
 
 unsigned
-SILeafNode::getSize() const
+SILeafNode::GetSize() const
 {
-	unsigned sum = LEAF_SIZE, num = this->getNum(), i;
-	for (i = 0; i < num; ++i)
-	{
-		sum += keys[i].getLen();
-	}
-	return sum;
+  unsigned sum = LEAF_SIZE, num = this->GetKeyNum(), i;
+  for (i = 0; i < num; ++i)
+  {
+    sum += keys[i].getLen();
+  }
+  return sum;
 }
 
+/**
+ * Split the leaf node
+ * @param _parent pointer to father node
+ * @param _index this node's position in parent node
+ * @return the new created node
+ */
 SINode*
-SILeafNode::split(SINode* _father, int _index)
+SILeafNode::Split(SINode* _parent, int _index)
 {
-	int num = this->getNum();
-	SINode* p = new SILeafNode;		//right child
-	p->setHeight(this->getHeight());	//NOTICE: assign height for new node
-	p->setNext(this->next);
-	this->setNext(p);
-	p->setPrev(this);
-	int i, k;
-	for (i = MIN_KEY_NUM, k = 0; i < num; ++i, ++k)
-	{
-		p->addKey(this->keys + i, k);
-		p->addValue(this->values[i], k);
-		p->addNum();
-	}
-	const Bstr* tp = this->keys + MIN_KEY_NUM;
-	this->setNum(MIN_KEY_NUM);
-	_father->addKey(tp, _index, true);
-	_father->addChild(p, _index + 1);	//DEBUG(check the index)
-	_father->addNum();
-	_father->setDirty();
-	p->setDirty();
-	this->setDirty();
+  int num = this->GetKeyNum();
+  SINode* p = new SILeafNode;		//right child
 
-	return p;
+  // NOTICE: assign height for new node
+  p->setHeight(this->getHeight());
+
+  p->SetNext(this->next);
+  this->SetNext(p);
+  p->setPrev(this);
+
+  int i, k;
+  for (i = MIN_KEY_NUM, k = 0; i < num; ++i, ++k)
+  {
+    p->addKey(this->keys + i, k);
+    p->AddValue(this->values[i], k);
+    p->AddKeyNum();
+  }
+  const Bstr* tp = this->keys + MIN_KEY_NUM;
+  this->SetKeyNum(MIN_KEY_NUM);
+  _parent->addKey(tp, _index, true);
+  // from these code , we can assure k[i] is value[i+1]'s min-value
+  _parent->AddChild(p, _index + 1);
+
+  _parent->AddKeyNum();
+  _parent->setDirty();
+  p->setDirty();
+  this->setDirty();
+
+  return p;
 }
 
+/**
+ * add a key or Coalesce a neighbor to this.
+ * Four case
+ * 1:union right to this.
+ * 2:move one from right
+ * 3:union left to this
+ * 4:move one from left
+ * @param _parent parent node
+ * @param _index which position this node is in parent's child
+ * @return  neighbour SINode in case 1/3, NULL case 2/4.
+ */
 SINode*
-SILeafNode::coalesce(SINode* _father, int _index)
-{		//add a key or coalesce a neighbor to this
-	int i, j = _father->getNum(), k;	//BETTER: unsigned?
-	SINode* p = NULL;
-	int ccase = 0;
-	const Bstr* bstr;
-	if (_index < j)	//the right neighbor
-	{
-		p = _father->getChild(_index + 1);
-		k = p->getNum();
-		if ((unsigned)k > MIN_KEY_NUM)
-			ccase = 2;
-		else				//==MIN_KEY_NUM
-			ccase = 1;
-	}
-	if (_index > 0)			//the left neighbor
-	{
-		SINode* tp = _father->getChild(_index - 1);
-		unsigned tk = tp->getNum();
-		if (ccase < 2)
-		{
-			if (ccase == 0)
-				ccase = 3;
-			if (tk > MIN_KEY_NUM)
-				ccase = 4;
-		}
-		if (ccase > 2)
-		{
-			p = tp;
-			k = tk;
-		}
-	}
-	switch (ccase)
-	{
-	case 1:					//union right to this
-		for (i = 0; i < k; ++i)
-		{
-			this->addKey(p->getKey(i), this->getNum());
-			this->addValue(p->getValue(i), this->getNum());
-			this->addNum();
-		}
-		_father->subKey(_index, true);
-		_father->subChild(_index + 1);
-		_father->subNum();
-		this->next = p->getNext();
-		if (this->next != NULL)
-			this->next->setPrev(this);
-		p->setNum(0);	//NOTICE: adjust num before delete!
-						//delete p;
-		break;
-	case 2:					//move one from right
-		this->addKey(p->getKey(0), this->getNum());
-		_father->setKey(p->getKey(1), _index, true);
-		p->subKey(0);
-		this->addValue(p->getValue(0), this->getNum());
-		p->subValue(0);
-		this->addNum();
-		p->subNum();
-		break;
-	case 3:					//union left to this
-							//BETTER: move all keys/etc one time
-		for (i = k; i > 0; --i)
-		{
-			int t = i - 1;
-			this->addKey(p->getKey(t), 0);
-			this->addValue(p->getValue(t), 0);
-			this->addNum();
-		}
-		_father->subKey(_index - 1, true);
-		_father->subChild(_index - 1);
-		_father->subNum();
-		this->prev = p->getPrev();
-		if (this->prev != NULL)		//else: leaves-list
-			this->prev->setNext(this);
-		p->setNum(0);
-		//delete p;
-		break;
-	case 4:					//move one from left
-		bstr = p->getKey(k - 1);
-		p->subKey(k - 1);
-		this->addKey(bstr, 0);
-		_father->setKey(bstr, _index - 1, true);
-		this->addValue(p->getValue(k - 1), 0);
-		p->subValue(k - 1);
-		this->addNum();
-		p->subNum();
-		break;
-	default:
-		print("error in coalesce: Invalid case!");
-		//printf("error in coalesce: Invalid case!");
-	}
+SILeafNode::Coalesce(SINode* _parent, int _index)
+{
+  int i, parent_key_num = _parent->GetKeyNum();
+  unsigned int neighbour_key_num;
+  SINode* neighbour = nullptr;
 
-	_father->setDirty();
-	p->setDirty();
-	this->setDirty();
-	if (ccase == 1 || ccase == 3)
-		return p;
-	else
-		return NULL;
+  // 1:union right to this
+  // 2:move one from right
+  // 3:union left to this
+  // 4:move one from left
+  int coalesce_method = 0;
+  const Bstr* bstr;
+
+  //it has a right neighbor
+  if (_index < parent_key_num)
+  {
+    neighbour = _parent->GetChild(_index + 1);
+    neighbour_key_num = neighbour->GetKeyNum();
+    if ((unsigned)neighbour_key_num > MIN_KEY_NUM)
+      coalesce_method = 2;
+    else // if the right child has <= MIN_KEY_NUM values
+      coalesce_method = 1;
+  }
+
+  //it has a left neighbor
+  if (_index > 0)
+  {
+    SINode* left_neighbour = _parent->GetChild(_index - 1);
+    unsigned tk = left_neighbour->GetKeyNum();
+    if (coalesce_method < 2)
+    {
+      // if not have right neighbour
+      if (coalesce_method == 0)
+        coalesce_method = 3;
+      if (tk > MIN_KEY_NUM)
+        coalesce_method = 4;
+    }
+    if (coalesce_method > 2)
+    {
+      neighbour = left_neighbour;
+      neighbour_key_num = tk;
+    }
+  }
+  switch (coalesce_method)
+  {
+    //union right to this
+    case 1:
+      for (i = 0; i < neighbour_key_num; ++i)
+      {
+        this->addKey(neighbour->getKey(i), this->GetKeyNum());
+        this->AddValue(neighbour->GetValue(i), this->GetKeyNum());
+        this->AddKeyNum();
+      }
+      _parent->subKey(_index, true);
+      _parent->subChild(_index + 1);
+      _parent->SubKeyNum();
+      this->next = neighbour->GetNext();
+      if (this->next != NULL)
+        this->next->setPrev(this);
+      neighbour->SetKeyNum(0);
+      break;
+
+    // move one from right and add it to this node's last position
+    // need to adjust keys of parent
+    case 2:
+      this->addKey(neighbour->getKey(0), this->GetKeyNum());
+      _parent->SetKey(neighbour->getKey(1), _index, true);
+      neighbour->subKey(0);
+      this->AddValue(neighbour->GetValue(0), this->GetKeyNum());
+      neighbour->SubValue(0);
+      this->AddKeyNum();
+      neighbour->SubKeyNum();
+      break;
+
+    //union left to this
+    case 3:
+      // may have efficiency problem
+      for (i = neighbour_key_num; i > 0; --i)
+      {
+        int t = i - 1;
+        this->addKey(neighbour->getKey(t), 0);
+        this->AddValue(neighbour->GetValue(t), 0);
+        this->AddKeyNum();
+      }
+      _parent->subKey(_index - 1, true);
+      _parent->subChild(_index - 1);
+      _parent->SubKeyNum();
+      this->prev = neighbour->GetPrev();
+      if (this->prev != NULL)
+        this->prev->SetNext(this);
+      neighbour->SetKeyNum(0);
+      break;
+
+    //move one from left
+    case 4:
+      bstr = neighbour->getKey(neighbour_key_num - 1);
+      neighbour->subKey(neighbour_key_num - 1);
+      this->addKey(bstr, 0);
+      _parent->SetKey(bstr, _index - 1, true);
+      this->AddValue(neighbour->GetValue(neighbour_key_num - 1), 0);
+      neighbour->SubValue(neighbour_key_num - 1);
+      this->AddKeyNum();
+      neighbour->SubKeyNum();
+      break;
+    default:
+      print("error in Coalesce: Invalid case!");
+  }
+
+  _parent->setDirty();
+  neighbour->setDirty();
+  this->setDirty();
+  if (coalesce_method == 1 || coalesce_method == 3)
+    return neighbour;
+  else
+    return NULL;
 }
 
 void
-SILeafNode::release()
+SILeafNode::Release()
 {
-	if (!this->inMem())
-		return;
-	unsigned num = this->getNum();
-	/*
-	for(int i = 0; i < num; ++i)
-	{
-	keys[i].release();
-	values[i].release();
-	}
-	*/
-	for (unsigned i = num; i < MAX_KEY_NUM; ++i)
-	{
-		keys[i].clear();
-	}
-	delete[] keys;
-	delete[] values;
+  if (!this->inMem())
+    return;
+  unsigned num = this->GetKeyNum();
+  for (unsigned i = num; i < MAX_KEY_NUM; ++i)
+  {
+    keys[i].clear();
+  }
+  delete[] keys;
+  delete[] values;
 }
 
 SILeafNode::~SILeafNode()
 {
-	release();
+  Release();
 }
 
 void
 SILeafNode::print(string s)
 {
 #ifdef DEBUG_KVSTORE
-	unsigned num = this->getNum();
+  unsigned num = this->getNum();
 	fputs(Util::showtime().c_str(), Util::debug_kvstore);
 	fputs("Class SILeafNode\n", Util::debug_kvstore);
 	fputs("Message: ", Util::debug_kvstore);
@@ -328,7 +363,7 @@ SILeafNode::print(string s)
 	unsigned i;
 	if (s == "NODE")
 	{
-		fprintf(Util::debug_kvstore, "store: %u\tnum: %u\tflag: %u\n", this->store, num, this->flag);
+		fprintf(Util::debug_kvstore, "store: %u\tnum: %u\tnode_flag_: %u\n", this->store, num, this->node_flag_);
 		fprintf(Util::debug_kvstore, "prev: %p\tnext: %p\n", this->prev, this->next);
 		for (i = 0; i < num; ++i)
 		{
@@ -338,16 +373,16 @@ SILeafNode::print(string s)
 	}
 	else if (s == "node")
 	{
-		fprintf(Util::debug_kvstore, "store: %u\tnum: %u\tflag: %u\n", this->store, num, this->flag);
+		fprintf(Util::debug_kvstore, "store: %u\tnum: %u\tnode_flag_: %u\n", this->store, num, this->node_flag_);
 		fprintf(Util::debug_kvstore, "prev: %p\tnext: %p\n", this->prev, this->next);
 	}
 	else if (s == "check node")
 	{
 		//check the node, if satisfy B+ definition
-		bool flag = true;
+		bool node_flag_ = true;
 		if (num < MIN_KEY_NUM || num > MAX_KEY_NUM)
-			flag = false;
-		if (flag)
+			node_flag_ = false;
+		if (node_flag_)
 		{
 			for (i = 1; i < num; ++i)
 			{
@@ -357,10 +392,10 @@ SILeafNode::print(string s)
 					break;
 			}
 			if (i < num)
-				flag = false;
+				node_flag_ = false;
 		}
 		this->print("node");
-		if (flag)
+		if (node_flag_)
 			fprintf(Util::debug_kvstore, "This node is good\n");
 		else
 			fprintf(Util::debug_kvstore, "This node is bad\n");

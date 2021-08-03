@@ -159,9 +159,9 @@ KVstore::getTrie()
 void
 KVstore::set_if_single_thread(bool _single)
 {
-	this->entity2id->setSingleThread(_single);
-	this->predicate2id->setSingleThread(_single);
-	this->literal2id->setSingleThread(_single);
+  this->entity2id->SetSingleThread(_single);
+  this->predicate2id->SetSingleThread(_single);
+  this->literal2id->SetSingleThread(_single);
 }
 
 string 
@@ -373,82 +373,6 @@ KVstore::getObjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 bool 
 KVstore::updateTupleslist_insert(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn) 
 {
-	//int* _tmp = NULL;
-	//int _len = 0;
-	//bool _get;
-	//cout << "Inserting:\t" << _sub_id << '\t' << _pre_id << '\t' << _obj_id << endl;
-	//cout << "Before insertion:" << endl;
-	//_get = this->getValueByKey(this->subID2values, _sub_id, (char*&)_tmp, _len);
-	//if (!_get) {
-	//	cout << "SubID " << _sub_id << ": doesn't exist." << endl;
-	//}
-	//else {
-	//	cout << "SubID " << _sub_id << ':';
-	//	for (unsigned i = 0; i < _len / sizeof(int); i++) {
-	//		cout << '\t' << _tmp[i];
-	//	}
-	//	cout << endl;
-	//}
-	//_get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len);
-	//if (!_get) {
-	//	cout << "ObjID " << _obj_id << ": doesn't exist." << endl;
-	//}
-	//else {
-	//	cout << "ObjID " << _obj_id << ':';
-	//	for (unsigned i = 0; i < _len / sizeof(int); i++) {
-	//		cout << '\t' << _tmp[i];
-	//	}
-	//	cout << endl;
-	//}
-	//_get = this->getValueByKey(this->preID2values, _pre_id, (char*&)_tmp, _len);
-	//if (!_get) {
-	//	cout << "PreID " << _pre_id << ": doesn't exist." << endl;
-	//}
-	//else {
-	//	cout << "PreID " << _pre_id << ':';
-	//	for (unsigned i = 0; i < _len / sizeof(int); i++) {
-	//		cout << '\t' << _tmp[i];
-	//	}
-	//	cout << endl;
-	//}
-	//bool flag = this->updateInsert_s2values(_sub_id, _pre_id, _obj_id)
-	//	&& this->updateInsert_o2values(_sub_id, _pre_id, _obj_id)
-	//	&& this->updateInsert_p2values(_sub_id, _pre_id, _obj_id);
-	//cout << "After insertion:" << endl;
-	//_get = this->getValueByKey(this->subID2values, _sub_id, (char*&)_tmp, _len);
-	//if (!_get) {
-	//	cout << "SubID " << _sub_id << ": doesn't exist." << endl;
-	//}
-	//else {
-	//	cout << "SubID " << _sub_id << ':';
-	//	for (unsigned i = 0; i < _len / sizeof(int); i++) {
-	//		cout << '\t' << _tmp[i];
-	//	}
-	//	cout << endl;
-	//}
-	//_get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len);
-	//if (!_get) {
-	//	cout << "ObjID " << _obj_id << ": doesn't exist." << endl;
-	//}
-	//else {
-	//	cout << "ObjID " << _obj_id << ':';
-	//	for (unsigned i = 0; i < _len / sizeof(int); i++) {
-	//		cout << '\t' << _tmp[i];
-	//	}
-	//	cout << endl;
-	//}
-	//_get = this->getValueByKey(this->preID2values, _pre_id, (char*&)_tmp, _len);
-	//if (!_get) {
-	//	cout << "PreID " << _pre_id << ": doesn't exist." << endl;
-	//}
-	//else {
-	//	cout << "PreID " << _pre_id << ':';
-	//	for (unsigned i = 0; i < _len / sizeof(int); i++) {
-	//		cout << '\t' << _tmp[i];
-	//	}
-	//	cout << endl;
-	//}
-	//return flag;
 	if(txn == nullptr)
 	{
 	return this->updateInsert_s2values(_sub_id, _pre_id, _obj_id)
@@ -2327,7 +2251,7 @@ KVstore::close_entity2id()
 		return true;
 	}
 
-	this->entity2id->save();
+  this->entity2id->Save();
 	delete this->entity2id;
 	this->entity2id = NULL;
 
@@ -2354,6 +2278,14 @@ KVstore::getIDByEntity(string _entity0) const
 	return this->getIDByStr(this->entity2id, _entity0.c_str(), _entity0.length());
 }
 
+/**
+ * Set ID to entity
+ * @warning You Must Look up _entity0 first!
+ * Only if it doesn't have an ID can you insert it!
+ * @param _entity0 the inserted entity
+ * @param _id the given id
+ * @return bool
+ */
 bool 
 KVstore::setIDByEntity(string _entity0, TYPE_ENTITY_LITERAL_ID _id) 
 {
@@ -2499,7 +2431,7 @@ KVstore::close_predicate2id()
 		return true;
 	}
 
-	this->predicate2id->save();
+  this->predicate2id->Save();
 	delete this->predicate2id;
 	this->predicate2id = NULL;
 
@@ -2523,6 +2455,14 @@ KVstore::getIDByPredicate(string _predicate0) const
 	return this->getIDByStr(this->predicate2id, _predicate0.c_str(), _predicate0.length());
 }
 
+/**
+ * Set ID to Predicate string
+ * @warning You Must Look up _predicate0 first!
+ * Only if it doesn't have an ID can you insert it!
+ * @param _predicate0 the inserted Predicate
+ * @param _id the given id
+ * @return bool
+ */
 bool 
 KVstore::setIDByPredicate(string _predicate0, TYPE_PREDICATE_ID _id) 
 {
@@ -2647,7 +2587,7 @@ KVstore::close_literal2id()
 		return true;
 	}
 
-	this->literal2id->save();
+  this->literal2id->Save();
 	delete this->literal2id;
 	this->literal2id = NULL;
 
@@ -2676,6 +2616,14 @@ KVstore::getIDByLiteral(string _literal0) const
 	//}
 }
 
+/**
+ * Set ID to Literale string
+ * @warning You Must Look up _literal0 first!
+ * Only if it doesn't have an ID can you insert it!
+ * @param _literal0 the inserted literal
+ * @param _id the given id
+ * @return bool
+ */
 bool 
 KVstore::setIDByLiteral(string _literal0, TYPE_ENTITY_LITERAL_ID _id) 
 {
@@ -4623,7 +4571,7 @@ KVstore::flush(SITree* _p_btree)
 {
 	if (_p_btree != NULL) 
 	{
-		_p_btree->save();
+      _p_btree->Save();
 	}
 }
 
@@ -4632,7 +4580,7 @@ KVstore::flush(ISTree* _p_btree)
 {
 	if (_p_btree != NULL) 
 	{
-		_p_btree->save();
+		_p_btree->Save();
 	}
 }*/
 
@@ -4652,7 +4600,7 @@ KVstore::flush(IVTree* _p_btree)
 {
 	if (_p_btree != NULL) 
 	{
-		_p_btree->save();
+		_p_btree->Save();
 	}
 }*/
 
@@ -4668,7 +4616,7 @@ KVstore::flush(IVArray* _array)
 bool 
 KVstore::addValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val) 
 {
-	return _p_btree->insert(_key, _klen, _val);
+	return _p_btree->Insert(_key, _klen, _val);
 }
 
 /*bool 
@@ -4708,7 +4656,7 @@ KVstore::addValueByKey(IVArray *_array, unsigned _key, char* _val, unsigned long
 bool 
 KVstore::setValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val) 
 {
-	return _p_btree->modify(_key, _klen, _val);
+	return _p_btree->Modify(_key, _klen, _val);
 }
 
 /*bool 
@@ -4748,13 +4696,13 @@ KVstore::setValueByKey(IVArray* _array, unsigned _key, char* _val, unsigned long
 bool 
 KVstore::getValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsigned* _val) const 
 {
-	return _p_btree->search(_key, _klen, _val);
+	return _p_btree->Search(_key, _klen, _val);
 }
 
 /*bool 
 KVstore::getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const 
 {
-	return _p_btree->search(_key, _val, _vlen);
+	return _p_btree->Search(_key, _val, _vlen);
 }*/
 
 bool
@@ -4772,7 +4720,7 @@ KVstore::getValueByKey(ISArray* _array, unsigned _key, char*& _val, unsigned& _v
 /*bool 
 KVstore::getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const 
 {
-	return _p_btree->search(_key, _val, _vlen);
+	return _p_btree->Search(_key, _val, _vlen);
 }*/
 
 bool
@@ -4790,7 +4738,7 @@ TYPE_ENTITY_LITERAL_ID
 KVstore::getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const 
 {
 	unsigned val = 0;
-	bool ret = _p_btree->search(_key, _klen, &val);
+	bool ret = _p_btree->Search(_key, _klen, &val);
 	if (!ret)
 	{
 		//return -1;
@@ -4803,7 +4751,7 @@ KVstore::getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const
 bool 
 KVstore::removeKey(SITree* _p_btree, const char* _key, unsigned _klen)
 {
-	return _p_btree->remove(_key, _klen);
+	return _p_btree->Remove(_key, _klen);
 }
 
 /*
