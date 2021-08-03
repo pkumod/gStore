@@ -31,16 +31,16 @@
 #include "workflow/WFHttpServer.h"
 #include "workflow/WFFacilities.h"
 #include "WebUrl.h"
-#include "../../Util/IPWhiteList.h"
-#include "../../Util/IPBlackList.h"
+//#include "../../Util/IPWhiteList.h"
+//#include "../../Util/IPBlackList.h"
 
 using namespace std;
 int loadCSR = 0;
 int blackList = 0;
 int whiteList = 0;
 
-IPWhiteList* ipWhiteList;
-IPBlackList* ipBlackList;
+//IPWhiteList* ipWhiteList;
+//IPBlackList* ipBlackList;
 
 bool ipCheck(WFHttpTask* server_task, protocol::HttpRequest* req, protocol::HttpResponse* resp) {
 	//get the real IP of the client, because we use nginx here
@@ -70,12 +70,12 @@ bool ipCheck(WFHttpTask* server_task, protocol::HttpRequest* req, protocol::Http
 
 	cout << "remote_ip: " << remote_ip << endl;
 	//check if the ip is allow or denied
-	if (whiteList == 1) {
+	/*if (whiteList == 1) {
 		return ipWhiteList->Check(remote_ip);
 	}
 	else if (blackList == 1) {
 		return ipBlackList->Check(remote_ip);
-	}
+	}*/
 	return true;
 }
 
@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
 
 
 
-	if (ipallow != "n")
+	/*if (ipallow != "n")
 	{
 		whiteList = 1;
 		cout << "IP white List enabled." << endl;
@@ -213,7 +213,7 @@ int main(int argc, char* argv[])
 		cout << "IP black list enabled." << endl;
 		ipBlackList = new IPBlackList();
 		ipBlackList->Load(ipdeny);
-	}
+	}*/
 
 	if (advanced == "y")
 	{
