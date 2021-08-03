@@ -265,7 +265,7 @@ const unsigned long long  MAX_TS = -1;
 //typedef unsigned NODE_ID;
 
 //can use `man limits.h` to see more
-static const unsigned INVALID = UINT_MAX;
+static const unsigned int INVALID = UINT_MAX;
 //static const int INVALID = -1;
 //#define INVALID UINT_MAX
 
@@ -491,24 +491,34 @@ private:
 
 //===================================================================================================================
 
+/**
+ * A list of unsigned
+ */
 class BlockInfo
 {
 public:
-	unsigned num;			
+    // starts from 1
+	unsigned num;
 	BlockInfo* next;
 	BlockInfo()
 	{
-		num = 0;
+      num = 0;
 		next = NULL;
 	}
 	BlockInfo(unsigned _num)
 	{
-		num = _num;
+      num = _num;
 		next = NULL;
 	}
+
+	/**
+	 * create BlockInfo
+	 * @param _num the number
+	 * @param _bp the 'next' pointer
+	 */
 	BlockInfo(unsigned _num, BlockInfo* _bp)
 	{
-		num = _num;
+      num = _num;
 		next = _bp;
 	}
 };
@@ -539,6 +549,13 @@ public:
 //BETTER+TODO:if considering frequent insert/delete, there maybe too many empty positions, too wasteful!
 //A method is to divide as groups, set the base for each, not conflict
 //Reproducing the array if needed!
+
+
+/**
+ * A raw array of string. A simple wrapping.
+ * BETTER+TODO:if considering frequent insert/delete, there maybe too many empty positions,too wasteful! .
+ * A method is to divide as groups, set the base for each, not conflict. Reproducing the array if needed!
+ */
 class Buffer
 {
 public:
@@ -549,10 +566,6 @@ public:
 	{
 		this->size = _size;
 		this->buffer = new std::string[this->size];
-		//for(unsigned i = 0; i < this->size; ++i)
-		//{
-			//this->buffer[i] = "";
-		//}
 	}
 	
 	bool set(unsigned _pos, const std::string& _ele)
@@ -583,92 +596,7 @@ public:
 
 	~Buffer()
 	{
-		//for(unsigned i = 0; i < size; ++i)
-		//{
-			//delete[] buffer[i];
-		//}
 		delete[] buffer;
-	}
-};
-
-//NOTICE: bool used to be represented by int in C, but in C++ it only occupies a byte
-//But in 32-bit machine, read/write on 32-bit(4-byte) will be more efficient, so bools are compressed into 4-bytes
-//vector<bool> is not suggested:)
-//http://blog.csdn.net/liushu1231/article/details/8844631
-class BoolArray
-{
-private:
-	unsigned size;
-	char* arr;
-
-public:
-	BoolArray()
-	{
-		size = 0;
-		arr = NULL;
-	}
-	BoolArray(unsigned _size)
-	{
-		//this->size = (_size+7)/8*8;
-		this->size = Util::ceiling(_size, 8);
-		this->arr = new char[this->size/8];
-	}
-	void fill(unsigned _size)
-	{
-		if(this->arr != NULL)
-		{
-			//unsigned tmp = (_size+7)/8*8;
-			unsigned tmp = Util::ceiling(_size, 8);
-			if(tmp > this->size)
-			{
-				this->size= tmp;
-				delete[] this->arr;
-				this->arr = new char[this->size/8];
-			}
-		}
-		else
-		{
-			//this->size = (_size+7)/8*8;
-			this->size = Util::ceiling(_size, 8);
-			this->arr = new char[this->size/8];
-		}
-	}
-	//void load()
-	//{
-	//}
-
-	bool exist()
-	{
-		return this->size > 0;
-	}
-	unsigned getSize()
-	{
-		return size;
-	}
-	void clear()
-	{
-		this->size = 0;
-		delete[] arr;
-		arr = NULL;
-	}
-	~BoolArray()
-	{
-		delete[] arr;
-	}
-};
-
-class AccessRequest
-{
-public:
-	unsigned id;
-	long offset;
-	unsigned length;
-	std::string *str;
-	AccessRequest(unsigned _id, long _offset, unsigned _length, std::string *_str):
-		id(_id), offset(_offset), length(_length), str(_str){};
-	inline bool operator < (const AccessRequest &x) const
-	{
-		return this->offset < x.offset;
 	}
 };
 

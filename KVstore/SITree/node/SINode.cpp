@@ -10,179 +10,151 @@
 
 using namespace std;
 
+/**
+ * new a Bstr Array
+ */
 void
 SINode::AllocKeys()
 {
 	keys = new Bstr[MAX_KEY_NUM];
 }
 
-/*
-void
-SINode::FreeKeys()
-{
-delete[] keys;
-}
-*/
-
+/**
+ * default constructor for SINode
+ * Specially In Memory is set to false
+ */
 SINode::SINode()
 {
-	store = flag = 0;
-	flag |= NF_IM;
-	heapId = -1;
-	AllocKeys();
+  store = node_flag_ = 0;
+  node_flag_ |= NF_IM;
+  heapId = -1;
+  AllocKeys();
 }
 
 SINode::SINode(bool isVirtual)
 {
-	store = flag = 0;
-	heapId = -1;
-	if (!isVirtual)
-	{
-		flag |= NF_IM;
-		AllocKeys();
-	}
+  store = node_flag_ = 0;
+  heapId = -1;
+  if (!isVirtual)
+  {
+    node_flag_ |= NF_IM;
+    AllocKeys();
+  }
 }
 
-/*
-SINode::Node(Storage* TSM)
-{
-AllocKeys();
-TSM->readSINode(this, Storage::OVER);
-}
-*/
 bool
 SINode::isLeaf() const
 {
-	return this->flag & NF_IL;
+	return this->node_flag_ & NF_IL;
 }
 
 bool
 SINode::isDirty() const
 {
-	return this->flag & NF_ID;
+	return this->node_flag_ & NF_ID;
 }
 
 void
 SINode::setDirty()
 {
-	this->flag |= NF_ID;
+	this->node_flag_ |= NF_ID;
 }
 
 void
 SINode::delDirty()
 {
-	this->flag &= ~NF_ID;
+	this->node_flag_ &= ~NF_ID;
 }
 
 bool
 SINode::inMem() const
 {
-	return this->flag & NF_IM;
+	return this->node_flag_ & NF_IM;
 }
 
 void
-SINode::setMem()
+SINode::SetInMem()
 {
-	this->flag |= NF_IM;
+	this->node_flag_ |= NF_IM;
 }
 
 void
-SINode::delMem()
+SINode::SetMemFlagFalse()
 {
-	this->flag &= ~NF_IM;
+	this->node_flag_ &= ~NF_IM;
 }
-
-/*
-bool
-SINode::isVirtual() const
-{
-return this->flag & NF_IV;
-}
-
-void
-SINode::setVirtual()
-{
-this->flag |= NF_IV;
-}
-
-void
-SINode::delVirtual()
-{
-this->flag &= ~NF_IV;
-}
-*/
 
 unsigned
 SINode::getRank() const
 {
-	return this->flag & NF_RK;
+	return this->node_flag_ & NF_RK;
 }
 
 void
 SINode::setRank(unsigned _rank)
 {
-	this->flag &= ~NF_RK;
-	this->flag |= _rank;
+	this->node_flag_ &= ~NF_RK;
+	this->node_flag_ |= _rank;
 }
 
 unsigned
 SINode::getHeight() const
 {
-	return (this->flag & NF_HT) >> 20;
+	return (this->node_flag_ & NF_HT) >> 20;
 }
 
 void
 SINode::setHeight(unsigned _h)
 {
-	this->flag &= ~NF_HT;
-	this->flag |= (_h << 20);
+	this->node_flag_ &= ~NF_HT;
+	this->node_flag_ |= (_h << 20);
 }
 
 unsigned
-SINode::getNum() const
+SINode::GetKeyNum() const
 {
-	return (this->flag & NF_KN) >> 12;
+	return (this->node_flag_ & NF_KN) >> 12;
 }
 
 bool
-SINode::setNum(int _num)
+SINode::SetKeyNum(int _num)
 {
 	if (_num < 0 || (unsigned)_num > MAX_KEY_NUM)
 	{
-		print(string("error in setNum: Invalid num ") + Util::int2string(_num));
+		print(string("error in SetKeyNum: Invalid num ") + Util::int2string(_num));
 		return false;
 	}
-	this->flag &= ~NF_KN;
-	this->flag |= (_num << 12);
+	this->node_flag_ &= ~NF_KN;
+	this->node_flag_ |= (_num << 12);
 	return true;
 }
 
 bool
-SINode::addNum()
+SINode::AddKeyNum()
 {
-	if (this->getNum() + 1 > MAX_KEY_NUM)
+	if (this->GetKeyNum() + 1 > MAX_KEY_NUM)
 	{
-		print("error in addNum: Invalid!");
+		print("error in AddKeyNum: Invalid!");
 		return false;
 	}
-	this->flag += (1 << 12);
+	this->node_flag_ += (1 << 12);
 	return true;
 }
 
 bool
-SINode::subNum()
+SINode::SubKeyNum()
 {
-	if (this->getNum() < 1)
+	if (this->GetKeyNum() < 1)
 	{
-		print("error in subNum: Invalid!");
+		print("error in SubKeyNum: Invalid!");
 		return false;
 	}
-	this->flag -= (1 << 12);
+	this->node_flag_ -= (1 << 12);
 	return true;
 }
 
 unsigned
-SINode::getStore() const
+SINode::GetStore() const
 {
 	return this->store;
 }
@@ -196,19 +168,19 @@ SINode::setStore(unsigned _store)
 unsigned
 SINode::getFlag() const
 {
-	return flag;
+	return node_flag_;
 }
 
 void
 SINode::setFlag(unsigned _flag)
 {
-	this->flag = _flag;
+	this->node_flag_ = _flag;
 }
 
 const Bstr*
 SINode::getKey(int _index) const
 {
-	int num = this->getNum();
+	int num = this->GetKeyNum();
 	if (_index < 0 || _index >= num)
 	{
 		//print(string("error in getKey: Invalid index ") + Util::int2string(_index));    
@@ -220,12 +192,12 @@ SINode::getKey(int _index) const
 }
 
 bool
-SINode::setKey(const Bstr* _key, int _index, bool ifcopy)
+SINode::SetKey(const Bstr* _key, int _index, bool ifcopy)
 {
-	int num = this->getNum();
+	int num = this->GetKeyNum();
 	if (_index < 0 || _index >= num)
 	{
-		print(string("error in setKey: Invalid index ") + Util::int2string(_index));
+		print(string("error in SetKey: Invalid index ") + Util::int2string(_index));
 		return false;
 	}
 	if (ifcopy)
@@ -238,7 +210,7 @@ SINode::setKey(const Bstr* _key, int _index, bool ifcopy)
 bool
 SINode::addKey(const Bstr* _key, int _index, bool ifcopy)
 {
-	int num = this->getNum();
+	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)
 	{
 		print(string("error in addKey: Invalid index ") + Util::int2string(_index));
@@ -260,7 +232,7 @@ SINode::addKey(const Bstr* _key, int _index, bool ifcopy)
 bool 
 SINode::addKey(char* _str, unsigned _len, int _index, bool ifcopy)
 {
-	int num = this->getNum();
+	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)
 	{
 		print(string("error in addKey: Invalid index ") + Util::int2string(_index));
@@ -281,7 +253,7 @@ SINode::addKey(char* _str, unsigned _len, int _index, bool ifcopy)
 bool
 SINode::subKey(int _index, bool ifdel)
 {
-	int num = this->getNum();
+	int num = this->GetKeyNum();
 	if (_index < 0 || _index >= num)
 	{
 		print(string("error in subKey: Invalid index ") + Util::int2string(_index));
@@ -296,14 +268,15 @@ SINode::subKey(int _index, bool ifdel)
 	return true;
 }
 
+/**
+ * use binary search to find string in keys.
+ * @param _bstr string
+ * @return the first position where key > _bstr
+ */
 int
 SINode::searchKey_less(const Bstr& _bstr) const
 {
-	int num = this->getNum();
-	//for(i = 0; i < num; ++i)
-	//if(bstr < *(p->getKey(i)))
-	//break;
-
+	int num = this->GetKeyNum();
 	int low = 0, high = num - 1, mid = -1;
 	while (low <= high)
 	{
@@ -326,7 +299,7 @@ SINode::searchKey_less(const Bstr& _bstr) const
 int
 SINode::searchKey_equal(const Bstr& _bstr) const
 {
-	int num = this->getNum();
+	int num = this->GetKeyNum();
 	//for(i = 0; i < num; ++i)
 	//	if(bstr == *(p->getKey(i)))
 	//	{
@@ -341,7 +314,7 @@ SINode::searchKey_equal(const Bstr& _bstr) const
 int
 SINode::searchKey_lessEqual(const Bstr& _bstr) const
 {
-	//int num = this->getNum();
+	//int num = this->GetKeyNum();
 	//for(i = 0; i < num; ++i)
 	//if(bstr <= *(p->getKey(i)))
 	//break;
@@ -353,38 +326,59 @@ SINode::searchKey_lessEqual(const Bstr& _bstr) const
 		return ret;
 }
 
-int 
+/**
+ * use binary search to find string in keys.
+ * @param _str string pointer
+ * @param _len string length
+ * @return i, the first position where key[i] > string,
+ * 0 if all keys > string
+ */
+int
 SINode::searchKey_less(const char* _str, unsigned _len) const
 {
-	int num = this->getNum();
+  int num = this->GetKeyNum();
 
-	int low = 0, high = num - 1, mid = -1;
-	while (low <= high)
-	{
-		mid = (low + high) / 2;
-		//if (this->keys[mid] > _bstr)
-		if (Util::compare(this->keys[mid].getStr(), this->keys[mid].getLen(), _str, _len) > 0)
-		{
-			if (low == mid)
-				break;
-			high = mid;
-		}
-		else
-		{
-			low = mid + 1;
-		}
-	}
+  int low = 0, high = num - 1, mid = -1;
+  while (low <= high)
+  {
+    mid = (low + high) / 2;
+    if (Util::compare(this->keys[mid].getStr(), this->keys[mid].getLen(), _str, _len) > 0)
+    {
+      if (low == mid)
+        break;
+      high = mid;
+    }
+    else
+      low = mid + 1;
+  }
+  // case : 0 1 2 -> find(1.5）
+  // low = 0, high = 2 mid = 1
+  // low = 2, high = 2 mid = 2 break
+  // return 2
 
-	return low;
+  // case :  0 1 2 ->find(-1)
+  // low = 0, high = 2 mid = 1
+  // low = 0, high = 1 mid = 0 out
+  // return 0
+
+  // case 0 1 2 ->find(0)
+  // low = 0, high = 2 mid = 1
+  // low = 0, high = 1 mid = 0
+  // low = 1, high = 1 mid = 1 break
+  // return 1
+
+  // case 0 1 2 ->find(3) or ->find(2)
+  // low = 0, high = 2 mid = 1
+  // low = 2, high = 2 mid = 2
+  // low = 3, high = 2 break
+  // return 3
+  return low;
 }
 
 int 
 SINode::searchKey_equal(const char* _str, unsigned _len) const
 {
-	int num = this->getNum();
-	//for(i = 0; i < num; ++i)
-	//	if(bstr == *(p->getKey(i)))
-	//	{
+	int num = this->GetKeyNum();
 
 	int ret = this->searchKey_less(_str, _len);
 	//if (ret > 0 && this->keys[ret - 1] == _bstr)

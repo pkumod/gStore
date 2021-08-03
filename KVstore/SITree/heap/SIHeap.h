@@ -12,12 +12,13 @@
 #include "../../../Util/Util.h"
 #include "../node/SINode.h"
 
-/* add, sub, modify: all can be done within O(logn) using adjust-function */
-//QUERY: when modified, finding right position consumes O(n). How about keeping smallest?
-//(add O(1), sub O(2n), modify O(n)
-//TODO: to solve this probem, use another hash: (pointer, pos), to find the right position of
-//given p in O(lgn) time
-
+/**
+ * add, sub, modify: all can be done within O(log n) using adjust-function
+ * using an array to implement a heap.
+ * Structure: heap[i] is the parent of heap[2i+1] and heap[2i+2], heap[0] is the top
+ * heap[i]'s rank <= (heap[2i+1] and heap[2i+2])'s rank
+ * traverse this heap, we can get SINode* by ranks descending
+ */
 class SIHeap
 {
 private:
@@ -31,8 +32,8 @@ public:
 	unsigned getLen() const;
 	unsigned getSize() const;
 	bool isEmpty() const;
-	bool insert(SINode* _np);	//insert and adjust
-	bool remove();			//remove top and adjust
+	bool Insert(SINode* _np);	//insert and adjust
+	bool RemoveTop();			//remove top and adjust
 	bool modify(SINode* _np, bool _flag);			//searech modified element and adjust
 	~SIHeap();
 	void print(std::string s);			//DEBUG

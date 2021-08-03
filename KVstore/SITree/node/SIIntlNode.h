@@ -15,33 +15,31 @@ class SIIntlNode : public SINode
 {
 protected:
 	SINode* childs[MAX_CHILD_NUM + 1];
-	//Node** childs;
-	//void AllocChilds();
 public:
 	SIIntlNode();
 	SIIntlNode(bool isVirtual);
-	//IntlNode(Storage* TSM);
+	//IntlNode(Storage* tsm_);
 	void Virtual();
 	void Normal();
-	SINode* getChild(int _index) const;
+	SINode* GetChild(int _index) const;
 	bool setChild(SINode* _child, int _index);
-	bool addChild(SINode* _child, int _index);
+	bool AddChild(SINode* _child, int _index);
 	bool subChild(int _index);
-	unsigned getSize() const;
-	SINode* split(SINode* _father, int _index);
-	SINode* coalesce(SINode* _father, int _index);
-	void release();
+	unsigned GetSize() const;
+	SINode* Split(SINode* _parent, int _index);
+	SINode* Coalesce(SINode* _father, int _index);
+	void Release();
 	~SIIntlNode();
 	void print(std::string s);	//DEBUG
 	/*non-sense functions: polymorphic
-	Node* getPrev() const;
-	Node* getNext() const;
-	const Bstr* getValue(int _index) const;
-	bool setValue(const Bstr* _value, int _index);
-	bool addValue(const Bstr* _value, int _index);
-	bool subValue(int _index);
+	Node* GetPrev() const;
+	Node* GetNext() const;
+	const Bstr* GetValue(int _index) const;
+	bool SetValue(const Bstr* _value, int _index);
+	bool AddValue(const Bstr* _value, int _index);
+	bool SubValue(int _index);
 	void setPrev(Node* _prev);
-	void setNext(Node* _next);
+	void SetNext(Node* _next);
 	*/
 };
 

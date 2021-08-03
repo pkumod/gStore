@@ -10,56 +10,44 @@
 
 using namespace std;
 
-/*
-void
-SIIntlNode::AllocChilds()
-{
-childs = (Node**)malloc(sizeof(Node*) * MAX_CHILD_NUM);
-}
-*/
 
 SIIntlNode::SIIntlNode()
 {
 	memset(childs, 0, sizeof(SINode*) * MAX_CHILD_NUM);
-	//this->AllocChilds();
 }
 
 SIIntlNode::SIIntlNode(bool isVirtual)	//call father-class's constructor automaticlly
 {
 	memset(childs, 0, sizeof(SINode*) * MAX_CHILD_NUM);
-	//this->AllocChilds();
 }
 
-/*
-SIIntlNode::IntlNode(Storage* TSM)	//QUERY
-{
-TSM->readNode(this, Storage::OVER);
-}
-*/
 
 void
 SIIntlNode::Virtual()
 {
-	//this->FreeKeys();
-	this->release();
-	this->delMem();
+  this->Release();
+  this->SetMemFlagFalse();
 }
 
 void
 SIIntlNode::Normal()
 {
-	this->AllocKeys();
-	this->setMem();
+  this->AllocKeys();
+  this->SetInMem();
 }
 
+/**
+ *
+ * @param _index
+ * @return
+ */
 SINode*
-SIIntlNode::getChild(int _index) const
+SIIntlNode::GetChild(int _index) const
 {
-	int num = this->getNum();
+	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)  //num keys, num+1 childs
 	{
-		//print(string("error in getChild: Invalid index ") + Util::int2string(_index));
-		return NULL;
+		return nullptr;
 	}
 	else
 		return childs[_index];
@@ -68,7 +56,7 @@ SIIntlNode::getChild(int _index) const
 bool
 SIIntlNode::setChild(SINode* _child, int _index)
 {
-	int num = this->getNum();
+	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)
 	{
 		print(string("error in setChild: Invalid index ") + Util::int2string(_index));
@@ -80,12 +68,12 @@ SIIntlNode::setChild(SINode* _child, int _index)
 }
 
 bool
-SIIntlNode::addChild(SINode* _child, int _index)
+SIIntlNode::AddChild(SINode* _child, int _index)
 {
-	int num = this->getNum();
+	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num + 1)
 	{
-		print(string("error in addChild: Invalid index ") + Util::int2string(_index));
+		print(string("error in AddChild: Invalid index ") + Util::int2string(_index));
 		return false;
 	}
 	int i;
@@ -99,7 +87,7 @@ SIIntlNode::addChild(SINode* _child, int _index)
 bool
 SIIntlNode::subChild(int _index)
 {
-	int num = this->getNum();
+	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)
 	{
 		print(string("error in subchild: Invalid index ") + Util::int2string(_index));
@@ -113,9 +101,9 @@ SIIntlNode::subChild(int _index)
 }
 
 unsigned
-SIIntlNode::getSize() const
+SIIntlNode::GetSize() const
 {
-	unsigned sum = INTL_SIZE, num = this->getNum(), i;
+	unsigned sum = INTL_SIZE, num = this->GetKeyNum(), i;
 	for (i = 0; i < num; ++i)
 		sum += keys[i].getLen();
 
@@ -123,43 +111,48 @@ SIIntlNode::getSize() const
 }
 
 SINode*
-SIIntlNode::split(SINode* _father, int _index)
+SIIntlNode::Split(SINode* _parent, int _index)
 {
-	int num = this->getNum();
+	int num = this->GetKeyNum();
 	SINode* p = new SIIntlNode;		//right child
 	p->setHeight(this->getHeight());
 	int i, k;
 	for (i = MIN_CHILD_NUM, k = 0; i < num; ++i, ++k)
 	{
 		p->addKey(this->keys + i, k);
-		p->addChild(this->childs[i], k);
-		p->addNum();
+      p->AddChild(this->childs[i], k);
+      p->AddKeyNum();
 	}
-	p->addChild(this->childs[i], k);
+  p->AddChild(this->childs[i], k);
 	const Bstr* tp = this->keys + MIN_KEY_NUM;
-	this->setNum(MIN_KEY_NUM);
-	_father->addKey(tp, _index);
-	_father->addChild(p, _index + 1);	//DEBUG(check the index)
-	_father->addNum();
-	_father->setDirty();
+  this->SetKeyNum(MIN_KEY_NUM);
+	_parent->addKey(tp, _index);
+  _parent->AddChild(p, _index + 1);	//DEBUG(check the index)
+  _parent->AddKeyNum();
+	_parent->setDirty();
 	p->setDirty();
 	this->setDirty();
 
 	return p;
 }
 
+/**
+ *
+ * @param _father
+ * @param _index
+ * @return
+ */
 SINode*
-SIIntlNode::coalesce(SINode* _father, int _index)
+SIIntlNode::Coalesce(SINode* _father, int _index)
 {
-	//int num = this->getNum();
-	int i, j = _father->getNum(), k;	//BETTER: unsigned?
+	int i, j = _father->GetKeyNum(), k;	//BETTER: unsigned?
 	SINode* p;
 	int ccase = 0;
 	const Bstr* bstr;
 	if (_index < j)	//the right neighbor
 	{
-		p = _father->getChild(_index + 1);
-		k = p->getNum();
+		p = _father->GetChild(_index + 1);
+		k = p->GetKeyNum();
 		if ((unsigned)k > MIN_KEY_NUM)
 			ccase = 2;
 		else				//==MIN_KEY_NUM
@@ -167,8 +160,8 @@ SIIntlNode::coalesce(SINode* _father, int _index)
 	}
 	if (_index > 0)	//the left neighbor
 	{
-		SINode* tp = _father->getChild(_index - 1);
-		unsigned tk = tp->getNum();
+		SINode* tp = _father->GetChild(_index - 1);
+		unsigned tk = tp->GetKeyNum();
 		if (ccase < 2)
 		{
 			if (ccase == 0)
@@ -185,60 +178,60 @@ SIIntlNode::coalesce(SINode* _father, int _index)
 	switch (ccase)
 	{
 	case 1:					//union right to this
-		this->addKey(_father->getKey(_index), this->getNum());
-		this->addNum();
+		this->addKey(_father->getKey(_index), this->GetKeyNum());
+        this->AddKeyNum();
 		for (i = 0; i < k; ++i)
 		{
-			this->addKey(p->getKey(i), this->getNum());
-			this->addChild(p->getChild(i), this->getNum());
-			this->addNum();
+			this->addKey(p->getKey(i), this->GetKeyNum());
+          this->AddChild(p->GetChild(i), this->GetKeyNum());
+          this->AddKeyNum();
 		}
-		this->setChild(p->getChild(i), this->getNum());
+		this->setChild(p->GetChild(i), this->GetKeyNum());
 		_father->subKey(_index);
 		_father->subChild(_index + 1);
-		_father->subNum();
-		p->setNum(0);
+        _father->SubKeyNum();
+        p->SetKeyNum(0);
 		//delete p;
 		break;
 	case 2:					//move one form right
-		this->addKey(_father->getKey(_index), this->getNum());
-		_father->setKey(p->getKey(0), _index);
+		this->addKey(_father->getKey(_index), this->GetKeyNum());
+        _father->SetKey(p->getKey(0), _index);
 		p->subKey(0);
-		this->addChild(p->getChild(0), this->getNum() + 1);
+        this->AddChild(p->GetChild(0), this->GetKeyNum() + 1);
 		p->subChild(0);
-		this->addNum();
-		p->subNum();
+        this->AddKeyNum();
+        p->SubKeyNum();
 		break;
 	case 3:					//union left to this
 		this->addKey(_father->getKey(_index - 1), 0);
-		this->addNum();
+        this->AddKeyNum();
 		for (i = k; i > 0; --i)
 		{
 			int t = i - 1;
 			this->addKey(p->getKey(t), 0);
-			this->addChild(p->getChild(i), 0);
-			this->addNum();
+          this->AddChild(p->GetChild(i), 0);
+          this->AddKeyNum();
 		}
-		this->addChild(p->getChild(0), 0);
+        this->AddChild(p->GetChild(0), 0);
 		_father->subKey(_index - 1);
 		_father->subChild(_index - 1);
-		_father->subNum();
-		p->setNum(0);
+        _father->SubKeyNum();
+        p->SetKeyNum(0);
 		//delete p;
 		break;
 	case 4:					//move one from left
 		bstr = p->getKey(k - 1);
 		p->subKey(k - 1);
 		this->addKey(_father->getKey(_index - 1), 0);
-		_father->setKey(bstr, _index - 1);
-		this->addChild(p->getChild(k), 0);
+        _father->SetKey(bstr, _index - 1);
+        this->AddChild(p->GetChild(k), 0);
 		p->subChild(k);
-		this->addNum();
-		p->subNum();
+        this->AddKeyNum();
+        p->SubKeyNum();
 		break;
 	default:
-		print("error in coalesce: Invalid case!");
-		//printf("error in coalesce: Invalid case!");
+		print("error in Coalesce: Invalid case!");
+		//printf("error in Coalesce: Invalid case!");
 	}
 
 	_father->setDirty();
@@ -251,11 +244,11 @@ SIIntlNode::coalesce(SINode* _father, int _index)
 }
 
 void
-SIIntlNode::release()
+SIIntlNode::Release()
 {
 	if (!this->inMem())
 		return;
-	unsigned num = this->getNum();
+	unsigned num = this->GetKeyNum();
 	//delete[] keys;  //this will release all!!!
 	for (unsigned i = num; i < MAX_KEY_NUM; ++i)
 		keys[i].clear();
@@ -264,7 +257,7 @@ SIIntlNode::release()
 
 SIIntlNode::~SIIntlNode()
 {
-	release();
+  Release();
 	//free(childs);
 }
 
@@ -280,7 +273,7 @@ SIIntlNode::print(string s)
 	fputs("\n", Util::debug_kvstore);
 	if (s == "node" || s == "NODE")
 	{
-		fprintf(Util::debug_kvstore, "store: %u\tnum: %u\tflag: %u\n", this->store, num, this->flag);
+		fprintf(Util::debug_kvstore, "store: %u\tnum: %u\tflag: %u\n", this->store, num, this->node_flag_);
 		int i;
 		for (i = 0; i < num; ++i)
 		{
