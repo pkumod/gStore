@@ -571,7 +571,6 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
     cout << "OUT encodeBasicQuery" << endl;
     this->encode_result = true;
 
-    cout << endl << "test linkwithconstant" << endl << endl;
     for(int i = 0; i < var_str2id.size(); ++i) {
     	if(this->link_with_constant[i]){
     		cout << "var[" << i <<"]: " << var_name[i] <<" is linked with constant: " << "true" << endl;

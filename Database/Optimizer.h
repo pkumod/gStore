@@ -33,6 +33,7 @@
 #include <list>
 #include <cstdlib>
 #include <cmath>
+#include <random>
 
 
 using namespace std;
@@ -109,7 +110,7 @@ class Optimizer
   const int SAMPLE_CACHE_MAX = 50;
   const double SAMPLE_PRO = 0.05;
 
-  int get_strategy(unsigned id_cache_size);
+  unsigned get_sample_size(unsigned id_cache_size);
   bool check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDICATE_ID p_id, TYPE_ENTITY_LITERAL_ID o_id);
   bool check_pass(vector<int> &linked_nei_pos, vector<char> &edge_type,
 				  vector<TYPE_PREDICATE_ID> &p_list, vector<unsigned> &last_sample, unsigned this_var_sample);

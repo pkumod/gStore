@@ -97,7 +97,7 @@ topkobj = $(objdir)DynamicTrie.o $(objdir)OrderedList.o $(objdir)Pool.o $(objdir
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o $(objdir)QueryPlan.o\
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
-		   $(objdir)PathQueryHandler.o $(topkobj)
+		   $(objdir)PathQueryHandler.o $(objdir)BGPQuery.o $(topkobj)
 
 signatureobj = $(objdir)SigEntry.o $(objdir)Signature.o
 
@@ -480,6 +480,9 @@ $(objdir)QueryCache.o: Query/QueryCache.cpp Query/QueryCache.h $(objdir)Util.o $
 
 $(objdir)PathQueryHandler.o: Query/PathQueryHandler.cpp Query/PathQueryHandler.h $(objdir)Util.o $(objdir)CSR.o
 	$(CC) $(CFLAGS) Query/PathQueryHandler.cpp $(inc) -o $(objdir)PathQueryHandler.o $(openmp)
+
+$(objdir)BGPQuery.o: Query/BGPQuery.cpp Query/BasicQuery.h $(objdir)BasicQuery.o
+	$(CC) $(CFLAGS) Query/BGPQuery.cpp $(inc) -o $(objdir)BGPQuery.o $(openmp)
 
 #objects in Query/topk/ begin
 
