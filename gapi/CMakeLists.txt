@@ -25,7 +25,7 @@ endif ()
 set(TUTORIAL_LIST
 	tutorial-00-helloworld
 	tutorial-01-wget
-	tutorial-04-http_echo_server
+	tutorial-04-apiserver
 	tutorial-05-http_proxy
 	tutorial-06-parallel_wget
 	tutorial-07-sort_task
