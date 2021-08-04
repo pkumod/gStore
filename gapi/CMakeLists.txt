@@ -80,11 +80,7 @@ if (KAFKA STREQUAL "y")
 	target_link_libraries("kafka_cli" wfkafka workflow z snappy lz4 zstd rt)
 endif ()
 
-set(DIR10 tutorial-10-user_defined_protocol)
-add_executable(server ${DIR10}/server.cc ${DIR10}/message.cc)
-add_executable(client ${DIR10}/client.cc ${DIR10}/message.cc)
-target_link_libraries(server ${WORKFLOW_LIB})
-target_link_libraries(client ${WORKFLOW_LIB})
+
 
 set_target_properties(server PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/${DIR10})
