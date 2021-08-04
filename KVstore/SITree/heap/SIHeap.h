@@ -22,21 +22,24 @@
 class SIHeap
 {
 private:
-	SINode** heap;			//dynamic array
-	unsigned length;		//valid elements num
-	unsigned size;			//max-size of heap
-public:
-	SIHeap();
-	SIHeap(unsigned _size);
-	SINode* getTop() const;			//return the top element
-	unsigned getLen() const;
-	unsigned getSize() const;
-	bool isEmpty() const;
-	bool Insert(SINode* _np);	//insert and adjust
-	bool RemoveTop();			//remove top and adjust
-	bool modify(SINode* _np, bool _flag);			//searech modified element and adjust
-	~SIHeap();
-	void print(std::string s);			//DEBUG
+  //dynamic array
+  SINode** heap;
+  //valid elements num
+  unsigned length;
+  //max-size of heap
+  unsigned size;
+ public:
+  SIHeap();
+  SIHeap(unsigned _size);
+  SINode* getTop() const;			//return the top element
+  unsigned getLen() const;
+  unsigned getSize() const;
+  bool isEmpty() const;
+  bool Insert(SINode* _np);	//insert and adjust
+  bool RemoveTop();			//remove top and adjust
+  bool modify(SINode* _np, bool _flag);			//searech modified element and adjust
+  ~SIHeap();
+  void print(std::string s);			//DEBUG
 };
 
 #endif

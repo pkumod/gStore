@@ -21,8 +21,8 @@
  *
  * [mete data]
  * 0-4 byte:  (unsigned int) tree height
- * 4-8 byte:  (unsigned int) the root SINode's block id
- * 9-12 byte: (unsigned int) cur_block_num
+ * 4-7 byte:  (unsigned int) the root SINode's block id
+ * 8-11 byte: (unsigned int) cur_block_num
  *
  * [free block bit map]
  * Attention : scalar is bits
@@ -31,30 +31,44 @@
  * the max size of the SITree File ~ 68,719,476,736 Byte ~ 64 GB
  *
  * [block content]
- * each SINode information structure:
- * 0-3 byte: the first stores its own node_flag_ information(is leaf/is dirty etc.) and have used some
- * bits operations to compress all information into 4 byte (see SIStorage::CreateNode)
- * 4-7 byte: the second stores the block num of the next SINode information
+ *  A node may occupy many blocks. Suppose Node i has n blocks, then
+ *  each block has Util::STORAGE_BLOCK_SIZE Bytes
+ *  [block 0]
+ *      0-3 bytes store node flag info
+ *      4-7 bytes store block id of [block 1]
+ *      8 - (Util::STORAGE_BLOCK_SIZE-1) bytes stores the actual content
+ *  [block 1]
+ *      0-3 bytes store block id of [block 2]
+ *      4-(Util::STORAGE_BLOCK_SIZE-1) bytes stores the actual content
  *
- * And Tree Index in the file is organized as follows :
- * 1. SINodes in one layer are assembled to a sequence, during reading, a linked
- *    list is built per layer
- * 2. The parent-children relationship is assured by the child num in SINode
- *    When all children are read, the parent is done, and go to the next node
- *    in parent's layer
+ *      ......
  *
- * The SINode Content Part are organized as follows
+ *  [block n-1]
+ *      0-3 bytes store block id of [block n]
+ *      4-(Util::STORAGE_BLOCK_SIZE-1) bytes stores the actual content
+ *  [block n]
+ *      0-3 bytes is zero
+ *      4-(Util::STORAGE_BLOCK_SIZE-1) bytes stores the actual content
+ *
+ *  actual content refers to keys and values. keys will first be stored
+ *  and later values.
  */
 class SIStorage
 {
 public:
-	static const unsigned BLOCK_SIZE = Util::STORAGE_BLOCK_SIZE;	//fixed size of disk-block
-	static const unsigned MAX_BLOCK_NUM = 1 << 24;		//max block-num ,must can be exactly divided by 8
-														//below two constants: must can be exactly divided by 8
-	static const unsigned SET_BLOCK_NUM = 1 << 8;		//initial blocks num
-	static const unsigned SET_BLOCK_INC = SET_BLOCK_NUM;	//base of blocks-num inc
-	static const unsigned SuperNum = MAX_BLOCK_NUM / (8 * BLOCK_SIZE) + 1;
-private:
+  //fixed size of disk-block
+  static const unsigned BLOCK_SIZE = Util::STORAGE_BLOCK_SIZE;
+  //max block-num ,must can be exactly divided by 8
+  static const unsigned MAX_BLOCK_NUM = 1 << 24;
+  //below two constants: must can be exactly divided by 8
+  //initial blocks num
+  static const unsigned SET_BLOCK_NUM = 1 << 8;
+  //base of blocks-num inc
+  static const unsigned SET_BLOCK_INC = SET_BLOCK_NUM;
+  // how many pages the bitmap and metadata may occupy, also the start block
+  // of the actual content
+  static const unsigned SuperNum = MAX_BLOCK_NUM / (8 * BLOCK_SIZE) + 1;
+ private:
 	unsigned long long max_buffer_size;
 	unsigned heap_size;
 	unsigned cur_block_num;

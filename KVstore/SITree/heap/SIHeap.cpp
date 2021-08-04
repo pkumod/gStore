@@ -21,7 +21,6 @@ SIHeap::SIHeap(unsigned _size)
   this->length = 0;
   this->size = _size;
   this->heap = (SINode**)malloc(this->size * sizeof(SINode*));	//not use 4 or 8
-  //this->heap = new SINode*[this->size];
   if (this->heap == NULL)
   {
     this->print("error in SIHeap: Allocation fail!");
@@ -56,6 +55,11 @@ SIHeap::isEmpty() const
   return this->length == 0;
 }
 
+/**
+ * insert a node into SIHeap. Like the implement of std::vector,
+ * if heap size exceed the capacity, double the size.
+ * @param _np the inserted node
+ */
 bool
 SIHeap::Insert(SINode* _np)
 {
@@ -72,6 +76,7 @@ SIHeap::Insert(SINode* _np)
   }
   // the inserted position
   unsigned int i = this->length;
+
   // the father of inserted position
   unsigned j;
 
@@ -92,7 +97,9 @@ SIHeap::Insert(SINode* _np)
 }
 
 /**
- * RemoveTop the top element, and adjust the most right leaf node's position
+ * RemoveTop the top element, and adjust the most right leaf node's position.
+ * From top to bottom, adjust nodes' position, and place the most right leaf node
+ * after find a position where its rank >= the most right leaf node.
  * @return if remove from an empty tree, return false
  */
 bool
@@ -134,13 +141,18 @@ SIHeap::RemoveTop()
   return true;
 }
 
+/**
+ * adjust _np position
+ * @param _np the node to adjust
+ * @param move_up move _np up
+ */
 bool
-SIHeap::modify(SINode* _np, bool _flag)	//control direction
+SIHeap::modify(SINode* _np, bool _flag)
 {
   //Search and adjust
   unsigned i, j;
   i = _np->heapId;
-  if (_flag == true)	//move up
+  if (_flag)	//move up
   {
     while (i != 0)
     {

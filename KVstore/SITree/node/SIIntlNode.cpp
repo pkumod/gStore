@@ -37,9 +37,9 @@ SIIntlNode::Normal()
 }
 
 /**
- *
+ * do a range check and return _index-th child
  * @param _index
- * @return
+ * @return _index-th child
  */
 SINode*
 SIIntlNode::GetChild(int _index) const
@@ -53,6 +53,12 @@ SIIntlNode::GetChild(int _index) const
 		return childs[_index];
 }
 
+/**
+ * set _index-th child as _child. It will not change key, so
+ * need to change keys content.
+ * @param _child _child SINode
+ * @param _index the position
+ */
 bool
 SIIntlNode::setChild(SINode* _child, int _index)
 {
@@ -67,6 +73,12 @@ SIIntlNode::setChild(SINode* _child, int _index)
 	return true;
 }
 
+/**
+ * move values[>= _index] one position rightward and
+ * add SINode to _i_th, and
+ * @param _child SINode*
+ * @param _index the inserted position
+ */
 bool
 SIIntlNode::AddChild(SINode* _child, int _index)
 {
@@ -84,6 +96,11 @@ SIIntlNode::AddChild(SINode* _child, int _index)
 	return true;
 }
 
+/**
+ * move children_[>index] one step leftward. It operation will not delete the origin
+ * children_[index], need to delete it before of after SubChild
+ * @param _index the deleted position
+ */
 bool
 SIIntlNode::subChild(int _index)
 {
@@ -110,43 +127,61 @@ SIIntlNode::GetSize() const
 	return sum;
 }
 
+/**
+ * Split the internal node, the new node will have
+ * (CurrentKeyNum - MIN_CHILD_NUM) keys and placed
+ * at the right of this node
+ * @param _parent pointer to father node
+ * @param _index this node's position in parent node
+ * @return the new created node
+ */
 SINode*
 SIIntlNode::Split(SINode* _parent, int _index)
 {
-	int num = this->GetKeyNum();
-	SINode* p = new SIIntlNode;		//right child
-	p->setHeight(this->getHeight());
-	int i, k;
-	for (i = MIN_CHILD_NUM, k = 0; i < num; ++i, ++k)
-	{
-		p->addKey(this->keys + i, k);
-      p->AddChild(this->childs[i], k);
-      p->AddKeyNum();
-	}
+  int num = this->GetKeyNum();
+  SINode* p = new SIIntlNode;		//right child
+  p->setHeight(this->getHeight());
+  int i, k;
+  for (i = MIN_CHILD_NUM, k = 0; i < num; ++i, ++k)
+  {
+    p->addKey(this->keys + i, k);
+    p->AddChild(this->childs[i], k);
+    p->AddKeyNum();
+  }
   p->AddChild(this->childs[i], k);
-	const Bstr* tp = this->keys + MIN_KEY_NUM;
+  const Bstr* tp = this->keys + MIN_KEY_NUM;
   this->SetKeyNum(MIN_KEY_NUM);
-	_parent->addKey(tp, _index);
-  _parent->AddChild(p, _index + 1);	//DEBUG(check the index)
+  _parent->addKey(tp, _index);
+  _parent->AddChild(p, _index + 1);
   _parent->AddKeyNum();
-	_parent->setDirty();
-	p->setDirty();
-	this->setDirty();
+  _parent->setDirty();
+  p->setDirty();
+  this->setDirty();
 
-	return p;
+  return p;
 }
 
 /**
- *
- * @param _father
- * @param _index
- * @return
+ * add a key or Coalesce a neighbor to this.
+ * Four case
+ * 1:union right to this.
+ * 2:move one from right
+ * 3:union left to this
+ * 4:move one from left
+ * @param _parent parent node
+ * @param _index which position this node is in parent's child
+ * @return  neighbour SINode in case 1/3, NULL case 2/4.
  */
 SINode*
 SIIntlNode::Coalesce(SINode* _father, int _index)
 {
 	int i, j = _father->GetKeyNum(), k;	//BETTER: unsigned?
 	SINode* p;
+
+  // 1:union right to this
+  // 2:move one from right
+  // 3:union left to this
+  // 4:move one from left
 	int ccase = 0;
 	const Bstr* bstr;
 	if (_index < j)	//the right neighbor
@@ -231,7 +266,7 @@ SIIntlNode::Coalesce(SINode* _father, int _index)
 		break;
 	default:
 		print("error in Coalesce: Invalid case!");
-		//printf("error in Coalesce: Invalid case!");
+
 	}
 
 	_father->setDirty();
@@ -249,7 +284,6 @@ SIIntlNode::Release()
 	if (!this->inMem())
 		return;
 	unsigned num = this->GetKeyNum();
-	//delete[] keys;  //this will release all!!!
 	for (unsigned i = num; i < MAX_KEY_NUM; ++i)
 		keys[i].clear();
 	delete[] keys;
@@ -258,7 +292,6 @@ SIIntlNode::Release()
 SIIntlNode::~SIIntlNode()
 {
   Release();
-	//free(childs);
 }
 
 void

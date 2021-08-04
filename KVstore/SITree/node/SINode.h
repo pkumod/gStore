@@ -12,11 +12,16 @@
 #include "../../../Util/Util.h"
 #include "../../../Util/Bstr.h"
 
-//change to int for value
 /**
  * A virtual class. It haas two derived class: SIIntINode and SILeafNode
  * The basic unit of SITree. Defined as node in B+ tree. It compress node
- * information (dirty / in memory etc. )into 4 bytes. And its physical address 'store'
+ * information (dirty / in memory etc. )into 4 bytes. And its physical
+ * address 'store' occupies another 4 bytes.
+ *
+ * The flag info is defined in some static const unsigned variable;
+ * notice that NF_RK = 0x00ffffff, means that the latter 24 bit is used as
+ * rank info.  The 0-3 bits of NF_RK is NF_HT, and the 4 bit is dirty bit.
+ * The 5-11 bit records the children num. So, only the last 12 bits can be changed.
  *
  * In SIIntINode, suppose we have k keys, then we should have k+1 children
  * keys[i] is defined as the min key of the subtree rooted at child[i+1].

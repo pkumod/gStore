@@ -163,7 +163,9 @@ SILeafNode::GetSize() const
 }
 
 /**
- * Split the leaf node
+ * Split the leaf node, the new node will have
+ * (CurrentKeyNum - MIN_CHILD_NUM) keys and placed
+ * at the right of this node
  * @param _parent pointer to father node
  * @param _index this node's position in parent node
  * @return the new created node

@@ -26,6 +26,7 @@
  *
  * The SITree implemented a type of mixed B+ tree. The inner node part is B tree, while
  * the leaves part is B+ tree (a linked list).
+ *
  * An example of SITree logic structure:
  * root                        [25| | ]
  *                         /           \
@@ -34,7 +35,6 @@
  *         /         |       \             |     \
  *      /           |          \           |      \
  * L2 [12|15| ]-[18|19|20]-[21|22|23]-[25|30|31]-[45|47|48|50]
- *
  *
  */
 class SITree

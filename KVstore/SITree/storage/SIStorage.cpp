@@ -107,7 +107,6 @@ bool
 SIStorage::PreRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
 {
   //set root(in memory) and leaves_head_
-  //TODO: false when exceed memory
   _leaves_tail = _leaves_head = _root = NULL;
   if (ftell(this->tree_fp_) == 0)	//root is null
     return true;
@@ -203,6 +202,10 @@ SIStorage::PreRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
   return true;
 }
 
+/**
+ * load the entire tree
+ * @param _root root node
+ */
 bool
 SIStorage::fullLoad(SINode*& _root)
 {
@@ -235,10 +238,8 @@ SIStorage::fullLoad(SINode*& _root)
 }
 
 /**
- * aligned with 8-byte in 64-bit machine. Change the offset to the
- * true offset in file
- * @param block_num id
- * @return
+ * @param block_num the block id
+ * @return the true offset in the file of this block
  */
 long
 SIStorage::Address(unsigned block_num) const  //BETTER: inline function
@@ -254,10 +255,13 @@ SIStorage::Address(unsigned block_num) const  //BETTER: inline function
   // = { MAX_BLOCK_NUM / (8 * BLOCK_SIZE) + 1 + block_num - 1 ) * BLOCK_SIZE
   // = { MAX_BLOCK_NUM / (8 * BLOCK_SIZE) + block_num ) * BLOCK_SIZE
   // = MAX_BLOCK_NUM / 8 +  block_num * BLOCK_SIZE
-  // #TODO: why 8?
   return (long)(this->SuperNum + block_num - 1) * (long)BLOCK_SIZE;
 }
 
+/**
+ * @param address the file offset
+ * @return the block id corresponding to this offset
+ */
 unsigned
 SIStorage::Blocknum(long address) const
 {
@@ -265,10 +269,10 @@ SIStorage::Blocknum(long address) const
 }
 
 /**
- * return the first block id in freelist and delete it
+ * return a free block id in freelist.
  * if free list is empty, alloc SET_BLOCK_INC blocks and
  * add them into freelist before returning first block
- * @return
+ * @return the new block id
  */
 unsigned
 SIStorage::AllocBlock()
@@ -301,12 +305,13 @@ SIStorage::FreeBlock(unsigned block_num)
   this->freelist->next = bp;
 }
 
+
 /**
  * if tree_fp points to the head of a page now, read
  * from tree_fp with the true offset calculated from
  * *next and update *next to the next page
  * Such way saves the frequency to access disk
- * @param _next the reference of the read value
+ * @param _next the next block id if we met a new block
  */
 void
 SIStorage::ReadAlign(unsigned* _next)
@@ -318,6 +323,14 @@ SIStorage::ReadAlign(unsigned* _next)
   }
 }
 
+/**
+ * Write a new block. And write the next block id in the first 4 byte( if _SpecialBlock,
+ * 4-7 bytes instead)
+ * @param _curnum the new block id
+ * @param _SpecialBlock means if this block is the first block of one SINode
+ * storage. if this block is a special block, leave the first 4 bytes empty.
+ * _SpecialBlock value will be changed if new block read
+ */
 void
 SIStorage::WriteAlign(unsigned* _curnum, bool& _SpecialBlock)
 {
@@ -338,7 +351,7 @@ SIStorage::WriteAlign(unsigned* _curnum, bool& _SpecialBlock)
 
 /**
  * Read the SINode into memory , read its keys (and values)
- * from disk and change request size
+ * from disk and change the SITree memory request size
  * @param _np the SINode
  * @param _request the memory SITree has used
  * @return whether the operation has successfully operated
@@ -419,6 +432,11 @@ SIStorage::CreateNode(SINode*& _np)
   return true;
 }
 
+/**
+ * Write a new node into disk. It will free the node's disk storage
+ * first and re-alloc block after
+ * @param _np the written node
+ */
 bool
 SIStorage::WriteNode(SINode* _np)
 {
@@ -430,8 +448,18 @@ SIStorage::WriteNode(SINode* _np)
   //to release original blocks
   unsigned store = _np->GetStore(), next;
   //if first store is 0, meaning a new node
+
+  // the first block
+  // 0-3 bytes empty
+  // 4-7 bytes block1's id
   fseek(this->tree_fp_, Address(store) + 4, SEEK_SET);
   fread(&next, sizeof(unsigned), 1, tree_fp_);
+
+  // free its origin blocks for further rusage
+  // for block[i] i> 0
+  // 0-3 bytes next_block_id
+  // if  next_block_id==0, this is the last
+
   while (store != 0)
   {
     this->FreeBlock(store);
@@ -466,7 +494,6 @@ SIStorage::WriteNode(SINode* _np)
 
   if (flag)
   {
-    //int tmp = -1;
     unsigned tmp = INVALID;
     //to write all values
     for (i = 0; i < num; ++i)
@@ -481,7 +508,6 @@ SIStorage::WriteNode(SINode* _np)
     fseek(tree_fp_, 4, SEEK_CUR);
   t = 0;
   fwrite(&t, sizeof(unsigned), 1, tree_fp_);		//the end-block
-  //_np->setFlag(_np->getFlag() & ~Node::NF_ID);
   _np->delDirty();
 
   return true;
@@ -522,6 +548,12 @@ SIStorage::ReadBstr(Bstr* _bp, unsigned* _next)
   return true;
 }
 
+/**
+ * Write BStr to Disk while maintains block id chain. It will not delete _bp
+ * @param _bp bstr
+ * @param _curnum block id
+ * @param _SpecialBlock if block is the first block of this node
+ */
 bool
 SIStorage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
 {
@@ -549,7 +581,8 @@ SIStorage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
 }
 
 /**
- * write the whole tree back and close tree_fp_
+ * write the whole tree back and close tree_fp_. First meta data, then
+ * free blocks bitmap and then the node content.
  * @param _np the root pointer
  */
 bool
@@ -648,6 +681,12 @@ SIStorage::WriteTree(SINode* _np)	//
   return true;
 }
 
+/**
+ * Insert a new node to min heap, or changed the rank of a node
+ * @param _np the SINode
+ * @param _rank its new rank
+ * @param _inheap if the node has already been in heap
+ */
 void
 SIStorage::updateHeap(SINode* _np, unsigned _rank, bool _inheap) const
 {
@@ -668,6 +707,10 @@ SIStorage::updateHeap(SINode* _np, unsigned _rank, bool _inheap) const
   }
 }
 
+/**
+ * alloc memory to satisfy SITree memory request
+ * @param needed_mem the memory request
+ */
 bool
 SIStorage::request(long long needed_mem)	//aligned to byte
 {	//NOTICE: <0 means release
@@ -738,11 +781,6 @@ SIStorage::~SIStorage()
   printf("already empty the buffer heap!\n");
 #endif
   fclose(this->tree_fp_);
-  //#ifdef DEBUG_KVSTORE
-  //	//NOTICE:there is more than one tree
-  //	fclose(Util::debug_kvstore);	//NULL is ok!
-  //	Util::debug_kvstore = NULL;
-  //#endif
 }
 
 void

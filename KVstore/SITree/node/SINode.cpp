@@ -84,12 +84,22 @@ SINode::SetMemFlagFalse()
 	this->node_flag_ &= ~NF_IM;
 }
 
+/**
+ * Get the rank of SINode. Rank has information of height, children num, dirty, etc.
+ * @return rank
+ */
 unsigned
 SINode::getRank() const
 {
 	return this->node_flag_ & NF_RK;
 }
 
+/**
+ * Set Rank info.
+ * @warning this operation will write height, children num, dirty information.
+ * You should make sure the first 8 bit remains the same.
+ * @param _rank the new rank
+ */
 void
 SINode::setRank(unsigned _rank)
 {
