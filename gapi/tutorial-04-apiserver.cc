@@ -38,6 +38,21 @@
 //#include "../../Util/IPWhiteList.h"
 //#include "../../Util/IPBlackList.h"
 
+#define THREAD_NUM 30
+#define MAX_DATABASE_NUM 100
+#define MAX_USER_NUM 1000
+#define ROOT_USERNAME "root"
+#define ROOT_PASSWORD "123456"
+#define DEFAULT_USERNAME "a"
+#define DEFAULT_PASSWORD "1"
+#define SYSTEM_PATH "data/system/system.nt"
+#define	MAX_QUERYLOG_size 800000000 
+#define QUERYLOG_PATH "logs/endpoint/"
+#define SYSTEM_USERNAME "system"
+#define MAX_OUTPUT_SIZE 100000
+#define TEST_IP "106.13.13.193"
+#define DB_PATH "."
+#define BACKUP_PATH "./backups"
 using namespace std;
 int loadCSR = 0;
 int blackList = 0;
