@@ -122,11 +122,11 @@ public:
 	}
 	User(string _username, string _password) {
 		if (_username == "")
-			username = DEFAULT_USERNAME;
+			username = "root";
 		else
 			username = _username;
 		if (_password == "")
-			password = DEFAULT_PASSWORD;
+			password = "123456";
 		else
 			password = _password;
 
