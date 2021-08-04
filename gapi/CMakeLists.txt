@@ -82,7 +82,4 @@ endif ()
 
 
 
-set_target_properties(server PROPERTIES
-	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/${DIR10})
-set_target_properties(client PROPERTIES
-	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/${DIR10})
+
