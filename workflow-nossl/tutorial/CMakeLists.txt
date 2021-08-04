@@ -13,6 +13,7 @@ find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 find_package(workflow REQUIRED CONFIG HINTS ..)
 include_directories(${OPENSSL_INCLUDE_DIR} ${WORKFLOW_INCLUDE_DIR})
 link_directories(${WORKFLOW_LIB_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../tools/antlr4-cpp-runtime-4/runtime/src)
 
 if (WIN32)
 		set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   /MP /wd4200")
