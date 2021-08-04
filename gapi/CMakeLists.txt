@@ -26,8 +26,7 @@ else ()
 endif ()
 
 set(TUTORIAL_LIST
-	tutorial-00-helloworld
-	tutorial-01-wget
+    tutorial-01-wget
 	tutorial-04-apiserver
 	tutorial-05-http_proxy
 	tutorial-06-parallel_wget
