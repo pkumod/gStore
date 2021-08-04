@@ -8,7 +8,7 @@ project(tutorial
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 
-set(library "-L/liwenjie/gapi2/gstore/lib -lreadline -L/usr/local/lib -L/usr/lib/ -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov   -lpthread  -lcurl")
+set(library "-L../lib -lreadline -L/usr/local/lib -L/usr/lib/ -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov   -lpthread  -lcurl")
 
 
 find_library(LIBRT rt)
@@ -16,13 +16,15 @@ find_package(OpenSSL REQUIRED)
 find_package(workflow REQUIRED CONFIG HINTS ..)
 include_directories(${OPENSSL_INCLUDE_DIR} ${WORKFLOW_INCLUDE_DIR})
 link_directories(${WORKFLOW_LIB_DIR})
+link_directories(../lib)
+link_libraries(../lib/libantlr4-runtime.a)
 
 if (WIN32)
 		set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   /MP /wd4200")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /wd4200 /std:c++14")
 else ()
 		set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wall -fPIC -pipe -std=gnu90")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -pipe -std=c++11 -fno-exceptions ${library}")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -pipe -std=c++11 -fno-exceptions")
 endif ()
 
 set(TUTORIAL_LIST
