@@ -170,6 +170,9 @@ public:
 
 	bool EncodeBGPQuery(KVstore* _kvstore, const vector<string>& _query_var);
 
+	unsigned get_triple_num();
+	unsigned get_total_var_num();
+
 
 	bool get_edge_type(int var_id, int edge_id);
 	int get_edge_nei(int var_id, int edge_id);
