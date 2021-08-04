@@ -14,10 +14,9 @@ set(library "-L../lib -lreadline -L/usr/local/lib -L/usr/lib/ -L/usr/local/lib -
 find_library(LIBRT rt)
 find_package(OpenSSL REQUIRED)
 find_package(workflow REQUIRED CONFIG HINTS ..)
-include_directories(${OPENSSL_INCLUDE_DIR} ${WORKFLOW_INCLUDE_DIR})
-link_directories(${WORKFLOW_LIB_DIR})
-link_directories("../lib")
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../tools/antlr4-cpp-runtime-4/runtime/src)
+include_directories(${OPENSSL_INCLUDE_DIR} ${WORKFLOW_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/antlr4-cpp-runtime-4/runtime/src)
+link_directories(${WORKFLOW_LIB_DIR} "../lib")
+
 
 if (WIN32)
 		set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   /MP /wd4200")
