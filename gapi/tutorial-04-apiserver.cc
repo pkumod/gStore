@@ -32,18 +32,17 @@
 #include "workflow/WFFacilities.h"
 #include "WebUrl.h"
 #include <iostream>
-#include "../Util/Util_New.h"
-#include "../Database/Database.h"
-#include "../Database/Txn_manager.h"
-#include "../Util/Util.h"
-#include "../tools/rapidjson/document.h"
-#include "../tools/rapidjson/prettywriter.h"  
-#include "../tools/rapidjson/writer.h"
-#include "../tools/rapidjson/stringbuffer.h"
-#include <iostream>
-#include <fstream>
-#include "../Util/IPWhiteList.h"
-#include "../Util/IPBlackList.h"
+//#include "../Util/Util_New.h"
+//#include "../Database/Database.h"
+//#include "../Database/Txn_manager.h"
+//#include "../Util/Util.h"
+//#include "../tools/rapidjson/document.h"
+//#include "../tools/rapidjson/prettywriter.h"  
+//#include "../tools/rapidjson/writer.h"
+//#include "../tools/rapidjson/stringbuffer.h"
+//#include <fstream>
+//#include "../Util/IPWhiteList.h"
+//#include "../Util/IPBlackList.h"
 //#include "../../Util/IPWhiteList.h"
 //#include "../../Util/IPBlackList.h"
 
@@ -67,232 +66,9 @@ int loadCSR = 0;
 int blackList = 0;
 int whiteList = 0;
 
-struct DBInfo {
-private:
-	std::string db_name;
-	std::string creator;
-	std::string built_time;
-public:
-	pthread_rwlock_t db_lock;
 
-	DBInfo() {
-		pthread_rwlock_init(&db_lock, NULL);
-	}
-	DBInfo(string _db_name, string _creator, string _time) {
-		db_name = _db_name;
-		creator = _creator;
-		built_time = _time;
-		pthread_rwlock_init(&db_lock, NULL);
-	}
-	DBInfo(string _db_name) {
-		db_name = _db_name;
-		pthread_rwlock_init(&db_lock, NULL);
-	}
-	~DBInfo() {
-		pthread_rwlock_destroy(&db_lock);
-	}
-	std::string getName() {
-		return db_name;
-	}
-	std::string getCreator() {
-		return creator;
-	}
-	void setCreator(string _creator) {
-		creator = _creator;
-	}
-	std::string getTime() {
-		return built_time;
-	}
-	void setTime(string _time) {
-		built_time = _time;
-	}
-};
 
-//user information
-struct User {
-private:
-	std::string username;
-	std::string password;
-public:
-	std::set<std::string> query_priv;
-	std::set<std::string> update_priv;
-	std::set<std::string> load_priv;
-	std::set<std::string> unload_priv;
-	std::set<std::string> backup_priv;
-	std::set<std::string> restore_priv;
-	std::set<std::string> export_priv;
 
-	pthread_rwlock_t query_priv_set_lock;
-	pthread_rwlock_t update_priv_set_lock;
-	pthread_rwlock_t load_priv_set_lock;
-	pthread_rwlock_t unload_priv_set_lock;
-	pthread_rwlock_t backup_priv_set_lock;
-	pthread_rwlock_t restore_priv_set_lock;
-	pthread_rwlock_t export_priv_set_lock;
-	/*
-	Database *build_priv[MAX_DATABASE_NUM];
-	Database *load_priv[MAX_DATABASE_NUM];
-	Database *unload_priv[MAX_DATABASE_NUM];
-	*/
-
-	User() {
-		pthread_rwlock_init(&query_priv_set_lock, NULL);
-		pthread_rwlock_init(&update_priv_set_lock, NULL);
-		pthread_rwlock_init(&load_priv_set_lock, NULL);
-		pthread_rwlock_init(&unload_priv_set_lock, NULL);
-		pthread_rwlock_init(&backup_priv_set_lock, NULL);
-		pthread_rwlock_init(&restore_priv_set_lock, NULL);
-		pthread_rwlock_init(&export_priv_set_lock, NULL);
-	}
-	User(string _username, string _password) {
-		if (_username == "")
-			username = "root";
-		else
-			username = _username;
-		if (_password == "")
-			password = "123456";
-		else
-			password = _password;
-
-		pthread_rwlock_init(&query_priv_set_lock, NULL);
-		pthread_rwlock_init(&update_priv_set_lock, NULL);
-		pthread_rwlock_init(&load_priv_set_lock, NULL);
-		pthread_rwlock_init(&unload_priv_set_lock, NULL);
-		pthread_rwlock_init(&backup_priv_set_lock, NULL);
-		pthread_rwlock_init(&restore_priv_set_lock, NULL);
-		pthread_rwlock_init(&export_priv_set_lock, NULL);
-	}
-	~User() {
-		pthread_rwlock_destroy(&query_priv_set_lock);
-		pthread_rwlock_destroy(&update_priv_set_lock);
-		pthread_rwlock_destroy(&load_priv_set_lock);
-		pthread_rwlock_destroy(&unload_priv_set_lock);
-		pthread_rwlock_destroy(&backup_priv_set_lock);
-		pthread_rwlock_destroy(&restore_priv_set_lock);
-		pthread_rwlock_destroy(&export_priv_set_lock);
-	}
-	std::string getPassword() {
-		return password;
-	}
-	std::string getUsername() {
-		return username;
-	}
-	std::string getQuery() {
-		std::string query_db;
-		if (username == ROOT_USERNAME)
-		{
-			query_db = "all";
-			return query_db;
-		}
-		std::set<std::string>::iterator it = query_priv.begin();
-		while (it != query_priv.end())
-		{
-			query_db = query_db + *it + " ";
-			++it;
-		}
-		return query_db;
-	}
-	std::string getUpdate() {
-		std::string update_db;
-		if (username == ROOT_USERNAME)
-		{
-			update_db = "all";
-			return update_db;
-		}
-		std::set<std::string>::iterator it = update_priv.begin();
-		while (it != update_priv.end())
-		{
-			update_db = update_db + *it + " ";
-			++it;
-		}
-		return update_db;
-	}
-	std::string getLoad() {
-		std::string load_db;
-		if (username == ROOT_USERNAME)
-		{
-			load_db = "all";
-			return load_db;
-		}
-
-		std::set<std::string>::iterator it = load_priv.begin();
-		while (it != load_priv.end())
-		{
-			load_db = load_db + *it + " ";
-			++it;
-		}
-		return load_db;
-	}
-	std::string getUnload() {
-		std::string unload_db;
-		if (username == ROOT_USERNAME)
-		{
-			unload_db = "all";
-			return unload_db;
-		}
-
-		std::set<std::string>::iterator it = unload_priv.begin();
-		while (it != unload_priv.end())
-		{
-			unload_db = unload_db + *it + " ";
-			++it;
-		}
-		return unload_db;
-	}
-	std::string getrestore() {
-		std::string restore_db;
-		if (username == ROOT_USERNAME)
-		{
-			restore_db = "all";
-			return restore_db;
-		}
-		std::set<std::string>::iterator it = restore_priv.begin();
-		while (it != restore_priv.end())
-		{
-			restore_db = restore_db + *it + " ";
-			++it;
-		}
-		return restore_db;
-	}
-	std::string getbackup() {
-		std::string backup_db;
-		if (username == ROOT_USERNAME)
-		{
-			backup_db = "all";
-			return backup_db;
-		}
-		std::set<std::string>::iterator it = backup_priv.begin();
-		while (it != backup_priv.end())
-		{
-			backup_db = backup_db + *it + " ";
-			++it;
-		}
-		return backup_db;
-	}
-	std::string getexport() {
-		std::string export_db;
-		if (username == ROOT_USERNAME)
-		{
-			export_db = "all";
-			return export_db;
-		}
-		std::set<std::string>::iterator it = export_priv.begin();
-		while (it != export_priv.end())
-		{
-			export_db = export_db + *it + " ";
-			++it;
-		}
-		return export_db;
-	}
-	void setPassword(string psw)
-	{
-		password = psw;
-	}
-
-};
-//struct User root = User(ROOT_USERNAME, ROOT_PASSWORD);
-std::map<std::string, struct DBInfo*> already_build;
-std::map<std::string, struct User*> users;
 
 //IPWhiteList* ipWhiteList;
 //IPBlackList* ipBlackList;
@@ -373,46 +149,7 @@ void handler_build(protocol::HttpRequest* req, protocol::HttpResponse* resp,
 
 }
 
-int initialize(int argc, char* argv[])
-{
-	cout << "enter initialize." << endl;
-	//Server restarts to use the original database
-	//current_database = NULL;
 
-	//users.insert(pair<std::string, struct User *>(ROOT_USERNAME, &root));
-
-	//load system.db when initialize
-	string current_path = Util_New::getCurrentRootPath();
-	cout << "the current path is:" << current_path << endl;
-	if (Util_New::checkFileOrDirIsExist("system.db")==false)
-	{
-		cout << "Can not find system.db." << endl;
-		return -1;
-	}
-	struct DBInfo* temp_db = new DBInfo("system");
-	temp_db->setCreator("root");
-	already_build.insert(pair<std::string, struct DBInfo*>("system", temp_db));
-	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find("system");
-	if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
-	{
-		cout << "Unable to load the database system.db due to loss of lock." << endl;
-		return -1;
-	}
-	system_database = new Database("system");
-	bool flag = system_database->load();
-	if (!flag)
-	{
-		cout << "Failed to load the database system.db." << endl;
-
-
-		return -1;
-	}
-	databases.insert(pair<std::string, Database*>("system", system_database));
-	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-
-	
-	//DB2Map();
-}
 
 void process(WFHttpTask* server_task)
 {
@@ -552,7 +289,7 @@ int main(int argc, char* argv[])
 	}
 
 	signal(SIGINT, sig_handler);
-	initialize(argc, argv);
+	//initialize(argc, argv);
 	WFHttpServer server(process);
 	port = atoi(portstr.c_str());
 	
