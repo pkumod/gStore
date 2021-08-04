@@ -58,5 +58,8 @@ private:
 	bool erase(unsigned i);
 };
 
+using IDCachesSharePtr = std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<IDList>>>;
+
+
 #endif //_QUERY_IDLIST_H
 

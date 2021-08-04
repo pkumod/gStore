@@ -267,6 +267,15 @@ bool BGPQuery::EncodeBGPQuery(KVstore *_kvstore, const vector<string> &_query_va
 
 }
 
+
+unsigned int BGPQuery::get_triple_num() {
+	return this->triple_vt.size();
+}
+
+unsigned int BGPQuery::get_total_var_num() {
+	return this->total_var_num;
+}
+
 // bool BGPQuery::get_edge_type(int var_id, int edge_id) {
 // 	return var_vector[var_id]->edge_type_[edge_id];
 // }
