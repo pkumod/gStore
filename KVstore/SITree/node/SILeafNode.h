@@ -17,41 +17,41 @@
  */
 class SILeafNode : public SINode
 {
-protected:
-	SINode* prev;	//LeafNode
-	SINode* next;
-	unsigned* values;
-	void AllocValues();
-public:
-	SILeafNode();
-	SILeafNode(bool isVirtual);
-	void Virtual();
-	void Normal();
-	SINode* GetPrev() const;
-	SINode* GetNext() const;
-	unsigned GetValue(int _index) const;
-	bool SetValue(unsigned _val, int _index);
-	bool AddValue(unsigned _val, int _index);
+ protected:
+  SINode* prev;	//LeafNode
+  SINode* next;
+  unsigned* values;
+  void AllocValues();
+ public:
+  SILeafNode();
+  SILeafNode(bool isVirtual);
+  void Virtual();
+  void Normal();
+  SINode* GetPrev() const;
+  SINode* GetNext() const;
+  unsigned GetValue(int _index) const;
+  bool SetValue(unsigned _val, int _index);
+  bool AddValue(unsigned _val, int _index);
 
-	bool SubValue(int _index);
+  bool SubValue(int _index);
 
-	void setPrev(SINode* _prev);
-	void SetNext(SINode* _next);
+  void setPrev(SINode* _prev);
+  void SetNext(SINode* _next);
 
-	unsigned GetSize() const;
+  unsigned GetSize() const;
 
-	SINode* Split(SINode* _parent, int _index);
-	SINode* Coalesce(SINode* _parent, int _index);
+  SINode* Split(SINode* _parent, int _index);
+  SINode* Coalesce(SINode* _parent, int _index);
 
-	void Release();
-	~SILeafNode();
-	void print(std::string s);			//DEBUG
+  void Release();
+  ~SILeafNode();
+  void print(std::string s);			//DEBUG
 
-	/*non-sense virtual function
-	Node* GetChild(int _index) const;
-	bool AddChild(Node* _child, int _index);
-	bool subChild(int _index);
-	*/
+  /*non-sense virtual function
+  Node* GetChild(int _index) const;
+  bool AddChild(Node* _child, int _index);
+  bool subChild(int _index);
+  */
 };
 
 #endif

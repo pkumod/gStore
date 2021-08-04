@@ -11,7 +11,7 @@ Tabs, '<' and '>' are not allowed to appear in entity, literal or predicates of 
 
 #### 1. gbuild
 
-As long as you download and compile the code of gStore system, a database named `system`(the real directory name is `system.db`) will be created automatically.
+As long as you download and compile the code of gStore system, a database named `system` (the real directory name is `system.db`) will be created automatically.
 This is the database that manages the information of system statistics, including all users and all databases.
 You can query this database using `gquery` command, but you are forbidded to modify it using editors.
 
