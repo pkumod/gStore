@@ -249,7 +249,7 @@ $(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/socke
 $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/IPWhiteList.h Util/IPBlackList.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/ghttp.cpp $(inc) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
-$(objdir)gapiserver.o: Main/gapiserver.cpp gapi/WebUrl.h Database/Database.h Database/Txn_manager.h Util/Util.h Util/Util_New.h Util/IPWhiteList.h Util/IPBlackList.h $(lib_antlr) $(lib_workflow)
+$(objdir)gapiserver.o: Main/gapiserver.cpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/Util_New.h Util/IPWhiteList.h Util/IPBlackList.h Util/WebUrl.h  $(lib_antlr) $(lib_workflow)
 	$(CC) $(CFLAGS) Main/gapiserver.cpp $(inc) $(inc_workflow) -o $(objdir)gapiserver.o $(openmp)
 
 $(objdir)gbackup.o: Main/gbackup.cpp Database/Database.h Util/Util.h $(lib_antlr)
@@ -478,6 +478,9 @@ $(objdir)Signature.o: Signature/Signature.cpp Signature/Signature.h
 
 $(objdir)Util.o:  Util/Util.cpp Util/Util.h
 	$(CC) $(CFLAGS) Util/Util.cpp -o $(objdir)Util.o $(openmp)
+
+$(objdir)WebUrl.o:  Util/WebUrl.cpp Util/WebUrl.h
+	$(CC) $(CFLAGS) Util/WebUrl.cpp -o $(objdir)WebUrl.o $(openmp)
 
 $(objdir)Stream.o:  Util/Stream.cpp Util/Stream.h $(objdir)Util.o $(objdir)Bstr.o
 	$(CC) $(CFLAGS) Util/Stream.cpp -o $(objdir)Stream.o $(def64IO) $(openmp)
