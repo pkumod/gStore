@@ -276,6 +276,10 @@ unsigned int BGPQuery::get_total_var_num() {
 	return this->total_var_num;
 }
 
+unsigned int BGPQuery::get_pre_var_num() {
+	return this->total_pre_var_num;
+}
+
 // bool BGPQuery::get_edge_type(int var_id, int edge_id) {
 // 	return var_vector[var_id]->edge_type_[edge_id];
 // }

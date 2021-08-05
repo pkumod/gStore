@@ -1,5 +1,5 @@
 /*=============================================================================
-# Filename: Optimizer.cpp
+# Filename: PlanGenerator.cpp
 # Author: Linglin Yang
 # Mail: linglinyang@stu.pku.edu.cn
 =============================================================================*/
@@ -711,8 +711,6 @@ void PlanGenerator::considerallscan(vector<int> &need_join_nodes, bool use_sampl
 
 	for(int i = 0 ; i < basicquery->getVarNum(); ++i) {
 
-		//		这个问题的bug在于 变量 z 是需要做Join的，但是没有idlist可读
-
 		if (basicquery->if_need_retrieve(i)) {
 
 			need_join_nodes.push_back(i);
@@ -904,30 +902,6 @@ int PlanGenerator::enum_query_plan(vector<int> &need_join_nodes){
 		}
 	}
 
-	//	int nodes = 2;
-	//	for(auto &x:card_cache){
-	//		cout << "card for " << nodes++ <<" nodes" << endl;
-	//		for(auto y:x){
-	//			for(int node:y.first){
-	//				cout << node << " ";
-	//			}
-	//			cout << ", card estimation: " << y.second << endl;
-	//		}
-	//	}
-
-	// cout << "card estimation: "<<endl;
-	// for(auto x : card_cache){
-	// 	for(auto y : x){
-	// 		for(auto z : y.first){
-	// 			cout << basicquery->getVarName(z) << ", ";
-	// 		}
-	// 		cout << endl;
-	// 		cout << "card esti = " << y.second << endl << endl;
-	//
-	// 	}
-	// }
-
-
 	return need_join_nodes.size();
 }
 
@@ -982,7 +956,7 @@ PlanTree* PlanGenerator::get_best_plan_by_num(int total_var_num){
 }
 
 
-PlanTree* PlanGenerator::get_plan(){
+PlanTree* PlanGenerator::get_normal_plan() {
 
 
 	vector<int> need_join_nodes;
@@ -1009,3 +983,13 @@ PlanTree* PlanGenerator::get_plan(){
 }
 
 
+PlanTree *PlanGenerator::get_special_no_pre_var_plan() {
+	if((*id_caches)[0]->size() <= (*id_caches)[1]->size())
+		return new PlanTree(vector<int> {0,1});
+	else
+		return new PlanTree(vector<int> {1,0});
+}
+
+PlanTree *PlanGenerator::get_special_one_triple_plan() {
+	;
+}

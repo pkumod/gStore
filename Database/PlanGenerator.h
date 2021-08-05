@@ -1,6 +1,8 @@
-//
-// Created by fyulingi on 2021/8/4.
-//
+/*=============================================================================
+# Filename: PlanGenerator.h
+# Author: Linglin Yang
+# Mail: linglinyang@stu.pku.edu.cn
+=============================================================================*/
 
 #ifndef GSTORE_PLANGENERATOR_H
 #define GSTORE_PLANGENERATOR_H
@@ -11,6 +13,7 @@
 #include "../KVstore/KVstore.h"
 #include "./Statistics.h"
 #include "./PlanTree.h"
+#include "TableOperator.h"
 #include "../Util/OrderedVector.h"
 
 #include <unordered_map>
@@ -18,7 +21,6 @@
 #include <cstring>
 #include <climits>
 #include <algorithm>
-
 #include <cstdlib>
 #include <cmath>
 #include <random>
@@ -78,7 +80,9 @@ public:
 	int enum_query_plan(vector<int> &need_join_nodes);
 	PlanTree* get_best_plan(const vector<int> &nodes);
 	PlanTree* get_best_plan_by_num(int total_var_num);
-	PlanTree* get_plan();
+	PlanTree* get_normal_plan();
+	PlanTree* get_special_no_pre_var_plan();
+	PlanTree* get_special_one_triple_plan();
 };
 
 
