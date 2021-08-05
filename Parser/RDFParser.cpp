@@ -2,7 +2,7 @@
 # Filename: RDFParser.cpp
 # Author: Yue Pang
 # Mail: michelle.py@pku.edu.cn
-# Last Modified:    2021-07-29 11:51 CST
+# Last Modified:    2021-08-03 15:28 CST
 # Description: implements the class for parsing RDF data during build based on 
 RDF-3X's TurtleParser
 =============================================================================*/
@@ -32,7 +32,7 @@ RDFParser::RDFParser(ifstream& _fin):_TurtleParser(_fin)
  * while (true)
  * {
  * 	triple_num = 0;
- * 	_RDFParser.parseFile();
+ * 	_RDFParser.parseFile(triple_array, triple_num);
  * 	if (triple_num == 0)    break;
  * 	......
  * }       
@@ -43,7 +43,7 @@ RDFParser::RDFParser(ifstream& _fin):_TurtleParser(_fin)
  * blank, output will be redirected to stdout. Each line of output is in the
  * format of: Line x (subject predicate object): error message.
  */
-string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, string _error_log)
+void RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, string _error_log)
 {
 	string rawSubject, rawPredicate, rawObject;
 	string _subject, _predicate, _object, _objectSubType;
@@ -298,7 +298,6 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, 
 		ofile.close();
 		cout.rdbuf(coutbuf);
 	}
-	return "";
 }
 
 /** Parses a string containing RDF data. Based on parseFile.
@@ -321,12 +320,12 @@ string RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, 
  */
 /*	
 */
-string RDFParser::parseString(string _str, TripleWithObjType* _triple_array, int& _triple_num)
+void RDFParser::parseString(string _str, TripleWithObjType* _triple_array, int& _triple_num)
 {
 	//clear in each time invoking
 	// The same thing: just a string stream instead of a file stream.
 	this->_sin.clear();
 	this->_sin << _str;
 	
-	return parseFile(_triple_array, _triple_num);
+	parseFile(_triple_array, _triple_num);
 }
