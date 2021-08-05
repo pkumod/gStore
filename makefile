@@ -49,7 +49,7 @@ EXEFLAG = -O2 -pthread -std=c++11
 
 #add -lreadline [-ltermcap] if using readline or objs contain readline
 # library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
-library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -L./workflow-nossl/_lib -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -lworkflow
+library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -L./workflow-nossl/_lib -L./workflow-nossl/_include -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -lworkflow
 #used for parallelsort
 openmp = -fopenmp -march=native
 # library = -ltermcap -lreadline -L./lib -lantlr -lgcov
@@ -66,6 +66,8 @@ testdir = scripts/
 lib_antlr = lib/libantlr4-runtime.a
 
 lib_workflow=workflow-nossl/_lib/libworkflow.a
+
+includ_workflow=workflow-nossl/_include/
 
 api_cpp = api/socket/cpp/lib/libgstoreconnector.a
 
@@ -173,7 +175,7 @@ $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/
 	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX $(openmp)
 
 $(exedir)gapiserver: $(lib_antlr) $(lib_workflow) $(objdir)gapiserver.o  $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gapiserver $(objdir)gapiserver.o $(objfile) $(library) $(openmp)
+	$(CC) $(EXEFLAG) -o $(exedir)gapiserver $(objdir)gapiserver.o $(objfile) $(library) $(openmp) 
 
 $(exedir)gbackup: $(lib_antlr) $(objdir)gbackup.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gbackup $(objdir)gbackup.o $(objfile) $(library) $(openmp)
