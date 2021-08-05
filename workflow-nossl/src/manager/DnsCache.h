@@ -26,7 +26,7 @@
 #include <string>
 #include <mutex>
 #include <utility>
-#include "LRUCache.h"
+#include "LRUCache2.h"
 #include "DnsUtil.h"
 
 #define GET_TYPE_TTL		0
@@ -166,7 +166,7 @@ private:
 		}
 	};
 
-	LRUCache<HostPort, DnsCacheValue, ValueDeleter> cache_pool_;
+	LRUCache2<HostPort, DnsCacheValue, ValueDeleter> cache_pool_;
 };
 
 #endif
