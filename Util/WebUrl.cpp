@@ -1,6 +1,10 @@
 #include "WebUrl.h"
 
 using namespace std;
+
+WebUrl::WebUrl() {}
+
+WebUrl::~WebUrl() {}
 string WebUrl::CutParam(string url, string param)
 {
 	int index = url.find("?" + param + "=");
