@@ -249,7 +249,7 @@ $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp D
 	$(CC) $(CFLAGS) Main/ghttp.cpp $(inc) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
 $(objdir)gapiserver.o: Main/gapiserver.cpp gapi/WebUrl.h Database/Database.h Database/Txn_manager.h Util/Util.h Util/Util_New.h Util/IPWhiteList.h Util/IPBlackList.h $(lib_antlr) $(lib_workflow)
-	$(CC) $(CFLAGS) Main/gapiserver.cpp $(inc) -o $(objdir)gapiserver.o $(openmp)
+	$(CC) $(CFLAGS) Main/gapiserver.cpp $(inc) -o $(objdir)gapiserver.o $(openmp) $(library)
 
 $(objdir)gbackup.o: Main/gbackup.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gbackup.cpp $(inc) -o $(objdir)gbackup.o $(openmp)
