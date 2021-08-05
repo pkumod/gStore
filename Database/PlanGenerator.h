@@ -9,6 +9,7 @@
 
 #include "../Util/Util.h"
 #include "../Query/BasicQuery.h"
+#include "../Query/BGPQuery.h"
 #include "../Query/IDList.h"
 #include "../KVstore/KVstore.h"
 #include "./Statistics.h"
@@ -30,6 +31,7 @@ class PlanGenerator {
 public:
 	KVstore *kvstore;
 	BasicQuery *basicquery;
+	BGPQuery *bgpquery;
 	Statistics *statistics;
 	IDCachesSharePtr & id_caches;
 
@@ -44,6 +46,9 @@ public:
 	map<int, map<int, unsigned >> s_o_list_average_size;
 
 	PlanGenerator(KVstore *kvstore_, BasicQuery *basicquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_);
+	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_);
+
+
 	//  You can change this,
 	//  but to make sure SAMPLE_CACHE_MAX <= SAMPLE_NUM_UPBOUND (in Statistics.h)
 	const unsigned SAMPLE_CACHE_MAX = 50;

@@ -49,10 +49,10 @@ TopKTreeSearchPlan::TopKTreeSearchPlan(BasicQuery *basic_query, Statistics *stat
 {
   auto total_vars_num = basic_query->getVarNum();
 
-  auto var_descriptors_ = std::make_shared<std::vector<VarDescriptor>>();
+  auto var_descriptors_ = std::make_shared<std::vector<OldVarDescriptor>>();
   // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
   for(int i = 0;i<total_vars_num; i++) {
-    var_descriptors_->emplace_back(VarDescriptor::VarType::EntityType ,basic_query->getVarName(i),basic_query);
+    var_descriptors_->emplace_back(OldVarDescriptor::VarType::EntityType ,basic_query->getVarName(i),basic_query);
   }
 
   std::map<int,set<int>> neighbours;

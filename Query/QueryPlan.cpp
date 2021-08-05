@@ -7,7 +7,7 @@
 #include "QueryPlan.h"
 
 
-QueryPlan::QueryPlan(const shared_ptr<vector<OneStepJoin>>& join_order, const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& ids_after_join,shared_ptr<vector<VarDescriptor>> var_infos) {
+QueryPlan::QueryPlan(const shared_ptr<vector<OneStepJoin>>& join_order, const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& ids_after_join,shared_ptr<vector<OldVarDescriptor>> var_infos) {
   // Copy Construction function of Vector
   // To avoid join_order_ and ids_after_join_ be adjusted by outer env
   this->join_order_ = make_shared<vector<OneStepJoin>>(*join_order);
@@ -23,7 +23,7 @@ QueryPlan::QueryPlan(const shared_ptr<vector<OneStepJoin>>& join_order, const sh
  * |pre var|
  * |satellites check|
  */
-QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector<VarDescriptor>> var_infos) {
+QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector<OldVarDescriptor>> var_infos) {
   /* total_var_num: the number of
    * 1 .selected vars
    * 2. not selected  but degree > 1  vars
@@ -34,7 +34,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
   vector<bool> vars_used_vec(total_var_num,false);
   // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
   for(int i = 0;i<total_var_num; i++) {
-    var_infos->emplace_back(VarDescriptor::VarType::EntityType ,basic_query->getVarName(i),basic_query);
+    var_infos->emplace_back(OldVarDescriptor::VarType::EntityType ,basic_query->getVarName(i),basic_query);
   }
 
   auto graph_var_num = basic_query->getVarNum();
@@ -182,14 +182,14 @@ TYPE_ENTITY_LITERAL_ID QueryPlan::SelectANode(BasicQuery *basic_query,std::share
  * @param var_infos     the var info list which we will fill in this function
  * @return
  */
-shared_ptr<QueryPlan> QueryPlan::DefaultBFS(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector<VarDescriptor>> var_infos) {
+shared_ptr<QueryPlan> QueryPlan::DefaultBFS(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector<OldVarDescriptor>> var_infos) {
   auto r = make_shared<QueryPlan>();
   r->constant_generating_lists_ = make_shared<vector<shared_ptr<OneStepJoinNode>>>();
   auto total_var_num = basic_query->getTotalVarNum();
   vector<bool> vars_used_vec(total_var_num,false);
   // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
   for(int i = 0;i<total_var_num; i++) {
-    var_infos->emplace_back(VarDescriptor::VarType::EntityType ,basic_query->getVarName(i),basic_query);
+    var_infos->emplace_back(OldVarDescriptor::VarType::EntityType ,basic_query->getVarName(i),basic_query);
   }
 
   auto graph_var_num = basic_query->getVarNum();
@@ -503,7 +503,7 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
  * @return a generating plan
  */
 OneStepJoin QueryPlan::FilterFirstNode(BasicQuery *basic_query, KVstore *kv_store,
-                                       TYPE_ENTITY_LITERAL_ID start_id, const shared_ptr<vector<VarDescriptor>> &var_list) {
+                                       TYPE_ENTITY_LITERAL_ID start_id, const shared_ptr<vector<OldVarDescriptor>> &var_list) {
 
   OneStepJoin one_step_join;
   auto generate_edge_info = make_shared<vector<EdgeInfo>>();
@@ -809,14 +809,14 @@ std::tuple<std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_
 
 std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> QueryPlan::OnlyConstFilter(BasicQuery *basic_query,
                                                       KVstore *kv_store,
-                                                      std::shared_ptr<std::vector<VarDescriptor>> var_infos) {
+                                                      std::shared_ptr<std::vector<OldVarDescriptor>> var_infos) {
   auto result = make_shared<QueryPlan>();
   auto constant_generating_lists = make_shared<vector<shared_ptr<OneStepJoinNode>>>();
   auto total_var_num = basic_query->getTotalVarNum();
 
   // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
   for(int i = 0;i<total_var_num; i++) {
-    var_infos->emplace_back(VarDescriptor::VarType::EntityType ,basic_query->getVarName(i),basic_query);
+    var_infos->emplace_back(OldVarDescriptor::VarType::EntityType ,basic_query->getVarName(i),basic_query);
   }
 
   result->var_descriptors_ = var_infos;

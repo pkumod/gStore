@@ -11,6 +11,7 @@
 #include <string>
 #include <iostream>
 #include "../Query/BasicQuery.h"
+#include "../Query/BGPQuery.h"
 #include "./TableOperator.h"
 
 using namespace std;
@@ -20,9 +21,10 @@ enum class NodeJoinType{ JoinANode, JoinTwoTable, LeafNode };
 std::string NodeJoinTypeStr(NodeJoinType node_join_type);
 
 
+// todo: just use node, *left_node, *right_node
 struct Tree_node{
     NodeJoinType joinType;
-    // AStepJoin a;
+    OneStepJoin node;
 
 //    just for joinType == JoinANode
     int node_to_join;
@@ -74,6 +76,9 @@ public:
 
 //    for create plan manually
     PlanTree(const vector<int> nodes_order);
+
+    // todo: use this to generate query plan for giving join node order
+    PlanTree(const vector<unsigned> nodes_order, BGPQuery *bgpquery);
 
     void delete_tree_node(Tree_node* root_node);
     ~PlanTree();

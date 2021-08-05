@@ -4,6 +4,19 @@
 # Mail: linglinyang@stu.pku.edu.cn
 =============================================================================*/
 
+
+// READ THIS FIRST
+// According to need of rewriting, the whole BGP(including all triples) invokes EncodeBGPQuery,
+// the split small BGP invokes EncodeSmallBGPQuery(the id is same as above, so maybe not begin with 0 or not continuous).
+// For example, the whole query is:
+// select ?s ?o ?o2 ?o3 where{
+// 	?s p1 ?o.
+// 	?s p2 ?o2.
+// 	Optional{?s p3 ?o3}
+// }
+// Then after EncodeBGPQuery, the var-encode map is: {{?s:0}, {?o:1}, {?o2:2}, {?o3:3}},
+// and in small optional BGP(?s p3 ?o3), the var-encode map is {{?s:0}, {?o3:3}}, not {{?s:0}, {?o3:1}}.
+
 #ifndef GSTORE_BGPQUERY_H
 #define GSTORE_BGPQUERY_H
 
@@ -113,6 +126,11 @@ class SOVarDescriptor:public VarDescriptor{
 
 };
 
+// How to use this class?
+// First, all triples need insert one by one by AddTriple
+// Then, invoke the function EncodeBGPQuery, this will give every var(selected or not, predicate or not predicate) an id
+// If you have special need to encode one small BGP, please invoke the function EncodeSmallBGPQuery,
+// and pass big BGPQuery pointer to it, it will keep the var with the same string name having same.
 class BGPQuery {
 public:
 
@@ -169,6 +187,7 @@ public:
 	void count_statistics_num();
 
 	bool EncodeBGPQuery(KVstore* _kvstore, const vector<string>& _query_var);
+	bool EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore* _kvstore, const vector<string>& _query_var);
 
 	unsigned get_triple_num();
 	unsigned get_total_var_num();
