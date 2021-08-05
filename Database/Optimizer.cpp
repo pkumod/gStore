@@ -1,4 +1,4 @@
-﻿/*=============================================================================
+/*=============================================================================
 # Filename: Optimizer.cpp
 # Author: Yuqi Zhou, Linglin Yang
 # Mail: zhouyuqi@pku.edu.cn, fyulingi@gmail.com
@@ -42,7 +42,7 @@ Optimizer::Optimizer(KVstore *kv_store,
   // TODO: join_cache_ & cardinality_cache_ not implemented yet.
   this->join_cache_ = make_shared<vector<map<BasicQuery*,vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>>(); // map(sub-structure, result_list)
   this->cardinality_cache_ = make_shared<vector<map<BasicQuery*,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>(); // map(sub-structure, cardinality), not in statistics
-  this->var_descriptors_ = make_shared<vector<VarDescriptor>>();
+  this->var_descriptors_ = make_shared<vector<OldVarDescriptor>>();
 }
 
 

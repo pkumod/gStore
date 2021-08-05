@@ -16,7 +16,9 @@ enum class JoinMethod{s2p,s2o,p2s,p2o,o2s,o2p,so2p,sp2o,po2s};
 
 std::string JoinMethodToString(JoinMethod x);
 // Not fully used, maybe abandoned
-class VarDescriptor{
+
+// todo: replace this by new vardescriptor in BGPQuery
+class OldVarDescriptor{
  public:
   enum class VarType{EntityType,PredicateType};
   bool selected_;
@@ -31,7 +33,7 @@ class VarDescriptor{
   int RewritingPosition(){return this->rewriting_position_;};
   // calculate the exact position in final result
 
-  VarDescriptor(VarType var_type,std::string var_name,BasicQuery* basic_query):
+  OldVarDescriptor(VarType var_type,std::string var_name,BasicQuery* basic_query):
   var_type_(var_type),var_name_(var_name)
   {
     this->basic_query_id = basic_query->getIDByVarName(var_name);

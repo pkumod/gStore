@@ -267,6 +267,11 @@ bool BGPQuery::EncodeBGPQuery(KVstore *_kvstore, const vector<string> &_query_va
 
 }
 
+// this function is invoked after adding all triples of small BGP
+bool BGPQuery::EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore *_kvstore, const vector<string> &_query_var) {
+	;
+
+}
 
 unsigned int BGPQuery::get_triple_num() {
 	return this->triple_vt.size();

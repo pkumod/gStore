@@ -198,7 +198,7 @@ class Optimizer
   shared_ptr<Transaction> txn_;
 
   // 因为BasicQuery不给谓词变量编码，所以搞了一个抽象的类
-  shared_ptr<vector<VarDescriptor>> var_descriptors_;
+  shared_ptr<vector<OldVarDescriptor>> var_descriptors_;
 
   //静态情况下可以存储weight
   shared_ptr<vector<double>> weight_list_;

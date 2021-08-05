@@ -9,6 +9,9 @@
 PlanGenerator::PlanGenerator(KVstore *kvstore_, BasicQuery *basicquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_):
 					kvstore(kvstore_), basicquery(basicquery_), statistics(statistics_), id_caches(id_caches_){};
 
+PlanGenerator::PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr &id_caches_):
+					kvstore(kvstore_), bgpquery(bgpquery_), statistics(statistics_), id_caches(id_caches_){};
+
 unsigned PlanGenerator::get_sample_size(unsigned id_cache_size){
 	if(id_cache_size <= 100){
 		return SAMPLE_CACHE_MAX;
@@ -991,5 +994,6 @@ PlanTree *PlanGenerator::get_special_no_pre_var_plan() {
 }
 
 PlanTree *PlanGenerator::get_special_one_triple_plan() {
+
 	;
 }

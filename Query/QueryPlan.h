@@ -18,18 +18,18 @@ class QueryPlan
  public:
   std::shared_ptr<std::vector<OneStepJoin>> join_order_; //join order
   std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> ids_after_join_;
-  std::shared_ptr<std::vector<VarDescriptor>> var_descriptors_;
+  std::shared_ptr<std::vector<OldVarDescriptor>> var_descriptors_;
   // Do Before the process begin
   std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> constant_generating_lists_;
 
   QueryPlan(const std::shared_ptr<std::vector<OneStepJoin>>& join_order,
             const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>&ids_after_join,
-            std::shared_ptr<std::vector<VarDescriptor>> var_infos);
+            std::shared_ptr<std::vector<OldVarDescriptor>> var_infos);
 
-  QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector<VarDescriptor>> var_infos);
+  QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector<OldVarDescriptor>> var_infos);
   QueryPlan()=default;
 
-  static std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> OnlyConstFilter(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
+  static std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> OnlyConstFilter(BasicQuery*,KVstore*,std::shared_ptr<std::vector<OldVarDescriptor>>);
 
   /* greedy method used in version 0.9 */
   static double ScoreNode(BasicQuery *basic_query, int var);
@@ -44,7 +44,7 @@ class QueryPlan
   std::tuple<std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>,std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>>
   PositionIDMappings();
 
-  static shared_ptr<QueryPlan> DefaultBFS(BasicQuery*,KVstore*,std::shared_ptr<std::vector<VarDescriptor>>);
+  static shared_ptr<QueryPlan> DefaultBFS(BasicQuery*,KVstore*,std::shared_ptr<std::vector<OldVarDescriptor>>);
 
   static tuple<shared_ptr<vector<EdgeInfo>>,shared_ptr<vector<EdgeConstantInfo>>> LinkTwoNode(BasicQuery *basic_query,
                                                       const KVstore *kv_store,
@@ -59,7 +59,7 @@ class QueryPlan
                                            KVstore *kv_store,
                                            TYPE_ENTITY_LITERAL_ID target_node);
   static OneStepJoin FilterFirstNode(BasicQuery *basic_query, KVstore *kv_store, TYPE_ENTITY_LITERAL_ID start_node,
-                                     const shared_ptr<vector<VarDescriptor>> &var_list);
+                                     const shared_ptr<vector<OldVarDescriptor>> &var_list);
   static void ProcessPredicateAndSatellites(BasicQuery *basic_query,
                                      KVstore *kv_store,
                                      vector<bool> &vars_used_vec,
