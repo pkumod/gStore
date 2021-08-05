@@ -1,4 +1,4 @@
-/*=============================================================================
+﻿/*=============================================================================
 # Filename: Optimizer.cpp
 # Author: Yuqi Zhou, Linglin Yang
 # Mail: zhouyuqi@pku.edu.cn, fyulingi@gmail.com
@@ -1234,13 +1234,13 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
 
       cout << "id_list.size = " << var_candidates_cache->size() << endl;
       for (auto x : *var_candidates_cache){
-      	cout << "var[" << x.first << "] = " << basic_query_pointer->getVarName(x.first) << "  , var_candidate list size = " << x.second->size() << endl;
+      	cout << "var[" << x.first << "] = " << basic_query_pointer->getVarName(x.first) << ", var_candidate list size = " << x.second->size() << endl;
       }
 #ifdef FEED_PLAN
       vector<int> node_order = {3,5,4,2,0,6,1};
       auto best_plan_tree = new PlanTree(node_order);
 #else
-      auto best_plan_tree = (new PlanGenerator(kv_store_, basic_query_pointer, statistics, var_candidates_cache))->get_plan();
+      auto best_plan_tree = (new PlanGenerator(kv_store_, basic_query_pointer, statistics, var_candidates_cache))->get_normal_plan();
       		// get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
 #endif
       long t4 = Util::get_cur_time();
@@ -1269,6 +1269,17 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       cout << "total execution, used " << (t7 - t1) <<"ms."<<endl;
     }
     else if(strategy ==BasicQueryStrategy::Special){
+    	// todo: change this to BGPQuery
+    	if(basic_query_pointer->getVarNum() == 2 && basic_query_pointer->getPreVarNum() == 0){
+    		auto best_plan_tree = (new PlanGenerator(kv_store_, basic_query_pointer, statistics, var_candidates_cache))->get_special_no_pre_var_plan();
+    	}
+    	if(basic_query_pointer->getTripleNum() == 1 && basic_query_pointer->getTotalVarNum() != 3){
+    		auto best_plan_tree = (new PlanGenerator(kv_store_, basic_query_pointer, statistics, var_candidates_cache))->get_special_one_triple_plan();
+    	}
+    	if(basic_query_pointer->getTripleNum() == 1 && basic_query_pointer->getTotalVarNum() == 3){
+    		// todo: get all triples in database
+    		//;
+    	}
       printf("BasicQueryStrategy::Special not supported yet\n");
     }
     else if(strategy == BasicQueryStrategy::TopK)

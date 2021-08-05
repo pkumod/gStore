@@ -109,6 +109,13 @@ class OneStepJoinNode{
   void ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> already_in);
 };
 
+class OneStepJoinTwoNode{
+public:
+	TYPE_ENTITY_LITERAL_ID node_to_join_1;
+	TYPE_ENTITY_LITERAL_ID node_to_join_2;
+	std::shared_ptr<EdgeInfo> edges_;
+	std::shared_ptr<EdgeConstantInfo> edges_constant_info_;
+};
 
 /* Join Two Table on Public Variables*/
 struct OneStepJoinTable{
@@ -121,10 +128,11 @@ struct OneStepJoinTable{
 class OneStepJoin{
  public:
   std::shared_ptr<OneStepJoinNode> join_node_;
+  std::shared_ptr<OneStepJoinTwoNode> join_two_node_;
   std::shared_ptr<OneStepJoinTable> join_table_;
   std::shared_ptr<OneStepJoinNode> edge_filter_; // GenerateCandidates & EdgeCheck use this filed
   // ConstCandidatesCheck
-  enum class JoinType{JoinNode,GenerateCandidates,JoinTable,EdgeCheck} join_type_;
+  enum class JoinType{JoinNode,GenerateCandidates,JoinTable,EdgeCheck,JoinTwoNode} join_type_;
 
   std::string static JoinTypeToString(JoinType x){
     switch (x) {

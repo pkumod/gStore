@@ -141,9 +141,9 @@ public:
 	int selected_so_var_num;
 	int total_selected_var_num;
 
-	int total_pre_var_num;
-	int total_so_var_num;
-	int total_var_num;
+	unsigned total_pre_var_num;
+	unsigned total_so_var_num;
+	unsigned total_var_num;
 
 //	maybe not use join_pre_var_num
 	int join_pre_var_num;
@@ -172,6 +172,7 @@ public:
 
 	unsigned get_triple_num();
 	unsigned get_total_var_num();
+	unsigned get_pre_var_num();
 
 
 	bool get_edge_type(int var_id, int edge_id);

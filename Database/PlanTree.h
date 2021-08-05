@@ -11,6 +11,7 @@
 #include <string>
 #include <iostream>
 #include "../Query/BasicQuery.h"
+#include "./TableOperator.h"
 
 using namespace std;
 
@@ -21,6 +22,7 @@ std::string NodeJoinTypeStr(NodeJoinType node_join_type);
 
 struct Tree_node{
     NodeJoinType joinType;
+    // AStepJoin a;
 
 //    just for joinType == JoinANode
     int node_to_join;
