@@ -3172,7 +3172,7 @@ void GeneralEvaluation::getUsefulVarset(Varset& useful, int dep)
 					useful += parrent_group_pattern.sub_group_pattern[k].filter.varset;
 			}
 		}
-		// All vars from current levels' triples and filters //
+		// All vars from current levels' OPTIONAL triples and filters //
 		for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
 		{
 			if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)

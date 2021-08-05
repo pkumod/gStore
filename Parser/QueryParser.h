@@ -2,7 +2,7 @@
 # Filename:	QueryParser.h
 # Author: Yue Pang
 # Mail: michelle.py@pku.edu.cn
-# Last Modified:	2021-07-28 10:05 CST
+# Last Modified:	2021-08-03 16:58 CST
 # Description: defines the class for parsing SPARQL queries based on ANTLR4
 =============================================================================*/
 
@@ -34,7 +34,6 @@ public:
 	void setQueryTree(QueryTree *qtp) { query_tree_ptr = qtp; }
 	void SPARQLParse(const std::string &query);	// Overall driver function
 
-	antlrcpp::Any visitQueryUnit(SPARQLParser::QueryUnitContext *ctx);
 	antlrcpp::Any visitQuery(SPARQLParser::QueryContext *ctx);
 	antlrcpp::Any visitSelectquery(SPARQLParser::SelectqueryContext *ctx);
 	antlrcpp::Any visitAskquery(SPARQLParser::AskqueryContext *ctx);
