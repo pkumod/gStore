@@ -1,7 +1,7 @@
 #include "WebUrl.h"
 
 using namespace std;
-string WebUrl::Request(string& url,string& request) const {
+string WebUrl::Request(string& url,string& request) {
 	smatch result;
 	if (regex_search(url.cbegin(), url.cend(), result, regex(request + "=(.*?)&"))) {
 		// 匹配具有多个参数的url
