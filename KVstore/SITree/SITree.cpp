@@ -152,6 +152,7 @@ SITree::Insert(char* str, unsigned len, unsigned val)
     request_ += SINode::LEAF_SIZE;
     this->height_ = 1;
     root_->setHeight(1);	//add to heap later
+    this->tsm_->updateHeap(root_, root_->getRank(), false);
   }
 
   //  split the root SINode
