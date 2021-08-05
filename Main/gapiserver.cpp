@@ -168,10 +168,10 @@ void process(WFHttpTask* server_task)
 		req->get_request_uri(), req->get_http_version());
 	resp->append_output_body(buf, len);
 	string uri = req->get_request_uri();
-	WebUrl web(uri);
 
 
-	len = snprintf(buf, 8192, "<p>dbname=%s</p>", web.Request("dbname").c_str());
+
+	len = snprintf(buf, 8192, "<p>dbname=%s</p>", WebUrl::Request(url,"dbname").c_str());
 	resp->append_output_body(buf, len);
 	while (cursor.next(name, value))
 	{

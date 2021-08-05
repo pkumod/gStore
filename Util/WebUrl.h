@@ -10,7 +10,7 @@ public:
 	WebUrl(const string& url): _url(url){}
 	WebUrl(string&& url) :_url(move(url)) {}
 
-	string Request(const string& request) const;
+	static string Request(string& url,string& request) const;
 private:
 	string _url;
 };
