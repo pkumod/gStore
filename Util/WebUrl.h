@@ -7,7 +7,8 @@
 using namespace std;
 class WebUrl {
 public:
-	
+	WebUrl();
+	~WebUrl();
 	static string CutParam(string url, string param);
 
 };
