@@ -171,7 +171,7 @@ void process(WFHttpTask* server_task)
 
 
 
-	len = snprintf(buf, 8192, "<p>dbname=%s</p>", WebUrl::Request(url.c_str(),"dbname").c_str());
+	len = snprintf(buf, 8192, "<p>dbname=%s</p>", WebUrl::Request(uri.c_str(),"dbname").c_str());
 	resp->append_output_body(buf, len);
 	while (cursor.next(name, value))
 	{
