@@ -197,7 +197,7 @@ void process(WFHttpTask* server_task)
 	resp->add_header_pair("Server", "Sogou WFHttpServer");
 	string operationtype = "operation";
 	//string operation = WebUrl::Request(uri, operationtype);
-	cout << "operation is :" << operation << endl;
+	//cout << "operation is :" << operation << endl;
 
 
 }
