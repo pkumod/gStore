@@ -264,12 +264,12 @@ int main(int argc, char* argv[])
 
 	string advanced = getArgValue(argc, argv, "advanced", "n");
 
-	string gstore = "  __ _ ___| |_ ___  _ __ ___\n" +
-		" / _` / __| __/ _ \| '__/ _ \\n" +
-		"| (_| \__ \ || (_) | | |  __/\n" +
-		" \__, |___/\__\___/|_|  \___|\n" +
-		" |___/";
-	cout <<"\n"<<gstore << endl;
+	cout<< "   __ _ ___| |_ ___  _ __ ___" << endl;
+	cout<< "  / _` / __| __/ _ \| '__/ _" << endl;
+	cout<< " | (_| \__ \ || (_) | | |  __/" << endl;
+	cout << " \__, |___/\__\___/|_|  \___|" << endl;
+	cout << " |___/" << endl;
+	
 
 
 
