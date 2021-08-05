@@ -2,7 +2,7 @@
 # Filename: RDFParser.h
 # Author: Yue Pang
 # Mail: michelle.py@pku.edu.cn
-# Last Modified:    2021-07-28 10:43 CST
+# Last Modified:    2021-08-03 15:28 CST
 # Description: defines the class for parsing RDF data during build based on 
 RDF-3X's TurtleParser
 =============================================================================*/
@@ -25,11 +25,11 @@ private:
     TurtleParser _TurtleParser;
 
 public:
-    static const int TRIPLE_NUM_PER_GROUP = 10 * 1000 * 1000;   // TODO: what for?
+    static const int TRIPLE_NUM_PER_GROUP = 10 * 1000 * 1000;
 
     RDFParser();
     RDFParser(ifstream& _fin);
-    string parseFile(TripleWithObjType* _triple_array, int& _triple_num, string _error_log="");
-    string parseString(string _str, TripleWithObjType* _triple_array, int& _triple_num);
+    void parseFile(TripleWithObjType* _triple_array, int& _triple_num, string _error_log="");
+    void parseString(string _str, TripleWithObjType* _triple_array, int& _triple_num);
 };
 #endif

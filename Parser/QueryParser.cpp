@@ -2,7 +2,7 @@
 # Filename:	QueryParser.cpp
 # Author: Yue Pang
 # Mail: michelle.py@pku.edu.cn
-# Last Modified:	2021-07-28 10:30 CST
+# Last Modified:	2021-08-04 09:52 CST
 # Description: implements the class for parsing SPARQL queries based on ANTLR4
 =============================================================================*/
 
@@ -101,24 +101,8 @@ void QueryParser::printQueryTree()
 }
 
 /**
-	queryUnit : query ;
-	Visit node queryUnit: recursively call visit on its only child node query.
-	(Redundant, can be removed without affecting QueryParser's function)
-
-	@param ctx pointer to queryUnit's context.
-	@return a dummy antlrcpp::Any object.
-*/
-antlrcpp::Any QueryParser::visitQueryUnit(SPARQLParser::QueryUnitContext *ctx)
-{
-	visit(ctx->query());
-
-	return antlrcpp::Any();
-}
-
-/**
 	query : prologue( selectquery | constructquery | describequery | askquery )valuesClause ;
 	Visit node query: recursively call visit on each of its children.
-	(Redundant, can be removed without affecting QueryParser's function)
 
 	@param ctx pointer to query's context.
 	@return a dummy antlrcpp::Any object.
@@ -750,7 +734,7 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 {
 	string tmp;
 
-	// Passing argument like so lose will type info; therefore needs string tp
+	// Passing argument like so loses type info; therefore needs string tp
 	if (tp == "conditionalOrexpression")
 	{
 		if (root->children.size() == 1)
@@ -1112,6 +1096,7 @@ antlrcpp::Any QueryParser::visitBind(SPARQLParser::BindContext *ctx, \
 	1) No triplesNodepath in triplesSameSubjectpath;
 	2) The child of verbpathOrSimple is verbSimple (no property path, only simple predicate);
 	3) The descendant of objectListpath/objectList is varOrTerm (only simple object).
+	1) and 3) means that currently we cannot handle blank nodes in queries.
 
 	@param ctx pointer to triplesSameSubjectpath's context.
 	@param group_pattern a group graph pattern.
@@ -1237,10 +1222,8 @@ antlrcpp::Any QueryParser::visitGroupClause(SPARQLParser::GroupClauseContext *ct
 /**
 	orderClause : K_ORDER K_BY orderCondition+ ;
 	orderCondition : ( ( K_ASC | K_DESC ) brackettedexpression )| ( constraint | var ) ;
-	Visit node orderClause: Collect ORDER BY variables, and whether the order should be 
+	Visit node orderClause: Collect ORDER BY conditions, and whether the order should be 
 	ASC or DESC.
-	Assumptions:
-	1) ORDER BY key can only be var or brackettedexpression.
 
 	@param ctx pointer to orderClause's context.
 	@return a dummy antlrcpp::Any object.
