@@ -30,7 +30,7 @@
 #include "workflow/WFServer.h"
 #include "workflow/WFHttpServer.h"
 #include "workflow/WFFacilities.h"
-#include "WebUrl.h"
+#include "../Util/WebUrl.h"
 #include <iostream>
 #include "../Util/Util_New.h"
 #include "../Database/Database.h"
