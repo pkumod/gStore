@@ -171,8 +171,8 @@ void process(WFHttpTask* server_task)
 
 
 	string type = "dbname";
-	/*len = snprintf(buf, 8192, "<p>dbname=%s</p>", WebUrl::Request(uri,type).c_str());
-	resp->append_output_body(buf, len);*/
+	len = snprintf(buf, 8192, "<p>dbname=%s</p>", WebUrl::CutParam(uri,type).c_str());
+	resp->append_output_body(buf, len);
 	while (cursor.next(name, value))
 	{
 		len = snprintf(buf, 8192, "<p>%s: %s</p>", name.c_str(), value.c_str());
@@ -195,9 +195,9 @@ void process(WFHttpTask* server_task)
 
 	resp->add_header_pair("Content-Type", "text/html");
 	resp->add_header_pair("Server", "Sogou WFHttpServer");
-	string operationtype = "operation";
-	//string operation = WebUrl::Request(uri, operationtype);
-	//cout << "operation is :" << operation << endl;
+	
+	string operation = WebUrl::CutParam(uri, "operation");
+	cout << "operation is :" << operation << endl;
 
 
 }

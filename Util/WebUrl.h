@@ -11,6 +11,7 @@ public:
 	WebUrl(string&& url) :_url(move(url)) {}
 
 	static string Request(string& url,string& request);
+	static string CutParam(string url, string param);
 private:
 	string _url;
 };
