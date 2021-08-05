@@ -16,15 +16,15 @@
   Authors: Wu Jiaxu (wujiaxu@sogou-inc.com)
 */
 
-#ifndef _LRUCACHE_H_
-#define _LRUCACHE_H_
+#ifndef _LRUCACHE2_H_
+#define _LRUCACHE2_H_
 #include <assert.h>
 #include <map>
 #include <mutex>
 //#include <unordered_map>
 
 /**
- * @file   LRUCache.h
+ * @file   LRUCache2.h
  * @brief  Template LRU Cache
  */
 
@@ -67,7 +67,7 @@ private:
 	int ref;
 	bool in_cache;
 
-template<typename, typename, class> friend class LRUCache;
+template<typename, typename, class> friend class LRUCache2;
 };
 
 // RAII: NO. Release ref by LRUCache::release
@@ -75,7 +75,7 @@ template<typename, typename, class> friend class LRUCache;
 // Thread safety: YES
 // Make sure KEY operator< usable
 template<typename KEY, typename VALUE, class ValueDeleter>
-class LRUCache
+class LRUCache2
 {
 protected:
 //using Map = std::unordered_map<KEY, VALUE>;
@@ -89,7 +89,7 @@ typedef typename Map::iterator			MapIterator;
 typedef typename Map::const_iterator	MapConstIterator;
 
 public:
-	LRUCache():
+	LRUCache2():
 		max_size_(0),
 		size_(0)
 	{
@@ -99,7 +99,7 @@ public:
 		in_use_.prev = &in_use_;
 	}
 
-	~LRUCache()
+	~LRUCache2()
 	{
 		std::lock_guard<std::mutex> lock(mutex_);
 
@@ -291,5 +291,5 @@ private:
 	ValueDeleter value_deleter_;
 };
 
-#endif  // SSS_LRUCACHE_H_
+#endif  // SSS_LRUCACHE2_H_
 
