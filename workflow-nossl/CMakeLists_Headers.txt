@@ -72,7 +72,7 @@ set(INCLUDE_HEADERS
 	src/manager/WFFacilities.h
 	src/manager/WFFacilities.inl
 	src/util/EncodeStream.h
-	src/util/LRUCache.h
+	src/util/LRUCache2.h
 	src/util/StringUtil.h
 	src/util/URIParser.h
 	src/util/MD5Util.h
