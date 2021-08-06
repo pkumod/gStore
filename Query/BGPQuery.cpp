@@ -9,8 +9,9 @@
 using namespace std;
 
 
-VarDescriptor::VarDescriptor(VarType var_type, const string &var_name):
-	var_type_(var_type), var_name_(var_name), selected_(false){};
+VarDescriptor::VarDescriptor(unsigned id, VarType var_type, const string &var_name):
+	id_(id), var_type_(var_type), var_name_(var_name), selected_(false){};
+
 
 // bool VarDescriptor::get_edge_type(int edge_id) {
 // 	return this->edge_type_[edge_id];
@@ -105,7 +106,7 @@ void BGPQuery::AddTriple(const Triple& _triple)
 }
 
 unsigned BGPQuery::get_var_id_by_name(const string& var_name) {
-	return this->var_item_to_position[var_name];
+	return this->var_item_to_id[var_name];
 	// for(unsigned i = 0; i < this->var_vector.size(); ++i){
 	// 	if(var_vector[i]->var_name_ == var_name){
 	// 		return i;
@@ -116,6 +117,9 @@ unsigned BGPQuery::get_var_id_by_name(const string& var_name) {
 	// return -1;
 }
 
+unsigned int BGPQuery::get_var_position_by_name(const string &var_name) {
+	return this->var_item_to_position[var_name];
+}
 
 void BGPQuery::ScanAllVar() {
 
@@ -127,9 +131,16 @@ void BGPQuery::ScanAllVar() {
 		if(not_found){
 			this->item_to_freq[triple.subject] = 1;
 			if(triple.subject.at(0) == '?') {
-				auto new_sub_var = make_shared<VarDescriptor>(VarDescriptor::VarType::Entity, triple.subject);
+				auto new_sub_var = make_shared<VarDescriptor>(index, VarDescriptor::VarType::Entity, triple.subject);
+				// todo: whether this should use std::move?
 				this->var_vector.push_back(new_sub_var);
+
 				this->var_item_to_position[triple.subject] = index;
+				this->var_item_to_id[triple.subject] = index;
+
+				this->id_position_map[index] = index;
+				this->position_id_map[index] = index;
+
 				this->so_var_id.push_back(index);
 				this->total_so_var_num += 1;
 				index += 1;
@@ -143,9 +154,15 @@ void BGPQuery::ScanAllVar() {
 		if(not_found){
 			this->item_to_freq[triple.predicate] = 1;
 			if(triple.predicate.at(0) == '?') {
-				auto new_pre_var = make_shared<VarDescriptor>(VarDescriptor::VarType::Predicate, triple.predicate);
+				auto new_pre_var = make_shared<VarDescriptor>(index, VarDescriptor::VarType::Predicate, triple.predicate);
 				this->var_vector.push_back(new_pre_var);
+
 				this->var_item_to_position[triple.predicate] = index;
+				this->var_item_to_id[triple.predicate] = index;
+
+				this->id_position_map[index] = index;
+				this->position_id_map[index] = index;
+
 				this->pre_var_id.push_back(index);
 				this->total_pre_var_num += 1;
 				index += 1;
@@ -160,9 +177,15 @@ void BGPQuery::ScanAllVar() {
 		if(not_found){
 			this->item_to_freq[triple.object] = 1;
 			if(triple.object.at(0) == '?') {
-				auto new_obj_var = make_shared<VarDescriptor>(VarDescriptor::VarType::Entity, triple.object);
+				auto new_obj_var = make_shared<VarDescriptor>(index, VarDescriptor::VarType::Entity, triple.object);
 				this->var_vector.push_back(new_obj_var);
+
 				this->var_item_to_position[triple.object] = index;
+				this->var_item_to_id[triple.object] = index;
+
+				this->id_position_map[index] = index;
+				this->position_id_map[index] = index;
+
 				this->so_var_id.push_back(index);
 				this->total_so_var_num += 1;
 				index += 1;
@@ -178,7 +201,6 @@ void BGPQuery::ScanAllVar() {
 void BGPQuery::build_edge_info(KVstore *_kvstore) {
 
 	for(unsigned i = 0; i < this->triple_vt.size(); ++i){
-		// TODO:not support pre var
 		string s_string = triple_vt[i].subject;
 		string p_string = triple_vt[i].predicate;
 		string o_string = triple_vt[i].object;
@@ -267,9 +289,96 @@ bool BGPQuery::EncodeBGPQuery(KVstore *_kvstore, const vector<string> &_query_va
 
 }
 
+
+void BGPQuery::ScanAllVarByBigBGPID(BGPQuery *big_bgpquery) {
+	bool not_found;
+	unsigned index = 0;
+	for(const auto &triple : triple_vt){
+		//		sub
+		not_found = (this->item_to_freq.find(triple.subject) == this->item_to_freq.end());
+		if(not_found){
+			this->item_to_freq[triple.subject] = 1;
+			if(triple.subject.at(0) == '?') {
+				auto new_sub_var = make_shared<VarDescriptor>(big_bgpquery->get_var_id_by_name(triple.subject),
+															  VarDescriptor::VarType::Entity, triple.subject);
+				this->var_vector.push_back(new_sub_var);
+
+				this->var_item_to_position[triple.subject] = index;
+				this->var_item_to_id[triple.subject] = big_bgpquery->get_var_id_by_name(triple.subject);
+
+				this->id_position_map[big_bgpquery->get_var_id_by_name(triple.subject)] = index;
+				this->position_id_map[index] = big_bgpquery->get_var_id_by_name(triple.subject);
+
+				this->so_var_id.push_back(big_bgpquery->get_var_id_by_name(triple.subject));
+				this->total_so_var_num += 1;
+				index += 1;
+			}
+		} else{
+			++(this->item_to_freq[triple.subject]);
+		}
+
+		//		pre
+		not_found = (this->item_to_freq.find(triple.predicate) == this->item_to_freq.end());
+		if(not_found){
+			this->item_to_freq[triple.predicate] = 1;
+			if(triple.predicate.at(0) == '?') {
+				auto new_pre_var = make_shared<VarDescriptor>(big_bgpquery->get_var_id_by_name(triple.predicate),
+															  VarDescriptor::VarType::Predicate, triple.predicate);
+				this->var_vector.push_back(new_pre_var);
+
+				this->var_item_to_position[triple.predicate] = index;
+				this->var_item_to_id[triple.predicate] = big_bgpquery->get_var_id_by_name(triple.predicate);
+
+				this->id_position_map[big_bgpquery->get_var_id_by_name(triple.predicate)] = index;
+				this->position_id_map[index] = big_bgpquery->get_var_id_by_name(triple.predicate);
+
+				this->pre_var_id.push_back(big_bgpquery->get_var_id_by_name(triple.predicate));
+				this->total_pre_var_num += 1;
+				index += 1;
+			}
+
+		} else{
+			++(this->item_to_freq[triple.predicate]);
+		}
+
+		//		obj
+		not_found = (this->item_to_freq.find(triple.object) == this->item_to_freq.end());
+		if(not_found){
+			this->item_to_freq[triple.object] = 1;
+			if(triple.object.at(0) == '?') {
+				auto new_obj_var = make_shared<VarDescriptor>(big_bgpquery->get_var_id_by_name(triple.object),
+															  VarDescriptor::VarType::Entity, triple.object);
+				this->var_vector.push_back(new_obj_var);
+
+				this->var_item_to_position[triple.object] = index;
+				this->var_item_to_id[triple.object] = big_bgpquery->get_var_id_by_name(triple.object);
+
+				this->id_position_map[big_bgpquery->get_var_id_by_name(triple.object)] = index;
+				this->position_id_map[index] = big_bgpquery->get_var_id_by_name(triple.object);
+
+				this->so_var_id.push_back(big_bgpquery->get_var_id_by_name(triple.object));
+				this->total_so_var_num += 1;
+				index += 1;
+			}
+
+		} else{
+			++(this->item_to_freq[triple.object]);
+		}
+	}
+}
+
+
 // this function is invoked after adding all triples of small BGP
 bool BGPQuery::EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore *_kvstore, const vector<string> &_query_var) {
-	;
+
+	this->ScanAllVarByBigBGPID(big_bgpquery_);
+
+	this->build_edge_info(_kvstore);
+
+	this->count_statistics_num();
+
+	// todo: return false imply parse error
+	return true;
 
 }
 

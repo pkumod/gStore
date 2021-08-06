@@ -42,8 +42,11 @@ public:
 	enum class EntiType{VarEntiType, ConEntiType};
 	enum class PreType{VarPreType, ConPreType};
 
+	unsigned id_;
 	VarType var_type_;
 	std::string var_name_;
+
+	// todo: use this to denote whether this var is selected or not
 	bool selected_;
 
 	// degree_ is the num of how many triples include this item,
@@ -87,7 +90,7 @@ public:
 	// int RewritingPosition(){return this->rewriting_position_;};
 	// calculate the exact position in final result
 
-	VarDescriptor(VarType var_type, const string &var_name);
+	VarDescriptor(unsigned id, VarType var_type, const string &var_name);
 
 	// VarDescriptor(VarType var_type,const std::string& var_name,BasicQuery* basic_query):
 	// 		var_type_(var_type),var_name_(var_name)
@@ -135,9 +138,15 @@ class BGPQuery {
 public:
 
 	// all item, including s, p, o, whether var or not
-	map<string, int> item_to_freq;
+	map<string, unsigned > item_to_freq;
+
 	// map var item to its position in var_vector
 	map<string, unsigned > var_item_to_position;
+	map<string, unsigned > var_item_to_id;
+
+	map<unsigned, unsigned> id_position_map;
+	map<unsigned, unsigned> position_id_map;
+
 
 	// all var, whether pre or not_pre, whether selected or not_selected
 	vector<shared_ptr<VarDescriptor>> var_vector;
@@ -177,16 +186,19 @@ public:
 
 	// return var_id in var_vector, if not find, return -1;
 	unsigned get_var_id_by_name(const string& var_name);
+	unsigned get_var_position_by_name(const string& var_name);
 
 	// void update_so_var_edge_info(uns);
 
 	void ScanAllVar();
-
 	void build_edge_info(KVstore *_kvstore);
-
 	void count_statistics_num();
 
 	bool EncodeBGPQuery(KVstore* _kvstore, const vector<string>& _query_var);
+
+
+
+	void ScanAllVarByBigBGPID(BGPQuery *big_bgpquery);
 	bool EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore* _kvstore, const vector<string>& _query_var);
 
 	unsigned get_triple_num();
