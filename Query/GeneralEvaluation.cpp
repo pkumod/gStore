@@ -233,9 +233,48 @@ bool GeneralEvaluation::doQuery()
 	return true;
 }
 
+void GeneralEvaluation::getAllPattern(const QueryTree::GroupPattern &group_pattern, vector<QueryTree::GroupPattern::Pattern> &vp)
+{
+	for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
+	{
+		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Group_type)
+			getAllPattern(group_pattern.sub_group_pattern[i].group_pattern, vp);
+		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+			vp.push_back(group_pattern.sub_group_pattern[i].pattern);
+		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
+		{
+			for (int j = 0; j < (int)group_pattern.sub_group_pattern[i].unions.size(); j++)
+				getAllPattern(group_pattern.sub_group_pattern[i].unions[j], vp);
+		}
+		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type \
+			|| group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
+			getAllPattern(group_pattern.sub_group_pattern[i].optional, vp);
+	}
+}
+
 TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 {
 	QueryTree::GroupPattern group_pattern;
+
+	// Test for BGPQuery
+	bool testBGPQuery = true;
+	if (testBGPQuery)
+	{
+		vector<QueryTree::GroupPattern::Pattern> vp;
+		getAllPattern(rewriting_evaluation_stack[dep].group_pattern, vp);
+
+		BGPQuery complete;
+		for (auto p : vp)
+			complete.AddTriple(Triple(p.subject.value, p.predicate.value, p.object.value));
+		complete.EncodeBGPQuery(kvstore, vector<string>());
+
+		BGPQuery partial;
+		partial.AddTriple(Triple(vp[0].subject.value, vp[0].predicate.value, vp[0].object.value));
+		partial.AddTriple(Triple(vp[1].subject.value, vp[1].predicate.value, vp[1].object.value));
+		partial.EncodeSmallBGPQuery(&complete, kvstore, vector<string>());
+
+		exit(0);
+	}
 
 	// Check well-designed (TODO: check at every depth, now only check once) //
 	// If well-designed, split and refill group_pattern according to rewriting //
