@@ -27,8 +27,8 @@ private:
 	TransactionState state;
 	TYPE_TS timestamp;
 
-	long int start_time;
-	long int end_time;
+	unsigned long start_time;
+	unsigned long end_time;
 	
 	//latch table
 	vector<IDSet> ReadSet; //shared latches
@@ -39,10 +39,11 @@ private:
 	vector<string> sparqls;
 	IsolationLevelType isolation;
 
+	
 	int wait_lock_time;
 	int retry_times;
 public:
-	unsigned long long int update_num;
+	int update_num;
 	enum class IDType{SUBJECT, PREDICATE, OBJECT};
 	Transaction(Transaction const&) = delete;
 	Transaction(string name, TYPE_TS time, txn_id_t TID, IsolationLevelType _isolation = IsolationLevelType::SERIALIZABLE);
@@ -74,11 +75,6 @@ public:
 	void WriteSetDelete(IDTriple _Triple);
 	bool WriteSetFind(TYPE_ENTITY_LITERAL_ID _ID, Transaction::IDType _type);
 	
-	void AddSetInsert(IDTriple _Triple);
-	void AddSetDelete(IDTriple _Triple);
-	void DelSetInsert(IDTriple _Triple);
-	void DelSetDelete(IDTriple _Triple);
-	
 	//void DependedTXNSetInsert(TYPE_TXN_ID _TID);
 	//void DependedTXNSetDelete(TYPE_TXN_ID _TID);
 	
@@ -92,6 +88,7 @@ public:
 	int get_wait_lock_time() { return this->wait_lock_time;}
 	int get_retry_times() { return this->retry_times; }
 	
+	//DEBUG Function
 	void print_ReadSet();
 	void print_WriteSet();
 	void print_AddSet();

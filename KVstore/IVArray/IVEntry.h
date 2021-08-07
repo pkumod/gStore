@@ -32,7 +32,7 @@ private:
 	//MVCC
 	atomic<bool> is_versioned;
 	
-	//Version List head point always point to the newest.
+	//Version List end point always point to the newest.
 	vector<shared_ptr<Version>> vList; 
 	//protect Version list. TODO: use free-locked list for better concurrency
 	Latch rwLatch;
@@ -81,15 +81,14 @@ public:
 	
 	void version_merge(VDataArray &addarray, VDataArray &delarray, VDataSet &AddSet, VDataSet &DelSet);
 	//get exclusive lock before update
-	int getExclusiveLatch(shared_ptr<Transaction> txn, bool has_read); 
-	bool releaseExlusiveLatch(shared_ptr<Transaction> txn, bool has_read); //different from unlock
-	bool invalidExlusiveLatch(shared_ptr<Transaction> txn, bool has_read); //undo
+	int GetExclusiveLatch(shared_ptr<Transaction> txn, bool has_read); 
+	bool InvalidExlusiveLatch(shared_ptr<Transaction> txn, bool has_read); 
 
-	bool unLatch(shared_ptr<Transaction> txn, LatchType latch_type); //commit
+	bool UnLatch(shared_ptr<Transaction> txn, LatchType latch_type); //commit
 
-	bool readVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn, bool &latched, bool repeated_read = false ); //read
-	int  writeVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn);
+	bool ReadVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn, bool &latched, bool first_read = false ); //read
+	int  WriteVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn);
 	
-	void cleanAllVersion();
+	void CleanAllVersion();
 	~IVEntry();
 };

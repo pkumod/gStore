@@ -177,7 +177,7 @@ int Txn_manager::Commit(txn_id_t TID)
 	txn_id_t CID = this->ArrangeCommitID();
 	txn->SetCommitID(CID);
 	if(db != nullptr)
-		db->transaction_commit(txn);
+		db->TransactionCommit(txn);
 	else
 	{
 		cout << "error! database has been flushed or removed" << endl;
@@ -207,7 +207,7 @@ int Txn_manager::Abort(txn_id_t TID)
 		return -1;
 	}
 	if(db != nullptr)
-		db->transaction_rollback(txn);
+		db->TransactionRollback(txn);
 	else
 	{
 		cout << "error! database has been flushed or removed" << endl;
@@ -294,7 +294,7 @@ void Txn_manager::Checkpoint()
 	//cout << "obj_ids.size(): " << obj_ids.size() << endl;
 	//cout << "obj_literal_ids.size(): " << obj_literal_ids.size() << endl;
  	if(db != nullptr)
-		db->version_clean(sub_ids, obj_ids, obj_literal_ids, pre_ids);
+		db->VersionClean(sub_ids, obj_ids, obj_literal_ids, pre_ids);
 	checkpoint_lock.unlock();
 }
 

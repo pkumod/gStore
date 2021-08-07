@@ -559,7 +559,7 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 		return false;
 	}
 	// try to read in main memory
-	bool ret = array[_key].readVersion(AddSet, DelSet, txn, latched, is_firstread);
+	bool ret = array[_key].ReadVersion(AddSet, DelSet, txn, latched, is_firstread);
 	bool is_empty = AddSet.size() == 0 && DelSet.size() == 0;
 	
 	if(ret == false) {
@@ -633,7 +633,7 @@ IVArray::remove(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn)
 		VDataSet addset;
 		addset.clear();
 		
-		bool ret = array[_key].writeVersion(addset, delta, txn);
+		bool ret = array[_key].WriteVersion(addset, delta, txn);
 		if(ret == false) txn->SetState(TransactionState::ABORTED);
 		ArrayUnlock();
 		return ret;
@@ -657,7 +657,7 @@ IVArray::insert(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn)
 	delset.clear();
 	//check if first insert 
 	//array[_key].setDirtyFlag(true);
-	int ret = array[_key].writeVersion(delta, delset, txn);
+	int ret = array[_key].WriteVersion(delta, delset, txn);
 	if(ret != 1) {
 		cerr << "write version failed!" << endl;
 		txn->SetState(TransactionState::ABORTED);
@@ -715,22 +715,10 @@ IVArray::TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_
 	}
 	//assert(_key < CurEntryNum);
 	
-	int ret = array[_key].getExclusiveLatch(txn, has_read);
+	int ret = array[_key].GetExclusiveLatch(txn, has_read);
 	ArrayUnlock();
 	return ret;
 }
-
-/*
-bool 
-IVArray::ReleaseExclusiveLock(unsigned _key, shared_ptr<Transaction> txn, bool has_read)
-{
-	if (_key >= CurEntryNum || !array[_key].isUsed() )
-	{
-		return false;
-	}
-	return array[_key].releaseExlusiveLatch(txn, has_read);
-}
-*/
 
 bool 
 IVArray::ReleaseLatch(unsigned _key, shared_ptr<Transaction> txn, IVEntry::LatchType type)
@@ -741,7 +729,7 @@ IVArray::ReleaseLatch(unsigned _key, shared_ptr<Transaction> txn, IVEntry::Latch
 		ArrayUnlock();
 		return false;
 	}
-	bool ret = array[_key].unLatch(txn, type);
+	bool ret = array[_key].UnLatch(txn, type);
 	ArrayUnlock();
 	return ret;
 }
@@ -756,7 +744,7 @@ IVArray::Rollback(unsigned _key, shared_ptr<Transaction> txn, bool has_read)
 		return false;
 	}
 	//bool delete_ret = array[_key].deleteUnCommittedVersion(txn);
-	bool delete_ret = array[_key].invalidExlusiveLatch(txn, has_read);
+	bool delete_ret = array[_key].InvalidExlusiveLatch(txn, has_read);
 	//cerr << "delete_retdelete_ret TID:" << txn->GetTID() << " " << _key << "    " << delete_ret << endl;
 	//bool unlock_ret = array[_key].releaseExlusiveLock(txn);
 	ArrayUnlock();
@@ -774,7 +762,7 @@ IVArray::CleanDirtyKey(unsigned _key)
 		ArrayUnlock();
 		return false;
 	}
-	array[_key].cleanAllVersion();
+	array[_key].CleanAllVersion();
 	ArrayUnlock();
 	return true;
 
