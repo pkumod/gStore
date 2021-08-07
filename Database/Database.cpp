@@ -5942,7 +5942,7 @@ Database::getFinalResult(SPARQLquery& _sparql_q, ResultSet& _result_set)
 
 //garbage clean 
 void
-Database::version_clean(vector<unsigned> &sub_ids ,vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned> &pre_ids)
+Database::VersionClean(vector<unsigned> &sub_ids ,vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned> &pre_ids)
 {
 	//vector<unsigned> sub_ids , obj_ids, obj_literal_ids, pre_ids;
 	(this->kvstore)->IVArrayVacuum(sub_ids, obj_ids, obj_literal_ids, pre_ids);
@@ -6045,7 +6045,7 @@ Database::version_clean(vector<unsigned> &sub_ids ,vector<unsigned>& obj_ids, ve
 }
 
 void 
-Database::transaction_rollback(shared_ptr<Transaction> txn)
+Database::TransactionRollback(shared_ptr<Transaction> txn)
 {
 	if((this->kvstore)->TransactionInvalid(txn) == false)
 	{
@@ -6055,7 +6055,7 @@ Database::transaction_rollback(shared_ptr<Transaction> txn)
 }
 
 void 
-Database::transaction_commit(shared_ptr<Transaction> txn)
+Database::TransactionCommit(shared_ptr<Transaction> txn)
 {
 	//cout << "transaction_commit ........" << endl;
 	if((this->kvstore)->ReleaseAllLocks(txn) == false)
