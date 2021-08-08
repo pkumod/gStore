@@ -66,7 +66,7 @@ class FQIterator: public OrderedList{
  public:
   TYPE_ENTITY_LITERAL_ID node_id_;
   explicit FQIterator(int k,TYPE_ENTITY_LITERAL_ID node_id,int child_type_num,double node_score):
-      node_score_(node_score), dynamic_trie_(k,child_type_num),node_id_(node_id)
+      node_score_(node_score), dynamic_trie_(child_type_num,k),node_id_(node_id)
   {this->FR_OW_iterators.reserve(child_type_num);};
   OrderedListType Type() override {return OrderedListType::FQ;};
   void TryGetNext(unsigned int k) override;

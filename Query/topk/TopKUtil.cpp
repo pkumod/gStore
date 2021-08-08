@@ -108,7 +108,7 @@ TopKTreeSearchPlan::TopKTreeSearchPlan(BasicQuery *basic_query, Statistics *stat
 #endif
   // construct the query tree
   bool*  vars_used_vec = new bool[total_vars_num];
-  memset(vars_used_vec,0,sizeof(vars_used_vec));
+  memset(vars_used_vec,0,total_vars_num*sizeof(bool));
   auto root_id = min_score_root;
   vars_used_vec[root_id] = true;
   std::stack<TopKTreeNode*> explore_id;
@@ -116,12 +116,18 @@ TopKTreeSearchPlan::TopKTreeSearchPlan(BasicQuery *basic_query, Statistics *stat
   r->var_id = root_id;
   explore_id.push(r);
 
-  while(!explore_id.empty())
-  {
+  while(!explore_id.empty()) {
     auto now_node = explore_id.top();
     explore_id.pop();
 #ifdef TOPK_DEBUG_INFO
-    cout << "pop " << now_node->var_id<<" children num:"<<neighbours[now_node->var_id].size()<<endl;
+    cout << "pop " << now_node->var_id << " children num:" << neighbours[now_node->var_id].size();
+    if (neighbours[now_node->var_id].size()) {
+    cout<<"[";
+    for(auto child_id:neighbours[now_node->var_id])
+      cout<<child_id<<" ";
+    cout<<"]";
+    }
+    cout<<endl;
 #endif
 
     for(const auto& child_id: neighbours[now_node->var_id])
@@ -217,7 +223,7 @@ double TopKUtil::GetScore(string &v, stringstream &ss)
   ss>>double_v;
   ss.clear();
   ss.str("");
-#ifdef TOPK_DEBUG_INFO
+#ifdef SHOW_SCORE
   std::cout<<"TopKUtil::GetScore str:"<<v<<" double "<<double_v<<std::endl;
 #endif
   return double_v;
@@ -259,22 +265,22 @@ void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_nod
  * @param order
  * @return
  */
-std::map<std::string,double> TopKUtil::getVarCoefficients(QueryTree::Order order)
+std::shared_ptr<std::map<std::string,double>> TopKUtil::getVarCoefficients(QueryTree::Order order)
 {
   stringstream ss;
-  std::map<std::string,double> r;
-  GetVarCoefficientsTreeNode(order.comp_tree_root, r, ss);
+  auto r= make_shared<std::map<std::string,double>>();
+  GetVarCoefficientsTreeNode(order.comp_tree_root, *r, ss);
 
 #ifdef TOPK_DEBUG_INFO
   //std::cout<<"TreeStructure:"<<std::endl;
   //order.comp_tree_root->print(0);
   std::cout<<"VarCoefficients:"<<std::endl;
-  for(const auto& pair:r)
+  for(const auto& pair:*r)
   {
     std::cout<<pair.first<<"\t"<<pair.second<<std::endl;
   }
 #endif
-  return std::move(r);
+  return r;
 }
 
 void TopKUtil::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared)
@@ -291,7 +297,7 @@ void TopKUtil::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* i
   }
 }
 
-void TopKUtil::FreeGlobalIterators(std::vector<std::shared_ptr<std::set<OrderedList*>>> *global_iterators)
+void TopKUtil::FreeGlobalIterators(std::shared_ptr<std::vector<std::shared_ptr<std::set<OrderedList*>>>> global_iterators)
 {
   for(auto layer_iterators:*global_iterators)
   {
@@ -423,7 +429,7 @@ std::map<TYPE_ENTITY_LITERAL_ID,FQIterator*> inline TopKUtil::AssemblingFrOw(set
       fq->Insert(descendents_FRs[i][fq_id]);
     id_fqs[fq_id] = fq;
     fq->TryGetNext(k);
-#ifdef TOPK_DEBUG_INFO
+#ifdef SHOW_SCORE
   cout<<"FQ["<<fq_id<<"], the min score are "<<fq->pool_[0].cost<<endl;
 #endif
   }
@@ -526,27 +532,12 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
                                              true,
                                              env->txn);
       }
-#ifdef TOPK_DEBUG_INFO
-      cout<<"direction[";
-      if(i < separator_num)
-        cout<<"parent -> child]";
-        else
-        cout<<"child -> parent]";
-      cout<<"  parent id:"<<parent_id<<" "<<env->kv_store->getEntityByID(parent_id)<<" predicate id "<<predicate_id<<" "<<
-      env->kv_store->getPredicateByID(predicate_id);
-#endif
+
       UpdateIDList(record_candidate_list,
                    edge_candidate_list,
                    edge_list_len,
                    record_candidate_prepared);
-#ifdef TOPK_DEBUG_INFO
-      cout<<"result size "<< record_candidate_list->size();
-      for(auto id :*record_candidate_list)
-      {
-        cout<<" "<<id;
-      }
-      cout<<endl;
-#endif
+
       delete[] edge_candidate_list;
       record_candidate_prepared = true;
     }
@@ -556,13 +547,8 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
       auto caches_ptr = (*(env->id_caches->find(child_var))).second;
       record_candidate_list->intersectList(caches_ptr->getList()->data(),caches_ptr->size());
     }
-#ifdef TOPK_DEBUG_INFO
-    cout<<"final result size "<< record_candidate_list->size()<<endl;
-#endif
+
     if (record_candidate_list->empty()) {
-#ifdef TOPK_DEBUG_INFO
-      cout<<"parent var["<<parent_var<<"] delete "<< parent_id<<endl;
-#endif
       deleted_parent_ids_this_child.insert(parent_id);
       continue;
     }
@@ -582,10 +568,6 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
     parent_var_candidates.erase(deleted_id);
     deleted_parents.insert(deleted_id);
   }
-#ifdef TOPK_DEBUG_INFO
-  if(has_coefficient)
-  cout<<" var has coefficient:"<<coefficient<<endl;
-#endif
   // calculate children's scores
   std::map<TYPE_ENTITY_LITERAL_ID,double>* node_score = nullptr;
   if(has_coefficient)
@@ -600,26 +582,26 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
   // Return OW iterators
   if (child_type_num == 0)
   {
-#ifdef TOPK_DEBUG_INFO
+#ifdef SHOW_SCORE
   cout<<"var["<<child_var<<"] has no child, constructing OW iterators"<<endl;
 #endif
     std::vector<TYPE_ENTITY_LITERAL_ID> children_ids;
     std::vector<double> children_scores;
     for(auto parent_id:parent_var_candidates)
     {
-#ifdef TOPK_DEBUG_INFO
+#ifdef SHOW_SCORE
       cout<<"parent var["<<parent_id<<"] has "<<parent_child[parent_id].size()<<" child, its OW "<<endl;
 #endif
       auto ow = new OWIterator();
       for(auto child_id:parent_child[parent_id])
       {
-#ifdef TOPK_DEBUG_INFO
+#ifdef SHOW_SCORE
         cout<<"["<<child_id<<"]"<<" "<<(*node_score)[child_id];
 #endif
         children_ids.push_back(child_id);
         children_scores.push_back((*node_score)[child_id]);
       }
-#ifdef TOPK_DEBUG_INFO
+#ifdef SHOW_SCORE
       cout<<endl;
       //cout<<parent_id<<"'s OW ["<<child_var<<"]";
 #endif
@@ -667,12 +649,17 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
     }
   }
 
+  for(auto deleted_parent:deleted_parents)
+    parent_var_candidates.erase(deleted_parent);
+
+
   // constructing parents' FRs
   for(auto parent_id:parent_var_candidates) {
     auto fr = new FRIterator();
     parents_FRs[parent_id] = fr;
     for(auto child_id:parent_child[parent_id])
       fr->Insert(env->k,child_fqs[child_id]);
+    fr->TryGetNext(env->k);
   }
 
   return std::move(parents_FRs);

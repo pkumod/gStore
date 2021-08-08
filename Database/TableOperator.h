@@ -69,7 +69,6 @@ class IntermediateResult{
                                                               const std::shared_ptr< std::vector<TYPE_ENTITY_LITERAL_ID> >& public_variables);
 };
 
-
 class EdgeInfo{
  public:
   // VarDescriptor ID
