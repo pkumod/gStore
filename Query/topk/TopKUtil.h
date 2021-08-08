@@ -16,13 +16,21 @@
 #include "../../Database/TableOperator.h"
 
 #define TOPK_DEBUG_INFO
-
+// #define SHOW_SCORE
 // only Vars
 struct TopKTreeNode{
   int var_id;
   std::vector<TopKTreeNode*> descendents_;
 };
 
+/**
+ * The General Top-k Search Plan Structure:
+ * 1. filtering all entity vars
+ * 2. build top-k iterators
+ * 3. get top-k results
+ * 3.1 check non-tree edges
+ * 3.2 fill selected predicate vars
+ */
 class TopKTreeSearchPlan {
  private:
   std::size_t CountDepth(std::map<int, set<int>>& neighbours, TYPE_ENTITY_LITERAL_ID root_id, std::size_t total_vars_num);
@@ -35,7 +43,14 @@ class TopKTreeSearchPlan {
   // Recursive delete
   ~TopKTreeSearchPlan();
   // The Edges that left behind
-  std::vector<std::pair<int,int>> postponed_edges_;
+  // It can be used in two ways:
+  // 1 . when filtering, use non tree edges to early filter
+  // 2 . when enumerating , use non tree edges to make sure correctness
+  std::vector<OneStepJoin> non_tree_edges;
+  // The predicate been selected,
+  // We process these vars when all the entity vars have been filled
+  std::vector<OneStepJoin> selected_predicate_edges;
+
   std::string DebugInfo();
 };
 
@@ -48,18 +63,20 @@ double GetScore(string &v, stringstream &ss);
 void GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
                                 std::map<std::string,double>& coefficients,
                                 stringstream &ss);
-std::map<std::string,double> getVarCoefficients(QueryTree::Order order);
+std::shared_ptr<std::map<std::string,double>> getVarCoefficients(QueryTree::Order order);
 
 struct Env{
   KVstore *kv_store;
   BasicQuery *basic_query;
   shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches;
   int k;
-  // we assume the var id ranges in [0, var_num)
-  std::vector<std::shared_ptr<std::set<OrderedList*>>> *global_iterators;
-  map<std::string, double> *coefficients;
+  // store the OrderedList that have been allocated , and delete them in the end of top-k function
+  std::shared_ptr<std::vector<std::shared_ptr<std::set<OrderedList*>>>> global_iterators;
+  // store the non-tree edges to speed up result enumeration
+  std::shared_ptr<std::vector<std::map<TYPE_ENTITY_LITERAL_ID,std::set<TYPE_ENTITY_LITERAL_ID> >>> non_tree_edges_lists_;
+  std::shared_ptr<map<std::string, double>> coefficients;
   shared_ptr<Transaction> txn;
-  stringstream *ss;
+  std::shared_ptr<stringstream> ss;
 };
 
 std::map<TYPE_ENTITY_LITERAL_ID,FQIterator*>  inline AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
@@ -76,6 +93,6 @@ FRIterator* BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> &tree_search_
 
 void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
 
-void FreeGlobalIterators(std::vector<std::shared_ptr<std::set<OrderedList*>>> *global_iterators);
+void FreeGlobalIterators(std::shared_ptr<std::vector<std::shared_ptr<std::set<OrderedList*>>>> global_iterators);
 }
 #endif //GSTORELIMITK_QUERY_TOPK_TOPKUTIL_H_

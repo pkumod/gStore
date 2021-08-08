@@ -22,6 +22,11 @@ struct element{
 };
 
 using  Pool = std::vector<element>;
+
+/**
+ * sequence in DP-B/DP-P ,slightly different from the paper
+ * it starts from zero, A initial seq in a Dynamic Trie is like '0-0-0'
+ */
 using  sequence =  std::vector<unsigned int>;
 
 // For FQ heap

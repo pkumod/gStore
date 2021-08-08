@@ -26,7 +26,7 @@ DPB::TrieEntry* DPB::DynamicTrie::newEntry(int k) {
 /**
  * build a DynamicTrie
  * @param depth  the depth of this Trie, the same as child type number of FQ
- * @param k
+ * @param k , the goal of this algorithm
  */
 DPB::DynamicTrie::DynamicTrie(int depth,int k ):depth_(depth),k_(k) {
   this->root = newEntry(k);
@@ -46,16 +46,21 @@ DPB::DynamicTrie::~DynamicTrie() {
   deleteEntry(this->root,0);
 }
 
+/**
+ * Insert a sequence and return the pointer to the TrieEntry
+ * @param seq the inserted sequence
+ * @return  the pointer to the TrieEntry
+ */
 DPB::TrieEntry* DPB::DynamicTrie::insert(const DPB::sequence &seq) {
   TrieEntry* p = this->root;
   TrieEntry* p_next;
   bool new_created = false;
-  for(int i=0;i<depth_-1;i++)
+  for(int i=0;i<depth_;i++)
   {
-    p_next = p->nexts[seq[i]-1];
+    p_next = p->nexts[seq[i]];
     if(p_next == NULL) {
       p_next = newEntry(this->k_);
-      p->nexts[seq[i]-1] = p_next;
+      p->nexts[seq[i]] = p_next;
       new_created = true;
     }
     p = p_next;
@@ -63,13 +68,19 @@ DPB::TrieEntry* DPB::DynamicTrie::insert(const DPB::sequence &seq) {
   if(new_created) {
     auto father_count = static_cast<size_t>(std::count_if(seq.begin(),
                                      seq.end(),
-                                     [](decltype(*seq.begin()) x) { return x != 1; })
+                                     [](decltype(*seq.begin()) x) { return x != 0; })
     );
     p_next->count = father_count;
   }
   return p_next;
 }
 
+/**
+ * detect if a sequence have been inserted into the Trie
+ * If so, return whether all its parents have been popped
+ * @param seq
+ * @return  whether all its parents have been popped
+ */
 bool DPB::DynamicTrie::detect(const DPB::sequence &seq) {
   auto p_next = this->insert(seq);
   p_next->count-- ;

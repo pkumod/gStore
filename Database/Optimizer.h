@@ -36,6 +36,8 @@
 #include <cmath>
 #include <random>
 
+//#define FEED_PLAN
+#define OPTIMIZER_DEBUG_INFO
 
 using namespace std;
 using TableContent = list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>;
@@ -116,7 +118,7 @@ class Optimizer
   shared_ptr<IDList> CandidatesWithConstantEdge(const shared_ptr<vector<EdgeInfo>> &edge_info_vector) const;
 
 
-    /*以下代码暂且不写
+    /* the function is not implemented yet
   std::shared_ptr<IDList> ExtendRecord(const shared_ptr<OneStepJoinNode> &one_step_join_node_,
                     const PositionValueSharedPtr &id_pos_mapping,
                     const IDCachesSharePtr &id_caches,
@@ -125,7 +127,7 @@ class Optimizer
 
   shared_ptr<IDList> CandidatesWithConstantEdge(const shared_ptr<vector<EdgeInfo>> &edge_info_vector) const;
 
-  /*以下代码暂且不写
+  /*  the function is not implemented yet
   bool update_cardinality_cache(shared_ptr<BasicQuery>,vector<map<shared_ptr<BasicQuery>,unsigned*> >);
   bool enum_query_plan(shared_ptr<BasicQuery>, KVstore* kvstore, bool _is_topk_query);// Join::multi_join() BFS
   bool choose_exec_plan(vector<map<shared_ptr<BasicQuery>, QueryPlan*> > _candidate_plans,
@@ -138,7 +140,7 @@ class Optimizer
   bool choose_exec_plan(vector<map<shared_ptr<BasicQuery>, QueryPlan*> > _candidate_plans,
                         map<shared_ptr<BasicQuery>,vector<unsigned*> > _current_result,  vector<QueryPlan>);
   //TODO: re-choose plan in every iteration
-  // 先实现手动喂计划的方案
+  // implement a method to feed plan manually first
   tuple<bool,shared_ptr<IntermediateResult>> execution(BasicQuery*, shared_ptr<QueryPlan>);*/
 
 

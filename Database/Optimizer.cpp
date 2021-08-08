@@ -529,9 +529,9 @@ tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer:: JoinTwoTab
     }
     /* if not, ignore */
   }
-  cout<<"binary join,  result size "<<result_table->size();
+  cout<<"binary join,  result size "<<result_table->size()<<endl;
   long t2 = Util::get_cur_time();
-  cout << ",  used " << (t2-t1) << "ms." <<endl;
+  cout << "binary join used " << (t2-t1) << "ms." <<endl;
   auto first_r = result_table->front();
   return make_tuple(true, new_position_id_mapping, result_table);
 
@@ -1237,7 +1237,7 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
       	cout << "var[" << x.first << "] = " << basic_query_pointer->getVarName(x.first) << ", var_candidate list size = " << x.second->size() << endl;
       }
 #ifdef FEED_PLAN
-      vector<int> node_order = {3,5,4,2,0,6,1};
+      vector<int> node_order = {2,1,0};
       auto best_plan_tree = new PlanTree(node_order);
 #else
       auto best_plan_tree = (new PlanGenerator(kv_store_, basic_query_pointer, statistics, var_candidates_cache))->get_normal_plan();
@@ -1718,10 +1718,10 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
   env->id_caches = id_caches;
   cout<<" Optimizer::ExecutionTopK  env->id_caches "<<  env->id_caches->size()<<endl;
   env->k = query_info.limit_num_;
-  env->coefficients= &var_coefficients;
+  env->coefficients = var_coefficients;
   env->txn = this->txn_;
-  env->ss = new stringstream();
-  env->global_iterators = new std::vector<std::shared_ptr<std::set<OrderedList*>>>();
+  env->ss = make_shared<stringstream>();
+  env->global_iterators = make_shared< std::vector<std::shared_ptr<std::set<OrderedList*>>>>();
 
   auto root_fr = TopKUtil::BuildIteratorTree(tree_search_plan,env);
   for(int i =1;i<=query_info.limit_num_;i++)
@@ -1729,6 +1729,11 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
     root_fr->TryGetNext(k);
     if(root_fr->pool_.size()!=i)
       break;
+#ifdef TOPK_DEBUG_INFO
+    else {
+      cout << "get top-" << i << " "<<root_fr->pool_[i-1].cost<<endl;
+    }
+#endif
   }
 
   auto result_list = make_shared<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
@@ -1755,9 +1760,11 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
   for(int i =0;i<result_list->size();i++)
   {
     auto rec = *it;
-    cout<<" record["<<i<<"]";
-    for(int j =0;j<rec->size();j++)
-      cout<<" "<<(*rec)[j];
+    cout<<" record["<<i<<"]"<<" score:"<<root_fr->pool_[i].cost;
+    for(int j =0;j<basic_query->getSelectVarNum();j++)
+      cout<<" "<<kv_store_->getStringByID((*rec)[j]);
+    //for(int j=basic_query->getSelectVarNum();j<var_num;j++)
+    //  cout<<" "<<kv_store_->getStringByID((*rec)[j]);
     cout<<endl;
     it++;
   }
