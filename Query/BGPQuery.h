@@ -82,7 +82,8 @@ public:
 	vector<EntiType> o_type_;
 	vector<unsigned> edge_index_;
 
-	int rewriting_position_; //zhouyuqi
+	// zhouyuqi, if use this, please add initial this in VarDescriptor(*****)
+	int rewriting_position_;
 	// -1 if not allocated a id in BasicQuery
 	int basic_query_id;
 
@@ -122,6 +123,9 @@ public:
 
 	//TODO, default appoint a var selected_ = false to true
 	void update_select_status(bool selected);
+
+	void print(KVstore *kvstore);
+
 };
 
 
@@ -209,6 +213,9 @@ public:
 	bool get_edge_type(int var_id, int edge_id);
 	int get_edge_nei(int var_id, int edge_id);
 	int get_edge_index(int var_id, int edge_id);
+
+
+	void print(KVstore * kvstore);
 
 
 private:

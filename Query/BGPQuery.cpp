@@ -10,7 +10,8 @@ using namespace std;
 
 
 VarDescriptor::VarDescriptor(unsigned id, VarType var_type, const string &var_name):
-	id_(id), var_type_(var_type), var_name_(var_name), selected_(false){};
+	id_(id), var_type_(var_type), var_name_(var_name), selected_(false), degree_(0),
+	so_var_var_edge_num(0), so_var_con_edge_num(0) {};
 
 
 // bool VarDescriptor::get_edge_type(int edge_id) {
@@ -87,6 +88,53 @@ void VarDescriptor::update_select_status(bool selected) {
 	this->selected_ = selected;
 }
 
+void VarDescriptor::print(KVstore *kvstore) {
+
+	cout << "var: " << var_name_ << " , id is " << id_ << ", var type: " << (var_type_ == VarType::Entity ? "Entity" : "Predicate") << endl;
+	cout << "degree = " << degree_ << endl;
+
+	if(var_type_ == VarType::Entity){
+		cout << "so_var_var_edge_num = " << so_var_var_edge_num << endl;
+		cout << "so_var_con_edge_num = " << so_var_con_edge_num << endl;
+
+		cout << "var edge type, var edge index, var edge nei, var edge pre, var edge pre type: " << endl;
+		for(unsigned i = 0; i < var_edge_type_.size(); ++i){
+			cout << var_edge_type_[i] << '\t' << var_edge_index_[i] << '\t' << var_edge_nei_[i] << '\t';
+			if(var_edge_pre_type_[i] == PreType::VarPreType){
+				cout << var_edge_pre_id_[i] << '\t' << "varpretype" << endl;
+			} else{
+				cout << kvstore->getPredicateByID(var_edge_pre_id_[i]) << '\t' << "conpretype" << endl;
+			}
+		}
+
+		cout << " con edge type, con edge index, con edge nei, con edge pre, con edge pre type: " << endl;
+		for(unsigned i = 0; i < con_edge_type_.size(); ++i){
+			cout << con_edge_type_[i] << '\t' << con_edge_index_[i] << '\t' << kvstore->getStringByID(con_edge_nei_[i]) << '\t';
+			if(var_edge_pre_type_[i] == PreType::VarPreType){
+				cout << var_edge_pre_id_[i] << '\t' << "varpretype" << endl;
+			} else{
+				cout << kvstore->getPredicateByID(var_edge_pre_id_[i]) << '\t' << "conpretype" << endl;
+			}
+		}
+	} else{
+		cout << "s_type_.size() = " << s_type_.size() << endl;
+		for(unsigned i = 0; i < s_type_.size(); ++i){
+
+			if(s_type_[i] == EntiType::ConEntiType){
+				cout << "s is con, " << kvstore->getStringByID(s_id_[i]) << "\t";
+			} else{
+				cout << "s is var, " << s_id_[i] << "\t";
+			}
+
+			if(o_type_[i] == EntiType::ConEntiType){
+				cout << "o is con, " << kvstore->getStringByID(o_id_[i]) << endl;
+			} else{
+				cout << "o is var, " << o_id_[i] << endl;
+			}
+		}
+	}
+}
+
 BGPQuery::BGPQuery() {
 	this->initial();
 
@@ -96,7 +144,13 @@ BGPQuery::BGPQuery() {
 // general_evalutial first new one BGPQuery, than initial it.
 // than add Triple one by one.
 void BGPQuery::initial() {
-	;
+
+	this->total_var_num = 0;
+	this->total_so_var_num = 0;
+	this->total_pre_var_num = 0;
+
+	this->total_join_var_num = 0;
+	this->total_selected_var_num = 0;
 }
 
 
@@ -233,20 +287,20 @@ void BGPQuery::build_edge_info(KVstore *_kvstore) {
 			p_id = _kvstore->getIDByPredicate(p_string);
 			p_is_var = false;
 		} else{
-			p_id = this->get_var_id_by_name(s_string);
+			p_id = this->get_var_id_by_name(p_string);
 		}
 
 		// deal with s_var
 		if(s_is_var)
-			this->var_vector[s_id]->update_so_var_edge_info(o_id,p_id,Util::EDGE_OUT,i,p_is_var,o_is_var);
+			this->var_vector[id_position_map[s_id]]->update_so_var_edge_info(o_id,p_id,Util::EDGE_OUT,i,p_is_var,o_is_var);
 
 		// deal with o_var
 		if(o_is_var)
-			this->var_vector[o_id]->update_so_var_edge_info(s_id,p_id,Util::EDGE_IN,i,p_is_var,o_is_var);
+			this->var_vector[id_position_map[o_id]]->update_so_var_edge_info(s_id,p_id,Util::EDGE_IN,i,p_is_var,o_is_var);
 
 		// deal with p_var
 		if(p_is_var)
-			this->var_vector[p_id]->update_pre_var_edge_info(s_id,o_id,s_is_var,o_is_var,i);
+			this->var_vector[id_position_map[p_id]]->update_pre_var_edge_info(s_id,o_id,s_is_var,o_is_var,i);
 
 	}
 }
@@ -406,3 +460,50 @@ unsigned int BGPQuery::get_pre_var_num() {
 // 	return var_vector[var_id]->edge_index_[edge_id];
 // }
 
+/**
+ * Print this BGPQuery's info, just for debug, not for user.
+ * Use VarDescriptor::print
+ * @param kvstore kvstore's pointer
+ */
+void BGPQuery::print(KVstore *kvstore) {
+	cout << "this BGP has " << var_vector.size() << " vars, ie. total_var_num = " << this->total_var_num << endl;
+
+	cout << "total so var num = " << total_so_var_num << ", so_var_id.size() = " << so_var_id.size() << endl;
+	for(unsigned i = 0; i < so_var_id.size(); ++ i ){
+		cout << "var name: " << var_vector[id_position_map[so_var_id[i]]]->var_name_ << endl;
+	}
+	cout << "total pre vat num = " << total_pre_var_num << ", pre_var_id.size() = " << pre_var_id.size() << endl;
+	for(unsigned i = 0; i < pre_var_id.size(); ++ i){
+		cout << "var name: " << var_vector[id_position_map[pre_var_id[i]]]->var_name_ << endl;
+	}
+
+	cout << "id position map:" << endl;
+	for(auto id_pos : id_position_map){
+		cout << id_pos.first << " : " << id_pos.second << endl;
+	}
+	cout << "position id map:" << endl;
+	for(auto pos_id : position_id_map){
+		cout << pos_id.first << " : " << pos_id.second << endl;
+	}
+
+	cout << "item to freq map:" << endl;
+	for(const auto& item_freq : item_to_freq){
+		cout << item_freq.first << " : " << item_freq.second << endl;
+	}
+
+	cout << "item to position map:" << endl;
+	for(const auto& item_pos : var_item_to_position){
+		cout << item_pos.first << " : " << item_pos.second << endl;
+	}
+
+	cout << "item to id map:" << endl;
+	for(const auto& item_id : var_item_to_id){
+		cout << item_id.first << " : " << item_id.second << endl;
+	}
+
+
+	cout << endl << "VAR INFO:" << endl;
+	for(unsigned i = 0; i < var_vector.size(); ++ i){
+		var_vector[i]->print(kvstore);
+	}
+}

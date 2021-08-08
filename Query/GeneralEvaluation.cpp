@@ -10,6 +10,8 @@
 #include<set>
 using namespace std;
 
+// #define TEST_BGPQUERY
+
 void *preread_from_index(void *argv)
 {
 	vector<StringIndexFile*> * indexfile = (vector<StringIndexFile*> *)*(long*)argv;
@@ -334,6 +336,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 	QueryTree::GroupPattern group_pattern;
 
 	// Test for BGPQuery
+#ifdef TEST_BGPQUERY
 	bool testBGPQuery = true;
 	if (testBGPQuery)
 	{
@@ -344,14 +347,19 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		for (auto p : vp)
 			complete.AddTriple(Triple(p.subject.value, p.predicate.value, p.object.value));
 		complete.EncodeBGPQuery(kvstore, vector<string>());
+		complete.print(kvstore);
 
 		BGPQuery partial;
-		partial.AddTriple(Triple(vp[0].subject.value, vp[0].predicate.value, vp[0].object.value));
 		partial.AddTriple(Triple(vp[1].subject.value, vp[1].predicate.value, vp[1].object.value));
+		partial.AddTriple(Triple(vp[6].subject.value, vp[6].predicate.value, vp[6].object.value));
 		partial.EncodeSmallBGPQuery(&complete, kvstore, vector<string>());
+
+		cout << endl << "print small bgpquery:" << endl;
+		partial.print(kvstore);
 
 		exit(0);
 	}
+#endif
 
 	// Check well-designed (TODO: check at every depth, now only check once) //
 	// If well-designed, split and refill group_pattern according to rewriting //
