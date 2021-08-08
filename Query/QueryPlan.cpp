@@ -7,10 +7,10 @@
 #include "QueryPlan.h"
 
 
-QueryPlan::QueryPlan(const shared_ptr<vector<OneStepJoin>>& join_order, const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& ids_after_join,shared_ptr<vector<OldVarDescriptor>> var_infos) {
+QueryPlan::QueryPlan(const shared_ptr<vector<StepOperation>>& join_order, const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& ids_after_join, shared_ptr<vector<OldVarDescriptor>> var_infos) {
   // Copy Construction function of Vector
   // To avoid join_order_ and ids_after_join_ be adjusted by outer env
-  this->join_order_ = make_shared<vector<OneStepJoin>>(*join_order);
+  this->join_order_ = make_shared<vector<StepOperation>>(*join_order);
   this->ids_after_join_ = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*ids_after_join);
   this->var_descriptors_=std::move(var_infos);
 }
@@ -29,7 +29,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
    * 2. not selected  but degree > 1  vars
    * no predicate counted
   */
-  this->constant_generating_lists_ = make_shared<vector<shared_ptr<OneStepJoinNode>>>();
+  this->constant_generating_lists_ = make_shared<vector<shared_ptr<FeedOneNode>>>();
   auto total_var_num = basic_query->getTotalVarNum();
   vector<bool> vars_used_vec(total_var_num,false);
   // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
@@ -41,7 +41,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
   auto pre_var_num = basic_query->getPreVarNum();
   auto selected_var_num = basic_query->getSelectVarNum();
 
-  this->join_order_ = make_shared<vector<OneStepJoin>>();
+  this->join_order_ = make_shared<vector<StepOperation>>();
   this->ids_after_join_ = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
 
   this->var_descriptors_ = var_infos;
@@ -184,7 +184,7 @@ TYPE_ENTITY_LITERAL_ID QueryPlan::SelectANode(BasicQuery *basic_query,std::share
  */
 shared_ptr<QueryPlan> QueryPlan::DefaultBFS(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector<OldVarDescriptor>> var_infos) {
   auto r = make_shared<QueryPlan>();
-  r->constant_generating_lists_ = make_shared<vector<shared_ptr<OneStepJoinNode>>>();
+  r->constant_generating_lists_ = make_shared<vector<shared_ptr<FeedOneNode>>>();
   auto total_var_num = basic_query->getTotalVarNum();
   vector<bool> vars_used_vec(total_var_num,false);
   // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
@@ -196,7 +196,7 @@ shared_ptr<QueryPlan> QueryPlan::DefaultBFS(BasicQuery *basic_query,KVstore *kv_
   auto pre_var_num = basic_query->getPreVarNum();
   auto selected_var_num = basic_query->getSelectVarNum();
 
-  r->join_order_ = make_shared<vector<OneStepJoin>>();
+  r->join_order_ = make_shared<vector<StepOperation>>();
   r->ids_after_join_ = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
 
   r->var_descriptors_ = var_infos;
@@ -250,7 +250,7 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
                                               KVstore *kv_store,
                                               vector<bool> &vars_used_vec,
                                               int graph_var_num,
-                                              unsigned int pre_var_num,std::shared_ptr<std::vector<OneStepJoin>> &join_order,
+                                              unsigned int pre_var_num,std::shared_ptr<std::vector<StepOperation>> &join_order,
                                               std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> &ids_after_join) {
 
   vector<TYPE_ENTITY_LITERAL_ID> leave_behind_satellite_vec;
@@ -327,9 +327,9 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
     }
     check_edge_constant_info->emplace_back(s_constant,p_constant,o_constant);
 
-    OneStepJoin one_step_join;
-    one_step_join.join_type_ = OneStepJoin::JoinType::EdgeCheck;
-    auto one_step_join_node = make_shared<OneStepJoinNode>();
+    StepOperation one_step_join;
+    one_step_join.join_type_ = StepOperation::JoinType::EdgeCheck;
+    auto one_step_join_node = make_shared<FeedOneNode>();
     one_step_join_node->node_to_join_ = satellite_id;
     one_step_join_node->edges_ = check_edge_info;
     one_step_join_node->edges_constant_info_ = check_edge_constant_info;
@@ -425,9 +425,9 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
       predicate_edge_info->emplace_back(s_id,pre_id_Table,o_id,join_method);
       predicate_edge_constant_info->emplace_back(s_constant,false,o_constant);
     }
-    OneStepJoin one_step_join;
-    one_step_join.join_type_ = OneStepJoin::JoinType::JoinNode;
-    auto one_step_join_node = make_shared<OneStepJoinNode>();
+    StepOperation one_step_join;
+    one_step_join.join_type_ = StepOperation::JoinType::JoinNode;
+    auto one_step_join_node = make_shared<FeedOneNode>();
     one_step_join_node->node_to_join_ = pre_id_Table;
     one_step_join_node->edges_ = predicate_edge_info;
     one_step_join_node->edges_constant_info_ = predicate_edge_constant_info;
@@ -478,9 +478,9 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
     check_edge_info->emplace_back(s_id,pre_id_table,o_id,join_method);
     check_edge_constant_info->emplace_back(s_constant, false,o_constant);
 
-    OneStepJoin one_step_join;
-    one_step_join.join_type_ = OneStepJoin::JoinType::EdgeCheck;
-    auto one_step_join_node = make_shared<OneStepJoinNode>();
+    StepOperation one_step_join;
+    one_step_join.join_type_ = StepOperation::JoinType::EdgeCheck;
+    auto one_step_join_node = make_shared<FeedOneNode>();
     one_step_join_node->node_to_join_ = left_id;
     one_step_join_node->edges_ = check_edge_info;
     one_step_join_node->edges_constant_info_ = check_edge_constant_info;
@@ -502,10 +502,10 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
  * @param var_list      the Var Descriptor list
  * @return a generating plan
  */
-OneStepJoin QueryPlan::FilterFirstNode(BasicQuery *basic_query, KVstore *kv_store,
-                                       TYPE_ENTITY_LITERAL_ID start_id, const shared_ptr<vector<OldVarDescriptor>> &var_list) {
+StepOperation QueryPlan::FilterFirstNode(BasicQuery *basic_query, KVstore *kv_store,
+                                     TYPE_ENTITY_LITERAL_ID start_id, const shared_ptr<vector<OldVarDescriptor>> &var_list) {
 
-  OneStepJoin one_step_join;
+  StepOperation one_step_join;
   auto generate_edge_info = make_shared<vector<EdgeInfo>>();
   auto generate_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
   for(int i_th_edge=0; i_th_edge<(*var_list)[start_id].degree_; i_th_edge++)
@@ -558,8 +558,8 @@ OneStepJoin QueryPlan::FilterFirstNode(BasicQuery *basic_query, KVstore *kv_stor
     }
     generate_edge_constant_info->emplace_back(s_constant,p_constant,o_constant);
   }
-  one_step_join.join_type_ = OneStepJoin::JoinType::GenerateCandidates;
-  auto one_step_join_node = make_shared<OneStepJoinNode>();
+  one_step_join.join_type_ = StepOperation::JoinType::GenerateCandidates;
+  auto one_step_join_node = make_shared<FeedOneNode>();
   one_step_join_node->node_to_join_ = start_id;
   one_step_join_node->edges_ = generate_edge_info;
   one_step_join_node->edges_constant_info_ = generate_edge_constant_info;
@@ -576,9 +576,9 @@ OneStepJoin QueryPlan::FilterFirstNode(BasicQuery *basic_query, KVstore *kv_stor
  * @param target_node   the node needed to check constant edge
  * @return the filtering plan
  */
-shared_ptr<OneStepJoinNode> QueryPlan::FilterNodeOnConstantEdge(BasicQuery *basic_query,
-                                                    KVstore *kv_store,
-                                                    TYPE_ENTITY_LITERAL_ID target_node) {
+shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(BasicQuery *basic_query,
+                                                            KVstore *kv_store,
+                                                            TYPE_ENTITY_LITERAL_ID target_node) {
   auto check_edge_info = make_shared<vector<EdgeInfo>>();
   auto check_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
 
@@ -640,7 +640,7 @@ shared_ptr<OneStepJoinNode> QueryPlan::FilterNodeOnConstantEdge(BasicQuery *basi
     }
   }
 
-  auto one_step_join_node = make_shared<OneStepJoinNode>();
+  auto one_step_join_node = make_shared<FeedOneNode>();
   one_step_join_node->node_to_join_ = target_node;
   one_step_join_node->edges_ = check_edge_info;
   one_step_join_node->edges_constant_info_ = check_edge_constant_info;
@@ -656,10 +656,10 @@ shared_ptr<OneStepJoinNode> QueryPlan::FilterNodeOnConstantEdge(BasicQuery *basi
  * @param table_ids     the ids which already in table
  * @return A JOIN Node query plan
  */
-OneStepJoin QueryPlan::LinkWithPreviousNodes(BasicQuery *basic_query,
-                                      const KVstore *kv_store,
-                                      TYPE_ENTITY_LITERAL_ID added_id,
-                                      const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> &table_ids) {
+StepOperation QueryPlan::LinkWithPreviousNodes(BasicQuery *basic_query,
+                                           const KVstore *kv_store,
+                                           TYPE_ENTITY_LITERAL_ID added_id,
+                                           const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> &table_ids) {
   auto join_edge_info = make_shared<vector<EdgeInfo>>();
   auto join_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
   for (auto selected_var:*table_ids) {
@@ -672,9 +672,9 @@ OneStepJoin QueryPlan::LinkWithPreviousNodes(BasicQuery *basic_query,
     join_edge_constant_info->insert(join_edge_constant_info->end(),r_edge_constant_info->begin(),r_edge_constant_info->end());
   }
 
-  OneStepJoin one_step_join;
-  one_step_join.join_type_ = OneStepJoin::JoinType::JoinNode;
-  auto one_step_join_node = make_shared<OneStepJoinNode>();
+  StepOperation one_step_join;
+  one_step_join.join_type_ = StepOperation::JoinType::JoinNode;
+  auto one_step_join_node = make_shared<FeedOneNode>();
   one_step_join_node->node_to_join_ = added_id;
   one_step_join_node->edges_ = join_edge_info;
   one_step_join_node->edges_constant_info_ = join_edge_constant_info;
@@ -755,14 +755,14 @@ std::string QueryPlan::toString(KVstore* kv_store) {
   {
     auto step_n = (*this->join_order_)[i];
 
-    ss<<"\tstep["<<i<<"]: "<<OneStepJoin::JoinTypeToString(step_n.join_type_)<<" \t ";
-    shared_ptr<OneStepJoinNode> step_descriptor;
+    ss << "\tstep[" << i << "]: " << StepOperation::JoinTypeToString(step_n.join_type_) << " \t ";
+    shared_ptr<FeedOneNode> step_descriptor;
     switch (step_n.join_type_) {
-      case OneStepJoin::JoinType::JoinNode:
+      case StepOperation::JoinType::JoinNode:
         step_descriptor = step_n.join_node_;
         break;
-      case OneStepJoin::JoinType::GenerateCandidates:
-      case OneStepJoin::JoinType::EdgeCheck:
+      case StepOperation::JoinType::GenerateCandidates:
+      case StepOperation::JoinType::EdgeCheck:
         step_descriptor = step_n.edge_filter_;
         break;
     }
@@ -785,16 +785,16 @@ std::tuple<std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_
     bool node_added = false;
     TYPE_ENTITY_LITERAL_ID node_i = -1;
     switch (one_step.join_type_) {
-      case  OneStepJoin::JoinType::JoinNode:
+      case  StepOperation::JoinType::JoinNode:
         node_i = one_step.join_node_->node_to_join_;
         node_added =true;
         break;
-      case  OneStepJoin::JoinType::GenerateCandidates:
+      case  StepOperation::JoinType::GenerateCandidates:
         node_i = one_step.edge_filter_->node_to_join_;
         node_added =true;
         break;
-      case  OneStepJoin::JoinType::JoinTable: break;
-      case  OneStepJoin::JoinType::EdgeCheck : break;
+      case  StepOperation::JoinType::JoinTable: break;
+      case  StepOperation::JoinType::EdgeCheck : break;
     }
     if(node_added)
     {
@@ -807,11 +807,11 @@ std::tuple<std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_
   return make_tuple(var_to_position,position_to_var);
 }
 
-std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> QueryPlan::OnlyConstFilter(BasicQuery *basic_query,
-                                                      KVstore *kv_store,
-                                                      std::shared_ptr<std::vector<OldVarDescriptor>> var_infos) {
+std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> QueryPlan::OnlyConstFilter(BasicQuery *basic_query,
+                                                                                      KVstore *kv_store,
+                                                                                      std::shared_ptr<std::vector<OldVarDescriptor>> var_infos) {
   auto result = make_shared<QueryPlan>();
-  auto constant_generating_lists = make_shared<vector<shared_ptr<OneStepJoinNode>>>();
+  auto constant_generating_lists = make_shared<vector<shared_ptr<FeedOneNode>>>();
   auto total_var_num = basic_query->getTotalVarNum();
 
   // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery

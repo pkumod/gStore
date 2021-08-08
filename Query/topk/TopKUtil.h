@@ -46,10 +46,10 @@ class TopKTreeSearchPlan {
   // It can be used in two ways:
   // 1 . when filtering, use non tree edges to early filter
   // 2 . when enumerating , use non tree edges to make sure correctness
-  std::vector<OneStepJoin> non_tree_edges;
+  std::vector<StepOperation> non_tree_edges;
   // The predicate been selected,
   // We process these vars when all the entity vars have been filled
-  std::vector<OneStepJoin> selected_predicate_edges;
+  std::vector<StepOperation> selected_predicate_edges;
 
   std::string DebugInfo();
 };

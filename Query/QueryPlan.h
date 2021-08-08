@@ -16,20 +16,20 @@
 class QueryPlan
 {
  public:
-  std::shared_ptr<std::vector<OneStepJoin>> join_order_; //join order
+  std::shared_ptr<std::vector<StepOperation>> join_order_; //join order
   std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> ids_after_join_;
   std::shared_ptr<std::vector<OldVarDescriptor>> var_descriptors_;
   // Do Before the process begin
-  std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> constant_generating_lists_;
+  std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> constant_generating_lists_;
 
-  QueryPlan(const std::shared_ptr<std::vector<OneStepJoin>>& join_order,
+  QueryPlan(const std::shared_ptr<std::vector<StepOperation>>& join_order,
             const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>&ids_after_join,
             std::shared_ptr<std::vector<OldVarDescriptor>> var_infos);
 
   QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector<OldVarDescriptor>> var_infos);
   QueryPlan()=default;
 
-  static std::shared_ptr<std::vector<std::shared_ptr<OneStepJoinNode>>> OnlyConstFilter(BasicQuery*,KVstore*,std::shared_ptr<std::vector<OldVarDescriptor>>);
+  static std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> OnlyConstFilter(BasicQuery*, KVstore*, std::shared_ptr<std::vector<OldVarDescriptor>>);
 
   /* greedy method used in version 0.9 */
   static double ScoreNode(BasicQuery *basic_query, int var);
@@ -51,21 +51,21 @@ class QueryPlan
                                                       TYPE_ENTITY_LITERAL_ID added_id,
                                                       TYPE_ENTITY_LITERAL_ID d_already_in_table);
 
-  static OneStepJoin LinkWithPreviousNodes(BasicQuery *basic_query,
-                                           const KVstore *kv_store,
-                                           TYPE_ENTITY_LITERAL_ID added_id,
-                                           const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> &table_ids);
-  static std::shared_ptr<OneStepJoinNode> FilterNodeOnConstantEdge(BasicQuery *basic_query,
-                                           KVstore *kv_store,
-                                           TYPE_ENTITY_LITERAL_ID target_node);
-  static OneStepJoin FilterFirstNode(BasicQuery *basic_query, KVstore *kv_store, TYPE_ENTITY_LITERAL_ID start_node,
-                                     const shared_ptr<vector<OldVarDescriptor>> &var_list);
+  static StepOperation LinkWithPreviousNodes(BasicQuery *basic_query,
+                                         const KVstore *kv_store,
+                                         TYPE_ENTITY_LITERAL_ID added_id,
+                                         const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> &table_ids);
+  static std::shared_ptr<FeedOneNode> FilterNodeOnConstantEdge(BasicQuery *basic_query,
+                                                               KVstore *kv_store,
+                                                               TYPE_ENTITY_LITERAL_ID target_node);
+  static StepOperation FilterFirstNode(BasicQuery *basic_query, KVstore *kv_store, TYPE_ENTITY_LITERAL_ID start_node,
+                                   const shared_ptr<vector<OldVarDescriptor>> &var_list);
   static void ProcessPredicateAndSatellites(BasicQuery *basic_query,
                                      KVstore *kv_store,
                                      vector<bool> &vars_used_vec,
                                      int graph_var_num,
                                      unsigned int pre_var_num,
-                                     std::shared_ptr<std::vector<OneStepJoin>> &join_order,
+                                     std::shared_ptr<std::vector<StepOperation>> &join_order,
                                      std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> &ids_after_join);
   static tuple<EdgeInfo,EdgeConstantInfo> WrapEdgeInfo_i_th_Edge(BasicQuery *basic_query,
                            const KVstore *kv_store,
