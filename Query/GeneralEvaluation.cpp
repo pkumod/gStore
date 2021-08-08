@@ -740,7 +740,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 								rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done = true;
 
 								TempResultSet *new_result = new TempResultSet();
-								sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.root, *new_result, \
+								sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter, *new_result, \
 									this->stringindex, rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
 
 								sub_result->release();
@@ -795,7 +795,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 								rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done = true;
 
 								TempResultSet *new_result = new TempResultSet();
-								sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.root, *new_result, \
+								sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter, *new_result, \
 									this->stringindex, rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
 
 								sub_result->release();
@@ -872,7 +872,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
 		{
 			TempResultSet *new_result = new TempResultSet();
-			result->doFilter(group_pattern.sub_group_pattern[i].filter.root, *new_result, this->stringindex, group_pattern.group_pattern_subject_object_maximal_varset);
+			result->doFilter(group_pattern.sub_group_pattern[i].filter, *new_result, this->stringindex, group_pattern.group_pattern_subject_object_maximal_varset);
 
 			result->release();
 			delete result;
@@ -1203,7 +1203,7 @@ TempResultSet* GeneralEvaluation::semanticBasedQueryEvaluation(QueryTree::GroupP
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
 		{
 			TempResultSet *new_result = new TempResultSet();
-			result->doFilter(group_pattern.sub_group_pattern[i].filter.root, *new_result, this->stringindex, group_pattern.group_pattern_subject_object_maximal_varset);
+			result->doFilter(group_pattern.sub_group_pattern[i].filter, *new_result, this->stringindex, group_pattern.group_pattern_subject_object_maximal_varset);
 
 			result->release();
 			delete result;
@@ -1516,7 +1516,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 					rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done = true;
 
 					TempResultSet *new_result = new TempResultSet();
-					sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.root, *new_result, \
+					sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter, *new_result, \
 						this->stringindex, rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
 
 					sub_result->release();
@@ -1570,7 +1570,7 @@ TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
 					rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done = true;
 
 					TempResultSet *new_result = new TempResultSet();
-					sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.root, *new_result, \
+					sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter, *new_result, \
 						this->stringindex, rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
 
 					sub_result->release();
@@ -2370,6 +2370,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						{
 							new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
 								result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, stringindex, \
+								query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, \
 								query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset).term_value;
 							if (j < end)
 							{

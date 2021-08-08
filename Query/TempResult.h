@@ -48,9 +48,9 @@ class TempResult
 
 		void getFilterString(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild &child, EvalMultitypeValue &femv, ResultPair &row, int id_cols, StringIndex *stringindex);
 		EvalMultitypeValue matchFilterTree(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, ResultPair &row, int id_cols, StringIndex *stringindex);
-		void doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset);
+		void doFilter(const QueryTree::CompTreeNode &filter, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset);
 
-		EvalMultitypeValue doComp(QueryTree::CompTreeNode *root, ResultPair &row, int id_cols, StringIndex *stringindex, Varset &entity_literal_varset);
+		EvalMultitypeValue doComp(const QueryTree::CompTreeNode &root, ResultPair &row, int id_cols, StringIndex *stringindex, Varset &this_varset, Varset &entity_literal_varset);
 
 		void print(int no=-1);
 };
@@ -72,7 +72,7 @@ class TempResultSet
 		void doUnion(TempResultSet &x, TempResultSet &r);
 		void doOptional(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
 		void doMinus(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
-		void doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
+		void doFilter(const QueryTree::CompTreeNode &filter, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
 
 		void doProjection1(Varset &proj, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
 		void doDistinct1(TempResultSet &r);
