@@ -102,7 +102,7 @@ std::string EdgeToString(KVstore *kv_store,EdgeInfo edge_info,EdgeConstantInfo e
 /* Extend One Table, add a new Node.
  * The Node can have a candidate list
  * or to check if a variable has a certain edge */
-class OneStepJoinNode{
+class FeedOneNode{
  public:
   TYPE_ENTITY_LITERAL_ID node_to_join_;
   std::shared_ptr<std::vector<EdgeInfo>> edges_;
@@ -110,7 +110,7 @@ class OneStepJoinNode{
   void ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> already_in);
 };
 
-class OneStepJoinTwoNode{
+class FeedTwoNode{
 public:
 	TYPE_ENTITY_LITERAL_ID node_to_join_1;
 	TYPE_ENTITY_LITERAL_ID node_to_join_2;
@@ -119,19 +119,19 @@ public:
 };
 
 /* Join Two Table on Public Variables*/
-struct OneStepJoinTable{
+struct JoinTwoTable{
   // VarDescriptor ID
   std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> public_variables_;
-  OneStepJoinTable(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> public_variables):public_variables_(public_variables){};
-  OneStepJoinTable(){this->public_variables_=std::make_shared<std::vector<TYPE_ENTITY_LITERAL_ID>>();};
+  JoinTwoTable(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> public_variables): public_variables_(public_variables){};
+  JoinTwoTable(){ this->public_variables_=std::make_shared<std::vector<TYPE_ENTITY_LITERAL_ID>>();};
 };
 
-class OneStepJoin{
+class StepOperation{
  public:
-  std::shared_ptr<OneStepJoinNode> join_node_;
-  std::shared_ptr<OneStepJoinTwoNode> join_two_node_;
-  std::shared_ptr<OneStepJoinTable> join_table_;
-  std::shared_ptr<OneStepJoinNode> edge_filter_; // GenerateCandidates & EdgeCheck use this filed
+  std::shared_ptr<FeedOneNode> join_node_;
+  std::shared_ptr<FeedTwoNode> join_two_node_;
+  std::shared_ptr<JoinTwoTable> join_table_;
+  std::shared_ptr<FeedOneNode> edge_filter_; // GenerateCandidates & EdgeCheck use this filed
   // ConstCandidatesCheck
   enum class JoinType{JoinNode,GenerateCandidates,JoinTable,EdgeCheck,JoinTwoNode} join_type_;
 

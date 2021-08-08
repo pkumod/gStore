@@ -186,7 +186,7 @@ shared_ptr<IDList> Optimizer::CandidatesWithConstantEdge(const shared_ptr<vector
  * @param intermediate_result The Result in previous step
  * @return bool: the function is done; IntermediateResult: the new IntermediateResult
  */
-tuple<bool,TableContentShardPtr> Optimizer::JoinANode(const shared_ptr<OneStepJoinNode>& one_step_join_node_,
+tuple<bool,TableContentShardPtr> Optimizer::JoinANode(const shared_ptr<FeedOneNode>& one_step_join_node_,
                                                       const TableContentShardPtr& table_content_ptr,
                                                       const PositionValueSharedPtr& id_pos_mapping,
                                                       const IDCachesSharePtr& id_caches)
@@ -225,7 +225,7 @@ tuple<bool,TableContentShardPtr> Optimizer::JoinANode(const shared_ptr<OneStepJo
 
 }
 
-shared_ptr<IDList> Optimizer::ExtendRecord(const shared_ptr<OneStepJoinNode> &one_step_join_node_,
+shared_ptr<IDList> Optimizer::ExtendRecord(const shared_ptr<FeedOneNode> &one_step_join_node_,
                                            const PositionValueSharedPtr &id_pos_mapping,
                                            const IDCachesSharePtr &id_caches,
                                            TYPE_ENTITY_LITERAL_ID new_id,
@@ -407,7 +407,7 @@ shared_ptr<IDList> Optimizer::ExtendRecord(const shared_ptr<OneStepJoinNode> &on
  * @return new table, columns are made up of
  * [ big table vars ][ small table vars - common vars]
  */
-tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer:: JoinTwoTable(const shared_ptr<OneStepJoinTable>& one_step_join_table,
+tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer:: JoinTable(const shared_ptr<JoinTwoTable>& one_step_join_table,
 																				  const TableContentShardPtr& table_a,
 																				  const PositionValueSharedPtr& table_a_id_pos,
 																				  const PositionValueSharedPtr& table_a_pos_id,
@@ -537,7 +537,7 @@ tuple<bool, PositionValueSharedPtr ,TableContentShardPtr> Optimizer:: JoinTwoTab
 
 }
 
-tuple<bool, TableContentShardPtr> Optimizer::ANodeEdgesConstraintFilter(const shared_ptr<OneStepJoinNode>& one_step_join_table,
+tuple<bool, TableContentShardPtr> Optimizer::ANodeEdgesConstraintFilter(const shared_ptr<FeedOneNode>& one_step_join_table,
                                                                         TableContentShardPtr table_content_ptr,
                                                                         const PositionValueSharedPtr& id_pos_mapping,
                                                                         const IDCachesSharePtr& id_caches) {
@@ -870,7 +870,7 @@ tuple<bool, TableContentShardPtr> Optimizer::FilterAVariableOnIDList(const share
 
 }
 
-bool Optimizer::CacheConstantCandidates(const shared_ptr<OneStepJoinNode>& one_step, const IDCachesSharePtr& id_caches) {
+bool Optimizer::CacheConstantCandidates(const shared_ptr<FeedOneNode>& one_step, const IDCachesSharePtr& id_caches) {
   auto node_t = one_step->node_to_join_;
   auto edges = one_step->edges_;
   auto edges_constant = one_step->edges_constant_info_;
@@ -1139,19 +1139,19 @@ tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(const shared_ptr
   auto one_step = (*(query_plan->join_order_))[layer_count];
   tuple<bool,TableContentShardPtr> step_result;
   switch (one_step.join_type_) {
-    case OneStepJoin::JoinType::JoinNode: { // 要注意这里的指针会不会传丢掉
+    case StepOperation::JoinType::JoinNode: { // 要注意这里的指针会不会传丢掉
       step_result = JoinANode(one_step.join_node_, table_content_ptr,id_pos_mapping,id_caches);
       break;
     }
-    case OneStepJoin::JoinType::JoinTable: {
+    case StepOperation::JoinType::JoinTable: {
       break;
     }
-    case OneStepJoin::JoinType::GenerateCandidates : {
+    case StepOperation::JoinType::GenerateCandidates : {
       // Now Only The first element can be GenerateCandidates
       // We have processed it before
       return make_tuple(false, nullptr);
     }
-    case OneStepJoin::JoinType::EdgeCheck: {
+    case StepOperation::JoinType::EdgeCheck: {
       step_result = ANodeEdgesConstraintFilter(one_step.edge_filter_, table_content_ptr,id_pos_mapping,id_caches);
       break;
     }
@@ -1516,13 +1516,6 @@ Optimizer::Cartesian(int pos, int end,int record_len,unsigned* record,
   }
 }
 
-
-
-
-//  Linglin Yang add:
-
-
-
 tuple<bool, TableContentShardPtr> Optimizer::getAllSubObjID(bool need_literal)
 {
   set<TYPE_ENTITY_LITERAL_ID> ids;
@@ -1677,7 +1670,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
 //      for(auto x : public_var_set)
 //        cout << x << endl;
 
-      auto one_step_join_table = make_shared<OneStepJoinTable>();
+      auto one_step_join_table = make_shared<JoinTwoTable>();
       for(const auto public_var:public_var_set)
         one_step_join_table->public_variables_->push_back(public_var);
 //      cout<<"ExecutionBreathFirst 5"<<endl;
@@ -1692,7 +1685,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
         (*right_id_pos_mapping)[pos_id_pair.second] = pos_id_pair.first;
 
 
-      return this->JoinTwoTable(one_step_join_table, left_table, left_id_pos_mapping,left_pos_id_mapping,
+      return this->JoinTable(one_step_join_table, left_table, left_id_pos_mapping,left_pos_id_mapping,
                                 right_table, right_id_pos_mapping,right_pos_id_mapping);
     }
   }

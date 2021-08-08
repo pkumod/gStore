@@ -192,7 +192,7 @@ string EdgeToString(KVstore *kv_store,EdgeInfo edge_info,EdgeConstantInfo edge_c
  * Last: not in and variable
  * @param already_in
  */
-void OneStepJoinNode::ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> already_in){
+void FeedOneNode::ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> already_in){
   struct ConstantNumberInfo
   {
     int constant_number;

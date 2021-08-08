@@ -92,7 +92,7 @@ public:
 // todo: just use node, *left_node, *right_node
 struct Tree_node{
     NodeJoinType joinType;
-    OneStepJoin node;
+    StepOperation node;
     // vector<unsigned >
 
 //    just for joinType == JoinANode
