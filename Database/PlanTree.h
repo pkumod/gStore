@@ -92,7 +92,7 @@ public:
 // todo: just use node, *left_node, *right_node
 struct Tree_node{
     NodeJoinType joinType;
-    StepOperation node;
+    shared_ptr<StepOperation> node;
     // vector<unsigned >
 
 //    just for joinType == JoinANode
@@ -129,6 +129,12 @@ struct Tree_node{
         }
     }
 
+    Tree_node(shared_ptr<StepOperation> next_node){
+    	node = next_node;
+    	left_node = nullptr;
+    	right_node = nullptr;
+    }
+
 
 };
 
@@ -142,6 +148,8 @@ public:
     PlanTree(int first_node);
     PlanTree(PlanTree *last_plantree, int next_node);
     PlanTree(PlanTree *left_plan, PlanTree *right_plan);
+
+    PlanTree(shared_ptr<StepOperation> &first_node);
 
 //    for create plan manually
     PlanTree(const vector<int> nodes_order);

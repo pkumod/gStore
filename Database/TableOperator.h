@@ -6,13 +6,15 @@
 
 #include "../Util/Util.h"
 #include "../Query/BasicQuery.h"
+#include "../Query/BGPQuery.h"
 
 
 #ifndef GSTORELIMITK_DATABASE_TABLEOPERATOR_H_
 #define GSTORELIMITK_DATABASE_TABLEOPERATOR_H_
 
 /* only consider extend 1 node per step */
-enum class JoinMethod{s2p,s2o,p2s,p2o,o2s,o2p,so2p,sp2o,po2s};
+enum class JoinMethod{s2p,s2o,p2s,p2o,o2s,o2p,so2p,sp2o,po2s,
+					  s2po,p2so,o2sp};
 
 std::string JoinMethodToString(JoinMethod x);
 // Not fully used, maybe abandoned
@@ -78,6 +80,67 @@ class EdgeInfo{
   EdgeInfo(TYPE_ENTITY_LITERAL_ID s,TYPE_ENTITY_LITERAL_ID p,TYPE_ENTITY_LITERAL_ID o,JoinMethod method):
       s_(s),o_(o),p_(p),join_method_(method){
   }
+
+  // return one var's index edge info, now only used in special case when triple_num == 1 query
+  EdgeInfo(shared_ptr<VarDescriptor> var_descrip, unsigned index, bool is_pre_var){
+  	if(is_pre_var){
+  		// var_descrip is a pre_var
+  		s_ = var_descrip->s_id_[index];
+  		o_ = var_descrip->o_id_[index];
+  		p_ = var_descrip->id_;
+  		if(var_descrip->s_type_[index] == VarDescriptor::EntiType::VarEntiType){
+  			if(var_descrip->o_type_[index] == VarDescriptor::EntiType::VarEntiType){
+  				cout << "error: sub, pre, obj in this triple are all var" << endl;
+  				exit(-1);
+  			}
+			else
+				join_method_ = JoinMethod::o2sp;
+  		} else{
+  			if(var_descrip->o_type_[index] == VarDescriptor::EntiType::VarEntiType)
+  				join_method_ = JoinMethod::s2po;
+			else
+				join_method_ = JoinMethod::so2p;
+  		}
+  	} else{
+
+  		// var_descrip is a so_var
+
+  		if(var_descrip->so_edge_type_[index] == Util::EDGE_IN){
+  			s_ = var_descrip->so_edge_nei_[index];
+  			o_ = var_descrip->id_;
+  		} else{
+  			s_ = var_descrip->id_;
+  			o_ = var_descrip->so_edge_nei_[index];
+  		}
+
+  		p_ = var_descrip->so_edge_pre_id_[index];
+
+  		if(var_descrip->so_edge_nei_type_[index] == VarDescriptor::EntiType::VarEntiType){
+  			if(var_descrip->so_edge_pre_type_[index] == VarDescriptor::PreType::VarPreType){
+  				cout << "error: sub, pre, obj in this triple are all var" << endl;
+  				exit(-1);
+  			} else{
+  				// nei is var, pre is const
+  				join_method_ = JoinMethod::p2so;
+  			}
+  		} else{
+  			if(var_descrip->so_edge_pre_type_[index] == VarDescriptor::PreType::VarPreType){
+  				// nei is const, pre is var
+  				if(var_descrip->so_edge_type_[index] == Util::EDGE_IN)
+  					join_method_ = JoinMethod::s2po;
+				else
+					join_method_ = JoinMethod::o2sp;
+  			} else{
+  				// nei is const, pre is const
+  				if(var_descrip->so_edge_type_[index] == Util::EDGE_IN)
+  					join_method_ = JoinMethod::sp2o;
+				else
+					join_method_ = JoinMethod::po2s;
+  			}
+  		}
+  	}
+  }
+
   JoinMethod join_method_;
   TYPE_ENTITY_LITERAL_ID getVarToFilter();
   std::string toString();
@@ -107,15 +170,22 @@ class FeedOneNode{
   TYPE_ENTITY_LITERAL_ID node_to_join_;
   std::shared_ptr<std::vector<EdgeInfo>> edges_;
   std::shared_ptr<std::vector<EdgeConstantInfo>> edges_constant_info_;
+  FeedOneNode(){};
+  FeedOneNode(unsigned join_node_id, shared_ptr<vector<EdgeInfo>> edge_info, shared_ptr<vector<EdgeConstantInfo>> edge_constant):
+  		node_to_join_(join_node_id), edges_(edge_info), edges_constant_info_(edge_constant){};
+
   void ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> already_in);
 };
 
 class FeedTwoNode{
 public:
-	TYPE_ENTITY_LITERAL_ID node_to_join_1;
-	TYPE_ENTITY_LITERAL_ID node_to_join_2;
+	TYPE_ENTITY_LITERAL_ID node_to_join_1_;
+	TYPE_ENTITY_LITERAL_ID node_to_join_2_;
 	std::shared_ptr<EdgeInfo> edges_;
 	std::shared_ptr<EdgeConstantInfo> edges_constant_info_;
+	FeedTwoNode(){};
+	FeedTwoNode(unsigned node_1, unsigned node_2, shared_ptr<EdgeInfo> edge_info, shared_ptr<EdgeConstantInfo> edge_constant):
+		node_to_join_1_(node_1), node_to_join_2_(node_2), edges_(edge_info), edges_constant_info_(edge_constant){};
 };
 
 /* Join Two Table on Public Variables*/
@@ -133,7 +203,12 @@ class StepOperation{
   std::shared_ptr<JoinTwoTable> join_table_;
   std::shared_ptr<FeedOneNode> edge_filter_; // GenerateCandidates & EdgeCheck use this filed
   // ConstCandidatesCheck
-  enum class JoinType{JoinNode,GenerateCandidates,JoinTable,EdgeCheck,JoinTwoNode} join_type_;
+  enum class JoinType{JoinNode,GenerateCandidates,JoinTable,EdgeCheck,JoinTwoNodes} join_type_;
+
+  StepOperation(){};
+
+  StepOperation(JoinType join_type, shared_ptr<FeedOneNode> join_node, shared_ptr<FeedTwoNode> join_two_nodes,
+			  shared_ptr<JoinTwoTable> join_table, shared_ptr<FeedOneNode> edge_filter);
 
   std::string static JoinTypeToString(JoinType x){
     switch (x) {
