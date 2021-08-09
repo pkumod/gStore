@@ -382,6 +382,7 @@ void processGetMethod(WFHttpTask* server_task)
 	protocol::HttpResponse* resp = server_task->get_resp();
 	string uri = req->get_request_uri();
 	string operation = WebUrl::CutParam(uri, "operation");
+	cout << "operation:" << operation << endl;
 	string result = "";
 	char buf[8192];
 	int len;
@@ -392,6 +393,7 @@ void processGetMethod(WFHttpTask* server_task)
 	else if (operation == "showVersion")
 	{
 		 result=show_handler(uri);
+		 cout << "show Version result is:" << result << endl;
 		 len = snprintf(buf, 8192, "<p>the version is=%s</p>", result.c_str());
 		 resp->append_output_body(buf, len);
 		
@@ -412,7 +414,7 @@ void process(WFHttpTask* server_task)
 	std::string value;
 	char buf[8192];
 	int len;
-
+	cout << "method:"<<req->get_method() << endl;
 	if (req->get_method() == "GET")
 	{
 		processGetMethod(server_task);
