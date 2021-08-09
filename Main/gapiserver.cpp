@@ -136,31 +136,7 @@ bool ipCheck(WFHttpTask* server_task, protocol::HttpRequest* req, protocol::Http
 	return true;
 }
 
-string UrlDecode(string& SRC)
-{
-	string ret;
-	char ch;
-	int ii;
-	for (size_t i = 0; i < SRC.length(); ++i)
-	{
-		if (int(SRC[i]) == 37)
-		{
-			sscanf(SRC.substr(i + 1, 2).c_str(), "%x", &ii);
-			ch = static_cast<char>(ii);
-			ret += ch;
-			i = i + 2;
-		}
-		else if (SRC[i] == '+')
-		{
-			ret += ' ';
-		}
-		else
-		{
-			ret += SRC[i];
-		}
-	}
-	return (ret);
-}
+
 
 void handler_build(protocol::HttpRequest* req, protocol::HttpResponse* resp,
 	string db_name,string db_path,string username,string password)
