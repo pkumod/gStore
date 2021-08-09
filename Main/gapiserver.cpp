@@ -160,7 +160,7 @@ string querySys(string sparql)
 {
 	string db_name = "system";
 	//pthread_rwlock_rdlock(&already_build_map_lock);
-	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
+	//std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
 	//pthread_rwlock_unlock(&already_build_map_lock);
 
 	//pthread_rwlock_rdlock(&(it_already_build->second->db_lock));
