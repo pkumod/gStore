@@ -415,8 +415,9 @@ void process(WFHttpTask* server_task)
 	char buf[8192];
 	int len;
 	cout << "method:"<<req->get_method() << endl;
-	if (req->get_method() == "GET")
+	if (req->get_method().c_str() == "GET")
 	{
+		cout << "handler the get request" << endl;
 		processGetMethod(server_task);
 	}
 
