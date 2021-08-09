@@ -232,161 +232,161 @@ string querySys(string sparql)
 
 void DB2Map()
 {
-	string sparql = "select ?x ?y where{?x <has_password> ?y.}";
-	string strJson = querySys(sparql);
-	//cout << "DDDDDDDDDDDDDDDB2Map: strJson : " << strJson << endl;
-	Document document;
-	document.Parse(strJson.c_str());
-	Value& p1 = document["results"];
-	Value& p2 = p1["bindings"];
-	//int i = 0;
-	for (int i = 0; i < p2.Size(); i++)
-	{
-		Value& pp = p2[i];
-		Value& pp1 = pp["x"];
-		Value& pp2 = pp["y"];
-		string username = pp1["value"].GetString();
-		string password = pp2["value"].GetString();
-		//cout << "DDDDDDDDDDDDDDDDB2Map: username: " + username << " password: " << password << endl;
-		struct User* user = new User(username, password);
+	//string sparql = "select ?x ?y where{?x <has_password> ?y.}";
+	//string strJson = querySys(sparql);
+	////cout << "DDDDDDDDDDDDDDDB2Map: strJson : " << strJson << endl;
+	//Document document;
+	//document.Parse(strJson.c_str());
+	//Value& p1 = document["results"];
+	//Value& p2 = p1["bindings"];
+	////int i = 0;
+	//for (int i = 0; i < p2.Size(); i++)
+	//{
+	//	Value& pp = p2[i];
+	//	Value& pp1 = pp["x"];
+	//	Value& pp2 = pp["y"];
+	//	string username = pp1["value"].GetString();
+	//	string password = pp2["value"].GetString();
+	//	//cout << "DDDDDDDDDDDDDDDDB2Map: username: " + username << " password: " << password << endl;
+	//	struct User* user = new User(username, password);
 
-		string sparql2 = "select ?x ?y where{<" + username + "> ?x ?y.}";
-		string strJson2 = querySys(sparql2);
-		//cout << "strJson2: " << strJson2 << endl;
-		Document document2;
-		document2.Parse(strJson2.c_str());
+	//	string sparql2 = "select ?x ?y where{<" + username + "> ?x ?y.}";
+	//	string strJson2 = querySys(sparql2);
+	//	//cout << "strJson2: " << strJson2 << endl;
+	//	Document document2;
+	//	document2.Parse(strJson2.c_str());
 
-		Value& p12 = document2["results"];
-		Value& p22 = p12["bindings"];
-		for (int j = 0; j < p22.Size(); j++)
-		{
-			Value& ppj = p22[j];
-			Value& pp12 = ppj["x"];
-			Value& pp22 = ppj["y"];
-			string type = pp12["value"].GetString();
-			string db_name = pp22["value"].GetString();
-			//cout << "DDDDDDDDDDDDDDDDDB2Map: type: " + type << " db_name: " << db_name << endl;
+	//	Value& p12 = document2["results"];
+	//	Value& p22 = p12["bindings"];
+	//	for (int j = 0; j < p22.Size(); j++)
+	//	{
+	//		Value& ppj = p22[j];
+	//		Value& pp12 = ppj["x"];
+	//		Value& pp22 = ppj["y"];
+	//		string type = pp12["value"].GetString();
+	//		string db_name = pp22["value"].GetString();
+	//		//cout << "DDDDDDDDDDDDDDDDDB2Map: type: " + type << " db_name: " << db_name << endl;
 
-			if (type == "has_query_priv")
-			{
-				//cout << username << type << db_name << endl;
-				user->query_priv.insert(db_name);
-			}
-			else if (type == "has_update_priv")
-			{
-				//cout << username << type << db_name << endl;
-				user->update_priv.insert(db_name);
-			}
-			else if (type == "has_load_priv")
-			{
-				user->load_priv.insert(db_name);
-			}
-			else if (type == "has_unload_priv")
-			{
-				user->unload_priv.insert(db_name);
-			}
-			else if (type == "has_restore_priv")
-			{
-				user->restore_priv.insert(db_name);
-			}
-			else if (type == "has_backup_priv")
-			{
-				user->backup_priv.insert(db_name);
-			}
-			else if (type == "has_export_priv")
-			{
-				user->export_priv.insert(db_name);
-			}
-		}
-		//users.insert(pair<std::string, struct User*>(username, &user));
-		users.insert(pair<std::string, struct User*>(username, user));
+	//		if (type == "has_query_priv")
+	//		{
+	//			//cout << username << type << db_name << endl;
+	//			user->query_priv.insert(db_name);
+	//		}
+	//		else if (type == "has_update_priv")
+	//		{
+	//			//cout << username << type << db_name << endl;
+	//			user->update_priv.insert(db_name);
+	//		}
+	//		else if (type == "has_load_priv")
+	//		{
+	//			user->load_priv.insert(db_name);
+	//		}
+	//		else if (type == "has_unload_priv")
+	//		{
+	//			user->unload_priv.insert(db_name);
+	//		}
+	//		else if (type == "has_restore_priv")
+	//		{
+	//			user->restore_priv.insert(db_name);
+	//		}
+	//		else if (type == "has_backup_priv")
+	//		{
+	//			user->backup_priv.insert(db_name);
+	//		}
+	//		else if (type == "has_export_priv")
+	//		{
+	//			user->export_priv.insert(db_name);
+	//		}
+	//	}
+	//	//users.insert(pair<std::string, struct User*>(username, &user));
+	//	users.insert(pair<std::string, struct User*>(username, user));
 
-		//cout << ".................." << user->getUsername() << endl;
-		//cout << ".................." << user->getPassword() << endl;
-		//cout << ".................." << user->getLoad() << endl;
-		//cout << ".................." << user->getQuery() << endl;
-		//cout << ".................." << user->getUnload() << endl;
-		//cout << "i: " << i << endl;
-		//i++;
-	}
-	//cout << "out of first ptree" << endl;
+	//	//cout << ".................." << user->getUsername() << endl;
+	//	//cout << ".................." << user->getPassword() << endl;
+	//	//cout << ".................." << user->getLoad() << endl;
+	//	//cout << ".................." << user->getQuery() << endl;
+	//	//cout << ".................." << user->getUnload() << endl;
+	//	//cout << "i: " << i << endl;
+	//	//i++;
+	//}
+	////cout << "out of first ptree" << endl;
 
-	//insert already_built database from system.db to already_build map
-	sparql = "select ?x where{?x <database_status> \"already_built\".}";
-	strJson = querySys(sparql);
-	document.Parse(strJson.c_str());
-	p1 = document["results"];
-	p2 = p1["bindings"];
+	////insert already_built database from system.db to already_build map
+	//sparql = "select ?x where{?x <database_status> \"already_built\".}";
+	//strJson = querySys(sparql);
+	//document.Parse(strJson.c_str());
+	//p1 = document["results"];
+	//p2 = p1["bindings"];
 
-	for (int i = 0; i < p2.Size(); i++)
-	{
-		Value& pp = p2[i];
-		Value& pp1 = pp["x"];
-		string db_name = pp1["value"].GetString();
-		struct DBInfo* temp_db = new DBInfo(db_name);
+	//for (int i = 0; i < p2.Size(); i++)
+	//{
+	//	Value& pp = p2[i];
+	//	Value& pp1 = pp["x"];
+	//	string db_name = pp1["value"].GetString();
+	//	struct DBInfo* temp_db = new DBInfo(db_name);
 
-		string sparql2 = "select ?x ?y where{<" + db_name + "> ?x ?y.}";
-		string strJson2 = querySys(sparql2);
-		Document document2;
-		document2.Parse(strJson2.c_str());
+	//	string sparql2 = "select ?x ?y where{<" + db_name + "> ?x ?y.}";
+	//	string strJson2 = querySys(sparql2);
+	//	Document document2;
+	//	document2.Parse(strJson2.c_str());
 
-		Value& p12 = document2["results"];
-		Value& p22 = p12["bindings"];
+	//	Value& p12 = document2["results"];
+	//	Value& p22 = p12["bindings"];
 
-		for (int j = 0; j < p22.Size(); j++)
-		{
-			Value& ppj = p22[j];
-			Value& pp12 = ppj["x"];
-			Value& pp22 = ppj["y"];
-			string type = pp12["value"].GetString();
-			string info = pp22["value"].GetString();
+	//	for (int j = 0; j < p22.Size(); j++)
+	//	{
+	//		Value& ppj = p22[j];
+	//		Value& pp12 = ppj["x"];
+	//		Value& pp22 = ppj["y"];
+	//		string type = pp12["value"].GetString();
+	//		string info = pp22["value"].GetString();
 
-			if (type == "built_by")
-				temp_db->setCreator(info);
-			else if (type == "built_time")
-				temp_db->setTime(info);
-		}
-		already_build.insert(pair<std::string, struct DBInfo*>(db_name, temp_db));
-	}
+	//		if (type == "built_by")
+	//			temp_db->setCreator(info);
+	//		else if (type == "built_time")
+	//			temp_db->setTime(info);
+	//	}
+	//	already_build.insert(pair<std::string, struct DBInfo*>(db_name, temp_db));
+	//}
 
-	//add bulit_time of system.db to already_build map
-	sparql = "select ?x where{<system> <built_time> ?x.}";
-	strJson = querySys(sparql);
-	document.Parse(strJson.c_str());
-	p1 = document["results"];
-	p2 = p1["bindings"];
+	////add bulit_time of system.db to already_build map
+	//sparql = "select ?x where{<system> <built_time> ?x.}";
+	//strJson = querySys(sparql);
+	//document.Parse(strJson.c_str());
+	//p1 = document["results"];
+	//p2 = p1["bindings"];
 
-	for (int i = 0; i < p2.Size(); i++)
-	{
-		Value& pp = p2[i];
-		Value& pp1 = pp["x"];
-		string built_time = pp1["value"].GetString();
-		already_build.find("system")->second->setTime(built_time);
-	}
+	//for (int i = 0; i < p2.Size(); i++)
+	//{
+	//	Value& pp = p2[i];
+	//	Value& pp1 = pp["x"];
+	//	string built_time = pp1["value"].GetString();
+	//	already_build.find("system")->second->setTime(built_time);
+	//}
 
-	//get CoreVersion and APIVersion
-	sparql = "select ?x where{<CoreVersion> <value> ?x.}";
-	strJson = querySys(sparql);
-	document.Parse(strJson.c_str());
-	p1 = document["results"];
-	p2 = p1["bindings"];
-	for (int i = 0; i < p2.Size(); i++)
-	{
-		Value& pp = p2[i];
-		Value& pp1 = pp["x"];
-		CoreVersion = pp1["value"].GetString();
-	}
-	sparql = "select ?x where{<APIVersion> <value> ?x.}";
-	strJson = querySys(sparql);
-	document.Parse(strJson.c_str());
-	p1 = document["results"];
-	p2 = p1["bindings"];
-	for (int i = 0; i < p2.Size(); i++)
-	{
-		Value& pp = p2[i];
-		Value& pp1 = pp["x"];
-		APIVersion = pp1["value"].GetString();
-	}
+	////get CoreVersion and APIVersion
+	//sparql = "select ?x where{<CoreVersion> <value> ?x.}";
+	//strJson = querySys(sparql);
+	//document.Parse(strJson.c_str());
+	//p1 = document["results"];
+	//p2 = p1["bindings"];
+	//for (int i = 0; i < p2.Size(); i++)
+	//{
+	//	Value& pp = p2[i];
+	//	Value& pp1 = pp["x"];
+	//	CoreVersion = pp1["value"].GetString();
+	//}
+	//sparql = "select ?x where{<APIVersion> <value> ?x.}";
+	//strJson = querySys(sparql);
+	//document.Parse(strJson.c_str());
+	//p1 = document["results"];
+	//p2 = p1["bindings"];
+	//for (int i = 0; i < p2.Size(); i++)
+	//{
+	//	Value& pp = p2[i];
+	//	Value& pp1 = pp["x"];
+	//	APIVersion = pp1["value"].GetString();
+	//}
 }
 string show_handler(string url)
 {
