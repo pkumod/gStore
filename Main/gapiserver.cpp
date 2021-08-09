@@ -36,13 +36,13 @@
 #include "../Database/Database.h"
 #include "../Database/Txn_manager.h"
 #include "../Util/Util.h"
-//#include "../tools/rapidjson/document.h"
-//#include "../tools/rapidjson/prettywriter.h"  
-//#include "../tools/rapidjson/writer.h"
-//#include "../tools/rapidjson/stringbuffer.h"
-//#include <fstream>
-//#include "../Util/IPWhiteList.h"
-//#include "../Util/IPBlackList.h"
+#include "../tools/rapidjson/document.h"
+#include "../tools/rapidjson/prettywriter.h"  
+#include "../tools/rapidjson/writer.h"
+#include "../tools/rapidjson/stringbuffer.h"
+#include <fstream>
+#include "../Util/IPWhiteList.h"
+#include "../Util/IPBlackList.h"
 //#include "../../Util/IPWhiteList.h"
 //#include "../../Util/IPBlackList.h"
 
@@ -72,6 +72,32 @@ int whiteList = 0;
 
 //IPWhiteList* ipWhiteList;
 //IPBlackList* ipBlackList;
+
+string UrlDecode(string& SRC)
+{
+	string ret;
+	char ch;
+	int ii;
+	for (size_t i = 0; i < SRC.length(); ++i)
+	{
+		if (int(SRC[i]) == 37)
+		{
+			sscanf(SRC.substr(i + 1, 2).c_str(), "%x", &ii);
+			ch = static_cast<char>(ii);
+			ret += ch;
+			i = i + 2;
+		}
+		else if (SRC[i] == '+')
+		{
+			ret += ' ';
+		}
+		else
+		{
+			ret += SRC[i];
+		}
+	}
+	return (ret);
+}
 
 bool ipCheck(WFHttpTask* server_task, protocol::HttpRequest* req, protocol::HttpResponse* resp) {
 	//get the real IP of the client, because we use nginx here
@@ -149,6 +175,255 @@ void handler_build(protocol::HttpRequest* req, protocol::HttpResponse* resp,
 
 }
 
+void build_handler(string url)
+{
+
+}
+
+string querySys(string sparql)
+{
+	string db_name = "system";
+	//pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
+	//pthread_rwlock_unlock(&already_build_map_lock);
+
+	//pthread_rwlock_rdlock(&(it_already_build->second->db_lock));
+	ResultSet rs;
+	FILE* output = NULL;
+	Database* system_database;
+	system_database = new Database("system");
+	bool flag = system_database->load();
+	int ret_val = system_database->query(sparql, rs, output);
+	bool ret = false, update = false;
+	if (ret_val < -1)   //non-update query
+	{
+		ret = (ret_val == -100);
+	}
+	else  //update query, -1 for error, non-negative for num of triples updated
+	{
+		update = true;
+	}
+
+	if (ret)
+	{
+		cout << "search query returned successfully." << endl;
+
+		string success = rs.to_JSON();
+		//pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		return success;
+	}
+	else
+	{
+		string error = "";
+		int error_code;
+		if (!update)
+		{
+			cout << "search query returned error." << endl;
+			error = "search query returns false.";
+			error_code = 403;
+		}
+
+		//pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+
+		return error;
+	}
+
+}
+
+void DB2Map()
+{
+	string sparql = "select ?x ?y where{?x <has_password> ?y.}";
+	string strJson = querySys(sparql);
+	//cout << "DDDDDDDDDDDDDDDB2Map: strJson : " << strJson << endl;
+	Document document;
+	document.Parse(strJson.c_str());
+	Value& p1 = document["results"];
+	Value& p2 = p1["bindings"];
+	//int i = 0;
+	for (int i = 0; i < p2.Size(); i++)
+	{
+		Value& pp = p2[i];
+		Value& pp1 = pp["x"];
+		Value& pp2 = pp["y"];
+		string username = pp1["value"].GetString();
+		string password = pp2["value"].GetString();
+		//cout << "DDDDDDDDDDDDDDDDB2Map: username: " + username << " password: " << password << endl;
+		struct User* user = new User(username, password);
+
+		string sparql2 = "select ?x ?y where{<" + username + "> ?x ?y.}";
+		string strJson2 = querySys(sparql2);
+		//cout << "strJson2: " << strJson2 << endl;
+		Document document2;
+		document2.Parse(strJson2.c_str());
+
+		Value& p12 = document2["results"];
+		Value& p22 = p12["bindings"];
+		for (int j = 0; j < p22.Size(); j++)
+		{
+			Value& ppj = p22[j];
+			Value& pp12 = ppj["x"];
+			Value& pp22 = ppj["y"];
+			string type = pp12["value"].GetString();
+			string db_name = pp22["value"].GetString();
+			//cout << "DDDDDDDDDDDDDDDDDB2Map: type: " + type << " db_name: " << db_name << endl;
+
+			if (type == "has_query_priv")
+			{
+				//cout << username << type << db_name << endl;
+				user->query_priv.insert(db_name);
+			}
+			else if (type == "has_update_priv")
+			{
+				//cout << username << type << db_name << endl;
+				user->update_priv.insert(db_name);
+			}
+			else if (type == "has_load_priv")
+			{
+				user->load_priv.insert(db_name);
+			}
+			else if (type == "has_unload_priv")
+			{
+				user->unload_priv.insert(db_name);
+			}
+			else if (type == "has_restore_priv")
+			{
+				user->restore_priv.insert(db_name);
+			}
+			else if (type == "has_backup_priv")
+			{
+				user->backup_priv.insert(db_name);
+			}
+			else if (type == "has_export_priv")
+			{
+				user->export_priv.insert(db_name);
+			}
+		}
+		//users.insert(pair<std::string, struct User*>(username, &user));
+		users.insert(pair<std::string, struct User*>(username, user));
+
+		//cout << ".................." << user->getUsername() << endl;
+		//cout << ".................." << user->getPassword() << endl;
+		//cout << ".................." << user->getLoad() << endl;
+		//cout << ".................." << user->getQuery() << endl;
+		//cout << ".................." << user->getUnload() << endl;
+		//cout << "i: " << i << endl;
+		//i++;
+	}
+	//cout << "out of first ptree" << endl;
+
+	//insert already_built database from system.db to already_build map
+	sparql = "select ?x where{?x <database_status> \"already_built\".}";
+	strJson = querySys(sparql);
+	document.Parse(strJson.c_str());
+	p1 = document["results"];
+	p2 = p1["bindings"];
+
+	for (int i = 0; i < p2.Size(); i++)
+	{
+		Value& pp = p2[i];
+		Value& pp1 = pp["x"];
+		string db_name = pp1["value"].GetString();
+		struct DBInfo* temp_db = new DBInfo(db_name);
+
+		string sparql2 = "select ?x ?y where{<" + db_name + "> ?x ?y.}";
+		string strJson2 = querySys(sparql2);
+		Document document2;
+		document2.Parse(strJson2.c_str());
+
+		Value& p12 = document2["results"];
+		Value& p22 = p12["bindings"];
+
+		for (int j = 0; j < p22.Size(); j++)
+		{
+			Value& ppj = p22[j];
+			Value& pp12 = ppj["x"];
+			Value& pp22 = ppj["y"];
+			string type = pp12["value"].GetString();
+			string info = pp22["value"].GetString();
+
+			if (type == "built_by")
+				temp_db->setCreator(info);
+			else if (type == "built_time")
+				temp_db->setTime(info);
+		}
+		already_build.insert(pair<std::string, struct DBInfo*>(db_name, temp_db));
+	}
+
+	//add bulit_time of system.db to already_build map
+	sparql = "select ?x where{<system> <built_time> ?x.}";
+	strJson = querySys(sparql);
+	document.Parse(strJson.c_str());
+	p1 = document["results"];
+	p2 = p1["bindings"];
+
+	for (int i = 0; i < p2.Size(); i++)
+	{
+		Value& pp = p2[i];
+		Value& pp1 = pp["x"];
+		string built_time = pp1["value"].GetString();
+		already_build.find("system")->second->setTime(built_time);
+	}
+
+	//get CoreVersion and APIVersion
+	sparql = "select ?x where{<CoreVersion> <value> ?x.}";
+	strJson = querySys(sparql);
+	document.Parse(strJson.c_str());
+	p1 = document["results"];
+	p2 = p1["bindings"];
+	for (int i = 0; i < p2.Size(); i++)
+	{
+		Value& pp = p2[i];
+		Value& pp1 = pp["x"];
+		CoreVersion = pp1["value"].GetString();
+	}
+	sparql = "select ?x where{<APIVersion> <value> ?x.}";
+	strJson = querySys(sparql);
+	document.Parse(strJson.c_str());
+	p1 = document["results"];
+	p2 = p1["bindings"];
+	for (int i = 0; i < p2.Size(); i++)
+	{
+		Value& pp = p2[i];
+		Value& pp1 = pp["x"];
+		APIVersion = pp1["value"].GetString();
+	}
+}
+string show_handler(string url)
+{
+	string username = WebUrl::CutParam(url, "username");
+	string password = WebUrl::CutParam(url, "password");
+	username = UrlDecode(username);
+	password = UrlDecode(password);
+	string sparql = "select ?x where{<CoreVersion> <value> ?x.}";
+	string result = querySys(sparql);
+	return result;
+	
+
+}
+void processGetMethod(WFHttpTask* server_task)
+{
+	protocol::HttpRequest* req = server_task->get_req();
+	protocol::HttpResponse* resp = server_task->get_resp();
+	string uri = req->get_request_uri();
+	string operation = WebUrl::CutParam(uri, "operation");
+	string result = "";
+	char buf[8192];
+	int len;
+	if (operation == "build")
+	{
+
+	}
+	else if (operation == "showVersion")
+	{
+		 result=show_handler(uri);
+		 len = snprintf(buf, 8192, "<p>the version is=%s</p>", result.c_str());
+		 resp->append_output_body(buf, len);
+		
+	}
+	
+	
+}
+
 
 
 void process(WFHttpTask* server_task)
@@ -161,6 +436,11 @@ void process(WFHttpTask* server_task)
 	std::string value;
 	char buf[8192];
 	int len;
+
+	if (req->get_method() == "GET")
+	{
+		processGetMethod(server_task);
+	}
 
 	/* Set response message body. */
 	resp->append_output_body_nocopy("<html>", 6);
@@ -264,8 +544,8 @@ int main(int argc, char* argv[])
 
 	string advanced = getArgValue(argc, argv, "advanced", "n");
 
-	cout<< "   __ _ ___| |_ ___  _ __ ___" << endl;
-	cout<< "  / _` / __| __/ _ \| '__/ _" << endl;
+	cout<< "  __ _ ___| |_ ___  _ __ ___" << endl;
+	cout<< " / _` / __| __/ _ \| '__/ _" << endl;
 	cout<< " | (_| \__ \ || (_) | | |  __/" << endl;
 	cout << " \__, |___/\__\___/|_|  \___|" << endl;
 	cout << " |___/" << endl;
