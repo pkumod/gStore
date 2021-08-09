@@ -121,6 +121,10 @@ PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan) {
 	root_node->right_node = new Tree_node(right_plan->root_node);
 }
 
+PlanTree::PlanTree(shared_ptr<StepOperation> &first_node) {
+	root_node = new Tree_node(first_node);
+}
+
 PlanTree::PlanTree(const vector<int> nodes_order) {
 	root_node = new Tree_node(nodes_order[0]);
 	for(int i = 1; i < nodes_order.size(); ++i){

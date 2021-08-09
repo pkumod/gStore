@@ -186,6 +186,31 @@ string EdgeToString(KVstore *kv_store,EdgeInfo edge_info,EdgeConstantInfo edge_c
   return ss.str();
 }
 
+StepOperation::StepOperation(JoinType join_type, shared_ptr<FeedOneNode> join_node,
+							 shared_ptr<FeedTwoNode> join_two_nodes, shared_ptr<JoinTwoTable> join_table,
+							 shared_ptr<FeedOneNode> edge_filter): join_type_(join_type) {
+	switch (join_type) {
+		case JoinType::JoinNode:{
+			join_node_ = join_node;
+			break;
+		}
+		case JoinType::JoinTwoNodes:{
+			join_two_nodes = join_two_nodes;
+			break;
+		}
+		case JoinType::JoinTable:{
+			join_table_ = join_table;
+			break;
+		}
+		case JoinType::EdgeCheck: ;
+		case JoinType::GenerateCandidates:
+			edge_filter_ = edge_filter;
+			break;
+	}
+
+}
+
+
 /**
  * change order to better produce candidate
  * Top: already in and constant

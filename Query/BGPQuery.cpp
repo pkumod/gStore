@@ -10,8 +10,7 @@ using namespace std;
 
 
 VarDescriptor::VarDescriptor(unsigned id, VarType var_type, const string &var_name):
-	id_(id), var_type_(var_type), var_name_(var_name), selected_(false), degree_(0),
-	so_var_var_edge_num(0), so_var_con_edge_num(0) {};
+	id_(id), var_type_(var_type), var_name_(var_name), selected_(false), degree_(0){};
 
 
 // bool VarDescriptor::get_edge_type(int edge_id) {
@@ -28,29 +27,21 @@ VarDescriptor::VarDescriptor(unsigned id, VarType var_type, const string &var_na
 
 void VarDescriptor::update_so_var_edge_info(unsigned int edge_nei_id, TYPE_PREDICATE_ID pre_id, char edge_type,
 											unsigned int edge_index, bool pre_is_var, bool edge_nei_is_var) {
-	if(edge_nei_is_var){
-		this->var_edge_nei_.push_back(edge_nei_id);
-		this->var_edge_pre_id_.push_back(pre_id);
-		this->var_edge_type_.push_back(edge_type);
-		this->var_edge_index_.push_back(edge_index);
 
-		if(pre_is_var){
-			this->var_edge_pre_type_.push_back(PreType::VarPreType);
-		} else{
-			this->var_edge_pre_type_.push_back(PreType::ConPreType);
-		}
-	} else{
-		this->con_edge_nei_.push_back(edge_nei_id);
-		this->con_edge_pre_id_.push_back(pre_id);
-		this->con_edge_type_.push_back(edge_type);
-		this->con_edge_index_.push_back(edge_index);
 
-		if(pre_is_var){
-			this->con_edge_pre_type_.push_back(PreType::VarPreType);
-		} else{
-			this->con_edge_pre_type_.push_back(PreType::ConPreType);
-		}
-	}
+	this->so_edge_nei_.push_back(edge_nei_id);
+	this->so_edge_pre_id_.push_back(pre_id);
+	this->so_edge_type_.push_back(edge_type);
+	this->so_edge_index_.push_back(edge_index);
+	if(pre_is_var)
+		this->so_edge_pre_type_.push_back(PreType::VarPreType);
+	else
+		this->so_edge_pre_type_.push_back(PreType::ConPreType);
+
+	if(edge_nei_is_var)
+		this->so_edge_nei_type_.push_back(EntiType::VarEntiType);
+	else
+		this->so_edge_nei_type_.push_back(EntiType::ConEntiType);
 }
 
 void VarDescriptor::update_pre_var_edge_info(unsigned int s_id, unsigned int o_id, bool s_is_var, bool o_is_var,
@@ -70,18 +61,14 @@ void VarDescriptor::update_pre_var_edge_info(unsigned int s_id, unsigned int o_i
 		this->o_type_.push_back(EntiType::ConEntiType);
 	}
 
-	this->edge_index_.push_back(edge_index);
+	this->pre_edge_index_.push_back(edge_index);
 }
 
 void VarDescriptor::update_statistics_num() {
-	if(this->var_type_ == VarDescriptor::VarType::Entity){
-		this->so_var_var_edge_num = this->var_edge_type_.size();
-		this->so_var_con_edge_num = this->con_edge_type_.size();
-
-		this->degree_ = this->so_var_var_edge_num + this->so_var_con_edge_num;
-	} else{
-		this->degree_ = this->edge_index_.size();
-	}
+	if(this->var_type_ == VarDescriptor::VarType::Entity)
+		this->degree_ = this->so_edge_index_.size();
+	else
+		this->degree_ = this->pre_edge_index_.size();
 }
 
 void VarDescriptor::update_select_status(bool selected) {
@@ -94,28 +81,23 @@ void VarDescriptor::print(KVstore *kvstore) {
 	cout << "degree = " << degree_ << endl;
 
 	if(var_type_ == VarType::Entity){
-		cout << "so_var_var_edge_num = " << so_var_var_edge_num << endl;
-		cout << "so_var_con_edge_num = " << so_var_con_edge_num << endl;
 
-		cout << "var edge type, var edge index, var edge nei, var edge pre, var edge pre type: " << endl;
-		for(unsigned i = 0; i < var_edge_type_.size(); ++i){
-			cout << var_edge_type_[i] << '\t' << var_edge_index_[i] << '\t' << var_edge_nei_[i] << '\t';
-			if(var_edge_pre_type_[i] == PreType::VarPreType){
-				cout << var_edge_pre_id_[i] << '\t' << "varpretype" << endl;
+		cout << "edge type, edge index, edge nei, edge nei type, var edge pre, var edge pre type: " << endl;
+		for(unsigned i = 0; i < so_edge_type_.size(); ++i){
+			cout << so_edge_type_[i] << '\t' << so_edge_index_[i] << '\t' << so_edge_nei_[i] << '\t';
+
+			if(so_edge_nei_type_[i] == EntiType::VarEntiType)
+				cout << so_edge_nei_[i] << '\t' << "varsotype" << '\t';
+			else
+				cout << kvstore->getStringByID(so_edge_nei_[i]) << '\t' << "consotype" << '\t';
+
+			if(so_edge_pre_type_[i] == PreType::VarPreType){
+				cout << so_edge_pre_id_[i] << '\t' << "varpretype" << endl;
 			} else{
-				cout << kvstore->getPredicateByID(var_edge_pre_id_[i]) << '\t' << "conpretype" << endl;
+				cout << kvstore->getPredicateByID(so_edge_pre_id_[i]) << '\t' << "conpretype" << endl;
 			}
 		}
 
-		cout << " con edge type, con edge index, con edge nei, con edge pre, con edge pre type: " << endl;
-		for(unsigned i = 0; i < con_edge_type_.size(); ++i){
-			cout << con_edge_type_[i] << '\t' << con_edge_index_[i] << '\t' << kvstore->getStringByID(con_edge_nei_[i]) << '\t';
-			if(var_edge_pre_type_[i] == PreType::VarPreType){
-				cout << var_edge_pre_id_[i] << '\t' << "varpretype" << endl;
-			} else{
-				cout << kvstore->getPredicateByID(var_edge_pre_id_[i]) << '\t' << "conpretype" << endl;
-			}
-		}
 	} else{
 		cout << "s_type_.size() = " << s_type_.size() << endl;
 		for(unsigned i = 0; i < s_type_.size(); ++i){
@@ -175,6 +157,18 @@ unsigned int BGPQuery::get_var_position_by_name(const string &var_name) {
 	return this->var_item_to_position[var_name];
 }
 
+unsigned int BGPQuery::get_var_id_by_index(unsigned int index) {
+	return this->var_id_vec[index];
+}
+
+const vector<unsigned int> &BGPQuery::get_var_id_vec() {
+	return this->var_id_vec;
+}
+
+const shared_ptr<VarDescriptor> &BGPQuery::get_vardescrip_by_index(unsigned index) {
+	return this->var_vector[index];
+}
+
 void BGPQuery::ScanAllVar() {
 
 	bool not_found;
@@ -196,6 +190,7 @@ void BGPQuery::ScanAllVar() {
 				this->position_id_map[index] = index;
 
 				this->so_var_id.push_back(index);
+				this->var_id_vec.push_back(index);
 				this->total_so_var_num += 1;
 				index += 1;
 			}
@@ -218,6 +213,7 @@ void BGPQuery::ScanAllVar() {
 				this->position_id_map[index] = index;
 
 				this->pre_var_id.push_back(index);
+				this->var_id_vec.push_back(index);
 				this->total_pre_var_num += 1;
 				index += 1;
 			}
@@ -241,6 +237,7 @@ void BGPQuery::ScanAllVar() {
 				this->position_id_map[index] = index;
 
 				this->so_var_id.push_back(index);
+				this->var_id_vec.push_back(index);
 				this->total_so_var_num += 1;
 				index += 1;
 			}
@@ -353,17 +350,18 @@ void BGPQuery::ScanAllVarByBigBGPID(BGPQuery *big_bgpquery) {
 		if(not_found){
 			this->item_to_freq[triple.subject] = 1;
 			if(triple.subject.at(0) == '?') {
-				auto new_sub_var = make_shared<VarDescriptor>(big_bgpquery->get_var_id_by_name(triple.subject),
-															  VarDescriptor::VarType::Entity, triple.subject);
+				auto var_id = big_bgpquery->get_var_id_by_name(triple.subject);
+				auto new_sub_var = make_shared<VarDescriptor>(var_id,VarDescriptor::VarType::Entity, triple.subject);
 				this->var_vector.push_back(new_sub_var);
 
 				this->var_item_to_position[triple.subject] = index;
-				this->var_item_to_id[triple.subject] = big_bgpquery->get_var_id_by_name(triple.subject);
+				this->var_item_to_id[triple.subject] = var_id;
 
-				this->id_position_map[big_bgpquery->get_var_id_by_name(triple.subject)] = index;
-				this->position_id_map[index] = big_bgpquery->get_var_id_by_name(triple.subject);
+				this->id_position_map[var_id] = index;
+				this->position_id_map[index] = var_id;
 
-				this->so_var_id.push_back(big_bgpquery->get_var_id_by_name(triple.subject));
+				this->so_var_id.push_back(var_id);
+				this->var_id_vec.push_back(var_id);
 				this->total_so_var_num += 1;
 				index += 1;
 			}
@@ -376,17 +374,18 @@ void BGPQuery::ScanAllVarByBigBGPID(BGPQuery *big_bgpquery) {
 		if(not_found){
 			this->item_to_freq[triple.predicate] = 1;
 			if(triple.predicate.at(0) == '?') {
-				auto new_pre_var = make_shared<VarDescriptor>(big_bgpquery->get_var_id_by_name(triple.predicate),
-															  VarDescriptor::VarType::Predicate, triple.predicate);
+				auto pre_id = big_bgpquery->get_var_id_by_name(triple.predicate);
+				auto new_pre_var = make_shared<VarDescriptor>(pre_id,VarDescriptor::VarType::Predicate, triple.predicate);
 				this->var_vector.push_back(new_pre_var);
 
 				this->var_item_to_position[triple.predicate] = index;
-				this->var_item_to_id[triple.predicate] = big_bgpquery->get_var_id_by_name(triple.predicate);
+				this->var_item_to_id[triple.predicate] = pre_id;
 
-				this->id_position_map[big_bgpquery->get_var_id_by_name(triple.predicate)] = index;
-				this->position_id_map[index] = big_bgpquery->get_var_id_by_name(triple.predicate);
+				this->id_position_map[pre_id] = index;
+				this->position_id_map[index] = pre_id;
 
-				this->pre_var_id.push_back(big_bgpquery->get_var_id_by_name(triple.predicate));
+				this->pre_var_id.push_back(pre_id);
+				this->var_id_vec.push_back(pre_id);
 				this->total_pre_var_num += 1;
 				index += 1;
 			}
@@ -400,17 +399,18 @@ void BGPQuery::ScanAllVarByBigBGPID(BGPQuery *big_bgpquery) {
 		if(not_found){
 			this->item_to_freq[triple.object] = 1;
 			if(triple.object.at(0) == '?') {
-				auto new_obj_var = make_shared<VarDescriptor>(big_bgpquery->get_var_id_by_name(triple.object),
-															  VarDescriptor::VarType::Entity, triple.object);
+				auto obj_id = big_bgpquery->get_var_id_by_name(triple.object);
+				auto new_obj_var = make_shared<VarDescriptor>(obj_id,VarDescriptor::VarType::Entity, triple.object);
 				this->var_vector.push_back(new_obj_var);
 
 				this->var_item_to_position[triple.object] = index;
-				this->var_item_to_id[triple.object] = big_bgpquery->get_var_id_by_name(triple.object);
+				this->var_item_to_id[triple.object] = obj_id;
 
-				this->id_position_map[big_bgpquery->get_var_id_by_name(triple.object)] = index;
-				this->position_id_map[index] = big_bgpquery->get_var_id_by_name(triple.object);
+				this->id_position_map[obj_id] = index;
+				this->position_id_map[index] = obj_id;
 
-				this->so_var_id.push_back(big_bgpquery->get_var_id_by_name(triple.object));
+				this->so_var_id.push_back(obj_id);
+				this->var_id_vec.push_back(obj_id);
 				this->total_so_var_num += 1;
 				index += 1;
 			}
@@ -459,6 +459,15 @@ unsigned int BGPQuery::get_pre_var_num() {
 // int BGPQuery::get_edge_index(int var_id, int edge_id) {
 // 	return var_vector[var_id]->edge_index_[edge_id];
 // }
+
+const vector <Triple> &BGPQuery::get_triple_vt() {
+	return this->triple_vt;
+}
+
+const Triple &BGPQuery::get_triple_by_index(unsigned int index) {
+	return this->triple_vt[index];
+}
+
 
 /**
  * Print this BGPQuery's info, just for debug, not for user.

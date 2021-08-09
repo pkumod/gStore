@@ -54,25 +54,33 @@ public:
 	unsigned degree_;
 
 	// only used when var_type_ == Entity
-	unsigned so_var_var_edge_num;
-	unsigned so_var_con_edge_num;
+	// unsigned so_var_var_edge_num;
+	// unsigned so_var_con_edge_num;
+
+	// only used when var_type_ == Entity
+	vector<char> so_edge_type_;
+	vector<unsigned> so_edge_index_;
+	vector<unsigned> so_edge_nei_;
+	vector<EntiType> so_edge_nei_type_;
+	vector<unsigned> so_edge_pre_id_;
+	vector<PreType> so_edge_pre_type_;
 
 	// connect to var so, only used when var_type_ == Entity,
 	// var_edge_pre_type_ records whether the pre is var or not
-	vector<char> var_edge_type_;
-	vector<unsigned > var_edge_index_;
-	vector<unsigned > var_edge_nei_;
-	vector<TYPE_PREDICATE_ID> var_edge_pre_id_;
-	vector<PreType> var_edge_pre_type_;
+	// vector<char> var_edge_type_;
+	// vector<unsigned > var_edge_index_;
+	// vector<unsigned > var_edge_nei_;
+	// vector<TYPE_PREDICATE_ID> var_edge_pre_id_;
+	// vector<PreType> var_edge_pre_type_;
 
 
 	// connect to constant so, only used when var_type == Entity,
 	// con_edge_pre_type_ records whether the pre is var or not
-	vector<char> con_edge_type_;
-	vector<unsigned > con_edge_index_;
-	vector<unsigned > con_edge_nei_;
-	vector<TYPE_PREDICATE_ID> con_edge_pre_id_;
-	vector<PreType> con_edge_pre_type_;
+	// vector<char> con_edge_type_;
+	// vector<unsigned > con_edge_index_;
+	// vector<unsigned > con_edge_nei_;
+	// vector<TYPE_PREDICATE_ID> con_edge_pre_id_;
+	// vector<PreType> con_edge_pre_type_;
 
 
 	//pre_var edge info, only used when var_type == Predicate
@@ -80,7 +88,7 @@ public:
 	vector<EntiType> s_type_;
 	vector<unsigned> o_id_;
 	vector<EntiType> o_type_;
-	vector<unsigned> edge_index_;
+	vector<unsigned> pre_edge_index_;
 
 	// zhouyuqi, if use this, please add initial this in VarDescriptor(*****)
 	int rewriting_position_;
@@ -158,9 +166,10 @@ public:
 	// vector indicate so_var position in var_vector
 	vector<unsigned> so_var_id;
 	vector<unsigned> pre_var_id;
+	vector<unsigned> var_id_vec;
 
 	// vector indicate selected var position in var_vector, whether pre_var or so_var
-	vector<int> selected_var_id;
+	vector<unsigned> selected_var_id;
 
 	vector<string> pre_var_names;
 
@@ -192,6 +201,12 @@ public:
 	unsigned get_var_id_by_name(const string& var_name);
 	unsigned get_var_position_by_name(const string& var_name);
 
+
+	unsigned get_var_id_by_index(unsigned index);
+	const vector<unsigned> &get_var_id_vec();
+
+	const shared_ptr<VarDescriptor> &get_vardescrip_by_index(unsigned);
+
 	// void update_so_var_edge_info(uns);
 
 	void ScanAllVar();
@@ -213,6 +228,9 @@ public:
 	bool get_edge_type(int var_id, int edge_id);
 	int get_edge_nei(int var_id, int edge_id);
 	int get_edge_index(int var_id, int edge_id);
+
+	const vector<Triple> &get_triple_vt();
+	const Triple &get_triple_by_index(unsigned index);
 
 
 	void print(KVstore * kvstore);
