@@ -48,6 +48,7 @@ public:
 
 	// todo: use this to denote whether this var is selected or not
 	bool selected_;
+	bool link_with_const;
 
 	// degree_ is the num of how many triples include this item,
 	// include entitytype or pretype
@@ -160,6 +161,14 @@ public:
 	map<unsigned, unsigned> position_id_map;
 
 
+	vector<unsigned> s_id_;
+	vector<unsigned> p_id_;
+	vector<unsigned> o_id_;
+
+	vector<bool> s_is_constant_;
+	vector<bool> p_is_constant_;
+	vector<bool> o_is_constant_;
+
 	// all var, whether pre or not_pre, whether selected or not_selected
 	vector<shared_ptr<VarDescriptor>> var_vector;
 
@@ -203,9 +212,12 @@ public:
 
 
 	unsigned get_var_id_by_index(unsigned index);
+	unsigned get_var_position_by_id(unsigned id);
+
 	const vector<unsigned> &get_var_id_vec();
 
-	const shared_ptr<VarDescriptor> &get_vardescrip_by_index(unsigned);
+	const shared_ptr<VarDescriptor> &get_vardescrip_by_index(unsigned index);
+	const shared_ptr<VarDescriptor> &get_vardescrip_by_id(unsigned id);
 
 	// void update_so_var_edge_info(uns);
 

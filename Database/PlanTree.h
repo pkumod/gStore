@@ -13,6 +13,7 @@
 #include "../Query/BasicQuery.h"
 #include "../Query/BGPQuery.h"
 #include "./TableOperator.h"
+#include "../Util/Util.h"
 
 using namespace std;
 
@@ -129,6 +130,34 @@ struct Tree_node{
         }
     }
 
+
+    // below will be used in gstore v1.0
+
+
+
+    // not used
+    JoinMethod get_join_method(bool s_is_var, bool p_is_var, bool o_is_var);
+
+    // new_fun_for_new_version is a redundant param,
+    // just distinguish it from Tree_node(Tree_node *node_need_copy)
+    Tree_node(Tree_node *node_need_copy, bool new_fun_for_new_version){
+    	node = node_need_copy->node;
+
+    	if(node_need_copy->left_node)
+    		left_node = new Tree_node(node_need_copy->left_node, true);
+		else
+			left_node = nullptr;
+
+		if(node_need_copy->right_node)
+			right_node = new Tree_node(node_need_copy->right_node, true);
+		else
+			right_node = nullptr;
+
+    }
+
+    Tree_node(unsigned node_id, BGPQuery *bgpquery, bool is_first_node);
+
+    Tree_node(unsigned node_id, set<unsigned> already_in, BGPQuery *bgpquery);
     Tree_node(shared_ptr<StepOperation> next_node){
     	node = next_node;
     	left_node = nullptr;
@@ -149,7 +178,10 @@ public:
     PlanTree(PlanTree *last_plantree, int next_node);
     PlanTree(PlanTree *left_plan, PlanTree *right_plan);
 
+    PlanTree(unsigned first_node, BGPQuery *bgpquery);
     PlanTree(shared_ptr<StepOperation> &first_node);
+    PlanTree(PlanTree *last_plan_tree, unsigned next_join_var_id, set<unsigned> already_id, BGPQuery *bgpquery);
+
 
 //    for create plan manually
     PlanTree(const vector<int> nodes_order);

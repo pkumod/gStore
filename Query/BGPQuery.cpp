@@ -10,7 +10,7 @@ using namespace std;
 
 
 VarDescriptor::VarDescriptor(unsigned id, VarType var_type, const string &var_name):
-	id_(id), var_type_(var_type), var_name_(var_name), selected_(false), degree_(0){};
+	id_(id), var_type_(var_type), var_name_(var_name), selected_(false), link_with_const(false), degree_(0){};
 
 
 // bool VarDescriptor::get_edge_type(int edge_id) {
@@ -35,13 +35,17 @@ void VarDescriptor::update_so_var_edge_info(unsigned int edge_nei_id, TYPE_PREDI
 	this->so_edge_index_.push_back(edge_index);
 	if(pre_is_var)
 		this->so_edge_pre_type_.push_back(PreType::VarPreType);
-	else
+	else{
 		this->so_edge_pre_type_.push_back(PreType::ConPreType);
+		this->link_with_const = true;
+	}
 
 	if(edge_nei_is_var)
 		this->so_edge_nei_type_.push_back(EntiType::VarEntiType);
-	else
+	else{
 		this->so_edge_nei_type_.push_back(EntiType::ConEntiType);
+		this->link_with_const = true;
+	}
 }
 
 void VarDescriptor::update_pre_var_edge_info(unsigned int s_id, unsigned int o_id, bool s_is_var, bool o_is_var,
@@ -53,12 +57,14 @@ void VarDescriptor::update_pre_var_edge_info(unsigned int s_id, unsigned int o_i
 		this->s_type_.push_back(EntiType::VarEntiType);
 	} else{
 		this->s_type_.push_back(EntiType::ConEntiType);
+		this->link_with_const = true;
 	}
 
 	if(o_is_var){
 		this->o_type_.push_back(EntiType::VarEntiType);
 	} else{
 		this->o_type_.push_back(EntiType::ConEntiType);
+		this->link_with_const = true;
 	}
 
 	this->pre_edge_index_.push_back(edge_index);
@@ -161,12 +167,20 @@ unsigned int BGPQuery::get_var_id_by_index(unsigned int index) {
 	return this->var_id_vec[index];
 }
 
+unsigned int BGPQuery::get_var_position_by_id(unsigned int id) {
+	return this->id_position_map[id];
+}
+
 const vector<unsigned int> &BGPQuery::get_var_id_vec() {
 	return this->var_id_vec;
 }
 
 const shared_ptr<VarDescriptor> &BGPQuery::get_vardescrip_by_index(unsigned index) {
 	return this->var_vector[index];
+}
+
+const shared_ptr<VarDescriptor> &BGPQuery::get_vardescrip_by_id(unsigned id) {
+	return this->var_vector[this->get_var_position_by_id(id)];
 }
 
 void BGPQuery::ScanAllVar() {
@@ -285,7 +299,15 @@ void BGPQuery::build_edge_info(KVstore *_kvstore) {
 			p_is_var = false;
 		} else{
 			p_id = this->get_var_id_by_name(p_string);
-		}
+		};
+
+		s_id_.push_back(s_id);
+		p_id_.push_back(p_id);
+		o_id_.push_back(o_id);
+
+		s_is_constant_.push_back(!s_is_var);
+		p_is_constant_.push_back(!p_is_var);
+		o_is_constant_.push_back(!o_is_var);
 
 		// deal with s_var
 		if(s_is_var)

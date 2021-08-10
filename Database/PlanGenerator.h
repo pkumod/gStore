@@ -45,6 +45,8 @@ public:
 	map<int, vector<unsigned>> var_to_sample_cache;
 	map<int, map<int, unsigned >> s_o_list_average_size;
 
+	vector<unsigned> join_nodes;
+
 	PlanGenerator(KVstore *kvstore_, BasicQuery *basicquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_);
 	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_);
 
@@ -87,7 +89,23 @@ public:
 	int enum_query_plan(vector<int> &need_join_nodes);
 	PlanTree* get_best_plan(const vector<int> &nodes);
 	PlanTree* get_best_plan_by_num(int total_var_num);
+
+
 	PlanTree* get_normal_plan();
+
+
+	void considerallvarscan();
+	void considerallwcojoin(unsigned var_num);
+	void considerallbinaryjoin(unsigned var_num);
+
+	PlanTree* get_plan();
+
+
+	unsigned choose_next_nei_id(set<unsigned> nei_id_set);
+
+	void update_nei_id_set(set<unsigned> &nei_id_vec, set<unsigned> &already_id, unsigned next_id);
+
+	PlanTree* get_random_plan();
 	PlanTree* get_special_no_pre_var_plan();
 	PlanTree* get_special_one_triple_plan();
 };
