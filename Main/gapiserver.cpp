@@ -417,7 +417,7 @@ void process(WFHttpTask* server_task)
 	cout << "method:"<<req->get_method() << endl;
 
 
-	char* method_char = req->get_method();
+	const char* method_char = req->get_method();
 	string method(method_char);
 	if (method == "GET")
 	{
