@@ -418,10 +418,7 @@ void process(WFHttpTask* server_task)
 
 
 	char* method_char = req->get_method();
-	string method;
-	method=method_char;
-
-
+	string method(method_char);
 	if (method == "GET")
 	{
 		cout << "handler the get request" << endl;
