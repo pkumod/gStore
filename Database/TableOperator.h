@@ -205,7 +205,7 @@ class StepOperation{
   // ConstCandidatesCheck
   enum class JoinType{JoinNode,GenerateCandidates,JoinTable,EdgeCheck,JoinTwoNodes} join_type_;
 
-  StepOperation(){};
+  StepOperation(): join_node_(nullptr), join_two_node_(nullptr), join_table_(nullptr), edge_filter_(nullptr){};
 
   StepOperation(JoinType join_type, shared_ptr<FeedOneNode> join_node, shared_ptr<FeedTwoNode> join_two_nodes,
 			  shared_ptr<JoinTwoTable> join_table, shared_ptr<FeedOneNode> edge_filter);

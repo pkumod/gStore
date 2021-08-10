@@ -1004,6 +1004,214 @@ PlanTree* PlanGenerator::get_normal_plan() {
 }
 
 
+void PlanGenerator::considerallvarscan() {
+	//special case: there is no query_var linked with constant, than need estimate by p2s or p2o
+	// bool is_special = true;
+	// random_device rd;
+	// mt19937 eng(rd());
+	//
+	// for(int var_pos = 0 ; var_pos < bgpquery->get_total_var_num(); ++ var_pos) {
+	//
+	// 	unsigned var_id = bgpquery->get_var_id_by_index(var_pos);
+	// 	join_nodes.push_back(var_id);
+	//
+	// 	vector<unsigned> this_node{var_id};
+	// 	PlanTree *new_plan = new PlanTree(var_id, bgpquery);
+	//
+	//
+	//
+	//
+	// 	if (basicquery->if_need_retrieve(i)) {
+	//
+	// 		// need_join_nodes.push_back(i);
+	// 		vector<int> this_node{i};
+	// 		PlanTree *new_scan = new PlanTree(i);
+	//
+	//
+	// 		var_to_num_map[i] = (*id_caches)[i]->size();
+	// 		new_scan->plan_cost = var_to_num_map[i];
+	//
+	// 		list<PlanTree *> this_node_plan;
+	// 		this_node_plan.push_back(new_scan);
+	//
+	// 		if (plan_cache.size() < 1) {
+	// 			map<vector<int>, list<PlanTree *>> one_node_plan_map;
+	//
+	// 			one_node_plan_map.insert(make_pair(this_node, this_node_plan));
+	//
+	// 			plan_cache.push_back(one_node_plan_map);
+	// 		} else {
+	// 			plan_cache[0].insert(make_pair(this_node, this_node_plan));
+	// 		}
+	//
+	// 		if (use_sample) {
+	//
+	// 			auto list_size = (*id_caches)[i]->size();
+	// 			// IDList* need_insert_vec;
+	// 			vector<unsigned> need_insert_vec;
+	// 			if (list_size <= SAMPLE_CACHE_MAX) {
+	// 				// need_insert_vec = new IDList((*id_caches)[i]->getList());
+	// 				need_insert_vec.assign((*id_caches)[i]->getList()->begin(), (*id_caches)[i]->getList()->end());
+	// 			} else {
+	// 				unsigned sample_size = get_sample_size(list_size);
+	// 				// need_insert_vec = new IDList(sample_size);
+	// 				need_insert_vec.reserve(sample_size);
+	//
+	// 				auto id_cache_list = (*id_caches)[i]->getList();
+	//
+	// 				uniform_int_distribution<unsigned> dis(0, list_size);
+	// 				for (unsigned sample_num = 0; sample_num < sample_size; ++sample_num) {
+	// 					unsigned index_need_insert = dis(eng);
+	// 					// need_insert_vec->addID((*id_cache_list)[index_need_insert]);
+	// 					need_insert_vec.push_back((*id_cache_list)[index_need_insert]);
+	// 				}
+	// 			}
+	// 			var_to_sample_cache[i] = std::move(need_insert_vec);
+	//
+	// 		}else {
+	//
+	// 			cout << "degree: " << basicquery->getVarDegree(i) << endl;
+	// 			for (int j = 0; j < basicquery->getVarDegree(i); ++j) {
+	// 				if (basicquery->getEdgePreID(i, j) == statistics->type_pre_id) {
+	// 					int triple_id = basicquery->getEdgeID(i, j);
+	// 					string type_name = basicquery->getTriple(triple_id).object;
+	// 					var_to_type_map[i] = kvstore->getIDByEntity(type_name);
+	//
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
+
+}
+
+void PlanGenerator::considerallwcojoin(unsigned int var_num) {
+	;
+}
+
+void PlanGenerator::considerallbinaryjoin(unsigned int var_num) {
+	;
+}
+
+PlanTree *PlanGenerator::get_plan() {
+
+	considerallvarscan();
+
+	for(unsigned var_num = 2; var_num <= bgpquery->get_total_var_num(); ++var_num) {
+		considerallwcojoin(var_num);
+
+		if(var_num >= 5)
+			considerallbinaryjoin(var_num);
+	}
+
+	return get_best_plan_by_num(bgpquery->get_total_var_num());
+
+}
+
+unsigned int PlanGenerator::choose_next_nei_id(set<unsigned int> nei_id_set) {
+
+	unsigned next_id = UINT_MAX;
+	unsigned degree = 0;
+
+	for(auto x : nei_id_set){
+		auto var_descrip = bgpquery->get_vardescrip_by_id(x);
+
+		if(var_descrip->degree_ > degree){
+			next_id = var_descrip->id_;
+			degree = var_descrip->degree_;
+		}
+	}
+
+	if(degree == 0){
+		cout << "error: choose next nei id error" << endl;
+		exit(-1);
+	} else{
+		return next_id;
+	}
+}
+
+// insert next_id's nei to nei_id_vec, remove next_id from nei_id_vec, insert next_id to already_id
+void PlanGenerator::update_nei_id_set(set<unsigned> &neibor_id, set<unsigned> &already_id, unsigned next_id) {
+
+	auto var_descrip = bgpquery->get_vardescrip_by_id(next_id);
+
+	if(var_descrip->var_type_ == VarDescriptor::VarType::Entity){
+		for(unsigned i = 0; i < var_descrip->degree_; ++i){
+			// TODO: pre var
+			if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType &&
+					already_id.count(var_descrip->so_edge_nei_[i]) == 0)
+				neibor_id.insert(var_descrip->so_edge_nei_[i]);
+
+			if(var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType &&
+					already_id.count(var_descrip->so_edge_pre_id_[i]) == 0)
+				neibor_id.insert(var_descrip->so_edge_pre_id_[i]);
+
+		}
+	} else{
+		for(unsigned i = 0; i < var_descrip->degree_; ++i){
+			if(var_descrip->s_type_[i] == VarDescriptor::EntiType::VarEntiType &&
+					already_id.count(var_descrip->s_id_[i]) == 0)
+				neibor_id.insert(var_descrip->s_id_[i]);
+
+			if(var_descrip->o_type_[i] == VarDescriptor::EntiType::VarEntiType &&
+					already_id.count(var_descrip->o_id_[i]) == 0)
+				neibor_id.insert(var_descrip->o_id_[i]);
+		}
+	}
+
+	already_id.insert(next_id);
+	neibor_id.erase(next_id);
+
+}
+
+
+// get a plan for debug, DFS_based plan.
+// First choose a max_degreed so_var with const,
+// then choose its nei by degree.
+PlanTree *PlanGenerator::get_random_plan() {
+	unsigned first_var_id = UINT_MAX;
+	unsigned degree = 0;
+	for(unsigned var_index = 0; var_index < bgpquery->get_total_var_num(); ++ var_index){
+
+		auto var_descrip = bgpquery->get_vardescrip_by_index(var_index);
+		if(var_descrip->link_with_const == false || var_descrip->var_type_ == VarDescriptor::VarType::Predicate)
+			continue;
+
+		if(var_descrip->degree_ > degree){
+			first_var_id = var_descrip->id_;
+			degree = var_descrip->degree_;
+		}
+	}
+
+	if(degree == 0){
+		cout << "error: find first node to join error" << endl;
+		exit(-1);
+	}
+
+	auto first_var_descrip = bgpquery->get_vardescrip_by_id(first_var_id);
+
+	PlanTree* plan_tree_p = new PlanTree(first_var_id, bgpquery);
+	PlanTree* plan_tree_q = nullptr;
+
+	set<unsigned> neibor_id;
+	set<unsigned> already_id{first_var_id};
+	for(unsigned i = 0; i < degree; ++i){
+		if(first_var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType)
+			neibor_id.insert(first_var_descrip->so_edge_nei_[i]);
+	}
+
+	while(neibor_id.size() > 0){
+		unsigned next_id = choose_next_nei_id(neibor_id);
+		plan_tree_q = new PlanTree(plan_tree_p, next_id, already_id, bgpquery);
+		update_nei_id_set(neibor_id, already_id, next_id);
+
+		plan_tree_p = plan_tree_q;
+	}
+
+	return plan_tree_q;
+
+}
+
 PlanTree *PlanGenerator::get_special_no_pre_var_plan() {
 	if((*id_caches)[0]->size() <= (*id_caches)[1]->size())
 		return new PlanTree(vector<int> {0,1});

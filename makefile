@@ -409,11 +409,12 @@ $(objdir)TableOperator.o: Database/TableOperator.cpp Database/TableOperator.h $(
 $(objdir)ResultTrigger.o: Database/ResultTrigger.cpp Database/ResultTrigger.h $(objdir)Util.o
 	$(CC) $(CFLAGS) Database/ResultTrigger.cpp $(inc) -o $(objdir)ResultTrigger.o $(openmp)
 
-$(objdir)PlanTree.o: Database/PlanTree.cpp Database/PlanTree.h $(objdir)BasicQuery.o $(objdir)TableOperator.o
+$(objdir)PlanTree.o: Database/PlanTree.cpp Database/PlanTree.h $(objdir)BasicQuery.o $(objdir)TableOperator.o \
+    $(objdir)BGPQuery.o $(objdir)Util.o
 	$(CC) $(CFLAGS) Database/PlanTree.cpp $(inc) -o $(objdir)PlanTree.o  $(openmp)
 
 $(objdir)PlanGenerator.o: Database/PlanGenerator.cpp Database/PlanGenerator.h \
-	$(objdir)Util.o $(objdir)BasicQuery.o $(objdir)IDList.o $(objdir)KVstore.o \
+	$(objdir)Util.o $(objdir)BasicQuery.o $(objdir)BGPQuery.o $(objdir)IDList.o $(objdir)KVstore.o \
 	$(objdir)Statistics.o $(objdir)PlanTree.o $(objdir)TableOperator.o $(objdir)OrderedVector.o
 	$(CC) $(CFLAGS) Database/PlanGenerator.cpp $(inc) -o $(objdir)PlanGenerator.o $(openmp)
 
@@ -462,7 +463,8 @@ $(objdir)QueryCache.o: Query/QueryCache.cpp Query/QueryCache.h $(objdir)Util.o $
 $(objdir)PathQueryHandler.o: Query/PathQueryHandler.cpp Query/PathQueryHandler.h $(objdir)Util.o $(objdir)CSR.o
 	$(CC) $(CFLAGS) Query/PathQueryHandler.cpp $(inc) -o $(objdir)PathQueryHandler.o $(openmp)
 
-$(objdir)BGPQuery.o: Query/BGPQuery.cpp Query/BasicQuery.h $(objdir)BasicQuery.o
+$(objdir)BGPQuery.o: Query/BGPQuery.cpp Query/BGPQuery.h $(objdir)BasicQuery.o  $(objdir)Util.o \
+    $(objdir)Triple.o $(objdir)KVstore.o
 	$(CC) $(CFLAGS) Query/BGPQuery.cpp $(inc) -o $(objdir)BGPQuery.o $(openmp)
 
 #objects in Query/topk/ begin

@@ -344,18 +344,24 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		getAllPattern(rewriting_evaluation_stack[dep].group_pattern, vp);
 
 		BGPQuery complete;
+		long t1 = Util::get_cur_time();
 		for (auto p : vp)
 			complete.AddTriple(Triple(p.subject.value, p.predicate.value, p.object.value));
 		complete.EncodeBGPQuery(kvstore, vector<string>());
 		complete.print(kvstore);
 
+		cout << "encode bgpquery, used " << (Util::get_cur_time() - t1) << " ms." << endl;
+
 		BGPQuery partial;
+		long t2 = Util::get_cur_time();
 		partial.AddTriple(Triple(vp[1].subject.value, vp[1].predicate.value, vp[1].object.value));
 		partial.AddTriple(Triple(vp[6].subject.value, vp[6].predicate.value, vp[6].object.value));
 		partial.EncodeSmallBGPQuery(&complete, kvstore, vector<string>());
 
 		cout << endl << "print small bgpquery:" << endl;
 		partial.print(kvstore);
+
+		cout << "encode small bgpquery, used " << (Util::get_cur_time() - t2) << " ms." << endl;
 
 		exit(0);
 	}
