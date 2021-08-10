@@ -392,6 +392,7 @@ void processGetMethod(WFHttpTask* server_task)
 	}
 	else if (operation == "showVersion")
 	{
+		cout << "begin show the version:" << endl;
 		 result=show_handler(uri);
 		 cout << "show Version result is:" << result << endl;
 		 len = snprintf(buf, 8192, "<p>the version is=%s</p>", result.c_str());
