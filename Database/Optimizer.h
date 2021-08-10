@@ -23,6 +23,7 @@
 #include "./PlanTree.h"
 #include "./PlanGenerator.h"
 #include "../Util/OrderedVector.h"
+#include "./Executor.h"
 #ifdef TOPK_SUPPORT
 #include "../Query/topk/TopKUtil.h"
 #endif // TOPK_SUPPORT
@@ -89,63 +90,10 @@ class Optimizer
   tuple<bool,shared_ptr<IntermediateResult>> DoQuery(SPARQLquery&,QueryInfo); // the whole process
   tuple<bool,shared_ptr<IntermediateResult>> MergeBasicQuery(SPARQLquery &sparql_query);
 
-
-  tuple<bool,TableContentShardPtr> GenerateColdCandidateList(const shared_ptr<vector<EdgeInfo>>&,const shared_ptr<vector<EdgeConstantInfo>>&);
-  tuple<bool,TableContentShardPtr> JoinANode(const shared_ptr<FeedOneNode>&, const TableContentShardPtr&, const PositionValueSharedPtr&, const IDCachesSharePtr&);
-  tuple<bool,PositionValueSharedPtr,TableContentShardPtr> JoinTable(const shared_ptr<JoinTwoTable>& one_step_join_table,
-  																	 const TableContentShardPtr& table_a,
-  																	 const PositionValueSharedPtr& table_a_id_pos,
-  																	 const PositionValueSharedPtr& table_a_pos_id,
-  																	 const TableContentShardPtr& table_b,
-  																	 const PositionValueSharedPtr& table_b_id_pos,
-  																	 const PositionValueSharedPtr& table_b_pos_id);
-  tuple<bool,TableContentShardPtr> ANodeEdgesConstraintFilter(const shared_ptr<FeedOneNode>&, TableContentShardPtr, const PositionValueSharedPtr&, const IDCachesSharePtr&);
-  tuple<bool,TableContentShardPtr> OneEdgeConstraintFilter(EdgeInfo, EdgeConstantInfo, const TableContentShardPtr&,const PositionValueSharedPtr&,const IDCachesSharePtr&);
-  tuple<bool,TableContentShardPtr> FilterAVariableOnIDList(const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>&,TYPE_ENTITY_LITERAL_ID ,const TableContentShardPtr&,const PositionValueSharedPtr&);
-  shared_ptr<IntermediateResult> NormalJoin(shared_ptr<BasicQuery>,shared_ptr<QueryPlan>);
-  bool CacheConstantCandidates(const shared_ptr<FeedOneNode>& one_step, const IDCachesSharePtr& id_caches);
-  bool AddConstantCandidates(EdgeInfo edge_info,EdgeConstantInfo edge_table_info,TYPE_ENTITY_LITERAL_ID targetID, const IDCachesSharePtr& id_caches);
-  tuple<bool, TableContentShardPtr> getAllSubObjID(bool need_literal);
-
-
-
-    std::shared_ptr<IDList> ExtendRecord(const shared_ptr<FeedOneNode> &one_step_join_node_,
-                    const PositionValueSharedPtr &id_pos_mapping,
-                    const IDCachesSharePtr &id_caches,
-                    TYPE_ENTITY_LITERAL_ID new_id,
-                    list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const;
-
-  shared_ptr<IDList> CandidatesWithConstantEdge(const shared_ptr<vector<EdgeInfo>> &edge_info_vector) const;
-
-
     /* the function is not implemented yet
-  std::shared_ptr<IDList> ExtendRecord(const shared_ptr<OneStepJoinNode> &one_step_join_node_,
-                    const PositionValueSharedPtr &id_pos_mapping,
-                    const IDCachesSharePtr &id_caches,
-                    TYPE_ENTITY_LITERAL_ID new_id,
-                    list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const;
-
-  shared_ptr<IDList> CandidatesWithConstantEdge(const shared_ptr<vector<EdgeInfo>> &edge_info_vector) const;
-
-  bool update_cardinality_cache(shared_ptr<BasicQuery>,vector<map<shared_ptr<BasicQuery>,unsigned*> >);
-  bool enum_query_plan(shared_ptr<BasicQuery>, KVstore* kvstore, bool _is_topk_query);// Join::multi_join() BFS
-  bool choose_exec_plan(vector<map<shared_ptr<BasicQuery>, QueryPlan*> > _candidate_plans,
-                        vector<QueryPlan> _execution_plan);     //TODO: DP
-  IDList gen_filter(unsigned _id, KVstore* kvstore, shared_ptr<TYPE_TRIPLE_NUM*> pre2num,
-                    shared_ptr<TYPE_TRIPLE_NUM*> pre2sub, shared_ptr<TYPE_TRIPLE_NUM*> pre2obj, shared_ptr<bool*> dealed_triple); // Strategy::pre_handler()
-  unsigned cardinality_estimator(shared_ptr<BasicQuery>, KVstore* kvstore, vector<map<shared_ptr<BasicQuery>,unsigned*> > _cardinality_cache);
-  unsigned cost_model(shared_ptr<BasicQuery>, shared_ptr<QueryPlan>); // TODO: other parameters used in cost model
-
-     change exec_plan if |real cardinality - estimated cardinality| > eps
-
-     bool choose_exec_plan(vector<map<shared_ptr<BasicQuery>, QueryPlan*> > _candidate_plans,
-                        map<shared_ptr<BasicQuery>,vector<unsigned*> > _current_result,  vector<QueryPlan>);
-
-     TODO: re-choose plan in every iteration
-
-     implement a method to feed plan manually first
-
-     tuple<bool,shared_ptr<IntermediateResult>> execution(BasicQuery*, shared_ptr<QueryPlan>);*/
+   TODO: re-choose plan in every iteration
+    implement a method to feed plan manually first
+    tuple<bool,shared_ptr<IntermediateResult>> execution(BasicQuery*, shared_ptr<QueryPlan>);*/
 
 
   BasicQueryStrategy ChooseStrategy(BasicQuery *basic_query,QueryInfo *query_info);
@@ -165,15 +113,11 @@ class Optimizer
                                                  const QueryInfo& query_info,IDCachesSharePtr id_caches);
 
 #endif
-  static void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
-
   /*copy the result to vector<unsigned*> & */
   bool CopyToResult(vector<unsigned*> *target, BasicQuery *basic_query, const shared_ptr<IntermediateResult>& result);
   void Cartesian(int, int,int,unsigned*,const shared_ptr<vector<Satellite>>&,vector<unsigned*>*,BasicQuery *);
 
-  //tuple<bool,TableContentShardPtr> BreathSearch(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan, 
-  //                                                              const PositionValueSharedPtr& id_pos_mapping, shared_ptr<vector<double>>& weight_list);
-  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionBreathFirst(BasicQuery* basic_query,const QueryInfo& query_info,Tree_node* plan_tree,IDCachesSharePtr id_caches);
+ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionBreathFirst(BasicQuery* basic_query,const QueryInfo& query_info,Tree_node* plan_tree,IDCachesSharePtr id_caches);
 
  private:
   KVstore* kv_store_;
@@ -208,13 +152,8 @@ class Optimizer
 
   //静态情况下可以存储weight
   shared_ptr<vector<double>> weight_list_;
+  Executor executor_;
 };
 
-template <typename Container> // we can make this generic for any container [1]
-struct container_hash {
-  std::size_t operator()(Container const& c) const {
-    return boost::hash_range(c.begin(), c.end());
-  }
-};
 
 #endif

@@ -238,6 +238,11 @@ static const TYPE_ENTITY_LITERAL_ID INVALID_ENTITY_LITERAL_ID = UINT_MAX;
 //static const TYPE_ENTITY_LITERAL_ID INVALID_ENTITY_LITERAL_ID = -1;
 //#define INVALID_ENTITY_LITERAL_ID UINT_MAX
 
+using TableContent = std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>;
+using TableContentShardPtr = std::shared_ptr<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>>;
+using PositionValue = std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>;
+using PositionValueSharedPtr = std::shared_ptr<PositionValue>;
+
 //type for predicate ID
 typedef int TYPE_PREDICATE_ID;
 static const TYPE_PREDICATE_ID INVALID_PREDICATE_ID = -1;
@@ -281,6 +286,7 @@ typedef struct TYPE_ID_TUPLE
 	TYPE_PREDICATE_ID preid;
 	TYPE_ENTITY_LITERAL_ID objid;
 }ID_TUPLE;
+
 
 //===================================================================================================================
 
