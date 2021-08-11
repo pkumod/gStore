@@ -434,7 +434,7 @@ public:
 	//Another way is to build a GstoreApplication program, and do this configure in the initialization of the application
 	static bool configure();  //read init.conf and set the parameters for this system
 	static bool configure_new(); //read gstore.ini and set the parameters for this system
-	static bool setGlobalConfig(INIParser parser, string rootname, string keyname);
+	static bool setGlobalConfig(INIParser& parser, string rootname, string keyname);
 	static bool config_setting();
 	static bool config_advanced();
 	static bool config_debug();
