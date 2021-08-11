@@ -246,7 +246,7 @@ Util::config_advanced()
 
 bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
 {
-    string value = ini_parser.GetValue(rootname, keyname);
+    string value = parser.GetValue(rootname, keyname);
     Util::global_config[keyname] = value;
 }
 
