@@ -139,6 +139,10 @@ void BGPQuery::initial() {
 
 	this->total_join_var_num = 0;
 	this->total_selected_var_num = 0;
+
+	selected_pre_var_num = 0;
+	selected_so_var_num = 0;
+	total_selected_var_num = 0;
 }
 
 
@@ -157,6 +161,10 @@ unsigned BGPQuery::get_var_id_by_name(const string& var_name) {
 	//
 	// // not found, return -1
 	// return -1;
+}
+
+string BGPQuery::get_var_name_by_id(unsigned int var_id) {
+	return var_vector[id_position_map[var_id]]->var_name_;
 }
 
 unsigned int BGPQuery::get_var_position_by_name(const string &var_name) {
@@ -183,7 +191,7 @@ const shared_ptr<VarDescriptor> &BGPQuery::get_vardescrip_by_id(unsigned id) {
 	return this->var_vector[this->get_var_position_by_id(id)];
 }
 
-void BGPQuery::ScanAllVar() {
+void BGPQuery::ScanAllVar(const vector<string>& _query_var) {
 
 	bool not_found;
 	unsigned index = 0;
@@ -206,6 +214,13 @@ void BGPQuery::ScanAllVar() {
 				this->so_var_id.push_back(index);
 				this->var_id_vec.push_back(index);
 				this->total_so_var_num += 1;
+
+				// if selected
+				if(find(_query_var.begin(), _query_var.end(), triple.subject) != _query_var.end()){
+					this->selected_var_id.push_back(index);
+					selected_so_var_num += 1;
+				}
+
 				index += 1;
 			}
 		} else{
@@ -229,6 +244,13 @@ void BGPQuery::ScanAllVar() {
 				this->pre_var_id.push_back(index);
 				this->var_id_vec.push_back(index);
 				this->total_pre_var_num += 1;
+
+				// if selected
+				if(find(_query_var.begin(), _query_var.end(), triple.predicate) != _query_var.end()){
+					this->selected_var_id.push_back(index);
+					selected_pre_var_num += 1;
+				}
+
 				index += 1;
 			}
 
@@ -253,6 +275,13 @@ void BGPQuery::ScanAllVar() {
 				this->so_var_id.push_back(index);
 				this->var_id_vec.push_back(index);
 				this->total_so_var_num += 1;
+
+				// if selected
+				if(find(_query_var.begin(), _query_var.end(), triple.object) != _query_var.end()){
+					this->selected_var_id.push_back(index);
+					selected_so_var_num += 1;
+				}
+
 				index += 1;
 			}
 
@@ -328,10 +357,14 @@ void BGPQuery::count_statistics_num() {
 
 	// TODO: need to check whether this = var_so_num + var_pre_num
 	this->total_var_num = this->var_vector.size();
+	this->total_selected_var_num = this->selected_var_id.size();
 
 	for(unsigned i = 0; i < this->var_vector.size(); ++ i){
 		this->var_vector[i]->update_statistics_num();
 	}
+
+	for(unsigned i = 0; i < selected_var_id.size(); ++i)
+		this->var_vector[id_position_map[selected_var_id[i]]]->update_select_status(true);
 }
 
 /**
@@ -344,7 +377,7 @@ bool BGPQuery::EncodeBGPQuery(KVstore *_kvstore, const vector<string> &_query_va
 
 
 	// I want this function scan all vars, incluing all pre_var and subject_or_object_var
-	this->ScanAllVar();
+	this->ScanAllVar(_query_var);
 
 	this->build_edge_info(_kvstore);
 
@@ -363,7 +396,7 @@ bool BGPQuery::EncodeBGPQuery(KVstore *_kvstore, const vector<string> &_query_va
 }
 
 
-void BGPQuery::ScanAllVarByBigBGPID(BGPQuery *big_bgpquery) {
+void BGPQuery::ScanAllVarByBigBGPID(BGPQuery *big_bgpquery, const vector<string>& _query_var) {
 	bool not_found;
 	unsigned index = 0;
 	for(const auto &triple : triple_vt){
@@ -372,19 +405,26 @@ void BGPQuery::ScanAllVarByBigBGPID(BGPQuery *big_bgpquery) {
 		if(not_found){
 			this->item_to_freq[triple.subject] = 1;
 			if(triple.subject.at(0) == '?') {
-				auto var_id = big_bgpquery->get_var_id_by_name(triple.subject);
-				auto new_sub_var = make_shared<VarDescriptor>(var_id,VarDescriptor::VarType::Entity, triple.subject);
+				auto sub_id = big_bgpquery->get_var_id_by_name(triple.subject);
+				auto new_sub_var = make_shared<VarDescriptor>(sub_id,VarDescriptor::VarType::Entity, triple.subject);
 				this->var_vector.push_back(new_sub_var);
 
 				this->var_item_to_position[triple.subject] = index;
-				this->var_item_to_id[triple.subject] = var_id;
+				this->var_item_to_id[triple.subject] = sub_id;
 
-				this->id_position_map[var_id] = index;
-				this->position_id_map[index] = var_id;
+				this->id_position_map[sub_id] = index;
+				this->position_id_map[index] = sub_id;
 
-				this->so_var_id.push_back(var_id);
-				this->var_id_vec.push_back(var_id);
+				this->so_var_id.push_back(sub_id);
+				this->var_id_vec.push_back(sub_id);
 				this->total_so_var_num += 1;
+
+				// if selected
+				if(find(_query_var.begin(), _query_var.end(), triple.subject) != _query_var.end()){
+					this->selected_var_id.push_back(sub_id);
+					selected_so_var_num += 1;
+				}
+
 				index += 1;
 			}
 		} else{
@@ -409,6 +449,13 @@ void BGPQuery::ScanAllVarByBigBGPID(BGPQuery *big_bgpquery) {
 				this->pre_var_id.push_back(pre_id);
 				this->var_id_vec.push_back(pre_id);
 				this->total_pre_var_num += 1;
+
+				// if selected
+				if(find(_query_var.begin(), _query_var.end(), triple.predicate) != _query_var.end()){
+					this->selected_var_id.push_back(pre_id);
+					selected_pre_var_num += 1;
+				}
+
 				index += 1;
 			}
 
@@ -434,6 +481,13 @@ void BGPQuery::ScanAllVarByBigBGPID(BGPQuery *big_bgpquery) {
 				this->so_var_id.push_back(obj_id);
 				this->var_id_vec.push_back(obj_id);
 				this->total_so_var_num += 1;
+
+				// if selected
+				if(find(_query_var.begin(), _query_var.end(), triple.object) != _query_var.end()){
+					this->selected_var_id.push_back(obj_id);
+					selected_so_var_num += 1;
+				}
+
 				index += 1;
 			}
 
@@ -447,7 +501,7 @@ void BGPQuery::ScanAllVarByBigBGPID(BGPQuery *big_bgpquery) {
 // this function is invoked after adding all triples of small BGP
 bool BGPQuery::EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore *_kvstore, const vector<string> &_query_var) {
 
-	this->ScanAllVarByBigBGPID(big_bgpquery_);
+	this->ScanAllVarByBigBGPID(big_bgpquery_, _query_var);
 
 	this->build_edge_info(_kvstore);
 
@@ -470,17 +524,59 @@ unsigned int BGPQuery::get_pre_var_num() {
 	return this->total_pre_var_num;
 }
 
-// bool BGPQuery::get_edge_type(int var_id, int edge_id) {
-// 	return var_vector[var_id]->edge_type_[edge_id];
-// }
-//
-// int BGPQuery::get_edge_nei(int var_id, int edge_id) {
-// 	return var_vector[var_id]->edge_nei_[edge_id];
-// }
-//
-// int BGPQuery::get_edge_index(int var_id, int edge_id) {
-// 	return var_vector[var_id]->edge_index_[edge_id];
-// }
+
+unsigned int BGPQuery::get_var_degree(unsigned int var_id) {
+	return var_vector[id_position_map[var_id]]->degree_;
+}
+
+bool BGPQuery::is_var_selected(unsigned int var_id) {
+	return var_vector[id_position_map[var_id]]->selected_;
+}
+
+unsigned int BGPQuery::get_so_var_edge_index(unsigned int var_id, int edge_id) {
+	return var_vector[id_position_map[var_id]]->so_edge_index_[edge_id];
+}
+
+bool BGPQuery::get_so_var_edge_type(unsigned int var_id, unsigned int edge_id) {
+	return var_vector[id_position_map[var_id]]->so_edge_type_[edge_id];
+}
+
+unsigned int BGPQuery::get_so_var_edge_nei(unsigned int var_id, unsigned int edge_id) {
+	return var_vector[id_position_map[var_id]]->so_edge_nei_[edge_id];
+}
+
+VarDescriptor::EntiType BGPQuery::get_so_var_edge_nei_type(unsigned int var_id, unsigned int edge_id) {
+	return var_vector[id_position_map[var_id]]->so_edge_nei_type_[edge_id];
+}
+
+unsigned int BGPQuery::get_so_var_edge_pre_id(unsigned int var_id, unsigned int edge_id) {
+	return var_vector[id_position_map[var_id]]->so_edge_pre_id_[edge_id];
+}
+
+VarDescriptor::PreType BGPQuery::get_so_var_edge_pre_type(unsigned int var_id, unsigned int edge_id) {
+	return var_vector[id_position_map[var_id]]->so_edge_pre_type_[edge_id];
+}
+
+
+unsigned int BGPQuery::get_pre_var_edge_index(unsigned int var_id, unsigned int edge_id) {
+	return var_vector[id_position_map[var_id]]->pre_edge_index_[edge_id];
+}
+
+unsigned int BGPQuery::get_pre_var_s_id(unsigned int var_id, unsigned int edge_id) {
+	return var_vector[id_position_map[var_id]]->s_id_[edge_id];
+}
+
+VarDescriptor::EntiType BGPQuery::get_pre_var_s_type(unsigned int var_id, unsigned int edge_id) {
+	return var_vector[id_position_map[var_id]]->s_type_[edge_id];
+}
+
+unsigned int BGPQuery::get_pre_var_o_id(unsigned int var_id, unsigned int edge_id) {
+	return var_vector[id_position_map[var_id]]->o_id_[edge_id];
+}
+
+VarDescriptor::EntiType BGPQuery::get_pre_var_o_type(unsigned int var_id, unsigned int edge_id) {
+	return var_vector[id_position_map[var_id]]->o_type_[edge_id];
+}
 
 const vector <Triple> &BGPQuery::get_triple_vt() {
 	return this->triple_vt;
