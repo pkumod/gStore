@@ -109,6 +109,7 @@ in the sparql query can point to the same node in data graph)
 #include "../tools/rapidjson/prettywriter.h"  
 #include "../tools/rapidjson/writer.h"
 #include "../tools/rapidjson/stringbuffer.h"
+#include "INIParser.h"
 
 #include "Latch.h"
 
@@ -432,6 +433,7 @@ public:
 	//You can call it by Util util in the first of your main program
 	//Another way is to build a GstoreApplication program, and do this configure in the initialization of the application
 	static bool configure();  //read init.conf and set the parameters for this system
+	static bool configure_new(); //read gstore.ini and set the parameters for this system
 	static bool config_setting();
 	static bool config_advanced();
 	static bool config_debug();
