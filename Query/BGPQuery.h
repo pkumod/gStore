@@ -208,6 +208,7 @@ public:
 
 	// return var_id in var_vector, if not find, return -1;
 	unsigned get_var_id_by_name(const string& var_name);
+	string get_var_name_by_id(unsigned var_id);
 	unsigned get_var_position_by_name(const string& var_name);
 
 
@@ -221,7 +222,7 @@ public:
 
 	// void update_so_var_edge_info(uns);
 
-	void ScanAllVar();
+	void ScanAllVar(const vector<string>& _query_var);
 	void build_edge_info(KVstore *_kvstore);
 	void count_statistics_num();
 
@@ -229,7 +230,7 @@ public:
 
 
 
-	void ScanAllVarByBigBGPID(BGPQuery *big_bgpquery);
+	void ScanAllVarByBigBGPID(BGPQuery *big_bgpquery, const vector<string>& _query_var);
 	bool EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore* _kvstore, const vector<string>& _query_var);
 
 	unsigned get_triple_num();
@@ -237,9 +238,25 @@ public:
 	unsigned get_pre_var_num();
 
 
-	bool get_edge_type(int var_id, int edge_id);
-	int get_edge_nei(int var_id, int edge_id);
-	int get_edge_index(int var_id, int edge_id);
+	unsigned get_var_degree(unsigned var_id);
+
+	bool is_var_selected(unsigned var_id);
+
+	// for EntiType var
+	unsigned get_so_var_edge_index(unsigned var_id, int edge_id);
+	bool get_so_var_edge_type(unsigned var_id, unsigned edge_id);
+	unsigned get_so_var_edge_nei(unsigned var_id, unsigned edge_id);
+	VarDescriptor::EntiType get_so_var_edge_nei_type(unsigned var_id, unsigned edge_id);
+	unsigned get_so_var_edge_pre_id(unsigned var_id, unsigned edge_id);
+	VarDescriptor::PreType get_so_var_edge_pre_type(unsigned var_id, unsigned edge_id);
+
+
+	// for PreType var
+	unsigned get_pre_var_edge_index(unsigned var_id, unsigned edge_id);
+	unsigned get_pre_var_s_id(unsigned var_id, unsigned edge_id);
+	VarDescriptor::EntiType get_pre_var_s_type(unsigned var_id, unsigned edge_id);
+	unsigned get_pre_var_o_id(unsigned var_id, unsigned edge_id);
+	VarDescriptor::EntiType get_pre_var_o_type(unsigned var_id, unsigned edge_id);
 
 	const vector<Triple> &get_triple_vt();
 	const Triple &get_triple_by_index(unsigned index);
