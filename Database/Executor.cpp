@@ -56,11 +56,11 @@ tuple<bool, TableContentShardPtr> Executor::JoinANode(const shared_ptr<FeedOneNo
   for (auto record_iterator = table_content_ptr->begin();
        record_iterator != table_content_ptr->end();
        record_iterator++) {
-    shared_ptr<IDList> record_candidate_list = ExtendRecord(one_step_join_node_,
-                                                            id_pos_mapping,
-                                                            id_caches,
-                                                            new_id,
-                                                            record_iterator);
+    shared_ptr<IDList> record_candidate_list = ExtendRecordOneNode(one_step_join_node_,
+                                                                   id_pos_mapping,
+                                                                   id_caches,
+                                                                   new_id,
+                                                                   record_iterator);
 
     /* write to the new table */
     auto record = *record_iterator;
@@ -76,6 +76,48 @@ tuple<bool, TableContentShardPtr> Executor::JoinANode(const shared_ptr<FeedOneNo
   return make_tuple(true,new_intermediate_table);
 
 }
+
+
+std::tuple<bool, TableContentShardPtr> Executor::JoinTwoNode(const shared_ptr<FeedTwoNode> join_two_node_,
+                                                          const TableContentShardPtr &table_content_ptr,
+                                                          const PositionValueSharedPtr &id_pos_mapping,
+                                                          const IDCachesSharePtr &id_caches)
+{
+
+
+  TableContentShardPtr new_intermediate_table = make_shared<TableContent>();
+
+  auto id1 = join_two_node_->node_to_join_1_;
+  auto id2 = join_two_node_->node_to_join_2_;
+
+  /* : each record */
+  for (auto record_iterator = table_content_ptr->begin();
+       record_iterator != table_content_ptr->end();
+       record_iterator++) {
+    auto record_two_node_list = ExtendRecordTwoNode(join_two_node_,
+                                                                   id_pos_mapping,
+                                                                   id_caches,
+                                                                   id1,
+                                                                   id2,
+                                                                   record_iterator);
+    auto valid_size = record_two_node_list->size()/2;
+    /* write to the new table */
+    auto record = *record_iterator;
+    for (decltype(valid_size) i =0;i<valid_size;i++) {
+      auto new_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*record);
+      auto id1_this_record = (*record_two_node_list)[i*2];
+      auto id2_this_record = (*record_two_node_list)[i*2+1];
+      new_record->push_back(id1_this_record);
+      new_record->push_back(id2_this_record);
+      new_intermediate_table->push_back(std::move(new_record));
+    }
+  }
+
+  //cout<<"Optimizer::JoinANode result_record_len = "<<new_intermediate_table->values_->front()->size()<<endl;
+  return make_tuple(true,new_intermediate_table);
+
+}
+
 
 /**
  * join two table with vars in one_step_join_table
@@ -823,11 +865,11 @@ Executor::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_lis
   }
 }
 
-std::shared_ptr<IDList> Executor::ExtendRecord(const shared_ptr<FeedOneNode> &one_step_join_node_,
-                                               const PositionValueSharedPtr &id_pos_mapping,
-                                               const IDCachesSharePtr &id_caches,
-                                               TYPE_ENTITY_LITERAL_ID new_id,
-                                               list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const{
+std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNode> &one_step_join_node_,
+                                                      const PositionValueSharedPtr &id_pos_mapping,
+                                                      const IDCachesSharePtr &id_caches,
+                                                      TYPE_ENTITY_LITERAL_ID new_id,
+                                                      list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const{
   auto record_candidate_list= make_shared<IDList>();
   auto record_candidate_prepared = false;
   auto edges_info = one_step_join_node_->edges_;
@@ -976,6 +1018,9 @@ std::shared_ptr<IDList> Executor::ExtendRecord(const shared_ptr<FeedOneNode> &on
                                                   this->txn_);
         break;
       }
+
+      default: // s2po p2so o2sp
+        throw "ExtendRecordOneNode only support add 1 node each time";
     }
 
     UpdateIDList(record_candidate_list,
@@ -996,3 +1041,102 @@ std::shared_ptr<IDList> Executor::ExtendRecord(const shared_ptr<FeedOneNode> &on
   return record_candidate_list;
 }
 
+/**
+ *
+ * @param one_step_join_node_ only 1 edge
+ * @param id_pos_mapping
+ * @param id_caches
+ * @param new_id1
+ * @param new_id2
+ * @param record_iterator
+ * @return
+ */
+std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>
+Executor::ExtendRecordTwoNode(const shared_ptr<FeedTwoNode> one_step_join_node_,
+                              const PositionValueSharedPtr &id_pos_mapping,
+                              const IDCachesSharePtr &id_caches,
+                              TYPE_ENTITY_LITERAL_ID new_id1,
+                              TYPE_ENTITY_LITERAL_ID new_id2,
+                              list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const{
+
+  auto two_node_list = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+
+  auto edge_info = one_step_join_node_->edges_;
+
+  TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
+  TYPE_ENTITY_LITERAL_ID edge_list_len;
+/* through this edge get candidate */
+  switch (edge_info.join_method_) {
+    case JoinMethod::s2po: {
+/* if s is constant, it is edge constraint check, and should not appear in the function*/
+      auto s_var_position = (*id_pos_mapping)[edge_info.s_];
+      auto s_var_id_this_record = (**record_iterator)[s_var_position];
+      this->kv_store_->getpreIDobjIDlistBysubID(s_var_id_this_record,
+                                                edge_candidate_list,
+                                                edge_list_len,
+                                                true,
+                                                this->txn_);
+      break;
+    }
+    case JoinMethod::p2so: {
+      auto p_var_position = (*id_pos_mapping)[edge_info.p_];
+      auto p_var_id_this_record = (**record_iterator)[p_var_position];
+      this->kv_store_->getsubIDobjIDlistBypreID(p_var_id_this_record,
+                                                edge_candidate_list,
+                                                edge_list_len,
+                                                true,
+                                                this->txn_);
+      break;
+    }
+    case JoinMethod::o2sp: {
+      auto o_var_position = (*id_pos_mapping)[edge_info.o_];
+      auto o_var_id_this_record = (**record_iterator)[o_var_position];
+      this->kv_store_->getsubIDpreIDlistByobjID(o_var_id_this_record,
+                                                edge_candidate_list,
+                                                edge_list_len,
+                                                true,
+                                                this->txn_);
+      break;
+    }
+    default:
+      throw "ExtendRecordTwoNode only support add 2 node each time";
+  }
+
+  bool id1_cached = false;
+  decltype((*id_caches->begin()).second->getList()) id1_caches_ptr;
+
+  bool id2_cached = false;
+  decltype(id1_caches_ptr) id2_caches_ptr;
+
+  if(id_caches->find(new_id1)!=id_caches->end())
+  {
+    id1_cached = true;
+    id1_caches_ptr = (*(id_caches->find(new_id1))).second->getList();
+  }
+
+  if(id_caches->find(new_id2)!=id_caches->end())
+  {
+    id2_cached= true;
+    id2_caches_ptr = (*(id_caches->find(new_id2))).second->getList();
+  }
+
+  edge_list_len = edge_list_len/2;
+  for(size_t i =0;i<edge_list_len;i++)
+  {
+    auto id1 = edge_candidate_list[2*i];
+    auto id2 = edge_candidate_list[2*i+1];
+
+    if(id1_cached)
+      if(!binary_search(id1_caches_ptr->begin(),id1_caches_ptr->end(),id1))
+        continue;
+
+    if(id2_cached)
+      if(!binary_search(id2_caches_ptr->begin(),id2_caches_ptr->end(),id2))
+        continue;
+
+    two_node_list->push_back(id1);
+    two_node_list->push_back(id2);
+  }
+  delete [] edge_candidate_list;
+  return two_node_list;
+}

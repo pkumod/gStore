@@ -181,10 +181,10 @@ class FeedTwoNode{
 public:
 	TYPE_ENTITY_LITERAL_ID node_to_join_1_;
 	TYPE_ENTITY_LITERAL_ID node_to_join_2_;
-	std::shared_ptr<EdgeInfo> edges_;
-	std::shared_ptr<EdgeConstantInfo> edges_constant_info_;
+	EdgeInfo edges_;
+	EdgeConstantInfo edges_constant_info_;
 	FeedTwoNode(){};
-	FeedTwoNode(unsigned node_1, unsigned node_2, shared_ptr<EdgeInfo> edge_info, shared_ptr<EdgeConstantInfo> edge_constant):
+	FeedTwoNode(unsigned node_1, unsigned node_2, EdgeInfo edge_info, EdgeConstantInfo edge_constant):
 		node_to_join_1_(node_1), node_to_join_2_(node_2), edges_(edge_info), edges_constant_info_(edge_constant){};
 };
 
