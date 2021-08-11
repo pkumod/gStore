@@ -1417,7 +1417,7 @@ PlanTree *PlanGenerator::get_plan_for_debug() {
 	auto p_o_edge_info = make_shared<EdgeInfo>(1,4,5,JoinMethod::s2po);
 	auto p_o_edge_const_info = make_shared<EdgeConstantInfo>(false, false, false);
 	auto p_o_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes, nullptr,
-											   make_shared<FeedTwoNode>(4,5,p_o_edge_info, p_o_edge_const_info),
+											   make_shared<FeedTwoNode>(4,5,*p_o_edge_info, *p_o_edge_const_info),
 											   nullptr, nullptr);
 	auto p_o_tree_node = new Tree_node(p_o_node);
 	p_o_tree_node->left_node = cour_join_table_tree_node;
