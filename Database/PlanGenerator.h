@@ -108,6 +108,9 @@ public:
 	PlanTree* get_random_plan();
 	PlanTree* get_special_no_pre_var_plan();
 	PlanTree* get_special_one_triple_plan();
+
+
+	PlanTree* get_plan_for_debug();
 };
 
 

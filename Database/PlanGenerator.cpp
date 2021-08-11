@@ -1327,3 +1327,115 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 	}
 
 }
+
+
+
+// plan below is for special query:
+//
+// select distinct ?ustu ?gstu where{
+// 	?ustu <rdf:type> <ub:UndergraduateStudent>. triple 0
+// 	?gstu <rdf:type> <ub:GraduateStudent>.      triple 1
+// 	?ustu <ub:advisor> ?prof.                   triple 2
+// 	?cour <rdf:type> <ub:Course>.               triple 3
+// 	?ustu <ub:takesCourse> ?cour.               triple 4
+// 	?gstu <ub:teachingAssistantOf> ?cour.       triple 5
+// 	?gstu ?p ?o.                                triple 6
+// }
+// var_id_map: {{?ustu:0}, {?gstu:1}, {?prof:2}, {?cour:3}, {?p:4}, {?o:5}}
+// plan this fun generates is:
+//       ?prof              edgecheck
+//         |
+//       ?p ?o             jointwonodes
+//         |
+//                           jointable
+//    /        \
+// ?cour     ?cour           joinnode
+//   |         |
+// ?ustu     ?gstu     generatecandidates
+PlanTree *PlanGenerator::get_plan_for_debug() {
+
+
+	// ?ustu node, ?ustu : 0
+	auto ustu_edge_info = make_shared<vector<EdgeInfo>>();
+	ustu_edge_info->emplace_back(0, kvstore->getIDByPredicate("<rdf:type>"),
+								 kvstore->getIDByString("<ub:UndergraduateStudent>"), JoinMethod::po2s);
+	auto ustu_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
+	ustu_edge_const_info->emplace_back(false, true, true);
+
+	auto ustu_node = make_shared<StepOperation>(StepOperation::JoinType::GenerateCandidates, nullptr, nullptr, nullptr,
+												make_shared<FeedOneNode>(0, ustu_edge_info, ustu_edge_const_info));
+	auto ustu_tree_node = new Tree_node(ustu_node);
+
+	// ?gstu node, ?gstu : 1
+	auto gstu_edge_info = make_shared<vector<EdgeInfo>>();
+	gstu_edge_info->emplace_back(1, kvstore->getIDByPredicate("<rdf:type>"),
+								 kvstore->getIDByString("<ub:GraduateStudent>"), JoinMethod::po2s);
+	auto gstu_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
+	gstu_edge_const_info->emplace_back(false, true, true);
+
+	auto gstu_node = make_shared<StepOperation>(StepOperation::JoinType::GenerateCandidates, nullptr, nullptr, nullptr,
+												make_shared<FeedOneNode>(0, gstu_edge_info, gstu_edge_const_info));
+	auto gstu_tree_node = new Tree_node(gstu_node);
+
+	// ?ustu - ?cour, ?cour : 3
+	auto ustu_cour_edge_info = make_shared<vector<EdgeInfo>>();
+	ustu_cour_edge_info->emplace_back(0, kvstore->getIDByPredicate("<ub:takesCourse>"),
+									  3, JoinMethod::sp2o);
+	auto ustu_cour_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
+	ustu_edge_const_info->emplace_back(false, true, false);
+
+	auto ustu_cour_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+													 make_shared<FeedOneNode>(3, ustu_cour_edge_info, ustu_cour_edge_const_info),
+													 nullptr, nullptr, nullptr);
+	auto ustu_cour_tree_node = new Tree_node(ustu_cour_node);
+	ustu_cour_tree_node->left_node = ustu_tree_node;
+
+	// ?gstu - ?cour, ?cour : 3
+	auto gstu_cour_edge_info = make_shared<vector<EdgeInfo>>();
+	gstu_cour_edge_info->emplace_back(1, kvstore->getIDByPredicate("<ub:takesCourse>"),
+									  3, JoinMethod::sp2o);
+	auto gstu_cour_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
+	gstu_edge_const_info->emplace_back(false, true, false);
+
+	auto gstu_cour_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+													 make_shared<FeedOneNode>(3, gstu_cour_edge_info, gstu_cour_edge_const_info),
+													 nullptr, nullptr, nullptr);
+	auto gstu_cour_tree_node = new Tree_node(gstu_cour_node);
+	gstu_cour_tree_node->left_node = gstu_tree_node;
+
+
+	// ?cour jointable, ?cour id : 3
+	auto public_var = shared_ptr<vector<unsigned >>();
+	public_var->push_back(3);
+	auto cour_join_table_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTable, nullptr, nullptr,
+														   make_shared<JoinTwoTable>(public_var), nullptr);
+	auto cour_join_table_tree_node = new Tree_node(cour_join_table_node);
+	cour_join_table_tree_node->left_node = ustu_cour_tree_node;
+	cour_join_table_tree_node->right_node = gstu_cour_tree_node;
+
+	// ?p ?o jointwonode, ?p : 4, ?o : 5
+	auto p_o_edge_info = make_shared<EdgeInfo>(1,4,5,JoinMethod::s2po);
+	auto p_o_edge_const_info = make_shared<EdgeConstantInfo>(false, false, false);
+	auto p_o_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes, nullptr,
+											   make_shared<FeedTwoNode>(4,5,p_o_edge_info, p_o_edge_const_info),
+											   nullptr, nullptr);
+	auto p_o_tree_node = new Tree_node(p_o_node);
+	p_o_tree_node->left_node = cour_join_table_tree_node;
+
+	// ?prof edge check, ?prof : 2
+	auto prof_check_edge_info = make_shared<vector<EdgeInfo>>();
+	prof_check_edge_info->emplace_back();
+	auto prof_check_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
+	prof_check_edge_const_info->emplace_back();
+
+	auto prof_check_node = make_shared<StepOperation>(StepOperation::JoinType::EdgeCheck, nullptr, nullptr, nullptr,
+												make_shared<FeedOneNode>(2, prof_check_edge_info, prof_check_edge_const_info));
+	auto prof_check_tree_node = new Tree_node(prof_check_node);
+	prof_check_tree_node->left_node = p_o_tree_node;
+
+
+	// build plan, assign its root_node
+	auto plan = new PlanTree();
+	plan->root_node = prof_check_tree_node;
+	return plan;
+}
