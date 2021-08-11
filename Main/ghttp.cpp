@@ -30,6 +30,7 @@
 #include <fstream>
 #include "../Util/IPWhiteList.h"
 #include "../Util/IPBlackList.h"
+#include "../Util/INIParser.h"
 
 using namespace rapidjson;
 using namespace std;
