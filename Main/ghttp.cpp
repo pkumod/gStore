@@ -793,7 +793,7 @@ int initialize(int argc, char *argv[])
     cout << "enter initialize." << endl;
 	//Server restarts to use the original database
 	//current_database = NULL;
-
+	Util::configure_new();
 	//users.insert(pair<std::string, struct User *>(ROOT_USERNAME, &root));
 
 	//load system.db when initialize
