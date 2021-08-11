@@ -51,6 +51,11 @@ class Executor {
                                              const PositionValueSharedPtr& id_pos_mapping,
                                              const IDCachesSharePtr& id_caches);
 
+  std::tuple<bool,TableContentShardPtr> JoinTwoNode(const std::shared_ptr<FeedTwoNode> join_two_node_,
+                                                  const TableContentShardPtr& table_content_ptr,
+                                                  const PositionValueSharedPtr& id_pos_mapping,
+                                                  const IDCachesSharePtr& id_caches);
+
   std::tuple<bool,PositionValueSharedPtr,TableContentShardPtr> JoinTable(const std::shared_ptr<JoinTwoTable>& one_step_join_table,
                                                                     const TableContentShardPtr& table_a,
                                                                     const PositionValueSharedPtr& table_a_id_pos,
@@ -69,11 +74,19 @@ class Executor {
 
   static void UpdateIDList(const std::shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
 
-  std::shared_ptr<IDList> ExtendRecord(const shared_ptr<FeedOneNode> &one_step_join_node_,
-                                       const PositionValueSharedPtr &id_pos_mapping,
-                                       const IDCachesSharePtr &id_caches,
-                                       TYPE_ENTITY_LITERAL_ID new_id,
-                                       list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const;
+  std::shared_ptr<IDList> ExtendRecordOneNode(const shared_ptr<FeedOneNode> &one_step_join_node_,
+                                              const PositionValueSharedPtr &id_pos_mapping,
+                                              const IDCachesSharePtr &id_caches,
+                                              TYPE_ENTITY_LITERAL_ID new_id,
+                                              list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const;
+
+  std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> ExtendRecordTwoNode(const shared_ptr<FeedTwoNode> one_step_join_node_,
+                                              const PositionValueSharedPtr &id_pos_mapping,
+                                              const IDCachesSharePtr &id_caches,
+                                              TYPE_ENTITY_LITERAL_ID new_id1,
+                                              TYPE_ENTITY_LITERAL_ID new_id2,
+                                              list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const;
+
 
   shared_ptr<IDList> CandidatesWithConstantEdge(const shared_ptr<vector<EdgeInfo>> &edge_info_vector) const;
 

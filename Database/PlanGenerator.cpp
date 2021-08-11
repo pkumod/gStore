@@ -1291,7 +1291,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 			auto edge_constant_info = make_shared<EdgeConstantInfo>(!s_is_var, !p_is_var, !o_is_var);
 
 			auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes, nullptr,
-														make_shared<FeedTwoNode>(first_var->id_, first_var->o_id_[0], edge_info, edge_constant_info),
+														make_shared<FeedTwoNode>(first_var->id_, first_var->o_id_[0], *edge_info, *edge_constant_info),
 														nullptr, nullptr);
 
 			return(new PlanTree(plan_node));
@@ -1303,7 +1303,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 			auto edge_constant_info = make_shared<EdgeConstantInfo>(!s_is_var, !p_is_var, !o_is_var);
 
 			auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes, nullptr,
-														make_shared<FeedTwoNode>(first_var->id_, first_var->so_edge_nei_[0], edge_info, edge_constant_info),
+														make_shared<FeedTwoNode>(first_var->id_, first_var->so_edge_nei_[0], *edge_info, *edge_constant_info),
 														nullptr, nullptr);
 
 			return(new PlanTree(plan_node));
@@ -1315,7 +1315,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 			auto edge_constant_info = make_shared<EdgeConstantInfo>(!s_is_var, !p_is_var, !o_is_var);
 
 			auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes, nullptr,
-														make_shared<FeedTwoNode>(first_var->id_, first_var->so_edge_pre_id_[0], edge_info, edge_constant_info),
+														make_shared<FeedTwoNode>(first_var->id_, first_var->so_edge_pre_id_[0], *edge_info, *edge_constant_info),
 														nullptr, nullptr);
 
 			return(new PlanTree(plan_node));
