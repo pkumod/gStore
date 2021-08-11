@@ -244,12 +244,31 @@ Util::config_advanced()
 	return true;
 }
 
+bool Util::setGlobalConfig(INIParser parser, string rootname, string keyname)
+{
+    string value = ini_parser.GetValue(rootname, keyname);
+    Util::global_config[keyname] = value;
+}
+
 bool Util::configure_new()
 {
     INIParser ini_parser;
     ini_parser.ReadINI("conf.ini");
-    string value=ini_parser.GetValue("ghttp", "max_out_limit");
-    Util::global_config["max_out_limit"] = value;
+    /*string value=ini_parser.GetValue("ghttp", "max_out_limit");
+    Util::global_config["max_out_limit"] = value;*/
+    Util::setGlobalConfig(ini_parser, "ghttp", "thread_num");
+    Util::setGlobalConfig(ini_parser, "ghttp", "max_database_num");
+    Util::setGlobalConfig(ini_parser, "ghttp", "max_user_num");
+    Util::setGlobalConfig(ini_parser, "ghttp", "root_username");
+    Util::setGlobalConfig(ini_parser, "ghttp", "root_password");
+    Util::setGlobalConfig(ini_parser, "ghttp", "system_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "querylog_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "max_querylog_size");
+    Util::setGlobalConfig(ini_parser, "ghttp", "system_username");
+    Util::setGlobalConfig(ini_parser, "ghttp", "max_output_size");
+    Util::setGlobalConfig(ini_parser, "ghttp", "db_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "backup_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "ip");
     cout << "the current settings are as below: " << endl;
     cout << "key : value" << endl;
     cout << "------------------------------------------------------------" << endl;
