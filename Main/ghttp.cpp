@@ -3421,6 +3421,7 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	int ret_val;
 	//catch exception when this is an update query and has no update privilege
 	try{
+		cout << "begin query..." << endl;
 		ret_val = current_database->query(sparql, rs, output, update_flag);
 	}catch(string exception_msg){
 	
