@@ -3431,6 +3431,14 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;	
 	}
+	catch (...)
+	{
+		string content = "未知错误";
+		string resJson = CreateJson(405, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+
 	bool ret = false, update = false;
 	if(ret_val < -1)   //non-update query
 	{
