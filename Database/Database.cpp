@@ -1666,7 +1666,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, \
 		this->limitID_entity, this->csr, txn);
 	//if(txn != nullptr)
-	//	cout << "query in transaction............................................" << endl;
+	cout << "query in transaction............................................" << endl;
 	long tv_begin = Util::get_cur_time();
 
 	this->query_parse_lock.lock();
