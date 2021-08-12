@@ -88,6 +88,9 @@ class Optimizer
              );
   ~Optimizer()=default;
   tuple<bool,shared_ptr<IntermediateResult>> DoQuery(SPARQLquery&,QueryInfo); // the whole process
+  tuple<bool,shared_ptr<IntermediateResult>> DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryInfo query_info); // the whole process
+
+
   tuple<bool,shared_ptr<IntermediateResult>> MergeBasicQuery(SPARQLquery &sparql_query);
 
     /* the function is not implemented yet
@@ -97,7 +100,7 @@ class Optimizer
 
 
   BasicQueryStrategy ChooseStrategy(BasicQuery *basic_query,QueryInfo *query_info);
-
+  BasicQueryStrategy ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query,QueryInfo *query_info);
 
   tuple<bool,TableContentShardPtr> ExecutionDepthFirst(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan,
                                                                  const QueryInfo& query_info,const PositionValueSharedPtr& id_pos_mapping);
@@ -119,6 +122,10 @@ class Optimizer
 
  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionBreathFirst(BasicQuery* basic_query,const QueryInfo& query_info,Tree_node* plan_tree,IDCachesSharePtr id_caches);
 
+  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionBreathFirst(shared_ptr<BGPQuery> bgp_query,
+                                                                                           const QueryInfo& query_info,
+                                                                                           Tree_node* plan_tree_node,
+                                                                                           IDCachesSharePtr id_caches);
  private:
   KVstore* kv_store_;
   Statistics* statistics;

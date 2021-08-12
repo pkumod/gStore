@@ -648,6 +648,87 @@ shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(BasicQuery *basic_qu
 }
 
 /**
+ * If the chosen one have a constant edge, that is ,
+ * 1. neighbour and predicate are both constant , or
+ * 2. have a not-selected predicate var and a constant neighbour
+ * @param bgp_query
+ * @param kv_store      KVStorePointer
+ * @param target_node   the node needed to check constant edge
+ * @return the filtering plan
+ */
+shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(shared_ptr<BGPQuery> bgp_query,
+                                                            KVstore *kv_store,
+                                                            TYPE_ENTITY_LITERAL_ID target_node) {
+  auto check_edge_info = make_shared<vector<EdgeInfo>>();
+  auto check_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+
+  auto var_descriptor = bgp_query->get_vardescrip_by_id(target_node);
+  auto j_degree = var_descriptor->degree_;
+  auto edge_ids = var_descriptor->so_edge_index_;
+  for (int i_th_edge = 0; i_th_edge < j_degree; i_th_edge++) {
+    TYPE_ENTITY_LITERAL_ID sid, oid, pid;
+    JoinMethod join_method;
+    auto edge_id = edge_ids[i_th_edge];
+    auto triple_string_type = bgp_query->get_triple_by_index(edge_id);
+
+    bool s_constant = triple_string_type.getSubject().at(0) != '?';
+    bool p_constant = triple_string_type.getPredicate().at(0) != '?';
+    bool o_constant = triple_string_type.getObject().at(0) != '?';
+
+    int const_number = 0;
+    if (s_constant) const_number++;
+    if (p_constant) const_number++;
+    if (o_constant) const_number++;
+
+
+    if (const_number == 2) {
+      if (!s_constant) {
+        sid = target_node;
+        pid = kv_store->getIDByPredicate(triple_string_type.getPredicate());
+        oid = kv_store->getIDByString(triple_string_type.getObject());
+        join_method = JoinMethod::po2s;
+      }
+      if (!p_constant) {
+        sid = kv_store->getIDByString(triple_string_type.getSubject());
+        pid = target_node;
+        oid = kv_store->getIDByString(triple_string_type.getObject());
+        join_method = JoinMethod::so2p;
+      }
+      if (!o_constant) {
+        sid = kv_store->getIDByString(triple_string_type.getSubject());
+        pid = kv_store->getIDByPredicate(triple_string_type.getPredicate());
+        oid = target_node;
+        join_method = JoinMethod::sp2o;
+      }
+      check_edge_info->emplace_back(sid, pid, oid, join_method);
+      check_edge_constant_info->emplace_back(s_constant, p_constant, o_constant);
+    }
+    else if(const_number == 1 && (!p_constant))
+    {
+      if (!s_constant) {
+        sid = target_node;
+        oid = kv_store->getIDByString(triple_string_type.getObject());
+        join_method = JoinMethod::o2s;
+      }
+      if (!o_constant) {
+        sid = kv_store->getIDByString(triple_string_type.getSubject());
+        oid = target_node;
+        join_method = JoinMethod::s2o;
+      }
+      check_edge_info->emplace_back(sid, pid, oid, join_method);
+      check_edge_constant_info->emplace_back(s_constant, p_constant, o_constant);
+    }
+  }
+
+  auto one_step_join_node = make_shared<FeedOneNode>();
+  one_step_join_node->node_to_join_ = target_node;
+  one_step_join_node->edges_ = check_edge_info;
+  one_step_join_node->edges_constant_info_ = check_edge_constant_info;
+  return one_step_join_node;
+}
+
+
+/**
  *  Get Edge Info with previous nodes to Generate Query Plan
  *  predicate can be constant/variable, neighbour should have been in the table
  * @param basic_query   BasicQueryPointer
@@ -831,3 +912,29 @@ std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> QueryPlan::OnlyConstF
   }
   return constant_generating_lists;
 }
+
+std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> QueryPlan::OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
+                                                                                      KVstore *kv_store,
+                                                                                      std::shared_ptr<std::vector<OldVarDescriptor>> var_infos) {
+  auto result = make_shared<QueryPlan>();
+  auto constant_generating_lists = make_shared<vector<shared_ptr<FeedOneNode>>>();
+  auto total_var_num = bgp_query->get_total_var_num();
+
+  // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
+  for(int i = 0;i<total_var_num; i++) {
+    var_infos->emplace_back(OldVarDescriptor::VarType::EntityType ,nullptr,nullptr);
+  }
+
+  result->var_descriptors_ = var_infos;
+
+  // select the first node to be the max degree
+  for(int i = 0;i<result->var_descriptors_->size(); i++)
+  {
+    if((*result->var_descriptors_)[i].IsSatellite())
+      continue;
+    auto constant_filtering = FilterNodeOnConstantEdge(bgp_query, kv_store, (*result->var_descriptors_)[i].basic_query_id);
+    constant_generating_lists->push_back(constant_filtering);
+  }
+  return constant_generating_lists;
+}
+
