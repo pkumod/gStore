@@ -263,11 +263,11 @@ public:
 
 
 	void print(KVstore * kvstore);
-
+    vector<unsigned*>* get_result_list_pointer();
 
 private:
 	vector<Triple> triple_vt;
-
+    vector<unsigned*> result_list;
 
 };
 

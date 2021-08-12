@@ -417,7 +417,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     }
 
     long t6 = Util::get_cur_time();
-    CopyToResult(basic_query_pointer->getResultListPointer(), basic_query_pointer, make_shared<IntermediateResult>(
+    CopyToResult(bgp_query->get_result_list_pointer(), bgp_query, make_shared<IntermediateResult>(
         var_pos_mapping,pos_var_mapping,get<2>(bfs_result)
     ));
     long t7 = Util::get_cur_time();
@@ -425,23 +425,24 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     cout << "total execution, used " << (t7 - t1) <<"ms."<<endl;
   }
   else if(strategy ==BasicQueryStrategy::Special){
-    // todo: change this to BGPQuery
-    if(basic_query_pointer->getVarNum() == 2 && basic_query_pointer->getPreVarNum() == 0){
-      auto best_plan_tree = (new PlanGenerator(kv_store_, basic_query_pointer, statistics, var_candidates_cache))->get_special_no_pre_var_plan();
+    if(bgp_query->get_total_var_num()== 2 && bgp_query->get_pre_var_num() == 0){
+      auto best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_special_no_pre_var_plan();
     }
-    if(basic_query_pointer->getTripleNum() == 1 && basic_query_pointer->getTotalVarNum() != 3){
-      auto best_plan_tree = (new PlanGenerator(kv_store_, basic_query_pointer, statistics, var_candidates_cache))->get_special_one_triple_plan();
+    if(bgp_query->get_triple_num() == 1 && bgp_query->get_total_var_num() != 3){
+      auto best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_special_one_triple_plan();
     }
-    if(basic_query_pointer->getTripleNum() == 1 && basic_query_pointer->getTotalVarNum() == 3){
+    if(bgp_query->get_triple_num() == 1 && bgp_query->get_total_var_num() == 3){
       // todo: get all triples in database
       //;
     }
     printf("BasicQueryStrategy::Special not supported yet\n");
   }
+  return tuple<bool, shared_ptr<IntermediateResult>>();
+  /*
   else if(strategy == BasicQueryStrategy::TopK)
   {
 #ifdef TOPK_SUPPORT
-    auto const_candidates = QueryPlan::OnlyConstFilter(basic_query_pointer, this->kv_store_, this->var_descriptors_);
+    auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_, this->var_descriptors_);
     for (auto &constant_generating_step: *const_candidates) {
       executor_.CacheConstantCandidates(constant_generating_step, var_candidates_cache);
     };
@@ -474,7 +475,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   {
 
   }
-  return MergeBasicQuery(sparql_query);
+  return MergeBasicQuery(sparql_query);*/
 }
 
 tuple<bool, shared_ptr<IntermediateResult>> Optimizer::MergeBasicQuery(SPARQLquery &sparql_query) {
@@ -644,6 +645,55 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
 
   return false;
 }
+
+
+bool Optimizer::CopyToResult(vector<unsigned int *> *target,
+                             shared_ptr<BGPQuery> bgp_query,
+                             const shared_ptr<IntermediateResult>& result) {
+
+  assert(target->empty());
+
+#ifdef OPTIMIZER_DEBUG_INFO
+  cout << "position to var des size: " << result->position_to_var_des_->size() << endl;
+  cout << "total var_num: " << bgp_query->get_total_var_num()<<endl;
+  cout << "selected var num: " << bgp_query->selected_so_var_num<<endl;
+  cout<<"Before Copy"<<endl;
+  for(auto &pos_id:*result->position_to_var_des_)
+    cout<<"pos["<<pos_id.first<<"] "<<pos_id.second<<endl;
+#endif
+  auto record_len = bgp_query->selected_so_var_num + bgp_query->selected_pre_var_num;
+  auto record = new unsigned[record_len];
+
+  auto position_id_map_ptr = result->position_to_var_des_;
+  auto id_position_map_ptr = result->var_des_to_position_;
+
+  // position_map[i] means in the new table, the i-th column
+  // is the  position_map[i]-th column from old table
+  auto position_map = new TYPE_ENTITY_LITERAL_ID[record_len];
+
+  for(auto pos_id_pair:bgp_query->position_id_map)
+  {
+    auto var_id = pos_id_pair.second;
+    auto old_position = (*id_position_map_ptr)[var_id];
+    auto new_position =  pos_id_pair.first;
+    position_map[new_position] = old_position;
+  }
+
+  for (const auto&  record_ptr : *(result->values_))
+  {
+    auto new_record = new unsigned[record_len];
+    for (int column_index = 0; column_index < record_len; ++column_index)
+    {
+      auto old_position = position_map[column_index];
+      record[column_index] = (*record_ptr)[old_position];
+    }
+    target->push_back(new_record);
+  }
+
+  delete[] position_map;
+  return false;
+}
+
 
 void
 Optimizer::Cartesian(int pos, int end,int record_len,unsigned* record,
@@ -918,7 +968,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       }
 #endif
         long t1 = Util::get_cur_time();
-        auto step_result = executor_.JoinANode(one_step_join.join_node_, left_table,left_id_position,id_caches);
+        auto step_result = executor_.JoinANode(one_step_join->join_node_, left_table,left_id_position,id_caches);
 
         cout<<"result size "<<get<1>(step_result)->size();
         long t2 = Util::get_cur_time();
@@ -931,12 +981,12 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
     //TODO
   }
   else if(operation_type==StepOperation::JoinType::JoinTable){
-    left_r = this->ExecutionBreathFirst(basic_query,query_info,plan_tree_node->left_node,id_caches);
+    auto left_r = this->ExecutionBreathFirst(bgp_query,query_info,plan_tree_node->left_node,id_caches);
     auto left_table = get<2>(left_r);
     auto left_pos_id_mapping = get<1>(left_r);
 
 
-    right_r = this->ExecutionBreathFirst(basic_query,query_info,plan_tree_node->right_node,id_caches);
+    auto right_r = this->ExecutionBreathFirst(bgp_query,query_info,plan_tree_node->right_node,id_caches);
     auto right_table = get<2>(right_r);
     auto right_pos_id_mapping = get<1>(right_r);
 
