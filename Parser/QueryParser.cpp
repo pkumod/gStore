@@ -349,10 +349,11 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		{
 			string tmp = bicCtx->children[0]->getText();
 			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-			if (tmp == "SIMPLECYCLEPATH" || tmp == "SIMPLECYCLEBOOLEAN"
-				|| tmp == "CYCLEPATH" || tmp == "CYCLEBOOLEAN"
-				|| tmp == "SHORTESTPATH" || tmp == "SHORTESTPATHLEN"
-				|| tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH")	// Path calls
+			if (tmp == "SIMPLECYCLEPATH" || tmp == "SIMPLECYCLEBOOLEAN" \
+				|| tmp == "CYCLEPATH" || tmp == "CYCLEBOOLEAN" \
+				|| tmp == "SHORTESTPATH" || tmp == "SHORTESTPATHLEN" \
+				|| tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH" \
+				|| tmp == "PPR")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -374,11 +375,16 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopEnumerate_type;
 				else if (tmp == "KHOPREACHABLEPATH")
 					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopReachablePath_type;
+				else if (tmp == "PPR")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::ppr_type;
 
 				proj_var.path_args.src = bicCtx->varOrIri(0)->getText();
 				replacePrefix(proj_var.path_args.src);
-				proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
-				replacePrefix(proj_var.path_args.dst);
+				if (tmp != "PPR")
+				{
+					proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
+					replacePrefix(proj_var.path_args.dst);
+				}
 				auto predSet = bicCtx->predSet()->iri();
 				for (auto pred : predSet)
 				{
@@ -387,10 +393,11 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.path_args.pred_set.push_back(prefixedPred);
 				}
 
-				if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH")
+				if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH" \
+					|| tmp == "PPR")
 				{
-					if (bicCtx->num_integer())
-						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer()));
+					if (bicCtx->num_integer(0))
+						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer(0)));
 					else if (bicCtx->integer_positive())
 						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_positive()));
 					else if (bicCtx->integer_negative())
@@ -400,11 +407,18 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 						proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
 					else
 						proj_var.path_args.confidence = 1;
+
+					if (bicCtx->num_integer(1))
+						proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(1)));
 				}
-				if (bicCtx->booleanLiteral()->getText() == "true")
-					proj_var.path_args.directed = true;
-				else
-					proj_var.path_args.directed = false;
+
+				if (tmp != "PPR")
+				{
+					if (bicCtx->booleanLiteral()->getText() == "true")
+						proj_var.path_args.directed = true;
+					else
+						proj_var.path_args.directed = false;
+				}
 
 				proj_var.var = varCtx->getText();
 				
@@ -616,7 +630,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 				if (funcName == "KHOPREACHABLE")
 				{
 					(curr_node.path_args).k = \
-						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer()->getText());
+						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer(0)->getText());
 					(curr_node.path_args).confidence = \
 						stof(((SPARQLParser::BuiltInCallContext *)root)->numericLiteral()->getText());
 				}
@@ -1144,7 +1158,7 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 				if (tmp == "KHOPREACHABLE")
 				{
 					filter.child[0].path_args.k = \
-						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer()->getText());
+						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer(0)->getText());
 					filter.child[0].path_args.confidence = \
 						stof(((SPARQLParser::BuiltInCallContext *)root)->numericLiteral()->getText());
 				}

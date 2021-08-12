@@ -1,5 +1,9 @@
 grammar SPARQL;
 
+// export CLASSPATH="PATH-TO-antlr-4.7.2-complete.jar:$CLASSPATH"
+// alias antlr4='java -Xmx500M -cp "PATH-TO-antlr-4.7.2-complete.jar:$CLASSPATH" org.antlr.v4.Tool'
+// antlr4 -Dlanguage=Cpp ./SPARQL.g4 -visitor
+
 // Parser rules
 
 entry : queryUnit | updateUnit EOF ;
@@ -194,6 +198,7 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_KHOPREACHABLE '(' varOrIri ',' varOrIri ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet (',' numericLiteral)? ')'
 |   K_KHOPENUMERATE '(' varOrIri ',' varOrIri ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet (',' numericLiteral)? ')'
 |   K_KHOPREACHABLEPATH '(' varOrIri ',' varOrIri ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet (',' numericLiteral)? ')'
+|   K_PPR '(' varOrIri ',' (num_integer | integer_positive | integer_negative) ',' predSet ',' num_integer ')'
  ;
 regexexpression : K_REGEX '(' expression ',' expression ( ',' expression )? ')' ;
 substringexpression : K_SUBSTR '(' expression ',' expression ( ',' expression )? ')' ;
@@ -343,6 +348,7 @@ K_SHORTESTPATHLEN : S H O R T E S T P A T H L E N ;
 K_KHOPREACHABLE : K H O P R E A C H A B L E ;
 K_KHOPENUMERATE : K H O P E N U M E R A T E ;
 K_KHOPREACHABLEPATH : K H O P R E A C H A B L E P A T H ;
+K_PPR : P P R ;
 KK_INSERTDATA : I N S E R T ' ' D A T A ;
 KK_DELETEDATA : D E L E T E ' ' D A T A ;
 KK_DELETEWHERE : D E L E T E ' ' W H E R E ;

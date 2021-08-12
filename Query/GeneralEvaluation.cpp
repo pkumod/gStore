@@ -1720,7 +1720,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				proj[0].aggregate_type != QueryTree::ProjectionVar::Min_type && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::Max_type)
 			{
-				// Path query, both nodes are IRI
+				// Path query, no var (all IRIs) in arg list
 
 				new_result0.result.push_back(TempResult::ResultPair());
 				new_result0.result.back().id = new unsigned[new_result0_id_cols];
@@ -1733,7 +1733,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				vector<int> uid_ls, vid_ls;
 				vector<int> pred_id_set;
 				uid_ls.push_back(kvstore->getIDByString(proj[0].path_args.src));
-				vid_ls.push_back(kvstore->getIDByString(proj[0].path_args.dst));
+				if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+					vid_ls.push_back(kvstore->getIDByString(proj[0].path_args.dst));
+				else
+					vid_ls.push_back(-1);	// Dummy for loop
 				if (!proj[0].path_args.pred_set.empty())
 				{
 					for (auto pred : proj[0].path_args.pred_set)
@@ -1852,7 +1855,21 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								ss << "\"true\"}";
 							else
 								ss << "\"false\"}";
-							cout << "src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid) << endl;
+							// cout << "src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid) << endl;
+						}
+						else if (proj[0].aggregate_type == QueryTree::ProjectionVar::ppr_type)
+						{
+							vector< pair<int ,double> > v2ppr;
+							pqHandler->SSPPR(uid, 3, proj[0].path_args.k, pred_id_set, v2ppr);
+							ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"results\":[";
+							for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
+							{
+								if (it != v2ppr.begin())
+									ss << ",";
+								ss << "{\"dst\":\"" << kvstore->getStringByID(it->first) << "\",\"PPR\":" \
+									<< it->second << "}";
+							}
+							ss << "]}";
 						}
 					}
 					if (earlyBreak)
@@ -2500,34 +2517,39 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						else	// src is an IRI
 							uid_ls.push_back(kvstore->getIDByString(proj[i].path_args.src));
 
-						cout << "uid: ";
-						for (int uid : uid_ls)
-							cout << uid << ' ';
-						cout << endl;
+						// cout << "uid: ";
+						// for (int uid : uid_ls)
+						// 	cout << uid << ' ';
+						// cout << endl;
 
 						// vid
-						if (proj[i].path_args.dst[0] == '?')	// dst is a variable
+						if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
 						{
-							int var2temp = Varset(proj[i].path_args.dst).mapTo(result0.getAllVarset())[0];
-							cout << "vid var2temp = " << var2temp << endl;
-							if (var2temp >= result0_id_cols)
-								cout << "[ERROR] dst must be an entity!" << endl;	// TODO: throw exception
-							else
+							if (proj[i].path_args.dst[0] == '?')	// dst is a variable
 							{
-								for (int j = begin; j <= end; j++)
+								int var2temp = Varset(proj[i].path_args.dst).mapTo(result0.getAllVarset())[0];
+								cout << "vid var2temp = " << var2temp << endl;
+								if (var2temp >= result0_id_cols)
+									cout << "[ERROR] dst must be an entity!" << endl;	// TODO: throw exception
+								else
 								{
-									if (result0.result[j].id[var2temp] != INVALID)
-										vid_ls.push_back(result0.result[j].id[var2temp]);
+									for (int j = begin; j <= end; j++)
+									{
+										if (result0.result[j].id[var2temp] != INVALID)
+											vid_ls.push_back(result0.result[j].id[var2temp]);
+									}
 								}
 							}
-						}
-						else	// dst is an IRI
-							vid_ls.push_back(kvstore->getIDByString(proj[i].path_args.dst));
+							else	// dst is an IRI
+								vid_ls.push_back(kvstore->getIDByString(proj[i].path_args.dst));
 
-						cout << "vid: ";
-						for (int vid : vid_ls)
-							cout << vid << ' ';
-						cout << endl;
+							// cout << "vid: ";
+							// for (int vid : vid_ls)
+							// 	cout << vid << ' ';
+							// cout << endl;
+						}
+						else
+							vid_ls.push_back(-1);	// Dummy for loop
 
 						// pred_id_set: convert from IRI to integer ID
 						if (!proj[i].path_args.pred_set.empty())
@@ -2650,21 +2672,35 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									else
 										ss << "\"false\"}";
 								}
-									}
-									if (earlyBreak)
-										break;
-								}
-								ss << "]}\"";
-								if (proj[i].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+								else if (proj[0].aggregate_type == QueryTree::ProjectionVar::ppr_type)
 								{
-									if (exist)
-										new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "true";
-									else
-										new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "false";
+									vector< pair<int ,double> > v2ppr;
+									pqHandler->SSPPR(uid, 3, proj[0].path_args.k, pred_id_set, v2ppr);
+									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"results\":[";
+									for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
+									{
+										if (it != v2ppr.begin())
+											ss << ",";
+										ss << "{\"dst\":\"" << kvstore->getStringByID(it->first) << "\",\"PPR\":" \
+											<< it->second << "}";
+									}
+									ss << "]}";
 								}
-								else
-									ss >> new_result0.result.back().str[proj2new[i] - new_result0_id_cols];
 							}
+							if (earlyBreak)
+								break;
+						}
+						ss << "]}\"";
+						if (proj[i].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+						{
+							if (exist)
+								new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "true";
+							else
+								new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "false";
+						}
+						else
+							ss >> new_result0.result.back().str[proj2new[i] - new_result0_id_cols];
+					}
 				}
 				begin = end + 1;
 			}

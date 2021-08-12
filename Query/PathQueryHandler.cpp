@@ -19,8 +19,11 @@ int PathQueryHandler::getVertNum()
 	if (n != -1)
 		return n;	// Only consider static graphs for now
 	set<int> vertices;
-	for (int i = 0; i < csr[1].pre_num; i++)
-		vertices.insert(csr[1].adjacency_list[i].begin(), csr[1].adjacency_list[i].end());
+	for (int j = 0; j < 2; j++)
+	{
+		for (int i = 0; i < csr[j].pre_num; i++)
+			vertices.insert(csr[j].adjacency_list[i].begin(), csr[j].adjacency_list[i].end());
+	}
 	n = vertices.size();
 	return n;
 }
@@ -30,10 +33,18 @@ int PathQueryHandler::getEdgeNum()
 	if (m != -1)
 		return m;	// Only consider static graphs for now
 	int ret = 0;
-	for (int i = 0; i < csr[1].pre_num; i++)
+	for (int i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
 		ret += csr[1].adjacency_list[i].size();
 	m = ret;
 	return m;
+}
+
+int PathQueryHandler::getSetEdgeNum(const vector<int> &pred_set)
+{
+	int ret = 0;
+	for (int pred : pred_set)
+		ret += csr[1].adjacency_list[pred].size();
+	return ret;
 }
 
 int PathQueryHandler::getInIndexByID(int vid, int pred)
@@ -1466,6 +1477,468 @@ vector<int> PathQueryHandler::kHopReachablePath(int uid, int vid, bool directed,
 	if ((ret.size() - 1) / 2 > k)
 		ret.clear();
 	return ret;
+}
+
+// retNum is the number of top nodes to return; k is the hop constraint -- don't mix them up!
+void PathQueryHandler::SSPPR(int uid, int retNum, int k, const vector<int> &pred_set, vector< pair<int ,double> > &topkV2ppr)
+{
+	srand(time(NULL));
+
+	unordered_map<int, double> v2ppr;
+	pair<iMap<double>, iMap<double>> fwd_idx;
+	iMap<double> ppr;
+	iMap<int> topk_filter;
+	iMap<double> upper_bounds;
+	iMap<double> lower_bounds;
+
+	// Data structures initialization
+	fwd_idx.first.nil = -9;
+    fwd_idx.first.initialize(getVertNum());
+    fwd_idx.second.nil = -9;
+    fwd_idx.second.initialize(getVertNum());
+    upper_bounds.nil = -9;
+    upper_bounds.init_keys(getVertNum());
+    lower_bounds.nil = -9;
+    lower_bounds.init_keys(getVertNum());
+    ppr.nil = -9;
+    ppr.initialize(getVertNum());
+    topk_filter.nil = -9;
+    topk_filter.initialize(getVertNum());
+
+    // Params initialization
+    int numPredEdges = getSetEdgeNum(pred_set);
+    double ppr_decay_alpha = 0.77;
+	double pfail = 1.0 / getVertNum() / getVertNum() / log(getVertNum());	// log(1/pfail) -> log(1*n/pfail)
+	double delta = 1.0 / 4;
+	double epsilon = 0.5;
+	double rmax;
+	double rmax_scale = 1.0;
+	double omega;
+	double alpha = 0.2;
+    double min_delta = 1.0 / getVertNum();
+    double threshold = (1.0 - ppr_decay_alpha) / pow(500, ppr_decay_alpha) / pow(getVertNum(), 1 - ppr_decay_alpha);
+    double lowest_delta_rmax = epsilon * sqrt(min_delta / 3 / numPredEdges / log(2 / pfail));
+    double rsum = 1.0;
+
+    vector<pair<int, int>> forward_from;
+    forward_from.clear();
+    forward_from.reserve(getVertNum());
+    forward_from.push_back(make_pair(uid, 0));
+
+    fwd_idx.first.clean();  //reserve
+    fwd_idx.second.clean();  //residual
+    fwd_idx.second.insert( uid, rsum );
+
+    double zero_ppr_upper_bound = 1.0;
+    upper_bounds.reset_one_values();
+    lower_bounds.reset_zero_values();
+
+    // fora_query_topk_with_bound
+    // for delta: try value from 1/4 to 1/n
+    int iteration = 0;
+    while( delta >= min_delta ){
+        rmax = epsilon * sqrt(delta / 3 / numPredEdges / log(2 / pfail));
+        rmax *= rmax_scale;
+	    omega = (2 + epsilon) * log(2 / pfail) / delta / epsilon / epsilon;
+        
+        if (getSetOutSize(uid, pred_set) == 0)
+        {
+            rsum = 0.0;
+            fwd_idx.first.insert(uid, 1);
+            compute_ppr_with_reserve(fwd_idx, v2ppr);
+            return;
+        }
+        else
+            forward_local_update_linear_topk( uid, rsum, rmax, lowest_delta_rmax, forward_from, fwd_idx, pred_set, alpha, k ); //forward propagation, obtain reserve and residual
+
+        compute_ppr_with_fwdidx_topk_with_bound(rsum, fwd_idx, v2ppr, delta, alpha, threshold, \
+        	pred_set, pfail, zero_ppr_upper_bound, omega, upper_bounds, lower_bounds);
+        if(if_stop(retNum, delta, threshold, epsilon, topk_filter, upper_bounds, lower_bounds, v2ppr) \
+        	|| delta <= min_delta)
+            break;
+        else
+            delta = max( min_delta, delta / 2.0 );  // otherwise, reduce delta to delta/2
+    }
+
+    // Extract top-k results
+    topkV2ppr.clear();
+    topkV2ppr.resize(retNum);
+    partial_sort_copy(v2ppr.begin(), v2ppr.end(), topkV2ppr.begin(), topkV2ppr.end(), 
+        [](pair<int, double> const& l, pair<int, double> const& r){return l.second > r.second;});
+    size_t i = topkV2ppr.size() - 1;
+    while (topkV2ppr[i].second == 0)
+    	i--;
+    topkV2ppr.erase(topkV2ppr.begin() + i + 1, topkV2ppr.end());	// Get rid of ppr = 0 entries
+}
+
+void PathQueryHandler::compute_ppr_with_reserve(pair<iMap<double>, iMap<double>> &fwd_idx, unordered_map<int, double> &v2ppr)
+{
+    int node_id;
+    double reserve;
+    for(long i=0; i< fwd_idx.first.occur.m_num; i++){
+        node_id = fwd_idx.first.occur[i];
+        reserve = fwd_idx.first[ node_id ];
+        if(reserve)
+        	v2ppr[node_id] = reserve;
+    }
+}
+
+void PathQueryHandler::forward_local_update_linear_topk(int s, double& rsum, double rmax, double lowest_rmax, vector<pair<int, int>>& forward_from, \
+	pair<iMap<double>, iMap<double>> &fwd_idx, const vector<int> &pred_set, double alpha, int k)
+{
+    double myeps = rmax;
+
+    vector<bool> in_forward(getVertNum());
+    vector<bool> in_next_forward(getVertNum());
+
+    std::fill(in_forward.begin(), in_forward.end(), false);
+    std::fill(in_next_forward.begin(), in_next_forward.end(), false);
+
+    vector<pair<int, int>> next_forward_from;
+    next_forward_from.reserve(getVertNum());
+    for(auto &v: forward_from)
+        in_forward[v.first] = true;
+
+    unsigned long i=0;
+    while( i < forward_from.size() )
+    {
+        int v = forward_from[i].first;
+        int level = forward_from[i].second;
+        i++;
+        // if (k != -1 && level >= k)
+        // 	continue;
+        in_forward[v] = false;
+        if (fwd_idx.second[v] / getSetOutSize(v, pred_set) >= myeps)
+        {
+            int out_neighbor = getSetOutSize(v, pred_set);
+            double v_residue = fwd_idx.second[v];
+            fwd_idx.second[v] = 0;
+            if(!fwd_idx.first.exist(v))
+                fwd_idx.first.insert( v, v_residue * alpha );
+            else
+                fwd_idx.first[v] += v_residue * alpha;
+
+            rsum -= v_residue * alpha;
+            if(out_neighbor == 0)
+            {
+                fwd_idx.second[s] += v_residue * (1-alpha);
+                if(getSetOutSize(s, pred_set) > 0 && in_forward[s] != true && fwd_idx.second[s] / getSetOutSize(s, pred_set) >= myeps)
+                {
+                    // forward_from.push_back(make_pair(s, level + 1));
+                    forward_from.push_back(make_pair(s, 0));
+                    in_forward[s] = true;
+                }
+                else if(getSetOutSize(s, pred_set) >= 0 && in_next_forward[s] != true && fwd_idx.second[s] / getSetOutSize(s, pred_set) >= lowest_rmax)
+                {
+                    // next_forward_from.push_back(make_pair(s, level + 1));
+                    next_forward_from.push_back(make_pair(s, 0));
+                    in_next_forward[s] = true;
+                }
+                continue;
+            }            
+            double avg_push_residual = ((1 - alpha) * v_residue) / out_neighbor;
+            // int out_neighbor_test = 0;
+            // cout << "out_neighbor = " << out_neighbor << endl;
+            for (int pred : pred_set)
+            {
+            	int out_neighbor_pred = getOutSize(v, pred);
+            	// out_neighbor_test += out_neighbor_pred;
+            	for (int i = 0; i < out_neighbor_pred; i++)
+            	{
+            		int next = getOutVertID(v, pred, i);
+            		if (next == -1)
+            		{
+            			cout << "ERROR!!!!!!" << endl;
+            			exit(0);	// TODO: throw an exception
+            		}
+
+            		if(!fwd_idx.second.exist(next))
+	                    fwd_idx.second.insert(next, avg_push_residual);
+	                else
+	                    fwd_idx.second[next] += avg_push_residual;
+
+	                if( in_forward[next] != true && fwd_idx.second[next] / getSetOutSize(next, pred_set) >= myeps \
+	                	&& (k == -1 || level < k))
+	                {
+	                    forward_from.push_back(make_pair(next, level + 1));
+	                    in_forward[next] = true;
+	                }
+	                else
+	                {
+	                    if(in_next_forward[next] != true && fwd_idx.second[next] / getSetOutSize(next, pred_set) >= lowest_rmax \
+	                    	&& (k == -1 || level < k))
+	                    {
+	                        next_forward_from.push_back(make_pair(next, level + 1));
+	                        in_next_forward[next] = true;
+	                    }
+	                }
+            	}
+            }
+        }
+        else{
+            if(in_next_forward[v] != true && fwd_idx.second[v] / getSetOutSize(v, pred_set) >= lowest_rmax){
+                next_forward_from.push_back(make_pair(v, level));
+                in_next_forward[v] = true;
+            }
+        }
+    }
+    
+    forward_from = next_forward_from;
+}
+
+void PathQueryHandler::compute_ppr_with_fwdidx_topk_with_bound(double check_rsum, pair<iMap<double>, iMap<double>> &fwd_idx, \
+	unordered_map<int, double> &v2ppr, double delta, double alpha, double threshold, \
+	const vector<int> &pred_set, double pfail, double &zero_ppr_upper_bound, double omega, \
+	iMap<double> &upper_bounds, iMap<double> &lower_bounds)
+{
+    compute_ppr_with_reserve(fwd_idx, v2ppr);
+
+    if(check_rsum == 0.0)
+        return;
+
+    long num_random_walk = omega * check_rsum;
+    long real_num_rand_walk = 0;
+
+    for(long i=0; i < fwd_idx.second.occur.m_num; i++)
+    {
+        int source = fwd_idx.second.occur[i];
+        double residual = fwd_idx.second[source];
+        long num_s_rw = ceil(residual / check_rsum * num_random_walk);
+        double a_s = residual / check_rsum * num_random_walk / num_s_rw;
+
+        real_num_rand_walk += num_s_rw;
+
+        double ppr_incre = a_s * check_rsum / num_random_walk;
+        for(long j = 0; j < num_s_rw; j++){
+            int des = random_walk(source, alpha, pred_set);
+            if (v2ppr.find(des) == v2ppr.end())
+            	v2ppr[des] = ppr_incre;
+            else
+                v2ppr[des] += ppr_incre;
+
+        }
+    }
+
+    if(delta < threshold)
+        set_ppr_bounds(fwd_idx, check_rsum, real_num_rand_walk, v2ppr, pfail, zero_ppr_upper_bound, \
+        	upper_bounds, lower_bounds);
+    else
+        zero_ppr_upper_bound = calculate_lambda(check_rsum,  pfail, zero_ppr_upper_bound, real_num_rand_walk);
+}
+
+void PathQueryHandler::set_ppr_bounds(pair<iMap<double>, iMap<double>> &fwd_idx, double rsum, \
+	long total_rw_num, unordered_map<int, double> &v2ppr, double pfail, double &zero_ppr_upper_bound, \
+	iMap<double> &upper_bounds, iMap<double> &lower_bounds)
+{
+    double min_ppr = 1.0 / getVertNum();
+    double sqrt_min_ppr = sqrt(1.0 / getVertNum());
+
+    double epsilon_v_div = sqrt(2.67 * rsum * log(2.0 / pfail) / total_rw_num);
+    double default_epsilon_v = epsilon_v_div / sqrt_min_ppr;
+
+    int nodeid;
+    double ub_eps_a;
+    double lb_eps_a;
+    double ub_eps_v;
+    double lb_eps_v;
+    double up_bound;
+    double low_bound;
+    zero_ppr_upper_bound = calculate_lambda( rsum,  pfail,  zero_ppr_upper_bound,  total_rw_num );
+    
+    for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
+    {
+        nodeid = it->first;
+        if(v2ppr[nodeid] <= 0)
+            continue;
+        double reserve=0.0;
+        if(fwd_idx.first.exist(nodeid))
+            reserve = fwd_idx.first[nodeid];
+        double epsilon_a = 1.0;
+        if( upper_bounds.exist(nodeid)  )
+        {
+            assert(upper_bounds[nodeid]>0.0);
+            if(upper_bounds[nodeid] > reserve)
+                epsilon_a = calculate_lambda( rsum, pfail, upper_bounds[nodeid] - reserve, total_rw_num);
+            else
+                epsilon_a = calculate_lambda( rsum, pfail, 1 - reserve, total_rw_num);
+        }
+        else
+            epsilon_a = calculate_lambda( rsum, pfail, 1.0-reserve, total_rw_num);
+
+        ub_eps_a = v2ppr[nodeid]+epsilon_a;
+        lb_eps_a = v2ppr[nodeid]-epsilon_a;
+        if(!(lb_eps_a > 0))
+            lb_eps_a = 0;
+
+        double epsilon_v = default_epsilon_v;
+        if(fwd_idx.first.exist(nodeid) && fwd_idx.first[nodeid] > min_ppr)
+        {
+            if(lower_bounds.exist(nodeid))
+                reserve = max(reserve, lower_bounds[nodeid]);
+            epsilon_v = epsilon_v_div / sqrt(reserve);
+        }
+        else
+        {
+            if(lower_bounds[nodeid] > 0)
+                epsilon_v = epsilon_v_div / sqrt(lower_bounds[nodeid]);
+        }
+
+
+        ub_eps_v = 1.0;
+        lb_eps_v = 0.0;
+        if(1.0 - epsilon_v > 0)
+        {
+            ub_eps_v = v2ppr[nodeid] / (1.0 - epsilon_v);
+            lb_eps_v = v2ppr[nodeid] / (1.0 + epsilon_v);
+        }
+
+        up_bound = min( min(ub_eps_a, ub_eps_v), 1.0 );
+        low_bound = max( max(lb_eps_a, lb_eps_v), reserve );
+        if(up_bound>0)
+        {
+            if(!upper_bounds.exist(nodeid))
+                upper_bounds.insert(nodeid, up_bound);
+            else
+                upper_bounds[nodeid] = up_bound;
+        }
+        
+        if(low_bound>=0)
+        {
+            if(!lower_bounds.exist(nodeid))
+                lower_bounds.insert(nodeid, low_bound);
+            else
+                lower_bounds[nodeid] = low_bound;
+        }
+    }
+}
+
+inline double PathQueryHandler::calculate_lambda(double rsum, double pfail, double upper_bound, long total_rw_num)
+{
+    return 1.0/3*log(2/pfail)*rsum/total_rw_num + 
+    sqrt(4.0/9.0*log(2.0/pfail)*log(2.0/pfail)*rsum*rsum +
+        8*total_rw_num*log(2.0/pfail)*rsum*upper_bound)
+    /2.0/total_rw_num;
+}
+
+inline int PathQueryHandler::random_walk(int start, double alpha, const vector<int> &pred_set)
+{
+    int cur = start;
+    unsigned long k;
+    if(getSetOutSize(start, pred_set) == 0)
+        return start;
+    while (true)
+    {
+        if ((double)rand() / (double)RAND_MAX <= alpha)	// drand, return bool, bernoulli by alpha
+            return cur;
+        if (getSetOutSize(cur, pred_set))
+        {
+            k = rand() % getSetOutSize(cur, pred_set);	// lrand
+        	unsigned long curr_idx = k;
+        	for (int pred : pred_set)
+        	{
+        		int curr_out = getOutSize(cur, pred);
+        		if (curr_out <= curr_idx)
+        			curr_idx -= curr_out;
+        		else
+        		{
+        			cur = getOutVertID(cur, pred, curr_idx);
+        			if (cur == -1)
+            		{
+            			cout << "ERROR1!!!!!!" << endl;
+            			exit(0);	// TODO: throw an exception
+            		}
+        			break;
+        		}
+        	}
+        }
+        else
+            cur = start;
+    }
+}
+
+double PathQueryHandler::kth_ppr(unordered_map<int, double> &v2ppr, int retNum)
+{
+    static vector<double> temp_ppr;
+    temp_ppr.clear();
+    temp_ppr.resize(v2ppr.size());
+    int i = 0;
+    for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
+    {
+    	temp_ppr[i] = v2ppr[it->second];
+    	i++;
+    }
+    nth_element(temp_ppr.begin(), temp_ppr.begin() + retNum - 1, temp_ppr.end(), \
+    	[](double x, double y){return x > y;});
+    return temp_ppr[retNum - 1];
+}
+
+bool PathQueryHandler::if_stop(int retNum, double delta, double threshold, double epsilon, iMap<int> &topk_filter, \
+	iMap<double> &upper_bounds, iMap<double> &lower_bounds, unordered_map<int, double> &v2ppr)
+{
+    if(kth_ppr(v2ppr, retNum) >= 2.0 * delta)
+        return true;
+
+    if(delta>=threshold) return false;
+    
+    const static double error = 1.0 + epsilon;
+    const static double error_2 = 1.0 + epsilon;
+
+    vector< pair<int ,double> > topk_pprs;
+    topk_pprs.clear();
+    topk_pprs.resize(retNum);
+    topk_filter.clean();
+
+    static vector< pair<int, double> > temp_bounds;
+    temp_bounds.clear();
+    temp_bounds.resize(lower_bounds.occur.m_num);
+    int nodeid;
+    for(int i=0; i<lower_bounds.occur.m_num; i++){
+        nodeid = lower_bounds.occur[i];
+        temp_bounds[i] = make_pair( nodeid, lower_bounds[nodeid] );
+    }
+
+    //sort topk nodes by lower bound
+    partial_sort_copy(temp_bounds.begin(), temp_bounds.end(), topk_pprs.begin(), topk_pprs.end(), 
+        [](pair<int, double> const& l, pair<int, double> const& r){return l.second > r.second;});
+    
+    //for topk nodes, upper-bound/low-bound <= 1+epsilon
+    double ratio=0.0;
+    double largest_ratio=0.0;
+    for(auto &node : topk_pprs){
+        topk_filter.insert(node.first, 1);
+        ratio = upper_bounds[node.first] / lower_bounds[node.first];
+        if(ratio > largest_ratio)
+            largest_ratio = ratio;
+        if(ratio > error_2){
+            return false;
+        }
+    }
+
+    //for remaining NO. retNum+1 to NO. n nodes, low-bound of retNum > the max upper-bound of remaining nodes 
+    double low_bound_k = topk_pprs[retNum - 1].second;
+    if(low_bound_k <= delta)
+        return false;
+
+    for(int i=0; i<upper_bounds.occur.m_num; i++)
+    {
+        nodeid = upper_bounds.occur[i];
+        if(topk_filter.exist(nodeid) || v2ppr[nodeid] <= 0)
+            continue;
+
+        double upper_temp = upper_bounds[nodeid];
+        double lower_temp = lower_bounds[nodeid];
+        if(upper_temp > low_bound_k * error)
+        {
+             if(upper_temp > (1 + epsilon) / (1 - epsilon) * lower_temp)
+                 continue;
+             else
+                 return false;
+        }
+        else
+            continue;
+    }
+
+    return true;
 }
 
 /**

@@ -104,6 +104,7 @@ class QueryTree
 			std::vector<std::string> pred_set;
 			int k;
 			float confidence;
+			int retNum;
 		};
 
 		class CompTreeNode
@@ -222,7 +223,7 @@ class QueryTree
 				enum AggregateType {None_type, Count_type, Sum_type, Min_type, Max_type, Avg_type, 
 					simpleCyclePath_type, simpleCycleBoolean_type, cyclePath_type, cycleBoolean_type, 
 					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type, kHopReachablePath_type,
-					CompTree_type, Contains_type};
+					CompTree_type, Contains_type, ppr_type};
 				AggregateType aggregate_type;
 
 				std::string var, aggregate_var;
