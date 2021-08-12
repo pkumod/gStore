@@ -38,6 +38,8 @@ class OldVarDescriptor{
   OldVarDescriptor(VarType var_type,std::string var_name,BasicQuery* basic_query):
   var_type_(var_type),var_name_(var_name)
   {
+    if(basic_query== nullptr)
+      return;
     this->basic_query_id = basic_query->getIDByVarName(var_name);
     this->selected_ = basic_query->isVarSelected(var_name);
     this->degree_ = basic_query->getVarDegree(basic_query_id);

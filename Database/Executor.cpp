@@ -740,6 +740,23 @@ tuple<bool, TableContentShardPtr> Executor::getAllSubObjID(bool need_literal)
   return make_tuple(true,result);
 }
 
+std::tuple<bool, TableContentShardPtr> Executor::getAllPreID()
+{
+  set<TYPE_ENTITY_LITERAL_ID> ids;
+  for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate_; ++i) {
+    auto pre_str = this->kv_store_->getEntityByID(i);
+    if(pre_str!="")
+      ids.insert(i);
+  }
+  auto result = make_shared<TableContent>();
+  for(auto var_id: ids)
+  {
+    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+    record->push_back(var_id);
+    result->push_back(record);
+  }
+  return make_tuple(true,result);
+}
 shared_ptr<IDList> Executor::CandidatesWithConstantEdge(const shared_ptr<vector<EdgeInfo>> &edge_info_vector) const {
   auto id_candidate = make_shared<IDList>();
   for(int i = 0; i<edge_info_vector->size(); i++)

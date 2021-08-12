@@ -71,7 +71,7 @@ class Executor {
   bool CacheConstantCandidates(const std::shared_ptr<FeedOneNode>& one_step, const IDCachesSharePtr& id_caches);
   bool AddConstantCandidates(EdgeInfo edge_info,EdgeConstantInfo edge_table_info,TYPE_ENTITY_LITERAL_ID targetID, const IDCachesSharePtr& id_caches);
   std::tuple<bool, TableContentShardPtr> getAllSubObjID(bool need_literal);
-
+  std::tuple<bool, TableContentShardPtr> getAllPreID();
   static void UpdateIDList(const std::shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
 
   std::shared_ptr<IDList> ExtendRecordOneNode(const shared_ptr<FeedOneNode> &one_step_join_node_,
