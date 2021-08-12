@@ -634,3 +634,9 @@ void BGPQuery::print(KVstore *kvstore) {
 		var_vector[i]->print(kvstore);
 	}
 }
+
+vector<unsigned*>*
+BGPQuery::get_result_list_pointer()
+{
+  return &(this->result_list);
+}

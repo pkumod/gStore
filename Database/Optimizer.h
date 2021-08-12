@@ -118,6 +118,9 @@ class Optimizer
 #endif
   /*copy the result to vector<unsigned*> & */
   bool CopyToResult(vector<unsigned*> *target, BasicQuery *basic_query, const shared_ptr<IntermediateResult>& result);
+
+  bool CopyToResult(vector<unsigned*> *target, shared_ptr<BGPQuery> bgp_query, const shared_ptr<IntermediateResult>& result);
+
   void Cartesian(int, int,int,unsigned*,const shared_ptr<vector<Satellite>>&,vector<unsigned*>*,BasicQuery *);
 
  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionBreathFirst(BasicQuery* basic_query,const QueryInfo& query_info,Tree_node* plan_tree,IDCachesSharePtr id_caches);
