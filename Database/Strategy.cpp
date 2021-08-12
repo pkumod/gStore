@@ -686,12 +686,12 @@ Strategy::handler2(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	if (var1_id == 0)   //subject var selected
 	{
 		//use p2s directly
-		this->kvstore->getsubIDlistBypreID(pre_id, id_list, id_list_len, true, txn);
+		this->kvstore->getsubIDlistBypreID(pre_id, id_list, id_list_len, false, txn);
 	}
 	else if (var2_id == 0) //object var selcted
 	{
 		//use p2o directly
-		this->kvstore->getobjIDlistBypreID(pre_id, id_list, id_list_len, true, txn);
+		this->kvstore->getobjIDlistBypreID(pre_id, id_list, id_list_len, false, txn);
 	}
 	else
 	{
