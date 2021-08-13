@@ -731,7 +731,7 @@ Database::load(bool loadCSR)
 		cout << "load database info error. @Database::load()" << endl;
 		return false;
 	}
-
+	cout << "load database info successfully!" << endl;
 	if(!(this->kvstore)->load_trie(kv_mode))
 		return false;
 
