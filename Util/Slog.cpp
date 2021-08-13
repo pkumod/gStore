@@ -72,6 +72,7 @@ void Slog::Fatal(const char* pFormat, ...)
 void Slog::Info(const char* pFormat, ...)
 {
 	DO_LOGGER(log4cplus::INFO_LOG_LEVEL, pFormat, 512);
+	
 }
 
 void Slog::Warn(const char* pFormat, ...)
