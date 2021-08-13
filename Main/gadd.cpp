@@ -29,9 +29,8 @@ main(int argc, char * argv[])
 {
 	//chdir(dirname(argv[0]));
 //#ifdef DEBUG
-	Util util;
+//Util util;
 //#endif
-	cout << "argc:" << argc << ",argv[1]:" << argv[1] << endl;
 	if (argc < 2)
 	{
 		cout << "please input the complete command:\t" << endl;
@@ -76,7 +75,7 @@ main(int argc, char * argv[])
 			cout << "your database can not end with .db" << endl;
 			return -1;
 		}
-		string filename=Util::getArgValue(argc, argv, "filename", "");
+		string filename=Util::getArgValue(argc, argv, "file", "");
 		if (filename.empty())
 		{
 			cout << "please input the file path." << endl;
