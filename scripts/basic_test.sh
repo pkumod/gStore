@@ -14,7 +14,7 @@ bbug_ans=(-1 -1 297 -1 2 24 0 -1)
 lubm_ans=(15 227393 0 27 5916 15 0 828 27 27 5916)
 num_ans=(8 0 4 1)
 small_ans=(2 2 1 27 1 1 1 4 1 5 5)
-triple_num=(1989 99550 29 25 31)
+triple_num=(1988 99550 29 25 31)
 
 #gbuild
 echo "gbuild......"
@@ -32,8 +32,31 @@ do
 	fi
 done
 
+#gadd and gsub
+# First sub all triples from the database, then add back
+echo "gsub and gadd......"
+for i in 0 1 2 3
+do
+	for j in 3 2
+	do
+        	${op[$j]} ${db[$i]} ${path}${db[$i]}"/"${db[$i]}".nt" > "1.txt"
+		"rm" "1.txt"
+	done
+	${op[1]} ${db[$i]} ${path}"all.sql" > "1.txt"
+	ans=$(grep "There has answer" 1.txt)
+	if [ ${ans:18:${#ans}-18} -ne ${triple_num[$i]} ]
+	then
+		echo ${ans}
+		echo -e "\033[43;35m update triples in ${db[$i]}.db has errors \033[0m"
+		"rm" "1.txt"
+		exit
+	fi
+	"rm" "1.txt"
+done
+
 #gquery
 gquery(){
+# bbug
 for i in 0 1 2 3 4 5 6 7
 do
 	echo "${op[1]} ${db[0]} ${path}${db[0]}/${db[0]}${bbug_sql[$i]}.sql"
@@ -51,6 +74,7 @@ do
 	"rm" "1.txt"
 done
 
+# lubm
 for i in 0 1 2 3 4 5 6 7 8 9 10
 do
     echo "${op[1]} ${db[1]} ${path}${db[1]}/${db[1]}${lubm_sql[$i]}.sql"
@@ -65,6 +89,7 @@ do
 	"rm" "1.txt"
 done
 
+# num
 for i in 0 1 2 3
 do
         echo "${op[1]} ${db[2]} ${path}${db[2]}/${db[2]}${num_sql[$i]}"
@@ -79,6 +104,7 @@ do
         "rm" "1.txt"
 done
 
+# small
 for i in 0 1 2 3 4 5 6 7 8 9 10
 do
         echo "${op[1]} ${db[3]} ${path}${db[3]}/${db[3]}${small_sql[$i]}"
@@ -96,26 +122,6 @@ done
 }
 echo "gquery......"
 gquery
-
-#gadd and gsub
-echo "gsub and gadd......"
-for i in 0 1 2 3
-do
-	for j in 3 2
-	do
-        	${op[$j]} ${db[$i]} ${path}${db[$i]}"/"${db[$i]}".nt" > "1.txt"
-		"rm" "1.txt"
-	done
-	${op[1]} ${db[$i]} ${path}"all.sql" > "1.txt"
-	ans=$(grep "There has answer" 1.txt)
-	if [ ${ans:18:${#ans}-18} -ne ${triple_num[$i]} ]
-	then
-		echo -e "\033[43;35m update triples in ${db[$i]}.db has errors \033[0m"
-		"rm" "1.txt"
-		exit
-	fi
-	"rm" "1.txt"
-done
 
 ${op[2]} ${db[3]} ${path}${db[3]}"/small_add.nt" > "1.txt"
 "rm" "1.txt"
