@@ -691,11 +691,12 @@ Database::warmUp()
 bool
 Database::load(bool loadCSR)
 {
+	
 	if(this->if_loaded)
 	{
 		return true;
 	}
-
+	cout << "begin loading..." << endl;
 	//TODO: acquire this arg from memory manager
 	//BETTER: get return value from subthread(using ref or file as hub)
 	unsigned vstree_cache = LRUCache::DEFAULT_CAPACITY;
