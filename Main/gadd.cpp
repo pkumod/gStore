@@ -31,6 +31,7 @@ main(int argc, char * argv[])
 //#ifdef DEBUG
 	Util util;
 //#endif
+	cout << "argc:" << argc << ",argv[1]:" << argv[1] << endl;
 	if (argc == 2 && (argv[1] == "-h" || argv[1] == "-help"))
 	{
 		cout << endl;
