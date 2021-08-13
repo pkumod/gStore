@@ -9,7 +9,7 @@
 *
 ***********************************************************************/
 
-#include "slog.h"
+#include "Slog.h"
 
 #include <stdio.h>
 #include <log4cplus/logger.h>
