@@ -1686,11 +1686,11 @@ Util::getTimeName()
 
 string
 Util::getTimeString() {
-	static const int max = 20; // max length of time string
+	static const int max = 17; // max length of time string
 	char time_str[max];
 	time_t timep;
 	time(&timep);
-	strftime(time_str, max, "%Y%m%d %H:%M:%S\t", gmtime(&timep));
+	strftime(time_str, max, "%Y%m%d %H:%M:%S", localtime(&timep));
 	return string(time_str);
 }
 
