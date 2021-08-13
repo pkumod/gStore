@@ -163,6 +163,9 @@ class Optimizer
   //静态情况下可以存储weight
   shared_ptr<vector<double>> weight_list_;
   Executor executor_;
+
+  tuple<bool,bool,bool> PrepareInitial(shared_ptr<BGPQuery> bgp_query,
+                            shared_ptr<FeedOneNode> join_a_node_plan) const;
 };
 
 

@@ -11,15 +11,14 @@ using namespace std;
 /**
  * @param edge_info_vector
  * @param edge_table_info_vector
- * @return
+ * @return a table with one column
  */
-tuple<bool, TableContentShardPtr> Executor::GenerateColdCandidateList(const shared_ptr<vector<EdgeInfo>>& edge_info_vector,
-                                                                      const shared_ptr<vector<EdgeConstantInfo>>& edge_table_info_vector) {
+tuple<bool, TableContentShardPtr> Executor::GenerateTableWithOneNode(const shared_ptr<vector<EdgeInfo>>& edge_info_vector,
+                                                                     const shared_ptr<vector<EdgeConstantInfo>>& edge_table_info_vector) {
 
   if(edge_info_vector->empty())
     return make_tuple(false, nullptr);
 
-  auto var_to_filter = (*edge_info_vector)[0].getVarToFilter();
   assert(edge_info_vector->size()==edge_table_info_vector->size());
   auto id_candidate = CandidatesWithConstantEdge(edge_info_vector);
   auto result = make_shared<TableContent>();
@@ -77,14 +76,98 @@ tuple<bool, TableContentShardPtr> Executor::JoinANode(const shared_ptr<FeedOneNo
 
 }
 
+/**
+ * @param one_step_join_node_
+ * @param table_content_ptr
+ * @param id_pos_mapping
+ * @param id_caches
+ * @return
+ */
+std::tuple<bool,TableContentShardPtr> Executor::InitialTableOneNode(const std::shared_ptr<FeedOneNode> one_step_join_node_,
+                                                                    bool is_entity,
+                                                                    bool is_literal,
+                                                                    bool is_predicate,
+                                                                    const PositionValueSharedPtr pos_id_mapping,
+                                                                    const IDCachesSharePtr id_caches)
+{
+  auto result = make_shared<TableContent>();
+  auto node_added = one_step_join_node_->node_to_join_;
+  auto id_cache_it = id_caches->find(node_added);
+  (*pos_id_mapping)[0] = node_added;
+  auto id_position_map = make_shared<PositionValue>();
+  (*id_position_map)[node_added] = 0;
+
+  std::shared_ptr<IDList> first_candidate_list = nullptr;
+
+  if(one_step_join_node_->edges_->size()!=0) {
+    // we assert that the plan will not visit contents from empty record
+    auto empty_record = result->begin();
+    first_candidate_list = ExtendRecordOneNode(one_step_join_node_, id_position_map, id_caches,
+                                           node_added, empty_record);
+    result = ConvertToTable(first_candidate_list);
+    return make_tuple(true, result);
+  }
+
+  if (id_cache_it != id_caches->end()) {
+    result = ConvertToTable(id_cache_it->second);
+    return make_tuple(true, result);
+  }
+  else // No Constant Constraint, Return All IDs
+  {
+    if(is_predicate)
+      result = get<1>(this->GetAllPreId());
+    else if(is_entity)
+    {
+      result = get<1>(this->GetAllSubObjId(is_literal));
+    }
+    return make_tuple(true, result);
+  }
+}
+
+
+std::tuple<bool,TableContentShardPtr> Executor::InitialTableTwoNode(const std::shared_ptr<FeedTwoNode> join_plan,
+                                                                    const PositionValueSharedPtr pos_id_mapping,
+                                                                    const IDCachesSharePtr id_caches)
+{
+  TableContentShardPtr result = make_shared<TableContent>();
+
+  auto id1 = join_plan->node_to_join_1_;
+  auto id2 = join_plan->node_to_join_2_;
+
+  (*pos_id_mapping)[0] = id1;
+  (*pos_id_mapping)[1] = id2;
+  auto id_position_map = make_shared<PositionValue>();
+  (*id_position_map)[id1] = 0;
+  (*id_position_map)[id2] = 1;
+
+  // we assert that the plan will not visit contents from empty record
+  auto empty_record = result->begin();
+  auto record_two_node_list = ExtendRecordTwoNode(join_plan,
+                                                  id_position_map,
+                                                  id_caches,
+                                                  id1,
+                                                  id2,
+                                                  empty_record);
+  auto valid_size = record_two_node_list->size()/2;
+  /* write to the new table */
+  for (decltype(valid_size) i =0;i<valid_size;i++) {
+    auto new_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+    auto id1_this_record = (*record_two_node_list)[i*2];
+    auto id2_this_record = (*record_two_node_list)[i*2+1];
+    new_record->push_back(id1_this_record);
+    new_record->push_back(id2_this_record);
+    result->push_back(std::move(new_record));
+  }
+  return make_tuple(true, result);
+}
+
+
 
 std::tuple<bool, TableContentShardPtr> Executor::JoinTwoNode(const shared_ptr<FeedTwoNode> join_two_node_,
-                                                          const TableContentShardPtr &table_content_ptr,
-                                                          const PositionValueSharedPtr &id_pos_mapping,
-                                                          const IDCachesSharePtr &id_caches)
+                                                          const TableContentShardPtr table_content_ptr,
+                                                          const PositionValueSharedPtr id_pos_mapping,
+                                                          const IDCachesSharePtr id_caches)
 {
-
-
   TableContentShardPtr new_intermediate_table = make_shared<TableContent>();
 
   auto id1 = join_two_node_->node_to_join_1_;
@@ -715,7 +798,7 @@ bool Executor::AddConstantCandidates(EdgeInfo edge_info,EdgeConstantInfo edge_ta
   return true;
 }
 
-tuple<bool, TableContentShardPtr> Executor::getAllSubObjID(bool need_literal)
+tuple<bool, TableContentShardPtr> Executor::GetAllSubObjId(bool need_literal)
 {
   set<TYPE_ENTITY_LITERAL_ID> ids;
   for (TYPE_PREDICATE_ID i = 0; i < this->limitID_entity_; ++i) {
@@ -740,7 +823,8 @@ tuple<bool, TableContentShardPtr> Executor::getAllSubObjID(bool need_literal)
   return make_tuple(true,result);
 }
 
-std::tuple<bool, TableContentShardPtr> Executor::getAllPreID()
+
+std::tuple<bool, TableContentShardPtr> Executor::GetAllPreId()
 {
   set<TYPE_ENTITY_LITERAL_ID> ids;
   for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate_; ++i) {
@@ -757,6 +841,12 @@ std::tuple<bool, TableContentShardPtr> Executor::getAllPreID()
   }
   return make_tuple(true,result);
 }
+
+/**
+ * use edge info to generate IDList
+ * @param edge_info_vector e.g. [sp2o 1 2 _][o2s _ _ 5]
+ * @return the IDList produced
+ */
 shared_ptr<IDList> Executor::CandidatesWithConstantEdge(const shared_ptr<vector<EdgeInfo>> &edge_info_vector) const {
   auto id_candidate = make_shared<IDList>();
   for(int i = 0; i<edge_info_vector->size(); i++)
@@ -882,9 +972,9 @@ Executor::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_lis
   }
 }
 
-std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNode> &one_step_join_node_,
-                                                      const PositionValueSharedPtr &id_pos_mapping,
-                                                      const IDCachesSharePtr &id_caches,
+std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNode> one_step_join_node_,
+                                                      const PositionValueSharedPtr id_pos_mapping,
+                                                      const IDCachesSharePtr id_caches,
                                                       TYPE_ENTITY_LITERAL_ID new_id,
                                                       list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const{
   auto record_candidate_list= make_shared<IDList>();
@@ -901,9 +991,13 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
 /* through this edge get candidate */
     switch (edge_info.join_method_) {
       case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
-/* if s is constant, it is edge constraint check, and should not appear in the function*/
-        auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-        auto s_var_id_this_record = (**record_iterator)[s_var_position];
+        TYPE_ENTITY_LITERAL_ID s_var_id_this_record;
+        if(edge_constant_info.s_constant_)
+          s_var_id_this_record = edge_info.s_;
+        else {
+          auto s_var_position = (*id_pos_mapping)[edge_info.s_];
+          s_var_id_this_record = (**record_iterator)[s_var_position];
+        }
         this->kv_store_->getpreIDlistBysubID(s_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
@@ -912,8 +1006,13 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
         break;
       }
       case JoinMethod::s2o: {
-        auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-        auto s_var_id_this_record = (**record_iterator)[s_var_position];
+        TYPE_ENTITY_LITERAL_ID s_var_id_this_record;
+        if(edge_constant_info.s_constant_)
+          s_var_id_this_record = edge_info.s_;
+        else {
+          auto s_var_position = (*id_pos_mapping)[edge_info.s_];
+          s_var_id_this_record = (**record_iterator)[s_var_position];
+        }
         this->kv_store_->getobjIDlistBysubID(s_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
@@ -922,8 +1021,13 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
         break;
       }
       case JoinMethod::p2s: {
-        auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-        auto p_var_id_this_record = (**record_iterator)[p_var_position];
+        TYPE_ENTITY_LITERAL_ID p_var_id_this_record;
+        if(edge_constant_info.p_constant_)
+          p_var_id_this_record = edge_info.p_;
+        else {
+          auto p_var_position = (*id_pos_mapping)[edge_info.p_];
+          p_var_id_this_record = (**record_iterator)[p_var_position];
+        }
         this->kv_store_->getsubIDlistBypreID(p_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
@@ -932,8 +1036,13 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
         break;
       }
       case JoinMethod::p2o: {
-        auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-        auto p_var_id_this_record = (**record_iterator)[p_var_position];
+        TYPE_ENTITY_LITERAL_ID p_var_id_this_record;
+        if(edge_constant_info.p_constant_)
+          p_var_id_this_record = edge_info.p_;
+        else {
+          auto p_var_position = (*id_pos_mapping)[edge_info.p_];
+          p_var_id_this_record = (**record_iterator)[p_var_position];
+        }
         this->kv_store_->getobjIDlistBypreID(p_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
@@ -942,8 +1051,13 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
         break;
       }
       case JoinMethod::o2s: {
-        auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-        auto o_var_id_this_record = (**record_iterator)[o_var_position];
+        TYPE_ENTITY_LITERAL_ID o_var_id_this_record;
+        if(edge_constant_info.o_constant_)
+          o_var_id_this_record = edge_info.o_;
+        else {
+          auto o_var_position = (*id_pos_mapping)[edge_info.o_];
+          o_var_id_this_record = (**record_iterator)[o_var_position];
+        }
         this->kv_store_->getsubIDlistByobjID(o_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
@@ -952,8 +1066,13 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
         break;
       }
       case JoinMethod::o2p: {
-        auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-        auto o_var_id_this_record = (**record_iterator)[o_var_position];
+        TYPE_ENTITY_LITERAL_ID o_var_id_this_record;
+        if(edge_constant_info.o_constant_)
+          o_var_id_this_record = edge_info.o_;
+        else {
+          auto o_var_position = (*id_pos_mapping)[edge_info.o_];
+          o_var_id_this_record = (**record_iterator)[o_var_position];
+        }
         this->kv_store_->getpreIDlistByobjID(o_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
@@ -962,7 +1081,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
         break;
       }
       case JoinMethod::so2p: {
-        TYPE_ENTITY_LITERAL_ID s_var_position,s_var_id_this_record;
+        TYPE_ENTITY_LITERAL_ID s_var_id_this_record;
         if(edge_constant_info.s_constant_)
           s_var_id_this_record = edge_info.s_;
         else {
@@ -970,7 +1089,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
           s_var_id_this_record = (**record_iterator)[s_var_position];
         }
 
-        TYPE_ENTITY_LITERAL_ID o_var_position,o_var_id_this_record;
+        TYPE_ENTITY_LITERAL_ID o_var_id_this_record;
         if(edge_constant_info.o_constant_)
           o_var_id_this_record = edge_info.o_;
         else {
@@ -987,7 +1106,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
         break;
       }
       case JoinMethod::sp2o: {
-        TYPE_ENTITY_LITERAL_ID s_var_position,s_var_id_this_record;
+        TYPE_ENTITY_LITERAL_ID s_var_id_this_record;
         if(edge_constant_info.s_constant_)
           s_var_id_this_record = edge_info.s_;
         else {
@@ -995,7 +1114,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
           s_var_id_this_record = (**record_iterator)[s_var_position];
         }
 
-        TYPE_ENTITY_LITERAL_ID p_var_position,p_var_id_this_record;
+        TYPE_ENTITY_LITERAL_ID p_var_id_this_record;
         if(edge_constant_info.p_constant_)
           p_var_id_this_record = edge_info.p_;
         else {
@@ -1011,7 +1130,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
         break;
       }
       case JoinMethod::po2s: {
-        TYPE_ENTITY_LITERAL_ID o_var_position,o_var_id_this_record;
+        TYPE_ENTITY_LITERAL_ID o_var_id_this_record;
         if(edge_constant_info.o_constant_)
           o_var_id_this_record = edge_info.o_;
         else {
@@ -1019,7 +1138,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
           o_var_id_this_record = (**record_iterator)[o_var_position];
         }
 
-        TYPE_ENTITY_LITERAL_ID p_var_position,p_var_id_this_record;
+        TYPE_ENTITY_LITERAL_ID p_var_id_this_record;
         if(edge_constant_info.p_constant_)
           p_var_id_this_record = edge_info.p_;
         else {
@@ -1065,13 +1184,14 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
  * @param id_caches
  * @param new_id1
  * @param new_id2
- * @param record_iterator
- * @return
+ * @param record_iterator if all edges are constant and need not to access vars in record_iterator
+ * record_iterator can be nullptr
+ * @return a vector of [id1 id2]_1 [id1 id2]_2  [id1 id2]_3 [id1 id2]_4
  */
 std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>
 Executor::ExtendRecordTwoNode(const shared_ptr<FeedTwoNode> one_step_join_node_,
-                              const PositionValueSharedPtr &id_pos_mapping,
-                              const IDCachesSharePtr &id_caches,
+                              const PositionValueSharedPtr id_pos_mapping,
+                              const IDCachesSharePtr id_caches,
                               TYPE_ENTITY_LITERAL_ID new_id1,
                               TYPE_ENTITY_LITERAL_ID new_id2,
                               list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const{
@@ -1079,15 +1199,22 @@ Executor::ExtendRecordTwoNode(const shared_ptr<FeedTwoNode> one_step_join_node_,
   auto two_node_list = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
 
   auto edge_info = one_step_join_node_->edges_;
+  auto edge_constant_info = one_step_join_node_->edges_constant_info_;
 
   TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
   TYPE_ENTITY_LITERAL_ID edge_list_len;
 /* through this edge get candidate */
   switch (edge_info.join_method_) {
     case JoinMethod::s2po: {
-/* if s is constant, it is edge constraint check, and should not appear in the function*/
-      auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-      auto s_var_id_this_record = (**record_iterator)[s_var_position];
+    /* if s is constant, it is edge constraint check, and should not appear in the function*/
+      TYPE_ENTITY_LITERAL_ID s_var_id_this_record;
+      if(edge_constant_info.s_constant_)
+        s_var_id_this_record = edge_info.s_;
+      else
+      {
+        auto s_var_position = (*id_pos_mapping)[edge_info.s_];
+        s_var_id_this_record = (**record_iterator)[s_var_position];
+      }
       this->kv_store_->getpreIDobjIDlistBysubID(s_var_id_this_record,
                                                 edge_candidate_list,
                                                 edge_list_len,
@@ -1096,8 +1223,14 @@ Executor::ExtendRecordTwoNode(const shared_ptr<FeedTwoNode> one_step_join_node_,
       break;
     }
     case JoinMethod::p2so: {
-      auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-      auto p_var_id_this_record = (**record_iterator)[p_var_position];
+      TYPE_ENTITY_LITERAL_ID p_var_id_this_record;
+      if(edge_constant_info.p_constant_)
+        p_var_id_this_record = edge_info.p_;
+      else
+      {
+        auto p_var_position = (*id_pos_mapping)[edge_info.p_];
+        p_var_id_this_record = (**record_iterator)[p_var_position];
+      }
       this->kv_store_->getsubIDobjIDlistBypreID(p_var_id_this_record,
                                                 edge_candidate_list,
                                                 edge_list_len,
@@ -1106,8 +1239,14 @@ Executor::ExtendRecordTwoNode(const shared_ptr<FeedTwoNode> one_step_join_node_,
       break;
     }
     case JoinMethod::o2sp: {
-      auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-      auto o_var_id_this_record = (**record_iterator)[o_var_position];
+      TYPE_ENTITY_LITERAL_ID o_var_id_this_record;
+      if(edge_constant_info.o_constant_)
+        o_var_id_this_record = edge_info.o_;
+      else
+      {
+        auto o_var_position = (*id_pos_mapping)[edge_info.o_];
+        o_var_id_this_record = (**record_iterator)[o_var_position];
+      }
       this->kv_store_->getsubIDpreIDlistByobjID(o_var_id_this_record,
                                                 edge_candidate_list,
                                                 edge_list_len,
@@ -1157,3 +1296,40 @@ Executor::ExtendRecordTwoNode(const shared_ptr<FeedTwoNode> one_step_join_node_,
   delete [] edge_candidate_list;
   return two_node_list;
 }
+
+/**
+ * This Operation will change id_caches. Update id_caches with
+ * information from step_operation
+ * @param step_operation the edge information
+ * @param id_caches
+ * @return bool
+ */
+bool Executor::UpdateIDCache(std::shared_ptr<StepOperation> step_operation,IDCachesSharePtr id_caches) {
+  //
+  auto feed_plan = step_operation->join_node_;
+  auto var_node_id = feed_plan->node_to_join_;
+  auto candidate_list_it = id_caches->find(var_node_id);
+  auto candidate_generated = this->CandidatesWithConstantEdge( feed_plan->edges_);
+  if(candidate_list_it==id_caches->end())
+  {
+    (*id_caches)[var_node_id] = candidate_generated;
+  }
+  else
+  {
+    auto candidate_already = candidate_list_it->second;
+    candidate_already->intersectList(candidate_generated->getList()->data(),candidate_generated->size());
+  }
+  return true;
+}
+
+TableContentShardPtr Executor::ConvertToTable(std::shared_ptr<IDList> id_list) {
+  auto result = make_shared<TableContent>();
+  auto id_candidate_vec = id_list->getList();
+  for (auto var_id: *id_candidate_vec) {
+    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+    record->push_back(var_id);
+    result->push_back(record);
+  }
+  return TableContentShardPtr();
+}
+

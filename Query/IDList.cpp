@@ -126,6 +126,12 @@ IDList::copy(const IDList* _new_idlist)
 	this->id_list = *(_new_idlist->getList());
 }
 
+/**
+ * Intersect With other List and change this IDList
+ * @param _id_list the other(will not change)
+ * @param _list_len the length of the other(will not change)
+ * @return how many items have been removed
+ */
 unsigned
 IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
 {
