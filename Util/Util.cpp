@@ -2620,3 +2620,9 @@ std::string Util::getArgValue(int argc, char* argv[], std::string argname, std::
 	//cout << argname << " is not exist,using the default value:" << default_value << endl;
 	return default_value;
 }
+
+void Util::formatPrint(std::string content, std::string type = "Info")
+{
+    string time = Util::getTimeString();
+    cout << "[" << type << "][" << time << "]:" << content << endl;
+}

@@ -29,6 +29,7 @@ main(int argc, char * argv[])
 {
 	//chdir(dirname(argv[0]));
 //#ifdef DEBUG
+//*! [important] you should init the Util class.
 Util util;
 //#endif
 	if (argc < 2)
@@ -56,7 +57,8 @@ Util util;
 		}
 		else
 		{
-			cout << "the command is not complete." << endl;
+			//cout << "the command is not complete." << endl;
+			Util::formatPrint("the command is not complete.", "Error");
 			return 0;
 		}
 	}
@@ -65,31 +67,35 @@ Util util;
 		string db_folder =Util::getArgValue(argc, argv, "db", "");
 		if (db_folder.empty())
 		{
-			cout << "please input the database name " << endl;
+	/*		cout << "please input the database name " << endl;*/
+			Util::formatPrint("please input the database name.", "Error");
 			return 0;
 		}
 		int len = db_folder.length();
 
 		if (db_folder.substr(len - 3, 3) == ".db")
 		{
-			cout << "your database can not end with .db" << endl;
+			/*cout << "your database can not end with .db" << endl;*/
+			Util::formatPrint("your database can not end with .db.", "Error");
 			return -1;
 		}
 		string filename=Util::getArgValue(argc, argv, "file", "");
 		if (filename.empty())
 		{
-			cout << "please input the file path." << endl;
+			//cout << "please input the file path." << endl;
+			Util::formatPrint("please input the file path.", "Error");
 			return 0;
 		}
-		cout << "begin operation,dbname"<<db_folder<<",file"<<filename << endl;
+	
 		Database _db(db_folder);
-		cout << "db:" << &_db << endl;
 		_db.load();
-		cout << "finish loading" << endl;
+		//cout << "finish loading" << endl;
+		Util::formatPrint("finish loading.", "Info");
 		//_db.insert(argv[2]);
 		//_db.remove(argv[2]);
 		_db.insert(filename, false, nullptr);
-		cout << "finish insert data" << endl;
+		//cout << "finish insert data" << endl;
+		Util::formatPrint("finish insert data.", "Info");
 
 	}
 	

@@ -701,7 +701,7 @@ Database::load(bool loadCSR)
 	//BETTER: get return value from subthread(using ref or file as hub)
 	unsigned vstree_cache = LRUCache::DEFAULT_CAPACITY;
 	bool flag;
-	cout << "begin loading dbinfoFile" << endl;
+	
 #ifndef THREAD_ON
 	//flag = (this->vstree)->loadTree(vstree_cache);
 	//if (!flag)
