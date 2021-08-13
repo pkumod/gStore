@@ -83,6 +83,7 @@ main(int argc, char * argv[])
 		}
 		cout << "begin operation,dbname"<<db_folder<<",file"<<filename << endl;
 		Database _db(db_folder);
+		cout << "db:" << &_db << endl;
 		_db.load();
 		cout << "finish loading" << endl;
 		//_db.insert(argv[2]);
