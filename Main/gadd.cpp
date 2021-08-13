@@ -29,7 +29,7 @@ main(int argc, char * argv[])
 {
 	//chdir(dirname(argv[0]));
 //#ifdef DEBUG
-//Util util;
+Util util;
 //#endif
 	if (argc < 2)
 	{
