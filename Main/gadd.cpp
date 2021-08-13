@@ -10,8 +10,10 @@
   * @attention  
   */
 
+
 #include "../Database/Database.h"
 #include "../Util/Util.h"
+#include "../Util//Slog.h"
 
 using namespace std;
 
@@ -24,6 +26,8 @@ using namespace std;
  *                   -help:print help info
  * @return 		the int value.
 */
+
+
 int
 main(int argc, char * argv[])
 {
@@ -32,10 +36,14 @@ main(int argc, char * argv[])
 //*! [important] you should init the Util class.
 Util util;
 //#endif
+Slog slog;
+slog.init("slog.properties");
+
 	if (argc < 2)
 	{
 		cout << "please input the complete command:\t" << endl;
 		cout << "\t bin/gadd -h" << endl;
+		slog.Error("please input the complete command:");
 		return 0;
 	}
 	else if (argc == 2)
@@ -91,11 +99,13 @@ Util util;
 		_db.load();
 		//cout << "finish loading" << endl;
 		Util::formatPrint("finish loading.", "Info");
+		slog.Info("finish loading.");
 		//_db.insert(argv[2]);
 		//_db.remove(argv[2]);
 		_db.insert(filename, false, nullptr);
 		//cout << "finish insert data" << endl;
 		Util::formatPrint("finish insert data.");
+		slog.Info("finish insert data.");
 
 	}
 	
