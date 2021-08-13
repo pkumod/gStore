@@ -200,12 +200,22 @@ struct JoinTwoTable{
 
 class StepOperation{
  public:
+  // TODO merge the four together
   std::shared_ptr<FeedOneNode> join_node_;
   std::shared_ptr<FeedTwoNode> join_two_node_;
   std::shared_ptr<JoinTwoTable> join_table_;
   std::shared_ptr<FeedOneNode> edge_filter_; // GenerateCandidates & EdgeCheck use this filed
+
   // ConstCandidatesCheck
-  enum class JoinType{JoinNode,GenerateCandidates,JoinTable,EdgeCheck,JoinTwoNodes} join_type_;
+  enum class JoinType{
+    JoinNode, // join a node to table, or create a table with one node
+    GenerateCandidates, // change the candidates list for one node
+    JoinTable, // join two table together
+    EdgeCheck, // check if an edge exist. the nodes in the edge should already in the table
+    JoinTwoNodes // join two node to table,instead of joining twice
+  };
+
+  JoinType join_type_;
 
   StepOperation(): join_node_(nullptr), join_two_node_(nullptr), join_table_(nullptr), edge_filter_(nullptr){};
 
