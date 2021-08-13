@@ -32,19 +32,34 @@ main(int argc, char * argv[])
 	Util util;
 //#endif
 	cout << "argc:" << argc << ",argv[1]:" << argv[1] << endl;
-	if (argc == 2 && (argv[1] == "-h" || argv[1] == "-help"))
+	if (argc < 2)
 	{
-		cout << endl;
-		cout << "gStore Batch Insert Data Tools(gadd)" << endl;
-		cout << endl;
-		cout << "Usage:\tbin/gadd -db [dbname] -file [filename] [option]" << endl;
-		cout << endl;
-		cout << "Options:" << endl;
-		cout << "\t-h,--help\t\tDisplay this message." << endl;
-		cout << "\t[dbname],\t\t the database name. " << endl;
-		cout << "\t[filename],\t\tthe file path for inserting data." << endl;
-		cout << endl;
+		cout << "please input the complete command:\t" << endl;
+		cout << "\t bin/gadd -h" << endl;
 		return 0;
+	}
+	else if (argc == 2)
+	{
+		string command = argv[1];
+		if (command == "-h" || command == "-help")
+		{
+			cout << endl;
+			cout << "gStore Batch Insert Data Tools(gadd)" << endl;
+			cout << endl;
+			cout << "Usage:\tbin/gadd -db [dbname] -file [filename] [option]" << endl;
+			cout << endl;
+			cout << "Options:" << endl;
+			cout << "\t-h,--help\t\tDisplay this message." << endl;
+			cout << "\t[dbname],\t\t the database name. " << endl;
+			cout << "\t[filename],\t\tthe file path for inserting data." << endl;
+			cout << endl;
+			return 0;
+		}
+		else
+		{
+			cout << "the command is not complete." << endl;
+			return 0;
+		}
 	}
 	else
 	{
