@@ -10,7 +10,7 @@
 #include<set>
 using namespace std;
 
-// #define TEST_BGPQUERY
+#define TEST_BGPQUERY
 
 void *preread_from_index(void *argv)
 {
@@ -337,7 +337,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 	// Test for BGPQuery
 #ifdef TEST_BGPQUERY
-	bool testBGPQuery = true;
+	bool testBGPQuery = false;
 	if (testBGPQuery)
 	{
 		vector<QueryTree::GroupPattern::Pattern> vp;
@@ -623,6 +623,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					getUsefulVarset(useful, dep);
 
 					SPARQLquery sparql_query;
+					#ifdef TEST_BGPQUERY
+					auto bgp_query = make_shared<BGPQuery>();
+					#endif
 					vector<vector<string> > encode_varset;
 					vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
 
@@ -686,11 +689,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 								//// QUESTION: Is basic_query_handle a redundant variable? ////
 								if (!success)
 								{
+									#ifndef TEST_BGPQUERY
 									sparql_query.addBasicQuery();
 									for (int k = 0; k < (int)basic_query.size(); k++)
 										sparql_query.addTriple(Triple(basic_query[k].subject.value,
 											basic_query[k].predicate.value,
 											basic_query[k].object.value));
+									#else
+									for (int k = 0; k < (int)basic_query.size(); k++)
+									bgp_query->AddTriple(Triple(basic_query[k].subject.value,
+											basic_query[k].predicate.value,
+											basic_query[k].object.value));
+									#endif
 
 									encode_varset.push_back(useful.vars);
 									basic_query_handle.push_back(basic_query);
@@ -700,7 +710,12 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 					// Encode BGPs //
 					long tv_begin = Util::get_cur_time();
+					#ifndef TEST_BGPQUERY
 					sparql_query.encodeQuery(this->kvstore, encode_varset);
+					#else
+					bgp_query->EncodeBGPQuery(kvstore, encode_varset[0]);
+					bgp_query->print(kvstore);
+					#endif
 					long tv_encode = Util::get_cur_time();
 					printf("after Encode, used %ld ms.\n", tv_encode - tv_begin);
 
@@ -725,7 +740,11 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					for(auto order_item:this->query_tree.getOrderVarVector())
 						query_info.ordered_by_expressions_->push_back(order_item);
 
+					#ifndef TEST_BGPQUERY
 					this->optimizer_->DoQuery(sparql_query,query_info);
+					#else
+					this->optimizer_->DoQuery(bgp_query,query_info);
+					#endif
 
 					long tv_handle = Util::get_cur_time();
 					printf("after Handle, used %ld ms.\n", tv_handle - tv_fillcand);
@@ -740,7 +759,11 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						temp->results[0].id_varset = Varset(encode_varset[j]);
 						int varnum = (int)encode_varset[j].size();
 
+						#ifndef TEST_BGPQUERY
 						vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
+						#else
+						vector<unsigned*> &basicquery_result = *(bgp_query->get_result_list_pointer());
+						#endif
 						int basicquery_result_num = (int)basicquery_result.size();
 
 						temp->results[0].result.reserve(basicquery_result_num);
