@@ -481,6 +481,7 @@ public:
 	static long int get_timestamp(std::string& line);
 	static std::string stamp2time(int timestamp);
 	static std::vector<std::string> GetFiles(const char *src_dir, const char *ext);
+	static std::string getArgValue(int argc, char* argv[], std::string argname, std::string default_value);
 private:
 	static bool isValidIPV4(std::string);
 	static bool isValidIPV6(std::string);
