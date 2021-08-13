@@ -84,8 +84,8 @@ tuple<bool, TableContentShardPtr> Optimizer::ExecutionDepthFirst(BasicQuery* bas
                                                                  const PositionValueSharedPtr& id_pos_mapping) {
   auto limit_num = query_info.limit_num_;
   cout<<"Optimizer::ExecutionDepthFirst query_info.limit_num_="<<query_info.limit_num_<<endl;
-  auto first_result = executor_.GenerateColdCandidateList((*query_plan->join_order_)[0].edge_filter_->edges_,
-                                                          (*query_plan->join_order_)[0].edge_filter_->edges_constant_info_);
+  auto first_result = executor_.GenerateTableWithOneNode((*query_plan->join_order_)[0].edge_filter_->edges_,
+                                                         (*query_plan->join_order_)[0].edge_filter_->edges_constant_info_);
 
   auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
   auto first_candidates_list = get<1>(first_result);
@@ -771,7 +771,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
           break;
         }
       }
-      auto all_nodes_table = get<1>(executor_.getAllSubObjID(has_in_edge));
+      auto all_nodes_table = get<1>(executor_.GetAllSubObjId(has_in_edge));
       // PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
 //      cout<<"ExecutionBreathFirst 2"<<endl;
       cout<<"result size "<<all_nodes_table->size()<<endl;
@@ -883,113 +883,149 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
                                                                                          Tree_node* plan_tree_node,
                                                                                          IDCachesSharePtr id_caches)
 {
-  auto limit_num = query_info.limit_num_;
   // leaf node
   auto step_operation = plan_tree_node->node;
   auto operation_type = step_operation->join_type_;
 
-  if(operation_type== StepOperation::JoinType::JoinNode) {
-    // create a table in leaf node
-    if (plan_tree_node->left_node == nullptr && plan_tree_node->right_node == nullptr) {
-      auto node_added = plan_tree_node->node_to_join;
-      cout << "leafnode [" << bgp_query->get_var_name_by_id(node_added) << "],  ";
-      auto id_cache_it = id_caches->find(node_added);
-      PositionValueSharedPtr pos_mapping = make_shared<PositionValue>();
-      (*pos_mapping)[0] = node_added;
-      auto result = make_shared<TableContent>();
-
-      if (id_cache_it != id_caches->end()) {
-        auto id_candidate_vec = id_cache_it->second->getList();
-        for (auto var_id: *id_candidate_vec) {
-          auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
-          record->push_back(var_id);
-          result->push_back(record);
-        }
-//      cout<<"ExecutionBreathFirst 1"<<endl;
-        cout << "result size " << result->size() << endl;
-        return make_tuple(true, pos_mapping, result);
-      } else // No Constant Constraint,Return All IDs
-      {
-        auto leaf_var_id = plan_tree_node->node_to_join;
-        auto var_descriptor = bgp_query->get_vardescrip_by_id(leaf_var_id);
-        TableContentShardPtr all_nodes_table;
-        if (var_descriptor->var_type_ == VarDescriptor::VarType::Predicate) {
-          all_nodes_table = get<1>(executor_.getAllPreID());
-        } else {
-          bool has_in_edge = false;
-          auto var_name = bgp_query->get_var_name_by_id(node_added);
-          auto edge_ids = var_descriptor->so_edge_index_;
-
-          for (auto edge_id : edge_ids) {
-            auto triple = bgp_query->get_triple_by_index(edge_id);
-            if (var_name == triple.getObject()) {
-              has_in_edge = true;
-              break;
-            }
-          }
-          all_nodes_table = get<1>(executor_.getAllSubObjID(has_in_edge));
-        }
-        cout << "result size " << all_nodes_table->size() << endl;
-        return make_tuple(true, pos_mapping, all_nodes_table);
-      }
+  // leaf node : create a table
+  if (plan_tree_node->left_node == nullptr && plan_tree_node->right_node == nullptr)
+  {
+    auto position_id_map = make_shared<PositionValue>();
+    TableContentShardPtr leaf_table;
+    if(operation_type== StepOperation::JoinType::JoinNode){
+      auto r = this->PrepareInitial(bgp_query,step_operation->join_node_);
+      bool is_entity= get<0>(r);
+      bool is_literal = get<1>(r);
+      bool is_predicate = get<2>(r);
+      auto initial_result = executor_.InitialTableOneNode(step_operation->join_node_,is_entity,is_literal,is_predicate,position_id_map,id_caches);
+      leaf_table = get<1>(initial_result);
     }
-    else // internal node: join a node to this table
+    else if(operation_type== StepOperation::JoinType::GenerateCandidates)
     {
-      tuple<bool,PositionValueSharedPtr, TableContentShardPtr> left_r;
-      tuple<bool,PositionValueSharedPtr, TableContentShardPtr> right_r;
-      if(plan_tree_node->joinType == NodeJoinType::JoinANode)
-      {
-        left_r = this->ExecutionBreathFirst(bgp_query,query_info,plan_tree_node->left_node,id_caches);
-        auto left_table = get<2>(left_r);
-        auto left_pos_id_mapping = get<1>(left_r);
+      executor_.UpdateIDCache(step_operation,id_caches);
+    }
+    else if(operation_type==StepOperation::JoinType::JoinTable)
+      throw "StepOperation::JoinType::JoinTable cannot happened in leaf node";
+    else if(operation_type==StepOperation::JoinType::EdgeCheck)
+      throw "StepOperation::JoinType::EdgeCheck cannot happened in leaf node";
+    else if(operation_type==StepOperation::JoinType::JoinTwoNodes){}
+    else
+      throw "unexpected JoinType";
 
-        auto left_ids = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+    return make_tuple(true,position_id_map,leaf_table);
+  }
 
-        auto left_id_position = make_shared<PositionValue>();
-        for(const auto& pos_id_pair:* left_pos_id_mapping) {
-          left_ids->push_back(pos_id_pair.second);
-          (*left_id_position)[pos_id_pair.second]= pos_id_pair.first;
-        }
-        auto node_to_join = plan_tree_node->right_node->node_to_join;
 
-        cout<<"join node ["<<bgp_query->get_var_name_by_id(node_to_join)<<"]"<<",  ";
-        auto one_step_join = plan_tree_node->node;
-        //auto one_step_join = QueryPlan::LinkWithPreviousNodes(bgp_query, this->kv_store_, node_to_join,left_ids);
-        (*left_pos_id_mapping)[left_pos_id_mapping->size()] = node_to_join;
-        (*left_id_position)[node_to_join] = left_pos_id_mapping->size();
-        auto join_node = one_step_join->join_node_;
-        auto edges = *join_node->edges_;
-        auto edge_c = *join_node->edges_constant_info_;
+  //inner node
+  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> left_r;
+  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> right_r;
+
+  if(plan_tree_node->left_node != nullptr)
+    left_r = this->ExecutionBreathFirst(bgp_query,query_info,plan_tree_node->left_node,id_caches);
+
+  if(plan_tree_node->right_node != nullptr)
+    right_r = this->ExecutionBreathFirst(bgp_query,query_info,plan_tree_node->right_node,id_caches);
+
+  if(operation_type == StepOperation::JoinType::GenerateCandidates){
+    executor_.UpdateIDCache(step_operation,id_caches);
+    return left_r;
+  }
+
+  // reading the left child result
+  auto left_table = get<2>(left_r);
+  auto left_pos_id_mapping = get<1>(left_r);
+  auto left_ids = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+  auto left_id_position = make_shared<PositionValue>();
+  for(const auto& pos_id_pair:* left_pos_id_mapping) {
+    left_ids->push_back(pos_id_pair.second);
+    (*left_id_position)[pos_id_pair.second]= pos_id_pair.first;
+  }
+
+  // JoinNode/EdgeCheck/JoinTwoNodes has only ONE left child
+  if(operation_type== StepOperation::JoinType::JoinNode) {
+    // create a new table
+    if(left_pos_id_mapping->size()==0){
+      auto position_id_map = make_shared<PositionValue>();
+      auto r = this->PrepareInitial(bgp_query,step_operation->join_node_);
+      bool is_entity= get<0>(r);
+      bool is_literal = get<1>(r);
+      bool is_predicate = get<2>(r);
+      auto initial_result = executor_.InitialTableOneNode(step_operation->join_node_,is_entity,is_literal,is_predicate,position_id_map,id_caches);
+      auto leaf_table = get<1>(initial_result);
+      return make_tuple(true,position_id_map,leaf_table);
+    }
+
+    auto one_step_join = plan_tree_node->node;
+    auto node_to_join = one_step_join->join_node_->node_to_join_;
+    cout<<"join node ["<<bgp_query->get_var_name_by_id(node_to_join)<<"]"<<",  ";
+    (*left_pos_id_mapping)[left_pos_id_mapping->size()] = node_to_join;
+    (*left_id_position)[node_to_join] = left_pos_id_mapping->size();
+    auto join_node = one_step_join->join_node_;
+    auto edges = *join_node->edges_;
+    auto edge_c = *join_node->edges_constant_info_;
 #ifdef TABLE_OPERATOR_DEBUG_INFO
-        for(int i=0;i<edges.size();i++)
+    for(int i=0;i<edges.size();i++)
       {
         std::cout<<"edge["<<i<<"] "<<edges[i].toString()<<std::endl;
         std::cout<<"constant["<<i<<"] "<<edge_c[i].toString()<<std::endl;
       }
 #endif
-        long t1 = Util::get_cur_time();
-        auto step_result = executor_.JoinANode(one_step_join->join_node_, left_table,left_id_position,id_caches);
+    long t1 = Util::get_cur_time();
+    auto step_result = executor_.JoinANode(one_step_join->join_node_, left_table,left_id_position,id_caches);
 
-        cout<<"result size "<<get<1>(step_result)->size();
-        long t2 = Util::get_cur_time();
-        cout<< ",  used " << (t2 - t1) << "ms." <<endl;
-        return make_tuple(true,left_pos_id_mapping,get<1>(step_result));
-      }
+    cout<<"result size "<<get<1>(step_result)->size();
+    long t2 = Util::get_cur_time();
+    cout<< ",  used " << (t2 - t1) << "ms." <<endl;
+    return make_tuple(true,left_pos_id_mapping,get<1>(step_result));
+
+  }
+  else if(operation_type==StepOperation::JoinType::EdgeCheck){
+
+    auto edge_filter = step_operation->edge_filter_;
+    long t1 = Util::get_cur_time();
+    auto step_result =executor_.ANodeEdgesConstraintFilter(edge_filter,left_table,left_id_position,id_caches);
+
+    cout<<"result size "<<get<1>(step_result)->size();
+    long t2 = Util::get_cur_time();
+    cout<< ",  used " << (t2 - t1) << "ms." <<endl;
+    return make_tuple(true,left_pos_id_mapping,get<1>(step_result));
+  }
+  else if(operation_type==StepOperation::JoinType::JoinTwoNodes){
+
+    if(left_pos_id_mapping->size()==0){
+      auto position_id_map = make_shared<PositionValue>();
+      auto initial_result = executor_.InitialTableTwoNode(step_operation->join_two_node_,position_id_map,id_caches);
+      auto leaf_table = get<1>(initial_result);
+      return make_tuple(true,position_id_map,leaf_table);
     }
+
+    auto one_step_join = plan_tree_node->node;
+    auto join_two_plan = one_step_join->join_two_node_;
+
+    auto node1 = join_two_plan->node_to_join_1_;
+    auto node2 = join_two_plan->node_to_join_2_;
+    cout<<"join node ["<<bgp_query->get_var_name_by_id(node1)<<"]"<<",  ";
+    cout<<"join node ["<<bgp_query->get_var_name_by_id(node2)<<"]"<<",  ";
+
+    (*left_pos_id_mapping)[left_pos_id_mapping->size()] = node1;
+    (*left_id_position)[node1] = left_pos_id_mapping->size();
+
+    (*left_pos_id_mapping)[left_pos_id_mapping->size()] = node2;
+    (*left_id_position)[node2] = left_pos_id_mapping->size();
+
+    long t1 = Util::get_cur_time();
+    auto step_result = executor_.JoinTwoNode(join_two_plan, left_table,left_id_position,id_caches);
+
+    cout<<"result size "<<get<1>(step_result)->size();
+    long t2 = Util::get_cur_time();
+    cout<< ",  used " << (t2 - t1) << "ms." <<endl;
+    return make_tuple(true,left_pos_id_mapping,get<1>(step_result));
   }
-  else if(operation_type== StepOperation::JoinType::GenerateCandidates){
-    //TODO
-  }
-  else if(operation_type==StepOperation::JoinType::JoinTable){
-    auto left_r = this->ExecutionBreathFirst(bgp_query,query_info,plan_tree_node->left_node,id_caches);
-    auto left_table = get<2>(left_r);
-    auto left_pos_id_mapping = get<1>(left_r);
 
+  auto right_table = get<2>(right_r);
+  auto right_pos_id_mapping = get<1>(right_r);
 
-    auto right_r = this->ExecutionBreathFirst(bgp_query,query_info,plan_tree_node->right_node,id_caches);
-    auto right_table = get<2>(right_r);
-    auto right_pos_id_mapping = get<1>(right_r);
-
+  if(operation_type==StepOperation::JoinType::JoinTable){
     set<TYPE_ENTITY_LITERAL_ID> public_var_set;
     set<TYPE_ENTITY_LITERAL_ID> right_table_var_id;
 
@@ -1001,14 +1037,10 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
         public_var_set.insert(left_pos_id_pair.second);
       }
     }
-//      cout << "public var:" << endl;
-//      for(auto x : public_var_set)
-//        cout << x << endl;
 
     auto one_step_join_table = make_shared<JoinTwoTable>();
     for(const auto public_var:public_var_set)
       one_step_join_table->public_variables_->push_back(public_var);
-//      cout<<"ExecutionBreathFirst 5"<<endl;
 
     auto left_id_pos_mapping = make_shared<PositionValue>();
     auto right_id_pos_mapping = make_shared<PositionValue>();
@@ -1023,17 +1055,47 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
     return executor_.JoinTable(one_step_join_table, left_table, left_id_pos_mapping,left_pos_id_mapping,
                                right_table, right_id_pos_mapping,right_pos_id_mapping);
   }
-  else if(operation_type==StepOperation::JoinType::EdgeCheck){}
-  else if(operation_type==StepOperation::JoinType::JoinTwoNodes){}
   else
     throw "unexpected JoinType";
-
+  auto position_id_map = make_shared<PositionValue>();
+  auto empty_table = make_shared<TableContent>();
+  return make_tuple(true,position_id_map,empty_table);
 }
 
-
+/**
+ * calculator which role a variable node maybe
+ * @param bgp_query
+ * @param join_a_node_plan
+ * @return is_entity,is_literal,is_predicate
+ */
+tuple<bool,bool,bool>
+Optimizer::PrepareInitial(shared_ptr<BGPQuery> bgp_query,
+                          shared_ptr<FeedOneNode> join_a_node_plan) const {
+  bool is_entity= false;
+  bool is_predicate= false;
+  bool is_literal= false;
+  auto target_var_id = join_a_node_plan->node_to_join_;
+  cout << "leaf node [" << bgp_query->get_var_name_by_id(target_var_id) << "],  ";
+  auto var_descriptor = bgp_query->get_vardescrip_by_id(target_var_id);
+  if (var_descriptor->var_type_ == VarDescriptor::VarType::Predicate) {
+    is_predicate = true;
+  }
+  else {
+    is_entity = true;
+    auto var_name = bgp_query->get_var_name_by_id(target_var_id);
+    auto edge_ids = var_descriptor->so_edge_index_;
+    for (auto edge_id : edge_ids) {
+      auto triple = bgp_query->get_triple_by_index(edge_id);
+      if (var_name == triple.getObject()) {
+        is_literal = true;
+        break;
+      }
+    }
+  }
+  return make_tuple(is_entity,is_literal,is_predicate);
+}
 
 #ifdef TOPK_SUPPORT
-
 tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTopK(BasicQuery* basic_query,
                                                                                    shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
                                                                                    const QueryInfo& query_info,
