@@ -2621,7 +2621,7 @@ std::string Util::getArgValue(int argc, char* argv[], std::string argname, std::
 	return default_value;
 }
 
-void Util::formatPrint(std::string content, std::string type = "Info")
+void Util::formatPrint(std::string content, std::string type)
 {
     string time = Util::getTimeString();
     cout << "[" << type << "][" << time << "]:" << content << endl;
