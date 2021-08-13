@@ -81,6 +81,7 @@ main(int argc, char * argv[])
 			cout << "please input the file path." << endl;
 			return 0;
 		}
+		cout << "begin operation,dbname"<<db_folder<<",file"<<filename << endl;
 		Database _db(db_folder);
 		_db.load();
 		cout << "finish loading" << endl;
