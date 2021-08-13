@@ -13,7 +13,22 @@
 
 #include "../Database/Database.h"
 #include "../Util/Util.h"
-#include "../Util//Slog.h"
+#include "../Util/Slog.h"
+#include <stdio.h>
+#include <log4cplus/logger.h>
+#include <log4cplus/loggingmacros.h>
+#include <log4cplus/consoleappender.h>
+#include <log4cplus/config.hxx>
+#include <log4cplus/logger.h>
+#include <log4cplus/configurator.h>
+#include <log4cplus/helpers/loglog.h>
+#include <log4cplus/helpers/stringhelper.h>
+#include <log4cplus/helpers/socket.h>
+#include <log4cplus/spi/loggerimpl.h>
+#include <log4cplus/spi/loggingevent.h>
+
+using namespace log4cplus;
+using namespace log4cplus::helpers;
 
 using namespace std;
 
@@ -36,7 +51,13 @@ main(int argc, char * argv[])
 //*! [important] you should init the Util class.
 Util util;
 //#endif
+
+log4cplus::initialize();
+log4cplus::PropertyConfigurator::doConfigure("slog.properties");
+log4cplus::Logger _logger = log4cplus::Logger::getInstance("global");
+LOG4CPLUS_INFO(_logger, "Logger system start finish.");
 Slog slog;
+
 slog.init("slog.properties");
 
 	if (argc < 2)
