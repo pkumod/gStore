@@ -696,7 +696,7 @@ Database::load(bool loadCSR)
 	{
 		return true;
 	}
-	cout << "begin loading..." << endl;
+	
 	//TODO: acquire this arg from memory manager
 	//BETTER: get return value from subthread(using ref or file as hub)
 	unsigned vstree_cache = LRUCache::DEFAULT_CAPACITY;
@@ -724,7 +724,7 @@ Database::load(bool loadCSR)
 	thread obj2values_thread(&Database::load_obj2values, this, kv_mode);
 	thread pre2values_thread(&Database::load_pre2values, this, kv_mode);
 #endif
-
+	cout << "begin loading dbinfoFile" << endl;
 	//this is very fast
 	flag = this->loadDBInfoFile();
 	if (!flag)
