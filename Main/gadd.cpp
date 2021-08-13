@@ -95,7 +95,7 @@ Util util;
 		//_db.remove(argv[2]);
 		_db.insert(filename, false, nullptr);
 		//cout << "finish insert data" << endl;
-		Util::formatPrint("finish insert data.", "Info");
+		Util::formatPrint("finish insert data.");
 
 	}
 	
