@@ -2597,3 +2597,26 @@ Util::GetFiles(const char *src_dir, const char *ext)
     closedir(dir);
     return result;
 }
+
+std::string Util::getArgValue(int argc, char* argv[], std::string argname, std::string default_value)
+{
+    
+	for (int i = 0; i < argc; i++)
+	{
+		if (argv[i] == "-" + argname)
+		{
+			if (i + 1 >= argc)
+			{
+				return argname + " has no value.";
+			}
+			else
+			{
+				return argv[i + 1];
+			}
+
+		}
+
+	}
+	cout << argname << " is not exist,using the default value:" << default_value << endl;
+	return default_value;
+}
