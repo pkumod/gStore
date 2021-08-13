@@ -3596,40 +3596,23 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		return false;
 	}
 	
-	//if this is not a new triple, return directly
-	// bool _triple_exist = false;
-	// if (!_is_new_sub && !_is_new_pre && !_is_new_obj)
-	// {
-	// 	//_triple_exist = this->exist_triple(_sub_id, _pre_id, _obj_id, txn);
-	// 	//check_times++;
-	// }
+	//if this is not a new triple, return directly (in case of no transaction)
+	if (txn == nullptr)
+	{
+		bool _triple_exist = false;
+		if (!_is_new_sub && !_is_new_pre && !_is_new_obj)
+			_triple_exist = this->exist_triple(_sub_id, _pre_id, _obj_id, txn);
 
-	//debug
-	//  {
-	//      stringstream _ss;
-	//      _ss << this->literal_num << endl;
-	//      _ss <<"ids: " << _sub_id << " " << _pre_id << " " << _obj_id << " " << _triple_exist << endl;
-	//      Util::logging(_ss.str());
-	//  }
-
-	// if (_triple_exist)
-	// {
-	// 	//unlock items that not locked before
-	// 	if(txn != nullptr){
-	// 		bool ret  = (this->kvstore)->releaseExclusiveLocks(_sub_id, _pre_id, _obj_id, txn);
-	// 		if(ret == false)
-	// 		{
-	// 			cerr << "...........................releaseExclusiveLocks failed!" << endl;
-	// 		}
-	// 	}
-	// 	cout << "this triple already exist" << endl;
-	// 	return false;
-	// }
-	// else
-	// {
-	// 	this->triples_num++;
-	// }
-	//cout<<"the triple spo ids: "<<_sub_id<<" "<<_pre_id<<" "<<_obj_id<<endl;
+		if (_triple_exist)
+		{
+			cout << "this triple already exist" << endl;
+			return false;
+		}
+		else
+		{
+			this->triples_num++;
+		}
+	}
 
 	//update sp2o op2s s2po o2ps s2o o2s etc.
 	bool ret = (this->kvstore)->updateTupleslist_insert(_sub_id, _pre_id, _obj_id, txn);
@@ -3704,19 +3687,17 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		return false;
 	}
 	
-	// bool _exist_triple = this->exist_triple(_sub_id, _pre_id, _obj_id, txn);
-	// if (!_exist_triple)
-	// {
-	// 	//unlock items that not locked before
-	// 	cout << "triple is not exsited! " << endl;
-	// 	if(txn != nullptr)
-	// 		(this->kvstore)->releaseExclusiveLocks(_sub_id, _pre_id, _obj_id, txn);
-	// 	return false;
-	// }
-	// else
-	// {
-	// 	this->triples_num--;
-	// }
+	if (txn == nullptr)
+	{
+		bool _exist_triple = this->exist_triple(_sub_id, _pre_id, _obj_id, txn);
+		if (!_exist_triple)
+		{
+			cout << "triple not exist! " << endl;
+			return false;
+		}
+		else
+			this->triples_num--;
+	}
 
 	//cout << "triple existence checked" << endl;
 
