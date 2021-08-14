@@ -17,9 +17,8 @@ enum class JoinMethod{s2p,s2o,p2s,p2o,o2s,o2p,so2p,sp2o,po2s,
 					  s2po,p2so,o2sp};
 
 std::string JoinMethodToString(JoinMethod x);
-// Not fully used, maybe abandoned
 
-// todo: replace this by new vardescriptor in BGPQuery
+// It will be abandoned
 class OldVarDescriptor{
  public:
   enum class VarType{EntityType,PredicateType};
