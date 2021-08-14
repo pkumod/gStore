@@ -56,7 +56,7 @@ public:
 	const unsigned SAMPLE_CACHE_MAX = 50;
 	const double SAMPLE_PRO = 0.05;
 
-	JoinMethod get_join_strategy(bool s_is_var, bool o_is_var, bool p_is_var, unsigned var_num);
+	JoinMethod get_join_strategy(bool s_is_var, bool p_is_var, bool o_is_var, unsigned var_num);
 
 	unsigned get_sample_size(unsigned id_cache_size);
 	bool check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDICATE_ID p_id, TYPE_ENTITY_LITERAL_ID o_id);
@@ -94,6 +94,7 @@ public:
 	PlanTree* get_normal_plan();
 
 
+	void get_candidate_generate_plan();
 	void considerallvarscan();
 	void considerallwcojoin(unsigned var_num);
 	void considerallbinaryjoin(unsigned var_num);

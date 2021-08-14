@@ -102,22 +102,6 @@ public:
 
 	VarDescriptor(unsigned id, VarType var_type, const string &var_name);
 
-	// VarDescriptor(VarType var_type,const std::string& var_name,BasicQuery* basic_query):
-	// 		var_type_(var_type),var_name_(var_name)
-	// {
-	// 	this->basic_query_id = basic_query->getIDByVarName(var_name);
-	// 	this->selected_ = basic_query->isVarSelected(var_name);
-	// 	this->degree_ = basic_query->getVarDegree(basic_query_id);
-	//
-	// 	if(!this->selected_)
-	// 		this->rewriting_position_ = -1;
-	// 	// record_len = select_var_num + selected_pre_var_num;
-	// 	if(this->var_type_ == VarType::EntityType)
-	// 		this->rewriting_position_ = basic_query->getSelectedVarPosition(this->var_name_);
-	//
-	// 	if(this->var_type_ == VarType::PredicateType)
-	// 		this->rewriting_position_ = basic_query->getSelectedPreVarPosition(this->var_name_);
-	// };
 
 	// bool get_edge_type(int edge_id);
 	// int get_edge_nei(int edge_id);
@@ -261,6 +245,8 @@ public:
 	const vector<Triple> &get_triple_vt();
 	const Triple &get_triple_by_index(unsigned index);
 
+
+	bool is_var_satellite_by_index(unsigned index);
 
 	void print(KVstore * kvstore);
     vector<unsigned*>* get_result_list_pointer();

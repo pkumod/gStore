@@ -398,7 +398,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     vector<int> node_order = {2,1,0};
       auto best_plan_tree = new PlanTree(node_order);
 #else
-    auto best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_normal_plan();
+    auto best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_random_plan();
     // get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
 #endif
     long t4 = Util::get_cur_time();

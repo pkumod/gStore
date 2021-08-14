@@ -714,7 +714,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					sparql_query.encodeQuery(this->kvstore, encode_varset);
 					#else
 					bgp_query->EncodeBGPQuery(kvstore, encode_varset[0]);
-					bgp_query->print(kvstore);
+					// bgp_query->print(kvstore);
 					#endif
 					long tv_encode = Util::get_cur_time();
 					printf("after Encode, used %ld ms.\n", tv_encode - tv_begin);
