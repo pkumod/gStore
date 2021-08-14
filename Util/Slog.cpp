@@ -1,10 +1,10 @@
 /**********************************************************************
-* Copyright (C) 2018 -  - All Rights Reserved
+* Copyright (C) 2021 -  - All Rights Reserved
 *
 * 文件名称:        slog.cpp
 * 摘    要:        日志包裹类,日志模块的接口
 *
-* 作    者:       xuqiang918
+* 作    者:       liwenjie
 * 修    改:       查看文件最下方.
 *
 ***********************************************************************/
@@ -35,7 +35,7 @@ Slog::Slog()
 Slog::~Slog()
 {
 	log4cplus::Logger _logger = log4cplus::Logger::getInstance("global");
-	LOG4CPLUS_INFO(_logger, "Slog System Stop Finish...");
+	//LOG4CPLUS_INFO(_logger, "Slog System Stop Finish...");
 	_logger.shutdown();
 }
 
@@ -91,5 +91,5 @@ void Slog::init(const char* properties_filename)
 	log4cplus::initialize();
 	log4cplus::PropertyConfigurator::doConfigure(properties_filename);
 	log4cplus::Logger _logger = log4cplus::Logger::getInstance("global");
-	LOG4CPLUS_INFO(_logger, "Logger system start finish.");
+	//LOG4CPLUS_INFO(_logger, "Logger system start finish.");
 }
