@@ -14,6 +14,7 @@
 #include "../Database/Database.h"
 #include "../Util/Util.h"
 #include "../Util/Slog.h"
+#include <sstream>
 //#include <stdio.h>
 //#include <log4cplus/logger.h>
 //#include <log4cplus/loggingmacros.h>
@@ -119,11 +120,14 @@ Log.init("slog.properties");
 		_db->insert(filename, false, nullptr);
 		long tv_end = Util::get_cur_time();
 		//cout << "finish insert data" << endl;
-		
-		Log.Info("after insert,used "<< (tv_end - tv_begin) << " ms");
+		stringstream ss;
+		ss << "after insert,used " << (tv_end - tv_begin) << " ms";
+		Log.Info(ss.str());
 		delete _db;
 		long tv_end1 = Util::get_cur_time();
-		Log.Info("persistence on disk" << (tv_end1 - tv_end) << " ms");
+		ss.str("");
+		ss << "persistence on disk" << (tv_end1 - tv_end) << " ms";
+		Log.Info(ss.str());
 
 
 
