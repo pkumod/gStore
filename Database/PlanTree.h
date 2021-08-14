@@ -194,6 +194,9 @@ public:
 
     void print_tree_node(Tree_node* node, BasicQuery* basicquery);
     void print(BasicQuery* basicquery);
+
+    void print_tree_node(Tree_node* node, BGPQuery* bgpquery);
+    void print(BGPQuery* bgpquery);
 };
 
 

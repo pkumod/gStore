@@ -152,9 +152,9 @@ Tree_node::Tree_node(unsigned int node_id, BGPQuery *bgpquery, bool is_first_nod
 				JoinMethod join_method;
 				if(constant_num == 2){
 					if(var_descrip->so_edge_type_[i_th_edge] == Util::EDGE_IN)
-						join_method = JoinMethod::po2s;
-					else
 						join_method = JoinMethod::sp2o;
+					else
+						join_method = JoinMethod::po2s;
 				} else{
 					if(bgpquery->p_is_constant_[triple_id]){
 						if(var_descrip->so_edge_type_[i_th_edge] == Util::EDGE_IN)
@@ -512,4 +512,22 @@ void PlanTree::print(BasicQuery* basicquery) {
 	print_tree_node(root_node, basicquery);
 	cout << ", cost: "<<this->plan_cost;
 	cout << endl;
+}
+
+void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
+	if(node == nullptr)
+		return;
+	if(node->left_node != nullptr)
+		print_tree_node(node->left_node, bgpquery);
+	if(node->right_node != nullptr)
+		print_tree_node(node->right_node, bgpquery);
+
+	cout << "join type: " << node->node->JoinTypeToString(node->node->join_type_) << endl;
+
+
+}
+
+void PlanTree::print(BGPQuery* bgpquery) {
+	cout << "Plan: " << endl;
+	// todo: not complete
 }
