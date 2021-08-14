@@ -56,15 +56,12 @@ log4cplus::initialize();
 log4cplus::PropertyConfigurator::doConfigure("slog.properties");
 log4cplus::Logger _logger = log4cplus::Logger::getInstance("global");
 LOG4CPLUS_INFO(_logger, "Logger system start finish.");
-Slog slog;
-
-slog.init("slog.properties");
 
 	if (argc < 2)
 	{
 		cout << "please input the complete command:\t" << endl;
 		cout << "\t bin/gadd -h" << endl;
-		slog.Error("please input the complete command:");
+		LOG4CPLUS_ERROR(_logger,"please input the complete command:");
 		return 0;
 	}
 	else if (argc == 2)
@@ -119,14 +116,14 @@ slog.init("slog.properties");
 		Database _db(db_folder);
 		_db.load();
 		//cout << "finish loading" << endl;
-		Util::formatPrint("finish loading.", "Info");
-		slog.Info("finish loading.");
+	
+		LOG4CPLUS_INFO(_logger,"finish loading.");
 		//_db.insert(argv[2]);
 		//_db.remove(argv[2]);
 		_db.insert(filename, false, nullptr);
 		//cout << "finish insert data" << endl;
-		Util::formatPrint("finish insert data.");
-		slog.Info("finish insert data.");
+		
+		LOG4CPLUS_INFO(_logger, "please input the complete command:");
 
 	}
 	
