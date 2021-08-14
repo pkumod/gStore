@@ -396,20 +396,29 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH" \
 					|| tmp == "PPR")
 				{
-					if (bicCtx->num_integer(0))
-						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer(0)));
-					else if (bicCtx->integer_positive())
+					if (bicCtx->integer_positive())
+					{
 						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_positive()));
+						if (bicCtx->num_integer(0))
+							proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(0)));
+					}
 					else if (bicCtx->integer_negative())
+					{
 						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_negative()));
-					
+						if (bicCtx->num_integer(0))
+							proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(0)));
+					}
+					else
+					{
+						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer(0)));
+						if (bicCtx->num_integer(1))
+							proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(1)));
+					}
+
 					if (bicCtx->numericLiteral())
 						proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
 					else
 						proj_var.path_args.confidence = 1;
-
-					if (bicCtx->num_integer(1))
-						proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(1)));
 				}
 
 				if (tmp != "PPR")
