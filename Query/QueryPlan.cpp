@@ -920,19 +920,12 @@ std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> QueryPlan::OnlyConstF
   auto constant_generating_lists = make_shared<vector<shared_ptr<FeedOneNode>>>();
   auto total_var_num = bgp_query->get_total_var_num();
 
-  // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
-  for(int i = 0;i<total_var_num; i++) {
-    var_infos->emplace_back(OldVarDescriptor::VarType::EntityType ,nullptr,nullptr);
-  }
-
-  result->var_descriptors_ = var_infos;
-
   // select the first node to be the max degree
-  for(int i = 0;i<result->var_descriptors_->size(); i++)
+  for(decltype(total_var_num) i = 0;i<total_var_num; i++)
   {
-    if((*result->var_descriptors_)[i].IsSatellite())
+    if( (!bgp_query->is_var_selected(i)) && bgp_query->get_var_degree(i) == 1)
       continue;
-    auto constant_filtering = FilterNodeOnConstantEdge(bgp_query, kv_store, (*result->var_descriptors_)[i].basic_query_id);
+    auto constant_filtering = FilterNodeOnConstantEdge(bgp_query, kv_store, i);
     constant_generating_lists->push_back(constant_filtering);
   }
   return constant_generating_lists;

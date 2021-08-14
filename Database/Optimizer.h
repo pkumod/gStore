@@ -87,6 +87,7 @@ class Optimizer
              // ,SPARQLquery& sparql_query,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list,TYPE_ENTITY_LITERAL_ID limit_num
              );
   ~Optimizer()=default;
+
   tuple<bool,shared_ptr<IntermediateResult>> DoQuery(SPARQLquery&,QueryInfo); // the whole process
   tuple<bool,shared_ptr<IntermediateResult>> DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryInfo query_info); // the whole process
 
