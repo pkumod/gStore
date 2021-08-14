@@ -1,1 +1,0 @@
-../../manager/EndpointParams.h
