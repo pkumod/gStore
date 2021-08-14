@@ -30,6 +30,7 @@
 #include <fstream>
 #include "../Util/IPWhiteList.h"
 #include "../Util/IPBlackList.h"
+#include "../Util/INIParser.h"
 
 using namespace rapidjson;
 using namespace std;
@@ -54,17 +55,23 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define TEST_IP "106.13.13.193"
 #define DB_PATH "."
 #define BACKUP_PATH "./backups"
-
+//! init the ghttp server
 int initialize(int argc, char *argv[]);
+
 int copy(string src_path, string dest_path);
+
 //Added for the default_resource example
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
         const shared_ptr<ifstream> &ifs);
 void download_result(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string download, string filepath);
+//! Create a json object to return the request's result.
 std::string CreateJson(int StatusCode, string StatusMsg, bool body, string ResponseBody="response");
+//! start a thread 
 pthread_t start_thread(void *(*_function)(void*));
+//！stop a thread
 bool stop_thread(pthread_t _thread);
 void* func_timer(void* _args);
+//! backup scheduler
 void* backup_scheduler(void* _args);
 void backup_auto(int backup_interval, string backup_path);
 void thread_sigterm_handler(int _signal_num);
@@ -194,9 +201,9 @@ std::map<std::string, txn_id_t> running_txn;
 //database information
 struct DBInfo{
 	private:
-		std::string db_name;
-		std::string creator;
-		std::string built_time;
+		std::string db_name;//! the name of database
+		std::string creator; //! the creator of database
+		std::string built_time;//! the built time of database;
 	public:
 		pthread_rwlock_t db_lock;
 
@@ -239,13 +246,13 @@ struct User{
 		std::string username;
 		std::string password;
 	public:
-		std::set<std::string> query_priv;
-		std::set<std::string> update_priv;
-		std::set<std::string> load_priv;
-		std::set<std::string> unload_priv;
-		std::set<std::string> backup_priv;
-		std::set<std::string> restore_priv;
-		std::set<std::string> export_priv;
+		std::set<std::string> query_priv;//! the query privilege
+		std::set<std::string> update_priv;//! the update privilege
+		std::set<std::string> load_priv;//! the load privilege
+		std::set<std::string> unload_priv;//! the unload privilege
+		std::set<std::string> backup_priv;//! the backup privilege
+		std::set<std::string> restore_priv;//! the restore privilege
+		std::set<std::string> export_priv;//! the export privilege
 
 		pthread_rwlock_t query_priv_set_lock;
 		pthread_rwlock_t update_priv_set_lock;
@@ -302,6 +309,10 @@ struct User{
 		std::string getUsername(){
 			return username;
 		}
+		/// <summary>
+		/// @brief get the database list which the user can query/
+		/// </summary>
+		/// <returns></returns>
 		std::string getQuery(){
 			std::string query_db;
 			if(username == ROOT_USERNAME)
@@ -792,7 +803,7 @@ int initialize(int argc, char *argv[])
     cout << "enter initialize." << endl;
 	//Server restarts to use the original database
 	//current_database = NULL;
-
+	Util::configure_new();
 	//users.insert(pair<std::string, struct User *>(ROOT_USERNAME, &root));
 
 	//load system.db when initialize
@@ -3420,6 +3431,7 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 	int ret_val;
 	//catch exception when this is an update query and has no update privilege
 	try{
+		cout << "begin query..." << endl;
 		ret_val = current_database->query(sparql, rs, output, update_flag);
 	}catch(string exception_msg){
 	
@@ -3429,6 +3441,14 @@ void query_thread(bool update_flag, string db_name, string format, string db_que
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		return;	
 	}
+	catch (...)
+	{
+		string content = "未知错误";
+		string resJson = CreateJson(405, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+
 	bool ret = false, update = false;
 	if(ret_val < -1)   //non-update query
 	{

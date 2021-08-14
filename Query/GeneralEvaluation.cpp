@@ -231,6 +231,12 @@ bool GeneralEvaluation::parseQuery(const string &_query)
 		printf("%s\n", e);
 		return false;
 	}
+	catch (...)
+	{
+		cout<<"GeneralEvaluation::parseQuery "<<" catch some error."<<endl;
+		
+		return false;
+	}
 
 	return true;
 }
