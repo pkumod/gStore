@@ -117,7 +117,7 @@ Log.init("slog.properties");
 		//_db.insert(argv[2]);
 		//_db.remove(argv[2]);
 		long tv_begin = Util::get_cur_time();
-		_db->insert(filename, false, nullptr);
+		_db.insert(filename, false, nullptr);
 		long tv_end = Util::get_cur_time();
 		//cout << "finish insert data" << endl;
 		stringstream ss;
