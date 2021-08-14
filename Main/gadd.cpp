@@ -14,21 +14,20 @@
 #include "../Database/Database.h"
 #include "../Util/Util.h"
 #include "../Util/Slog.h"
-#include <stdio.h>
-#include <log4cplus/logger.h>
-#include <log4cplus/loggingmacros.h>
-#include <log4cplus/consoleappender.h>
-#include <log4cplus/config.hxx>
-#include <log4cplus/logger.h>
-#include <log4cplus/configurator.h>
-#include <log4cplus/helpers/loglog.h>
-#include <log4cplus/helpers/stringhelper.h>
-#include <log4cplus/helpers/socket.h>
-#include <log4cplus/spi/loggerimpl.h>
-#include <log4cplus/spi/loggingevent.h>
+//#include <stdio.h>
+//#include <log4cplus/logger.h>
+//#include <log4cplus/loggingmacros.h>
+//#include <log4cplus/consoleappender.h>
+//#include <log4cplus/config.hxx>
+//#include <log4cplus/logger.h>
+//#include <log4cplus/configurator.h>
+//#include <log4cplus/helpers/loglog.h>
+//#include <log4cplus/helpers/stringhelper.h>
+//#include <log4cplus/helpers/socket.h>
+//#include <log4cplus/spi/loggerimpl.h>
+//#include <log4cplus/spi/loggingevent.h>
 
-using namespace log4cplus;
-using namespace log4cplus::helpers;
+
 
 using namespace std;
 
@@ -51,17 +50,13 @@ main(int argc, char * argv[])
 //*! [important] you should init the Util class.
 Util util;
 //#endif
-
-log4cplus::initialize();
-log4cplus::PropertyConfigurator::doConfigure("slog.properties");
-log4cplus::Logger _logger = log4cplus::Logger::getInstance("global");
-LOG4CPLUS_INFO(_logger, "Logger system start finish.");
+Log.init("slog.properties");
 
 	if (argc < 2)
 	{
 		cout << "please input the complete command:\t" << endl;
 		cout << "\t bin/gadd -h" << endl;
-		LOG4CPLUS_ERROR(_logger,"Invalid arguments! Input \"bin/gadd -h\" for help.");
+		Log.Error("Invalid arguments! Input \"bin/gadd -h\" for help.");
 		return 0;
 	}
 	else if (argc == 2)
@@ -117,13 +112,13 @@ LOG4CPLUS_INFO(_logger, "Logger system start finish.");
 		_db.load();
 		//cout << "finish loading" << endl;
 	
-		LOG4CPLUS_INFO(_logger,"finish loading.");
+		Log.Info("finish loading.");
 		//_db.insert(argv[2]);
 		//_db.remove(argv[2]);
 		_db.insert(filename, false, nullptr);
 		//cout << "finish insert data" << endl;
 		
-		LOG4CPLUS_INFO(_logger, "please input the complete command:");
+		Log.Info("please input the complete command:");
 
 	}
 	
