@@ -614,7 +614,7 @@ pre:
 	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
 	cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;make install;
 	# cd ../../;
-	cd tools;unzip srpc-master.zip cd 
+	# cd tools;unzip srpc-master.zip cd 
 	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
 	
 	

@@ -123,11 +123,11 @@ Log.init("slog.properties");
 		stringstream ss;
 		ss << "after insert,used " << (tv_end - tv_begin) << " ms";
 		Log.Info(ss.str());
-		delete _db;
+		/*delete _db;
 		long tv_end1 = Util::get_cur_time();
 		ss.str("");
 		ss << "persistence on disk" << (tv_end1 - tv_end) << " ms";
-		Log.Info(ss.str());
+		Log.Info(ss.str());*/
 
 
 
