@@ -2612,7 +2612,7 @@ std::string Util::getArgValue(int argc, char* argv[], std::string argname,std::s
     
 	for (int i = 0; i < argc; i++)
 	{
-		if ((argv[i] == "-" + argname)||(argv[i]=="--"+argname2)
+		if ((argv[i] == "-" + argname)||(argv[i]=="--"+argname2))
 		{
 			if (i + 1 >= argc)
 			{
