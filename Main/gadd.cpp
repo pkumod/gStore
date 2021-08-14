@@ -61,23 +61,23 @@ LOG4CPLUS_INFO(_logger, "Logger system start finish.");
 	{
 		cout << "please input the complete command:\t" << endl;
 		cout << "\t bin/gadd -h" << endl;
-		LOG4CPLUS_ERROR(_logger,"please input the complete command:");
+		LOG4CPLUS_ERROR(_logger,"Invalid arguments! Input \"bin/gadd -h\" for help.");
 		return 0;
 	}
 	else if (argc == 2)
 	{
 		string command = argv[1];
-		if (command == "-h" || command == "-help")
+		if (command == "-h" || command == "--help")
 		{
 			cout << endl;
 			cout << "gStore Batch Insert Data Tools(gadd)" << endl;
 			cout << endl;
-			cout << "Usage:\tbin/gadd -db [dbname] -file [filename] [option]" << endl;
+			cout << "Usage:\tbin/gadd -db [dbname] -f [filename] " << endl;
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t[dbname],\t\t the database name. " << endl;
-			cout << "\t[filename],\t\tthe file path for inserting data." << endl;
+			cout << "\t-db,--database,\t\t the database name. " << endl;
+			cout << "\t-f,--file,\t\tthe file path for inserting data." << endl;
 			cout << endl;
 			return 0;
 		}
@@ -90,7 +90,7 @@ LOG4CPLUS_INFO(_logger, "Logger system start finish.");
 	}
 	else
 	{
-		string db_folder =Util::getArgValue(argc, argv, "db", "");
+		string db_folder =Util::getArgValue(argc, argv, "db","database");
 		if (db_folder.empty())
 		{
 	/*		cout << "please input the database name " << endl;*/
@@ -105,7 +105,7 @@ LOG4CPLUS_INFO(_logger, "Logger system start finish.");
 			Util::formatPrint("your database can not end with .db.", "Error");
 			return -1;
 		}
-		string filename=Util::getArgValue(argc, argv, "file", "");
+		string filename=Util::getArgValue(argc, argv, "f","file");
 		if (filename.empty())
 		{
 			//cout << "please input the file path." << endl;
