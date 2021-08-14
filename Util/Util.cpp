@@ -2598,16 +2598,25 @@ Util::GetFiles(const char *src_dir, const char *ext)
     return result;
 }
 
-std::string Util::getArgValue(int argc, char* argv[], std::string argname, std::string default_value)
+/*!
+ * @brief		get the param value from command
+ * @param[in]	argc:the length of argc
+ * @param[in]	argv:the param list
+ * @param[in]   argname:the abbreviation name of param (the format is "-"+argname,e.g. -db)
+ * @param[in]   argname2:the full name of param(the format is "--"+argname,e.g. --database)
+ * @param[in]   default_value:the default value of the param while the param is not exist.
+ * @return 		the value of param
+*/
+std::string Util::getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value)
 {
     
 	for (int i = 0; i < argc; i++)
 	{
-		if (argv[i] == "-" + argname)
+		if ((argv[i] == "-" + argname)||(argv[i]=="--"+argname2)
 		{
 			if (i + 1 >= argc)
 			{
-				return argname + " has no value.";
+				return "";
 			}
 			else
 			{
