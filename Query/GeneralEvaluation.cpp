@@ -1860,7 +1860,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						else if (proj[0].aggregate_type == QueryTree::ProjectionVar::ppr_type)
 						{
 							vector< pair<int ,double> > v2ppr;
-							pqHandler->SSPPR(uid, 3, proj[0].path_args.k, pred_id_set, v2ppr);
+							pqHandler->SSPPR(uid, proj[0].path_args.retNum, proj[0].path_args.k, pred_id_set, v2ppr);
 							ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"results\":[";
 							for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
 							{
@@ -2675,7 +2675,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								else if (proj[0].aggregate_type == QueryTree::ProjectionVar::ppr_type)
 								{
 									vector< pair<int ,double> > v2ppr;
-									pqHandler->SSPPR(uid, 3, proj[0].path_args.k, pred_id_set, v2ppr);
+									pqHandler->SSPPR(uid, proj[0].path_args.retNum, proj[0].path_args.k, pred_id_set, v2ppr);
 									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"results\":[";
 									for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
 									{
