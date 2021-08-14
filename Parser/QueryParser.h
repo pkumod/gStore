@@ -71,6 +71,9 @@ public:
 	void parseSelectAggregateFunction(SPARQLParser::ExpressionContext *expCtx, \
 		SPARQLParser::VarContext *varCtx);
 	void buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode &curr_node);
+	void buildFilterTree(antlr4::tree::ParseTree *root, \
+		QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild *currChild, \
+		QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, std::string tp);
 	void addTriple(std::string subject, std::string predicate, std::string object, \
 		QueryTree::GroupPattern &group_pattern);
 	void replacePrefix(std::string &str);
