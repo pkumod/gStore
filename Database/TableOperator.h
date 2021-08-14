@@ -227,6 +227,7 @@ class StepOperation{
       case JoinType::JoinTable: return "JoinType::JoinTable";
       case JoinType::GenerateCandidates: return "JoinType::GenerateCandidates";
       case JoinType::EdgeCheck: return "JoinType::EdgeCheck";
+      case JoinType::JoinTwoNodes: return "JoinType::JoinTwoNodes";
     }
     return "err in JoinTypeToString";
   };
