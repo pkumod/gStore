@@ -122,7 +122,7 @@ Log.init("slog.properties");
 		//cout << "finish insert data" << endl;
 		stringstream ss;
 		ss << "after insert,used " << (tv_end - tv_begin) << " ms";
-		Log.Info(ss.str());
+		Log.Info(ss.str().c_str());
 		/*delete _db;
 		long tv_end1 = Util::get_cur_time();
 		ss.str("");
