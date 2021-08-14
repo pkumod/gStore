@@ -109,6 +109,7 @@ in the sparql query can point to the same node in data graph)
 #include "../tools/rapidjson/prettywriter.h"  
 #include "../tools/rapidjson/writer.h"
 #include "../tools/rapidjson/stringbuffer.h"
+#include "INIParser.h"
 
 #include "Latch.h"
 
@@ -438,6 +439,8 @@ public:
 	//You can call it by Util util in the first of your main program
 	//Another way is to build a GstoreApplication program, and do this configure in the initialization of the application
 	static bool configure();  //read init.conf and set the parameters for this system
+	static bool configure_new(); //read gstore.ini and set the parameters for this system
+	static bool setGlobalConfig(INIParser& parser, string rootname, string keyname);
 	static bool config_setting();
 	static bool config_advanced();
 	static bool config_debug();
@@ -484,6 +487,8 @@ public:
 	static long int get_timestamp(std::string& line);
 	static std::string stamp2time(int timestamp);
 	static std::vector<std::string> GetFiles(const char *src_dir, const char *ext);
+	static std::string getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value="");
+	static void formatPrint(std::string content, std::string type = "Info");
 private:
 	static bool isValidIPV4(std::string);
 	static bool isValidIPV6(std::string);

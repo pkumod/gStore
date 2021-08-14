@@ -691,15 +691,17 @@ Database::warmUp()
 bool
 Database::load(bool loadCSR)
 {
+	
 	if(this->if_loaded)
 	{
 		return true;
 	}
-
+	
 	//TODO: acquire this arg from memory manager
 	//BETTER: get return value from subthread(using ref or file as hub)
 	unsigned vstree_cache = LRUCache::DEFAULT_CAPACITY;
 	bool flag;
+	
 #ifndef THREAD_ON
 	//flag = (this->vstree)->loadTree(vstree_cache);
 	//if (!flag)
@@ -723,7 +725,7 @@ Database::load(bool loadCSR)
 	thread obj2values_thread(&Database::load_obj2values, this, kv_mode);
 	thread pre2values_thread(&Database::load_pre2values, this, kv_mode);
 #endif
-
+	
 	//this is very fast
 	flag = this->loadDBInfoFile();
 	if (!flag)
@@ -731,7 +733,7 @@ Database::load(bool loadCSR)
 		cout << "load database info error. @Database::load()" << endl;
 		return false;
 	}
-
+	cout << "load database info successfully!" << endl;
 	if(!(this->kvstore)->load_trie(kv_mode))
 		return false;
 
@@ -1666,7 +1668,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, \
 		this->limitID_entity, this->csr, txn);
 	//if(txn != nullptr)
-	//	cout << "query in transaction............................................" << endl;
+	cout << "query in transaction............................................" << endl;
 	long tv_begin = Util::get_cur_time();
 
 	//this->query_parse_lock.lock();
