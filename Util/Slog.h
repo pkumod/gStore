@@ -49,6 +49,7 @@ public:
 		static Slog _instance;
 		return _instance;
 	}
+	
 };
 #define Log Slog::getSingleton()
 #define Plog Slog::getSingleton()
