@@ -12,7 +12,7 @@ PlanGenerator::PlanGenerator(KVstore *kvstore_, BasicQuery *basicquery_, Statist
 PlanGenerator::PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr &id_caches_):
 					kvstore(kvstore_), bgpquery(bgpquery_), statistics(statistics_), id_caches(id_caches_){};
 
-JoinMethod PlanGenerator::get_join_strategy(bool s_is_var, bool o_is_var, bool p_is_var, unsigned var_num) {
+JoinMethod PlanGenerator::get_join_strategy(bool s_is_var, bool p_is_var, bool o_is_var, unsigned var_num) {
 
 	if(var_num == 2){
 		if(!s_is_var) return JoinMethod::s2po;
@@ -1004,6 +1004,17 @@ PlanTree* PlanGenerator::get_normal_plan() {
 }
 
 
+void PlanGenerator::get_candidate_generate_plan() {
+	// include all posible vars candidate_generate_plan, refer to Vardescriptor.link_with_const.
+	// If it is true, then this function will generate plan for getting its candidates,
+	// else, candidate_generate_plan_vec[i] will be nullptr
+	vector<shared_ptr<StepOperation>> candidate_generate_plan_vec;
+
+	// for(unsigned var_index = 0; var_index < bgpquery->get_total_var_num(); ++var_index){
+	// 	if(bgp)
+	// }
+}
+
 void PlanGenerator::considerallvarscan() {
 	//special case: there is no query_var linked with constant, than need estimate by p2s or p2o
 	// bool is_special = true;
@@ -1191,7 +1202,7 @@ PlanTree *PlanGenerator::get_random_plan() {
 	auto first_var_descrip = bgpquery->get_vardescrip_by_id(first_var_id);
 
 	PlanTree* plan_tree_p = new PlanTree(first_var_id, bgpquery);
-	PlanTree* plan_tree_q = nullptr;
+	PlanTree* plan_tree_q = plan_tree_p;
 
 	set<unsigned> neibor_id;
 	set<unsigned> already_id{first_var_id};
@@ -1220,12 +1231,12 @@ PlanTree *PlanGenerator::get_special_no_pre_var_plan() {
 }
 
 PlanTree *PlanGenerator::get_special_one_triple_plan() {
-	bool s_is_var = bgpquery->get_triple_by_index(0).subject.at(0) == '?';
-	bool o_is_var = bgpquery->get_triple_by_index(0).object.at(0) == '?';
-	bool p_is_var = bgpquery->get_triple_by_index(0).predicate.at(0) == '?';
+	bool s_is_var = !(bgpquery->s_is_constant_[0]);
+	bool p_is_var = !(bgpquery->p_is_constant_[0]);
+	bool o_is_var = !(bgpquery->o_is_constant_[0]);
 
 	unsigned var_num = bgpquery->get_total_var_num();
-	JoinMethod join_method = get_join_strategy(s_is_var, o_is_var, p_is_var, var_num);
+	JoinMethod join_method = get_join_strategy(s_is_var, p_is_var, p_is_var, var_num);
 
 
 	auto first_var = bgpquery->get_vardescrip_by_index(0);

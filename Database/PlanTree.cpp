@@ -220,6 +220,9 @@ Tree_node::Tree_node(unsigned int node_id, BGPQuery *bgpquery, bool is_first_nod
 		node->join_type_ = StepOperation::JoinType::JoinNode;
 		node->join_node_ = one_step_join_node;
 	}
+
+	left_node = nullptr;
+	right_node = nullptr;
 }
 
 Tree_node::Tree_node(unsigned node_id, set<unsigned> already_in, BGPQuery *bgpquery) {
