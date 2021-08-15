@@ -55,8 +55,8 @@ Log.init("slog.properties");
 
 	if (argc < 2)
 	{
-		cout << "please input the complete command:\t" << endl;
-		cout << "\t bin/gadd -h" << endl;
+		/*cout << "please input the complete command:\t" << endl;
+		cout << "\t bin/gadd -h" << endl;*/
 		Log.Error("Invalid arguments! Input \"bin/gadd -h\" for help.");
 		return 0;
 	}
@@ -80,7 +80,7 @@ Log.init("slog.properties");
 		else
 		{
 			//cout << "the command is not complete." << endl;
-			Util::formatPrint("the command is not complete.", "Error");
+			Log.Error("Invalid arguments! Input \"bin/gadd -h\" for help.");
 			return 0;
 		}
 	}
@@ -90,7 +90,7 @@ Log.init("slog.properties");
 		if (db_folder.empty())
 		{
 	/*		cout << "please input the database name " << endl;*/
-			Util::formatPrint("please input the database name.", "Error");
+			Log.Error("the database name is empty! Input \"bin/gbackup -h\" for help.");
 			return 0;
 		}
 		int len = db_folder.length();
@@ -98,14 +98,15 @@ Log.init("slog.properties");
 		if (db_folder.substr(len - 3, 3) == ".db")
 		{
 			/*cout << "your database can not end with .db" << endl;*/
-			Util::formatPrint("your database can not end with .db.", "Error");
+			Log.Error("your database can not end with .db.! Input \"bin/gadd -h\" for help.");
 			return -1;
 		}
 		string filename=Util::getArgValue(argc, argv, "f","file");
 		if (filename.empty())
 		{
 			//cout << "please input the file path." << endl;
-			Util::formatPrint("please input the file path.", "Error");
+			//Util::formatPrint("please input the file path.", "Error");
+			Log.Error("the add data file is empty! Input \"bin/gadd -h\" for help.");
 			return 0;
 		}
 	
