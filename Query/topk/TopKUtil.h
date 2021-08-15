@@ -38,6 +38,9 @@ class TopKTreeSearchPlan {
   // Choose A shortest tree to do top-k
   explicit TopKTreeSearchPlan(BasicQuery* basic_query, Statistics *statistics, QueryTree::Order expression,
                               shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
+
+  explicit TopKTreeSearchPlan(shared_ptr<BGPQuery> bgp_query, Statistics *statistics, QueryTree::Order expression,
+                              shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
   // The first tree to search
   TopKTreeNode* tree_root_;
   // Recursive delete

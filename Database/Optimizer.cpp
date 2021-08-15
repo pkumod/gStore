@@ -46,8 +46,11 @@ Optimizer::Optimizer(KVstore *kv_store,
 }
 
 BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query,QueryInfo *query_info){
-  if (!query_info->limit_) {
+  if (!query_info->limit_)
+  {
     if(bgp_query->get_triple_num()!=1)
+      return BasicQueryStrategy::Normal;
+    else if(bgp_query->get_total_var_num() != 3)
       return BasicQueryStrategy::Normal;
     else
       return BasicQueryStrategy::Special;
@@ -77,8 +80,7 @@ BasicQueryStrategy Optimizer::ChooseStrategy(BasicQuery *basic_query,QueryInfo *
   }
 }
 
-/* This is One layer, need more*/
-tuple<bool, TableContentShardPtr> Optimizer::ExecutionDepthFirst(BasicQuery* basic_query,
+tuple<bool, TableContentShardPtr> Optimizer::ExecutionDepthFirst(shared_ptr<BGPQuery> bgp_query,
                                                                  const shared_ptr<QueryPlan>& query_plan,
                                                                  const QueryInfo& query_info,
                                                                  const PositionValueSharedPtr& id_pos_mapping) {
@@ -110,7 +112,7 @@ tuple<bool, TableContentShardPtr> Optimizer::ExecutionDepthFirst(BasicQuery* bas
   };
 
   cout<<"first_candidates_list.size()="<<first_candidates_list->size()<<endl;
-  /* #TODO 特殊情况：只有一个点，这个还没写
+  /* TODO 特殊情况：只有一个点，这个还没写
    * */
   if(limit_num != -1) {
     while (now_result <= limit_num) {
@@ -158,7 +160,6 @@ tuple<bool, TableContentShardPtr> Optimizer::ExecutionDepthFirst(BasicQuery* bas
     return make_tuple(true,make_shared<TableContent>());
   int counter = 0;
   /* merge result */
-
   auto final_result = result_container[0];
   for(int i=1;i<result_container.size();i++)
     for(const auto& record:*(result_container[i])) {
@@ -171,7 +172,7 @@ tuple<bool, TableContentShardPtr> Optimizer::ExecutionDepthFirst(BasicQuery* bas
   return make_tuple(true,final_result);
 }
 
-// #TODO, just return list<shared_ptr<vector< ID_TYPE >>>
+
 tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(const shared_ptr<QueryPlan>& query_plan,
                                                                 int layer_count,
                                                                 int &result_number_till_now,
@@ -183,7 +184,7 @@ tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(const shared_ptr
   auto one_step = (*(query_plan->join_order_))[layer_count];
   tuple<bool,TableContentShardPtr> step_result;
   switch (one_step.join_type_) {
-    case StepOperation::JoinType::JoinNode: { // 要注意这里的指针会不会传丢掉
+    case StepOperation::JoinType::JoinNode: {
       step_result = executor_.JoinANode(one_step.join_node_, table_content_ptr,id_pos_mapping,id_caches);
       break;
     }
@@ -199,15 +200,17 @@ tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(const shared_ptr
       step_result = executor_.ANodeEdgesConstraintFilter(one_step.edge_filter_, table_content_ptr,id_pos_mapping,id_caches);
       break;
     }
+    case StepOperation::JoinType::JoinTwoNodes: {
+      step_result = executor_.JoinTwoNode(one_step.join_two_node_, table_content_ptr,id_pos_mapping,id_caches);
+      break;
+    }
   }
   // If not success, should have returned before
-
   auto try_result = get<1>(step_result);
 
   /* go deeper */
   if(try_result->empty())
     return make_tuple(false, nullptr);
-
 
   /* deep in bottom */
   if(layer_count + 1 == query_plan->join_order_->size()) {
@@ -217,8 +220,6 @@ tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(const shared_ptr
   }
 
   auto all_result = make_shared<TableContent>();
-
-
 
   /* fill a node */
   for(const auto& one_result:*try_result) {
@@ -243,7 +244,6 @@ tuple<bool,TableContentShardPtr> Optimizer::DepthSearchOneLayer(const shared_ptr
     }
   }
   return make_tuple(true,all_result);
-
 }
 
 
@@ -425,16 +425,10 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     cout << "total execution, used " << (t7 - t1) <<"ms."<<endl;
   }
   else if(strategy ==BasicQueryStrategy::Special){
-    if(bgp_query->get_total_var_num()== 2 && bgp_query->get_pre_var_num() == 0){
-      auto best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_special_no_pre_var_plan();
-    }
-    if(bgp_query->get_triple_num() == 1 && bgp_query->get_total_var_num() != 3){
-      auto best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_special_one_triple_plan();
-    }
-    if(bgp_query->get_triple_num() == 1 && bgp_query->get_total_var_num() == 3){
+    // if(bgp_query->get_triple_num() == 1 && bgp_query->get_total_var_num() == 3){
       // todo: get all triples in database
       //;
-    }
+
     printf("BasicQueryStrategy::Special not supported yet\n");
   }
   return tuple<bool, shared_ptr<IntermediateResult>>();
