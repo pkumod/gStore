@@ -62,7 +62,7 @@ main(int argc, char * argv[])
 		if (_db_path.length() > 3 && _db_path.substr(len - 3, 3) == ".db")
 		{
 			
-			Log.Error("your database can not end with .db or less than 3 characters")
+			Log.Error("your database can not end with .db or less than 3 characters");
 			return -1;
 		}
 
@@ -106,7 +106,7 @@ main(int argc, char * argv[])
 			if (flag)
 			{
 			
-				Log.Info("Build Database Successfully!")
+				Log.Info("Build Database Successfully!");
 				ofstream f;
 				f.open("./" + _db_path + ".db/success.txt");
 				f.close();
@@ -153,7 +153,7 @@ main(int argc, char * argv[])
 						cout << msg << endl;*/
 				}
 				Util::add_backuplog(_db_path);
-				Log.Info("Saving database info:" + msg);
+				Log.Info(("Saving database info:" + msg).c_str());
 				
 			}
 			long tv_end = Util::get_cur_time();
