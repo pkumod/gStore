@@ -2,6 +2,7 @@
 #include "srpc/rpc_module.h"
 #include "srpc/rpc_span_policies.h"
 #include "srpc/rpc_types.h"
+using namespace srpc;
 class ExampleServiceImpl : public Example::Service
 {
 public:
