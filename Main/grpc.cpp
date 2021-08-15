@@ -5,6 +5,7 @@
 #include "srpc/rpc_span_policies.h"
 #include "srpc/rpc_types.h"
 using namespace srpc;
+static WFFacilities::WaitGroup wait_group(1);
 class ExampleServiceImpl : public Example::Service
 {
 public:
@@ -24,6 +25,9 @@ static void sig_handler(int signo)
 int main()
 {
 	//SRPCServer server_srpc;
+	GOOGLE_PROTOBUF_VERIFY_VERSION;
+	signal(SIGINT, sig_handler);
+	signal(SIGTERM, sig_handler);
 	SRPCHttpServer server_srpc_http;
 	//BRPCServer server_brpc;
 	//ThriftServer server_thrift;
@@ -45,7 +49,7 @@ int main()
 	if (result == 0)
 	{
 		wait_group.wait();
-		server.stop();
+		server_srpc_http.stop();
 	}
 	else
 		perror("server start");
