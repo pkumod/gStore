@@ -154,12 +154,13 @@ main(int argc, char * argv[])
 				}
 				Util::add_backuplog(_db_path);
 				Log.Info("Saving database info:" + msg);
-				return 0;
+				
 			}
 			long tv_end = Util::get_cur_time();
 			stringstream ss;
 			ss << "Build RDF database "<<_db_path<<" successfully! Used " << (tv_end - tv_begin) << " ms";
-			return 0£»
+			Log.Info(ss.str().c_str());
+			return 0;
 		}
 	}
 	//if(argc < 3)  //./gbuild
