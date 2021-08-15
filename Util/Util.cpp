@@ -251,6 +251,16 @@ bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
     Util::global_config[keyname] = value;
 }
 
+string Util::getConfigureValue(string keyname)
+{
+    map<string, string>::iterator iter = Util::global_config.find(keyname);
+	if (iter != Util::global_config.end())
+	{
+		    return iter->second;
+	}
+	return "";
+}
+
 bool Util::configure_new()
 {
     INIParser ini_parser;

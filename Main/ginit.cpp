@@ -14,11 +14,16 @@
 #include "../Database/Database.h"
 #include <iostream>
 #include <fstream>
+#include "../Util/Slog.h"
 using namespace std;
 
 int main(int argc, char * argv[])
 {
 	string op;
+	Util util;
+	Log.init("slog.properties");
+	ResultSet _rs;
+	bool no_sysdb = false;
 	if(argc > 1)
 	{
 		op = argv[1];
@@ -150,9 +155,7 @@ int main(int argc, char * argv[])
 			return 0;			
 		}
 	}
-	Util util;
-	ResultSet _rs;
-	bool no_sysdb = false;
+	
 	if(boost::filesystem::exists("system.db"))
 	{
 		Database system_db("system");
