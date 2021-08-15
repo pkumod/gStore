@@ -1206,9 +1206,18 @@ PlanTree *PlanGenerator::get_random_plan() {
 
 	set<unsigned> neibor_id;
 	set<unsigned> already_id{first_var_id};
-	for(unsigned i = 0; i < degree; ++i){
-		if(first_var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType)
-			neibor_id.insert(first_var_descrip->so_edge_nei_[i]);
+	if(first_var_descrip->var_type_ == VarDescriptor::VarType::Entity){
+		for(unsigned i = 0; i < degree; ++i){
+			if(first_var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType)
+				neibor_id.insert(first_var_descrip->so_edge_nei_[i]);
+		}
+	} else{
+		for(unsigned i = 0; i < degree; ++i){
+			if(first_var_descrip->s_type_[i] == VarDescriptor::EntiType::VarEntiType)
+				neibor_id.insert(first_var_descrip->s_id_[i]);
+			if(first_var_descrip->o_type_[i] == VarDescriptor::EntiType::VarEntiType)
+				neibor_id.insert(first_var_descrip->o_id_[i]);
+		}
 	}
 
 	while(neibor_id.size() > 0){
