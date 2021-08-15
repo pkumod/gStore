@@ -125,7 +125,7 @@ inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
 
 #gtest
 
-TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback  
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback   $(exedir)grpc
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -179,6 +179,9 @@ $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/
 
 #$(exedir)gapiserver: $(lib_antlr) $(lib_workflow) $(objdir)gapiserver.o  $(objfile)
 #	$(CC) $(EXEFLAG) -o $(exedir)gapiserver $(objdir)gapiserver.o $(objfile) $(library) $(openmp) 
+
+$(exedir)grpc: $(lib_antlr)  $(objdir)grpc.o  $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)grpc ./Main/grpc.cpp ./GRPC/grpc.pb.cc $(library) -lsrpc $(openmp) 
 
 $(exedir)gbackup: $(lib_antlr) $(objdir)gbackup.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gbackup $(objdir)gbackup.o $(objfile) $(library) $(openmp)
@@ -614,7 +617,7 @@ pre:
 	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
 	cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;make install;
 	# cd ../../;
-	# cd tools;unzip srpc-master.zip cd 
+	cd tools;unzip srpc.zip; cd srpc;make;make install; 
 	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
 	
 	
