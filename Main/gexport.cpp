@@ -1,23 +1,119 @@
 /*=============================================================================
 # Filename: gexport.cpp
-# Author: suxunbin
-# Last Modified: 2019-07-23 15:37
+# Author: suxunbin,liwenjie
+# Last Modified: 2021-8-15 23:15:16
 # Description: export a database to get .nt file
 =============================================================================*/
 
 #include "../Database/Database.h"
 #include "../Util/Util.h"
-
+#include "../Util/Slog.h"
 using namespace std;
 
 int
 main(int argc, char * argv[])
 {
 	Util util;
-
+	Log.init("slog.properties");
 	string db_name;
 	string filepath;
-	if (argc == 1)
+	if (argc < 2)
+	{
+		/*cout << "please input the complete command:\t" << endl;
+		cout << "\t bin/gadd -h" << endl;*/
+		Log.Error("Invalid arguments! Input \"bin/gexport -h\" for help.");
+		return 0;
+	}
+	else if (argc == 2)
+	{
+		string command = argv[1];
+		if (command == "-h" || command == "--help")
+		{
+			cout << endl;
+			cout << "gStore Export Data Tools(gexport)" << endl;
+			cout << endl;
+			cout << "Usage:\tbin/gexport -db [dbname] -f [backup_path] " << endl;
+			cout << endl;
+			cout << "Options:" << endl;
+			cout << "\t-h,--help\t\tDisplay this message." << endl;
+			cout << "\t-db,--database,\t\t the database name. " << endl;
+			cout << "\t-f,--file [optional],\t\tthe export path,defalut export file path is current path,the path should not include your database's name!" << endl;
+			cout << endl;
+			return 0;
+		}
+		else
+		{
+			//cout << "the command is not complete." << endl;
+			Log.Error("Invalid arguments! Input \"bin/gexport -h\" for help.");
+			return 0;
+		}
+	}
+	else
+	{
+		db_name= Util::getArgValue(argc, argv, "db", "database");
+		if (db_name.empty())
+		{
+			Log.Error("You need to input the database name that you want to export. Input \"bin/gexport -h\" for help.");
+			return 0;
+		}
+		if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
+		{
+			Log.Error("The database name can not end with .db");
+			return 0;
+		}
+		filepath= Util::getArgValue(argc, argv, "f", "file");
+		if (filepath.empty())
+		{
+			filepath = db_name + ".nt";
+		}
+		else
+		{
+			if (filepath[filepath.length() - 1] != '/')
+				filepath = filepath + "/";
+			if (!boost::filesystem::exists(filepath))
+				boost::filesystem::create_directories(filepath);
+			filepath = filepath + db_name + ".nt";
+			
+		}
+		cout << "gexport..." << endl;
+
+		Database system_db("system");
+		system_db.load();
+
+		string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
+		ResultSet ask_rs;
+		FILE* ask_ofp = stdout;
+		int ret = system_db.query(sparql, ask_rs, ask_ofp);
+		if (ask_rs.answer[0][0] == "false")
+		{
+			Log.Error("The database does not exist.");
+			return 0;
+		}
+		long tv_begin = Util::get_cur_time();
+		Log.Info("start exporting the database......");
+		Database _db(db_name);
+		_db.load();
+		Log.Info("finish loading");
+
+		sparql = "select * where{?x ?y ?z.}";
+		ResultSet _rs;
+		FILE* ofp = fopen(filepath.c_str(), "w");
+		ret = _db.query(sparql, _rs, ofp, true, true);
+		fflush(ofp);
+		fclose(ofp);
+		ofp = NULL;
+		long tv_end = Util::get_cur_time();
+		stringstream ss;
+		ss << db_name << ".db exported successfully! Used " << (tv_end - tv_begin) << " ms";
+		Log.Info(ss.str().c_str());
+		return 0;
+
+		
+
+
+
+	}
+	/*if (argc == 1)
 	{
 		cout << "You need to input the database name that you want to export." << endl;
 		return 0;
@@ -73,11 +169,11 @@ main(int argc, char * argv[])
 	sparql = "select * where{?x ?y ?z.}";
 	ResultSet _rs;
 	FILE* ofp = fopen(filepath.c_str(), "w");
-    ret = _db.query(sparql, _rs, ofp, true, true);
-    fflush(ofp);
+	ret = _db.query(sparql, _rs, ofp, true, true);
+	fflush(ofp);
 	fclose(ofp);
 	ofp = NULL;
 	cout << "finish exporting the database." << endl;
 
-	return 0;
+	return 0;*/
 }
