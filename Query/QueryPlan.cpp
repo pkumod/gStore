@@ -931,3 +931,23 @@ std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> QueryPlan::OnlyConstF
   return constant_generating_lists;
 }
 
+QueryPlan::QueryPlan(PlanTree *plan_tree) {
+  // Do A depth first search
+  auto root = plan_tree->root_node;
+  stack<decltype(root)> q;
+  q.push(root);
+  while(!q.empty())
+  {
+    auto top_node = q.top();
+    if(top_node->node->join_type_ == StepOperation::JoinType::GenerateCandidates)
+      this->constant_generating_lists_->push_back(top_node->node->join_node_);
+    else
+      this->join_order_->push_back(*(top_node->node));
+    if(top_node->left_node!= nullptr)
+      q.push(top_node->left_node);
+    if(top_node->right_node!= nullptr)
+      q.push(top_node->right_node);
+    q.pop();
+  }
+}
+

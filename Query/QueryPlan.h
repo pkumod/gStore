@@ -27,6 +27,7 @@ class QueryPlan
             std::shared_ptr<std::vector<OldVarDescriptor>> var_infos);
 
   QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector<OldVarDescriptor>> var_infos);
+  QueryPlan(PlanTree* plan_tree);
   QueryPlan()=default;
 
   static std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> OnlyConstFilter(BasicQuery*, KVstore*, std::shared_ptr<std::vector<OldVarDescriptor>>);

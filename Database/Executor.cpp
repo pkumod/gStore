@@ -980,10 +980,11 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
   auto record_candidate_list= make_shared<IDList>();
   auto record_candidate_prepared = false;
   auto edges_info = one_step_join_node_->edges_;
-/* for each edge */
+  auto edge_constant_info_vec = one_step_join_node_->edges_constant_info_;
+  /* for each edge */
   for (int edge_i = 0;edge_i<edges_info->size();edge_i++) {
     auto edge_info = (*edges_info)[edge_i];
-    auto edge_constant_info = one_step_join_node_->edges_constant_info_->operator[](edge_i);
+    auto edge_constant_info = (*edge_constant_info_vec)[edge_i];
     if (record_candidate_prepared && record_candidate_list->empty())
       continue;
     TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
@@ -1306,7 +1307,7 @@ Executor::ExtendRecordTwoNode(const shared_ptr<FeedTwoNode> one_step_join_node_,
  */
 bool Executor::UpdateIDCache(std::shared_ptr<StepOperation> step_operation,IDCachesSharePtr id_caches) {
   //
-  auto feed_plan = step_operation->join_node_;
+  auto feed_plan = step_operation->edge_filter_;
   auto var_node_id = feed_plan->node_to_join_;
   auto candidate_list_it = id_caches->find(var_node_id);
   auto candidate_generated = this->CandidatesWithConstantEdge( feed_plan->edges_);

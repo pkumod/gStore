@@ -103,7 +103,7 @@ class Optimizer
   BasicQueryStrategy ChooseStrategy(BasicQuery *basic_query,QueryInfo *query_info);
   BasicQueryStrategy ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query,QueryInfo *query_info);
 
-  tuple<bool,TableContentShardPtr> ExecutionDepthFirst(BasicQuery* basic_query, const shared_ptr<QueryPlan>& query_plan,
+  tuple<bool,TableContentShardPtr> ExecutionDepthFirst(shared_ptr<BGPQuery>  bgp_query, const shared_ptr<QueryPlan>& query_plan,
                                                                  const QueryInfo& query_info,const PositionValueSharedPtr& id_pos_mapping);
 
   tuple<bool,TableContentShardPtr> DepthSearchOneLayer(const shared_ptr<QueryPlan>& query_plan,
@@ -112,6 +112,8 @@ class Optimizer
                                                                  int limit_number,
                                                                  const TableContentShardPtr& tmp_result, const PositionValueSharedPtr& id_pos_mapping,
                                                                  const IDCachesSharePtr& id_caches);
+
+
 #ifdef TOPK_SUPPORT
   tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionTopK(BasicQuery* basic_query, shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
                                                  const QueryInfo& query_info,IDCachesSharePtr id_caches);

@@ -207,11 +207,16 @@ class StepOperation{
 
   // ConstCandidatesCheck
   enum class JoinType{
-    JoinNode, // join a node to table, or create a table with one node
-    GenerateCandidates, // change the candidates list for one node
-    JoinTable, // join two table together
-    EdgeCheck, // check if an edge exist. the nodes in the edge should already in the table
-    JoinTwoNodes // join two node to table,instead of joining twice
+    // join a node to table, or create a table with one node
+    JoinNode,
+    // change the candidates list for one node
+    GenerateCandidates,
+    // join two table together
+    JoinTable,
+    // check if an edge exist. the nodes in the edge should already in the table
+    EdgeCheck,
+    // join two node to table,instead of joining twice
+    JoinTwoNodes
   };
 
   JoinType join_type_;
