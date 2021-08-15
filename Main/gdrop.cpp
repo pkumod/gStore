@@ -43,65 +43,67 @@ int main(int argc, char * argv[])
 		}
 		else
 		{
-			db_name = Util::getArgValue(argc, argv, "db", "database");
-			if (db_name.empty())
-			{
-				Log.Error("The database name can not been empty! Input \"bin/gdrop -h\" for help.");
-				return -1;
-			}
-			else
-			{
-				int len = db_name.length();
-				if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
-				{
-					Log.Error("The database name can not end with .db");
-					return -1;
-				}
-				if (!boost::filesystem::exists(db_name + ".db"))
-				{
-					Log.Error("The database that you want to drop does not exist.");
-					return -1;
-				}
-				Log.Info("Begin to drop database....");
-				long tv_begin = Util::get_cur_time();
-				Database system_db("system");
-				system_db.load();
-				string sparql = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
-				ResultSet _rs;
-				FILE* ofp = stdout;
-				string msg;
-				int ret = system_db.query(sparql, _rs, ofp);
-				if (ret <= -100) // select query
-				{
-					if (ret == -100)
-						msg = _rs.to_str();
-					else //query error
-						msg = "query failed";
-				}
-				else //update query
-				{
-					if (ret >= 0)
-						msg = "update num : " + Util::int2string(ret);
-					else //update error
-						msg = "update failed.";
-				}
-				Log.Info("Delete the database info from system database successfully!");
-				string cmd = "rm -r " + db_name + ".db";
-				system(cmd.c_str());
-				Util::delete_backuplog(db_name);
-				long tv_end = Util::get_cur_time();
-				stringstream ss;
-				ss <<db_name<< ".db is dropped successfully! Used " << (tv_end - tv_begin) << " ms";
-				Log.Info(ss.str().c_str());
-				return 0;
-			}
+			Log.Error("Invalid arguments! Input \"bin/gdrop -h\" for help.");
+			return 0;
 
 		}
 	}
 	else
 	{
-		Log.Error("Invalid arguments! Input \"bin/gdrop -h\" for help.");
-		return 0;
+
+		db_name = Util::getArgValue(argc, argv, "db", "database");
+		if (db_name.empty())
+		{
+			Log.Error("The database name can not been empty! Input \"bin/gdrop -h\" for help.");
+			return -1;
+		}
+		else
+		{
+			int len = db_name.length();
+			if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
+			{
+				Log.Error("The database name can not end with .db");
+				return -1;
+			}
+			if (!boost::filesystem::exists(db_name + ".db"))
+			{
+				Log.Error("The database that you want to drop does not exist.");
+				return -1;
+			}
+			Log.Info("Begin to drop database....");
+			long tv_begin = Util::get_cur_time();
+			Database system_db("system");
+			system_db.load();
+			string sparql = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
+			ResultSet _rs;
+			FILE* ofp = stdout;
+			string msg;
+			int ret = system_db.query(sparql, _rs, ofp);
+			if (ret <= -100) // select query
+			{
+				if (ret == -100)
+					msg = _rs.to_str();
+				else //query error
+					msg = "query failed";
+			}
+			else //update query
+			{
+				if (ret >= 0)
+					msg = "update num : " + Util::int2string(ret);
+				else //update error
+					msg = "update failed.";
+			}
+			Log.Info("Delete the database info from system database successfully!");
+			string cmd = "rm -r " + db_name + ".db";
+			system(cmd.c_str());
+			Util::delete_backuplog(db_name);
+			long tv_end = Util::get_cur_time();
+			stringstream ss;
+			ss << db_name << ".db is dropped successfully! Used " << (tv_end - tv_begin) << " ms";
+			Log.Info(ss.str().c_str());
+			return 0;
+		}
+		
 	}
 
 
