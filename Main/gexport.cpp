@@ -56,6 +56,7 @@ main(int argc, char * argv[])
 			Log.Error("You need to input the database name that you want to export. Input \"bin/gexport -h\" for help.");
 			return 0;
 		}
+		int len = db_name.length();
 		if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
 		{
 			Log.Error("The database name can not end with .db");
