@@ -94,7 +94,7 @@ main(int argc, char * argv[])
 			isbuilt = 0;
 		if(isbuilt == 1)
 		{
-			Log.Error("the database "+_db_path+" has been built. please use bin/gdrop to remove it at first.");
+			Log.Error(("the database "+_db_path+" has been built. please use bin/gdrop to remove it at first.").c_str());
 			return -1;
 		}
 		else
