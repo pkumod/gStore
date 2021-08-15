@@ -130,7 +130,7 @@ main(int argc, char * argv[])
 			system(sys_cmd.c_str());
 			long tv_end = Util::get_cur_time();
 			stringstream ss;
-			ss << "DB:"<<db_name<<"Backup Successful! used " << (tv_end - tv_begin) << " ms";
+			ss << "DB:"<<db_name<<" Backup Successfully! Used " << (tv_end - tv_begin) << " ms";
 			Log.Info(ss.str().c_str());
 			/*cout << "Time:" + time << endl;
 			cout << "DB:" + db_name + " Backup done!" << endl;*/

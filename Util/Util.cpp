@@ -199,14 +199,14 @@ Util::configure()
 
     fclose(fp);
 	//display all settings here
-	cout<<"the current settings are as below: "<<endl;
+	/*cout<<"the current settings are as below: "<<endl;
 	cout<<"key : value"<<endl;
 	cout<<"------------------------------------------------------------"<<endl;
 	for(map<string, string>::iterator it = global_config.begin(); it != global_config.end(); ++it)
 	{
 		cout<<it->first<<" : "<<it->second<<endl;
 	}
-	cout<<endl;
+	cout<<endl;*/
 
 	return true;
 	//return Util::config_setting() && Util::config_debug() && Util::config_advanced();
