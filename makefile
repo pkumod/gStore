@@ -180,8 +180,8 @@ $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/
 #$(exedir)gapiserver: $(lib_antlr) $(lib_workflow) $(objdir)gapiserver.o  $(objfile)
 #	$(CC) $(EXEFLAG) -o $(exedir)gapiserver $(objdir)gapiserver.o $(objfile) $(library) $(openmp) 
 
-$(exedir)grpc: $(lib_antlr)  $(objdir)grpc.o  $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)grpc ./Main/grpc.cpp ./GRPC/grpc.pb.cc $(library) -lsrpc $(openmp) 
+$(exedir)grpc: $(lib_antlr) $(lib_workflow) $(objdir)grpc.o  $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)grpc ./Main/grpc.cpp ./GRPC/grpc.pb.cc  $(library) -lsrpc $(openmp) 
 
 $(exedir)gbackup: $(lib_antlr) $(objdir)gbackup.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gbackup $(objdir)gbackup.o $(objfile) $(library) $(openmp)
