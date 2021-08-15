@@ -1,4 +1,6 @@
+#include <signal.h>
 #include "../GRPC/grpc.srpc.h"
+#include "workflow/WFFacilities.h"
 #include "srpc/rpc_module.h"
 #include "srpc/rpc_span_policies.h"
 #include "srpc/rpc_types.h"
@@ -15,33 +17,44 @@ public:
 			response->DebugString().c_str());
 	}
 };
-
+static void sig_handler(int signo)
+{
+	wait_group.done();
+}
 int main()
 {
-	SRPCServer server_srpc;
+	//SRPCServer server_srpc;
 	SRPCHttpServer server_srpc_http;
-	BRPCServer server_brpc;
-	ThriftServer server_thrift;
+	//BRPCServer server_brpc;
+	//ThriftServer server_thrift;
 
 	ExampleServiceImpl impl_pb;
-	AnotherThriftServiceImpl impl_thrift;
+	//AnotherThriftServiceImpl impl_thrift;
 
-	server_srpc.add_service(&impl_pb);
-	server_srpc.add_service(&impl_thrift);
+	/*server_srpc.add_service(&impl_pb);*/
+	//server_srpc.add_service(&impl_thrift);
 	server_srpc_http.add_service(&impl_pb);
-	server_srpc_http.add_service(&impl_thrift);
-	server_brpc.add_service(&impl_pb);
-	server_thrift.add_service(&impl_thrift);
+	//server_srpc_http.add_service(&impl_thrift);
+	//server_brpc.add_service(&impl_pb);
+	//server_thrift.add_service(&impl_thrift);
 
-	server_srpc.start(1412);
-	server_srpc_http.start(8811);
-	server_brpc.start(2020);
-	server_thrift.start(9090);
-	pause();
+	//server_srpc.start(1412);
+	int result=server_srpc_http.start(8811);
+	/*server_brpc.start(2020);
+	server_thrift.start(9090);*/
+	if (result == 0)
+	{
+		wait_group.wait();
+		server.stop();
+	}
+	else
+		perror("server start");
+
+	/*pause();
 	server_thrift.stop();
 	server_brpc.stop();
 	server_srpc_http.stop();
-	server_srpc.stop();
+	server_srpc.stop();*/
 
 	return 0;
 }
