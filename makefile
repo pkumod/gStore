@@ -50,7 +50,8 @@ EXEFLAG = -O2 -pthread -std=c++11
 #add -lreadline [-ltermcap] if using readline or objs contain readline
 # library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -L./workflow-nossl/_lib -L./workflow-nossl/_include -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -lworkflow -llog4cplus
-library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/  -L./tools/workflow-master/_lib -L./tools/workflow-master/_include  -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl  -llog4cplus -lworkflow
+#library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/  -L./tools/workflow-master/_lib -L./tools/workflow-master/_include  -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl  -llog4cplus -lworkflow
+library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl  -llog4cplus 
 #used for parallelsort
 openmp = -fopenmp -march=native
 # library = -ltermcap -lreadline -L./lib -lantlr -lgcov
@@ -66,9 +67,9 @@ testdir = scripts/
 
 lib_antlr = lib/libantlr4-runtime.a
 
-lib_workflow=tools/workflow-master/_lib/libworkflow.a
+#lib_workflow=tools/workflow-master/_lib/libworkflow.a
 
-includ_workflow=tools/workflow-master/_include/
+#includ_workflow=tools/workflow-master/_include/
 
 api_cpp = api/socket/cpp/lib/libgstoreconnector.a
 
@@ -87,7 +88,7 @@ kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarray
 
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o \
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
-			$(objdir)IPBlackList.o  $(objdir)SpinLock.o $(objdir)GraphLock.o $(objdir)WebUrl.o $(objdir)INIParser.o $(objdir)Slog.o $(objdir)grpc.srpc.o
+			$(objdir)IPBlackList.o  $(objdir)SpinLock.o $(objdir)GraphLock.o $(objdir)WebUrl.o $(objdir)INIParser.o $(objdir)Slog.o
 
 
 
@@ -126,7 +127,7 @@ inc_workflow=-I./tools/workflow-master/_include
 
 #gtest
 
-TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback   $(exedir)grpc
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback  
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -181,8 +182,8 @@ $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/
 #$(exedir)gapiserver: $(lib_antlr) $(lib_workflow) $(objdir)gapiserver.o  $(objfile)
 #	$(CC) $(EXEFLAG) -o $(exedir)gapiserver $(objdir)gapiserver.o $(objfile) $(library) $(openmp) 
 
-$(exedir)grpc: $(lib_antlr) $(lib_workflow) $(objdir)grpc.o  $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)grpc ./Main/grpc.cpp ./GRPC/grpc.pb.cc  $(library) -lsrpc $(openmp) 
+#$(exedir)grpc: $(lib_antlr) $(lib_workflow) $(objdir)grpc.o  $(objfile)
+#	$(CC) $(EXEFLAG) -o $(exedir)grpc ./Main/grpc.cpp ./GRPC/grpc.pb.cc  $(library) -lsrpc $(openmp) 
 
 $(exedir)gbackup: $(lib_antlr) $(objdir)gbackup.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gbackup $(objdir)gbackup.o $(objfile) $(library) $(openmp)
@@ -258,8 +259,8 @@ $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp D
 #$(objdir)gapiserver.o: Main/gapiserver.cpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/Util_New.h Util/IPWhiteList.h Util/IPBlackList.h Util/WebUrl.h  $(lib_antlr) $(lib_workflow)
 #	$(CC) $(CFLAGS) Main/gapiserver.cpp $(inc) $(inc_workflow) -o $(objdir)gapiserver.o $(openmp)
 
-$(objdir)grpc.o: Main/grpc.cpp GRPC/grpc.srpc.h $(lib_antlr) $(lib_workflow)
-	$(CC) $(CFLAGS) Main/grpc.cpp $(inc) $(inc_workflow) -o $(objdir)grpc.o $(openmp)
+#$(objdir)grpc.o: Main/grpc.cpp GRPC/grpc.srpc.h $(lib_antlr) $(lib_workflow)
+#	$(CC) $(CFLAGS) Main/grpc.cpp $(inc) $(inc_workflow) -o $(objdir)grpc.o $(openmp)
 
 $(objdir)gbackup.o: Main/gbackup.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gbackup.cpp $(inc) -o $(objdir)gbackup.o $(openmp)
@@ -499,8 +500,8 @@ $(objdir)INIParser.o:  Util/INIParser.cpp Util/INIParser.h
 $(objdir)Slog.o:  Util/Slog.cpp Util/Slog.h
 	$(CC) $(CFLAGS) Util/Slog.cpp -o $(objdir)Slog.o $(openmp)
 
-$(objdir)grpc.srpc.o:   GRPC/grpc.srpc.h $(lib_workflow)
-	$(CC) $(CFLAGS)  GRPC/grpc.srpc.h -o $(objdir)grpc.srpc.o $(openmp) 
+#$(objdir)grpc.srpc.o:   GRPC/grpc.srpc.h $(lib_workflow)
+#	$(CC) $(CFLAGS)  GRPC/grpc.srpc.h -o $(objdir)grpc.srpc.o $(openmp) 
 
 $(objdir)Stream.o:  Util/Stream.cpp Util/Stream.h $(objdir)Util.o $(objdir)Bstr.o
 	$(CC) $(CFLAGS) Util/Stream.cpp -o $(objdir)Stream.o $(def64IO) $(openmp)
@@ -626,8 +627,8 @@ pre:
 	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
 	cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;make install;
 	# cd ../../;
-	cd tools;unzip -o workflow-master.zip;cd workflow-master;make;
-	cd tools;unzip -o srpc.zip; cd srpc;make;make install; 
+	#cd tools;unzip -o workflow-master.zip;cd workflow-master;make;
+	#cd tools;unzip -o srpc.zip; cd srpc;make;make install; 
 	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
 	
 	
