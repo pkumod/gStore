@@ -257,7 +257,7 @@ $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp D
 #$(objdir)gapiserver.o: Main/gapiserver.cpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/Util_New.h Util/IPWhiteList.h Util/IPBlackList.h Util/WebUrl.h  $(lib_antlr) $(lib_workflow)
 #	$(CC) $(CFLAGS) Main/gapiserver.cpp $(inc) $(inc_workflow) -o $(objdir)gapiserver.o $(openmp)
 
-$(objdir)grpc.o: Main/grpc.cpp 
+$(objdir)grpc.o: Main/grpc.cpp GRPC/grpc.srpc.h
 	$(CC) $(CFLAGS) Main/grpc.cpp $(inc) $(inc_workflow) -o $(objdir)grpc.o $(openmp)
 
 $(objdir)gbackup.o: Main/gbackup.cpp Database/Database.h Util/Util.h $(lib_antlr)
