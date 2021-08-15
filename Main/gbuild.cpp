@@ -59,6 +59,11 @@ main(int argc, char * argv[])
 	{
 		string _db_path = Util::getArgValue(argc, argv, "db", "database");
 		int len = _db_path.length();
+		if (_db_path.empty())
+		{
+			Log.Error("You must input the database name for building database!");
+			return -1;
+		}
 		if (_db_path.length() > 3 && _db_path.substr(len - 3, 3) == ".db")
 		{
 			
