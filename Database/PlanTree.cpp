@@ -212,15 +212,17 @@ Tree_node::Tree_node(unsigned int node_id, BGPQuery *bgpquery, bool is_first_nod
 	one_step_join_node->edges_constant_info_ = edge_constant_info;
 
 	node = make_shared<StepOperation>();
-	if(is_first_node){
-		node->join_type_ = StepOperation::JoinType::GenerateCandidates;
-		node->edge_filter_ = one_step_join_node;
+	// if(is_first_node){
+	// 	node->join_type_ = StepOperation::JoinType::GenerateCandidates;
+	// 	node->edge_filter_ = one_step_join_node;
+	//
+	// } else{
+	// 	node->join_type_ = StepOperation::JoinType::JoinNode;
+	// 	node->join_node_ = one_step_join_node;
+	// }
 
-	} else{
-		node->join_type_ = StepOperation::JoinType::JoinNode;
-		node->join_node_ = one_step_join_node;
-	}
-
+	node->join_type_ = StepOperation::JoinType::JoinNode;
+	node->join_node_ = one_step_join_node;
 	left_node = nullptr;
 	right_node = nullptr;
 }
@@ -522,7 +524,30 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 	if(node->right_node != nullptr)
 		print_tree_node(node->right_node, bgpquery);
 
-	cout << "join type: " << node->node->JoinTypeToString(node->node->join_type_) << endl;
+	auto stepoperation = node->node;
+	cout << "join type: " << stepoperation->JoinTypeToString(stepoperation->join_type_) << endl;
+	switch (stepoperation->join_type_) {
+		case StepOperation::JoinType::GenerateCandidates:{
+			for(unsigned i = 0; i < stepoperation->edge_filter_->edges_->size(); ++ i){
+				cout << "edge[" << i << "]:" << endl;
+				cout << "\t\ts[" << (*stepoperation->edge_filter_->edges_)[i].s_ << "]" << ((*stepoperation->edge_filter_->edges_constant_info_)[i].s_constant_ ? "const" : "var") << '\t';
+				cout << "p[" << (*stepoperation->edge_filter_->edges_)[i].p_ << "]" << ((*stepoperation->edge_filter_->edges_constant_info_)[i].p_constant_ ? "const" : "var") << '\t';
+				cout << "o[" << (*stepoperation->edge_filter_->edges_)[i].o_ << "]" << ((*stepoperation->edge_filter_->edges_constant_info_)[i].o_constant_ ? "const" : "var") << endl;
+			}
+			cout << "node id: " << stepoperation->edge_filter_->node_to_join_ << endl;
+		}
+		case StepOperation::JoinType::JoinNode:{
+			for(unsigned i = 0; i < stepoperation->join_node_->edges_->size(); ++ i){
+				cout << "\tedge[" << i << "]:" << endl;
+				cout << "\t\ts[" << (*stepoperation->join_node_->edges_)[i].s_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].s_constant_ ? "const" : "var") << "    ";
+				cout << "p[" << (*stepoperation->join_node_->edges_)[i].p_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].p_constant_ ? "const" : "var") << "    ";
+				cout << "o[" << (*stepoperation->join_node_->edges_)[i].o_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].o_constant_ ? "const" : "var") << "    ";
+				cout << JoinMethodToString((*stepoperation->join_node_->edges_)[i].join_method_) << endl;
+			}
+			cout << "\tnode id: " << stepoperation->join_node_->node_to_join_ << endl;
+		}
+
+	}
 
 
 }
@@ -530,4 +555,5 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 void PlanTree::print(BGPQuery* bgpquery) {
 	cout << "Plan: " << endl;
 	// todo: not complete
+	print_tree_node(root_node, bgpquery);
 }

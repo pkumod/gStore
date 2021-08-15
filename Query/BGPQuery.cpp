@@ -633,6 +633,14 @@ void BGPQuery::print(KVstore *kvstore) {
 		cout << item_id.first << " : " << item_id.second << endl;
 	}
 
+	cout << "s_id, p_id, o_id:" << endl;
+	for(unsigned i = 0; i < s_id_.size(); ++i){
+		cout << s_id_[i] << (s_is_constant_[i] ? "const" : "var") << "    ";
+		cout << p_id_[i] << (p_is_constant_[i] ? "const" : "var") << "    ";
+		cout << o_id_[i] << (o_is_constant_[i] ? "const" : "var") << endl;
+
+	}
+
 
 	cout << endl << "VAR INFO:" << endl;
 	for(unsigned i = 0; i < var_vector.size(); ++ i){
