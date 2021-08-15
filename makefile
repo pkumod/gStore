@@ -50,7 +50,7 @@ EXEFLAG = -O2 -pthread -std=c++11
 #add -lreadline [-ltermcap] if using readline or objs contain readline
 # library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -L./workflow-nossl/_lib -L./workflow-nossl/_include -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -lworkflow -llog4cplus
-library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/  -L.tools/workflow-nossl/_lib -L.tools/workflow-nossl/_include  -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl  -llog4cplus -lworkflow
+library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/  -L./tools/workflow-master/_lib -L./tools/workflow-master/_include  -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl  -llog4cplus -lworkflow
 #used for parallelsort
 openmp = -fopenmp -march=native
 # library = -ltermcap -lreadline -L./lib -lantlr -lgcov
@@ -66,9 +66,9 @@ testdir = scripts/
 
 lib_antlr = lib/libantlr4-runtime.a
 
-lib_workflow=tools/workflow-nossl/_lib/libworkflow.a
+lib_workflow=tools/workflow-master/_lib/libworkflow.a
 
-includ_workflow=tools/workflow-nossl/_include/
+includ_workflow=tools/workflow-master/_include/
 
 api_cpp = api/socket/cpp/lib/libgstoreconnector.a
 
@@ -115,7 +115,7 @@ objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj)
 		  $(utilobj) $(signatureobj) $(queryobj) $(trieobj)
 	 
 inc = -I./tools/antlr4-cpp-runtime-4/runtime/src 
-inc_workflow=-I./tools/workflow-nossl/_include 
+inc_workflow=-I./tools/workflow-master/_include 
 #-I./usr/local/include/boost/
 
 
@@ -622,7 +622,7 @@ pre:
 	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
 	cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;make install;
 	# cd ../../;
-	cd tools;unzip -o workflow-nossl.zip;cd workflow-nossl;make;
+	cd tools;unzip -o workflow-master.zip;cd workflow-master;make;
 	cd tools;unzip -o srpc.zip; cd srpc;make;make install; 
 	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
 	
