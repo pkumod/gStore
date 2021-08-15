@@ -901,12 +901,12 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
       executor_.UpdateIDCache(step_operation,id_caches);
     }
     else if(operation_type==StepOperation::JoinType::JoinTable)
-      throw "StepOperation::JoinType::JoinTable cannot happened in leaf node";
+      throw string("StepOperation::JoinType::JoinTable cannot happened in leaf node");
     else if(operation_type==StepOperation::JoinType::EdgeCheck)
-      throw "StepOperation::JoinType::EdgeCheck cannot happened in leaf node";
+      throw string("StepOperation::JoinType::EdgeCheck cannot happened in leaf node");
     else if(operation_type==StepOperation::JoinType::JoinTwoNodes){}
     else
-      throw "unexpected JoinType";
+      throw string("unexpected JoinType");
 
     return make_tuple(true,position_id_map,leaf_table);
   }
@@ -1052,7 +1052,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
                                right_table, right_id_pos_mapping,right_pos_id_mapping);
   }
   else
-    throw "unexpected JoinType";
+    throw string("unexpected JoinType");
   auto position_id_map = make_shared<PositionValue>();
   auto empty_table = make_shared<TableContent>();
   return make_tuple(true,position_id_map,empty_table);

@@ -1331,6 +1331,6 @@ TableContentShardPtr Executor::ConvertToTable(std::shared_ptr<IDList> id_list) {
     record->push_back(var_id);
     result->push_back(record);
   }
-  return TableContentShardPtr();
+  return result;
 }
 
