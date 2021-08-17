@@ -83,8 +83,8 @@ main(int argc, char * argv[])
 			Log.Error("You need to input the database name that you want to export. Input \"bin/gexport -h\" for help.");
 			return 0;
 		}
-		int len = db_name.length();
-		if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
+		int len = db_folder.length();
+		if (db_folder.length() > 3 && db_folder.substr(len - 3, 3) == ".db")
 		{
 			Log.Error("The database name can not end with .db");
 			return 0;
@@ -120,7 +120,7 @@ main(int argc, char * argv[])
 			FILE* ofp = stdout;
 			if (resultfile.empty()==false)
 			{
-				ofp = fopen(resultfile, "w");
+				ofp = fopen(resultfile.c_str(), "w");
 			}
 			string msg;
 			shared_ptr<Transaction> ptxn = make_shared<Transaction>(db_folder, 1, 1);
