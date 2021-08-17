@@ -179,6 +179,11 @@ int main(int argc, char * argv[])
 				{
 					continue;
 				}
+				if (Util::dir_exist(db_name + ".db")==false)
+				{
+					Log.Error(("The database " + db_name + " is not exist").c_str());
+					continue;
+				}
 				sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
 				sparql = sparql + "<" + db_name + "> <built_by> <root>.";
 				sparql = sparql + "<" + db_name + "> <built_time> \"" + time + "\".";
