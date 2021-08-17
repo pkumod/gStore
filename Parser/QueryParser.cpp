@@ -303,10 +303,13 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 	SPARQLParser::VarContext *varCtx)
 {
 	// Sanity checks
-	SPARQLParser::BuiltInCallContext *bicCtx = expCtx->conditionalOrexpression()-> \
+	SPARQLParser::PrimaryexpressionContext *prmCtx = expCtx->conditionalOrexpression()-> \
 		conditionalAndexpression(0)->valueLogical(0)->relationalexpression()-> \
 		numericexpression(0)->additiveexpression()->multiplicativeexpression(0)-> \
-		unaryexpression(0)->primaryexpression()->builtInCall();
+		unaryexpression(0)->primaryexpression();
+	SPARQLParser::BuiltInCallContext *bicCtx;
+	if (prmCtx)
+		bicCtx = prmCtx->builtInCall();
 	if (bicCtx)
 	{	
 		antlr4::tree::ParseTree *curr = expCtx;
@@ -316,7 +319,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			if (curr->children.size() > 1)
 				throw runtime_error("[ERROR] Currently only support selecting variables; "
 					"the aggregate functions COUNT, MIN, MAX, SUM, AVG; "
-					"the built-in call CONTAINS; and path-associated built-in calls");
+					"the built-in call CONTAINS; and path-associated built-in or custom calls");
 			curr = curr->children[0];
 		}
 		SPARQLParser::AggregateContext *aggCtx = bicCtx->aggregate();
@@ -437,19 +440,42 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				query_tree_ptr->addProjectionVar();
 				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
 				proj_var.aggregate_type = QueryTree::ProjectionVar::Contains_type;
-				proj_var.builtin_args.push_back(bicCtx->expression(0)->getText());
-				proj_var.builtin_args.push_back(bicCtx->expression(1)->getText());
+				proj_var.func_args.push_back(bicCtx->expression(0)->getText());
+				proj_var.func_args.push_back(bicCtx->expression(1)->getText());
 				proj_var.var = varCtx->getText();
 			}
 			else
 				throw runtime_error("[ERROR] Currently only support selecting variables; "
 					"the aggregate functions COUNT, MIN, MAX, SUM, AVG; "
-					"the built-in call CONTAINS; and path-associated built-in calls");
+					"the built-in call CONTAINS; and path-associated built-in or custom calls");
 				
 			
 		}
 	}
-	else 	// For multi-layer computation, only consider vars, literals, and bracketted expressions for now
+	else if (prmCtx && prmCtx->iriOrFunction() && prmCtx->iriOrFunction()->argList())
+	{
+		// Custom function call (constrained to path-related)
+		antlr4::tree::ParseTree *curr = expCtx;
+		for (int i = 0; i < 10; i++)
+		{
+			// Make sure only one children along the way
+			if (curr->children.size() > 1)
+				throw runtime_error("[ERROR] Currently only support selecting variables; "
+					"the aggregate functions COUNT, MIN, MAX, SUM, AVG; "
+					"the built-in call CONTAINS; and path-associated built-in or custom calls");
+			curr = curr->children[0];
+		}
+		SPARQLParser::IriOrFunctionContext *funcCtx = prmCtx->iriOrFunction();
+		query_tree_ptr->addProjectionVar();
+		QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+		proj_var.aggregate_type = QueryTree::ProjectionVar::Custom_type;
+		string custom_func_iri = prmCtx->iriOrFunction()->iri()->getText();
+		proj_var.custom_func_name = custom_func_iri.substr(1, custom_func_iri.length() - 2);
+		// Don't deal with DISTINCT in argList for now
+		for (auto expression : prmCtx->iriOrFunction()->argList()->expression())
+			proj_var.func_args.push_back(expression->getText());
+	}
+	else
 	{
 		query_tree_ptr->addProjectionVar();
 		QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
