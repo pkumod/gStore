@@ -811,6 +811,12 @@ Util::dir_exist(const string _dir)
 	return false;
 }
 
+bool Util::file_exist(const string _file)
+{
+	struct stat buffer;
+	return (stat(name.c_str(), &buffer) == 0);
+}
+
 bool
 Util::create_dir(const  string _dir)
 {

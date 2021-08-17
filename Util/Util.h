@@ -80,7 +80,7 @@ in the sparql query can point to the same node in data graph)
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <exception>
-
+#include <sys/stat.h>
 //Below are for boost
 //Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE
@@ -367,6 +367,7 @@ public:
 	static unsigned bsearch_vec_uporder(unsigned _key, const std::vector<unsigned>* _vec);
 	static std::string result_id_str(std::vector<unsigned*>& _v, int _var_num);
 	static bool dir_exist(const std::string _dir);
+    static bool file_exist(const std::string _file);
 	static bool create_dir(const std:: string _dir);
 	static bool create_file(const std::string _file);
 
