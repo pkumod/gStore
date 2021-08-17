@@ -105,11 +105,11 @@ int main(int argc, char * argv[])
 			Log.Info(("database:" + db_name).c_str());
 			Log.Info(("creator:" + creator).c_str());
 			Log.Info(("built_time:" + built_time).c_str());
-			Log.Info(("triple num:" + Util::int2string(triple_num)).cstr());
-			Log.Info(("entity num:" + Util::int2string(entity_num)).cstr());
-			Log.Info(("literal num:" + Util::int2string(literal_num)).cstr());
-			Log.Info(("subject num:" + Util::int2string(subject_num)).cstr());
-			Log.Info(("predicate num:" + Util::int2string(predicate_num)).cstr());
+			Log.Info(("triple num:" + Util::int2string(triple_num)).c_str());
+			Log.Info(("entity num:" + Util::int2string(entity_num)).c_str());
+			Log.Info(("literal num:" + Util::int2string(literal_num)).c_str());
+			Log.Info(("subject num:" + Util::int2string(subject_num)).c_str());
+			Log.Info(("predicate num:" + Util::int2string(predicate_num)).c_str());
 			Log.Info("========================================");
 			
 			return 0;
