@@ -891,31 +891,11 @@ std::tuple<std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_
 std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> QueryPlan::OnlyConstFilter(BasicQuery *basic_query,
                                                                                       KVstore *kv_store,
                                                                                       std::shared_ptr<std::vector<OldVarDescriptor>> var_infos) {
-  auto result = make_shared<QueryPlan>();
-  auto constant_generating_lists = make_shared<vector<shared_ptr<FeedOneNode>>>();
-  auto total_var_num = basic_query->getTotalVarNum();
-
-  // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
-  for(int i = 0;i<total_var_num; i++) {
-    var_infos->emplace_back(OldVarDescriptor::VarType::EntityType ,basic_query->getVarName(i),basic_query);
-  }
-
-  result->var_descriptors_ = var_infos;
-
-  // select the first node to be the max degree
-  for(int i = 0;i<result->var_descriptors_->size(); i++)
-  {
-    if((*result->var_descriptors_)[i].IsSatellite())
-      continue;
-    auto constant_filtering = FilterNodeOnConstantEdge(basic_query, kv_store, (*result->var_descriptors_)[i].basic_query_id);
-    constant_generating_lists->push_back(constant_filtering);
-  }
-  return constant_generating_lists;
+ return make_shared<std::vector<std::shared_ptr<FeedOneNode>>>();
 }
 
 std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> QueryPlan::OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
-                                                                                      KVstore *kv_store,
-                                                                                      std::shared_ptr<std::vector<OldVarDescriptor>> var_infos) {
+                                                                                      KVstore *kv_store) {
   auto result = make_shared<QueryPlan>();
   auto constant_generating_lists = make_shared<vector<shared_ptr<FeedOneNode>>>();
   auto total_var_num = bgp_query->get_total_var_num();

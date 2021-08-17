@@ -57,19 +57,22 @@ class OldVarDescriptor{
 class IntermediateResult{
  private:
  public:
-  std::shared_ptr<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>> values_;
-  // VarDescriptor ID, not BasicQuery ID
-  std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> var_des_to_position_;
-  // VarDescriptor ID, not BasicQuery ID
-  std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>> position_to_var_des_;
 
-  IntermediateResult(const std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>& id_to_position,
-                     const std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>& position_to_id,
-                     std::shared_ptr<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>> values);
+  TableContentShardPtr values_;
+  PositionValueSharedPtr id_pos_map;
+  PositionValueSharedPtr pos_id_map;
 
+  IntermediateResult(const PositionValueSharedPtr& id_to_position,
+                     const PositionValueSharedPtr& position_to_id,
+                     TableContentShardPtr values);
+  IntermediateResult(const IntermediateResult& other) = default;
   IntermediateResult();
-  static std::shared_ptr<IntermediateResult> JoinTwoStructure(const std::shared_ptr<IntermediateResult>& result_a,const std::shared_ptr<IntermediateResult>& result_b,
+  static IntermediateResult OnlyPositionCopy(const IntermediateResult& other);
+  static std::shared_ptr<IntermediateResult> JoinTwoStructure(const std::shared_ptr<IntermediateResult>& result_a,
+                                                              const std::shared_ptr<IntermediateResult>& result_b,
                                                               const std::shared_ptr< std::vector<TYPE_ENTITY_LITERAL_ID> >& public_variables);
+  TYPE_ENTITY_LITERAL_ID AddNewNode(TYPE_ENTITY_LITERAL_ID node_id);
+  size_t GetColumns(){return this->id_pos_map->size();}
 };
 
 class EdgeInfo{

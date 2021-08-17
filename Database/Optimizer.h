@@ -91,7 +91,7 @@ class Optimizer
   tuple<bool,shared_ptr<IntermediateResult>> DoQuery(SPARQLquery&,QueryInfo); // the whole process
   tuple<bool,shared_ptr<IntermediateResult>> DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryInfo query_info); // the whole process
 
-
+ private:
   tuple<bool,shared_ptr<IntermediateResult>> MergeBasicQuery(SPARQLquery &sparql_query);
 
     /* the function is not implemented yet
@@ -103,15 +103,22 @@ class Optimizer
   BasicQueryStrategy ChooseStrategy(BasicQuery *basic_query,QueryInfo *query_info);
   BasicQueryStrategy ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query,QueryInfo *query_info);
 
-  tuple<bool,TableContentShardPtr> ExecutionDepthFirst(shared_ptr<BGPQuery>  bgp_query, const shared_ptr<QueryPlan>& query_plan,
-                                                                 const QueryInfo& query_info,const PositionValueSharedPtr& id_pos_mapping);
+  std::shared_ptr<std::vector<IntermediateResult>> GenerateResultTemplate(shared_ptr<QueryPlan> query_plan);
 
-  tuple<bool,TableContentShardPtr> DepthSearchOneLayer(const shared_ptr<QueryPlan>& query_plan,
-                                                                 int layer_count,
-                                                                 int &result_number_till_now,
-                                                                 int limit_number,
-                                                                 const TableContentShardPtr& tmp_result, const PositionValueSharedPtr& id_pos_mapping,
-                                                                 const IDCachesSharePtr& id_caches);
+  tuple<bool,IntermediateResult> ExecutionDepthFirst(shared_ptr<BGPQuery>  bgp_query,
+                                                       shared_ptr<QueryPlan> query_plan,
+                                                       QueryInfo query_info,
+                                                       PositionValueSharedPtr id_pos_mapping);
+
+
+  tuple<bool,IntermediateResult> DepthSearchOneLayer(shared_ptr<QueryPlan> query_plan,
+                                                     int layer_count,
+                                                     int &result_number_till_now,
+                                                     int limit_number,
+                                                     TableContentShardPtr table_content_ptr,
+                                                     IDCachesSharePtr id_caches,
+                                                     shared_ptr<vector<IntermediateResult>> table_template);
+
 
 
 #ifdef TOPK_SUPPORT
@@ -122,16 +129,16 @@ class Optimizer
   /*copy the result to vector<unsigned*> & */
   bool CopyToResult(vector<unsigned*> *target, BasicQuery *basic_query, const shared_ptr<IntermediateResult>& result);
 
-  bool CopyToResult(vector<unsigned*> *target, shared_ptr<BGPQuery> bgp_query, const shared_ptr<IntermediateResult>& result);
+  bool CopyToResult(vector<unsigned*> *target, shared_ptr<BGPQuery> bgp_query, IntermediateResult result);
 
   void Cartesian(int, int,int,unsigned*,const shared_ptr<vector<Satellite>>&,vector<unsigned*>*,BasicQuery *);
 
- tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionBreathFirst(BasicQuery* basic_query,const QueryInfo& query_info,Tree_node* plan_tree,IDCachesSharePtr id_caches);
+  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionBreathFirst(BasicQuery* basic_query,const QueryInfo& query_info,Tree_node* plan_tree,IDCachesSharePtr id_caches);
 
-  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionBreathFirst(shared_ptr<BGPQuery> bgp_query,
-                                                                                           const QueryInfo& query_info,
-                                                                                           Tree_node* plan_tree_node,
-                                                                                           IDCachesSharePtr id_caches);
+  tuple<bool,IntermediateResult> ExecutionBreathFirst(shared_ptr<BGPQuery> bgp_query,
+                                                      QueryInfo query_info,
+                                                      Tree_node* plan_tree_node,
+                                                      IDCachesSharePtr id_caches);
  private:
   KVstore* kv_store_;
   Statistics* statistics;
@@ -159,9 +166,6 @@ class Optimizer
   TYPE_ENTITY_LITERAL_ID limitID_literal_;
   TYPE_ENTITY_LITERAL_ID limitID_entity_;
   shared_ptr<Transaction> txn_;
-
-  // 因为BasicQuery不给谓词变量编码，所以搞了一个抽象的类
-  shared_ptr<vector<OldVarDescriptor>> var_descriptors_;
 
   //静态情况下可以存储weight
   shared_ptr<vector<double>> weight_list_;

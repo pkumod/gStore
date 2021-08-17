@@ -33,8 +33,7 @@ class QueryPlan
   static std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> OnlyConstFilter(BasicQuery*, KVstore*, std::shared_ptr<std::vector<OldVarDescriptor>>);
 
   static std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
-                                                                                        KVstore *kv_store,
-                                                                                        std::shared_ptr<std::vector<OldVarDescriptor>> var_infos);
+                                                                                        KVstore *kv_store);
   /* greedy method used in version 0.9 */
   static double ScoreNode(BasicQuery *basic_query, int var);
   static TYPE_ENTITY_LITERAL_ID SelectANode(BasicQuery *basic_query,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> processed_nodes); //include select the start node and choose next node;

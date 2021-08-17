@@ -47,14 +47,14 @@ IntermediateResult::JoinTwoStructure(const shared_ptr<IntermediateResult>& resul
   for(auto id:*public_variables)
     public_variables_set.insert(id);
 
-  decltype(result_a->position_to_var_des_) r_position_to_id;
-  for(auto a_kv:*result_a->position_to_var_des_)
+  decltype(result_a->pos_id_map) r_position_to_id;
+  for(auto a_kv:*result_a->pos_id_map)
   {
     auto already_filled_size = r_position_to_id->size();
     (*(r_position_to_id))[already_filled_size] = a_kv.second;
   }
 
-  for(auto b_kv:*result_b->position_to_var_des_)
+  for(auto b_kv:*result_b->pos_id_map)
   {
     if (public_variables_set.find(b_kv.second)!=public_variables_set.end())
       continue;
@@ -71,20 +71,53 @@ IntermediateResult::JoinTwoStructure(const shared_ptr<IntermediateResult>& resul
   return make_shared<IntermediateResult>(r_id_to_position,r_position_to_id,make_shared<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>>());
 }
 
+/**
+ * Add a column to the right of the table
+ * @param node_id the var id
+ * @return the variable's position
+ */
+TYPE_ENTITY_LITERAL_ID IntermediateResult::AddNewNode(TYPE_ENTITY_LITERAL_ID node_id)
+{
+  auto new_pos = this->pos_id_map->size();
+  (*this->pos_id_map)[new_pos] = node_id;
+  (*this->id_pos_map)[node_id] = new_pos;
+  return new_pos;
+}
+
+/**
+ * This operation will move the values into this table
+ * @param id_to_position
+ * @param position_to_id
+ * @param values
+ */
 IntermediateResult::IntermediateResult(
-    const shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>& id_to_position,
-const shared_ptr<map<TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID>>& position_to_id,
-    std::shared_ptr<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>> values){
+    const PositionValueSharedPtr& id_to_position,
+    const PositionValueSharedPtr& position_to_id,
+    TableContentShardPtr values){
   this->values_ = std::move(values);
-  this->var_des_to_position_ = make_shared<map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>(*id_to_position);
-  this->position_to_var_des_ = make_shared<map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>(*position_to_id);
+  this->id_pos_map = make_shared<PositionValue>(*id_to_position);
+  this->pos_id_map = make_shared<PositionValue>(*position_to_id);
 }
 
 IntermediateResult::IntermediateResult(){
-  this->values_ = make_shared<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
-  this->var_des_to_position_ = make_shared<map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>();
-  this->position_to_var_des_ = make_shared<map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>();
+  this->values_ = make_shared<TableContent>();
+  this->id_pos_map = make_shared<PositionValue>();
+  this->pos_id_map = make_shared<PositionValue>();
+}
+
+/**
+ * This function will copy the position infomation from other.
+ * But the content will not be copied
+ * @param other the other table
+ */
+IntermediateResult IntermediateResult::OnlyPositionCopy(const IntermediateResult &other)  {
+  IntermediateResult r;
+  r.id_pos_map = make_shared<PositionValue>(*other.id_pos_map);
+  r.pos_id_map = make_shared<PositionValue>(*other.pos_id_map);
+  r.values_ = make_shared<TableContent>();
+  return r;
 };
+
 
 
 bool EdgeConstantInfo::ConstantToVar(EdgeInfo edge_info) {
