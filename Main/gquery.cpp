@@ -156,7 +156,7 @@ main(int argc, char * argv[])
 			
 			long tv_end = Util::get_cur_time();
 			stringstream ss;
-			ss <<"query database successfully! Return message:"<<msg<<", Used " << (tv_end - tv_begin) << " ms";
+			ss <<"query database successfully, Used " << (tv_end - tv_begin) << " ms";
 			Log.Info(ss.str().c_str());
 			return 0;
 
