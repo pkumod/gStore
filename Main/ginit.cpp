@@ -47,7 +47,10 @@ int main(int argc, char * argv[])
 			ofstream f;
 			f.open("./" + _db_path + ".db/success.txt");
 			f.close();
+
 			Log.Info("system.db rebuild successfully!");
+			delete _db;
+			_db = NULL;
 			Util::init_backuplog();
 			Util::configure_new();
 			string version = Util::getConfigureValue("version");
@@ -66,6 +69,8 @@ int main(int argc, char * argv[])
 			if (ret != -100)
 				Log.Info(("Insert data result:" + msg).c_str());
 			Log.Info("import RDF file to database done.");
+			delete _db;
+		    _db = NULL;
 			return 0;
 
 		}
