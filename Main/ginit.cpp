@@ -88,11 +88,10 @@ int main(int argc, char * argv[])
 			cout << endl;
 			cout << "gStore Initialize Data Tools(ginit)" << endl;
 			cout << endl;
-			cout << "Usage:\tbin/ginit -a -db [dbname] " << endl;
+			cout << "Usage:\tbin/ginit  -db [dbname] " << endl;
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-a,--append\t\tAppend the database info into system database." << endl;
 			cout << "\t-db,--database,\t\t The database names.Use & to split database name. e.g. databaseA&databaseB" << endl;
 		    cout << endl;
 			return 0;
@@ -165,6 +164,11 @@ int main(int argc, char * argv[])
 		else
 		{
 			vector<string> db_names;
+			if (db_namestr[db_namestr.length() - 1] != "&")
+			{
+				db_namestr = db_namestr + "&";
+			}
+			cout << "db_names:" << db_namestr << endl;
 			Util::split(db_namestr, "&", db_names);
 			string sparql = "insert data {";
 			string time = Util::get_date_time();
