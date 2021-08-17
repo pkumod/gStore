@@ -50,7 +50,7 @@ int main(int argc, char * argv[])
 			Util::init_backuplog();
 			Util::configure_new();
 			string version = Util::getConfigureValue("version");
-			string update_sparql = "insert data {<CoreVersion> <value> "\"" + version + "\". }";
+			string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". }";
 			ResultSet _rs;
 			FILE* ofp = stdout;
 			string msg;
@@ -150,11 +150,11 @@ int main(int argc, char * argv[])
 		{
 			vector<string> db_names;
 			Util::split(db_namestr, "&", db_names);
-			sparql = "insert data {";
+			string sparql = "insert data {";
 			string time = Util::get_date_time();
 			for (int i = 0; i < db_names.size(); i++)
 			{
-				db_name =db_names[i];
+				string db_name =db_names[i];
 				sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
 				sparql = sparql + "<" + db_name + "> <built_by> <root>.";
 				sparql = sparql + "<" + db_name + "> <built_time> \"" + time + "\".";
