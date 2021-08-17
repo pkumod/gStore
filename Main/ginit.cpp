@@ -92,7 +92,7 @@ int main(int argc, char * argv[])
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-db,--database,\t\t The database names.Use & to split database name. e.g. databaseA&databaseB" << endl;
+			cout << "\t-db,--database,\t\t The database names.Use , to split database name. e.g. databaseA,databaseB" << endl;
 		    cout << endl;
 			return 0;
 		}
@@ -164,17 +164,21 @@ int main(int argc, char * argv[])
 		else
 		{
 			vector<string> db_names;
-			if (db_namestr.substr(db_namestr.length()-1,1) != "&")
+			if (db_namestr.substr(db_namestr.length()-1,1) != ",")
 			{
-				db_namestr = db_namestr + "&";
+				db_namestr = db_namestr + ",";
 			}
 			cout << "db_names:" << db_namestr << endl;
-			Util::split(db_namestr, "&", db_names);
+			Util::split(db_namestr, ",", db_names);
 			string sparql = "insert data {";
 			string time = Util::get_date_time();
 			for (int i = 0; i < db_names.size(); i++)
 			{
 				string db_name =db_names[i];
+				if (db_name.empty())
+				{
+					continue;
+				}
 				sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
 				sparql = sparql + "<" + db_name + "> <built_by> <root>.";
 				sparql = sparql + "<" + db_name + "> <built_time> \"" + time + "\".";
