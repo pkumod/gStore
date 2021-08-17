@@ -19,12 +19,10 @@ using namespace std;
 
 int main(int argc, char * argv[])
 {
-	string op;
+	
 	Util util;
 	Log.init("slog.properties");
-	ResultSet _rs;
-	bool no_sysdb = false;
-
+	
 	if (argc == 1)
 	{
 		/*cout << "please input the complete command:\t" << endl;
@@ -182,6 +180,7 @@ int main(int argc, char * argv[])
 			FILE* ofp = stdout;
 			string msg;
 			string _db_path = "system";
+			Log.Info(sparql.c_str());
 			ResultSet _rs;
 			Database* _db = new Database(_db_path);
 			_db->load();
@@ -199,12 +198,11 @@ int main(int argc, char * argv[])
 					msg = "update num : " + Util::int2string(ret);
 				else //update error
 					msg = "update failed.";
-				if (ret != -100)
-					cout << msg << endl;
+				
 			}
 			delete _db;
 			_db = NULL;
-			Log.Info("system.db init successfully!");
+			Log.Info(("system.db init successfully!"+msg).c_str());
 			return 0;
 
 		}
