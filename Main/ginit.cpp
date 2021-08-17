@@ -164,7 +164,7 @@ int main(int argc, char * argv[])
 		else
 		{
 			vector<string> db_names;
-			if (db_namestr[db_namestr.length() - 1] != "&")
+			if (db_namestr.substr(db_namestr.length()-1,1) != "&")
 			{
 				db_namestr = db_namestr + "&";
 			}
