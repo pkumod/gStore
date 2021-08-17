@@ -2,61 +2,37 @@
 # Filename: Executor.h
 # Author: Yuqi Zhou
 # Mail: zhouyuqi@pku.edu.cn
-# Last Modified:  2021/8/10.
+# Last Modified:  2021/8/16.
 =============================================================================*/
 
 #include "Executor.h"
 using namespace std;
 
 /**
- * @param edge_info_vector
- * @param edge_table_info_vector
- * @return a table with one column
+ * Join A node to the exist table
+ * @param old_table
+ * @param id_caches
+ * @param feed_plan
+ * @return the new created table
  */
-tuple<bool, TableContentShardPtr> Executor::GenerateTableWithOneNode(const shared_ptr<vector<EdgeInfo>>& edge_info_vector,
-                                                                     const shared_ptr<vector<EdgeConstantInfo>>& edge_table_info_vector) {
-
-  if(edge_info_vector->empty())
-    return make_tuple(false, nullptr);
-
-  assert(edge_info_vector->size()==edge_table_info_vector->size());
-  auto id_candidate = CandidatesWithConstantEdge(edge_info_vector);
-  auto result = make_shared<TableContent>();
-  auto id_candidate_vec = id_candidate->getList();
-  for(auto var_id: *id_candidate_vec)
-  {
-    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
-    record->push_back(var_id);
-    result->push_back(record);
-  }
-  return make_tuple(true,result);
-}
-
-/**
- * add a node to the table
- * @param one_step_join_node_ Describe how to join a node
- * @param intermediate_result The Result in previous step
- * @return bool: the function is done; IntermediateResult: the new IntermediateResult
- */
-tuple<bool, TableContentShardPtr> Executor::JoinANode(const shared_ptr<FeedOneNode>& one_step_join_node_,
-                                                      const TableContentShardPtr& table_content_ptr,
-                                                      const PositionValueSharedPtr& id_pos_mapping,
-                                                      const IDCachesSharePtr& id_caches)
+tuple<bool, IntermediateResult> Executor::JoinANode(IntermediateResult old_table,
+                                                    const IDCachesSharePtr id_caches,
+                                                    const shared_ptr<FeedOneNode> feed_plan)
 {
-
-
-  TableContentShardPtr new_intermediate_table = make_shared<TableContent>();
-
-  auto new_id = one_step_join_node_->node_to_join_;
-  auto new_id_position = (*id_pos_mapping)[new_id];
-  auto edges_info = one_step_join_node_->edges_;
+  auto new_id = feed_plan->node_to_join_;
+  auto table_content_ptr = old_table.values_;
+  auto new_table = IntermediateResult::OnlyPositionCopy(old_table);
+  auto new_id_position = new_table.AddNewNode(new_id);
+  auto new_records = new_table.values_;
+  auto id_pos_map = new_table.id_pos_map;
+  auto edges_info = feed_plan->edges_;
 
   /* : each record */
   for (auto record_iterator = table_content_ptr->begin();
        record_iterator != table_content_ptr->end();
        record_iterator++) {
-    shared_ptr<IDList> record_candidate_list = ExtendRecordOneNode(one_step_join_node_,
-                                                                   id_pos_mapping,
+    shared_ptr<IDList> record_candidate_list = ExtendRecordOneNode(feed_plan,
+                                                                   id_pos_map,
                                                                    id_caches,
                                                                    new_id,
                                                                    record_iterator);
@@ -66,82 +42,75 @@ tuple<bool, TableContentShardPtr> Executor::JoinANode(const shared_ptr<FeedOneNo
     for (auto new_element:*(record_candidate_list->getList())) {
       auto new_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*record);
       new_record->push_back(new_element);
-      //cout<<"new_record_len="<<new_record->size()<<endl;
-      new_intermediate_table->push_back(std::move(new_record));
+      new_records->push_back(std::move(new_record));
     }
   }
-
-  //cout<<"Optimizer::JoinANode result_record_len = "<<new_intermediate_table->values_->front()->size()<<endl;
-  return make_tuple(true,new_intermediate_table);
-
+  return make_tuple(true, new_table);
 }
 
 /**
- * @param one_step_join_node_
- * @param table_content_ptr
- * @param id_pos_mapping
+ *
+ * @param feed_plan
+ * @param is_entity
+ * @param is_literal
+ * @param is_predicate
  * @param id_caches
  * @return
  */
-std::tuple<bool,TableContentShardPtr> Executor::InitialTableOneNode(const std::shared_ptr<FeedOneNode> one_step_join_node_,
-                                                                    bool is_entity,
-                                                                    bool is_literal,
-                                                                    bool is_predicate,
-                                                                    const PositionValueSharedPtr pos_id_mapping,
-                                                                    const IDCachesSharePtr id_caches)
+std::tuple<bool,IntermediateResult> Executor::InitialTableOneNode(const std::shared_ptr<FeedOneNode> feed_plan,
+                                                                  bool is_entity,
+                                                                  bool is_literal,
+                                                                  bool is_predicate,
+                                                                  const IDCachesSharePtr id_caches)
 {
-  auto result = make_shared<TableContent>();
-  auto node_added = one_step_join_node_->node_to_join_;
-  auto id_cache_it = id_caches->find(node_added);
-  (*pos_id_mapping)[0] = node_added;
-  auto id_position_map = make_shared<PositionValue>();
-  (*id_position_map)[node_added] = 0;
-
+  IntermediateResult init_table;
+  auto &records = init_table.values_;
+  auto node_added = feed_plan->node_to_join_;
+  init_table.AddNewNode(node_added);
+  auto id_position_map = init_table.id_pos_map;
   std::shared_ptr<IDList> first_candidate_list = nullptr;
 
-  if(one_step_join_node_->edges_->size()!=0) {
+  if(feed_plan->edges_->size()!=0) {
     // we assert that the plan will not visit contents from empty record
-    auto empty_record = result->begin();
-    first_candidate_list = ExtendRecordOneNode(one_step_join_node_, id_position_map, id_caches,
-                                           node_added, empty_record);
-    result = ConvertToTable(first_candidate_list);
-    return make_tuple(true, result);
+    auto empty_record = records->begin();
+    first_candidate_list = ExtendRecordOneNode(feed_plan, id_position_map, id_caches,
+                                               node_added, empty_record);
+    records = ConvertToTable(first_candidate_list);
+    return make_tuple(true, init_table);
   }
 
+  auto id_cache_it = id_caches->find(node_added);
   if (id_cache_it != id_caches->end()) {
-    result = ConvertToTable(id_cache_it->second);
-    return make_tuple(true, result);
+    records = ConvertToTable(id_cache_it->second);
+    return make_tuple(true, init_table);
   }
   else // No Constant Constraint, Return All IDs
   {
     if(is_predicate)
-      result = get<1>(this->GetAllPreId());
+      records = get<1>(this->GetAllPreId());
     else if(is_entity)
     {
-      result = get<1>(this->GetAllSubObjId(is_literal));
+      records = get<1>(this->GetAllSubObjId(is_literal));
     }
-    return make_tuple(true, result);
+    return make_tuple(true, init_table);
   }
 }
 
 
-std::tuple<bool,TableContentShardPtr> Executor::InitialTableTwoNode(const std::shared_ptr<FeedTwoNode> join_plan,
-                                                                    const PositionValueSharedPtr pos_id_mapping,
-                                                                    const IDCachesSharePtr id_caches)
+std::tuple<bool,IntermediateResult> Executor::InitialTableTwoNode(const std::shared_ptr<FeedTwoNode> join_plan,
+                                                                  const IDCachesSharePtr id_caches)
 {
-  TableContentShardPtr result = make_shared<TableContent>();
+  IntermediateResult init_table;
 
+  auto records = init_table.values_;
   auto id1 = join_plan->node_to_join_1_;
   auto id2 = join_plan->node_to_join_2_;
-
-  (*pos_id_mapping)[0] = id1;
-  (*pos_id_mapping)[1] = id2;
-  auto id_position_map = make_shared<PositionValue>();
-  (*id_position_map)[id1] = 0;
-  (*id_position_map)[id2] = 1;
+  init_table.AddNewNode(id1);
+  init_table.AddNewNode(id2);
+  auto id_position_map = init_table.id_pos_map;
 
   // we assert that the plan will not visit contents from empty record
-  auto empty_record = result->begin();
+  auto empty_record = records->begin();
   auto record_two_node_list = ExtendRecordTwoNode(join_plan,
                                                   id_position_map,
                                                   id_caches,
@@ -156,26 +125,30 @@ std::tuple<bool,TableContentShardPtr> Executor::InitialTableTwoNode(const std::s
     auto id2_this_record = (*record_two_node_list)[i*2+1];
     new_record->push_back(id1_this_record);
     new_record->push_back(id2_this_record);
-    result->push_back(std::move(new_record));
+    records->push_back(std::move(new_record));
   }
-  return make_tuple(true, result);
+  return make_tuple(true, init_table);
 }
 
 
 
-std::tuple<bool, TableContentShardPtr> Executor::JoinTwoNode(const shared_ptr<FeedTwoNode> join_two_node_,
-                                                          const TableContentShardPtr table_content_ptr,
-                                                          const PositionValueSharedPtr id_pos_mapping,
+std::tuple<bool, IntermediateResult> Executor::JoinTwoNode(const shared_ptr<FeedTwoNode> join_two_node_,
+                                                           IntermediateResult old_table,
                                                           const IDCachesSharePtr id_caches)
 {
-  TableContentShardPtr new_intermediate_table = make_shared<TableContent>();
-
+  auto new_table=IntermediateResult::OnlyPositionCopy(old_table);
   auto id1 = join_two_node_->node_to_join_1_;
   auto id2 = join_two_node_->node_to_join_2_;
+  new_table.AddNewNode(id1);
+  new_table.AddNewNode(id2);
+
+  auto new_records = new_table.values_;
+  auto old_records = old_table.values_;
+  auto id_pos_mapping = new_table.id_pos_map;
 
   /* : each record */
-  for (auto record_iterator = table_content_ptr->begin();
-       record_iterator != table_content_ptr->end();
+  for (auto record_iterator = old_records->begin();
+       record_iterator != old_records->end();
        record_iterator++) {
     auto record_two_node_list = ExtendRecordTwoNode(join_two_node_,
                                                                    id_pos_mapping,
@@ -192,81 +165,80 @@ std::tuple<bool, TableContentShardPtr> Executor::JoinTwoNode(const shared_ptr<Fe
       auto id2_this_record = (*record_two_node_list)[i*2+1];
       new_record->push_back(id1_this_record);
       new_record->push_back(id2_this_record);
-      new_intermediate_table->push_back(std::move(new_record));
+      new_records->push_back(std::move(new_record));
     }
   }
 
-  //cout<<"Optimizer::JoinANode result_record_len = "<<new_intermediate_table->values_->front()->size()<<endl;
-  return make_tuple(true,new_intermediate_table);
-
+  return make_tuple(true, new_table);
 }
 
 
 /**
  * join two table with vars in one_step_join_table
- * @param one_step_join_table: define join vars
+ * @param join_plan: define join vars
  * @param table_a
  * @param table_b
  * @return new table, columns are made up of
  * [ big table vars ][ small table vars - common vars]
  */
-tuple<bool,PositionValueSharedPtr,TableContentShardPtr> Executor::JoinTable(const shared_ptr<JoinTwoTable>& one_step_join_table,
-                                                                            const TableContentShardPtr& table_a,
-                                                                            const PositionValueSharedPtr& table_a_id_pos,
-                                                                            const PositionValueSharedPtr& table_a_pos_id,
-                                                                            const TableContentShardPtr& table_b,
-                                                                            const PositionValueSharedPtr& table_b_id_pos,
-                                                                            const PositionValueSharedPtr& table_b_pos_id)
+tuple<bool,IntermediateResult> Executor::JoinTable(const shared_ptr<JoinTwoTable> join_plan,
+                                                   IntermediateResult table_a,
+                                                   IntermediateResult table_b)
 {
+  auto records_a = table_a.values_;
+  auto table_a_id_pos = table_a.id_pos_map;
+  auto table_a_pos_id = table_a.pos_id_map;
+  auto records_b = table_b.values_;
+  auto table_b_id_pos = table_b.id_pos_map;
+  auto table_b_pos_id = table_b.pos_id_map;
+
+  IntermediateResult result_table;
+
   long t1 = Util::get_cur_time();
-  if(table_a->empty() || table_b->empty())
-    return make_tuple(false,nullptr,make_shared<TableContent>());
+  if(records_a->empty() || records_b->empty())
+    return make_tuple(false,result_table);
 
   auto new_position_id_mapping = make_shared<PositionValue>();
 
-  auto join_nodes = one_step_join_table->public_variables_;
-  /* build index in big table
-   * */
-  auto& big_table = table_a->size() > table_b->size() ? table_a : table_b;
-  auto& big_id_pos = table_a->size() > table_b->size() ? table_a_id_pos : table_b_id_pos;
-  auto& big_pos_id = table_a->size() > table_b->size() ? table_a_pos_id : table_b_pos_id;
+  auto join_nodes = join_plan->public_variables_;
 
-  auto& small_table = table_a->size() <= table_b->size() ? table_a : table_b;
-  auto& small_id_pos = table_a->size() <= table_b->size() ? table_a_id_pos : table_b_id_pos;
-  auto& small_pos_id = table_a->size() <= table_b->size() ? table_a_pos_id : table_b_pos_id;
-
-  auto result_table = make_shared<TableContent>();
+  // build index in big table
+  auto& big_table = records_a->size() > records_b->size() ? records_a : records_b;
+  auto& big_id_pos = records_a->size() > records_b->size() ? table_a_id_pos : table_b_id_pos;
+  auto& big_pos_id = records_a->size() > records_b->size() ? table_a_pos_id : table_b_pos_id;
+  auto& small_table = records_a->size() <= records_b->size() ? records_a : records_b;
+  auto& small_id_pos = records_a->size() <= records_b->size() ? table_a_id_pos : table_b_id_pos;
+  auto& small_pos_id = records_a->size() <= records_b->size() ? table_a_pos_id : table_b_pos_id;
 
   auto indexed_result = unordered_map<
       /*key*/ vector<TYPE_ENTITY_LITERAL_ID>,
       /*value*/ shared_ptr<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>,
       /*hash function*/ container_hash<vector<TYPE_ENTITY_LITERAL_ID>>
   >();
-  // # TODO 先建立大表的索引 ，再建立小表的索引
+
+  // the new order [ big table vars ][ small table vars - common vars]
   vector<TYPE_ENTITY_LITERAL_ID> common_variables_position_big;
   vector<TYPE_ENTITY_LITERAL_ID> common_variables_position_small;
-  for(auto common_variable:*(one_step_join_table->public_variables_))
+  for(auto common_variable:*(join_plan->public_variables_))
   {
     common_variables_position_big.push_back((*big_id_pos)[common_variable]);
     common_variables_position_small.push_back((*small_id_pos)[common_variable]);
   }
-  auto &public_vars = one_step_join_table->public_variables_;
+  auto &public_vars = join_plan->public_variables_;
 
   auto big_table_record_len = big_id_pos->size();
-  for(int i =0;i<big_table_record_len;i++)
+  for(decltype(big_table_record_len) i =0;i<big_table_record_len;i++)
     (*new_position_id_mapping)[i]= (*big_pos_id)[i];
 
   auto small_table_record_len = small_pos_id->size();
-  for(int i =0;i<small_table_record_len;i++) {
+  for(decltype(small_table_record_len) i =0;i<small_table_record_len;i++) {
     auto small_id = (*small_pos_id)[i];
     if(find(public_vars->begin(),public_vars->end(),small_id)!=public_vars->end())
       continue;
     (*new_position_id_mapping)[new_position_id_mapping->size()] = small_id;
   }
 
-//  cout << "JoinTwoTable::new_mapping = " << new_position_id_mapping->size() << endl;
-
-  auto common_variables_size = one_step_join_table->public_variables_->size();
+  auto common_variables_size = join_plan->public_variables_->size();
   for(const auto& big_record:*(big_table))
   {
     vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
@@ -287,15 +259,14 @@ tuple<bool,PositionValueSharedPtr,TableContentShardPtr> Executor::JoinTable(cons
   }
 
 
-  /* Now Do the Matching , first calculate which ids in table small should be add
-   * */
+  /* Now Do the Matching , first calculate which ids in table small should be added */
   set<TYPE_ENTITY_LITERAL_ID> public_variables;
   for(auto variable_id:*join_nodes)
   {
     public_variables.insert(variable_id);
   }
   vector<TYPE_ENTITY_LITERAL_ID> small_table_inserted_variables_position;
-  for(int i =0;i<small_pos_id->size();i++)
+  for(decltype(small_pos_id->size()) i =0;i<small_pos_id->size();i++)
   {
     auto small_node = (*small_pos_id)[i];
     if (public_variables.find(small_node)!=public_variables.end())
@@ -303,78 +274,154 @@ tuple<bool,PositionValueSharedPtr,TableContentShardPtr> Executor::JoinTable(cons
     small_table_inserted_variables_position.push_back(i);
   }
 
-  auto result_contents = result_table;
+  auto result_records = result_table.values_;
   /* do the matching */
   for(const auto& small_record:*small_table)
   {
     vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
     for(auto common_position:common_variables_position_small)
-    {
       result_index.push_back((*small_record)[common_position]);
-    }
+
     /* the index is in the big table */
     if(indexed_result.find(result_index)!=indexed_result.end())
     {
       vector<TYPE_ENTITY_LITERAL_ID> small_record_inserted;
       for(auto small_position:small_table_inserted_variables_position)
-      {
         small_record_inserted.push_back((*small_record)[small_position]);
-      }
       auto matched_content = indexed_result[result_index];
       for(const auto& matched_big_record:*matched_content)
       {
         auto result_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*matched_big_record);
         for(auto small_inserted_element:small_record_inserted)
-        {
           result_record->push_back(small_inserted_element);
-        }
-        result_contents->push_back(result_record);
+        result_records->push_back(result_record);
       }
     }
     /* if not, ignore */
   }
-  cout<<"binary join,  result size "<<result_table->size()<<endl;
-  long t2 = Util::get_cur_time();
-  cout << "binary join used " << (t2-t1) << "ms." <<endl;
-  auto first_r = result_table->front();
-  return make_tuple(true, new_position_id_mapping, result_table);
+  result_table.pos_id_map = new_position_id_mapping;
+  auto id_pos_map = result_table.id_pos_map;
+  for(const auto& pos_id_pair:*new_position_id_mapping)
+    (*id_pos_map)[pos_id_pair.second] = pos_id_pair.first;
 
+  return make_tuple(true, result_table);
+}
+
+
+/**
+ *
+ * @param check_plan
+ * @param old_table
+ * @param id_caches
+ * @return a new IntermediateResult, changing the return one will not change the old table
+ */
+tuple<bool,IntermediateResult> Executor::ANodeEdgesConstraintFilter(shared_ptr<FeedOneNode> check_plan,
+                                                                    IntermediateResult old_table,
+                                                                    IDCachesSharePtr id_caches) {
+  auto new_table = IntermediateResult::OnlyPositionCopy(old_table);
+  auto table_content = old_table.values_;
+  auto id_pos_mapping =old_table.id_pos_map;
+
+  auto edge_info_vec = check_plan->edges_;
+  auto edge_constant_info_vec = check_plan->edges_constant_info_;
+  auto edge_num = check_plan->edges_->size();
+  for(decltype(edge_num) i=0;i<edge_num;i++)
+  {
+    auto edge_info = (*edge_info_vec)[i];
+    auto edge_constant_info = (*edge_constant_info_vec)[i];
+    auto step_result = this->OneEdgeConstraintFilter(edge_info, edge_constant_info, table_content, id_pos_mapping, id_caches);
+    if(get<0>(step_result))
+      table_content = get<1>(step_result);
+  }
+  new_table.values_ = table_content;
+  return make_tuple(true,new_table);
+}
+
+bool Executor::CacheConstantCandidates(shared_ptr<FeedOneNode> one_step, IDCachesSharePtr id_caches) {
+  auto node_t = one_step->node_to_join_;
+  auto edges = one_step->edges_;
+  auto edges_constant = one_step->edges_constant_info_;
+  for(decltype(edges->size()) i =0 ;i<edges->size();i++) {
+    AddConstantCandidates((*edges)[i],node_t,id_caches);
+  }
+  return true;
+}
+
+/**
+ * a simple version of Join::update_answer_list
+ * @param valid_id_list
+ * @param id_list
+ * @param id_list_len
+ * @param id_list_prepared : valid_id_list is initialed
+ */
+void
+Executor::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared)
+{
+  if(id_list_prepared)
+  {
+    valid_id_list->intersectList(id_list, id_list_len);
+  }
+  else
+  {
+    valid_id_list->reserve(id_list_len);
+    for(int i = 0; i < id_list_len; i++)
+      valid_id_list->addID(id_list[i]);
+  }
+}
+
+/**
+ * This Operation will change id_caches. Update id_caches with
+ * information from step_operation
+ * @param step_operation the edge information
+ * @param id_caches
+ * @return bool
+ */
+bool Executor::UpdateIDCache(std::shared_ptr<StepOperation> step_operation,IDCachesSharePtr id_caches) {
+  //
+  auto feed_plan = step_operation->edge_filter_;
+  auto var_node_id = feed_plan->node_to_join_;
+  auto candidate_list_it = id_caches->find(var_node_id);
+  auto candidate_generated = this->CandidatesWithConstantEdge( feed_plan->edges_);
+  if(candidate_list_it==id_caches->end())
+  {
+    (*id_caches)[var_node_id] = candidate_generated;
+  }
+  else
+  {
+    auto candidate_already = candidate_list_it->second;
+    candidate_already->intersectList(candidate_generated->getList()->data(),candidate_generated->size());
+  }
+  return true;
+}
+
+TableContentShardPtr Executor::ConvertToTable(std::shared_ptr<IDList> id_list) {
+  auto result = make_shared<TableContent>();
+  auto id_candidate_vec = id_list->getList();
+  for (auto var_id: *id_candidate_vec) {
+    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+    record->push_back(var_id);
+    result->push_back(record);
+  }
+  return result;
 }
 
 /**
  *
- * @param one_step_join_table
+ * @param edge_info
+ * @param edge_table_info
  * @param table_content_ptr
  * @param id_pos_mapping
  * @param id_caches
- * @return
+ * @return the filtered table. Change the returned one will not infect the old one
  */
-tuple<bool,TableContentShardPtr> Executor::ANodeEdgesConstraintFilter(const shared_ptr<FeedOneNode>& one_step_join_table,
-                                                                      TableContentShardPtr table_content_ptr,
-                                                                      const PositionValueSharedPtr& id_pos_mapping,
-                                                                      const IDCachesSharePtr& id_caches) {
-  auto edge_info_vec = one_step_join_table->edges_;
-  auto edge_constant_info_vec = one_step_join_table->edges_constant_info_;
-  for(int i=0;i<one_step_join_table->edges_->size();i++)
-  {
-    auto edge_info = (*edge_info_vec)[i];
-    auto edge_constant_info = (*edge_constant_info_vec)[i];
-    auto step_result = this->OneEdgeConstraintFilter(edge_info,edge_constant_info,table_content_ptr,id_pos_mapping,id_caches);
-    if(get<0>(step_result))
-      table_content_ptr = get<1>(step_result);
-  }
-  return make_tuple(true,table_content_ptr);
-}
-
 tuple<bool,TableContentShardPtr> Executor::OneEdgeConstraintFilter(EdgeInfo edge_info,
                                                                    EdgeConstantInfo edge_table_info,
-                                                                   const TableContentShardPtr& table_content_ptr,
-                                                                   const PositionValueSharedPtr& id_pos_mapping,
-                                                                   const IDCachesSharePtr& id_caches) {
+                                                                   TableContentShardPtr table_content_ptr,
+                                                                   PositionValueSharedPtr id_pos_mapping,
+                                                                   IDCachesSharePtr id_caches) {
   TYPE_ENTITY_LITERAL_ID var_to_filter= edge_info.getVarToFilter();
   if(edge_table_info.ConstantToVar(edge_info))
   {
-
     TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
     TYPE_ENTITY_LITERAL_ID this_edge_list_len;
     switch (edge_info.join_method_) {
@@ -652,10 +699,10 @@ tuple<bool,TableContentShardPtr> Executor::OneEdgeConstraintFilter(EdgeInfo edge
 
 }
 
-tuple<bool,TableContentShardPtr> Executor::FilterAVariableOnIDList(const shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& candidate_list,
+tuple<bool,TableContentShardPtr> Executor::FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> candidate_list,
                                                                    TYPE_ENTITY_LITERAL_ID var_id,
-                                                                   const TableContentShardPtr& table_content_ptr,
-                                                                   const PositionValueSharedPtr& id_posing_mapping) {
+                                                                   TableContentShardPtr table_content_ptr,
+                                                                   PositionValueSharedPtr id_posing_mapping) {
 
   auto new_intermediate_table = make_shared<TableContent>();
   auto var_position = (*id_posing_mapping)[var_id];
@@ -673,22 +720,7 @@ tuple<bool,TableContentShardPtr> Executor::FilterAVariableOnIDList(const shared_
 
 }
 
-shared_ptr<IntermediateResult> Executor::NormalJoin(shared_ptr<BasicQuery>,shared_ptr<QueryPlan>){
-  return shared_ptr<IntermediateResult>();
-}
-
-bool Executor::CacheConstantCandidates(const shared_ptr<FeedOneNode>& one_step, const IDCachesSharePtr& id_caches) {
-  auto node_t = one_step->node_to_join_;
-  auto edges = one_step->edges_;
-  auto edges_constant = one_step->edges_constant_info_;
-  for(int i =0 ;i<edges->size();i++) {
-    AddConstantCandidates((*edges)[i],(*edges_constant)[i],node_t,id_caches);
-  }
-  return true;
-}
-
-bool Executor::AddConstantCandidates(EdgeInfo edge_info,EdgeConstantInfo edge_table_info,TYPE_ENTITY_LITERAL_ID targetID,
-                                     const IDCachesSharePtr& id_caches)
+bool Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID targetID,IDCachesSharePtr id_caches)
 {
   TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
   TYPE_ENTITY_LITERAL_ID this_edge_list_len;
@@ -842,141 +874,11 @@ std::tuple<bool, TableContentShardPtr> Executor::GetAllPreId()
   return make_tuple(true,result);
 }
 
-/**
- * use edge info to generate IDList
- * @param edge_info_vector e.g. [sp2o 1 2 _][o2s _ _ 5]
- * @return the IDList produced
- */
-shared_ptr<IDList> Executor::CandidatesWithConstantEdge(const shared_ptr<vector<EdgeInfo>> &edge_info_vector) const {
-  auto id_candidate = make_shared<IDList>();
-  for(int i = 0; i<edge_info_vector->size(); i++)
-  {
-    auto edge_info = (*edge_info_vector)[i];
-    TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
-    TYPE_ENTITY_LITERAL_ID this_edge_list_len;
-    cout<<"edge["<<i<<"] \n\t"<< edge_info.toString() << "\n\t join method:"<<JoinMethodToString(edge_info.join_method_)<<endl;
-    switch (edge_info.join_method_) {
-      case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
-        auto s_var_constant_id = edge_info.s_;
-        this->kv_store_->getpreIDlistBysubID(s_var_constant_id,
-                                             edge_candidate_list,
-                                             this_edge_list_len,
-                                             true,
-                                             this->txn_);
-        break;
-      }
-      case JoinMethod::s2o: {
-        auto s_var_constant_id = edge_info.s_;
-        this->kv_store_->getobjIDlistBysubID(s_var_constant_id,
-                                             edge_candidate_list,
-                                             this_edge_list_len,
-                                             true,
-                                             this->txn_);
-        break;
-      }
-      case JoinMethod::p2s: {
-        auto p_var_constant_id = edge_info.p_;
-        this->kv_store_->getsubIDlistBypreID(p_var_constant_id,
-                                             edge_candidate_list,
-                                             this_edge_list_len,
-                                             true,
-                                             this->txn_);
-        break;
-      }
-      case JoinMethod::p2o: {
-        auto p_var_constant_id = edge_info.p_;
-        this->kv_store_->getobjIDlistBypreID(p_var_constant_id,
-                                             edge_candidate_list,
-                                             this_edge_list_len,
-                                             true,
-                                             this->txn_);
-        break;
-      }
-      case JoinMethod::o2s: {
-        auto o_var_constant_id = edge_info.o_;
-        this->kv_store_->getsubIDlistByobjID(o_var_constant_id,
-                                             edge_candidate_list,
-                                             this_edge_list_len,
-                                             true,
-                                             this->txn_);
-        break;
-      }
-      case JoinMethod::o2p: {
-        auto o_var_constant_id = edge_info.o_;
-        this->kv_store_->getpreIDlistByobjID(o_var_constant_id,
-                                             edge_candidate_list,
-                                             this_edge_list_len,
-                                             true,
-                                             this->txn_);
-        break;
-      }
-      case JoinMethod::so2p: {
-        auto s_var_constant_id = edge_info.s_;
-        auto o_var_constant_id = edge_info.o_;
-        this->kv_store_->getpreIDlistBysubIDobjID(s_var_constant_id,
-                                                  o_var_constant_id,
-                                                  edge_candidate_list,
-                                                  this_edge_list_len,
-                                                  true,
-                                                  this->txn_);
-        break;
-      }
-      case JoinMethod::sp2o: {
-        auto s_var_constant_id = edge_info.s_;
-        auto p_var_constant_id = edge_info.p_;
-        this->kv_store_->getobjIDlistBysubIDpreID(s_var_constant_id,
-                                                  p_var_constant_id,
-                                                  edge_candidate_list,
-                                                  this_edge_list_len,
-                                                  true,
-                                                  this->txn_);
-        break;
-      }
-      case JoinMethod::po2s: {
-        auto p_var_constant_id = edge_info.p_;
-        auto o_var_constant_id = edge_info.o_;
-        this->kv_store_->getsubIDlistByobjIDpreID(o_var_constant_id,
-                                                  p_var_constant_id,
-                                                  edge_candidate_list,
-                                                  this_edge_list_len,
-                                                  true,
-                                                  this->txn_);
-        break;
-      }
-    }
-    cout<<"get "<<this_edge_list_len<<" result in this edge "<<endl;
-    UpdateIDList(id_candidate,edge_candidate_list,this_edge_list_len,i > 0);
-  }
-  return id_candidate;
-}
-
-/**
- * a simple version of Join::update_answer_list
- * @param valid_id_list
- * @param id_list
- * @param id_list_len
- * @param id_list_prepared : valid_id_list is initialed
- */
-void
-Executor::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared)
-{
-  if(id_list_prepared)
-  {
-    valid_id_list->intersectList(id_list, id_list_len);
-  }
-  else
-  {
-    valid_id_list->reserve(id_list_len);
-    for(int i = 0; i < id_list_len; i++)
-      valid_id_list->addID(id_list[i]);
-  }
-}
-
-std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNode> one_step_join_node_,
-                                                      const PositionValueSharedPtr id_pos_mapping,
-                                                      const IDCachesSharePtr id_caches,
+std::shared_ptr<IDList> Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> one_step_join_node_,
+                                                      PositionValueSharedPtr id_pos_mapping,
+                                                      IDCachesSharePtr id_caches,
                                                       TYPE_ENTITY_LITERAL_ID new_id,
-                                                      list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const{
+                                                      list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator record_iterator) const{
   auto record_candidate_list= make_shared<IDList>();
   auto record_candidate_prepared = false;
   auto edges_info = one_step_join_node_->edges_;
@@ -1190,12 +1092,12 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(const shared_ptr<FeedOneNo
  * @return a vector of [id1 id2]_1 [id1 id2]_2  [id1 id2]_3 [id1 id2]_4
  */
 std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>
-Executor::ExtendRecordTwoNode(const shared_ptr<FeedTwoNode> one_step_join_node_,
-                              const PositionValueSharedPtr id_pos_mapping,
-                              const IDCachesSharePtr id_caches,
+Executor::ExtendRecordTwoNode(shared_ptr<FeedTwoNode> one_step_join_node_,
+                              PositionValueSharedPtr id_pos_mapping,
+                              IDCachesSharePtr id_caches,
                               TYPE_ENTITY_LITERAL_ID new_id1,
                               TYPE_ENTITY_LITERAL_ID new_id2,
-                              list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator &record_iterator) const{
+                              list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator record_iterator) const{
 
   auto two_node_list = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
 
@@ -1207,7 +1109,7 @@ Executor::ExtendRecordTwoNode(const shared_ptr<FeedTwoNode> one_step_join_node_,
 /* through this edge get candidate */
   switch (edge_info.join_method_) {
     case JoinMethod::s2po: {
-    /* if s is constant, it is edge constraint check, and should not appear in the function*/
+      /* if s is constant, it is edge constraint check, and should not appear in the function*/
       TYPE_ENTITY_LITERAL_ID s_var_id_this_record;
       if(edge_constant_info.s_constant_)
         s_var_id_this_record = edge_info.s_;
@@ -1299,38 +1201,110 @@ Executor::ExtendRecordTwoNode(const shared_ptr<FeedTwoNode> one_step_join_node_,
 }
 
 /**
- * This Operation will change id_caches. Update id_caches with
- * information from step_operation
- * @param step_operation the edge information
- * @param id_caches
- * @return bool
+ * use edge info to generate IDList
+ * @param edge_info_vector e.g. [sp2o 1 2 _][o2s _ _ 5]
+ * @return the IDList produced
  */
-bool Executor::UpdateIDCache(std::shared_ptr<StepOperation> step_operation,IDCachesSharePtr id_caches) {
-  //
-  auto feed_plan = step_operation->edge_filter_;
-  auto var_node_id = feed_plan->node_to_join_;
-  auto candidate_list_it = id_caches->find(var_node_id);
-  auto candidate_generated = this->CandidatesWithConstantEdge( feed_plan->edges_);
-  if(candidate_list_it==id_caches->end())
+shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeInfo>> edge_info_vector) const {
+  auto id_candidate = make_shared<IDList>();
+  for(int i = 0; i<edge_info_vector->size(); i++)
   {
-    (*id_caches)[var_node_id] = candidate_generated;
+    auto edge_info = (*edge_info_vector)[i];
+    TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
+    TYPE_ENTITY_LITERAL_ID this_edge_list_len;
+    cout<<"edge["<<i<<"] \n\t"<< edge_info.toString() << "\n\t join method:"<<JoinMethodToString(edge_info.join_method_)<<endl;
+    switch (edge_info.join_method_) {
+      case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
+        auto s_var_constant_id = edge_info.s_;
+        this->kv_store_->getpreIDlistBysubID(s_var_constant_id,
+                                             edge_candidate_list,
+                                             this_edge_list_len,
+                                             true,
+                                             this->txn_);
+        break;
+      }
+      case JoinMethod::s2o: {
+        auto s_var_constant_id = edge_info.s_;
+        this->kv_store_->getobjIDlistBysubID(s_var_constant_id,
+                                             edge_candidate_list,
+                                             this_edge_list_len,
+                                             true,
+                                             this->txn_);
+        break;
+      }
+      case JoinMethod::p2s: {
+        auto p_var_constant_id = edge_info.p_;
+        this->kv_store_->getsubIDlistBypreID(p_var_constant_id,
+                                             edge_candidate_list,
+                                             this_edge_list_len,
+                                             true,
+                                             this->txn_);
+        break;
+      }
+      case JoinMethod::p2o: {
+        auto p_var_constant_id = edge_info.p_;
+        this->kv_store_->getobjIDlistBypreID(p_var_constant_id,
+                                             edge_candidate_list,
+                                             this_edge_list_len,
+                                             true,
+                                             this->txn_);
+        break;
+      }
+      case JoinMethod::o2s: {
+        auto o_var_constant_id = edge_info.o_;
+        this->kv_store_->getsubIDlistByobjID(o_var_constant_id,
+                                             edge_candidate_list,
+                                             this_edge_list_len,
+                                             true,
+                                             this->txn_);
+        break;
+      }
+      case JoinMethod::o2p: {
+        auto o_var_constant_id = edge_info.o_;
+        this->kv_store_->getpreIDlistByobjID(o_var_constant_id,
+                                             edge_candidate_list,
+                                             this_edge_list_len,
+                                             true,
+                                             this->txn_);
+        break;
+      }
+      case JoinMethod::so2p: {
+        auto s_var_constant_id = edge_info.s_;
+        auto o_var_constant_id = edge_info.o_;
+        this->kv_store_->getpreIDlistBysubIDobjID(s_var_constant_id,
+                                                  o_var_constant_id,
+                                                  edge_candidate_list,
+                                                  this_edge_list_len,
+                                                  true,
+                                                  this->txn_);
+        break;
+      }
+      case JoinMethod::sp2o: {
+        auto s_var_constant_id = edge_info.s_;
+        auto p_var_constant_id = edge_info.p_;
+        this->kv_store_->getobjIDlistBysubIDpreID(s_var_constant_id,
+                                                  p_var_constant_id,
+                                                  edge_candidate_list,
+                                                  this_edge_list_len,
+                                                  true,
+                                                  this->txn_);
+        break;
+      }
+      case JoinMethod::po2s: {
+        auto p_var_constant_id = edge_info.p_;
+        auto o_var_constant_id = edge_info.o_;
+        this->kv_store_->getsubIDlistByobjIDpreID(o_var_constant_id,
+                                                  p_var_constant_id,
+                                                  edge_candidate_list,
+                                                  this_edge_list_len,
+                                                  true,
+                                                  this->txn_);
+        break;
+      }
+    }
+    cout<<"get "<<this_edge_list_len<<" result in this edge "<<endl;
+    UpdateIDList(id_candidate,edge_candidate_list,this_edge_list_len,i > 0);
   }
-  else
-  {
-    auto candidate_already = candidate_list_it->second;
-    candidate_already->intersectList(candidate_generated->getList()->data(),candidate_generated->size());
-  }
-  return true;
-}
-
-TableContentShardPtr Executor::ConvertToTable(std::shared_ptr<IDList> id_list) {
-  auto result = make_shared<TableContent>();
-  auto id_candidate_vec = id_list->getList();
-  for (auto var_id: *id_candidate_vec) {
-    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
-    record->push_back(var_id);
-    result->push_back(record);
-  }
-  return result;
+  return id_candidate;
 }
 
