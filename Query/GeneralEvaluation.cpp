@@ -1717,16 +1717,22 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			int new_result0_id_cols = new_result0.id_varset.getVarsetSize();
 			int new_result0_str_cols = new_result0.str_varset.getVarsetSize();
 
+			// TODO: (Refactor)
+			// 1. Make a fine distinction between aggregates and non-aggregate functions
+			// 2. For non-aggregate functions, split argument gathering and executing
+			// (possibly get rid of PathArgs and stick with a string vector for args?)
 			if (result0_size == 0 && proj.size() == 1 && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::None_type && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::Count_type && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::CompTree_type && \
+				proj[0].aggregate_type != QueryTree::ProjectionVar::Count_type && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::Sum_type && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::Avg_type && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::Min_type && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::Max_type)
+				proj[0].aggregate_type != QueryTree::ProjectionVar::Max_type && \
+				proj[0].aggregate_type != QueryTree::ProjectionVar::Contains_type)
 			{
-				// Path query, no var (all IRIs) in arg list
+				// Non-aggregate functions, no var (all constant) in arg list
+				// TODO: handle CONTAINS and custom functions
 
 				new_result0.result.push_back(TempResult::ResultPair());
 				new_result0.result.back().id = new unsigned[new_result0_id_cols];
@@ -1735,167 +1741,213 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				for (int i = 0; i < new_result0_id_cols; i++)
 					new_result0.result.back().id[i] = INVALID;
 
-				prepPathQuery();
-				vector<int> uid_ls, vid_ls;
-				vector<int> pred_id_set;
-				uid_ls.push_back(kvstore->getIDByString(proj[0].path_args.src));
-				if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
-					vid_ls.push_back(kvstore->getIDByString(proj[0].path_args.dst));
-				else
-					vid_ls.push_back(-1);	// Dummy for loop
-				if (!proj[0].path_args.pred_set.empty())
+				// Path functions
+				if (proj[0].aggregate_type != QueryTree::ProjectionVar::Custom_type)
 				{
-					for (auto pred : proj[0].path_args.pred_set)
-						pred_id_set.push_back(kvstore->getIDByPredicate(pred));
-				}
-				else
-				{
-					// Allow all predicates
-					unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
-					for (unsigned j = 0; j < pre_num; j++)
-						pred_id_set.push_back(j);
-				}
-
-				// For each u-v pair, query
-				bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
-				stringstream ss;
-				bool notFirstOutput = 0;	// For outputting commas
-				ss << "\"{\"paths\":[";
-				for (int uid : uid_ls)
-				{
-					for (int vid : vid_ls)
-					{
-						if (proj[0].aggregate_type == QueryTree::ProjectionVar::cyclePath_type)
-						{
-							if (uid == vid)
-								continue;
-							vector<int> path = pqHandler->cycle(uid, vid, proj[0].path_args.directed, pred_id_set);
-							if (path.size() != 0)
-							{
-								if (notFirstOutput)
-									ss << ",";
-								else
-									notFirstOutput = 1;
-								pathVec2JSON(uid, vid, path, ss);
-							}
-						}
-						else if (proj[0].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
-						{
-							if (uid == vid)
-								continue;
-							if (pqHandler->cycle(uid, vid, proj[0].path_args.directed, pred_id_set).size() != 0)
-							{
-								exist = 1;
-								earlyBreak = 1;
-								break;
-							}
-						}
-						else if (proj[0].aggregate_type == QueryTree::ProjectionVar::shortestPath_type)
-						{
-							if (uid == vid)
-							{
-								if (notFirstOutput)
-									ss << ",";
-								else
-									notFirstOutput = 1;
-								vector<int> path;	// Empty path
-								pathVec2JSON(uid, vid, path, ss);
-								continue;
-							}
-							vector<int> path = pqHandler->shortestPath(uid, vid, proj[0].path_args.directed, pred_id_set);
-							if (path.size() != 0)
-							{
-								if (notFirstOutput)
-									ss << ",";
-								else
-									notFirstOutput = 1;
-								pathVec2JSON(uid, vid, path, ss);
-							}
-						}
-						else if (proj[0].aggregate_type == QueryTree::ProjectionVar::shortestPathLen_type)
-						{
-							if (uid == vid)
-							{
-								if (notFirstOutput)
-									ss << ",";
-								else
-									notFirstOutput = 1;
-								ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
-									<< "\",\"dst\":\"" << kvstore->getStringByID(vid) \
-									<< "\",\"length\":0}";
-								continue;
-							}
-							vector<int> path = pqHandler->shortestPath(uid, vid, proj[0].path_args.directed, pred_id_set);
-							if (path.size() != 0)
-							{
-								if (notFirstOutput)
-									ss << ",";
-								else
-									notFirstOutput = 1;
-								ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
-									<< "\",\"dst\":\"" << kvstore->getStringByID(vid) << "\",\"length\":";
-								ss << (path.size() - 1) / 2;
-								ss << "}";
-							}
-						}
-						else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachable_type)
-						{
-							if (uid == vid)
-							{
-								if (notFirstOutput)
-									ss << ",";
-								else
-									notFirstOutput = 1;
-								ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
-									<< "\",\"dst\":\"" << kvstore->getStringByID(vid) \
-									<< "\",\"value\":\"true\"}";
-								continue;
-							}
-							int hopConstraint = proj[0].path_args.k;
-							if (hopConstraint < 0)
-								hopConstraint = 999;
-							bool reachRes = pqHandler->kHopReachable(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
-							ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"dst\":\"" \
-								<< kvstore->getStringByID(vid) << "\",\"value\":";
-							if (reachRes)
-								ss << "\"true\"}";
-							else
-								ss << "\"false\"}";
-							// cout << "src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid) << endl;
-						}
-						else if (proj[0].aggregate_type == QueryTree::ProjectionVar::ppr_type)
-						{
-							vector< pair<int ,double> > v2ppr;
-							pqHandler->SSPPR(uid, proj[0].path_args.retNum, proj[0].path_args.k, pred_id_set, v2ppr);
-							ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"results\":[";
-							for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
-							{
-								if (it != v2ppr.begin())
-									ss << ",";
-								ss << "{\"dst\":\"" << kvstore->getStringByID(it->first) << "\",\"PPR\":" \
-									<< it->second << "}";
-							}
-							ss << "]}";
-						}
-					}
-					if (earlyBreak)
-						break;
-				}
-				ss << "]}\"";
-				if (proj[0].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
-				{
-					if (exist)
-						new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = "true";
+					prepPathQuery();
+					vector<int> uid_ls, vid_ls;
+					vector<int> pred_id_set;
+					uid_ls.push_back(kvstore->getIDByString(proj[0].path_args.src));
+					if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+						vid_ls.push_back(kvstore->getIDByString(proj[0].path_args.dst));
 					else
-						new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = "false";
+						vid_ls.push_back(-1);	// Dummy for loop
+					if (!proj[0].path_args.pred_set.empty())
+					{
+						for (auto pred : proj[0].path_args.pred_set)
+							pred_id_set.push_back(kvstore->getIDByPredicate(pred));
+					}
+					else
+					{
+						// Allow all predicates
+						unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
+						for (unsigned j = 0; j < pre_num; j++)
+							pred_id_set.push_back(j);
+					}
+
+					// For each u-v pair, query
+					bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
+					stringstream ss;
+					bool notFirstOutput = 0;	// For outputting commas
+					ss << "\"{\"paths\":[";
+					for (int uid : uid_ls)
+					{
+						for (int vid : vid_ls)
+						{
+							if (proj[0].aggregate_type == QueryTree::ProjectionVar::cyclePath_type)
+							{
+								if (uid == vid)
+									continue;
+								vector<int> path = pqHandler->cycle(uid, vid, proj[0].path_args.directed, pred_id_set);
+								if (path.size() != 0)
+								{
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									pathVec2JSON(uid, vid, path, ss);
+								}
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+							{
+								if (uid == vid)
+									continue;
+								if (pqHandler->cycle(uid, vid, proj[0].path_args.directed, pred_id_set).size() != 0)
+								{
+									exist = 1;
+									earlyBreak = 1;
+									break;
+								}
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::shortestPath_type)
+							{
+								if (uid == vid)
+								{
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									vector<int> path;	// Empty path
+									pathVec2JSON(uid, vid, path, ss);
+									continue;
+								}
+								vector<int> path = pqHandler->shortestPath(uid, vid, proj[0].path_args.directed, pred_id_set);
+								if (path.size() != 0)
+								{
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									pathVec2JSON(uid, vid, path, ss);
+								}
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::shortestPathLen_type)
+							{
+								if (uid == vid)
+								{
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
+										<< "\",\"dst\":\"" << kvstore->getStringByID(vid) \
+										<< "\",\"length\":0}";
+									continue;
+								}
+								vector<int> path = pqHandler->shortestPath(uid, vid, proj[0].path_args.directed, pred_id_set);
+								if (path.size() != 0)
+								{
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
+										<< "\",\"dst\":\"" << kvstore->getStringByID(vid) << "\",\"length\":";
+									ss << (path.size() - 1) / 2;
+									ss << "}";
+								}
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachable_type)
+							{
+								if (uid == vid)
+								{
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									ss << "{\"src\":\"" << kvstore->getStringByID(uid) \
+										<< "\",\"dst\":\"" << kvstore->getStringByID(vid) \
+										<< "\",\"value\":\"true\"}";
+									continue;
+								}
+								int hopConstraint = proj[0].path_args.k;
+								if (hopConstraint < 0)
+									hopConstraint = 999;
+								bool reachRes = pqHandler->kHopReachable(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
+								ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"dst\":\"" \
+									<< kvstore->getStringByID(vid) << "\",\"value\":";
+								if (reachRes)
+									ss << "\"true\"}";
+								else
+									ss << "\"false\"}";
+								// cout << "src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid) << endl;
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::ppr_type)
+							{
+								vector< pair<int ,double> > v2ppr;
+								pqHandler->SSPPR(uid, proj[0].path_args.retNum, proj[0].path_args.k, pred_id_set, v2ppr);
+								ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"results\":[";
+								for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
+								{
+									if (it != v2ppr.begin())
+										ss << ",";
+									ss << "{\"dst\":\"" << kvstore->getStringByID(it->first) << "\",\"PPR\":" \
+										<< it->second << "}";
+								}
+								ss << "]}";
+							}
+						}
+						if (earlyBreak)
+							break;
+					}
+					ss << "]}\"";
+					if (proj[0].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+					{
+						if (exist)
+							new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = "true";
+						else
+							new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = "false";
+					}
+					else
+						ss >> new_result0.result.back().str[proj2new[0] - new_result0_id_cols];
 				}
 				else
-					ss >> new_result0.result.back().str[proj2new[0] - new_result0_id_cols];
+				{
+					// Custom functions
+					if (proj[0].aggregate_type == QueryTree::ProjectionVar::Custom_type \
+						&& proj[0].custom_func_name == "PPR")
+					{
+						prepPathQuery();
+						int uid = kvstore->getIDByString(proj[0].func_args[0]);
+						int k = stoi(proj[0].func_args[1]);
+						vector<int> pred_id_set;
+						string pred;
+						for (size_t i = 2; i < proj[0].func_args.size() - 1; i++)
+						{
+							pred = proj[0].func_args[i];
+							query_parser.replacePrefix(pred);
+							pred_id_set.push_back(kvstore->getIDByPredicate(pred));
+						}
+						if (pred_id_set.empty())
+						{
+							// Allow all predicates
+							unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
+							for (unsigned j = 0; j < pre_num; j++)
+								pred_id_set.push_back(j);
+						}
+						int retNum = stoi(proj[0].func_args[proj[0].func_args.size() - 1]);
+						vector< pair<int ,double> > v2ppr;
+						pqHandler->SSPPR(uid, retNum, k, pred_id_set, v2ppr);
+						stringstream ss;
+						ss << "\"{\"paths\":[{\"src\":\"" << proj[0].func_args[0] << "\",\"results\":[";
+						for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
+						{
+							if (it != v2ppr.begin())
+								ss << ",";
+							ss << "{\"dst\":\"" << kvstore->getStringByID(it->first) << "\",\"PPR\":" \
+								<< it->second << "}";
+						}
+						ss << "]}]}\"";
+						ss >> new_result0.result.back().str[proj2new[0] - new_result0_id_cols];
+					}
+				}
 			}
 
 			// Exclusive with the if branch above
 			for (int begin = 0; begin < result0_size;)
 			{
+				// At the end of an iteration, begin will be set to end + 1
+				// The value of end will depend on GROUP BY conditions
 				int end;
 				if (group2temp.empty())
 					end = result0_size - 1;
@@ -2405,9 +2457,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					}
 					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Contains_type)
 					{
-						if (proj[i].builtin_args.size() == 2)
+						if (proj[i].func_args.size() == 2)
 						{
-							string arg1 = proj[i].builtin_args[0], arg2 = proj[i].builtin_args[1];
+							string arg1 = proj[i].func_args[0], arg2 = proj[i].func_args[1];
 							int pos1 = -2, pos2 = -2;	// -2 for string, -1 for error var, others for correct var
 														// But < result0_id_cols is impossible, because must be string
 							bool isel1 = false, isel2 = false;
@@ -2496,6 +2548,63 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									new_result0.result.back().str.resize(new_result0_str_cols);
 								}
 							}
+						}
+					}
+					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Custom_type)
+					{
+						if (proj[i].custom_func_name == "PPR")
+						{
+							prepPathQuery();
+							vector<int> uid_ls;
+							int var2temp = Varset(proj[0].func_args[0]).mapTo(result0.getAllVarset())[0];
+							if (var2temp >= result0_id_cols)
+								cout << "[ERROR] src must be an entity!" << endl;	// TODO: throw exception
+							else
+							{
+								for (int j = begin; j <= end; j++)
+								{
+									if (result0.result[j].id[var2temp] != INVALID)
+										uid_ls.push_back(result0.result[j].id[var2temp]);
+								}
+							}
+							int k = stoi(proj[0].func_args[1]);
+							vector<int> pred_id_set;
+							string pred;
+							for (size_t i = 2; i < proj[0].func_args.size() - 1; i++)
+							{
+								pred = proj[0].func_args[i];
+								query_parser.replacePrefix(pred);
+								pred_id_set.push_back(kvstore->getIDByPredicate(pred));
+							}
+							if (pred_id_set.empty())
+							{
+								// Allow all predicates
+								unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
+								for (unsigned j = 0; j < pre_num; j++)
+									pred_id_set.push_back(j);
+							}
+							int retNum = stoi(proj[0].func_args[proj[0].func_args.size() - 1]);
+							vector< pair<int ,double> > v2ppr;
+							stringstream ss;
+							ss << "\"{\"paths\":[";
+							for (auto uid : uid_ls)
+							{
+								pqHandler->SSPPR(uid, retNum, k, pred_id_set, v2ppr);
+								ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"results\":[";
+								for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
+								{
+									if (it != v2ppr.begin())
+										ss << ",";
+									ss << "{\"dst\":\"" << kvstore->getStringByID(it->first) << "\",\"PPR\":" \
+										<< it->second << "}";
+								}
+								ss << "]}";
+							}
+							ss << "]}\"";
+							ss >> new_result0.result.back().str[proj2new[0] - new_result0_id_cols];
+							string tmp;
+							ss >> tmp;
+							cout << "HERE !!!! " << tmp << endl;
 						}
 					}
 					else	// Path query

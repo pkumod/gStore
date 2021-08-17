@@ -222,8 +222,9 @@ class QueryTree
 			public:
 				enum AggregateType {None_type, Count_type, Sum_type, Min_type, Max_type, Avg_type, 
 					simpleCyclePath_type, simpleCycleBoolean_type, cyclePath_type, cycleBoolean_type, 
-					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type, kHopReachablePath_type,
-					CompTree_type, Contains_type, ppr_type};
+					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type, 
+					kHopReachablePath_type, ppr_type,
+					CompTree_type, Contains_type, Custom_type};
 				AggregateType aggregate_type;
 
 				std::string var, aggregate_var;
@@ -233,7 +234,8 @@ class QueryTree
 
 				CompTreeNode comp_tree_root;
 
-				std::vector<std::string> builtin_args;
+				std::vector<std::string> func_args;
+				std::string custom_func_name;
 
 				ProjectionVar():aggregate_type(None_type), distinct(false){}
 		};

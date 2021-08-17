@@ -1482,6 +1482,7 @@ vector<int> PathQueryHandler::kHopReachablePath(int uid, int vid, bool directed,
 // retNum is the number of top nodes to return; k is the hop constraint -- don't mix them up!
 void PathQueryHandler::SSPPR(int uid, int retNum, int k, const vector<int> &pred_set, vector< pair<int ,double> > &topkV2ppr)
 {
+	topkV2ppr.clear();
 	srand(time(NULL));
 
 	unordered_map<int, double> v2ppr;
@@ -1939,6 +1940,11 @@ bool PathQueryHandler::if_stop(int retNum, double delta, double threshold, doubl
     }
 
     return true;
+}
+
+vector<pair<pair<int, int>, int>> kHopSubgraph(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set)
+{
+	return vector<pair<pair<int, int>, int>>();
 }
 
 /**
