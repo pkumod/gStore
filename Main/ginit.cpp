@@ -184,6 +184,7 @@ int main(int argc, char * argv[])
 			string _db_path = "system";
 			ResultSet _rs;
 			Database* _db = new Database(_db_path);
+			_db->load();
 			int ret = _db->query(sparql, _rs, ofp);
 			if (ret <= -100) // select query
 			{
