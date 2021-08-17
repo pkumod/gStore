@@ -100,7 +100,9 @@ int main(int argc, char * argv[])
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
 			cout << "\t-db,--database,\t\t The database names.Use , to split database name. e.g. databaseA,databaseB" << endl;
-		    cout << endl;
+			cout << "\tIf you want to rebuild the system database,please use \t bin/ginit" << endl;
+			cout << "\tIf you want to add database info into system database,please use \t bin/ginit -db db1,db2,..." << endl;
+			cout << endl;
 			return 0;
 		}
 		else
@@ -112,56 +114,13 @@ int main(int argc, char * argv[])
 	}
 	else
 	{
-		Log.Info("begin rebuild the system database ....");
+		
 		long tv_begin = Util::get_cur_time();
-		if (boost::filesystem::exists("system.db"))
+		if (Util::dir_exist("system.db")==false)
 		{
-			string cmd;
-			cmd = "rm -r system.db";
-			system(cmd.c_str());
+			Log.Error("The system database is not exist,please use bin/ginit to rebuild the system database at first!");
+			return -1;
 
-		}
-		string _db_path = "system";
-		string _rdf = "./data/system/system.nt";
-		Database* _db = new Database(_db_path);
-		bool flag = _db->build(_rdf);
-		if (flag)
-		{
-
-			ofstream f;
-			f.open("./" + _db_path + ".db/success.txt");
-			f.close();
-
-			Log.Info("system.db rebuild successfully!");
-			delete _db;
-			_db = NULL;
-			Util::init_backuplog();
-			Util::configure_new();
-			string version = Util::getConfigureValue("version");
-			string update_sparql = "insert data {<CoreVersion> <value> " + version + ". }";
-			
-			ResultSet _rs;
-			FILE* ofp = stdout;
-			string msg;
-			_db = new Database(_db_path);
-			_db->load();
-			int ret = _db->query(update_sparql, _rs, ofp);
-			if (ret >= 0)
-				msg = "update num : " + Util::int2string(ret);
-			else //update error
-				msg = "update failed.";
-			if (ret != -100)
-				Log.Info(("Insert data result:" + msg).c_str());
-			Log.Info("import RDF file to database done.");
-			delete _db;
-			_db = NULL;
-			
-
-		}
-		else
-		{
-			Log.Error("Build RDF database failure!");
-			return 0;
 		}
 		string db_namestr = Util::getArgValue(argc, argv, "db", "database");
 		if (db_namestr.empty())
