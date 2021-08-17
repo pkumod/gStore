@@ -52,6 +52,7 @@ int main(int argc, char * argv[])
 			Util::configure_new();
 			string version = Util::getConfigureValue("version");
 			string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". }";
+			Log.Info(("update_sparql:" + update_sparql + "").c_str());
 			ResultSet _rs;
 			FILE* ofp = stdout;
 			string msg;
