@@ -814,7 +814,7 @@ Util::dir_exist(const string _dir)
 bool Util::file_exist(const string _file)
 {
 	struct stat buffer;
-	return (stat(name.c_str(), &buffer) == 0);
+	return (stat(_file.c_str(), &buffer) == 0);
 }
 
 bool
