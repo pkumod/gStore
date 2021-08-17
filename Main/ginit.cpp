@@ -126,13 +126,20 @@ int main(int argc, char * argv[])
 			ofstream f;
 			f.open("./" + _db_path + ".db/success.txt");
 			f.close();
+
+			Log.Info("system.db rebuild successfully!");
+			delete _db;
+			_db = NULL;
 			Util::init_backuplog();
 			Util::configure_new();
 			string version = Util::getConfigureValue("version");
-			string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". }";
+			string update_sparql = "insert data {<CoreVersion> <value> " + version + ". }";
+			Log.Info(("update_sparql:" + update_sparql + "").c_str());
 			ResultSet _rs;
 			FILE* ofp = stdout;
 			string msg;
+			_db = new Database(_db_path);
+			_db->load();
 			int ret = _db->query(update_sparql, _rs, ofp);
 			if (ret >= 0)
 				msg = "update num : " + Util::int2string(ret);
@@ -141,6 +148,8 @@ int main(int argc, char * argv[])
 			if (ret != -100)
 				Log.Info(("Insert data result:" + msg).c_str());
 			Log.Info("import RDF file to database done.");
+			delete _db;
+			_db = NULL;
 			
 
 		}
