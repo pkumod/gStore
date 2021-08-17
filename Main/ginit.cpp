@@ -56,6 +56,7 @@ int main(int argc, char * argv[])
 			ResultSet _rs;
 			FILE* ofp = stdout;
 			string msg;
+			_db = new Database(_db_path);
 			_db->load();
 			int ret = _db->query(update_sparql, _rs, ofp);
 			if (ret >= 0)
