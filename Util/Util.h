@@ -445,6 +445,7 @@ public:
 	static bool config_setting();
 	static bool config_advanced();
 	static bool config_debug();
+
 	//static bool gStore_mode;
 	static std::map<std::string, std::string> global_config;
 	//static std::string db_home;
