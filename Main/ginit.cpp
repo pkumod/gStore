@@ -27,6 +27,7 @@ int main(int argc, char * argv[])
 	{
 		/*cout << "please input the complete command:\t" << endl;
 		cout << "\t bin/gadd -h" << endl;*/
+		long tv_begin = Util::get_cur_time();
 		Log.Info("begin rebuild the system database ....");
 		if (boost::filesystem::exists("system.db"))
 		{
@@ -53,7 +54,7 @@ int main(int argc, char * argv[])
 			Util::configure_new();
 			string version = Util::getConfigureValue("version");
 			string update_sparql = "insert data {<CoreVersion> <value> " + version + ". }";
-			Log.Info(("update_sparql:" + update_sparql + "").c_str());
+			
 			ResultSet _rs;
 			FILE* ofp = stdout;
 			string msg;
@@ -66,9 +67,15 @@ int main(int argc, char * argv[])
 				msg = "update failed.";
 			if (ret != -100)
 				Log.Info(("Insert data result:" + msg).c_str());
-			Log.Info("import RDF file to database done.");
+
+			
+		
 			delete _db;
 		    _db = NULL;
+			long tv_end = Util::get_cur_time();
+			stringstream ss;
+			ss << "system.db init successfully! Used " << (tv_end - tv_begin) << " ms";
+			Log.Info(ss.str().c_str());
 			return 0;
 
 		}
@@ -106,6 +113,7 @@ int main(int argc, char * argv[])
 	else
 	{
 		Log.Info("begin rebuild the system database ....");
+		long tv_begin = Util::get_cur_time();
 		if (boost::filesystem::exists("system.db"))
 		{
 			string cmd;
@@ -131,7 +139,7 @@ int main(int argc, char * argv[])
 			Util::configure_new();
 			string version = Util::getConfigureValue("version");
 			string update_sparql = "insert data {<CoreVersion> <value> " + version + ". }";
-			Log.Info(("update_sparql:" + update_sparql + "").c_str());
+			
 			ResultSet _rs;
 			FILE* ofp = stdout;
 			string msg;
@@ -168,7 +176,7 @@ int main(int argc, char * argv[])
 			{
 				db_namestr = db_namestr + ",";
 			}
-			cout << "db_names:" << db_namestr << endl;
+		
 			Util::split(db_namestr, ",", db_names);
 			string sparql = "insert data {";
 			string time = Util::get_date_time();
@@ -193,7 +201,7 @@ int main(int argc, char * argv[])
 			FILE* ofp = stdout;
 			string msg;
 			string _db_path = "system";
-			Log.Info(sparql.c_str());
+			
 			ResultSet _rs;
 			Database* _db = new Database(_db_path);
 			_db->load();
@@ -215,7 +223,11 @@ int main(int argc, char * argv[])
 			}
 			delete _db;
 			_db = NULL;
-			Log.Info(("system.db init successfully!"+msg).c_str());
+			long tv_end = Util::get_cur_time();
+			stringstream ss;
+			ss << "system.db init successfully! Used " << (tv_end - tv_begin) << " ms";
+			Log.Info(ss.str().c_str());
+			
 			return 0;
 
 		}
