@@ -62,7 +62,7 @@ int main(int argc, char * argv[])
 			if (ret != -100)
 				Log.Info(("Insert data result:" + msg).c_str());
 			Log.Info("import RDF file to database done.");
-			reutrn 0;
+			return 0;
 
 		}
 		else
@@ -132,7 +132,7 @@ int main(int argc, char * argv[])
 			if (ret != -100)
 				Log.Info(("Insert data result:" + msg).c_str());
 			Log.Info("import RDF file to database done.");
-			reutrn 0;
+			
 
 		}
 		else
