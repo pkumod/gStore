@@ -100,8 +100,8 @@ int main(int argc, char * argv[])
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
 			cout << "\t-db,--database,\t\t The database names.Use , to split database name. e.g. databaseA,databaseB" << endl;
-			cout << "\tIf you want to rebuild the system database,please use \t bin/ginit" << endl;
-			cout << "\tIf you want to add database info into system database,please use \t bin/ginit -db db1,db2,..." << endl;
+			cout << "If you want to rebuild the system database,please use bin/ginit \n" << endl;
+			cout << "If you want to add database info into system database,please use bin/ginit -db db1,db2,...\n" << endl;
 			cout << endl;
 			return 0;
 		}
