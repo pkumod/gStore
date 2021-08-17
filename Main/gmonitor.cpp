@@ -102,10 +102,16 @@ int main(int argc, char * argv[])
 			
 
 			Log.Info("========================================");
-			string output = "database: " + db_name + "\ncreator: " + creator + "\nbuilt_time: " + built_time + "\n";
-			output = output + "triple num: " + Util::int2string(triple_num) + "\nentity num: " + Util::int2string(entity_num) + "\nliteral num: " + Util::int2string(literal_num) + "\nsubject num: " + Util::int2string(subject_num) + "\npredicate num: " + Util::int2string(predicate_num)
-				+ "\n========================================\n";
-			Log.Info(output.c_str());
+			Log.Info(("database:" + db_name).c_str());
+			Log.Info(("creator:" + creator).c_str());
+			Log.Info(("built_time:" + built_time).c_str());
+			Log.Info(("triple num:" + Util::int2string(triple_num)).cstr());
+			Log.Info(("entity num:" + Util::int2string(entity_num)).cstr());
+			Log.Info(("literal num:" + Util::int2string(literal_num)).cstr());
+			Log.Info(("subject num:" + Util::int2string(subject_num)).cstr());
+			Log.Info(("predicate num:" + Util::int2string(predicate_num)).cstr());
+			Log.Info("========================================");
+			
 			return 0;
 			
 		}
