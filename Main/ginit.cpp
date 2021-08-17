@@ -43,10 +43,11 @@ int main(int argc, char * argv[])
 		bool flag = _db->build(_rdf);
 		if (flag)
 		{
-
+			
 			ofstream f;
 			f.open("./" + _db_path + ".db/success.txt");
 			f.close();
+			Log.Info("system.db rebuild successfully!");
 			Util::init_backuplog();
 			Util::configure_new();
 			string version = Util::getConfigureValue("version");
