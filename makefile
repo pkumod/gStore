@@ -625,7 +625,7 @@ pre:
 	rm -rf tools/rapidjson/
 	cd tools; tar -xzvf rapidjson.tar.gz;
 	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
-	cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure --prefix=/usr/local/ CXXFLAGS="-std=c++0x";make;sudo make install;
+	cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;sudo make install;
 	# cd ../../;
 	#cd tools;unzip -o workflow-master.zip;cd workflow-master;make;
 	#cd tools;unzip -o srpc.zip; cd srpc;make;make install; 
