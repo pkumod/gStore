@@ -839,7 +839,7 @@ EvalMultitypeValue
 
 		if (x.datatype == EvalMultitypeValue::rdf_term)
 		{
-			int p = x.str_value.rfind("^^");
+			size_t p = x.str_value.rfind("^^");
 			if (p != string::npos)
 			{
 				ret_femv.datatype = EvalMultitypeValue::iri;
@@ -849,7 +849,7 @@ EvalMultitypeValue
 		else if (x.datatype == EvalMultitypeValue::literal)
 		{
 			ret_femv.datatype = EvalMultitypeValue::iri;
-			int p = x.str_value.rfind('@');
+			size_t p = x.str_value.rfind('@');
 			if (p != string::npos)
 				ret_femv.term_value = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>";
 			else
@@ -1024,9 +1024,9 @@ EvalMultitypeValue
 		if(x.argCompatible(y))
 		{
 			string x_content = x.getStrContent(), y_content = y.getStrContent();
-			int p = x_content.find(y_content);
-			if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_contains_type && p != string::npos \
-				|| filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_strstarts_type && p == 0)
+			size_t p = x_content.find(y_content);
+			if ((filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_contains_type && p != string::npos)
+				|| (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_strstarts_type && p == 0))
 				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
 			else
 				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
@@ -1347,7 +1347,7 @@ TempResult::doComp(const QueryTree::CompTreeNode &root, ResultPair &row, int id_
 		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
 		if (x.datatype == EvalMultitypeValue::rdf_term)
 		{
-			int p = x.str_value.rfind("^^");
+			size_t p = x.str_value.rfind("^^");
 			if (p != string::npos)
 			{
 				ret_femv.datatype = EvalMultitypeValue::iri;
@@ -1357,7 +1357,7 @@ TempResult::doComp(const QueryTree::CompTreeNode &root, ResultPair &row, int id_
 		else if (x.datatype == EvalMultitypeValue::literal)
 		{
 			ret_femv.datatype = EvalMultitypeValue::iri;
-			int p = x.str_value.rfind('@');
+			size_t p = x.str_value.rfind('@');
 			if (p != string::npos)
 				ret_femv.term_value = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>";
 			else
@@ -1498,8 +1498,8 @@ TempResult::doComp(const QueryTree::CompTreeNode &root, ResultPair &row, int id_
 		if(x.argCompatible(y))
 		{
 			string x_content = x.getStrContent(), y_content = y.getStrContent();
-			int p = x_content.find(y_content);
-			if (root.oprt == "CONTAINS" && p != string::npos || root.oprt == "STRSTARTS" && p == 0)
+			size_t p = x_content.find(y_content);
+			if ((root.oprt == "CONTAINS" && p != string::npos) || (root.oprt == "STRSTARTS" && p == 0))
 				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
 			else
 				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;

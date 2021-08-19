@@ -38,7 +38,6 @@ class GeneralEvaluation
 		Strategy strategy;
 		QueryCache *query_cache;
 		PathQueryHandler *pqHandler;
-		CSR *csr;
 		int well_designed;
 
 		TYPE_TRIPLE_NUM *pre2num;
@@ -47,6 +46,7 @@ class GeneralEvaluation
 		TYPE_PREDICATE_ID limitID_predicate;
 		TYPE_ENTITY_LITERAL_ID limitID_literal;
 		TYPE_ENTITY_LITERAL_ID limitID_entity;
+		CSR *csr;
 		shared_ptr<Transaction> txn;
     public:
     	FILE* fp;
@@ -78,8 +78,6 @@ class GeneralEvaluation
 		std::vector<EvaluationStackStruct> rewriting_evaluation_stack;
 
 	public:
-		TempResultSet* semanticBasedQueryEvaluation(QueryTree::GroupPattern &group_pattern);
-
 		bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &group_pattern, std::deque<QueryTree::GroupPattern> &queue);
 		TempResultSet* rewritingBasedQueryEvaluation(int dep);
 		TempResultSet* queryEvaluation(int dep);
