@@ -444,8 +444,6 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 			continue;
 		}
 
-        string& sub = this->triple_vt[i].subject;
-        string& obj = this->triple_vt[i].object;
 		int pid = this->getPreVarID(pre);
 		if(pid == -1)
 		{
@@ -1017,26 +1015,6 @@ BasicQuery::print(ostream& _out_stream)
 }
 
 
-// WARN:not used because this also considers the candidate not 
-// adding literals
-int
-BasicQuery::getVarID_MinCandidateList()
-{
-    int min_var = -1;
-    unsigned min_size = Util::TRIPLE_NUM_MAX;
-    for(int i = 0; i < this->graph_var_num; i ++)
-    {
-        unsigned tmp_size = (this->candidate_list[i]).size();
-        if(tmp_size < min_size)
-        {
-            min_var = i;
-            min_size = tmp_size;
-        }
-    }
-
-    return min_var;
-}
-
 int
 BasicQuery::getVarID_MaxCandidateList()
 {
@@ -1140,7 +1118,7 @@ string BasicQuery::triple_str()
 
     _ss<<"Triple num:"<<this->getTripleNum()<<endl;
 
-    for (int i = 0; i < getTripleNum(); i++)
+    for (unsigned i = 0; i < getTripleNum(); i++)
     {
         _ss<<(this->getTriple(i).toString())<<endl;
     }
