@@ -2988,8 +2988,8 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		auto strJson = request->content.string();
         
 		document.Parse(strJson.c_str());
-		operation = document["operation"];
-		db_name = document["db_name"];
+		operation = document["operation"].GetString();
+		db_name=document["db_name"].GetString();
 	}
 	else
 	{
@@ -3024,7 +3024,7 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		else if (RequestType == "POST")
 		{
 		
-			string db_path = document["db_path"];
+			string db_path = document["db_path"].GetString();
 			build_thread_new(response, db_name, db_path, username, password);
 
 		}	
