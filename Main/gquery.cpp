@@ -12,7 +12,7 @@
 
 #include "../Database/Database.h"
 #include "../Util/Util.h"
-#include "../Util/Slog.h"
+//#include "../Util/Slog.h"
 
 using namespace std;
 
@@ -42,12 +42,12 @@ main(int argc, char * argv[])
 //#ifdef DEBUG
 	Util util;
 //#endif
-	Log.init("slog.properties");
+	//Log.init("slog.properties");
 	if (argc < 2)
 	{
 		/*cout << "please input the complete command:\t" << endl;
 		cout << "\t bin/gadd -h" << endl;*/
-		Log.Error("Invalid arguments! Input \"bin/gquery -h\" for help.");
+		cout<<"Invalid arguments! Input \"bin/gquery -h\" for help."<<endl;
 		return 0;
 	}
 	else if (argc == 2)
@@ -71,7 +71,7 @@ main(int argc, char * argv[])
 		else
 		{
 			//cout << "the command is not complete." << endl;
-			Log.Error("Invalid arguments! Input \"bin/gquery -h\" for help.");
+			cout<<"Invalid arguments! Input \"bin/gquery -h\" for help."<<endl;
 			return 0;
 		}
 	}
@@ -80,24 +80,24 @@ main(int argc, char * argv[])
 		string db_folder = Util::getArgValue(argc, argv, "db", "database");
 		if (db_folder.empty())
 		{
-			Log.Error("You need to input the database name that you want to export. Input \"bin/gexport -h\" for help.");
+			cout<<"You need to input the database name that you want to export. Input \"bin/gexport -h\" for help."<<endl;
 			return 0;
 		}
 		int len = db_folder.length();
 		if (db_folder.length() > 3 && db_folder.substr(len - 3, 3) == ".db")
 		{
-			Log.Error("The database name can not end with .db");
+			cout<<"The database name can not end with .db"<<endl;
 			return 0;
 		}
 		string queryfile = Util::getArgValue(argc, argv, "q", "queryfile");
 		if (queryfile.empty())
 		{
-			Log.Error("The query file path can not be empty!");
+			cout<<"The query file path can not be empty!"<<endl;
 			return 0;
 		}
 		else if (Util::file_exist(queryfile) == false)
 		{
-			Log.Error("The query file is not exist!");
+			cout<<"The query file is not exist!"<<endl;
 			return 0;
 		}
 		else
@@ -105,16 +105,16 @@ main(int argc, char * argv[])
 			long tv_begin = Util::get_cur_time();
 			Database _db(db_folder);
 			_db.load();
-			Log.Info("finish loading");
+			cout << "finish loading" << endl;
 	
 			string query = Util::getQueryFromFile(queryfile.c_str());
 
 			if (query.empty())
 			{
-				Log.Error("the query file is empty!");
+				cout<<"the query file is empty!"<<endl;
 				return 0;
 			}
-			Log.Info(("the query is :" + query).c_str());
+			cout<<"the query is :" + query<<endl;
 			string resultfile= Util::getArgValue(argc, argv, "f", "resultfile");
 			ResultSet _rs;
 			FILE* ofp = stdout;
@@ -155,9 +155,9 @@ main(int argc, char * argv[])
 			}
 			
 			long tv_end = Util::get_cur_time();
-			stringstream ss;
-			ss <<"query database successfully, Used " << (tv_end - tv_begin) << " ms";
-			Log.Info(ss.str().c_str());
+			//stringstream ss;
+			cout <<"query database successfully, Used " << (tv_end - tv_begin) << " ms"<<endl;
+			//Log.Info(ss.str().c_str());
 			return 0;
 
 		}
