@@ -80,7 +80,7 @@ main(int argc, char * argv[])
 		string db_folder = Util::getArgValue(argc, argv, "db", "database");
 		if (db_folder.empty())
 		{
-			cout<<"You need to input the database name that you want to export. Input \"bin/gexport -h\" for help."<<endl;
+			cout<<"You need to input the database name that you want to query. Input \"bin/gquery -h\" for help."<<endl;
 			return 0;
 		}
 		int len = db_folder.length();
