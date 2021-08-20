@@ -90,6 +90,9 @@ txn_id_t get_txn_id(string db_name, string user);
 //bool doQuery(string format, string db_query, const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 
 //=============================================================================
+
+bool request_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+
 bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 bool load_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
@@ -800,14 +803,110 @@ bool isNum(char *str)
 
 int initialize(int argc, char *argv[])
 {
-    cout << "enter initialize." << endl;
+    cout << "ghttp begin initialize..." << endl;
 	//Server restarts to use the original database
 	//current_database = NULL;
-	Util::configure_new();
+	cout << "init param..." << endl;
+	 Util::configure_new();
+
+	 HttpServer server;
+	 string db_name = "";
+	 server.config.port = 9000;
+	 bool loadCSR = 0;	// DO NOT load CSR by default
+
+	 if (argc < 2)
+	 {
+		 /*cout << "please input the complete command:\t" << endl;
+		 cout << "\t bin/gadd -h" << endl;*/
+		 cout << "Use the default port:9000!" << endl;
+		 cout << "Not load any database!" << endl;
+		 server.config.port = 9000;
+		 db_name = "";
+		 loadCSR = 0;
+		 whiteList = 0;
+		 blackList = 0;
+
+	 }
+	 else if (argc == 2)
+	 {
+		 string command = argv[1];
+		 if (command == "-h" || command == "--help")
+		 {
+			 cout << endl;
+			 cout << "gStore HTTP Server(ghttp)" << endl;
+			 cout << endl;
+			 cout << "Usage:\tbin/ghttp -db [dbname] -p [port] -c [enable]" << endl;
+			 cout << endl;
+			 cout << "Options:" << endl;
+			 cout << "\t-h,--help\t\tDisplay this message." << endl;
+			 cout << "\t-db,--database[option],\t\t the database name.Default value is empty. Notice that the name can not end with .db" << endl;
+			 cout << "\t-p,--port[option],\t\t the listen port. Default value is 9000." << endl;
+			 cout << "\t-c,--csr[option],\t\t Enable CSR Struct or not. 0 denote that false, 1 denote that true. Default value is 0." << endl;
+
+			 cout << endl;
+			 return 0;
+		 }
+		 else
+		 {
+			 //cout << "the command is not complete." << endl;
+			 cout << "Invalid arguments! Input \"bin/ghttp -h\" for help." << endl;
+			 return 0;
+		 }
+	 }
+	 else
+	 {
+		 db_name = Util::getArgValue(argc, argv, "db", "database");
+		 
+		 if (db_name.length() > 3 && db_name.substr(db_name.length() - 3, 3) == ".db")
+		 {
+			 cout << "Your db name to be built should not end with \".db\"." << endl;
+			 return -1;
+		 }
+		 else if (db_name == "system")
+		 {
+			 cout << "You can not load system files." << endl;
+			 return -1;
+		 }
+		 string port = Util::getArgValue(argc, argv, "p", "port", "9000");
+		 server.config.port = Util::string2int(port);
+		 loadCSR = Util::string2int(Util::getArgValue(argc, argv, "c", "csr", "0"));
+		 ipWhiteFile = Util::getConfigureValue("ip_allow_path");
+		 ipBlackFile = Util::getConfigureValue("ip_deny_path");
+		 if (ipWhiteFile.empty())
+		 {
+			 whiteList = 0;
+		 }
+		 else
+		 {
+			 whiteList = 1;
+		 }
+		 if (ipBlackFile.empty())
+		 {
+			 blackList = 0;
+		 }
+		 else
+		 {
+			 blackList = 1;
+		 }
+
+	 }
+	 cout << "server port: " << server.config.port << " database name: " << db_name << endl;
+	 if (whiteList) {
+		 cout << "IP white List enabled." << endl;
+		 ipWhiteList = new IPWhiteList();
+		 ipWhiteList->Load(ipWhiteFile);
+	 }
+	 else if (blackList) {
+		 cout << "IP black list enabled." << endl;
+		 ipBlackList = new IPBlackList();
+		 ipBlackList->Load(ipBlackFile);
+	 }
+	 
+
 	//users.insert(pair<std::string, struct User *>(ROOT_USERNAME, &root));
 
 	//load system.db when initialize
-	if(!boost::filesystem::exists("system.db"))
+	if(!Util::dir_exist("system.db"))
 	{
 		cout << "Can not find system.db."<<endl;
 		return -1;
@@ -826,8 +925,6 @@ int initialize(int argc, char *argv[])
 	if(!flag)
 	{
 		cout << "Failed to load the database system.db."<<endl;
-
-
 			return -1;
 	}
 	databases.insert(pair<std::string, Database *>("system", system_database));
@@ -865,373 +962,16 @@ int initialize(int argc, char *argv[])
 	//insert user from system.db to user map
 	DB2Map();
 
-	HttpServer server;
-	string db_name = "";
-	server.config.port = 9000;
-	bool loadCSR = 0;	// DO NOT load CSR by default
-	if(argc == 1)
+	string database = db_name;
+	Database* current_database = new Database(database);
+	if (database.length() != 0)
 	{
-		server.config.port = 9000;
-		db_name = "";
-	}
-	else if(argc == 2)
-	{
-		if(isNum(argv[1]))
-		{
-			server.config.port = atoi(argv[1]);
-			db_name = "";
-		}
-		else
-		{
-			server.config.port = 9000;
-			string para = argv[1];
-			if(para.substr(0, 10) == "--ipAllow="){
-				whiteList = 1;
-				ipWhiteFile = para.substr(10);
-				db_name = "";
-			}
-			else if(para.substr(0, 9) == "--ipDeny="){
-				blackList = 1;
-				ipBlackFile = para.substr(9);
-				db_name = "";
-			}
-			else if (strcmp(argv[1], "--advanced=true") == 0)
-			{
-				loadCSR = 1;
-				db_name = "";
-			}
-			else if (strcmp(argv[1], "--advanced=false") == 0)
-			{
-				loadCSR = 0;
-				db_name = "";
-			}
-			else
-				db_name = argv[1];
-		}
-	}
-	else if (argc == 3)
-	{
-		if (isNum(argv[1]))
-		{
-			server.config.port = atoi(argv[1]);
-			string para = argv[2];
-			if(para.substr(0, 10) == "--ipAllow="){
-				whiteList = 1;
-				ipWhiteFile = para.substr(10);
-				db_name = "";
-			}
-			else if(para.substr(0, 9) == "--ipDeny="){
-				blackList = 1;
-				ipBlackFile = para.substr(9);
-				db_name = "";
-			}
-			if (strcmp(argv[2], "--advanced=true") == 0)
-			{
-				loadCSR = 1;
-				db_name = "";
-			}
-			else if (strcmp(argv[2], "--advanced=false") == 0)
-			{
-				loadCSR = 0;
-				db_name = "";
-			}
-			else
-				db_name = argv[2];
-		}
-		else if (isNum(argv[2]))
-		{
-			server.config.port = atoi(argv[2]);
-			string para = argv[1];
-			if(para.substr(0, 10) == "--ipAllow="){
-				whiteList = 1;
-				ipWhiteFile = para.substr(10);
-				db_name = "";
-			}
-			else if(para.substr(0, 9) == "--ipDeny="){
-				blackList = 1;
-				ipBlackFile = para.substr(9);
-				db_name = "";
-			}
-			else if (strcmp(argv[1], "--advanced=true") == 0)
-			{
-				loadCSR = 1;
-				db_name = "";
-			}
-			else if (strcmp(argv[1], "--advanced=false") == 0)
-			{
-				loadCSR = 0;
-				db_name = "";
-			}
-			else
-				db_name = argv[1];
-		}
-		else
-		{
-			string para1 = argv[1];
-			string para2 = argv[2];
-			if(para1.substr(0, 10) == "--ipAllow="){
-				whiteList = 1;
-				ipWhiteFile = para1.substr(10);
-				db_name = argv[2];
-			}
-			else if(para1.substr(0, 9) == "--ipDeny="){
-				blackList = 1;
-				ipBlackFile = para1.substr(9);
-				db_name = argv[2];
-			}
-			else if(para2.substr(0, 10) == "--ipAllow="){
-				whiteList = 1;
-				ipWhiteFile = para2.substr(10);
-				db_name = argv[1];
-			}
-			else if(para2.substr(0, 9) == "--ipDeny="){
-				blackList = 1;
-				ipBlackFile = para2.substr(9);
-				db_name = argv[1];
-			}
-			else if (strcmp(argv[1], "--advanced=true") == 0)
-			{
-				loadCSR = 1;
-				db_name = argv[2];
-			}
-			else if (strcmp(argv[1], "--advanced=false") == 0)
-			{
-				loadCSR = 0;
-				db_name = argv[2];
-			}
-			else if (strcmp(argv[2], "--advanced=true") == 0)
-			{
-				loadCSR = 1;
-				db_name = argv[1];
-			}
-			else if (strcmp(argv[2], "--advanced=false") == 0)
-			{
-				loadCSR = 0;
-				db_name = argv[1];
-			}
-			else
-			{
-				cout << "wrong format of parameters, please input the server port and the database." << endl;
-				return -1;
-			}
-		}
-	}
-	else if (argc == 4)
-	{
-		if(isNum(argv[1]))
-		{
-			server.config.port = atoi(argv[1]);
-			string para2 = argv[2];
-			string para3 = argv[3];
-			if (strcmp(argv[2], "--advanced=true") == 0)
-			{
-				loadCSR = 1;
-				db_name = argv[3];
-			}
-			else if (strcmp(argv[2], "--advanced=false") == 0)
-			{
-				loadCSR = 0;
-				db_name = argv[3];
-			}
-			else if (strcmp(argv[3], "--advanced=true") == 0)
-			{
-				loadCSR = 1;
-				db_name = argv[2];
-			}
-			else if (strcmp(argv[3], "--advanced=false") == 0)
-			{
-				loadCSR = 0;
-				db_name = argv[2];
-			}
-			else if(para2.substr(0, 10) == "--ipAllow="){
-				whiteList = 1;
-				ipWhiteFile = para2.substr(10);
-				db_name = argv[3];
-			}
-			else if(para2.substr(0, 9) == "--ipDeny="){
-				blackList = 1;
-				ipBlackFile = para2.substr(9);
-				db_name = argv[3];
-			}
-			else if(para3.substr(0, 10) == "--ipAllow="){
-				whiteList = 1;
-				ipWhiteFile = para3.substr(10);
-				db_name = argv[2];
-			}
-			else if(para3.substr(0, 9) == "--ipDeny="){
-				blackList = 1;
-				ipBlackFile = para3.substr(9);
-				db_name = argv[2];
-			}
-			else
-			{
-				cout << "wrong format of parameters, please input the server port and the database." << endl;
-				return -1;
-			}
-
-		}
-		else if(isNum(argv[2]))
-		{
-			server.config.port = atoi(argv[2]);
-			string para1 = argv[1];
-			string para3 = argv[3];
-			if (strcmp(argv[1], "--advanced=true") == 0)
-			{
-				loadCSR = 1;
-				db_name = argv[3];
-			}
-			else if (strcmp(argv[1], "--advanced=false") == 0)
-			{
-				loadCSR = 0;
-				db_name = argv[3];
-			}
-			else if (strcmp(argv[3], "--advanced=true") == 0)
-			{
-				loadCSR = 1;
-				db_name = argv[1];
-			}
-			else if (strcmp(argv[3], "--advanced=false") == 0)
-			{
-				loadCSR = 0;
-				db_name = argv[1];
-			}
-			else if(para1.substr(0, 10) == "--ipAllow="){
-				whiteList = 1;
-				ipWhiteFile = para1.substr(10);
-				db_name = argv[3];
-			}
-			else if(para1.substr(0, 9) == "--ipDeny="){
-				blackList = 1;
-				ipBlackFile = para1.substr(9);
-				db_name = argv[3];
-			}
-			else if(para3.substr(0, 10) == "--ipAllow="){
-				whiteList = 1;
-				ipWhiteFile = para3.substr(10);
-				db_name = argv[1];
-			}
-			else if(para3.substr(0, 9) == "--ipDeny="){
-				blackList = 1;
-				ipBlackFile = para3.substr(9);
-				db_name = argv[1];
-			}
-			else
-			{
-				cout << "wrong format of parameters, please input the server port and the database." << endl;
-				return -1;
-			}
-		}
-		else if (isNum(argv[3]))
-		{
-			server.config.port = atoi(argv[3]);
-			string para1 = argv[1];
-			string para2 = argv[2];
-			if (strcmp(argv[1], "--advanced=true") == 0)
-			{
-				loadCSR = 1;
-				db_name = argv[2];
-			}
-			else if (strcmp(argv[1], "--advanced=false") == 0)
-			{
-				loadCSR = 0;
-				db_name = argv[2];
-			}
-			else if (strcmp(argv[2], "--advanced=true") == 0)
-			{
-				loadCSR = 1;
-				db_name = argv[1];
-			}
-			else if (strcmp(argv[2], "--advanced=false") == 0)
-			{
-				loadCSR = 0;
-				db_name = argv[1];
-			}
-			else if(para1.substr(0, 10) == "--ipAllow="){
-				whiteList = 1;
-				ipWhiteFile = para1.substr(10);
-				db_name = argv[2];
-			}
-			else if(para1.substr(0, 9) == "--ipDeny="){
-				blackList = 1;
-				ipBlackFile = para1.substr(9);
-				db_name = argv[2];
-			}
-			else if(para2.substr(0, 10) == "--ipAllow="){
-				whiteList = 1;
-				ipWhiteFile = para2.substr(10);
-				db_name = argv[1];
-			}
-			else if(para2.substr(0, 9) == "--ipDeny="){
-				blackList = 1;
-				ipBlackFile = para2.substr(9);
-				db_name = argv[1];
-			}
-			else
-			{
-				cout << "wrong format of parameters, please input the server port and the database." << endl;
-				return -1;
-			}
-		}
-		else
-		{
-			cout << "wrong format of parameters, please input the server port and the database." << endl;
-			return -1;
-		}
-	}
-	else
-	{
-		cout << "wrong format of parameters, please input the server port and the database." << endl;
-		return -1;
-	}
-	port = server.config.port;
-	cout << "server port: " << server.config.port << " database name: " << db_name << endl;
-
-	if(whiteList){
-		cout << "IP white List enabled." << endl;
-		ipWhiteList = new IPWhiteList();
-		ipWhiteList->Load(ipWhiteFile);
-	}
-	else if(blackList){
-		cout << "IP black list enabled." << endl;
-		ipBlackList = new IPBlackList();
-		ipBlackList->Load(ipBlackFile);
-	}
-	//USAGE: then user can use http://localhost:port/ to visit the server or coding with RESTful API
-    //HTTP-server at port 9000 using 1 thread
-    //Unless you do more heavy non-threaded processing in the resources,
-    //1 thread is usually faster than several threads
-
-    //GET-example for the path /load/[db_name], responds with the matched string in path
-    //For instance a request GET /load/db123 will receive: db123
-    //server.resource["^/load/(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-
-
-	//string success = db_name;
-		cout << "Database system.db loaded successfully."<<endl;
-
-		string database = db_name;
-	//if(current_database == NULL && database != "")
-	//{
-		if(database.length() > 3 && database.substr(database.length()-3, 3) == ".db")
-		{
-			cout << "Your db name to be built should not end with \".db\"." << endl;
-			return -1;
-		}
-		else if(database == "system")
-		{
-			cout << "You can not load system files." << endl;
-			return -1;
-		}
-		cout << database << endl;
-		Database *current_database = new Database(database);
-	if(database.length() != 0)
-	{
-		if (!boost::filesystem::exists(database + ".db"))
+		if (!Util::dir_exist(database + ".db"))
 		{
 			cout << "Database " << database << ".db has not been built." << endl;
 			return -1;
 		}
-		if (!boost::filesystem::exists(database + ".db/success.txt"))
+		if (!Util::file_exist(database + ".db/success.txt"))
 		{
 			cout << "Database " << database << ".db has not been built successfully." << endl;
 			string cmd = "rm -r " + database + ".db";
@@ -1242,7 +982,7 @@ int initialize(int argc, char *argv[])
 		bool flag = current_database->load(loadCSR);
 		if (!flag)
 		{
-			cout << "Failed to load the database."<<endl;
+			cout << "Failed to load the database." << endl;
 			delete current_database;
 			current_database = NULL;
 			return -1;
@@ -1253,27 +993,27 @@ int initialize(int argc, char *argv[])
 		pthread_rwlock_unlock(&txn_m_lock);
 		//string success = db_name;
 		//already_build.insert(db_name);
-		databases.insert(pair<std::string, Database *>(db_name, current_database));
-	//}
+		databases.insert(pair<std::string, Database*>(db_name, current_database));
+		//}
 	}
 	//init transaction log
 	Util::init_transactionlog();
 	//get the log name
 	string namelog_name = QUERYLOG_PATH + NAMELOG_PATH;
-	FILE *name_logfp = fopen(namelog_name.c_str(), "r+");
+	FILE* name_logfp = fopen(namelog_name.c_str(), "r+");
 	string querylog_name;
-	if(name_logfp == NULL)   //file not exist, create one
+	if (name_logfp == NULL)   //file not exist, create one
 	{
 		name_logfp = fopen(namelog_name.c_str(), "w");
 		querylog_name = Util::get_date_time();
 		int index_space = querylog_name.find(' ');
-		querylog_name = querylog_name.replace(index_space,1, 1, '_');
+		querylog_name = querylog_name.replace(index_space, 1, 1, '_');
 		fprintf(name_logfp, "%s", querylog_name.c_str());
 	}
 	else
 	{
 		char name_char[100];
-		fscanf(name_logfp,"%s",&name_char);
+		fscanf(name_logfp, "%s", &name_char);
 		querylog_name = name_char;
 	}
 	fclose(name_logfp);
@@ -1282,9 +1022,9 @@ int initialize(int argc, char *argv[])
 	queryLog = QUERYLOG_PATH + querylog_name + ".log";
 	cout << "queryLog: " << queryLog << endl;
 	query_logfp = fopen(queryLog.c_str(), "a");
-	if(query_logfp == NULL)
+	if (query_logfp == NULL)
 	{
-		cerr << "open query log error"<<endl;
+		cerr << "open query log error" << endl;
 		return -1;
 	}
 	long querylog_size = ftell(query_logfp);
@@ -1316,8 +1056,8 @@ int initialize(int argc, char *argv[])
 	ofp << system_password;
 	ofp.close();
 	ofp.open("system.db/port.txt", ios::out);
-    ofp << server.config.port;
-    ofp.close();
+	ofp << server.config.port;
+	ofp.close();
 	//time_t cur_time = time(NULL);
 	//long time_backup = Util::read_backup_time();
 	//long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
@@ -1331,6 +1071,469 @@ int initialize(int argc, char *argv[])
 	//pthread_rwlock_init(&database_load_lock, NULL);
 
 #ifndef SPARQL_ENDPOINT
+
+//	if(argc<2)
+//	{
+//		server.config.port = 9000;
+//		db_name = "";
+//	}
+//	else if(argc == 2)
+//	{
+//		if(isNum(argv[1]))
+//		{
+//			server.config.port = atoi(argv[1]);
+//			db_name = "";
+//		}
+//		else
+//		{
+//			server.config.port = 9000;
+//			string para = argv[1];
+//			if(para.substr(0, 10) == "--ipAllow="){
+//				whiteList = 1;
+//				ipWhiteFile = para.substr(10);
+//				db_name = "";
+//			}
+//			else if(para.substr(0, 9) == "--ipDeny="){
+//				blackList = 1;
+//				ipBlackFile = para.substr(9);
+//				db_name = "";
+//			}
+//			else if (strcmp(argv[1], "--advanced=true") == 0)
+//			{
+//				loadCSR = 1;
+//				db_name = "";
+//			}
+//			else if (strcmp(argv[1], "--advanced=false") == 0)
+//			{
+//				loadCSR = 0;
+//				db_name = "";
+//			}
+//			else
+//				db_name = argv[1];
+//		}
+//	}
+//	else if (argc == 3)
+//	{
+//		if (isNum(argv[1]))
+//		{
+//			server.config.port = atoi(argv[1]);
+//			string para = argv[2];
+//			if(para.substr(0, 10) == "--ipAllow="){
+//				whiteList = 1;
+//				ipWhiteFile = para.substr(10);
+//				db_name = "";
+//			}
+//			else if(para.substr(0, 9) == "--ipDeny="){
+//				blackList = 1;
+//				ipBlackFile = para.substr(9);
+//				db_name = "";
+//			}
+//			if (strcmp(argv[2], "--advanced=true") == 0)
+//			{
+//				loadCSR = 1;
+//				db_name = "";
+//			}
+//			else if (strcmp(argv[2], "--advanced=false") == 0)
+//			{
+//				loadCSR = 0;
+//				db_name = "";
+//			}
+//			else
+//				db_name = argv[2];
+//		}
+//		else if (isNum(argv[2]))
+//		{
+//			server.config.port = atoi(argv[2]);
+//			string para = argv[1];
+//			if(para.substr(0, 10) == "--ipAllow="){
+//				whiteList = 1;
+//				ipWhiteFile = para.substr(10);
+//				db_name = "";
+//			}
+//			else if(para.substr(0, 9) == "--ipDeny="){
+//				blackList = 1;
+//				ipBlackFile = para.substr(9);
+//				db_name = "";
+//			}
+//			else if (strcmp(argv[1], "--advanced=true") == 0)
+//			{
+//				loadCSR = 1;
+//				db_name = "";
+//			}
+//			else if (strcmp(argv[1], "--advanced=false") == 0)
+//			{
+//				loadCSR = 0;
+//				db_name = "";
+//			}
+//			else
+//				db_name = argv[1];
+//		}
+//		else
+//		{
+//			string para1 = argv[1];
+//			string para2 = argv[2];
+//			if(para1.substr(0, 10) == "--ipAllow="){
+//				whiteList = 1;
+//				ipWhiteFile = para1.substr(10);
+//				db_name = argv[2];
+//			}
+//			else if(para1.substr(0, 9) == "--ipDeny="){
+//				blackList = 1;
+//				ipBlackFile = para1.substr(9);
+//				db_name = argv[2];
+//			}
+//			else if(para2.substr(0, 10) == "--ipAllow="){
+//				whiteList = 1;
+//				ipWhiteFile = para2.substr(10);
+//				db_name = argv[1];
+//			}
+//			else if(para2.substr(0, 9) == "--ipDeny="){
+//				blackList = 1;
+//				ipBlackFile = para2.substr(9);
+//				db_name = argv[1];
+//			}
+//			else if (strcmp(argv[1], "--advanced=true") == 0)
+//			{
+//				loadCSR = 1;
+//				db_name = argv[2];
+//			}
+//			else if (strcmp(argv[1], "--advanced=false") == 0)
+//			{
+//				loadCSR = 0;
+//				db_name = argv[2];
+//			}
+//			else if (strcmp(argv[2], "--advanced=true") == 0)
+//			{
+//				loadCSR = 1;
+//				db_name = argv[1];
+//			}
+//			else if (strcmp(argv[2], "--advanced=false") == 0)
+//			{
+//				loadCSR = 0;
+//				db_name = argv[1];
+//			}
+//			else
+//			{
+//				cout << "wrong format of parameters, please input the server port and the database." << endl;
+//				return -1;
+//			}
+//		}
+//	}
+//	else if (argc == 4)
+//	{
+//		if(isNum(argv[1]))
+//		{
+//			server.config.port = atoi(argv[1]);
+//			string para2 = argv[2];
+//			string para3 = argv[3];
+//			if (strcmp(argv[2], "--advanced=true") == 0)
+//			{
+//				loadCSR = 1;
+//				db_name = argv[3];
+//			}
+//			else if (strcmp(argv[2], "--advanced=false") == 0)
+//			{
+//				loadCSR = 0;
+//				db_name = argv[3];
+//			}
+//			else if (strcmp(argv[3], "--advanced=true") == 0)
+//			{
+//				loadCSR = 1;
+//				db_name = argv[2];
+//			}
+//			else if (strcmp(argv[3], "--advanced=false") == 0)
+//			{
+//				loadCSR = 0;
+//				db_name = argv[2];
+//			}
+//			else if(para2.substr(0, 10) == "--ipAllow="){
+//				whiteList = 1;
+//				ipWhiteFile = para2.substr(10);
+//				db_name = argv[3];
+//			}
+//			else if(para2.substr(0, 9) == "--ipDeny="){
+//				blackList = 1;
+//				ipBlackFile = para2.substr(9);
+//				db_name = argv[3];
+//			}
+//			else if(para3.substr(0, 10) == "--ipAllow="){
+//				whiteList = 1;
+//				ipWhiteFile = para3.substr(10);
+//				db_name = argv[2];
+//			}
+//			else if(para3.substr(0, 9) == "--ipDeny="){
+//				blackList = 1;
+//				ipBlackFile = para3.substr(9);
+//				db_name = argv[2];
+//			}
+//			else
+//			{
+//				cout << "wrong format of parameters, please input the server port and the database." << endl;
+//				return -1;
+//			}
+//
+//		}
+//		else if(isNum(argv[2]))
+//		{
+//			server.config.port = atoi(argv[2]);
+//			string para1 = argv[1];
+//			string para3 = argv[3];
+//			if (strcmp(argv[1], "--advanced=true") == 0)
+//			{
+//				loadCSR = 1;
+//				db_name = argv[3];
+//			}
+//			else if (strcmp(argv[1], "--advanced=false") == 0)
+//			{
+//				loadCSR = 0;
+//				db_name = argv[3];
+//			}
+//			else if (strcmp(argv[3], "--advanced=true") == 0)
+//			{
+//				loadCSR = 1;
+//				db_name = argv[1];
+//			}
+//			else if (strcmp(argv[3], "--advanced=false") == 0)
+//			{
+//				loadCSR = 0;
+//				db_name = argv[1];
+//			}
+//			else if(para1.substr(0, 10) == "--ipAllow="){
+//				whiteList = 1;
+//				ipWhiteFile = para1.substr(10);
+//				db_name = argv[3];
+//			}
+//			else if(para1.substr(0, 9) == "--ipDeny="){
+//				blackList = 1;
+//				ipBlackFile = para1.substr(9);
+//				db_name = argv[3];
+//			}
+//			else if(para3.substr(0, 10) == "--ipAllow="){
+//				whiteList = 1;
+//				ipWhiteFile = para3.substr(10);
+//				db_name = argv[1];
+//			}
+//			else if(para3.substr(0, 9) == "--ipDeny="){
+//				blackList = 1;
+//				ipBlackFile = para3.substr(9);
+//				db_name = argv[1];
+//			}
+//			else
+//			{
+//				cout << "wrong format of parameters, please input the server port and the database." << endl;
+//				return -1;
+//			}
+//		}
+//		else if (isNum(argv[3]))
+//		{
+//			server.config.port = atoi(argv[3]);
+//			string para1 = argv[1];
+//			string para2 = argv[2];
+//			if (strcmp(argv[1], "--advanced=true") == 0)
+//			{
+//				loadCSR = 1;
+//				db_name = argv[2];
+//			}
+//			else if (strcmp(argv[1], "--advanced=false") == 0)
+//			{
+//				loadCSR = 0;
+//				db_name = argv[2];
+//			}
+//			else if (strcmp(argv[2], "--advanced=true") == 0)
+//			{
+//				loadCSR = 1;
+//				db_name = argv[1];
+//			}
+//			else if (strcmp(argv[2], "--advanced=false") == 0)
+//			{
+//				loadCSR = 0;
+//				db_name = argv[1];
+//			}
+//			else if(para1.substr(0, 10) == "--ipAllow="){
+//				whiteList = 1;
+//				ipWhiteFile = para1.substr(10);
+//				db_name = argv[2];
+//			}
+//			else if(para1.substr(0, 9) == "--ipDeny="){
+//				blackList = 1;
+//				ipBlackFile = para1.substr(9);
+//				db_name = argv[2];
+//			}
+//			else if(para2.substr(0, 10) == "--ipAllow="){
+//				whiteList = 1;
+//				ipWhiteFile = para2.substr(10);
+//				db_name = argv[1];
+//			}
+//			else if(para2.substr(0, 9) == "--ipDeny="){
+//				blackList = 1;
+//				ipBlackFile = para2.substr(9);
+//				db_name = argv[1];
+//			}
+//			else
+//			{
+//				cout << "wrong format of parameters, please input the server port and the database." << endl;
+//				return -1;
+//			}
+//		}
+//		else
+//		{
+//			cout << "wrong format of parameters, please input the server port and the database." << endl;
+//			return -1;
+//		}
+//	}
+//	else
+//	{
+//		cout << "wrong format of parameters, please input the server port and the database." << endl;
+//		return -1;
+//	}
+//	port = server.config.port;
+//	cout << "server port: " << server.config.port << " database name: " << db_name << endl;
+//
+//	if(whiteList){
+//		cout << "IP white List enabled." << endl;
+//		ipWhiteList = new IPWhiteList();
+//		ipWhiteList->Load(ipWhiteFile);
+//	}
+//	else if(blackList){
+//		cout << "IP black list enabled." << endl;
+//		ipBlackList = new IPBlackList();
+//		ipBlackList->Load(ipBlackFile);
+//	}
+//	//USAGE: then user can use http://localhost:port/ to visit the server or coding with RESTful API
+//    //HTTP-server at port 9000 using 1 thread
+//    //Unless you do more heavy non-threaded processing in the resources,
+//    //1 thread is usually faster than several threads
+//
+//    //GET-example for the path /load/[db_name], responds with the matched string in path
+//    //For instance a request GET /load/db123 will receive: db123
+//    //server.resource["^/load/(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+//
+//
+//	//string success = db_name;
+//		cout << "Database system.db loaded successfully."<<endl;
+//
+//		string database = db_name;
+//	//if(current_database == NULL && database != "")
+//	//{
+//		if(database.length() > 3 && database.substr(database.length()-3, 3) == ".db")
+//		{
+//			cout << "Your db name to be built should not end with \".db\"." << endl;
+//			return -1;
+//		}
+//		else if(database == "system")
+//		{
+//			cout << "You can not load system files." << endl;
+//			return -1;
+//		}
+//		cout << database << endl;
+//		Database *current_database = new Database(database);
+//	if(database.length() != 0)
+//	{
+//		if (!boost::filesystem::exists(database + ".db"))
+//		{
+//			cout << "Database " << database << ".db has not been built." << endl;
+//			return -1;
+//		}
+//		if (!boost::filesystem::exists(database + ".db/success.txt"))
+//		{
+//			cout << "Database " << database << ".db has not been built successfully." << endl;
+//			string cmd = "rm -r " + database + ".db";
+//			system(cmd.c_str());
+//			return -1;
+//		}
+//
+//		bool flag = current_database->load(loadCSR);
+//		if (!flag)
+//		{
+//			cout << "Failed to load the database."<<endl;
+//			delete current_database;
+//			current_database = NULL;
+//			return -1;
+//		}
+//		shared_ptr<Txn_manager> txn_m = make_shared<Txn_manager>(current_database, database);
+//		pthread_rwlock_wrlock(&txn_m_lock);
+//		txn_managers.insert(pair<string, shared_ptr<Txn_manager>>(database, txn_m));
+//		pthread_rwlock_unlock(&txn_m_lock);
+//		//string success = db_name;
+//		//already_build.insert(db_name);
+//		databases.insert(pair<std::string, Database *>(db_name, current_database));
+//	//}
+//	}
+//	//init transaction log
+//	Util::init_transactionlog();
+//	//get the log name
+//	string namelog_name = QUERYLOG_PATH + NAMELOG_PATH;
+//	FILE *name_logfp = fopen(namelog_name.c_str(), "r+");
+//	string querylog_name;
+//	if(name_logfp == NULL)   //file not exist, create one
+//	{
+//		name_logfp = fopen(namelog_name.c_str(), "w");
+//		querylog_name = Util::get_date_time();
+//		int index_space = querylog_name.find(' ');
+//		querylog_name = querylog_name.replace(index_space,1, 1, '_');
+//		fprintf(name_logfp, "%s", querylog_name.c_str());
+//	}
+//	else
+//	{
+//		char name_char[100];
+//		fscanf(name_logfp,"%s",&name_char);
+//		querylog_name = name_char;
+//	}
+//	fclose(name_logfp);
+//	//cout << "querylog_name: " << querylog_name << endl;
+//	//open the query log
+//	queryLog = QUERYLOG_PATH + querylog_name + ".log";
+//	cout << "queryLog: " << queryLog << endl;
+//	query_logfp = fopen(queryLog.c_str(), "a");
+//	if(query_logfp == NULL)
+//	{
+//		cerr << "open query log error"<<endl;
+//		return -1;
+//	}
+//	long querylog_size = ftell(query_logfp);
+//	//cout << "querylog_size: " << querylog_size << endl;
+//	//cout << "Util::getTimeName: " << Util::getTimeName() << endl;
+//	//cout << "Util::get_cur_time: " << Util::get_cur_time() << endl;
+//	//cout << "Util::getTimeString: " << Util::getTimeString() << endl;
+//	//cout << "Util::get_date_time: " << Util::get_date_time() << endl;
+//
+//	string cmd = "lsof -i:" + Util::int2string(server.config.port) + " > system.db/ep.txt";
+//	system(cmd.c_str());
+//	fstream ofp;
+//	ofp.open("system.db/ep.txt", ios::in);
+//	int ch = ofp.get();
+//	if (!ofp.eof())
+//	{
+//		ofp.close();
+//		cout << "Port " << server.config.port << " is already in use." << endl;
+//		string cmd = "rm system.db/ep.txt";
+//		system(cmd.c_str());
+//		return -1;
+//	}
+//	ofp.close();
+//	cmd = "rm system.db/ep.txt";
+//	system(cmd.c_str());
+//
+//	system_password = Util::int2string(rand()) + Util::int2string(rand());
+//	ofp.open("system.db/password" + Util::int2string(server.config.port) + ".txt", ios::out);
+//	ofp << system_password;
+//	ofp.close();
+//	ofp.open("system.db/port.txt", ios::out);
+//    ofp << server.config.port;
+//    ofp.close();
+//	//time_t cur_time = time(NULL);
+//	//long time_backup = Util::read_backup_time();
+//	//long next_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval + Util::gserver_backup_interval;
+//	//NOTICE: no need to backup for endpoint
+////TODO: we give up the backup function here
+//#ifndef ONLY_READ
+//	scheduler = start_thread(backup_scheduler);
+//#endif
+//
+//	pool.create();
+//	//pthread_rwlock_init(&database_load_lock, NULL);
+//
+//#ifndef SPARQL_ENDPOINT
 
 	//GET-example for the path /?operation=build&db_name=[db_name]&ds_path=[ds_path]&username=[username]&password=[password], responds with the matched string in path
 	//i.e. database name and dataset path
@@ -2295,6 +2498,7 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 
 	if (RequestType == "GET")
 	{
+		cout << "request path:" << request->path << endl;
 		db_name = request->path_match[1];
 		db_path = request->path_match[2];
 		username = request->path_match[3];
@@ -2488,6 +2692,38 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 	Util::add_backuplog(db_name);
 	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 //	pthread_rwlock_unlock(&database_load_lock);
+}
+
+
+void request_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	if (!ipCheck(request)) {
+		cout << "IP Blocked!" << endl;
+		string content = "IP Blocked!";
+
+		string resJson = CreateJson(916, content, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	string thread_id = Util::getThreadID();
+	string log_prefix = "thread " + thread_id + " -- ";
+	cout << log_prefix << "HTTP: this is build" << endl;
+
+	string db_name;
+	string db_path;
+	string username;
+	string password;
+	cout << "request method:" << request->method << endl;
+	cout << "request path:" << request->path << endl;
+	cout << "request http_version:" << request->http_version << endl;
+	cout << "request type:" << RequestType << endl;
+
+}
+bool request_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+	thread t(&request_thread, response, request, RequestType);
+	t.detach();
+	return true;
 }
 
 bool build_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
@@ -5947,6 +6183,10 @@ std::string CreateJson(int StatusCode, string StatusMsg, bool body, string Respo
 	return s.GetString();
 
 }
+/*!
+ * @brief		init the user map, alread_built map
+ * @return 		Null.
+*/
 void DB2Map()
 {	
 	string sparql = "select ?x ?y where{?x <has_password> ?y.}";
@@ -6091,7 +6331,7 @@ void DB2Map()
 		Value &pp1 = pp["x"];
 		CoreVersion = pp1["value"].GetString();
 	}
-	sparql = "select ?x where{<APIVersion> <value> ?x.}";
+	/*sparql = "select ?x where{<APIVersion> <value> ?x.}";
 	strJson = querySys(sparql);
 	document.Parse(strJson.c_str());
 	p1 = document["results"];
@@ -6101,7 +6341,7 @@ void DB2Map()
 		Value &pp = p2[i];
 		Value &pp1 = pp["x"];
 		APIVersion = pp1["value"].GetString();
-	}
+	}*/
 }
 
 string querySys(string sparql)
