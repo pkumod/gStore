@@ -2517,8 +2517,6 @@ void build_thread_new(const shared_ptr<HttpServer::Response>& response,string db
 		sendResponseMsg(1004, error, response);
 		return;
 	}
-
-	//database += ".db";
 	string dataset = db_path;
 	string database = db_name;
 	cout << "Import dataset to build database..." << endl;
