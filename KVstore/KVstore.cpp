@@ -3206,6 +3206,14 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 	}
 }
 
+/**
+ * @param _subid
+ * @param _preid_objidlist [p0 o0, p1 o1, p2 o2,...,pn on]
+ * @param _list_len n
+ * @param _no_duplicate reserve the repeated elements
+ * @param txn
+ * @return
+ */
 bool 
 KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preid_objidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const 
 {

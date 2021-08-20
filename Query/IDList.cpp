@@ -497,3 +497,34 @@ IDList::eraseAt(std::vector<unsigned>::iterator  it){
 void IDList::reserve(size_t size) {
   id_list.reserve(size);
 }
+
+/**
+ *
+ * @param id_list of size records_num * records_num
+ * @param records_num
+ * @param records_num
+ * @param main_key_position the position inside a record
+ */
+IDListWithAppending::IDListWithAppending(TYPE_ENTITY_LITERAL_ID* id_list, size_t records_num,
+                                         size_t record_len, size_t main_key_position)
+{
+  for(decltype(records_num) i =0;i<records_num;i++)
+  {
+    auto record_p = id_list + record_len * i;
+    auto attached = make_shared<std::vector<TYPE_ENTITY_LITERAL_ID>>();
+    TYPE_ENTITY_LITERAL_ID main_key;
+    for(decltype(record_len) j = 0;j<record_len;j++)
+    {
+     if(j == main_key_position)
+       main_key = record_p[j];
+     else
+       attached->push_back(record_p[j]);
+    }
+    this->contents_->insert(make_pair(main_key,attached));
+  }
+}
+
+// not implemented yet
+void IDListWithAppending::Intersect(IDListWithAppending &other) {
+
+}

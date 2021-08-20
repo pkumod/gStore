@@ -9,7 +9,7 @@
 class OrderedList;
 
 namespace DPB {
-
+static TYPE_ENTITY_LITERAL_ID INVALID_PREDICATE = -1;
 struct element{
   union Identity {
     TYPE_ENTITY_LITERAL_ID node;
@@ -18,6 +18,7 @@ struct element{
   Identity identity;
   unsigned int index;
   double cost;
+  TYPE_ENTITY_LITERAL_ID predicate;
   bool operator<(const element &other) const {return this->cost < other.cost;}
 };
 
@@ -34,8 +35,8 @@ struct FqElement{
  public:
   sequence seq;
   double cost;
-  //bool operator<(const FqElement &other) const {return this->cost < other.cost;}
   bool operator<(const FqElement& other) const {return this->cost < other.cost;}
+  FqElement() = default;
 };
 
 using  ePool = std::vector<FqElement>;
