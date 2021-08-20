@@ -175,7 +175,7 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
 		vector<unsigned>::iterator it = this->id_list.begin();
 		while (it != (this->id_list).end())
 		{
-			int can_id = *it;
+			unsigned can_id = *it;
 			while ((id_i < _list_len) && (_id_list[id_i] < can_id))
 			{
 				id_i++;
@@ -314,7 +314,7 @@ IDList::unionList(const unsigned* _id_list, unsigned _list_len, bool only_litera
 
 	// update this IDList
 	this->clear();
-	for (int i = 0; i < temp_list_len; i++)
+	for (unsigned i = 0; i < temp_list_len; i++)
 		this->addID(temp_list[i]);
 	delete[]temp_list;
 
@@ -418,7 +418,7 @@ IDList::intersect(const IDList& _id_list, const unsigned* _list, unsigned _len)
 	{
 	case 0:
 	{   //this bracket is needed if vars are defined in case
-		int id_i = 0;
+		unsigned id_i = 0;
 		unsigned num = _id_list.size();
 		for (unsigned i = 0; i < num; ++i)
 		{
