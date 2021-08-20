@@ -2962,6 +2962,7 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	string username;
 	string password;
 	string operation;
+	string db_name;
 	Document document;
 	string url;
 	cout << "request method:" << request->method << endl;
@@ -2979,14 +2980,16 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		username = UrlDecode(username);
 		cout << "new username:" << username << endl;
 		password = UrlDecode(password);
+		db_name = WebUrl::CutParam(url, "db_name");
 		
 	}
 	else if (RequestType == "POST")
 	{
 		auto strJson = request->content.string();
-		
+        
 		document.Parse(strJson.c_str());
 		operation = document["operation"];
+		db_name = document["db_name"];
 	}
 	else
 	{
@@ -3013,8 +3016,6 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	{
 		if (RequestType == "GET")
 		{
-			string db_name=WebUrl::CutParam(url,"db_name");
-			
 			string db_path = WebUrl::CutParam(url, "db_path");
 			db_name = UrlDecode(db_name);
 			db_path = UrlDecode(db_path);
@@ -3022,7 +3023,7 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		}
 		else if (RequestType == "POST")
 		{
-			string db_name = document["db_name"];
+		
 			string db_path = document["db_path"];
 			build_thread_new(response, db_name, db_path, username, password);
 
@@ -3031,14 +3032,11 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	else if (operation == "load")
 	{
 		if (RequestType == "GET")
-		{
-			string db_name = WebUrl::CutParam(url, "db_name");
-			
+		{	
 			load_thread_new(response, db_name);
 		}
 		else if (RequestType == "POST")
 		{
-			string db_name = document["db_name"];
 			load_thread_new(response, db_name);
 
 		}
