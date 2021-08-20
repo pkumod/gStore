@@ -2520,7 +2520,7 @@ void build_thread_new(const shared_ptr<HttpServer::Response>& response,string db
 
 	//database += ".db";
 	string dataset = db_path;
-
+	string database = db_name;
 	cout << "Import dataset to build database..." << endl;
 	cout << "DB_store: " << database << "\tRDF_data: " << dataset << endl;
 	int len = database.length();
