@@ -185,9 +185,9 @@ bool trylockdb(std::map<std::string, struct DBInfo*>::iterator it_already_build)
 
 void sendResponseMsg(int code, string msg, const shared_ptr<HttpServer::Response>& response);
 
-void build_thread(const shared_ptr<HttpServer::Response>& response, string db_name, string db_path, string username, string password);
+void build_thread_new(const shared_ptr<HttpServer::Response>& response, string db_name, string db_path, string username, string password);
 
-void load_thread(const shared_ptr<HttpServer::Response>& response, string db_name);
+void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db_name);
 
 //TODO: use lock to protect logs when running in multithreading environment
 FILE* query_logfp = NULL;
@@ -2495,7 +2495,7 @@ bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 	return true;
 }
 
-void build_thread(const shared_ptr<HttpServer::Response>& response,string db_name,string db_path,string username,string password)
+void build_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string db_path,string username,string password)
 {
 	if (db_path == SYSTEM_PATH)
 	{
@@ -2640,7 +2640,7 @@ bool trylockdb(std::map<std::string, struct DBInfo*>::iterator it_already_build)
 	return result;
 		
 }
-void load_thread(const shared_ptr<HttpServer::Response>& response, string db_name)
+void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db_name)
 {
 	string error = checkparamValue("db_name", db_name);
 	if (error.empty() == false)
@@ -3018,13 +3018,13 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 			string db_path = WebUrl::CutParam(url, "db_path");
 			db_name = UrlDecode(db_name);
 			db_path = UrlDecode(db_path);
-			build_thread(response, db_name, db_path, username, password);
+			build_thread_new(response, db_name, db_path, username, password);
 		}
 		else if (RequestType == "POST")
 		{
 			string db_name = document["db_name"];
 			string db_path = document["db_path"];
-			build_thread(response, db_name, db_path, username, password);
+			build_thread_new(response, db_name, db_path, username, password);
 
 		}	
 	}
@@ -3034,17 +3034,17 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		{
 			string db_name = WebUrl::CutParam(url, "db_name");
 			
-			load_thread(response, db_name);
+			load_thread_new(response, db_name);
 		}
 		else if (RequestType == "POST")
 		{
 			string db_name = document["db_name"];
-			load_thread(response, db_name);
+			load_thread_new(response, db_name);
 
 		}
 	}
 	else {
-		string error="the operation "+opreation +" has not match handler function";
+		string error="the operation "+operation +" has not match handler function";
 		sendResponseMsg(1100, error, response);
 	}
 	
