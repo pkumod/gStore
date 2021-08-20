@@ -292,7 +292,6 @@ public:
 	void addTriple(const Triple& _triple);
 	void print(ostream& _out_stream);
 
-	int getVarID_MinCandidateList();
 	int getVarID_MaxCandidateList();
 	int getVarID_FirstProcessWhenJoin();
 

@@ -621,8 +621,15 @@ $(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)
 
 #objects in Server/ end
 
+# your gcc g++ v5.4 path
+# in ./bashrc CXX should be gcc, otherwise, make pre2 will error
+# see https://blog.csdn.net/weixin_34268610/article/details/89085852
+pre1:export CC=/usr/local/gcc-5.4.0/bin/gcc
+pre1:export CXX=/usr/local/gcc-5.4.0/bin/g++
+pre1:
+	cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;sudo make install;
 
-pre:
+pre2:
 	rm -rf tools/rapidjson/
 	cd tools; tar -xzvf rapidjson.tar.gz;
 	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
