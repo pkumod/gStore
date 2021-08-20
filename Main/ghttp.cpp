@@ -807,6 +807,7 @@ int initialize(int argc, char *argv[])
 	//Server restarts to use the original database
 	//current_database = NULL;
 	cout << "init param..." << endl;
+	 Util util;
 	 Util::configure_new();
 
 	 HttpServer server;
