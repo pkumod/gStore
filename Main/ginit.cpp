@@ -14,21 +14,21 @@
 #include "../Database/Database.h"
 #include <iostream>
 #include <fstream>
-#include "../Util/Slog.h"
+//#include "../Util/Slog.h"
 using namespace std;
 
 int main(int argc, char * argv[])
 {
 	
 	Util util;
-	Log.init("slog.properties");
+	//Log.init("slog.properties");
 	
 	if (argc == 1)
 	{
 		/*cout << "please input the complete command:\t" << endl;
 		cout << "\t bin/gadd -h" << endl;*/
 		long tv_begin = Util::get_cur_time();
-		Log.Info("begin rebuild the system database ....");
+		cout<<"begin rebuild the system database ...."<<endl;
 		if (boost::filesystem::exists("system.db"))
 		{
 			string cmd;
@@ -47,7 +47,7 @@ int main(int argc, char * argv[])
 			f.open("./" + _db_path + ".db/success.txt");
 			f.close();
 
-			Log.Info("system.db rebuild successfully!");
+			cout<<"system.db rebuild successfully!"<<endl;
 			delete _db;
 			_db = NULL;
 			Util::init_backuplog();
@@ -66,22 +66,22 @@ int main(int argc, char * argv[])
 			else //update error
 				msg = "update failed.";
 			if (ret != -100)
-				Log.Info(("Insert data result:" + msg).c_str());
+				cout<<"Insert data result:" + msg<<endl;
 
 			
 		
 			delete _db;
 		    _db = NULL;
 			long tv_end = Util::get_cur_time();
-			stringstream ss;
-			ss << "system.db init successfully! Used " << (tv_end - tv_begin) << " ms";
-			Log.Info(ss.str().c_str());
+			//stringstream ss;
+			cout << "system.db init successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+			//Log.Info(ss.str().c_str());
 			return 0;
 
 		}
 		else
 		{
-			Log.Error("Build RDF database failure!");
+			cout<<"Build RDF database failure!"<<endl;
 			return 0;
 		}
 		
@@ -108,7 +108,7 @@ int main(int argc, char * argv[])
 		else
 		{
 			//cout << "the command is not complete." << endl;
-			Log.Error("Invalid arguments! Input \"bin/ginit -h\" for help.");
+			cout<<"Invalid arguments! Input \"bin/ginit -h\" for help."<<endl;
 			return 0;
 		}
 	}
@@ -118,14 +118,14 @@ int main(int argc, char * argv[])
 		long tv_begin = Util::get_cur_time();
 		if (Util::dir_exist("system.db")==false)
 		{
-			Log.Error("The system database is not exist,please use bin/ginit to rebuild the system database at first!");
+			cout<<"The system database is not exist,please use bin/ginit to rebuild the system database at first!"<<endl;
 			return -1;
 
 		}
 		string db_namestr = Util::getArgValue(argc, argv, "db", "database");
 		if (db_namestr.empty())
 		{
-			Log.Error("You need to input the database name that you want to init. Input \"bin/ginit -h\" for help.");
+			cout<<"You need to input the database name that you want to init. Input \"bin/ginit -h\" for help."<<endl;
 			return 0;
 		}
 		else
@@ -148,7 +148,7 @@ int main(int argc, char * argv[])
 				}
 				if (Util::dir_exist(db_name + ".db")==false)
 				{
-					Log.Error(("The database " + db_name + " is not exist").c_str());
+					cout<<"The database " + db_name + " is not exist"<<endl;
 					continue;
 				}
 				sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
@@ -183,9 +183,9 @@ int main(int argc, char * argv[])
 			delete _db;
 			_db = NULL;
 			long tv_end = Util::get_cur_time();
-			stringstream ss;
-			ss << "system.db init successfully! Used " << (tv_end - tv_begin) << " ms";
-			Log.Info(ss.str().c_str());
+			//stringstream ss;
+			cout << "system.db init successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+			//Log.Info(ss.str().c_str());
 			
 			return 0;
 

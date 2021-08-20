@@ -9,20 +9,20 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
-#include "../Util/Slog.h"
+//#include "../Util/Slog.h"
 
 using namespace std;
 
 int main(int argc, char * argv[])
 {
 	Util util;
-	Log.init("slog.properties");
+	//Log.init("slog.properties");
 	string db_name;
 	if (argc < 2)
 	{
 		/*cout << "please input the complete command:\t" << endl;
 		cout << "\t bin/gadd -h" << endl;*/
-		Log.Error("Invalid arguments! Input \"bin/gdrop -h\" for help.");
+		cout<<"Invalid arguments! Input \"bin/gdrop -h\" for help."<<endl;
 		return 0;
 	}
 	else if (argc == 2)
@@ -43,7 +43,7 @@ int main(int argc, char * argv[])
 		}
 		else
 		{
-			Log.Error("Invalid arguments! Input \"bin/gdrop -h\" for help.");
+			cout<<"Invalid arguments! Input \"bin/gdrop -h\" for help."<<endl;
 			return 0;
 
 		}
@@ -54,7 +54,7 @@ int main(int argc, char * argv[])
 		db_name = Util::getArgValue(argc, argv, "db", "database");
 		if (db_name.empty())
 		{
-			Log.Error("The database name can not been empty! Input \"bin/gdrop -h\" for help.");
+			cout<<"The database name can not been empty! Input \"bin/gdrop -h\" for help."<<endl;
 			return -1;
 		}
 		else
@@ -62,15 +62,15 @@ int main(int argc, char * argv[])
 			int len = db_name.length();
 			if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
 			{
-				Log.Error("The database name can not end with .db");
+				cout<<"The database name can not end with .db"<<endl;
 				return -1;
 			}
 			if (!boost::filesystem::exists(db_name + ".db"))
 			{
-				Log.Error("The database that you want to drop does not exist.");
+				cout<<"The database that you want to drop does not exist."<<endl;
 				return -1;
 			}
-			Log.Info("Begin to drop database....");
+			cout<<"Begin to drop database...."<<endl;
 			long tv_begin = Util::get_cur_time();
 			Database system_db("system");
 			system_db.load();
@@ -93,14 +93,14 @@ int main(int argc, char * argv[])
 				else //update error
 					msg = "update failed.";
 			}
-			Log.Info("Delete the database info from system database successfully!");
+			cout<<"Delete the database info from system database successfully!"<<endl;
 			string cmd = "rm -r " + db_name + ".db";
 			system(cmd.c_str());
 			Util::delete_backuplog(db_name);
 			long tv_end = Util::get_cur_time();
-			stringstream ss;
-			ss << db_name << ".db is dropped successfully! Used " << (tv_end - tv_begin) << " ms";
-			Log.Info(ss.str().c_str());
+			//stringstream ss;
+			cout << db_name << ".db is dropped successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+			//Log.Info(ss.str().c_str());
 			return 0;
 		}
 		

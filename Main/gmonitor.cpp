@@ -8,20 +8,20 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
-#include "../Util/Slog.h"
+//#include "../Util/Slog.h"
 
 using namespace std;
 
 int main(int argc, char * argv[])
 {
 		Util util;
-		Log.init("slog.properties");
+		//Log.init("slog.properties");
 		string db_name;
 		if (argc < 2)
 		{
 			/*cout << "please input the complete command:\t" << endl;
 			cout << "\t bin/gadd -h" << endl;*/
-			Log.Error("Invalid arguments! Input \"bin/gmonitor -h\" for help.");
+			cout<<"Invalid arguments! Input \"bin/gmonitor -h\" for help."<<endl;
 			return 0;
 		}
 		else if (argc == 2)
@@ -43,7 +43,7 @@ int main(int argc, char * argv[])
 			else
 			{
 				//cout << "the command is not complete." << endl;
-				Log.Error("Invalid arguments! Input \"bin/gmonitor -h\" for help.");
+				cout<<"Invalid arguments! Input \"bin/gmonitor -h\" for help."<<endl;
 				return 0;
 			}
 		}
@@ -52,13 +52,13 @@ int main(int argc, char * argv[])
 			db_name = Util::getArgValue(argc, argv, "db", "database");
 			if (db_name.empty())
 			{
-				Log.Error("You need to input the database name that you want to monitor. Input \"bin/gmonitor -h\" for help.");
+				cout<<"You need to input the database name that you want to monitor. Input \"bin/gmonitor -h\" for help."<<endl;
 				return 0;
 			}
 			int len = db_name.length();
 			if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
 			{
-				Log.Error("The database name can not end with .db");
+				cout<<"The database name can not end with .db"<<endl;
 				return 0;
 			}
 			Database system_db("system");
@@ -70,14 +70,14 @@ int main(int argc, char * argv[])
 			int ret = system_db.query(sparql, ask_rs, ask_ofp);
 			if (ask_rs.answer[0][0] == "false")
 			{
-				Log.Error("The database does not exist.");
+				cout<<"The database does not exist."<<endl;
 				return 0;
 			}
 
-			Log.Info("start loading the database......");
+			cout<<"start loading the database......"<<endl;
 			Database _db(db_name);
 			_db.load();
-			Log.Info("finish loading....");
+			cout<<"finish loading...."<<endl;
 
 			sparql = "select ?p ?o where{<" + db_name + "> ?p ?o.}";
 			ResultSet _rs;
@@ -101,16 +101,16 @@ int main(int argc, char * argv[])
 			unsigned predicate_num = _db.getPreNum();
 			
 
-			Log.Info("========================================");
-			Log.Info(("database:" + db_name).c_str());
-			Log.Info(("creator:" + creator).c_str());
-			Log.Info(("built_time:" + built_time).c_str());
-			Log.Info(("triple num:" + Util::int2string(triple_num)).c_str());
-			Log.Info(("entity num:" + Util::int2string(entity_num)).c_str());
-			Log.Info(("literal num:" + Util::int2string(literal_num)).c_str());
-			Log.Info(("subject num:" + Util::int2string(subject_num)).c_str());
-			Log.Info(("predicate num:" + Util::int2string(predicate_num)).c_str());
-			Log.Info("========================================");
+			cout<<"========================================"<<endl;
+			cout<<"database:" + db_name<<endl;
+			cout<<"creator:" + creator<<endl;
+			cout<<"built_time:" + built_time<<endl;
+			cout<<"triple num:" + Util::int2string(triple_num)<<endl;
+			cout<<"entity num:" + Util::int2string(entity_num)<<endl;
+			cout<<"literal num:" + Util::int2string(literal_num)<<endl;
+			cout<<"subject num:" + Util::int2string(subject_num)<<endl;
+			cout<<"predicate num:" + Util::int2string(predicate_num)<<endl;
+			cout<<"========================================"<<endl;
 			
 			return 0;
 			

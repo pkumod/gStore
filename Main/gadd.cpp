@@ -13,7 +13,7 @@
 
 #include "../Database/Database.h"
 #include "../Util/Util.h"
-#include "../Util/Slog.h"
+//#include "../Util/Slog.h"
 #include <sstream>
 //#include <stdio.h>
 //#include <log4cplus/logger.h>
@@ -51,13 +51,14 @@ main(int argc, char * argv[])
 //*! [important] you should init the Util class.
 Util util;
 //#endif
-Log.init("slog.properties");
+//Log.init("slog.properties");
 
 	if (argc < 2)
 	{
 		/*cout << "please input the complete command:\t" << endl;
 		cout << "\t bin/gadd -h" << endl;*/
-		Log.Error("Invalid arguments! Input \"bin/gadd -h\" for help.");
+		//Log.Error("Invalid arguments! Input \"bin/gadd -h\" for help.");
+		cout<<"Invalid arguments! Input \"bin/gadd -h\" for help."<<endl;
 		return 0;
 	}
 	else if (argc == 2)
@@ -80,7 +81,8 @@ Log.init("slog.properties");
 		else
 		{
 			//cout << "the command is not complete." << endl;
-			Log.Error("Invalid arguments! Input \"bin/gadd -h\" for help.");
+			//Log.Error("Invalid arguments! Input \"bin/gadd -h\" for help.");
+			cout << "Invalid arguments! Input \"bin/gadd -h\" for help." << endl;
 			return 0;
 		}
 	}
@@ -90,7 +92,8 @@ Log.init("slog.properties");
 		if (db_folder.empty())
 		{
 	/*		cout << "please input the database name " << endl;*/
-			Log.Error("the database name is empty! Input \"bin/gbackup -h\" for help.");
+			//Log.Error("the database name is empty! Input \"bin/gbackup -h\" for help.");
+		    cout<<"the database name is empty! Input \"bin/gadd -h\" for help."<<endl;
 			return 0;
 		}
 		int len = db_folder.length();
@@ -98,7 +101,8 @@ Log.init("slog.properties");
 		if (db_folder.substr(len - 3, 3) == ".db")
 		{
 			/*cout << "your database can not end with .db" << endl;*/
-			Log.Error("your database can not end with .db.! Input \"bin/gadd -h\" for help.");
+			//Log.Error("your database can not end with .db.! Input \"bin/gadd -h\" for help.");
+			cout<<"your database can not end with .db.! Input \"bin/gadd -h\" for help."<<endl;
 			return -1;
 		}
 		string filename=Util::getArgValue(argc, argv, "f","file");
@@ -106,24 +110,28 @@ Log.init("slog.properties");
 		{
 			//cout << "please input the file path." << endl;
 			//Util::formatPrint("please input the file path.", "Error");
-			Log.Error("the add data file is empty! Input \"bin/gadd -h\" for help.");
+			//Log.Error("the add data file is empty! Input \"bin/gadd -h\" for help.");
+			cout<<"the add data file is empty! Input \"bin/gadd -h\" for help."<<endl;
 			return 0;
 		}
 	
 		Database _db(db_folder);
 		_db.load();
-		//cout << "finish loading" << endl;
+		cout << "finish loading" << endl;
 	
-		Log.Info("finish loading.");
+		//Log.Info("finish loading.");
 		//_db.insert(argv[2]);
 		//_db.remove(argv[2]);
 		long tv_begin = Util::get_cur_time();
 		_db.insert(filename, false, nullptr);
 		long tv_end = Util::get_cur_time();
 		//cout << "finish insert data" << endl;
-		stringstream ss;
+		
+		cout << "after insert,used " << (tv_end - tv_begin) << " ms"<<endl;
+	
+		/*stringstream ss;
 		ss << "after insert,used " << (tv_end - tv_begin) << " ms";
-		Log.Info(ss.str().c_str());
+		Log.Info(ss.str().c_str());*/
 		/*delete _db;
 		long tv_end1 = Util::get_cur_time();
 		ss.str("");

@@ -9,7 +9,7 @@ TODO: add -h/--help for help message
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
-#include "../Util/Slog.h"
+//#include "../Util/Slog.h"
 
 using namespace std;
 #define SYSTEM_PATH "data/system/system.nt"
@@ -23,12 +23,13 @@ main(int argc, char * argv[])
 	Util util;
 
 //#endif
-	Log.init("slog.properties");
+	//Log.init("slog.properties");
 	if (argc < 2)
 	{
 		/*cout << "please input the complete command:\t" << endl;
 		cout << "\t bin/gadd -h" << endl;*/
-		Log.Error("Invalid arguments! Input \"bin/gbuild -h\" for help.");
+		//Log.Error("Invalid arguments! Input \"bin/gbuild -h\" for help.");
+		cout<<"Invalid arguments! Input \"bin/gbuild -h\" for help."<<endl;
 		return 0;
 	}
 	else if (argc == 2)
@@ -51,7 +52,7 @@ main(int argc, char * argv[])
 		else
 		{
 			//cout << "the command is not complete." << endl;
-			Log.Error("Invalid arguments! Input \"bin/gbuild -h\" for help.");
+			cout<<"Invalid arguments! Input \"bin/gbuild -h\" for help."<<endl;
 			return 0;
 		}
 	}
@@ -61,20 +62,20 @@ main(int argc, char * argv[])
 		int len = _db_path.length();
 		if (_db_path.empty())
 		{
-			Log.Error("You must input the database name for building database!");
+			cout<<"You must input the database name for building database!"<<endl;
 			return -1;
 		}
 		if (_db_path.length() > 3 && _db_path.substr(len - 3, 3) == ".db")
 		{
 			
-			Log.Error("your database can not end with .db or less than 3 characters");
+			cout << "your database can not end with .db or less than 3 characters" << endl;
 			return -1;
 		}
 
 		//check if the db_name is system
 		if (_db_path == "system")
 		{
-			Log.Error("Your database's name can not be system.");
+			cout<<"Your database's name can not be system."<<endl;
 			return -1;
 		}
 
@@ -83,12 +84,12 @@ main(int argc, char * argv[])
 		//check if the db_path is the path of system.nt
 		if (_rdf == SYSTEM_PATH)
 		{
-			Log.Error("You have no rights to access system files");
+			cout<<"You have no rights to access system files"<<endl;
 			return -1;
 		}
 		if (_rdf.empty())
 		{
-			Log.Error("You must input the rdf file path for building database!");
+			cout<<"You must input the rdf file path for building database!"<<endl;
 			return -1;
 		}
 
@@ -99,19 +100,19 @@ main(int argc, char * argv[])
 			isbuilt = 0;
 		if(isbuilt == 1)
 		{
-			Log.Error(("the database "+_db_path+" has been built. please use bin/gdrop to remove it at first.").c_str());
+			cout<<"the database "+_db_path+" has been built. please use bin/gdrop to remove it at first."<<endl;
 			return -1;
 		}
 		else
 		{
-			Log.Info("Begin to build database....");
+			cout<<"Begin to build database...."<<endl;
 			long tv_begin = Util::get_cur_time();
 			Database _db(_db_path);
 			bool flag = _db.build(_rdf);
 			if (flag)
 			{
 			
-				Log.Info("Build Database Successfully!");
+				cout<<"Build Database Successfully!"<<endl;
 				ofstream f;
 				f.open("./" + _db_path + ".db/success.txt");
 				f.close();
@@ -119,7 +120,7 @@ main(int argc, char * argv[])
 			else //if fails, drop database and return
 			{
 			
-				Log.Error("Build Database Failed!");
+				cout<<"Build Database Failed!"<<endl;
 				string cmd = "rm -r " + _db_path + ".db";
 				system(cmd.c_str());
 				return 0;
@@ -127,7 +128,7 @@ main(int argc, char * argv[])
 			if (!boost::filesystem::exists("system.db"))
 				return 0;
 			//system("clock");
-			Log.Info("Save the database info to system database....");
+			cout<<"Save the database info to system database...."<<endl;
 			Database system_db("system");
 			system_db.load();
 
@@ -158,13 +159,13 @@ main(int argc, char * argv[])
 						cout << msg << endl;*/
 				}
 				Util::add_backuplog(_db_path);
-				Log.Info(("Saving database info:" + msg).c_str());
+				cout<<"Saving database info:" + msg<<endl;
 				
 			}
 			long tv_end = Util::get_cur_time();
-			stringstream ss;
-			ss << "Build RDF database "<<_db_path<<" successfully! Used " << (tv_end - tv_begin) << " ms";
-			Log.Info(ss.str().c_str());
+			//stringstream ss;
+			cout<< "Build RDF database "<<_db_path<<" successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+			//Log.Info(ss.str().c_str());
 			return 0;
 		}
 	}

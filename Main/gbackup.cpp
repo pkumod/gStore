@@ -14,7 +14,7 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
-#include "../Util/Slog.h"
+//#include "../Util/Slog.h"
 #include <sstream>
 using namespace std;
 #define SYSTEM_PATH "data/system/system.nt"
@@ -44,13 +44,14 @@ int
 main(int argc, char * argv[])
 {
 	Util util;
-	Log.init("slog.properties");
+	//Log.init("slog.properties");
 	string db_name, backup_path;
 	if (argc < 2)
 	{
 		/*cout << "please input the complete command:\t" << endl;
 		cout << "\t bin/gadd -h" << endl;*/
-		Log.Error("Invalid arguments! Input \"bin/gbackup -h\" for help.");
+		//Log.Error("Invalid arguments! Input \"bin/gbackup -h\" for help.");
+		cout << "Invalid arguments! Input \"bin/gbackup -h\" for help." << endl;
 		return 0;
 	}
 	else if (argc == 2)
@@ -73,7 +74,8 @@ main(int argc, char * argv[])
 		else
 		{
 			//cout << "the command is not complete." << endl;
-			Log.Error("Invalid arguments! Input \"bin/gbackup -h\" for help.");
+			//Log.Error("Invalid arguments! Input \"bin/gbackup -h\" for help.");
+			cout<<"Invalid arguments! Input \"bin/gbackup -h\" for help."<<endl;
 			return 0;
 		}
 	}
@@ -89,18 +91,19 @@ main(int argc, char * argv[])
 		if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
 		{
 			
-			Log.Error("your database name can not end with .db! Input \"bin/gbackup -h\" for help.");
+			//Log.Error("your database name can not end with .db! Input \"bin/gbackup -h\" for help.");
+			cout<<"your database name can not end with .db! Input \"bin/gbackup -h\" for help."<<endl;
 			return -1;
 		}
 		if (db_name == "system")
 		{
-			//cout << "Your database's name can not be system." << endl;
-			Log.Error("Your database's name can not be system!");
+			cout << "Your database's name can not be system." << endl;
+			/*Log.Error("Your database's name can not be system!");*/
 			return -1;
 		}
 		if (backup_path == "." || backup_path == "./") {
-			//cout << "Backup Path Can not be root, Backup Failed!" << endl;
-			Log.Error("Backup Path Can not be root, Backup Failed!");
+			cout << "Backup Path Can not be root, Backup Failed!" << endl;
+			//Log.Error("Backup Path Can not be root, Backup Failed!");
 			return 0;
 		}
 		//TODO: We need two column in system.db :
@@ -118,8 +121,8 @@ main(int argc, char * argv[])
 		
 		int ret = copy(db_path, backup_path);
 		if (ret == 1) {
-			//cout << "Database Name Error, Backup Failed!" << endl;
-			Log.Error("Database Name Error, Backup Failed!");
+			cout << "Database Name Error, Backup Failed!" << endl;
+			//Log.Error("Database Name Error, Backup Failed!");
 		}
 		else {
 			string time = Util::get_date_time();
@@ -129,9 +132,11 @@ main(int argc, char * argv[])
 			string sys_cmd = "mv " + backup_path + " " + _backup_path;
 			system(sys_cmd.c_str());
 			long tv_end = Util::get_cur_time();
-			stringstream ss;
+
+			cout << "DB:" << db_name << " Backup Successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+			/*stringstream ss;
 			ss << "DB:"<<db_name<<" Backup Successfully! Used " << (tv_end - tv_begin) << " ms";
-			Log.Info(ss.str().c_str());
+			Log.Info(ss.str().c_str());*/
 			/*cout << "Time:" + time << endl;
 			cout << "DB:" + db_name + " Backup done!" << endl;*/
 			
