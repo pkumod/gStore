@@ -1539,299 +1539,299 @@ int initialize(int argc, char *argv[])
 
 	//GET-example for the path /?operation=build&db_name=[db_name]&ds_path=[ds_path]&username=[username]&password=[password], responds with the matched string in path
 	//i.e. database name and dataset path
-	server.resource["^/%3[F|f]operation%3[D|d]build%26db_name%3[D|d](.*)%26ds_path%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		build_handler(server, response, request, "GET");
-    };
+	//server.resource["^/%3[F|f]operation%3[D|d]build%26db_name%3[D|d](.*)%26ds_path%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	build_handler(server, response, request, "GET");
+ //   };
 
-  server.resource["^/\\?operation=build&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		string req_url = request->path;
-		cout << "request url: " << req_url << endl;
-		build_handler(server, response, request, "GET");
-	};
+ // server.resource["^/\\?operation=build&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	//	string req_url = request->path;
+	//	cout << "request url: " << req_url << endl;
+	//	build_handler(server, response, request, "GET");
+	//};
 
-	//POST-example for the path /build, responds with the matched string in path
-	server.resource["/build"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		build_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /build, responds with the matched string in path
+	//server.resource["/build"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	build_handler(server, response, request, "POST");
+	//};
 
-	//GET-example for the path /?operation=load&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]load%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		load_handler(server, response, request, "GET");
-	};
+	////GET-example for the path /?operation=load&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
+ //   server.resource["^/%3[F|f]operation%3[D|d]load%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	load_handler(server, response, request, "GET");
+	//};
 
-  server.resource["^/\\?operation=load&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		string req_url = request->path;
-		cout << "request url: " << req_url << endl;
-		load_handler(server, response, request, "GET");
-	};
+ // server.resource["^/\\?operation=load&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	//	string req_url = request->path;
+	//	cout << "request url: " << req_url << endl;
+	//	load_handler(server, response, request, "GET");
+	//};
 
-	//POST-example for the path /load, responds with the matched string in path
-	server.resource["/load"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		load_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /load, responds with the matched string in path
+	//server.resource["/load"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	load_handler(server, response, request, "POST");
+	//};
 
-    //GET-example for the path /?operation=unload&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]unload%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		unload_handler(server, response, request, "GET");
-    };
+ //   //GET-example for the path /?operation=unload&db_name=[db_name]&username=[username]&password=[password], responds with the matched string in path
+ //   server.resource["^/%3[F|f]operation%3[D|d]unload%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	unload_handler(server, response, request, "GET");
+ //   };
 
-  server.resource["^/\\?operation=unload&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		string req_url = request->path;
-		cout << "request url: " << req_url << endl;
-		unload_handler(server, response, request, "GET");
-	};
+ // server.resource["^/\\?operation=unload&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	//	string req_url = request->path;
+	//	cout << "request url: " << req_url << endl;
+	//	unload_handler(server, response, request, "GET");
+	//};
 
-	//POST-example for the path /unload, responds with the matched string in path
-	server.resource["/unload"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		unload_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /unload, responds with the matched string in path
+	//server.resource["/unload"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	unload_handler(server, response, request, "POST");
+	//};
 
-    //GET-example for the path /?operation=login&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]login%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		login_handler(server, response, request, "GET");
-    };
+ //   //GET-example for the path /?operation=login&username=[username]&password=[password], responds with the matched string in path
+ //   server.resource["^/%3[F|f]operation%3[D|d]login%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	login_handler(server, response, request, "GET");
+ //   };
 
-  server.resource["^/\\?operation=login&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		string req_url = request->path;
-		cout << "request url: " << req_url << endl;
-		login_handler(server, response, request, "GET");
-	};
+ // server.resource["^/\\?operation=login&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	//	string req_url = request->path;
+	//	cout << "request url: " << req_url << endl;
+	//	login_handler(server, response, request, "GET");
+	//};
 
-	//POST-example for the path /login, responds with the matched string in path
-	server.resource["/login"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		login_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /login, responds with the matched string in path
+	//server.resource["/login"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	login_handler(server, response, request, "POST");
+	//};
 
-	//GET-example for the path /?operation=user&type=[type]&username1=[username1]&password1=[password1]&username2=[username2]&addition=[password2 || db_name], responds with the matched string in path
-	server.resource["^/%3[F|f]operation%3[D|d]user%26type%3[D|d](.*)%26username1%3[D|d](.*)%26password1%3[D|d](.*)%26username2%3[D|d](.*)%26addition%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		user_handler(server, response, request, "GET");
-    };
+	////GET-example for the path /?operation=user&type=[type]&username1=[username1]&password1=[password1]&username2=[username2]&addition=[password2 || db_name], responds with the matched string in path
+	//server.resource["^/%3[F|f]operation%3[D|d]user%26type%3[D|d](.*)%26username1%3[D|d](.*)%26password1%3[D|d](.*)%26username2%3[D|d](.*)%26addition%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	user_handler(server, response, request, "GET");
+ //   };
 
-  server.resource["^/\\?operation=user&type=(.*)&username1=(.*)&password1=(.*)&username2=(.*)&addition=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		user_handler(server, response, request, "GET");
-    };
+ // server.resource["^/\\?operation=user&type=(.*)&username1=(.*)&password1=(.*)&username2=(.*)&addition=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	//	user_handler(server, response, request, "GET");
+ //   };
 
-	//POST-example for the path /user, responds with the matched string in path
-	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		user_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /user, responds with the matched string in path
+	//server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	user_handler(server, response, request, "POST");
+	//};
 
-	//GET-example for the path /?operation=showUser&username=[username]&password=[password], responds with the matched string in path
-	server.resource["^/%3[F|f]operation%3[D|d]showUser%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		showUser_handler(server, response, request, "GET");
-	};
+	////GET-example for the path /?operation=showUser&username=[username]&password=[password], responds with the matched string in path
+	//server.resource["^/%3[F|f]operation%3[D|d]showUser%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	showUser_handler(server, response, request, "GET");
+	//};
 
-  server.resource["^/\\?operation=showUser&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		showUser_handler(server, response, request, "GET");
-	};
+ // server.resource["^/\\?operation=showUser&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	//	showUser_handler(server, response, request, "GET");
+	//};
 
-	//POST-example for the path /showUser, responds with the matched string in path
-	server.resource["/showUser"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		showUser_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /showUser, responds with the matched string in path
+	//server.resource["/showUser"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	showUser_handler(server, response, request, "POST");
+	//};
 
-	//GET-example for the path /?operation=query&username=[username]&password=[password]&db_name=[db_name]&format=[format]&sparql=[sparql], responds with the matched string in path
-	server.resource["^/%3[F|f]operation%3[D|d]query%26username%3[D|d](.*)%26password%3[D|d](.*)%26db_name%3[D|d](.*)%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		query_handler1(server, response, request, "GET");
-    };
+	////GET-example for the path /?operation=query&username=[username]&password=[password]&db_name=[db_name]&format=[format]&sparql=[sparql], responds with the matched string in path
+	//server.resource["^/%3[F|f]operation%3[D|d]query%26username%3[D|d](.*)%26password%3[D|d](.*)%26db_name%3[D|d](.*)%26format%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	query_handler1(server, response, request, "GET");
+ //   };
 
-  server.resource["^/\\?operation=query&username=(.*)&password=(.*)&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		query_handler1(server, response, request, "GET");
-    };
+ // server.resource["^/\\?operation=query&username=(.*)&password=(.*)&db_name=(.*)&format=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	//	query_handler1(server, response, request, "GET");
+ //   };
 
-	//POST-example for the path /query, responds with the matched string in path
-	server.resource["/query"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		query_handler1(server, response, request, "POST");
-	};
+	////POST-example for the path /query, responds with the matched string in path
+	//server.resource["/query"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	query_handler1(server, response, request, "POST");
+	//};
 
-	//GET-example for the path /?operation=export&db_name=[db_name]&ds_path=[ds_path]&username=[username]&password=[password], responds with the matched string in path
-	server.resource["^/%3[F|f]operation%3[D|d]export%26db_name%3[D|d](.*)%26ds_path%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		export_handler(server, response, request, "GET");
-    };
+	////GET-example for the path /?operation=export&db_name=[db_name]&ds_path=[ds_path]&username=[username]&password=[password], responds with the matched string in path
+	//server.resource["^/%3[F|f]operation%3[D|d]export%26db_name%3[D|d](.*)%26ds_path%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	export_handler(server, response, request, "GET");
+ //   };
 
-  server.resource["^/\\?operation=export&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		export_handler(server, response, request, "GET");
-    };
+ // server.resource["^/\\?operation=export&db_name=(.*)&ds_path=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	//	export_handler(server, response, request, "GET");
+ //   };
 
-	//POST-example for the path /export, responds with the matched string in path
-	server.resource["/export"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		export_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /export, responds with the matched string in path
+	//server.resource["/export"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	export_handler(server, response, request, "POST");
+	//};
 
-	//GET-example for the path /?operation=check&username=[username]&password=[password], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]check%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		check_handler(server, response, request, "GET");
-    };
+	////GET-example for the path /?operation=check&username=[username]&password=[password], responds with the matched string in path
+ //   server.resource["^/%3[F|f]operation%3[D|d]check%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	check_handler(server, response, request, "GET");
+ //   };
 
-  server.resource["^/\\?operation=check&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		check_handler(server, response, request, "GET");
-    };
+ // server.resource["^/\\?operation=check&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	//	check_handler(server, response, request, "GET");
+ //   };
 
-	//POST-example for the path /check, responds with the matched string in path
-	server.resource["/check"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		check_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /check, responds with the matched string in path
+	//server.resource["/check"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	check_handler(server, response, request, "POST");
+	//};
 
-	server.resource["^/%3[F|f]operation%3[D|d]init%26db_list%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26is_backup%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		init_handler(server, response, request, "GET");
-    };
+	//server.resource["^/%3[F|f]operation%3[D|d]init%26db_list%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26is_backup%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	init_handler(server, response, request, "GET");
+ //   };
 
-	server.resource["^/?operation=init&db_list=(.*)&username=(.*)&password=(.*)&is_backup=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		init_handler(server, response, request, "GET");
-    };
+	//server.resource["^/?operation=init&db_list=(.*)&username=(.*)&password=(.*)&is_backup=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	init_handler(server, response, request, "GET");
+ //   };
 
-	//POST-example for the path /check, responds with the matched string in path
-	server.resource["/check"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		init_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /check, responds with the matched string in path
+	//server.resource["/check"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	init_handler(server, response, request, "POST");
+	//};
 
-    //GET-example for the path /?operation=drop&db_name=[db_name]&username=[username]&password=[password]&is_backup=[true|false], responds with the matched string in path
-    server.resource["^/%3[F|f]operation%3[D|d]drop%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26is_backup%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		drop_handler(server, response, request, "GET");
-    };
+ //   //GET-example for the path /?operation=drop&db_name=[db_name]&username=[username]&password=[password]&is_backup=[true|false], responds with the matched string in path
+ //   server.resource["^/%3[F|f]operation%3[D|d]drop%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26is_backup%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	drop_handler(server, response, request, "GET");
+ //   };
 
-  server.resource["^/\\?operation=drop&db_name=(.*)&username=(.*)&password=(.*)&is_backup=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		drop_handler(server, response, request, "GET");
-    };
+ // server.resource["^/\\?operation=drop&db_name=(.*)&username=(.*)&password=(.*)&is_backup=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	//	drop_handler(server, response, request, "GET");
+ //   };
 
-	//POST-example for the path /drop, responds with the matched string in path
-	server.resource["/drop"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		drop_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /drop, responds with the matched string in path
+	//server.resource["/drop"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	drop_handler(server, response, request, "POST");
+	//};
 
-	server.resource["^/%3[F|f]operation%3[D|d]refresh%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		refresh_handler(server, response, request, "GET");
-    };
+	//server.resource["^/%3[F|f]operation%3[D|d]refresh%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	refresh_handler(server, response, request, "GET");
+ //   };
 
-  server.resource["^/\\?operation=refresh&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-		refresh_handler(server, response, request, "GET");
-    };
+ // server.resource["^/\\?operation=refresh&db_name=(.*)&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	//	refresh_handler(server, response, request, "GET");
+ //   };
 
-	//POST-example for the path /drop, responds with the matched string in path
-	server.resource["/refresh"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		refresh_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /drop, responds with the matched string in path
+	//server.resource["/refresh"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	refresh_handler(server, response, request, "POST");
+	//};
 
-	server.resource["^/%3[F|f]operation%3[D|d]parameter%26db_name%3[D|d](.*)%26type%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26value%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		parameter_handler(server, response, request, "GET");
-    };
+	//server.resource["^/%3[F|f]operation%3[D|d]parameter%26db_name%3[D|d](.*)%26type%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26value%3[D|d](.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	parameter_handler(server, response, request, "GET");
+ //   };
 
-	server.resource["^/?operation=parameter&db_name=(.*)&type=(.*)&username=(.*)&password=(.*)&value=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		parameter_handler(server, response, request, "GET");
-    };
+	//server.resource["^/?operation=parameter&db_name=(.*)&type=(.*)&username=(.*)&password=(.*)&value=(.*)$"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	parameter_handler(server, response, request, "GET");
+ //   };
 
-	//POST-example for the path /user, responds with the matched string in path
-	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		parameter_handler(server, response, request, "POST");
-	};
-	
-	server.resource["^/%3[F|f]operation%3[D|d]begin%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26isolevel%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		begin_handler(server, response, request, "GET");
-	};
+	////POST-example for the path /user, responds with the matched string in path
+	//server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	parameter_handler(server, response, request, "POST");
+	//};
+	//
+	//server.resource["^/%3[F|f]operation%3[D|d]begin%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26isolevel%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	begin_handler(server, response, request, "GET");
+	//};
 
-	server.resource["^/?operation=begin&db_name=(.*)&username=(.*)&password=(.*)&isolevel=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		begin_handler(server, response, request, "GET");
-	};
+	//server.resource["^/?operation=begin&db_name=(.*)&username=(.*)&password=(.*)&isolevel=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	begin_handler(server, response, request, "GET");
+	//};
 
-	//POST-example for the path /user, responds with the matched string in path
-	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		begin_handler(server, response, request, "POST");
-	};
-	
-	server.resource["^/%3[F|f]operation%3[D|d]tquery%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26TID%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		tquery_handler(server, response, request, "GET");
-	};
+	////POST-example for the path /user, responds with the matched string in path
+	//server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	begin_handler(server, response, request, "POST");
+	//};
+	//
+	//server.resource["^/%3[F|f]operation%3[D|d]tquery%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26TID%3[D|d](.*)%26sparql%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	tquery_handler(server, response, request, "GET");
+	//};
 
-	server.resource["^/?operation=tquery&db_name=(.*)&username=(.*)&password=(.*)&TID=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		tquery_handler(server, response, request, "GET");
-	};
+	//server.resource["^/?operation=tquery&db_name=(.*)&username=(.*)&password=(.*)&TID=(.*)&sparql=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	tquery_handler(server, response, request, "GET");
+	//};
 
-	//POST-example for the path /user, responds with the matched string in path
-	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		tquery_handler(server, response, request, "POST");
-	};
-	
-	server.resource["^/%3[F|f]operation%3[D|d]commit%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26TID%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		commit_handler(server, response, request, "GET");
-	};
+	////POST-example for the path /user, responds with the matched string in path
+	//server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	tquery_handler(server, response, request, "POST");
+	//};
+	//
+	//server.resource["^/%3[F|f]operation%3[D|d]commit%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26TID%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	commit_handler(server, response, request, "GET");
+	//};
 
-	server.resource["^/?operation=commit&db_name=(.*)&username=(.*)&password=(.*)&TID=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		commit_handler(server, response, request, "GET");
-	};
+	//server.resource["^/?operation=commit&db_name=(.*)&username=(.*)&password=(.*)&TID=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	commit_handler(server, response, request, "GET");
+	//};
 
-	//POST-example for the path /user, responds with the matched string in path
-	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		commit_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /user, responds with the matched string in path
+	//server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	commit_handler(server, response, request, "POST");
+	//};
 
-	server.resource["^/%3[F|f]operation%3[D|d]rollback%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26TID%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		rollback_handler(server, response, request, "GET");
-	};
+	//server.resource["^/%3[F|f]operation%3[D|d]rollback%26db_name%3[D|d](.*)%26username%3[D|d](.*)%26password%3[D|d](.*)%26TID%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	rollback_handler(server, response, request, "GET");
+	//};
 
-	server.resource["^/?operation=rollback&db_name=(.*)&username=(.*)&password=(.*)&TID=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		rollback_handler(server, response, request, "GET");
-	};
+	//server.resource["^/?operation=rollback&db_name=(.*)&username=(.*)&password=(.*)&TID=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	rollback_handler(server, response, request, "GET");
+	//};
 
-	//POST-example for the path /user, responds with the matched string in path
-	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		rollback_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /user, responds with the matched string in path
+	//server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	rollback_handler(server, response, request, "POST");
+	//};
 
-	server.resource["^/%3[F|f]operation%3[D|d]txnlog%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		txnlog_handler(server, response, request, "GET");
-	};
+	//server.resource["^/%3[F|f]operation%3[D|d]txnlog%26username%3[D|d](.*)%26password%3[D|d](.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	txnlog_handler(server, response, request, "GET");
+	//};
 
-	server.resource["^/?operation=txnlog&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		txnlog_handler(server, response, request, "GET");
-	};
+	//server.resource["^/?operation=txnlog&username=(.*)&password=(.*)$"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	txnlog_handler(server, response, request, "GET");
+	//};
 
-	//POST-example for the path /user, responds with the matched string in path
-	server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
-	{
-		txnlog_handler(server, response, request, "POST");
-	};
+	////POST-example for the path /user, responds with the matched string in path
+	//server.resource["/user"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	//{
+	//	txnlog_handler(server, response, request, "POST");
+	//};
 
 #endif
 
