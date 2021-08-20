@@ -60,6 +60,21 @@ private:
 
 using IDCachesSharePtr = std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<IDList>>>;
 
+/**
+ * extending IDList, each element in IDListWithAppending is (main_key,[attached elements])
+ * join operation will join  (1,[2 3]) and (1,[4 5]) to (1,[2 3 4 5])
+ */
+class IDListWithAppending
+{
+  std::shared_ptr<std::map<
+      TYPE_ENTITY_LITERAL_ID, // main key
+      std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> // attached elements
+      >> contents_;
+ public:
+  IDListWithAppending(TYPE_ENTITY_LITERAL_ID* id_list, size_t records_num,
+                      size_t record_len, size_t main_key_position);
+  void Intersect(IDListWithAppending& other);
+};
 
 #endif //_QUERY_IDLIST_H
 

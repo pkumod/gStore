@@ -16,10 +16,27 @@
 #include "../../Database/TableOperator.h"
 
 #define TOPK_DEBUG_INFO
+
+namespace TopKUtil{
+enum class EdgeDirection{IN,OUT,NoEdge};
+
+// something like FeedTwoNodes, but this one is only used in
+// Top-K searching
+struct TreeEdge{
+    std::vector<bool> predicate_constant_;
+    std::vector<TYPE_ENTITY_LITERAL_ID> predicate_ids_;
+    std::vector<TopKUtil::EdgeDirection> directions_;
+    void ChangeOrder();
+};
+
+}
+
+
 // #define SHOW_SCORE
 // only Vars
 struct TopKTreeNode{
   int var_id;
+  std::vector<std::shared_ptr<TopKUtil::TreeEdge>> tree_edges_;
   std::vector<TopKTreeNode*> descendents_;
 };
 
@@ -33,13 +50,9 @@ struct TopKTreeNode{
  */
 class TopKTreeSearchPlan {
  private:
-  std::size_t CountDepth(std::map<int, set<int>>& neighbours, TYPE_ENTITY_LITERAL_ID root_id, std::size_t total_vars_num);
+  std::size_t CountDepth(map<TYPE_ENTITY_LITERAL_ID,vector<TYPE_ENTITY_LITERAL_ID>> &neighbours, TYPE_ENTITY_LITERAL_ID root_id, std::size_t total_vars_num);
  public:
-  // Choose A shortest tree to do top-k
-  explicit TopKTreeSearchPlan(BasicQuery* basic_query, Statistics *statistics, QueryTree::Order expression,
-                              shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
-
-  explicit TopKTreeSearchPlan(shared_ptr<BGPQuery> bgp_query, Statistics *statistics, QueryTree::Order expression,
+  explicit TopKTreeSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore kv_store, Statistics *statistics, QueryTree::Order expression,
                               shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
   // The first tree to search
   TopKTreeNode* tree_root_;
@@ -92,7 +105,7 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*>  GenerateIteratorNode(int parent_
                                                                      std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
                                                                 TopKTreeNode *child_tree_node,Env *env);
 
-FRIterator* BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,Env *env);
+FRIterator* BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> tree_search_plan,Env *env);
 
 void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
 

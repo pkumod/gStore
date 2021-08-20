@@ -4,12 +4,19 @@
 
 #include "TopKUtil.h"
 
-
-std::size_t TopKTreeSearchPlan::CountDepth(std::map<int, set<int>>& neighbours,
+/**
+ * count the tree depth regarding the root_id as root.
+ * @note must be a tree, not a graph with loops
+ * @param neighbours the tree structure
+ * @param root_id root
+ * @param total_vars_num the node number of the tree
+ * @return the tree depth
+ */
+std::size_t TopKTreeSearchPlan::CountDepth(map<TYPE_ENTITY_LITERAL_ID,vector<TYPE_ENTITY_LITERAL_ID>>& neighbours,
                                            TYPE_ENTITY_LITERAL_ID root_id,
                                            std::size_t total_vars_num) {
-  bool*  vars_used_vec = new bool[total_vars_num];
-  std::size_t *  vars_depth = new std::size_t [total_vars_num];
+  auto vars_used_vec = new bool[total_vars_num];
+  auto vars_depth = new std::size_t [total_vars_num];
   memset(vars_used_vec,0,total_vars_num);
   memset(vars_depth,0,total_vars_num);
   vars_used_vec[root_id] = true;
@@ -37,44 +44,79 @@ std::size_t TopKTreeSearchPlan::CountDepth(std::map<int, set<int>>& neighbours,
   return *std::max_element(vars_depth,vars_depth+total_vars_num);
 }
 
-
-/**
- * Choose A shallowest tree to do top-k query
- *
- * @param basic_query
- * @param statistics
- */
-TopKTreeSearchPlan::TopKTreeSearchPlan(BasicQuery *basic_query, Statistics *statistics, QueryTree::Order expression,
+TopKTreeSearchPlan::TopKTreeSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore kv_store,
+                                       Statistics *statistics, QueryTree::Order expression,
                                        shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches)
 {
-  auto total_vars_num = basic_query->getVarNum();
+  auto total_vars_num = bgp_query->get_total_var_num();
+  TYPE_ENTITY_LITERAL_ID CONSTANT = -1;
 
-  auto var_descriptors_ = std::make_shared<std::vector<OldVarDescriptor>>();
-  // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
-  for(int i = 0;i<total_vars_num; i++) {
-    var_descriptors_->emplace_back(OldVarDescriptor::VarType::EntityType ,basic_query->getVarName(i),basic_query);
-  }
+  // all the information
+  // a neighbour may have more than one edge
+  map<TYPE_ENTITY_LITERAL_ID ,vector<TYPE_ENTITY_LITERAL_ID>> neighbours;
+  map<TYPE_ENTITY_LITERAL_ID,vector<vector<bool>>> predicates_constant;
+  map<TYPE_ENTITY_LITERAL_ID,vector<vector<TYPE_ENTITY_LITERAL_ID>>> predicates_ids;
+  map<TYPE_ENTITY_LITERAL_ID,vector<vector<TopKUtil::EdgeDirection>>> directions;
 
-  std::map<int,set<int>> neighbours;
-  for(int i = 0;i< total_vars_num ; i++)
+  // constructing the information structure
+  for(decltype(total_vars_num) i = 0;i< total_vars_num ; i++)
   {
+    map<TYPE_ENTITY_LITERAL_ID,size_t> neighbour_position;
 
-    neighbours[i] = set<int>();
-    auto degree = basic_query->getVarDegree(i);
+    neighbours[i] = decltype(neighbours.begin()->second)();
+    predicates_constant[i] = decltype(predicates_constant.begin()->second)();
+    predicates_ids[i] = decltype(predicates_ids.begin()->second)();
+    directions[i] = decltype(directions.begin()->second)();
 
-#ifdef TOPK_DEBUG_INFO
-    std::cout<<"["<<i<<"]:";
-#endif
+    auto var_descriptor = bgp_query->get_vardescrip_by_index(i);
+    if(var_descriptor->var_type_ == VarDescriptor::VarType::Predicate)
+      continue;
 
-    for(int j=0;j<degree;j++) {
-      auto nei_id = basic_query->getEdgeNeighborID(i, j);
-      if(nei_id<0)
+    auto &edge_index_list = var_descriptor->so_edge_index_;
+    auto degree = bgp_query->get_var_degree(i);
+    auto v_name = bgp_query->get_var_name_by_id(i);
+    for(auto edge_id:edge_index_list) {
+      decltype(i) nei_id;
+      auto &triple = bgp_query->get_triple_by_index(edge_id);
+      decltype(triple.object) nei_name;
+      TopKUtil::EdgeDirection direction=TopKUtil::EdgeDirection::NoEdge;
+      if(triple.subject==v_name) {
+        nei_name = triple.object;
+        direction = TopKUtil::EdgeDirection::OUT;
+      }
+      else {
+        nei_name = triple.subject;
+        direction = TopKUtil::EdgeDirection::IN;
+      }
+      if(nei_name[0]=='?')
+        nei_id = CONSTANT;
+
+      if(nei_id==CONSTANT)
         continue;
 
-#ifdef TOPK_DEBUG_INFO
-        std::cout<<nei_id<<" ";
-#endif
-      neighbours[i].insert(nei_id);
+      TYPE_ENTITY_LITERAL_ID predicates_id = CONSTANT;
+      auto predicate_constant = triple.predicate[0]!='?';
+      if(predicate_constant)
+        predicates_id = kv_store.getIDByPredicate(triple.predicate);
+      else
+        predicates_id = bgp_query->get_var_id_by_name(triple.predicate);
+
+      size_t neighbour_pos;
+      if(neighbour_position.find(nei_id)==neighbour_position.end())
+      {
+        neighbours[i].push_back(nei_id);
+        neighbour_pos = neighbour_position.size();
+        neighbour_position[nei_id] = neighbour_pos;
+
+        predicates_constant[i].emplace_back();
+        predicates_ids[i].emplace_back();
+        directions[i].emplace_back();
+      }
+
+
+      predicates_constant[i][neighbour_pos].push_back(predicate_constant);
+      predicates_ids[i][neighbour_pos].push_back(predicates_id);
+      directions[i][neighbour_pos].push_back(direction);
     }
 
 #ifdef TOPK_DEBUG_INFO
@@ -84,70 +126,153 @@ TopKTreeSearchPlan::TopKTreeSearchPlan(BasicQuery *basic_query, Statistics *stat
   }
   int min_score_root = -1;
   auto min_score = DBL_MAX;
-  for(int i = 0;i< total_vars_num ; i++)
+
+  // get the root id by arg min( candidates * tree depth )
+  // if all nodes don't have candidates, choose the min tree depth
+  for(decltype(total_vars_num)  i = 0;i< total_vars_num ; i++)
   {
-    // need_retrieve = degree > 1
-    // so this line check so-called satellites nodes
-    if((*var_descriptors_)[i].IsSatellite())
+    auto var_descriptor = bgp_query->get_vardescrip_by_index(i);
+    if(var_descriptor->var_type_ == VarDescriptor::VarType::Predicate)
       continue;
-    if(id_caches->size()&&
-      id_caches->find((*var_descriptors_)[i].basic_query_id)==id_caches->end())
+
+    if(id_caches->size()&&id_caches->find(i)==id_caches->end())
       continue;
+
     // count the its depth if regard node i as root
     auto tree_depth = this->CountDepth(neighbours, i, total_vars_num);
-    auto candidates_size =  (*id_caches)[(*var_descriptors_)[i].basic_query_id]->size();
-    double score = tree_depth * candidates_size;
-    if(score<min_score)
+    auto candidates_size = id_caches->find(i)->second->size();
+    double score;
+    if(id_caches->size()>0)
+      score = tree_depth * candidates_size;
+    else
+      score = tree_depth;
+
+    if (score < min_score)
     {
       min_score_root = i;
       min_score = score;
     }
   }
+
 #ifdef TOPK_DEBUG_INFO
   cout << "chosen root node:" << min_score_root << endl;
 #endif
+
   // construct the query tree
   bool*  vars_used_vec = new bool[total_vars_num];
   memset(vars_used_vec,0,total_vars_num*sizeof(bool));
   auto root_id = min_score_root;
   vars_used_vec[root_id] = true;
   std::stack<TopKTreeNode*> explore_id;
+
   TopKTreeNode* r = new TopKTreeNode;
   r->var_id = root_id;
   explore_id.push(r);
 
+  vector<StepOperation> edges_after_;
   while(!explore_id.empty()) {
     auto now_node = explore_id.top();
+    auto now_id = now_node->var_id;
     explore_id.pop();
 #ifdef TOPK_DEBUG_INFO
     cout << "pop " << now_node->var_id << " children num:" << neighbours[now_node->var_id].size();
     if (neighbours[now_node->var_id].size()) {
-    cout<<"[";
-    for(auto child_id:neighbours[now_node->var_id])
-      cout<<child_id<<" ";
-    cout<<"]";
+      cout<<"[";
+      for(auto child_id:neighbours[now_node->var_id])
+        cout<<child_id<<" ";
+      cout<<"]";
     }
     cout<<endl;
 #endif
 
-    for(const auto& child_id: neighbours[now_node->var_id])
+    auto child_num = neighbours[now_id].size();
+    for(decltype(child_num) child_i =0;child_i < child_num;child_i++)
     {
+      auto child_id= neighbours[now_id][child_i];
+
+      // below are vectors
+      auto two_var_edges_num = predicates_ids.size();
+      auto two_var_predicate_ids = predicates_ids[now_id][child_i];
+      auto two_var_predicate_constants = predicates_constant[now_id][child_i];
+      auto two_var_directions = directions[now_id][child_i];
+
       if(vars_used_vec[child_id])
+      {
+        for(decltype(two_var_edges_num) edge_i =0;edge_i<two_var_edges_num;edge_i++)
+        {
+          auto predicate_id = two_var_predicate_ids[edge_i];
+          auto predicate_constant =  two_var_predicate_constants[edge_i];
+          auto direction =  two_var_directions[edge_i];
+          // leaves the edge to process after the main procedure
+          EdgeInfo edge_info;
+          EdgeConstantInfo edge_constant_info(false,predicate_constant, false);
+          if(direction == TopKUtil::EdgeDirection::IN)
+          {
+            if(predicate_constant)
+              edge_info = EdgeInfo(child_id,predicate_id,now_id,JoinMethod::po2s);
+            else
+              edge_info = EdgeInfo(child_id,predicate_id,now_id,JoinMethod::o2sp);
+          }
+          else // TopKUtil::EdgeDirection::OUT
+          {
+            if(predicate_constant)
+              edge_info = EdgeInfo(now_id,predicate_id,child_id,JoinMethod::sp2o);
+            else
+              edge_info = EdgeInfo(now_id,predicate_id,child_id,JoinMethod::s2po);
+          }
+
+          // add this edge to the postponed edges set
+          edges_after_.emplace_back();
+          auto &step_op = edges_after_.back();
+          if(predicate_constant)
+          {
+            step_op.join_type_  = StepOperation::JoinType::EdgeCheck;
+            step_op.edge_filter_->node_to_join_ = child_id;
+            step_op.edge_filter_->edges_->push_back(edge_info);
+            step_op.edge_filter_->edges_constant_info_->push_back(edge_constant_info);
+          }
+          else
+          {
+            step_op.join_type_  = StepOperation::JoinType::JoinTwoNodes;
+            if(direction == TopKUtil::EdgeDirection::IN) // o2sp
+            {
+              step_op.join_two_node_->node_to_join_1_ =edge_info.s_;
+              step_op.join_two_node_->node_to_join_2_ =edge_info.p_;
+            }
+            else // s2po
+            {
+              step_op.join_two_node_->node_to_join_1_ =edge_info.p_;
+              step_op.join_two_node_->node_to_join_2_ =edge_info.o_;
+            }
+            step_op.join_two_node_->edges_ = edge_info;
+            step_op.join_two_node_->edges_constant_info_ = edge_constant_info;
+          }
+        }
         continue;
+      }
       vars_used_vec[child_id] = true;
       auto child_tree = new TopKTreeNode;
+
+
       child_tree->var_id = child_id;
+
       now_node->descendents_.push_back(child_tree);
+      auto tree_edge_ptr = make_shared<TopKUtil::TreeEdge>();
+      tree_edge_ptr->predicate_constant_ = std::move(two_var_predicate_constants);
+      tree_edge_ptr->predicate_ids_ = std::move(two_var_predicate_ids);
+      tree_edge_ptr->directions_ = std::move(two_var_directions);
+      now_node->tree_edges_.push_back(tree_edge_ptr);
+      tree_edge_ptr->ChangeOrder();
 #ifdef TOPK_DEBUG_INFO
       cout << "push " << child_tree->var_id<<endl;
 #endif
       explore_id.push(child_tree);
     }
-
   }
   delete[] vars_used_vec;
   this->tree_root_ = r;
 }
+
 
 
 TopKTreeSearchPlan::~TopKTreeSearchPlan() {
@@ -237,8 +362,8 @@ void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_nod
   std::cout<<"Node:"<<comp_tree_node->val<<" "<<comp_tree_node->lchild->val<<" "<<comp_tree_node->rchild->val<<std::endl;
 #endif
   // if both of the child are leaves
-  if(comp_tree_node->lchild->lchild==NULL&&comp_tree_node->lchild->rchild==NULL&&
-      comp_tree_node->rchild->lchild==NULL&&comp_tree_node->rchild->rchild==NULL)
+  if(comp_tree_node->lchild->lchild==nullptr&&comp_tree_node->lchild->rchild==nullptr&&
+      comp_tree_node->rchild->lchild==nullptr&&comp_tree_node->rchild->rchild==nullptr)
   {
 
     if (comp_tree_node->lchild->val.at(0) == '?') // ?x * 0.1
@@ -272,8 +397,7 @@ std::shared_ptr<std::map<std::string,double>> TopKUtil::getVarCoefficients(Query
   GetVarCoefficientsTreeNode(order.comp_tree_root, *r, ss);
 
 #ifdef TOPK_DEBUG_INFO
-  //std::cout<<"TreeStructure:"<<std::endl;
-  //order.comp_tree_root->print(0);
+
   std::cout<<"VarCoefficients:"<<std::endl;
   for(const auto& pair:*r)
   {
@@ -329,7 +453,7 @@ void TopKUtil::FreeGlobalIterators(std::shared_ptr<std::vector<std::shared_ptr<s
   }
 }
 
-FRIterator *TopKUtil::BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> &tree_search_plan,Env *env){
+FRIterator *TopKUtil::BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> tree_search_plan,Env *env){
 
   auto root_plan = tree_search_plan->tree_root_;
   auto root_var = root_plan->var_id;
@@ -654,6 +778,7 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
 
 
   // constructing parents' FRs
+  // also add predicate information into FRs
   for(auto parent_id:parent_var_candidates) {
     auto fr = new FRIterator();
     parents_FRs[parent_id] = fr;
@@ -666,3 +791,28 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
 
 }
 
+/**
+ * Reorder the TreeEdge structure, making
+ * edges with constant edges pop first
+ */
+void TopKUtil::TreeEdge::ChangeOrder() {
+  // [0,const_end) stores constant edge
+  // [const_end,end) stores variable edge
+  size_t const_end = 0;
+  auto edges_num = predicate_constant_.size();
+  for(decltype(edges_num) i=0;i<edges_num;i++)
+  {
+    // const
+    if(predicate_constant_[i] == true)
+    {
+      // exchange i with const_end
+      if(i!=const_end)
+      {
+        std::swap(predicate_constant_[i],predicate_constant_[const_end]);
+        std::swap(predicate_ids_[i],predicate_ids_[const_end]);
+        std::swap(directions_[i],directions_[const_end]);
+      }
+      const_end++;
+    }
+  }
+}
