@@ -175,6 +175,20 @@ bool txnlog_handler(const HttpServer& server, const shared_ptr<HttpServer::Respo
 void signalHandler(int signum);
 //=============================================================================
 
+string checkparamValue(string paramname, string value);
+
+bool checkdbexist(string db_name);
+
+bool checkdbload(string db_name);
+
+bool trylockdb(std::map<std::string, struct DBInfo*>::iterator it_already_build);
+
+void sendResponseMsg(int code, string msg, const shared_ptr<HttpServer::Response>& response);
+
+void build_thread(const shared_ptr<HttpServer::Response>& response, string db_name, string db_path, string username, string password);
+
+void load_thread(const shared_ptr<HttpServer::Response>& response, string db_name);
+
 //TODO: use lock to protect logs when running in multithreading environment
 FILE* query_logfp = NULL;
 string queryLog = "logs/endpoint/query.log";
@@ -2481,6 +2495,211 @@ bool download_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 	return true;
 }
 
+void build_thread(const shared_ptr<HttpServer::Response>& response,string db_name,string db_path,string username,string password)
+{
+	if (db_path == SYSTEM_PATH)
+	{
+		string error = "You have no rights to access system files";
+		sendResponseMsg(1002, error, response);
+		return;
+	}
+	string result = checkparamValue("db_name", db_name);
+	if (result.empty() == false)
+	{
+		sendResponseMsg(1003, result, response);
+		return;
+	}
+	
+	//check if database named [db_name] is already built
+	if (checkdbexist(db_name))
+	{
+		string error = "database already built.";
+		sendResponseMsg(1004, error, response);
+		return;
+	}
+
+	//database += ".db";
+	string dataset = db_path;
+
+	cout << "Import dataset to build database..." << endl;
+	cout << "DB_store: " << database << "\tRDF_data: " << dataset << endl;
+	int len = database.length();
+	Database* current_database = new Database(database);
+	bool flag = current_database->build(dataset);
+	delete current_database;
+	current_database = NULL;
+	if (!flag)
+	{
+		string error = "Import RDF file to database failed.";
+		string cmd = "rm -r " + database + ".db";
+		system(cmd.c_str());
+		sendResponseMsg(1005, error, response);
+		return;
+	}
+
+	ofstream f;
+	f.open("./" + database + ".db/success.txt");
+	f.close();
+
+	//by default, one can query or load or unload the database that is built by itself, so add the database name to the privilege set of the user
+	if (addPrivilege(username, "query", db_name) == 0 || addPrivilege(username, "load", db_name) == 0 || addPrivilege(username, "unload", db_name) == 0 || addPrivilege(username, "backup", db_name) == 0 || addPrivilege(username, "restore", db_name) == 0 || addPrivilege(username, "export", db_name) == 0)
+	{
+		string error = "add query or load or unload privilege failed.";
+		sendResponseMsg(1006, error, response);
+		return;
+	}
+	cout << "add query and load and unload privilege succeed after build." << endl;
+
+	//add database information to system.db
+	pthread_rwlock_wrlock(&already_build_map_lock);
+	cout << "already_build_map_lock acquired." << endl;
+	string time = Util::get_date_time();
+	struct DBInfo* temp_db = new DBInfo(db_name, username, time);
+	already_build.insert(pair<std::string, struct DBInfo*>(db_name, temp_db));
+	pthread_rwlock_unlock(&already_build_map_lock);
+	string update = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." +
+		"<" + db_name + "> <built_by> <" + username + "> ." + "<" + db_name + "> <built_time> \"" + time + "\".}";
+	updateSys(update);
+	cout << "database add done." << endl;
+	// string success = db_name + " " + db_path;
+	string success = "Import RDF file to database done.";
+	sendResponseMsg(0, success, response);
+	Util::add_backuplog(db_name);
+}
+
+void sendResponseMsg(int code, string msg, const shared_ptr<HttpServer::Response>& response)
+{
+	string resJson = CreateJson(code, msg, 0);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+}
+
+string checkparamValue(string paramname, string value)
+{
+	string result = "";
+	if (value.empty())
+	{
+		result = "the value of " + paramname + " can not be empty!";
+		return result;
+	}
+	if (paramname == "db_name")
+	{
+		string database = value;
+		if (database == "system")
+		{
+			result = "you can not operate the system database";
+			return result;
+		}
+		if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db")
+		{
+			//cout << "Your db name to be built should not end with \".db\"." << endl;
+			result = "Your db name to be built should not end with \".db\".";
+			return result;
+		}
+		
+	}
+	return "";
+}
+bool checkdbexist(string db_name)
+{
+	bool result = true;
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
+	if (it_already_build == already_build.end())
+	{
+		result=false;
+	}
+	pthread_rwlock_unlock(&already_build_map_lock);
+	return result;
+}
+
+bool checkdbload(string db_name)
+{
+	bool result = false;
+	pthread_rwlock_rdlock(&databases_map_lock);
+	if (databases.find(db_name) != databases.end())
+	{
+		result = true;
+	}
+	pthread_rwlock_unlock(&databases_map_lock);
+	return result;
+}
+
+bool trylockdb(std::map<std::string, struct DBInfo*>::iterator it_already_build)
+{
+	bool result = false;
+	
+	if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+	{
+		result = false;
+	}
+	else
+	{
+		result = true;
+	}
+	return result;
+		
+}
+void load_thread(const shared_ptr<HttpServer::Response>& response, string db_name)
+{
+	string error = checkparamValue("db_name", db_name);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	if (checkdbexist(db_name)==false)
+	{
+		error = "the database ["+db_name+"] not built yet.";
+		sendResponseMsg(1004, error, response);
+		return;
+	}
+	if (checkdbload(db_name))
+	{
+		error = "the database already load yet.";
+		sendResponseMsg(0, error, response);
+	}
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+	if (trylockdb(it_already_build)==false)
+	{
+		error = "the operation can not been excuted due to loss of lock.";
+		sendResponseMsg(1007, error, response);
+	}
+	else
+	{
+		string database = db_name;
+		Database* current_database = new Database(database);
+		bool flag = current_database->load();
+		shared_ptr<Txn_manager> txn_m = make_shared<Txn_manager>(current_database, database);
+		pthread_rwlock_wrlock(&txn_m_lock);
+		txn_managers.insert(pair<string, shared_ptr<Txn_manager>>(database, txn_m));
+		pthread_rwlock_unlock(&txn_m_lock);
+		//delete current_database;
+		//current_database = NULL;
+		//cout << "load done." << endl;
+		if (!flag)
+		{
+			error = "Failed to load the database.";
+			sendResponseMsg(1005, error, response);
+			return;
+		}
+		pthread_rwlock_wrlock(&databases_map_lock);
+		databases.insert(pair<std::string, Database*>(db_name, current_database));
+		pthread_rwlock_unlock(&databases_map_lock);
+
+		cout << "database insert done." << endl;
+		string success = "Database loaded successfully.";
+		sendResponseMsg(0, success, response);
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	}
+
+
+
+
+}
+
 void build_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	if(!ipCheck(request)){
@@ -2699,6 +2918,33 @@ void build_thread(const shared_ptr<HttpServer::Response>& response, const shared
 }
 
 
+string checkIdentity(string username, string password)
+{
+	//check identity.
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User*>::iterator it = users.find(username);
+	if (it == users.end())
+	{
+		string error = "username not find.";
+		pthread_rwlock_unlock(&users_map_lock);
+		return error;
+	}
+	else if (it->second->getPassword() != password)
+	{
+		string error = "wrong password.";
+		
+		pthread_rwlock_unlock(&users_map_lock);
+		return error;
+	}
+	pthread_rwlock_unlock(&users_map_lock);
+
+	cout << "check identity successfully." << endl;
+
+	return "";
+}
+
+
+
 void request_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	if (!ipCheck(request)) {
@@ -2711,27 +2957,95 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
-	cout << log_prefix << "HTTP: this is build" << endl;
-
-	string db_name;
-	string db_path;
+	
+	
 	string username;
 	string password;
+	string operation;
+	Document document;
+	string url;
 	cout << "request method:" << request->method << endl;
-	cout << "request path:" << request->path << endl;
+
 	cout << "request http_version:" << request->http_version << endl;
 	cout << "request type:" << RequestType << endl;
+	cout << "request path:" << request->path << endl;
 	if (RequestType == "GET")
 	{
-		string url = request->path;
-		string opreation=WebUrl::CutParam(url, "operation");
-		if (opreation == "build")
+		url = request->path;
+		operation=WebUrl::CutParam(url, "operation");
+		username = WebUrl::CutParam(url, "username");
+		password = WebUrl::CutParam(url, "password");
+		cout << "old username:" << username << endl;
+		username = UrlDecode(username);
+		cout << "new username:" << username << endl;
+		password = UrlDecode(password);
+		
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		
+		document.Parse(strJson.c_str());
+		operation = document["operation"];
+	}
+	else
+	{
+		string msg = "The method type " + request->method + " is not support";
+		sendResponseMsg(1000, msg, response);
+		return;
+	}
+
+	string checkidentityresult = checkIdentity(username, password);
+	if (checkidentityresult.empty() == false)
+	{
+		sendResponseMsg(1001, checkidentityresult, response);
+		return;
+	}
+	if (checkPrivilege(username, operation, db_name) == 0)
+	{
+		string msg = "You have no " + operation + " privilege, operation failed";
+		sendResponseMsg(1002, msg, response);
+		return;
+	}
+	cout << log_prefix << "HTTP: this is " <<operation<< endl;
+
+	if (operation == "build")
+	{
+		if (RequestType == "GET")
 		{
-			build_thread(response, request, RequestType);
+			string db_name=WebUrl::CutParam(url,"db_name");
+			
+			string db_path = WebUrl::CutParam(url, "db_path");
+			db_name = UrlDecode(db_name);
+			db_path = UrlDecode(db_path);
+			build_thread(response, db_name, db_path, username, password);
 		}
-		else {
-			cout << "the operation " << opreation << " has not match handler function" << endl;
+		else if (RequestType == "POST")
+		{
+			string db_name = document["db_name"];
+			string db_path = document["db_path"];
+			build_thread(response, db_name, db_path, username, password);
+
+		}	
+	}
+	else if (operation == "load")
+	{
+		if (RequestType == "GET")
+		{
+			string db_name = WebUrl::CutParam(url, "db_name");
+			
+			load_thread(response, db_name);
 		}
+		else if (RequestType == "POST")
+		{
+			string db_name = document["db_name"];
+			load_thread(response, db_name);
+
+		}
+	}
+	else {
+		string error="the operation "+opreation +" has not match handler function";
+		sendResponseMsg(1100, error, response);
 	}
 	
 }
@@ -6179,7 +6493,7 @@ bool checkPrivilege(string username, string type, string db_name)
 		pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
 	}
 	pthread_rwlock_unlock(&users_map_lock);
-	return 0;
+	return 1;
 }
 std::string CreateJson(int StatusCode, string StatusMsg, bool body, string ResponseBody)
 {
