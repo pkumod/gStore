@@ -966,12 +966,12 @@ int initialize(int argc, char *argv[])
 	Database* current_database = new Database(database);
 	if (database.length() != 0)
 	{
-		if (!Util::dir_exist(database + ".db"))
+		if (Util::dir_exist(database + ".db")==false)
 		{
 			cout << "Database " << database << ".db has not been built." << endl;
 			return -1;
 		}
-		if (!Util::file_exist(database + ".db/success.txt"))
+		if (Util::file_exist(database + ".db/success.txt")==false)
 		{
 			cout << "Database " << database << ".db has not been built successfully." << endl;
 			string cmd = "rm -r " + database + ".db";
