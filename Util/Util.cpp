@@ -10,6 +10,7 @@
 
 #include "Util.h"
 
+
 using namespace std;
 using namespace rapidjson;
 //==================================================================================================================
@@ -198,14 +199,14 @@ Util::configure()
 
     fclose(fp);
 	//display all settings here
-	cout<<"the current settings are as below: "<<endl;
+	/*cout<<"the current settings are as below: "<<endl;
 	cout<<"key : value"<<endl;
 	cout<<"------------------------------------------------------------"<<endl;
 	for(map<string, string>::iterator it = global_config.begin(); it != global_config.end(); ++it)
 	{
 		cout<<it->first<<" : "<<it->second<<endl;
 	}
-	cout<<endl;
+	cout<<endl;*/
 
 	return true;
 	//return Util::config_setting() && Util::config_debug() && Util::config_advanced();
@@ -241,6 +242,58 @@ Util::config_advanced()
     FILE *fp = NULL;
     int status = 0; // 1 AppName 2 KeyName
 	return true;
+}
+
+bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
+{
+    string value = parser.GetValue(rootname, keyname);
+    if(value.empty()==false)
+    Util::global_config[keyname] = value;
+}
+
+string Util::getConfigureValue(string keyname)
+{
+    map<string, string>::iterator iter = Util::global_config.find(keyname);
+	if (iter != Util::global_config.end())
+	{
+		    return iter->second;
+	}
+	return "";
+}
+
+bool Util::configure_new()
+{
+    
+    INIParser ini_parser;
+    ini_parser.ReadINI("conf.ini");
+    /*string value=ini_parser.GetValue("ghttp", "max_out_limit");
+    Util::global_config["max_out_limit"] = value;*/
+    Util::setGlobalConfig(ini_parser, "ghttp", "thread_num");
+    Util::setGlobalConfig(ini_parser, "ghttp", "max_database_num");
+    Util::setGlobalConfig(ini_parser, "ghttp", "max_user_num");
+    Util::setGlobalConfig(ini_parser, "ghttp", "root_username");
+    Util::setGlobalConfig(ini_parser, "ghttp", "root_password");
+    Util::setGlobalConfig(ini_parser, "ghttp", "system_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "querylog_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "max_querylog_size");
+    Util::setGlobalConfig(ini_parser, "ghttp", "system_username");
+    Util::setGlobalConfig(ini_parser, "ghttp", "max_output_size");
+    Util::setGlobalConfig(ini_parser, "ghttp", "db_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "backup_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "ip");
+    Util::setGlobalConfig(ini_parser, "ghttp", "ip_allow_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "ip_deny_path");
+    Util::setGlobalConfig(ini_parser, "system", "version");
+  
+    cout << "the current settings are as below: " << endl;
+    cout << "key : value" << endl;
+    cout << "------------------------------------------------------------" << endl;
+    for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
+    {
+        cout << it->first << " : " << it->second << endl;
+    }
+    cout << endl;
+    
 }
 
 bool
@@ -759,6 +812,12 @@ Util::dir_exist(const string _dir)
 	}
 
 	return false;
+}
+
+bool Util::file_exist(const string _file)
+{
+	struct stat buffer;
+	return (stat(_file.c_str(), &buffer) == 0);
 }
 
 bool
@@ -1652,7 +1711,7 @@ Util::getTimeString() {
 	char time_str[max];
 	time_t timep;
 	time(&timep);
-	strftime(time_str, max, "%Y%m%d %H:%M:%S\t", gmtime(&timep));
+	strftime(time_str, max, "%Y%m%d %H:%M:%S", localtime(&timep));
 	return string(time_str);
 }
 
@@ -2558,4 +2617,42 @@ Util::GetFiles(const char *src_dir, const char *ext)
  
     closedir(dir);
     return result;
+}
+
+/*!
+ * @brief		get the param value from command
+ * @param[in]	argc:the length of argc
+ * @param[in]	argv:the param list
+ * @param[in]   argname:the abbreviation name of param (the format is "-"+argname,e.g. -db)
+ * @param[in]   argname2:the full name of param(the format is "--"+argname,e.g. --database)
+ * @param[in]   default_value:the default value of the param while the param is not exist.
+ * @return 		the value of param
+*/
+std::string Util::getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value)
+{
+    
+	for (int i = 0; i < argc; i++)
+	{
+		if ((argv[i] == "-" + argname)||(argv[i]=="--"+argname2))
+		{
+			if (i + 1 >= argc)
+			{
+				return "";
+			}
+			else
+			{
+				return argv[i + 1];
+			}
+
+		}
+
+	}
+	//cout << argname << " is not exist,using the default value:" << default_value << endl;
+	return default_value;
+}
+
+void Util::formatPrint(std::string content, std::string type)
+{
+    string time = Util::getTimeString();
+    cout << "[" << type << "][" << time << "]:" << content << endl;
 }

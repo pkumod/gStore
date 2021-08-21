@@ -14,13 +14,15 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
-
+//#include "../Util/Slog.h"
+#include <sstream>
 using namespace std;
 #define SYSTEM_PATH "data/system/system.nt"
 #define DEFALUT_BACKUP_PATH "backups"
 
 int copy(string src_path, string dest_path)
 {
+
 	string sys_cmd;
 	if(!boost::filesystem::exists(src_path)){
 		//check the source path
@@ -42,74 +44,112 @@ int
 main(int argc, char * argv[])
 {
 	Util util;
+	//Log.init("slog.properties");
 	string db_name, backup_path;
-	if(argc < 2)  
+	if (argc < 2)
 	{
-		//output help info here
-		cout << "the usage of gbackup: " << endl;
-		cout << "./bin/gbackup your_database_name your_backup_path(optional) "<< endl;
-		cout << "defalut backup_path = ./backups" << endl;
-		cout << "the path should not include your database's name!" << endl;
+		/*cout << "please input the complete command:\t" << endl;
+		cout << "\t bin/gadd -h" << endl;*/
+		//Log.Error("Invalid arguments! Input \"bin/gbackup -h\" for help.");
+		cout << "Invalid arguments! Input \"bin/gbackup -h\" for help." << endl;
 		return 0;
 	}
-	db_name = string(argv[1]);
-	if(argc > 2)
-		backup_path = string(argv[2]);
-
-	cout << "gbackup..." << endl;
+	else if (argc == 2)
 	{
-		cout << "argc: " << argc << "\t";
-		cout << "DB_name:" << db_name << "\t";
-		cout << "Backup_path: " << backup_path << "\t";
-		cout << endl;
+		string command = argv[1];
+		if (command == "-h" || command == "--help")
+		{
+			cout << endl;
+			cout << "gStore Backup Tools(gbackup)" << endl;
+			cout << endl;
+			cout << "Usage:\tbin/gbackup -db [dbname] -p [backup_path] " << endl;
+			cout << endl;
+			cout << "Options:" << endl;
+			cout << "\t-h,--help\t\tDisplay this message." << endl;
+			cout << "\t-db,--database,\t\t the database name. " << endl;
+			cout << "\t-p,--path [optional],\t\tthe backup path,defalut backup_path = ./backups,the path should not include your database's name!" << endl;
+			cout << endl;
+			return 0;
+		}
+		else
+		{
+			//cout << "the command is not complete." << endl;
+			//Log.Error("Invalid arguments! Input \"bin/gbackup -h\" for help.");
+			cout<<"Invalid arguments! Input \"bin/gbackup -h\" for help."<<endl;
+			return 0;
+		}
 	}
-
-	int len = db_name.length();
-	if(db_name.length() > 3 && db_name.substr(len-3, 3) == ".db")
+	else
 	{
-		cout<<"your database name can not end with .db"<<endl;
-		return -1;
-	}
+		db_name = Util::getArgValue(argc, argv, "db", "database");
+		backup_path= Util::getArgValue(argc, argv, "p", "path");
+		if (backup_path.empty())
+		{
+			backup_path = DEFALUT_BACKUP_PATH;
+		}
+		int len = db_name.length();
+		if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
+		{
+			
+			//Log.Error("your database name can not end with .db! Input \"bin/gbackup -h\" for help.");
+			cout<<"your database name can not end with .db! Input \"bin/gbackup -h\" for help."<<endl;
+			return -1;
+		}
+		if (db_name == "system")
+		{
+			cout << "Your database's name can not be system." << endl;
+			/*Log.Error("Your database's name can not be system!");*/
+			return -1;
+		}
+		if (backup_path == "." || backup_path == "./") {
+			cout << "Backup Path Can not be root, Backup Failed!" << endl;
+			//Log.Error("Backup Path Can not be root, Backup Failed!");
+			return 0;
+		}
+		//TODO: We need two column in system.db :
+       //build_path and backup_path;
+      //we can get the build_path as database_path should write the backup_path when we finish the backup
+    //query database_name build_path
+    //insert database_name backup_path
+		if (backup_path[0] == '/') backup_path = '.' + backup_path;
+		if (backup_path[backup_path.length() - 1] == '/') backup_path = backup_path.substr(0, backup_path.length() - 1);
+		backup_path = "./" + backup_path;
+		string db_path = db_name + ".db";
+		if (backup_path == "") backup_path = DEFALUT_BACKUP_PATH;
+		long tv_begin = Util::get_cur_time();
+		
+		
+		int ret = copy(db_path, backup_path);
+		if (ret == 1) {
+			cout << "Database Name Error, Backup Failed!" << endl;
+			//Log.Error("Database Name Error, Backup Failed!");
+		}
+		else {
+			string time = Util::get_date_time();
+			string timestamp = Util::get_timestamp();
+			backup_path = backup_path + "/" + db_path;
+			string _backup_path = backup_path + "_" + timestamp;
+			string sys_cmd = "mv " + backup_path + " " + _backup_path;
+			system(sys_cmd.c_str());
+			long tv_end = Util::get_cur_time();
 
-	if (db_name == "system")
-	{
-		cout<< "Your database's name can not be system."<<endl;
-		return -1;
-	}
-
-//TODO: We need two column in system.db :
-//build_path and backup_path;
-//we can get the build_path as database_path should write the backup_path when we finish the backup
-//query database_name build_path
-//insert database_name backup_path
-
-	if(backup_path == "") backup_path = DEFALUT_BACKUP_PATH;
-	if(backup_path == "." || backup_path == "./" ){
-		cout << "Backup Path Can not be root, Backup Failed!" << endl;
+			cout << "DB:" << db_name << " Backup Successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+			/*stringstream ss;
+			ss << "DB:"<<db_name<<" Backup Successfully! Used " << (tv_end - tv_begin) << " ms";
+			Log.Info(ss.str().c_str());*/
+			/*cout << "Time:" + time << endl;
+			cout << "DB:" + db_name + " Backup done!" << endl;*/
+			
+		}
 		return 0;
+
+
 	}
-	if(backup_path[0] == '/') backup_path = '.' + backup_path;
-	if(backup_path[backup_path.length() - 1] == '/') backup_path = backup_path.substr(0, backup_path.length() - 1);
 	
-	backup_path = "./" + backup_path;
-	string db_path = db_name + ".db";
 
-	//copy
-	if(backup_path == "") backup_path = DEFALUT_BACKUP_PATH;
-	int ret = copy(db_path, backup_path);
-	if(ret == 1){
-		cout << "Database Name Error, Backup Failed!" << endl;
-	}
-	else{
-		string time = Util::get_date_time();
-		string timestamp = Util::get_timestamp();
-		backup_path = backup_path + "/" + db_path;
-		string _backup_path = backup_path + "_" + timestamp;
-		string sys_cmd = "mv " + backup_path + " " + _backup_path;
-		system(sys_cmd.c_str());
-		cout << "Time:" + time << endl;
-		cout << "DB:" + db_name + " Backup done!" << endl;
-	}
-	return 0;
+
+
+
+	
 }
 

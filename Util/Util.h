@@ -80,7 +80,7 @@ in the sparql query can point to the same node in data graph)
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <exception>
-
+#include <sys/stat.h>
 //Below are for boost
 //Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE
@@ -109,6 +109,7 @@ in the sparql query can point to the same node in data graph)
 #include "../tools/rapidjson/prettywriter.h"  
 #include "../tools/rapidjson/writer.h"
 #include "../tools/rapidjson/stringbuffer.h"
+#include "INIParser.h"
 
 #include "Latch.h"
 
@@ -366,6 +367,7 @@ public:
 	static unsigned bsearch_vec_uporder(unsigned _key, const std::vector<unsigned>* _vec);
 	static std::string result_id_str(std::vector<unsigned*>& _v, int _var_num);
 	static bool dir_exist(const std::string _dir);
+    static bool file_exist(const std::string _file);
 	static bool create_dir(const std:: string _dir);
 	static bool create_file(const std::string _file);
 
@@ -438,9 +440,13 @@ public:
 	//You can call it by Util util in the first of your main program
 	//Another way is to build a GstoreApplication program, and do this configure in the initialization of the application
 	static bool configure();  //read init.conf and set the parameters for this system
+	static bool configure_new(); //read gstore.ini and set the parameters for this system
+	static bool setGlobalConfig(INIParser& parser, string rootname, string keyname);
+	static string getConfigureValue(string keyname);
 	static bool config_setting();
 	static bool config_advanced();
 	static bool config_debug();
+
 	//static bool gStore_mode;
 	static std::map<std::string, std::string> global_config;
 	//static std::string db_home;
@@ -484,6 +490,8 @@ public:
 	static long int get_timestamp(std::string& line);
 	static std::string stamp2time(int timestamp);
 	static std::vector<std::string> GetFiles(const char *src_dir, const char *ext);
+	static std::string getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value="");
+	static void formatPrint(std::string content, std::string type = "Info");
 private:
 	static bool isValidIPV4(std::string);
 	static bool isValidIPV6(std::string);
@@ -598,6 +606,309 @@ public:
 	{
 		delete[] buffer;
 	}
+};
+
+/**
+ * A custom vector. For some algorithms in PathQueryHandler.
+ */
+template <typename _T>
+class iVector
+{
+public:
+    unsigned int m_size;
+    _T* m_data;
+    unsigned int m_num;
+
+    void free_mem()
+    {
+        delete[] m_data;
+    }
+
+    iVector()
+    {
+        m_size = 20;
+        m_data = new _T[20];
+        m_num = 0;
+    }
+    iVector( unsigned int n )
+    {
+        if ( n == 0 )
+        {
+            n = 20;
+        }
+        m_size = n;
+        m_data = new _T[m_size];
+        m_num = 0;
+    }
+    void push_back( _T d )
+    {
+        if ( m_num == m_size )
+        {
+            re_allocate( m_size*2 );
+        }
+        m_data[m_num] = d ;
+        m_num++;        
+    }
+    void push_back( const _T* p, unsigned int len )
+    {
+        while ( m_num + len > m_size )
+        {
+            re_allocate( m_size*2 );
+        }
+        memcpy( m_data+m_num, p, sizeof(_T)*len );
+        m_num += len;
+    }
+
+    void re_allocate( unsigned int size )
+    {
+        if ( size < m_num )
+        {
+            return;
+        }
+        _T* tmp = new _T[size];
+        memcpy( tmp, m_data, sizeof(_T)*m_num );
+        m_size = size;
+        delete[] m_data;
+        m_data = tmp;
+    }
+    void Sort()
+    {
+        if ( m_num < 20 )
+        {
+            int k ;
+            _T tmp;
+            for ( int i = 0 ; i < m_num-1 ; ++i )
+            {
+                k = i ;
+                for ( int j = i+1 ; j < m_num ; ++j )
+                    if ( m_data[j] < m_data[k] ) k = j ;
+                if ( k != i )
+                {
+                    tmp = m_data[i];
+                    m_data[i] = m_data[k];
+                    m_data[k] = tmp;
+                }
+            }
+        }
+        else sort( m_data, m_data+m_num );
+    }
+    void unique()
+    {
+        if ( m_num == 0 ) return;
+        Sort();
+        unsigned int j = 0;
+        for ( unsigned int i = 0 ; i < m_num ; ++i )
+            if ( !(m_data[i] == m_data[j]) )
+            {
+                ++j;
+                if ( j != i ) m_data[j] = m_data[i];
+            }
+        m_num = j+1;
+    }
+    int BinarySearch( _T& data )
+    {
+        for ( int x = 0 , y = m_num-1 ; x <= y ; )
+        {
+            int p = (x+y)/2;
+            if ( m_data[p] == data ) return p;
+            if ( m_data[p] < data ) x = p+1;
+            else y = p-1;
+        }
+        return -1;
+    }
+    void clean()
+    {
+        m_num = 0;
+    }
+    void assign( iVector& t )
+    {
+        m_num = t.m_num;
+        m_size = t.m_size;
+        delete[] m_data;
+        m_data = t.m_data;
+    }
+
+    bool remove( _T& x )
+    {
+        for ( int l = 0 , r = m_num ; l < r ; )
+        {
+            int m = (l+r)/2;
+
+            if ( m_data[m] == x )
+            {
+                m_num--;
+                if ( m_num > m ) memmove( m_data+m, m_data+m+1, sizeof(_T)*(m_num-m) );
+                return true;
+            }
+            else if ( m_data[m] < x ) l = m+1;
+            else r = m;
+        }
+        return false;
+    }
+
+    void sorted_insert( _T& x )
+    {
+        if ( m_num == 0 )
+        {
+            push_back( x );
+            return;
+        }
+
+        if ( m_num == m_size ) re_allocate( m_size*2 );
+
+        int l,r;
+
+        for ( l = 0 , r = m_num ; l < r ; )
+        {
+            int m = (l+r)/2;
+            if ( m_data[m] < x ) l = m+1;
+            else r = m;
+        }
+
+        if ( m_num > l )
+        {
+            memmove( m_data+l+1, m_data+l, sizeof(_T)*(m_num-l) );
+        }
+        m_num++;
+        m_data[l] = x;
+    }
+
+    bool remove_unsorted( _T& x )
+    {
+        for ( int m = 0 ; m < m_num ; ++m )
+        {
+            if ( m_data[m] == x )
+            {
+                m_num--;
+                if ( m_num > m ) memcpy( m_data+m, m_data+m+1, sizeof(_T)*(m_num-m) );
+                return true;
+            }
+        }
+        return false;
+    }
+
+    _T& operator[]( unsigned int i )
+    {
+        return m_data[i];
+    }
+    //close range check for [] in iVector if release
+
+};
+
+/**
+ * A custom map. For some algorithms in PathQueryHandler.
+ */
+template <typename _T>
+struct iMap
+{   
+    _T* m_data;
+    int m_num;
+    int cur;
+    iVector<int> occur;
+    _T nil; 
+    iMap()
+    {
+        m_data = NULL;
+        m_num = 0;
+    }
+    iMap(int size){
+        initialize(size);
+    }
+    void free_mem()
+    {
+        delete[] m_data;
+        occur.free_mem();
+    }
+
+    void initialize( int n )
+    {
+        occur.re_allocate(n);
+        occur.clean();
+        m_num = n;
+        if ( m_data != NULL )
+            delete[] m_data;
+        m_data = new _T[m_num];
+        for ( int i = 0 ; i < m_num ; ++i )
+            m_data[i] = nil;
+        cur = 0;
+    }
+    void clean()
+    {
+        for ( int i = 0 ; i < occur.m_num ; ++i )
+        {
+            m_data[occur[i]] = nil;
+        }
+        occur.clean();
+        cur = 0;
+    }
+    
+    //init keys 0-n, value as 0
+    void init_keys(int n){
+        occur.re_allocate(n);
+        occur.clean();
+        m_num = n;
+        if ( m_data != NULL )
+            delete[] m_data;
+        m_data = new _T[m_num];
+        for ( int i = 0 ; i < m_num ; ++i ){
+            m_data[i] = 0;
+            occur.push_back( i );
+            cur++;
+        }
+    }
+    //reset all values to be zero
+    void reset_zero_values(){
+        memset( m_data, 0.0, m_num*sizeof(_T) );
+    }
+
+    void reset_one_values(){
+        for ( int i = 0 ; i < m_num ; ++i )
+            m_data[i] = 1.0;
+    }
+
+    _T get( int p )
+    {
+        return m_data[p];
+    }
+    _T& operator[](  int p )
+    {
+        return m_data[p];
+    }
+    void erase( int p )
+    {
+        m_data[p] = nil;
+        cur--;
+    }
+    bool notexist( int p )
+    {
+        return m_data[p] == nil ;
+    }
+    bool exist( int p )
+    {
+        return !(m_data[p] == nil);
+    }
+    void insert( int p , _T d )
+    {
+        if ( m_data[p] == nil )
+        {
+            occur.push_back( p );
+            cur++;
+        }
+        m_data[p] = d;
+    }
+    void inc( int p )
+    {
+        m_data[p]++;
+    }
+    void inc( int p , int x )
+    {
+        m_data[p] += x;
+    }
+    void dec( int p )
+    {
+        m_data[p]--;
+    }
+    //close range check when release!!!!!!!!!!!!!!!!!!!!    
 };
 
 #endif //_UTIL_UTIL_H

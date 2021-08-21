@@ -70,7 +70,7 @@ public:
 
 	void parseSelectAggregateFunction(SPARQLParser::ExpressionContext *expCtx, \
 		SPARQLParser::VarContext *varCtx);
-	void buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode *curr_node);
+	void buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode &curr_node);
 	void buildFilterTree(antlr4::tree::ParseTree *root, \
 		QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild *currChild, \
 		QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, std::string tp);
