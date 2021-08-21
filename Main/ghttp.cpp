@@ -2946,17 +2946,12 @@ string checkIdentity(string username, string password)
 void request_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	if (!ipCheck(request)) {
-		cout << "IP Blocked!" << endl;
-		string content = "IP Blocked!";
-
-		string resJson = CreateJson(916, content, 0);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		string error = "IP Blocked!"
+		sendResponseMsg(1101, error, response);
 		return;
 	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
-	
-	
 	string username;
 	string password;
 	string operation;
@@ -2964,7 +2959,6 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	Document document;
 	string url;
 	cout << "request method:" << request->method << endl;
-
 	cout << "request http_version:" << request->http_version << endl;
 	cout << "request type:" << RequestType << endl;
 	cout << "request path:" << request->path << endl;
@@ -3021,28 +3015,23 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		}
 		else if (RequestType == "POST")
 		{
-		
 			string db_path = document["db_path"].GetString();
 			build_thread_new(response, db_name, db_path, username, password);
-
 		}	
 	}
 	else if (operation == "load")
 	{
-		if (RequestType == "GET")
-		{	
-			load_thread_new(response, db_name);
-		}
-		else if (RequestType == "POST")
-		{
-			load_thread_new(response, db_name);
+		load_thread_new(response, db_name);
+	}
+	else if (operation == "monitor")
+	{
 
-		}
 	}
 	else {
 		string error="the operation "+operation +" has not match handler function";
 		sendResponseMsg(1100, error, response);
 	}
+	
 	
 }
 bool request_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
