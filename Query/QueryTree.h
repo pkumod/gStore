@@ -18,6 +18,8 @@ class QueryTree
 		enum QueryForm {Select_Query, Ask_Query};
 		enum ProjectionModifier {Modifier_None, Modifier_Distinct, Modifier_Reduced, Modifier_Count, Modifier_Duplicates};
 
+		class CompTreeNode;
+		
 		class GroupPattern
 		{
 			public:
@@ -44,7 +46,7 @@ class QueryTree
 				GroupPattern& getLastOptional();
 
 				void addOneFilter();
-				FilterTree& getLastFilter();
+				CompTreeNode& getLastFilter();
 
 				void addOneBind();
 				Bind& getLastBind();
@@ -102,22 +104,27 @@ class QueryTree
 			std::vector<std::string> pred_set;
 			int k;
 			float confidence;
+			int retNum;
 		};
 
 		class CompTreeNode
 		{
 		public:
 			std::string oprt;	// operator
-			CompTreeNode *lchild;
-			CompTreeNode *rchild;	// child nodes
+			// CompTreeNode *lchild;
+			// CompTreeNode *rchild;
+			std::vector<CompTreeNode> children;	// child nodes
 			std::string val;	// variable, or literal followed by datatype suffix
+			PathArgs path_args;
+			Varset varset;
+			bool done;
 
-			CompTreeNode();
-			CompTreeNode(const CompTreeNode& that);
-			CompTreeNode& operator=(const CompTreeNode& that);
-			~CompTreeNode();
+			CompTreeNode(): done(false) {}
+			// CompTreeNode(const CompTreeNode& that);
+			// CompTreeNode& operator=(const CompTreeNode& that);
+			// ~CompTreeNode();
 			void print(int dep);	// Print subtree rooted at this node
-			Varset getCompTreeVarset();
+			Varset getVarset();
 		};
 
 		class GroupPattern::FilterTree
@@ -195,7 +202,8 @@ class QueryTree
 				GroupPattern group_pattern;
 				std::vector<GroupPattern> unions;	// groupOrUnionGraphPattern
 				GroupPattern optional;	// optionalGraphPattern, minusGraphPattern
-				FilterTree filter;	// filter
+				// FilterTree filter;	// filter
+				CompTreeNode filter;
 				Bind bind;	// bind
 
 				SubGroupPattern(SubGroupPatternType _type):type(_type){}
@@ -214,8 +222,9 @@ class QueryTree
 			public:
 				enum AggregateType {None_type, Count_type, Sum_type, Min_type, Max_type, Avg_type, 
 					simpleCyclePath_type, simpleCycleBoolean_type, cyclePath_type, cycleBoolean_type, 
-					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type, kHopReachablePath_type,
-					CompTree_type, Contains_type};
+					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type, 
+					kHopReachablePath_type, ppr_type,
+					CompTree_type, Contains_type, Custom_type};
 				AggregateType aggregate_type;
 
 				std::string var, aggregate_var;
@@ -223,9 +232,10 @@ class QueryTree
 
 				PathArgs path_args;
 
-				CompTreeNode *comp_tree_root;
+				CompTreeNode comp_tree_root;
 
-				std::vector<std::string> builtin_args;
+				std::vector<std::string> func_args;
+				std::string custom_func_name;
 
 				ProjectionVar():aggregate_type(None_type), distinct(false){}
 		};
@@ -234,13 +244,13 @@ class QueryTree
 		{
 			public:
 				std::string var;	// Don't remove for backward compatibility
-				CompTreeNode *comp_tree_root;	// Support expression
+				CompTreeNode comp_tree_root;	// Support expression
 				bool descending;
 				// Order(std::string &_var, bool _descending): var(_var), descending(_descending) { comp_tree_root = new CompTreeNode(); }
 				Order(bool _descending);
-				Order(const Order& that);
-				Order& operator=(const Order& that);
-				~Order();
+				// Order(const Order& that);
+				// Order& operator=(const Order& that);
+				// ~Order();
 		};
 
 		enum UpdateType {Not_Update, Insert_Data, Delete_Data, Delete_Where, Insert_Clause, Delete_Clause, Modify_Clause};

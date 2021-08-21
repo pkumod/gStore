@@ -691,15 +691,17 @@ Database::warmUp()
 bool
 Database::load(bool loadCSR)
 {
+	
 	if(this->if_loaded)
 	{
 		return true;
 	}
-
+	
 	//TODO: acquire this arg from memory manager
 	//BETTER: get return value from subthread(using ref or file as hub)
 	unsigned vstree_cache = LRUCache::DEFAULT_CAPACITY;
 	bool flag;
+	
 #ifndef THREAD_ON
 	//flag = (this->vstree)->loadTree(vstree_cache);
 	//if (!flag)
@@ -723,7 +725,7 @@ Database::load(bool loadCSR)
 	thread obj2values_thread(&Database::load_obj2values, this, kv_mode);
 	thread pre2values_thread(&Database::load_pre2values, this, kv_mode);
 #endif
-
+	
 	//this is very fast
 	flag = this->loadDBInfoFile();
 	if (!flag)
@@ -731,7 +733,7 @@ Database::load(bool loadCSR)
 		cout << "load database info error. @Database::load()" << endl;
 		return false;
 	}
-
+	cout << "load database info successfully!" << endl;
 	if(!(this->kvstore)->load_trie(kv_mode))
 		return false;
 
@@ -1666,7 +1668,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 		this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, \
 		this->limitID_entity, this->csr, txn);
 	//if(txn != nullptr)
-	//	cout << "query in transaction............................................" << endl;
+	cout << "query in transaction............................................" << endl;
 	long tv_begin = Util::get_cur_time();
 
 	//this->query_parse_lock.lock();
@@ -3596,40 +3598,23 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		return false;
 	}
 	
-	//if this is not a new triple, return directly
-	// bool _triple_exist = false;
-	// if (!_is_new_sub && !_is_new_pre && !_is_new_obj)
-	// {
-	// 	//_triple_exist = this->exist_triple(_sub_id, _pre_id, _obj_id, txn);
-	// 	//check_times++;
-	// }
+	//if this is not a new triple, return directly (in case of no transaction)
+	if (txn == nullptr)
+	{
+		bool _triple_exist = false;
+		if (!_is_new_sub && !_is_new_pre && !_is_new_obj)
+			_triple_exist = this->exist_triple(_sub_id, _pre_id, _obj_id, txn);
 
-	//debug
-	//  {
-	//      stringstream _ss;
-	//      _ss << this->literal_num << endl;
-	//      _ss <<"ids: " << _sub_id << " " << _pre_id << " " << _obj_id << " " << _triple_exist << endl;
-	//      Util::logging(_ss.str());
-	//  }
-
-	// if (_triple_exist)
-	// {
-	// 	//unlock items that not locked before
-	// 	if(txn != nullptr){
-	// 		bool ret  = (this->kvstore)->releaseExclusiveLocks(_sub_id, _pre_id, _obj_id, txn);
-	// 		if(ret == false)
-	// 		{
-	// 			cerr << "...........................releaseExclusiveLocks failed!" << endl;
-	// 		}
-	// 	}
-	// 	cout << "this triple already exist" << endl;
-	// 	return false;
-	// }
-	// else
-	// {
-	// 	this->triples_num++;
-	// }
-	//cout<<"the triple spo ids: "<<_sub_id<<" "<<_pre_id<<" "<<_obj_id<<endl;
+		if (_triple_exist)
+		{
+			cout << "this triple already exist" << endl;
+			return false;
+		}
+		else
+		{
+			this->triples_num++;
+		}
+	}
 
 	//update sp2o op2s s2po o2ps s2o o2s etc.
 	bool ret = (this->kvstore)->updateTupleslist_insert(_sub_id, _pre_id, _obj_id, txn);
@@ -3704,19 +3689,17 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		return false;
 	}
 	
-	// bool _exist_triple = this->exist_triple(_sub_id, _pre_id, _obj_id, txn);
-	// if (!_exist_triple)
-	// {
-	// 	//unlock items that not locked before
-	// 	cout << "triple is not exsited! " << endl;
-	// 	if(txn != nullptr)
-	// 		(this->kvstore)->releaseExclusiveLocks(_sub_id, _pre_id, _obj_id, txn);
-	// 	return false;
-	// }
-	// else
-	// {
-	// 	this->triples_num--;
-	// }
+	if (txn == nullptr)
+	{
+		bool _exist_triple = this->exist_triple(_sub_id, _pre_id, _obj_id, txn);
+		if (!_exist_triple)
+		{
+			cout << "triple not exist! " << endl;
+			return false;
+		}
+		else
+			this->triples_num--;
+	}
 
 	//cout << "triple existence checked" << endl;
 

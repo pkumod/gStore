@@ -86,16 +86,22 @@ std::set<triple> update_triples;
 std::set<triple> db_triples;
 Database* db;
 
-void print()
+void print(bool update, bool db)
 {
-	cerr << "update_triples:" << endl;
-	std::set<triple>::iterator it1;
-	for (it1 = update_triples.begin(); it1 != update_triples.end(); it1++)
-		cerr << it1->subject << " " << it1->predicate << "" << it1->object << endl;
-	cerr << "db_triples:" << endl;
-	std::set<triple>::iterator it2;
-	for (it2 = db_triples.begin(); it2 != db_triples.end(); it2++)
-		cerr << it2->subject << " " << it2->predicate << "" << it2->object << endl;
+	if (update)
+	{
+		cerr << "update_triples:" << endl;
+		std::set<triple>::iterator it1;
+		for (it1 = update_triples.begin(); it1 != update_triples.end(); it1++)
+			cerr << it1->subject << " " << it1->predicate << "" << it1->object << endl;
+	}
+	if (db)
+	{
+		cerr << "db_triples:" << endl;
+		std::set<triple>::iterator it2;
+		for (it2 = db_triples.begin(); it2 != db_triples.end(); it2++)
+			cerr << it2->subject << " " << it2->predicate << "" << it2->object << endl;
+	}
 }
 
 int main(int argc, char * argv[])
@@ -224,6 +230,7 @@ int main(int argc, char * argv[])
 				FILE* ofp = stdout;
 				int ret = db->query(query, _rs, ofp);
 			}
+			// print(true, false);
 			for (int j = 0; j < b; j++)
 			{
 				int s = rand() % test_value_region;
@@ -238,6 +245,7 @@ int main(int argc, char * argv[])
 				FILE* ofp = stdout;
 				int ret = db->query(query, _rs, ofp);
 			}
+			// print(true, false);
 			db_triples.clear();
 			string query = "select ?s ?p ?o where{?s ?p ?o.}";
 			ResultSet _rs;
@@ -251,7 +259,7 @@ int main(int argc, char * argv[])
 				triple t(s, p, o);
 				db_triples.insert(t);
 			}
-			//print();
+			// print(false, true);
 			if (update_triples.size() != db_triples.size())
 			{
 				cerr << "Update triples exist errors." << endl;
