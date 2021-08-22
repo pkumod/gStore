@@ -1,10 +1,31 @@
-/*=============================================================================
-# Filename: gbackup.cpp
-# Author: zhe zhang
-# Mail: zhezhang99@gmail.com
-# Last Modified: 2019.7.22
-# Description: backup a database by copy its source files to a backup location
-=============================================================================*/
+/*
+ *                        .::::.
+ *                      .::::::::.
+ *                     :::::::::::
+ *                  ..:::::::::::'
+ *               '::::::::::::'
+ *                 .::::::::::
+ *            '::::::::::::::..
+ *                 ..::::::::::::.
+ *               ``::::::::::::::::
+ *                ::::``:::::::::'        .:::.
+ *               ::::'   ':::::'       .::::::::.
+ *             .::::'      ::::     .:::::::'::::.
+ *            .:::'       :::::  .:::::::::' ':::::.
+ *           .::'        :::::.:::::::::'      ':::::.
+ *          .::'         ::::::::::::::'         ``::::.
+ *      ...:::           ::::::::::::'              ``::.
+ *     ````':.          ':::::::::'                  ::::..
+ *                        '.:::::'                    ':'````..
+ * 
+ * @Author: zhe zhang,liwenjie
+ * @Date: 2021-08-20 10:29:41
+ * @LastEditTime: 2021-08-22 20:45:47
+ * @LastEditors: Please set LastEditors
+ * @Description: backup a database by copy its source files to a backup location
+ * @FilePath: /gstore/Main/gbackup.cpp
+ */
+
 
 //backup 
 //TODO:database_path is designed to support the customized database path 
