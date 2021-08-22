@@ -127,6 +127,7 @@ bool GLatch::tryupgradelatch(ull TID)
         }
     }
     latch.unlock();
+    if(ret == false) assert(_TID == INVALID_TID);
     return ret;
 }
 
@@ -144,6 +145,7 @@ bool GLatch::trydowngradelatch(ull TID)
             cerr << "down grade latch failed wrong read count!" << endl;
         }
         else{
+            _TID = INVALID_TID;
             ret = true;
         }
     }
