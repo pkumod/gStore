@@ -199,12 +199,12 @@ void
 IVEntry::getLatestVersion(TYPE_TXN_ID TID, VDataSet &addset, VDataSet &delset)
 {
 	rwLatch.lockShared();
-	int n = vList.size();
-	for(int i = 0; i < n; i++)
+	unsigned n = vList.size();
+	for(unsigned i = 0; i < n - 1; i++)
 	{
 		vList[i]->get_version(addset, delset);
 	}
-	if(vList[n-1]->get_begin_ts() == INVALID_TS && vList[n-1]->get_end_ts() == TID) //private version
+	if((vList[n-1]->get_begin_ts() == INVALID_TS && vList[n-1]->get_end_ts() == TID) || (vList[n-1]->get_end_ts() == INVALID_TS && vList[n-1]->get_begin_ts() < TID)) //private version or committed version
 	{
 		vList[n-1]->get_version(addset, delset);
 	}
@@ -269,7 +269,7 @@ IVEntry::version_merge(VDataArray &addarray, VDataArray &delarray, VDataSet &Add
 }
 
 bool 
-IVEntry::readVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn, bool &latched, bool first_read)
+IVEntry::ReadVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn, bool &latched, bool first_read)
 {
 	if(txn->GetIsolationLevelType() == IsolationLevelType::READ_COMMITTED)
 	{
@@ -287,12 +287,14 @@ IVEntry::readVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction>
 		int ret = checkheadVersion(txn->GetTID());
 		if(ret == -1){
 			rwLatch.unlock();
+			assert(latched == false);
 			return false;
 		}
 		else if(ret == 1 && first_read){
 			latched = glatch.trysharedlatch(txn->GetTID());
 			if(!latched){
 				rwLatch.unlock();
+				assert(latched == false);
 				return false;
 			}
 		}
@@ -301,7 +303,7 @@ IVEntry::readVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction>
 	}
 	else //not defined
 	{
-		return false;
+		assert(false);
 	}
 	return true;
 }
@@ -309,7 +311,7 @@ IVEntry::readVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction>
 
 //txn aborts then delete its uncommitted version. Deleted version is always the latest version.
 bool 
-IVEntry::invalidExlusiveLatch(shared_ptr<Transaction> txn, bool has_read)
+IVEntry::InvalidExlusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 {
 	bool IS_SR = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
 	auto TID = txn->GetTID();
@@ -320,7 +322,7 @@ IVEntry::invalidExlusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 		if(has_read)
 		{
 			if(glatch.trydowngradelatch(TID) == false) {
-				cerr << "down grade failed!" << endl;
+				assert(false);
 				rwLatch.unlock();
 				return false;
 			}
@@ -341,7 +343,7 @@ IVEntry::invalidExlusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 }
 
 bool
-IVEntry::unLatch(shared_ptr<Transaction> txn, LatchType latch_type)
+IVEntry::UnLatch(shared_ptr<Transaction> txn, LatchType latch_type)
 {
 	bool IS_SR = (txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE);
 	auto TID = txn->GetTID();
@@ -394,7 +396,7 @@ IVEntry::clearVersionFlag()
 }
 
 void
-IVEntry::cleanAllVersion()
+IVEntry::CleanAllVersion()
 {
 	rwLatch.lockExclusive();
 	vList.clear();
@@ -410,7 +412,7 @@ we don't need any lock in RC and SI here but only head version check
 SR need exclusive lock to restrict the read operations!
 */
 int 
-IVEntry::getExclusiveLatch(shared_ptr<Transaction> txn, bool has_read)
+IVEntry::GetExclusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 {
 	auto TID = txn->GetTID();
 	shared_ptr<Version> new_version = make_shared<Version>(INVALID_TS, TID); //[-1, TID]
@@ -465,7 +467,7 @@ IVEntry::getExclusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 }
 
 int
-IVEntry::writeVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn)
+IVEntry::WriteVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn)
 {
 	//private version no need any lock here
 	rwLatch.lockShared();
@@ -477,11 +479,4 @@ IVEntry::writeVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction
 		vList.back()->remove(it);
 	rwLatch.unlock();
 	return 1;
-}
-
-//abort only
-bool 
-IVEntry::releaseExlusiveLatch(shared_ptr<Transaction> txn, bool has_read)
-{
-	return this->invalidExlusiveLatch(txn, has_read);
 }

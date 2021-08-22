@@ -87,9 +87,7 @@ public:
 	//abort
 	//clean invalid version(release exclusive latch along) and release exclusive lock
 	bool Rollback(unsigned _key, shared_ptr<Transaction> txn, bool has_read );
-	//unlock(abort)
-	bool ReleaseExclusiveLock(unsigned _key, shared_ptr<Transaction> txn);
-
+	
 	//garbage clean
 	bool CleanDirtyKey(unsigned _key) ;
 };
