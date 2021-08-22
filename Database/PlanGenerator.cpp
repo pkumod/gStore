@@ -16,7 +16,7 @@ JoinMethod PlanGenerator::get_join_strategy(bool s_is_var, bool p_is_var, bool o
 
 	if(var_num == 2){
 		if(!s_is_var) return JoinMethod::s2po;
-		if(!o_is_var) return JoinMethod::o2sp;
+		if(!o_is_var) return JoinMethod::o2ps;
 		if(!p_is_var) return JoinMethod::p2so;
 	} else if(var_num == 1){
 		if(s_is_var) return JoinMethod::po2s;
@@ -1328,9 +1328,9 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 			return(new PlanTree(plan_node));
 		}
-		case JoinMethod::o2sp: {
+		case JoinMethod::o2ps: {
 			auto edge_info = make_shared<EdgeInfo>(first_var->id_, first_var->so_edge_pre_id_[0],
-												   first_var->so_edge_nei_[0], JoinMethod::o2sp);
+												   first_var->so_edge_nei_[0], JoinMethod::o2ps);
 
 			auto edge_constant_info = make_shared<EdgeConstantInfo>(!s_is_var, !p_is_var, !o_is_var);
 

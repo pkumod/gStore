@@ -101,13 +101,18 @@ std::map<TYPE_ENTITY_LITERAL_ID,FQIterator*>  inline AssemblingFrOw(set<TYPE_ENT
 
 void inline AddRelation(TYPE_ENTITY_LITERAL_ID x,TYPE_ENTITY_LITERAL_ID y, std::map<TYPE_ENTITY_LITERAL_ID ,std::set<TYPE_ENTITY_LITERAL_ID >>& mapping);
 
-std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*>  GenerateIteratorNode(int parent_var,int child_var,std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
+std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*>  GenerateIteratorNode(int parent_var,int child_var,std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
+                                                                     std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
                                                                      std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
                                                                 TopKTreeNode *child_tree_node,Env *env);
 
 FRIterator* BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> tree_search_plan,Env *env);
 
-void UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
+void UpdateIDList(shared_ptr<IDList> valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
+
+void UpdateIDListWithAppending(shared_ptr<IDListWithAppending> ids_appending, unsigned* id_list,
+                               unsigned id_list_len,unsigned  one_record_len,
+                               bool id_list_prepared,unsigned main_key_position);
 
 void FreeGlobalIterators(std::shared_ptr<std::vector<std::shared_ptr<std::set<OrderedList*>>>> global_iterators);
 }

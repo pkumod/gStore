@@ -211,7 +211,7 @@ TopKTreeSearchPlan::TopKTreeSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore k
             if(predicate_constant)
               edge_info = EdgeInfo(child_id,predicate_id,now_id,JoinMethod::po2s);
             else
-              edge_info = EdgeInfo(child_id,predicate_id,now_id,JoinMethod::o2sp);
+              edge_info = EdgeInfo(child_id,predicate_id,now_id,JoinMethod::o2ps);
           }
           else // TopKUtil::EdgeDirection::OUT
           {
@@ -234,10 +234,10 @@ TopKTreeSearchPlan::TopKTreeSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore k
           else
           {
             step_op.join_type_  = StepOperation::JoinType::JoinTwoNodes;
-            if(direction == TopKUtil::EdgeDirection::IN) // o2sp
+            if(direction == TopKUtil::EdgeDirection::IN) // o2ps
             {
-              step_op.join_two_node_->node_to_join_1_ =edge_info.s_;
-              step_op.join_two_node_->node_to_join_2_ =edge_info.p_;
+              step_op.join_two_node_->node_to_join_1_ =edge_info.p_;
+              step_op.join_two_node_->node_to_join_2_ =edge_info.s_;
             }
             else // s2po
             {
@@ -407,7 +407,7 @@ std::shared_ptr<std::map<std::string,double>> TopKUtil::getVarCoefficients(Query
   return r;
 }
 
-void TopKUtil::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared)
+void TopKUtil::UpdateIDList(shared_ptr<IDList> valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared)
 {
   if(id_list_prepared)
   {
@@ -419,6 +419,16 @@ void TopKUtil::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned* i
     for(int i = 0; i < id_list_len; i++)
       valid_id_list->addID(id_list[i]);
   }
+}
+
+void TopKUtil::UpdateIDListWithAppending(shared_ptr<IDListWithAppending> ids_appending, unsigned* id_list,
+                                         unsigned id_list_len,unsigned  one_record_len,
+                                         bool id_list_prepared,unsigned main_key_position)
+{
+  if(id_list_prepared)
+    ids_appending->Intersect(id_list, id_list_len,one_record_len,main_key_position);
+  else
+    ids_appending->Init(id_list,id_list_len,one_record_len,main_key_position);
 }
 
 void TopKUtil::FreeGlobalIterators(std::shared_ptr<std::vector<std::shared_ptr<std::set<OrderedList*>>>> global_iterators)
@@ -453,6 +463,10 @@ void TopKUtil::FreeGlobalIterators(std::shared_ptr<std::vector<std::shared_ptr<s
   }
 }
 
+/**
+ * Build Iterators for top k search.
+ * @return the final FRIterator
+ */
 FRIterator *TopKUtil::BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> tree_search_plan,Env *env){
 
   auto root_plan = tree_search_plan->tree_root_;
@@ -490,8 +504,13 @@ FRIterator *TopKUtil::BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> tre
   descendents_FRs.reserve(child_type_num);
 
   std::set<TYPE_ENTITY_LITERAL_ID > deleted_root_ids;
-  for (auto descendent_plan:root_plan->descendents_) {
-    auto descendent_iterators = GenerateIteratorNode(root_var, descendent_plan->var_id, root_candidate,deleted_root_ids, descendent_plan, env);
+  auto descendents_num = root_plan->descendents_.size();
+  for (decltype(descendents_num) descendent_i = 0;descendent_i<descendents_num;descendent_i++ )
+  {
+    auto descendent_plan = root_plan->descendents_[descendent_i];
+    auto tree_edges_plan = root_plan->tree_edges_[descendent_i];
+    auto descendent_iterators = GenerateIteratorNode(root_var, descendent_plan->var_id,tree_edges_plan,
+                                                     root_candidate,deleted_root_ids, descendent_plan, env);
     descendents_FRs.push_back(std::move(descendent_iterators));
   }
 
@@ -563,7 +582,8 @@ std::map<TYPE_ENTITY_LITERAL_ID,FQIterator*> inline TopKUtil::AssemblingFrOw(set
 /**
  * extend one edge in the query graph
  * parent - children - descendants
- *
+ * This function only deals with a parent - children relation in the query
+ * graph. Generate children and the call GenerateIteratorNode again.
  * @param parent_var
  * @param child_var
  * @param parent_var_candidates
@@ -571,7 +591,7 @@ std::map<TYPE_ENTITY_LITERAL_ID,FQIterator*> inline TopKUtil::AssemblingFrOw(set
  * @param env
  * @return each parent id and their corresponding FRs
  */
-std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(int parent_var,int child_var,
+std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(int parent_var,int child_var,std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
                                                                               std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
                                                                               std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
                                                                               TopKTreeNode *child_tree_node,Env *env) {
@@ -582,34 +602,7 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
   double coefficient = has_coefficient ? (*coefficient_it).second : 0.0;
   auto layer_child_iterators = make_shared<set<OrderedList*>>();
   env->global_iterators->push_back(layer_child_iterators);
-  int separator_num;
 
-  // [0,separator_num) are the predicates parent to child
-  // [separator_num,end) are the predicates from child to parent
-  std::vector<TYPE_PREDICATE_ID> predicates;
-
-  // parent -> child
-  auto parent_degree = env->basic_query->getVarDegree(parent_var);
-  for (int edge_i =0;edge_i<parent_degree;edge_i++) {
-    if(env->basic_query->getEdgeNeighborID(parent_var,edge_i)!=child_var)
-      continue;
-    if(env->basic_query->getEdgeType(parent_var,edge_i) == Util::EDGE_IN)
-      continue;
-    auto edge_predicate = env->basic_query->getEdgePreID(parent_var, edge_i);
-    predicates.push_back(edge_predicate);
-  }
-  separator_num = predicates.size();
-
-  // child  -> parent
-  auto child_degree = env->basic_query->getVarDegree(child_var);
-  for (int edge_i =0;edge_i<child_degree;edge_i++) {
-    if(env->basic_query->getEdgeNeighborID(child_var,edge_i)!=parent_var)
-      continue;
-    if(env->basic_query->getEdgeType(child_var,edge_i) == Util::EDGE_IN)
-      continue;
-    auto edge_predicate = env->basic_query->getEdgePreID(child_var, edge_i);
-    predicates.push_back(edge_predicate);
-  }
 
   std::set<TYPE_ENTITY_LITERAL_ID> deleted_parent_ids_this_child;
 
@@ -618,61 +611,120 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
   std::map<TYPE_ENTITY_LITERAL_ID, std::set<TYPE_ENTITY_LITERAL_ID >> child_parent;
 
   std::set<TYPE_ENTITY_LITERAL_ID> child_candidates;
-  for (auto it = parent_var_candidates.begin(); it != parent_var_candidates.end(); it++) {
-    auto parent_id = *it;
-    auto record_candidate_list = make_shared<IDList>();
-    auto record_candidate_prepared = false;
 
-    for (int i = 0; i < predicates.size(); i++) {
-      auto predicate_id = predicates[i];
-      TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
-      TYPE_ENTITY_LITERAL_ID edge_list_len;
-      if (i < separator_num) {
-        if (predicate_id != -1)
-          env->kv_store->getobjIDlistBysubIDpreID(parent_id,
-                                                  predicate_id,
-                                                  edge_candidate_list,
-                                                  edge_list_len,
-                                                  true,
-                                                  env->txn);
-        else
-          env->kv_store->getobjIDlistBysubID(parent_id,
-                                             edge_candidate_list,
-                                             edge_list_len,
-                                             true,
-                                             env->txn);
-      } else {
-        if (predicate_id != -1)
-          env->kv_store->getsubIDlistByobjIDpreID(parent_id,
-                                                  predicate_id,
-                                                  edge_candidate_list,
-                                                  edge_list_len,
-                                                  true,
-                                                  env->txn);
-        else
-          env->kv_store->getobjIDlistBysubID(parent_id,
-                                             edge_candidate_list,
-                                             edge_list_len,
-                                             true,
-                                             env->txn);
+  auto &predicates_constant = tree_edges_->predicate_constant_;
+  auto &predicate_ids = tree_edges_->predicate_ids_;
+  auto &directions = tree_edges_->directions_;
+
+  for (auto it = parent_var_candidates.begin(); it != parent_var_candidates.end(); it++)
+  {
+    auto parent_id = *it;
+    auto id_list_ptr = make_shared<IDList>();
+
+    // because we arrange constants edge first, we can use IDList
+    // first and then use IDListWithAppending later when meeting
+    // variable predicate.
+    auto id_list_prepared = false;
+
+    shared_ptr<IDListWithAppending> appending_list_ptr = nullptr;
+    auto appending_list_prepared = false;
+
+    auto two_var_edges_num = predicate_ids.size();
+    decltype(two_var_edges_num) i;
+
+    for (i = 0; i < two_var_edges_num; i++)
+    {
+      // encounter a case where we must use IDListWithAppending
+      // need to transfer to IDListWithAppending
+      if(!appending_list_prepared && !predicates_constant[i])
+      {
+        if(id_list_prepared)
+          appending_list_ptr = make_shared<IDListWithAppending>(*id_list_ptr);
+        appending_list_prepared = true;
       }
 
-      UpdateIDList(record_candidate_list,
-                   edge_candidate_list,
-                   edge_list_len,
-                   record_candidate_prepared);
+      TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
+      TYPE_ENTITY_LITERAL_ID edge_list_len;
 
+      // use IDList
+      if (predicates_constant[i]){
+        if(directions[i] == EdgeDirection::OUT)
+        {
+          env->kv_store->getobjIDlistBysubIDpreID(parent_id,
+                                                  predicate_ids[i],
+                                                  edge_candidate_list,
+                                                  edge_list_len,
+                                                  true,
+                                                  env->txn);
+        }
+        else if(directions[i] == EdgeDirection::IN)
+        {
+          env->kv_store->getsubIDlistByobjIDpreID(parent_id,
+                                                  predicate_ids[i],
+                                                  edge_candidate_list,
+                                                  edge_list_len,
+                                                  true,
+                                                  env->txn);
+        }
+        else
+          throw string("unknown EdgeDirection");
+        UpdateIDList(id_list_ptr,
+                     edge_candidate_list,
+                     edge_list_len,
+                     id_list_prepared);
+
+        if(!id_list_prepared)
+        {
+          if(env->id_caches->find(child_var)!=env->id_caches->end())
+          {
+            auto caches_ptr = (*(env->id_caches->find(child_var))).second;
+            id_list_ptr->intersectList(caches_ptr->getList()->data(), caches_ptr->size());
+          }
+        }
+
+        id_list_prepared =true;
+      }
+      else // use IDListWithAppending
+      {
+        if(directions[i] == EdgeDirection::OUT)
+        {
+          env->kv_store->getpreIDobjIDlistBysubID(parent_id,
+                                                  edge_candidate_list,
+                                                  edge_list_len,
+                                                  true,
+                                                  env->txn);
+          UpdateIDListWithAppending(appending_list_ptr,edge_candidate_list,edge_list_len,
+                                    2,appending_list_prepared,1);
+        }
+        else if(directions[i] == EdgeDirection::IN)
+        {
+          env->kv_store->getpreIDsubIDlistByobjID(parent_id,
+                                             edge_candidate_list,
+                                             edge_list_len,
+                                             true,
+                                             env->txn);
+          UpdateIDListWithAppending(appending_list_ptr,edge_candidate_list,edge_list_len,
+                                    2,appending_list_prepared,1);
+        }
+        else
+          throw string("unknown EdgeDirection");
+
+        if(!appending_list_prepared)
+        {
+          if(env->id_caches->find(child_var)!=env->id_caches->end())
+          {
+            auto caches_ptr = (*(env->id_caches->find(child_var))).second;
+            appending_list_ptr->Intersect(caches_ptr->getList()->data(), caches_ptr->size(),1,0);
+          }
+        }
+
+        appending_list_prepared = true;
+      }
       delete[] edge_candidate_list;
-      record_candidate_prepared = true;
+
     }
 
-    if(env->id_caches->find(child_var)!=env->id_caches->end())
-    {
-      auto caches_ptr = (*(env->id_caches->find(child_var))).second;
-      record_candidate_list->intersectList(caches_ptr->getList()->data(),caches_ptr->size());
-    }
-
-    if (record_candidate_list->empty()) {
+    if (id_list_ptr->empty()) {
       deleted_parent_ids_this_child.insert(parent_id);
       continue;
     }
@@ -680,7 +732,7 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
     // write into the relationship
     parent_child[parent_id] = std::set<TYPE_ENTITY_LITERAL_ID>();
     auto p_it = parent_child.find(parent_id);
-    for (auto child_id:*record_candidate_list->getList()) {
+    for (auto child_id:*id_list_ptr->getList()) {
       p_it->second.insert(child_id);
       AddRelation(child_id, parent_id, child_parent);
       child_candidates.insert(child_id);
@@ -744,8 +796,18 @@ std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*> TopKUtil::GenerateIteratorNode(in
   std::vector<std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*>> descendents_FRs;
   descendents_FRs.reserve(child_type_num);
 
-  for (auto descendent_plan:child_tree_node->descendents_) {
-    auto descendent_iterators = GenerateIteratorNode(child_var, descendent_plan->var_id, child_candidates,deleted_children, descendent_plan, env);
+  auto descendents_num = child_tree_node->descendents_.size();
+
+  for (decltype(descendents_num) descendent_i=0;descendent_i<descendents_num;descendent_i++)
+  {
+    auto descendent_plan = child_tree_node->descendents_[descendent_i];
+    auto descendent_tree_edges_plan = child_tree_node->tree_edges_[descendent_i];
+    auto descendent_iterators = GenerateIteratorNode(child_var,
+                                                     descendent_plan->var_id,
+                                                     descendent_tree_edges_plan,
+                                                     child_candidates,
+                                                     deleted_children,
+                                                     descendent_plan, env);
     descendents_FRs.push_back(std::move(descendent_iterators));
   }
 

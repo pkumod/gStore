@@ -3950,53 +3950,6 @@ KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _pre
 		return true;
 	}
 }
-
-bool
-KVstore::getsubIDpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subid_preidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const
-{
-  //cout << "In getpreIDsubIDlistByobjID " << _objid << endl;
-  unsigned* _tmp = NULL;
-  unsigned long _len = 0;
-  if(txn == nullptr)
-  {
-    bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
-    if (!_get) {
-      _subid_preidlist = NULL;
-      _list_len = 0;
-      return false;
-    }
-
-    _list_len = 2 * _tmp[0];
-    _subid_preidlist = new unsigned[_list_len];
-    unsigned _offset_next;
-    unsigned j = 0;
-    for (unsigned i = 0; i < _tmp[1]; i++) {
-      if (i == _tmp[1] - 1) {
-        _offset_next = 2 + 2 * _tmp[1] + _tmp[0];
-      }
-      else {
-        _offset_next = _tmp[5 + 2 * i];
-      }
-      for (; 2 + 2 * _tmp[1] + j < _offset_next; j++) {
-        // This part is different from getpreIDsubIDlistByobjID
-        _subid_preidlist[2 * j + 1] = _tmp[2 + 2 * i];
-        _subid_preidlist[2 * j] = _tmp[2 + 2 * _tmp[1] + j];
-      }
-    }
-
-    //if this is a long list, then we should remove itself after copying
-    //otherwise, we should not free the list memory
-    //	if(VList::listNeedDelete(_len))
-    //	{
-    delete[] _tmp;
-    //_tmp = NULL;
-    //	}
-
-    return true;
-  }
-}
-
-
 bool 
 KVstore::open_preID2values(int _mode, TYPE_PREDICATE_ID _pre_num) 
 {
