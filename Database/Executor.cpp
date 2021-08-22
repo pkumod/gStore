@@ -1141,7 +1141,7 @@ Executor::ExtendRecordTwoNode(shared_ptr<FeedTwoNode> one_step_join_node_,
                                                 this->txn_);
       break;
     }
-    case JoinMethod::o2sp: {
+    case JoinMethod::o2ps: {
       TYPE_ENTITY_LITERAL_ID o_var_id_this_record;
       if(edge_constant_info.o_constant_)
         o_var_id_this_record = edge_info.o_;
@@ -1150,7 +1150,7 @@ Executor::ExtendRecordTwoNode(shared_ptr<FeedTwoNode> one_step_join_node_,
         auto o_var_position = (*id_pos_mapping)[edge_info.o_];
         o_var_id_this_record = (**record_iterator)[o_var_position];
       }
-      this->kv_store_->getsubIDpreIDlistByobjID(o_var_id_this_record,
+      this->kv_store_->getpreIDsubIDlistByobjID(o_var_id_this_record,
                                                 edge_candidate_list,
                                                 edge_list_len,
                                                 true,

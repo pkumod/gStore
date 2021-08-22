@@ -14,7 +14,7 @@
 
 /* only consider extend 1 node per step */
 enum class JoinMethod{s2p,s2o,p2s,p2o,o2s,o2p,so2p,sp2o,po2s,
-					  s2po,p2so,o2sp};
+					  s2po,p2so,o2ps};
 
 std::string JoinMethodToString(JoinMethod x);
 
@@ -98,7 +98,7 @@ class EdgeInfo{
   				exit(-1);
   			}
 			else
-				join_method_ = JoinMethod::o2sp;
+				join_method_ = JoinMethod::o2ps;
   		} else{
   			if(var_descrip->o_type_[index] == VarDescriptor::EntiType::VarEntiType)
   				join_method_ = JoinMethod::s2po;
@@ -133,7 +133,7 @@ class EdgeInfo{
   				if(var_descrip->so_edge_type_[index] == Util::EDGE_IN)
   					join_method_ = JoinMethod::s2po;
 				else
-					join_method_ = JoinMethod::o2sp;
+					join_method_ = JoinMethod::o2ps;
   			} else{
   				// nei is const, pre is const
   				if(var_descrip->so_edge_type_[index] == Util::EDGE_IN)

@@ -23,7 +23,7 @@ std::string JoinMethodToString(JoinMethod x){
     case JoinMethod::po2s: return "po2s";
     case JoinMethod::s2po: return "s2po";
     case JoinMethod::p2so: return "p2so";
-    case JoinMethod::o2sp: return "o2sp";
+    case JoinMethod::o2ps: return "o2ps";
   }
   return "Not a JoinMethod instance";
 };

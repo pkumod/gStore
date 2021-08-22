@@ -113,7 +113,7 @@ JoinMethod Tree_node::get_join_method(bool s_is_var, bool p_is_var, bool o_is_va
 	// todo: this is a question, what about a triple like ?s ?p ?o ?
 	if(var_num == 2){
 		if(!s_is_var) return JoinMethod::s2po;
-		if(!o_is_var) return JoinMethod::o2sp;
+		if(!o_is_var) return JoinMethod::o2ps;
 		if(!p_is_var) return JoinMethod::p2so;
 	} else if(var_num == 1){
 		if(s_is_var) return JoinMethod::po2s;

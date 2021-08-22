@@ -71,9 +71,14 @@ class IDListWithAppending
       std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> // attached elements
       >> contents_;
  public:
+  IDListWithAppending() = default;
+  IDListWithAppending(const IDList &id_list);
   IDListWithAppending(TYPE_ENTITY_LITERAL_ID* id_list, size_t records_num,
-                      size_t record_len, size_t main_key_position);
-  void Intersect(IDListWithAppending& other);
+                      size_t one_record_len, size_t main_key_position);
+  void Init(const TYPE_ENTITY_LITERAL_ID* id_list, size_t records_num,
+                    size_t one_record_len, size_t main_key_position);
+  void Intersect(const TYPE_ENTITY_LITERAL_ID* id_list, size_t record_num, size_t one_record_len, size_t main_key_position);
+
 };
 
 #endif //_QUERY_IDLIST_H
