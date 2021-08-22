@@ -128,7 +128,7 @@ inc_workflow=-I./tools/workflow-master/_include
 
 #gtest
 
-TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback  
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback  
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -212,6 +212,10 @@ $(testdir)run_transaction: $(lib_antlr) $(objdir)run_transaction.o $(objfile)
 
 $(testdir)workload: $(lib_antlr) $(objdir)workload.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(testdir)workload $(objdir)workload.o $(objfile) $(library) $(openmp)
+
+$(testdir)debug_test: $(lib_antlr) $(objdir)debug_test.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(testdir)debug_test $(objdir)debug_test.o $(objfile) $(library) $(openmp)
+
 #executables end
 
 
@@ -292,6 +296,10 @@ $(objdir)run_transaction.o: $(testdir)run_transaction.cpp Util/Util.h $(lib_antl
 
 $(objdir)workload.o: $(testdir)workload.cpp Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) $(testdir)workload.cpp $(inc) -o $(objdir)workload.o $(openmp)
+
+$(objdir)debug_test.o: $(testdir)debug_test.cpp Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) $(testdir)debug_test.cpp $(inc) -o $(objdir)debug_test.o $(openmp)
+	
 #objects in scripts/ end
 
 
@@ -672,7 +680,7 @@ clean:
 	#$(MAKE) -C KVstore clean
 	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole* $(exedir)rollback
 	rm -rf bin/*.class
-	rm -rf $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload
+	rm -rf $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test
 	#rm -rf .project .cproject .settings   just for eclipse
 	rm -rf logs/*.log
 	rm -rf *.out   # gmon.out for gprof with -pg
