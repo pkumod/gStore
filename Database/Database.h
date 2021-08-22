@@ -63,6 +63,9 @@ public:
 	bool insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 	bool remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 
+	bool batch_insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
+	bool batch_remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
+
 	bool backup();
 	bool restore();
 
@@ -100,9 +103,9 @@ public:
 	mutex& get_query_parse_lock();
 	
 	//MVCC
-	void transaction_rollback(shared_ptr<Transaction> txn);
-	void transaction_commit(shared_ptr<Transaction> txn);
-	void version_clean(vector<unsigned> &sub_ids ,vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned> &pre_ids);
+	void TransactionRollback(shared_ptr<Transaction> txn);
+	void TransactionCommit(shared_ptr<Transaction> txn);
+	void VersionClean(vector<unsigned> &sub_ids ,vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned> &pre_ids);
 private:
 	string name;
 	string store_path;
