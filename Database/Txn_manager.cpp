@@ -311,7 +311,6 @@ void Txn_manager::restore()
 		if (line[0] == 'B')
 		{
 			vector<string> redo_set;
-			bool full_txn = false;
 			while (getline(in, line))
 			{
 				if (line[0] == 'B' || line[0] == 'C')

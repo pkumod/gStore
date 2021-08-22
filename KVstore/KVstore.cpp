@@ -1955,7 +1955,7 @@ KVstore::Insert_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tm
 
 	//preid doesn't exist
 	if (!_len) {
-		unsigned* values = new unsigned[1 + 2*n];
+		values = new unsigned[1 + 2*n];
 		values[0] = n;
 		int i = 1;
 		for(auto &it: mp)
@@ -2099,7 +2099,7 @@ KVstore::Insert_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tm
 unsigned 
 KVstore::Remove_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tmp,  unsigned long _len, unsigned*& values, unsigned long& values_len) const
 {
-	if(_sidoidlist.size())
+	if(_sidoidlist.size() == 0)
 	{
 		values = _tmp;
 		values_len = _len;
@@ -2902,6 +2902,8 @@ KVstore::getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlis
 		if(IS_SI && latched && FirstRead)
 			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
 		
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::SUB_S);
 		if (!_get) 
 		{
 			_preidlist = NULL;
@@ -3006,15 +3008,19 @@ KVstore::getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlis
 		VDataSet addset, delset;
 		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
 
-		if(IS_SI && latched && FirstRead)
-			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
-		
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::SUB_S);
+
 		if (!_get) 
 		{
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
+
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
+
 		vector<unsigned> add_pidoidlist, del_pidoidlist;
 		for(auto po: addset)
 		{
@@ -3124,16 +3130,19 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 		
 		VDataSet addset, delset;
 		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
-
-		if(IS_SI && latched && FirstRead)
-			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
 		
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::SUB_S);
+
 		if (!_get) 
 		{
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
+
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
 		vector<unsigned> add_pidoidlist, del_pidoidlist;
 		for(auto po: addset)
 		{
@@ -3257,15 +3266,18 @@ KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _pre
 		VDataSet addset, delset;
 
 		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
-
-		if(IS_SI && latched && FirstRead)
-			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
 		
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::SUB_S);
+
 		if (!_get) {
 			_preid_objidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
+		
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
 
 		vector<unsigned> add_pidoidlist, del_pidoidlist;
 		for(auto po: addset)
@@ -3496,15 +3508,18 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 		
 		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
 
-		if(IS_SI && latched && FirstRead)
-			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
-		
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::OBJ_S);
+
 		if (!_get) {
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
 		
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
+
 		vector<unsigned> add_pidsidlist, del_pidsidlist;
 		for(auto ps: addset){
 			add_pidsidlist.push_back(ps.first);
@@ -3600,14 +3615,18 @@ KVstore::getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlis
 		
 		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, latched,  FirstRead);
 		
-		if(IS_SI && latched && FirstRead)
-			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
-		
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::OBJ_S);
+
 		if (!_get) {
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
+
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
+
 		vector<unsigned> add_pidsidlist, del_pidsidlist;
 		for(auto ps: addset){
 			add_pidsidlist.push_back(ps.first);
@@ -3713,16 +3732,18 @@ KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 		
 		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
 
-		//bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::OBJ_S);
 
-		if(IS_SI && latched && FirstRead)
-			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
-		
 		if (!_get) {
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
+
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
+
 		unsigned tmp_len = _len;
 		// if(addset.size() != 0 || delset.size() != 0){
 		// 	cerr << addset.size() << "   " << delset.size() << endl;
@@ -3857,13 +3878,18 @@ KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _pre
 		
 		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
 		
-		if(IS_SI && latched && FirstRead)
-			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::OBJ_S);
+
 		if (!_get) {
 			_preid_subidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
+
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
+
 		vector<unsigned> add_pidsidlist, del_pidsidlist;
 		for(auto ps: addset){
 			add_pidsidlist.push_back(ps.first);
@@ -4048,10 +4074,10 @@ KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, un
 		
 		VDataSet addset, delset;
 		
-		int _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, latched,  FirstRead);
+		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, latched,  FirstRead);
 
-		if(IS_SI && FirstRead && FirstRead)
-			txn->ReadSetInsert(_preid, Transaction::IDType::PREDICATE);
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::PRE_S);
 
 		if (!_get) {
 			_subidlist = NULL;
@@ -4059,6 +4085,9 @@ KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, un
 			return false;
 		}
 		
+		if(IS_SI && FirstRead && FirstRead)
+			txn->ReadSetInsert(_preid, Transaction::IDType::PREDICATE);
+
 		vector<unsigned> add_sidoidlist, del_sidoidlist;
 		for(auto so: addset)
 		{
@@ -4151,10 +4180,11 @@ KVstore::getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, un
 		
 		VDataSet addset, delset;
 		
-		int _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
 
-		if(IS_SI && FirstRead && FirstRead)
-			txn->ReadSetInsert(_preid, Transaction::IDType::PREDICATE);
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::PRE_S);
+
 		//cout << "getobjIDlistBypreID:.............................." << _get << endl;
 		if (!_get) {
 			_objidlist = NULL;
@@ -4162,6 +4192,9 @@ KVstore::getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, un
 			return false;
 		}
 		
+		if(IS_SI && FirstRead && FirstRead)
+			txn->ReadSetInsert(_preid, Transaction::IDType::PREDICATE);
+
 		vector<unsigned> add_sidoidlist, del_sidoidlist;
 		for(auto so: addset)
 		{
@@ -4268,14 +4301,18 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 		
 		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, latched,  FirstRead);
 
-		if(IS_SI && latched && FirstRead)
-			txn->ReadSetInsert(_preid, Transaction::IDType::PREDICATE);
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::PRE_S);
+
 		if (!_get) {
 			_subid_objidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
 		
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_preid, Transaction::IDType::PREDICATE);
+
 		vector<unsigned> add_sidoidlist, del_sidoidlist;
 		for(auto so: addset)
 		{
@@ -5032,7 +5069,7 @@ KVstore::getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned lon
 		unsigned key = _key - Util::LITERAL_FIRST_ID;
 		return objID2values_literal->search(key, _val, _vlen, AddSet, DelSet, txn, latched, FirstRead);
 	}
-	return _array->search(_key, _val, _vlen, AddSet, DelSet, txn, FirstRead);
+	return _array->search(_key, _val, _vlen, AddSet, DelSet, txn, latched,  FirstRead);
 }
 
 bool 
@@ -5135,9 +5172,6 @@ KVstore::GetExclusiveLocks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENT
 bool 
 KVstore::try_exclusive_lock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
-	//may unlock first locked item
-	//cout << "getExclusiveLocks....................................................." << endl;
-	//cout << _sub_id << " " << _pre_id << " " << _obj_id << endl;
 	bool sub_has_read = txn->ReadSetFind(_sub_id, Transaction::IDType::SUBJECT);
 	bool pre_has_read = txn->ReadSetFind(_pre_id, Transaction::IDType::PREDICATE);
 	bool obj_has_read = txn->ReadSetFind(_obj_id, Transaction::IDType::OBJECT);
@@ -5147,54 +5181,50 @@ KVstore::try_exclusive_lock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _p
 
 	int sub_ret = 0, obj_ret = 0, pre_ret = 0;
 
+	if(!pre_has_write){
+		//cerr << "Try to get PREDICATE exclusive lock................." << endl;
+	 	pre_ret = get_exclusive_latch(this->preID2values, _pre_id,txn, pre_has_read);
+	 	if(pre_ret == 0)
+		{
+			//cerr << this_thread::get_id() << "pre id latch get failed!" << endl;
+			txn->SetErrorType(TransactionErrorType::PRE_X);
+	 		return false;
+	 	}
+	 }
+
 	if(!sub_has_write){
 		//cerr << "Try to get SUBJECT exclusive lock................." << endl;
 		sub_ret = get_exclusive_latch(this->subID2values, _sub_id, txn, sub_has_read);
 		if(sub_ret == 0){
-			//cerr << this_thread::get_id() << " :sub id latch get failed!   " << _sub_id << endl;
-			//cerr << txn->GetTID() << endl;
-			//txn->print_all();
-			return false;
+			txn->SetErrorType(TransactionErrorType::SUB_X);
+			bool invalid_pre = true;
+	 		if(!pre_has_write && pre_ret == 1)
+	 			invalid_pre = invalid_values(this->preID2values, _pre_id, txn, pre_has_read);
+			assert(invalid_pre);
+	 		return false;
 		}
 	}
-
 
 	if(!obj_has_write){
 		//cerr << "Try to get OBJECT exclusive lock................." << endl;
 		obj_ret = get_exclusive_latch(this->objID2values, _obj_id, txn, obj_has_read);
 		if(obj_ret == 0)
 		{
-			bool invalid = true;
-			if(!sub_has_write && sub_ret == 1) 
-				invalid = invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
-			if(invalid == false)
-				cerr << "invalid error, latch not release! TID:" << txn->GetTID() << endl;
-			//cerr << this_thread::get_id() << "obj id latch get failed!" << endl;
+			txn->SetErrorType(TransactionErrorType::OBJ_X);
+			bool invalid_pre = true;
+	 		if(!pre_has_write && pre_ret == 1){
+				 invalid_pre = invalid_values(this->preID2values, _pre_id, txn, pre_has_read);
+			}
+			assert(invalid_pre);
+			bool invalid_sub = true;
+			if(!sub_has_write && sub_ret == 1) {
+				invalid_sub = invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
+			}
+			assert(invalid_sub);
 			return false;
 		}
 	}
 
-	if(!pre_has_write){
-		cerr << "Try to get PREDICATE exclusive lock................." << endl;
-	 	pre_ret = get_exclusive_latch(this->preID2values, _pre_id,txn, pre_has_read);
-	 	if(pre_ret == 0)
-		{
-	 		bool invalid1 = true, invalid2 = true;
-	 		if(!sub_has_write && sub_ret == 1)
-	 			invalid1 = invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
-	 		if(invalid1 == false){
-	 			cerr << "invalid error, subject latch not release! TID:" << txn->GetTID() << "  "  <<  _sub_id << endl;
-	 		}
-	 		if(!obj_has_write && obj_ret == 1)
-	 			invalid2 = invalid_values(this->objID2values, _obj_id, txn, obj_has_read);
-	 		if(invalid2 == false){
-	 			cerr << "invalid error, object latch not release! TID:" << txn->GetTID() << endl;
-	 		}
-	 		//cerr << this_thread::get_id() << "pre id latch get failed!" << endl;
-	 		return false;
-	 	}
-	 }
-	
 	//cout << "getExclusiveLocks success! TID:" << txn->GetTID() << endl;
 	return true;
 }
@@ -5237,7 +5267,6 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 				}
 				if(invalid == false){
 					sub_invalid = false;
-					cerr << "invalid error, latch not release! TID:" << txn->GetTID() << endl;
 				}
 			}
 			return false;
@@ -5260,7 +5289,6 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 				}
 				if(invalid == false){
 					obj_invalid = false;
-					cerr << "invalid error, latch not release! TID:" << txn->GetTID() << endl;
 				}
 			}
 
@@ -5272,7 +5300,6 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 				}
 				if(invalid == false){
 					sub_invalid = false;
-					cerr << "invalid error, latch not release! TID:" << txn->GetTID() << endl;
 				}
 			}
 			return false;
@@ -5295,7 +5322,6 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 	 			}
 	 			if(invalid == false){
 	 				obj_invalid = false;
-	 				cerr << "invalid error, latch not release! TID:" << txn->GetTID() << endl;
 	 			}
 	 		}
 
@@ -5307,7 +5333,6 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 	 			}
 	 			if(invalid == false){
 	 				sub_invalid = false;
-	 				cerr << "invalid error, latch not release! TID:" << txn->GetTID() << endl;
 	 			}
 	 		}
 
@@ -5319,7 +5344,6 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 				}
 				if(invalid == false){
 	 				obj_invalid = false;
-	 				cerr << "invalid error, latch not release! TID:" << txn->GetTID() << endl;
 	 			}
 	 		}
 
@@ -5351,19 +5375,16 @@ KVstore::ReleaseExclusiveLock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID 
 	bool obj_has_read = txn->ReadSetFind(_obj_id, Transaction::IDType::OBJECT);
 	if(txn != nullptr && txn->WriteSetFind(_sub_id, Transaction::IDType::SUBJECT) == false){
 		if(invalid_values(this->subID2values, _sub_id, txn, sub_has_read) == false) {
-			cerr << "..................................sub id release failed!" << endl;
 			ret = false;
 		}
 	}
 	if(txn != nullptr && txn->WriteSetFind(_obj_id, Transaction::IDType::OBJECT) == false){		
 		if(invalid_values(this->objID2values, _obj_id, txn, obj_has_read) == false){
-			cerr << "..................................obj id release failed!" << obj_has_read << endl;
 			ret = false;
 		}
 	}
 	if(txn != nullptr && txn->WriteSetFind(_pre_id, Transaction::IDType::PREDICATE) == false){ 
 		if(invalid_values(this->preID2values, _pre_id, txn,pre_has_read) == false) {
-			cerr << ".................................._pre_id id release failed!" << endl;
 			ret = false;
 		}
 	}
@@ -5421,32 +5442,31 @@ KVstore::ReleaseAllLocks(shared_ptr<Transaction> txn) const
 		auto& preRset = ReadSet[(unsigned)Transaction::IDType::PREDICATE];
 		auto& objRset = ReadSet[(unsigned)Transaction::IDType::OBJECT];
 		//check the released key
-		for(auto &it: subRset)
-		{
-			if(subWset.find(it) == subWset.end())//not exclusive latched
-			{	
-				if(this->release_shared_latch(this->subID2values, it, txn) == false) {
-					cerr << "SUBJECT:    " << it << "shared latch release failed!" << endl;
-					ret1 = false;//release shared latch
-				}
-			}
-		}
 		for(auto &it: preRset)
 		{
 			if(preWset.find(it) == preWset.end())
 			{
 				if(this->release_shared_latch(this->preID2values, it, txn) == false){
-					cerr << "PREDICATE:    " << it << "shared latch release failed!" << endl;
 					ret1 = false;//release shared latch
 				}
 			}
 		}
+
+		for(auto &it: subRset)
+		{
+			if(subWset.find(it) == subWset.end())//not exclusive latched
+			{	
+				if(this->release_shared_latch(this->subID2values, it, txn) == false) {
+					ret1 = false;//release shared latch
+				}
+			}
+		}
+		
 		for(auto &it: objRset)
 		{
 			if(objWset.find(it) == objWset.end())
 			{
 				if(this->release_shared_latch(this->objID2values, it, txn) == false){
-					cerr << "OBJECT:    " << it << "shared latch release failed!" << endl;
 					ret1 = false;//release shared latch
 				}
 
@@ -5459,21 +5479,19 @@ KVstore::ReleaseAllLocks(shared_ptr<Transaction> txn) const
 	
 	bool ret2 = true;
 	//release exclusive latch
-	for(auto &it: subWset)
-		if(this->release_exclusive_latch(this->subID2values, it, txn) == false) {
-				cerr << "SUBJECT:       " << it << "exclusive latch release failed" << endl;
-				ret2 = false;
-		}
 	for(auto &it: preWset)
 		if(this->release_exclusive_latch(this->preID2values, it, txn) == false){
-				cerr << "PREDICATE:       " << it << "exclusive latch release failed" << endl;
+				ret2 = false;
+		}
+	for(auto &it: subWset)
+		if(this->release_exclusive_latch(this->subID2values, it, txn) == false) {
 				ret2 = false;
 		}
 	for(auto &it: objWset)
 		if(this->release_exclusive_latch(this->objID2values, it, txn) == false){
-				cerr << "OBJECT:       " << it << "exclusive latch release failed" << endl;
 				ret2 = false;
 		}
+	assert(ret1 && ret2);
 	return ret1 && ret2;
 	
 }
@@ -5494,16 +5512,6 @@ KVstore::TransactionInvalid(shared_ptr<Transaction> txn)
 		auto& preRset = ReadSet[(unsigned)Transaction::IDType::PREDICATE];
 		auto& objRset = ReadSet[(unsigned)Transaction::IDType::OBJECT];
 		//check the released key
-		for(auto &it: subRset)
-		{
-			if(subWset.find(it) == subWset.end())//shared lock only
-			{			
-				if(this->release_shared_latch(this->subID2values, it, txn) == false) {
-					cout << "release shared latch of subject failed " << it << endl;
-					ret1 = false;//release shared latch
-				}
-			}
-		}
 		for(auto &it: preRset)
 		{
 			if(preWset.find(it) == preWset.end())
@@ -5511,12 +5519,20 @@ KVstore::TransactionInvalid(shared_ptr<Transaction> txn)
 				if(this->release_shared_latch(this->preID2values, it, txn) == false) ret1 = false;
 			}
 		}
+		for(auto &it: subRset)
+		{
+			if(subWset.find(it) == subWset.end())//shared lock only
+			{			
+				if(this->release_shared_latch(this->subID2values, it, txn) == false) {
+					ret1 = false;//release shared latch
+				}
+			}
+		}
 		for(auto &it: objRset)
 		{
 			if(objWset.find(it) == objWset.end())
 			{
 				if(this->release_shared_latch(this->objID2values, it, txn) == false){
-					cout << "release shared latch of object failed " << it << endl;
 					ret1 = false;
 				} 
 			}
@@ -5528,11 +5544,11 @@ KVstore::TransactionInvalid(shared_ptr<Transaction> txn)
 	
 	bool ret2 = true;
 	//invalid all updates and release latches
+	for(auto &it: preWset)
+	 	if(this->invalid_values(this->preID2values, it, txn, false) == false) ret2 = false;
 	for(auto &it: subWset){
 		if(this->invalid_values(this->subID2values, it, txn, false) == false) ret2 = false;
 	}
-	for(auto &it: preWset)
-	 	if(this->invalid_values(this->preID2values, it, txn, false) == false) ret2 = false;
 	for(auto &it: objWset){
 		if(this->invalid_values(this->objID2values, it, txn, false) == false) ret2 = false;	
 	}
@@ -5545,6 +5561,7 @@ KVstore::TransactionInvalid(shared_ptr<Transaction> txn)
 	{
 		cerr << "exclusive unlock failed !" << endl;
 	}
+	assert(ret1 && ret2);
 	return ret1 && ret2;
 }
 
@@ -5561,7 +5578,7 @@ KVstore::IVArrayVacuum(vector<unsigned>& sub_ids , vector<unsigned>& obj_ids, ve
 	//no transaction is running in this database!
 	//we can use four thread to clean three(four) index!
 	string name("clean");
-	shared_ptr<Transaction> clean_txn = make_shared<Transaction>(name, (INVALID_TS - 1), 1, IsolationLevelType::READ_COMMITTED);
+	shared_ptr<Transaction> clean_txn = make_shared<Transaction>(name, (INVALID_TS - 1), INVALID_TID, IsolationLevelType::READ_COMMITTED);
 	//vector<unsigned> sub_ids, obj_ids, obj_literal_ids, pre_ids;
 	s2values_vacuum(sub_ids, clean_txn);
 	o2values_vacuum(obj_ids, clean_txn);
@@ -5765,6 +5782,7 @@ KVstore::o2values_literal_vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<T
 			if(base_empty == false)
 			{
 				cerr << "delete keys" << endl;
+				assert(false);
 				this->removeKey(this->objID2values, _obj_id);
 			}
 			continue;

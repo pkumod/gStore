@@ -1667,7 +1667,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	GeneralEvaluation general_evaluation(this->vstree, this->kvstore, this->stringindex, this->query_cache, \
 		this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, \
 		this->limitID_entity, this->csr, txn);
-	//if(txn != nullptr)
+	if(txn != nullptr)
 	cout << "query in transaction............................................" << endl;
 	long tv_begin = Util::get_cur_time();
 
@@ -4938,6 +4938,117 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	return valid_num;
 }
 
+bool
+Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction> txn )
+{
+	bool flag = _is_restore || this->load();
+	if (!flag)
+	{
+		return false;
+	}
+	cout << "finish loading" << endl;
+
+	long tv_load = Util::get_cur_time();
+
+	TYPE_TRIPLE_NUM success_num = 0;
+
+	ifstream _fin(_rdf_file.c_str());
+	if (!_fin)
+	{
+		cout << "fail to open : " << _rdf_file << ".@insert_test" << endl;
+		//exit(0);
+		return false;
+	}
+
+	//NOTICE+WARN:we can not load all triples into memory all at once!!!
+	//the parameter in build and insert must be the same, because RDF parser also use this
+	//for build process, this one can be big enough if memory permits
+	//for insert/delete process, this can not be too large, otherwise too costly
+	TripleWithObjType* triple_array = new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP];
+	//parse a file
+	RDFParser _parser(_fin);
+
+	TYPE_TRIPLE_NUM triple_num = 0;
+	while (true)
+	{
+		int parse_triple_num = 0;
+		_parser.parseFile(triple_array, parse_triple_num);
+		if (parse_triple_num == 0)
+		{
+			break;
+		}
+		long tv_begin = Util::get_cur_time();
+		success_num += this->batch_insert(triple_array, parse_triple_num, _is_restore, txn);
+		long tv_end = Util::get_cur_time();
+		cout << "batch insert, used " << (tv_end - tv_begin) << " ms" << endl;
+	}
+
+	delete[] triple_array;
+	triple_array = NULL;
+	long tv_insert = Util::get_cur_time();
+	cout << "after batch insert, used " << (tv_insert - tv_load) << "ms." << endl;
+
+	cout << "insert rdf triples done." << endl;
+	cout<<"inserted triples num: "<<success_num<<endl;
+
+	return true;
+}
+
+bool
+Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction> txn)
+{
+	bool flag = _is_restore || this->load();
+	if (!flag)
+	{
+		return false;
+	}
+	cout << "finish loading" << endl;
+
+	long tv_load = Util::get_cur_time();
+	TYPE_TRIPLE_NUM success_num = 0;
+
+	ifstream _fin(_rdf_file.c_str());
+	if (!_fin)
+	{
+		cout << "fail to open : " << _rdf_file << ".@remove_test" << endl;
+		return false;
+	}
+
+	//NOTICE+WARN:we can not load all triples into memory all at once!!!
+	TripleWithObjType* triple_array = new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP];
+	RDFParser _parser(_fin);
+
+	while (true)
+	{
+		int parse_triple_num = 0;
+		_parser.parseFile(triple_array, parse_triple_num);
+		if (parse_triple_num == 0)
+		{
+			break;
+		}
+
+
+		long tv_begin = Util::get_cur_time();
+		success_num += this->batch_remove(triple_array, parse_triple_num, _is_restore, txn);
+		long tv_end = Util::get_cur_time();
+		cout << "batch remove, used " << (tv_end - tv_begin) << " ms" << endl;
+
+	}
+
+	delete[] triple_array;
+	triple_array = NULL;
+	long tv_remove = Util::get_cur_time();
+	cout << "after batch remove, used " << (tv_remove - tv_load) << "ms." << endl;
+	cout << "remove rdf triples done." << endl;
+	cout<<"removed triples num: "<<success_num<<endl;
+
+	if(this->triples_num == 0)
+	{
+		this->resetIDinfo();
+	}
+	return true;
+}
+
 //WARNING: TRANSACTIONAL batch insert is not completed yet!
 unsigned 
 Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
@@ -5036,7 +5147,7 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 
 	//so inserts
 	//sub_batch_update(id_tuples, valid_num, update_num_p, UPDATE_TYPE::PREDICATE_INSERT, txn);
-	//thread pre_t = thread(&Database::sub_batch_update, this, id_tuples, valid_num, ref(update_num_p), UPDATE_TYPE::PREDICATE_INSERT, txn );
+	thread pre_t = thread(&Database::sub_batch_update, this, id_tuples, valid_num, ref(update_num_p), UPDATE_TYPE::PREDICATE_INSERT, txn );
 
 	//ps inserts
 	//sub_batch_update(id_tuples, valid_num, update_num_o, UPDATE_TYPE::OBJECT_INSERT, txn);
@@ -5044,11 +5155,11 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 	
 
 	sub_t.join();
-	//pre_t.join();
+	pre_t.join();
 	obj_t.join();
 
 	//cout << update_num_s << " " << update_num_p << " " << update_num_o << endl;
-	//assert(update_num_o == update_num_p);
+	assert(update_num_o == update_num_p);
 	assert(update_num_s == update_num_o);
 
 	this->stringindex->SetTrie(kvstore->getTrie());
@@ -5117,7 +5228,7 @@ Database::batch_remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 
 	//so inserts
 	//sub_batch_update(id_tuples, valid_num, update_num_p, UPDATE_TYPE::PREDICATE_INSERT, txn);
-	//thread pre_t = thread(&Database::sub_batch_update, this, id_tuples, valid_num, ref(update_num_p), UPDATE_TYPE::PREDICATE_REMOVE, txn );
+	thread pre_t = thread(&Database::sub_batch_update, this, id_tuples, valid_num, ref(update_num_p), UPDATE_TYPE::PREDICATE_REMOVE, txn );
 
 	//ps inserts
 	//sub_batch_update(id_tuples, valid_num, update_num_o, UPDATE_TYPE::OBJECT_INSERT, txn);
@@ -5125,10 +5236,10 @@ Database::batch_remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 	//cout << update_num_s << " " << update_num_p << " " << update_num_o << endl;
 
 	sub_t.join();
-	//pre_t.join();
+	pre_t.join();
 	obj_t.join();
 	//cout << update_num_s << " " << update_num_p << " " << update_num_o << endl;
-	//assert(update_num_o == update_num_p);
+	assert(update_num_o == update_num_p);
 	assert(update_num_s == update_num_o);
 
 	if(txn == nullptr)
@@ -5184,7 +5295,7 @@ Database::batch_remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 			int pre_degree = this->kvstore->getPredicateDegree(_pre_id);
 			if (pre_degree == 0)
 			{
-				string predicate = this->kvstore->getEntityByID(_pre_id);
+				string predicate = this->kvstore->getPredicateByID(_pre_id);
 				if(predicate == "") continue;
 				this->kvstore->subPredicateByID(_pre_id);
 				this->kvstore->subIDByPredicate(predicate);

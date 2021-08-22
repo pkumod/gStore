@@ -567,6 +567,7 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 		_str = NULL;
 		_len = 0;
 		txn->SetState(TransactionState::ABORTED);
+		assert(latched == false);
 		ArrayUnlock();
 		return false;
 	}
@@ -578,8 +579,7 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 		_len = 0;
 		ArrayUnlock();
 		this->CacheLock.unlock();
-		if(is_empty) return false;
-		else return true;
+		return true;
 	}
 	
 	
@@ -592,6 +592,7 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 		//_str maybe nullptr
 		//cout << "get base str success......................................................" << endl;
 		ArrayUnlock();
+		if(ret == false && latched == true) assert(false);
 		return ret;
 	}
 	
