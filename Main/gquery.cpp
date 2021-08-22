@@ -90,7 +90,7 @@ main(int argc, char * argv[])
 			return 0;
 		}
 		Database _db(db_folder);
-		
+		//test 
 		if (argc > 3)
 		{
 			string queryfile = Util::getArgValue(argc, argv, "q", "queryfile");
