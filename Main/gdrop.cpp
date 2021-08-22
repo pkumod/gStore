@@ -65,7 +65,7 @@ int main(int argc, char * argv[])
 				cout<<"The database name can not end with .db"<<endl;
 				return -1;
 			}
-			if (!boost::filesystem::exists(db_name + ".db"))
+			if (!Util::dir_exist(db_name + ".db"))
 			{
 				cout<<"The database that you want to drop does not exist."<<endl;
 				return -1;

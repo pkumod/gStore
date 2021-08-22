@@ -1,46 +1,39 @@
-/**
-  * @file		gadd.cpp
-  * @author		WenjieLi
-  * @email		liwenjiehn@pku.edu.cn
-  * @version	v1.0
-  * @date		2021-08-23
-  * @license	Apache 2.0
-  * @brief 		batch insert data to gstore
-  * @detail		batch insert data to gstore by a file
-  * @attention  
-  */
+/*
+ *                        .::::.
+ *                      .::::::::.
+ *                     :::::::::::
+ *                  ..:::::::::::'
+ *               '::::::::::::'
+ *                 .::::::::::
+ *            '::::::::::::::..
+ *                 ..::::::::::::.
+ *               ``::::::::::::::::
+ *                ::::``:::::::::'        .:::.
+ *               ::::'   ':::::'       .::::::::.
+ *             .::::'      ::::     .:::::::'::::.
+ *            .:::'       :::::  .:::::::::' ':::::.
+ *           .::'        :::::.:::::::::'      ':::::.
+ *          .::'         ::::::::::::::'         ``::::.
+ *      ...:::           ::::::::::::'              ``::.
+ *     ````':.          ':::::::::'                  ::::..
+ *                        '.:::::'                    ':'````..
+ * 
+ * @Author: liwenjie
+ * @Date: 2021-08-22 20:14:02
+ * @LastEditTime: 2021-08-22 20:44:53
+ * @LastEditors: Please set LastEditors
+ * @Description: batch insert data tool
+ * @FilePath: /gstore/Main/gadd.cpp
+ */
+
 
 
 #include "../Database/Database.h"
 #include "../Util/Util.h"
 //#include "../Util/Slog.h"
 #include <sstream>
-//#include <stdio.h>
-//#include <log4cplus/logger.h>
-//#include <log4cplus/loggingmacros.h>
-//#include <log4cplus/consoleappender.h>
-//#include <log4cplus/config.hxx>
-//#include <log4cplus/logger.h>
-//#include <log4cplus/configurator.h>
-//#include <log4cplus/helpers/loglog.h>
-//#include <log4cplus/helpers/stringhelper.h>
-//#include <log4cplus/helpers/socket.h>
-//#include <log4cplus/spi/loggerimpl.h>
-//#include <log4cplus/spi/loggingevent.h>
-
-
 
 using namespace std;
-
-/*!
- * @brief		the main function
- * @param[in]	argc:the length of argc
- * @param[in]	argv:the param list\n
- *                   -db:the database name\n
- *                   -file:the insert data file\n
- *                   -help:print help info
- * @return 		the int value.
-*/
 
 
 int
