@@ -204,7 +204,7 @@ IVEntry::getLatestVersion(TYPE_TXN_ID TID, VDataSet &addset, VDataSet &delset)
 	{
 		vList[i]->get_version(addset, delset);
 	}
-	if(vList[n-1]->get_begin_ts() == INVALID_TS && vList[n-1]->get_end_ts() == TID) //private version
+	if((vList[n-1]->get_begin_ts() == INVALID_TS && vList[n-1]->get_end_ts() == TID) || (vList[n-1]->get_end_ts() == INVALID_TS && vList[n-1]->get_begin_ts() < TID)) //private version or committed version
 	{
 		vList[n-1]->get_version(addset, delset);
 	}
@@ -287,12 +287,14 @@ IVEntry::ReadVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction>
 		int ret = checkheadVersion(txn->GetTID());
 		if(ret == -1){
 			rwLatch.unlock();
+			assert(latched == false);
 			return false;
 		}
 		else if(ret == 1 && first_read){
 			latched = glatch.trysharedlatch(txn->GetTID());
 			if(!latched){
 				rwLatch.unlock();
+				assert(latched == false);
 				return false;
 			}
 		}
@@ -301,7 +303,7 @@ IVEntry::ReadVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction>
 	}
 	else //not defined
 	{
-		return false;
+		assert(false);
 	}
 	return true;
 }
@@ -320,7 +322,7 @@ IVEntry::InvalidExlusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 		if(has_read)
 		{
 			if(glatch.trydowngradelatch(TID) == false) {
-				cerr << "down grade failed!" << endl;
+				assert(false);
 				rwLatch.unlock();
 				return false;
 			}

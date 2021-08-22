@@ -11,6 +11,7 @@ typedef set<IDTriple> TripleSet;
 typedef unordered_set<TYPE_ENTITY_LITERAL_ID> IDSet;
 typedef set<TYPE_TXN_ID> TXNSet;
 enum class TransactionState{ WAITING = 0, RUNNING, COMMITTED, ABORTED};
+enum class TransactionErrorType {SUB_X = 0, PRE_X, OBJ_X, SUB_S, PRE_S, OBJ_S};
 enum class IsolationLevelType {
 	INVALID = INVALID_TYPE_ID,
 	SERIALIZABLE = 1,      // serializable
@@ -26,6 +27,7 @@ private:
 
 	TransactionState state;
 	TYPE_TS timestamp;
+	TransactionErrorType errormsg;
 
 	unsigned long start_time;
 	unsigned long end_time;
@@ -45,6 +47,8 @@ private:
 public:
 	int update_num;
 	enum class IDType{SUBJECT, PREDICATE, OBJECT};
+	//error type for aborted transaction. X latched failed or S latched failed.
+	
 	Transaction(Transaction const&) = delete;
 	Transaction(string name, TYPE_TS time, txn_id_t TID, IsolationLevelType _isolation = IsolationLevelType::SERIALIZABLE);
 	~Transaction(){
@@ -56,7 +60,8 @@ public:
 	inline void SetEndTime(long long int time) { end_time = time; }
 	inline long GetStartTime() const { return start_time;  }
 	inline long GetEndTime() const { return end_time;  }
-	
+	inline void SetErrorType(TransactionErrorType _type) {this->errormsg = _type;}
+	TransactionErrorType GetErrorType() {return this->errormsg;}
 	//inline void SetTimeStamp(TYPE_TS _timestamp) {this->timestamp = _timestamp; }
 	//inline TYPE_TS GetTimeStamp() const {return this->timestamp; };
 	
