@@ -1,39 +1,12 @@
-/*
- *                        _oo0oo_
- *                       o8888888o
- *                       88" . "88
- *                       (| -_- |)
- *                       0\  =  /0
- *                     ___/`---'\___
- *                   .' \\|     |// '.
- *                  / \\|||  :  |||// \
- *                 / _||||| -:- |||||- \
- *                |   | \\\  - /// |   |
- *                | \_|  ''\---/''  |_/ |
- *                \  .-\__  '-'  ___/-. /
- *              ___'. .'  /--.--\  `. .'___
- *           ."" '<  `.___\_<|>_/___.' >' "".
- *          | | :  `- \`.;`\ _ /`;.`/ - ` : | |
- *          \  \ `_.   \_ __\ /__ _/   .-` /  /
- *      =====`-.____`.___ \_____/___.-`___.-'=====
- *                        `=---='
- * 
- * 
- *      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * 
- *            佛祖保佑       永不宕机     永无BUG
- * 
+/* 
  * Copyright 2021 gStore, All Rights Reserved. 
  * @Author: Bookug Lober suxunbin liwenjie
  * @Date: 2021-08-22 00:37:57
- * @LastEditTime: 2021-08-22 11:11:26
+ * @LastEditTime: 2021-08-23 13:09:23
  * @LastEditors: Please set LastEditors
  * @Description: the http server to handler the user's request, which is main access entrance of gStore
  * @FilePath: /gstore/Main/ghttp.cpp
  */
-
-
-
 
 //SPARQL Endpoint:  log files in logs/endpoint/
 //operation.log: not used
