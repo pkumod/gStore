@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-08-22 18:00:17
- * @LastEditTime: 2021-08-22 23:43:07
+ * @LastEditTime: 2021-08-23 13:12:31
  * @LastEditors: Please set LastEditors
  * @Description: Batch delete data from database
  * @FilePath: /gstore/Main/gsub.cpp
