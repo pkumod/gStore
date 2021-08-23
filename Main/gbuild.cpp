@@ -1,11 +1,31 @@
-/*=============================================================================
-# Filename: gbuild.cpp
-# Author: Bookug Lobert suxunbin
-# Mail: 1181955272@qq.com suxunbin@pku.edu.cn
-# Last Modified: 2021-8-15 22:26:02
-# Description: firstly written by liyouhuan, modified by zengli and suxunbin and liwenjie
-TODO: add -h/--help for help message
-=============================================================================*/
+/*
+ *                        .::::.
+ *                      .::::::::.
+ *                     :::::::::::
+ *                  ..:::::::::::'
+ *               '::::::::::::'
+ *                 .::::::::::
+ *            '::::::::::::::..
+ *                 ..::::::::::::.
+ *               ``::::::::::::::::
+ *                ::::``:::::::::'        .:::.
+ *               ::::'   ':::::'       .::::::::.
+ *             .::::'      ::::     .:::::::'::::.
+ *            .:::'       :::::  .:::::::::' ':::::.
+ *           .::'        :::::.:::::::::'      ':::::.
+ *          .::'         ::::::::::::::'         ``::::.
+ *      ...:::           ::::::::::::'              ``::.
+ *     ````':.          ':::::::::'                  ::::..
+ *                        '.:::::'                    ':'````..
+ * 
+ * @Author: Bookug Lobert suxunbin liwenjie
+ * @Date: 2021-08-20 10:29:41
+ * @LastEditTime: 2021-08-22 21:31:46
+ * @LastEditors: Please set LastEditors
+ * @Description: The build database tool 
+ * @FilePath: /gstore/Main/gbuild.cpp
+ */
+
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
@@ -45,7 +65,7 @@ main(int argc, char * argv[])
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
 			cout << "\t-db,--database,\t\t the database name. " << endl;
-			cout << "\t-rdf,--rdffile,\t\tthe file path for building." << endl;
+			cout << "\t-f,--file,\t\tthe file path for building." << endl;
 			cout << endl;
 			return 0;
 		}
@@ -79,7 +99,7 @@ main(int argc, char * argv[])
 			return -1;
 		}
 
-		string _rdf = Util::getArgValue(argc, argv, "rdf", "rdffile");
+		string _rdf = Util::getArgValue(argc, argv, "f", "file");
 
 		//check if the db_path is the path of system.nt
 		if (_rdf == SYSTEM_PATH)

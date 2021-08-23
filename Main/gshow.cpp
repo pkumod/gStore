@@ -1,3 +1,11 @@
+/*
+ * @Author: your name
+ * @Date: 2021-08-20 10:29:41
+ * @LastEditTime: 2021-08-22 23:51:00
+ * @LastEditors: Please set LastEditors
+ * @Description: In User Settings Edit
+ * @FilePath: /gstore/Main/gshow.cpp
+ */
 /*=============================================================================
 # Filename: gshow.cpp
 # Author: suxunbin
