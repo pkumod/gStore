@@ -1,12 +1,12 @@
-/*=============================================================================
-# Filename: ghttp.cpp
-# Author: Bookug Lober suxunbin
-# Mail: zengli-bookug@pku.edu.cn
-# Last Modified: 2019-5-9 17:00
-# Description: created by lvxin, improved by lijing and suxunbin and liwenjie
-# Last Modified:2020-03-26 14:16
-# Description: add the initVersion function to init the version info by data/system/version.nt
-=============================================================================*/
+/* 
+ * Copyright 2021 gStore, All Rights Reserved. 
+ * @Author: Bookug Lober suxunbin liwenjie
+ * @Date: 2021-08-22 00:37:57
+ * @LastEditTime: 2021-08-23 13:09:23
+ * @LastEditors: Please set LastEditors
+ * @Description: the http server to handler the user's request, which is main access entrance of gStore
+ * @FilePath: /gstore/Main/ghttp.cpp
+ */
 
 //SPARQL Endpoint:  log files in logs/endpoint/
 //operation.log: not used
@@ -31,7 +31,7 @@
 #include "../Util/IPWhiteList.h"
 #include "../Util/IPBlackList.h"
 #include "../Util/INIParser.h"
-#include "../Util//WebUrl.h"
+#include "../Util/WebUrl.h"
 
 using namespace rapidjson;
 using namespace std;
@@ -181,13 +181,40 @@ bool checkdbexist(string db_name);
 
 bool checkdbload(string db_name);
 
+string getRemoteIp(const shared_ptr<HttpServer::Request>& request);
+
 bool trylockdb(std::map<std::string, struct DBInfo*>::iterator it_already_build);
+
+void writeLog(FILE* fp, string _info);
 
 void sendResponseMsg(int code, string msg, const shared_ptr<HttpServer::Response>& response);
 
 void build_thread_new(const shared_ptr<HttpServer::Response>& response, string db_name, string db_path, string username, string password);
 
 void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db_name);
+
+void monitor_thread_new(const shared_ptr<HttpServer::Response>& response, string db_name);
+
+void unload_thread_new(const shared_ptr<HttpServer::Response>& response, string db_name);
+
+void drop_thread_new(const shared_ptr<HttpServer::Response>& response, string db_name,string is_backup);
+
+void show_thread_new(const shared_ptr<HttpServer::Response>& response);
+
+void userManager_thread_new(const shared_ptr<HttpServer::Response>& response,string username,string password,string type);
+
+void showuser_thread_new(const shared_ptr<HttpServer::Response>& response);
+
+void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Response>& response,string username,string privilege,
+string type,string db_name);
+
+void backup_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string backup_path);
+
+void restore_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string backup_path,string username);
+
+void query_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string sparql,string format,
+string update_flag,string remote_ip,string thread_id,string log_prefix);
+
 
 //TODO: use lock to protect logs when running in multithreading environment
 FILE* query_logfp = NULL;
@@ -2565,6 +2592,13 @@ void build_thread_new(const shared_ptr<HttpServer::Response>& response,string db
 	Util::add_backuplog(db_name);
 }
 
+/**
+ * @description: response message to client 
+ * @Author: liwenjie
+ * @param {int} code: StatusCode value
+ * @param {string} msg:StatusMsg value
+ * @param {const} shared_ptr
+ */
 void sendResponseMsg(int code, string msg, const shared_ptr<HttpServer::Response>& response)
 {
 	string resJson = CreateJson(code, msg, 0);
@@ -2572,6 +2606,12 @@ void sendResponseMsg(int code, string msg, const shared_ptr<HttpServer::Response
 
 }
 
+/**
+ * @description: check the param is legal or not.
+ * @Author: liwenjie
+ * @param {string} paramname: if paramname is db_name, then check the value is end with ".db" or not.
+ * @param {string} value: the value of param.
+ */
 string checkparamValue(string paramname, string value)
 {
 	string result = "";
@@ -2598,10 +2638,17 @@ string checkparamValue(string paramname, string value)
 	}
 	return "";
 }
+
+/**
+ * @description: check the database is exist or not.
+ * @Author: liwenjie
+ * @param {string} db_name: the operation database name.
+ */
 bool checkdbexist(string db_name)
 {
 	bool result = true;
 	pthread_rwlock_rdlock(&already_build_map_lock);
+	
 	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
 	if (it_already_build == already_build.end())
 	{
@@ -2611,6 +2658,11 @@ bool checkdbexist(string db_name)
 	return result;
 }
 
+/**
+ * @description: check the database has loaded or not.
+ * @Author: liwenjie
+ * @param {string} db_name
+ */
 bool checkdbload(string db_name)
 {
 	bool result = false;
@@ -2623,6 +2675,27 @@ bool checkdbload(string db_name)
 	return result;
 }
 
+string getRemoteIp(const shared_ptr<HttpServer::Request>& request)
+{
+	string remote_ip;
+	//get the real IP of the client, because we use nginx here
+	unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals> m = request->header;
+	string map_key = "X-Real-IP";
+	//for (auto it = m.begin(); it != m.end(); it ++){
+	pair<std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator, std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals>::iterator> lu = m.equal_range(map_key);
+	if (lu.first != lu.second)
+		remote_ip = lu.first->second;
+	else
+		remote_ip = request->remote_endpoint_address;
+	cout << "remote_ip: " << remote_ip << endl;
+	return remote_ip;
+}
+
+/**
+ * @description: try lock the write and read lock the database.
+ * @Author: liwenjie
+ * @param {struct} DBInfo
+ */
 bool trylockdb(std::map<std::string, struct DBInfo*>::iterator it_already_build)
 {
 	bool result = false;
@@ -2638,6 +2711,12 @@ bool trylockdb(std::map<std::string, struct DBInfo*>::iterator it_already_build)
 	return result;
 		
 }
+/**
+ * @description: load the database to memory.
+ * @Author: liwenjie
+ * @param {const} shared_ptr
+ * @param {string} db_name
+ */
 void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db_name)
 {
 	string error = checkparamValue("db_name", db_name);
@@ -2698,6 +2777,1167 @@ void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db
 
 }
 
+/**
+ * @description: get the database monitor info
+ * @Author:liwenjie
+ * @param {const} shared_ptr response point
+ * @param {string} db_name
+ * @return {*}
+ */
+void monitor_thread_new(const shared_ptr<HttpServer::Response>& response, string db_name)
+{
+	//check the param value is legal or not.
+	string error=checkparamValue("db_name",db_name);
+	if(error.empty()==false)
+	{
+		sendResponseMsg(1003,error,response);
+		return;
+	}
+	if (checkdbexist(db_name)==false)
+	{
+		error = "the database ["+db_name+"] not built yet.";
+		sendResponseMsg(1004, error, response);
+		return;
+	}
+	// if (checkdbload(db_name))
+	// {
+	// 	error = "the database already load yet.";
+	// 	sendResponseMsg(0, error, response);
+	// }
+	pthread_rwlock_rdlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+	pthread_rwlock_unlock(&databases_map_lock);
+	if(iter == databases.end())
+	{
+		//cout << "database not loaded yet." << endl;
+		error = "Database not load yet.";
+		sendResponseMsg(1004,error,response);
+		pthread_rwlock_unlock(&databases_map_lock);
+		return;
+	}
+	Database *_database = iter->second;
+	pthread_rwlock_unlock(&databases_map_lock);
+
+    pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
+	string creator = it_already_build->second->getCreator();
+	string time = it_already_build->second->getTime();
+	pthread_rwlock_unlock(&already_build_map_lock);
+
+	if(pthread_rwlock_tryrdlock(&(it_already_build->second->db_lock)) != 0)
+	{
+		string error = "Unable to monitor due to loss of lock";
+		string resJson = CreateJson(501, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+		
+		
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+	//use JSON format to send message
+	Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "success", allocator);
+	string name = _database->getName();
+	resDoc.AddMember("database", StringRef(name.c_str()), allocator);
+	resDoc.AddMember("creator", StringRef(creator.c_str()), allocator);
+	resDoc.AddMember("built_time", StringRef(time.c_str()), allocator);
+	char tripleNumString[128];
+
+	//sprintf(tripleNumString, "%u", _database->getTripleNum());
+	//resDoc.AddMember("triple num", StringRef( tripleNumString), allocator);
+	/*不知道为什么要做这种处理？显示不下吗？*/
+	/*resDoc.AddMember("triple num", _database->getTripleNum(), allocator);*/
+
+	sprintf(tripleNumString, "%lld", _database->getTripleNum());
+	//string triplenumstr = tripleNumString;
+	//cout << "triple num:" << triplenumstr << endl;
+
+	resDoc.AddMember("triple num", StringRef(tripleNumString), allocator);
+	resDoc.AddMember("entity num", _database->getEntityNum(), allocator);
+	resDoc.AddMember("literal num", _database->getLiteralNum(), allocator);
+	resDoc.AddMember("subject num", _database->getSubNum(), allocator);
+	resDoc.AddMember("predicate num", _database->getPreNum(), allocator);
+	int conn_num = connection_num / 2;
+	resDoc.AddMember("connection num", conn_num, allocator);
+
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+	
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+}
+
+/**
+ * @description: unload a database from memory 
+ * @Author:liwenjie 
+ * @param {const} shared_ptr response point
+ * @param {string} db_name the database name
+ * @return {*}
+ */
+void unload_thread_new(const shared_ptr<HttpServer::Response> &response, string db_name)
+{
+
+	string error = checkparamValue("db_name", db_name);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	if (checkdbexist(db_name) == false)
+	{
+		error = "the database [" + db_name + "] not built yet.";
+		sendResponseMsg(1004, error, response);
+		return;
+	}
+	if (checkdbload(db_name) == false)
+	{
+		error = "the database already load yet.";
+		sendResponseMsg(0, error, response);
+	}
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+	if (trylockdb(it_already_build) == false)
+	{
+		error = "the operation can not been excuted due to loss of lock.";
+		sendResponseMsg(1007, error, response);
+	}
+	else
+	{
+		pthread_rwlock_wrlock(&databases_map_lock);
+		std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+		if (iter == databases.end())
+		{
+			string error = "Database not load yet.";
+			sendResponseMsg(1004, error, response);
+			pthread_rwlock_unlock(&databases_map_lock);
+			return;
+		}
+		Database *current_database = iter->second;
+		db_checkpoint(db_name);
+		delete current_database;
+		current_database = NULL;
+		databases.erase(db_name);
+		pthread_rwlock_wrlock(&txn_m_lock);
+		if (txn_managers.find(db_name) == txn_managers.end())
+		{
+			error = "transaction manager can not find the database";
+			sendResponseMsg(1008, error, response);
+			pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+			pthread_rwlock_unlock(&databases_map_lock);
+			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+			return;
+		}
+		db_checkpoint(db_name);
+		txn_managers.erase(db_name);
+		pthread_rwlock_unlock(&txn_m_lock);
+		string success = "Database unloaded.";
+		sendResponseMsg(0, success, response);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+		//	pthread_rwlock_unlock(&database_load_lock);
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		pthread_rwlock_unlock(&databases_map_lock);
+	}
+}
+
+/**
+ * @description:drop a database
+ * @Author:liwenjie 
+ * @param {const shared_ptr<HttpServer::Response>} &response
+ * @param {string} db_name: the database name
+ * @param {string} is_backup: true:logical drop,the file is not deleted; false:force drop, the file also is deleted.
+ * @return {*}
+ */
+void drop_thread_new(const shared_ptr<HttpServer::Response> &response, string db_name, string is_backup)
+{
+	string error = checkparamValue("db_name", db_name);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	if (checkdbexist(db_name) == false)
+	{
+		error = "the database [" + db_name + "] not built yet.";
+		sendResponseMsg(1004, error, response);
+		return;
+	}
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+	if (trylockdb(it_already_build) == false)
+	{
+		error = "the operation can not been excuted due to loss of lock.";
+		sendResponseMsg(1007, error, response);
+	}
+	else
+	{
+		pthread_rwlock_wrlock(&databases_map_lock);
+		std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+		string time = "";
+		if (iter != databases.end())
+		{
+			//@ the database has loaded, unload it firstly
+			Database *current_database = iter->second;
+			time = ""; //没有啥用
+			delete current_database;
+			current_database = NULL;
+			databases.erase(db_name);
+			cout<<"remove it from loaded database list"<<endl;
+			//@ remove the database from the already build list
+			already_build.erase(db_name);
+			cout<<"remove the database from the already build database list"<<endl;
+			pthread_rwlock_unlock(&databases_map_lock);
+			pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		}
+		else
+		{
+
+			pthread_rwlock_unlock(&databases_map_lock);
+			//drop database named [db_name]
+			pthread_rwlock_rdlock(&already_build_map_lock);
+			struct DBInfo *temp_db = it_already_build->second;
+			time = temp_db->getTime(); //没有啥用
+			delete temp_db;
+			temp_db = NULL;
+			already_build.erase(db_name);
+			cout<<"remove the database from the already build database list"<<endl;
+			pthread_rwlock_unlock(&already_build_map_lock);
+		}
+		//@ delete the database info from  the system database
+		string update = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
+		updateSys(update);
+		string cmd;
+		
+		if (is_backup == "false")
+			cmd = "rm -r " + db_name + ".db";
+		else if (is_backup == "true")
+			cmd = "mv " + db_name + ".db " + db_name + ".bak";
+		cout<<"delete the file: "<<cmd<<endl;
+		system(cmd.c_str());
+		
+		Util::delete_backuplog(db_name);
+		string success = "Database " + db_name + " dropped.";
+		sendResponseMsg(0, success, response);
+		return;
+	}
+}
+/**
+ * @description: show the all database list (except system database)
+ * @Author:liwenjie
+ * @param {const shared_ptr<HttpServer::Response>} &response
+ * @return {*}
+ */
+void show_thread_new(const shared_ptr<HttpServer::Response> &response)
+{
+    pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build;
+	string success;
+	Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "Get the database list successfully!", allocator);
+	Value jsonArray(kArrayType);
+
+	for (it_already_build = already_build.begin(); it_already_build != already_build.end(); it_already_build++)
+	{
+		string database_name = it_already_build->first;
+		string creator = it_already_build->second->getCreator();
+		string time = it_already_build->second->getTime();
+		if ((database_name == "system"))
+			continue;
+		Value obj(kObjectType);
+
+		Value _database_name;
+		_database_name.SetString(database_name.c_str(), database_name.length(), allocator);
+		obj.AddMember("database", _database_name, allocator);
+
+		Value _creator;
+		_creator.SetString(creator.c_str(), creator.length(), allocator);
+		obj.AddMember("creator", _creator, allocator);
+
+		Value _time;
+		_time.SetString(time.c_str(), time.length(), allocator);
+		obj.AddMember("built_time", _time, allocator);
+		pthread_rwlock_rdlock(&databases_map_lock);
+		if (databases.find(database_name) == databases.end())
+			obj.AddMember("status", "unloaded", allocator);
+		else
+			obj.AddMember("status", "loaded", allocator);
+		pthread_rwlock_unlock(&databases_map_lock);
+		jsonArray.PushBack(obj, allocator);
+	}
+	resDoc.AddMember("ResponseBody", jsonArray, allocator);
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json" << "\r\n\r\n" << resJson;
+
+
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	//return true;
+	pthread_rwlock_unlock(&already_build_map_lock);
+	return;
+}
+
+/**
+ * @description: user manager (include add user,delete user,alter user),notice that  only support alter user's password
+ * @Author:liwenjie
+ * @param {const} shared_ptr
+ * @param {string} username
+ * @param {string} password
+ * @param {string} type :the operation type, 1: addUser 2:deleteUser 3:alterUser
+ * @return {*}
+ */
+void userManager_thread_new(const shared_ptr<HttpServer::Response>& response,string username,string password,string type)
+{
+	string error="";
+     if(type=="1")
+	 {
+		 //add user
+		 if(username.empty()||password.empty())
+		 {
+            error="the user name and password can not be empty while adding user.";
+			sendResponseMsg(1003,error,response);
+			return;
+		 }
+		 else{
+			pthread_rwlock_wrlock(&users_map_lock);
+			if(users.find(username) == users.end())
+			{
+				cout << "user ready to add." << endl;				
+				struct User *temp_user = new User(username, password);
+				users.insert(pair<std::string, struct User *>(username, temp_user));
+				string update = "INSERT DATA {<" + username + "> <has_password> \"" + password + "\".}";
+				updateSys(update);		
+				error="user add done.";
+				sendResponseMsg(0,error,response);
+			}
+			else
+			{
+				error = "username already existed, add user failed.";
+			    sendResponseMsg(1004,error,response);
+				
+			}
+			pthread_rwlock_unlock(&users_map_lock);
+			return;
+		 }
+	 }
+	 else if(type=="2")
+	 {
+        //delete user
+		pthread_rwlock_wrlock(&users_map_lock);
+		std::map<std::string, struct User *>::iterator iter;
+		iter = users.find(username);
+		if(iter != users.end() && username != ROOT_USERNAME)
+		{
+				delete iter->second;
+				iter->second = NULL;
+				users.erase(username);
+				string update = "DELETE where {<" + username + "> ?p ?o.}";
+				updateSys(update);
+				sendResponseMsg(0,"delete user done.",response);
+				
+			}
+			else
+			{
+				string error;
+				int error_code;
+				if(username == ROOT_USERNAME)
+				{
+					error = "you cannot delete root, delete user failed.";
+					
+				}
+				else
+				{
+					error = "username not exist, delete user failed.";
+					
+				}
+				sendResponseMsg(1004,error,response);
+				pthread_rwlock_unlock(&users_map_lock);
+				return;
+			}
+			pthread_rwlock_unlock(&users_map_lock);
+			return;
+
+	 }
+	 else if(type=="3")
+	 {
+		 pthread_rwlock_wrlock(&users_map_lock);
+			std::map<std::string, struct User *>::iterator iter;
+			iter = users.find(username);
+		
+			if(iter == users.end())
+			{
+				error = "username not exist, change password failed.";
+				sendResponseMsg(1004,error,response);
+				pthread_rwlock_unlock(&users_map_lock);
+				return;
+				
+			}
+			else
+			{
+				iter->second->setPassword(password);
+				string update = "DELETE WHERE {<" + username + "> <has_password> ?o.}";
+				updateSys(update);
+				string update2 = "INSERT DATA {<" + username + "> <has_password>  \"" + password + "\".}";
+				updateSys(update2);
+				sendResponseMsg(0,"change password done.",response);
+				
+			}
+			pthread_rwlock_unlock(&users_map_lock);
+			return;
+	 }
+	 else
+	 {
+		 error="the operation is not support.";
+		 sendResponseMsg(1003,error,response);
+		 return;
+	 }
+}
+
+/**
+ * @description: show all user list.
+ * @Author:liwenjie
+ * @param {const} shared_ptr
+ * @return {*}
+ */
+void showuser_thread_new(const shared_ptr<HttpServer::Response>& response)
+{
+    pthread_rwlock_rdlock(&users_map_lock);
+	if (users.empty())
+	{
+		string error = "No Users.";
+		sendResponseMsg(0,error,response);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&users_map_lock);
+		return;
+	}
+	string success;
+
+	Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "success", allocator);
+	Value json_array(kArrayType);
+    std::map<std::string, struct User *>::iterator it;
+	for (it = users.begin(); it != users.end(); it++)
+	{
+		Value obj(kObjectType);
+		string username = it->second->getUsername();
+		Value _username;
+		_username.SetString(username.c_str(), username.length(), allocator);
+		obj.AddMember("username", _username, allocator);
+
+		string password = it->second->getPassword();
+		Value _password;
+		_password.SetString(password.c_str(), password.length(), allocator);
+		obj.AddMember("password", _password, allocator);
+
+		string query_db = it->second->getQuery();
+		Value _query_db;
+		_query_db.SetString(query_db.c_str(), query_db.length(), allocator);
+		obj.AddMember("query privilege", _query_db, allocator);
+
+		string update_db = it->second->getUpdate();
+		Value _update_db;
+		_update_db.SetString(update_db.c_str(), update_db.length(), allocator);
+		obj.AddMember("update privilege", _update_db, allocator);
+
+		string load_db = it->second->getLoad();
+		Value _load_db;
+		_load_db.SetString(load_db.c_str(), load_db.length(), allocator);
+		obj.AddMember("load privilege", _load_db, allocator);
+
+		string unload_db = it->second->getUnload();
+		Value _unload_db;
+		_unload_db.SetString(unload_db.c_str(), unload_db.length(), allocator);
+		obj.AddMember("unload privilege", _unload_db, allocator);
+
+		string backup_db = it->second->getbackup();
+		Value _backup_db;
+		_backup_db.SetString(backup_db.c_str(), backup_db.length(), allocator);
+		obj.AddMember("backup privilege", _backup_db, allocator);
+
+		string restore_db = it->second->getrestore();
+		Value _restore_db;
+		_restore_db.SetString(restore_db.c_str(), restore_db.length(), allocator);
+		obj.AddMember("restore privilege", _restore_db, allocator);
+
+		string export_db = it->second->getexport();
+		Value _export_db;
+		_export_db.SetString(export_db.c_str(), export_db.length(), allocator);
+		obj.AddMember("export privilege", _export_db, allocator);
+
+		json_array.PushBack(obj, allocator);
+	}
+	resDoc.AddMember("ResponseBody", json_array, allocator);
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	pthread_rwlock_unlock(&users_map_lock);
+	return;
+}
+
+/**
+ * @description: manage the user privilege, include add user privilege, delete user privilege
+ * @Author:liwenjie
+ * @param {const} shared_ptr
+ * @param {string} username
+ * @param {string} privilege 1:query,2:load,3:unload,4:update,5:backup,6:restore,7:export, you can set multi privileges by using , to split.
+ * @param {string} type: the operation type,1: add privilege, 2: delete privilege
+ * @param {string} db_name: the opration database
+ * @return {*}
+ */
+void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Response> &response, string username,
+									string privilege, string type, string db_name)
+{
+	string error = "";
+	error = checkparamValue("db_name", db_name);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	error = checkparamValue("privilege", privilege);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	if (username == ROOT_USERNAME)
+	{
+		string error = "you can't add privilege to root user.";
+		sendResponseMsg(1004, error, response);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+	vector<string> privileges;
+	if (privilege.substr(privilege.length() - 1, 1) != ",")
+	{
+		privilege = privilege + ",";
+	}
+
+	Util::split(privilege, ",", privileges);
+	string result = "";
+	for (int i = 0; i < privileges.size(); i++)
+	{
+		string temp_privilege_int = privileges[i];
+		string temp_privilege = "";
+		if (temp_privilege_int.empty())
+		{
+			continue;
+		}
+		if (temp_privilege_int == "1")
+		{
+			temp_privilege = "query";
+		}
+		else if (temp_privilege_int == "2")
+		{
+			temp_privilege = "load";
+		}
+		else if (temp_privilege_int == "3")
+		{
+			temp_privilege = "unload";
+		}
+		else if (temp_privilege_int == "4")
+		{
+			temp_privilege = "update";
+		}
+		else if (temp_privilege_int == "5")
+		{
+			temp_privilege = "backup";
+		}
+		else if (temp_privilege_int == "6")
+		{
+			temp_privilege = "restore";
+		}
+		else if (temp_privilege_int == "7")
+		{
+			temp_privilege = "export";
+		}
+		if (temp_privilege.empty() == false)
+		{
+			if (type == "1")
+			{
+				if (addPrivilege(username, temp_privilege, db_name) == 0)
+				{
+					result = result + "add privilege " + temp_privilege + " failed. \r\n";
+				}
+				else
+				{
+					result = result + "add privilege " + temp_privilege + " successfully. \r\n";
+				}
+			}
+			else if (type == "2")
+			{
+				if (delPrivilege(username, temp_privilege, db_name) == 0)
+				{
+					result = result + "delete privilege " + temp_privilege + " failed. \r\n";
+				}
+				else
+				{
+					result = result + "delete privilege " + temp_privilege + " successfully. \r\n";
+				}
+			}
+			else
+			{
+				result = "the operation type is not support.";
+				sendResponseMsg(1003, result, response);
+				return;
+			}
+		}
+	}
+	sendResponseMsg(0, result, response);
+	return;
+}
+
+/**
+ * @description: backup a database 
+ * @Author:liwenjie
+ * @param {const} shared_ptr
+ * @param {string} db_name:the operation database name
+ * @param {string} backup_path: the backup path
+ * @return {*}
+ */
+void backup_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string backup_path)
+{
+	string error="";
+	error=checkparamValue("db_name",db_name);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	if (checkdbexist(db_name) == false)
+	{
+		error = "the database [" + db_name + "] not built yet.";
+		sendResponseMsg(1004, error, response);
+		return;
+	}
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+	if (trylockdb(it_already_build) == false)
+	{
+		error = "the operation can not been excuted due to loss of lock.";
+		sendResponseMsg(1007, error, response);
+		return;
+	}
+	//begin backup database
+	string path=backup_path;
+	if(path == "") path = BACKUP_PATH;
+	if(path == "." ){
+		cout << "Backup Path Can not be root or empty, Backup Failed!" << endl;
+		string error = "Failed to backup the database. Backup Path Can not be root or empty.";
+		sendResponseMsg(1003,error,response);
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		return;
+	}
+	if(path[0] == '.') path = path.substr(1, path.length() - 1);
+	if(path[0] == '/') path = path.substr(1, path.length() - 1);
+	if(path[path.length() - 1] == '/') path = path.substr(0, path.length() - 1);
+	string db_path = db_name + ".db";
+	pthread_rwlock_wrlock(&databases_map_lock);
+	int ret = copy(db_path, path);
+	pthread_rwlock_unlock(&databases_map_lock);
+	string timestamp="";
+	if(ret == 1){
+		cout << "Database Folder Misssing, Backup Failed!" << endl;
+		string error = "Failed to backup the database. Database Folder Misssing.";
+		sendResponseMsg(1005,error,response);
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		return;
+	}
+	else{
+		string time = Util::get_date_time();
+		timestamp = Util::get_timestamp();
+		cout << "Time:" + time << endl;
+		cout << "DB:" + db_name + " Backup done!" << endl;
+	}
+	path = path + "/" + db_path;
+	string _path = path + "_" + timestamp;
+	string sys_cmd = "mv " + path + " " + _path;
+	system(sys_cmd.c_str());
+
+	cout << "database backup done." << endl;
+	string success = "Database backup successfully.";
+	sendResponseMsg(0,success,response);
+	
+	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+
+}
+
+/**
+ * @description:restore the database
+ * @Author:liwenjie
+ * @param {const} shared_ptr
+ * @param {string} db_name the operation database name
+ * @param {string} backup_path the backup path
+ * @param {string} username the operation username
+ * @return {*}
+ */
+void restore_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string backup_path,string username)
+{
+	string error="";
+	error=checkparamValue("db_name",db_name);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	string path=backup_path;
+	if(path[0] == '/') path = '.' + path;
+	if(path[path.length() - 1] == '/') path = path.substr(0, path.length()-1);
+
+	if(Util::dir_exist(path)==false){
+		string error = "Backup Path Error, Restore Failed";
+		sendResponseMsg(1003,error,response);
+		return;
+	}
+	string database=db_name;
+	cout << "restore "<< database << endl;
+
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
+	if(it_already_build == already_build.end())
+	{
+		string error = "Database not built yet. Rebuild Now";
+		string time = Util::get_backup_time(path, db_name);
+		if(time.size() == 0){
+			string error = "Backup Path Does not Match DataBase Name, Restore Failed";
+			sendResponseMsg(1003,error,response);
+			pthread_rwlock_unlock(&already_build_map_lock);
+			return;
+		}
+		if(addPrivilege(username, "query", db_name) == 0 || addPrivilege(username, "load", db_name) == 0 || 
+		addPrivilege(username, "unload", db_name) == 0 || addPrivilege(username, "backup", db_name) == 0 || 
+		addPrivilege(username, "restore", db_name) == 0 || addPrivilege(username, "export", db_name) == 0)
+		{
+			string error = "add query or load or unload or backup or restore privilege failed.";
+
+			sendResponseMsg(1005,error,response);
+			
+			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+			//return false;
+			pthread_rwlock_unlock(&already_build_map_lock);
+			return;
+		}
+
+		cout << "add query and load and unload and backup and restore privilege succeed after build." << endl;
+		struct DBInfo *temp_db = new DBInfo(db_name, username, time);
+		already_build.insert(pair<std::string, struct DBInfo *>(db_name, temp_db));
+		string update = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." +
+		"<" + db_name + "> <built_by> <" + username + "> ." + "<" + db_name + "> <built_time> \"" + time + "\".}";
+		updateSys(update);
+		Util::add_backuplog(db_name);
+		it_already_build = already_build.find(db_name);
+	}
+	pthread_rwlock_unlock(&already_build_map_lock);
+
+	if(pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+	{
+		string error = "Unable to restore due to loss of lock";
+
+		sendResponseMsg(1007,error,response);
+		
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		return;
+	}
+
+	//restore
+	string sys_cmd = "rm -rf " + db_name + ".db";
+	system(sys_cmd.c_str());
+	
+	pthread_rwlock_wrlock(&databases_map_lock);
+	int ret  = copy(path, DB_PATH);
+	pthread_rwlock_unlock(&databases_map_lock);
+
+	if(ret == 1){
+		string error = "Failed to restore the database. Backup Path Error";
+		sendResponseMsg(1005,error,response);
+		cout << "Backup Path Error, Restore Failed!" << endl;
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		return;
+	}else{
+		//TODO update the in system.db
+		string time = Util::get_date_time();
+		cout << "Time:" + time << endl;
+		cout << "DB:" + db_name + " Restore done!" << endl;
+	}
+
+	pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	path = Util::get_folder_name(path, db_name);
+	sys_cmd = "mv " + path + " " + db_name + ".db";
+	system(sys_cmd.c_str());
+
+	cout << "database restore done." << endl;
+	string success = "Database restore successfully.";
+	sendResponseMsg(0,success,response);
+}
+
+/**
+ * @description: query the database.
+ * @Author:liwenjie
+ * @param {const} shared_ptr
+ * @param {string} db_name: the operation database name.
+ * @param {string} sparql: the sparql
+ * @param {string} format: json/html/file
+ * @param {string} file:the out file path
+ * @return {*}
+ */
+void query_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string sparql,string format,
+string update_flag,string remote_ip,string thread_id,string log_prefix)
+{
+    string error="";
+	error=checkparamValue("db_name",db_name);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	error=checkparamValue("sparql",sparql);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	if(checkdbexist(db_name)==false)
+	{
+		error="Database not build yet.";
+		sendResponseMsg(1004,error,response);
+		return;
+	}
+	if(checkdbload(db_name)==false)
+	{
+		error="Database not load yet.";
+		sendResponseMsg(1004,error,response);
+		return;
+	}
+	string db_query=sparql;
+	cout<<"check: "<<db_query<<endl;
+	string str = db_query;
+
+
+
+	pthread_rwlock_rdlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+	if(iter == databases.end())
+	{
+		string error = "Database not load yet.";
+	//cout << error << endl;
+		sendResponseMsg(1004,error,response);
+		pthread_rwlock_unlock(&databases_map_lock);
+		return;
+	}
+	cout<<"the database is loaded.."<<endl;
+	Database *current_database;
+	std::map<std::string, struct DBInfo *>::iterator it_already_build;
+	try
+	{
+		/* code */
+		current_database = iter->second;
+		if(current_database==NULL)
+		{
+			cout<<"current_database is null"<<endl;
+		}
+		else
+		{
+			cout<<"current_database:"<<current_database->getName()<<endl;
+		}
+	pthread_rwlock_unlock(&databases_map_lock);
+
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	
+	it_already_build = already_build.find(db_name);
+	if(it_already_build==already_build.end())
+	{
+		cout<<"not find the database "<<db_name<<endl;
+	}
+	else
+	{
+		cout<<"find name:"<<it_already_build->second->getName()<<endl;
+	}
+	pthread_rwlock_unlock(&already_build_map_lock);
+	
+	pthread_rwlock_rdlock(&(it_already_build->second->db_lock));
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+	catch(...)
+	{
+		cerr<<"unknow error!"<<endl;
+	}
+	cout<<"test debug1..."<<endl;
+	
+	// Database *current_database = iter->second;
+	// pthread_rwlock_unlock(&databases_map_lock);
+
+	// pthread_rwlock_rdlock(&already_build_map_lock);
+	// std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
+	// pthread_rwlock_unlock(&already_build_map_lock);
+	
+	// pthread_rwlock_rdlock(&(it_already_build->second->db_lock));
+
+
+	FILE* output = NULL;
+
+	ResultSet rs;
+	int query_time = Util::get_cur_time();
+	int ret_val;
+	//catch exception when this is an update query and has no update privilege
+	try{
+		cout << "begin query..." << endl;
+		ret_val = current_database->query(sparql, rs, output, true,false,nullptr);
+	}catch(string exception_msg){
+	
+		string content=exception_msg;
+		cout << exception_msg;
+		sendResponseMsg(1005,content,response);
+		return;	
+	}
+	catch (...)
+	{
+		string content = "unknow error";
+		cout<<"query failed:"<<content<<endl;
+		sendResponseMsg(1005,content,response);
+		return;	
+		
+	}
+
+	bool ret = false, update = false;
+	if(ret_val < -1)   //non-update query
+	{
+		ret = (ret_val == -100);
+	}
+	else  //update query, -1 for error, non-negative for num of triples updated
+	{
+		update = true;
+	}
+
+	query_time = Util::get_cur_time() - query_time;
+	string query_time_s = Util::int2string(query_time);
+	//if (timer != 0 && !stop_thread(timer)) 
+	//{
+		//cerr <<log_prefix<< "Failed to stop timer." << endl;
+	//}
+
+	ostringstream stream;
+	stream << rs.ansNum;
+	string ansNum_s = stream.str();
+	cout <<"ansNum_s: " << ansNum_s << endl;
+	string filename = "thread_" + thread_id + "_" + Util::getTimeName() + "_query";
+	string localname = ".tmp/web/" + filename;
+
+	if(ret)
+	{
+		cout <<log_prefix<< "search query returned successfully." << endl;
+			
+		//record each query operation, including the sparql and the answer number
+		//accurate down to microseconds
+		char time_str[100];
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		int s = tv.tv_usec/1000;
+		int y = tv.tv_usec%1000;
+
+		string query_start_time = Util::get_date_time() + ":" + Util::int2string(s) + "ms" + ":" + Util::int2string(y) + "microseconds";
+	
+		cout << "remote_ip: " << remote_ip << endl;
+
+		//filter the IP from the test server
+		if(remote_ip != TEST_IP)
+		{
+			Document doc;
+			doc.SetObject();
+			Document::AllocatorType &doc_allocator = doc.GetAllocator();
+			doc.AddMember("QueryDateTime", StringRef(query_start_time.c_str()), doc_allocator);
+			doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
+			doc.AddMember("Sparql", StringRef(sparql.c_str()), doc_allocator);
+			doc.AddMember("AnsNum", rs.ansNum, doc_allocator);
+			string QueryTime = Util::int2string(query_time) + "ms";
+			doc.AddMember("QueryTime", StringRef(QueryTime.c_str()), doc_allocator);
+			StringBuffer buffer;
+			PrettyWriter<StringBuffer> writer(buffer);
+			doc.Accept(writer);
+			writeLog(query_logfp, buffer.GetString());
+		}
+
+
+		//string log_info = Util::get_date_time() + "\n" + sparql + "\n\nanswer num: " + Util::int2string(rs.ansNum)+"\nquery time: "+Util::int2string(query_time) +" ms\n-----------------------------------------------------------\n";
+	
+		//to void someone downloading all the data file by sparql query on purpose and to protect the data
+		//if the ansNum too large, for example, larger than 100000, we limit the return ans.
+		if(rs.ansNum > MAX_OUTPUT_SIZE)
+		{
+			if(rs.output_limit == -1 || rs.output_limit > MAX_OUTPUT_SIZE )
+				rs.output_limit = MAX_OUTPUT_SIZE;
+		}
+
+    ofstream outfile;
+    string ans = "";
+    string success = "";
+    //TODO: if result is stored in Stream instead of memory?  (if out of memory to use to_str)
+    //BETTER: divide and transfer, in multiple times, getNext()
+    if (format == "json") {
+      success = rs.to_JSON();
+      Document resDoc;
+      Document::AllocatorType& allocator = resDoc.GetAllocator();
+      resDoc.Parse(success.c_str());
+      resDoc.AddMember("StatusCode", 0, allocator);
+      resDoc.AddMember("StatusMsg", "success", allocator);
+      StringBuffer resBuffer;
+      PrettyWriter<StringBuffer> resWriter(resBuffer);
+      resDoc.Accept(resWriter);
+      success = resBuffer.GetString();
+	  localname = localname + "." + format;
+      filename = filename + "." + format;
+	  filename = "";
+      filename = "sparql." + format;
+      cout << log_prefix << "filename: " << filename << endl;
+      *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length();
+      *response << "\r\nContent-Type: application/octet-stream";
+      *response << "\r\nContent-Disposition: attachment; filename=\"" << filename << '"';
+      *response << "\r\n\r\n" << success;
+
+	  pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+			return;
+			//return true;
+			//
+	
+    } 
+	else if(format=="html")
+	{
+		success = rs.to_str();
+		localname = localname + ".txt";
+       filename = filename + ".txt";
+		outfile.open(localname);
+      outfile << success;
+      outfile.close();
+      if (rs.ansNum > 100) {
+        if (rs.output_limit == -1 || rs.output_limit > 100)
+          rs.output_limit = 100;
+      }
+      success = rs.to_JSON();
+
+      Document resDoc;
+      Document::AllocatorType& allocator = resDoc.GetAllocator();
+      resDoc.Parse(success.c_str());
+      resDoc.AddMember("StatusCode", 0, allocator);
+      resDoc.AddMember("StatusMsg", "success", allocator);
+      resDoc.AddMember("AnsNum", rs.ansNum, allocator);
+      string QueryTime = Util::int2string(query_time) + "ms";
+      resDoc.AddMember("QueryTime", StringRef(QueryTime.c_str()), allocator);
+      resDoc.AddMember("Filename", StringRef(filename.c_str()), allocator);
+
+      StringBuffer resBuffer;
+      PrettyWriter<StringBuffer> resWriter(resBuffer);
+      resDoc.Accept(resWriter);
+      string resJson = resBuffer.GetString();
+
+      *response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length();
+      *response << "\r\nCache-Control: no-cache"
+                << "\r\nPragma: no-cache"
+                << "\r\nExpires: 0";
+      *response << "\r\n\r\n" << resJson;
+
+      //!Notice: remember to set no-cache in the response of query, Firefox and chrome works well even if you don't set, but IE will act strange if you don't set
+      //beacause IE will defaultly cache the query result after first query request, so the following query request of the same url will not be send if the result in cache isn't expired.
+      //then the following query will show the same result without sending a request to let the service run query
+      //so the download function will go wrong because there is no file in the service.
+      //*response << "HTTP/1.1 200 OK\r\nContent-Length: " << query_time_s.length()+ansNum_s.length()+filename.length()+success.length()+4;
+      //*response << "\r\nContent-Type: text/plain";
+      //*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
+      //*response  << "\r\n\r\n" << "0+" << query_time_s<< '+' << rs.ansNum << '+' << filename << '+' << success;
+      pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+      //return true;
+      return;
+	}
+	else if (format == "sparql-results+json") {
+		
+      success = rs.to_JSON(); // convert the result to json
+	   *response << "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: " << success.length();
+      *response << "\r\nCache-Control: no-cache"
+                << "\r\nPragma: no-cache"
+                << "\r\nExpires: 0";
+      *response << "\r\n\r\n" << success; // success contains the json-encoded result
+
+      pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	  return;
+    }
+	else
+	{
+		 localname = localname + ".txt";
+        filename = filename + ".txt";
+		 cout << log_prefix << "filename: " << filename << endl;
+		 filename = "";
+		  success = rs.to_str();
+      filename = "sparql.txt";
+      cout << log_prefix << "filename: " << filename << endl;
+      *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length();
+      *response << "\r\nContent-Type: application/octet-stream";
+      *response << "\r\nContent-Disposition: attachment; filename=\"" << filename << '"';
+      *response << "\r\n\r\n" << success;
+
+	  pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	   return;
+			//return true;
+			//
+		
+	}
+	
+	}
+	else
+	{
+		string error = "";
+		int error_code;
+		if(update)
+		{
+			cout <<log_prefix<< "update query returned correctly." << endl;
+			error = "update query returns true.";
+			error_code = 0;
+		}
+		else
+		{
+			cout <<log_prefix<< "search query returned error." << endl;
+			error = "search query returns false.";
+			error_code = 1005;
+		}
+		sendResponseMsg(error_code,error,response);
+		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		//return false;
+		return;
+	}
+}
+
+/**
+ * @description: build the database by http server
+ * @Author:liwenjie
+ * @param {const} shared_ptr response
+ * @param {const} shared_ptr request
+ * @param {string} RequestType request-type
+ * @return {*}
+ */
 void build_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	if(!ipCheck(request)){
@@ -2946,7 +4186,7 @@ string checkIdentity(string username, string password)
 void request_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	if (!ipCheck(request)) {
-		string error = "IP Blocked!"
+		string error = "IP Blocked!";
 		sendResponseMsg(1101, error, response);
 		return;
 	}
@@ -2958,6 +4198,7 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	string db_name;
 	Document document;
 	string url;
+	string remote_ip=getRemoteIp(request);
 	cout << "request method:" << request->method << endl;
 	cout << "request http_version:" << request->http_version << endl;
 	cout << "request type:" << RequestType << endl;
@@ -3025,7 +4266,133 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	}
 	else if (operation == "monitor")
 	{
-
+        monitor_thread_new(response,db_name);
+	}
+	else if(operation=="unload")
+	{
+        unload_thread_new(response,db_name);
+	}
+	else if(operation=="drop")
+	{
+	   string is_backup="true";
+       if(RequestType=="GET")
+	   {
+          is_backup=WebUrl::CutParam(url,"is_backup");   
+	   }
+	   else{
+		   is_backup=document["is_backup"].GetString();
+	   }
+	   if(is_backup.empty())
+	   {
+		   is_backup="true";
+	   }
+	   cout<<"is_backup:"<<is_backup<<endl;
+	   drop_thread_new(response,db_name,is_backup);
+	}
+	else if(operation=="show")
+	{
+        show_thread_new(response);
+	}
+	else if(operation=="usermanage")
+	{
+        string type="";
+		string op_username="";
+		string op_password="";
+		if(RequestType=="GET")
+		{
+			type=WebUrl::CutParam(url,"type");
+			op_username=WebUrl::CutParam(url,"op_username");
+			op_password=WebUrl::CutParam(url,"op_password");
+		}
+		else 
+		{
+            type=document["type"].GetString();
+			op_username=document["op_username"].GetString();
+			op_password=document["op_password"].GetString();
+		}
+		userManager_thread_new(response,op_username,op_password,type);
+	}
+	else if(operation=="showuser")
+	{
+        showuser_thread_new(response);
+	}
+	else if(operation=="userprivilegemanage")
+	{
+		string type="";
+		string op_username="";
+		string privileges="";
+		if(RequestType=="GET")
+		{
+			type=WebUrl::CutParam(url,"type");
+			op_username=WebUrl::CutParam(url,"op_username");
+			privileges=WebUrl::CutParam(url,"privileges");
+		}
+		else 
+		{
+            type=document["type"].GetString();
+			op_username=document["op_username"].GetString();
+			privileges=document["privileges"].GetString();
+		}
+       userPrivilegeManage_thread_new(response,op_username,privileges,type,db_name);
+	}
+	else if(operation=="backup")
+	{
+        string backup_path="";
+		if(RequestType=="GET")
+		{
+			backup_path=WebUrl::CutParam(url,"backup_path");
+			backup_path=UrlDecode(backup_path);
+		}
+		else 
+		{
+            backup_path=document["backup_path"].GetString();
+		}
+		backup_thread_new(response,db_name,backup_path);
+	}
+	else if(operation=="restore")
+	{
+		string backup_path="";
+		if(RequestType=="GET")
+		{
+			backup_path=WebUrl::CutParam(url,"backup_path");
+			backup_path=UrlDecode(backup_path);
+		}
+		else 
+		{
+            backup_path=document["backup_path"].GetString();
+		}
+		restore_thread_new(response,db_name,backup_path,username);
+		
+	}
+	else if(operation=="query")
+	{
+        string format="";
+		string sparql="";
+	
+		string querytype="0";
+		if (checkPrivilege(username, "update", db_name) ==0)
+		{
+            querytype="0";
+		}
+		else
+		{
+			querytype="1";
+		}
+		if(RequestType=="GET")
+		{
+			format=WebUrl::CutParam(url,"format");
+			sparql=WebUrl::CutParam(url,"sparql");
+		
+			sparql=UrlDecode(sparql);
+		}
+		else 
+		{
+            format=document["format"].GetString();
+			sparql=document["sparql"].GetString();
+			
+		
+		}
+		query_thread_new(response,db_name,sparql,format,querytype,remote_ip,thread_id,log_prefix);
 	}
 	else {
 		string error="the operation "+operation +" has not match handler function";
@@ -3034,6 +4401,13 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	
 	
 }
+/**
+ * @Author: liwenjie
+ * @param {const} HttpServer
+ * @param {const} shared_ptr
+ * @param {const} shared_ptr
+ * @param {string} RequestType
+ */
 bool request_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	thread t(&request_thread, response, request, RequestType);
@@ -6816,12 +8190,12 @@ bool refreshSys()
 int copy(string src_path, string dest_path)
 {
 	string sys_cmd;
-	if(!boost::filesystem::exists(src_path)){
+	if(Util::dir_exist(src_path)==false){
 		//check the source path
 		cout << "Source Path Error, Please Check It Again!" << endl;
 		return 1;
 	}
-	if(!boost::filesystem::exists(dest_path)){
+	if(Util::dir_exist(dest_path)==false){
 		//check the destnation path 
 		sys_cmd = "mkdir -p ./" + dest_path;
 		system(sys_cmd.c_str());
@@ -8973,3 +10347,4 @@ txn_id_t get_txn_id(string db_name, string user)
 	else
 		return running_txn[idx];
 }
+
