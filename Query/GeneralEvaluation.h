@@ -100,7 +100,7 @@ class GeneralEvaluation
 
 		int constructTriplePattern(QueryTree::GroupPattern& triple_pattern, int dep);
 		void getUsefulVarset(Varset& useful, int dep);
-		bool checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *sub_result, Varset& useful);
+		bool checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *&sub_result, Varset& useful);
 		void fillCandList(SPARQLquery& sparql_query, int dep, vector<vector<string> >& encode_varset);
 		void joinBasicQueryResult(SPARQLquery& sparql_query, TempResultSet *new_result, TempResultSet *sub_result, vector<vector<string> >& encode_varset, \
 			vector<vector<QueryTree::GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep);
