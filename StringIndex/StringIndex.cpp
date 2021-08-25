@@ -297,7 +297,7 @@ void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessReque
 	else
 	{
 		cout << "random access." << endl;
-		for (int i = 0; i < (int)this->request.size(); i++)
+		for (int i = 0; i < (int)requestVector.size(); i++)
 			{
 				//this->randomAccess(this->request[i].id, (this->request[i].off_str + base), real);
 			this->randomAccess(requestVector[i].id, (requestVector[i].off_str + base), real);
