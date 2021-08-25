@@ -2978,8 +2978,9 @@ void GeneralEvaluation::fillCandList(SPARQLquery& sparql_query, int dep, vector<
 				for (set<unsigned>::iterator iter = result_set.begin(); iter != result_set.end(); iter++)
 					result_vector.push_back(*iter);
 
-				basic_query.getCandidateList(k).copy(result_vector);
-				basic_query.setReady(k);
+
+				basic_query.getCandidateList(basic_query.getIDByVarName(basic_query_encode_varset[k])).copy(result_vector);
+				basic_query.setReady(basic_query.getIDByVarName(basic_query_encode_varset[k]));
 
 				printf("fill var %s CandidateList size %d\n", basic_query_encode_varset[k].c_str(), (int)result_vector.size());
 			}
