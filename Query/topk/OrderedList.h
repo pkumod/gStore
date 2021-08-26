@@ -10,11 +10,19 @@
 #include "DynamicTrie.h"
 enum class OrderedListType{UnDefined,FR,OW,FQ};
 
+using OnePointPredicateVec= std::vector<TYPE_ENTITY_LITERAL_ID>;
+using OnePointPredicatePtr = std::shared_ptr<OnePointPredicateVec>;
+using NodeOneChildVarPredicates = std::vector<OnePointPredicatePtr>;
+using NodeOneChildVarPredicatesPtr = std::shared_ptr<NodeOneChildVarPredicates>;
+
+
 /* This structure is designed for
   selecting top-k min element */
 class OrderedList{
  public:
   DPB::Pool pool_;
+  // predicates_vec[i] is the predicates of child[i]
+  // FQs and FRs will use this field.
   virtual OrderedListType Type(){return OrderedListType::UnDefined;};
   virtual void TryGetNext(unsigned int k)=0;
   virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record)=0;
@@ -22,6 +30,7 @@ class OrderedList{
 
 class FRIterator:public OrderedList {
  private:
+  NodeOneChildVarPredicatesPtr type_predicates_;
   minmax::MinMaxHeap<DPB::element> queue_;
  public:
   FRIterator() = default;
@@ -29,11 +38,8 @@ class FRIterator:public OrderedList {
   void TryGetNext(unsigned int k) override;
 
   // Insert a bulk of FQ iterator, all the same type
-  void Insert(unsigned int k,OrderedList* FQ_iterator);
-
-  // Insert a bulk of FQ iterator, all the same type
-  void Insert(unsigned int k,const std::vector<OrderedList*>& FQ_iterators);
-  void Insert(unsigned int k,const std::set<OrderedList*>& FQ_iterators);
+  void Insert(unsigned int k,OrderedList* FQ_iterator,
+              OnePointPredicatePtr predicates_vec);
 
   double DeltaCost(OrderedList* node_pointer, int index);
   bool NextEPoolElement(unsigned int k, OrderedList* node_pointer, unsigned int index);
@@ -63,7 +69,11 @@ class FQIterator: public OrderedList{
   std::vector<std::vector<unsigned int>> seq_list_;
   DPB::ePool e_pool_;
   DPB::DynamicTrie dynamic_trie_;
+  std::vector<NodeOneChildVarPredicatesPtr> types_predicates_;
  public:
+  void AddOneTypePredicate(NodeOneChildVarPredicatesPtr p){this->types_predicates_.push_back(p);}
+
+
   TYPE_ENTITY_LITERAL_ID node_id_;
   explicit FQIterator(int k,TYPE_ENTITY_LITERAL_ID node_id,int child_type_num,double node_score):
       node_score_(node_score), dynamic_trie_(child_type_num,k),node_id_(node_id)

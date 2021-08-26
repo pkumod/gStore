@@ -38,6 +38,8 @@ struct TopKTreeNode{
   int var_id;
   std::vector<std::shared_ptr<TopKUtil::TreeEdge>> tree_edges_;
   std::vector<TopKTreeNode*> descendents_;
+  size_t descendents_fr_num_;
+  size_t descendents_ow_num_;
 };
 
 /**
@@ -50,7 +52,9 @@ struct TopKTreeNode{
  */
 class TopKTreeSearchPlan {
  private:
+  std::size_t total_vars_num_;
   std::size_t CountDepth(map<TYPE_ENTITY_LITERAL_ID,vector<TYPE_ENTITY_LITERAL_ID>> &neighbours, TYPE_ENTITY_LITERAL_ID root_id, std::size_t total_vars_num);
+  void AdjustOrder();
  public:
   explicit TopKTreeSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore kv_store, Statistics *statistics, QueryTree::Order expression,
                               shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
@@ -97,14 +101,31 @@ struct Env{
 
 std::map<TYPE_ENTITY_LITERAL_ID,FQIterator*>  inline AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
                                                                     std::map<TYPE_ENTITY_LITERAL_ID,double>* node_scores, int k,
-                                                                    vector<std::map<TYPE_ENTITY_LITERAL_ID, OrderedList *>> &descendents_FRs);
+                                                                    vector<std::map<TYPE_ENTITY_LITERAL_ID, FRIterator *>> &descendents_FRs,
+                                                                    std::vector<std::map<TYPE_ENTITY_LITERAL_ID,std::pair<OWIterator*,NodeOneChildVarPredicatesPtr>>>&descendents_OWs);
 
 void inline AddRelation(TYPE_ENTITY_LITERAL_ID x,TYPE_ENTITY_LITERAL_ID y, std::map<TYPE_ENTITY_LITERAL_ID ,std::set<TYPE_ENTITY_LITERAL_ID >>& mapping);
 
-std::map<TYPE_ENTITY_LITERAL_ID ,OrderedList*>  GenerateIteratorNode(int parent_var,int child_var,std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
-                                                                     std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
-                                                                     std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
-                                                                TopKTreeNode *child_tree_node,Env *env);
+std::set<TYPE_ENTITY_LITERAL_ID> // child_candidates
+ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,int child_var,
+               std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
+               std::map<TYPE_ENTITY_LITERAL_ID, shared_ptr<IDListWithAppending>  > &parent_child,
+               std::map<TYPE_ENTITY_LITERAL_ID, std::set<TYPE_ENTITY_LITERAL_ID> > &child_parent,
+               std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
+               Env *env);
+
+std::map<TYPE_ENTITY_LITERAL_ID, // parent id
+         std::pair<OWIterator*, // its OW
+                   NodeOneChildVarPredicatesPtr>> // predicate correspond to the OW
+GenerateOWs(int parent_var,int child_var,std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
+            std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
+            std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
+            TopKTreeNode *child_tree_node,Env *env);
+
+std::map<TYPE_ENTITY_LITERAL_ID,FRIterator*>  GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
+                                                            std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
+                                                            std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
+                                                            TopKTreeNode *child_tree_node, Env *env);
 
 FRIterator* BuildIteratorTree(const shared_ptr<TopKTreeSearchPlan> tree_search_plan,Env *env);
 
