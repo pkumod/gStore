@@ -66,11 +66,12 @@ using IDCachesSharePtr = std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,std::sh
  */
 class IDListWithAppending
 {
+ public:
   std::shared_ptr<std::map<
       TYPE_ENTITY_LITERAL_ID, // main key
       std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> // attached elements
       >> contents_;
- public:
+
   IDListWithAppending() = default;
   IDListWithAppending(const IDList &id_list);
   IDListWithAppending(TYPE_ENTITY_LITERAL_ID* id_list, size_t records_num,
@@ -79,6 +80,10 @@ class IDListWithAppending
                     size_t one_record_len, size_t main_key_position);
   void Intersect(const TYPE_ENTITY_LITERAL_ID* id_list, size_t record_num, size_t one_record_len, size_t main_key_position);
 
+  size_t Size(){ return this->contents_->size();}
+  bool Empty() {return this->contents_->empty();}
+  bool Erase(TYPE_ENTITY_LITERAL_ID main_key){ return this->contents_->erase(main_key);}
+  size_t MainKeyNum() {return this->contents_->size();}
 };
 
 #endif //_QUERY_IDLIST_H

@@ -33,30 +33,28 @@ void FRIterator::TryGetNext(unsigned int k) {
 }
 
 
-void FRIterator::Insert(unsigned int k, OrderedList* fq_pointer) {
+/**
+ * Insert One FQ iterator into the FR
+ * @param k
+ * @param fq_pointer
+ */
+void FRIterator::Insert(unsigned int k, OrderedList* fq_pointer,
+                        OnePointPredicatePtr predicates_vec) {
+
+  auto already_FQ_num = this->type_predicates_->size();
+  this->type_predicates_->push_back(predicates_vec);
+
   auto cost = fq_pointer->pool_[0].cost;
   if(queue_.size()>=k && cost>queue_.findMax().cost)
     return;
   DPB::element e{};
   e.cost = cost;
-  e.index = 0;
+  e.index = already_FQ_num;
+
   e.identity.pointer = fq_pointer;
   queue_.push(e);
   if(queue_.size()>k)
     queue_.popMax();
-}
-
-void FRIterator::Insert(unsigned int k,const std::vector<OrderedList *>& FQ_iterators) {
-  for(auto fq_pointer : FQ_iterators)
-  {
-    Insert(k,fq_pointer);
-  }
-}
-void FRIterator::Insert(unsigned int k,const std::set<OrderedList *>& FQ_iterators) {
-  for(auto fq_pointer : FQ_iterators)
-  {
-    Insert(k,fq_pointer);
-  }
 }
 
 double FRIterator::DeltaCost(OrderedList* node_pointer, int index) {

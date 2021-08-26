@@ -149,7 +149,7 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
 	//compare n(k+1) and nklogn: k0 = log(n/2)2 requiring that n>2
 	//k<=k0 binary search; k>k0 intersect
 	int method = -1; //0: intersect 1: search in vector 2: search in int*
-	int n = this->id_list.size();
+	auto n = this->id_list.size();
 	double k = 0;
 	if (n < _list_len)
 	{
