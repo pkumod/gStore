@@ -94,6 +94,7 @@ public:
 	PlanTree* get_normal_plan();
 
 
+	JoinMethod get_join_method(bool s_const, bool p_const, bool o_const, VarDescriptor::ItemType item_type);
 	void get_candidate_generate_plan();
 	void considerallvarscan();
 	void considerallwcojoin(unsigned var_num);

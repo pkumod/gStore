@@ -40,6 +40,7 @@ public:
 	// cannot descriminate literal with entity
 	enum class VarType{Entity,Predicate};
 	enum class EntiType{VarEntiType, ConEntiType};
+	enum class ItemType{SubType, PreType, ObjType};
 	enum class PreType{VarPreType, ConPreType};
 
 	unsigned id_;
@@ -58,6 +59,8 @@ public:
 	// unsigned so_var_var_edge_num;
 	// unsigned so_var_con_edge_num;
 
+
+	vector<ItemType> so_var_item_type;
 	// only used when var_type_ == Entity
 	vector<char> so_edge_type_;
 	vector<unsigned> so_edge_index_;
