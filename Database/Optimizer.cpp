@@ -856,7 +856,6 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
   env->coefficients = var_coefficients;
   env->txn = this->txn_;
   env->ss = make_shared<stringstream>();
-  env->global_iterators = make_shared< std::vector<std::shared_ptr<std::set<OrderedList*>>>>();
 
   auto root_fr = TopKUtil::BuildIteratorTree(tree_search_plan,env);
   for(int i =1;i<=query_info.limit_num_;i++)
@@ -904,7 +903,6 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
     it++;
   }
 #endif
-  TopKUtil::FreeGlobalIterators(env->global_iterators);
   return std::make_tuple(true,pos_var_mapping, result_list);
 }
 
