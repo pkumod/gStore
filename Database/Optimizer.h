@@ -125,6 +125,8 @@ class Optimizer
   tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionTopK(BasicQuery* basic_query, shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
                                                  const QueryInfo& query_info,IDCachesSharePtr id_caches);
 
+  tuple<bool,IntermediateResult> ExecutionTopK(shared_ptr<BGPQuery> bgp_query, shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
+                                                                         const QueryInfo& query_info,IDCachesSharePtr id_caches);
 #endif
   /*copy the result to vector<unsigned*> & */
   bool CopyToResult(vector<unsigned*> *target, BasicQuery *basic_query, const shared_ptr<IntermediateResult>& result);
