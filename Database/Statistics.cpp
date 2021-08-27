@@ -1372,3 +1372,10 @@ void Statistics::load_Statistics() {
     this->load_Statistics_for_two_edge_type2();
     this->load_Statistics_for_two_edge_type3();
 }
+
+double Statistics::estimate_one_edge(EdgeInfo edge_info,
+                                     EdgeConstantInfo edge_constant_info,
+                                     shared_ptr<IDList> s_cache,
+                                     shared_ptr<IDList> o_cache) {
+  return 0;
+}
