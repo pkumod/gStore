@@ -725,8 +725,6 @@ void PlanGenerator::get_join_nodes(const vector<int> &plan_a_nodes, vector<int> 
 // first node
 void PlanGenerator::considerallscan(vector<int> &need_join_nodes, bool use_sample){
 
-	//special case: there is no query_var linked with constant, than need estimate by p2s or p2o
-	bool is_special = true;
 	random_device rd;
 	mt19937 eng(rd());
 
@@ -1004,15 +1002,119 @@ PlanTree* PlanGenerator::get_normal_plan() {
 }
 
 
+JoinMethod PlanGenerator::get_join_method(bool s_const, bool p_const, bool o_const, VarDescriptor::ItemType item_type) {
+	switch (item_type) {
+		case VarDescriptor::ItemType::SubType:
+			if(p_const)
+				if(o_const) return JoinMethod::po2s;
+				else return JoinMethod::p2s;
+			else
+				if(o_const) return JoinMethod::o2s;
+				else{
+					cout << "error! error when try to generate candidates from two vars in one triple!" << endl;
+					exit(-1);
+				}
+		case VarDescriptor::ItemType::ObjType:
+			if(p_const)
+				if(s_const) return JoinMethod::sp2o;
+				else return JoinMethod::p2o;
+			else
+				if(s_const) return JoinMethod::s2o;
+				else{
+					cout << "error! error when try to generate candidates from two vars in one triple!" << endl;
+					exit(-1);
+				}
+		case VarDescriptor::ItemType::PreType:
+			if(s_const)
+				if(o_const) return JoinMethod::so2p;
+				else return JoinMethod::s2p;
+			else
+				if(o_const) return JoinMethod::o2p;
+				else{
+					cout << "error! error when try to generate candidates from two vars in one triple!" << endl;
+					exit(-1);
+				}
+	}
+}
+
+
+/**
+ * Generate var candidates_generation plan.
+ * Edges below will be considered in this function:
+ * 1. Triple with only one var: ?s p o, s ?p o, s p ?o.
+ * 	We will tell the executor to generate candidate for the var from the other two const.
+ * 2. Triple with two var and one const.
+ * 	We will generate candidate for the var from the const.
+ * 	Todo: generate all items from the db when the triples include the var is like ?s ?p ?o.
+ */
 void PlanGenerator::get_candidate_generate_plan() {
 	// include all posible vars candidate_generate_plan, refer to Vardescriptor.link_with_const.
 	// If it is true, then this function will generate plan for getting its candidates,
 	// else, candidate_generate_plan_vec[i] will be nullptr
+	// need_join_var_index contains var index which will generate candidates,
+	// ie. which position in candidate_generate_plan_vec is not nullptr
 	vector<shared_ptr<StepOperation>> candidate_generate_plan_vec;
+	vector<unsigned> need_join_var_index;
 
-	// for(unsigned var_index = 0; var_index < bgpquery->get_total_var_num(); ++var_index){
-	// 	if(bgp)
-	// }
+	for(unsigned var_index = 0; var_index < bgpquery->get_total_var_num(); ++var_index){
+		if(!bgpquery->is_var_satellite_by_index(var_index)){
+			// if this var is not select and degree is one,
+			// then we will not generate candidates of it,
+			// instead, we will check edge after all other vars have joined
+
+			need_join_var_index.push_back(var_index);
+			auto var_descrip = bgpquery->get_vardescrip_by_index(var_index);
+
+			auto edge_info = make_shared<vector<EdgeInfo>>();
+			auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+
+
+			if(var_descrip->var_type_ == VarDescriptor::VarType::Entity){
+				for(unsigned i_th_edge = 0; i_th_edge < var_descrip->degree_; ++i_th_edge){
+
+					unsigned triple_index = var_descrip->so_edge_index_[i_th_edge];
+					// todo: get join method by s_const, p_const, o_const
+					bool s_const = bgpquery->s_is_constant_[triple_index];
+					bool p_const = bgpquery->p_is_constant_[triple_index];
+					bool o_const = bgpquery->o_is_constant_[triple_index];
+
+					// todo: add so_var_item_type to bgpquery.build()
+					if(s_const || p_const || o_const){
+						// at least have one const
+						JoinMethod join_method = get_join_method(s_const, p_const, o_const, var_descrip->so_var_item_type[i_th_edge]);
+						edge_info->emplace_back(bgpquery->s_id_[triple_index], bgpquery->p_id_[triple_index], bgpquery->o_id_[triple_index], join_method);
+						edge_constant_info->emplace_back(s_const, p_const, o_const);
+					}
+
+				}
+			} else{
+				// pre var type
+				for(unsigned i_th_edge = 0; i_th_edge < var_descrip->degree_; ++i_th_edge){
+
+					unsigned triple_index = var_descrip->pre_edge_index_[i_th_edge];
+					// todo: get join method by s_const, p_const, o_const
+					bool s_const = bgpquery->s_is_constant_[triple_index];
+					bool p_const = bgpquery->p_is_constant_[triple_index];
+					bool o_const = bgpquery->o_is_constant_[triple_index];
+
+					// todo: add so_var_item_type to bgpquery.build()
+					if(s_const || p_const || o_const){
+						// at least have one const
+						JoinMethod join_method = get_join_method(s_const, p_const, o_const, VarDescriptor::ItemType::PreType);
+						edge_info->emplace_back(bgpquery->s_id_[triple_index], bgpquery->p_id_[triple_index], bgpquery->o_id_[triple_index], join_method);
+						edge_constant_info->emplace_back(s_const, p_const, o_const);
+					}
+
+				}
+			}
+
+			auto candidate_node = make_shared<FeedOneNode>(var_descrip->id_, edge_info, edge_constant_info);
+
+			candidate_generate_plan_vec.emplace_back(make_shared<StepOperation>(StepOperation::JoinType::GenerateCandidates, nullptr, nullptr, nullptr, candidate_node));
+
+		} else
+			candidate_generate_plan_vec.push_back(nullptr);
+	}
 }
 
 void PlanGenerator::considerallvarscan() {
@@ -1119,6 +1221,12 @@ PlanTree *PlanGenerator::get_plan() {
 
 }
 
+
+/**
+ * Get which nei from nei_id_set to expand
+ * @param nei_id_set node id can been chosen to expand
+ * @return the chosen node id
+ */
 unsigned int PlanGenerator::choose_next_nei_id(set<unsigned int> nei_id_set) {
 
 	unsigned next_id = UINT_MAX;
@@ -1141,7 +1249,13 @@ unsigned int PlanGenerator::choose_next_nei_id(set<unsigned int> nei_id_set) {
 	}
 }
 
-// insert next_id's nei to nei_id_vec, remove next_id from nei_id_vec, insert next_id to already_id
+
+/**
+ * insert next_id's nei to neibor_id, remove next_id from neibor_id, insert next_id to already_id
+ * @param neibor_id neighbor of processed node, which have not been processed
+ * @param already_id already processed node id
+ * @param next_id next processed node id
+ */
 void PlanGenerator::update_nei_id_set(set<unsigned> &neibor_id, set<unsigned> &already_id, unsigned next_id) {
 
 	auto var_descrip = bgpquery->get_vardescrip_by_id(next_id);
@@ -1350,28 +1464,31 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 
 
-// plan below is for special query:
-//
-// select distinct ?ustu ?gstu where{
-// 	?ustu <rdf:type> <ub:UndergraduateStudent>. triple 0
-// 	?gstu <rdf:type> <ub:GraduateStudent>.      triple 1
-// 	?ustu <ub:advisor> ?prof.                   triple 2
-// 	?cour <rdf:type> <ub:Course>.               triple 3
-// 	?ustu <ub:takesCourse> ?cour.               triple 4
-// 	?gstu <ub:teachingAssistantOf> ?cour.       triple 5
-// 	?gstu ?p ?o.                                triple 6
-// }
-// var_id_map: {{?ustu:0}, {?gstu:1}, {?prof:2}, {?cour:3}, {?p:4}, {?o:5}}
-// plan this fun generates is:
-//       ?prof              edgecheck
-//         |
-//       ?p ?o             jointwonodes
-//         |
-//                           jointable
-//    /        \
-// ?cour     ?cour           joinnode
-//   |         |
-// ?ustu     ?gstu     generatecandidates
+/*
+ plan below is for special query:
+
+ select distinct ?ustu ?gstu where{
+ 	?ustu <rdf:type> <ub:UndergraduateStudent>. triple 0
+ 	?gstu <rdf:type> <ub:GraduateStudent>.      triple 1
+ 	?ustu <ub:advisor> ?prof.                   triple 2
+ 	?cour <rdf:type> <ub:Course>.               triple 3
+ 	?ustu <ub:takesCourse> ?cour.               triple 4
+ 	?gstu <ub:teachingAssistantOf> ?cour.       triple 5
+ 	?gstu ?p ?o.                                triple 6
+ }
+
+ var_id_map: {{?ustu:0}, {?gstu:1}, {?prof:2}, {?cour:3}, {?p:4}, {?o:5}}
+ plan this fun generates is:
+       ?prof              edgecheck
+         |
+       ?p ?o             jointwonodes
+         |
+                           jointable
+    /        \
+ ?cour     ?cour           joinnode
+   |         |
+ ?ustu     ?gstu     generatecandidates
+*/
 PlanTree *PlanGenerator::get_plan_for_debug() {
 
 

@@ -82,8 +82,7 @@ class EdgeInfo{
   TYPE_ENTITY_LITERAL_ID p_;
   TYPE_ENTITY_LITERAL_ID o_;
   EdgeInfo(TYPE_ENTITY_LITERAL_ID s,TYPE_ENTITY_LITERAL_ID p,TYPE_ENTITY_LITERAL_ID o,JoinMethod method):
-      s_(s),o_(o),p_(p),join_method_(method){
-  }
+      s_(s),p_(p),o_(o),join_method_(method){}
 
   // return one var's index edge info, now only used in special case when triple_num == 1 query
   EdgeInfo(shared_ptr<VarDescriptor> var_descrip, unsigned index, bool is_pre_var){
