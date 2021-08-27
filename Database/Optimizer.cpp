@@ -376,8 +376,6 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 #endif
     auto top_k_result = this->ExecutionTopK(bgp_query,search_plan,query_info,var_candidates_cache);
     auto result_table = get<1>(top_k_result);
-    auto pos_var_mapping = result_table.pos_id_map;
-    auto var_pos_mapping = result_table.id_pos_map;
     CopyToResult(bgp_query->get_result_list_pointer(), bgp_query, result_table);
 #endif
   }
