@@ -13,7 +13,6 @@
 #include <string>
 #include "../Util/Util.h"
 #include "../KVstore/KVstore.h"
-#include "./TableOperator.h"
 
 //    Statistics 类主要考虑了一条边和两条边的信息,
 //    以谓词 pre_id 作索引, 存储 (stype_id)-[pre_id]->(otype_id) 的数目和抽样信息
@@ -193,8 +192,8 @@ public:
     int get_type_two_edges_type2id_num_by_id(TWO_PRE_ID p1_p2_id, TWO_EDGES_ENTITY_TYPE_ID s1_s2_s3_type_id);
     int get_type_two_edges_type3id_num_by_id(TWO_PRE_ID p1_p2_id, TWO_EDGES_ENTITY_TYPE_ID s1_s2_s3_type_id);
 
-    double estimate_one_edge(EdgeInfo edge_info,EdgeConstantInfo edge_constant_info,
-                             shared_ptr<IDList> s_cache,shared_ptr<IDList> o_cache);
+    double estimate_one_edge_selectivity(TYPE_PREDICATE_ID  pre_id,bool pre_constant,
+                             vector<TYPE_ENTITY_LITERAL_ID> &s_cache,vector<TYPE_ENTITY_LITERAL_ID> &o_cache);
 //    bool insert_one_edge_type(TYPE_ENTITY_LITERAL_ID s_type,
 //                              TYPE_PREDICATE_ID p_type, TYPE_ENTITY_LITERAL_ID o_type);
 //    bool insert_two_edges_type1(TYPE_ENTITY_LITERAL_ID s1_type, TYPE_PREDICATE_ID p1_type,
