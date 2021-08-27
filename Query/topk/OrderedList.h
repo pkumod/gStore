@@ -8,6 +8,21 @@
 #include "Pool.h"
 #include "MinMaxHeap.hpp"
 #include "DynamicTrie.h"
+
+/**
+ * Structure
+ * FR
+ *   FQ
+ *   predicates with this FQ
+ *
+ * FQ [OW first and FRs last]
+ *   OWs
+ *   predicates information with all nodes in OW
+ *   FRs
+ *   no predicates information
+ * OW
+ *   no predicates information
+ */
 enum class OrderedListType{UnDefined,FR,OW,FQ};
 
 using OnePointPredicateVec= std::vector<TYPE_ENTITY_LITERAL_ID>;
@@ -25,7 +40,8 @@ class OrderedList{
   // FQs and FRs will use this field.
   virtual OrderedListType Type(){return OrderedListType::UnDefined;};
   virtual void TryGetNext(unsigned int k)=0;
-  virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record)=0;
+  virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
+                         NodeOneChildVarPredicatesPtr predicate_information = nullptr)=0;
   virtual ~OrderedList(){};
 };
 
@@ -48,7 +64,8 @@ class FRIterator:public OrderedList {
 
   static double DeltaCost(std::shared_ptr<OrderedList> node_pointer, int index);
   static bool NextEPoolElement(unsigned int k, std::shared_ptr<OrderedList> node_pointer, unsigned int index);
-  virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record) override;
+  virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
+                         NodeOneChildVarPredicatesPtr predicate_information = nullptr) override;
 };
 
 class OWIterator: public OrderedList{
@@ -63,7 +80,8 @@ class OWIterator: public OrderedList{
 
   // Insert a bulk of gStore Node ids and their scores
   void Insert(unsigned int k,const std::vector<TYPE_ENTITY_LITERAL_ID>& ids, const std::vector<double>& scores);
-  virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record) override;
+  virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
+                         NodeOneChildVarPredicatesPtr predicate_information = nullptr) override;
 };
 
 // FQ may have cost itself
@@ -91,7 +109,8 @@ class FQIterator: public OrderedList{
   void Insert(std::shared_ptr<OrderedList> FR_OW_iterator);
   static bool NextEPoolElement(unsigned int k, std::shared_ptr<OrderedList> node_pointer, unsigned int index);
   static double DeltaCost(std::shared_ptr<OrderedList> FR_OW_iterator, int index);
-  virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record) override;
+  virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
+                         NodeOneChildVarPredicatesPtr predicate_information = nullptr) override;
   virtual OrderedListType Type() override {return OrderedListType::FQ;};
 };
 

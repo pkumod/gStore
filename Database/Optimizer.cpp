@@ -352,12 +352,10 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 
     printf("BasicQueryStrategy::Special not supported yet\n");
   }
-  return tuple<bool, shared_ptr<IntermediateResult>>();
-  /*
   else if(strategy == BasicQueryStrategy::TopK)
   {
 #ifdef TOPK_SUPPORT
-    auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_, this->var_descriptors_);
+    auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
     for (auto &constant_generating_step: *const_candidates) {
       executor_.CacheConstantCandidates(constant_generating_step, var_candidates_cache);
     };
@@ -369,28 +367,26 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     std::cout<<"Top-k Constant Filtering Candidates Info End"<<std::endl;
 #endif
 
-    auto search_plan = make_shared<TopKTreeSearchPlan>(basic_query_pointer,this->statistics,(*query_info.ordered_by_expressions_)[0],var_candidates_cache);
+    auto search_plan = make_shared<TopKTreeSearchPlan>(bgp_query,this->kv_store_,
+                                                       this->statistics,(*query_info.ordered_by_expressions_)[0],
+                                                       var_candidates_cache);
 #ifdef TOPK_DEBUG_INFO
     std::cout<<"Top-k Search Plan"<<std::endl;
     std::cout<<search_plan->DebugInfo()<<std::endl;
 #endif
-    auto top_k_result = this->ExecutionTopK(basic_query_pointer,search_plan,query_info,var_candidates_cache);
-    auto pos_var_mapping = get<1>(top_k_result);
-    auto var_pos_mapping = make_shared<PositionValue>();
-    for(const auto& pos_var_pair:*pos_var_mapping) {
-      (*var_pos_mapping)[pos_var_pair.second] = pos_var_pair.first;
-    }
-
-    CopyToResult(basic_query_pointer->getResultListPointer(), basic_query_pointer, make_shared<IntermediateResult>(
-        var_pos_mapping,pos_var_mapping,get<2>(top_k_result)
-    ));
+    auto top_k_result = this->ExecutionTopK(bgp_query,search_plan,query_info,var_candidates_cache);
+    auto result_table = get<1>(top_k_result);
+    auto pos_var_mapping = result_table.pos_id_map;
+    auto var_pos_mapping = result_table.id_pos_map;
+    CopyToResult(bgp_query->get_result_list_pointer(), bgp_query, result_table);
 #endif
   }
   else if(strategy == BasicQueryStrategy::limitK)
   {
 
   }
-  return MergeBasicQuery(sparql_query);*/
+  return tuple<bool, shared_ptr<IntermediateResult>>();
+
 }
 
 tuple<bool, shared_ptr<IntermediateResult>> Optimizer::MergeBasicQuery(SPARQLquery &sparql_query) {
@@ -904,6 +900,79 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
   }
 #endif
   return std::make_tuple(true,pos_var_mapping, result_list);
+}
+
+tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp_query, shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
+                                             const QueryInfo& query_info,IDCachesSharePtr id_caches){
+
+  auto pos_var_mapping = TopKUtil::CalculatePosVarMapping(tree_search_plan);
+  auto k = query_info.limit_num_;
+  auto first_item = (*query_info.ordered_by_expressions_)[0];
+  auto var_coefficients = TopKUtil::getVarCoefficients(first_item);
+  // Build Iterator tree
+  auto env = new TopKUtil::Env();
+  env->kv_store= this->kv_store_;
+  env->id_caches = id_caches;
+  cout<<" Optimizer::ExecutionTopK  env->id_caches "<<  env->id_caches->size()<<endl;
+  env->k = query_info.limit_num_;
+  env->coefficients = var_coefficients;
+  env->txn = this->txn_;
+  env->ss = make_shared<stringstream>();
+
+  auto root_fr = TopKUtil::BuildIteratorTree(tree_search_plan,env);
+  for(int i =1;i<=query_info.limit_num_;i++)
+  {
+    root_fr->TryGetNext(k);
+    if(root_fr->pool_.size()!=i)
+      break;
+#ifdef TOPK_DEBUG_INFO
+    else {
+      cout << "get top-" << i << " "<<root_fr->pool_[i-1].cost<<endl;
+    }
+#endif
+  }
+
+  auto result_list = make_shared<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
+
+#ifdef TOPK_DEBUG_INFO
+  cout<<" the top score "<<root_fr->pool_[0].cost<<"  pool size "<<root_fr->pool_.size()<<endl;
+  for(const auto& pos_id_pair:*pos_var_mapping)
+  {
+    cout<<"pos["<<pos_id_pair.first<<"]"<<" var id "<<pos_id_pair.second<<" "<<env->basic_query->getVarName(pos_id_pair.second)<<endl;
+  }
+
+#endif
+
+  auto var_num = pos_var_mapping->size();
+  for(int i =0;i<root_fr->pool_.size();i++)
+  {
+    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+    record->reserve(var_num);
+    root_fr->GetResult(i,record);
+    result_list->emplace_back(std::move(record));
+  }
+#ifdef TOPK_DEBUG_INFO
+  auto it = result_list->begin();
+  for(int i =0;i<result_list->size();i++)
+  {
+    auto rec = *it;
+    cout<<" record["<<i<<"]"<<" score:"<<root_fr->pool_[i].cost;
+    auto var_num = bgp_query->get_total_var_num();
+    for(unsigned j =0;j<var_num;j++)
+      cout<<" "<<kv_store_->getStringByID((*rec)[j]);
+    //for(int j=basic_query->getSelectVarNum();j<var_num;j++)
+    //  cout<<" "<<kv_store_->getStringByID((*rec)[j]);
+    cout<<endl;
+    it++;
+  }
+#endif
+
+  auto result_table = IntermediateResult();
+  result_table.values_ = result_list;
+  result_table.pos_id_map = pos_var_mapping;
+  for(auto pos_id_pair:*pos_var_mapping)
+    (*result_table.id_pos_map)[pos_id_pair.second] = pos_id_pair.first;
+  return std::make_tuple(true,result_table);
 }
 
 #endif

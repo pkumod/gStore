@@ -383,10 +383,30 @@ void TopKUtil::CalculatePosVarMappingNode(TopKTreeNode* top_k_tree_node,
 {
   auto now_position = pos_var_mapping->size();
   (*pos_var_mapping)[now_position] = top_k_tree_node->var_id;
-  for(auto descendent:top_k_tree_node->descendents_)
-  {
-    CalculatePosVarMappingNode(descendent,pos_var_mapping);
+  auto descendent_num = top_k_tree_node->descendents_.size();
+  auto ow_num = top_k_tree_node->descendents_ow_num_;
+  decltype(descendent_num) i = 0;
+  for(;i<ow_num;i++) {
+    auto ow_descendent = top_k_tree_node->descendents_[i];
+    auto tree_edges_const = top_k_tree_node->tree_edges_[i]->predicate_constant_;
+    auto tree_edges_id = top_k_tree_node->tree_edges_[i]->predicate_ids_;
+    auto edge_size = tree_edges_const.size();
+    for(decltype(edge_size) j =0 ;j<edge_size;j++)
+      if(tree_edges_const[j])
+        (*pos_var_mapping)[pos_var_mapping->size()] = tree_edges_id[j];
+    CalculatePosVarMappingNode(ow_descendent, pos_var_mapping);
   }
+  for(;i<descendent_num;i++) {
+    auto fr_descendent = top_k_tree_node->descendents_[i];
+    auto tree_edges_const = top_k_tree_node->tree_edges_[i]->predicate_constant_;
+    auto tree_edges_id = top_k_tree_node->tree_edges_[i]->predicate_ids_;
+    auto edge_size = tree_edges_const.size();
+    for(decltype(edge_size) j =0 ;j<edge_size;j++)
+      if(tree_edges_const[j])
+        (*pos_var_mapping)[pos_var_mapping->size()] = tree_edges_id[j];
+    CalculatePosVarMappingNode(fr_descendent, pos_var_mapping);
+  }
+
 }
 
 shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>>

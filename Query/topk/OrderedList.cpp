@@ -71,11 +71,21 @@ bool FRIterator::NextEPoolElement(unsigned int k, std::shared_ptr<OrderedList> n
     return false;
 }
 
-void FRIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record) {
+/**
+ *
+ * @param i_th
+ * @param record
+ * @param predicate_information not used, because FR itself saves the information
+ */
+void FRIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
+                           NodeOneChildVarPredicatesPtr predicate_information) {
   auto fq = this->pool_[i_th];
   auto fq_i_th = fq.index;
   auto fq_id = fq.node;
   auto fq_pointer = this->fqs_map_[fq_id];
+  auto predicates = (*this->type_predicates_)[fq_id];
+  for(auto pre_id:*predicates)
+    record->push_back(pre_id);
   fq_pointer->GetResult(fq_i_th,record);
 }
 
@@ -106,9 +116,13 @@ void OWIterator::Insert(unsigned int k,
   }
 }
 
-void OWIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record) {
+void OWIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
+                           NodeOneChildVarPredicatesPtr predicate_information) {
   auto &i_th_element = this->pool_[i_th];
   auto node_id = i_th_element.node;
+  auto predicates = (*predicate_information)[node_id];
+  for(auto predicate_id:*predicates)
+    record->push_back(predicate_id);
   record->push_back(node_id);
 }
 
@@ -208,9 +222,16 @@ double FQIterator::DeltaCost(std::shared_ptr<OrderedList> FR_OW_iterator, int in
   return delta;
 }
 
-void FQIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record) {
+void FQIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
+                           NodeOneChildVarPredicatesPtr predicate_information) {
   record->push_back(this->node_id_);
   auto &seq = this->seq_list_[i_th];
-  for(unsigned int i =0; i<this->fr_ow_iterators_.size(); i++)
-    fr_ow_iterators_[i]->GetResult(seq[i], record);
+  for(unsigned int i =0; i<this->fr_ow_iterators_.size(); i++) {
+    if(fr_ow_iterators_[i]->Type() ==OrderedListType::OW) {
+      auto ow_predicates = this->types_predicates_[i];
+      fr_ow_iterators_[i]->GetResult(seq[i], record,ow_predicates);
+    }
+    else
+      fr_ow_iterators_[i]->GetResult(seq[i], record);
+  }
 }
