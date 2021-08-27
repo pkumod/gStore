@@ -135,7 +135,7 @@ IDList::copy(const IDList* _new_idlist)
 unsigned
 IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
 {
-	if (_id_list == NULL || _list_len == 0)
+	if (_id_list == nullptr || _list_len == 0)
 	{
 		int remove_number = this->id_list.size();
 		this->id_list.clear();
@@ -148,9 +148,9 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
 	//n>0 m=nk(0<k<1) 
 	//compare n(k+1) and nklogn: k0 = log(n/2)2 requiring that n>2
 	//k<=k0 binary search; k>k0 intersect
-	int method = -1; //0: intersect 1: search in vector 2: search in int*
+	int method; //0: intersect 1: search in vector 2: search in int*
 	auto n = this->id_list.size();
-	double k = 0;
+	double k;
 	if (n < _list_len)
 	{
 		k = (double)n / (double)_list_len;
@@ -171,7 +171,7 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
 			method = 0;
 	}
 
-	int remove_number = 0;
+	int remove_number;
 	switch (method)
 	{
 	case 0:

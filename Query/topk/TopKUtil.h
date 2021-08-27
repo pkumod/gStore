@@ -53,10 +53,10 @@ struct TopKTreeNode{
 class TopKTreeSearchPlan {
  private:
   std::size_t total_vars_num_;
-  std::size_t CountDepth(map<TYPE_ENTITY_LITERAL_ID,vector<TYPE_ENTITY_LITERAL_ID>> &neighbours, TYPE_ENTITY_LITERAL_ID root_id, std::size_t total_vars_num);
+  static std::size_t CountDepth(map<TYPE_ENTITY_LITERAL_ID,vector<TYPE_ENTITY_LITERAL_ID>> &neighbours, TYPE_ENTITY_LITERAL_ID root_id, std::size_t total_vars_num);
   void AdjustOrder();
  public:
-  explicit TopKTreeSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore kv_store, Statistics *statistics, QueryTree::Order expression,
+  explicit TopKTreeSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics, QueryTree::Order expression,
                               shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
   // The first tree to search
   TopKTreeNode* tree_root_;
@@ -90,8 +90,6 @@ struct Env{
   BasicQuery *basic_query;
   shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches;
   int k;
-  // store the OrderedList that have been allocated , and delete them in the end of top-k function
-  std::shared_ptr<std::vector<std::shared_ptr<std::set<OrderedList*>>>> global_iterators;
   // store the non-tree edges to speed up result enumeration
   std::shared_ptr<std::vector<std::map<TYPE_ENTITY_LITERAL_ID,std::set<TYPE_ENTITY_LITERAL_ID> >>> non_tree_edges_lists_;
   std::shared_ptr<map<std::string, double>> coefficients;
@@ -99,10 +97,10 @@ struct Env{
   std::shared_ptr<stringstream> ss;
 };
 
-std::map<TYPE_ENTITY_LITERAL_ID,FQIterator*>  inline AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
+std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<FQIterator>>  AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
                                                                     std::map<TYPE_ENTITY_LITERAL_ID,double>* node_scores, int k,
-                                                                    vector<std::map<TYPE_ENTITY_LITERAL_ID, FRIterator *>> &descendents_FRs,
-                                                                    std::vector<std::map<TYPE_ENTITY_LITERAL_ID,std::pair<OWIterator*,NodeOneChildVarPredicatesPtr>>>&descendents_OWs);
+                                                                    vector<std::map<TYPE_ENTITY_LITERAL_ID, std::shared_ptr<FRIterator>>> &descendents_FRs,
+                                                                    std::vector<std::map<TYPE_ENTITY_LITERAL_ID,std::pair<std::shared_ptr<OWIterator>,NodeOneChildVarPredicatesPtr>>>&descendents_OWs);
 
 void inline AddRelation(TYPE_ENTITY_LITERAL_ID x,TYPE_ENTITY_LITERAL_ID y, std::map<TYPE_ENTITY_LITERAL_ID ,std::set<TYPE_ENTITY_LITERAL_ID >>& mapping);
 
@@ -115,14 +113,14 @@ ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,int child
                Env *env);
 
 std::map<TYPE_ENTITY_LITERAL_ID, // parent id
-         std::pair<OWIterator*, // its OW
+         std::pair<std::shared_ptr<OWIterator>, // its OW
                    NodeOneChildVarPredicatesPtr>> // predicate correspond to the OW
 GenerateOWs(int parent_var,int child_var,std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
             std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
             std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
             TopKTreeNode *child_tree_node,Env *env);
 
-std::map<TYPE_ENTITY_LITERAL_ID,FRIterator*>  GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
+std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<FRIterator>>  GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
                                                             std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
                                                             std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
                                                             TopKTreeNode *child_tree_node, Env *env);
@@ -134,7 +132,5 @@ void UpdateIDList(shared_ptr<IDList> valid_id_list, unsigned* id_list, unsigned 
 void UpdateIDListWithAppending(shared_ptr<IDListWithAppending> ids_appending, unsigned* id_list,
                                unsigned id_list_len,unsigned  one_record_len,
                                bool id_list_prepared,unsigned main_key_position);
-
-void FreeGlobalIterators(std::shared_ptr<std::vector<std::shared_ptr<std::set<OrderedList*>>>> global_iterators);
 }
 #endif //GSTORELIMITK_QUERY_TOPK_TOPKUTIL_H_

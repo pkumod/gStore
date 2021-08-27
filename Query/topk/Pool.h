@@ -9,13 +9,9 @@
 class OrderedList;
 
 namespace DPB {
-//static TYPE_ENTITY_LITERAL_ID INVALID_PREDICATE = -1;
 struct element{
-  union Identity {
-    TYPE_ENTITY_LITERAL_ID node;
-    OrderedList* pointer;
-  };
-  Identity identity;
+  TYPE_ENTITY_LITERAL_ID node;
+  //std::shared_ptr<OrderedList> pointer;
   unsigned int index;
   double cost;
   bool operator<(const element &other) const {return this->cost < other.cost;}
