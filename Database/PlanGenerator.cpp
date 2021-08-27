@@ -1217,10 +1217,14 @@ PlanTree *PlanGenerator::get_plan() {
 			considerallbinaryjoin(var_num);
 	}
 
+	// Todo: add all sattelate node to plan
+
 	return get_best_plan_by_num(bgpquery->get_total_var_num());
 
 }
 
+
+// Codes below is for generating random plan
 
 /**
  * Get which nei from nei_id_set to expand
@@ -1575,4 +1579,116 @@ PlanTree *PlanGenerator::get_plan_for_debug() {
 	auto plan = new PlanTree();
 	plan->root_node = prof_check_tree_node;
 	return plan;
+}
+
+// Codes belows for TOPK
+
+void PlanGenerator::get_idcache_sample(shared_ptr<IDList> &so_cache, vector<unsigned int> &so_sample_cache) {
+	random_device rd;
+	mt19937 eng(rd());
+
+	auto cache_size = so_cache->size();
+
+	if (cache_size <= SAMPLE_CACHE_MAX) {
+		so_sample_cache.assign(so_cache->getList()->begin(), so_cache->getList()->end());
+	} else {
+		unsigned sample_size = get_sample_size(cache_size);
+		// need_insert_vec = new IDList(sample_size);
+		so_sample_cache.reserve(sample_size);
+
+		auto id_cache_list = so_cache->getList();
+
+		uniform_int_distribution<unsigned> dis(0, cache_size);
+		for (unsigned sample_num = 0; sample_num < sample_size; ++sample_num) {
+			unsigned index_need_insert = dis(eng);
+			so_sample_cache.push_back((*id_cache_list)[index_need_insert]);
+		}
+	}
+}
+
+double PlanGenerator::estimate_one_edge_selectivity(TYPE_PREDICATE_ID pre_id, bool pre_constant, KVstore *kvstore,
+													shared_ptr<IDList> &s_cache, shared_ptr<IDList> &o_cache) {
+	vector<unsigned> s_sample_cache;
+	vector<unsigned> o_sample_cache;
+
+	unsigned pass_num = 0;
+	unsigned small_cache_size;
+
+	if(s_cache->size() < o_cache->size()){
+		get_idcache_sample(s_cache, s_sample_cache);
+		small_cache_size = s_cache->size();
+	}
+	else{
+		get_idcache_sample(o_cache, o_sample_cache);
+		small_cache_size = o_cache->size();
+	}
+
+	if(pre_constant){
+		if(s_cache->size() < o_cache->size()){
+			for (unsigned i = 0; i < s_sample_cache.size(); ++i) {
+				unsigned *o_list = nullptr;
+				unsigned o_list_len = 0;
+
+				kvstore->getobjIDlistBysubIDpreID(s_sample_cache[i], pre_id,
+												  o_list,o_list_len);
+
+				for (unsigned j = 0; j < o_list_len; ++j)
+					if (binary_search(o_cache->begin(), o_cache->end(), o_list[j]))
+						pass_num += 1;
+
+				delete[] o_list;
+
+			}
+		} else{
+			for (unsigned i = 0; i < o_sample_cache.size(); ++i) {
+				unsigned *s_list = nullptr;
+				unsigned s_list_len = 0;
+
+				kvstore->getsubIDlistByobjIDpreID(o_sample_cache[i], pre_id,
+												  s_list,s_list_len);
+
+				for (unsigned j = 0; j < s_list_len; ++j)
+					if (binary_search(s_cache->begin(), s_cache->end(), s_list[j]))
+						pass_num += 1;
+
+					delete[] s_list;
+
+			}
+		}
+
+	} else{
+		if(s_cache->size() < o_cache->size()){
+			for (unsigned i = 0; i < s_sample_cache.size(); ++i) {
+				unsigned *o_list = nullptr;
+				unsigned o_list_len = 0;
+
+				kvstore->getobjIDlistBysubID(s_sample_cache[i],
+												  o_list,o_list_len);
+
+				for (unsigned j = 0; j < o_list_len; ++j)
+					if (binary_search(o_cache->begin(), o_cache->end(), o_list[j]))
+						pass_num += 1;
+
+					delete[] o_list;
+
+			}
+		} else{
+			for (unsigned i = 0; i < o_sample_cache.size(); ++i) {
+				unsigned *s_list = nullptr;
+				unsigned s_list_len = 0;
+
+				kvstore->getsubIDlistByobjID(o_sample_cache[i],
+												  s_list,s_list_len);
+
+				for (unsigned j = 0; j < s_list_len; ++j)
+					if (binary_search(s_cache->begin(), s_cache->end(), s_list[j]))
+						pass_num += 1;
+
+					delete[] s_list;
+
+			}
+		}
+	}
+
+	return (double)pass_num/small_cache_size;
 }

@@ -53,12 +53,12 @@ public:
 
 	//  You can change this,
 	//  but to make sure SAMPLE_CACHE_MAX <= SAMPLE_NUM_UPBOUND (in Statistics.h)
-	const unsigned SAMPLE_CACHE_MAX = 50;
+	static const unsigned SAMPLE_CACHE_MAX = 50;
 	const double SAMPLE_PRO = 0.05;
 
 	JoinMethod get_join_strategy(bool s_is_var, bool p_is_var, bool o_is_var, unsigned var_num);
 
-	unsigned get_sample_size(unsigned id_cache_size);
+	static unsigned get_sample_size(unsigned id_cache_size);
 	bool check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDICATE_ID p_id, TYPE_ENTITY_LITERAL_ID o_id);
 	bool check_pass(vector<int> &linked_nei_pos, vector<char> &edge_type,
 					vector<TYPE_PREDICATE_ID> &p_list, vector<unsigned> &last_sample, unsigned this_var_sample);
@@ -113,6 +113,13 @@ public:
 
 
 	PlanTree* get_plan_for_debug();
+
+	static double estimate_one_edge_selectivity(TYPE_PREDICATE_ID  pre_id,
+										 		bool pre_constant, KVstore *kvstore,
+										 		shared_ptr<IDList> &s_cache,
+										 		shared_ptr<IDList> &o_cache);
+
+	static void get_idcache_sample(shared_ptr<IDList> &so_cache, vector<unsigned> &so_sample_cache);
 };
 
 
