@@ -1373,9 +1373,9 @@ void Statistics::load_Statistics() {
     this->load_Statistics_for_two_edge_type3();
 }
 
-double Statistics::estimate_one_edge(EdgeInfo edge_info,
-                                     EdgeConstantInfo edge_constant_info,
-                                     shared_ptr<IDList> s_cache,
-                                     shared_ptr<IDList> o_cache) {
+double Statistics::estimate_one_edge_selectivity(TYPE_PREDICATE_ID  pre_id,
+                                     bool pre_constant,
+                                     vector<TYPE_ENTITY_LITERAL_ID> &s_cache,
+                                     vector<TYPE_ENTITY_LITERAL_ID> &o_cache) {
   return 0;
 }
