@@ -367,9 +367,9 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     std::cout<<"Top-k Constant Filtering Candidates Info End"<<std::endl;
 #endif
 
-    auto search_plan = make_shared<TopKTreeSearchPlan>(bgp_query,this->kv_store_,
-                                                       this->statistics,(*query_info.ordered_by_expressions_)[0],
-                                                       var_candidates_cache);
+    auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,
+                                                   this->statistics, (*query_info.ordered_by_expressions_)[0],
+                                                   var_candidates_cache);
 #ifdef TOPK_DEBUG_INFO
     std::cout<<"Top-k Search Plan"<<std::endl;
     std::cout<<search_plan->DebugInfo()<<std::endl;
@@ -832,7 +832,7 @@ Optimizer::PrepareInitial(shared_ptr<BGPQuery> bgp_query,
 
 #ifdef TOPK_SUPPORT
 tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTopK(BasicQuery* basic_query,
-                                                                                   shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
+                                                                                   shared_ptr<TopKSearchPlan> &tree_search_plan,
                                                                                    const QueryInfo& query_info,
                                                                                    IDCachesSharePtr id_caches) {
 
@@ -900,7 +900,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
   return std::make_tuple(true,pos_var_mapping, result_list);
 }
 
-tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp_query, shared_ptr<TopKTreeSearchPlan> &tree_search_plan,
+tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp_query, shared_ptr<TopKSearchPlan> &tree_search_plan,
                                              const QueryInfo& query_info,IDCachesSharePtr id_caches){
 
   auto pos_var_mapping = TopKUtil::CalculatePosVarMapping(tree_search_plan);

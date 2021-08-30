@@ -22,7 +22,6 @@ tuple<bool, IntermediateResult> Executor::JoinANode(IntermediateResult old_table
   auto new_id = feed_plan->node_to_join_;
   auto table_content_ptr = old_table.values_;
   auto new_table = IntermediateResult::OnlyPositionCopy(old_table);
-  auto new_id_position = new_table.AddNewNode(new_id);
   auto new_records = new_table.values_;
   auto id_pos_map = new_table.id_pos_map;
   auto edges_info = feed_plan->edges_;
@@ -678,6 +677,8 @@ tuple<bool,TableContentShardPtr> Executor::OneEdgeConstraintFilter(EdgeInfo edge
                                                   this->txn_);
         break;
       }
+      default:
+        throw string("OneEdgeConstraintFilter not support join two node");
 
     }
 

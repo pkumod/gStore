@@ -84,7 +84,7 @@ utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
 			$(objdir)IPBlackList.o $(objdir)OrderedVector.o
 
-topkobj = $(objdir)DynamicTrie.o $(objdir)OrderedList.o $(objdir)Pool.o $(objdir)TopKUtil.o
+topkobj = $(objdir)DynamicTrie.o $(objdir)OrderedList.o $(objdir)Pool.o $(objdir)TopKUtil.o $(objdir)TopKSearchPlan.o
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o $(objdir)QueryPlan.o\
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
@@ -486,9 +486,14 @@ $(objdir)OrderedList.o: Query/topk/OrderedList.cpp Query/topk/OrderedList.h $(ob
 	$(objdir)DynamicTrie.o
 	$(CC) $(CFLAGS) Query/topk/OrderedList.cpp $(inc) -o $(objdir)OrderedList.o $(openmp)
 
+$(objdir)TopKSearchPlan.o: Query/topk/TopKSearchPlan.cpp Query/topk/TopKSearchPlan.h $(objdir)Util.o \
+	$(objdir)KVstore.o $(objdir)OrderedList.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o \
+	$(objdir)Statistics.o $(objdir)QueryTree.o $(objdir)IDList.o $(objdir)TableOperator.o
+	$(CC) $(CFLAGS) Query/topk/TopKSearchPlan.cpp $(inc) -o $(objdir)TopKSearchPlan.o $(openmp)
+
 $(objdir)TopKUtil.o: Query/topk/TopKUtil.cpp Query/topk/TopKUtil.h $(objdir)Util.o $(objdir)KVstore.o \
 	$(objdir)OrderedList.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)Statistics.o \
-	$(objdir)QueryTree.o $(objdir)IDList.o $(objdir)TableOperator.o
+	$(objdir)QueryTree.o $(objdir)IDList.o $(objdir)TableOperator.o $(objdir)TopKSearchPlan.o
 	$(CC) $(CFLAGS) Query/topk/TopKUtil.cpp $(inc) -o $(objdir)TopKUtil.o $(openmp)
 
 #objects in Query/topk/ end
