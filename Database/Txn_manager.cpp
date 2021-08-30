@@ -264,7 +264,7 @@ int Txn_manager::Query(txn_id_t TID, string sparql, string& results)
 	}
 	if (ret_val < -1)   //non-update query
 	{
-		//results = rs.to_JSON();
+		results = rs.to_JSON();
 		return ret_val;
 	}
 	else

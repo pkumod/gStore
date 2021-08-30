@@ -228,6 +228,7 @@ Util::config_debug()
 	return true;
 }
 
+
 bool
 Util::config_advanced()
 {

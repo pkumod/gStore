@@ -102,6 +102,7 @@ in the sparql query can point to the same node in data graph)
 #include <random>
 #include <type_traits>
 
+
 //Added for __gnu_parallel::sort
 #include <omp.h>
 #include <parallel/algorithm>
