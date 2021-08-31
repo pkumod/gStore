@@ -35,17 +35,21 @@ public:
 	Statistics *statistics;
 	IDCachesSharePtr & id_caches;
 
-	vector<map<vector<int>, list<PlanTree*>>> plan_cache;
+	vector<map<vector<unsigned>, list<PlanTree*>>> plan_cache;
 
-	vector<map<vector<int>, unsigned long>> card_cache;
-	vector<map<vector<int>, vector<vector<unsigned>> >> sample_cache;
+	vector<map<vector<unsigned>, unsigned long>> card_cache;
+	vector<map<vector<unsigned>, vector<vector<unsigned>> >> sample_cache;
 
-	map<int, unsigned > var_to_num_map;
-	map<int, TYPE_ENTITY_LITERAL_ID > var_to_type_map;
-	map<int, vector<unsigned>> var_to_sample_cache;
-	map<int, map<int, unsigned >> s_o_list_average_size;
+	// map var id to some thing
+	map<unsigned, unsigned > var_to_num_map;
+	map<unsigned, TYPE_ENTITY_LITERAL_ID > var_to_type_map;
+	map<unsigned, vector<unsigned>> var_to_sample_cache;
+	map<unsigned, map<unsigned, unsigned >> s_o_list_average_size;
 
 	vector<unsigned> join_nodes;
+
+	map<unsigned, vector<TYPE_ENTITY_LITERAL_ID>> so_var_to_sample_cache;
+	map<unsigned, vector<TYPE_PREDICATE_ID>> pre_var_to_sample_cache;
 
 	PlanGenerator(KVstore *kvstore_, BasicQuery *basicquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_);
 	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_);
@@ -63,31 +67,31 @@ public:
 	bool check_pass(vector<int> &linked_nei_pos, vector<char> &edge_type,
 					vector<TYPE_PREDICATE_ID> &p_list, vector<unsigned> &last_sample, unsigned this_var_sample);
 
-	unsigned long card_estimator(const vector<int> &last_plan_nodes, int next_join_node, const vector<int> &now_plan_nodes,
+	unsigned long card_estimator(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes,
 								 bool use_sample = true);
 
-	unsigned long get_card(const vector<int> &nodes);
+	unsigned long get_card(const vector<unsigned> &nodes);
 
 	unsigned long cost_model_for_wco(PlanTree* last_plan,
-									 const vector<int> &last_plan_node, int next_node, const vector<int> &now_plan_node);
+									 const vector<unsigned> &last_plan_node, unsigned next_node, const vector<unsigned> &now_plan_node);
 
-	unsigned long cost_model_for_binary(const vector<int> &plan_a_nodes, const vector<int> &plan_b_nodes,
+	unsigned long cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
 										PlanTree* plan_a, PlanTree* plan_b);
 
-	void get_nei_by_subplan_nodes(const vector<int> &need_join_nodes,
-								  const vector<int> &last_plan_node, set<int> &nei_node);
+	void get_nei_by_subplan_nodes(const vector<unsigned> &need_join_nodes,
+								  const vector<unsigned> &last_plan_node, set<unsigned> &nei_node);
 
-	void get_join_nodes(const vector<int> &plan_a_nodes,
-						vector<int> &other_nodes, set<int> &join_nodes);
+	void get_join_nodes(const vector<unsigned> &plan_a_nodes,
+						vector<unsigned> &other_nodes, set<unsigned> &join_nodes);
 
-	void considerallscan(vector<int> &need_join_nodes, bool use_sample = true);
+	void considerallscan(vector<unsigned> &need_join_nodes, bool use_sample = true);
 
-	void considerwcojoin(unsigned node_num, const vector<int> &need_join_nodes);
+	void considerwcojoin(unsigned node_num, const vector<unsigned> &need_join_nodes);
 
 	void considerbinaryjoin(unsigned node_num);
 
-	int enum_query_plan(vector<int> &need_join_nodes);
-	PlanTree* get_best_plan(const vector<int> &nodes);
+	int enum_query_plan(vector<unsigned> &need_join_nodes);
+	PlanTree* get_best_plan(const vector<unsigned> &nodes);
 	PlanTree* get_best_plan_by_num(int total_var_num);
 
 

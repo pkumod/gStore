@@ -17,9 +17,9 @@ using namespace std;
 class OrderedVector {
 
 public:
-    static bool contain_sub_vec(const vector<int> &input, const vector<int> &small_vec);
-    static void subtract(const vector<int> &input, const vector<int> &to_subtract, vector<int> &result);
-    static void vec_set_union(vector<int> &vector_A, set<int> &set_B);
+    static bool contain_sub_vec(const vector<unsigned> &input, const vector<unsigned> &small_vec);
+    static void subtract(const vector<unsigned> &input, const vector<unsigned> &to_subtract, vector<unsigned> &result);
+    static void vec_set_union(vector<unsigned> &vector_A, set<unsigned> &set_B);
 
 
 };

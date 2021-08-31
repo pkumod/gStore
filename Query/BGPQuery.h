@@ -226,6 +226,7 @@ public:
 
 
 	unsigned get_var_degree(unsigned var_id);
+	VarDescriptor::VarType get_var_type_by_id(unsigned var_id);
 
 	bool is_var_selected(unsigned var_id);
 

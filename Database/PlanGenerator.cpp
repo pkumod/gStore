@@ -77,7 +77,7 @@ bool PlanGenerator::check_pass(vector<int> &linked_nei_pos, vector<char> &edge_t
 
 }
 
-unsigned long PlanGenerator::card_estimator(const vector<int> &last_plan_nodes, int next_join_node, const vector<int> &now_plan_nodes,
+unsigned long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes,
 										bool use_sample){
 
 
@@ -114,7 +114,7 @@ unsigned long PlanGenerator::card_estimator(const vector<int> &last_plan_nodes, 
 				exit(-1);
 			} else{
 				if(card_cache.size() < 1){
-					map<vector<int>, unsigned long> two_var_card_map;
+					map<vector<unsigned>, unsigned long> two_var_card_map;
 					two_var_card_map.insert(make_pair(now_plan_nodes, card_estimation));
 					card_cache.push_back(two_var_card_map);
 
@@ -160,7 +160,7 @@ unsigned long PlanGenerator::card_estimator(const vector<int> &last_plan_nodes, 
 				exit(-1);
 			} else{
 				if(card_cache.size() < now_plan_node_num-1){
-					map<vector<int>, unsigned long> this_var_num_card_map;
+					map<vector<unsigned>, unsigned long> this_var_num_card_map;
 					this_var_num_card_map.insert(make_pair(now_plan_nodes, card_estimation));
 					card_cache.push_back(this_var_num_card_map);
 
@@ -291,7 +291,7 @@ unsigned long PlanGenerator::card_estimator(const vector<int> &last_plan_nodes, 
 					}
 
 					if (s_o_list_average_size.find(last_plan_nodes[0]) == s_o_list_average_size.end()) {
-						map<int, unsigned > this_node_selectivity_map;
+						map<unsigned, unsigned > this_node_selectivity_map;
 						this_node_selectivity_map.insert(
 								make_pair(next_join_node, (unsigned )((double) s_o_list1_total_num / var_to_sample_cache[last_plan_nodes[0]].size())));
 						s_o_list_average_size.insert(make_pair(last_plan_nodes[0], this_node_selectivity_map));
@@ -301,7 +301,7 @@ unsigned long PlanGenerator::card_estimator(const vector<int> &last_plan_nodes, 
 					}
 
 					if (s_o_list_average_size.find(next_join_node) == s_o_list_average_size.end()) {
-						map<int, unsigned > this_node_selectivity_map;
+						map<unsigned, unsigned > this_node_selectivity_map;
 						this_node_selectivity_map.insert(
 								make_pair(last_plan_nodes[0], (unsigned )((double) s_o_list2_total_num / var_to_sample_cache[next_join_node].size())));
 						s_o_list_average_size.insert(make_pair(next_join_node, this_node_selectivity_map));
@@ -384,7 +384,7 @@ unsigned long PlanGenerator::card_estimator(const vector<int> &last_plan_nodes, 
 					}
 
 					if (s_o_list_average_size.find(next_join_node) == s_o_list_average_size.end()) {
-						map<int, unsigned > this_node_selectivity_map;
+						map<unsigned, unsigned > this_node_selectivity_map;
 						this_node_selectivity_map.insert(
 								make_pair(last_plan_nodes[0], (unsigned )((double) s_o_list1_total_num / var_to_sample_cache[next_join_node].size())));
 						s_o_list_average_size.insert(make_pair(next_join_node, this_node_selectivity_map));
@@ -394,7 +394,7 @@ unsigned long PlanGenerator::card_estimator(const vector<int> &last_plan_nodes, 
 					}
 
 					if (s_o_list_average_size.find(last_plan_nodes[0]) == s_o_list_average_size.end()) {
-						map<int, unsigned > this_node_selectivity_map;
+						map<unsigned, unsigned > this_node_selectivity_map;
 						this_node_selectivity_map.insert(
 								make_pair(next_join_node, (unsigned )((double) s_o_list2_total_num / var_to_sample_cache[last_plan_nodes[0]].size())));
 						s_o_list_average_size.insert(make_pair(last_plan_nodes[0], this_node_selectivity_map));
@@ -416,11 +416,11 @@ unsigned long PlanGenerator::card_estimator(const vector<int> &last_plan_nodes, 
 										, (unsigned long) 1);
 
 				if (card_cache.size() < 1) {
-					map<vector<int>, unsigned long> this_var_num_card_map;
+					map<vector<unsigned>, unsigned long> this_var_num_card_map;
 					this_var_num_card_map.insert(make_pair(now_plan_nodes, card_estimation));
 					card_cache.push_back(this_var_num_card_map);
 
-					map<vector<int>, vector<vector<unsigned>>> this_var_num_sample_map;
+					map<vector<unsigned>, vector<vector<unsigned>>> this_var_num_sample_map;
 					this_var_num_sample_map.insert(make_pair(now_plan_nodes, this_sample));
 					sample_cache.push_back(this_var_num_sample_map);
 
@@ -625,11 +625,11 @@ unsigned long PlanGenerator::card_estimator(const vector<int> &last_plan_nodes, 
 				}
 
 				if (card_cache.size() < now_plan_node_num - 1) {
-					map<vector<int>, unsigned long> this_var_num_card_map;
+					map<vector<unsigned>, unsigned long> this_var_num_card_map;
 					this_var_num_card_map.insert(make_pair(now_plan_nodes, card_estimation));
 					card_cache.push_back(this_var_num_card_map);
 
-					map<vector<int>, vector<vector<unsigned>>> this_var_num_sample_map;
+					map<vector<unsigned>, vector<vector<unsigned>>> this_var_num_sample_map;
 					this_var_num_sample_map.insert(make_pair(now_plan_nodes, this_sample));
 					sample_cache.push_back(this_var_num_sample_map);
 
@@ -675,17 +675,17 @@ unsigned long PlanGenerator::card_estimator(const vector<int> &last_plan_nodes, 
 	}
 }
 
-unsigned long PlanGenerator::get_card(const vector<int> &nodes){
+unsigned long PlanGenerator::get_card(const vector<unsigned> &nodes){
 	return card_cache[nodes.size()-2][nodes];
 }
 
 unsigned long PlanGenerator::cost_model_for_wco(PlanTree* last_plan,
-											const vector<int> &last_plan_node, int next_node, const vector<int> &now_plan_node){
+											const vector<unsigned> &last_plan_node, unsigned next_node, const vector<unsigned> &now_plan_node){
 
 	return last_plan->plan_cost + card_estimator(last_plan_node, next_node, now_plan_node);
 }
 
-unsigned long PlanGenerator::cost_model_for_binary(const vector<int> &plan_a_nodes, const vector<int> &plan_b_nodes,
+unsigned long PlanGenerator::cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
 											   PlanTree* plan_a, PlanTree* plan_b){
 
 	unsigned long plan_a_card = get_card(plan_a_nodes);
@@ -697,8 +697,8 @@ unsigned long PlanGenerator::cost_model_for_binary(const vector<int> &plan_a_nod
 }
 
 //    save every nei_id of now_in_plan_node in nei_node
-void PlanGenerator::get_nei_by_subplan_nodes(const vector<int> &need_join_nodes,
-										 const vector<int> &last_plan_node, set<int> &nei_node){
+void PlanGenerator::get_nei_by_subplan_nodes(const vector<unsigned> &need_join_nodes,
+										 const vector<unsigned> &last_plan_node, set<unsigned> &nei_node){
 	;
 	for(int node_in_plan : last_plan_node){
 		for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
@@ -712,7 +712,7 @@ void PlanGenerator::get_nei_by_subplan_nodes(const vector<int> &need_join_nodes,
 	}
 }
 
-void PlanGenerator::get_join_nodes(const vector<int> &plan_a_nodes, vector<int> &other_nodes, set<int> &join_nodes){
+void PlanGenerator::get_join_nodes(const vector<unsigned> &plan_a_nodes, vector<unsigned> &other_nodes, set<unsigned> &join_nodes){
 	for(int node : other_nodes){
 		for(int i = 0; i < basicquery->getVarDegree(node); ++i){
 			if(find(plan_a_nodes.begin(), plan_a_nodes.end(), basicquery->getEdgeNeighborID(node, i))!= plan_a_nodes.end()){
@@ -723,7 +723,7 @@ void PlanGenerator::get_join_nodes(const vector<int> &plan_a_nodes, vector<int> 
 }
 
 // first node
-void PlanGenerator::considerallscan(vector<int> &need_join_nodes, bool use_sample){
+void PlanGenerator::considerallscan(vector<unsigned> &need_join_nodes, bool use_sample){
 
 	random_device rd;
 	mt19937 eng(rd());
@@ -733,7 +733,7 @@ void PlanGenerator::considerallscan(vector<int> &need_join_nodes, bool use_sampl
 		if (basicquery->if_need_retrieve(i)) {
 
 			need_join_nodes.push_back(i);
-			vector<int> this_node{i};
+			vector<unsigned> this_node{i};
 			PlanTree *new_scan = new PlanTree(i);
 
 
@@ -744,7 +744,7 @@ void PlanGenerator::considerallscan(vector<int> &need_join_nodes, bool use_sampl
 			this_node_plan.push_back(new_scan);
 
 			if (plan_cache.size() < 1) {
-				map<vector<int>, list<PlanTree *>> one_node_plan_map;
+				map<vector<unsigned >, list<PlanTree *>> one_node_plan_map;
 
 				one_node_plan_map.insert(make_pair(this_node, this_node_plan));
 
@@ -795,10 +795,10 @@ void PlanGenerator::considerallscan(vector<int> &need_join_nodes, bool use_sampl
 }
 
 // add one node, the added node need to be linked by nodes in plan before
-void PlanGenerator::considerwcojoin(unsigned node_num, const vector<int> &need_join_nodes){
+void PlanGenerator::considerwcojoin(unsigned node_num, const vector<unsigned> &need_join_nodes){
 	auto plan_tree_list = plan_cache[node_num - 2];
 	for(const auto &last_node_plan : plan_tree_list){
-		set<int> nei_node;
+		set<unsigned> nei_node;
 
 		get_nei_by_subplan_nodes(need_join_nodes, last_node_plan.first, nei_node);
 
@@ -806,7 +806,7 @@ void PlanGenerator::considerwcojoin(unsigned node_num, const vector<int> &need_j
 
 		for(int next_node : nei_node) {
 
-			vector<int> new_node_vec(last_node_plan.first);
+			vector<unsigned> new_node_vec(last_node_plan.first);
 			new_node_vec.push_back(next_node);
 			sort(new_node_vec.begin(), new_node_vec.end());
 
@@ -817,7 +817,7 @@ void PlanGenerator::considerwcojoin(unsigned node_num, const vector<int> &need_j
 			new_plan->plan_cost = cost;
 
 			if(plan_cache.size() < node_num){
-				map<vector<int>, list<PlanTree*>> this_num_node_plan;
+				map<vector<unsigned>, list<PlanTree*>> this_num_node_plan;
 				list<PlanTree*> this_nodes_plan;
 				this_nodes_plan.push_back(new_plan);
 				this_num_node_plan.insert(make_pair(new_node_vec, this_nodes_plan));
@@ -852,9 +852,9 @@ void PlanGenerator::considerbinaryjoin(unsigned node_num){
 		for(unsigned small_plan_nodes_num = min_size; small_plan_nodes_num <= max_size; ++ small_plan_nodes_num){
 			for(const auto &small_nodes_plan : plan_cache[small_plan_nodes_num-1]){
 				if(OrderedVector::contain_sub_vec(need_considerbinaryjoin_nodes_plan.first, small_nodes_plan.first)) {
-					vector<int> other_nodes;
+					vector<unsigned> other_nodes;
 					OrderedVector::subtract(need_considerbinaryjoin_nodes_plan.first, small_nodes_plan.first,other_nodes);
-					set<int> join_nodes;
+					set<unsigned> join_nodes;
 					get_join_nodes(small_nodes_plan.first, other_nodes, join_nodes);
 
 					if (join_nodes.size() >= 1 && join_nodes.size() + other_nodes.size() < node_num - 1) {
@@ -890,7 +890,7 @@ void PlanGenerator::considerbinaryjoin(unsigned node_num){
 
 
 //  enumerate all execution plan, and build cost_cache
-int PlanGenerator::enum_query_plan(vector<int> &need_join_nodes){
+int PlanGenerator::enum_query_plan(vector<unsigned> &need_join_nodes){
 
 
 
@@ -924,7 +924,7 @@ int PlanGenerator::enum_query_plan(vector<int> &need_join_nodes){
 	return need_join_nodes.size();
 }
 
-PlanTree* PlanGenerator::get_best_plan(const vector<int> &nodes){
+PlanTree* PlanGenerator::get_best_plan(const vector<unsigned> &nodes){
 
 	PlanTree* best_plan = nullptr;
 	unsigned long min_cost = ULONG_MAX;
@@ -978,7 +978,7 @@ PlanTree* PlanGenerator::get_best_plan_by_num(int total_var_num){
 PlanTree* PlanGenerator::get_normal_plan() {
 
 
-	vector<int> need_join_nodes;
+	vector<unsigned> need_join_nodes;
 
 	int join_nodes_num = enum_query_plan(need_join_nodes);
 
@@ -1117,84 +1117,58 @@ void PlanGenerator::get_candidate_generate_plan() {
 	}
 }
 
+
+/**
+ * Generate sample set of every var.
+ * If a var has no const linked to it, then sample from the whole database.
+ * Todo: SO_type var sample in so_var_to_sample_cache; pre_type var sample in pre_var_to_sample_cache.
+ */
 void PlanGenerator::considerallvarscan() {
-	//special case: there is no query_var linked with constant, than need estimate by p2s or p2o
-	// bool is_special = true;
-	// random_device rd;
-	// mt19937 eng(rd());
-	//
-	// for(int var_pos = 0 ; var_pos < bgpquery->get_total_var_num(); ++ var_pos) {
-	//
-	// 	unsigned var_id = bgpquery->get_var_id_by_index(var_pos);
-	// 	join_nodes.push_back(var_id);
-	//
-	// 	vector<unsigned> this_node{var_id};
-	// 	PlanTree *new_plan = new PlanTree(var_id, bgpquery);
-	//
-	//
-	//
-	//
-	// 	if (basicquery->if_need_retrieve(i)) {
-	//
-	// 		// need_join_nodes.push_back(i);
-	// 		vector<int> this_node{i};
-	// 		PlanTree *new_scan = new PlanTree(i);
-	//
-	//
-	// 		var_to_num_map[i] = (*id_caches)[i]->size();
-	// 		new_scan->plan_cost = var_to_num_map[i];
-	//
-	// 		list<PlanTree *> this_node_plan;
-	// 		this_node_plan.push_back(new_scan);
-	//
-	// 		if (plan_cache.size() < 1) {
-	// 			map<vector<int>, list<PlanTree *>> one_node_plan_map;
-	//
-	// 			one_node_plan_map.insert(make_pair(this_node, this_node_plan));
-	//
-	// 			plan_cache.push_back(one_node_plan_map);
-	// 		} else {
-	// 			plan_cache[0].insert(make_pair(this_node, this_node_plan));
-	// 		}
-	//
-	// 		if (use_sample) {
-	//
-	// 			auto list_size = (*id_caches)[i]->size();
-	// 			// IDList* need_insert_vec;
-	// 			vector<unsigned> need_insert_vec;
-	// 			if (list_size <= SAMPLE_CACHE_MAX) {
-	// 				// need_insert_vec = new IDList((*id_caches)[i]->getList());
-	// 				need_insert_vec.assign((*id_caches)[i]->getList()->begin(), (*id_caches)[i]->getList()->end());
-	// 			} else {
-	// 				unsigned sample_size = get_sample_size(list_size);
-	// 				// need_insert_vec = new IDList(sample_size);
-	// 				need_insert_vec.reserve(sample_size);
-	//
-	// 				auto id_cache_list = (*id_caches)[i]->getList();
-	//
-	// 				uniform_int_distribution<unsigned> dis(0, list_size);
-	// 				for (unsigned sample_num = 0; sample_num < sample_size; ++sample_num) {
-	// 					unsigned index_need_insert = dis(eng);
-	// 					// need_insert_vec->addID((*id_cache_list)[index_need_insert]);
-	// 					need_insert_vec.push_back((*id_cache_list)[index_need_insert]);
-	// 				}
-	// 			}
-	// 			var_to_sample_cache[i] = std::move(need_insert_vec);
-	//
-	// 		}else {
-	//
-	// 			cout << "degree: " << basicquery->getVarDegree(i) << endl;
-	// 			for (int j = 0; j < basicquery->getVarDegree(i); ++j) {
-	// 				if (basicquery->getEdgePreID(i, j) == statistics->type_pre_id) {
-	// 					int triple_id = basicquery->getEdgeID(i, j);
-	// 					string type_name = basicquery->getTriple(triple_id).object;
-	// 					var_to_type_map[i] = kvstore->getIDByEntity(type_name);
-	//
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
+
+	random_device rd;
+	mt19937 eng(rd());
+
+	for(unsigned var_index = 0 ; var_index < bgpquery->get_total_var_num(); ++ var_index) {
+
+		if(bgpquery->is_var_satellite_by_index(var_index))
+			continue;
+
+		unsigned var_id = bgpquery->get_var_id_by_index(var_index);
+		auto var_descrip = bgpquery->get_vardescrip_by_index(var_index);
+
+		if(bgpquery->get_var_type_by_id(var_id) == VarDescriptor::VarType::Entity)
+			join_nodes.push_back(var_id);
+
+		vector<unsigned> this_node{var_id};
+		PlanTree *new_scan = new PlanTree(var_id, bgpquery);
+
+		// Todo: to change this to (*id_caches)[id_to_position]->size()
+		var_to_num_map[var_id] = (*id_caches)[var_id]->size();
+		new_scan->plan_cost = var_to_num_map[var_id];
+
+		list<PlanTree *> this_node_plan;
+		this_node_plan.push_back(new_scan);
+
+		// insert to plan_cache, todo: insert subtract as a function
+		if (plan_cache.size() < 1) {
+			map<vector<unsigned>, list<PlanTree *>> one_node_plan_map;
+			one_node_plan_map.insert(make_pair(this_node, this_node_plan));
+			plan_cache.push_back(one_node_plan_map);
+		} else {
+			plan_cache[0].insert(make_pair(this_node, this_node_plan));
+		}
+
+		// sample for id_cache
+
+		if((*id_caches).find(var_id) != (*id_caches).end()) {
+			vector<unsigned> need_insert_vec;
+			get_idcache_sample((*id_caches)[var_id], need_insert_vec);
+
+			var_to_sample_cache[var_id] = std::move(need_insert_vec);
+
+		}
+
+	}
 
 }
 
@@ -1583,7 +1557,7 @@ PlanTree *PlanGenerator::get_plan_for_debug() {
 
 // Codes belows for TOPK
 
-void PlanGenerator::get_idcache_sample(shared_ptr<IDList> &so_cache, vector<unsigned int> &so_sample_cache) {
+void PlanGenerator::get_idcache_sample(shared_ptr<IDList> &so_cache, vector<unsigned> &so_sample_cache) {
 	random_device rd;
 	mt19937 eng(rd());
 
