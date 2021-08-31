@@ -47,28 +47,21 @@ std::size_t TopKSearchPlan::CountDepth(map<TYPE_ENTITY_LITERAL_ID, vector<TYPE_E
 }
 
 TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
-                               Statistics *statistics, QueryTree::Order expression,
+                               Statistics *statistics, const QueryTree::Order& expression,
                                shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches)
 {
   this->total_vars_num_ = bgp_query->get_total_var_num();
   TYPE_ENTITY_LITERAL_ID CONSTANT = -1;
-
-// all the information
-// a neighbour may have more than one edge
-  map<TYPE_ENTITY_LITERAL_ID ,vector<TYPE_ENTITY_LITERAL_ID>> neighbours;
-  map<TYPE_ENTITY_LITERAL_ID,vector<vector<bool>>> predicates_constant;
-  map<TYPE_ENTITY_LITERAL_ID,vector<vector<TYPE_ENTITY_LITERAL_ID>>> predicates_ids;
-  map<TYPE_ENTITY_LITERAL_ID,vector<vector<TopKUtil::EdgeDirection>>> directions;
-
-// constructing the information structure
+  // a neighbour may have more than one edge
+  // constructing the information structure
   for(decltype(total_vars_num_) i = 0; i< total_vars_num_ ; i++)
   {
     map<TYPE_ENTITY_LITERAL_ID,size_t> neighbour_position;
 
-    neighbours[i] = decltype(neighbours.begin()->second)();
-    predicates_constant[i] = decltype(predicates_constant.begin()->second)();
-    predicates_ids[i] = decltype(predicates_ids.begin()->second)();
-    directions[i] = decltype(directions.begin()->second)();
+    neighbours_[i] = decltype(neighbours_.begin()->second)();
+    predicates_constant_[i] = decltype(predicates_constant_.begin()->second)();
+    predicates_ids_[i] = decltype(predicates_ids_.begin()->second)();
+    directions_[i] = decltype(directions_.begin()->second)();
 
     auto var_descriptor = bgp_query->get_vardescrip_by_index(i);
     if(var_descriptor->var_type_ == VarDescriptor::VarType::Predicate)
@@ -106,19 +99,19 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
       size_t neighbour_pos;
       if(neighbour_position.find(nei_id)==neighbour_position.end())
       {
-        neighbours[i].push_back(nei_id);
+        neighbours_[i].push_back(nei_id);
         neighbour_pos = neighbour_position.size();
         neighbour_position[nei_id] = neighbour_pos;
 
-        predicates_constant[i].emplace_back();
-        predicates_ids[i].emplace_back();
-        directions[i].emplace_back();
+        predicates_constant_[i].emplace_back();
+        predicates_ids_[i].emplace_back();
+        directions_[i].emplace_back();
       }
 
 
-      predicates_constant[i][neighbour_pos].push_back(predicate_constant);
-      predicates_ids[i][neighbour_pos].push_back(predicates_id);
-      directions[i][neighbour_pos].push_back(direction);
+      predicates_constant_[i][neighbour_pos].push_back(predicate_constant);
+      predicates_ids_[i][neighbour_pos].push_back(predicates_id);
+      directions_[i][neighbour_pos].push_back(direction);
     }
 
 #ifdef TOPK_DEBUG_INFO
@@ -126,11 +119,20 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
 #endif
 
   }
+
+}
+
+void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
+                             KVstore *kv_store,
+                             Statistics *statistics,
+                             QueryTree::Order expression,
+                             shared_ptr<map<TYPE_ENTITY_LITERAL_ID, shared_ptr<IDList>>> id_caches) {
+
   int min_score_root = -1;
   auto min_score = DBL_MAX;
 
-// get the root id by arg min( candidates * tree depth )
-// if all nodes don't have candidates, choose the min tree depth
+  // get the root id by arg min( candidates * tree depth )
+  // if all nodes don't have candidates, choose the min tree depth
   for(decltype(total_vars_num_)  i = 0; i< total_vars_num_ ; i++)
   {
     auto var_descriptor = bgp_query->get_vardescrip_by_index(i);
@@ -141,7 +143,7 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
       continue;
 
 // count the its depth if regard node i as root
-    auto tree_depth = this->CountDepth(neighbours, i, total_vars_num_);
+    auto tree_depth = this->CountDepth(neighbours_, i, total_vars_num_);
     auto candidates_size = id_caches->find(i)->second->size();
     double score;
     if(id_caches->size()>0)
@@ -187,16 +189,16 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
     cout<<endl;
 #endif
 
-    auto child_num = neighbours[now_id].size();
+    auto child_num = neighbours_[now_id].size();
     for(decltype(child_num) child_i =0;child_i < child_num;child_i++)
     {
-      auto child_id= neighbours[now_id][child_i];
+      auto child_id= neighbours_[now_id][child_i];
 
 // below are vectors
-      auto two_var_edges_num = predicates_ids.size();
-      auto two_var_predicate_ids = predicates_ids[now_id][child_i];
-      auto two_var_predicate_constants = predicates_constant[now_id][child_i];
-      auto two_var_directions = directions[now_id][child_i];
+      auto two_var_edges_num = predicates_ids_.size();
+      auto two_var_predicate_ids = predicates_ids_[now_id][child_i];
+      auto two_var_predicate_constants = predicates_constant_[now_id][child_i];
+      auto two_var_directions = directions_[now_id][child_i];
 
       if(vars_used_vec[child_id])
       {
@@ -271,6 +273,7 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
   delete[] vars_used_vec;
   this->tree_root_ = r;
   this->AdjustOrder();
+
 }
 
 TopKSearchPlan::~TopKSearchPlan() {
@@ -380,3 +383,243 @@ void TopKSearchPlan::AdjustOrder() {
     }
   }
 }
+
+/**
+ * Using Topological method to find if the query has a cycle
+ * @return the found cycle. Empty if not found
+ */
+std::vector<int> TopKSearchPlan::FindCycle() {
+  std::vector<int> result_cycle;
+  auto degrees = map<int,size_t>();
+  stack<int> one_degree;
+
+  for(auto &pair:this->neighbours_)
+  {
+    auto var_id = pair.first;
+    auto var_degree = pair.second.size();
+    if(var_degree>1)
+      degrees[var_id] = var_degree;
+    if(var_degree==1)
+      one_degree.push(var_id);
+  }
+
+  while(!one_degree.empty())
+  {
+    auto top_id = one_degree.top();
+    one_degree.pop();
+    auto& top_neighbours = this->neighbours_[top_id];
+    for(auto neighbour_id:top_neighbours)
+    {
+      if(degrees.find(neighbour_id)==degrees.end())
+        continue;
+      if(--degrees[neighbour_id]==1) {
+        one_degree.push(neighbour_id);
+        degrees.erase(neighbour_id);
+      }
+    }
+  }
+
+  if(degrees.empty())
+    return result_cycle;
+
+  // a cycle exists in the remaining 'degrees', find it
+  set<int> possible_vars;
+  for(auto& pair:degrees)
+    possible_vars.insert(pair.first);
+
+  auto cycle_start = *possible_vars.begin();
+  set<int> walk_pass_vars;
+  walk_pass_vars.insert(cycle_start);
+  result_cycle.push_back(cycle_start);
+  bool found = walk(possible_vars,walk_pass_vars,result_cycle);
+  if(!found)
+    throw string(" Not Expected Situation for topology");
+  return move(result_cycle);
+}
+
+/**
+ * To judge if the query graph is too
+ * complex (more than 2 loops ) to
+ * use top k algorithm
+ * @return if this query graph worth of top-k
+ */
+bool TopKSearchPlan::SuggestTopK()
+{
+  auto cycle = this->FindCycle();
+  if(cycle.empty())
+    return true;
+  auto id1 = cycle[0];
+  auto id2 = cycle[1];
+  auto id1_neighbour_backup = this->neighbours_[id1];
+  auto id2_neighbour_backup = this->neighbours_[id2];
+
+  auto &old_id1_neighbour = this->neighbours_[id1];
+  auto &old_id2_neighbour = this->neighbours_[id2];
+  old_id1_neighbour = vector<TYPE_ENTITY_LITERAL_ID>();
+  old_id2_neighbour = vector<TYPE_ENTITY_LITERAL_ID>();
+
+  for(auto id1_nei: id1_neighbour_backup)
+    if(id1_nei!=id2)
+      old_id1_neighbour.push_back(id1_nei);
+
+  for(auto id2_nei: id2_neighbour_backup)
+    if(id2_nei!=id1)
+      old_id2_neighbour.push_back(id2_nei);
+
+  auto second_cycle = this->FindCycle();
+  bool worth_try = second_cycle.empty();
+
+  this->neighbours_[id1] = id1_neighbour_backup;
+  this->neighbours_[id2] = id2_neighbour_backup;
+  return worth_try;
+}
+
+/**
+ * A dfs way to find cycle
+ */
+bool TopKSearchPlan::walk(set<int> &possible_vars,set<int> &walk_pass_vars, vector<int> &result_cycle)
+{
+  auto var_now = result_cycle.back();
+  auto& next_vars = this->neighbours_[var_now];
+  for(auto next_var:next_vars)
+  {
+    if(possible_vars.find(next_var)==possible_vars.end())
+      continue;
+
+    // We have found a cycle
+    if(walk_pass_vars.find(next_var)!=walk_pass_vars.end())
+    {
+      auto start_it = result_cycle.begin();
+      while(*start_it!=next_var)
+        start_it++;
+      vector<int> tem(start_it,result_cycle.end());
+      result_cycle = tem;
+      return true;
+    }
+
+    // if not found, walk deeper
+    result_cycle.push_back(next_var);
+    walk_pass_vars.insert(next_var);
+    bool found = walk(possible_vars,walk_pass_vars,result_cycle);
+    if(found)
+      return found;
+    result_cycle.pop_back();
+    walk_pass_vars.erase(next_var);
+    // to try next
+  }
+  return false;
+}
+
+/**
+ * Cut A edge from the cycle, so that this query
+ * will be processed as tree query. After each
+ * result, we will check if the edge exist
+ * @return if we cut an edge
+ */
+bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics,
+                              shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches) {
+  auto cycle = this->FindCycle();
+  if(cycle.empty())
+    return false;
+
+  vector<double> selectivity(cycle.size());
+  auto edge_num = cycle.size();
+  cycle.push_back(cycle[0]);
+  decltype(edge_num) choose_one = 0;
+  // choose a max selectivity
+  double max_selectivity = 1.1;
+  for(decltype(edge_num) i=0;i<edge_num;i++)
+  {
+    // estimate selectivity of a->b
+    auto a_id = cycle[i];
+    auto b_id = cycle[i+1];
+    auto a_var = bgp_query->get_vardescrip_by_index(a_id);
+    auto b_string = bgp_query->get_var_name_by_id(b_id);
+    auto &edges = a_var->so_edge_index_;
+    double min_sel = 1;
+
+    shared_ptr<IDList> a_cache;
+    shared_ptr<IDList> b_cache;
+
+    auto a_it = id_caches->find(a_id);
+    if(a_it==id_caches->end())
+      continue;
+    auto b_it = id_caches->find(b_id);
+    if(b_it==id_caches->end())
+      continue;
+
+    a_cache = a_it->second;
+    b_cache = b_it->second;
+
+    for(auto edge_id:edges) {
+      auto triple = bgp_query->get_triple_by_index(edge_id);
+      auto& s_string = triple.subject;
+      auto& p_string = triple.predicate;
+      auto& o_string = triple.object;
+      if(s_string!=b_string && o_string != b_string)
+        continue;
+      auto predicate_constant = p_string[0] != '?';
+      TYPE_PREDICATE_ID predicate_id = -1;
+      if(predicate_constant)
+        predicate_id = kv_store->getIDByPredicate(p_string);
+
+      double sel;
+      if(s_string==b_string) {
+        sel = PlanGenerator::estimate_one_edge_selectivity(predicate_id,predicate_constant,kv_store,
+                                                     b_cache,a_cache);
+      }
+      else // s_string==a_string
+      {
+        sel = PlanGenerator::estimate_one_edge_selectivity(predicate_id,predicate_constant,kv_store,
+                                                     a_cache,b_cache);
+      }
+      min_sel = std::min(min_sel,sel);
+    }
+
+    if(min_sel>max_selectivity)
+    {
+      max_selectivity = min_sel;
+      choose_one = i;
+    }
+  }
+
+  // Now cut the edge c-d
+  // and record the edge in the class member
+  auto c_id = cycle[choose_one];
+  auto d_id = cycle[choose_one+1];
+  auto c_var = bgp_query->get_vardescrip_by_index(c_id);
+  auto d_string = bgp_query->get_var_name_by_id(d_id);
+  auto &edges = c_var->so_edge_index_;
+
+  this->non_tree_edges_.emplace_back();
+  auto &edge_operation = this->non_tree_edges_.back();
+  for(auto edge_id:edges) {
+    auto triple = bgp_query->get_triple_by_index(edge_id);
+    auto &s_string = triple.subject;
+    auto &p_string = triple.predicate;
+    auto &o_string = triple.object;
+    if (s_string != d_string && o_string != d_string)
+      continue;
+    auto predicate_constant = p_string[0] != '?';
+    TYPE_PREDICATE_ID predicate_id = -1;
+    if (predicate_constant)
+      predicate_id = kv_store->getIDByPredicate(p_string);
+
+    EdgeInfo edge_info;
+    edge_info.p_ = predicate_id;
+    if (s_string == d_string) {
+      edge_info.s_ = d_id;
+      edge_info.o_ = c_id;
+    } else {
+      edge_info.s_ = c_id;
+      edge_info.o_ = d_id;
+    }
+    EdgeConstantInfo edge_constant_info(false, predicate_constant, false);
+    edge_operation.edge_filter_->edges_->push_back(edge_info);
+    edge_operation.edge_filter_->edges_constant_info_->push_back(edge_constant_info);
+  }
+  edge_operation.edge_filter_->node_to_join_ = c_id;
+  edge_operation.join_type_ = StepOperation::JoinType::EdgeCheck;
+  return true;
+}
+
