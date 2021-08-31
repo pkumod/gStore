@@ -56,8 +56,15 @@ BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query
   }
   else
   {
-    if(query_info->ordered_by_expressions_->size())
-      return BasicQueryStrategy::TopK;
+    if(query_info->ordered_by_expressions_->size()) {
+      auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,
+                                                     this->statistics, (*query_info->ordered_by_expressions_)[0],
+                                                     nullptr);
+      if(search_plan->SuggestTopK())
+        return BasicQueryStrategy::TopK;
+      else
+        return BasicQueryStrategy::Normal;
+    }
     else
       return BasicQueryStrategy::limitK;
   }
@@ -370,6 +377,9 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,
                                                    this->statistics, (*query_info.ordered_by_expressions_)[0],
                                                    var_candidates_cache);
+    search_plan->GetPlan(bgp_query, this->kv_store_,
+                         this->statistics, (*query_info.ordered_by_expressions_)[0],
+                         var_candidates_cache);
 #ifdef TOPK_DEBUG_INFO
     std::cout<<"Top-k Search Plan"<<std::endl;
     std::cout<<search_plan->DebugInfo()<<std::endl;

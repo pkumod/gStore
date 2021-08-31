@@ -488,7 +488,8 @@ $(objdir)OrderedList.o: Query/topk/OrderedList.cpp Query/topk/OrderedList.h $(ob
 
 $(objdir)TopKSearchPlan.o: Query/topk/TopKSearchPlan.cpp Query/topk/TopKSearchPlan.h $(objdir)Util.o \
 	$(objdir)KVstore.o $(objdir)OrderedList.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o \
-	$(objdir)Statistics.o $(objdir)QueryTree.o $(objdir)IDList.o $(objdir)TableOperator.o
+	$(objdir)Statistics.o $(objdir)QueryTree.o $(objdir)IDList.o \
+	$(objdir)PlanGenerator.o $(objdir)TableOperator.o
 	$(CC) $(CFLAGS) Query/topk/TopKSearchPlan.cpp $(inc) -o $(objdir)TopKSearchPlan.o $(openmp)
 
 $(objdir)TopKUtil.o: Query/topk/TopKUtil.cpp Query/topk/TopKUtil.h $(objdir)Util.o $(objdir)KVstore.o \

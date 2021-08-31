@@ -10,7 +10,7 @@
 #include "../../Query/QueryTree.h"
 #include "../../Query/IDList.h"
 #include "../../Database/TableOperator.h"
-
+#include "../../Database/PlanGenerator.h"
 #ifndef GSTOREGDB_QUERY_TOPK_TOPKSEARCHPLAN_H_
 #define GSTOREGDB_QUERY_TOPK_TOPKSEARCHPLAN_H_
 
@@ -50,25 +50,33 @@ struct TopKTreeNode{
  */
 class TopKSearchPlan {
  private:
+  // all the information
+  map<TYPE_ENTITY_LITERAL_ID ,vector<TYPE_ENTITY_LITERAL_ID>> neighbours_;
+  map<TYPE_ENTITY_LITERAL_ID,vector<vector<bool>>> predicates_constant_;
+  map<TYPE_ENTITY_LITERAL_ID,vector<vector<TYPE_ENTITY_LITERAL_ID>>> predicates_ids_;
+  map<TYPE_ENTITY_LITERAL_ID,vector<vector<TopKUtil::EdgeDirection>>> directions_;
+  // The Edges that left behind
+  // It can be used when enumerating , use non tree edges to make sure correctness
+  std::vector<StepOperation> non_tree_edges_;
   std::size_t total_vars_num_;
   static std::size_t CountDepth(map<TYPE_ENTITY_LITERAL_ID,vector<TYPE_ENTITY_LITERAL_ID>> &neighbours, TYPE_ENTITY_LITERAL_ID root_id, std::size_t total_vars_num);
   void AdjustOrder();
+  bool walk(set<int> &possible_vars,set<int> &walk_pass_vars,vector<int> &result_cycle);
+
+  bool CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics,
+                shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
  public:
-  explicit TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics, QueryTree::Order expression,
-                          shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
+  explicit TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics,
+                          const QueryTree::Order&,shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
+  void GetPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics, QueryTree::Order expression,
+               shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
   // The first tree to search
   TopKTreeNode* tree_root_;
   // Recursive delete
   ~TopKSearchPlan();
-  // The Edges that left behind
-  // It can be used in two ways:
-  // 1 . when filtering, use non tree edges to early filter
-  // 2 . when enumerating , use non tree edges to make sure correctness
-  std::vector<StepOperation> non_tree_edges;
-  // The predicate been selected,
-  // We process these vars when all the entity vars have been filled
-  std::vector<StepOperation> selected_predicate_edges;
-
+  std::vector<StepOperation>& GetNonTreeEdges(){return this->non_tree_edges_;};
+  std::vector<int> FindCycle();
+  bool SuggestTopK();
   std::string DebugInfo();
 };
 
