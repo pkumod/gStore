@@ -735,7 +735,12 @@ Database::load(bool loadCSR)
 	}
 	cout << "load database info successfully!" << endl;
 	if(!(this->kvstore)->load_trie(kv_mode))
-		return false;
+	{
+		cout<<"load kvstore failed."<<endl;
+         return false;
+
+	}
+		
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
 	//NOTICE: we should also run some heavy work in the main thread
