@@ -2,7 +2,7 @@
  * Copyright 2021 gStore, All Rights Reserved. 
  * @Author: Bookug Lober suxunbin liwenjie
  * @Date: 2021-08-22 00:37:57
- * @LastEditTime: 2021-08-29 23:13:58
+ * @LastEditTime: 2021-08-31 10:02:24
  * @LastEditors: Please set LastEditors
  * @Description: the http server to handler the user's request, which is main access entrance of gStore
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2762,7 +2762,9 @@ void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db
 	{
 		error = "the database already load yet.";
 		sendResponseMsg(0, error, response);
+		return;
 	}
+	cout<<"begin loading1..."<<endl;
 	pthread_rwlock_rdlock(&already_build_map_lock);
 	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
 	pthread_rwlock_unlock(&already_build_map_lock);
@@ -2773,11 +2775,14 @@ void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db
 	}
 	else
 	{
+		cout<<"begin loading..."<<endl;
 		string database = db_name;
 		Database* current_database = new Database(database);
 		bool flag = current_database->load();
+		cout<<"end loading..."<<endl;
 		shared_ptr<Txn_manager> txn_m = make_shared<Txn_manager>(current_database, database);
 		pthread_rwlock_wrlock(&txn_m_lock);
+		cout<<"begin txn manager..."<<endl;
 		txn_managers.insert(pair<string, shared_ptr<Txn_manager>>(database, txn_m));
 		pthread_rwlock_unlock(&txn_m_lock);
 		cout<<"txt_managers:"<<txn_managers.size()<<endl;

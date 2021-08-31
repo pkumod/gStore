@@ -2511,20 +2511,19 @@ Util::get_transactionlog()
     }
     in.close();
     if (success)
-        all.AddMember("StatusCode", 109, all.GetAllocator());
+    {
+          all.AddMember("StatusCode", 0, all.GetAllocator());
+          all.AddMember("StatusMsg", "Get Transaction log success", all.GetAllocator());
+          all.AddMember("list", darray, all.GetAllocator());
+    }
+       
     else
-        all.AddMember("StatusCode", 110, all.GetAllocator());
+    {
+         all.AddMember("StatusCode", 1005, all.GetAllocator());
+         all.AddMember("message", "error! Transaction log corrupted", all.GetAllocator());
 
-    if (success) {
-        a.AddMember("success", "Yes", all.GetAllocator());
-        a.AddMember("message", "Get Transaction log success", all.GetAllocator());
     }
-    else {
-        a.AddMember("success", "No", all.GetAllocator());
-        a.AddMember("message", "error! Transaction log corrupted", all.GetAllocator());
-    }
-    a.AddMember("list", darray, all.GetAllocator());
-    all.AddMember("StatusMsg", a, all.GetAllocator());
+       
     StringBuffer buffer;
     Writer<StringBuffer> writer(buffer);
     all.Accept(writer);
