@@ -10,10 +10,7 @@
  * @return the pointer to the TrieEntry instance
  */
 DPB::TrieEntry* DPB::DynamicTrie::newEntry(int k) {
-  auto r = new TrieEntry;
-  r->nexts = new TrieEntry*[k];
-  memset(r->nexts ,0,k*sizeof(TrieEntry*));
-  return r;
+  return new TrieEntry(k);
 }
 
 /**
@@ -28,16 +25,20 @@ DPB::TrieEntry* DPB::DynamicTrie::newEntry(int k) {
  * @param depth  the depth of this Trie, the same as child type number of FQ
  * @param k , the goal of this algorithm
  */
-DPB::DynamicTrie::DynamicTrie(int depth,int k ):depth_(depth),k_(k) {
+DPB::DynamicTrie::DynamicTrie(int depth,int k ): depth_(depth), default_k_(k) {
   this->root = newEntry(k);
 }
 
+/**
+ * Recursive Delete
+ * @param trie_entry
+ * @param depth
+ */
 void DPB::DynamicTrie::deleteEntry(DPB::TrieEntry *trie_entry, int depth) {
   if(depth != this->depth_-1)
-    for(int i=0;i<this->k_;i++)
+    for(unsigned int i=0;i<trie_entry->nexts.size();i++)
       if(trie_entry->nexts[i] != nullptr)
         deleteEntry(trie_entry->nexts[i],depth+1);
-
   delete[] trie_entry;
 }
 
@@ -47,7 +48,10 @@ DPB::DynamicTrie::~DynamicTrie() {
 }
 
 /**
+ * if seq not exist:
  * Insert a sequence and return the pointer to the TrieEntry
+ * if exist:
+ * return the pointer to the old TrieEntry
  * @param seq the inserted sequence
  * @return  the pointer to the TrieEntry
  */
@@ -57,9 +61,17 @@ DPB::TrieEntry* DPB::DynamicTrie::insert(const DPB::sequence &seq) {
   bool new_created = false;
   for(int i=0;i<depth_;i++)
   {
+    auto i_th_element = seq[i];
+
+    // alloc new entries
+    while(i_th_element>=p->nexts.size())
+    {
+      p->nexts.push_back(nullptr);
+    }
+
     p_next = p->nexts[seq[i]];
-    if(p_next == NULL) {
-      p_next = newEntry(this->k_);
+    if(p_next == nullptr) {
+      p_next = newEntry(this->default_k_);
       p->nexts[seq[i]] = p_next;
       new_created = true;
     }
