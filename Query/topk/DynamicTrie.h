@@ -11,29 +11,31 @@ namespace DPB {
 
 /**
  * The basic unit of the DynamicTrie.
- * If we insert two sequences into the Trie: 1-1-1, 1-2-1:
+ * If we insert two sequences into the Trie: 0-0-0, 0-1-0:
  * the trie will have 6 TrieEntry:
  * root
  * |
- * 1
+ * 0
  * | \
- * 1 2
+ * 0 1
  * | |
- * 1 1
- * the upper 4 TrieEntry has filed 'nexts' with size k
- * the bottom 2 TrieEntry has filed 'count'
+ * 0 0
+ * the upper 4 TrieEntry is inner node
+ * the bottom 2 TrieEntry if leaf node
  * count means how many its parents has been met
  */
-union TrieEntry {
-  TrieEntry** nexts;
+struct TrieEntry {
+  std::vector<TrieEntry*> nexts;
+  // useful only in leaf node
   size_t count;
+  TrieEntry(size_t default_k):nexts(default_k, nullptr),count(-1){};
 };
 
 class DynamicTrie {
  private:
   TrieEntry* root;
   int depth_;
-  int k_;
+  int default_k_;
  public:
   DPB::TrieEntry* newEntry(int k);
   explicit DynamicTrie(int depth,int k );
