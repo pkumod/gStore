@@ -185,7 +185,7 @@ tuple<bool, IntermediateResult> Optimizer::ExecutionDepthFirst(shared_ptr<BGPQue
     return make_tuple(true,final_result);
   int counter = 0;
   /* merge result */
-  for(int i=1;i<result_container.size();i++)
+  for(unsigned int i=1;i<result_container.size();i++)
     for(const auto& record:*(result_container[i])) {
       final_result.values_->push_back(record);
       if( ++counter == limit_num)
@@ -253,7 +253,7 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPl
     return make_tuple(false, layer_result);
 
   /* deep in bottom */
-  if(layer_count + 1 == query_plan->join_order_->size()) {
+  if( (unsigned )layer_count + 1 == query_plan->join_order_->size()) {
     result_number_till_now += step_table->size();
     return make_tuple(false, layer_result);
   }
@@ -562,7 +562,7 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
   delete[] record;
 
 
-  return false;
+  return true;
 }
 
 
@@ -928,58 +928,84 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   env->ss = make_shared<stringstream>();
 
   auto root_fr = TopKUtil::BuildIteratorTree(tree_search_plan,env);
-  for(int i =1;i<=query_info.limit_num_;i++)
-  {
-    root_fr->TryGetNext(k);
-    if(root_fr->pool_.size()!=i)
-      break;
-#ifdef TOPK_DEBUG_INFO
-    else {
-      cout << "get top-" << i << " "<<root_fr->pool_[i-1].cost<<endl;
-    }
-#endif
-  }
 
+  decltype(query_info.limit_num_) deleted_num = 0;
   auto result_list = make_shared<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
-
-#ifdef TOPK_DEBUG_INFO
-  cout<<" the top score "<<root_fr->pool_[0].cost<<"  pool size "<<root_fr->pool_.size()<<endl;
-  for(const auto& pos_id_pair:*pos_var_mapping)
-  {
-    cout<<"pos["<<pos_id_pair.first<<"]"<<" var id "<<pos_id_pair.second<<" "<<env->basic_query->getVarName(pos_id_pair.second)<<endl;
-  }
-
-#endif
-
-  auto var_num = pos_var_mapping->size();
-  for(int i =0;i<root_fr->pool_.size();i++)
-  {
-    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
-    record->reserve(var_num);
-    root_fr->GetResult(i,record);
-    result_list->emplace_back(std::move(record));
-  }
-#ifdef TOPK_DEBUG_INFO
-  auto it = result_list->begin();
-  for(int i =0;i<result_list->size();i++)
-  {
-    auto rec = *it;
-    cout<<" record["<<i<<"]"<<" score:"<<root_fr->pool_[i].cost;
-    auto var_num = bgp_query->get_total_var_num();
-    for(unsigned j =0;j<var_num;j++)
-      cout<<" "<<kv_store_->getStringByID((*rec)[j]);
-    //for(int j=basic_query->getSelectVarNum();j<var_num;j++)
-    //  cout<<" "<<kv_store_->getStringByID((*rec)[j]);
-    cout<<endl;
-    it++;
-  }
-#endif
 
   auto result_table = IntermediateResult();
   result_table.values_ = result_list;
   result_table.pos_id_map = pos_var_mapping;
   for(auto pos_id_pair:*pos_var_mapping)
     (*result_table.id_pos_map)[pos_id_pair.second] = pos_id_pair.first;
+
+  auto temp_table = IntermediateResult();
+  temp_table.pos_id_map = result_table.pos_id_map;
+  temp_table.id_pos_map = result_table.id_pos_map;
+
+#ifdef TOPK_DEBUG_INFO
+  for(const auto& pos_id_pair:*pos_var_mapping)
+  {
+    cout<<"pos["<<pos_id_pair.first<<"]"<<" var id "<<pos_id_pair.second<<" "<<env->basic_query->getVarName(pos_id_pair.second)<<endl;
+  }
+#endif
+
+  for(int i =1; i<=query_info.limit_num_ + deleted_num; i++)
+  {
+    root_fr->TryGetNext(k+ deleted_num);
+    if(root_fr->pool_.size()!=(unsigned int)i)
+      break;
+#ifdef TOPK_DEBUG_INFO
+    else {
+      cout << "get top-" << i << " "<<root_fr->pool_[i-1].cost<<endl;
+    }
+#endif
+
+    // can't get any more
+    if((unsigned)i<root_fr->pool_.size())
+      break;
+
+
+#ifdef TOPK_DEBUG_INFO
+    cout<<" the "<<i<<"-th score "<<root_fr->pool_[i].cost<<endl;
+#endif
+
+    auto var_num = pos_var_mapping->size();
+
+    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+    record->reserve(var_num);
+    root_fr->GetResult(i,record);
+
+    bool success = false;
+    auto &non_tree_edge = tree_search_plan->GetNonTreeEdges();
+    if(tree_search_plan->LoopGraph())
+    {
+      auto temp_content_ptr = make_shared<TableContent>();
+      temp_content_ptr->push_back(record);
+      temp_table.values_ = temp_content_ptr;
+      auto filter_result = this->executor_.ANodeEdgesConstraintFilter(non_tree_edge.edge_filter_,temp_table,id_caches);
+      auto filter_result_size = get<1>(filter_result).values_->size();
+      success = filter_result_size != 0;
+    }
+
+    if(success)
+      result_list->push_back(record);
+    else
+      deleted_num += 1;
+#ifdef TOPK_DEBUG_INFO
+    auto it = result_list->begin();
+    for(decltype(result_list->size()) i =0;i<result_list->size();i++)
+    {
+      auto rec = *it;
+      cout<<" record["<<i<<"]"<<" score:"<<root_fr->pool_[i].cost;
+      auto var_num = bgp_query->get_total_var_num();
+      for(unsigned j =0;j<var_num;j++)
+        cout<<" "<<kv_store_->getStringByID((*rec)[j]);
+      cout<<endl;
+      it++;
+    }
+#endif
+  }
+
   return std::make_tuple(true,result_table);
 }
 
