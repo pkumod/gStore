@@ -529,6 +529,10 @@ unsigned int BGPQuery::get_var_degree(unsigned int var_id) {
 	return var_vector[id_position_map[var_id]]->degree_;
 }
 
+VarDescriptor::VarType BGPQuery::get_var_type_by_id(unsigned int var_id) {
+	return var_vector[id_position_map[var_id]]->var_type_;
+}
+
 bool BGPQuery::is_var_selected(unsigned int var_id) {
 	return var_vector[id_position_map[var_id]]->selected_;
 }

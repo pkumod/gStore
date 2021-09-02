@@ -12,7 +12,7 @@ using namespace std;
 /**
  * @return if input contain small_vec, than return true, else return false;
  */
-bool OrderedVector::contain_sub_vec(const vector<int> &input, const vector<int> &small_vec) {
+bool OrderedVector::contain_sub_vec(const vector<unsigned> &input, const vector<unsigned> &small_vec) {
     for(auto node : small_vec){
         if(find(input.begin(), input.end(), node) == input.end()){
             return false;
@@ -27,7 +27,7 @@ bool OrderedVector::contain_sub_vec(const vector<int> &input, const vector<int> 
  * @param to_subtract ordered vector to subtract
  * @param result result ordered vector (input - to_subtract)
  */
-void OrderedVector::subtract(const vector<int> &input, const vector<int> &to_subtract, vector<int> &result) {
+void OrderedVector::subtract(const vector<unsigned> &input, const vector<unsigned> &to_subtract, vector<unsigned> &result) {
     for(auto x : input){
         if(find(to_subtract.begin(), to_subtract.end(), x) == to_subtract.end()){
             result.push_back(x);
@@ -38,7 +38,7 @@ void OrderedVector::subtract(const vector<int> &input, const vector<int> &to_sub
 /**
  * @param vector_A result ordered vector union with set_B
  */
-void OrderedVector::vec_set_union(vector<int> &vector_A, set<int> &set_B) {
+void OrderedVector::vec_set_union(vector<unsigned> &vector_A, set<unsigned> &set_B) {
     for(auto x : set_B){
         if(find(vector_A.begin(), vector_A.end(), x) == vector_A.end()){
             vector_A.push_back(x);
