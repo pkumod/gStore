@@ -14,7 +14,7 @@ void FRIterator::TryGetNext(unsigned int k) {
   }
   if(this->queue_.empty())
     return;
-  auto m = this->pool_.size();
+  //auto m = this->pool_.size();
   auto em = this->pool_.back();
   auto em_pointer = this->fqs_map_[em.node];
   this->queue_.popMin();
@@ -27,8 +27,8 @@ void FRIterator::TryGetNext(unsigned int k) {
     this->queue_.push(e);
   }
   if(!queue_.empty()) {
-    if (this->queue_.size() > k - m)
-      this->queue_.popMax();
+    //if (this->queue_.size() > k - m)
+    //  this->queue_.popMax();
     this->pool_.push_back(this->queue_.findMin());
   }
 }
@@ -53,8 +53,8 @@ void FRIterator::Insert(unsigned int k,
   e.index = already_FQ_num;
 
   queue_.push(e);
-  if(queue_.size()>k)
-    queue_.popMax();
+  //if(queue_.size()>k)
+  //  queue_.popMax();
 }
 
 double FRIterator::DeltaCost(std::shared_ptr<OrderedList> node_pointer, int index) {
@@ -92,8 +92,7 @@ void FRIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LIT
 void OWIterator::TryGetNext(unsigned int k) {
 }
 
-void OWIterator::Insert(unsigned int k,
-                        const std::vector<TYPE_ENTITY_LITERAL_ID>& ids,
+void OWIterator::Insert(const std::vector<TYPE_ENTITY_LITERAL_ID>& ids,
                         const std::vector<double>& scores)
 {
   struct ScorePair{
@@ -106,7 +105,7 @@ void OWIterator::Insert(unsigned int k,
   for(unsigned int  i=0;i<ids.size();i++)
     ranks.push_back(ScorePair{ids[i],scores[i]});
   std::sort(ranks.begin(),ranks.end());
-  for(unsigned int i=0;i<k && i < ranks.size();i++)
+  for(unsigned int i=0;i < ranks.size();i++)
   {
     DPB::element e{};
     e.index = 0;
@@ -155,15 +154,14 @@ void FQIterator::TryGetNext(unsigned int k) {
   }
   if(this->queue_.empty())
     return;
-  auto m = this->e_pool_.size();
+
+  // Get Next-- insert the children of the top
+  //auto m = this->e_pool_.size();
   auto em = this->e_pool_.back();
   queue_.popMin();
   auto seq = em.seq;
   for(unsigned int j=0; j<this->fr_ow_iterators_.size(); j++)
   {
-    // it means this iterator cannot output more
-    if(seq[j]>=k)
-      continue;
     seq[j] += 1;
     if(this->dynamic_trie_.detect(seq))
     {
@@ -178,8 +176,6 @@ void FQIterator::TryGetNext(unsigned int k) {
     seq[j] -= 1;
   }
   if(!queue_.empty()) {
-    if (this->queue_.size() > k - m)
-      this->queue_.popMax();
     auto inserted = this->queue_.findMin();
     inserted.cost += this->node_score_;
     this->e_pool_.push_back(inserted);

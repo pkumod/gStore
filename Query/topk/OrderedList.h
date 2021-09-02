@@ -79,7 +79,7 @@ class OWIterator: public OrderedList{
   void TryGetNext(unsigned int k) override;
 
   // Insert a bulk of gStore Node ids and their scores
-  void Insert(unsigned int k,const std::vector<TYPE_ENTITY_LITERAL_ID>& ids, const std::vector<double>& scores);
+  void Insert(const std::vector<TYPE_ENTITY_LITERAL_ID>& ids, const std::vector<double>& scores);
   virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
                          NodeOneChildVarPredicatesPtr predicate_information = nullptr) override;
 };
