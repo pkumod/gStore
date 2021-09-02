@@ -50,6 +50,7 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
                                Statistics *statistics, const QueryTree::Order& expression,
                                shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches)
 {
+  this->is_loop_graph = false;
   this->total_vars_num_ = bgp_query->get_total_var_num();
   TYPE_ENTITY_LITERAL_ID CONSTANT = -1;
   // a neighbour may have more than one edge
@@ -68,7 +69,7 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
       continue;
 
     auto &edge_index_list = var_descriptor->so_edge_index_;
-    auto degree = bgp_query->get_var_degree(i);
+
     auto v_name = bgp_query->get_var_name_by_id(i);
     for(auto edge_id:edge_index_list) {
       decltype(i) nei_id;
@@ -127,6 +128,11 @@ void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
                              Statistics *statistics,
                              QueryTree::Order expression,
                              shared_ptr<map<TYPE_ENTITY_LITERAL_ID, shared_ptr<IDList>>> id_caches) {
+
+
+  auto first_cycle = this->FindCycle();
+  if(!first_cycle.empty())
+    this->CutCycle(bgp_query,kv_store,statistics,id_caches);
 
   int min_score_root = -1;
   auto min_score = DBL_MAX;
@@ -521,7 +527,7 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
   auto cycle = this->FindCycle();
   if(cycle.empty())
     return false;
-
+  this->is_loop_graph = true;
   vector<double> selectivity(cycle.size());
   auto edge_num = cycle.size();
   cycle.push_back(cycle[0]);
@@ -591,8 +597,6 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
   auto d_string = bgp_query->get_var_name_by_id(d_id);
   auto &edges = c_var->so_edge_index_;
 
-  this->non_tree_edges_.emplace_back();
-  auto &edge_operation = this->non_tree_edges_.back();
   for(auto edge_id:edges) {
     auto triple = bgp_query->get_triple_by_index(edge_id);
     auto &s_string = triple.subject;
@@ -615,11 +619,11 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
       edge_info.o_ = d_id;
     }
     EdgeConstantInfo edge_constant_info(false, predicate_constant, false);
-    edge_operation.edge_filter_->edges_->push_back(edge_info);
-    edge_operation.edge_filter_->edges_constant_info_->push_back(edge_constant_info);
+    this->non_tree_edges_.edge_filter_->edges_->push_back(edge_info);
+    this->non_tree_edges_.edge_filter_->edges_constant_info_->push_back(edge_constant_info);
   }
-  edge_operation.edge_filter_->node_to_join_ = c_id;
-  edge_operation.join_type_ = StepOperation::JoinType::EdgeCheck;
+  this->non_tree_edges_.edge_filter_->node_to_join_ = c_id;
+  this->non_tree_edges_.join_type_ = StepOperation::JoinType::EdgeCheck;
   return true;
 }
 

@@ -7,7 +7,6 @@
 #include "../Util/Util.h"
 #include "TableOperator.h"
 
-#include <utility>
 using namespace std;
 
 std::string JoinMethodToString(JoinMethod x){
@@ -137,11 +136,13 @@ bool EdgeConstantInfo::ConstantToVar(EdgeInfo edge_info) {
       return this->s_constant_ && this->p_constant_;
     case JoinMethod::po2s:
       return this->p_constant_ && this->o_constant_;
+    default:
+      throw string("ConstantToVar error");
   }
   return false;
 }
 
-TYPE_ENTITY_LITERAL_ID EdgeInfo::getVarToFilter() {
+TYPE_ENTITY_LITERAL_ID EdgeInfo::getVarToFilter() const {
   TYPE_ENTITY_LITERAL_ID var_to_filter;
   switch (this->join_method_) {
     case JoinMethod::s2p:
@@ -165,9 +166,6 @@ TYPE_ENTITY_LITERAL_ID EdgeInfo::getVarToFilter() {
       break;
 
     case JoinMethod::o2p:
-      var_to_filter = this->p_;
-      break;
-
     case JoinMethod::so2p:
       var_to_filter = this->p_;
       break;
@@ -179,12 +177,13 @@ TYPE_ENTITY_LITERAL_ID EdgeInfo::getVarToFilter() {
     case JoinMethod::po2s:
       var_to_filter = this->s_;
       break;
+    default:
+      throw string("EdgeInfo::getVarToFilter err");
   }
   return var_to_filter;
 }
 
-string EdgeInfo::toString() {
-
+string EdgeInfo::toString() const {
   stringstream ss;
   ss<<" EdgeInfo: \t s["<<this->s_<<"] \t p["<<this->p_<<"]"<<" \t o["<<this->o_<<"]";
   return ss.str();
@@ -231,7 +230,7 @@ StepOperation::StepOperation(JoinType join_type, shared_ptr<FeedOneNode> join_no
 			break;
 		}
 		case JoinType::JoinTwoNodes:{
-			join_two_nodes = join_two_nodes;
+			this->join_two_node_ = join_two_nodes;
 			break;
 		}
 		case JoinType::JoinTable:{
@@ -266,7 +265,7 @@ void FeedOneNode::ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID
 
   std::vector<ConstantNumberInfo> number_info_vec;
 
-  for(auto i =0;i<this->edges_->size();i++)
+  for(decltype(this->edges_->size()) i =0;i<this->edges_->size();i++)
   {
     ConstantNumberInfo t;
     t.already_in_number = t.constant_number = 0;

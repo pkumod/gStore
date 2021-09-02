@@ -57,7 +57,8 @@ class TopKSearchPlan {
   map<TYPE_ENTITY_LITERAL_ID,vector<vector<TopKUtil::EdgeDirection>>> directions_;
   // The Edges that left behind
   // It can be used when enumerating , use non tree edges to make sure correctness
-  std::vector<StepOperation> non_tree_edges_;
+  StepOperation non_tree_edges_;
+  bool is_loop_graph;
   std::size_t total_vars_num_;
   static std::size_t CountDepth(map<TYPE_ENTITY_LITERAL_ID,vector<TYPE_ENTITY_LITERAL_ID>> &neighbours, TYPE_ENTITY_LITERAL_ID root_id, std::size_t total_vars_num);
   void AdjustOrder();
@@ -74,10 +75,11 @@ class TopKSearchPlan {
   TopKTreeNode* tree_root_;
   // Recursive delete
   ~TopKSearchPlan();
-  std::vector<StepOperation>& GetNonTreeEdges(){return this->non_tree_edges_;};
+  StepOperation& GetNonTreeEdges(){return this->non_tree_edges_;};
   std::vector<int> FindCycle();
   bool SuggestTopK();
   std::string DebugInfo();
+  bool LoopGraph() {return this->is_loop_graph;};
 };
 
 #endif //GSTOREGDB_QUERY_TOPK_TOPKSEARCHPLAN_H_

@@ -145,8 +145,8 @@ class EdgeInfo{
   }
 
   JoinMethod join_method_;
-  TYPE_ENTITY_LITERAL_ID getVarToFilter();
-  std::string toString();
+  TYPE_ENTITY_LITERAL_ID getVarToFilter() const;
+  std::string toString() const;
   EdgeInfo() = default;
 };
 
@@ -250,7 +250,7 @@ struct IndexedRecordResultCompare
 {
   bool operator()(const std::vector<TYPE_ENTITY_LITERAL_ID> &a, const std::vector<TYPE_ENTITY_LITERAL_ID> &b)
   {
-    for(auto i = 0;i<a.size();i++)
+    for(decltype(a.size()) i = 0;i<a.size();i++)
     {
       if(a[i]<b[i])
         return true;
