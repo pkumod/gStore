@@ -530,7 +530,7 @@ TopKUtil::GenerateOWs(int parent_var,int child_var,std::shared_ptr<TopKUtil::Tre
       //cout<<parent_id<<"'s OW ["<<child_var<<"]";
 #endif
 
-    ow->Insert(env->k, children_ids, children_scores);
+    ow->Insert( children_ids, children_scores);
     result[parent_id] = make_pair(ow,ow_predicates);
     children_ids.clear();
     children_scores.clear();
