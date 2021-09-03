@@ -285,7 +285,7 @@ bool Util::configure_new()
     Util::setGlobalConfig(ini_parser, "ghttp", "ip_allow_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "ip_deny_path");
     Util::setGlobalConfig(ini_parser, "system", "version");
-  
+    Util::setGlobalConfig(ini_parser, "system", "licensetype");
     cout << "the current settings are as below: " << endl;
     cout << "key : value" << endl;
     cout << "------------------------------------------------------------" << endl;
