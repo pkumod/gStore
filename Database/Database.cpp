@@ -740,11 +740,15 @@ Database::load(bool loadCSR)
          return false;
 
 	}
+	else{
+		cout<<"load kvstore successfully!"<<endl;
+	}
 		
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
 	//NOTICE: we should also run some heavy work in the main thread
 	this->stringindex->load();
+	cout<<"load stringindex  successfully!"<<endl;
 	this->readIDinfo();
 
 #ifdef THREAD_ON
@@ -786,7 +790,7 @@ Database::load(bool loadCSR)
 #endif
 	//load cache of sub2values and obj2values
 	this->load_cache();
-	
+	cout<<"load cache successfully!"<<endl;
 	//warm up always as finishing build(), to utilize the system buffer
 	//this->warmUp();
 	//DEBUG:the warmUp() calls query(), which will also output results, this is not we want
