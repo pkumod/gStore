@@ -2,7 +2,7 @@
  * Copyright 2021 gStore, All Rights Reserved. 
  * @Author: Bookug Lober suxunbin liwenjie
  * @Date: 2021-08-22 00:37:57
- * @LastEditTime: 2021-09-02 20:26:35
+ * @LastEditTime: 2021-09-03 14:34:43
  * @LastEditors: Please set LastEditors
  * @Description: the http server to handler the user's request, which is main access entrance of gStore
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2578,19 +2578,22 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
       StringBuffer resBuffer;
       PrettyWriter<StringBuffer> resWriter(resBuffer);
       resDoc.Accept(resWriter);
-      success = resBuffer.GetString();
+      string resJson = resBuffer.GetString();
 	  localname = localname + "." + format;
       filename = filename + "." + format;
 	  filename = "";
       filename = "sparql." + format;
       cout << log_prefix << "filename: " << filename << endl;
-      *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length();
-      *response << "\r\nContent-Type: application/octet-stream";
-      *response << "\r\nContent-Disposition: attachment; filename=\"" << filename << '"';
-      *response << "\r\n\r\n" << success;
-
+     
+      *response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length();
+      *response << "\r\nCache-Control: no-cache"
+                << "\r\nPragma: no-cache"
+                << "\r\nExpires: 0";
+      *response << "\r\n\r\n" << resJson;
+      cout<<"query complete! unlock the database "<<endl;
 	  pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-	 return;
+	   cout<<"query complete! unlock the database successfully! "<<endl;
+	  return;
 			//return true;
 			//
 	
