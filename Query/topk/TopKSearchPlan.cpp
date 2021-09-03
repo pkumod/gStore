@@ -87,6 +87,8 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
       }
       if(nei_name[0]!='?')
         nei_id = CONSTANT;
+      else
+        nei_id = bgp_query->get_var_id_by_name(nei_name);
 
       if(nei_id==CONSTANT)
         continue;
@@ -238,6 +240,7 @@ void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
           if(predicate_constant)
           {
             step_op.join_type_  = StepOperation::JoinType::EdgeCheck;
+            step_op.edge_filter_ = make_shared<FeedOneNode>();
             step_op.edge_filter_->node_to_join_ = child_id;
             step_op.edge_filter_->edges_->push_back(edge_info);
             step_op.edge_filter_->edges_constant_info_->push_back(edge_constant_info);
@@ -245,6 +248,7 @@ void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
           else
           {
             step_op.join_type_  = StepOperation::JoinType::JoinTwoNodes;
+            step_op.join_two_node_ = make_shared<FeedTwoNode>();
             if(direction == TopKUtil::EdgeDirection::IN) // o2ps
             {
               step_op.join_two_node_->node_to_join_1_ =edge_info.p_;

@@ -991,21 +991,20 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
       result_list->push_back(record);
     else
       deleted_num += 1;
-#ifdef TOPK_DEBUG_INFO
-    auto it = result_list->begin();
-    for(decltype(result_list->size()) i =0;i<result_list->size();i++)
-    {
-      auto rec = *it;
-      cout<<" record["<<i<<"]"<<" score:"<<root_fr->pool_[i].cost;
-      auto var_num = bgp_query->get_total_var_num();
-      for(unsigned j =0;j<var_num;j++)
-        cout<<" "<<kv_store_->getStringByID((*rec)[j]);
-      cout<<endl;
-      it++;
-    }
-#endif
   }
-
+#ifdef TOPK_DEBUG_INFO
+  auto it = result_list->begin();
+  for(decltype(result_list->size()) i =0;i<result_list->size();i++)
+  {
+    auto rec = *it;
+    cout<<" record["<<i<<"]"<<" score:"<<root_fr->pool_[i].cost;
+    auto var_num = bgp_query->get_total_var_num();
+    for(unsigned j =0;j<var_num;j++)
+      cout<<" "<<kv_store_->getStringByID((*rec)[j]);
+    cout<<endl;
+    it++;
+  }
+#endif
   return std::make_tuple(true,result_table);
 }
 

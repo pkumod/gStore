@@ -72,7 +72,8 @@ class IDListWithAppending
       std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> // attached elements
       >> contents_;
 
-  IDListWithAppending() = default;
+  IDListWithAppending():contents_(std::make_shared<std::remove_reference<decltype(*contents_)>::type>()){
+  };
   IDListWithAppending(const IDList &id_list);
   IDListWithAppending(TYPE_ENTITY_LITERAL_ID* id_list, size_t records_num,
                       size_t one_record_len, size_t main_key_position);
