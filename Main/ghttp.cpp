@@ -2,7 +2,7 @@
  * Copyright 2021 gStore, All Rights Reserved. 
  * @Author: Bookug Lober suxunbin liwenjie
  * @Date: 2021-08-22 00:37:57
- * @LastEditTime: 2021-08-31 20:25:04
+ * @LastEditTime: 2021-09-02 20:26:35
  * @LastEditors: Please set LastEditors
  * @Description: the http server to handler the user's request, which is main access entrance of gStore
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -159,6 +159,10 @@ void rollback_thread_new(const shared_ptr<HttpServer::Response>& response,string
 void txnlog_thread_new(const shared_ptr<HttpServer::Response>& response,string username);
 
 void checkpoint_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name);
+
+void test_connect_thread_new(const shared_ptr<HttpServer::Response>& response);
+
+void getCoreVersion_thread_new(const shared_ptr<HttpServer::Response>& response);
 //TODO: use lock to protect logs when running in multithreading environment
 FILE* query_logfp = NULL;
 string queryLog = "logs/endpoint/query.log";
@@ -2795,7 +2799,23 @@ void export_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 void login_thread_new(const shared_ptr<HttpServer::Response>& response)
 {
 	string success="login successfully.";
-	sendResponseMsg(0,success,response);
+	 Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "login successfully", allocator);
+	string version=Util::getConfigureValue("version");
+	resDoc.AddMember("CoreVersion", StringRef(version.c_str()), allocator);
+	string licensetype=Util::getConfigureValue("licensetype");
+	resDoc.AddMember("licensetype",StringRef(licensetype.c_str()), allocator);
+
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+	
 }
 /**
  * @Author: liwenjie
@@ -3290,6 +3310,46 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Response>& response,stri
 
 }
 
+ void test_connect_thread_new(const shared_ptr<HttpServer::Response>& response)
+ {
+     Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "success", allocator);
+	string version=Util::getConfigureValue("version");
+	resDoc.AddMember("CoreVersion", StringRef(version.c_str()), allocator);
+	string licensetype=Util::getConfigureValue("licensetype");
+	resDoc.AddMember("licensetype",StringRef(licensetype.c_str()), allocator);
+
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+  
+ }
+
+ void getCoreVersion_thread_new(const shared_ptr<HttpServer::Response>& response)
+ {
+
+	 Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "success", allocator);
+	string version=Util::getConfigureValue("version");
+	resDoc.AddMember("CoreVersion", StringRef(version.c_str()), allocator);
+
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+ }
+
 
 
 string checkIdentity(string username, string password)
@@ -3774,6 +3834,15 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	else if(operation=="checkpoint")
 	{
          checkpoint_thread_new(response,db_name);
+
+	}
+	else if(operation=="testConnect")
+	{
+		test_connect_thread_new(response);
+	}
+	else if(operation=="getCoreVersion")
+	{
+		 getCoreVersion_thread_new(response);
 
 	}
 	
