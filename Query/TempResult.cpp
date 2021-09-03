@@ -1804,6 +1804,10 @@ void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, StringIndex *
 			int add_pos = r.findCompatibleResult(add_id_varset, add_str_varset);
 			this->results[i].doOptional(binding, x.results[j], r.results[noadd_pos], r.results[add_pos], j + 1 == (int)x.results.size());
 		}
+
+		if(x.results.size() == 0){
+			this->results[i].doUnion(r.results[noadd_pos]);
+		}
 	}
 
 	long tv_end = Util::get_cur_time();
