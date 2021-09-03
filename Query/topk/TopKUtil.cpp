@@ -61,6 +61,15 @@ void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_nod
                                           std::map<std::string,double>& coefficients,
                                           stringstream &ss)
 {
+
+  if(comp_tree_node->lchild==nullptr&&comp_tree_node->rchild==nullptr)
+  {
+    coefficients[comp_tree_node->val] = 1.0;
+#ifdef TOPK_DEBUG_INFO
+    std::cout<<"Node:"<<comp_tree_node->val<<" 1.0"<<std::endl;
+    return;
+#endif
+  }
 #ifdef TOPK_DEBUG_INFO
   std::cout<<"Node:"<<comp_tree_node->val<<" "<<comp_tree_node->lchild->val<<" "<<comp_tree_node->rchild->val<<std::endl;
 #endif
@@ -268,7 +277,7 @@ TopKUtil::AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
       fq->Insert(descendents_OWs[i][fq_id].first);
       fq->AddOneTypePredicate(descendents_OWs[i][fq_id].second);
     }
-    for(decltype(child_type_num) i =0;i<child_type_num;i++)
+    for(decltype(child_type_num) i =0;i<fr_size;i++)
       fq->Insert(descendents_FRs[i][fq_id]);
     id_fqs[fq_id] = fq;
     fq->TryGetNext(k);

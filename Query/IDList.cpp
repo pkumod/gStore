@@ -525,12 +525,14 @@ void IDListWithAppending::Init(const TYPE_ENTITY_LITERAL_ID* id_list, size_t rec
  * @param main_key_position the position inside a record
  */
 IDListWithAppending::IDListWithAppending(TYPE_ENTITY_LITERAL_ID* id_list, size_t records_num,
-                                         size_t one_record_len, size_t main_key_position)
-                                         {
-                                           Init(id_list,records_num,one_record_len,main_key_position);
+                                         size_t one_record_len, size_t main_key_position):
+    contents_(std::make_shared<std::remove_reference<decltype(*contents_)>::type>())
+{
+  Init(id_list,records_num,one_record_len,main_key_position);
 }
 
-IDListWithAppending::IDListWithAppending(const IDList &id_list) {
+IDListWithAppending::IDListWithAppending(const IDList &id_list):
+    contents_(std::make_shared<std::remove_reference<decltype(*contents_)>::type>()) {
   Init(id_list.getList()->data(),id_list.size(),1,0);
 }
 

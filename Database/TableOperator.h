@@ -173,7 +173,10 @@ class FeedOneNode{
   TYPE_ENTITY_LITERAL_ID node_to_join_;
   std::shared_ptr<std::vector<EdgeInfo>> edges_;
   std::shared_ptr<std::vector<EdgeConstantInfo>> edges_constant_info_;
-  FeedOneNode()=default;
+  FeedOneNode():node_to_join_(-1){
+    edges_ = std::make_shared<std::vector<EdgeInfo>>();
+    edges_constant_info_ = std::make_shared<std::vector<EdgeConstantInfo>>();
+  };
   FeedOneNode(unsigned join_node_id, shared_ptr<vector<EdgeInfo>> edge_info, shared_ptr<vector<EdgeConstantInfo>> edge_constant):
   		node_to_join_(join_node_id), edges_(edge_info), edges_constant_info_(edge_constant){};
 
@@ -192,7 +195,8 @@ public:
 };
 
 /* Join Two Table on Public Variables*/
-struct JoinTwoTable{
+class JoinTwoTable{
+ public:
   // VarDescriptor ID
   std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> public_variables_;
   JoinTwoTable(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> public_variables): public_variables_(public_variables){};

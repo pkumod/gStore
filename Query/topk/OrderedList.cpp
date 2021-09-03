@@ -40,12 +40,11 @@ void FRIterator::TryGetNext(unsigned int k) {
 void FRIterator::Insert(TYPE_ENTITY_LITERAL_ID fq_id,
                         std::shared_ptr<OrderedList> fq_pointer,
                         OnePointPredicatePtr predicates_vec) {
-  auto already_FQ_num = this->type_predicates_->size();
   (*this->type_predicates_)[fq_id] = predicates_vec;
   auto cost = fq_pointer->pool_[0].cost;
   DPB::element e{};
   e.cost = cost;
-  e.index = already_FQ_num;
+  e.index = 0;
   e.node = fq_id;
   this->fqs_map_[fq_id] = fq_pointer;
   queue_.push(e);
