@@ -32,6 +32,7 @@ std::shared_ptr<std::map<std::string,double>> getVarCoefficients(QueryTree::Orde
 struct Env{
   KVstore *kv_store;
   BasicQuery *basic_query;
+  shared_ptr<BGPQuery> bgp_query;
   shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches;
   int k;
   // store the non-tree edges to speed up result enumeration

@@ -119,7 +119,7 @@ void TopKUtil::UpdateIDList(shared_ptr<IDList> valid_id_list, unsigned* id_list,
   else
   {
     valid_id_list->reserve(id_list_len);
-    for(int i = 0; i < id_list_len; i++)
+    for(unsigned i = 0; i < id_list_len; i++)
       valid_id_list->addID(id_list[i]);
   }
 }
@@ -148,7 +148,7 @@ FRIterator *TopKUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_se
   auto root_candidate_ids = (*env->id_caches)[root_var];
 
   set<TYPE_ENTITY_LITERAL_ID> root_candidate;
-  auto coefficient_it = env->coefficients->find(env->basic_query->getVarName(root_var));
+  auto coefficient_it = env->coefficients->find(env->bgp_query->get_var_name_by_id((root_var)));
   bool has_coefficient = coefficient_it != env->coefficients->end();
   double coefficient = has_coefficient? (*coefficient_it).second:0.0;
 
@@ -214,7 +214,7 @@ FRIterator *TopKUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_se
   for(auto root_id_fq:child_fqs) {
     auto root_id = root_id_fq.first;
     auto fq_pointer = root_id_fq.second;
-      fr->Insert(env->k,root_id,fq_pointer,empty_pre);
+      fr->Insert(root_id,fq_pointer,empty_pre);
   }
 
 #ifdef TOPK_DEBUG_INFO
@@ -466,7 +466,7 @@ TopKUtil::GenerateOWs(int parent_var,int child_var,std::shared_ptr<TopKUtil::Tre
 {
 
   auto child_type_num = child_tree_node->descendents_.size();
-  auto coefficient_it = env->coefficients->find(env->basic_query->getVarName(child_var));
+  auto coefficient_it = env->coefficients->find(env->bgp_query->get_var_name_by_id((child_var)));
   bool has_coefficient = coefficient_it != env->coefficients->end();
   double coefficient = has_coefficient ? (*coefficient_it).second : 0.0;
   std::set<TYPE_ENTITY_LITERAL_ID> deleted_parent_ids_this_child;
@@ -559,7 +559,7 @@ TopKUtil::GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKUtil::T
                       std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
                       TopKTreeNode *child_tree_node, Env *env) {
   auto child_type_num = child_tree_node->descendents_.size();
-  auto coefficient_it = env->coefficients->find(env->basic_query->getVarName(child_var));
+  auto coefficient_it = env->coefficients->find(env->bgp_query->get_var_name_by_id(child_var));
   bool has_coefficient = coefficient_it != env->coefficients->end();
   double coefficient = has_coefficient ? (*coefficient_it).second : 0.0;
   std::set<TYPE_ENTITY_LITERAL_ID> deleted_parent_ids_this_child;
@@ -658,7 +658,7 @@ TopKUtil::GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKUtil::T
     {
       auto child_id = child_id_appending_pair.first;
       auto appending_list = child_id_appending_pair.second;
-      fr->Insert(env->k, child_id,child_fqs[child_id],appending_list);
+      fr->Insert( child_id,child_fqs[child_id],appending_list);
     }
     result[parent_id] = fr;
     fr->TryGetNext(env->k);

@@ -35,11 +35,10 @@ DPB::DynamicTrie::DynamicTrie(int depth,int k ): depth_(depth), default_k_(k) {
  * @param depth
  */
 void DPB::DynamicTrie::deleteEntry(DPB::TrieEntry *trie_entry, int depth) {
-  if(depth != this->depth_-1)
-    for(unsigned int i=0;i<trie_entry->nexts.size();i++)
-      if(trie_entry->nexts[i] != nullptr)
-        deleteEntry(trie_entry->nexts[i],depth+1);
-  delete[] trie_entry;
+  for(unsigned int i=0;i<trie_entry->nexts.size();i++)
+    if(trie_entry->nexts[i] != nullptr)
+      deleteEntry(trie_entry->nexts[i],depth+1);
+  delete trie_entry;
 }
 
 DPB::DynamicTrie::~DynamicTrie() {

@@ -36,6 +36,7 @@ using NodeOneChildVarPredicatesPtr = std::shared_ptr<NodeOneChildVarPredicates>;
 class OrderedList{
  public:
   DPB::Pool pool_;
+  OrderedList()=default;
   // predicates_vec[i] is the predicates of child[i]
   // FQs and FRs will use this field.
   virtual OrderedListType Type(){return OrderedListType::UnDefined;};
@@ -51,14 +52,13 @@ class FRIterator:public OrderedList {
   minmax::MinMaxHeap<DPB::element> queue_;
   std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<OrderedList>> fqs_map_;
  public:
-  FRIterator() = default;
+  FRIterator();
   virtual ~FRIterator(){};
   OrderedListType Type() override {return OrderedListType::FR;};
   void TryGetNext(unsigned int k) override;
 
   // Insert a bulk of FQ iterator, all the same type
-  void Insert(unsigned int k,
-              TYPE_ENTITY_LITERAL_ID fq_id,
+  void Insert(TYPE_ENTITY_LITERAL_ID fq_id,
               std::shared_ptr<OrderedList> FQ_iterator,
               OnePointPredicatePtr predicates_vec);
 
@@ -101,7 +101,7 @@ class FQIterator: public OrderedList{
   void AddOneTypePredicate(NodeOneChildVarPredicatesPtr p){this->types_predicates_.push_back(p);}
   explicit FQIterator(int k,TYPE_ENTITY_LITERAL_ID node_id,int child_type_num,double node_score):
       node_score_(node_score), dynamic_trie_(child_type_num,k),node_id_(node_id)
-  {this->fr_ow_iterators_.reserve(child_type_num);};
+  {   this->fr_ow_iterators_.reserve(child_type_num);};
   void TryGetNext(unsigned int k) override;
   TYPE_ENTITY_LITERAL_ID GetNodeID(){return this->node_id_;};
 

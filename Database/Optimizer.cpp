@@ -57,9 +57,8 @@ BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query
   else
   {
     if(query_info->ordered_by_expressions_->size()) {
-      auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,
-                                                     this->statistics, (*query_info->ordered_by_expressions_)[0],
-                                                     nullptr);
+      auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,this->statistics,
+                                                     (*query_info->ordered_by_expressions_)[0],nullptr);
       if(search_plan->SuggestTopK())
         return BasicQueryStrategy::TopK;
       else
@@ -920,6 +919,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   // Build Iterator tree
   auto env = new TopKUtil::Env();
   env->kv_store= this->kv_store_;
+  env->bgp_query = bgp_query;
   env->id_caches = id_caches;
   cout<<" Optimizer::ExecutionTopK  env->id_caches "<<  env->id_caches->size()<<endl;
   env->k = query_info.limit_num_;
@@ -945,7 +945,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
 #ifdef TOPK_DEBUG_INFO
   for(const auto& pos_id_pair:*pos_var_mapping)
   {
-    cout<<"pos["<<pos_id_pair.first<<"]"<<" var id "<<pos_id_pair.second<<" "<<env->basic_query->getVarName(pos_id_pair.second)<<endl;
+    cout<<"pos["<<pos_id_pair.first<<"]"<<" var id "<<pos_id_pair.second<<" "<<bgp_query->get_var_name_by_id(pos_id_pair.second)<<endl;
   }
 #endif
 
@@ -961,19 +961,19 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
 #endif
 
     // can't get any more
-    if((unsigned)i<root_fr->pool_.size())
+    if((unsigned)i>root_fr->pool_.size())
       break;
 
 
 #ifdef TOPK_DEBUG_INFO
-    cout<<" the "<<i<<"-th score "<<root_fr->pool_[i].cost<<endl;
+    cout<<" the "<<i<<"-th score "<<root_fr->pool_[i-1].cost<<endl;
 #endif
 
     auto var_num = pos_var_mapping->size();
 
     auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
     record->reserve(var_num);
-    root_fr->GetResult(i,record);
+    root_fr->GetResult(i-1,record);
 
     bool success = false;
     auto &non_tree_edge = tree_search_plan->GetNonTreeEdges();
