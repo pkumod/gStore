@@ -48,7 +48,8 @@ std::size_t TopKSearchPlan::CountDepth(map<TYPE_ENTITY_LITERAL_ID, vector<TYPE_E
 
 TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
                                Statistics *statistics, const QueryTree::Order& expression,
-                               shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches)
+                               shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches):
+                               tree_root_(nullptr)
 {
   this->is_loop_graph = false;
   this->total_vars_num_ = bgp_query->get_total_var_num();
@@ -84,7 +85,7 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
         nei_name = triple.subject;
         direction = TopKUtil::EdgeDirection::IN;
       }
-      if(nei_name[0]=='?')
+      if(nei_name[0]!='?')
         nei_id = CONSTANT;
 
       if(nei_id==CONSTANT)
@@ -283,6 +284,8 @@ void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
 }
 
 TopKSearchPlan::~TopKSearchPlan() {
+  if(tree_root_== nullptr)
+    return;
   std::stack<TopKTreeNode*> to_delete;
   to_delete.push(this->tree_root_);
   while(!to_delete.empty())

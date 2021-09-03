@@ -14,21 +14,19 @@ void FRIterator::TryGetNext(unsigned int k) {
   }
   if(this->queue_.empty())
     return;
-  //auto m = this->pool_.size();
+
   auto em = this->pool_.back();
   auto em_pointer = this->fqs_map_[em.node];
   this->queue_.popMin();
   if(NextEPoolElement(k,em_pointer,em.index))
   {
     decltype(em) e;
-    //e.pointer = em.pointer;
+    e.node = em.node;
     e.index = em.index + 1;
     e.cost = em.cost + this->DeltaCost(em_pointer,em.index);
     this->queue_.push(e);
   }
   if(!queue_.empty()) {
-    //if (this->queue_.size() > k - m)
-    //  this->queue_.popMax();
     this->pool_.push_back(this->queue_.findMin());
   }
 }
@@ -39,22 +37,18 @@ void FRIterator::TryGetNext(unsigned int k) {
  * @param k
  * @param fq_pointer
  */
-void FRIterator::Insert(unsigned int k,
-                        TYPE_ENTITY_LITERAL_ID fq_id,
+void FRIterator::Insert(TYPE_ENTITY_LITERAL_ID fq_id,
                         std::shared_ptr<OrderedList> fq_pointer,
                         OnePointPredicatePtr predicates_vec) {
   auto already_FQ_num = this->type_predicates_->size();
   (*this->type_predicates_)[fq_id] = predicates_vec;
   auto cost = fq_pointer->pool_[0].cost;
-  if(queue_.size()>=k && cost>queue_.findMax().cost)
-    return;
   DPB::element e{};
   e.cost = cost;
   e.index = already_FQ_num;
-
+  e.node = fq_id;
+  this->fqs_map_[fq_id] = fq_pointer;
   queue_.push(e);
-  //if(queue_.size()>k)
-  //  queue_.popMax();
 }
 
 double FRIterator::DeltaCost(std::shared_ptr<OrderedList> node_pointer, int index) {
@@ -83,10 +77,15 @@ void FRIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LIT
   auto fq_i_th = fq.index;
   auto fq_id = fq.node;
   auto fq_pointer = this->fqs_map_[fq_id];
-  auto predicates = (*this->type_predicates_)[fq_id];
-  for(auto pre_id:*predicates)
-    record->push_back(pre_id);
+  if(this->type_predicates_->find(fq_id)!=this->type_predicates_->end()) {
+    auto predicates = (*this->type_predicates_)[fq_id];
+    for (auto pre_id:*predicates)
+      record->push_back(pre_id);
+  }
   fq_pointer->GetResult(fq_i_th,record);
+}
+FRIterator::FRIterator() {
+  this->type_predicates_=std::make_shared<NodeOneChildVarPredicates>();
 }
 
 void OWIterator::TryGetNext(unsigned int k) {
@@ -224,7 +223,7 @@ void FQIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LIT
   auto &seq = this->seq_list_[i_th];
   for(unsigned int i =0; i<this->fr_ow_iterators_.size(); i++) {
     if(fr_ow_iterators_[i]->Type() ==OrderedListType::OW) {
-      auto ow_predicates = this->types_predicates_[i];
+        auto ow_predicates = this->types_predicates_[i];
       fr_ow_iterators_[i]->GetResult(seq[i], record,ow_predicates);
     }
     else
