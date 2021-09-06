@@ -905,6 +905,8 @@ std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> QueryPlan::OnlyConstF
   {
     if( (!bgp_query->is_var_selected(i)) && bgp_query->get_var_degree(i) == 1)
       continue;
+    if(bgp_query->get_vardescrip_by_index(i)->var_type_==VarDescriptor::VarType::Predicate)
+      continue;
     auto constant_filtering = FilterNodeOnConstantEdge(bgp_query, kv_store, i);
     constant_generating_lists->push_back(constant_filtering);
   }

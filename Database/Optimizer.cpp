@@ -381,7 +381,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
                          var_candidates_cache);
 #ifdef TOPK_DEBUG_INFO
     std::cout<<"Top-k Search Plan"<<std::endl;
-    std::cout<<search_plan->DebugInfo()<<std::endl;
+    search_plan->DebugInfo(bgp_query,kv_store_);
 #endif
     auto top_k_result = this->ExecutionTopK(bgp_query,search_plan,query_info,var_candidates_cache);
     auto result_table = get<1>(top_k_result);
@@ -577,7 +577,8 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
   cout << "selected var num: " << bgp_query->selected_so_var_num<<endl;
   cout<<"Before Copy, result size:"<<result.values_->size()<<endl;
   for(auto &pos_id:*result.pos_id_map)
-    cout<<"pos["<<pos_id.first<<"] "<<pos_id.second<<endl;
+    cout<<"pos["<<pos_id.first<<"] "<<pos_id.second<<"\t";
+  cout<<endl;
 #endif
   auto record_len = bgp_query->selected_so_var_num + bgp_query->selected_pre_var_num;
   auto record = new unsigned[record_len];
@@ -864,7 +865,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
   for(int i =1;i<=query_info.limit_num_;i++)
   {
     root_fr->TryGetNext(k);
-    if(root_fr->pool_.size()!=i)
+    if(root_fr->pool_.size()!=(unsigned )i)
       break;
 #ifdef TOPK_DEBUG_INFO
     else {
@@ -885,7 +886,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
 #endif
 
   auto var_num = pos_var_mapping->size();
-  for(int i =0;i<root_fr->pool_.size();i++)
+  for(decltype(root_fr->pool_.size()) i =0;i<root_fr->pool_.size();i++)
   {
     auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
     record->reserve(var_num);
@@ -894,7 +895,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
   }
 #ifdef TOPK_DEBUG_INFO
   auto it = result_list->begin();
-  for(int i =0;i<result_list->size();i++)
+  for(decltype(result_list->size()) i =0;i<result_list->size();i++)
   {
     auto rec = *it;
     cout<<" record["<<i<<"]"<<" score:"<<root_fr->pool_[i].cost;
@@ -945,8 +946,9 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
 #ifdef TOPK_DEBUG_INFO
   for(const auto& pos_id_pair:*pos_var_mapping)
   {
-    cout<<"pos["<<pos_id_pair.first<<"]"<<" var id "<<pos_id_pair.second<<" "<<bgp_query->get_var_name_by_id(pos_id_pair.second)<<endl;
+    cout<<"pos["<<pos_id_pair.first<<"]"<<" var id "<<pos_id_pair.second<<" "<<bgp_query->get_var_name_by_id(pos_id_pair.second)<<"\t";
   }
+  cout<<endl;
 #endif
 
   for(int i =1; i<=query_info.limit_num_ + deleted_num; i++)
@@ -964,21 +966,17 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
     if((unsigned)i>root_fr->pool_.size())
       break;
 
-
-#ifdef TOPK_DEBUG_INFO
-    cout<<" the "<<i<<"-th score "<<root_fr->pool_[i-1].cost<<endl;
-#endif
-
     auto var_num = pos_var_mapping->size();
 
     auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
     record->reserve(var_num);
     root_fr->GetResult(i-1,record);
 
-    bool success = false;
-    auto &non_tree_edge = tree_search_plan->GetNonTreeEdges();
-    if(tree_search_plan->LoopGraph())
+    bool success = true;
+
+    if(tree_search_plan->HasCycle())
     {
+      auto &non_tree_edge = tree_search_plan->GetNonTreeEdges();
       auto temp_content_ptr = make_shared<TableContent>();
       temp_content_ptr->push_back(record);
       temp_table.values_ = temp_content_ptr;

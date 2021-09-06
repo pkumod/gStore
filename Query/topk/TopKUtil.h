@@ -16,7 +16,6 @@
 #include "../../Database/TableOperator.h"
 #include "TopKSearchPlan.h"
 
-#define TOPK_DEBUG_INFO
 
 namespace TopKUtil{
 
@@ -27,6 +26,8 @@ double GetScore(string &v, stringstream &ss);
 void GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
                                 std::map<std::string,double>& coefficients,
                                 stringstream &ss);
+
+
 std::shared_ptr<std::map<std::string,double>> getVarCoefficients(QueryTree::Order order);
 
 struct Env{
@@ -42,8 +43,17 @@ struct Env{
   std::shared_ptr<stringstream> ss;
 };
 
+std::shared_ptr< std::map<TYPE_ENTITY_LITERAL_ID,double>>
+GetChildNodeScores(double coefficient,
+                   std::set<TYPE_ENTITY_LITERAL_ID> &child_candidates,
+                   bool has_parent,
+                   std::set<TYPE_ENTITY_LITERAL_ID>* deleted_parents,
+                   std::map<TYPE_ENTITY_LITERAL_ID, shared_ptr<IDListWithAppending>  > *parent_child,
+                   std::map<TYPE_ENTITY_LITERAL_ID, std::set<TYPE_ENTITY_LITERAL_ID> > *child_parent,
+                   Env *env);
+
 std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<FQIterator>>  AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
-                                                                    std::map<TYPE_ENTITY_LITERAL_ID,double>* node_scores, int k,
+                                                                    std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,double>> node_scores, int k,
                                                                     vector<std::map<TYPE_ENTITY_LITERAL_ID, std::shared_ptr<FRIterator>>> &descendents_FRs,
                                                                     std::vector<std::map<TYPE_ENTITY_LITERAL_ID,std::pair<std::shared_ptr<OWIterator>,NodeOneChildVarPredicatesPtr>>>&descendents_OWs);
 
@@ -74,7 +84,7 @@ FRIterator* BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_search_plan,
 
 void UpdateIDList(shared_ptr<IDList> valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
 
-void UpdateIDListWithAppending(shared_ptr<IDListWithAppending> ids_appending, unsigned* id_list,
+void UpdateIDListWithAppending(shared_ptr<IDListWithAppending> &ids_appending, unsigned* id_list,
                                unsigned id_list_len,unsigned  one_record_len,
                                bool id_list_prepared,unsigned main_key_position);
 }

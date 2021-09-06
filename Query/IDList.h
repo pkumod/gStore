@@ -61,6 +61,7 @@ private:
 using IDCachesSharePtr = std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<IDList>>>;
 
 /**
+ * stores child and its predicates
  * extending IDList, each element in IDListWithAppending is (main_key,[attached elements])
  * join operation will join  (1,[2 3]) and (1,[4 5]) to (1,[2 3 4 5])
  */

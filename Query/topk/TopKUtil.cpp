@@ -133,14 +133,14 @@ void TopKUtil::UpdateIDList(shared_ptr<IDList> valid_id_list, unsigned* id_list,
   }
 }
 
-void TopKUtil::UpdateIDListWithAppending(shared_ptr<IDListWithAppending> ids_appending, unsigned* id_list,
+void TopKUtil::UpdateIDListWithAppending(shared_ptr<IDListWithAppending> &ids_appending, unsigned* id_list,
                                          unsigned id_list_len,unsigned  one_record_len,
                                          bool id_list_prepared,unsigned main_key_position)
 {
   if(id_list_prepared)
     ids_appending->Intersect(id_list, id_list_len,one_record_len,main_key_position);
   else
-    ids_appending->Init(id_list,id_list_len,one_record_len,main_key_position);
+    ids_appending = make_shared<IDListWithAppending>(id_list, id_list_len, one_record_len, main_key_position);
 }
 
 /**
@@ -151,7 +151,6 @@ FRIterator *TopKUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_se
 
   auto root_plan = tree_search_plan->tree_root_;
   auto root_var = root_plan->var_id;
-  auto child_type_num = root_plan->descendents_.size();
 
   // from top to down, build the structure
   auto root_candidate_ids = (*env->id_caches)[root_var];
@@ -162,7 +161,7 @@ FRIterator *TopKUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_se
   double coefficient = has_coefficient? (*coefficient_it).second:0.0;
 
   // calculating scores
-  std::map<TYPE_ENTITY_LITERAL_ID,double>* node_score = nullptr;
+  shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,double>> node_score = nullptr;
 
   // build
   for (auto root_id: *root_candidate_ids->getList()) {
@@ -172,13 +171,10 @@ FRIterator *TopKUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_se
   cout<<"ROOT has"<< root_candidate.size()<<" ids"<<endl;
 #endif
   if(has_coefficient)
-  {
-    node_score = new std::map<TYPE_ENTITY_LITERAL_ID,double>();
-    for (auto root_id:root_candidate) {
-      string v = env->kv_store->getLiteralByID(root_id).substr(1);
-      (*node_score)[root_id] = coefficient*GetScore(v, *env->ss);
-    }
-  }
+    node_score = GetChildNodeScores(coefficient,root_candidate, false, nullptr, nullptr,
+                                    nullptr,env);
+
+
 
   // each node's descendents are OW first and FRs last
   std::vector<std::map<TYPE_ENTITY_LITERAL_ID ,std::shared_ptr<FRIterator>>> descendents_FRs;
@@ -247,6 +243,55 @@ void inline TopKUtil::AddRelation(TYPE_ENTITY_LITERAL_ID x,
   mapping[x].insert(y);
 }
 
+std::shared_ptr< std::map<TYPE_ENTITY_LITERAL_ID,double>>
+TopKUtil::GetChildNodeScores(double coefficient,
+                             std::set<TYPE_ENTITY_LITERAL_ID> &child_candidates,
+                             bool has_parent,
+                             std::set<TYPE_ENTITY_LITERAL_ID>* deleted_parents,
+                             std::map<TYPE_ENTITY_LITERAL_ID, shared_ptr<IDListWithAppending>  > *parent_child,
+                             std::map<TYPE_ENTITY_LITERAL_ID, std::set<TYPE_ENTITY_LITERAL_ID> > *child_parent,
+                             Env *env)
+{
+  auto node_score =  make_shared< std::map<TYPE_ENTITY_LITERAL_ID,double>>();
+  std::set<TYPE_ENTITY_LITERAL_ID> deleted_children;
+  for (auto child_id:child_candidates) {
+    bool delete_it = false;
+    // this child is not valid,delete it
+    if(Util::is_entity_ele(child_id))
+    {
+      deleted_children.insert(child_id);
+      delete_it = true;
+      if(!has_parent)
+        continue;
+    }
+    auto literal_string = env->kv_store->getLiteralByID(child_id);
+    if(literal_string.size()>1) {
+      string v = env->kv_store->getLiteralByID(child_id).substr(1);
+      (*node_score)[child_id] = coefficient * GetScore(v, *env->ss);
+    }
+    else
+      delete_it = true;
+    if(delete_it)
+    {
+      auto &its_parents = (*child_parent)[child_id];
+      for(auto parent_id:its_parents)
+      {
+        auto children_and_predicates = (*parent_child)[parent_id];
+        children_and_predicates->Erase(child_id);
+        if(children_and_predicates->Size()==0)
+        {
+          deleted_parents->insert(parent_id);
+          parent_child->erase(parent_id);
+        }
+      }
+    }
+  }
+
+  for(auto delete_child:deleted_children)
+    child_candidates.erase(delete_child);
+  return node_score;
+}
+
 /**
  * Assembling FQ Iterators by OW/FR mappings
  * OW first and FR last
@@ -254,7 +299,7 @@ void inline TopKUtil::AddRelation(TYPE_ENTITY_LITERAL_ID x,
  */
 std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<FQIterator>>
 TopKUtil::AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
-                         std::map<TYPE_ENTITY_LITERAL_ID,double>* node_scores, int k,
+                         std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,double>> node_scores, int k,
                          vector<std::map<TYPE_ENTITY_LITERAL_ID, shared_ptr<FRIterator> >> &descendents_FRs,
                          std::vector<
                              std::map<TYPE_ENTITY_LITERAL_ID, // parent id
@@ -285,7 +330,7 @@ TopKUtil::AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
   cout<<"FQ["<<fq_id<<"], the min score are "<<fq->pool_[0].cost<<endl;
 #endif
   }
-  return move(id_fqs);
+  return id_fqs;
 }
 
 std::set<TYPE_ENTITY_LITERAL_ID> // child_candidates
@@ -328,14 +373,27 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
       // encounter a case where we must use IDListWithAppending
       // need to transfer to IDListWithAppending
       if(!appending_list_prepared && !predicates_constant[i])
-      {
-        if(id_list_prepared)
+        if(id_list_prepared) {
           appending_list_ptr = make_shared<IDListWithAppending>(*id_list_ptr);
-        appending_list_prepared = true;
-      }
+          appending_list_prepared = true;
+        }
+
 
       TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
       TYPE_ENTITY_LITERAL_ID edge_list_len;
+
+#ifdef TOPK_DEBUG_INFO
+      cout << "\t \t " <<env->kv_store->getEntityByID(parent_id)<<" ";
+      if(predicates_constant[i])
+      cout<<"-"<<env->kv_store->getPredicateByID(predicate_ids[i]);
+      else
+        cout<<"-"<<"?";
+      if(directions[i] == EdgeDirection::OUT)
+        cout<<"->";
+      else
+        cout<<"<-";
+      cout<<" "<<env->bgp_query->get_var_name_by_id(child_var)<<endl;
+#endif
 
       // use IDList
       if (predicates_constant[i]){
@@ -451,7 +509,7 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
     parent_var_candidates.erase(deleted_id);
     deleted_parents.insert(deleted_id);
   }
-  return std::move(child_candidates);
+  return child_candidates;
 }
 
 /**
@@ -473,12 +531,9 @@ TopKUtil::GenerateOWs(int parent_var,int child_var,std::shared_ptr<TopKUtil::Tre
                       std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
                       TopKTreeNode *child_tree_node,Env *env)
 {
-
-  auto child_type_num = child_tree_node->descendents_.size();
   auto coefficient_it = env->coefficients->find(env->bgp_query->get_var_name_by_id((child_var)));
   bool has_coefficient = coefficient_it != env->coefficients->end();
   double coefficient = has_coefficient ? (*coefficient_it).second : 0.0;
-  std::set<TYPE_ENTITY_LITERAL_ID> deleted_parent_ids_this_child;
 
   // record the mapping between parent and children
   // IDListWithAppending not only records the children
@@ -491,15 +546,10 @@ TopKUtil::GenerateOWs(int parent_var,int child_var,std::shared_ptr<TopKUtil::Tre
                                                                                child_parent,tree_edges_,env);
 
   // calculate children's scores
-  std::map<TYPE_ENTITY_LITERAL_ID,double>* node_score = nullptr;
+  std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,double>> node_score =nullptr;
   if(has_coefficient)
-  {
-    node_score = new std::map<TYPE_ENTITY_LITERAL_ID,double>();
-    for (auto child_id:child_candidates) {
-      string v = env->kv_store->getLiteralByID(child_id).substr(1);
-      (*node_score)[child_id] = coefficient*GetScore(v, *env->ss);
-    }
-  }
+    node_score = GetChildNodeScores(coefficient,child_candidates,true,&deleted_parents,&parent_child,
+                                    &child_parent,env);
 
   // Return OW iterators
 
@@ -544,7 +594,7 @@ TopKUtil::GenerateOWs(int parent_var,int child_var,std::shared_ptr<TopKUtil::Tre
     children_ids.clear();
     children_scores.clear();
   }
-  return std::move(result);
+  return result;
 
 }
 
@@ -567,7 +617,6 @@ TopKUtil::GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKUtil::T
                       std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
                       std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
                       TopKTreeNode *child_tree_node, Env *env) {
-  auto child_type_num = child_tree_node->descendents_.size();
   auto coefficient_it = env->coefficients->find(env->bgp_query->get_var_name_by_id(child_var));
   bool has_coefficient = coefficient_it != env->coefficients->end();
   double coefficient = has_coefficient ? (*coefficient_it).second : 0.0;
@@ -584,15 +633,11 @@ TopKUtil::GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKUtil::T
                                                                                child_parent,tree_edges_,env);
 
   // calculate children's scores
-  std::map<TYPE_ENTITY_LITERAL_ID,double>* node_score = nullptr;
+  shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,double>> node_score = nullptr;
   if(has_coefficient)
-  {
-    node_score = new std::map<TYPE_ENTITY_LITERAL_ID,double>();
-    for (auto child_id:child_candidates) {
-      string v = env->kv_store->getLiteralByID(child_id).substr(1);
-      (*node_score)[child_id] = coefficient*GetScore(v, *env->ss);
-    }
-  }
+    node_score = GetChildNodeScores(coefficient,child_candidates,true,&deleted_parents,&parent_child,
+                                    &child_parent,env);
+
 
 
   // Return FR iterators
@@ -673,7 +718,7 @@ TopKUtil::GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKUtil::T
     fr->TryGetNext(env->k);
   }
 
-  return std::move(result);
+  return result;
 
 }
 
