@@ -946,7 +946,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
 #ifdef TOPK_DEBUG_INFO
   for(const auto& pos_id_pair:*pos_var_mapping)
   {
-    cout<<"pos["<<pos_id_pair.first<<"]"<<" var id "<<pos_id_pair.second<<" "<<bgp_query->get_var_name_by_id(pos_id_pair.second)<<"\t";
+    cout<<"pos["<<pos_id_pair.first<<"]"<<"|"<<pos_id_pair.second<<"| "<<bgp_query->get_var_name_by_id(pos_id_pair.second)<<"\t";
   }
   cout<<endl;
 #endif
@@ -991,14 +991,22 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
       deleted_num += 1;
   }
 #ifdef TOPK_DEBUG_INFO
+  auto var_num = bgp_query->get_total_var_num();
+  vector<bool> is_predicate_var(var_num,false);
+  for(unsigned i =0;i<var_num;i++)
+    is_predicate_var[i] = bgp_query->get_vardescrip_by_index(i)->var_type_ == VarDescriptor::VarType::Predicate;
+
   auto it = result_list->begin();
   for(decltype(result_list->size()) i =0;i<result_list->size();i++)
   {
     auto rec = *it;
     cout<<" record["<<i<<"]"<<" score:"<<root_fr->pool_[i].cost;
-    auto var_num = bgp_query->get_total_var_num();
+
     for(unsigned j =0;j<var_num;j++)
-      cout<<" "<<kv_store_->getStringByID((*rec)[j]);
+      if(is_predicate_var[(*pos_var_mapping)[j]])
+        cout<<" "<<kv_store_->getPredicateByID((*rec)[j]);
+      else
+        cout<<" "<<kv_store_->getStringByID((*rec)[j]);
     cout<<endl;
     it++;
   }

@@ -18,7 +18,7 @@ void TopKUtil::CalculatePosVarMappingNode(TopKTreeNode* top_k_tree_node,
     auto tree_edges_id = top_k_tree_node->tree_edges_[i]->predicate_ids_;
     auto edge_size = tree_edges_const.size();
     for(decltype(edge_size) j =0 ;j<edge_size;j++)
-      if(tree_edges_const[j])
+      if(!tree_edges_const[j])
         (*pos_var_mapping)[pos_var_mapping->size()] = tree_edges_id[j];
     CalculatePosVarMappingNode(ow_descendent, pos_var_mapping);
   }
@@ -28,7 +28,7 @@ void TopKUtil::CalculatePosVarMappingNode(TopKTreeNode* top_k_tree_node,
     auto tree_edges_id = top_k_tree_node->tree_edges_[i]->predicate_ids_;
     auto edge_size = tree_edges_const.size();
     for(decltype(edge_size) j =0 ;j<edge_size;j++)
-      if(tree_edges_const[j])
+      if(!tree_edges_const[j])
         (*pos_var_mapping)[pos_var_mapping->size()] = tree_edges_id[j];
     CalculatePosVarMappingNode(fr_descendent, pos_var_mapping);
   }
@@ -204,7 +204,7 @@ FRIterator *TopKUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_se
     else
     {
       auto descendent_iterators = GenerateOWs(root_var, descendent_plan->var_id, tree_edges_plan,
-                                              root_candidate, deleted_root_ids, descendent_plan, env);
+                                              root_candidate, deleted_root_ids, env);
       descendents_OWs.push_back(std::move(descendent_iterators));
     }
   }
@@ -529,7 +529,7 @@ std::map<TYPE_ENTITY_LITERAL_ID, // parent id
 TopKUtil::GenerateOWs(int parent_var,int child_var,std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
                       std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
                       std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
-                      TopKTreeNode *child_tree_node,Env *env)
+                      Env *env)
 {
   auto coefficient_it = env->coefficients->find(env->bgp_query->get_var_name_by_id((child_var)));
   bool has_coefficient = coefficient_it != env->coefficients->end();
@@ -676,7 +676,7 @@ TopKUtil::GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKUtil::T
                                               descendent_tree_edges_plan,
                                               child_candidates,
                                               deleted_children,
-                                              descendent_plan, env);
+                                              env);
       descendents_OWs.push_back(std::move(descendent_iterators));
     }
   }
