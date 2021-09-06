@@ -222,7 +222,7 @@ void FQIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LIT
   auto &seq = this->seq_list_[i_th];
   for(unsigned int i =0; i<this->fr_ow_iterators_.size(); i++) {
     if(fr_ow_iterators_[i]->Type() ==OrderedListType::OW) {
-        auto ow_predicates = this->types_predicates_[i];
+      auto ow_predicates = this->types_predicates_[i];
       fr_ow_iterators_[i]->GetResult(seq[i], record,ow_predicates);
     }
     else

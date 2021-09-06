@@ -73,7 +73,7 @@ std::map<TYPE_ENTITY_LITERAL_ID, // parent id
 GenerateOWs(int parent_var,int child_var,std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
             std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
             std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
-            TopKTreeNode *child_tree_node,Env *env);
+            Env *env);
 
 std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<FRIterator>>  GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
                                                             std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
