@@ -14,6 +14,7 @@
 #ifndef GSTOREGDB_QUERY_TOPK_TOPKSEARCHPLAN_H_
 #define GSTOREGDB_QUERY_TOPK_TOPKSEARCHPLAN_H_
 
+#define TOPK_DEBUG_INFO
 
 namespace TopKUtil{
 enum class EdgeDirection{IN,OUT,NoEdge};
@@ -58,7 +59,7 @@ class TopKSearchPlan {
   // The Edges that left behind
   // It can be used when enumerating , use non tree edges to make sure correctness
   StepOperation non_tree_edges_;
-  bool is_loop_graph;
+  bool is_cycle_graph_;
   std::size_t total_vars_num_;
   static std::size_t CountDepth(map<TYPE_ENTITY_LITERAL_ID,vector<TYPE_ENTITY_LITERAL_ID>> &neighbours, TYPE_ENTITY_LITERAL_ID root_id, std::size_t total_vars_num);
   void AdjustOrder();
@@ -78,8 +79,8 @@ class TopKSearchPlan {
   StepOperation& GetNonTreeEdges(){return this->non_tree_edges_;};
   std::vector<int> FindCycle();
   bool SuggestTopK();
-  std::string DebugInfo();
-  bool LoopGraph() {return this->is_loop_graph;};
+  void DebugInfo(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store);
+  bool HasCycle() {return this->is_cycle_graph_;};
 };
 
 #endif //GSTOREGDB_QUERY_TOPK_TOPKSEARCHPLAN_H_

@@ -35,6 +35,7 @@ std::size_t TopKSearchPlan::CountDepth(map<TYPE_ENTITY_LITERAL_ID, vector<TYPE_E
         continue;
       vars_used_vec[child_id] = true;
       vars_depth[child_id] = vars_depth[now_id] + 1;
+      explore_id.push(child_id);
     }
     explore_id.pop();
   }
@@ -51,7 +52,7 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
                                shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches):
                                tree_root_(nullptr)
 {
-  this->is_loop_graph = false;
+  this->is_cycle_graph_ = false;
   this->total_vars_num_ = bgp_query->get_total_var_num();
   TYPE_ENTITY_LITERAL_ID CONSTANT = -1;
   // a neighbour may have more than one edge
@@ -168,10 +169,10 @@ void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
   }
 
 #ifdef TOPK_DEBUG_INFO
-  cout << "chosen root node:" << min_score_root << endl;
+  cout << "chosen root node:" << bgp_query->get_var_name_by_id(min_score_root)<<"["<<min_score_root<<"]" << endl;
 #endif
 
-// construct the query tree
+  // construct the query tree
   bool*  vars_used_vec = new bool[total_vars_num_];
   memset(vars_used_vec, 0, total_vars_num_*sizeof(bool));
   auto root_id = min_score_root;
@@ -187,84 +188,19 @@ void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
     auto now_node = explore_id.top();
     auto now_id = now_node->var_id;
     explore_id.pop();
-#ifdef TOPK_DEBUG_INFO
-    cout << "pop " << now_node->var_id << " children num:" << neighbours[now_node->var_id].size();
-    if (neighbours[now_node->var_id].size()) {
-      cout<<"[";
-      for(auto child_id:neighbours[now_node->var_id])
-        cout<<child_id<<" ";
-      cout<<"]";
-    }
-    cout<<endl;
-#endif
-
     auto child_num = neighbours_[now_id].size();
     for(decltype(child_num) child_i =0;child_i < child_num;child_i++)
     {
       auto child_id= neighbours_[now_id][child_i];
-
-// below are vectors
+      // below are vectors
       auto two_var_edges_num = predicates_ids_.size();
       auto two_var_predicate_ids = predicates_ids_[now_id][child_i];
       auto two_var_predicate_constants = predicates_constant_[now_id][child_i];
       auto two_var_directions = directions_[now_id][child_i];
 
       if(vars_used_vec[child_id])
-      {
-        for(decltype(two_var_edges_num) edge_i =0;edge_i<two_var_edges_num;edge_i++)
-        {
-          auto predicate_id = two_var_predicate_ids[edge_i];
-          auto predicate_constant =  two_var_predicate_constants[edge_i];
-          auto direction =  two_var_directions[edge_i];
-// leaves the edge to process after the main procedure
-          EdgeInfo edge_info;
-          EdgeConstantInfo edge_constant_info(false,predicate_constant, false);
-          if(direction == TopKUtil::EdgeDirection::IN)
-          {
-            if(predicate_constant)
-              edge_info = EdgeInfo(child_id,predicate_id,now_id,JoinMethod::po2s);
-            else
-              edge_info = EdgeInfo(child_id,predicate_id,now_id,JoinMethod::o2ps);
-          }
-          else // TopKUtil::EdgeDirection::OUT
-          {
-            if(predicate_constant)
-              edge_info = EdgeInfo(now_id,predicate_id,child_id,JoinMethod::sp2o);
-            else
-              edge_info = EdgeInfo(now_id,predicate_id,child_id,JoinMethod::s2po);
-          }
-
-// add this edge to the postponed edges set
-          edges_after_.emplace_back();
-          auto &step_op = edges_after_.back();
-          if(predicate_constant)
-          {
-            step_op.join_type_  = StepOperation::JoinType::EdgeCheck;
-            step_op.edge_filter_ = make_shared<FeedOneNode>();
-            step_op.edge_filter_->node_to_join_ = child_id;
-            step_op.edge_filter_->edges_->push_back(edge_info);
-            step_op.edge_filter_->edges_constant_info_->push_back(edge_constant_info);
-          }
-          else
-          {
-            step_op.join_type_  = StepOperation::JoinType::JoinTwoNodes;
-            step_op.join_two_node_ = make_shared<FeedTwoNode>();
-            if(direction == TopKUtil::EdgeDirection::IN) // o2ps
-            {
-              step_op.join_two_node_->node_to_join_1_ =edge_info.p_;
-              step_op.join_two_node_->node_to_join_2_ =edge_info.s_;
-            }
-            else // s2po
-            {
-              step_op.join_two_node_->node_to_join_1_ =edge_info.p_;
-              step_op.join_two_node_->node_to_join_2_ =edge_info.o_;
-            }
-            step_op.join_two_node_->edges_ = edge_info;
-            step_op.join_two_node_->edges_constant_info_ = edge_constant_info;
-          }
-        }
         continue;
-      }
+
       vars_used_vec[child_id] = true;
       auto child_tree = new TopKTreeNode;
       child_tree->var_id = child_id;
@@ -275,16 +211,12 @@ void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
       tree_edge_ptr->directions_ = std::move(two_var_directions);
       now_node->tree_edges_.push_back(tree_edge_ptr);
       tree_edge_ptr->ChangeOrder();
-#ifdef TOPK_DEBUG_INFO
-      cout << "push " << child_tree->var_id<<endl;
-#endif
       explore_id.push(child_tree);
     }
   }
   delete[] vars_used_vec;
   this->tree_root_ = r;
   this->AdjustOrder();
-
 }
 
 TopKSearchPlan::~TopKSearchPlan() {
@@ -304,36 +236,53 @@ TopKSearchPlan::~TopKSearchPlan() {
   }
 }
 
-std::string TopKSearchPlan::DebugInfo() {
-  stringstream ss;
-  std::string result;
+void TopKSearchPlan::DebugInfo(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store) {
+
   std::stack<decltype(this->tree_root_)> h;
   h.push(this->tree_root_);
   while(!h.empty())
   {
-    auto t = h.top();
+    auto now_node = h.top();
     h.pop();
-    string id_str;
-    ss<<t->var_id;
-    ss>>id_str;
-    ss.clear();
-    ss.str("");
-
-    string children_str;
-    for(auto &child_ptr:t->descendents_)
+    auto child_num = now_node->descendents_.size();
+#ifdef TOPK_DEBUG_INFO
+    cout << "pop "  <<bgp_query->get_var_name_by_id( now_node->var_id);
+    cout<<"["<<now_node->var_id << "] children num:" << child_num<<endl;
+#endif
+    for(decltype(child_num) child_i=0;child_i<child_num;child_i++)
     {
-      h.push(child_ptr);
-      std::string child_str;
-      ss<<child_ptr->var_id;
-      ss>>child_str;
-      ss.clear();
-      ss.str("");
-      children_str += child_str + " ";
+      auto &child_p = now_node->descendents_[child_i];
+      auto &tree_edge_ptr = now_node->tree_edges_[child_i];
+      auto child_id = child_p->var_id;
+
+#ifdef TOPK_DEBUG_INFO
+      cout << "\t child "<<bgp_query->get_var_name_by_id(child_id)<<"["<<child_id<<"]"<<endl;
+      auto edge_num = tree_edge_ptr->predicate_constant_.size();
+      for(decltype(edge_num) j = 0;j<edge_num;j++)
+      {
+        cout << "\t \t edge-------------"<<j<<"----------------"<<endl;
+        cout << "\t \t direction:";
+        if(tree_edge_ptr->directions_[j]==TopKUtil::EdgeDirection::IN)
+          cout<<"IN";
+        else
+          cout<<"OUT";
+        cout <<endl<< "\t \t predicate_constant:"<<tree_edge_ptr->predicate_constant_[j];
+        cout <<endl<< "\t \t predicate:";
+        if(tree_edge_ptr->predicate_constant_[j])
+          cout<<kv_store->getPredicateByID(tree_edge_ptr->predicate_ids_[j]);
+        else
+          cout<<bgp_query->get_var_name_by_id( tree_edge_ptr->predicate_ids_[j])<<"["
+              <<tree_edge_ptr->predicate_ids_[j]<<"]";
+        cout<<endl;
+      }
+      cout << "\t push " << child_p->var_id<<endl;
+#endif
+      h.push(child_p);
     }
-    result += id_str + "(" + children_str + ")\n";
 
   }
-  return result;
+  flush(cout);
+  return;
 }
 
 /**
@@ -343,6 +292,8 @@ std::string TopKSearchPlan::DebugInfo() {
 void TopKSearchPlan::AdjustOrder() {
 
   // count fr and ow information
+  // fr[i] means node i will corresponds to a fr in its
+  // parent node
   bool is_fr[this->total_vars_num_+1];
   for(size_t i = 0;i<this->total_vars_num_+1;i++)
     is_fr[i] = false;
@@ -361,8 +312,6 @@ void TopKSearchPlan::AdjustOrder() {
     for(auto child_p:top->descendents_)
       node_to_visit.push(child_p);
   }
-
-
   // now to adjust the order
   node_to_visit.push(this->tree_root_);
 
@@ -376,12 +325,16 @@ void TopKSearchPlan::AdjustOrder() {
     auto descendents_num = top->descendents_.size();
     for(decltype(descendents_num) i=0;i<descendents_num;i++)
     {
+      auto i_node_var = top->descendents_[i]->var_id;
       // move it to the left part
-      if(is_fr[i] == false)
+      if(is_fr[i_node_var] == false)
       {
         // exchange i with const_end
         if(i!=ow_end)
-          std::swap(top->descendents_[i],top->descendents_[ow_end]);
+        {
+          std::swap(top->tree_edges_[i],top->tree_edges_[ow_end]);
+          std::swap(top->descendents_[i], top->descendents_[ow_end]);
+        }
         ow_end++;
       }
     }
@@ -534,7 +487,7 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
   auto cycle = this->FindCycle();
   if(cycle.empty())
     return false;
-  this->is_loop_graph = true;
+  this->is_cycle_graph_ = true;
   vector<double> selectivity(cycle.size());
   auto edge_num = cycle.size();
   cycle.push_back(cycle[0]);
@@ -626,6 +579,7 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
       edge_info.o_ = d_id;
     }
     EdgeConstantInfo edge_constant_info(false, predicate_constant, false);
+    this->non_tree_edges_.edge_filter_ = make_shared<FeedOneNode>();
     this->non_tree_edges_.edge_filter_->edges_->push_back(edge_info);
     this->non_tree_edges_.edge_filter_->edges_constant_info_->push_back(edge_constant_info);
   }
