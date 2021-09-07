@@ -745,7 +745,8 @@ Database::load(bool loadCSR)
 	}
 		
 
-	this->stringindex->SetTrie(this->kvstore->getTrie());
+	//this->stringindex->SetTrie(this->kvstore->getTrie());
+	cout<<"set Trie for stringIndex  successfully!"<<endl;
 	//NOTICE: we should also run some heavy work in the main thread
 	this->stringindex->load();
 	cout<<"load stringindex  successfully!"<<endl;
