@@ -757,6 +757,7 @@ Database::load(bool loadCSR)
 	pre2values_thread.join();
 #endif
 	this->setPreMap();
+	cout<<"set Pre Map Successfully!"<<endl;
 
 #ifdef THREAD_ON
 	id2entity_thread.join();
