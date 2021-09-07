@@ -2560,7 +2560,7 @@ Util::GetFiles(const char *src_dir, const char *ext)
     return result;
 }
 
-pair<bool, double> Util::checkGetNumericLiteral(string literal)
+pair<bool, double> Util::checkGetNumericLiteral(string &literal)
 {
     if (literal[0] != '"')
         return make_pair(false, 0);

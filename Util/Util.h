@@ -486,11 +486,13 @@ public:
 	static long int get_timestamp(std::string& line);
 	static std::string stamp2time(int timestamp);
 	static std::vector<std::string> GetFiles(const char *src_dir, const char *ext);
-private:
+	static std::pair<bool, double> checkGetNumericLiteral(std::string&);
+
+ private:
 	static bool isValidIPV4(std::string);
 	static bool isValidIPV6(std::string);
 
-	static std::pair<bool, double> checkGetNumericLiteral(std::string);
+
 };
 
 //===================================================================================================================

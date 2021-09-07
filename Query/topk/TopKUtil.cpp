@@ -265,12 +265,9 @@ TopKUtil::GetChildNodeScores(double coefficient,
         continue;
     }
     auto literal_string = env->kv_store->getLiteralByID(child_id);
-    if(literal_string.size()>1) {
-      string v = env->kv_store->getLiteralByID(child_id).substr(1);
-      (*node_score)[child_id] = coefficient * GetScore(v, *env->ss);
-    }
-    else
-      delete_it = true;
+    pair<bool, double> check_result =  Util::checkGetNumericLiteral(literal_string);
+    delete_it = !get<0>(check_result);
+    (*node_score)[child_id] = coefficient *get<1>(check_result);
     if(delete_it)
     {
       auto &its_parents = (*child_parent)[child_id];
