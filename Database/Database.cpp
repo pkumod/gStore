@@ -751,6 +751,7 @@ Database::load(bool loadCSR)
 	this->stringindex->load();
 	cout<<"load stringindex  successfully!"<<endl;
 	this->readIDinfo();
+	cout<<"read IDInfo file  successfully!"<<endl;
 
 #ifdef THREAD_ON
 	pre2values_thread.join();
@@ -790,6 +791,7 @@ Database::load(bool loadCSR)
 	//vstree_thread.join();
 #endif
 	//load cache of sub2values and obj2values
+	cout<<"begin load cache!"<<endl;
 	this->load_cache();
 	cout<<"load cache successfully!"<<endl;
 	//warm up always as finishing build(), to utilize the system buffer
