@@ -1316,6 +1316,7 @@ Database::get_important_objID()
 void 
 Database::load_entity2id(int _mode)
 {
+	cout<<"begin to load_entity2id!"<<endl;
 	this->kvstore->open_entity2id(_mode);
 	cout<<"load_entity2id successfully!"<<endl;
 }
@@ -1323,6 +1324,7 @@ Database::load_entity2id(int _mode)
 void 
 Database::load_id2entity(int _mode)
 {
+	cout<<"begin to load_id2entity!"<<endl;
 	this->kvstore->open_id2entity(_mode);
 	cout<<"load_id2entity successfully!"<<endl;
 }
@@ -1330,6 +1332,7 @@ Database::load_id2entity(int _mode)
 void 
 Database::load_literal2id(int _mode)
 {
+	cout<<"begin to load_literal2id!"<<endl;
 	this->kvstore->open_literal2id(_mode);
 	cout<<"load_literal2id successfully!"<<endl;
 }
@@ -1337,6 +1340,7 @@ Database::load_literal2id(int _mode)
 void 
 Database::load_id2literal(int _mode)
 {
+	cout<<"begin to load_id2literal!"<<endl;
 	this->kvstore->open_id2literal(_mode);
 	cout<<"load_id2literal successfully!"<<endl;
 }
@@ -1344,6 +1348,7 @@ Database::load_id2literal(int _mode)
 void 
 Database::load_predicate2id(int _mode)
 {
+	cout<<"begin to load_predicate2id!"<<endl;
 	this->kvstore->open_predicate2id(_mode);
 	cout<<"load_predicate2id successfully!"<<endl;
 }
@@ -1351,6 +1356,7 @@ Database::load_predicate2id(int _mode)
 void 
 Database::load_id2predicate(int _mode)
 {
+	cout<<"begin to load_id2predicate!"<<endl;
 	this->kvstore->open_id2predicate(_mode);
 	cout<<"load_id2predicate successfully!"<<endl;
 }
@@ -1358,6 +1364,7 @@ Database::load_id2predicate(int _mode)
 void 
 Database::load_sub2values(int _mode)
 {
+	cout<<"begin to load_sub2values!"<<endl;
 	this->kvstore->open_subID2values(_mode);
 	cout<<"load_sub2values successfully!"<<endl;
 }
@@ -1365,6 +1372,7 @@ Database::load_sub2values(int _mode)
 void 
 Database::load_obj2values(int _mode)
 {
+	cout<<"begin to load_obj2values!"<<endl;
 	this->kvstore->open_objID2values(_mode);
 	cout<<"load_obj2values successfully!"<<endl;
 }
@@ -1372,6 +1380,7 @@ Database::load_obj2values(int _mode)
 void 
 Database::load_pre2values(int _mode)
 {
+	cout<<"begin to load_pre2values!"<<endl;
 	this->kvstore->open_preID2values(_mode);
 	cout<<"load_pre2values successfully!"<<endl;
 }
