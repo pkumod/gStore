@@ -489,6 +489,8 @@ public:
 private:
 	static bool isValidIPV4(std::string);
 	static bool isValidIPV6(std::string);
+
+	static std::pair<bool, double> checkGetNumericLiteral(std::string);
 };
 
 //===================================================================================================================
