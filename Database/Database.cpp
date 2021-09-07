@@ -761,7 +761,9 @@ Database::load(bool loadCSR)
 
 #ifdef THREAD_ON
 	id2entity_thread.join();
+	cout<<"id2entity_thread.join() Successfully!"<<endl;
 	id2literal_thread.join();
+	cout<<"id2literal_thread.join() Successfully!"<<endl;
 #endif
 
 	//BETTER: if we set string buffer using string index instead of B+Tree, then we can
@@ -779,15 +781,21 @@ Database::load(bool loadCSR)
 #ifndef ONLY_READ
 #ifdef THREAD_ON
 	id2predicate_thread.join();
+	cout<<"id2predicate_thread.join() Successfully!"<<endl;
 #endif
 #endif
 
 #ifdef THREAD_ON
 	entity2id_thread.join();
+	cout<<"entity2id_thread.join() Successfully!"<<endl;
 	literal2id_thread.join();
+	cout<<"literal2id_thread.join() Successfully!"<<endl;
 	predicate2id_thread.join();
+	cout<<"predicate2id_thread.join() Successfully!"<<endl;
 	sub2values_thread.join();
+	cout<<"sub2values_thread.join() Successfully!"<<endl;
 	obj2values_thread.join();
+	cout<<"obj2values_thread.join() Successfully!"<<endl;
 	//wait for vstree thread
 	//vstree_thread.join();
 #endif
