@@ -10,7 +10,6 @@
 
 #include "Util.h"
 
-
 using namespace std;
 using namespace rapidjson;
 //==================================================================================================================
@@ -228,7 +227,6 @@ Util::config_debug()
 	return true;
 }
 
-
 bool
 Util::config_advanced()
 {
@@ -264,7 +262,7 @@ string Util::getConfigureValue(string keyname)
 
 bool Util::configure_new()
 {
-    
+
     INIParser ini_parser;
     ini_parser.ReadINI("conf.ini");
     /*string value=ini_parser.GetValue("ghttp", "max_out_limit");
@@ -294,7 +292,7 @@ bool Util::configure_new()
         cout << it->first << " : " << it->second << endl;
     }
     cout << endl;
-    
+
 }
 
 bool
@@ -859,7 +857,7 @@ Util::get_date_time()
 	return tmp;
 }
 
-string 
+string
 Util::get_date_day()
 {
 	time_t timep;
@@ -1765,7 +1763,7 @@ bool Util::checkPort(int port)
            close(ss);
            return true;
        }
-      
+
     }
     catch(const std::exception& e)
     {
@@ -2147,13 +2145,13 @@ Util::read_backup_time()
 std::string
 Util::replace_all(std::string _content,const std::string oldtext,const std::string newtext)
 {
-     while(true)   {     
-            string::size_type  pos(0);     
-            if(  (pos=_content.find(oldtext))!=string::npos  )     
-                _content.replace(pos,oldtext.length(),newtext);     
-            else   break;     
-        }     
-    return  _content;     
+     while(true)   {
+            string::size_type  pos(0);
+            if(  (pos=_content.find(oldtext))!=string::npos  )
+                _content.replace(pos,oldtext.length(),newtext);
+            else   break;
+        }
+    return  _content;
 }
 
 void
@@ -2593,14 +2591,14 @@ Util::get_transactionlog()
           all.AddMember("StatusMsg", "Get Transaction log success", all.GetAllocator());
           all.AddMember("list", darray, all.GetAllocator());
     }
-       
+
     else
     {
          all.AddMember("StatusCode", 1005, all.GetAllocator());
          all.AddMember("message", "error! Transaction log corrupted", all.GetAllocator());
 
     }
-       
+
     StringBuffer buffer;
     Writer<StringBuffer> writer(buffer);
     all.Accept(writer);
@@ -2696,6 +2694,7 @@ Util::GetFiles(const char *src_dir, const char *ext)
     return result;
 }
 
+
 /*!
  * @brief		get the param value from command
  * @param[in]	argc:the length of argc
@@ -2707,31 +2706,31 @@ Util::GetFiles(const char *src_dir, const char *ext)
 */
 std::string Util::getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value)
 {
-    
-	for (int i = 0; i < argc; i++)
-	{
-		if ((argv[i] == "-" + argname)||(argv[i]=="--"+argname2))
-		{
-			if (i + 1 >= argc)
-			{
-				return "";
-			}
-			else
-			{
-				return argv[i + 1];
-			}
 
-		}
+  for (int i = 0; i < argc; i++)
+  {
+    if ((argv[i] == "-" + argname)||(argv[i]=="--"+argname2))
+    {
+      if (i + 1 >= argc)
+      {
+        return "";
+      }
+      else
+      {
+        return argv[i + 1];
+      }
 
-	}
-	//cout << argname << " is not exist,using the default value:" << default_value << endl;
-	return default_value;
+    }
+
+  }
+  //cout << argname << " is not exist,using the default value:" << default_value << endl;
+  return default_value;
 }
 
 void Util::formatPrint(std::string content, std::string type)
 {
-    string time = Util::getTimeString();
-    cout << "[" << type << "][" << time << "]:" << content << endl;
+  string time = Util::getTimeString();
+  cout << "[" << type << "][" << time << "]:" << content << endl;
 }
 
 pair<bool, double> Util::checkGetNumericLiteral(string literal)
@@ -2903,11 +2902,4 @@ pair<bool, double> Util::checkGetNumericLiteral(string literal)
     }
     else
         return make_pair(false, 0);
-}
-
-// md5
-std::string Util::md5(const string& text)
-{
-    MD5 _md5(text);
-    return _md5.md5();
 }
