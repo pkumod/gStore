@@ -867,7 +867,7 @@ Util::get_date_day()
 	return tmp;
 }
 
-string 
+string
 Util::get_timestamp()
 {
     string timestamp;
@@ -2694,7 +2694,6 @@ Util::GetFiles(const char *src_dir, const char *ext)
     return result;
 }
 
-
 /*!
  * @brief		get the param value from command
  * @param[in]	argc:the length of argc
@@ -2727,13 +2726,7 @@ std::string Util::getArgValue(int argc, char* argv[], std::string argname,std::s
   return default_value;
 }
 
-void Util::formatPrint(std::string content, std::string type)
-{
-  string time = Util::getTimeString();
-  cout << "[" << type << "][" << time << "]:" << content << endl;
-}
-
-pair<bool, double> Util::checkGetNumericLiteral(string literal)
+pair<bool, double> Util::checkGetNumericLiteral(string &literal)
 {
     if (literal[0] != '"')
         return make_pair(false, 0);

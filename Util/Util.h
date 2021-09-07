@@ -505,6 +505,9 @@ public:
 	static long int get_timestamp(std::string& line);
 	static std::string stamp2time(int timestamp);
 	static std::vector<std::string> GetFiles(const char *src_dir, const char *ext);
+	static std::pair<bool, double> checkGetNumericLiteral(std::string&);
+
+ private:
 	static std::string getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value="");
 	static void formatPrint(std::string content, std::string type = "Info");
     static bool checkPort(int port);
