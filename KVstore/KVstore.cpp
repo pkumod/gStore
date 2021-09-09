@@ -4598,6 +4598,7 @@ KVstore::open(SITree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 		cerr << "Invalid open mode of: " << _tree_name << " mode = " << _mode << endl;
 		return false;
 	}
+    cout<<"open the "<<_tree_name<<endl;
 	_p_btree = new SITree(this->store_path, _tree_name, smode, _buffer_size);
 	return true;
 }

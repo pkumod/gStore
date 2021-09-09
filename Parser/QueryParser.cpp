@@ -16,7 +16,7 @@ using namespace std;
 void SPARQLErrorListener::syntaxError(antlr4::Recognizer *recognizer, antlr4::Token * offendingSymbol, \
 	size_t line, size_t charPositionInLine, const std::string &msg, std::exception_ptr e)
 {
-	throw runtime_error("line " + to_string(line) + ":" + to_string(charPositionInLine) + " " + msg);
+	throw runtime_error("[Syntax Error]:line " + to_string(line) + ":" + to_string(charPositionInLine) + " " + msg);
 }
 
 /**
@@ -26,11 +26,12 @@ void SPARQLErrorListener::syntaxError(antlr4::Recognizer *recognizer, antlr4::To
 */
 void QueryParser::SPARQLParse(const string &query)
 {
-	istringstream ifs(query);
+	try{
+		istringstream ifs(query);
 
-	SPARQLErrorListener lstnr;
+	 SPARQLErrorListener lstnr;
 
-	antlr4::ANTLRInputStream input(ifs);
+	  antlr4::ANTLRInputStream input(ifs);
 	SPARQLLexer lexer(&input);
 	lexer.removeErrorListeners();
 	lexer.addErrorListener(&lstnr);
@@ -42,6 +43,12 @@ void QueryParser::SPARQLParse(const string &query)
 
 	SPARQLParser::EntryContext *tree = parser.entry();
 	visitEntry(tree);
+	}catch(const runtime_error& e1)
+	{
+        
+		throw runtime_error(e1.what());
+	}
+	
 }
 
 /**
