@@ -860,6 +860,16 @@ Util::get_date_time()
 }
 
 string 
+Util::get_date_day()
+{
+	time_t timep;
+	time(&timep);
+	char tmp[64];
+	strftime(tmp, sizeof(tmp), "%Y%m%d",localtime(&timep) );
+	return tmp;
+}
+
+string 
 Util::get_timestamp()
 {
     string timestamp;
@@ -1715,6 +1725,27 @@ Util::getTimeString() {
 	strftime(time_str, max, "%Y%m%d %H:%M:%S", localtime(&timep));
 	return string(time_str);
 }
+
+string
+Util::getTimeString2() {
+	static const int max = 20; // max length of time string
+	char time_str[max];
+	time_t timep;
+	time(&timep);
+	strftime(time_str, max, "%Y%m%d%H%M%S", localtime(&timep));
+	return string(time_str);
+}
+int
+Util::getRandNum()
+{
+     unsigned seed;  // Random generator seed
+    // Use the time function to get a "seed” value for srand
+    seed = time(0);
+    srand(seed);
+    int result=rand();
+    return result;
+}
+
 
 //is ostream.write() ok to update to disk at once? all add ofstream.flush()?
 //http://bookug.cc/rwbuffer
