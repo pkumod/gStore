@@ -39,12 +39,8 @@ public class GETexample{
         res = gc.load("lubm");
         System.out.println(res);
 
-		// to add, delete a user or modify the privilege of a user, operation must be done by the root user
-        //res = gc.user("add_user", "user1", "111111");
-        //System.out.println(res);
-
 		// show all users
-        res = gc.showUser();
+        res = gc.showuser();
         System.out.println(res);
 
 		// query
@@ -79,11 +75,6 @@ public class GETexample{
 		//res = gc.drop("lubm", true); //leave a backup
 		System.out.println(res);
 
-		// get CoreVersion and APIVersion
-		res = gc.getCoreVersion();
-		System.out.println(res);
-		res = gc.getAPIVersion();
-		System.out.println(res);
 	}
 }
 

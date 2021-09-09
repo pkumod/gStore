@@ -1,5 +1,4 @@
 lib_dir=../lib/
-socket_obj_dir=../../../.objs/
 
 all: $(lib_dir)GstoreJavaAPI.jar
 

@@ -38,12 +38,8 @@ public class POSTexample{
         res = gc.load("lubm", "POST");
         System.out.println(res);
 
-		// to add, delete a user or modify the privilege of a user, operation must be done by the root user
-        //res = gc.user("add_user", "user1", "111111", "POST");
-        //System.out.println(res);
-
 		// show all users
-        res = gc.showUser("POST");
+        res = gc.showuser("POST");
         System.out.println(res);
 
 		// query
@@ -80,11 +76,6 @@ public class POSTexample{
 		//res = gc.drop("lubm", true, "POST"); //leave a backup
 		System.out.println(res);
 
-		// get CoreVersion and APIVersion
-		res = gc.getCoreVersion("POST");
-		System.out.println(res);
-		res = gc.getAPIVersion("POST");
-		System.out.println(res);
 	}
 }
 

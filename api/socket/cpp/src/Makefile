@@ -1,16 +1,15 @@
-#CC=g++
 CC= g++ -std=c++11
 
 lib_dir=../lib/
 socket_obj_dir=../../../../.objs/
 
-all: $(lib_dir)libgstoreconnector.a
+all: $(lib_dir)libclient.a
 
-$(lib_dir)libgstoreconnector.a: GstoreConnector.o $(socket_obj_dir)Socket.o
-	ar -crv $(lib_dir)libgstoreconnector.a GstoreConnector.o $(socket_obj_dir)Socket.o
+$(lib_dir)libclient.a: Client.o $(socket_obj_dir)Socket.o
+	ar -crv $(lib_dir)libclient.a Client.o $(socket_obj_dir)Socket.o
 
-GstoreConnector.o: GstoreConnector.cpp GstoreConnector.h $(socket_obj_dir)Socket.o
-	$(CC) -c GstoreConnector.cpp -o GstoreConnector.o
+Client.o: Client.cpp Client.h $(socket_obj_dir)Socket.o
+	$(CC) -c Client.cpp -o Client.o
 
 clean:
-	rm -rf GstoreConnector.o $(lib_dir)libgstoreconnector.a
+	rm -rf Client.o $(lib_dir)libclient.a

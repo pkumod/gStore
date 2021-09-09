@@ -1,4 +1,4 @@
-#include "../api/http/cpp/client.h"
+#include "../api/http/cpp/src/GstoreConnector.h"
 #include <iostream>
 #include "../Util/Util.h"
 
