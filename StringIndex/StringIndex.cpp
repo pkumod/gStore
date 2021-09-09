@@ -399,8 +399,11 @@ void StringIndex::save(KVstore &kv_store)
 void StringIndex::load()
 {
 	this->entity.load();
+	cout<<"entity has loaded successfully!"<<endl;
 	this->literal.load();
+	cout<<"literal has loaded successfully!"<<endl;
 	this->predicate.load();
+	cout<<"predicate has loaded successfully!"<<endl;
 }
 
 bool
