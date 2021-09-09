@@ -1,28 +1,26 @@
-/*=============================================================================
-# Filename: CppAPIExample.cpp
-# Author: Bookug Lobert 
-# Mail: 1181955272@qq.com
-# Last Modified: 2016-02-21 21:32
-# Description: originally written by hanshuo, modified by zengli
-=============================================================================*/
+/**
+* @file  CppAPIExample.cpp
+* @author  suxunbin
+* @date  13-AUG-2021
+* @brief  a simple example of a socket client
+*/
 
-#include "GstoreConnector.h"
+#include "Client.h"
 #include <string>
 #include <iostream>
 
-// before run this example, you must start up the GStore server at first (use command ./gserver).
-int main(int argc, char * argv[])
+/**
+* @note  Before running this example, you must start up the GStore server at first (use command bin/gserver in the root directory).
+*/
+int main(int argc, char* argv[])
 {
-    // initialize the GStore server's IP address and port.
-    GstoreConnector gc("127.0.0.1", 3305);
-
-    // build a new database by a RDF file.
-    // note that the relative path is related to gserver.
-    gc.build("LUBM10", "data/lubm/lubm.nt");
-    gc.load("LUBM10");
-
-    // then you can execute SPARQL query on this database.
-    std::string sparql = "select ?x where \
+	std::string ip = "127.0.0.1";
+	int port = 9000;
+	std::string username = "root";
+	std::string password = "123456";
+	std::string db_name = "LUBM10";
+	std::string rdf_path = "data/lubm/lubm.nt";
+	std::string sparql = "select ?x where \
                          { \
                          ?x    <rdf:type>    <ub:UndergraduateStudent>. \
                          ?y    <ub:name> <Course1>. \
@@ -32,18 +30,73 @@ int main(int argc, char * argv[])
                          ?z    <ub:worksFor>    ?w. \
                          ?w    <ub:name>    <Department0>. \
                          }";
-    std::string answer = gc.query(sparql);
-    std::cout << answer << std::endl;
+	std::string cmd;
+	std::string recv_msg;
 
-    // unload this database.
-    gc.unload("LUBM10");
+	/**
+	* @brief  Initialize the GstoreConnector with the server's IP address and port.
+	*/
+	GstoreConnector gc(ip, port);
 
-    // also, you can load some exist database directly and then query.
-    gc.load("LUBM10");
-    answer = gc.query(sparql);
-    std::cout << answer << std::endl;
-    gc.unload("LUBM10");
+	/**
+	* @brief  Connect the server.
+	*/
+	gc.connect();
 
-    return 0;
+	/**
+	* @brief  Login the server using the root user.
+	*/
+	cmd = "{\"op\":\"login\", \"username\":\"" + username + "\", \"password\":\"" + password + "\"}";
+	gc.send(cmd);
+	gc.recv(recv_msg);
+
+	/**
+	* @brief  Build a database.
+	*/
+	cmd = "{\"op\":\"build\", \"db_name\":\"" + db_name + "\", \"rdf_path\":\"" + rdf_path + "\"}";
+	gc.send(cmd);
+	gc.recv(recv_msg);
+
+	/**
+	* @brief  Load a database.
+	*/
+	cmd = "{\"op\":\"load\", \"db_name\":\"" + db_name + "\"}";
+	gc.send(cmd);
+	gc.recv(recv_msg);
+
+	/**
+	* @brief  Execute a sparql query on a database.
+	*/
+	cmd = "{\"op\":\"query\", \"db_name\":\"" + db_name + "\", \"sparql\":\"" + sparql + "\"}";
+	gc.send(cmd);
+	gc.recv(recv_msg);
+
+	/**
+	* @brief  show all databases.
+	*/
+	cmd = "{\"op\":\"show\"}";
+	gc.send(cmd);
+	gc.recv(recv_msg);
+
+	/**
+	* @brief  Unload a database.
+	*/
+	cmd = "{\"op\":\"unload\", \"db_name\":\"" + db_name + "\"}";
+	gc.send(cmd);
+	gc.recv(recv_msg);
+
+	/**
+	* @brief  Drop a database.
+	*/
+	cmd = "{\"op\":\"drop\", \"db_name\":\"" + db_name + "\"}";
+	gc.send(cmd);
+	gc.recv(recv_msg);
+
+	/**
+	* @brief  Close the connection.
+	*/
+	gc.disconnect();
+
+	return 0;
 }
 

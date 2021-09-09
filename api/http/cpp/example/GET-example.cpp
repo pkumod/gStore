@@ -1,7 +1,7 @@
 /*=============================================================================
 # Filename: GET-example.cpp
 # Author: suxunbin
-# Last Modified: 2019-5-17 20:51
+# Last Modified: 2021-07-20 20:51
 # Description: a simple GET-example of C++ API
 =============================================================================*/
 
@@ -9,19 +9,19 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-#include "client.h"
+#include "GstoreConnector.h"
 
 using namespace std;
 
-// before you run this example, make sure that you have started up ghttp service (using bin/ghttp port)
+// before you run this example, make sure that you have started up ghttp service (using bin/ghttp [port])
 // "GET" is a default parameter that can be omitted
-int main(int argc, char * argv[])
+int main(int argc, char* argv[])
 {
 	std::string IP = "127.0.0.1";
 	int Port = 9000;
 	std::string username = "root";
 	std::string password = "123456";
-    std::string sparql = "select ?x where \
+	std::string sparql = "select ?x where \
                          { \
                          ?x    <rdf:type>    <ub:UndergraduateStudent>. \
                          ?y    <ub:name> <Course1>. \
@@ -44,12 +44,8 @@ int main(int argc, char * argv[])
 	res = gc.load("lubm");
 	cout << res << endl;
 
-	// to add, delete a user or modify the privilege of a user, operation must be done by the root user
-	//res = gc.user("add_user", "user1", "111111");
-	//cout << res << endl;
-
 	// show all users
-	res = gc.showUser();
+	res = gc.showuser();
 	cout << res << endl;
 
 	// query
@@ -82,14 +78,8 @@ int main(int argc, char * argv[])
 	// drop the database
 	res = gc.drop("lubm", false); //delete the database directly
 	//res = gc.drop("lubm", true); //leave a backup
-	cout << res << endl;  
-
-	// get CoreVersion and APIVersion
-	res = gc.getCoreVersion();
-	cout << res << endl;
-	res = gc.getAPIVersion();
 	cout << res << endl;
 
-    return 0;
+	return 0;
 }
 

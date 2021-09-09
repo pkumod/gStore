@@ -38,12 +38,8 @@ print(res)
 res = gc.load("lubm")
 print(res);
 
-# to add, delete a user or modify the privilege of a user, operation must be done by the root user
-#res = gc.user("add_user", "user1", "111111")
-#print(res);
-
 # show all users
-res = gc.showUser()
+res = gc.showuser()
 print(res)
 
 # query
@@ -78,8 +74,3 @@ res = gc.drop("lubm", False) #delete the database directly
 #res = gc.drop("lubm", True) #leave a backup
 print(res);
 
-# get CoreVersion and APIVersion
-res = gc.getCoreVersion()
-print(res)
-res = gc.getAPIVersion()
-print(res)

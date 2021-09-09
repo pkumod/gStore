@@ -1,257 +1,650 @@
-/*=============================================================================
-# Filename: GstoreConnector.cpp
-# Author: Bookug Lobert
-# Mail: 1181955272@qq.com
-# Last Modified: 2016-02-21 21:24
-# Description: achieve functions in GstoreConnector.h
-=============================================================================*/
-
 #include "GstoreConnector.h"
-#include <iostream>
 
-using namespace std;
-
-const string GstoreConnector::defaultServerIP = "127.0.0.1";
-const unsigned short GstoreConnector::defaultServerPort = 3305;
-
-GstoreConnector::GstoreConnector()
+GstoreConnector::GstoreConnector(void) :
+	m_bDebug(false)
 {
-	this->serverIP = GstoreConnector::defaultServerIP;
-}
 
-GstoreConnector::GstoreConnector(string _ip)
-{
-	this->serverIP = _ip;
-	this->serverPort = GstoreConnector::defaultServerPort;
 }
-
-GstoreConnector::GstoreConnector(unsigned short _port)
-{
-	this->serverIP = GstoreConnector::defaultServerIP;
-	this->serverPort = _port;
-}
-
-GstoreConnector::GstoreConnector(string _ip, unsigned short _port)
+GstoreConnector::GstoreConnector(std::string _ip, int _port, std::string _user, std::string _passwd) :
+	m_bDebug(false)
 {
 	if (_ip == "localhost")
-		this->serverIP = "127.0.0.1";
+		this->serverIP = defaultServerIP;
 	else
 		this->serverIP = _ip;
 	this->serverPort = _port;
+	this->Url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort) + "/";
+	this->username = _user;
+	this->password = _passwd;
 }
-
-GstoreConnector::~GstoreConnector()
+GstoreConnector::~GstoreConnector(void)
 {
-	//this->disconnect();
+
 }
-/*
-bool GstoreConnector::test() {
-	bool connect_return = this->connect();
-	if (!connect_return) {
-		cerr << "failed to connect to server. @GstoreConnector::test" << endl;
-		return false;
-	}
 
-	string cmd = "test";
-	bool send_return = this->socket.send(cmd);
-	if (!send_return) {
-		cerr << "send test command error. @GstoreConnector::test" << endl;
-		return false;
-	}
-
-	string recv_msg;
-	this->socket.recv(recv_msg);
-
-	this->disconnect();
-
-	cout << recv_msg << endl;
-	if (recv_msg == "OK") {
-		return true;
-	}
-	return false;
-}
-*/
-bool
-GstoreConnector::load(string _db_name, string username, string password)
+static const std::string UrlEncode(const std::string& s)
 {
-	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
+	std::string ret;
+	unsigned char* ptr = (unsigned char*)s.c_str();
+	ret.reserve(s.length());
 
-		string cmd = url + "/?operation=load&db_name=" + _db_name + "&username=" + username + "&password=" + password;
-	string recv_msg;
-	int ret;
-	ret = hc.Get(cmd, recv_msg);
-	cout << recv_msg << endl;
-	if (recv_msg == "load database done.")
+	for (int i = 0; i < s.length(); ++i)
 	{
-		return true;
+		if ((int(ptr[i]) == 42) || (int(ptr[i]) == 45) || (int(ptr[i]) == 46) || (int(ptr[i]) == 47) || (int(ptr[i]) == 58) || (int(ptr[i]) == 95))
+			ret += ptr[i];
+		else if ((int(ptr[i]) >= 48) && (int(ptr[i]) <= 57))
+			ret += ptr[i];
+		else if ((int(ptr[i]) >= 65) && (int(ptr[i]) <= 90))
+			ret += ptr[i];
+		else if ((int(ptr[i]) >= 97) && (int(ptr[i]) <= 122))
+			ret += ptr[i];
+		else if (int(ptr[i]) == 32)
+			ret += '+';
+		else if ((int(ptr[i]) != 9) && (int(ptr[i]) != 10) && (int(ptr[i]) != 13))
+		{
+			char buf[5];
+			memset(buf, 0, 5);
+			snprintf(buf, 5, "%%%X", ptr[i]);
+			ret.append(buf);
+		}
 	}
-
-	return false;
+	return ret;
 }
 
-bool
-GstoreConnector::unload(string _db_name, string username, string password)
+static int OnDebug(CURL*, curl_infotype itype, char* pData, size_t size, void*)
 {
-	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
-
-
-	string cmd = url + "/?operation=unload&db_name=" + _db_name + "&username=" + username + "&password=" + password;
-	string recv_msg;
-	int ret = hc.Get(cmd, recv_msg);
-	cout << recv_msg << endl;
-	if (recv_msg == "unload database done.")
+	if (itype == CURLINFO_TEXT)
 	{
-		return true;
+		printf("[TEXT]%s\n", pData);
 	}
-
-	return false;
-}
-
-bool
-GstoreConnector::build(string _db_name, string _rdf_file_path, string username, string password)
-{
-	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
-
-	string cmd = url + "/?operation=build&db_name=" + _db_name + "&ds_path=" + _rdf_file_path + "&username=" + username + "&password=" + password;
-	string recv_msg;
-	int ret = hc.Get(cmd, recv_msg);
-	cerr << recv_msg << endl;
-	if (recv_msg == "import RDF file to database done.")
+	else if (itype == CURLINFO_HEADER_IN)
 	{
-		return true;
+		printf("[HEADER_IN]%s\n", pData);
 	}
-
-	return false;
-}
-/*
-bool
-GstoreConnector::drop(string _db_name)
-{
-	bool connect_return = this->connect();
-	if (!connect_return)
+	else if (itype == CURLINFO_HEADER_OUT)
 	{
-		cerr << "connect to server error. @GstoreConnector::unload" << endl;
-		return false;
+		printf("[HEADER_OUT]%s\n", pData);
 	}
-
-	string cmd = "drop " + _db_name;
-	bool send_return = this->socket.send(cmd);
-	if (!send_return)
+	else if (itype == CURLINFO_DATA_IN)
 	{
-		cerr << "send unload command error. @GstoreConnector::unload" << endl;
-		return false;
+		printf("[DATA_IN]%s\n", pData);
 	}
-
-	string recv_msg;
-	this->socket.recv(recv_msg);
-
-	this->disconnect();
-
-	cout << recv_msg << endl;
-	if (recv_msg == "drop database done.")
+	else if (itype == CURLINFO_DATA_OUT)
 	{
-		return true;
+		printf("[DATA_OUT]%s\n", pData);
 	}
-	return false;
-}
-*/
-string
-GstoreConnector::query(string username, string password, string db_name, string sparql)
-{
-	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
-
-	string cmd = url + "/?operation=query&username=" + username + "&password=" + password + "&db_name=" + db_name + "&format=json&sparql=" + sparql; 
-	string recv_msg;
-	int ret = hc.Get(cmd, recv_msg);
-	return recv_msg;
+	return 0;
 }
 
-void GstoreConnector::query(string username, string password, string db_name, string sparql, string filename)
+static size_t OnWriteData(void* buffer, size_t size, size_t nmemb, void* lpVoid)
 {
-    string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
-    string cmd = url + "/?operation=query&username=" + username + "&password=" + password + "&db_name=" + db_name + "&format=json&sparql=" + sparql;
-    int ret = hc.Get(cmd, filename, true);
-    return;
-}
-
-string
-GstoreConnector::show(string username, string password)
-{
-	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
-
-	string cmd = url + "/?operation=show&username="  + username + "&password=" + password;
-	string recv_msg;
-	int ret = hc.Get(cmd, recv_msg);
-	return recv_msg;
-}
-/*
-bool
-GstoreConnector::connect()
-{
-	bool flag = this->socket.create();
-	if (!flag)
+	std::string* str = dynamic_cast<std::string*>((std::string*)lpVoid);
+	if (NULL == str || NULL == buffer)
 	{
-		cerr << "cannot create socket. @GstoreConnector::connect" << endl;
-		return false;
+		return -1;
 	}
 
-	flag = this->socket.connect(this->serverIP, this->serverPort);
+	char* pData = (char*)buffer;
+	str->append(pData, size * nmemb);
+	return nmemb;
+}
 
-	if (!flag)
+int GstoreConnector::Get(const std::string& strUrl, std::string& strResponse)
+{
+	strResponse.clear();
+	CURLcode res;
+	CURL* curl = curl_easy_init();
+	if (NULL == curl)
 	{
-		cerr << "cannot connect to server. @GstoreConnector::connect" << endl;
-		return false;
+		return CURLE_FAILED_INIT;
+	}
+	if (m_bDebug)
+	{
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
+	}
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
+	res = curl_easy_perform(curl);
+	curl_easy_cleanup(curl);
+	return res;
+}
+
+int GstoreConnector::Get(const std::string& strUrl, const std::string& filename)
+{
+	CURLcode res;
+	CURL* curl = curl_easy_init();
+	if (NULL == curl)
+	{
+		return CURLE_FAILED_INIT;
+	}
+	if (m_bDebug)
+	{
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
+	}
+	curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 4096);
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
+
+	FILE* fw = fopen(filename.c_str(), "wb");
+	if (!fw)
+	{
+		std::cout << "open file failed" << std::endl;
+		return -1;
+	}
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fw);
+
+	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+	res = curl_easy_perform(curl);
+
+	curl_easy_cleanup(curl);
+	fclose(fw);
+	return res;
+}
+
+int GstoreConnector::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse)
+{
+	strResponse.clear();
+	CURLcode res;
+	CURL* curl = curl_easy_init();
+	if (NULL == curl)
+	{
+		return CURLE_FAILED_INIT;
+	}
+	if (m_bDebug)
+	{
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
+	}
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_POST, 1);
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
+	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
+	res = curl_easy_perform(curl);
+	curl_easy_cleanup(curl);
+	return res;
+}
+
+int GstoreConnector::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename)
+{
+	CURLcode res;
+	CURL* curl = curl_easy_init();
+	if (NULL == curl)
+	{
+		return CURLE_FAILED_INIT;
+	}
+	if (m_bDebug)
+	{
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
+	}
+	curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 4096);
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_POST, 1);
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
+	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
+	FILE* fw = fopen(filename.c_str(), "wb");
+	if (!fw)
+	{
+		std::cout << "open file failed" << std::endl;
+		return -1;
+	}
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fw);
+	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+	res = curl_easy_perform(curl);
+	curl_easy_cleanup(curl);
+	fclose(fw);
+	return res;
+}
+
+int GstoreConnector::Gets(const std::string& strUrl, std::string& strResponse, const char* pCaPath)
+{
+	strResponse.clear();
+	CURLcode res;
+	CURL* curl = curl_easy_init();
+	if (NULL == curl)
+	{
+		return CURLE_FAILED_INIT;
+	}
+	if (m_bDebug)
+	{
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
+	}
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+	if (NULL == pCaPath)
+	{
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, false);
+	}
+	else
+	{
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, true);
+		curl_easy_setopt(curl, CURLOPT_CAINFO, pCaPath);
+	}
+	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
+	res = curl_easy_perform(curl);
+	curl_easy_cleanup(curl);
+	return res;
+}
+
+int GstoreConnector::Posts(const std::string& strUrl, const std::string& strPost, std::string& strResponse, const char* pCaPath)
+{
+	strResponse.clear();
+	CURLcode res;
+	CURL* curl = curl_easy_init();
+	if (NULL == curl)
+	{
+		return CURLE_FAILED_INIT;
+	}
+	if (m_bDebug)
+	{
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
+	}
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_POST, 1);
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
+	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+	if (NULL == pCaPath)
+	{
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, false);
+	}
+	else
+	{
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, true);
+		curl_easy_setopt(curl, CURLOPT_CAINFO, pCaPath);
+	}
+	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
+	res = curl_easy_perform(curl);
+	curl_easy_cleanup(curl);
+	return res;
+}
+
+std::string GstoreConnector::build(std::string db_name, std::string db_path, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=build&db_name=" + db_name + "&db_path=" + db_path + "&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"build\", \"db_name\": \"" + db_name + "\", \"db_path\": \"" + db_path + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::check(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=check";
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"check\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::load(std::string db_name, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=load&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"load\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::monitor(std::string db_name, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=monitor&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"monitor\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::unload(std::string db_name, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=unload&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"unload\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::drop(std::string db_name, bool is_backup, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl;
+		if (is_backup)
+			strUrl = this->Url + "?operation=drop&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password + "&is_backup=true";
+		else
+			strUrl = this->Url + "?operation=drop&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password + "&is_backup=false";
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost;
+		if (is_backup)
+			strPost = "{\"operation\": \"drop\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"is_backup\": \"true\"}";
+		else
+			strPost = "{\"operation\": \"drop\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"is_backup\": \"false\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::show(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=show&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"show\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::usermanage(std::string type, std::string op_username, std::string op_password, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=usermanage&type=" + type + "&username=" + this->username + "&password=" + this->password + "&op_username=" + op_username + "&op_password=" + op_password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"usermanage\", \"type\": \"" + type + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"op_username\": \"" + op_username + "\", \"op_password\": \"" + op_password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::showuser(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=showuser&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"showuser\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::userprivilegemanage(std::string type, std::string op_username, std::string privileges, std::string db_name, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "operation=userprivilegemanage&type=" + type + "&username=" + this->username + "&password=" + this->password + "&op_username=" + op_username + "&privileges=" + privileges + "&db_name=" + db_name;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"userprivilegemanage\", \"type\": \"" + type + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"op_username\": \"" + op_username + "\", \"privileges\": \"" + privileges + "\", \"db_name\": \"" + db_name + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::backup(std::string db_name, std::string backup_path, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=backup&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&backup_path=" + backup_path;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"backup\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"backup_path\": \"" + backup_path + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::restore(std::string db_name, std::string backup_path, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=restore&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&backup_path=" + backup_path;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"restore\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"backup_path\": \"" + backup_path + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::query(std::string db_name, std::string format, std::string sparql, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=query&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&format=" + format + "&sparql=" + sparql;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"query\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"format\": \"" + format + "\", \"sparql\": \"" + sparql + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+void GstoreConnector::fquery(std::string db_name, std::string format, std::string sparql, std::string filename, std::string request_type)
+{
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=query&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&format=" + format + "&sparql=" + sparql;
+		int ret = this->Get(strUrl, filename);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"query\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"format\": \"" + format + "\", \"sparql\": \"" + sparql + "\"}";
+		int ret = this->Post(this->Url, strPost, filename);
+	}
+	return;
+}
+
+std::string GstoreConnector::exportDB(std::string db_name, std::string db_path, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=export&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&db_path=" + db_path;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"export\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"db_path\": \"" + db_path + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::login(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=login&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"login\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::begin(std::string db_name, std::string isolevel, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=begin&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&isolevel=" + isolevel;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"begin\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"isolevel\": \"" + isolevel + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
 	}
 
-	return true;
+	return res;
 }
 
-bool
-GstoreConnector::disconnect()
+std::string GstoreConnector::tquery(std::string db_name, std::string tid, std::string sparql, std::string request_type)
 {
-	bool flag = this->socket.close();
-
-	return flag;
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=tquery&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&tid=" + tid + "&sparql=" + sparql;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"tquery\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"tid\": \"" + tid + "\", \"sparql\": \"" + sparql + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
 }
-*/
-string
-GstoreConnector::user(string type, string username1, string password1, string username2, string addition)
+
+std::string GstoreConnector::commit(std::string db_name, std::string tid, std::string request_type)
 {
-	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
-
-	string cmd = url + "/?operation=user&type=" + type + "&username1=" + username1 + "&password1=" + password1 + "&username2=" + username2 + "&addition=" + addition; 
-	string recv_msg;
-	int ret = hc.Get(cmd, recv_msg);
-	return recv_msg;
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=commit&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&tid=" + tid;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"commit\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"tid\": \"" + tid + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
 }
-string
-GstoreConnector::showUser()
+
+std::string GstoreConnector::rollback(std::string db_name, std::string tid, std::string request_type)
 {
-	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
-
-	string cmd = url + "/?operation=showUser";
-	string recv_msg;
-	int ret = hc.Get(cmd, recv_msg);
-	return recv_msg;
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=rollback&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&tid=" + tid;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"rollback\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"tid\": \"" + tid + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
 }
-string
-GstoreConnector::monitor(string db_name, string username, string password)
+
+std::string GstoreConnector::getTransLog(std::string request_type)
 {
-	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
-
-	string cmd = url + "/?operation=monitor&db_name=" + db_name + "&username=" + username + "&password=" + password; 
-	string recv_msg;
-	int ret = hc.Get(cmd, recv_msg);
-	return recv_msg;
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=txnlog&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"txnlog\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
 }
-string
-GstoreConnector::checkpoint(string db_name, string username, string password)
+
+std::string GstoreConnector::checkpoint(std::string db_name, std::string request_type)
 {
-	string url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort);
-
-	string cmd = url + "/?operation=checkpoint&db_name=" + db_name + "&username=" + username + "&password=" + password;
-	string recv_msg;
-	int ret = hc.Get(cmd, recv_msg);
-	return recv_msg;
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=checkpoint&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"checkpoint\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
 }
 
+void GstoreConnector::SetDebug(bool bDebug)
+{
+	m_bDebug = bDebug;
+}

@@ -1,5 +1,3 @@
-#CC=g++
-#CC=ccache g++ -std=c++11
 CC=g++ -std=c++11
 
 lib_dir=../lib/
@@ -14,3 +12,4 @@ GstoreConnector.o: GstoreConnector.cpp GstoreConnector.h
 
 clean:
 	rm -rf GstoreConnector.o $(lib_dir)libgstoreconnector.a
+
