@@ -4,7 +4,7 @@
 
 #ifndef TOPK_DPB_DYNAMICTRIE_H_
 #define TOPK_DPB_DYNAMICTRIE_H_
-#include "../../Util/Util.h"
+#include "../../../Util/Util.h"
 #include "Pool.h"
 
 namespace DPB {

@@ -77,14 +77,14 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
       decltype(i) nei_id;
       auto &triple = bgp_query->get_triple_by_index(edge_id);
       decltype(triple.object) nei_name;
-      TopKUtil::EdgeDirection direction=TopKUtil::EdgeDirection::NoEdge;
+      auto direction= TopKPlanUtil::EdgeDirection::NoEdge;
       if(triple.subject==v_name) {
         nei_name = triple.object;
-        direction = TopKUtil::EdgeDirection::OUT;
+        direction = TopKPlanUtil::EdgeDirection::OUT;
       }
       else {
         nei_name = triple.subject;
-        direction = TopKUtil::EdgeDirection::IN;
+        direction = TopKPlanUtil::EdgeDirection::IN;
       }
       if(nei_name[0]!='?')
         nei_id = CONSTANT;
@@ -130,7 +130,7 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
 void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
                              KVstore *kv_store,
                              Statistics *statistics,
-                             QueryTree::Order expression,
+                             const QueryTree::Order& expression,
                              shared_ptr<map<TYPE_ENTITY_LITERAL_ID, shared_ptr<IDList>>> id_caches) {
 
 
@@ -205,7 +205,7 @@ void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
       auto child_tree = new TopKTreeNode;
       child_tree->var_id = child_id;
       now_node->descendents_.push_back(child_tree);
-      auto tree_edge_ptr = make_shared<TopKUtil::TreeEdge>();
+      auto tree_edge_ptr = make_shared<TopKPlanUtil::TreeEdge>();
       tree_edge_ptr->predicate_constant_ = std::move(two_var_predicate_constants);
       tree_edge_ptr->predicate_ids_ = std::move(two_var_predicate_ids);
       tree_edge_ptr->directions_ = std::move(two_var_directions);
@@ -262,7 +262,7 @@ void TopKSearchPlan::DebugInfo(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
       {
         cout << "\t \t edge-------------"<<j<<"----------------"<<endl;
         cout << "\t \t direction:";
-        if(tree_edge_ptr->directions_[j]==TopKUtil::EdgeDirection::IN)
+        if(tree_edge_ptr->directions_[j]==TopKPlanUtil::EdgeDirection::IN)
           cout<<"IN";
         else
           cout<<"OUT";
@@ -588,3 +588,28 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
   return true;
 }
 
+/**
+ * Reorder the TreeEdge structure, making
+ * edges with constant edges pop first
+ */
+void TopKPlanUtil::TreeEdge::ChangeOrder() {
+  // [0,const_end) stores constant edge
+  // [const_end,end) stores variable edge
+  size_t const_end = 0;
+  auto edges_num = predicate_constant_.size();
+  for(decltype(edges_num) i=0;i<edges_num;i++)
+  {
+    // const
+    if(predicate_constant_[i] == true)
+    {
+      // exchange i with const_end
+      if(i!=const_end)
+      {
+        std::swap(predicate_constant_[i],predicate_constant_[const_end]);
+        std::swap(predicate_ids_[i],predicate_ids_[const_end]);
+        std::swap(directions_[i],directions_[const_end]);
+      }
+      const_end++;
+    }
+  }
+}

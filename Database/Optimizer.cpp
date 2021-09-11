@@ -861,7 +861,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
   env->txn = this->txn_;
   env->ss = make_shared<stringstream>();
 
-  auto root_fr = TopKUtil::BuildIteratorTree(tree_search_plan,env);
+  auto root_fr = DPBUtil::BuildIteratorTree(tree_search_plan, env);
   for(int i =1;i<=query_info.limit_num_;i++)
   {
     root_fr->TryGetNext(k);
@@ -928,7 +928,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   env->txn = this->txn_;
   env->ss = make_shared<stringstream>();
 
-  auto root_fr = TopKUtil::BuildIteratorTree(tree_search_plan,env);
+  auto root_fr = DPBUtil::BuildIteratorTree(tree_search_plan, env);
 
   decltype(query_info.limit_num_) deleted_num = 0;
   auto result_list = make_shared<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();

@@ -1,13 +1,13 @@
 //
-// Created by Yuqi Zhou on 2021/7/10.
+// Created by Yuqi Zhou on 2021/9/11.
 //
 
-#ifndef GSTORELIMITK_QUERY_TOPK_TOPKUTIL_H_
-#define GSTORELIMITK_QUERY_TOPK_TOPKUTIL_H_
+#ifndef GSTOREGDB_QUERY_TOPK_DPB_TOPKUTIL_H_
+#define GSTOREGDB_QUERY_TOPK_DPB_TOPKUTIL_H_
 
 #include "../../Util/Util.h"
 #include "../../KVstore/KVstore.h"
-#include "./OrderedList.h"
+#include "DPB/OrderedList.h"
 #include "../../Query/SPARQLquery.h"
 #include "../../Query/BasicQuery.h"
 #include "../../Database/Statistics.h"
@@ -16,19 +16,7 @@
 #include "../../Database/TableOperator.h"
 #include "TopKSearchPlan.h"
 
-
-namespace TopKUtil{
-
-void CalculatePosVarMappingNode(TopKTreeNode* top_k_tree_node,shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>> pos_var_mapping);
-shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>> CalculatePosVarMapping(shared_ptr<TopKSearchPlan> search_plan);
-
-double GetScore(string &v, stringstream &ss);
-void GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
-                                std::map<std::string,double>& coefficients,
-                                stringstream &ss);
-
-
-std::shared_ptr<std::map<std::string,double>> getVarCoefficients(QueryTree::Order order);
+namespace TopKUtil {
 
 struct Env{
   KVstore *kv_store;
@@ -43,6 +31,34 @@ struct Env{
   std::shared_ptr<stringstream> ss;
 };
 
+void UpdateIDList(shared_ptr<IDList> valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
+
+void UpdateIDListWithAppending(shared_ptr<IDListWithAppending> &ids_appending, unsigned* id_list,
+                               unsigned id_list_len,unsigned  one_record_len,
+                               bool id_list_prepared,unsigned main_key_position);
+
+std::set<TYPE_ENTITY_LITERAL_ID> // child_candidates
+ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,int child_var,
+               std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
+               std::map<TYPE_ENTITY_LITERAL_ID, shared_ptr<IDListWithAppending>  > &parent_child,
+               std::map<TYPE_ENTITY_LITERAL_ID, std::set<TYPE_ENTITY_LITERAL_ID> > &child_parent,
+               std::shared_ptr<TopKPlanUtil::TreeEdge> tree_edges_,
+               Env *env);
+
+void AddRelation(TYPE_ENTITY_LITERAL_ID x,TYPE_ENTITY_LITERAL_ID y, std::map<TYPE_ENTITY_LITERAL_ID ,std::set<TYPE_ENTITY_LITERAL_ID >>& mapping);
+
+
+void CalculatePosVarMappingNode(TopKTreeNode* top_k_tree_node,shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>> pos_var_mapping);
+shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>> CalculatePosVarMapping(shared_ptr<TopKSearchPlan> search_plan);
+
+double GetScore(string &v, stringstream &ss);
+void GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
+                                std::map<std::string,double>& coefficients,
+                                stringstream &ss);
+
+
+std::shared_ptr<std::map<std::string,double>> getVarCoefficients(QueryTree::Order order);
+
 std::shared_ptr< std::map<TYPE_ENTITY_LITERAL_ID,double>>
 GetChildNodeScores(double coefficient,
                    std::set<TYPE_ENTITY_LITERAL_ID> &child_candidates,
@@ -52,40 +68,6 @@ GetChildNodeScores(double coefficient,
                    std::map<TYPE_ENTITY_LITERAL_ID, std::set<TYPE_ENTITY_LITERAL_ID> > *child_parent,
                    Env *env);
 
-std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<FQIterator>>  AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
-                                                                    std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,double>> node_scores, int k,
-                                                                    vector<std::map<TYPE_ENTITY_LITERAL_ID, std::shared_ptr<FRIterator>>> &descendents_FRs,
-                                                                    std::vector<std::map<TYPE_ENTITY_LITERAL_ID,std::pair<std::shared_ptr<OWIterator>,NodeOneChildVarPredicatesPtr>>>&descendents_OWs);
+};
 
-void inline AddRelation(TYPE_ENTITY_LITERAL_ID x,TYPE_ENTITY_LITERAL_ID y, std::map<TYPE_ENTITY_LITERAL_ID ,std::set<TYPE_ENTITY_LITERAL_ID >>& mapping);
-
-std::set<TYPE_ENTITY_LITERAL_ID> // child_candidates
-ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,int child_var,
-               std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
-               std::map<TYPE_ENTITY_LITERAL_ID, shared_ptr<IDListWithAppending>  > &parent_child,
-               std::map<TYPE_ENTITY_LITERAL_ID, std::set<TYPE_ENTITY_LITERAL_ID> > &child_parent,
-               std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
-               Env *env);
-
-std::map<TYPE_ENTITY_LITERAL_ID, // parent id
-         std::pair<std::shared_ptr<OWIterator>, // its OW
-                   NodeOneChildVarPredicatesPtr>> // predicate correspond to the OW
-GenerateOWs(int parent_var,int child_var,std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
-            std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
-            std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
-            Env *env);
-
-std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<FRIterator>>  GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKUtil::TreeEdge> tree_edges_,
-                                                            std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates,
-                                                            std::set<TYPE_ENTITY_LITERAL_ID>& deleted_parents,
-                                                            TopKTreeNode *child_tree_node, Env *env);
-
-FRIterator* BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_search_plan, Env *env);
-
-void UpdateIDList(shared_ptr<IDList> valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
-
-void UpdateIDListWithAppending(shared_ptr<IDListWithAppending> &ids_appending, unsigned* id_list,
-                               unsigned id_list_len,unsigned  one_record_len,
-                               bool id_list_prepared,unsigned main_key_position);
-}
-#endif //GSTORELIMITK_QUERY_TOPK_TOPKUTIL_H_
+#endif //GSTOREGDB_QUERY_TOPK_DPB_TOPKUTIL_H_

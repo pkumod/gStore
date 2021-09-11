@@ -3,7 +3,7 @@
 //
 #include "../../Util/Util.h"
 #include "../../KVstore/KVstore.h"
-#include "./OrderedList.h"
+#include "DPB/OrderedList.h"
 #include "../../Query/SPARQLquery.h"
 #include "../../Query/BasicQuery.h"
 #include "../../Database/Statistics.h"
@@ -16,7 +16,7 @@
 
 #define TOPK_DEBUG_INFO
 
-namespace TopKUtil{
+namespace TopKPlanUtil{
 enum class EdgeDirection{IN,OUT,NoEdge};
 
 // something like FeedTwoNodes, but this one is only used in
@@ -24,7 +24,7 @@ enum class EdgeDirection{IN,OUT,NoEdge};
 struct TreeEdge{
   std::vector<bool> predicate_constant_;
   std::vector<TYPE_ENTITY_LITERAL_ID> predicate_ids_;
-  std::vector<TopKUtil::EdgeDirection> directions_;
+  std::vector<TopKPlanUtil::EdgeDirection> directions_;
   void ChangeOrder();
 };
 
@@ -35,7 +35,7 @@ struct TreeEdge{
 // only Vars
 struct TopKTreeNode{
   int var_id;
-  std::vector<std::shared_ptr<TopKUtil::TreeEdge>> tree_edges_;
+  std::vector<std::shared_ptr<TopKPlanUtil::TreeEdge>> tree_edges_;
   std::vector<TopKTreeNode*> descendents_;
   size_t descendents_fr_num_;
   size_t descendents_ow_num_;
@@ -55,7 +55,7 @@ class TopKSearchPlan {
   map<TYPE_ENTITY_LITERAL_ID ,vector<TYPE_ENTITY_LITERAL_ID>> neighbours_;
   map<TYPE_ENTITY_LITERAL_ID,vector<vector<bool>>> predicates_constant_;
   map<TYPE_ENTITY_LITERAL_ID,vector<vector<TYPE_ENTITY_LITERAL_ID>>> predicates_ids_;
-  map<TYPE_ENTITY_LITERAL_ID,vector<vector<TopKUtil::EdgeDirection>>> directions_;
+  map<TYPE_ENTITY_LITERAL_ID,vector<vector<TopKPlanUtil::EdgeDirection>>> directions_;
   // The Edges that left behind
   // It can be used when enumerating , use non tree edges to make sure correctness
   StepOperation non_tree_edges_;
@@ -70,7 +70,7 @@ class TopKSearchPlan {
  public:
   explicit TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics,
                           const QueryTree::Order&,shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
-  void GetPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics, QueryTree::Order expression,
+  void GetPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics, const QueryTree::Order& expression,
                shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
   // The first tree to search
   TopKTreeNode* tree_root_;

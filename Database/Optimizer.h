@@ -25,7 +25,7 @@
 #include "../Util/OrderedVector.h"
 #include "./Executor.h"
 #ifdef TOPK_SUPPORT
-#include "../Query/topk/TopKUtil.h"
+#include "../Query/topk/DPBTopKUtil.h"
 #endif // TOPK_SUPPORT
 #include <unordered_map>
 #include <map>

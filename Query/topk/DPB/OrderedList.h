@@ -4,9 +4,9 @@
 
 #ifndef TOPK_DPB_ORDEREDLIST_H_
 #define TOPK_DPB_ORDEREDLIST_H_
-#include "../../Util/Util.h"
+#include "../../../Util/Util.h"
 #include "Pool.h"
-#include "MinMaxHeap.hpp"
+#include "../MinMaxHeap.hpp"
 #include "DynamicTrie.h"
 
 /**

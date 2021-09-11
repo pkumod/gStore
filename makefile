@@ -93,7 +93,7 @@ utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
 			$(objdir)IPBlackList.o  $(objdir)SpinLock.o $(objdir)GraphLock.o $(objdir)WebUrl.o $(objdir)INIParser.o $(objdir)OrderedVector.o
 
-topkobj = $(objdir)DynamicTrie.o $(objdir)OrderedList.o $(objdir)Pool.o $(objdir)TopKUtil.o $(objdir)TopKSearchPlan.o
+topkobj = $(objdir)DynamicTrie.o $(objdir)OrderedList.o $(objdir)Pool.o $(objdir)TopKUtil.o $(objdir)DPBTopKUtil.o $(objdir)TopKSearchPlan.o
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o $(objdir)QueryPlan.o\
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
@@ -446,12 +446,12 @@ $(objdir)PlanGenerator.o: Database/PlanGenerator.cpp Database/PlanGenerator.h \
 
 $(objdir)Executor.o: Database/Executor.cpp Database/Executor.h $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)IDList.o \
 	$(objdir)KVstore.o  $(objdir)VSTree.o $(objdir)Join.o $(objdir)Transaction.o $(objdir)TableOperator.o $(objdir)ResultTrigger.o \
-	$(objdir)QueryPlan.o $(objdir)Statistics.o $(objdir)PlanTree.o $(objdir)PlanGenerator.o $(objdir)OrderedVector.o $(objdir)TopKUtil.o
+	$(objdir)QueryPlan.o $(objdir)Statistics.o $(objdir)PlanTree.o $(objdir)PlanGenerator.o $(objdir)OrderedVector.o $(objdir)DPBTopKUtil.o
 	$(CC) $(CFLAGS) Database/Executor.cpp $(inc) -o $(objdir)Executor.o $(openmp)
 
 $(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)IDList.o \
 	$(objdir)KVstore.o  $(objdir)VSTree.o $(objdir)Join.o $(objdir)Transaction.o $(objdir)TableOperator.o $(objdir)ResultTrigger.o $(objdir)Executor.o\
-	$(objdir)QueryPlan.o $(objdir)Statistics.o $(objdir)PlanTree.o $(objdir)PlanGenerator.o $(objdir)OrderedVector.o $(objdir)TopKUtil.o
+	$(objdir)QueryPlan.o $(objdir)Statistics.o $(objdir)PlanTree.o $(objdir)PlanGenerator.o $(objdir)OrderedVector.o $(objdir)DPBTopKUtil.o
 	$(CC) $(CFLAGS) Database/Optimizer.cpp $(inc) -o $(objdir)Optimizer.o $(openmp)
 
 $(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(objdir)Util.o $(objdir)Transaction.o $(objdir)Database.o
@@ -500,15 +500,15 @@ $(objdir)BGPQuery.o: Query/BGPQuery.cpp Query/BGPQuery.h $(objdir)BasicQuery.o  
 
 #objects in Query/topk/ begin
 
-$(objdir)Pool.o: Query/topk/Pool.cpp Query/topk/Pool.h $(objdir)Util.o
-	$(CC) $(CFLAGS) Query/topk/Pool.cpp $(inc) -o $(objdir)Pool.o $(openmp)
+$(objdir)Pool.o: Query/topk/DPB/Pool.cpp Query/topk/DPB/Pool.h $(objdir)Util.o
+	$(CC) $(CFLAGS) Query/topk/DPB/Pool.cpp $(inc) -o $(objdir)Pool.o $(openmp)
 
-$(objdir)DynamicTrie.o: Query/topk/DynamicTrie.cpp Query/topk/DynamicTrie.h $(objdir)Util.o $(objdir)Pool.o
-	$(CC) $(CFLAGS) Query/topk/DynamicTrie.cpp $(inc) -o $(objdir)DynamicTrie.o $(openmp)
+$(objdir)DynamicTrie.o: Query/topk/DPB/DynamicTrie.cpp Query/topk/DPB/DynamicTrie.h $(objdir)Util.o $(objdir)Pool.o
+	$(CC) $(CFLAGS) Query/topk/DPB/DynamicTrie.cpp $(inc) -o $(objdir)DynamicTrie.o $(openmp)
 
-$(objdir)OrderedList.o: Query/topk/OrderedList.cpp Query/topk/OrderedList.h $(objdir)Util.o $(objdir)Pool.o \
+$(objdir)OrderedList.o: Query/topk/DPB/OrderedList.cpp Query/topk/DPB/OrderedList.h $(objdir)Util.o $(objdir)Pool.o \
 	$(objdir)DynamicTrie.o
-	$(CC) $(CFLAGS) Query/topk/OrderedList.cpp $(inc) -o $(objdir)OrderedList.o $(openmp)
+	$(CC) $(CFLAGS) Query/topk/DPB/OrderedList.cpp $(inc) -o $(objdir)OrderedList.o $(openmp)
 
 $(objdir)TopKSearchPlan.o: Query/topk/TopKSearchPlan.cpp Query/topk/TopKSearchPlan.h $(objdir)Util.o \
 	$(objdir)KVstore.o $(objdir)OrderedList.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o \
@@ -520,6 +520,10 @@ $(objdir)TopKUtil.o: Query/topk/TopKUtil.cpp Query/topk/TopKUtil.h $(objdir)Util
 	$(objdir)OrderedList.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)Statistics.o \
 	$(objdir)QueryTree.o $(objdir)IDList.o $(objdir)TableOperator.o $(objdir)TopKSearchPlan.o
 	$(CC) $(CFLAGS) Query/topk/TopKUtil.cpp $(inc) -o $(objdir)TopKUtil.o $(openmp)
+
+
+$(objdir)DPBTopKUtil.o: Query/topk/DPBTopKUtil.cpp Query/topk/DPBTopKUtil.h $(objdir)TopKUtil.o
+	$(CC) $(CFLAGS) Query/topk/DPBTopKUtil.cpp $(inc) -o $(objdir)DPBTopKUtil.o $(openmp)
 
 #objects in Query/topk/ end
 
