@@ -2,7 +2,7 @@
  * Copyright 2021 gStore, All Rights Reserved. 
  * @Author: Bookug Lober suxunbin liwenjie
  * @Date: 2021-08-22 00:37:57
- * @LastEditTime: 2021-09-03 14:34:43
+ * @LastEditTime: 2021-09-09 21:39:16
  * @LastEditors: Please set LastEditors
  * @Description: the http server to handler the user's request, which is main access entrance of gStore
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -899,7 +899,11 @@ int initialize(int argc, char *argv[])
 		 ipBlackList->Load(ipBlackFile);
 	 }
 	 
-
+    if(Util::file_exist("system.db/port.txt"))
+	{
+		cout << "Port " << server.config.port << " is already in use." << endl;
+	    return -1;
+	}
 	//users.insert(pair<std::string, struct User *>(ROOT_USERNAME, &root));
 
 	//load system.db when initialize
@@ -969,27 +973,33 @@ int initialize(int argc, char *argv[])
 	//init transaction log
 	Util::init_transactionlog();
 	//get the log name
-	string namelog_name = QUERYLOG_PATH + NAMELOG_PATH;
-	FILE* name_logfp = fopen(namelog_name.c_str(), "r+");
-	string querylog_name;
-	if (name_logfp == NULL)   //file not exist, create one
-	{
-		name_logfp = fopen(namelog_name.c_str(), "w");
-		querylog_name = Util::get_date_time();
-		int index_space = querylog_name.find(' ');
-		querylog_name = querylog_name.replace(index_space, 1, 1, '_');
-		fprintf(name_logfp, "%s", querylog_name.c_str());
-	}
-	else
-	{
-		char name_char[100];
-		fscanf(name_logfp, "%s", &name_char);
-		querylog_name = name_char;
-	}
-	fclose(name_logfp);
-	cout << "querylog_name: " << querylog_name << endl;
+	// string namelog_name = QUERYLOG_PATH + NAMELOG_PATH;
+	// FILE* name_logfp = fopen(namelog_name.c_str(), "r+");
+	// string querylog_name;
+	// if (name_logfp == NULL)   //file not exist, create one
+	// {
+	// 	name_logfp = fopen(namelog_name.c_str(), "w");
+	// 	querylog_name = Util::get_date_time();
+	// 	int index_space = querylog_name.find(' ');
+	// 	querylog_name = querylog_name.replace(index_space, 1, 1, '_');
+	// 	fprintf(name_logfp, "%s", querylog_name.c_str());
+	// }
+	// else
+	// {
+	// 	char name_char[100];
+	// 	fscanf(name_logfp, "%s", &name_char);
+	// 	querylog_name = name_char;
+	// }
+	// fclose(name_logfp);
+	string querylog_name=Util::get_date_day();
+	//cout << "querylog_name: " << querylog_name << endl;
 	//open the query log
 	queryLog = QUERYLOG_PATH + querylog_name + ".log";
+	if(Util::file_exist(queryLog)==false)
+	{
+	   cout<<"query log file is not exists, now create it."<<endl;
+       Util::create_file(queryLog);
+	}
 	cout << "queryLog: " << queryLog << endl;
 	query_logfp = fopen(queryLog.c_str(), "a");
 	if (query_logfp == NULL)
@@ -998,25 +1008,28 @@ int initialize(int argc, char *argv[])
 		return -1;
 	}
 	long querylog_size = ftell(query_logfp);
-	
-	string cmd = "lsof -i:" + Util::int2string(server.config.port) + " > system.db/ep.txt";
-	system(cmd.c_str());
-	fstream ofp;
-	ofp.open("system.db/ep.txt", ios::in);
-	int ch = ofp.get();
-	if (!ofp.eof())
-	{
-		ofp.close();
-		cout << "Port " << server.config.port << " is already in use." << endl;
-		string cmd = "rm system.db/ep.txt";
-		system(cmd.c_str());
-		return -1;
-	}
-	ofp.close();
-	cmd = "rm system.db/ep.txt";
-	system(cmd.c_str());
 
-	system_password = Util::int2string(rand()) + Util::int2string(rand());
+	
+	
+	// string cmd = "lsof -i:" + Util::int2string(server.config.port) + " > system.db/ep.txt";
+	// system(cmd.c_str());
+	// fstream ofp;
+	// ofp.open("system.db/ep.txt", ios::in);
+	// int ch = ofp.get();
+	// if (!ofp.eof())
+	// {
+	// 	ofp.close();
+	// 	cout << "Port " << server.config.port << " is already in use." << endl;
+	// 	string cmd = "rm system.db/ep.txt";
+	// 	system(cmd.c_str());
+	// 	return -1;
+	// }
+	// ofp.close();
+	// cmd = "rm system.db/ep.txt";
+	// system(cmd.c_str());
+    
+    fstream ofp;
+	system_password = Util::int2string(Util::getRandNum());
 	ofp.open("system.db/password" + Util::int2string(server.config.port) + ".txt", ios::out);
 	ofp << system_password;
 	ofp.close();
@@ -1342,7 +1355,7 @@ void sendResponseMsg(int code, string msg, const shared_ptr<HttpServer::Response
 string checkparamValue(string paramname, string value)
 {
 	string result = "";
-	if (value.empty())
+	if (value.empty()) 
 	{
 		result = "the value of " + paramname + " can not be empty!";
 		return result;
@@ -1429,7 +1442,16 @@ bool trylockdb(std::map<std::string, struct DBInfo*>::iterator it_already_build)
 	
 	if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
 	{
-		result = false;
+		// pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		// if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+		// {
+        //    result = false;
+		// }
+		// else {
+		// 	result=true;
+		// }
+		result=false;
+		
 	}
 	else
 	{
@@ -2485,6 +2507,13 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 		sendResponseMsg(1005,content,response);
 		return;	
 	}
+	catch(const std::runtime_error& e2)
+	{
+		string content =e2.what();
+		cout<<"query failed:"<<content<<endl;
+		sendResponseMsg(1005,content,response);
+		return;	
+	}
 	catch (...)
 	{
 		string content = "unknow error";
@@ -2515,27 +2544,29 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 	stream << rs.ansNum;
 	string ansNum_s = stream.str();
 	cout <<"ansNum_s: " << ansNum_s << endl;
-	string filename = "thread_" + thread_id + "_" + Util::getTimeName() + "_query";
-	string localname = ".tmp/web/" + filename;
-
-	if(ret)
+	
+	string filename = Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
+	
+	Util::create_dir("query_result/");
+    string localname = "query_result/" + filename;
+	if (ret)
 	{
-		cout <<log_prefix<< "search query returned successfully." << endl;
-			
+		cout << log_prefix << "search query returned successfully." << endl;
+
 		//record each query operation, including the sparql and the answer number
 		//accurate down to microseconds
 		char time_str[100];
 		struct timeval tv;
 		gettimeofday(&tv, NULL);
-		int s = tv.tv_usec/1000;
-		int y = tv.tv_usec%1000;
+		int s = tv.tv_usec / 1000;
+		int y = tv.tv_usec % 1000;
 
 		string query_start_time = Util::get_date_time() + ":" + Util::int2string(s) + "ms" + ":" + Util::int2string(y) + "microseconds";
-	
+
 		cout << "remote_ip: " << remote_ip << endl;
 
 		//filter the IP from the test server
-		if(remote_ip != TEST_IP)
+		if (remote_ip != TEST_IP)
 		{
 			Document doc;
 			doc.SetObject();
@@ -2544,158 +2575,198 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			doc.AddMember("RemoteIP", StringRef(remote_ip.c_str()), doc_allocator);
 			doc.AddMember("Sparql", StringRef(sparql.c_str()), doc_allocator);
 			doc.AddMember("AnsNum", rs.ansNum, doc_allocator);
-			string QueryTime = Util::int2string(query_time) + "ms";
-			doc.AddMember("QueryTime", StringRef(QueryTime.c_str()), doc_allocator);
+			doc.AddMember("Format", StringRef(format.c_str()), doc_allocator);
+			doc.AddMember("FileName", StringRef(filename.c_str()), doc_allocator);
+			// string QueryTime = Util::int2string(query_time) + "ms";
+			doc.AddMember("QueryTime", query_time, doc_allocator);
 			StringBuffer buffer;
 			PrettyWriter<StringBuffer> writer(buffer);
 			doc.Accept(writer);
 			writeLog(query_logfp, buffer.GetString());
 		}
 
-
 		//string log_info = Util::get_date_time() + "\n" + sparql + "\n\nanswer num: " + Util::int2string(rs.ansNum)+"\nquery time: "+Util::int2string(query_time) +" ms\n-----------------------------------------------------------\n";
-	
+
 		//to void someone downloading all the data file by sparql query on purpose and to protect the data
 		//if the ansNum too large, for example, larger than 100000, we limit the return ans.
-		if(rs.ansNum > MAX_OUTPUT_SIZE)
+		if (rs.ansNum > MAX_OUTPUT_SIZE)
 		{
-			if(rs.output_limit == -1 || rs.output_limit > MAX_OUTPUT_SIZE )
+			if (rs.output_limit == -1 || rs.output_limit > MAX_OUTPUT_SIZE)
 				rs.output_limit = MAX_OUTPUT_SIZE;
 		}
 
-    ofstream outfile;
-    string ans = "";
-    string success = "";
-    //TODO: if result is stored in Stream instead of memory?  (if out of memory to use to_str)
-    //BETTER: divide and transfer, in multiple times, getNext()
-    if (format == "json") {
-      success = rs.to_JSON();
-      Document resDoc;
-      Document::AllocatorType& allocator = resDoc.GetAllocator();
-      resDoc.Parse(success.c_str());
-      resDoc.AddMember("StatusCode", 0, allocator);
-      resDoc.AddMember("StatusMsg", "success", allocator);
-      StringBuffer resBuffer;
-      PrettyWriter<StringBuffer> resWriter(resBuffer);
-      resDoc.Accept(resWriter);
-      string resJson = resBuffer.GetString();
-	  localname = localname + "." + format;
-      filename = filename + "." + format;
-	  filename = "";
-      filename = "sparql." + format;
-      cout << log_prefix << "filename: " << filename << endl;
-     
-      *response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length();
-      *response << "\r\nCache-Control: no-cache"
-                << "\r\nPragma: no-cache"
-                << "\r\nExpires: 0";
-      *response << "\r\n\r\n" << resJson;
-      cout<<"query complete! unlock the database "<<endl;
-	  pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-	   cout<<"query complete! unlock the database successfully! "<<endl;
-	  return;
+		ofstream outfile;
+		string ans = "";
+		string success = "";
+		//TODO: if result is stored in Stream instead of memory?  (if out of memory to use to_str)
+		//BETTER: divide and transfer, in multiple times, getNext()
+		if (format == "json")
+		{
+			success = rs.to_JSON();
+			Document resDoc;
+			Document::AllocatorType &allocator = resDoc.GetAllocator();
+			resDoc.Parse(success.c_str());
+			resDoc.AddMember("StatusCode", 0, allocator);
+			resDoc.AddMember("StatusMsg", "success", allocator);
+			resDoc.AddMember("AnsNum", rs.ansNum, allocator);
+			resDoc.AddMember("OutputLimit", rs.output_limit, allocator);
+	        resDoc.AddMember("QueryTime", StringRef(Util::int2string(query_time).c_str()), allocator);
+			StringBuffer resBuffer;
+			PrettyWriter<StringBuffer> resWriter(resBuffer);
+			resDoc.Accept(resWriter);
+			string resJson = resBuffer.GetString();
+			//   localname = localname + "." + format;
+			//   filename = filename + "." + format;
+			//   filename = "";
+			//   filename = "sparql." + format;
+			//   cout << log_prefix << "filename: " << filename << endl;
+
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length();
+			*response << "\r\nCache-Control: no-cache"
+					  << "\r\nPragma: no-cache"
+					  << "\r\nExpires: 0";
+			*response << "\r\n\r\n"
+					  << resJson;
+			cout << "query complete! unlock the database " << endl;
+			pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+			cout << "query complete! unlock the database successfully! " << endl;
+			return;
 			//return true;
 			//
-	
-    } 
-	else if(format=="html")
-	{
-		success = rs.to_str();
-		localname = localname + ".txt";
-       filename = filename + ".txt";
-		outfile.open(localname);
-      outfile << success;
-      outfile.close();
-      if (rs.ansNum > 100) {
-        if (rs.output_limit == -1 || rs.output_limit > 100)
-          rs.output_limit = 100;
-      }
-      success = rs.to_JSON();
+		}
+		else if (format == "file")
+		{
+			success = rs.to_str();
+			// 	localname = localname + ".txt";
+			//    filename = filename + ".txt";
+			outfile.open(localname);
+			outfile << success;
+			outfile.close();
 
-      Document resDoc;
-      Document::AllocatorType& allocator = resDoc.GetAllocator();
-      resDoc.Parse(success.c_str());
-      resDoc.AddMember("StatusCode", 0, allocator);
-      resDoc.AddMember("StatusMsg", "success", allocator);
-      resDoc.AddMember("AnsNum", rs.ansNum, allocator);
-      string QueryTime = Util::int2string(query_time) + "ms";
-      resDoc.AddMember("QueryTime", StringRef(QueryTime.c_str()), allocator);
-      resDoc.AddMember("Filename", StringRef(filename.c_str()), allocator);
+			StringBuffer s;
+			PrettyWriter<StringBuffer> writer(s);
+			writer.StartObject();
+			writer.Key("StatusCode");
+			writer.Uint(0);
+			writer.Key("StatusMsg");
+			writer.String(StringRef("success"));
+			writer.Key("AnsNum");
+			writer.Uint(rs.ansNum);
+			writer.Key("OutputLimit");
+			writer.Uint(rs.output_limit);
+			
+			writer.Key("QueryTime");
+			writer.String(StringRef(Util::int2string(query_time).c_str()));
+			writer.Key("FileName");
+			writer.String(StringRef(filename.c_str()));
+			writer.EndObject();
+			string resJson = s.GetString();
 
-      StringBuffer resBuffer;
-      PrettyWriter<StringBuffer> resWriter(resBuffer);
-      resDoc.Accept(resWriter);
-      string resJson = resBuffer.GetString();
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length();
+			*response << "\r\nCache-Control: no-cache"
+					  << "\r\nPragma: no-cache"
+					  << "\r\nExpires: 0";
+			*response << "\r\n\r\n"
+					  << resJson;
 
-      *response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length();
-      *response << "\r\nCache-Control: no-cache"
-                << "\r\nPragma: no-cache"
-                << "\r\nExpires: 0";
-      *response << "\r\n\r\n" << resJson;
-
-      //!Notice: remember to set no-cache in the response of query, Firefox and chrome works well even if you don't set, but IE will act strange if you don't set
-      //beacause IE will defaultly cache the query result after first query request, so the following query request of the same url will not be send if the result in cache isn't expired.
-      //then the following query will show the same result without sending a request to let the service run query
-      //so the download function will go wrong because there is no file in the service.
-      //*response << "HTTP/1.1 200 OK\r\nContent-Length: " << query_time_s.length()+ansNum_s.length()+filename.length()+success.length()+4;
-      //*response << "\r\nContent-Type: text/plain";
-      //*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
-      //*response  << "\r\n\r\n" << "0+" << query_time_s<< '+' << rs.ansNum << '+' << filename << '+' << success;
-      pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-      //return true;
-      return;
-	}
-	else if (format == "sparql-results+json") {
+			//!Notice: remember to set no-cache in the response of query, Firefox and chrome works well even if you don't set, but IE will act strange if you don't set
+			//beacause IE will defaultly cache the query result after first query request, so the following query request of the same url will not be send if the result in cache isn't expired.
+			//then the following query will show the same result without sending a request to let the service run query
+			//so the download function will go wrong because there is no file in the service.
+			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << query_time_s.length()+ansNum_s.length()+filename.length()+success.length()+4;
+			//*response << "\r\nContent-Type: text/plain";
+			//*response << "\r\nCache-Control: no-cache" << "\r\nPragma: no-cache" << "\r\nExpires: 0";
+			//*response  << "\r\n\r\n" << "0+" << query_time_s<< '+' << rs.ansNum << '+' << filename << '+' << success;
+			pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+			//return true;
+			return;
+		}
+		else if (format == "json+file" || format == "file+json")
+		{
+			success = rs.to_str();
+			// 	localname = localname + ".txt";
+			//    filename = filename + ".txt";
+			outfile.open(localname);
+			outfile << success;
+			outfile.close();
+			success = rs.to_JSON();
+			Document resDoc;
+			Document::AllocatorType &allocator = resDoc.GetAllocator();
+			resDoc.Parse(success.c_str());
+			resDoc.AddMember("StatusCode", 0, allocator);
+			resDoc.AddMember("StatusMsg", "success", allocator);
+			resDoc.AddMember("AnsNum", rs.ansNum, allocator);
+			resDoc.AddMember("OutputLimit", rs.output_limit, allocator);
+	        resDoc.AddMember("QueryTime", StringRef(Util::int2string(query_time).c_str()), allocator);
 		
-      success = rs.to_JSON(); // convert the result to json
-	   *response << "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: " << success.length();
-      *response << "\r\nCache-Control: no-cache"
-                << "\r\nPragma: no-cache"
-                << "\r\nExpires: 0";
-      *response << "\r\n\r\n" << success; // success contains the json-encoded result
+			resDoc.AddMember("FileName", StringRef(filename.c_str()), allocator);
+			StringBuffer resBuffer;
+			PrettyWriter<StringBuffer> resWriter(resBuffer);
+			resDoc.Accept(resWriter);
+			string resJson = resBuffer.GetString();
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length();
+			*response << "\r\nCache-Control: no-cache"
+					  << "\r\nPragma: no-cache"
+					  << "\r\nExpires: 0";
+			*response << "\r\n\r\n"
+					  << resJson;
+			cout << "query complete! unlock the database " << endl;
+			pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+			cout << "query complete! unlock the database successfully! " << endl;
+			return;
+		}
+		else if (format == "sparql-results+json")
+		{
 
-      pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-	  return;
-    }
-	else
-	{
-		 localname = localname + ".txt";
-        filename = filename + ".txt";
-		 cout << log_prefix << "filename: " << filename << endl;
-		 filename = "";
-		  success = rs.to_str();
-      filename = "sparql.txt";
-      cout << log_prefix << "filename: " << filename << endl;
-      *response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length();
-      *response << "\r\nContent-Type: application/octet-stream";
-      *response << "\r\nContent-Disposition: attachment; filename=\"" << filename << '"';
-      *response << "\r\n\r\n" << success;
+			success = rs.to_JSON(); // convert the result to json
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: " << success.length();
+			*response << "\r\nCache-Control: no-cache"
+					  << "\r\nPragma: no-cache"
+					  << "\r\nExpires: 0";
+			*response << "\r\n\r\n"
+					  << success; // success contains the json-encoded result
 
-	  pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-	   return;
+			pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+			return;
+		}
+		else
+		{
+			localname = localname + ".txt";
+			filename = filename + ".txt";
+			cout << log_prefix << "filename: " << filename << endl;
+			filename = "";
+			success = rs.to_str();
+			filename = "sparql.txt";
+			cout << log_prefix << "filename: " << filename << endl;
+			*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length();
+			*response << "\r\nContent-Type: application/octet-stream";
+			*response << "\r\nContent-Disposition: attachment; filename=\"" << filename << '"';
+			*response << "\r\n\r\n"
+					  << success;
+
+			pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+			return;
 			//return true;
 			//
-		
-	}
-	
+		}
 	}
 	else
 	{
 		string error = "";
 		int error_code;
-		if(update)
+		if (update)
 		{
-			cout <<log_prefix<< "update query returned correctly." << endl;
+			cout << log_prefix << "update query returned correctly." << endl;
 			error = "update query returns true.";
 			error_code = 0;
 		}
 		else
 		{
-			cout <<log_prefix<< "search query returned error." << endl;
+			cout << log_prefix << "search query returned error." << endl;
 			error = "search query returns false.";
 			error_code = 1005;
 		}
-		sendResponseMsg(error_code,error,response);
+		sendResponseMsg(error_code, error, response);
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 		//return false;

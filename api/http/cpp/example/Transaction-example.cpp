@@ -2,13 +2,12 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-#include "client.h"
+#include "GstoreConnector.h"
 
 using namespace std;
 
 int main(int argc, char* argv[])
 {
-	const string func = "GET";
 	std::string IP = "127.0.0.1";
 	int Port = 9000;
 	std::string username = "root";
@@ -24,16 +23,16 @@ int main(int argc, char* argv[])
 
 	GstoreConnector gc(IP, Port, username, password);
 
-
-	std::string res = gc.build("lubm", "data/lubm/lubm.nt", func);
+	// build a database with a RDF graph
+	std::string res = gc.build("lubm", "data/lubm/lubm.nt");
 	cout << res << endl;
 
 	// load the database
-	res = gc.load("lubm", func);
+	res = gc.load("lubm");
 	cout << res << endl;
 
 	//test 1
-	res = gc.begin("lubm", func);
+	res = gc.begin("lubm", "1");
 	cout << res << endl;
 
 	res = gc.query("lubm", "json", query);
@@ -45,14 +44,14 @@ int main(int argc, char* argv[])
 	res = gc.query("lubm", "json", query);
 	cout << res << endl;
 
-	res = gc.commit("lubm", "", func);
+	res = gc.commit("lubm", "");
 	cout << res << endl;
 
 	res = gc.query("lubm", "json", remove);
 	cout << res << endl;
 
 	//test2
-	res = gc.begin("lubm", func);
+	res = gc.begin("lubm", "1");
 	cout << res << endl;
 
 	res = gc.query("lubm", "json", query);
@@ -64,7 +63,7 @@ int main(int argc, char* argv[])
 	res = gc.query("lubm", "json", query);
 	cout << res << endl;
 
-	res = gc.rollback("lubm", "", func);
+	res = gc.rollback("lubm", "");
 	cout << res << endl;
 
 	res = gc.query("lubm", "json", remove);
@@ -120,7 +119,7 @@ int main(int argc, char* argv[])
 	cout << res << endl;
 
 	//transaction log
-	res = gc.getTransLog(func);
+	res = gc.getTransLog();
 	cout << res << endl;
 
 	return 0;

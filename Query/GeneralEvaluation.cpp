@@ -158,10 +158,16 @@ bool GeneralEvaluation::parseQuery(const string &_query)
 		printf("%s\n", e);
 		return false;
 	}
+	catch(const runtime_error& e2)
+	{
+		//cout<<"catch the runtime error"<<endl;
+		throw runtime_error(e2.what());
+		return false;
+	}
 	catch (...)
 	{
 		cout<<"GeneralEvaluation::parseQuery "<<" catch some error."<<endl;
-		
+		throw  runtime_error("Some syntax errors in sparql");
 		return false;
 	}
 

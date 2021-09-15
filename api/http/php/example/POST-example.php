@@ -27,12 +27,8 @@ echo $res . PHP_EOL;
 $res = $gc->load("lubm", "POST");
 echo $res . PHP_EOL;
 
-// to add, delete a user or modify the privilege of a user, operation must be done by the root user
-//$res = $gc->user("add_user", "user1", "111111", "POST");
-//echo $res . PHP_EOL;
-
 // show all users
-$res = $gc->showUser("POST");
+$res = $gc->showuser("POST");
 echo $res. PHP_EOL;
 
 // query
@@ -67,11 +63,6 @@ $res = $gc->drop("lubm", false, "POST"); #delete the database directly
 //$res = $gc->drop("lubm", true, "POST"); #leave a backup
 echo $res. PHP_EOL;
 
-// get CoreVersion and APIVersion
-$res = $gc->getCoreVersion("POST");
-echo $res. PHP_EOL;
-$res = $gc->getAPIVersion("POST");
-echo $res. PHP_EOL;
 ?>
 
 

@@ -1,8 +1,8 @@
-/*
-* Operation.cpp
-*
-*  Created on: 2014-10-16
-*      Author: hanshuo
+/**
+* @file  Operation.cpp
+* @author  suxunbin
+* @date  10-AUG-2021
+* @brief  an operation class used to store a command and its parameter list
 */
 
 #include "Operation.h"
@@ -12,16 +12,8 @@ Operation::Operation()
 	this->command = CMD_OTHER;
 }
 
-Operation::Operation(CommandType _cmd, const std::vector<std::string>& _para)
+Operation::Operation(CommandType _cmd, const std::unordered_map<std::string, std::string>& _para)
 {
-	this->command = _cmd;
-	this->parameters = _para;
-}
-
-Operation::Operation(std::string _usr, std::string _pwd, CommandType _cmd, const std::vector<std::string>& _para)
-{
-	this->username = _usr;
-	this->password = _pwd;
 	this->command = _cmd;
 	this->parameters = _para;
 }
@@ -31,34 +23,17 @@ Operation::~Operation()
 
 }
 
-Bstr Operation::encrypt()
-{
-	//TODO
-	return Bstr(NULL, 0);
-}
-
-Bstr Operation::decrypt()
-{
-	//TODO
-	return Bstr(NULL, 0);
-}
-
 CommandType Operation::getCommand()
 {
 	return this->command;
 }
 
-std::string Operation::getParameter(int _idx)
+std::string Operation::getParameter(std::string _para_name)
 {
-	if ((unsigned)_idx < this->parameters.size())
-	{
-		return this->parameters[_idx];
-	}
-	else
-	{
-		std::cerr << "beyond index error. @Operation::getParameter" << std::endl;
-		return *this->parameters.end();
-	}
+	std::unordered_map<std::string, std::string>::iterator it = this->parameters.find(_para_name);
+	if (it == this->parameters.end())
+		std::cerr << "beyond para_name error. @Operation::getParameter" << std::endl;
+	return it->second;
 }
 
 void Operation::setCommand(CommandType _cmd)
@@ -66,7 +41,7 @@ void Operation::setCommand(CommandType _cmd)
 	this->command = _cmd;
 }
 
-void Operation::setParameter(const std::vector<std::string>& _para)
+void Operation::setParameter(const std::unordered_map<std::string, std::string>& _para)
 {
 	this->parameters = _para;
 }

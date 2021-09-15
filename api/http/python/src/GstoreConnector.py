@@ -22,7 +22,7 @@ class GstoreConnector:
         else:
             self.serverIP = ip
         self.serverPort = port
-        self.Url = "http://" + self.serverIP + ":" + str(self.serverPort)
+        self.Url = "http://" + self.serverIP + ":" + str(self.serverPort) + "/"
         self.username = username
         self.password = password
    
@@ -51,8 +51,8 @@ class GstoreConnector:
         r = requests.get(self.Url + self.UrlEncode(strUrl))
         return r.text
 
-    def Post(self, strUrl, strPost):
-        r = requests.post(self.Url + self.UrlEncode(strUrl), strPost)
+    def Post(self, strPost):
+        r = requests.post(self.Url + strPost)
         return r.text
 
     def fGet(self, strUrl, filename):
@@ -62,155 +62,213 @@ class GstoreConnector:
                 fd.write(chunk)
         return
 
-    def fPost(self, strUrl, strPost, filename):
-        r = requests.post(self.Url + self.UrlEncode(strUrl), strPost, stream=True)
+    def fPost(self, strPost, filename):
+        r = requests.post(self.Url + strPost, stream=True)
         with open(filename, 'wb') as fd:
             for chunk in r.iter_content(4096):
                 fd.write(chunk)
         return
 
-    def build(self, db_name, rdf_file_path, request_type='GET'):
+    def build(self, db_name, db_path, request_type='GET'):
         if request_type == 'GET':        
-            strUrl = "/?operation=build&db_name=" + db_name + "&ds_path=" + rdf_file_path + "&username=" + self.username + "&password=" + self.password
+            strUrl = "?operation=build&db_name=" + db_name + "&db_path=" + db_path + "&username=" + self.username + "&password=" + self.password
             res = self.Get(strUrl)
         elif request_type == 'POST':        
-            strUrl = "/build"
-            strPost = '{\"db_name\": \"' + db_name + '\", \"ds_path\": \"' + rdf_file_path + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
-            res = self.Post(strUrl, strPost)
+            strPost = '{\"operation\": \"build\", \"db_name\": \"' + db_name + '\", \"db_path\": \"' + db_path + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
+            res = self.Post(strPost)
+        return res
+
+    def check(self, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=check"
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"check\"}'
+            res = self.Post(strPost)
         return res
 
     def load(self, db_name, request_type='GET'):
         if request_type == 'GET':        
-            strUrl = "/?operation=load&db_name=" + db_name + "&username=" + self.username + "&password=" + self.password
+            strUrl = "?operation=load&db_name=" + db_name + "&username=" + self.username + "&password=" + self.password
             res = self.Get(strUrl)
         elif request_type == 'POST':        
-            strUrl = "/load"
-            strPost = '{\"db_name\": \"' + db_name + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
-            res = self.Post(strUrl, strPost)
+            strPost = '{\"operation\": \"load\", \"db_name\": \"' + db_name + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
+            res = self.Post(strPost)
         return res
-    
+  
+    def monitor(self, db_name, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=monitor&db_name=" + db_name + "&username=" + self.username + "&password=" + self.password
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"monitor\", \"db_name\": \"' + db_name + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
+            res = self.Post(strPost)
+        return res
+  
     def unload(self, db_name, request_type='GET'):
         if request_type == 'GET':        
-            strUrl = "/?operation=unload&db_name=" + db_name + "&username=" + self.username + "&password=" + self.password
+            strUrl = "?operation=unload&db_name=" + db_name + "&username=" + self.username + "&password=" + self.password
             res = self.Get(strUrl)
         elif request_type == 'POST':        
-            strUrl = "/unload"
-            strPost = '{\"db_name\": \"' + db_name + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
-            res = self.Post(strUrl, strPost)             
+            strPost = '{\"operation\": \"unload\", \"db_name\": \"' + db_name + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
+            res = self.Post(strPost)
         return res
-
-    def user(self, type, username2, addition, request_type='GET'):
-        if request_type == 'GET':        
-            strUrl = "/?operation=user&type=" + type + "&username1=" + self.username + "&password1=" + self.password + "&username2=" + username2 + "&addition=" +addition
-            res = self.Get(strUrl)
-        elif request_type == 'POST':        
-            strUrl = "/user"
-            strPost = '{\"type\": \"' + type + '\", \"username1\": \"' + self.username + '\", \"password1\": \"' + self.password + '\", \"username2\": \"' + username2 + '\", \"addition\": \"' + addition + '\"}'
-            res = self.Post(strUrl, strPost)
-        return res
-
-    def showUser(self, request_type='GET'):
-        if request_type == 'GET':        
-            strUrl = "/?operation=showUser&username=" + self.username + "&password=" + self.password
-            res = self.Get(strUrl)
-        elif request_type == 'POST':        
-            strUrl = "/showUser"
-            strPost = '{\"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
-            res = self.Post(strUrl, strPost)
-        return res
-
-    def query(self, db_name, format, sparql, request_type='GET'):
-        if request_type == 'GET':        
-            strUrl = "/?operation=query&username=" + self.username + "&password=" + self.password + "&db_name=" + db_name + "&format=" + format + "&sparql=" + sparql
-            res = self.Get(strUrl)
-        elif request_type == 'POST':        
-            strUrl = "/query"
-            strPost = '{\"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"db_name\": \"' + db_name + '\", \"format\": \"' + format + '\", \"sparql\": \"' + sparql + '\"}'
-            res = self.Post(strUrl, strPost)
-        return res
-
-    def fquery(self, db_name, format, sparql, filename, request_type='GET'):
-        if request_type == 'GET':        
-            strUrl = "/?operation=query&username=" + self.username + "&password=" + self.password + "&db_name=" + db_name + "&format=" + format + "&sparql=" + sparql
-            self.fGet(strUrl, filename)
-        elif request_type == 'POST':        
-            strUrl = "/query"
-            strPost = '{\"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"db_name\": \"' + db_name + '\", \"format\": \"' + format + '\", \"sparql\": \"' + sparql + '\"}'
-            self.fPost(strUrl, strPost, filename)
-        return
 
     def drop(self, db_name, is_backup, request_type='GET'):
         if request_type == 'GET':      
             if is_backup:  
-                strUrl = "/?operation=drop&db_name=" + db_name + "&username=" + self.username + "&password=" + self.password + "&is_backup=true"
+                strUrl = "?operation=drop&db_name=" + db_name + "&username=" + self.username + "&password=" + self.password + "&is_backup=true"
             else:  
-                strUrl = "/?operation=drop&db_name=" + db_name + "&username=" + self.username + "&password=" + self.password + "&is_backup=false"
+                strUrl = "?operation=drop&db_name=" + db_name + "&username=" + self.username + "&password=" + self.password + "&is_backup=false"
             res = self.Get(strUrl)
         elif request_type == 'POST':        
-            strUrl = "/drop"
             if is_backup: 
-                strPost = '{\"db_name\": \"' + db_name + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"is_backup\": \"true\"}'
+                strPost = '{\"operation\": \"drop\", \"db_name\": \"' + db_name + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"is_backup\": \"true\"}'
             else: 
-                strPost = '{\"db_name\": \"' + db_name + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"is_backup\": \"false\"}'
-            res = self.Post(strUrl, strPost)
-        return res
-
-    def monitor(self, db_name, request_type='GET'):    
-        if request_type == 'GET':        
-            strUrl = "/?operation=monitor&db_name=" + db_name + "&username=" + self.username + "&password=" + self.password
-            res = self.Get(strUrl)
-        elif request_type == 'POST':        
-            strUrl = "/monitor"
-            strPost = '{\"db_name\": \"' + db_name + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
-            res = self.Post(strUrl, strPost)
-        return res
-
-    def checkpoint(self, db_name, request_type='GET'):    
-        if request_type == 'GET':        
-            strUrl = "/?operation=checkpoint&db_name=" + db_name + "&username=" + self.username + "&password=" + self.password
-            res = self.Get(strUrl)
-        elif request_type == 'POST':        
-            strUrl = "/checkpoint"
-            strPost = '{\"db_name\": \"' + db_name + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
-            res = self.Post(strUrl, strPost)
+                strPost = '{\"operation\": \"drop\", \"db_name\": \"' + db_name + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"is_backup\": \"false\"}'
+            res = self.Post(strPost)
         return res
 
     def show(self, request_type='GET'):
         if request_type == 'GET':        
-            strUrl = "/?operation=show&username=" + self.username + "&password=" + self.password
+            strUrl = "?operation=show&username=" + self.username + "&password=" + self.password
             res = self.Get(strUrl)
         elif request_type == 'POST':        
-            strUrl = "/show"
-            strPost = '{\"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
-            res = self.Post(strUrl, strPost)
+            strPost = '{\"operation\": \"show\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
+            res = self.Post(strPost)
         return res
 
-    def getCoreVersion(self, request_type='GET'):
+    def usermanage(self, type, op_username, op_password, request_type='GET'):
         if request_type == 'GET':        
-            strUrl = "/?operation=getCoreVersion&username=" + self.username + "&password=" + self.password
+            strUrl = "?operation=usermanage&type=" + type + "&username=" + self.username + "&password=" + self.password + "&op_username=" + op_username + "&op_password=" + op_password
             res = self.Get(strUrl)
         elif request_type == 'POST':        
-            strUrl = "/getCoreVersion"
-            strPost = '{\"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
-            res = self.Post(strUrl, strPost)
+            strPost = '{\"operation\": \"usermanage\", \"type\": \"' + type + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"op_username\": \"' + op_username + '\", \"op_password\": \"' + op_password + '\"}'
+            res = self.Post(strPost)
         return res
 
-    def getAPIVersion(self, request_type='GET'):
+    def showuser(self, request_type='GET'):
         if request_type == 'GET':        
-            strUrl = "/?operation=getAPIVersion&username=" + self.username + "&password=" + self.password
+            strUrl = "?operation=showuser&username=" + self.username + "&password=" + self.password
             res = self.Get(strUrl)
         elif request_type == 'POST':        
-            strUrl = "/getAPIVersion"
-            strPost = '{\"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
-            res = self.Post(strUrl, strPost)
+            strPost = '{\"operation\": \"showuser\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
+            res = self.Post(strPost)
         return res
 
-    def exportDB(self, db_name, dir_path, request_type='GET'):
+    def userprivilegemanage(self, type, op_username, privileges, db_name, request_type='GET'):
         if request_type == 'GET':        
-            strUrl = "/?operation=export&db_name=" + db_name + "&ds_path=" + dir_path + "&username=" + self.username + "&password=" + self.password
+            strUrl = "?operation=userprivilegemanage&type=" + type + "&username=" + self.username + "&password=" + self.password + "&op_username=" + op_username + "&privileges=" + privileges + "&db_name=" + db_name
             res = self.Get(strUrl)
         elif request_type == 'POST':        
-            strUrl = "/export"
-            strPost = '{\"db_name\": \"' + db_name + '\", \"ds_path\": \"' + dir_path + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
-            res = self.Post(strUrl, strPost)
+            strPost = '{\"operation\": \"userprivilegemanage\", \"type\": \"' + type + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"op_username\": \"' + op_username + '\", \"privileges\": \"' + privileges + '\", \"db_name\": \"' + db_name + '\"}'
+            res = self.Post(strPost)
+        return res
+
+    def backup(self, db_name, backup_path, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=backup&username=" + self.username + "&password=" + self.password + "&db_name=" + db_name + "&backup_path=" + backup_path
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"backup\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"db_name\": \"' + db_name + '\", \"backup_path\": \"' + backup_path + '\"}'
+            res = self.Post(strPost)
+        return res
+
+    def restore(self, db_name, backup_path, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=restore&username=" + self.username + "&password=" + self.password + "&db_name=" + db_name + "&backup_path=" + backup_path
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"restore\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"db_name\": \"' + db_name + '\", \"backup_path\": \"' + backup_path + '\"}'
+            res = self.Post(strPost)
+        return res
+
+    def query(self, db_name, format, sparql, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=query&username=" + self.username + "&password=" + self.password + "&db_name=" + db_name + "&format=" + format + "&sparql=" + sparql
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"query\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"db_name\": \"' + db_name + '\", \"format\": \"' + format + '\", \"sparql\": \"' + sparql + '\"}'
+            res = self.Post(strPost)
+        return res
+
+    def fquery(self, db_name, format, sparql, filename, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=query&username=" + self.username + "&password=" + self.password + "&db_name=" + db_name + "&format=" + format + "&sparql=" + sparql
+            self.fGet(strUrl, filename)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"query\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"db_name\": \"' + db_name + '\", \"format\": \"' + format + '\", \"sparql\": \"' + sparql + '\"}'
+            self.fPost(strPost, filename)
+        return
+
+    def exportDB(self, db_name, db_path, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=export&username=" + self.username + "&password=" + self.password + "&db_name=" + db_name + "&db_path=" + db_path
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"export\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"db_name\": \"' + db_name + '\", \"db_path\": \"' + db_path + '\"}'
+            res = self.Post(strPost)
+        return res
+
+    def login(self, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=login&username=" + self.username + "&password=" + self.password
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"login\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
+            res = self.Post(strPost)
+        return res
+
+    def begin(self, db_name, isolevel, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=begin&username=" + self.username + "&password=" + self.password + "&db_name=" + db_name + "&isolevel=" + isolevel
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"begin\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"db_name\": \"' + db_name + '\", \"isolevel\": \"' + isolevel + '\"}'
+            res = self.Post(strPost)
+        return res
+
+    def tquery(self, db_name, tid, sparql, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=tquery&username=" + self.username + "&password=" + self.password + "&db_name=" + db_name + "&tid=" + tid + "&sparql=" + sparql
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"tquery\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"db_name\": \"' + db_name + '\", \"tid\": \"' + tid + '\", \"sparql\": \"' + sparql + '\"}'
+            res = self.Post(strPost)
+        return res
+
+    def commit(self, db_name, tid, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=commit&username=" + self.username + "&password=" + self.password + "&db_name=" + db_name + "&tid=" + tid
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"commit\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"db_name\": \"' + db_name + '\", \"tid\": \"' + tid + '\"}'
+            res = self.Post(strPost)
+        return res
+
+    def rollback(self, db_name, tid, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=rollback&username=" + self.username + "&password=" + self.password + "&db_name=" + db_name + "&tid=" + tid
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"rollback\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"db_name\": \"' + db_name + '\", \"tid\": \"' + tid + '\"}'
+            res = self.Post(strPost)
+        return res
+
+    def getTransLog(self, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=txnlog&username=" + self.username + "&password=" + self.password
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"txnlog\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
+            res = self.Post(strPost)
+        return res
+        
+    def checkpoint(self, db_name, request_type='GET'):
+        if request_type == 'GET':        
+            strUrl = "?operation=checkpoint&username=" + self.username + "&password=" + self.password + "&db_name=" + db_name
+            res = self.Get(strUrl)
+        elif request_type == 'POST':        
+            strPost = '{\"operation\": \"checkpoint\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\", \"db_name\": \"' + db_name + '\"}'
+            res = self.Post(strPost)
         return res
