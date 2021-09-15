@@ -8,6 +8,7 @@
 
 #include "Database.h"
 
+using namespace rapidjson;
 using namespace std;
 
 Database::Database()
@@ -1711,7 +1712,25 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	long tv_begin = Util::get_cur_time();
 
 	//this->query_parse_lock.lock();
-	bool parse_ret = general_evaluation.parseQuery(_query);
+	bool parse_ret=false;
+	try
+	{
+		/* code */
+		parse_ret = general_evaluation.parseQuery(_query);
+	}
+	catch(const std::runtime_error& e2)
+	{
+		cout<<"catch run_time error exception"<<endl;
+		throw std::runtime_error(e2.what());
+		std::cerr<<e2.what()<<"\n";
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+	
+	
+	
 	//this->query_parse_lock.unlock();
 	if (!parse_ret)
 		return -101;
@@ -1940,6 +1959,64 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 //Or we can consider divide entity and literal totally
 //In distributed gStore, each machine's graph should be based on unique encoding IDs,
 //and require that triples in each graph no more than a limit(maybe 10^9)
+
+bool
+Database::build(const string& _rdf_file, Socket& socket)
+{
+	this->resetIDinfo();
+
+	string ret = Util::getExactPath(_rdf_file.c_str());
+	long tv_build_begin = Util::get_cur_time();
+
+	Util::create_dir(this->store_path);
+
+	string kv_store_path = store_path + "/kv_store";
+	Util::create_dir(kv_store_path);
+
+	string stringindex_store_path = store_path + "/stringindex_store";
+	Util::create_dir(stringindex_store_path);
+
+	string update_log_path = this->store_path + '/' + this->update_log;
+	Util::create_file(update_log_path);
+	string update_log_since_backup = this->store_path + '/' + this->update_log_since_backup;
+	Util::create_file(update_log_since_backup);
+
+	string error_log = this->store_path + "/parse_error.log";
+	Util::create_file(error_log);
+
+	string msg = "begin encode RDF from : " + ret + " ...\n";
+	cout << msg;
+	string resJson = CreateJson(1, "building", msg);
+	socket.send(resJson);
+
+	if (!this->encodeRDF_new(ret, error_log))
+	{
+		return false;
+	}
+	msg = "finish encode.\n";
+	cout << msg;
+	resJson = CreateJson(1, "building", msg);
+	socket.send(resJson);
+
+	delete this->kvstore;
+	this->kvstore = NULL;
+
+	long tv_build_end = Util::get_cur_time();
+
+	msg = "after build, used " + to_string(tv_build_end - tv_build_begin) + "ms.\n";
+	msg = msg + "finish build VS-Tree.\n";
+	msg = msg + "finish sub2id pre2id obj2id\n";
+	msg = msg + "tripleNum is " + to_string(this->triples_num) + "\n";
+	msg = msg + "entityNum is " + to_string(this->entity_num) + "\n";
+	msg = msg + "preNum is " + to_string(this->pre_num) + "\n";
+	msg = msg + "literalNum is " + to_string(this->literal_num) + "\n";
+	cout << msg;
+	resJson = CreateJson(1, "building", msg);
+	socket.send(resJson);
+
+	return true;
+}
+
 bool
 Database::build(const string& _rdf_file)
 {
@@ -6201,4 +6278,21 @@ Database::TransactionCommit(shared_ptr<Transaction> txn)
 	// 	cerr << "WARNING: not all lockes get unlocked! " << endl;
 	// 	cerr << "Please REBOOT service!" << endl;
 	// }
+}
+
+std::string
+Database::CreateJson(int StatusCode, std::string StatusMsg, std::string ResponseBody)
+{
+	StringBuffer s;
+	PrettyWriter<StringBuffer> writer(s);
+	writer.StartObject();
+	writer.Key("ResponseBody");
+	writer.String(StringRef(ResponseBody.c_str()));
+	writer.Key("StatusCode");
+	writer.Uint(StatusCode);
+	writer.Key("StatusMsg");
+	writer.String(StringRef(StatusMsg.c_str()));
+	writer.EndObject();
+	std::string res = s.GetString();
+	return res;
 }

@@ -1,30 +1,29 @@
-/*=================================================================================
-# Filename: gserver.cpp
-# Author: Bookug Lobert
-# Mail: 1181955272@qq.com
-# Last Modified: 2016-02-26 19:15
-# Description: first written by hanshuo, modified by zengli, improved by Wang Libo
-=================================================================================*/
+/**
+* @file  gserver.cpp
+* @author  suxunbin
+* @date  13-AUG-2021
+* @brief  a gStore socket server
+*/
 
 #include "../Server/Server.h"
 #include "../Util/Util.h"
 
+using namespace rapidjson;
 using namespace std;
 
-//#define GSERVER_PORT_FILE "bin/.gserver_port"
-//#define GSERVER_PORT_SWAP "bin/.gserver_port.swap"
 //#define GSERVER_LOG "logs/gserver.log"
 
 bool isOnlyProcess(const char* argv0);
 void checkSwap();
 bool startServer(bool _debug);
 bool stopServer();
+int parseJson(std::string strJson);
 
 int main(int argc, char* argv[])
 {
-//#ifdef DEBUG
+	//#ifdef DEBUG
 	Util util;
-//#endif
+	//#endif
 
 	string mode;
 	if (argc == 1) {
@@ -71,7 +70,6 @@ int main(int argc, char* argv[])
 			}
 		}
 		if (!isOnlyProcess(argv[0])) {
-			//ofstream out(GSERVER_PORT_SWAP, ios::out);
 			ofstream out(Util::gserver_port_swap.c_str());
 			if (!out) {
 				cerr << "Failed to change port!" << endl;
@@ -82,7 +80,6 @@ int main(int argc, char* argv[])
 			cout << "Port will be changed to " << port << " after the current server stops or restarts." << endl;
 			return 0;
 		}
-		//ofstream out(GSERVER_PORT_FILE, ios::out);
 		ofstream out(Util::gserver_port_file.c_str());
 		if (!out) {
 			cerr << "Failed to change port!" << endl;
@@ -149,7 +146,6 @@ int main(int argc, char* argv[])
 
 	else if (mode == "-P" || mode == "--printport") {
 		unsigned short port = Socket::DEFAULT_CONNECT_PORT;
-		//ifstream in(GSERVER_PORT_FILE);
 		ifstream in(Util::gserver_port_file.c_str());
 		if (in) {
 			in >> port;
@@ -157,7 +153,6 @@ int main(int argc, char* argv[])
 		}
 		cout << "Current connection port is " << port << '.' << endl;
 		unsigned short portSwap = 0;
-		//ifstream inSwap(GSERVER_PORT_SWAP);
 		ifstream inSwap(Util::gserver_port_swap.c_str());
 		if (inSwap) {
 			inSwap >> portSwap;
@@ -189,11 +184,9 @@ bool isOnlyProcess(const char* argv0) {
 }
 
 void checkSwap() {
-	//if (access(GSERVER_PORT_SWAP, 00) != 0) {
 	if (access(Util::gserver_port_swap.c_str(), 00) != 0) {
 		return;
 	}
-	//ifstream in(GSERVER_PORT_SWAP, ios::in);
 	ifstream in(Util::gserver_port_swap.c_str());
 	if (!in) {
 		cerr << "Failed in checkSwap(), port may not be changed." << endl;
@@ -202,7 +195,6 @@ void checkSwap() {
 	unsigned short port;
 	in >> port;
 	in.close();
-	//ofstream out(GSERVER_PORT_FILE, ios::out);
 	ofstream out(Util::gserver_port_file.c_str());
 	if (!out) {
 		cerr << "Failed in checkSwap(), port may not be changed." << endl;
@@ -210,24 +202,19 @@ void checkSwap() {
 	}
 	out << port;
 	out.close();
-	//chmod(GSERVER_PORT_FILE, 0644);
 	chmod(Util::gserver_port_file.c_str(), 0644);
-	//string cmd = string("rm ") + GSERVER_PORT_SWAP;
 	string cmd = string("rm ") + Util::gserver_port_swap;
 	system(cmd.c_str());
 }
 
 bool startServer(bool _debug) {
 	unsigned short port = Socket::DEFAULT_CONNECT_PORT;
-	//ifstream in(GSERVER_PORT_FILE, ios::in);
 	ifstream in(Util::gserver_port_file.c_str());
 	if (!in) {
-		//ofstream out(GSERVER_PORT_FILE, ios::out);
 		ofstream out(Util::gserver_port_file.c_str());
 		if (out) {
 			out << port;
 			out.close();
-			//chmod(GSERVER_PORT_FILE, 0644);
 			chmod(Util::gserver_port_file.c_str(), 0644);
 		}
 	}
@@ -244,6 +231,7 @@ bool startServer(bool _debug) {
 		}
 		cout << Util::getTimeString() << "Server started at port " << port << '.' << endl;
 		server.listen();
+		server.deleteConnection();
 		return true;
 	}
 
@@ -271,6 +259,7 @@ bool startServer(bool _debug) {
 				}
 				cout << Util::getTimeString() << "Server started at port " << port << '.' << endl;
 				server.listen();
+				server.deleteConnection();
 				exit(0);
 				return true;
 			}
@@ -307,22 +296,42 @@ bool startServer(bool _debug) {
 }
 
 bool stopServer() {
+	/**
+	* @brief Read the server port.
+	*/
 	unsigned short port = Socket::DEFAULT_CONNECT_PORT;
-	//ifstream in(GSERVER_PORT_FILE, ios::in);
 	ifstream in(Util::gserver_port_file.c_str());
 	if (in) {
 		in >> port;
 		in.close();
 	}
+
+	/**
+	* @brief Login the server using the root user.
+	*/
 	Socket socket;
-	if (!socket.create() || !socket.connect("127.0.0.1", port) || !socket.send("stop")) {
+	std::string cmd = "{\"op\":\"login\",\"username\":\"root\",\"password\":\"123456\"}";
+	if (!socket.create() || !socket.connect("127.0.0.1", port) || !socket.send(cmd)) {
 		cerr << "Failed to stop server at port " << port << '.' << endl;
 		return false;
 	}
-	string recv_msg;
+	std::string recv_msg;
+	socket.recv(recv_msg);
+
+	/**
+	* @brief Stop the server.
+	*/
+	cmd = "{\"op\":\"stop\"}";
+	if (!socket.send(cmd)) {
+		cerr << "Failed to stop server at port " << port << '.' << endl;
+		return false;
+	}
 	socket.recv(recv_msg);
 	socket.close();
-	if (recv_msg != "server stopped.") {
+
+	int StatusCode = parseJson(recv_msg);
+
+	if (StatusCode != 0) {
 		cerr << "Failed to stop server at port " << port << '.' << endl;
 		return false;
 	}
@@ -331,3 +340,11 @@ bool stopServer() {
 	return true;
 }
 
+int parseJson(std::string strJson)
+{
+	Document document;
+	document.Parse(strJson.c_str());
+	Value& p = document["StatusCode"];
+	int StatusCode = p.GetInt();
+	return StatusCode;
+}

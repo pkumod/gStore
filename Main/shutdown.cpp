@@ -6,7 +6,7 @@
 # Description: used to stop the ghttp server
 =============================================================================*/
 
-#include "../api/http/cpp/client.h"
+#include "../api/http/cpp/src/GstoreConnector.h"
 #include "../Util/Util.h"
 
 using namespace std;

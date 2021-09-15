@@ -24,6 +24,7 @@
 #include "../Parser/SPARQL/SPARQLParser.h"
 #include "../Query/QueryCache.h"
 #include "../Query/GeneralEvaluation.h"
+#include "../Server/Socket.h"
 #include "CSR.h"
 
 class Database
@@ -58,6 +59,7 @@ public:
 	//2. assign new tuple_id to tuple, if predicate or object doesn't exist before too;
 	//3. if subject exist, update SigEntry, and update spo, ops... etc. if needed
 
+	bool build(const string& _rdf_file, Socket& socket);
 	bool build(const string& _rdf_file);
 	//interfaces to insert/delete from given rdf file
 	bool insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
@@ -106,6 +108,7 @@ public:
 	void TransactionRollback(shared_ptr<Transaction> txn);
 	void TransactionCommit(shared_ptr<Transaction> txn);
 	void VersionClean(vector<unsigned> &sub_ids ,vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned> &pre_ids);
+	std::string CreateJson(int StatusCode, std::string StatusMsg, std::string ResponseBody);
 private:
 	string name;
 	string store_path;

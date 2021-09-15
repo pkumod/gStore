@@ -1,7 +1,7 @@
 /*
 # Filename: GstoreConnector.java
 # Author: suxunbin
-# Last Modified: 2019-5-16 21:00
+# Last Modified: 2021-07-21 17:00
 # Description: http api for java
 */
 package jgsc;
@@ -34,16 +34,13 @@ public class GstoreConnector {
 		    this.serverIP = _ip;
 		}
         this.serverPort = _port;
-		this.Url = "http://" + this.serverIP + ":" + this.serverPort;
+		this.Url = "http://" + this.serverIP + ":" + this.serverPort + "/";
 		this.username = _user;
 		this.password = _passwd;
     }
 
-	//PERFORMANCE: what if the query result is too large?  receive and save to file directly at once
-	//In addition, set the -Xmx larger(maybe in scale of Gs) if the query result could be very large, 
-	//this may help to reduce the GC cost
     public String sendGet(String strUrl) {
-        StringBuffer result = new StringBuffer();
+		StringBuffer result = new StringBuffer();
         BufferedReader in = null;
 
 		try {
@@ -54,7 +51,7 @@ public class GstoreConnector {
 		}
 
         try {
-		    strUrl = this.Url + "/" + strUrl;
+		    strUrl = this.Url + strUrl;
             URL realUrl = new URL(strUrl);
 
             // open the connection with the URL
@@ -95,7 +92,8 @@ public class GstoreConnector {
         return result.toString();
     }
 
-    public String sendPost(String strUrl, String strPost) {
+    public String sendPost(String strPost) {
+	    String strUrl = "";
 	    PrintWriter out = null;
         StringBuffer result = new StringBuffer();
         BufferedReader in = null;
@@ -108,7 +106,7 @@ public class GstoreConnector {
 		}
 
         try {
-		    strUrl = this.Url + "/" + strUrl;
+		    strUrl = this.Url;
             URL realUrl = new URL(strUrl);
 
             // open the connection with the URL
@@ -174,7 +172,7 @@ public class GstoreConnector {
         }
 
         try {
-		    strUrl = this.Url + "/" + strUrl;
+		    strUrl = this.Url + strUrl;
             URL realUrl = new URL(strUrl);
 
             // open the connection with the URL
@@ -221,8 +219,9 @@ public class GstoreConnector {
         return;
     }
 
-    public void sendPost(String strUrl, String strPost, String filename) {
-	    PrintWriter out = null;
+    public void sendPost(String strPost, String filename) {
+	    String strUrl = "";
+		PrintWriter out = null;
         BufferedReader in = null;      
 
         if (filename == null)
@@ -242,7 +241,7 @@ public class GstoreConnector {
         }
 
         try {
-		    strUrl = this.Url + "/" + strUrl;
+		    strUrl = this.Url;
             URL realUrl = new URL(strUrl);
 
             // open the connection with the URL
@@ -295,22 +294,39 @@ public class GstoreConnector {
         return;
     }
 
-    public String build(String db_name, String rdf_file_path, String request_type) {
+    public String build(String db_name, String db_path, String request_type) {
 	    String res = "";
         if (request_type.equals("GET")) {
-            String strUrl = "?operation=build&db_name=" + db_name + "&ds_path=" + rdf_file_path + "&username=" + this.username + "&password=" + this.password;
+            String strUrl = "?operation=build&db_name=" + db_name + "&db_path=" + db_path + "&username=" + this.username + "&password=" + this.password;
             res = this.sendGet(strUrl);
 		}
         else if (request_type.equals("POST")) {
-		    String strUrl = "build";
-			String strPost = "{\"db_name\": \"" + db_name + "\", \"ds_path\": \"" + rdf_file_path + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strUrl, strPost);
+			String strPost = "{\"operation\": \"build\", \"db_name\": \"" + db_name + "\", \"db_path\": \"" + db_path + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strPost);
         }
         return res;
     }
 
-    public String build(String db_name, String rdf_file_path) {
-	    String res = this.build(db_name, rdf_file_path, "GET");
+    public String build(String db_name, String db_path) {
+	    String res = this.build(db_name, db_path, "GET");
+        return res;
+    }
+
+    public String check(String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=check";
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"check\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String check() {
+	    String res = this.check("GET");
         return res;
     }
 
@@ -321,15 +337,32 @@ public class GstoreConnector {
             res = this.sendGet(strUrl);
 		}
         else if (request_type.equals("POST")) {
-		    String strUrl = "load";
-			String strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strUrl, strPost);
+			String strPost = "{\"operation\": \"load\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strPost);
         }
         return res;
     }
 
     public String load(String db_name) {
 	    String res = this.load(db_name, "GET");
+        return res;
+    }
+
+    public String monitor(String db_name, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=monitor&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"monitor\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String monitor(String db_name) {
+	    String res = this.monitor(db_name, "GET");
         return res;
     }
 
@@ -340,9 +373,8 @@ public class GstoreConnector {
             res = this.sendGet(strUrl);
 		}
         else if (request_type.equals("POST")) {
-		    String strUrl = "unload";
-			String strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strUrl, strPost);
+			String strPost = "{\"operation\": \"unload\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strPost);
         }
         return res;
     }
@@ -352,41 +384,141 @@ public class GstoreConnector {
         return res;
     }
 
-    public String user(String type, String username2, String addition, String request_type) {
+    public String drop(String db_name, boolean is_backup, String request_type) {
 	    String res = "";
         if (request_type.equals("GET")) {
-            String strUrl = "?operation=user&type=" + type + "&username1=" + this.username + "&password1=" + this.password + "&username2=" + username2 + "&addition=" + addition;
-            res = this.sendGet(strUrl);
+		    String strUrl;
+		    if (is_backup) {
+                strUrl = "?operation=drop&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password + "&is_backup=true";
+            }
+			else{
+			    strUrl = "?operation=drop&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password + "&is_backup=false";
+			}
+			res = this.sendGet(strUrl);
 		}
         else if (request_type.equals("POST")) {
-		    String strUrl = "user";
-			String strPost = "{\"type\": \"" + type + "\", \"username1\": \"" + this.username + "\", \"password1\": \"" + this.password + "\", \"username2\": \"" + username2 + "\", \"addition\": \"" + addition + "\"}";
-            res = this.sendPost(strUrl, strPost);
+			String strPost;
+			if (is_backup) {
+			    strPost = "{\"operation\": \"drop\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"is_backup\": \"true\"}";
+            }
+			else{
+			    strPost = "{\"operation\": \"drop\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"is_backup\": \"false\"}";
+			}
+			res = this.sendPost(strPost);
         }
         return res;
     }
 
-    public String user(String type, String username2, String addition) {
-	    String res = this.user(type, username2, addition, "GET");
+    public String drop(String db_name, boolean is_backup) {
+	    String res = this.drop(db_name, is_backup, "GET");
         return res;
     }
 
-    public String showUser(String request_type) {
+    public String show(String request_type) {
 	    String res = "";
         if (request_type.equals("GET")) {
-            String strUrl = "?operation=showUser&username=" + this.username + "&password=" + this.password;
+            String strUrl = "?operation=show&username=" + this.username + "&password=" + this.password;
             res = this.sendGet(strUrl);
 		}
         else if (request_type.equals("POST")) {
-		    String strUrl = "showUser";
-			String strPost = "{\"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strUrl, strPost);
+			String strPost = "{\"operation\": \"show\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strPost);
         }
         return res;
     }
 
-    public String showUser() {
-	    String res = this.showUser("GET");
+    public String show() {
+	    String res = this.show("GET");
+        return res;
+    }
+
+    public String usermanage(String type, String op_username, String op_password, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=usermanage&type=" + type + "&username=" + this.username + "&password=" + this.password + "&op_username=" + op_username + "&op_password=" + op_password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"usermanage\", \"type\": \"" + type + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"op_username\": \"" + op_username + "\", \"op_password\": \"" + op_password + "\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String usermanage(String type, String op_username, String op_password) {
+	    String res = this.usermanage(type, op_username, op_password, "GET");
+        return res;
+    }
+
+    public String showuser(String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=showuser&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"showuser\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String showuser() {
+	    String res = this.showuser("GET");
+        return res;
+    }
+
+    public String userprivilegemanage(String type, String op_username, String privileges, String db_name, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=userprivilegemanage&type=" + type + "&username=" + this.username + "&password=" + this.password + "&op_username=" + op_username + "&privileges=" + privileges + "&db_name=" + db_name;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"userprivilegemanage\", \"type\": \"" + type + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"op_username\": \"" + op_username + "\", \"privileges\": \"" + privileges + "\", \"db_name\": \"" + db_name + "\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String userprivilegemanage(String type, String op_username, String privileges, String db_name) {
+	    String res = this.userprivilegemanage(type, op_username, privileges, db_name, "GET");
+        return res;
+    }
+
+    public String backup(String db_name, String backup_path, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=backup&username=" + this.username + "&password=" + this.password + "&db_name=" + db_name + "&backup_path=" + backup_path;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"backup\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"backup_path\": \"" + backup_path + "\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String backup(String db_name, String backup_path) {
+	    String res = this.backup(db_name, backup_path, "GET");
+        return res;
+    }
+
+    public String restore(String db_name, String backup_path, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=restore&username=" + this.username + "&password=" + this.password + "&db_name=" + db_name + "&backup_path=" + backup_path;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"restore\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"backup_path\": \"" + backup_path + "\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String restore(String db_name, String backup_path) {
+	    String res = this.restore(db_name, backup_path, "GET");
         return res;
     }
 
@@ -397,9 +529,8 @@ public class GstoreConnector {
             res = this.sendGet(strUrl);
 		}
         else if (request_type.equals("POST")) {
-		    String strUrl = "query";
-			String strPost = "{\"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"format\": \"" + format + "\", \"sparql\": \"" + sparql + "\"}";
-            res = this.sendPost(strUrl, strPost);
+			String strPost = "{\"operation\": \"query\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"format\": \"" + format + "\", \"sparql\": \"" + sparql + "\"}";
+            res = this.sendPost(strPost);
         }
         return res;
     }
@@ -415,9 +546,8 @@ public class GstoreConnector {
             this.sendGet(strUrl, filename);
 		}
         else if (request_type.equals("POST")) {
-		    String strUrl = "query";
-			String strPost = "{\"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"format\": \"" + format + "\", \"sparql\": \"" + sparql + "\"}";
-            this.sendPost(strUrl, strPost, filename);
+			String strPost = "{\"operation\": \"query\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"format\": \"" + format + "\", \"sparql\": \"" + sparql + "\"}";
+            this.sendPost(strPost, filename);
         }
         return;
     }
@@ -427,66 +557,141 @@ public class GstoreConnector {
         return;
     }
 
-    public String drop(String db_name, boolean is_backup, String request_type) {
-	   String res = "";
-        if (request_type.equals("GET")) {
-		    String strUrl;
-		    if (is_backup) {
-                strUrl = "?operation=drop&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password + "&is_backup=true";
-            }
-			else{
-			    strUrl = "?operation=drop&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password + "&is_backup=false";
-			}
-			res = this.sendGet(strUrl);
-		}
-        else if (request_type.equals("POST")) {
-		    String strUrl = "drop";
-			String strPost;
-			if (is_backup) {
-			    strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"is_backup\": \"true\"}";
-            }
-			else{
-			    strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"is_backup\": \"false\"}";
-			}
-			res = this.sendPost(strUrl, strPost);
-        }
-        return res;
-    }
-
-    public String drop(String db_name, boolean is_backup) {
-	    String res = this.drop(db_name, is_backup, "GET");
-        return res;
-    }
-
-    public String monitor(String db_name, String request_type) {
+    public String exportDB(String db_name, String db_path, String request_type) {
 	    String res = "";
         if (request_type.equals("GET")) {
-            String strUrl = "?operation=monitor&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password;
+            String strUrl = "?operation=export&username=" + this.username + "&password=" + this.password + "&db_name=" + db_name + "&db_path=" + db_path;
             res = this.sendGet(strUrl);
 		}
         else if (request_type.equals("POST")) {
-		    String strUrl = "monitor";
-			String strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strUrl, strPost);
+			String strPost = "{\"operation\": \"export\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"db_path\": \"" + db_path + "\"}";
+            res = this.sendPost(strPost);
         }
         return res;
     }
 
-    public String monitor(String db_name) {
-	    String res = this.monitor(db_name, "GET");
+    public String exportDB(String db_name, String db_path) {
+	    String res = this.exportDB(db_name, db_path, "GET");
+        return res;
+    }
+
+    public String login(String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=login&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"login\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String login() {
+	    String res = this.login("GET");
+        return res;
+    }
+
+    public String begin(String db_name, String isolevel, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=begin&username=" + this.username + "&password=" + this.password + "&db_name=" + db_name + "&isolevel=" + isolevel;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"begin\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"isolevel\": \"" + isolevel + "\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String begin(String db_name, String isolevel) {
+	    String res = this.begin(db_name, isolevel, "GET");
+        return res;
+    }
+
+    public String tquery(String db_name, String tid, String sparql, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=tquery&username=" + this.username + "&password=" + this.password + "&db_name=" + db_name + "&tid=" + tid + "&sparql=" + sparql;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"tquery\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"tid\": \"" + tid + "\", \"sparql\": \"" + sparql + "\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String tquery(String db_name, String tid, String sparql) {
+	    String res = this.tquery(db_name, tid, sparql, "GET");
+        return res;
+    }
+
+    public String commit(String db_name, String tid, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=commit&username=" + this.username + "&password=" + this.password + "&db_name=" + db_name + "&tid=" + tid;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"commit\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"tid\": \"" + tid + "\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String commit(String db_name, String tid) {
+	    String res = this.commit(db_name, tid, "GET");
+        return res;
+    }
+
+    public String rollback(String db_name, String tid, String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=rollback&username=" + this.username + "&password=" + this.password + "&db_name=" + db_name + "&tid=" + tid;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"rollback\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\", \"tid\": \"" + tid + "\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String rollback(String db_name, String tid) {
+	    String res = this.rollback(db_name, tid, "GET");
+        return res;
+    }
+
+    public String getTransLog(String request_type) {
+	    String res = "";
+        if (request_type.equals("GET")) {
+            String strUrl = "?operation=txnlog&username=" + this.username + "&password=" + this.password;
+            res = this.sendGet(strUrl);
+		}
+        else if (request_type.equals("POST")) {
+			String strPost = "{\"operation\": \"txnlog\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+            res = this.sendPost(strPost);
+        }
+        return res;
+    }
+
+    public String getTransLog() {
+	    String res = this.getTransLog("GET");
         return res;
     }
 
     public String checkpoint(String db_name, String request_type) {
-	   String res = "";
+	    String res = "";
         if (request_type.equals("GET")) {
-            String strUrl = "?operation=checkpoint&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password;
+            String strUrl = "?operation=checkpoint&username=" + this.username + "&password=" + this.password + "&db_name=" + db_name;
             res = this.sendGet(strUrl);
 		}
         else if (request_type.equals("POST")) {
-		    String strUrl = "checkpoint";
-			String strPost = "{\"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strUrl, strPost);
+			String strPost = "{\"operation\": \"checkpoint\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\", \"db_name\": \"" + db_name + "\"}";
+            res = this.sendPost(strPost);
         }
         return res;
     }
@@ -496,81 +701,6 @@ public class GstoreConnector {
         return res;
     }
 
-    public String show(String request_type) {
-	    String res = "";
-        if (request_type.equals("GET")) {
-            String strUrl = "?operation=show&username=" + this.username + "&password=" + this.password;
-            res = this.sendGet(strUrl);
-		}
-        else if (request_type.equals("POST")) {
-		    String strUrl = "show";
-			String strPost = "{\"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strUrl, strPost);
-        }
-        return res;
-    }
-
-    public String show() {
-	    String res = this.show("GET");
-        return res;
-    }
-
-    public String getCoreVersion(String request_type) {
-	    String res = "";
-        if (request_type.equals("GET")) {
-            String strUrl = "?operation=getCoreVersion&username=" + this.username + "&password=" + this.password;
-            res = this.sendGet(strUrl);
-		}
-        else if (request_type.equals("POST")) {
-		    String strUrl = "getCoreVersion";
-			String strPost = "{\"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strUrl, strPost);
-        }
-        return res;
-    }
-
-    public String getCoreVersion() {
-	    String res = this.getCoreVersion("GET");
-        return res;
-    }
-
-    public String getAPIVersion(String request_type) {
-	    String res = "";
-        if (request_type.equals("GET")) {
-            String strUrl = "?operation=getAPIVersion&username=" + this.username + "&password=" + this.password;
-            res = this.sendGet(strUrl);
-		}
-        else if (request_type.equals("POST")) {
-		    String strUrl = "getAPIVersion";
-			String strPost = "{\"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strUrl, strPost);
-        }
-        return res;
-    }
-
-    public String getAPIVersion() {
-	    String res = this.getAPIVersion("GET");
-        return res;
-    }
-
-    public String exportDB(String db_name, String dir_path, String request_type) {
-        String res = "";
-        if (request_type.equals("GET")) {
-            String strUrl = "?operation=export&db_name=" + db_name + "&ds_path=" + dir_path + "&username=" + this.username + "&password=" + this.password;
-            res = this.sendGet(strUrl);
-        }
-        else if (request_type.equals("POST")) {
-            String strUrl = "export";
-            String strPost = "{\"db_name\": \"" + db_name + "\", \"ds_path\": \"" + dir_path + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strUrl, strPost);
-        }
-        return res;
-    }
-
-    public String exportDB(String db_name, String dir_path) {
-        String res = this.exportDB(db_name, dir_path, "GET");
-        return res;
-    }
 
     private static byte[] packageMsgData(String _msg) {
         //byte[] data_context = _msg.getBytes();

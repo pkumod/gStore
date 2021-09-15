@@ -374,12 +374,15 @@ public:
 
 	static std::string getTimeName();
 	static std::string getTimeString();
+    static std::string getTimeString2();
+    static int getRandNum();
 	static std::string get_folder_name(const std::string path, const std::string db_name);
 	static std::string get_backup_time(const std::string path, const std::string db_name);
 	static long get_cur_time();
 	static int get_time();
 	static int str2time();
 	static std::string get_date_time();
+    static std::string get_date_day();
 	static std::string get_timestamp();
 	static time_t time_to_stamp(std::string time);
 	static bool save_to_file(const char*, const std::string _content);

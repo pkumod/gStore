@@ -1,6 +1,6 @@
 #include "../Database/Database.h"
 #include "../Util/Util.h"
-#include "../api/http/cpp/client.h"
+#include "../api/http/cpp/src/GstoreConnector.h"
 
 using namespace std;
 using namespace rapidjson;
