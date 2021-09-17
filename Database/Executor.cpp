@@ -419,6 +419,7 @@ tuple<bool,TableContentShardPtr> Executor::OneEdgeConstraintFilter(EdgeInfo edge
                                                                    PositionValueSharedPtr id_pos_mapping,
                                                                    IDCachesSharePtr id_caches) {
   TYPE_ENTITY_LITERAL_ID var_to_filter= edge_info.getVarToFilter();
+  auto var_in_record = id_pos_mapping->find(var_to_filter)!=id_pos_mapping->end();
   if(edge_table_info.ConstantToVar(edge_info))
   {
     TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
@@ -686,9 +687,18 @@ tuple<bool,TableContentShardPtr> Executor::OneEdgeConstraintFilter(EdgeInfo edge
      * Now we get the valid candidate list of var_to_filter
      * do a binary to decide whether the record satisfy this edge
      * */
+    auto constant_var_id = edge_info.getVarToFilter(edge_table_info);
+    bool var_const = constant_var_id.first;
+    auto var_id = constant_var_id.second;
+    TYPE_ENTITY_LITERAL_ID var_to_filter_id_this_record;
+    if(!var_const)
+    {
+      auto var_to_filter_position = (*id_pos_mapping)[var_to_filter];
+      var_to_filter_id_this_record = (**record_iterator)[var_to_filter_position];
+    }
+    else
+      var_to_filter_id_this_record = var_id;
 
-    auto var_to_filter_position = (*id_pos_mapping)[var_to_filter];
-    auto var_to_filter_id_this_record = (**record_iterator)[var_to_filter_position];
     if(binary_search(edge_candidate_list,edge_candidate_list+edge_list_len,var_to_filter_id_this_record))
     {
       result_table->push_back(*record_iterator);

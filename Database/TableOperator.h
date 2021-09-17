@@ -75,6 +75,7 @@ class IntermediateResult{
   size_t GetColumns(){return this->id_pos_map->size();}
 };
 
+class EdgeConstantInfo;
 class EdgeInfo{
  public:
   // VarDescriptor ID
@@ -146,6 +147,7 @@ class EdgeInfo{
 
   JoinMethod join_method_;
   TYPE_ENTITY_LITERAL_ID getVarToFilter() const;
+  std::pair<bool,TYPE_ENTITY_LITERAL_ID> getVarToFilter(EdgeConstantInfo constant_info) const;
   std::string toString() const;
   EdgeInfo() = default;
 };
