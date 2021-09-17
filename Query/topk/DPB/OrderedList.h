@@ -90,7 +90,7 @@ class FQIterator: public OrderedList{
   double node_score_;
   minmax::MinMaxHeap<DPB::FqElement> queue_;
   std::vector<std::shared_ptr<OrderedList>> fr_ow_iterators_;
-  std::vector<std::vector<unsigned int>> seq_list_;
+  //std::vector<std::vector<unsigned int>> seq_list_;
   DPB::ePool e_pool_;
   DPB::DynamicTrie dynamic_trie_;
   std::vector<NodeOneChildVarPredicatesPtr> types_predicates_;

@@ -18,12 +18,12 @@ void FRIterator::TryGetNext(unsigned int k) {
   auto em = this->pool_.back();
   auto em_pointer = this->fqs_map_[em.node];
   this->queue_.popMin();
-  if(NextEPoolElement(k,em_pointer,em.index))
+  if(NextEPoolElement(k,em_pointer,em.index + 1))
   {
     decltype(em) e;
     e.node = em.node;
     e.index = em.index + 1;
-    e.cost = em.cost + this->DeltaCost(em_pointer,em.index);
+    e.cost = em.cost + this->DeltaCost(em_pointer,e.index);
     this->queue_.push(e);
   }
   if(!queue_.empty()) {
@@ -51,14 +51,14 @@ void FRIterator::Insert(TYPE_ENTITY_LITERAL_ID fq_id,
 }
 
 double FRIterator::DeltaCost(std::shared_ptr<OrderedList> node_pointer, int index) {
-  auto delta =  node_pointer->pool_[index+1].cost - node_pointer->pool_[index].cost;
+  auto delta =  node_pointer->pool_[index].cost - node_pointer->pool_[index-1].cost;
   return delta;
 }
 
 bool FRIterator::NextEPoolElement(unsigned int k, std::shared_ptr<OrderedList> node_pointer, unsigned int index) {
-  if(index + 1 == node_pointer->pool_.size())
+  if(index == node_pointer->pool_.size())
     node_pointer->TryGetNext(k);
-  if(index + 1< node_pointer->pool_.size())
+  if(index < node_pointer->pool_.size())
     return true;
   else
     return false;
@@ -145,8 +145,7 @@ void FQIterator::TryGetNext(unsigned int k) {
     DPB::element ipool_element{};
     ipool_element.cost = e.cost;
     ipool_element.index = this->pool_.size();
-    //ipool_e.pointer = this;
-    this->seq_list_.push_back(e.seq);
+    //this->seq_list_.push_back(e.seq);
     this->pool_.push_back(ipool_element);
     return;
   }
@@ -166,7 +165,7 @@ void FQIterator::TryGetNext(unsigned int k) {
       if(this->NextEPoolElement(k, this->fr_ow_iterators_[j], seq[j]))
       {
         decltype(em) ec;
-        ec.cost = em.cost + this->DeltaCost(this->fr_ow_iterators_[j], seq[j] - 1);
+        ec.cost = em.cost + this->DeltaCost(this->fr_ow_iterators_[j], seq[j]);
         ec.seq = seq;
         this->queue_.push(ec);
       }
@@ -180,17 +179,16 @@ void FQIterator::TryGetNext(unsigned int k) {
     // transfer e pool to i pool element
     DPB::element e{};
     e.cost = inserted.cost;
-    e.index = this->pool_.size();
-    this->seq_list_.push_back(std::move(inserted.seq));
+    e.index = this->pool_.size()-1;
+    //this->seq_list_.push_back(std::move(inserted.seq));
     this->pool_.push_back(e);
   }
 }
 
 bool FQIterator::NextEPoolElement(unsigned int k, std::shared_ptr<OrderedList> node_pointer, unsigned int index) {
-  auto required_size = index + 1;
-  if(required_size == node_pointer->pool_.size())
+  if(index == node_pointer->pool_.size())
     node_pointer->TryGetNext(k);
-  if(required_size <= node_pointer->pool_.size())
+  if(index < node_pointer->pool_.size())
     return true;
   else
     return false;
@@ -212,14 +210,15 @@ void FQIterator::Insert(std::vector<std::shared_ptr<OrderedList>> FR_OW_iterator
 
 
 double FQIterator::DeltaCost(std::shared_ptr<OrderedList> FR_OW_iterator, int index) {
-  auto delta =  FR_OW_iterator->pool_[index+1].cost - FR_OW_iterator->pool_[index].cost;
+  auto delta =  FR_OW_iterator->pool_[index].cost - FR_OW_iterator->pool_[index-1].cost;
   return delta;
 }
 
 void FQIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
                            NodeOneChildVarPredicatesPtr predicate_information) {
   record->push_back(this->node_id_);
-  auto &seq = this->seq_list_[i_th];
+  //auto &seq = this->seq_list_[i_th];
+  auto &seq = this->e_pool_[i_th].seq;
   for(unsigned int i =0; i<this->fr_ow_iterators_.size(); i++) {
     if(fr_ow_iterators_[i]->Type() ==OrderedListType::OW) {
       auto ow_predicates = this->types_predicates_[i];
