@@ -2,7 +2,7 @@
  * Copyright 2021 gStore, All Rights Reserved. 
  * @Author: Bookug Lober suxunbin liwenjie
  * @Date: 2021-08-22 00:37:57
- * @LastEditTime: 2021-09-09 21:39:16
+ * @LastEditTime: 2021-09-17 20:38:48
  * @LastEditors: Please set LastEditors
  * @Description: the http server to handler the user's request, which is main access entrance of gStore
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -770,6 +770,11 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
+				if (Util::file_exist("system.db/port.txt"))
+				{
+					string cmd = "rm system.db/port.txt";
+                    system(cmd.c_str());
+				}
 				cerr << "Server stopped abnormally, restarting server..." << endl;
 				//break;
 			}
