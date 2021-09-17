@@ -183,6 +183,56 @@ TYPE_ENTITY_LITERAL_ID EdgeInfo::getVarToFilter() const {
   return var_to_filter;
 }
 
+std::pair<bool,TYPE_ENTITY_LITERAL_ID> EdgeInfo::getVarToFilter(EdgeConstantInfo constant_info) const {
+  TYPE_ENTITY_LITERAL_ID var_to_filter;
+  bool this_var_constant = false;
+  switch (this->join_method_) {
+    case JoinMethod::s2p:
+      var_to_filter = this->p_;
+      this_var_constant = constant_info.p_constant_;
+      break;
+
+    case JoinMethod::s2o:
+      var_to_filter = this->o_;
+      this_var_constant = constant_info.o_constant_;
+      break;
+
+    case JoinMethod::p2s:
+      var_to_filter = this->s_;
+      this_var_constant = constant_info.s_constant_;
+      break;
+
+    case JoinMethod::p2o:
+      var_to_filter = this->o_;
+      this_var_constant = constant_info.o_constant_;
+      break;
+
+    case JoinMethod::o2s:
+      var_to_filter = this->s_;
+      this_var_constant = constant_info.s_constant_;
+      break;
+
+    case JoinMethod::o2p:
+    case JoinMethod::so2p:
+      var_to_filter = this->p_;
+      this_var_constant = constant_info.p_constant_;
+      break;
+
+    case JoinMethod::sp2o:
+      var_to_filter = this->o_;
+      this_var_constant = constant_info.o_constant_;
+      break;
+
+    case JoinMethod::po2s:
+      var_to_filter = this->s_;
+      this_var_constant = constant_info.s_constant_;
+      break;
+    default:
+      throw string("EdgeInfo::getVarToFilter err");
+  }
+  return make_pair(this_var_constant,var_to_filter);
+}
+
 string EdgeInfo::toString() const {
   stringstream ss;
   ss<<" EdgeInfo: \t s["<<this->s_<<"] \t p["<<this->p_<<"]"<<" \t o["<<this->o_<<"]";

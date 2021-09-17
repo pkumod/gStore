@@ -553,6 +553,8 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
   // and record the edge in the class member
   auto c_id = cycle[choose_one];
   auto d_id = cycle[choose_one+1];
+  DeleteEdge(c_id,d_id);
+  DeleteEdge(d_id,c_id);
   auto c_var = bgp_query->get_vardescrip_by_index(c_id);
   auto d_string = bgp_query->get_var_name_by_id(d_id);
   auto &edges = c_var->so_edge_index_;
@@ -564,6 +566,10 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
     auto &o_string = triple.object;
     if (s_string != d_string && o_string != d_string)
       continue;
+#ifdef TOPK_DEBUG_INFO
+    cout<<"cut edge "<<s_string<<" "<<p_string<<" "<<o_string<<endl;
+#endif
+
     auto predicate_constant = p_string[0] != '?';
     TYPE_PREDICATE_ID predicate_id = -1;
     if (predicate_constant)
@@ -578,6 +584,7 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
       edge_info.s_ = c_id;
       edge_info.o_ = d_id;
     }
+    edge_info.join_method_ = JoinMethod::so2p;
     EdgeConstantInfo edge_constant_info(false, predicate_constant, false);
     this->non_tree_edges_.edge_filter_ = make_shared<FeedOneNode>();
     this->non_tree_edges_.edge_filter_->edges_->push_back(edge_info);
@@ -586,6 +593,29 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
   this->non_tree_edges_.edge_filter_->node_to_join_ = c_id;
   this->non_tree_edges_.join_type_ = StepOperation::JoinType::EdgeCheck;
   return true;
+}
+
+void TopKSearchPlan::DeleteEdge(TYPE_ENTITY_LITERAL_ID a, TYPE_ENTITY_LITERAL_ID b) {
+  auto a_nei = neighbours_[a].begin();
+  auto a_nei_end = neighbours_[a].end();
+  auto a_pre_c = predicates_constant_[a].begin();
+  auto a_pre = predicates_ids_[a].begin();
+  auto a_direction = directions_[a].begin();
+  while(a_nei!=a_nei_end)
+  {
+    if(*a_nei == b)
+    {
+      neighbours_[a].erase(a_nei);
+      predicates_constant_[a].erase(a_pre_c);
+      predicates_ids_[a].erase(a_pre);
+      directions_[a].erase(a_direction);
+      break;
+    }
+    a_nei++;
+    a_pre_c++;
+    a_pre++;
+    a_direction++;
+  }
 }
 
 /**
