@@ -455,6 +455,8 @@ PlanTree::PlanTree(PlanTree *last_plan_tree, unsigned int next_join_var_id, set<
 
 }
 
+void PlanTree::add_satellitenode(BGPQuery *bgpquery, unsigned int satellitenode_id) {;}
+
 PlanTree::PlanTree(const vector<int> nodes_order) {
 	root_node = new Tree_node(nodes_order[0]);
 	for(int i = 1; i < nodes_order.size(); ++i){
