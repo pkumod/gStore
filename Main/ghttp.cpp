@@ -2,7 +2,7 @@
  * Copyright 2021 gStore, All Rights Reserved. 
  * @Author: Bookug Lober suxunbin liwenjie
  * @Date: 2021-08-22 00:37:57
- * @LastEditTime: 2021-09-17 20:38:48
+ * @LastEditTime: 2021-09-19 14:30:28
  * @LastEditors: Please set LastEditors
  * @Description: the http server to handler the user's request, which is main access entrance of gStore
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -1114,7 +1114,7 @@ void signalHandler(int signum)
 			string error = "Unable to checkpoint due to loss of lock";
 			cout << error << endl;
 			pthread_rwlock_unlock(&databases_map_lock);
-			//cout << "Stop server failed." << endl;
+			cout << "Stop server failed." << endl;
 			exit(signum);
 		}
 		current_database->save();
@@ -1144,7 +1144,7 @@ void signalHandler(int signum)
 	system(cmd.c_str());
 	cmd = "rm system.db/port.txt";
         system(cmd.c_str());
-	//cout << "Server stopped." << endl;
+	cout << "Server stopped." << endl;
 	exit(signum);
 }
 
@@ -1447,15 +1447,12 @@ bool trylockdb(std::map<std::string, struct DBInfo*>::iterator it_already_build)
 	
 	if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
 	{
-		// pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-		// if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
-		// {
-        //    result = false;
-		// }
-		// else {
-		// 	result=true;
-		// }
-		result=false;
+		//  pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		//  cout<<"unlock the db_lock"<<endl;
+		//  pthread_rwlock_wrlock(&(it_already_build->second->db_lock));
+		// cout<<"wrlock the db_lock"<<endl;
+		// result=true;
+		return false;
 		
 	}
 	else
@@ -1491,17 +1488,28 @@ void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db
 		sendResponseMsg(0, error, response);
 		return;
 	}
-	cout<<"begin loading1..."<<endl;
+	
 	pthread_rwlock_rdlock(&already_build_map_lock);
 	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
-	pthread_rwlock_unlock(&already_build_map_lock);
+	
 	if (trylockdb(it_already_build)==false)
 	{
 		error = "the operation can not been excuted due to loss of lock.";
 		sendResponseMsg(1007, error, response);
+		pthread_rwlock_unlock(&already_build_map_lock);
+		return;
 	}
 	else
 	{
+		pthread_rwlock_unlock(&already_build_map_lock);
+		if(pthread_rwlock_trywrlock(&databases_map_lock)!=0)
+	   {
+		   error = "Unable to load due to loss of lock";
+		
+			sendResponseMsg(1007,error,response);
+			return;
+
+	   }
 		cout<<"begin loading..."<<endl;
 		string database = db_name;
 		Database* current_database = new Database(database);
@@ -1522,8 +1530,20 @@ void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db
 			sendResponseMsg(1005, error, response);
 			return;
 		}
-		pthread_rwlock_wrlock(&databases_map_lock);
+	// 	if(pthread_rwlock_trywrlock(&databases_map_lock)!=0)
+	//    {
+	// 	//    cout<<"can not wrlock the databases map  lock!"<<endl;
+    //     //    pthread_rwlock_unlock(&databases_map_lock);
+	// 	//    cout<<"unlock the databases map  lock!"<<endl;
+	// 	//    pthread_rwlock_wrlock(&databases_map_lock);
+	// 	//    cout<<"relock the databases map  lock!"<<endl;
+	// 	    error = "Unable to load due to loss of lock";
+	// 		sendResponseMsg(1007,error,response);
+	// 		return;
+	//    }
+		cout<<"wrlock the database map"<<endl;
 		databases.insert(pair<std::string, Database*>(db_name, current_database));
+		cout<<"insert the pair into the databases"<<endl;
 		pthread_rwlock_unlock(&databases_map_lock);
 
 		cout << "database insert done." << endl;
@@ -1566,7 +1586,7 @@ void monitor_thread_new(const shared_ptr<HttpServer::Response>& response, string
 	// }
 	pthread_rwlock_rdlock(&databases_map_lock);
 	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
-	pthread_rwlock_unlock(&databases_map_lock);
+	
 	if(iter == databases.end())
 	{
 		//cout << "database not loaded yet." << endl;
@@ -1587,7 +1607,7 @@ void monitor_thread_new(const shared_ptr<HttpServer::Response>& response, string
 	if(pthread_rwlock_tryrdlock(&(it_already_build->second->db_lock)) != 0)
 	{
 		string error = "Unable to monitor due to loss of lock";
-		string resJson = CreateJson(501, error, 0);
+		string resJson = CreateJson(1007, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
@@ -4083,7 +4103,7 @@ bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 		if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
 		{
 			string error = "Unable to checkpoint due to loss of lock";
-			string resJson = CreateJson(704, error, 0);
+			string resJson = CreateJson(1007, error, 0);
 			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
 
 			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
