@@ -699,7 +699,6 @@ unsigned long PlanGenerator::cost_model_for_binary(const vector<unsigned> &plan_
 //    save every nei_id of now_in_plan_node in nei_node
 void PlanGenerator::get_nei_by_subplan_nodes(const vector<unsigned> &need_join_nodes,
 										 const vector<unsigned> &last_plan_node, set<unsigned> &nei_node){
-	;
 	for(int node_in_plan : last_plan_node){
 		for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
 			if(find(last_plan_node.begin(), last_plan_node.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
@@ -960,7 +959,7 @@ PlanTree* PlanGenerator::get_best_plan_by_num(int total_var_num){
 	//	}
 
 	int count = 0;
-	for(const auto &nodes_plan : plan_cache[total_var_num-1]){
+	for(const auto &nodes_plan : plan_cache[total_var_num - 1]){
 		for(const auto &plan_tree : nodes_plan.second){
 			//    	plan_tree->print(basicquery);
 			count ++;
@@ -1122,15 +1121,19 @@ void PlanGenerator::get_candidate_generate_plan() {
  * Generate sample set of every var.
  * If a var has no const linked to it, then sample from the whole database.
  * Todo: SO_type var sample in so_var_to_sample_cache; pre_type var sample in pre_var_to_sample_cache.
+ * Todo: should tell me whether the query only contain pre_var.
  */
-void PlanGenerator::considerallvarscan() {
+void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
 
 	random_device rd;
 	mt19937 eng(rd());
 
 	for(unsigned var_index = 0 ; var_index < bgpquery->get_total_var_num(); ++ var_index) {
 
-		if(bgpquery->is_var_satellite_by_index(var_index))
+		if(bgpquery->is_var_satellite_by_index(var_index)){
+
+			satellite_nodes.push_back(bgpquery->get_var_id_by_index(var_index));
+		}
 			continue;
 
 		unsigned var_id = bgpquery->get_var_id_by_index(var_index);
@@ -1170,26 +1173,92 @@ void PlanGenerator::considerallvarscan() {
 
 	}
 
+	++largeset_plan_var_num;
+
+}
+
+void PlanGenerator::get_nei_by_sub_plan_nodes(const vector<unsigned int> &last_plan_node, set<unsigned int> &nei_node) {
+	for(int node_in_plan : last_plan_node){
+		for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
+			if(find(last_plan_node.begin(), last_plan_node.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
+			== last_plan_node.end() && basicquery->getEdgeNeighborID(node_in_plan, i) != -1 &&
+			find(need_join_nodes.begin(), need_join_nodes.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
+			!= need_join_nodes.end()){
+				nei_node.insert(basicquery->getEdgeNeighborID(node_in_plan, i));
+			}
+		}
+	}
 }
 
 void PlanGenerator::considerallwcojoin(unsigned int var_num) {
-	;
+	auto plan_tree_list = plan_cache[var_num - 2];
+	for(const auto &last_node_plan : plan_tree_list){
+		set<unsigned> nei_node;
+
+		get_nei_by_sub_plan_nodes(last_node_plan.first, nei_node);
+
+		PlanTree* last_best_plan = get_best_plan(last_node_plan.first);
+
+		for(int next_node : nei_node) {
+
+
+		}
+	}
 }
 
 void PlanGenerator::considerallbinaryjoin(unsigned int var_num) {
 	;
 }
 
+bool compare_pair_vector(pair<double, unsigned> a, pair<double, unsigned> b) {
+	return a.first < b.first;
+}
+
+void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
+
+	vector<pair<double, unsigned >> satellitenode_score;
+
+	// todo: satellite_nodes must be so_type?
+	for(unsigned satellitenode_index = 0; satellitenode_index < satellite_nodes.size(); ++satellitenode_index){
+		unsigned satellitenode_id = satellite_nodes[satellitenode_index];
+
+		auto var_descrip = bgpquery->get_vardescrip_by_id(satellitenode_id);
+
+		// todo: predegree or pre_list; nei must give it a estimatation num
+		satellitenode_score.emplace_back((double)(kvstore->getPredicateDegree(var_descrip->so_edge_pre_id_[0])) /
+													var_to_num_map[var_descrip->so_edge_nei_[0]], satellitenode_index);
+	}
+
+	sort(satellitenode_score.begin(), satellitenode_score.end(), compare_pair_vector);
+
+	for(unsigned satellitenode_index = 0; satellitenode_index < satellitenode_score.size(); ++satellitenode_index){
+		// todo: change this to function of best_plan
+		best_plan->add_satellitenode(bgpquery, satellite_nodes[satellitenode_score[satellitenode_index].second]);
+	}
+
+}
+
 PlanTree *PlanGenerator::get_plan() {
 
-	considerallvarscan();
 
-	for(unsigned var_num = 2; var_num <= bgpquery->get_total_var_num(); ++var_num) {
+	unsigned largeset_plan_var_num = 0;
+
+	considerallvarscan(largeset_plan_var_num);
+
+
+	// should be var num not include satellite node
+	for(unsigned var_num = 2; var_num <= join_nodes.size(); ++var_num) {
+
+		// todo: if i want to complete this, i need to know whether the input query is linded or not
 		considerallwcojoin(var_num);
 
 		if(var_num >= 5)
 			considerallbinaryjoin(var_num);
 	}
+
+	PlanTree* best_plan = get_best_plan_by_num(join_nodes.size());
+
+	addsatellitenode(best_plan);
 
 	// Todo: add all sattelate node to plan
 

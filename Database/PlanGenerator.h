@@ -35,6 +35,9 @@ public:
 	Statistics *statistics;
 	IDCachesSharePtr & id_caches;
 
+	// only contain plans joining not-satellite nodes
+	// plan_cache[0] contains only one node scan plan
+	// plan_cache[n] contains n-1 nodes join plan, and this n-1 nodes are connected
 	vector<map<vector<unsigned>, list<PlanTree*>>> plan_cache;
 
 	vector<map<vector<unsigned>, unsigned long>> card_cache;
@@ -46,7 +49,9 @@ public:
 	map<unsigned, vector<unsigned>> var_to_sample_cache;
 	map<unsigned, map<unsigned, unsigned >> s_o_list_average_size;
 
+	// store var id, not var index
 	vector<unsigned> join_nodes;
+	vector<unsigned> satellite_nodes;
 
 	map<unsigned, vector<TYPE_ENTITY_LITERAL_ID>> so_var_to_sample_cache;
 	map<unsigned, vector<TYPE_PREDICATE_ID>> pre_var_to_sample_cache;
@@ -100,9 +105,11 @@ public:
 
 	JoinMethod get_join_method(bool s_const, bool p_const, bool o_const, VarDescriptor::ItemType item_type);
 	void get_candidate_generate_plan();
-	void considerallvarscan();
+	void considerallvarscan(unsigned &largeset_plan_var_num);
+	void get_nei_by_sub_plan_nodes(const vector<unsigned> &last_plan_node, set<unsigned> &nei_node);
 	void considerallwcojoin(unsigned var_num);
 	void considerallbinaryjoin(unsigned var_num);
+	void addsatellitenode(PlanTree* best_plan);
 
 	PlanTree* get_plan();
 
