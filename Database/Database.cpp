@@ -734,7 +734,7 @@ Database::load(bool loadCSR)
 		cout << "load database info error. @Database::load()" << endl;
 		return false;
 	}
-	cout << "load database info successfully!" << endl;
+	//cout << "load database info successfully!" << endl;
 	if(!(this->kvstore)->load_trie(kv_mode))
 	{
 		cout<<"load kvstore failed."<<endl;
@@ -742,29 +742,29 @@ Database::load(bool loadCSR)
 
 	}
 	else{
-		cout<<"load kvstore successfully!"<<endl;
+		//cout<<"load kvstore successfully!"<<endl;
 	}
 		
 
 	//this->stringindex->SetTrie(this->kvstore->getTrie());
-	cout<<"set Trie for stringIndex  successfully!"<<endl;
+	//cout<<"set Trie for stringIndex  successfully!"<<endl;
 	//NOTICE: we should also run some heavy work in the main thread
 	this->stringindex->load();
-	cout<<"load stringindex  successfully!"<<endl;
+	//cout<<"load stringindex  successfully!"<<endl;
 	this->readIDinfo();
-	cout<<"read IDInfo file  successfully!"<<endl;
+	//cout<<"read IDInfo file  successfully!"<<endl;
 
 #ifdef THREAD_ON
 	pre2values_thread.join();
 #endif
 	this->setPreMap();
-	cout<<"set Pre Map Successfully!"<<endl;
+	//cout<<"set Pre Map Successfully!"<<endl;
 
 #ifdef THREAD_ON
 	id2entity_thread.join();
-	cout<<"id2entity_thread.join() Successfully!"<<endl;
+	//cout<<"id2entity_thread.join() Successfully!"<<endl;
 	id2literal_thread.join();
-	cout<<"id2literal_thread.join() Successfully!"<<endl;
+	//cout<<"id2literal_thread.join() Successfully!"<<endl;
 #endif
 
 	//BETTER: if we set string buffer using string index instead of B+Tree, then we can
@@ -782,21 +782,21 @@ Database::load(bool loadCSR)
 #ifndef ONLY_READ
 #ifdef THREAD_ON
 	id2predicate_thread.join();
-	cout<<"id2predicate_thread.join() Successfully!"<<endl;
+	//cout<<"id2predicate_thread.join() Successfully!"<<endl;
 #endif
 #endif
 
 #ifdef THREAD_ON
 	entity2id_thread.join();
-	cout<<"entity2id_thread.join() Successfully!"<<endl;
+	//cout<<"entity2id_thread.join() Successfully!"<<endl;
 	literal2id_thread.join();
-	cout<<"literal2id_thread.join() Successfully!"<<endl;
+	//cout<<"literal2id_thread.join() Successfully!"<<endl;
 	predicate2id_thread.join();
-	cout<<"predicate2id_thread.join() Successfully!"<<endl;
+	//cout<<"predicate2id_thread.join() Successfully!"<<endl;
 	sub2values_thread.join();
-	cout<<"sub2values_thread.join() Successfully!"<<endl;
+	//cout<<"sub2values_thread.join() Successfully!"<<endl;
 	obj2values_thread.join();
-	cout<<"obj2values_thread.join() Successfully!"<<endl;
+	//cout<<"obj2values_thread.join() Successfully!"<<endl;
 	//wait for vstree thread
 	//vstree_thread.join();
 #endif
@@ -1317,80 +1317,80 @@ Database::get_important_objID()
 void 
 Database::load_entity2id(int _mode)
 {
-	cout<<"begin to load_entity2id!"<<endl;
+	//cout<<"begin to load_entity2id!"<<endl;
 	this->kvstore->open_entity2id(_mode);
-	cout<<"load_entity2id successfully!"<<endl;
+	//cout<<"load_entity2id successfully!"<<endl;
 }
 
 void 
 Database::load_id2entity(int _mode)
 {
-	cout<<"begin to load_id2entity!"<<endl;
+	//cout<<"begin to load_id2entity!"<<endl;
 	this->kvstore->open_id2entity(_mode);
-	cout<<"load_id2entity successfully!"<<endl;
+	//cout<<"load_id2entity successfully!"<<endl;
 }
 
 void 
 Database::load_literal2id(int _mode)
 {
-	cout<<"begin to load_literal2id!"<<endl;
+	//cout<<"begin to load_literal2id!"<<endl;
 	this->kvstore->open_literal2id(_mode);
-	cout<<"load_literal2id successfully!"<<endl;
+	//cout<<"load_literal2id successfully!"<<endl;
 }
 
 void 
 Database::load_id2literal(int _mode)
 {
-	cout<<"begin to load_id2literal!"<<endl;
+	//cout<<"begin to load_id2literal!"<<endl;
 	this->kvstore->open_id2literal(_mode);
-	cout<<"load_id2literal successfully!"<<endl;
+	//cout<<"load_id2literal successfully!"<<endl;
 }
 
 void 
 Database::load_predicate2id(int _mode)
 {
-	cout<<"begin to load_predicate2id!"<<endl;
+	//cout<<"begin to load_predicate2id!"<<endl;
 	this->kvstore->open_predicate2id(_mode);
-	cout<<"load_predicate2id successfully!"<<endl;
+	//cout<<"load_predicate2id successfully!"<<endl;
 }
 
 void 
 Database::load_id2predicate(int _mode)
 {
-	cout<<"begin to load_id2predicate!"<<endl;
+	//cout<<"begin to load_id2predicate!"<<endl;
 	this->kvstore->open_id2predicate(_mode);
-	cout<<"load_id2predicate successfully!"<<endl;
+	//cout<<"load_id2predicate successfully!"<<endl;
 }
 
 void 
 Database::load_sub2values(int _mode)
 {
-	cout<<"begin to load_sub2values!"<<endl;
+	//cout<<"begin to load_sub2values!"<<endl;
 	this->kvstore->open_subID2values(_mode);
-	cout<<"load_sub2values successfully!"<<endl;
+	//cout<<"load_sub2values successfully!"<<endl;
 }
 
 void 
 Database::load_obj2values(int _mode)
 {
-	cout<<"begin to load_obj2values!"<<endl;
+	//cout<<"begin to load_obj2values!"<<endl;
 	this->kvstore->open_objID2values(_mode);
-	cout<<"load_obj2values successfully!"<<endl;
+	//cout<<"load_obj2values successfully!"<<endl;
 }
 
 void 
 Database::load_pre2values(int _mode)
 {
-	cout<<"begin to load_pre2values!"<<endl;
+	//cout<<"begin to load_pre2values!"<<endl;
 	this->kvstore->open_preID2values(_mode);
-	cout<<"load_pre2values successfully!"<<endl;
+	//cout<<"load_pre2values successfully!"<<endl;
 }
 
 void 
 Database::load_vstree(unsigned _vstree_size)
 {
 	(this->vstree)->loadTree(_vstree_size);
-	cout<<"vstree loaded"<<endl;
+	//cout<<"vstree loaded"<<endl;
 }
 
 // @author bookug
