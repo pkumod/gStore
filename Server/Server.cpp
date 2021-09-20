@@ -134,8 +134,12 @@ void sockThread::start()
 void
 Server::handler(Socket& _socket)
 {
+	int repeated_num = 0;
 	while (true)
 	{
+		if (repeated_num > 10)
+			break;
+
 		/**
 		* @brief Receive the command message from the client.
 		*/
@@ -144,6 +148,7 @@ Server::handler(Socket& _socket)
 		if (!recv_return)
 		{
 			cerr << Util::getTimeString() << "Receive command from client error. @Server::listen" << endl;
+			repeated_num++;
 			continue;
 		}
 
@@ -160,7 +165,7 @@ Server::handler(Socket& _socket)
 			cout << Util::getTimeString() << "Parser command error. @Server::listen" << endl;
 			std::string error = "Invalid command.";
 			this->response(1001, error, _socket);
-
+			repeated_num++;
 			continue;
 		}
 
@@ -200,8 +205,8 @@ Server::handler(Socket& _socket)
 		case CMD_BUILD:
 		{
 			std::string db_name = operation.getParameter("db_name");
-			std::string rdf_path = operation.getParameter("rdf_path");
-			this->build(db_name, rdf_path, _socket);
+			std::string db_path = operation.getParameter("db_path");
+			this->build(db_name, db_path, _socket);
 			break;
 		}
 		case CMD_DROP:
@@ -247,10 +252,15 @@ Server::handler(Socket& _socket)
 		}
 
 		default:
+		{
 			cerr << Util::getTimeString() << "This command is not supported by now. @Server::listen" << endl;
+			std::string error = "Invalid command.";
+			this->response(1001, error, _socket);
+		}
 		}
 		if (_close)
 			break;
+		repeated_num = 0;
 	}
 	/**
 	* @brief Disconnect from the client.
@@ -462,7 +472,7 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 		_ret_oprt.setCommand(CMD_BUILD);
 		if (para_num != 3)
 			return false;
-		if ((paras.find("db_name") == paras.end()) || (paras.find("rdf_path") == paras.end()))
+		if ((paras.find("db_name") == paras.end()) || (paras.find("db_path") == paras.end()))
 			return false;
 	}
 	else if (cmd == "load") {
@@ -721,7 +731,7 @@ Server::unload(std::string _db_name, Socket& _socket)
 }
 
 bool
-Server::build(std::string _db_name, std::string _rdf_path, Socket& _socket)
+Server::build(std::string _db_name, std::string _db_path, Socket& _socket)
 {
 	/**
 	* @brief Check if the client logins.
@@ -746,7 +756,7 @@ Server::build(std::string _db_name, std::string _rdf_path, Socket& _socket)
 	/**
 	* @brief Check if the rdf file path is legal.
 	*/
-	result = checkparamValue("rdf_path", _rdf_path);
+	result = checkparamValue("db_path", _db_path);
 	if (result.empty() == false)
 	{
 		this->response(1003, result, _socket);
@@ -764,10 +774,10 @@ Server::build(std::string _db_name, std::string _rdf_path, Socket& _socket)
 	}
 
 	cout << "Import dataset to build database..." << endl;
-	cout << "DB_store: " << _db_name << "\tRDF_data: " << _rdf_path << endl;
+	cout << "DB_store: " << _db_name << "\tRDF_data: " << _db_path << endl;
 
 	Database* database = new Database(_db_name);
-	bool flag = database->build(_rdf_path, _socket);
+	bool flag = database->build(_db_path, _socket);
 	delete database;
 	database = NULL;
 
