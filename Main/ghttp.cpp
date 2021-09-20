@@ -2,7 +2,7 @@
  * Copyright 2021 gStore, All Rights Reserved. 
  * @Author: Bookug Lober suxunbin liwenjie
  * @Date: 2021-08-22 00:37:57
- * @LastEditTime: 2021-09-19 14:30:28
+ * @LastEditTime: 2021-09-19 23:37:31
  * @LastEditors: Please set LastEditors
  * @Description: the http server to handler the user's request, which is main access entrance of gStore
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2248,6 +2248,7 @@ void backup_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 	if(path[0] == '.') path = path.substr(1, path.length() - 1);
 	//if(path[0] == '/') path = path.substr(1, path.length() - 1);
 	if(path[path.length() - 1] == '/') path = path.substr(0, path.length() - 1);
+	cout<<"backup path:"<<path<<endl;
 	string db_path = db_name + ".db";
 	pthread_rwlock_wrlock(&databases_map_lock);
 	int ret = copy(db_path, path);
@@ -2313,7 +2314,7 @@ void restore_thread_new(const shared_ptr<HttpServer::Response>& response,string 
 	string path=backup_path;
 	//if(path[0] == '/') path = '.' + path;
 	if(path[path.length() - 1] == '/') path = path.substr(0, path.length()-1);
-
+    cout<<"backup path:"<<path<<endl;
 	if(Util::dir_exist(path)==false){
 		string error = "Backup Path not exist, Restore Failed";
 		sendResponseMsg(1003,error,response);
