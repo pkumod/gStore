@@ -52,7 +52,7 @@ struct TopKTreeNode{
 class TopKSearchPlan {
  private:
   // all the information
-  map<TYPE_ENTITY_LITERAL_ID ,vector<TYPE_ENTITY_LITERAL_ID>> neighbours_;
+  map<TYPE_ENTITY_LITERAL_ID,vector<TYPE_ENTITY_LITERAL_ID>> neighbours_;
   map<TYPE_ENTITY_LITERAL_ID,vector<vector<bool>>> predicates_constant_;
   map<TYPE_ENTITY_LITERAL_ID,vector<vector<TYPE_ENTITY_LITERAL_ID>>> predicates_ids_;
   map<TYPE_ENTITY_LITERAL_ID,vector<vector<TopKPlanUtil::EdgeDirection>>> directions_;
@@ -65,8 +65,10 @@ class TopKSearchPlan {
   void AdjustOrder();
   bool walk(set<int> &possible_vars,set<int> &walk_pass_vars,vector<int> &result_cycle);
 
+  void DeleteEdge(TYPE_ENTITY_LITERAL_ID a,TYPE_ENTITY_LITERAL_ID b);
   bool CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics,
                 shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
+
  public:
   explicit TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics,
                           const QueryTree::Order&,shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
