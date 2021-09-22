@@ -1178,16 +1178,16 @@ void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
 }
 
 void PlanGenerator::get_nei_by_sub_plan_nodes(const vector<unsigned int> &last_plan_node, set<unsigned int> &nei_node) {
-	for(int node_in_plan : last_plan_node){
-		for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
-			if(find(last_plan_node.begin(), last_plan_node.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
-			== last_plan_node.end() && basicquery->getEdgeNeighborID(node_in_plan, i) != -1 &&
-			find(need_join_nodes.begin(), need_join_nodes.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
-			!= need_join_nodes.end()){
-				nei_node.insert(basicquery->getEdgeNeighborID(node_in_plan, i));
-			}
-		}
-	}
+	// for(int node_in_plan : last_plan_node){
+	// 	for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
+	// 		if(find(last_plan_node.begin(), last_plan_node.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
+	// 		== last_plan_node.end() && basicquery->getEdgeNeighborID(node_in_plan, i) != -1 &&
+	// 		find(need_join_nodes.begin(), need_join_nodes.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
+	// 		!= need_join_nodes.end()){
+	// 			nei_node.insert(basicquery->getEdgeNeighborID(node_in_plan, i));
+	// 		}
+	// 	}
+	// }
 }
 
 void PlanGenerator::considerallwcojoin(unsigned int var_num) {

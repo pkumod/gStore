@@ -820,10 +820,10 @@ Database::load(bool loadCSR)
 		return false;
 	}*/
 
-	long t1 = Util::get_cur_time();
-    this->load_statistics();
-    long t2 = Util::get_cur_time();
-    cout << "load statistics, used " << (t2 - t1) << "ms." << endl;
+	// long t1 = Util::get_cur_time();
+    // this->load_statistics();
+    // long t2 = Util::get_cur_time();
+    // cout << "load statistics, used " << (t2 - t1) << "ms." << endl;
 
     this->if_loaded = true;
 
@@ -2588,6 +2588,7 @@ Database::encodeRDF_new(const string _rdf_file,const string _error_log)
 	this->kvstore->close_literal2id();
 	this->kvstore->close_id2literal();
 	this->kvstore->close_predicate2id();
+	this->kvstore->close_id2predicate();
 
 
 	long t4 = Util::get_cur_time();
@@ -2647,6 +2648,8 @@ Database::encodeRDF_new(const string _rdf_file,const string _error_log)
 
 	//Util::logging("finish encodeRDF_new");
 
+	// not use statistics
+	/*
     if(!this->kvstore->open_preID2values(KVstore::READ_WRITE_MODE) ||
        !this->kvstore->open_subID2values(KVstore::READ_WRITE_MODE) ||
        !this->kvstore->open_objID2values(KVstore::READ_WRITE_MODE) ){
@@ -2677,6 +2680,7 @@ Database::encodeRDF_new(const string _rdf_file,const string _error_log)
 
     this->kvstore->close_id2predicate();
 
+	 */
 
     return true;
 }
