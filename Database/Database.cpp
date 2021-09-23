@@ -973,6 +973,10 @@ Database::load_cache()
 	this->load_important_obj2values();
 	
 	long t0 = Util::get_cur_time();
+	if(this->stringindex==NULL)
+	{
+		cout<<"the string index is null"<<endl;
+	}
 	vector<StringIndexFile*> indexfile = this->stringindex->get_three_StringIndexFile();
 
 	StringIndexFile* 	entity = indexfile[0];
