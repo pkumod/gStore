@@ -99,6 +99,7 @@ void OWIterator::Insert(const std::vector<TYPE_ENTITY_LITERAL_ID>& ids,
     bool operator<(const ScorePair& other) const{return this->cost<other.cost;};
   };
   std::vector<ScorePair> ranks;
+  this->pool_.reserve(ids.size());
   ranks.reserve(ids.size());
   for(unsigned int  i=0;i<ids.size();i++)
     ranks.push_back(ScorePair{ids[i],scores[i]});
@@ -113,6 +114,22 @@ void OWIterator::Insert(const std::vector<TYPE_ENTITY_LITERAL_ID>& ids,
   }
 }
 
+/**
+ * Default score : 0.0
+ * @param ids
+ */
+void OWIterator::Insert(const std::vector<TYPE_ENTITY_LITERAL_ID> &ids) {
+  pool_.reserve(ids.size());
+  for(unsigned int i=0;i < ids.size();i++)
+  {
+    DPB::element e{};
+    e.index = 0;
+    e.cost = 0.0;
+    e.node = ids[i];
+    this->pool_.push_back(e);
+  }
+}
+
 void OWIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
                            NodeOneChildVarPredicatesPtr predicate_information) {
   auto &i_th_element = this->pool_[i_th];
@@ -122,6 +139,7 @@ void OWIterator::GetResult(int i_th, std::shared_ptr<std::vector<TYPE_ENTITY_LIT
     record->push_back(predicate_id);
   record->push_back(node_id);
 }
+
 
 void FQIterator::TryGetNext(unsigned int k) {
   // get first
