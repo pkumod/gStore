@@ -734,7 +734,7 @@ Database::load(bool loadCSR)
 		cout << "load database info error. @Database::load()" << endl;
 		return false;
 	}
-	//cout << "load database info successfully!" << endl;
+	cout << "load database info successfully!" << endl;
 	if(!(this->kvstore)->load_trie(kv_mode))
 	{
 		cout<<"load kvstore failed."<<endl;
@@ -742,7 +742,7 @@ Database::load(bool loadCSR)
 
 	}
 	else{
-		//cout<<"load kvstore successfully!"<<endl;
+		cout<<"load kvstore successfully!"<<endl;
 	}
 		
 
@@ -750,9 +750,9 @@ Database::load(bool loadCSR)
 	//cout<<"set Trie for stringIndex  successfully!"<<endl;
 	//NOTICE: we should also run some heavy work in the main thread
 	this->stringindex->load();
-	//cout<<"load stringindex  successfully!"<<endl;
+	cout<<"load stringindex  successfully!"<<endl;
 	this->readIDinfo();
-	//cout<<"read IDInfo file  successfully!"<<endl;
+	cout<<"read IDInfo file  successfully!"<<endl;
 
 #ifdef THREAD_ON
 	pre2values_thread.join();
