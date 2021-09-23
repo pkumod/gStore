@@ -5054,26 +5054,26 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	return valid_num;
 }
 
-bool
+unsigned
 Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction> txn )
 {
 	bool flag = _is_restore || this->load();
 	if (!flag)
 	{
-		return false;
+		return -1;
 	}
 	cout << "finish loading" << endl;
 
 	long tv_load = Util::get_cur_time();
 
-	TYPE_TRIPLE_NUM success_num = 0;
+	unsigned success_num = 0;
 
 	ifstream _fin(_rdf_file.c_str());
 	if (!_fin)
 	{
 		cout << "fail to open : " << _rdf_file << ".@insert_test" << endl;
 		//exit(0);
-		return false;
+		return -1;
 	}
 
 	//NOTICE+WARN:we can not load all triples into memory all at once!!!
@@ -5107,27 +5107,27 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	cout << "insert rdf triples done." << endl;
 	cout<<"inserted triples num: "<<success_num<<endl;
 
-	return true;
+	return success_num;
 }
 
-bool
+unsigned
 Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction> txn)
 {
 	bool flag = _is_restore || this->load();
 	if (!flag)
 	{
-		return false;
+		return -1;
 	}
 	cout << "finish loading" << endl;
 
 	long tv_load = Util::get_cur_time();
-	TYPE_TRIPLE_NUM success_num = 0;
+	unsigned success_num = 0;
 
 	ifstream _fin(_rdf_file.c_str());
 	if (!_fin)
 	{
 		cout << "fail to open : " << _rdf_file << ".@remove_test" << endl;
-		return false;
+		return -1;
 	}
 
 	//NOTICE+WARN:we can not load all triples into memory all at once!!!
@@ -5162,7 +5162,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	{
 		this->resetIDinfo();
 	}
-	return true;
+	return success_num;
 }
 
 //WARNING: TRANSACTIONAL batch insert is not completed yet!

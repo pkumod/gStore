@@ -65,8 +65,8 @@ public:
 	bool insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 	bool remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 
-	bool batch_insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
-	bool batch_remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
+	unsigned batch_insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
+	unsigned batch_remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 
 	bool backup();
 	bool restore();
