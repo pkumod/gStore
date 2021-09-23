@@ -1,8 +1,16 @@
+/*
+ * @Author: your name
+ * @Date: 2021-09-23 16:55:53
+ * @LastEditTime: 2021-09-23 17:22:21
+ * @LastEditors: Please set LastEditors
+ * @Description: In User Settings Edit
+ * @FilePath: /gstore/Main/ghttp.cpp
+ */
 /* 
  * Copyright 2021 gStore, All Rights Reserved. 
  * @Author: Bookug Lober suxunbin liwenjie
  * @Date: 2021-08-22 00:37:57
- * @LastEditTime: 2021-09-19 23:37:31
+ * @LastEditTime: 2021-09-23 16:55:32
  * @LastEditors: Please set LastEditors
  * @Description: the http server to handler the user's request, which is main access entrance of gStore
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -163,6 +171,10 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Response>& response,stri
 void test_connect_thread_new(const shared_ptr<HttpServer::Response>& response);
 
 void getCoreVersion_thread_new(const shared_ptr<HttpServer::Response>& response);
+
+void batchInsert_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string file);
+
+void batchRemove_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string file);
 //TODO: use lock to protect logs when running in multithreading environment
 FILE* query_logfp = NULL;
 string queryLog = "logs/endpoint/query.log";
@@ -1712,8 +1724,6 @@ void unload_thread_new(const shared_ptr<HttpServer::Response> &response, string 
 			sendResponseMsg(1008, error, response);
 			pthread_rwlock_unlock(&txn_m_lock);
             pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-			
-			
 			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 			return;
 		}
@@ -2984,13 +2994,14 @@ void begin_thread_new(const shared_ptr<HttpServer::Response>& response,string db
 	{
 	     error = "Database transaction manager error.";
 		sendResponseMsg(1004,error,response);
+		pthread_rwlock_unlock(&txn_m_lock);
 		return;
 	}
 
 	shared_ptr<Txn_manager> txn_m = txn_managers[db_name];
 	pthread_rwlock_unlock(&txn_m_lock);
 	
-	cerr << "IsolationLevelType:" << level << endl;
+	cerr << "Isolation Level Type:" << level << endl;
 	txn_id_t TID = txn_m->Begin(static_cast<IsolationLevelType>(level));
 	cout <<"Transcation Id:"<< to_string(TID) << endl;
 	cout << to_string(txn_m->Get_Transaction(TID)->GetStartTime()) << endl;
@@ -3450,6 +3461,170 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Response>& response,stri
 	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
  }
 
+ 
+/**
+ * @Author: liwenjie
+ * Copyright 2021 gStore, All Rights Reserved. 
+ * email：liwenjiehn@pku.edu.cn
+ * @description: 
+ * @param {string} db_name: the name of target database
+ * @param {string} file: the insert data file 
+ * @return {*}
+ */
+void batchInsert_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string file)
+{
+	 string error;
+	 error=checkparamValue("db_name",db_name);
+	 if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	error=checkparamValue("file",file);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	if(Util::file_exist(file)==false)
+	{
+       error="the data file is not exist";
+	   sendResponseMsg(1003,error,response);
+	   return;
+	}
+	if(checkdbexist(db_name)==false)
+	{
+		error="database not built yet.";
+		sendResponseMsg(1004,error,response);
+		return;
+	}
+	
+	pthread_rwlock_rdlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+	if(iter == databases.end())
+	{
+		error = "Database not load yet.";
+	    sendResponseMsg(1004,error,response);
+		pthread_rwlock_unlock(&databases_map_lock);
+		return;
+	}
+	Database *current_database = iter->second;
+	pthread_rwlock_unlock(&databases_map_lock);	
+
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+	if (trylockdb(it_already_build)==false)
+	{
+		error = "the operation can not been excuted due to loss of lock.";
+		sendResponseMsg(1004, error, response);
+		return;
+	}
+	else
+	{
+	
+	unsigned success_num=current_database->batch_insert(file,false,nullptr);
+	//NOTICE: this info is in header
+    Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "Batch Insert Data  Successfully.", allocator);
+	resDoc.AddMember("success_num", StringRef(Util::int2string(success_num).c_str()), allocator);
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+	//header and content are split by an empty line
+    *response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+	 pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	 return;
+	}
+}
+
+/**
+ * @Author: liwenjie
+ * Copyright 2021 gStore, All Rights Reserved. 
+ * email：liwenjiehn@pku.edu.cn
+ * @description: 
+ * @param {string} db_name: the target database's name
+ * @param {string} file: the remove data file
+ * @return {*}
+ */
+void batchRemove_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string file)
+{
+	 string error;
+	 error=checkparamValue("db_name",db_name);
+	 if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	error=checkparamValue("file",file);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	if(Util::file_exist(file)==false)
+	{
+       error="the data file is not exist";
+	   sendResponseMsg(1003,error,response);
+	   return;
+	}
+	if(checkdbexist(db_name)==false)
+	{
+		error="database not built yet.";
+		sendResponseMsg(1004,error,response);
+		return;
+	}
+	
+	pthread_rwlock_rdlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+	if(iter == databases.end())
+	{
+		error = "Database not load yet.";
+	    sendResponseMsg(1004,error,response);
+		pthread_rwlock_unlock(&databases_map_lock);
+		return;
+	}
+	Database *current_database = iter->second;
+	pthread_rwlock_unlock(&databases_map_lock);	
+
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+	if (trylockdb(it_already_build)==false)
+	{
+		error = "the operation can not been excuted due to loss of lock.";
+		sendResponseMsg(1004, error, response);
+		return;
+	}
+	else
+	{
+	
+	unsigned success_num=current_database->batch_remove(file,false,nullptr);
+	//NOTICE: this info is in header
+	string success = "Batch Remove Data  Successfully.";
+
+    Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "Batch Remove Data  Successfully.", allocator);
+
+	resDoc.AddMember("success_num", StringRef(Util::int2string(success_num).c_str()), allocator);
+		StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	//header and content are split by an empty line
+    *response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+	 pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	 return;
+	}
+}
 
 
 string checkIdentity(string username, string password)
@@ -3944,6 +4119,62 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	{
 		 getCoreVersion_thread_new(response);
 
+	}
+	else if(operation=="batchInsert")
+	{
+		string file="";
+		if (RequestType == "GET")
+		{
+			file = WebUrl::CutParam(url, "file");
+			db_name = UrlDecode(db_name);
+			file = UrlDecode(file);
+			
+		}
+		else if (RequestType == "POST")
+		{
+			try
+			{
+				if (document.HasMember("file")&&document["file"].IsString())
+				{
+					file = document["file"].GetString();
+				}
+			}
+			catch (...)
+			{
+				string error = "the parameter has some error,please look up the api document.";
+				sendResponseMsg(1003, error, response);
+				return;
+			}
+		}
+		batchInsert_thread_new(response, db_name, file);	
+	}
+	else if(operation=="batchRemove")
+	{
+		string file="";
+		if (RequestType == "GET")
+		{
+			file = WebUrl::CutParam(url, "file");
+			db_name = UrlDecode(db_name);
+			file = UrlDecode(file);
+			
+		}
+		else if (RequestType == "POST")
+		{
+			try
+			{
+				if (document.HasMember("file")&&document["file"].IsString())
+				{
+					file = document["file"].GetString();
+				}
+			}
+			catch (...)
+			{
+				string error = "the parameter has some error,please look up the api document.";
+				sendResponseMsg(1003, error, response);
+				return;
+			}
+		}
+		batchRemove_thread_new(response, db_name, file);	
 	}
 	
 	else {
