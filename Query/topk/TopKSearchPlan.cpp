@@ -119,10 +119,6 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
       directions_[i][neighbour_pos].push_back(direction);
     }
 
-#ifdef TOPK_DEBUG_INFO
-    std::cout<<std::endl;
-#endif
-
   }
 
 }
@@ -193,7 +189,6 @@ void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
     {
       auto child_id= neighbours_[now_id][child_i];
       // below are vectors
-      auto two_var_edges_num = predicates_ids_.size();
       auto two_var_predicate_ids = predicates_ids_[now_id][child_i];
       auto two_var_predicate_constants = predicates_constant_[now_id][child_i];
       auto two_var_directions = directions_[now_id][child_i];

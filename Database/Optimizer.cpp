@@ -893,7 +893,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTo
     root_fr->GetResult(i,record);
     result_list->emplace_back(std::move(record));
   }
-#ifdef TOPK_DEBUG_INFO
+#ifdef TOPK_DEBUG_RESULT_INFO
   auto it = result_list->begin();
   for(decltype(result_list->size()) i =0;i<result_list->size();i++)
   {
@@ -958,7 +958,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
       break;
 #ifdef TOPK_DEBUG_INFO
     else {
-      cout << "get top-" << i << " "<<root_fr->pool_[i-1].cost<<endl;
+      cout << "get top-" << i << " "<<root_fr->pool_[i-1].cost;
     }
 #endif
 
@@ -984,13 +984,18 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
       auto filter_result_size = get<1>(filter_result).values_->size();
       success = filter_result_size != 0;
     }
-
+#ifdef TOPK_DEBUG_INFO
+    if(!success) {
+      cout << "  deleted";
+    }
+    cout<<endl;
+#endif
     if(success)
       result_list->push_back(record);
     else
       deleted_num += 1;
   }
-#ifdef TOPK_DEBUG_INFO
+#ifdef TOPK_DEBUG_RESULT_INFO
   auto var_num = bgp_query->get_total_var_num();
   vector<bool> is_predicate_var(var_num,false);
   for(unsigned i =0;i<var_num;i++)

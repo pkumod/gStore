@@ -67,8 +67,8 @@ void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_nod
     coefficients[comp_tree_node->val] = 1.0;
 #ifdef TOPK_DEBUG_INFO
     std::cout<<"Node:"<<comp_tree_node->val<<" 1.0"<<std::endl;
-    return;
 #endif
+    return;
   }
 #ifdef TOPK_DEBUG_INFO
   std::cout<<"Node:"<<comp_tree_node->val<<" "<<comp_tree_node->lchild->val<<" "<<comp_tree_node->rchild->val<<std::endl;
@@ -182,8 +182,9 @@ TopKUtil::GetChildNodeScores(double coefficient,
     auto literal_string = env->kv_store->getLiteralByID(child_id);
     pair<bool, double> check_result =  Util::checkGetNumericLiteral(literal_string);
     delete_it = !get<0>(check_result);
-    (*node_score)[child_id] = coefficient *get<1>(check_result);
-    if(delete_it)
+    if(!delete_it)
+      (*node_score)[child_id] = coefficient *get<1>(check_result);
+    if(parent_child!= nullptr && delete_it)
     {
       auto &its_parents = (*child_parent)[child_id];
       for(auto parent_id:its_parents)
@@ -253,7 +254,7 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
       TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
       TYPE_ENTITY_LITERAL_ID edge_list_len;
 
-#ifdef TOPK_DEBUG_INFO
+#ifdef TOPK_DEBUG_RESULT_INFO
       cout << "\t \t " <<env->kv_store->getEntityByID(parent_id)<<" ";
       if(predicates_constant[i])
       cout<<"-"<<env->kv_store->getPredicateByID(predicate_ids[i]);

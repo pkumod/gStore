@@ -36,8 +36,6 @@ FRIterator *DPBUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_sea
     node_score = GetChildNodeScores(coefficient,root_candidate, false, nullptr, nullptr,
                                     nullptr,env);
 
-
-
   // each node's descendents are OW first and FRs last
   std::vector<std::map<TYPE_ENTITY_LITERAL_ID ,std::shared_ptr<FRIterator>>> descendents_FRs;
 
@@ -170,8 +168,10 @@ DPBUtil::GenerateOWs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
     node_score = GetChildNodeScores(coefficient,child_candidates,true,&deleted_parents,&parent_child,
                                     &child_parent,env);
 
-  // Return OW iterators
+  for(auto deleted_parent:deleted_parents)
+    parent_var_candidates.erase(deleted_parent);
 
+  // Return OW iterators
 #ifdef SHOW_SCORE
   cout<<"var["<<child_var<<"] has no child, constructing OW iterators"<<endl;
 #endif
@@ -200,15 +200,18 @@ DPBUtil::GenerateOWs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
 #endif
       children_ids.push_back(child_id);
       (*ow_predicates)[child_id] = predicate_vec;
-      children_scores.push_back((*node_score)[child_id]);
+      if(has_coefficient)
+        children_scores.push_back((*node_score)[child_id]);
       child_it++;
     }
 #ifdef SHOW_SCORE
     cout<<endl;
       //cout<<parent_id<<"'s OW ["<<child_var<<"]";
 #endif
-
-    ow->Insert( children_ids, children_scores);
+    if(has_coefficient)
+      ow->Insert( children_ids, children_scores);
+    else
+      ow->Insert( children_ids);
     result[parent_id] = make_pair(ow,ow_predicates);
     children_ids.clear();
     children_scores.clear();
@@ -251,13 +254,16 @@ DPBUtil::GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
                                                                               deleted_parents, parent_child,
                                                                               child_parent, tree_edges_, env);
 
+
+
   // calculate children's scores
   shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,double>> node_score = nullptr;
   if(has_coefficient)
     node_score = GetChildNodeScores(coefficient,child_candidates,true,&deleted_parents,&parent_child,
                                     &child_parent,env);
 
-
+  for(auto deleted_parent:deleted_parents)
+    parent_var_candidates.erase(deleted_parent);
 
   // Return FR iterators
   std::set<TYPE_ENTITY_LITERAL_ID > deleted_children;
@@ -316,9 +322,6 @@ DPBUtil::GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
       }
     }
   }
-
-  for(auto deleted_parent:deleted_parents)
-    parent_var_candidates.erase(deleted_parent);
 
   std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<FRIterator>> result;
 

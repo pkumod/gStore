@@ -2562,171 +2562,20 @@ Util::GetFiles(const char *src_dir, const char *ext)
 
 pair<bool, double> Util::checkGetNumericLiteral(string &literal)
 {
-    if (literal[0] != '"')
-        return make_pair(false, 0);
-    if (literal.rfind('"') == string::npos)
-        return make_pair(false, 0);
-    size_t sepPos = literal.find('^');
-    if (sepPos == string::npos || literal[sepPos + 1] != '^' \
-        || literal[sepPos + 2] != '<' || literal[literal.size() - 1] != '>')
-        return make_pair(false, 0);
-    string valuePart = literal.substr(1, literal.rfind('"') - 1);
-    string suffix = literal.substr(sepPos + 2);
-    if (suffix == "<http://www.w3.org/2001/XMLSchema#integer>")
-    {
-        long long ll;
-        try
-        {
-            ll = stoll(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Integer value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        catch (out_of_range& e)
-        {
-            cout << "Integer out of range" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, ll);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#decimal>")
-    {
-        double d = stod(valuePart);
-        return make_pair(true, d);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#double>")
-    {
-        double d;
-        try
-        {
-            d = stod(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Double value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        if (valuePart.length() == 3 && toupper(valuePart[0]) == 'N' && toupper(valuePart[1]) == 'A'
-            && toupper(valuePart[2]) == 'N')
-        {
-            cout << "Double value is NaN" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, d);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#long>")
-    {
-        long long ll;
-        try
-        {
-            ll = stoll(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Long value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        catch (out_of_range& e)
-        {
-            cout << "Long value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, ll);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#int>")
-    {
-        long long ll;
-        try
-        {
-            ll = stoll(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Int value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        catch (out_of_range& e)
-        {
-            cout << "Int value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        if (ll < (long long)INT_MIN || ll >(long long)INT_MAX)
-        {
-            cout << "Int value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, ll);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#short>")
-    {
-        long long ll;
-        try
-        {
-            ll = stoll(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Short value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        catch (out_of_range& e)
-        {
-            cout << "Short value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        if (ll < (long long)SHRT_MIN || ll >(long long)SHRT_MAX)
-        {
-            cout << "Short value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, ll);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#byte>")
-    {
-        long long ll;
-        try
-        {
-            ll = stoll(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Byte value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        catch (out_of_range& e)
-        {
-            cout << "Byte value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        if (ll < (long long)SCHAR_MIN || ll >(long long)SCHAR_MAX)
-        {
-            cout << "Byte value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, ll);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#float>")
-    {
-        float f;
-        try
-        {
-            f = stof(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Float value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        if (valuePart.length() == 3 && toupper(valuePart[0]) == 'N' && toupper(valuePart[1]) == 'A'
-            && toupper(valuePart[2]) == 'N')
-        {
-            cout << "Float value is NaN" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, f);
-    }
-    else
-        return make_pair(false, 0);
+  if (literal.size() <= 2)
+    return make_pair(false, 0);
+  if (literal[0] != '"')
+    return make_pair(false, 0);
+
+  auto right_quotation_pos =  literal.rfind('"');
+
+  if (right_quotation_pos == 1 || right_quotation_pos == string::npos)
+    return make_pair(false, 0);
+
+  const char* last_s = literal.c_str() + right_quotation_pos;
+  const char* start = literal.c_str() + 1;
+  char* end_ptr;
+  double v = std::strtod(start, &end_ptr);
+  bool success = end_ptr == last_s;
+  return make_pair(success,v);
 }
