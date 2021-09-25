@@ -49,8 +49,9 @@ public:
 	map<unsigned, vector<unsigned>> var_to_sample_cache;
 	map<unsigned, map<unsigned, unsigned >> s_o_list_average_size;
 
-	// store var id, not var index
+	// store var id, not var index, only contains s_o var
 	vector<unsigned> join_nodes;
+
 	vector<unsigned> satellite_nodes;
 
 	map<unsigned, vector<TYPE_ENTITY_LITERAL_ID>> so_var_to_sample_cache;
