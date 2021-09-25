@@ -4,6 +4,20 @@
 # Mail: linglinyang@stu.pku.edu.cn
 =============================================================================*/
 
+// something need clear:
+// 1. s ?p ?o. If we use ?p in the future, then s2po is similar to s2o in efficiency, because the result size is same.
+// 			   However, we need to re-design the cost function to fit the new added pre_var ?p.
+
+// s ?p ?o
+// ?s ?p o do not need generate ?p candidate, even pre num of one s_o is small\
+// however, ?o ?s's candidate should be consider
+
+// plan_cache only contains plans about s_o var, because in ?s ?p ?o, after considering ?s and ?o, then ?p has also considered.
+// in binary join, only consider s_o var
+
+// scan var(candidate set generation) -> add var by WCO_join or binary_join -> add satellite var
+
+
 #include "PlanGenerator.h"
 
 PlanGenerator::PlanGenerator(KVstore *kvstore_, BasicQuery *basicquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_):
@@ -1178,16 +1192,16 @@ void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
 }
 
 void PlanGenerator::get_nei_by_sub_plan_nodes(const vector<unsigned int> &last_plan_node, set<unsigned int> &nei_node) {
-	// for(int node_in_plan : last_plan_node){
-	// 	for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
-	// 		if(find(last_plan_node.begin(), last_plan_node.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
-	// 		== last_plan_node.end() && basicquery->getEdgeNeighborID(node_in_plan, i) != -1 &&
-	// 		find(need_join_nodes.begin(), need_join_nodes.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
-	// 		!= need_join_nodes.end()){
-	// 			nei_node.insert(basicquery->getEdgeNeighborID(node_in_plan, i));
-	// 		}
-	// 	}
-	// }
+	for(int node_in_plan : last_plan_node){
+		for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
+			if(find(last_plan_node.begin(), last_plan_node.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
+			== last_plan_node.end() && basicquery->getEdgeNeighborID(node_in_plan, i) != -1 &&
+			find(need_join_nodes.begin(), need_join_nodes.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
+			!= need_join_nodes.end()){
+				nei_node.insert(basicquery->getEdgeNeighborID(node_in_plan, i));
+			}
+		}
+	}
 }
 
 void PlanGenerator::considerallwcojoin(unsigned int var_num) {
@@ -1207,7 +1221,53 @@ void PlanGenerator::considerallwcojoin(unsigned int var_num) {
 }
 
 void PlanGenerator::considerallbinaryjoin(unsigned int var_num) {
-	;
+
+	unsigned min_size = 3;
+	unsigned max_size = min(min_size, var_num - 2);
+
+
+	for(const auto &need_considerbinaryjoin_nodes_plan : plan_cache[var_num - 1]){
+
+		unsigned long last_plan_smallest_cost = get_best_plan(need_considerbinaryjoin_nodes_plan.first)->plan_cost;
+
+		// todo: need consider pre_var not include
+		for(unsigned small_plan_nodes_num = min_size; small_plan_nodes_num <= max_size; ++ small_plan_nodes_num){
+			for(const auto &small_nodes_plan : plan_cache[small_plan_nodes_num-1]){
+				if(OrderedVector::contain_sub_vec(need_considerbinaryjoin_nodes_plan.first, small_nodes_plan.first)) {
+					vector<unsigned> other_nodes;
+					OrderedVector::subtract(need_considerbinaryjoin_nodes_plan.first, small_nodes_plan.first,other_nodes);
+					set<unsigned> join_nodes;
+					get_join_nodes(small_nodes_plan.first, other_nodes, join_nodes);
+
+					if (join_nodes.size() >= 1 && join_nodes.size() + other_nodes.size() < node_num - 1) {
+
+						OrderedVector::vec_set_union(other_nodes, join_nodes);
+
+						if (plan_cache[other_nodes.size() - 1].find(other_nodes) !=
+						plan_cache[other_nodes.size() - 1].end()) {
+
+							PlanTree *small_best_plan = get_best_plan(small_nodes_plan.first);
+							PlanTree *another_small_best_plan = get_best_plan(other_nodes);
+
+							unsigned long now_cost = cost_model_for_binary(small_nodes_plan.first,
+																		   other_nodes, small_best_plan,
+																		   another_small_best_plan);
+
+							if (now_cost < last_plan_smallest_cost) {
+								//                            build new plan and add to plan_cache
+								PlanTree *new_plan = new PlanTree(small_best_plan, another_small_best_plan);
+								new_plan->plan_cost = now_cost;
+								plan_cache[node_num - 1][need_considerbinaryjoin_nodes_plan.first].push_back(new_plan);
+								last_plan_smallest_cost = now_cost;
+
+							}
+						}
+					}
+				}
+
+			}
+		}
+	}
 }
 
 bool compare_pair_vector(pair<double, unsigned> a, pair<double, unsigned> b) {
@@ -1218,7 +1278,8 @@ void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
 
 	vector<pair<double, unsigned >> satellitenode_score;
 
-	// todo: satellite_nodes must be so_type?
+	// satellite_nodes must be so_type?
+	// yes! If s ?p o. ... then we only need to treat this one triple. Because it has not linked with other GP by var.
 	for(unsigned satellitenode_index = 0; satellitenode_index < satellite_nodes.size(); ++satellitenode_index){
 		unsigned satellitenode_id = satellite_nodes[satellitenode_index];
 
