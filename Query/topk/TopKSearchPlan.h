@@ -15,7 +15,8 @@
 #define GSTOREGDB_QUERY_TOPK_TOPKSEARCHPLAN_H_
 
 #define TOPK_DEBUG_INFO
-//#define TOPK_DEBUG_RESULT_INFO
+#define TOPK_DEBUG_RESULT_INFO
+//#define TOPK_DEBUG_TREE_EXTEND_INFO
 namespace TopKPlanUtil{
 enum class EdgeDirection{IN,OUT,NoEdge};
 

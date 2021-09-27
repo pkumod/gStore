@@ -58,13 +58,17 @@ double TopKUtil::GetScore(string &v, stringstream &ss)
 }
 
 void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
-                                         std::map<std::string,double>& coefficients,
-                                         stringstream &ss)
+                                          std::map<std::string,double>& coefficients,
+                                          stringstream &ss,
+                                          bool minus_signed)
 {
 
   if(comp_tree_node->lchild==nullptr&&comp_tree_node->rchild==nullptr)
   {
-    coefficients[comp_tree_node->val] = 1.0;
+    if(minus_signed)
+      coefficients[comp_tree_node->val] = -1.0;
+    else
+      coefficients[comp_tree_node->val] = 1.0;
 #ifdef TOPK_DEBUG_INFO
     std::cout<<"Node:"<<comp_tree_node->val<<" 1.0"<<std::endl;
 #endif
@@ -74,26 +78,46 @@ void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_nod
   std::cout<<"Node:"<<comp_tree_node->val<<" "<<comp_tree_node->lchild->val<<" "<<comp_tree_node->rchild->val<<std::endl;
 #endif
   // if both of the child are leaves
+  // e.g
+  // case    A                B
+  //         *                +
+  //      /     \          /     \
+  //    ?x      1.0      ?x       ?y
   if(comp_tree_node->lchild->lchild==nullptr&&comp_tree_node->lchild->rchild==nullptr&&
       comp_tree_node->rchild->lchild==nullptr&&comp_tree_node->rchild->rchild==nullptr)
   {
+    // case B
+    if(comp_tree_node->oprt == "+" ||comp_tree_node->oprt == "-"  )
+    {
+      GetVarCoefficientsTreeNode(comp_tree_node->lchild, coefficients, ss,minus_signed);
+      GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients, ss,comp_tree_node->oprt == "-");
+      return;
+    }
 
     if (comp_tree_node->lchild->val.at(0) == '?') // ?x * 0.1
     {
       auto val_string = comp_tree_node->rchild->val.substr(1);
-      coefficients[comp_tree_node->lchild->val] = GetScore(val_string,ss);
+        coefficients[comp_tree_node->lchild->val] = GetScore(val_string,ss);
     }
     else // 0.1 * ?x
     {
       auto val_string = comp_tree_node->lchild->val.substr(1);
       coefficients[comp_tree_node->rchild->val] = GetScore(val_string,ss);;
     }
+    if(minus_signed)
+      coefficients[comp_tree_node->lchild->val] = -coefficients[comp_tree_node->lchild->val];
+    return;
   }
+
+  // the left should be either a leaf or a triangle
+  if(comp_tree_node->lchild != nullptr)
+    GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients, ss,minus_signed);
+
+  // the case where left child exists and right child not exist cannot happen
+  if(comp_tree_node->val=="-")
+    GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients, ss,true);
   else
-  {
-    GetVarCoefficientsTreeNode(comp_tree_node->lchild, coefficients, ss);
     GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients, ss);
-  }
 }
 
 /**
@@ -104,12 +128,14 @@ void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_nod
  */
 std::shared_ptr<std::map<std::string,double>> TopKUtil::getVarCoefficients(QueryTree::Order order)
 {
+#ifdef TOPK_DEBUG_INFO
+  order.comp_tree_root->print(0);
+#endif
   stringstream ss;
   auto r= make_shared<std::map<std::string,double>>();
   GetVarCoefficientsTreeNode(order.comp_tree_root, *r, ss);
 
 #ifdef TOPK_DEBUG_INFO
-
   std::cout<<"VarCoefficients:"<<std::endl;
   for(const auto& pair:*r)
   {
@@ -254,7 +280,7 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
       TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
       TYPE_ENTITY_LITERAL_ID edge_list_len;
 
-#ifdef TOPK_DEBUG_RESULT_INFO
+#ifdef TOPK_DEBUG_TREE_EXTEND_INFO
       cout << "\t \t " <<env->kv_store->getEntityByID(parent_id)<<" ";
       if(predicates_constant[i])
       cout<<"-"<<env->kv_store->getPredicateByID(predicate_ids[i]);
