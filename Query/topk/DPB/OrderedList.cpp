@@ -107,7 +107,7 @@ void OWIterator::Insert(const std::vector<TYPE_ENTITY_LITERAL_ID>& ids,
   for(unsigned int i=0;i < ranks.size();i++)
   {
     DPB::element e{};
-    e.index = 0;
+    e.index = i;
     e.cost = ranks[i].cost;
     e.node = ranks[i].id;
     this->pool_.push_back(e);
@@ -123,7 +123,7 @@ void OWIterator::Insert(const std::vector<TYPE_ENTITY_LITERAL_ID> &ids) {
   for(unsigned int i=0;i < ids.size();i++)
   {
     DPB::element e{};
-    e.index = 0;
+    e.index = i;
     e.cost = 0.0;
     e.node = ids[i];
     this->pool_.push_back(e);
