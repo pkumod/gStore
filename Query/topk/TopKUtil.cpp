@@ -111,13 +111,11 @@ void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_nod
 
   // the left should be either a leaf or a triangle
   if(comp_tree_node->lchild != nullptr)
-    GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients, ss,minus_signed);
+    GetVarCoefficientsTreeNode(comp_tree_node->lchild, coefficients, ss,minus_signed);
 
   // the case where left child exists and right child not exist cannot happen
-  if(comp_tree_node->val=="-")
-    GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients, ss,true);
-  else
-    GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients, ss);
+  GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients, ss,comp_tree_node->val=="-");
+
 }
 
 /**
