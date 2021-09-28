@@ -1,8 +1,16 @@
+/*
+ * @Author: your name
+ * @Date: 2021-09-23 16:55:53
+ * @LastEditTime: 2021-09-23 17:22:21
+ * @LastEditors: Please set LastEditors
+ * @Description: In User Settings Edit
+ * @FilePath: /gstore/Main/ghttp.cpp
+ */
 /* 
  * Copyright 2021 gStore, All Rights Reserved. 
  * @Author: Bookug Lober suxunbin liwenjie
  * @Date: 2021-08-22 00:37:57
- * @LastEditTime: 2021-09-09 21:39:16
+ * @LastEditTime: 2021-09-23 16:55:32
  * @LastEditors: Please set LastEditors
  * @Description: the http server to handler the user's request, which is main access entrance of gStore
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -163,6 +171,10 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Response>& response,stri
 void test_connect_thread_new(const shared_ptr<HttpServer::Response>& response);
 
 void getCoreVersion_thread_new(const shared_ptr<HttpServer::Response>& response);
+
+void batchInsert_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string file);
+
+void batchRemove_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string file);
 //TODO: use lock to protect logs when running in multithreading environment
 FILE* query_logfp = NULL;
 string queryLog = "logs/endpoint/query.log";
@@ -770,6 +782,11 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
+				if (Util::file_exist("system.db/port.txt"))
+				{
+					string cmd = "rm system.db/port.txt";
+                    system(cmd.c_str());
+				}
 				cerr << "Server stopped abnormally, restarting server..." << endl;
 				//break;
 			}
@@ -1109,7 +1126,7 @@ void signalHandler(int signum)
 			string error = "Unable to checkpoint due to loss of lock";
 			cout << error << endl;
 			pthread_rwlock_unlock(&databases_map_lock);
-			//cout << "Stop server failed." << endl;
+			cout << "Stop server failed." << endl;
 			exit(signum);
 		}
 		current_database->save();
@@ -1139,7 +1156,7 @@ void signalHandler(int signum)
 	system(cmd.c_str());
 	cmd = "rm system.db/port.txt";
         system(cmd.c_str());
-	//cout << "Server stopped." << endl;
+	cout << "Server stopped." << endl;
 	exit(signum);
 }
 
@@ -1442,15 +1459,12 @@ bool trylockdb(std::map<std::string, struct DBInfo*>::iterator it_already_build)
 	
 	if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
 	{
-		// pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-		// if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
-		// {
-        //    result = false;
-		// }
-		// else {
-		// 	result=true;
-		// }
-		result=false;
+		//  pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+		//  cout<<"unlock the db_lock"<<endl;
+		//  pthread_rwlock_wrlock(&(it_already_build->second->db_lock));
+		// cout<<"wrlock the db_lock"<<endl;
+		// result=true;
+		return false;
 		
 	}
 	else
@@ -1486,17 +1500,28 @@ void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db
 		sendResponseMsg(0, error, response);
 		return;
 	}
-	cout<<"begin loading1..."<<endl;
+	
 	pthread_rwlock_rdlock(&already_build_map_lock);
 	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
-	pthread_rwlock_unlock(&already_build_map_lock);
+	
 	if (trylockdb(it_already_build)==false)
 	{
 		error = "the operation can not been excuted due to loss of lock.";
 		sendResponseMsg(1007, error, response);
+		pthread_rwlock_unlock(&already_build_map_lock);
+		return;
 	}
 	else
 	{
+		pthread_rwlock_unlock(&already_build_map_lock);
+		if(pthread_rwlock_trywrlock(&databases_map_lock)!=0)
+	   {
+		   error = "Unable to load due to loss of lock";
+		
+			sendResponseMsg(1007,error,response);
+			return;
+
+	   }
 		cout<<"begin loading..."<<endl;
 		string database = db_name;
 		Database* current_database = new Database(database);
@@ -1517,8 +1542,20 @@ void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db
 			sendResponseMsg(1005, error, response);
 			return;
 		}
-		pthread_rwlock_wrlock(&databases_map_lock);
+	// 	if(pthread_rwlock_trywrlock(&databases_map_lock)!=0)
+	//    {
+	// 	//    cout<<"can not wrlock the databases map  lock!"<<endl;
+    //     //    pthread_rwlock_unlock(&databases_map_lock);
+	// 	//    cout<<"unlock the databases map  lock!"<<endl;
+	// 	//    pthread_rwlock_wrlock(&databases_map_lock);
+	// 	//    cout<<"relock the databases map  lock!"<<endl;
+	// 	    error = "Unable to load due to loss of lock";
+	// 		sendResponseMsg(1007,error,response);
+	// 		return;
+	//    }
+		cout<<"wrlock the database map"<<endl;
 		databases.insert(pair<std::string, Database*>(db_name, current_database));
+		cout<<"insert the pair into the databases"<<endl;
 		pthread_rwlock_unlock(&databases_map_lock);
 
 		cout << "database insert done." << endl;
@@ -1561,7 +1598,7 @@ void monitor_thread_new(const shared_ptr<HttpServer::Response>& response, string
 	// }
 	pthread_rwlock_rdlock(&databases_map_lock);
 	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
-	pthread_rwlock_unlock(&databases_map_lock);
+	
 	if(iter == databases.end())
 	{
 		//cout << "database not loaded yet." << endl;
@@ -1582,7 +1619,7 @@ void monitor_thread_new(const shared_ptr<HttpServer::Response>& response, string
 	if(pthread_rwlock_tryrdlock(&(it_already_build->second->db_lock)) != 0)
 	{
 		string error = "Unable to monitor due to loss of lock";
-		string resJson = CreateJson(501, error, 0);
+		string resJson = CreateJson(1007, error, 0);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
 		
 		
@@ -1687,8 +1724,6 @@ void unload_thread_new(const shared_ptr<HttpServer::Response> &response, string 
 			sendResponseMsg(1008, error, response);
 			pthread_rwlock_unlock(&txn_m_lock);
             pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-			
-			
 			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 			return;
 		}
@@ -2223,6 +2258,7 @@ void backup_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 	if(path[0] == '.') path = path.substr(1, path.length() - 1);
 	//if(path[0] == '/') path = path.substr(1, path.length() - 1);
 	if(path[path.length() - 1] == '/') path = path.substr(0, path.length() - 1);
+	cout<<"backup path:"<<path<<endl;
 	string db_path = db_name + ".db";
 	pthread_rwlock_wrlock(&databases_map_lock);
 	int ret = copy(db_path, path);
@@ -2288,7 +2324,7 @@ void restore_thread_new(const shared_ptr<HttpServer::Response>& response,string 
 	string path=backup_path;
 	//if(path[0] == '/') path = '.' + path;
 	if(path[path.length() - 1] == '/') path = path.substr(0, path.length()-1);
-
+    cout<<"backup path:"<<path<<endl;
 	if(Util::dir_exist(path)==false){
 		string error = "Backup Path not exist, Restore Failed";
 		sendResponseMsg(1003,error,response);
@@ -2958,13 +2994,14 @@ void begin_thread_new(const shared_ptr<HttpServer::Response>& response,string db
 	{
 	     error = "Database transaction manager error.";
 		sendResponseMsg(1004,error,response);
+		pthread_rwlock_unlock(&txn_m_lock);
 		return;
 	}
 
 	shared_ptr<Txn_manager> txn_m = txn_managers[db_name];
 	pthread_rwlock_unlock(&txn_m_lock);
 	
-	cerr << "IsolationLevelType:" << level << endl;
+	cerr << "Isolation Level Type:" << level << endl;
 	txn_id_t TID = txn_m->Begin(static_cast<IsolationLevelType>(level));
 	cout <<"Transcation Id:"<< to_string(TID) << endl;
 	cout << to_string(txn_m->Get_Transaction(TID)->GetStartTime()) << endl;
@@ -3424,6 +3461,170 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Response>& response,stri
 	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
  }
 
+ 
+/**
+ * @Author: liwenjie
+ * Copyright 2021 gStore, All Rights Reserved. 
+ * email：liwenjiehn@pku.edu.cn
+ * @description: 
+ * @param {string} db_name: the name of target database
+ * @param {string} file: the insert data file 
+ * @return {*}
+ */
+void batchInsert_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string file)
+{
+	 string error;
+	 error=checkparamValue("db_name",db_name);
+	 if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	error=checkparamValue("file",file);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	if(Util::file_exist(file)==false)
+	{
+       error="the data file is not exist";
+	   sendResponseMsg(1003,error,response);
+	   return;
+	}
+	if(checkdbexist(db_name)==false)
+	{
+		error="database not built yet.";
+		sendResponseMsg(1004,error,response);
+		return;
+	}
+	
+	pthread_rwlock_rdlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+	if(iter == databases.end())
+	{
+		error = "Database not load yet.";
+	    sendResponseMsg(1004,error,response);
+		pthread_rwlock_unlock(&databases_map_lock);
+		return;
+	}
+	Database *current_database = iter->second;
+	pthread_rwlock_unlock(&databases_map_lock);	
+
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+	if (trylockdb(it_already_build)==false)
+	{
+		error = "the operation can not been excuted due to loss of lock.";
+		sendResponseMsg(1004, error, response);
+		return;
+	}
+	else
+	{
+	
+	unsigned success_num=current_database->batch_insert(file,false,nullptr);
+	//NOTICE: this info is in header
+    Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "Batch Insert Data  Successfully.", allocator);
+	resDoc.AddMember("success_num", StringRef(Util::int2string(success_num).c_str()), allocator);
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+	//header and content are split by an empty line
+    *response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+	 pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	 return;
+	}
+}
+
+/**
+ * @Author: liwenjie
+ * Copyright 2021 gStore, All Rights Reserved. 
+ * email：liwenjiehn@pku.edu.cn
+ * @description: 
+ * @param {string} db_name: the target database's name
+ * @param {string} file: the remove data file
+ * @return {*}
+ */
+void batchRemove_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string file)
+{
+	 string error;
+	 error=checkparamValue("db_name",db_name);
+	 if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	error=checkparamValue("file",file);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+	if(Util::file_exist(file)==false)
+	{
+       error="the data file is not exist";
+	   sendResponseMsg(1003,error,response);
+	   return;
+	}
+	if(checkdbexist(db_name)==false)
+	{
+		error="database not built yet.";
+		sendResponseMsg(1004,error,response);
+		return;
+	}
+	
+	pthread_rwlock_rdlock(&databases_map_lock);
+	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
+	if(iter == databases.end())
+	{
+		error = "Database not load yet.";
+	    sendResponseMsg(1004,error,response);
+		pthread_rwlock_unlock(&databases_map_lock);
+		return;
+	}
+	Database *current_database = iter->second;
+	pthread_rwlock_unlock(&databases_map_lock);	
+
+	pthread_rwlock_rdlock(&already_build_map_lock);
+	std::map<std::string, struct DBInfo*>::iterator it_already_build = already_build.find(db_name);
+	pthread_rwlock_unlock(&already_build_map_lock);
+	if (trylockdb(it_already_build)==false)
+	{
+		error = "the operation can not been excuted due to loss of lock.";
+		sendResponseMsg(1004, error, response);
+		return;
+	}
+	else
+	{
+	
+	unsigned success_num=current_database->batch_remove(file,false,nullptr);
+	//NOTICE: this info is in header
+	string success = "Batch Remove Data  Successfully.";
+
+    Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType &allocator = resDoc.GetAllocator();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "Batch Remove Data  Successfully.", allocator);
+
+	resDoc.AddMember("success_num", StringRef(Util::int2string(success_num).c_str()), allocator);
+		StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+
+	//header and content are split by an empty line
+    *response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length()  << "\r\n\r\n" << resJson;
+	 pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	 return;
+	}
+}
 
 
 string checkIdentity(string username, string password)
@@ -3919,6 +4120,62 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 		 getCoreVersion_thread_new(response);
 
 	}
+	else if(operation=="batchInsert")
+	{
+		string file="";
+		if (RequestType == "GET")
+		{
+			file = WebUrl::CutParam(url, "file");
+			db_name = UrlDecode(db_name);
+			file = UrlDecode(file);
+			
+		}
+		else if (RequestType == "POST")
+		{
+			try
+			{
+				if (document.HasMember("file")&&document["file"].IsString())
+				{
+					file = document["file"].GetString();
+				}
+			}
+			catch (...)
+			{
+				string error = "the parameter has some error,please look up the api document.";
+				sendResponseMsg(1003, error, response);
+				return;
+			}
+		}
+		batchInsert_thread_new(response, db_name, file);	
+	}
+	else if(operation=="batchRemove")
+	{
+		string file="";
+		if (RequestType == "GET")
+		{
+			file = WebUrl::CutParam(url, "file");
+			db_name = UrlDecode(db_name);
+			file = UrlDecode(file);
+			
+		}
+		else if (RequestType == "POST")
+		{
+			try
+			{
+				if (document.HasMember("file")&&document["file"].IsString())
+				{
+					file = document["file"].GetString();
+				}
+			}
+			catch (...)
+			{
+				string error = "the parameter has some error,please look up the api document.";
+				sendResponseMsg(1003, error, response);
+				return;
+			}
+		}
+		batchRemove_thread_new(response, db_name, file);	
+	}
 	
 	else {
 		string error="the operation "+operation +" has not match handler function";
@@ -4078,7 +4335,7 @@ bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 		if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
 		{
 			string error = "Unable to checkpoint due to loss of lock";
-			string resJson = CreateJson(704, error, 0);
+			string resJson = CreateJson(1007, error, 0);
 			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
 
 			//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;

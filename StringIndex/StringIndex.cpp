@@ -505,6 +505,7 @@ void StringIndex::SetTrie(Trie* trie)
 vector<StringIndexFile*>
 StringIndex::get_three_StringIndexFile()
 {
+	cout<<"begin three StringIndexFile"<<endl;
 	latch.lockShared();
 	vector<StringIndexFile*> ret;
 	ret.push_back(&this->entity);
