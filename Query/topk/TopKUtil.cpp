@@ -245,16 +245,14 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
                         std::map<TYPE_ENTITY_LITERAL_ID, shared_ptr<IDListWithAppending>  > &parent_child,
                         std::map<TYPE_ENTITY_LITERAL_ID, std::set<TYPE_ENTITY_LITERAL_ID> > &child_parent,
                         std::shared_ptr<TopKPlanUtil::TreeEdge> tree_edges_,
-                        Env *env)
-{
+                        Env *env) {
   std::set<TYPE_ENTITY_LITERAL_ID> child_candidates;
   std::set<TYPE_ENTITY_LITERAL_ID> deleted_parent_ids_this_child;
   auto &predicates_constant = tree_edges_->predicate_constant_;
   auto &predicate_ids = tree_edges_->predicate_ids_;
   auto &directions = tree_edges_->directions_;
 
-  for (auto it = parent_var_candidates.begin(); it != parent_var_candidates.end(); it++)
-  {
+  for (auto it = parent_var_candidates.begin(); it != parent_var_candidates.end(); it++) {
     auto parent_id = *it;
     auto id_list_ptr = make_shared<IDList>();
 
@@ -268,22 +266,20 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
 
     auto two_var_edges_num = predicate_ids.size();
     decltype(two_var_edges_num) i;
-    for (i = 0; i < two_var_edges_num; i++)
-    {
+    for (i = 0; i < two_var_edges_num; i++) {
       // early terminate
-      if (id_list_prepared && id_list_ptr->size()==0)
+      if (id_list_prepared && id_list_ptr->size() == 0)
         break;
-      if(appending_list_prepared && appending_list_ptr->Size()==0)
+      if (appending_list_prepared && appending_list_ptr->Size() == 0)
         break;
 
       // encounter a case where we must use IDListWithAppending
       // need to transfer to IDListWithAppending
-      if(!appending_list_prepared && !predicates_constant[i])
-        if(id_list_prepared) {
+      if (!appending_list_prepared && !predicates_constant[i])
+        if (id_list_prepared) {
           appending_list_ptr = make_shared<IDListWithAppending>(*id_list_ptr);
           appending_list_prepared = true;
         }
-
 
       TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
       TYPE_ENTITY_LITERAL_ID edge_list_len;
@@ -302,74 +298,61 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
 #endif
 
       // use IDList
-      if (predicates_constant[i]){
-        if(directions[i] == TopKPlanUtil::EdgeDirection::OUT)
-        {
+      if (predicates_constant[i]) {
+        if (directions[i] == TopKPlanUtil::EdgeDirection::OUT) {
           env->kv_store->getobjIDlistBysubIDpreID(parent_id,
                                                   predicate_ids[i],
                                                   edge_candidate_list,
                                                   edge_list_len,
                                                   true,
                                                   env->txn);
-        }
-        else if(directions[i] == TopKPlanUtil::EdgeDirection::IN)
-        {
+        } else if (directions[i] == TopKPlanUtil::EdgeDirection::IN) {
           env->kv_store->getsubIDlistByobjIDpreID(parent_id,
                                                   predicate_ids[i],
                                                   edge_candidate_list,
                                                   edge_list_len,
                                                   true,
                                                   env->txn);
-        }
-        else
+        } else
           throw string("unknown EdgeDirection");
         UpdateIDList(id_list_ptr,
                      edge_candidate_list,
                      edge_list_len,
                      id_list_prepared);
 
-        if(!id_list_prepared)
-        {
-          if(env->id_caches->find(child_var)!=env->id_caches->end())
-          {
+        if (!id_list_prepared) {
+          if (env->id_caches->find(child_var) != env->id_caches->end()) {
             auto caches_ptr = (*(env->id_caches->find(child_var))).second;
             id_list_ptr->intersectList(caches_ptr->getList()->data(), caches_ptr->size());
           }
         }
 
-        id_list_prepared =true;
-      }
-      else // use IDListWithAppending
+        id_list_prepared = true;
+      } else // use IDListWithAppending
       {
-        if(directions[i] == TopKPlanUtil::EdgeDirection::OUT)
-        {
+        if (directions[i] == TopKPlanUtil::EdgeDirection::OUT) {
           env->kv_store->getpreIDobjIDlistBysubID(parent_id,
                                                   edge_candidate_list,
                                                   edge_list_len,
                                                   true,
                                                   env->txn);
-          UpdateIDListWithAppending(appending_list_ptr,edge_candidate_list,edge_list_len/2,
-                                    2,appending_list_prepared,1);
-        }
-        else if(directions[i] == TopKPlanUtil::EdgeDirection::IN)
-        {
+          UpdateIDListWithAppending(appending_list_ptr, edge_candidate_list, edge_list_len / 2,
+                                    2, appending_list_prepared, 1);
+        } else if (directions[i] == TopKPlanUtil::EdgeDirection::IN) {
           env->kv_store->getpreIDsubIDlistByobjID(parent_id,
                                                   edge_candidate_list,
                                                   edge_list_len,
                                                   true,
                                                   env->txn);
-          UpdateIDListWithAppending(appending_list_ptr,edge_candidate_list,edge_list_len/2,
-                                    2,appending_list_prepared,1);
-        }
-        else
+          UpdateIDListWithAppending(appending_list_ptr, edge_candidate_list, edge_list_len / 2,
+                                    2, appending_list_prepared, 1);
+        } else
           throw string("unknown EdgeDirection");
 
-        if(!appending_list_prepared)
-        {
-          if(env->id_caches->find(child_var)!=env->id_caches->end())
-          {
+        if (!appending_list_prepared) {
+          if (env->id_caches->find(child_var) != env->id_caches->end()) {
             auto caches_ptr = (*(env->id_caches->find(child_var))).second;
-            appending_list_ptr->Intersect(caches_ptr->getList()->data(), caches_ptr->size(),1,0);
+            appending_list_ptr->Intersect(caches_ptr->getList()->data(), caches_ptr->size(), 1, 0);
           }
         }
 
@@ -380,31 +363,29 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
     }
 
     // deleting the wrong parent
-    if(appending_list_prepared) {
+    if (appending_list_prepared) {
       if (appending_list_ptr->Empty()) {
         deleted_parent_ids_this_child.insert(parent_id);
         continue;
       }
-    }
-    else if(id_list_prepared){
-      if (id_list_ptr->empty()){
+    } else if (id_list_prepared) {
+      if (id_list_ptr->empty()) {
         deleted_parent_ids_this_child.insert(parent_id);
         continue;
       }
-    }
-    else{
+    } else {
       deleted_parent_ids_this_child.insert(parent_id);
       continue;
     }
 
-    if(!appending_list_prepared)
+    if (!appending_list_prepared)
       appending_list_ptr = make_shared<IDListWithAppending>(*id_list_ptr);
     // write into the relationship
     parent_child[parent_id] = appending_list_ptr;
 
     auto child_id_it = appending_list_ptr->contents_->cbegin();
     auto child_id_end = appending_list_ptr->contents_->cend();
-    while(child_id_it != child_id_end) {
+    while (child_id_it != child_id_end) {
       AddRelation(child_id_it->first, parent_id, child_parent);
       child_candidates.insert(child_id_it->first);
       child_id_it++;
@@ -415,5 +396,34 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
     parent_var_candidates.erase(deleted_id);
     deleted_parents.insert(deleted_id);
   }
+  auto child_id_caches_it = env->id_caches->find(child_var);
+  if(child_id_caches_it!=env->id_caches->end())
+  {
+    deleted_parent_ids_this_child.clear();
+    auto child_id_caches = child_id_caches_it->second;
+    auto child_id_begin_it = child_id_caches->begin();
+    auto child_id_end_it = child_id_caches->end();
+    set<TYPE_ENTITY_LITERAL_ID> deleted_children;
+    for (const auto &child_parents_pair: child_parent) {
+      auto child_id = child_parents_pair.first;
+      if (std::binary_search(child_id_begin_it, child_id_end_it, child_id))
+        continue;
+      deleted_children.insert(child_id);
+      for (auto parent_id : child_parents_pair.second) {
+        parent_child[parent_id]->Erase(child_id);
+        if (parent_child[parent_id]->Empty())
+          deleted_parent_ids_this_child.insert(parent_id);
+      }
+    }
+
+    for (auto deleted_child : deleted_children)
+      child_parent.erase(deleted_child);
+  }
+
+  for (auto deleted_id:deleted_parent_ids_this_child) {
+    parent_var_candidates.erase(deleted_id);
+    deleted_parents.insert(deleted_id);
+  }
+
   return child_candidates;
 }
