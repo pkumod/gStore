@@ -747,7 +747,7 @@ Database::load(bool loadCSR)
 		
 
 	//this->stringindex->SetTrie(this->kvstore->getTrie());
-	cout<<"set Trie for stringIndex  successfully!"<<endl;
+	//cout<<"set Trie for stringIndex  successfully!"<<endl;
 	//NOTICE: we should also run some heavy work in the main thread
 	this->stringindex->load();
 	cout<<"load stringindex  successfully!"<<endl;
@@ -758,13 +758,13 @@ Database::load(bool loadCSR)
 	pre2values_thread.join();
 #endif
 	this->setPreMap();
-	cout<<"set Pre Map Successfully!"<<endl;
+	//cout<<"set Pre Map Successfully!"<<endl;
 
 #ifdef THREAD_ON
 	id2entity_thread.join();
-	cout<<"id2entity_thread.join() Successfully!"<<endl;
+	//cout<<"id2entity_thread.join() Successfully!"<<endl;
 	id2literal_thread.join();
-	cout<<"id2literal_thread.join() Successfully!"<<endl;
+	//cout<<"id2literal_thread.join() Successfully!"<<endl;
 #endif
 
 	//BETTER: if we set string buffer using string index instead of B+Tree, then we can
@@ -782,21 +782,21 @@ Database::load(bool loadCSR)
 #ifndef ONLY_READ
 #ifdef THREAD_ON
 	id2predicate_thread.join();
-	cout<<"id2predicate_thread.join() Successfully!"<<endl;
+	//cout<<"id2predicate_thread.join() Successfully!"<<endl;
 #endif
 #endif
 
 #ifdef THREAD_ON
 	entity2id_thread.join();
-	cout<<"entity2id_thread.join() Successfully!"<<endl;
+	//cout<<"entity2id_thread.join() Successfully!"<<endl;
 	literal2id_thread.join();
-	cout<<"literal2id_thread.join() Successfully!"<<endl;
+	//cout<<"literal2id_thread.join() Successfully!"<<endl;
 	predicate2id_thread.join();
-	cout<<"predicate2id_thread.join() Successfully!"<<endl;
+	//cout<<"predicate2id_thread.join() Successfully!"<<endl;
 	sub2values_thread.join();
-	cout<<"sub2values_thread.join() Successfully!"<<endl;
+	//cout<<"sub2values_thread.join() Successfully!"<<endl;
 	obj2values_thread.join();
-	cout<<"obj2values_thread.join() Successfully!"<<endl;
+	//cout<<"obj2values_thread.join() Successfully!"<<endl;
 	//wait for vstree thread
 	//vstree_thread.join();
 #endif
@@ -973,6 +973,10 @@ Database::load_cache()
 	this->load_important_obj2values();
 	
 	long t0 = Util::get_cur_time();
+	if(this->stringindex==NULL)
+	{
+		cout<<"the string index is null"<<endl;
+	}
 	vector<StringIndexFile*> indexfile = this->stringindex->get_three_StringIndexFile();
 
 	StringIndexFile* 	entity = indexfile[0];
@@ -1317,80 +1321,80 @@ Database::get_important_objID()
 void 
 Database::load_entity2id(int _mode)
 {
-	cout<<"begin to load_entity2id!"<<endl;
+	//cout<<"begin to load_entity2id!"<<endl;
 	this->kvstore->open_entity2id(_mode);
-	cout<<"load_entity2id successfully!"<<endl;
+	//cout<<"load_entity2id successfully!"<<endl;
 }
 
 void 
 Database::load_id2entity(int _mode)
 {
-	cout<<"begin to load_id2entity!"<<endl;
+	//cout<<"begin to load_id2entity!"<<endl;
 	this->kvstore->open_id2entity(_mode);
-	cout<<"load_id2entity successfully!"<<endl;
+	//cout<<"load_id2entity successfully!"<<endl;
 }
 
 void 
 Database::load_literal2id(int _mode)
 {
-	cout<<"begin to load_literal2id!"<<endl;
+	//cout<<"begin to load_literal2id!"<<endl;
 	this->kvstore->open_literal2id(_mode);
-	cout<<"load_literal2id successfully!"<<endl;
+	//cout<<"load_literal2id successfully!"<<endl;
 }
 
 void 
 Database::load_id2literal(int _mode)
 {
-	cout<<"begin to load_id2literal!"<<endl;
+	//cout<<"begin to load_id2literal!"<<endl;
 	this->kvstore->open_id2literal(_mode);
-	cout<<"load_id2literal successfully!"<<endl;
+	//cout<<"load_id2literal successfully!"<<endl;
 }
 
 void 
 Database::load_predicate2id(int _mode)
 {
-	cout<<"begin to load_predicate2id!"<<endl;
+	//cout<<"begin to load_predicate2id!"<<endl;
 	this->kvstore->open_predicate2id(_mode);
-	cout<<"load_predicate2id successfully!"<<endl;
+	//cout<<"load_predicate2id successfully!"<<endl;
 }
 
 void 
 Database::load_id2predicate(int _mode)
 {
-	cout<<"begin to load_id2predicate!"<<endl;
+	//cout<<"begin to load_id2predicate!"<<endl;
 	this->kvstore->open_id2predicate(_mode);
-	cout<<"load_id2predicate successfully!"<<endl;
+	//cout<<"load_id2predicate successfully!"<<endl;
 }
 
 void 
 Database::load_sub2values(int _mode)
 {
-	cout<<"begin to load_sub2values!"<<endl;
+	//cout<<"begin to load_sub2values!"<<endl;
 	this->kvstore->open_subID2values(_mode);
-	cout<<"load_sub2values successfully!"<<endl;
+	//cout<<"load_sub2values successfully!"<<endl;
 }
 
 void 
 Database::load_obj2values(int _mode)
 {
-	cout<<"begin to load_obj2values!"<<endl;
+	//cout<<"begin to load_obj2values!"<<endl;
 	this->kvstore->open_objID2values(_mode);
-	cout<<"load_obj2values successfully!"<<endl;
+	//cout<<"load_obj2values successfully!"<<endl;
 }
 
 void 
 Database::load_pre2values(int _mode)
 {
-	cout<<"begin to load_pre2values!"<<endl;
+	//cout<<"begin to load_pre2values!"<<endl;
 	this->kvstore->open_preID2values(_mode);
-	cout<<"load_pre2values successfully!"<<endl;
+	//cout<<"load_pre2values successfully!"<<endl;
 }
 
 void 
 Database::load_vstree(unsigned _vstree_size)
 {
 	(this->vstree)->loadTree(_vstree_size);
-	cout<<"vstree loaded"<<endl;
+	//cout<<"vstree loaded"<<endl;
 }
 
 // @author bookug
@@ -5054,26 +5058,26 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 	return valid_num;
 }
 
-bool
+unsigned
 Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction> txn )
 {
 	bool flag = _is_restore || this->load();
 	if (!flag)
 	{
-		return false;
+		return -1;
 	}
 	cout << "finish loading" << endl;
 
 	long tv_load = Util::get_cur_time();
 
-	TYPE_TRIPLE_NUM success_num = 0;
+	unsigned success_num = 0;
 
 	ifstream _fin(_rdf_file.c_str());
 	if (!_fin)
 	{
 		cout << "fail to open : " << _rdf_file << ".@insert_test" << endl;
 		//exit(0);
-		return false;
+		return -1;
 	}
 
 	//NOTICE+WARN:we can not load all triples into memory all at once!!!
@@ -5107,27 +5111,27 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	cout << "insert rdf triples done." << endl;
 	cout<<"inserted triples num: "<<success_num<<endl;
 
-	return true;
+	return success_num;
 }
 
-bool
+unsigned
 Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction> txn)
 {
 	bool flag = _is_restore || this->load();
 	if (!flag)
 	{
-		return false;
+		return -1;
 	}
 	cout << "finish loading" << endl;
 
 	long tv_load = Util::get_cur_time();
-	TYPE_TRIPLE_NUM success_num = 0;
+	unsigned success_num = 0;
 
 	ifstream _fin(_rdf_file.c_str());
 	if (!_fin)
 	{
 		cout << "fail to open : " << _rdf_file << ".@remove_test" << endl;
-		return false;
+		return -1;
 	}
 
 	//NOTICE+WARN:we can not load all triples into memory all at once!!!
@@ -5162,7 +5166,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	{
 		this->resetIDinfo();
 	}
-	return true;
+	return success_num;
 }
 
 //WARNING: TRANSACTIONAL batch insert is not completed yet!

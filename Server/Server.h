@@ -159,13 +159,13 @@ public:
 	/**
 	* @brief Build a database named [db_name].
 	* @param[in]  _db_name : A database name
-	* @param[in]  _rdf_path : The rdf file path
+	* @param[in]  _db_path : The rdf file path
 	* @param[in]  socket : A client socket
 	* @return
 	*	true : Build the database successfully. \n
 	*	false : Build the database failed. \n
 	*/
-	bool build(std::string _db_name, std::string _rdf_path, Socket& socket);
+	bool build(std::string _db_name, std::string _db_path, Socket& socket);
 
 	/**
 	* @brief Query a sparql in a database named [db_name].

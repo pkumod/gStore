@@ -29,7 +29,7 @@ int main(int argc, char * argv[])
 		cout << "\t bin/gadd -h" << endl;*/
 		long tv_begin = Util::get_cur_time();
 		cout<<"begin rebuild the system database ...."<<endl;
-		if (boost::filesystem::exists("system.db"))
+		if (Util::dir_exist("system.db"))
 		{
 			string cmd;
 			cmd = "rm -r system.db";
@@ -100,15 +100,74 @@ int main(int argc, char * argv[])
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
 			cout << "\t-db,--database,\t\t The database names.Use , to split database name. e.g. databaseA,databaseB" << endl;
-			cout << "If you want to rebuild the system database,please use bin/ginit \n" << endl;
-			cout << "If you want to add database info into system database,please use bin/ginit -db db1,db2,...\n" << endl;
+			cout << "If you want to rebuild the system database,please use bin/ginit \n"
+				 << endl;
+			cout << "If you want to add database info into system database,please use bin/ginit -db db1,db2,...\n"
+				 << endl;
 			cout << endl;
 			return 0;
+		}
+		else if (command == "-m" || command == "--make")
+		{
+			if (Util::dir_exist("system.db") == false)
+			{
+				cout << "system.db is not exist. Now create it." << endl;
+				long tv_begin = Util::get_cur_time();
+
+				string _db_path = "system";
+				string _rdf = "./data/system/system.nt";
+				Database *_db = new Database(_db_path);
+				bool flag = _db->build(_rdf);
+				if (flag)
+				{
+
+					ofstream f;
+					f.open("./" + _db_path + ".db/success.txt");
+					f.close();
+
+					cout << "system.db built successfully!" << endl;
+					delete _db;
+					_db = NULL;
+					Util::init_backuplog();
+					Util::configure_new();
+					string version = Util::getConfigureValue("version");
+					string update_sparql = "insert data {<CoreVersion> <value> " + version + ". }";
+
+					ResultSet _rs;
+					FILE *ofp = stdout;
+					string msg;
+					_db = new Database(_db_path);
+					_db->load();
+					int ret = _db->query(update_sparql, _rs, ofp);
+					if (ret >= 0)
+						msg = "update num : " + Util::int2string(ret);
+					else //update error
+						msg = "update failed.";
+					if (ret != -100)
+						cout << "Insert data result:" + msg << endl;
+
+					delete _db;
+					_db = NULL;
+					long tv_end = Util::get_cur_time();
+					//stringstream ss;
+					cout << "system.db init successfully! Used " << (tv_end - tv_begin) << " ms" << endl;
+					//Log.Info(ss.str().c_str());
+					return 0;
+				}
+				else
+				{
+					cout << "Build RDF database failure!" << endl;
+					return 0;
+				}
+			}
+			else{
+				cout<<"the system database is exist, skip the init system database."<<endl;
+			}
 		}
 		else
 		{
 			//cout << "the command is not complete." << endl;
-			cout<<"Invalid arguments! Input \"bin/ginit -h\" for help."<<endl;
+			cout << "Invalid arguments! Input \"bin/ginit -h\" for help." << endl;
 			return 0;
 		}
 	}
@@ -192,255 +251,4 @@ int main(int argc, char * argv[])
 		}
 	}
 	return 0;
-
-
-
-	//if(argc > 1)
-	//{
-	//	op = argv[1];
-	//	if(op == "-make")
-	//	{
-	//		if(boost::filesystem::exists("system.db"))
-	//			return 0;			
-	//	}
-	//	else if(op == "-d")
-	//	{
-	//		if(argc == 2)
-	//		{
-	//			cout << "You need to input at least one database name." << endl;
-	//			return 0;
-	//		}
-	//	}
-	//	else if (op == "-cv"||op=="-av")
-	//	{
-	//		if (argc == 2)
-	//		{
-	//			cout << "You need to input the value of version." << endl;
-	//			return 0;
-	//		}
-	//		else
-	//		{
-	//			string version = argv[2];
-	//			string versionname = "<CoreVersion>";
-	//			if (op == "-av")
-	//			{
-	//				versionname = "<APIVersion>";
-	//			}
-	//			string sparql = "DELETE where {"+versionname+" <value> ?x.}";
-	//		    
-	//			string _db_path = "system";
-	//			Util util;
-	//			Database* _db = new Database(_db_path);
-	//		
-	//			_db->load();
-	//			ResultSet _rs;
-	//			FILE* ofp = stdout;
-	//			string msg;
-	//			int ret = _db->query(sparql, _rs, ofp);
-	//			sparql = "INSERT DATA {"+versionname+" <value>	\"" + version + "\".}";
-	//			ret = _db->query(sparql, _rs, ofp);
-	//			if (ret <= -100) // select query
-	//			{
-	//				if (ret == -100)
-	//					msg = _rs.to_str();
-	//				else //query error
-	//					msg = "query failed";
-	//			}
-	//			else //update query
-	//			{
-	//				if (ret >= 0)
-	//					msg = "update num : " + Util::int2string(ret);
-	//				else //update error
-	//					msg = "update failed.";
-	//				if (ret != -100)
-	//					cout << msg << endl;
-	//			}
-	//			delete _db;
-	//			_db = NULL;
-	//			cout << "the "<<versionname<<" is updated successfully!" << endl;
-	//			return 0;
-	//		}
-	//	}
-	//	else if (op == "-u")
-	//	{
-	//		//update the gstore, and init the version info 
-	//		string file = "data/system/version.nt";
-	//		if (boost::filesystem::exists(file) == false)
-	//		{
-	//			cout << "the file of version information is not found!" << endl;
-	//			
-	//			return 0;
-	//		}
-	//		string sparql = "Delete WHERE { <CoreVersion> ?x ?y. <APIVersion> ?x1 ?y1.}";
-
-
-	//		string _db_path = "system";
-	//		Util util;
-	//		Database* _db = new Database(_db_path);
-
-	//		_db->load();
-	//		ResultSet _rs;
-	//		FILE* ofp = stdout;
-	//		string msg;
-	//		int ret = _db->query(sparql, _rs, ofp);
-	//		ifstream infile;
-	//		infile.open(file.data());   //½«ÎÄ¼þÁ÷¶ÔÏóÓëÎÄ¼þÁ¬½ÓÆðÀ´ 
-	//		string s;
-	//		sparql = "INSERT DATA {";
-	//		while (getline(infile, s))
-	//		{
-	//			if (s != "")
-	//				sparql = sparql + s;
-	//		}
-	//		infile.close();
-	//		sparql = sparql + "}";
-	//		cout << "the sparql of initversion is:" << sparql << endl;
-
-
-	//		//sparql = "INSERT DATA {" + versionname + " <value>	\"" + version + "\".}";
-	//		ret = _db->query(sparql, _rs, ofp);
-	//		if (ret <= -100) // select query
-	//		{
-	//			if (ret == -100)
-	//				msg = _rs.to_str();
-	//			else //query error
-	//				msg = "query failed";
-	//		}
-	//		else //update query
-	//		{
-	//			if (ret >= 0)
-	//				msg = "update num : " + Util::int2string(ret);
-	//			else //update error
-	//				msg = "update failed.";
-	//			if (ret != -100)
-	//				cout << msg << endl;
-	//		}
-	//		delete _db;
-	//		_db = NULL;
-	//		cout << "the value of version is updated successfully!" << endl;
-	//		return 0;
-	//	}
-	//	else
-	//	{
-	//		cout << "The initialization option is not correct." << endl;
-	//		return 0;			
-	//	}
-	//}
-	//
-	//if(boost::filesystem::exists("system.db"))
-	//{
-	//	Database system_db("system");
-	//	system_db.load();
-	//	string sparql = "select ?s where{?s <database_status> \"already_built\".}";
-	//	FILE* ofp = stdout;
-	//	int ret = system_db.query(sparql, _rs, ofp);
-	//}
-	//else
-	//   no_sysdb = true;
-	//if(argc > 2){
-	//	cout << "db reserved db reserved db reserved db reserved db reserved " << endl;
-	//	vector<string> db_names;
-	//	for(int i = 2; i < argc; i++){
-	//		cout << argv[i] << endl;
-	//		db_names.push_back(argv[i]);
-	//	}
-	//	for (int i = 0; i < _rs.ansNum; i++)
-	//	{
-	//		string db_name = _rs.answer[i][0];
-	//		db_name.erase(0,1);
-	//		db_name.pop_back();
-	//		//cout << "db num:db num:db num:db num:db num:db num:db num:db num:" << db_name << endl;
-	//		if(find(db_names.begin(), db_names.end(), db_name) == db_names.end() || db_name == "system")
-	//		{
-	//			string cmd;
-	//			cmd = "rm -r " + db_name + ".db";
-	//			system(cmd.c_str()); //maybe failed
-	//		}
-	//	}
-	//}
-	//else{
-	//	if (!no_sysdb) {
-	//		string cmd;
-	//		cmd = "rm -r system.db";
-	//		system(cmd.c_str());
-	//		cout << _rs.ansNum << endl;
-	//	}
-	//	for (int i = 0; i < _rs.ansNum; i++)
-	//	{
-	//		string db_name = _rs.answer[i][0];
-	//		db_name.erase(0,1);
-	//		db_name.pop_back();
-	//		string cmd;
-	//		cmd = "rm -r " + db_name + ".db";
-	//		system(cmd.c_str());
-	//	}
-	//}
-	////build system.db
-	//string _db_path = "system";
-	//string _rdf = "./data/system/system.nt";
-	//Database* _db = new Database(_db_path);
-	//bool flag = _db->build(_rdf);
-	//if (flag)
-	//{
-	//	cout << "import RDF file to database done." << endl;
-	//	ofstream f;
-	//	f.open("./"+ _db_path +".db/success.txt");
-	//	f.close();
-	//	Util::init_backuplog();
-	//}
-	//else //if fails, drop system.db and return
-	//{
-	//	cout << "import RDF file to database failed." << endl;
-	//	string cmd = "rm -r " + _db_path + ".db";
-	//	system(cmd.c_str());
-	//	delete _db;
-	//	_db = NULL;
-	//	return 0;
-	//}
-
-	////insert built_time of system.db
-	//delete _db;
-	//_db = new Database(_db_path);
-	//_db->load();
-	//string time = Util::get_date_time();
-	//string sparql = "INSERT DATA {<system> <built_time> \"" + time + "\".";
-	//if(argc > 1)
-	//{
-	//	op = argv[1];
-	//	if(op == "-d")
-	//	{
-	//		for(int i=2; i<argc; i++)
-	//		{
-	//			string db_name = argv[i];
-	//			sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
-	//			sparql = sparql + "<" + db_name + "> <built_by> <root>.";
-	//			sparql = sparql + "<" + db_name + "> <built_time> \"" + time + "\".";
-	//			Util::add_backuplog(db_name);
-	//		}		
-	//	}
-	//}
-	//sparql = sparql + "}";
-	//FILE* ofp = stdout;
-	//string msg;
-	//int ret = _db->query(sparql, _rs, ofp);
-	//if (ret <= -100) // select query
-	//{
-	//	if (ret == -100)
-	//		msg = _rs.to_str();
-	//	else //query error
-	//		msg = "query failed";
-	//}
-	//else //update query
-	//{
-	//	if (ret >= 0)
-	//		msg = "update num : " + Util::int2string(ret);
-	//	else //update error
-	//		msg = "update failed.";
-	//	if (ret != -100)
-	//		cout << msg << endl;
-	//}
-	//delete _db;
-	//_db = NULL;
-	//cout << "system.db is built successfully!" << endl;
-	//return 0;
 }
