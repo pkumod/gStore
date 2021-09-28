@@ -951,6 +951,8 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   cout<<endl;
 #endif
 
+  vector<double> score_list;
+  score_list.reserve(query_info.limit_num_);
   for(int i =1; i<=query_info.limit_num_ + deleted_num; i++)
   {
     root_fr->TryGetNext(k+ deleted_num);
@@ -961,7 +963,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
       cout << "get top-" << i << " "<<root_fr->pool_[i-1].cost;
     }
 #endif
-
+    auto temp_score = root_fr->pool_[i-1].cost;
     // can't get any more
     if((unsigned)i>root_fr->pool_.size())
       break;
@@ -991,7 +993,10 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
     cout<<endl;
 #endif
     if(success)
+    {
+      score_list.push_back(temp_score);
       result_list->push_back(record);
+    }
     else
       deleted_num += 1;
   }
@@ -1005,7 +1010,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   for(decltype(result_list->size()) i =0;i<result_list->size();i++)
   {
     auto rec = *it;
-    cout<<" record["<<i<<"]"<<" score:"<<root_fr->pool_[i].cost;
+    cout<<" record["<<i<<"]"<<" score:"<<score_list[i];
 
     for(unsigned j =0;j<var_num;j++)
       if(is_predicate_var[(*pos_var_mapping)[j]])
