@@ -351,6 +351,7 @@ void TopKSearchPlan::AdjustOrder() {
  */
 std::vector<int> TopKSearchPlan::FindCycle() {
   std::vector<int> result_cycle;
+  // each var and its corresponding degree
   auto degrees = map<int,size_t>();
   stack<int> one_degree;
 

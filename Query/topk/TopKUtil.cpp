@@ -74,7 +74,11 @@ void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_nod
     return;
   }
 #ifdef TOPK_DEBUG_INFO
-  std::cout<<"Node:"<<comp_tree_node->val<<" "<<comp_tree_node->lchild->val<<" "<<comp_tree_node->rchild->val<<std::endl;
+  std::cout<<"Node:"<<comp_tree_node->val<<" ";
+  if(comp_tree_node->lchild!=nullptr)
+    cout<<comp_tree_node->lchild->val<<" ";
+  if(comp_tree_node->rchild!=nullptr)
+    cout<<comp_tree_node->rchild->val<<std::endl;
 #endif
   // if both of the child are leaves
   // e.g
@@ -113,11 +117,15 @@ void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_nod
   }
 
   // the left should be either a leaf or a triangle
-  if(comp_tree_node->lchild != nullptr)
-    GetVarCoefficientsTreeNode(comp_tree_node->lchild, coefficients,minus_signed);
+  if(comp_tree_node->lchild != nullptr) {
+    if(comp_tree_node->rchild!= nullptr)
+      GetVarCoefficientsTreeNode(comp_tree_node->lchild, coefficients, minus_signed);
+    else // case expression: " -?x "
+      GetVarCoefficientsTreeNode(comp_tree_node->lchild, coefficients, comp_tree_node->oprt=="-");
+  }
 
-  // the case where left child exists and right child not exist cannot happen
-  GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients,comp_tree_node->oprt=="-");
+  if(comp_tree_node->rchild!= nullptr)
+    GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients,comp_tree_node->oprt=="-");
 
 }
 
