@@ -943,6 +943,7 @@ int initialize(int argc, char *argv[])
 	if(!flag)
 	{
 		cout << "Failed to load the database system.db."<<endl;
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 			return -1;
 	}
 	databases.insert(pair<std::string, Database *>("system", system_database));
@@ -1517,7 +1518,7 @@ void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db
 		if(pthread_rwlock_trywrlock(&databases_map_lock)!=0)
 	   {
 		   error = "Unable to load due to loss of lock";
-		
+			pthread_rwlock_unlock(&it_already_build->second->db_lock);
 			sendResponseMsg(1007,error,response);
 			return;
 
@@ -1529,10 +1530,10 @@ void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db
 		cout<<"end loading..."<<endl;
 		shared_ptr<Txn_manager> txn_m = make_shared<Txn_manager>(current_database, database);
 		pthread_rwlock_wrlock(&txn_m_lock);
-		cout<<"begin txn manager..."<<endl;
+		//cout<<"begin txn manager..."<<endl;
 		txn_managers.insert(pair<string, shared_ptr<Txn_manager>>(database, txn_m));
 		pthread_rwlock_unlock(&txn_m_lock);
-		cout<<"txt_managers:"<<txn_managers.size()<<endl;
+		//cout<<"txt_managers:"<<txn_managers.size()<<endl;
 		//delete current_database;
 		//current_database = NULL;
 		//cout << "load done." << endl;
@@ -1612,8 +1613,6 @@ void monitor_thread_new(const shared_ptr<HttpServer::Response>& response, string
 
     pthread_rwlock_rdlock(&already_build_map_lock);
 	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
-	string creator = it_already_build->second->getCreator();
-	string time = it_already_build->second->getTime();
 	pthread_rwlock_unlock(&already_build_map_lock);
 
 	if(pthread_rwlock_tryrdlock(&(it_already_build->second->db_lock)) != 0)
@@ -1627,6 +1626,8 @@ void monitor_thread_new(const shared_ptr<HttpServer::Response>& response, string
 		return;
 	}
 	//use JSON format to send message
+	string creator = it_already_build->second->getCreator();
+	string time = it_already_build->second->getTime();
 	Document resDoc;
 	resDoc.SetObject();
 	Document::AllocatorType &allocator = resDoc.GetAllocator();
@@ -1715,9 +1716,8 @@ void unload_thread_new(const shared_ptr<HttpServer::Response> &response, string 
 			pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 			return;
 		}
-		pthread_rwlock_unlock(&databases_map_lock);
         cout<<"unload txn_manager:"<<txn_managers.size()<<endl;
-		pthread_rwlock_wrlock(&txn_m_lock);
+		pthread_rwlock_rdlock(&txn_m_lock);
 		if (txn_managers.find(db_name) == txn_managers.end())
 		{
 			error = "transaction manager can not find the database";
@@ -1729,9 +1729,7 @@ void unload_thread_new(const shared_ptr<HttpServer::Response> &response, string 
 		}
 		pthread_rwlock_unlock(&txn_m_lock);
 		db_checkpoint(db_name);
-		txn_managers.erase(db_name);
 		Database *current_database = iter->second;
-		db_checkpoint(db_name);
 		delete current_database;
 		current_database = NULL;
 		databases.erase(db_name);
@@ -1740,6 +1738,7 @@ void unload_thread_new(const shared_ptr<HttpServer::Response> &response, string 
 		sendResponseMsg(0, success, response);
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
 		//	pthread_rwlock_unlock(&database_load_lock);
+		pthread_rwlock_unlock(&databases_map_lock);
 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 	
 	}
@@ -1770,6 +1769,11 @@ void drop_thread_new(const shared_ptr<HttpServer::Response> &response, string db
 	pthread_rwlock_rdlock(&already_build_map_lock);
 	std::map<std::string, struct DBInfo *>::iterator it_already_build = already_build.find(db_name);
 	pthread_rwlock_unlock(&already_build_map_lock);
+	if(it_already_build == already_build.end())
+	{
+		error = "the database [" + db_name + "] not built yet.";
+		sendResponseMsg(1004, error, response);
+	}
 	if (trylockdb(it_already_build) == false)
 	{
 		error = "the operation can not been excuted due to loss of lock.";
@@ -1790,7 +1794,9 @@ void drop_thread_new(const shared_ptr<HttpServer::Response> &response, string db
 			databases.erase(db_name);
 			cout<<"remove it from loaded database list"<<endl;
 			//@ remove the database from the already build list
+			pthread_rwlock_wrlock(&already_build_map_lock);
 			already_build.erase(db_name);
+			pthread_rwlock_unlock(&already_build_map_lock);
 			cout<<"remove the database from the already build database list"<<endl;
 			pthread_rwlock_unlock(&databases_map_lock);
 			pthread_rwlock_unlock(&(it_already_build->second->db_lock));
@@ -1800,7 +1806,7 @@ void drop_thread_new(const shared_ptr<HttpServer::Response> &response, string db
 
 			pthread_rwlock_unlock(&databases_map_lock);
 			//drop database named [db_name]
-			pthread_rwlock_rdlock(&already_build_map_lock);
+			pthread_rwlock_wrlock(&already_build_map_lock);
 			struct DBInfo *temp_db = it_already_build->second;
 			time = temp_db->getTime(); //没有啥用
 			delete temp_db;
@@ -1808,6 +1814,7 @@ void drop_thread_new(const shared_ptr<HttpServer::Response> &response, string db
 			already_build.erase(db_name);
 			cout<<"remove the database from the already build database list"<<endl;
 			pthread_rwlock_unlock(&already_build_map_lock);
+			pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 		}
 		//@ delete the database info from  the system database
 		string update = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
@@ -2541,6 +2548,7 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 		string content=exception_msg;
 		cout << exception_msg;
 		sendResponseMsg(1005,content,response);
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 		return;	
 	}
 	catch(const std::runtime_error& e2)
@@ -2548,6 +2556,7 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 		string content =e2.what();
 		cout<<"query failed:"<<content<<endl;
 		sendResponseMsg(1005,content,response);
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 		return;	
 	}
 	catch (...)
@@ -2555,6 +2564,7 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 		string content = "unknow error";
 		cout<<"query failed:"<<content<<endl;
 		sendResponseMsg(1005,content,response);
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 		return;	
 		
 	}
@@ -3093,6 +3103,7 @@ void tquery_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 	{
 		error = "Database transaction manager error.";
 		sendResponseMsg(1004,error,response);
+		pthread_rwlock_unlock(&txn_m_lock);
 		return;
 	}
 	auto txn_m = txn_managers[db_name];
@@ -3219,6 +3230,7 @@ void commit_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 	{
 		string error = "Database transaction manager error.";
 		 sendResponseMsg(1004,error,response);
+		pthread_rwlock_unlock(&txn_m_lock);
 		return;
 	}
 	shared_ptr<Txn_manager> txn_m = txn_managers[db_name];
@@ -3307,13 +3319,14 @@ void rollback_thread_new(const shared_ptr<HttpServer::Response>& response,string
 	{
 		string error = "Database transaction manager error.";
 		 sendResponseMsg(1004,error,response);
+		pthread_rwlock_unlock(&txn_m_lock);
 		return;
 	}
 	shared_ptr<Txn_manager> txn_m = txn_managers[db_name];
 	pthread_rwlock_unlock(&txn_m_lock);
 
 		
-	int ret = txn_m->Commit(TID);
+	int ret = txn_m->Rollback(TID);
 	//string idx = db_name + "_" + username;
 	//running_txn.erase(idx);
 	if (ret == 1)
@@ -4291,6 +4304,7 @@ bool db_checkpoint(string db_name)
 	if (txn_managers.find(db_name) == txn_managers.end())
 	{
 		string error = "Database transaction manager error.";
+		pthread_rwlock_unlock(&txn_m_lock);
 		return false;
 	}
 	shared_ptr<Txn_manager> txn_m = txn_managers[db_name];
@@ -5021,12 +5035,6 @@ int db_reload(string db_name)
 	iter->second = current_database;
 	bool flag = current_database->load();
 	pthread_rwlock_wrlock(&txn_m_lock);
-	if (txn_managers.find(db_name) == txn_managers.end())
-	{
-		string error = "Database transaction manager error.";
-		return -1;
-	}
-	
 	shared_ptr<Txn_manager> txn_m = make_shared<Txn_manager>(current_database, db_name);
 	txn_managers[db_name] = txn_m; //new txn_manager
 	pthread_rwlock_unlock(&txn_m_lock);
