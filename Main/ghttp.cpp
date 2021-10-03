@@ -3015,7 +3015,8 @@ void begin_thread_new(const shared_ptr<HttpServer::Response>& response,string db
 	txn_id_t TID = txn_m->Begin(static_cast<IsolationLevelType>(level));
 	cout <<"Transcation Id:"<< to_string(TID) << endl;
 	cout << to_string(txn_m->Get_Transaction(TID)->GetStartTime()) << endl;
-	Util::add_transactionlog(db_name, username, to_string(TID), to_string(txn_m->Get_Transaction(TID)->GetStartTime()), "RUNNING", "INF");
+	string Time_TID = Util::get_date_time() + " " + to_string(TID);
+	Util::add_transactionlog(db_name, username, Time_TID, to_string(txn_m->Get_Transaction(TID)->GetStartTime()), "RUNNING", "INF");
 	if (TID == INVALID_ID)
 	{
 		error = "transaction begin failed.";
@@ -3254,7 +3255,8 @@ void commit_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 	}
 	else
 	{
-		Util::update_transactionlog(to_string(TID), "COMMITED", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
+		string Time_TID = Util::get_date_time() + " " + to_string(TID);
+		Util::update_transactionlog(Time_TID, "COMMITED", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
 		string success = "transaction commit success. TID: " + TID_s;
 		sendResponseMsg(0,success,response);
 		return;
@@ -3343,7 +3345,8 @@ void rollback_thread_new(const shared_ptr<HttpServer::Response>& response,string
 	}
 	else
 	{
-		Util::update_transactionlog(to_string(TID), "ROLLBACK", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
+		string Time_TID = Util::get_date_time() + " " + to_string(TID);
+		Util::update_transactionlog(Time_TID, "ROLLBACK", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
 		string success = "transaction rollback success. TID: " + TID_s;
 		sendResponseMsg(0,success,response);
 		return;
