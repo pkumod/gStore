@@ -1021,6 +1021,8 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
     it++;
   }
 #endif
+  delete root_fr;
+  delete env;
   return std::make_tuple(true,result_table);
 }
 
