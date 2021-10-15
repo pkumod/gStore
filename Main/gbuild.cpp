@@ -2,7 +2,7 @@
  * 
  * @Author: Bookug Lobert suxunbin liwenjie
  * @Date: 2021-08-20 10:29:41
- * @LastEditTime: 2021-10-14 17:45:19
+ * @LastEditTime: 2021-10-15 20:15:27
  * @LastEditors: Please set LastEditors
  * @Description: The build database tool 
  * @FilePath: /gstore/Main/gbuild.cpp
@@ -42,7 +42,7 @@ main(int argc, char * argv[])
 			cout << endl;
 			cout << "gStore Build Tools(gbuild)" << endl;
 			cout << endl;
-			cout << "Usage:\tbin/gbuild -db [dbname] -rdf [filename] " << endl;
+			cout << "Usage:\tbin/gbuild -db [dbname] -f [filename] " << endl;
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
