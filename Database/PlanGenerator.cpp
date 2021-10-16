@@ -689,6 +689,101 @@ unsigned long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_no
 	}
 }
 
+// todo: need to complete
+unsigned long PlanGenerator::card_estimator_new_version(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
+
+	unsigned last_plan_nodes_num = last_plan_nodes.size();
+	auto var_descrip = bgpquery->get_vardescrip_by_id(next_join_node);
+
+
+	if(last_plan_nodes_num == 1) {
+		if(card_cache.size() == 0 || card_cache[0].find(now_plan_nodes) == card_cache[0].end()){
+
+			unsigned long card_estimation;
+			vector<vector<unsigned>> this_sample;
+
+			unsigned now_sample_num = 0;
+
+			vector<int> linked_nei_id;
+			vector<char> edge_type;
+			vector<TYPE_PREDICATE_ID> p_list;
+
+			vector<unsigned> pre_var_id;
+
+			vector<unsigned> linked_nei_index;
+			for(unsigned i = 0; i < var_descrip->degree_; ++i){
+				if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType &&
+					var_descrip->so_edge_nei_[i] == last_plan_nodes[0]){
+					linked_nei_index.push_back(i);
+					edge_type.push_back(var_descrip->so_edge_type_[i]);
+					if(var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType)
+						pre_var_id.push_back(var_descrip->so_edge_pre_id_[i]);
+					// todo: p_list not used
+				}
+			}
+
+			map<unsigned, unsigned> new_id_pos_map;
+			if (last_plan_nodes[0] < next_join_node) {
+				new_id_pos_map[last_plan_nodes[0]] = 0;
+				new_id_pos_map[next_join_node] = 1;
+			} else {
+				new_id_pos_map[next_join_node] = 0;
+				new_id_pos_map[last_plan_nodes[0]] = 1;
+			}
+
+			for(auto pre_var : pre_var_id){
+				// because s_o var id and pre var id is in the same space,
+				// there does not exist an id both be the s_o var and pre var
+				new_id_pos_map[pre_var] = new_id_pos_map.size();
+			}
+
+			// for (int i = 0; i < basicquery->getVarDegree(next_join_node); ++i) {
+			// 	if (basicquery->getEdgeNeighborID(next_join_node, i) == last_plan_nodes[0]) {
+			// 		linked_nei_id.push_back(i);
+			// 		edge_type.push_back(basicquery->getEdgeType(next_join_node, i));
+			// 		p_list.push_back(basicquery->getEdgePreID(next_join_node, i));
+			// 	}
+			// }
+			//
+			//
+			// map<int, int> new_id_pos_map;
+			// if (last_plan_nodes[0] < next_join_node) {
+			// 	new_id_pos_map[last_plan_nodes[0]] = 0;
+			// 	new_id_pos_map[next_join_node] = 1;
+			// } else {
+			// 	new_id_pos_map[next_join_node] = 0;
+			// 	new_id_pos_map[last_plan_nodes[0]] = 1;
+			// }
+			//
+			// unsigned long s_o_list1_total_num = 0;
+			// unsigned long s_o_list2_total_num = 0;
+
+			random_device rd;
+			mt19937 eng(rd());
+			uniform_real_distribution<double> dis(0, 1);
+
+
+			;
+		} else{
+			return var_to_num_map[last_plan_nodes[0]]*s_o_list_average_size[last_plan_nodes[0]][next_join_node];
+		}
+	} else{
+		if(card_cache.size() < last_plan_nodes_num ||
+			card_cache[last_plan_nodes_num-1].find(now_plan_nodes) == card_cache[last_plan_nodes_num-1].end()){
+			;
+		} else{
+			// todo: design multiple
+			unsigned multiple = 1;
+			return card_cache[last_plan_nodes_num-2][last_plan_nodes]*multiple;
+		}
+		;
+	}
+
+	cout << "PlanGenerator::card_estimator_new_version error!" << endl;
+	return 0;
+}
+
+
 unsigned long PlanGenerator::get_card(const vector<unsigned> &nodes){
 	return card_cache[nodes.size()-2][nodes];
 }
@@ -697,6 +792,11 @@ unsigned long PlanGenerator::cost_model_for_wco(PlanTree* last_plan,
 											const vector<unsigned> &last_plan_node, unsigned next_node, const vector<unsigned> &now_plan_node){
 
 	return last_plan->plan_cost + card_estimator(last_plan_node, next_node, now_plan_node);
+}
+
+unsigned long PlanGenerator::cost_model_for_wco_new_version(PlanTree *last_plan, const vector<unsigned int> &last_plan_node,
+															unsigned int next_node, const vector<unsigned int> &now_plan_node) {
+	return last_plan->plan_cost + card_estimator_new_version(last_plan_node, next_node, now_plan_node);
 }
 
 unsigned long PlanGenerator::cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
@@ -1131,6 +1231,19 @@ void PlanGenerator::get_candidate_generate_plan() {
 }
 
 
+void PlanGenerator::get_join_nodes_new_version(const vector<unsigned int> &plan_a_nodes,
+											   vector<unsigned int> &other_nodes, set<unsigned int> &join_nodes) {
+	for(int node : other_nodes){
+		auto var_descrip = bgpquery->get_vardescrip_by_id(node);
+		for(unsigned i = 0; i < var_descrip->degree_; ++i){
+			if(find(plan_a_nodes.begin(), plan_a_nodes.end(), var_descrip->so_edge_nei_[i])!= plan_a_nodes.end()){
+				if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType)
+					join_nodes.insert(basicquery->getEdgeNeighborID(node, i));
+			}
+		}
+	}
+}
+
 /**
  * Generate sample set of every var.
  * If a var has no const linked to it, then sample from the whole database.
@@ -1145,10 +1258,9 @@ void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
 	for(unsigned var_index = 0 ; var_index < bgpquery->get_total_var_num(); ++ var_index) {
 
 		if(bgpquery->is_var_satellite_by_index(var_index)){
-
 			satellite_nodes.push_back(bgpquery->get_var_id_by_index(var_index));
-		}
 			continue;
+		}
 
 		unsigned var_id = bgpquery->get_var_id_by_index(var_index);
 		auto var_descrip = bgpquery->get_vardescrip_by_index(var_index);
@@ -1191,15 +1303,18 @@ void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
 
 }
 
+
+// todo: not complete
 void PlanGenerator::get_nei_by_sub_plan_nodes(const vector<unsigned int> &last_plan_node, set<unsigned int> &nei_node) {
-	for(int node_in_plan : last_plan_node){
-		for(int i = 0; i < basicquery->getVarDegree(node_in_plan); ++i){
-			if(find(last_plan_node.begin(), last_plan_node.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
-			== last_plan_node.end() && basicquery->getEdgeNeighborID(node_in_plan, i) != -1 &&
-			find(need_join_nodes.begin(), need_join_nodes.end(), basicquery->getEdgeNeighborID(node_in_plan, i))
-			!= need_join_nodes.end()){
-				nei_node.insert(basicquery->getEdgeNeighborID(node_in_plan, i));
-			}
+	for(unsigned node_in_plan : last_plan_node){
+		auto var_descrip = bgpquery->get_vardescrip_by_id(node_in_plan);
+		for(unsigned i = 0; i < var_descrip->degree_; ++i){
+			if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::ConEntiType)
+				continue;
+			if(find(join_nodes.begin(), join_nodes.end(), var_descrip->so_edge_nei_[i]) == join_nodes.end())
+				continue;
+			if(find(last_plan_node.begin(), last_plan_node.end(), var_descrip->so_edge_nei_[i]) == last_plan_node.end())
+				nei_node.insert(var_descrip->so_edge_nei_[i]);
 		}
 	}
 }
@@ -1215,7 +1330,33 @@ void PlanGenerator::considerallwcojoin(unsigned int var_num) {
 
 		for(int next_node : nei_node) {
 
+			vector<unsigned> new_node_vec(last_node_plan.first);
+			new_node_vec.push_back(next_node);
+			sort(new_node_vec.begin(), new_node_vec.end());
 
+
+			// todo: complete this
+			PlanTree* new_plan = new PlanTree(last_best_plan, next_node);
+			unsigned long cost = cost_model_for_wco_new_version(last_best_plan, last_node_plan.first,
+													next_node, new_node_vec);
+			new_plan->plan_cost = cost;
+
+			if(plan_cache.size() < var_num){
+				map<vector<unsigned>, list<PlanTree*>> this_num_node_plan;
+				list<PlanTree*> this_nodes_plan;
+				this_nodes_plan.push_back(new_plan);
+				this_num_node_plan.insert(make_pair(new_node_vec, this_nodes_plan));
+				plan_cache.push_back(this_num_node_plan);
+
+			} else{
+				if(plan_cache[var_num-1].find(new_node_vec) == plan_cache[var_num-1].end()){
+					list<PlanTree*> this_nodes_plan;
+					this_nodes_plan.push_back(new_plan);
+					plan_cache[var_num-1].insert(make_pair(new_node_vec, this_nodes_plan));
+				}else{
+					plan_cache[var_num-1][new_node_vec].push_back(new_plan);
+				}
+			}
 		}
 	}
 }
@@ -1237,27 +1378,30 @@ void PlanGenerator::considerallbinaryjoin(unsigned int var_num) {
 					vector<unsigned> other_nodes;
 					OrderedVector::subtract(need_considerbinaryjoin_nodes_plan.first, small_nodes_plan.first,other_nodes);
 					set<unsigned> join_nodes;
-					get_join_nodes(small_nodes_plan.first, other_nodes, join_nodes);
+					get_join_nodes_new_version(small_nodes_plan.first, other_nodes, join_nodes);
 
-					if (join_nodes.size() >= 1 && join_nodes.size() + other_nodes.size() < node_num - 1) {
+					if (join_nodes.size() >= 1 && join_nodes.size() + other_nodes.size() < var_num - 1) {
 
 						OrderedVector::vec_set_union(other_nodes, join_nodes);
 
 						if (plan_cache[other_nodes.size() - 1].find(other_nodes) !=
-						plan_cache[other_nodes.size() - 1].end()) {
+								plan_cache[other_nodes.size() - 1].end()) {
 
 							PlanTree *small_best_plan = get_best_plan(small_nodes_plan.first);
 							PlanTree *another_small_best_plan = get_best_plan(other_nodes);
 
+							// todo: need to complete
 							unsigned long now_cost = cost_model_for_binary(small_nodes_plan.first,
 																		   other_nodes, small_best_plan,
 																		   another_small_best_plan);
 
 							if (now_cost < last_plan_smallest_cost) {
 								//                            build new plan and add to plan_cache
+								// todo: need to complete
+
 								PlanTree *new_plan = new PlanTree(small_best_plan, another_small_best_plan);
 								new_plan->plan_cost = now_cost;
-								plan_cache[node_num - 1][need_considerbinaryjoin_nodes_plan.first].push_back(new_plan);
+								plan_cache[var_num - 1][need_considerbinaryjoin_nodes_plan.first].push_back(new_plan);
 								last_plan_smallest_cost = now_cost;
 
 							}
@@ -1308,9 +1452,11 @@ PlanTree *PlanGenerator::get_plan() {
 
 
 	// should be var num not include satellite node
+	// todo: also should not include pre_var num
 	for(unsigned var_num = 2; var_num <= join_nodes.size(); ++var_num) {
 
-		// todo: if i want to complete this, i need to know whether the input query is linded or not
+		// todo: if i want to complete this, i need to know whether the input query is lindek or not
+		// answer: yes, input query is linked by var
 		considerallwcojoin(var_num);
 
 		if(var_num >= 5)
