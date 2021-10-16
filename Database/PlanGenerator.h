@@ -49,6 +49,8 @@ public:
 	map<unsigned, vector<unsigned>> var_to_sample_cache;
 	map<unsigned, map<unsigned, unsigned >> s_o_list_average_size;
 
+	map<unsigned, bool> var_has_sample;
+
 	// store var id, not var index, only contains s_o var
 	vector<unsigned> join_nodes;
 
@@ -76,10 +78,16 @@ public:
 	unsigned long card_estimator(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes,
 								 bool use_sample = true);
 
+	// using sample method
+	unsigned long card_estimator_new_version(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
+
 	unsigned long get_card(const vector<unsigned> &nodes);
 
 	unsigned long cost_model_for_wco(PlanTree* last_plan,
 									 const vector<unsigned> &last_plan_node, unsigned next_node, const vector<unsigned> &now_plan_node);
+
+	unsigned long cost_model_for_wco_new_version(PlanTree* last_plan, const vector<unsigned> &last_plan_node,
+												 unsigned next_node, const vector<unsigned> &now_plan_node);
 
 	unsigned long cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
 										PlanTree* plan_a, PlanTree* plan_b);
@@ -106,6 +114,8 @@ public:
 
 	JoinMethod get_join_method(bool s_const, bool p_const, bool o_const, VarDescriptor::ItemType item_type);
 	void get_candidate_generate_plan();
+	void get_join_nodes_new_version(const vector<unsigned> &plan_a_nodes,
+									vector<unsigned> &other_nodes, set<unsigned> &join_nodes);
 	void considerallvarscan(unsigned &largeset_plan_var_num);
 	void get_nei_by_sub_plan_nodes(const vector<unsigned> &last_plan_node, set<unsigned> &nei_node);
 	void considerallwcojoin(unsigned var_num);
