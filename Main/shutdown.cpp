@@ -37,26 +37,43 @@ string int2string(int n)
 int main(int argc, char *argv[])
 {
 	string port;
-	if(argc == 1)
+
+    if (argc < 2)
 	{
-		cout << "You need to input the server port that you want to stop." << endl;
+		/*cout << "please input the complete command:\t" << endl;
+		cout << "\t bin/gadd -h" << endl;*/
+		//Log.Error("Invalid arguments! Input \"bin/gbuild -h\" for help.");
+		cout<<"Invalid arguments! Input \"bin/shutdown -h\" for help."<<endl;
 		return 0;
 	}
-	else if(argc == 2)
+	else if (argc == 2)
 	{
-		if(isNum(argv[1]))
-			port = argv[1];
+		string command = argv[1];
+		if (command == "-h" || command == "--help")
+		{
+			cout << endl;
+			cout << "Shutdown the ghttp server" << endl;
+			cout << endl;
+			cout << "Usage:\tbin/shutdown -p [port] " << endl;
+			cout << endl;
+			cout << "Options:" << endl;
+			cout << "\t-h,--help\t\tDisplay this message." << endl;
+			cout << "\t-p,--port,\t\t the ghttp  server listen port . " << endl;
+	
+			cout << endl;
+			return 0;
+		}
 		else
 		{
-			cout << "wrong format of server port" <<endl;
+			//cout << "the command is not complete." << endl;
+			cout<<"Invalid arguments! Input \"bin/shutdown -h\" for help."<<endl;
 			return 0;
 		}
 	}
 	else
 	{
-		cout << "The number of parameters is not correct." << endl;
-		return 0;
-	}
+		port = Util::getArgValue(argc, argv, "p", "port");
+	
 	fstream ofp;
 	ofp.open("system.db/password" + port + ".txt", ios::in);
 	ofp >> system_password;
@@ -64,6 +81,37 @@ int main(int argc, char *argv[])
 	GstoreConnector gc;
 	string res;
 	int ret;
-	ret = gc.Get("http://127.0.0.1:" + port + "/?operation=stop&username=" + SYSTEM_USERNAME + "&password=" + system_password, res);
+	ret = gc.Get("http://127.0.0.1:" + port + "/?operation=shutdown&username=" + SYSTEM_USERNAME + "&password=" + system_password, res);
 	return 0;
+	}
+
+	// if(argc == 1)
+	// {
+	// 	cout << "You need to input the server port that you want to stop." << endl;
+	// 	return 0;
+	// }
+	// else if(argc == 2)
+	// {
+	// 	if(isNum(argv[1]))
+	// 		port = argv[1];
+	// 	else
+	// 	{
+	// 		cout << "wrong format of server port" <<endl;
+	// 		return 0;
+	// 	}
+	// }
+	// else
+	// {
+	// 	cout << "The number of parameters is not correct." << endl;
+	// 	return 0;
+	// }
+	// fstream ofp;
+	// ofp.open("system.db/password" + port + ".txt", ios::in);
+	// ofp >> system_password;
+	// ofp.close();
+	// GstoreConnector gc;
+	// string res;
+	// int ret;
+	// ret = gc.Get("http://127.0.0.1:" + port + "/?operation=shutdown&username=" + SYSTEM_USERNAME + "&password=" + system_password, res);
+	// return 0;
 }

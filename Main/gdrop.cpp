@@ -33,7 +33,7 @@ int main(int argc, char * argv[])
 			cout << endl;
 			cout << "gStore Drop Database Tools(gdrop)" << endl;
 			cout << endl;
-			cout << "Usage:\tbin/gadd -db [dbname] -f [filename] " << endl;
+			cout << "Usage:\tbin/gdrop -db [dbname] -f [filename] " << endl;
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
