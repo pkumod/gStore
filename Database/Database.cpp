@@ -2681,6 +2681,7 @@ Database::build_s2xx(ID_TUPLE* _p_id_tuples)
 
 	//remove duplicates from the id tables
 	TYPE_TRIPLE_NUM j = 1;
+	// TODO: should output triples_num without removing duplicates for reference, or keep a unique_triples_num separately?
 	for(TYPE_TRIPLE_NUM i = 1; i < this->triples_num; ++i)
 	{
 		if(!Util::equal(_p_id_tuples[i], _p_id_tuples[i-1]))
@@ -2689,7 +2690,7 @@ Database::build_s2xx(ID_TUPLE* _p_id_tuples)
 			++j;
 		}
 	}
-	this->triples_num = j;
+	this->triples_num = j;	// NOTE: triples_num set here
 	
 	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num, this->entity_num);
 
@@ -3054,7 +3055,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 			//BETTER: assume that no duplicate triples in RDF for building
 			//should judge first? using exist_triple() 
 			//or sub triples_num in build_subID2values(judge if two neighbor triples are same)
-			this->triples_num++;
+			this->triples_num++;	 // NOTE: triples_num set here
 
 			//if the _id_tuples exceeds, double the space
 			//if (_id_tuples_size == _id_tuples_max)
@@ -3344,6 +3345,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 		while (true)
 		{
 			int parse_triple_num = 0;
+			// TODO: make the line numbers reported inside parseFile global
 			_parser0.parseFile(triple_array, parse_triple_num,_error_log);
 			if (parse_triple_num == 0)
 			{
@@ -3366,18 +3368,20 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 		cout << "BuildPrefix done. used" << Util::get_cur_time() - begin << endl;
 	}
 
-	RDFParser _parser(_fin);
+	RDFParser _parser(_fin);	// RDFParser is actually invoked twice, see above
 	//Util::logging("==> while(true)");
 
+	int num_lines = 0;
 	while (true)
 	{
 		int parse_triple_num = 0;
 
-		_parser.parseFile(triple_array, parse_triple_num);
+		int curr_lines = _parser.parseFile(triple_array, parse_triple_num, "", num_lines);
+		num_lines += curr_lines;
 
 		{
 			stringstream _ss;
-			_ss << "finish rdfparser" << this->triples_num << endl;
+			_ss << "finish rdfparser" << this->triples_num + parse_triple_num << endl;
 			//Util::logging(_ss.str());
 			cout << _ss.str() << endl;
 		}
@@ -3389,12 +3393,13 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 		}
 
 		//Process the Triple one by one
+		// triples_num will eventually be set to the sum of all parse_triple_num (which seems legit)
 		for (int i = 0; i < parse_triple_num; i++)
 		{
 			//BETTER: assume that no duplicate triples in RDF for building
 			//should judge first? using exist_triple() 
 			//or sub triples_num in build_subID2values(judge if two neighbor triples are same)
-			this->triples_num++;
+			this->triples_num++;	// NOTE: triples_num set here
 
 			//if the _id_tuples exceeds, double the space
 			//if (_id_tuples_size == _id_tuples_max)
@@ -3732,7 +3737,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 		}
 		else
 		{
-			this->triples_num++;
+			this->triples_num++;	// NOTE: triples_num set here
 		}
 	}
 
@@ -3818,7 +3823,7 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 			return false;
 		}
 		else
-			this->triples_num--;
+			this->triples_num--;	// NOTE: triples_num set here
 	}
 
 	//cout << "triple existence checked" << endl;
@@ -4275,7 +4280,7 @@ Database::insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		id_tuples[valid_num][0] = subid;
 		id_tuples[valid_num][1] = preid;
 		id_tuples[valid_num][2] = objid;
-		this->triples_num++;
+		this->triples_num++;	// NOTE: triples_num set here
 		valid_num++;
 
 		tmpset.reset();
@@ -4741,7 +4746,7 @@ Database::remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num,
 		id_tuples[valid_num][0] = subid;
 		id_tuples[valid_num][1] = preid;
 		id_tuples[valid_num][2] = objid;
-		this->triples_num--;
+		this->triples_num--;	// NOTE: triples_num set here
 		valid_num++;
 	}
 
