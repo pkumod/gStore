@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-09-23 17:22:21
+ * @LastEditTime: 2021-10-14 20:03:51
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -102,12 +102,14 @@ txn_id_t get_txn_id(string db_name, string user);
 
 //=============================================================================
 
-bool request_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
+void request_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 
 void signalHandler(int signum);
 
-
+bool stop_handler(const HttpServer& server, 
+const shared_ptr<HttpServer::Response>& response, 
+const shared_ptr<HttpServer::Request>& request,string RequestType,string postcontent);
 //=============================================================================
 
 string checkparamValue(string paramname, string value);
@@ -175,6 +177,8 @@ void getCoreVersion_thread_new(const shared_ptr<HttpServer::Response>& response)
 void batchInsert_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string file);
 
 void batchRemove_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string file);
+
+bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
 //TODO: use lock to protect logs when running in multithreading environment
 FILE* query_logfp = NULL;
 string queryLog = "logs/endpoint/query.log";
@@ -521,7 +525,7 @@ bool ipCheck(const shared_ptr<HttpServer::Request>& request){
 		remote_ip = lu.first->second;
 	else
 		remote_ip = request->remote_endpoint_address;
-	cout << "remote_ip: " << remote_ip << endl;
+	//cout << "remote ip: " << remote_ip << endl;
 	//check if the ip is allow or denied
 	if(whiteList == 1){
 		return ipWhiteList->Check(remote_ip);
@@ -3668,9 +3672,28 @@ string checkIdentity(string username, string password)
 	return "";
 }
 
+string checkIdentity2(string username, string password,string port)
+{
+	//check identity.
+	string system_password;
+	fstream ofp;
+	ofp.open("system.db/password" + port + ".txt", ios::in);
+	ofp >> system_password;
+	ofp.close();
+	if(password==system_password)
+	{
+		return "";
+	}
+	else{
+		return "the password is wrong. please check the system.db/password"+port+".txt";
+	}
+
+} 
 
 
-void request_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+
+void request_thread(const shared_ptr<HttpServer::Response>& response, 
+const shared_ptr<HttpServer::Request>& request, string RequestType,string postcontent)
 {
 	if (!ipCheck(request)) {
 		string error = "IP Blocked!";
@@ -3686,10 +3709,11 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	Document document;
 	string url;
 	string remote_ip=getRemoteIp(request);
+	cout<<"request remote ip:"<<remote_ip<<endl;
 	cout << "request method:" << request->method << endl;
 	cout << "request http_version:" << request->http_version << endl;
 	cout << "request type:" << RequestType << endl;
-	
+
 	if (RequestType == "GET")
 	{
 		cout << "request path:" << request->path << endl;
@@ -3709,8 +3733,8 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
 	}
 	else if (RequestType == "POST")
 	{
-		auto strJson = request->content.string();
-        cout<<"post content"<<endl;
+		auto strJson = postcontent;
+        cout<<"post content:"<<endl;
 		cout<<strJson<<endl;
 
 		document.Parse(strJson.c_str());
@@ -4207,11 +4231,65 @@ void request_thread(const shared_ptr<HttpServer::Response>& response, const shar
  * @param {const} shared_ptr
  * @param {string} RequestType
  */
-bool request_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+void request_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
-	thread t(&request_thread, response, request, RequestType);
+
+    string operation;
+	Document document;
+	string url;
+	string postcontent;
+	if (RequestType == "GET")
+	{
+		cout << "request path:" << request->path << endl;
+
+		url = request->path;
+		url=UrlDecode(url);
+		cout << "request path:" << url << endl;
+		operation=WebUrl::CutParam(url, "operation");
+	
+		
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+        cout<<"post content:"<<endl;
+		cout<<strJson<<endl;
+        postcontent=strJson.c_str();
+		document.Parse(strJson.c_str());
+		if (document.HasParseError())
+		{
+			string error = "the post content is not fit the json format,content=" + strJson;
+			sendResponseMsg(1003, error, response);
+			return ;
+		}
+
+		operation="";
+		
+		if(document.HasMember("operation")&&document["operation"].IsString())
+		{
+			operation=document["operation"].GetString();
+		}
+		
+			
+	}
+	if(operation=="shutdown")
+    {
+       bool flag = stop_handler(server, response, request,RequestType,postcontent);
+		if (flag)
+		{
+			
+			cout<<"the Server is stopped！"<<endl;
+            exit(1);
+			return;
+		}
+			
+     
+	}
+    else{
+	thread t(&request_thread, response, request, RequestType,postcontent);
 	t.detach();
-	return true;
+	return ;
+	}
 }
 
 
@@ -4297,7 +4375,123 @@ bool query_handler0_sparql_conform(const HttpServer& server, const shared_ptr<Ht
 
 
 //to stop the ghttp server
+bool stop_handler(const HttpServer& server, 
+const shared_ptr<HttpServer::Response>& response, 
+const shared_ptr<HttpServer::Request>& request,string RequestType,string postcontent)
+{
+	if (!ipCheck(request)) {
+		string error = "IP Blocked!";
+		sendResponseMsg(1101, error, response);
+		return false;
+	}
 
+   
+	string username;
+	string password;
+	string operation;
+	
+	Document document;
+	string url;
+	string remote_ip=getRemoteIp(request);
+	cout<<"request remote ip:"<<remote_ip<<endl;
+	cout << "request method:" << request->method << endl;
+	cout << "request http_version:" << request->http_version << endl;
+	cout << "request type:" << RequestType << endl;
+
+	if (RequestType == "GET")
+	{
+		cout << "request path:" << request->path << endl;
+
+		url = request->path;
+		url=UrlDecode(url);
+		cout << "request path:" << url << endl;
+		operation=WebUrl::CutParam(url, "operation");
+		username = WebUrl::CutParam(url, "username");
+		password = WebUrl::CutParam(url, "password");
+	
+		username = UrlDecode(username);
+		
+		password = UrlDecode(password);
+		
+		
+	}
+	else if (RequestType == "POST")
+	{
+		auto strJson = postcontent;
+        cout<<"post content:"<<endl;
+		cout<<strJson<<endl;
+
+		document.Parse(strJson.c_str());
+		if (document.HasParseError())
+		{
+			string error = "the post content is not fit the json format,content=" + strJson;
+			sendResponseMsg(1003, error, response);
+			return false;
+		}
+
+		operation="";
+	
+		username="";
+		password="";
+		if(document.HasMember("operation")&&document["operation"].IsString())
+		{
+			operation=document["operation"].GetString();
+		}
+		if(document.HasMember("username")&&document["username"].IsString())
+		{
+			username=document["username"].GetString();
+		}
+		if(document.HasMember("password")&&document["password"].IsString())
+		{
+			password=document["password"].GetString();
+		}
+			
+	}
+	else
+	{
+		string msg = "The method type " + request->method + " is not support";
+		sendResponseMsg(1000, msg, response);
+		return false;
+	}
+
+	cout<<"HTTP: this is stop"<<endl;
+	
+
+	//check identity.
+	if (username != SYSTEM_USERNAME)
+	{
+		string error = "You have no rights to stop the server.";
+		string resJson = CreateJson(1001, error, 0);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		cout << "Stop server failed." << endl;
+		return false;
+	}
+	string checkidentityresult = checkIdentity2(username, password,Util::int2string(server.config.port));
+	if (checkidentityresult.empty() == false)
+	{
+		sendResponseMsg(1001, checkidentityresult, response);
+		return false;
+	}
+	cout << "check identity successfully." << endl;
+
+	//string success = "Server stopped.";
+	//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length() << "\r\n\r\n" << success;
+	bool flag = checkall_thread(response, request);	
+	if (flag == false)
+	{
+		string error= "Stop server failed.";
+		sendResponseMsg(1005,error,response);
+		return false;
+	}
+	string cmd = "rm system.db/password" + Util::int2string(server.config.port) + ".txt";
+	system(cmd.c_str());
+	cmd = "rm system.db/port.txt";
+	system(cmd.c_str());
+	cout<<"Server stopped."<<endl;
+	string success = "Server stopped successfully.";
+	sendResponseMsg(0, success, response);
+	return true;	
+}
 
 
 
