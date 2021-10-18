@@ -43,7 +43,7 @@ RDFParser::RDFParser(ifstream& _fin):_TurtleParser(_fin)
  * blank, output will be redirected to stdout. Each line of output is in the
  * format of: Line x (subject predicate object): error message.
  */
-void RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, string _error_log)
+int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, string _error_log, int init_line)
 {
 	string rawSubject, rawPredicate, rawObject;
 	string _subject, _predicate, _object, _objectSubType;
@@ -64,7 +64,7 @@ void RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, st
 			cout << "Error log file cannot be opened." << endl;
 	}
 
-	int numLines = 0;
+	int numLines = init_line;
 	while (_triple_num < RDFParser::TRIPLE_NUM_PER_GROUP)
 	{
 		numLines++;
@@ -75,6 +75,13 @@ void RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, st
 		catch (const TurtleParser::Exception& _e)
 		{
 			errorMsg = _e.message;
+			// TODO: sync the line number in errorMsg, then get rid of the part before ':'
+			// format: "lexer error in line 14276: unexpected character ?"
+			int num_l = errorMsg.find("line") + 5;
+			int num_r = errorMsg.find(':');
+			numLines = stoi(errorMsg.substr(num_l, num_r - num_l));
+			errorMsg = errorMsg.substr(num_r + 1);
+
 			cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
 				<< " " << rawObject << "): " << errorMsg << endl;
 			this->_TurtleParser.discardLine();
@@ -167,7 +174,6 @@ void RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, st
 					}
 					catch (out_of_range& e)
 					{
-						
 						errorMsg = "Object long value out of range";
 						cout << "Line " << numLines << " (" << rawSubject << " " << rawPredicate \
 							<< " " << rawObject << "): " << errorMsg << endl;
@@ -292,12 +298,14 @@ void RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, st
 		_triple_array[_triple_num++] = TripleWithObjType(_subject, _predicate, _object, _object_type);
 
 	}
-	cout << "RDFParser parseFile done!" << endl;
 	if (!_error_log.empty())
 	{
 		ofile.close();
 		cout.rdbuf(coutbuf);
 	}
+	cout << "RDFParser parseFile done!" << endl;
+
+	return numLines;
 }
 
 /** Parses a string containing RDF data. Based on parseFile.

@@ -29,7 +29,7 @@ public:
 
     RDFParser();
     RDFParser(ifstream& _fin);
-    void parseFile(TripleWithObjType* _triple_array, int& _triple_num, string _error_log="");
+    int parseFile(TripleWithObjType* _triple_array, int& _triple_num, string _error_log="", int init_line=0);
     void parseString(string _str, TripleWithObjType* _triple_array, int& _triple_num);
 };
 #endif
