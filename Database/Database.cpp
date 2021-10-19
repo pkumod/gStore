@@ -2679,6 +2679,7 @@ Database::build_s2xx(ID_TUPLE* _p_id_tuples)
 #endif
 	//qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_spo_cmp);
 
+	cout << "triples_num before removing duplicates: " << this->triples_num << endl;
 	//remove duplicates from the id tables
 	TYPE_TRIPLE_NUM j = 1;
 	// TODO: should output triples_num without removing duplicates for reference, or keep a unique_triples_num separately?
@@ -3332,6 +3333,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 	//}
 	//EntityBitSet _tmp_bitset;
 
+	int num_lines = 0;
 	{
 		cout << "begin build Prefix new." << endl;
 		long begin = Util::get_cur_time();
@@ -3346,7 +3348,8 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 		{
 			int parse_triple_num = 0;
 			// TODO: make the line numbers reported inside parseFile global
-			_parser0.parseFile(triple_array, parse_triple_num,_error_log);
+			int curr_lines = _parser0.parseFile(triple_array, parse_triple_num, _error_log, num_lines);
+			num_lines = curr_lines;
 			if (parse_triple_num == 0)
 			{
 				break;
@@ -3371,13 +3374,13 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 	RDFParser _parser(_fin);	// RDFParser is actually invoked twice, see above
 	//Util::logging("==> while(true)");
 
-	int num_lines = 0;
+	num_lines = 0;
 	while (true)
 	{
 		int parse_triple_num = 0;
 
-		int curr_lines = _parser.parseFile(triple_array, parse_triple_num, "", num_lines);
-		num_lines += curr_lines;
+		int curr_lines = _parser.parseFile(triple_array, parse_triple_num, "NULL", num_lines);
+		num_lines = curr_lines;
 
 		{
 			stringstream _ss;
