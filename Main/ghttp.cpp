@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-10-26 11:34:44
+ * @LastEditTime: 2021-10-26 12:19:25
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2663,10 +2663,16 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			catch(const std::exception& e)
 			{
 				std::cerr << e.what() << '\n';
+				error="parse error";
+				sendResponseMsg(1005,error,response);
+				return;
 			}
 			catch(...)
 			{
 				cout<<"result parse error:"<<success<<endl;
+				error="parse error";
+				sendResponseMsg(1005,error,response);
+				return;
 			}
 			
 			
@@ -2756,7 +2762,26 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			success = rs.to_JSON();
 			Document resDoc;
 			Document::AllocatorType &allocator = resDoc.GetAllocator();
-			resDoc.Parse(success.c_str());
+			try
+			{
+				/* code */
+				resDoc.Parse(success.c_str());
+			}
+			catch(const std::exception& e)
+			{
+				std::cerr << e.what() << '\n';
+				error="parse error";
+				sendResponseMsg(1005,error,response);
+				return;
+			}
+			catch(...)
+			{
+				cout<<"result parse error:"<<success<<endl;
+				error="parse error";
+				sendResponseMsg(1005,error,response);
+				return;
+			}
+			// resDoc.Parse(success.c_str());
 			resDoc.AddMember("StatusCode", 0, allocator);
 			resDoc.AddMember("StatusMsg", "success", allocator);
 			resDoc.AddMember("AnsNum", rs.ansNum, allocator);
