@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-10-26 17:33:53
+ * @LastEditTime: 2021-10-26 20:46:33
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2667,6 +2667,13 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			}
 			catch(const std::exception& e)
 			{
+				string filename2 ="error_"+Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
+	
+                 string localname2 = "query_result/" + filename2;
+				outfile.open(localname2);
+			    outfile << success;
+		  	    outfile.close();
+
 				std::cerr << e.what() << '\n';
 				error="parse error";
 				sendResponseMsg(1005,error,response);
@@ -2676,6 +2683,12 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			{
 				cout<<"result parse error:"<<success<<endl;
 				error="parse error";
+				string filename2 ="error_"+Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
+	
+                 string localname2 = "query_result/" + filename2;
+				outfile.open(localname2);
+			    outfile << success;
+		  	    outfile.close();
 				sendResponseMsg(1005,error,response);
 				return;
 			}
