@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-10-14 20:03:51
+ * @LastEditTime: 2021-10-26 11:34:44
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -791,7 +791,7 @@ int main(int argc, char *argv[])
 					string cmd = "rm system.db/port.txt";
                     system(cmd.c_str());
 				}
-				cerr << "Server stopped abnormally, restarting server..." << endl;
+				cerr << "["<<Util::getTimeString()<<"] stopped abnormally, restarting server..." << endl;
 				//break;
 			}
 		}
@@ -2655,7 +2655,21 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			success = rs.to_JSON();
 			Document resDoc;
 			Document::AllocatorType &allocator = resDoc.GetAllocator();
-			resDoc.Parse(success.c_str());
+			try
+			{
+				/* code */
+				resDoc.Parse(success.c_str());
+			}
+			catch(const std::exception& e)
+			{
+				std::cerr << e.what() << '\n';
+			}
+			catch(...)
+			{
+				cout<<"result parse error:"<<success<<endl;
+			}
+			
+			
 			resDoc.AddMember("StatusCode", 0, allocator);
 			resDoc.AddMember("StatusMsg", "success", allocator);
 			resDoc.AddMember("AnsNum", rs.ansNum, allocator);
@@ -3709,6 +3723,7 @@ const shared_ptr<HttpServer::Request>& request, string RequestType,string postco
 	Document document;
 	string url;
 	string remote_ip=getRemoteIp(request);
+	cout<<"request time :"<<Util::getTimeString()<<endl;
 	cout<<"request remote ip:"<<remote_ip<<endl;
 	cout << "request method:" << request->method << endl;
 	cout << "request http_version:" << request->http_version << endl;
