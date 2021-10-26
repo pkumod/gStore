@@ -3484,7 +3484,18 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Response>& response,stri
 	}
 	else
 	{
-		
+		pthread_rwlock_rdlock(&txn_m_lock);
+		if (txn_managers.find(db_name) == txn_managers.end())
+		{
+			error = "Database transaction manager error.";
+			sendResponseMsg(1004,error,response);
+			pthread_rwlock_unlock(&txn_m_lock);
+			return;
+		}
+
+		shared_ptr<Txn_manager> txn_m = txn_managers[db_name];
+		pthread_rwlock_unlock(&txn_m_lock);
+		txn_m->Checkpoint();
 		current_database->save();
 	//NOTICE: this info is in header
 	string success = "Database saved successfully.";
