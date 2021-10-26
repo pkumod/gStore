@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-10-26 12:19:25
+ * @LastEditTime: 2021-10-26 17:33:53
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -920,7 +920,12 @@ int initialize(int argc, char *argv[])
 		 ipBlackList->Load(ipBlackFile);
 	 }
 	 
-    if(Util::file_exist("system.db/port.txt"))
+    // if(Util::file_exist("system.db/port.txt"))
+	// {
+	// 	cout << "Port " << server.config.port << " is already in use." << endl;
+	//     return -1;
+	// }
+	if(Util::checkPort(port)==false)
 	{
 		cout << "Port " << server.config.port << " is already in use." << endl;
 	    return -1;
