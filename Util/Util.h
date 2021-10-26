@@ -47,6 +47,8 @@ in the sparql query can point to the same node in data graph)
 #include <netdb.h>
 #include <arpa/inet.h>
 
+#include <unistd.h>
+
 //NOTICE:below are restricted to C++, C files should not include(maybe nested) this header!
 #include <bitset>
 #include <string>
@@ -496,6 +498,7 @@ public:
 	static std::vector<std::string> GetFiles(const char *src_dir, const char *ext);
 	static std::string getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value="");
 	static void formatPrint(std::string content, std::string type = "Info");
+    static bool checkPort(int port);
 private:
 	static bool isValidIPV4(std::string);
 	static bool isValidIPV6(std::string);

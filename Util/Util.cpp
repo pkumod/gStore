@@ -1746,6 +1746,39 @@ Util::getRandNum()
     return result;
 }
 
+bool Util::checkPort(int port)
+{
+    try
+    {
+       int ss=socket(AF_INET,SOCK_STREAM,0);
+       struct sockaddr_in addr;
+       addr.sin_family=AF_INET;
+       addr.sin_port=htons(port);
+       addr.sin_addr.s_addr=htonl(INADDR_ANY);
+       if(bind(ss,(struct sockaddr *)&addr,sizeof(addr))==-1)
+       {
+           close(ss);
+           return false;
+       }
+       else
+       {
+           close(ss);
+           return true;
+       }
+      
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+    catch(...)
+    {
+        std::cerr<<"port has been used."<<endl;
+        return false;
+    }
+    return false;
+}
 
 //is ostream.write() ok to update to disk at once? all add ofstream.flush()?
 //http://bookug.cc/rwbuffer
