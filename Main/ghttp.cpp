@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-10-26 20:46:33
+ * @LastEditTime: 2021-10-27 17:57:33
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -920,16 +920,16 @@ int initialize(int argc, char *argv[])
 		 ipBlackList->Load(ipBlackFile);
 	 }
 	 
-    // if(Util::file_exist("system.db/port.txt"))
-	// {
-	// 	cout << "Port " << server.config.port << " is already in use." << endl;
-	//     return -1;
-	// }
-	if(Util::checkPort(port)==false)
+    if(Util::file_exist("system.db/port.txt"))
 	{
 		cout << "Port " << server.config.port << " is already in use." << endl;
 	    return -1;
 	}
+	// if(Util::checkPort(port)==false)
+	// {
+	// 	cout << "Port " << server.config.port << " is already in use." << endl;
+	//     return -1;
+	// }
 	//users.insert(pair<std::string, struct User *>(ROOT_USERNAME, &root));
 
 	//load system.db when initialize
@@ -2660,32 +2660,17 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			success = rs.to_JSON();
 			Document resDoc;
 			Document::AllocatorType &allocator = resDoc.GetAllocator();
-			try
-			{
+			
 				/* code */
 				resDoc.Parse(success.c_str());
-			}
-			catch(const std::exception& e)
-			{
-				string filename2 ="error_"+Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
-	
-                 string localname2 = "query_result/" + filename2;
-				outfile.open(localname2);
-			    outfile << success;
-		  	    outfile.close();
-
-				std::cerr << e.what() << '\n';
-				error="parse error";
-				sendResponseMsg(1005,error,response);
-				return;
-			}
-			catch(...)
+			
+			if(resDoc.HasParseError())
 			{
 				cout<<"result parse error:"<<success<<endl;
 				error="parse error";
 				string filename2 ="error_"+Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
 	
-                 string localname2 = "query_result/" + filename2;
+                string localname2 = "query_result/" + filename2;
 				outfile.open(localname2);
 			    outfile << success;
 		  	    outfile.close();
@@ -2780,22 +2765,14 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			success = rs.to_JSON();
 			Document resDoc;
 			Document::AllocatorType &allocator = resDoc.GetAllocator();
-			try
-			{
+			
 				/* code */
 				resDoc.Parse(success.c_str());
-			}
-			catch(const std::exception& e)
-			{
-				std::cerr << e.what() << '\n';
-				error="parse error";
-				sendResponseMsg(1005,error,response);
-				return;
-			}
-			catch(...)
+			
+			if(resDoc.HasParseError())
 			{
 				cout<<"result parse error:"<<success<<endl;
-				error="parse error";
+				error="parse error,file name:"+filename;
 				sendResponseMsg(1005,error,response);
 				return;
 			}
@@ -3198,13 +3175,23 @@ void tquery_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 	
 		cout<<"res:"<<res<<endl;
 		Document::AllocatorType &allocator = resDoc.GetAllocator();
-		resDoc.Parse(res.c_str());
+		
+       
+          resDoc.Parse(res.c_str());
 		if(resDoc.HasParseError())
 		{
-			cout<<"error parse"<<endl;
+            cout<<"error parse"<<endl;
 			resDoc.Parse("{}");
-			resDoc.AddMember("result",StringRef(res.c_str()),allocator);
+			resDoc.AddMember("result",StringRef(res.c_str()),allocator);      
 		}
+
+		
+		// if(resDoc.HasParseError())
+		// {
+		// 	cout<<"error parse"<<endl;
+		// 	resDoc.Parse("{}");
+		// 	resDoc.AddMember("result",StringRef(res.c_str()),allocator);
+		// }
 		resDoc.AddMember("StatusCode", 0, allocator);
 		resDoc.AddMember("StatusMsg", "success", allocator);
 		StringBuffer resBuffer;
@@ -3761,7 +3748,7 @@ string checkIdentity2(string username, string password,string port)
 
 
 void request_thread(const shared_ptr<HttpServer::Response>& response, 
-const shared_ptr<HttpServer::Request>& request, string RequestType,string postcontent)
+const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 	if (!ipCheck(request)) {
 		string error = "IP Blocked!";
@@ -3802,18 +3789,21 @@ const shared_ptr<HttpServer::Request>& request, string RequestType,string postco
 	}
 	else if (RequestType == "POST")
 	{
-		auto strJson = postcontent;
+		auto strJson = request->content.string();
+    
+		//auto strJson = postcontent;
         cout<<"post content:"<<endl;
 		cout<<strJson<<endl;
 
-		document.Parse(strJson.c_str());
-		if (document.HasParseError())
+        
+        document.Parse(strJson.c_str()); 
+		if(document.HasParseError())
 		{
-			string error = "the post content is not fit the json format,content=" + strJson;
+            string error = "the post content is not fit the json format,content=" + strJson;
 			sendResponseMsg(1003, error, response);
 			return;
 		}
-
+		
 		operation="";
 		db_name="";
 		username="";
@@ -4303,62 +4293,64 @@ const shared_ptr<HttpServer::Request>& request, string RequestType,string postco
 void request_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
 {
 
-    string operation;
-	Document document;
-	string url;
-	string postcontent;
-	if (RequestType == "GET")
-	{
-		cout << "request path:" << request->path << endl;
+    // string operation;
+	// Document document;
+	// string url;
+	// string postcontent;
+	// if (RequestType == "GET")
+	// {
+	// 	cout << "request path:" << request->path << endl;
 
-		url = request->path;
-		url=UrlDecode(url);
-		cout << "request path:" << url << endl;
-		operation=WebUrl::CutParam(url, "operation");
+	// 	url = request->path;
+	// 	url=UrlDecode(url);
+	// 	cout << "request path:" << url << endl;
+	// 	operation=WebUrl::CutParam(url, "operation");
 	
 		
-	}
-	else if (RequestType == "POST")
-	{
-		auto strJson = request->content.string();
-        cout<<"post content:"<<endl;
-		cout<<strJson<<endl;
-        postcontent=strJson.c_str();
-		document.Parse(strJson.c_str());
-		if (document.HasParseError())
-		{
-			string error = "the post content is not fit the json format,content=" + strJson;
-			sendResponseMsg(1003, error, response);
-			return ;
-		}
+	// }
+	// else if (RequestType == "POST")
+	// {
+	// 	auto strJson = request->content.string();
+    //     cout<<"post content:"<<endl;
+	// 	cout<<strJson<<endl;
+    //     postcontent=strJson.c_str();
+		
+    //     document.Parse(strJson.c_str());
+	// 	if(document.HasParseError())
+	// 	{
+	// 		string error = "the post content is not fit the json format,content=" + strJson;
+	// 		sendResponseMsg(1003, error, response);
+	// 		return ;
+	// 	}
+		
 
-		operation="";
+	// 	operation="";
 		
-		if(document.HasMember("operation")&&document["operation"].IsString())
-		{
-			operation=document["operation"].GetString();
-		}
+	// 	if(document.HasMember("operation")&&document["operation"].IsString())
+	// 	{
+	// 		operation=document["operation"].GetString();
+	// 	}
 		
 			
-	}
-	if(operation=="shutdown")
-    {
-       bool flag = stop_handler(server, response, request,RequestType,postcontent);
-		if (flag)
-		{
+	// }
+	// if(operation=="shutdown")
+    // {
+    //    bool flag = stop_handler(server, response, request,RequestType,postcontent);
+	// 	if (flag)
+	// 	{
 			
-			cout<<"the Server is stopped！"<<endl;
-            exit(1);
-			return;
-		}
+	// 		cout<<"the Server is stopped！"<<endl;
+    //         exit(1);
+	// 		return;
+	// 	}
 			
      
-	}
-    else{
-	thread t(&request_thread, response, request, RequestType,postcontent);
+	// }
+    // else{
+	thread t(&request_thread, response, request, RequestType);
 	t.detach();
 	return ;
-	}
+	// }
 }
 
 
@@ -4939,6 +4931,11 @@ void DB2Map()
 	//cout << "DDDDDDDDDDDDDDDB2Map: strJson : " << strJson << endl;
 	Document document;
 	document.Parse(strJson.c_str());
+	if(document.HasParseError())
+	{
+		cout<<"DB2Map  getuser Parse Error "<<strJson<<endl;
+		return;
+	}
 	Value &p1 = document["results"];
 	Value &p2 = p1["bindings"]; 
 	//int i = 0;
@@ -4957,7 +4954,11 @@ void DB2Map()
 		//cout << "strJson2: " << strJson2 << endl;
 		Document document2;
 		document2.Parse(strJson2.c_str());
-
+        if(document2.HasParseError())
+		{
+			cout<<"DB2Map get username info Parse Error "<<strJson2<<endl;
+			return;
+		}
 		Value &p12 = document2["results"];
 		Value &p22 = p12["bindings"];
 		for(int j = 0; j < p22.Size(); j++)
@@ -5014,7 +5015,13 @@ void DB2Map()
 	//insert already_built database from system.db to already_build map
 	sparql = "select ?x where{?x <database_status> \"already_built\".}";
 	strJson = querySys(sparql);
+
 	document.Parse(strJson.c_str());
+	if(document.HasParseError())
+	{
+		cout<<"DB2Map getdatabase Parse Error "<<strJson<<endl;
+		return;
+	}
 	p1 = document["results"];
 	p2 = p1["bindings"]; 
 
@@ -5029,6 +5036,10 @@ void DB2Map()
 		string strJson2 = querySys(sparql2);
 		Document document2;
 		document2.Parse(strJson2.c_str());
+		if(document2.HasParseError())
+		{
+			cout<<"DB2Map getDatabaseProperties Parse Error "<<strJson2<<endl;
+		}
 
 		Value &p12 = document2["results"];
 		Value &p22 = p12["bindings"];
@@ -5053,6 +5064,10 @@ void DB2Map()
 	sparql = "select ?x where{<system> <built_time> ?x.}";
 	strJson = querySys(sparql);
 	document.Parse(strJson.c_str());
+	if(document.HasParseError())
+	{
+		cout<<"DB2Map getSystemDatabase Time Parse Error "<<strJson<<endl;
+	}
 	p1 = document["results"];
 	p2 = p1["bindings"]; 
 
@@ -5067,7 +5082,12 @@ void DB2Map()
 	//get CoreVersion and APIVersion
 	sparql = "select ?x where{<CoreVersion> <value> ?x.}";
 	strJson = querySys(sparql);
+
 	document.Parse(strJson.c_str());
+	if(document.HasParseError())
+	{
+		cout<<"DB2Map getCoreVersion Parse Error "<<strJson<<endl;
+	}
 	p1 = document["results"];
 	p2 = p1["bindings"];
 	for (int i = 0; i < p2.Size(); i++)

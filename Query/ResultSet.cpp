@@ -207,25 +207,68 @@ ResultSet::to_JSON()
 					ans_str = ans_str.substr(1, ans_str.length() - 2);
 					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
 					_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+				    list_empty=false;
 				}
-				else if (ans_str[0] == '"' && ans_str.find("\"^^<") == string::npos && ans_str[ans_str.length() - 1] != '>' )
+				else if (ans_str[0] == '"')
 				{
-					ans_type = "literal";
-					ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
-					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-					_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+					if (ans_str.find("\"^^<") == string::npos)
+					{
+						//no has type string
+						ans_type = "literal";
+						ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
+						_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
+						_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+						list_empty = false;
+					}
+					else
+					{
+						if (ans_str[ans_str.length() - 1] == '>')
+						{
+							ans_type = "typed-literal";
+							int pos = ans_str.find("\"^^<");
+							string data_type = ans_str.substr(pos + 4, ans_str.length() - pos - 5);
+							ans_str = ans_str.substr(1, pos - 1);
+							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
+							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+							list_empty = false;
+						}
+						else
+						{
+							// the entity value is not complete
+							ans_type = "typed-literal";
+							int pos = ans_str.find("\"^^<");
+							string data_type = "http://www.w3.org/2001/XMLSchema#string-complete";
+							ans_str = ans_str.substr(1, pos - 1);
+							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
+							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+							list_empty = false;
+						}
+					}
 				}
-				else if (ans_str[0] == '"' && ans_str.find("\"^^<") != string::npos && ans_str[ans_str.length() - 1] == '>' )
-				{
-					ans_type = "typed-literal";
-					int pos = ans_str.find("\"^^<");
-					string data_type = ans_str.substr(pos + 4, ans_str.length() - pos - 5);
-					ans_str = ans_str.substr(1, pos - 1);
-
-					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-					_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+				// else if (ans_str[0] == '"' && ans_str.find("\"^^<") == string::npos && ans_str[ans_str.length() - 1] != '>' )
+				// {
+				// 	ans_type = "literal";
+				// 	ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
+				// 	_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
+				// 	_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+				//     list_empty=false;
+				// }
+				// else if (ans_str[0] == '"' && ans_str.find("\"^^<") != string::npos && ans_str[ans_str.length() - 1] == '>' )
+				// {
+				// 	ans_type = "typed-literal";
+				// 	int pos = ans_str.find("\"^^<");
+				// 	string data_type = ans_str.substr(pos + 4, ans_str.length() - pos - 5);
+				// 	ans_str = ans_str.substr(1, pos - 1);
+				// 	_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
+				// 	_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+                //     list_empty=false;
+				// }
+				
+				else{
+					_buf<<"error:"+ans_str;
+					list_empty=false;
 				}
-				list_empty = false;
+				//list_empty = false;
 			}
 			_buf << "}";
 		}
