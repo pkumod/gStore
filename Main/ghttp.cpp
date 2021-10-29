@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-10-27 17:57:33
+ * @LastEditTime: 2021-10-29 00:13:10
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2662,7 +2662,7 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			Document::AllocatorType &allocator = resDoc.GetAllocator();
 			
 				/* code */
-				resDoc.Parse(success.c_str());
+			resDoc.Parse(success.c_str());
 			
 			if(resDoc.HasParseError())
 			{

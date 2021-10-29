@@ -367,6 +367,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			{
 				query_tree_ptr->addProjectionVar();
 				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+				cout<<"tmp:"<<tmp<<endl;
 				if (tmp == "SIMPLECYCLEPATH")
 					proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCyclePath_type;
 				else if (tmp == "SIMPLECYCLEBOOLEAN")
