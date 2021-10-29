@@ -1474,6 +1474,7 @@ bool PathQueryHandler::kHopReachableTest(int uid, int vid, bool directed, int k,
 vector<int> PathQueryHandler::kHopReachablePath(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set)
 {
 	vector<int> ret = shortestPath(uid, vid, directed, pred_set);
+	cout<<"ret.size:"<<ret.size()<<",k:"<<k<<endl;
 	if ((ret.size() - 1) / 2 > k)
 		ret.clear();
 	return ret;
