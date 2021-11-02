@@ -54,7 +54,7 @@ int main(int argc, char * argv[])
 			Util::configure_new();
 			string version = Util::getConfigureValue("version");
 			string update_sparql = "insert data {<CoreVersion> <value> " + version + ". }";
-			
+			cout<<"version:"<<version<<",update_sparql:"<<update_sparql<<endl;
 			ResultSet _rs;
 			FILE* ofp = stdout;
 			string msg;
@@ -203,6 +203,7 @@ int main(int argc, char * argv[])
 				string db_name =db_names[i];
 				if (db_name.empty())
 				{
+					cout<<"the database name is empty!"<<endl;
 					continue;
 				}
 				if (Util::dir_exist(db_name + ".db")==false)
