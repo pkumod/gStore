@@ -265,7 +265,7 @@ ResultSet::to_JSON()
 				// }
 				
 				else{
-					_buf<<"error:"+ans_str;
+					_buf<<"\"error\":\"the information is not complete!\"}";
 					list_empty=false;
 				}
 				//list_empty = false;
