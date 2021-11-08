@@ -2144,6 +2144,18 @@ Util::read_backup_time()
 	return Util::gserver_backup_time;
 }
 
+std::string
+Util::replace_all(std::string _content,const std::string oldtext,const std::string newtext)
+{
+     while(true)   {     
+            string::size_type  pos(0);     
+            if(  (pos=_content.find(oldtext))!=string::npos  )     
+                _content.replace(pos,oldtext.length(),newtext);     
+            else   break;     
+        }     
+    return  _content;     
+}
+
 void
 Util::split(string str, string pattern, vector<string> &res){
     string::size_type pos = 0;

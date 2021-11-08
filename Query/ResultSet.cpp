@@ -25,6 +25,7 @@ ResultSet::ResultSet()
 
 ResultSet::~ResultSet()
 {
+	cout<<"call the delete function for ResultSet"<<endl;
 	delete[] this->var_name;
 	if (!this->useStream)
 	{
@@ -174,10 +175,16 @@ ResultSet::to_JSON()
 	for(long long i = (!this->useStream ? this->output_offset : 0LL); i < this->ansNum; i++)
 	{
 		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
-			break;
-
+		{
+			  cout<<"the size is out than the output_limit"<<endl;
+              break;
+		}
+			
 		if (this->useStream)
-			bp = this->stream->read();
+		{
+            bp = this->stream->read();
+		}
+			
 
 		if (i >= this->output_offset)
 		{
@@ -198,7 +205,7 @@ ResultSet::to_JSON()
 
 				if (ans_str.length() == 0)
 					continue;
-
+                //ans_str=Util::replace_all(ans_str,"\n","");
 				if (!list_empty)
 					_buf << ",\t";
 				if (ans_str[0] == '<')
@@ -238,9 +245,9 @@ ResultSet::to_JSON()
 							ans_type = "typed-literal";
 							int pos = ans_str.find("\"^^<");
 							string data_type = "http://www.w3.org/2001/XMLSchema#string-complete";
-							ans_str = ans_str.substr(1, pos - 1);
+							string ans_str_new = ans_str.substr(1, pos - 1);
 							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\",\"oldvalue\":"+ Util::node2string((string("\"") + ans_str + "\"").c_str()+"\", \"value\": " + Util::node2string((string("\"") + ans_str_new + "\"").c_str()) + " }";
 							list_empty = false;
 						}
 					}
@@ -265,7 +272,9 @@ ResultSet::to_JSON()
 				// }
 				
 				else{
-					_buf<<"\"error\":\"the information is not complete!\"}";
+					
+					string ans_str_new=Util::replace_all(ans_str,"\"","“");
+					_buf<<"\"error\":{\"errorMsg:\":\"the information is not complete!\",\"errorContent\":\""+ans_str_new+"\"}";
 					list_empty=false;
 				}
 				//list_empty = false;
