@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-11-08 21:26:14
+ * @LastEditTime: 2021-11-08 23:14:26
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2506,7 +2506,7 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 	string str = db_query;
 
 
-
+    string thread_id = Util::getThreadID();
 	pthread_rwlock_rdlock(&databases_map_lock);
 	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
 	if(iter == databases.end())
@@ -2628,7 +2628,7 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 	string ansNum_s = stream.str();
 	cout <<"ansNum_s: " << ansNum_s << endl;
 	
-	string filename = Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
+	string filename = thread_id+"_"+Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
 	
 	Util::create_dir("query_result/");
     string localname = "query_result/" + filename;
@@ -2699,7 +2699,7 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			{
 				cout<<"result parse error:"<<success<<endl;
 				error="parse error";
-				string filename2 ="error_"+Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
+				string filename2 ="error_"+thread_id+"_"+Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
 	
                 string localname2 = "query_result/" + filename2;
 				outfile.open(localname2);
