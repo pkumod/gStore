@@ -393,6 +393,8 @@ public:
 	static std::string node2string(const char* _raw_str);
 	static long read_backup_time();
 
+    static std::string replace_all(std::string _content,const std::string oldtext,const std::string newtext);
+
 	static bool is_literal_ele(TYPE_ENTITY_LITERAL_ID id);
 	static bool is_entity_ele(TYPE_ENTITY_LITERAL_ID id);
 	static bool isEntity(const std::string& _str);

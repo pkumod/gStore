@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-10-29 00:13:10
+ * @LastEditTime: 2021-11-08 21:26:14
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -87,6 +87,7 @@ void thread_sigterm_handler(int _signal_num);
 bool addPrivilege(string username, string type, string db_name);
 bool delPrivilege(string username, string type, string db_name);
 bool checkPrivilege(string username, string type, string db_name);
+int clearPrivilege(string username);
 void DB2Map();
 string querySys(string sparql);
 bool sysrefresh();
@@ -2124,24 +2125,35 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Response> &resp
 									string privilege, string type, string db_name)
 {
 	string error = "";
-	error = checkparamValue("db_name", db_name);
-	if (error.empty() == false)
-	{
-		sendResponseMsg(1003, error, response);
-		return;
-	}
-	error = checkparamValue("privilege", privilege);
-	if (error.empty() == false)
-	{
-		sendResponseMsg(1003, error, response);
-		return;
-	}
 	error=checkparamValue("type",type);
 	if (error.empty() == false)
 	{
 		sendResponseMsg(1003, error, response);
 		return;
 	}
+	error=checkparamValue("username",username);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, response);
+		return;
+	}
+
+	if (type != "3")
+	{
+		error = checkparamValue("db_name", db_name);
+		if (error.empty() == false)
+		{
+			sendResponseMsg(1003, error, response);
+			return;
+		}
+		error = checkparamValue("privilege", privilege);
+		if (error.empty() == false)
+		{
+			sendResponseMsg(1003, error, response);
+			return;
+		}
+	}
+
 	if (username == ROOT_USERNAME)
 	{
 		string error = "you can't add privilege to root user.";
@@ -2149,79 +2161,95 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Response> &resp
 		//*response << "HTTP/1.1 200 OK\r\nContent-Length: " << error.length() << "\r\n\r\n" << error;
 		return;
 	}
-	vector<string> privileges;
-	if (privilege.substr(privilege.length() - 1, 1) != ",")
+	string result="";
+	if(type=="3")
 	{
-		privilege = privilege + ",";
+		//clear the user all privileges
+       int resultint=clearPrivilege(username);
+	   if(resultint==-1)
+	   {
+		   error="the username is not exists or the username is root.";
+		   sendResponseMsg(1004, error, response);
+		   return;
+	   }
+       else
+	   result="clear the all privileges for the user successfully!";
 	}
-
-	Util::split(privilege, ",", privileges);
-	string result = "";
-	for (int i = 0; i < privileges.size(); i++)
+	else
 	{
-		string temp_privilege_int = privileges[i];
-		string temp_privilege = "";
-		if (temp_privilege_int.empty())
+		vector<string> privileges;
+		if (privilege.substr(privilege.length() - 1, 1) != ",")
 		{
-			continue;
+			privilege = privilege + ",";
 		}
-		if (temp_privilege_int == "1")
+
+		Util::split(privilege, ",", privileges);
+		for (int i = 0; i < privileges.size(); i++)
 		{
-			temp_privilege = "query";
-		}
-		else if (temp_privilege_int == "2")
-		{
-			temp_privilege = "load";
-		}
-		else if (temp_privilege_int == "3")
-		{
-			temp_privilege = "unload";
-		}
-		else if (temp_privilege_int == "4")
-		{
-			temp_privilege = "update";
-		}
-		else if (temp_privilege_int == "5")
-		{
-			temp_privilege = "backup";
-		}
-		else if (temp_privilege_int == "6")
-		{
-			temp_privilege = "restore";
-		}
-		else if (temp_privilege_int == "7")
-		{
-			temp_privilege = "export";
-		}
-		if (temp_privilege.empty() == false)
-		{
-			if (type == "1")
+			string temp_privilege_int = privileges[i];
+			string temp_privilege = "";
+			if (temp_privilege_int.empty())
 			{
-				if (addPrivilege(username, temp_privilege, db_name) == 0)
+				continue;
+			}
+			if (temp_privilege_int == "1")
+			{
+				temp_privilege = "query";
+			}
+			else if (temp_privilege_int == "2")
+			{
+				temp_privilege = "load";
+			}
+			else if (temp_privilege_int == "3")
+			{
+				temp_privilege = "unload";
+			}
+			else if (temp_privilege_int == "4")
+			{
+				temp_privilege = "update";
+			}
+			else if (temp_privilege_int == "5")
+			{
+				temp_privilege = "backup";
+			}
+			else if (temp_privilege_int == "6")
+			{
+				temp_privilege = "restore";
+			}
+			else if (temp_privilege_int == "7")
+			{
+				temp_privilege = "export";
+			}
+			if (temp_privilege.empty() == false)
+			{
+				if (type == "1")
 				{
-					result = result + "add privilege " + temp_privilege + " failed. \r\n";
+					if (addPrivilege(username, temp_privilege, db_name) == 0)
+					{
+						result = result + "add privilege " + temp_privilege + " failed. \r\n";
+					}
+					else
+					{
+						result = result + "add privilege " + temp_privilege + " successfully. \r\n";
+					}
+				}
+				else if (type == "2")
+				{
+					if (delPrivilege(username, temp_privilege, db_name) == 0)
+					{
+						result = result + "delete privilege " + temp_privilege + " failed. \r\n";
+					}
+					else
+					{
+						result = result + "delete privilege " + temp_privilege + " successfully. \r\n";
+					}
 				}
 				else
 				{
-					result = result + "add privilege " + temp_privilege + " successfully. \r\n";
+					result = "the operation type is not support.";
+					sendResponseMsg(1003, result, response);
+					return;
 				}
-			}
-			else if (type == "2")
-			{
-				if (delPrivilege(username, temp_privilege, db_name) == 0)
-				{
-					result = result + "delete privilege " + temp_privilege + " failed. \r\n";
-				}
-				else
-				{
-					result = result + "delete privilege " + temp_privilege + " successfully. \r\n";
-				}
-			}
-			else
-			{
-				result = "the operation type is not support.";
-				sendResponseMsg(1003, result, response);
-				return;
 			}
 		}
 	}
@@ -2658,6 +2686,9 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 		if (format == "json")
 		{
 			success = rs.to_JSON();
+			int rs_ansNum=rs.ansNum;
+			int rs_outputlimit=rs.output_limit;
+			//delete &rs;
 			Document resDoc;
 			Document::AllocatorType &allocator = resDoc.GetAllocator();
 			
@@ -2674,15 +2705,15 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 				outfile.open(localname2);
 			    outfile << success;
 		  	    outfile.close();
-				sendResponseMsg(1005,error,response);
+				sendResponseMsg(1005,error,response); 
 				return;
 			}
 			
 			
 			resDoc.AddMember("StatusCode", 0, allocator);
 			resDoc.AddMember("StatusMsg", "success", allocator);
-			resDoc.AddMember("AnsNum", rs.ansNum, allocator);
-			resDoc.AddMember("OutputLimit", rs.output_limit, allocator);
+			resDoc.AddMember("AnsNum", rs_ansNum, allocator);
+			resDoc.AddMember("OutputLimit", rs_outputlimit, allocator);
 	        resDoc.AddMember("QueryTime", StringRef(Util::int2string(query_time).c_str()), allocator);
 			StringBuffer resBuffer;
 			PrettyWriter<StringBuffer> resWriter(resBuffer);
@@ -2710,6 +2741,9 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 		else if (format == "file")
 		{
 			success = rs.to_str();
+			int rs_ansNum=rs.ansNum;
+			int rs_outputlimit=rs.output_limit;
+			//delete &rs;
 			// 	localname = localname + ".txt";
 			//    filename = filename + ".txt";
 			outfile.open(localname);
@@ -2724,9 +2758,9 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			writer.Key("StatusMsg");
 			writer.String(StringRef("success"));
 			writer.Key("AnsNum");
-			writer.Uint(rs.ansNum);
+			writer.Uint(rs_ansNum);
 			writer.Key("OutputLimit");
-			writer.Uint(rs.output_limit);
+			writer.Uint(rs_outputlimit);
 			
 			writer.Key("QueryTime");
 			writer.String(StringRef(Util::int2string(query_time).c_str()));
@@ -2757,12 +2791,16 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 		else if (format == "json+file" || format == "file+json")
 		{
 			success = rs.to_str();
+			int rs_ansNum=rs.ansNum;
+			int rs_outputlimit=rs.output_limit;
+			
 			// 	localname = localname + ".txt";
 			//    filename = filename + ".txt";
 			outfile.open(localname);
 			outfile << success;
 			outfile.close();
 			success = rs.to_JSON();
+			//delete &rs;
 			Document resDoc;
 			Document::AllocatorType &allocator = resDoc.GetAllocator();
 			
@@ -2779,8 +2817,8 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			// resDoc.Parse(success.c_str());
 			resDoc.AddMember("StatusCode", 0, allocator);
 			resDoc.AddMember("StatusMsg", "success", allocator);
-			resDoc.AddMember("AnsNum", rs.ansNum, allocator);
-			resDoc.AddMember("OutputLimit", rs.output_limit, allocator);
+			resDoc.AddMember("AnsNum", rs_ansNum, allocator);
+			resDoc.AddMember("OutputLimit", rs_outputlimit, allocator);
 	        resDoc.AddMember("QueryTime", StringRef(Util::int2string(query_time).c_str()), allocator);
 		
 			resDoc.AddMember("FileName", StringRef(filename.c_str()), allocator);
@@ -2803,6 +2841,9 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 		{
 
 			success = rs.to_JSON(); // convert the result to json
+			int rs_ansNum=rs.ansNum;
+			int rs_outputlimit=rs.output_limit;
+			//delete &rs;
 			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: " << success.length();
 			*response << "\r\nCache-Control: no-cache"
 					  << "\r\nPragma: no-cache"
@@ -2820,6 +2861,9 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			cout << log_prefix << "filename: " << filename << endl;
 			filename = "";
 			success = rs.to_str();
+			int rs_ansNum=rs.ansNum;
+			int rs_outputlimit=rs.output_limit;
+			//delete &rs;
 			filename = "sparql.txt";
 			cout << log_prefix << "filename: " << filename << endl;
 			*response << "HTTP/1.1 200 OK\r\nContent-Length: " << success.length();
@@ -4363,6 +4407,7 @@ void writeLog(FILE* fp, string _info)
 	//Another way to locka many: lock(lk1, lk2...)
 	query_log_lock.lock();
 	fprintf(fp, "%s", _info.c_str());
+	fprintf(fp,"%s",",");
 	Util::Csync(fp);
 	long logSize = ftell(fp);
 	cout << "logSize: " << logSize << endl;
@@ -4811,6 +4856,43 @@ bool delPrivilege(string username, string type, string db_name)
 	}
 	pthread_rwlock_unlock(&users_map_lock);
 	return 0;
+}
+
+
+int clearPrivilege(string username)
+{
+	pthread_rwlock_rdlock(&users_map_lock);
+	std::map<std::string, struct User *>::iterator it = users.find(username);
+	string update="";
+	if(it != users.end() && username != ROOT_USERNAME)
+	{
+		pthread_rwlock_unlock(&users_map_lock);
+		update = "DELETE where {<" + username + "> <has_query_priv> ?x.}";
+		updateSys(update);
+		update = "DELETE where {<" + username + "> <has_load_priv> ?x.}";
+		updateSys(update);
+		update = "DELETE where {<" + username + "> <has_unload_priv> ?x.}";
+		updateSys(update);
+		update = "DELETE where {<" + username + "> <has_update_priv> ?x.}";
+		updateSys(update);	
+		update = "DELETE where {<" + username + "> <has_backup_priv> ?x.}";
+		updateSys(update);
+		update = "DELETE where {<" + username + "> <has_restore_priv> ?x.}";
+		updateSys(update);
+		update = "DELETE where {<" + username + "> <has_export_priv> ?x.}";
+		updateSys(update);
+		pthread_rwlock_unlock(&users_map_lock);
+		return 1;
+
+	    	
+	}
+	else
+	{
+		pthread_rwlock_unlock(&users_map_lock);
+         return -1;
+	}
+	
+	
 }
 bool checkPrivilege(string username, string type, string db_name)
 {
