@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-11-08 23:14:26
+ * @LastEditTime: 2021-11-09 23:10:50
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -151,7 +151,7 @@ void backup_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 void restore_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string backup_path,string username);
 
 void query_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string sparql,string format,
-string update_flag,string remote_ip,string thread_id,string log_prefix);
+string update_flag,string remote_ip,string log_prefix);
 
 void export_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string db_path,string username);
 
@@ -544,18 +544,38 @@ public:
 	string db_name;
 	string format;
 	string db_query;
+	string remote_ip;
+	string querytype;
+	string log_prefix;
 	const shared_ptr<HttpServer::Response> response;
 	const shared_ptr<HttpServer::Request> request;
 	Task(bool flag, string name, string ft, string query, const shared_ptr<HttpServer::Response>& res, const shared_ptr<HttpServer::Request>& req);
+	Task(string name, string ft, string _remote_ip,string _log_prefix,string _querytype,
+string query, const shared_ptr<HttpServer::Response>& res, const shared_ptr<HttpServer::Request>& req);
 	~Task();
 	void run();
 };
-Task::Task(bool flag, string name, string ft, string query, const shared_ptr<HttpServer::Response>& res, const shared_ptr<HttpServer::Request>& req):response(res),request(req)
+Task::Task(bool flag, string name, string ft, 
+string query, const shared_ptr<HttpServer::Response>& res,
+ const shared_ptr<HttpServer::Request>& req):response(res),request(req)
 {
 	update = flag;
 	db_name = name;
 	format = ft;
 	db_query = query;
+}
+
+Task::Task(string name, string ft,string _remote_ip,string _log_prefix,string _querytype,
+string query, const shared_ptr<HttpServer::Response>& res,
+ const shared_ptr<HttpServer::Request>& req):response(res),request(req)
+{
+	//update = flag;
+	db_name = name;
+	format = ft;
+	db_query = query;
+	querytype=_querytype;
+	remote_ip=_remote_ip;
+	log_prefix=_log_prefix;
 }
 Task::~Task()
 {
@@ -564,6 +584,7 @@ Task::~Task()
 void Task::run()
 {
 	//query_thread(update, db_name, format, db_query, response, request);
+	query_thread_new(response,db_name,db_query,format,querytype,remote_ip,log_prefix);
 }
 
 class Thread
@@ -830,6 +851,7 @@ int initialize(int argc, char *argv[])
 	 HttpServer server;
 	 string db_name = "";
 	 server.config.port = 9000;
+	 server.config.thread_pool_size=30;
 	 bool loadCSR = 0;	// DO NOT load CSR by default
 
 	 if (argc < 2)
@@ -2468,8 +2490,9 @@ void restore_thread_new(const shared_ptr<HttpServer::Response>& response,string 
  * @param {string} file:the out file path
  * @return {*}
  */
-void query_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string sparql,string format,
-string update_flag,string remote_ip,string thread_id,string log_prefix)
+void query_thread_new(const shared_ptr<HttpServer::Response>& response,
+string db_name,string sparql,string format,
+string update_flag,string remote_ip,string log_prefix)
 {
     string error="";
 	error=checkparamValue("db_name",db_name);
@@ -2504,8 +2527,6 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 	string db_query=sparql;
 	cout<<"check: "<<db_query<<endl;
 	string str = db_query;
-
-
     string thread_id = Util::getThreadID();
 	pthread_rwlock_rdlock(&databases_map_lock);
 	std::map<std::string, Database *>::iterator iter = databases.find(db_name);
@@ -2634,7 +2655,7 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
     string localname = "query_result/" + filename;
 	if (ret)
 	{
-		cout << log_prefix << "search query returned successfully." << endl;
+		cout << thread_id << ":search query returned successfully." << endl;
 
 		//record each query operation, including the sparql and the answer number
 		//accurate down to microseconds
@@ -2714,6 +2735,7 @@ string update_flag,string remote_ip,string thread_id,string log_prefix)
 			resDoc.AddMember("StatusMsg", "success", allocator);
 			resDoc.AddMember("AnsNum", rs_ansNum, allocator);
 			resDoc.AddMember("OutputLimit", rs_outputlimit, allocator);
+			resDoc.AddMember("ThreadId",StringRef(thread_id.c_str()),allocator);
 	        resDoc.AddMember("QueryTime", StringRef(Util::int2string(query_time).c_str()), allocator);
 			StringBuffer resBuffer;
 			PrettyWriter<StringBuffer> resWriter(resBuffer);
@@ -4133,7 +4155,15 @@ const shared_ptr<HttpServer::Request>& request, string RequestType)
 		{
 			format="json";
 		}
-		query_thread_new(response,db_name,sparql,format,querytype,remote_ip,thread_id,log_prefix);
+
+       query_num++;
+	   Task* task = new Task(db_name, format,remote_ip,log_prefix,querytype,sparql, response, request);
+	    pool.AddTask(task);
+	//thread t(&query_thread, db_name, format, db_query, response, request);
+	//t.detach();
+		//return true;
+
+		//query_thread_new(response,db_name,sparql,format,querytype,remote_ip,thread_id,log_prefix);
 	}
 	else if(operation=="export")
 	{
