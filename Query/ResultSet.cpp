@@ -247,7 +247,7 @@ ResultSet::to_JSON()
 							string data_type = "http://www.w3.org/2001/XMLSchema#string-complete";
 							string ans_str_new = ans_str.substr(1, pos - 1);
 							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\",\"oldvalue\":"+ Util::node2string((string("\"") + ans_str + "\"").c_str())+"\", \"value\": " + Util::node2string((string("\"") + ans_str_new + "\"").c_str()) + " }";
+							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\",\"oldvalue\":"+ Util::node2string((string("\"") + ans_str + "\"").c_str())+", \"value\": " + Util::node2string((string("\"") + ans_str_new + "\"").c_str()) + " }";
 							list_empty = false;
 						}
 					}
