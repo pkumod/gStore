@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-11-12 17:41:33
+ * @LastEditTime: 2021-11-12 20:05:38
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -4947,6 +4947,7 @@ int clearPrivilege(string username)
 		updateSys(update);
 		update = "DELETE where {<" + username + "> <has_export_priv> ?x.}";
 		updateSys(update);
+		sysrefresh();
 		pthread_rwlock_unlock(&users_map_lock);
 		return 1;
 
