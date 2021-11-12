@@ -81,7 +81,14 @@ int main(int argc, char *argv[])
 	GstoreConnector gc;
 	string res;
 	int ret;
-	ret = gc.Get("http://127.0.0.1:" + port + "/?operation=shutdown&username=" + SYSTEM_USERNAME + "&password=" + system_password, res);
+	string postdata="{\"username\":\"system\",\"password\":\""+system_password+"\"}";
+	//ret = gc.Get("http://127.0.0.1:" + port + "/shutdown/?username=" + SYSTEM_USERNAME + "&password=" + system_password, res);
+	ret=gc.Post("http://127.0.0.1:" + port + "/shutdown",postdata,res);
+	if(res=="")
+	{
+		res="the Server is stopped successfully!";
+	}
+	cout<<"response:"<<res<<endl;
 	return 0;
 	}
 

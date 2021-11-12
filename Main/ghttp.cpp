@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-11-12 20:05:38
+ * @LastEditTime: 2021-11-12 20:47:15
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -4573,11 +4573,12 @@ const shared_ptr<HttpServer::Request>& request,string RequestType,string postcon
 	if (RequestType == "GET")
 	{
 		cout << "request path:" << request->path << endl;
-
+        
 		url = request->path;
+		//url=Util::string_replace(url,"/shutdown")
 		url=UrlDecode(url);
 		cout << "request path:" << url << endl;
-		operation=WebUrl::CutParam(url, "operation");
+	
 		username = WebUrl::CutParam(url, "username");
 		password = WebUrl::CutParam(url, "password");
 	
@@ -4601,14 +4602,11 @@ const shared_ptr<HttpServer::Request>& request,string RequestType,string postcon
 			return false;
 		}
 
-		operation="";
+		
 	
 		username="";
 		password="";
-		if(document.HasMember("operation")&&document["operation"].IsString())
-		{
-			operation=document["operation"].GetString();
-		}
+		
 		if(document.HasMember("username")&&document["username"].IsString())
 		{
 			username=document["username"].GetString();
@@ -4934,20 +4932,44 @@ int clearPrivilege(string username)
 	{
 		pthread_rwlock_unlock(&users_map_lock);
 		update = "DELETE where {<" + username + "> <has_query_priv> ?x.}";
+		pthread_rwlock_wrlock(&(it->second->query_priv_set_lock));
+		it->second->query_priv.clear();
+		pthread_rwlock_unlock(&(it->second->query_priv_set_lock));
+				
+		
 		updateSys(update);
 		update = "DELETE where {<" + username + "> <has_load_priv> ?x.}";
 		updateSys(update);
+		pthread_rwlock_wrlock(&(it->second->load_priv_set_lock));
+		it->second->load_priv.clear();
+		pthread_rwlock_unlock(&(it->second->load_priv_set_lock));
 		update = "DELETE where {<" + username + "> <has_unload_priv> ?x.}";
 		updateSys(update);
+		pthread_rwlock_wrlock(&(it->second->unload_priv_set_lock));
+		it->second->unload_priv.clear();
+		pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
 		update = "DELETE where {<" + username + "> <has_update_priv> ?x.}";
 		updateSys(update);	
+		pthread_rwlock_wrlock(&(it->second->update_priv_set_lock));
+		it->second->update_priv.clear();
+		pthread_rwlock_unlock(&(it->second->update_priv_set_lock));
 		update = "DELETE where {<" + username + "> <has_backup_priv> ?x.}";
 		updateSys(update);
+		pthread_rwlock_wrlock(&(it->second->backup_priv_set_lock));
+		it->second->backup_priv.clear();
+		pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
 		update = "DELETE where {<" + username + "> <has_restore_priv> ?x.}";
 		updateSys(update);
+		pthread_rwlock_wrlock(&(it->second->restore_priv_set_lock));
+		it->second->restore_priv.clear();
+		pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
 		update = "DELETE where {<" + username + "> <has_export_priv> ?x.}";
 		updateSys(update);
+		pthread_rwlock_wrlock(&(it->second->export_priv_set_lock));
+		it->second->export_priv.clear();
+		pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
 		sysrefresh();
+	
 		pthread_rwlock_unlock(&users_map_lock);
 		return 1;
 
