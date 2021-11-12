@@ -7,6 +7,7 @@
 =============================================================================*/
 
 #include "ResultSet.h"
+#include <regex>
 
 using namespace std;
 
@@ -172,6 +173,11 @@ ResultSet::to_JSON()
 		this->resetStream();
 
 	const Bstr* bp = NULL;
+	// match ^^<*> string
+	regex dataTypePattern("\\^\\^<(\\S*?)[^>]*>.*?|<.*? />");
+	smatch matchResult;
+	string::const_iterator iterStart;
+	string::const_iterator iterEnd;
 	for(long long i = (!this->useStream ? this->output_offset : 0LL); i < this->ansNum; i++)
 	{
 		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
@@ -229,14 +235,35 @@ ResultSet::to_JSON()
 					}
 					else
 					{
+						string data_type = "";
 						if (ans_str[ans_str.length() - 1] == '>')
 						{
 							ans_type = "typed-literal";
 							int pos = ans_str.find("\"^^<");
-							string data_type = ans_str.substr(pos + 4, ans_str.length() - pos - 5);
-							ans_str = ans_str.substr(1, pos - 1);
+							// string data_type = ans_str.substr(pos + 4, ans_str.length() - pos - 5);
+							iterStart = ans_str.begin();
+							iterEnd = ans_str.end();
+							while (regex_search(iterStart, iterEnd, matchResult, dataTypePattern))
+							{
+								data_type = matchResult[0];
+								break;
+							}
+							if (data_type.length() > 4)
+							{
+								// remove ^^<>
+								data_type = data_type.substr(3, data_type.length()-4);
+								if (data_type.find("^^<") != string::npos)
+								{
+									data_type = "http://www.w3.org/2001/XMLSchema#string-complete";
+								}
+							}
+							else
+							{
+								data_type = "http://www.w3.org/2001/XMLSchema#string-complete";
+							}
+							ans_str = ans_str.substr(0, pos+1);
 							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string(ans_str.c_str()) + " }";
 							list_empty = false;
 						}
 						else
@@ -244,10 +271,10 @@ ResultSet::to_JSON()
 							// the entity value is not complete
 							ans_type = "typed-literal";
 							int pos = ans_str.find("\"^^<");
-							string data_type = "http://www.w3.org/2001/XMLSchema#string-complete";
-							string ans_str_new = ans_str.substr(1, pos - 1);
+							data_type = "http://www.w3.org/2001/XMLSchema#string-not-complete";
+							ans_str = ans_str.substr(0, pos+1);
 							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\",\"oldvalue\":"+ Util::node2string((string("\"") + ans_str + "\"").c_str())+", \"value\": " + Util::node2string((string("\"") + ans_str_new + "\"").c_str()) + " }";
+							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string(ans_str.c_str()) + " }";
 							list_empty = false;
 						}
 					}
@@ -272,9 +299,8 @@ ResultSet::to_JSON()
 				// }
 				
 				else{
-					
-					string ans_str_new=Util::replace_all(ans_str,"\"","“");
-					_buf<<"\"error\":{\"errorMsg:\":\"the information is not complete!\",\"errorContent\":\""+ans_str_new+"\"}";
+					//string ans_str_new=Util::replace_all(ans_str,"\"","“");
+					_buf<<"\"error\":{\"errorMsg:\":\"the information is not complete!\"}";
 					list_empty=false;
 				}
 				//list_empty = false;

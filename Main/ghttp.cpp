@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-11-09 23:10:50
+ * @LastEditTime: 2021-11-12 17:41:33
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -105,6 +105,7 @@ txn_id_t get_txn_id(string db_name, string user);
 
 void request_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
+void shutdown_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType);
 
 void signalHandler(int signum);
 
@@ -1102,6 +1103,19 @@ int initialize(int argc, char *argv[])
     //Will respond with content in the web/-directory, and its subdirectories.
     //Default file: index.html
     //Can for instance be used to retrieve an HTML 5 client that uses REST-resources on this server
+
+    server.resource["/shutdown"]["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		shutdown_handler(server, response, request, "GET");
+    };
+
+	//POST-example for the path /build, responds with the matched string in path
+	server.resource["/shutdown"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		shutdown_handler(server, response, request, "POST");
+	};
+
+
     server.default_resource["GET"]=[&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		//default_handler(server, response, request);
@@ -2086,37 +2100,37 @@ void showuser_thread_new(const shared_ptr<HttpServer::Response>& response)
 		string query_db = it->second->getQuery();
 		Value _query_db;
 		_query_db.SetString(query_db.c_str(), query_db.length(), allocator);
-		obj.AddMember("query privilege", _query_db, allocator);
+		obj.AddMember("query_privilege", _query_db, allocator);
 
 		string update_db = it->second->getUpdate();
 		Value _update_db;
 		_update_db.SetString(update_db.c_str(), update_db.length(), allocator);
-		obj.AddMember("update privilege", _update_db, allocator);
+		obj.AddMember("update_privilege", _update_db, allocator);
 
 		string load_db = it->second->getLoad();
 		Value _load_db;
 		_load_db.SetString(load_db.c_str(), load_db.length(), allocator);
-		obj.AddMember("load privilege", _load_db, allocator);
+		obj.AddMember("load_privilege", _load_db, allocator);
 
 		string unload_db = it->second->getUnload();
 		Value _unload_db;
 		_unload_db.SetString(unload_db.c_str(), unload_db.length(), allocator);
-		obj.AddMember("unload privilege", _unload_db, allocator);
+		obj.AddMember("unload_privilege", _unload_db, allocator);
 
 		string backup_db = it->second->getbackup();
 		Value _backup_db;
 		_backup_db.SetString(backup_db.c_str(), backup_db.length(), allocator);
-		obj.AddMember("backup privilege", _backup_db, allocator);
+		obj.AddMember("backup_privilege", _backup_db, allocator);
 
 		string restore_db = it->second->getrestore();
 		Value _restore_db;
 		_restore_db.SetString(restore_db.c_str(), restore_db.length(), allocator);
-		obj.AddMember("restore privilege", _restore_db, allocator);
+		obj.AddMember("restore_privilege", _restore_db, allocator);
 
 		string export_db = it->second->getexport();
 		Value _export_db;
 		_export_db.SetString(export_db.c_str(), export_db.length(), allocator);
-		obj.AddMember("export privilege", _export_db, allocator);
+		obj.AddMember("export_privilege", _export_db, allocator);
 
 		json_array.PushBack(obj, allocator);
 	}
@@ -4425,6 +4439,28 @@ void request_handler(const HttpServer& server, const shared_ptr<HttpServer::Resp
 	t.detach();
 	return ;
 	// }
+}
+
+void shutdown_handler(const HttpServer& server, const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request, string RequestType)
+{
+
+	string postcontent;
+	if (RequestType == "POST")
+	{
+		auto strJson = request->content.string();
+		cout << "post content:" << endl;
+		cout << strJson << endl;
+		postcontent = strJson.c_str();
+	}
+
+	bool flag = stop_handler(server, response, request, RequestType, postcontent);
+	if (flag)
+	{
+
+		cout << "the Server is stopped！" << endl;
+		exit(1);
+		return;
+	}
 }
 
 
