@@ -1,20 +1,12 @@
 /*
- * @Author: your name
+ * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-11-12 20:47:15
- * @LastEditors: Please set LastEditors
+ * @LastEditTime: 2021-11-15 16:18:02
+ * @LastEditors: liwenjie
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
  */
-/* 
- * Copyright 2021 gStore, All Rights Reserved. 
- * @Author: Bookug Lober suxunbin liwenjie
- * @Date: 2021-08-22 00:37:57
- * @LastEditTime: 2021-09-23 16:55:32
- * @LastEditors: Please set LastEditors
- * @Description: the http server to handler the user's request, which is main access entrance of gStore
- * @FilePath: /gstore/Main/ghttp.cpp
- */
+
 
 //SPARQL Endpoint:  log files in logs/endpoint/
 //operation.log: not used
@@ -3806,6 +3798,7 @@ string checkIdentity(string username, string password)
 
 	return "";
 }
+
 
 string checkIdentity2(string username, string password,string port)
 {
