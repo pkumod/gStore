@@ -2903,3 +2903,10 @@ pair<bool, double> Util::checkGetNumericLiteral(string literal)
     else
         return make_pair(false, 0);
 }
+
+// md5
+std::string Util::md5(const string& text)
+{
+    MD5 _md5(text);
+    return _md5.md5();
+}
