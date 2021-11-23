@@ -84,7 +84,6 @@ class GeneralEvaluation
 		TempResultSet* semanticBasedQueryEvaluation(QueryTree::GroupPattern &group_pattern);
 
 		bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &group_pattern, std::deque<QueryTree::GroupPattern> &queue);
-		TempResultSet* rewritingBasedQueryEvaluation(int dep);
 
 		TempResultSet* queryEvaluation(int dep);
 

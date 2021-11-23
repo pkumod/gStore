@@ -335,38 +335,6 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 {
 	QueryTree::GroupPattern group_pattern;
 
-	// Test for BGPQuery
-#ifdef TEST_BGPQUERY
-	bool testBGPQuery = false;
-	if (testBGPQuery)
-	{
-		vector<QueryTree::GroupPattern::Pattern> vp;
-		getAllPattern(rewriting_evaluation_stack[dep].group_pattern, vp);
-
-		BGPQuery complete;
-		long t1 = Util::get_cur_time();
-		for (auto p : vp)
-			complete.AddTriple(Triple(p.subject.value, p.predicate.value, p.object.value));
-		complete.EncodeBGPQuery(kvstore, vector<string>());
-		complete.print(kvstore);
-
-		cout << "encode bgpquery, used " << (Util::get_cur_time() - t1) << " ms." << endl;
-
-		BGPQuery partial;
-		long t2 = Util::get_cur_time();
-		partial.AddTriple(Triple(vp[1].subject.value, vp[1].predicate.value, vp[1].object.value));
-		partial.AddTriple(Triple(vp[6].subject.value, vp[6].predicate.value, vp[6].object.value));
-		partial.EncodeSmallBGPQuery(&complete, kvstore, vector<string>());
-
-		cout << endl << "print small bgpquery:" << endl;
-		partial.print(kvstore);
-
-		cout << "encode small bgpquery, used " << (Util::get_cur_time() - t2) << " ms." << endl;
-
-		exit(0);
-	}
-#endif
-
 	// Check well-designed (TODO: check at every depth, now only check once) //
 	// If well-designed, split and refill group_pattern according to rewriting //
 	if (well_designed == -1)
@@ -444,12 +412,16 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				st--;
 
 			for (int j = st; j < i; j++)
+			{
 				if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 				{
 					if (group_pattern.sub_group_pattern[i].pattern.subject_object_varset.hasCommonVar(group_pattern.sub_group_pattern[j].pattern.subject_object_varset))
 						group_pattern.mergePatternBlockID(i, j);
 				}
+			}
 
+			cout << "i = " << i << endl;
+			cout << "group_pattern.sub_group_pattern.size() = " << group_pattern.sub_group_pattern.size() << endl;
 			if (i + 1 == (int)group_pattern.sub_group_pattern.size() ||
 				(group_pattern.sub_group_pattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Pattern_type && group_pattern.sub_group_pattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Union_type))
 			{
@@ -677,11 +649,11 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 									);
 
 								//// Check query cache for saved results of this BGP ////
-			        			if(this->export_flag)
-			        			{
-			        				this->strategy.fp = this->fp;
-			        				this->strategy.export_flag = this->export_flag;
-			        			}
+	        			if(this->export_flag)
+	        			{
+	        				this->strategy.fp = this->fp;
+	        				this->strategy.export_flag = this->export_flag;
+	        			}
 								bool success = false;
 								if (this->query_cache != NULL && dep == 0)
 									success = checkBasicQueryCache(basic_query, sub_result, useful);
@@ -720,12 +692,12 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					printf("after Encode, used %ld ms.\n", tv_encode - tv_begin);
 
 					// Set candidate lists of common vars with the parent layer in rewriting_evaluation_stack //
+					// TODO: check if this affects BGPQuery execution
 					if (dep > 0)
 						fillCandList(sparql_query, dep, encode_varset);
 					long tv_fillcand = Util::get_cur_time();
 					printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
 
-					/* PLEASE REPLACE WITH OPTIMIZER */
 					QueryInfo query_info;
 
 					query_info.limit_ = false;
@@ -751,8 +723,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 					// Collect and join the result of each BasicQuery //
 					// Each BGP's results are copied out to temp, and then joined with sub_result //
-					for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
-					{
+					// NOTE: only one BGP so get rid of the loop
+					// for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
+					// {
 						TempResultSet *temp = new TempResultSet();
 						temp->results.push_back(TempResult());
 
@@ -762,6 +735,11 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						#ifndef TEST_BGPQUERY
 						vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
 						#else
+						unique_ptr<unsigned[]>& p2id = bgp_query->resultPositionToId();
+						p2id = unique_ptr<unsigned[]>(new unsigned [varnum]);
+						for (int k = 0; k < varnum; k++)
+							p2id[k] = bgp_query->get_var_id_by_name(temp->results[0].id_varset.vars[k]);
+						// TODO: call CopyToResult here? (IntermediateResult where?)
 						vector<unsigned*> &basicquery_result = *(bgp_query->get_result_list_pointer());
 						#endif
 						int basicquery_result_num = (int)basicquery_result.size();
@@ -770,7 +748,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						for (int k = 0; k < basicquery_result_num; k++)
 						{
 							unsigned *v = new unsigned[varnum];
-							memcpy(v, basicquery_result[k], sizeof(int) * varnum);
+							memcpy(v, basicquery_result[k], sizeof(unsigned) * varnum);	// TODO: change to unsigned
 							temp->results[0].result.push_back(TempResult::ResultPair());
 							temp->results[0].result.back().id = v;
 						}
@@ -805,7 +783,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 							sub_result = new_result;
 						}
-					}
+					// }
 
 					// Prepare varset (without this step the following will fail) //
 					for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
@@ -890,7 +868,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					}
 
 					// Process the remaining FILTER (without constraint) //
-					// QUESTION: Why separate into two stages? //
+					// NOTE: Why separate into two stages? //
 					for (int j = 0; j < (int)rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size(); j++)
 					{
 						if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
@@ -1378,336 +1356,11 @@ bool GeneralEvaluation::expanseFirstOuterUnionGroupPattern(QueryTree::GroupPatte
 	return true;
 }
 
-TempResultSet* GeneralEvaluation::rewritingBasedQueryEvaluation(int dep)
-{
-	// Construct group_pattern_union, which will consist of all expansion results //
-	// (group-patterns without UNIONs, whose results will have to be UNION'ed to get //
-	// the original result) //
-	deque<QueryTree::GroupPattern> queue;
-	queue.push_back(this->rewriting_evaluation_stack[dep].group_pattern);
-	vector<QueryTree::GroupPattern> group_pattern_union;
-	while (!queue.empty())
-	{
-		if (!this->expanseFirstOuterUnionGroupPattern(queue.front(), queue)) {
-			group_pattern_union.push_back(queue.front());	// Expansion complete
-		}
-		queue.pop_front();
-	}
-	TempResultSet *result = new TempResultSet();
-
-	// Treat each expansion result as a separate query //
-	// rewriting_evaluation_stack is for OPTIONAL, each nested OPTIONAL dep + 1 //
-	for (int i = 0; i < (int)group_pattern_union.size(); i++)
-	{
-		// Prepare and print //
-		this->rewriting_evaluation_stack[dep].group_pattern = group_pattern_union[i];
-		for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
-		rewriting_evaluation_stack[dep].group_pattern.print(dep);
-		for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
-		TempResultSet *sub_result = new TempResultSet();
-
-		// Construct triple_pattern //
-		QueryTree::GroupPattern triple_pattern;
-		int group_pattern_triple_num = constructTriplePattern(triple_pattern, dep);
-
-		// Get useful varset //
-		Varset useful;
-		getUsefulVarset(useful, dep);
-
-		SPARQLquery sparql_query;
-		vector<vector<string> > encode_varset;
-		vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
-
-		// Get connected block (BGP): merge the block IDs of triples with common vars //
-		triple_pattern.initPatternBlockid();
-		for (int j = 0; j < (int)triple_pattern.sub_group_pattern.size(); j++)
-			if (triple_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-			{
-				for (int k = 0; k < j; k++)
-					if (triple_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-						if (triple_pattern.sub_group_pattern[j].pattern.subject_object_varset.hasCommonVar(triple_pattern.sub_group_pattern[k].pattern.subject_object_varset))
-							triple_pattern.mergePatternBlockID(j, k);
-			}
-
-		// Retrieve current BGP's result if query cache hit, or else save into sparql_query //
-		for (int j = 0; j < (int)triple_pattern.sub_group_pattern.size(); j++)
-			if (triple_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type) {
-				/// Process only the root triples of each BGP ///
-				if (triple_pattern.getRootPatternBlockID(j) == j)
-				{
-					//// Construct occur: all vars that occur in this BGP ////
-					//// Construct basic_query: vector of triples in this block ////
-					Varset occur;
-					vector<QueryTree::GroupPattern::Pattern> basic_query;
-					for (int k = 0; k < (int)triple_pattern.sub_group_pattern.size(); k++)
-						if (triple_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-							if (triple_pattern.getRootPatternBlockID(k) == j)
-							{
-								if (k < group_pattern_triple_num)
-									occur += triple_pattern.sub_group_pattern[k].pattern.varset;
-
-								basic_query.push_back(triple_pattern.sub_group_pattern[k].pattern);
-							}
-
-					//// Reduce useful: return result vars ////
-					if (!this->query_tree.checkProjectionAsterisk() && useful.hasCommonVar(occur))
-						useful = useful * occur;	// Only the common vars remain
-					else
-						useful = occur;
-
-					//// Print useful vars and triple patterns ////
-					printf("useful vars (SELECT + GROUPBY + ORDERBY): ");
-					useful.print();
-					printf("triple patterns: \n");
-					for (int k = 0; k < (int)basic_query.size(); k++)
-						printf("%s\t%s\t%s\n", basic_query[k].subject.value.c_str(),
-							basic_query[k].predicate.value.c_str(),
-							basic_query[k].object.value.c_str()
-						);
-
-					//// Check query cache for saved results of this BGP ////
-        			if(this->export_flag)
-        			{
-        				this->strategy.fp = this->fp;
-        				this->strategy.export_flag = this->export_flag;
-        			}
-					bool success = false;
-					if (this->query_cache != NULL && dep == 0)
-						success = checkBasicQueryCache(basic_query, sub_result, useful);
-					//// If query cache not hit, save the current BGP to sparql_query for later processing ////
-					//// QUESTION: Is basic_query_handle a redundant variable? ////
-					if (!success)
-					{
-						sparql_query.addBasicQuery();
-						for (int k = 0; k < (int)basic_query.size(); k++)
-							sparql_query.addTriple(Triple(basic_query[k].subject.value,
-								basic_query[k].predicate.value,
-								basic_query[k].object.value));
-
-						encode_varset.push_back(useful.vars);
-						basic_query_handle.push_back(basic_query);
-					}
-				}
-			}
-
-		// Encode BGPs //
-		long tv_begin = Util::get_cur_time();
-		sparql_query.encodeQuery(this->kvstore, encode_varset);
-		long tv_encode = Util::get_cur_time();
-		printf("after Encode, used %ld ms.\n", tv_encode - tv_begin);
-
-		// Set candidate lists of common vars with the parent layer in rewriting_evaluation_stack //
-		if (dep > 0)
-			fillCandList(sparql_query, dep, encode_varset);
-		long tv_fillcand = Util::get_cur_time();
-		printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
-
-		// replace this class to the new 'optimizer'
-		//  this->strategy.handle(sparql_query);
-
-      // Execute sparql_query //
-      QueryInfo query_info;
-
-      query_info.limit_ = false;
-      if(this->query_tree.getLimit()!=-1) {
-        query_info.limit_ = true;
-        query_info.limit_num_ = this->query_tree.getLimit();
-      }
-
-      query_info.is_distinct_ = this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct;
-
-      query_info.ordered_by_expressions_ = make_shared<vector<QueryTree::Order>>();
-      for(auto order_item:this->query_tree.getOrderVarVector())
-        query_info.ordered_by_expressions_->push_back(order_item);
-
-      this->optimizer_->DoQuery(sparql_query,query_info);
-
-		long tv_handle = Util::get_cur_time();
-		printf("after Handle, used %ld ms.\n", tv_handle - tv_fillcand);
-
-		// Collect and join the result of each BasicQuery //
-		// Each BGP's results are copied out to temp, and then joined with sub_result //
-		for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
-		{
-			TempResultSet *temp = new TempResultSet();
-			temp->results.push_back(TempResult());
-
-			temp->results[0].id_varset = Varset(encode_varset[j]);
-			int varnum = (int)encode_varset[j].size();
-
-			vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
-			int basicquery_result_num = (int)basicquery_result.size();
-
-			temp->results[0].result.reserve(basicquery_result_num);
-			for (int k = 0; k < basicquery_result_num; k++)
-			{
-				unsigned *v = new unsigned[varnum];
-				memcpy(v, basicquery_result[k], sizeof(int) * varnum);
-				temp->results[0].result.push_back(TempResult::ResultPair());
-				temp->results[0].result.back().id = v;
-			}
-
-			if (this->query_cache != NULL && dep == 0)
-			{
-				//if unconnected, time is incorrect
-				int time = tv_handle - tv_begin;
-
-				long tv_bftry = Util::get_cur_time();
-				bool success = this->query_cache->tryCaching(basic_query_handle[j], temp->results[0], time);
-				if (success)	printf("QueryCache cached\n");
-				else			printf("QueryCache didn't cache\n");
-				long tv_aftry = Util::get_cur_time();
-				printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
-			}
-
-			if (sub_result->results.empty())
-			{
-				delete sub_result;
-				sub_result = temp;
-			}
-			else
-			{
-				TempResultSet *new_result = new TempResultSet();
-				sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
-
-				temp->release();
-				sub_result->release();
-				delete temp;
-				delete sub_result;
-
-				sub_result = new_result;
-			}
-		}
-
-		// Prepare varset (without this step the following will fail) //
-		for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
-			rewriting_evaluation_stack[dep].group_pattern.getVarset();
-
-		// Process BIND //
-		for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
-			if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Bind_type)
-			{
-				TempResultSet *temp = new TempResultSet();
-				temp->results.push_back(TempResult());
-
-				temp->results[0].str_varset = rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].bind.varset;
-
-				temp->results[0].result.push_back(TempResult::ResultPair());
-				temp->results[0].result[0].str.push_back(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].bind.str);
-
-				TempResultSet *new_result = new TempResultSet();
-				sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
-
-				temp->release();
-				sub_result->release();
-				delete temp;
-				delete sub_result;
-
-				sub_result = new_result;
-			}
-
-		// Process FILTER (with var in minimal_varset constraint) //
-		for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
-			if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
-				if (!rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done && \
-					rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.varset. \
-					belongTo(rewriting_evaluation_stack[dep].group_pattern.group_pattern_resultset_minimal_varset))
-				// if (!rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done)
-				{
-					rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done = true;
-
-					TempResultSet *new_result = new TempResultSet();
-					sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.root, *new_result, \
-						this->stringindex, rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
-
-					sub_result->release();
-					delete sub_result;
-
-					sub_result = new_result;
-				}
-
-		// Process OPTIONAL //
-		if (sub_result->results.empty() || !sub_result->results[0].result.empty())
-		{
-			for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
-			{
-				if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
-				{
-					if ((int)this->rewriting_evaluation_stack.size() == dep + 1)
-					{
-						this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
-						this->rewriting_evaluation_stack.back().result = NULL;
-						// group_pattern = &this->rewriting_evaluation_stack[dep].group_pattern;
-					}
-
-					this->rewriting_evaluation_stack[dep].result = sub_result;
-					this->rewriting_evaluation_stack[dep + 1].group_pattern = \
-						this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].optional;
-					// this->rewriting_evaluation_stack[dep + 1].group_pattern.print(0);
-
-					TempResultSet *temp = rewritingBasedQueryEvaluation(dep + 1);
-
-					TempResultSet *new_result = new TempResultSet();
-					sub_result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
-
-					temp->release();
-					sub_result->release();
-					delete temp;
-					delete sub_result;
-
-					sub_result = new_result;
-				}
-			}
-		}
-
-		// Process the remaining FILTER (without constraint) //
-		// QUESTION: Why separate into two stages? //
-		for (int j = 0; j < (int)rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size(); j++)
-		{
-			if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
-			{
-				if (!rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done)
-				{
-					rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.done = true;
-
-					TempResultSet *new_result = new TempResultSet();
-					sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.root, *new_result, \
-						this->stringindex, rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
-
-					sub_result->release();
-					delete sub_result;
-
-					sub_result = new_result;
-					printf("IN SECOND doFilter\n");
-				}
-			}
-		}
-
-		// Do UNION with the previous expansion results //
-		if (result->results.empty())
-		{
-			delete result;
-			result = sub_result;
-		}
-		else
-		{
-			TempResultSet *new_result = new TempResultSet();
-			result->doUnion(*sub_result, *new_result);
-
-			sub_result->release();
-			result->release();
-			delete sub_result;
-			delete result;
-
-			result = new_result;
-		}
-	}
-
-	return result;
-}
-
 void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 {
+	printf("-----PRINTING-----\n");
+	temp_result->print();
+	printf("-----PRINTING-----\n");
 
 	if (this->temp_result == NULL)
 	{
@@ -2861,65 +2514,16 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		vector<int> proj2temp = ret_result_varset.mapTo(result0.getAllVarset());
 		int id_cols = result0.id_varset.getVarsetSize();
 
-		vector<bool> isel;
+		vector<bool> isel;	// Indicates whether the var is a subject/object (true) or predicate (false)
 		for (int i = 0; i < result0.id_varset.getVarsetSize(); i++)
 			isel.push_back(this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.findVar(result0.id_varset.vars[i]));
 
 		if (!ret_result.checkUseStream())
 		{
-
-			//pthread_t tidp;
-			//long arg[6];
 			vector<StringIndexFile* > a = this->stringindex->get_three_StringIndexFile();
-			/*arg[0] = (long)&a;
-			arg[1] = (long)&ret_result;
-			arg[2] = (long)&proj2temp;
-			arg[3] = (long)id_cols;
-			arg[4] = (long)&result0;
-			arg[5] = (long)&isel;
-			pthread_create(&tidp, NULL, &preread_from_index, arg);*/
 
 			unsigned retAnsNum = ret_result.ansNum;
 			unsigned selectVar = ret_result.select_var_num;
-			/*
-			int counterEntity = 0;
-			int counterLiteral = 0;
-			int counterPredicate = 0;
-
-			for (int j = 0; j < selectVar; j++)
-			{
-				int k = proj2temp[j];
-				if (k != -1)
-				{
-					if (k < id_cols)
-					{
-						if (isel[k])
-						{
-							for (unsigned i = 0; i < retAnsNum; i++)
-							{
-								unsigned ans_id = result0.result[i].id[k];
-								if (ans_id == INVALID)
-									continue;
-								if (ans_id < Util::LITERAL_FIRST_ID)
-									counterEntity++;
-								else
-									counterLiteral++;
-							}
-						}
-						else
-							for (unsigned i = 0; i < retAnsNum; i++)
-							{
-								unsigned ans_id = result0.result[i].id[k];
-								if (ans_id == INVALID)
-									continue;
-								counterPredicate++;
-							}
-					}
-				}
-			}
-			a[0]->request_reserve(counterEntity);
-			a[1]->request_reserve(counterLiteral);
-			a[2]->request_reserve(counterPredicate);*/
 			
 			ret_result.delete_another_way = 1;
 			string *t = new string[retAnsNum*selectVar];
@@ -2930,8 +2534,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			a[1]->set_string_base(t);
 			a[2]->set_string_base(t);
 
-
 			for (int j = 0; j < selectVar; j++)
+			// for (int j = 1; j < selectVar; j++)
 			{
 				int k = proj2temp[j];
 				if (k != -1)
@@ -3326,6 +2930,7 @@ void GeneralEvaluation::fillCandList(SPARQLquery& sparql_query, int dep, vector<
 
 	for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
 	{
+		// TODO: change BasicQuery to BGPQuery
 		BasicQuery &basic_query = sparql_query.getBasicQuery(j);
 		vector<string> &basic_query_encode_varset = encode_varset[j];
 
