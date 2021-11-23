@@ -344,7 +344,7 @@ void BGPQuery::build_edge_info(KVstore *_kvstore) {
 
 		// deal with o_var
 		if(o_is_var)
-			this->var_vector[id_position_map[o_id]]->update_so_var_edge_info(s_id,p_id,Util::EDGE_IN,i,p_is_var,o_is_var);
+			this->var_vector[id_position_map[o_id]]->update_so_var_edge_info(s_id,p_id,Util::EDGE_IN,i,p_is_var,s_is_var);
 
 		// deal with p_var
 		if(p_is_var)
