@@ -657,3 +657,9 @@ BGPQuery::get_result_list_pointer()
 {
   return &(this->result_list);
 }
+
+unique_ptr<unsigned[]>&
+BGPQuery::resultPositionToId()
+{
+	return result_position_to_id;
+}
