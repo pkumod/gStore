@@ -159,9 +159,9 @@ KVstore::getTrie()
 void
 KVstore::set_if_single_thread(bool _single)
 {
-	this->entity2id->setSingleThread(_single);
-	this->predicate2id->setSingleThread(_single);
-	this->literal2id->setSingleThread(_single);
+  this->entity2id->SetSingleThread(_single);
+  this->predicate2id->SetSingleThread(_single);
+  this->literal2id->SetSingleThread(_single);
 }
 
 string 
@@ -373,82 +373,6 @@ KVstore::getObjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 bool 
 KVstore::updateTupleslist_insert(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn) 
 {
-	//int* _tmp = NULL;
-	//int _len = 0;
-	//bool _get;
-	//cout << "Inserting:\t" << _sub_id << '\t' << _pre_id << '\t' << _obj_id << endl;
-	//cout << "Before insertion:" << endl;
-	//_get = this->getValueByKey(this->subID2values, _sub_id, (char*&)_tmp, _len);
-	//if (!_get) {
-	//	cout << "SubID " << _sub_id << ": doesn't exist." << endl;
-	//}
-	//else {
-	//	cout << "SubID " << _sub_id << ':';
-	//	for (unsigned i = 0; i < _len / sizeof(int); i++) {
-	//		cout << '\t' << _tmp[i];
-	//	}
-	//	cout << endl;
-	//}
-	//_get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len);
-	//if (!_get) {
-	//	cout << "ObjID " << _obj_id << ": doesn't exist." << endl;
-	//}
-	//else {
-	//	cout << "ObjID " << _obj_id << ':';
-	//	for (unsigned i = 0; i < _len / sizeof(int); i++) {
-	//		cout << '\t' << _tmp[i];
-	//	}
-	//	cout << endl;
-	//}
-	//_get = this->getValueByKey(this->preID2values, _pre_id, (char*&)_tmp, _len);
-	//if (!_get) {
-	//	cout << "PreID " << _pre_id << ": doesn't exist." << endl;
-	//}
-	//else {
-	//	cout << "PreID " << _pre_id << ':';
-	//	for (unsigned i = 0; i < _len / sizeof(int); i++) {
-	//		cout << '\t' << _tmp[i];
-	//	}
-	//	cout << endl;
-	//}
-	//bool flag = this->updateInsert_s2values(_sub_id, _pre_id, _obj_id)
-	//	&& this->updateInsert_o2values(_sub_id, _pre_id, _obj_id)
-	//	&& this->updateInsert_p2values(_sub_id, _pre_id, _obj_id);
-	//cout << "After insertion:" << endl;
-	//_get = this->getValueByKey(this->subID2values, _sub_id, (char*&)_tmp, _len);
-	//if (!_get) {
-	//	cout << "SubID " << _sub_id << ": doesn't exist." << endl;
-	//}
-	//else {
-	//	cout << "SubID " << _sub_id << ':';
-	//	for (unsigned i = 0; i < _len / sizeof(int); i++) {
-	//		cout << '\t' << _tmp[i];
-	//	}
-	//	cout << endl;
-	//}
-	//_get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len);
-	//if (!_get) {
-	//	cout << "ObjID " << _obj_id << ": doesn't exist." << endl;
-	//}
-	//else {
-	//	cout << "ObjID " << _obj_id << ':';
-	//	for (unsigned i = 0; i < _len / sizeof(int); i++) {
-	//		cout << '\t' << _tmp[i];
-	//	}
-	//	cout << endl;
-	//}
-	//_get = this->getValueByKey(this->preID2values, _pre_id, (char*&)_tmp, _len);
-	//if (!_get) {
-	//	cout << "PreID " << _pre_id << ": doesn't exist." << endl;
-	//}
-	//else {
-	//	cout << "PreID " << _pre_id << ':';
-	//	for (unsigned i = 0; i < _len / sizeof(int); i++) {
-	//		cout << '\t' << _tmp[i];
-	//	}
-	//	cout << endl;
-	//}
-	//return flag;
 	if(txn == nullptr)
 	{
 	return this->updateInsert_s2values(_sub_id, _pre_id, _obj_id)
@@ -756,35 +680,493 @@ KVstore::updateRemove_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 }
 
 //TODO: TO BE IMPROVED
-bool 
+unsigned 
 KVstore::updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _subid, const std::vector<unsigned>& _pidoidlist) 
 {
-	vector<unsigned>::const_iterator iter = _pidoidlist.begin();
-	while (iter < _pidoidlist.end()) {
-		TYPE_PREDICATE_ID _preid = *iter;
-		iter++;
-		TYPE_ENTITY_LITERAL_ID _objid = *iter;
-		iter++;
-		this->updateInsert_s2values(_subid, _preid, _objid);
+	if(_pidoidlist.size() == 0) return 0;
+	unsigned* _tmp = NULL;
+	unsigned long _len = 0;
+	bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
+	_len = _len/sizeof(unsigned);
+	//cout << "_len：          " << _len << endl;
+	unsigned* values = NULL;
+	unsigned long values_len = 0;
+	unsigned update_num = this->Insert_s2values(_pidoidlist, _tmp, _len, values, values_len);
+	if(update_num == 0) return 0;
+	if(_len == 0){
+		this->addValueByKey(this->subID2values, _subid, (char*)values, sizeof(unsigned) * values_len);
+		return update_num;
 	}
-	return true;
+	else
+	{
+		this->setValueByKey(this->subID2values, _subid, (char*)values, sizeof(unsigned) * values_len);
+		return update_num;
+	}
 }
 
 //TODO: TO BE IMPROVED
-bool 
+unsigned 
 KVstore::updateRemove_s2values(TYPE_ENTITY_LITERAL_ID _subid, const std::vector<unsigned>& _pidoidlist) 
 {
-	vector<unsigned>::const_iterator iter = _pidoidlist.begin();
-	while (iter < _pidoidlist.end()) {
-		TYPE_PREDICATE_ID _preid = *iter;
-		iter++;
-		TYPE_ENTITY_LITERAL_ID _objid = *iter;
-		iter++;
-		this->updateRemove_s2values(_subid, _preid, _objid);
+	if(_pidoidlist.size() == 0) return 0;
+	unsigned* _tmp = NULL;
+	unsigned long _len = 0;
+	bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
+	_len = _len/sizeof(unsigned);
+	if(_len == 0) return 0;
+	unsigned* values = NULL;
+	unsigned long values_len = 0;
+	unsigned update_num = this->Remove_s2values(_pidoidlist, _tmp, _len, values, values_len);
+	if(update_num == 0) return 0;
+	if(values_len != 0)
+		this->setValueByKey(this->subID2values, _subid, (char*)values, sizeof(unsigned) * values_len);
+	else{
+		this->removeKey(this->subID2values, _subid);
 	}
-	return true;
+
+	return update_num;
 }
 
+unsigned 
+KVstore::Insert_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  unsigned long _len, unsigned*& values, unsigned long& values_len) const
+{
+	if(_pidoidlist.size() == 0)
+	{
+		values = _tmp;
+		values_len = _len;
+		return 0;
+	}
+	map<unsigned, vector<unsigned>> mp;
+
+	unsigned update_num = 0;
+    int n = 0;
+    int entity_num = 0;
+	for(int i = 0; i < _pidoidlist.size(); i += 2)
+    {
+        mp[_pidoidlist[i]].push_back(_pidoidlist[i+1]);
+		pair<int, bool> res = {0, true};
+        if(res.second == true) {
+            n++;
+            if(Util::is_entity_ele(_pidoidlist[i+1])) entity_num++;
+        }
+    }
+
+	if (!_len) 
+	{
+		unsigned* _values = new unsigned[3 + 3*n];
+		//cout << 2 + 3*n << endl;
+		_values[0] = n;
+		_values[1] = mp.size();
+		_values[2] = entity_num;
+		//cout << "mp.size()" << _values[1] << endl;
+		int j = 3, len;
+		for(auto &it: mp)
+		{
+			_values[j] = it.first;
+			j += 2;
+		}
+
+		len = j;
+		j = 4;
+		for(auto &it: mp)
+		{
+			_values[j] = len;
+			for(auto &sid: it.second)
+			{
+				_values[len] = sid;
+				len++;
+			}
+			j += 2; //_values[j] = offset
+		}
+
+		//assert(_values[0] ==  _values[_values[1]*2+2] - _values[4] + 1);
+		assert(len == _values[0] + 2*_values[1] + 3);
+		values = new unsigned[len];
+		memcpy(values, _values, sizeof(unsigned) * len);
+		values_len = len;
+		delete [] _values;
+		update_num = values[0];
+	}
+	else
+	{
+		unsigned* _values;
+		unsigned long _values_len;
+		_values_len = _len + 3*n;
+		_values = new unsigned[_values_len];
+		memset(_values, 0, sizeof(unsigned)* _values_len);
+		auto it = mp.begin();
+		int old_p_offset = 3, p_offset = 3;
+		int old_p_len = _tmp[1] * 2 + 3;
+		//merge pid
+		while(it != mp.end() && old_p_offset < old_p_len)
+		{
+			if(it->first > _tmp[old_p_offset])
+			{
+				_values[p_offset] = _tmp[old_p_offset];
+				old_p_offset += 2;
+			}
+			else if(it-> first < _tmp[old_p_offset])
+			{
+				_values[p_offset] = it->first;
+				it++;
+			}
+			else
+			{
+				_values[p_offset] = it->first;
+				it++;
+				old_p_offset += 2;
+			}
+			p_offset += 2;
+		}
+
+		while(it != mp.end()){
+			_values[p_offset] = it->first;
+			it++; p_offset += 2;
+		}
+		while(old_p_offset < old_p_len){
+			_values[p_offset] = _tmp[old_p_offset];
+			old_p_offset += 2; p_offset += 2;
+		}
+
+		_values[1] = (p_offset-1) / 2 - 1;
+		
+		//merge sid
+		it = mp.begin();
+		int o_offset = p_offset;
+		int p_len = p_offset;
+		int entity_num = 0;
+		p_offset = old_p_offset = 3;
+		_values[4] = o_offset;
+
+		while(it != mp.end() && old_p_offset < old_p_len)
+		{
+			//merge sids
+			int next_o_offset;
+			if(old_p_offset + 3 > old_p_len){
+				next_o_offset = _len; //to the last pid
+			}
+			else{
+				next_o_offset = _tmp[old_p_offset+3];
+			}
+			if(_values[p_offset] == it->first && _values[p_offset] == _tmp[old_p_offset])
+			{
+				auto oids = it->second;
+				auto o_it = oids.begin();
+				int old_o_offset = _tmp[old_p_offset+1];
+				while(o_it != oids.end() && old_o_offset < next_o_offset)
+				{
+					if(*o_it > _tmp[old_o_offset])
+					{
+						_values[o_offset] = _tmp[old_o_offset];
+						old_o_offset++;
+						o_offset++;
+					}
+					else if(*o_it < _tmp[old_o_offset])
+					{
+						_values[o_offset] = *o_it;
+						o_it++;
+						o_offset++;
+					}
+					else
+					{
+						_values[o_offset] = _tmp[old_o_offset];
+						old_o_offset++;
+						o_it++;
+						o_offset++;
+					}
+					if(Util::is_entity_ele(_values[o_offset-1])) entity_num++;
+				}
+				while(o_it != oids.end())
+				{
+					_values[o_offset] = *o_it;
+					o_it++;
+					o_offset++;
+					if(Util::is_entity_ele(_values[o_offset-1])) entity_num++;
+				}
+				while(old_o_offset < next_o_offset)
+				{
+					_values[o_offset] = _tmp[old_o_offset];
+					old_o_offset++;
+					o_offset++;
+					if(Util::is_entity_ele(_values[o_offset-1])) entity_num++;
+				}
+				it++;
+				old_p_offset += 2;
+			}
+			else if(_values[p_offset] == it->first && _values[p_offset] != _tmp[old_p_offset])
+			{
+				auto oids = it->second;
+				for(auto oid: oids)
+				{
+					_values[o_offset] = oid;
+					o_offset++;
+					if(Util::is_entity_ele(_values[o_offset-1])) entity_num++;
+				}
+				it++;
+			}
+			else if(_values[p_offset] != it->first && _values[p_offset] == _tmp[old_p_offset])
+			{
+				int old_o_offset = _tmp[old_p_offset+1];
+				while(old_o_offset < next_o_offset)
+				{
+					_values[o_offset] = _tmp[old_o_offset];
+					old_o_offset++;
+					o_offset++;
+					if(Util::is_entity_ele(_values[o_offset-1])) entity_num++;
+				}
+				old_p_offset += 2;
+			}
+			else
+			{
+				cerr << "error!" << endl;
+			}
+			if(p_offset + 3 < p_len)
+				_values[p_offset + 3] = o_offset;
+			p_offset += 2;
+		}
+
+		while(it != mp.end())
+		{
+			assert(_values[p_offset] == it->first);
+			auto oids = it->second;
+			for(auto oid: oids)
+			{
+				_values[o_offset] = oid;
+				o_offset++;
+				if(Util::is_entity_ele(_values[o_offset-1])) entity_num++;
+			}
+			if(p_offset + 3 < p_len)
+				_values[p_offset + 3] = o_offset;
+			it++;
+			p_offset += 2;
+		}
+
+		while(old_p_offset < old_p_len)
+		{
+			assert(_values[p_offset] == _tmp[old_p_offset]);
+			int old_o_offset = _tmp[old_p_offset+1];
+			int next_o_offset;
+			if(old_p_offset + 3 > old_p_len){
+				next_o_offset = _len; //to the last pid
+			}
+			else{
+				next_o_offset = _tmp[old_p_offset+3];
+			}
+			while(old_o_offset < next_o_offset)
+			{
+				_values[o_offset] = _tmp[old_o_offset];
+				old_o_offset++;
+				o_offset++;
+				if(Util::is_entity_ele(_values[o_offset-1])) entity_num++;
+			}
+			if(p_offset + 3 < p_len)
+				_values[p_offset + 3] = o_offset;
+			old_p_offset += 2;
+			p_offset += 2;
+		}
+
+		int len = o_offset;
+
+		_values[0] = len - 3 - _values[1]*2;
+		_values[2] = entity_num;
+		//assert(len == _values[0] + 2*_values[1] + 3);
+		values = new unsigned[len];
+		memcpy(values, _values, sizeof(unsigned) * len);
+		values_len = len;
+		delete [] _values;
+		update_num = values[0] - _tmp[0];
+	} 
+	delete [] _tmp;
+	return update_num;
+
+}
+
+/*
+input:
+    _pidoidlist: remove PO pairs
+	_tmp: input data nums(unsigned nums but not bytes num!)
+	_len: bytes nums
+	_values: output data
+	values_len: output data nums(unsigned nums but not bytes num!)
+*/
+unsigned 
+KVstore::Remove_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  unsigned long _len, unsigned*& values, unsigned long& values_len) const
+{
+	if(_pidoidlist.size() == 0){
+		values = _tmp;
+		values_len = 0;
+		return 0;
+	} 
+	map<unsigned, set<unsigned>> mp;
+
+	for(int i = 0; i < _pidoidlist.size(); i += 2)
+    {
+        auto res = mp[_pidoidlist[i]].insert(_pidoidlist[i+1]);
+	}
+
+	int update_num = 0;
+	if (!_len) 
+	{
+		return 0;
+	}
+
+	unsigned* _values = new unsigned[_len];
+
+    auto it = mp.begin();
+    int old_p_len = _tmp[1] * 2 + 3;
+    int p_len = old_p_len;
+    int old_p_offset, p_offset;
+    int old_o_offset, o_offset;
+    old_p_offset = p_offset = 3;
+    old_o_offset = o_offset = _tmp[1]*2 + 3;
+    int prev_o_offset = o_offset;
+    int pre_num = _tmp[1];
+    _values[4] = o_offset;
+    int entity_num = 0;
+    while(it != mp.end() && old_p_offset < old_p_len)
+    {
+        int next_o_offset;
+        if(old_p_offset + 3 > old_p_len){
+            next_o_offset = _len; //to the last pid
+        }
+        else{
+            next_o_offset = _tmp[old_p_offset+3];
+        }
+
+        if(_tmp[old_p_offset] == it->first)
+        {
+            auto oids = it->second;
+            auto o_it = oids.begin();
+            while(old_o_offset < next_o_offset && o_it != oids.end())
+            {
+                if(_tmp[old_o_offset] == *o_it) //delete
+                {
+					//cout << _tmp[old_o_offset] << endl;
+                    old_o_offset++;
+                    o_it++;
+                }
+                else if(_tmp[old_o_offset] > *o_it)
+                {
+                    o_it++;
+                }
+                else
+                {
+                    _values[o_offset] = _tmp[old_o_offset];
+                    if(Util::is_entity_ele(_values[o_offset])) entity_num++;
+                    o_offset++;
+                    old_o_offset++;
+                }
+            }
+
+            while(old_o_offset < next_o_offset)
+            {
+                _values[o_offset] = _tmp[old_o_offset];
+                if(Util::is_entity_ele(_values[o_offset])) entity_num++;
+                o_offset++;
+                old_o_offset++;
+            }
+
+            while(o_it != oids.end())
+            {
+                o_it++;
+                //do nothing
+            }
+
+            if(prev_o_offset != o_offset){ //no need delete pre
+                _values[p_offset] = _tmp[old_p_offset];
+                if(p_offset + 3 < p_len)
+                    _values[p_offset + 3] = o_offset;
+                p_offset += 2;
+            }
+            else
+            {
+                pre_num--;
+            }
+            old_p_offset += 2;
+            it++;
+
+            prev_o_offset = o_offset;
+        }
+        else if(_tmp[old_p_offset] > it->first)
+        {
+            it++;
+        }
+        else if(_tmp[old_p_offset] < it->first)
+        {
+            while(old_o_offset < next_o_offset)
+            {
+                _values[o_offset] = _tmp[old_o_offset];
+                if(Util::is_entity_ele(_values[o_offset])) entity_num++;
+                o_offset++;
+                old_o_offset++;
+            }
+            //set predicate
+            _values[p_offset] = _tmp[old_p_offset];
+            if(p_offset + 3 < p_len)
+                _values[p_offset + 3] = o_offset;
+            p_offset += 2;
+            old_p_offset += 2;
+            //record prev offset
+            prev_o_offset = o_offset;
+        }
+    }
+
+    while(it != mp.end()){
+        it++; //do nothing
+    }
+
+    while(old_p_offset < old_p_len)
+    {
+		cout << " old_p_offset < old_p_len " << endl;
+        int next_o_offset;
+        if(old_p_offset + 3 > old_p_len){
+            next_o_offset = _len; //to the last pid
+        }
+        else{
+            next_o_offset = _tmp[old_p_offset+3];
+        }
+
+        while(old_o_offset < next_o_offset)
+        {
+            _values[o_offset] = _tmp[old_o_offset];
+            if(Util::is_entity_ele(_values[o_offset])) entity_num++;
+            o_offset++;
+            old_o_offset++;
+        }
+        if(p_offset + 3 < p_len)
+            _values[p_offset + 3] = o_offset;
+        _values[p_offset] = _tmp[old_p_offset];
+        p_offset += 2;
+        old_p_offset += 2;
+    }
+    _values[0] = o_offset - old_p_len;
+    //cout << o_offset << " " << old_p_len << " " << _values[0] << endl;
+    int deleted_pre_num = _tmp[1] - pre_num;
+    _values[1] = pre_num;
+    _values[2] = entity_num;
+    int len = pre_num*2 + 3 + _values[0];
+    values = new unsigned[len];
+    values[0] = _values[0];
+    values[1] = _values[1];
+    values[2] = _values[2];
+    for(int i = 3; i < 2*pre_num + 3; i += 2){
+        values[i] = _values[i];
+        values[i+1] = _values[i+1] - deleted_pre_num*2;
+    }
+    for(int i = 2*pre_num + 3, j = _tmp[1] * 2 + 3; i < len && j < _len; i++, j++)
+        values[i] = _values[j];
+	values_len = len;
+	delete [] _values;
+	update_num =  _tmp[0] - values[0];
+	delete [] _tmp;
+	if(values[0] == 0){
+        delete [] values;
+        values = nullptr;
+        values_len = 0;
+    }
+	return update_num;
+}
+	
 bool 
 KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
@@ -964,32 +1346,459 @@ KVstore::updateRemove_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 }
 
 //TODO: TO BE IMPROVED
-bool 
+unsigned 
 KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _objid, const std::vector<unsigned>& _pidsidlist) 
 {
-	vector<unsigned>::const_iterator iter = _pidsidlist.begin();
-	while (iter < _pidsidlist.end()) {
-		TYPE_PREDICATE_ID _preid = *iter;
-		iter++;
-		TYPE_ENTITY_LITERAL_ID _subid = *iter;
-		iter++;
-		this->updateInsert_o2values(_subid, _preid, _objid);
+	if(_pidsidlist.size() == 0) return 0;
+	unsigned* _tmp = NULL;
+	unsigned long _len = 0;
+	bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
+	_len = _len/sizeof(unsigned);
+
+	unsigned* values = NULL;
+	unsigned long values_len = 0;
+	unsigned update_num = this->Insert_o2values(_pidsidlist, _tmp, _len, values, values_len);
+	if(update_num == 0) return 0;
+	if(_len == 0){
+		this->addValueByKey(this->objID2values, _objid, (char*)values, sizeof(unsigned) * values_len);
+		return update_num;
 	}
-	return true;
+	else
+	{
+		this->setValueByKey(this->objID2values, _objid, (char*)values, sizeof(unsigned) * values_len);
+		return update_num;
+	}
 }
 
-bool 
+unsigned 
 KVstore::updateRemove_o2values(TYPE_ENTITY_LITERAL_ID _objid, const std::vector<unsigned>& _pidsidlist) 
 {
-	vector<unsigned>::const_iterator iter = _pidsidlist.begin();
-	while (iter < _pidsidlist.end()) {
-		TYPE_PREDICATE_ID _preid = *iter;
-		iter++;
-		TYPE_ENTITY_LITERAL_ID _subid = *iter;
-		iter++;
-		this->updateRemove_o2values(_subid, _preid, _objid);
+	if(_pidsidlist.size() == 0) return 0;
+	unsigned* _tmp = NULL;
+	unsigned long _len = 0;
+	unsigned update_num = 0;
+	bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
+	_len = _len / sizeof(unsigned);
+	if (!_len) {
+		return 0;
 	}
-	return true;
+
+	unsigned* values = NULL;
+	unsigned long values_len = 0;
+	update_num = this->Remove_o2values(_pidsidlist, _tmp, _len, values, values_len);
+	if(update_num == 0) return 0;
+	if(values_len != 0)
+		this->setValueByKey(this->objID2values, _objid, (char*)values, sizeof(unsigned) * values_len);
+	else{
+		this->removeKey(this->objID2values, _objid);
+	}
+
+	return update_num;
+	
+}
+
+
+unsigned 
+KVstore::Insert_o2values(const std::vector<unsigned>& _pidsidlist, unsigned* _tmp,  unsigned long _len, unsigned*& values, unsigned long& values_len) const
+{
+	if(_pidsidlist.size() == 0)
+	{
+		values = _tmp;
+		values_len = _len;
+		return 0;
+	}
+	map<unsigned, vector<unsigned>> mp;
+
+    int n = 0;
+	unsigned update_num = 0;
+    for(int i = 0; i < _pidsidlist.size(); i += 2)
+    {
+		pair<int, bool> res{0, true};
+        mp[_pidsidlist[i]].push_back(_pidsidlist[i+1]);
+        if(res.second == true) n++;
+    }
+
+	//objID doesn't exist
+	if (!_len) {
+		unsigned* _values = new unsigned[2 + 3*n];
+		//cout << 2 + 3*n << endl;
+		_values[0] = n;
+		_values[1] = mp.size();
+		//cout << "mp.size()" << _values[1] << endl;
+		int j = 2, len;
+		for(auto &it: mp)
+		{
+			_values[j] = it.first;
+			j += 2;
+		}
+		len = j;
+		j = 3;
+		for(auto &it: mp)
+		{
+			_values[j] = len;
+			for(auto &sid: it.second)
+			{
+				_values[len] = sid;
+				len++;
+			}
+			j += 2; //_values[j] = offset
+		}
+		assert(len == _values[0] + 2*_values[1] + 2);
+		values = new unsigned[len];
+		memcpy(values, _values, sizeof(unsigned) * len);
+		values_len = len;
+		delete [] _values;
+		update_num = values[0];
+	}
+	else
+	{
+		unsigned* _values;
+		unsigned long _values_len;
+		_values_len = _len + 3*n;
+		_values = new unsigned[_values_len];
+		memset(_values, 0, sizeof(unsigned)* _values_len);
+		auto it = mp.begin();
+		int old_p_offset = 2, p_offset = 2;
+		int old_p_len = _tmp[1] * 2 + 2;
+		//merge pid
+		while(it != mp.end() && old_p_offset < old_p_len)
+		{
+			if(it->first > _tmp[old_p_offset])
+			{
+				_values[p_offset] = _tmp[old_p_offset];
+				old_p_offset += 2;
+			}
+			else if(it-> first < _tmp[old_p_offset])
+			{
+				_values[p_offset] = it->first;
+				it++;
+			}
+			else
+			{
+				_values[p_offset] = it->first;
+				it++;
+				old_p_offset += 2;
+			}
+			p_offset += 2;
+		}
+
+		while(it != mp.end()){
+			_values[p_offset] = it->first;
+			it++; p_offset += 2;
+		}
+		while(old_p_offset < old_p_len){
+			_values[p_offset] = _tmp[old_p_offset];
+			old_p_offset += 2; p_offset += 2;
+		}
+
+		_values[1] = p_offset / 2 - 1;
+
+		//merge sid
+		it = mp.begin();
+		int s_offset = p_offset;
+		int p_len = p_offset;
+
+		p_offset = old_p_offset = 2;
+		_values[3] = s_offset;
+
+		while(it != mp.end() && old_p_offset < old_p_len)
+		{
+			//merge sids
+			int next_s_offset;
+			if(old_p_offset + 3 > old_p_len){
+				next_s_offset = _len; //to the last pid
+			}
+			else{
+				next_s_offset = _tmp[old_p_offset+3];
+			}
+			if(_values[p_offset] == it->first && _values[p_offset] == _tmp[old_p_offset])
+			{
+				auto sids = it->second;
+				auto s_it = sids.begin();
+				int old_s_offset = _tmp[old_p_offset+1];
+				while(s_it != sids.end() && old_s_offset < next_s_offset)
+				{
+					if(*s_it > _tmp[old_s_offset])
+					{
+						_values[s_offset] = _tmp[old_s_offset];
+						old_s_offset++;
+						s_offset++;
+					}
+					else if(*s_it < _tmp[old_s_offset])
+					{
+						_values[s_offset] = *s_it;
+						s_it++;
+						s_offset++;
+					}
+					else
+					{
+						_values[s_offset] = _tmp[old_s_offset];
+						old_s_offset++;
+						s_it++;
+						s_offset++;
+					}
+				}
+				while(s_it != sids.end())
+				{
+					_values[s_offset] = *s_it;
+					s_it++;
+					s_offset++;
+				}
+				while(old_s_offset < next_s_offset)
+				{
+					_values[s_offset] = _tmp[old_s_offset];
+					old_s_offset++;
+					s_offset++;
+				}
+				it++;
+				old_p_offset += 2;
+			}
+			else if(_values[p_offset] == it->first && _values[p_offset] != _tmp[old_p_offset])
+			{
+				auto sids = it->second;
+				for(auto sid: sids)
+				{
+					_values[s_offset] = sid;
+					s_offset++;
+				}
+				it++;
+			}
+			else if(_values[p_offset] != it->first && _values[p_offset] == _tmp[old_p_offset])
+			{
+				int old_s_offset = _tmp[old_p_offset+1];
+				while(old_s_offset < next_s_offset)
+				{
+					_values[s_offset] = _tmp[old_s_offset];
+					old_s_offset++;
+					s_offset++;
+				}
+				old_p_offset += 2;
+			}
+			else
+			{
+				cerr << "error!" << endl;
+			}
+			if(p_offset + 3 < p_len)
+				_values[p_offset + 3] = s_offset;
+			p_offset += 2;
+		}
+
+		while(it != mp.end())
+		{
+			assert(_values[p_offset] == it->first);
+			auto sids = it->second;
+			for(auto sid: sids)
+			{
+				_values[s_offset] = sid;
+				s_offset++;
+			}
+			if(p_offset + 3 < p_len)
+				_values[p_offset + 3] = s_offset;
+			it++;
+			p_offset += 2;
+		}
+
+		while(old_p_offset < old_p_len)
+		{
+			assert(_values[p_offset] == _tmp[old_p_offset]);
+			int old_s_offset = _tmp[old_p_offset+1];
+			int next_s_offset;
+			if(old_p_offset + 3 > old_p_len){
+				next_s_offset = _len; //to the last pid
+			}
+			else{
+				next_s_offset = _tmp[old_p_offset+3];
+			}
+			while(old_s_offset < next_s_offset)
+			{
+				_values[s_offset] = _tmp[old_s_offset];
+				old_s_offset++;
+				s_offset++;
+			}
+			if(p_offset + 3 < p_len)
+				_values[p_offset + 3] = s_offset;
+			old_p_offset += 2;
+			p_offset += 2;
+		}
+
+		int len = s_offset;
+
+		_values[0] = len - 2 - 2*_values[1];
+		//assert(len == _values[0] + 2*_values[1] + 2);
+		values = new unsigned[len];
+		memcpy(values, _values, sizeof(unsigned) * len);
+		//cout << _tmp[0] << values[0] << endl;
+		values_len = len;
+		delete [] _values;
+		update_num = values[0] - _tmp[0];
+	}
+	delete []_tmp;
+	return update_num;
+}
+
+unsigned 
+KVstore::Remove_o2values(const std::vector<unsigned>& _pidsidlist, unsigned* _tmp,  unsigned long _len, unsigned*& values, unsigned long& values_len) const
+{
+	unsigned update_num = 0;
+	if (!_len) {
+		values = _tmp;
+		values_len = _len;
+		return 0;
+	}
+
+	map<unsigned, set<unsigned>> mp;
+
+    for(int i = 0; i < _pidsidlist.size(); i += 2)
+    {
+       auto res = mp[_pidsidlist[i]].insert(_pidsidlist[i+1]);
+    }
+
+    unsigned* _values = new unsigned[_len];
+
+    auto it = mp.begin();
+    int old_p_len = _tmp[1] * 2 + 2;
+    int p_len = old_p_len;
+    int old_p_offset, p_offset;
+    int old_s_offset, s_offset;
+    old_p_offset = p_offset = 2;
+    old_s_offset = s_offset = _tmp[1]*2 + 2;
+    int prev_s_offset = s_offset;
+    int pre_num = _tmp[1];
+    _values[3] = s_offset;
+    while(it != mp.end() && old_p_offset < old_p_len)
+    {
+        int next_s_offset;
+        if(old_p_offset + 3 > old_p_len){
+            next_s_offset = _len; //to the last pid
+        }
+        else{
+            next_s_offset = _tmp[old_p_offset+3];
+        }
+
+        if(_tmp[old_p_offset] == it->first)
+        {
+            auto sids = it->second;
+            auto s_it = sids.begin();
+            while(old_s_offset < next_s_offset && s_it != sids.end())
+            {
+                if(_tmp[old_s_offset] == *s_it) //delete
+                {
+                    old_s_offset++;
+                    s_it++;
+                }
+                else if(_tmp[old_s_offset] > *s_it)
+                {
+                    s_it++;
+                }
+                else
+                {
+                    _values[s_offset] = _tmp[old_s_offset];
+                    s_offset++;
+                    old_s_offset++;
+                }
+            }
+
+            while(old_s_offset < next_s_offset)
+            {
+                _values[s_offset] = _tmp[old_s_offset];
+                s_offset++;
+                old_s_offset++;
+            }
+
+            while(s_it != sids.end())
+            {
+                s_it++;
+                //do nothing
+            }
+
+            if(prev_s_offset != s_offset){ //no need delete pre
+                _values[p_offset] = _tmp[old_p_offset];
+                if(p_offset + 3 < p_len)
+                    _values[p_offset + 3] = s_offset;
+                p_offset += 2;
+            }
+            else
+            {
+                pre_num--;
+            }
+            old_p_offset += 2;
+            it++;
+
+            prev_s_offset = s_offset;
+        }
+        else if(_tmp[old_p_offset] > it->first)
+        {
+            it++;
+        }
+        else if(_tmp[old_p_offset] < it->first)
+        {
+            while(old_s_offset < next_s_offset)
+            {
+                _values[s_offset] = _tmp[old_s_offset];
+                s_offset++;
+                old_s_offset++;
+            }
+            //set predicate
+            _values[p_offset] = _tmp[old_p_offset];
+            if(p_offset + 3 < p_len)
+                _values[p_offset + 3] = s_offset;
+            p_offset += 2;
+            old_p_offset += 2;
+            //record prev offset
+            prev_s_offset = s_offset;
+        }
+    }
+
+    while(it != mp.end()){
+        it++; //do nothing
+    }
+
+    while(old_p_offset < old_p_len)
+    {
+        int next_s_offset;
+        if(old_p_offset + 3 > old_p_len){
+            next_s_offset = _len; //to the last pid
+        }
+        else{
+            next_s_offset = _tmp[old_p_offset+3];
+        }
+
+        while(old_s_offset < next_s_offset)
+        {
+            _values[s_offset] = _tmp[old_s_offset];
+            s_offset++;
+            old_s_offset++;
+        }
+        if(p_offset + 3 < p_len)
+            _values[p_offset + 3] = s_offset;
+        _values[p_offset] = _tmp[old_p_offset];
+        p_offset += 2;
+        old_p_offset += 2;
+    }
+    _values[0] = s_offset - old_p_len;
+    int deleted_pre_num = _tmp[1] - pre_num;
+    _values[1] = pre_num;
+    int len = pre_num*2 + 2 + _values[0];
+    values = new unsigned[len];
+    values[0] = _values[0];
+    values[1] = _values[1];
+    for(int i = 2; i < 2*pre_num + 2; i += 2){
+        values[i] = _values[i];
+        values[i+1] = _values[i+1] - deleted_pre_num*2;
+    }
+    for(int i = 2*pre_num + 2, j = _tmp[1] * 2 + 2; i < len && j < _len; i++, j++)
+        values[i] = _values[j];
+	delete [] _values;
+	values_len = len;
+	update_num = _tmp[0] - values[0];
+	delete [] _tmp;
+	if(values[0] == 0)
+    {
+        delete [] values;
+        values = nullptr;
+        values_len = 0;
+    }
+	return update_num;
 }
 
 bool 
@@ -998,7 +1807,7 @@ KVstore::updateInsert_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	unsigned* _tmp = NULL;
 	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->preID2values, _pre_id, (char*&)_tmp, _len);
-
+	
 	//preid doesn't exist
 	if (!_get) {
 		//unsigned _values[3];
@@ -1075,32 +1884,340 @@ KVstore::updateRemove_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	return true;
 }
 
-bool 
+unsigned 
 KVstore::updateInsert_p2values(TYPE_PREDICATE_ID _preid, const std::vector<unsigned>& _sidoidlist) 
 {
-	vector<unsigned>::const_iterator iter = _sidoidlist.begin();
-	while (iter < _sidoidlist.end()) {
-		TYPE_ENTITY_LITERAL_ID _subid = *iter;
-		iter++;
-		TYPE_ENTITY_LITERAL_ID _objid = *iter;
-		iter++;
-		this->updateInsert_p2values(_subid, _preid, _objid);
+	if(_sidoidlist.size() == 0) return 0;
+	unsigned* _tmp = NULL;
+	unsigned long _len = 0;
+	bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len);
+	_len = _len / sizeof(unsigned);
+	//cout << "updateInsert_p2values........" << endl;
+	unsigned* values = NULL;
+	unsigned long values_len = 0;
+	unsigned update_num = this->Insert_p2values(_sidoidlist, _tmp, _len, values, values_len);
+	if(update_num == 0) return 0;
+	if(_len == 0){
+		//cout << "...............preID2values addValueByKey" << endl;
+		this->addValueByKey(this->preID2values, _preid, (char*)values, sizeof(unsigned)*values_len);
 	}
-	return true;
+	else
+	{
+		this->setValueByKey(this->preID2values, _preid, (char*)values, sizeof(unsigned)*values_len);
+	}
+	return update_num;
 }
 
-bool 
+unsigned 
 KVstore::updateRemove_p2values(TYPE_PREDICATE_ID _preid, const std::vector<unsigned>& _sidoidlist) 
 {
-	vector<unsigned>::const_iterator iter = _sidoidlist.begin();
-	while (iter < _sidoidlist.end()) {
-		TYPE_ENTITY_LITERAL_ID _subid = *iter;
-		iter++;
-		TYPE_ENTITY_LITERAL_ID _objid = *iter;
-		iter++;
-		this->updateRemove_p2values(_subid, _preid, _objid);
+	if(_sidoidlist.size() == 0) return 0;
+	unsigned* _tmp = NULL;
+	unsigned long _len = 0;
+	bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len);
+	_len = _len / sizeof(unsigned);
+
+	unsigned* values = NULL;
+	unsigned long values_len = 0;
+	unsigned update_num = this->Remove_p2values(_sidoidlist, _tmp, _len, values, values_len);
+	if(update_num == 0) {
+		return 0;
 	}
-	return true;
+	if(values_len != 0){
+		this->setValueByKey(this->preID2values, _preid, (char*)values, sizeof(unsigned)*values_len);
+	}
+	else
+	{
+		this->removeKey(this->preID2values, _preid);
+	}
+	return update_num;
+}
+
+unsigned 
+KVstore::Insert_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tmp,  unsigned long _len, unsigned*& values, unsigned long& values_len) const
+{
+	if(_sidoidlist.size() == 0)
+	{
+		values = _tmp;
+		values_len = _len;
+		return 0;
+	}
+	map<unsigned, vector<unsigned>> mp;
+
+    int n = 0;
+	unsigned update_num = 0;
+    for(int i = 0; i < _sidoidlist.size(); i += 2)
+    {
+       pair<int, bool> res = {0, true};
+	   mp[_sidoidlist[i]].push_back(_sidoidlist[i+1]);
+       if(res.second == true) n++;
+    }
+
+	//preid doesn't exist
+	if (!_len) {
+		values = new unsigned[1 + 2*n];
+		values[0] = n;
+		int i = 1;
+		for(auto &it: mp)
+		{
+			int sid = it.first;
+			auto oids = it.second;
+			for(auto oid: oids)
+			{
+				values[i] = sid;
+				values[i + n] = oid;
+				i++;
+			}
+		}
+		assert(i == n+1);
+		values_len = 2*n + 1;
+		update_num = n;
+	}
+	else
+	{
+		unsigned* _values;
+		unsigned long _values_len;
+		_values_len = _len + 2*n;
+		_values = new unsigned[_values_len];
+		memset(_values, -1, sizeof(unsigned)* _values_len);
+
+		auto it = mp.begin();
+		int old_len = _tmp[0];
+		int tmp_len = (_values_len - 1) / 2;
+		assert(tmp_len == n + old_len);
+		int old_s_offset = 1, s_offset = 1;
+		while(old_s_offset <= _tmp[0] && it != mp.end())
+		{
+			if(_tmp[old_s_offset] == it->first)
+			{
+				auto oids = it->second;
+				auto o_it = oids.begin();
+				while(o_it != oids.end() && old_s_offset <= _tmp[0] && _tmp[old_s_offset] == it->first)
+				{
+					if(*o_it < _tmp[old_s_offset + old_len])
+					{
+						_values[s_offset] = it->first;
+						_values[s_offset + tmp_len] = *o_it;
+						o_it++;
+					}
+					else if(*o_it > _tmp[old_s_offset + old_len])
+					{
+						_values[s_offset] = _tmp[old_s_offset];
+						_values[s_offset + tmp_len] = _tmp[old_s_offset + old_len];
+						old_s_offset++;
+					}
+					else
+					{
+						_values[s_offset] = _tmp[old_s_offset];
+						_values[s_offset + tmp_len] = _tmp[old_s_offset + old_len];
+						o_it++;
+						old_s_offset++;
+					}
+					s_offset++;
+				}
+
+				while(o_it != oids.end())
+				{
+					_values[s_offset] = it->first;
+					_values[s_offset + tmp_len] = *o_it;
+					o_it++;
+					s_offset++;
+				}
+
+				while(old_s_offset <= _tmp[0] && _tmp[old_s_offset] == it->first)
+				{
+					_values[s_offset] = _tmp[old_s_offset];
+					_values[s_offset + tmp_len] = _tmp[old_s_offset + old_len];
+					old_s_offset++;
+					s_offset++;
+				}
+				it++;
+			}
+			else if(_tmp[old_s_offset] > it->first)
+			{
+				auto oids = it->second;
+				auto o_it = oids.begin();
+				while(o_it != oids.end())
+				{
+					_values[s_offset] = it->first;
+					_values[s_offset + tmp_len] = *o_it;
+					s_offset++; o_it++;
+				}
+				it++;
+			}
+			else
+			{
+				while(old_s_offset <= _tmp[0] && _tmp[old_s_offset] < it->first)
+				{
+					_values[s_offset] = _tmp[old_s_offset];
+					_values[s_offset + tmp_len] = _tmp[old_s_offset + old_len];
+					old_s_offset++;
+					s_offset++;
+				}
+			}
+		}
+
+		while(old_s_offset <= _tmp[0])
+		{
+			_values[s_offset] = _tmp[old_s_offset];
+			_values[s_offset + tmp_len] = _tmp[old_s_offset + old_len];
+			old_s_offset++;
+			s_offset++;
+		}
+
+		while(it != mp.end())
+		{
+			auto oids = it->second;
+			auto o_it = oids.begin();
+			while(o_it != oids.end())
+			{
+				_values[s_offset] = it->first;
+				_values[s_offset + tmp_len] = *o_it;
+				s_offset++; o_it++;
+			}
+			it++;
+		}
+
+		//compaction
+		_values[0] = s_offset - 1;
+		values = new unsigned[1 + 2*_values[0]];
+		values[0] = _values[0];
+		for(int i = 1; i < s_offset; i++)
+		{
+			values[i] = _values[i];
+			values[i+values[0]] = _values[i+tmp_len];
+		}
+		values_len = 2*values[0] + 1;
+		delete [] _values;
+		update_num = values[0] - _tmp[0];
+	}
+
+	delete []_tmp;
+	return update_num;
+}
+
+unsigned 
+KVstore::Remove_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tmp,  unsigned long _len, unsigned*& values, unsigned long& values_len) const
+{
+	if(_sidoidlist.size() == 0)
+	{
+		values = _tmp;
+		values_len = _len;
+		return 0;
+	}
+	map<unsigned, set<unsigned>> mp;
+
+    int n = 0;
+	unsigned update_num = 0;
+    for(int i = 0; i < _sidoidlist.size(); i += 2)
+    {
+       auto res = mp[_sidoidlist[i]].insert(_sidoidlist[i+1]);
+       if(res.second == true) n++;
+    }
+	
+	if (!_len) {
+		return 0;
+	}
+
+	 unsigned* _values;
+    _values = new unsigned[_len];
+    memset(_values, -1, sizeof(unsigned)* _len);
+
+    auto it = mp.begin();
+    int old_len = _tmp[0];
+    int tmp_len = old_len;
+    int old_s_offset = 1, s_offset = 1;
+    while(old_s_offset <= _tmp[0] && it != mp.end())
+    {
+        if(_tmp[old_s_offset] == it->first)
+        {
+            auto oids = it->second;
+            auto o_it = oids.begin();
+            while(o_it != oids.end() && old_s_offset <= _tmp[0] && _tmp[old_s_offset] == it->first)
+            {
+                if(*o_it < _tmp[old_s_offset + old_len])
+                {
+                    o_it++;
+                }
+                else if(*o_it > _tmp[old_s_offset + old_len])
+                {
+                    _values[s_offset] = _tmp[old_s_offset];
+                    _values[s_offset + tmp_len] = _tmp[old_s_offset + old_len];
+                    old_s_offset++;
+                    s_offset++;
+                }
+                else
+                {
+                    o_it++;
+                    old_s_offset++;
+                }
+            }
+
+            while(o_it != oids.end())
+            {
+                o_it++;
+                //do nothing
+            }
+
+            while(old_s_offset <= _tmp[0] && _tmp[old_s_offset] == it->first)
+            {
+                _values[s_offset] = _tmp[old_s_offset];
+                _values[s_offset + tmp_len] = _tmp[old_s_offset + old_len];
+                old_s_offset++;
+                s_offset++;
+            }
+            it++;
+        }
+        else if(_tmp[old_s_offset] > it->first)
+        {
+            it++; //do nothing
+        }
+        else
+        {
+            while(old_s_offset <= _tmp[0] && _tmp[old_s_offset] < it->first)
+            {
+                _values[s_offset] = _tmp[old_s_offset];
+                _values[s_offset + tmp_len] = _tmp[old_s_offset + old_len];
+                old_s_offset++;
+                s_offset++;
+            }
+        }
+    }
+
+    while(old_s_offset <= _tmp[0])
+    {
+        _values[s_offset] = _tmp[old_s_offset];
+        _values[s_offset + tmp_len] = _tmp[old_s_offset + old_len];
+        old_s_offset++;
+        s_offset++;
+    }
+
+    while(it != mp.end())
+    {
+        it++; //do nothing
+    }
+
+    //compaction
+    _values[0] = s_offset - 1;
+    values = new unsigned[1 + 2*_values[0]];
+    values[0] = _values[0];
+    for(int i = 1; i < s_offset; i++)
+    {
+        values[i] = _values[i];
+        values[i+values[0]] = _values[i+tmp_len];
+    }
+    values_len = 2*values[0] + 1;
+	delete [] _values;
+	
+	update_num = _tmp[0] - values[0];
+	delete [] _tmp;
+	if(values[0] == 0)
+    {
+        delete [] values;
+        values = nullptr;
+        values_len = 0;
+    }
+	return update_num;
 }
 
 //for entity2id
@@ -1134,7 +2251,7 @@ KVstore::close_entity2id()
 		return true;
 	}
 
-	this->entity2id->save();
+  this->entity2id->Save();
 	delete this->entity2id;
 	this->entity2id = NULL;
 
@@ -1148,19 +2265,27 @@ KVstore::subIDByEntity(string _entity0)
 	//_entity will not be released befor ethis function ends
 	//so _entity.c_str() is a valid const char*
 	//this->load_trie();
-	string _entity = trie->Compress(_entity0);
+	//string _entity = trie->Compress(_entity0);
 	//return this->entity2id->remove(_entity.c_str(), _entity.length());
-	return this->removeKey(this->entity2id, _entity.c_str(), _entity.length());
+	return this->removeKey(this->entity2id, _entity0.c_str(), _entity0.length());
 }
 
 TYPE_ENTITY_LITERAL_ID
 KVstore::getIDByEntity(string _entity0) const  
 {
 	//this->load_trie();
-	string _entity = trie->Compress(_entity0);
-	return this->getIDByStr(this->entity2id, _entity.c_str(), _entity.length());
+	//string _entity = trie->Compress(_entity0);
+	return this->getIDByStr(this->entity2id, _entity0.c_str(), _entity0.length());
 }
 
+/**
+ * Set ID to entity
+ * @warning You Must Look up _entity0 first!
+ * Only if it doesn't have an ID can you insert it!
+ * @param _entity0 the inserted entity
+ * @param _id the given id
+ * @return bool
+ */
 bool 
 KVstore::setIDByEntity(string _entity0, TYPE_ENTITY_LITERAL_ID _id) 
 {
@@ -1168,11 +2293,11 @@ KVstore::setIDByEntity(string _entity0, TYPE_ENTITY_LITERAL_ID _id)
 	//int len = _entity.length() + 1;
 
 	//this->load_trie();
-	string _entity = trie->Compress(_entity0);
-	int len = _entity.length();
+	//string _entity = trie->Compress(_entity0);
+	int len = _entity0.length();
 	char* str = new char[len];
 
-	memcpy(str, _entity.c_str(), len);
+	memcpy(str, _entity0.c_str(), len);
 	return this->addValueByKey(this->entity2id, str, len, _id);
 }
 
@@ -1265,12 +2390,12 @@ KVstore::setEntityByID(TYPE_ENTITY_LITERAL_ID _id, string _entity0)
 {
 	//return this->addValueByKey(this->id2entity, _id, _entity.c_str(), _entity.length());
 	//int len = _entity.length() + 1;
-	string _entity = this->trie->Compress(_entity0);
+	//string _entity = this->trie->Compress(_entity0);
 
-	int len = _entity.length();
+	int len = _entity0.length();
 	char* str = new char[len];
 
-	memcpy(str, _entity.c_str(), len);
+	memcpy(str, _entity0.c_str(), len);
 
 	return this->addValueByKey(this->id2entity, _id, str, len);
 }
@@ -1306,7 +2431,7 @@ KVstore::close_predicate2id()
 		return true;
 	}
 
-	this->predicate2id->save();
+  this->predicate2id->Save();
 	delete this->predicate2id;
 	this->predicate2id = NULL;
 
@@ -1317,29 +2442,37 @@ bool
 KVstore::subIDByPredicate(string _predicate0) 
 {
 	//this->load_trie();
-	string _predicate = trie->Compress(_predicate0);
+	//string _predicate = trie->Compress(_predicate0);
 	//return this->predicate2id->remove(_predicate.c_str(), _predicate.length());
-	return this->removeKey(this->predicate2id, _predicate.c_str(), _predicate.length());
+	return this->removeKey(this->predicate2id, _predicate0.c_str(), _predicate0.length());
 }
 
 TYPE_PREDICATE_ID
 KVstore::getIDByPredicate(string _predicate0) const 
 {
 	//this->load_trie();
-	string _predicate = trie->Compress(_predicate0);
-	return this->getIDByStr(this->predicate2id, _predicate.c_str(), _predicate.length());
+	//string _predicate = trie->Compress(_predicate0);
+	return this->getIDByStr(this->predicate2id, _predicate0.c_str(), _predicate0.length());
 }
 
+/**
+ * Set ID to Predicate string
+ * @warning You Must Look up _predicate0 first!
+ * Only if it doesn't have an ID can you insert it!
+ * @param _predicate0 the inserted Predicate
+ * @param _id the given id
+ * @return bool
+ */
 bool 
 KVstore::setIDByPredicate(string _predicate0, TYPE_PREDICATE_ID _id) 
 {
 	//return this->addValueByKey(this->predicate2id, _predicate.c_str(), _predicate.length(), _id);
 	//int len = _predicate.length() + 1;
 	//this->load_trie();
-	string _predicate = trie->Compress(_predicate0);
-	char* str = new char[_predicate.length()];
-	memcpy(str, _predicate.c_str(), _predicate.length());
-	return this->addValueByKey(this->predicate2id, str, _predicate.length(), _id);
+	//string _predicate = trie->Compress(_predicate0);
+	char* str = new char[_predicate0.length()];
+	memcpy(str, _predicate0.c_str(), _predicate0.length());
+	return this->addValueByKey(this->predicate2id, str, _predicate0.length(), _id);
 }
 
 //for id2predicate
@@ -1415,10 +2548,10 @@ KVstore::setPredicateByID(TYPE_PREDICATE_ID _id, string _predicate0)
 {
 	//return this->addValueByKey(this->id2predicate, _id, _predicate.c_str(), _predicate.length());
 	//int len = _predicate.length() + 1;
-	string _predicate = trie->Compress(_predicate0);
-	int len = _predicate.length();
+	//string _predicate = trie->Compress(_predicate0);
+	int len = _predicate0.length();
 	char* str = new char[len];
-	memcpy(str, _predicate.c_str(), len);
+	memcpy(str, _predicate0.c_str(), len);
 
 	return this->addValueByKey(this->id2predicate, _id, str, len);
 }
@@ -1454,7 +2587,7 @@ KVstore::close_literal2id()
 		return true;
 	}
 
-	this->literal2id->save();
+  this->literal2id->Save();
 	delete this->literal2id;
 	this->literal2id = NULL;
 
@@ -1465,17 +2598,17 @@ bool
 KVstore::subIDByLiteral(string _literal0) 
 {
 	//this->load_trie();
-	string _literal = trie->Compress(_literal0);
+	//string _literal = trie->Compress(_literal0);
 	//return this->literal2id->remove(_literal.c_str(), _literal.length());
-	return this->removeKey(this->literal2id, _literal.c_str(), _literal.length());
+	return this->removeKey(this->literal2id, _literal0.c_str(), _literal0.length());
 }
 
 TYPE_ENTITY_LITERAL_ID
 KVstore::getIDByLiteral(string _literal0) const 
 {
 	//this->load_trie();
-	string _literal = trie->Compress(_literal0);
-	return this->getIDByStr(this->literal2id, _literal.c_str(), _literal.length());
+	//string _literal = trie->Compress(_literal0);
+	return this->getIDByStr(this->literal2id, _literal0.c_str(), _literal0.length());
 	//TYPE_ENTITY_LITERAL_ID id = this->getIDByStr(this->literal2id, _literal.c_str(), _literal.length());
 	//if(id != INVALID)
 	//{
@@ -1483,6 +2616,14 @@ KVstore::getIDByLiteral(string _literal0) const
 	//}
 }
 
+/**
+ * Set ID to Literale string
+ * @warning You Must Look up _literal0 first!
+ * Only if it doesn't have an ID can you insert it!
+ * @param _literal0 the inserted literal
+ * @param _id the given id
+ * @return bool
+ */
 bool 
 KVstore::setIDByLiteral(string _literal0, TYPE_ENTITY_LITERAL_ID _id) 
 {
@@ -1490,10 +2631,10 @@ KVstore::setIDByLiteral(string _literal0, TYPE_ENTITY_LITERAL_ID _id)
 	//int len = _literal.length() + 1;
 	//this->load_trie();
 
-	string _literal = trie->Compress(_literal0);	
-	int len = _literal.length();
+	//string _literal = trie->Compress(_literal0);	
+	int len = _literal0.length();
 	char* str = new char[len];
-	memcpy(str, _literal.c_str(), len);
+	memcpy(str, _literal0.c_str(), len);
 
 	return this->addValueByKey(this->literal2id, str, len, _id);
 }
@@ -1571,10 +2712,10 @@ KVstore::setLiteralByID(TYPE_ENTITY_LITERAL_ID _id, string _literal0)
 {
 	//return this->addValueByKey(this->id2literal, _id, _literal.c_str(), _literal.length());
 	//int len = _literal.length() + 1;
-	string _literal = trie->Compress(_literal0);
-	int len = _literal.length();
+	//string _literal = trie->Compress(_literal0);
+	int len = _literal0.length();
 	char* str = new char[len];
-	memcpy(str, _literal.c_str(), len);
+	memcpy(str, _literal0.c_str(), len);
 
 	return this->addValueByKey(this->id2literal, _id, str, len);
 }
@@ -1749,64 +2890,69 @@ KVstore::getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlis
 	}
 	else
 	{
-		bool FirstRead;
+		bool FirstRead = false, latched = false;
+		bool IS_SI = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
 		//check if get shared-lock
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
-			FirstRead = !txn->ReadSetFind(_subid, Transaction::IDType::SUBJECT);
+		if(IS_SI)
+			FirstRead = !txn->ReadSetFind(_subid, Transaction::IDType::SUBJECT) && !txn->WriteSetFind(_subid, Transaction::IDType::SUBJECT);
 		
 		VDataSet addset, delset;
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
 		
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::SUB_S);
 		if (!_get) 
 		{
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
-		//not complete
-		//merge
-		
-		vector<unsigned> _preidlist_v;
-		if(_tmp != NULL)
+
+		vector<unsigned> add_pidoidlist, del_pidoidlist;
+		for(auto po: addset)
 		{
-			_preidlist_v.resize(_tmp[1]);
-			for (unsigned i = 0; i < _tmp[1]; i++) {
-				_preidlist_v[i] = _tmp[2 * i + 3];
-			}
+			add_pidoidlist.push_back(po.first);
+			add_pidoidlist.push_back(po.second);
 		}
-		
-		for(auto it: addset)
+
+		for(auto po: delset)
 		{
-			auto pos = lower_bound(_preidlist_v.begin(), _preidlist_v.end(), it.first);
-			if(pos == _preidlist_v.end() || *pos != it.first)
-				_preidlist_v.insert(pos, it.first);
+			del_pidoidlist.push_back(po.first);
+			del_pidoidlist.push_back(po.second);
 		}
-		//get _preidlist
-		
-		for(auto it: delset)
-		{
-			auto pos = lower_bound(_preidlist_v.begin(), _preidlist_v.end(), it.first);
-			if(pos != _preidlist_v.end() && *pos == it.first) //recheck
-				_preidlist_v.erase(pos);
+
+		unsigned * _values = nullptr;
+		unsigned long _values_len;
+		//cout << ".........._tmp:                                                 " <<  _tmp << endl;
+		if(add_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_s2values(add_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
 		}
-		_list_len = _preidlist_v.size();
-		bool ret = true;
-		if(_list_len == 0)
-		{
+		//cout << ".........._tmp:                                                 " <<  _tmp << endl;
+		if(del_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_s2values(del_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+
+		if(_len == 0) {
 			_preidlist = NULL;
-			ret = false;
+			_list_len = 0;
+			return false;
 		}
-		else
-		{
-			_preidlist = new unsigned[_list_len];
-			for (unsigned i = 0; i < _list_len; i++) {
-				_preidlist[i] = _preidlist_v[i];
-			}
+
+		_list_len = _tmp[1];
+		_preidlist = new unsigned[_list_len];
+		for (unsigned i = 0; i < _list_len; i++) {
+			_preidlist[i] = _tmp[2 * i + 3];
 		}
-		//_preidlist = _preidlist_v.data();
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE && FirstRead)
-			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
-		if(_tmp != NULL) delete[] _tmp;
+		delete[] _tmp;
 		return true;
 	}
 }
@@ -1853,56 +2999,72 @@ KVstore::getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlis
 	}
 	else
 	{
-		bool FirstRead;
+		bool FirstRead = false , latched = false;
+		bool IS_SI = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
 		//check if get shared-lock
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
-			FirstRead = !txn->ReadSetFind(_subid, Transaction::IDType::SUBJECT);
+		if(IS_SI)
+			FirstRead = !txn->ReadSetFind(_subid, Transaction::IDType::SUBJECT) && !txn->WriteSetFind(_subid, Transaction::IDType::SUBJECT);
 		
 		VDataSet addset, delset;
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
-		
+		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::SUB_S);
+
 		if (!_get) 
 		{
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
-		set<unsigned> _objidlist_set;
-		if(_tmp != NULL)
-		{
-			int tmp_len = _tmp[0];
-			
-			for(int i = 0, offset = 3 + 2 * _tmp[1]; i < tmp_len; i++, offset++)
-				_objidlist_set.insert(_tmp[offset]);
-		}
-		//merge
-		for(auto it: addset)
-			_objidlist_set.insert(it.second);
-		
-		for(auto it: delset)
-			_objidlist_set.erase(it.second);
-		
-		//get _objidlist
-		_list_len = _objidlist_set.size();
-		bool ret = true;
-		if(_list_len == 0)
-		{
-			ret = false;
-			_objidlist = NULL;
-		}
-		else
-		{
-			_objidlist = new unsigned[_list_len];
-			int k = 0;
-			for(auto it: _objidlist_set)
-			{
-				_objidlist[k] = it;
-				k++;
-			}
-		}
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE && FirstRead)
+
+		if(IS_SI && latched && FirstRead)
 			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
-		if(_tmp != NULL) delete[] _tmp;
+
+		vector<unsigned> add_pidoidlist, del_pidoidlist;
+		for(auto po: addset)
+		{
+			add_pidoidlist.push_back(po.first);
+			add_pidoidlist.push_back(po.second);
+		}
+
+		for(auto po: delset)
+		{
+			del_pidoidlist.push_back(po.first);
+			del_pidoidlist.push_back(po.second);
+		}
+
+		unsigned * _values = nullptr;
+		unsigned long _values_len;
+		//cout << ".........._tmp:                                                 " <<  _tmp << endl;
+		if(add_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_s2values(add_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cout << ".........._tmp:                                                 " <<  _tmp << endl;
+		if(del_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_s2values(del_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cout << ".........._tmp:                                                 " <<  _tmp << endl;
+		if(_len == 0) {
+			_objidlist = NULL;
+			_list_len = 0;
+			return false;
+		}
+		_list_len = _tmp[0];
+		_objidlist = new unsigned[_list_len];
+		memcpy(_objidlist, _tmp + 3 + 2 * _tmp[1], sizeof(unsigned) * _list_len);
+		Util::sort(_objidlist, _list_len);
+		if (_no_duplicate) {
+			_list_len = Util::removeDuplicate(_objidlist, _list_len);
+		}
+	
+		delete[] _tmp;
 		return true;
 	}
 }
@@ -1960,85 +3122,87 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 	}
 	else
 	{
-		bool FirstRead;
+		bool FirstRead = false, latched = false;
+		bool IS_SI = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
 		//check if get shared-lock
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE){
+		if(IS_SI)
 			FirstRead = !txn->ReadSetFind(_subid, Transaction::IDType::SUBJECT);
-			if(FirstRead) txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
-		}
 		
 		VDataSet addset, delset;
+		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
 		
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
-		if (!_get) {
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::SUB_S);
+
+		if (!_get) 
+		{
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
-		vector<unsigned> _objidvec;
-		if(_tmp != NULL)
+
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
+		vector<unsigned> add_pidoidlist, del_pidoidlist;
+		for(auto po: addset)
 		{
-			unsigned _result = KVstore::binarySearch(_preid, _tmp + 3, _tmp[1], 2);
-			//if (_result == -1) 
-			if (_result == INVALID) 
-			{
-				_objidlist = NULL;
-				_list_len = 0;
-				return false;
-			}
-			unsigned _offset = _tmp[4 + 2 * _result];
-			unsigned _offset_next;
-			if (_result == _tmp[1] - 1) {
-				_offset_next = 3 + 2 * _tmp[1] + _tmp[0];
-			}
-			else {
-				_offset_next = _tmp[6 + 2 * _result];
-			}
-			unsigned tmp_len = _offset_next - _offset;
-			_objidvec.resize(tmp_len);
-			for(int i = 0, offset = _offset; i < tmp_len; i++, offset++)
-			{
-				_objidvec[i] = _tmp[offset];
-			}
+			add_pidoidlist.push_back(po.first);
+			add_pidoidlist.push_back(po.second);
 		}
-		
-		
-		
-		for(auto &it: addset)
+
+		for(auto po: delset)
 		{
-			if(it.first == _preid)
-			{
-				auto pos = lower_bound(_objidvec.begin(), _objidvec.end(), it.second);
-				if(pos == _objidvec.end() || *pos != it.second) 
-					_objidvec.insert(pos, it.second);
-			}
+			del_pidoidlist.push_back(po.first);
+			del_pidoidlist.push_back(po.second);
 		}
-		
-		for(auto &it: delset)
-		{
-			if(it.first == _preid)
-			{
-				auto pos = lower_bound(_objidvec.begin(), _objidvec.end(), it.second);
-				if(pos != _objidvec.end() && *pos == it.second) 
-					_objidvec.erase(pos);
-			}
+
+		unsigned * _values = nullptr;
+		unsigned long _values_len;
+		//cerr << ".........._len:                                                 " <<  _len << endl;
+		if(add_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_s2values(add_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
 		}
-		_list_len = _objidvec.size();
-		bool ret = true;
-		if(_list_len == 0)
-		{
-			ret = false;
+		//cerr << ".........._len:                                                 " <<  _len << endl;
+		if(del_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_s2values(del_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cerr << ".........._len:                                                 " <<  _len << endl;
+		// for(int i = 0; i < _len / sizeof(unsigned); i++) cerr << _tmp[i] << " ";
+		// cerr << endl;
+		if(_len == 0) {
 			_objidlist = NULL;
+			_list_len = 0;
+			return false;
 		}
-		else
+		unsigned _result = KVstore::binarySearch(_preid, _tmp + 3, _tmp[1], 2);
+		//if (_result == -1) 
+		if (_result == INVALID) 
 		{
-			_objidlist = new unsigned[_list_len];
-			//_objidlist = _objidvec.data();
-			for(int i = 0; i < _list_len; i++)
-				_objidlist[i] = _objidvec[i];
+			_objidlist = NULL;
+			_list_len = 0;
+			//delete[] _tmp;
+			return false;
 		}
-		if(_tmp != NULL) delete[] _tmp;
-		return ret;
+		unsigned _offset = _tmp[4 + 2 * _result];
+		unsigned _offset_next;
+		if (_result == _tmp[1] - 1) {
+			_offset_next = 3 + 2 * _tmp[1] + _tmp[0];
+		}
+		else {
+			_offset_next = _tmp[6 + 2 * _result];
+		}
+		_list_len = _offset_next - _offset;
+		_objidlist = new unsigned[_list_len];
+		memcpy(_objidlist, _tmp + _offset, sizeof(unsigned) * _list_len);
+
+		delete[] _tmp;
+		return true;
 	}
 }
 
@@ -2093,37 +3257,61 @@ KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _pre
 	}
 	else
 	{
-		bool FirstRead;
+		bool FirstRead = false, latched = false;
 		//check if get shared-lock
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
-			FirstRead = !txn->ReadSetFind(_subid, Transaction::IDType::SUBJECT);
+		bool IS_SI = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
+		if(IS_SI)
+			FirstRead = !txn->ReadSetFind(_subid, Transaction::IDType::SUBJECT) && !txn->WriteSetFind(_subid, Transaction::IDType::SUBJECT);
 		
 		VDataSet addset, delset;
 
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+		
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::SUB_S);
+
 		if (!_get) {
-			if(_get == 0 && txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE && FirstRead)
-				txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
 			_preid_objidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
+		
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
+
+		vector<unsigned> add_pidoidlist, del_pidoidlist;
+		for(auto po: addset)
+		{
+			add_pidoidlist.push_back(po.first);
+			add_pidoidlist.push_back(po.second);
+		}
+
+		for(auto po: delset)
+		{
+			del_pidoidlist.push_back(po.first);
+			del_pidoidlist.push_back(po.second);
+		}
+
 		unsigned * _values = nullptr;
 		unsigned long _values_len;
-		cout << ".........._tmp:                                                 " <<  _tmp << endl;
-		this->Insert_s2values(addset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
-		cout << ".........._tmp:                                                 " <<  _tmp << endl;
-		this->Remove_s2values(delset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
-		cout << ".........._tmp:                                                 " <<  _tmp << endl;
-		bool ret = true;
+		if(add_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_s2values(add_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cout << ".........._tmp:                                                 " <<  _tmp << endl;
+		if(del_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_s2values(del_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cout << ".........._tmp:                                                 " <<  _tmp << endl;
 		if(_len == 0) {
 			_preid_objidlist = NULL;
 			_list_len = 0;
-			ret = false;
+			return false;
 		}
 		else
 		{
@@ -2144,11 +3332,8 @@ KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _pre
 				}
 			}
 		}
-		
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE && FirstRead)
-			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
 		delete[] _tmp;
-		return ret;
+		return true;
 	}
 }
 
@@ -2277,7 +3462,12 @@ KVstore::build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num
 bool 
 KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const 
 {
-	//cout << "In getpreIDlistByobjID " << _objid << endl;
+	//cerr << "InIn getpreIDlistByobjID " << _objid << endl;
+	if(_objid == INVALID_ENTITY_LITERAL_ID) {
+		_preidlist = nullptr;
+		_list_len = 0;
+		return false;
+	}
 	unsigned* _tmp = NULL;
 	unsigned long _len = 0;
 	if(txn == nullptr)
@@ -2308,61 +3498,69 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 	}
 	else
 	{
-		bool FirstRead;
+		bool FirstRead = false , latched = false;
 		//check if get shared-lock
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
-			FirstRead = !txn->ReadSetFind(_objid, Transaction::IDType::OBJECT);
+		bool IS_SI = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
+		if(IS_SI)
+			FirstRead = !txn->ReadSetFind(_objid, Transaction::IDType::OBJECT) && !txn->WriteSetFind(_objid, Transaction::IDType::OBJECT);
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::OBJ_S);
+
 		if (!_get) {
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
-		vector<unsigned> _preidvec;
-		if(_tmp != NULL)
-		{
-			int _tmp_len = _tmp[1];
-			_preidvec.resize(_tmp_len);
-			for (unsigned i = 0; i < _tmp_len; i++) {
-				_preidlist[i] = _tmp[2 * i + 2];
-			}
-		}
 		
-		for(auto it: addset)
-		{
-			auto pos = lower_bound(_preidvec.begin(), _preidvec.end(), it.first);
-			if(pos == _preidvec.end() || it.first != *pos)
-				_preidvec.insert(pos, it.first);
-		}
-		
-		for(auto it: delset)
-		{
-			auto pos = lower_bound(_preidvec.begin(), _preidvec.end(), it.first);
-			if(pos != _preidvec.end() && it.first == *pos)
-				_preidvec.erase(pos);
-		}
-		
-		_list_len = _preidvec.size();
-		bool ret = true;
-		if(_list_len == 0)
-		{
-			_preidlist = nullptr;
-			ret = false;
-		}
-		else
-		{
-			_preidlist = new unsigned[_list_len];
-			for(int i = 0; i < _list_len; i++)
-				_preidlist[i] = _preidvec[i];
-		}
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE && FirstRead)
+		if(IS_SI && latched && FirstRead)
 			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
-			
-		if(_tmp != NULL) delete[] _tmp;
-		return ret;
+
+		vector<unsigned> add_pidsidlist, del_pidsidlist;
+		for(auto ps: addset){
+			add_pidsidlist.push_back(ps.first);
+			add_pidsidlist.push_back(ps.second);
+		}
+
+		for(auto ps: delset){
+			del_pidsidlist.push_back(ps.first);
+			del_pidsidlist.push_back(ps.second);
+		}
+
+		unsigned * _values = nullptr;
+		unsigned long _values_len;
+		if(add_pidsidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_o2values(add_pidsidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cerr << "_len:                                                 " <<  _len << endl;
+		if(del_pidsidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_o2values(del_pidsidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+
+		if(_len == 0) {
+			_preidlist = NULL;
+			_list_len = 0;
+			return false;
+		}
+		
+		_list_len = _tmp[1];
+		_preidlist = new unsigned[_list_len];
+		for (unsigned i = 0; i < _list_len; i++) {
+			_preidlist[i] = _tmp[2 * i + 2];
+		}
+		delete[] _tmp;
+
+		return true;
 	}
 	
 }
@@ -2370,7 +3568,12 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 bool 
 KVstore::getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const 
 {
-	//cout << "In getsubIDlistByobjID " << _objid << endl;
+	//cerr << "InIn getsubIDlistByobjID " << _objid << endl;
+	if(_objid == INVALID_ENTITY_LITERAL_ID) {
+		_subidlist = nullptr;
+		_list_len = 0;
+		return false;
+	}
 	unsigned* _tmp = NULL;
 	unsigned long _len = 0;
 	if(txn == nullptr)
@@ -2402,65 +3605,83 @@ KVstore::getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlis
 	}
 	else
 	{
-		bool FirstRead;
+		bool FirstRead = false, latched = false;
+		bool IS_SI = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
 		//check if get shared-lock
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
-			FirstRead = !txn->ReadSetFind(_objid, Transaction::IDType::OBJECT);
+		if(IS_SI)
+			FirstRead = !txn->ReadSetFind(_objid, Transaction::IDType::OBJECT) && !txn->WriteSetFind(_objid, Transaction::IDType::OBJECT);
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, latched,  FirstRead);
+		
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::OBJ_S);
+
 		if (!_get) {
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
-		set<unsigned> _subidset;
-		if(_tmp != NULL)
-		{
-			int tmp_len = _tmp[0];
-			
-			
-			for(int pos = 2 + 2 * _tmp[1], i = 0; i < tmp_len; i++, pos++)
-			{
-				_subidset.insert(_tmp[pos]);
-			}
-		}
-		for(auto it: addset)
-			_subidset.insert(it.second);
-		for(auto it: delset)
-			_subidset.erase(it.second);
-		
-		bool ret = true;
-		_list_len = _subidset.size();
-		if(_list_len == 0) 
-		{
-			_subidlist = nullptr;
-			ret = false;
-		}
-		else
-		{
-			_subidlist = new unsigned[_list_len];
-			int k = 0;
-			for(auto it: _subidset)
-			{
-				_subidlist[k] = it;
-				k++;
-			}
-		}
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE && FirstRead)
+
+		if(IS_SI && latched && FirstRead)
 			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
+
+		vector<unsigned> add_pidsidlist, del_pidsidlist;
+		for(auto ps: addset){
+			add_pidsidlist.push_back(ps.first);
+			add_pidsidlist.push_back(ps.second);
+		}
+
+		for(auto ps: delset){
+			del_pidsidlist.push_back(ps.first);
+			del_pidsidlist.push_back(ps.second);
+		}
+		unsigned * _values = nullptr;
+		unsigned long _values_len;
+		if(add_pidsidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_o2values(add_pidsidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cerr << "_len:                                                 " <<  _len << endl;
+		if(del_pidsidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_o2values(del_pidsidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+
+		if(_len == 0) {
+			_subidlist = NULL;
+			_list_len = 0;
+			return false;
+		}
 		
-		if(_tmp != NULL) delete[] _tmp;
+		_list_len = _tmp[0];
+		_subidlist = new unsigned[_list_len];
+		memcpy(_subidlist, _tmp + 2 + 2 * _tmp[1], sizeof(unsigned) * _list_len);
+		Util::sort(_subidlist, _list_len);
+		if (_no_duplicate) {
+			_list_len = Util::removeDuplicate(_subidlist, _list_len);
+		}
+
+		delete[] _tmp;
 		
-		return ret;
+		return true;
 	}
 }
 
 bool 
 KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const 
 {
-	//cout << "In getsubIDlistByobjIDpreID " << _objid << ' ' << _preid << endl;
+	//cerr << "InIn getsubIDlistByobjIDpreID " << _objid << ' ' << _preid << endl;
+	if(_objid == INVALID_ENTITY_LITERAL_ID) {
+		_subidlist = nullptr;
+		_list_len = 0;
+		return false;
+	}
 	unsigned* _tmp = NULL;
 	unsigned long _len = 0;
 	if(txn == nullptr)
@@ -2477,6 +3698,7 @@ KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 		{
 			_subidlist = NULL;
 			_list_len = 0;
+			delete[] _tmp;
 			return false;
 		}
 		unsigned _offset = _tmp[3 + 2 * _result];
@@ -2500,82 +3722,112 @@ KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 	}
 	else
 	{
-		bool FirstRead;
+		bool FirstRead = false, latched = false;
 		//check if get shared-lock
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
+		bool IS_SI = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
+		if(IS_SI)
 			FirstRead = !txn->ReadSetFind(_objid, Transaction::IDType::OBJECT);
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::OBJ_S);
+
 		if (!_get) {
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
-		vector<unsigned> _subidvec;
-		if(_tmp != NULL)
-		{
-			unsigned _result = KVstore::binarySearch(_preid, _tmp + 2, _tmp[1], 2);
-			unsigned _offset = _tmp[3 + 2 * _result];
-			unsigned _offset_next;
 
-			if (_result == _tmp[1] - 1) {
-				_offset_next = 2 + 2 * _tmp[1] + _tmp[0];
-			}
-			else {
-				_offset_next = _tmp[5 + 2 * _result];
-			}
-			unsigned tmp_len = _offset_next - _offset;
-			//_subidlist = new unsigned[_list_len];
-			_subidvec.resize(tmp_len);
-			for(int i = _offset, j = 0; j < tmp_len; i++, j++)
-				_subidvec[j] = _tmp[i];
-		}
-		for(auto it: addset)
-		{
-			if(it.first == _preid)
-			{
-				auto pos = lower_bound(_subidvec.begin(), _subidvec.end(), it.second);
-				if(pos == _subidvec.begin() || *pos != it.second)
-					_subidvec.insert(pos, it.second);
-			}
-		}
-		
-		for(auto it: delset)
-		{
-			if(it.first == _preid)
-			{
-				auto pos = lower_bound(_subidvec.begin(), _subidvec.end(), it.second);
-				if(pos != _subidvec.end() && *pos == it.second)
-					_subidvec.erase(pos);
-			}
-		}
-		
-		_list_len = _subidvec.size();
-		bool ret = true;
-		if(_list_len == 0){
-			_subidlist = nullptr;
-			ret = false;
-		}
-		else
-		{
-			_subidlist = new unsigned[_list_len];
-			for(int i = 0; i < _list_len; i++)
-				_subidlist[i] = _subidvec[i];
-		}
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE && FirstRead)
+		if(IS_SI && latched && FirstRead)
 			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
-		
-		if(_tmp != NULL) delete[] _tmp;
-		return ret;
+
+		unsigned tmp_len = _len;
+		// if(addset.size() != 0 || delset.size() != 0){
+		// 	cerr << addset.size() << "   " << delset.size() << endl;
+		// }
+		vector<unsigned> add_pidsidlist, del_pidsidlist;
+		for(auto ps: addset){
+			add_pidsidlist.push_back(ps.first);
+			add_pidsidlist.push_back(ps.second);
+		}
+
+		for(auto ps: delset){
+			del_pidsidlist.push_back(ps.first);
+			del_pidsidlist.push_back(ps.second);
+		}
+		unsigned * _values = nullptr;
+		unsigned long _values_len;
+		if(add_pidsidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_o2values(add_pidsidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cerr << "_len:                                                 " <<  _len << endl;
+		if(del_pidsidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_o2values(del_pidsidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+
+		if(_len == 0) {
+			_subidlist = NULL;
+			_list_len = 0;
+			return false;
+		}
+		if(_tmp[1] == 0 || _tmp[1] == 32767){
+			cerr << "InIn getsubIDlistByobjIDpreID " << _objid << ' ' << _preid << endl;
+			cerr << " _tmp[0] :" << _tmp[0] << endl;
+			cerr << " _tmp[1] :" << _tmp[1] << endl;
+			cerr << "_len:" << _len << endl;
+			cerr << "old_len:  " << tmp_len << endl;
+			cerr << "add_pidsidlist.size():  " << add_pidsidlist.size() << " " << "del_pidsidlist.size(): " << del_pidsidlist.size() << endl;
+
+			// for(int i = 0; i < _len / sizeof(unsigned); i++){
+			// 	cerr << _tmp[i] << " ";
+			// }
+			// cerr << endl;
+		}
+			
+		unsigned _result = KVstore::binarySearch(_preid, _tmp + 2, _tmp[1], 2);
+		//if (_result == -1) 
+		if (_result == INVALID) 
+		{
+			_subidlist = NULL;
+			_list_len = 0;
+			delete[] _tmp;
+			return false;
+		}
+		unsigned _offset = _tmp[3 + 2 * _result];
+		unsigned _offset_next;
+
+		if (_result == _tmp[1] - 1) {
+			_offset_next = 2 + 2 * _tmp[1] + _tmp[0];
+		}
+		else {
+			_offset_next = _tmp[5 + 2 * _result];
+		}
+		_list_len = _offset_next - _offset;
+		_subidlist = new unsigned[_list_len];
+		memcpy(_subidlist, _tmp + _offset, sizeof(unsigned) * _list_len);
+		delete[] _tmp;
+		return true;
 	}
 }
 
 bool 
 KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preid_subidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const 
 {
-	//cout << "In getpreIDsubIDlistByobjID " << _objid << endl;
+	//cerr << "InIn getpreIDsubIDlistByobjID " << _objid << endl;
+	if(_objid == INVALID_ENTITY_LITERAL_ID) {
+		_preid_subidlist = nullptr;
+		_list_len = 0;
+		return false;
+	}
 	unsigned* _tmp = NULL;
 	unsigned long _len = 0;
 	if(txn == nullptr)
@@ -2616,58 +3868,78 @@ KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _pre
 	}
 	else
 	{
-		bool FirstRead;
+		bool FirstRead = false, latched = false;
+		bool IS_SI = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
 		//check if get shared-lock
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
-			FirstRead = !txn->ReadSetFind(_objid, Transaction::IDType::OBJECT);
+		if(IS_SI)
+			FirstRead = !txn->ReadSetFind(_objid, Transaction::IDType::OBJECT) && !txn->WriteSetFind(_objid, Transaction::IDType::OBJECT);
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+		
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::OBJ_S);
+
 		if (!_get) {
 			_preid_subidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
+
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
+
+		vector<unsigned> add_pidsidlist, del_pidsidlist;
+		for(auto ps: addset){
+			add_pidsidlist.push_back(ps.first);
+			add_pidsidlist.push_back(ps.second);
+		}
+
+		for(auto ps: delset){
+			del_pidsidlist.push_back(ps.first);
+			del_pidsidlist.push_back(ps.second);
+		}
 		unsigned * _values = nullptr;
 		unsigned long _values_len;
-		this->Insert_o2values(addset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
-		this->Remove_o2values(delset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
-		bool ret = true;
+		if(add_pidsidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_o2values(add_pidsidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cerr << "_len:                                                 " <<  _len << endl;
+		if(del_pidsidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_o2values(del_pidsidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+
 		if(_len == 0) {
 			_preid_subidlist = NULL;
 			_list_len = 0;
-			ret = false;
+			return false;
 		}
-		else
-		{
-			_list_len = 2 * _tmp[0];
-			_preid_subidlist = new unsigned[_list_len];
-			unsigned _offset_next;
-			unsigned j = 0;
-			for (unsigned i = 0; i < _tmp[1]; i++) {
-				if (i == _tmp[1] - 1) {
-					_offset_next = 2 + 2 * _tmp[1] + _tmp[0];
-				}
-				else {
-					_offset_next = _tmp[5 + 2 * i];
-				}
-				for (; 2 + 2 * _tmp[1] + j < _offset_next; j++) {
-					_preid_subidlist[2 * j] = _tmp[2 + 2 * i];
-					_preid_subidlist[2 * j + 1] = _tmp[2 + 2 * _tmp[1] + j];
-				}
+		_list_len = 2 * _tmp[0];
+		_preid_subidlist = new unsigned[_list_len];
+		unsigned _offset_next;
+		unsigned j = 0;
+		for (unsigned i = 0; i < _tmp[1]; i++) {
+			if (i == _tmp[1] - 1) {
+				_offset_next = 2 + 2 * _tmp[1] + _tmp[0];
+			}
+			else {
+				_offset_next = _tmp[5 + 2 * i];
+			}
+			for (; 2 + 2 * _tmp[1] + j < _offset_next; j++) {
+				_preid_subidlist[2 * j] = _tmp[2 + 2 * i];
+				_preid_subidlist[2 * j + 1] = _tmp[2 + 2 * _tmp[1] + j];
 			}
 		}
 		
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE && FirstRead)
-			txn->ReadSetInsert(_objid, Transaction::IDType::OBJECT);
-		
 		delete[] _tmp;
-		return ret;
+		return true;
 	}
 }
 
@@ -2794,60 +4066,75 @@ KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, un
 	}
 	else
 	{
-		bool FirstRead;
+		bool FirstRead = false, latched = false;
+		bool IS_SI = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
 		//check if get shared-lock
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
-			FirstRead = !txn->ReadSetFind(_preid, Transaction::IDType::PREDICATE);
+		if(IS_SI)
+			FirstRead = !txn->ReadSetFind(_preid, Transaction::IDType::PREDICATE) && !txn->WriteSetFind(_preid, Transaction::IDType::PREDICATE);
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
-		cout << "getsubIDlistBypreID: ............................" << _get << endl;
+		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, latched,  FirstRead);
+
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::PRE_S);
+
 		if (!_get) {
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
-		set<unsigned> _subidset;
-		if(_tmp != NULL)
-		{
-			int tmp_len = _tmp[0];
 		
-			for(int i = 1, j = 0; j < tmp_len; j++, i++)
-			{
-				_subidset.insert(_tmp[i]);
-			}
+		if(IS_SI && FirstRead && FirstRead)
+			txn->ReadSetInsert(_preid, Transaction::IDType::PREDICATE);
+
+		vector<unsigned> add_sidoidlist, del_sidoidlist;
+		for(auto so: addset)
+		{
+			add_sidoidlist.push_back(so.first);
+			add_sidoidlist.push_back(so.second);
 		}
-		for(auto it: addset)
-			_subidset.insert(it.first);
-		
-		for(auto it: delset)
-			_subidset.erase(it.first);
-		bool ret = true;
-		_list_len = _subidset.size();
-		if(_list_len != 0)
+
+		for(auto so: delset)
 		{
-			_subidlist = new unsigned[_list_len];
-		
-			int k = 0;
-			for(auto it: _subidset)
-			{
-				_subidlist[k] = it;
-				k++;
-			}
-			//cout << "k: ...................................................." << k << endl;
+			del_sidoidlist.push_back(so.first);
+			del_sidoidlist.push_back(so.second);
 		}
-		else
-		{
+		
+		unsigned * _values = nullptr;
+		unsigned long _values_len;
+		//cout << "_len:                                                 " <<  _len << endl;
+		//cerr << "addset.size():           " << addset.size() << "   delset.size()                      " << delset.size() << endl;
+		if(add_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_p2values(add_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cout << "_len:                                                 " <<  _len << endl;
+		if(del_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_p2values(del_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+
+		if(_len == 0){
 			_subidlist = NULL;
 			_list_len = 0;
-			ret = false;
+			return false;
 		}
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE && FirstRead)
-			txn->ReadSetInsert(_preid, Transaction::IDType::PREDICATE);
-			
-		if(_tmp != NULL) delete[] _tmp;
-		return ret;
+
+		_list_len = _tmp[0];
+		_subidlist = new unsigned[_list_len];
+		memcpy(_subidlist, _tmp + 1, sizeof(unsigned) * _list_len);
+		if (_no_duplicate) {
+			_list_len = Util::removeDuplicate(_subidlist, _list_len);
+		}
+
+		delete[] _tmp;
+
+		return true;
 	}
 }
 
@@ -2885,65 +4172,76 @@ KVstore::getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, un
 	}
 	else
 	{
-		bool FirstRead;
+		bool FirstRead = false, latched = false;
+		bool IS_SI = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
 		//check if get shared-lock
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
-			FirstRead = !txn->ReadSetFind(_preid, Transaction::IDType::PREDICATE);
+		if(IS_SI)
+			FirstRead = !txn->ReadSetFind(_preid, Transaction::IDType::PREDICATE) && !txn->WriteSetFind(_preid, Transaction::IDType::PREDICATE);
 		
 		VDataSet addset, delset;
 		
-		int _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::PRE_S);
+
 		//cout << "getobjIDlistBypreID:.............................." << _get << endl;
 		if (!_get) {
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
-		set<unsigned> _objidset;
-		if(_tmp != NULL)
+		
+		if(IS_SI && FirstRead && FirstRead)
+			txn->ReadSetInsert(_preid, Transaction::IDType::PREDICATE);
+
+		vector<unsigned> add_sidoidlist, del_sidoidlist;
+		for(auto so: addset)
 		{
-			unsigned tmp_len = _tmp[0];
-			
-			for(int i = 1 + _tmp[0], j = 0; j < tmp_len; j++, i++)
-			{
-				_objidset.insert(_tmp[i]);
-			}
+			add_sidoidlist.push_back(so.first);
+			add_sidoidlist.push_back(so.second);
 		}
-		for(auto it: addset)
+
+		for(auto so: delset)
 		{
-			_objidset.insert(it.second);
+			del_sidoidlist.push_back(so.first);
+			del_sidoidlist.push_back(so.second);
 		}
 		
-		for(auto it: delset)
-		{
-			_objidset.erase(it.second);
+		unsigned * _values = nullptr;
+		unsigned long _values_len;
+		//cout << "_len:                                                 " <<  _len << endl;
+		//cerr << "addset.size():           " << addset.size() << "   delset.size()                      " << delset.size() << endl;
+		if(add_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_p2values(add_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
 		}
-		
-		bool ret = true;
-		_list_len = _objidset.size();
-		if(_list_len != 0)
-		{
-			_objidlist = new unsigned[_list_len];
-			int k = 0;
-			
-			for(auto it: _objidset)
-			{
-				_objidlist[k] = it;
-				k++;
-			}
+		//cout << "_len:                                                 " <<  _len << endl;
+		if(del_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_p2values(del_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
 		}
-		else
-		{
+
+		if(_len == 0){
 			_objidlist = NULL;
 			_list_len = 0;
-			ret = false;
+			return false;
+		}
+
+		_list_len = _tmp[0];
+		_objidlist = new unsigned[_list_len];
+		memcpy(_objidlist, _tmp + 1 + _tmp[0], sizeof(unsigned) * _list_len);
+		Util::sort(_objidlist, _list_len);
+		if (_no_duplicate) {
+			_list_len = Util::removeDuplicate(_objidlist, _list_len);
 		}
 		
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE && FirstRead)
-			txn->ReadSetInsert(_preid, Transaction::IDType::PREDICATE);
-		
-		if(_tmp != NULL) delete[] _tmp;
-		return ret;
+		delete[] _tmp;
+		return true;
 	}
 }
 
@@ -2993,33 +4291,64 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 	}
 	else
 	{
-		bool FirstRead;
+		bool FirstRead = false, latched = false;
 		//check if get shared-lock
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
-			FirstRead = !txn->ReadSetFind(_preid, Transaction::IDType::PREDICATE);
+		bool IS_SI = txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE;
+		if(IS_SI)
+			FirstRead = !txn->ReadSetFind(_preid, Transaction::IDType::PREDICATE) && !txn->WriteSetFind(_preid, Transaction::IDType::PREDICATE);
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, latched,  FirstRead);
+
+		if(txn->GetState() == TransactionState::ABORTED)
+			txn->SetErrorType(TransactionErrorType::PRE_S);
+
 		if (!_get) {
 			_subid_objidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
 		
+		if(IS_SI && latched && FirstRead)
+			txn->ReadSetInsert(_preid, Transaction::IDType::PREDICATE);
+
+		vector<unsigned> add_sidoidlist, del_sidoidlist;
+		for(auto so: addset)
+		{
+			add_sidoidlist.push_back(so.first);
+			add_sidoidlist.push_back(so.second);
+		}
+
+		for(auto so: delset)
+		{
+			del_sidoidlist.push_back(so.first);
+			del_sidoidlist.push_back(so.second);
+		}
+		
 		unsigned * _values = nullptr;
 		unsigned long _values_len;
-		this->Insert_p2values(addset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
-		this->Remove_p2values(delset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
-		bool ret = true;
+		//cout << "_len:                                                 " <<  _len << endl;
+		//cerr << "addset.size():           " << addset.size() << "   delset.size()                      " << delset.size() << endl;
+		if(add_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_p2values(add_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//cout << "_len:                                                 " <<  _len << endl;
+		if(del_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_p2values(del_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		//bool ret = true;
 		if(_len == 0) {
 			_subid_objidlist = NULL;
 			_list_len = 0;
-			ret = false;
+			//ret = false;
+			return false;
 		}
 		else
 		{
@@ -3031,11 +4360,9 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 				_subid_objidlist[2 * i + 1] = _tmp[1 + _tmp[0] + i];
 			};
 		}
-		if(txn != nullptr && txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE && FirstRead)
-			txn->ReadSetInsert(_preid, Transaction::IDType::PREDICATE);
 		
 		delete[] _tmp;
-		return ret;
+		return true;
 	}
 }
 
@@ -3155,16 +4482,41 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 		unsigned* _tmp = NULL;
 		unsigned long _len = 0;
 		VDataSet addset, delset;
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, false);		
+		bool latched = false; 
+		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched,  false);		
 		
+		vector<unsigned> add_pidoidlist, del_pidoidlist;
+		for(auto po: addset)
+		{
+			add_pidoidlist.push_back(po.first);
+			add_pidoidlist.push_back(po.second);
+		}
+
+		for(auto po: delset)
+		{
+			del_pidoidlist.push_back(po.first);
+			del_pidoidlist.push_back(po.second);
+		}
+
 		unsigned * _values = nullptr;
 		unsigned long _values_len;
-		this->Insert_s2values(addset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
-		this->Remove_s2values(delset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		if(add_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_s2values(add_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		if(del_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_s2values(del_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
+		if(_len == 0) {
+			_preidlist = NULL;
+			_list_len = 0;
+			return false;
+		}
 		
 		_list_len = len;
 		unsigned _result = 0;
@@ -3246,6 +4598,7 @@ KVstore::open(SITree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 		cerr << "Invalid open mode of: " << _tree_name << " mode = " << _mode << endl;
 		return false;
 	}
+    cout<<"open the "<<_tree_name<<endl;
 	_p_btree = new SITree(this->store_path, _tree_name, smode, _buffer_size);
 	return true;
 }
@@ -3345,7 +4698,7 @@ KVstore::flush(SITree* _p_btree)
 {
 	if (_p_btree != NULL) 
 	{
-		_p_btree->save();
+      _p_btree->Save();
 	}
 }
 
@@ -3354,7 +4707,7 @@ KVstore::flush(ISTree* _p_btree)
 {
 	if (_p_btree != NULL) 
 	{
-		_p_btree->save();
+		_p_btree->Save();
 	}
 }*/
 
@@ -3374,7 +4727,7 @@ KVstore::flush(IVTree* _p_btree)
 {
 	if (_p_btree != NULL) 
 	{
-		_p_btree->save();
+		_p_btree->Save();
 	}
 }*/
 
@@ -3390,7 +4743,7 @@ KVstore::flush(IVArray* _array)
 bool 
 KVstore::addValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val) 
 {
-	return _p_btree->insert(_key, _klen, _val);
+	return _p_btree->Insert(_key, _klen, _val);
 }
 
 /*bool 
@@ -3430,7 +4783,7 @@ KVstore::addValueByKey(IVArray *_array, unsigned _key, char* _val, unsigned long
 bool 
 KVstore::setValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val) 
 {
-	return _p_btree->modify(_key, _klen, _val);
+	return _p_btree->Modify(_key, _klen, _val);
 }
 
 /*bool 
@@ -3470,13 +4823,13 @@ KVstore::setValueByKey(IVArray* _array, unsigned _key, char* _val, unsigned long
 bool 
 KVstore::getValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsigned* _val) const 
 {
-	return _p_btree->search(_key, _klen, _val);
+	return _p_btree->Search(_key, _klen, _val);
 }
 
 /*bool 
 KVstore::getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const 
 {
-	return _p_btree->search(_key, _val, _vlen);
+	return _p_btree->Search(_key, _val, _vlen);
 }*/
 
 bool
@@ -3494,7 +4847,7 @@ KVstore::getValueByKey(ISArray* _array, unsigned _key, char*& _val, unsigned& _v
 /*bool 
 KVstore::getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const 
 {
-	return _p_btree->search(_key, _val, _vlen);
+	return _p_btree->Search(_key, _val, _vlen);
 }*/
 
 bool
@@ -3512,7 +4865,7 @@ TYPE_ENTITY_LITERAL_ID
 KVstore::getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const 
 {
 	unsigned val = 0;
-	bool ret = _p_btree->search(_key, _klen, &val);
+	bool ret = _p_btree->Search(_key, _klen, &val);
 	if (!ret)
 	{
 		//return -1;
@@ -3525,7 +4878,7 @@ KVstore::getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const
 bool 
 KVstore::removeKey(SITree* _p_btree, const char* _key, unsigned _klen)
 {
-	return _p_btree->remove(_key, _klen);
+	return _p_btree->Remove(_key, _klen);
 }
 
 /*
@@ -3708,581 +5061,16 @@ unsigned short KVstore::buffer_pID2values_query = 8;
 //MVCC
 
 bool
-KVstore::getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned long & _vlen, VDataSet& AddSet, VDataSet& DelSet, shared_ptr<Transaction> txn, bool FirstRead) const
+KVstore::getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned long & _vlen, VDataSet& AddSet, VDataSet& DelSet, shared_ptr<Transaction> txn, bool &latched, bool FirstRead) const
 {
 	//cout << "getValueByKey                  " << _key << FirstRead << endl;
 	//cout << "this is transaction getValueByKey ..................." << endl;
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
 		unsigned key = _key - Util::LITERAL_FIRST_ID;
-		return objID2values_literal->search(key, _val, _vlen, AddSet, DelSet, txn, FirstRead);
+		return objID2values_literal->search(key, _val, _vlen, AddSet, DelSet, txn, latched, FirstRead);
 	}
-	return _array->search(_key, _val, _vlen, AddSet, DelSet, txn, FirstRead);
-}
-
-void 
-KVstore::Insert_s2values(VDataSet &addset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len)const
-{
-	bool first_insert = true;
-	//cout << "KVstore::Insert_s2values size: " << addset.size() << endl;
-	//if(_tmp == nullptr)
-	//	cout << "_tmp: ..............." << _len << endl;
-	for(auto it: addset)
-	{
-		unsigned _pre_id = it.first;
-		unsigned _obj_id = it.second;
-		bool _is_entity = Util::is_entity_ele(_obj_id);
-		
-		if(!first_insert)
-		{
-			if(_tmp != nullptr) delete[] _tmp;
-			_tmp = _values;
-			_len = _values_len * sizeof(unsigned);
-		}
-		
-		if (_tmp == nullptr) 
-		{
-			//unsigned _values[6];
-			_values = new unsigned[6];
-			_values[0] = 1;
-			_values[1] = 1;
-			_values[2] = _is_entity ? 1 : 0;
-			_values[3] = _pre_id;
-			_values[4] = 5;
-			_values[5] = _obj_id;
-			//NOTICE: not use array in stack here, otherwise it will be freed, and data in B+Tree, too
-			_values_len = 6;
-		}
-
-		//subID exists
-		else 
-		{
-			unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 3, _tmp[1], 2);
-
-			//preID doesn't exist
-			if (_position == INVALID) 
-				//if (_position == -1) 
-			{
-				_values_len = _len / sizeof(unsigned) + 3;
-				_values = new unsigned[_values_len];
-				_values[0] = _tmp[0] + 1;
-				_values[1] = _tmp[1] + 1;
-				_values[2] = _tmp[2] + (_is_entity ? 1 : 0);
-				unsigned i, j;
-				for (i = 0, j = 3; i < _tmp[1] && _tmp[3 + 2 * i] < _pre_id; i++, j += 2) {
-					_values[j] = _tmp[3 + 2 * i];
-					_values[j + 1] = _tmp[4 + 2 * i] + 2;
-				}
-				_values[j] = _pre_id;
-				unsigned _offset_old;
-				if (i == _tmp[1]) {
-					_offset_old = 3 + 2 * _tmp[1] + _tmp[0];
-				}
-				else {
-					_offset_old = _tmp[4 + 2 * i];
-				}
-				_values[j + 1] = _offset_old + 2;
-				j += 2;
-				for (; i < _tmp[1]; i++, j += 2) {
-					_values[j] = _tmp[3 + 2 * i];
-					_values[j + 1] = _tmp[4 + 2 * i] + 3;
-				}
-				for (i = 3 + 2 * _tmp[1]; i < 3 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					if (i == _offset_old) {
-						_values[j] = _obj_id;
-						j++;
-					}
-					_values[j] = _tmp[i];
-				}
-				if (i == _offset_old) {
-					_values[j] = _obj_id;
-				}
-			}
-
-			//preID exists
-			else 
-			{
-				//cout << "preID exists......................................." << _len <<  endl;
-				_values_len = _len / sizeof(unsigned) + 1;
-				_values = new unsigned[_values_len];
-				memcpy(_values, _tmp, sizeof(unsigned) * _tmp[4 + 2 * _position]);
-				_values[0]++;
-				if (_is_entity) {
-					_values[2]++;
-				}
-				for (unsigned i = _position + 1; i < _tmp[1]; i++) {
-					_values[4 + 2 * i]++;
-				}
-				unsigned i, j;
-				unsigned right;
-				if (_position == _tmp[1] - 1) {
-					right = 3 + 2 * _tmp[1] + _tmp[0];
-				}
-				else {
-					right = _tmp[6 + 2 * _position];
-				}
-				for (i = _tmp[4 + 2 * _position], j = _tmp[4 + 2 * _position]; i < right && _tmp[i] < _obj_id; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-				_values[j] = _obj_id;
-				j++;
-				for (; i < 3 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-			}
-			//delete[] _values;
-		}
-		
-		if(first_insert) first_insert = false;
-	}
-	if(!first_insert)
-	{
-		if(_tmp != nullptr) delete[] _tmp;
-		_tmp = nullptr;
-		_values_len = _values_len * sizeof(unsigned);
-	}
-	else
-	{
-		_values = _tmp;
-		_values_len = _len;
-	}
-}
-
-void 
-KVstore::Remove_s2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len)const
-{
-	bool first_remove = true;
-	for(auto it: delset)
-	{
-		if(!first_remove)
-		{
-			if(_tmp != nullptr) delete[] _tmp;
-			_tmp = _values;
-			_len = _values_len * sizeof(unsigned);
-		
-		}
-		if (_tmp[0] == 1) 
-		{
-			_values = nullptr;
-			_values_len = 0;
-			if(first_remove) first_remove = false;
-			break;
-		}
-		//subID still exists after removal
-		else 
-		{
-			unsigned _pre_id = it.first;
-			unsigned _obj_id = it.second;
-			bool _is_entity = Util::is_entity_ele(_obj_id);
-			
-			unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 3, _tmp[1], 2);
-			if (_position == INVALID) {
-				cerr << "merge error!" << endl;
-				continue;
-			}
-			unsigned _oidlen_sp;
-			//DEBUG: if _tmp[1] -1 < 0??
-			if (_position == _tmp[1] - 1) 
-			{
-				_oidlen_sp = 3 + 2 * _tmp[1] + _tmp[0] - _tmp[4 + 2 * _position];
-			}
-			else 
-			{
-				_oidlen_sp = _tmp[6 + 2 * _position] - _tmp[4 + 2 * _position];
-			}
-
-			//preID doesn't exist after removal
-			if (_oidlen_sp == 1) {
-				_values_len = _len / sizeof(unsigned) - 3;
-				_values = new unsigned[_values_len];
-				memcpy(_values, _tmp, sizeof(unsigned) * (3 + 2 * _position));
-				_values[0]--;
-				_values[1]--;
-				if (_is_entity) {
-					_values[2]--;
-				}
-				for (unsigned i = 0; i < _position; i++) {
-					_values[4 + 2 * i] -= 2;
-				}
-				unsigned i, j;
-				for (i = 5 + 2 * _position, j = 3 + 2 * _position; i < 3 + 2 * _tmp[1]; i += 2, j += 2) {
-					_values[j] = _tmp[i];
-					_values[j + 1] = _tmp[i + 1] - 3;
-				}
-				for (; i < 3 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					if (i == _tmp[4 + 2 * _position]) {
-						j--;
-						continue;
-					}
-					_values[j] = _tmp[i];
-				}
-			}
-
-			//preID still exists after removal
-			else {
-				_values_len = _len / sizeof(unsigned) - 1;
-				_values = new unsigned[_values_len];
-				memcpy(_values, _tmp, sizeof(unsigned) * _tmp[4 + 2 * _position]);
-				_values[0]--;
-				if (_is_entity) {
-					_values[2]--;
-				}
-				for (unsigned i = _position + 1; i < _tmp[1]; i++) {
-					_values[4 + 2 * i]--;
-				}
-				unsigned i, j;
-				for (i = _tmp[4 + 2 * _position], j = _tmp[4 + 2 * _position];
-					i < 3 + 2 * _tmp[1] + _tmp[0] && _tmp[i] < _obj_id; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-				i++;
-				for (; i < 3 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-			}
-			if(first_remove) first_remove = false;
-		}
-	}
-	if(!first_remove)
-	{
-		if(_tmp != nullptr) delete[] _tmp;
-		_tmp = nullptr;
-		_values_len = _values_len * sizeof(unsigned);
-	}
-	else
-	{
-		_values = _tmp;
-		_values_len = _len;
-	}
-}
-
-void 
-KVstore::Insert_o2values(VDataSet &addset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len)const
-{
-	bool first_insert = true;
-	for(auto it: addset)
-	{
-		unsigned _pre_id = it.first;
-		unsigned _sub_id = it.second;
-		
-		if(!first_insert)
-		{
-			if(_tmp != nullptr) delete[] _tmp;
-			_tmp = _values;
-			_len = _values_len * sizeof(unsigned);
-		}
-		
-		if (_tmp == nullptr) {
-			//unsigned _values[5];
-			//cout << "new _values" << endl;
-			_values = new unsigned[5];
-			_values[0] = 1;
-			_values[1] = 1;
-			_values[2] = _pre_id;
-			_values[3] = 4;
-			_values[4] = _sub_id;
-			_values_len = 5 ;
-		}
-
-		//objID exists
-		else {
-			
-			unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 2, _tmp[1], 2);
-
-			//preID doesn't exist
-			if (_position == INVALID) 
-			{
-				_values_len = _len / sizeof(unsigned) + 3;
-				_values = new unsigned[_values_len];
-				_values[0] = _tmp[0] + 1;
-				_values[1] = _tmp[1] + 1;
-				unsigned i, j;
-				for (i = 0, j = 2; i < _tmp[1] && _tmp[2 + 2 * i] < _pre_id; i++, j += 2) {
-					_values[j] = _tmp[2 + 2 * i];
-					_values[j + 1] = _tmp[3 + 2 * i] + 2;
-				}
-				_values[j] = _pre_id;
-				unsigned _offset_old;
-				if (i == _tmp[1]) {
-					_offset_old = 2 + 2 * _tmp[1] + _tmp[0];
-				}
-				else {
-					_offset_old = _tmp[3 + 2 * i];
-				}
-				_values[j + 1] = _offset_old + 2;
-				j += 2;
-				for (; i < _tmp[1]; i++, j += 2) {
-					_values[j] = _tmp[2 + 2 * i];
-					_values[j + 1] = _tmp[3 + 2 * i] + 3;
-				}
-				for (i = 2 + 2 * _tmp[1]; i < 2 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					if (i == _offset_old) {
-						_values[j] = _sub_id;
-						j++;
-					}
-					_values[j] = _tmp[i];
-				}
-				if (i == _offset_old) {
-					_values[j] = _sub_id;
-					j++;
-				}
-			}
-
-			//preID exists
-			else {
-				_values_len = _len / sizeof(unsigned) + 1;
-				_values = new unsigned[_values_len];
-				memcpy(_values, _tmp, sizeof(unsigned) * _tmp[3 + 2 * _position]);
-				_values[0]++;
-				for (unsigned i = _position + 1; i < _tmp[1]; i++) {
-					_values[3 + 2 * i]++;
-				}
-				unsigned i, j;
-				unsigned right;
-				if (_position == _tmp[1] - 1) {
-					right = 2 + 2 * _tmp[1] + _tmp[0];
-				}
-				else {
-					right = _tmp[5 + 2 * _position];
-				}
-				for (i = _tmp[3 + 2 * _position], j = _tmp[3 + 2 * _position]; i < right && _tmp[i] < _sub_id; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-				_values[j] = _sub_id;
-				j++;
-				for (; i < 2 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-			}
-
-		}
-		if(first_insert) first_insert = false;
-	}
-	if(!first_insert)
-	{
-		if(_tmp != nullptr) delete[] _tmp;
-		_tmp = nullptr;
-		_values_len = _values_len * sizeof(unsigned);
-	}
-	else
-	{
-		_values = _tmp;
-		_values_len = _len;
-	}
-}
-
-void 
-KVstore::Remove_o2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len)const
-{
-	bool first_remove = true;
-	int cnt = 0;
-	//cerr << "_tmp[0]: " << _tmp[0] << "_tmp[1]: " << _tmp[1]  << endl;
-	for(auto it:delset)
-	{
-		//cerr << "times: cnt" << cnt << endl;
-		unsigned _pre_id = it.first;
-		unsigned _sub_id = it.second;
-		if(!first_remove)
-		{
-			delete _tmp;
-			_tmp = _values;
-			_len = _values_len * sizeof(unsigned);
-		}
-		
-		if (_tmp[0] == 1) {
-			_values = nullptr;
-			_values_len = 0;
-			if(first_remove) first_remove = false;
-			break;
-		}
-		//objID still exists after removal
-		else {
-			
-			unsigned _position = KVstore::binarySearch(_pre_id, _tmp + 2, _tmp[1], 2);
-			unsigned _sidlen_op;
-			if (_position == _tmp[1] - 1) {
-				_sidlen_op = 2 + 2 * _tmp[1] + _tmp[0] - _tmp[3 + 2 * _position];
-			}
-			else {
-				_sidlen_op = _tmp[5 + 2 * _position] - _tmp[3 + 2 * _position];
-			}
-
-			//preID doesn't exist after removal
-			if (_sidlen_op == 1) {
-				_values_len = _len / sizeof(unsigned) - 3;
-				_values = new unsigned[_values_len];
-				memcpy(_values, _tmp, sizeof(unsigned) * (2 + 2 * _position));
-				_values[0]--;
-				_values[1]--;
-				for (unsigned i = 0; i < _position; i++) {
-					_values[3 + 2 * i] -= 2;
-				}
-				unsigned i, j;
-				for (i = 4 + 2 * _position, j = 2 + 2 * _position; i < 2 + 2 * _tmp[1]; i += 2, j += 2) {
-					_values[j] = _tmp[i];
-					_values[j + 1] = _tmp[i + 1] - 3;
-				}
-				for (; i < 2 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					if (i == _tmp[3 + 2 * _position]) {
-						j--;
-						continue;
-					}
-					_values[j] = _tmp[i];
-				}
-			}
-
-			//preID still exists after removal
-			else {
-				_values_len = _len / sizeof(unsigned) - 1;
-				_values = new unsigned[_values_len];
-				memcpy(_values, _tmp, sizeof(unsigned) * _tmp[3 + 2 * _position]);
-				_values[0]--;
-				for (unsigned i = _position + 1; i < _tmp[1]; i++) {
-					_values[3 + 2 * i]--;
-				}
-				unsigned i, j;
-				for (i = _tmp[3 + 2 * _position], j = _tmp[3 + 2 * _position];
-					i < 2 + 2 * _tmp[1] + _tmp[0] && _tmp[i] < _sub_id; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-				i++;
-				for (; i < 2 + 2 * _tmp[1] + _tmp[0]; i++, j++) {
-					_values[j] = _tmp[i];
-				}
-			}
-		}
-		if(first_remove) first_remove = false;
-	}
-	if(!first_remove)
-	{
-		//cerr << "_values[0]: " << _values[0] << "_values[1]: " << _values[1]  << endl;
-		//cerr << "_tmp[0]: " << _tmp[0] << "_tmp[1]: " << _tmp[1]  << endl;
-		if(_tmp != nullptr) delete _tmp;
-		_tmp = nullptr;
-		_values_len = _values_len * sizeof(unsigned);
-	}
-	else
-	{
-		_values = _tmp;
-		_values_len = _len;
-	}
-}
-	
-void 
-KVstore::Insert_p2values(VDataSet &addset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const
-{
-	bool first_insert = true;
-	for(auto it: addset)
-	{
-		unsigned _sub_id = it.first;
-		unsigned _obj_id = it.second;
-		
-		if(!first_insert)
-		{
-			if(_tmp != nullptr) delete[] _tmp;
-			_tmp = _values;
-			_len = _values_len * sizeof(unsigned);
-		}
-		
-		if (_tmp == nullptr) {
-			//unsigned _values[3];
-			_values = new unsigned[3];
-			_values[0] = 1;
-			_values[1] = _sub_id;
-			_values[2] = _obj_id;
-			_values_len = 3 ;
-		}
-
-		//preid exists
-		else {
-			_values_len = _len / sizeof(unsigned) + 2;
-			_values = new unsigned[_values_len];
-			unsigned i, j;
-			_values[0] = _tmp[0] + 1;
-			for (i = 1, j = 1;
-				i < 1 + _tmp[0] && (_tmp[i] < _sub_id || (_tmp[i] == _sub_id && _tmp[i + _tmp[0]] < _obj_id));
-				i++, j++) {
-				_values[j] = _tmp[i];
-				_values[j + _tmp[0] + 1] = _tmp[i + _tmp[0]];
-			}
-			_values[j] = _sub_id;
-			_values[j + _tmp[0] + 1] = _obj_id;
-			j++;
-			for (; i < 1 + _tmp[0]; i++, j++) {
-				_values[j] = _tmp[i];
-				_values[j + _tmp[0] + 1] = _tmp[i + _tmp[0]];
-			}
-		}
-		if(first_insert) first_insert = false;
-	}
-	if(!first_insert)
-	{
-		if(_tmp != nullptr) delete[] _tmp;
-		_tmp = nullptr;
-		_values_len = _values_len * sizeof(unsigned);
-	}
-	else
-	{
-		_values = _tmp;
-		_values_len = _len;
-	}
-}
-
-void 
-KVstore::Remove_p2values(VDataSet &delset, unsigned* _tmp,  unsigned long _len, unsigned*& _values, unsigned long& _values_len) const
-{
-	bool first_remove = true;
-	for(auto it: delset)
-	{
-		unsigned _sub_id = it.first;
-		unsigned _obj_id = it.second;
-		
-		if(!first_remove)
-		{
-			delete[] _tmp;
-			_tmp = _values;
-			_len = _values_len * sizeof(unsigned);
-		}
-		
-		if (_tmp[0] == 1) {
-			_values = nullptr;
-			_values_len = 0;
-			if(first_remove) first_remove = false;
-			break;
-		}
-
-		//preid still exists after removal
-		else {
-			_values_len = _len / sizeof(unsigned) - 2;
-			_values = new unsigned[_values_len];
-			unsigned i, j;
-			_values[0] = _tmp[0] - 1;
-			for (i = 1, j = 1;
-				i < 1 + _tmp[0] && (_tmp[i] < _sub_id || (_tmp[i] == _sub_id && _tmp[i + _tmp[0]] < _obj_id));
-				i++, j++) {
-				_values[j] = _tmp[i];
-				_values[j + _tmp[0] - 1] = _tmp[i + _tmp[0]];
-			}
-			i++;
-			for (; i < 1 + _tmp[0]; i++, j++) {
-				_values[j] = _tmp[i];
-				_values[j + _tmp[0] - 1] = _tmp[i + _tmp[0]];
-			}
-			//delete[] _values;
-		}
-		if(first_remove) first_remove = false;
-	}
-	if(!first_remove)
-	{
-		if(_tmp != nullptr) delete[] _tmp;
-		_tmp = nullptr;
-		_values_len = _values_len * sizeof(unsigned);
-	}
-	else
-	{
-		_values = _tmp;
-		_values_len = _len;
-	}
+	return _array->search(_key, _val, _vlen, AddSet, DelSet, txn, latched,  FirstRead);
 }
 
 bool 
@@ -4290,14 +5078,14 @@ KVstore::updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 {
 	VDataSet addset;
 	addset.insert(VData{_pre_id, _obj_id});
-	return Insert_values(this->subID2values, _sub_id, addset, txn);
+	return insert_values(this->subID2values, _sub_id, addset, txn);
 }
 bool 
 KVstore::updateRemove_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	VDataSet delset;
 	delset.insert(VData{_pre_id, _obj_id});
-	return Remove_values(this->subID2values, _sub_id, delset, txn);
+	return remove_values(this->subID2values, _sub_id, delset, txn);
 }
 bool 
 KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
@@ -4305,14 +5093,14 @@ KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	//cout << "updateInsert_o2values......................" << endl;
 	VDataSet addset;
 	addset.insert(VData{_pre_id, _sub_id});
-	return Insert_values(this->objID2values, _obj_id, addset, txn);
+	return insert_values(this->objID2values, _obj_id, addset, txn);
 }
 bool 
 KVstore::updateRemove_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	VDataSet delset;
 	delset.insert(VData{_pre_id, _sub_id});
-	return Remove_values(this->objID2values, _obj_id, delset, txn);
+	return remove_values(this->objID2values, _obj_id, delset, txn);
 }
 bool 
 KVstore::updateInsert_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
@@ -4320,20 +5108,19 @@ KVstore::updateInsert_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	//cout << "updateInsert_p2values......................" << endl;
 	VDataSet addset;
 	addset.insert(VData{_sub_id, _obj_id});
-	return Insert_values(this->preID2values, _pre_id, addset, txn);
+	return insert_values(this->preID2values, _pre_id, addset, txn);
 }
 bool 
 KVstore::updateRemove_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	VDataSet delset;
 	delset.insert(VData{_sub_id, _obj_id});
-	return Remove_values(this->preID2values, _pre_id, delset, txn);
+	return remove_values(this->preID2values, _pre_id, delset, txn);
 }
 	
 bool
-KVstore::Insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_ptr<Transaction> txn)
+KVstore::insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_ptr<Transaction> txn)
 {
-	//cout << "this is Insert_values................: " << _key <<  endl;
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
 		unsigned key = _key - Util::LITERAL_FIRST_ID;
@@ -4343,38 +5130,49 @@ KVstore::Insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_
 }
 
 bool 
-KVstore::Remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_ptr<Transaction> txn)
+KVstore::remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_ptr<Transaction> txn)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
 		unsigned key = _key - Util::LITERAL_FIRST_ID;
 		return objID2values_literal->remove(key, delset, txn);
 	}
-	return _array->remove(_key, delset, txn);
+	else return _array->remove(_key, delset, txn);
 }
 
 bool 
-KVstore::getExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
+KVstore::GetExclusiveLock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	int base_timer = txn->get_wait_lock_time();
 	int times = txn->get_retry_times();
-	for(int i = 0; i < times; i++)
-	{
-		if(getExclusiveLatches(_sub_id, _pre_id, _obj_id, txn)) return true;
-		usleep(base_timer);
-		base_timer = base_timer*2;
-	}
+	// for(int i = 0; i < times; i++)
+	// {
+		if(try_exclusive_lock(_sub_id, _pre_id, _obj_id, txn)) return true;
+		//usleep(base_timer);
+		//base_timer = base_timer*2;
+	//}
+	return false;
+}
+
+
+bool 
+KVstore::GetExclusiveLocks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENTITY_LITERAL_ID>& oids, vector<TYPE_PREDICATE_ID>& pids, shared_ptr<Transaction> txn)
+{
+	int base_timer = txn->get_wait_lock_time();
+	int times = txn->get_retry_times();
+	// for(int i = 0; i < times; i++)
+	// {
+		if(try_exclusive_locks(sids, oids, pids, txn)) return true;
+		//usleep(base_timer);
+		//base_timer = base_timer*2;
+	//}
 	return false;
 }
 
 //get exclusive lock and create new version atomicly for write operation
 bool 
-KVstore::getExclusiveLatches(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
+KVstore::try_exclusive_lock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
-	//may unlock first locked item
-	//cout << "getExclusiveLocks....................................................." << endl;
-	//cout << _sub_id << " " << _pre_id << " " << _obj_id << endl;
-
 	bool sub_has_read = txn->ReadSetFind(_sub_id, Transaction::IDType::SUBJECT);
 	bool pre_has_read = txn->ReadSetFind(_pre_id, Transaction::IDType::PREDICATE);
 	bool obj_has_read = txn->ReadSetFind(_obj_id, Transaction::IDType::OBJECT);
@@ -4382,84 +5180,194 @@ KVstore::getExclusiveLatches(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _
 	bool pre_has_write = txn->WriteSetFind(_pre_id, Transaction::IDType::PREDICATE);
 	bool obj_has_write = txn->WriteSetFind(_obj_id, Transaction::IDType::OBJECT);
 
-	int sub_ret, obj_ret, pre_ret;
-
-	if(!sub_has_write){
-		//cerr << "Try to get SUBJECT exclusive lock................." << endl;
-		sub_ret = getExclusiveLock(this->subID2values, _sub_id, txn, sub_has_read);
-		if(sub_ret == 0){
-			//cerr << this_thread::get_id() << " :sub id latch get failed!   " << _sub_id << endl;
-			//cerr << txn->GetTID() << endl;
-			//txn->print_all();
-			return false;
-		}
-	}
-
-
-	if(!obj_has_write){
-		//cerr << "Try to get OBJECT exclusive lock................." << endl;
-		obj_ret = getExclusiveLock(this->objID2values, _obj_id, txn, obj_has_read);
-		if(obj_ret == 0)
-		{
-			bool invalid;
-			if(!sub_has_write && sub_ret == 1) 
-				invalid = Invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
-			if(invalid == false)
-				cerr << "invalid error, latch not release! TID:" << txn->GetTID() << endl;
-			//cerr << this_thread::get_id() << "obj id latch get failed!" << endl;
-			return false;
-		}
-	}
+	int sub_ret = 0, obj_ret = 0, pre_ret = 0;
 
 	if(!pre_has_write){
 		//cerr << "Try to get PREDICATE exclusive lock................." << endl;
-		pre_ret = getExclusiveLock(this->preID2values, _pre_id,txn, pre_has_read);
-		if(pre_ret == 0)
+	 	pre_ret = get_exclusive_latch(this->preID2values, _pre_id,txn, pre_has_read);
+	 	if(pre_ret == 0)
 		{
-			bool invalid1 = true, invalid2 = true;
-			if(!sub_has_write && sub_ret == 1)
-				invalid1 = Invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
-			if(invalid1 == false){
-				cerr << "invalid error, subject latch not release! TID:" << txn->GetTID() << "  "  <<  _sub_id << endl;
-			}
-			if(!obj_has_write && obj_ret == 1)
-				invalid2 = Invalid_values(this->objID2values, _obj_id, txn, obj_has_read);
-			if(invalid2 == false){
-				cerr << "invalid error, object latch not release! TID:" << txn->GetTID() << endl;
-			}
 			//cerr << this_thread::get_id() << "pre id latch get failed!" << endl;
+			txn->SetErrorType(TransactionErrorType::PRE_X);
+	 		return false;
+	 	}
+	 }
+
+	if(!sub_has_write){
+		//cerr << "Try to get SUBJECT exclusive lock................." << endl;
+		sub_ret = get_exclusive_latch(this->subID2values, _sub_id, txn, sub_has_read);
+		if(sub_ret == 0){
+			txn->SetErrorType(TransactionErrorType::SUB_X);
+			bool invalid_pre = true;
+	 		if(!pre_has_write && pre_ret == 1)
+	 			invalid_pre = invalid_values(this->preID2values, _pre_id, txn, pre_has_read);
+			assert(invalid_pre);
+	 		return false;
+		}
+	}
+
+	if(!obj_has_write){
+		//cerr << "Try to get OBJECT exclusive lock................." << endl;
+		obj_ret = get_exclusive_latch(this->objID2values, _obj_id, txn, obj_has_read);
+		if(obj_ret == 0)
+		{
+			txn->SetErrorType(TransactionErrorType::OBJ_X);
+			bool invalid_pre = true;
+	 		if(!pre_has_write && pre_ret == 1){
+				 invalid_pre = invalid_values(this->preID2values, _pre_id, txn, pre_has_read);
+			}
+			assert(invalid_pre);
+			bool invalid_sub = true;
+			if(!sub_has_write && sub_ret == 1) {
+				invalid_sub = invalid_values(this->subID2values, _sub_id, txn, sub_has_read);
+			}
+			assert(invalid_sub);
 			return false;
 		}
 	}
-	
+
 	//cout << "getExclusiveLocks success! TID:" << txn->GetTID() << endl;
 	return true;
 }
 
+
+bool 
+KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENTITY_LITERAL_ID>& oids, vector<TYPE_PREDICATE_ID>& pids, shared_ptr<Transaction> txn)
+{
+	int s_num = sids.size(), p_num = pids.size(), o_num = oids.size();
+	vector<bool> sub_has_write(s_num), pre_has_write(p_num), obj_has_write(o_num);
+	vector<bool> sub_has_read(s_num), pre_has_read(p_num), obj_has_read(o_num);
+	for(int i = 0; i < s_num; i++){
+		sub_has_read[i] = txn->ReadSetFind(sids[i], Transaction::IDType::SUBJECT);
+		sub_has_write[i] = txn->WriteSetFind(sids[i], Transaction::IDType::SUBJECT);
+	}
+
+	for(int i = 0; i < p_num; i++){
+		pre_has_read[i] = txn->ReadSetFind(pids[i], Transaction::IDType::PREDICATE);
+		pre_has_write[i] = txn->WriteSetFind(pids[i], Transaction::IDType::PREDICATE);
+	}
+
+	for(int i = 0; i < o_num; i++){
+		obj_has_read[i] = txn->ReadSetFind(oids[i], Transaction::IDType::OBJECT);
+		obj_has_write[i] = txn->WriteSetFind(oids[i],Transaction::IDType::OBJECT);
+	}
+	int sub_ret, obj_ret, pre_ret;
+	bool sub_invalid = true, obj_invalid = true, pre_invalid = true;
+	int k = 0;
+	for(; k < s_num; k++)
+	{
+		if(!sub_has_write[k]){
+			sub_ret = get_exclusive_latch(this->subID2values, sids[k], txn, sub_has_read[k]);
+		}
+		if(sub_ret == 0){
+			for(int i = 0; i < k; i++)
+			{
+				bool invalid = true;
+				if(!sub_has_write[i]){
+					invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
+				}
+				if(invalid == false){
+					sub_invalid = false;
+				}
+			}
+			return false;
+		}
+	}
+
+	k = 0;
+	for(; k < o_num; k++)
+	{
+		if(!obj_has_write[k]){
+			obj_ret = get_exclusive_latch(this->objID2values, oids[k], txn, obj_has_read[k]);
+		}
+		if(obj_ret == 0)
+		{
+			for(int i = 0; i < k; i++)
+			{
+				bool invalid = true;
+				if(!obj_has_write[i]){
+					invalid = invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
+				}
+				if(invalid == false){
+					obj_invalid = false;
+				}
+			}
+
+			for(int i = 0; i < s_num; i++)
+			{
+				bool invalid = true;
+				if(!sub_has_write[i]){
+					invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
+				}
+				if(invalid == false){
+					sub_invalid = false;
+				}
+			}
+			return false;
+		}
+	}
+
+	k = 0;
+	 for(; k < p_num; k++)
+	 {
+	 	if(!pre_has_write[k]){
+	 		pre_ret = get_exclusive_latch(this->preID2values, pids[k], txn, pre_has_read[k]);
+	 	}
+	 	if(pre_ret == 0)
+	 	{
+	 		for(int i = 0; i < k; i++)
+	 		{
+	 			bool invalid = true;
+	 			if(!pre_has_write[i]){
+	 				invalid = invalid_values(this->preID2values, pids[i], txn, pre_has_read[i]);
+	 			}
+	 			if(invalid == false){
+	 				obj_invalid = false;
+	 			}
+	 		}
+
+	 		for(int i = 0; i < s_num; i++)
+	 		{
+	 			bool invalid = true;
+	 			if(!sub_has_write[i]){
+	 				invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
+	 			}
+	 			if(invalid == false){
+	 				sub_invalid = false;
+	 			}
+	 		}
+
+	 		for(int i = 0; i < o_num; i++)
+			{
+	 			bool invalid = true;
+	 			if(!obj_has_write[i]){
+	 				invalid = invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
+				}
+				if(invalid == false){
+	 				obj_invalid = false;
+	 			}
+	 		}
+
+	 	}
+	}
+
+	return true;
+}
+
 int 
-KVstore::getExclusiveLock(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read) const
+KVstore::get_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read) const
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
 		unsigned key = _key - Util::LITERAL_FIRST_ID;
-		return objID2values_literal->TryExclusiveLock(key, txn, has_read);
+		return objID2values_literal->TryExclusiveLatch(key, txn, has_read);
 	}
-	return _array->TryExclusiveLock(_key, txn, has_read);
+	return _array->TryExclusiveLatch(_key, txn, has_read);
 }
 
-/*
+//abort
 bool
-KVstore::releaseExclusiveLock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
-{
-	return releaseExclusiveLock(this->subID2values, _sub_id, txn)&& 
-	releaseExclusiveLock(this->objID2values, _obj_id, txn)&&
-	releaseExclusiveLock(this->preID2values, _pre_id, txn);
-}
-*/
-
-//undo
-bool
-KVstore::releaseExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
+KVstore::ReleaseExclusiveLock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
 	bool ret = true;
 	//we can not unlatch exsited exclusive latch
@@ -4467,85 +5375,37 @@ KVstore::releaseExclusiveLocks(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 	bool pre_has_read = txn->ReadSetFind(_pre_id, Transaction::IDType::PREDICATE);
 	bool obj_has_read = txn->ReadSetFind(_obj_id, Transaction::IDType::OBJECT);
 	if(txn != nullptr && txn->WriteSetFind(_sub_id, Transaction::IDType::SUBJECT) == false){
-		if(Invalid_values(this->subID2values, _sub_id, txn, sub_has_read) == false) {
-			cerr << "..................................sub id release failed!" << endl;
+		if(invalid_values(this->subID2values, _sub_id, txn, sub_has_read) == false) {
 			ret = false;
 		}
 	}
 	if(txn != nullptr && txn->WriteSetFind(_obj_id, Transaction::IDType::OBJECT) == false){		
-		if(Invalid_values(this->objID2values, _obj_id, txn, obj_has_read) == false){
-			cerr << "..................................obj id release failed!" << obj_has_read << endl;
+		if(invalid_values(this->objID2values, _obj_id, txn, obj_has_read) == false){
 			ret = false;
 		}
 	}
 	if(txn != nullptr && txn->WriteSetFind(_pre_id, Transaction::IDType::PREDICATE) == false){ 
-		if(Invalid_values(this->preID2values, _pre_id, txn,pre_has_read) == false) {
-			cerr << ".................................._pre_id id release failed!" << endl;
+		if(invalid_values(this->preID2values, _pre_id, txn,pre_has_read) == false) {
 			ret = false;
 		}
 	}
 	return ret;
 }
-/*
-bool 
-KVstore::releaseAllExclusiveLocks(shared_ptr<Transaction> txn) const
-{
-	vector<IDSet>& WriteSet = txn->Get_WriteSet();
-	auto& subWset = WriteSet[(unsigned)Transaction::IDType::SUBJECT];
-	auto& preWset = WriteSet[(unsigned)Transaction::IDType::PREDICATE];
-	auto& objWset = WriteSet[(unsigned)Transaction::IDType::OBJECT];
-	
-	bool ret = true;
-	//release exclusive latch
-	for(auto &it: subWset)
-	{
-		if(this->releaseExclusiveLock(this->subID2values, it, txn) == false)
-			ret = false;
-	}
-	for(auto &it: preWset)
-	{
-		if(this->releaseExclusiveLock(this->preID2values, it, txn) == false)
-			ret = false;
-	}
-	for(auto &it: objWset)
-	{
-		if(this->releaseExclusiveLock(this->objID2values, it, txn) == false)
-			ret = false;
-	}
-	
-	return ret;
-}
-*/
 
-/*
-//abort
 bool 
-KVstore::releaseExclusiveLock(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const
+KVstore::invalid_values(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
 		unsigned key = _key - Util::LITERAL_FIRST_ID;
-		return objID2values_literal->ReleaseExclusiveLock(key, txn);
+		return objID2values_literal->Rollback(key, txn, has_read);
 	}
-	return _array->ReleaseExclusiveLock(_key, txn);
-}
-*/
-
-//abort
-bool 
-KVstore::Invalid_values(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read)
-{
-	if (Util::is_literal_ele(_key) && _array == objID2values)
-	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
-		return objID2values_literal->rollback(key, txn, has_read);
-	}
-	return _array->rollback(_key, txn, has_read);
+	return _array->Rollback(_key, txn, has_read);
 }
 
 
 bool 
-KVstore::releaseExclusiveLatch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const
+KVstore::release_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -4556,7 +5416,7 @@ KVstore::releaseExclusiveLatch(IVArray* _array, unsigned _key, shared_ptr<Transa
 }
 
 bool 
-KVstore::releaseSharedLatch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const
+KVstore::release_shared_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -4567,7 +5427,7 @@ KVstore::releaseSharedLatch(IVArray* _array, unsigned _key, shared_ptr<Transacti
 }
 
 bool 
-KVstore::releaseAllLatches(shared_ptr<Transaction> txn) const
+KVstore::ReleaseAllLocks(shared_ptr<Transaction> txn) const
 {
 	auto& WriteSet = txn->Get_WriteSet();
 	auto& subWset = WriteSet[(unsigned)Transaction::IDType::SUBJECT];
@@ -4583,32 +5443,31 @@ KVstore::releaseAllLatches(shared_ptr<Transaction> txn) const
 		auto& preRset = ReadSet[(unsigned)Transaction::IDType::PREDICATE];
 		auto& objRset = ReadSet[(unsigned)Transaction::IDType::OBJECT];
 		//check the released key
-		for(auto &it: subRset)
-		{
-			if(subWset.find(it) == subWset.end())//not exclusive latched
-			{			
-				if(this->releaseSharedLatch(this->subID2values, it, txn) == false) {
-					cerr << "SUBJECT:    " << it << "shared latch release failed!" << endl;
-					ret1 = false;//release shared latch
-				}
-			}
-		}
 		for(auto &it: preRset)
 		{
 			if(preWset.find(it) == preWset.end())
 			{
-				if(this->releaseSharedLatch(this->preID2values, it, txn) == false){
-					cerr << "PREDICATE:    " << it << "shared latch release failed!" << endl;
+				if(this->release_shared_latch(this->preID2values, it, txn) == false){
 					ret1 = false;//release shared latch
 				}
 			}
 		}
+
+		for(auto &it: subRset)
+		{
+			if(subWset.find(it) == subWset.end())//not exclusive latched
+			{	
+				if(this->release_shared_latch(this->subID2values, it, txn) == false) {
+					ret1 = false;//release shared latch
+				}
+			}
+		}
+		
 		for(auto &it: objRset)
 		{
 			if(objWset.find(it) == objWset.end())
 			{
-				if(this->releaseSharedLatch(this->objID2values, it, txn) == false){
-					cerr << "OBJECT:    " << it << "shared latch release failed!" << endl;
+				if(this->release_shared_latch(this->objID2values, it, txn) == false){
 					ret1 = false;//release shared latch
 				}
 
@@ -4621,27 +5480,25 @@ KVstore::releaseAllLatches(shared_ptr<Transaction> txn) const
 	
 	bool ret2 = true;
 	//release exclusive latch
-	for(auto &it: subWset)
-		if(this->releaseExclusiveLatch(this->subID2values, it, txn) == false) {
-				cerr << "SUBJECT:       " << it << "exclusive latch release failed" << endl;
+	for(auto &it: preWset)
+		if(this->release_exclusive_latch(this->preID2values, it, txn) == false){
 				ret2 = false;
 		}
-	for(auto &it: preWset)
-		if(this->releaseExclusiveLatch(this->preID2values, it, txn) == false){
-				cerr << "PREDICATE:       " << it << "exclusive latch release failed" << endl;
+	for(auto &it: subWset)
+		if(this->release_exclusive_latch(this->subID2values, it, txn) == false) {
 				ret2 = false;
 		}
 	for(auto &it: objWset)
-		if(this->releaseExclusiveLatch(this->objID2values, it, txn) == false){
-				cerr << "OBJECT:       " << it << "exclusive latch release failed" << endl;
+		if(this->release_exclusive_latch(this->objID2values, it, txn) == false){
 				ret2 = false;
 		}
+	assert(ret1 && ret2);
 	return ret1 && ret2;
 	
 }
 
 bool
-KVstore::transaction_invalid(shared_ptr<Transaction> txn)
+KVstore::TransactionInvalid(shared_ptr<Transaction> txn)
 {
 	auto& WriteSet = txn->Get_WriteSet();
 	auto& subWset = WriteSet[(unsigned)Transaction::IDType::SUBJECT];
@@ -4651,31 +5508,34 @@ KVstore::transaction_invalid(shared_ptr<Transaction> txn)
 	int ret1 = true;
 	if(txn->GetIsolationLevelType() == IsolationLevelType::SERIALIZABLE)
 	{
-		//cout << "releaseSharedLatch................." << endl; 
 		auto& ReadSet = txn->Get_ReadSet();
 		auto& subRset = ReadSet[(unsigned)Transaction::IDType::SUBJECT];
 		auto& preRset = ReadSet[(unsigned)Transaction::IDType::PREDICATE];
 		auto& objRset = ReadSet[(unsigned)Transaction::IDType::OBJECT];
 		//check the released key
-		for(auto &it: subRset)
-		{
-			if(subWset.find(it) == subWset.end())//shared lock only
-			{			
-				if(this->releaseSharedLatch(this->subID2values, it, txn) == false) ret1 = false;//release shared latch
-			}
-		}
 		for(auto &it: preRset)
 		{
 			if(preWset.find(it) == preWset.end())
 			{
-				if(this->releaseSharedLatch(this->preID2values, it, txn) == false) ret1 = false;
+				if(this->release_shared_latch(this->preID2values, it, txn) == false) ret1 = false;
+			}
+		}
+		for(auto &it: subRset)
+		{
+			if(subWset.find(it) == subWset.end())//shared lock only
+			{			
+				if(this->release_shared_latch(this->subID2values, it, txn) == false) {
+					ret1 = false;//release shared latch
+				}
 			}
 		}
 		for(auto &it: objRset)
 		{
 			if(objWset.find(it) == objWset.end())
 			{
-				if(this->releaseSharedLatch(this->objID2values, it, txn) == false) ret1 = false;
+				if(this->release_shared_latch(this->objID2values, it, txn) == false){
+					ret1 = false;
+				} 
 			}
 		}
 	}
@@ -4685,12 +5545,14 @@ KVstore::transaction_invalid(shared_ptr<Transaction> txn)
 	
 	bool ret2 = true;
 	//invalid all updates and release latches
-	for(auto &it: subWset)
-		if(this->Invalid_values(this->subID2values, it, txn, false) == false) ret2 = false;
 	for(auto &it: preWset)
-		if(this->Invalid_values(this->preID2values, it, txn, false) == false) ret2 = false;
-	for(auto &it: objWset)
-		if(this->Invalid_values(this->objID2values, it, txn, false) == false) ret2 = false;	
+	 	if(this->invalid_values(this->preID2values, it, txn, false) == false) ret2 = false;
+	for(auto &it: subWset){
+		if(this->invalid_values(this->subID2values, it, txn, false) == false) ret2 = false;
+	}
+	for(auto &it: objWset){
+		if(this->invalid_values(this->objID2values, it, txn, false) == false) ret2 = false;	
+	}
 	
 	if(ret1 == false)
 	{
@@ -4700,6 +5562,7 @@ KVstore::transaction_invalid(shared_ptr<Transaction> txn)
 	{
 		cerr << "exclusive unlock failed !" << endl;
 	}
+	assert(ret1 && ret2);
 	return ret1 && ret2;
 }
 
@@ -4711,137 +5574,226 @@ void print_merge_tmp(unsigned* _tmp, unsigned long _len)
 }
 
 void 
-KVstore::IVArray_Vacuum(vector<unsigned>& sub_ids , vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned>& pre_ids) 
+KVstore::IVArrayVacuum(vector<unsigned>& sub_ids , vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned>& pre_ids) 
 {
 	//no transaction is running in this database!
 	//we can use four thread to clean three(four) index!
 	string name("clean");
-	shared_ptr<Transaction> clean_txn = make_shared<Transaction>(name, (INVALID_TS - 1), 1, IsolationLevelType::READ_COMMITTED);
+	shared_ptr<Transaction> clean_txn = make_shared<Transaction>(name, (INVALID_TS - 1), INVALID_TID, IsolationLevelType::READ_COMMITTED);
 	//vector<unsigned> sub_ids, obj_ids, obj_literal_ids, pre_ids;
-	s2values_Vacuum(sub_ids, clean_txn);
-	o2values_Vacuum(obj_ids, clean_txn);
-	o2values_literal_Vacuum(obj_literal_ids, clean_txn);
-	p2values_Vacuum(pre_ids, clean_txn);
+	s2values_vacuum(sub_ids, clean_txn);
+	o2values_vacuum(obj_ids, clean_txn);
+	o2values_literal_vacuum(obj_literal_ids, clean_txn);
+	p2values_vacuum(pre_ids, clean_txn);
 	
 	//join here	
 	//dictionary_Vacuum();
 }
+
 void 
-KVstore::s2values_Vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn) 
+KVstore::s2values_vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn) 
 {
 	//cerr << "KVstore::s2values_Vacuum................................." << endl;
-	getDirtyKeys(this->subID2values, sub_ids);
+	//getDirtyKeys(this->subID2values, sub_ids);
 	bool FirstRead = false;
 	unsigned* _tmp = NULL;
-	unsigned long _len = 0;
-	cout << "sub_ids.size():" << sub_ids.size() << endl;
+	unsigned long _len = 0, base_len;
+	bool base_empty = false;
+	//cout << "sub_ids.size():" << sub_ids.size() << endl;
 	for(auto _subid:  sub_ids)
 	{
 		VDataSet addset, delset;
 		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		
+		base_empty = (_tmp == nullptr);
+		vector<unsigned> add_pidoidlist, del_pidoidlist;
+		for(auto po: addset)
+		{
+			add_pidoidlist.push_back(po.first);
+			add_pidoidlist.push_back(po.second);
+		}
+
+		for(auto po: delset)
+		{
+			del_pidoidlist.push_back(po.first);
+			del_pidoidlist.push_back(po.second);
+		}
+		//cout << add_pidoidlist.size() << "     " << del_pidoidlist.size() << endl;
 		//if(!_get) cout << " this->getValueByKey failed ......." << endl;
 		unsigned * _values = nullptr;
-		unsigned long _values_len;
-		//cout << "_len:                                                 " <<  _len << endl;
+		unsigned long _values_len = 0;
+		// cout << "_len:                                                 " <<  _len << endl;
+		// for(int i = 0; i < _len / sizeof(unsigned); i++) cout << _tmp[i] << " ";
+		// cout << endl;
 		//cerr << "addset.size():           " << addset.size() << "    delset.size()                      " << delset.size() << endl;
-		this->Insert_s2values(addset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		if(add_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_s2values(add_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
 		//cerr << ".........._len:                                                 " <<  _len << endl;
-		this->Remove_s2values(delset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		if(del_pidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_s2values(del_pidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
 		//cerr << ".........._len:                                                 " <<  _len << endl;
-		if(_len == 0) {
-			//cerr << "delete keys" << endl;
-			this->cleanDirtyKey(this->subID2values, _subid);
-			this->removeKey(this->subID2values, _subid);
+
+		// for(int i = 0; i < _len / sizeof(unsigned); i++) cout << _tmp[i] << " ";
+		// cout << endl;
+		this->clean_dirty_key(this->subID2values, _subid);
+
+		if(_len == 0 ) {
+			if(base_empty == false){
+				cerr << "delete keys" << endl;
+				this->removeKey(this->subID2values, _subid);
+			}
 			continue;
 		}
-		this->cleanDirtyKey(this->subID2values, _subid);
-		this->setValueByKey(this->subID2values, _subid, (char*)_tmp, _len);
+		
+		if(base_empty == true){
+			//cout << "addValueByKey! in s2values" << endl;
+			this->addValueByKey(this->subID2values, _subid, (char*)_tmp, _len);
+		}
+		else
+			this->setValueByKey(this->subID2values, _subid, (char*)_tmp, _len);
 		//reset
 		//delete [] _tmp;
 		//print_merge_tmp(_tmp, _len);
-		_tmp = nullptr;
-		_len = 0;
 	}
 }
+
 void 
-KVstore::o2values_Vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn) 
+KVstore::o2values_vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn) 
 {
 	//cerr << "KVstore::o2values_Vacuum..............................................." << endl;
-	getDirtyKeys(this->objID2values, obj_ids);
+	//getDirtyKeys(this->objID2values, obj_ids);
 	bool FirstRead = false;
 	unsigned* _tmp = NULL;
-	unsigned long _len = 0;
+	unsigned long _len = 0, base_len;
+	bool base_empty = false;
 	//cerr << "obj_ids.size()" << obj_ids.size() << endl;
 	for(auto _obj_id:  obj_ids)
 	{
 		VDataSet addset, delset;
 		bool _get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		base_empty = (_tmp == nullptr);
+		vector<unsigned> add_pidsidlist, del_pidsidlist;
+		for(auto ps: addset){
+			add_pidsidlist.push_back(ps.first);
+			add_pidsidlist.push_back(ps.second);
+		}
 
+		for(auto ps: delset){
+			del_pidsidlist.push_back(ps.first);
+			del_pidsidlist.push_back(ps.second);
+		}
 		unsigned * _values = nullptr;
 		unsigned long _values_len = 0;
 		//cout << "_len:                                                 " <<  _len << endl;
-		//cerr << "addset.size():           " << addset.size() << "   delset.size()                      " << delset.size() << endl;
-		this->Insert_o2values(addset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		if(add_pidsidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_o2values(add_pidsidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
 		//cerr << "_len:                                                 " <<  _len << endl;
-		this->Remove_o2values(delset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		if(del_pidsidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_o2values(del_pidsidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
 		//cout << "_len:                                                 " <<  _len << endl;
+		// for(int i = 0; i < _len; i++) cout << _tmp[i] << " ";
+		// cout << endl;
+		this->clean_dirty_key(this->objID2values, _obj_id);
+
 		if(_len == 0) {
-			//cerr << "delete keys" << endl;
-			this->cleanDirtyKey(this->objID2values, _obj_id);
-			this->removeKey(this->objID2values, _obj_id);
+			if(base_empty == false){
+				cerr << "delete keys" << endl;
+				this->removeKey(this->objID2values, _obj_id);
+			}
 			continue;
 		}
-		this->cleanDirtyKey(this->objID2values, _obj_id);
-		this->setValueByKey(this->objID2values, _obj_id, (char*)_tmp, _len);
+		
+		if(base_empty == true){
+			cout << "addValueByKey in objID2values" << endl;
+			this->addValueByKey(this->objID2values, _obj_id, (char*)_tmp, _len);
+		} 
+		else this->setValueByKey(this->objID2values, _obj_id, (char*)_tmp, _len);
 		//print_merge_tmp(_tmp, _len);
 		//reset
 		//delete [] _tmp;
-		_tmp = nullptr;
-		_len = 0;
 	}
 }
 
 void 
-KVstore::o2values_literal_Vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<Transaction> txn) 
+KVstore::o2values_literal_vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<Transaction> txn) 
 {
 	//cerr << "KVstore::o2values_literal_Vacuum.............................................." << endl;
-	getDirtyKeys(this->objID2values_literal, obj_literal_ids);
+	//getDirtyKeys(this->objID2values_literal, obj_literal_ids);
 	bool FirstRead = false;
 	unsigned* _tmp = NULL;
-	unsigned long _len = 0;
+	unsigned long _len = 0, base_len;
+	bool base_empty = false;
 	//cerr << "o2values_literal.size()" << obj_literal_ids.size() << endl;
 	for(auto _obj_id:  obj_literal_ids)
 	{
 		VDataSet addset, delset;
-		bool _get = this->getValueByKey(this->objID2values_literal, _obj_id, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
-		
+		bool _get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		base_empty = (_tmp == nullptr);
+		vector<unsigned> add_pidsidlist, del_pidsidlist;
+		for(auto ps: addset){
+			add_pidsidlist.push_back(ps.first);
+			add_pidsidlist.push_back(ps.second);
+		}
+
+		for(auto ps: delset){
+			del_pidsidlist.push_back(ps.first);
+			del_pidsidlist.push_back(ps.second);
+		}
+
 		unsigned * _values = nullptr;
-		unsigned long _values_len;
+		unsigned long _values_len = 0;
 		//cout << "_len:                                                 " <<  _len << endl;
+		//for(int i = 0; i < _len / sizeof(unsigned); i++) cout << _tmp[i] << " ";
+		//cout << endl;
 		//cerr << "addset.size():           " << addset.size() << "    delset.size()                      " << delset.size() << endl;
-		this->Insert_o2values(addset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		if(add_pidsidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_o2values(add_pidsidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
 		//cout << "_len:                                                 " <<  _len << endl;
-		this->Remove_o2values(delset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		if(del_pidsidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_o2values(del_pidsidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
 		//cout << "_len:                                                 " <<  _len << endl;
+		//for(int i = 0; i < _len / sizeof(unsigned); i++) cout << _tmp[i] << " ";
+		//cout << endl;
+		this->clean_dirty_key(this->objID2values, _obj_id);
 		if(_len == 0) {
-			this->cleanDirtyKey(this->objID2values_literal, _obj_id);
-			this->removeKey(this->objID2values_literal, _obj_id);
+			if(base_empty == false)
+			{
+				cerr << "delete keys" << endl;
+				assert(false);
+				this->removeKey(this->objID2values, _obj_id);
+			}
 			continue;
 		}
-		this->cleanDirtyKey(this->objID2values_literal, _obj_id);
-		this->setValueByKey(this->objID2values_literal, _obj_id, (char*)_tmp, _len);
+		
+		if(base_empty == true){
+			this->addValueByKey(this->objID2values, _obj_id, (char*)_tmp, _len);
+			
+		} 
+		else this->setValueByKey(this->objID2values, _obj_id, (char*)_tmp, _len);
 		//print_merge_tmp(_tmp, _len);
 		//reset
 		//delete [] _tmp;
@@ -4851,38 +5803,65 @@ KVstore::o2values_literal_Vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<T
 }
 
 void 
-KVstore::p2values_Vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn) 
+KVstore::p2values_vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn) 
 {
 	//cerr << "KVstore::p2values_Vacuum....................................................." << endl;
-	getDirtyKeys(this->preID2values, pre_ids);
+	//getDirtyKeys(this->preID2values, pre_ids);
 	bool FirstRead = false;
 	unsigned* _tmp = NULL;
-	unsigned long _len = 0;
+	unsigned long _len = 0, base_len;
+	bool base_empty = false;
 	//cerr << "pre_ids.size():" << pre_ids.size() << endl;
 	for(auto _pre_id:  pre_ids)
 	{
 		VDataSet addset, delset;
 		bool _get = this->getValueByKey(this->preID2values, _pre_id, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		base_empty = (_tmp == nullptr) ;
+		vector<unsigned> add_sidoidlist, del_sidoidlist;
+		for(auto so: addset)
+		{
+			add_sidoidlist.push_back(so.first);
+			add_sidoidlist.push_back(so.second);
+		}
+
+		for(auto so: delset)
+		{
+			del_sidoidlist.push_back(so.first);
+			del_sidoidlist.push_back(so.second);
+		}
 		
 		unsigned * _values = nullptr;
 		unsigned long _values_len;
 		//cout << "_len:                                                 " <<  _len << endl;
 		//cerr << "addset.size():           " << addset.size() << "   delset.size()                      " << delset.size() << endl;
-		this->Insert_p2values(addset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		if(add_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Insert_p2values(add_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
 		//cout << "_len:                                                 " <<  _len << endl;
-		this->Remove_p2values(delset, _tmp, _len, _values, _values_len);
-		_tmp = _values;
-		_len = _values_len;
+		if(del_sidoidlist.size() != 0){
+			_len = _len / sizeof(unsigned);
+			this->Remove_p2values(del_sidoidlist, _tmp, _len, _values, _values_len);
+			_tmp = _values;
+			_len = _values_len * sizeof(unsigned);
+		}
 		//cout << "_len:                                                 " <<  _len << endl;
+		this->clean_dirty_key(this->preID2values, _pre_id);
+
 		if(_len == 0) {
-			this->cleanDirtyKey(this->preID2values, _pre_id);
-			this->removeKey(this->preID2values, _pre_id);
+			if(base_empty == false){
+				cerr << "delete keys" << endl;
+				this->removeKey(this->preID2values, _pre_id);
+			}
 			continue;
 		}
-		this->cleanDirtyKey(this->preID2values, _pre_id);
-		bool ret = this->setValueByKey(this->preID2values, _pre_id, (char*)_tmp, _len);
+		
+		if(base_empty == true)
+			this->addValueByKey(this->preID2values, _pre_id, (char*)_tmp, _len);
+		else
+			this->setValueByKey(this->preID2values, _pre_id, (char*)_tmp, _len);
 		//print_merge_tmp(_tmp, _len);
 		//cout << "ret:                           " << ret << endl;
 		//reset
@@ -4891,19 +5870,10 @@ KVstore::p2values_Vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn)
 		_len = 0;
 	}
 }
-void 
-KVstore::dictionary_Vacuum() 
-{
-}
+
 
 bool 
-KVstore::getDirtyKeys(IVArray* _array, vector<unsigned>& lists)
-{
-	return _array->GetDirtyKeys(lists);
-}
-
-bool 
-KVstore::cleanDirtyKey(IVArray* _array, unsigned _key)
+KVstore::clean_dirty_key(IVArray* _array, unsigned _key)
 {
 	return _array->CleanDirtyKey(_key);
 }

@@ -10,6 +10,8 @@
 #include "../../Util/VList.h"
 #include "../../Util/Version.h"
 #include "../../Util/Transaction.h"
+#include "../../Util/GraphLock.h"
+
 using namespace std;
 
 class IVEntry
@@ -26,33 +28,14 @@ private:
 	
 	Bstr* value;
 	
+	GLatch glatch;
 	//MVCC
 	atomic<bool> is_versioned;
-	atomic<TYPE_TXN_ID> txnID;
 	
-	//LCV = latest committed version
-	atomic<TYPE_READ_CNT> readLCVcnt;
-	
-	//Version List head point always point to the newest.
-	deque<shared_ptr<Version>> vList; 
+	//Version List end point always point to the newest.
+	vector<shared_ptr<Version>> vList; 
 	//protect Version list. TODO: use free-locked list for better concurrency
 	Latch rwLatch;
-
-
-	bool get_shared_latch(TYPE_TXN_ID TID);
-	bool get_exclusive_latch(TYPE_TXN_ID TID, bool is_SI);
-	//SI only
-	bool upgrade_latch(TYPE_TXN_ID TID);
-	bool downgrade_latch(TYPE_TXN_ID TID); //abort
-	//unlatch(commit)
-	bool shared_unlatch();
-	bool exclusive_unlatch(TYPE_TXN_ID TID, bool is_SI);
-	//get status
-	bool is_exclusive_latched();
-	bool is_shared_latched();
-	bool is_latched();
-	TYPE_READ_CNT get_readers();
-	bool is_owned_exclusive_latched(TYPE_TXN_ID TID);
 public:
 	IVEntry();
 	enum class LatchType { SHARED, EXCLUSIVE};
@@ -90,21 +73,22 @@ public:
 	void setVersionFlag();
 	void clearVersionFlag();
 	bool isVersioned() { return is_versioned.load();}
-	shared_ptr<Version> searchVersion(TYPE_TXN_ID TID);
-	shared_ptr<Version> getProperVersion(TYPE_TXN_ID TID, VDataArray &addarray, VDataArray &delarray, bool IS_SI);
-	shared_ptr<Version> getLatestVersion(TYPE_TXN_ID TID, VDataArray &addarray, VDataArray &delarray);
+	
+	bool checkVersion(TYPE_TXN_ID TID, bool IS_RC);
+	int checkheadVersion(TYPE_TXN_ID TID);
+	void getProperVersion(TYPE_TXN_ID TID, VDataSet &addarray, VDataSet &delarray);
+	void getLatestVersion(TYPE_TXN_ID TID, VDataSet &addarray, VDataSet &delarray);
 	
 	void version_merge(VDataArray &addarray, VDataArray &delarray, VDataSet &AddSet, VDataSet &DelSet);
 	//get exclusive lock before update
-	int getExclusiveLatch(shared_ptr<Transaction> txn, bool has_read); 
-	bool releaseExlusiveLatch(shared_ptr<Transaction> txn, bool has_read); //different from unlock
-	bool invalidExlusiveLatch(shared_ptr<Transaction> txn, bool has_read); //undo
+	int GetExclusiveLatch(shared_ptr<Transaction> txn, bool has_read); 
+	bool InvalidExlusiveLatch(shared_ptr<Transaction> txn, bool has_read); 
 
-	bool unLatch(shared_ptr<Transaction> txn, LatchType latch_type); //commit
+	bool UnLatch(shared_ptr<Transaction> txn, LatchType latch_type); //commit
 
-	bool readVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn, bool repeated_read = false); //read
-	int  writeVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn);
+	bool ReadVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn, bool &latched, bool first_read = false ); //read
+	int  WriteVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn);
 	
-	void cleanAllVersion();
+	void CleanAllVersion();
 	~IVEntry();
 };

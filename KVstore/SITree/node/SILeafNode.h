@@ -11,47 +11,48 @@
 
 #include "SINode.h"
 
+/**
+ * The leaf node of SITree. It maintains linked list structures.
+ * And a list of values, which is ID corresponding to strings in keys.
+ */
 class SILeafNode : public SINode
 {
-protected:
-	SINode* prev;	//LeafNode
-	SINode* next;
-	unsigned* values;
-	void AllocValues();
-	//void FreeValues();
-public:
-	SILeafNode();
-	SILeafNode(bool isVirtual);
-	//LeafNode(Storage* TSM);
-	void Virtual();
-	void Normal();
-	SINode* getPrev() const;
-	SINode* getNext() const;
-	unsigned getValue(int _index) const;
-	bool setValue(unsigned _val, int _index);
-	bool addValue(unsigned _val, int _index);
+ protected:
+  SINode* prev;	//LeafNode
+  SINode* next;
+  unsigned* values;
+  void AllocValues();
+ public:
+  SILeafNode();
+  SILeafNode(bool isVirtual);
+  void Virtual();
+  void Normal();
+  SINode* GetPrev() const;
+  SINode* GetNext() const;
+  unsigned GetValue(int _index) const;
+  bool SetValue(unsigned _val, int _index);
+  bool AddValue(unsigned _val, int _index);
 
-	bool subValue(int _index);
+  bool SubValue(int _index);
 
-	void setPrev(SINode* _prev);
-	void setNext(SINode* _next);
+  void setPrev(SINode* _prev);
+  void SetNext(SINode* _next);
 
-	unsigned getSize() const;
+  unsigned GetSize() const;
 
-	SINode* split(SINode* _father, int _index);
-	SINode* coalesce(SINode* _father, int _index);
+  SINode* Split(SINode* _parent, int _index);
+  SINode* Coalesce(SINode* _parent, int _index);
 
-	void release();
-	~SILeafNode();
-	void print(std::string s);			//DEBUG
+  void Release();
+  ~SILeafNode();
+  void print(std::string s);			//DEBUG
 
-	/*non-sense virtual function
-	Node* getChild(int _index) const;
-	bool addChild(Node* _child, int _index);
-	bool subChild(int _index);
-	*/
+  /*non-sense virtual function
+  Node* GetChild(int _index) const;
+  bool AddChild(Node* _child, int _index);
+  bool subChild(int _index);
+  */
 };
-//BETTER: prev isn't a must, and reverse-range can be achieved using recursive-next
 
 #endif
 
