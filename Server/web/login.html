@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN" id="main_html">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+ <!-- <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	-->
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">                          
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+  <!--[if lt IE 9]>
+    <script src="https://cdn.bootcss.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
+  <![endif]-->
+  <style type="text/css">
+	body {
+		color: #ffffff;
+	  padding-top: 200px;
+	  padding-bottom: 40px;
+	  background-color: #fcf8e3;
+	}
+
+	.form-signin {
+	  max-width: 330px;
+	  padding: 15px;
+	  margin: 0 auto;
+	  background-color: #ffcc99;
+	}
+	.btn-primary{
+		background-color: #f79f79;
+		border-color: #e79f79;
+	}
+  </style>
+</head>
+ <body id="main_body">
+	<div id="myspin"></div>
+    <div class="container">
+
+      <form class="form-signin">
+        <h2 class="form-signin-heading">Please sign in</h2>
+        <label for="inputUserName" class="sr-only">User Name</label>
+        <input type="text" id="user" class="form-control" placeholder="User Name" required autofocus>
+        <label for="inputPassword" class="sr-only">Password</label>
+        <input type="password" id="pswd" class="form-control" placeholder="password" required>
+       
+		<label for="inputPassword" class="sr-only">Password</label>
+        <input type="password" id="pswd2" class="form-control" placeholder="password" style="display: none" required>
+       
+		<label for="checkMsg" id="checkMsg" hidden="true">*incorrect username or password!</label>
+       <!--
+		<div class="checkbox">
+          <label>
+            <input type="checkbox" value="remember-me" id="remember"> Remember me
+          </label>
+        </div>
+		-->
+	   <br>
+        <button class="btn btn-warning btn-block" id="signin" onclick="login()">Sign in</button>
+		<a id="hideLink" style="display: none">link</a>
+	</form>
+
+    </div> <!-- /container -->
+
+ <script src="https://cdn.bootcss.com/spin.js/2.3.2/spin.min.js"></script>
+
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+	<script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+  <!-- Include all compiled plugins (below), or include individual files as needed -->
+ <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+ <script src="login.js"></script>
+  </body>
+</html>

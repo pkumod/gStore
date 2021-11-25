@@ -1,0 +1,4 @@
+*
+!.gitignore
+!libantlr3c-3.4.tar.gz
+!rapidjson.tar.gz

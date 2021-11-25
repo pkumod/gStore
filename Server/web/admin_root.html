@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+<!--  <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">                          
+-->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+  <!--[if lt IE 9]>
+    <script src="https://cdn.bootcss.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <style type="text/css">
+.inline-group{
+	display: inline-block;
+}
+.left-group{
+	float: left;
+}
+.right-group{
+	float: right;
+}
+  </style>
+  </head>
+<body id="main_body">
+<div id = "myspin"></div> 
+<div id="wapper" class="container">
+	  <div id="img-box" style="margin:0px 150px;">
+	    <img src="logo.png" alt="gStore" height="100">
+      </div>
+ 
+    <div style="margin:10px 150px;height:800px;">
+      <!-- Nav tabs -->
+      <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active"><a href="#build" aria-controls="build" role="tab" data-toggle="tab">build</a></li>
+        <li role="presentation"><a href="#load" aria-controls="load" role="tab" data-toggle="tab">load</a></li>
+        <li role="presentation"><a href="#query" aria-controls="query" role="tab" data-toggle="tab">query</a></li>
+        <li role="presentation"><a href="#unload" aria-controls="unload" role="tab" data-toggle="tab">unload</a></li>
+		<li role="presentation" onclick="monitor_empty()"><a href="#monitor" aria-controls="monitor" role="tab" data-toggle="tab">monitor</a></li>
+		<li role="presentation" onclick="databases_empty()"><a href="#databases" aria-controls="databases" role="tab" data-toggle="tab">databases</a></li>
+		<li role="presentation"><a href="#user" aria-controls="user" role="tab" data-toggle="tab">user</a></li>
+		<li role="presentation"><a href="/api.html" target="_blank">About API</a></li>
+      </ul>
+
+      <!-- Tab panes -->
+      <div class="tab-content" style="margin: 20px auto">
+        <div role="tabpanel" class="tab-pane active" id="build">
+          <form>
+            <div class="form-group">
+              <label for="_db_name">Database name</label>
+              <input type="text" class="form-control" id="_db_name" name="_db_name" placeholder="db_name">
+            </div>
+            <div class="form-group">
+              <label for="_ds_path">Dataset path</label>
+              <input type="text" class="form-control" id="_ds_path" name="_ds_path" placeholder="ds_path">
+            </div>
+            <button id="build_button" type="button" class="btn btn-default" onclick="build(_db_name.value, _ds_path.value)">build</button>
+          </form>
+        </div>
+        <div role="tabpanel" class="tab-pane" id="load">
+          <form>
+            <div class="form-group">
+              <label for="_db_name_1">Database name</label>
+              <input type="text" class="form-control" id="_db_name_1" name="_db_name_1" placeholder="db_name">
+			  <input style="display:none;" type="text">
+		  </div>
+            <button id="load_button" type="button" class="btn btn-default" onclick="load(_db_name_1.value)">load</button>
+          </form>
+        </div>
+		<!-- <div role="tabpanel" class="tab-pane" id="query">
+          <form>
+            <div class="form-group">
+              <label for="query_text">Query Text</label>
+			  <textarea class="form-control" id="query_text" name="query_text" placeholder="query_text"></textarea>
+            </div>
+            <button id="query_button" type="button" class="btn btn-default" onclick="query(query_text.value)">query</button>
+          </form>
+		  <div class="alert alert-warning alert-dismissible fade in" style="margin: 20px auto; height: 400px; overflow: auto" id="queryAns">
+
+		  </div>
+        </div>
+		-->
+		<div role="tabpanel" class="tab-pane" id="query">
+			<form>
+				
+				<div class="form-group">
+					<label for="_db_name_3">Database name</label>
+					<input type="text" class="form-control" id="_db_name_3" name="_db_name_3" placeholder="db_name">
+					<input style="display:none;" type="text">
+				</div>
+				
+				<div class="form-group">
+					<label for="query_text">Query text</label>
+					<textarea id="query_text" class="form-control" name="query_text" placeholder="query_text" style="height: 300px"></textarea>
+				</div>
+				<div class="form-group">
+					<label for="result_format">Result format</label>
+					<select id="result_format" class="form-control" name="result_format">
+						<option value="1" selected="true">HTML</option>
+						<option value="2">Text</option>
+						<!--<option value="3">CSV</option>-->
+						<option value="4">Json</option>
+					</select>
+				</div>
+				<input type="hidden" name="queryAns1" id="queryAns" value="defaultAns"/>
+				<a id="hideLink" style="display: none">link</a>
+				<button id="query_button" type="button" class="btn btn-default" onclick="query(_db_name_3.value, query_text.value)">Run query</button>
+			</form>
+		</div>
+        <div role="tabpanel" class="tab-pane" id="unload">
+          <form>
+            <div class="form-group">
+              <label for="_db_name_2">Database name</label>
+              <input type="text" class="form-control" id="_db_name_2" name="_db_name_2" placeholder="db_name">
+			  <input style="display:none;" type="text"> 
+		  </div>
+            <button id="unload_button" type="button" class="btn btn-default" onclick="unload(_db_name_2.value)">unload</button>
+          </form>
+        </div>
+		<div role="tabpanel" class="tab-pane" id="monitor">
+		  <form>
+			<div class="form-group">
+              <label for="_db_name_monitor">Database name</label>
+              <input type="text" class="form-control" id="_db_name_monitor" name="_db_name_monitor" placeholder="db_name">
+			  <input style="display:none;" type="text">
+		  </div>
+
+			<div class="form-group">
+				<button id="monitor_button" type="button" class="btn btn-default" onclick="monitor()">monitor</button>
+				<div class="alert alert-warning alert-dismissible fade in" style="margin: 20px auto; height: 400px; overflow: auto" id="monitorAns">
+				</div>
+			<!--<input type="text" class="form-control" name="monitor_text" id="monitor_text" placeholder="monitor_text" readonly>
+			-->
+			</div>
+		</form>
+		</div>
+		<div role="tabpanel" class="tab-pane" id="databases">
+		  <form>
+			<div class="form-group">
+				<button id="show_databases_button" type="button" class="btn btn-default" onclick="showDatabases()">show databases</button>
+				<div class="alert alert-warning alert-dismissible fade in" style="margin: 20px auto; height: 400px; overflow: auto" id="databasesAns">
+				</div>
+			</div>
+		</form>
+		</div>
+		<div role="tabpanel" class="tab-pane" id="user">
+			<form>
+			<div>
+			<div class="inline-group">
+				<!--<label for="_username1">Username</label>-->
+              <input type="text" class="form-control" id="_username1" name="_username1" placeholder="username">
+            </div>
+            <div class="inline-group">
+				<!--<label for="_password">Password</label>-->
+              <input type="text" class="form-control" id="_password" name="_password" placeholder="password">
+            </div>
+			<div class="inline-group" style="float:right">
+            <button id="add_user_button" type="button" class="btn btn-default" onclick="addUser(_username1.value, _password.value)">Add user</button>
+			</div>
+			</div>
+
+			<br>
+
+			<div>
+			<div class="inline-group">
+				<!--<label for="_username2">Username</label>-->
+              <input type="text" class="form-control" id="_username2" name="_username2" placeholder="username">
+            </div>
+			<div class="inline-group" style="float:right">
+            <button id="del_user_button" type="button" class="btn btn-default" onclick="delUser(_username2.value)">Delete user</button>
+			</div>
+			</div>
+			
+			<br>
+
+			<div>
+			<div class="inline-group">
+				<!--<label for="_username1">Username</label>-->
+              <input type="text" class="form-control" id="_username33" name="_username33" placeholder="username">
+            </div>
+            <div class="inline-group">
+				<!--<label for="_password">Password</label>-->
+              <input type="text" class="form-control" id="_password33" name="_password33" placeholder="password">
+            </div>
+			<div class="inline-group" style="float:right">
+            <button id="change_psw_button" type="button" class="btn btn-default" onclick="changePsw(_username33.value, _password33.value)">Change Password</button>
+			</div>
+			</div>
+
+			<br>
+
+			<div>
+			<div class="inline-group">
+				<!--<label for="_username3">Username</label>-->
+              <input type="text" class="form-control" id="_username3" name="_username3" placeholder="username">
+            </div>
+			<div class="inline-group">
+				<!--<label for="privilege_type">Privilege type</label>-->
+              <input type="text" class="form-control" id="privilege_type" name="privilege_type" placeholder="pri:query,update,load,unload">
+            </div>
+			<div class="inline-group">
+				<!--<label for="pri_db_name">Database name</label>-->
+              <input type="text" class="form-control" id="pri_db_name" name="pri_db_name" placeholder="pri_db_name">
+            </div>
+			<div class="inline-group" style="float:right">
+			<button id="add_privilege_button" type="button" class="btn btn-default" onclick="addPrivilege(_username3.value, privilege_type.value, pri_db_name.value)">Add privilege</button>
+			</div>
+			</div>
+
+			<br>
+			
+			<div>
+			<div class="inline-group">
+				<!--<label for="_username3">Username</label>-->
+              <input type="text" class="form-control" id="_username4" name="_username4" placeholder="username">
+            </div>
+			<div class="inline-group">
+				<!--<label for="privilege_type">Privilege type</label>-->
+              <input type="text" class="form-control" id="privilege_type4" name="privilege_type4" placeholder="pri:query,update,load,unload">
+            </div>
+			<div class="inline-group">
+				<!--<label for="pri_db_name">Database name</label>-->
+              <input type="text" class="form-control" id="pri_db_name4" name="pri_db_name4" placeholder="pri_db_name">
+            </div>
+			<div class="inline-group" style="float:right">
+			<button id="del_privilege_button" type="button" class="btn btn-default" onclick="delPrivilege(_username4.value, privilege_type4.value, pri_db_name4.value)">Delete privilege</button>
+			</div>
+			</div>
+
+			<br>
+			<br>
+
+			<div class="form-group">
+				<button id="user_button" type="button" class="btn btn-default" onclick="showUsers()">show Users</button>
+			<div class="alert alert-warning alert-dismissible fade in" style="margin: 20px auto; height: 400px; overflow: auto" id="userAns">
+			</div>
+			<!--<input type="text" class="form-control" name="monitor_text" id="monitor_text" placeholder="monitor_text" readonly>
+			-->
+			</div>
+			</form>
+		</div>
+
+      </div>
+      </div>
+
+	<div id="footer" style="color:#080808;text-align:center;font-size:85%;">
+		<div id="support">Supported by <a href="http://www.gstore-pku.com" style="color:#1435E9">gStore</a></div>
+		<div id="copyright">Copyright &copy; 2017 <a href="http://www.icst.pku.edu.cn/db/zh/index.php/%E9%A6%96%E9%A1%B5" style="color:#1435E9">Data Management Lab, Institute of Computer Science & Technology of Peking University</a></div>
+	</div>
+    
+</div>
+  <script src="https://cdn.bootcss.com/spin.js/2.3.2/spin.min.js"></script>
+
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+  <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+  <!-- Include all compiled plugins (below), or include individual files as needed -->
+  <!--<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

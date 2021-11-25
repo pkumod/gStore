@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+		<meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta http-equiv="X-UA-Compatible" content="IE=9,chrome=1">
+		<meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <link rel="shortcut icon" href="http://www.gstore-pku.com/favicon.ico" />	
+       
+        <title>OpenKG Query Endpoint</title>
+ <!--<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+-->
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+		<!--<link rel="stylesheet" type="text/css" href="view.css" media="all" />-->
+		<!--	<link rel="alternate" type="application/rss+xml" title="" href="feed/index.html">-->
+<!--		<link href="http://fonts.googleapis.com/css?family=Raleway:700,300" rel="stylesheet"
+		type="text/css">-->
+	  <link rel="stylesheet" href="style.css">
+		<!-- Bootstrap -->
+       	<!--<script type="text/javascript" src="view.js"></script> -->
+        <script src="https://cdn.bootcss.com/spin.js/2.3.2/spin.min.js"></script>
+
+		<script type="text/javascript" src="index.js"></script>
+		 <script src="js/jquery.min.js"></script>
+		 <script src="textarea-caret-position/index.js"></script>
+		 <!--	 <script src="js/bootstrap.min.js"></script>-->
+	<!--	  <link href="../css/material-design-color-palette.min.css" rel="stylesheet">
+		 <link href="../css/d3-context-menu.css" rel="stylesheet">
+		--> 
+	<link href="../css/cateIns.css" rel="stylesheet">
+	</head>
+    <body id="main_body" onload="handleQueryExample()">
+   <div id = "myspin"></div> 
+	<div class="wrapper">
+    <header>
+		<div id="form_container" class="container" style="margin-left: 0px">
+			<h2 class = "lone-header">OpenKG Query Endpoint</h2>
+		</div>
+    </header>
+    <section>
+		
+		<div class="img-box">
+					<img src="logo.png" alt="gStore" width="14%">
+		</div>
+		<h3 style="text-align:left;margin-top:0px;margin-bottom:0px;margin-left:3%;font-weight:lighter;"><a href="api.html" target="_blank" style="font-size:80%;color:#1435E9;text-decoration: underline">About API</a></h3>
+
+		<div>
+            <form id="myForm" method="post" action="PHPAPIExample.php">
+				<div class="form-group" >
+                <ul class="docs-nav">
+                    <li id="li_1" >
+                        <label class="description" for="element_1">Database Name </label>
+                        <div>
+                        <input id="element_1" name="databasename" class="form-control" type="text" maxlength="255" value="lubm">
+                        </input>
+                        </div> 
+
+                    </li>
+					
+
+                    <li id="li_2" >
+                        <label class="description" for="element_2">Query Examples</label>
+                        <div>
+                            <select id="example" class="custom-select custom-select-lg mb-3" onchange="handleQueryExample()">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+                                <option value="q3">q3</option>
+								<!--<option value="q4">q4</option>
+								<option value="q5">q5</option>
+								-->
+                                <!--<option value="q6">q6</option>-->
+                                <!--<option value="q7">q7</option>-->
+                                <!--<option value="q8">q8</option>-->
+                                <!--<option value="q9">q9</option>-->
+                                <!--<option value="q10">q10</option>-->
+                            </select>
+                        </div>
+                    </li>
+					<br>
+		
+						
+					
+
+                    <li id="li_3">
+                    
+                        <label class="description" for="element_3">Query Text </label>
+                        <div>
+							<textarea id="element_3" style="height:250px" name="query_file" class="form-control"></textarea> 
+                        </div> 
+			<!--			<div>
+							<textarea id="element_3" style="height:250px" name="query_file" class="form-control" onkeyup="handlekeyup(event)"></textarea> 
+                        </div> 
+			
+						<div style="position: absolute;left: 400px;top:400px;display: none; z-index: 2" class="searchbar" id="multiple-datasets">
+							<input id="searchbox" class="typeahead" placeholder="搜索 实体" >			
+						
+						</div>
+						<br>
+						<div id="buttonlist" class="row"></div>
+				-->					
+						</li>
+					<br>
+
+                    <li id="li_5" >
+                        <label class="description" for="element_5">Results Format </label>
+                        <div>
+                            <select class="custom-select" id="element_5" name="format"> 
+                            <option value="1" selected="ture">HTML</option>
+                            <option value="2" >Text</option>
+							<!--<option value="3" >CSV</option>-->
+							<option value="4" >JSON</option>
+                            </select>
+                        </div> 
+                    </li>
+					<br>
+				<div>
+                <input type="hidden" name="queryAns1" id="queryAns" value="defaultAns" />
+				<a id="hideLink" style="display: none">link</a>
+                <button id="query_button" type="button" class="btn btn-primary" style="color:white" onclick="query(query_file.value)">Run Query</button>
+				</div>
+			</ul>
+		</div>
+			</form>
+        </div>
+    </section>
+    </div>
+    <div id="footer" style="color:#080808;font-size:small; text-align:center;">
+		<div id="support">Supported by <a href="http://www.gstore-pku.com" style="color:#1435E9">gStore</a></div>
+		<div id="copyright">Copyright &copy; 2017 <a href="http://www.icst.pku.edu.cn/db/zh/index.php/%E9%A6%96%E9%A1%B5" style="color:#1435E9">Data Management Lab, Institute of Computer Science & Technology of Peking University</a></div>
+	</div>
+
+	
+			<script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+  <!-- Include all compiled plugins (below), or include individual files as needed -->
+  <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script> 
+ <!--<script src="index.js"></script>-->
+ 	<script src="js/handlebars.js"></script>
+		 <script src="js/progressbar.js"></script>
+		 <script src="js/typeahead.bundle.js"></script>
+		 <script src="js/search_typeahead.js"></script>
+		 <script src="js/categoryInstance.js"></script>
+		 <script src="js/entityTriple.js"></script>
+ 
+ </body>
+</html>
+

@@ -1,0 +1,29 @@
+	\begin{tikzpicture}[font=\Large]
+ 		 \begin{semilogyaxis}[
+               width = 20cm,
+               height = 10cm,
+               %ymax = 100000,
+    			ybar,
+   			ymajorgrids = true,
+   			ylabel = {Query Response Time (in ms)},
+                %xlabel = {Queries},
+    			symbolic x coords = {$Q_{0}$, $Q_{1}$,$Q_{2}$,$Q_{3}$,$Q_{4}$,$Q_{5}$,$Q_{6}$,$Q_{7}$,$Q_{8}$,$Q_{9}$},
+    %bar width=5pt,
+             %enlarge x limits=0.02,
+    			scaled y ticks = true,
+			legend pos= north west,
+ legend cell align=left
+   		]
+   \addplot coordinates {($Q_{0}$, 38) ($Q_{1}$, 404) ($Q_{2}$, 29) ($Q_{3}$, 1635) ($Q_{4}$, 25) ($Q_{5}$, 103) ($Q_{6}$, 99) ($Q_{7}$, 108) ($Q_{8}$, 5148) ($Q_{9}$, 127)};
+
+
+\addplot coordinates {($Q_{0}$, 441) ($Q_{1}$, 5333) ($Q_{2}$, 428) ($Q_{3}$, 8331) ($Q_{4}$, 200) ($Q_{5}$, 727) ($Q_{6}$, 267) ($Q_{7}$, 159700) ($Q_{8}$, 21462) ($Q_{9}$, 401)};
+		
+\addplot coordinates {($Q_{0}$, 2222) ($Q_{1}$, 13505) ($Q_{2}$, 180) ($Q_{3}$, 17779) ($Q_{4}$, 51) ($Q_{5}$, 6236) ($Q_{6}$, 500) ($Q_{7}$, 242) ($Q_{8}$, 1771450) ($Q_{9}$, 96463)};
+		
+%result num: 
+%69724 3304145 0 3204145 0 65419 2011 45 12765738 520
+		
+   		 \legend{gStore,Jena, Virtuoso}
+  		\end{semilogyaxis}
+\end{tikzpicture}

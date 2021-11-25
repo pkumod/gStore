@@ -1,0 +1,296 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+		<meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta http-equiv="X-UA-Compatible" content="IE=9,chrome=1">
+		<title>DBpedia Test Benchmark</title>
+        <link rel="stylesheet" type="text/css" href="view.css" media="all" />
+        <script type="text/javascript" src="test.js"></script>
+    </head>
+    <body id="main_body" onload="handleQueryExample()">
+		<div id="form_container">
+            <div class="img-box">
+				<img src="logo.png" alt="gStore" height="100">
+			</div>
+		<form id="myForm" method="post">
+            <div class="form_description">
+				<h2>DBpedia Test Benchmark</h2>
+            </div>
+            <ul >
+                <li id="li_1" >
+                        <label class="description" for="element_1">Database Name </label>
+                        <div>
+                        <input id="element_1" name="databasename" class="element text medium" type="text" maxlength="255" value="DBpedia" readonly>
+                        </input>
+                        </div> 
+                </li>
+                <li id="li_2" >
+                        <label class="description" for="element_1">Triple Num </label>
+                        <div>
+                        <input id="element_1" name="databasename" class="element text medium" type="text" maxlength="255" value="170M" readonly>
+                        </input>
+                        </div> 
+                </li>
+            </ul>
+        </form>
+		
+		<br>
+		
+		
+		
+		<form id="query1" method="post" action="PHPAPIExample.php">
+            <h3>实体查询-主语</h3>
+			Examples <select id="example1" class="element select medium" onchange="handleQueryExample(1)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text1" name="query_text1" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns1" id="queryAns1" value="defaultAns" />
+            <a id="hideLink1" style="display: none">link</a>
+            <button id="query_button1" type="button" class="btn btn-default" onclick="query_sparql(1, query_text1.value)">Run Query</button>
+        </form>
+
+		<br>
+
+		<form id="query2" method="post" action="PHPAPIExample.php">
+            <h3>实体查询-宾语</h3>
+			Examples <select id="example2" class="element select medium" onchange="handleQueryExample(2)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text2" name="query_text2" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns2" id="queryAns2" value="defaultAns" />
+            <a id="hideLink2" style="display: none">link</a>
+            <button id="query_button2" type="button" class="btn btn-default" onclick="query_sparql(2, query_text2.value)">Run Query</button>
+        </form>
+
+		<br>
+
+		<form id="query3" method="post" action="PHPAPIExample.php">
+            <h3>概念查询</h3>
+			Examples <select id="example3" class="element select medium" onchange="handleQueryExample(3)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text3" name="query_text3" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns3" id="queryAns3" value="defaultAns" />
+            <a id="hideLink3" style="display: none">link</a>
+            <button id="query_button3" type="button" class="btn btn-default" onclick="query_sparql(3, query_text3.value)">Run Query</button>
+        </form>
+
+		<br>
+
+		<form id="query4" method="post" action="PHPAPIExample.php">
+            <h3>谓词查询-第一种</h3>
+			Examples <select id="example4" class="element select medium" onchange="handleQueryExample(4)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text4" name="query_text4" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns4" id="queryAns4" value="defaultAns" />
+            <a id="hideLink4" style="display: none">link</a>
+            <button id="query_button4" type="button" class="btn btn-default" onclick="query_sparql(4, query_text4.value)">Run Query</button>
+        </form>
+
+	<br>
+
+		<form id="query5" method="post" action="PHPAPIExample.php">
+            <h3>谓词查询-第二种</h3>
+			Examples <select id="example5" class="element select medium" onchange="handleQueryExample(5)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text5" name="query_text5" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns5" id="queryAns5" value="defaultAns" />
+            <a id="hideLink5" style="display: none">link</a>
+            <button id="query_button5" type="button" class="btn btn-default" onclick="query_sparql(5, query_text5.value)">Run Query</button>
+        </form>
+
+	<br>
+
+		<form id="query6" method="post" action="PHPAPIExample.php">
+            <h3>给定谓词查两端</h3>
+			Examples <select id="example6" class="element select medium" onchange="handleQueryExample(6)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text6" name="query_text6" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns6" id="queryAns6" value="defaultAns" />
+            <a id="hideLink6" style="display: none">link</a>
+            <button id="query_button6" type="button" class="btn btn-default" onclick="query_sparql(6, query_text6.value)">Run Query</button>
+        </form>
+
+	<br>
+
+		<form id="query7" method="post" action="PHPAPIExample.php">
+            <h3>上下位查询-第一种</h3>
+			Examples <select id="example7" class="element select medium" onchange="handleQueryExample(7)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text7" name="query_text7" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns7" id="queryAns7" value="defaultAns" />
+            <a id="hideLink7" style="display: none">link</a>
+            <button id="query_button7" type="button" class="btn btn-default" onclick="query_sparql(7, query_text7.value)">Run Query</button>
+        </form>
+
+	<br>
+
+		<form id="query8" method="post" action="PHPAPIExample.php">
+            <h3>上下位查询-第二种</h3>
+			Examples <select id="example8" class="element select medium" onchange="handleQueryExample(8)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text8" name="query_text8" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns8" id="queryAns8" value="defaultAns" />
+            <a id="hideLink8" style="display: none">link</a>
+            <button id="query_button8" type="button" class="btn btn-default" onclick="query_sparql(8, query_text8.value)">Run Query</button>
+        </form>
+
+	<br>
+
+		<form id="query9" method="post" action="PHPAPIExample.php">
+            <h3>环状查询</h3>
+			Examples <select id="example9" class="element select medium" onchange="handleQueryExample(9)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text9" name="query_text9" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns9" id="queryAns9" value="defaultAns" />
+            <a id="hideLink9" style="display: none">link</a>
+            <button id="query_button9" type="button" class="btn btn-default" onclick="query_sparql(9, query_text9.value)">Run Query</button>
+        </form>
+
+	<br>
+
+		<form id="query10" method="post" action="PHPAPIExample.php">
+            <h3>星状查询</h3>
+			Examples <select id="example10" class="element select medium" onchange="handleQueryExample(10)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text10" name="query_text10" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns10" id="queryAns10" value="defaultAns" />
+            <a id="hideLink10" style="display: none">link</a>
+            <button id="query_button10" type="button" class="btn btn-default" onclick="query_sparql(10, query_text10.value)">Run Query</button>
+        </form>
+
+	<br>
+
+		<form id="query11" method="post" action="PHPAPIExample.php">
+            <h3>线状查询</h3>
+			Examples <select id="example11" class="element select medium" onchange="handleQueryExample(11)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text11" name="query_text11" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns11" id="queryAns11" value="defaultAns" />
+            <a id="hideLink11" style="display: none">link</a>
+            <button id="query_button11" type="button" class="btn btn-default" onclick="query_sparql(11, query_text11.value)">Run Query</button>
+        </form>
+
+	<br>
+
+		<form id="query12" method="post" action="PHPAPIExample.php">
+            <h3>两个星状拼接查询</h3>
+			Examples <select id="example12" class="element select medium" onchange="handleQueryExample(12)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text12" name="query_text12" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns12" id="queryAns12" value="defaultAns" />
+            <a id="hideLink12" style="display: none">link</a>
+            <button id="query_button12" type="button" class="btn btn-default" onclick="query_sparql(12, query_text12.value)">Run Query</button>
+        </form>
+
+	<br>
+
+		<form id="query13" method="post" action="PHPAPIExample.php">
+            <h3>实体链接</h3>
+			Examples <select id="example13" class="element select medium" onchange="handleQueryExample(13)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text13" name="query_text13" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns13" id="queryAns13" value="defaultAns" />
+            <a id="hideLink13" style="display: none">link</a>
+            <button id="query_button13" type="button" class="btn btn-default" onclick="query_entity(13, query_text13.value)">Run Query</button>
+        </form>
+
+	<br>
+	<br>
+	<br>
+
+	<p>
+	插入操作和删除操作的测试方法如下：（需要用到下方的删除、插入、测试三个接口，最终数据库恢复原状）
+	<ul>
+		<li>
+		第一种测试(q1)：先用底部测试接口里面的q1查询，再用删除接口里面的q1删除这个已有的triple，之后再进行测试接口的q1查询检验该triple是否被删除。接着用插入接口的q1再插入刚刚删除的triple，最后再用测试接口的q1查询检验插入是否成功。
+		</li>
+		<li>
+		第二种测试(q2)：先用底部测试接口里面的q2查询，再用插入接口里面的q2插入这个原本不存在的triple，之后再进行测试接口的q2查询检验该triple是否被成功插入。接着用删除接口的q2再删除刚刚插入的triple，最后再用测试接口的q2查询检验删除是否成功。
+		</li>
+	</ul>
+	</p>
+
+		<form id="query14" method="post" action="PHPAPIExample.php">
+            <h3>删除测试</h3>
+			Examples <select id="example14" class="element select medium" onchange="handleQueryExample(14)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text14" name="query_text14" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns14" id="queryAns14" value="defaultAns" />
+            <a id="hideLink14" style="display: none">link</a>
+            <button id="query_button14" type="button" class="btn btn-default" onclick="query_sparql(14, query_text14.value)">Run Query</button>
+        </form>
+
+	<br>
+
+		<form id="query15" method="post" action="PHPAPIExample.php">
+            <h3>插入测试</h3>
+			Examples <select id="example15" class="element select medium" onchange="handleQueryExample(15)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text15" name="query_text15" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns15" id="queryAns15" value="defaultAns" />
+            <a id="hideLink15" style="display: none">link</a>
+            <button id="query_button15" type="button" class="btn btn-default" onclick="query_sparql(15, query_text15.value)">Run Query</button>
+        </form>
+
+	<br>
+
+		<form id="query16" method="post" action="PHPAPIExample.php">
+            <h3>对插入和删除的测试</h3>
+			Examples <select id="example16" class="element select medium" onchange="handleQueryExample(16)">
+                                <option value="q1" selected="selected">q1</option>
+                                <option value="q2">q2</option>
+							</select>
+                <textarea id="query_text16" name="query_text16" class="element textarea large"> </textarea> 
+            <input type="hidden" name="queryAns16" id="queryAns16" value="defaultAns" />
+            <a id="hideLink16" style="display: none">link</a>
+            <button id="query_button16" type="button" class="btn btn-default" onclick="query_sparql(16, query_text16.value)">Run Query</button>
+        </form>
+		
+		
+		
+		
+			<br>
+			<br>
+			<br>
+			<br>
+            <div id="footer" style="color:#080808;">
+				<div id="support">
+					Supported by <a href="http://www.gstore-pku.com" style="color:#1435E9">gStore</a></div>
+				<div id="copyright">
+					Copyright &copy; 2017 <a href="http://www.icst.pku.edu.cn/db/zh/index.php/%E9%A6%96%E9%A1%B5" style="color:#1435E9">Data Management Lab, Institute of Computer Science & Technology of Peking University</a></div>
+			</div>
+		</div>
+			<script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+  <!-- Include all compiled plugins (below), or include individual files as needed -->
+  <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    </body>
+</html>
