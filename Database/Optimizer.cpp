@@ -307,29 +307,40 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   if(strategy == BasicQueryStrategy::Normal)
   {
 
-    long t1 =Util::get_cur_time();
-    auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
-    for (auto &constant_generating_step: *const_candidates) {
-      executor_.CacheConstantCandidates(constant_generating_step, var_candidates_cache);
-    };
-    long t2 = Util::get_cur_time();
-    cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
+  	PlanTree* best_plan_tree;
 
-    long t3 = Util::get_cur_time();
+  	if(bgp_query->get_triple_num()==1)
+  		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_special_one_triple_plan();
+  	else{
 
-    cout << "id_list.size = " << var_candidates_cache->size() << endl;
-    //for (auto x : *var_candidates_cache){
-    //  cout << "var[" << x.first << "] = " << bgp_query->get_vardescrip_by_id(x.first). << ", var_candidate list size = " << x.second->size() << endl;
-    //}
-#ifdef FEED_PLAN
-    vector<int> node_order = {2,1,0};
-      auto best_plan_tree = new PlanTree(node_order);
-#else
-    auto best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_random_plan();
-    // get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
-#endif
-    long t4 = Util::get_cur_time();
-    cout << "plan get, used " << (t4 - t3) << "ms." << endl;
+
+  		long t1 =Util::get_cur_time();
+  		auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
+  		for (auto &constant_generating_step: *const_candidates) {
+  			executor_.CacheConstantCandidates(constant_generating_step, var_candidates_cache);
+  		};
+  		long t2 = Util::get_cur_time();
+  		cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
+
+  		long t3 = Util::get_cur_time();
+
+  		cout << "id_list.size = " << var_candidates_cache->size() << endl;
+  		//for (auto x : *var_candidates_cache){
+  		//  cout << "var[" << x.first << "] = " << bgp_query->get_vardescrip_by_id(x.first). << ", var_candidate list size = " << x.second->size() << endl;
+  		//}
+
+  		// #ifdef FEED_PLAN
+  		//     vector<int> node_order = {2,1,0};
+  		//     auto best_plan_tree = new PlanTree(node_order);
+  		// #else
+  		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_random_plan();
+  		// todo: replace by this
+  		// best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_normal_plan()
+  		// get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
+  		// #endif
+  		long t4 = Util::get_cur_time();
+  		cout << "plan get, used " << (t4 - t3) << "ms." << endl;
+  	}
     best_plan_tree->print(bgp_query.get());
     cout << "plan print done" << endl;
 

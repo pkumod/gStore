@@ -582,6 +582,20 @@ VarDescriptor::EntiType BGPQuery::get_pre_var_o_type(unsigned int var_id, unsign
 	return var_vector[id_position_map[var_id]]->o_type_[edge_id];
 }
 
+bool BGPQuery::check_already_joined_pre_var(vector<unsigned int> &already_node, unsigned int pre_var_id) {
+	for(auto x:already_node){
+		auto var_descip = get_vardescrip_by_id(x);
+		for(unsigned i = 0; i < var_descip->degree_; ++i){
+			if(var_descip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType &&
+				var_descip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType)
+				if(find(already_node.begin(), already_node.end(), var_descip->so_edge_nei_[i]) != already_node.end() &&
+					var_descip->so_edge_pre_id_[i] == pre_var_id)
+					return true;
+		}
+	}
+	return false;
+}
+
 const vector <Triple> &BGPQuery::get_triple_vt() {
 	return this->triple_vt;
 }
