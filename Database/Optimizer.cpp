@@ -309,12 +309,12 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 
   	PlanTree* best_plan_tree;
 
+  	long t1 =Util::get_cur_time();
+
   	if(bgp_query->get_triple_num()==1)
   		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_special_one_triple_plan();
   	else{
 
-
-  		long t1 =Util::get_cur_time();
   		auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
   		for (auto &constant_generating_step: *const_candidates) {
   			executor_.CacheConstantCandidates(constant_generating_step, var_candidates_cache);
@@ -344,10 +344,11 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     best_plan_tree->print(bgp_query.get());
     cout << "plan print done" << endl;
 
+    long t_ = Util::get_cur_time();
     auto bfs_result = this->ExecutionBreathFirst(bgp_query,query_info,best_plan_tree->root_node,var_candidates_cache);
 
     long t5 = Util::get_cur_time();
-    cout << "execution, used " << (t5 - t3) << "ms." << endl;
+    cout << "execution, used " << (t5 - t_) << "ms." << endl;
 
     auto bfs_table = get<1>(bfs_result);
     auto pos_var_mapping = bfs_table.pos_id_map;

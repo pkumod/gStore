@@ -101,7 +101,7 @@ public:
 						vector<unsigned> &other_nodes, set<unsigned> &join_nodes);
 
 
-	void insert_this_plan_to_cache(PlanTree *new_plan, vector<unsigned> &new_node_vec, unsigned var_num);
+	void insert_this_plan_to_cache(PlanTree *new_plan, const vector<unsigned> &new_node_vec, unsigned var_num);
 	void considerallscan(vector<unsigned> &need_join_nodes, bool use_sample = true);
 
 	void considerwcojoin(unsigned node_num, const vector<unsigned> &need_join_nodes);
