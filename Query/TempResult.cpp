@@ -10,82 +10,6 @@
 
 using namespace std;
 
-TempResult::ResultPair::ResultPair()
-{
-	id = NULL;
-	sz = 0;
-}
-
-TempResult::ResultPair::ResultPair(const ResultPair& that)
-{
-	if (that.id)
-	{
-		id = new unsigned[that.sz];
-		// TODO: ResultPair cannot access id_varset of its parent TempResult
-		memcpy(id, that.id, (that.sz) * sizeof(unsigned));
-	}
-	sz = that.sz;
-	str = that.str;
-}
-
-TempResult::ResultPair& TempResult::ResultPair::operator=(const ResultPair& that)
-{
-	if (that.id)
-	{
-		// unsigned *local_id = new unsigned[that.id_varset.getVarsetSize()];
-		unsigned *local_id = new unsigned[that.sz];
-		memcpy(local_id, that.id, (that.sz) * sizeof(unsigned));
-		if (id)
-			delete[] id;	// Prevent exception leaving original id in limbo
-		id = local_id;
-	}
-	else
-	{
-		if (id)
-			delete[] id;
-		id = NULL;
-	}
-	sz = that.sz;
-	str = that.str;
-
-	return *this;
-}
-
-TempResult::TempResult(const TempResult& that)
-{
-	id_varset = that.id_varset;
-	str_varset = that.str_varset;
-	result = that.result;
-}
-
-TempResult& TempResult::operator=(const TempResult& that)
-{
-	id_varset = that.id_varset;
-	str_varset = that.str_varset;
-	result = that.result;
-
-	return *this;
-}
-
-TempResultSet::TempResultSet()
-{
-	initial = true;
-}
-
-TempResultSet::TempResultSet(const TempResultSet& that)
-{
-	results = that.results;
-	initial = that.initial;
-}
-
-TempResultSet& TempResultSet::operator=(const TempResultSet& that)
-{
-	results = that.results;
-	initial = that.initial;
-
-	return *this;
-}
-
 Varset TempResult::getAllVarset()
 {
 	return this->id_varset + this->str_varset;
@@ -259,7 +183,6 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 				if (r_id_cols > 0)
 				{
 					r.result.back().id = new unsigned [r_id_cols];
-					r.result.back().sz = r_id_cols;
 					unsigned *v = r.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -300,7 +223,6 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 				if (r_id_cols > 0)
 				{
 					r.result.back().id = new unsigned [r_id_cols];
-					r.result.back().sz = r_id_cols;
 					unsigned *v = r.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -344,7 +266,6 @@ void TempResult::doUnion(TempResult &r)
 		if (r_id_cols > 0)
 		{
 			r.result.back().id = new unsigned [r_id_cols];
-			r.result.back().sz = r_id_cols;
 			unsigned *v = r.result.back().id;
 
 			for (int k = 0; k < this_id_cols; k++)
@@ -418,7 +339,6 @@ void TempResult::doOptional(vector<bool> &binding, TempResult &x, TempResult &rn
 				if (ra_id_cols > 0)
 				{
 					ra.result.back().id = new unsigned [ra_id_cols];
-					ra.result.back().sz = ra_id_cols;
 					unsigned *v = ra.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -451,7 +371,6 @@ void TempResult::doOptional(vector<bool> &binding, TempResult &x, TempResult &rn
 				if (rn_id_cols > 0)
 				{
 					rn.result.back().id = new unsigned [rn_id_cols];
-					rn.result.back().sz = rn_id_cols;
 					unsigned *v = rn.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -493,7 +412,6 @@ void TempResult::doMinus(TempResult &x, TempResult &r)
 			if (r_id_cols > 0)
 			{
 				r.result.back().id = new unsigned [r_id_cols];
-				r.result.back().sz = r_id_cols;
 				unsigned *v = r.result.back().id;
 
 				for (int k = 0; k < this_id_cols; k++)
@@ -527,7 +445,6 @@ void TempResult::doMinus(TempResult &x, TempResult &r)
 				if (r_id_cols > 0)
 				{
 					r.result.back().id = new unsigned [r_id_cols];
-					r.result.back().sz = r_id_cols;
 					unsigned *v = r.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -922,7 +839,7 @@ EvalMultitypeValue
 
 		if (x.datatype == EvalMultitypeValue::rdf_term)
 		{
-			int p = x.str_value.rfind("^^");
+			size_t p = x.str_value.rfind("^^");
 			if (p != string::npos)
 			{
 				ret_femv.datatype = EvalMultitypeValue::iri;
@@ -932,7 +849,7 @@ EvalMultitypeValue
 		else if (x.datatype == EvalMultitypeValue::literal)
 		{
 			ret_femv.datatype = EvalMultitypeValue::iri;
-			int p = x.str_value.rfind('@');
+			size_t p = x.str_value.rfind('@');
 			if (p != string::npos)
 				ret_femv.term_value = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>";
 			else
@@ -1107,9 +1024,9 @@ EvalMultitypeValue
 		if(x.argCompatible(y))
 		{
 			string x_content = x.getStrContent(), y_content = y.getStrContent();
-			int p = x_content.find(y_content);
-			if (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_contains_type && p != string::npos \
-				|| filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_strstarts_type && p == 0)
+			size_t p = x_content.find(y_content);
+			if ((filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_contains_type && p != string::npos)
+				|| (filter.oper_type == QueryTree::GroupPattern::FilterTree::FilterTreeNode::Builtin_strstarts_type && p == 0))
 				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
 			else
 				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
@@ -1216,16 +1133,18 @@ EvalMultitypeValue
 }
 
 EvalMultitypeValue
-TempResult::doComp(QueryTree::CompTreeNode *root, ResultPair &row, int id_cols, StringIndex *stringindex, Varset &entity_literal_varset)
+TempResult::doComp(const QueryTree::CompTreeNode &root, ResultPair &row, int id_cols, StringIndex *stringindex, Varset &this_varset, Varset &entity_literal_varset)
 {
-	if (root->lchild == NULL && root->rchild == NULL)	// leaf node
+	// Arithmetic and logical operations
+	// if (root->lchild == NULL && root->rchild == NULL)	// leaf node
+	if (root.children.size() == 0)	// leaf node
 	{
 		EvalMultitypeValue x;
 		x.datatype = EvalMultitypeValue::rdf_term;
-		if (root->val[0] == '?')	// variable
+		if (root.val[0] == '?')	// variable
 		{
 			int pos;
-			pos = Varset(root->val).mapTo(entity_literal_varset)[0];
+			pos = Varset(root.val).mapTo(this_varset)[0];
 			if (pos == -1)
 			{
 				x.datatype = EvalMultitypeValue::xsd_boolean;
@@ -1235,69 +1154,466 @@ TempResult::doComp(QueryTree::CompTreeNode *root, ResultPair &row, int id_cols, 
 			if (pos < id_cols)
 			{
 				int id = row.id[pos];
-				bool isel = entity_literal_varset.findVar(root->val);
+				bool isel = entity_literal_varset.findVar(root.val);
 				stringindex->randomAccess(id, &x.term_value, isel);
 			}
 			else
 				x.term_value = row.str[pos - id_cols];
 		}
 		else  	// literal
-			x.term_value = root->val;
+			x.term_value = root.val;
 		x.deduceTypeValue();
-		cout << "x.term_value = " << x.term_value << endl;
+		// cout << "x.term_value = " << x.term_value << endl;
 		return x;
 	}
-	else
+	else if (root.children.size() == 1 && \
+		(root.oprt == "+" || root.oprt == "-" || root.oprt == "!"))	// unary operator
 	{
-		EvalMultitypeValue lRes, rRes;
-		if (root->lchild)
-			lRes = doComp(root->lchild, row, id_cols, stringindex, entity_literal_varset);
-		if (root->rchild)
-			rRes = doComp(root->rchild, row, id_cols, stringindex, entity_literal_varset);
-
-		if (root->oprt == "||")
-			return lRes || rRes;
-		else if (root->oprt == "&&")
-			return lRes && rRes;
-		else if (root->oprt == "=")
-			return lRes == rRes;
-		else if (root->oprt == "!=")
-			return lRes != rRes;
-		else if (root->oprt == "<")
-			return lRes < rRes;
-		else if (root->oprt == ">")
-			return lRes > rRes;
-		else if (root->oprt == "<=")
-			return lRes <= rRes;
-		else if (root->oprt == ">=")
-			return lRes >= rRes;
-		else if (root->oprt == "+")
-		{
-			if (!root->rchild)	// unary
-				return lRes;
-			else 	// binary
-				return lRes + rRes;
-		}
-		else if (root->oprt == "-")
-		{
-			if (!root->rchild)	// unary
-				return -lRes;
-			else 	// binary
-				return lRes - rRes;
-		}
-		else if (root->oprt == "*")
-			return lRes * rRes;
-		else if (root->oprt == "/")
-			return lRes / rRes;
-		else if (root->oprt == "!")
+		EvalMultitypeValue lRes = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (root.oprt == "+")
+			return lRes;
+		else if (root.oprt == "-")
+			return -lRes;
+		else if (root.oprt == "!")
 			return !lRes;
 	}
+	else if (root.children.size() == 2 && \
+		(root.oprt == "||" || root.oprt == "&&" || root.oprt == "=" \
+		|| root.oprt == "!=" || root.oprt == "<" || root.oprt == ">" \
+		|| root.oprt == "<=" || root.oprt == ">=" || root.oprt == "+" \
+		|| root.oprt == "-" || root.oprt == "*" || root.oprt == "/"))	// binary operator
+	{
+		EvalMultitypeValue lRes, rRes;
+		lRes = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		rRes = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+
+		if (root.oprt == "||")
+			return lRes || rRes;
+		else if (root.oprt == "&&")
+			return lRes && rRes;
+		else if (root.oprt == "=")
+			return lRes == rRes;
+		else if (root.oprt == "!=")
+			return lRes != rRes;
+		else if (root.oprt == "<")
+			return lRes < rRes;
+		else if (root.oprt == ">")
+			return lRes > rRes;
+		else if (root.oprt == "<=")
+			return lRes <= rRes;
+		else if (root.oprt == ">=")
+			return lRes >= rRes;
+		else if (root.oprt == "+")
+			return lRes + rRes;
+		else if (root.oprt == "-")
+			return lRes - rRes;
+		else if (root.oprt == "*")
+			return lRes * rRes;
+		else if (root.oprt == "/")
+			return lRes / rRes;
+	}
+
+	// Built-in function calls
+	EvalMultitypeValue ret_femv;
+	ret_femv.datatype = EvalMultitypeValue::xsd_boolean;
+	ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
+
+	if (root.oprt == "REGEX")
+	{
+		EvalMultitypeValue x, y, z;
+		string t, p, f;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (x.datatype == EvalMultitypeValue::literal || x.datatype == EvalMultitypeValue::xsd_string)
+		{
+			t = x.str_value;
+			t = t.substr(1, t.rfind('"') - 1);
+		}
+		else
+			return ret_femv;
+		y = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (y.isSimpleLiteral())
+		{
+			p = y.str_value;
+			p = p.substr(1, p.rfind('"') - 1);
+		}
+		else
+			return ret_femv;
+		if (root.children.size() >= 3)
+		{
+			z = doComp(root.children[2], row, id_cols, stringindex, this_varset, entity_literal_varset);
+			if (z.isSimpleLiteral())
+			{
+				f = z.str_value;
+				f = f.substr(1, f.rfind('"') - 1);
+			}
+			else
+				return ret_femv;
+		}
+
+		RegexExpression re;
+		if (!re.compile(p, f))
+			ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
+		else
+			ret_femv.bool_value = re.match(t);
+
+		return ret_femv;
+	}
+	else if (root.oprt == "STR")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (x.datatype == EvalMultitypeValue::literal)
+		{
+			ret_femv.datatype = EvalMultitypeValue::literal;
+			ret_femv.str_value = x.str_value.substr(0, x.str_value.rfind('"') + 1);
+			return ret_femv;
+		}
+		else if (x.datatype == EvalMultitypeValue::iri)
+		{
+			ret_femv.datatype = EvalMultitypeValue::literal;
+			ret_femv.str_value = "\"" + x.str_value.substr(1, x.str_value.length() - 2) + "\"";
+			return ret_femv;
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_string)
+		{
+			ret_femv.datatype = EvalMultitypeValue::literal;
+			ret_femv.str_value = x.str_value;
+			return ret_femv;
+		}
+		else
+			return ret_femv;
+	}
+	else if (root.oprt == "ISIRI" || root.oprt == "ISURI")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		ret_femv.bool_value = (x.datatype == EvalMultitypeValue::iri);
+
+		return ret_femv;
+	}
+	else if (root.oprt == "ISLITERAL")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		ret_femv.bool_value = (x.datatype == EvalMultitypeValue::literal ||
+							   x.datatype == EvalMultitypeValue::xsd_string ||
+							   x.datatype == EvalMultitypeValue::xsd_boolean ||
+							   x.datatype == EvalMultitypeValue::xsd_integer ||
+							   x.datatype == EvalMultitypeValue::xsd_decimal ||
+							   x.datatype == EvalMultitypeValue::xsd_float ||
+							   x.datatype == EvalMultitypeValue::xsd_double ||
+							   x.datatype == EvalMultitypeValue::xsd_datetime);
+
+		return ret_femv;
+	}
+	else if (root.oprt == "ISNUMERIC")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		ret_femv.bool_value = (x.datatype == EvalMultitypeValue::xsd_integer ||
+							   x.datatype == EvalMultitypeValue::xsd_decimal ||
+							   x.datatype == EvalMultitypeValue::xsd_float ||
+							   x.datatype == EvalMultitypeValue::xsd_double);
+
+		return ret_femv;
+	}
+	else if (root.oprt == "LANG")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (x.datatype == EvalMultitypeValue::literal)
+		{
+			ret_femv.datatype = EvalMultitypeValue::literal;
+			int p = x.str_value.rfind('@');
+			if (p != -1)
+				ret_femv.str_value = "\"" + x.str_value.substr(p + 1) + "\"";
+			else
+				ret_femv.str_value = "";
+			return ret_femv;
+		}
+		else
+			return ret_femv;
+	}
+	else if (root.oprt == "DATATYPE")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (x.datatype == EvalMultitypeValue::rdf_term)
+		{
+			size_t p = x.str_value.rfind("^^");
+			if (p != string::npos)
+			{
+				ret_femv.datatype = EvalMultitypeValue::iri;
+				ret_femv.term_value = x.str_value.substr(p + 2);
+			}
+		}
+		else if (x.datatype == EvalMultitypeValue::literal)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			size_t p = x.str_value.rfind('@');
+			if (p != string::npos)
+				ret_femv.term_value = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>";
+			else
+				ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#string>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_string)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#string>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_boolean)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#boolean>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_integer)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#integer>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_decimal)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#decimal>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_float)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#float>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_double)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#double>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_datetime)
+		{
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#dateTime>";
+		}
+
+		return ret_femv;
+	}
+	else if (root.oprt == "NOW")
+	{
+		cout << "IN NOW" << endl;
+		time_t now = time(0);
+		tm *lctm = localtime(&now);
+		ret_femv.datatype = EvalMultitypeValue::xsd_datetime;
+		ret_femv.dt_value = EvalMultitypeValue::DateTime(1900 + lctm->tm_year, 1 + lctm->tm_mon, \
+			lctm->tm_mday, 5+lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
+		// ret_femv.deduceTermValue();
+		return ret_femv;
+	}
+	else if (root.oprt == "YEAR")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (x.datatype == EvalMultitypeValue::xsd_datetime)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
+			ret_femv.int_value = x.dt_value.date[0];
+			return ret_femv;
+		}
+		else
+			return ret_femv;
+	}
+	else if (root.oprt == "MONTH")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (x.datatype == EvalMultitypeValue::xsd_datetime)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
+			ret_femv.int_value = x.dt_value.date[1];
+			return ret_femv;
+		}
+		else
+			return ret_femv;
+	}
+	else if (root.oprt == "DAY")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (x.datatype == EvalMultitypeValue::xsd_datetime)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
+			ret_femv.int_value = x.dt_value.date[2];
+			return ret_femv;
+		}
+		else
+			return ret_femv;
+	}
+	else if (root.oprt == "UCASE" || root.oprt == "LCASE")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		string langTag = "";
+		if (x.datatype == EvalMultitypeValue::xsd_string)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_string;
+			ret_femv.str_value = x.str_value;
+		}
+		else if (x.datatype == EvalMultitypeValue::literal)
+		{
+			ret_femv.datatype = EvalMultitypeValue::literal;
+			int p = x.str_value.rfind('@');
+			if (p != -1)
+			{
+				ret_femv.str_value = x.str_value.substr(0, p);	// ADD lang tag!
+				langTag = x.str_value.substr(p + 1);
+			}
+			else
+				ret_femv.str_value = x.str_value;
+		}
+
+		if (root.oprt == "UCASE")
+			transform(ret_femv.str_value.begin(), ret_femv.str_value.end(), \
+				ret_femv.str_value.begin(), ::toupper);
+		else 	// Builtin_lcase_type
+			transform(ret_femv.str_value.begin(), ret_femv.str_value.end(), \
+				ret_femv.str_value.begin(), ::tolower);
+		if (langTag != "")
+			ret_femv.str_value += "@" + langTag;
+		
+		return ret_femv;
+	}
+	else if (root.oprt == "CONTAINS" || root.oprt == "STRSTARTS")
+	{
+		EvalMultitypeValue x, y;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		y = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if(x.argCompatible(y))
+		{
+			string x_content = x.getStrContent(), y_content = y.getStrContent();
+			size_t p = x_content.find(y_content);
+			if ((root.oprt == "CONTAINS" && p != string::npos) || (root.oprt == "STRSTARTS" && p == 0))
+				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
+			else
+				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
+		}
+
+		return ret_femv;
+	}
+	else if (root.oprt == "ABS")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (x.datatype == EvalMultitypeValue::xsd_integer)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
+			ret_femv.int_value = abs(x.int_value);
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_decimal)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_decimal;
+			ret_femv.flt_value = fabs(x.flt_value);
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_float)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_float;
+			ret_femv.flt_value = fabs(x.flt_value);
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_double)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_double;
+			ret_femv.dbl_value = fabs(x.dbl_value);
+		}
+
+		return ret_femv;
+	}
+	else if (root.oprt == "LANGMATCHES")
+	{
+		EvalMultitypeValue x, y;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (!x.isSimpleLiteral())
+			return ret_femv;
+		y = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (!y.isSimpleLiteral())
+			return ret_femv;
+
+		ret_femv.bool_value = ((x.str_value == y.str_value) || (x.str_value.length() > 0 && y.str_value == "\"*\""));
+
+		return ret_femv;
+	}
+	else if (root.oprt == "BOUND")
+	{
+		EvalMultitypeValue x;
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		// Only return false when x is xsd_boolean and has error_value
+		if (x.datatype == EvalMultitypeValue::xsd_boolean && x.bool_value.getValue() == 2)
+			ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
+		else
+			ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
+
+		return ret_femv;
+	}
+	else if (root.oprt == "IN")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		ret_femv.bool_value.value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
+		for (int i = 1; i < (int)root.children.size(); i++)
+		{
+			EvalMultitypeValue y;
+			y = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+			EvalMultitypeValue equal = (x == y);
+			if (i == 1)
+				ret_femv = equal;
+			else
+				ret_femv = (ret_femv || equal);
+
+			if (ret_femv.datatype == EvalMultitypeValue::xsd_boolean && ret_femv.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+				return ret_femv;
+		}
+
+		return ret_femv;
+	}
+	else if (root.oprt == "NOT IN")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		ret_femv.bool_value.value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
+		for (int i = 1; i < (int)root.children.size(); i++)
+		{
+			EvalMultitypeValue y;
+			y = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+			EvalMultitypeValue inequal = (x != y);
+			if (i == 1)
+				ret_femv = inequal;
+			else
+				ret_femv = (ret_femv && inequal);
+
+			if (ret_femv.datatype == EvalMultitypeValue::xsd_boolean && ret_femv.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::false_value)
+				return ret_femv;
+		}
+
+		return ret_femv;
+	}
+
+	return ret_femv;
 }
 
-void TempResult::doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset)
+void TempResult::doFilter(const QueryTree::CompTreeNode &filter, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset)
 {
 	Varset this_varset = this->getAllVarset();
-	filter.mapVarPos2Varset(this_varset, entity_literal_varset);
+	// filter.mapVarPos2Varset(this_varset, entity_literal_varset);
 
 	int this_id_cols = this->id_varset.getVarsetSize();
 
@@ -1311,7 +1627,8 @@ void TempResult::doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &f
 
 	for (int i = 0; i < (int)this->result.size(); i++)
 	{
-		EvalMultitypeValue ret_femv = matchFilterTree(filter, this->result[i], this_id_cols, stringindex);
+		// EvalMultitypeValue ret_femv = matchFilterTree(filter, this->result[i], this_id_cols, stringindex);
+		EvalMultitypeValue ret_femv = doComp(filter, this->result[i], this_id_cols, stringindex, this_varset, entity_literal_varset);
 
 		if (ret_femv.datatype == EvalMultitypeValue::xsd_boolean && ret_femv.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
 		{
@@ -1320,7 +1637,6 @@ void TempResult::doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &f
 			if (r_id_cols > 0)
 			{
 				r.result.back().id = new unsigned [r_id_cols];
-				r.result.back().sz = r_id_cols;
 				unsigned *v = r.result.back().id;
 
 				for (int k = 0; k < this_id_cols; k++)
@@ -1488,6 +1804,10 @@ void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, StringIndex *
 			int add_pos = r.findCompatibleResult(add_id_varset, add_str_varset);
 			this->results[i].doOptional(binding, x.results[j], r.results[noadd_pos], r.results[add_pos], j + 1 == (int)x.results.size());
 		}
+
+		if(x.results.size() == 0){
+			this->results[i].doUnion(r.results[noadd_pos]);
+		}
 	}
 
 	long tv_end = Util::get_cur_time();
@@ -1555,7 +1875,8 @@ void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, StringIndex *str
 	printf("after doMinus, used %ld ms.\n", tv_end - tv_begin);
 }
 
-void TempResultSet::doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
+// void TempResultSet::doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
+void TempResultSet::doFilter(const QueryTree::CompTreeNode &filter, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
 {
 	long tv_begin = Util::get_cur_time();
 
@@ -1609,7 +1930,6 @@ void TempResultSet::doProjection1(Varset &proj, TempResultSet &r, StringIndex *s
 				if (r_id_cols > 0)
 				{
 					r.results[0].result.back().id = new unsigned [r_id_cols];
-					r.results[0].result.back().sz = r_id_cols;
 					unsigned *v = r.results[0].result.back().id;
 
 					for (int k = 0; k < r_id_cols; k++)
@@ -1674,7 +1994,6 @@ void TempResultSet::doDistinct1(TempResultSet &r)
 				if (r_id_cols > 0)
 				{
 					r_results0.result.back().id = new unsigned [r_id_cols];
-					r_results0.result.back().sz = r_id_cols;
 					unsigned *v = r_results0.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)

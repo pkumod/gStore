@@ -1,3 +1,11 @@
+/*=============================================================================
+# Filename:	QueryParser.cpp
+# Author: Yue Pang
+# Mail: michelle.py@pku.edu.cn
+# Last Modified:	2021-08-04 09:52 CST
+# Description: implements the class for parsing SPARQL queries based on ANTLR4
+=============================================================================*/
+
 #include "QueryParser.h"
 
 using namespace std;
@@ -8,7 +16,7 @@ using namespace std;
 void SPARQLErrorListener::syntaxError(antlr4::Recognizer *recognizer, antlr4::Token * offendingSymbol, \
 	size_t line, size_t charPositionInLine, const std::string &msg, std::exception_ptr e)
 {
-	throw runtime_error("line " + to_string(line) + ":" + to_string(charPositionInLine) + " " + msg);
+	throw runtime_error("[Syntax Error]:line " + to_string(line) + ":" + to_string(charPositionInLine) + " " + msg);
 }
 
 /**
@@ -18,11 +26,12 @@ void SPARQLErrorListener::syntaxError(antlr4::Recognizer *recognizer, antlr4::To
 */
 void QueryParser::SPARQLParse(const string &query)
 {
-	istringstream ifs(query);
+	try{
+		istringstream ifs(query);
 
-	SPARQLErrorListener lstnr;
+	 SPARQLErrorListener lstnr;
 
-	antlr4::ANTLRInputStream input(ifs);
+	  antlr4::ANTLRInputStream input(ifs);
 	SPARQLLexer lexer(&input);
 	lexer.removeErrorListeners();
 	lexer.addErrorListener(&lstnr);
@@ -33,8 +42,13 @@ void QueryParser::SPARQLParse(const string &query)
 	parser.addErrorListener(&lstnr);
 
 	SPARQLParser::EntryContext *tree = parser.entry();
-	// printTree(tree, 0);
 	visitEntry(tree);
+	}catch(const runtime_error& e1)
+	{
+        
+		throw runtime_error(e1.what());
+	}
+	
 }
 
 /**
@@ -94,34 +108,14 @@ void QueryParser::printQueryTree()
 }
 
 /**
-	queryUnit : query ;
-	Visit node queryUnit: recursively call visit on its only child node query.
-	(Redundant, can be removed without affecting QueryParser's function)
-
-	@param ctx pointer to queryUnit's context.
-	@return a dummy antlrcpp::Any object.
-*/
-antlrcpp::Any QueryParser::visitQueryUnit(SPARQLParser::QueryUnitContext *ctx)
-{
-	// printNode(ctx, "queryUnit");
-
-	visit(ctx->query());
-
-	return antlrcpp::Any();
-}
-
-/**
 	query : prologue( selectquery | constructquery | describequery | askquery )valuesClause ;
 	Visit node query: recursively call visit on each of its children.
-	(Redundant, can be removed without affecting QueryParser's function)
 
 	@param ctx pointer to query's context.
 	@return a dummy antlrcpp::Any object.
 */
 antlrcpp::Any QueryParser::visitQuery(SPARQLParser::QueryContext *ctx)
 {
-	// printNode(ctx, "query");
-
 	visit(ctx->prologue());
 
 	// Only one of the following children is valid
@@ -316,13 +310,13 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 	SPARQLParser::VarContext *varCtx)
 {
 	// Sanity checks
-	SPARQLParser::BuiltInCallContext *bicCtx = expCtx->conditionalOrexpression()-> \
+	SPARQLParser::PrimaryexpressionContext *prmCtx = expCtx->conditionalOrexpression()-> \
 		conditionalAndexpression(0)->valueLogical(0)->relationalexpression()-> \
 		numericexpression(0)->additiveexpression()->multiplicativeexpression(0)-> \
-		unaryexpression(0)->primaryexpression()->builtInCall();
-	// if (!bicCtx)
-	// 	throw runtime_error("[ERROR]	Currently only support selecting variables, "
-	// 		"the aggregate function COUNT, and path-associated built-in calls");
+		unaryexpression(0)->primaryexpression();
+	SPARQLParser::BuiltInCallContext *bicCtx;
+	if (prmCtx)
+		bicCtx = prmCtx->builtInCall();
 	if (bicCtx)
 	{	
 		antlr4::tree::ParseTree *curr = expCtx;
@@ -332,7 +326,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			if (curr->children.size() > 1)
 				throw runtime_error("[ERROR] Currently only support selecting variables; "
 					"the aggregate functions COUNT, MIN, MAX, SUM, AVG; "
-					"the built-in call CONTAINS; and path-associated built-in calls");
+					"the built-in call CONTAINS; and path-associated built-in or custom calls");
 			curr = curr->children[0];
 		}
 		SPARQLParser::AggregateContext *aggCtx = bicCtx->aggregate();
@@ -365,13 +359,15 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		{
 			string tmp = bicCtx->children[0]->getText();
 			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-			if (tmp == "SIMPLECYCLEPATH" || tmp == "SIMPLECYCLEBOOLEAN"
-				|| tmp == "CYCLEPATH" || tmp == "CYCLEBOOLEAN"
-				|| tmp == "SHORTESTPATH" || tmp == "SHORTESTPATHLEN"
-				|| tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH")	// Path calls
+			if (tmp == "SIMPLECYCLEPATH" || tmp == "SIMPLECYCLEBOOLEAN" \
+				|| tmp == "CYCLEPATH" || tmp == "CYCLEBOOLEAN" \
+				|| tmp == "SHORTESTPATH" || tmp == "SHORTESTPATHLEN" \
+				|| tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH" \
+				|| tmp == "PPR")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+				cout<<"tmp:"<<tmp<<endl;
 				if (tmp == "SIMPLECYCLEPATH")
 					proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCyclePath_type;
 				else if (tmp == "SIMPLECYCLEBOOLEAN")
@@ -390,11 +386,16 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopEnumerate_type;
 				else if (tmp == "KHOPREACHABLEPATH")
 					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopReachablePath_type;
+				else if (tmp == "PPR")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::ppr_type;
 
 				proj_var.path_args.src = bicCtx->varOrIri(0)->getText();
 				replacePrefix(proj_var.path_args.src);
-				proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
-				replacePrefix(proj_var.path_args.dst);
+				if (tmp != "PPR")
+				{
+					proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
+					replacePrefix(proj_var.path_args.dst);
+				}
 				auto predSet = bicCtx->predSet()->iri();
 				for (auto pred : predSet)
 				{
@@ -403,24 +404,41 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.path_args.pred_set.push_back(prefixedPred);
 				}
 
-				if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH")
+				if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH" \
+					|| tmp == "PPR")
 				{
-					if (bicCtx->num_integer())
-						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer()));
-					else if (bicCtx->integer_positive())
+					if (bicCtx->integer_positive())
+					{
 						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_positive()));
+						if (bicCtx->num_integer(0))
+							proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(0)));
+					}
 					else if (bicCtx->integer_negative())
+					{
 						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_negative()));
-					
+						if (bicCtx->num_integer(0))
+							proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(0)));
+					}
+					else
+					{
+						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer(0)));
+						if (bicCtx->num_integer(1))
+							proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(1)));
+					}
+
 					if (bicCtx->numericLiteral())
 						proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
 					else
 						proj_var.path_args.confidence = 1;
 				}
-				if (bicCtx->booleanLiteral()->getText() == "true")
-					proj_var.path_args.directed = true;
-				else
-					proj_var.path_args.directed = false;
+
+				if (tmp != "PPR")
+				{
+					if (bicCtx->booleanLiteral()->getText() == "true")
+						proj_var.path_args.directed = true;
+					else
+						proj_var.path_args.directed = false;
+				}
 
 				proj_var.var = varCtx->getText();
 				
@@ -430,64 +448,95 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				query_tree_ptr->addProjectionVar();
 				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
 				proj_var.aggregate_type = QueryTree::ProjectionVar::Contains_type;
-				proj_var.builtin_args.push_back(bicCtx->expression(0)->getText());
-				proj_var.builtin_args.push_back(bicCtx->expression(1)->getText());
+				proj_var.func_args.push_back(bicCtx->expression(0)->getText());
+				proj_var.func_args.push_back(bicCtx->expression(1)->getText());
 				proj_var.var = varCtx->getText();
 			}
 			else
 				throw runtime_error("[ERROR] Currently only support selecting variables; "
 					"the aggregate functions COUNT, MIN, MAX, SUM, AVG; "
-					"the built-in call CONTAINS; and path-associated built-in calls");
+					"the built-in call CONTAINS; and path-associated built-in or custom calls");
 				
 			
 		}
 	}
-	else 	// For multi-layer computation, only consider vars, literals, and bracketted expressions for now
+	else if (prmCtx && prmCtx->iriOrFunction() && prmCtx->iriOrFunction()->argList())
+	{
+		// Custom function call (constrained to path-related)
+		antlr4::tree::ParseTree *curr = expCtx;
+		for (int i = 0; i < 10; i++)
+		{
+			// Make sure only one children along the way
+			if (curr->children.size() > 1)
+				throw runtime_error("[ERROR] Currently only support selecting variables; "
+					"the aggregate functions COUNT, MIN, MAX, SUM, AVG; "
+					"the built-in call CONTAINS; and path-associated built-in or custom calls");
+			curr = curr->children[0];
+		}
+		SPARQLParser::IriOrFunctionContext *funcCtx = prmCtx->iriOrFunction();
+		query_tree_ptr->addProjectionVar();
+		QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+		proj_var.aggregate_type = QueryTree::ProjectionVar::Custom_type;
+		string custom_func_iri = prmCtx->iriOrFunction()->iri()->getText();
+		proj_var.custom_func_name = custom_func_iri.substr(1, custom_func_iri.length() - 2);
+		// Don't deal with DISTINCT in argList for now
+		for (auto expression : prmCtx->iriOrFunction()->argList()->expression())
+			proj_var.func_args.push_back(expression->getText());
+	}
+	else
 	{
 		query_tree_ptr->addProjectionVar();
 		QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
 		proj_var.aggregate_type = QueryTree::ProjectionVar::CompTree_type;
 		proj_var.var = varCtx->getText();
-		proj_var.comp_tree_root = new QueryTree::CompTreeNode;
+		// proj_var.comp_tree_root = new QueryTree::CompTreeNode;
 		buildCompTree(expCtx, -1, proj_var.comp_tree_root);
 	}
 }
 
-void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode *curr_node)
-{
-	// cout << root->getText() << endl;
-	// cout << "#children = " << root->children.size() << endl;
+/**
+	Build a CompTree (i.e., a tree structure denoting the operand-operator
+	relations in an expression), in SELECT/FILTER/ORDER BY.
 
+	@param root pointer to the expression or var's context.
+	@param oper_pos the starting position to look at for the current node, 
+	used to branch out the right child node.
+	@param curr_node pointer to the current CompTree node.
+*/
+void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode &curr_node)
+{
 	if (root->children.size() == 1)
 	{
+		// TODO: add handling for builtInCall (just put function name in oprt), 
+		// iriOrFunction (not supported); IN, NOT (relationalexpression);	
 		if (((SPARQLParser::PrimaryexpressionContext *)root)->rDFLiteral())
 		{
-			curr_node->oprt = "";
-			curr_node->lchild = NULL;
-			curr_node->rchild = NULL;
-			curr_node->val = root->getText();
+			curr_node.oprt = "";
+			// curr_node.lchild = NULL;
+			// curr_node.rchild = NULL;
+			curr_node.val = root->getText();
 		}
 		else if (((SPARQLParser::PrimaryexpressionContext *)root)->numericLiteral())
 		{
-			curr_node->oprt = "";
-			curr_node->lchild = NULL;
-			curr_node->rchild = NULL;
+			curr_node.oprt = "";
+			// curr_node.lchild = NULL;
+			// curr_node.rchild = NULL;
 			auto numericLiteral = ((SPARQLParser::PrimaryexpressionContext *)root)->numericLiteral();
-			curr_node->val = getNumeric(numericLiteral);
+			curr_node.val = getNumeric(numericLiteral);
 		}
 		else if (((SPARQLParser::PrimaryexpressionContext *)root)->booleanLiteral())
 		{
-			curr_node->oprt = "";
-			curr_node->lchild = NULL;
-			curr_node->rchild = NULL;
-			curr_node->val = "\"" + root->getText() + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
+			curr_node.oprt = "";
+			// curr_node.lchild = NULL;
+			// curr_node.rchild = NULL;
+			curr_node.val = "\"" + root->getText() + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
 		}
 		else if (((SPARQLParser::PrimaryexpressionContext *)root)->var())
 		{
-			curr_node->oprt = "";
-			curr_node->lchild = NULL;
-			curr_node->rchild = NULL;
-			curr_node->val = root->getText();
+			curr_node.oprt = "";
+			// curr_node.lchild = NULL;
+			// curr_node.rchild = NULL;
+			curr_node.val = root->getText();
 		}
 		else
 		{
@@ -496,50 +545,167 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 			else
 			{
 				// var from varCtx
-				curr_node->oprt = "";
-				curr_node->lchild = NULL;
-				curr_node->rchild = NULL;
-				curr_node->val = root->getText();
+				curr_node.oprt = "";
+				// curr_node.lchild = NULL;
+				// curr_node.rchild = NULL;
+				curr_node.val = root->getText();
 			}
 		}
 	}
 	else if (root->children.size() == 2)
 	{
-		if (root->children[0]->getText()[0] != '!' \
-			&& root->children[0]->getText()[0] != '+' \
-			&& root->children[0]->getText()[0] != '-')
+		string left = root->children[0]->getText();
+		transform(left.begin(), left.end(), left.begin(), ::toupper);
+		if (left != "!" && left != "+" && left != "-" && left != "NOW")
 			throw runtime_error("[ERROR]	Unary operator not supported");
-		curr_node->oprt = root->children[0]->getText();
-		curr_node->lchild = new QueryTree::CompTreeNode;
-		curr_node->rchild = NULL;
-		curr_node->val = "";
-		buildCompTree(root->children[1], -1, curr_node->lchild);
+		if (((SPARQLParser::IriOrFunctionContext *)root)->argList())
+			throw runtime_error("[ERROR]	Custom function not supported");
+		curr_node.oprt = left;
+		// curr_node.lchild = new QueryTree::CompTreeNode;
+		curr_node.children.push_back(QueryTree::CompTreeNode());
+		// curr_node.rchild = NULL;
+		curr_node.val = "";
+		if (left != "NOW")
+		{
+			// buildCompTree(root->children[1], -1, curr_node.lchild);
+			buildCompTree(root->children[1], -1, curr_node.children[0]);
+		}
 	}
 	else if (root->children.size() % 2 == 1)	// >= 3, odd #children
 	{
+		string left = root->children[1]->getText();
+		transform(left.begin(), left.end(), left.begin(), ::toupper);
 		if (root->children[0]->getText() == "(")
 			buildCompTree(root->children[1], -1, curr_node);
+		else if (left == "IN")
+		{
+			// relationalexpression : numericexpression K_IN expressionList
+			curr_node.oprt = "IN";
+			curr_node.val = "";
+			curr_node.children.push_back(QueryTree::CompTreeNode());
+			buildCompTree(((SPARQLParser::RelationalexpressionContext *)root)->numericexpression()[0], -1, curr_node.children[0]);
+			int numChild = 1;
+			for (auto expression : \
+				((SPARQLParser::RelationalexpressionContext *)root)->expressionList()->expression())
+			{
+				curr_node.children.push_back(QueryTree::CompTreeNode());
+				buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
+				numChild++;
+			}
+		}
 		else
 		{
 			int rightmostOprtPos = root->children.size() - 2;
-			// if (oper_pos == -1)
-			// 	oper_pos = 1;
 			if (oper_pos < rightmostOprtPos)
 			{
 				int new_oper_pos = oper_pos + 2;
-				curr_node->oprt = root->children[oper_pos + 2]->getText();
-				curr_node->lchild = new QueryTree::CompTreeNode;
-				curr_node->rchild = new QueryTree::CompTreeNode;
-				curr_node->val = "";
-				buildCompTree(root->children[oper_pos + 1], -1, curr_node->lchild);
-				buildCompTree(root, oper_pos + 2, curr_node->rchild);
+				curr_node.oprt = root->children[oper_pos + 2]->getText();
+				curr_node.val = "";
+				// curr_node.lchild = new QueryTree::CompTreeNode;
+				// curr_node.rchild = new QueryTree::CompTreeNode;
+				// buildCompTree(root->children[oper_pos + 1], -1, curr_node.lchild);
+				// buildCompTree(root, oper_pos + 2, curr_node.rchild);
+				curr_node.children.push_back(QueryTree::CompTreeNode());
+				curr_node.children.push_back(QueryTree::CompTreeNode());
+				buildCompTree(root->children[oper_pos + 1], -1, curr_node.children[0]);
+				buildCompTree(root, oper_pos + 2, curr_node.children[1]);
 			}
 			else 	// oper_pos == rightmostOprtPos, the last operator on this level has been handled
 				buildCompTree(root->children[oper_pos + 1], -1, curr_node);
 		}
 	}
-	else
-		throw runtime_error("[ERROR]	Computation type not supported (an even #children > 2)");
+	else 	// >= 3, even #children, must be NOT IN or function call
+	{
+		cout << "root->getText() " << root->getText() << endl;
+		string left = root->children[1]->getText();
+		transform(left.begin(), left.end(), left.begin(), ::toupper);
+		if (left == "NOT")
+		{
+			// relationalexpression : K_NOT K_IN expressionList
+			curr_node.oprt = "NOT IN";
+			curr_node.val = "";
+			curr_node.children.push_back(QueryTree::CompTreeNode());
+			buildCompTree(((SPARQLParser::RelationalexpressionContext *)root)->numericexpression()[0], -1, curr_node.children[0]);
+			int numChild = 1;
+			for (auto expression : \
+				((SPARQLParser::RelationalexpressionContext *)root)->expressionList()->expression())
+			{
+				curr_node.children.push_back(QueryTree::CompTreeNode());
+				buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
+				numChild++;
+			}
+		}
+		else if (root->children[0]->children.size() == 0)
+		{
+			string funcName = root->children[0]->getText();
+			transform(funcName.begin(), funcName.end(), funcName.begin(), ::toupper);
+			if (funcName != "STR" && funcName != "ISIRI" && funcName != "ISURI" \
+				&& funcName != "ISLITERAL" && funcName != "ISNUMERIC" && funcName != "LANG" \
+				&& funcName != "LANGMATCHES" && funcName != "BOUND" && funcName != "SIMPLECYCLEBOOLEAN" \
+				&& funcName != "CYCLEBOOLEAN" && funcName != "SHORTESTPATHLEN" && funcName != "SHORTESTPATHLEN" \
+				&& funcName != "KHOPREACHABLE" && funcName != "DATATYPE" && funcName != "CONTAINS" \
+				&& funcName != "UCASE" && funcName != "LCASE" && funcName != "STRSTARTS" \
+				&& funcName != "NOW" && funcName != "YEAR" && funcName != "MONTH" \
+				&& funcName != "DAY" && funcName != "ABS" && funcName != "REGEX")
+				throw runtime_error("[ERROR] Filter currently does not support this built-in call.");
+			curr_node.oprt = funcName;
+			if (funcName == "BOUND")
+			{
+				curr_node.children.push_back(QueryTree::CompTreeNode());
+				curr_node.children[0].oprt = "";
+				curr_node.children[0].val = ((SPARQLParser::BuiltInCallContext *)root)->var()->getText();
+			}
+			else if (funcName == "SIMPLECYCLEBOOLEAN" || funcName == "CYCLEBOOLEAN" \
+				|| funcName == "SHORTESTPATHLEN" || funcName == "KHOPREACHABLE")
+			{
+				(curr_node.path_args).src = ((SPARQLParser::BuiltInCallContext *)root)->varOrIri(0)->getText();
+				replacePrefix((curr_node.path_args).src);
+				(curr_node.path_args).dst = ((SPARQLParser::BuiltInCallContext *)root)->varOrIri(1)->getText();
+				replacePrefix((curr_node.path_args).dst);
+				auto predSet = ((SPARQLParser::BuiltInCallContext *)root)->predSet()->iri();
+				for (auto pred : predSet)
+				{
+					string prefixedPred = pred->getText();
+					replacePrefix(prefixedPred);
+					(curr_node.path_args).pred_set.push_back(prefixedPred);
+				}
+
+				if (funcName == "KHOPREACHABLE")
+				{
+					(curr_node.path_args).k = \
+						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer(0)->getText());
+					(curr_node.path_args).confidence = \
+						stof(((SPARQLParser::BuiltInCallContext *)root)->numericLiteral()->getText());
+				}
+				if (((SPARQLParser::BuiltInCallContext *)root)->booleanLiteral()->getText() == "true")
+					(curr_node.path_args).directed = true;
+				else
+					(curr_node.path_args).directed = false;
+			}
+			else if (funcName == "REGEX")
+			{
+				int numChild = 0;
+				for (auto expression : ((SPARQLParser::RegexexpressionContext *)root)->expression())
+				{
+					curr_node.children.push_back(QueryTree::CompTreeNode());
+					buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
+					numChild++;
+				}
+			}
+			else
+			{
+				int numChild = 0;
+				for (auto expression : ((SPARQLParser::BuiltInCallContext *)root)->expression())
+				{
+					curr_node.children.push_back(QueryTree::CompTreeNode());
+					buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
+					numChild++;
+				}
+			}
+		}
+		else
+			throw runtime_error("[ERROR]	Filter currently does not support this built-in call.");
+	}
 }
 
 /**
@@ -721,11 +887,14 @@ antlrcpp::Any QueryParser::visitFilter(SPARQLParser::FilterContext *ctx, \
 	group_pattern.addOneFilter();
 
 	if (ctx->constraint()->brackettedexpression())
-		buildFilterTree(ctx->constraint()->brackettedexpression()->expression()->conditionalOrexpression(), \
-			NULL, group_pattern.getLastFilter().root, "conditionalOrexpression");
+		// buildFilterTree(ctx->constraint()->brackettedexpression()->expression()->conditionalOrexpression(), \
+		// 	NULL, group_pattern.getLastFilter().root, "conditionalOrexpression");
+		buildCompTree(ctx->constraint()->brackettedexpression()->expression()->conditionalOrexpression(), \
+			-1, group_pattern.getLastFilter());
 	else if (ctx->constraint()->builtInCall())
-		buildFilterTree(ctx->constraint()->builtInCall(), NULL, \
-			group_pattern.getLastFilter().root, "builtInCall");
+		// buildFilterTree(ctx->constraint()->builtInCall(), NULL, \
+		// 	group_pattern.getLastFilter().root, "builtInCall");
+		buildCompTree(ctx->constraint()->builtInCall(), -1, group_pattern.getLastFilter());
 
 	return antlrcpp::Any();
 }
@@ -746,7 +915,7 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 {
 	string tmp;
 
-	// Passing argument like so lose will type info; therefore needs string tp
+	// Passing argument like so loses type info; therefore needs string tp
 	if (tp == "conditionalOrexpression")
 	{
 		if (root->children.size() == 1)
@@ -1032,7 +1201,7 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 				if (tmp == "KHOPREACHABLE")
 				{
 					filter.child[0].path_args.k = \
-						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer()->getText());
+						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer(0)->getText());
 					filter.child[0].path_args.confidence = \
 						stof(((SPARQLParser::BuiltInCallContext *)root)->numericLiteral()->getText());
 				}
@@ -1108,6 +1277,7 @@ antlrcpp::Any QueryParser::visitBind(SPARQLParser::BindContext *ctx, \
 	1) No triplesNodepath in triplesSameSubjectpath;
 	2) The child of verbpathOrSimple is verbSimple (no property path, only simple predicate);
 	3) The descendant of objectListpath/objectList is varOrTerm (only simple object).
+	1) and 3) means that currently we cannot handle blank nodes in queries.
 
 	@param ctx pointer to triplesSameSubjectpath's context.
 	@param group_pattern a group graph pattern.
@@ -1233,10 +1403,8 @@ antlrcpp::Any QueryParser::visitGroupClause(SPARQLParser::GroupClauseContext *ct
 /**
 	orderClause : K_ORDER K_BY orderCondition+ ;
 	orderCondition : ( ( K_ASC | K_DESC ) brackettedexpression )| ( constraint | var ) ;
-	Visit node orderClause: Collect ORDER BY variables, and whether the order should be 
+	Visit node orderClause: Collect ORDER BY conditions, and whether the order should be 
 	ASC or DESC.
-	Assumptions:
-	1) ORDER BY key can only be var or brackettedexpression.
 
 	@param ctx pointer to orderClause's context.
 	@return a dummy antlrcpp::Any object.

@@ -23,22 +23,12 @@ class TempResult
 		{
 			public:
 				unsigned *id;
-				int sz;
 				std::vector<std::string> str;
-				
-				ResultPair();
-				ResultPair(const ResultPair& that);
-				ResultPair& operator=(const ResultPair& that);
-				~ResultPair() { }	// Delete pointer already handled in release
+				ResultPair():id(NULL){}
 		};
 
 		Varset id_varset, str_varset;
 		std::vector<ResultPair> result;
-
-		TempResult() { }
-		TempResult(const TempResult& that);
-		TempResult& operator=(const TempResult& that);
-		~TempResult() { }
 
 		Varset getAllVarset();
 
@@ -58,9 +48,9 @@ class TempResult
 
 		void getFilterString(QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild &child, EvalMultitypeValue &femv, ResultPair &row, int id_cols, StringIndex *stringindex);
 		EvalMultitypeValue matchFilterTree(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, ResultPair &row, int id_cols, StringIndex *stringindex);
-		void doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset);
+		void doFilter(const QueryTree::CompTreeNode &filter, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset);
 
-		EvalMultitypeValue doComp(QueryTree::CompTreeNode *root, ResultPair &row, int id_cols, StringIndex *stringindex, Varset &entity_literal_varset);
+		EvalMultitypeValue doComp(const QueryTree::CompTreeNode &root, ResultPair &row, int id_cols, StringIndex *stringindex, Varset &this_varset, Varset &entity_literal_varset);
 
 		void print(int no=-1);
 };
@@ -72,10 +62,7 @@ class TempResultSet
 		bool initial;	// If true -- has never been filled, any result will overwrite it
 						// If false -- has been filled by some executed query, even if empty,
 						// will join normally
-		TempResultSet();
-		TempResultSet(const TempResultSet& that);
-		TempResultSet& operator=(const TempResultSet& that);
-		~TempResultSet() { }
+		TempResultSet() { initial = true; }
 
 		void release();
 
@@ -85,7 +72,7 @@ class TempResultSet
 		void doUnion(TempResultSet &x, TempResultSet &r);
 		void doOptional(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
 		void doMinus(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
-		void doFilter(QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
+		void doFilter(const QueryTree::CompTreeNode &filter, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
 
 		void doProjection1(Varset &proj, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
 		void doDistinct1(TempResultSet &r);

@@ -1,52 +1,73 @@
-/*
-* Operation.h
-*
-* Created on: 2014-10-16
-* Author: hanshuo
+/**
+* @file  Operation.h
+* @author  suxunbin
+* @date  10-AUG-2021
+* @brief  an operation class used to store a command and its parameter list
 */
 
 #ifndef OPERATION_H_
 #define OPERATION_H_
 
 #include "../Util/Util.h"
-#include"../Util/Bstr.h"
 
-//NOTICE:CMD_DROP is used to remove the database, and CMD_CREATE is not useful because
-//we always need to import a dataset to create a gstore db
+/** @brief  A enum of different command types */
 enum CommandType {
-	CMD_CONNECT, CMD_TEST, CMD_LOAD, CMD_UNLOAD, CMD_CREATE, CMD_DROP, CMD_BUILD,
-	CMD_QUERY, CMD_SHOW, CMD_INSERT, CMD_STOP, CMD_BACKUP, CMD_OTHER
-	//CMD_CONNECT, CMD_EXIT, CMD_TEST, CMD_LOAD, CMD_UNLOAD, CMD_CREATE, CMD_DROP,
-	//CMD_IMPORT, CMD_QUERY, CMD_SHOW, CMD_INSERT, CMD_STOP, CMD_OTHER
-}; // extend the operation command type here.
+	CMD_OTHER, /**< enum value other. */
+	CMD_TEST, /**< enum value test. */
+	CMD_LOGIN, /**< enum value login. */
+	CMD_BUILD, /**< enum value build. */
+	CMD_LOAD, /**< enum value load. */
+	CMD_UNLOAD, /**< enum value unload. */
+	CMD_QUERY, /**< enum value query. */
+	CMD_SHOW, /**< enum value show. */
+	CMD_STOP, /**< enum value stop. */
+	CMD_DROP, /**< enum value drop. */
+	CMD_CLOSE /**< enum value close. */
+};
 
 class Operation
 {
 public:
+	/** @brief A default constructor. */
 	Operation();
-	Operation(std::string _usr, std::string _pwd, CommandType _cmd, const std::vector<std::string>& _para);
-	Operation(CommandType _cmd, const std::vector<std::string>& _para);
+
+	/**
+	* @brief A constructor taking two arguments.
+	* @param[in]  _cmd : The command type
+	* @param[in]  _para : The parameter list
+	*/
+	Operation(CommandType _cmd, const std::unordered_map<std::string, std::string>& _para);
+
+	/** @brief A default destructor. */
 	~Operation();
 
-	Bstr encrypt();
-	Bstr decrypt();
-
+	/**
+	* @brief Get the command type.
+	*/
 	CommandType getCommand();
-	std::string getParameter(int _idx);
 
+	/**
+	* @brief Get the parameter value of a parameter.
+	* @param[in]  _para_name : A parameter name
+	*/
+	std::string getParameter(std::string _para_name);
+
+	/**
+	* @brief Set the command type.
+	* @param[in] _cmd : A command type
+	*/
 	void setCommand(CommandType _cmd);
-	void setParameter(const std::vector<std::string>& _para);
+
+	/**
+	* @brief Set the parameter list.
+	* @param[in] _para : A parameter list
+	*/
+	void setParameter(const std::unordered_map<std::string, std::string>& _para);
 
 
 private:
-	/*
-	* attention: the username and password is not used to verify permissions of connection by now...
-	* this part of functions should be implemented later.
-	*/
-	std::string username;
-	std::string password;
-	CommandType command;
-	std::vector<std::string> parameters;
+	CommandType command; /**< The command type. */
+	std::unordered_map<std::string, std::string> parameters; /**<  The parameter list. */
 };
 
 #endif /* OPERATION_H_ */

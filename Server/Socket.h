@@ -1,74 +1,119 @@
-/*
- * Socket.h
- *
- *  Created on: 2014-10-14
- *      Author: hanshuo
- */
+/**
+* @file  Socket.h
+* @author  suxunbin
+* @date  11-AUG-2021
+* @brief  a socket interface
+*/
 
 #ifndef _SERVER_SOCKET_H
 #define _SERVER_SOCKET_H
 
-//#include "../Util/Util.h"
-#include <iostream> 
-#include <string> 
-#include <string.h> 
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/wait.h>
+#include "../Util/Util.h"
+#include "../tools/rapidjson/document.h"
+#include "../tools/rapidjson/prettywriter.h"  
+#include "../tools/rapidjson/writer.h"
+#include "../tools/rapidjson/stringbuffer.h"
+#include "../tools/rapidjson/error/en.h"
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <limits.h>
-//DBL_MAX is contained in the header below
-#include <float.h>
-#include <dirent.h>
-#include <string.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <time.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <regex.h>
-#include <locale.h>
-#include <assert.h>
-#include <libgen.h>
-#include <signal.h>
+#define BUFFER_SIZE 131072 /**<  The socket send/recv buffer size. */
 
 class Socket
 {
 public:
-    Socket();
-    ~Socket();
+	/** @brief A default constructor. */
+	Socket();
 
-    bool create();
-    bool close();
-    bool bind(const unsigned short _port); //0~65535
-    bool listen()const;
-    bool accept(Socket& _new_socket)const;
+	/** @brief A default destructor. */
+	~Socket();
 
-    bool connect(const std::string _hostname, const unsigned short _port);
+	/**
+	* @brief Create a socket and set sockopt.
+	* @return
+	*	true : Create the socket successfully. \n
+	*	false : Create the socket failed. \n
+	*/
+	bool create();
 
-    bool send(const std::string& _msg)const;
-    int recv(std::string& _msg)const;
+	/**
+	* @brief Close a socket.
+	* @return
+	*	true : Close the socket successfully. \n
+	*	false : Close the socket failed. \n
+	*/
+	bool close();
 
-    bool isValid()const;
+	/**
+	* @brief Bind a socket with a port.
+	* @param[in]  _port : A port
+	* @return
+	*	true : Bind the socket successfully. \n
+	*	false : Bind the socket failed. \n
+	*/
+	bool bind(const unsigned short _port);
 
-    static const int MAX_CONNECTIONS = 20;
-    static const unsigned short DEFAULT_CONNECT_PORT = 3305;
-    static const std::string DEFAULT_SERVER_IP;
+	/**
+	* @brief Start to listen on the socket.
+	* @return
+	*	true : Start to listen on the socket successfully. \n
+	*	false : Start to listen on the socket failed. \n
+	*/
+	bool listen()const;
+
+	/**
+	* @brief Accept a new socket from a client.
+	* @param[in]  _new_socket : A new socket from a client
+	* @return
+	*	true : Accept the socket successfully. \n
+	*	false : Accept the socket failed. \n
+	*/
+	bool accept(Socket& _new_socket)const;
+
+	/**
+	* @brief Connect the socket with an IP address and a port.
+	* @param[in]  _hostname : An IP address
+	* @param[in]  _port : A port
+	* @return
+	*	true : Connect the socket successfully. \n
+	*	false : Connect the socket failed. \n
+	*/
+	bool connect(const std::string _hostname, const unsigned short _port);
+
+	/**
+	* @brief Send messages.
+	* @param[in]  _msg : a message
+	* @return
+	*	true : Send the message successfully. \n
+	*	false : Send the message failed. \n
+	*/
+	bool send(const std::string& _msg)const;
+
+	/**
+	* @brief Receive messages.
+	* @param[out]  _msg : the message received
+	* @return
+	*	<= 0 : Receive the message failed. \n
+	*	> 0 : The received message length. \n
+	*/
+	int recv(std::string& _msg)const;
+
+	/**
+	* @brief Determine whether a socket is valid.
+	* @return
+	*	true : A valid socket. \n
+	*	false : An invalid socket. \n
+	*/
+	bool isValid()const;
+
+	static const int MAX_CONNECTIONS = 3000; /**<  The maximum connections of the server. */
+	static const unsigned short DEFAULT_CONNECT_PORT = 9000; /**<  A default port. */
+	static const std::string DEFAULT_SERVER_IP; /**<  A default IP address. */
+	std::string username; /**<  The username to connect the server. */
+	std::string password; /**<  The password to connect the server. */
 
 private:
-    int sock;
-    sockaddr_in addr;
+	int sock; /**<  A sockfd. */
+	sockaddr_in addr; /**<  A socket address. */
 };
 
-#endif // _SERVER_SOCKET_H
+#endif /* _SERVER_SOCKET_H */
 

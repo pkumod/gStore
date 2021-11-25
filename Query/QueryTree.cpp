@@ -10,26 +10,6 @@
 
 using namespace std;
 
-QueryTree::GroupPattern::GroupPattern(const QueryTree::GroupPattern& that)
-{
-	sub_group_pattern = that.sub_group_pattern;
-	group_pattern_resultset_minimal_varset = that.group_pattern_resultset_minimal_varset;
-	group_pattern_resultset_maximal_varset = that.group_pattern_resultset_maximal_varset;
-	group_pattern_subject_object_maximal_varset = that.group_pattern_subject_object_maximal_varset;
-	group_pattern_predicate_maximal_varset = that.group_pattern_predicate_maximal_varset;
-}
-
-QueryTree::GroupPattern& QueryTree::GroupPattern::operator=(const QueryTree::GroupPattern& that)
-{
-	sub_group_pattern = that.sub_group_pattern;
-	group_pattern_resultset_minimal_varset = that.group_pattern_resultset_minimal_varset;
-	group_pattern_resultset_maximal_varset = that.group_pattern_resultset_maximal_varset;
-	group_pattern_subject_object_maximal_varset = that.group_pattern_subject_object_maximal_varset;
-	group_pattern_predicate_maximal_varset = that.group_pattern_predicate_maximal_varset;
-
-	return *this;
-}
-
 /**
 	Get varset of the sub-FilterTree rooted at this FilterTreeNode.
 
@@ -365,7 +345,8 @@ void QueryTree::GroupPattern::addOneFilter()
 
 	@return the requested FILTER.
 */
-QueryTree::GroupPattern::FilterTree& QueryTree::GroupPattern::getLastFilter()
+// QueryTree::GroupPattern::FilterTree& QueryTree::GroupPattern::getLastFilter()
+QueryTree::CompTreeNode& QueryTree::GroupPattern::getLastFilter()
 {
 	if (this->sub_group_pattern.back().type != SubGroupPattern::Filter_type)
 		throw "QueryTree::GroupPattern::getLastFilter failed";
@@ -464,9 +445,7 @@ void QueryTree::GroupPattern::getVarset()
 			this->sub_group_pattern[i].optional.getVarset();
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Filter_type)
-		{
-			this->sub_group_pattern[i].filter.root.getVarset(this->sub_group_pattern[i].filter.varset);
-		}
+			this->sub_group_pattern[i].filter.varset = this->sub_group_pattern[i].filter.getVarset();
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Bind_type)
 		{
 			this->sub_group_pattern[i].bind.varset = Varset(this->sub_group_pattern[i].bind.var);
@@ -637,7 +616,7 @@ void QueryTree::GroupPattern::print(int dep)
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Filter_type)
 		{
 			for (int t = 0; t <= dep; t++)	printf("\t");	printf("FILTER\t");
-			this->sub_group_pattern[i].filter.root.print(dep + 1);
+			this->sub_group_pattern[i].filter.print(dep + 1);
 			printf("\n");
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Bind_type)
@@ -798,46 +777,46 @@ Varset& QueryTree::getGroupByVarset()
 QueryTree::Order::Order(bool _descending)
 {
 	descending = _descending;
-	comp_tree_root = new CompTreeNode();
+	// comp_tree_root = new CompTreeNode();
 }
 
 /**
 	The copy constructor of class Order.
 	@param that the object to copy from.
 */
-QueryTree::Order::Order(const QueryTree::Order& that)
-{
-	var = that.var;
-	comp_tree_root = new CompTreeNode();
-	*comp_tree_root = *(that.comp_tree_root);
-	descending = that.descending;
-}
+// QueryTree::Order::Order(const QueryTree::Order& that)
+// {
+// 	var = that.var;
+// 	comp_tree_root = new CompTreeNode();
+// 	*comp_tree_root = *(that.comp_tree_root);
+// 	descending = that.descending;
+// }
 
 /**
 	The copy assignment operator of class Order.
 	@param that the object to copy from.
 */
-QueryTree::Order& QueryTree::Order::operator=(const QueryTree::Order& that)
-{
-	CompTreeNode *local_root = new CompTreeNode();
-	// If the above statement throws,
-    // the object is still in the same state as before.
-    // None of the following statements will throw an exception :)
-    *local_root = *(that.comp_tree_root);
-    delete comp_tree_root;
-    comp_tree_root = local_root;
-    var = that.var;
-    descending = that.descending;
-    return *this;
-}
+// QueryTree::Order& QueryTree::Order::operator=(const QueryTree::Order& that)
+// {
+// 	CompTreeNode *local_root = new CompTreeNode();
+// 	// If the above statement throws,
+//     // the object is still in the same state as before.
+//     // None of the following statements will throw an exception :)
+//     *local_root = *(that.comp_tree_root);
+//     delete comp_tree_root;
+//     comp_tree_root = local_root;
+//     var = that.var;
+//     descending = that.descending;
+//     return *this;
+// }
 
 /**
 	The destructor of class Order.
 */
-QueryTree::Order::~Order()
-{
-	delete comp_tree_root;
-}
+// QueryTree::Order::~Order()
+// {
+// 	delete comp_tree_root;
+// }
 
 /**
 	Add a ORDER BY variable, and mark if it is DESC or ASC.
@@ -882,7 +861,7 @@ Varset QueryTree::getOrderByVarset()
 	{
 		// if (this->order_by[i].var != "")
 		// 	varset.addVar(this->order_by[i].var);
-		varset += order_by[i].comp_tree_root->getCompTreeVarset();
+		varset += order_by[i].comp_tree_root.getVarset();
 	}
 
 	return varset;
@@ -1095,7 +1074,7 @@ void QueryTree::print()
 					if (this->projection[i].aggregate_type == QueryTree::ProjectionVar::CompTree_type)
 					{
 						cout << endl;
-						projection[i].comp_tree_root->print(0);
+						projection[i].comp_tree_root.print(0);
 					}
 					
 					if (this->projection[i].distinct)
@@ -1170,7 +1149,7 @@ void QueryTree::print()
 					if (!this->order_by[i].descending)	printf("ASC(");
 					else printf("DESC(");
 					// printf("%s)\t", this->order_by[i].var.c_str());
-					order_by[i].comp_tree_root->print(0);
+					order_by[i].comp_tree_root.print(0);
 					printf(")\t");
 				}
 				printf("\n");
@@ -1209,125 +1188,158 @@ void QueryTree::print()
 /**
 	The constructor of class CompTreeNode.
 */
-QueryTree::CompTreeNode::CompTreeNode()
-{
-	lchild = NULL;
-	rchild = NULL;
-}
+// QueryTree::CompTreeNode::CompTreeNode()
+// {
+// 	lchild = NULL;
+// 	rchild = NULL;
+// }
 
 /**
 	The copy constructor of class CompTreeNode.
 	@param that the object to copy from.
 */
-QueryTree::CompTreeNode::CompTreeNode(const QueryTree::CompTreeNode& that)
-{
-	oprt = that.oprt;
-	if (that.lchild)
-	{
-		lchild = new QueryTree::CompTreeNode();
-		*lchild = *(that.lchild);
-	}
-	else
-		lchild = NULL;
-	if (that.rchild)
-	{
-		rchild = new QueryTree::CompTreeNode();
-		*rchild = *(that.rchild);
-	}
-	else
-		rchild = NULL;
-	val = that.val;
-}
+// QueryTree::CompTreeNode::CompTreeNode(const QueryTree::CompTreeNode& that)
+// {
+// 	oprt = that.oprt;
+// 	if (that.lchild)
+// 	{
+// 		lchild = new QueryTree::CompTreeNode();
+// 		*lchild = *(that.lchild);
+// 	}
+// 	else
+// 		lchild = NULL;
+// 	if (that.rchild)
+// 	{
+// 		rchild = new QueryTree::CompTreeNode();
+// 		*rchild = *(that.rchild);
+// 	}
+// 	else
+// 		rchild = NULL;
+// 	val = that.val;
+// }
 
 /**
 	The copy assignment operator of class CompTreeNode.
 	@param that the object to copy from.
 */
-QueryTree::CompTreeNode& QueryTree::CompTreeNode::operator=(const QueryTree::CompTreeNode& that)
-{
-	if (that.lchild)
-	{
-		QueryTree::CompTreeNode *local_lchild = new QueryTree::CompTreeNode();
-	    *local_lchild = *(that.lchild);
-	    if (lchild)
-	    	delete lchild;
-	    lchild = local_lchild;
-	}
-	else if (lchild)
-	{
-		delete lchild;
-		lchild = NULL;
-	}
-	if (that.rchild)
-	{
-		QueryTree::CompTreeNode *local_rchild = new QueryTree::CompTreeNode();
-	    *local_rchild = *(that.rchild);
-	    if (rchild)
-	    	delete rchild;
-	    rchild = local_rchild;
-	}
-	else if (rchild)
-	{
-		delete rchild;
-		rchild = NULL;
-	}
-    oprt = that.oprt;
-    val = that.val;
-    return *this;
-}
+// QueryTree::CompTreeNode& QueryTree::CompTreeNode::operator=(const QueryTree::CompTreeNode& that)
+// {
+// 	if (that.lchild)
+// 	{
+// 		QueryTree::CompTreeNode *local_lchild = new QueryTree::CompTreeNode();
+// 	    *local_lchild = *(that.lchild);
+// 	    if (lchild)
+// 	    	delete lchild;
+// 	    lchild = local_lchild;
+// 	}
+// 	else if (lchild)
+// 	{
+// 		delete lchild;
+// 		lchild = NULL;
+// 	}
+// 	if (that.rchild)
+// 	{
+// 		QueryTree::CompTreeNode *local_rchild = new QueryTree::CompTreeNode();
+// 	    *local_rchild = *(that.rchild);
+// 	    if (rchild)
+// 	    	delete rchild;
+// 	    rchild = local_rchild;
+// 	}
+// 	else if (rchild)
+// 	{
+// 		delete rchild;
+// 		rchild = NULL;
+// 	}
+//     oprt = that.oprt;
+//     val = that.val;
+//     return *this;
+// }
 
 /**
 	The destructor of class CompTreeNode.
 */
-QueryTree::CompTreeNode::~CompTreeNode()
-{
-	if (lchild)
-		delete lchild;
-	if (rchild)
-		delete rchild;
-}
+// QueryTree::CompTreeNode::~CompTreeNode()
+// {
+// 	if (lchild)
+// 		delete lchild;
+// 	if (rchild)
+// 		delete rchild;
+// }
 
 void QueryTree::CompTreeNode::print(int dep)
 {
-	if (!lchild && !rchild)
+	if (children.empty())
 	{
-		for (int i = 0; i < dep; i++)
+		for (size_t i = 0; i < dep; i++)
 			cout << '\t';
 		cout << "Value: " << val << endl;
 	}
 	else
 	{
-		for (int i = 0; i < dep; i++)
+		for (size_t i = 0; i < dep; i++)
 			cout << '\t';
 		cout << "Operator " << oprt << endl;
-		if (lchild)
+		for (size_t i = 0; i < children.size(); i++)
 		{
-			for (int i = 0; i < dep; i++)
+			for (size_t i = 0; i < dep; i++)
 				cout << '\t';
-			cout << "lchild:" << endl;
-			lchild->print(dep + 1);
-		}
-		if (rchild)
-		{
-			for (int i = 0; i < dep; i++)
-				cout << '\t';
-			cout << "rchild:" << endl;
-			rchild->print(dep + 1);
+			cout << "child[" << i << "]:" << endl;
+			children[i].print(dep + 1);
 		}
 	}
+
+	// if (!lchild && !rchild)
+	// {
+	// 	for (int i = 0; i < dep; i++)
+	// 		cout << '\t';
+	// 	cout << "Value: " << val << endl;
+	// }
+	// else
+	// {
+	// 	for (int i = 0; i < dep; i++)
+	// 		cout << '\t';
+	// 	cout << "Operator " << oprt << endl;
+	// 	if (lchild)
+	// 	{
+	// 		for (int i = 0; i < dep; i++)
+	// 			cout << '\t';
+	// 		cout << "lchild:" << endl;
+	// 		lchild->print(dep + 1);
+	// 	}
+	// 	if (rchild)
+	// 	{
+	// 		for (int i = 0; i < dep; i++)
+	// 			cout << '\t';
+	// 		cout << "rchild:" << endl;
+	// 		rchild->print(dep + 1);
+	// 	}
+	// }
 }
 
-Varset QueryTree::CompTreeNode::getCompTreeVarset()
+Varset QueryTree::CompTreeNode::getVarset()
 {
-	if (lchild && rchild)
-		return lchild->getCompTreeVarset() + rchild->getCompTreeVarset();
-	if (lchild)
-		return lchild->getCompTreeVarset();
-	if (rchild)
-		return rchild->getCompTreeVarset();
-	// !lchild && !rchild
-	if (val[0] == '?')
-		return Varset(val);
+	if (children.size() == 0)
+	{
+		if (val[0] == '?')
+			return Varset(val);
+		else
+			return Varset();
+	}
 	else
-		return Varset();
+	{
+		Varset ret = children[0].getVarset();
+		for (size_t i = 1; i < children.size(); i++)
+			ret += children[i].getVarset();
+		return ret;
+	}
+
+	// if (lchild && rchild)
+	// 	return lchild->getVarset() + rchild->getVarset();
+	// if (lchild)
+	// 	return lchild->getVarset();
+	// if (rchild)
+	// 	return rchild->getVarset();
+	// // !lchild && !rchild
+	// if (val[0] == '?')
+	// 	return Varset(val);
 }

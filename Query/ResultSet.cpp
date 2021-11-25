@@ -7,6 +7,7 @@
 =============================================================================*/
 
 #include "ResultSet.h"
+#include <regex>
 
 using namespace std;
 
@@ -25,6 +26,7 @@ ResultSet::ResultSet()
 
 ResultSet::~ResultSet()
 {
+	cout<<"call the delete function for ResultSet"<<endl;
 	delete[] this->var_name;
 	if (!this->useStream)
 	{
@@ -171,13 +173,24 @@ ResultSet::to_JSON()
 		this->resetStream();
 
 	const Bstr* bp = NULL;
+	// match ^^<*> string
+	regex dataTypePattern("\\^\\^<(\\S*?)[^>]*>.*?|<.*? />");
+	smatch matchResult;
+	string::const_iterator iterStart;
+	string::const_iterator iterEnd;
 	for(long long i = (!this->useStream ? this->output_offset : 0LL); i < this->ansNum; i++)
 	{
 		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
-			break;
-
+		{
+			  cout<<"the size is out than the output_limit"<<endl;
+              break;
+		}
+			
 		if (this->useStream)
-			bp = this->stream->read();
+		{
+            bp = this->stream->read();
+		}
+			
 
 		if (i >= this->output_offset)
 		{
@@ -198,7 +211,7 @@ ResultSet::to_JSON()
 
 				if (ans_str.length() == 0)
 					continue;
-
+                //ans_str=Util::replace_all(ans_str,"\n","");
 				if (!list_empty)
 					_buf << ",\t";
 				if (ans_str[0] == '<')
@@ -207,25 +220,90 @@ ResultSet::to_JSON()
 					ans_str = ans_str.substr(1, ans_str.length() - 2);
 					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
 					_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+				    list_empty=false;
 				}
-				else if (ans_str[0] == '"' && ans_str.find("\"^^<") == string::npos && ans_str[ans_str.length() - 1] != '>' )
+				else if (ans_str[0] == '"')
 				{
-					ans_type = "literal";
-					ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
-					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-					_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+					if (ans_str.find("\"^^<") == string::npos)
+					{
+						//no has type string
+						ans_type = "literal";
+						ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
+						_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
+						_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+						list_empty = false;
+					}
+					else
+					{
+						string data_type = "";
+						if (ans_str[ans_str.length() - 1] == '>')
+						{
+							ans_type = "typed-literal";
+							int pos = ans_str.find("\"^^<");
+							// string data_type = ans_str.substr(pos + 4, ans_str.length() - pos - 5);
+							iterStart = ans_str.begin();
+							iterEnd = ans_str.end();
+							while (regex_search(iterStart, iterEnd, matchResult, dataTypePattern))
+							{
+								data_type = matchResult[0];
+								break;
+							}
+							if (data_type.length() > 4)
+							{
+								// remove ^^<>
+								data_type = data_type.substr(3, data_type.length()-4);
+								if (data_type.find("^^<") != string::npos)
+								{
+									data_type = "http://www.w3.org/2001/XMLSchema#string-complete";
+								}
+							}
+							else
+							{
+								data_type = "http://www.w3.org/2001/XMLSchema#string-complete";
+							}
+							ans_str = ans_str.substr(0, pos+1);
+							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
+							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string(ans_str.c_str()) + " }";
+							list_empty = false;
+						}
+						else
+						{
+							// the entity value is not complete
+							ans_type = "typed-literal";
+							int pos = ans_str.find("\"^^<");
+							data_type = "http://www.w3.org/2001/XMLSchema#string-not-complete";
+							ans_str = ans_str.substr(0, pos+1);
+							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
+							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string(ans_str.c_str()) + " }";
+							list_empty = false;
+						}
+					}
 				}
-				else if (ans_str[0] == '"' && ans_str.find("\"^^<") != string::npos && ans_str[ans_str.length() - 1] == '>' )
-				{
-					ans_type = "typed-literal";
-					int pos = ans_str.find("\"^^<");
-					string data_type = ans_str.substr(pos + 4, ans_str.length() - pos - 5);
-					ans_str = ans_str.substr(1, pos - 1);
-
-					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-					_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+				// else if (ans_str[0] == '"' && ans_str.find("\"^^<") == string::npos && ans_str[ans_str.length() - 1] != '>' )
+				// {
+				// 	ans_type = "literal";
+				// 	ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
+				// 	_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
+				// 	_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+				//     list_empty=false;
+				// }
+				// else if (ans_str[0] == '"' && ans_str.find("\"^^<") != string::npos && ans_str[ans_str.length() - 1] == '>' )
+				// {
+				// 	ans_type = "typed-literal";
+				// 	int pos = ans_str.find("\"^^<");
+				// 	string data_type = ans_str.substr(pos + 4, ans_str.length() - pos - 5);
+				// 	ans_str = ans_str.substr(1, pos - 1);
+				// 	_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
+				// 	_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+                //     list_empty=false;
+				// }
+				
+				else{
+					//string ans_str_new=Util::replace_all(ans_str,"\"","“");
+					_buf<<"\"error\":{\"errorMsg:\":\"the information is not complete!\"}";
+					list_empty=false;
 				}
-				list_empty = false;
+				//list_empty = false;
 			}
 			_buf << "}";
 		}

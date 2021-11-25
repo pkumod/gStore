@@ -1,40 +1,29 @@
-/*=============================================================================
-# Filename: Server.cpp
-# Author: Bookug Lobert
-# Mail: 1181955272@qq.com
-# Last Modified: 2015-10-25 13:47
-# Description:
-=============================================================================*/
+/**
+* @file  Server.cpp
+* @author  suxunbin
+* @date  12-AUG-2021
+* @brief  a gStore socket server
+*/
 
 #include "Server.h"
 
+using namespace rapidjson;
 using namespace std;
 
-//Server::Server()
-//{
-	//this->connectionPort = Socket::DEFAULT_CONNECT_PORT;
-	//this->connectionMaxNum = Socket::MAX_CONNECTIONS;
-	//this->databaseMaxNum = 1; // will be updated when supporting multiple databases.
-	//this->database = NULL;
-	//this->db_home = Util::global_config["db_home"];
-	//this->db_suffix = Util::global_config["db_suffix"];
-//}
+bool _stop = false; /**< A stopServer flag. */
 
-Server::Server(unsigned short _port)
+Server::Server(int _port)
 {
 	this->connectionPort = _port;
 	this->connectionMaxNum = Socket::MAX_CONNECTIONS;
-	this->databaseMaxNum = 1; // will be updated when supporting multiple databases.
-	this->database = NULL;
+	this->databaseMaxNum = 10;
 	this->db_home = Util::global_config["db_home"];
 	this->db_suffix = Util::global_config["db_suffix"];
-	this->next_backup = 0;
-	this->scheduler_pid = 0;
 }
 
 Server::~Server()
 {
-	delete this->database;
+
 }
 
 bool
@@ -45,21 +34,21 @@ Server::createConnection()
 	flag = this->socket.create();
 	if (!flag)
 	{
-		cerr << Util::getTimeString() << "cannot create socket. @Server::createConnection" << endl;
+		cerr << Util::getTimeString() << "Cannot create socket. @Server::createConnection" << endl;
 		return false;
 	}
 
 	flag = this->socket.bind(this->connectionPort);
 	if (!flag)
 	{
-		cerr << Util::getTimeString() << "cannot bind to port " << this->connectionPort << ". @Server::createConnection" << endl;
+		cerr << Util::getTimeString() << "Cannot bind to port " << this->connectionPort << ". @Server::createConnection" << endl;
 		return false;
 	}
-	//gc = new GstoreConnector(IP, Port, username, password);
+
 	flag = this->socket.listen();
 	if (!flag)
 	{
-		cerr << Util::getTimeString() << "cannot listen to port" << this->connectionPort << ". @Server::createConnection" << endl;
+		cerr << Util::getTimeString() << "Cannot listen to port" << this->connectionPort << ". @Server::createConnection" << endl;
 		return false;
 	}
 
@@ -75,51 +64,117 @@ Server::deleteConnection()
 }
 
 bool
-Server::response(Socket _socket, std::string& _msg)
+Server::response(int _code, std::string _msg, Socket& _socket)
 {
-	bool flag = _socket.send(_msg);
-
+	std::string resJson = CreateJson(_code, _msg, 0);
+	bool flag = _socket.send(resJson);
 	return flag;
 }
 
-void
-Server::listen()
+/**
+* @brief A socket thread class
+*/
+class sockThread
 {
+public:
+	std::thread TD;
+	int tid; /**< A thread id. */
+	static int Threadnum; /**< A thread counter. */
+	Socket socket; /**< A client socket. */
+	Server* server;
+	/**
+	* @brief A constructor taking an argument.
+	* @param[in]  _socket : A client socket
+	*/
+	sockThread(Socket& _socket);
+	/** @brief A default destructor. */
+	~sockThread();
+	/**
+	* @brief Get the thread id.
+	* @return The thread id.
+	*/
+	int GetThreadID();
+	/**
+	* @brief A thread handling function.
+	*/
+	void run();
+	/**
+	* @brief Start the thread.
+	*/
+	void start();
+};
+
+int sockThread::Threadnum = 0;
+
+sockThread::sockThread(Socket& _socket)
+{
+	Threadnum++;
+	tid = Threadnum;
+	socket = _socket;
+}
+sockThread::~sockThread()
+{
+
+}
+int sockThread::GetThreadID()
+{
+	return tid;
+}
+void sockThread::run()
+{
+	cout << Util::getTimeString() << "Thread:" << tid << " run\n";
+	server->handler(socket);
+}
+void sockThread::start()
+{
+	TD = std::thread(&sockThread::run, this);
+	TD.detach();
+}
+
+void
+Server::handler(Socket& _socket)
+{
+	int repeated_num = 0;
 	while (true)
 	{
-		Socket new_server_socket;
+		if (repeated_num > 10)
+			break;
 
-		cout << Util::getTimeString() << "Wait for input..." << endl;
-
-		this->socket.accept(new_server_socket);
-
-		cout << Util::getTimeString() << "accept new socket." << endl;
-
-		string recv_cmd;
-		bool recv_return = new_server_socket.recv(recv_cmd);
+		/**
+		* @brief Receive the command message from the client.
+		*/
+		std::string recv_cmd;
+		bool recv_return = _socket.recv(recv_cmd);
 		if (!recv_return)
 		{
-			cerr << Util::getTimeString() << "receive command from client error. @Server::listen" << endl;
+			cerr << Util::getTimeString() << "Receive command from client error. @Server::listen" << endl;
+			repeated_num++;
 			continue;
 		}
 
-		cout << Util::getTimeString() << "received msg: " << recv_cmd << endl;
+		cout << Util::getTimeString() << "Received msg: " << recv_cmd << endl;
 
+		/**
+		* @brief Parse the command message and construct an operation.
+		*/
 		Operation operation;
 		bool parser_return = this->parser(recv_cmd, operation);
-		cout << Util::getTimeString() << "parser_return=" << parser_return << endl; //debug
+		cout << Util::getTimeString() << "Parser_return=" << parser_return << endl; //debug
 		if (!parser_return)
 		{
-			cout << Util::getTimeString() << "parser command error. @Server::listen" << endl;
-			string ret_msg = "invalid command.";
-			this->response(new_server_socket, ret_msg);
-			new_server_socket.close();
+			cout << Util::getTimeString() << "Parser command error. @Server::listen" << endl;
+			std::string error = "Invalid command.";
+			this->response(1001, error, _socket);
+			repeated_num++;
 			continue;
 		}
 
-		string ret_msg;
-		bool _stop = false;
+		/**
+		* @brief Execute the specific command function.
+		*/
+		std::string ret_msg;
 		CommandType cmd_type = operation.getCommand();
+		bool _close = false;
 		switch (cmd_type)
 		{
 		case CMD_TEST:
@@ -127,48 +182,50 @@ Server::listen()
 			ret_msg = "OK";
 			break;
 		}
-		
+		case CMD_LOGIN:
+		{
+			std::string username = operation.getParameter("username");
+			std::string password = operation.getParameter("password");
+			this->login(username, password, _socket);
+			break;
+		}
 		case CMD_LOAD:
 		{
-			string db_name = operation.getParameter(0);
-			this->loadDatabase(db_name, "", ret_msg);
-			//ret_msg = gc->load(db_name);
+			std::string db_name = operation.getParameter("db_name");
+			this->load(db_name, _socket);
 			break;
 		}
 		case CMD_UNLOAD:
 		{
-			string db_name = operation.getParameter(0);
-			this->unloadDatabase(db_name, "", ret_msg);
-			//ret_msg = this->gc->load(db_name);
+			std::string db_name = operation.getParameter("db_name");
+			this->unload(db_name, _socket);
 			break;
 		}
 
 		case CMD_BUILD:
 		{
-			string db_name = operation.getParameter(0);
-			string rdf_path = operation.getParameter(1);
-			this->buildDatabase(db_name, "", rdf_path, ret_msg);
+			std::string db_name = operation.getParameter("db_name");
+			std::string db_path = operation.getParameter("db_path");
+			this->build(db_name, db_path, _socket);
 			break;
 		}
 		case CMD_DROP:
 		{
-			string db_name = operation.getParameter(0);
-			this->dropDatabase(db_name, "", ret_msg);
+			std::string db_name = operation.getParameter("db_name");
+			this->drop(db_name, _socket);
 			break;
 		}
 
 		case CMD_QUERY:
 		{
-			//string db_name = operation.getParameter(0);
-			//string format = operation.getParameter(1);
-			string sparql = operation.getParameter(0);
+			std::string db_name = operation.getParameter("db_name");
+			std::string sparql = operation.getParameter("sparql");
 
 			pthread_t timer = Server::start_timer();
 			if (timer == 0) {
 				cerr << Util::getTimeString() << "Failed to start timer." << endl;
 			}
-			this->query(sparql, ret_msg);
-			//ret_msg = this->gc->query(db_name, format, sparql);
+			this->query(db_name, sparql, _socket);
 			if (timer != 0 && !Server::stop_timer(timer)) {
 				cerr << Util::getTimeString() << "Failed to stop timer." << endl;
 			}
@@ -177,77 +234,172 @@ Server::listen()
 
 		case CMD_SHOW:
 		{
-			string para = operation.getParameter(0);
-			if (para == "databases" || para == "all")
-			{
-				this->showDatabases(para, "", ret_msg);
-			}
-			else
-			{
-				ret_msg = "invalid command.";
-			}
+			this->show(_socket);
 			break;
 		}
-		/*
-		case CMD_INSERT:
-		{
-			string db_name = operation.getParameter(0);
-			string rdf_path = operation.getParameter(1);
-			this->insertTriple(db_name, "", rdf_path, ret_msg);
-		    break;
-		}
-		 */
 		case CMD_STOP:
 		{
-			this->stopServer(ret_msg);
+			this->stopServer(_socket);
 			_stop = true;
+			_close = true;
 			break;
 		}
-		case CMD_BACKUP: {
-			string para = operation.getParameter(0);
-			stringstream ss(para);
-			long time_backup;
-			ss >> time_backup;
-			if (this->next_backup == 0) {
-				break;
-			}
-			while (this->next_backup < time_backup) {
-				this->next_backup += Util::gserver_backup_interval;
-			}
-			if (this->next_backup == time_backup) {
-				this->backup(ret_msg);
-			}
-			else {
-				ret_msg = "done";
-			}
+		case CMD_CLOSE:
+		{
+			this->closeConnection(_socket);
+			_close = true;
 			break;
 		}
 
 		default:
-			cerr << Util::getTimeString() << "this command is not supported by now. @Server::listen" << endl;
+		{
+			cerr << Util::getTimeString() << "This command is not supported by now. @Server::listen" << endl;
+			std::string error = "Invalid command.";
+			this->response(1001, error, _socket);
 		}
-
-		this->response(new_server_socket, ret_msg);
-		new_server_socket.close();
-		if (_stop) {
-			this->deleteConnection();
-			cout << Util::getTimeString() << "server stopped." << endl;
+		}
+		if (_close)
 			break;
+		repeated_num = 0;
+	}
+	/**
+	* @brief Disconnect from the client.
+	*/
+	if (logins.find(_socket.username) != logins.end())
+		logins.erase(_socket.username);
+	_socket.username = "";
+	_socket.password = "";
+	_socket.close();
+	/**
+	* @brief Stop the server.
+	*/
+	if (_stop)
+		kill(getpid(), SIGTERM);
+}
+
+void
+Server::init()
+{
+	/**
+	* @brief Load the system database.
+	*/
+	if (access("system.db", 00) != 0)
+	{
+		cerr << Util::getTimeString() << "Can not find system.db." << endl;
+		return;
+	}
+	localDBs.insert(pair<std::string, int>("system", 1));
+	system_database = new Database("system");
+	bool flag = system_database->load();
+	if (!flag)
+	{
+		cerr << Util::getTimeString() << "Failed to load the database system.db." << endl;
+		delete system_database;
+		system_database = NULL;
+		return;
+	}
+	databases.insert(pair<std::string, Database*>("system", system_database));
+
+	importSys();
+}
+
+void
+Server::listen()
+{
+	this->init();
+	Socket soc[this->connectionMaxNum];
+	int i = 0;
+	Socket new_server_socket;
+	while (true)
+	{
+		/**
+		* @brief Receive the stopServer signal.
+		*/
+		signal(SIGTERM, Server::stop_sigterm_handler);
+
+		cout << Util::getTimeString() << "Wait for connection..." << endl;
+
+		this->socket.accept(new_server_socket);
+
+		cout << Util::getTimeString() << "Accept a new socket connection." << endl;
+
+		/**
+		* @brief Create a thread for a client socket.
+		*/
+		memcpy(&soc[i], &new_server_socket, sizeof(Socket));
+		sockThread* tid = new sockThread(soc[i++]);
+		tid->server = this;
+		tid->start();
+	}
+}
+
+std::string Server::checkparamValue(std::string param, std::string value)
+{
+	std::string result = "";
+	if (value.empty())
+	{
+		result = "The value of " + param + " can not be empty!";
+		return result;
+	}
+	if (param == "db_name")
+	{
+		std::string database = value;
+		if (database == "system")
+		{
+			result = "You can not operate the system database.";
+			return result;
 		}
-		if (this->next_backup > 0) {
-			time_t cur_time = time(NULL);
-			if (cur_time >= this->next_backup) {
-				string str;
-				this->backup(str);
-			}
+		if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db")
+		{
+			result = "Your db_name to be built should not end with \".db\".";
+			return result;
 		}
 	}
+	if (param == "db_path")
+	{
+		std::string path = value;
+		if (path == SYSTEM_PATH)
+		{
+			result = "You can not operate the system files.";
+			return result;
+		}
+	}
+	return "";
+}
+
+bool Server::checkdbexist(std::string _db_name)
+{
+	bool result = true;
+	std::map<std::string, int>::iterator it = localDBs.find(_db_name);
+	if (it == localDBs.end())
+		result = false;
+	return result;
+}
+
+bool Server::checkdbload(std::string _db_name)
+{
+	bool result = true;
+	std::map<std::string, Database*>::iterator it = databases.find(_db_name);
+	if (it == databases.end())
+		result = false;
+	return result;
 }
 
 bool
 Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 {
-	int cmd_start_pos = 0;
+	/**
+	* @brief Check if the command is a valid JSON string.
+	*/
+	Document document;
+	document.Parse(_raw_cmd.c_str());
+	if (document.HasParseError())
+		return false;
+
+	/**
+	* @brief Delete the extra space.
+	*/
+	int para_start_pos = 0;
 	int raw_len = (int)_raw_cmd.size();
 
 	for (int i = 0; i < raw_len; i++) {
@@ -256,396 +408,592 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 		}
 	}
 
-	while (cmd_start_pos < raw_len && _raw_cmd[cmd_start_pos] == ' ') {
-		cmd_start_pos++;
-	}
-	if (cmd_start_pos == raw_len)
-	{
-		return false;
-	}
-
-	int idx1 = raw_len;
-	for (int i = cmd_start_pos; i < raw_len; i++) {
-		if (_raw_cmd[i] == ' ')
-		{
-			idx1 = i;
-			break;
-		}
-	}
-
-	string cmd = _raw_cmd.substr(cmd_start_pos, idx1 - cmd_start_pos);
-	int para_start_pos = idx1;
-	while (para_start_pos < raw_len && _raw_cmd[para_start_pos] == ' ')
+	while (para_start_pos < raw_len && _raw_cmd[para_start_pos] == ' ') {
 		para_start_pos++;
+	}
+	if (para_start_pos == raw_len)
+		return false;
 
-	int para_cnt;
+	std::unordered_map<std::string, std::string> paras;
+	int para_end_pos;
+	std::vector<std::string> para_vec;
+
+	/**
+	* @brief Get all parameters.
+	*/
+	while (true)
+	{
+		if (_raw_cmd[para_start_pos] == '"')
+		{
+			para_start_pos++;
+			para_end_pos = para_start_pos;
+			while (true)
+			{
+				if (_raw_cmd[para_end_pos] == '"')
+					break;
+				para_end_pos++;
+			}
+			std::string para = _raw_cmd.substr(para_start_pos, para_end_pos - para_start_pos);
+			para_vec.push_back(para);
+			para_start_pos = para_end_pos;
+		}
+		para_start_pos++;
+		if (_raw_cmd[para_start_pos] == '}')
+			break;
+	}
+	if (para_vec.size() % 2 == 1)
+		return false;
+	std::string cmd = "";
+	for (int i = 0; i < para_vec.size(); i += 2)
+	{
+		if (para_vec[i] == "op")
+			cmd = para_vec[i + 1];
+		paras.insert(pair<std::string, std::string>(para_vec[i], para_vec[i + 1]));
+	}
+
+	/**
+	* @brief Check if the parameters are valid.
+	*/
+	if (cmd == "")
+		return false;
+	int para_num = paras.size();
+
 	if (cmd == "test") {
 		_ret_oprt.setCommand(CMD_TEST);
-		para_cnt = 0;
+	}
+	if (cmd == "login") {
+		_ret_oprt.setCommand(CMD_LOGIN);
+		if (para_num != 3)
+			return false;
+		if ((paras.find("username") == paras.end()) || (paras.find("password") == paras.end()))
+			return false;
+	}
+	else if (cmd == "build") {
+		_ret_oprt.setCommand(CMD_BUILD);
+		if (para_num != 3)
+			return false;
+		if ((paras.find("db_name") == paras.end()) || (paras.find("db_path") == paras.end()))
+			return false;
 	}
 	else if (cmd == "load") {
 		_ret_oprt.setCommand(CMD_LOAD);
-		para_cnt = 1;
+		if (para_num != 2)
+			return false;
+		if (paras.find("db_name") == paras.end())
+			return false;
 	}
 	else if (cmd == "unload") {
 		_ret_oprt.setCommand(CMD_UNLOAD);
-		para_cnt = 1;
+		if (para_num != 2)
+			return false;
+		if (paras.find("db_name") == paras.end())
+			return false;
 	}
-	else if (cmd == "build")
-	{
-		_ret_oprt.setCommand(CMD_BUILD);
-		para_cnt = 2;
-	}
-	else if (cmd == "query")
-	{
+	else if (cmd == "query") {
 		_ret_oprt.setCommand(CMD_QUERY);
-		para_cnt = 1;
+		if (para_num != 3)
+			return false;
+		if ((paras.find("db_name") == paras.end()) || (paras.find("sparql") == paras.end()))
+			return false;
 	}
-	else if (cmd == "show")
-	{
+	else if (cmd == "show") {
 		_ret_oprt.setCommand(CMD_SHOW);
-		para_cnt = 1;
-	}
-	else if (cmd == "insert")
-	{
-		_ret_oprt.setCommand(CMD_INSERT);
-		para_cnt = 2;
-	}
-	else if (cmd == "drop") {
-		_ret_oprt.setCommand(CMD_DROP);
-		para_cnt = 1;
+		if (para_num != 1)
+			return false;
 	}
 	else if (cmd == "stop") {
 		_ret_oprt.setCommand(CMD_STOP);
-		para_cnt = 0;
-	}
-	else if (cmd == "backup") {
-		_ret_oprt.setCommand(CMD_BACKUP);
-		para_cnt = 1;
-	}
-	else
-	{
-		return false;
-	}
-
-	vector<string> paras;
-	int cur_idx = para_start_pos;
-	for (int i = 1; i <= para_cnt; i++)
-	{
-		if (cur_idx >= raw_len)
-		{
+		if (para_num != 1)
 			return false;
-		}
-
-		int next_idx = raw_len;
-		if (i < para_cnt)
-		{
-			for (int j = cur_idx; j<raw_len; j++)
-				if (_raw_cmd[j] == ' ')
-				{
-					next_idx = j;
-					break;
-				}
-		}
-		else
-		{
-			for (int j = raw_len - 1; j>cur_idx; j--)
-				if (_raw_cmd[j] != ' ')
-				{
-					next_idx = j + 1;
-					break;
-				}
-		}
-
-		paras.push_back(_raw_cmd.substr(cur_idx, next_idx - cur_idx));
-
-		cur_idx = next_idx;
-		while (cur_idx < raw_len && _raw_cmd[cur_idx] == ' ')
-			cur_idx++;
 	}
-
-	if (cur_idx != raw_len)
-	{
+	else if (cmd == "close") {
+		_ret_oprt.setCommand(CMD_CLOSE);
+		if (para_num != 1)
+			return false;
+	}
+	else if (cmd == "drop") {
+		_ret_oprt.setCommand(CMD_DROP);
+		if (para_num != 2)
+			return false;
+		if (paras.find("db_name") == paras.end())
+			return false;
+	}
+	else {
 		return false;
 	}
-
 	_ret_oprt.setParameter(paras);
 
 	return true;
 }
 
 bool
-Server::createDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
+Server::drop(std::string _db_name, Socket& _socket)
 {
-	// to be implemented...
-
-	return false;
-}
-
-bool
-Server::dropDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
-{
-	if (this->database != NULL) {
-		_ret_msg = "please do not use this command when you are using a database.";
+	/**
+	* @brief Check if the client logins.
+	*/
+	if (logins.find(_socket.username) == logins.end())
+	{
+		std::string error = "Need to login first.";
+		this->response(1001, error, _socket);
 		return false;
 	}
 
-	size_t length = _db_name.length();
-	if (length < 3 || _db_name.substr(length - 3, 3) == ".db") {
-		_ret_msg = "you can not only drop databases whose names end with \".db\"";
+	/**
+	* @brief Check if the database name is legal.
+	*/
+	std::string result = checkparamValue("db_name", _db_name);
+	if (result.empty() == false)
+	{
+		this->response(1003, result, _socket);
 		return false;
 	}
 
-	string store_path = this->db_home + "/" + _db_name + this->db_suffix;
+	/**
+	* @brief Check if database named [db_name] exists.
+	*/
+	if (!this->checkdbexist(_db_name))
+	{
+		std::string error = "Database not built yet.";
+		this->response(1004, error, _socket);
+		return false;
+	}
 
-	std::string cmd = std::string("rm -rf ") + store_path;
+	/**
+	* @brief Check if database named [db_name] is already loaded.
+	*/
+	if (this->checkdbload(_db_name))
+	{
+		std::string error = "Need to unload database first.";
+		this->response(1004, error, _socket);
+		return false;
+	}
+
+	std::string cmd = "rm -rf " + _db_name + ".db";
 	int ret = system(cmd.c_str());
 	if (ret == 0) {
-		_ret_msg = "drop database done.";
+		localDBs.erase(_db_name);
+		std::string success = "Drop database done.";
+		this->response(0, success, _socket);
 		return true;
 	}
 	else {
-		_ret_msg = "drop database failed.";
+		std::string error = "Drop database failed.";
+		this->response(1005, error, _socket);
 		return false;
 	}
 }
 
 bool
-Server::loadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
+Server::login(std::string _username, std::string _password, Socket& _socket)
 {
-	if(this->database == NULL)
+	/**
+	* @brief Check if the client's username and password is right.
+	*/
+	std::map<std::string, std::string>::iterator iter = users.find(_username);
+	if (iter == users.end())
 	{
-		this->database = new Database(_db_name);
-	}
-	else
-	{
-		_ret_msg = "please unload the current db first: " + this->database->getName();
+		std::string error = "username not find.";
+		this->response(903, error, _socket);
 		return false;
 	}
-
-	bool flag = this->database->load();
-
-	if (flag)
+	else if (iter->second != _password)
 	{
-		_ret_msg = "load database done.";
-	}
-	else
-	{
-		_ret_msg = "load database failed.";
-		delete this->database;
-		this->database = NULL;
+		std::string error = "wrong password.";
+		this->response(902, error, _socket);
 		return false;
 	}
+	logins.insert(pair<std::string, int>(_username, 1));
 
-	pid_t fpid = vfork();
-
-	// child, scheduler
-	if (fpid == 0) {
-		time_t cur_time = time(NULL);
-		long time_backup = Util::read_backup_time();
-		long first_backup = cur_time - (cur_time - time_backup) % Util::gserver_backup_interval
-			+ Util::gserver_backup_interval;
-		this->next_backup = first_backup;
-		string s_port = Util::int2string(this->connectionPort);
-		string s_next_backup = Util::int2string(first_backup);
-		execl("bin/gserver_backup_scheduler", "gserver_backup_scheduler", s_port.c_str(), s_next_backup.c_str(), NULL);
-		exit(0);
-		return true;
-	}
-	// parent
-	if (fpid > 0) {
-		this->scheduler_pid = fpid;
-	}
-	// fork failure
-	else if (fpid < 0) {
-		cerr << Util::getTimeString() << "Database will not be backed-up automatically." << endl;
-	}
-
-	//_ret_msg = "load database done.";
-	return true;
-	//return flag;
-}
-
-bool
-Server::unloadDatabase(std::string _db_name, std::string _ac_name, std::string& _ret_msg)
-{
-	if (this->database == NULL || this->database->getName() != _db_name)
-	{
-		_ret_msg = "database:" + _db_name + " is not loaded.";
-		return false;
-	}
-
-	delete this->database;
-	this->database = NULL;
-	_ret_msg = "unload database done.";
-
-	this->next_backup = 0;
-	//string cmd = "kill " + Util::int2string(this->scheduler_pid);
-	//system(cmd.c_str());
-	kill(this->scheduler_pid, SIGTERM);
-	waitpid(this->scheduler_pid, NULL, 0);
-	this->scheduler_pid = 0;
+	std::string success = "Login successfully.";
+	this->response(0, success, _socket);
+	_socket.username = _username;
+	_socket.password = _password;
 
 	return true;
 }
 
 bool
-Server::buildDatabase(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
+Server::load(std::string _db_name, Socket& _socket)
 {
-	//if (this->database != NULL && this->database->getName() != _db_name)
-	if (this->database != NULL)
+	/**
+	* @brief Check if the client logins.
+	*/
+	if (logins.find(_socket.username) == logins.end())
 	{
-		//delete this->database;
-		//NOTICE:if there is a db loaded, we should not build directly, tell user to unload it first
-		_ret_msg = "please unload the current db first: " + this->database->getName();
+		std::string error = "Need to login first.";
+		this->response(1001, error, _socket);
 		return false;
 	}
 
-	this->database = new Database(_db_name);
-	bool flag = this->database->build(_rdf_path);
-
-	delete this->database;
-	this->database = NULL;
-
-	if (flag)
+	/**
+	* @brief Check if the database name is legal.
+	*/
+	std::string result = checkparamValue("db_name", _db_name);
+	if (result.empty() == false)
 	{
-		_ret_msg = "import RDF file to database done.";
-	}
-	else
-	{
-		_ret_msg = "import RDF file to database failed.";
+		this->response(1003, result, _socket);
+		return false;
 	}
 
-	return flag;
+	/**
+	* @brief Check if database named [db_name] exists.
+	*/
+	if (!this->checkdbexist(_db_name))
+	{
+		std::string error = "Database not built yet.";
+		this->response(1004, error, _socket);
+		return false;
+	}
+
+	/**
+	* @brief Check if database named [db_name] is already loaded.
+	*/
+	if (this->checkdbload(_db_name))
+	{
+		std::string error = "Database already load.";
+		this->response(0, error, _socket);
+		return false;
+	}
+
+	Database* database = new Database(_db_name);
+	bool flag = database->load();
+
+	if (!flag)
+	{
+		std::string error = "Failed to load the database.";
+		this->response(1005, error, _socket);
+		delete database;
+		database = NULL;
+		return false;
+	}
+
+	databases.insert(pair<std::string, Database*>(_db_name, database));
+	std::string success = "Load database successfully.";
+	this->response(0, success, _socket);
+
+	return true;
 }
 
-//bool
-//Server::insertTriple(std::string _db_name, std::string _ac_name, std::string _rdf_path, std::string& _ret_msg)
-//{
-	//if (this->database != NULL)
-	//{
-		//this->database->unload();
-		//delete this->database;
-	//}
-
-	//this->database = new Database(_db_name);
-	//bool flag = this->database->insert(_rdf_path);
-
-	//if (flag)
-	//{
-		//_ret_msg = "insert triple file to database done.";
-	//}
-	//else
-	//{
-		//_ret_msg = "import triple file to database failed.";
-	//}
-
-	//return flag;
-//}
-
 bool
-Server::query(const string _query, string& _ret_msg)
+Server::unload(std::string _db_name, Socket& _socket)
 {
-	//cout<<"Server query()"<<endl;
-	//cout<<_query<<endl;
-	cout << Util::getTimeString() << "Server query(): " << _query << endl;
-	
-	if (this->database == NULL)
+	/**
+	* @brief Check if the client logins.
+	*/
+	if (logins.find(_socket.username) == logins.end())
 	{
-		_ret_msg = "database has not been loaded.";
+		std::string error = "Need to login first.";
+		this->response(1001, error, _socket);
 		return false;
 	}
+
+	/**
+	* @brief Check if the database name is legal.
+	*/
+	std::string result = checkparamValue("db_name", _db_name);
+	if (result.empty() == false)
+	{
+		this->response(1003, result, _socket);
+		return false;
+	}
+
+	/**
+	* @brief Check if database named [db_name] exists.
+	*/
+	if (!this->checkdbexist(_db_name))
+	{
+		std::string error = "Database not built yet.";
+		this->response(1004, error, _socket);
+		return false;
+	}
+
+	/**
+	* @brief Check if database named [db_name] is already unloaded.
+	*/
+	std::map<std::string, Database*>::iterator iter = databases.find(_db_name);
+	if (iter == databases.end())
+	{
+		std::string error = "Database: " + _db_name + " is not loaded yet.";
+		this->response(0, error, _socket);
+		return false;
+	}
+
+	Database* database = iter->second;
+	delete database;
+	database = NULL;
+	databases.erase(_db_name);;
+
+	std::string success = "Unload database done.";
+	this->response(0, success, _socket);
+
+	return true;
+}
+
+bool
+Server::build(std::string _db_name, std::string _db_path, Socket& _socket)
+{
+	/**
+	* @brief Check if the client logins.
+	*/
+	if (logins.find(_socket.username) == logins.end())
+	{
+		std::string error = "Need to login first.";
+		this->response(1001, error, _socket);
+		return false;
+	}
+
+	/**
+	* @brief Check if the database name is legal.
+	*/
+	std::string result = checkparamValue("db_name", _db_name);
+	if (result.empty() == false)
+	{
+		this->response(1003, result, _socket);
+		return false;
+	}
+
+	/**
+	* @brief Check if the rdf file path is legal.
+	*/
+	result = checkparamValue("db_path", _db_path);
+	if (result.empty() == false)
+	{
+		this->response(1003, result, _socket);
+		return false;
+	}
+
+	/**
+	* @brief Check if database named [db_name] is already built.
+	*/
+	if (this->checkdbexist(_db_name))
+	{
+		std::string error = "Database already built.";
+		this->response(1004, error, _socket);
+		return false;
+	}
+
+	cout << "Import dataset to build database..." << endl;
+	cout << "DB_store: " << _db_name << "\tRDF_data: " << _db_path << endl;
+
+	Database* database = new Database(_db_name);
+	bool flag = database->build(_db_path, _socket);
+	delete database;
+	database = NULL;
+
+	/**
+	* @brief Build the database failed.
+	*/
+	if (!flag)
+	{
+		std::string error = "Import RDF file to database failed.";
+		this->response(1005, error, _socket);
+		std::string cmd = "rm -rf " + _db_name + ".db";
+		system(cmd.c_str());
+		return false;
+	}
+
+	/**
+	* @brief Create a success flag file.
+	*/
+	ofstream fsuc;
+	fsuc.open("./" + _db_name + ".db/success.txt");
+	fsuc.close();
+
+	localDBs.insert(pair<std::string, int>(_db_name, 1));
+	std::string success = "Import RDF file to database done.";
+	this->response(0, success, _socket);
+
+	return true;
+}
+
+bool
+Server::query(std::string _db_name, std::string _sparql, Socket& _socket)
+{
+	/**
+	* @brief Check if the client logins.
+	*/
+	if (logins.find(_socket.username) == logins.end())
+	{
+		std::string error = "Need to login first.";
+		this->response(1001, error, _socket);
+		return false;
+	}
+
+	/**
+	* @brief Check if the database name is legal.
+	*/
+	std::string result = checkparamValue("db_name", _db_name);
+	if (result.empty() == false)
+	{
+		this->response(1003, result, _socket);
+		return false;
+	}
+
+	/**
+	* @brief Check if the sparql query is legal.
+	*/
+	result = checkparamValue("sparql", _sparql);
+	if (result.empty() == false)
+	{
+		this->response(1003, result, _socket);
+		return false;
+	}
+
+	/**
+	* @brief Check if database named [db_name] is already loaded.
+	*/
+	std::map<std::string, Database*>::iterator iter = databases.find(_db_name);
+	if (iter == databases.end())
+	{
+		std::string error = "Need to load database first.";
+		this->response(1004, error, _socket);
+		return false;
+	}
+
+	Database* database = iter->second;
 
 	FILE* output = NULL;
-#ifdef OUTPUT_QUERY_RESULT
-	string path = "logs/gserver_query.log";
-	output = fopen(path.c_str(), "w");
-#endif
-
 	ResultSet res_set;
-	int query_ret = this->database->query(_query, res_set, output);
-	if (output != NULL) 
-	{
+	std::string _ret_msg;
+	int ret_val = database->query(_sparql, res_set, output);
+	if (output != NULL)
 		fclose(output);
-	}
 
-	bool flag = true;
-	//cout<<"Server query ret: "<<query_ret<<endl;
-	if (query_ret <= -100)  //select query
+	/**
+	* @brief Select query.
+	*/
+	if (ret_val < -1)
 	{
-		//_ret_msg = "results are too large!";
-		//BETTER: divide and transfer if too large to be placed in memory, using Stream
-		if(query_ret == -100)
+		if (ret_val == -100)
 		{
 #ifdef SERVER_SEND_JSON
 			_ret_msg = res_set.to_JSON();
 #else
 			_ret_msg = res_set.to_str();
 #endif
+			Document resDoc;
+			Document::AllocatorType& allocator = resDoc.GetAllocator();
+			resDoc.Parse(_ret_msg.c_str());
+			resDoc.AddMember("StatusCode", 0, allocator);
+			resDoc.AddMember("StatusMsg", "success", allocator);
+			StringBuffer resBuffer;
+			PrettyWriter<StringBuffer> resWriter(resBuffer);
+			resDoc.Accept(resWriter);
+			std::string resJson = resBuffer.GetString();
+			_socket.send(resJson);
+			return true;
 		}
-		else //query error
+		else /**< Query error. */
 		{
-			flag = false;
-			_ret_msg = "query failed.";
-			//BETTER: {type:select} {success:false}
+			std::string error = "Query failed.";
+			this->response(1005, error, _socket);
+			return false;
 		}
 	}
-	else //update query
+	else /**< Update query. */
 	{
-		if(query_ret >= 0)
+		if (ret_val >= 0)
 		{
-			_ret_msg = "update num: " + Util::int2string(query_ret);
+			std::string responsebody = "Update num: " + Util::int2string(ret_val);
+			std::string success = "success";
+			std::string resJson = CreateJson(0, success, true, responsebody);
+			_socket.send(resJson);
+			return true;
 		}
-		else //update error
+		else /**< Update error. */
 		{
-			flag = false;
-			_ret_msg = "update failed.";
+			std::string error = "Update failed.";
+			this->response(1005, error, _socket);
+			return false;
 		}
 	}
-
-	return flag;
 }
 
 bool
-Server::showDatabases(string _para, string _ac_name, string& _ret_msg)
+Server::show(Socket& _socket)
 {
-	if (_para == "all")
+	/**
+	* @brief Check if the client logins.
+	*/
+	if (logins.find(_socket.username) == logins.end())
 	{
-		_ret_msg = Util::getItemsFromDir(this->db_home);
-		return true;
+		std::string error = "Need to login first.";
+		this->response(1001, error, _socket);
+		return false;
 	}
-	if (this->database != NULL)
+
+	std::map<std::string, int>::iterator iter;
+	Document resDoc;
+	resDoc.SetObject();
+	Document::AllocatorType& allocator = resDoc.GetAllocator();
+	Value jsonArray(kArrayType);
+	for (iter = localDBs.begin(); iter != localDBs.end(); iter++)
 	{
-		_ret_msg = "\n" + this->database->getName() + "\n";
+		if (iter->first == "system")
+			continue;
+		Value obj(kObjectType);
+		Value db_name;
+		db_name.SetString(iter->first.c_str(), iter->first.length(), allocator);
+		if (databases.find(iter->first) == databases.end())
+			obj.AddMember(db_name, "unloaded", allocator);
+		else
+			obj.AddMember(db_name, "loaded", allocator);
+		jsonArray.PushBack(obj, allocator);
 	}
-	else
+	resDoc.AddMember("ResponseBody", jsonArray, allocator);
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "success", allocator);
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	string resJson = resBuffer.GetString();
+	_socket.send(resJson);
+	return true;
+}
+
+bool Server::stopServer(Socket& _socket)
+{
+	/**
+	* @brief Check if the client logins.
+	*/
+	if (logins.find(_socket.username) == logins.end())
 	{
-		_ret_msg = "\n[empty]\n";
+		std::string error = "Need to login first.";
+		this->response(1001, error, _socket);
+		return false;
 	}
+
+	/**
+	* @brief Check if the client is the root user.
+	*/
+	if (_socket.username != "root")
+	{
+		std::string error = "You have no rights to stop the server.";
+		this->response(1002, error, _socket);
+		return false;
+	}
+
+	std::map<std::string, Database*>::iterator iter;
+	for (iter = databases.begin(); iter != databases.end(); iter++)
+	{
+		delete iter->second;
+		iter->second = NULL;
+	}
+	databases.clear();
+	users.clear();
+	localDBs.clear();
+	logins.clear();
+
+	std::string success = "Server stopped.";
+	this->response(0, success, _socket);
 
 	return true;
 }
 
-bool Server::stopServer(string& _ret_msg) {
-	if (this->database != NULL) {
-		delete this->database;
-		this->database = NULL;
-	}
-	_ret_msg = "server stopped.";
-	return true;
-}
-
-bool Server::backup(string& _ret_msg) {
-	this->next_backup += Util::gserver_backup_interval;
-	if (this->database == NULL) {
-		_ret_msg = "No database in use.";
-		return false;
-	}
-	if (!this->database->backup()) {
-		_ret_msg = "Backup failed.";
-		return false;
-	}
-	_ret_msg = "done";
+bool Server::closeConnection(Socket& _socket) {
+	std::string success = "Connection disconnected.";
+		this->response(0, success, _socket);
 	return true;
 }
 
@@ -662,6 +1010,9 @@ bool Server::stop_timer(pthread_t _timer) {
 }
 
 void* Server::timer(void* _args) {
+	/**
+	* @brief Receive the stop timer signal.
+	*/
 	signal(SIGTERM, Server::timer_sigterm_handler);
 	sleep(Util::gserver_query_timeout);
 	cerr << Util::getTimeString() << "Query out of time." << endl;
@@ -672,3 +1023,174 @@ void Server::timer_sigterm_handler(int _signal_num) {
 	pthread_exit(0);
 }
 
+void Server::stop_sigterm_handler(int _signal_num) {
+	cout << Util::getTimeString() << "Server stopped." << endl;
+	exit(_signal_num);
+}
+
+void Server::dirTraversal(const char* _dir_name, std::vector<std::string>& _filename)
+{
+	if (_dir_name == NULL)
+	{
+		std::cout << "dir_name is NULL ! " << std::endl;
+		return;
+	}
+	struct stat s;
+	lstat(_dir_name, &s);
+	if (!S_ISDIR(s.st_mode))
+	{
+		std::cout << "dir_name is not a valid directory ! " << std::endl;
+		return;
+	}
+	struct dirent* filename;
+	DIR* dir;
+	dir = opendir(_dir_name);
+	if (dir == NULL)
+	{
+		std::cout << "Can not open directory " << _dir_name << std::endl;
+		return;
+	}
+	while ((filename = readdir(dir)) != NULL)
+	{
+		if (strcmp(filename->d_name, ".") == 0 ||
+			strcmp(filename->d_name, "..") == 0)
+			continue;
+		_filename.push_back(filename->d_name);
+	}
+	return;
+}
+
+bool Server::querySys(std::string _sparql, std::string& _res)
+{
+	FILE* output = NULL;
+	ResultSet res_set;
+	int ret_val = system_database->query(_sparql, res_set, output);
+
+	/**
+	* @brief Select query.
+	*/
+	if (ret_val < -1)
+	{
+		if (ret_val == -100)
+		{
+#ifdef SERVER_SEND_JSON
+			_res = res_set.to_JSON();
+#else
+			_res = res_set.to_str();
+#endif
+			return true;
+		}
+		else /**< Query error. */
+		{
+			std::string error = "Query failed.";
+			cerr << Util::getTimeString() << error << endl;
+			return false;
+		}
+	}
+	else /**< Update query. */
+	{
+		if (ret_val >= 0)
+		{
+			_res = "Update num: " + Util::int2string(ret_val) + "\n";
+			return true;
+		}
+		else /**< Update error. */
+		{
+			std::string error = "Update failed.\n";
+			cerr << Util::getTimeString() << error << endl;
+			return false;
+		}
+	}
+}
+
+void Server::importSys()
+{
+	/**
+	* @brief Query the system.db and get all users.
+	*/
+	std::string sparql = "select ?x ?y where{?x <has_password> ?y.}";
+	std::string strJson;
+	querySys(sparql, strJson);
+
+	Document document;
+	document.Parse(strJson.c_str());
+	Value& p1 = document["results"];
+	Value& p2 = p1["bindings"];
+
+	for (int i = 0; i < p2.Size(); i++)
+	{
+		Value& pp = p2[i];
+		Value& pp1 = pp["x"];
+		Value& pp2 = pp["y"];
+		std::string username = pp1["value"].GetString();
+		std::string password = pp2["value"].GetString();
+		users.insert(pair<std::string, std::string>(username, password));
+	}
+
+	/**
+	* @brief Query the system.db and get all databases.
+	*/
+	sparql = "select ?x where{?x <database_status> \"already_built\".}";
+	querySys(sparql, strJson);
+	document.Parse(strJson.c_str());
+	p1 = document["results"];
+	p2 = p1["bindings"];
+
+	for (int i = 0; i < p2.Size(); i++)
+	{
+		Value& pp = p2[i];
+		Value& pp1 = pp["x"];
+		std::string db_name = pp1["value"].GetString();
+
+		localDBs.insert(pair<std::string, int>(db_name, 1));
+	}
+
+	/**
+	* @brief Query the system.db and get the core version.
+	*/
+	sparql = "select ?x where{<CoreVersion> <value> ?x.}";
+	querySys(sparql, strJson);
+	document.Parse(strJson.c_str());
+	p1 = document["results"];
+	p2 = p1["bindings"];
+	for (int i = 0; i < p2.Size(); i++)
+	{
+		Value& pp = p2[i];
+		Value& pp1 = pp["x"];
+		CoreVersion = pp1["value"].GetString();
+	}
+
+	/**
+	* @brief Query the system.db and get the API version.
+	*/
+	sparql = "select ?x where{<APIVersion> <value> ?x.}";
+	querySys(sparql, strJson);
+	document.Parse(strJson.c_str());
+	p1 = document["results"];
+	p2 = p1["bindings"];
+	for (int i = 0; i < p2.Size(); i++)
+	{
+		Value& pp = p2[i];
+		Value& pp1 = pp["x"];
+		APIVersion = pp1["value"].GetString();
+	}
+}
+
+std::string Server::CreateJson(int StatusCode, std::string StatusMsg, bool _body_flag, std::string ResponseBody)
+{
+	StringBuffer s;
+	PrettyWriter<StringBuffer> writer(s);
+	writer.StartObject();
+	if (_body_flag)
+	{
+		writer.Key("ResponseBody");
+		writer.String(StringRef(ResponseBody.c_str()));
+	}
+	writer.Key("StatusCode");
+	writer.Uint(StatusCode);
+	writer.Key("StatusMsg");
+	writer.String(StringRef(StatusMsg.c_str()));
+	writer.EndObject();
+	std::string res = s.GetString();
+	return res;
+}

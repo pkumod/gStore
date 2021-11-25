@@ -1,3 +1,11 @@
+/*=============================================================================
+# Filename:	QueryParser.h
+# Author: Yue Pang
+# Mail: michelle.py@pku.edu.cn
+# Last Modified:	2021-08-03 16:58 CST
+# Description: defines the class for parsing SPARQL queries based on ANTLR4
+=============================================================================*/
+
 #include <typeinfo>
 
 #include "antlr4-runtime.h"
@@ -7,11 +15,18 @@
 #include "../Query/QueryTree.h"
 #include "../Util/Util.h"
 
+/**
+	Parser for SPARQL queries, inherited from SPARQLBaseVisitor, which is
+	automatically generated from the SPARQL grammar by ANTLR. Implements
+	visiting important grammatical units, extracts relevant information,
+	and stores in QueryTree (pointed to by query_tree_ptr).
+*/
 class QueryParser: public SPARQLBaseVisitor
 {
 private:
 	QueryTree *query_tree_ptr;
-	std::map<std::string, std::string> prefix_map;
+	std::map<std::string, std::string> prefix_map;	// Stores mapping from
+		// the short form of prefixes to their full URIs
 
 public:
 	QueryParser() {}
@@ -19,7 +34,6 @@ public:
 	void setQueryTree(QueryTree *qtp) { query_tree_ptr = qtp; }
 	void SPARQLParse(const std::string &query);	// Overall driver function
 
-	antlrcpp::Any visitQueryUnit(SPARQLParser::QueryUnitContext *ctx);
 	antlrcpp::Any visitQuery(SPARQLParser::QueryContext *ctx);
 	antlrcpp::Any visitSelectquery(SPARQLParser::SelectqueryContext *ctx);
 	antlrcpp::Any visitAskquery(SPARQLParser::AskqueryContext *ctx);
@@ -56,7 +70,7 @@ public:
 
 	void parseSelectAggregateFunction(SPARQLParser::ExpressionContext *expCtx, \
 		SPARQLParser::VarContext *varCtx);
-	void buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode *curr_node);
+	void buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode &curr_node);
 	void buildFilterTree(antlr4::tree::ParseTree *root, \
 		QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild *currChild, \
 		QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, std::string tp);
@@ -71,6 +85,10 @@ public:
 	void printQueryTree();
 };
 
+/**
+	Listener for errors during SPARQL query parsing, which throws a 
+	corresponding exception when an error arises.
+*/
 class SPARQLErrorListener: public antlr4::BaseErrorListener
 {
 public:
