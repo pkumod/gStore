@@ -19,7 +19,7 @@ class GstoreConnector {
         else
             $this->serverIP = $ip;
         $this->serverPort = $port;
-        $this->Url = "http://" . $ip . ":" . strval($port);
+        $this->Url = "http://" . $ip . ":" . strval($port) . "/";
         $this->username = $user;
         $this->password = $passwd;
     }
@@ -110,17 +110,30 @@ class GstoreConnector {
         return;
     }
 
-    function build($db_name, $rdf_file_path, $request_type="GET") {
+    function build($db_name, $db_path, $request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=build&db_name=" . $db_name . "&ds_path=" . $rdf_file_path . "&username=" . $this->username . "&password=" . $this->password;
+            $strUrl = $this->Url . "?operation=build&db_name=" . $db_name . "&db_path=" . $db_path . "&username=" . $this->username . "&password=" . $this->password;
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
         {
-            $strUrl = $this->Url . "/build";
-            $strPost = "{\"db_name\": \"" . $db_name . "\", \"ds_path\": \"" . $rdf_file_path . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
-            $res = $this->Post($strUrl, $strPost);
+            $strPost = "{\"operation\": \"build\", \"db_name\": \"" . $db_name . "\", \"db_path\": \"" . $db_path . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
+            $res = $this->Post($this->Url, $strPost);
+        }
+        return $res;    
+    }
+
+    function check($request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "?operation=check";
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strPost = "{\"operation\": \"check\"}";
+            $res = $this->Post($this->Url, $strPost);
         }
         return $res;    
     }
@@ -128,14 +141,27 @@ class GstoreConnector {
     function load($db_name, $request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=load&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password;
+            $strUrl = $this->Url . "?operation=load&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password;
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
         {
-            $strUrl = $this->Url . "/load";
-            $strPost = "{\"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
-            $res = $this->Post($strUrl, $strPost);
+            $strPost = "{\"operation\": \"load\", \"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
+            $res = $this->Post($this->Url, $strPost);
+        }
+        return $res;
+    }
+
+    function monitor($db_name, $request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "?operation=monitor&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password;
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strPost = "{\"operation\": \"monitor\", \"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
+            $res = $this->Post($this->Url, $strPost);
         }
         return $res;
     }
@@ -143,59 +169,131 @@ class GstoreConnector {
     function unload($db_name, $request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=unload&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password;
+            $strUrl = $this->Url . "?operation=unload&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password;
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
         {
-            $strUrl = $this->Url . "/unload";
-            $strPost = "{\"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
-            $res = $this->Post($strUrl, $strPost);
+            $strPost = "{\"operation\": \"unload\", \"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
+            $res = $this->Post($this->Url, $strPost);
+        }
+        return $res;
+    }
+	
+    function drop($db_name, $is_backup, $request_type="GET") {
+        if ($request_type == "GET")
+        {
+            if ($is_backup)
+                $strUrl = $this->Url . "?operation=drop&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password . "&is_backup=true";
+            else
+                $strUrl = $this->Url . "?operation=drop&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password . "&is_backup=false";           
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            if ($is_backup)
+                $strPost = "{\"operation\": \"drop\", \"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"is_backup\": \"true\"}";
+            else
+                $strPost = "{\"operation\": \"drop\", \"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"is_backup\": \"false\"}";
+            $res = $this->Post($this->Url, $strPost);
+        }
+        return $res;    
+    }
+
+    function show($request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "?operation=show&username=" . $this->username . "&password=" . $this->password; 
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strPost = "{\"operation\": \"show\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
+            $res = $this->Post($this->Url, $strPost);
         }
         return $res;
     }
 
-    function user($type, $username2, $addition, $request_type="GET") {
+    function usermanage($type, $op_username, $op_password, $request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=user&type=" . $type . "&username1=" . $this->username . "&password1=" . $this->password . "&username2=" . $username2 . "&addition=" . $addition; 
+            $strUrl = $this->Url . "?operation=usermanage&type=" . $type . "&username=" . $this->username . "&password=" . $this->password . "&op_username=" . $op_username . "&op_password=" . $op_password; 
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
         {
-            $strUrl = $this->Url . "/user";
-            $strPost = "{\"type\": \"" . $type . "\", \"username1\": \"" . $this->username . "\", \"password1\": \"" . $this->password . "\", \"username2\": \"" . $username2 . "\", \"addition\": \"" . $addition . "\"}";
-            $res = $this->Post($strUrl, $strPost);
+            $strPost = "{\"operation\": \"usermanage\", \"type\": \"" . $type . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"op_username\": \"" . $op_username . "\", \"op_password\": \"" . $op_password . "\"}";
+            $res = $this->Post($this->Url, $strPost);
         }
         return $res;
      }
 
-     function showUser($request_type="GET") {
+    function showuser($request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=showUser&username=" . $this->username . "&password=" . $this->password; 
+            $strUrl = $this->Url . "?operation=showuser&username=" . $this->username . "&password=" . $this->password; 
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
         {
-            $strUrl = $this->Url . "/showUser";
-            $strPost = "{\"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
-            $res = $this->Post($strUrl, $strPost);
+            $strPost = "{\"operation\": \"showuser\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
+            $res = $this->Post($this->Url, $strPost);
         }
         return $res;
-     }
+    }
+	
+    function userprivilegemanage($type, $op_username, $privileges, $db_name, $request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "?operation=userprivilegemanage&type=" . $type . "&username=" . $this->username . "&password=" . $this->password . "&op_username=" . $op_username . "&privileges=" . $privileges . "&db_name=" . $db_name; 
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strPost = "{\"operation\": \"userprivilegemanage\", \"type\": \"" . $type . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"op_username\": \"" . $op_username . "\", \"privileges\": \"" . $privileges . "\", \"db_name\": \"" . $db_name . "\"}";
+            $res = $this->Post($this->Url, $strPost);
+        }
+        return $res;
+     }	
+	 
+    function backup($db_name, $backup_path, $request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "?operation=backup&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&backup_path=" . $backup_path;
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strPost = "{\"operation\": \"backup\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"backup_path\": \"" . $backup_path . "\"}";
+            $res = $this->Post($this->Url, $strPost);
+        }
+        return $res;    
+    }
+
+    function restore($db_name, $backup_path, $request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "?operation=restore&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&backup_path=" . $backup_path;
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strPost = "{\"operation\": \"restore\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"backup_path\": \"" . $backup_path . "\"}";
+            $res = $this->Post($this->Url, $strPost);
+        }
+        return $res;    
+    }
 
     function query($db_name, $format, $sparql, $request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=query&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&format=" . $format . "&sparql=" . $sparql; 
+            $strUrl = $this->Url . "?operation=query&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&format=" . $format . "&sparql=" . $sparql; 
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
         {
-            $strUrl = $this->Url . "/query";
-            $strPost = "{\"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"format\": \"" . $format . "\", \"sparql\": \"" . $sparql . "\"}";
-            $res = $this->Post($strUrl, $strPost);
+            $strPost = "{\"operation\": \"query\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"format\": \"" . $format . "\", \"sparql\": \"" . $sparql . "\"}";
+            $res = $this->Post($this->Url, $strPost);
         }
         return $res;    
     }
@@ -203,50 +301,111 @@ class GstoreConnector {
     function fquery($db_name, $format, $sparql, $filename, $request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=query&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&format=" . $format . "&sparql=" . $sparql; 
+            $strUrl = $this->Url . "?operation=query&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&format=" . $format . "&sparql=" . $sparql; 
             $this->fGet($strUrl, $filename);
         }
         elseif ($request_type == "POST")
         {
-            $strUrl = $this->Url . "/query";
-            $strPost = "{\"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"format\": \"" . $format . "\", \"sparql\": \"" . $sparql . "\"}";
-            $this->fPost($strUrl, $strPost, $filename);
+            $strPost = "{\"operation\": \"query\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"format\": \"" . $format . "\", \"sparql\": \"" . $sparql . "\"}";
+            $this->fPost($this->Url, $strPost, $filename);
         }
         return;     
     }
 
-    function drop($db_name, $is_backup, $request_type="GET") {
+    function exportDB($db_name, $db_path, $request_type="GET") {
         if ($request_type == "GET")
         {
-            if ($is_backup)
-                $strUrl = $this->Url . "/?operation=drop&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password . "&is_backup=true";
-            else
-                $strUrl = $this->Url . "/?operation=drop&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password . "&is_backup=false";           
+            $strUrl = $this->Url . "?operation=export&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&db_path=" . $db_path;
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
         {
-            $strUrl = $this->Url . "/drop";
-            if ($is_backup)
-                $strPost = "{\"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"is_backup\": \"true\"}";
-            else
-                $strPost = "{\"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"is_backup\": \"false\"}";
-            $res = $this->Post($strUrl, $strPost);
+            $strPost = "{\"operation\": \"export\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"db_path\": \"" . $db_path . "\"}";
+            $res = $this->Post($this->Url, $strPost);
         }
         return $res;    
     }
 
-    function monitor($db_name, $request_type="GET") {
+    function login($request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=monitor&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password;
+            $strUrl = $this->Url . "?operation=login&username=" . $this->username . "&password=" . $this->password; 
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
         {
-            $strUrl = $this->Url . "/monitor";
-            $strPost = "{\"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
-            $res = $this->Post($strUrl, $strPost);
+            $strPost = "{\"operation\": \"login\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
+            $res = $this->Post($this->Url, $strPost);
+        }
+        return $res;
+    }
+
+    function begin($db_name, $isolevel, $request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "?operation=begin&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&isolevel=" . $isolevel;
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strPost = "{\"operation\": \"begin\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"isolevel\": \"" . $isolevel . "\"}";
+            $res = $this->Post($this->Url, $strPost);
+        }
+        return $res;    
+    }
+
+    function tquery($db_name, $tid, $sparql, $request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "?operation=tquery&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&tid=" . $tid . "&sparql=" . $sparql; 
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strPost = "{\"operation\": \"tquery\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"tid\": \"" . $tid . "\", \"sparql\": \"" . $sparql . "\"}";
+            $res = $this->Post($this->Url, $strPost);
+        }
+        return $res;    
+    }
+    
+    function commit($db_name, $tid, $request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "?operation=commit&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&tid=" . $tid;
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strPost = "{\"operation\": \"commit\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"tid\": \"" . $tid . "\"}";
+            $res = $this->Post($this->Url, $strPost);
+        }
+        return $res;    
+    }
+
+    function rollback($db_name, $tid, $request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "?operation=rollback&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name . "&tid=" . $tid;
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strPost = "{\"operation\": \"rollback\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\", \"tid\": \"" . $tid . "\"}";
+            $res = $this->Post($this->Url, $strPost);
+        }
+        return $res;    
+    }
+
+    function getTransLog($request_type="GET") {
+        if ($request_type == "GET")
+        {
+            $strUrl = $this->Url . "?operation=txnlog&username=" . $this->username . "&password=" . $this->password; 
+            $res = $this->Get($strUrl);
+        }
+        elseif ($request_type == "POST")
+        {
+            $strPost = "{\"operation\": \"txnlog\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
+            $res = $this->Post($this->Url, $strPost);
         }
         return $res;
     }
@@ -254,76 +413,15 @@ class GstoreConnector {
     function checkpoint($db_name, $request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "/?operation=checkpoint&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password;
+            $strUrl = $this->Url . "?operation=checkpoint&username=" . $this->username . "&password=" . $this->password . "&db_name=" . $db_name;
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
         {
-            $strUrl = $this->Url . "/checkpoint";
-            $strPost = "{\"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
-            $res = $this->Post($strUrl, $strPost);
+            $strPost = "{\"operation\": \"checkpoint\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\", \"db_name\": \"" . $db_name . "\"}";
+            $res = $this->Post($this->Url, $strPost);
         }
         return $res;
-    }
-
-    function show($request_type="GET") {
-        if ($request_type == "GET")
-        {
-            $strUrl = $this->Url . "/?operation=show&username=" . $this->username . "&password=" . $this->password; 
-            $res = $this->Get($strUrl);
-        }
-        elseif ($request_type == "POST")
-        {
-            $strUrl = $this->Url . "/show";
-            $strPost = "{\"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
-            $res = $this->Post($strUrl, $strPost);
-        }
-        return $res;
-    }
-
-    function getCoreVersion($request_type="GET") {
-        if ($request_type == "GET")
-        {
-            $strUrl = $this->Url . "/?operation=getCoreVersion&username=" . $this->username . "&password=" . $this->password; 
-            $res = $this->Get($strUrl);
-        }
-        elseif ($request_type == "POST")
-        {
-            $strUrl = $this->Url . "/getCoreVersion";
-            $strPost = "{\"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
-            $res = $this->Post($strUrl, $strPost);
-        }
-        return $res;
-    }
-    
-    function getAPIVersion($request_type="GET") {
-        if ($request_type == "GET")
-        {
-            $strUrl = $this->Url . "/?operation=getAPIVersion&username=" . $this->username . "&password=" . $this->password; 
-            $res = $this->Get($strUrl);
-        }
-        elseif ($request_type == "POST")
-        {
-            $strUrl = $this->Url . "/getAPIVersion";
-            $strPost = "{\"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
-            $res = $this->Post($strUrl, $strPost);
-        }
-        return $res;
-    }
-
-    function exportDB($db_name, $dir_path, $request_type="GET") {
-        if ($request_type == "GET")
-        {
-            $strUrl = $this->Url . "/?operation=export&db_name=" . $db_name . "&ds_path=" . $dir_path . "&username=" . $this->username . "&password=" . $this->password;
-            $res = $this->Get($strUrl);
-        }
-        elseif ($request_type == "POST")
-        {
-            $strUrl = $this->Url . "/export";
-            $strPost = "{\"db_name\": \"" . $db_name . "\", \"ds_path\": \"" . $dir_path . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
-            $res = $this->Post($strUrl, $strPost);
-        }
-        return $res;    
     }
 }
 ?>
