@@ -54,7 +54,7 @@ shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>> CalculatePo
 double GetScore(string &v, stringstream &ss);
 void GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
                                 std::map<std::string,double>& coefficients,
-                                stringstream &ss);
+                                bool minus_signed=false);
 
 
 std::shared_ptr<std::map<std::string,double>> getVarCoefficients(QueryTree::Order order);

@@ -257,11 +257,12 @@ public:
 
 	void print(KVstore * kvstore);
     vector<unsigned*>* get_result_list_pointer();
+    unique_ptr<unsigned[]>& resultPositionToId();
 
 private:
 	vector<Triple> triple_vt;
     vector<unsigned*> result_list;
-
+    unique_ptr<unsigned[]> result_position_to_id;
 };
 
 

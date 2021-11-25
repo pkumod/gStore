@@ -58,42 +58,75 @@ double TopKUtil::GetScore(string &v, stringstream &ss)
 }
 
 void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
-                                         std::map<std::string,double>& coefficients,
-                                         stringstream &ss)
+                                          std::map<std::string,double>& coefficients,
+                                          bool minus_signed)
 {
 
   if(comp_tree_node->lchild==nullptr&&comp_tree_node->rchild==nullptr)
   {
-    coefficients[comp_tree_node->val] = 1.0;
+    if(minus_signed)
+      coefficients[comp_tree_node->val] = -1.0;
+    else
+      coefficients[comp_tree_node->val] = 1.0;
 #ifdef TOPK_DEBUG_INFO
     std::cout<<"Node:"<<comp_tree_node->val<<" 1.0"<<std::endl;
 #endif
     return;
   }
 #ifdef TOPK_DEBUG_INFO
-  std::cout<<"Node:"<<comp_tree_node->val<<" "<<comp_tree_node->lchild->val<<" "<<comp_tree_node->rchild->val<<std::endl;
+  std::cout<<"Node:"<<comp_tree_node->val<<" ";
+  if(comp_tree_node->lchild!=nullptr)
+    cout<<comp_tree_node->lchild->val<<" ";
+  if(comp_tree_node->rchild!=nullptr)
+    cout<<comp_tree_node->rchild->val<<std::endl;
 #endif
   // if both of the child are leaves
-  if(comp_tree_node->lchild->lchild==nullptr&&comp_tree_node->lchild->rchild==nullptr&&
+  // e.g
+  // case    A                B
+  //         *                +
+  //      /     \          /     \
+  //    ?x      1.0      ?x       ?y
+  if( comp_tree_node->lchild!= nullptr &&comp_tree_node->rchild!= nullptr&&
+      comp_tree_node->lchild->lchild==nullptr&&comp_tree_node->lchild->rchild==nullptr&&
       comp_tree_node->rchild->lchild==nullptr&&comp_tree_node->rchild->rchild==nullptr)
   {
-
-    if (comp_tree_node->lchild->val.at(0) == '?') // ?x * 0.1
+    // case B
+    if(comp_tree_node->oprt == "+" ||comp_tree_node->oprt == "-"  )
     {
-      auto val_string = comp_tree_node->rchild->val.substr(1);
-      coefficients[comp_tree_node->lchild->val] = GetScore(val_string,ss);
+      GetVarCoefficientsTreeNode(comp_tree_node->lchild, coefficients,minus_signed);
+      GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients,comp_tree_node->oprt == "-");
+      return;
+    }
+
+    if (comp_tree_node->lchild->val.at(0) == '?')
+    {
+      auto &val_string = comp_tree_node->rchild->val;//.substr(1);
+      coefficients[comp_tree_node->lchild->val] = get<1>(Util::checkGetNumericLiteral(val_string));
+      if(minus_signed)
+        coefficients[comp_tree_node->lchild->val]  = -coefficients[comp_tree_node->lchild->val] ;
     }
     else // 0.1 * ?x
     {
-      auto val_string = comp_tree_node->lchild->val.substr(1);
-      coefficients[comp_tree_node->rchild->val] = GetScore(val_string,ss);;
+      auto &val_string = comp_tree_node->lchild->val;
+      coefficients[comp_tree_node->rchild->val] = get<1>(Util::checkGetNumericLiteral(val_string));
+      if(minus_signed)
+        coefficients[comp_tree_node->rchild->val]  = - coefficients[comp_tree_node->rchild->val];
     }
+
+    return;
   }
-  else
-  {
-    GetVarCoefficientsTreeNode(comp_tree_node->lchild, coefficients, ss);
-    GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients, ss);
+
+  // the left should be either a leaf or a triangle
+  if(comp_tree_node->lchild != nullptr) {
+    if(comp_tree_node->rchild!= nullptr)
+      GetVarCoefficientsTreeNode(comp_tree_node->lchild, coefficients, minus_signed);
+    else // case expression: " -?x "
+      GetVarCoefficientsTreeNode(comp_tree_node->lchild, coefficients, comp_tree_node->oprt=="-");
   }
+
+  if(comp_tree_node->rchild!= nullptr)
+    GetVarCoefficientsTreeNode(comp_tree_node->rchild, coefficients,comp_tree_node->oprt=="-");
+
 }
 
 /**
@@ -104,12 +137,13 @@ void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_nod
  */
 std::shared_ptr<std::map<std::string,double>> TopKUtil::getVarCoefficients(QueryTree::Order order)
 {
-  stringstream ss;
+#ifdef TOPK_DEBUG_INFO
+  order.comp_tree_root->print(0);
+#endif
   auto r= make_shared<std::map<std::string,double>>();
-  GetVarCoefficientsTreeNode(order.comp_tree_root, *r, ss);
+  GetVarCoefficientsTreeNode(order.comp_tree_root, *r);
 
 #ifdef TOPK_DEBUG_INFO
-
   std::cout<<"VarCoefficients:"<<std::endl;
   for(const auto& pair:*r)
   {
@@ -211,16 +245,14 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
                         std::map<TYPE_ENTITY_LITERAL_ID, shared_ptr<IDListWithAppending>  > &parent_child,
                         std::map<TYPE_ENTITY_LITERAL_ID, std::set<TYPE_ENTITY_LITERAL_ID> > &child_parent,
                         std::shared_ptr<TopKPlanUtil::TreeEdge> tree_edges_,
-                        Env *env)
-{
+                        Env *env) {
   std::set<TYPE_ENTITY_LITERAL_ID> child_candidates;
   std::set<TYPE_ENTITY_LITERAL_ID> deleted_parent_ids_this_child;
   auto &predicates_constant = tree_edges_->predicate_constant_;
   auto &predicate_ids = tree_edges_->predicate_ids_;
   auto &directions = tree_edges_->directions_;
 
-  for (auto it = parent_var_candidates.begin(); it != parent_var_candidates.end(); it++)
-  {
+  for (auto it = parent_var_candidates.begin(); it != parent_var_candidates.end(); it++) {
     auto parent_id = *it;
     auto id_list_ptr = make_shared<IDList>();
 
@@ -234,27 +266,25 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
 
     auto two_var_edges_num = predicate_ids.size();
     decltype(two_var_edges_num) i;
-    for (i = 0; i < two_var_edges_num; i++)
-    {
+    for (i = 0; i < two_var_edges_num; i++) {
       // early terminate
-      if (id_list_prepared && id_list_ptr->size()==0)
+      if (id_list_prepared && id_list_ptr->size() == 0)
         break;
-      if(appending_list_prepared && appending_list_ptr->Size()==0)
+      if (appending_list_prepared && appending_list_ptr->Size() == 0)
         break;
 
       // encounter a case where we must use IDListWithAppending
       // need to transfer to IDListWithAppending
-      if(!appending_list_prepared && !predicates_constant[i])
-        if(id_list_prepared) {
+      if (!appending_list_prepared && !predicates_constant[i])
+        if (id_list_prepared) {
           appending_list_ptr = make_shared<IDListWithAppending>(*id_list_ptr);
           appending_list_prepared = true;
         }
 
-
       TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
       TYPE_ENTITY_LITERAL_ID edge_list_len;
 
-#ifdef TOPK_DEBUG_RESULT_INFO
+#ifdef TOPK_DEBUG_TREE_EXTEND_INFO
       cout << "\t \t " <<env->kv_store->getEntityByID(parent_id)<<" ";
       if(predicates_constant[i])
       cout<<"-"<<env->kv_store->getPredicateByID(predicate_ids[i]);
@@ -268,74 +298,61 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
 #endif
 
       // use IDList
-      if (predicates_constant[i]){
-        if(directions[i] == TopKPlanUtil::EdgeDirection::OUT)
-        {
+      if (predicates_constant[i]) {
+        if (directions[i] == TopKPlanUtil::EdgeDirection::OUT) {
           env->kv_store->getobjIDlistBysubIDpreID(parent_id,
                                                   predicate_ids[i],
                                                   edge_candidate_list,
                                                   edge_list_len,
                                                   true,
                                                   env->txn);
-        }
-        else if(directions[i] == TopKPlanUtil::EdgeDirection::IN)
-        {
+        } else if (directions[i] == TopKPlanUtil::EdgeDirection::IN) {
           env->kv_store->getsubIDlistByobjIDpreID(parent_id,
                                                   predicate_ids[i],
                                                   edge_candidate_list,
                                                   edge_list_len,
                                                   true,
                                                   env->txn);
-        }
-        else
+        } else
           throw string("unknown EdgeDirection");
         UpdateIDList(id_list_ptr,
                      edge_candidate_list,
                      edge_list_len,
                      id_list_prepared);
 
-        if(!id_list_prepared)
-        {
-          if(env->id_caches->find(child_var)!=env->id_caches->end())
-          {
+        if (!id_list_prepared) {
+          if (env->id_caches->find(child_var) != env->id_caches->end()) {
             auto caches_ptr = (*(env->id_caches->find(child_var))).second;
             id_list_ptr->intersectList(caches_ptr->getList()->data(), caches_ptr->size());
           }
         }
 
-        id_list_prepared =true;
-      }
-      else // use IDListWithAppending
+        id_list_prepared = true;
+      } else // use IDListWithAppending
       {
-        if(directions[i] == TopKPlanUtil::EdgeDirection::OUT)
-        {
+        if (directions[i] == TopKPlanUtil::EdgeDirection::OUT) {
           env->kv_store->getpreIDobjIDlistBysubID(parent_id,
                                                   edge_candidate_list,
                                                   edge_list_len,
                                                   true,
                                                   env->txn);
-          UpdateIDListWithAppending(appending_list_ptr,edge_candidate_list,edge_list_len/2,
-                                    2,appending_list_prepared,1);
-        }
-        else if(directions[i] == TopKPlanUtil::EdgeDirection::IN)
-        {
+          UpdateIDListWithAppending(appending_list_ptr, edge_candidate_list, edge_list_len / 2,
+                                    2, appending_list_prepared, 1);
+        } else if (directions[i] == TopKPlanUtil::EdgeDirection::IN) {
           env->kv_store->getpreIDsubIDlistByobjID(parent_id,
                                                   edge_candidate_list,
                                                   edge_list_len,
                                                   true,
                                                   env->txn);
-          UpdateIDListWithAppending(appending_list_ptr,edge_candidate_list,edge_list_len/2,
-                                    2,appending_list_prepared,1);
-        }
-        else
+          UpdateIDListWithAppending(appending_list_ptr, edge_candidate_list, edge_list_len / 2,
+                                    2, appending_list_prepared, 1);
+        } else
           throw string("unknown EdgeDirection");
 
-        if(!appending_list_prepared)
-        {
-          if(env->id_caches->find(child_var)!=env->id_caches->end())
-          {
+        if (!appending_list_prepared) {
+          if (env->id_caches->find(child_var) != env->id_caches->end()) {
             auto caches_ptr = (*(env->id_caches->find(child_var))).second;
-            appending_list_ptr->Intersect(caches_ptr->getList()->data(), caches_ptr->size(),1,0);
+            appending_list_ptr->Intersect(caches_ptr->getList()->data(), caches_ptr->size(), 1, 0);
           }
         }
 
@@ -346,31 +363,29 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
     }
 
     // deleting the wrong parent
-    if(appending_list_prepared) {
+    if (appending_list_prepared) {
       if (appending_list_ptr->Empty()) {
         deleted_parent_ids_this_child.insert(parent_id);
         continue;
       }
-    }
-    else if(id_list_prepared){
-      if (id_list_ptr->empty()){
+    } else if (id_list_prepared) {
+      if (id_list_ptr->empty()) {
         deleted_parent_ids_this_child.insert(parent_id);
         continue;
       }
-    }
-    else{
+    } else {
       deleted_parent_ids_this_child.insert(parent_id);
       continue;
     }
 
-    if(!appending_list_prepared)
+    if (!appending_list_prepared)
       appending_list_ptr = make_shared<IDListWithAppending>(*id_list_ptr);
     // write into the relationship
     parent_child[parent_id] = appending_list_ptr;
 
     auto child_id_it = appending_list_ptr->contents_->cbegin();
     auto child_id_end = appending_list_ptr->contents_->cend();
-    while(child_id_it != child_id_end) {
+    while (child_id_it != child_id_end) {
       AddRelation(child_id_it->first, parent_id, child_parent);
       child_candidates.insert(child_id_it->first);
       child_id_it++;
@@ -381,5 +396,34 @@ TopKUtil::ExtendTreeEdge(std::set<TYPE_ENTITY_LITERAL_ID>& parent_var_candidates
     parent_var_candidates.erase(deleted_id);
     deleted_parents.insert(deleted_id);
   }
+  auto child_id_caches_it = env->id_caches->find(child_var);
+  if(child_id_caches_it!=env->id_caches->end())
+  {
+    deleted_parent_ids_this_child.clear();
+    auto child_id_caches = child_id_caches_it->second;
+    auto child_id_begin_it = child_id_caches->begin();
+    auto child_id_end_it = child_id_caches->end();
+    set<TYPE_ENTITY_LITERAL_ID> deleted_children;
+    for (const auto &child_parents_pair: child_parent) {
+      auto child_id = child_parents_pair.first;
+      if (std::binary_search(child_id_begin_it, child_id_end_it, child_id))
+        continue;
+      deleted_children.insert(child_id);
+      for (auto parent_id : child_parents_pair.second) {
+        parent_child[parent_id]->Erase(child_id);
+        if (parent_child[parent_id]->Empty())
+          deleted_parent_ids_this_child.insert(parent_id);
+      }
+    }
+
+    for (auto deleted_child : deleted_children)
+      child_parent.erase(deleted_child);
+  }
+
+  for (auto deleted_id:deleted_parent_ids_this_child) {
+    parent_var_candidates.erase(deleted_id);
+    deleted_parents.insert(deleted_id);
+  }
+
   return child_candidates;
 }

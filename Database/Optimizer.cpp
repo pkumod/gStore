@@ -354,7 +354,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     auto var_pos_mapping = bfs_table.id_pos_map;
 
     long t6 = Util::get_cur_time();
-    CopyToResult(bgp_query->get_result_list_pointer(), bgp_query, bfs_table);
+    CopyToResult(bgp_query, bfs_table);
 #ifdef OPTIMIZER_DEBUG_INFO
     cout<<"after copy bfs result size "<<bgp_query->get_result_list_pointer()->size()<<endl;
 #endif
@@ -396,7 +396,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 #endif
     auto top_k_result = this->ExecutionTopK(bgp_query,search_plan,query_info,var_candidates_cache);
     auto result_table = get<1>(top_k_result);
-    CopyToResult(bgp_query->get_result_list_pointer(), bgp_query, result_table);
+    CopyToResult(bgp_query, result_table);
 #endif
   }
   else if(strategy == BasicQueryStrategy::limitK)
@@ -576,10 +576,10 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
 }
 
 
-bool Optimizer::CopyToResult(vector<unsigned int *> *target,
-                             shared_ptr<BGPQuery> bgp_query,
+bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
                              IntermediateResult result) {
 
+  auto target = bgp_query->get_result_list_pointer();
   assert(target->empty());
 
 #ifdef OPTIMIZER_DEBUG_INFO
@@ -599,15 +599,23 @@ bool Optimizer::CopyToResult(vector<unsigned int *> *target,
 
   // position_map[i] means in the new table, the i-th column
   // is the  position_map[i]-th column from old table
+  const auto& result_position_to_id = bgp_query->resultPositionToId();
   auto position_map = new TYPE_ENTITY_LITERAL_ID[record_len];
 
-  for(auto pos_id_pair:bgp_query->position_id_map)
+  for(decltype(record_len) pos = 0;pos<record_len;pos++ )
   {
-    auto var_id = pos_id_pair.second;
+    auto var_id = result_position_to_id[pos];
     auto old_position = (*id_position_map_ptr)[var_id];
-    auto new_position =  pos_id_pair.first;
-    position_map[new_position] = old_position;
+    position_map[pos] = old_position;
   }
+
+//  for(auto pos_id_pair:bgp_query->position_id_map)
+//  {
+//    auto var_id = pos_id_pair.second;
+//    auto old_position = (*id_position_map_ptr)[var_id];
+//    auto new_position =  pos_id_pair.first;
+//    position_map[new_position] = old_position;
+//  }
 
   for (const auto&  record_ptr : *(result.values_))
   {
@@ -962,6 +970,8 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   cout<<endl;
 #endif
 
+  vector<double> score_list;
+  score_list.reserve(query_info.limit_num_);
   for(int i =1; i<=query_info.limit_num_ + deleted_num; i++)
   {
     root_fr->TryGetNext(k+ deleted_num);
@@ -972,7 +982,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
       cout << "get top-" << i << " "<<root_fr->pool_[i-1].cost;
     }
 #endif
-
+    auto temp_score = root_fr->pool_[i-1].cost;
     // can't get any more
     if((unsigned)i>root_fr->pool_.size())
       break;
@@ -1002,7 +1012,10 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
     cout<<endl;
 #endif
     if(success)
+    {
+      score_list.push_back(temp_score);
       result_list->push_back(record);
+    }
     else
       deleted_num += 1;
   }
@@ -1016,7 +1029,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   for(decltype(result_list->size()) i =0;i<result_list->size();i++)
   {
     auto rec = *it;
-    cout<<" record["<<i<<"]"<<" score:"<<root_fr->pool_[i].cost;
+    cout<<" record["<<i<<"]"<<" score:"<<score_list[i];
 
     for(unsigned j =0;j<var_num;j++)
       if(is_predicate_var[(*pos_var_mapping)[j]])
@@ -1027,6 +1040,8 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
     it++;
   }
 #endif
+  delete root_fr;
+  delete env;
   return std::make_tuple(true,result_table);
 }
 
