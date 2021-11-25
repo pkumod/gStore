@@ -1,2 +1,0 @@
-?name	?mbox
-"Roberto"@es	<mailto:bob@work.example>

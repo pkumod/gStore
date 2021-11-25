@@ -1,4 +1,0 @@
-<a1> <name> "Alice"@en .
-<a1> <birthday> "2005-02-28T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-<a1> <owns> "-5"^^<http://www.w3.org/2001/XMLSchema#integer> .
-<a1> <height> "167.5"^^<http://www.w3.org/2001/XMLSchema#float> .
