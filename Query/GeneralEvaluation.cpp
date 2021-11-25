@@ -715,6 +715,10 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					#ifndef TEST_BGPQUERY
 					this->optimizer_->DoQuery(sparql_query,query_info);
 					#else
+					unique_ptr<unsigned[]>& p2id = bgp_query->resultPositionToId();
+					p2id = unique_ptr<unsigned[]>(new unsigned [encode_varset[0].size()]);
+					for (int k = 0; k < encode_varset[0].size(); k++)
+						p2id[k] = bgp_query->get_var_id_by_name(Varset(encode_varset[0]).vars[k]);
 					this->optimizer_->DoQuery(bgp_query,query_info);
 					#endif
 
@@ -735,11 +739,6 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						#ifndef TEST_BGPQUERY
 						vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
 						#else
-						unique_ptr<unsigned[]>& p2id = bgp_query->resultPositionToId();
-						p2id = unique_ptr<unsigned[]>(new unsigned [varnum]);
-						for (int k = 0; k < varnum; k++)
-							p2id[k] = bgp_query->get_var_id_by_name(temp->results[0].id_varset.vars[k]);
-						// TODO: call CopyToResult here? (IntermediateResult where?)
 						vector<unsigned*> &basicquery_result = *(bgp_query->get_result_list_pointer());
 						#endif
 						int basicquery_result_num = (int)basicquery_result.size();
