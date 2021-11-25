@@ -1,16 +1,6 @@
 {"db_name": "system","backup_timer": "600"}
-{"db_name": "gakg","backup_interval": "600","last_backup_time": "2021-09-20 21:33:31","is_backup": "false"}
-{"db_name": "lubm","backup_interval": "600","last_backup_time": "2021-09-20 21:33:31","is_backup": "false"}
-{"db_name": "lubm3","backup_interval": "600","last_backup_time": "2021-09-20 21:33:31","is_backup": "false"}
-{"db_name": "movie","backup_interval": "600","last_backup_time": "2021-09-20 21:33:31","is_backup": "false"}
-{"db_name": "pkubase","backup_interval": "600","last_backup_time": "2021-09-20 21:33:31","is_backup": "false"}
-{"db_name": "rskg","backup_interval": "600","last_backup_time": "2021-09-20 21:33:31","is_backup": "false"}
-{"db_name": "test2","backup_interval": "600","last_backup_time": "2021-09-20 21:33:31","is_backup": "false"}
-{"db_name": "test3","backup_interval": "600","last_backup_time": "2021-09-20 21:33:31","is_backup": "false"}
-{"db_name": "test","backup_interval": "600","last_backup_time": "2021-09-20 21:33:31","is_backup": "false"}
-{"db_name": "testhw","backup_interval": "600","last_backup_time": "2021-09-29 08:44:16","is_backup": "false"}
-{"db_name": "lubm33","backup_interval": "600","last_backup_time": "2021-10-14 20:23:55","is_backup": "false"}
-{"db_name": "zqkg2","backup_interval": "600","last_backup_time": "2021-10-15 11:27:54","is_backup": "false"}
-{"db_name": "zqkg","backup_interval": "600","last_backup_time": "2021-10-15 14:22:26","is_backup": "false"}
-{"db_name": "testdata","backup_interval": "600","last_backup_time": "2021-10-28 15:48:26","is_backup": "false"}
-{"db_name": "csr","backup_interval": "600","last_backup_time": "2021-10-28 23:33:37","is_backup": "false"}
+{"db_name": "movie","backup_interval": "600","last_backup_time": "2021-11-12 17:11:50","is_backup": "false"}
+{"db_name": "gakg","backup_interval": "600","last_backup_time": "2021-11-12 17:12:30","is_backup": "false"}
+{"db_name": "csr","backup_interval": "600","last_backup_time": "2021-11-12 17:12:30","is_backup": "false"}
+{"db_name": "zqkg","backup_interval": "600","last_backup_time": "2021-11-12 17:12:30","is_backup": "false"}
+{"db_name": "yjzhkg","backup_interval": "600","last_backup_time": "2021-11-16 01:01:07","is_backup": "false"}

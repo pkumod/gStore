@@ -2503,6 +2503,7 @@ Util::update_transactionlog(std::string TID, std::string state, std::string end_
     cmd += TRANSACTION_LOG_PATH;
     system(cmd.c_str());
     pthread_rwlock_unlock(&transactionlog_lock);
+    return ret;
 }
 
 string 
