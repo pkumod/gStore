@@ -1248,7 +1248,7 @@ void PlanGenerator::get_join_nodes_new_version(const vector<unsigned int> &plan_
 	}
 }
 
-void PlanGenerator::insert_this_plan_to_cache(PlanTree *new_plan, vector<unsigned> &new_node_vec, unsigned var_num) {
+void PlanGenerator::insert_this_plan_to_cache(PlanTree *new_plan, const vector<unsigned> &new_node_vec, unsigned var_num) {
 	if(plan_cache.size() < var_num){
 		map<vector<unsigned>, list<PlanTree*>> this_num_node_plan;
 		list<PlanTree*> this_nodes_plan;
