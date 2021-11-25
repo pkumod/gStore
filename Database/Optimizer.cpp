@@ -593,11 +593,7 @@ bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
   cout<<endl;
 #endif
   auto record_len = bgp_query->selected_so_var_num + bgp_query->selected_pre_var_num;
-  auto record = new unsigned[record_len];
-
-  auto position_id_map_ptr = result.pos_id_map;
   auto id_position_map_ptr = result.id_pos_map;
-
   // position_map[i] means in the new table, the i-th column
   // is the  position_map[i]-th column from old table
   const auto& result_position_to_id = bgp_query->resultPositionToId();
@@ -610,21 +606,13 @@ bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
     position_map[pos] = old_position;
   }
 
-//  for(auto pos_id_pair:bgp_query->position_id_map)
-//  {
-//    auto var_id = pos_id_pair.second;
-//    auto old_position = (*id_position_map_ptr)[var_id];
-//    auto new_position =  pos_id_pair.first;
-//    position_map[new_position] = old_position;
-//  }
-
   for (const auto&  record_ptr : *(result.values_))
   {
     auto new_record = new unsigned[record_len];
     for (int column_index = 0; column_index < record_len; ++column_index)
     {
       auto old_position = position_map[column_index];
-      record[column_index] = (*record_ptr)[old_position];
+      new_record[column_index] = (*record_ptr)[old_position];
     }
     target->push_back(new_record);
   }
@@ -1034,9 +1022,9 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
 
     for(unsigned j =0;j<var_num;j++)
       if(is_predicate_var[(*pos_var_mapping)[j]])
-        cout<<" "<<kv_store_->getPredicateByID((*rec)[j]);
+        cout<<" "<<kv_store_->getPredicateByID((*rec)[j])<<"["<<(*rec)[j]<<"]";
       else
-        cout<<" "<<kv_store_->getStringByID((*rec)[j]);
+        cout<<" "<<kv_store_->getStringByID((*rec)[j])<<"["<<(*rec)[j]<<"]";;
     cout<<endl;
     it++;
   }
