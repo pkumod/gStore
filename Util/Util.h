@@ -47,6 +47,8 @@ in the sparql query can point to the same node in data graph)
 #include <netdb.h>
 #include <arpa/inet.h>
 
+#include <unistd.h>
+
 //NOTICE:below are restricted to C++, C files should not include(maybe nested) this header!
 #include <bitset>
 #include <string>
@@ -80,7 +82,7 @@ in the sparql query can point to the same node in data graph)
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <exception>
-
+#include <sys/stat.h>
 //Below are for boost
 //Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE
@@ -102,6 +104,7 @@ in the sparql query can point to the same node in data graph)
 #include <random>
 #include <type_traits>
 
+
 //Added for __gnu_parallel::sort
 #include <omp.h>
 #include <parallel/algorithm>
@@ -109,6 +112,7 @@ in the sparql query can point to the same node in data graph)
 #include "../tools/rapidjson/prettywriter.h"  
 #include "../tools/rapidjson/writer.h"
 #include "../tools/rapidjson/stringbuffer.h"
+#include "INIParser.h"
 
 #include "Latch.h"
 
@@ -265,7 +269,7 @@ const unsigned long long  MAX_TS = -1;
 //typedef unsigned NODE_ID;
 
 //can use `man limits.h` to see more
-static const unsigned INVALID = UINT_MAX;
+static const unsigned int INVALID = UINT_MAX;
 //static const int INVALID = -1;
 //#define INVALID UINT_MAX
 
@@ -278,6 +282,12 @@ typedef struct TYPE_ID_TUPLE
 	TYPE_ENTITY_LITERAL_ID subid;
 	TYPE_ENTITY_LITERAL_ID preid;
 	TYPE_ENTITY_LITERAL_ID objid;
+	TYPE_ID_TUPLE(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LITERAL_ID _preid, TYPE_ENTITY_LITERAL_ID _objid): \
+		subid(_subid), preid(_preid), objid(_objid)
+	{
+
+	}
+	TYPE_ID_TUPLE(){}
 }ID_TUPLE;
 
 //===================================================================================================================
@@ -360,17 +370,21 @@ public:
 	static unsigned bsearch_vec_uporder(unsigned _key, const std::vector<unsigned>* _vec);
 	static std::string result_id_str(std::vector<unsigned*>& _v, int _var_num);
 	static bool dir_exist(const std::string _dir);
+    static bool file_exist(const std::string _file);
 	static bool create_dir(const std:: string _dir);
 	static bool create_file(const std::string _file);
 
 	static std::string getTimeName();
 	static std::string getTimeString();
+    static std::string getTimeString2();
+    static int getRandNum();
 	static std::string get_folder_name(const std::string path, const std::string db_name);
 	static std::string get_backup_time(const std::string path, const std::string db_name);
 	static long get_cur_time();
 	static int get_time();
 	static int str2time();
 	static std::string get_date_time();
+    static std::string get_date_day();
 	static std::string get_timestamp();
 	static time_t time_to_stamp(std::string time);
 	static bool save_to_file(const char*, const std::string _content);
@@ -378,6 +392,8 @@ public:
 	static bool isValidIP(std::string);
 	static std::string node2string(const char* _raw_str);
 	static long read_backup_time();
+
+    static std::string replace_all(std::string _content,const std::string oldtext,const std::string newtext);
 
 	static bool is_literal_ele(TYPE_ENTITY_LITERAL_ID id);
 	static bool is_entity_ele(TYPE_ENTITY_LITERAL_ID id);
@@ -432,9 +448,13 @@ public:
 	//You can call it by Util util in the first of your main program
 	//Another way is to build a GstoreApplication program, and do this configure in the initialization of the application
 	static bool configure();  //read init.conf and set the parameters for this system
+	static bool configure_new(); //read gstore.ini and set the parameters for this system
+	static bool setGlobalConfig(INIParser& parser, string rootname, string keyname);
+	static string getConfigureValue(string keyname);
 	static bool config_setting();
 	static bool config_advanced();
 	static bool config_debug();
+
 	//static bool gStore_mode;
 	static std::map<std::string, std::string> global_config;
 	//static std::string db_home;
@@ -478,31 +498,47 @@ public:
 	static long int get_timestamp(std::string& line);
 	static std::string stamp2time(int timestamp);
 	static std::vector<std::string> GetFiles(const char *src_dir, const char *ext);
+	static std::string getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value="");
+	static void formatPrint(std::string content, std::string type = "Info");
+    static bool checkPort(int port);
+    static std::string md5(const string& text);
 private:
 	static bool isValidIPV4(std::string);
 	static bool isValidIPV6(std::string);
+
+	static std::pair<bool, double> checkGetNumericLiteral(std::string);
 };
 
 //===================================================================================================================
 
+/**
+ * A list of unsigned
+ */
 class BlockInfo
 {
 public:
-	unsigned num;			
+    // starts from 1
+	unsigned num;
 	BlockInfo* next;
 	BlockInfo()
 	{
-		num = 0;
+      num = 0;
 		next = NULL;
 	}
 	BlockInfo(unsigned _num)
 	{
-		num = _num;
+      num = _num;
 		next = NULL;
 	}
+
+	/**
+	 * create BlockInfo
+	 * @param _num the number
+	 * @param _bp the 'next' pointer
+	 */
 	BlockInfo(unsigned _num, BlockInfo* _bp)
 	{
-		num = _num;
+      num = _num;
 		next = _bp;
 	}
 };
@@ -533,6 +569,13 @@ public:
 //BETTER+TODO:if considering frequent insert/delete, there maybe too many empty positions, too wasteful!
 //A method is to divide as groups, set the base for each, not conflict
 //Reproducing the array if needed!
+
+
+/**
+ * A raw array of string. A simple wrapping.
+ * BETTER+TODO:if considering frequent insert/delete, there maybe too many empty positions,too wasteful! .
+ * A method is to divide as groups, set the base for each, not conflict. Reproducing the array if needed!
+ */
 class Buffer
 {
 public:
@@ -543,10 +586,6 @@ public:
 	{
 		this->size = _size;
 		this->buffer = new std::string[this->size];
-		//for(unsigned i = 0; i < this->size; ++i)
-		//{
-			//this->buffer[i] = "";
-		//}
 	}
 	
 	bool set(unsigned _pos, const std::string& _ele)
@@ -577,94 +616,618 @@ public:
 
 	~Buffer()
 	{
-		//for(unsigned i = 0; i < size; ++i)
-		//{
-			//delete[] buffer[i];
-		//}
 		delete[] buffer;
 	}
 };
 
-//NOTICE: bool used to be represented by int in C, but in C++ it only occupies a byte
-//But in 32-bit machine, read/write on 32-bit(4-byte) will be more efficient, so bools are compressed into 4-bytes
-//vector<bool> is not suggested:)
-//http://blog.csdn.net/liushu1231/article/details/8844631
-class BoolArray
-{
-private:
-	unsigned size;
-	char* arr;
-
-public:
-	BoolArray()
-	{
-		size = 0;
-		arr = NULL;
-	}
-	BoolArray(unsigned _size)
-	{
-		//this->size = (_size+7)/8*8;
-		this->size = Util::ceiling(_size, 8);
-		this->arr = new char[this->size/8];
-	}
-	void fill(unsigned _size)
-	{
-		if(this->arr != NULL)
-		{
-			//unsigned tmp = (_size+7)/8*8;
-			unsigned tmp = Util::ceiling(_size, 8);
-			if(tmp > this->size)
-			{
-				this->size= tmp;
-				delete[] this->arr;
-				this->arr = new char[this->size/8];
-			}
-		}
-		else
-		{
-			//this->size = (_size+7)/8*8;
-			this->size = Util::ceiling(_size, 8);
-			this->arr = new char[this->size/8];
-		}
-	}
-	//void load()
-	//{
-	//}
-
-	bool exist()
-	{
-		return this->size > 0;
-	}
-	unsigned getSize()
-	{
-		return size;
-	}
-	void clear()
-	{
-		this->size = 0;
-		delete[] arr;
-		arr = NULL;
-	}
-	~BoolArray()
-	{
-		delete[] arr;
-	}
-};
-
-class AccessRequest
+/**
+ * A custom vector. For some algorithms in PathQueryHandler.
+ */
+template <typename _T>
+class iVector
 {
 public:
-	unsigned id;
-	long offset;
-	unsigned length;
-	std::string *str;
-	AccessRequest(unsigned _id, long _offset, unsigned _length, std::string *_str):
-		id(_id), offset(_offset), length(_length), str(_str){};
-	inline bool operator < (const AccessRequest &x) const
-	{
-		return this->offset < x.offset;
-	}
+    unsigned int m_size;
+    _T* m_data;
+    unsigned int m_num;
+
+    void free_mem()
+    {
+        delete[] m_data;
+    }
+
+    iVector()
+    {
+        m_size = 20;
+        m_data = new _T[20];
+        m_num = 0;
+    }
+    iVector( unsigned int n )
+    {
+        if ( n == 0 )
+        {
+            n = 20;
+        }
+        m_size = n;
+        m_data = new _T[m_size];
+        m_num = 0;
+    }
+    void push_back( _T d )
+    {
+        if ( m_num == m_size )
+        {
+            re_allocate( m_size*2 );
+        }
+        m_data[m_num] = d ;
+        m_num++;        
+    }
+    void push_back( const _T* p, unsigned int len )
+    {
+        while ( m_num + len > m_size )
+        {
+            re_allocate( m_size*2 );
+        }
+        memcpy( m_data+m_num, p, sizeof(_T)*len );
+        m_num += len;
+    }
+
+    void re_allocate( unsigned int size )
+    {
+        if ( size < m_num )
+        {
+            return;
+        }
+        _T* tmp = new _T[size];
+        memcpy( tmp, m_data, sizeof(_T)*m_num );
+        m_size = size;
+        delete[] m_data;
+        m_data = tmp;
+    }
+    void Sort()
+    {
+        if ( m_num < 20 )
+        {
+            int k ;
+            _T tmp;
+            for ( int i = 0 ; i < m_num-1 ; ++i )
+            {
+                k = i ;
+                for ( int j = i+1 ; j < m_num ; ++j )
+                    if ( m_data[j] < m_data[k] ) k = j ;
+                if ( k != i )
+                {
+                    tmp = m_data[i];
+                    m_data[i] = m_data[k];
+                    m_data[k] = tmp;
+                }
+            }
+        }
+        else sort( m_data, m_data+m_num );
+    }
+    void unique()
+    {
+        if ( m_num == 0 ) return;
+        Sort();
+        unsigned int j = 0;
+        for ( unsigned int i = 0 ; i < m_num ; ++i )
+            if ( !(m_data[i] == m_data[j]) )
+            {
+                ++j;
+                if ( j != i ) m_data[j] = m_data[i];
+            }
+        m_num = j+1;
+    }
+    int BinarySearch( _T& data )
+    {
+        for ( int x = 0 , y = m_num-1 ; x <= y ; )
+        {
+            int p = (x+y)/2;
+            if ( m_data[p] == data ) return p;
+            if ( m_data[p] < data ) x = p+1;
+            else y = p-1;
+        }
+        return -1;
+    }
+    void clean()
+    {
+        m_num = 0;
+    }
+    void assign( iVector& t )
+    {
+        m_num = t.m_num;
+        m_size = t.m_size;
+        delete[] m_data;
+        m_data = t.m_data;
+    }
+
+    bool remove( _T& x )
+    {
+        for ( int l = 0 , r = m_num ; l < r ; )
+        {
+            int m = (l+r)/2;
+
+            if ( m_data[m] == x )
+            {
+                m_num--;
+                if ( m_num > m ) memmove( m_data+m, m_data+m+1, sizeof(_T)*(m_num-m) );
+                return true;
+            }
+            else if ( m_data[m] < x ) l = m+1;
+            else r = m;
+        }
+        return false;
+    }
+
+    void sorted_insert( _T& x )
+    {
+        if ( m_num == 0 )
+        {
+            push_back( x );
+            return;
+        }
+
+        if ( m_num == m_size ) re_allocate( m_size*2 );
+
+        int l,r;
+
+        for ( l = 0 , r = m_num ; l < r ; )
+        {
+            int m = (l+r)/2;
+            if ( m_data[m] < x ) l = m+1;
+            else r = m;
+        }
+
+        if ( m_num > l )
+        {
+            memmove( m_data+l+1, m_data+l, sizeof(_T)*(m_num-l) );
+        }
+        m_num++;
+        m_data[l] = x;
+    }
+
+    bool remove_unsorted( _T& x )
+    {
+        for ( int m = 0 ; m < m_num ; ++m )
+        {
+            if ( m_data[m] == x )
+            {
+                m_num--;
+                if ( m_num > m ) memcpy( m_data+m, m_data+m+1, sizeof(_T)*(m_num-m) );
+                return true;
+            }
+        }
+        return false;
+    }
+
+    _T& operator[]( unsigned int i )
+    {
+        return m_data[i];
+    }
+    //close range check for [] in iVector if release
+
 };
 
+/**
+ * A custom map. For some algorithms in PathQueryHandler.
+ */
+template <typename _T>
+struct iMap
+{   
+    _T* m_data;
+    int m_num;
+    int cur;
+    iVector<int> occur;
+    _T nil; 
+    iMap()
+    {
+        m_data = NULL;
+        m_num = 0;
+    }
+    iMap(int size){
+        initialize(size);
+    }
+    void free_mem()
+    {
+        delete[] m_data;
+        occur.free_mem();
+    }
+
+    void initialize( int n )
+    {
+        occur.re_allocate(n);
+        occur.clean();
+        m_num = n;
+        if ( m_data != NULL )
+            delete[] m_data;
+        m_data = new _T[m_num];
+        for ( int i = 0 ; i < m_num ; ++i )
+            m_data[i] = nil;
+        cur = 0;
+    }
+    void clean()
+    {
+        for ( int i = 0 ; i < occur.m_num ; ++i )
+        {
+            m_data[occur[i]] = nil;
+        }
+        occur.clean();
+        cur = 0;
+    }
+    
+    //init keys 0-n, value as 0
+    void init_keys(int n){
+        occur.re_allocate(n);
+        occur.clean();
+        m_num = n;
+        if ( m_data != NULL )
+            delete[] m_data;
+        m_data = new _T[m_num];
+        for ( int i = 0 ; i < m_num ; ++i ){
+            m_data[i] = 0;
+            occur.push_back( i );
+            cur++;
+        }
+    }
+    //reset all values to be zero
+    void reset_zero_values(){
+        memset( m_data, 0.0, m_num*sizeof(_T) );
+    }
+
+    void reset_one_values(){
+        for ( int i = 0 ; i < m_num ; ++i )
+            m_data[i] = 1.0;
+    }
+
+    _T get( int p )
+    {
+        return m_data[p];
+    }
+    _T& operator[](  int p )
+    {
+        return m_data[p];
+    }
+    void erase( int p )
+    {
+        m_data[p] = nil;
+        cur--;
+    }
+    bool notexist( int p )
+    {
+        return m_data[p] == nil ;
+    }
+    bool exist( int p )
+    {
+        return !(m_data[p] == nil);
+    }
+    void insert( int p , _T d )
+    {
+        if ( m_data[p] == nil )
+        {
+            occur.push_back( p );
+            cur++;
+        }
+        m_data[p] = d;
+    }
+    void inc( int p )
+    {
+        m_data[p]++;
+    }
+    void inc( int p , int x )
+    {
+        m_data[p] += x;
+    }
+    void dec( int p )
+    {
+        m_data[p]--;
+    }
+    //close range check when release!!!!!!!!!!!!!!!!!!!!    
+};
+// md5 class
+class MD5
+{
+    #define S11 7
+    #define S12 12
+    #define S13 17
+    #define S14 22
+    #define S21 5
+    #define S22 9
+    #define S23 14
+    #define S24 20
+    #define S31 4
+    #define S32 11
+    #define S33 16
+    #define S34 23
+    #define S41 6
+    #define S42 10
+    #define S43 15
+    #define S44 21
+    public:
+        typedef unsigned int size_type; // must be 32bit
+
+        // default ctor, just initailize
+        MD5()
+        {
+            init();
+        }
+
+        // nifty shortcut ctor, compute MD5 for string and finalize it right away
+        MD5(const std::string &text)
+        {
+            init();
+            update(text.c_str(), text.length());
+            finalize();
+        }
+
+        // MD5 block update operation. Continues an MD5 message-digest
+        // operation, processing another message block
+        void update(const unsigned char input[], size_type length)
+        {
+            // compute number of bytes mod 64
+            size_type index = count[0] / 8 % blocksize;
+
+            // Update number of bits
+            if ((count[0] += (length << 3)) < (length << 3))
+                count[1]++;
+            count[1] += (length >> 29);
+
+            // number of bytes we need to fill in buffer
+            size_type firstpart = 64 - index;
+
+            size_type i;
+
+            // transform as many times as possible.
+            if (length >= firstpart)
+            {
+                // fill buffer first, transform
+                memcpy(&buffer[index], input, firstpart);
+                transform(buffer);
+
+                // transform chunks of blocksize (64 bytes)
+                for (i = firstpart; i + blocksize <= length; i += blocksize)
+                transform(&input[i]);
+
+                index = 0;
+            }
+            else
+                i = 0;
+
+            // buffer remaining input
+            memcpy(&buffer[index], &input[i], length-i);
+        }
+
+        // for convenience provide a verson with signed char
+        void update(const char *input, size_type length)
+        {
+            update((const unsigned char*)input, length);
+        }
+        
+        // MD5 finalization. Ends an MD5 message-digest operation, writing the
+        // the message digest and zeroizing the context.
+        MD5& finalize()
+        {
+            static unsigned char padding[64] = {
+                0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            };
+
+            if (!finalized) {
+                // Save number of bits
+                unsigned char bits[8];
+                encode(bits, count, 8);
+
+                // pad out to 56 mod 64.
+                size_type index = count[0] / 8 % 64;
+                size_type padLen = (index < 56) ? (56 - index) : (120 - index);
+                update(padding, padLen);
+
+                // Append length (before padding)
+                update(bits, 8);
+
+                // Store state in digest
+                encode(digest, state, 16);
+
+                // Zeroize sensitive information.
+                memset(buffer, 0, sizeof buffer);
+                memset(count, 0, sizeof count);
+
+                finalized=true;
+            }
+
+            return *this;
+        }
+        
+        // return hex representation of digest as string
+        std::string hexdigest() const
+        {
+            if (!finalized)
+                return "";
+
+            char buf[33];
+            for (int i=0; i<16; i++)
+                sprintf(buf+i*2, "%02x", digest[i]);
+            buf[32]=0;
+
+            return std::string(buf);
+        }
+        
+        std::string md5() const
+        {
+            return hexdigest();
+        }
+        
+        friend std::ostream& operator<<(std::ostream& out, MD5 md5)
+        {
+            return out << md5.hexdigest();
+        }
+    private:
+        
+        typedef unsigned char uint1; //  8bit
+        typedef unsigned int uint4;  // 32bit
+        enum {blocksize = 64}; // VC6 won't eat a const static int here
+
+        bool finalized;
+        uint1 buffer[blocksize]; // bytes that didn't fit in last 64 byte chunk
+        uint4 count[2];   // 64bit counter for number of bits (lo, hi)
+        uint4 state[4];   // digest so far
+        uint1 digest[16]; // the result
+
+        void init()
+        {
+            finalized=false;
+
+            count[0] = 0;
+            count[1] = 0;
+
+            // load magic initialization constants.
+            state[0] = 0x67452301;
+            state[1] = 0xefcdab89;
+            state[2] = 0x98badcfe;
+            state[3] = 0x10325476;
+        }
+        
+        static void decode(uint4 output[], const uint1 input[], size_type len)
+        {
+            for (unsigned int i = 0, j = 0; j < len; i++, j += 4)
+                output[i] = ((uint4)input[j]) | (((uint4)input[j+1]) << 8) |
+                (((uint4)input[j+2]) << 16) | (((uint4)input[j+3]) << 24);
+        }
+
+        static void encode(uint1 output[], const uint4 input[], size_type len)
+        {
+            for (size_type i = 0, j = 0; j < len; i++, j += 4) {
+                output[j] = input[i] & 0xff;
+                output[j+1] = (input[i] >> 8) & 0xff;
+                output[j+2] = (input[i] >> 16) & 0xff;
+                output[j+3] = (input[i] >> 24) & 0xff;
+            }
+        }
+        
+        // low level logic operations
+        static inline uint4 F(uint4 x, uint4 y, uint4 z)
+        {
+            return (x & y) | ((~x) & z);
+        }
+        static inline uint4 G(uint4 x, uint4 y, uint4 z)
+        {
+            return (x&z) | (y&~z);
+        }
+        static inline uint4 H(uint4 x, uint4 y, uint4 z)
+        {
+            return x^y^z;
+        }
+        static inline uint4 I(uint4 x, uint4 y, uint4 z)
+        {
+            return y ^ (x | ~z);
+        }
+        static inline uint4 rotate_left(uint4 x, int n)
+        {
+            return (x << n) | (x >> (32-n));
+        }
+        // FF, GG, HH, and II transformations for rounds 1, 2, 3, and 4.
+        // Rotation is separate from addition to prevent recomputation.
+        static inline void FF(uint4 &a, uint4 b, uint4 c, uint4 d, uint4 x, uint4 s, uint4 ac)
+        {
+            a = rotate_left(a+ F(b,c,d) + x + ac, s) + b;
+        }
+        static inline void GG(uint4 &a, uint4 b, uint4 c, uint4 d, uint4 x, uint4 s, uint4 ac)
+        {
+            a = rotate_left(a + G(b,c,d) + x + ac, s) + b;
+        }
+        static inline void HH(uint4 &a, uint4 b, uint4 c, uint4 d, uint4 x, uint4 s, uint4 ac)
+        {
+            a = rotate_left(a + H(b,c,d) + x + ac, s) + b;
+        }
+        static inline void II(uint4 &a, uint4 b, uint4 c, uint4 d, uint4 x, uint4 s, uint4 ac)
+        {
+            a = rotate_left(a + I(b,c,d) + x + ac, s) + b;
+        }
+
+        void transform(const uint1 block[blocksize])
+        {
+            uint4 a = state[0], b = state[1], c = state[2], d = state[3], x[16];
+            decode (x, block, blocksize);
+
+            /* Round 1 */
+            FF (a, b, c, d, x[ 0], S11, 0xd76aa478); /* 1 */
+            FF (d, a, b, c, x[ 1], S12, 0xe8c7b756); /* 2 */
+            FF (c, d, a, b, x[ 2], S13, 0x242070db); /* 3 */
+            FF (b, c, d, a, x[ 3], S14, 0xc1bdceee); /* 4 */
+            FF (a, b, c, d, x[ 4], S11, 0xf57c0faf); /* 5 */
+            FF (d, a, b, c, x[ 5], S12, 0x4787c62a); /* 6 */
+            FF (c, d, a, b, x[ 6], S13, 0xa8304613); /* 7 */
+            FF (b, c, d, a, x[ 7], S14, 0xfd469501); /* 8 */
+            FF (a, b, c, d, x[ 8], S11, 0x698098d8); /* 9 */
+            FF (d, a, b, c, x[ 9], S12, 0x8b44f7af); /* 10 */
+            FF (c, d, a, b, x[10], S13, 0xffff5bb1); /* 11 */
+            FF (b, c, d, a, x[11], S14, 0x895cd7be); /* 12 */
+            FF (a, b, c, d, x[12], S11, 0x6b901122); /* 13 */
+            FF (d, a, b, c, x[13], S12, 0xfd987193); /* 14 */
+            FF (c, d, a, b, x[14], S13, 0xa679438e); /* 15 */
+            FF (b, c, d, a, x[15], S14, 0x49b40821); /* 16 */
+
+            /* Round 2 */
+            GG (a, b, c, d, x[ 1], S21, 0xf61e2562); /* 17 */
+            GG (d, a, b, c, x[ 6], S22, 0xc040b340); /* 18 */
+            GG (c, d, a, b, x[11], S23, 0x265e5a51); /* 19 */
+            GG (b, c, d, a, x[ 0], S24, 0xe9b6c7aa); /* 20 */
+            GG (a, b, c, d, x[ 5], S21, 0xd62f105d); /* 21 */
+            GG (d, a, b, c, x[10], S22,  0x2441453); /* 22 */
+            GG (c, d, a, b, x[15], S23, 0xd8a1e681); /* 23 */
+            GG (b, c, d, a, x[ 4], S24, 0xe7d3fbc8); /* 24 */
+            GG (a, b, c, d, x[ 9], S21, 0x21e1cde6); /* 25 */
+            GG (d, a, b, c, x[14], S22, 0xc33707d6); /* 26 */
+            GG (c, d, a, b, x[ 3], S23, 0xf4d50d87); /* 27 */
+            GG (b, c, d, a, x[ 8], S24, 0x455a14ed); /* 28 */
+            GG (a, b, c, d, x[13], S21, 0xa9e3e905); /* 29 */
+            GG (d, a, b, c, x[ 2], S22, 0xfcefa3f8); /* 30 */
+            GG (c, d, a, b, x[ 7], S23, 0x676f02d9); /* 31 */
+            GG (b, c, d, a, x[12], S24, 0x8d2a4c8a); /* 32 */
+
+            /* Round 3 */
+            HH (a, b, c, d, x[ 5], S31, 0xfffa3942); /* 33 */
+            HH (d, a, b, c, x[ 8], S32, 0x8771f681); /* 34 */
+            HH (c, d, a, b, x[11], S33, 0x6d9d6122); /* 35 */
+            HH (b, c, d, a, x[14], S34, 0xfde5380c); /* 36 */
+            HH (a, b, c, d, x[ 1], S31, 0xa4beea44); /* 37 */
+            HH (d, a, b, c, x[ 4], S32, 0x4bdecfa9); /* 38 */
+            HH (c, d, a, b, x[ 7], S33, 0xf6bb4b60); /* 39 */
+            HH (b, c, d, a, x[10], S34, 0xbebfbc70); /* 40 */
+            HH (a, b, c, d, x[13], S31, 0x289b7ec6); /* 41 */
+            HH (d, a, b, c, x[ 0], S32, 0xeaa127fa); /* 42 */
+            HH (c, d, a, b, x[ 3], S33, 0xd4ef3085); /* 43 */
+            HH (b, c, d, a, x[ 6], S34,  0x4881d05); /* 44 */
+            HH (a, b, c, d, x[ 9], S31, 0xd9d4d039); /* 45 */
+            HH (d, a, b, c, x[12], S32, 0xe6db99e5); /* 46 */
+            HH (c, d, a, b, x[15], S33, 0x1fa27cf8); /* 47 */
+            HH (b, c, d, a, x[ 2], S34, 0xc4ac5665); /* 48 */
+
+            /* Round 4 */
+            II (a, b, c, d, x[ 0], S41, 0xf4292244); /* 49 */
+            II (d, a, b, c, x[ 7], S42, 0x432aff97); /* 50 */
+            II (c, d, a, b, x[14], S43, 0xab9423a7); /* 51 */
+            II (b, c, d, a, x[ 5], S44, 0xfc93a039); /* 52 */
+            II (a, b, c, d, x[12], S41, 0x655b59c3); /* 53 */
+            II (d, a, b, c, x[ 3], S42, 0x8f0ccc92); /* 54 */
+            II (c, d, a, b, x[10], S43, 0xffeff47d); /* 55 */
+            II (b, c, d, a, x[ 1], S44, 0x85845dd1); /* 56 */
+            II (a, b, c, d, x[ 8], S41, 0x6fa87e4f); /* 57 */
+            II (d, a, b, c, x[15], S42, 0xfe2ce6e0); /* 58 */
+            II (c, d, a, b, x[ 6], S43, 0xa3014314); /* 59 */
+            II (b, c, d, a, x[13], S44, 0x4e0811a1); /* 60 */
+            II (a, b, c, d, x[ 4], S41, 0xf7537e82); /* 61 */
+            II (d, a, b, c, x[11], S42, 0xbd3af235); /* 62 */
+            II (c, d, a, b, x[ 2], S43, 0x2ad7d2bb); /* 63 */
+            II (b, c, d, a, x[ 9], S44, 0xeb86d391); /* 64 */
+
+            state[0] += a;
+            state[1] += b;
+            state[2] += c;
+            state[3] += d;
+
+            // Zeroize sensitive information.
+            memset(x, 0, sizeof x);
+        }
+};
 #endif //_UTIL_UTIL_H
 

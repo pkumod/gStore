@@ -8,9 +8,10 @@ using namespace std;
 
 typedef unsigned long long txn_id_t;
 typedef set<IDTriple> TripleSet;
-typedef set<TYPE_ENTITY_LITERAL_ID> IDSet;
+typedef unordered_set<TYPE_ENTITY_LITERAL_ID> IDSet;
 typedef set<TYPE_TXN_ID> TXNSet;
-enum class TransactionState{ WAITING, RUNNING, COMMITTED, ABORTED};
+enum class TransactionState{ WAITING = 0, RUNNING, COMMITTED, ABORTED};
+enum class TransactionErrorType {SUB_X = 0, PRE_X, OBJ_X, SUB_S, PRE_S, OBJ_S};
 enum class IsolationLevelType {
 	INVALID = INVALID_TYPE_ID,
 	SERIALIZABLE = 1,      // serializable
@@ -26,9 +27,10 @@ private:
 
 	TransactionState state;
 	TYPE_TS timestamp;
+	TransactionErrorType errormsg;
 
-	long int start_time;
-	long int end_time;
+	unsigned long start_time;
+	unsigned long end_time;
 	
 	//latch table
 	vector<IDSet> ReadSet; //shared latches
@@ -39,11 +41,14 @@ private:
 	vector<string> sparqls;
 	IsolationLevelType isolation;
 
+	
 	int wait_lock_time;
 	int retry_times;
 public:
-	unsigned long long int update_num;
+	int update_num;
 	enum class IDType{SUBJECT, PREDICATE, OBJECT};
+	//error type for aborted transaction. X latched failed or S latched failed.
+	
 	Transaction(Transaction const&) = delete;
 	Transaction(string name, TYPE_TS time, txn_id_t TID, IsolationLevelType _isolation = IsolationLevelType::SERIALIZABLE);
 	~Transaction(){
@@ -55,7 +60,8 @@ public:
 	inline void SetEndTime(long long int time) { end_time = time; }
 	inline long GetStartTime() const { return start_time;  }
 	inline long GetEndTime() const { return end_time;  }
-	
+	inline void SetErrorType(TransactionErrorType _type) {this->errormsg = _type;}
+	TransactionErrorType GetErrorType() {return this->errormsg;}
 	//inline void SetTimeStamp(TYPE_TS _timestamp) {this->timestamp = _timestamp; }
 	//inline TYPE_TS GetTimeStamp() const {return this->timestamp; };
 	
@@ -74,11 +80,6 @@ public:
 	void WriteSetDelete(IDTriple _Triple);
 	bool WriteSetFind(TYPE_ENTITY_LITERAL_ID _ID, Transaction::IDType _type);
 	
-	void AddSetInsert(IDTriple _Triple);
-	void AddSetDelete(IDTriple _Triple);
-	void DelSetInsert(IDTriple _Triple);
-	void DelSetDelete(IDTriple _Triple);
-	
 	//void DependedTXNSetInsert(TYPE_TXN_ID _TID);
 	//void DependedTXNSetDelete(TYPE_TXN_ID _TID);
 	
@@ -92,6 +93,7 @@ public:
 	int get_wait_lock_time() { return this->wait_lock_time;}
 	int get_retry_times() { return this->retry_times; }
 	
+	//DEBUG Function
 	void print_ReadSet();
 	void print_WriteSet();
 	void print_AddSet();

@@ -11,6 +11,8 @@
 
 #include "../KVstore/KVstore.h"
 #include "../Util/Util.h"
+#include "../Util/SpinLock.h"
+#include "../Util/Latch.h"
 
 class StringIndexFile
 {
@@ -46,6 +48,12 @@ class StringIndexFile
 		char *buffer;
 		char *UncompressBuffer;
 
+		
+		
+//		std::string dictionary_path;
+		string *base;
+	public:
+		
 		class AccessRequest
 		{
 			public:
@@ -71,10 +79,6 @@ class StringIndexFile
 				}*/
 		};
 		std::vector<AccessRequest> request;
-
-//		std::string dictionary_path;
-		string *base;
-	public:
 		void flush_file()
 		{	
 			if (this->value_file != NULL)
@@ -168,7 +172,7 @@ class StringIndexFile
 			this->request.push_back(AccessRequest(id, off_base));
 		}
 
-		void trySequenceAccess(bool real = true, pthread_t tidp = -1);
+		void trySequenceAccess(std::vector<StringIndexFile::AccessRequest> requestVectors, string *base,bool real = true, pthread_t tidp = -1);
 
 		void change(unsigned id, KVstore &kv_store);
 		void disable(unsigned id);
@@ -183,7 +187,10 @@ class StringIndex
 		Buffer* literal_buffer;
 		unsigned literal_buffer_size;
 		
-		mutex AccessLock;
+		//mutex AccessLock;
+		// spinlock AccessLock;
+		Latch latch;
+		//atomic_flag spinlock = ATOMIC_FLAG_INIT ;
 	public:
 //		Trie *trie;
 		void SetTrie(Trie* trie);
@@ -230,7 +237,7 @@ class StringIndex
 
 		bool randomAccess(unsigned id, std::string *str, bool is_entity_or_literal = true, bool real = true);
 		void addRequest(unsigned id, unsigned off_base, bool is_entity_or_literal = true);
-		void trySequenceAccess(bool real = true, pthread_t tidp = -1);
+		void trySequenceAccess(std::vector<StringIndexFile::AccessRequest>* requestVectors,string *base, bool real = true, pthread_t tidp = -1);
 		void change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_entity_or_literal = true);
 		void disable(std::vector<unsigned> &ids, bool is_entity_or_literal = true);
 };
