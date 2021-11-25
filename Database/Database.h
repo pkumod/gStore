@@ -20,12 +20,11 @@
 #include "../VSTree/VSTree.h"
 #include "../KVstore/KVstore.h"
 #include "../StringIndex/StringIndex.h"
-#include "../Parser/DBparser.h"
 #include "../Parser/RDFParser.h"
-// #include "../Parser/SparqlParser.h"
 #include "../Parser/SPARQL/SPARQLParser.h"
 #include "../Query/QueryCache.h"
 #include "../Query/GeneralEvaluation.h"
+#include "../Server/Socket.h"
 #include "CSR.h"
 
 class Database
@@ -60,10 +59,14 @@ public:
 	//2. assign new tuple_id to tuple, if predicate or object doesn't exist before too;
 	//3. if subject exist, update SigEntry, and update spo, ops... etc. if needed
 
+	bool build(const string& _rdf_file, Socket& socket);
 	bool build(const string& _rdf_file);
 	//interfaces to insert/delete from given rdf file
 	bool insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 	bool remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
+
+	unsigned batch_insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
+	unsigned batch_remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 
 	bool backup();
 	bool restore();
@@ -102,9 +105,10 @@ public:
 	mutex& get_query_parse_lock();
 	
 	//MVCC
-	void transaction_rollback(shared_ptr<Transaction> txn);
-	void transaction_commit(shared_ptr<Transaction> txn);
-	void version_clean();
+	void TransactionRollback(shared_ptr<Transaction> txn);
+	void TransactionCommit(shared_ptr<Transaction> txn);
+	void VersionClean(vector<unsigned> &sub_ids ,vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned> &pre_ids);
+	std::string CreateJson(int StatusCode, std::string StatusMsg, std::string ResponseBody);
 private:
 	string name;
 	string store_path;
@@ -141,6 +145,7 @@ private:
 	StringIndex* stringindex;
 	Join* join;
 
+	enum class UPDATE_TYPE{ SUBJECT_INSERT, SUBJECT_REMOVE, PREDICATE_INSERT, PREDICATE_REMOVE, OBJECT_INSERT, OBJECT_REMOVE};
 	//metadata of this database: sub_num, pre_num, obj_num, literal_num, etc. 
 	string db_info_file;
 
@@ -295,6 +300,13 @@ private:
 	unsigned insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false , shared_ptr<Transaction> txn = nullptr);
 	//bool insert(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
 	unsigned remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false, shared_ptr<Transaction> txn = nullptr);
+
+
+	unsigned batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false , shared_ptr<Transaction> txn = nullptr);
+	unsigned batch_remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false , shared_ptr<Transaction> txn = nullptr);
+	
+	void sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
+	static void run_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
 
 	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file);
 	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const string _error_log);

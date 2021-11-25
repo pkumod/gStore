@@ -128,12 +128,11 @@ inline txn_id_t Txn_manager::ArrangeTID()
 
 inline txn_id_t Txn_manager::ArrangeTID()
 {
-	txn_id_t TID = cnt.load();
+	txn_id_t TID = cnt.fetch_add(1);
 	if(TID == INVALID_ID)
 	{
-		cout << "TID wrapped! " << endl;
+		cerr << "TID wrapped! " << endl;
 	}
-	cnt++;
 	return TID;
 }
 
@@ -167,19 +166,22 @@ int Txn_manager::Commit(txn_id_t TID)
 	shared_ptr<Transaction> txn = get_transaction(TID);
 	if (txn == nullptr) {
 		cerr << "wrong transaction id!" << endl;
+		checkpoint_lock.unlock();
 		return -1;
 	}
 	else if (txn->GetState() != TransactionState::RUNNING) {
-		cerr << "transaction not in running state! commit failed" << endl;
+		cerr << "transaction not in running state! commit failed" << " " << (int)txn->GetState() << endl;
+		checkpoint_lock.unlock();
 		return 1;
 	}
 	txn_id_t CID = this->ArrangeCommitID();
 	txn->SetCommitID(CID);
 	if(db != nullptr)
-		db->transaction_commit(txn);
+		db->TransactionCommit(txn);
 	else
 	{
 		cout << "error! database has been flushed or removed" << endl;
+		checkpoint_lock.unlock();
 		return -1;
 	}
 	//writelog(log_str);
@@ -187,6 +189,12 @@ int Txn_manager::Commit(txn_id_t TID)
 	txn->SetEndTime(Util::get_cur_time());
 	add_dirty_keys(txn);
 	checkpoint_lock.unlock();
+	committed_num++;
+	int cycle = 50000;
+	if(committed_num.compare_exchange_strong(cycle, 0)){
+		Checkpoint();
+		cerr << "checkpoint done!" << endl;
+	}
 	return 0;
 }
 
@@ -199,7 +207,7 @@ int Txn_manager::Abort(txn_id_t TID)
 		return -1;
 	}
 	if(db != nullptr)
-		db->transaction_rollback(txn);
+		db->TransactionRollback(txn);
 	else
 	{
 		cout << "error! database has been flushed or removed" << endl;
@@ -209,6 +217,7 @@ int Txn_manager::Abort(txn_id_t TID)
 	txn->SetState(TransactionState::ABORTED);
 	txn->SetEndTime(Util::get_cur_time());
 	checkpoint_lock.unlock();
+	//add_dirty_keys(txn);
 	return 0;
 }
 
@@ -235,7 +244,7 @@ int Txn_manager::Query(txn_id_t TID, string sparql, string& results)
 		return -1;
 	}
 	if (txn->GetState() != TransactionState::RUNNING) {
-		cerr << "transaction not in running state! Query failed" << endl;;
+		cerr << "transaction not in running state! Query failed" <<  " " << (int)txn->GetState() <<  endl;;
 		return -99;
 	}
 	int ret_val;
@@ -268,8 +277,24 @@ int Txn_manager::Query(txn_id_t TID, string sparql, string& results)
 void Txn_manager::Checkpoint()
 {
 	checkpoint_lock.lockExclusive();
-	if(db != nullptr)
-		db->version_clean();
+	vector<unsigned> sub_ids , obj_ids, obj_literal_ids, pre_ids;
+	sub_ids.insert(sub_ids.begin(), DirtyKeys[0].begin(), DirtyKeys[0].end());
+	pre_ids.insert(pre_ids.begin(), DirtyKeys[1].begin(), DirtyKeys[1].end());
+	for(auto key: DirtyKeys[2])
+	{
+		if(Util::is_entity_ele(key)){
+			obj_ids.push_back(key);
+		}
+		else{
+			obj_literal_ids.push_back(key);
+		}
+	}
+	//cout << "sub_ids.size(): " << sub_ids.size() << endl;
+	//cout << "pre_ids.size(): " << pre_ids.size() << endl;
+	//cout << "obj_ids.size(): " << obj_ids.size() << endl;
+	//cout << "obj_literal_ids.size(): " << obj_literal_ids.size() << endl;
+ 	if(db != nullptr)
+		db->VersionClean(sub_ids, obj_ids, obj_literal_ids, pre_ids);
 	checkpoint_lock.unlock();
 }
 
@@ -286,7 +311,6 @@ void Txn_manager::restore()
 		if (line[0] == 'B')
 		{
 			vector<string> redo_set;
-			bool full_txn = false;
 			while (getline(in, line))
 			{
 				if (line[0] == 'B' || line[0] == 'C')
@@ -358,9 +382,12 @@ void Txn_manager::print_txn_dataset(txn_id_t TID)
 
 void Txn_manager::add_dirty_keys(shared_ptr<Transaction> txn)
 {
+	//lock_guard<mutex> lck(DirtyKeys_lock);
+	DirtyKeys_lock.lock();
 	const vector<IDSet> & sets = txn->Get_WriteSet();
 	for(int i = 0; i < 3; i++)
 	{
 		DirtyKeys[i].insert(sets[i].begin(), sets[i].end());
 	}
+	DirtyKeys_lock.unlock();
 }

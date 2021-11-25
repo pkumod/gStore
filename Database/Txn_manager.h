@@ -37,10 +37,10 @@ private:
 	mutex log_lock;
 	Latch checkpoint_lock;
 	Latch table_lock;
-	//not used
-	mutex db_lock;
+	mutex DirtyKeys_lock;
 	
 	vector<IDSet> DirtyKeys;
+	atomic<int> committed_num = {0};
 	bool add_transaction(txn_id_t TID, shared_ptr<Transaction> txn);
 	shared_ptr<Transaction> get_transaction(txn_id_t TID);
 
@@ -55,8 +55,6 @@ private:
 	
 	inline void lock_log() { log_lock.lock(); }
 	inline void unlock_log() { log_lock.unlock(); }
-	inline void lock_db() { db_lock.lock(); }
-	inline void unlock_db() { db_lock.unlock(); }
 	
 	void add_dirty_keys(shared_ptr<Transaction> txn);
 public:
