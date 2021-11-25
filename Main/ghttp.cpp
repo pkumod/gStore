@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-11-19 09:23:30
+ * @LastEditTime: 2021-11-25 18:28:53
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -3325,7 +3325,8 @@ void commit_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 	}
 	string res;
 	txn_id_t TID;
-	
+	int pos = TID_s.find(" ") + 1;
+	TID_s = TID_s.substr(pos, TID_s.size()-pos);
 	if(Util::is_number(TID_s))
 	{
 		TID = strtoull(TID_s.c_str(), NULL, 0);
@@ -3416,7 +3417,8 @@ void rollback_thread_new(const shared_ptr<HttpServer::Response>& response,string
 	}
 	string res;
 	txn_id_t TID;
-	
+	int pos = TID_s.find(" ") + 1;
+	TID_s = TID_s.substr(pos, TID_s.size()-pos);
 	if(Util::is_number(TID_s))
 	{
 		TID = strtoull(TID_s.c_str(), NULL, 0);
