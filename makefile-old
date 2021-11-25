@@ -49,9 +49,6 @@ EXEFLAG = -O2 -pthread -std=c++11
 
 #add -lreadline [-ltermcap] if using readline or objs contain readline
 # library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
-#library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -L./workflow-nossl/_lib -L./workflow-nossl/_include -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -lworkflow -llog4cplus
-#library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/  -L./tools/workflow-master/_lib -L./tools/workflow-master/_include  -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl  -llog4cplus -lworkflow
-#library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -llog4cplus -Wl,-rpath='/usr/local/lib'
 library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
 #used for parallelsort
 openmp = -fopenmp -march=native
@@ -68,15 +65,9 @@ testdir = scripts/
 
 lib_antlr = lib/libantlr4-runtime.a
 
-#lib_workflow=tools/workflow-master/_lib/libworkflow.a
+api_cpp = api/socket/cpp/lib/libgstoreconnector.a
 
-#includ_workflow=tools/workflow-master/_include/
-
-api_cpp = api/http/cpp/lib/libgstoreconnector.a
-
-api_socket = api/socket/cpp/lib/libclient.a
-
-api_java = api/http/java/lib/GstoreJavaAPI.jar
+api_java = api/socket/java/lib/GstoreJavaAPI.jar
 
 # objects
 
@@ -91,9 +82,7 @@ kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarray
 
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o \
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
-			$(objdir)IPBlackList.o  $(objdir)SpinLock.o $(objdir)GraphLock.o $(objdir)WebUrl.o $(objdir)INIParser.o 
-
-
+			$(objdir)IPBlackList.o
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o \
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
@@ -105,10 +94,10 @@ vstreeobj = $(objdir)VSTree.o $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdi
 
 stringindexobj = $(objdir)StringIndex.o
 
-parserobj = $(objdir)RDFParser.o $(objdir)SPARQLParser.o \
+parserobj = $(objdir)RDFParser.o $(objdir)SPARQLParser.o $(objdir)DBparser.o \
 			$(objdir)SPARQLLexer.o $(objdir)TurtleParser.o $(objdir)QueryParser.o
 
-serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Socket.o
+serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Client.o $(objdir)Socket.o
 
 # httpobj = $(objdir)client_http.hpp.gch $(objdir)server_http.hpp.gch
 
@@ -119,8 +108,7 @@ trieobj = $(objdir)Trie.o $(objdir)TrieNode.o
 objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj) $(httpobj) $(databaseobj) \
 		  $(utilobj) $(signatureobj) $(queryobj) $(trieobj)
 	 
-inc = -I./tools/antlr4-cpp-runtime-4/runtime/src 
-inc_workflow=-I./tools/workflow-master/_include 
+inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
 #-I./usr/local/include/boost/
 
 
@@ -130,7 +118,7 @@ inc_workflow=-I./tools/workflow-master/_include
 
 #gtest
 
-TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gquery $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback  
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gclient $(exedir)gquery $(exedir)gconsole $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback 
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -153,7 +141,7 @@ $(exedir)ginit: $(lib_antlr) $(objdir)ginit.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)ginit $(objdir)ginit.o $(objfile) $(library) $(openmp)
 
 $(exedir)shutdown: $(lib_antlr) $(objdir)shutdown.o $(objfile) $(api_cpp)
-	$(CC) $(EXEFLAG) -o $(exedir)shutdown $(objdir)shutdown.o $(objfile) $(openmp) -L./api/http/cpp/lib -lgstoreconnector $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)shutdown $(objdir)shutdown.o $(objfile) $(openmp) -L./api/http/cpp/lib -lclient $(library)
 
 $(exedir)gmonitor: $(lib_antlr) $(objdir)gmonitor.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gmonitor $(objdir)gmonitor.o $(objfile) $(library) $(openmp)
@@ -173,14 +161,14 @@ $(exedir)gserver: $(lib_antlr) $(objdir)gserver.o $(objfile)
 $(exedir)gserver_backup_scheduler: $(lib_antlr) $(objdir)gserver_backup_scheduler.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gserver_backup_scheduler $(objdir)gserver_backup_scheduler.o $(objfile) $(library) $(openmp)
 
+$(exedir)gclient: $(lib_antlr) $(objdir)gclient.o $(objfile) 
+	$(CC) $(EXEFLAG) -o $(exedir)gclient $(objdir)gclient.o $(objfile) $(library) $(openmp)
+
+$(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) $(api_cpp)
+	$(CC) $(EXEFLAG) -o $(exedir)gconsole $(objdir)gconsole.o $(objfile) $(library) -L./api/socket/cpp/lib -lgstoreconnector $(openmp)
+
 $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) $(library) $(inc) -DUSE_BOOST_REGEX $(openmp)
-
-#$(exedir)gapiserver: $(lib_antlr) $(lib_workflow) $(objdir)gapiserver.o  $(objfile)
-#	$(CC) $(EXEFLAG) -o $(exedir)gapiserver $(objdir)gapiserver.o $(objfile) $(library) $(openmp) 
-
-#$(exedir)grpc: $(lib_antlr) $(lib_workflow) $(objdir)grpc.o  $(objfile)
-#	$(CC) $(EXEFLAG) -o $(exedir)grpc ./Main/grpc.cpp ./GRPC/grpc.pb.cc  $(library) -lsrpc $(openmp) 
 
 $(exedir)gbackup: $(lib_antlr) $(objdir)gbackup.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)gbackup $(objdir)gbackup.o $(objfile) $(library) $(openmp)
@@ -189,10 +177,10 @@ $(exedir)grestore: $(lib_antlr) $(objdir)grestore.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(exedir)grestore $(objdir)grestore.o $(objfile) $(library) $(openmp)
 
 $(exedir)gpara: $(lib_antlr) $(objdir)gpara.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)gpara $(objdir)gpara.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lgstoreconnector $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)gpara $(objdir)gpara.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
 
 $(exedir)rollback: $(lib_antlr) $(objdir)rollback.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(exedir)rollback $(objdir)rollback.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lgstoreconnector $(library)
+	$(CC) $(EXEFLAG) -o $(exedir)rollback $(objdir)rollback.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
 
 $(testdir)update_test: $(lib_antlr) $(objdir)update_test.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(testdir)update_test $(objdir)update_test.o $(objfile) $(library) $(openmp)
@@ -204,14 +192,10 @@ $(testdir)transaction_test: $(lib_antlr) $(objdir)transaction_test.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(testdir)transaction_test $(objdir)transaction_test.o $(objfile) $(library) $(openmp)
 
 $(testdir)run_transaction: $(lib_antlr) $(objdir)run_transaction.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(testdir)run_transaction $(objdir)run_transaction.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lgstoreconnector $(library)
+	$(CC) $(EXEFLAG) -o $(testdir)run_transaction $(objdir)run_transaction.o $(objfile) $(library) $(openmp) -L./api/http/cpp/lib -lclient $(library)
 
 $(testdir)workload: $(lib_antlr) $(objdir)workload.o $(objfile)
 	$(CC) $(EXEFLAG) -o $(testdir)workload $(objdir)workload.o $(objfile) $(library) $(openmp)
-
-$(testdir)debug_test: $(lib_antlr) $(objdir)debug_test.o $(objfile)
-	$(CC) $(EXEFLAG) -o $(testdir)debug_test $(objdir)debug_test.o $(objfile) $(library) $(openmp)
-
 #executables end
 
 
@@ -248,14 +232,14 @@ $(objdir)gserver.o: Main/gserver.cpp Server/Server.h Util/Util.h $(lib_antlr)
 $(objdir)gserver_backup_scheduler.o: Main/gserver_backup_scheduler.cpp Server/Server.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gserver_backup_scheduler.cpp $(inc) -o $(objdir)gserver_backup_scheduler.o $(openmp)
 
-$(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/IPWhiteList.h Util/IPBlackList.h $(lib_antlr) Util/INIParser.h Util/WebUrl.h
+$(objdir)gclient.o: Main/gclient.cpp Server/Client.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gclient.cpp $(inc) -o $(objdir)gclient.o $(openmp) #-DREADLINE_ON
+
+$(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h api/socket/cpp/src/GstoreConnector.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gconsole.cpp $(inc) -o $(objdir)gconsole.o -I./api/socket/cpp/src/ $(openmp) #-DREADLINE_ON
+
+$(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/IPWhiteList.h Util/IPBlackList.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/ghttp.cpp $(inc) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
-
-#$(objdir)gapiserver.o: Main/gapiserver.cpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/Util_New.h Util/IPWhiteList.h Util/IPBlackList.h Util/WebUrl.h  $(lib_antlr) $(lib_workflow)
-#	$(CC) $(CFLAGS) Main/gapiserver.cpp $(inc) $(inc_workflow) -o $(objdir)gapiserver.o $(openmp)
-
-#$(objdir)grpc.o: Main/grpc.cpp GRPC/grpc.srpc.h $(lib_antlr) $(lib_workflow)
-#	$(CC) $(CFLAGS) Main/grpc.cpp $(inc) $(inc_workflow) -o $(objdir)grpc.o $(openmp)
 
 $(objdir)gbackup.o: Main/gbackup.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gbackup.cpp $(inc) -o $(objdir)gbackup.o $(openmp)
@@ -286,10 +270,6 @@ $(objdir)run_transaction.o: $(testdir)run_transaction.cpp Util/Util.h $(lib_antl
 
 $(objdir)workload.o: $(testdir)workload.cpp Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) $(testdir)workload.cpp $(inc) -o $(objdir)workload.o $(openmp)
-
-$(objdir)debug_test.o: $(testdir)debug_test.cpp Util/Util.h $(lib_antlr)
-	$(CC) $(CFLAGS) $(testdir)debug_test.cpp $(inc) -o $(objdir)debug_test.o $(openmp)
-	
 #objects in scripts/ end
 
 
@@ -393,7 +373,7 @@ $(objdir)IVArray.o: KVstore/IVArray/IVArray.cpp KVstore/IVArray/IVArray.h $(objd
 $(objdir)IVBlockManager.o: KVstore/IVArray/IVBlockManager.cpp KVstore/IVArray/IVBlockManager.h 
 	$(CC) $(CFLAGS) KVstore/IVArray/IVBlockManager.cpp -o $(objdir)IVBlockManager.o
 
-$(objdir)IVEntry.o: KVstore/IVArray/IVEntry.cpp KVstore/IVArray/IVEntry.h $(objdir)Version.o $(objdir)GraphLock.o
+$(objdir)IVEntry.o: KVstore/IVArray/IVEntry.cpp KVstore/IVArray/IVEntry.h $(objdir)Version.o
 	$(CC) $(CFLAGS) KVstore/IVArray/IVEntry.cpp -o $(objdir)IVEntry.o
 
 #objects in ivarray/ end
@@ -409,7 +389,7 @@ $(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h KVstore/Tree.h
 $(objdir)Database.o: Database/Database.cpp Database/Database.h \
 	$(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
 	$(objdir)BasicQuery.o $(objdir)Triple.o $(objdir)SigEntry.o \
-	$(objdir)KVstore.o $(objdir)VSTree.o \
+	$(objdir)KVstore.o $(objdir)VSTree.o $(objdir)DBparser.o \
 	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o $(objdir)GeneralEvaluation.o $(objdir)StringIndex.o $(objdir)Transaction.o
 	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o $(openmp)
 
@@ -488,20 +468,6 @@ $(objdir)Signature.o: Signature/Signature.cpp Signature/Signature.h
 $(objdir)Util.o:  Util/Util.cpp Util/Util.h
 	$(CC) $(CFLAGS) Util/Util.cpp -o $(objdir)Util.o $(openmp)
 
-$(objdir)WebUrl.o:  Util/WebUrl.cpp Util/WebUrl.h
-	$(CC) $(CFLAGS) Util/WebUrl.cpp -o $(objdir)WebUrl.o $(openmp)
-
-
-
-$(objdir)INIParser.o:  Util/INIParser.cpp Util/INIParser.h
-	$(CC) $(CFLAGS) Util/INIParser.cpp -o $(objdir)INIParser.o $(openmp)
-
-#$(objdir)Slog.o:  Util/Slog.cpp Util/Slog.h
-#	$(CC) $(CFLAGS) Util/Slog.cpp -o $(objdir)Slog.o $(openmp)
-
-#$(objdir)grpc.srpc.o:   GRPC/grpc.srpc.h $(lib_workflow)
-#	$(CC) $(CFLAGS)  GRPC/grpc.srpc.h -o $(objdir)grpc.srpc.o $(openmp) 
-
 $(objdir)Stream.o:  Util/Stream.cpp Util/Stream.h $(objdir)Util.o $(objdir)Bstr.o
 	$(CC) $(CFLAGS) Util/Stream.cpp -o $(objdir)Stream.o $(def64IO) $(openmp)
 
@@ -522,12 +488,6 @@ $(objdir)EvalMultitypeValue.o: Util/EvalMultitypeValue.cpp Util/EvalMultitypeVal
 
 $(objdir)Version.o: Util/Version.cpp Util/Version.h
 	$(CC) $(CFLAGS) Util/Version.cpp -o $(objdir)Version.o $(openmp)
-
-$(objdir)SpinLock.o: Util/SpinLock.h Util/SpinLock.cpp
-	$(CC) $(CFLAGS) Util/SpinLock.cpp -o $(objdir)SpinLock.o $(openmp)
-
-$(objdir)GraphLock.o: Util/GraphLock.h Util/GraphLock.cpp
-	$(CC) $(CFLAGS) Util/GraphLock.cpp -o $(objdir)GraphLock.o $(openmp)
 
 $(objdir)Transaction.o: Util/Transaction.cpp Util/Transaction.h $(objdir)Util.o $(objdir)IDTriple.o
 	$(CC) $(CFLAGS) Util/Transaction.cpp $(inc) -o $(objdir)Transaction.o $(openmp)
@@ -572,8 +532,17 @@ $(objdir)StringIndex.o: StringIndex/StringIndex.cpp StringIndex/StringIndex.h $(
 
 #objects in Parser/ begin
 
+$(objdir)DBparser.o: Parser/DBparser.cpp Parser/DBparser.h $(objdir)SPARQLParser.o $(objdir)SPARQLLexer.o $(objdir)Triple.o
+	$(CC) $(CFLAGS) Parser/DBparser.cpp $(inc) -o $(objdir)DBparser.o $(openmp)
+
+# $(objdir)SparqlParser.o: Parser/SparqlParser.c Parser/SparqlParser.h
+# 	gcc  $(CFLAGS) Parser/SparqlParser.c $(inc) -o $(objdir)SparqlParser.o $(openmp)
+
 $(objdir)SPARQLParser.o: Parser/SPARQL/SPARQLParser.cpp Parser/SPARQL/SPARQLParser.h
 	$(CC)  $(CFLAGS) Parser/SPARQL/SPARQLParser.cpp $(inc) -o $(objdir)SPARQLParser.o $(openmp)
+
+# $(objdir)SparqlLexer.o: Parser/SparqlLexer.c Parser/SparqlLexer.h
+# 	gcc  $(CFLAGS) Parser/SparqlLexer.c $(inc) -o $(objdir)SparqlLexer.o $(openmp)
 
 $(objdir)SPARQLLexer.o: Parser/SPARQL/SPARQLLexer.cpp Parser/SPARQL/SPARQLLexer.h
 	$(CC)  $(CFLAGS) Parser/SPARQL/SPARQLLexer.cpp $(inc) -o $(objdir)SPARQLLexer.o $(openmp)
@@ -608,6 +577,9 @@ $(objdir)Socket.o: Server/Socket.cpp Server/Socket.h
 $(objdir)Server.o: Server/Server.cpp Server/Server.h $(objdir)Socket.o $(objdir)Database.o $(objdir)Operation.o
 	$(CC) $(CFLAGS) Server/Server.cpp $(inc) -o $(objdir)Server.o $(openmp)
 
+$(objdir)Client.o: Server/Client.cpp Server/Client.h $(objdir)Socket.o $(objdir)Util.o
+	$(CC) $(CFLAGS) Server/Client.cpp $(inc) -o $(objdir)Client.o $(openmp)
+
 # $(objdir)client_http.o: Server/client_http.hpp
 # 	$(CC) $(CFLAGS) Server/client_http.hpp $(inc) -o $(objdir)client_http.o
 
@@ -616,32 +588,27 @@ $(objdir)Server.o: Server/Server.cpp Server/Server.h $(objdir)Socket.o $(objdir)
 
 #objects in Server/ end
 
-# your gcc g++ v5.4 path
-# in ./bashrc CXX should be gcc, otherwise, make pre2 will error
-# see https://blog.csdn.net/weixin_34268610/article/details/89085852
-#pre1:export CC=/usr/local/gcc-5.4.0/bin/gcc
-#pre1:export CXX=/usr/local/gcc-5.4.0/bin/g++
-#pre1:
-#	cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;sudo make install;
 
 pre:
 	rm -rf tools/rapidjson/
 	cd tools; tar -xzvf rapidjson.tar.gz;
 	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
-	# cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;sudo make install;
-	# cd ../../;
-	#cd tools;unzip -o workflow-master.zip;cd workflow-master;make;
-	#cd tools;unzip -o srpc.zip; cd srpc;make;make install; 
 	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
-	
 
-$(api_cpp):
-	$(MAKE) -C api/http/cpp/src
+# DEBUG: below not works properly
+#Parser/SparqlLexer.c Parser/SparqlLexer.h Parser/SparqlParser.h Parser/SparqlParser.c: unpack_sparql
+#.INTERMEDIATE: unpack_sparql
+#unpack_sparql: tools/sparql.tar.gz
+##NOTICE: update the sparql.tar.gz if Sparql* in Parser are changed manually
+#rm -rf Parser/Sparql*
+#cd tools; tar -xzvf sparql.tar.gz; mv Sparql* ../Parser/;
 
-$(api_socket):
-	$(MAKE) -C api/socket/cpp/src
+$(api_cpp): $(objdir)Socket.o
+	$(MAKE) -C api/socket/cpp/src 
+	$(MAKE) -C api/http/cpp/
 
 $(api_java):
+	$(MAKE) -C api/socket/java/src
 	$(MAKE) -C api/http/java/src
 
 .PHONY: clean dist tarball api_example gtest sumlines contribution test
@@ -658,14 +625,17 @@ clean:
 	#rm -rf lib/libantlr4-runtime.a
 	$(MAKE) -C api/socket/cpp/src clean
 	$(MAKE) -C api/socket/cpp/example clean
+	$(MAKE) -C api/socket/java/src clean
+	$(MAKE) -C api/socket/java/example clean
+	$(MAKE) -C api/http/cpp clean
 	$(MAKE) -C api/http/cpp/src clean
 	$(MAKE) -C api/http/cpp/example clean
 	$(MAKE) -C api/http/java/src clean
 	$(MAKE) -C api/http/java/example clean
 	#$(MAKE) -C KVstore clean
-	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir)rollback
+	rm -rf $(exedir)g* $(objdir)*.o $(exedir).gserver* $(exedir)shutdown $(exedir).gconsole* $(exedir)rollback
 	rm -rf bin/*.class
-	rm -rf $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test
+	rm -rf $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload
 	#rm -rf .project .cproject .settings   just for eclipse
 	rm -rf logs/*.log
 	rm -rf *.out   # gmon.out for gprof with -pg
@@ -680,12 +650,13 @@ dist: clean
 
 tarball:
 	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts garbage docs data logs \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf conf.ini NOTES.md StringIndex COVERAGE \
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf NOTES.md StringIndex COVERAGE \
 		Dockerfile LICENSE makefile Trie
 
-APIexample: $(api_cpp) $(api_socket) $(api_java)
-	$(MAKE) -C api/http/cpp/example
+APIexample: $(api_cpp) $(api_java)
 	$(MAKE) -C api/socket/cpp/example
+	$(MAKE) -C api/socket/java/example
+	$(MAKE) -C api/http/cpp/example
 	$(MAKE) -C api/http/java/example
 
 gtest: $(objdir)gtest.o $(objfile)
