@@ -1,0 +1,109 @@
+# Executables
+*.pyc
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+bin/g*
+scripts/update_test
+scripts/dataset_test
+api/cpp/example/example
+
+Parser/Sparql*
+
+#result logs
+*.txt
+*.log
+
+#download files
+*.torrent
+*.iso 
+#compressed files
+*.tar.bz2
+*.zip
+*.tar.gz 
+*.tar.bz2
+*.7z 
+*.rar 
+#compiled objects
+*.o
+*.class
+#debug logs
+*.log
+#temp files
+*.dat
+#datasets
+*.nt
+*.n3
+#databases
+*.db
+#libs
+*.a
+*.so
+*.jar
+#pictures
+*.jpg
+*.jpeg
+*.png
+*.pdf
+#music and movie
+*.mp3
+*.wav
+*.mp4
+*.rmvb
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Debug files
+*.dSYM/
+
+# IDE files
+cscope*
+.cproject
+.project
+tags
+.settings
+
+# latex files
+*.aux
+*.toc
+*.synctex.gz
+*.log
+*.out
+*.bak~
+
+# queries
+*.sql
+*.sh
+
+# modules
+node_modules
+
+# query results
+*.info
+
+/.vs
+/VSTree/LRUCache2.h
+/VSTree/LRUCache2.cpp
