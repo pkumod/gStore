@@ -1,0 +1,5 @@
+?s
+<http://example/alice>
+<http://example/bob1>
+<http://example/carol>
+<http://example/dave>
