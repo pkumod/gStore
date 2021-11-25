@@ -1,8 +1,8 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-11-15 16:18:02
- * @LastEditors: liwenjie
+ * @LastEditTime: 2021-11-19 09:23:30
+ * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
  */
@@ -173,6 +173,10 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Response>& response,str
 void batchRemove_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string file);
 
 bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const shared_ptr<HttpServer::Request>& request);
+
+ifstream & seek_to_line(ifstream &, int);
+
+void quereyLog_thread_new(const shared_ptr<HttpServer::Response>& response, string file_name, int page_no, int page_size);
 //TODO: use lock to protect logs when running in multithreading environment
 FILE* query_logfp = NULL;
 string queryLog = "logs/endpoint/query.log";
@@ -3125,8 +3129,9 @@ void begin_thread_new(const shared_ptr<HttpServer::Response>& response,string db
 	txn_id_t TID = txn_m->Begin(static_cast<IsolationLevelType>(level));
 	cout <<"Transcation Id:"<< to_string(TID) << endl;
 	cout << to_string(txn_m->Get_Transaction(TID)->GetStartTime()) << endl;
-	string Time_TID = Util::get_date_time() + " " + to_string(TID);
-	Util::add_transactionlog(db_name, username, Time_TID, to_string(txn_m->Get_Transaction(TID)->GetStartTime()), "RUNNING", "INF");
+	string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
+	string Time_TID = begin_time + " " + to_string(TID);
+	Util::add_transactionlog(db_name, username, Time_TID, begin_time, "RUNNING", "INF");
 	if (TID == INVALID_ID)
 	{
 		error = "transaction begin failed.";
@@ -3375,7 +3380,8 @@ void commit_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 	}
 	else
 	{
-		string Time_TID = Util::get_date_time() + " " + to_string(TID);
+		string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
+		string Time_TID = begin_time + " " + to_string(TID);
 		Util::update_transactionlog(Time_TID, "COMMITED", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
 		string success = "transaction commit success. TID: " + TID_s;
 		sendResponseMsg(0,success,response);
@@ -3465,7 +3471,8 @@ void rollback_thread_new(const shared_ptr<HttpServer::Response>& response,string
 	}
 	else
 	{
-		string Time_TID = Util::get_date_time() + " " + to_string(TID);
+		string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
+		string Time_TID = begin_time + " " + to_string(TID);
 		Util::update_transactionlog(Time_TID, "ROLLBACK", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
 		string success = "transaction rollback success. TID: " + TID_s;
 		sendResponseMsg(0,success,response);
@@ -4356,7 +4363,46 @@ const shared_ptr<HttpServer::Request>& request, string RequestType)
 		}
 		batchRemove_thread_new(response, db_name, file);	
 	}
-	
+	else if(operation=="querylog")
+	{
+		string file_name = "";
+		int page_no = 1;
+		int page_size = 10;
+		try
+		{
+			if (RequestType == "GET")
+			{
+				file_name = WebUrl::CutParam(url, "date");
+				string str_page_no = WebUrl::CutParam(url, "pageNo");
+				string str_page_size = WebUrl::CutParam(url, "pageSize");
+				page_no = Util::string2int(str_page_no);
+				page_size = Util::string2int(str_page_size);
+				file_name = UrlDecode(file_name);
+			}
+			else if (RequestType == "POST")
+			{
+				if (document.HasMember("date")&&document["date"].IsString())
+				{
+					file_name = document["date"].GetString();
+				}
+				if (document.HasMember("pageNo")&&document["pageNo"].IsInt())
+				{
+					page_no = document["pageNo"].GetInt();
+				}
+				if (document.HasMember("pageSize")&&document["pageSize"].IsInt())
+				{
+					page_size = document["pageSize"].GetInt();
+				}
+			}
+			quereyLog_thread_new(response, file_name, page_no, page_size);
+		}
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
+		}
+	}
 	else {
 		string error="the operation "+operation +" has not match handler function";
 		sendResponseMsg(1100, error, response);
@@ -4465,8 +4511,12 @@ void writeLog(FILE* fp, string _info)
 {
 	//Another way to locka many: lock(lk1, lk2...)
 	query_log_lock.lock();
+	_info = Util::string_replace(_info, "\n", "");
+    _info = Util::string_replace(_info, "    ", "");
+	_info.push_back(',');
+    _info.push_back('\n');
 	fprintf(fp, "%s", _info.c_str());
-	fprintf(fp,"%s",",");
+
 	Util::Csync(fp);
 	long logSize = ftell(fp);
 	cout << "logSize: " << logSize << endl;
@@ -5511,3 +5561,120 @@ txn_id_t get_txn_id(string db_name, string user)
 		return running_txn[idx];
 }
 
+/**
+ * seek to line
+ * 
+ * @param in
+ * @param line
+ * @return ifstream& 
+ */
+ifstream & seek_to_line(ifstream & in, int line)
+{
+	int i;
+	char buf[1024];
+	in.seekg(0, ios::beg);
+	for(i=1; i< line; i++)
+	{
+		in.getline(buf, sizeof(buf));
+	}
+	return in;
+}
+
+/**
+ * query log thread 
+ * 
+ * @param response 
+ * @param file_name 
+ * @param page_no 
+ * @param page_size 
+ */
+void quereyLog_thread_new(const shared_ptr<HttpServer::Response>& response, string file_name, int page_no, int page_size)
+{
+    query_log_lock.lock();
+	int totalSize = 0;
+	int totalPage = 0;
+	string queryLog = QUERYLOG_PATH + file_name + ".log";
+	Document all;
+	Document list;
+	all.SetObject();
+	list.SetArray();
+	if(Util::file_exist(queryLog))
+	{
+		try 
+		{
+			ifstream in;
+			string line;
+			in.open(queryLog, ios::in);
+			// start paging
+			int startLine; //include
+			int endLine; //exclude
+			if (page_no < 1)
+			{
+				page_no = 1;
+			}
+			if (page_size < 1)
+			{
+				page_size = 10;
+			}
+			startLine = (page_no - 1)*page_size + 1;
+			endLine = page_no*page_size + 1;
+			//count total
+			while (getline(in, line))
+			{
+				totalSize++;
+			}
+			in.close();
+			cout<< "totalSize=" << totalSize << ", page_no=" << page_no << ", page_size=" << page_size << endl;
+			// seek to start line;
+			in.open(queryLog, ios::in);
+			seek_to_line(in, startLine);
+			bool success = true;
+			stringstream str_stream;
+			str_stream << "[";
+			while (startLine < endLine && getline(in, line)) {
+				str_stream << line;
+				startLine++;
+			}
+			in.close();
+			line = str_stream.str();
+			line = Util::string_replace(line, "\n", "");
+			if (line[line.length() - 1] == ',')
+			{
+				line = line.substr(0, (line.length() - 1));
+			}
+			line.push_back(']');
+			list.Parse(line.c_str());
+			totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
+			all.AddMember("StatusCode", 0, all.GetAllocator());
+			all.AddMember("StatusMsg", "Get query log success", all.GetAllocator());
+			all.AddMember("totalSize", totalSize, all.GetAllocator());
+			all.AddMember("totalPage", totalPage, all.GetAllocator());
+			all.AddMember("pageNo", page_no, all.GetAllocator());
+			all.AddMember("pageSize", page_size, all.GetAllocator());
+			all.AddMember("list", list, all.GetAllocator());
+		} 
+		catch (std::exception &e) 
+		{
+			all.AddMember("StatusCode", 1005, all.GetAllocator());
+         	all.AddMember("message", "Error! Query log corrupted", all.GetAllocator());
+		}
+	}
+	else
+	{
+		list.Parse("[]");
+		all.AddMember("StatusCode", 0, all.GetAllocator());
+		all.AddMember("StatusMsg", "Get query log success", all.GetAllocator());
+		all.AddMember("totalSize", totalSize, all.GetAllocator());
+		all.AddMember("totalPage", totalPage, all.GetAllocator());
+		all.AddMember("pageNo", page_no, all.GetAllocator());
+		all.AddMember("pageSize", page_size, all.GetAllocator());
+		all.AddMember("list", list, all.GetAllocator());
+	}
+    StringBuffer buffer;
+    Writer<StringBuffer> writer(buffer);
+    all.Accept(writer);
+    string resJson = buffer.GetString();
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+    query_log_lock.unlock();
+	return;
+}
