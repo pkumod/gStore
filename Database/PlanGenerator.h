@@ -56,6 +56,8 @@ public:
 
 	vector<unsigned> satellite_nodes;
 
+	vector<unsigned> pre_vars;
+
 	map<unsigned, vector<TYPE_ENTITY_LITERAL_ID>> so_var_to_sample_cache;
 	map<unsigned, vector<TYPE_PREDICATE_ID>> pre_var_to_sample_cache;
 
@@ -98,6 +100,8 @@ public:
 	void get_join_nodes(const vector<unsigned> &plan_a_nodes,
 						vector<unsigned> &other_nodes, set<unsigned> &join_nodes);
 
+
+	void insert_this_plan_to_cache(PlanTree *new_plan, vector<unsigned> &new_node_vec, unsigned var_num);
 	void considerallscan(vector<unsigned> &need_join_nodes, bool use_sample = true);
 
 	void considerwcojoin(unsigned node_num, const vector<unsigned> &need_join_nodes);
@@ -125,6 +129,7 @@ public:
 	PlanTree* get_plan();
 
 
+	unsigned choose_first_var_id_random();
 	unsigned choose_next_nei_id(set<unsigned> nei_id_set);
 
 	void update_nei_id_set(set<unsigned> &nei_id_vec, set<unsigned> &already_id, unsigned next_id);

@@ -38,7 +38,8 @@ class VarDescriptor{
 
 public:
 	// cannot descriminate literal with entity
-	enum class VarType{Entity,Predicate};
+	// note: NotDecided only used in PlanGenerator
+	enum class VarType{Entity, Predicate, NotDecided};
 	enum class EntiType{VarEntiType, ConEntiType};
 	enum class ItemType{SubType, PreType, ObjType};
 	enum class PreType{VarPreType, ConPreType};
@@ -245,6 +246,8 @@ public:
 	VarDescriptor::EntiType get_pre_var_s_type(unsigned var_id, unsigned edge_id);
 	unsigned get_pre_var_o_id(unsigned var_id, unsigned edge_id);
 	VarDescriptor::EntiType get_pre_var_o_type(unsigned var_id, unsigned edge_id);
+
+	bool check_already_joined_pre_var(vector<unsigned> &already_node, unsigned pre_var_id);
 
 	const vector<Triple> &get_triple_vt();
 	const Triple &get_triple_by_index(unsigned index);

@@ -421,6 +421,28 @@ PlanTree::PlanTree(PlanTree *last_plantree, int next_node) {
 	root_node->right_node = new Tree_node(next_node);
 }
 
+// PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, int next_node) {
+// 	// todo: I need a vector to store already joined pre_var
+// 	auto var_descrip = bgpquery->get_vardescrip_by_id(next_node);
+// 	// true means join next_node also needs join pre var
+// 	map<unsigned, bool> pre_index_need_join;
+// 	// vector<int> need_join_pre_var_index;
+// 	for(int i = 0; i < var_descrip->degree_; ++i){
+// 		if(var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType and
+// 				find(already_joined_pre_var.begin(), already_joined_pre_var.end(), var_descrip->so_edge_pre_id_[i]) == already_joined_pre_var.end())
+// 			pre_index_need_join[i] = true;
+// 		else pre_index_need_join[i] = false;
+//
+// 	}
+//
+// 	// 如果一个变量加入同时有多个谓词变量怎么办？
+// 	for(int i = 0; i < var_descrip->degree_; ++i){
+//
+// 	}
+//
+//
+// }
+
 PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan) {
 	root_node = new Tree_node();
 	root_node->joinType = NodeJoinType::JoinTwoTable;

@@ -171,9 +171,10 @@ class PlanTree {
 
 public:
     Tree_node *root_node;
+    vector<unsigned> already_joined_pre_var;
     unsigned long plan_cost;
 
-    PlanTree()= default;;
+    PlanTree()= default;
     PlanTree(int first_node);
     PlanTree(PlanTree *last_plantree, int next_node);
     PlanTree(PlanTree *left_plan, PlanTree *right_plan);

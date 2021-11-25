@@ -344,7 +344,7 @@ void BGPQuery::build_edge_info(KVstore *_kvstore) {
 
 		// deal with o_var
 		if(o_is_var)
-			this->var_vector[id_position_map[o_id]]->update_so_var_edge_info(s_id,p_id,Util::EDGE_IN,i,p_is_var,o_is_var);
+			this->var_vector[id_position_map[o_id]]->update_so_var_edge_info(s_id,p_id,Util::EDGE_IN,i,p_is_var,s_is_var);
 
 		// deal with p_var
 		if(p_is_var)
@@ -580,6 +580,20 @@ unsigned int BGPQuery::get_pre_var_o_id(unsigned int var_id, unsigned int edge_i
 
 VarDescriptor::EntiType BGPQuery::get_pre_var_o_type(unsigned int var_id, unsigned int edge_id) {
 	return var_vector[id_position_map[var_id]]->o_type_[edge_id];
+}
+
+bool BGPQuery::check_already_joined_pre_var(vector<unsigned int> &already_node, unsigned int pre_var_id) {
+	for(auto x:already_node){
+		auto var_descip = get_vardescrip_by_id(x);
+		for(unsigned i = 0; i < var_descip->degree_; ++i){
+			if(var_descip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType &&
+				var_descip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType)
+				if(find(already_node.begin(), already_node.end(), var_descip->so_edge_nei_[i]) != already_node.end() &&
+					var_descip->so_edge_pre_id_[i] == pre_var_id)
+					return true;
+		}
+	}
+	return false;
 }
 
 const vector <Triple> &BGPQuery::get_triple_vt() {

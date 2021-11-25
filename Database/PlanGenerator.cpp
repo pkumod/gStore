@@ -17,6 +17,10 @@
 
 // scan var(candidate set generation) -> add var by WCO_join or binary_join -> add satellite var
 
+// todo: (星期三完成)
+// plantree(node)
+// plantree(last_plan, node)
+// plantree(left_plan, right_plan)
 
 #include "PlanGenerator.h"
 
@@ -737,6 +741,7 @@ unsigned long PlanGenerator::card_estimator_new_version(const vector<unsigned> &
 				new_id_pos_map[pre_var] = new_id_pos_map.size();
 			}
 
+			// todo: 我想用连接操作，周雨奇有没有提供快速连接操作？
 			// for (int i = 0; i < basicquery->getVarDegree(next_join_node); ++i) {
 			// 	if (basicquery->getEdgeNeighborID(next_join_node, i) == last_plan_nodes[0]) {
 			// 		linked_nei_id.push_back(i);
@@ -770,7 +775,6 @@ unsigned long PlanGenerator::card_estimator_new_version(const vector<unsigned> &
 	} else{
 		if(card_cache.size() < last_plan_nodes_num ||
 			card_cache[last_plan_nodes_num-1].find(now_plan_nodes) == card_cache[last_plan_nodes_num-1].end()){
-			;
 		} else{
 			// todo: design multiple
 			unsigned multiple = 1;
@@ -1244,6 +1248,24 @@ void PlanGenerator::get_join_nodes_new_version(const vector<unsigned int> &plan_
 	}
 }
 
+void PlanGenerator::insert_this_plan_to_cache(PlanTree *new_plan, vector<unsigned> &new_node_vec, unsigned var_num) {
+	if(plan_cache.size() < var_num){
+		map<vector<unsigned>, list<PlanTree*>> this_num_node_plan;
+		list<PlanTree*> this_nodes_plan;
+		this_nodes_plan.push_back(new_plan);
+		this_num_node_plan.insert(make_pair(new_node_vec, this_nodes_plan));
+		plan_cache.push_back(this_num_node_plan);
+	} else{
+		if(plan_cache[var_num-1].find(new_node_vec) == plan_cache[var_num-1].end()){
+			list<PlanTree*> this_nodes_plan;
+			this_nodes_plan.push_back(new_plan);
+			plan_cache[var_num-1].insert(make_pair(new_node_vec, this_nodes_plan));
+		}else{
+			plan_cache[var_num-1][new_node_vec].push_back(new_plan);
+		}
+	}
+}
+
 /**
  * Generate sample set of every var.
  * If a var has no const linked to it, then sample from the whole database.
@@ -1305,12 +1327,15 @@ void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
 
 
 // todo: not complete
+// todo: has a question, what about ?s ?p o
+// I think this fun has completed, I only need to deal with s_o_var
 void PlanGenerator::get_nei_by_sub_plan_nodes(const vector<unsigned int> &last_plan_node, set<unsigned int> &nei_node) {
 	for(unsigned node_in_plan : last_plan_node){
 		auto var_descrip = bgpquery->get_vardescrip_by_id(node_in_plan);
 		for(unsigned i = 0; i < var_descrip->degree_; ++i){
 			if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::ConEntiType)
 				continue;
+			// satellite_node, not need to add to join_plan
 			if(find(join_nodes.begin(), join_nodes.end(), var_descrip->so_edge_nei_[i]) == join_nodes.end())
 				continue;
 			if(find(last_plan_node.begin(), last_plan_node.end(), var_descrip->so_edge_nei_[i]) == last_plan_node.end())
@@ -1328,7 +1353,7 @@ void PlanGenerator::considerallwcojoin(unsigned int var_num) {
 
 		PlanTree* last_best_plan = get_best_plan(last_node_plan.first);
 
-		for(int next_node : nei_node) {
+		for(unsigned next_node : nei_node) {
 
 			vector<unsigned> new_node_vec(last_node_plan.first);
 			new_node_vec.push_back(next_node);
@@ -1341,27 +1366,14 @@ void PlanGenerator::considerallwcojoin(unsigned int var_num) {
 													next_node, new_node_vec);
 			new_plan->plan_cost = cost;
 
-			if(plan_cache.size() < var_num){
-				map<vector<unsigned>, list<PlanTree*>> this_num_node_plan;
-				list<PlanTree*> this_nodes_plan;
-				this_nodes_plan.push_back(new_plan);
-				this_num_node_plan.insert(make_pair(new_node_vec, this_nodes_plan));
-				plan_cache.push_back(this_num_node_plan);
+			insert_this_plan_to_cache(new_plan, new_node_vec, var_num);
 
-			} else{
-				if(plan_cache[var_num-1].find(new_node_vec) == plan_cache[var_num-1].end()){
-					list<PlanTree*> this_nodes_plan;
-					this_nodes_plan.push_back(new_plan);
-					plan_cache[var_num-1].insert(make_pair(new_node_vec, this_nodes_plan));
-				}else{
-					plan_cache[var_num-1][new_node_vec].push_back(new_plan);
-				}
-			}
 		}
 	}
 }
 
-void PlanGenerator::considerallbinaryjoin(unsigned int var_num) {
+// todo: should consider the condition when using this carefully
+void PlanGenerator::considerallbinaryjoin(unsigned int var_num)  {
 
 	unsigned min_size = 3;
 	unsigned max_size = min(min_size, var_num - 2);
@@ -1372,6 +1384,10 @@ void PlanGenerator::considerallbinaryjoin(unsigned int var_num) {
 		unsigned long last_plan_smallest_cost = get_best_plan(need_considerbinaryjoin_nodes_plan.first)->plan_cost;
 
 		// todo: need consider pre_var not include
+		// todo: 问周雨奇
+		// for example. Input query: ?s1->?p1->?o1, ?s2->?p1->?o2, ?s1->?p3->?o2.
+		// we have plan1 of ?s1->?p1->?o1, plan2 of ?s2->?p1->?o2.
+		// but we need to check ?s1->?p3->?o2 when using binary join plan1 and plan2
 		for(unsigned small_plan_nodes_num = min_size; small_plan_nodes_num <= max_size; ++ small_plan_nodes_num){
 			for(const auto &small_nodes_plan : plan_cache[small_plan_nodes_num-1]){
 				if(OrderedVector::contain_sub_vec(need_considerbinaryjoin_nodes_plan.first, small_nodes_plan.first)) {
@@ -1398,10 +1414,11 @@ void PlanGenerator::considerallbinaryjoin(unsigned int var_num) {
 							if (now_cost < last_plan_smallest_cost) {
 								//                            build new plan and add to plan_cache
 								// todo: need to complete
-
 								PlanTree *new_plan = new PlanTree(small_best_plan, another_small_best_plan);
 								new_plan->plan_cost = now_cost;
-								plan_cache[var_num - 1][need_considerbinaryjoin_nodes_plan.first].push_back(new_plan);
+
+								insert_this_plan_to_cache(new_plan, need_considerbinaryjoin_nodes_plan.first, var_num);
+								// plan_cache[var_num - 1][need_considerbinaryjoin_nodes_plan.first].push_back(new_plan);
 								last_plan_smallest_cost = now_cost;
 
 							}
@@ -1443,8 +1460,12 @@ void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
 
 }
 
-PlanTree *PlanGenerator::get_plan() {
 
+// 我在想这样一个问题：什么时候会有谓词变量？
+// 如果有谓词变量，感觉一定会有s_o_var连接上，不然会被拆分开。
+// 是这样吗？
+
+PlanTree *PlanGenerator::get_plan() {
 
 	unsigned largeset_plan_var_num = 0;
 
@@ -1452,10 +1473,10 @@ PlanTree *PlanGenerator::get_plan() {
 
 
 	// should be var num not include satellite node
-	// todo: also should not include pre_var num
+	// should not include pre_var num
 	for(unsigned var_num = 2; var_num <= join_nodes.size(); ++var_num) {
 
-		// todo: if i want to complete this, i need to know whether the input query is lindek or not
+		// if i want to complete this, i need to know whether the input query is linded or not
 		// answer: yes, input query is linked by var
 		considerallwcojoin(var_num);
 
@@ -1465,9 +1486,11 @@ PlanTree *PlanGenerator::get_plan() {
 
 	PlanTree* best_plan = get_best_plan_by_num(join_nodes.size());
 
+	// todo: 这个卫星点应该也有卫星谓词变量
+	// s ?p ?o. 在之前的计划中已经加入了?o, 则这一步也需要加入?p
 	addsatellitenode(best_plan);
 
-	// Todo: add all sattelate node to plan
+
 
 	return get_best_plan_by_num(bgpquery->get_total_var_num());
 
@@ -1475,6 +1498,91 @@ PlanTree *PlanGenerator::get_plan() {
 
 
 // Codes below is for generating random plan
+
+
+
+/**
+ * Get first node id when generate random plan.
+ * linked_with_const s_o_var >> linked_with_const pre_var >> s_o_var >> pre_var
+ * In each class, choose node with max_degree.
+ * @return the first node id
+ */
+unsigned PlanGenerator::choose_first_var_id_random() {
+
+	unsigned first_var_id = UINT_MAX;
+	unsigned degree = 0;
+
+	auto first_var_type = VarDescriptor::VarType::NotDecided;
+
+	// choose var linked with const and large degree, so_var is better than pre_var
+	for(unsigned var_index = 0; var_index < bgpquery->get_total_var_num(); ++ var_index){
+
+		auto var_descrip = bgpquery->get_vardescrip_by_index(var_index);
+		if(!var_descrip->link_with_const)
+			continue;
+
+		if(first_var_type == VarDescriptor::VarType::NotDecided){
+			first_var_type = var_descrip->var_type_;
+			first_var_id = var_descrip->id_;
+			degree = var_descrip->degree_;
+			continue;
+		}
+
+		if(first_var_type == var_descrip->var_type_){
+			if(var_descrip->degree_ > degree){
+				first_var_id = var_descrip->id_;
+				degree = var_descrip->degree_;
+			}
+		} else{
+			if(first_var_type == VarDescriptor::VarType::Predicate and var_descrip->var_type_ == VarDescriptor::VarType::Entity){
+				first_var_id = var_descrip->id_;
+				degree = var_descrip->degree_;
+				first_var_type = VarDescriptor::VarType::Entity;
+			}
+			// if first_var_type == VarDescriptor::VarType::Entity,
+			// and var_descrip->var_type_ == VarDescriptor::VarType::Predicate,
+			// do not choose that var
+		}
+	}
+
+	// choose var with large degree, so_var is better than pre_var
+	if(degree == 0){
+		for(unsigned var_index = 0; var_index < bgpquery->get_total_var_num(); ++ var_index){
+
+			auto var_descrip = bgpquery->get_vardescrip_by_index(var_index);
+
+			if(first_var_type == VarDescriptor::VarType::NotDecided){
+				first_var_type = var_descrip->var_type_;
+				first_var_id = var_descrip->id_;
+				degree = var_descrip->degree_;
+				continue;
+			}
+
+			if(first_var_type == var_descrip->var_type_){
+				if(var_descrip->degree_ > degree){
+					first_var_id = var_descrip->id_;
+					degree = var_descrip->degree_;
+				}
+			} else{
+				if(first_var_type == VarDescriptor::VarType::Predicate and var_descrip->var_type_ == VarDescriptor::VarType::Entity){
+					first_var_id = var_descrip->id_;
+					degree = var_descrip->degree_;
+					first_var_type = VarDescriptor::VarType::Entity;
+				}
+				// if first_var_type == VarDescriptor::VarType::Entity,
+				// and var_descrip->var_type_ == VarDescriptor::VarType::Predicate,
+				// do not choose that var
+			}
+		}
+
+		if(degree == 0){
+			cout << "error: find first node to join error" << endl;
+			exit(-1);
+		}
+	}
+
+	return first_var_id;
+}
 
 /**
  * Get which nei from nei_id_set to expand
@@ -1547,27 +1655,13 @@ void PlanGenerator::update_nei_id_set(set<unsigned> &neibor_id, set<unsigned> &a
 // get a plan for debug, DFS_based plan.
 // First choose a max_degreed so_var with const,
 // then choose its nei by degree.
+// todo: this fun has a bug: what about a query has only pre_var?
 PlanTree *PlanGenerator::get_random_plan() {
-	unsigned first_var_id = UINT_MAX;
-	unsigned degree = 0;
-	for(unsigned var_index = 0; var_index < bgpquery->get_total_var_num(); ++ var_index){
 
-		auto var_descrip = bgpquery->get_vardescrip_by_index(var_index);
-		if(var_descrip->link_with_const == false || var_descrip->var_type_ == VarDescriptor::VarType::Predicate)
-			continue;
-
-		if(var_descrip->degree_ > degree){
-			first_var_id = var_descrip->id_;
-			degree = var_descrip->degree_;
-		}
-	}
-
-	if(degree == 0){
-		cout << "error: find first node to join error" << endl;
-		exit(-1);
-	}
-
+	unsigned first_var_id = choose_first_var_id_random();
 	auto first_var_descrip = bgpquery->get_vardescrip_by_id(first_var_id);
+	unsigned degree = first_var_descrip->degree_;
+
 
 	PlanTree* plan_tree_p = new PlanTree(first_var_id, bgpquery);
 	PlanTree* plan_tree_q = plan_tree_p;
@@ -1600,6 +1694,8 @@ PlanTree *PlanGenerator::get_random_plan() {
 
 }
 
+
+// not used
 PlanTree *PlanGenerator::get_special_no_pre_var_plan() {
 	if((*id_caches)[0]->size() <= (*id_caches)[1]->size())
 		return new PlanTree(vector<int> {0,1});
