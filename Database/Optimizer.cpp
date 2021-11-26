@@ -925,6 +925,14 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   auto k = query_info.limit_num_;
   auto first_item = (*query_info.ordered_by_expressions_)[0];
   auto var_coefficients = TopKUtil::getVarCoefficients(first_item);
+  if(first_item.descending)
+    std::for_each(var_coefficients->begin(),
+                  var_coefficients->end(),
+                  [](decltype(*var_coefficients->begin()) pair_it)
+                  {
+                    pair_it.second = -pair_it.second;
+                  });
+  auto a = *var_coefficients->begin();
   // Build Iterator tree
   auto env = new TopKUtil::Env();
   env->kv_store= this->kv_store_;
