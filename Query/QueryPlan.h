@@ -34,6 +34,9 @@ class QueryPlan
 
   static std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
                                                                                         KVstore *kv_store);
+
+  static std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> PredicateFilter(std::shared_ptr<BGPQuery> bgp_query,
+                                                                                    KVstore *kv_store);
   /* greedy method used in version 0.9 */
   static double ScoreNode(BasicQuery *basic_query, int var);
   static TYPE_ENTITY_LITERAL_ID SelectANode(BasicQuery *basic_query,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> processed_nodes); //include select the start node and choose next node;
@@ -62,9 +65,13 @@ class QueryPlan
                                                                KVstore *kv_store,
                                                                TYPE_ENTITY_LITERAL_ID target_node);
 
-  static shared_ptr<FeedOneNode> FilterNodeOnConstantEdge(shared_ptr<BGPQuery> basic_query,
+  static shared_ptr<FeedOneNode> FilterNodeOnConstantEdge(shared_ptr<BGPQuery> bgp_query,
                                                               KVstore *kv_store,
                                                               TYPE_ENTITY_LITERAL_ID target_node);
+
+  static shared_ptr<FeedOneNode> FilterNodeOnConstantPredicate(shared_ptr<BGPQuery> bgp_query,
+                                                               KVstore *kv_store,
+                                                               TYPE_ENTITY_LITERAL_ID target_node);
 
   static StepOperation FilterFirstNode(BasicQuery *basic_query, KVstore *kv_store, TYPE_ENTITY_LITERAL_ID start_node,
                                    const shared_ptr<vector<OldVarDescriptor>> &var_list);

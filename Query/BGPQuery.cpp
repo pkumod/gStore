@@ -677,3 +677,26 @@ BGPQuery::resultPositionToId()
 {
 	return result_position_to_id;
 }
+
+std::tuple<bool, bool, bool> BGPQuery::GetOccurPosition(int var_id) {
+  bool is_entity = false;
+  bool is_literal = false;
+  bool is_predicate = false;
+  auto var_descriptor = this->get_vardescrip_by_id(var_id);
+  if (var_descriptor->var_type_ == VarDescriptor::VarType::Predicate) {
+    is_predicate = true;
+  }
+  else {
+    is_entity = true;
+    auto var_name = this->get_var_name_by_id(var_id);
+    auto edge_ids = var_descriptor->so_edge_index_;
+    for (auto edge_id : edge_ids) {
+      auto triple = this->get_triple_by_index(edge_id);
+      if (var_name == triple.getObject()) {
+        is_literal = true;
+        break;
+      }
+    }
+  }
+  return make_tuple(is_entity,is_literal,is_predicate);
+}
