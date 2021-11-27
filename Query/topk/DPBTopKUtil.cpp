@@ -14,8 +14,18 @@ FRIterator *DPBUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_sea
   auto root_plan = tree_search_plan->tree_root_;
   auto root_var = root_plan->var_id;
 
+  shared_ptr<IDList> root_candidate_ids(nullptr);
+
   // from top to down, build the structure
-  auto root_candidate_ids = (*env->id_caches)[root_var];
+  if(env->id_caches->find(root_var)!=env->id_caches->end())
+    root_candidate_ids = (*env->id_caches)[root_var];
+  else
+  {
+    auto property_info = env->bgp_query->GetOccurPosition(root_var);
+    auto is_literal = get<1>(property_info);
+    root_candidate_ids = GetAllSubObjId(env->kv_store,env->limitID_entity,
+                                        env->limitID_literal,is_literal);
+  }
 
   set<TYPE_ENTITY_LITERAL_ID> root_candidate;
   auto coefficient_it = env->coefficients->find(env->bgp_query->get_var_name_by_id((root_var)));
@@ -344,3 +354,24 @@ DPBUtil::GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
 
 }
 
+shared_ptr<IDList>
+DPBUtil::GetAllSubObjId(KVstore *kv_store_,
+                        unsigned int limitID_entity_,
+                        unsigned int limitID_literal_,
+                        bool need_literal)
+{
+  auto result = make_shared<IDList>();
+  for (TYPE_PREDICATE_ID i = 0; i < limitID_entity_; ++i) {
+    auto entity_str = kv_store_->getEntityByID(i);
+    if(entity_str!="")
+      result->addID(i);
+  }
+  if(need_literal) {
+    for (TYPE_PREDICATE_ID i = Util::LITERAL_FIRST_ID; i < limitID_literal_; ++i) {
+      auto entity_str = kv_store_->getLiteralByID(i);
+      if (entity_str != "")
+        result->addID(i);
+    }
+  }
+  return result;
+}

@@ -377,6 +377,13 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     for (auto &constant_generating_step: *const_candidates) {
       executor_.CacheConstantCandidates(constant_generating_step, var_candidates_cache);
     };
+    if(const_candidates->empty())
+    {
+      auto predicate_filter = QueryPlan::PredicateFilter(bgp_query,this->kv_store_);
+      for (auto &predicate_step: *predicate_filter) {
+        executor_.CacheConstantCandidates(predicate_step, var_candidates_cache);
+      };
+    }
 
 #ifdef TOPK_DEBUG_INFO
     std::cout<<"Top-k Constant Filtering Candidates Info"<<std::endl;
@@ -824,28 +831,9 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
 tuple<bool,bool,bool>
 Optimizer::PrepareInitial(shared_ptr<BGPQuery> bgp_query,
                           shared_ptr<FeedOneNode> join_a_node_plan) const {
-  bool is_entity= false;
-  bool is_predicate= false;
-  bool is_literal= false;
   auto target_var_id = join_a_node_plan->node_to_join_;
   cout << "leaf node [" << bgp_query->get_var_name_by_id(target_var_id) << "],  ";
-  auto var_descriptor = bgp_query->get_vardescrip_by_id(target_var_id);
-  if (var_descriptor->var_type_ == VarDescriptor::VarType::Predicate) {
-    is_predicate = true;
-  }
-  else {
-    is_entity = true;
-    auto var_name = bgp_query->get_var_name_by_id(target_var_id);
-    auto edge_ids = var_descriptor->so_edge_index_;
-    for (auto edge_id : edge_ids) {
-      auto triple = bgp_query->get_triple_by_index(edge_id);
-      if (var_name == triple.getObject()) {
-        is_literal = true;
-        break;
-      }
-    }
-  }
-  return make_tuple(is_entity,is_literal,is_predicate);
+  return bgp_query->GetOccurPosition(target_var_id);
 }
 
 #ifdef TOPK_SUPPORT
@@ -936,6 +924,8 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   // Build Iterator tree
   auto env = new TopKUtil::Env();
   env->kv_store= this->kv_store_;
+  env->limitID_entity = this->limitID_entity_;
+  env->limitID_literal = this->limitID_literal_;
   env->bgp_query = bgp_query;
   env->id_caches = id_caches;
   cout<<" Optimizer::ExecutionTopK  env->id_caches "<<  env->id_caches->size()<<endl;

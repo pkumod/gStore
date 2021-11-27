@@ -20,6 +20,8 @@ namespace TopKUtil {
 
 struct Env{
   KVstore *kv_store;
+  unsigned int limitID_entity;
+  unsigned int limitID_literal;
   BasicQuery *basic_query;
   shared_ptr<BGPQuery> bgp_query;
   shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches;
