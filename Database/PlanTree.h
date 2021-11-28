@@ -171,7 +171,9 @@ class PlanTree {
 
 public:
     Tree_node *root_node;
+    // todo: this two vec need build
     vector<unsigned> already_joined_pre_var;
+    vector<unsigned> already_so_var;
     unsigned long plan_cost;
 
     PlanTree()= default;
@@ -181,6 +183,7 @@ public:
 
     PlanTree(unsigned first_node, BGPQuery *bgpquery);
     PlanTree(shared_ptr<StepOperation> &first_node);
+    PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, int next_node);
     PlanTree(PlanTree *last_plan_tree, unsigned next_join_var_id, set<unsigned> already_id, BGPQuery *bgpquery);
 
     void add_satellitenode(BGPQuery* bgpquery, unsigned satellitenode_id);
