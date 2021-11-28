@@ -21,6 +21,7 @@
 // plantree(node)
 // plantree(last_plan, node)
 // plantree(left_plan, right_plan)
+// add_satellitenode
 
 #include "PlanGenerator.h"
 
@@ -1287,7 +1288,11 @@ void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
 		unsigned var_id = bgpquery->get_var_id_by_index(var_index);
 		auto var_descrip = bgpquery->get_vardescrip_by_index(var_index);
 
-		if(bgpquery->get_var_type_by_id(var_id) == VarDescriptor::VarType::Entity)
+		if(var_descrip->var_type_ == VarDescriptor::VarType::Predicate){
+			pre_vars.emplace_back(var_id);
+			continue;
+		}
+		if(var_descrip->var_type_ == VarDescriptor::VarType::Entity)
 			join_nodes.push_back(var_id);
 
 		vector<unsigned> this_node{var_id};
@@ -1465,7 +1470,7 @@ void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
 // 如果有谓词变量，感觉一定会有s_o_var连接上，不然会被拆分开。
 // 是这样吗？
 
-PlanTree *PlanGenerator::get_plan() {
+PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 
 	unsigned largeset_plan_var_num = 0;
 
@@ -1480,8 +1485,9 @@ PlanTree *PlanGenerator::get_plan() {
 		// answer: yes, input query is linked by var
 		considerallwcojoin(var_num);
 
-		if(var_num >= 5)
-			considerallbinaryjoin(var_num);
+		if(use_binary_join)
+			if(var_num >= 5)
+				considerallbinaryjoin(var_num);
 	}
 
 	PlanTree* best_plan = get_best_plan_by_num(join_nodes.size());
@@ -1709,7 +1715,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 	bool o_is_var = !(bgpquery->o_is_constant_[0]);
 
 	unsigned var_num = bgpquery->get_total_var_num();
-	JoinMethod join_method = get_join_strategy(s_is_var, p_is_var, p_is_var, var_num);
+	JoinMethod join_method = get_join_strategy(s_is_var, p_is_var, o_is_var, var_num);
 
 
 	auto first_var = bgpquery->get_vardescrip_by_index(0);

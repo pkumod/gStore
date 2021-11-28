@@ -421,27 +421,82 @@ PlanTree::PlanTree(PlanTree *last_plantree, int next_node) {
 	root_node->right_node = new Tree_node(next_node);
 }
 
-// PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, int next_node) {
-// 	// todo: I need a vector to store already joined pre_var
-// 	auto var_descrip = bgpquery->get_vardescrip_by_id(next_node);
-// 	// true means join next_node also needs join pre var
-// 	map<unsigned, bool> pre_index_need_join;
-// 	// vector<int> need_join_pre_var_index;
-// 	for(int i = 0; i < var_descrip->degree_; ++i){
-// 		if(var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType and
-// 				find(already_joined_pre_var.begin(), already_joined_pre_var.end(), var_descrip->so_edge_pre_id_[i]) == already_joined_pre_var.end())
-// 			pre_index_need_join[i] = true;
-// 		else pre_index_need_join[i] = false;
-//
-// 	}
-//
-// 	// 如果一个变量加入同时有多个谓词变量怎么办？
-// 	for(int i = 0; i < var_descrip->degree_; ++i){
-//
-// 	}
-//
-//
-// }
+// We want to join ?o.
+// case1 s p ?o. This is done in candidate generation.
+// case2 s ?p ?o. ?p is degree_one, then s2o, else s2po(?p not alrealy) or s2po(?p already).
+// case3 ?s p ?o. this should be done first by sp2o.
+// case4 ?s ?p ?o. ?p is degree_one pre_var(only exists in this triple), then we only need s2o on s.
+// 	      If ?p is not degree one, then join two_node(?p not already) by s2po, or join one_node(?p already) by sp2o.
+// First sp2o, then join other pre_var by join_a_node
+PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, int next_node) {
+	// todo: I need a vector to store already joined pre_var
+	auto var_descrip = bgpquery->get_vardescrip_by_id(next_node);
+	auto & already_so = last_plantree->already_so_var;
+	auto & already_pre = last_plantree->already_joined_pre_var;
+
+	auto join_a_node_edge_info = make_shared<vector<EdgeInfo>>();
+	auto join_a_node_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
+	vector<unsigned> need_join_two_nodes_index;
+
+	// true means join next_node also needs join pre var
+	map<unsigned, bool> pre_index_need_join;
+	bool link_from_two_already = false;
+	// vector<int> need_join_pre_var_index;
+	NodeJoinType join_type;
+	for(int i = 0; i < var_descrip->degree_; ++i){
+
+		// ?s (?)p ?o, join ?o, however, ?s is not already, then donnot need deal with this triple.
+		// This triple will be dealed when join ?s next time.
+		// After this if, we can believe (?)s is ready for join.
+		if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType and
+		find(already_so.begin(), already_so.end(), var_descrip->so_edge_nei_[i]) == already_so.end())
+			continue;
+
+		// s p ?o. This edge will be done in candidate generation
+		if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::ConEntiType and
+		var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::ConPreType)
+			continue;
+
+		if(var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::ConPreType or
+		find(already_pre.begin(), already_pre.end(), var_descrip->so_edge_pre_id_[i]) != already_pre.end()){
+			// s ?p ?o, ?p ready.
+			// ?s p ?o, ?s ready.
+			// ?s ?p ?o, ?s ready, ?p ready.
+			unsigned edge_index = var_descrip->so_edge_index_[i];
+			join_a_node_edge_info->emplace_back(bgpquery->s_id_[edge_index], bgpquery->p_id_[edge_index], bgpquery->o_id_[edge_index],
+												(var_descrip->so_edge_type_[i] == Util::EDGE_IN ? JoinMethod::sp2o : JoinMethod::po2s));
+		} else{
+			// s ?p ?o, ?p not ready.
+			// Or ?s ?p ?o, ?s ready, ?p not ready.
+			need_join_two_nodes_index.emplace_back(i);
+			// degreeone!
+
+		}
+
+	}
+	// only one FeedOneNode can join this node
+	if(need_join_two_nodes_index.size() == 0){
+		shared_ptr<FeedOneNode> join_a_node = make_shared<FeedOneNode>(next_node, join_a_node_edge_info, join_a_node_edge_const_info);
+		// shared_ptr<StepOperation> join_one_node = make_shared<StepOperation>()
+		Tree_node *new_tree_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode, join_a_node,
+																			nullptr, nullptr, nullptr));
+		new_tree_node->left_node = root_node;
+		root_node = new_tree_node;
+		already_so_var.emplace_back(next_node);
+		// 构造函数可以return吗？
+		return;
+		;
+	} else{
+		if(join_a_node_edge_info->size() != 0){
+			;
+		} else{
+			int index = 0;
+
+		}
+	}
+
+
+}
 
 PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan) {
 	root_node = new Tree_node();
@@ -550,6 +605,7 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 
 	auto stepoperation = node->node;
 	cout << "join type: " << stepoperation->JoinTypeToString(stepoperation->join_type_) << endl;
+
 	switch (stepoperation->join_type_) {
 		case StepOperation::JoinType::GenerateCandidates:{
 			for(unsigned i = 0; i < stepoperation->edge_filter_->edges_->size(); ++ i){
@@ -559,6 +615,7 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 				cout << "o[" << (*stepoperation->edge_filter_->edges_)[i].o_ << "]" << ((*stepoperation->edge_filter_->edges_constant_info_)[i].o_constant_ ? "const" : "var") << endl;
 			}
 			cout << "node id: " << stepoperation->edge_filter_->node_to_join_ << endl;
+			break;
 		}
 		case StepOperation::JoinType::JoinNode:{
 			for(unsigned i = 0; i < stepoperation->join_node_->edges_->size(); ++ i){
@@ -569,6 +626,39 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 				cout << JoinMethodToString((*stepoperation->join_node_->edges_)[i].join_method_) << endl;
 			}
 			cout << "\tnode id: " << stepoperation->join_node_->node_to_join_ << endl;
+			break;
+		}
+		case StepOperation::JoinType::EdgeCheck:{
+			for(unsigned i = 0; i < stepoperation->edge_filter_->edges_->size(); ++i){
+				cout << "\tedge[" << i << "]:" << endl;
+				cout << "\t\ts[" << (*stepoperation->edge_filter_->edges_)[i].s_ << "]" << ((*stepoperation->edge_filter_->edges_constant_info_)[i].s_constant_ ? "const" : "var") << "    ";
+				cout << "p[" << (*stepoperation->edge_filter_->edges_)[i].p_ << "]" << ((*stepoperation->edge_filter_->edges_constant_info_)[i].p_constant_ ? "const" : "var") << "    ";
+				cout << "o[" << (*stepoperation->edge_filter_->edges_)[i].o_ << "]" << ((*stepoperation->edge_filter_->edges_constant_info_)[i].o_constant_ ? "const" : "var") << "    ";
+				cout << JoinMethodToString((*stepoperation->edge_filter_->edges_)[i].join_method_) << endl;
+			}
+			cout << "\tnode id: " << stepoperation->edge_filter_->node_to_join_ << endl;
+			break;
+		}
+		case StepOperation::JoinType::JoinTable:{
+			cout << "\tpublic nodes is: ";
+			for(auto &x : (*stepoperation->join_table_->public_variables_))
+				cout << x << "    ";
+			cout << endl;
+			break;
+		}
+		case StepOperation::JoinType::JoinTwoNodes:{
+			cout << "\tedge:" << endl;
+			cout << "\t\ts[" << stepoperation->join_two_node_->edges_.s_ << "]" << (stepoperation->join_two_node_->edges_constant_info_.s_constant_ ? "const" : "var") << "    ";
+			cout << "p[" << stepoperation->join_two_node_->edges_.p_ << "]" << (stepoperation->join_two_node_->edges_constant_info_.p_constant_ ? "const" : "var") << "    ";
+			cout << "o[" << stepoperation->join_two_node_->edges_.o_ << "]" << (stepoperation->join_two_node_->edges_constant_info_.o_constant_ ? "const" : "var") << endl;
+
+			cout << "\tnodes id: " << stepoperation->join_two_node_->node_to_join_1_ << "    "
+			<< stepoperation->join_two_node_->node_to_join_2_ << endl;
+			break;
+		}
+		default:{
+			cout << "error! unknown JoinType!" << endl;
+			exit(-1);
 		}
 
 	}
@@ -578,6 +668,5 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 
 void PlanTree::print(BGPQuery* bgpquery) {
 	cout << "Plan: " << endl;
-	// todo: not complete
 	print_tree_node(root_node, bgpquery);
 }
