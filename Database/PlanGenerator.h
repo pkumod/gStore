@@ -126,7 +126,7 @@ public:
 	void considerallbinaryjoin(unsigned var_num);
 	void addsatellitenode(PlanTree* best_plan);
 
-	PlanTree* get_plan();
+	PlanTree* get_plan(bool use_binary_join = true);
 
 
 	unsigned choose_first_var_id_random();
