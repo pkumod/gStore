@@ -181,6 +181,9 @@ public:
     PlanTree(PlanTree *last_plantree, int next_node);
     PlanTree(PlanTree *left_plan, PlanTree *right_plan);
 
+
+    JoinMethod get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescriptor> var_descrip, unsigned edge_index, bool join_two_node = true );
+
     PlanTree(unsigned first_node, BGPQuery *bgpquery);
     PlanTree(shared_ptr<StepOperation> &first_node);
     PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, int next_node);

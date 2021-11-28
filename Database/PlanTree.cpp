@@ -421,6 +421,20 @@ PlanTree::PlanTree(PlanTree *last_plantree, int next_node) {
 	root_node->right_node = new Tree_node(next_node);
 }
 
+JoinMethod PlanTree::get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescriptor> var_descrip, unsigned int edge_index, bool join_two_node) {
+	if(join_two_node){
+		auto pre_decrip = bgp_query->get_vardescrip_by_id(var_descrip->so_edge_pre_id_[edge_index]);
+		if(pre_decrip->degree_ == 1 and pre_decrip->selected_ == false)
+			return var_descrip->so_edge_type_[edge_index] == Util::EDGE_IN ? JoinMethod::s2o : JoinMethod::o2s;
+		else
+			return var_descrip->so_edge_type_[edge_index] == Util::EDGE_IN ? JoinMethod::s2po : JoinMethod::o2ps;
+	} else{
+		cout << "not support" << endl;
+		exit(-1);
+	}
+}
+
+
 // We want to join ?o.
 // case1 s p ?o. This is done in candidate generation.
 // case2 s ?p ?o. ?p is degree_one, then s2o, else s2po(?p not alrealy) or s2po(?p already).
@@ -483,14 +497,35 @@ PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, int next_node) {
 		new_tree_node->left_node = root_node;
 		root_node = new_tree_node;
 		already_so_var.emplace_back(next_node);
-		// 构造函数可以return吗？
-		return;
-		;
 	} else{
 		if(join_a_node_edge_info->size() != 0){
 			;
 		} else{
-			int index = 0;
+			// int index = 0;
+			unsigned edge_index = var_descrip->so_edge_index_[need_join_two_nodes_index[0]];
+			shared_ptr<FeedTwoNode> join_two_nodes = make_shared<FeedTwoNode>(next_node, var_descrip->so_edge_pre_id_[need_join_two_nodes_index[0]],
+											  EdgeInfo(bgpquery->s_id_[edge_index], bgpquery->p_id_[edge_index], bgpquery->o_id_[edge_index],
+													   get_join_strategy(bgpquery, var_descrip, need_join_two_nodes_index[0])),
+											  EdgeConstantInfo(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]));
+			Tree_node *new_tree_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes,
+																				nullptr, join_two_nodes, nullptr,nullptr));
+			new_tree_node->left_node = root_node;
+			root_node = new_tree_node;
+			already_so.emplace_back(next_node);
+			already_pre.emplace_back(bgpquery->p_id_[edge_index]);
+
+
+
+			for(int i = 1; i < need_join_two_nodes_index.size(); ++i){
+				edge_index = var_descrip->so_edge_index_[need_join_two_nodes_index[i]];
+				auto pre_var_descrip = bgpquery->get_vardescrip_by_id(var_descrip->so_edge_pre_id_[need_join_two_nodes_index[i]]);
+				if(pre_var_descrip->selected_ == false and pre_var_descrip->degree_ == 1){
+					shared_ptr<FeedOneNode> edge_check = make_shared<FeedOneNode>(pre_var_descrip->id_,
+												 EdgeInfo(bgpquery->s_id_[edge_index],bgpquery->p_id_[edge_index],bgpquery->p_id_[edge_index],JoinMethod::so2p),
+												 EdgeConstantInfo(EdgeConstantInfo(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index])));
+					Tree_node *new_edge_check = new Tree_node();
+				}
+			}
 
 		}
 	}
@@ -662,7 +697,6 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 		}
 
 	}
-
 
 }
 

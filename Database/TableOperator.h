@@ -179,6 +179,9 @@ class FeedOneNode{
     edges_ = std::make_shared<std::vector<EdgeInfo>>();
     edges_constant_info_ = std::make_shared<std::vector<EdgeConstantInfo>>();
   };
+  FeedOneNode(unsigned join_node_id, EdgeInfo edge_info, EdgeConstantInfo edge_constant):node_to_join_(join_node_id){
+  	edges_ = make_shared<vector<EdgeInfo>>(vector<EdgeInfo>{edge_info});
+  	edges_constant_info_ = make_shared<vector<EdgeConstantInfo>>(vector<EdgeConstantInfo>{edge_constant});};
   FeedOneNode(unsigned join_node_id, shared_ptr<vector<EdgeInfo>> edge_info, shared_ptr<vector<EdgeConstantInfo>> edge_constant):
   		node_to_join_(join_node_id), edges_(edge_info), edges_constant_info_(edge_constant){};
 
