@@ -102,7 +102,10 @@ struct Tree_node{
     Tree_node *left_node;
     Tree_node *right_node;
 
-    Tree_node(){};
+    Tree_node(){
+    	left_node = nullptr;
+    	right_node = nullptr;
+    };
 
     Tree_node(int next_node){
         joinType = NodeJoinType::LeafNode;
@@ -185,8 +188,10 @@ public:
     JoinMethod get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescriptor> var_descrip, unsigned edge_index, bool join_two_node = true );
 
     PlanTree(unsigned first_node, BGPQuery *bgpquery);
+    PlanTree(unsigned first_node, BGPQuery *bgpquery, bool used_in_random_plan);
     PlanTree(shared_ptr<StepOperation> &first_node);
-    PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, int next_node);
+    PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_node);
+    PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery);
     PlanTree(PlanTree *last_plan_tree, unsigned next_join_var_id, set<unsigned> already_id, BGPQuery *bgpquery);
 
     void add_satellitenode(BGPQuery* bgpquery, unsigned satellitenode_id);
