@@ -44,6 +44,7 @@ JoinMethod PlanGenerator::get_join_strategy(bool s_is_var, bool p_is_var, bool o
 			}
 		}
 		if(!o_is_var){
+			cout << "in this" << endl;
 			if(!bgpquery->get_vardescrip_by_id(bgpquery->pre_var_id[0])->selected_)
 				return JoinMethod::o2s;
 			else{
@@ -825,7 +826,8 @@ unsigned long PlanGenerator::cost_model_for_wco(PlanTree* last_plan,
 
 unsigned long PlanGenerator::cost_model_for_wco_new_version(PlanTree *last_plan, const vector<unsigned int> &last_plan_node,
 															unsigned int next_node, const vector<unsigned int> &now_plan_node) {
-	return last_plan->plan_cost + card_estimator_new_version(last_plan_node, next_node, now_plan_node);
+	// return last_plan->plan_cost + card_estimator_new_version(last_plan_node, next_node, now_plan_node);
+	return 1;
 }
 
 unsigned long PlanGenerator::cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
@@ -1305,6 +1307,7 @@ void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
 	for(unsigned var_index = 0 ; var_index < bgpquery->get_total_var_num(); ++ var_index) {
 
 		if(bgpquery->is_var_satellite_by_index(var_index)){
+			cout << "satellite" << endl;
 			satellite_nodes.push_back(bgpquery->get_var_id_by_index(var_index));
 			continue;
 		}
@@ -1320,11 +1323,14 @@ void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
 			join_nodes.push_back(var_id);
 
 		vector<unsigned> this_node{var_id};
+		cout << "before scan" << endl;
 		PlanTree *new_scan = new PlanTree(var_id, bgpquery);
+		cout << "12121212121" << endl;
 
 		// Todo: to change this to (*id_caches)[id_to_position]->size()
-		var_to_num_map[var_id] = (*id_caches)[var_id]->size();
-		new_scan->plan_cost = var_to_num_map[var_id];
+		new_scan->plan_cost = 1;
+		// var_to_num_map[var_id] = (*id_caches)[var_id]->size();
+		// new_scan->plan_cost = var_to_num_map[var_id];
 
 		list<PlanTree *> this_node_plan;
 		this_node_plan.push_back(new_scan);
@@ -1340,17 +1346,19 @@ void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
 
 		// sample for id_cache
 
-		if((*id_caches).find(var_id) != (*id_caches).end()) {
-			vector<unsigned> need_insert_vec;
-			get_idcache_sample((*id_caches)[var_id], need_insert_vec);
+		// if((*id_caches).find(var_id) != (*id_caches).end()) {
+		// 	vector<unsigned> need_insert_vec;
+		// 	get_idcache_sample((*id_caches)[var_id], need_insert_vec);
+		//
+		// 	var_to_sample_cache[var_id] = std::move(need_insert_vec);
+		//
+		// }
 
-			var_to_sample_cache[var_id] = std::move(need_insert_vec);
+		++largeset_plan_var_num;
 
-		}
 
 	}
 
-	++largeset_plan_var_num;
 
 }
 
@@ -1383,14 +1391,14 @@ void PlanGenerator::considerallwcojoin(unsigned int var_num) {
 		PlanTree* last_best_plan = get_best_plan(last_node_plan.first);
 
 		for(unsigned next_node : nei_node) {
+			cout << "next_node = " << next_node << endl;
 
 			vector<unsigned> new_node_vec(last_node_plan.first);
 			new_node_vec.push_back(next_node);
 			sort(new_node_vec.begin(), new_node_vec.end());
 
-
+			PlanTree* new_plan = new PlanTree(last_best_plan, bgpquery, next_node);
 			// todo: complete this
-			PlanTree* new_plan = new PlanTree(last_best_plan, next_node);
 			unsigned long cost = cost_model_for_wco_new_version(last_best_plan, last_node_plan.first,
 													next_node, new_node_vec);
 			new_plan->plan_cost = cost;
@@ -1496,14 +1504,22 @@ void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
 
 PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 
+	cout << "-------print var and id--------" << endl;
+	for(unsigned i = 0; i < bgpquery->var_vector.size(); ++i){
+		cout << "\t" << bgpquery->get_vardescrip_by_index(i)->var_name_ << "  " << bgpquery->get_vardescrip_by_index(i)->id_ << endl;
+	}
+
 	unsigned largeset_plan_var_num = 0;
 
+	cout << "111111" << endl;
 	considerallvarscan(largeset_plan_var_num);
+	cout << "2222222" << endl;
 
 
 	// should be var num not include satellite node
 	// should not include pre_var num
 	for(unsigned var_num = 2; var_num <= join_nodes.size(); ++var_num) {
+		cout << "var num = " << var_num << endl;
 
 		// if i want to complete this, i need to know whether the input query is linded or not
 		// answer: yes, input query is linked by var
@@ -1521,8 +1537,8 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 	addsatellitenode(best_plan);
 
 
-
-	return get_best_plan_by_num(bgpquery->get_total_var_num());
+	return best_plan;
+	// return get_best_plan_by_num(bgpquery->get_total_var_num());
 
 }
 
@@ -1693,7 +1709,7 @@ PlanTree *PlanGenerator::get_random_plan() {
 	unsigned degree = first_var_descrip->degree_;
 
 
-	PlanTree* plan_tree_p = new PlanTree(first_var_id, bgpquery);
+	PlanTree* plan_tree_p = new PlanTree(first_var_id, bgpquery, true);
 	PlanTree* plan_tree_q = plan_tree_p;
 
 	set<unsigned> neibor_id;
@@ -1791,6 +1807,90 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 			auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes, nullptr,
 														make_shared<FeedTwoNode>(bgpquery->p_id_[0], bgpquery->s_id_[0], *edge_info, *edge_constant_info),
 														nullptr, nullptr);
+
+			return(new PlanTree(plan_node));
+		}
+		case JoinMethod::p2s:{
+			auto edge_info = make_shared<vector<EdgeInfo>>();
+			edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+
+			auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+			edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+
+
+			auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+														make_shared<FeedOneNode>(bgpquery->s_id_[0], edge_info, edge_constant_info),
+														nullptr, nullptr, nullptr);
+
+			return(new PlanTree(plan_node));
+		}
+		case JoinMethod::p2o:{
+			auto edge_info = make_shared<vector<EdgeInfo>>();
+			edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+
+			auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+			edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+
+
+			auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+														make_shared<FeedOneNode>(bgpquery->o_id_[0], edge_info, edge_constant_info),
+														nullptr, nullptr, nullptr);
+
+			return(new PlanTree(plan_node));
+		}
+		case JoinMethod::s2p:{
+			auto edge_info = make_shared<vector<EdgeInfo>>();
+			edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+
+			auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+			edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+
+
+			auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+														make_shared<FeedOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
+														nullptr, nullptr, nullptr);
+
+			return(new PlanTree(plan_node));
+		}
+		case JoinMethod::s2o:{
+			auto edge_info = make_shared<vector<EdgeInfo>>();
+			edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+
+			auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+			edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+
+
+			auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+														make_shared<FeedOneNode>(bgpquery->o_id_[0], edge_info, edge_constant_info),
+														nullptr, nullptr, nullptr);
+
+			return(new PlanTree(plan_node));
+		}
+		case JoinMethod::o2s:{
+			auto edge_info = make_shared<vector<EdgeInfo>>();
+			edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+
+			auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+			edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+
+
+			auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+														make_shared<FeedOneNode>(bgpquery->s_id_[0], edge_info, edge_constant_info),
+														nullptr, nullptr, nullptr);
+
+			return(new PlanTree(plan_node));
+		}
+		case JoinMethod::o2p:{
+			auto edge_info = make_shared<vector<EdgeInfo>>();
+			edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+
+			auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+			edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+
+
+			auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+														make_shared<FeedOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
+														nullptr, nullptr, nullptr);
 
 			return(new PlanTree(plan_node));
 		}
