@@ -443,7 +443,7 @@ JoinMethod PlanTree::get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescri
 // 	      If ?p is not degree one, then join two_node(?p not already) by s2po, or join one_node(?p already) by sp2o.
 // First sp2o, then join other pre_var by join_a_node
 PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_node) {
-	cout << endl << endl << "next node id : " << next_node << endl;
+	// cout << endl << endl << "next node id : " << next_node << endl;
 
 	auto var_descrip = bgpquery->get_vardescrip_by_id(next_node);
 	// todo: 这个构造函数用得对吗？
@@ -488,9 +488,9 @@ PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_no
 
 	}
 
-	cout << "edge_info size: " << join_a_node_edge_info->size() << endl;
-	cout << "edge_const size: " << join_a_node_edge_const_info->size() << endl;
-	cout << "need_join_two_nodes size: " << need_join_two_nodes_index.size() << endl;
+	// cout << "edge_info size: " << join_a_node_edge_info->size() << endl;
+	// cout << "edge_const size: " << join_a_node_edge_const_info->size() << endl;
+	// cout << "need_join_two_nodes size: " << need_join_two_nodes_index.size() << endl;
 	if(!join_a_node_edge_info->empty()){
 		shared_ptr<FeedOneNode> join_a_node = make_shared<FeedOneNode>(next_node, join_a_node_edge_info, join_a_node_edge_const_info);
 		// shared_ptr<StepOperation> join_one_node = make_shared<StepOperation>()
@@ -561,7 +561,7 @@ PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_no
 
 	already_so_var.emplace_back(next_node);
 
-	cout << endl << endl;
+	// cout << endl << endl;
 
 }
 
@@ -573,19 +573,21 @@ PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan) {
 	root_node->right_node = new Tree_node(right_plan->root_node);
 }
 
+// todo: check these three cases would not apprear
+// After join left and right table, we need consider some edges between them:
 // case1 ?s p ?o, ?s in left, ?o in right
 // case2 ?s ?p ?o, join ?p(not appear in left and right) or edgecheck(?p ready)
 // case3 ?s1 ?p ?o1 in left, ?s2 ?p ?o2 in right, this can be done in JoinTwoTable
 // todo: 用Plangenerator的参数，直接算出哪些是不被join的
-PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery) {
+PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery, set<unsigned> &join_nodes) {
 
-	shared_ptr<vector<unsigned>> public_variables = make_shared<vector<unsigned>>();
+	shared_ptr<vector<unsigned>> public_variables = make_shared<vector<unsigned>>(join_nodes.begin(), join_nodes.end());
 
-	for(auto x : left_plan->already_so_var){
-		if(find(right_plan->already_so_var.begin(), right_plan->already_so_var.end(), x) != right_plan->already_so_var.end()){
-			public_variables->emplace_back(x);
-		}
-	}
+	// for(auto x : left_plan->already_so_var){
+	// 	if(find(right_plan->already_so_var.begin(), right_plan->already_so_var.end(), x) != right_plan->already_so_var.end()){
+	// 		public_variables->emplace_back(x);
+	// 	}
+	// }
 
 	for(auto x : left_plan->already_joined_pre_var){
 		if(find(right_plan->already_joined_pre_var.begin(), right_plan->already_joined_pre_var.end(), x) != right_plan->already_so_var.end()){
@@ -593,9 +595,33 @@ PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery
 		}
 	}
 
-	Tree_node *new_join_two_table = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinTable,
+	root_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinTable,
 												nullptr, nullptr, make_shared<JoinTwoTable>(public_variables), nullptr));
 
+
+	root_node->left_node = left_plan->root_node;
+	root_node->right_node = right_plan->root_node;
+
+	// vector<unsigned> & left_so = left_plan->already_so_var;
+	// vector<unsigned> & left_pre = left_plan->already_joined_pre_var;
+	// vector<unsigned> & right_so = right_plan->already_so_var;
+	// vector<unsigned> & right_pre = right_plan->already_joined_pre_var;
+	//
+	// vector<unsigned> need_join_node_index;
+	//
+	// for(unsigned so_var_id : right_so){
+	// 	auto var_descrip = bgpquery->get_vardescrip_by_id(so_var_id);
+	//
+	// 	for(unsigned i = 0; i < var_descrip->degree_; ++i){
+	// 		if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType and
+	// 				find(left_so.begin(), left_so.end(), var_descrip->so_edge_nei_[i]) != left_so.end()){
+	//
+	// 			if(var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType and find(left_pre.begin(), left_pre.))
+	// 			;
+	// 		}
+	// 	}
+	//
+	// }
 
 
 }
@@ -698,7 +724,7 @@ void PlanTree::print(BasicQuery* basicquery) {
 }
 
 void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
-	cout << "type = " << StepOperation::JoinTypeToString(node->node->join_type_) << endl;
+
 	if(node == nullptr)
 		return;
 	if(node->left_node != nullptr)

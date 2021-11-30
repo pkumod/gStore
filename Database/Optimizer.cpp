@@ -312,7 +312,8 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   	long t1 =Util::get_cur_time();
 
   	if(bgp_query->get_triple_num()==1)
-  		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_special_one_triple_plan();
+  		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache,
+  				limitID_predicate_, limitID_literal_, limitID_entity_))->get_special_one_triple_plan();
   	else{
 
   		auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
@@ -333,9 +334,11 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   		//     vector<int> node_order = {2,1,0};
   		//     auto best_plan_tree = new PlanTree(node_order);
   		// #else
-  		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_plan(false);
+  		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache,
+  							limitID_predicate_, limitID_literal_, limitID_entity_))->get_plan(false);
 
-  		// best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_random_plan();
+  		// best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache,
+  		// 						limitID_predicate_, limitID_literal_, limitID_entity_))->get_random_plan();
   		// todo: replace by this
   		// best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_normal_plan()
   		// get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
@@ -349,6 +352,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     long t_ = Util::get_cur_time();
     auto bfs_result = this->ExecutionBreathFirst(bgp_query,query_info,best_plan_tree->root_node,var_candidates_cache);
 
+    // todo: Destructor of PlanGenerator here
     long t5 = Util::get_cur_time();
     cout << "execution, used " << (t5 - t_) << "ms." << endl;
 

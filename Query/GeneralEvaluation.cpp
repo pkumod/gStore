@@ -1357,9 +1357,9 @@ bool GeneralEvaluation::expanseFirstOuterUnionGroupPattern(QueryTree::GroupPatte
 
 void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 {
-	printf("-----PRINTING-----\n");
-	temp_result->print();
-	printf("-----PRINTING-----\n");
+	// printf("-----PRINTING-----\n");
+	// temp_result->print();
+	// printf("-----PRINTING-----\n");
 
 	if (this->temp_result == NULL)
 	{
