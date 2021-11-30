@@ -851,7 +851,7 @@ tuple<bool, TableContentShardPtr> Executor::GetAllSubObjId(bool need_literal)
       ids.insert(i);
   }
   if(need_literal) {
-    for (TYPE_PREDICATE_ID i = Util::LITERAL_FIRST_ID; i < this->limitID_literal_; ++i) {
+    for (TYPE_PREDICATE_ID i = Util::LITERAL_FIRST_ID; i < this->limitID_literal_ + Util::LITERAL_FIRST_ID; ++i) {
       auto entity_str = this->kv_store_->getLiteralByID(i);
       if (entity_str != "")
         ids.insert(i);
