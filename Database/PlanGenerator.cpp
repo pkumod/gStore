@@ -1398,20 +1398,20 @@ void PlanGenerator::considerallvarscan() {
 
 		// sample for id_cache
 
-		vector<unsigned> need_insert_vec;
-
-		if((*id_caches).find(var_id) != (*id_caches).end()) {
-
-			get_idcache_sample((*id_caches)[var_id], need_insert_vec);
-			var_to_num_map[var_id] = (*id_caches)[var_id]->size();
-			var_sampled_from_candidate[var_id] = true;
-
-		} else{
-			var_to_num_map[var_id] = get_sample_from_whole_database(var_id, need_insert_vec);
-			var_sampled_from_candidate[var_id] = false;
-
-		}
-		var_to_sample_cache[var_id] = std::move(need_insert_vec);
+		// vector<unsigned> need_insert_vec;
+		//
+		// if((*id_caches).find(var_id) != (*id_caches).end()) {
+		//
+		// 	get_idcache_sample((*id_caches)[var_id], need_insert_vec);
+		// 	var_to_num_map[var_id] = (*id_caches)[var_id]->size();
+		// 	var_sampled_from_candidate[var_id] = true;
+		//
+		// } else{
+		// 	var_to_num_map[var_id] = get_sample_from_whole_database(var_id, need_insert_vec);
+		// 	var_sampled_from_candidate[var_id] = false;
+		//
+		// }
+		// var_to_sample_cache[var_id] = std::move(need_insert_vec);
 
 	}
 
