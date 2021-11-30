@@ -34,6 +34,9 @@ public:
 	BGPQuery *bgpquery;
 	Statistics *statistics;
 	IDCachesSharePtr & id_caches;
+	TYPE_PREDICATE_ID limitID_predicate;
+	TYPE_ENTITY_LITERAL_ID limitID_literal;
+	TYPE_ENTITY_LITERAL_ID limitID_entity;
 
 	// only contain plans joining not-satellite nodes
 	// plan_cache[0] contains only one node scan plan
@@ -49,7 +52,7 @@ public:
 	map<unsigned, vector<unsigned>> var_to_sample_cache;
 	map<unsigned, map<unsigned, unsigned >> s_o_list_average_size;
 
-	map<unsigned, bool> var_has_sample;
+	map<unsigned, bool> var_sampled_from_candidate;
 
 	// store var id, not var index, only contains s_o var
 	vector<unsigned> join_nodes;
@@ -62,7 +65,8 @@ public:
 	map<unsigned, vector<TYPE_PREDICATE_ID>> pre_var_to_sample_cache;
 
 	PlanGenerator(KVstore *kvstore_, BasicQuery *basicquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_);
-	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_);
+	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_,
+				  	TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_);
 
 
 	//  You can change this,
@@ -120,7 +124,9 @@ public:
 	void get_candidate_generate_plan();
 	void get_join_nodes_new_version(const vector<unsigned> &plan_a_nodes,
 									vector<unsigned> &other_nodes, set<unsigned> &join_nodes);
-	void considerallvarscan(unsigned &largeset_plan_var_num);
+
+	unsigned get_sample_from_whole_database(unsigned var_id, vector<unsigned> &so_sample_cache);
+	void considerallvarscan();
 	void get_nei_by_sub_plan_nodes(const vector<unsigned> &last_plan_node, set<unsigned> &nei_node);
 	void considerallwcojoin(unsigned var_num);
 	void considerallbinaryjoin(unsigned var_num);

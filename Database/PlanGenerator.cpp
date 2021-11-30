@@ -28,8 +28,10 @@
 PlanGenerator::PlanGenerator(KVstore *kvstore_, BasicQuery *basicquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_):
 					kvstore(kvstore_), basicquery(basicquery_), statistics(statistics_), id_caches(id_caches_){};
 
-PlanGenerator::PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr &id_caches_):
-					kvstore(kvstore_), bgpquery(bgpquery_), statistics(statistics_), id_caches(id_caches_){};
+PlanGenerator::PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr &id_caches_,
+							TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_):
+					kvstore(kvstore_), bgpquery(bgpquery_), statistics(statistics_), id_caches(id_caches_),
+					limitID_predicate(limitID_predicate_), limitID_literal(limitID_literal_), limitID_entity(limitID_entity_){};
 
 JoinMethod PlanGenerator::get_join_strategy(bool s_is_var, bool p_is_var, bool o_is_var, unsigned var_num) {
 
@@ -725,7 +727,6 @@ unsigned long PlanGenerator::card_estimator_new_version(const vector<unsigned> &
 	unsigned last_plan_nodes_num = last_plan_nodes.size();
 	auto var_descrip = bgpquery->get_vardescrip_by_id(next_join_node);
 
-
 	if(last_plan_nodes_num == 1) {
 		if(card_cache.size() == 0 || card_cache[0].find(now_plan_nodes) == card_cache[0].end()){
 
@@ -827,7 +828,7 @@ unsigned long PlanGenerator::cost_model_for_wco(PlanTree* last_plan,
 unsigned long PlanGenerator::cost_model_for_wco_new_version(PlanTree *last_plan, const vector<unsigned int> &last_plan_node,
 															unsigned int next_node, const vector<unsigned int> &now_plan_node) {
 	// return last_plan->plan_cost + card_estimator_new_version(last_plan_node, next_node, now_plan_node);
-	return 1;
+	return 20;
 }
 
 unsigned long PlanGenerator::cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
@@ -1264,12 +1265,12 @@ void PlanGenerator::get_candidate_generate_plan() {
 
 void PlanGenerator::get_join_nodes_new_version(const vector<unsigned int> &plan_a_nodes,
 											   vector<unsigned int> &other_nodes, set<unsigned int> &join_nodes) {
-	for(int node : other_nodes){
+	for(unsigned node : other_nodes){
 		auto var_descrip = bgpquery->get_vardescrip_by_id(node);
 		for(unsigned i = 0; i < var_descrip->degree_; ++i){
-			if(find(plan_a_nodes.begin(), plan_a_nodes.end(), var_descrip->so_edge_nei_[i])!= plan_a_nodes.end()){
-				if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType)
-					join_nodes.insert(basicquery->getEdgeNeighborID(node, i));
+			if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType and
+					find(plan_a_nodes.begin(), plan_a_nodes.end(), var_descrip->so_edge_nei_[i]) != plan_a_nodes.end()){
+				join_nodes.insert(var_descrip->so_edge_nei_[i]);
 			}
 		}
 	}
@@ -1293,17 +1294,70 @@ void PlanGenerator::insert_this_plan_to_cache(PlanTree *new_plan, const vector<u
 	}
 }
 
+
+
+unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<unsigned> &so_sample_cache){
+
+	random_device rd;
+	mt19937 eng(rd());
+
+	auto var_descrip = bgpquery->get_vardescrip_by_id(var_id);
+
+	bool is_literal = false;
+	for(unsigned i = 0; i < var_descrip->degree_; ++i){
+		if(var_descrip->so_edge_type_[i] == Util::EDGE_IN){
+			is_literal = true;
+			break;
+		}
+	}
+
+	unsigned sample_from_num = is_literal ? limitID_literal : limitID_entity + limitID_literal;
+
+	unsigned sample_size = get_sample_size(sample_from_num);
+	unsigned sample_entity_size = is_literal ? 0 : ((double )sample_size * limitID_entity / (limitID_literal + limitID_entity) + 1);
+	unsigned sample_literal_size = is_literal ? sample_size : ((double )sample_size * limitID_literal / (limitID_literal + limitID_entity) + 1);
+	// need_insert_vec = new IDList(sample_size);
+	// vector<unsigned> so_sample_cache;
+	so_sample_cache.reserve(sample_size);
+
+	unsigned already_sampled_num = 0;
+	uniform_int_distribution<unsigned> dis(0, limitID_entity);
+	while (already_sampled_num < sample_entity_size){
+		unsigned index_need_insert = dis(eng);
+		auto entity_str = kvstore->getEntityByID(index_need_insert);
+		if(entity_str != ""){
+			so_sample_cache.emplace_back(index_need_insert);
+			++already_sampled_num;
+		}
+	}
+
+	already_sampled_num = 0;
+	dis = uniform_int_distribution<unsigned>(0, limitID_literal);
+	while (already_sampled_num < sample_literal_size){
+		unsigned index_need_insert = dis(eng);
+		auto literal_str = kvstore->getLiteralByID(index_need_insert);
+		if(literal_str != ""){
+			so_sample_cache.emplace_back(index_need_insert);
+			++already_sampled_num;
+		}
+	}
+
+	return sample_from_num;
+
+}
+
 /**
  * Generate sample set of every var.
  * If a var has no const linked to it, then sample from the whole database.
  * Todo: SO_type var sample in so_var_to_sample_cache; pre_type var sample in pre_var_to_sample_cache.
  * Todo: should tell me whether the query only contain pre_var.
  */
-void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
+void PlanGenerator::considerallvarscan() {
 
 	random_device rd;
 	mt19937 eng(rd());
 
+	// todo: directly use BGPQuery::so_var_id
 	for(unsigned var_index = 0 ; var_index < bgpquery->get_total_var_num(); ++ var_index) {
 
 		if(bgpquery->is_var_satellite_by_index(var_index)){
@@ -1323,9 +1377,7 @@ void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
 			join_nodes.push_back(var_id);
 
 		vector<unsigned> this_node{var_id};
-		cout << "before scan" << endl;
 		PlanTree *new_scan = new PlanTree(var_id, bgpquery);
-		cout << "12121212121" << endl;
 
 		// Todo: to change this to (*id_caches)[id_to_position]->size()
 		new_scan->plan_cost = 1;
@@ -1346,19 +1398,22 @@ void PlanGenerator::considerallvarscan(unsigned &largeset_plan_var_num) {
 
 		// sample for id_cache
 
-		// if((*id_caches).find(var_id) != (*id_caches).end()) {
-		// 	vector<unsigned> need_insert_vec;
-		// 	get_idcache_sample((*id_caches)[var_id], need_insert_vec);
-		//
-		// 	var_to_sample_cache[var_id] = std::move(need_insert_vec);
-		//
-		// }
+		vector<unsigned> need_insert_vec;
 
-		++largeset_plan_var_num;
+		if((*id_caches).find(var_id) != (*id_caches).end()) {
 
+			get_idcache_sample((*id_caches)[var_id], need_insert_vec);
+			var_to_num_map[var_id] = (*id_caches)[var_id]->size();
+			var_sampled_from_candidate[var_id] = true;
+
+		} else{
+			var_to_num_map[var_id] = get_sample_from_whole_database(var_id, need_insert_vec);
+			var_sampled_from_candidate[var_id] = false;
+
+		}
+		var_to_sample_cache[var_id] = std::move(need_insert_vec);
 
 	}
-
 
 }
 
@@ -1391,7 +1446,6 @@ void PlanGenerator::considerallwcojoin(unsigned int var_num) {
 		PlanTree* last_best_plan = get_best_plan(last_node_plan.first);
 
 		for(unsigned next_node : nei_node) {
-			cout << "next_node = " << next_node << endl;
 
 			vector<unsigned> new_node_vec(last_node_plan.first);
 			new_node_vec.push_back(next_node);
@@ -1444,14 +1498,15 @@ void PlanGenerator::considerallbinaryjoin(unsigned int var_num)  {
 							PlanTree *another_small_best_plan = get_best_plan(other_nodes);
 
 							// todo: need to complete
-							unsigned long now_cost = cost_model_for_binary(small_nodes_plan.first,
-																		   other_nodes, small_best_plan,
-																		   another_small_best_plan);
+							// unsigned long now_cost = cost_model_for_binary(small_nodes_plan.first,
+							// 											   other_nodes, small_best_plan,
+							// 											   another_small_best_plan);
+							unsigned long now_cost = 1;
 
 							if (now_cost < last_plan_smallest_cost) {
 								//                            build new plan and add to plan_cache
 								// todo: need to complete
-								PlanTree *new_plan = new PlanTree(small_best_plan, another_small_best_plan);
+								PlanTree *new_plan = new PlanTree(small_best_plan, another_small_best_plan, bgpquery, join_nodes);
 								new_plan->plan_cost = now_cost;
 
 								insert_this_plan_to_cache(new_plan, need_considerbinaryjoin_nodes_plan.first, var_num);
@@ -1506,20 +1561,15 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 
 	cout << "-------print var and id--------" << endl;
 	for(unsigned i = 0; i < bgpquery->var_vector.size(); ++i){
-		cout << "\t" << bgpquery->get_vardescrip_by_index(i)->var_name_ << "  " << bgpquery->get_vardescrip_by_index(i)->id_ << endl;
+		cout << "\t" << bgpquery->get_vardescrip_by_index(i)->var_name_ << "\t\t" << bgpquery->get_vardescrip_by_index(i)->id_ << endl;
 	}
 
-	unsigned largeset_plan_var_num = 0;
 
-	cout << "111111" << endl;
-	considerallvarscan(largeset_plan_var_num);
-	cout << "2222222" << endl;
-
+	considerallvarscan();
 
 	// should be var num not include satellite node
 	// should not include pre_var num
 	for(unsigned var_num = 2; var_num <= join_nodes.size(); ++var_num) {
-		cout << "var num = " << var_num << endl;
 
 		// if i want to complete this, i need to know whether the input query is linded or not
 		// answer: yes, input query is linked by var
@@ -1538,7 +1588,6 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 
 
 	return best_plan;
-	// return get_best_plan_by_num(bgpquery->get_total_var_num());
 
 }
 

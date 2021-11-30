@@ -191,7 +191,7 @@ public:
     PlanTree(unsigned first_node, BGPQuery *bgpquery, bool used_in_random_plan);
     PlanTree(shared_ptr<StepOperation> &first_node);
     PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_node);
-    PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery);
+    PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery, set<unsigned> &join_nodes);
     PlanTree(PlanTree *last_plan_tree, unsigned next_join_var_id, set<unsigned> already_id, BGPQuery *bgpquery);
 
     void add_satellitenode(BGPQuery* bgpquery, unsigned satellitenode_id);
