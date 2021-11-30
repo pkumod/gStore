@@ -872,7 +872,7 @@ std::tuple<bool, TableContentShardPtr> Executor::GetAllPreId()
 {
   set<TYPE_ENTITY_LITERAL_ID> ids;
   for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate_; ++i) {
-    auto pre_str = this->kv_store_->getEntityByID(i);
+    auto pre_str = this->kv_store_->getPredicateByID(i);
     if(pre_str!="")
       ids.insert(i);
   }
