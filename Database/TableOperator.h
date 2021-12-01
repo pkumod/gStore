@@ -227,7 +227,9 @@ class StepOperation{
     // check if an edge exist. the nodes in the edge should already in the table
     EdgeCheck,
     // join two node to table,instead of joining twice
-    JoinTwoNodes
+    JoinTwoNodes,
+    // get all triples in the dataset
+    GetAllTriples
   };
 
   JoinType join_type_;
@@ -244,6 +246,7 @@ class StepOperation{
       case JoinType::GenerateCandidates: return "JoinType::GenerateCandidates";
       case JoinType::EdgeCheck: return "JoinType::EdgeCheck";
       case JoinType::JoinTwoNodes: return "JoinType::JoinTwoNodes";
+      case JoinType::GetAllTriples: return "JoinType::GetAllTriples";
     }
     return "err in JoinTypeToString";
   };
