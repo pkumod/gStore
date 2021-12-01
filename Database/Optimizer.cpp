@@ -47,12 +47,13 @@ Optimizer::Optimizer(KVstore *kv_store,
 BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query,QueryInfo *query_info){
   if (!query_info->limit_)
   {
-    if(bgp_query->get_triple_num()!=1)
-      return BasicQueryStrategy::Normal;
-    else if(bgp_query->get_total_var_num() != 3)
-      return BasicQueryStrategy::Normal;
-    else
-      return BasicQueryStrategy::Special;
+  	return BasicQueryStrategy::Normal;
+    // if(bgp_query->get_triple_num()!=1)
+    //   return BasicQueryStrategy::Normal;
+    // else if(bgp_query->get_total_var_num() != 3)
+    //   return BasicQueryStrategy::Normal;
+    // else
+    //   return BasicQueryStrategy::Special;
   }
   else
   {
@@ -388,7 +389,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
       auto predicate_filter = QueryPlan::PredicateFilter(bgp_query,this->kv_store_);
       for (auto &predicate_step: *predicate_filter) {
         executor_.CacheConstantCandidates(predicate_step, var_candidates_cache);
-      };
+      }
     }
 
 #ifdef TOPK_DEBUG_INFO

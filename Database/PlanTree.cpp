@@ -785,6 +785,10 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 			<< stepoperation->join_two_node_->node_to_join_2_ << endl;
 			break;
 		}
+		case StepOperation::JoinType::GetAllTriples:{
+			cout << "\tget all triples from database via p2so" << endl;
+			break;
+		}
 		default:{
 			cout << "error! unknown JoinType!" << endl;
 			exit(-1);

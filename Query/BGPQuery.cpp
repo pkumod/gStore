@@ -13,18 +13,6 @@ VarDescriptor::VarDescriptor(unsigned id, VarType var_type, const string &var_na
 	id_(id), var_type_(var_type), var_name_(var_name), selected_(false), link_with_const(false), degree_(0){};
 
 
-// bool VarDescriptor::get_edge_type(int edge_id) {
-// 	return this->edge_type_[edge_id];
-// }
-//
-// int VarDescriptor::get_edge_nei(int edge_id) {
-// 	return this->edge_nei_[edge_id];
-// }
-//
-// int VarDescriptor::get_edge_index(int edge_id) {
-// 	return this->edge_index_[edge_id];
-// }
-
 void VarDescriptor::update_so_var_edge_info(unsigned int edge_nei_id, TYPE_PREDICATE_ID pre_id, char edge_type,
 											unsigned int edge_index, bool pre_is_var, bool edge_nei_is_var) {
 
@@ -84,7 +72,7 @@ void VarDescriptor::update_select_status(bool selected) {
 void VarDescriptor::print(KVstore *kvstore) {
 
 	cout << "var: " << var_name_ << " , id is " << id_ << ", var type: " << (var_type_ == VarType::Entity ? "Entity" : "Predicate") << endl;
-	cout << "degree = " << degree_ << endl;
+	cout << "degree = " << degree_ << ", selected: " << (selected_ ? "true" : "false") << endl;
 
 	if(var_type_ == VarType::Entity){
 
@@ -617,7 +605,8 @@ bool BGPQuery::is_var_satellite_by_index(unsigned index) {
  * @param kvstore kvstore's pointer
  */
 void BGPQuery::print(KVstore *kvstore) {
-	cout << "this BGP has " << var_vector.size() << " vars, ie. total_var_num = " << this->total_var_num << endl;
+	cout << "this BGP has " << var_vector.size() << " vars, ie. total_var_num = " << this->total_var_num << ", "
+			<< "triples num = " << triple_vt.size() << endl;
 
 	cout << "total so var num = " << total_so_var_num << ", so_var_id.size() = " << so_var_id.size() << endl;
 	for(unsigned i = 0; i < so_var_id.size(); ++ i ){
