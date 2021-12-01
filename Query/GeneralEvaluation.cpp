@@ -428,7 +428,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				// Reach the end of this BGP, start merging
 				SPARQLquery sparql_query;
 				#ifdef TEST_BGPQUERY
-				auto bgp_query = make_shared<BGPQuery>();
+				vector<shared_ptr<BGPQuery>> bgp_query_vec;
+				auto bgp_query_large = make_shared<BGPQuery>();
 				#endif
 				vector<vector<string> > encode_varset;
 				vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
@@ -475,10 +476,16 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 											basic_query[k].predicate.value,
 											basic_query[k].object.value));
 									#else
+									bgp_query_vec.push_back(make_shared<BGPQuery>());
 									for (int k = 0; k < (int)basic_query.size(); k++)
-									bgp_query->AddTriple(Triple(basic_query[k].subject.value,
-											basic_query[k].predicate.value,
-											basic_query[k].object.value));
+									{
+										bgp_query_large->AddTriple(Triple(basic_query[k].subject.value,
+												basic_query[k].predicate.value,
+												basic_query[k].object.value));
+										bgp_query_vec[bgp_query_vec.size() - 1]->AddTriple(Triple(basic_query[k].subject.value,
+												basic_query[k].predicate.value,
+												basic_query[k].object.value));
+									}
 									#endif
 
 									encode_varset.push_back(occur.vars);
@@ -492,7 +499,12 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				#ifndef TEST_BGPQUERY
 				sparql_query.encodeQuery(this->kvstore, encode_varset);
 				#else
-				bgp_query->EncodeBGPQuery(kvstore, encode_varset[0]);
+				vector<string> total_encode_varset;
+				for (size_t k = 0; k < encode_varset.size(); k++)
+					total_encode_varset.insert(total_encode_varset.end(), encode_varset[k].begin(), encode_varset[k].end());
+				bgp_query_large->EncodeBGPQuery(kvstore, total_encode_varset);
+				for (size_t k = 0; k < bgp_query_vec.size(); k++)
+					bgp_query_vec[k]->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset[k]);
 				#endif
 				long tv_encode = Util::get_cur_time();
 				printf("during Encode, used %ld ms.\n", tv_encode - tv_begin);
@@ -515,11 +527,15 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				#ifndef TEST_BGPQUERY
 				this->optimizer_->DoQuery(sparql_query,query_info);
 				#else
-				unique_ptr<unsigned[]>& p2id = bgp_query->resultPositionToId();
-				p2id = unique_ptr<unsigned[]>(new unsigned [encode_varset[0].size()]);
-				for (int k = 0; k < encode_varset[0].size(); k++)
-					p2id[k] = bgp_query->get_var_id_by_name(Varset(encode_varset[0]).vars[k]);
-				this->optimizer_->DoQuery(bgp_query,query_info);
+				for (size_t j = 0; j < bgp_query_vec.size(); j++)
+				{
+					unique_ptr<unsigned[]>& p2id = bgp_query_vec[j]->resultPositionToId();
+					p2id = unique_ptr<unsigned[]>(new unsigned [encode_varset[j].size()]);
+					for (size_t k = 0; k < encode_varset[j].size(); k++)
+						p2id[k] = bgp_query_vec[j]->get_var_id_by_name(Varset(encode_varset[j]).vars[k]);
+					bgp_query_vec[j]->print(kvstore);
+					this->optimizer_->DoQuery(bgp_query_vec[j],query_info);
+				}
 				#endif
 
 				long tv_handle = Util::get_cur_time();
@@ -528,17 +544,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				//collect and join the result of each BasicQuery
 				TempResultSet *new_result;
 				// for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
-				// {
+				for (size_t j = 0; j < bgp_query_vec.size(); j++)
+				{
 					TempResultSet *temp = new TempResultSet();
 					temp->results.push_back(TempResult());
 
-					temp->results[0].id_varset = Varset(encode_varset[0]);
-					int varnum = (int)encode_varset[0].size();
+					temp->results[0].id_varset = Varset(encode_varset[j]);
+					int varnum = (int)encode_varset[j].size();
 
 					#ifndef TEST_BGPQUERY
-					vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(0).getResultList();
+					vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
 					#else
-					vector<unsigned*> &basicquery_result = *(bgp_query->get_result_list_pointer());
+					vector<unsigned*> &basicquery_result = *(bgp_query_vec[j]->get_result_list_pointer());
 					#endif
 					int basicquery_result_num = (int)basicquery_result.size();
 
@@ -581,7 +598,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 						result = new_result;
 					}
-				// }
+				}
 				
 				// printf("Pattern_type result: \n");
 				// result->print();
@@ -624,7 +641,6 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					#ifdef TEST_BGPQUERY
 					vector<shared_ptr<BGPQuery>> bgp_query_vec;
 					auto bgp_query_large = make_shared<BGPQuery>();
-					// auto bgp_query = make_shared<BGPQuery>();
 					#endif
 					vector<vector<string> > encode_varset;
 					vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
@@ -754,7 +770,6 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					#ifndef TEST_BGPQUERY
 					this->optimizer_->DoQuery(sparql_query,query_info);
 					#else
-					// for (auto bgp_query : bgp_query_vec)
 					for (size_t j = 0; j < bgp_query_vec.size(); j++)
 					{
 						unique_ptr<unsigned[]>& p2id = bgp_query_vec[j]->resultPositionToId();
