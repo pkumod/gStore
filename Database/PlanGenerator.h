@@ -69,9 +69,9 @@ public:
 				  	TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_);
 
 
-	//  You can change this,
+	//  You can change this, initialized in PlanGenerator.cpp
 	//  but to make sure SAMPLE_CACHE_MAX <= SAMPLE_NUM_UPBOUND (in Statistics.h)
-	static const unsigned SAMPLE_CACHE_MAX = 50;
+	static const unsigned SAMPLE_CACHE_MAX;
 	const double SAMPLE_PRO = 0.05;
 
 	JoinMethod get_join_strategy(bool s_is_var, bool p_is_var, bool o_is_var, unsigned var_num);
@@ -84,6 +84,9 @@ public:
 	unsigned long card_estimator(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes,
 								 bool use_sample = true);
 
+
+	unsigned long card_estimator_two_nodes(unsigned last_node, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
+	unsigned long card_estimator_more_than_three_nodes(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
 	// using sample method
 	unsigned long card_estimator_new_version(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
 
