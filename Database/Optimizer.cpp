@@ -716,6 +716,11 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
       auto initial_result = executor_.InitialTableTwoNode(step_operation->join_two_node_,id_caches);
       leaf_table = get<1>(initial_result);
     }
+    else if(operation_type==StepOperation::JoinType::GetAllTriples)
+    {
+      auto all_triple_result = executor_.GetAllTriple(step_operation->join_node_);
+      leaf_table = get<1>(all_triple_result);
+    }
     else
       throw string("unexpected JoinType");
 
