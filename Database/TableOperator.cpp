@@ -275,7 +275,8 @@ StepOperation::StepOperation(JoinType join_type, shared_ptr<FeedOneNode> join_no
 							 shared_ptr<FeedTwoNode> join_two_nodes, shared_ptr<JoinTwoTable> join_table,
 							 shared_ptr<FeedOneNode> edge_filter): join_type_(join_type) {
 	switch (join_type) {
-		case JoinType::JoinNode:{
+		case JoinType::JoinNode:
+		case JoinType::GetAllTriples:{
 			join_node_ = join_node;
 			break;
 		}
