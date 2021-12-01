@@ -81,8 +81,6 @@ class GeneralEvaluation
 		std::vector<EvaluationStackStruct> rewriting_evaluation_stack;
 
 	public:
-		TempResultSet* semanticBasedQueryEvaluation(QueryTree::GroupPattern &group_pattern);
-
 		bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &group_pattern, std::deque<QueryTree::GroupPattern> &queue);
 
 		TempResultSet* queryEvaluation(int dep);
