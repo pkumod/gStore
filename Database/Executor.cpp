@@ -254,7 +254,7 @@ tuple<bool,IntermediateResult> Executor::JoinTable(const shared_ptr<JoinTwoTable
     {
       auto tmp_vector = make_shared<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
       tmp_vector->push_back(big_record);
-      indexed_result[result_index] = tmp_vector;
+      indexed_result[result_index] = std::move(tmp_vector);
     }
   }
 
@@ -867,7 +867,6 @@ tuple<bool, TableContentShardPtr> Executor::GetAllSubObjId(bool need_literal)
   return make_tuple(true,result);
 }
 
-
 std::tuple<bool, TableContentShardPtr> Executor::GetAllPreId()
 {
   set<TYPE_ENTITY_LITERAL_ID> ids;
@@ -1320,3 +1319,34 @@ shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeIn
   return id_candidate;
 }
 
+std::tuple<bool,IntermediateResult> Executor::GetAllTriple(std::shared_ptr<FeedOneNode> feed_one_node)
+{
+  IntermediateResult init_table;
+  auto &records = init_table.values_;
+  auto &the_only_edge = (*feed_one_node->edges_)[0];
+  init_table.AddNewNode(the_only_edge.s_);
+  init_table.AddNewNode(the_only_edge.p_);
+  init_table.AddNewNode(the_only_edge.o_);
+
+  TYPE_ENTITY_LITERAL_ID * id_list;
+  unsigned int id_list_len;
+
+  for (TYPE_PREDICATE_ID p_id = 0; p_id < this->limitID_predicate_; ++p_id)
+  {
+    if(this->kv_store_->getPredicateByID(p_id)=="")
+      continue;
+    this->kv_store_->getsubIDobjIDlistBypreID(p_id, id_list, id_list_len, true, this->txn_);
+    for (unsigned j = 0; j < id_list_len; j += 2)
+    {
+      auto s_id = id_list[j];
+      auto o_id  = id_list[j + 1];
+      auto row = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+      row->push_back(s_id);
+      row->push_back(p_id);
+      row->push_back(o_id);
+      records->push_back(std::move(row));
+    }
+    delete[] id_list;
+  }
+  return make_tuple(true,std::move(init_table));
+}

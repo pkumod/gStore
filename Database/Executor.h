@@ -114,7 +114,7 @@ class Executor {
 
   bool UpdateIDCache(std::shared_ptr<StepOperation> step_operation, IDCachesSharePtr id_caches);
 
-
+  std::tuple<bool,IntermediateResult> GetAllTriple(std::shared_ptr<FeedOneNode> feed_one_node);
 };
 
 #endif //GSTOREGDB_DATABASE_EXECUTOR_H_
