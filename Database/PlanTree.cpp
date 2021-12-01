@@ -786,6 +786,13 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 			break;
 		}
 		case StepOperation::JoinType::GetAllTriples:{
+			for(unsigned i = 0; i < stepoperation->join_node_->edges_->size(); ++ i){
+				cout << "\tedge[" << i << "]:" << endl;
+				cout << "\t\ts[" << (*stepoperation->join_node_->edges_)[i].s_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].s_constant_ ? "const" : "var") << "    ";
+				cout << "p[" << (*stepoperation->join_node_->edges_)[i].p_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].p_constant_ ? "const" : "var") << "    ";
+				cout << "o[" << (*stepoperation->join_node_->edges_)[i].o_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].o_constant_ ? "const" : "var") << "    ";
+				cout << JoinMethodToString((*stepoperation->join_node_->edges_)[i].join_method_) << endl;
+			}
 			cout << "\tget all triples from database via p2so" << endl;
 			break;
 		}

@@ -214,7 +214,7 @@ class StepOperation{
   std::shared_ptr<FeedOneNode> join_node_; // GetAllTriples uses this field
   std::shared_ptr<FeedTwoNode> join_two_node_;
   std::shared_ptr<JoinTwoTable> join_table_;
-  std::shared_ptr<FeedOneNode> edge_filter_; // GenerateCandidates & EdgeCheck use this filed
+  std::shared_ptr<FeedOneNode> edge_filter_; // GenerateCandidates & EdgeCheck use this field
 
   // ConstCandidatesCheck
   enum class JoinType{
@@ -237,7 +237,9 @@ class StepOperation{
   StepOperation(): join_node_(nullptr), join_two_node_(nullptr), join_table_(nullptr), edge_filter_(nullptr){};
 
   StepOperation(JoinType join_type, shared_ptr<FeedOneNode> join_node, shared_ptr<FeedTwoNode> join_two_nodes,
-			  shared_ptr<JoinTwoTable> join_table, shared_ptr<FeedOneNode> edge_filter);
+			  shared_ptr<JoinTwoTable> join_table, shared_ptr<FeedOneNode> edge_filter):
+			  join_node_(join_node), join_two_node_(join_two_nodes),
+			  join_table_(join_table), edge_filter_(edge_filter), join_type_(join_type){};
 
   std::string static JoinTypeToString(JoinType x){
     switch (x) {
