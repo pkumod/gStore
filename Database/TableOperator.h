@@ -211,7 +211,7 @@ class JoinTwoTable{
 class StepOperation{
  public:
   // TODO merge the four together
-  std::shared_ptr<FeedOneNode> join_node_;
+  std::shared_ptr<FeedOneNode> join_node_; // GetAllTriples uses this field
   std::shared_ptr<FeedTwoNode> join_two_node_;
   std::shared_ptr<JoinTwoTable> join_table_;
   std::shared_ptr<FeedOneNode> edge_filter_; // GenerateCandidates & EdgeCheck use this filed
