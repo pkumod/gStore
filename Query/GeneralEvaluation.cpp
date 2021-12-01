@@ -754,15 +754,15 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					#ifndef TEST_BGPQUERY
 					this->optimizer_->DoQuery(sparql_query,query_info);
 					#else
-					// TODO: I forgot what this is...
-					for (auto bgp_query : bgp_query_vec)
+					// for (auto bgp_query : bgp_query_vec)
+					for (size_t j = 0; j < bgp_query_vec.size(); j++)
 					{
-						unique_ptr<unsigned[]>& p2id = bgp_query->resultPositionToId();
-						p2id = unique_ptr<unsigned[]>(new unsigned [encode_varset[0].size()]);
-						for (int k = 0; k < encode_varset[0].size(); k++)
-							p2id[k] = bgp_query->get_var_id_by_name(Varset(encode_varset[0]).vars[k]);
-						bgp_query->print(kvstore);
-						this->optimizer_->DoQuery(bgp_query,query_info);
+						unique_ptr<unsigned[]>& p2id = bgp_query_vec[j]->resultPositionToId();
+						p2id = unique_ptr<unsigned[]>(new unsigned [encode_varset[j].size()]);
+						for (size_t k = 0; k < encode_varset[j].size(); k++)
+							p2id[k] = bgp_query_vec[j]->get_var_id_by_name(Varset(encode_varset[j]).vars[k]);
+						bgp_query_vec[j]->print(kvstore);
+						this->optimizer_->DoQuery(bgp_query_vec[j],query_info);
 					}
 					#endif
 
@@ -792,7 +792,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						for (int k = 0; k < basicquery_result_num; k++)
 						{
 							unsigned *v = new unsigned[varnum];
-							memcpy(v, basicquery_result[k], sizeof(unsigned) * varnum);	// TODO: change to unsigned
+							memcpy(v, basicquery_result[k], sizeof(unsigned) * varnum);
 							temp->results[0].result.push_back(TempResult::ResultPair());
 							temp->results[0].result.back().id = v;
 						}
