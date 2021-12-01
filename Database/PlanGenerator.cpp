@@ -72,11 +72,15 @@ JoinMethod PlanGenerator::get_join_strategy(bool s_is_var, bool p_is_var, bool o
 
 unsigned PlanGenerator::get_sample_size(unsigned id_cache_size){
 	if(id_cache_size <= 100){
-		return min(SAMPLE_CACHE_MAX, id_cache_size);
+		if(SAMPLE_CACHE_MAX < id_cache_size)
+			return SAMPLE_CACHE_MAX;
+		else
+			return id_cache_size;
 	} else{
 		return (unsigned )(log(id_cache_size)*11);
 	}
 }
+
 
 ////  Copied from Database::exist_triple in Database.cpp
 ////  If there exist a triple (s_id, p_id, o_id) in db, return true;
