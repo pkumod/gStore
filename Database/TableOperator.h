@@ -211,7 +211,7 @@ class JoinTwoTable{
 class StepOperation{
  public:
   // TODO merge the four together
-  std::shared_ptr<FeedOneNode> join_node_;
+  std::shared_ptr<FeedOneNode> join_node_; // GetAllTriples uses this field
   std::shared_ptr<FeedTwoNode> join_two_node_;
   std::shared_ptr<JoinTwoTable> join_table_;
   std::shared_ptr<FeedOneNode> edge_filter_; // GenerateCandidates & EdgeCheck use this filed
@@ -227,7 +227,9 @@ class StepOperation{
     // check if an edge exist. the nodes in the edge should already in the table
     EdgeCheck,
     // join two node to table,instead of joining twice
-    JoinTwoNodes
+    JoinTwoNodes,
+    // get all triples in the dataset
+    GetAllTriples
   };
 
   JoinType join_type_;
@@ -244,6 +246,7 @@ class StepOperation{
       case JoinType::GenerateCandidates: return "JoinType::GenerateCandidates";
       case JoinType::EdgeCheck: return "JoinType::EdgeCheck";
       case JoinType::JoinTwoNodes: return "JoinType::JoinTwoNodes";
+      case JoinType::GetAllTriples: return "JoinType::GetAllTriples";
     }
     return "err in JoinTypeToString";
   };
