@@ -95,6 +95,11 @@ public:
 	unsigned long cost_model_for_wco(PlanTree* last_plan,
 									 const vector<unsigned> &last_plan_node, unsigned next_node, const vector<unsigned> &now_plan_node);
 
+	void insert_edge_selectivity_to_cache(unsigned from_id, unsigned to_id, unsigned linked_num);
+
+	void insert_card_estimation_to_cache(const vector<unsigned> &now_plan_nodes,
+										 unsigned long card_estimation, vector<vector<unsigned>> &result_sample);
+
 	unsigned long cost_model_for_wco_new_version(PlanTree* last_plan, const vector<unsigned> &last_plan_node,
 												 unsigned next_node, const vector<unsigned> &now_plan_node);
 

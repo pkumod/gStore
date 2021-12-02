@@ -347,6 +347,8 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   		long t4 = Util::get_cur_time();
   		cout << "plan get, used " << (t4 - t3) << "ms." << endl;
   	}
+  	// best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache,
+		// 								  limitID_predicate_, limitID_literal_, limitID_entity_))->get_plan_for_debug();
     best_plan_tree->print(bgp_query.get());
     cout << "plan print done" << endl;
 
