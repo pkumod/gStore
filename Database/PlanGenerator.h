@@ -51,7 +51,7 @@ public:
 	map<unsigned, unsigned > var_to_num_map;
 	map<unsigned, TYPE_ENTITY_LITERAL_ID > var_to_type_map;
 	map<unsigned, vector<unsigned>> var_to_sample_cache;
-	map<unsigned, map<unsigned, unsigned >> s_o_list_average_size;
+	map<unsigned, map<unsigned, double >> s_o_list_average_size;
 
 	map<unsigned, bool> var_sampled_from_candidate;
 
