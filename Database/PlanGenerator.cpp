@@ -991,7 +991,6 @@ unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsign
 }
 
 
-// todo: test {s1 ?p ?o, s2 ?p o2};
 unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
 
 	unsigned last_plan_nodes_num = last_plan_nodes.size();

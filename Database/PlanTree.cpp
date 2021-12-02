@@ -583,12 +583,6 @@ PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery
 
 	shared_ptr<vector<unsigned>> public_variables = make_shared<vector<unsigned>>(join_nodes.begin(), join_nodes.end());
 
-	for(auto x : left_plan->already_so_var){
-		if(find(right_plan->already_so_var.begin(), right_plan->already_so_var.end(), x) != right_plan->already_so_var.end()){
-			public_variables->emplace_back(x);
-		}
-	}
-
 	already_so_var = left_plan->already_so_var;
 	for(auto x : right_plan->already_so_var)
 		if(find(already_so_var.begin(), already_so_var.end(), x) == already_so_var.end())
@@ -809,7 +803,8 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 				cout << "o[" << (*stepoperation->join_node_->edges_)[i].o_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].o_constant_ ? "const" : "var") << "    ";
 				cout << JoinMethodToString((*stepoperation->join_node_->edges_)[i].join_method_) << endl;
 			}
-			cout << "\tnode id: " << stepoperation->join_node_->node_to_join_ << endl;
+			cout << "\tnode id: " << stepoperation->join_node_->node_to_join_;
+			cout << (stepoperation->join_node_->node_should_be_added_into_table ? ", saved in table" : ", not saved in table") << endl;
 			break;
 		}
 		case StepOperation::JoinType::JoinTable:{
