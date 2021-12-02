@@ -173,17 +173,29 @@ std::string EdgeToString(KVstore *kv_store,EdgeInfo edge_info,EdgeConstantInfo e
 class FeedOneNode{
  public:
   TYPE_ENTITY_LITERAL_ID node_to_join_;
+  bool node_should_be_added_into_table;
   std::shared_ptr<std::vector<EdgeInfo>> edges_;
   std::shared_ptr<std::vector<EdgeConstantInfo>> edges_constant_info_;
-  FeedOneNode():node_to_join_(-1){
+  FeedOneNode():node_to_join_(-1),node_should_be_added_into_table(true){
     edges_ = std::make_shared<std::vector<EdgeInfo>>();
     edges_constant_info_ = std::make_shared<std::vector<EdgeConstantInfo>>();
   };
-  FeedOneNode(unsigned join_node_id, EdgeInfo edge_info, EdgeConstantInfo edge_constant):node_to_join_(join_node_id){
-  	edges_ = make_shared<vector<EdgeInfo>>(vector<EdgeInfo>{edge_info});
-  	edges_constant_info_ = make_shared<vector<EdgeConstantInfo>>(vector<EdgeConstantInfo>{edge_constant});};
-  FeedOneNode(unsigned join_node_id, shared_ptr<vector<EdgeInfo>> edge_info, shared_ptr<vector<EdgeConstantInfo>> edge_constant):
-  		node_to_join_(join_node_id), edges_(edge_info), edges_constant_info_(edge_constant){};
+
+  FeedOneNode(unsigned join_node_id,
+              EdgeInfo edge_info,
+              EdgeConstantInfo edge_constant,
+              bool added_into_table=true):
+      node_to_join_(join_node_id),node_should_be_added_into_table(added_into_table)
+  {
+    edges_ = make_shared<vector<EdgeInfo>>(vector<EdgeInfo>{edge_info});
+    edges_constant_info_ = make_shared<vector<EdgeConstantInfo>>(vector<EdgeConstantInfo>{edge_constant});
+  };
+  FeedOneNode(unsigned join_node_id,
+              shared_ptr<vector<EdgeInfo>> edge_info,
+              shared_ptr<vector<EdgeConstantInfo>> edge_constant,
+              bool added_into_table=true):
+      node_to_join_(join_node_id),node_should_be_added_into_table(added_into_table),edges_(edge_info), edges_constant_info_(edge_constant)
+  {};
 
   void ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> already_in);
 };
