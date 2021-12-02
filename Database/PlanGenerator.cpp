@@ -1749,6 +1749,8 @@ unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<u
 	unsigned sample_literal_size = not_literal ? 0 : (sample_size * limitID_literal / (limitID_literal + limitID_entity) + 1);
 	// need_insert_vec = new IDList(sample_size);
 	// vector<unsigned> so_sample_cache;
+	sample_entity_size = limitID_entity == 0 ? 0 : sample_entity_size;
+	sample_literal_size = limitID_literal == 0 ? 0 : sample_literal_size;
 	cout << "sample entity size = " << sample_entity_size << endl;
 	cout << "sample literal size = " << sample_literal_size << endl;
 	so_sample_cache.reserve(sample_entity_size + sample_literal_size);
@@ -1766,7 +1768,7 @@ unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<u
 			so_sample_cache.emplace_back(index_need_insert);
 			++already_sampled_num;
 		} else{
-			cout << "not pass" << endl;
+			cout << "entity not pass" << endl;
 		}
 	}
 
@@ -1784,7 +1786,7 @@ unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<u
 			so_sample_cache.emplace_back(index_need_insert);
 			++already_sampled_num;
 		}else{
-			cout << "not pass" << endl;
+			cout << "literal not pass" << endl;
 		}
 	}
 
@@ -1812,8 +1814,8 @@ void PlanGenerator::considerallvarscan() {
 			continue;
 		}
 
-		unsigned var_id = bgpquery->get_var_id_by_index(var_index);
 		auto var_descrip = bgpquery->get_vardescrip_by_index(var_index);
+		unsigned var_id = var_descrip->id_;
 
 		if(var_descrip->var_type_ == VarDescriptor::VarType::Predicate){
 			pre_vars.emplace_back(var_id);
