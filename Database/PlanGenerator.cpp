@@ -725,526 +725,504 @@ unsigned long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_no
 }
 
 
-// unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
-//
-// 	auto var_descrip = bgpquery->get_vardescrip_by_id(next_join_node);
-//
-// 	if(card_cache.size() == 0 || card_cache[0].find(now_plan_nodes) == card_cache[0].end()){
-//
-//
-// 		if(!var_sampled_from_candidate[next_join_node]){
-// 			;
-// 			// todo: sample from last_plan
-// 		}
-//
-//
-// 		unsigned long card_estimation;
-// 		vector<vector<unsigned>> this_sample;
-//
-// 		unsigned now_sample_num = 0;
-//
-// 		vector<char> edge_type;
-// 		vector<TYPE_PREDICATE_ID> p_list;
-//
-// 		for(unsigned i = 0; i < var_descrip->degree_; ++i){
-// 			if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType &&
-// 			var_descrip->so_edge_nei_[i] == last_node){
-// 				edge_type.push_back(var_descrip->so_edge_type_[i]);
-// 				if(var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType)
-// 					p_list.push_back(-1);
-// 				else
-// 					p_list.push_back(var_descrip->so_edge_pre_id_[i]);
-// 			}
-// 		}
-//
-// 		map<unsigned, unsigned> new_id_pos_map;
-// 		if (last_node < next_join_node) {
-// 			new_id_pos_map[last_node] = 0;
-// 			new_id_pos_map[next_join_node] = 1;
-// 		} else {
-// 			new_id_pos_map[next_join_node] = 0;
-// 			new_id_pos_map[last_node] = 1;
-// 		}
-//
-// 		unsigned long s_o_list1_total_num = 0;
-// 		unsigned long s_o_list2_total_num = 0;
-//
-// 		random_device rd;
-// 		mt19937 eng(rd());
-// 		uniform_real_distribution<double> dis(0, 1);
-//
-// 		if (edge_type[0] == Util::EDGE_IN) {
-// 			// not need to sample, because sampled in considering all scans
-// 			for (unsigned i = 0; i < var_to_sample_cache[last_node].size(); ++i) {
-// 				unsigned *s_o_list = nullptr;
-// 				unsigned s_o_list_len = 0;
-//
-// 				if(p_list[0] >= 0)
-// 					kvstore->getobjIDlistBysubIDpreID(var_to_sample_cache[last_node][i], p_list[0],
-// 													  s_o_list,
-// 													  s_o_list_len);
-// 				else
-// 					kvstore->getobjIDlistBysubID(var_to_sample_cache[last_node][i],
-// 												 s_o_list,
-// 												 s_o_list_len);
-//
-//
-// 				s_o_list1_total_num += s_o_list_len;
-//
-// 				for (unsigned j = 0; j < s_o_list_len; ++j) {
-// 					if(var_sampled_from_candidate[next_join_node] and
-// 					!binary_search((*id_caches)[next_join_node]->begin(),
-// 								   (*id_caches)[next_join_node]->end(), s_o_list[j]))
-// 						continue;
-//
-//
-//
-// 					unsigned k = 1;
-// 					for (; k < edge_type.size(); ++k) {
-// 						if (edge_type[k] == Util::EDGE_IN) {
-// 							if (!check_exist_this_triple(var_to_sample_cache[last_node][i],
-// 														 p_list[k], s_o_list[j])) {
-// 								break;
-// 							}
-// 						} else {
-// 							if (!check_exist_this_triple(s_o_list[j], p_list[k],
-// 														 var_to_sample_cache[last_node][i])) {
-// 								break;
-// 							}
-// 						}
-// 					}
-//
-// 					if (k == edge_type.size()) {
-// 						++now_sample_num;
-// 						if (now_sample_num < SAMPLE_CACHE_MAX) {
-// 							vector<unsigned> this_pass_sample(2);
-// 							this_pass_sample[new_id_pos_map[last_node]] = var_to_sample_cache[last_node][i];
-// 							this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
-//
-// 							this_sample.push_back(move(this_pass_sample));
-// 						} else {
-// 							if (dis(eng) < SAMPLE_PRO) {
-//
-// 								vector<unsigned> this_pass_sample(2);
-// 								this_pass_sample[new_id_pos_map[last_node]] = var_to_sample_cache[last_node][i];
-// 								this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
-//
-// 								this_sample.push_back(move(this_pass_sample));
-//
-// 							}
-// 						}
-// 					}
-// 				}
-//
-// 				delete[] s_o_list;
-//
-// 			}
-//
-// 			for (unsigned i = 0; i < var_to_sample_cache[next_join_node].size(); ++i) {
-// 				unsigned *s_o_list = nullptr;
-// 				unsigned s_o_list_len = 0;
-//
-// 				// if()
-// 				kvstore->getsubIDlistByobjIDpreID(var_to_sample_cache[next_join_node][i], p_list[0], s_o_list,
-// 												  s_o_list_len);
-// 				s_o_list2_total_num += s_o_list_len;
-//
-// 				delete[] s_o_list;
-//
-//
-// 			}
-//
-// 			if (s_o_list_average_size.find(last_node) == s_o_list_average_size.end()) {
-// 				map<unsigned, unsigned > this_node_selectivity_map;
-// 				this_node_selectivity_map.insert(
-// 						make_pair(next_join_node, (unsigned )((double) s_o_list1_total_num / var_to_sample_cache[last_node].size())));
-// 				s_o_list_average_size.insert(make_pair(last_node, this_node_selectivity_map));
-// 			} else {
-// 				s_o_list_average_size[last_node].insert(
-// 						make_pair(next_join_node, (unsigned )((double) s_o_list1_total_num / var_to_sample_cache[last_node].size())));
-// 			}
-//
-// 			if (s_o_list_average_size.find(next_join_node) == s_o_list_average_size.end()) {
-// 				map<unsigned, unsigned > this_node_selectivity_map;
-// 				this_node_selectivity_map.insert(
-// 						make_pair(last_node, (unsigned )((double) s_o_list2_total_num / var_to_sample_cache[next_join_node].size())));
-// 				s_o_list_average_size.insert(make_pair(next_join_node, this_node_selectivity_map));
-// 			} else {
-// 				s_o_list_average_size[next_join_node].insert(
-// 						make_pair(last_node, (unsigned )((double) s_o_list2_total_num / var_to_sample_cache[next_join_node].size())));
-// 			}
-//
-// 		} else {
-//
-//
-// 			for (unsigned i = 0; i < var_to_sample_cache[next_join_node].size(); ++i) {
-// 				unsigned *s_o_list = nullptr;
-// 				unsigned s_o_list_len = 0;
-//
-// 				kvstore->getobjIDlistBysubIDpreID(var_to_sample_cache[next_join_node][i], p_list[0], s_o_list,
-// 												  s_o_list_len);
-//
-// 				s_o_list1_total_num += s_o_list_len;
-//
-// 				for (unsigned j = 0; j < s_o_list_len; ++j) {
-// 					if (binary_search((*id_caches)[last_node]->begin(),
-// 									  (*id_caches)[last_node]->end(), s_o_list[j])) {
-// 						unsigned k = 1;
-// 						for (; k < edge_type.size(); ++k) {
-// 							if (edge_type[k] == Util::EDGE_IN) {
-// 								if (!check_exist_this_triple(s_o_list[j], p_list[k],
-// 															 var_to_sample_cache[next_join_node][i])) {
-// 									break;
-// 								}
-// 							} else {
-// 								if (!check_exist_this_triple(var_to_sample_cache[next_join_node][i], p_list[k],
-// 															 s_o_list[j])) {
-// 									break;
-// 								}
-// 							}
-//
-// 						}
-//
-// 						if (k == edge_type.size()) { ;
-// 							++now_sample_num;
-// 							if (now_sample_num < SAMPLE_CACHE_MAX) {
-// 								//
-// 								vector<unsigned> this_pass_sample(2);
-// 								this_pass_sample[new_id_pos_map[last_node]] = s_o_list[j];
-// 								this_pass_sample[new_id_pos_map[next_join_node]] = var_to_sample_cache[next_join_node][i];
-//
-// 								this_sample.push_back(move(this_pass_sample));
-// 							} else {
-// 								if (dis(eng) < SAMPLE_PRO) {
-//
-// 									vector<unsigned> this_pass_sample(2);
-// 									this_pass_sample[new_id_pos_map[last_node]] = s_o_list[j];
-// 									this_pass_sample[new_id_pos_map[next_join_node]] = var_to_sample_cache[next_join_node][i];
-//
-// 									this_sample.push_back(move(this_pass_sample));
-//
-// 								}
-// 							}
-// 						}
-//
-// 					}
-// 				}
-//
-// 				delete[] s_o_list;
-// 			}
-//
-// 			for (unsigned i = 0; i < var_to_sample_cache[last_node].size(); ++i) {
-// 				unsigned *s_o_list = nullptr;
-// 				unsigned s_o_list_len = 0;
-//
-// 				kvstore->getsubIDlistByobjIDpreID(var_to_sample_cache[last_node][i], p_list[0],
-// 												  s_o_list,
-// 												  s_o_list_len);
-// 				s_o_list2_total_num += s_o_list_len;
-//
-// 				delete[] s_o_list;
-//
-//
-// 			}
-//
-// 			if (s_o_list_average_size.find(next_join_node) == s_o_list_average_size.end()) {
-// 				map<unsigned, unsigned > this_node_selectivity_map;
-// 				this_node_selectivity_map.insert(
-// 						make_pair(last_node, (unsigned )((double) s_o_list1_total_num / var_to_sample_cache[next_join_node].size())));
-// 				s_o_list_average_size.insert(make_pair(next_join_node, this_node_selectivity_map));
-// 			} else {
-// 				s_o_list_average_size[next_join_node].insert(
-// 						make_pair(last_node,(unsigned )((double) s_o_list1_total_num / var_to_sample_cache[next_join_node].size())));
-// 			}
-//
-// 			if (s_o_list_average_size.find(last_node) == s_o_list_average_size.end()) {
-// 				map<unsigned, unsigned > this_node_selectivity_map;
-// 				this_node_selectivity_map.insert(
-// 						make_pair(next_join_node, (unsigned )((double) s_o_list2_total_num / var_to_sample_cache[last_node].size())));
-// 				s_o_list_average_size.insert(make_pair(last_node, this_node_selectivity_map));
-// 			} else {
-// 				s_o_list_average_size[last_node].insert(
-// 						make_pair(next_join_node, (unsigned )((double) s_o_list2_total_num / var_to_sample_cache[last_node].size())));
-// 			}
-//
-// 		}
-//
-//
-// 		card_estimation = max((edge_type[0] == Util::EDGE_IN) ? (unsigned long) ((double) (now_sample_num *
-// 				var_to_num_map[last_node]) /
-// 						var_to_sample_cache[last_node].size())
-// 								:
-// 								(unsigned long) ((double) (now_sample_num *
-// 								var_to_num_map[next_join_node]) /
-// 								var_to_sample_cache[next_join_node].size() )
-// 								, (unsigned long) 1);
-//
-// 		if (card_cache.size() < 1) {
-// 			map<vector<unsigned>, unsigned long> this_var_num_card_map;
-// 			this_var_num_card_map.insert(make_pair(now_plan_nodes, card_estimation));
-// 			card_cache.push_back(this_var_num_card_map);
-//
-// 			map<vector<unsigned>, vector<vector<unsigned>>> this_var_num_sample_map;
-// 			this_var_num_sample_map.insert(make_pair(now_plan_nodes, this_sample));
-// 			sample_cache.push_back(this_var_num_sample_map);
-//
-// 		} else {
-// 			card_cache[0].insert(make_pair(now_plan_nodes, card_estimation));
-// 			sample_cache[0].insert(make_pair(now_plan_nodes, this_sample));
-// 		}
-// 		return var_to_num_map[last_node]*s_o_list_average_size[last_node][next_join_node]
-//
-// 		;
-// 	}  else{
-// 		return var_to_num_map[last_node]*s_o_list_average_size[last_node][next_join_node];//+var_to_num_map[next_join_node];
-// 	}
-// }
+void PlanGenerator::insert_edge_selectivity_to_cache(unsigned from_id, unsigned to_id, unsigned linked_num) {
+
+	if (s_o_list_average_size.find(from_id) == s_o_list_average_size.end()) {
+		map<unsigned, unsigned > this_node_selectivity_map;
+		this_node_selectivity_map.insert(
+				make_pair(to_id, (unsigned )((double) linked_num / var_to_sample_cache[from_id].size())));
+		s_o_list_average_size.insert(make_pair(from_id, this_node_selectivity_map));
+	} else {
+		s_o_list_average_size[from_id].insert(
+				make_pair(to_id, (unsigned )((double) linked_num / var_to_sample_cache[from_id].size())));
+	}
+
+}
+
+void PlanGenerator::insert_card_estimation_to_cache(const vector<unsigned> &now_plan_nodes,
+													unsigned long card_estimation, vector<vector<unsigned>> &result_sample) {
+	if (card_cache.size() < now_plan_nodes.size() - 1) {
+		map<vector<unsigned>, unsigned long> this_var_num_card_map;
+		this_var_num_card_map.insert(make_pair(now_plan_nodes, card_estimation));
+		card_cache.push_back(this_var_num_card_map);
+
+		map<vector<unsigned>, vector<vector<unsigned>>> this_var_num_sample_map;
+		this_var_num_sample_map.insert(make_pair(now_plan_nodes, result_sample));
+		sample_cache.push_back(this_var_num_sample_map);
+
+	} else {
+		card_cache[now_plan_nodes.size() - 2].insert(make_pair(now_plan_nodes, card_estimation));
+		sample_cache[now_plan_nodes.size() - 2].insert(make_pair(now_plan_nodes, result_sample));
+	}
+}
+
+unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
+
+	auto var_descrip = bgpquery->get_vardescrip_by_id(next_join_node);
+
+	if(card_cache.size() == 0 || card_cache[0].find(now_plan_nodes) == card_cache[0].end()){
 
 
-// unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
-//
-// 	unsigned last_plan_nodes_num = last_plan_nodes.size();
-// 	auto var_descrip = bgpquery->get_vardescrip_by_id(next_join_node);
-//
-// 	if (card_cache.size() < last_plan_nodes_num ||
-// 	card_cache[last_plan_nodes_num - 1].find(now_plan_nodes) == card_cache[last_plan_nodes_num - 1].end()) {
-//
-// 		unsigned long card_estimation;
-// 		unsigned long last_card_estimation = card_cache[last_plan_nodes_num - 2][last_plan_nodes];
-//
-// 		vector<vector<unsigned>> this_sample;
-// 		vector<vector<unsigned>> &last_sample = sample_cache[last_plan_nodes_num - 2][last_plan_nodes];
-//
-// 		if (last_sample.size() != 0) {
-//
-// 			unsigned now_sample_num = 0;
-//
-// 			vector<int> linked_nei_pos;
-// 			vector<char> edge_type;
-// 			vector<TYPE_PREDICATE_ID> p_list;
-//
-//
-// 			for(unsigned i = 0; i < var_descrip->degree_; ++i){
-// 				if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType){
-//
-// 					for(unsigned j = 0; j < last_plan_nodes.size(); ++j){
-// 						if(var_descrip->so_edge_nei_[i] == last_plan_nodes[j]){
-// 							linked_nei_pos.emplace_back(j);
-// 							edge_type.emplace_back(var_descrip->so_edge_type_[i]);
-// 							if(var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType)
-// 								p_list.push_back(-1);
-// 							else
-// 								p_list.push_back(var_descrip->so_edge_pre_id_[i]);
-// 						}
-// 					}
-// 				}
-// 			}
-//
-// 			map<int, unsigned > new_id_pos_map;
-// 			for (unsigned i = 0, index = 0, used = 0; i <= last_plan_nodes_num; ++i) {
-// 				if ((index == last_plan_nodes_num) || (!used && next_join_node < last_plan_nodes[index])) {
-// 					new_id_pos_map[next_join_node] = i;
-// 					used = 1;
-// 				} else {
-// 					new_id_pos_map[last_plan_nodes[index]] = i;
-// 					++index;
-// 				}
-// 			}
-//
-// 			random_device rd;
-// 			mt19937 eng(rd());
-// 			uniform_int_distribution<unsigned > dis(0, 1000);
-//
-//
-//
-// 			if (edge_type[0] == Util::EDGE_IN) {
-// 				for (unsigned i = 0; i < last_sample.size(); ++i) {
-// 					unsigned *s_o_list = nullptr;
-// 					unsigned s_o_list_len = 0;
-//
-// 					if(p_list[0] >= 0 )
-// 						kvstore->getobjIDlistBysubIDpreID(last_sample[i][linked_nei_pos[0]], p_list[0],
-// 														  s_o_list,s_o_list_len);
-// 					else
-// 						kvstore->getobjIDlistBysubID(last_sample[i][linked_nei_pos[0]],
-// 													 s_o_list,s_o_list_len);
-//
-//
-// 					for (unsigned j = 0; j < s_o_list_len; ++j) {
-// 						if (binary_search((*id_caches)[next_join_node]->begin(),
-// 										  (*id_caches)[next_join_node]->end(),
-// 										  s_o_list[j])) {
-// 							unsigned k = 1;
-// 							for (; k < edge_type.size(); ++k) {
-// 								if (edge_type[k] == Util::EDGE_IN) {
-// 									if (!check_exist_this_triple(last_sample[i][linked_nei_pos[k]], p_list[k],
-// 																 s_o_list[j])) {
-// 										break;
-// 									}
-// 								} else {
-// 									if (!check_exist_this_triple(s_o_list[j], p_list[k],
-// 																 last_sample[i][linked_nei_pos[k]])) {
-// 										break;
-// 									}
-// 								}
-//
-// 							}
-//
-// 							if (k == edge_type.size()) { ;
-// 								++now_sample_num;
-// 								if (now_sample_num < SAMPLE_CACHE_MAX) {
-// 									//
-// 									vector<unsigned> this_pass_sample(now_plan_node_num);
-// 									for (unsigned l = 0; l < now_plan_node_num - 1; ++l) {
-// 										this_pass_sample[new_id_pos_map[last_plan_nodes[l]]] = last_sample[i][l];
-// 									}
-// 									this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
-//
-// 									this_sample.push_back(move(this_pass_sample));
-// 								} else {
-//
-// 									if (dis(eng) < SAMPLE_CACHE_MAX) {
-//
-// 										vector<unsigned> this_pass_sample(now_plan_node_num);
-// 										for (unsigned l = 0; l < now_plan_node_num - 1; ++l) {
-// 											this_pass_sample[new_id_pos_map[last_plan_nodes[l]]] = last_sample[i][l];
-// 										}
-// 										this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
-//
-// 										this_sample.push_back(move(this_pass_sample));
-//
-// 									}
-// 								}
-// 							}
-//
-// 						}
-// 					}
-//
-// 					delete[] s_o_list;
-//
-//
-// 				}
-// 			} else {
-// 				for (unsigned i = 0; i < last_sample.size(); ++i) {
-// 					unsigned *s_o_list = nullptr;
-// 					unsigned s_o_list_len = 0;
-//
-// 					kvstore->getsubIDlistByobjIDpreID(last_sample[i][linked_nei_pos[0]], p_list[0], s_o_list,
-// 													  s_o_list_len);
-//
-//
-// 					for (unsigned j = 0; j < s_o_list_len; ++j) {
-// 						if (binary_search((*id_caches)[next_join_node]->begin(),
-// 										  (*id_caches)[next_join_node]->end(),
-// 										  s_o_list[j])) {
-// 							unsigned k = 1;
-// 							for (; k < edge_type.size(); ++k) {
-// 								if (edge_type[k] == Util::EDGE_IN) {
-// 									if (!check_exist_this_triple(last_sample[i][linked_nei_pos[k]], p_list[k],
-// 																 s_o_list[j])) {
-// 										break;
-// 									}
-// 								} else {
-// 									if (!check_exist_this_triple(s_o_list[j], p_list[k],
-// 																 last_sample[i][linked_nei_pos[k]])) {
-// 										break;
-// 									}
-// 								}
-//
-// 							}
-//
-// 							if (k == edge_type.size()) { ;
-// 								++now_sample_num;
-// 								if (now_sample_num < SAMPLE_CACHE_MAX) {
-//
-// 									vector<unsigned> this_pass_sample(now_plan_node_num);
-// 									for (unsigned l = 0; l < now_plan_node_num - 1; ++l) {
-// 										this_pass_sample[new_id_pos_map[last_plan_nodes[l]]] = last_sample[i][l];
-// 									}
-// 									this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
-//
-// 									this_sample.push_back(move(this_pass_sample));
-// 								} else {
-// 									if (dis(eng) < SAMPLE_CACHE_MAX) {
-//
-// 										vector<unsigned> this_pass_sample(now_plan_node_num);
-// 										for (unsigned l = 0; l < now_plan_node_num - 1; ++l) {
-// 											this_pass_sample[new_id_pos_map[last_plan_nodes[l]]] = last_sample[i][l];
-// 										}
-// 										this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
-//
-// 										this_sample.push_back(move(this_pass_sample));
-//
-// 									}
-// 								}
-// 							}
-//
-// 						}
-// 					}
-//
-// 					delete[] s_o_list;
-//
-//
-// 				}
-//
-// 			}
-//
-// 			card_estimation = max(
-// 					(unsigned long) ((double) (now_sample_num * last_card_estimation ) / last_sample.size() ),
-// 					(unsigned long) 1);
-//
-// 		} else {
-// 			card_estimation = 1;
-// 		}
-//
-// 		if (card_cache.size() < now_plan_node_num - 1) {
-// 			map<vector<unsigned>, unsigned long> this_var_num_card_map;
-// 			this_var_num_card_map.insert(make_pair(now_plan_nodes, card_estimation));
-// 			card_cache.push_back(this_var_num_card_map);
-//
-// 			map<vector<unsigned>, vector<vector<unsigned>>> this_var_num_sample_map;
-// 			this_var_num_sample_map.insert(make_pair(now_plan_nodes, this_sample));
-// 			sample_cache.push_back(this_var_num_sample_map);
-//
-// 		} else {
-// 			card_cache[now_plan_node_num - 2].insert(make_pair(now_plan_nodes, card_estimation));
-// 			sample_cache[now_plan_node_num - 2].insert(make_pair(now_plan_nodes, this_sample));
-// 		}
-//
-// 		vector<int> linked_nei_id;
-// 		for (int i = 0; i < basicquery->getVarDegree(next_join_node); ++i) {
-// 			if (find(last_plan_nodes.begin(), last_plan_nodes.end(), basicquery->getEdgeNeighborID(next_join_node, i))
-// 			!= last_plan_nodes.end()) {
-// 				linked_nei_id.push_back(basicquery->getEdgeNeighborID(next_join_node, i));
-// 			}
-// 		}
-//
-// 		unsigned multiple = 1+s_o_list_average_size[linked_nei_id[0]][next_join_node];
-// 		for(auto x : linked_nei_id){
-// 			multiple = min(multiple, s_o_list_average_size[x][next_join_node]+1);
-// 			//					multiple += s_o_list_average_size[x][next_join_node];
-//
-// 		}
-// 		return card_cache[now_plan_node_num - 3][last_plan_nodes]*multiple;
-//
-// 	} else{
-//
-// 		vector<int> linked_nei_id;
-// 		for (int i = 0; i < basicquery->getVarDegree(next_join_node); ++i) {
-// 			if (find(last_plan_nodes.begin(), last_plan_nodes.end(), basicquery->getEdgeNeighborID(next_join_node, i))
-// 			!= last_plan_nodes.end()) {
-// 				linked_nei_id.push_back(basicquery->getEdgeNeighborID(next_join_node, i));
-// 			}
-// 		}
-// 		unsigned multiple = 1+s_o_list_average_size[linked_nei_id[0]][next_join_node];
-// 		for(auto x : linked_nei_id){
-// 			multiple = min(multiple, s_o_list_average_size[x][next_join_node]+1);
-// 		}
-//
-// 		return card_cache[now_plan_node_num - 3][last_plan_nodes]*multiple;//+var_to_num_map[next_join_node];
-// 	}
-// }
+		if(!var_sampled_from_candidate[next_join_node]){
+			;
+			// todo: sample from last_plan
+		}
 
+
+		unsigned long card_estimation;
+		vector<vector<unsigned>> this_sample;
+
+		unsigned now_sample_num = 0;
+
+		vector<char> edge_type;
+		vector<TYPE_PREDICATE_ID> p_list;
+
+		for(unsigned i = 0; i < var_descrip->degree_; ++i){
+			if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType &&
+			var_descrip->so_edge_nei_[i] == last_node){
+				edge_type.push_back(var_descrip->so_edge_type_[i]);
+				if(var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType)
+					p_list.push_back(-1);
+				else
+					p_list.push_back(var_descrip->so_edge_pre_id_[i]);
+			}
+		}
+
+		map<unsigned, unsigned> new_id_pos_map;
+		if (last_node < next_join_node) {
+			new_id_pos_map[last_node] = 0;
+			new_id_pos_map[next_join_node] = 1;
+		} else {
+			new_id_pos_map[next_join_node] = 0;
+			new_id_pos_map[last_node] = 1;
+		}
+
+		unsigned long s_o_list1_total_num = 0;
+		unsigned long s_o_list2_total_num = 0;
+
+		random_device rd;
+		mt19937 eng(rd());
+		uniform_real_distribution<double> dis(0, 1);
+
+		if (edge_type[0] == Util::EDGE_IN) {
+			// not need to sample, because sampled in considering all scans
+			for (unsigned i = 0; i < var_to_sample_cache[last_node].size(); ++i) {
+				unsigned *s_o_list = nullptr;
+				unsigned s_o_list_len = 0;
+
+				if(p_list[0] >= 0)
+					kvstore->getobjIDlistBysubIDpreID(var_to_sample_cache[last_node][i], p_list[0],
+													  s_o_list,
+													  s_o_list_len);
+				else
+					kvstore->getobjIDlistBysubID(var_to_sample_cache[last_node][i],
+												 s_o_list,
+												 s_o_list_len);
+
+				s_o_list1_total_num += s_o_list_len;
+
+				for (unsigned j = 0; j < s_o_list_len; ++j) {
+					if(var_sampled_from_candidate[next_join_node] and
+							!binary_search((*id_caches)[next_join_node]->begin(),
+								   	(*id_caches)[next_join_node]->end(), s_o_list[j]))
+						continue;
+
+
+
+					unsigned k = 1;
+					for (; k < edge_type.size(); ++k) {
+						if (edge_type[k] == Util::EDGE_IN) {
+							if (!check_exist_this_triple(var_to_sample_cache[last_node][i],
+														 p_list[k], s_o_list[j])) {
+								break;
+							}
+						} else {
+							if (!check_exist_this_triple(s_o_list[j], p_list[k],
+														 var_to_sample_cache[last_node][i])) {
+								break;
+							}
+						}
+					}
+
+					if (k == edge_type.size()) {
+						++now_sample_num;
+						if (now_sample_num < SAMPLE_CACHE_MAX) {
+							vector<unsigned> this_pass_sample(2);
+							this_pass_sample[new_id_pos_map[last_node]] = var_to_sample_cache[last_node][i];
+							this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
+
+							this_sample.push_back(move(this_pass_sample));
+						} else {
+							if (dis(eng) < SAMPLE_PRO) {
+
+								vector<unsigned> this_pass_sample(2);
+								this_pass_sample[new_id_pos_map[last_node]] = var_to_sample_cache[last_node][i];
+								this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
+
+								this_sample.push_back(move(this_pass_sample));
+
+							}
+						}
+					}
+				}
+
+				delete[] s_o_list;
+
+			}
+
+			for (unsigned i = 0; i < var_to_sample_cache[next_join_node].size(); ++i) {
+				unsigned *s_o_list = nullptr;
+				unsigned s_o_list_len = 0;
+
+				if(p_list[0] >= 0)
+					kvstore->getsubIDlistByobjIDpreID(var_to_sample_cache[next_join_node][i], p_list[0],
+													  s_o_list,s_o_list_len);
+				else
+					kvstore->getsubIDlistByobjID(var_to_sample_cache[next_join_node][i],
+												 s_o_list, s_o_list_len);
+
+				s_o_list2_total_num += s_o_list_len;
+
+				delete[] s_o_list;
+
+			}
+
+			insert_edge_selectivity_to_cache(last_node, next_join_node, s_o_list1_total_num);
+			insert_edge_selectivity_to_cache(next_join_node, last_node, s_o_list2_total_num);
+
+		} else {
+
+			for (unsigned i = 0; i < var_to_sample_cache[next_join_node].size(); ++i) {
+				unsigned *s_o_list = nullptr;
+				unsigned s_o_list_len = 0;
+
+				if(p_list[0] >= 0)
+					kvstore->getobjIDlistBysubIDpreID(var_to_sample_cache[next_join_node][i], p_list[0],
+													  s_o_list,s_o_list_len);
+				else
+					kvstore->getobjIDlistBysubID(var_to_sample_cache[next_join_node][i],
+													  s_o_list,s_o_list_len);
+
+				s_o_list1_total_num += s_o_list_len;
+
+				for (unsigned j = 0; j < s_o_list_len; ++j) {
+					if(var_sampled_from_candidate[last_node] and
+							!binary_search((*id_caches)[last_node]->begin(),
+										   (*id_caches)[last_node]->end(), s_o_list[j]))
+						continue;
+
+					unsigned k = 1;
+					for (; k < edge_type.size(); ++k) {
+						if (edge_type[k] == Util::EDGE_IN) {
+							if (!check_exist_this_triple(s_o_list[j], p_list[k],
+														 var_to_sample_cache[next_join_node][i])) {
+								break;
+							}
+						} else {
+							if (!check_exist_this_triple(var_to_sample_cache[next_join_node][i], p_list[k],
+														 s_o_list[j])) {
+								break;
+							}
+						}
+
+					}
+
+					if (k == edge_type.size()) {
+						++now_sample_num;
+						if (now_sample_num < SAMPLE_CACHE_MAX) {
+							vector<unsigned> this_pass_sample(2);
+							this_pass_sample[new_id_pos_map[last_node]] = s_o_list[j];
+							this_pass_sample[new_id_pos_map[next_join_node]] = var_to_sample_cache[next_join_node][i];
+
+							this_sample.push_back(move(this_pass_sample));
+						} else {
+							if (dis(eng) < SAMPLE_PRO) {
+
+								vector<unsigned> this_pass_sample(2);
+								this_pass_sample[new_id_pos_map[last_node]] = s_o_list[j];
+								this_pass_sample[new_id_pos_map[next_join_node]] = var_to_sample_cache[next_join_node][i];
+
+								this_sample.push_back(move(this_pass_sample));
+
+							}
+						}
+					}
+				}
+
+				delete[] s_o_list;
+			}
+
+			for (unsigned i = 0; i < var_to_sample_cache[last_node].size(); ++i) {
+				unsigned *s_o_list = nullptr;
+				unsigned s_o_list_len = 0;
+
+				if(p_list[0] >= 0)
+					kvstore->getsubIDlistByobjIDpreID(var_to_sample_cache[last_node][i], p_list[0],
+													  s_o_list,s_o_list_len);
+				else
+					kvstore->getsubIDlistByobjID(var_to_sample_cache[last_node][i],
+												 s_o_list, s_o_list_len);
+
+				s_o_list2_total_num += s_o_list_len;
+
+				delete[] s_o_list;
+
+
+			}
+
+			insert_edge_selectivity_to_cache(next_join_node, last_node, s_o_list1_total_num);
+			insert_edge_selectivity_to_cache(last_node, next_join_node, s_o_list2_total_num);
+
+		}
+
+		card_estimation = max((edge_type[0] == Util::EDGE_IN) ?
+				(unsigned long) ((double) (now_sample_num * var_to_num_map[last_node]) / var_to_sample_cache[last_node].size()) :
+				(unsigned long) ((double) (now_sample_num * var_to_num_map[next_join_node]) / var_to_sample_cache[next_join_node].size() )
+					, (unsigned long) 1);
+
+		insert_card_estimation_to_cache(now_plan_nodes, card_estimation, this_sample);
+
+		return var_to_num_map[last_node]*s_o_list_average_size[last_node][next_join_node];
+
+	}  else{
+		return var_to_num_map[last_node]*s_o_list_average_size[last_node][next_join_node];//+var_to_num_map[next_join_node];
+	}
+}
+
+
+// todo: test {s1 ?p ?o, s2 ?p o2};
+unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
+
+	unsigned last_plan_nodes_num = last_plan_nodes.size();
+	auto var_descrip = bgpquery->get_vardescrip_by_id(next_join_node);
+
+	if (card_cache.size() < last_plan_nodes_num ||
+			card_cache[last_plan_nodes_num - 1].find(now_plan_nodes) == card_cache[last_plan_nodes_num - 1].end()) {
+
+		unsigned long card_estimation;
+		unsigned long last_card_estimation = card_cache[last_plan_nodes_num - 2][last_plan_nodes];
+
+		vector<vector<unsigned>> this_sample;
+		vector<vector<unsigned>> &last_sample = sample_cache[last_plan_nodes_num - 2][last_plan_nodes];
+
+		if (last_sample.size() != 0) {
+
+			unsigned now_sample_num = 0;
+
+			vector<unsigned> linked_nei_pos;
+			vector<char> edge_type;
+			vector<TYPE_PREDICATE_ID> p_list;
+
+
+			for(unsigned i = 0; i < var_descrip->degree_; ++i){
+				if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType){
+
+					for(unsigned j = 0; j < last_plan_nodes.size(); ++j){
+						if(var_descrip->so_edge_nei_[i] == last_plan_nodes[j]){
+							linked_nei_pos.emplace_back(j);
+							edge_type.emplace_back(var_descrip->so_edge_type_[i]);
+							if(var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType)
+								p_list.push_back(-1);
+							else
+								p_list.push_back(var_descrip->so_edge_pre_id_[i]);
+						}
+					}
+				}
+			}
+
+			map<unsigned , unsigned > new_id_pos_map;
+			for (unsigned i = 0, index = 0, used = 0; i <= last_plan_nodes_num; ++i) {
+				if ((index == last_plan_nodes_num) || (!used && next_join_node < last_plan_nodes[index])) {
+					new_id_pos_map[next_join_node] = i;
+					used = 1;
+				} else {
+					new_id_pos_map[last_plan_nodes[index]] = i;
+					++index;
+				}
+			}
+
+			random_device rd;
+			mt19937 eng(rd());
+			uniform_int_distribution<unsigned > dis(0, 1000);
+
+			if (edge_type[0] == Util::EDGE_IN) {
+				for (unsigned i = 0; i < last_sample.size(); ++i) {
+					unsigned *s_o_list = nullptr;
+					unsigned s_o_list_len = 0;
+
+					if(p_list[0] >= 0 )
+						kvstore->getobjIDlistBysubIDpreID(last_sample[i][linked_nei_pos[0]], p_list[0],
+														  s_o_list,s_o_list_len);
+					else
+						kvstore->getobjIDlistBysubID(last_sample[i][linked_nei_pos[0]],
+													 s_o_list,s_o_list_len);
+
+					for (unsigned j = 0; j < s_o_list_len; ++j) {
+						if(var_sampled_from_candidate[next_join_node] and
+								!binary_search((*id_caches)[next_join_node]->begin(),
+									   (*id_caches)[next_join_node]->end(), s_o_list[j]))
+							continue;
+
+
+						unsigned k = 1;
+						for (; k < edge_type.size(); ++k) {
+							if (edge_type[k] == Util::EDGE_IN) {
+								if (!check_exist_this_triple(last_sample[i][linked_nei_pos[k]], p_list[k],
+															 s_o_list[j])) {
+									break;
+								}
+							} else {
+								if (!check_exist_this_triple(s_o_list[j], p_list[k],
+															 last_sample[i][linked_nei_pos[k]])) {
+									break;
+								}
+							}
+
+						}
+
+						if (k == edge_type.size()) {
+							++now_sample_num;
+							if (now_sample_num < SAMPLE_CACHE_MAX) {
+								vector<unsigned> this_pass_sample(last_plan_nodes_num+1);
+								for (unsigned l = 0; l < last_plan_nodes_num; ++l) {
+									this_pass_sample[new_id_pos_map[last_plan_nodes[l]]] = last_sample[i][l];
+								}
+								this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
+
+								this_sample.push_back(move(this_pass_sample));
+							} else {
+
+								if (dis(eng) < SAMPLE_CACHE_MAX) {
+
+									vector<unsigned> this_pass_sample(last_plan_nodes_num+1);
+									for (unsigned l = 0; l < last_plan_nodes_num; ++l) {
+										this_pass_sample[new_id_pos_map[last_plan_nodes[l]]] = last_sample[i][l];
+									}
+									this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
+
+									this_sample.push_back(move(this_pass_sample));
+								}
+							}
+						}
+
+					}
+
+					delete[] s_o_list;
+
+				}
+			} else {
+
+				for (unsigned i = 0; i < last_sample.size(); ++i) {
+					unsigned *s_o_list = nullptr;
+					unsigned s_o_list_len = 0;
+
+					if(p_list[0] >= 0 )
+						kvstore->getsubIDlistByobjIDpreID(last_sample[i][linked_nei_pos[0]], p_list[0],
+														  s_o_list,s_o_list_len);
+					else
+						kvstore->getsubIDlistByobjID(last_sample[i][linked_nei_pos[0]],
+													 s_o_list,s_o_list_len);
+
+					for (unsigned j = 0; j < s_o_list_len; ++j) {
+						if(var_sampled_from_candidate[next_join_node] and
+								!binary_search((*id_caches)[next_join_node]->begin(),
+											   (*id_caches)[next_join_node]->end(), s_o_list[j]))
+							continue;
+
+						unsigned k = 1;
+						for (; k < edge_type.size(); ++k) {
+							if (edge_type[k] == Util::EDGE_IN) {
+								if (!check_exist_this_triple(last_sample[i][linked_nei_pos[k]], p_list[k],
+															 s_o_list[j])) {
+									break;
+								}
+							} else {
+								if (!check_exist_this_triple(s_o_list[j], p_list[k],
+															 last_sample[i][linked_nei_pos[k]])) {
+									break;
+								}
+							}
+
+						}
+
+						if (k == edge_type.size()) {
+							++now_sample_num;
+							if (now_sample_num < SAMPLE_CACHE_MAX) {
+								vector<unsigned> this_pass_sample(last_plan_nodes_num+1);
+								for (unsigned l = 0; l < last_plan_nodes_num; ++l) {
+									this_pass_sample[new_id_pos_map[last_plan_nodes[l]]] = last_sample[i][l];
+								}
+								this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
+
+								this_sample.push_back(move(this_pass_sample));
+							} else {
+
+								if (dis(eng) < SAMPLE_CACHE_MAX) {
+
+									vector<unsigned> this_pass_sample(last_plan_nodes_num+1);
+									for (unsigned l = 0; l < last_plan_nodes_num; ++l) {
+										this_pass_sample[new_id_pos_map[last_plan_nodes[l]]] = last_sample[i][l];
+									}
+									this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
+
+									this_sample.push_back(move(this_pass_sample));
+								}
+							}
+						}
+
+					}
+
+					delete[] s_o_list;
+
+				}
+
+			}
+
+			card_estimation = max(
+					(unsigned long) ((double) (now_sample_num * last_card_estimation ) / last_sample.size() ),
+					(unsigned long) 1);
+
+		} else {
+			card_estimation = 1;
+		}
+
+		insert_card_estimation_to_cache(now_plan_nodes, card_estimation, this_sample);
+
+		vector<unsigned> linked_nei_id;
+		for(unsigned i = 0; i < var_descrip->degree_; ++i){
+			if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType and
+					find(last_plan_nodes.begin(), last_plan_nodes.end(), var_descrip->so_edge_nei_[i])
+						!= last_plan_nodes.end())
+				linked_nei_id.push_back(var_descrip->so_edge_nei_[i]);
+
+		}
+
+		unsigned multiple = 1 + s_o_list_average_size[linked_nei_id[0]][next_join_node];
+		for(auto x : linked_nei_id){
+			multiple = min(multiple, s_o_list_average_size[x][next_join_node]+1);
+			//					multiple += s_o_list_average_size[x][next_join_node];
+
+		}
+		return card_cache[last_plan_nodes_num-2][last_plan_nodes]*multiple;
+
+	} else{
+
+		vector<unsigned> linked_nei_id;
+		for(unsigned i = 0; i < var_descrip->degree_; ++i){
+			if(var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType and
+					find(last_plan_nodes.begin(), last_plan_nodes.end(), var_descrip->so_edge_nei_[i])
+						!= last_plan_nodes.end())
+				linked_nei_id.push_back(var_descrip->so_edge_nei_[i]);
+
+		}
+		unsigned multiple = 1+s_o_list_average_size[linked_nei_id[0]][next_join_node];
+		for(auto x : linked_nei_id){
+			multiple = min(multiple, s_o_list_average_size[x][next_join_node]+1);
+		}
+
+		return card_cache[last_plan_nodes_num-2][last_plan_nodes]*multiple;//+var_to_num_map[next_join_node];
+	}
+}
 
 
 // todo: need to complete
@@ -1252,12 +1230,12 @@ unsigned long PlanGenerator::card_estimator_new_version(const vector<unsigned> &
 
 	unsigned last_plan_nodes_num = last_plan_nodes.size();
 
-	// if(last_plan_nodes_num == 1)
-	// 	return card_estimator_two_nodes(last_plan_nodes[0], next_join_node, now_plan_nodes);
-	// else
-	// 	return card_estimator_more_than_three_nodes(last_plan_nodes, next_join_node, now_plan_nodes);
+	if(last_plan_nodes_num == 1)
+		return card_estimator_two_nodes(last_plan_nodes[0], next_join_node, now_plan_nodes);
+	else
+		return card_estimator_more_than_three_nodes(last_plan_nodes, next_join_node, now_plan_nodes);
 
-	return 1;
+	// return 1;
 }
 
 
@@ -1273,8 +1251,8 @@ unsigned long PlanGenerator::cost_model_for_wco(PlanTree* last_plan,
 
 unsigned long PlanGenerator::cost_model_for_wco_new_version(PlanTree *last_plan, const vector<unsigned int> &last_plan_node,
 															unsigned int next_node, const vector<unsigned int> &now_plan_node) {
-	// return last_plan->plan_cost + card_estimator_new_version(last_plan_node, next_node, now_plan_node);
-	return 20;
+	return last_plan->plan_cost + card_estimator_new_version(last_plan_node, next_node, now_plan_node);
+	// return 20;
 }
 
 unsigned long PlanGenerator::cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
@@ -1968,10 +1946,10 @@ void PlanGenerator::considerallbinaryjoin(unsigned int var_num)  {
 							PlanTree *another_small_best_plan = get_best_plan(other_nodes);
 
 							// todo: need to complete
-							// unsigned long now_cost = cost_model_for_binary(small_nodes_plan.first,
-							// 											   other_nodes, small_best_plan,
-							// 											   another_small_best_plan);
-							unsigned long now_cost = 1;
+							unsigned long now_cost = cost_model_for_binary(small_nodes_plan.first,
+																		   other_nodes, small_best_plan,
+																		   another_small_best_plan);
+							// unsigned long now_cost = 1;
 
 							if (now_cost < last_plan_smallest_cost) {
 								//                            build new plan and add to plan_cache
@@ -2009,14 +1987,18 @@ void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
 		auto var_descrip = bgpquery->get_vardescrip_by_id(satellitenode_id);
 
 		// todo: predegree or pre_list; nei must give it a estimatation num
-		satellitenode_score.emplace_back((double)(kvstore->getPredicateDegree(var_descrip->so_edge_pre_id_[0])) /
-													var_to_num_map[var_descrip->so_edge_nei_[0]], satellitenode_index);
+		if(var_descrip->so_edge_pre_type_[0] == VarDescriptor::PreType::ConPreType)
+			satellitenode_score.emplace_back((double)(kvstore->getPredicateDegree(var_descrip->so_edge_pre_id_[0])) /
+														var_to_num_map[var_descrip->so_edge_nei_[0]], satellitenode_index);
+		else
+			satellitenode_score.emplace_back((double)(limitID_predicate) /var_to_num_map[var_descrip->so_edge_nei_[0]],
+											 	satellitenode_index);
+
 	}
 
 	sort(satellitenode_score.begin(), satellitenode_score.end(), compare_pair_vector);
 
 	for(unsigned satellitenode_index = 0; satellitenode_index < satellitenode_score.size(); ++satellitenode_index){
-		// todo: change this to function of best_plan
 		best_plan->add_satellitenode(bgpquery, satellite_nodes[satellitenode_score[satellitenode_index].second]);
 	}
 
@@ -2484,7 +2466,7 @@ PlanTree *PlanGenerator::get_plan_for_debug() {
 	gstu_edge_const_info->emplace_back(false, true, true);
 
 	auto gstu_node = make_shared<StepOperation>(StepOperation::JoinType::GenerateCandidates, nullptr, nullptr, nullptr,
-												make_shared<FeedOneNode>(0, gstu_edge_info, gstu_edge_const_info));
+												make_shared<FeedOneNode>(1, gstu_edge_info, gstu_edge_const_info));
 	auto gstu_tree_node = new Tree_node(gstu_node);
 
 	// ?ustu - ?cour, ?cour : 3
@@ -2492,7 +2474,7 @@ PlanTree *PlanGenerator::get_plan_for_debug() {
 	ustu_cour_edge_info->emplace_back(0, kvstore->getIDByPredicate("<ub:takesCourse>"),
 									  3, JoinMethod::sp2o);
 	auto ustu_cour_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
-	ustu_edge_const_info->emplace_back(false, true, false);
+	ustu_cour_edge_const_info->emplace_back(false, true, false);
 
 	auto ustu_cour_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 													 make_shared<FeedOneNode>(3, ustu_cour_edge_info, ustu_cour_edge_const_info),
@@ -2505,7 +2487,7 @@ PlanTree *PlanGenerator::get_plan_for_debug() {
 	gstu_cour_edge_info->emplace_back(1, kvstore->getIDByPredicate("<ub:takesCourse>"),
 									  3, JoinMethod::sp2o);
 	auto gstu_cour_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
-	gstu_edge_const_info->emplace_back(false, true, false);
+	gstu_cour_edge_const_info->emplace_back(false, true, false);
 
 	auto gstu_cour_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 													 make_shared<FeedOneNode>(3, gstu_cour_edge_info, gstu_cour_edge_const_info),
@@ -2515,8 +2497,8 @@ PlanTree *PlanGenerator::get_plan_for_debug() {
 
 
 	// ?cour jointable, ?cour id : 3
-	auto public_var = shared_ptr<vector<unsigned >>();
-	public_var->push_back(3);
+	auto public_var = make_shared<vector<unsigned >>();
+	public_var->emplace_back(3);
 	auto cour_join_table_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTable, nullptr, nullptr,
 														   make_shared<JoinTwoTable>(public_var), nullptr);
 	auto cour_join_table_tree_node = new Tree_node(cour_join_table_node);
