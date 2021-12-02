@@ -1668,7 +1668,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
 	GeneralEvaluation general_evaluation(this->kvstore, this->statistics, this->stringindex, this->query_cache, \
-		this->pre2num, this->pre2sub, this->pre2obj, this->limitID_predicate, this->limitID_literal, \
+		this->pre2num, this->pre2sub, this->pre2obj, this->triples_num, this->limitID_predicate, this->limitID_literal, \
 		this->limitID_entity, this->csr, txn);
 	//if(txn != nullptr)
 	//	cout << "query in transaction............................................" << endl;

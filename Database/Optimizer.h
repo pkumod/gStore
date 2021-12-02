@@ -82,8 +82,8 @@ class Optimizer
  public:
 
   Optimizer(KVstore* kv_store, Statistics *statistics, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
-             TYPE_TRIPLE_NUM* pre2obj, TYPE_PREDICATE_ID limitID_predicate, TYPE_ENTITY_LITERAL_ID limitID_literal,
-             TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn
+			TYPE_TRIPLE_NUM* pre2obj, TYPE_TRIPLE_NUM triples_num, TYPE_PREDICATE_ID limitID_predicate,
+			TYPE_ENTITY_LITERAL_ID limitID_literal, TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn
              // ,SPARQLquery& sparql_query,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list,TYPE_ENTITY_LITERAL_ID limit_num
              );
   ~Optimizer()=default;
@@ -164,6 +164,7 @@ class Optimizer
   TYPE_TRIPLE_NUM* pre2num_;
   TYPE_TRIPLE_NUM* pre2sub_;
   TYPE_TRIPLE_NUM* pre2obj_;
+  TYPE_TRIPLE_NUM triples_num_;
   TYPE_PREDICATE_ID limitID_predicate_;
   TYPE_ENTITY_LITERAL_ID limitID_literal_;
   TYPE_ENTITY_LITERAL_ID limitID_entity_;
