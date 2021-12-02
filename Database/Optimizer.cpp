@@ -680,7 +680,7 @@ tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBre
  * @param query_info
  * @param plan_tree_node
  * @param id_caches
- * @return PositionValueSharedPtr position2var
+ * @return IntermediateResult
  */
 tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQuery> bgp_query,
                                                                QueryInfo query_info,
