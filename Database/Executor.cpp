@@ -37,12 +37,24 @@ tuple<bool, IntermediateResult> Executor::JoinANode(IntermediateResult old_table
                                                                    new_id,
                                                                    record_iterator);
 
-    /* write to the new table */
-    auto record = *record_iterator;
-    for (auto new_element:*(record_candidate_list->getList())) {
-      auto new_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*record);
-      new_record->push_back(new_element);
-      new_records->push_back(std::move(new_record));
+    if(feed_plan->node_should_be_added_into_table) {
+      /* write to the new table */
+      auto record = *record_iterator;
+      for (auto new_element:*(record_candidate_list->getList())) {
+        auto new_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*record);
+        new_record->push_back(new_element);
+        new_records->push_back(std::move(new_record));
+      }
+    }
+    else if(record_candidate_list->size()>0)
+    {
+      if(record_candidate_list->size()==1)
+        new_records->push_back(std::move(*record_iterator));
+      else{
+        for(unsigned int i = 0;i<record_candidate_list->size()-1;i++)
+          new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
+        new_records->push_back(std::move(*record_iterator));
+      }
     }
   }
   return make_tuple(true, new_table);
