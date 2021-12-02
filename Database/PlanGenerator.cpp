@@ -1990,10 +1990,10 @@ void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
 
 		// todo: predegree or pre_list; nei must give it a estimatation num
 		if(var_descrip->so_edge_pre_type_[0] == VarDescriptor::PreType::ConPreType)
-			satellitenode_score.emplace_back((double)(kvstore->getPredicateDegree(var_descrip->so_edge_pre_id_[0])) /
-														var_to_num_map[var_descrip->so_edge_nei_[0]], satellitenode_index);
+			satellitenode_score.emplace_back((double)(kvstore->getPredicateDegree(var_descrip->so_edge_pre_id_[0])) *
+												var_to_num_map[var_descrip->so_edge_nei_[0]], satellitenode_index);
 		else
-			satellitenode_score.emplace_back((double)(limitID_predicate) /var_to_num_map[var_descrip->so_edge_nei_[0]],
+			satellitenode_score.emplace_back((double)(limitID_predicate) * var_to_num_map[var_descrip->so_edge_nei_[0]],
 											 	satellitenode_index);
 
 	}
@@ -2425,13 +2425,13 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
  plan below is for special query:
 
  select distinct ?ustu ?gstu where{
- 	?ustu <rdf:type> <ub:UndergraduateStudent>. triple 0
- 	?gstu <rdf:type> <ub:GraduateStudent>.      triple 1
- 	?ustu <ub:advisor> ?prof.                   triple 2
- 	?cour <rdf:type> <ub:Course>.               triple 3
- 	?ustu <ub:takesCourse> ?cour.               triple 4
- 	?gstu <ub:teachingAssistantOf> ?cour.       triple 5
- 	?gstu ?p ?o.                                triple 6
+ 	?ustu <rdf:type> <ub:UndergraduateStudent>.
+ 	?gstu <rdf:type> <ub:GraduateStudent>.
+ 	?ustu <ub:advisor> ?prof.
+ 	?cour <rdf:type> <ub:Course>.
+ 	?ustu <ub:takesCourse> ?cour.
+ 	?gstu <ub:teachingAssistantOf> ?cour.
+ 	?gstu ?p ?o.
  }
 
  var_id_map: {{?ustu:0}, {?gstu:1}, {?prof:2}, {?cour:3}, {?p:4}, {?o:5}}

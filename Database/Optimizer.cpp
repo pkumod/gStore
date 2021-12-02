@@ -336,7 +336,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   		//     auto best_plan_tree = new PlanTree(node_order);
   		// #else
   		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache,
-  							limitID_predicate_, limitID_literal_, limitID_entity_))->get_plan(false);
+  							limitID_predicate_, limitID_literal_, limitID_entity_))->get_plan(true);
 
   		// best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache,
   		// 						limitID_predicate_, limitID_literal_, limitID_entity_))->get_random_plan();
