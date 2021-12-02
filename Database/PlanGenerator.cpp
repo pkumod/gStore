@@ -25,8 +25,9 @@ PlanGenerator::PlanGenerator(KVstore *kvstore_, BasicQuery *basicquery_, Statist
 					kvstore(kvstore_), basicquery(basicquery_), statistics(statistics_), id_caches(id_caches_){};
 
 PlanGenerator::PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr &id_caches_,
-							TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_):
-					kvstore(kvstore_), bgpquery(bgpquery_), statistics(statistics_), id_caches(id_caches_),
+							 TYPE_TRIPLE_NUM triples_num_, TYPE_PREDICATE_ID limitID_predicate_,
+							 TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_):
+					kvstore(kvstore_), bgpquery(bgpquery_), statistics(statistics_), id_caches(id_caches_), triples_num(triples_num_),
 					limitID_predicate(limitID_predicate_), limitID_literal(limitID_literal_), limitID_entity(limitID_entity_){};
 
 JoinMethod PlanGenerator::get_join_strategy(bool s_is_var, bool p_is_var, bool o_is_var, unsigned var_num) {
@@ -1974,7 +1975,7 @@ void PlanGenerator::considerallbinaryjoin(unsigned int var_num)  {
 }
 
 bool compare_pair_vector(pair<double, unsigned> a, pair<double, unsigned> b) {
-	return a.first > b.first;
+	return a.first < b.first;
 }
 
 void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
@@ -1990,10 +1991,10 @@ void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
 
 		// todo: predegree or pre_list; nei must give it a estimatation num
 		if(var_descrip->so_edge_pre_type_[0] == VarDescriptor::PreType::ConPreType)
-			satellitenode_score.emplace_back((double)(kvstore->getPredicateDegree(var_descrip->so_edge_pre_id_[0])) *
+			satellitenode_score.emplace_back((double)(kvstore->getPredicateDegree(var_descrip->so_edge_pre_id_[0])) /
 												var_to_num_map[var_descrip->so_edge_nei_[0]], satellitenode_index);
 		else
-			satellitenode_score.emplace_back((double)(limitID_predicate) * var_to_num_map[var_descrip->so_edge_nei_[0]],
+			satellitenode_score.emplace_back((double)(triples_num) / var_to_num_map[var_descrip->so_edge_nei_[0]],
 											 	satellitenode_index);
 
 	}

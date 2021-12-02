@@ -34,6 +34,7 @@ public:
 	BGPQuery *bgpquery;
 	Statistics *statistics;
 	IDCachesSharePtr & id_caches;
+	TYPE_TRIPLE_NUM triples_num;
 	TYPE_PREDICATE_ID limitID_predicate;
 	TYPE_ENTITY_LITERAL_ID limitID_literal;
 	TYPE_ENTITY_LITERAL_ID limitID_entity;
@@ -65,7 +66,7 @@ public:
 	map<unsigned, vector<TYPE_PREDICATE_ID>> pre_var_to_sample_cache;
 
 	PlanGenerator(KVstore *kvstore_, BasicQuery *basicquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_);
-	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_,
+	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
 				  	TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_);
 
 

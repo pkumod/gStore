@@ -48,6 +48,7 @@ class GeneralEvaluation
 		TYPE_TRIPLE_NUM *pre2num;
 		TYPE_TRIPLE_NUM *pre2sub;
 		TYPE_TRIPLE_NUM *pre2obj;
+		TYPE_TRIPLE_NUM triples_num;
 		TYPE_PREDICATE_ID limitID_predicate;
 		TYPE_ENTITY_LITERAL_ID limitID_literal;
 		TYPE_ENTITY_LITERAL_ID limitID_entity;
@@ -60,7 +61,7 @@ class GeneralEvaluation
 	public:
 		GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, Statistics *_statistics, StringIndex *_stringindex, QueryCache *_query_cache, \
 			TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub, TYPE_TRIPLE_NUM *_pre2obj, \
-			TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, \
+			TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, \
 			TYPE_ENTITY_LITERAL_ID _limitID_entity, CSR *_csr, shared_ptr<Transaction> txn = nullptr);
 
 		~GeneralEvaluation();

@@ -12,14 +12,15 @@ Optimizer::Optimizer(KVstore *kv_store,
                      TYPE_TRIPLE_NUM *pre2num,
                      TYPE_TRIPLE_NUM *pre2sub,
                      TYPE_TRIPLE_NUM *pre2obj,
+                     TYPE_TRIPLE_NUM triples_num,
                      TYPE_PREDICATE_ID limitID_predicate,
                      TYPE_ENTITY_LITERAL_ID limitID_literal,
                      TYPE_ENTITY_LITERAL_ID limitID_entity,
                      shared_ptr<Transaction> txn
 ):
     kv_store_(kv_store), statistics(statistics), pre2num_(pre2num),
-    pre2sub_(pre2obj),pre2obj_(pre2obj),limitID_predicate_(limitID_predicate),
-    limitID_literal_(limitID_literal),limitID_entity_(limitID_entity),
+    pre2sub_(pre2obj),pre2obj_(pre2obj),triples_num_(triples_num),
+    limitID_predicate_(limitID_predicate), limitID_literal_(limitID_literal),limitID_entity_(limitID_entity),
     txn_(std::move(txn)), executor_(kv_store,txn,limitID_predicate,limitID_literal,limitID_entity_)
 {
 /*
@@ -313,7 +314,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   	long t1 =Util::get_cur_time();
 
   	if(bgp_query->get_triple_num()==1)
-  		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache,
+  		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
   				limitID_predicate_, limitID_literal_, limitID_entity_))->get_special_one_triple_plan();
   	else{
 
@@ -335,10 +336,10 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   		//     vector<int> node_order = {2,1,0};
   		//     auto best_plan_tree = new PlanTree(node_order);
   		// #else
-  		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache,
+  		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
   							limitID_predicate_, limitID_literal_, limitID_entity_))->get_plan(true);
 
-  		// best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache,
+  		// best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_
   		// 						limitID_predicate_, limitID_literal_, limitID_entity_))->get_random_plan();
   		// todo: replace by this
   		// best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_normal_plan()
