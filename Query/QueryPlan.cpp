@@ -1033,3 +1033,20 @@ QueryPlan::QueryPlan(PlanTree *plan_tree) {
   }
 }
 
+void QueryPlan::PreTravel(Tree_node *node)
+{
+  if(node->left_node!= nullptr)
+    PreTravel(node->left_node);
+  if(node->right_node!= nullptr)
+    PreTravel(node->right_node);
+  this->join_order_->push_back(*node->node);
+}
+
+QueryPlan::QueryPlan(Tree_node *root_node) {
+  this->join_order_=make_shared<std::vector<StepOperation>>();
+  this->ids_after_join_=make_shared<std::vector<TYPE_ENTITY_LITERAL_ID>>();
+  this->var_descriptors_=make_shared<std::vector<OldVarDescriptor>>();
+  this->constant_generating_lists_= make_shared<vector<std::shared_ptr<FeedOneNode>>>();
+  PreTravel(root_node);
+}
+

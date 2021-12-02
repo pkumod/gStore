@@ -66,8 +66,12 @@ BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query
       else
         return BasicQueryStrategy::Normal;
     }
-    else
-      return BasicQueryStrategy::limitK;
+    else {
+      if (bgp_query->get_triple_num() == 1)
+        return BasicQueryStrategy::Normal;
+      else
+        return BasicQueryStrategy::limitK;
+    }
   }
 }
 
@@ -121,15 +125,9 @@ std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTempla
 tuple<bool, IntermediateResult> Optimizer::ExecutionDepthFirst(shared_ptr<BGPQuery> bgp_query,
                                                                shared_ptr<QueryPlan> query_plan,
                                                                QueryInfo query_info,
-                                                               PositionValueSharedPtr id_pos_mapping) {
+                                                               IDCachesSharePtr id_caches) {
   auto limit_num = query_info.limit_num_;
   cout<<"Optimizer::ExecutionDepthFirst query_info.limit_num_="<<query_info.limit_num_<<endl;
-
-  auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
-  for(auto& constant_generating_step: *(query_plan->constant_generating_lists_))
-  {
-    executor_.CacheConstantCandidates(constant_generating_step,var_candidates_cache);
-  };
   auto &first_operation = (*query_plan->join_order_)[0];
   tuple<bool, IntermediateResult> step_result;
   IntermediateResult first_table;
@@ -140,14 +138,13 @@ tuple<bool, IntermediateResult> Optimizer::ExecutionDepthFirst(shared_ptr<BGPQue
     auto is_literal = get<1>(property_array);
     auto is_predicate = get<2>(property_array);
     step_result = executor_.InitialTableOneNode(first_operation.join_node_,is_entity,
-                                                is_literal,is_predicate,var_candidates_cache);
+                                                is_literal,is_predicate,id_caches);
     first_table = get<1>(step_result);
   }
   else // Two Nodes
   {
-    step_result  = executor_.InitialTableTwoNode(first_operation.join_two_node_,var_candidates_cache);
+    step_result  = executor_.InitialTableTwoNode(first_operation.join_two_node_,id_caches);
     first_table = get<1>(step_result);
-
   }
   if( query_plan->join_order_->size()==1 || first_table.values_->empty())
     return make_tuple(true, first_table);
@@ -163,7 +160,7 @@ tuple<bool, IntermediateResult> Optimizer::ExecutionDepthFirst(shared_ptr<BGPQue
     tmp_result->push_back(first_candidates_list->front());
     first_candidates_list->pop_front();
     auto first_var_one_point_result =
-        this->DepthSearchOneLayer(query_plan, 1, now_result, limit_num, tmp_result,var_candidates_cache,table_template);
+        this->DepthSearchOneLayer(query_plan, 1, now_result, limit_num, tmp_result,id_caches,table_template);
 
     if (get<0>(first_var_one_point_result))
     {
@@ -328,28 +325,12 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   		long t3 = Util::get_cur_time();
 
   		cout << "id_list.size = " << var_candidates_cache->size() << endl;
-  		//for (auto x : *var_candidates_cache){
-  		//  cout << "var[" << x.first << "] = " << bgp_query->get_vardescrip_by_id(x.first). << ", var_candidate list size = " << x.second->size() << endl;
-  		//}
-
-  		// #ifdef FEED_PLAN
-  		//     vector<int> node_order = {2,1,0};
-  		//     auto best_plan_tree = new PlanTree(node_order);
-  		// #else
   		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
   							limitID_predicate_, limitID_literal_, limitID_entity_))->get_plan(true);
-
-  		// best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_
-  		// 						limitID_predicate_, limitID_literal_, limitID_entity_))->get_random_plan();
-  		// todo: replace by this
-  		// best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache))->get_normal_plan()
-  		// get_plan(basic_query_pointer, this->kv_store_, var_candidates_cache);
-  		// #endif
   		long t4 = Util::get_cur_time();
   		cout << "plan get, used " << (t4 - t3) << "ms." << endl;
   	}
-  	// best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache,
-		// 								  limitID_predicate_, limitID_literal_, limitID_entity_))->get_plan_for_debug();
+
     best_plan_tree->print(bgp_query.get());
     cout << "plan print done" << endl;
 
@@ -374,10 +355,6 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     cout << "total execution, used " << (t7 - t1) <<"ms."<<endl;
   }
   else if(strategy ==BasicQueryStrategy::Special){
-    // if(bgp_query->get_triple_num() == 1 && bgp_query->get_total_var_num() == 3){
-      // todo: get all triples in database
-      //;
-
     printf("BasicQueryStrategy::Special not supported yet\n");
   }
   else if(strategy == BasicQueryStrategy::TopK)
@@ -419,7 +396,54 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   }
   else if(strategy == BasicQueryStrategy::limitK)
   {
+    PlanTree* best_plan_tree;
+    long t1 =Util::get_cur_time();
+    auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
+    for (auto &constant_generating_step: *const_candidates) {
+      executor_.CacheConstantCandidates(constant_generating_step, var_candidates_cache);
+    };
+    long t2 = Util::get_cur_time();
+    cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
 
+    long t3 = Util::get_cur_time();
+
+    cout << "id_list.size = " << var_candidates_cache->size() << endl;
+    best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
+                                        limitID_predicate_, limitID_literal_, limitID_entity_))->get_plan(false);
+
+    long t4 = Util::get_cur_time();
+    cout << "plan get, used " << (t4 - t3) << "ms." << endl;
+
+    best_plan_tree->print(bgp_query.get());
+    cout << "plan print done" << endl;
+
+    long t_ = Util::get_cur_time();
+    auto dfs_result = this->ExecutionDepthFirst(bgp_query, make_shared<QueryPlan>(best_plan_tree->root_node),
+                                                query_info,var_candidates_cache);
+
+    // todo: Destructor of PlanGenerator here
+    long t5 = Util::get_cur_time();
+    cout << "execution, used " << (t5 - t_) << "ms." << endl;
+
+    auto bfs_table = get<1>(dfs_result);
+    auto pos_var_mapping = bfs_table.pos_id_map;
+    auto var_pos_mapping = bfs_table.id_pos_map;
+
+    long t6 = Util::get_cur_time();
+    CopyToResult(bgp_query, bfs_table);
+#ifdef OPTIMIZER_DEBUG_INFO
+    cout<<"after copy bfs result size "<<bgp_query->get_result_list_pointer()->size()<<endl;
+#endif
+    long t7 = Util::get_cur_time();
+    cout << "copy to result, used " << (t7 - t6) <<"ms." <<endl;
+    cout << "total execution, used " << (t7 - t1) <<"ms."<<endl;
+  }
+  else if(strategy ==BasicQueryStrategy::Special){
+    // if(bgp_query->get_triple_num() == 1 && bgp_query->get_total_var_num() == 3){
+    // todo: get all triples in database
+    //;
+
+    printf("BasicQueryStrategy::Special not supported yet\n");
   }
   return tuple<bool, shared_ptr<IntermediateResult>>();
 
