@@ -341,23 +341,23 @@ unsigned long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_no
 					}
 
 					if (s_o_list_average_size.find(last_plan_nodes[0]) == s_o_list_average_size.end()) {
-						map<unsigned, unsigned > this_node_selectivity_map;
+						map<unsigned, double > this_node_selectivity_map;
 						this_node_selectivity_map.insert(
-								make_pair(next_join_node, (unsigned )((double) s_o_list1_total_num / var_to_sample_cache[last_plan_nodes[0]].size())));
+								make_pair(next_join_node, ((double) s_o_list1_total_num / var_to_sample_cache[last_plan_nodes[0]].size())));
 						s_o_list_average_size.insert(make_pair(last_plan_nodes[0], this_node_selectivity_map));
 					} else {
 						s_o_list_average_size[last_plan_nodes[0]].insert(
-								make_pair(next_join_node, (unsigned )((double) s_o_list1_total_num / var_to_sample_cache[last_plan_nodes[0]].size())));
+								make_pair(next_join_node, ((double) s_o_list1_total_num / var_to_sample_cache[last_plan_nodes[0]].size())));
 					}
 
 					if (s_o_list_average_size.find(next_join_node) == s_o_list_average_size.end()) {
-						map<unsigned, unsigned > this_node_selectivity_map;
+						map<unsigned, double > this_node_selectivity_map;
 						this_node_selectivity_map.insert(
-								make_pair(last_plan_nodes[0], (unsigned )((double) s_o_list2_total_num / var_to_sample_cache[next_join_node].size())));
+								make_pair(last_plan_nodes[0], ((double) s_o_list2_total_num / var_to_sample_cache[next_join_node].size())));
 						s_o_list_average_size.insert(make_pair(next_join_node, this_node_selectivity_map));
 					} else {
 						s_o_list_average_size[next_join_node].insert(
-								make_pair(last_plan_nodes[0], (unsigned )((double) s_o_list2_total_num / var_to_sample_cache[next_join_node].size())));
+								make_pair(last_plan_nodes[0], ((double) s_o_list2_total_num / var_to_sample_cache[next_join_node].size())));
 					}
 
 				} else {
@@ -434,23 +434,23 @@ unsigned long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_no
 					}
 
 					if (s_o_list_average_size.find(next_join_node) == s_o_list_average_size.end()) {
-						map<unsigned, unsigned > this_node_selectivity_map;
+						map<unsigned, double > this_node_selectivity_map;
 						this_node_selectivity_map.insert(
-								make_pair(last_plan_nodes[0], (unsigned )((double) s_o_list1_total_num / var_to_sample_cache[next_join_node].size())));
+								make_pair(last_plan_nodes[0], ((double) s_o_list1_total_num / var_to_sample_cache[next_join_node].size())));
 						s_o_list_average_size.insert(make_pair(next_join_node, this_node_selectivity_map));
 					} else {
 						s_o_list_average_size[next_join_node].insert(
-								make_pair(last_plan_nodes[0],(unsigned )((double) s_o_list1_total_num / var_to_sample_cache[next_join_node].size())));
+								make_pair(last_plan_nodes[0],((double) s_o_list1_total_num / var_to_sample_cache[next_join_node].size())));
 					}
 
 					if (s_o_list_average_size.find(last_plan_nodes[0]) == s_o_list_average_size.end()) {
-						map<unsigned, unsigned > this_node_selectivity_map;
+						map<unsigned, double > this_node_selectivity_map;
 						this_node_selectivity_map.insert(
-								make_pair(next_join_node, (unsigned )((double) s_o_list2_total_num / var_to_sample_cache[last_plan_nodes[0]].size())));
+								make_pair(next_join_node, ((double) s_o_list2_total_num / var_to_sample_cache[last_plan_nodes[0]].size())));
 						s_o_list_average_size.insert(make_pair(last_plan_nodes[0], this_node_selectivity_map));
 					} else {
 						s_o_list_average_size[last_plan_nodes[0]].insert(
-								make_pair(next_join_node, (unsigned )((double) s_o_list2_total_num / var_to_sample_cache[last_plan_nodes[0]].size())));
+								make_pair(next_join_node, ((double) s_o_list2_total_num / var_to_sample_cache[last_plan_nodes[0]].size())));
 					}
 
 				}
@@ -696,7 +696,7 @@ unsigned long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_no
 					}
 				}
 
-				unsigned multiple = 1+s_o_list_average_size[linked_nei_id[0]][next_join_node];
+				double multiple = 1+s_o_list_average_size[linked_nei_id[0]][next_join_node];
 				for(auto x : linked_nei_id){
 					multiple = min(multiple, s_o_list_average_size[x][next_join_node]+1);
 					//					multiple += s_o_list_average_size[x][next_join_node];
@@ -713,7 +713,7 @@ unsigned long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_no
 						linked_nei_id.push_back(basicquery->getEdgeNeighborID(next_join_node, i));
 					}
 				}
-				unsigned multiple = 1+s_o_list_average_size[linked_nei_id[0]][next_join_node];
+				double multiple = 1+s_o_list_average_size[linked_nei_id[0]][next_join_node];
 				for(auto x : linked_nei_id){
 					multiple = min(multiple, s_o_list_average_size[x][next_join_node]+1);
 				}
@@ -728,10 +728,10 @@ unsigned long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_no
 
 void PlanGenerator::insert_edge_selectivity_to_cache(unsigned from_id, unsigned to_id, unsigned linked_num) {
 
-	// cout << "from id: " << from_id << ", to id: " << to_id << ", linked_num = " << linked_num << endl;
-	unsigned selectivity = max((unsigned )1, (unsigned )((double) linked_num / var_to_sample_cache[from_id].size()));
+	cout << "from id: " << from_id << ", to id: " << to_id << ", linked_num = " << linked_num  << ", var_cache_num = " << var_to_sample_cache[from_id].size() << endl;
+	double selectivity = max(1.0, ((double) linked_num / var_to_sample_cache[from_id].size()));
 	if (s_o_list_average_size.find(from_id) == s_o_list_average_size.end()) {
-		map<unsigned, unsigned > this_node_selectivity_map;
+		map<unsigned, double > this_node_selectivity_map;
 		this_node_selectivity_map.insert(
 				make_pair(to_id, selectivity));
 		s_o_list_average_size.insert(make_pair(from_id, this_node_selectivity_map));
@@ -988,8 +988,8 @@ unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsign
 		return var_to_num_map[last_node]*s_o_list_average_size[last_node][next_join_node];
 
 	}  else{
-		// cout << "in card estimator two nodes" << endl;
-		// cout << "last_node: " << last_node << ", next_node: " << next_join_node << " solistaveragesize: " << s_o_list_average_size[last_node][next_join_node] << endl;
+		cout << "in card estimator two nodes" << endl;
+		cout << "last_node: " << last_node << ", next_node: " << next_join_node << " solistaveragesize: " << s_o_list_average_size[last_node][next_join_node] << endl;
 		return var_to_num_map[last_node]*s_o_list_average_size[last_node][next_join_node];//+var_to_num_map[next_join_node];
 	}
 }
@@ -1201,7 +1201,7 @@ unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<u
 
 		}
 
-		unsigned multiple = 1 + s_o_list_average_size[linked_nei_id[0]][next_join_node];
+		double multiple = 1 + s_o_list_average_size[linked_nei_id[0]][next_join_node];
 		for(auto x : linked_nei_id){
 			multiple = min(multiple, s_o_list_average_size[x][next_join_node]+1);
 			//					multiple += s_o_list_average_size[x][next_join_node];
@@ -1219,7 +1219,7 @@ unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<u
 				linked_nei_id.push_back(var_descrip->so_edge_nei_[i]);
 
 		}
-		unsigned multiple = 1+s_o_list_average_size[linked_nei_id[0]][next_join_node];
+		double multiple = 1+s_o_list_average_size[linked_nei_id[0]][next_join_node];
 		for(auto x : linked_nei_id){
 			multiple = min(multiple, s_o_list_average_size[x][next_join_node]+1);
 		}
@@ -1256,7 +1256,6 @@ unsigned long PlanGenerator::cost_model_for_wco(PlanTree* last_plan,
 unsigned long PlanGenerator::cost_model_for_wco_new_version(PlanTree *last_plan, const vector<unsigned int> &last_plan_node,
 															unsigned int next_node, const vector<unsigned int> &now_plan_node) {
 	return last_plan->plan_cost + card_estimator_new_version(last_plan_node, next_node, now_plan_node);
-	// return 20;
 }
 
 unsigned long PlanGenerator::cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
@@ -1910,9 +1909,9 @@ void PlanGenerator::considerallwcojoin(unsigned int var_num) {
 			unsigned long cost = cost_model_for_wco_new_version(last_best_plan, last_node_plan.first,
 													next_node, new_node_vec);
 			new_plan->plan_cost = cost;
-			//
-			// for(auto x:last_node_plan.first) cout << x << " ";
-			// cout << "to node " << next_node << " , cost: " << cost << endl;
+
+			for(auto x:last_node_plan.first) cout << x << " ";
+			cout << "to node " << next_node << " , cost: " << cost << endl;
 
 			insert_this_plan_to_cache(new_plan, new_node_vec, var_num);
 
@@ -2027,10 +2026,10 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 
 
 	considerallvarscan();
-	//
-	// cout << "print for var_to_num_map:" << endl;
-	// for(auto x:var_to_num_map)
-	// 	cout << x.first << "   " << x.second<<endl;
+
+	cout << "print for var_to_num_map:" << endl;
+	for(auto x:var_to_num_map)
+		cout << x.first << "   " << x.second<<endl;
 
 	// should be var num not include satellite node
 	// should not include pre_var num
