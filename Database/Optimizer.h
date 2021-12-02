@@ -106,9 +106,9 @@ class Optimizer
   std::shared_ptr<std::vector<IntermediateResult>> GenerateResultTemplate(shared_ptr<QueryPlan> query_plan);
 
   tuple<bool,IntermediateResult> ExecutionDepthFirst(shared_ptr<BGPQuery>  bgp_query,
-                                                       shared_ptr<QueryPlan> query_plan,
-                                                       QueryInfo query_info,
-                                                       PositionValueSharedPtr id_pos_mapping);
+                                                     shared_ptr<QueryPlan> query_plan,
+                                                     QueryInfo query_info,
+                                                     IDCachesSharePtr id_caches);
 
 
   tuple<bool,IntermediateResult> DepthSearchOneLayer(shared_ptr<QueryPlan> query_plan,

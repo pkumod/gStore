@@ -22,6 +22,7 @@ class QueryPlan
   // Do Before the process begin
   std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> constant_generating_lists_;
 
+  QueryPlan(Tree_node* root_node);
   QueryPlan(const std::shared_ptr<std::vector<StepOperation>>& join_order,
             const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>&ids_after_join,
             std::shared_ptr<std::vector<OldVarDescriptor>> var_infos);
@@ -29,7 +30,7 @@ class QueryPlan
   QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector<OldVarDescriptor>> var_infos);
   QueryPlan(PlanTree* plan_tree);
   QueryPlan()=default;
-
+  void PreTravel(Tree_node *node);
   static std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> OnlyConstFilter(BasicQuery*, KVstore*, std::shared_ptr<std::vector<OldVarDescriptor>>);
 
   static std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
