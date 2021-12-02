@@ -650,13 +650,12 @@ PlanTree::PlanTree(PlanTree *last_plan_tree, unsigned int next_join_var_id, set<
 
 }
 
-// ?s p ?o joinanode sp2o
-// ?s ?p ?o, ?p already, sp2o joinanode
+// ?s p ?o joinanode sp2o, false
+// ?s ?p ?o, ?p already, sp2o  false
 // below: ?p not ready
-// ?s ?p ?o, ?p degree1 notselected, joinanode s2o
-// ?s ?p ?o, ?p degree1 selected or degree > 1, jointwonode s2po
+// ?s ?p ?o, ?p degree1 notselected,  s2o false
+// ?s ?p ?o, ?p degree1 selected or degree > 1, joinanode s2p
 void PlanTree::add_satellitenode(BGPQuery *bgpquery, unsigned int satellitenode_id) {
-	;
 	auto var_descrip = bgpquery->get_vardescrip_by_id(satellitenode_id);
 	unsigned edge_index = var_descrip->so_edge_index_[0];
 
@@ -672,7 +671,7 @@ void PlanTree::add_satellitenode(BGPQuery *bgpquery, unsigned int satellitenode_
 											var_descrip->so_edge_type_[0] == Util::EDGE_IN ? JoinMethod::sp2o : JoinMethod::po2s);
 		join_a_node_edge_const_info->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 
-		auto join_node = make_shared<FeedOneNode>(satellitenode_id,join_a_node_edge_info, join_a_node_edge_const_info);
+		auto join_node = make_shared<FeedOneNode>(satellitenode_id,join_a_node_edge_info, join_a_node_edge_const_info, false);
 		Tree_node *new_join_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 																			join_node, nullptr, nullptr, nullptr));
 
@@ -689,7 +688,7 @@ void PlanTree::add_satellitenode(BGPQuery *bgpquery, unsigned int satellitenode_
 												var_descrip->so_edge_type_[0] == Util::EDGE_IN ? JoinMethod::s2o : JoinMethod::p2s);
 			join_a_node_edge_const_info->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 
-			auto join_node = make_shared<FeedOneNode>(satellitenode_id,join_a_node_edge_info, join_a_node_edge_const_info);
+			auto join_node = make_shared<FeedOneNode>(satellitenode_id,join_a_node_edge_info, join_a_node_edge_const_info, false);
 			Tree_node *new_join_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 																				join_node, nullptr, nullptr, nullptr));
 			new_join_node->left_node = root_node;
@@ -698,17 +697,20 @@ void PlanTree::add_satellitenode(BGPQuery *bgpquery, unsigned int satellitenode_
 
 		}else{
 
-			auto join_two_node = make_shared<FeedTwoNode>(pre_var_descrip->id_, satellitenode_id,
-														  EdgeInfo(bgpquery->s_id_[edge_index], bgpquery->p_id_[edge_index], bgpquery->o_id_[edge_index],
-																   var_descrip->so_edge_type_[0] == Util::EDGE_IN ? JoinMethod::s2po : JoinMethod::o2ps),
-														  EdgeConstantInfo(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]));
-			Tree_node *new_join_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes,
-																				nullptr, join_two_node, nullptr, nullptr));
+			auto join_a_node_edge_info = make_shared<vector<EdgeInfo>>();
+			auto join_a_node_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
+
+			join_a_node_edge_info->emplace_back(bgpquery->s_id_[edge_index], bgpquery->p_id_[edge_index], bgpquery->o_id_[edge_index],
+												var_descrip->so_edge_type_[0] == Util::EDGE_IN ? JoinMethod::s2p : JoinMethod::o2p);
+			join_a_node_edge_const_info->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
+
+			auto join_node = make_shared<FeedOneNode>(satellitenode_id,join_a_node_edge_info, join_a_node_edge_const_info, false);
+			Tree_node *new_join_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+																				join_node, nullptr, nullptr, nullptr));
 
 			new_join_node->left_node = root_node;
 			root_node = new_join_node;
 			already_joined_pre_var.emplace_back(pre_var_descrip->id_);
-			already_so_var.emplace_back(satellitenode_id);
 		}
 	}
 }
