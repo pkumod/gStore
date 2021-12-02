@@ -728,14 +728,16 @@ unsigned long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_no
 
 void PlanGenerator::insert_edge_selectivity_to_cache(unsigned from_id, unsigned to_id, unsigned linked_num) {
 
+	// cout << "from id: " << from_id << ", to id: " << to_id << ", linked_num = " << linked_num << endl;
+	unsigned selectivity = max((unsigned )1, (unsigned )((double) linked_num / var_to_sample_cache[from_id].size()));
 	if (s_o_list_average_size.find(from_id) == s_o_list_average_size.end()) {
 		map<unsigned, unsigned > this_node_selectivity_map;
 		this_node_selectivity_map.insert(
-				make_pair(to_id, (unsigned )((double) linked_num / var_to_sample_cache[from_id].size())));
+				make_pair(to_id, selectivity));
 		s_o_list_average_size.insert(make_pair(from_id, this_node_selectivity_map));
 	} else {
 		s_o_list_average_size[from_id].insert(
-				make_pair(to_id, (unsigned )((double) linked_num / var_to_sample_cache[from_id].size())));
+				make_pair(to_id, selectivity));
 	}
 
 }
@@ -764,10 +766,10 @@ unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsign
 	if(card_cache.size() == 0 || card_cache[0].find(now_plan_nodes) == card_cache[0].end()){
 
 
-		if(!var_sampled_from_candidate[next_join_node]){
-			;
-			// todo: sample from last_plan
-		}
+		// if(!var_sampled_from_candidate[next_join_node]){
+		// 	;
+		// 	// todo: sample from last_plan
+		// }
 
 
 		unsigned long card_estimation;
@@ -986,6 +988,8 @@ unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsign
 		return var_to_num_map[last_node]*s_o_list_average_size[last_node][next_join_node];
 
 	}  else{
+		// cout << "in card estimator two nodes" << endl;
+		// cout << "last_node: " << last_node << ", next_node: " << next_join_node << " solistaveragesize: " << s_o_list_average_size[last_node][next_join_node] << endl;
 		return var_to_num_map[last_node]*s_o_list_average_size[last_node][next_join_node];//+var_to_num_map[next_join_node];
 	}
 }
@@ -1906,6 +1910,9 @@ void PlanGenerator::considerallwcojoin(unsigned int var_num) {
 			unsigned long cost = cost_model_for_wco_new_version(last_best_plan, last_node_plan.first,
 													next_node, new_node_vec);
 			new_plan->plan_cost = cost;
+			//
+			// for(auto x:last_node_plan.first) cout << x << " ";
+			// cout << "to node " << next_node << " , cost: " << cost << endl;
 
 			insert_this_plan_to_cache(new_plan, new_node_vec, var_num);
 
@@ -2020,6 +2027,10 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 
 
 	considerallvarscan();
+	//
+	// cout << "print for var_to_num_map:" << endl;
+	// for(auto x:var_to_num_map)
+	// 	cout << x.first << "   " << x.second<<endl;
 
 	// should be var num not include satellite node
 	// should not include pre_var num
@@ -2035,6 +2046,15 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 	}
 
 	PlanTree* best_plan = get_best_plan_by_num(join_nodes.size());
+	//
+	// for(auto x : card_cache){
+	// 	for(auto y : x){
+	// 		for(auto z : y.first) cout << z << " ";
+	// 		cout << "cost: " << y.second << endl;
+	// 	}
+	//
+	// 	cout << endl;
+	// }
 
 	// todo: 这个卫星点应该也有卫星谓词变量
 	// s ?p ?o. 在之前的计划中已经加入了?o, 则这一步也需要加入?p
