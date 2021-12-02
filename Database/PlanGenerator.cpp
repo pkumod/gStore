@@ -1974,7 +1974,7 @@ void PlanGenerator::considerallbinaryjoin(unsigned int var_num)  {
 }
 
 bool compare_pair_vector(pair<double, unsigned> a, pair<double, unsigned> b) {
-	return a.first < b.first;
+	return a.first > b.first;
 }
 
 void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
