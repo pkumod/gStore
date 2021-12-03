@@ -8,100 +8,6 @@
 #include "PlanTree.h"
 using namespace std;
 
-// for yanglei's paper, will not used in gStore v1.0
-string NodeJoinTypeStr(NodeJoinType node_join_type)
-{
-  switch (node_join_type) {
-    case NodeJoinType::JoinANode: return "JoinANode";
-    case NodeJoinType::JoinTwoTable: return "JoinTwoTable";
-    case NodeJoinType::LeafNode: return "LeafNode";
-  }
-  return "NodeJoinType::No Exist";
-}
-
-
-OldPlanTree::OldPlanTree(int first_node) {
-    root_node = new Old_Tree_Node(first_node);
-}
-
-OldPlanTree::OldPlanTree(OldPlanTree *last_plantree, int next_node) {
-    root_node = new Old_Tree_Node();
-    root_node->joinType = NodeJoinType::JoinANode;
-    root_node->left_node = new Old_Tree_Node(last_plantree->root_node);
-    root_node->right_node = new Old_Tree_Node(next_node);
-}
-
-OldPlanTree::OldPlanTree(OldPlanTree *left_plan, OldPlanTree *right_plan) {
-    root_node = new Old_Tree_Node();
-    root_node->joinType = NodeJoinType::JoinTwoTable;
-
-    root_node->left_node = new Old_Tree_Node(left_plan->root_node);
-    root_node->right_node = new Old_Tree_Node(right_plan->root_node);
-}
-
-OldPlanTree::OldPlanTree(const vector<int> nodes_order) {
-	root_node = new Old_Tree_Node(nodes_order[0]);
-	for(int i = 1; i < nodes_order.size(); ++i){
-		Old_Tree_Node* last_plan = root_node;
-		root_node = new Old_Tree_Node();
-		root_node->joinType = NodeJoinType::JoinANode;
-		root_node->left_node = last_plan;
-		root_node->right_node = new Old_Tree_Node(nodes_order[i]);
-	}
-}
-
-void OldPlanTree::delete_tree_node(Old_Tree_Node *root_node) {
-    if(root_node == nullptr){
-        return;
-    }
-
-    delete_tree_node(root_node->left_node);
-    delete_tree_node(root_node->right_node);
-    delete root_node;
-}
-
-OldPlanTree::~OldPlanTree() {
-    delete_tree_node(root_node);
-}
-
-
-void OldPlanTree::print_tree_node(Old_Tree_Node* node, BasicQuery* basicquery){
-	if(node == nullptr){
-		return;
-	}
-
-	switch (node->joinType) {
-		case NodeJoinType::LeafNode:
-			cout << basicquery->getVarName(node->node_to_join);
-			break;
-		case NodeJoinType::JoinTwoTable:
-			cout << "Binary join(";
-			break;
-		case NodeJoinType::JoinANode:
-			cout << "WCO join(";
-			break;
-	}
-
-	if(node->left_node!= nullptr){
-		print_tree_node(node->left_node, basicquery);
-		cout << ",";
-		print_tree_node(node->right_node, basicquery);
-	}
-
-	if(node->joinType!=NodeJoinType::LeafNode){
-		cout << ")";
-	}
-}
-
-void OldPlanTree::print(BasicQuery* basicquery) {
-	cout << "Plan: ";
-	print_tree_node(root_node, basicquery);
-	cout << ", cost: "<<this->plan_cost;
-	cout << endl;
-}
-
-
-// codes below will be used in gStore v1.0
 
 JoinMethod Tree_node::get_join_method(bool s_is_var, bool p_is_var, bool o_is_var) {
 
@@ -410,16 +316,6 @@ Tree_node::Tree_node(unsigned node_id, set<unsigned> already_in, BGPQuery *bgpqu
 	node->join_node_ = one_step_join_node;
 }
 
-PlanTree::PlanTree(int first_node) {
-	root_node = new Tree_node(first_node);
-}
-
-PlanTree::PlanTree(PlanTree *last_plantree, int next_node) {
-	root_node = new Tree_node();
-	root_node->joinType = NodeJoinType::JoinANode;
-	root_node->left_node = new Tree_node(last_plantree->root_node);
-	root_node->right_node = new Tree_node(next_node);
-}
 
 JoinMethod PlanTree::get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescriptor> var_descrip, unsigned int edge_index, bool join_two_node) {
 	if(join_two_node){
@@ -432,6 +328,17 @@ JoinMethod PlanTree::get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescri
 		cout << "not support" << endl;
 		exit(-1);
 	}
+}
+
+
+
+PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery) {
+	// root_node = new Tree_node(first_node, bgpquery, true);
+	root_node = new Tree_node();
+	auto join_node = make_shared<FeedOneNode>(first_node, make_shared<vector<EdgeInfo>>(), make_shared<vector<EdgeConstantInfo>>());
+	root_node->node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode, join_node, nullptr, nullptr, nullptr);
+	already_so_var = {first_node};
+	// todo: if used in normal plan (invoked by optimizer), then should give its cost
 }
 
 
@@ -565,13 +472,6 @@ PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_no
 
 }
 
-PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan) {
-	root_node = new Tree_node();
-	root_node->joinType = NodeJoinType::JoinTwoTable;
-
-	root_node->left_node = new Tree_node(left_plan->root_node);
-	root_node->right_node = new Tree_node(right_plan->root_node);
-}
 
 // todo: check these three cases would not apprear
 // After join left and right table, we need consider some edges between them:
@@ -615,20 +515,9 @@ PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery, bool used_in_ran
 	// todo: if used in normal plan (invoked by optimizer), then should give its cost
 }
 
-// todo: not complete
-PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery) {
-	// root_node = new Tree_node(first_node, bgpquery, true);
-	root_node = new Tree_node();
-	auto join_node = make_shared<FeedOneNode>(first_node, make_shared<vector<EdgeInfo>>(), make_shared<vector<EdgeConstantInfo>>());
-	root_node->node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode, join_node, nullptr, nullptr, nullptr);
-	already_so_var = {first_node};
-	// todo: if used in normal plan (invoked by optimizer), then should give its cost
-}
-
 PlanTree::PlanTree(shared_ptr<StepOperation> &first_node) {
 	root_node = new Tree_node(first_node);
 }
-
 
 /**
  * Build plantree for adding one node (FeedOneNode type) to last_plan_tree
@@ -709,16 +598,6 @@ void PlanTree::add_satellitenode(BGPQuery *bgpquery, unsigned int satellitenode_
 	}
 }
 
-PlanTree::PlanTree(const vector<int> nodes_order) {
-	root_node = new Tree_node(nodes_order[0]);
-	for(int i = 1; i < nodes_order.size(); ++i){
-		Tree_node* last_plan = root_node;
-		root_node = new Tree_node();
-		root_node->joinType = NodeJoinType::JoinANode;
-		root_node->left_node = last_plan;
-		root_node->right_node = new Tree_node(nodes_order[i]);
-	}
-}
 
 void PlanTree::delete_tree_node(Tree_node *root_node) {
 	if(root_node == nullptr){
@@ -732,42 +611,6 @@ void PlanTree::delete_tree_node(Tree_node *root_node) {
 
 PlanTree::~PlanTree() {
 	delete_tree_node(root_node);
-}
-
-
-void PlanTree::print_tree_node(Tree_node* node, BasicQuery* basicquery){
-	if(node == nullptr){
-		return;
-	}
-
-	switch (node->joinType) {
-		case NodeJoinType::LeafNode:
-			cout << basicquery->getVarName(node->node_to_join);
-			break;
-			case NodeJoinType::JoinTwoTable:
-				cout << "Binary join(";
-				break;
-				case NodeJoinType::JoinANode:
-					cout << "WCO join(";
-					break;
-	}
-
-	if(node->left_node!= nullptr){
-		print_tree_node(node->left_node, basicquery);
-		cout << ",";
-		print_tree_node(node->right_node, basicquery);
-	}
-
-	if(node->joinType!=NodeJoinType::LeafNode){
-		cout << ")";
-	}
-}
-
-void PlanTree::print(BasicQuery* basicquery) {
-	cout << "Plan: ";
-	print_tree_node(root_node, basicquery);
-	cout << ", cost: "<<this->plan_cost;
-	cout << endl;
 }
 
 void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
