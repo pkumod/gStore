@@ -451,7 +451,7 @@ $(objdir)Executor.o: Database/Executor.cpp Database/Executor.h $(objdir)Util.o $
 	$(objdir)QueryPlan.o $(objdir)Statistics.o $(objdir)PlanTree.o $(objdir)PlanGenerator.o $(objdir)OrderedVector.o $(objdir)DPBTopKUtil.o
 	$(CC) $(CFLAGS) Database/Executor.cpp $(inc) -o $(objdir)Executor.o $(openmp)
 
-$(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)IDList.o \
+$(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)IDList.o \
 	$(objdir)KVstore.o  $(objdir)VSTree.o $(objdir)Join.o $(objdir)Transaction.o $(objdir)TableOperator.o $(objdir)ResultTrigger.o $(objdir)Executor.o\
 	$(objdir)QueryPlan.o $(objdir)Statistics.o $(objdir)PlanTree.o $(objdir)PlanGenerator.o $(objdir)OrderedVector.o $(objdir)DPBTopKUtil.o
 	$(CC) $(CFLAGS) Database/Optimizer.cpp $(inc) -o $(objdir)Optimizer.o $(openmp)

@@ -21,29 +21,7 @@ Optimizer::Optimizer(KVstore *kv_store,
     kv_store_(kv_store), statistics(statistics), pre2num_(pre2num),
     pre2sub_(pre2obj),pre2obj_(pre2obj),triples_num_(triples_num),
     limitID_predicate_(limitID_predicate), limitID_literal_(limitID_literal),limitID_entity_(limitID_entity),
-    txn_(std::move(txn)), executor_(kv_store,txn,limitID_predicate,limitID_literal,limitID_entity_)
-{
-/*
-  this->current_basic_query_ = -1; // updated by result_list.size()
-  this->basic_query_list_= make_shared<vector<shared_ptr<BasicQuery>>>();
-
-  auto basic_query_vector = sparql_query.getBasicQueryVec();
-  for(auto basic_query_pointer :basic_query_vector)
-  {
-    auto basic_query_shared_pointer = make_shared<BasicQuery>(*basic_query_pointer);
-    this->basic_query_list_->push_back(basic_query_shared_pointer);
-  }
-
-  this->candidate_plans_ = make_shared<vector<tuple<shared_ptr<BasicQuery>, shared_ptr<vector<QueryPlan>>>>>(basic_query_list_->size());
-
-  this->execution_plan_=make_shared<vector<QueryPlan>>();
-  this->result_list_=make_shared<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>(); // vector<unsigned*>* result_list;
-*/
-
-  // TODO: join_cache_ & cardinality_cache_ not implemented yet.
-  this->join_cache_ = make_shared<vector<map<BasicQuery*,vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>>(); // map(sub-structure, result_list)
-  this->cardinality_cache_ = make_shared<vector<map<BasicQuery*,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>(); // map(sub-structure, cardinality), not in statistics
-}
+    txn_(std::move(txn)), executor_(kv_store,txn,limitID_predicate,limitID_literal,limitID_entity_){}
 
 BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query,QueryInfo *query_info){
   if (!query_info->limit_)
@@ -72,22 +50,6 @@ BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query
       else
         return BasicQueryStrategy::limitK;
     }
-  }
-}
-
-BasicQueryStrategy Optimizer::ChooseStrategy(BasicQuery *basic_query,QueryInfo *query_info) {
-  if (!query_info->limit_) {
-    if(basic_query->getTripleNum()!=1)
-      return BasicQueryStrategy::Normal;
-    else
-      return BasicQueryStrategy::Special;
-  }
-  else
-  {
-    if(query_info->ordered_by_expressions_->size())
-      return BasicQueryStrategy::TopK;
-    else
-      return BasicQueryStrategy::limitK;
   }
 }
 
@@ -460,171 +422,6 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::MergeBasicQuery(SPARQLque
   return tuple<bool, shared_ptr<IntermediateResult>>();
 }
 
-/**
- * 调用栈：   Strategy::handle
- *          Strategy::handler0
- *          Join::join_basic
- * @param target
- * @param basic_query
- * @param result, which has already gotten CoreVar, Pre var(selected), but not get satellites
- * @return
- */
-bool Optimizer::CopyToResult(vector<unsigned int *> *target,
-                             BasicQuery* basic_query,
-                             const shared_ptr<IntermediateResult>& result) {
-
-  assert(target->empty());
-
-  int select_var_num = basic_query->getSelectVarNum();
-  int core_var_num = basic_query->getRetrievedVarNum();
-  int selected_pre_var_num = basic_query->getSelectedPreVarNum();
-
-  // A little different with that in Join::CopyToResult
-  // may basic query don't allocate an id for not selected var so selected_pre_var_num = pre_var_num?
-  cout << "position to var des size: " << result->pos_id_map->size() << endl;
-  cout << "totalvar_num: " << basic_query->getTotalVarNum()<<endl;
-  cout << "varnum: " << basic_query->getVarNum()<<endl;
-  cout << "selected var num: " << select_var_num<<endl;
-  cout << "core var num: " << core_var_num<<endl;
-  cout << "selected pre var num: " << selected_pre_var_num<<endl;
-
-#ifdef OPTIMIZER_DEBUG_INFO
-  for(auto &pos_id:*result->pos_id_map)
-  {
-    cout<<"pos["<<pos_id.first<<"] "<<pos_id.second<<endl;
-  }
-#endif
-//  Linglin Yang fix it to total_var_num,
-//  maybe change it to core_var_num + selected_pre_var_num in the future
-  if (result->pos_id_map->size() != basic_query->getVarNum())
-  {
-    cout << "terrible error in Optimizer::CopyToResult!" << endl;
-    return false;
-  }
-
-  shared_ptr<vector<Satellite>> satellites = make_shared<vector<Satellite>>();
-
-  auto record_len = select_var_num + selected_pre_var_num;
-  auto record = new unsigned[record_len];
-
-  auto position_id_map_ptr = result->pos_id_map;
-  auto id_position_map_ptr = result->id_pos_map;
-  cout<<"fir_var_position"<<basic_query->getSelectedVarPosition((*position_id_map_ptr)[0])<<endl;
-  int var_num =  basic_query->getVarNum();
-  for (const auto&  record_ptr : *(result->values_))
-  {
-    int column_index = 0;
-    for (; column_index < core_var_num; ++column_index)
-    {
-      //This is because selected var id is always smaller
-      if ( (*position_id_map_ptr)[column_index] < select_var_num)
-      {
-        int vpos = basic_query->getSelectedVarPosition((*position_id_map_ptr)[column_index]);
-        record[vpos] = (*record_ptr)[column_index];
-      }
-    }
-
-    // below are for selected pre vars
-    while (column_index < result->pos_id_map->size() )
-    {
-      //only add selected ones
-      // 原句是 int pre_var_id = this->pos2id[i] - this->var_num;
-      // 可能有bug
-      int pre_var_id = (*position_id_map_ptr)[column_index] - var_num;
-      int pre_var_position = basic_query->getSelectedPreVarPosition(pre_var_id);
-      if(pre_var_position >= 0)
-      {
-        record[pre_var_position] = (*record_ptr)[column_index];
-      }
-      ++column_index;
-    }
-
-    bool valid = true;
-    //generate satellites when constructing records
-    //NOTICE: satellites in join must be selected
-    //core vertex maybe not in select
-    for (column_index = 0; column_index < core_var_num; ++column_index)
-    {
-      int id = (*position_id_map_ptr)[column_index];
-      unsigned ele = (*record_ptr)[column_index];
-      int degree = basic_query->getVarDegree(id);
-      for (int j = 0; j < degree; ++j)
-      {
-        int id2 = basic_query->getEdgeNeighborID(id, j);
-        if (basic_query->isSatelliteInJoin(id2) == false)
-          continue;
-
-        if(id_position_map_ptr->find(id2)!=id_position_map_ptr->end())
-          continue;
-
-        cout << "satellite node: " <<basic_query->getVarName(id2)<<endl;
-        unsigned* idlist = nullptr;
-        unsigned idlist_len = 0;
-        int triple_id = basic_query->getEdgeID(id, j);
-        Triple triple = basic_query->getTriple(triple_id);
-
-        TYPE_PREDICATE_ID preid = basic_query->getEdgePreID(id, j);
-        if (preid == -2)  //?p
-        {
-          string predicate = triple.predicate;
-          int pre_var_id = basic_query->getPreVarID(predicate);
-          //if(this->basic_query->isPreVarSelected(pre_var_id))
-          //{
-          preid = (*record_ptr)[ (*id_position_map_ptr)[pre_var_id+ var_num]];
-          //}
-        }
-        else if (preid == -1)  //INVALID_PREDICATE_ID
-        {
-          //ERROR
-        }
-
-        char edge_type = basic_query->getEdgeType(id, j);
-        if (edge_type == Util::EDGE_OUT)
-        {
-          this->kv_store_->getobjIDlistBysubIDpreID(ele, preid, idlist, idlist_len, true, this->txn_);
-        }
-        else
-        {
-          this->kv_store_->getsubIDlistByobjIDpreID(ele, preid, idlist, idlist_len, true, this->txn_);
-        }
-
-        if(idlist_len == 0)
-        {
-          valid = false;
-          break;
-        }
-        satellites->push_back(Satellite(id2, idlist, idlist_len));
-
-      }
-      if(!valid)
-      {
-        break;
-      }
-    }
-
-    int size = satellites->size();
-    if(valid)
-    {
-      // Join::cartesian
-      Cartesian(0,size,record_len,record,satellites,target,basic_query);
-    }
-
-    for (int k = 0; k < size; ++k)
-    {
-      delete[] (*satellites)[k].idlist;
-      //this->satellites[k].idlist = NULL;
-    }
-    //WARN:use this to avoid influence on the next loop
-    satellites->clear();
-  }
-
-  delete[] record;
-
-
-  return true;
-}
-
-
 bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
                              IntermediateResult result) {
 
@@ -667,43 +464,6 @@ bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
 
   delete[] position_map;
   return false;
-}
-
-
-void
-Optimizer::Cartesian(int pos, int end,int record_len,unsigned* record,
-                     const shared_ptr<vector<Satellite>>& satellites,
-                     vector<unsigned*>* result_list,
-                     BasicQuery *basic_query)
-{
-  if (pos == end)
-  {
-    auto new_record = new unsigned[record_len];
-    memcpy(new_record, record, sizeof(unsigned) * record_len);
-    result_list->push_back(new_record);
-    return;
-  }
-
-  unsigned size = (*satellites)[pos].idlist_len;
-  int id = (*satellites)[pos].id;
-  int vpos = basic_query->getSelectedVarPosition(id);
-  unsigned* list = (*satellites)[pos].idlist;
-  for (unsigned i = 0; i < size; ++i)
-  {
-    record[vpos] = list[i];
-    Cartesian(pos + 1, end,record_len,record,satellites,result_list,basic_query);
-  }
-}
-
-/**
- * It is not implemented
- */
-tuple<bool,PositionValueSharedPtr, TableContentShardPtr> Optimizer::ExecutionBreathFirst(BasicQuery* basic_query,
-                                                                                         const QueryInfo& query_info,
-                                                                                         Tree_node* plan_tree_node,
-                                                                                         IDCachesSharePtr id_caches)
-{
-  return make_tuple(false, nullptr,nullptr);
 }
 
 /**
@@ -890,75 +650,6 @@ Optimizer::PrepareInitial(shared_ptr<BGPQuery> bgp_query,
 }
 
 #ifdef TOPK_SUPPORT
-tuple<bool,PositionValueSharedPtr, TableContentShardPtr>  Optimizer::ExecutionTopK(BasicQuery* basic_query,
-                                                                                   shared_ptr<TopKSearchPlan> &tree_search_plan,
-                                                                                   const QueryInfo& query_info,
-                                                                                   IDCachesSharePtr id_caches) {
-
-  auto pos_var_mapping = TopKUtil::CalculatePosVarMapping(tree_search_plan);
-  auto k = query_info.limit_num_;
-  auto first_item = (*query_info.ordered_by_expressions_)[0];
-  auto var_coefficients = TopKUtil::getVarCoefficients(first_item);
-  // Build Iterator tree
-  auto env = new TopKUtil::Env();
-  env->kv_store= this->kv_store_;
-  env->basic_query = basic_query;
-  env->id_caches = id_caches;
-  cout<<" Optimizer::ExecutionTopK  env->id_caches "<<  env->id_caches->size()<<endl;
-  env->k = query_info.limit_num_;
-  env->coefficients = var_coefficients;
-  env->txn = this->txn_;
-  env->ss = make_shared<stringstream>();
-
-  auto root_fr = DPBUtil::BuildIteratorTree(tree_search_plan, env);
-  for(int i =1;i<=query_info.limit_num_;i++)
-  {
-    root_fr->TryGetNext(k);
-    if(root_fr->pool_.size()!=(unsigned )i)
-      break;
-#ifdef TOPK_DEBUG_INFO
-    else {
-      cout << "get top-" << i << " "<<root_fr->pool_[i-1].cost<<endl;
-    }
-#endif
-  }
-
-  auto result_list = make_shared<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
-
-#ifdef TOPK_DEBUG_INFO
-  cout<<" the top score "<<root_fr->pool_[0].cost<<"  pool size "<<root_fr->pool_.size()<<endl;
-  for(const auto& pos_id_pair:*pos_var_mapping)
-  {
-    cout<<"pos["<<pos_id_pair.first<<"]"<<" var id "<<pos_id_pair.second<<" "<<env->basic_query->getVarName(pos_id_pair.second)<<endl;
-  }
-
-#endif
-
-  auto var_num = pos_var_mapping->size();
-  for(decltype(root_fr->pool_.size()) i =0;i<root_fr->pool_.size();i++)
-  {
-    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
-    record->reserve(var_num);
-    root_fr->GetResult(i,record);
-    result_list->emplace_back(std::move(record));
-  }
-#ifdef TOPK_DEBUG_RESULT_INFO
-  auto it = result_list->begin();
-  for(decltype(result_list->size()) i =0;i<result_list->size();i++)
-  {
-    auto rec = *it;
-    cout<<" record["<<i<<"]"<<" score:"<<root_fr->pool_[i].cost;
-    for(int j =0;j<basic_query->getSelectVarNum();j++)
-      cout<<" "<<kv_store_->getStringByID((*rec)[j]);
-    //for(int j=basic_query->getSelectVarNum();j<var_num;j++)
-    //  cout<<" "<<kv_store_->getStringByID((*rec)[j]);
-    cout<<endl;
-    it++;
-  }
-#endif
-  return std::make_tuple(true,pos_var_mapping, result_list);
-}
-
 tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp_query, shared_ptr<TopKSearchPlan> &tree_search_plan,
                                              const QueryInfo& query_info,IDCachesSharePtr id_caches){
 
