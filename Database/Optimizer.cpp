@@ -162,8 +162,8 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
 
   while (now_result <= limit_num) {
     auto tmp_result = make_shared<TableContent>();
-    tmp_result->push_back(first_candidates_list->back());
-    first_candidates_list->pop_back();
+    tmp_result->push_back(first_candidates_list->front());
+    first_candidates_list->pop_front();
     auto first_var_one_point_result =
         this->DepthSearchOneLayer(query_plan, 1, now_result, limit_num, tmp_result,id_caches,table_template);
 
@@ -188,9 +188,10 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
     return make_tuple(true,final_result);
   int counter = 0;
   /* merge result */
-  for(unsigned int i=1;i<result_container.size();i++)
-    for(const auto& record:*(result_container[i])) {
-      final_result.values_->push_back(record);
+  for(auto& result_item:result_container)
+    for(auto &record: *result_item)
+    {
+      final_result.values_->push_back(std::move(record));
       if( ++counter == limit_num)
         break;
     }
@@ -199,7 +200,7 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
 }
 
 /**
- *
+ * 可能在传结果这里有问题
  * @param query_plan
  * @param layer_count
  * @param result_number_till_now
@@ -255,14 +256,15 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPl
   if(step_table->empty())
     return make_tuple(false, layer_result);
 
-  /* deep in bottom */
+  auto& all_result = layer_result.values_;
+
+  /* deep in bottom, update the 'result_number_till_now' */
   if( (unsigned )layer_count + 1 == query_plan->join_order_->size()) {
     result_number_till_now += step_table->size();
-    return make_tuple(false, layer_result);
+    for(auto it = step_table->begin();it!=step_table->end();it++)
+      all_result->push_back(std::move(*it));
+    return make_tuple(true, layer_result);
   }
-
-  auto all_result = make_shared<TableContent>();
-  layer_result.values_ = all_result;
 
   /*  go deeper by filling a node */
   for(const auto& one_result:*step_table) {
@@ -279,9 +281,9 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPl
     if(record_extended->empty())
       continue;
 
-    /* record the result */
+    /* record the result, move the next layer result to this layer result */
     for(const auto& next_layer_one_result: *record_extended) {
-      all_result->push_back(next_layer_one_result);
+      all_result->push_back(std::move(next_layer_one_result));
     }
     if(limit_number!=-1) {
       /* examine the number*/
