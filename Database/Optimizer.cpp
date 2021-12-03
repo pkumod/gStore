@@ -702,7 +702,14 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   cout<<endl;
 #endif
 
+  auto& select_var = bgp_query->selected_var_id;
+  vector<unsigned int> select_position;
+  for_each(select_var.begin(),select_var.end(),[&select_position,&result_table](unsigned int x){
+    select_position.push_back(result_table.id_pos_map->operator[](x));
+  });
   vector<double> score_list;
+  // for checking the distinct property
+  std::set<vector<TYPE_ENTITY_LITERAL_ID>> selected_id_set;
   score_list.reserve(query_info.limit_num_);
   for(int i =1; i<=query_info.limit_num_ + deleted_num; i++)
   {
@@ -726,7 +733,6 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
     root_fr->GetResult(i-1,record);
 
     bool success = true;
-
     if(tree_search_plan->HasCycle())
     {
       auto &non_tree_edge = tree_search_plan->GetNonTreeEdges();
@@ -737,10 +743,20 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
       auto filter_result_size = get<1>(filter_result).values_->size();
       success = filter_result_size != 0;
     }
-#ifdef TOPK_DEBUG_INFO
-    if(!success) {
-      cout << "  deleted";
+    if(query_info.is_distinct_)
+    {
+      vector<TYPE_ENTITY_LITERAL_ID> select_id;
+      for_each(select_position.begin(),select_position.end(),[&select_id,&record](unsigned int pos){
+        select_id.push_back(record->at(pos));
+      });
+      if(selected_id_set.count(select_id))
+        success = false;
+      else
+        selected_id_set.insert(std::move(select_id));
     }
+#ifdef TOPK_DEBUG_INFO
+    if(!success)
+      cout << "  deleted";
     cout<<endl;
 #endif
     if(success)
