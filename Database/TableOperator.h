@@ -250,10 +250,10 @@ class StepOperation{
   StepOperation(): join_node_(nullptr), join_two_node_(nullptr), join_table_(nullptr), edge_filter_(nullptr),distinct_(false){};
 
   StepOperation(JoinType join_type, shared_ptr<FeedOneNode> join_node, shared_ptr<FeedTwoNode> join_two_nodes,
-			  shared_ptr<JoinTwoTable> join_table, shared_ptr<FeedOneNode> edge_filter,bool distinct = false):
+			  shared_ptr<JoinTwoTable> join_table, shared_ptr<FeedOneNode> edge_filter, bool distinct = false):
 			  join_node_(join_node), join_two_node_(join_two_nodes),
 			  join_table_(join_table), edge_filter_(edge_filter),
-			  join_type_(join_type),distinct_(distinct){};
+			  join_type_(join_type), distinct_(distinct){};
 
   std::string static JoinTypeToString(JoinType x){
     switch (x) {
