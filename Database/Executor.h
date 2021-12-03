@@ -48,8 +48,7 @@ class Executor {
   tuple<bool,TableContentShardPtr> OneEdgeConstraintFilter(EdgeInfo edge_info,
                                                            EdgeConstantInfo edge_table_info,
                                                            TableContentShardPtr table_content_ptr,
-                                                           PositionValueSharedPtr id_pos_mapping,
-                                                           IDCachesSharePtr id_caches);
+                                                           PositionValueSharedPtr id_pos_mapping);
 
   tuple<bool,TableContentShardPtr> FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> candidate_list,
                                                            TYPE_ENTITY_LITERAL_ID var_id,
@@ -58,7 +57,7 @@ class Executor {
 
   TableContentShardPtr ConvertToTable(std::shared_ptr<IDList> id_list);
 
-  bool AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID targetID,IDCachesSharePtr id_caches);
+  bool AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID targetID,bool distinct,IDCachesSharePtr id_caches);
 
   std::tuple<bool, TableContentShardPtr> GetAllSubObjId(bool need_literal);
   std::tuple<bool, TableContentShardPtr> GetAllPreId();
@@ -66,6 +65,7 @@ class Executor {
                                               PositionValueSharedPtr id_pos_mapping,
                                               IDCachesSharePtr id_caches,
                                               TYPE_ENTITY_LITERAL_ID new_id,
+                                              bool distinct,
                                               list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator record_iterator) const;
 
   std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> ExtendRecordTwoNode(shared_ptr<FeedTwoNode> one_step_join_node_,
@@ -75,7 +75,7 @@ class Executor {
                                                                            TYPE_ENTITY_LITERAL_ID new_id2,
                                                                            list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator record_iterator) const;
 
-  shared_ptr<IDList> CandidatesWithConstantEdge(shared_ptr<vector<EdgeInfo>> edge_info_vector) const;
+  shared_ptr<IDList> CandidatesWithConstantEdge(shared_ptr<vector<EdgeInfo>> edge_info_vector,bool distinct) const;
 
  public:
   Executor(KVstore *kv_store,std::shared_ptr<Transaction> txn,TYPE_PREDICATE_ID limitID_predicate,
@@ -85,12 +85,14 @@ class Executor {
 
   tuple<bool, IntermediateResult> JoinANode(IntermediateResult old_table,
                                             IDCachesSharePtr id_caches,
+                                            bool distinct,
                                             shared_ptr<FeedOneNode> feed_plan);
 
   std::tuple<bool,IntermediateResult> InitialTableOneNode(std::shared_ptr<FeedOneNode> feed_plan,
                                                           bool is_entity,
                                                           bool is_literal,
                                                           bool is_predicate,
+                                                          bool distinct,
                                                           IDCachesSharePtr id_caches);
 
   std::tuple<bool,IntermediateResult> InitialTableTwoNode(std::shared_ptr<FeedTwoNode> join_plan,
@@ -105,10 +107,9 @@ class Executor {
                                            IntermediateResult table_b);
 
   tuple<bool,IntermediateResult> ANodeEdgesConstraintFilter(shared_ptr<FeedOneNode> check_plan,
-                                                            IntermediateResult old_table,
-                                                            IDCachesSharePtr id_caches) ;
+                                                            IntermediateResult old_table) ;
 
-  bool CacheConstantCandidates(shared_ptr<FeedOneNode> one_step, IDCachesSharePtr id_caches);
+  bool CacheConstantCandidates(shared_ptr<FeedOneNode> one_step,bool distinct, IDCachesSharePtr id_caches);
 
   static void UpdateIDList(const std::shared_ptr<IDList>& valid_id_list, unsigned* id_list, unsigned id_list_len,bool id_list_prepared);
 
