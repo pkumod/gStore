@@ -2299,140 +2299,140 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 		switch (join_method) {
 
 			case JoinMethod::sp2o:
-				case JoinMethod::po2s:
-					case JoinMethod::so2p:{
-						auto edge_info = make_shared<vector<EdgeInfo>>();
-						edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+			case JoinMethod::po2s:
+			case JoinMethod::so2p:{
+				auto edge_info = make_shared<vector<EdgeInfo>>();
+				edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
 
-						auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
-						edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
-
-
-						auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																	make_shared<FeedOneNode>(first_var->id_, edge_info, edge_constant_info),
-																	nullptr, nullptr, nullptr);
-
-						return (new PlanTree(plan_node));
-					}
-					case JoinMethod::s2po: {
-						auto edge_info = make_shared<EdgeInfo>(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0] , join_method);
-
-						auto edge_constant_info = make_shared<EdgeConstantInfo>(!s_is_var, !p_is_var, !o_is_var);
-
-						auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes, nullptr,
-																	make_shared<FeedTwoNode>(bgpquery->p_id_[0], bgpquery->o_id_[0], *edge_info, *edge_constant_info),
-																	nullptr, nullptr);
-						return (new PlanTree(plan_node));
-					}
-					case JoinMethod::p2so: {
-						auto edge_info = make_shared<EdgeInfo>(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0] , join_method);
-
-						auto edge_constant_info = make_shared<EdgeConstantInfo>(!s_is_var, !p_is_var, !o_is_var);
-
-						auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes, nullptr,
-																	make_shared<FeedTwoNode>(bgpquery->s_id_[0], bgpquery->o_id_[0], *edge_info, *edge_constant_info),
-																	nullptr, nullptr);
-						return (new PlanTree(plan_node));
-					}
-					case JoinMethod::o2ps: {
-						auto edge_info = make_shared<EdgeInfo>(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0] ,join_method);
-
-						auto edge_constant_info = make_shared<EdgeConstantInfo>(!s_is_var, !p_is_var, !o_is_var);
-
-						auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes, nullptr,
-																	make_shared<FeedTwoNode>(bgpquery->p_id_[0], bgpquery->s_id_[0], *edge_info, *edge_constant_info),
-																	nullptr, nullptr);
-
-						return (new PlanTree(plan_node));
-					}
-					case JoinMethod::p2s:{
-						auto edge_info = make_shared<vector<EdgeInfo>>();
-						edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
-
-						auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
-						edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+				auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+				edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
 
 
-						auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																	make_shared<FeedOneNode>(bgpquery->s_id_[0], edge_info, edge_constant_info),
-																	nullptr, nullptr, nullptr);
+				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+															make_shared<FeedOneNode>(first_var->id_, edge_info, edge_constant_info),
+															nullptr, nullptr, nullptr);
 
-						return (new PlanTree(plan_node));
-					}
-					case JoinMethod::p2o:{
-						auto edge_info = make_shared<vector<EdgeInfo>>();
-						edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+				return (new PlanTree(plan_node));
+			}
+			case JoinMethod::s2po: {
+				auto edge_info = make_shared<EdgeInfo>(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0] , join_method);
 
-						auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
-						edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+				auto edge_constant_info = make_shared<EdgeConstantInfo>(!s_is_var, !p_is_var, !o_is_var);
 
+				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes, nullptr,
+															make_shared<FeedTwoNode>(bgpquery->p_id_[0], bgpquery->o_id_[0], *edge_info, *edge_constant_info),
+															nullptr, nullptr);
+				return (new PlanTree(plan_node));
+			}
+			case JoinMethod::p2so: {
+				auto edge_info = make_shared<EdgeInfo>(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0] , join_method);
 
-						auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																	make_shared<FeedOneNode>(bgpquery->o_id_[0], edge_info, edge_constant_info),
-																	nullptr, nullptr, nullptr);
+				auto edge_constant_info = make_shared<EdgeConstantInfo>(!s_is_var, !p_is_var, !o_is_var);
 
-						return (new PlanTree(plan_node));
-					}
-					case JoinMethod::s2p:{
-						auto edge_info = make_shared<vector<EdgeInfo>>();
-						edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes, nullptr,
+															make_shared<FeedTwoNode>(bgpquery->s_id_[0], bgpquery->o_id_[0], *edge_info, *edge_constant_info),
+															nullptr, nullptr);
+				return (new PlanTree(plan_node));
+			}
+			case JoinMethod::o2ps: {
+				auto edge_info = make_shared<EdgeInfo>(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0] ,join_method);
 
-						auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
-						edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+				auto edge_constant_info = make_shared<EdgeConstantInfo>(!s_is_var, !p_is_var, !o_is_var);
 
+				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes, nullptr,
+															make_shared<FeedTwoNode>(bgpquery->p_id_[0], bgpquery->s_id_[0], *edge_info, *edge_constant_info),
+															nullptr, nullptr);
 
-						auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																	make_shared<FeedOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
-																	nullptr, nullptr, nullptr);
+				return (new PlanTree(plan_node));
+			}
+			case JoinMethod::p2s:{
+				auto edge_info = make_shared<vector<EdgeInfo>>();
+				edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
 
-						return (new PlanTree(plan_node));
-					}
-					case JoinMethod::s2o:{
-						auto edge_info = make_shared<vector<EdgeInfo>>();
-						edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
-
-						auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
-						edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
-
-
-						auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																	make_shared<FeedOneNode>(bgpquery->o_id_[0], edge_info, edge_constant_info),
-																	nullptr, nullptr, nullptr);
-
-						return (new PlanTree(plan_node));
-					}
-					case JoinMethod::o2s:{
-						auto edge_info = make_shared<vector<EdgeInfo>>();
-						edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
-
-						auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
-						edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+				auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+				edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
 
 
-						auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																	make_shared<FeedOneNode>(bgpquery->s_id_[0], edge_info, edge_constant_info),
-																	nullptr, nullptr, nullptr);
+				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+															make_shared<FeedOneNode>(bgpquery->s_id_[0], edge_info, edge_constant_info),
+															nullptr, nullptr, nullptr);
 
-						return (new PlanTree(plan_node));
-					}
-					case JoinMethod::o2p:{
-						auto edge_info = make_shared<vector<EdgeInfo>>();
-						edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+				return (new PlanTree(plan_node));
+			}
+			case JoinMethod::p2o:{
+				auto edge_info = make_shared<vector<EdgeInfo>>();
+				edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
 
-						auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
-						edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+				auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+				edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
 
 
-						auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																	make_shared<FeedOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
-																	nullptr, nullptr, nullptr);
+				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+															make_shared<FeedOneNode>(bgpquery->o_id_[0], edge_info, edge_constant_info),
+															nullptr, nullptr, nullptr);
 
-						return (new PlanTree(plan_node));
-					}
-					default:{
-						cout << "error: joinmethod error" << endl;
-						exit(-1);
-					}
+				return (new PlanTree(plan_node));
+			}
+			case JoinMethod::s2p:{
+				auto edge_info = make_shared<vector<EdgeInfo>>();
+				edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+
+				auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+				edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+
+
+				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+															make_shared<FeedOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
+															nullptr, nullptr, nullptr);
+
+				return (new PlanTree(plan_node));
+			}
+			case JoinMethod::s2o:{
+				auto edge_info = make_shared<vector<EdgeInfo>>();
+				edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+
+				auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+				edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+
+
+				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+															make_shared<FeedOneNode>(bgpquery->o_id_[0], edge_info, edge_constant_info),
+															nullptr, nullptr, nullptr);
+
+				return (new PlanTree(plan_node));
+			}
+			case JoinMethod::o2s:{
+				auto edge_info = make_shared<vector<EdgeInfo>>();
+				edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+
+				auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+				edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+
+
+				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+															make_shared<FeedOneNode>(bgpquery->s_id_[0], edge_info, edge_constant_info),
+															nullptr, nullptr, nullptr);
+
+				return (new PlanTree(plan_node));
+			}
+			case JoinMethod::o2p:{
+				auto edge_info = make_shared<vector<EdgeInfo>>();
+				edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], join_method);
+
+				auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+				edge_constant_info->emplace_back(!s_is_var, !p_is_var, !o_is_var);
+
+
+				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
+															make_shared<FeedOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
+															nullptr, nullptr, nullptr);
+
+				return (new PlanTree(plan_node));
+			}
+			default:{
+				cout << "error: joinmethod error" << endl;
+				exit(-1);
+			}
 		}
 	}
 
