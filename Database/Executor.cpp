@@ -17,6 +17,7 @@ using namespace std;
  */
 tuple<bool, IntermediateResult> Executor::JoinANode(IntermediateResult old_table,
                                                     const IDCachesSharePtr id_caches,
+                                                    bool distinct,
                                                     const shared_ptr<FeedOneNode> feed_plan)
 {
   auto new_id = feed_plan->node_to_join_;
@@ -36,6 +37,7 @@ tuple<bool, IntermediateResult> Executor::JoinANode(IntermediateResult old_table
                                                                    id_pos_map,
                                                                    id_caches,
                                                                    new_id,
+                                                                   distinct,
                                                                    record_iterator);
     if(record_candidate_list->size()>0)
     {
@@ -76,6 +78,7 @@ std::tuple<bool,IntermediateResult> Executor::InitialTableOneNode(const std::sha
                                                                   bool is_entity,
                                                                   bool is_literal,
                                                                   bool is_predicate,
+                                                                  bool distinct,
                                                                   const IDCachesSharePtr id_caches)
 {
   IntermediateResult init_table;
@@ -89,7 +92,7 @@ std::tuple<bool,IntermediateResult> Executor::InitialTableOneNode(const std::sha
     // we assert that the plan will not visit contents from empty record
     auto empty_record = records->begin();
     first_candidate_list = ExtendRecordOneNode(feed_plan, id_position_map, id_caches,
-                                               node_added, empty_record);
+                                               node_added,distinct, empty_record);
     records = ConvertToTable(first_candidate_list);
     return make_tuple(true, init_table);
   }
@@ -331,8 +334,7 @@ tuple<bool,IntermediateResult> Executor::JoinTable(const shared_ptr<JoinTwoTable
  * @return a new IntermediateResult, changing the return one will not change the old table
  */
 tuple<bool,IntermediateResult> Executor::ANodeEdgesConstraintFilter(shared_ptr<FeedOneNode> check_plan,
-                                                                    IntermediateResult old_table,
-                                                                    IDCachesSharePtr id_caches) {
+                                                                    IntermediateResult old_table) {
   auto new_table = IntermediateResult::OnlyPositionCopy(old_table);
   auto table_content = old_table.values_;
   auto id_pos_mapping =old_table.id_pos_map;
@@ -344,7 +346,7 @@ tuple<bool,IntermediateResult> Executor::ANodeEdgesConstraintFilter(shared_ptr<F
   {
     auto edge_info = (*edge_info_vec)[i];
     auto edge_constant_info = (*edge_constant_info_vec)[i];
-    auto step_result = this->OneEdgeConstraintFilter(edge_info, edge_constant_info, table_content, id_pos_mapping, id_caches);
+    auto step_result = this->OneEdgeConstraintFilter(edge_info, edge_constant_info, table_content, id_pos_mapping);
     if(get<0>(step_result))
       table_content = get<1>(step_result);
   }
@@ -352,12 +354,12 @@ tuple<bool,IntermediateResult> Executor::ANodeEdgesConstraintFilter(shared_ptr<F
   return make_tuple(true,new_table);
 }
 
-bool Executor::CacheConstantCandidates(shared_ptr<FeedOneNode> one_step, IDCachesSharePtr id_caches) {
+bool Executor::CacheConstantCandidates(shared_ptr<FeedOneNode> one_step,bool distinct, IDCachesSharePtr id_caches) {
   auto node_t = one_step->node_to_join_;
   auto edges = one_step->edges_;
   auto edges_constant = one_step->edges_constant_info_;
   for(decltype(edges->size()) i =0 ;i<edges->size();i++) {
-    AddConstantCandidates((*edges)[i],node_t,id_caches);
+    AddConstantCandidates((*edges)[i],node_t,distinct, id_caches);
   }
   return true;
 }
@@ -396,11 +398,9 @@ bool Executor::UpdateIDCache(std::shared_ptr<StepOperation> step_operation,IDCac
   auto feed_plan = step_operation->edge_filter_;
   auto var_node_id = feed_plan->node_to_join_;
   auto candidate_list_it = id_caches->find(var_node_id);
-  auto candidate_generated = this->CandidatesWithConstantEdge( feed_plan->edges_);
+  auto candidate_generated = this->CandidatesWithConstantEdge( feed_plan->edges_,step_operation->distinct_);
   if(candidate_list_it==id_caches->end())
-  {
     (*id_caches)[var_node_id] = candidate_generated;
-  }
   else
   {
     auto candidate_already = candidate_list_it->second;
@@ -421,21 +421,18 @@ TableContentShardPtr Executor::ConvertToTable(std::shared_ptr<IDList> id_list) {
 }
 
 /**
- *
+ * check the IntermediateResult satisfy an edge of query graph
  * @param edge_info
  * @param edge_table_info
  * @param table_content_ptr
  * @param id_pos_mapping
- * @param id_caches
  * @return the filtered table. Change the returned one will not infect the old one
  */
 tuple<bool,TableContentShardPtr> Executor::OneEdgeConstraintFilter(EdgeInfo edge_info,
                                                                    EdgeConstantInfo edge_table_info,
                                                                    TableContentShardPtr table_content_ptr,
-                                                                   PositionValueSharedPtr id_pos_mapping,
-                                                                   IDCachesSharePtr id_caches) {
+                                                                   PositionValueSharedPtr id_pos_mapping) {
   TYPE_ENTITY_LITERAL_ID var_to_filter= edge_info.getVarToFilter();
-  auto var_in_record = id_pos_mapping->find(var_to_filter)!=id_pos_mapping->end();
   if(edge_table_info.ConstantToVar(edge_info))
   {
     TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
@@ -533,8 +530,6 @@ tuple<bool,TableContentShardPtr> Executor::OneEdgeConstraintFilter(EdgeInfo edge
     delete [] edge_candidate_list;
     return FilterAVariableOnIDList(validate_list,var_to_filter,table_content_ptr,id_pos_mapping);
   }
-
-
   auto result_table = make_shared<TableContent>();
   /* : each record */
   for (auto record_iterator = table_content_ptr->begin(); record_iterator != table_content_ptr->end();record_iterator++) {
@@ -716,14 +711,10 @@ tuple<bool,TableContentShardPtr> Executor::OneEdgeConstraintFilter(EdgeInfo edge
       var_to_filter_id_this_record = var_id;
 
     if(binary_search(edge_candidate_list,edge_candidate_list+edge_list_len,var_to_filter_id_this_record))
-    {
       result_table->push_back(*record_iterator);
-    }
     delete [] edge_candidate_list;
   }
-
   return make_tuple(true,result_table);
-
 }
 
 tuple<bool,TableContentShardPtr> Executor::FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> candidate_list,
@@ -747,7 +738,10 @@ tuple<bool,TableContentShardPtr> Executor::FilterAVariableOnIDList(shared_ptr<ve
 
 }
 
-bool Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID targetID,IDCachesSharePtr id_caches)
+/**
+ * Use Constant edge to
+ */
+bool Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID targetID,bool distinct, IDCachesSharePtr id_caches)
 {
   TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
   TYPE_ENTITY_LITERAL_ID this_edge_list_len;
@@ -757,7 +751,7 @@ bool Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID t
       this->kv_store_->getpreIDlistBysubID(s_var_constant_id,
                                            edge_candidate_list,
                                            this_edge_list_len,
-                                           true,
+                                           distinct,
                                            this->txn_);
       break;
     }
@@ -766,7 +760,7 @@ bool Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID t
       this->kv_store_->getobjIDlistBysubID(s_var_constant_id,
                                            edge_candidate_list,
                                            this_edge_list_len,
-                                           true,
+                                           distinct,
                                            this->txn_);
       break;
     }
@@ -775,7 +769,7 @@ bool Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID t
       this->kv_store_->getsubIDlistBypreID(p_var_constant_id,
                                            edge_candidate_list,
                                            this_edge_list_len,
-                                           true,
+                                           distinct,
                                            this->txn_);
       break;
     }
@@ -784,7 +778,7 @@ bool Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID t
       this->kv_store_->getobjIDlistBypreID(p_var_constant_id,
                                            edge_candidate_list,
                                            this_edge_list_len,
-                                           true,
+                                           distinct,
                                            this->txn_);
       break;
     }
@@ -793,7 +787,7 @@ bool Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID t
       this->kv_store_->getsubIDlistByobjID(o_var_constant_id,
                                            edge_candidate_list,
                                            this_edge_list_len,
-                                           true,
+                                           distinct,
                                            this->txn_);
       break;
     }
@@ -802,7 +796,7 @@ bool Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID t
       this->kv_store_->getpreIDlistByobjID(o_var_constant_id,
                                            edge_candidate_list,
                                            this_edge_list_len,
-                                           true,
+                                           distinct,
                                            this->txn_);
       break;
     }
@@ -813,7 +807,7 @@ bool Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID t
                                                 o_var_constant_id,
                                                 edge_candidate_list,
                                                 this_edge_list_len,
-                                                true,
+                                                distinct,
                                                 this->txn_);
       break;
     }
@@ -824,7 +818,7 @@ bool Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID t
                                                 p_var_constant_id,
                                                 edge_candidate_list,
                                                 this_edge_list_len,
-                                                true,
+                                                distinct,
                                                 this->txn_);
       break;
     }
@@ -835,7 +829,7 @@ bool Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID t
                                                 p_var_constant_id,
                                                 edge_candidate_list,
                                                 this_edge_list_len,
-                                                true,
+                                                distinct,
                                                 this->txn_);
       break;
     }
@@ -904,6 +898,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> on
                                                       PositionValueSharedPtr id_pos_mapping,
                                                       IDCachesSharePtr id_caches,
                                                       TYPE_ENTITY_LITERAL_ID new_id,
+                                                      bool distinct,
                                                       list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator record_iterator) const{
   auto record_candidate_list= make_shared<IDList>();
   auto record_candidate_prepared = false;
@@ -930,7 +925,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> on
         this->kv_store_->getpreIDlistBysubID(s_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
-                                             true,
+                                             distinct,
                                              this->txn_);
         break;
       }
@@ -945,7 +940,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> on
         this->kv_store_->getobjIDlistBysubID(s_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
-                                             true,
+                                             distinct,
                                              this->txn_);
         break;
       }
@@ -960,7 +955,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> on
         this->kv_store_->getsubIDlistBypreID(p_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
-                                             true,
+                                             distinct,
                                              this->txn_);
         break;
       }
@@ -975,7 +970,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> on
         this->kv_store_->getobjIDlistBypreID(p_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
-                                             true,
+                                             distinct,
                                              this->txn_);
         break;
       }
@@ -990,7 +985,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> on
         this->kv_store_->getsubIDlistByobjID(o_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
-                                             true,
+                                             distinct,
                                              this->txn_);
         break;
       }
@@ -1005,7 +1000,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> on
         this->kv_store_->getpreIDlistByobjID(o_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
-                                             true,
+                                             distinct,
                                              this->txn_);
         break;
       }
@@ -1030,7 +1025,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> on
                                                   o_var_id_this_record,
                                                   edge_candidate_list,
                                                   edge_list_len,
-                                                  true,
+                                                  distinct,
                                                   this->txn_);
         break;
       }
@@ -1054,7 +1049,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> on
                                                   p_var_id_this_record,
                                                   edge_candidate_list,
                                                   edge_list_len,
-                                                  true,
+                                                  distinct,
                                                   this->txn_);
         break;
       }
@@ -1079,7 +1074,7 @@ std::shared_ptr<IDList> Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> on
                                                   p_var_id_this_record,
                                                   edge_candidate_list,
                                                   edge_list_len,
-                                                  true,
+                                                  distinct,
                                                   this->txn_);
         break;
       }
@@ -1147,7 +1142,7 @@ Executor::ExtendRecordTwoNode(shared_ptr<FeedTwoNode> one_step_join_node_,
       this->kv_store_->getpreIDobjIDlistBysubID(s_var_id_this_record,
                                                 edge_candidate_list,
                                                 edge_list_len,
-                                                true,
+                                                false,
                                                 this->txn_);
       break;
     }
@@ -1163,7 +1158,7 @@ Executor::ExtendRecordTwoNode(shared_ptr<FeedTwoNode> one_step_join_node_,
       this->kv_store_->getsubIDobjIDlistBypreID(p_var_id_this_record,
                                                 edge_candidate_list,
                                                 edge_list_len,
-                                                true,
+                                                false,
                                                 this->txn_);
       break;
     }
@@ -1179,7 +1174,7 @@ Executor::ExtendRecordTwoNode(shared_ptr<FeedTwoNode> one_step_join_node_,
       this->kv_store_->getpreIDsubIDlistByobjID(o_var_id_this_record,
                                                 edge_candidate_list,
                                                 edge_list_len,
-                                                true,
+                                                false,
                                                 this->txn_);
       break;
     }
@@ -1231,7 +1226,7 @@ Executor::ExtendRecordTwoNode(shared_ptr<FeedTwoNode> one_step_join_node_,
  * @param edge_info_vector e.g. [sp2o 1 2 _][o2s _ _ 5]
  * @return the IDList produced
  */
-shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeInfo>> edge_info_vector) const {
+shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeInfo>> edge_info_vector,bool distinct) const {
   auto id_candidate = make_shared<IDList>();
   for(int i = 0; i<edge_info_vector->size(); i++)
   {
@@ -1245,7 +1240,7 @@ shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeIn
         this->kv_store_->getpreIDlistBysubID(s_var_constant_id,
                                              edge_candidate_list,
                                              this_edge_list_len,
-                                             true,
+                                             distinct,
                                              this->txn_);
         break;
       }
@@ -1254,7 +1249,7 @@ shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeIn
         this->kv_store_->getobjIDlistBysubID(s_var_constant_id,
                                              edge_candidate_list,
                                              this_edge_list_len,
-                                             true,
+                                             distinct,
                                              this->txn_);
         break;
       }
@@ -1263,7 +1258,7 @@ shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeIn
         this->kv_store_->getsubIDlistBypreID(p_var_constant_id,
                                              edge_candidate_list,
                                              this_edge_list_len,
-                                             true,
+                                             distinct,
                                              this->txn_);
         break;
       }
@@ -1272,7 +1267,7 @@ shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeIn
         this->kv_store_->getobjIDlistBypreID(p_var_constant_id,
                                              edge_candidate_list,
                                              this_edge_list_len,
-                                             true,
+                                             distinct,
                                              this->txn_);
         break;
       }
@@ -1281,7 +1276,7 @@ shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeIn
         this->kv_store_->getsubIDlistByobjID(o_var_constant_id,
                                              edge_candidate_list,
                                              this_edge_list_len,
-                                             true,
+                                             distinct,
                                              this->txn_);
         break;
       }
@@ -1290,7 +1285,7 @@ shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeIn
         this->kv_store_->getpreIDlistByobjID(o_var_constant_id,
                                              edge_candidate_list,
                                              this_edge_list_len,
-                                             true,
+                                             distinct,
                                              this->txn_);
         break;
       }
@@ -1301,7 +1296,7 @@ shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeIn
                                                   o_var_constant_id,
                                                   edge_candidate_list,
                                                   this_edge_list_len,
-                                                  true,
+                                                  distinct,
                                                   this->txn_);
         break;
       }
@@ -1312,7 +1307,7 @@ shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeIn
                                                   p_var_constant_id,
                                                   edge_candidate_list,
                                                   this_edge_list_len,
-                                                  true,
+                                                  distinct,
                                                   this->txn_);
         break;
       }
@@ -1323,7 +1318,7 @@ shared_ptr<IDList> Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeIn
                                                   p_var_constant_id,
                                                   edge_candidate_list,
                                                   this_edge_list_len,
-                                                  true,
+                                                  distinct,
                                                   this->txn_);
         break;
       }
@@ -1350,7 +1345,7 @@ std::tuple<bool,IntermediateResult> Executor::GetAllTriple(std::shared_ptr<FeedO
   {
     if(this->kv_store_->getPredicateByID(p_id)=="")
       continue;
-    this->kv_store_->getsubIDobjIDlistBypreID(p_id, id_list, id_list_len, true, this->txn_);
+    this->kv_store_->getsubIDobjIDlistBypreID(p_id, id_list, id_list_len, false, this->txn_);
     for (unsigned j = 0; j < id_list_len; j += 2)
     {
       auto s_id = id_list[j];

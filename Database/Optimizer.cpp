@@ -105,7 +105,7 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
     auto is_literal = get<1>(property_array);
     auto is_predicate = get<2>(property_array);
     step_result = executor_.InitialTableOneNode(first_operation.join_node_,is_entity,
-                                                is_literal,is_predicate,id_caches);
+                                                is_literal,is_predicate,first_operation.distinct_ , id_caches);
     first_table = get<1>(step_result);
   }
   else // Two Nodes
@@ -192,7 +192,7 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPl
   TableContentShardPtr step_table;
   switch (one_step.join_type_) {
     case StepOperation::JoinType::JoinNode: {
-      auto step_result = executor_.JoinANode(old_table,id_caches,one_step.join_node_);
+      auto step_result = executor_.JoinANode(old_table,id_caches,one_step.distinct_,one_step.join_node_);
       step_table = get<1>(step_result).values_;
       break;
     }
@@ -203,7 +203,7 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPl
       throw string("Optimizer::DepthSearchOneLayer not suitable for GenerateCandidates");
     }
     case StepOperation::JoinType::EdgeCheck: {
-      auto step_result = executor_.ANodeEdgesConstraintFilter(one_step.edge_filter_, old_table,id_caches);
+      auto step_result = executor_.ANodeEdgesConstraintFilter(one_step.edge_filter_, old_table);
       step_table = get<1>(step_result).values_;
       break;
     }
@@ -272,33 +272,32 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
   shared_ptr<QueryPlan> query_plan;
   auto strategy = this->ChooseStrategy(bgp_query,&query_info);
+  auto distinct = bgp_query->dinstinct_query;
   if(strategy == BasicQueryStrategy::Normal)
   {
 
-  	PlanTree* best_plan_tree;
+    PlanTree* best_plan_tree;
 
-  	long t1 =Util::get_cur_time();
+    long t1 =Util::get_cur_time();
 
-  	if(bgp_query->get_triple_num()==1)
-  		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
-  				limitID_predicate_, limitID_literal_, limitID_entity_))->get_special_one_triple_plan();
-  	else{
+    if(bgp_query->get_triple_num()==1)
+      best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
+                                          limitID_predicate_, limitID_literal_, limitID_entity_))->get_special_one_triple_plan();
+    else{
+      auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query,this->kv_store_);
+      for (auto &constant_generating_step: *const_candidates)
+        executor_.CacheConstantCandidates(constant_generating_step,distinct, var_candidates_cache);
 
-  		auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
-  		for (auto &constant_generating_step: *const_candidates) {
-  			executor_.CacheConstantCandidates(constant_generating_step, var_candidates_cache);
-  		};
-  		long t2 = Util::get_cur_time();
-  		cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
+      long t2 = Util::get_cur_time();
+      cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
+      long t3 = Util::get_cur_time();
+      cout << "id_list.size = " << var_candidates_cache->size() << endl;
 
-  		long t3 = Util::get_cur_time();
-
-  		cout << "id_list.size = " << var_candidates_cache->size() << endl;
-  		best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
-  							limitID_predicate_, limitID_literal_, limitID_entity_))->get_plan(true);
-  		long t4 = Util::get_cur_time();
-  		cout << "plan get, used " << (t4 - t3) << "ms." << endl;
-  	}
+      best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
+                                          limitID_predicate_, limitID_literal_, limitID_entity_))->get_plan(true);
+      long t4 = Util::get_cur_time();
+      cout << "plan get, used " << (t4 - t3) << "ms." << endl;
+    }
 
     best_plan_tree->print(bgp_query.get());
     cout << "plan print done" << endl;
@@ -331,13 +330,13 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 #ifdef TOPK_SUPPORT
     auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
     for (auto &constant_generating_step: *const_candidates) {
-      executor_.CacheConstantCandidates(constant_generating_step, var_candidates_cache);
+      executor_.CacheConstantCandidates(constant_generating_step, distinct,var_candidates_cache);
     };
     if(const_candidates->empty())
     {
       auto predicate_filter = QueryPlan::PredicateFilter(bgp_query,this->kv_store_);
       for (auto &predicate_step: *predicate_filter) {
-        executor_.CacheConstantCandidates(predicate_step, var_candidates_cache);
+        executor_.CacheConstantCandidates(predicate_step,distinct, var_candidates_cache);
       }
     }
 
@@ -369,7 +368,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     long t1 =Util::get_cur_time();
     auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
     for (auto &constant_generating_step: *const_candidates) {
-      executor_.CacheConstantCandidates(constant_generating_step, var_candidates_cache);
+      executor_.CacheConstantCandidates(constant_generating_step, distinct,var_candidates_cache);
     };
     long t2 = Util::get_cur_time();
     cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
@@ -493,7 +492,8 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
       bool is_entity= get<0>(r);
       bool is_literal = get<1>(r);
       bool is_predicate = get<2>(r);
-      auto initial_result = executor_.InitialTableOneNode(step_operation->join_node_,is_entity,is_literal,is_predicate,id_caches);
+      auto initial_result = executor_.InitialTableOneNode(step_operation->join_node_,is_entity,is_literal,is_predicate,
+                                                          step_operation->distinct_,id_caches);
       leaf_table = get<1>(initial_result);
 #ifdef OPTIMIZER_DEBUG_INFO
       cout<<"JoinNode result size:"<<leaf_table.values_->size()<<endl;
@@ -551,7 +551,8 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
       bool is_entity= get<0>(r);
       bool is_literal = get<1>(r);
       bool is_predicate = get<2>(r);
-      auto initial_result = executor_.InitialTableOneNode(step_operation->join_node_,is_entity,is_literal,is_predicate,id_caches);
+      auto initial_result = executor_.InitialTableOneNode(step_operation->join_node_,is_entity,is_literal,is_predicate,
+                                                          step_operation->distinct_,id_caches);
       auto leaf_table = get<1>(initial_result);
       return make_tuple(true,leaf_table);
     }
@@ -570,7 +571,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
       }
 #endif
     long t1 = Util::get_cur_time();
-    auto step_result = executor_.JoinANode(left_table,id_caches,one_step_join->join_node_);
+    auto step_result = executor_.JoinANode(left_table,id_caches,one_step_join->distinct_,one_step_join->join_node_);
 
 #ifdef OPTIMIZER_DEBUG_INFO
     cout<<"JoinNode result size:"<<get<1>(step_result).values_->size()<<endl;
@@ -583,7 +584,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
 
     auto edge_filter = step_operation->edge_filter_;
     long t1 = Util::get_cur_time();
-    auto step_result =executor_.ANodeEdgesConstraintFilter(edge_filter, left_table, id_caches);
+    auto step_result =executor_.ANodeEdgesConstraintFilter(edge_filter, left_table);
 
     cout<<"result size "<<get<1>(step_result).values_->size();
     long t2 = Util::get_cur_time();
@@ -732,7 +733,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
       auto temp_content_ptr = make_shared<TableContent>();
       temp_content_ptr->push_back(record);
       temp_table.values_ = temp_content_ptr;
-      auto filter_result = this->executor_.ANodeEdgesConstraintFilter(non_tree_edge.edge_filter_,temp_table,id_caches);
+      auto filter_result = this->executor_.ANodeEdgesConstraintFilter(non_tree_edge.edge_filter_,temp_table);
       auto filter_result_size = get<1>(filter_result).values_->size();
       success = filter_result_size != 0;
     }
