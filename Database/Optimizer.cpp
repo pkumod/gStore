@@ -859,7 +859,14 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
 
   auto right_table = get<1>(right_r);
   if(operation_type==StepOperation::JoinType::JoinTable){
+#ifndef OPTIMIZER_DEBUG_INFO
     return executor_.JoinTable(step_operation->join_table_, left_table, right_table);
+#endif
+#ifdef OPTIMIZER_DEBUG_INFO
+    auto join_result =  executor_.JoinTable(step_operation->join_table_, left_table, right_table);
+    cout<<"JoinTable result size:"<<get<1>(join_result).values_->size()<<endl;
+    return std::move(join_result);
+#endif
   }
   else
     throw string("unexpected JoinType");
