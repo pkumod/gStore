@@ -10,7 +10,6 @@
 
 #include "../Util/Util.h"
 #include "../Query/SPARQLquery.h"
-#include "../Query/BasicQuery.h"
 #include "../Query/IDList.h"
 #include "../KVstore/KVstore.h"
 #include "../VSTree/VSTree.h"
@@ -83,9 +82,7 @@ class Optimizer
 
   Optimizer(KVstore* kv_store, Statistics *statistics, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
 			TYPE_TRIPLE_NUM* pre2obj, TYPE_TRIPLE_NUM triples_num, TYPE_PREDICATE_ID limitID_predicate,
-			TYPE_ENTITY_LITERAL_ID limitID_literal, TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn
-             // ,SPARQLquery& sparql_query,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list,TYPE_ENTITY_LITERAL_ID limit_num
-             );
+			TYPE_ENTITY_LITERAL_ID limitID_literal, TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn);
   ~Optimizer()=default;
 
   tuple<bool,shared_ptr<IntermediateResult>> DoQuery(SPARQLquery&,QueryInfo); // the whole process
@@ -94,13 +91,6 @@ class Optimizer
  private:
   tuple<bool,shared_ptr<IntermediateResult>> MergeBasicQuery(SPARQLquery &sparql_query);
 
-    /* the function is not implemented yet
-   TODO: re-choose plan in every iteration
-    implement a method to feed plan manually first
-    tuple<bool,shared_ptr<IntermediateResult>> execution(BasicQuery*, shared_ptr<QueryPlan>);*/
-
-
-  BasicQueryStrategy ChooseStrategy(BasicQuery *basic_query,QueryInfo *query_info);
   BasicQueryStrategy ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query,QueryInfo *query_info);
 
   std::shared_ptr<std::vector<IntermediateResult>> GenerateResultTemplate(shared_ptr<QueryPlan> query_plan);
@@ -119,23 +109,11 @@ class Optimizer
                                                      IDCachesSharePtr id_caches,
                                                      shared_ptr<vector<IntermediateResult>> table_template);
 
-
-
 #ifdef TOPK_SUPPORT
-  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionTopK(BasicQuery* basic_query, shared_ptr<TopKSearchPlan> &tree_search_plan,
-                                                 const QueryInfo& query_info,IDCachesSharePtr id_caches);
-
   tuple<bool,IntermediateResult> ExecutionTopK(shared_ptr<BGPQuery> bgp_query, shared_ptr<TopKSearchPlan> &tree_search_plan,
                                                                          const QueryInfo& query_info,IDCachesSharePtr id_caches);
 #endif
-  /*copy the result to vector<unsigned*> & */
-  bool CopyToResult(vector<unsigned*> *target, BasicQuery *basic_query, const shared_ptr<IntermediateResult>& result);
-
   bool CopyToResult(shared_ptr<BGPQuery> bgp_query, IntermediateResult result);
-
-  void Cartesian(int, int,int,unsigned*,const shared_ptr<vector<Satellite>>&,vector<unsigned*>*,BasicQuery *);
-
-  tuple<bool,PositionValueSharedPtr, TableContentShardPtr> ExecutionBreathFirst(BasicQuery* basic_query,const QueryInfo& query_info,Tree_node* plan_tree,IDCachesSharePtr id_caches);
 
   tuple<bool,IntermediateResult> ExecutionBreathFirst(shared_ptr<BGPQuery> bgp_query,
                                                       QueryInfo query_info,
@@ -148,19 +126,6 @@ class Optimizer
   shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list_; // empty if not using 'orderby'
   TYPE_ENTITY_LITERAL_ID limit_num_; // -1 if not limit result size
 
-  bool is_edge_case; //Strategy 1-6 or Strategy 0
-  int current_basic_query_; // updated by result_list.size()
-
-  shared_ptr<vector<BasicQuery*>> basic_query_list_; //fork from SPARQLQuery, I dont know why
-  shared_ptr<vector<tuple<BasicQuery*, shared_ptr<vector<QueryPlan>>>>> candidate_plans_;
-  shared_ptr<vector<QueryPlan>> execution_plan_;
-  shared_ptr<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>> result_list_; // vector<unsigned*>* result_list;
-
-  //TODO: shared_ptr<BasicQuery> may brings wrong matching
-  shared_ptr<vector<map<BasicQuery*,vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>>> join_cache_; // map(sub-structure, result_list)
-  shared_ptr<vector<map<BasicQuery*,shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>> cardinality_cache_; // map(sub-structure, cardinality), not in statistics
-
-  FILE* fp_;
   TYPE_TRIPLE_NUM* pre2num_;
   TYPE_TRIPLE_NUM* pre2sub_;
   TYPE_TRIPLE_NUM* pre2obj_;
@@ -170,8 +135,6 @@ class Optimizer
   TYPE_ENTITY_LITERAL_ID limitID_entity_;
   shared_ptr<Transaction> txn_;
 
-  //静态情况下可以存储weight
-  shared_ptr<vector<double>> weight_list_;
   Executor executor_;
 
   tuple<bool,bool,bool> PrepareInitial(shared_ptr<BGPQuery> bgp_query,
