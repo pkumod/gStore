@@ -91,6 +91,10 @@ BasicQueryStrategy Optimizer::ChooseStrategy(BasicQuery *basic_query,QueryInfo *
   }
 }
 
+/**
+ * Generate a list of Intermediate templates, so each layer doesn't have to
+ * calculate it each time
+ */
 std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTemplate(shared_ptr<QueryPlan> query_plan)
 {
   auto table_template = make_shared<std::vector<IntermediateResult>>();
@@ -115,14 +119,15 @@ std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTempla
     if(join_type==StepOperation::JoinType::JoinNode)
       tables.back().AddNewNode( it->join_node_->node_to_join_);
     else if(join_type==StepOperation::JoinType::JoinTwoNodes) {
-      tables.back().AddNewNode( it->join_two_node_->node_to_join_1_);
-      tables.back().AddNewNode( it->join_two_node_->node_to_join_2_);
+      tables.back().AddNewNode(it->join_two_node_->node_to_join_1_);
+      tables.back().AddNewNode(it->join_two_node_->node_to_join_2_);
     }
+    it++;
   }
   return table_template;
 }
 
-tuple<bool, IntermediateResult> Optimizer::ExecutionDepthFirst(shared_ptr<BGPQuery> bgp_query,
+tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQuery> bgp_query,
                                                                shared_ptr<QueryPlan> query_plan,
                                                                QueryInfo query_info,
                                                                IDCachesSharePtr id_caches) {
@@ -157,8 +162,8 @@ tuple<bool, IntermediateResult> Optimizer::ExecutionDepthFirst(shared_ptr<BGPQue
 
   while (now_result <= limit_num) {
     auto tmp_result = make_shared<TableContent>();
-    tmp_result->push_back(first_candidates_list->front());
-    first_candidates_list->pop_front();
+    tmp_result->push_back(first_candidates_list->back());
+    first_candidates_list->pop_back();
     auto first_var_one_point_result =
         this->DepthSearchOneLayer(query_plan, 1, now_result, limit_num, tmp_result,id_caches,table_template);
 
@@ -425,12 +430,12 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     long t5 = Util::get_cur_time();
     cout << "execution, used " << (t5 - t_) << "ms." << endl;
 
-    auto bfs_table = get<1>(dfs_result);
-    auto pos_var_mapping = bfs_table.pos_id_map;
-    auto var_pos_mapping = bfs_table.id_pos_map;
+    auto dfs_table = get<1>(dfs_result);
+    auto pos_var_mapping = dfs_table.pos_id_map;
+    auto var_pos_mapping = dfs_table.id_pos_map;
 
     long t6 = Util::get_cur_time();
-    CopyToResult(bgp_query, bfs_table);
+    CopyToResult(bgp_query, dfs_table);
 #ifdef OPTIMIZER_DEBUG_INFO
     cout<<"after copy bfs result size "<<bgp_query->get_result_list_pointer()->size()<<endl;
 #endif
