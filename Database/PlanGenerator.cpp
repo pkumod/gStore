@@ -815,12 +815,10 @@ unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsign
 
 				if(p_list[0] >= 0)
 					kvstore->getobjIDlistBysubIDpreID(var_to_sample_cache[last_node][i], p_list[0],
-													  s_o_list,
-													  s_o_list_len);
+													  s_o_list,s_o_list_len);
 				else
 					kvstore->getobjIDlistBysubID(var_to_sample_cache[last_node][i],
-												 s_o_list,
-												 s_o_list_len);
+												 s_o_list,s_o_list_len, bgpquery->dinstinct_query);
 
 				s_o_list1_total_num += s_o_list_len;
 
@@ -882,7 +880,7 @@ unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsign
 													  s_o_list,s_o_list_len);
 				else
 					kvstore->getsubIDlistByobjID(var_to_sample_cache[next_join_node][i],
-												 s_o_list, s_o_list_len);
+												 s_o_list, s_o_list_len, bgpquery->dinstinct_query);
 
 				s_o_list2_total_num += s_o_list_len;
 
@@ -904,7 +902,7 @@ unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsign
 													  s_o_list,s_o_list_len);
 				else
 					kvstore->getobjIDlistBysubID(var_to_sample_cache[next_join_node][i],
-													  s_o_list,s_o_list_len);
+												 s_o_list,s_o_list_len, bgpquery->dinstinct_query);
 
 				s_o_list1_total_num += s_o_list_len;
 
@@ -964,7 +962,7 @@ unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsign
 													  s_o_list,s_o_list_len);
 				else
 					kvstore->getsubIDlistByobjID(var_to_sample_cache[last_node][i],
-												 s_o_list, s_o_list_len);
+												 s_o_list, s_o_list_len, bgpquery->dinstinct_query);
 
 				s_o_list2_total_num += s_o_list_len;
 
@@ -1059,7 +1057,7 @@ unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<u
 														  s_o_list,s_o_list_len);
 					else
 						kvstore->getobjIDlistBysubID(last_sample[i][linked_nei_pos[0]],
-													 s_o_list,s_o_list_len);
+													 s_o_list,s_o_list_len, bgpquery->dinstinct_query);
 
 					for (unsigned j = 0; j < s_o_list_len; ++j) {
 						if(var_sampled_from_candidate[next_join_node] and
@@ -1125,7 +1123,7 @@ unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<u
 														  s_o_list,s_o_list_len);
 					else
 						kvstore->getsubIDlistByobjID(last_sample[i][linked_nei_pos[0]],
-													 s_o_list,s_o_list_len);
+													 s_o_list,s_o_list_len, bgpquery->dinstinct_query);
 
 					for (unsigned j = 0; j < s_o_list_len; ++j) {
 						if(var_sampled_from_candidate[next_join_node] and
@@ -2355,7 +2353,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 															make_shared<FeedOneNode>(bgpquery->s_id_[0], edge_info, edge_constant_info),
-															nullptr, nullptr, nullptr);
+															nullptr, nullptr, nullptr, bgpquery->dinstinct_query);
 
 				return (new PlanTree(plan_node));
 			}
@@ -2369,7 +2367,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 															make_shared<FeedOneNode>(bgpquery->o_id_[0], edge_info, edge_constant_info),
-															nullptr, nullptr, nullptr);
+															nullptr, nullptr, nullptr, bgpquery->dinstinct_query);
 
 				return (new PlanTree(plan_node));
 			}
@@ -2383,7 +2381,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 															make_shared<FeedOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
-															nullptr, nullptr, nullptr);
+															nullptr, nullptr, nullptr, bgpquery->dinstinct_query);
 
 				return (new PlanTree(plan_node));
 			}
@@ -2397,7 +2395,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 															make_shared<FeedOneNode>(bgpquery->o_id_[0], edge_info, edge_constant_info),
-															nullptr, nullptr, nullptr);
+															nullptr, nullptr, nullptr, bgpquery->dinstinct_query);
 
 				return (new PlanTree(plan_node));
 			}
@@ -2411,7 +2409,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 															make_shared<FeedOneNode>(bgpquery->s_id_[0], edge_info, edge_constant_info),
-															nullptr, nullptr, nullptr);
+															nullptr, nullptr, nullptr, bgpquery->dinstinct_query);
 
 				return (new PlanTree(plan_node));
 			}
@@ -2425,7 +2423,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 															make_shared<FeedOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
-															nullptr, nullptr, nullptr);
+															nullptr, nullptr, nullptr, bgpquery->dinstinct_query);
 
 				return (new PlanTree(plan_node));
 			}
