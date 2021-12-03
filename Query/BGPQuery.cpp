@@ -361,8 +361,10 @@ void BGPQuery::count_statistics_num() {
  * @param _query_var the
  * @return
  */
-bool BGPQuery::EncodeBGPQuery(KVstore *_kvstore, const vector<string> &_query_var) {
+bool BGPQuery::EncodeBGPQuery(KVstore *_kvstore, const vector<string> &_query_var, bool dinstinct) {
 
+
+	this->dinstinct_query = dinstinct;
 
 	// I want this function scan all vars, incluing all pre_var and subject_or_object_var
 	this->ScanAllVar(_query_var);
@@ -487,7 +489,10 @@ void BGPQuery::ScanAllVarByBigBGPID(BGPQuery *big_bgpquery, const vector<string>
 
 
 // this function is invoked after adding all triples of small BGP
-bool BGPQuery::EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore *_kvstore, const vector<string> &_query_var) {
+bool BGPQuery::EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore *_kvstore,
+								   const vector<string> &_query_var, bool dinstinct) {
+
+	this->dinstinct_query = dinstinct;
 
 	this->ScanAllVarByBigBGPID(big_bgpquery_, _query_var);
 
