@@ -40,7 +40,6 @@ JoinMethod PlanGenerator::get_join_strategy(bool s_is_var, bool p_is_var, bool o
 			}
 		}
 		if(!o_is_var){
-			cout << "in this" << endl;
 			if(!bgpquery->get_vardescrip_by_id(bgpquery->pre_var_id[0])->selected_)
 				return JoinMethod::o2s;
 			else{
@@ -107,8 +106,8 @@ bool PlanGenerator::check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PR
 void PlanGenerator::insert_edge_selectivity_to_cache(unsigned from_id, unsigned to_id, unsigned linked_num) {
 
 	double selectivity = max(1.0, ((double) linked_num / var_to_sample_cache[from_id].size()));
-	cout << "from id: " << from_id << ", to id: " << to_id << ", linked_num = " << linked_num  <<
-		", var_cache_num = " << var_to_sample_cache[from_id].size() << " selectivity: " << selectivity << endl;
+	// cout << "from id: " << from_id << ", to id: " << to_id << ", linked_num = " << linked_num  <<
+	// 	", var_cache_num = " << var_to_sample_cache[from_id].size() << " selectivity: " << selectivity << endl;
 	if (s_o_list_average_size.find(from_id) == s_o_list_average_size.end()) {
 		map<unsigned, double > this_node_selectivity_map;
 		this_node_selectivity_map.insert(
@@ -385,9 +384,9 @@ unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<u
 		vector<vector<unsigned>> &last_sample = sample_cache[last_plan_nodes_num - 2][last_plan_nodes];
 
 		if (last_sample.size() != 0) {
-			cout << "card estimation from " ;
-			for(auto x : last_plan_nodes) cout << x << " ";
-			cout << "to " << next_join_node;
+			// cout << "card estimation from " ;
+			// for(auto x : last_plan_nodes) cout << x << " ";
+			// cout << "to " << next_join_node;
 
 			unsigned now_sample_num = 0;
 
@@ -560,7 +559,7 @@ unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<u
 
 			}
 
-			cout << " pass num: " << now_sample_num << endl;
+			// cout << " pass num: " << now_sample_num << endl;
 
 			card_estimation = max(
 					(unsigned long) ((double) (now_sample_num * last_card_estimation ) / last_sample.size() ),
@@ -858,58 +857,36 @@ unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<u
 		}
 	}
 
-	cout << "done" << endl;
-
-	cout << "limit literal: " << limitID_literal << endl;
-	cout << "limit entity: "  << limitID_entity << endl;
 	unsigned sample_from_num = not_literal ? limitID_entity : limitID_entity + limitID_literal;
 
-	cout << "samplefromnum = " << sample_from_num << endl;
 
 	unsigned sample_size = get_sample_size(sample_from_num);
-	cout << "sample_size = " << sample_size << endl;
 	unsigned sample_entity_size = not_literal ? sample_size : ((double )sample_size * limitID_entity / (limitID_literal + limitID_entity) + 1);
 	unsigned sample_literal_size = not_literal ? 0 : (sample_size * limitID_literal / (limitID_literal + limitID_entity) + 1);
-	// need_insert_vec = new IDList(sample_size);
-	// vector<unsigned> so_sample_cache;
 	sample_entity_size = limitID_entity == 0 ? 0 : sample_entity_size;
 	sample_literal_size = limitID_literal == 0 ? 0 : sample_literal_size;
-	cout << "sample entity size = " << sample_entity_size << endl;
-	cout << "sample literal size = " << sample_literal_size << endl;
 	so_sample_cache.reserve(sample_entity_size + sample_literal_size);
 
 	unsigned already_sampled_num = 0;
 	uniform_int_distribution<unsigned> dis(0, limitID_entity-1);
-	for(int i = 0; i < 20; ++i) cout << dis(eng) << "  ";
-	cout << endl;
 	while (already_sampled_num < sample_entity_size){
 		unsigned index_need_insert = dis(eng);
-		cout << "index = " << index_need_insert << endl;
 		auto entity_str = kvstore->getEntityByID(index_need_insert);
 		if(entity_str != ""){
-			cout << "pass" << endl;
 			so_sample_cache.emplace_back(index_need_insert);
 			++already_sampled_num;
-		} else{
-			cout << "entity not pass" << endl;
 		}
 	}
 
-	cout << "1111111" << endl;
 
 	already_sampled_num = 0;
 	dis = uniform_int_distribution<unsigned>(0, limitID_literal-1);
-	cout << "22222222" << endl;
 	while (already_sampled_num < sample_literal_size){
 		unsigned index_need_insert = dis(eng) + Util::LITERAL_FIRST_ID;
-		cout << "index = " << index_need_insert << endl;
 		auto literal_str = kvstore->getLiteralByID(index_need_insert);
 		if(literal_str != ""){
-			cout << "pass" << endl;
 			so_sample_cache.emplace_back(index_need_insert);
 			++already_sampled_num;
-		}else{
-			cout << "literal not pass" << endl;
 		}
 	}
 
@@ -977,9 +954,7 @@ void PlanGenerator::considervarscan() {
 			var_sampled_from_candidate[var_id] = true;
 
 		} else{
-			cout << "in this for var id: " << var_id << endl;
 			var_to_num_map[var_id] = get_sample_from_whole_database(var_id, need_insert_vec);
-			cout << "in this, sample for var id: " << var_id << " done" << endl;
 			var_sampled_from_candidate[var_id] = false;
 
 		}
@@ -1030,8 +1005,8 @@ void PlanGenerator::considerwcojoin(unsigned int var_num) {
 													next_node, new_node_vec);
 			new_plan->plan_cost = cost;
 
-			for(auto x:last_node_plan.first) cout << x << " ";
-			cout << "to node " << next_node << " , cost: " << cost << endl;
+			// for(auto x:last_node_plan.first) cout << x << " ";
+			// cout << "to node " << next_node << " , cost: " << cost << endl;
 
 			insert_this_plan_to_cache(new_plan, new_node_vec, var_num);
 
@@ -1148,9 +1123,9 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 
 	considervarscan();
 
-	cout << "print for var_to_num_map:" << endl;
-	for(auto x:var_to_num_map)
-		cout << x.first << "   " << x.second<<endl;
+	// cout << "print for var_to_num_map:" << endl;
+	// for(auto x:var_to_num_map)
+	// 	cout << x.first << "   " << x.second<<endl;
 
 	// should be var num not include satellite node
 	// should not include pre_var num
@@ -1165,12 +1140,12 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 				considerbinaryjoin(var_num);
 	}
 
-	for(auto x:card_cache){
-		for(auto y:x){
-			for(auto z:y.first) cout << z << " ";
-			cout << "card: " << y.second << endl;
-		}
-	}
+	// for(auto x:card_cache){
+	// 	for(auto y:x){
+	// 		for(auto z:y.first) cout << z << " ";
+	// 		cout << "card: " << y.second << endl;
+	// 	}
+	// }
 
 	PlanTree* best_plan = get_best_plan_by_num(join_nodes.size());
 	//
