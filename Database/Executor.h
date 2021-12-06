@@ -23,6 +23,8 @@
 
 using namespace std;
 
+#define EXECUTOR_DEBUG_INFO
+
 template <typename Container> // we can make this generic for any container [1]
 struct container_hash{
   std::size_t operator()(Container const& c) const {

@@ -219,7 +219,12 @@ tuple<bool,IntermediateResult> Executor::JoinTable(const shared_ptr<JoinTwoTable
   auto new_position_id_mapping = make_shared<PositionValue>();
 
   auto join_nodes = join_plan->public_variables_;
-
+#ifdef EXECUTOR_DEBUG_INFO
+  cout<<"Executor::JoinTable public_variables_:";
+  for(auto public_var_id : *join_nodes)
+    cout<<public_var_id<<" ";
+  cout<<endl;
+#endif
   // build index in big table
   auto& big_table = records_a->size() > records_b->size() ? records_a : records_b;
   auto& big_id_pos = records_a->size() > records_b->size() ? table_a_id_pos : table_b_id_pos;
