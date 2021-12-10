@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-11-25 18:28:53
+ * @LastEditTime: 2021-12-10 14:47:05
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -3783,7 +3783,7 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Response>& response,str
 }
 
 
-string checkIdentity(string username, string password)
+string checkIdentity(string username, string password,string is_encryption)
 {
 	//check identity.
 	pthread_rwlock_rdlock(&users_map_lock);
@@ -3793,6 +3793,17 @@ string checkIdentity(string username, string password)
 		string error = "username not find.";
 		pthread_rwlock_unlock(&users_map_lock);
 		return error;
+	}
+	if( is_encryption=="1")
+	{
+		if(Util::md5(it->second->getPassword())!=password)
+		{
+			string error = "wrong password.";
+		
+		  pthread_rwlock_unlock(&users_map_lock);
+		  return error;
+		}
+		
 	}
 	else if (it->second->getPassword() != password)
 	{
@@ -3845,6 +3856,7 @@ const shared_ptr<HttpServer::Request>& request, string RequestType)
 	string db_name;
 	Document document;
 	string url;
+	string is_encryption="0";
 	string remote_ip=getRemoteIp(request);
 	cout<<"request time :"<<Util::getTimeString()<<endl;
 	cout<<"request remote ip:"<<remote_ip<<endl;
@@ -3867,6 +3879,7 @@ const shared_ptr<HttpServer::Request>& request, string RequestType)
 		
 		password = UrlDecode(password);
 		db_name = WebUrl::CutParam(url, "db_name");
+		is_encryption=WebUrl::CutParam(url,"encryption");
 		
 	}
 	else if (RequestType == "POST")
@@ -3906,6 +3919,10 @@ const shared_ptr<HttpServer::Request>& request, string RequestType)
 		{
 			password=document["password"].GetString();
 		}
+		if(document.HasMember("encryption"))
+		{
+			is_encryption=document["encryption"].GetString();
+		}
 			
 	}
 	else
@@ -3920,7 +3937,7 @@ const shared_ptr<HttpServer::Request>& request, string RequestType)
 		return;
 	}
 
-	string checkidentityresult = checkIdentity(username, password);
+	string checkidentityresult = checkIdentity(username, password,is_encryption);
 	if (checkidentityresult.empty() == false)
 	{
 		sendResponseMsg(1001, checkidentityresult, response);
