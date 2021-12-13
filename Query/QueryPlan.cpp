@@ -649,8 +649,7 @@ shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(BasicQuery *basic_qu
 
 /**
  * If the chosen one have a constant edge, that is ,
- * 1. neighbour and predicate are both constant , or
- * 2. have a not-selected predicate var and a constant neighbour
+ *  neighbour and predicate are both constant
  * @param bgp_query
  * @param kv_store      KVStorePointer
  * @param target_node   the node needed to check constant edge
@@ -699,21 +698,6 @@ shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(shared_ptr<BGPQuery>
         pid = kv_store->getIDByPredicate(triple_string_type.getPredicate());
         oid = target_node;
         join_method = JoinMethod::sp2o;
-      }
-      check_edge_info->emplace_back(sid, pid, oid, join_method);
-      check_edge_constant_info->emplace_back(s_constant, p_constant, o_constant);
-    }
-    else if(const_number == 1 && (!p_constant))
-    {
-      if (!s_constant) {
-        sid = target_node;
-        oid = kv_store->getIDByString(triple_string_type.getObject());
-        join_method = JoinMethod::o2s;
-      }
-      if (!o_constant) {
-        sid = kv_store->getIDByString(triple_string_type.getSubject());
-        oid = target_node;
-        join_method = JoinMethod::s2o;
       }
       check_edge_info->emplace_back(sid, pid, oid, join_method);
       check_edge_constant_info->emplace_back(s_constant, p_constant, o_constant);

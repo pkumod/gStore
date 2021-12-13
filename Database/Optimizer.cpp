@@ -513,8 +513,16 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
     else if(operation_type==StepOperation::JoinType::EdgeCheck)
       throw string("StepOperation::JoinType::EdgeCheck cannot happened in leaf node");
     else if(operation_type==StepOperation::JoinType::JoinTwoNodes){
+#ifdef OPTIMIZER_DEBUG_INFO
+      long t1 = Util::get_cur_time();
+#endif
       auto initial_result = executor_.InitialTableTwoNode(step_operation->join_two_node_,id_caches);
       leaf_table = get<1>(initial_result);
+#ifdef OPTIMIZER_DEBUG_INFO
+      cout<<"InitialTableTwoNode result size:"<<leaf_table.values_->size();
+      long t2 = Util::get_cur_time();
+      cout<< ",  used " << (t2 - t1) << "ms." <<endl;
+#endif
     }
     else if(operation_type==StepOperation::JoinType::GetAllTriples)
     {
