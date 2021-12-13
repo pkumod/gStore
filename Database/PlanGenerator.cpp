@@ -121,9 +121,9 @@ void PlanGenerator::insert_edge_selectivity_to_cache(unsigned from_id, unsigned 
 }
 
 void PlanGenerator::insert_card_estimation_to_cache(const vector<unsigned> &now_plan_nodes,
-													unsigned long card_estimation, vector<vector<unsigned>> &result_sample) {
+													long long card_estimation, vector<vector<unsigned>> &result_sample) {
 	if (card_cache.size() < now_plan_nodes.size() - 1) {
-		map<vector<unsigned>, unsigned long> this_var_num_card_map;
+		map<vector<unsigned>, long long> this_var_num_card_map;
 		this_var_num_card_map.insert(make_pair(now_plan_nodes, card_estimation));
 		card_cache.push_back(this_var_num_card_map);
 
@@ -137,7 +137,7 @@ void PlanGenerator::insert_card_estimation_to_cache(const vector<unsigned> &now_
 	}
 }
 
-unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
+long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
 
 	auto var_descrip = bgpquery->get_vardescrip_by_id(next_join_node);
 
@@ -150,7 +150,7 @@ unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsign
 		// }
 
 
-		unsigned long card_estimation;
+		long long card_estimation;
 		vector<vector<unsigned>> this_sample;
 
 		unsigned now_sample_num = 0;
@@ -178,8 +178,8 @@ unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsign
 			new_id_pos_map[last_node] = 1;
 		}
 
-		unsigned long s_o_list1_total_num = 0;
-		unsigned long s_o_list2_total_num = 0;
+		long long s_o_list1_total_num = 0;
+		long long s_o_list2_total_num = 0;
 
 		random_device rd;
 		mt19937 eng(rd());
@@ -355,9 +355,9 @@ unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsign
 		}
 
 		card_estimation = max((edge_type[0] == Util::EDGE_IN) ?
-				(unsigned long) ((double) (now_sample_num * var_to_num_map[last_node]) / var_to_sample_cache[last_node].size()) :
-				(unsigned long) ((double) (now_sample_num * var_to_num_map[next_join_node]) / var_to_sample_cache[next_join_node].size() )
-					, (unsigned long) 1);
+				(long long) ((double) (now_sample_num * var_to_num_map[last_node]) / var_to_sample_cache[last_node].size()) :
+				(long long) ((double) (now_sample_num * var_to_num_map[next_join_node]) / var_to_sample_cache[next_join_node].size() )
+					, (long long) 1);
 
 		insert_card_estimation_to_cache(now_plan_nodes, card_estimation, this_sample);
 
@@ -369,7 +369,7 @@ unsigned long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsign
 }
 
 
-unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
+long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
 
 	unsigned last_plan_nodes_num = last_plan_nodes.size();
 	auto var_descrip = bgpquery->get_vardescrip_by_id(next_join_node);
@@ -377,8 +377,8 @@ unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<u
 	if (card_cache.size() < last_plan_nodes_num ||
 			card_cache[last_plan_nodes_num - 1].find(now_plan_nodes) == card_cache[last_plan_nodes_num - 1].end()) {
 
-		unsigned long card_estimation;
-		unsigned long last_card_estimation = card_cache[last_plan_nodes_num - 2][last_plan_nodes];
+		long long card_estimation;
+		long long last_card_estimation = card_cache[last_plan_nodes_num - 2][last_plan_nodes];
 
 		vector<vector<unsigned>> this_sample;
 		vector<vector<unsigned>> &last_sample = sample_cache[last_plan_nodes_num - 2][last_plan_nodes];
@@ -562,8 +562,8 @@ unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<u
 			// cout << " pass num: " << now_sample_num << endl;
 
 			card_estimation = max(
-					(unsigned long) ((double) (now_sample_num * last_card_estimation ) / last_sample.size() ),
-					(unsigned long) 1);
+					(long long) ((double) (now_sample_num * last_card_estimation ) / last_sample.size() ),
+					(long long) 1);
 
 		} else {
 			card_estimation = 1;
@@ -609,7 +609,7 @@ unsigned long PlanGenerator::card_estimator_more_than_three_nodes(const vector<u
 
 
 // todo: need to complete
-unsigned long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
+long long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
 
 	unsigned last_plan_nodes_num = last_plan_nodes.size();
 
@@ -621,22 +621,22 @@ unsigned long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_no
 	// return 1;
 }
 
-unsigned long PlanGenerator::get_card(const vector<unsigned> &nodes){
+long long PlanGenerator::get_card(const vector<unsigned> &nodes){
 	return card_cache[nodes.size()-2][nodes];
 }
 
-unsigned long PlanGenerator::cost_model_for_wco(PlanTree *last_plan, const vector<unsigned int> &last_plan_node,
+long long PlanGenerator::cost_model_for_wco(PlanTree *last_plan, const vector<unsigned int> &last_plan_node,
 															unsigned int next_node, const vector<unsigned int> &now_plan_node) {
 	return last_plan->plan_cost + card_estimator(last_plan_node, next_node, now_plan_node);
 }
 
-unsigned long PlanGenerator::cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
+long long PlanGenerator::cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
 											   PlanTree* plan_a, PlanTree* plan_b){
 
-	unsigned long plan_a_card = get_card(plan_a_nodes);
-	unsigned long plan_b_card = get_card(plan_b_nodes);
-	unsigned long min_card = min(plan_a_card, plan_b_card);
-	unsigned long max_card = max(plan_a_card, plan_b_card);
+	long long plan_a_card = get_card(plan_a_nodes);
+	long long plan_b_card = get_card(plan_b_nodes);
+	long long min_card = min(plan_a_card, plan_b_card);
+	long long max_card = max(plan_a_card, plan_b_card);
 
 	return min_card + 2*max_card + plan_a->plan_cost + plan_b->plan_cost;
 }
@@ -645,7 +645,7 @@ unsigned long PlanGenerator::cost_model_for_binary(const vector<unsigned> &plan_
 PlanTree* PlanGenerator::get_best_plan(const vector<unsigned> &nodes){
 
 	PlanTree* best_plan = nullptr;
-	unsigned long min_cost = ULONG_MAX;
+	long long min_cost = LLONG_MAX;
 
 
 	for(const auto &plan : plan_cache[nodes.size()-1][nodes]){
@@ -662,7 +662,7 @@ PlanTree* PlanGenerator::get_best_plan(const vector<unsigned> &nodes){
 PlanTree* PlanGenerator::get_best_plan_by_num(int total_var_num){
 
 	PlanTree* best_plan = nullptr;
-	unsigned long min_cost = ULONG_MAX	;
+	long long min_cost = LLONG_MAX	;
 
 
 	//	for(int i =0;i < plan_cache.size();++i){
@@ -894,6 +894,34 @@ unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<u
 
 }
 
+
+// todo: complete this
+long long PlanGenerator::cost_model_for_p2so_optimization(unsigned node_1_id, unsigned node_2_id) {
+	auto var1_descrip = bgpquery->get_vardescrip_by_id(node_1_id);
+	auto var2_descrip = bgpquery->get_vardescrip_by_id(node_2_id);
+
+	// unsigned linked_edge_count = 0;
+	vector<unsigned> linked_edge_pre_const_index;
+	// vector<unsigned> linked_edge_pre_var_index;
+	for(unsigned edge_index = 0; edge_index < var1_descrip->degree_; ++edge_index){
+		if(var1_descrip->so_edge_nei_type_[edge_index] == VarDescriptor::EntiType::VarEntiType and
+				var1_descrip->so_edge_nei_[edge_index] == node_2_id){
+			if(var1_descrip->so_edge_pre_type_[edge_index] == VarDescriptor::PreType::ConPreType)
+				linked_edge_pre_const_index.push_back(edge_index);
+			// else
+			// 	linked_edge_pre_var_index.push_back(edge_index);
+		}
+	}
+
+	if(!linked_edge_pre_const_index.empty()){
+		return kvstore->getPreListSize(var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]]);
+	} else{
+		return triples_num;
+	}
+
+
+}
+
 /**
  * Generate sample set of every var.
  * If a var has no const linked to it, then sample from the whole database.
@@ -926,11 +954,6 @@ void PlanGenerator::considervarscan() {
 		vector<unsigned> this_node{var_id};
 		PlanTree *new_scan = new PlanTree(var_id, bgpquery);
 
-		// Todo: to change this to (*id_caches)[id_to_position]->size()
-		new_scan->plan_cost = 1;
-		// var_to_num_map[var_id] = (*id_caches)[var_id]->size();
-		// new_scan->plan_cost = var_to_num_map[var_id];
-
 		list<PlanTree *> this_node_plan;
 		this_node_plan.push_back(new_scan);
 
@@ -959,6 +982,9 @@ void PlanGenerator::considervarscan() {
 
 		}
 		var_to_sample_cache[var_id] = std::move(need_insert_vec);
+
+		new_scan->plan_cost = var_to_num_map[var_id];
+
 
 	}
 
@@ -1001,12 +1027,20 @@ void PlanGenerator::considerwcojoin(unsigned int var_num) {
 
 			PlanTree* new_plan = new PlanTree(last_best_plan, bgpquery, next_node);
 			// todo: complete this
-			unsigned long cost = cost_model_for_wco(last_best_plan, last_node_plan.first,
+			long long cost = cost_model_for_wco(last_best_plan, last_node_plan.first,
 													next_node, new_node_vec);
 			new_plan->plan_cost = cost;
 
 			// for(auto x:last_node_plan.first) cout << x << " ";
 			// cout << "to node " << next_node << " , cost: " << cost << endl;
+			if(var_num == 2){
+				unsigned this_cost = cost_model_for_p2so_optimization(last_node_plan.first[0], next_node);
+				if(this_cost < cost){
+					new_plan = new PlanTree(last_node_plan.first[0], next_node, bgpquery);
+					new_plan->plan_cost = this_cost;
+				}
+			}
+
 
 			insert_this_plan_to_cache(new_plan, new_node_vec, var_num);
 
@@ -1024,7 +1058,7 @@ void PlanGenerator::considerbinaryjoin(unsigned int var_num)  {
 
 	for(const auto &need_considerbinaryjoin_nodes_plan : plan_cache[var_num - 1]){
 
-		unsigned long last_plan_smallest_cost = get_best_plan(need_considerbinaryjoin_nodes_plan.first)->plan_cost;
+		long long last_plan_smallest_cost = get_best_plan(need_considerbinaryjoin_nodes_plan.first)->plan_cost;
 
 		// todo: need consider pre_var not include
 		// todo: 问周雨奇
@@ -1050,10 +1084,10 @@ void PlanGenerator::considerbinaryjoin(unsigned int var_num)  {
 							PlanTree *another_small_best_plan = get_best_plan(other_nodes);
 
 							// todo: need to complete
-							unsigned long now_cost = cost_model_for_binary(small_nodes_plan.first,
+							long long now_cost = cost_model_for_binary(small_nodes_plan.first,
 																		   other_nodes, small_best_plan,
 																		   another_small_best_plan);
-							// unsigned long now_cost = 1;
+							// long long now_cost = 1;
 
 							if (now_cost < last_plan_smallest_cost) {
 								//                            build new plan and add to plan_cache
