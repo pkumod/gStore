@@ -4,27 +4,25 @@
 #It is best to update the process of modification in the rear of the original code(reduce the order changes).
 #Otherwise the speed of construction will be influenced on a large scale.
 
-#TODO: some space can be saved by using the low version of gcc mirror(e.g-gcc:5).
-#But its mobility and dependence has not been tested yet and waiting for confirmation.
-
-FROM registry.docker-cn.com/library/gcc:8
-
-#download all the optional installation library in gstore's document.
-RUN apt-get update && apt-get install -y --no-install-recommends realpath \
-         ccache \
-         vim \
-	 lsof \
-         openjdk-8-jdk \
-         libreadline-dev \
-         libboost-all-dev \
-         && rm -rf /var/lib/apt/lists/
+FROM lsvih/gcc-boost-cmake-java:v1
+RUN apt update \
+	&& apt install -y --no-install-recommends \
+	libcurl4-openssl-dev \
+	libreadline-dev \
+	uuid-dev \
+	&& ldconfig -v \
+	&& echo "*    -    nofile    65535" >> /etc/security/limits.conf \
+	&& echo "*    -    noproc    65535" >> /etc/security/limits.conf
 
 COPY . /usr/src/gstore
 WORKDIR /usr/src/gstore
 
-#The solution to the problem of java, whose default setting is using ansii to encode.
 ENV LANG C.UTF-8
 
 EXPOSE 80
 
-RUN make
+RUN make pre -j && make -j \
+	&& apt autoclean && apt clean \
+	&& rm -rf /tmp/* /var/tmp/* \
+	&& rm -rf /usr/share/doc/* \
+	&& rm -rf /var/lib/apt/lists/* 
