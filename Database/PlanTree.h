@@ -76,7 +76,7 @@ public:
     // todo: this two vec need build
     vector<unsigned> already_joined_pre_var;
     vector<unsigned> already_so_var;
-    unsigned long plan_cost;
+    long long plan_cost;
 
     PlanTree()= default;
 
@@ -85,6 +85,8 @@ public:
 
     PlanTree(unsigned first_node, BGPQuery *bgpquery);
     PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_node);
+    void add_prevar_neicon(unsigned node_id, BGPQuery *bgpquery, bool is_first_node);
+    PlanTree(unsigned node_1_id, unsigned node_2_id, BGPQuery *bgpquery);
     PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery, set<unsigned> &join_nodes);
     PlanTree(PlanTree *last_plan_tree, unsigned next_join_var_id, set<unsigned> already_id, BGPQuery *bgpquery);
 

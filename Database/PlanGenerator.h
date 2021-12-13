@@ -43,7 +43,7 @@ public:
 	// plan_cache[n] contains n-1 nodes join plan, and this n-1 nodes are connected
 	vector<map<vector<unsigned>, list<PlanTree*>>> plan_cache;
 
-	vector<map<vector<unsigned>, unsigned long>> card_cache;
+	vector<map<vector<unsigned>, long long>> card_cache;
 	vector<map<vector<unsigned>, vector<vector<unsigned>> >> sample_cache;
 
 	// map var id to some thing
@@ -72,22 +72,23 @@ public:
 	static unsigned get_sample_size(unsigned id_cache_size);
 	bool check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDICATE_ID p_id, TYPE_ENTITY_LITERAL_ID o_id);
 
-	unsigned long card_estimator_two_nodes(unsigned last_node, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
-	unsigned long card_estimator_more_than_three_nodes(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
+	long long card_estimator_two_nodes(unsigned last_node, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
+	long long card_estimator_more_than_three_nodes(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
 	// using sample method
-	unsigned long card_estimator(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
+	long long card_estimator(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
 
-	unsigned long get_card(const vector<unsigned> &nodes);
+	long long get_card(const vector<unsigned> &nodes);
 
 	void insert_edge_selectivity_to_cache(unsigned from_id, unsigned to_id, unsigned linked_num);
 
 	void insert_card_estimation_to_cache(const vector<unsigned> &now_plan_nodes,
-										 unsigned long card_estimation, vector<vector<unsigned>> &result_sample);
+										 long long card_estimation, vector<vector<unsigned>> &result_sample);
 
-	unsigned long cost_model_for_wco(PlanTree* last_plan, const vector<unsigned> &last_plan_node,
+	long long cost_model_for_p2so_optimization(unsigned node_1_id, unsigned node_2_id);
+	long long cost_model_for_wco(PlanTree* last_plan, const vector<unsigned> &last_plan_node,
 												 unsigned next_node, const vector<unsigned> &now_plan_node);
 
-	unsigned long cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
+	long long cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
 										PlanTree* plan_a, PlanTree* plan_b);
 
 	void insert_this_plan_to_cache(PlanTree *new_plan, const vector<unsigned> &new_node_vec, unsigned var_num);
