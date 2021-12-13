@@ -86,3 +86,21 @@ bool IPBlackList::Check(std::string ip){
     }
     return true;
 }
+
+void IPBlackList::InsertIPToFile(std::string file, std::string ip, std::string reason)
+{
+    ofstream outfile;
+    // ios::app指从文件尾开始输出
+    outfile.open(file, ios::out | ios::app);
+    if (!outfile)
+    {
+        cout << "open white list file failed." << endl;
+        return;
+    }
+
+    //使输出格式为浮点
+    outfile << "#" << reason << "\n"; //以空格为间隔写 x y
+    outfile << ip << "\n";            //一行写完换行
+    outfile.close();
+    this->ipList.insert(ip);
+}

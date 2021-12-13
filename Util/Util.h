@@ -377,6 +377,7 @@ public:
 	static std::string getTimeName();
 	static std::string getTimeString();
     static std::string getTimeString2();
+    static std::string getTimeString3();
     static int getRandNum();
 	static std::string get_folder_name(const std::string path, const std::string db_name);
 	static std::string get_backup_time(const std::string path, const std::string db_name);
