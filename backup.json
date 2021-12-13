@@ -4,3 +4,4 @@
 {"db_name": "csr","backup_interval": "600","last_backup_time": "2021-11-12 17:12:30","is_backup": "false"}
 {"db_name": "zqkg","backup_interval": "600","last_backup_time": "2021-11-12 17:12:30","is_backup": "false"}
 {"db_name": "yjzhkg","backup_interval": "600","last_backup_time": "2021-11-16 01:01:07","is_backup": "false"}
+{"db_name": "rskg","backup_interval": "600","last_backup_time": "2021-12-02 16:37:19","is_backup": "false"}

@@ -257,7 +257,9 @@ string Util::getConfigureValue(string keyname)
     map<string, string>::iterator iter = Util::global_config.find(keyname);
 	if (iter != Util::global_config.end())
 	{
-		    return iter->second;
+        string value=iter->second;
+        value=Util::replace_all(value,"\"","");
+		    return value;
 	}
 	return "";
 }
@@ -284,6 +286,7 @@ bool Util::configure_new()
     Util::setGlobalConfig(ini_parser, "ghttp", "ip");
     Util::setGlobalConfig(ini_parser, "ghttp", "ip_allow_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "ip_deny_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "ip_access_log");
     Util::setGlobalConfig(ini_parser, "system", "version");
     Util::setGlobalConfig(ini_parser, "system", "licensetype");
     cout << "the current settings are as below: " << endl;
@@ -1725,6 +1728,17 @@ Util::getTimeString() {
 	strftime(time_str, max, "%Y%m%d %H:%M:%S", localtime(&timep));
 	return string(time_str);
 }
+
+string
+Util::getTimeString3() {
+	static const int max = 40; // max length of time string
+	char time_str[max];
+	time_t timep;
+	time(&timep);
+	strftime(time_str, max, "%Y-%m-%d %H:%M:%S", localtime(&timep));
+	return string(time_str);
+}
+
 
 string
 Util::getTimeString2() {
