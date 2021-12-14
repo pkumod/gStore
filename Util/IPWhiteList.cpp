@@ -102,3 +102,20 @@ void IPWhiteList::InsertIPToFile(std::string file, std::string ip, std::string r
     outfile.close();
     this->ipList.insert(ip);
 }
+
+void IPWhiteList::UpdateIPToFile(std::string file, vector<std::string>& ips, std::string reason)
+{
+    ofstream outfile;
+    outfile.open(file.c_str());
+    if (!outfile)
+    {
+        cout << "open white list file failed." << endl;
+        return;
+    }
+    outfile << "#" << reason << "\n";
+    for(vector<std::string>::iterator it = ips.begin(); it != ips.end(); it++)
+    {
+        outfile << (*it) << "\n";
+    }
+    outfile.close();
+}

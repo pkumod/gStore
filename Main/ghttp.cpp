@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-12-11 01:00:53
+ * @LastEditTime: 2021-12-14 15:54:53
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -123,7 +123,7 @@ string getRemoteIp(const shared_ptr<HttpServer::Request>& request);
 
 bool trylockdb(std::map<std::string, struct DBInfo*>::iterator it_already_build);
 
-void writeLog(FILE* fp, string _info);
+void writeLog(string _info);
 
 void sendResponseMsg(int code, string msg, const shared_ptr<HttpServer::Response>& response,string ip,string operation);
 
@@ -184,6 +184,10 @@ bool checkall_thread(const shared_ptr<HttpServer::Response>& response, const sha
 ifstream & seek_to_line(ifstream &, int);
 
 void quereyLog_thread_new(const shared_ptr<HttpServer::Response>& response, string file_name, int page_no, int page_size,string ip);
+
+void accessLog_thread_new(const shared_ptr<HttpServer::Response>& response, string file_name, int page_no, int page_size,string ip);
+
+void IPManager_thread_new(const shared_ptr<HttpServer::Response>& response, string ips, string ip_type, string type);
 //TODO: use lock to protect logs when running in multithreading environment
 FILE* query_logfp = NULL;
 string queryLog = "logs/endpoint/query.log";
@@ -1101,23 +1105,23 @@ int initialize(int argc, char *argv[])
 	// 	querylog_name = name_char;
 	// }
 	// fclose(name_logfp);
-	string querylog_name=Util::get_date_day();
-	//cout << "querylog_name: " << querylog_name << endl;
-	//open the query log
-	queryLog = QUERYLOG_PATH + querylog_name + ".log";
-	if(Util::file_exist(queryLog)==false)
-	{
-	   cout<<"query log file is not exists, now create it."<<endl;
-       Util::create_file(queryLog);
-	}
-	cout << "queryLog: " << queryLog << endl;
-	query_logfp = fopen(queryLog.c_str(), "a");
-	if (query_logfp == NULL)
-	{
-		cerr << "open query log error" << endl;
-		return -1;
-	}
-	long querylog_size = ftell(query_logfp);
+	// string querylog_name=Util::get_date_day();
+	// cout << "querylog_name: " << querylog_name << endl;
+	// open the query log
+	// queryLog = QUERYLOG_PATH + querylog_name + ".log";
+	// if(Util::file_exist(queryLog)==false)
+	// {
+	//    cout<<"query log file is not exists, now create it."<<endl;
+    //    Util::create_file(queryLog);
+	// }
+	// cout << "queryLog: " << queryLog << endl;
+	// query_logfp = fopen(queryLog.c_str(), "a");
+	// if (query_logfp == NULL)
+	// {
+	// 	cerr << "open query log error" << endl;
+	// 	return -1;
+	// }
+	// long querylog_size = ftell(query_logfp);
 
 	
 	
@@ -2774,9 +2778,9 @@ string update_flag,string remote_ip,string log_prefix)
 			// string QueryTime = Util::int2string(query_time) + "ms";
 			doc.AddMember("QueryTime", query_time, doc_allocator);
 			StringBuffer buffer;
-			PrettyWriter<StringBuffer> writer(buffer);
+			Writer<StringBuffer> writer(buffer);
 			doc.Accept(writer);
-			writeLog(query_logfp, buffer.GetString());
+			writeLog(buffer.GetString());
 		}
 
 		//string log_info = Util::get_date_time() + "\n" + sparql + "\n\nanswer num: " + Util::int2string(rs.ansNum)+"\nquery time: "+Util::int2string(query_time) +" ms\n-----------------------------------------------------------\n";
@@ -4557,13 +4561,27 @@ const shared_ptr<HttpServer::Request>& request, string RequestType)
 				{
 					file_name = document["date"].GetString();
 				}
-				if (document.HasMember("pageNo")&&document["pageNo"].IsInt())
+				if (document.HasMember("pageNo"))
 				{
-					page_no = document["pageNo"].GetInt();
+					if (document["pageNo"].IsInt())
+					{
+						page_no = document["pageNo"].GetInt();
+					}
+					else if (document["pageNo"].IsString())
+					{
+						page_no = Util::string2int(document["pageNo"].GetString());
+					}
 				}
-				if (document.HasMember("pageSize")&&document["pageSize"].IsInt())
+				if (document.HasMember("pageSize"))
 				{
-					page_size = document["pageSize"].GetInt();
+					if (document["pageSize"].IsInt())
+					{
+						page_size = document["pageSize"].GetInt();
+					}
+					else if (document["pageSize"].IsString())
+					{
+						page_size = Util::string2int(document["pageSize"].GetString());
+					}
 				}
 			}
 			quereyLog_thread_new(response, file_name, page_no, page_size,remote_ip);
@@ -4572,6 +4590,97 @@ const shared_ptr<HttpServer::Request>& request, string RequestType)
 		{
 			string error = "the parameter has some error,please look up the api document.";
 			sendResponseMsg(1003, error, response,remote_ip,"querylog");
+			return;
+		}
+	}
+	else if(operation=="accesslog")
+	{
+		string file_name = "";
+		int page_no = 1;
+		int page_size = 10;
+		try
+		{
+			if (RequestType == "GET")
+			{
+				file_name = WebUrl::CutParam(url, "date");
+				string str_page_no = WebUrl::CutParam(url, "pageNo");
+				string str_page_size = WebUrl::CutParam(url, "pageSize");
+				page_no = Util::string2int(str_page_no);
+				page_size = Util::string2int(str_page_size);
+				file_name = UrlDecode(file_name);
+			}
+			else if (RequestType == "POST")
+			{
+				if (document.HasMember("date")&&document["date"].IsString())
+				{
+					file_name = document["date"].GetString();
+				}
+				if (document.HasMember("pageNo"))
+				{
+					if (document["pageNo"].IsInt())
+					{
+						page_no = document["pageNo"].GetInt();
+					}
+					else if (document["pageNo"].IsString())
+					{
+						page_no = Util::string2int(document["pageNo"].GetString());
+					}
+				}
+				if (document.HasMember("pageSize"))
+				{
+					if (document["pageSize"].IsInt())
+					{
+						page_size = document["pageSize"].GetInt();
+					}
+					else if (document["pageSize"].IsString())
+					{
+						page_size = Util::string2int(document["pageSize"].GetString());
+					}
+				}
+			}
+			accessLog_thread_new(response, file_name, page_no, page_size,remote_ip);
+		}
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response,remote_ip,"accesslog");
+			return;
+		}
+	}
+	else if(operation=="ipmanage")
+	{
+		string type = "";
+		string ips = "";
+		string ip_type = "";
+		try
+		{
+			if (RequestType == "GET")
+			{
+				type = WebUrl::CutParam(url, "type");
+				ips = WebUrl::CutParam(url, "ips");
+				ip_type = WebUrl::CutParam(url, "ip_type");
+			}
+			else if (RequestType == "POST")
+			{
+				if (document.HasMember("type")&&document["type"].IsString())
+				{
+					type = document["type"].GetString();
+				}
+				if (document.HasMember("ips")&&document["ips"].IsString())
+				{
+					ips = document["ips"].GetString();
+				}
+				if (document.HasMember("ip_type")&&document["ip_type"].IsString())
+				{
+					ip_type = document["ip_type"].GetString();
+				}
+			}
+			IPManager_thread_new(response, ips, ip_type, type);
+		}
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response,remote_ip,"ipmanage");
 			return;
 		}
 	}
@@ -4739,48 +4848,36 @@ void shutdown_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 
 
 
-void writeLog(FILE* fp, string _info)
+void writeLog(string _info)
 {
+	string queyrlog_name = Util::get_date_day();
+	if (Util::dir_exist(QUERYLOG_PATH) == false)
+	{
+		Util::create_dir(QUERYLOG_PATH);
+	}
+	string querylog_file = QUERYLOG_PATH + queyrlog_name + ".log";
+	if (Util::file_exist(querylog_file) == false)
+	{
+		cout<<"qeury log file is not exist, now create it."<<endl;
+		Util::create_file(querylog_file);
+	}
+	cout << "querylog: " << querylog_file << endl;
+	FILE* querylog_fp = fopen(querylog_file.c_str(), "a");
+	if (querylog_fp == NULL)
+	{
+		cout<<"open query log error." <<endl;
+		return;
+	}
 	//Another way to locka many: lock(lk1, lk2...)
 	query_log_lock.lock();
-	_info = Util::string_replace(_info, "\n", "");
-    _info = Util::string_replace(_info, "    ", "");
 	_info.push_back(',');
     _info.push_back('\n');
-	fprintf(fp, "%s", _info.c_str());
+	fprintf(querylog_fp, "%s", _info.c_str());
 
-	Util::Csync(fp);
-	long logSize = ftell(fp);
+	Util::Csync(querylog_fp);
+	long logSize = ftell(querylog_fp);
+	fclose(querylog_fp);
 	cout << "logSize: " << logSize << endl;
-	//if log size too big, we create a new log file
-	if(logSize > MAX_QUERYLOG_size)
-	{
-		//close the old query log file
-		fclose(query_logfp);
-		//create and open a new query log file, then save the log name to name.log
-		string querylog_name = Util::get_date_time();
-		int index_space = querylog_name.find(' ');
-		querylog_name = querylog_name.replace(index_space, 1, 1, '_');
-		string namelog_name = QUERYLOG_PATH + NAMELOG_PATH;
-		FILE *name_logfp = fopen(namelog_name.c_str(), "w");
-		fprintf(name_logfp, "%s", querylog_name.c_str());
-
-		queryLog = QUERYLOG_PATH + querylog_name + ".log";
-		//queryLog = querylog_name;
-		cout << "querLog: " << queryLog << endl;
-		query_logfp = fopen(queryLog.c_str(), "a");
-		if(query_logfp == NULL)
-		{
-			cerr << "open query log error"<<endl;
-		}
-	}
-	//another way to get the log file size
-	/*
-	struct stat statbuf;
-	stat(queryLog.c_str(), &statbuf);
-	int size = statbuf.st_size;
-	cout << "logSize in statbuf: " << size << endl;
-	*/
 	query_log_lock.unlock();
 }
 
@@ -5853,7 +5950,7 @@ void quereyLog_thread_new(const shared_ptr<HttpServer::Response>& response, stri
 			startLine = (page_no - 1)*page_size + 1;
 			endLine = page_no*page_size + 1;
 			//count total
-			while (getline(in, line))
+			while (getline(in, line, '\n'))
 			{
 				totalSize++;
 			}
@@ -5897,7 +5994,6 @@ void quereyLog_thread_new(const shared_ptr<HttpServer::Response>& response, stri
 	}
 	else
 	{
-		list.Parse("[]");
 		all.AddMember("StatusCode", 0, all.GetAllocator());
 		all.AddMember("StatusMsg", "Get query log success", all.GetAllocator());
 		all.AddMember("totalSize", totalSize, all.GetAllocator());
@@ -5914,4 +6010,222 @@ void quereyLog_thread_new(const shared_ptr<HttpServer::Response>& response, stri
     query_log_lock.unlock();
 	writeIpAccessLog(ip,operation,"get data successfully!",0);
 	return;
+}
+
+/**
+ * access log thread 
+ * 
+ * @param response 
+ * @param file_name 
+ * @param page_no 
+ * @param page_size 
+ */
+void accessLog_thread_new(const shared_ptr<HttpServer::Response>& response, string file_name, int page_no, int page_size,string ip)
+{
+	string operation="accessLog";
+    ip_log_lock.lock();
+	int totalSize = 0;
+	int totalPage = 0;
+	string queryLog = IP_ACCESS_PATH + file_name + ".log";
+	Document all;
+	Document list;
+	all.SetObject();
+	list.SetArray();
+	if(Util::file_exist(queryLog))
+	{
+		try 
+		{
+			ifstream in;
+			string line;
+			in.open(queryLog, ios::in);
+			// start paging
+			int startLine; //include
+			int endLine; //exclude
+			if (page_no < 1)
+			{
+				page_no = 1;
+			}
+			if (page_size < 1)
+			{
+				page_size = 10;
+			}
+			startLine = (page_no - 1)*page_size + 1;
+			endLine = page_no*page_size + 1;
+			//count total
+			while (getline(in, line, '\n'))
+			{
+				totalSize++;
+			}
+			in.close();
+			cout<< "totalSize=" << totalSize << ", page_no=" << page_no << ", page_size=" << page_size << endl;
+			// seek to start line;
+			in.open(queryLog, ios::in);
+			seek_to_line(in, startLine);
+			bool success = true;
+			stringstream str_stream;
+			str_stream << "[";
+			while (startLine < endLine && getline(in, line)) {
+				str_stream << line;
+				startLine++;
+			}
+			in.close();
+			line = str_stream.str();
+			line = Util::string_replace(line, "\n", "");
+			if (line[line.length() - 1] == ',')
+			{
+				line = line.substr(0, (line.length() - 1));
+			}
+			line.push_back(']');
+			list.Parse(line.c_str());
+			totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
+			all.AddMember("StatusCode", 0, all.GetAllocator());
+			all.AddMember("StatusMsg", "Get access log success", all.GetAllocator());
+			all.AddMember("totalSize", totalSize, all.GetAllocator());
+			all.AddMember("totalPage", totalPage, all.GetAllocator());
+			all.AddMember("pageNo", page_no, all.GetAllocator());
+			all.AddMember("pageSize", page_size, all.GetAllocator());
+			all.AddMember("list", list, all.GetAllocator());
+			
+		} 
+		catch (std::exception &e) 
+		{
+			all.AddMember("StatusCode", 1005, all.GetAllocator());
+         	all.AddMember("message", "Error! Access log corrupted", all.GetAllocator());
+			 writeIpAccessLog(ip,operation,"get data error!",1005);
+		}
+	}
+	else
+	{
+		all.AddMember("StatusCode", 0, all.GetAllocator());
+		all.AddMember("StatusMsg", "Get access log success", all.GetAllocator());
+		all.AddMember("totalSize", totalSize, all.GetAllocator());
+		all.AddMember("totalPage", totalPage, all.GetAllocator());
+		all.AddMember("pageNo", page_no, all.GetAllocator());
+		all.AddMember("pageSize", page_size, all.GetAllocator());
+		all.AddMember("list", list, all.GetAllocator());
+	}
+    StringBuffer buffer;
+    Writer<StringBuffer> writer(buffer);
+    all.Accept(writer);
+    string resJson = buffer.GetString();
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+    ip_log_lock.unlock();
+	// writeIpAccessLog(ip,operation,"get data successfully!",0);
+	return;
+}
+
+/**
+ * @brief IP manager
+ * 
+ * @param response 
+ * @param ips ip string
+ * @param ip_type 1-black ip 2-white ip
+ * @param type  1-query 2-save
+ */
+void IPManager_thread_new(const shared_ptr<HttpServer::Response>& response, string ips, string ip_type, string type)
+{
+	Document all;
+	Document::AllocatorType& allocator = all.GetAllocator(); 
+	all.SetObject();
+	if ( type == "1") // query
+	{
+		Document responseBody;
+		Document listDoc;
+		responseBody.SetObject();
+		listDoc.SetArray();
+		if (whiteList) // white IP
+		{
+			cout << "IP white List enabled." << endl;
+			responseBody.AddMember("ip_type", "2", allocator);
+			for (std::set<std::string>::iterator it = ipWhiteList->ipList.begin(); it!=ipWhiteList->ipList.end();it++)
+			{
+				Value item(kStringType);
+				item.SetString((*it).c_str(), allocator);
+				listDoc.PushBack(item, allocator);
+			}
+		}
+		else if (blackList) // black IP
+		{
+			cout << "IP black List enabled." << endl;
+			responseBody.AddMember("ip_type", "1", allocator);
+			for (std::set<std::string>::iterator it = ipBlackList->ipList.begin(); it!=ipBlackList->ipList.end();it++)
+			{
+				Value item(kStringType);
+				item.SetString((*it).c_str(), allocator);
+				listDoc.PushBack(item, allocator);
+			}
+		}
+		else
+		{
+			string resJson = CreateJson(1005, "please configure ip_deny_path or ip_allow_path in the conf.ini file first.", 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+			return;
+		}
+		responseBody.AddMember("ips", listDoc, allocator);
+
+		all.AddMember("StatusCode", 0, allocator);
+		all.AddMember("StatusMsg", "success", allocator);
+		all.AddMember("ResponseBody", responseBody, allocator);
+		StringBuffer buffer;
+		Writer<StringBuffer> writer(buffer);
+		all.Accept(writer);
+		string resJson = buffer.GetString();
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
+	else if (type == "2") // save 
+	{
+		if (ips.empty())
+		{
+			string resJson = CreateJson(1003, "the ips can't be empty", 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+			return;
+		}
+		vector<string> ipVector;
+		Util::split(ips,",", ipVector);
+		if (ip_type == "1") // black IP
+		{
+			if (blackList)
+			{
+				ipBlackList->UpdateIPToFile(ipBlackFile, ipVector, "update by wrokbanch");
+				// realod ip list
+				ipBlackList->Load(ipBlackFile);
+			}
+			else
+			{
+				string resJson = CreateJson(1005, "ip_deny_path is not configured, please configure it in the conf.ini file first.", 0);
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+				return;
+			}
+		}
+		else if (ip_type == "2") // white IP
+		{
+			if (whiteList)
+			{
+				ipWhiteList->UpdateIPToFile(ipWhiteFile, ipVector, "update by wrokbanch");
+				// realod ip list
+				ipWhiteList->Load(ipWhiteFile);
+			}
+			else
+			{
+				string resJson = CreateJson(1005, "ip_allow_path is not configured, please configure it in the conf.ini file first.", 0);
+				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+				return;
+			}
+		}
+		else
+		{
+			string resJson = CreateJson(1003, "ip_type is invalid, please look up the api document.", 0);
+			*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+			return;
+		}
+		all.AddMember("StatusCode", 0, allocator);
+		all.AddMember("StatusMsg", "success", allocator);
+		StringBuffer buffer;
+		Writer<StringBuffer> writer(buffer);
+		all.Accept(writer);
+		string resJson = buffer.GetString();
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		return;
+	}
 }
