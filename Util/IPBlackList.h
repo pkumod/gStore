@@ -1,8 +1,8 @@
 /*
  * @Author: your name
  * @Date: 2021-12-10 20:34:32
- * @LastEditTime: 2021-12-10 20:34:32
- * @LastEditors: your name
+ * @LastEditTime: 2021-12-14 15:55:47
+ * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gstore/Util/IPBlackList.h
  */
@@ -29,5 +29,6 @@ public:
     bool Check(std::string ip);
     //bool AddIP(std::string ip);
     void InsertIPToFile(std::string file,std::string ip,std::string reason);
-
+    void UpdateIPToFile(std::string file, vector<std::string>& ips, std::string reason);
+    
 };
