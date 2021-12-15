@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-12-15 09:23:17
+ * @LastEditTime: 2021-12-15 11:07:17
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -5955,18 +5955,36 @@ void quereyLog_thread_new(const shared_ptr<HttpServer::Response>& response, stri
 				totalSize++;
 			}
 			in.close();
-			cout<< "totalSize=" << totalSize << ", page_no=" << page_no << ", page_size=" << page_size << endl;
+			totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
+			if (page_no > totalPage)
+			{
+				throw runtime_error("page_no more then max_page_no " + totalPage);
+			}
+			startLine = totalSize - page_size*page_no + 1;
+			endLine = totalSize - page_size*(page_no - 1) + 1;
+			if (startLine < 1)
+			{
+				startLine = 1;
+			}
+			cout<< "startLine=" << startLine << ", endLine=" << endLine << ", totalSize=" << totalSize << ", totalPage=" << totalPage << endl;
 			// seek to start line;
 			in.open(queryLog, ios::in);
 			seek_to_line(in, startLine);
-			bool success = true;
-			stringstream str_stream;
-			str_stream << "[";
-			while (startLine < endLine && getline(in, line)) {
-				str_stream << line;
+			vector<std::string> lines;
+			while (startLine < endLine && getline(in, line, '\n')) {
+				lines.push_back(line);
 				startLine++;
 			}
 			in.close();
+			stringstream str_stream;
+			size_t count;
+			str_stream << "[";
+			count =  lines.size();			
+			for (size_t i = 0; i < count; i++)
+			{
+				line = lines[count - i - 1];
+				str_stream << line;
+			}
 			line = str_stream.str();
 			line = Util::string_replace(line, "\n", "");
 			if (line[line.length() - 1] == ',')
@@ -6049,26 +6067,42 @@ void accessLog_thread_new(const shared_ptr<HttpServer::Response>& response, stri
 			{
 				page_size = 10;
 			}
-			startLine = (page_no - 1)*page_size + 1;
-			endLine = page_no*page_size + 1;
-			//count total
+			// count total
 			while (getline(in, line, '\n'))
 			{
 				totalSize++;
 			}
 			in.close();
-			cout<< "totalSize=" << totalSize << ", page_no=" << page_no << ", page_size=" << page_size << endl;
+			totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
+			if (page_no > totalPage)
+			{
+				throw runtime_error("page_no more then max_page_no " + totalPage);
+			}
+			startLine = totalSize - page_size*page_no + 1;
+			endLine = totalSize - page_size*(page_no - 1) + 1;
+			if (startLine < 1)
+			{
+				startLine = 1;
+			}
+			cout<< "startLine=" << startLine << ", endLine=" << endLine << ", totalSize=" << totalSize << ", totalPage=" << totalPage << endl;
 			// seek to start line;
 			in.open(queryLog, ios::in);
 			seek_to_line(in, startLine);
-			bool success = true;
-			stringstream str_stream;
-			str_stream << "[";
-			while (startLine < endLine && getline(in, line)) {
-				str_stream << line;
+			vector<std::string> lines;
+			while (startLine < endLine && getline(in, line, '\n')) {
+				lines.push_back(line);
 				startLine++;
 			}
 			in.close();
+			stringstream str_stream;
+			size_t count;
+			str_stream << "[";
+			count =  lines.size();			
+			for (size_t i = 0; i < count; i++)
+			{
+				line = lines[count - i - 1];
+				str_stream << line;
+			}			
 			line = str_stream.str();
 			line = Util::string_replace(line, "\n", "");
 			if (line[line.length() - 1] == ',')
@@ -6077,7 +6111,7 @@ void accessLog_thread_new(const shared_ptr<HttpServer::Response>& response, stri
 			}
 			line.push_back(']');
 			list.Parse(line.c_str());
-			totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
+			
 			all.AddMember("StatusCode", 0, all.GetAllocator());
 			all.AddMember("StatusMsg", "Get access log success", all.GetAllocator());
 			all.AddMember("totalSize", totalSize, all.GetAllocator());
