@@ -18,6 +18,7 @@ using namespace std;
 tuple<bool, IntermediateResult> Executor::JoinANode(IntermediateResult old_table,
                                                     const IDCachesSharePtr id_caches,
                                                     bool distinct,
+                                                    bool remain_old,
                                                     const shared_ptr<FeedOneNode> feed_plan)
 {
   auto new_id = feed_plan->node_to_join_;
@@ -30,8 +31,7 @@ tuple<bool, IntermediateResult> Executor::JoinANode(IntermediateResult old_table
 
   /* : each record */
   for (auto record_iterator = table_content_ptr->begin();
-       record_iterator != table_content_ptr->end();
-       record_iterator++)
+       record_iterator != table_content_ptr->end();)
   {
     shared_ptr<IDList> record_candidate_list = ExtendRecordOneNode(feed_plan,
                                                                    id_pos_map,
@@ -42,25 +42,34 @@ tuple<bool, IntermediateResult> Executor::JoinANode(IntermediateResult old_table
     if(record_candidate_list->size()>0)
     {
       if (feed_plan->node_should_be_added_into_table) {
-        /* write to the new table *
-         * first copy the n-1 records
+        /* write to the new table, first copy the n-1 records
          * and move the last */
         for (unsigned int i = 0; i < record_candidate_list->size() - 1; i++) {
           new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
           auto new_element = record_candidate_list->getID(i);
           new_records->back()->push_back(new_element);
         }
-        new_records->push_back(std::move(*record_iterator));
+        if(!remain_old) { // move and delete
+          new_records->push_back(std::move(*record_iterator));}
+        else
+          new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
         auto new_element = record_candidate_list->getID(record_candidate_list->size() - 1);
         new_records->back()->push_back(new_element);
       }
-      else
+      else // node_should NOT be_added_into_table
       {
         for (unsigned int i = 0; i < record_candidate_list->size() - 1; i++)
           new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
-        new_records->push_back(std::move(*record_iterator));
+        if(!remain_old)
+          new_records->push_back(std::move(*record_iterator));
+        else
+          new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
       }
     }
+    if(!remain_old)
+      record_iterator = table_content_ptr->erase(record_iterator);
+    else
+      record_iterator++;
   }
   return make_tuple(true, new_table);
 }
@@ -152,7 +161,8 @@ std::tuple<bool,IntermediateResult> Executor::InitialTableTwoNode(const std::sha
 
 std::tuple<bool, IntermediateResult> Executor::JoinTwoNode(const shared_ptr<FeedTwoNode> join_two_node_,
                                                            IntermediateResult old_table,
-                                                          const IDCachesSharePtr id_caches)
+                                                           const IDCachesSharePtr id_caches,
+                                                           bool remain_old)
 {
   auto new_table=IntermediateResult::OnlyPositionCopy(old_table);
   auto id1 = join_two_node_->node_to_join_1_;
@@ -166,8 +176,7 @@ std::tuple<bool, IntermediateResult> Executor::JoinTwoNode(const shared_ptr<Feed
 
   /* : each record */
   for (auto record_iterator = old_records->begin();
-       record_iterator != old_records->end();
-       record_iterator++) {
+       record_iterator != old_records->end();) {
     auto record_two_node_list = ExtendRecordTwoNode(join_two_node_,
                                                                    id_pos_mapping,
                                                                    id_caches,
@@ -178,13 +187,21 @@ std::tuple<bool, IntermediateResult> Executor::JoinTwoNode(const shared_ptr<Feed
     /* write to the new table */
     auto record = *record_iterator;
     for (decltype(valid_size) i =0;i<valid_size;i++) {
-      auto new_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*record);
+      shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> new_record(nullptr);
+      if(!remain_old && i == (valid_size-1) )
+        new_record = record;
+      else
+        new_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*record);
       auto id1_this_record = (*record_two_node_list)[i*2];
       auto id2_this_record = (*record_two_node_list)[i*2+1];
       new_record->push_back(id1_this_record);
       new_record->push_back(id2_this_record);
       new_records->push_back(std::move(new_record));
     }
+    if(!remain_old)
+      record_iterator = old_records->erase(record_iterator);
+    else
+      record_iterator++;
   }
 
   return make_tuple(true, new_table);
@@ -201,7 +218,8 @@ std::tuple<bool, IntermediateResult> Executor::JoinTwoNode(const shared_ptr<Feed
  */
 tuple<bool,IntermediateResult> Executor::JoinTable(const shared_ptr<JoinTwoTable> join_plan,
                                                    IntermediateResult table_a,
-                                                   IntermediateResult table_b)
+                                                   IntermediateResult table_b,
+                                                   bool remain_old)
 {
   auto records_a = table_a.values_;
   auto table_a_id_pos = table_a.id_pos_map;
@@ -262,8 +280,10 @@ tuple<bool,IntermediateResult> Executor::JoinTable(const shared_ptr<JoinTwoTable
   }
 
   auto common_variables_size = join_plan->public_variables_->size();
-  for(const auto& big_record:*(big_table))
+
+  for(auto big_table_it = big_table->begin();big_table_it!=big_table->end();)
   {
+    auto big_record = *big_table_it;
     vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
     for(auto common_position:common_variables_position_big)
     {
@@ -271,14 +291,24 @@ tuple<bool,IntermediateResult> Executor::JoinTable(const shared_ptr<JoinTwoTable
     }
     if(indexed_result.find(result_index)!=indexed_result.end())
     {
-      indexed_result[result_index]->push_back(big_record);
+      if(!remain_old)
+        indexed_result[result_index]->push_back(std::move(big_record));
+      else
+        indexed_result[result_index]->push_back(big_record);
     }
     else
     {
       auto tmp_vector = make_shared<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
-      tmp_vector->push_back(big_record);
+      if(!remain_old)
+        tmp_vector->push_back(std::move(big_record));
+      else
+        tmp_vector->push_back(big_record);
       indexed_result[result_index] = std::move(tmp_vector);
     }
+    if(!remain_old)
+      big_table_it= big_table->erase(big_table_it);
+    else
+      big_table_it++;
   }
 
 
@@ -299,8 +329,9 @@ tuple<bool,IntermediateResult> Executor::JoinTable(const shared_ptr<JoinTwoTable
 
   auto result_records = result_table.values_;
   /* do the matching */
-  for(const auto& small_record:*small_table)
+  for(auto small_table_it = small_table->begin();small_table_it!=small_table->end();)
   {
+    auto small_record = *small_table_it;
     vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
     for(auto common_position:common_variables_position_small)
       result_index.push_back((*small_record)[common_position]);
@@ -320,7 +351,12 @@ tuple<bool,IntermediateResult> Executor::JoinTable(const shared_ptr<JoinTwoTable
         result_records->push_back(result_record);
       }
     }
-    /* if not, ignore */
+    /* if not found, ignore */
+
+    if(!remain_old)
+      small_table_it= small_table->erase(small_table_it);
+    else
+      small_table_it++;
   }
   result_table.pos_id_map = new_position_id_mapping;
   auto id_pos_map = result_table.id_pos_map;
@@ -339,7 +375,8 @@ tuple<bool,IntermediateResult> Executor::JoinTable(const shared_ptr<JoinTwoTable
  * @return a new IntermediateResult, changing the return one will not change the old table
  */
 tuple<bool,IntermediateResult> Executor::ANodeEdgesConstraintFilter(shared_ptr<FeedOneNode> check_plan,
-                                                                    IntermediateResult old_table) {
+                                                                    IntermediateResult old_table,
+                                                                    bool remain_old) {
   auto new_table = IntermediateResult::OnlyPositionCopy(old_table);
   auto table_content = old_table.values_;
   auto id_pos_mapping =old_table.id_pos_map;
@@ -351,7 +388,7 @@ tuple<bool,IntermediateResult> Executor::ANodeEdgesConstraintFilter(shared_ptr<F
   {
     auto edge_info = (*edge_info_vec)[i];
     auto edge_constant_info = (*edge_constant_info_vec)[i];
-    auto step_result = this->OneEdgeConstraintFilter(edge_info, edge_constant_info, table_content, id_pos_mapping);
+    auto step_result = this->OneEdgeConstraintFilter(edge_info, edge_constant_info, table_content, id_pos_mapping,remain_old);
     if(get<0>(step_result))
       table_content = get<1>(step_result);
   }
@@ -436,7 +473,8 @@ TableContentShardPtr Executor::ConvertToTable(std::shared_ptr<IDList> id_list) {
 tuple<bool,TableContentShardPtr> Executor::OneEdgeConstraintFilter(EdgeInfo edge_info,
                                                                    EdgeConstantInfo edge_table_info,
                                                                    TableContentShardPtr table_content_ptr,
-                                                                   PositionValueSharedPtr id_pos_mapping) {
+                                                                   PositionValueSharedPtr id_pos_mapping,
+                                                                   bool remain_old) {
   TYPE_ENTITY_LITERAL_ID var_to_filter= edge_info.getVarToFilter();
   if(edge_table_info.ConstantToVar(edge_info))
   {
@@ -533,11 +571,11 @@ tuple<bool,TableContentShardPtr> Executor::OneEdgeConstraintFilter(EdgeInfo edge
     }
     auto validate_list = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(edge_candidate_list,edge_candidate_list+this_edge_list_len);
     delete [] edge_candidate_list;
-    return FilterAVariableOnIDList(validate_list,var_to_filter,table_content_ptr,id_pos_mapping);
+    return FilterAVariableOnIDList(validate_list,var_to_filter,table_content_ptr,id_pos_mapping,remain_old);
   }
   auto result_table = make_shared<TableContent>();
   /* : each record */
-  for (auto record_iterator = table_content_ptr->begin(); record_iterator != table_content_ptr->end();record_iterator++) {
+  for (auto record_iterator = table_content_ptr->begin(); record_iterator != table_content_ptr->end();) {
     TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
     TYPE_ENTITY_LITERAL_ID edge_list_len;
     switch (edge_info.join_method_) {
@@ -716,7 +754,16 @@ tuple<bool,TableContentShardPtr> Executor::OneEdgeConstraintFilter(EdgeInfo edge
       var_to_filter_id_this_record = var_id;
 
     if(binary_search(edge_candidate_list,edge_candidate_list+edge_list_len,var_to_filter_id_this_record))
-      result_table->push_back(*record_iterator);
+    {
+      if(!remain_old)
+        result_table->push_back(std::move(*record_iterator));
+      else
+        result_table->push_back(*record_iterator);
+    }
+    if(!remain_old)
+      record_iterator = result_table->erase(record_iterator);
+    else
+      record_iterator++;
     delete [] edge_candidate_list;
   }
   return make_tuple(true,result_table);
@@ -725,18 +772,27 @@ tuple<bool,TableContentShardPtr> Executor::OneEdgeConstraintFilter(EdgeInfo edge
 tuple<bool,TableContentShardPtr> Executor::FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> candidate_list,
                                                                    TYPE_ENTITY_LITERAL_ID var_id,
                                                                    TableContentShardPtr table_content_ptr,
-                                                                   PositionValueSharedPtr id_posing_mapping) {
+                                                                   PositionValueSharedPtr id_posing_mapping,
+                                                                   bool remain_old) {
 
   auto new_intermediate_table = make_shared<TableContent>();
   auto var_position = (*id_posing_mapping)[var_id];
 
   /* : each record */
-  for (const auto& record_sp : *table_content_ptr){
+  for (auto table_it = table_content_ptr->begin();table_it!=table_content_ptr->end();){
+    auto record_sp = *table_it;
     auto var_to_filter_id_this_record=(*record_sp)[var_position];
     if(binary_search(candidate_list->begin(),candidate_list->end(),var_to_filter_id_this_record))
     {
-      new_intermediate_table->push_back(record_sp);
+      if(!remain_old)
+        new_intermediate_table->push_back(std::move(record_sp));
+      else
+        new_intermediate_table->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*record_sp));
     }
+    if(!remain_old)
+      table_it= table_content_ptr->erase(table_it);
+    else
+      table_it++;
   }
 
   return make_tuple(true,new_intermediate_table);
