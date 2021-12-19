@@ -126,6 +126,10 @@ public:
 										 		shared_ptr<IDList> &o_cache);
 
 	static void get_idcache_sample(shared_ptr<IDList> &so_cache, vector<unsigned> &so_sample_cache);
+
+
+	void print_plan_generator_info();
+	void print_sample_info();
 };
 
 

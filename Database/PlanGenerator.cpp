@@ -912,11 +912,24 @@ long long PlanGenerator::cost_model_for_p2so_optimization(unsigned node_1_id, un
 			// 	linked_edge_pre_var_index.push_back(edge_index);
 		}
 	}
+	bool both_not_linked_const = (var_sampled_from_candidate[node_1_id] && var_sampled_from_candidate[node_2_id]);
 
 	if(!linked_edge_pre_const_index.empty()){
-		return kvstore->getPreListSize(var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]]);
+		// cout << "linked pre size = " << kvstore->getPreListSize(var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]]) << endl;
+		// cout << "guess pre size = " << (kvstore->getPreListSize(var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]])-4)/8 << endl;
+		cout << "my_fun return pre list size = " << kvstore->getSubObjListLenthByPre(var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]]) << endl;
+
+		// unsigned *s_o_list = nullptr;
+		// unsigned s_o_list_len = 0;
+		//
+		//
+		// kvstore->getsubIDobjIDlistBypreID(var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]],s_o_list,s_o_list_len);
+		// cout << "true size = " << s_o_list_len << endl;
+		// delete[] s_o_list;
+
+		return max((unsigned)1, kvstore->getSubObjListLenthByPre(var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]])/(both_not_linked_const ? 4 : 2));
 	} else{
-		return triples_num;
+		return max((unsigned long long)1, triples_num/(both_not_linked_const ? 4 : 2));
 	}
 
 
@@ -983,7 +996,7 @@ void PlanGenerator::considervarscan() {
 		}
 		var_to_sample_cache[var_id] = std::move(need_insert_vec);
 
-		new_scan->plan_cost = var_to_num_map[var_id];
+		new_scan->plan_cost = max((unsigned)1, var_to_num_map[var_id]/2);
 
 
 	}
@@ -1034,7 +1047,9 @@ void PlanGenerator::considerwcojoin(unsigned int var_num) {
 			// for(auto x:last_node_plan.first) cout << x << " ";
 			// cout << "to node " << next_node << " , cost: " << cost << endl;
 			if(var_num == 2){
-				unsigned this_cost = cost_model_for_p2so_optimization(last_node_plan.first[0], next_node);
+				long long this_cost = cost_model_for_p2so_optimization(last_node_plan.first[0], next_node);
+				cout << "in wcojoin, " << last_node_plan.first[0] << " to " << next_node << endl;
+				cout << "\t" << "normal cost: " << cost << ", p2so cost: " << this_cost << endl;
 				if(this_cost < cost){
 					new_plan = new PlanTree(last_node_plan.first[0], next_node, bgpquery);
 					new_plan->plan_cost = this_cost;
@@ -1195,6 +1210,11 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 	// todo: 这个卫星点应该也有卫星谓词变量
 	// s ?p ?o. 在之前的计划中已经加入了?o, 则这一步也需要加入?p
 	addsatellitenode(best_plan);
+
+	cout << endl << endl;
+	print_plan_generator_info();
+	print_sample_info();
+	cout << endl << endl;
 
 
 	return best_plan;
@@ -1677,4 +1697,41 @@ double PlanGenerator::estimate_one_edge_selectivity(TYPE_PREDICATE_ID pre_id, bo
 	}
 
 	return (double)pass_num/small_cache_size;
+}
+
+
+// Codes belows for print debug_info
+void PlanGenerator::print_plan_generator_info(){
+	cout << "----print plan_generator_info----" << endl;
+	cout << "triple_num = " << triples_num << endl;
+	cout << "limit_literal = " << limitID_literal << endl;
+	cout << "limit_entity = " << limitID_entity << endl;
+	cout << "limit_predicate = " << limitID_predicate << endl;
+}
+
+
+void PlanGenerator::print_sample_info(){
+
+	cout << "----print var_to_num_map----" << endl;
+	for(auto var_num_pair : var_to_num_map){
+		cout << "var: " << var_num_pair.first << ", num: " << var_num_pair.second << endl;
+	}
+
+	cout << "----print var_sampled_from_candidate----" << endl;
+	for(auto var_sampled_pair : var_sampled_from_candidate){
+		cout << "var: " << var_sampled_pair.first << ", sampled: " << (var_sampled_pair.second ? "true" : "false") << endl;
+	}
+
+	cout << "----print var_to_sample_cache----" << endl;
+	for(auto var_sample_pair : var_to_sample_cache){
+		cout << "var: " << var_sample_pair.first << ", sample_num: " << var_sample_pair.second.size() << endl;
+	}
+
+	cout << "----print s_o_list_average_size----" << endl;
+	for(auto s_pair : s_o_list_average_size){
+		for(auto o_pair : s_pair.second){
+			cout << s_pair.first << " to " << o_pair.first << " average size: " << o_pair.second << endl;
+		}
+	}
+
 }
