@@ -192,7 +192,7 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPl
   TableContentShardPtr step_table;
   switch (one_step.join_type_) {
     case StepOperation::JoinType::JoinNode: {
-      auto step_result = executor_.JoinANode(old_table,id_caches,one_step.distinct_,one_step.join_node_);
+      auto step_result = executor_.JoinANode(old_table,id_caches,one_step.distinct_,false,one_step.join_node_);
       step_table = get<1>(step_result).values_;
       break;
     }
@@ -203,12 +203,12 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPl
       throw string("Optimizer::DepthSearchOneLayer not suitable for GenerateCandidates");
     }
     case StepOperation::JoinType::EdgeCheck: {
-      auto step_result = executor_.ANodeEdgesConstraintFilter(one_step.edge_filter_, old_table);
+      auto step_result = executor_.ANodeEdgesConstraintFilter(one_step.edge_filter_, old_table,false);
       step_table = get<1>(step_result).values_;
       break;
     }
     case StepOperation::JoinType::JoinTwoNodes: {
-      auto step_result = executor_.JoinTwoNode(one_step.join_two_node_, old_table,id_caches);
+      auto step_result = executor_.JoinTwoNode(one_step.join_two_node_, old_table,id_caches,false);
       step_table = get<1>(step_result).values_;
       break;
     }
@@ -481,7 +481,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
   // leaf node
   auto step_operation = plan_tree_node->node;
   auto operation_type = step_operation->join_type_;
-
+  auto remain_old = step_operation->remain_old_result_;
   // leaf node : create a table
   if (plan_tree_node->left_node == nullptr && plan_tree_node->right_node == nullptr)
   {
@@ -609,7 +609,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
 #ifdef OPTIMIZER_DEBUG_INFO
     long t1 = Util::get_cur_time();
 #endif
-    auto step_result = executor_.JoinANode(left_table,id_caches,one_step_join->distinct_,one_step_join->join_node_);
+    auto step_result = executor_.JoinANode(left_table,id_caches,one_step_join->distinct_,remain_old,one_step_join->join_node_);
 
 #ifdef OPTIMIZER_DEBUG_INFO
     cout<<"JoinNode result size:"<<get<1>(step_result).values_->size();
@@ -624,7 +624,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
 #ifdef OPTIMIZER_DEBUG_INFO
     long t1 = Util::get_cur_time();
 #endif
-    auto step_result =executor_.ANodeEdgesConstraintFilter(edge_filter, left_table);
+    auto step_result =executor_.ANodeEdgesConstraintFilter(edge_filter, left_table,remain_old);
 #ifdef OPTIMIZER_DEBUG_INFO
     cout<<"result size "<<get<1>(step_result).values_->size();
     long t2 = Util::get_cur_time();
@@ -650,7 +650,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
     cout<<"join node ["<<bgp_query->get_var_name_by_id(node2)<<"]"<<",  ";
 
     long t1 = Util::get_cur_time();
-    auto step_result = executor_.JoinTwoNode(join_two_plan, left_table, id_caches);
+    auto step_result = executor_.JoinTwoNode(join_two_plan, left_table, id_caches,remain_old);
 
     long t2 = Util::get_cur_time();
     cout<< ",  used " << (t2 - t1) << "ms." <<endl;
@@ -669,7 +669,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
 #ifdef OPTIMIZER_DEBUG_INFO
     long t1 = Util::get_cur_time();
 #endif
-    auto join_result =  executor_.JoinTable(step_operation->join_table_, left_table, right_table);
+    auto join_result =  executor_.JoinTable(step_operation->join_table_, left_table, right_table,remain_old);
 #ifdef OPTIMIZER_DEBUG_INFO
     cout<<"JoinTable result size:"<<get<1>(join_result).values_->size();
     long t2 = Util::get_cur_time();
@@ -785,7 +785,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
       auto temp_content_ptr = make_shared<TableContent>();
       temp_content_ptr->push_back(record);
       temp_table.values_ = temp_content_ptr;
-      auto filter_result = this->executor_.ANodeEdgesConstraintFilter(non_tree_edge.edge_filter_,temp_table);
+      auto filter_result = this->executor_.ANodeEdgesConstraintFilter(non_tree_edge.edge_filter_,temp_table,false);
       auto filter_result_size = get<1>(filter_result).values_->size();
       success = filter_result_size != 0;
     }

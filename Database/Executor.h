@@ -50,12 +50,14 @@ class Executor {
   tuple<bool,TableContentShardPtr> OneEdgeConstraintFilter(EdgeInfo edge_info,
                                                            EdgeConstantInfo edge_table_info,
                                                            TableContentShardPtr table_content_ptr,
-                                                           PositionValueSharedPtr id_pos_mapping);
+                                                           PositionValueSharedPtr id_pos_mapping,
+                                                           bool remain_old);
 
   tuple<bool,TableContentShardPtr> FilterAVariableOnIDList(shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> candidate_list,
                                                            TYPE_ENTITY_LITERAL_ID var_id,
                                                            TableContentShardPtr table_content_ptr,
-                                                           PositionValueSharedPtr id_posing_mapping);
+                                                           PositionValueSharedPtr id_posing_mapping,
+                                                           bool remain_old);
 
   TableContentShardPtr ConvertToTable(std::shared_ptr<IDList> id_list);
 
@@ -88,6 +90,7 @@ class Executor {
   tuple<bool, IntermediateResult> JoinANode(IntermediateResult old_table,
                                             IDCachesSharePtr id_caches,
                                             bool distinct,
+                                            bool remain_old,
                                             shared_ptr<FeedOneNode> feed_plan);
 
   std::tuple<bool,IntermediateResult> InitialTableOneNode(std::shared_ptr<FeedOneNode> feed_plan,
@@ -102,14 +105,17 @@ class Executor {
 
   std::tuple<bool, IntermediateResult> JoinTwoNode(shared_ptr<FeedTwoNode> join_two_node_,
                                                    IntermediateResult old_table,
-                                                   IDCachesSharePtr id_caches);
+                                                   IDCachesSharePtr id_caches,
+                                                   bool remain_old);
 
   tuple<bool,IntermediateResult> JoinTable(shared_ptr<JoinTwoTable> join_plan,
                                            IntermediateResult table_a,
-                                           IntermediateResult table_b);
+                                           IntermediateResult table_b,
+                                           bool remain_old);
 
   tuple<bool,IntermediateResult> ANodeEdgesConstraintFilter(shared_ptr<FeedOneNode> check_plan,
-                                                            IntermediateResult old_table) ;
+                                                            IntermediateResult old_table,
+                                                            bool remain_old) ;
 
   bool CacheConstantCandidates(shared_ptr<FeedOneNode> one_step,bool distinct, IDCachesSharePtr id_caches);
 
