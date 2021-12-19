@@ -86,10 +86,10 @@ FRIterator *DPBUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_sea
   auto empty_pre = make_shared<OnePointPredicateVec>();
   auto fr = new FRIterator();
   // constructing parents' FRs
-  for(auto root_id_fq:child_fqs) {
-    auto root_id = root_id_fq.first;
-    auto fq_pointer = root_id_fq.second;
-      fr->Insert(root_id,fq_pointer,empty_pre);
+  for(auto& root_id_fq:child_fqs) {
+    auto& root_id = root_id_fq.first;
+    auto& fq_pointer = root_id_fq.second;
+    fr->Insert(root_id,fq_pointer,empty_pre);
   }
 
 #ifdef TOPK_DEBUG_INFO
@@ -340,10 +340,10 @@ DPBUtil::GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
   for(auto parent_id:parent_var_candidates) {
     auto fr = make_shared<FRIterator>();
     auto edges_predicates = make_shared<NodeOneChildVarPredicates>();
-    for(auto child_id_appending_pair: *(parent_child[parent_id])->contents_)
+    for(auto& child_id_appending_pair: *(parent_child[parent_id])->contents_)
     {
-      auto child_id = child_id_appending_pair.first;
-      auto appending_list = child_id_appending_pair.second;
+      auto& child_id = child_id_appending_pair.first;
+      auto& appending_list = child_id_appending_pair.second;
       fr->Insert( child_id,child_fqs[child_id],appending_list);
     }
     result[parent_id] = fr;
