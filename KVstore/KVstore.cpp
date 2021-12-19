@@ -3675,6 +3675,22 @@ KVstore::getPreListSize(TYPE_PREDICATE_ID _pre_id)
 	return _ret;
 }
 
+
+unsigned
+KVstore::getSubObjListLenthByPre(TYPE_PREDICATE_ID _pre_id)
+{
+	unsigned* _tmp = nullptr;
+	unsigned long _ret;
+	if(this->getValueByKey(this->preID2values, _pre_id, (char*&) _tmp, _ret)){
+		unsigned length = _tmp[0];
+		delete [] _tmp;
+		return length;
+	} else{
+		delete [] _tmp;
+		return (unsigned)0;
+	}
+}
+
 //TODO+BETTER: adjust the buffer size according to current memory usage(global memory manager)
 //better to adjust these parameters according to memory usage and entity num
 //need a memory manager first

@@ -59,6 +59,8 @@ public:
 	unsigned long getPreListSize(TYPE_PREDICATE_ID _pre_id);
 	unsigned long getSubListSize(TYPE_ENTITY_LITERAL_ID _sub_id);
 	unsigned long getObjListSize(TYPE_ENTITY_LITERAL_ID _obj_id);
+
+	unsigned getSubObjListLenthByPre(TYPE_PREDICATE_ID _pre_id);
 	
 	//===============================================================================
 
