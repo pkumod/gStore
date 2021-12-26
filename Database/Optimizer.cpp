@@ -282,7 +282,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 
     if(bgp_query->get_triple_num()==1)
       best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
-                                          limitID_predicate_, limitID_literal_, limitID_entity_))->get_special_one_triple_plan();
+                                          limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_))->get_special_one_triple_plan();
     else{
       auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query,this->kv_store_);
       for (auto &constant_generating_step: *const_candidates)
@@ -294,7 +294,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
       cout << "id_list.size = " << var_candidates_cache->size() << endl;
 
       best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
-                                          limitID_predicate_, limitID_literal_, limitID_entity_))->get_plan(true);
+                                          limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_))->get_plan(true);
       long t4 = Util::get_cur_time();
       cout << "plan get, used " << (t4 - t3) << "ms." << endl;
     }
@@ -377,7 +377,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 
     cout << "id_list.size = " << var_candidates_cache->size() << endl;
     best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
-                                        limitID_predicate_, limitID_literal_, limitID_entity_))->get_plan(false);
+                                        limitID_predicate_, limitID_literal_, limitID_entity_,pre2num_, pre2sub_, pre2obj_))->get_plan(false);
 
     long t4 = Util::get_cur_time();
     cout << "plan get, used " << (t4 - t3) << "ms." << endl;

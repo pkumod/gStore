@@ -23,9 +23,11 @@ const unsigned PlanGenerator::SAMPLE_CACHE_MAX = 50;
 
 PlanGenerator::PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr &id_caches_,
 							 TYPE_TRIPLE_NUM triples_num_, TYPE_PREDICATE_ID limitID_predicate_,
-							 TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_):
+							 TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_,
+							 TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_):
 					kvstore(kvstore_), bgpquery(bgpquery_), statistics(statistics_), id_caches(id_caches_), triples_num(triples_num_),
-					limitID_predicate(limitID_predicate_), limitID_literal(limitID_literal_), limitID_entity(limitID_entity_){};
+					limitID_predicate(limitID_predicate_), limitID_literal(limitID_literal_), limitID_entity(limitID_entity_),
+					pre2num(pre2num_), pre2sub(pre2sub_), pre2obj(pre2obj_){};
 
 JoinMethod PlanGenerator::get_join_strategy(bool s_is_var, bool p_is_var, bool o_is_var, unsigned var_num) {
 
@@ -917,7 +919,7 @@ long long PlanGenerator::cost_model_for_p2so_optimization(unsigned node_1_id, un
 	if(!linked_edge_pre_const_index.empty()){
 		// cout << "linked pre size = " << kvstore->getPreListSize(var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]]) << endl;
 		// cout << "guess pre size = " << (kvstore->getPreListSize(var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]])-4)/8 << endl;
-		cout << "my_fun return pre list size = " << kvstore->getSubObjListLenthByPre(var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]]) << endl;
+		// cout << "my_fun return pre list size = " << kvstore->getSubObjListLenthByPre(var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]]) << endl;
 
 		// unsigned *s_o_list = nullptr;
 		// unsigned s_o_list_len = 0;
@@ -927,7 +929,8 @@ long long PlanGenerator::cost_model_for_p2so_optimization(unsigned node_1_id, un
 		// cout << "true size = " << s_o_list_len << endl;
 		// delete[] s_o_list;
 
-		return max((unsigned)1, kvstore->getSubObjListLenthByPre(var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]])/(both_not_linked_const ? 4 : 2));
+		// todo: check this! clear fun in kvstore
+		return max((unsigned long long)1,pre2num[var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]]]/(both_not_linked_const ? 4 : 2));
 	} else{
 		return max((unsigned long long)1, triples_num/(both_not_linked_const ? 4 : 2));
 	}
