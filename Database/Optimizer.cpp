@@ -267,8 +267,6 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   std::cout<<"Optimizer:: limit used:"<<query_info.limit_<<std::endl;
   std::cout<<"Optimizer::DoQuery limit num:"<<query_info.limit_num_<<std::endl;
 #endif
-
-
   auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
   shared_ptr<QueryPlan> query_plan;
   auto strategy = this->ChooseStrategy(bgp_query,&query_info);
@@ -293,8 +291,14 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
       long t3 = Util::get_cur_time();
       cout << "id_list.size = " << var_candidates_cache->size() << endl;
 
-      best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
-                                          limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_))->get_plan(true);
+      auto plan_generator = unique_ptr<PlanGenerator>(new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
+                                             limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_));
+      auto second_run_candidates_plan = plan_generator->completecandidate();
+
+      for(const auto& constant_generating_step: *const_candidates)
+        executor_.CacheConstantCandidates(constant_generating_step,distinct, var_candidates_cache);
+
+      best_plan_tree = plan_generator->get_plan(true);
       long t4 = Util::get_cur_time();
       cout << "plan get, used " << (t4 - t3) << "ms." << endl;
     }
