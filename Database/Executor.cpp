@@ -238,7 +238,7 @@ tuple<bool,IntermediateResult> Executor::JoinTable(const shared_ptr<JoinTwoTable
 
   auto join_nodes = join_plan->public_variables_;
 #ifdef EXECUTOR_DEBUG_INFO
-  cout<<"Executor::JoinTable public_variables_:";
+  cout<<"JoinTable public_variables_ ";
   for(auto public_var_id : *join_nodes)
     cout<<public_var_id<<" ";
   cout<<endl;

@@ -332,7 +332,10 @@ JoinMethod PlanTree::get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescri
 
 
 
-// s ?p ?o
+// ?s ?p o consider this edge
+// ?s ?p ?o not consider
+// ?s p ?o not consider
+// ?s p o already done in candidate_generation
 PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery) {
 
 	auto edge_info = make_shared<vector<EdgeInfo>>();
@@ -353,13 +356,15 @@ PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery) {
 
 			JoinMethod join_method;
 			if(!pre_var_descrip->selected_ and pre_var_descrip->degree_ == 1){
-				if(var_descrip->so_edge_type_[i_th_edge] == Util::EDGE_IN)
-					join_method = JoinMethod::s2o;
-				else
-					join_method = JoinMethod::o2s;
-
-				edge_info->emplace_back(bgpquery->s_id_[triple_id], bgpquery->p_id_[triple_id], bgpquery->o_id_[triple_id], join_method);
-				edge_constant_info->emplace_back(bgpquery->s_is_constant_[triple_id], bgpquery->p_is_constant_[triple_id], bgpquery->o_is_constant_[triple_id]);
+				continue;
+				// considered in candidate generation
+				// if(var_descrip->so_edge_type_[i_th_edge] == Util::EDGE_IN)
+				// 	join_method = JoinMethod::s2o;
+				// else
+				// 	join_method = JoinMethod::o2s;
+				//
+				// edge_info->emplace_back(bgpquery->s_id_[triple_id], bgpquery->p_id_[triple_id], bgpquery->o_id_[triple_id], join_method);
+				// edge_constant_info->emplace_back(bgpquery->s_is_constant_[triple_id], bgpquery->p_is_constant_[triple_id], bgpquery->o_is_constant_[triple_id]);
 
 			} else{
 				need_join_two_nodes_edge_index.push_back(i_th_edge);
