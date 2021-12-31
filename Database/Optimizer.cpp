@@ -284,19 +284,21 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     else{
       auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query,this->kv_store_);
       for (auto &constant_generating_step: *const_candidates)
-        executor_.CacheConstantCandidates(constant_generating_step,distinct, var_candidates_cache);
+        executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
       long t2 = Util::get_cur_time();
       cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
       long t3 = Util::get_cur_time();
       cout << "id_list.size = " << var_candidates_cache->size() << endl;
 
+	  cout << "limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_ << endl;
       auto plan_generator = unique_ptr<PlanGenerator>(new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
                                              limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_));
       auto second_run_candidates_plan = plan_generator->completecandidate();
+	  cout << "this done" << endl;
 
       for(const auto& constant_generating_step: *const_candidates)
-        executor_.CacheConstantCandidates(constant_generating_step,distinct, var_candidates_cache);
+        executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
       best_plan_tree = plan_generator->get_plan(true);
       long t4 = Util::get_cur_time();
@@ -369,22 +371,33 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   else if(strategy == BasicQueryStrategy::limitK)
   {
     PlanTree* best_plan_tree;
-    long t1 =Util::get_cur_time();
-    auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
-    for (auto &constant_generating_step: *const_candidates) {
-      executor_.CacheConstantCandidates(constant_generating_step, distinct,var_candidates_cache);
-    };
-    long t2 = Util::get_cur_time();
-    cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
 
-    long t3 = Util::get_cur_time();
+	long t1 =Util::get_cur_time();
 
-    cout << "id_list.size = " << var_candidates_cache->size() << endl;
-    best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
-                                        limitID_predicate_, limitID_literal_, limitID_entity_,pre2num_, pre2sub_, pre2obj_))->get_plan(false);
+	if(bgp_query->get_triple_num()==1)
+	  best_plan_tree = (new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
+											  limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_))->get_special_one_triple_plan();
+	else{
+	  auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query,this->kv_store_);
+	  for (auto &constant_generating_step: *const_candidates)
+			  executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
-    long t4 = Util::get_cur_time();
-    cout << "plan get, used " << (t4 - t3) << "ms." << endl;
+	  long t2 = Util::get_cur_time();
+	  cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
+	  long t3 = Util::get_cur_time();
+	  cout << "id_list.size = " << var_candidates_cache->size() << endl;
+
+	  auto plan_generator = unique_ptr<PlanGenerator>(new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
+																			limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_));
+	  auto second_run_candidates_plan = plan_generator->completecandidate();
+
+	  for(const auto& constant_generating_step: *const_candidates)
+			  executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
+
+	  best_plan_tree = plan_generator->get_plan(true);
+	  long t4 = Util::get_cur_time();
+	  cout << "plan get, used " << (t4 - t3) << "ms." << endl;
+	}
 
     best_plan_tree->print(bgp_query.get());
     cout << "plan print done" << endl;
@@ -503,7 +516,8 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
                                                           step_operation->distinct_,id_caches);
       leaf_table = get<1>(initial_result);
 #ifdef OPTIMIZER_DEBUG_INFO
-      cout<<"InitialTableOneNode result size:"<<leaf_table.values_->size();
+      cout<<"join node ["<<bgp_query->get_var_name_by_id(step_operation->join_node_->node_to_join_)<<"]" << endl;
+	  cout<< "\tresult size:"<<leaf_table.values_->size();
       long t2 = Util::get_cur_time();
       cout<< ",  used " << (t2 - t1) << "ms." <<endl;
 #endif
@@ -523,7 +537,11 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
       auto initial_result = executor_.InitialTableTwoNode(step_operation->join_two_node_,id_caches);
       leaf_table = get<1>(initial_result);
 #ifdef OPTIMIZER_DEBUG_INFO
-      cout<<"InitialTableTwoNode result size:"<<leaf_table.values_->size();
+	  auto node1 = step_operation->join_two_node_->node_to_join_1_;
+	  auto node2 = step_operation->join_two_node_->node_to_join_2_;
+	  cout<<"join two nodes ["<<bgp_query->get_var_name_by_id(node1)<<"]"<<",  [";
+	  cout<<bgp_query->get_var_name_by_id(node2)<<"]"<<endl;
+      cout<<"\tresult size:"<<leaf_table.values_->size();
       long t2 = Util::get_cur_time();
       cout<< ",  used " << (t2 - t1) << "ms." <<endl;
 #endif
@@ -616,7 +634,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
     auto step_result = executor_.JoinANode(left_table,id_caches,one_step_join->distinct_,remain_old,one_step_join->join_node_);
 
 #ifdef OPTIMIZER_DEBUG_INFO
-    cout<<"JoinNode result size:"<<get<1>(step_result).values_->size();
+    cout<<"\tresult size:"<<get<1>(step_result).values_->size();
     long t2 = Util::get_cur_time();
     cout<< ",  used " << (t2 - t1) << "ms." <<endl;
 #endif
@@ -647,20 +665,19 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
     }
     auto one_step_join = plan_tree_node->node;
     auto join_two_plan = one_step_join->join_two_node_;
-
+#ifdef OPTIMIZER_DEBUG_INFO
     auto node1 = join_two_plan->node_to_join_1_;
     auto node2 = join_two_plan->node_to_join_2_;
-    cout<<"join node ["<<bgp_query->get_var_name_by_id(node1)<<"]"<<",  ";
-    cout<<"join node ["<<bgp_query->get_var_name_by_id(node2)<<"]"<<",  ";
+    cout<<"join two nodes ["<<bgp_query->get_var_name_by_id(node1)<<"]"<<",  [";
+    cout<<bgp_query->get_var_name_by_id(node2)<<"]"<<endl;
 
     long t1 = Util::get_cur_time();
+#endif
     auto step_result = executor_.JoinTwoNode(join_two_plan, left_table, id_caches,remain_old);
-
-    long t2 = Util::get_cur_time();
-    cout<< ",  used " << (t2 - t1) << "ms." <<endl;
-
 #ifdef OPTIMIZER_DEBUG_INFO
-    cout<<"JoinTwoNodes result size:"<<get<1>(step_result).values_->size()<<endl;
+    long t2 = Util::get_cur_time();
+    cout<<"\tresult size:"<<get<1>(step_result).values_->size();
+	cout<< ",  used " << (t2 - t1) << "ms." <<endl;
 #endif
     return step_result;
   }
@@ -675,7 +692,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
 #endif
     auto join_result =  executor_.JoinTable(step_operation->join_table_, left_table, right_table,remain_old);
 #ifdef OPTIMIZER_DEBUG_INFO
-    cout<<"JoinTable result size:"<<get<1>(join_result).values_->size();
+    cout<<"\tresult size:"<<get<1>(join_result).values_->size();
     long t2 = Util::get_cur_time();
     cout<< ",  used " << (t2 - t1) << "ms." <<endl;
 #endif

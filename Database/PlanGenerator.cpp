@@ -588,6 +588,7 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 			//					multiple += s_o_list_average_size[x][next_join_node];
 
 		}
+		// cout << "    card esti: " << card_estimation << endl;
 		return card_cache[last_plan_nodes_num-2][last_plan_nodes]*multiple;
 
 	} else{
@@ -960,14 +961,15 @@ vector<shared_ptr<FeedOneNode>> PlanGenerator::completecandidate(){
 
 		for(unsigned i = 0; i < var_descrip->degree_; ++i){
 			bool pre_var = var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType;
-			bool nei_var = var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType;
-			unsigned size = (no_candidate ? 0 : ((*id_caches)[var_id]->size()));
+			bool nei_const = var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::ConEntiType;
+			unsigned size = (no_candidate ? limitID_entity : ((*id_caches)[var_id]->size()));
 
-			if(pre_var && nei_var){
+			if(pre_var && nei_const){
 
 				double border = size / (Util::logarithm(2, size) + 1);
 				if((double)(pre2num[var_descrip->so_edge_pre_id_[i]]) < border)
 				{
+					cout << "add candidate for var " << var_id << endl;
 					unsigned triple_index = var_descrip->so_edge_index_[i];
 					candidate_edge_info->emplace_back(bgpquery->s_id_[triple_index], bgpquery->p_id_[triple_index], bgpquery->o_id_[triple_index],
 													  (var_descrip->so_edge_type_[i] == Util::EDGE_IN ? JoinMethod::p2o : JoinMethod::p2s));
@@ -1101,8 +1103,8 @@ void PlanGenerator::considerwcojoin(unsigned int var_num) {
 			// cout << "to node " << next_node << " , cost: " << cost << endl;
 			if(var_num == 2){
 				long long this_cost = cost_model_for_p2so_optimization(last_node_plan.first[0], next_node);
-				cout << "in wcojoin, " << last_node_plan.first[0] << " to " << next_node << endl;
-				cout << "\t" << "normal cost: " << cost << ", p2so cost: " << this_cost << endl;
+				// cout << "in wcojoin, " << last_node_plan.first[0] << " to " << next_node << endl;
+				// cout << "\t" << "normal cost: " << cost << ", p2so cost: " << this_cost << endl;
 				if(this_cost < cost){
 					new_plan = new PlanTree(last_node_plan.first[0], next_node, bgpquery);
 					new_plan->plan_cost = this_cost;
