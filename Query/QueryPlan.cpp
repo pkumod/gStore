@@ -699,6 +699,21 @@ shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(shared_ptr<BGPQuery>
         oid = target_node;
         join_method = JoinMethod::sp2o;
       }
+	  check_edge_info->emplace_back(sid, pid, oid, join_method);
+	  check_edge_constant_info->emplace_back(s_constant, p_constant, o_constant);
+	}
+	else if(const_number == 1 && (!p_constant))
+	{
+	  if (!s_constant) {
+	  	sid = target_node;
+	  	oid = kv_store->getIDByString(triple_string_type.getObject());
+	  	join_method = JoinMethod::o2s;
+	  }
+	  if (!o_constant) {
+	  	sid = kv_store->getIDByString(triple_string_type.getSubject());
+	  	oid = target_node;
+	  	join_method = JoinMethod::s2o;
+	  }
       check_edge_info->emplace_back(sid, pid, oid, join_method);
       check_edge_constant_info->emplace_back(s_constant, p_constant, o_constant);
     }
