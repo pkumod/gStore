@@ -938,6 +938,56 @@ long long PlanGenerator::cost_model_for_p2so_optimization(unsigned node_1_id, un
 
 }
 
+vector<shared_ptr<FeedOneNode>> PlanGenerator::completecandidate(){
+	vector<shared_ptr<FeedOneNode>> need_candidate;
+	for(unsigned var_index = 0 ; var_index < bgpquery->get_total_var_num(); ++ var_index) {
+		if(bgpquery->is_var_satellite_by_index(var_index)){
+			// cout << "var_id: " << bgpquery->get_vardescrip_by_index(var_index)->var_name_ << "  satellite" << endl;
+			// satellite_nodes.push_back(bgpquery->get_var_id_by_index(var_index));
+			continue;
+		}
+
+		auto var_descrip = bgpquery->get_vardescrip_by_index(var_index);
+		unsigned var_id = var_descrip->id_;
+
+		if(var_descrip->var_type_ == VarDescriptor::VarType::Predicate){
+			continue;
+		}
+
+		bool no_candidate =  (*id_caches).find(var_id) == (*id_caches).end();
+		auto candidate_edge_info = make_shared<vector<EdgeInfo>>();
+		auto candidate_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
+
+		for(unsigned i = 0; i < var_descrip->degree_; ++i){
+			bool pre_var = var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType;
+			bool nei_var = var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType;
+			unsigned size = (no_candidate ? 0 : ((*id_caches)[var_id]->size()));
+
+			if(pre_var && nei_var){
+
+				double border = size / (Util::logarithm(2, size) + 1);
+				if((double)(pre2num[var_descrip->so_edge_pre_id_[i]]) < border)
+				{
+					unsigned triple_index = var_descrip->so_edge_index_[i];
+					candidate_edge_info->emplace_back(bgpquery->s_id_[triple_index], bgpquery->p_id_[triple_index], bgpquery->o_id_[triple_index],
+													  (var_descrip->so_edge_type_[i] == Util::EDGE_IN ? JoinMethod::p2o : JoinMethod::p2s));
+					candidate_edge_const_info->emplace_back(bgpquery->s_is_constant_[triple_index], bgpquery->p_is_constant_[triple_index],bgpquery->o_is_constant_[triple_index]);
+
+				}
+
+
+			}
+
+		}
+		if(!candidate_edge_info->empty()){
+			need_candidate.emplace_back(make_shared<FeedOneNode>(var_id, candidate_edge_info, candidate_edge_const_info));
+		}
+
+	}
+	return need_candidate;
+}
+
+
 /**
  * Generate sample set of every var.
  * If a var has no const linked to it, then sample from the whole database.

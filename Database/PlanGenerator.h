@@ -106,6 +106,7 @@ public:
 									vector<unsigned> &other_nodes, set<unsigned> &join_nodes);
 
 	unsigned get_sample_from_whole_database(unsigned var_id, vector<unsigned> &so_sample_cache);
+	vector<shared_ptr<FeedOneNode>> completecandidate();
 	void considervarscan();
 	void get_nei_by_sub_plan_nodes(const vector<unsigned> &last_plan_node, set<unsigned> &nei_node);
 	void considerwcojoin(unsigned var_num);
