@@ -55,6 +55,20 @@ struct Tree_node{
 			right_node = nullptr;
 
     }
+	Tree_node(Tree_node *node_need_copy){
+		node = node_need_copy->node;
+
+		if(node_need_copy->left_node)
+			left_node = new Tree_node(node_need_copy->left_node);
+		else
+			left_node = nullptr;
+
+		if(node_need_copy->right_node)
+			right_node = new Tree_node(node_need_copy->right_node);
+		else
+			right_node = nullptr;
+
+	}
 
     Tree_node(unsigned node_id, BGPQuery *bgpquery, bool is_first_node);
 
