@@ -295,9 +295,9 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
       auto plan_generator = unique_ptr<PlanGenerator>(new PlanGenerator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
                                              limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_));
       auto second_run_candidates_plan = plan_generator->completecandidate();
-	  cout << "this done" << endl;
+	  cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
 
-      for(const auto& constant_generating_step: *const_candidates)
+      for(const auto& constant_generating_step: second_run_candidates_plan)
         executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
       best_plan_tree = plan_generator->get_plan(true);
@@ -391,7 +391,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 																			limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_));
 	  auto second_run_candidates_plan = plan_generator->completecandidate();
 
-	  for(const auto& constant_generating_step: *const_candidates)
+	  for(const auto& constant_generating_step: second_run_candidates_plan)
 			  executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
 	  best_plan_tree = plan_generator->get_plan(true);
@@ -516,7 +516,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
                                                           step_operation->distinct_,id_caches);
       leaf_table = get<1>(initial_result);
 #ifdef OPTIMIZER_DEBUG_INFO
-      cout<<"join node ["<<bgp_query->get_var_name_by_id(step_operation->join_node_->node_to_join_)<<"]" << endl;
+      // cout<<"join node ["<<bgp_query->get_var_name_by_id(step_operation->join_node_->node_to_join_)<<"]" << endl;
 	  cout<< "\tresult size:"<<leaf_table.values_->size();
       long t2 = Util::get_cur_time();
       cout<< ",  used " << (t2 - t1) << "ms." <<endl;

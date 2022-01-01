@@ -336,10 +336,11 @@ JoinMethod PlanTree::get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescri
 // ?s ?p ?o not consider
 // ?s p ?o not consider
 // ?s p o already done in candidate_generation
-PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery) {
+PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery, vector<unsigned> satellite_index,
+				   shared_ptr<vector<EdgeInfo>> edge_info, shared_ptr<vector<EdgeConstantInfo>> edge_constant_info) {
 
-	auto edge_info = make_shared<vector<EdgeInfo>>();
-	auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
+	// auto edge_info = make_shared<vector<EdgeInfo>>();
+	// auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
 	root_node = nullptr;
 
 	auto var_descrip = bgpquery->get_vardescrip_by_id(first_node);
@@ -356,15 +357,15 @@ PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery) {
 
 			JoinMethod join_method;
 			if(!pre_var_descrip->selected_ and pre_var_descrip->degree_ == 1){
-				continue;
+				// continue;
 				// considered in candidate generation
-				// if(var_descrip->so_edge_type_[i_th_edge] == Util::EDGE_IN)
-				// 	join_method = JoinMethod::s2o;
-				// else
-				// 	join_method = JoinMethod::o2s;
-				//
-				// edge_info->emplace_back(bgpquery->s_id_[triple_id], bgpquery->p_id_[triple_id], bgpquery->o_id_[triple_id], join_method);
-				// edge_constant_info->emplace_back(bgpquery->s_is_constant_[triple_id], bgpquery->p_is_constant_[triple_id], bgpquery->o_is_constant_[triple_id]);
+				if(var_descrip->so_edge_type_[i_th_edge] == Util::EDGE_IN)
+					join_method = JoinMethod::s2o;
+				else
+					join_method = JoinMethod::o2s;
+
+				edge_info->emplace_back(bgpquery->s_id_[triple_id], bgpquery->p_id_[triple_id], bgpquery->o_id_[triple_id], join_method);
+				edge_constant_info->emplace_back(bgpquery->s_is_constant_[triple_id], bgpquery->p_is_constant_[triple_id], bgpquery->o_is_constant_[triple_id]);
 
 			} else{
 				need_join_two_nodes_edge_index.push_back(i_th_edge);
@@ -440,6 +441,9 @@ PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery) {
 	// auto join_node = make_shared<FeedOneNode>(first_node, make_shared<vector<EdgeInfo>>(), make_shared<vector<EdgeConstantInfo>>());
 	// root_node->node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode, join_node, nullptr, nullptr, nullptr);
 	already_so_var = {first_node};
+	for(auto index : satellite_index){
+		already_so_var.emplace_back(var_descrip->so_edge_nei_[index]);
+	}
 	// todo: if used in normal plan (invoked by optimizer), then should give its cost
 }
 
@@ -938,7 +942,6 @@ void PlanTree::add_satellitenode(BGPQuery *bgpquery, unsigned int satellitenode_
 
 		new_join_node->left_node = root_node;
 		root_node = new_join_node;
-		already_so_var.emplace_back(satellitenode_id);
 	} else{
 		auto pre_var_descrip = bgpquery->get_vardescrip_by_id(var_descrip->so_edge_pre_id_[0]);
 		if(!pre_var_descrip->selected_ and pre_var_descrip->degree_ == 1){
@@ -954,7 +957,6 @@ void PlanTree::add_satellitenode(BGPQuery *bgpquery, unsigned int satellitenode_
 																	join_node, nullptr, nullptr, nullptr, bgpquery->dinstinct_query));
 			new_join_node->left_node = root_node;
 			root_node = new_join_node;
-			already_so_var.emplace_back(satellitenode_id);
 
 		} else{
 
@@ -974,6 +976,8 @@ void PlanTree::add_satellitenode(BGPQuery *bgpquery, unsigned int satellitenode_
 			already_joined_pre_var.emplace_back(pre_var_descrip->id_);
 		}
 	}
+	already_so_var.emplace_back(satellitenode_id);
+
 }
 
 

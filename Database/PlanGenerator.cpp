@@ -930,10 +930,9 @@ long long PlanGenerator::cost_model_for_p2so_optimization(unsigned node_1_id, un
 		// cout << "true size = " << s_o_list_len << endl;
 		// delete[] s_o_list;
 
-		// todo: check this! clear fun in kvstore
-		return max((unsigned long long)1,pre2num[var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]]]/(both_not_linked_const ? 4 : 2));
+		return max((unsigned long long)1,(unsigned long long)(pre2num[var1_descrip->so_edge_pre_id_[linked_edge_pre_const_index[0]]]/(both_not_linked_const ? 1.0 : 0.5)));
 	} else{
-		return max((unsigned long long)1, triples_num/(both_not_linked_const ? 4 : 2));
+		return max((unsigned long long)1, (unsigned long long)(triples_num/(both_not_linked_const ? 1.0 : 0.5)));
 	}
 
 
@@ -950,6 +949,7 @@ vector<shared_ptr<FeedOneNode>> PlanGenerator::completecandidate(){
 
 		auto var_descrip = bgpquery->get_vardescrip_by_index(var_index);
 		unsigned var_id = var_descrip->id_;
+		cout << "consider var id = " << var_id << endl;
 
 		if(var_descrip->var_type_ == VarDescriptor::VarType::Predicate){
 			continue;
@@ -960,16 +960,30 @@ vector<shared_ptr<FeedOneNode>> PlanGenerator::completecandidate(){
 		auto candidate_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
 
 		for(unsigned i = 0; i < var_descrip->degree_; ++i){
-			bool pre_var = var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::VarPreType;
-			bool nei_const = var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::ConEntiType;
-			unsigned size = (no_candidate ? limitID_entity : ((*id_caches)[var_id]->size()));
+			bool pre_const = var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::ConPreType;
+			bool nei_var = var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType;
+			unsigned size = (no_candidate ? limitID_entity + limitID_literal : ((*id_caches)[var_id]->size()));
 
-			if(pre_var && nei_const){
+			if(pre_const && nei_var){
+				cout << "size = " << size << endl;
+				cout << "pre2num = " << pre2num[var_descrip->so_edge_pre_id_[i]] << endl;
+				cout << "border = " << size / (Util::logarithm(2, size) + 1) << endl;
 
 				double border = size / (Util::logarithm(2, size) + 1);
-				if((double)(pre2num[var_descrip->so_edge_pre_id_[i]]) < border)
+				if((no_candidate) || (double)(pre2num[var_descrip->so_edge_pre_id_[i]]) < border)
 				{
+					unsigned estimate_num = min((unsigned)10000000, size);
+					auto pre_id = var_descrip->so_edge_pre_id_[i];
 					cout << "add candidate for var " << var_id << endl;
+					if((var_descrip->so_edge_type_[i] == Util::EDGE_IN && pre2obj[pre_id] > estimate_num) ||
+					   (var_descrip->so_edge_type_[i] == Util::EDGE_OUT && pre2sub[pre_id] > estimate_num)){
+						cout << "skip the prefilter because the constant filter is strong enough" << endl;
+						continue;
+					}
+					cout << "need this prefilter!" << endl;
+					if(bgpquery->is_var_satellite_by_index(bgpquery->id_position_map[var_descrip->so_edge_nei_[i]])){
+						already_done_satellite.insert(var_descrip->so_edge_nei_[i]);
+					}
 					unsigned triple_index = var_descrip->so_edge_index_[i];
 					candidate_edge_info->emplace_back(bgpquery->s_id_[triple_index], bgpquery->p_id_[triple_index], bgpquery->o_id_[triple_index],
 													  (var_descrip->so_edge_type_[i] == Util::EDGE_IN ? JoinMethod::p2o : JoinMethod::p2s));
@@ -981,6 +995,8 @@ vector<shared_ptr<FeedOneNode>> PlanGenerator::completecandidate(){
 			}
 
 		}
+
+		cout << "candidate edge info for var " << var_id << " is " << (*candidate_edge_info).size() << endl;
 		if(!candidate_edge_info->empty()){
 			need_candidate.emplace_back(make_shared<FeedOneNode>(var_id, candidate_edge_info, candidate_edge_const_info));
 		}
@@ -1020,7 +1036,39 @@ void PlanGenerator::considervarscan() {
 			join_nodes.push_back(var_id);
 
 		vector<unsigned> this_node{var_id};
-		PlanTree *new_scan = new PlanTree(var_id, bgpquery);
+		vector<unsigned> satellite_edge_index;
+		unsigned estimate = triples_num;
+		PlanTree *new_scan;// = new PlanTree(var_id, bgpquery);
+		bool no_candidate =  (*id_caches).find(var_id) == (*id_caches).end();
+		auto candidate_edge_info = make_shared<vector<EdgeInfo>>();
+		auto candidate_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
+
+		for(unsigned i = 0; i < var_descrip->degree_; ++i){
+			bool pre_const = var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::ConPreType;
+			bool nei_var = var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType;
+			unsigned size = (no_candidate ? limitID_entity + limitID_literal : ((*id_caches)[var_id]->size()));
+
+			if(pre_const && nei_var && already_done_satellite.count(var_descrip->so_edge_nei_[i])){
+				cout << "size = " << size << endl;
+				cout << "pre2num = " << pre2num[var_descrip->so_edge_pre_id_[i]] << endl;
+				cout << "border = " << size / (Util::logarithm(2, size) + 1) << endl;
+
+				estimate = min(estimate, (unsigned)pre2num[var_descrip->so_edge_pre_id_[i]]);
+				cout << "need this prefilter!" << endl;
+				already_done_satellite.insert(var_descrip->so_edge_pre_id_[i]);
+				satellite_edge_index.emplace_back(i);
+				unsigned triple_index = var_descrip->so_edge_index_[i];
+				candidate_edge_info->emplace_back(bgpquery->s_id_[triple_index], bgpquery->p_id_[triple_index], bgpquery->o_id_[triple_index],
+												  (var_descrip->so_edge_type_[i] == Util::EDGE_IN ? JoinMethod::p2o : JoinMethod::p2s));
+				candidate_edge_const_info->emplace_back(bgpquery->s_is_constant_[triple_index], bgpquery->p_is_constant_[triple_index],bgpquery->o_is_constant_[triple_index]);
+
+			}
+
+
+		}
+
+
+		new_scan = new PlanTree(var_id, bgpquery, satellite_edge_index, candidate_edge_info, candidate_edge_const_info);
 
 		list<PlanTree *> this_node_plan;
 		this_node_plan.push_back(new_scan);
@@ -1041,11 +1089,11 @@ void PlanGenerator::considervarscan() {
 		if((*id_caches).find(var_id) != (*id_caches).end()) {
 
 			get_idcache_sample((*id_caches)[var_id], need_insert_vec);
-			var_to_num_map[var_id] = (*id_caches)[var_id]->size();
+			var_to_num_map[var_id] = min((*id_caches)[var_id]->size(), estimate);
 			var_sampled_from_candidate[var_id] = true;
 
 		} else{
-			var_to_num_map[var_id] = get_sample_from_whole_database(var_id, need_insert_vec);
+			var_to_num_map[var_id] = min(get_sample_from_whole_database(var_id, need_insert_vec), estimate);
 			var_sampled_from_candidate[var_id] = false;
 
 		}
@@ -1103,8 +1151,8 @@ void PlanGenerator::considerwcojoin(unsigned int var_num) {
 			// cout << "to node " << next_node << " , cost: " << cost << endl;
 			if(var_num == 2){
 				long long this_cost = cost_model_for_p2so_optimization(last_node_plan.first[0], next_node);
-				// cout << "in wcojoin, " << last_node_plan.first[0] << " to " << next_node << endl;
-				// cout << "\t" << "normal cost: " << cost << ", p2so cost: " << this_cost << endl;
+				cout << "in wcojoin, " << last_node_plan.first[0] << " to " << next_node << endl;
+				cout << "\t" << "normal cost: " << cost << ", p2so cost: " << this_cost << endl;
 				if(this_cost < cost){
 					new_plan = new PlanTree(last_node_plan.first[0], next_node, bgpquery);
 					new_plan->plan_cost = this_cost;
@@ -1186,11 +1234,13 @@ bool compare_pair_vector(pair<double, unsigned> a, pair<double, unsigned> b) {
 void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
 
 	vector<pair<double, unsigned >> satellitenode_score;
+	vector<unsigned> already_node = best_plan->already_so_var;
 
 	// satellite_nodes must be so_type?
 	// yes! If s ?p o. ... then we only need to treat this one triple. Because it has not linked with other GP by var.
 	for(unsigned satellitenode_index = 0; satellitenode_index < satellite_nodes.size(); ++satellitenode_index){
 		unsigned satellitenode_id = satellite_nodes[satellitenode_index];
+		if(find(already_node.begin(), already_node.end(), satellitenode_id) != already_node.end()) continue;
 
 		auto var_descrip = bgpquery->get_vardescrip_by_id(satellitenode_id);
 
@@ -1244,23 +1294,14 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 				considerbinaryjoin(var_num);
 	}
 
-	// for(auto x:card_cache){
-	// 	for(auto y:x){
-	// 		for(auto z:y.first) cout << z << " ";
-	// 		cout << "card: " << y.second << endl;
-	// 	}
-	// }
+	for(auto x:card_cache){
+		for(auto y:x){
+			for(auto z:y.first) cout << z << " ";
+			cout << "card: " << y.second << endl;
+		}
+	}
 
 	PlanTree* best_plan = get_best_plan_by_num(join_nodes.size());
-	//
-	// for(auto x : card_cache){
-	// 	for(auto y : x){
-	// 		for(auto z : y.first) cout << z << " ";
-	// 		cout << "cost: " << y.second << endl;
-	// 	}
-	//
-	// 	cout << endl;
-	// }
 
 	// todo: 这个卫星点应该也有卫星谓词变量
 	// s ?p ?o. 在之前的计划中已经加入了?o, 则这一步也需要加入?p
