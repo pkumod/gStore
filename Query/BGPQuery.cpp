@@ -116,6 +116,10 @@ BGPQuery::BGPQuery() {
 
 }
 
+BGPQuery::~BGPQuery() {
+	for(auto p:result_list) delete p;
+}
+
 
 // general_evalutial first new one BGPQuery, than initial it.
 // than add Triple one by one.

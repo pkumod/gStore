@@ -191,6 +191,7 @@ public:
 
 
 	BGPQuery();
+	~BGPQuery();
 	void initial();
 
 
