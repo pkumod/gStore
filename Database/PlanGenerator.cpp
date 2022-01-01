@@ -32,9 +32,18 @@ PlanGenerator::PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics 
 PlanGenerator::~PlanGenerator() {
 	for(auto &map_plan_list : plan_cache){
 		for(auto &nodes_plan_list_pair : map_plan_list){
-			for(auto &plan : nodes_plan_list_pair.second){
-				delete plan;
+			for(auto x : nodes_plan_list_pair.first) cout << x << " ";
+			cout << endl;
+			auto plan_ = nodes_plan_list_pair.second.begin();
+			while(plan_ != nodes_plan_list_pair.second.end()){
+				auto temp = *plan_;
+				plan_ = nodes_plan_list_pair.second.erase(plan_);
+				delete temp;
+
 			}
+			// for(auto &plan : nodes_plan_list_pair.second){
+			// 	delete plan;
+			// }
 		}
 	}
 }

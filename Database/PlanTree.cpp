@@ -460,7 +460,7 @@ PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_no
 
 	auto var_descrip = bgpquery->get_vardescrip_by_id(next_node);
 	// todo: 这个构造函数用得对吗？
-	root_node = last_plantree->root_node;
+	root_node = new Tree_node(last_plantree->root_node);
 	already_so_var = last_plantree->already_so_var;
 	already_joined_pre_var = last_plantree->already_joined_pre_var;
 
@@ -886,8 +886,8 @@ PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery
 												nullptr, nullptr, make_shared<JoinTwoTable>(public_variables), nullptr));
 
 
-	root_node->left_node = left_plan->root_node;
-	root_node->right_node = right_plan->root_node;
+	root_node->left_node = new Tree_node(left_plan->root_node);
+	root_node->right_node = new Tree_node(right_plan->root_node);
 
 
 }
