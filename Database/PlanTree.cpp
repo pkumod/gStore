@@ -981,19 +981,19 @@ void PlanTree::add_satellitenode(BGPQuery *bgpquery, unsigned int satellitenode_
 }
 
 
-void PlanTree::delete_tree_node(Tree_node *root_node) {
-	if(root_node == nullptr){
-		return;
-	}
-
-	delete_tree_node(root_node->left_node);
-	delete_tree_node(root_node->right_node);
-	delete root_node;
-}
-
-PlanTree::~PlanTree() {
-	delete_tree_node(root_node);
-}
+// void PlanTree::delete_tree_node(Tree_node *root_node) {
+// 	if(root_node == nullptr){
+// 		return;
+// 	}
+//
+// 	delete_tree_node(root_node->left_node);
+// 	delete_tree_node(root_node->right_node);
+// 	delete root_node;
+// }
+//
+// PlanTree::~PlanTree() {
+// 	delete_tree_node(root_node);
+// }
 
 void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 	if(node == nullptr)

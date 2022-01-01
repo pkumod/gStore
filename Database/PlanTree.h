@@ -66,19 +66,33 @@ struct Tree_node{
     	right_node = nullptr;
     }
 
+	~Tree_node(){
+		if(left_node){
+			delete left_node;
+			left_node = nullptr;
+		}
+		if(right_node){
+			delete right_node;
+			right_node = nullptr;
+		}
+	}
+
 
 };
 
 class PlanTree {
 
 public:
-    Tree_node *root_node;
+    Tree_node *root_node = nullptr;
     // todo: this two vec need build
     vector<unsigned> already_joined_pre_var;
     vector<unsigned> already_so_var;
     long long plan_cost;
 
     PlanTree()= default;
+	~PlanTree(){
+		delete root_node;
+	}
 
 
     JoinMethod get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescriptor> var_descrip, unsigned edge_index, bool join_two_node = true );
@@ -97,7 +111,6 @@ public:
     PlanTree(unsigned first_node, BGPQuery *bgpquery, bool used_in_random_plan);
 
     void delete_tree_node(Tree_node* root_node);
-    ~PlanTree();
 
     void print_tree_node(Tree_node* node, BGPQuery* bgpquery);
     void print(BGPQuery* bgpquery);

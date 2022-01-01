@@ -29,6 +29,16 @@ PlanGenerator::PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics 
 					limitID_predicate(limitID_predicate_), limitID_literal(limitID_literal_), limitID_entity(limitID_entity_),
 					pre2num(pre2num_), pre2sub(pre2sub_), pre2obj(pre2obj_){};
 
+PlanGenerator::~PlanGenerator() {
+	for(auto &map_plan_list : plan_cache){
+		for(auto &nodes_plan_list_pair : map_plan_list){
+			for(auto &plan : nodes_plan_list_pair.second){
+				delete plan;
+			}
+		}
+	}
+}
+
 JoinMethod PlanGenerator::get_join_strategy(bool s_is_var, bool p_is_var, bool o_is_var, unsigned var_num) {
 
 	if(var_num == 2){
