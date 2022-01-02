@@ -189,6 +189,8 @@ public:
 	int join_so_var_num;
 	int total_join_var_num;
 
+	shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> var_candidates_cache;
+
 
 	BGPQuery();
 	~BGPQuery();
@@ -260,7 +262,14 @@ public:
 	bool is_var_satellite_by_index(unsigned index);
 
 	void print(KVstore * kvstore);
-    vector<unsigned*>* get_result_list_pointer();
+
+	void set_var_candidate_cache(unsigned var_id, shared_ptr<IDList> candidate_cache);
+
+	shared_ptr<IDList> get_candidate_list_by_id(unsigned var_id);
+	shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> get_all_candidates();
+
+
+		vector<unsigned*>* get_result_list_pointer();
     unique_ptr<unsigned[]>& resultPositionToId();
     /* tells if the var_id appears in the position of
      * subject / predicate / object

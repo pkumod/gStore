@@ -267,7 +267,8 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   std::cout<<"Optimizer:: limit used:"<<query_info.limit_<<std::endl;
   std::cout<<"Optimizer::DoQuery limit num:"<<query_info.limit_num_<<std::endl;
 #endif
-  auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
+  auto var_candidates_cache = bgp_query->get_all_candidates();
+  // auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
   shared_ptr<QueryPlan> query_plan;
   auto strategy = this->ChooseStrategy(bgp_query,&query_info);
   auto distinct = bgp_query->dinstinct_query;

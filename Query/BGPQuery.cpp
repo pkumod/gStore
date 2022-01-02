@@ -113,11 +113,12 @@ void VarDescriptor::print(KVstore *kvstore) {
 
 BGPQuery::BGPQuery() {
 	this->initial();
+	var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
 
 }
 
 BGPQuery::~BGPQuery() {
-	for(auto p:result_list) delete p;
+	for(auto p:result_list) delete[] p;
 }
 
 
@@ -664,6 +665,26 @@ void BGPQuery::print(KVstore *kvstore) {
 		var_vector[i]->print(kvstore);
 	}
 }
+
+
+void BGPQuery::set_var_candidate_cache(unsigned var_id, shared_ptr<IDList> candidate_cache) {
+	(*var_candidates_cache)[var_id] = candidate_cache;
+}
+
+
+
+shared_ptr<IDList> BGPQuery::get_candidate_list_by_id(unsigned var_id) {
+	if((*var_candidates_cache).find(var_id) != (*var_candidates_cache).end())
+		return nullptr;
+	else
+		return (*var_candidates_cache)[var_id];
+}
+
+shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> BGPQuery::get_all_candidates() {
+	return var_candidates_cache;
+}
+
+
 
 vector<unsigned*>*
 BGPQuery::get_result_list_pointer()
