@@ -749,7 +749,13 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					// Set candidate lists of common vars with the parent layer in rewriting_evaluation_stack //
 					// TODO: check if this affects BGPQuery execution
 					if (dep > 0)
+					{
+						#ifndef TEST_BGPQUERY
 						fillCandList(sparql_query, dep, encode_varset);
+						#else
+						fillCandList(bgp_query_vec, dep, encode_varset);
+						#endif
+					}
 					long tv_fillcand = Util::get_cur_time();
 					printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
 
@@ -2655,6 +2661,57 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<QueryTree::GroupPattern::Pat
 		delete temp;
 	}
 	return success;
+}
+
+void GeneralEvaluation::fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec, int dep, vector<vector<string> >& encode_varset)
+{
+	TempResultSet *&last_result = this->rewriting_evaluation_stack[dep - 1].result;
+
+	for (int j = 0; j < bgp_query_vec.size(); j++)
+	{
+		vector<string> &basic_query_encode_varset = encode_varset[j];
+
+		for (int k = 0; k < (int)basic_query_encode_varset.size(); k++)
+		{
+			/// For each var in the current BGP ///
+			/// construct result_set: the candidate values of this var from the parent result in rewriting_evaluation_stack ///
+			set<unsigned> result_set;
+
+			for (int t = 0; t < (int)last_result->results.size(); t++)
+			{
+				//// For each var in each BGP, check each result in the parent result in rewriting_evaluation_stack ////
+				//// If this var exists in the parent result, retrieve its value in the parent result into result_set ////
+				vector<TempResult::ResultPair> &result = last_result->results[t].result;
+
+				int pos = Varset(basic_query_encode_varset[k]).mapTo(last_result->results[t].id_varset)[0];
+				if (pos != -1)
+				{
+					for (int l = 0; l < (int)result.size(); l++)
+						result_set.insert(result[l].id[pos]);
+				}
+			}
+
+			/// If result_set is non-empty, set it as the current var's candidate list ///
+			if (!result_set.empty())
+			{
+				// vector<unsigned> result_vector;
+				IDList result_vector;
+				result_vector.reserve(result_set.size());
+
+				for (set<unsigned>::iterator iter = result_set.begin(); iter != result_set.end(); iter++)
+					// result_vector.push_back(*iter);
+					result_vector.addID(*iter);
+
+				
+				bgp_query_vec[j]->set_var_candidate_cache(bgp_query_vec[j]->get_var_id_by_name(basic_query_encode_varset[k]), make_shared<IDList>(result_vector));
+				// bgp_query_vec[j]->get_candidate_list_by_id(bgp_query_vec[j]->get_var_id_by_name(basic_query_encode_varset[k]))->copy(result_vector);
+				// basic_query.getCandidateList(basic_query.getIDByVarName(basic_query_encode_varset[k])).copy(result_vector);
+				// basic_query.setReady(basic_query.getIDByVarName(basic_query_encode_varset[k]));
+
+				printf("fill var %s CandidateList size %d\n", basic_query_encode_varset[k].c_str(), (int)result_vector.size());
+			}
+		}
+	}
 }
 
 void GeneralEvaluation::fillCandList(SPARQLquery& sparql_query, int dep, vector<vector<string> >& encode_varset)
