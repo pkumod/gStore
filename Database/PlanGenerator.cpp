@@ -78,14 +78,18 @@ JoinMethod PlanGenerator::get_join_strategy(bool s_is_var, bool p_is_var, bool o
 				else return JoinMethod::p2so;
 			}
 		}
-	} else if(var_num == 1){
-		if(s_is_var) return JoinMethod::po2s;
-		if(o_is_var) return JoinMethod::sp2o;
-		if(p_is_var) return JoinMethod::so2p;
-	} else{
-		cout << "error: var_num not equal to 1 or 2" << endl;
-		exit(-1);
+	} else {
+		if (var_num == 1) {
+			if (s_is_var) return JoinMethod::po2s;
+			if (o_is_var) return JoinMethod::sp2o;
+			if (p_is_var) return JoinMethod::so2p;
+		} else {
+			cout << "error: var_num not equal to 1 or 2" << endl;
+			exit(-1);
+		}
 	}
+	cout << "error: var_num not equal to 1 or 2" << endl;
+	exit(-1);
 
 }
 
@@ -204,7 +208,7 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 
 		random_device rd;
 		mt19937 eng(rd());
-		uniform_real_distribution<double> dis(0, 1);
+		uniform_real_distribution<double> dis(0.0, 1.0);
 
 		if (edge_type[0] == Util::EDGE_IN) {
 			// not need to sample, because sampled in considering all scans
@@ -747,6 +751,10 @@ JoinMethod PlanGenerator::get_join_method(bool s_const, bool p_const, bool o_con
 					cout << "error! error when try to generate candidates from two vars in one triple!" << endl;
 					exit(-1);
 				}
+		default:{
+			cout << "error! error when try to get join method in PlanGenerator::get_join_method! " << endl;
+			exit(-1);
+		}
 	}
 }
 
@@ -981,7 +989,7 @@ vector<shared_ptr<FeedOneNode>> PlanGenerator::completecandidate(){
 		for(unsigned i = 0; i < var_descrip->degree_; ++i){
 			bool pre_const = var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::ConPreType;
 			bool nei_var = var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::VarEntiType;
-			unsigned size = (no_candidate ? limitID_entity + limitID_literal : ((*id_caches)[var_id]->size()));
+			unsigned size = (no_candidate ? limitID_entity + limitID_literal : max(((*id_caches)[var_id]->size()), (unsigned)2));
 
 			if(pre_const && nei_var){
 				cout << "size = " << size << endl;
@@ -1148,6 +1156,7 @@ void PlanGenerator::get_nei_by_sub_plan_nodes(const vector<unsigned int> &last_p
 void PlanGenerator::considerwcojoin(unsigned int var_num) {
 	auto plan_tree_list = plan_cache[var_num - 2];
 	for(const auto &last_node_plan : plan_tree_list){
+		// if(last_node_plan.first == vector<unsigned>{0}) continue;
 		set<unsigned> nei_node;
 
 		get_nei_by_sub_plan_nodes(last_node_plan.first, nei_node);
@@ -1168,6 +1177,7 @@ void PlanGenerator::considerwcojoin(unsigned int var_num) {
 
 			// for(auto x:last_node_plan.first) cout << x << " ";
 			// cout << "to node " << next_node << " , cost: " << cost << endl;
+			// todo : test this
 			if(var_num == 2){
 				long long this_cost = cost_model_for_p2so_optimization(last_node_plan.first[0], next_node);
 				cout << "in wcojoin, " << last_node_plan.first[0] << " to " << next_node << endl;
