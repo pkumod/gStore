@@ -500,11 +500,16 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				sparql_query.encodeQuery(this->kvstore, encode_varset);
 				#else
 				vector<string> total_encode_varset;
+				vector<bool> encode_constant_exist(bgp_query_vec.size(), true);
+				bool curr_exist;
 				for (size_t k = 0; k < encode_varset.size(); k++)
 					total_encode_varset.insert(total_encode_varset.end(), encode_varset[k].begin(), encode_varset[k].end());
 				bgp_query_large->EncodeBGPQuery(kvstore, total_encode_varset);
 				for (size_t k = 0; k < bgp_query_vec.size(); k++)
-					bgp_query_vec[k]->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset[k]);
+				{
+					curr_exist = bgp_query_vec[k]->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset[k]);
+					encode_constant_exist[k] = curr_exist;
+				}
 				#endif
 				long tv_encode = Util::get_cur_time();
 				printf("during Encode, used %ld ms.\n", tv_encode - tv_begin);
@@ -534,6 +539,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					for (size_t k = 0; k < encode_varset[j].size(); k++)
 						p2id[k] = bgp_query_vec[j]->get_var_id_by_name(Varset(encode_varset[j]).vars[k]);
 					bgp_query_vec[j]->print(kvstore);
+					if (!encode_constant_exist[j])
+						continue;	// If any constant in this BGP does not exist, do not need to DoQuery
 					this->optimizer_->DoQuery(bgp_query_vec[j],query_info);
 				}
 				#endif
@@ -737,11 +744,15 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					sparql_query.encodeQuery(this->kvstore, encode_varset);
 					#else
 					vector<string> total_encode_varset;
+					vector<bool> encode_constant_exist(bgp_query_vec.size(), true);
 					for (size_t k = 0; k < encode_varset.size(); k++)
 						total_encode_varset.insert(total_encode_varset.end(), encode_varset[k].begin(), encode_varset[k].end());
 					bgp_query_large->EncodeBGPQuery(kvstore, total_encode_varset);
 					for (size_t k = 0; k < bgp_query_vec.size(); k++)
-						bgp_query_vec[k]->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset[k]);
+					{
+						bool curr_exist = bgp_query_vec[k]->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset[k]);
+						encode_constant_exist[k] = curr_exist;
+					}
 					#endif
 					long tv_encode = Util::get_cur_time();
 					printf("after Encode, used %ld ms.\n", tv_encode - tv_begin);
@@ -783,6 +794,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						for (size_t k = 0; k < encode_varset[j].size(); k++)
 							p2id[k] = bgp_query_vec[j]->get_var_id_by_name(Varset(encode_varset[j]).vars[k]);
 						bgp_query_vec[j]->print(kvstore);
+						if (!encode_constant_exist[j])
+							continue;
 						this->optimizer_->DoQuery(bgp_query_vec[j],query_info);
 					}
 					#endif
