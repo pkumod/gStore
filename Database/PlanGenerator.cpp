@@ -1183,6 +1183,7 @@ void PlanGenerator::considerwcojoin(unsigned int var_num) {
 				cout << "in wcojoin, " << last_node_plan.first[0] << " to " << next_node << endl;
 				cout << "\t" << "normal cost: " << cost << ", p2so cost: " << this_cost << endl;
 				if(this_cost < cost){
+					delete new_plan;
 					new_plan = new PlanTree(last_node_plan.first[0], next_node, bgpquery);
 					new_plan->plan_cost = this_cost;
 				}

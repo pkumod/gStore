@@ -384,7 +384,6 @@ bool BGPQuery::EncodeBGPQuery(KVstore *_kvstore, const vector<string> &_query_va
 	bool legal_bgp = this->build_edge_info(_kvstore);
 
 	this->count_statistics_num();
-	if(!legal_bgp) cout << "in encode error" << endl;
 
 
 
@@ -510,7 +509,6 @@ bool BGPQuery::EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore *_kvstore,
 	this->ScanAllVarByBigBGPID(big_bgpquery_, _query_var);
 
 	bool legal_bgp = this->build_edge_info(_kvstore);
-	if(!legal_bgp) cout << "in small encode error" << endl;
 
 
 	this->count_statistics_num();
