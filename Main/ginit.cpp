@@ -132,7 +132,7 @@ int main(int argc, char * argv[])
 					Util::init_backuplog();
 					Util::configure_new();
 					string version = Util::getConfigureValue("version");
-					string update_sparql = "insert data {<CoreVersion> <value> " + version + ". }";
+					string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". }";
 
 					ResultSet _rs;
 					FILE *ofp = stdout;
