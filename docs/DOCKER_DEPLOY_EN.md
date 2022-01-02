@@ -20,7 +20,7 @@ After the building, using `docker run -p 9000:80 -it gstore` directly to start a
 
 ## 0x02. pulling the mirror directly to run(recommendation)
 
-Instead of downloading project or building on your own, input `docker pull pkumodlab/gstore:0.9` to pull the mirror which has been automatically built well on the docker hub.  Then input `docker run -p 9000:80 -it pkumodlab/gstore:0.9` to start and enter the container and execute other operations. 
+Instead of downloading project or building on your own, input `docker pull pkumodlab/gstore:latest` to pull the mirror which has been automatically built well on the docker hub.  Then input `docker run -p 9000:80 -it pkumodlab/gstore:latest` to start and enter the container and execute other operations. 
 
 ## 0x03. Follow-up
 
