@@ -20,7 +20,7 @@
 
 ## 0x02.直接拉取镜像运行(推荐)
 
-无需下载项目或自己构建，直接输入 `docker pull pkumodlab/gstore:0.9` 拉取已经在 docker hub 上自动构建完成的镜像。拉取完成后 `docker run -p 9000:80 -it pkumodlab/gstore:0.9` 即可直接启动并进入容器使用。
+无需下载项目或自己构建，直接输入 `docker pull pkumodlab/gstore:latest` 拉取已经在 docker hub 上自动构建完成的镜像。拉取完成后 `docker run -p 9000:80 -it pkumodlab/gstore:latest` 即可直接启动并进入容器使用。
  
 ## 0x03.后续工作
 
