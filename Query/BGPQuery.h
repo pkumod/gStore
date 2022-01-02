@@ -216,7 +216,7 @@ public:
 	// void update_so_var_edge_info(uns);
 
 	void ScanAllVar(const vector<string>& _query_var);
-	void build_edge_info(KVstore *_kvstore);
+	bool build_edge_info(KVstore *_kvstore);
 	void count_statistics_num();
 
 	bool EncodeBGPQuery(KVstore* _kvstore, const vector<string>& _query_var, bool dinstinct = false);

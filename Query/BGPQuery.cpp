@@ -285,7 +285,9 @@ void BGPQuery::ScanAllVar(const vector<string>& _query_var) {
 
 }
 
-void BGPQuery::build_edge_info(KVstore *_kvstore) {
+bool BGPQuery::build_edge_info(KVstore *_kvstore) {
+
+	bool legal_bgp = true;
 
 	for(unsigned i = 0; i < this->triple_vt.size(); ++i){
 		string s_string = triple_vt[i].subject;
@@ -305,6 +307,7 @@ void BGPQuery::build_edge_info(KVstore *_kvstore) {
 		if(s_string.at(0) != '?'){
 			s_id = _kvstore->getIDByString(s_string);
 			s_is_var = false;
+			if(s_id == INVALID) legal_bgp = false;
 		} else{
 			s_id = this->get_var_id_by_name(s_string);
 		}
@@ -312,6 +315,7 @@ void BGPQuery::build_edge_info(KVstore *_kvstore) {
 		if(o_string.at(0) != '?'){
 			o_id = _kvstore->getIDByString(o_string);
 			o_is_var = false;
+			if(o_id == INVALID) legal_bgp = false;
 		} else{
 			o_id = this->get_var_id_by_name(o_string);
 		}
@@ -319,6 +323,7 @@ void BGPQuery::build_edge_info(KVstore *_kvstore) {
 		if(p_string.at(0) != '?'){
 			p_id = _kvstore->getIDByPredicate(p_string);
 			p_is_var = false;
+			if(p_id == INVALID) legal_bgp = false;
 		} else{
 			p_id = this->get_var_id_by_name(p_string);
 		};
@@ -344,6 +349,8 @@ void BGPQuery::build_edge_info(KVstore *_kvstore) {
 			this->var_vector[id_position_map[p_id]]->update_pre_var_edge_info(s_id,o_id,s_is_var,o_is_var,i);
 
 	}
+
+	return legal_bgp;
 }
 
 void BGPQuery::count_statistics_num() {
@@ -374,9 +381,10 @@ bool BGPQuery::EncodeBGPQuery(KVstore *_kvstore, const vector<string> &_query_va
 	// I want this function scan all vars, incluing all pre_var and subject_or_object_var
 	this->ScanAllVar(_query_var);
 
-	this->build_edge_info(_kvstore);
+	bool legal_bgp = this->build_edge_info(_kvstore);
 
 	this->count_statistics_num();
+	if(!legal_bgp) cout << "in encode error" << endl;
 
 
 
@@ -385,7 +393,7 @@ bool BGPQuery::EncodeBGPQuery(KVstore *_kvstore, const vector<string> &_query_va
 		cout << "_query_var[" << i << "] = " << _query_var[i] << endl;
 	}
 
-	return true;
+	return legal_bgp;
 
 
 }
@@ -501,12 +509,14 @@ bool BGPQuery::EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore *_kvstore,
 
 	this->ScanAllVarByBigBGPID(big_bgpquery_, _query_var);
 
-	this->build_edge_info(_kvstore);
+	bool legal_bgp = this->build_edge_info(_kvstore);
+	if(!legal_bgp) cout << "in small encode error" << endl;
+
 
 	this->count_statistics_num();
 
 	// todo: return false imply parse error
-	return true;
+	return legal_bgp;
 
 }
 
