@@ -206,9 +206,9 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 		long long s_o_list1_total_num = 0;
 		long long s_o_list2_total_num = 0;
 
-		random_device rd;
-		mt19937 eng(rd());
-		uniform_real_distribution<double> dis(0.0, 1.0);
+		// random_device rd;
+		// // mt19937 eng(rd());
+		// uniform_real_distribution<double> dis(0.0, 1.0);
 
 		if (edge_type[0] == Util::EDGE_IN) {
 			// not need to sample, because sampled in considering all scans
@@ -257,7 +257,7 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 
 							this_sample.push_back(move(this_pass_sample));
 						} else {
-							if (dis(eng) < SAMPLE_PRO) {
+							if (rand() / double(RAND_MAX) < SAMPLE_PRO) {
 
 								vector<unsigned> this_pass_sample(2);
 								this_pass_sample[new_id_pos_map[last_node]] = var_to_sample_cache[last_node][i];
@@ -340,7 +340,7 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 
 							this_sample.push_back(move(this_pass_sample));
 						} else {
-							if (dis(eng) < SAMPLE_PRO) {
+							if (rand() / double(RAND_MAX) < SAMPLE_PRO) {
 
 								vector<unsigned> this_pass_sample(2);
 								this_pass_sample[new_id_pos_map[last_node]] = s_o_list[j];
