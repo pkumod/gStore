@@ -26,7 +26,8 @@ tuple<bool, IntermediateResult> Executor::JoinANode(IntermediateResult old_table
   auto new_table = IntermediateResult::OnlyPositionCopy(old_table);
   auto new_records = new_table.values_;
   auto id_pos_map = new_table.id_pos_map;
-  new_table.AddNewNode(new_id);
+  if (feed_plan->node_should_be_added_into_table)
+    new_table.AddNewNode(new_id);
   auto edges_info = feed_plan->edges_;
 
   /* : each record */
