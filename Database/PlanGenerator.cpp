@@ -1069,6 +1069,7 @@ void PlanGenerator::considervarscan() {
 		bool no_candidate =  (*id_caches).find(var_id) == (*id_caches).end();
 		auto candidate_edge_info = make_shared<vector<EdgeInfo>>();
 		auto candidate_edge_const_info = make_shared<vector<EdgeConstantInfo>>();
+		vector<unsigned> nei_id_vec;
 
 		for(unsigned i = 0; i < var_descrip->degree_; ++i){
 			bool pre_const = var_descrip->so_edge_pre_type_[i] == VarDescriptor::PreType::ConPreType;
@@ -1086,16 +1087,16 @@ void PlanGenerator::considervarscan() {
 				satellite_edge_index.emplace_back(i);
 				unsigned triple_index = var_descrip->so_edge_index_[i];
 				candidate_edge_info->emplace_back(bgpquery->s_id_[triple_index], bgpquery->p_id_[triple_index], bgpquery->o_id_[triple_index],
-												  (var_descrip->so_edge_type_[i] == Util::EDGE_IN ? JoinMethod::p2o : JoinMethod::p2s));
+												  (var_descrip->so_edge_type_[i] == Util::EDGE_IN ? JoinMethod::p2s : JoinMethod::p2o));
 				candidate_edge_const_info->emplace_back(bgpquery->s_is_constant_[triple_index], bgpquery->p_is_constant_[triple_index],bgpquery->o_is_constant_[triple_index]);
-
+				nei_id_vec.emplace_back(var_descrip->so_edge_nei_[i]);
 			}
 
 
 		}
 
 
-		new_scan = new PlanTree(var_id, bgpquery, satellite_edge_index, candidate_edge_info, candidate_edge_const_info);
+		new_scan = new PlanTree(var_id, bgpquery, satellite_edge_index, candidate_edge_info, candidate_edge_const_info, nei_id_vec);
 
 		list<PlanTree *> this_node_plan;
 		this_node_plan.push_back(new_scan);

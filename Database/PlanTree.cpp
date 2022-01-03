@@ -337,7 +337,8 @@ JoinMethod PlanTree::get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescri
 // ?s p ?o not consider
 // ?s p o already done in candidate_generation
 PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery, vector<unsigned> satellite_index,
-				   shared_ptr<vector<EdgeInfo>> edge_info, shared_ptr<vector<EdgeConstantInfo>> edge_constant_info) {
+				   shared_ptr<vector<EdgeInfo>> edge_info, shared_ptr<vector<EdgeConstantInfo>> edge_constant_info,
+				   vector<unsigned> &nei_id_vec) {
 
 	// auto edge_info = make_shared<vector<EdgeInfo>>();
 	// auto edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
@@ -360,13 +361,13 @@ PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery, vector<unsigned>
 				// continue;
 				// considered in candidate generation
 				if(var_descrip->so_edge_type_[i_th_edge] == Util::EDGE_IN)
-					join_method = JoinMethod::s2o;
+					join_method = JoinMethod::o2p;
 				else
-					join_method = JoinMethod::o2s;
+					join_method = JoinMethod::s2p;
 
 				edge_info->emplace_back(bgpquery->s_id_[triple_id], bgpquery->p_id_[triple_id], bgpquery->o_id_[triple_id], join_method);
 				edge_constant_info->emplace_back(bgpquery->s_is_constant_[triple_id], bgpquery->p_is_constant_[triple_id], bgpquery->o_is_constant_[triple_id]);
-
+				nei_id_vec.emplace_back(var_descrip->so_edge_pre_id_[i_th_edge]);
 			} else{
 				need_join_two_nodes_edge_index.push_back(i_th_edge);
 			}
@@ -376,9 +377,16 @@ PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery, vector<unsigned>
 	}
 
 	if(!edge_info->empty()){
-		auto join_node = make_shared<FeedOneNode>(first_node, edge_info, edge_constant_info);
+		auto join_node = make_shared<FeedOneNode>(first_node, make_shared<vector<EdgeInfo>>(), make_shared<vector<EdgeConstantInfo>>());
 		root_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode, join_node, nullptr, nullptr, nullptr));
 
+		for(unsigned i = 0; i < edge_info->size(); ++i) {
+			auto join_satellite_node = make_shared<FeedOneNode>(nei_id_vec[i], make_shared<vector<EdgeInfo>>(vector<EdgeInfo>{(*edge_info)[i]}), make_shared<vector<EdgeConstantInfo>>(vector<EdgeConstantInfo>{(*edge_constant_info)[i]}), false);
+			auto new_root_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode, join_satellite_node, nullptr, nullptr, nullptr));
+			new_root_node->left_node = root_node;
+			root_node = new_root_node;
+
+		}
 	}
 
 	if(!need_join_two_nodes_edge_index.empty()){
