@@ -60,9 +60,10 @@ public:
 	unsigned long getSubListSize(TYPE_ENTITY_LITERAL_ID _sub_id);
 	unsigned long getObjListSize(TYPE_ENTITY_LITERAL_ID _obj_id);
 
-	unsigned getSubObjListLenthByPre(TYPE_PREDICATE_ID _pre_id);
-	
-	//===============================================================================
+	bool existThisTriple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
+
+
+		//===============================================================================
 
 	//including IN-neighbor & OUT-neighbor 
 	unsigned getEntityDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const;

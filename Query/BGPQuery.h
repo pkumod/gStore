@@ -227,6 +227,8 @@ public:
 	bool EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore* _kvstore,
 							 const vector<string>& _query_var, bool dinstinct = false);
 
+	static bool CheckConstBGPExist(const vector<Triple> &triple_vt, KVstore *kvstore);
+
 	unsigned get_triple_num();
 	unsigned get_total_var_num();
 	unsigned get_pre_var_num();
