@@ -366,6 +366,48 @@ void GeneralEvaluation::getAllPattern(const QueryTree::GroupPattern &group_patte
 
 TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 {
+	// If ASK query, and only one BGP, check if every triple consists of all constants
+	// If so, set a special result so that getFinalResult will know
+	if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
+	{
+		bool singleBGP = true, allConstants = true;
+		vector<Triple> triple_vt;
+		for (int i = 0; i < this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size(); i++)
+		{
+			if (this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].type \
+				!= QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+			{
+				singleBGP = false;
+				break;
+			}
+			// Check if the triple consists of all constants
+			if (this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].pattern.subject.value[0] == '?' \
+				|| this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].pattern.predicate.value[0] == '?' \
+				|| this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].pattern.object.value[0] == '?')
+			{
+				allConstants = false;
+				break;
+			}
+			triple_vt.push_back(Triple(this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].pattern.subject.value, \
+				this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].pattern.predicate.value, \
+				this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].pattern.object.value));
+		}
+		if (singleBGP && allConstants)
+		{
+			// Check if these constant triples exist in database
+			bool exist = BGPQuery::CheckConstBGPExist(triple_vt, kvstore);
+			// Set a special result (indicates true/false) 
+			TempResultSet *result = new TempResultSet();
+			(*result).results.push_back(TempResult());
+			(*result).results[0].result.push_back(TempResult::ResultPair());
+			if (exist)
+				(*result).results[0].result[0].str.push_back("true");
+			else
+				(*result).results[0].result[0].str.push_back("false");
+			return result;
+		}
+	}
+
 	QueryTree::GroupPattern group_pattern;
 
 	// Check well-designed (TODO: check at every depth, now only check once) //
@@ -2410,7 +2452,13 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			ret_result.answer[0][0] = "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
 			for (int i = 0; i < (int)this->temp_result->results.size(); i++)
 				if (!this->temp_result->results[i].result.empty())
+				{
+					if (this->temp_result->results[i].result[0].str.size() == 1 \
+						&& this->temp_result->results[i].result[0].str[0] == "false")
+						continue;
 					ret_result.answer[0][0] = "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+					break;
+				}
 		}
 	}
 
