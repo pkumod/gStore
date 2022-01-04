@@ -326,7 +326,7 @@ bool BGPQuery::build_edge_info(KVstore *_kvstore) {
 			if(p_id == INVALID) legal_bgp = false;
 		} else{
 			p_id = this->get_var_id_by_name(p_string);
-		};
+		}
 
 		s_id_.push_back(s_id);
 		p_id_.push_back(p_id);
@@ -516,6 +516,47 @@ bool BGPQuery::EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore *_kvstore,
 	// todo: return false imply parse error
 	return legal_bgp;
 
+}
+
+
+
+bool BGPQuery::CheckConstBGPExist(const vector<Triple> &triple_vt, KVstore *_kvstore) {
+	for(unsigned i = 0; i < triple_vt.size(); ++i) {
+		string s_string = triple_vt[i].subject;
+		string p_string = triple_vt[i].predicate;
+		string o_string = triple_vt[i].object;
+
+		TYPE_ENTITY_LITERAL_ID s_id;
+		TYPE_ENTITY_LITERAL_ID o_id;
+		TYPE_PREDICATE_ID p_id;
+
+		if(s_string.at(0) != '?'){
+			s_id = _kvstore->getIDByString(s_string);
+			if(s_id == INVALID) return false;
+		} else{
+			cout << "error: pass an var in CheckConstBGPExist!" << endl;
+			exit(-1);
+		}
+
+		if(o_string.at(0) != '?'){
+			o_id = _kvstore->getIDByString(o_string);
+			if(o_id == INVALID) return false;
+		} else{
+			cout << "error: pass an var in CheckConstBGPExist!" << endl;
+			exit(-1);
+		}
+
+		if(p_string.at(0) != '?'){
+			p_id = _kvstore->getIDByPredicate(p_string);
+			if(p_id == INVALID) return false;
+		} else{
+			cout << "error: pass an var in CheckConstBGPExist!" << endl;
+			exit(-1);
+		}
+
+		if(!_kvstore->existThisTriple(s_id, p_id, o_id)) return false;
+	}
+	return true;
 }
 
 unsigned int BGPQuery::get_triple_num() {
