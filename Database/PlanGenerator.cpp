@@ -634,7 +634,6 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 }
 
 
-// todo: need to complete
 long long PlanGenerator::card_estimator(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes) {
 
 	unsigned last_plan_nodes_num = last_plan_nodes.size();
@@ -925,7 +924,6 @@ unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<u
 }
 
 
-// todo: complete this
 long long PlanGenerator::cost_model_for_p2so_optimization(unsigned node_1_id, unsigned node_2_id) {
 	auto var1_descrip = bgpquery->get_vardescrip_by_id(node_1_id);
 	auto var2_descrip = bgpquery->get_vardescrip_by_id(node_2_id);
@@ -1135,8 +1133,6 @@ void PlanGenerator::considervarscan() {
 }
 
 
-// todo: not complete
-// todo: has a question, what about ?s ?p o
 // I think this fun has completed, I only need to deal with s_o_var
 void PlanGenerator::get_nei_by_sub_plan_nodes(const vector<unsigned int> &last_plan_node, set<unsigned int> &nei_node) {
 	for(unsigned node_in_plan : last_plan_node){
@@ -1171,14 +1167,12 @@ void PlanGenerator::considerwcojoin(unsigned int var_num) {
 			sort(new_node_vec.begin(), new_node_vec.end());
 
 			PlanTree* new_plan = new PlanTree(last_best_plan, bgpquery, next_node);
-			// todo: complete this
 			long long cost = cost_model_for_wco(last_best_plan, last_node_plan.first,
 													next_node, new_node_vec);
 			new_plan->plan_cost = cost;
 
 			// for(auto x:last_node_plan.first) cout << x << " ";
 			// cout << "to node " << next_node << " , cost: " << cost << endl;
-			// todo : test this
 			if(var_num == 2){
 				long long this_cost = cost_model_for_p2so_optimization(last_node_plan.first[0], next_node);
 				cout << "in wcojoin, " << last_node_plan.first[0] << " to " << next_node << endl;
@@ -1209,8 +1203,6 @@ void PlanGenerator::considerbinaryjoin(unsigned int var_num)  {
 
 		long long last_plan_smallest_cost = get_best_plan(need_considerbinaryjoin_nodes_plan.first)->plan_cost;
 
-		// todo: need consider pre_var not include
-		// todo: 问周雨奇
 		// for example. Input query: ?s1->?p1->?o1, ?s2->?p1->?o2, ?s1->?p3->?o2.
 		// we have plan1 of ?s1->?p1->?o1, plan2 of ?s2->?p1->?o2.
 		// but we need to check ?s1->?p3->?o2 when using binary join plan1 and plan2
@@ -1232,15 +1224,12 @@ void PlanGenerator::considerbinaryjoin(unsigned int var_num)  {
 							PlanTree *small_best_plan = get_best_plan(small_nodes_plan.first);
 							PlanTree *another_small_best_plan = get_best_plan(other_nodes);
 
-							// todo: need to complete
 							long long now_cost = cost_model_for_binary(small_nodes_plan.first,
 																		   other_nodes, small_best_plan,
 																		   another_small_best_plan);
 							// long long now_cost = 1;
 
 							if (now_cost < last_plan_smallest_cost) {
-								//                            build new plan and add to plan_cache
-								// todo: need to complete
 								PlanTree *new_plan = new PlanTree(small_best_plan, another_small_best_plan, bgpquery, join_nodes);
 								new_plan->plan_cost = now_cost;
 

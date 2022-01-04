@@ -10,6 +10,83 @@
 
 using namespace std;
 
+TempResult::ResultPair::ResultPair()
+{
+	id = NULL;
+	sz = 0;
+}
+
+TempResult::ResultPair::ResultPair(const ResultPair& that)
+{
+	if (that.id)
+	{
+		id = new unsigned[that.sz];
+		// TODO: ResultPair cannot access id_varset of its parent TempResult
+		memcpy(id, that.id, (that.sz) * sizeof(unsigned));
+	}else{
+		id = nullptr;
+	}	sz = that.sz;
+	str = that.str;
+}
+
+TempResult::ResultPair& TempResult::ResultPair::operator=(const ResultPair& that)
+{
+	if (that.id)
+	{
+		// unsigned *local_id = new unsigned[that.id_varset.getVarsetSize()];
+		unsigned *local_id = new unsigned[that.sz];
+		memcpy(local_id, that.id, (that.sz) * sizeof(unsigned));
+		if (id)
+			delete[] id;	// Prevent exception leaving original id in limbo
+		id = local_id;
+	}
+	else
+	{
+		if (id)
+			delete[] id;
+		id = NULL;
+	}
+	sz = that.sz;
+	str = that.str;
+
+	return *this;
+}
+
+TempResult::TempResult(const TempResult& that)
+{
+	id_varset = that.id_varset;
+	str_varset = that.str_varset;
+	result = that.result;
+}
+
+TempResult& TempResult::operator=(const TempResult& that)
+{
+	id_varset = that.id_varset;
+	str_varset = that.str_varset;
+	result = that.result;
+
+	return *this;
+}
+
+TempResultSet::TempResultSet()
+{
+	initial = true;
+}
+
+TempResultSet::TempResultSet(const TempResultSet& that)
+{
+	results = that.results;
+	initial = that.initial;
+}
+
+TempResultSet& TempResultSet::operator=(const TempResultSet& that)
+{
+	results = that.results;
+	initial = that.initial;
+
+	return *this;
+}
+
 Varset TempResult::getAllVarset()
 {
 	return this->id_varset + this->str_varset;
@@ -266,6 +343,7 @@ void TempResult::doUnion(TempResult &r)
 		if (r_id_cols > 0)
 		{
 			r.result.back().id = new unsigned [r_id_cols];
+			r.result.back().sz = r_id_cols;
 			unsigned *v = r.result.back().id;
 
 			for (int k = 0; k < this_id_cols; k++)
@@ -339,6 +417,7 @@ void TempResult::doOptional(vector<bool> &binding, TempResult &x, TempResult &rn
 				if (ra_id_cols > 0)
 				{
 					ra.result.back().id = new unsigned [ra_id_cols];
+					ra.result.back().sz = ra_id_cols;
 					unsigned *v = ra.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -476,8 +555,6 @@ void TempResult::getFilterString(QueryTree::GroupPattern::FilterTree::FilterTree
 			{
 				femv.datatype = EvalMultitypeValue::xsd_boolean;
 				femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
-
-				cout << "SUSPECT??" << endl;
 
 				return;
 			}
@@ -1003,7 +1080,7 @@ EvalMultitypeValue
 				ret_femv.str_value.begin(), ::tolower);
 		if (langTag != "")
 			ret_femv.str_value += "@" + langTag;
-		
+
 		return ret_femv;
 	}
 
@@ -1486,7 +1563,7 @@ TempResult::doComp(const QueryTree::CompTreeNode &root, ResultPair &row, int id_
 				ret_femv.str_value.begin(), ::tolower);
 		if (langTag != "")
 			ret_femv.str_value += "@" + langTag;
-		
+
 		return ret_femv;
 	}
 	else if (root.oprt == "CONTAINS" || root.oprt == "STRSTARTS")
