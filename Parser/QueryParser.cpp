@@ -184,6 +184,10 @@ antlrcpp::Any QueryParser::visitAskquery(SPARQLParser::AskqueryContext *ctx)
 	query_tree_ptr->setQueryForm(QueryTree::Ask_Query);
 	query_tree_ptr->setProjectionAsterisk();
 
+	// Add DISTINCT and LIMIT 1 to speed up query execution
+	query_tree_ptr->setProjectionModifier(QueryTree::Modifier_Distinct);
+	query_tree_ptr->setLimit(1);
+
 	// datasetClause not supported
 
 	// Call explictly to pass group_pattern as a parameter
