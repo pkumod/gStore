@@ -908,6 +908,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							temp->results[0].result.back().id = v;
 							temp->results[0].result.back().sz = varnum;
 						}
+						// cout << "Use count = " << bgp_query_vec[j].use_count() << endl;
+						bgp_query_vec[j] = nullptr;
 
 						if (this->query_cache != NULL && dep == 0)
 						{
