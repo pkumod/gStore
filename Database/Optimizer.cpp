@@ -296,14 +296,16 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 	  cout << "limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_ << endl;
 
 	  auto second_run_candidates_plan = plan_generator.completecandidate();
+	  long t3_ = Util::get_cur_time();
 	  cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
 
       for(const auto& constant_generating_step: second_run_candidates_plan)
         executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
+	  long t4_ = Util::get_cur_time();
       best_plan_tree = plan_generator.get_plan(true);
       long t4 = Util::get_cur_time();
-      cout << "plan get, used " << (t4 - t3) << "ms." << endl;
+      cout << "plan get, used " << (t4 - t4_) + (t3_ - t3) << "ms." << endl;
     }
 
     best_plan_tree->print(bgp_query.get());
@@ -390,14 +392,16 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 	  cout << "id_list.size = " << var_candidates_cache->size() << endl;
 
 	  auto second_run_candidates_plan = plan_generator.completecandidate();
+	  long t3_ = Util::get_cur_time();
 	  cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
 
 	  for(const auto& constant_generating_step: second_run_candidates_plan)
 			  executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
+	  long t4_ = Util::get_cur_time();
 	  best_plan_tree = plan_generator.get_plan(true);
 	  long t4 = Util::get_cur_time();
-	  cout << "plan get, used " << (t4 - t3) << "ms." << endl;
+	  cout << "plan get, used " << (t4 - t4_) + (t3_ - t3) << "ms." << endl;
 	}
 
     best_plan_tree->print(bgp_query.get());
