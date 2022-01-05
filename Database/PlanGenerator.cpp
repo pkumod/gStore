@@ -447,9 +447,9 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 				}
 			}
 
-			random_device rd;
-			mt19937 eng(rd());
-			uniform_int_distribution<unsigned > dis(0, 1000);
+			// random_device rd;
+			// mt19937 eng(rd());
+			// uniform_int_distribution<unsigned > dis(0, 1000);
 
 			if (edge_type[0] == Util::EDGE_IN) {
 				for (unsigned i = 0; i < last_sample.size(); ++i) {
@@ -498,7 +498,7 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 								this_sample.push_back(move(this_pass_sample));
 							} else {
 
-								if (dis(eng) < SAMPLE_CACHE_MAX) {
+								if (rand() % 1000 < SAMPLE_CACHE_MAX) {
 
 									vector<unsigned> this_pass_sample(last_plan_nodes_num+1);
 									for (unsigned l = 0; l < last_plan_nodes_num; ++l) {
@@ -563,7 +563,7 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 								this_sample.push_back(move(this_pass_sample));
 							} else {
 
-								if (dis(eng) < SAMPLE_CACHE_MAX) {
+								if (rand() % 1000 < SAMPLE_CACHE_MAX) {
 
 									vector<unsigned> this_pass_sample(last_plan_nodes_num+1);
 									for (unsigned l = 0; l < last_plan_nodes_num; ++l) {
