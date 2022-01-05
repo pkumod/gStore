@@ -717,7 +717,7 @@ void BGPQuery::print(KVstore *kvstore) {
 
 
 void BGPQuery::set_var_candidate_cache(unsigned var_id, shared_ptr<IDList> candidate_cache) {
-	(*var_candidates_cache)[var_id] = candidate_cache;
+	(*var_candidates_cache)[var_id] = std::move(candidate_cache);
 }
 
 

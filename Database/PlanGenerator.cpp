@@ -447,9 +447,9 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 				}
 			}
 
-			random_device rd;
-			mt19937 eng(rd());
-			uniform_int_distribution<unsigned > dis(0, 1000);
+			// random_device rd;
+			// mt19937 eng(rd());
+			// uniform_int_distribution<unsigned > dis(0, 1000);
 
 			if (edge_type[0] == Util::EDGE_IN) {
 				for (unsigned i = 0; i < last_sample.size(); ++i) {
@@ -498,7 +498,7 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 								this_sample.push_back(move(this_pass_sample));
 							} else {
 
-								if (dis(eng) < SAMPLE_CACHE_MAX) {
+								if (rand() % 1000 < SAMPLE_CACHE_MAX) {
 
 									vector<unsigned> this_pass_sample(last_plan_nodes_num+1);
 									for (unsigned l = 0; l < last_plan_nodes_num; ++l) {
@@ -563,7 +563,7 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 								this_sample.push_back(move(this_pass_sample));
 							} else {
 
-								if (dis(eng) < SAMPLE_CACHE_MAX) {
+								if (rand() % 1000 < SAMPLE_CACHE_MAX) {
 
 									vector<unsigned> this_pass_sample(last_plan_nodes_num+1);
 									for (unsigned l = 0; l < last_plan_nodes_num; ++l) {
@@ -873,8 +873,8 @@ void PlanGenerator::insert_this_plan_to_cache(PlanTree *new_plan, const vector<u
 // todo: 这一步先不抽样，在两个点Join的时候生成侯选集
 unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<unsigned> &so_sample_cache){
 
-	random_device rd;
-	mt19937 eng(rd());
+	// random_device rd;
+	// mt19937 eng(rd());
 
 	auto var_descrip = bgpquery->get_vardescrip_by_id(var_id);
 
@@ -897,9 +897,9 @@ unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<u
 	so_sample_cache.reserve(sample_entity_size + sample_literal_size);
 
 	unsigned already_sampled_num = 0;
-	uniform_int_distribution<unsigned> dis(0, limitID_entity-1);
+	// uniform_int_distribution<unsigned> dis(0, limitID_entity-1);
 	while (already_sampled_num < sample_entity_size){
-		unsigned index_need_insert = dis(eng);
+		unsigned index_need_insert = rand() % limitID_entity;
 		auto entity_str = kvstore->getEntityByID(index_need_insert);
 		if(entity_str != ""){
 			so_sample_cache.emplace_back(index_need_insert);
@@ -909,9 +909,9 @@ unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<u
 
 
 	already_sampled_num = 0;
-	dis = uniform_int_distribution<unsigned>(0, limitID_literal-1);
+	// dis = uniform_int_distribution<unsigned>(0, limitID_literal-1);
 	while (already_sampled_num < sample_literal_size){
-		unsigned index_need_insert = dis(eng) + Util::LITERAL_FIRST_ID;
+		unsigned index_need_insert = rand() % limitID_literal + Util::LITERAL_FIRST_ID;
 		auto literal_str = kvstore->getLiteralByID(index_need_insert);
 		if(literal_str != ""){
 			so_sample_cache.emplace_back(index_need_insert);
@@ -1039,8 +1039,8 @@ vector<shared_ptr<FeedOneNode>> PlanGenerator::completecandidate(){
  */
 void PlanGenerator::considervarscan() {
 
-	random_device rd;
-	mt19937 eng(rd());
+	// random_device rd;
+	// mt19937 eng(rd());
 
 	// todo: directly use BGPQuery::so_var_id
 	for(unsigned var_index = 0 ; var_index < bgpquery->get_total_var_num(); ++ var_index) {
@@ -1266,7 +1266,7 @@ void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
 
 		// todo: predegree or pre_list; nei must give it a estimatation num
 		if(var_descrip->so_edge_pre_type_[0] == VarDescriptor::PreType::ConPreType)
-			satellitenode_score.emplace_back((double)(kvstore->getPredicateDegree(var_descrip->so_edge_pre_id_[0])) /
+			satellitenode_score.emplace_back((double)(pre2num[var_descrip->so_edge_pre_id_[0]]) /
 												var_to_num_map[var_descrip->so_edge_nei_[0]], satellitenode_index);
 		else
 			satellitenode_score.emplace_back((double)(triples_num) / var_to_num_map[var_descrip->so_edge_nei_[0]],
@@ -1706,8 +1706,8 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 // Codes belows for TOPK
 
 void PlanGenerator::get_idcache_sample(shared_ptr<IDList> &so_cache, vector<unsigned> &so_sample_cache) {
-	random_device rd;
-	mt19937 eng(rd());
+	// random_device rd;
+	// mt19937 eng(rd());
 
 	auto cache_size = so_cache->size();
 
@@ -1720,9 +1720,9 @@ void PlanGenerator::get_idcache_sample(shared_ptr<IDList> &so_cache, vector<unsi
 
 		auto id_cache_list = so_cache->getList();
 
-		uniform_int_distribution<unsigned> dis(0, cache_size);
+		// uniform_int_distribution<unsigned> dis(0, cache_size);
 		for (unsigned sample_num = 0; sample_num < sample_size; ++sample_num) {
-			unsigned index_need_insert = dis(eng);
+			unsigned index_need_insert = rand()% cache_size;
 			so_sample_cache.push_back((*id_cache_list)[index_need_insert]);
 		}
 	}
