@@ -23,9 +23,10 @@ TempResult::ResultPair::ResultPair(const ResultPair& that)
 		id = new unsigned[that.sz];
 		// TODO: ResultPair cannot access id_varset of its parent TempResult
 		memcpy(id, that.id, (that.sz) * sizeof(unsigned));
-	}else{
-		id = nullptr;
-	}	sz = that.sz;
+	}
+	else
+		id = NULL;
+	sz = that.sz;
 	str = that.str;
 }
 
@@ -96,7 +97,8 @@ void TempResult::release()
 {
 	for (int i = 0; i < (int)this->result.size(); i++)
 	{
-		delete[] result[i].id;
+		if (result[i].id)
+			delete[] result[i].id;
 		vector<string>().swap(result[i].str);
 	}
 }
@@ -131,11 +133,12 @@ int TempResult::compareRow(const ResultPair &x, const int x_id_cols, const vecto
 void TempResult::sort(int l, int r, const vector<int> &this_pos)
 {
 	int i = l, j = r;
-	ResultPair m = this->result[(l + r) / 2];
+	ResultPair &m = this->result[(l + r) / 2];
 
 	int this_id_cols = this->id_varset.getVarsetSize();
 	do
 	{
+		// TODO: out of bounds hazard?
 		while (compareRow(this->result[i], this_id_cols, this_pos, m, this_id_cols, this_pos) == -1)	i++;
 		while (compareRow(m, this_id_cols, this_pos, this->result[j], this_id_cols, this_pos) == -1)	j--;
 		if (i <= j)

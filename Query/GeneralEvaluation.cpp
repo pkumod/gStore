@@ -649,6 +649,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						memcpy(v, basicquery_result[k], sizeof(int) * varnum);
 						temp->results[0].result.push_back(TempResult::ResultPair());
 						temp->results[0].result.back().id = v;
+						temp->results[0].result.back().sz = varnum;
 					}
 
 					if (this->query_cache != NULL)
@@ -905,6 +906,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							memcpy(v, basicquery_result[k], sizeof(unsigned) * varnum);
 							temp->results[0].result.push_back(TempResult::ResultPair());
 							temp->results[0].result.back().id = v;
+							temp->results[0].result.back().sz = varnum;
 						}
 
 						if (this->query_cache != NULL && dep == 0)
@@ -1303,6 +1305,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 				new_result0.result.push_back(TempResult::ResultPair());
 				new_result0.result.back().id = new unsigned[new_result0_id_cols];
+				new_result0.result.back().sz = new_result0_id_cols;
 				new_result0.result.back().str.resize(new_result0_str_cols);
 
 				for (int i = 0; i < new_result0_id_cols; i++)
@@ -1462,6 +1465,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 				new_result0.result.push_back(TempResult::ResultPair());
 				new_result0.result.back().id = new unsigned[new_result0_id_cols];
+				new_result0.result.back().sz = new_result0_id_cols;
 				new_result0.result.back().str.resize(new_result0_str_cols);
 
 				for (int i = 0; i < new_result0_id_cols; i++)
@@ -1956,6 +1960,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								new_result0.result.push_back(TempResult::ResultPair());
 								new_result0.result.back().id = new unsigned[new_result0_id_cols];
+								new_result0.result.back().sz = new_result0_id_cols;
 								new_result0.result.back().str.resize(new_result0_str_cols);
 							}
 						}
@@ -2050,6 +2055,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								{
 									new_result0.result.push_back(TempResult::ResultPair());
 									new_result0.result.back().id = new unsigned[new_result0_id_cols];
+									new_result0.result.back().sz = new_result0_id_cols;
 									new_result0.result.back().str.resize(new_result0_str_cols);
 								}
 							}
@@ -2878,6 +2884,7 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResu
 			memcpy(v, basicquery_result[k], sizeof(int) * varnum);
 			temp->results[0].result.push_back(TempResult::ResultPair());
 			temp->results[0].result.back().id = v;
+			temp->results[0].result.back().sz = varnum;
 		}
 
 		if (this->query_cache != NULL && dep == 0)
