@@ -59,12 +59,20 @@ tuple<bool, IntermediateResult> Executor::JoinANode(IntermediateResult old_table
       }
       else // node_should NOT be_added_into_table
       {
-        for (unsigned int i = 0; i < record_candidate_list->size() - 1; i++)
-          new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
-        if(!remain_old)
-          new_records->push_back(std::move(*record_iterator));
-        else
-          new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
+        if(distinct){
+          if (!remain_old)
+            new_records->push_back(std::move(*record_iterator));
+          else
+            new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
+        }
+        else {
+          for (unsigned int i = 0; i < record_candidate_list->size() - 1; i++)
+            new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
+          if (!remain_old)
+            new_records->push_back(std::move(*record_iterator));
+          else
+            new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
+        }
       }
     }
     if(!remain_old)
