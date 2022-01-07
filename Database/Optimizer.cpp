@@ -271,7 +271,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   // auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
   shared_ptr<QueryPlan> query_plan;
   auto strategy = this->ChooseStrategy(bgp_query,&query_info);
-  auto distinct = bgp_query->dinstinct_query;
+  auto distinct = bgp_query->distinct_query;
   if(strategy == BasicQueryStrategy::Normal)
   {
 
