@@ -579,10 +579,10 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				bool curr_exist;
 				for (size_t k = 0; k < encode_varset.size(); k++)
 					total_encode_varset.insert(total_encode_varset.end(), encode_varset[k].begin(), encode_varset[k].end());
-				bgp_query_large->EncodeBGPQuery(kvstore, total_encode_varset);
+				bgp_query_large->EncodeBGPQuery(kvstore, total_encode_varset, this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 				for (size_t k = 0; k < bgp_query_vec.size(); k++)
 				{
-					curr_exist = bgp_query_vec[k]->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset[k]);
+					curr_exist = bgp_query_vec[k]->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset[k], this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 					encode_constant_exist[k] = curr_exist;
 				}
 				#endif
@@ -822,10 +822,10 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					vector<bool> encode_constant_exist(bgp_query_vec.size(), true);
 					for (size_t k = 0; k < encode_varset.size(); k++)
 						total_encode_varset.insert(total_encode_varset.end(), encode_varset[k].begin(), encode_varset[k].end());
-					bgp_query_large->EncodeBGPQuery(kvstore, total_encode_varset);
+					bgp_query_large->EncodeBGPQuery(kvstore, total_encode_varset, this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 					for (size_t k = 0; k < bgp_query_vec.size(); k++)
 					{
-						bool curr_exist = bgp_query_vec[k]->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset[k]);
+						bool curr_exist = bgp_query_vec[k]->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset[k], this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 						encode_constant_exist[k] = curr_exist;
 					}
 					#endif
