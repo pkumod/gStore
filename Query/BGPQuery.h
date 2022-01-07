@@ -138,7 +138,7 @@ class SOVarDescriptor:public VarDescriptor{
 class BGPQuery {
 public:
 
-	bool dinstinct_query;
+	bool distinct_query;
 
 	// all item, including s, p, o, whether var or not
 	map<string, unsigned > item_to_freq;
@@ -219,13 +219,13 @@ public:
 	bool build_edge_info(KVstore *_kvstore);
 	void count_statistics_num();
 
-	bool EncodeBGPQuery(KVstore* _kvstore, const vector<string>& _query_var, bool dinstinct = false);
+	bool EncodeBGPQuery(KVstore* _kvstore, const vector<string>& _query_var, bool distinct = false);
 
 
 
 	void ScanAllVarByBigBGPID(BGPQuery *big_bgpquery, const vector<string>& _query_var);
 	bool EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore* _kvstore,
-							 const vector<string>& _query_var, bool dinstinct = false);
+							 const vector<string>& _query_var, bool distinct = false);
 
 	static bool CheckConstBGPExist(const vector<Triple> &triple_vt, KVstore *kvstore);
 

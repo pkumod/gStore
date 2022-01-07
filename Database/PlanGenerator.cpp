@@ -17,6 +17,11 @@
 
 // scan var(candidate set generation) -> add var by WCO_join or binary_join -> add satellite var
 
+// NOTICE:
+// random_device rd;
+// mt19937 eng(rd());
+// may cause SIGILL in valgrind. when encounter this prob, please change it to other sample method
+
 #include "PlanGenerator.h"
 
 const unsigned PlanGenerator::SAMPLE_CACHE_MAX = 50;
@@ -206,9 +211,9 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 		long long s_o_list1_total_num = 0;
 		long long s_o_list2_total_num = 0;
 
-		// random_device rd;
-		// // mt19937 eng(rd());
-		// uniform_real_distribution<double> dis(0.0, 1.0);
+		random_device rd;
+		mt19937 eng(rd());
+		uniform_real_distribution<double> dis(0.0, 1.0);
 
 		if (edge_type[0] == Util::EDGE_IN) {
 			// not need to sample, because sampled in considering all scans
@@ -221,7 +226,7 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 													  s_o_list,s_o_list_len);
 				else
 					kvstore->getobjIDlistBysubID(var_to_sample_cache[last_node][i],
-												 s_o_list,s_o_list_len, bgpquery->dinstinct_query);
+												 s_o_list,s_o_list_len, bgpquery->distinct_query);
 
 				s_o_list1_total_num += s_o_list_len;
 
@@ -257,7 +262,9 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 
 							this_sample.push_back(move(this_pass_sample));
 						} else {
-							if (rand() / double(RAND_MAX) < SAMPLE_PRO) {
+							// if (rand() / double(RAND_MAX) < SAMPLE_PRO) {
+							if (dis(eng) < SAMPLE_PRO) {
+
 
 								vector<unsigned> this_pass_sample(2);
 								this_pass_sample[new_id_pos_map[last_node]] = var_to_sample_cache[last_node][i];
@@ -283,7 +290,7 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 													  s_o_list,s_o_list_len);
 				else
 					kvstore->getsubIDlistByobjID(var_to_sample_cache[next_join_node][i],
-												 s_o_list, s_o_list_len, bgpquery->dinstinct_query);
+												 s_o_list, s_o_list_len, bgpquery->distinct_query);
 
 				s_o_list2_total_num += s_o_list_len;
 
@@ -305,7 +312,7 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 													  s_o_list,s_o_list_len);
 				else
 					kvstore->getobjIDlistBysubID(var_to_sample_cache[next_join_node][i],
-												 s_o_list,s_o_list_len, bgpquery->dinstinct_query);
+												 s_o_list,s_o_list_len, bgpquery->distinct_query);
 
 				s_o_list1_total_num += s_o_list_len;
 
@@ -340,7 +347,8 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 
 							this_sample.push_back(move(this_pass_sample));
 						} else {
-							if (rand() / double(RAND_MAX) < SAMPLE_PRO) {
+							// if (rand() / double(RAND_MAX) < SAMPLE_PRO) {
+							if (dis(eng) < SAMPLE_PRO) {
 
 								vector<unsigned> this_pass_sample(2);
 								this_pass_sample[new_id_pos_map[last_node]] = s_o_list[j];
@@ -365,7 +373,7 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 													  s_o_list,s_o_list_len);
 				else
 					kvstore->getsubIDlistByobjID(var_to_sample_cache[last_node][i],
-												 s_o_list, s_o_list_len, bgpquery->dinstinct_query);
+												 s_o_list, s_o_list_len, bgpquery->distinct_query);
 
 				s_o_list2_total_num += s_o_list_len;
 
@@ -447,9 +455,9 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 				}
 			}
 
-			// random_device rd;
-			// mt19937 eng(rd());
-			// uniform_int_distribution<unsigned > dis(0, 1000);
+			random_device rd;
+			mt19937 eng(rd());
+			uniform_real_distribution<double> dis(0.0, 1.0);
 
 			if (edge_type[0] == Util::EDGE_IN) {
 				for (unsigned i = 0; i < last_sample.size(); ++i) {
@@ -461,7 +469,7 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 														  s_o_list,s_o_list_len);
 					else
 						kvstore->getobjIDlistBysubID(last_sample[i][linked_nei_pos[0]],
-													 s_o_list,s_o_list_len, bgpquery->dinstinct_query);
+													 s_o_list,s_o_list_len, bgpquery->distinct_query);
 
 					for (unsigned j = 0; j < s_o_list_len; ++j) {
 						if(var_sampled_from_candidate[next_join_node] and
@@ -498,7 +506,8 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 								this_sample.push_back(move(this_pass_sample));
 							} else {
 
-								if (rand() % 1000 < SAMPLE_CACHE_MAX) {
+								// if (rand() % 1000 < SAMPLE_CACHE_MAX) {
+								if (dis(eng) < SAMPLE_PRO) {
 
 									vector<unsigned> this_pass_sample(last_plan_nodes_num+1);
 									for (unsigned l = 0; l < last_plan_nodes_num; ++l) {
@@ -527,7 +536,7 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 														  s_o_list,s_o_list_len);
 					else
 						kvstore->getsubIDlistByobjID(last_sample[i][linked_nei_pos[0]],
-													 s_o_list,s_o_list_len, bgpquery->dinstinct_query);
+													 s_o_list,s_o_list_len, bgpquery->distinct_query);
 
 					for (unsigned j = 0; j < s_o_list_len; ++j) {
 						if(var_sampled_from_candidate[next_join_node] and
@@ -563,7 +572,8 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 								this_sample.push_back(move(this_pass_sample));
 							} else {
 
-								if (rand() % 1000 < SAMPLE_CACHE_MAX) {
+								// if (rand() % 1000 < SAMPLE_CACHE_MAX) {
+								if (dis(eng) < SAMPLE_PRO) {
 
 									vector<unsigned> this_pass_sample(last_plan_nodes_num+1);
 									for (unsigned l = 0; l < last_plan_nodes_num; ++l) {
@@ -873,8 +883,8 @@ void PlanGenerator::insert_this_plan_to_cache(PlanTree *new_plan, const vector<u
 // todo: 这一步先不抽样，在两个点Join的时候生成侯选集
 unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<unsigned> &so_sample_cache){
 
-	// random_device rd;
-	// mt19937 eng(rd());
+	random_device rd;
+	mt19937 eng(rd());
 
 	auto var_descrip = bgpquery->get_vardescrip_by_id(var_id);
 
@@ -897,9 +907,10 @@ unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<u
 	so_sample_cache.reserve(sample_entity_size + sample_literal_size);
 
 	unsigned already_sampled_num = 0;
-	// uniform_int_distribution<unsigned> dis(0, limitID_entity-1);
+	uniform_int_distribution<unsigned> dis(0, limitID_entity-1);
 	while (already_sampled_num < sample_entity_size){
-		unsigned index_need_insert = rand() % limitID_entity;
+		// unsigned index_need_insert = rand() % limitID_entity;
+		unsigned index_need_insert = dis(eng);
 		auto entity_str = kvstore->getEntityByID(index_need_insert);
 		if(entity_str != ""){
 			so_sample_cache.emplace_back(index_need_insert);
@@ -909,9 +920,10 @@ unsigned PlanGenerator::get_sample_from_whole_database(unsigned var_id, vector<u
 
 
 	already_sampled_num = 0;
-	// dis = uniform_int_distribution<unsigned>(0, limitID_literal-1);
+	dis = uniform_int_distribution<unsigned>(0, limitID_literal-1);
 	while (already_sampled_num < sample_literal_size){
-		unsigned index_need_insert = rand() % limitID_literal + Util::LITERAL_FIRST_ID;
+		// unsigned index_need_insert = rand() % limitID_literal + Util::LITERAL_FIRST_ID;
+		unsigned index_need_insert = dis(eng) + Util::LITERAL_FIRST_ID;
 		auto literal_str = kvstore->getLiteralByID(index_need_insert);
 		if(literal_str != ""){
 			so_sample_cache.emplace_back(index_need_insert);
@@ -1261,6 +1273,7 @@ void PlanGenerator::addsatellitenode(PlanTree* best_plan) {
 	for(unsigned satellitenode_index = 0; satellitenode_index < satellite_nodes.size(); ++satellitenode_index){
 		unsigned satellitenode_id = satellite_nodes[satellitenode_index];
 		if(find(already_node.begin(), already_node.end(), satellitenode_id) != already_node.end()) continue;
+		if(bgpquery->distinct_query && already_done_satellite.count(satellite_nodes[satellitenode_index])) continue;
 
 		auto var_descrip = bgpquery->get_vardescrip_by_id(satellitenode_id);
 
@@ -1619,7 +1632,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 															make_shared<FeedOneNode>(bgpquery->s_id_[0], edge_info, edge_constant_info),
-															nullptr, nullptr, nullptr, bgpquery->dinstinct_query);
+															nullptr, nullptr, nullptr, bgpquery->distinct_query);
 
 				return (new PlanTree(plan_node));
 			}
@@ -1633,7 +1646,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 															make_shared<FeedOneNode>(bgpquery->o_id_[0], edge_info, edge_constant_info),
-															nullptr, nullptr, nullptr, bgpquery->dinstinct_query);
+															nullptr, nullptr, nullptr, bgpquery->distinct_query);
 
 				return (new PlanTree(plan_node));
 			}
@@ -1647,7 +1660,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 															make_shared<FeedOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
-															nullptr, nullptr, nullptr, bgpquery->dinstinct_query);
+															nullptr, nullptr, nullptr, bgpquery->distinct_query);
 
 				return (new PlanTree(plan_node));
 			}
@@ -1661,7 +1674,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 															make_shared<FeedOneNode>(bgpquery->o_id_[0], edge_info, edge_constant_info),
-															nullptr, nullptr, nullptr, bgpquery->dinstinct_query);
+															nullptr, nullptr, nullptr, bgpquery->distinct_query);
 
 				return (new PlanTree(plan_node));
 			}
@@ -1675,7 +1688,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 															make_shared<FeedOneNode>(bgpquery->s_id_[0], edge_info, edge_constant_info),
-															nullptr, nullptr, nullptr, bgpquery->dinstinct_query);
+															nullptr, nullptr, nullptr, bgpquery->distinct_query);
 
 				return (new PlanTree(plan_node));
 			}
@@ -1689,7 +1702,7 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 
 				auto plan_node = make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 															make_shared<FeedOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
-															nullptr, nullptr, nullptr, bgpquery->dinstinct_query);
+															nullptr, nullptr, nullptr, bgpquery->distinct_query);
 
 				return (new PlanTree(plan_node));
 			}
@@ -1706,8 +1719,8 @@ PlanTree *PlanGenerator::get_special_one_triple_plan() {
 // Codes belows for TOPK
 
 void PlanGenerator::get_idcache_sample(shared_ptr<IDList> &so_cache, vector<unsigned> &so_sample_cache) {
-	// random_device rd;
-	// mt19937 eng(rd());
+	random_device rd;
+	mt19937 eng(rd());
 
 	auto cache_size = so_cache->size();
 
@@ -1718,12 +1731,14 @@ void PlanGenerator::get_idcache_sample(shared_ptr<IDList> &so_cache, vector<unsi
 		// need_insert_vec = new IDList(sample_size);
 		so_sample_cache.reserve(sample_size);
 
-		auto id_cache_list = so_cache->getList();
+		// auto id_cache_list = so_cache->getList();
+		uniform_int_distribution<unsigned> dis(0, cache_size-1);
 
-		// uniform_int_distribution<unsigned> dis(0, cache_size);
 		for (unsigned sample_num = 0; sample_num < sample_size; ++sample_num) {
-			unsigned index_need_insert = rand()% cache_size;
-			so_sample_cache.push_back((*id_cache_list)[index_need_insert]);
+			// unsigned index_need_insert = rand()% cache_size;
+			unsigned index_need_insert = dis(eng);
+			// so_sample_cache.push_back((*id_cache_list)[index_need_insert]);
+			so_sample_cache.push_back(so_cache->getID(index_need_insert));
 		}
 	}
 }
