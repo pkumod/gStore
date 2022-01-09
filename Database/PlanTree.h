@@ -129,7 +129,13 @@ public:
 
     void print_tree_node(Tree_node* node, BGPQuery* bgpquery);
     void print(BGPQuery* bgpquery);
-};
+
+	PlanTree* string_to_node(BGPQuery* bgpquery, vector<int> &node_id, vector<int> &degree);
+	PlanTree(BGPQuery* bgpquery, vector<int> &node_id, vector<int> &degree);
+	void node_to_string(Tree_node *node, vector<int> &node_id, vector<int> &degree);
+	void plan_to_string(vector<int> &node_id, vector<int> &degree);
+
+	};
 
 
 #endif //GSTORE_PLANTREE_H

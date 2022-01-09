@@ -1165,3 +1165,114 @@ void PlanTree::print(BGPQuery* bgpquery) {
 	cout << "Plan: " << (bgpquery->distinct_query ? "distinct" : "not distinct") << endl;
 	print_tree_node(root_node, bgpquery);
 }
+
+
+// Tree_node* PlanTree::string_to_node(BGPQuery* bgpquery, string node_str) {
+// 	if (node_str.empty()) return nullptr;
+// 	auto found_pa = node_str.find('(');
+// 	if (found_pa == string::npos) found_pa = node_str.length();
+// 	auto found_com = node_str.find(',');
+// 	int type = stoi(node_str.substr(0, found_com));
+// 	int node_id = stoi(node_str.substr(found_com+1, found_pa-found_com-1));
+// 	Tree_node *new_node = new Tree_node(type, node_id);
+// 	if(found_pa == node_str.length()) return new_node;
+// 	int start = found_pa, cnt = 0;
+// 	for(int index = start; index < node_str.length(); ++index){
+// 		if(node_str[index] == '(') ++cnt;
+// 		else{
+// 			if(node_str[index] == ')') --cnt;
+// 		}
+// 		if(cnt == 0 && start == found_pa) {
+// 			new_node->left_node = string_to_node(bgpquery, node_str.substr(start+1, index-start-1));
+// 			start = index+1;
+// 		} else if(cnt==0){
+// 			new_node->right_node = string_to_node(bgpquery, node_str.substr(start+1, index-start-1));
+// 		}
+// 	}
+// 	return new_node;
+// }
+
+PlanTree* PlanTree::string_to_node(BGPQuery* bgpquery, vector<int> &node_id, vector<int> &degree) {
+	stack<PlanTree*> st;
+	for(int i = 0; i < node_id.size(); ++i) {
+		if(degree[i] == 0){
+			vector<unsigned> a;
+			st.push(new PlanTree(node_id[i], bgpquery, vector<unsigned>(),
+					nullptr, nullptr,
+					a));
+		}else{
+			if(degree[i] == 2){
+				PlanTree* right = st.top();
+				st.pop();
+				PlanTree* left = st.top();
+				st.pop();
+				set<unsigned> join_nodes;
+				for(auto x:left->already_so_var){
+					if(std::find(right->already_so_var.begin(), right->already_so_var.end(), x) != right->already_so_var.end()){
+						join_nodes.insert(x);
+					}
+				}
+				st.push(new PlanTree(left, right, bgpquery, join_nodes));
+			}else{
+				PlanTree* left = st.top();
+				st.pop();
+				st.push(new PlanTree(left, bgpquery, node_id[i]));
+
+			}
+		}
+	}
+	return st.top();
+}
+
+PlanTree::PlanTree(BGPQuery* bgpquery, vector<int> &node_id, vector<int> &degree) {
+	root_node = new Tree_node((this->string_to_node(bgpquery, node_id, degree))->root_node);
+}
+
+// void PlanTree::node_to_string(Tree_node* node, string &str) {
+// 	if(!node) return;
+// 	switch(node->node->join_type_) {
+// 		case StepOperation::JoinType::JoinNode:{
+// 			str.append("1,"+node->node->join_node_->node_to_join_);
+// 			break;
+// 		}
+// 		case StepOperation::JoinType::JoinTable:{
+// 			str.append("2,0");
+// 			break;
+// 		}
+// 	}
+// 	if(node->left_node){
+// 		str.append("(");
+// 		node_to_string(node->left_node);
+// 		str.append(")");
+// 		if(node->right_node){
+// 			str.append("(");
+// 			node_to_string(node->right_node);
+// 			str.append(")");
+// 		}
+// 	}else{
+// 		str.append("()()");
+// 	}
+// }
+
+void PlanTree::node_to_string(Tree_node *node, vector<int> &node_id, vector<int> &degree) {
+	int deg = 0;
+	if(node->left_node){
+		node_to_string(node->left_node, node_id, degree);
+		++deg;
+	}
+	if(node->left_node){
+		node_to_string(node->right_node, node_id, degree);
+		++deg;
+	}
+	node_id.push_back((node->node->join_type_ == StepOperation::JoinType::JoinNode ?
+				node->node->join_node_->node_to_join_ : -1));
+	degree.push_back(deg);
+}
+
+void PlanTree::plan_to_string(vector<int> &node_id, vector<int> &degree) {
+	node_to_string(this->root_node, node_id, degree);
+
+	// string plan_str = "";
+	// node_to_string(this->root_node, plan_str);
+	// return plan_str;
+}
