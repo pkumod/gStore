@@ -91,7 +91,7 @@ main(int argc, char * argv[])
 	ResultSet ask_rs;
 	FILE* ask_ofp = stdout;
 	system_db.query(sparql, ask_rs, ask_ofp);
-	if (ask_rs.answer[0][0] == "false")
+	if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
 	{
 		cout << "The database does not exist. Rebuild" << endl;
 		string time = Util::get_backup_time(backup_path, db_name);
