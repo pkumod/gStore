@@ -1707,6 +1707,35 @@ Database::get_query_parse_lock()
 	//return this->query_parse_lock;
 }
 
+void
+Database::export_db(FILE* fp)
+{
+	unsigned* id_list = NULL;
+  	unsigned id_list_len = 0;
+
+  	for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate; ++i)
+  	{
+  		TYPE_PREDICATE_ID pid = i;
+  		string p = this->kvstore->getPredicateByID(pid);
+  		string pre = Util::node2string(p.c_str());
+  		this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len, true, nullptr);
+  		for (unsigned j = 0; j < id_list_len; j += 2)
+  		{
+  			string s = this->kvstore->getEntityByID(id_list[j]);
+  			string sub = Util::node2string(s.c_str());
+  			string o;
+  			if(id_list[j + 1] >= Util::LITERAL_FIRST_ID)
+  				o = this->kvstore->getLiteralByID(id_list[j + 1]);
+  			else
+  				o = this->kvstore->getEntityByID(id_list[j + 1]);
+  			string obj = Util::node2string(o.c_str());
+  			string record = sub + "\t" + pre + "\t" + obj + ".\n";
+  			fprintf(fp, "%s", record.c_str());
+  		}
+    	delete[] id_list;
+    }
+}
+
 int
 Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool update_flag, bool export_flag, shared_ptr<Transaction> txn)
 {
