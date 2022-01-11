@@ -59,7 +59,7 @@ main(int argc, char * argv[])
 	ResultSet ask_rs;
 	FILE* ask_ofp = stdout;
 	int ret = system_db.query(sparql, ask_rs, ask_ofp);
-	if (ask_rs.answer[0][0] == "false")
+	if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
 	{
 		cout << "The database does not exist." << endl;
 		return 0;
@@ -70,10 +70,8 @@ main(int argc, char * argv[])
 	_db.load();
 	cout << "finish loading" << endl;
 
-	sparql = "select * where{?x ?y ?z.}";
-	ResultSet _rs;
 	FILE* ofp = fopen(filepath.c_str(), "w");
-    ret = _db.query(sparql, _rs, ofp, true, true);
+    _db.export_db(ofp);
     fflush(ofp);
 	fclose(ofp);
 	ofp = NULL;
