@@ -29,10 +29,10 @@ const unsigned PlanGenerator::SAMPLE_CACHE_MAX = 50;
 PlanGenerator::PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr &id_caches_,
 							 TYPE_TRIPLE_NUM triples_num_, TYPE_PREDICATE_ID limitID_predicate_,
 							 TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_,
-							 TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_):
+							 TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_, shared_ptr<Transaction> txn_):
 					kvstore(kvstore_), bgpquery(bgpquery_), statistics(statistics_), id_caches(id_caches_), triples_num(triples_num_),
 					limitID_predicate(limitID_predicate_), limitID_literal(limitID_literal_), limitID_entity(limitID_entity_),
-					pre2num(pre2num_), pre2sub(pre2sub_), pre2obj(pre2obj_){};
+					pre2num(pre2num_), pre2sub(pre2sub_), pre2obj(pre2obj_), txn(txn_){};
 
 PlanGenerator::~PlanGenerator() {
 	for(auto &map_plan_list : plan_cache){
@@ -121,9 +121,9 @@ bool PlanGenerator::check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PR
 	bool is_exist = false;
 	//get exclusive before update!
 	if(p_id >= 0)
-		kvstore->getobjIDlistBysubIDpreID(s_id, p_id, _objidlist, _list_len);
+		kvstore->getobjIDlistBysubIDpreID(s_id, p_id, _objidlist, _list_len, false, this->txn);
 	else
-		kvstore->getobjIDlistBysubID(s_id, _objidlist, _list_len);
+		kvstore->getobjIDlistBysubID(s_id, _objidlist, _list_len, false, this->txn);
 
 	if (Util::bsearch_int_uporder(o_id, _objidlist, _list_len) != INVALID){
 		is_exist = true;
@@ -178,6 +178,14 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 		// 	;
 		// 	// todo: sample from last_plan
 		// }
+		bool changed_two_nodes = false;
+		if(var_to_num_map[last_node] > var_to_num_map[next_join_node]){
+			unsigned tmp = last_node;
+			last_node = next_join_node;
+			next_join_node = tmp;
+			changed_two_nodes = true;
+			var_descrip = bgpquery->get_vardescrip_by_id(next_join_node);
+		}
 
 
 		long long card_estimation;
@@ -223,10 +231,10 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 
 				if(p_list[0] >= 0)
 					kvstore->getobjIDlistBysubIDpreID(var_to_sample_cache[last_node][i], p_list[0],
-													  s_o_list,s_o_list_len);
+													  s_o_list,s_o_list_len, false, this->txn);
 				else
 					kvstore->getobjIDlistBysubID(var_to_sample_cache[last_node][i],
-												 s_o_list,s_o_list_len, bgpquery->distinct_query);
+												 s_o_list,s_o_list_len, bgpquery->distinct_query, this->txn);
 
 				s_o_list1_total_num += s_o_list_len;
 
@@ -287,10 +295,10 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 
 				if(p_list[0] >= 0)
 					kvstore->getsubIDlistByobjIDpreID(var_to_sample_cache[next_join_node][i], p_list[0],
-													  s_o_list,s_o_list_len);
+													  s_o_list,s_o_list_len, false, this->txn);
 				else
 					kvstore->getsubIDlistByobjID(var_to_sample_cache[next_join_node][i],
-												 s_o_list, s_o_list_len, bgpquery->distinct_query);
+												 s_o_list, s_o_list_len, bgpquery->distinct_query, this->txn);
 
 				s_o_list2_total_num += s_o_list_len;
 
@@ -309,10 +317,10 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 
 				if(p_list[0] >= 0)
 					kvstore->getobjIDlistBysubIDpreID(var_to_sample_cache[next_join_node][i], p_list[0],
-													  s_o_list,s_o_list_len);
+													  s_o_list,s_o_list_len, false, this->txn);
 				else
 					kvstore->getobjIDlistBysubID(var_to_sample_cache[next_join_node][i],
-												 s_o_list,s_o_list_len, bgpquery->distinct_query);
+												 s_o_list,s_o_list_len, bgpquery->distinct_query, this->txn);
 
 				s_o_list1_total_num += s_o_list_len;
 
@@ -370,10 +378,10 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 
 				if(p_list[0] >= 0)
 					kvstore->getsubIDlistByobjIDpreID(var_to_sample_cache[last_node][i], p_list[0],
-													  s_o_list,s_o_list_len);
+													  s_o_list,s_o_list_len, false, this->txn);
 				else
 					kvstore->getsubIDlistByobjID(var_to_sample_cache[last_node][i],
-												 s_o_list, s_o_list_len, bgpquery->distinct_query);
+												 s_o_list, s_o_list_len, bgpquery->distinct_query, this->txn);
 
 				s_o_list2_total_num += s_o_list_len;
 
@@ -394,7 +402,10 @@ long long PlanGenerator::card_estimator_two_nodes(unsigned last_node, unsigned n
 
 		insert_card_estimation_to_cache(now_plan_nodes, card_estimation, this_sample);
 
-		return var_to_num_map[last_node]*s_o_list_average_size[last_node][next_join_node];
+		if(changed_two_nodes)
+			return var_to_num_map[next_join_node]*s_o_list_average_size[next_join_node][last_node];
+		else
+			return var_to_num_map[last_node]*s_o_list_average_size[last_node][next_join_node];
 
 	}  else{
 		return var_to_num_map[last_node]*s_o_list_average_size[last_node][next_join_node];//+var_to_num_map[next_join_node];
@@ -466,10 +477,10 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 
 					if(p_list[0] >= 0 )
 						kvstore->getobjIDlistBysubIDpreID(last_sample[i][linked_nei_pos[0]], p_list[0],
-														  s_o_list,s_o_list_len);
+														  s_o_list,s_o_list_len, false, this->txn);
 					else
 						kvstore->getobjIDlistBysubID(last_sample[i][linked_nei_pos[0]],
-													 s_o_list,s_o_list_len, bgpquery->distinct_query);
+													 s_o_list,s_o_list_len, bgpquery->distinct_query, this->txn);
 
 					for (unsigned j = 0; j < s_o_list_len; ++j) {
 						if(var_sampled_from_candidate[next_join_node] and
@@ -531,12 +542,12 @@ long long PlanGenerator::card_estimator_more_than_three_nodes(const vector<unsig
 					unsigned *s_o_list = nullptr;
 					unsigned s_o_list_len = 0;
 
-					if(p_list[0] >= 0 )
+					if(p_list[0] >= 0)
 						kvstore->getsubIDlistByobjIDpreID(last_sample[i][linked_nei_pos[0]], p_list[0],
-														  s_o_list,s_o_list_len);
+														  s_o_list,s_o_list_len, false, this->txn);
 					else
 						kvstore->getsubIDlistByobjID(last_sample[i][linked_nei_pos[0]],
-													 s_o_list,s_o_list_len, bgpquery->distinct_query);
+													 s_o_list,s_o_list_len, bgpquery->distinct_query, this->txn);
 
 					for (unsigned j = 0; j < s_o_list_len; ++j) {
 						if(var_sampled_from_candidate[next_join_node] and
