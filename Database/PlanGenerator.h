@@ -40,6 +40,7 @@ public:
 	TYPE_TRIPLE_NUM* pre2num;
 	TYPE_TRIPLE_NUM* pre2sub;
 	TYPE_TRIPLE_NUM* pre2obj;
+	shared_ptr<Transaction> txn;
 
 	// only contain plans joining not-satellite nodes
 	// plan_cache[0] contains only one node scan plan
@@ -64,7 +65,7 @@ public:
 
 	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
 				  	TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_,
-				  TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_);
+				  TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_, shared_ptr<Transaction> txn_);
 
 	~PlanGenerator();
 
