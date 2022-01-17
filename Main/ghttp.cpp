@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2021-12-15 11:07:17
+ * @LastEditTime: 2022-01-17 11:55:52
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2412,7 +2412,7 @@ void backup_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
 		return;
 	}
-	if(path[0] == '.') path = path.substr(1, path.length() - 1);
+	//if(path[0] == '.') path = path.substr(1, path.length() - 1);
 	//if(path[0] == '/') path = path.substr(1, path.length() - 1);
 	if(path[path.length() - 1] == '/') path = path.substr(0, path.length() - 1);
 	cout<<"backup path:"<<path<<endl;
