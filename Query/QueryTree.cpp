@@ -10,6 +10,26 @@
 
 using namespace std;
 
+QueryTree::GroupPattern::GroupPattern(const QueryTree::GroupPattern& that)
+{
+	sub_group_pattern = that.sub_group_pattern;
+	group_pattern_resultset_minimal_varset = that.group_pattern_resultset_minimal_varset;
+	group_pattern_resultset_maximal_varset = that.group_pattern_resultset_maximal_varset;
+	group_pattern_subject_object_maximal_varset = that.group_pattern_subject_object_maximal_varset;
+	group_pattern_predicate_maximal_varset = that.group_pattern_predicate_maximal_varset;
+}
+
+QueryTree::GroupPattern& QueryTree::GroupPattern::operator=(const QueryTree::GroupPattern& that)
+{
+	sub_group_pattern = that.sub_group_pattern;
+	group_pattern_resultset_minimal_varset = that.group_pattern_resultset_minimal_varset;
+	group_pattern_resultset_maximal_varset = that.group_pattern_resultset_maximal_varset;
+	group_pattern_subject_object_maximal_varset = that.group_pattern_subject_object_maximal_varset;
+	group_pattern_predicate_maximal_varset = that.group_pattern_predicate_maximal_varset;
+
+	return *this;
+}
+
 /**
 	Get varset of the sub-FilterTree rooted at this FilterTreeNode.
 
@@ -1032,6 +1052,8 @@ void QueryTree::print()
 	{
 		if (this->query_form == Select_Query)
 		{
+			if (singleBGP)
+				printf("Single BGP\n");
 			printf("SELECT");
 			if (this->projection_modifier == Modifier_Distinct)
 				printf(" DISTINCT");

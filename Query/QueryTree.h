@@ -33,6 +33,11 @@ class QueryTree
 				Varset group_pattern_resultset_minimal_varset, group_pattern_resultset_maximal_varset;
 				Varset group_pattern_subject_object_maximal_varset, group_pattern_predicate_maximal_varset;
 
+				GroupPattern() { }
+				GroupPattern(const GroupPattern& that);
+				GroupPattern& operator=(const GroupPattern& that);
+				~GroupPattern() { }
+
 				void addOnePattern(Pattern _pattern);
 
 				void addOneGroup();
@@ -268,6 +273,8 @@ class QueryTree
 
 			GroupPattern group_pattern;
 
+			bool singleBGP;
+
 			//----------------------------------------------------------------------------------------------------------------------------------------------------
 
 			UpdateType update_type;
@@ -277,7 +284,9 @@ class QueryTree
 
 		public:
 			QueryTree():
-				query_form(Select_Query), projection_modifier(Modifier_None), projection_asterisk(false), offset(0), limit(-1), update_type(Not_Update){}
+				query_form(Select_Query), projection_modifier(Modifier_None), \
+				projection_asterisk(false), offset(0), limit(-1), update_type(Not_Update), \
+				singleBGP(false) {}
 
 			void setQueryForm(QueryForm _queryform);
 			QueryForm getQueryForm();
@@ -320,6 +329,9 @@ class QueryTree
 			bool checkSelectAggregateFunctionGroupByValid();
 
 			void print();
+
+			void setSingleBGP(bool val);
+			bool getSingleBGP();
 };
 
 #endif // _QUERY_QUERYTREE_H
