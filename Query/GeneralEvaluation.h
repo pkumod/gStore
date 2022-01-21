@@ -34,14 +34,14 @@ class GeneralEvaluation
 	private:
 		QueryParser query_parser;
 		QueryTree query_tree;
-		VSTree *vstree;
+		int well_designed;
+		// VSTree *vstree;
 		KVstore *kvstore;
 		StringIndex *stringindex;
 		Strategy strategy;
 		shared_ptr<Optimizer> optimizer_;
 		QueryCache *query_cache;
 		PathQueryHandler *pqHandler;
-		int well_designed;
 		CSR *csr;
         Statistics *statistics;
 
@@ -59,7 +59,7 @@ class GeneralEvaluation
     	bool export_flag;
 
 	public:
-		GeneralEvaluation(VSTree *_vstree, KVstore *_kvstore, Statistics *_statistics, StringIndex *_stringindex, QueryCache *_query_cache, \
+		GeneralEvaluation(KVstore *_kvstore, Statistics *_statistics, StringIndex *_stringindex, QueryCache *_query_cache, \
 			TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub, TYPE_TRIPLE_NUM *_pre2obj, \
 			TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, \
 			TYPE_ENTITY_LITERAL_ID _limitID_entity, CSR *_csr, shared_ptr<Transaction> txn = nullptr);
@@ -80,12 +80,16 @@ class GeneralEvaluation
 		{
 			QueryTree::GroupPattern group_pattern;
 			TempResultSet *result;
+			EvaluationStackStruct();
+			EvaluationStackStruct(const EvaluationStackStruct& that);
+			EvaluationStackStruct& operator=(const EvaluationStackStruct& that);
+			~EvaluationStackStruct();
 		};
 		std::vector<EvaluationStackStruct> rewriting_evaluation_stack;
 
 	public:
 		bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &group_pattern, std::deque<QueryTree::GroupPattern> &queue);
-		TempResultSet* rewritingBasedQueryEvaluation(int dep);
+
 		TempResultSet* queryEvaluation(int dep);
 
 		void getFinalResult(ResultSet &ret_result);
@@ -100,10 +104,12 @@ class GeneralEvaluation
 
 		int constructTriplePattern(QueryTree::GroupPattern& triple_pattern, int dep);
 		void getUsefulVarset(Varset& useful, int dep);
-		bool checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *&sub_result, Varset& useful);
+		bool checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *sub_result, Varset& useful);
 		void fillCandList(SPARQLquery& sparql_query, int dep, vector<vector<string> >& encode_varset);
+		void fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec, int dep, vector<vector<string> >& encode_varset);
 		void joinBasicQueryResult(SPARQLquery& sparql_query, TempResultSet *new_result, TempResultSet *sub_result, vector<vector<string> >& encode_varset, \
-			vector<vector<QueryTree::GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep);
+			vector<vector<QueryTree::GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep=0);
+		void getAllPattern(const QueryTree::GroupPattern &group_pattern, vector<QueryTree::GroupPattern::Pattern> &vp);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H
