@@ -96,7 +96,8 @@ void TempResult::release()
 {
 	for (int i = 0; i < (int)this->result.size(); i++)
 	{
-		delete[] result[i].id;
+		if (result[i].id)
+			delete[] result[i].id;
 		vector<string>().swap(result[i].str);
 	}
 }
@@ -131,7 +132,7 @@ int TempResult::compareRow(const ResultPair &x, const int x_id_cols, const vecto
 void TempResult::sort(int l, int r, const vector<int> &this_pos)
 {
 	int i = l, j = r;
-	ResultPair m = this->result[(l + r) / 2];
+	ResultPair &m = this->result[(l + r) / 2];
 
 	int this_id_cols = this->id_varset.getVarsetSize();
 	do
@@ -260,6 +261,7 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 				if (r_id_cols > 0)
 				{
 					r.result.back().id = new unsigned [r_id_cols];
+					r.result.back().sz = r_id_cols;
 					unsigned *v = r.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -300,6 +302,7 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 				if (r_id_cols > 0)
 				{
 					r.result.back().id = new unsigned [r_id_cols];
+					r.result.back().sz = r_id_cols;
 					unsigned *v = r.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -450,6 +453,7 @@ void TempResult::doOptional(vector<bool> &binding, TempResult &x, TempResult &rn
 				if (rn_id_cols > 0)
 				{
 					rn.result.back().id = new unsigned [rn_id_cols];
+					rn.result.back().sz = rn_id_cols;
 					unsigned *v = rn.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -491,6 +495,7 @@ void TempResult::doMinus(TempResult &x, TempResult &r)
 			if (r_id_cols > 0)
 			{
 				r.result.back().id = new unsigned [r_id_cols];
+				r.result.back().sz = r_id_cols;
 				unsigned *v = r.result.back().id;
 
 				for (int k = 0; k < this_id_cols; k++)
@@ -524,6 +529,7 @@ void TempResult::doMinus(TempResult &x, TempResult &r)
 				if (r_id_cols > 0)
 				{
 					r.result.back().id = new unsigned [r_id_cols];
+					r.result.back().sz = r_id_cols;
 					unsigned *v = r.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
@@ -1714,6 +1720,7 @@ void TempResult::doFilter(const QueryTree::CompTreeNode &filter, TempResult &r, 
 			if (r_id_cols > 0)
 			{
 				r.result.back().id = new unsigned [r_id_cols];
+				r.result.back().sz = r_id_cols;
 				unsigned *v = r.result.back().id;
 
 				for (int k = 0; k < this_id_cols; k++)
@@ -2007,6 +2014,7 @@ void TempResultSet::doProjection1(Varset &proj, TempResultSet &r, StringIndex *s
 				if (r_id_cols > 0)
 				{
 					r.results[0].result.back().id = new unsigned [r_id_cols];
+					r.results[0].result.back().sz = r_id_cols;
 					unsigned *v = r.results[0].result.back().id;
 
 					for (int k = 0; k < r_id_cols; k++)
@@ -2071,6 +2079,7 @@ void TempResultSet::doDistinct1(TempResultSet &r)
 				if (r_id_cols > 0)
 				{
 					r_results0.result.back().id = new unsigned [r_id_cols];
+					r_results0.result.back().sz = r_id_cols;
 					unsigned *v = r_results0.result.back().id;
 
 					for (int k = 0; k < this_id_cols; k++)
