@@ -108,8 +108,26 @@ void QueryParser::printQueryTree()
 }
 
 /**
+	queryUnit : query ;
+	Visit node queryUnit: recursively call visit on its only child node query.
+	(Redundant, can be removed without affecting QueryParser's function)
+
+	@param ctx pointer to queryUnit's context.
+	@return a dummy antlrcpp::Any object.
+*/
+antlrcpp::Any QueryParser::visitQueryUnit(SPARQLParser::QueryUnitContext *ctx)
+{
+	// printNode(ctx, "queryUnit");
+
+	visit(ctx->query());
+
+	return antlrcpp::Any();
+}
+
+/**
 	query : prologue( selectquery | constructquery | describequery | askquery )valuesClause ;
 	Visit node query: recursively call visit on each of its children.
+	(Redundant, can be removed without affecting QueryParser's function)
 
 	@param ctx pointer to query's context.
 	@return a dummy antlrcpp::Any object.
@@ -177,6 +195,10 @@ antlrcpp::Any QueryParser::visitAskquery(SPARQLParser::AskqueryContext *ctx)
 {
 	query_tree_ptr->setQueryForm(QueryTree::Ask_Query);
 	query_tree_ptr->setProjectionAsterisk();
+
+	// Add DISTINCT and LIMIT 1 to speed up query execution
+	query_tree_ptr->setProjectionModifier(QueryTree::Modifier_Distinct);
+	query_tree_ptr->setLimit(1);
 
 	// datasetClause not supported
 
@@ -741,6 +763,9 @@ antlrcpp::Any QueryParser::visitGroupGraphPattern(SPARQLParser::GroupGraphPatter
 antlrcpp::Any QueryParser::visitGroupGraphPatternSub(SPARQLParser::GroupGraphPatternSubContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
+	if (firstVisitGroupGraphPatternSub && ctx->graphPatternTriplesBlock().empty())
+		query_tree_ptr->setSingleBGP(true);
+	firstVisitGroupGraphPatternSub = false;
 	if (ctx->triplesBlock())
 		visitTriplesBlock(ctx->triplesBlock(), group_pattern);
 	for (auto graphPatternTriplesBlock : ctx->graphPatternTriplesBlock())
