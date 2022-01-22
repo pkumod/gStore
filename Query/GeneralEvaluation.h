@@ -52,7 +52,6 @@ class GeneralEvaluation
 		TYPE_PREDICATE_ID limitID_predicate;
 		TYPE_ENTITY_LITERAL_ID limitID_literal;
 		TYPE_ENTITY_LITERAL_ID limitID_entity;
-		CSR *csr;
 		shared_ptr<Transaction> txn;
     public:
     	FILE* fp;
