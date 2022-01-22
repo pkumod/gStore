@@ -416,7 +416,7 @@ $(objdir)Statistics.o: Database/Statistics.cpp Database/Statistics.h $(objdir)Ut
 $(objdir)Database.o: Database/Database.cpp Database/Database.h \
 	$(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
 	$(objdir)BasicQuery.o $(objdir)Triple.o $(objdir)SigEntry.o \
-	$(objdir)KVstore.o $(objdir)VSTree.o $(objdir)DBparser.o $(objdir)Statistics.o \
+	$(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Statistics.o \
 	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o $(objdir)GeneralEvaluation.o $(objdir)StringIndex.o $(objdir)Transaction.o
 	$(CC) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o $(openmp)
 
