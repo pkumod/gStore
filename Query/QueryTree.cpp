@@ -1365,3 +1365,13 @@ Varset QueryTree::CompTreeNode::getVarset()
 	// if (val[0] == '?')
 	// 	return Varset(val);
 }
+
+void QueryTree::setSingleBGP(bool val)
+{
+	singleBGP = val;
+}
+
+bool QueryTree::getSingleBGP()
+{
+	return singleBGP;
+}
