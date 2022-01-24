@@ -22,6 +22,7 @@ Database::Database()
 	this->id_tuples_file = "id_tuples";
 	this->update_log = "update.log";
 	this->update_log_since_backup = "update_since_backup.log";
+	this->csr = NULL;
 	// this->csr = new CSR[2];
 
 	string kv_store_path = store_path + "/kv_store";
@@ -79,6 +80,7 @@ Database::Database(string _name)
 	this->id_tuples_file = "id_tuples";
 	this->update_log = "update.log";
 	this->update_log_since_backup = "update_since_backup.log";
+	this->csr = NULL;
 	// this->csr = new CSR[2];
 
 	string kv_store_path = store_path + "/kv_store";
