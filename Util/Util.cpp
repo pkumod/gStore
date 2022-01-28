@@ -274,6 +274,15 @@ bool Util::configure_new()
     
     
     Util::setGlobalConfig(ini_parser, "ghttp", "thread_num");
+
+    cout << "the current settings are as below: " << endl;
+    cout << "key : value" << endl;
+    cout << "------------------------------------------------------------" << endl;
+    for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
+    {
+        cout << it->first << " : " << it->second << endl;
+    }
+    cout << endl;
     Util::setGlobalConfig(ini_parser, "ghttp", "max_database_num");
     Util::setGlobalConfig(ini_parser, "ghttp", "max_user_num");
     Util::setGlobalConfig(ini_parser, "ghttp", "root_username");
@@ -286,14 +295,7 @@ bool Util::configure_new()
     Util::setGlobalConfig(ini_parser, "ghttp", "db_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "backup_path");
 
-     cout << "the current settings are as below: " << endl;
-    cout << "key : value" << endl;
-    cout << "------------------------------------------------------------" << endl;
-    for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
-    {
-        cout << it->first << " : " << it->second << endl;
-    }
-    cout << endl;
+    
    // Util::setGlobalConfig(ini_parser, "ghttp", "ip");
     Util::setGlobalConfig(ini_parser, "ghttp", "ip_allow_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "ip_deny_path");
