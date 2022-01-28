@@ -271,6 +271,14 @@ bool Util::configure_new()
     ini_parser.ReadINI("conf.ini");
     /*string value=ini_parser.GetValue("ghttp", "max_out_limit");
     Util::global_config["max_out_limit"] = value;*/
+    cout << "the current settings are as below: " << endl;
+    cout << "key : value" << endl;
+    cout << "------------------------------------------------------------" << endl;
+    for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
+    {
+        cout << it->first << " : " << it->second << endl;
+    }
+    cout << endl;
     Util::setGlobalConfig(ini_parser, "ghttp", "thread_num");
     Util::setGlobalConfig(ini_parser, "ghttp", "max_database_num");
     Util::setGlobalConfig(ini_parser, "ghttp", "max_user_num");
