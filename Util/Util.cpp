@@ -248,6 +248,7 @@ Util::config_advanced()
 bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
 {
     string value = parser.GetValue(rootname, keyname);
+    cout<<"the root name："<<rootname<<", the key name:"<<keyname<<endl;
     if(value.empty()==false)
     Util::global_config[keyname] = value;
 }
