@@ -11,6 +11,7 @@ string & TrimString(string & str)
 //read in INI file and parse it
 int INIParser::ReadINI(string path)
 {
+        cout<<"path："<<path<<endl;
         ifstream in_conf_file(path.c_str());  
         if (!in_conf_file) return 0;   
         string str_line = "";   
