@@ -26,7 +26,7 @@ int INIParser::ReadINI(string path)
                 string str_value = "";           
                 if ((str_line.npos != (left_pos = str_line.find("["))) && (str_line.npos != (right_pos = str_line.find("]"))))                 
                 {                   
-                        cout << str_line.substr(left_pos+1, right_pos-1) << endl;                      
+                        //cout << str_line.substr(left_pos+1, right_pos-1) << endl;                      
                         str_root = str_line.substr(left_pos + 1, right_pos - 1);                  
                 }                                     
                 if (str_line.npos != (equal_div_pos = str_line.find("=")))                  
@@ -35,13 +35,13 @@ int INIParser::ReadINI(string path)
                         str_value = str_line.substr(equal_div_pos + 1, str_line.size() - 1);                  
                         str_key = TrimString(str_key);                 
                         str_value = TrimString(str_value);                    
-                        cout << str_key << "=" << str_value << endl;                       
+                        //cout << str_key << "=" << str_value << endl;                       
                 }                        
                 if ((!str_root.empty()) && (!str_key.empty()) && (!str_value.empty()))                    
                 {                   
                         ININode ini_node(str_root, str_key, str_value);                  
                         vec_ini.push_back(ini_node);                  
-                        cout << vec_ini.size() << endl;                       
+                        //cout << vec_ini.size() << endl;                       
                 }            
         }
         in_conf_file.close();   
