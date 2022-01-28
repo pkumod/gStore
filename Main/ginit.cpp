@@ -53,7 +53,9 @@ int main(int argc, char * argv[])
 			Util::init_backuplog();
 			cout<<"init backuplog successfully!"<<endl;
 			Util::configure_new();
+			
 			string version = Util::getConfigureValue("version");
+
 			string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". }";
 			cout<<"version:"<<version<<",update_sparql:"<<update_sparql<<endl;
 			ResultSet _rs;
