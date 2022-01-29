@@ -2531,7 +2531,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		{
 			vector <unsigned> keys;
 			vector <bool> desc;
-			if (!query_tree.getSingleBGP())
+			if (!(query_tree.getSingleBGP() && query_tree.getLimit() != -1))
 			{
 				// Else, ORDER BY will already have been processed at the BGP level
 				for (int i = 0; i < (int)this->query_tree.getOrderVarVector().size(); i++)
