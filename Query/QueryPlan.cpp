@@ -984,7 +984,7 @@ QueryPlan::OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
     auto var_id = bgp_query->get_vardescrip_by_index(i)->id_;
     if( (!bgp_query->is_var_selected(var_id)) && bgp_query->get_var_degree(var_id) == 1)
       continue;
-    if(bgp_query->get_vardescrip_by_index(var_id)->var_type_==VarDescriptor::VarType::Predicate)
+    if(bgp_query->get_vardescrip_by_index(i)->var_type_==VarDescriptor::VarType::Predicate)
       continue;
     auto constant_filtering = FilterNodeOnConstantEdge(bgp_query, kv_store, var_id);
     if(!constant_filtering->edges_->empty())
@@ -1005,7 +1005,7 @@ QueryPlan::PredicateFilter(std::shared_ptr<BGPQuery> bgp_query,
   for(decltype(total_var_num) i = 0;i<total_var_num; i++)
   {
     auto var_id = bgp_query->get_vardescrip_by_index(i)->id_;
-    if(bgp_query->get_vardescrip_by_index(var_id)->var_type_==VarDescriptor::VarType::Predicate)
+    if(bgp_query->get_vardescrip_by_index(i)->var_type_==VarDescriptor::VarType::Predicate)
       continue;
     auto predicate_filtering = FilterNodeOnConstantPredicate(bgp_query, kv_store, var_id);
     if(!predicate_filtering->edges_->empty())
