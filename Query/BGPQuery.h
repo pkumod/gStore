@@ -202,7 +202,7 @@ public:
 	// return var_id in var_vector, if not find, return -1;
 	unsigned get_var_id_by_name(const string& var_name);
 	string get_var_name_by_id(unsigned var_id);
-	unsigned get_var_position_by_name(const string& var_name);
+	unsigned get_var_index_by_name(const string& var_name);
 
 
 	unsigned get_var_id_by_index(unsigned index);
@@ -234,10 +234,10 @@ public:
 	unsigned get_pre_var_num();
 
 
-	unsigned get_var_degree(unsigned var_id);
+	unsigned get_var_degree_by_id(unsigned var_id);
 	VarDescriptor::VarType get_var_type_by_id(unsigned var_id);
 
-	bool is_var_selected(unsigned var_id);
+	bool is_var_selected_by_id(unsigned var_id);
 
 	// for EntiType var
 	unsigned get_so_var_edge_index(unsigned var_id, int edge_id);

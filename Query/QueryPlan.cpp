@@ -982,7 +982,7 @@ QueryPlan::OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
   for(decltype(total_var_num) i = 0;i<total_var_num; i++)
   {
     auto var_id = bgp_query->get_vardescrip_by_index(i)->id_;
-    if( (!bgp_query->is_var_selected(var_id)) && bgp_query->get_var_degree(var_id) == 1)
+    if( (!bgp_query->is_var_selected_by_id(var_id)) && bgp_query->get_var_degree_by_id(var_id) == 1)
       continue;
     if(bgp_query->get_vardescrip_by_index(i)->var_type_==VarDescriptor::VarType::Predicate)
       continue;
