@@ -131,26 +131,35 @@ int TempResult::compareRow(const ResultPair &x, const int x_id_cols, const vecto
 
 void TempResult::sort(int l, int r, const vector<int> &this_pos)
 {
-	int i = l, j = r;
-	ResultPair &m = this->result[(l + r) / 2];
+	if (r <= l)
+		return;
+	int i = l, j = r + 1;
+	ResultPair &m = this->result[l];
 
 	int this_id_cols = this->id_varset.getVarsetSize();
-	do
-	{
-		while (compareRow(this->result[i], this_id_cols, this_pos, m, this_id_cols, this_pos) == -1)	i++;
-		while (compareRow(m, this_id_cols, this_pos, this->result[j], this_id_cols, this_pos) == -1)	j--;
-		if (i <= j)
-		{
-			swap(this->result[i].id, this->result[j].id);
-			swap(this->result[i].str, this->result[j].str);
-			i++;
-			j--;
-		}
-	}
-	while (i <= j);
 
-	if (l < j)	sort(l, j, this_pos);
-	if (i < r)	sort(i, r, this_pos);
+	while (true)
+	{
+		while (compareRow(this->result[++i], this_id_cols, this_pos, m, this_id_cols, this_pos) == -1)
+		{
+			if (i == r)
+				break;
+		}
+		while (compareRow(m, this_id_cols, this_pos, this->result[--j], this_id_cols, this_pos) == -1)
+		{
+			if (j == l)
+				break;
+		}
+		if (i >= j)
+			break;
+		swap(this->result[i].id, this->result[j].id);
+		swap(this->result[i].str, this->result[j].str);
+	}
+	swap(m.id, this->result[j].id);
+	swap(m.str, this->result[j].str);
+
+	sort(l, j - 1, this_pos);
+	sort(j + 1, r, this_pos);
 }
 
 int TempResult::findLeftBounder(const vector<int> &this_pos, const ResultPair &x, const int x_id_cols, const vector<int> &x_pos) const
