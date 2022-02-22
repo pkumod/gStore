@@ -2987,7 +2987,7 @@ void GeneralEvaluation::getUsefulVarset(Varset& useful, int dep)
 	}
 }
 
-bool GeneralEvaluation::checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *sub_result, Varset& useful)
+bool GeneralEvaluation::checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *&sub_result, Varset& useful)
 {
 	bool success = false;
 	if (this->query_cache != NULL)
