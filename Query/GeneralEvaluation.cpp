@@ -1497,9 +1497,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					if (proj[0].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
 					{
 						if (exist)
-							new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = "true";
+							new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
 						else
-							new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = "false";
+							new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
 					}
 					else
 						ss >> new_result0.result.back().str[proj2new[0] - new_result0_id_cols];
@@ -2391,31 +2391,31 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										ss << "\"false\"}";
 								}
 								else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
-							{
-								cout << "begin run  kHopReachablePath " << endl;
-								if (uid == vid)
 								{
-									if (notFirstOutput)
-										ss << ",";
-									else
-										notFirstOutput = 1;
-									vector<int> path; // Empty path
-									pathVec2JSON(uid, vid, path, ss);
-									continue;
+									cout << "begin run  kHopReachablePath " << endl;
+									if (uid == vid)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										vector<int> path; // Empty path
+										pathVec2JSON(uid, vid, path, ss);
+										continue;
+									}
+									int hopConstraint = proj[0].path_args.k;
+									if (hopConstraint < 0)
+										hopConstraint = 999;
+									vector<int> path = pqHandler->kHopReachablePath(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
+									if (path.size() != 0)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										pathVec2JSON(uid, vid, path, ss);
+									}
 								}
-								int hopConstraint = proj[0].path_args.k;
-								if (hopConstraint < 0)
-									hopConstraint = 999;
-								vector<int> path = pqHandler->kHopReachablePath(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
-								if (path.size() != 0)
-								{
-									if (notFirstOutput)
-										ss << ",";
-									else
-										notFirstOutput = 1;
-									pathVec2JSON(uid, vid, path, ss);
-								}
-							}
 								else if (proj[0].aggregate_type == QueryTree::ProjectionVar::ppr_type)
 								{
 									vector< pair<int ,double> > v2ppr;
@@ -2438,9 +2438,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						if (proj[i].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
 						{
 							if (exist)
-								new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "true";
+								new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
 							else
-								new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "false";
+								new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
 						}
 						else
 							ss >> new_result0.result.back().str[proj2new[i] - new_result0_id_cols];
