@@ -1,12 +1,90 @@
-# gStore System
+```text
+<div align=center>
+<img src="http://file.gstore.cn/f/d0103fb87196432f858a/" width="600" height="600" />
+</div>
+```
 
-Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
 
-**The formal help document is in [English(EN)](docs/help/gStore_help.pdf) and [中文(ZH)](docs/help/gStore_help_ZH.pdf).**
 
-**The formal experiment result is in [Experiment](docs/test/formal_experiment.pdf).**
+# gStore- Native graph database system for large-scale knowledge graph application
 
-**We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore](http://gstore.cn).**
+<font size=5>**The latest version:** </font>
+
+The latest version is 0.9.1, updated on November 25, 2021.
+
+<font size=5>**Help document:** </font>
+
+[gStore帮助手册-0.9.1版本-中文版](http://file.gstore.cn/f/50f350b7bac047688dab/?dl=1)
+
+[gStore User Guide - 0.9.1 Version-English](http://file.gstore.cn/f/d69814aabd2e40fead22/?dl=1)
+
+<font size=5>**Homepage:** </font>
+
+[ http://gstore.cn](http://gstore.cn)
+
+<font size=5>**Product trial:** </font>
+
+[http://cloud.gstore.cn](http://cloud.gstore.cn)
+
+<font size=5>**Discussion group:** </font>
+
+[http://www.gstore.cn/pcsite/index.html#/medical（only chinese）](http://cloud.gstore.cn)
+
+[https://github.com/pkumod/gStore/issues](https://github.com/pkumod/gStore/issues)
+
+<font size=5>**Development team:** </font>
+
+Data Management Laboratory (PKUMOD) of Wangxuan Institute of Computer Technology of Peking University.
+
+<font size=5>**License:** </font>
+
+[ BSD-3-Clause License](https://github.com/pkumod/gStore/blob/0.9.1/LICENSE)
+
+<font size=5>**Contact us:** </font>
+
+Technical problems: gstore@pku.edu.cn , service@gstore.cn
+
+Business issues:gstore@pku.edu.cn , jiuhua.qi@cqbdri.pku.edu.cn
+
+
+
+## Introduction
+
+gStore is a graph-based RDF data management system(or what is commonly called a "triple store") that maintains the graph structure of the original [RDF](http://www.w3.org/TR/rdf11-concepts/) data. Its data model is a labeled, directed multi edge graph, where each vertex corresponds to a subject or an object. 
+
+We represent a given [SPARQL](http://www.w3.org/TR/sparql11-overview/) query by a query graph Q. Query processing involves finding subgraph matches of Q over the RDF graph G, instead of joining tables in relational data management system. gStore incorporates an index over the RDF graph (called VS-tree) to speed up query processing. VS-tree is a height balanced tree with a number of associated pruning techniques to speed up subgraph matching.
+
+**(NOTICE: Homomorphism is used here, instead of isomorphism)**
+
+
+
+## Fature
+
+The important features of gStore are as follows:
+
+- gStore manages RDF repository from a graph database perspective.
+- Support SPARQL 1.1 standard query language (including operation primitives such as UNION, FILTER, OPTIONAL and add, delete and modify).
+- gStore supports both query and update efficiently.
+- gStore can handle, in a uniform manner, different data types (strings and numerical data) and SPARQL queries with aggregate, range operators.
+- Support distributed deployment(Paid support).
+- The standalone version supports 5 billion triples.
+- The system has independent backup and error recovery functions, providing high reliable performance guarantee.
+- Complete support for transaction ACID.
+
+
+
+## Publication
+
+The first essay to come up with Gstore System is [gStore_VLDB](http://file.gstore.cn/f/f8dcf8d1476b4982a182/).
+
+- Lei Zou, Jinghui Mo, Lei Chen,M. Tamer Özsu, Dongyan Zhao, [gStore: Answering SPARQL Queries Via Subgraph Matching](http://www.icst.pku.edu.cn/intro/leizou/projects/papers/p482-zou.pdf), Proc. VLDB 4(8): 482-493, 2011.
+- Lei Zou, M. Tamer Özsu,Lei Chen, Xuchuan Shen, Ruizhe Huang, Dongyan Zhao, [gStore: A Graph-based SPARQL Query Engine](http://www.icst.pku.edu.cn/intro/leizou/projects/papers/gStoreVLDBJ.pdf), VLDB Journal , 23(4): 565-590, 2014.
+- Xuchuan Shen, Lei Zou, M. Tamer Özsu, Lei Chen, Youhuan Li, Shuo Han, Dongyan Zhao, [A Graph-based RDF Triple Store](http://www.icst.pku.edu.cn/intro/leizou/projects/papers/demo.pdf), in Proc. 31st International Conference on Data Engineering (ICDE), 2015; To appear (demo).
+- Dong Wang, Lei Zou, Yansong Feng, Xuchuan Shen, Jilei Tian, and Dongyan Zhao, [S-store: An Engine for Large RDF Graph Integrating Spatial Information](http://www.icst.pku.edu.cn/intro/leizou/projects/papers/Store.pdf), in Proc. 18th International Conference on Database Systems for Advanced Applications (DASFAA), pages 31-47, 2013.
+- Dong Wang, Lei Zou and Dongyan Zhao, [gst-Store: An Engine for Large RDF Graph Integrating Spatiotemporal Information](http://www.icst.pku.edu.cn/intro/leizou/projects/papers/edbtdemo2014.pdf), in Proc. 17th International Conference on Extending Database Technology (EDBT), pages 652-655, 2014 (demo).
+- Lei Zou, Yueguo Chen, [A Survey of Large-Scale RDF Data Management](http://www.icst.pku.edu.cn/intro/leizou/documentation/pdf/2012CCCF.pdf), Comunications of CCCF Vol.8(11): 32-43, 2012 (Invited Paper, in Chinese).
+
+
 
 ## Change log
 
@@ -39,6 +117,7 @@ New features in version 0.9 include:
 - Expanding data structures to hold large-scale graphs of up to five billion triples.
 
 The version is a beta version, you can get it by :
+
 ```
 git clone https://github.com/pkumod/gStore.git
 ```
@@ -46,15 +125,18 @@ git clone https://github.com/pkumod/gStore.git
 **0.8（Stable）**
 
 The version is a stable version ,you can get it by 
+
 ```
  git clone -b 0.8 https://github.com/pkumod/gStore.git
 ```
 
-
 <!--**You can write your information in [survey](http://59.108.48.38/survey) if you like.**-->
 
+
+
 ## Getting Started
-### Compile from Source
+
+### <font size=5>**Compile from Source** </font>
 This system is really user-friendly and you can pick it up in several minutes. Remember to check your platform where you want to run this system by viewing [System Requirements](docs/DEMAND.md). After all are verified, please get this project's source code. There are several ways to do this:
 
 - (suggested)type `git clone https://github.com/pkumod/gStore.git` in your terminal or use git GUI to acquire it
@@ -84,13 +166,37 @@ To run gStore, please type `bin/gbuild database_name dataset_path` to build a da
 
 - - -
 
+
+
+## Performance
+
+**The formal experiment report is in [EXPERIMENT](test/formal_experiment.pdf).**
+
+## Preparation
+
+We have compared the performance of gStore with several other database systems, such as [Jena](http://jena.apache.org/), [Sesame](http://www.rdf4j.org/), [Virtuoso](http://virtuoso.openlinksw.com/) and so on. Contents to be compared are the time to build database, the size of the built database, the time to answer single SPARQL query and the matching case of single query's results. In addition, if the memory cost is very large(>20G), we will record the memory cost when running these database systems.(not accurate, just for your reference)
+
+To ensure all database systems can run correctly on all datasets and queries, the format of datasets must be supported by all database systems and the queries should not contain update operations, aggregate operations and operations related with uncertain predicates. Notice that when measuring the time to answer queries, the time of loading database index should not be included. To ensure this principle, we load the database index first for some database systems, and warm up several times for others.
+
+Datasets used here are WatDiv, Lubm, Bsbm and DBpedia. Some of them are provided by websites, and others are generated by algorithms. Queries are generated by algorithms or written by us.
+
+The experiment environment is a CentOS server, whose memory size is 82G and disk size is 7T. We use [full_test](../test/full_test.sh) to do this test.
+
+## Result
+
+This program produces many logs placed in result.log/, load.log/ and time.log/. You can see that all results of all queries are matched by viewing files in result.log/, and the time cost and space cost of gStore to build database are larger than others by viewing files in load.log/. More precisely, there is an order of magnitude difference between gStore and others in the time/space cost of building database. 
+
+Through analysing time.log/, we can find that gStore behave better than others on very complicated queries(many variables, circles, etc). For other simple queries, there is not much difference between the time of these database systems.
+
+Generally speaking, the memory cost of gStore when answering queries is higher than others. More complicated the query is and more large the dataset is, more apparent the phenomenon is.
+
+You can find more detailed information in [test report](pdf/gstore_test_report.pdf). Notice that some questions in the test report have already be solved now.
+
+
+
 ## Advanced Help
 
 If you want to understand the details of the gStore system, or you want to try some advanced operations(for example, using the API, server/client), please see the chapters below.
-
-- [Basic Introduction](docs/INTRO.md): introduce the theory and features of gStore
-
-- [Install Guide](docs/INSTALL.md): instructions on how to install this system
 
 - [How To Use](docs/USAGE.md): detailed information about using the gStore system
 
@@ -98,28 +204,21 @@ If you want to understand the details of the gStore system, or you want to try s
 
 - [Project Structure](docs/STRUCT.md): show the whole structure and process of this project
 
-- [Related Essays](docs/ESSAY.md): contain essays and publications related with gStore
-
-- [Update Logs](docs/CHANGELOG.md): keep the logs of the system updates
-
-- [Test Results](docs/TEST.md): present the test results of a series of experiments
-
 - - -
 
-## Other Business
+    
+
+## Submit questions
 
 Bugs are recorded in [BUG REPORT](docs/BUGS.md).
-You are welcomed to submit the bugs you discover if they do not exist in this file.
+
+You are welcome to submit any advice or errors in the Github Issues part of this repository and [official website forum](http://www.gstore.cn/pcsite/index.html#/medical), if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <gstore@pku.edu.cn>,<jiuhua.qi@cqbdri.pku.edu.cn> to submit your suggestions and report bugs. A full list of our whole team is in [Mailing List](docs/MAIL.md).
 
 We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in [Recipe Book](docs/TIPS.md).
 
-You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <gjsjdbgroup@pku.edu.cn> to submit your suggestions and report bugs. A full list of our whole team is in [Mailing List](docs/MAIL.md).
-
-There are some restrictions when you use the current gStore project, you can see them on [Limit Description](docs/LIMIT.md).
-
 Sometimes you may find some strange phenomena(but not wrong case), or something hard to understand/solve(don't know how to do next), then do not hesitate to visit the [Frequently Asked Questions](docs/FAQ.md) page.
 
-Graph database engine is a new area and we are still trying to go further. Things we plan to do next is in [Future Plan](docs/PLAN.md) chapter, and we hope more and more people will support or even join us. You can support in many ways:
+Graph database engine is a new area and we are still trying to go further, and we hope more and more people will support or even join us. You can support in many ways:
 
 - watch/star our project
 
@@ -130,8 +229,4 @@ Graph database engine is a new area and we are still trying to go further. Thing
 - ...
 
 People who inspire us or contribute to this project will be listed in the [Thanks List](docs/THANK.md) chapter.
-
-
-
-<!--This whole document is divided into different pieces, and each them is stored in a markdown file. You can see/download the combined markdown file in [help_markdown](docs/gStore_help.md), and for html file, please go to [help_html](docs/gStore_help.html). What is more, we also provide help file in pdf format, and you can visit it in [help_pdf](docs/latex/gStore_help.pdf).-->
 

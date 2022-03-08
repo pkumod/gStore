@@ -1,27 +1,30 @@
-*We have tested on linux server with CentOS 6.2 x86_64 and CentOS 6.6 x86_64. The version of GCC should be 4.8 or later.*
+*We have tested on linux server with CentOS 6.2 x86_64 and CentOS 6.6 x86_64. The version of GCC should be 4.8 or later.The version of boost should be 1.56 or later*
 
-Item | Requirement
-:-- | :--
-operation system | Linux, such as CentOS, Ubuntu and so on
-architecture | x86_64
-disk size | according to size of dataset 
-memory size | according to size of dataset
-glibc | version >= 2.14
-gcc | version >= 4.8
-g++ | version >= 4.8
-make | need to be installed
-boost | version >= 1.54
-readline | need to be installed
-readline-devel | need to be installed
-openjdk | needed if using Java api
-openjdk-devel | needed if using Java api
-requests | needed if using Python http api
-node | needed if using Nodejs http api and version >= 10.9.0
-pthreads | needed if using php http api 
-curl-devel | needed if using php http api
-realpath | needed if using gconsole
-ccache | optional, used to speed up the compilation
-libcurl-devel | needed to be installed
+| Project          | Requirement                                            |
+| :--------------- | :----------------------------------------------------- |
+| Operating System | Linux, such as CentOS, Ubuntu etc.                     |
+| Framework        | x86_64                                                 |
+| Disk Size        | Depends on the size of the data set                    |
+| Memory Size      | Depends on the size of the data set                    |
+| glibc            | Must install version >= 2.14                           |
+| gcc              | Must install version >= 5.0                            |
+| g++              | Must install version >= 5.0                            |
+| make             | Must install                                           |
+| cmake            | Must install                                           |
+| pkg-config       | Must install                                           |
+| uuid             | Must install                                           |
+| boost            | Must install version >= 1.56 && <= 1.59                |
+| readline         | Must install                                           |
+| readline-devel   | Must install                                           |
+| libcurl-devel    | Must install                                           |
+| openjdk          | If using the Java API, yes                             |
+| openjdk-devel    | If using the Java API, yes                             |
+| requests         | If using Python http API, yes                          |
+| node             | If using Nodejs http api must install version >=10.9.0 |
+| curl-devel       | If using php http API, yes                             |
+| pthreads         | If using php http API, yes                             |
+| realpath         | If using gconsole, yes                                 |
+| ccache           | Optional, used to speed up compilation                 |
 
 NOTICE:
 
@@ -41,7 +44,7 @@ NOTICE:
 
 7. To install ccache, you need to add epel repository if using CentOS, while in Ubuntu you can directly install it by `apt-get install ccache` command. If you can not install ccache(or maybe you do not want to), please go to modify the makefile(just change the CC variable to g++).
 
-8. If you need to use the HTTP server in gStore, then Boost Library(like boost-devel, including boost headers for developing) must be installed and the version should not be less than 1.54. Remember to check the makefile for your installed path of Boost. To use Python api, you need to install requests by `pip install requests` in CentOS. To use php api, you need to install pthreads and curl in CentOS as follows:
+8. If you need to use the HTTP server in gStore, then Boost Library(like boost-devel, including boost headers for developing) must be installed and the version should not be less than 1.56. Remember to check the makefile for your installed path of Boost. To use Python api, you need to install requests by `pip install requests` in CentOS. To use php api, you need to install pthreads and curl in CentOS as follows:
 ```
 1- get curl-devel
 # yum install curl-devel
