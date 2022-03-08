@@ -1,10 +1,4 @@
-```text
-<div align=center>
-<img src="http://file.gstore.cn/f/d0103fb87196432f858a/" width="600" height="600" />
-</div>
-```
-
-
+<img src="https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/image/logo%201.png" width="300px" />
 
 # gStore- Native graph database system for large-scale knowledge graph application
 
