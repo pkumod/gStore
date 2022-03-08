@@ -1,3 +1,5 @@
+
+
 <div align = center><img src="https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/image/logo%201.png" width="300px" /></div>
 
 # gStore- Native graph database system for large-scale knowledge graph application
@@ -8,9 +10,9 @@ The latest version is 0.9.1, updated on November 25, 2021.
 
 <font size=5>**Help document:** </font>
 
-[gStore帮助手册-0.9.1版本-中文版](http://file.gstore.cn/f/50f350b7bac047688dab/?dl=1)
+[gStore帮助手册-0.9.1版本-中文版](http://file.gstore.cn/f/50f350b7bac047688dab/)
 
-[gStore User Guide - 0.9.1 Version-English](http://file.gstore.cn/f/d69814aabd2e40fead22/?dl=1)
+[gStore User Guide - 0.9.1 Version-English](http://file.gstore.cn/f/d69814aabd2e40fead22/)
 
 <font size=5>**Homepage:** </font>
 
@@ -22,7 +24,7 @@ The latest version is 0.9.1, updated on November 25, 2021.
 
 <font size=5>**Discussion group:** </font>
 
-[http://www.gstore.cn/pcsite/index.html#/medical（only chinese）](http://cloud.gstore.cn)
+[http://www.gstore.cn/pcsite/index.html#/medical（only chinese）](http://www.gstore.cn/pcsite/index.html#/medical)
 
 [https://github.com/pkumod/gStore/issues](https://github.com/pkumod/gStore/issues)
 
