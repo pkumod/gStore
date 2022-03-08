@@ -1,4 +1,4 @@
-<center><img src="https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/image/logo%201.png" width="300px" /> </center>
+<div align = center><img src="https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/image/logo%201.png" width="300px" /></div>
 
 # gStore- Native graph database system for large-scale knowledge graph application
 
