@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-03-10 14:37:35
+ * @LastEditTime: 2022-03-10 20:11:17
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -113,7 +113,6 @@ int APIUtil::initialize(const std::string db_name, bool load_csr)
         {
             blackList = 1;
         }
-        cout << "whiteList " << whiteList <<"blackList "<<blackList<<endl;
         if (whiteList) {
             cout << "IP white List enabled." << endl;
             ipWhiteList = new IPWhiteList();
@@ -128,7 +127,7 @@ int APIUtil::initialize(const std::string db_name, bool load_csr)
         // load system db
         if(!Util::dir_exist("system.db"))
         {
-            cout << "Can not find system.db."<<endl;
+            Util::formatPrint("Can not find system.db.","ERROR");
             return -1;
         }
         system_database = new Database("system");
@@ -141,10 +140,8 @@ int APIUtil::initialize(const std::string db_name, bool load_csr)
         ResultSet rs;
         rapidjson::Document doc;
         FILE *output = NULL;
-        std::string sparql = "select ?x where{?x <database_status> \"already_built\".}";
-        cout << "system query begin" << endl;
+        std::string sparql = "select ?x where{?x <database_status> \"already_built\".}";       
         int ret_val = system_database->query(sparql, rs, output);
-        cout << "system query get result" << endl;
         if (ret_val == -100)
         {
             std::string json_str = rs.to_JSON();
@@ -154,9 +151,7 @@ int APIUtil::initialize(const std::string db_name, bool load_csr)
             {
                 rapidjson::Value &p1 = doc["results"];
                 rapidjson::Value &p2 = p1["bindings"];
-                cout << "build_map_Lock start" << endl;
                 pthread_rwlock_wrlock(&already_build_map_lock);
-                cout << "build_map_Lock end" << endl;
                 for (int i = 0; i < p2.Size(); i++)
                 {
                     rapidjson::Value &p21 = p2[i];
@@ -165,9 +160,7 @@ int APIUtil::initialize(const std::string db_name, bool load_csr)
                     struct DatabaseInfo *temp_db = new DatabaseInfo(db_name);
 
                     sparql = "select ?x ?y where{<" + db_name + "> ?x ?y.}";
-                    cout << "sparql is " << sparql <<endl;
                     ret_val = system_database->query(sparql, rs, output);
-                    cout << "database in system query over" << endl;
                     if (ret_val == -100)
                     {
                         json_str = rs.to_JSON();
@@ -213,7 +206,6 @@ int APIUtil::initialize(const std::string db_name, bool load_csr)
             }
         }
         //userinfo
-        cout << "userinfo begin query" << endl;
         sparql = "select ?x ?y where{?x <has_password> ?y.}";
         ret_val = system_database->query(sparql, rs, output);
         if (ret_val == -100)
@@ -290,7 +282,6 @@ int APIUtil::initialize(const std::string db_name, bool load_csr)
                 pthread_rwlock_unlock(&users_map_lock);
             }
         }
-        cout << "userinfo query end" << endl;
         Util::init_transactionlog();
         fstream ofp;
         system_password = Util::int2string(Util::getRandNum());
@@ -315,7 +306,7 @@ int APIUtil::initialize(const std::string db_name, bool load_csr)
             bool flag = current_database->load(load_csr);
             if (!flag)
             {
-                cout << "Failed to load the database." << endl;
+                Util::formatPrint("Failed to load the database.","ERROR");
                 delete current_database;
                 current_database = NULL;
                 return -1;
@@ -337,11 +328,11 @@ bool APIUtil::trywrlock_database_map()
 {
     if (pthread_rwlock_trywrlock(&databases_map_lock) == 0)
     {
-        cout<<"trywrlock_database_map success"<<endl;
+        Util::formatPrint("trywrlock_database_map success");
         return true;
     }
     else {
-        cout<<"trywrlock_database_map unsuccess"<<endl;
+        Util::formatPrint("trywrlock_database_map unsuccess");
         return false;
     }
 }
@@ -350,12 +341,12 @@ bool APIUtil::unlock_database_map()
 {
     if (pthread_rwlock_unlock(&databases_map_lock) == 0)
     {
-        cout<<"unlock database_map success"<<endl;
+        Util::formatPrint("unlock database_map success");
         return true;
     }
     else
     {
-        cout<<"unlock database_map unsuccess"<<endl;
+        Util::formatPrint("unlock database_map unsuccess");
         return false;
     }
         
@@ -365,13 +356,13 @@ bool APIUtil::trywrlock_already_build_map()
 {
     if (pthread_rwlock_trywrlock(&already_build_map_lock) == 0)
     {
-        cout<<"trywrlock_already_build_map success"<<endl;
+        Util::formatPrint("trywrlock_already_build_map success");
         return true;
     }
         
     else
     {
-         cout<<"trywrlock_already_build_map unsuccess"<<endl;
+        Util::formatPrint("trywrlock_already_build_map unsuccess");
         return false;
     }
         
@@ -381,13 +372,13 @@ bool APIUtil::unlock_already_build_map()
 {
     if (pthread_rwlock_unlock(&already_build_map_lock) == 0)
     {
-        cout<<"unlock_already_build_map success"<<endl;
+        Util::formatPrint("unlock_already_build_map success");
         return true;
     }
         
     else
     {
-        cout<<"unlock_already_build_map unsuccess"<<endl;
+        Util::formatPrint("unlock_already_build_map unsuccess");
         return false;
     }
         
@@ -397,10 +388,12 @@ bool APIUtil::rw_wrlock_build_map()
 {
     if(pthread_rwlock_wrlock(&already_build_map_lock) == 0)
     {
+        Util::formatPrint("lock already_build_map success");
         return true;
     }
     else
     {
+        Util::formatPrint("lock already_build_map fail", "ERROR");
         return false;
     }
 }
@@ -409,10 +402,12 @@ bool APIUtil::rw_wrlock_database_map()
 {
     if(pthread_rwlock_wrlock(&databases_map_lock) == 0)
     {
+        Util::formatPrint("lock database_map success");
         return true;
     }
     else
     {
+        Util::formatPrint("lock database_map fail", "ERROR");
         return false;
     }
 }
@@ -435,14 +430,14 @@ vector<string> APIUtil::ip_list(string type)
     vector<string>ip_list;
     if(type == "2")
     {
-        cout << "IP white List enabled." << endl;
+        Util::formatPrint("IP white List enabled.");
         for (std::set<std::string>::iterator it = ipWhiteList->ipList.begin(); it!=ipWhiteList->ipList.end();it++)
         {
             ip_list.push_back((*it));
         }
     }
     else{
-        cout << "IP black List enabled." << endl;
+        Util::formatPrint("IP black List enabled.");
         for (std::set<std::string>::iterator it = ipBlackList->ipList.begin(); it!=ipBlackList->ipList.end();it++)
         {
             ip_list.push_back((*it));
@@ -602,27 +597,27 @@ bool APIUtil::tryrdlock_databaseinfo(DatabaseInfo* dbinfo)
 {
     if (pthread_rwlock_rdlock(&(dbinfo->db_lock)) == 0)
     {
-        cout<<"tryrdlock_databaseinfo success"<<endl;
+        Util::formatPrint("tryrdlock_databaseinfo success");
         return true;
     }
     else
     {
-        cout<<"tryrdlock_databaseinfo unsuccess"<<endl;
+        Util::formatPrint("tryrdlock_databaseinfo unsuccess","ERROR");
         return false;
     }
 }
 
 bool APIUtil::unlock_databaseinfo(DatabaseInfo* dbinfo)
 {
-    cout<<"begin unlock_databaseinfo"<<endl;
-    if(dbinfo == NULL) cout<<"db_info is null"<<endl;
+    
+    if(dbinfo == NULL) Util::formatPrint("db_info is null","ERROR");
     if (pthread_rwlock_unlock(&(dbinfo->db_lock)) == 0){
-        cout << "unlock_databaseinfo success"<<endl;
+        Util::formatPrint("unlock_databaseinfo success");
         return true;
     }
     else
     {
-        cout << "unlock_databaseinfo unsuccess"<<endl;
+        Util::formatPrint("unlock_databaseinfo unsuccess","ERROR");
         return false;
     }
 }
@@ -701,7 +696,7 @@ bool APIUtil::db_checkpoint(string db_name)
 	pthread_rwlock_unlock(&txn_m_lock);
 	txn_m->abort_all_running();
 	txn_m->Checkpoint();
-	cout << "txn_m checkpoint success!" << endl;
+    Util::formatPrint("txn_m checkpoint success!");
 	return true;
 }
 
@@ -2094,7 +2089,6 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
     delete fun_info;
     cmd = "rm -f " + logFile;
     system(cmd.c_str());
-    cout << "error_msg " <<error_msg<<endl;
     // has error_msg
     if (error_msg.size() > 0)
     {
@@ -2128,6 +2122,7 @@ std::string APIUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
     }
 
     _buf << "extern \"C\" string " + fun_name;
+    cout << "fun_args "<<fun_args <<endl;
     if (fun_args == "1") // int uid, int vid, bool directed, vector<int> pred_set
     {
         _buf << "(std::vector<int> iri_set, bool directed, std::vector<int> pred_set, CSRUtil* csrUtil)\n";

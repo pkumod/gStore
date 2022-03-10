@@ -137,26 +137,27 @@ message CommonResponse {
     optional int32 OutputLimit = 7;
     optional string ThreadId = 8;
     optional string QueryTime = 9;
+    optional string FileName = 10;
     // for export
-    optional string filepath = 10;
+    optional string filepath = 11;
     // for begin
-    optional string TID = 11;
+    optional string TID = 12;
     // for txnLog queryLog accessLog
-    repeated google.protobuf.Any list = 12;
+    repeated google.protobuf.Any list = 13;
     // for getCoreVersion
-    optional string CoreVersion = 13;
-    optional string licensetype = 14;
+    optional string CoreVersion = 14;
+    optional string licensetype = 15;
     // for batch insert and remove
-    optional string success_num = 15;
+    optional string success_num = 16;
     // for queryLog and accessLog
-    optional int32 totalSize = 16;
-    optional int32 totalPage = 17;
-    optional int32 pageNo = 18;
-    optional int32 pageSize = 19;
+    optional int32 totalSize = 17;
+    optional int32 totalPage = 18;
+    optional int32 pageNo = 19;
+    optional int32 pageSize = 20;
     // for backup
-    optional string backupfilepath=20;
+    optional string backupfilepath=21;
     // for personalized function
-    optional string Result = 21;
+    optional string Result = 22;
 };
 
 service grpc {

@@ -1,3 +1,11 @@
+/*
+ * @Author: your name
+ * @Date: 2022-03-10 20:12:56
+ * @LastEditTime: 2022-03-10 20:12:57
+ * @LastEditors: your name
+ * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ * @FilePath: /gstore/GRPC/server.pb_skeleton.cc
+ */
 
 #include "grpc.srpc.h"
 #include "workflow/WFFacilities.h"

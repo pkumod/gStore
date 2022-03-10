@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-03-10 14:38:40
+ * @LastEditTime: 2022-03-10 20:11:23
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -421,17 +421,6 @@ public:
 	    string json_str = strBuf.GetString();
         return json_str;
     }
-    void toValue(rapidjson::Value &obj, rapidjson::Document::AllocatorType &allocator)
-    {
-		obj.AddMember("QueryDateTime", rapidjson::StringRef(queryDateTime.c_str()), allocator);
-        obj.AddMember("RemoteIP", rapidjson::StringRef(remoteIP.c_str()), allocator);
-        obj.AddMember("Sparql", rapidjson::StringRef(sparql.c_str()), allocator);
-        obj.AddMember("AnsNum", ansNum, allocator);
-        obj.AddMember("Format", rapidjson::StringRef(format.c_str()), allocator);
-        obj.AddMember("FileName", rapidjson::StringRef(fileName.c_str()), allocator);
-        obj.AddMember("StatusCode", statusCode, allocator);
-        obj.AddMember("QueryTime", queryTime, allocator);
-    }
 };
 
 struct DBQueryLogs
@@ -470,7 +459,6 @@ public:
     void addQueryLogInfo(const string & json_str)
     {
         DBQueryLogInfo item(json_str);
-        cout<< " make QLinfo" <<endl;
         list.push_back(item);
     }
     vector<struct DBQueryLogInfo> getQueryLogInfoList()
@@ -601,7 +589,17 @@ private:
     std::string funReturn;
     std::string lastTime;
 public:
-    PFNInfo() {};
+    PFNInfo() 
+    {
+        funName = "";
+        funDesc = "";
+        funArgs = "";
+        funBody = "";
+        funSubs = "";
+        funStatus = "";
+        funReturn = "";
+        lastTime = "";
+    };
     PFNInfo(string _funName, string _funDesc, string _funArgs, string _funBody, string _funSubs,string _funStatus,string _funReturn,string _lastTime)
     {
         funName = _funName;

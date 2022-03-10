@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-03-10 14:17:18
+ * @LastEditTime: 2022-03-10 20:10:14
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -38,7 +38,7 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 
 #define THREAD_NUM 30
 #define TEST_IP "106.13.13.193"
-APIUtil *apiUtil;
+APIUtil *apiUtil = nullptr;
 //! init the ghttp server
 int initialize(int argc, char *argv[]);
 
@@ -131,18 +131,19 @@ void accesslog_thread_new(const shared_ptr<HttpServer::Response>& response, stri
 
 void ipmanage_thread_new(const shared_ptr<HttpServer::Response>& response, string type, string ips, string ip_type);
 
-void fun_create_thread_new(const shared_ptr<HttpServer::Response>& response, string encryption ,string fun_name, string fun_desc, string fun_args, string fun_body, string fun_subs, string fun_status, string fun_return, string last_time, string fun_review, string username);
+void fun_create_thread_new(const shared_ptr<HttpServer::Response>& response, string username, struct PFNInfo &pfn_info);
 
-void fun_query_thread_new(const shared_ptr<HttpServer::Response>& response, string encryption ,string fun_name, string fun_desc, string fun_args, string fun_body, string fun_subs, string fun_status, string fun_return, string last_time, string fun_review, string username);
+void fun_query_thread_new(const shared_ptr<HttpServer::Response>& response, string username, struct PFNInfo &pfn_info);
 
-void fun_update_thread_new(const shared_ptr<HttpServer::Response>& response, string encryption ,string fun_name, string fun_desc, string fun_args, string fun_body, string fun_subs, string fun_status, string fun_return, string last_time, string fun_review, string username);
+void fun_update_thread_new(const shared_ptr<HttpServer::Response>& response, string username, struct PFNInfo &pfn_info);
 
-void fun_delete_thread_new(const shared_ptr<HttpServer::Response>& response, string encryption ,string fun_name, string fun_desc, string fun_args, string fun_body, string fun_subs, string fun_status, string fun_return, string last_time, string fun_review, string username);
+void fun_delete_thread_new(const shared_ptr<HttpServer::Response>& response, string username, struct PFNInfo &pfn_info);
 
-void fun_build_thread_new(const shared_ptr<HttpServer::Response>& response, string encryption ,string fun_name, string fun_desc, string fun_args, string fun_body, string fun_subs, string fun_status, string fun_return, string last_time, string fun_review, string username);
+void fun_build_thread_new(const shared_ptr<HttpServer::Response>& response, string username, struct PFNInfo &pfn_info);
 
-void fun_review_thread_new(const shared_ptr<HttpServer::Response>& response, string encryption ,string fun_name, string fun_desc, string fun_args, string fun_body, string fun_subs, string fun_status, string fun_return, string last_time, string fun_review, string username);
+void fun_review_thread_new(const shared_ptr<HttpServer::Response>& response, string username, struct PFNInfo &pfn_info);
 
+void build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo &pfn_info);
 pthread_t scheduler = 0;
 
 int query_num = 0;
@@ -464,6 +465,11 @@ int main(int argc, char *argv[])
 		if (fpid == 0) {
 			int ret = initialize(argc, argv);
 			//TODO: which to use here!
+			if (apiUtil != nullptr)
+			{
+				delete apiUtil;
+			}
+			
 			exit(ret);
 		}
 
@@ -491,7 +497,7 @@ int main(int argc, char *argv[])
 
 int initialize(int argc, char *argv[])
 {
-    cout << "ghttp begin initialize..." << endl;
+	Util::formatPrint("ghttp begin initialize...");
 	//Server restarts to use the original database
 	//current_database = NULL;
 	
@@ -503,8 +509,8 @@ int initialize(int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		cout << "Use the default port:9000!" << endl;
-		cout << "Not load any database!" << endl;
+		Util::formatPrint("Use the default port:9000!");
+		Util::formatPrint("Not load any database!");
 	}
 	else if (argc == 2)
 	{
@@ -527,7 +533,7 @@ int initialize(int argc, char *argv[])
 		}
 		else
 		{
-			cout << "Invalid arguments! Input \"bin/ghttp -h\" for help." << endl;
+			Util::formatPrint("Invalid arguments! Input \"bin/ghttp -h\" for help.","error");
 			return 0;
 		}
 	}
@@ -536,12 +542,12 @@ int initialize(int argc, char *argv[])
 		db_name = Util::getArgValue(argc, argv, "db", "database");
 		if (db_name.length() > 3 && db_name.substr(db_name.length() - 3, 3) == ".db")
 		{
-			cout << "Your db name to be built should not end with \".db\"." << endl;
+			Util::formatPrint("Your db name to be built should not end with \".db\".","error");
 			return -1;
 		}
 		else if (db_name == "system")
 		{
-			cout << "You can not load system files." << endl;
+			Util::formatPrint("You can not load system files.","error");
 			return -1;
 		}
 		string port_str = Util::getArgValue(argc, argv, "p", "port", "9000");
@@ -608,7 +614,6 @@ int initialize(int argc, char *argv[])
 
     server_thread.join();
 	Util::formatPrint("check: server stoped", "DEBUG");
-	delete apiUtil;
     return 0;
 }
 
@@ -851,7 +856,6 @@ void load_thread_new(const shared_ptr<HttpServer::Response>& response, string db
 			sendResponseMsg(1005, error, response);
 		}
 		rt = apiUtil->unlock_database(db_name);
-		cout << "unlock database: " << rt << endl;
 	}
 	else
 	{
@@ -1326,10 +1330,10 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Response> &resp
  * @param {string} backup_path: the backup path
  * @return {*}
  */
-void backup_thread_new(const shared_ptr<HttpServer::Response>& response,string db_name,string backup_path)
+void backup_thread_new(const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path)
 {
-	string error="";
-	error = apiUtil->check_param_value("db_name",db_name);
+	string error = "";
+	error = apiUtil->check_param_value("db_name", db_name);
 	if (error.empty() == false)
 	{
 		sendResponseMsg(1003, error, response);
@@ -1342,39 +1346,38 @@ void backup_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 		return;
 	}
 	struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
-	if(apiUtil->trywrlock_databaseinfo(db_info) == false)
+	if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 	{
 		error = "the operation can not been excuted due to loss of lock.";
 		sendResponseMsg(1007, error, response);
 		return;
 	}
-	//begin backup database
-	string path=backup_path;
-	if(path == "") 
+	// begin backup database
+	string path = backup_path;
+	if (path.empty())
 	{
 		path = apiUtil->get_backup_path();
+		Util::formatPrint("backup_path is empty, set to default path: " + path);
 	}
-	if(path == "." ){
-		cout << "Backup Path Can not be root or empty, Backup Failed!" << endl;
+	if (path == ".")
+	{
 		string error = "Failed to backup the database. Backup Path Can not be root or empty.";
 		apiUtil->unlock_databaseinfo(db_info);
-		sendResponseMsg(1003,error,response);
+		sendResponseMsg(1003, error, response);
 		return;
 	}
-	if(path[path.length() - 1] == '/') 
+	if (path[path.length() - 1] == '/')
 	{
 		path = path.substr(0, path.length() - 1);
 	}
-	Util::formatPrint("backup path:" + path);
+	Util::formatPrint("backup path: " + path);
 	string db_path = db_name + ".db";
-	// TODO: why need lock the database_map?
-	// apiUtil->trywrlock_database_map(); //lock the databases_map_lock
 	apiUtil->rw_wrlock_database_map();
 	int ret = apiUtil->db_copy(db_path, path);
 	apiUtil->unlock_database_map();
-	// apiUtil->unlock_database_map(); //unlock the databases_map_lock
-	string timestamp="";
-	if(ret == 1){
+	string timestamp = "";
+	if (ret == 1)
+	{
 		string error = "Failed to backup the database. Database Folder Misssing.";
 		apiUtil->unlock_databaseinfo(db_info);
 		sendResponseMsg(1005, error, response);
@@ -1382,14 +1385,14 @@ void backup_thread_new(const shared_ptr<HttpServer::Response>& response,string d
 	else
 	{
 		timestamp = Util::get_timestamp();
-        path = path + "/" + db_path;
-        string _path = path + "_" + timestamp;
-        string sys_cmd = "mv " + path + " " + _path;
-        system(sys_cmd.c_str());
-        
+		path = path + "/" + db_path;
+		string _path = path + "_" + timestamp;
+		string sys_cmd = "mv " + path + " " + _path;
+		system(sys_cmd.c_str());
+
 		Util::formatPrint("database backup done: " + db_name);
-        string success = "Database backup successfully.";
-        apiUtil->unlock_databaseinfo(db_info);
+		string success = "Database backup successfully.";
+		apiUtil->unlock_databaseinfo(db_info);
 
 		Document resDoc;
 		resDoc.SetObject();
@@ -2080,7 +2083,7 @@ void tquery_thread_new(const shared_ptr<HttpServer::Response>& response,string d
         resDoc.Parse(res.c_str());
 		if(resDoc.HasParseError())
 		{
-            cout<<"error parse"<<endl;
+			Util::formatPrint("error parse","error");
 			resDoc.Parse("{}");
 			resDoc.AddMember("result",StringRef(res.c_str()),allocator);      
 		}
@@ -2319,7 +2322,6 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Response>& response,stri
 		else
 		{
 			txn_m->Checkpoint();
-			cout << "txm -> checkpoint ok "<<endl;
             current_database->save();
             apiUtil->unlock_database(db_name);
 			string success = "Database saved successfully.";
@@ -2525,16 +2527,6 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
 	string db_name;
 	Document document;
 	string url;
-	
-	std::cout << "------------------------ ghttp-api ------------------------" << std::endl;
-    std::cout << "thread_id: " << thread_id << std::endl;
-    std::cout << "remote_ip: " <<  remote_ip << std::endl;
-    std::cout << "operation: " << operation << std::endl;
-    std::cout << "method: " << request_type << std::endl;
-    std::cout << "request_path: " << request->path << std::endl;
-    std::cout << "http_version: " << request->http_version << std::endl;
-    std::cout << "request_time: " << Util::get_date_time() << std::endl;
-    std::cout << "----------------------------------------------------------" << std::endl;
 
 	if (request_type == "GET")
 	{
@@ -2600,6 +2592,16 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
 		return;
 	}
 
+	std::cout << "------------------------ ghttp-api ------------------------" << std::endl;
+    std::cout << "thread_id: " << thread_id << std::endl;
+    std::cout << "remote_ip: " <<  remote_ip << std::endl;
+    std::cout << "operation: " << operation << std::endl;
+    std::cout << "method: " << request_type << std::endl;
+    std::cout << "request_path: " << request->path << std::endl;
+    std::cout << "http_version: " << request->http_version << std::endl;
+    std::cout << "request_time: " << Util::get_date_time() << std::endl;
+    std::cout << "----------------------------------------------------------" << std::endl;
+
 	if(operation=="check")
 	{
         check_thread_new(response);
@@ -2621,27 +2623,27 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
     //build database
 	if (operation == "build")
 	{
-		string db_path="";
-		if (request_type == "GET")
+		string db_path = "";
+		try
 		{
-			db_path = WebUrl::CutParam(url, "db_path");
-			db_path = UrlDecode(db_path);
-		}
-		else if (request_type == "POST")
-		{
-			try
+			if (request_type == "GET")
+			{
+				db_path = WebUrl::CutParam(url, "db_path");
+				db_path = UrlDecode(db_path);
+			}
+			else if (request_type == "POST")
 			{
 				if (document.HasMember("db_path")&&document["db_path"].IsString())
 				{
 					db_path = document["db_path"].GetString();
 				}
 			}
-			catch (...)
-			{
-				string error = "the parameter has some error,please look up the api document.";
-				sendResponseMsg(1003, error, response);
-				return;
-			}
+		}
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
 		}
 		build_thread_new(response, db_name, db_path, username, password);	
 	}
@@ -2650,26 +2652,26 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
 	{
 		bool load_csr = false;
 		string loadCSRStr = "";
-		if (request_type == "GET")
+		try
 		{
-			loadCSRStr = WebUrl::CutParam(url, "load_csr");
-			loadCSRStr = UrlDecode(loadCSRStr);
-		}
-		else if (request_type == "POST")
-		{
-			try
+			if (request_type == "GET")
+			{
+				loadCSRStr = WebUrl::CutParam(url, "load_csr");
+				loadCSRStr = UrlDecode(loadCSRStr);
+			}
+			else if (request_type == "POST")
 			{
 				if (document.HasMember("load_csr")&&document["load_csr"].IsString())
 				{
 					loadCSRStr = document["load_csr"].GetString();
 				}
 			}
-			catch (...)
-			{
-				string error = "the parameter has some error,please look up the api document.";
-				sendResponseMsg(1003, error, response);
-				return;
-			}
+		}
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
 		}
 		if (loadCSRStr == "true")
 			load_csr = true;
@@ -2686,36 +2688,35 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
         unload_thread_new(response, db_name);
 	}
 	//drop database
-	else if(operation=="drop")
+	else if (operation == "drop")
 	{
-	   string is_backup="true";
-       if(request_type=="GET")
-	   {
-          is_backup=WebUrl::CutParam(url,"is_backup");   
-	   }
-	   else
-	   {
+		string is_backup = "true";
+		try
+		{
+			if (request_type == "GET")
+			{
+				is_backup = WebUrl::CutParam(url, "is_backup");
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("is_backup") && document["is_backup"].IsString())
+				{
+					is_backup = document["is_backup"].GetString();
+				}
+			}
+		}
+		catch (...)
+		{
+			string error = "the parameter has some error, please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
+		}
+		if (is_backup.empty())
+		{
+			is_backup = "true";
+		}
 
-		   try
-		   {
-			   if (document.HasMember("is_backup")&&document["is_backup"].IsString())
-			   {
-				   is_backup = document["is_backup"].GetString();
-			   }
-		   }
-		   catch (...)
-		   {
-			   string error = "the parameter has some error, please look up the api document.";
-			   sendResponseMsg(1003, error, response);
-			   return;
-		   }
-	   }
-	   if(is_backup.empty())
-	   {
-		   is_backup="true";
-	   }
-	   cout<<"is_backup:"<<is_backup<<endl;
-	   drop_thread_new(response, db_name, is_backup);
+		drop_thread_new(response, db_name, is_backup);
 	}
 	//show all databases
 	else if(operation=="show")
@@ -2723,44 +2724,44 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
         show_thread_new(response);
 	}
 	//manage the user list
-	else if(operation=="usermanage")
+	else if (operation == "usermanage")
 	{
-        string type="";
-		string op_username="";
-		string op_password="";
-		if(request_type=="GET")
+		string type = "";
+		string op_username = "";
+		string op_password = "";
+		try
 		{
-			type=WebUrl::CutParam(url,"type");
-			op_username=WebUrl::CutParam(url,"op_username");
-			op_username=UrlDecode(op_username);
-			op_password=WebUrl::CutParam(url,"op_password");
-			op_password=UrlDecode(op_password);
-		}
-		else 
-		{
-			try
+			if (request_type == "GET")
 			{
-				if(document.HasMember("type")&&document["type"].IsString())
+				type = WebUrl::CutParam(url, "type");
+				op_username = WebUrl::CutParam(url, "op_username");
+				op_username = UrlDecode(op_username);
+				op_password = WebUrl::CutParam(url, "op_password");
+				op_password = UrlDecode(op_password);
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("type") && document["type"].IsString())
 				{
-                    type = document["type"].GetString();
+					type = document["type"].GetString();
 				}
-				if (document.HasMember("op_username")&&document["op_username"].IsString())
+				if (document.HasMember("op_username") && document["op_username"].IsString())
 				{
 					op_username = document["op_username"].GetString();
 				}
-				if (document.HasMember("op_password")&&document["op_password"].IsString())
+				if (document.HasMember("op_password") && document["op_password"].IsString())
 				{
 					op_password = document["op_password"].GetString();
 				}
 			}
-			catch (...)
-			{
-				string error = "the parameter has some error,please look up the api document.";
-				sendResponseMsg(1003, error, response);
-				return;
-			}
 		}
-		userManager_thread_new(response,op_username,op_password,type);
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
+		}
+		userManager_thread_new(response, op_username, op_password, type);
 	}
 	//show the user list
 	else if(operation=="showuser")
@@ -2768,286 +2769,357 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
         showuser_thread_new(response);
 	}
 	//manage user privilege
-	else if(operation=="userprivilegemanage")
+	else if (operation == "userprivilegemanage")
 	{
-		string type="";
-		string op_username="";
-		string privileges="";
-		if(request_type=="GET")
+		string type = "";
+		string op_username = "";
+		string privileges = "";
+		try
 		{
-			type=WebUrl::CutParam(url,"type");
-			op_username=WebUrl::CutParam(url,"op_username");
-			privileges=WebUrl::CutParam(url,"privileges");
+			if (request_type == "GET")
+			{
+				type = WebUrl::CutParam(url, "type");
+				op_username = WebUrl::CutParam(url, "op_username");
+				privileges = WebUrl::CutParam(url, "privileges");
+			}
+			else if (request_type == "POST")
+			{
+				type = document["type"].GetString();
+
+				if (document.HasMember("op_username") && document["op_username"].IsString())
+				{
+					op_username = document["op_username"].GetString();
+				}
+				if (document.HasMember("privileges") && document["privileges"].IsString())
+				{
+					privileges = document["privileges"].GetString();
+				}
+			}
 		}
-		else 
+		catch (...)
 		{
-            type=document["type"].GetString();
-			
-			if (document.HasMember("op_username")&&document["op_username"].IsString())
-			{
-				op_username = document["op_username"].GetString();
-			}
-			if (document.HasMember("privileges")&&document["privileges"].IsString())
-			{
-				privileges = document["privileges"].GetString();
-			}
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
 		}
-       userPrivilegeManage_thread_new(response,op_username,privileges,type,db_name);
+		userPrivilegeManage_thread_new(response, op_username, privileges, type, db_name);
 	}
 	//backup a database
-	else if(operation=="backup")
+	else if (operation == "backup")
 	{
-        string backup_path="";
-		if(request_type=="GET")
+		string backup_path = "";
+		try
 		{
-			backup_path=WebUrl::CutParam(url,"backup_path");
-			backup_path=UrlDecode(backup_path);
-		}
-		else 
-		{
-			if (document.HasMember("backup_path")&&document["backup_path"].IsString())
+			if (request_type == "GET")
 			{
-				backup_path = document["backup_path"].GetString();
+				backup_path = WebUrl::CutParam(url, "backup_path");
+				backup_path = UrlDecode(backup_path);
 			}
-			
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("backup_path") && document["backup_path"].IsString())
+				{
+					backup_path = document["backup_path"].GetString();
+				}
+			}
 		}
-		backup_thread_new(response,db_name,backup_path);
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
+		}
+		backup_thread_new(response, db_name, backup_path);
 	}
 	//restore database
-	else if(operation=="restore")
+	else if (operation == "restore")
 	{
-		string backup_path="";
-		if(request_type=="GET")
+		string backup_path = "";
+		try
 		{
-			backup_path=WebUrl::CutParam(url,"backup_path");
-			backup_path=UrlDecode(backup_path);
-		}
-		else 
-		{
-           	if (document.HasMember("backup_path")&&document["backup_path"].IsString())
+			if (request_type == "GET")
 			{
-				backup_path = document["backup_path"].GetString();
+				backup_path = WebUrl::CutParam(url, "backup_path");
+				backup_path = UrlDecode(backup_path);
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("backup_path") && document["backup_path"].IsString())
+				{
+					backup_path = document["backup_path"].GetString();
+				}
 			}
 		}
-		restore_thread_new(response,db_name,backup_path,username);
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
+		}
+		restore_thread_new(response, db_name, backup_path, username);
 	}
 	//query database
-	else if(operation=="query")
+	else if (operation == "query")
 	{
-        string format="";
-		string sparql="";
-	
-		string querytype="0";
-		if (apiUtil->check_privilege(username, "update", db_name) ==0)
+		string format = "";
+		string sparql = "";
+
+		string querytype = "0";
+		if (apiUtil->check_privilege(username, "update", db_name) == 0)
 		{
-            querytype="0";
+			querytype = "0";
 		}
 		else
 		{
-			querytype="1";
+			querytype = "1";
 		}
-		if(request_type=="GET")
+		try
 		{
-			format=WebUrl::CutParam(url,"format");
-			sparql=WebUrl::CutParam(url,"sparql");
-		
-			sparql=UrlDecode(sparql);
+			if (request_type == "GET")
+			{
+				format = WebUrl::CutParam(url, "format");
+				format = UrlDecode(format);
+				sparql = WebUrl::CutParam(url, "sparql");
+				sparql = UrlDecode(sparql);
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("format") && document["format"].IsString())
+				{
+					format = document["format"].GetString();
+				}
+				if (document.HasMember("sparql") && document["sparql"].IsString())
+				{
+					sparql = document["sparql"].GetString();
+				}
+			}
 		}
-		else 
+		catch (...)
 		{
-			if (document.HasMember("format")&&document["format"].IsString())
-			{
-				format = document["format"].GetString();
-			}
-			if (document.HasMember("sparql")&&document["sparql"].IsString())
-			{
-				sparql = document["sparql"].GetString();
-			}
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
 		}
+
 		if (format.empty())
 		{
-			format="json";
+			format = "json";
 		}
 
-       	query_num++;
-	   	Task* task = new Task(username,db_name,format,remote_ip,log_prefix,querytype,sparql,response,request);
-	    pool.AddTask(task);
+		query_num++;
+		Task *task = new Task(username, db_name, format, remote_ip, log_prefix, querytype, sparql, response, request);
+		pool.AddTask(task);
 	}
-	else if(operation=="export")
+	else if (operation == "export")
 	{
-        string db_path="";
-		if(request_type=="GET")
+		string db_path = "";
+		try
 		{
-			db_path=WebUrl::CutParam(url,"db_path");
-			db_path=UrlDecode(db_path);
-		}
-		else 
-		{
-            
-			if (document.HasMember("db_path")&&document["db_path"].IsString())
+			if (request_type == "GET")
 			{
-				db_path = document["db_path"].GetString();
+				db_path = WebUrl::CutParam(url, "db_path");
+				db_path = UrlDecode(db_path);
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("db_path") && document["db_path"].IsString())
+				{
+					db_path = document["db_path"].GetString();
+				}
 			}
 		}
-		if(db_path.empty())
+		catch (...)
 		{
-			db_path=".";
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
 		}
-		export_thread_new(response,db_name,db_path,username);
+		export_thread_new(response, db_name, db_path, username);
 	}
-	else if(operation=="login")
+	else if (operation == "login")
 	{
-        login_thread_new(response);
+		login_thread_new(response);
 	}
-	else if(operation=="begin")
+	else if (operation == "begin")
 	{
-         string isolevel="";
-		if(request_type=="GET")
+		string isolevel = "";
+		try
 		{
-			isolevel=WebUrl::CutParam(url,"isolevel");
-			isolevel=UrlDecode(isolevel);
-		}
-		else 
-		{
-            
-			if (document.HasMember("isolevel")&&document["isolevel"].IsString())
+			if (request_type == "GET")
 			{
-				isolevel = document["isolevel"].GetString();
+				isolevel = WebUrl::CutParam(url, "isolevel");
+				isolevel = UrlDecode(isolevel);
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("isolevel") && document["isolevel"].IsString())
+				{
+					isolevel = document["isolevel"].GetString();
+				}
 			}
 		}
-		begin_thread_new(response,db_name,isolevel,username);
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
+		}
+		begin_thread_new(response, db_name, isolevel, username);
 	}
-	else if(operation=="tquery")
+	else if (operation == "tquery")
 	{
-       string TID="";
-	   string sparql="";
-		if(request_type=="GET")
+		string TID = "";
+		string sparql = "";
+		try
 		{
-			TID=WebUrl::CutParam(url,"tid");
-			TID=UrlDecode(TID);
-			sparql=WebUrl::CutParam(url,"sparql");
-			sparql=UrlDecode(sparql);
-		}
-		else 
-		{
-			if (document.HasMember("tid")&&document["tid"].IsString())
+			if (request_type == "GET")
 			{
-				TID = document["tid"].GetString();
+				TID = WebUrl::CutParam(url, "tid");
+				TID = UrlDecode(TID);
+				sparql = WebUrl::CutParam(url, "sparql");
+				sparql = UrlDecode(sparql);
 			}
-			if (document.HasMember("sparql")&&document["sparql"].IsString())
+			else if (request_type == "POST")
 			{
-				sparql = document["sparql"].GetString();
-			}
-		}
-		tquery_thread_new(response,db_name,TID,sparql);
-
-	}
-	else if(operation=="commit")
-	{
-        string TID="";
-	  
-		if(request_type=="GET")
-		{
-			TID=WebUrl::CutParam(url,"tid");
-			TID=UrlDecode(TID);
-		}
-		else 
-		{
-           if (document.HasMember("tid")&&document["tid"].IsString())
-			{
-				TID = document["tid"].GetString();
+				if (document.HasMember("tid") && document["tid"].IsString())
+				{
+					TID = document["tid"].GetString();
+				}
+				if (document.HasMember("sparql") && document["sparql"].IsString())
+				{
+					sparql = document["sparql"].GetString();
+				}
 			}
 		}
-		commit_thread_new(response,db_name,TID);
-	}
-	else if(operation=="rollback")
-	{
-		string TID="";
-	  
-		if(request_type=="GET")
+		catch (...)
 		{
-			TID=WebUrl::CutParam(url,"tid");
-			TID=UrlDecode(TID);
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
 		}
-		else 
+		tquery_thread_new(response, db_name, TID, sparql);
+	}
+	else if (operation == "commit")
+	{
+		string TID = "";
+		try
 		{
-            if (document.HasMember("tid")&&document["tid"].IsString())
+			if (request_type == "GET")
 			{
-				TID = document["tid"].GetString();
+				TID = WebUrl::CutParam(url, "tid");
+				TID = UrlDecode(TID);
 			}
-			
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("tid") && document["tid"].IsString())
+				{
+					TID = document["tid"].GetString();
+				}
+			}
 		}
-		rollback_thread_new(response,db_name,TID);
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
+		}
+		commit_thread_new(response, db_name, TID);
 	}
-	else if(operation=="txnlog")
+	else if (operation == "rollback")
 	{
-        txnlog_thread_new(response,username);
+		string TID = "";
+		try
+		{
+			if (request_type == "GET")
+			{
+				TID = WebUrl::CutParam(url, "tid");
+				TID = UrlDecode(TID);
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("tid") && document["tid"].IsString())
+				{
+					TID = document["tid"].GetString();
+				}
+			}
+		}
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
+		}
+		rollback_thread_new(response, db_name, TID);
 	}
-	else if(operation=="checkpoint")
+	else if (operation == "txnlog")
 	{
-         checkpoint_thread_new(response,db_name);
+		txnlog_thread_new(response, username);
 	}
-	else if(operation=="testConnect")
+	else if (operation == "checkpoint")
+	{
+		checkpoint_thread_new(response, db_name);
+	}
+	else if (operation == "testConnect")
 	{
 		test_connect_thread_new(response);
 	}
-	else if(operation=="getCoreVersion")
+	else if (operation == "getCoreVersion")
 	{
-		 getCoreVersion_thread_new(response);
+		getCoreVersion_thread_new(response);
 	}
-	else if(operation=="batchInsert")
+	else if (operation == "batchInsert")
 	{
-		string file="";
-		if (request_type == "GET")
+		string file = "";
+		try
 		{
-			file = WebUrl::CutParam(url, "file");
-			file = UrlDecode(file);
-		}
-		else if (request_type == "POST")
-		{
-			try
+			if (request_type == "GET")
 			{
-				if (document.HasMember("file")&&document["file"].IsString())
+				file = WebUrl::CutParam(url, "file");
+				file = UrlDecode(file);
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("file") && document["file"].IsString())
 				{
 					file = document["file"].GetString();
 				}
 			}
-			catch (...)
-			{
-				string error = "the parameter has some error,please look up the api document.";
-				sendResponseMsg(1003, error, response);
-				return;
-			}
 		}
-		batchInsert_thread_new(response, db_name, file, remote_ip);	
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
+		}
+		batchInsert_thread_new(response, db_name, file, remote_ip);
 	}
-	else if(operation=="batchRemove")
+	else if (operation == "batchRemove")
 	{
-		string file="";
-		if (request_type == "GET")
+		string file = "";
+		try
 		{
-			file = WebUrl::CutParam(url, "file");
-			file = UrlDecode(file);
-		}
-		else if (request_type == "POST")
-		{
-			try
+			if (request_type == "GET")
 			{
-				if (document.HasMember("file")&&document["file"].IsString())
+				file = WebUrl::CutParam(url, "file");
+				file = UrlDecode(file);
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("file") && document["file"].IsString())
 				{
 					file = document["file"].GetString();
 				}
 			}
-			catch (...)
-			{
-				string error = "the parameter has some error,please look up the api document.";
-				sendResponseMsg(1003, error, response);
-				return;
-			}
 		}
-		batchRemove_thread_new(response, db_name, file , remote_ip);	
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, response);
+			return;
+		}
+		batchRemove_thread_new(response, db_name, file, remote_ip);
 	}
-	else if(operation=="querylog")
+	else if (operation == "querylog")
 	{
 		string date = "";
 		int page_no = 1;
@@ -3065,20 +3137,19 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
 			}
 			else if (request_type == "POST")
 			{
-				if (document.HasMember("date")&&document["date"].IsString())
+				if (document.HasMember("date") && document["date"].IsString())
 				{
 					date = document["date"].GetString();
 				}
-				if (document.HasMember("pageNo")&&document["pageNo"].IsInt())
+				if (document.HasMember("pageNo") && document["pageNo"].IsInt())
 				{
 					page_no = document["pageNo"].GetInt();
 				}
-				if (document.HasMember("pageSize")&&document["pageSize"].IsInt())
+				if (document.HasMember("pageSize") && document["pageSize"].IsInt())
 				{
 					page_size = document["pageSize"].GetInt();
 				}
 			}
-			quereylog_thread_new(response, date, page_no, page_size);
 		}
 		catch (...)
 		{
@@ -3086,8 +3157,9 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
 			sendResponseMsg(1003, error, response);
 			return;
 		}
+		quereylog_thread_new(response, date, page_no, page_size);
 	}
-	else if(operation=="accesslog")
+	else if (operation == "accesslog")
 	{
 		string date = "";
 		int page_no = 1;
@@ -3105,20 +3177,19 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
 			}
 			else if (request_type == "POST")
 			{
-				if (document.HasMember("date")&&document["date"].IsString())
+				if (document.HasMember("date") && document["date"].IsString())
 				{
 					date = document["date"].GetString();
 				}
-				if (document.HasMember("pageNo")&&document["pageNo"].IsInt())
+				if (document.HasMember("pageNo") && document["pageNo"].IsInt())
 				{
 					page_no = document["pageNo"].GetInt();
 				}
-				if (document.HasMember("pageSize")&&document["pageSize"].IsInt())
+				if (document.HasMember("pageSize") && document["pageSize"].IsInt())
 				{
 					page_size = document["pageSize"].GetInt();
 				}
 			}
-			accesslog_thread_new(response, date, page_no, page_size);
 		}
 		catch (...)
 		{
@@ -3126,8 +3197,9 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
 			sendResponseMsg(1003, error, response);
 			return;
 		}
+		accesslog_thread_new(response, date, page_no, page_size);
 	}
-	else if(operation == "ipmanage")
+	else if (operation == "ipmanage")
 	{
 		string type = "";
 		string ips = "";
@@ -3139,23 +3211,23 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
 				type = WebUrl::CutParam(url, "type");
 				if (type == "2")
 				{
-					ips = WebUrl::CutParam(url,"ips");
-					ip_type = WebUrl::CutParam(url,"ip_type");
+					ips = WebUrl::CutParam(url, "ips");
+					ip_type = WebUrl::CutParam(url, "ip_type");
 				}
 			}
 			else if (request_type == "POST")
 			{
-				if (document.HasMember("type")&&document["type"].IsString())
+				if (document.HasMember("type") && document["type"].IsString())
 				{
 					type = document["type"].GetString();
 				}
 				if (type == "2")
 				{
-					if (document.HasMember("ips")&&document["ips"].IsString())
+					if (document.HasMember("ips") && document["ips"].IsString())
 					{
 						ips = document["ips"].GetString();
 					}
-					if (document.HasMember("ip_type")&&document["ip_type"].IsString())
+					if (document.HasMember("ip_type") && document["ip_type"].IsString())
 					{
 						ip_type = document["ip_type"].GetString();
 					}
@@ -3170,513 +3242,177 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
 			return;
 		}
 	}
-	else if(operation == "fuc_create")
+	else if (operation == "fun_create")
 	{
-		string encryption = "";
-		string fun_name = "";
-    	string fun_desc = "";
-    	string fun_args = "";
-    	string fun_body = "";
-    	string fun_subs = "";
-    	string fun_status = "";
-    	string fun_return = "";
-    	string last_time = "";
-    	string fun_review = "";
-		string fuc_info = "";
+		struct PFNInfo pfn_info;
 		try
 		{
-			if( request_type == "POST")
+			if (request_type == "POST")
 			{
-				if (document.HasMember("encryption")&&document["encryption"].IsString())
+				if (document.HasMember("fun_info"))
 				{
-					encryption = document["encryption"].GetString();
+					Value &fun_info = document["fun_info"];
+					build_PFNInfo(fun_info, pfn_info);
 				}
-				if (document.HasMember("fun_info")&&document["fun_info"].IsString())
-				{
-					fuc_info = document["fun_info"].GetString();
-					Document fucInfo;
-					fucInfo.Parse(fuc_info.c_str());
-					if(fucInfo.HasParseError())
-					{
-						string error = "the post content is not fit the json format, content=" + fuc_info;
-						sendResponseMsg(1003, error, response);
-						return;
-					}
-					if (fucInfo.HasMember("fun_name")&&fucInfo["fun_name"].IsString())
-					{
-						fun_name = fucInfo["fun_name"].GetString();
-					}
-					if (fucInfo.HasMember("fun_desc")&&fucInfo["fun_desc"].IsString())
-					{
-						fun_name = fucInfo["fun_desc"].GetString();
-					}
-					if (fucInfo.HasMember("fun_args")&&fucInfo["fun_args"].IsString())
-					{
-						fun_name = fucInfo["fun_args"].GetString();
-					}
-					if (fucInfo.HasMember("fun_body")&&fucInfo["fun_body"].IsString())
-					{
-						fun_name = fucInfo["fun_body"].GetString();
-					}
-					if (fucInfo.HasMember("fun_subs")&&fucInfo["fun_subs"].IsString())
-					{
-						fun_name = fucInfo["fun_subs"].GetString();
-					}
-					if (fucInfo.HasMember("fun_status")&&fucInfo["fun_status"].IsString())
-					{
-						fun_name = fucInfo["fun_status"].GetString();
-					}
-					if (fucInfo.HasMember("fun_return")&&fucInfo["fun_return"].IsString())
-					{
-						fun_name = fucInfo["fun_return"].GetString();
-					}
-					if (fucInfo.HasMember("last_time")&&fucInfo["last_time"].IsString())
-					{
-						fun_name = fucInfo["last_time"].GetString();
-					}
-					if (fucInfo.HasMember("fun_review")&&fucInfo["fun_review"].IsString())
-					{
-						fun_name = fucInfo["fun_review"].GetString();
-					}
-				}
-				fun_create_thread_new(response, encryption, fun_name, fun_desc, fun_args, fun_body, fun_subs, fun_status, fun_return, last_time, fun_review, username);
 			}
-			else{
+			else
+			{
 				string error = "please use POST";
-				sendResponseMsg (1003,error,response);
+				sendResponseMsg(1003, error, response);
 				return;
 			}
 		}
-		catch(...)
+		catch (...)
 		{
 			string error = "the parameter has some error,please look up the api document.";
 			sendResponseMsg(1003, error, response);
 			return;
 		}
-		
+		fun_create_thread_new(response, username, pfn_info);
 	}
-	else if(operation == "fun_query")
+	else if (operation == "fun_query")
 	{
-		string encryption = "";
-		string fun_name = "";
-    	string fun_desc = "";
-    	string fun_args = "";
-    	string fun_body = "";
-    	string fun_subs = "";
-    	string fun_status = "";
-    	string fun_return = "";
-    	string last_time = "";
-    	string fun_review = "";
-		string fuc_info = "";
+		struct PFNInfo pfn_info;
 		try
 		{
-			if( request_type == "POST")
+			if (request_type == "POST")
 			{
-				if (document.HasMember("encryption")&&document["encryption"].IsString())
+				if (document.HasMember("fun_info"))
 				{
-					encryption = document["encryption"].GetString();
+					Value &fun_info = document["fun_info"];
+					build_PFNInfo(fun_info, pfn_info);
 				}
-				if (document.HasMember("fun_info")&&document["fun_info"].IsString())
-				{
-					fuc_info = document["fun_info"].GetString();
-					Document fucInfo;
-					fucInfo.Parse(fuc_info.c_str());
-					if(fucInfo.HasParseError())
-					{
-						string error = "the post content is not fit the json format, content=" + fuc_info;
-						sendResponseMsg(1003, error, response);
-						return;
-					}
-					if (fucInfo.HasMember("fun_name")&&fucInfo["fun_name"].IsString())
-					{
-						fun_name = fucInfo["fun_name"].GetString();
-					}
-					if (fucInfo.HasMember("fun_desc")&&fucInfo["fun_desc"].IsString())
-					{
-						fun_name = fucInfo["fun_desc"].GetString();
-					}
-					if (fucInfo.HasMember("fun_args")&&fucInfo["fun_args"].IsString())
-					{
-						fun_name = fucInfo["fun_args"].GetString();
-					}
-					if (fucInfo.HasMember("fun_body")&&fucInfo["fun_body"].IsString())
-					{
-						fun_name = fucInfo["fun_body"].GetString();
-					}
-					if (fucInfo.HasMember("fun_subs")&&fucInfo["fun_subs"].IsString())
-					{
-						fun_name = fucInfo["fun_subs"].GetString();
-					}
-					if (fucInfo.HasMember("fun_status")&&fucInfo["fun_status"].IsString())
-					{
-						fun_name = fucInfo["fun_status"].GetString();
-					}
-					if (fucInfo.HasMember("fun_return")&&fucInfo["fun_return"].IsString())
-					{
-						fun_name = fucInfo["fun_return"].GetString();
-					}
-					if (fucInfo.HasMember("last_time")&&fucInfo["last_time"].IsString())
-					{
-						fun_name = fucInfo["last_time"].GetString();
-					}
-					if (fucInfo.HasMember("fun_review")&&fucInfo["fun_review"].IsString())
-					{
-						fun_name = fucInfo["fun_review"].GetString();
-					}
-				}
-				fun_query_thread_new(response, encryption, fun_name, fun_desc, fun_args, fun_body, fun_subs, fun_status, fun_return, last_time, fun_review, username);
 			}
-			else{
+			else
+			{
 				string error = "please use POST";
-				sendResponseMsg (1003,error,response);
+				sendResponseMsg(1003, error, response);
 				return;
 			}
 		}
-		catch(...)
+		catch (...)
 		{
 			string error = "the parameter has some error,please look up the api document.";
 			sendResponseMsg(1003, error, response);
 			return;
 		}
+		fun_query_thread_new(response, username, pfn_info);
 	}
-	else if(operation == "fun_update")
+	else if (operation == "fun_update")
 	{
-		string encryption = "";
-		string fun_name = "";
-    	string fun_desc = "";
-    	string fun_args = "";
-    	string fun_body = "";
-    	string fun_subs = "";
-    	string fun_status = "";
-    	string fun_return = "";
-    	string last_time = "";
-    	string fun_review = "";
-		string fuc_info = "";
+		struct PFNInfo pfn_info;
 		try
 		{
-			if( request_type == "POST")
+			if (request_type == "POST")
 			{
-				if (document.HasMember("encryption")&&document["encryption"].IsString())
+				if (document.HasMember("fun_info"))
 				{
-					encryption = document["encryption"].GetString();
+					Value &fun_info = document["fun_info"];
+					build_PFNInfo(fun_info, pfn_info);
 				}
-				if (document.HasMember("fun_info")&&document["fun_info"].IsString())
-				{
-					fuc_info = document["fun_info"].GetString();
-					Document fucInfo;
-					fucInfo.Parse(fuc_info.c_str());
-					if(fucInfo.HasParseError())
-					{
-						string error = "the post content is not fit the json format, content=" + fuc_info;
-						sendResponseMsg(1003, error, response);
-						return;
-					}
-					if (fucInfo.HasMember("fun_name")&&fucInfo["fun_name"].IsString())
-					{
-						fun_name = fucInfo["fun_name"].GetString();
-					}
-					if (fucInfo.HasMember("fun_desc")&&fucInfo["fun_desc"].IsString())
-					{
-						fun_name = fucInfo["fun_desc"].GetString();
-					}
-					if (fucInfo.HasMember("fun_args")&&fucInfo["fun_args"].IsString())
-					{
-						fun_name = fucInfo["fun_args"].GetString();
-					}
-					if (fucInfo.HasMember("fun_body")&&fucInfo["fun_body"].IsString())
-					{
-						fun_name = fucInfo["fun_body"].GetString();
-					}
-					if (fucInfo.HasMember("fun_subs")&&fucInfo["fun_subs"].IsString())
-					{
-						fun_name = fucInfo["fun_subs"].GetString();
-					}
-					if (fucInfo.HasMember("fun_status")&&fucInfo["fun_status"].IsString())
-					{
-						fun_name = fucInfo["fun_status"].GetString();
-					}
-					if (fucInfo.HasMember("fun_return")&&fucInfo["fun_return"].IsString())
-					{
-						fun_name = fucInfo["fun_return"].GetString();
-					}
-					if (fucInfo.HasMember("last_time")&&fucInfo["last_time"].IsString())
-					{
-						fun_name = fucInfo["last_time"].GetString();
-					}
-					if (fucInfo.HasMember("fun_review")&&fucInfo["fun_review"].IsString())
-					{
-						fun_name = fucInfo["fun_review"].GetString();
-					}
-				}
-				fun_update_thread_new(response, encryption, fun_name, fun_desc, fun_args, fun_body, fun_subs, fun_status, fun_return, last_time, fun_review, username);
 			}
-			else{
+			else
+			{
 				string error = "please use POST";
-				sendResponseMsg (1003,error,response);
+				sendResponseMsg(1003, error, response);
 				return;
 			}
 		}
-		catch(...)
+		catch (...)
 		{
 			string error = "the parameter has some error,please look up the api document.";
 			sendResponseMsg(1003, error, response);
 			return;
 		}
+		fun_update_thread_new(response, username, pfn_info);
 	}
-	else if(operation == "fun_delete")
+	else if (operation == "fun_delete")
 	{
-		string encryption = "";
-		string fun_name = "";
-    	string fun_desc = "";
-    	string fun_args = "";
-    	string fun_body = "";
-    	string fun_subs = "";
-    	string fun_status = "";
-    	string fun_return = "";
-    	string last_time = "";
-    	string fun_review = "";
-		string fuc_info = "";
+		struct PFNInfo pfn_info;
 		try
 		{
-			if( request_type == "POST")
+			if (request_type == "POST")
 			{
-				if (document.HasMember("encryption")&&document["encryption"].IsString())
+				if (document.HasMember("fun_info"))
 				{
-					encryption = document["encryption"].GetString();
+					Value &fun_info = document["fun_info"];
+					build_PFNInfo(fun_info, pfn_info);
 				}
-				if (document.HasMember("fun_info")&&document["fun_info"].IsString())
-				{
-					fuc_info = document["fun_info"].GetString();
-					Document fucInfo;
-					fucInfo.Parse(fuc_info.c_str());
-					if(fucInfo.HasParseError())
-					{
-						string error = "the post content is not fit the json format, content=" + fuc_info;
-						sendResponseMsg(1003, error, response);
-						return;
-					}
-					if (fucInfo.HasMember("fun_name")&&fucInfo["fun_name"].IsString())
-					{
-						fun_name = fucInfo["fun_name"].GetString();
-					}
-					if (fucInfo.HasMember("fun_desc")&&fucInfo["fun_desc"].IsString())
-					{
-						fun_name = fucInfo["fun_desc"].GetString();
-					}
-					if (fucInfo.HasMember("fun_args")&&fucInfo["fun_args"].IsString())
-					{
-						fun_name = fucInfo["fun_args"].GetString();
-					}
-					if (fucInfo.HasMember("fun_body")&&fucInfo["fun_body"].IsString())
-					{
-						fun_name = fucInfo["fun_body"].GetString();
-					}
-					if (fucInfo.HasMember("fun_subs")&&fucInfo["fun_subs"].IsString())
-					{
-						fun_name = fucInfo["fun_subs"].GetString();
-					}
-					if (fucInfo.HasMember("fun_status")&&fucInfo["fun_status"].IsString())
-					{
-						fun_name = fucInfo["fun_status"].GetString();
-					}
-					if (fucInfo.HasMember("fun_return")&&fucInfo["fun_return"].IsString())
-					{
-						fun_name = fucInfo["fun_return"].GetString();
-					}
-					if (fucInfo.HasMember("last_time")&&fucInfo["last_time"].IsString())
-					{
-						fun_name = fucInfo["last_time"].GetString();
-					}
-					if (fucInfo.HasMember("fun_review")&&fucInfo["fun_review"].IsString())
-					{
-						fun_name = fucInfo["fun_review"].GetString();
-					}
-				}
-				fun_delete_thread_new(response, encryption, fun_name, fun_desc, fun_args, fun_body, fun_subs, fun_status, fun_return, last_time, fun_review, username);
 			}
-			else{
+			else
+			{
 				string error = "please use POST";
-				sendResponseMsg (1003,error,response);
+				sendResponseMsg(1003, error, response);
 				return;
 			}
 		}
-		catch(...)
+		catch (...)
 		{
 			string error = "the parameter has some error,please look up the api document.";
 			sendResponseMsg(1003, error, response);
 			return;
 		}
+		fun_delete_thread_new(response, username, pfn_info);
 	}
-	else if(operation == "fun_build")
+	else if (operation == "fun_build")
 	{
-		string encryption = "";
-		string fun_name = "";
-    	string fun_desc = "";
-    	string fun_args = "";
-    	string fun_body = "";
-    	string fun_subs = "";
-    	string fun_status = "";
-    	string fun_return = "";
-    	string last_time = "";
-    	string fun_review = "";
-		string fuc_info = "";
+		struct PFNInfo pfn_info;
 		try
 		{
-			if( request_type == "POST")
+			if (request_type == "POST")
 			{
-				if (document.HasMember("encryption")&&document["encryption"].IsString())
+				if (document.HasMember("fun_info"))
 				{
-					encryption = document["encryption"].GetString();
+					Value &fun_info = document["fun_info"];
+					build_PFNInfo(fun_info, pfn_info);
 				}
-				if (document.HasMember("fun_info")&&document["fun_info"].IsString())
-				{
-					fuc_info = document["fun_info"].GetString();
-					Document fucInfo;
-					fucInfo.Parse(fuc_info.c_str());
-					if(fucInfo.HasParseError())
-					{
-						string error = "the post content is not fit the json format, content=" + fuc_info;
-						sendResponseMsg(1003, error, response);
-						return;
-					}
-					if (fucInfo.HasMember("fun_name")&&fucInfo["fun_name"].IsString())
-					{
-						fun_name = fucInfo["fun_name"].GetString();
-					}
-					if (fucInfo.HasMember("fun_desc")&&fucInfo["fun_desc"].IsString())
-					{
-						fun_name = fucInfo["fun_desc"].GetString();
-					}
-					if (fucInfo.HasMember("fun_args")&&fucInfo["fun_args"].IsString())
-					{
-						fun_name = fucInfo["fun_args"].GetString();
-					}
-					if (fucInfo.HasMember("fun_body")&&fucInfo["fun_body"].IsString())
-					{
-						fun_name = fucInfo["fun_body"].GetString();
-					}
-					if (fucInfo.HasMember("fun_subs")&&fucInfo["fun_subs"].IsString())
-					{
-						fun_name = fucInfo["fun_subs"].GetString();
-					}
-					if (fucInfo.HasMember("fun_status")&&fucInfo["fun_status"].IsString())
-					{
-						fun_name = fucInfo["fun_status"].GetString();
-					}
-					if (fucInfo.HasMember("fun_return")&&fucInfo["fun_return"].IsString())
-					{
-						fun_name = fucInfo["fun_return"].GetString();
-					}
-					if (fucInfo.HasMember("last_time")&&fucInfo["last_time"].IsString())
-					{
-						fun_name = fucInfo["last_time"].GetString();
-					}
-					if (fucInfo.HasMember("fun_review")&&fucInfo["fun_review"].IsString())
-					{
-						fun_name = fucInfo["fun_review"].GetString();
-					}
-				}
-				fun_build_thread_new(response, encryption, fun_name, fun_desc, fun_args, fun_body, fun_subs, fun_status, fun_return, last_time, fun_review, username);
 			}
-			else{
+			else
+			{
 				string error = "please use POST";
-				sendResponseMsg (1003,error,response);
+				sendResponseMsg(1003, error, response);
 				return;
 			}
 		}
-		catch(...)
+		catch (...)
 		{
 			string error = "the parameter has some error,please look up the api document.";
 			sendResponseMsg(1003, error, response);
 			return;
 		}
+		fun_build_thread_new(response, username, pfn_info);
 	}
-	else if(operation == "fun_review")
+	else if (operation == "fun_review")
 	{
-		string encryption = "";
-		string fun_name = "";
-    	string fun_desc = "";
-    	string fun_args = "";
-    	string fun_body = "";
-    	string fun_subs = "";
-    	string fun_status = "";
-    	string fun_return = "";
-    	string last_time = "";
-    	string fun_review = "";
-		string fuc_info = "";
+		struct PFNInfo pfn_info;
 		try
 		{
-			if( request_type == "POST")
+			if (request_type == "POST")
 			{
-				if (document.HasMember("encryption")&&document["encryption"].IsString())
+				if (document.HasMember("fun_info"))
 				{
-					encryption = document["encryption"].GetString();
+					Value &fun_info = document["fun_info"];
+					build_PFNInfo(fun_info, pfn_info);
 				}
-				if (document.HasMember("fun_info")&&document["fun_info"].IsString())
-				{
-					fuc_info = document["fun_info"].GetString();
-					Document fucInfo;
-					fucInfo.Parse(fuc_info.c_str());
-					if(fucInfo.HasParseError())
-					{
-						string error = "the post content is not fit the json format, content=" + fuc_info;
-						sendResponseMsg(1003, error, response);
-						return;
-					}
-					if (fucInfo.HasMember("fun_name")&&fucInfo["fun_name"].IsString())
-					{
-						fun_name = fucInfo["fun_name"].GetString();
-					}
-					if (fucInfo.HasMember("fun_desc")&&fucInfo["fun_desc"].IsString())
-					{
-						fun_name = fucInfo["fun_desc"].GetString();
-					}
-					if (fucInfo.HasMember("fun_args")&&fucInfo["fun_args"].IsString())
-					{
-						fun_name = fucInfo["fun_args"].GetString();
-					}
-					if (fucInfo.HasMember("fun_body")&&fucInfo["fun_body"].IsString())
-					{
-						fun_name = fucInfo["fun_body"].GetString();
-					}
-					if (fucInfo.HasMember("fun_subs")&&fucInfo["fun_subs"].IsString())
-					{
-						fun_name = fucInfo["fun_subs"].GetString();
-					}
-					if (fucInfo.HasMember("fun_status")&&fucInfo["fun_status"].IsString())
-					{
-						fun_name = fucInfo["fun_status"].GetString();
-					}
-					if (fucInfo.HasMember("fun_return")&&fucInfo["fun_return"].IsString())
-					{
-						fun_name = fucInfo["fun_return"].GetString();
-					}
-					if (fucInfo.HasMember("last_time")&&fucInfo["last_time"].IsString())
-					{
-						fun_name = fucInfo["last_time"].GetString();
-					}
-					if (fucInfo.HasMember("fun_review")&&fucInfo["fun_review"].IsString())
-					{
-						fun_name = fucInfo["fun_review"].GetString();
-					}
-				}
-				fun_review_thread_new(response, encryption, fun_name, fun_desc, fun_args, fun_body, fun_subs, fun_status, fun_return, last_time, fun_review, username);
 			}
-			else{
+			else
+			{
 				string error = "please use POST";
-				sendResponseMsg (1003,error,response);
+				sendResponseMsg(1003, error, response);
 				return;
 			}
 		}
-		catch(...)
+		catch (...)
 		{
 			string error = "the parameter has some error,please look up the api document.";
 			sendResponseMsg(1003, error, response);
 			return;
 		}
+		fun_review_thread_new(response, username, pfn_info);
 	}
-	else {
-		string error="the operation "+operation +" has not match handler function";
+	else
+	{
+		string error = "the operation " + operation + " has not match handler function";
 		sendResponseMsg(1100, error, response);
 	}
 }
@@ -3891,17 +3627,29 @@ void quereylog_thread_new(const shared_ptr<HttpServer::Response>& response, stri
 	apiUtil->get_query_log(date, page_no, page_size, &dbQueryLogs);
 	vector<struct DBQueryLogInfo> logList = dbQueryLogs.getQueryLogInfoList();
 	size_t count = logList.size();
-	Document all;
-	Document::AllocatorType &allocator = all.GetAllocator();
-	all.SetObject();
-	rapidjson::Value jsonArray(rapidjson::kArrayType);
+	string line = "";
+	stringstream str_stream;
+	str_stream << "[";
 	for (size_t i = 0; i < count; i++)
 	{
+		if (i > 0)
+		{
+			str_stream << ",";
+		}
 		DBQueryLogInfo log_info = logList[i];
-		rapidjson::Value obj(kObjectType);
-		log_info.toValue(obj, allocator);
-		jsonArray.PushBack(obj, allocator);
+		line = log_info.toJSON();
+		str_stream << line;
 	}
+	str_stream << "]";
+	
+	Document all;
+	Document jsonArray;
+	Document::AllocatorType &allocator = all.GetAllocator();
+	all.SetObject();
+	jsonArray.SetArray();
+	line = str_stream.str();
+	jsonArray.Parse(line.c_str());
+
 	int totalSize = dbQueryLogs.getTotalSize();
 	int totalPage = dbQueryLogs.getTotalPage();
 	all.AddMember("StatusCode", 0, allocator);
@@ -3916,7 +3664,6 @@ void quereylog_thread_new(const shared_ptr<HttpServer::Response>& response, stri
     rapidjson::Writer<StringBuffer> writer(buffer);
     all.Accept(writer);
     string resJson = buffer.GetString();
-	cout << "resJson:\n" << resJson << endl;
 	sendResponseMsg(resJson, response);
 }
 
@@ -3934,18 +3681,29 @@ void accesslog_thread_new(const shared_ptr<HttpServer::Response>& response, stri
 	apiUtil->get_access_log(date, page_no, page_size, &dbAccessLogs);
 	vector<struct DBAccessLogInfo> logList = dbAccessLogs.getAccessLogInfoList();
 	size_t count = logList.size();
-	cout << "get logList size is " <<count <<endl;
-	Document all;
-	Document::AllocatorType &allocator = all.GetAllocator();
-	all.SetObject();
-	rapidjson::Value jsonArray(rapidjson::kArrayType);
+	string line = "";
+	stringstream str_stream;
+	str_stream << "[";
 	for (size_t i = 0; i < count; i++)
 	{
+		if (i > 0)
+		{
+			str_stream << ",";
+		}
 		DBAccessLogInfo log_info = logList[i];
-		rapidjson::Value obj(kObjectType);
-		log_info.toValue(obj, allocator);
-		jsonArray.PushBack(obj, allocator);
+		line = log_info.toJSON();
+		str_stream << line;
 	}
+	str_stream << "]";
+	
+	Document all;
+	Document jsonArray;
+	Document::AllocatorType &allocator = all.GetAllocator();
+	all.SetObject();
+	jsonArray.SetArray();
+	line = str_stream.str();
+	jsonArray.Parse(line.c_str());
+
 	int totalSize = dbAccessLogs.getTotalSize();
 	int totalPage = dbAccessLogs.getTotalPage();
 	all.AddMember("StatusCode", 0, allocator);
@@ -3982,18 +3740,25 @@ void ipmanage_thread_new(const shared_ptr<HttpServer::Response>& response, strin
 		if(IPtype == "3")
 		{
 			sendResponseMsg(1005,"please configure ip_deny_path or ip_allow_path in the conf.ini file first.",response);
-		}
+		}	
+		vector<string> ip_list = apiUtil->ip_list(IPtype);
+		size_t count = ip_list.size();
+		stringstream str_stream;
+		str_stream << "[";
+		for(int i = 0; i < count; i++){
+			if (i > 0)
+			{
+				str_stream << ",";
+			}
+			str_stream << ip_list[i];
+        }
+		str_stream << "]";
 		Document responseBody;
 		Document listDoc;
 		responseBody.SetObject();
 		listDoc.SetArray();
+		listDoc.Parse(str_stream.str().c_str());
 		responseBody.AddMember("ip_type", StringRef(IPtype.c_str()), allocator);
-		vector<string>ip_list = apiUtil->ip_list(IPtype);
-		for(int i = 0 ;i<ip_list.size();i++){
-           Value item(kStringType);
-		   item.SetString(ip_list[i].c_str(), allocator);
-		   listDoc.PushBack(item, allocator);
-        }
 		responseBody.AddMember("ips", listDoc, allocator);
 
 		all.AddMember("StatusCode", 0, allocator);
@@ -4003,8 +3768,7 @@ void ipmanage_thread_new(const shared_ptr<HttpServer::Response>& response, strin
 		Writer<StringBuffer> writer(buffer);
 		all.Accept(writer);
 		string resJson = buffer.GetString();
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
-		return;
+		sendResponseMsg(resJson, response);
 	}
 	else if (type == "2")
 	{
@@ -4016,8 +3780,13 @@ void ipmanage_thread_new(const shared_ptr<HttpServer::Response>& response, strin
 		Util::split(ips,",", ipVector);
         if(ip_type == "1"|| ip_type== "2")
         {
-            if(apiUtil->ip_save(ip_type,ipVector)==false)
+			bool rt = apiUtil->ip_save(ip_type, ipVector);
+            if(rt)
             {
+				sendResponseMsg(0, "success", response);
+            }
+			else
+			{
                 if(ip_type == "1")
                 {
                     sendResponseMsg(1005,"ip_deny_path is not configured, please configure it in the conf.ini file first.",response);
@@ -4026,209 +3795,140 @@ void ipmanage_thread_new(const shared_ptr<HttpServer::Response>& response, strin
                 {
                     sendResponseMsg(1005,"ip_allow_path is not configured, please configure it in the conf.ini file first.",response);
                 }
-            }
-            
+			}
         }
 		else
 		{
 			sendResponseMsg(1003,"ip_type is invalid, please look up the api document.",response);
 		}
-		sendResponseMsg(0, "success", response);
-		return;
 	}
-}
-
-void fun_create_thread_new(const shared_ptr<HttpServer::Response>& response, string encryption ,string fun_name, string fun_desc, string fun_args, string fun_body, string fun_subs, string fun_status, string fun_return, string last_time, string fun_review, string username)
-{
-	struct PFNInfo *pfn_info = nullptr;
-	try{
-		pfn_info = new PFNInfo();
-		if(!fun_name.empty())
-			pfn_info->setFunName(fun_name);
-		if(!fun_desc.empty())
-			pfn_info->setFunDesc(fun_desc);
-		if(!fun_args.empty())
-			pfn_info->setFunArgs(fun_args);
-		if(!fun_body.empty())
-			pfn_info->setFunBody(fun_body);
-		if(!fun_subs.empty())
-			pfn_info->setFunSubs(fun_subs);
-		if(!fun_status.empty())
-			pfn_info->setFunStatus(fun_status);
-		if(!fun_return.empty())
-			pfn_info->setFunReturn(fun_return);
-		if(!last_time.empty())
-			pfn_info->setLastTime(last_time);
-		apiUtil->fun_create(username, pfn_info);
-		delete pfn_info;
-		sendResponseMsg(0,"success",response);
-		return;
-	}
-	catch(const std::exception &e)
+	else
 	{
-		if(pfn_info)
-		{
-			delete pfn_info;
-		}
-		string msg = string(e.what());
-        Util::formatPrint(msg,"ERROR");
-		sendResponseMsg(1005, msg,response);
+		sendResponseMsg(1003, "type is invalid, please look up the api document.", response);
 	}
 }
 
-void fun_query_thread_new(const shared_ptr<HttpServer::Response>& response, string encryption ,string fun_name, string fun_desc, string fun_args, string fun_body, string fun_subs, string fun_status, string fun_return, string last_time, string fun_review, string username)
+void fun_create_thread_new(const shared_ptr<HttpServer::Response> &response, string username, struct PFNInfo &pfn_info)
 {
 	try
 	{
-		Document all;
-		all.SetObject();
+		apiUtil->fun_create(username, &pfn_info);
+		sendResponseMsg(0, "success", response);
+	}
+	catch (const std::exception &e)
+	{
+		string msg = string(e.what());
+		sendResponseMsg(1005, msg, response);
+	}
+}
+
+void fun_query_thread_new(const shared_ptr<HttpServer::Response> &response, string username, struct PFNInfo &pfn_info)
+{
+	try
+	{
 		struct PFNInfos *pfn_infos = new PFNInfos();
-		apiUtil->fun_query(fun_name, fun_status, username, pfn_infos);
+		apiUtil->fun_query(pfn_info.getFunName(), pfn_info.getFunStatus(), username, pfn_infos);
 		vector<struct PFNInfo> list = pfn_infos->getPFNInfoList();
-		rapidjson::Value objectArray(rapidjson::kArrayType);
 		size_t count = list.size();
+		string line = "";
+		stringstream str_stream;
+		str_stream << "[";
 		for (size_t i = 0; i < count; i++)
 		{
-			rapidjson::Document obj(rapidjson::kObjectType);
-			string data = "{\"fun_name\":\""+ list[i].getFunName() +"\",\"fun_args\":\"" + list[i].getFunArgs() + 
-				"\",\"fun_desc\":\"" + list[i].getFunDesc() + "\",\"fun_body\":\"" + list[i].getFunBody() +
-				"\",\"fun_subs\":\"" + list[i].getFunSubs() + "\",\"fun_return\":\"" + list[i].getFunReturn() + 
-				"\",\"fun_status\":\"" + list[i].getFunStatus() + "\",\"last_time\":\"" + list[i].getLastTime() + "\"}";
-			obj.Parse(data.c_str());
-			objectArray.PushBack(obj, all.GetAllocator());
+			if (i > 0)
+			{
+				str_stream << ",";
+			}
+			PFNInfo pfn_info = list[i];
+			line = pfn_info.toJSON();
+			str_stream << line;
 		}
-		all.AddMember("StatusCode", 0, all.GetAllocator());
-		all.AddMember("StatusMsg", "success", all.GetAllocator());
-		all.AddMember("list", objectArray, all.GetAllocator());
+		str_stream << "]";
+
+		Document all;
+		Document jsonArray;
+		Document::AllocatorType &allocator = all.GetAllocator();
+		all.SetObject();
+		jsonArray.SetArray();
+		line = str_stream.str();
+		jsonArray.Parse(line.c_str());
+
+		all.AddMember("StatusCode", 0, allocator);
+		all.AddMember("StatusMsg", "success", allocator);
+		all.AddMember("list", jsonArray, allocator);
+		
 		rapidjson::StringBuffer buffer;
 		rapidjson::Writer<StringBuffer> writer(buffer);
 		all.Accept(writer);
 		string resJson = buffer.GetString();
+
 		sendResponseMsg(resJson, response);
 	}
-	catch(const std::exception &e)
+	catch (const std::exception &e)
 	{
 		string content = "query fail: " + string(e.what());
-		std::cout << content << '\n';
-		sendResponseMsg(1005,content,response);
+		sendResponseMsg(1005, content, response);
 	}
 }
 
-void fun_update_thread_new(const shared_ptr<HttpServer::Response>& response, string encryption ,string fun_name, string fun_desc, string fun_args, string fun_body, string fun_subs, string fun_status, string fun_return, string last_time, string fun_review, string username)
+void fun_update_thread_new(const shared_ptr<HttpServer::Response> &response, string username, struct PFNInfo &pfn_info)
 {
-	struct PFNInfo *pfn_info = nullptr;
-	try{
-		pfn_info = new PFNInfo();
-		if(!fun_name.empty())
-			pfn_info->setFunName(fun_name);
-		if(!fun_desc.empty())
-			pfn_info->setFunDesc(fun_desc);
-		if(!fun_args.empty())
-			pfn_info->setFunArgs(fun_args);
-		if(!fun_body.empty())
-			pfn_info->setFunBody(fun_body);
-		if(!fun_subs.empty())
-			pfn_info->setFunSubs(fun_subs);
-		if(!fun_status.empty())
-			pfn_info->setFunStatus(fun_status);
-		if(!fun_return.empty())
-			pfn_info->setFunReturn(fun_return);
-		if(!last_time.empty())
-			pfn_info->setLastTime(last_time);
-		apiUtil->fun_update(username, pfn_info);
-		delete pfn_info;
-		sendResponseMsg(0,"success",response);
-	}
-	catch(const std::exception &e)
+	try
 	{
-		if(pfn_info)
+		apiUtil->fun_update(username, &pfn_info);
+		sendResponseMsg(0, "success", response);
+	}
+	catch (const std::exception &e)
+	{
+		string msg = string(e.what());
+		sendResponseMsg(1005, msg, response);
+	}
+}
+
+void fun_delete_thread_new(const shared_ptr<HttpServer::Response> &response, string username, struct PFNInfo &pfn_info)
+{
+	try
+	{
+		apiUtil->fun_delete(username, &pfn_info);
+		sendResponseMsg(0, "success", response);
+	}
+	catch (const std::exception &e)
+	{
+		string msg = string(e.what());
+		sendResponseMsg(1005, msg, response);
+	}
+}
+
+void fun_build_thread_new(const shared_ptr<HttpServer::Response> &response, string username, struct PFNInfo &pfn_info)
+{
+	try
+	{
+		string result = apiUtil->fun_build(username, pfn_info.getFunName());
+		if (result == "")
 		{
-			delete pfn_info;
+			sendResponseMsg(0, "success", response);
 		}
-		string msg = string(e.what());
-        Util::formatPrint(msg,"ERROR");
-		sendResponseMsg(1005, msg,response);
-	}
-}
-
-void fun_delete_thread_new(const shared_ptr<HttpServer::Response>& response, string encryption ,string fun_name, string fun_desc, string fun_args, string fun_body, string fun_subs, string fun_status, string fun_return, string last_time, string fun_review, string username)
-{
-	struct PFNInfo *pfn_info = nullptr;
-	try{
-		pfn_info = new PFNInfo();
-		if(!fun_name.empty())
-			pfn_info->setFunName(fun_name);
-		if(!fun_desc.empty())
-			pfn_info->setFunDesc(fun_desc);
-		if(!fun_args.empty())
-			pfn_info->setFunArgs(fun_args);
-		if(!fun_body.empty())
-			pfn_info->setFunBody(fun_body);
-		if(!fun_subs.empty())
-			pfn_info->setFunSubs(fun_subs);
-		if(!fun_status.empty())
-			pfn_info->setFunStatus(fun_status);
-		if(!fun_return.empty())
-			pfn_info->setFunReturn(fun_return);
-		if(!last_time.empty())
-			pfn_info->setLastTime(last_time);
-		apiUtil->fun_delete(username, pfn_info);
-		delete pfn_info;
-		sendResponseMsg(0,"success",response);
-	}
-	catch(const std::exception &e)
-	{
-		if(pfn_info)
+		else
 		{
-			delete pfn_info;
+			sendResponseMsg(1005, result, response);
 		}
-		string msg = string(e.what());
-        Util::formatPrint(msg,"ERROR");
-		sendResponseMsg(1005, msg,response);
 	}
-}
-
-void fun_build_thread_new(const shared_ptr<HttpServer::Response>& response, string encryption ,string fun_name, string fun_desc, string fun_args, string fun_body, string fun_subs, string fun_status, string fun_return, string last_time, string fun_review, string username)
-{
-	try{
-		apiUtil->fun_build(username, fun_name);
-		sendResponseMsg(0,"success",response);
-	}
-	catch(const std::exception &e)
+	catch (const std::exception &e)
 	{
 		string msg = string(e.what());
-        Util::formatPrint(msg,"ERROR");
-		sendResponseMsg(1005, msg,response);
+		sendResponseMsg(1005, msg, response);
 	}
 }
 
-void fun_review_thread_new(const shared_ptr<HttpServer::Response>& response, string encryption ,string fun_name, string fun_desc, string fun_args, string fun_body, string fun_subs, string fun_status, string fun_return, string last_time, string fun_review, string username)
+void fun_review_thread_new(const shared_ptr<HttpServer::Response> &response, string username, struct PFNInfo &pfn_info)
 {
-	struct PFNInfo *pfn_info = nullptr;
-	Document all;
-	all.SetObject();
-	try{
-		pfn_info = new PFNInfo();
-		if(!fun_name.empty())
-			pfn_info->setFunName(fun_name);
-		if(!fun_desc.empty())
-			pfn_info->setFunDesc(fun_desc);
-		if(!fun_args.empty())
-			pfn_info->setFunArgs(fun_args);
-		if(!fun_body.empty())
-			pfn_info->setFunBody(fun_body);
-		if(!fun_subs.empty())
-			pfn_info->setFunSubs(fun_subs);
-		if(!fun_status.empty())
-			pfn_info->setFunStatus(fun_status);
-		if(!fun_return.empty())
-			pfn_info->setFunReturn(fun_return);
-		if(!last_time.empty())
-			pfn_info->setLastTime(last_time);
-		apiUtil->fun_review(username, pfn_info);
-		string content = pfn_info->getFunBody();
+	try
+	{
+		apiUtil->fun_review(username, &pfn_info);
+		string content = pfn_info.getFunBody();
 		content = Util::urlEncode(content);
-		delete pfn_info;
+		Document all;
+		all.SetObject();
 		all.AddMember("StatusCode", 0, all.GetAllocator());
 		all.AddMember("StatusMsg", "success", all.GetAllocator());
 		all.AddMember("result", StringRef(content.c_str()), all.GetAllocator());
@@ -4238,14 +3938,41 @@ void fun_review_thread_new(const shared_ptr<HttpServer::Response>& response, str
 		string resJson = buffer.GetString();
 		sendResponseMsg(resJson, response);
 	}
-	catch(const std::exception &e)
+	catch (const std::exception &e)
 	{
-		if(pfn_info)
-		{
-			delete pfn_info;
-		}
 		string msg = string(e.what());
-        Util::formatPrint(msg,"ERROR");
-		sendResponseMsg(1005, msg,response);
+		sendResponseMsg(1005, msg, response);
+	}
+}
+
+void build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo &pfn_info)
+{
+	if (fun_info.HasMember("fun_name") && fun_info["fun_name"].IsString())
+	{
+		pfn_info.setFunName(fun_info["fun_name"].GetString());
+	}
+	if (fun_info.HasMember("fun_desc") && fun_info["fun_desc"].IsString())
+	{
+		pfn_info.setFunDesc(fun_info["fun_desc"].GetString());
+	}
+	if (fun_info.HasMember("fun_args") && fun_info["fun_args"].IsString())
+	{
+		pfn_info.setFunArgs(fun_info["fun_args"].GetString());
+	}
+	if (fun_info.HasMember("fun_body") && fun_info["fun_body"].IsString())
+	{
+		pfn_info.setFunBody(fun_info["fun_body"].GetString());
+	}
+	if (fun_info.HasMember("fun_subs") && fun_info["fun_subs"].IsString())
+	{
+		pfn_info.setFunSubs(fun_info["fun_subs"].GetString());
+	}
+	if (fun_info.HasMember("fun_status") && fun_info["fun_status"].IsString())
+	{
+		pfn_info.setFunArgs(fun_info["fun_status"].GetString());
+	}
+	if (fun_info.HasMember("fun_return") && fun_info["fun_return"].IsString())
+	{
+		pfn_info.setFunReturn(fun_info["fun_return"].GetString());
 	}
 }
