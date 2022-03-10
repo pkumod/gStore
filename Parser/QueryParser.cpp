@@ -108,8 +108,26 @@ void QueryParser::printQueryTree()
 }
 
 /**
+	queryUnit : query ;
+	Visit node queryUnit: recursively call visit on its only child node query.
+	(Redundant, can be removed without affecting QueryParser's function)
+
+	@param ctx pointer to queryUnit's context.
+	@return a dummy antlrcpp::Any object.
+*/
+antlrcpp::Any QueryParser::visitQueryUnit(SPARQLParser::QueryUnitContext *ctx)
+{
+	// printNode(ctx, "queryUnit");
+
+	visit(ctx->query());
+
+	return antlrcpp::Any();
+}
+
+/**
 	query : prologue( selectquery | constructquery | describequery | askquery )valuesClause ;
 	Visit node query: recursively call visit on each of its children.
+	(Redundant, can be removed without affecting QueryParser's function)
 
 	@param ctx pointer to query's context.
 	@return a dummy antlrcpp::Any object.
@@ -177,6 +195,10 @@ antlrcpp::Any QueryParser::visitAskquery(SPARQLParser::AskqueryContext *ctx)
 {
 	query_tree_ptr->setQueryForm(QueryTree::Ask_Query);
 	query_tree_ptr->setProjectionAsterisk();
+
+	// Add DISTINCT and LIMIT 1 to speed up query execution
+	query_tree_ptr->setProjectionModifier(QueryTree::Modifier_Distinct);
+	query_tree_ptr->setLimit(1);
 
 	// datasetClause not supported
 
@@ -442,6 +464,57 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 
 				proj_var.var = varCtx->getText();
 				
+			}
+			else if (tmp == "PFN") //Personalized Function
+			{
+				query_tree_ptr->addProjectionVar();
+				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+				proj_var.aggregate_type = QueryTree::ProjectionVar::PFN_type;
+				// set iri_set
+				auto iriSet = bicCtx->varOrIriSet()->varOrIri();
+				for (auto iri : iriSet)
+				{
+					string prefixedIri = iri->getText();
+					replacePrefix(prefixedIri);
+					proj_var.path_args.iri_set.push_back(prefixedIri);
+				}
+				// set src and dst when iri_set size is two 
+				if (proj_var.path_args.iri_set.size() == 2)
+				{
+					proj_var.path_args.src = proj_var.path_args.iri_set[0];
+					proj_var.path_args.dst = proj_var.path_args.iri_set[1];
+				}
+				
+				// set pred_set
+				auto predSet = bicCtx->predSet()->iri();
+				for (auto pred : predSet)
+				{
+					string prefixedPred = pred->getText();
+					replacePrefix(prefixedPred);
+					proj_var.path_args.pred_set.push_back(prefixedPred);
+				}
+				// set k
+				if (bicCtx->integer_positive())
+				{
+					proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_positive()));
+				}
+				else if (bicCtx->integer_negative())
+				{
+					proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_negative()));
+				}
+				else
+				{
+					proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer(0)));
+				}
+				// set directed
+				if (bicCtx->booleanLiteral()->getText() == "true")
+					proj_var.path_args.directed = true;
+				else
+					proj_var.path_args.directed = false;
+				// set fun_name
+				proj_var.path_args.fun_name = bicCtx->string()->getText();
+				proj_var.var = varCtx->getText();
+				cout<< "PFN fun_name: " << proj_var.path_args.fun_name << endl;
 			}
 			else if (tmp == "CONTAINS")	// Original built-in calls, may add others later
 			{
@@ -741,6 +814,9 @@ antlrcpp::Any QueryParser::visitGroupGraphPattern(SPARQLParser::GroupGraphPatter
 antlrcpp::Any QueryParser::visitGroupGraphPatternSub(SPARQLParser::GroupGraphPatternSubContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
+	if (firstVisitGroupGraphPatternSub && ctx->graphPatternTriplesBlock().empty())
+		query_tree_ptr->setSingleBGP(true);
+	firstVisitGroupGraphPatternSub = false;
 	if (ctx->triplesBlock())
 		visitTriplesBlock(ctx->triplesBlock(), group_pattern);
 	for (auto graphPatternTriplesBlock : ctx->graphPatternTriplesBlock())

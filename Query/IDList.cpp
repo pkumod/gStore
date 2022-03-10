@@ -16,17 +16,17 @@ IDList::IDList()
 }
 
 //return the _i-th id of the list if _i exceeds, return -1 
-unsigned
-IDList::getID(unsigned _i) const
-{
-	if (this->size() > _i)
-	{
-		return this->id_list[_i];
-	}
-
-	//return -1;
-	return INVALID;
-}
+//inline unsigned
+//IDList::getID(unsigned _i) const
+//{
+//	if (this->size() > _i)
+//	{
+//		return this->id_list[_i];
+//	}
+//
+//	//return -1;
+//	return INVALID;
+//}
 
 bool
 IDList::addID(unsigned _id)
@@ -126,10 +126,16 @@ IDList::copy(const IDList* _new_idlist)
 	this->id_list = *(_new_idlist->getList());
 }
 
+/**
+ * Intersect With other List and change this IDList
+ * @param _id_list the other(will not change)
+ * @param _list_len the length of the other(will not change)
+ * @return how many items have been removed
+ */
 unsigned
 IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
 {
-	if (_id_list == NULL || _list_len == 0)
+	if (_id_list == nullptr || _list_len == 0)
 	{
 		int remove_number = this->id_list.size();
 		this->id_list.clear();
@@ -142,9 +148,9 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
 	//n>0 m=nk(0<k<1) 
 	//compare n(k+1) and nklogn: k0 = log(n/2)2 requiring that n>2
 	//k<=k0 binary search; k>k0 intersect
-	int method = -1; //0: intersect 1: search in vector 2: search in int*
-	unsigned n = this->id_list.size();
-	double k = 0;
+	int method; //0: intersect 1: search in vector 2: search in int*
+	auto n = this->id_list.size();
+	double k;
 	if (n < _list_len)
 	{
 		k = (double)n / (double)_list_len;
@@ -165,7 +171,7 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
 			method = 0;
 	}
 
-	int remove_number = 0;
+	int remove_number;
 	switch (method)
 	{
 	case 0:
@@ -486,4 +492,161 @@ IDList::bsearch_uporder(unsigned _key)
 std::vector<unsigned>::iterator 
 IDList::eraseAt(std::vector<unsigned>::iterator  it){
 	return id_list.erase( it);
+}
+
+void IDList::reserve(size_t size) {
+  id_list.reserve(size);
+}
+
+void IDListWithAppending::Init(const TYPE_ENTITY_LITERAL_ID* id_list, size_t records_num, size_t one_record_len, size_t main_key_position)
+{
+  for(decltype(records_num) i =0;i<records_num;i++)
+  {
+    auto record_p = id_list + one_record_len * i;
+    auto attached = make_shared<std::vector<TYPE_ENTITY_LITERAL_ID>>();
+    TYPE_ENTITY_LITERAL_ID main_key;
+    for(decltype(one_record_len) j = 0; j<one_record_len; j++)
+    {
+      if(j == main_key_position)
+        main_key = record_p[j];
+      else
+        attached->push_back(record_p[j]);
+    }
+    this->contents_->insert(make_pair(main_key,attached));
+  }
+}
+
+
+/**
+ *
+ * @param id_list of size records_num * records_num
+ * @param records_num
+ * @param records_num
+ * @param main_key_position the position inside a record
+ */
+IDListWithAppending::IDListWithAppending(TYPE_ENTITY_LITERAL_ID* id_list, size_t records_num,
+                                         size_t one_record_len, size_t main_key_position):
+    contents_(std::make_shared<std::remove_reference<decltype(*contents_)>::type>())
+{
+  Init(id_list,records_num,one_record_len,main_key_position);
+}
+
+IDListWithAppending::IDListWithAppending(const IDList &id_list):
+    contents_(std::make_shared<std::remove_reference<decltype(*contents_)>::type>()) {
+  Init(id_list.getList()->data(),id_list.size(),1,0);
+}
+
+/**
+ * Intersection other list, and change itself
+ * @param id_list
+ * @param records_num
+ * @param one_record_len
+ * @param main_key_position
+ */
+void IDListWithAppending::Intersect(const TYPE_ENTITY_LITERAL_ID* id_list, size_t record_num, size_t one_record_len, size_t main_key_position)
+{
+  enum class SearchMethod{EqualIntersect,SearchMyself,SearchInput} search_method;
+  // it means you cannot search ids in the id_list
+  if(main_key_position!=0)
+  {
+    search_method = SearchMethod::SearchMyself;
+  }
+  else
+  {
+    unsigned size_myself = this->contents_->size();
+    double relative_ratio = 0;
+    if (size_myself < record_num) {
+      relative_ratio = (double) size_myself / (double) record_num;
+      size_myself = record_num;
+      search_method = SearchMethod::SearchInput;
+    } else {
+      relative_ratio = (double) record_num / (double) size_myself;
+      search_method = SearchMethod::SearchMyself;
+    }
+
+    if (size_myself <= 2)
+      search_method = SearchMethod::EqualIntersect;
+
+    else {
+      double limit = Util::logarithm(size_myself / 2, 2);
+      if (relative_ratio > limit)
+        search_method = SearchMethod::EqualIntersect;
+    }
+  }
+
+  auto old_content = this->contents_;
+  auto new_content = make_shared<remove_reference<decltype((*this->contents_))>::type>();
+  auto self_it = old_content->begin();
+  auto self_last = old_content->end();
+  auto other_it = id_list;
+  auto other_last = id_list + (record_num * one_record_len);
+
+  if(search_method == SearchMethod::EqualIntersect)
+  {
+    // below are copied from the implement of std::set_intersection
+    while (self_it != self_last && other_it != other_last)
+    {
+      auto other_key = other_it[main_key_position];
+      if (self_it->first < other_key)
+        ++self_it;
+      else
+      {
+        if (other_key == self_it->first)
+        {
+          auto attached = (self_it++)->second;
+          for(decltype(one_record_len) j = 0; j<one_record_len; j++)
+            if(j != main_key_position)
+              attached->push_back(other_it[j]);
+          (*new_content)[other_key] = attached;
+        }
+        other_it += one_record_len;
+      }
+    }
+  }
+  else if(search_method == SearchMethod::SearchMyself)
+  {
+    for (;other_it!=other_last;other_it += one_record_len)
+    {
+      auto other_key = other_it[main_key_position];
+      if(this->contents_->find(other_key) != this->contents_->end())
+      {
+        auto attached = this->contents_->find(other_key)->second;
+        for (decltype(one_record_len) j = 0; j < one_record_len; j++)
+          if (j != main_key_position)
+            attached->push_back(other_it[j]);
+        (*new_content)[other_key] = attached;
+      }
+    }
+
+  }
+  else if(search_method == SearchMethod::SearchInput)
+  {
+    // main_key_position must be 0
+    for (;self_it!=self_last;self_it++)
+    {
+      auto self_main_key = self_it->first;
+      // copied from cppreference.com, the example of bsearch
+      auto p = static_cast<TYPE_ENTITY_LITERAL_ID *>(
+          std::bsearch(&self_main_key,other_it,record_num,
+                       one_record_len*sizeof(TYPE_ENTITY_LITERAL_ID),
+                       [](const void* x, const void* y) {
+                         const auto arg1 = *static_cast<const TYPE_ENTITY_LITERAL_ID*>(x);
+                         const auto arg2 = *static_cast<const TYPE_ENTITY_LITERAL_ID*>(y);
+                         if (arg1 < arg2) return -1;
+                         if (arg1 > arg2) return 1;
+                         return 0;}
+                         ));
+      if(p != nullptr)
+      {
+        auto attached = self_it->second;
+        for (decltype(one_record_len) j = 0; j < one_record_len; j++)
+          if (j != main_key_position)
+            attached->push_back(p[j]);
+        (*new_content)[self_main_key] = attached;
+      }
+    }
+  }
+  else
+    throw string("Merge method error");
+
 }

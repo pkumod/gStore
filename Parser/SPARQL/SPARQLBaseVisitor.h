@@ -1,5 +1,5 @@
 
-// Generated from ./SPARQL.g4 by ANTLR 4.7.2
+// Generated from ./SPARQL.g4 by ANTLR 4.9
 
 #pragma once
 
@@ -452,6 +452,10 @@ public:
   }
 
   virtual antlrcpp::Any visitVarOrIri(SPARQLParser::VarOrIriContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitVarOrIriSet(SPARQLParser::VarOrIriSetContext *ctx) override {
     return visitChildren(ctx);
   }
 

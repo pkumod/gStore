@@ -1,14 +1,164 @@
 syntax="proto2";
+import "google/protobuf/any.proto";
 
-message EchoRequest {
-    optional string message = 1;
-    optional string name = 2;
+message CommonRequest {
+    required string username = 1;
+    required string password = 2;
+    optional string operation = 3;
+    optional string encryption = 4;
+    // for build
+    optional string db_name = 5;
+    optional string db_path = 6;
+    // for load
+    optional string load_csr = 7;
+    // for drop
+    optional string is_backup = 8;
+    // for user manager
+    optional string type = 9;
+    optional string op_username = 10;
+    optional string op_password = 11;
+    // for user privilege
+    optional string privileges = 12;
+    // for backup
+    optional string backup_path = 13;
+    // for query
+    optional string sparql = 14;
+    optional string format = 15;
+    // for begin
+    optional string isolevel = 16;
+    // for tquery
+    optional string tid = 17;
+    // for batch insert and remove
+    optional string file = 18;
+    // for query log and access log
+    optional string date = 19;
+    optional int32 pageNo = 20;
+    optional int32 pageSize = 21;
+    // for ip manage
+    optional string ip_type = 22;
+    optional string ips = 23;
+    // for personalized function
+    optional FunInfo fun_info = 24;
 };
 
-message EchoResponse {
-    optional string message = 1;
+message Monitor {
+    optional string database = 1;
+    optional string creator = 2;
+    optional string built_time = 3;
+    optional string triple_num = 4;
+    optional int32 entity_num = 5;
+    optional int32 literal_num = 6;
+    optional int32 subject_num = 7;
+    optional int32 predicate_num = 8;
+    optional int32 connection_num = 9;
 };
 
-service Example {
-     rpc Echo(EchoRequest) returns (EchoResponse);
+message UserInfo {
+    optional string username = 1;
+    optional string password = 2;
+    optional string query_privilege = 3;
+    optional string update_privilege = 4;
+    optional string load_privilege = 5;
+    optional string unload_privilege = 6;
+    optional string backup_privilege = 7;
+    optional string restore_privilege = 8;
+    optional string export_privilege = 9;
+};
+
+message DBInfo {
+    optional string database = 1;
+    optional string creator = 2;
+    optional string built_time = 3;
+    optional string status = 4;
+};
+
+message QueryHeadInfo {
+    repeated string link = 1; 
+    repeated string vars = 2;
+};
+
+message QueryResultInfo {
+    repeated string bindings = 1;
+};
+
+message TxnLogInfo {
+    optional string db_name = 1;
+    optional string TID = 2;
+    optional string user = 3;
+    optional string begin_time = 4;
+    optional string state = 5;
+    optional string end_time = 6;
+};
+
+message QueryLogInfo {
+    optional string QueryDateTime = 1;
+    optional string Sparql = 2;
+    optional string Format = 3;
+    optional string RemoteIP = 4;
+    optional string FileName = 5;
+    optional int32 QueryTime = 6;
+    optional int32 AnsNum = 7;
+};
+
+message AccessLogInfo {
+    optional string ip = 1;
+    optional string operation = 2;
+    optional string createtime = 3;
+    optional int32 code = 4;
+    optional string msg = 5;
+}
+
+message IPManageInfo {
+    optional string ip_type = 1;
+    repeated string ips = 2;
+}
+
+message FunInfo {
+    optional string fun_name = 1;
+    optional string fun_desc = 2;
+    optional string fun_args = 3;
+    optional string fun_body = 4;
+    optional string fun_subs = 5;
+    optional string fun_status = 6;
+    optional string fun_return = 7;
+    optional string last_time = 8;
+    optional string fun_review = 9;
+}
+
+message CommonResponse {
+    optional int32 StatusCode = 1;
+    optional string StatusMsg = 2;
+    // for monitor showUser showDb
+    repeated google.protobuf.Any ResponseBody = 3;
+    // for query
+    optional QueryHeadInfo head = 4;
+    optional QueryResultInfo results = 5;
+    optional int32 AnsNum = 6;
+    optional int32 OutputLimit = 7;
+    optional string ThreadId = 8;
+    optional string QueryTime = 9;
+    // for export
+    optional string filepath = 10;
+    // for begin
+    optional string TID = 11;
+    // for txnLog queryLog accessLog
+    repeated google.protobuf.Any list = 12;
+    // for getCoreVersion
+    optional string CoreVersion = 13;
+    optional string licensetype = 14;
+    // for batch insert and remove
+    optional string success_num = 15;
+    // for queryLog and accessLog
+    optional int32 totalSize = 16;
+    optional int32 totalPage = 17;
+    optional int32 pageNo = 18;
+    optional int32 pageSize = 19;
+    // for backup
+    optional string backupfilepath=20;
+    // for personalized function
+    optional string Result = 21;
+};
+
+service grpc {
+     rpc api(CommonRequest) returns (CommonResponse);
 };

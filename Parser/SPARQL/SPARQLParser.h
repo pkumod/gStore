@@ -1,5 +1,5 @@
 
-// Generated from ./SPARQL.g4 by ANTLR 4.7.2
+// Generated from ./SPARQL.g4 by ANTLR 4.9
 
 #pragma once
 
@@ -50,7 +50,7 @@ public:
     STRING_LITERAL_LONG2 = 171, ECHAR = 172, NIL = 173, WS = 174, ANON = 175, 
     PN_CHARS_BASE = 176, PN_CHARS_U = 177, VARNAME = 178, PN_CHARS = 179, 
     PN_PREFIX = 180, PN_LOCAL = 181, PLX = 182, PERCENT = 183, HEX = 184, 
-    PN_LOCAL_ESC = 185
+    PN_LOCAL_ESC = 185, K_PFN = 186
   };
 
   enum {
@@ -84,24 +84,24 @@ public:
     RulePathNegatedPropertySet = 98, RulePathOneInPropertySet = 99, RuleTriplesNode = 100, 
     RuleBlankNodepropertyList = 101, RuleTriplesNodepath = 102, RuleBlankNodepropertyListpath = 103, 
     RuleCollection = 104, RuleCollectionpath = 105, RuleGraphNode = 106, 
-    RuleGraphNodepath = 107, RuleVarOrTerm = 108, RuleVarOrIri = 109, RuleVar = 110, 
-    RuleGraphTerm = 111, RuleExpression = 112, RuleConditionalOrexpression = 113, 
-    RuleConditionalAndexpression = 114, RuleValueLogical = 115, RuleRelationalexpression = 116, 
-    RuleNumericexpression = 117, RuleAdditiveexpression = 118, RuleMultiplicativeexpression = 119, 
-    RuleUnaryexpression = 120, RulePrimaryexpression = 121, RuleBrackettedexpression = 122, 
-    RulePredSet = 123, RuleBuiltInCall = 124, RuleRegexexpression = 125, 
-    RuleSubstringexpression = 126, RuleStrReplaceexpression = 127, RuleExistsFunc = 128, 
-    RuleNotexistsFunc = 129, RuleAggregate = 130, RuleIriOrFunction = 131, 
-    RuleRDFLiteral = 132, RuleNumericLiteral = 133, RuleNumericLiteralUnsigned = 134, 
-    RuleNumericLiteralPositive = 135, RuleNumericLiteralNegative = 136, 
-    RuleNum_integer = 137, RuleNum_decimal = 138, RuleNum_double = 139, 
-    RuleInteger_positive = 140, RuleDecimal_positive = 141, RuleDouble_positive = 142, 
-    RuleInteger_negative = 143, RuleDecimal_negative = 144, RuleDouble_negative = 145, 
-    RuleBooleanLiteral = 146, RuleString = 147, RuleIri = 148, RulePrefixedName = 149, 
-    RuleBlankNode = 150
+    RuleGraphNodepath = 107, RuleVarOrTerm = 108, RuleVarOrIri = 109, RuleVarOrIriSet = 110, 
+    RuleVar = 111, RuleGraphTerm = 112, RuleExpression = 113, RuleConditionalOrexpression = 114, 
+    RuleConditionalAndexpression = 115, RuleValueLogical = 116, RuleRelationalexpression = 117, 
+    RuleNumericexpression = 118, RuleAdditiveexpression = 119, RuleMultiplicativeexpression = 120, 
+    RuleUnaryexpression = 121, RulePrimaryexpression = 122, RuleBrackettedexpression = 123, 
+    RulePredSet = 124, RuleBuiltInCall = 125, RuleRegexexpression = 126, 
+    RuleSubstringexpression = 127, RuleStrReplaceexpression = 128, RuleExistsFunc = 129, 
+    RuleNotexistsFunc = 130, RuleAggregate = 131, RuleIriOrFunction = 132, 
+    RuleRDFLiteral = 133, RuleNumericLiteral = 134, RuleNumericLiteralUnsigned = 135, 
+    RuleNumericLiteralPositive = 136, RuleNumericLiteralNegative = 137, 
+    RuleNum_integer = 138, RuleNum_decimal = 139, RuleNum_double = 140, 
+    RuleInteger_positive = 141, RuleDecimal_positive = 142, RuleDouble_positive = 143, 
+    RuleInteger_negative = 144, RuleDecimal_negative = 145, RuleDouble_negative = 146, 
+    RuleBooleanLiteral = 147, RuleString = 148, RuleIri = 149, RulePrefixedName = 150, 
+    RuleBlankNode = 151
   };
 
-  SPARQLParser(antlr4::TokenStream *input);
+  explicit SPARQLParser(antlr4::TokenStream *input);
   ~SPARQLParser();
 
   virtual std::string getGrammarFileName() const override;
@@ -221,6 +221,7 @@ public:
   class GraphNodepathContext;
   class VarOrTermContext;
   class VarOrIriContext;
+  class VarOrIriSetContext;
   class VarContext;
   class GraphTermContext;
   class ExpressionContext;
@@ -2122,6 +2123,22 @@ public:
 
   VarOrIriContext* varOrIri();
 
+  class  VarOrIriSetContext : public antlr4::ParserRuleContext {
+  public:
+    VarOrIriSetContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<VarOrIriContext *> varOrIri();
+    VarOrIriContext* varOrIri(size_t i);
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  VarOrIriSetContext* varOrIriSet();
+
   class  VarContext : public antlr4::ParserRuleContext {
   public:
     VarContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -2442,6 +2459,9 @@ public:
     antlr4::tree::TerminalNode *K_KHOPENUMERATE();
     antlr4::tree::TerminalNode *K_KHOPREACHABLEPATH();
     antlr4::tree::TerminalNode *K_PPR();
+    antlr4::tree::TerminalNode *K_PFN();
+    VarOrIriSetContext *varOrIriSet();
+    StringContext *string();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;

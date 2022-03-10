@@ -1,5 +1,5 @@
 
-// Generated from ./SPARQL.g4 by ANTLR 4.7.2
+// Generated from ./SPARQL.g4 by ANTLR 4.9
 
 #pragma once
 
@@ -53,7 +53,7 @@ public:
     PN_LOCAL_ESC = 185
   };
 
-  SPARQLLexer(antlr4::CharStream *input);
+  explicit SPARQLLexer(antlr4::CharStream *input);
   ~SPARQLLexer();
 
   virtual std::string getGrammarFileName() const override;

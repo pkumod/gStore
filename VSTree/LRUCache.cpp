@@ -22,14 +22,14 @@ using namespace std;
 //whole vstree memory cost almost 20G  
 //What is more, if the system memory is enough(precisely, the memory you want to assign to gstore), 
 //we can also set the sig length larger(which should be included in config file)
-//int LRUCache::DEFAULT_CAPACITY = 10000000;
-int LRUCache::DEFAULT_CAPACITY = 1 * 1000 * 1000;  //about 20G memory for vstree
-//int LRUCache::DEFAULT_CAPACITY = 1000;
+//int gstore::LRUCache::DEFAULT_CAPACITY = 10000000;
+int gstore::LRUCache::DEFAULT_CAPACITY = 1 * 1000 * 1000;  //about 20G memory for vstree
+//int gstore::LRUCache::DEFAULT_CAPACITY = 1000;
 //NOTICE:10^6 is a good parameter, at most use 20G
 
 //NOTICE: it is ok to set it 4000000 when building!!!  better to adjust according to the current memory usage
 //also use 2000000 or smaller for query()
-LRUCache::LRUCache(int _capacity)
+gstore::LRUCache::LRUCache(int _capacity)
 {
 	//initialize the lock
 #ifdef THREAD_VSTREE_ON
@@ -39,7 +39,7 @@ LRUCache::LRUCache(int _capacity)
 	//cout<<"size of VNODE: "<<sizeof(VNode)<<endl;
 	cout<<"size of VNODE: "<<VNode::VNODE_SIZE<<endl;
 	cout << "LRUCache initial..." << endl;
-	this->capacity = _capacity > 0 ? _capacity : LRUCache::DEFAULT_CAPACITY;
+	this->capacity = _capacity > 0 ? _capacity : gstore::LRUCache::DEFAULT_CAPACITY;
 
 	//DEBUG:it seems that a minium size is required, for example, multiple path down(the height?)
 	//at least 3*h
@@ -62,15 +62,15 @@ LRUCache::LRUCache(int _capacity)
 	}
 
 	//prev and next are used to implement the LRU strategy
-	this->next[LRUCache::START_INDEX] = LRUCache::END_INDEX;
-	this->next[LRUCache::END_INDEX] = LRUCache::NULL_INDEX;
-	this->prev[LRUCache::START_INDEX] = LRUCache::NULL_INDEX;
-	this->prev[LRUCache::END_INDEX] = LRUCache::START_INDEX;
+	this->next[gstore::LRUCache::START_INDEX] = gstore::LRUCache::END_INDEX;
+	this->next[gstore::LRUCache::END_INDEX] = gstore::LRUCache::NULL_INDEX;
+	this->prev[gstore::LRUCache::START_INDEX] = gstore::LRUCache::NULL_INDEX;
+	this->prev[gstore::LRUCache::END_INDEX] = gstore::LRUCache::START_INDEX;
 	this->size = 0;
 	cout << "LRUCache initial finish" << endl;
 }
 
-LRUCache::~LRUCache()
+gstore::LRUCache::~LRUCache()
 {
 	delete[] this->next;
 	delete[] this->prev;
@@ -89,14 +89,14 @@ LRUCache::~LRUCache()
 
 //NOTICE:this must be done in one thread(and only one time)
 //load cache's elements from an exist data file. 
-bool LRUCache::loadCache(string _filePath)
+bool gstore::LRUCache::loadCache(string _filePath)
 {
 	this->dataFilePath = _filePath;
 
 	FILE* filePtr = fopen(this->dataFilePath.c_str(), "rb");
 	if (filePtr == NULL)
 	{
-		cerr << "error, can not load an exist data file. @LRUCache::loadCache" << endl;
+		cerr << "error, can not load an exist data file. @gstore::LRUCache::loadCache" << endl;
 		return false;
 	}
 
@@ -111,7 +111,7 @@ bool LRUCache::loadCache(string _filePath)
 
 	if (flag != 0)
 	{
-		cerr << "error,can't seek to the fileLine. @LRUCache::loadCache" << endl;
+		cerr << "error,can't seek to the fileLine. @gstore::LRUCache::loadCache" << endl;
 		return false;
 	}
 
@@ -146,7 +146,7 @@ bool LRUCache::loadCache(string _filePath)
 
 		//this->size if the real size, while DEFAULT_NUM is the prefix
 		//To maintain a double-linked list, the pos 0 is head, while the pos 1 is tail
-		int pos = LRUCache::DEFAULT_NUM + this->size;
+		int pos = gstore::LRUCache::DEFAULT_NUM + this->size;
 		this->setElem(pos, nodePtr->getFileLine(), nodePtr);
 
 		//debug
@@ -168,14 +168,14 @@ bool LRUCache::loadCache(string _filePath)
 }
 
 //create a new empty data file, the original one will be overwrite. 
-bool LRUCache::createCache(string _filePath)
+bool gstore::LRUCache::createCache(string _filePath)
 {
 	this->dataFilePath = _filePath;
 
 	FILE* filePtr = fopen(this->dataFilePath.c_str(), "wb");
 	if (filePtr == NULL)
 	{
-		cerr << "error, can not create a new data file. @LRUCache::createCache" << endl;
+		cerr << "error, can not create a new data file. @gstore::LRUCache::createCache" << endl;
 		return false;
 	}
 	fclose(filePtr);
@@ -186,7 +186,7 @@ bool LRUCache::createCache(string _filePath)
 //DEBUG+WARN:the memory-disk swap strategy exists serious bugs, however, we do not really use this startegy now!!!
 //
 //set the key(node's file line) and value(node's pointer). if the key exists now, the value of this key will be overwritten. 
-bool LRUCache::set(int _key, VNode * _value)
+bool gstore::LRUCache::set(int _key, VNode * _value)
 {
 #ifdef THREAD_VSTREE_ON
 	pthread_rwlock_wrlock(&(this->cache_lock));
@@ -209,7 +209,7 @@ bool LRUCache::set(int _key, VNode * _value)
 #ifdef DEBUG_LRUCACHE
 		//cout<<"to insert a node in LRU cache"<<endl;
 #endif
-		int pos = LRUCache::DEFAULT_NUM + this->size;
+		int pos = gstore::LRUCache::DEFAULT_NUM + this->size;
 		this->setElem(pos, _key, _value);
 		//this->refresh(pos);
 	}
@@ -220,7 +220,7 @@ bool LRUCache::set(int _key, VNode * _value)
 		//cout<<"memory-disk swap hadppened in VSTree - LRUCache"<<endl;
 #endif
 		// write out and free the memory of the least recently used one.
-		int pos = this->next[LRUCache::START_INDEX];
+		int pos = this->next[gstore::LRUCache::START_INDEX];
 		//cout<<pos<<" "<<_key<<" "<<_value->getFileLine()<<endl;
 
 		int ret = 0;
@@ -230,7 +230,7 @@ bool LRUCache::set(int _key, VNode * _value)
 		//TODO:scan and select a unlocked one to swap, if no, then wait by cond
 		if(ret != 0)  //not success
 		{
-			cout<<"error: fail to get the vnode lock in LRUCache::set()"<<endl;
+			cout<<"error: fail to get the vnode lock in gstore::LRUCache::set()"<<endl;
 		}
 		//NOTICE:we can unlock here because user has released this lock, if he want to read 
 		//this node again, he must wait for this buffer operation to end up
@@ -254,7 +254,7 @@ bool LRUCache::set(int _key, VNode * _value)
 
 //Assume that the node of this key exist in memory now
 bool
-LRUCache::del(int _key)
+gstore::LRUCache::del(int _key)
 {
 #ifdef THREAD_VSTREE_ON
 	pthread_rwlock_wrlock(&(this->cache_lock));
@@ -267,7 +267,7 @@ LRUCache::del(int _key)
 	if (iter != this->key2pos.end())
 	{
 		int pos1 = iter->second;
-		int pos2 = LRUCache::DEFAULT_NUM + this->size - 1;
+		int pos2 = gstore::LRUCache::DEFAULT_NUM + this->size - 1;
 #ifdef DEBUG_LRUCACHE
 		cout<<"pos 1: "<<pos1<<"  pos2: "<<pos2<<endl;
 #endif
@@ -301,7 +301,7 @@ LRUCache::del(int _key)
 }
 
 //get the value(node's pointer) by key(node's file line). 
-VNode* LRUCache::get(int _key)
+VNode* gstore::LRUCache::get(int _key)
 {
 #ifdef THREAD_VSTREE_ON
 	pthread_rwlock_rdlock(&(this->cache_lock));
@@ -330,7 +330,7 @@ VNode* LRUCache::get(int _key)
 #ifdef DEBUG_LRUCACHE
 		cout<<"new read hadppened in VSTree - LRUCache"<<endl;
 #endif
-		int pos = LRUCache::DEFAULT_NUM + this->size;
+		int pos = gstore::LRUCache::DEFAULT_NUM + this->size;
 		if (this->readIn(pos, _key))
 		{
 			ret = this->values[pos];
@@ -338,7 +338,7 @@ VNode* LRUCache::get(int _key)
 		}
 		else
 		{
-			cout<<"LRUCache::get() - readIn error in the second case"<<endl;
+			cout<<"gstore::LRUCache::get() - readIn error in the second case"<<endl;
 		}
 	}
 	// if the memory pool is full now, should swap out the least recently used one, and swap in the required value.
@@ -350,9 +350,9 @@ VNode* LRUCache::get(int _key)
 #endif
 
 #ifdef DEBUG_LRUCACHE
-		//cout<<"memory-disk swap hadppened in VSTree - LRUCache::get()"<<endl;
+		//cout<<"memory-disk swap hadppened in VSTree - gstore::LRUCache::get()"<<endl;
 #endif
-		int pos = this->next[LRUCache::START_INDEX];
+		int pos = this->next[gstore::LRUCache::START_INDEX];
 
 		int retval = 0;
 #ifdef THREAD_VSTREE_ON
@@ -361,7 +361,7 @@ VNode* LRUCache::get(int _key)
 		//TODO:scan and select a unlocked one to swap, if no, then wait by cond
 		if(retval != 0)  //not success
 		{
-			cout<<"error: fail to get the vnode lock in LRUCache::set()"<<endl;
+			cout<<"error: fail to get the vnode lock in gstore::LRUCache::set()"<<endl;
 		}
 #ifdef THREAD_VSTREE_ON
 		pthread_mutex_unlock(&(this->values[pos]->node_lock));
@@ -379,7 +379,7 @@ VNode* LRUCache::get(int _key)
 		}
 		else
 		{
-			cout<<"LRUCache::get() - readIn error in the third case"<<endl;
+			cout<<"gstore::LRUCache::get() - readIn error in the third case"<<endl;
 		}
 	}
 
@@ -392,7 +392,7 @@ VNode* LRUCache::get(int _key)
 }
 
 //update the _key's mapping _value. if the key do not exist, this operation will fail and return false. 
-bool LRUCache::update(int _key, VNode* _value)
+bool gstore::LRUCache::update(int _key, VNode* _value)
 {
 #ifdef THREAD_VSTREE_ON
 	pthread_rwlock_wrlock(&(this->cache_lock));
@@ -407,7 +407,7 @@ bool LRUCache::update(int _key, VNode* _value)
 		//BETTER:remove the below cerr
 		if (this->keys[pos] != _key)
 		{
-			cerr << "error, the pos is wrong. @LRUCache::update" << endl;
+			cerr << "error, the pos is wrong. @gstore::LRUCache::update" << endl;
 
 #ifdef THREAD_VSTREE_ON
 			pthread_rwlock_unlock(&(this->cache_lock));
@@ -433,12 +433,12 @@ bool LRUCache::update(int _key, VNode* _value)
 	return false;
 }
 
-int LRUCache::getCapacity()
+int gstore::LRUCache::getCapacity()
 {
 	return this->capacity;
 }
 
-int LRUCache::getRestAmount()
+int gstore::LRUCache::getRestAmount()
 {
 #ifdef THREAD_VSTREE_ON
 	pthread_rwlock_rdlock(&(this->cache_lock));
@@ -452,7 +452,7 @@ int LRUCache::getRestAmount()
 	//return this->capacity - this->size;
 }
 
-void LRUCache::showAmount()
+void gstore::LRUCache::showAmount()
 {
 #ifdef THREAD_VSTREE_ON
 	pthread_rwlock_rdlock(&(this->cache_lock));
@@ -468,7 +468,7 @@ void LRUCache::showAmount()
 #endif
 }
 
-bool LRUCache::isFull()
+bool gstore::LRUCache::isFull()
 {
 #ifdef THREAD_VSTREE_ON
 	pthread_rwlock_rdlock(&(this->cache_lock));
@@ -483,12 +483,12 @@ bool LRUCache::isFull()
 }
 
 //LRU: put the new visited one to the tail 
-void LRUCache::refresh(int _pos)
+void gstore::LRUCache::refresh(int _pos)
 {
 	int prevPos, nextPos;
 
 	nextPos = this->next[_pos];
-	if(nextPos == LRUCache::END_INDEX)
+	if(nextPos == gstore::LRUCache::END_INDEX)
 	{
 		//already the last element
 		return;
@@ -498,22 +498,22 @@ void LRUCache::refresh(int _pos)
 	this->next[prevPos] = nextPos;
 	this->prev[nextPos] = prevPos;
 
-	prevPos = this->prev[LRUCache::END_INDEX];
-	nextPos = LRUCache::END_INDEX;
+	prevPos = this->prev[gstore::LRUCache::END_INDEX];
+	nextPos = gstore::LRUCache::END_INDEX;
 
 	this->next[prevPos] = _pos;
 	this->prev[nextPos] = _pos;
 
-	this->next[_pos] = LRUCache::END_INDEX;
+	this->next[_pos] = gstore::LRUCache::END_INDEX;
 	this->prev[_pos] = prevPos;
 }
 
 //free the memory of the _pos element in cache. 
-void LRUCache::freeElem(int _pos)
+void gstore::LRUCache::freeElem(int _pos)
 {
-	if(_pos < LRUCache::DEFAULT_NUM || _pos >= LRUCache::DEFAULT_NUM + this->size)
+	if(_pos < gstore::LRUCache::DEFAULT_NUM || _pos >= gstore::LRUCache::DEFAULT_NUM + this->size)
 	{
-		cerr << "error in LRUCache::freeElem() -- invalid pos" << endl;
+		cerr << "error in gstore::LRUCache::freeElem() -- invalid pos" << endl;
 		return;
 	}
 
@@ -524,33 +524,33 @@ void LRUCache::freeElem(int _pos)
 	}
 
 	this->key2pos.erase(this->keys[_pos]);
-	this->keys[_pos] = LRUCache::NULL_INDEX;
+	this->keys[_pos] = gstore::LRUCache::NULL_INDEX;
 
 	// update the double linked list.
 	int prevPos = this->prev[_pos];
 	int nextPos = this->next[_pos];
 	this->next[prevPos] = nextPos;
 	this->prev[nextPos] = prevPos;
-	this->next[_pos] = LRUCache::NULL_INDEX;
-	this->prev[_pos] = LRUCache::NULL_INDEX;
+	this->next[_pos] = gstore::LRUCache::NULL_INDEX;
+	this->prev[_pos] = gstore::LRUCache::NULL_INDEX;
 
 	this->size--;
 }
 
 //NOTICE: setElem will append the ele to the end, so LRU is ok
 //set the memory of the _pos element in cache 
-void LRUCache::setElem(int _pos, int _key, VNode* _value)
+void gstore::LRUCache::setElem(int _pos, int _key, VNode* _value)
 {
 	this->key2pos[_key] = _pos;
 	this->keys[_pos] = _key;
 	this->values[_pos] = _value;
 
 	// put the new element to the tail of the linked list.
-	int prevPos = this->prev[LRUCache::END_INDEX];
-	int nextPos = LRUCache::END_INDEX;
+	int prevPos = this->prev[gstore::LRUCache::END_INDEX];
+	int nextPos = gstore::LRUCache::END_INDEX;
 	this->next[prevPos] = _pos;
 	this->prev[nextPos] = _pos;
-	this->next[_pos] = LRUCache::END_INDEX;
+	this->next[_pos] = gstore::LRUCache::END_INDEX;
 	this->prev[_pos] = prevPos;
 	//NOTICE: this cannot be placed in loadCache() because this may be called by other functions
 	this->size++;
@@ -558,7 +558,7 @@ void LRUCache::setElem(int _pos, int _key, VNode* _value)
 
 //NOTICE: fillElem will change the pos1's next to the end, so LRU is ok(pos2 is always the current maximium position)
 //move pos2 ele to pos1, and pos1 ele should be freed
-void LRUCache::fillElem(int _pos1, int _pos2)
+void gstore::LRUCache::fillElem(int _pos1, int _pos2)
 {
 	cout<<"fill elem in LRUCache() happen"<<endl;
 
@@ -569,7 +569,7 @@ void LRUCache::fillElem(int _pos1, int _pos2)
 	if(_pos1 >= _pos2)  //0 ele or 1 ele(just remove the only one)
 	{
 #ifdef DEBUG_LRUCACHE
-		cout<<"LRUCache::fillElem() - no need to fill"<<endl;
+		cout<<"gstore::LRUCache::fillElem() - no need to fill"<<endl;
 #endif
 		return;
 	}
@@ -587,7 +587,7 @@ void LRUCache::fillElem(int _pos1, int _pos2)
 	this->keys[_pos1] = key;
 	this->values[_pos1] = this->values[_pos2];
 
-	this->keys[_pos2] = LRUCache::NULL_INDEX;
+	this->keys[_pos2] = gstore::LRUCache::NULL_INDEX;
 	this->values[_pos2] = NULL;
 	int prevPos = this->prev[_pos2];
 	int nextPos = this->next[_pos2];
@@ -605,19 +605,19 @@ void LRUCache::fillElem(int _pos1, int _pos2)
 }
 
 bool
-LRUCache::freeDisk(int _pos)
+gstore::LRUCache::freeDisk(int _pos)
 {
 	VNode* nodePtr = this->values[_pos];
 	FILE* filePtr = fopen(this->dataFilePath.c_str(), "r+b");
 
 	if (nodePtr == NULL)
 	{
-		cerr << "error, VNode do not exist. @LRUCache::freeDisk" << endl;
+		cerr << "error, VNode do not exist. @gstore::LRUCache::freeDisk" << endl;
 		return false;
 	}
 	if (filePtr == NULL)
 	{
-		cerr << "error, can't open file. @LRUCache::freeDisk" << endl;
+		cerr << "error, can't open file. @gstore::LRUCache::freeDisk" << endl;
 		return false;
 	}
 
@@ -631,7 +631,7 @@ LRUCache::freeDisk(int _pos)
 
 	if (flag != 0)
 	{
-		cerr << "error, can't seek to the fileLine. @LRUCache::writeOut" << endl;
+		cerr << "error, can't seek to the fileLine. @gstore::LRUCache::writeOut" << endl;
 		return false;
 	}
 
@@ -646,25 +646,25 @@ LRUCache::freeDisk(int _pos)
 
 //just write the values[_pos] to the hard disk, the VNode in memory will not be free. 
 bool 
-LRUCache::writeOut(int _pos, int _fileLine)
+gstore::LRUCache::writeOut(int _pos, int _fileLine)
 {
 	VNode* nodePtr = this->values[_pos];
 	FILE* filePtr = fopen(this->dataFilePath.c_str(), "r+b");
 
 	if (nodePtr == NULL)
 	{
-		cerr << "error, VNode do not exist. @LRUCache::writeOut" << endl;
+		cerr << "error, VNode do not exist. @gstore::LRUCache::writeOut" << endl;
 		return false;
 	}
 	if (filePtr == NULL)
 	{
-		cerr << "error, can't open file. @LRUCache::writeOut" << endl;
+		cerr << "error, can't open file. @gstore::LRUCache::writeOut" << endl;
 		return false;
 	}
 
 	if (nodePtr->getFileLine() != _fileLine)
 	{
-		cerr << "error, fileLine " << _fileLine <<" "<< nodePtr->getFileLine() << " wrong. @LRUCache::writeOut" << endl;
+		cerr << "error, fileLine " << _fileLine <<" "<< nodePtr->getFileLine() << " wrong. @gstore::LRUCache::writeOut" << endl;
 	}
 
 	if(!nodePtr->isDirty())
@@ -688,7 +688,7 @@ LRUCache::writeOut(int _pos, int _fileLine)
 
 	if (flag != 0)
 	{
-		cerr << "error, can't seek to the fileLine. @LRUCache::writeOut" << endl;
+		cerr << "error, can't seek to the fileLine. @gstore::LRUCache::writeOut" << endl;
 		return false;
 	}
 
@@ -701,7 +701,7 @@ LRUCache::writeOut(int _pos, int _fileLine)
 
 //read the value from hard disk, and put it to the values[_pos].
 //before use it, you must make sure that the _pos element in cache is free(unoccupied).
-bool LRUCache::readIn(int _pos, int _fileLine)
+bool gstore::LRUCache::readIn(int _pos, int _fileLine)
 {
 #ifdef DEBUG_LRUCACHE
 	//cout<<"pos: "<<_pos<<" "<<"fileline: "<<_fileLine<<endl;
@@ -712,7 +712,7 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 
 	//if (nodePtr == NULL)
 	//{
-		//cerr << "error, can not new a VNode. @LRUCache::readIn" << endl;
+		//cerr << "error, can not new a VNode. @gstore::LRUCache::readIn" << endl;
 		//return false;
 	//}
 
@@ -720,7 +720,7 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 	{
 		cerr << "error, can't open " <<
 			"[" << this->dataFilePath << "]" <<
-			". @LRUCache::readIn" << endl;
+			". @gstore::LRUCache::readIn" << endl;
 		return false;
 	}
 
@@ -734,7 +734,7 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 
 	if (flag != 0)
 	{
-		cerr << "error,can't seek to the fileLine. @LRUCache::readIn" << endl;
+		cerr << "error,can't seek to the fileLine. @gstore::LRUCache::readIn" << endl;
 		return false;
 	}
 
@@ -746,7 +746,7 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 	if (nodePtr == NULL || nodePtr->getFileLine() != _fileLine)
 	{
 		cout<<"node file line: "<<nodePtr->getFileLine()<<endl;
-		cerr << "error,node fileLine error. @LRUCache::readIn" << endl;
+		cerr << "error,node fileLine error. @gstore::LRUCache::readIn" << endl;
 	}
 
 	this->setElem(_pos, _fileLine, nodePtr);
@@ -756,7 +756,7 @@ bool LRUCache::readIn(int _pos, int _fileLine)
 
 //NOTICE:this can only be done by one thread
 //write out all the elements to hard disk. 
-bool LRUCache::flush()
+bool gstore::LRUCache::flush()
 {
 #ifdef DEBUG_VSTREE
 	cout<<"to flush in LRUCache"<<endl;
@@ -765,11 +765,11 @@ bool LRUCache::flush()
 
 	if (filePtr == NULL)
 	{
-		cerr << "error, can't open file. @LRUCache::flush" << endl;
+		cerr << "error, can't open file. @gstore::LRUCache::flush" << endl;
 		return false;
 	}
 
-	int startIndex = LRUCache::DEFAULT_NUM;
+	int startIndex = gstore::LRUCache::DEFAULT_NUM;
 	int endIndex = startIndex + this->size;
 	size_t vNodeSize = VNode::VNODE_SIZE;
 	//size_t vNodeSize = sizeof(VNode);
@@ -790,7 +790,7 @@ bool LRUCache::flush()
 
 		if (nodePtr == NULL)
 		{
-			cerr << "error, VNode do not exist. @LRUCache::flush" << endl;
+			cerr << "error, VNode do not exist. @gstore::LRUCache::flush" << endl;
 			return false;
 		}
 
@@ -805,7 +805,7 @@ bool LRUCache::flush()
 
 		if (flag != 0)
 		{
-			cerr << "error, can't seek to the fileLine. @LRUCache::flush" << endl;
+			cerr << "error, can't seek to the fileLine. @gstore::LRUCache::flush" << endl;
 			return false;
 		}
 

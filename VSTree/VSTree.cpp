@@ -170,7 +170,7 @@ VSTree::buildTree(std::string _entry_file_path, int _cache_size)
     // create the entry buffer and node buffer.
 	this->entry_buffer = new EntryBuffer(EntryBuffer::DEFAULT_CAPACITY);
 	//cout<<"entry buffer newed"<<endl;
-    this->node_buffer = new LRUCache(_cache_size);
+    this->node_buffer = new gstore::LRUCache(_cache_size);
     //this->node_buffer = new LRUCache(LRUCache::DEFAULT_CAPACITY);
 
     // create the root node.
@@ -650,7 +650,7 @@ bool
 VSTree::loadTree(int _cache_size)
 {
 	cout << "load VSTree..." << endl;
-	(this->node_buffer) = new LRUCache(_cache_size);
+	(this->node_buffer) = new gstore::LRUCache(_cache_size);
 	//(this->node_buffer) = new LRUCache(LRUCache::DEFAULT_CAPACITY);
 	cout<<"LRU cache built"<<endl;
 

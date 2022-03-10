@@ -11,7 +11,17 @@ PathQueryHandler::PathQueryHandler(CSR *_csr)
 	cacheMaxSize = 10000;
 	n = -1;
 	m = -1;
+	csrUtil = new CSRUtil(csr);
 	srand(time(NULL));
+}
+
+PathQueryHandler::~PathQueryHandler() 
+{
+	if (csrUtil)
+	{
+		delete csrUtil;
+	}
+	
 }
 
 int PathQueryHandler::getVertNum()
@@ -1969,3 +1979,133 @@ vector<pair<pair<int, int>, int>> kHopSubgraph(int uid, int vid, bool directed, 
 // {
 
 // }
+std::map<std::string, std::string> PathQueryHandler::dynamicFunction(const std::vector<int> &iri_set, bool directed, int k, const std::vector<int> &pred_set, const std::string& fun_name, const std::string& username)
+{
+	try
+	{
+		std::map<std::string, std::string> returnMap;
+		// check funInfo from json file.
+		string json_file_path = "./fun/" + username + "/data.json";
+		cout << "open json file: " << json_file_path << endl;
+		ifstream in;
+		in.open(json_file_path, ios::in);
+		if (!in.is_open())
+		{
+			throw runtime_error("open function json file error.");
+		}
+		string line;
+		bool isMatch;
+		string temp_name, md5Str;
+		string fun_args, fun_status, fun_return;
+		isMatch = false;
+		fun_return = "";
+		while (getline(in, line))
+		{
+			rapidjson::Document doc;
+			doc.SetObject();
+			if (!doc.Parse(line.c_str()).HasParseError())
+			{
+				if (doc.HasMember("fun_name"))
+				{
+					temp_name = doc["fun_name"].GetString();
+					if (temp_name == fun_name)
+					{
+						if (doc.HasMember("fun_status"))
+							fun_status = doc["fun_status"].GetString();
+						if (fun_status != "2")
+							throw runtime_error("function " + fun_name + " not compile yet");
+						if (doc.HasMember("fun_args"))
+							fun_args = doc["fun_args"].GetString();
+						if (doc.HasMember("fun_return"))
+							fun_return = doc["fun_return"].GetString();
+						if (doc.HasMember("last_time"))
+							md5Str = Util::md5(doc["last_time"].GetString());
+						isMatch = true;
+						break;
+					}
+				}
+			}
+		}
+		in.close();
+		if (!isMatch)
+		{
+			throw runtime_error("function '" + fun_name + "' not exists");
+		}
+		// check funInfo end
+		string error_msg;
+		string fileName, soFile;
+		fileName = fun_name;
+		std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::tolower);
+		soFile = "./lib/" + username + "/lib" + fileName + md5Str + ".so";
+		void *handle;
+		string result;
+		std::cout << "================================================\nopening " << soFile << endl;
+		handle = dlopen(soFile.c_str(), RTLD_LAZY);
+		if (!handle)
+		{
+			error_msg = "load so file error:" + string(dlerror());
+			throw runtime_error(error_msg);
+		}
+		char *error;
+		if (fun_args == "1")
+		{
+			std::cout << "begin 1 for " << fun_name << endl;
+			// int uid, int vid, bool directed, vector<int> pred_set, CSR * _csr
+			typedef string (*personalized_fun)(vector<int>, bool, vector<int>, CSRUtil *);
+			personalized_fun p_fun;
+			p_fun = (personalized_fun)dlsym(handle, fun_name.c_str());
+			if ((error = dlerror()) != NULL)
+			{
+				error_msg = "cannot load symbol '" + fun_name + "': " + string(error);
+				dlclose(handle);
+				throw runtime_error(error_msg);
+			}
+			// call function
+			result = p_fun(iri_set, directed, pred_set, csrUtil);
+			std::cout << "end with: " << result << endl;
+			std::cout<< "================================================\n";
+			dlclose(handle);
+			returnMap.insert(pair<std::string, std::string>("return_type", fun_return));
+			returnMap.insert(pair<std::string, std::string>("return_value", result));
+			return returnMap;
+		}
+		else if (fun_args == "2")
+		{
+			std::cout << "begin 2..." << endl;
+			// int uid, int vid, bool directed, int k, vector<int> pred_set
+			typedef string (*personalized_fun)(vector<int>, bool, int, vector<int>, CSRUtil *);
+			personalized_fun p_fun;
+			p_fun = (personalized_fun)dlsym(handle, fun_name.c_str());
+			if ((error = dlerror()) != NULL)
+			{
+				error_msg = "cannot load symbol '" + fun_name + "': " + string(error);
+				dlclose(handle);
+				throw runtime_error(error_msg);
+			}
+			// call function
+			result = p_fun(iri_set, directed, k, pred_set, csrUtil);
+			std::cout << "end with: " << result << endl;
+			cout<< "================================================\n";
+			dlclose(handle);
+			returnMap.insert(pair<std::string, std::string>("return_type", fun_return));
+			returnMap.insert(pair<std::string, std::string>("return_value", result));
+			return returnMap;
+		}
+		else
+		{
+			throw runtime_error("unkown function argment type '" + fun_args + "'");
+		}
+	}
+	catch (const std::exception &e)
+    {
+		string content = "run personalized function fail: " + string(e.what());
+        std::cout << content << '\n';
+		throw runtime_error(content);
+    }
+	catch (...)
+	{
+		string content = "run personalized function fail: unknow error";
+		std::cout << content << '\n';
+		throw runtime_error(content);
+	}
+}

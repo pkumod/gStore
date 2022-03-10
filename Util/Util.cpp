@@ -10,7 +10,6 @@
 
 #include "Util.h"
 
-
 using namespace std;
 using namespace rapidjson;
 //==================================================================================================================
@@ -228,7 +227,6 @@ Util::config_debug()
 	return true;
 }
 
-
 bool
 Util::config_advanced()
 {
@@ -248,7 +246,6 @@ Util::config_advanced()
 bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
 {
     string value = parser.GetValue(rootname, keyname);
-    cout<<"the root name："<<rootname<<", the key name:"<<keyname<<",the value:"<<value<<endl;
     if(value.empty()==false)
     Util::global_config[keyname] = value;
 }
@@ -258,49 +255,38 @@ string Util::getConfigureValue(string keyname)
     map<string, string>::iterator iter = Util::global_config.find(keyname);
 	if (iter != Util::global_config.end())
 	{
-        string value=iter->second;
-        value=Util::replace_all(value,"\"","");
-		    return value;
+		    return iter->second;
 	}
 	return "";
 }
 
 bool Util::configure_new()
 {
-    
+
     INIParser ini_parser;
     ini_parser.ReadINI("conf.ini");
     /*string value=ini_parser.GetValue("ghttp", "max_out_limit");
     Util::global_config["max_out_limit"] = value;*/
-    
-    
     Util::setGlobalConfig(ini_parser, "ghttp", "thread_num");
-
-    cout << "the current settings are as below: " << endl;
-    cout << "key : value" << endl;
-    cout << "------------------------------------------------------------" << endl;
-    for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
-    {
-        cout << it->first << " : " << it->second << endl;
-    }
-    cout << endl;
     Util::setGlobalConfig(ini_parser, "ghttp", "max_database_num");
     Util::setGlobalConfig(ini_parser, "ghttp", "max_user_num");
     Util::setGlobalConfig(ini_parser, "ghttp", "root_username");
     Util::setGlobalConfig(ini_parser, "ghttp", "root_password");
     Util::setGlobalConfig(ini_parser, "ghttp", "system_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "querylog_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "accesslog_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "queryresult_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "pfn_file_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "pfn_lib_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "max_querylog_size");
     Util::setGlobalConfig(ini_parser, "ghttp", "system_username");
     Util::setGlobalConfig(ini_parser, "ghttp", "max_output_size");
     Util::setGlobalConfig(ini_parser, "ghttp", "db_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "backup_path");
-
-    
-   // Util::setGlobalConfig(ini_parser, "ghttp", "ip");
+    Util::setGlobalConfig(ini_parser, "ghttp", "ip");
     Util::setGlobalConfig(ini_parser, "ghttp", "ip_allow_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "ip_deny_path");
-    Util::setGlobalConfig(ini_parser, "ghttp", "ip_access_log");
+    Util::setGlobalConfig(ini_parser, "ghttp", "save_log");
     Util::setGlobalConfig(ini_parser, "system", "version");
     Util::setGlobalConfig(ini_parser, "system", "licensetype");
     cout << "the current settings are as below: " << endl;
@@ -311,7 +297,7 @@ bool Util::configure_new()
         cout << it->first << " : " << it->second << endl;
     }
     cout << endl;
-    
+
 }
 
 bool
@@ -876,7 +862,7 @@ Util::get_date_time()
 	return tmp;
 }
 
-string 
+string
 Util::get_date_day()
 {
 	time_t timep;
@@ -886,7 +872,7 @@ Util::get_date_day()
 	return tmp;
 }
 
-string 
+string
 Util::get_timestamp()
 {
     string timestamp;
@@ -1744,17 +1730,6 @@ Util::getTimeString() {
 }
 
 string
-Util::getTimeString3() {
-	static const int max = 40; // max length of time string
-	char time_str[max];
-	time_t timep;
-	time(&timep);
-	strftime(time_str, max, "%Y-%m-%d %H:%M:%S", localtime(&timep));
-	return string(time_str);
-}
-
-
-string
 Util::getTimeString2() {
 	static const int max = 20; // max length of time string
 	char time_str[max];
@@ -1774,38 +1749,40 @@ Util::getRandNum()
     return result;
 }
 
-bool Util::checkPort(int port)
+bool Util::checkPort(int port, std::string p_name)
 {
-    try
-    {
-       int ss=socket(AF_INET,SOCK_STREAM,0);
-       struct sockaddr_in addr;
-       addr.sin_family=AF_INET;
-       addr.sin_port=htons(port);
-       addr.sin_addr.s_addr=htonl(INADDR_ANY);
-       if(bind(ss,(struct sockaddr *)&addr,sizeof(addr))==-1)
-       {
-           close(ss);
-           return false;
-       }
-       else
-       {
-           close(ss);
-           return true;
-       }
-      
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-        return false;
-    }
-    catch(...)
-    {
-        std::cerr<<"port has been used."<<endl;
-        return false;
-    }
-    return false;
+    stringstream ss;
+	ss << port;
+	string str_port = ss.str();
+	string out_file = ".tmp/port_check";
+	string cmd = "netstat -ntlp |grep " + str_port + " > " + out_file;
+	system(cmd.c_str());
+	struct stat buffer;
+	bool file_exist = (stat(out_file.c_str(), &buffer) == 0);
+	if (!file_exist)
+	{
+		return true;
+	}
+	ifstream inputFile(out_file.c_str());
+	string line;
+	size_t idx;
+	str_port = ":" + str_port;
+	bool result = true;
+	while (getline(inputFile, line, '\n'))
+	{
+		idx = line.find(str_port);
+		if ((idx != string::npos) && line[idx + str_port.size()] == ' ')
+		{
+			if (p_name.empty())
+				result = false;
+			else if (line.find(p_name) == string::npos) // main process restart sub process
+				result = false;
+			break;
+		}
+	}
+	line = "rm -f " + out_file;
+	system(line.c_str());
+	return result;
 }
 
 //is ostream.write() ok to update to disk at once? all add ofstream.flush()?
@@ -2175,13 +2152,13 @@ Util::read_backup_time()
 std::string
 Util::replace_all(std::string _content,const std::string oldtext,const std::string newtext)
 {
-     while(true)   {     
-            string::size_type  pos(0);     
-            if(  (pos=_content.find(oldtext))!=string::npos  )     
-                _content.replace(pos,oldtext.length(),newtext);     
-            else   break;     
-        }     
-    return  _content;     
+     while(true)   {
+            string::size_type  pos(0);
+            if(  (pos=_content.find(oldtext))!=string::npos  )
+                _content.replace(pos,oldtext.length(),newtext);
+            else   break;
+        }
+    return  _content;
 }
 
 void
@@ -2621,14 +2598,14 @@ Util::get_transactionlog()
           all.AddMember("StatusMsg", "Get Transaction log success", all.GetAllocator());
           all.AddMember("list", darray, all.GetAllocator());
     }
-       
+
     else
     {
          all.AddMember("StatusCode", 1005, all.GetAllocator());
          all.AddMember("message", "error! Transaction log corrupted", all.GetAllocator());
 
     }
-       
+
     StringBuffer buffer;
     Writer<StringBuffer> writer(buffer);
     all.Accept(writer);
@@ -2735,207 +2712,122 @@ Util::GetFiles(const char *src_dir, const char *ext)
 */
 std::string Util::getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value)
 {
-    
-	for (int i = 0; i < argc; i++)
-	{
-		if ((argv[i] == "-" + argname)||(argv[i]=="--"+argname2))
-		{
-			if (i + 1 >= argc)
-			{
-				return "";
-			}
-			else
-			{
-				return argv[i + 1];
-			}
 
-		}
+  for (int i = 0; i < argc; i++)
+  {
+    if ((argv[i] == "-" + argname)||(argv[i]=="--"+argname2))
+    {
+      if (i + 1 >= argc)
+      {
+        return "";
+      }
+      else
+      {
+        return argv[i + 1];
+      }
 
-	}
-	//cout << argname << " is not exist,using the default value:" << default_value << endl;
-	return default_value;
+    }
+
+  }
+  //cout << argname << " is not exist,using the default value:" << default_value << endl;
+  return default_value;
 }
 
-void Util::formatPrint(std::string content, std::string type)
+pair<bool, double> Util::checkGetNumericLiteral(string &literal)
 {
-    string time = Util::getTimeString();
-    cout << "[" << type << "][" << time << "]:" << content << endl;
+  if (literal.size() <= 2)
+    return make_pair(false, 0);
+  if (literal[0] != '"')
+    return make_pair(false, 0);
+
+  auto right_quotation_pos =  literal.rfind('"');
+
+  if (right_quotation_pos == 1 || right_quotation_pos == string::npos)
+    return make_pair(false, 0);
+
+  const char* last_s = literal.c_str() + right_quotation_pos;
+  const char* start = literal.c_str() + 1;
+  char* end_ptr;
+  double v = std::strtod(start, &end_ptr);
+  bool success = end_ptr == last_s;
+  return make_pair(success,v);
 }
 
-pair<bool, double> Util::checkGetNumericLiteral(string literal)
-{
-    if (literal[0] != '"')
-        return make_pair(false, 0);
-    if (literal.rfind('"') == string::npos)
-        return make_pair(false, 0);
-    size_t sepPos = literal.find('^');
-    if (sepPos == string::npos || literal[sepPos + 1] != '^' \
-        || literal[sepPos + 2] != '<' || literal[literal.size() - 1] != '>')
-        return make_pair(false, 0);
-    string valuePart = literal.substr(1, literal.rfind('"') - 1);
-    string suffix = literal.substr(sepPos + 2);
-    if (suffix == "<http://www.w3.org/2001/XMLSchema#integer>")
-    {
-        long long ll;
-        try
-        {
-            ll = stoll(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Integer value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        catch (out_of_range& e)
-        {
-            cout << "Integer out of range" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, ll);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#decimal>")
-    {
-        double d = stod(valuePart);
-        return make_pair(true, d);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#double>")
-    {
-        double d;
-        try
-        {
-            d = stod(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Double value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        if (valuePart.length() == 3 && toupper(valuePart[0]) == 'N' && toupper(valuePart[1]) == 'A'
-            && toupper(valuePart[2]) == 'N')
-        {
-            cout << "Double value is NaN" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, d);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#long>")
-    {
-        long long ll;
-        try
-        {
-            ll = stoll(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Long value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        catch (out_of_range& e)
-        {
-            cout << "Long value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, ll);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#int>")
-    {
-        long long ll;
-        try
-        {
-            ll = stoll(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Int value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        catch (out_of_range& e)
-        {
-            cout << "Int value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        if (ll < (long long)INT_MIN || ll >(long long)INT_MAX)
-        {
-            cout << "Int value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, ll);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#short>")
-    {
-        long long ll;
-        try
-        {
-            ll = stoll(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Short value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        catch (out_of_range& e)
-        {
-            cout << "Short value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        if (ll < (long long)SHRT_MIN || ll >(long long)SHRT_MAX)
-        {
-            cout << "Short value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, ll);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#byte>")
-    {
-        long long ll;
-        try
-        {
-            ll = stoll(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Byte value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        catch (out_of_range& e)
-        {
-            cout << "Byte value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        if (ll < (long long)SCHAR_MIN || ll >(long long)SCHAR_MAX)
-        {
-            cout << "Byte value out of range" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, ll);
-    }
-    else if (suffix == "<http://www.w3.org/2001/XMLSchema#float>")
-    {
-        float f;
-        try
-        {
-            f = stof(valuePart);
-        }
-        catch (invalid_argument& e)
-        {
-            cout << "Float value invalid" << endl;
-            return make_pair(false, 0);
-        }
-        if (valuePart.length() == 3 && toupper(valuePart[0]) == 'N' && toupper(valuePart[1]) == 'A'
-            && toupper(valuePart[2]) == 'N')
-        {
-            cout << "Float value is NaN" << endl;
-            return make_pair(false, 0);
-        }
-        return make_pair(true, f);
-    }
-    else
-        return make_pair(false, 0);
-}
-
-// md5
 std::string Util::md5(const string& text)
 {
     MD5 _md5(text);
     return _md5.md5();
+}
+
+void Util::formatPrint(std::string content, std::string type)
+{
+    string time = Util::get_date_time();
+    cout << "[" << type << "][" << time << "] " << content << endl;
+}
+
+std::string Util::urlEncode(const std::string& str)
+{
+    std::string strTemp = "";
+    size_t length = str.length();
+    unsigned char x;
+    for (size_t i = 0; i < length; i++)
+    {
+        if (isalnum((unsigned char)str[i]) ||
+            (str[i] == '-') ||
+            (str[i] == '_') ||
+            (str[i] == '.') ||
+            (str[i] == '~'))
+            strTemp += str[i];
+        else if (str[i] == ' ')
+            strTemp += "+";
+        else
+        {
+            strTemp += '%';
+            x = (unsigned char)str[i] >> 4;
+            strTemp += x > 9 ? x + 55 : x + 48;
+            x = (unsigned char)str[i] % 16;
+            strTemp += x > 9 ? x + 55 : x + 48;
+        }
+    }
+    return strTemp;
+}
+
+std::string Util::urlDecode(const std::string& str)
+{
+    std::string strTemp = "";
+    size_t length = str.length();
+    unsigned char x;
+    for (size_t i = 0; i < length; i++)
+    {
+        if (str[i] == '+')
+            strTemp += ' ';
+        else if (str[i] == '%')
+        {
+            assert(i + 2 < length);
+            x = (unsigned char)str[++i];
+            unsigned char high;
+            if (x >= 'A' && x <= 'Z')
+                high = x - 'A' + 10;
+            else if (x >= 'a' && x <= 'z')
+                high = x - 'a' + 10;
+            else if (x >= '0' && x <= '9')
+                high = x - '0';
+            else
+                assert(0);
+
+            x = (unsigned char)str[++i];
+            unsigned char low;
+            if (x >= 'A' && x <= 'Z')
+                low = x - 'A' + 10;
+            else if (x >= 'a' && x <= 'z')
+                low = x - 'a' + 10;
+            else if (x >= '0' && x <= '9')
+                low = x - '0';
+
+            strTemp += high * 16 + low;
+        }
+        else
+            strTemp += str[i];
+    }
+    return strTemp;
 }

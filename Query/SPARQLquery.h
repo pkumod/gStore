@@ -13,44 +13,62 @@
 
 class SPARQLquery
 {
-private:
-	vector<BasicQuery*> query_union;
-	vector<string>	query_var;
+ private:
+  vector<BasicQuery*> query_union;
+  vector<string>	query_var;
 
-public:
-	SPARQLquery(const string& _query);
+  int limit_;
 
-	SPARQLquery();
-	~SPARQLquery();
+ public:
+  struct OrderedBy{
+    string name_;
+    bool descending_;
+  };
+ private:
+  shared_ptr<vector<OrderedBy>> ordered_by_vec;
 
-	void addQueryVar(const string& _var);
+ public:
+  SPARQLquery(const string& _query);
 
-	void addTriple(const Triple& _triple);
+  SPARQLquery();
 
-	void addBasicQuery(BasicQuery* _basic_q);
+  SPARQLquery(const SPARQLquery &other);
+  ~SPARQLquery();
 
-	void addBasicQuery();
+  void addQueryVar(const string& _var);
 
-	const int getBasicQueryNum();
+  void addTriple(const Triple& _triple);
 
-	BasicQuery& getBasicQuery(int _basic_query_id);
+  void addBasicQuery(BasicQuery* _basic_q);
 
-	const int getQueryVarNum();
+  void addBasicQuery();
 
-	const vector<string>& getQueryVar()const;
+  const int getBasicQueryNum();
 
-	const string& getQueryVar(int _id);
+  BasicQuery& getBasicQuery(int _basic_query_id);
 
-	void encodeQuery(KVstore* _p_kv_store);
-	void encodeQuery(KVstore* _p_kv_store, vector< vector<string> > sparql_query_varset);
+  const int getQueryVarNum();
 
-	vector<BasicQuery*>& getBasicQueryVec();
+  const vector<string>& getQueryVar()const;
 
-	void print(ostream& _out_stream);
-	std::string triple_str();
-	std::string candidate_str();
-	std::string result_str();
-	std::string to_str();
+  const string& getQueryVar(int _id);
+
+  void encodeQuery(KVstore* _p_kv_store);
+  void encodeQuery(KVstore* _p_kv_store, vector< vector<string> > sparql_query_varset);
+
+  int GetLimit() const;
+  void SetLimit(int limit);
+  shared_ptr<vector<OrderedBy>> GetOrderedByVec();
+  void SetOrderedByVec(const shared_ptr<vector<OrderedBy>> &ordered_by_vec);
+
+  vector<BasicQuery*>& getBasicQueryVec();
+
+  void print(ostream& _out_stream);
+  std::string triple_str();
+  std::string candidate_str();
+  std::string result_str();
+  std::string to_str();
+
 };
 
 #endif //_QUERY_SPARQLQUERY_H

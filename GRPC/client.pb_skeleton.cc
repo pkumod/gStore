@@ -11,7 +11,7 @@ void sig_handler(int signo)
 	wait_group.done();
 }
 
-static void echo_done(EchoResponse *response, srpc::RPCContext *context)
+static void api_done(CommonResponse *response, srpc::RPCContext *context)
 {
 }
 
@@ -21,12 +21,12 @@ int main()
 	const char *ip = "127.0.0.1";
 	unsigned short port = 1412;
 
-	Example::SRPCClient client(ip, port);
+	grpc::SRPCClient client(ip, port);
 
 	// example for RPC method call
-	EchoRequest echo_req;
-	//echo_req.set_message("Hello, srpc!");
-	client.Echo(&echo_req, echo_done);
+	CommonRequest api_req;
+	//api_req.set_message("Hello, srpc!");
+	client.api(&api_req, api_done);
 
 	wait_group.wait();
 	google::protobuf::ShutdownProtobufLibrary();

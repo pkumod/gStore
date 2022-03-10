@@ -7,7 +7,7 @@
 =============================================================================*/
 
 #include "Join.h"
-
+#define DEBUG_JOIN
 using namespace std;
 
 Join::Join()
@@ -75,6 +75,10 @@ Join::clear()
 }
 
 //the return value should be non-negative
+/*
+node的权重定义为周围边的过滤性和自己的过滤性：
+常数/候选集大小；常数权重自己为1000000，周围边为10000（考虑一下分母非0）。
+*/
 double
 Join::score_node(int var)
 {
@@ -127,6 +131,9 @@ Join::score_node(int var)
 	return wt;
 }
 
+/*
+函数已弃用，一定会走multi-join的分支；
+*/
 int
 Join::judge(unsigned _smallest, unsigned _biggest)
 {
@@ -144,6 +151,9 @@ Join::judge(unsigned _smallest, unsigned _biggest)
 		return 1;	//index_join method
 }
 
+/*
+选择权重最大的点作为join的初始点
+*/
 //select the start point for multi-join
 void
 Join::select()
@@ -204,7 +214,9 @@ Join::join_sparql(SPARQLquery& _sparql_query)
 //TODO: consider a node with multiple same predicates(not pre var), use p2s(...false) to do this
 //BETTER?: ?s-p-?o, use p2so instead of p2s and p2o to get candidates for ?s and ?o will be better??
 //TODO: deal with predicate variables, maybe not ready like literals
-
+/*
+原join策略的核心流程，BFS的部分在this->join();
+*/
 bool
 Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 {
@@ -247,7 +259,10 @@ Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 		this->clear();
 		return false;
 	}
-
+/*
+原方案的后续步骤，需要将卫星结点进行join，这部分基本可以删除；
+所有结点都在上面join里面做完，因此不需要判断是否为卫星结点。
+*/
 	bool ret4 = this->only_pre_filter_after_join();
 	long after_only_pre_filter = Util::get_cur_time();
 	cout << "during only pre filter: used " << (after_only_pre_filter - after_joinbasic) << " ms" << endl;
@@ -541,6 +556,9 @@ Join::pre_var_handler()
 //NOTICE:we must save the results of pre var, because we may need to use it to generate the results of satellites
 //s2o and o2s to generate satellites maybe cause error, because some pre var may exist in several triples!!!
 //NOTICE:in this way, all triple counts maybe right(except satellites which may also cause duplicates num not right)
+// Detail: record_len = select_var_num + selected_pre_var_num;
+// New Table columns:
+//    select_var_num first
 
 void
 Join::copyToResult()
@@ -570,7 +588,7 @@ Join::copyToResult()
 		int i = 0;
 		for (; i < core_var_num; ++i)
 		{
-			//This is because sleect var id is always smaller
+			//This is because select var id is always smaller
 			if (this->pos2id[i] < select_var_num)
 			{
 				int vpos = this->basic_query->getSelectedVarPosition(this->pos2id[i]);
@@ -799,6 +817,9 @@ Join::toStartJoin()
 		}
 	}
 	
+	/*
+	star graph query的特殊处理
+	*/
 	//a special case is a star graph, where all pres are vars
 	if(!flag) 
 	{
@@ -839,6 +860,10 @@ Join::toStartJoin()
 	//cout<<"current can size: "<<origin_candidate_list.size()<<endl;
 }
 
+/*
+根据之前的预处理结果进行最大候选集和最小候选集的判断；
+由于我们没有index join，因此这部分的逻辑就是走完this->toStartJoin()后直接到this->multi_join()；
+*/
 // use the appropriate method to join candidates
 bool
 Join::join()
@@ -906,6 +931,9 @@ Join::join()
 	return ret;
 }
 
+/*
+BFS的过程中会进一步寻找权重更高的点加入到join；
+*/
 int
 Join::choose_next_node(int id)
 {
@@ -1018,6 +1046,10 @@ Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* i
 //which causes too many redunt linking operations.
 //However, the case is really rare in our test(the reason may be that the web graph is always very sparse)
 //If we add a buffer for this case, will cause worse performance
+/*
+join_two的代码应该对应我们的JoinANode部分;
+上面的注释不太明白是什么意思。
+*/
 bool
 Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_list_size, int _id, bool _is_ready)
 {
@@ -1258,6 +1290,10 @@ Join::reset_id_pos_mapping()
 //should not filter for literal var and just generate when join?
 //QUERY:is the allFilterBySatellites sometimes costly if candidate list is too large?
 //in this case we can join first and filter by edge later
+
+/*
+BFS逻辑
+*/
 bool
 Join::multi_join()
 {
@@ -1432,6 +1468,9 @@ Join::multi_join()
 //===================================================================================================
 
 //sort the candidate lists and deal with all constant neigbors
+/*
+index join的函数，可以直接忽略；
+*/
 bool
 Join::filter_before_join()
 {
@@ -1490,6 +1529,9 @@ Join::filter_before_join()
 	return true;
 }
 
+/*
+index join的函数，可以直接忽略；
+*/
 //decrease the candidates of _var_i using its constant neighbors
 bool
 Join::constant_edge_filter(int _var_i)
@@ -1629,6 +1671,9 @@ Join::constant_edge_filter(int _var_i)
 	return true;
 }
 
+/*
+index join的函数，可以直接忽略；
+*/
 //BETTER?:merge with constant_edge_filter?
 //this only consider subject constant neighbors, while the latter also
 //consider constant object neighbors(literal), as well as entities
@@ -1778,8 +1823,10 @@ Join::add_literal_candidate()
 	//Util::logging("OUT add_literal_candidate");
 }
 
-
-
+/*
+这个函数和only_pre_filter_after_join的比较，处理join逻辑后续的结点；
+待比较他们俩的逻辑之后，决定把哪一个补到愿策略的后面。
+*/
 //NOTICE:I think we should use this instead of only_pre_filter_after_join
 //this function not only consider satellite predicates, but also one degree not selected var and other vars in join
 //(constants are not necessary considered here)

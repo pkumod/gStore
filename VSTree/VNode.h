@@ -79,8 +79,8 @@ public:
     void setEntry(const SigEntry _entry);
     void setChildEntry(int _i, const SigEntry _entry);
 
-	VNode* getFather(LRUCache& _nodeBuffer) const; // get the father node's pointer.
-	VNode* getChild(int _i, LRUCache& _nodeBuffer) const; // get the _i-th child node's pointer.
+	VNode* getFather(gstore::LRUCache& _nodeBuffer) const; // get the father node's pointer.
+	VNode* getChild(int _i, gstore::LRUCache& _nodeBuffer) const; // get the _i-th child node's pointer.
 
 	/* add one child node to this node. when splitting this node, can add a new child to it. */
 	bool addChildNode(VNode* _p_child_node, bool _is_splitting = false);
@@ -88,14 +88,14 @@ public:
 	bool addChildEntry(const SigEntry _entry, bool _is_splitting = false);
 	bool removeChild(int _i);
 
-	int getIndexInFatherNode(LRUCache& _nodeBuffer);
+	int getIndexInFatherNode(gstore::LRUCache& _nodeBuffer);
 	void refreshSignature(); // just refresh itself signature.
-	void refreshAncestorSignature(LRUCache& _nodeBuffer); // refresh self and its ancestor's signature.
+	void refreshAncestorSignature(gstore::LRUCache& _nodeBuffer); // refresh self and its ancestor's signature.
 
 	/* used by internal Node */
-	bool retrieveChild(std::vector<VNode*>& _child_vec, const EntitySig _filter_sig, LRUCache& _nodeBuffer);
+	bool retrieveChild(std::vector<VNode*>& _child_vec, const EntitySig _filter_sig, gstore::LRUCache& _nodeBuffer);
 	/* only used by leaf Node */
-	bool retrieveEntry(std::vector<SigEntry>& _entry_vec, const EntitySig _filter_sig, LRUCache& _nodeBuffer);
+	bool retrieveEntry(std::vector<SigEntry>& _entry_vec, const EntitySig _filter_sig, gstore::LRUCache& _nodeBuffer);
 
 	 //for debug 
 	bool checkState();

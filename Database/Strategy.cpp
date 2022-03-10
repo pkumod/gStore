@@ -14,20 +14,20 @@ Strategy::Strategy()
 {
 	this->method = 0;
 	this->kvstore = NULL;
-	this->vstree = NULL;
+	// this->vstree = NULL;
 	this->fp = NULL;
 	this->export_flag = false;
 	this->txn = nullptr;
 	//this->prepare_handler();
 }
 
-Strategy::Strategy(KVstore* _kvstore, VSTree* _vstree, TYPE_TRIPLE_NUM* _pre2num, TYPE_TRIPLE_NUM* _pre2sub,
+Strategy::Strategy(KVstore* _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_TRIPLE_NUM* _pre2sub,
  	TYPE_TRIPLE_NUM* _pre2obj, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
 	TYPE_ENTITY_LITERAL_ID _limitID_entity,bool _is_distinct, shared_ptr<Transaction> _txn)
 {
 	this->method = 0;
 	this->kvstore = _kvstore;
-	this->vstree = _vstree;
+	// this->vstree = _vstree;
 	this->pre2num = _pre2num;
 	this->pre2sub = _pre2sub;
 	this->pre2obj = _pre2obj;
@@ -563,7 +563,7 @@ void
 Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	//long before_filter = Util::get_cur_time();
-	cout << "this BasicQuery use query strategy 0" << endl;
+	cout << "this BasicQuery use query strategy 0 database" << endl;
 
 	//BETTER:not all vars in join filtered by vstree
 	//(A)-B-c: B should by vstree, then by c, but A should be generated in join(first set A as not)
@@ -604,6 +604,13 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 
 	long tv_retrieve = Util::get_cur_time();
 	cout << "after Retrieve, used " << (tv_retrieve - tv_handle) << "ms." << endl;
+
+	/*
+		pre_handler()主要是对谓词过滤做一些预处理，对量级有一定要求，要求使用二分搜索；
+		量级判断的条件和初始化部分有一定的问题；
+		这部分代码可以考虑直接删除;
+		对于谓词来说，我们尽可能直接调用pre2num来采用lazy initialization的方法获取，或者使用statistics进行获取。
+	*/
 
 	bool * d_triple = (bool*)calloc(_bq->getTripleNum(), sizeof(bool));
 
