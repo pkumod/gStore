@@ -71,7 +71,7 @@ private:
 	int entry_num;
 	int height;
 
-	LRUCache* node_buffer;
+	gstore::LRUCache* node_buffer;
 	EntryBuffer* entry_buffer;
 	map<int, int> entityID2FileLineMap; // record the mapping from entityID to their node's file line.
 

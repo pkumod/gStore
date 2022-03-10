@@ -23,12 +23,22 @@ class TempResult
 		{
 			public:
 				unsigned *id;
+				int sz;
 				std::vector<std::string> str;
-				ResultPair():id(NULL){}
+				
+				ResultPair();
+				ResultPair(const ResultPair& that);
+				ResultPair& operator=(const ResultPair& that);
+				~ResultPair() { }	// Delete pointer already handled in release
 		};
 
 		Varset id_varset, str_varset;
 		std::vector<ResultPair> result;
+
+		TempResult() { }
+		TempResult(const TempResult& that);
+		TempResult& operator=(const TempResult& that);
+		~TempResult() { }
 
 		Varset getAllVarset();
 
@@ -62,7 +72,10 @@ class TempResultSet
 		bool initial;	// If true -- has never been filled, any result will overwrite it
 						// If false -- has been filled by some executed query, even if empty,
 						// will join normally
-		TempResultSet() { initial = true; }
+		TempResultSet();
+		TempResultSet(const TempResultSet& that);
+		TempResultSet& operator=(const TempResultSet& that);
+		~TempResultSet() { }
 
 		void release();
 

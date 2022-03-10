@@ -10,6 +10,19 @@ Gstore System(also called gStore) is a graph database engine for managing large 
 
 ## Change log
 
+**0.9.1（beta）：2021-11-25**
+
+New features in gStore 0.9.1 are listed as follows:
+
+- Decoupling the parsing and execution of queries in kernel, and further improvements on the query performance through optimized join ordering and other techniques. On complex queries, the performance is improved by over 40%.
+- Rewriting of the HTTP service component, ghttp, with improved robustness and the addition of functions such as user permission, heartbeat detection, batch import, and batch deletion; API documents are added.
+- Implementation of the Personalized PageRank (PPR) extension function, which can be invoked in the SELECT clause to calculate the correlation between entities.
+- Support for arithmetic operations (e.g., `?x + ?y = 5`) in the FILTER clause.
+- Support for transactional operations, such as begin, tquery (transactional query), commit, and rollback;
+- A new executive component, gserver, is added to provide another pathway for remote access of gStore aside from the ghttp component, which implements two-way communication via the socket API.
+- Unification of the format of command line arguments of executive components. The `--help` option is uniformly introduced (e.g., `$ bin/gbuild --help` or `$ bin/gbuild -h`), by which users can view the command manual including the meaning of each option.
+- A number of bug fixes.
+
 **0.9（beta）：2021-02-10**
 
 New features in version 0.9 include:

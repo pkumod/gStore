@@ -18,6 +18,7 @@ class ResultSet
 private:
 	Stream* stream;
 	bool useStream;
+	std::string username;
 public:
 	int select_var_num;	// Include order by keys
 	int true_select_var_num;	// Exclude order by keys
@@ -49,6 +50,8 @@ public:
 	void resetStream();
 	void writeToStream(std::string& _s);
 	const Bstr* getOneRecord();
+	void setUsername(const std::string& _username);
+	std::string getUsername();
 };
 
 #endif //_QUERY_RESULTSET_H

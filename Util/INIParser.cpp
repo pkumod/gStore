@@ -11,7 +11,6 @@ string & TrimString(string & str)
 //read in INI file and parse it
 int INIParser::ReadINI(string path)
 {
-        cout<<"path："<<path<<endl;
         ifstream in_conf_file(path.c_str());  
         if (!in_conf_file) return 0;   
         string str_line = "";   
@@ -55,12 +54,12 @@ int INIParser::ReadINI(string path)
         SubNode sn;
         for (map<string, string>::iterator itr = map_tmp.begin(); itr != map_tmp.end(); ++itr)         
         {            
-                cout << itr->first << endl;           
+                //cout << itr->first << endl;           
                 for (vector<ININode>::iterator sub_itr = vec_ini.begin(); sub_itr != vec_ini.end(); ++sub_itr)                
                 {                  
                         if (sub_itr->root == itr->first)                           
                         {                       
-                                cout << sub_itr->key << "=" << sub_itr->value << endl;                           
+                                //cout << sub_itr->key << "=" << sub_itr->value << endl;                           
                                 sn.InsertElement(sub_itr->key, sub_itr->value);                          
                         }                 
                 }            

@@ -2,6 +2,8 @@
 
 #include "../Util/Util.h"
 #include "../Database/CSR.h"
+#include "../Database/CSRUtil.h"
+#include <dlfcn.h>
 
 #ifndef _QUERY_PATH_H
 #define _QUERY_PATH_H
@@ -14,8 +16,11 @@ private:
 	std::unordered_map<int, std::set<int> > distinctOutEdges;
 	int cacheMaxSize;
 	int n, m;	// #vertices, #edges
+	CSRUtil *csrUtil;
 public:
 	PathQueryHandler(CSR *_csr);
+	
+	~PathQueryHandler();
 
 	void inputGraph(std::string filename);	// Read in a graph FOR TESTING. Graph file format:
 						// First line: #vertices #labels
@@ -60,7 +65,8 @@ public:
 	void SSPPR(int uid, int retNum, int k, const std::vector<int> &pred_set, std::vector< std::pair<int ,double> > &topkV2ppr);
 
     std::vector<std::pair<std::pair<int, int>, int>> kHopSubgraph(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
-    
+	
+    std::map<std::string, std::string> dynamicFunction(const std::vector<int> &iri_set, bool directed, int k, const std::vector<int> &pred_set, const std::string& fun_name, const std::string& username);
 private:
     // Helper functions for SSPPR
     void compute_ppr_with_reserve(std::pair<iMap<double>, iMap<double>> &fwd_idx, std::unordered_map<int, double> &v2ppr);

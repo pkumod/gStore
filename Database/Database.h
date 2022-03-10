@@ -26,6 +26,7 @@
 #include "../Query/GeneralEvaluation.h"
 #include "../Server/Socket.h"
 #include "CSR.h"
+#include "./Statistics.h"
 
 class Database
 {
@@ -53,6 +54,7 @@ public:
 	bool load(bool loadCSR=false);
 	bool unload();
 	void clear();
+	void export_db(FILE* fp);
 	int query(const string _query, ResultSet& _result_set, FILE* _fp = stdout, bool update_flag = true, bool export_flag = false, shared_ptr<Transaction> txn = nullptr);
 	//1. if subject of _triple doesn't exist,
 	//then assign a new subid, and insert a new SigEntry
@@ -84,7 +86,7 @@ public:
 	string getSixTuplesFile();
 
 	//root Path of this DB + signatureBFile
-	string getSignatureBFile();
+	// string getSignatureBFile();
 
 	//root Path of this DB + DBInfoFile
 	string getDBInfoFile();
@@ -92,7 +94,7 @@ public:
 	//id tuples file
 	string getIDTuplesFile();
 
-	VSTree* getVSTree();
+	// VSTree* getVSTree();
 	KVstore* getKVstore();
 	StringIndex* getStringIndex();
 	QueryCache* getQueryCache();
@@ -140,13 +142,16 @@ private:
 	//for log file
 	mutex log_lock;
 	
-	VSTree* vstree;
+	// VSTree* vstree;
 	KVstore* kvstore;
 	StringIndex* stringindex;
 	Join* join;
 
 	enum class UPDATE_TYPE{ SUBJECT_INSERT, SUBJECT_REMOVE, PREDICATE_INSERT, PREDICATE_REMOVE, OBJECT_INSERT, OBJECT_REMOVE};
-	//metadata of this database: sub_num, pre_num, obj_num, literal_num, etc. 
+	//metadata of this database: sub_num, pre_num, obj_num, literal_num, etc.
+    Statistics *statistics;
+
+    //metadata of this database: sub_num, pre_num, obj_num, literal_num, etc.
 	string db_info_file;
 
 	//six tuples: <sub pre obj sid pid oid> 
@@ -190,7 +195,7 @@ private:
 	void query_stringIndex(int id);
 	void check();
 	//used for multiple threads
-	void load_vstree(unsigned _vstree_size);
+	// void load_vstree(unsigned _vstree_size);
 	void load_entity2id(int _mode);
 	void load_id2entity(int _mode);
 	void load_literal2id(int _mode);
@@ -220,7 +225,7 @@ private:
 	
 	//triple num per group for insert/delete
 	//can not be too high, otherwise the heap will over
-	static const int GROUP_SIZE = 1000;
+	// static const int GROUP_SIZE = 1000;
 	//manage the ID allocate and garbage
 	static const TYPE_ENTITY_LITERAL_ID START_ID_NUM = 0;
 	//static const int START_ID_NUM = 1000;
@@ -258,17 +263,17 @@ private:
 	string getStorePath();
 
 	//encode relative signature data of all Basic Graph Query, who union together into SPARQLquery 
-	void buildSparqlSignature(SPARQLquery & _sparql_q);
+	// void buildSparqlSignature(SPARQLquery & _sparql_q);
 
 	//encode Triple into Subject EntityBitSet 
-	bool encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
+	// bool encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
 	//NOTICE: the encodeTriple with Triple* is invalid now(not enocde the linkage of neighbor-predicate)
-	bool encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
+	// bool encodeTriple2SubEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
 	//encode Triple into Object EntityBitSet 
-	bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
-	bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _sub_id);
+	// bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, const Triple* _p_triple);
+	// bool encodeTriple2ObjEntityBitSet(EntityBitSet& _bitset, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _sub_id);
 
-	bool calculateEntityBitSet(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet & _bitset);
+	// bool calculateEntityBitSet(TYPE_ENTITY_LITERAL_ID _entity_id, EntityBitSet & _bitset);
 
 	//check whether the relative 3-tuples exist
 	//usually, through sp2olist 
@@ -292,7 +297,9 @@ private:
 	void build_o2xx(ID_TUPLE*);
 	void build_p2xx(ID_TUPLE*);
 
-	//insert and delete, notice that modify is not needed here
+    void load_statistics();
+
+    //insert and delete, notice that modify is not needed here
 	//we can read from file or use sparql syntax
 	bool insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL, shared_ptr<Transaction> txn  = nullptr);
 	bool removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices = NULL, vector<unsigned>* _predicates = NULL, shared_ptr<Transaction> txn = nullptr);
@@ -304,7 +311,7 @@ private:
 
 	unsigned batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false , shared_ptr<Transaction> txn = nullptr);
 	unsigned batch_remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore=false , shared_ptr<Transaction> txn = nullptr);
-	
+
 	void sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
 	static void run_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
 

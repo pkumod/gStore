@@ -118,6 +118,7 @@ graphNode : varOrTerm | triplesNode ;
 graphNodepath : varOrTerm | triplesNodepath ;
 varOrTerm : var | graphTerm ;
 varOrIri : var | iri ;
+varOrIriSet : '{' varOrIri ',' varOrIri ( ',' varOrIri )* '}' ;
 var : VAR1 | VAR2 ;
 graphTerm : iri | rDFLiteral | numericLiteral | booleanLiteral | blankNode | NIL ;
 expression : conditionalOrexpression ;
@@ -199,6 +200,7 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_KHOPENUMERATE '(' varOrIri ',' varOrIri ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet (',' numericLiteral)? ')'
 |   K_KHOPREACHABLEPATH '(' varOrIri ',' varOrIri ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet (',' numericLiteral)? ')'
 |   K_PPR '(' varOrIri ',' (num_integer | integer_positive | integer_negative) ',' predSet ',' num_integer ')'
+|   K_PFN '(' varOrIriSet ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet ',' string ')'
  ;
 regexexpression : K_REGEX '(' expression ',' expression ( ',' expression )? ')' ;
 substringexpression : K_SUBSTR '(' expression ',' expression ( ',' expression )? ')' ;

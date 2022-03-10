@@ -235,7 +235,7 @@ void VNode::setChildEntry(int _i, const SigEntry _entry)
 //    }
 }
 
-VNode* VNode::getFather(LRUCache& _nodeBuffer)const
+VNode* VNode::getFather(gstore::LRUCache& _nodeBuffer)const
 {
     if (this->isRoot())
     {
@@ -245,7 +245,7 @@ VNode* VNode::getFather(LRUCache& _nodeBuffer)const
     return _nodeBuffer.get(this->getFatherFileLine());
 }
 
-VNode* VNode::getChild(int _i, LRUCache& _nodeBuffer)const
+VNode* VNode::getChild(int _i, gstore::LRUCache& _nodeBuffer)const
 {
     if (this->isLeaf())
     {
@@ -330,7 +330,7 @@ bool VNode::removeChild(int _i)
     return true;
 }
 
-int VNode::getIndexInFatherNode(LRUCache& _nodeBuffer)
+int VNode::getIndexInFatherNode(gstore::LRUCache& _nodeBuffer)
 {
     VNode * fatherNodePtr = this->getFather(_nodeBuffer);
 
@@ -377,7 +377,7 @@ void VNode::refreshSignature()
     }
 }
 
-void VNode::refreshAncestorSignature(LRUCache& _nodeBuffer)
+void VNode::refreshAncestorSignature(gstore::LRUCache& _nodeBuffer)
 {
     // refresh self node's signature.
     this->refreshSignature();
@@ -406,7 +406,7 @@ void VNode::refreshAncestorSignature(LRUCache& _nodeBuffer)
 #endif
 }
 
-bool VNode::retrieveChild(vector<VNode*>& _child_vec, const EntitySig _filter_sig, LRUCache& _nodeBuffer)
+bool VNode::retrieveChild(vector<VNode*>& _child_vec, const EntitySig _filter_sig, gstore::LRUCache& _nodeBuffer)
 {
     if (this->isLeaf())
     {
@@ -426,7 +426,7 @@ bool VNode::retrieveChild(vector<VNode*>& _child_vec, const EntitySig _filter_si
     return true;
 }
 
-bool VNode::retrieveEntry(vector<SigEntry>& _entry_vec, const EntitySig _filter_sig, LRUCache& _nodeBuffer)
+bool VNode::retrieveEntry(vector<SigEntry>& _entry_vec, const EntitySig _filter_sig, gstore::LRUCache& _nodeBuffer)
 {
     if (!this->isLeaf())
     {

@@ -21,6 +21,10 @@ SPARQLquery::SPARQLquery()
 
 }
 
+SPARQLquery::SPARQLquery(const SPARQLquery &other):query_union(other.query_union),query_var(other.query_var) {
+
+}
+
 SPARQLquery::~SPARQLquery()
 {
 	for(unsigned i = 0; i < this->query_union.size(); i ++)
@@ -185,5 +189,19 @@ SPARQLquery::to_str()
 	}
 
 	return _ss.str();
+}
+int SPARQLquery::GetLimit() const {
+  return this->limit_;
+}
+void SPARQLquery::SetLimit(int limit) {
+  this->limit_ = limit;
+}
+
+shared_ptr<vector<SPARQLquery::OrderedBy>> SPARQLquery::GetOrderedByVec(){
+  return this->ordered_by_vec;
+}
+
+void SPARQLquery::SetOrderedByVec(const shared_ptr<vector<OrderedBy>> &ordered_by_vec) {
+  this->ordered_by_vec = ordered_by_vec;
 }
 

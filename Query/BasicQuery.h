@@ -108,8 +108,6 @@ private:
 	// record each tuple's(subject, predicate, object) number of occurrences in this BasicQuery
 	map<std::string, int> tuple2freq;
 	set<std::string> selected_var_set;
-	//NOTICE:this is not used now!
-	map<std::string, int> var_not_in_select;
 
 	// id < select_var_num means in select
 	int select_var_num;
@@ -128,8 +126,8 @@ private:
 	bool* ready;
 	//if need to be retrieved by vstree or generate when join(first is graph var)
 	bool* need_retrieve;
+	bool* link_with_constant;
 
-	char encode_method;
 
 	//save the result of encodeBasicQuery
 	bool encode_result;
@@ -155,15 +153,13 @@ private:
 	//EdgeBitSet**  edge_sig;
 
 	void addInVarNotInSelect();
-	void findVarNotInSelect();
 	void buildTuple2Freq();
 	void initial();
-	void null_initial();
 
 	//void updateSubSig(int _sub_id, int _pre_id, int _obj_id, std::string _obj, int _line_id);
 	//void updateObjSig(int _obj_id, int _pre_id, int _sub_id, std::string _sub, int _line_id);
-	void updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, int _line_id, int _obj_var_id);
-	void updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _sub_id, int _line_id, int _sub_var_id);
+	void updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, int _line_id, int _obj_var_id);
+	void updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, int _line_id, int _sub_var_id);
 
 	//infos for predicate variables
 	vector<PreVar> pre_var;
@@ -174,6 +170,8 @@ private:
 	//positive key id for normal var, -1-id for pre var
 	map<int, int> selected_var_position;
 
+	// refer to
+	shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>> intermediate_result_values_;
 public:
 	// static const int MAX_VAR_NUM = 20;
 	static const int MAX_VAR_NUM = 50;

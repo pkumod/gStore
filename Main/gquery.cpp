@@ -260,33 +260,33 @@ main(int argc, char * argv[])
 #ifdef DEBUG_PRECISE
 				printf("%s\n", p);
 #endif
-				if (q == NULL)
-				{
-					printf("invalid path!\n");
-					free(q);
-					free(buf);
-					continue;
-				}
-				else
-					printf("%s\n", q);
-				//query = getQueryFromFile(p);
-				query = Util::getQueryFromFile(q);
-				if (query.empty())
-				{
-					free(q);
-					//free(resolved_path);
-					free(buf);
-					if (ifredirect)
-						fclose(fp);
-					continue;
-				}
-				printf("query is:\n");
-				printf("%s\n\n", query.c_str());
-				ResultSet _rs;
-				shared_ptr<Transaction> ptxn = make_shared<Transaction>(db_folder, 1, 1);
-				int ret = _db.query(query, _rs, fp, true, false, nullptr);
-				//int ret = _db.query(query, _rs, NULL);
-				string msg;
+		if (q == NULL)
+		{
+			printf("invalid path!\n");
+			free(q);
+			free(buf);
+			continue;
+		}
+		else
+			printf("%s\n", q);
+		//query = getQueryFromFile(p);
+		query = Util::getQueryFromFile(q);
+		if (query.empty())
+		{
+			free(q);
+			//free(resolved_path);
+			free(buf);
+			if (ifredirect)
+				fclose(fp);
+			continue;
+		}
+		printf("query is:\n");
+		printf("%s\n\n", query.c_str());
+		ResultSet _rs;
+		//shared_ptr<Transaction> ptxn = make_shared<Transaction>(db_folder, 1, 1);
+		int ret = _db.query(query, _rs, fp, true, false, nullptr);
+		//int ret = _db.query(query, _rs, NULL);
+		string msg;
 
 				//cout<<"gquery ret: "<<ret<<endl;
 				if (ret <= -100) //select query

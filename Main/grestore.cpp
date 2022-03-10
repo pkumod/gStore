@@ -121,7 +121,7 @@ main(int argc, char * argv[])
 		ResultSet ask_rs;
 		FILE *ask_ofp = stdout;
 		system_db.query(sparql, ask_rs, ask_ofp);
-		if (ask_rs.answer[0][0] == "false")
+		if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
 		{
 			cout << "The database does not exist. Rebuild" << endl;
 			string time = Util::get_backup_time(backup_path, db_name);
@@ -173,7 +173,7 @@ main(int argc, char * argv[])
 		return 0;
 	}
 
-	// if(argc < 2)  
+	// if(argc < 2)
 	// {
 	// 	//output help info here
 	// 	cout << "the usage of grestore: " << endl;
@@ -194,7 +194,7 @@ main(int argc, char * argv[])
 	// 	cout << endl;
 	// }
 
-	
+
 	// int len = db_name.length();
 	// if(db_name.length() > 3 && db_name.substr(len-3, 3) == ".db")
 	// {
@@ -206,7 +206,7 @@ main(int argc, char * argv[])
 	// {
 	// 	cout<< "Your database's name can not be system."<<endl;
 	// 	return -1;
-	// }	
+	// }
 
 	// if(backup_path[0] == '/') backup_path = '.' + backup_path;
 	// if(backup_path[backup_path.length() - 1] == '/') backup_path = backup_path.substr(0, backup_path.length()-1);
@@ -249,7 +249,7 @@ main(int argc, char * argv[])
 	// 	cout << msg << endl;
 	// 	Util::add_backuplog(db_name);
 	// }
-	
+
 	// int ret = copy(backup_path, DEFALUT_BUILD_PATH);
 
 	// if(ret == 1){

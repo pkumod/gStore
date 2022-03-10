@@ -1,5 +1,5 @@
 
-// Generated from ./SPARQL.g4 by ANTLR 4.7.2
+// Generated from ./SPARQL.g4 by ANTLR 4.9
 
 
 #include "SPARQLLexer.h"
@@ -60,42 +60,38 @@ atn::ATN SPARQLLexer::_atn;
 std::vector<uint16_t> SPARQLLexer::_serializedATN;
 
 std::vector<std::string> SPARQLLexer::_ruleNames = {
-  u8"T__0", u8"T__1", u8"T__2", u8"T__3", u8"T__4", u8"T__5", u8"T__6", 
-  u8"T__7", u8"T__8", u8"T__9", u8"T__10", u8"T__11", u8"T__12", u8"T__13", 
-  u8"T__14", u8"T__15", u8"T__16", u8"T__17", u8"T__18", u8"T__19", u8"T__20", 
-  u8"T__21", u8"T__22", u8"T__23", u8"T__24", u8"T__25", u8"T__26", u8"T__27", 
-  u8"T__28", u8"K_NOW", u8"K_YEAR", u8"K_UNION", u8"K_IF", u8"K_ASK", u8"K_ASC", 
-  u8"K_CONCAT", u8"K_IN", u8"K_UNDEF", u8"K_INSERT", u8"K_MONTH", u8"K_DEFAULT", 
-  u8"K_SELECT", u8"K_FLOOR", u8"K_TZ", u8"K_COPY", u8"K_CEIL", u8"K_HOURS", 
-  u8"K_DATATYPE", u8"K_ISNUMERIC", u8"K_STRUUID", u8"K_CONSTRUCT", u8"K_ADD", 
-  u8"K_BOUND", u8"K_NAMED", u8"K_TIMEZONE", u8"K_MIN", u8"K_ISBLANK", u8"K_UUID", 
-  u8"K_BIND", u8"K_CLEAR", u8"K_INTO", u8"K_AS", u8"K_ALL", u8"K_IRI", u8"K_BASE", 
-  u8"K_BY", u8"K_DROP", u8"K_LOAD", u8"K_WITH", u8"K_BNODE", u8"K_WHERE", 
-  u8"K_AVG", u8"K_SAMPLE", u8"K_UCASE", u8"K_SERVICE", u8"K_MINUS", u8"K_SAMETERM", 
-  u8"K_STRSTARTS", u8"K_STR", u8"K_MOVE", u8"K_HAVING", u8"K_COALESCE", 
-  u8"K_STRBEFORE", u8"K_ABS", u8"K_ISLITERAL", u8"K_STRAFTER", u8"K_STRLEN", 
-  u8"K_LANG", u8"K_CREATE", u8"K_DESC", u8"K_MAX", u8"K_FILTER", u8"K_USING", 
-  u8"K_NOT", u8"K_STRENDS", u8"K_OFFSET", u8"K_CONTAINS", u8"K_PREFIX", 
-  u8"K_MINUTES", u8"K_REPLACE", u8"K_REGEX", u8"K_DELETE", u8"K_SEPARATOR", 
-  u8"K_DAY", u8"K_SILENT", u8"K_STRLANG", u8"K_ORDER", u8"K_ROUND", u8"K_GRAPH", 
-  u8"K_SECONDS", u8"K_URI", u8"K_DISTINCT", u8"K_EXISTS", u8"K_GROUP", u8"K_SUM", 
-  u8"K_REDUCED", u8"K_FROM", u8"K_LANGMATCHES", u8"K_ISURI", u8"K_TO", u8"K_ISIRI", 
-  u8"K_RAND", u8"K_STRDT", u8"K_COUNT", u8"K_DESCRIBE", u8"K_VALUES", u8"K_LCASE", 
-  u8"K_OPTIONAL", u8"K_LIMIT", u8"K_SUBSTR", u8"K_SIMPLECYCLEPATH", u8"K_SIMPLECYCLEBOOLEAN", 
-  u8"K_CYCLEPATH", u8"K_CYCLEBOOLEAN", u8"K_SHORTESTPATH", u8"K_SHORTESTPATHLEN", 
-  u8"K_KHOPREACHABLE", u8"K_KHOPENUMERATE", u8"K_KHOPREACHABLEPATH", u8"K_PPR", 
-  u8"KK_INSERTDATA", u8"KK_DELETEDATA", u8"KK_DELETEWHERE", u8"KK_ENCODE_FOR_URI", 
-  u8"KK_MD5", u8"KK_SHA1", u8"KK_SHA256", u8"KK_SHA384", u8"KK_SHA512", 
-  u8"KK_GROUP_CONCAT", u8"IRIREF", u8"PNAME_NS", u8"PNAME_LN", u8"BLANK_NODE_LABEL", 
-  u8"VAR1", u8"VAR2", u8"LANGTAG", u8"INTEGER", u8"DECIMAL", u8"DOUBLE", 
-  u8"INTEGER_POSITIVE", u8"DECIMAL_POSITIVE", u8"DOUBLE_POSITIVE", u8"INTEGER_NEGATIVE", 
-  u8"DECIMAL_NEGATIVE", u8"DOUBLE_NEGATIVE", u8"EXPONENT", u8"STRING_LITERAL1", 
-  u8"STRING_LITERAL2", u8"STRING_LITERAL_LONG1", u8"STRING_LITERAL_LONG2", 
-  u8"ECHAR", u8"NIL", u8"WS", u8"ANON", u8"PN_CHARS_BASE", u8"PN_CHARS_U", 
-  u8"VARNAME", u8"PN_CHARS", u8"PN_PREFIX", u8"PN_LOCAL", u8"PLX", u8"PERCENT", 
-  u8"HEX", u8"PN_LOCAL_ESC", u8"A", u8"B", u8"C", u8"D", u8"E", u8"F", u8"G", 
-  u8"H", u8"I", u8"J", u8"K", u8"L", u8"M", u8"N", u8"O", u8"P", u8"Q", 
-  u8"R", u8"S", u8"T", u8"U", u8"V", u8"W", u8"X", u8"Y", u8"Z"
+  "T__0", "T__1", "T__2", "T__3", "T__4", "T__5", "T__6", "T__7", "T__8", 
+  "T__9", "T__10", "T__11", "T__12", "T__13", "T__14", "T__15", "T__16", 
+  "T__17", "T__18", "T__19", "T__20", "T__21", "T__22", "T__23", "T__24", 
+  "T__25", "T__26", "T__27", "T__28", "K_NOW", "K_YEAR", "K_UNION", "K_IF", 
+  "K_ASK", "K_ASC", "K_CONCAT", "K_IN", "K_UNDEF", "K_INSERT", "K_MONTH", 
+  "K_DEFAULT", "K_SELECT", "K_FLOOR", "K_TZ", "K_COPY", "K_CEIL", "K_HOURS", 
+  "K_DATATYPE", "K_ISNUMERIC", "K_STRUUID", "K_CONSTRUCT", "K_ADD", "K_BOUND", 
+  "K_NAMED", "K_TIMEZONE", "K_MIN", "K_ISBLANK", "K_UUID", "K_BIND", "K_CLEAR", 
+  "K_INTO", "K_AS", "K_ALL", "K_IRI", "K_BASE", "K_BY", "K_DROP", "K_LOAD", 
+  "K_WITH", "K_BNODE", "K_WHERE", "K_AVG", "K_SAMPLE", "K_UCASE", "K_SERVICE", 
+  "K_MINUS", "K_SAMETERM", "K_STRSTARTS", "K_STR", "K_MOVE", "K_HAVING", 
+  "K_COALESCE", "K_STRBEFORE", "K_ABS", "K_ISLITERAL", "K_STRAFTER", "K_STRLEN", 
+  "K_LANG", "K_CREATE", "K_DESC", "K_MAX", "K_FILTER", "K_USING", "K_NOT", 
+  "K_STRENDS", "K_OFFSET", "K_CONTAINS", "K_PREFIX", "K_MINUTES", "K_REPLACE", 
+  "K_REGEX", "K_DELETE", "K_SEPARATOR", "K_DAY", "K_SILENT", "K_STRLANG", 
+  "K_ORDER", "K_ROUND", "K_GRAPH", "K_SECONDS", "K_URI", "K_DISTINCT", "K_EXISTS", 
+  "K_GROUP", "K_SUM", "K_REDUCED", "K_FROM", "K_LANGMATCHES", "K_ISURI", 
+  "K_TO", "K_ISIRI", "K_RAND", "K_STRDT", "K_COUNT", "K_DESCRIBE", "K_VALUES", 
+  "K_LCASE", "K_OPTIONAL", "K_LIMIT", "K_SUBSTR", "K_SIMPLECYCLEPATH", "K_SIMPLECYCLEBOOLEAN", 
+  "K_CYCLEPATH", "K_CYCLEBOOLEAN", "K_SHORTESTPATH", "K_SHORTESTPATHLEN", 
+  "K_KHOPREACHABLE", "K_KHOPENUMERATE", "K_KHOPREACHABLEPATH", "K_PPR", 
+  "KK_INSERTDATA", "KK_DELETEDATA", "KK_DELETEWHERE", "KK_ENCODE_FOR_URI", 
+  "KK_MD5", "KK_SHA1", "KK_SHA256", "KK_SHA384", "KK_SHA512", "KK_GROUP_CONCAT", 
+  "IRIREF", "PNAME_NS", "PNAME_LN", "BLANK_NODE_LABEL", "VAR1", "VAR2", 
+  "LANGTAG", "INTEGER", "DECIMAL", "DOUBLE", "INTEGER_POSITIVE", "DECIMAL_POSITIVE", 
+  "DOUBLE_POSITIVE", "INTEGER_NEGATIVE", "DECIMAL_NEGATIVE", "DOUBLE_NEGATIVE", 
+  "EXPONENT", "STRING_LITERAL1", "STRING_LITERAL2", "STRING_LITERAL_LONG1", 
+  "STRING_LITERAL_LONG2", "ECHAR", "NIL", "WS", "ANON", "PN_CHARS_BASE", 
+  "PN_CHARS_U", "VARNAME", "PN_CHARS", "PN_PREFIX", "PN_LOCAL", "PLX", "PERCENT", 
+  "HEX", "PN_LOCAL_ESC", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", 
+  "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", 
+  "Y", "Z"
 };
 
 std::vector<std::string> SPARQLLexer::_channelNames = {
@@ -103,48 +99,45 @@ std::vector<std::string> SPARQLLexer::_channelNames = {
 };
 
 std::vector<std::string> SPARQLLexer::_modeNames = {
-  u8"DEFAULT_MODE"
+  "DEFAULT_MODE"
 };
 
 std::vector<std::string> SPARQLLexer::_literalNames = {
-  "", u8"'*'", u8"'('", u8"')'", u8"'{'", u8"'}'", u8"';'", u8"'.'", u8"','", 
-  u8"'a'", u8"'|'", u8"'/'", u8"'^'", u8"'?'", u8"'+'", u8"'!'", u8"'['", 
-  u8"']'", u8"'||'", u8"'&&'", u8"'='", u8"'!='", u8"'<'", u8"'>'", u8"'<='", 
-  u8"'>='", u8"'-'", u8"'^^'", u8"'true'", u8"'false'"
+  "", "'*'", "'('", "')'", "'{'", "'}'", "';'", "'.'", "','", "'a'", "'|'", 
+  "'/'", "'^'", "'\u003F'", "'+'", "'!'", "'['", "']'", "'||'", "'&&'", 
+  "'='", "'!='", "'<'", "'>'", "'<='", "'>='", "'-'", "'^^'", "'true'", 
+  "'false'"
 };
 
 std::vector<std::string> SPARQLLexer::_symbolicNames = {
   "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", 
-  "", "", "", "", "", "", "", "", "", "", "", "", u8"K_NOW", u8"K_YEAR", 
-  u8"K_UNION", u8"K_IF", u8"K_ASK", u8"K_ASC", u8"K_CONCAT", u8"K_IN", u8"K_UNDEF", 
-  u8"K_INSERT", u8"K_MONTH", u8"K_DEFAULT", u8"K_SELECT", u8"K_FLOOR", u8"K_TZ", 
-  u8"K_COPY", u8"K_CEIL", u8"K_HOURS", u8"K_DATATYPE", u8"K_ISNUMERIC", 
-  u8"K_STRUUID", u8"K_CONSTRUCT", u8"K_ADD", u8"K_BOUND", u8"K_NAMED", u8"K_TIMEZONE", 
-  u8"K_MIN", u8"K_ISBLANK", u8"K_UUID", u8"K_BIND", u8"K_CLEAR", u8"K_INTO", 
-  u8"K_AS", u8"K_ALL", u8"K_IRI", u8"K_BASE", u8"K_BY", u8"K_DROP", u8"K_LOAD", 
-  u8"K_WITH", u8"K_BNODE", u8"K_WHERE", u8"K_AVG", u8"K_SAMPLE", u8"K_UCASE", 
-  u8"K_SERVICE", u8"K_MINUS", u8"K_SAMETERM", u8"K_STRSTARTS", u8"K_STR", 
-  u8"K_MOVE", u8"K_HAVING", u8"K_COALESCE", u8"K_STRBEFORE", u8"K_ABS", 
-  u8"K_ISLITERAL", u8"K_STRAFTER", u8"K_STRLEN", u8"K_LANG", u8"K_CREATE", 
-  u8"K_DESC", u8"K_MAX", u8"K_FILTER", u8"K_USING", u8"K_NOT", u8"K_STRENDS", 
-  u8"K_OFFSET", u8"K_CONTAINS", u8"K_PREFIX", u8"K_MINUTES", u8"K_REPLACE", 
-  u8"K_REGEX", u8"K_DELETE", u8"K_SEPARATOR", u8"K_DAY", u8"K_SILENT", u8"K_STRLANG", 
-  u8"K_ORDER", u8"K_ROUND", u8"K_GRAPH", u8"K_SECONDS", u8"K_URI", u8"K_DISTINCT", 
-  u8"K_EXISTS", u8"K_GROUP", u8"K_SUM", u8"K_REDUCED", u8"K_FROM", u8"K_LANGMATCHES", 
-  u8"K_ISURI", u8"K_TO", u8"K_ISIRI", u8"K_RAND", u8"K_STRDT", u8"K_COUNT", 
-  u8"K_DESCRIBE", u8"K_VALUES", u8"K_LCASE", u8"K_OPTIONAL", u8"K_LIMIT", 
-  u8"K_SUBSTR", u8"K_SIMPLECYCLEPATH", u8"K_SIMPLECYCLEBOOLEAN", u8"K_CYCLEPATH", 
-  u8"K_CYCLEBOOLEAN", u8"K_SHORTESTPATH", u8"K_SHORTESTPATHLEN", u8"K_KHOPREACHABLE", 
-  u8"K_KHOPENUMERATE", u8"K_KHOPREACHABLEPATH", u8"K_PPR", u8"KK_INSERTDATA", 
-  u8"KK_DELETEDATA", u8"KK_DELETEWHERE", u8"KK_ENCODE_FOR_URI", u8"KK_MD5", 
-  u8"KK_SHA1", u8"KK_SHA256", u8"KK_SHA384", u8"KK_SHA512", u8"KK_GROUP_CONCAT", 
-  u8"IRIREF", u8"PNAME_NS", u8"PNAME_LN", u8"BLANK_NODE_LABEL", u8"VAR1", 
-  u8"VAR2", u8"LANGTAG", u8"INTEGER", u8"DECIMAL", u8"DOUBLE", u8"INTEGER_POSITIVE", 
-  u8"DECIMAL_POSITIVE", u8"DOUBLE_POSITIVE", u8"INTEGER_NEGATIVE", u8"DECIMAL_NEGATIVE", 
-  u8"DOUBLE_NEGATIVE", u8"EXPONENT", u8"STRING_LITERAL1", u8"STRING_LITERAL2", 
-  u8"STRING_LITERAL_LONG1", u8"STRING_LITERAL_LONG2", u8"ECHAR", u8"NIL", 
-  u8"WS", u8"ANON", u8"PN_CHARS_BASE", u8"PN_CHARS_U", u8"VARNAME", u8"PN_CHARS", 
-  u8"PN_PREFIX", u8"PN_LOCAL", u8"PLX", u8"PERCENT", u8"HEX", u8"PN_LOCAL_ESC"
+  "", "", "", "", "", "", "", "", "", "", "", "", "K_NOW", "K_YEAR", "K_UNION", 
+  "K_IF", "K_ASK", "K_ASC", "K_CONCAT", "K_IN", "K_UNDEF", "K_INSERT", "K_MONTH", 
+  "K_DEFAULT", "K_SELECT", "K_FLOOR", "K_TZ", "K_COPY", "K_CEIL", "K_HOURS", 
+  "K_DATATYPE", "K_ISNUMERIC", "K_STRUUID", "K_CONSTRUCT", "K_ADD", "K_BOUND", 
+  "K_NAMED", "K_TIMEZONE", "K_MIN", "K_ISBLANK", "K_UUID", "K_BIND", "K_CLEAR", 
+  "K_INTO", "K_AS", "K_ALL", "K_IRI", "K_BASE", "K_BY", "K_DROP", "K_LOAD", 
+  "K_WITH", "K_BNODE", "K_WHERE", "K_AVG", "K_SAMPLE", "K_UCASE", "K_SERVICE", 
+  "K_MINUS", "K_SAMETERM", "K_STRSTARTS", "K_STR", "K_MOVE", "K_HAVING", 
+  "K_COALESCE", "K_STRBEFORE", "K_ABS", "K_ISLITERAL", "K_STRAFTER", "K_STRLEN", 
+  "K_LANG", "K_CREATE", "K_DESC", "K_MAX", "K_FILTER", "K_USING", "K_NOT", 
+  "K_STRENDS", "K_OFFSET", "K_CONTAINS", "K_PREFIX", "K_MINUTES", "K_REPLACE", 
+  "K_REGEX", "K_DELETE", "K_SEPARATOR", "K_DAY", "K_SILENT", "K_STRLANG", 
+  "K_ORDER", "K_ROUND", "K_GRAPH", "K_SECONDS", "K_URI", "K_DISTINCT", "K_EXISTS", 
+  "K_GROUP", "K_SUM", "K_REDUCED", "K_FROM", "K_LANGMATCHES", "K_ISURI", 
+  "K_TO", "K_ISIRI", "K_RAND", "K_STRDT", "K_COUNT", "K_DESCRIBE", "K_VALUES", 
+  "K_LCASE", "K_OPTIONAL", "K_LIMIT", "K_SUBSTR", "K_SIMPLECYCLEPATH", "K_SIMPLECYCLEBOOLEAN", 
+  "K_CYCLEPATH", "K_CYCLEBOOLEAN", "K_SHORTESTPATH", "K_SHORTESTPATHLEN", 
+  "K_KHOPREACHABLE", "K_KHOPENUMERATE", "K_KHOPREACHABLEPATH", "K_PPR", 
+  "KK_INSERTDATA", "KK_DELETEDATA", "KK_DELETEWHERE", "KK_ENCODE_FOR_URI", 
+  "KK_MD5", "KK_SHA1", "KK_SHA256", "KK_SHA384", "KK_SHA512", "KK_GROUP_CONCAT", 
+  "IRIREF", "PNAME_NS", "PNAME_LN", "BLANK_NODE_LABEL", "VAR1", "VAR2", 
+  "LANGTAG", "INTEGER", "DECIMAL", "DOUBLE", "INTEGER_POSITIVE", "DECIMAL_POSITIVE", 
+  "DOUBLE_POSITIVE", "INTEGER_NEGATIVE", "DECIMAL_NEGATIVE", "DOUBLE_NEGATIVE", 
+  "EXPONENT", "STRING_LITERAL1", "STRING_LITERAL2", "STRING_LITERAL_LONG1", 
+  "STRING_LITERAL_LONG2", "ECHAR", "NIL", "WS", "ANON", "PN_CHARS_BASE", 
+  "PN_CHARS_U", "VARNAME", "PN_CHARS", "PN_PREFIX", "PN_LOCAL", "PLX", "PERCENT", 
+  "HEX", "PN_LOCAL_ESC"
 };
 
 dfa::Vocabulary SPARQLLexer::_vocabulary(_literalNames, _symbolicNames);

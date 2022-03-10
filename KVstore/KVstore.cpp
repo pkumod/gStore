@@ -15,7 +15,7 @@ using namespace std;
 KVstore::KVstore(string _store_path) 
 {
 	this->store_path = _store_path;
-	
+
 	this->dictionary_store_path = _store_path + "/StringPrefix.dc";
 	this->trie = NULL;
 
@@ -180,7 +180,7 @@ KVstore::getStringByID(TYPE_ENTITY_LITERAL_ID _id)
 TYPE_ENTITY_LITERAL_ID
 KVstore::getIDByString(string _str)
 {
-	cout << "KVSTORE::GETIDBYSTRING" << endl;
+	// cout << "KVSTORE::GETIDBYSTRING" << endl;
 	//load kv_trie
 /*	if (kv_trie == NULL)
 	{
@@ -3206,6 +3206,14 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 	}
 }
 
+/**
+ * @param _subid
+ * @param _preid_objidlist [p0 o0, p1 o1, p2 o2,...,pn on]
+ * @param _list_len n
+ * @param _no_duplicate reserve the repeated elements
+ * @param txn
+ * @return
+ */
 bool 
 KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preid_objidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const 
 {
@@ -3942,7 +3950,6 @@ KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _pre
 		return true;
 	}
 }
-
 bool 
 KVstore::open_preID2values(int _mode, TYPE_PREDICATE_ID _pre_num) 
 {
@@ -5020,6 +5027,23 @@ KVstore::getPreListSize(TYPE_PREDICATE_ID _pre_id)
 	this->getValueByKey(this->preID2values, _pre_id, (char*&) _tmp, _ret);
 	delete [] _tmp;
 	return _ret;
+}
+
+// check by sp2o, maybe there is other better method.
+// same as Database::exist_triple
+bool
+KVstore::existThisTriple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) {
+	unsigned* _objidlist = nullptr;
+	unsigned _list_len = 0;
+	this->getobjIDlistBysubIDpreID(_sub_id, _pre_id, _objidlist, _list_len, true);
+
+	bool is_exist = false;
+	if (Util::bsearch_int_uporder(_obj_id, _objidlist, _list_len) != INVALID) {
+		is_exist = true;
+	}
+
+	delete[] _objidlist;
+	return is_exist;
 }
 
 //TODO+BETTER: adjust the buffer size according to current memory usage(global memory manager)

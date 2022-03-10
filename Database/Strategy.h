@@ -16,7 +16,6 @@
 #include "../Query/SPARQLquery.h"
 #include "../Query/BasicQuery.h"
 #include "../KVstore/KVstore.h"
-#include "../VSTree/VSTree.h"
 
 class Strategy
 {
@@ -27,7 +26,7 @@ public:
 	Strategy();
 	    	// if there exists a variable with limited matches in the query, then skip the filter of other
 	    	// variables as soon as possible
-	Strategy(KVstore*, VSTree*, TYPE_TRIPLE_NUM*, TYPE_TRIPLE_NUM*,TYPE_TRIPLE_NUM*, TYPE_PREDICATE_ID, 
+	Strategy(KVstore*, TYPE_TRIPLE_NUM*, TYPE_TRIPLE_NUM*,TYPE_TRIPLE_NUM*, TYPE_PREDICATE_ID, 
 		TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID,bool, shared_ptr<Transaction> _txn = nullptr);
 	~Strategy();
 	//select efficient strategy to do the sparql query
@@ -39,7 +38,6 @@ private:
 	int method;
 	bool isDistinct;
 	KVstore* kvstore;
-	VSTree* vstree;
 	TYPE_TRIPLE_NUM* pre2num;
 	TYPE_TRIPLE_NUM* pre2sub;
 	TYPE_TRIPLE_NUM* pre2obj;

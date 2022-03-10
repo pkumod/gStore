@@ -59,8 +59,11 @@ public:
 	unsigned long getPreListSize(TYPE_PREDICATE_ID _pre_id);
 	unsigned long getSubListSize(TYPE_ENTITY_LITERAL_ID _sub_id);
 	unsigned long getObjListSize(TYPE_ENTITY_LITERAL_ID _obj_id);
-	
-	//===============================================================================
+
+	bool existThisTriple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id);
+
+
+		//===============================================================================
 
 	//including IN-neighbor & OUT-neighbor 
 	unsigned getEntityDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const;
@@ -202,7 +205,6 @@ public:
 	bool getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
 	bool getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
 	bool getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preid_subidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
-
 	//for preID2values
 	bool open_preID2values(int _mode, TYPE_PREDICATE_ID _pre_num = 0);
 	bool close_preID2values();

@@ -1,5 +1,5 @@
 
-// Generated from ./SPARQL.g4 by ANTLR 4.7.2
+// Generated from ./SPARQL.g4 by ANTLR 4.9
 
 #pragma once
 
@@ -343,6 +343,9 @@ public:
 
   virtual void enterVarOrIri(SPARQLParser::VarOrIriContext *ctx) = 0;
   virtual void exitVarOrIri(SPARQLParser::VarOrIriContext *ctx) = 0;
+
+  virtual void enterVarOrIriSet(SPARQLParser::VarOrIriSetContext *ctx) = 0;
+  virtual void exitVarOrIriSet(SPARQLParser::VarOrIriSetContext *ctx) = 0;
 
   virtual void enterVar(SPARQLParser::VarContext *ctx) = 0;
   virtual void exitVar(SPARQLParser::VarContext *ctx) = 0;

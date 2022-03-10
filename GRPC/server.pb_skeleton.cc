@@ -11,11 +11,11 @@ void sig_handler(int signo)
 	wait_group.done();
 }
 
-class ExampleServiceImpl : public Example::Service
+class grpcServiceImpl : public grpc::Service
 {
 public:
 
-	void Echo(EchoRequest *request, EchoResponse *response, srpc::RPCContext *ctx) override
+	void api(CommonRequest *request, CommonResponse *response, srpc::RPCContext *ctx) override
 	{}
 };
 
@@ -25,8 +25,8 @@ int main()
 	unsigned short port = 1412;
 	SRPCServer server;
 
-	ExampleServiceImpl example_impl;
-	server.add_service(&example_impl);
+	grpcServiceImpl grpc_impl;
+	server.add_service(&grpc_impl);
 
 	server.start(port);
 	wait_group.wait();

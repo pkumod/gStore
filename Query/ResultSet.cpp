@@ -97,6 +97,17 @@ ResultSet::setVar(const vector<string> & _var_names)
 	}
 }
 
+void
+ResultSet::setUsername(const std::string& _username)
+{
+	this->username = _username;
+}
+string
+ResultSet::getUsername()
+{
+	return this->username;
+}
+
 //convert to TSV string
 string 
 ResultSet::to_str()
