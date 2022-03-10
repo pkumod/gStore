@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 	srand(time(NULL));
 	while (true)
 	{
-		pid_t fpid = 0; //fork();
+		pid_t fpid = fork();
 		if (fpid == 0)
 		{
 			int ret = initialize(argc, argv);
