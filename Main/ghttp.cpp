@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-03-10 20:10:14
+ * @LastEditTime: 2022-03-10 20:18:38
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -460,7 +460,7 @@ int main(int argc, char *argv[])
 	while (true) {
 		//NOTICE: here we use 2 processes, father process is used for monitor and control(like, restart)
 		//Child process is used to deal with web requests, can also has many threads
-		pid_t fpid = 0;//fork();
+		pid_t fpid = fork();
 
 		if (fpid == 0) {
 			int ret = initialize(argc, argv);
