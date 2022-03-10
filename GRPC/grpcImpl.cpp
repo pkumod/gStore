@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2022-02-28 10:31:06
- * @LastEditTime: 2022-03-10 14:40:09
+ * @LastEditTime: 2022-03-10 20:10:54
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.cpp
@@ -875,10 +875,15 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
         response->set_statusmsg(check_result);
         return;
     }
+    string thread_id = Util::getThreadID();
     Database *current_database;
     string db_name = request->db_name();
     string sparql = request->sparql();
     string format = request->format();
+    if (format.empty())
+    {
+        format="json";
+    }
     try
     {
         // check db_name paramter
@@ -962,7 +967,7 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
     catch (...)
     {
         string content = "unknow error";
-        std::cout << "query failed:" << content << endl;
+        Util::formatPrint("query failed:unknow error", "ERROR");
         apiUtil->unlock_database(db_name);
         response->set_statuscode(1005);
         response->set_statusmsg("query failed: " + content);
@@ -977,11 +982,14 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
     {
         update = true;
     }
+    if (Util::dir_exist("./query_result") == false)
+	{
+		Util::create_dir("./query_result");
+	}
+	string filename = thread_id+"_"+Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
+    string localname = "./query_result/" + filename;
     if (ret)
     {
-        ostringstream stream;
-        stream << ctx->get_seqid();
-        std::string thread_id = stream.str();
         cout << thread_id << ":search query returned successfully." << endl;
         if (rs.ansNum > apiUtil->get_max_output_size())
         {
@@ -990,20 +998,50 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
                 rs.output_limit = apiUtil->get_max_output_size();
             }
         }
-        std::string filename = "";
         std::string query_time_s = Util::int2string(query_time);
         std::string ans_num_s = Util::int2string(rs.ansNum);
         std::string log_info = "queryTime: " + query_time_s + ", ansNum: " + ans_num_s;
         Util::formatPrint(log_info);
-
-        parse_query_result(request, response, rs);
+        ofstream outfile;
+        std::string json_result = rs.to_JSON();
+        if (format == "json")
+        {
+            parse_query_result(request, response, rs);
+        }
+        else if (format == "file")
+        {
+            outfile.open(localname);
+			outfile << json_result;
+			outfile.close();
+            response->set_filename(filename);
+        }
+        else if (format == "json+file" || format == "file+json")
+        {
+            parse_query_result(request, response, rs);
+            outfile.open(localname);
+			outfile << json_result;
+			outfile.close();
+            response->set_filename(filename);
+        }
+        else if (format == "sparql-results+json")
+        {
+            response->set_result(json_result);
+        }
+        else
+        {
+            apiUtil->unlock_database(db_name);
+            Util::formatPrint("query fail: unkown result format.", "ERROR");
+            response->set_statuscode(1005);
+            response->set_statusmsg("Unkown result format.");
+            return;
+        }
         response->set_statuscode(0);
         response->set_statusmsg("success");
         response->set_ansnum(rs.ansNum);
         response->set_outputlimit(rs.output_limit);
         response->set_querytime(query_time_s);
         response->set_threadid(thread_id);
-
+        
         // record each query operation, including the sparql and the answer number
         // accurate down to microseconds
         std::string remoteIP = ctx->get_remote_ip();
@@ -2043,9 +2081,7 @@ void GrpcImpl::query_log_task(CommonRequest *&request, CommonResponse *&response
         int page_no = request->pageno();
         int page_size = request->pagesize();
         struct DBQueryLogs dbQueryLogs;
-        cout << "get query log begin" <<endl;
         apiUtil->get_query_log(date, page_no, page_size, &dbQueryLogs);
-        cout << "get query log" <<endl;
         response->set_statuscode(0);
         response->set_statusmsg("Get query log success");
         response->set_totalsize(dbQueryLogs.getTotalSize());
