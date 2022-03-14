@@ -551,11 +551,13 @@ int APIUtil::db_copy(string src_path, string dest_path)
 
 bool APIUtil::add_database(const std::string &db_name, Database *&db)
 {
+    Util::formatPrint("try lock database_map");
     if (!APIUtil::rw_wrlock_database_map())
     {
         Util::formatPrint("database_map lock false", "ERROR");
         return false;
     }
+
     Util::formatPrint("database_map lock true");
     databases.insert(pair<std::string, Database *>(db_name, db));
     if (APIUtil::unlock_database_map())
