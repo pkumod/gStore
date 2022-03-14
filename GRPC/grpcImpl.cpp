@@ -41,7 +41,6 @@ void GrpcImpl::api(CommonRequest *request, CommonResponse *response, srpc::RPCCo
 
     if (operation == "show")
     {
-        cout << "in show" <<endl;
         task = WFTaskFactory::create_go_task("show_task", &GrpcImpl::show_task, this, request, response, ctx);
     }
     else if (operation == "load")
@@ -192,105 +191,114 @@ void GrpcImpl::api(CommonRequest *request, CommonResponse *response, srpc::RPCCo
 
 void GrpcImpl::build_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string username = request->username();
-    string password = request->password();
-    string encryption = request->encryption();
-    string check_result = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(check_result.empty() == false)
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(check_result);
-        return;
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(check_result.empty() == false)
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        string db_path = request->db_path();
+        if (db_path == apiUtil->get_system_path())
+        {
+            response->set_statuscode(1002);
+            response->set_statusmsg("You have no rights to access system files");
+            return;
+        }
+        string result = apiUtil->check_param_value("db_name", request->db_name());
+        if (result.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(result);
+            return;
+        }
+        //check if database named [db_name] is already built
+        if(apiUtil->check_db_exist(request->db_name()))
+        {
+            response->set_statuscode(1004);
+            response->set_statusmsg("database already built.");
+            return;
+        }
+        string dataset = request->db_path();
+        string database = request->db_name();
+        cout << "Import dataset to build database..." << endl;
+        cout << "DB_store: " << database << "\tRDF_data: " << dataset << endl;
+        int len = database.length();
+        Database* current_database = new Database(database);
+        bool flag = current_database->build(dataset);
+        delete current_database;
+        current_database = NULL;
+        if (!flag)
+        {
+            string error = "Import RDF file to database failed.";
+            string cmd = "rm -r " + database + ".db";
+            system(cmd.c_str());
+            response->set_statuscode(1005);
+            response->set_statusmsg(error);
+            return;
+        }
+
+        ofstream f;
+        f.open("./" + database + ".db/success.txt");
+        f.close();
+        //by default, one can query or load or unload the database that is built by itself, so add the database name to the privilege set of the user
+        if (apiUtil->add_privilege(request->username(), "query", request->db_name()) == 0 || 
+        apiUtil->add_privilege(request->username(), "load", request->db_name()) == 0 || 
+        apiUtil->add_privilege(request->username(), "unload", request->db_name()) == 0 || 
+        apiUtil->add_privilege(request->username(), "backup", request->db_name()) == 0 || 
+        apiUtil->add_privilege(request->username(), "restore", request->db_name()) == 0 || 
+        apiUtil->add_privilege(request->username(), "export", request->db_name()) == 0)
+        {
+            string error = "add query or load or unload or backup or restore or export privilege failed.";
+            Util::formatPrint(error, "ERROR");
+            response->set_statuscode(1006);
+            response->set_statusmsg(error);
+            return;
+        }
+        Util::formatPrint("add query and load and unload and backup and restore privilege succeed after build.");
+
+        //add database information to system.db
+        if(apiUtil->build_db_user_privilege(request->db_name() ,request->username()))
+        {
+            string success = "Import RDF file to database done.";
+            response->set_statuscode(0);
+            response->set_statusmsg(success);
+            Util::add_backuplog(request->db_name());
+        }
+        else 
+        {
+            string error = "add database information to system failed.";
+            Util::formatPrint(error, "ERROR");
+            response->set_statuscode(1006);
+            response->set_statusmsg(error);
+        }
     }
-    check_result = apiUtil->check_indentity(username, password, encryption);
-    if (check_result.empty() == false)
+    catch (...)
     {
-        response->set_statuscode(1001);
-        response->set_statusmsg(check_result);
-        return;
-    }
-    if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
-	{
-		check_result = "You have no " + request->operation() + " privilege, operation failed";
-		response->set_statuscode(1002);
-        response->set_statusmsg(check_result);
-		return;
-	}
-    string db_path = request->db_path();
-    if (db_path == apiUtil->get_system_path())
-    {
-        response->set_statuscode(1002);
-        response->set_statusmsg("You have no rights to access system files");
-        return;
-    }
-    string result = apiUtil->check_param_value("db_name", request->db_name());
-    if (result.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(result);
-        return;
-    }
-    //check if database named [db_name] is already built
-    if(apiUtil->check_db_exist(request->db_name()))
-    {
-        response->set_statuscode(1004);
-        response->set_statusmsg("database already built.");
-        return;
-    }
-    string dataset = request->db_path();
-	string database = request->db_name();
-    cout << "Import dataset to build database..." << endl;
-	cout << "DB_store: " << database << "\tRDF_data: " << dataset << endl;
-	int len = database.length();
-    Database* current_database = new Database(database);
-    bool flag = current_database->build(dataset);
-    delete current_database;
-    current_database = NULL;
-    if (!flag)
-    {
-        string error = "Import RDF file to database failed.";
-		string cmd = "rm -r " + database + ".db";
-		system(cmd.c_str());
+        string content = "unknow error";
+        std::cout << "build failed:" << content << endl;
         response->set_statuscode(1005);
-        response->set_statusmsg(error);
-        return;
+        response->set_statusmsg("build failed: " + content);
     }
-
-    ofstream f;
-	f.open("./" + database + ".db/success.txt");
-	f.close();
-    //by default, one can query or load or unload the database that is built by itself, so add the database name to the privilege set of the user
-	if (apiUtil->add_privilege(request->username(), "query", request->db_name()) == 0 || 
-    apiUtil->add_privilege(request->username(), "load", request->db_name()) == 0 || 
-    apiUtil->add_privilege(request->username(), "unload", request->db_name()) == 0 || 
-    apiUtil->add_privilege(request->username(), "backup", request->db_name()) == 0 || 
-    apiUtil->add_privilege(request->username(), "restore", request->db_name()) == 0 || 
-    apiUtil->add_privilege(request->username(), "export", request->db_name()) == 0)
-	{
-		string error = "add query or load or unload or backup or restore or export privilege failed.";
-        Util::formatPrint(error, "ERROR");
-        response->set_statuscode(1006);
-        response->set_statusmsg(error);
-		return;
-	}
-	Util::formatPrint("add query and load and unload and backup and restore privilege succeed after build.");
-
-    //add database information to system.db
-    if(apiUtil->build_db_user_privilege(request->db_name() ,request->username()))
-    {
-        string success = "Import RDF file to database done.";
-        response->set_statuscode(0);
-        response->set_statusmsg(success);
-        Util::add_backuplog(request->db_name());
-    }
-    else 
-    {
-        string error = "add database information to system failed.";
-		Util::formatPrint(error, "ERROR");
-        response->set_statuscode(1006);
-        response->set_statusmsg(error);
-    }
-
 }
 
 void GrpcImpl::load_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
@@ -411,737 +419,813 @@ void GrpcImpl::check_task(CommonRequest *&request, CommonResponse *&response, sr
 
 void GrpcImpl::monitor_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string error = apiUtil->check_param_value("db_name", request->db_name());
+        if( error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->check_db_exist(request->db_name()) == false)
+        {
+            error = "the database [" + request->db_name() + "] not built yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(!apiUtil->check_already_load(request->db_name()))
+        {
+            error = "Database not load yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->trywrlock_databaseinfo(apiUtil->get_databaseinfo(request->db_name())) == false)
+        {
+            error = "Unable to monitor due to loss of lock";
+            response->set_statuscode(1007);
+            response->set_statusmsg(error);
+            return;
+        }
+        string result = apiUtil->get_moniter_info(apiUtil->get_database(request->db_name()), apiUtil->get_databaseinfo(request->db_name()));
+        apiUtil->unlock_databaseinfo(apiUtil->get_databaseinfo(request->db_name()));
+        rapidjson::Document doc;
+        doc.SetObject();
+        doc.Parse(result.c_str());
+        if (doc.HasParseError())
+        {
+            cout << "parse already build data error: " << doc.GetParseError() << endl;
+            response->set_statuscode(1005);
+            response->set_statusmsg("Get the database infomation error!");
+            return;
+        }
+        Monitor monitor;
+        if (doc.HasMember("database"))
+        {
+            monitor.set_database(doc["database"].GetString());
+        }
+        if (doc.HasMember("creator"))
+        {
+            monitor.set_creator(doc["creator"].GetString());
+        }
+        if (doc.HasMember("built_time"))
+        {
+            monitor.set_built_time(doc["built_time"].GetString());
+        }
+        if (doc.HasMember("triple num"))
+        {
+            monitor.set_triple_num(doc["triple num"].GetString());
+        }
+        if (doc.HasMember("literal num"))
+        {
+            monitor.set_literal_num(doc["literal num"].GetInt());
+        }
+        if (doc.HasMember("subject num"))
+        {
+            monitor.set_subject_num(doc["subject num"].GetInt());
+        }
+        if (doc.HasMember("predicate num"))
+        {
+            monitor.set_predicate_num(doc["predicate num"].GetInt());
+        }
+        if (doc.HasMember("connection num"))
+        {
+            monitor.set_connection_num(doc["connection num"].GetInt());
+        }
+        if (doc.HasMember("entity num"))
+        {
+            monitor.set_entity_num(doc["entity num"].GetInt());
+        }
+        google::protobuf::Any *any = response->add_responsebody();
+        any->PackFrom(monitor);
+        response->set_statuscode(0);
+        response->set_statusmsg("success");
     }
-    string error = apiUtil->check_param_value("db_name", request->db_name());
-    if( error.empty() == false)
+    catch (...)
     {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->check_db_exist(request->db_name()) == false)
-    {
-        error = "the database [" + request->db_name() + "] not built yet.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(!apiUtil->check_already_load(request->db_name()))
-    {
-        error = "Database not load yet.";
-		response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->trywrlock_databaseinfo(apiUtil->get_databaseinfo(request->db_name())) == false)
-    {
-        error = "Unable to monitor due to loss of lock";
-        response->set_statuscode(1007);
-        response->set_statusmsg(error);
-        return;
-    }
-    string result = apiUtil->get_moniter_info(apiUtil->get_database(request->db_name()), apiUtil->get_databaseinfo(request->db_name()));
-    apiUtil->unlock_databaseinfo(apiUtil->get_databaseinfo(request->db_name()));
-    rapidjson::Document doc;
-    doc.SetObject();
-    doc.Parse(result.c_str());
-    if (doc.HasParseError())
-    {
-        cout << "parse already build data error: " << doc.GetParseError() << endl;
+        string content = "unknow error";
+        std::cout << "moniter failed:" << content << endl;
         response->set_statuscode(1005);
-        response->set_statusmsg("Get the database infomation error!");
-        return;
+        response->set_statusmsg("moniter failed: " + content);
     }
-    Monitor monitor;
-    if (doc.HasMember("database"))
-    {
-        monitor.set_database(doc["database"].GetString());
-    }
-    if (doc.HasMember("creator"))
-    {
-        monitor.set_creator(doc["creator"].GetString());
-    }
-    if (doc.HasMember("built_time"))
-    {
-        monitor.set_built_time(doc["built_time"].GetString());
-    }
-    if (doc.HasMember("triple num"))
-    {
-        monitor.set_triple_num(doc["triple num"].GetString());
-    }
-    if (doc.HasMember("literal num"))
-    {
-        monitor.set_literal_num(doc["literal num"].GetInt());
-    }
-    if (doc.HasMember("subject num"))
-    {
-        monitor.set_subject_num(doc["subject num"].GetInt());
-    }
-    if (doc.HasMember("predicate num"))
-    {
-        monitor.set_predicate_num(doc["predicate num"].GetInt());
-    }
-    if (doc.HasMember("connection num"))
-    {
-        monitor.set_connection_num(doc["connection num"].GetInt());
-    }
-    if (doc.HasMember("entity num"))
-    {
-        monitor.set_entity_num(doc["entity num"].GetInt());
-    }
-    google::protobuf::Any *any = response->add_responsebody();
-    any->PackFrom(monitor);
-    response->set_statuscode(0);
-    response->set_statusmsg("success");
 }
 
 void GrpcImpl::unload_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string db_name = request->db_name();
-    string error = apiUtil->check_param_value("db_name", db_name);
-    if( error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->check_db_exist(db_name) == false)
-    {
-        error = "the database [" + db_name + "] not built yet.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->check_already_load(db_name) == false)
-    {
-        error = "Database not load yet.";
-		response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    //here lock the databaseinfo
-    struct DatabaseInfo* db_info = apiUtil->get_databaseinfo(db_name);
-    if (apiUtil->trywrlock_databaseinfo(db_info) == false)
-    {
-        error = "the operation can not been excuted due to loss of lock.";
-		response->set_statuscode(1007);
-        response->set_statusmsg(error);
-		return;
-    }
-    else{
-        //  apiUtil->trywrlock_database_map();//lock the databases_map_lock
-        if(apiUtil->find_txn_managers(db_name) == false)
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
         {
-            error = "transaction manager can not find the database";
-			apiUtil->unlock_database_map();
-        	apiUtil->unlock_databaseinfo(db_info);
-            response->set_statuscode(1008);
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string db_name = request->db_name();
+        string error = apiUtil->check_param_value("db_name", db_name);
+        if( error.empty() == false)
+        {
+            response->set_statuscode(1003);
             response->set_statusmsg(error);
             return;
         }
-        apiUtil->db_checkpoint(db_name);
-        apiUtil->delete_from_databases(db_name);
-        response->set_statuscode(0);
-        string success = "Database ["+ db_name +"] unloaded.";
-        response->set_statusmsg(success);
-        // apiUtil->unlock_database_map();
-        apiUtil->unlock_databaseinfo(db_info);
-        return;
+        if(apiUtil->check_db_exist(db_name) == false)
+        {
+            error = "the database [" + db_name + "] not built yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->check_already_load(db_name) == false)
+        {
+            error = "Database not load yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        //here lock the databaseinfo
+        struct DatabaseInfo* db_info = apiUtil->get_databaseinfo(db_name);
+        if (apiUtil->trywrlock_databaseinfo(db_info) == false)
+        {
+            error = "the operation can not been excuted due to loss of lock.";
+            response->set_statuscode(1007);
+            response->set_statusmsg(error);
+            return;
+        }
+        else{
+            //  apiUtil->trywrlock_database_map();//lock the databases_map_lock
+            if(apiUtil->find_txn_managers(db_name) == false)
+            {
+                error = "transaction manager can not find the database";
+                apiUtil->unlock_database_map();
+                apiUtil->unlock_databaseinfo(db_info);
+                response->set_statuscode(1008);
+                response->set_statusmsg(error);
+                return;
+            }
+            apiUtil->db_checkpoint(db_name);
+            apiUtil->delete_from_databases(db_name);
+            response->set_statuscode(0);
+            string success = "Database ["+ db_name +"] unloaded.";
+            response->set_statusmsg(success);
+            // apiUtil->unlock_database_map();
+            apiUtil->unlock_databaseinfo(db_info);
+            return;
+        }
+    }
+    catch (...)
+    {
+        string content = "unknow error";
+        std::cout << "unload failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("unload failed: " + content);
     }
 }
 
 void GrpcImpl::drop_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string db_name = request->db_name();
-    string error = apiUtil->check_param_value("db_name", db_name);
-    if( error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->check_already_build(db_name) == false)
-    {
-        error = "the database [" + db_name + "] not built yet.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    struct DatabaseInfo* db_info = apiUtil->get_databaseinfo(db_name);
-    if(apiUtil->trywrlock_databaseinfo(db_info) == false)
-    {
-        error = "the operation can not been excuted due to loss of lock.";
-        response->set_statuscode(1007);
-        response->set_statusmsg(error);
-        return;
-    }
-    else
-    {
-        //@ the database has loaded, unload it firstly
-        if (apiUtil->check_already_load(db_name))
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
         {
-            apiUtil->delete_from_databases(db_name);
-            Util::formatPrint("remove " + db_name + " from loaded database list");
-            
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
         }
-        apiUtil->unlock_databaseinfo(db_info);
-        apiUtil->delete_from_already_build(db_name);
-        Util::formatPrint("remove " + db_name + " from the already build database list");
-        //@ delete the database info from  the system database
-		string update = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
-		apiUtil->update_sys_db(update);
-		string cmd;
-		
-		if (request->is_backup() == "false")
-			cmd = "rm -r " + db_name + ".db";
-		else if (request->is_backup() == "true")
-			cmd = "mv " + db_name + ".db " + db_name + ".bak";
-		cout<<"delete the file: "<<cmd<<endl;
-		system(cmd.c_str());
+        string db_name = request->db_name();
+        string error = apiUtil->check_param_value("db_name", db_name);
+        if( error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->check_already_build(db_name) == false)
+        {
+            error = "the database [" + db_name + "] not built yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        struct DatabaseInfo* db_info = apiUtil->get_databaseinfo(db_name);
+        if(apiUtil->trywrlock_databaseinfo(db_info) == false)
+        {
+            error = "the operation can not been excuted due to loss of lock.";
+            response->set_statuscode(1007);
+            response->set_statusmsg(error);
+            return;
+        }
+        else
+        {
+            //@ the database has loaded, unload it firstly
+            if (apiUtil->check_already_load(db_name))
+            {
+                apiUtil->delete_from_databases(db_name);
+                Util::formatPrint("remove " + db_name + " from loaded database list");
+                
+            }
+            apiUtil->unlock_databaseinfo(db_info);
+            apiUtil->delete_from_already_build(db_name);
+            Util::formatPrint("remove " + db_name + " from the already build database list");
+            //@ delete the database info from  the system database
+            string update = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
+            apiUtil->update_sys_db(update);
+            string cmd;
+            
+            if (request->is_backup() == "false")
+                cmd = "rm -r " + db_name + ".db";
+            else if (request->is_backup() == "true")
+                cmd = "mv " + db_name + ".db " + db_name + ".bak";
+            cout<<"delete the file: "<<cmd<<endl;
+            system(cmd.c_str());
 
-        Util::delete_backuplog(db_name);
-		string success = "Database " + db_name + " dropped.";
-        response->set_statuscode(0);
-        response->set_statusmsg(success);
+            Util::delete_backuplog(db_name);
+            string success = "Database " + db_name + " dropped.";
+            response->set_statuscode(0);
+            response->set_statusmsg(success);
+        }
+    }
+    catch (...)
+    {
+        string content = "unknow error";
+        std::cout << "drop failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("drop failed: " + content);
     }
 }
 
 void GrpcImpl::show_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    cout << "show task begin" << endl;
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    cout << "check ip over" <<endl;
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        vector<struct DatabaseInfo *> array;
+        apiUtil->get_already_builds(array);
+        size_t count = array.size();
+        for (size_t i = 0; i < count; i++)
+        {
+            DatabaseInfo * db_ptr = array[i];
+            DBInfo dbInfo;
+            dbInfo.set_database(db_ptr->getName());
+            dbInfo.set_creator(db_ptr->getCreator());
+            dbInfo.set_built_time(db_ptr->getTime());
+            dbInfo.set_status(db_ptr->getStatus());
+            google::protobuf::Any *any = response->add_responsebody();
+            any->PackFrom(dbInfo);
+        }
+        // set response status and message
+        response->set_statuscode(0);
+        response->set_statusmsg("Get the database list successfully!");
     }
-    cout << "ip check over "<<endl;
-    string username = request->username();
-    string password = request->password();
-    string encryption = request->encryption();
-    string check_result = apiUtil->check_indentity(username, password, encryption);
-    if (check_result.empty() == false)
+    catch (...)
     {
-        response->set_statuscode(1001);
-        response->set_statusmsg(check_result);
-        return;
+        string content = "unknow error";
+        std::cout << "show failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("show failed: " + content);
     }
-    vector<struct DatabaseInfo *> array;
-    apiUtil->get_already_builds(array);
-    size_t count = array.size();
-    for (size_t i = 0; i < count; i++)
-    {
-        DatabaseInfo * db_ptr = array[i];
-        DBInfo dbInfo;
-        dbInfo.set_database(db_ptr->getName());
-        dbInfo.set_creator(db_ptr->getCreator());
-        dbInfo.set_built_time(db_ptr->getTime());
-        dbInfo.set_status(db_ptr->getStatus());
-        google::protobuf::Any *any = response->add_responsebody();
-        any->PackFrom(dbInfo);
-    }
-    // set response status and message
-    response->set_statuscode(0);
-    response->set_statusmsg("Get the database list successfully!");
 }
 
 void GrpcImpl::backup_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string db_name = request->db_name();
-    string error = apiUtil->check_param_value("db_name", db_name);
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-    }
-    if(apiUtil->check_already_build(request->db_name()) == false)
-    {
-        error = "the database [" + request->db_name() + "] not built yet.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(request->db_name());
-    if(apiUtil->trywrlock_databaseinfo(db_info) == false)
-    {
-        error = "the operation can not been excuted due to loss of lock.";
-        response->set_statuscode(1007);
-        response->set_statusmsg(error);
-        return;
-    }
-    //begin backup database
-    string path = request->backup_path();
-    if(path == "") {
-        path = apiUtil->get_backup_path();
-    }
-    if(path == "." ){
-		string error = "Failed to backup the database. Backup Path Can not be root or empty.";
-        apiUtil->unlock_databaseinfo(db_info);
-		response->set_statuscode(1003);
-        response->set_statusmsg(error);		
-		return;
-	}
-    if(path[path.length() - 1] == '/') 
-    {
-        path = path.substr(0, path.length() - 1);
-    }
-    Util::formatPrint("backup path:" + path);
-	string db_path = db_name + ".db";
-    // APIUtil::trywrlock_database_map(); //lock the databases_map_lock
-    apiUtil->rw_wrlock_database_map();
-    int ret = apiUtil->db_copy(db_path, path);
-    apiUtil->unlock_database_map();
-    // APIUtil::unlock_database_map(); //unlock the databases_map_lock
-    string timestamp="";
-    if(ret == 1)
-    {
-		string error = "Failed to backup the database. Database Folder Misssing.";
-        apiUtil->unlock_databaseinfo(db_info);
-        response->set_statuscode(1005);
-        response->set_statusmsg(error);
-    }
-    else
-    {
-		timestamp = Util::get_timestamp();
-        cout << "db_path " << db_path << endl;
-        // path = path.substr(0, path.length() - 1);
-        path = path + "/" + db_path;
-        string _path = path + "_" + timestamp;
-        cout << "_path " << _path << endl;
-        string sys_cmd = "mv " + path + " " + _path;
-        system(sys_cmd.c_str());
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string db_name = request->db_name();
+        string error = apiUtil->check_param_value("db_name", db_name);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+        }
+        if(apiUtil->check_already_build(request->db_name()) == false)
+        {
+            error = "the database [" + request->db_name() + "] not built yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(request->db_name());
+        if(apiUtil->trywrlock_databaseinfo(db_info) == false)
+        {
+            error = "the operation can not been excuted due to loss of lock.";
+            response->set_statuscode(1007);
+            response->set_statusmsg(error);
+            return;
+        }
+        //begin backup database
+        string path = request->backup_path();
+        if(path == "") {
+            path = apiUtil->get_backup_path();
+        }
+        if(path == "." ){
+            string error = "Failed to backup the database. Backup Path Can not be root or empty.";
+            apiUtil->unlock_databaseinfo(db_info);
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);		
+            return;
+        }
+        if(path[path.length() - 1] == '/') 
+        {
+            path = path.substr(0, path.length() - 1);
+        }
+        Util::formatPrint("backup path:" + path);
+        string db_path = db_name + ".db";
+        // APIUtil::trywrlock_database_map(); //lock the databases_map_lock
+        apiUtil->rw_wrlock_database_map();
+        int ret = apiUtil->db_copy(db_path, path);
+        apiUtil->unlock_database_map();
+        // APIUtil::unlock_database_map(); //unlock the databases_map_lock
+        string timestamp="";
+        if(ret == 1)
+        {
+            string error = "Failed to backup the database. Database Folder Misssing.";
+            apiUtil->unlock_databaseinfo(db_info);
+            response->set_statuscode(1005);
+            response->set_statusmsg(error);
+        }
+        else
+        {
+            timestamp = Util::get_timestamp();
+            cout << "db_path " << db_path << endl;
+            // path = path.substr(0, path.length() - 1);
+            path = path + "/" + db_path;
+            string _path = path + "_" + timestamp;
+            cout << "_path " << _path << endl;
+            string sys_cmd = "mv " + path + " " + _path;
+            system(sys_cmd.c_str());
 
-		Util::formatPrint("database backup done: " + db_name);
-        string success = "Database backup successfully.";
-        apiUtil->unlock_databaseinfo(db_info);
-        
-        response->set_statuscode(0);
-        response->set_statusmsg(success);
-        response->set_backupfilepath(_path);
-	}
+            Util::formatPrint("database backup done: " + db_name);
+            string success = "Database backup successfully.";
+            apiUtil->unlock_databaseinfo(db_info);
+            
+            response->set_statuscode(0);
+            response->set_statusmsg(success);
+            response->set_backupfilepath(_path);
+        }
+    }
+    catch (...)
+    {
+        string content = "unknow error";
+        std::cout << "backup failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("backup failed: " + content);
+    }
 }
 
 void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string db_name = request->db_name();
-    string username = request->username();
-    string error = apiUtil->check_param_value("db_name", db_name);
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-    }
-    string path = request->backup_path();
-    if(path[path.length() - 1] == '/') 
-    {
-        path = path.substr(0, path.length()-1);
-    }
-    Util::formatPrint("backup path: " + path);
-	if(Util::dir_exist(path)==false){
-		string error = "Backup path not exist, restore failed.";
-		response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-	}
-	string database = db_name;
-	Util::formatPrint("restore database:" + database);
-    //@ check database build?
-    if( apiUtil->check_already_build(db_name) == false){
-        string error = "Database not built yet. Rebuild Now";
-		string time = Util::get_backup_time(path, db_name);
-        if(time.size() == 0){
-			string error = "Backup path does not match database name, restore failed";
-			response->set_statuscode(1003);
-            response->set_statusmsg(error);
-			return;
-		}
-        if (apiUtil->add_privilege(username, "query", db_name) == 0 || 
-        apiUtil->add_privilege(username, "load", db_name) == 0 || 
-        apiUtil->add_privilege(username, "unload", db_name) == 0 || 
-        apiUtil->add_privilege(username, "backup", db_name) == 0 || 
-        apiUtil->add_privilege(username, "restore", db_name) == 0 || 
-        apiUtil->add_privilege(username, "export", db_name) == 0)
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
         {
-            string error = "add query or load or unload or backup or restore or export privilege failed.";
-            response->set_statuscode(1006);
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string db_name = request->db_name();
+        string username = request->username();
+        string error = apiUtil->check_param_value("db_name", db_name);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
             response->set_statusmsg(error);
             return;
         }
-        if(apiUtil->build_db_user_privilege(db_name, username))
-		{
-			Util::add_backuplog(db_name);
-		}
+        string path = request->backup_path();
+        if(path[path.length() - 1] == '/') 
+        {
+            path = path.substr(0, path.length()-1);
+        }
+        Util::formatPrint("backup path: " + path);
+        if(Util::dir_exist(path)==false){
+            string error = "Backup path not exist, restore failed.";
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+            return;
+        }
+        string database = db_name;
+        Util::formatPrint("restore database:" + database);
+        //@ check database build?
+        if( apiUtil->check_already_build(db_name) == false){
+            string error = "Database not built yet. Rebuild Now";
+            string time = Util::get_backup_time(path, db_name);
+            if(time.size() == 0){
+                string error = "Backup path does not match database name, restore failed";
+                response->set_statuscode(1003);
+                response->set_statusmsg(error);
+                return;
+            }
+            if (apiUtil->add_privilege(username, "query", db_name) == 0 || 
+            apiUtil->add_privilege(username, "load", db_name) == 0 || 
+            apiUtil->add_privilege(username, "unload", db_name) == 0 || 
+            apiUtil->add_privilege(username, "backup", db_name) == 0 || 
+            apiUtil->add_privilege(username, "restore", db_name) == 0 || 
+            apiUtil->add_privilege(username, "export", db_name) == 0)
+            {
+                string error = "add query or load or unload or backup or restore or export privilege failed.";
+                response->set_statuscode(1006);
+                response->set_statusmsg(error);
+                return;
+            }
+            if(apiUtil->build_db_user_privilege(db_name, username))
+            {
+                Util::add_backuplog(db_name);
+            }
+            else
+            {
+                error = "Database not built yet. Rebuild failed.";
+                response->set_statuscode(1005);
+                response->set_statusmsg(error);
+                return;
+            }
+        }
+        struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
+        if(apiUtil->trywrlock_databaseinfo(db_info) == false)
+        {
+            error = "the operation can not been excuted due to loss of lock.";
+            response->set_statuscode(1007);
+            response->set_statusmsg(error);
+            return;
+        }
+        //restore
+        string sys_cmd = "rm -rf " + db_name + ".db";
+        system(sys_cmd.c_str());
+
+        // TODO why need lock the database_map?
+        // APIUtil::trywrlock_database_map();
+        int ret = apiUtil->db_copy(path, apiUtil->get_Db_path());
+        // APIUtil::unlock_database_map();
+
+        if (ret == 1)
+        {
+            string error = "Failed to restore the database. Backup Path Error";
+            apiUtil->unlock_databaseinfo(db_info);
+            response->set_statuscode(1007);
+            response->set_statusmsg(error);
+        }
         else
         {
-            error = "Database not built yet. Rebuild failed.";
-            response->set_statuscode(1005);
-            response->set_statusmsg(error);
-            return;
+            //TODO update the in system.db
+            path = Util::get_folder_name(path, db_name);
+            sys_cmd = "cp -r " + path + " " + db_name + ".db";
+            system(sys_cmd.c_str());
+            
+            apiUtil->unlock_databaseinfo(db_info);
+
+            string success = "Database " + db_name + " restore successfully.";
+            response->set_statuscode(0);
+            response->set_statusmsg(success);
         }
     }
-    struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
-    if(apiUtil->trywrlock_databaseinfo(db_info) == false)
+    catch (...)
     {
-        error = "the operation can not been excuted due to loss of lock.";
-        response->set_statuscode(1007);
-        response->set_statusmsg(error);
-        return;
-    }
-    //restore
-	string sys_cmd = "rm -rf " + db_name + ".db";
-	system(sys_cmd.c_str());
-
-    // TODO why need lock the database_map?
-    // APIUtil::trywrlock_database_map();
-    int ret = apiUtil->db_copy(path, apiUtil->get_Db_path());
-    // APIUtil::unlock_database_map();
-
-    if (ret == 1)
-    {
-        string error = "Failed to restore the database. Backup Path Error";
-        apiUtil->unlock_databaseinfo(db_info);
-        response->set_statuscode(1007);
-        response->set_statusmsg(error);
-    }
-    else
-    {
-        //TODO update the in system.db
-        path = Util::get_folder_name(path, db_name);
-        sys_cmd = "cp -r " + path + " " + db_name + ".db";
-        system(sys_cmd.c_str());
-        
-        apiUtil->unlock_databaseinfo(db_info);
-
-        string success = "Database " + db_name + " restore successfully.";
-        response->set_statuscode(0);
-        response->set_statusmsg(success);
+        string content = "unknow error";
+        std::cout << "restore failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("restore failed: " + content);
     }
 }
 
 void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
-    {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string username = request->username();
-    string password = request->password();
-    string encryption = request->encryption();
-    string check_result = apiUtil->check_indentity(username, password, encryption);
-    if (check_result.empty() == false)
-    {
-        response->set_statuscode(1001);
-        response->set_statusmsg(check_result);
-        return;
-    }
-    string thread_id = Util::getThreadID();
-    Database *current_database;
-    string db_name = request->db_name();
-    string sparql = request->sparql();
-    string format = request->format();
-    if (format.empty())
-    {
-        format="json";
-    }
     try
     {
-        // check db_name paramter
-        string error="";
-        error = apiUtil->check_param_value("db_name",db_name);
-        if (error.empty() == false)
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
         {
-            throw runtime_error(error);
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
         }
-        // check sparql paramter
-        error = apiUtil->check_param_value("sparql",sparql);
-        if (error.empty() == false)
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
         {
-            throw runtime_error(error);
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
         }
-        // check database exist
-        if(apiUtil->check_db_exist(db_name) == false)
+        string thread_id = Util::getThreadID();
+        Database *current_database;
+        string db_name = request->db_name();
+        string sparql = request->sparql();
+        string format = request->format();
+        if (format.empty())
         {
-            throw runtime_error("Database not build yet.");
+            format="json";
         }
-        // check database load status
-        current_database = apiUtil->get_database(db_name);
-        if (current_database == NULL)
+        try
         {
-            throw runtime_error("Database not load yet.");
+            // check db_name paramter
+            string error="";
+            error = apiUtil->check_param_value("db_name",db_name);
+            if (error.empty() == false)
+            {
+                throw runtime_error(error);
+            }
+            // check sparql paramter
+            error = apiUtil->check_param_value("sparql",sparql);
+            if (error.empty() == false)
+            {
+                throw runtime_error(error);
+            }
+            // check database exist
+            if(apiUtil->check_db_exist(db_name) == false)
+            {
+                throw runtime_error("Database not build yet.");
+            }
+            // check database load status
+            current_database = apiUtil->get_database(db_name);
+            if (current_database == NULL)
+            {
+                throw runtime_error("Database not load yet.");
+            }
+            bool lock_rt = apiUtil->rdlock_database(db_name);
+            if (lock_rt)
+            {
+                Util::formatPrint("get current database read lock success: " + db_name);
+            }
+            else
+            {
+                throw runtime_error("get current database read lock fail.");
+            }
+            
         }
-        bool lock_rt = apiUtil->rdlock_database(db_name);
-        if (lock_rt)
+        catch (const std::exception &e)
         {
-            Util::formatPrint("get current database read lock success: " + db_name);
+            string content = "query failed: " + string(e.what());
+            response->set_statuscode(1005);
+            response->set_statusmsg(content);
+            return;
+        }
+        FILE *output = NULL;
+
+        ResultSet rs;
+        int ret_val;
+        bool update_flag_bool = true;
+        size_t query_time = Util::get_cur_time();
+
+        // set query_start_time
+        std::string query_start_time;
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        int s = tv.tv_usec / 1000;
+        int y = tv.tv_usec % 1000;
+        query_start_time = Util::get_date_time() + ":" + Util::int2string(s) + "ms" + ":" + Util::int2string(y) + "microseconds";
+        try
+        {
+            Util::formatPrint("begin query...");
+            rs.setUsername(username);
+            ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
+            query_time = Util::get_cur_time() - query_time;
+        }
+        catch (const std::string &exception_msg)
+        {
+            apiUtil->unlock_database(db_name);
+            response->set_statuscode(1005);
+            response->set_statusmsg(exception_msg);
+            return;
+        }
+        catch (const std::runtime_error &e1)
+        {
+            string content = e1.what();
+            apiUtil->unlock_database(db_name);
+            response->set_statuscode(1005);
+            response->set_statusmsg(content);
+            return;
+        }
+        catch (...)
+        {
+            string content = "unknow error";
+            Util::formatPrint("query failed:unknow error", "ERROR");
+            apiUtil->unlock_database(db_name);
+            response->set_statuscode(1005);
+            response->set_statusmsg("query failed: " + content);
+            return;
+        }
+        bool ret = false, update = false;
+        if (ret_val < -1) // non-update query
+        {
+            ret = (ret_val == -100);
+        }
+        else // update query, -1 for error, non-negative for num of triples updated
+        {
+            update = true;
+        }
+        if (Util::dir_exist("./query_result") == false)
+        {
+            Util::create_dir("./query_result");
+        }
+        string filename = thread_id+"_"+Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
+        string localname = "./query_result/" + filename;
+        if (ret)
+        {
+            cout << thread_id << ":search query returned successfully." << endl;
+            if (rs.ansNum > apiUtil->get_max_output_size())
+            {
+                if (rs.output_limit == -1 || rs.output_limit > apiUtil->get_max_output_size())
+                {
+                    rs.output_limit = apiUtil->get_max_output_size();
+                }
+            }
+            std::string query_time_s = Util::int2string(query_time);
+            std::string ans_num_s = Util::int2string(rs.ansNum);
+            std::string log_info = "queryTime: " + query_time_s + ", ansNum: " + ans_num_s;
+            Util::formatPrint(log_info);
+            ofstream outfile;
+            std::string json_result = rs.to_JSON();
+            if (format == "json")
+            {
+                parse_query_result(request, response, rs);
+            }
+            else if (format == "file")
+            {
+                outfile.open(localname);
+                outfile << json_result;
+                outfile.close();
+                response->set_filename(filename);
+            }
+            else if (format == "json+file" || format == "file+json")
+            {
+                parse_query_result(request, response, rs);
+                outfile.open(localname);
+                outfile << json_result;
+                outfile.close();
+                response->set_filename(filename);
+            }
+            else if (format == "sparql-results+json")
+            {
+                response->set_result(json_result);
+            }
+            else
+            {
+                apiUtil->unlock_database(db_name);
+                Util::formatPrint("query fail: unkown result format.", "ERROR");
+                response->set_statuscode(1005);
+                response->set_statusmsg("Unkown result format.");
+                return;
+            }
+            response->set_statuscode(0);
+            response->set_statusmsg("success");
+            response->set_ansnum(rs.ansNum);
+            response->set_outputlimit(rs.output_limit);
+            response->set_querytime(query_time_s);
+            response->set_threadid(thread_id);
+            
+            // record each query operation, including the sparql and the answer number
+            // accurate down to microseconds
+            std::string remoteIP = ctx->get_remote_ip();
+            long ansNum = rs.ansNum;
+            int statusCode = response->statuscode();
+            struct DBQueryLogInfo* queryLogInfo = new DBQueryLogInfo(query_start_time, remoteIP, sparql, ansNum, format, filename, statusCode, query_time);
+            apiUtil->write_query_log(queryLogInfo);
+            delete queryLogInfo;
         }
         else
         {
-            throw runtime_error("get current database read lock fail.");
+            string status_msg;
+            int status_code;
+            if (update)
+            {
+                status_code = 0;
+                status_msg = "update query returns true.";
+                Util::formatPrint(status_msg);
+            }
+            else
+            {
+                status_code = 1005;
+                status_msg = "search query returns false.";
+                std::cout << status_msg << endl;
+                Util::formatPrint(status_msg, "WARN");
+            }
+            response->set_statuscode(status_code);
+            response->set_statusmsg(status_msg);
         }
-        
+        apiUtil->unlock_database(db_name);
+        Util::formatPrint("query complete!");
     }
-    catch (const std::exception &e)
+    catch (...)
     {
-        string content = "query failed: " + string(e.what());
+        string content = "unknow error";
+        std::cout << "query failed:" << content << endl;
         response->set_statuscode(1005);
-        response->set_statusmsg(content);
-        return;
+        response->set_statusmsg("query failed: " + content);
     }
-    FILE *output = NULL;
+}
 
-    ResultSet rs;
-    int ret_val;
-    bool update_flag_bool = true;
-    size_t query_time = Util::get_cur_time();
-
-    // set query_start_time
-    std::string query_start_time;
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    int s = tv.tv_usec / 1000;
-    int y = tv.tv_usec % 1000;
-    query_start_time = Util::get_date_time() + ":" + Util::int2string(s) + "ms" + ":" + Util::int2string(y) + "microseconds";
+void GrpcImpl::export_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
+{
     try
     {
-        Util::formatPrint("begin query...");
-        rs.setUsername(username);
-        ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
-        query_time = Util::get_cur_time() - query_time;
-    }
-    catch (const std::string &exception_msg)
-    {
-        apiUtil->unlock_database(db_name);
-        response->set_statuscode(1005);
-        response->set_statusmsg(exception_msg);
-        return;
-    }
-    catch (const std::runtime_error &e1)
-    {
-        string content = e1.what();
-        apiUtil->unlock_database(db_name);
-        response->set_statuscode(1005);
-        response->set_statusmsg(content);
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string db_name = request->db_name();
+        string db_path = request->db_path();
+        string error = apiUtil->check_param_value("db_name", db_name);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+        }
+        error = apiUtil->check_param_value("db_path", db_path);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+        }
+        if(apiUtil->check_already_build(db_name) == false)
+        {
+            error = "the database not built yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(db_path[db_path.length()-1] != '/')
+        {
+            db_path = db_path + "/";
+        }	
+        if(Util::dir_exist(db_path)==false)
+        {
+            Util::create_dir(db_path);
+        }	
+        db_path = db_path + db_name +"_"+Util::get_timestamp()+ ".nt";
+        //check if database named [db_name] is already load
+        if(!apiUtil->check_already_load(db_name))
+        {
+            error = "Database not load yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        Database *current_database = apiUtil->get_database(db_name);
+        apiUtil->rdlock_database(db_name);//lock database
+
+        string sparql = "select * where {?x ?y ?z.} ";
+        ResultSet rs;
+        Util::formatPrint("db_path: " + db_path);
+        FILE* ofp = fopen(db_path.c_str(), "w");
+        int ret = current_database->query(sparql, rs, ofp, true, true);
+        fflush(ofp);
+        fclose(ofp);
+        ofp = NULL;
+        current_database = NULL;
+
+        string success = "Export the database successfully.";
+        apiUtil->unlock_database(db_name);//unlock database
+        
+        response->set_statuscode(0);
+        response->set_statusmsg(success);
+        response->set_filepath(db_path);
         return;
     }
     catch (...)
     {
         string content = "unknow error";
-        Util::formatPrint("query failed:unknow error", "ERROR");
-        apiUtil->unlock_database(db_name);
+        std::cout << "export failed:" << content << endl;
         response->set_statuscode(1005);
-        response->set_statusmsg("query failed: " + content);
-        return;
+        response->set_statusmsg("export failed: " + content);
     }
-    bool ret = false, update = false;
-    if (ret_val < -1) // non-update query
-    {
-        ret = (ret_val == -100);
-    }
-    else // update query, -1 for error, non-negative for num of triples updated
-    {
-        update = true;
-    }
-    if (Util::dir_exist("./query_result") == false)
-	{
-		Util::create_dir("./query_result");
-	}
-	string filename = thread_id+"_"+Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
-    string localname = "./query_result/" + filename;
-    if (ret)
-    {
-        cout << thread_id << ":search query returned successfully." << endl;
-        if (rs.ansNum > apiUtil->get_max_output_size())
-        {
-            if (rs.output_limit == -1 || rs.output_limit > apiUtil->get_max_output_size())
-            {
-                rs.output_limit = apiUtil->get_max_output_size();
-            }
-        }
-        std::string query_time_s = Util::int2string(query_time);
-        std::string ans_num_s = Util::int2string(rs.ansNum);
-        std::string log_info = "queryTime: " + query_time_s + ", ansNum: " + ans_num_s;
-        Util::formatPrint(log_info);
-        ofstream outfile;
-        std::string json_result = rs.to_JSON();
-        if (format == "json")
-        {
-            parse_query_result(request, response, rs);
-        }
-        else if (format == "file")
-        {
-            outfile.open(localname);
-			outfile << json_result;
-			outfile.close();
-            response->set_filename(filename);
-        }
-        else if (format == "json+file" || format == "file+json")
-        {
-            parse_query_result(request, response, rs);
-            outfile.open(localname);
-			outfile << json_result;
-			outfile.close();
-            response->set_filename(filename);
-        }
-        else if (format == "sparql-results+json")
-        {
-            response->set_result(json_result);
-        }
-        else
-        {
-            apiUtil->unlock_database(db_name);
-            Util::formatPrint("query fail: unkown result format.", "ERROR");
-            response->set_statuscode(1005);
-            response->set_statusmsg("Unkown result format.");
-            return;
-        }
-        response->set_statuscode(0);
-        response->set_statusmsg("success");
-        response->set_ansnum(rs.ansNum);
-        response->set_outputlimit(rs.output_limit);
-        response->set_querytime(query_time_s);
-        response->set_threadid(thread_id);
-        
-        // record each query operation, including the sparql and the answer number
-        // accurate down to microseconds
-        std::string remoteIP = ctx->get_remote_ip();
-        long ansNum = rs.ansNum;
-        int statusCode = response->statuscode();
-        struct DBQueryLogInfo* queryLogInfo = new DBQueryLogInfo(query_start_time, remoteIP, sparql, ansNum, format, filename, statusCode, query_time);
-        apiUtil->write_query_log(queryLogInfo);
-        delete queryLogInfo;
-    }
-    else
-    {
-        string status_msg;
-        int status_code;
-        if (update)
-        {
-            status_code = 0;
-            status_msg = "update query returns true.";
-             Util::formatPrint(status_msg);
-        }
-        else
-        {
-            status_code = 1005;
-            status_msg = "search query returns false.";
-            std::cout << status_msg << endl;
-            Util::formatPrint(status_msg, "WARN");
-        }
-        response->set_statuscode(status_code);
-        response->set_statusmsg(status_msg);
-    }
-    apiUtil->unlock_database(db_name);
-    Util::formatPrint("query complete!");
-}
-
-void GrpcImpl::export_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
-{
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
-    {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string db_name = request->db_name();
-    string db_path = request->db_path();
-    string error = apiUtil->check_param_value("db_name", db_name);
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-    }
-    error = apiUtil->check_param_value("db_path", db_path);
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-    }
-    if(apiUtil->check_already_build(db_name) == false)
-    {
-        error = "the database not built yet.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(db_path[db_path.length()-1] != '/')
-	{
-        db_path = db_path + "/";
-    }	
-	if(Util::dir_exist(db_path)==false)
-	{
-        Util::create_dir(db_path);
-    }	
-	db_path = db_path + db_name +"_"+Util::get_timestamp()+ ".nt";
-    //check if database named [db_name] is already load
-    if(!apiUtil->check_already_load(db_name))
-    {
-        error = "Database not load yet.";
-		response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    Database *current_database = apiUtil->get_database(db_name);
-    apiUtil->rdlock_database(db_name);//lock database
-
-    string sparql = "select * where {?x ?y ?z.} ";
-	ResultSet rs;
-    Util::formatPrint("db_path: " + db_path);
-	FILE* ofp = fopen(db_path.c_str(), "w");
-    int ret = current_database->query(sparql, rs, ofp, true, true);
-    fflush(ofp);
-	fclose(ofp);
-	ofp = NULL;
-    current_database = NULL;
-
-	string success = "Export the database successfully.";
-    apiUtil->unlock_database(db_name);//unlock database
-    
-    response->set_statuscode(0);
-    response->set_statusmsg(success);
-    response->set_filepath(db_path);
-    return;
 }
 
 void GrpcImpl::login_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
@@ -1166,421 +1250,483 @@ void GrpcImpl::login_task(CommonRequest *&request, CommonResponse *&response, sr
 
 void GrpcImpl::begin_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string db_name = request->db_name();
+        string error = apiUtil->check_param_value("db_name", db_name);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+        }
+        string isolevel = request->isolevel();
+        error = apiUtil->check_param_value("isolevel", isolevel);
+        int level=Util::string2int(isolevel);
+        if(level<=0||level>3)
+        {
+            error="the Isolation level's value only can been 1/2/3";
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->check_already_build(db_name) == false)
+        {
+            error = "Database not built yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->check_already_load(db_name) == false)
+        {
+            error = "Database not load yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->get_Txn_ptr(db_name) == NULL)
+        {
+            error = "Database transaction manager error.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        string result_tid = apiUtil->begin_process(db_name, level, request->username());
+        if( result_tid.empty())
+        {
+            error = "transaction begin failed.";
+            response->set_statuscode(1005);
+            response->set_statusmsg(error);
+            return;
+        }
+        
+        response->set_statuscode(0);
+        response->set_statusmsg("transaction begin success");
+        response->set_tid(result_tid);
     }
-    string db_name = request->db_name();
-    string error = apiUtil->check_param_value("db_name", db_name);
-    if (error.empty() == false)
+    catch (...)
     {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-    }
-    string isolevel = request->isolevel();
-    error = apiUtil->check_param_value("isolevel", isolevel);
-    int level=Util::string2int(isolevel);
-	if(level<=0||level>3)
-	{
-		error="the Isolation level's value only can been 1/2/3";
-		response->set_statuscode(1003);
-        response->set_statusmsg(error);
-		return;
-	}
-    if(apiUtil->check_already_build(db_name) == false)
-    {
-        error = "Database not built yet.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->check_already_load(db_name) == false)
-    {
-        error = "Database not load yet.";
-		response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->get_Txn_ptr(db_name) == NULL)
-    {
-        error = "Database transaction manager error.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    string result_tid = apiUtil->begin_process(db_name, level, request->username());
-    if( result_tid.empty())
-    {
-        error = "transaction begin failed.";
+        string content = "unknow error";
+        std::cout << "begin failed:" << content << endl;
         response->set_statuscode(1005);
-        response->set_statusmsg(error);
-        return;
+        response->set_statusmsg("begin failed: " + content);
     }
-    
-    response->set_statuscode(0);
-    response->set_statusmsg("transaction begin success");
-    response->set_tid(result_tid);
 }
 
 void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string db_name = request->db_name();
-    string sparql = request->sparql();
-    string error = apiUtil->check_param_value("db_name", db_name);
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-    }
-    error = apiUtil->check_param_value("TID", request->tid());
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-    }
-    error = apiUtil->check_param_value("sparql", sparql);
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-    }
-    auto TID = apiUtil->check_txn_id(request->tid());
-    if(TID == NULL)
-    {
-        error = "TID is not a pure number. TID: " + request->tid();
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-    }
-    if(apiUtil->check_already_load(db_name) == false)
-    {
-        error = "Database not load yet.";
-		response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    auto txn_m = apiUtil->get_Txn_ptr(db_name);
-    if( txn_m == NULL)
-    {
-        error = "Database transaction manager error.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    Util::formatPrint("tquery sparql: " + sparql);
-    string res;
-    int ret = txn_m->Query(TID, sparql ,res);
-    if(ret == -1)
-	{
-		error = "Transaction query failed due to wrong TID";
-		response->set_statuscode(1005);
-        response->set_statusmsg(error);
-	}
-	else if(ret == -10)
-	{
-		error = "Transaction query failed due to wrong database status";
-		response->set_statuscode(1005);
-        response->set_statusmsg(error);
-	}
-	else if(ret == -99)
-	{
-		error = "Transaction query failed. This transaction is not in running status!";
-		response->set_statuscode(1005);
-        response->set_statusmsg(error);
-	}
-	else if(ret == -100)
-	{
-		
-		Document resDoc;
-		cout<<"res:"<<res<<endl;
-        resDoc.Parse(res.c_str());
-		if(resDoc.HasParseError())
-		{
-            response->set_statuscode(0);
-            response->set_statusmsg("success");
-            response->set_result(res);
-		}
-        else
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
         {
-            //TODO res = rs.to_JSON() need convert to query result object
-            cout << res <<endl;
-            Value& a = resDoc["head"]["vars"];
-            QueryHeadInfo *head = new QueryHeadInfo();
-            QueryResultInfo *results = new QueryResultInfo();
-            for(int i = 0; i<a.Size(); i++)
-            {
-                head->add_vars(resDoc["head"]["vars"][i].GetString());
-            }
-            Value& b = resDoc["results"]["bindings"];
-            for(int i = 0; i<b.Size(); i++)
-            {
-                results->add_bindings(resDoc["results"]["bindings"][i].GetString());
-            }
-            
-		    response->set_statuscode(0);
-            response->set_statusmsg("success");
-            response->set_allocated_head(head);
-            response->set_allocated_results(results);
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
         }
-	}
-	else if(ret == -20)
-	{
-		error = "Transaction query failed. This transaction is set abort due to conflict!";
-		response->set_statuscode(1005);
-        response->set_statusmsg(error);
-	}
-	else if(ret == -101)
-	{
-		error = "Transaction query failed. Unknown query error";
-		response->set_statuscode(1005);
-        response->set_statusmsg(error);
-	}
-	else
-	{
-		string success = "Transaction query success, update num: " + Util::int2string(ret);
-		response->set_statuscode(0);
-        response->set_statusmsg(success);
-	}
-}
-
-void GrpcImpl::commit_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
-{
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
-    {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string db_name = request->db_name();
-    string error = apiUtil->check_param_value("db_name", db_name);
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-    }
-    error = apiUtil->check_param_value("TID", request->tid());
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-    }
-    string TID_s = request->tid();
-    auto TID = apiUtil->check_txn_id(TID_s);
-    if( TID == NULL)
-    {
-        error = "TID is not a pure number. TID: " + TID_s;
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->check_db_exist(db_name) == false)
-    {
-        error = "Database not built yet.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->check_already_load(db_name) == false)
-    {
-        error = "Database not load yet.";
-		response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    auto txn_m = apiUtil->get_Txn_ptr(db_name);
-    if(txn_m == NULL)
-    {
-        error = "Database transaction manager error.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    int ret = txn_m->Commit(TID);
-    if (ret == 1)
-	{
-		error = "transaction not in running state! commit failed. TID: " + TID_s;
-		response->set_statuscode(1005);
-        response->set_statusmsg(error);
-	}
-	else if (ret == -1)
-	{
-		error = "transaction not found, commit failed. TID: " + TID_s;
-		response->set_statuscode(1005);
-        response->set_statusmsg(error);
-	}
-	else
-	{
-        apiUtil->commit_process(txn_m, TID);
-		string success = "transaction commit success. TID: " + TID_s;
-		response->set_statuscode(0);
-        response->set_statusmsg(success);
-	}
-
-}
-
-void GrpcImpl::rollback_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
-{
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
-    {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string db_name = request->db_name();
-    string error = apiUtil->check_param_value("db_name", db_name);
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-    }
-    error = apiUtil->check_param_value("TID", request->tid());
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-    }
-    string TID_s = request->tid();
-    auto TID = apiUtil->check_txn_id(TID_s);
-    if(TID == NULL)
-    {
-        error = "TID is not a pure number. TID: " + TID_s;
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-    }
-    if(apiUtil->check_db_exist(request->db_name()) == false)
-    {
-        error = "the database [" + request->db_name() + "] not built yet.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(!apiUtil->check_already_load(request->db_name()))
-    {
-        error = "Database not load yet.";
-		response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    auto txn_m = apiUtil->get_Txn_ptr(db_name);
-    if(txn_m == NULL)
-    {
-        error = "Database transaction manager error.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    int ret = txn_m->Rollback(TID);
-    if (ret == 1)
-	{
-		error = "transaction not in running state! rollback failed. TID: " + TID_s;
-		response->set_statuscode(1005);
-        response->set_statusmsg(error);
-		return;
-	}
-	else if (ret == -1)
-	{
-		error = "transaction not found, rollback failed. TID: " + TID_s;
-		response->set_statuscode(1005);
-        response->set_statusmsg(error);
-		return;
-	}
-	else
-	{
-		apiUtil->rollback_process(txn_m, TID);
-		string success = "transaction rollback success. TID: " + TID_s;
-		response->set_statuscode(0);
-        response->set_statusmsg(success);
-		return;
-	}
-}
-
-void GrpcImpl::checkpoint_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
-{
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
-    {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string db_name = request->db_name();
-    string error = apiUtil->check_param_value("db_name", db_name);
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->check_db_exist(db_name) == false)
-    {
-        error = "Database not built yet.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->check_already_load(db_name) == false)
-    {
-        error = "Database not load yet.";
-		response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    Database *current_database = apiUtil->get_database(db_name);
-    if (apiUtil->trywrlock_database(db_name) == false)
-    {
-        error = "the operation can not been excuted due to loss of lock.";
-		response->set_statuscode(1007);
-        response->set_statusmsg(error);
-    }
-    else
-    {
+        string db_name = request->db_name();
+        string sparql = request->sparql();
+        string error = apiUtil->check_param_value("db_name", db_name);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+        }
+        error = apiUtil->check_param_value("TID", request->tid());
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+        }
+        error = apiUtil->check_param_value("sparql", sparql);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+        }
+        auto TID = apiUtil->check_txn_id(request->tid());
+        if(TID == NULL)
+        {
+            error = "TID is not a pure number. TID: " + request->tid();
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+        }
+        if(apiUtil->check_already_load(db_name) == false)
+        {
+            error = "Database not load yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
         auto txn_m = apiUtil->get_Txn_ptr(db_name);
-        if(txn_m == NULL)
+        if( txn_m == NULL)
         {
             error = "Database transaction manager error.";
-            apiUtil->unlock_database(db_name);
             response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        Util::formatPrint("tquery sparql: " + sparql);
+        string res;
+        int ret = txn_m->Query(TID, sparql ,res);
+        if(ret == -1)
+        {
+            error = "Transaction query failed due to wrong TID";
+            response->set_statuscode(1005);
+            response->set_statusmsg(error);
+        }
+        else if(ret == -10)
+        {
+            error = "Transaction query failed due to wrong database status";
+            response->set_statuscode(1005);
+            response->set_statusmsg(error);
+        }
+        else if(ret == -99)
+        {
+            error = "Transaction query failed. This transaction is not in running status!";
+            response->set_statuscode(1005);
+            response->set_statusmsg(error);
+        }
+        else if(ret == -100)
+        {
+            
+            Document resDoc;
+            cout<<"res:"<<res<<endl;
+            resDoc.Parse(res.c_str());
+            if(resDoc.HasParseError())
+            {
+                response->set_statuscode(0);
+                response->set_statusmsg("success");
+                response->set_result(res);
+            }
+            else
+            {
+                //TODO res = rs.to_JSON() need convert to query result object
+                cout << res <<endl;
+                Value& a = resDoc["head"]["vars"];
+                QueryHeadInfo *head = new QueryHeadInfo();
+                QueryResultInfo *results = new QueryResultInfo();
+                for(int i = 0; i<a.Size(); i++)
+                {
+                    head->add_vars(resDoc["head"]["vars"][i].GetString());
+                }
+                Value& b = resDoc["results"]["bindings"];
+                for(int i = 0; i<b.Size(); i++)
+                {
+                    results->add_bindings(resDoc["results"]["bindings"][i].GetString());
+                }
+                
+                response->set_statuscode(0);
+                response->set_statusmsg("success");
+                response->set_allocated_head(head);
+                response->set_allocated_results(results);
+            }
+        }
+        else if(ret == -20)
+        {
+            error = "Transaction query failed. This transaction is set abort due to conflict!";
+            response->set_statuscode(1005);
+            response->set_statusmsg(error);
+        }
+        else if(ret == -101)
+        {
+            error = "Transaction query failed. Unknown query error";
+            response->set_statuscode(1005);
             response->set_statusmsg(error);
         }
         else
         {
-            txn_m->Checkpoint();
-            current_database->save();
-            apiUtil->unlock_database(db_name);
+            string success = "Transaction query success, update num: " + Util::int2string(ret);
             response->set_statuscode(0);
-            response->set_statusmsg("Database saved successfully.");
+            response->set_statusmsg(success);
         }
+    }
+    catch (...)
+    {
+        string content = "unknow error";
+        std::cout << "tquery failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("tquery failed: " + content);
+    }
+}
+
+void GrpcImpl::commit_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
+{
+    try
+    {
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string db_name = request->db_name();
+        string error = apiUtil->check_param_value("db_name", db_name);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+            return;
+        }
+        error = apiUtil->check_param_value("TID", request->tid());
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+            return;
+        }
+        string TID_s = request->tid();
+        auto TID = apiUtil->check_txn_id(TID_s);
+        if( TID == NULL)
+        {
+            error = "TID is not a pure number. TID: " + TID_s;
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->check_db_exist(db_name) == false)
+        {
+            error = "Database not built yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->check_already_load(db_name) == false)
+        {
+            error = "Database not load yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        auto txn_m = apiUtil->get_Txn_ptr(db_name);
+        if(txn_m == NULL)
+        {
+            error = "Database transaction manager error.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        int ret = txn_m->Commit(TID);
+        if (ret == 1)
+        {
+            error = "transaction not in running state! commit failed. TID: " + TID_s;
+            response->set_statuscode(1005);
+            response->set_statusmsg(error);
+        }
+        else if (ret == -1)
+        {
+            error = "transaction not found, commit failed. TID: " + TID_s;
+            response->set_statuscode(1005);
+            response->set_statusmsg(error);
+        }
+        else
+        {
+            apiUtil->commit_process(txn_m, TID);
+            string success = "transaction commit success. TID: " + TID_s;
+            response->set_statuscode(0);
+            response->set_statusmsg(success);
+        }
+    }
+    catch (...)
+    {
+        string content = "unknow error";
+        std::cout << "commit failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("commit failed: " + content);
+    }
+}
+
+void GrpcImpl::rollback_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
+{
+    try
+    {
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string db_name = request->db_name();
+        string error = apiUtil->check_param_value("db_name", db_name);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+        }
+        error = apiUtil->check_param_value("TID", request->tid());
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+        }
+        string TID_s = request->tid();
+        auto TID = apiUtil->check_txn_id(TID_s);
+        if(TID == NULL)
+        {
+            error = "TID is not a pure number. TID: " + TID_s;
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+        }
+        if(apiUtil->check_db_exist(request->db_name()) == false)
+        {
+            error = "the database [" + request->db_name() + "] not built yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(!apiUtil->check_already_load(request->db_name()))
+        {
+            error = "Database not load yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        auto txn_m = apiUtil->get_Txn_ptr(db_name);
+        if(txn_m == NULL)
+        {
+            error = "Database transaction manager error.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        int ret = txn_m->Rollback(TID);
+        if (ret == 1)
+        {
+            error = "transaction not in running state! rollback failed. TID: " + TID_s;
+            response->set_statuscode(1005);
+            response->set_statusmsg(error);
+            return;
+        }
+        else if (ret == -1)
+        {
+            error = "transaction not found, rollback failed. TID: " + TID_s;
+            response->set_statuscode(1005);
+            response->set_statusmsg(error);
+            return;
+        }
+        else
+        {
+            apiUtil->rollback_process(txn_m, TID);
+            string success = "transaction rollback success. TID: " + TID_s;
+            response->set_statuscode(0);
+            response->set_statusmsg(success);
+            return;
+        }
+    }
+    catch (...)
+    {
+        string content = "unknow error";
+        std::cout << "rollback failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("rollback failed: " + content);
+    }
+}
+
+void GrpcImpl::checkpoint_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
+{
+    try
+    {
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string db_name = request->db_name();
+        string error = apiUtil->check_param_value("db_name", db_name);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->check_db_exist(db_name) == false)
+        {
+            error = "Database not built yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->check_already_load(db_name) == false)
+        {
+            error = "Database not load yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        Database *current_database = apiUtil->get_database(db_name);
+        if (apiUtil->trywrlock_database(db_name) == false)
+        {
+            error = "the operation can not been excuted due to loss of lock.";
+            response->set_statuscode(1007);
+            response->set_statusmsg(error);
+        }
+        else
+        {
+            Util::formatPrint("get Txn_ptr");
+            auto txn_m = apiUtil->get_Txn_ptr(db_name);
+            if(txn_m == NULL)
+            {
+                error = "Database transaction manager error.";
+                apiUtil->unlock_database(db_name);
+                response->set_statuscode(1004);
+                response->set_statusmsg(error);
+            }
+            else
+            {
+                Util::formatPrint("begin checkpoint");
+                txn_m->Checkpoint();
+                Util::formatPrint("begin save");
+                current_database->save();
+                apiUtil->unlock_database(db_name);
+                response->set_statuscode(0);
+                response->set_statusmsg("Database saved successfully.");
+            }
+        }
+    }
+    catch (...)
+    {
+        string content = "unknow error";
+        std::cout << "checkpoint failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("checkpoint failed: " + content);
     }
 }
 
 void GrpcImpl::test_connect_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        response->set_statuscode(0);
+        response->set_statusmsg("success");
+        string version = Util::getConfigureValue("version");
+        response->set_coreversion(version);
+        string licensetype=Util::getConfigureValue("licensetype");
+        response->set_licensetype(licensetype);
     }
-    response->set_statuscode(0);
-    response->set_statusmsg("success");
-    string version = Util::getConfigureValue("version");
-    response->set_coreversion(version);
-    string licensetype=Util::getConfigureValue("licensetype");
-    response->set_licensetype(licensetype);
+    catch (...)
+    {
+        string content = "unknow error";
+        std::cout << "testConnect failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("testConnect failed: " + content);
+    }
 }
 
 void GrpcImpl::core_version_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
@@ -1600,130 +1746,150 @@ void GrpcImpl::core_version_task(CommonRequest *&request, CommonResponse *&respo
 
 void GrpcImpl::batch_insert_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string db_name = request->db_name();
-    string file = request->file();
-    string error = apiUtil->check_param_value("db_name", db_name);
-    if (error.empty() == false)
-    {
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string db_name = request->db_name();
+        string file = request->file();
+        string error = apiUtil->check_param_value("db_name", db_name);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+            return;
+        }
+        error = apiUtil->check_param_value("file", file);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(Util::file_exist(file)==false)
+        {
+        error="The data file is not exist";
         response->set_statuscode(1003);
         response->set_statusmsg(error);
         return;
+        }
+        if(apiUtil->check_db_exist(db_name) == false)
+        {
+            error = "Database not built yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->check_already_load(db_name) == false)
+        {
+            error = "Database not load yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        Database *current_database = apiUtil->get_database(db_name);
+        if (apiUtil->trywrlock_database(db_name) == false)
+        {
+            error = "the operation can not been excuted due to loss of lock.";
+            response->set_statuscode(1007);
+            response->set_statusmsg(error);
+        }
+        else
+        {
+            unsigned success_num = current_database->batch_insert(file, false, nullptr);
+            apiUtil->unlock_database(db_name);
+            response->set_statuscode(0);
+            response->set_statusmsg("Batch insert data successfully.");
+            response->set_success_num(Util::int2string(success_num));
+            apiUtil->write_access_log("batchInsert",ctx->get_remote_ip(),0,"Batch insert data successfully.");
+            return;
+        }
     }
-    error = apiUtil->check_param_value("file", file);
-    if (error.empty() == false)
+    catch (...)
     {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(Util::file_exist(file)==false)
-	{
-       error="The data file is not exist";
-	   response->set_statuscode(1003);
-       response->set_statusmsg(error);
-	   return;
-	}
-    if(apiUtil->check_db_exist(db_name) == false)
-    {
-        error = "Database not built yet.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->check_already_load(db_name) == false)
-    {
-        error = "Database not load yet.";
-		response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    Database *current_database = apiUtil->get_database(db_name);
-    if (apiUtil->trywrlock_database(db_name) == false)
-    {
-        error = "the operation can not been excuted due to loss of lock.";
-		response->set_statuscode(1007);
-        response->set_statusmsg(error);
-    }
-    else
-    {
-        unsigned success_num = current_database->batch_insert(file, false, nullptr);
-        apiUtil->unlock_database(db_name);
-        response->set_statuscode(0);
-        response->set_statusmsg("Batch insert data successfully.");
-        response->set_success_num(Util::int2string(success_num));
-        apiUtil->write_access_log("batchInsert",ctx->get_remote_ip(),0,"Batch insert data successfully.");
-        return;
+        string content = "unknow error";
+        std::cout << "batchInsert failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("batchInsert failed: " + content);
     }
 }
 
 void GrpcImpl::batch_remove_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string db_name = request->db_name();
-    string file = request->file();
-    string error = apiUtil->check_param_value("db_name", db_name);
-    if (error.empty() == false)
-    {
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string db_name = request->db_name();
+        string file = request->file();
+        string error = apiUtil->check_param_value("db_name", db_name);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+            return;
+        }
+        error = apiUtil->check_param_value("file", file);
+        if (error.empty() == false)
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(Util::file_exist(file) == false)
+        {
+        error="the data file is not exist";
         response->set_statuscode(1003);
         response->set_statusmsg(error);
         return;
+        }
+        if(apiUtil->check_db_exist(db_name) == false)
+        {
+            error = "Database not built yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        if(apiUtil->check_already_load(db_name) == false)
+        {
+            error = "Database not load yet.";
+            response->set_statuscode(1004);
+            response->set_statusmsg(error);
+            return;
+        }
+        Database *current_database = apiUtil->get_database(db_name);
+        if (apiUtil->trywrlock_database(db_name) == false)
+        {
+            error = "the operation can not been excuted due to loss of lock.";
+            response->set_statuscode(1007);
+            response->set_statusmsg(error);
+        }
+        else
+        {
+            unsigned success_num = current_database->batch_remove(file, false, nullptr);
+            apiUtil->unlock_database(db_name);
+            response->set_statuscode(0);
+            response->set_statusmsg("Batch remove data successfully.");
+            response->set_success_num(Util::int2string(success_num));
+            apiUtil->write_access_log("batchRemove",ctx->get_remote_ip(),0,"Batch remove data successfully.");
+        }
     }
-    error = apiUtil->check_param_value("file", file);
-    if (error.empty() == false)
+    catch (...)
     {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(Util::file_exist(file) == false)
-	{
-       error="the data file is not exist";
-	   response->set_statuscode(1003);
-       response->set_statusmsg(error);
-	   return;
-	}
-    if(apiUtil->check_db_exist(db_name) == false)
-    {
-        error = "Database not built yet.";
-        response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(apiUtil->check_already_load(db_name) == false)
-    {
-        error = "Database not load yet.";
-		response->set_statuscode(1004);
-        response->set_statusmsg(error);
-        return;
-    }
-    Database *current_database = apiUtil->get_database(db_name);
-    if (apiUtil->trywrlock_database(db_name) == false)
-    {
-        error = "the operation can not been excuted due to loss of lock.";
-		response->set_statuscode(1007);
-        response->set_statusmsg(error);
-    }
-    else
-    {
-        unsigned success_num = current_database->batch_remove(file, false, nullptr);
-        apiUtil->unlock_database(db_name);
-        response->set_statuscode(0);
-        response->set_statusmsg("Batch remove data successfully.");
-        response->set_success_num(Util::int2string(success_num));
-        apiUtil->write_access_log("batchRemove",ctx->get_remote_ip(),0,"Batch remove data successfully.");
+        string content = "unknow error";
+        std::cout << "batchRemove failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("batchRemove failed: " + content);
     }
 }
 
@@ -1734,335 +1900,375 @@ void GrpcImpl::shutdown_task(CommonRequest *&request, CommonResponse *&response,
 
 void GrpcImpl::user_manage_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(!ipCheckResult.empty())
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string type = request->type();
-    string error = "";
-    string username = request->username();
-    string password = request->password();
-    if(type == "1")//insert user
-    {
-        if(username.empty()||password.empty())
-		{
-            error="the user name and password can not be empty while adding user.";
-			response->set_statuscode(1003);
-            response->set_statusmsg(error);
-		}
-        else if(apiUtil->user_add(username,password))
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(!ipCheckResult.empty())
         {
-            error="user add done.";
-            response->set_statuscode(0);
-            response->set_statusmsg(error);
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string type = request->type();
+        string error = "";
+        string username = request->username();
+        string password = request->password();
+        if(type == "1")//insert user
+        {
+            if(username.empty()||password.empty())
+            {
+                error="the user name and password can not be empty while adding user.";
+                response->set_statuscode(1003);
+                response->set_statusmsg(error);
+            }
+            else if(apiUtil->user_add(username,password))
+            {
+                error="user add done.";
+                response->set_statuscode(0);
+                response->set_statusmsg(error);
+            }
+            else
+            {
+                error = "username already existed, add user failed.";
+                response->set_statuscode(1004);
+                response->set_statusmsg(error);
+            }
+        }
+        else if(type == "2") //delete user
+        {
+            if(username == ROOT_USERNAME)
+            {
+                error = "you cannot delete root, delete user failed.";
+                response->set_statuscode(1004);
+                response->set_statusmsg(error);
+            }
+            else if(apiUtil->user_delete(username, password))
+            {
+                response->set_statuscode(0);
+                response->set_statusmsg("delete user done.");
+            }
+            else
+            {
+                response->set_statuscode(1004);
+                response->set_statusmsg("username not exist, delete user failed.");
+            }
+        }
+        else if (type =="3")//alert password
+        {
+            if(apiUtil->user_pwd_alert(username, password))
+            {
+                response->set_statuscode(0);
+                response->set_statusmsg("change password done.");
+            }
+            else
+            {
+                response->set_statuscode(1004);
+                response->set_statusmsg("username not exist, change password failed.");
+            }
         }
         else
         {
-            error = "username already existed, add user failed.";
-            response->set_statuscode(1004);
-            response->set_statusmsg(error);
+            response->set_statuscode(1003);
+            response->set_statusmsg("the operation is not support.");
         }
     }
-    else if(type == "2") //delete user
+    catch (...)
     {
-        if(username == ROOT_USERNAME)
-        {
-            error = "you cannot delete root, delete user failed.";
-            response->set_statuscode(1004);
-            response->set_statusmsg(error);
-        }
-        else if(apiUtil->user_delete(username, password))
-        {
-            response->set_statuscode(0);
-            response->set_statusmsg("delete user done.");
-        }
-        else
-        {
-            response->set_statuscode(1004);
-            response->set_statusmsg("username not exist, delete user failed.");
-        }
-    }
-    else if (type =="3")//alert password
-    {
-        if(apiUtil->user_pwd_alert(username, password))
-        {
-            response->set_statuscode(0);
-            response->set_statusmsg("change password done.");
-        }
-        else
-        {
-            response->set_statuscode(1004);
-            response->set_statusmsg("username not exist, change password failed.");
-        }
-    }
-    else
-    {
-		response->set_statuscode(1003);
-        response->set_statusmsg("the operation is not support.");
+        string content = "unknow error";
+        std::cout << "usermanage failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("usermanage failed: " + content);
     }
 }
 
 void GrpcImpl::user_show_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string result = apiUtil->get_user_info();
+        if(result != ""){
+            rapidjson::Document doc;
+            doc.SetArray();
+            doc.Parse(result.c_str());
+            size_t len = doc["ResponseBody"].Size();
+            for (size_t i = 0; i < len; i++)
+            {
+
+                UserInfo userInfo;
+                if (doc["ResponseBody"][i].HasMember("username"))
+                    userInfo.set_username(doc["ResponseBody"][i]["username"].GetString());
+
+                if (doc["ResponseBody"][i].HasMember("password"))
+                    userInfo.set_password(doc["ResponseBody"][i]["password"].GetString());
+
+                if (doc["ResponseBody"][i].HasMember("query_privilege"))
+                    userInfo.set_query_privilege(doc["ResponseBody"][i]["query_privilege"].GetString());
+
+                if (doc["ResponseBody"][i].HasMember("update_privilege"))
+                    userInfo.set_update_privilege(doc["ResponseBody"][i]["update_privilege"].GetString());
+                
+                if (doc["ResponseBody"][i].HasMember("load_privilege"))
+                    userInfo.set_load_privilege(doc["ResponseBody"][i]["load_privilege"].GetString());
+                
+                if (doc["ResponseBody"][i].HasMember("unload_privilege"))
+                    userInfo.set_unload_privilege(doc["ResponseBody"][i]["unload_privilege"].GetString());
+                
+                if (doc["ResponseBody"][i].HasMember("backup_privilege"))
+                    userInfo.set_backup_privilege(doc["ResponseBody"][i]["backup_privilege"].GetString());
+
+                if (doc["ResponseBody"][i].HasMember("restore_privilege"))
+                    userInfo.set_restore_privilege(doc["ResponseBody"][i]["restore_privilege"].GetString());
+
+                if (doc["ResponseBody"][i].HasMember("export_privilege"))
+                    userInfo.set_export_privilege(doc["ResponseBody"][i]["export_privilege"].GetString());
+                google::protobuf::Any *any = response->add_responsebody();
+                any->PackFrom(userInfo);
+            }
+            // set response status and message
+            response->set_statuscode(0);
+            response->set_statusmsg("success");
+        }
+        else
+        {
+            string error = "No Users";
+            response->set_statuscode(0);
+            response->set_statusmsg(error);
+        }
         return;
     }
-    string result = apiUtil->get_user_info();
-    if(result != ""){
-        rapidjson::Document doc;
-        doc.SetArray();
-        doc.Parse(result.c_str());
-        size_t len = doc["ResponseBody"].Size();
-        for (size_t i = 0; i < len; i++)
-        {
-
-            UserInfo userInfo;
-            if (doc["ResponseBody"][i].HasMember("username"))
-                userInfo.set_username(doc["ResponseBody"][i]["username"].GetString());
-
-            if (doc["ResponseBody"][i].HasMember("password"))
-                userInfo.set_password(doc["ResponseBody"][i]["password"].GetString());
-
-            if (doc["ResponseBody"][i].HasMember("query_privilege"))
-                userInfo.set_query_privilege(doc["ResponseBody"][i]["query_privilege"].GetString());
-
-            if (doc["ResponseBody"][i].HasMember("update_privilege"))
-                userInfo.set_update_privilege(doc["ResponseBody"][i]["update_privilege"].GetString());
-            
-            if (doc["ResponseBody"][i].HasMember("load_privilege"))
-                userInfo.set_load_privilege(doc["ResponseBody"][i]["load_privilege"].GetString());
-            
-            if (doc["ResponseBody"][i].HasMember("unload_privilege"))
-                userInfo.set_unload_privilege(doc["ResponseBody"][i]["unload_privilege"].GetString());
-            
-            if (doc["ResponseBody"][i].HasMember("backup_privilege"))
-                userInfo.set_backup_privilege(doc["ResponseBody"][i]["backup_privilege"].GetString());
-
-            if (doc["ResponseBody"][i].HasMember("restore_privilege"))
-                userInfo.set_restore_privilege(doc["ResponseBody"][i]["restore_privilege"].GetString());
-
-            if (doc["ResponseBody"][i].HasMember("export_privilege"))
-                userInfo.set_export_privilege(doc["ResponseBody"][i]["export_privilege"].GetString());
-            google::protobuf::Any *any = response->add_responsebody();
-            any->PackFrom(userInfo);
-        }
-        // set response status and message
-        response->set_statuscode(0);
-        response->set_statusmsg("success");
-    }
-    else
+    catch (...)
     {
-        string error = "No Users";
-        response->set_statuscode(0);
-        response->set_statusmsg(error);
+        string content = "unknow error";
+        std::cout << "usershow failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("usershow failed: " + content);
     }
-    return;
 }
 
 void GrpcImpl::user_privilege_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string error ="";
-    string privilege = request->privileges();
-    error = apiUtil->check_param_value("type", request->type());
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-    }
-    error = apiUtil->check_param_value("username", request->username());
-    if (error.empty() == false)
-    {
-        response->set_statuscode(1003);
-        response->set_statusmsg(error);
-        return;
-    }
-    if(request->type()!="3")
-    {
-        error = apiUtil->check_param_value("db_name", request->db_name());
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string error ="";
+        string privilege = request->privileges();
+        error = apiUtil->check_param_value("type", request->type());
         if (error.empty() == false)
         {
             response->set_statuscode(1003);
             response->set_statusmsg(error);
             return;
         }
-        error = apiUtil->check_param_value("privilege", request->privileges());
+        error = apiUtil->check_param_value("username", request->username());
         if (error.empty() == false)
         {
             response->set_statuscode(1003);
             response->set_statusmsg(error);
             return;
         }
-    }
+        if(request->type()!="3")
+        {
+            error = apiUtil->check_param_value("db_name", request->db_name());
+            if (error.empty() == false)
+            {
+                response->set_statuscode(1003);
+                response->set_statusmsg(error);
+                return;
+            }
+            error = apiUtil->check_param_value("privilege", request->privileges());
+            if (error.empty() == false)
+            {
+                response->set_statuscode(1003);
+                response->set_statusmsg(error);
+                return;
+            }
+        }
 
-    if (request->username() == ROOT_USERNAME)
-	{
-		error = "you can't add privilege to root user.";
-		response->set_statuscode(1004);
-        response->set_statusmsg(error);
-		return;
-	}
-    string result = "";
-    if(request->type() == "3")
-    {
-        int resultint = apiUtil->clear_user_privilege(request->username());
-        if(resultint == -1)
+        if (request->username() == ROOT_USERNAME)
         {
-            error="the username is not exists or the username is root.";
+            error = "you can't add privilege to root user.";
             response->set_statuscode(1004);
             response->set_statusmsg(error);
+            return;
+        }
+        string result = "";
+        if(request->type() == "3")
+        {
+            int resultint = apiUtil->clear_user_privilege(request->username());
+            if(resultint == -1)
+            {
+                error="the username is not exists or the username is root.";
+                response->set_statuscode(1004);
+                response->set_statusmsg(error);
+            }
+            else
+            {
+                result="clear the all privileges for the user successfully!";
+                response->set_statuscode(0);
+                response->set_statusmsg(result);
+            }
         }
         else
         {
-	        result="clear the all privileges for the user successfully!";
+            vector<string> privileges;
+            if (privilege.substr(privilege.length() - 1, 1) != ",")
+            {
+                privilege = privilege + ",";
+            }
+            Util::split(privilege, ",", privileges);
+            for (int i = 0; i < privileges.size(); i++)
+            {
+                string temp_privilege_int = privileges[i];
+                string temp_privilege = "";
+                if (temp_privilege_int.empty())
+                {
+                    continue;
+                }
+                if (temp_privilege_int == "1")
+                {
+                    temp_privilege = "query";
+                }
+                else if (temp_privilege_int == "2")
+                {
+                    temp_privilege = "load";
+                }
+                else if (temp_privilege_int == "3")
+                {
+                    temp_privilege = "unload";
+                }
+                else if (temp_privilege_int == "4")
+                {
+                    temp_privilege = "update";
+                }
+                else if (temp_privilege_int == "5")
+                {
+                    temp_privilege = "backup";
+                }
+                else if (temp_privilege_int == "6")
+                {
+                    temp_privilege = "restore";
+                }
+                else if (temp_privilege_int == "7")
+                {
+                    temp_privilege = "export";
+                }
+                if (temp_privilege.empty() == false)
+                {
+                    if (request->type() == "1")
+                    {
+                        if (apiUtil->add_privilege(request->username(), temp_privilege, request->db_name()) == 0)
+                        {
+                            result = result + "add privilege " + temp_privilege + " failed. \r\n";
+                        }
+                        else
+                        {
+                            result = result + "add privilege " + temp_privilege + " successfully. \r\n";
+                        }
+                    }
+                    else if (request->type() == "2")
+                    {
+                        if (apiUtil->del_privilege(request->username(), temp_privilege, request->db_name()) == 0)
+                        {
+                            result = result + "delete privilege " + temp_privilege + " failed. \r\n";
+                        }
+                        else
+                        {
+                            result = result + "delete privilege " + temp_privilege + " successfully. \r\n";
+                        }
+                    }
+                    else
+                    {
+                        result = "the operation type is not support.";
+                        response->set_statuscode(1003);
+                        response->set_statusmsg(result);
+                        return;
+                    }
+                }
+            }
             response->set_statuscode(0);
             response->set_statusmsg(result);
         }
     }
-    else
+    catch (...)
     {
-        vector<string> privileges;
-		if (privilege.substr(privilege.length() - 1, 1) != ",")
-		{
-			privilege = privilege + ",";
-		}
-        Util::split(privilege, ",", privileges);
-		for (int i = 0; i < privileges.size(); i++)
-		{
-			string temp_privilege_int = privileges[i];
-			string temp_privilege = "";
-			if (temp_privilege_int.empty())
-			{
-				continue;
-			}
-			if (temp_privilege_int == "1")
-			{
-				temp_privilege = "query";
-			}
-			else if (temp_privilege_int == "2")
-			{
-				temp_privilege = "load";
-			}
-			else if (temp_privilege_int == "3")
-			{
-				temp_privilege = "unload";
-			}
-			else if (temp_privilege_int == "4")
-			{
-				temp_privilege = "update";
-			}
-			else if (temp_privilege_int == "5")
-			{
-				temp_privilege = "backup";
-			}
-			else if (temp_privilege_int == "6")
-			{
-				temp_privilege = "restore";
-			}
-			else if (temp_privilege_int == "7")
-			{
-				temp_privilege = "export";
-			}
-			if (temp_privilege.empty() == false)
-			{
-				if (request->type() == "1")
-				{
-					if (apiUtil->add_privilege(request->username(), temp_privilege, request->db_name()) == 0)
-					{
-						result = result + "add privilege " + temp_privilege + " failed. \r\n";
-					}
-					else
-					{
-						result = result + "add privilege " + temp_privilege + " successfully. \r\n";
-					}
-				}
-				else if (request->type() == "2")
-				{
-					if (apiUtil->del_privilege(request->username(), temp_privilege, request->db_name()) == 0)
-					{
-						result = result + "delete privilege " + temp_privilege + " failed. \r\n";
-					}
-					else
-					{
-						result = result + "delete privilege " + temp_privilege + " successfully. \r\n";
-					}
-				}
-				else
-				{
-					result = "the operation type is not support.";
-					response->set_statuscode(1003);
-                    response->set_statusmsg(result);
-					return;
-				}
-			}
-		}
-        response->set_statuscode(0);
-        response->set_statusmsg(result);
+        string content = "unknow error";
+        std::cout << "userprivilege failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("userprivilege failed: " + content);
     }
 }
 
 void GrpcImpl::txn_log_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    if(request->username() == ROOT_USERNAME)
-    {
-        string result = Util::get_transactionlog();
-        response->set_statuscode(0);
-        response->set_statusmsg("Get Transaction log success");
-        rapidjson::Document doc;
-        doc.SetArray();
-        doc.Parse(result.c_str());
-        size_t len = doc["list"].Size();
-        for (size_t i = 0; i < len; i++)
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
         {
-            TxnLogInfo txnLogInfo;
-            if (doc["list"][i].HasMember("db_name"))
-                txnLogInfo.set_db_name(doc["list"][i]["db_name"].GetString());
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        if(request->username() == ROOT_USERNAME)
+        {
+            string result = Util::get_transactionlog();
+            response->set_statuscode(0);
+            response->set_statusmsg("Get Transaction log success");
+            rapidjson::Document doc;
+            doc.SetArray();
+            doc.Parse(result.c_str());
+            size_t len = doc["list"].Size();
+            for (size_t i = 0; i < len; i++)
+            {
+                TxnLogInfo txnLogInfo;
+                if (doc["list"][i].HasMember("db_name"))
+                    txnLogInfo.set_db_name(doc["list"][i]["db_name"].GetString());
 
-            if (doc["list"][i].HasMember("TID"))
-                txnLogInfo.set_tid(doc["list"][i]["TID"].GetString());
-            
-            if (doc["list"][i].HasMember("user"))
-                txnLogInfo.set_user(doc["list"][i]["user"].GetString());
-            
-            if (doc["list"][i].HasMember("begin_time"))
-                txnLogInfo.set_begin_time(doc["list"][i]["begin_time"].GetString());
-            
-            if (doc["list"][i].HasMember("state"))
-                txnLogInfo.set_state(doc["list"][i]["state"].GetString());
-            
-            if (doc["list"][i].HasMember("end_time"))
-                txnLogInfo.set_end_time(doc["list"][i]["end_time"].GetString());
-            
-            google::protobuf::Any *any = response->add_list();
-            any->PackFrom(txnLogInfo);
+                if (doc["list"][i].HasMember("TID"))
+                    txnLogInfo.set_tid(doc["list"][i]["TID"].GetString());
+                
+                if (doc["list"][i].HasMember("user"))
+                    txnLogInfo.set_user(doc["list"][i]["user"].GetString());
+                
+                if (doc["list"][i].HasMember("begin_time"))
+                    txnLogInfo.set_begin_time(doc["list"][i]["begin_time"].GetString());
+                
+                if (doc["list"][i].HasMember("state"))
+                    txnLogInfo.set_state(doc["list"][i]["state"].GetString());
+                
+                if (doc["list"][i].HasMember("end_time"))
+                    txnLogInfo.set_end_time(doc["list"][i]["end_time"].GetString());
+                
+                google::protobuf::Any *any = response->add_list();
+                any->PackFrom(txnLogInfo);
+            }
+        }
+        else
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg("Root User Only!");
+            return;
         }
     }
-    else
+    catch (...)
     {
-        response->set_statuscode(1003);
-        response->set_statusmsg("Root User Only!");
-        return;
+        string content = "unknow error";
+        std::cout << "txn_log failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("txn_log failed: " + content);
     }
 }
 
@@ -2163,71 +2369,81 @@ void GrpcImpl::access_log_task(CommonRequest *&request, CommonResponse *&respons
 
 void GrpcImpl::ip_manage_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    if(request->type() == "1")
-    {
-        string IPtype = apiUtil->ip_enabled_type();
-        if(IPtype == "3"){
-            response->set_statuscode(1005);
-            response->set_statusmsg("please configure ip_deny_path or ip_allow_path in the conf.ini file first.");
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
             return;
         }
-        IPManageInfo* ipManageInfo = new IPManageInfo();
-        ipManageInfo->set_ip_type(IPtype);
-        vector<string>ip_list = apiUtil->ip_list(IPtype);
-        for(int i = 0 ;i<ip_list.size();i++){
-           ipManageInfo->add_ips(ip_list[i]);
-        }
-        response->set_statuscode(0);
-        response->set_statusmsg("success");
-        google::protobuf::Any *any = response->add_responsebody();
-        any->PackFrom(*ipManageInfo);
-        return;
-    }
-    else if ( request->type() == "2")
-    {
-        string ips = "";
-        ips = request->ips();
-        if(ips.empty())
+        if(request->type() == "1")
         {
-            response->set_statuscode(1003);
-            response->set_statusmsg("the ips can't be empty");
-            return;
-        }
-        vector<string> ipVector;
-		Util::split(ips,",", ipVector);
-        if(request->ip_type() == "1"|| request->ip_type() == "2")
-        {
-            if(apiUtil->ip_save(request->ip_type(),ipVector)==false)
-            {
-                if(request->ip_type() == "1")
-                {
-                    response->set_statuscode(1005);
-                    response->set_statusmsg("ip_deny_path is not configured, please configure it in the conf.ini file first.");
-                }
-                else
-                {
-                    response->set_statuscode(1005);
-                    response->set_statusmsg("ip_allow_path is not configured, please configure it in the conf.ini file first.");
-                }
+            string IPtype = apiUtil->ip_enabled_type();
+            if(IPtype == "3"){
+                response->set_statuscode(1005);
+                response->set_statusmsg("please configure ip_deny_path or ip_allow_path in the conf.ini file first.");
+                return;
             }
-            
-        }
-        else
-        {
-            response->set_statuscode(1003);
-            response->set_statusmsg("ip_type is invalid, please look up the api document.");
+            IPManageInfo* ipManageInfo = new IPManageInfo();
+            ipManageInfo->set_ip_type(IPtype);
+            vector<string>ip_list = apiUtil->ip_list(IPtype);
+            for(int i = 0 ;i<ip_list.size();i++){
+            ipManageInfo->add_ips(ip_list[i]);
+            }
+            response->set_statuscode(0);
+            response->set_statusmsg("success");
+            google::protobuf::Any *any = response->add_responsebody();
+            any->PackFrom(*ipManageInfo);
             return;
         }
-        response->set_statuscode(0);
-        response->set_statusmsg("success");
-        return;
+        else if ( request->type() == "2")
+        {
+            string ips = "";
+            ips = request->ips();
+            if(ips.empty())
+            {
+                response->set_statuscode(1003);
+                response->set_statusmsg("the ips can't be empty");
+                return;
+            }
+            vector<string> ipVector;
+            Util::split(ips,",", ipVector);
+            if(request->ip_type() == "1"|| request->ip_type() == "2")
+            {
+                if(apiUtil->ip_save(request->ip_type(),ipVector)==false)
+                {
+                    if(request->ip_type() == "1")
+                    {
+                        response->set_statuscode(1005);
+                        response->set_statusmsg("ip_deny_path is not configured, please configure it in the conf.ini file first.");
+                    }
+                    else
+                    {
+                        response->set_statuscode(1005);
+                        response->set_statusmsg("ip_allow_path is not configured, please configure it in the conf.ini file first.");
+                    }
+                }
+                
+            }
+            else
+            {
+                response->set_statuscode(1003);
+                response->set_statusmsg("ip_type is invalid, please look up the api document.");
+                return;
+            }
+            response->set_statuscode(0);
+            response->set_statusmsg("success");
+            return;
+        }
+    }
+    catch (...)
+    {
+        string content = "unknow error";
+        std::cout << "ipmanage failed:" << content << endl;
+        response->set_statuscode(1005);
+        response->set_statusmsg("ipmanage failed: " + content);
     }
 }
 
