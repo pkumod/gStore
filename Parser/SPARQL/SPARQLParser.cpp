@@ -1121,28 +1121,28 @@ SPARQLParser::ConstructqueryContext* SPARQLParser::constructquery() {
           ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
           | (1ULL << SPARQLParser::T__15)
           | (1ULL << SPARQLParser::T__27)
-          | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-          ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-          | (1ULL << (SPARQLParser::PNAME_NS - 151))
-          | (1ULL << (SPARQLParser::PNAME_LN - 151))
-          | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 151))
-          | (1ULL << (SPARQLParser::VAR1 - 151))
-          | (1ULL << (SPARQLParser::VAR2 - 151))
-          | (1ULL << (SPARQLParser::INTEGER - 151))
-          | (1ULL << (SPARQLParser::DECIMAL - 151))
-          | (1ULL << (SPARQLParser::DOUBLE - 151))
-          | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-          | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-          | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-          | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-          | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-          | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-          | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-          | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-          | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-          | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151))
-          | (1ULL << (SPARQLParser::NIL - 151))
-          | (1ULL << (SPARQLParser::ANON - 151)))) != 0)) {
+          | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+          ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+          | (1ULL << (SPARQLParser::PNAME_NS - 152))
+          | (1ULL << (SPARQLParser::PNAME_LN - 152))
+          | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 152))
+          | (1ULL << (SPARQLParser::VAR1 - 152))
+          | (1ULL << (SPARQLParser::VAR2 - 152))
+          | (1ULL << (SPARQLParser::INTEGER - 152))
+          | (1ULL << (SPARQLParser::DECIMAL - 152))
+          | (1ULL << (SPARQLParser::DOUBLE - 152))
+          | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+          | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+          | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+          | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+          | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+          | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+          | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+          | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+          | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+          | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152))
+          | (1ULL << (SPARQLParser::NIL - 152))
+          | (1ULL << (SPARQLParser::ANON - 152)))) != 0)) {
           setState(390);
           triplesTemplate();
         }
@@ -1259,12 +1259,12 @@ SPARQLParser::DescribequeryContext* SPARQLParser::describequery() {
           setState(401); 
           _errHandler->sync(this);
           _la = _input->LA(1);
-        } while (((((_la - 151) & ~ 0x3fULL) == 0) &&
-          ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-          | (1ULL << (SPARQLParser::PNAME_NS - 151))
-          | (1ULL << (SPARQLParser::PNAME_LN - 151))
-          | (1ULL << (SPARQLParser::VAR1 - 151))
-          | (1ULL << (SPARQLParser::VAR2 - 151)))) != 0));
+        } while (((((_la - 152) & ~ 0x3fULL) == 0) &&
+          ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+          | (1ULL << (SPARQLParser::PNAME_NS - 152))
+          | (1ULL << (SPARQLParser::PNAME_LN - 152))
+          | (1ULL << (SPARQLParser::VAR1 - 152))
+          | (1ULL << (SPARQLParser::VAR2 - 152)))) != 0));
         break;
       }
 
@@ -1998,6 +1998,7 @@ SPARQLParser::GroupClauseContext* SPARQLParser::groupClause() {
       | (1ULL << (SPARQLParser::K_KHOPENUMERATE - 130))
       | (1ULL << (SPARQLParser::K_KHOPREACHABLEPATH - 130))
       | (1ULL << (SPARQLParser::K_PPR - 130))
+      | (1ULL << (SPARQLParser::K_PFN - 130))
       | (1ULL << (SPARQLParser::KK_ENCODE_FOR_URI - 130))
       | (1ULL << (SPARQLParser::KK_MD5 - 130))
       | (1ULL << (SPARQLParser::KK_SHA1 - 130))
@@ -2009,8 +2010,7 @@ SPARQLParser::GroupClauseContext* SPARQLParser::groupClause() {
       | (1ULL << (SPARQLParser::PNAME_NS - 130))
       | (1ULL << (SPARQLParser::PNAME_LN - 130))
       | (1ULL << (SPARQLParser::VAR1 - 130))
-      | (1ULL << (SPARQLParser::VAR2 - 130))
-      | (1ULL << (SPARQLParser::K_PFN - 130)))) != 0));
+      | (1ULL << (SPARQLParser::VAR2 - 130)))) != 0));
    
   }
   catch (RecognitionException &e) {
@@ -2153,14 +2153,14 @@ SPARQLParser::GroupConditionContext* SPARQLParser::groupCondition() {
       case SPARQLParser::K_KHOPENUMERATE:
       case SPARQLParser::K_KHOPREACHABLEPATH:
       case SPARQLParser::K_PPR:
+      case SPARQLParser::K_PFN:
       case SPARQLParser::KK_ENCODE_FOR_URI:
       case SPARQLParser::KK_MD5:
       case SPARQLParser::KK_SHA1:
       case SPARQLParser::KK_SHA256:
       case SPARQLParser::KK_SHA384:
       case SPARQLParser::KK_SHA512:
-      case SPARQLParser::KK_GROUP_CONCAT:
-      case SPARQLParser::K_PFN: {
+      case SPARQLParser::KK_GROUP_CONCAT: {
         enterOuterAlt(_localctx, 1);
         setState(463);
         builtInCall();
@@ -2353,6 +2353,7 @@ SPARQLParser::HavingClauseContext* SPARQLParser::havingClause() {
       | (1ULL << (SPARQLParser::K_KHOPENUMERATE - 130))
       | (1ULL << (SPARQLParser::K_KHOPREACHABLEPATH - 130))
       | (1ULL << (SPARQLParser::K_PPR - 130))
+      | (1ULL << (SPARQLParser::K_PFN - 130))
       | (1ULL << (SPARQLParser::KK_ENCODE_FOR_URI - 130))
       | (1ULL << (SPARQLParser::KK_MD5 - 130))
       | (1ULL << (SPARQLParser::KK_SHA1 - 130))
@@ -2362,8 +2363,7 @@ SPARQLParser::HavingClauseContext* SPARQLParser::havingClause() {
       | (1ULL << (SPARQLParser::KK_GROUP_CONCAT - 130))
       | (1ULL << (SPARQLParser::IRIREF - 130))
       | (1ULL << (SPARQLParser::PNAME_NS - 130))
-      | (1ULL << (SPARQLParser::PNAME_LN - 130))
-      | (1ULL << (SPARQLParser::K_PFN - 130)))) != 0));
+      | (1ULL << (SPARQLParser::PNAME_LN - 130)))) != 0));
    
   }
   catch (RecognitionException &e) {
@@ -2578,6 +2578,7 @@ SPARQLParser::OrderClauseContext* SPARQLParser::orderClause() {
       | (1ULL << (SPARQLParser::K_KHOPENUMERATE - 130))
       | (1ULL << (SPARQLParser::K_KHOPREACHABLEPATH - 130))
       | (1ULL << (SPARQLParser::K_PPR - 130))
+      | (1ULL << (SPARQLParser::K_PFN - 130))
       | (1ULL << (SPARQLParser::KK_ENCODE_FOR_URI - 130))
       | (1ULL << (SPARQLParser::KK_MD5 - 130))
       | (1ULL << (SPARQLParser::KK_SHA1 - 130))
@@ -2589,8 +2590,7 @@ SPARQLParser::OrderClauseContext* SPARQLParser::orderClause() {
       | (1ULL << (SPARQLParser::PNAME_NS - 130))
       | (1ULL << (SPARQLParser::PNAME_LN - 130))
       | (1ULL << (SPARQLParser::VAR1 - 130))
-      | (1ULL << (SPARQLParser::VAR2 - 130))
-      | (1ULL << (SPARQLParser::K_PFN - 130)))) != 0));
+      | (1ULL << (SPARQLParser::VAR2 - 130)))) != 0));
    
   }
   catch (RecognitionException &e) {
@@ -2753,6 +2753,7 @@ SPARQLParser::OrderConditionContext* SPARQLParser::orderCondition() {
       case SPARQLParser::K_KHOPENUMERATE:
       case SPARQLParser::K_KHOPREACHABLEPATH:
       case SPARQLParser::K_PPR:
+      case SPARQLParser::K_PFN:
       case SPARQLParser::KK_ENCODE_FOR_URI:
       case SPARQLParser::KK_MD5:
       case SPARQLParser::KK_SHA1:
@@ -2764,8 +2765,7 @@ SPARQLParser::OrderConditionContext* SPARQLParser::orderCondition() {
       case SPARQLParser::PNAME_NS:
       case SPARQLParser::PNAME_LN:
       case SPARQLParser::VAR1:
-      case SPARQLParser::VAR2:
-      case SPARQLParser::K_PFN: {
+      case SPARQLParser::VAR2: {
         enterOuterAlt(_localctx, 2);
         setState(495);
         _errHandler->sync(this);
@@ -2835,6 +2835,7 @@ SPARQLParser::OrderConditionContext* SPARQLParser::orderCondition() {
           case SPARQLParser::K_KHOPENUMERATE:
           case SPARQLParser::K_KHOPREACHABLEPATH:
           case SPARQLParser::K_PPR:
+          case SPARQLParser::K_PFN:
           case SPARQLParser::KK_ENCODE_FOR_URI:
           case SPARQLParser::KK_MD5:
           case SPARQLParser::KK_SHA1:
@@ -2844,8 +2845,7 @@ SPARQLParser::OrderConditionContext* SPARQLParser::orderCondition() {
           case SPARQLParser::KK_GROUP_CONCAT:
           case SPARQLParser::IRIREF:
           case SPARQLParser::PNAME_NS:
-          case SPARQLParser::PNAME_LN:
-          case SPARQLParser::K_PFN: {
+          case SPARQLParser::PNAME_LN: {
             setState(493);
             constraint();
             break;
@@ -3258,10 +3258,10 @@ SPARQLParser::UpdateContext* SPARQLParser::update() {
       | (1ULL << (SPARQLParser::K_WITH - 39))
       | (1ULL << (SPARQLParser::K_MOVE - 39))
       | (1ULL << (SPARQLParser::K_CREATE - 39))
-      | (1ULL << (SPARQLParser::K_DELETE - 39)))) != 0) || ((((_la - 141) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 141)) & ((1ULL << (SPARQLParser::KK_INSERTDATA - 141))
-      | (1ULL << (SPARQLParser::KK_DELETEDATA - 141))
-      | (1ULL << (SPARQLParser::KK_DELETEWHERE - 141)))) != 0)) {
+      | (1ULL << (SPARQLParser::K_DELETE - 39)))) != 0) || ((((_la - 142) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 142)) & ((1ULL << (SPARQLParser::KK_INSERTDATA - 142))
+      | (1ULL << (SPARQLParser::KK_DELETEDATA - 142))
+      | (1ULL << (SPARQLParser::KK_DELETEWHERE - 142)))) != 0)) {
       setState(520);
       update1();
       setState(523);
@@ -5115,28 +5115,28 @@ SPARQLParser::QuadsContext* SPARQLParser::quads() {
       ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
       | (1ULL << SPARQLParser::T__15)
       | (1ULL << SPARQLParser::T__27)
-      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-      | (1ULL << (SPARQLParser::PNAME_NS - 151))
-      | (1ULL << (SPARQLParser::PNAME_LN - 151))
-      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 151))
-      | (1ULL << (SPARQLParser::VAR1 - 151))
-      | (1ULL << (SPARQLParser::VAR2 - 151))
-      | (1ULL << (SPARQLParser::INTEGER - 151))
-      | (1ULL << (SPARQLParser::DECIMAL - 151))
-      | (1ULL << (SPARQLParser::DOUBLE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151))
-      | (1ULL << (SPARQLParser::NIL - 151))
-      | (1ULL << (SPARQLParser::ANON - 151)))) != 0)) {
+      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+      | (1ULL << (SPARQLParser::PNAME_NS - 152))
+      | (1ULL << (SPARQLParser::PNAME_LN - 152))
+      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 152))
+      | (1ULL << (SPARQLParser::VAR1 - 152))
+      | (1ULL << (SPARQLParser::VAR2 - 152))
+      | (1ULL << (SPARQLParser::INTEGER - 152))
+      | (1ULL << (SPARQLParser::DECIMAL - 152))
+      | (1ULL << (SPARQLParser::DOUBLE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152))
+      | (1ULL << (SPARQLParser::NIL - 152))
+      | (1ULL << (SPARQLParser::ANON - 152)))) != 0)) {
       setState(656);
       triplesTemplate();
     }
@@ -5162,28 +5162,28 @@ SPARQLParser::QuadsContext* SPARQLParser::quads() {
         ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
         | (1ULL << SPARQLParser::T__15)
         | (1ULL << SPARQLParser::T__27)
-        | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-        ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-        | (1ULL << (SPARQLParser::PNAME_NS - 151))
-        | (1ULL << (SPARQLParser::PNAME_LN - 151))
-        | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 151))
-        | (1ULL << (SPARQLParser::VAR1 - 151))
-        | (1ULL << (SPARQLParser::VAR2 - 151))
-        | (1ULL << (SPARQLParser::INTEGER - 151))
-        | (1ULL << (SPARQLParser::DECIMAL - 151))
-        | (1ULL << (SPARQLParser::DOUBLE - 151))
-        | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-        | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-        | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-        | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-        | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-        | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151))
-        | (1ULL << (SPARQLParser::NIL - 151))
-        | (1ULL << (SPARQLParser::ANON - 151)))) != 0)) {
+        | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+        ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+        | (1ULL << (SPARQLParser::PNAME_NS - 152))
+        | (1ULL << (SPARQLParser::PNAME_LN - 152))
+        | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 152))
+        | (1ULL << (SPARQLParser::VAR1 - 152))
+        | (1ULL << (SPARQLParser::VAR2 - 152))
+        | (1ULL << (SPARQLParser::INTEGER - 152))
+        | (1ULL << (SPARQLParser::DECIMAL - 152))
+        | (1ULL << (SPARQLParser::DOUBLE - 152))
+        | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+        | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+        | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+        | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+        | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+        | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152))
+        | (1ULL << (SPARQLParser::NIL - 152))
+        | (1ULL << (SPARQLParser::ANON - 152)))) != 0)) {
         setState(663);
         triplesTemplate();
       }
@@ -5273,28 +5273,28 @@ SPARQLParser::QuadsNotTriplesContext* SPARQLParser::quadsNotTriples() {
       ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
       | (1ULL << SPARQLParser::T__15)
       | (1ULL << SPARQLParser::T__27)
-      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-      | (1ULL << (SPARQLParser::PNAME_NS - 151))
-      | (1ULL << (SPARQLParser::PNAME_LN - 151))
-      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 151))
-      | (1ULL << (SPARQLParser::VAR1 - 151))
-      | (1ULL << (SPARQLParser::VAR2 - 151))
-      | (1ULL << (SPARQLParser::INTEGER - 151))
-      | (1ULL << (SPARQLParser::DECIMAL - 151))
-      | (1ULL << (SPARQLParser::DOUBLE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151))
-      | (1ULL << (SPARQLParser::NIL - 151))
-      | (1ULL << (SPARQLParser::ANON - 151)))) != 0)) {
+      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+      | (1ULL << (SPARQLParser::PNAME_NS - 152))
+      | (1ULL << (SPARQLParser::PNAME_LN - 152))
+      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 152))
+      | (1ULL << (SPARQLParser::VAR1 - 152))
+      | (1ULL << (SPARQLParser::VAR2 - 152))
+      | (1ULL << (SPARQLParser::INTEGER - 152))
+      | (1ULL << (SPARQLParser::DECIMAL - 152))
+      | (1ULL << (SPARQLParser::DOUBLE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152))
+      | (1ULL << (SPARQLParser::NIL - 152))
+      | (1ULL << (SPARQLParser::ANON - 152)))) != 0)) {
       setState(674);
       triplesTemplate();
     }
@@ -5381,28 +5381,28 @@ SPARQLParser::TriplesTemplateContext* SPARQLParser::triplesTemplate() {
         ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
         | (1ULL << SPARQLParser::T__15)
         | (1ULL << SPARQLParser::T__27)
-        | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-        ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-        | (1ULL << (SPARQLParser::PNAME_NS - 151))
-        | (1ULL << (SPARQLParser::PNAME_LN - 151))
-        | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 151))
-        | (1ULL << (SPARQLParser::VAR1 - 151))
-        | (1ULL << (SPARQLParser::VAR2 - 151))
-        | (1ULL << (SPARQLParser::INTEGER - 151))
-        | (1ULL << (SPARQLParser::DECIMAL - 151))
-        | (1ULL << (SPARQLParser::DOUBLE - 151))
-        | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-        | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-        | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-        | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-        | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-        | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151))
-        | (1ULL << (SPARQLParser::NIL - 151))
-        | (1ULL << (SPARQLParser::ANON - 151)))) != 0)) {
+        | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+        ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+        | (1ULL << (SPARQLParser::PNAME_NS - 152))
+        | (1ULL << (SPARQLParser::PNAME_LN - 152))
+        | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 152))
+        | (1ULL << (SPARQLParser::VAR1 - 152))
+        | (1ULL << (SPARQLParser::VAR2 - 152))
+        | (1ULL << (SPARQLParser::INTEGER - 152))
+        | (1ULL << (SPARQLParser::DECIMAL - 152))
+        | (1ULL << (SPARQLParser::DOUBLE - 152))
+        | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+        | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+        | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+        | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+        | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+        | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152))
+        | (1ULL << (SPARQLParser::NIL - 152))
+        | (1ULL << (SPARQLParser::ANON - 152)))) != 0)) {
         setState(681);
         triplesTemplate();
       }
@@ -5601,28 +5601,28 @@ SPARQLParser::GroupGraphPatternSubContext* SPARQLParser::groupGraphPatternSub() 
       ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
       | (1ULL << SPARQLParser::T__15)
       | (1ULL << SPARQLParser::T__27)
-      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-      | (1ULL << (SPARQLParser::PNAME_NS - 151))
-      | (1ULL << (SPARQLParser::PNAME_LN - 151))
-      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 151))
-      | (1ULL << (SPARQLParser::VAR1 - 151))
-      | (1ULL << (SPARQLParser::VAR2 - 151))
-      | (1ULL << (SPARQLParser::INTEGER - 151))
-      | (1ULL << (SPARQLParser::DECIMAL - 151))
-      | (1ULL << (SPARQLParser::DOUBLE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151))
-      | (1ULL << (SPARQLParser::NIL - 151))
-      | (1ULL << (SPARQLParser::ANON - 151)))) != 0)) {
+      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+      | (1ULL << (SPARQLParser::PNAME_NS - 152))
+      | (1ULL << (SPARQLParser::PNAME_LN - 152))
+      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 152))
+      | (1ULL << (SPARQLParser::VAR1 - 152))
+      | (1ULL << (SPARQLParser::VAR2 - 152))
+      | (1ULL << (SPARQLParser::INTEGER - 152))
+      | (1ULL << (SPARQLParser::DECIMAL - 152))
+      | (1ULL << (SPARQLParser::DOUBLE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152))
+      | (1ULL << (SPARQLParser::NIL - 152))
+      | (1ULL << (SPARQLParser::ANON - 152)))) != 0)) {
       setState(693);
       triplesBlock();
     }
@@ -5726,28 +5726,28 @@ SPARQLParser::GraphPatternTriplesBlockContext* SPARQLParser::graphPatternTriples
       ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
       | (1ULL << SPARQLParser::T__15)
       | (1ULL << SPARQLParser::T__27)
-      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-      | (1ULL << (SPARQLParser::PNAME_NS - 151))
-      | (1ULL << (SPARQLParser::PNAME_LN - 151))
-      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 151))
-      | (1ULL << (SPARQLParser::VAR1 - 151))
-      | (1ULL << (SPARQLParser::VAR2 - 151))
-      | (1ULL << (SPARQLParser::INTEGER - 151))
-      | (1ULL << (SPARQLParser::DECIMAL - 151))
-      | (1ULL << (SPARQLParser::DOUBLE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151))
-      | (1ULL << (SPARQLParser::NIL - 151))
-      | (1ULL << (SPARQLParser::ANON - 151)))) != 0)) {
+      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+      | (1ULL << (SPARQLParser::PNAME_NS - 152))
+      | (1ULL << (SPARQLParser::PNAME_LN - 152))
+      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 152))
+      | (1ULL << (SPARQLParser::VAR1 - 152))
+      | (1ULL << (SPARQLParser::VAR2 - 152))
+      | (1ULL << (SPARQLParser::INTEGER - 152))
+      | (1ULL << (SPARQLParser::DECIMAL - 152))
+      | (1ULL << (SPARQLParser::DOUBLE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152))
+      | (1ULL << (SPARQLParser::NIL - 152))
+      | (1ULL << (SPARQLParser::ANON - 152)))) != 0)) {
       setState(706);
       triplesBlock();
     }
@@ -5832,28 +5832,28 @@ SPARQLParser::TriplesBlockContext* SPARQLParser::triplesBlock() {
         ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
         | (1ULL << SPARQLParser::T__15)
         | (1ULL << SPARQLParser::T__27)
-        | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-        ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-        | (1ULL << (SPARQLParser::PNAME_NS - 151))
-        | (1ULL << (SPARQLParser::PNAME_LN - 151))
-        | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 151))
-        | (1ULL << (SPARQLParser::VAR1 - 151))
-        | (1ULL << (SPARQLParser::VAR2 - 151))
-        | (1ULL << (SPARQLParser::INTEGER - 151))
-        | (1ULL << (SPARQLParser::DECIMAL - 151))
-        | (1ULL << (SPARQLParser::DOUBLE - 151))
-        | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-        | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-        | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-        | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-        | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-        | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151))
-        | (1ULL << (SPARQLParser::NIL - 151))
-        | (1ULL << (SPARQLParser::ANON - 151)))) != 0)) {
+        | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+        ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+        | (1ULL << (SPARQLParser::PNAME_NS - 152))
+        | (1ULL << (SPARQLParser::PNAME_LN - 152))
+        | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 152))
+        | (1ULL << (SPARQLParser::VAR1 - 152))
+        | (1ULL << (SPARQLParser::VAR2 - 152))
+        | (1ULL << (SPARQLParser::INTEGER - 152))
+        | (1ULL << (SPARQLParser::DECIMAL - 152))
+        | (1ULL << (SPARQLParser::DOUBLE - 152))
+        | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+        | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+        | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+        | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+        | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+        | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152))
+        | (1ULL << (SPARQLParser::NIL - 152))
+        | (1ULL << (SPARQLParser::ANON - 152)))) != 0)) {
         setState(711);
         triplesBlock();
       }
@@ -6544,23 +6544,23 @@ SPARQLParser::InlineDataOnevarContext* SPARQLParser::inlineDataOnevar() {
     while ((((_la & ~ 0x3fULL) == 0) &&
       ((1ULL << _la) & ((1ULL << SPARQLParser::T__27)
       | (1ULL << SPARQLParser::T__28)
-      | (1ULL << SPARQLParser::K_UNDEF))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-      | (1ULL << (SPARQLParser::PNAME_NS - 151))
-      | (1ULL << (SPARQLParser::PNAME_LN - 151))
-      | (1ULL << (SPARQLParser::INTEGER - 151))
-      | (1ULL << (SPARQLParser::DECIMAL - 151))
-      | (1ULL << (SPARQLParser::DOUBLE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151)))) != 0)) {
+      | (1ULL << SPARQLParser::K_UNDEF))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+      | (1ULL << (SPARQLParser::PNAME_NS - 152))
+      | (1ULL << (SPARQLParser::PNAME_LN - 152))
+      | (1ULL << (SPARQLParser::INTEGER - 152))
+      | (1ULL << (SPARQLParser::DECIMAL - 152))
+      | (1ULL << (SPARQLParser::DOUBLE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152)))) != 0)) {
       setState(756);
       dataBlockValue();
       setState(761);
@@ -6699,23 +6699,23 @@ SPARQLParser::InlineDataFullContext* SPARQLParser::inlineDataFull() {
           while ((((_la & ~ 0x3fULL) == 0) &&
             ((1ULL << _la) & ((1ULL << SPARQLParser::T__27)
             | (1ULL << SPARQLParser::T__28)
-            | (1ULL << SPARQLParser::K_UNDEF))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-            ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-            | (1ULL << (SPARQLParser::PNAME_NS - 151))
-            | (1ULL << (SPARQLParser::PNAME_LN - 151))
-            | (1ULL << (SPARQLParser::INTEGER - 151))
-            | (1ULL << (SPARQLParser::DECIMAL - 151))
-            | (1ULL << (SPARQLParser::DOUBLE - 151))
-            | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-            | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-            | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-            | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-            | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-            | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-            | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-            | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-            | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-            | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151)))) != 0)) {
+            | (1ULL << SPARQLParser::K_UNDEF))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+            ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+            | (1ULL << (SPARQLParser::PNAME_NS - 152))
+            | (1ULL << (SPARQLParser::PNAME_LN - 152))
+            | (1ULL << (SPARQLParser::INTEGER - 152))
+            | (1ULL << (SPARQLParser::DECIMAL - 152))
+            | (1ULL << (SPARQLParser::DOUBLE - 152))
+            | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+            | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+            | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+            | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+            | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+            | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+            | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+            | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+            | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+            | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152)))) != 0)) {
             setState(777);
             dataBlockValue();
             setState(782);
@@ -7231,14 +7231,14 @@ SPARQLParser::ConstraintContext* SPARQLParser::constraint() {
       case SPARQLParser::K_KHOPENUMERATE:
       case SPARQLParser::K_KHOPREACHABLEPATH:
       case SPARQLParser::K_PPR:
+      case SPARQLParser::K_PFN:
       case SPARQLParser::KK_ENCODE_FOR_URI:
       case SPARQLParser::KK_MD5:
       case SPARQLParser::KK_SHA1:
       case SPARQLParser::KK_SHA256:
       case SPARQLParser::KK_SHA384:
       case SPARQLParser::KK_SHA512:
-      case SPARQLParser::KK_GROUP_CONCAT:
-      case SPARQLParser::K_PFN: {
+      case SPARQLParser::KK_GROUP_CONCAT: {
         enterOuterAlt(_localctx, 2);
         setState(814);
         builtInCall();
@@ -7612,28 +7612,28 @@ SPARQLParser::ConstructTemplateContext* SPARQLParser::constructTemplate() {
       ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
       | (1ULL << SPARQLParser::T__15)
       | (1ULL << SPARQLParser::T__27)
-      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-      | (1ULL << (SPARQLParser::PNAME_NS - 151))
-      | (1ULL << (SPARQLParser::PNAME_LN - 151))
-      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 151))
-      | (1ULL << (SPARQLParser::VAR1 - 151))
-      | (1ULL << (SPARQLParser::VAR2 - 151))
-      | (1ULL << (SPARQLParser::INTEGER - 151))
-      | (1ULL << (SPARQLParser::DECIMAL - 151))
-      | (1ULL << (SPARQLParser::DOUBLE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151))
-      | (1ULL << (SPARQLParser::NIL - 151))
-      | (1ULL << (SPARQLParser::ANON - 151)))) != 0)) {
+      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+      | (1ULL << (SPARQLParser::PNAME_NS - 152))
+      | (1ULL << (SPARQLParser::PNAME_LN - 152))
+      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 152))
+      | (1ULL << (SPARQLParser::VAR1 - 152))
+      | (1ULL << (SPARQLParser::VAR2 - 152))
+      | (1ULL << (SPARQLParser::INTEGER - 152))
+      | (1ULL << (SPARQLParser::DECIMAL - 152))
+      | (1ULL << (SPARQLParser::DOUBLE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152))
+      | (1ULL << (SPARQLParser::NIL - 152))
+      | (1ULL << (SPARQLParser::ANON - 152)))) != 0)) {
       setState(853);
       constructTriples();
     }
@@ -7720,28 +7720,28 @@ SPARQLParser::ConstructTriplesContext* SPARQLParser::constructTriples() {
         ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
         | (1ULL << SPARQLParser::T__15)
         | (1ULL << SPARQLParser::T__27)
-        | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-        ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-        | (1ULL << (SPARQLParser::PNAME_NS - 151))
-        | (1ULL << (SPARQLParser::PNAME_LN - 151))
-        | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 151))
-        | (1ULL << (SPARQLParser::VAR1 - 151))
-        | (1ULL << (SPARQLParser::VAR2 - 151))
-        | (1ULL << (SPARQLParser::INTEGER - 151))
-        | (1ULL << (SPARQLParser::DECIMAL - 151))
-        | (1ULL << (SPARQLParser::DOUBLE - 151))
-        | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-        | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-        | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-        | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-        | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-        | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151))
-        | (1ULL << (SPARQLParser::NIL - 151))
-        | (1ULL << (SPARQLParser::ANON - 151)))) != 0)) {
+        | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+        ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+        | (1ULL << (SPARQLParser::PNAME_NS - 152))
+        | (1ULL << (SPARQLParser::PNAME_LN - 152))
+        | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 152))
+        | (1ULL << (SPARQLParser::VAR1 - 152))
+        | (1ULL << (SPARQLParser::VAR2 - 152))
+        | (1ULL << (SPARQLParser::INTEGER - 152))
+        | (1ULL << (SPARQLParser::DECIMAL - 152))
+        | (1ULL << (SPARQLParser::DOUBLE - 152))
+        | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+        | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+        | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+        | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+        | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+        | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+        | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152))
+        | (1ULL << (SPARQLParser::NIL - 152))
+        | (1ULL << (SPARQLParser::ANON - 152)))) != 0)) {
         setState(860);
         constructTriples();
       }
@@ -7927,12 +7927,12 @@ SPARQLParser::PropertyListContext* SPARQLParser::propertyList() {
     _errHandler->sync(this);
 
     _la = _input->LA(1);
-    if (_la == SPARQLParser::T__8 || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-      | (1ULL << (SPARQLParser::PNAME_NS - 151))
-      | (1ULL << (SPARQLParser::PNAME_LN - 151))
-      | (1ULL << (SPARQLParser::VAR1 - 151))
-      | (1ULL << (SPARQLParser::VAR2 - 151)))) != 0)) {
+    if (_la == SPARQLParser::T__8 || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+      | (1ULL << (SPARQLParser::PNAME_NS - 152))
+      | (1ULL << (SPARQLParser::PNAME_LN - 152))
+      | (1ULL << (SPARQLParser::VAR1 - 152))
+      | (1ULL << (SPARQLParser::VAR2 - 152)))) != 0)) {
       setState(873);
       propertyListNotEmpty();
     }
@@ -8022,12 +8022,12 @@ SPARQLParser::PropertyListNotEmptyContext* SPARQLParser::propertyListNotEmpty() 
       _errHandler->sync(this);
 
       _la = _input->LA(1);
-      if (_la == SPARQLParser::T__8 || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-        ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-        | (1ULL << (SPARQLParser::PNAME_NS - 151))
-        | (1ULL << (SPARQLParser::PNAME_LN - 151))
-        | (1ULL << (SPARQLParser::VAR1 - 151))
-        | (1ULL << (SPARQLParser::VAR2 - 151)))) != 0)) {
+      if (_la == SPARQLParser::T__8 || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+        ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+        | (1ULL << (SPARQLParser::PNAME_NS - 152))
+        | (1ULL << (SPARQLParser::PNAME_LN - 152))
+        | (1ULL << (SPARQLParser::VAR1 - 152))
+        | (1ULL << (SPARQLParser::VAR2 - 152)))) != 0)) {
         setState(879);
         verb();
         setState(880);
@@ -8443,12 +8443,12 @@ SPARQLParser::PropertyListpathContext* SPARQLParser::propertyListpath() {
       ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
       | (1ULL << SPARQLParser::T__8)
       | (1ULL << SPARQLParser::T__11)
-      | (1ULL << SPARQLParser::T__14))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-      | (1ULL << (SPARQLParser::PNAME_NS - 151))
-      | (1ULL << (SPARQLParser::PNAME_LN - 151))
-      | (1ULL << (SPARQLParser::VAR1 - 151))
-      | (1ULL << (SPARQLParser::VAR2 - 151)))) != 0)) {
+      | (1ULL << SPARQLParser::T__14))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+      | (1ULL << (SPARQLParser::PNAME_NS - 152))
+      | (1ULL << (SPARQLParser::PNAME_LN - 152))
+      | (1ULL << (SPARQLParser::VAR1 - 152))
+      | (1ULL << (SPARQLParser::VAR2 - 152)))) != 0)) {
       setState(911);
       propertyListpathNotEmpty();
     }
@@ -8546,12 +8546,12 @@ SPARQLParser::PropertyListpathNotEmptyContext* SPARQLParser::propertyListpathNot
         ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
         | (1ULL << SPARQLParser::T__8)
         | (1ULL << SPARQLParser::T__11)
-        | (1ULL << SPARQLParser::T__14))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-        ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-        | (1ULL << (SPARQLParser::PNAME_NS - 151))
-        | (1ULL << (SPARQLParser::PNAME_LN - 151))
-        | (1ULL << (SPARQLParser::VAR1 - 151))
-        | (1ULL << (SPARQLParser::VAR2 - 151)))) != 0)) {
+        | (1ULL << SPARQLParser::T__14))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+        ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+        | (1ULL << (SPARQLParser::PNAME_NS - 152))
+        | (1ULL << (SPARQLParser::PNAME_LN - 152))
+        | (1ULL << (SPARQLParser::VAR1 - 152))
+        | (1ULL << (SPARQLParser::VAR2 - 152)))) != 0)) {
         setState(917);
         verbpathOrSimple();
         setState(918);
@@ -9553,10 +9553,10 @@ SPARQLParser::PathNegatedPropertySetContext* SPARQLParser::pathNegatedPropertySe
         _la = _input->LA(1);
         if (_la == SPARQLParser::T__8
 
-        || _la == SPARQLParser::T__11 || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-          ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-          | (1ULL << (SPARQLParser::PNAME_NS - 151))
-          | (1ULL << (SPARQLParser::PNAME_LN - 151)))) != 0)) {
+        || _la == SPARQLParser::T__11 || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+          ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+          | (1ULL << (SPARQLParser::PNAME_NS - 152))
+          | (1ULL << (SPARQLParser::PNAME_LN - 152)))) != 0)) {
           setState(986);
           pathOneInPropertySet();
           setState(991);
@@ -10060,28 +10060,28 @@ SPARQLParser::CollectionContext* SPARQLParser::collection() {
       ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
       | (1ULL << SPARQLParser::T__15)
       | (1ULL << SPARQLParser::T__27)
-      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-      | (1ULL << (SPARQLParser::PNAME_NS - 151))
-      | (1ULL << (SPARQLParser::PNAME_LN - 151))
-      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 151))
-      | (1ULL << (SPARQLParser::VAR1 - 151))
-      | (1ULL << (SPARQLParser::VAR2 - 151))
-      | (1ULL << (SPARQLParser::INTEGER - 151))
-      | (1ULL << (SPARQLParser::DECIMAL - 151))
-      | (1ULL << (SPARQLParser::DOUBLE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151))
-      | (1ULL << (SPARQLParser::NIL - 151))
-      | (1ULL << (SPARQLParser::ANON - 151)))) != 0));
+      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+      | (1ULL << (SPARQLParser::PNAME_NS - 152))
+      | (1ULL << (SPARQLParser::PNAME_LN - 152))
+      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 152))
+      | (1ULL << (SPARQLParser::VAR1 - 152))
+      | (1ULL << (SPARQLParser::VAR2 - 152))
+      | (1ULL << (SPARQLParser::INTEGER - 152))
+      | (1ULL << (SPARQLParser::DECIMAL - 152))
+      | (1ULL << (SPARQLParser::DOUBLE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152))
+      | (1ULL << (SPARQLParser::NIL - 152))
+      | (1ULL << (SPARQLParser::ANON - 152)))) != 0));
     setState(1030);
     match(SPARQLParser::T__2);
    
@@ -10163,28 +10163,28 @@ SPARQLParser::CollectionpathContext* SPARQLParser::collectionpath() {
       ((1ULL << _la) & ((1ULL << SPARQLParser::T__1)
       | (1ULL << SPARQLParser::T__15)
       | (1ULL << SPARQLParser::T__27)
-      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 151) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 151)) & ((1ULL << (SPARQLParser::IRIREF - 151))
-      | (1ULL << (SPARQLParser::PNAME_NS - 151))
-      | (1ULL << (SPARQLParser::PNAME_LN - 151))
-      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 151))
-      | (1ULL << (SPARQLParser::VAR1 - 151))
-      | (1ULL << (SPARQLParser::VAR2 - 151))
-      | (1ULL << (SPARQLParser::INTEGER - 151))
-      | (1ULL << (SPARQLParser::DECIMAL - 151))
-      | (1ULL << (SPARQLParser::DOUBLE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 151))
-      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 151))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 151))
-      | (1ULL << (SPARQLParser::NIL - 151))
-      | (1ULL << (SPARQLParser::ANON - 151)))) != 0));
+      | (1ULL << SPARQLParser::T__28))) != 0) || ((((_la - 152) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 152)) & ((1ULL << (SPARQLParser::IRIREF - 152))
+      | (1ULL << (SPARQLParser::PNAME_NS - 152))
+      | (1ULL << (SPARQLParser::PNAME_LN - 152))
+      | (1ULL << (SPARQLParser::BLANK_NODE_LABEL - 152))
+      | (1ULL << (SPARQLParser::VAR1 - 152))
+      | (1ULL << (SPARQLParser::VAR2 - 152))
+      | (1ULL << (SPARQLParser::INTEGER - 152))
+      | (1ULL << (SPARQLParser::DECIMAL - 152))
+      | (1ULL << (SPARQLParser::DOUBLE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 152))
+      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 152))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 152))
+      | (1ULL << (SPARQLParser::NIL - 152))
+      | (1ULL << (SPARQLParser::ANON - 152)))) != 0));
     setState(1038);
     match(SPARQLParser::T__2);
    
@@ -11479,13 +11479,13 @@ SPARQLParser::AdditiveexpressionContext* SPARQLParser::additiveexpression() {
     _la = _input->LA(1);
     while (_la == SPARQLParser::T__13
 
-    || _la == SPARQLParser::T__25 || ((((_la - 161) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 161)) & ((1ULL << (SPARQLParser::INTEGER_POSITIVE - 161))
-      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 161))
-      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 161))
-      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 161))
-      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 161))
-      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 161)))) != 0)) {
+    || _la == SPARQLParser::T__25 || ((((_la - 162) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 162)) & ((1ULL << (SPARQLParser::INTEGER_POSITIVE - 162))
+      | (1ULL << (SPARQLParser::DECIMAL_POSITIVE - 162))
+      | (1ULL << (SPARQLParser::DOUBLE_POSITIVE - 162))
+      | (1ULL << (SPARQLParser::INTEGER_NEGATIVE - 162))
+      | (1ULL << (SPARQLParser::DECIMAL_NEGATIVE - 162))
+      | (1ULL << (SPARQLParser::DOUBLE_NEGATIVE - 162)))) != 0)) {
       setState(1139);
       _errHandler->sync(this);
       switch (_input->LA(1)) {
@@ -11828,6 +11828,7 @@ SPARQLParser::UnaryexpressionContext* SPARQLParser::unaryexpression() {
       case SPARQLParser::K_KHOPENUMERATE:
       case SPARQLParser::K_KHOPREACHABLEPATH:
       case SPARQLParser::K_PPR:
+      case SPARQLParser::K_PFN:
       case SPARQLParser::KK_ENCODE_FOR_URI:
       case SPARQLParser::KK_MD5:
       case SPARQLParser::KK_SHA1:
@@ -11852,8 +11853,7 @@ SPARQLParser::UnaryexpressionContext* SPARQLParser::unaryexpression() {
       case SPARQLParser::STRING_LITERAL1:
       case SPARQLParser::STRING_LITERAL2:
       case SPARQLParser::STRING_LITERAL_LONG1:
-      case SPARQLParser::STRING_LITERAL_LONG2:
-      case SPARQLParser::K_PFN: {
+      case SPARQLParser::STRING_LITERAL_LONG2: {
         enterOuterAlt(_localctx, 4);
         setState(1160);
         primaryexpression();
@@ -12019,14 +12019,14 @@ SPARQLParser::PrimaryexpressionContext* SPARQLParser::primaryexpression() {
       case SPARQLParser::K_KHOPENUMERATE:
       case SPARQLParser::K_KHOPREACHABLEPATH:
       case SPARQLParser::K_PPR:
+      case SPARQLParser::K_PFN:
       case SPARQLParser::KK_ENCODE_FOR_URI:
       case SPARQLParser::KK_MD5:
       case SPARQLParser::KK_SHA1:
       case SPARQLParser::KK_SHA256:
       case SPARQLParser::KK_SHA384:
       case SPARQLParser::KK_SHA512:
-      case SPARQLParser::KK_GROUP_CONCAT:
-      case SPARQLParser::K_PFN: {
+      case SPARQLParser::KK_GROUP_CONCAT: {
         enterOuterAlt(_localctx, 2);
         setState(1164);
         builtInCall();
@@ -14402,6 +14402,7 @@ SPARQLParser::AggregateContext* SPARQLParser::aggregate() {
           case SPARQLParser::K_KHOPENUMERATE:
           case SPARQLParser::K_KHOPREACHABLEPATH:
           case SPARQLParser::K_PPR:
+          case SPARQLParser::K_PFN:
           case SPARQLParser::KK_ENCODE_FOR_URI:
           case SPARQLParser::KK_MD5:
           case SPARQLParser::KK_SHA1:
@@ -14426,8 +14427,7 @@ SPARQLParser::AggregateContext* SPARQLParser::aggregate() {
           case SPARQLParser::STRING_LITERAL1:
           case SPARQLParser::STRING_LITERAL2:
           case SPARQLParser::STRING_LITERAL_LONG1:
-          case SPARQLParser::STRING_LITERAL_LONG2:
-          case SPARQLParser::K_PFN: {
+          case SPARQLParser::STRING_LITERAL_LONG2: {
             setState(1660);
             expression();
             break;
@@ -15876,11 +15876,11 @@ SPARQLParser::StringContext* SPARQLParser::string() {
     enterOuterAlt(_localctx, 1);
     setState(1770);
     _la = _input->LA(1);
-    if (!(((((_la - 168) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 168)) & ((1ULL << (SPARQLParser::STRING_LITERAL1 - 168))
-      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 168))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 168))
-      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 168)))) != 0))) {
+    if (!(((((_la - 169) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 169)) & ((1ULL << (SPARQLParser::STRING_LITERAL1 - 169))
+      | (1ULL << (SPARQLParser::STRING_LITERAL2 - 169))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG1 - 169))
+      | (1ULL << (SPARQLParser::STRING_LITERAL_LONG2 - 169)))) != 0))) {
     _errHandler->recoverInline(this);
     }
     else {
@@ -16202,7 +16202,7 @@ std::vector<std::string> SPARQLParser::_symbolicNames = {
   "K_LCASE", "K_OPTIONAL", "K_LIMIT", "K_SUBSTR", "K_SIMPLECYCLEPATH", "K_SIMPLECYCLEBOOLEAN", 
   "K_CYCLEPATH", "K_CYCLEBOOLEAN", "K_SHORTESTPATH", "K_SHORTESTPATHLEN", 
   "K_KHOPREACHABLE", "K_KHOPENUMERATE", "K_KHOPREACHABLEPATH", "K_PPR", 
-  "KK_INSERTDATA", "KK_DELETEDATA", "KK_DELETEWHERE", "KK_ENCODE_FOR_URI", 
+  "K_PFN", "KK_INSERTDATA", "KK_DELETEDATA", "KK_DELETEWHERE", "KK_ENCODE_FOR_URI", 
   "KK_MD5", "KK_SHA1", "KK_SHA256", "KK_SHA384", "KK_SHA512", "KK_GROUP_CONCAT", 
   "IRIREF", "PNAME_NS", "PNAME_LN", "BLANK_NODE_LABEL", "VAR1", "VAR2", 
   "LANGTAG", "INTEGER", "DECIMAL", "DOUBLE", "INTEGER_POSITIVE", "DECIMAL_POSITIVE", 
@@ -16210,7 +16210,7 @@ std::vector<std::string> SPARQLParser::_symbolicNames = {
   "EXPONENT", "STRING_LITERAL1", "STRING_LITERAL2", "STRING_LITERAL_LONG1", 
   "STRING_LITERAL_LONG2", "ECHAR", "NIL", "WS", "ANON", "PN_CHARS_BASE", 
   "PN_CHARS_U", "VARNAME", "PN_CHARS", "PN_PREFIX", "PN_LOCAL", "PLX", "PERCENT", 
-  "HEX", "PN_LOCAL_ESC", "K_PFN"
+  "HEX", "PN_LOCAL_ESC"
 };
 
 dfa::Vocabulary SPARQLParser::_vocabulary(_literalNames, _symbolicNames);
@@ -16540,8 +16540,8 @@ SPARQLParser::Initializer::Initializer() {
     0x116, 0x118, 0x11a, 0x11c, 0x11e, 0x120, 0x122, 0x124, 0x126, 0x128, 
     0x12a, 0x12c, 0x12e, 0x130, 0x2, 0xa, 0x4, 0x2, 0x72, 0x72, 0x76, 0x76, 
     0x4, 0x2, 0x25, 0x25, 0x5c, 0x5c, 0x4, 0x2, 0x3, 0x3, 0xf, 0x10, 0x3, 
-    0x2, 0x9d, 0x9e, 0x3, 0x2, 0x1e, 0x1f, 0x3, 0x2, 0xaa, 0xad, 0x3, 0x2, 
-    0x9a, 0x9b, 0x4, 0x2, 0x9c, 0x9c, 0xb1, 0xb1, 0x2, 0x780, 0x2, 0x136, 
+    0x2, 0x9e, 0x9f, 0x3, 0x2, 0x1e, 0x1f, 0x3, 0x2, 0xab, 0xae, 0x3, 0x2, 
+    0x9b, 0x9c, 0x4, 0x2, 0x9d, 0x9d, 0xb2, 0xb2, 0x2, 0x780, 0x2, 0x136, 
     0x3, 0x2, 0x2, 0x2, 0x4, 0x138, 0x3, 0x2, 0x2, 0x2, 0x6, 0x13a, 0x3, 
     0x2, 0x2, 0x2, 0x8, 0x143, 0x3, 0x2, 0x2, 0x2, 0xa, 0x149, 0x3, 0x2, 
     0x2, 0x2, 0xc, 0x14c, 0x3, 0x2, 0x2, 0x2, 0xe, 0x14f, 0x3, 0x2, 0x2, 
@@ -16629,9 +16629,9 @@ SPARQLParser::Initializer::Initializer() {
     0x3, 0x2, 0x2, 0x2, 0x148, 0x14b, 0x3, 0x2, 0x2, 0x2, 0x149, 0x147, 
     0x3, 0x2, 0x2, 0x2, 0x149, 0x14a, 0x3, 0x2, 0x2, 0x2, 0x14a, 0xb, 0x3, 
     0x2, 0x2, 0x2, 0x14b, 0x149, 0x3, 0x2, 0x2, 0x2, 0x14c, 0x14d, 0x7, 
-    0x43, 0x2, 0x2, 0x14d, 0x14e, 0x7, 0x99, 0x2, 0x2, 0x14e, 0xd, 0x3, 
+    0x43, 0x2, 0x2, 0x14d, 0x14e, 0x7, 0x9a, 0x2, 0x2, 0x14e, 0xd, 0x3, 
     0x2, 0x2, 0x2, 0x14f, 0x150, 0x7, 0x64, 0x2, 0x2, 0x150, 0x151, 0x7, 
-    0x9a, 0x2, 0x2, 0x151, 0x152, 0x7, 0x99, 0x2, 0x2, 0x152, 0xf, 0x3, 
+    0x9b, 0x2, 0x2, 0x151, 0x152, 0x7, 0x9a, 0x2, 0x2, 0x152, 0xf, 0x3, 
     0x2, 0x2, 0x2, 0x153, 0x157, 0x5, 0x14, 0xb, 0x2, 0x154, 0x156, 0x5, 
     0x1e, 0x10, 0x2, 0x155, 0x154, 0x3, 0x2, 0x2, 0x2, 0x156, 0x159, 0x3, 
     0x2, 0x2, 0x2, 0x157, 0x155, 0x3, 0x2, 0x2, 0x2, 0x157, 0x158, 0x3, 
@@ -16734,9 +16734,9 @@ SPARQLParser::Initializer::Initializer() {
     0x1fa, 0x3, 0x2, 0x2, 0x2, 0x1fb, 0x1fc, 0x3, 0x2, 0x2, 0x2, 0x1fc, 
     0x1fe, 0x3, 0x2, 0x2, 0x2, 0x1fd, 0x1f5, 0x3, 0x2, 0x2, 0x2, 0x1fd, 
     0x1f9, 0x3, 0x2, 0x2, 0x2, 0x1fe, 0x37, 0x3, 0x2, 0x2, 0x2, 0x1ff, 0x200, 
-    0x7, 0x83, 0x2, 0x2, 0x200, 0x201, 0x7, 0xa0, 0x2, 0x2, 0x201, 0x39, 
+    0x7, 0x83, 0x2, 0x2, 0x200, 0x201, 0x7, 0xa1, 0x2, 0x2, 0x201, 0x39, 
     0x3, 0x2, 0x2, 0x2, 0x202, 0x203, 0x7, 0x62, 0x2, 0x2, 0x203, 0x204, 
-    0x7, 0xa0, 0x2, 0x2, 0x204, 0x3b, 0x3, 0x2, 0x2, 0x2, 0x205, 0x206, 
+    0x7, 0xa1, 0x2, 0x2, 0x204, 0x3b, 0x3, 0x2, 0x2, 0x2, 0x205, 0x206, 
     0x7, 0x80, 0x2, 0x2, 0x206, 0x208, 0x5, 0x82, 0x42, 0x2, 0x207, 0x205, 
     0x3, 0x2, 0x2, 0x2, 0x207, 0x208, 0x3, 0x2, 0x2, 0x2, 0x208, 0x3d, 0x3, 
     0x2, 0x2, 0x2, 0x209, 0x20f, 0x5, 0xa, 0x6, 0x2, 0x20a, 0x20d, 0x5, 
@@ -16785,10 +16785,10 @@ SPARQLParser::Initializer::Initializer() {
     0x2, 0x24b, 0x24c, 0x3, 0x2, 0x2, 0x2, 0x24c, 0x24d, 0x3, 0x2, 0x2, 
     0x2, 0x24d, 0x24e, 0x5, 0x5e, 0x30, 0x2, 0x24e, 0x24f, 0x7, 0x7a, 0x2, 
     0x2, 0x24f, 0x250, 0x5, 0x5e, 0x30, 0x2, 0x250, 0x4f, 0x3, 0x2, 0x2, 
-    0x2, 0x251, 0x252, 0x7, 0x8f, 0x2, 0x2, 0x252, 0x253, 0x5, 0x66, 0x34, 
-    0x2, 0x253, 0x51, 0x3, 0x2, 0x2, 0x2, 0x254, 0x255, 0x7, 0x90, 0x2, 
+    0x2, 0x251, 0x252, 0x7, 0x90, 0x2, 0x2, 0x252, 0x253, 0x5, 0x66, 0x34, 
+    0x2, 0x253, 0x51, 0x3, 0x2, 0x2, 0x2, 0x254, 0x255, 0x7, 0x91, 0x2, 
     0x2, 0x255, 0x256, 0x5, 0x66, 0x34, 0x2, 0x256, 0x53, 0x3, 0x2, 0x2, 
-    0x2, 0x257, 0x258, 0x7, 0x91, 0x2, 0x2, 0x258, 0x259, 0x5, 0x64, 0x33, 
+    0x2, 0x257, 0x258, 0x7, 0x92, 0x2, 0x2, 0x258, 0x259, 0x5, 0x64, 0x33, 
     0x2, 0x259, 0x55, 0x3, 0x2, 0x2, 0x2, 0x25a, 0x25b, 0x7, 0x47, 0x2, 
     0x2, 0x25b, 0x25d, 0x5, 0x12c, 0x97, 0x2, 0x25c, 0x25a, 0x3, 0x2, 0x2, 
     0x2, 0x25c, 0x25d, 0x3, 0x2, 0x2, 0x2, 0x25d, 0x263, 0x3, 0x2, 0x2, 
@@ -16888,7 +16888,7 @@ SPARQLParser::Initializer::Initializer() {
     0x2f7, 0x3, 0x2, 0x2, 0x2, 0x2f9, 0x2fa, 0x3, 0x2, 0x2, 0x2, 0x2fa, 
     0x2fc, 0x3, 0x2, 0x2, 0x2, 0x2fb, 0x2f9, 0x3, 0x2, 0x2, 0x2, 0x2fc, 
     0x2fd, 0x7, 0x7, 0x2, 0x2, 0x2fd, 0x85, 0x3, 0x2, 0x2, 0x2, 0x2fe, 0x308, 
-    0x7, 0xaf, 0x2, 0x2, 0x2ff, 0x303, 0x7, 0x4, 0x2, 0x2, 0x300, 0x302, 
+    0x7, 0xb0, 0x2, 0x2, 0x2ff, 0x303, 0x7, 0x4, 0x2, 0x2, 0x300, 0x302, 
     0x5, 0xe0, 0x71, 0x2, 0x301, 0x300, 0x3, 0x2, 0x2, 0x2, 0x302, 0x305, 
     0x3, 0x2, 0x2, 0x2, 0x303, 0x301, 0x3, 0x2, 0x2, 0x2, 0x303, 0x304, 
     0x3, 0x2, 0x2, 0x2, 0x304, 0x306, 0x3, 0x2, 0x2, 0x2, 0x305, 0x303, 
@@ -16899,7 +16899,7 @@ SPARQLParser::Initializer::Initializer() {
     0x3, 0x2, 0x2, 0x2, 0x30d, 0x310, 0x3, 0x2, 0x2, 0x2, 0x30e, 0x30c, 
     0x3, 0x2, 0x2, 0x2, 0x30e, 0x30f, 0x3, 0x2, 0x2, 0x2, 0x30f, 0x311, 
     0x3, 0x2, 0x2, 0x2, 0x310, 0x30e, 0x3, 0x2, 0x2, 0x2, 0x311, 0x314, 
-    0x7, 0x5, 0x2, 0x2, 0x312, 0x314, 0x7, 0xaf, 0x2, 0x2, 0x313, 0x30a, 
+    0x7, 0x5, 0x2, 0x2, 0x312, 0x314, 0x7, 0xb0, 0x2, 0x2, 0x313, 0x30a, 
     0x3, 0x2, 0x2, 0x2, 0x313, 0x312, 0x3, 0x2, 0x2, 0x2, 0x314, 0x317, 
     0x3, 0x2, 0x2, 0x2, 0x315, 0x313, 0x3, 0x2, 0x2, 0x2, 0x315, 0x316, 
     0x3, 0x2, 0x2, 0x2, 0x316, 0x318, 0x3, 0x2, 0x2, 0x2, 0x317, 0x315, 
@@ -16922,7 +16922,7 @@ SPARQLParser::Initializer::Initializer() {
     0x2, 0x2, 0x332, 0x330, 0x3, 0x2, 0x2, 0x2, 0x332, 0x331, 0x3, 0x2, 
     0x2, 0x2, 0x333, 0x91, 0x3, 0x2, 0x2, 0x2, 0x334, 0x335, 0x5, 0x12c, 
     0x97, 0x2, 0x335, 0x336, 0x5, 0x94, 0x4b, 0x2, 0x336, 0x93, 0x3, 0x2, 
-    0x2, 0x2, 0x337, 0x347, 0x7, 0xaf, 0x2, 0x2, 0x338, 0x33a, 0x7, 0x4, 
+    0x2, 0x2, 0x337, 0x347, 0x7, 0xb0, 0x2, 0x2, 0x338, 0x33a, 0x7, 0x4, 
     0x2, 0x2, 0x339, 0x33b, 0x7, 0x72, 0x2, 0x2, 0x33a, 0x339, 0x3, 0x2, 
     0x2, 0x2, 0x33a, 0x33b, 0x3, 0x2, 0x2, 0x2, 0x33b, 0x33c, 0x3, 0x2, 
     0x2, 0x2, 0x33c, 0x341, 0x5, 0xe4, 0x73, 0x2, 0x33d, 0x33e, 0x7, 0xa, 
@@ -16932,7 +16932,7 @@ SPARQLParser::Initializer::Initializer() {
     0x2, 0x2, 0x343, 0x341, 0x3, 0x2, 0x2, 0x2, 0x344, 0x345, 0x7, 0x5, 
     0x2, 0x2, 0x345, 0x347, 0x3, 0x2, 0x2, 0x2, 0x346, 0x337, 0x3, 0x2, 
     0x2, 0x2, 0x346, 0x338, 0x3, 0x2, 0x2, 0x2, 0x347, 0x95, 0x3, 0x2, 0x2, 
-    0x2, 0x348, 0x355, 0x7, 0xaf, 0x2, 0x2, 0x349, 0x34a, 0x7, 0x4, 0x2, 
+    0x2, 0x348, 0x355, 0x7, 0xb0, 0x2, 0x2, 0x349, 0x34a, 0x7, 0x4, 0x2, 
     0x2, 0x34a, 0x34f, 0x5, 0xe4, 0x73, 0x2, 0x34b, 0x34c, 0x7, 0xa, 0x2, 
     0x2, 0x34c, 0x34e, 0x5, 0xe4, 0x73, 0x2, 0x34d, 0x34b, 0x3, 0x2, 0x2, 
     0x2, 0x34e, 0x351, 0x3, 0x2, 0x2, 0x2, 0x34f, 0x34d, 0x3, 0x2, 0x2, 
@@ -17068,7 +17068,7 @@ SPARQLParser::Initializer::Initializer() {
     0x2, 0x2, 0x42f, 0x430, 0x9, 0x5, 0x2, 0x2, 0x430, 0xe1, 0x3, 0x2, 0x2, 
     0x2, 0x431, 0x438, 0x5, 0x12c, 0x97, 0x2, 0x432, 0x438, 0x5, 0x10c, 
     0x87, 0x2, 0x433, 0x438, 0x5, 0x10e, 0x88, 0x2, 0x434, 0x438, 0x5, 0x128, 
-    0x95, 0x2, 0x435, 0x438, 0x5, 0x130, 0x99, 0x2, 0x436, 0x438, 0x7, 0xaf, 
+    0x95, 0x2, 0x435, 0x438, 0x5, 0x130, 0x99, 0x2, 0x436, 0x438, 0x7, 0xb0, 
     0x2, 0x2, 0x437, 0x431, 0x3, 0x2, 0x2, 0x2, 0x437, 0x432, 0x3, 0x2, 
     0x2, 0x2, 0x437, 0x433, 0x3, 0x2, 0x2, 0x2, 0x437, 0x434, 0x3, 0x2, 
     0x2, 0x2, 0x437, 0x435, 0x3, 0x2, 0x2, 0x2, 0x437, 0x436, 0x3, 0x2, 
@@ -17164,9 +17164,9 @@ SPARQLParser::Initializer::Initializer() {
     0x2, 0x2, 0x4ce, 0x64d, 0x3, 0x2, 0x2, 0x2, 0x4cf, 0x4d5, 0x7, 0x48, 
     0x2, 0x2, 0x4d0, 0x4d1, 0x7, 0x4, 0x2, 0x2, 0x4d1, 0x4d2, 0x5, 0xe4, 
     0x73, 0x2, 0x4d2, 0x4d3, 0x7, 0x5, 0x2, 0x2, 0x4d3, 0x4d6, 0x3, 0x2, 
-    0x2, 0x2, 0x4d4, 0x4d6, 0x7, 0xaf, 0x2, 0x2, 0x4d5, 0x4d0, 0x3, 0x2, 
+    0x2, 0x2, 0x4d4, 0x4d6, 0x7, 0xb0, 0x2, 0x2, 0x4d5, 0x4d0, 0x3, 0x2, 
     0x2, 0x2, 0x4d5, 0x4d4, 0x3, 0x2, 0x2, 0x2, 0x4d6, 0x64d, 0x3, 0x2, 
-    0x2, 0x2, 0x4d7, 0x4d8, 0x7, 0x7c, 0x2, 0x2, 0x4d8, 0x64d, 0x7, 0xaf, 
+    0x2, 0x2, 0x4d7, 0x4d8, 0x7, 0x7c, 0x2, 0x2, 0x4d8, 0x64d, 0x7, 0xb0, 
     0x2, 0x2, 0x4d9, 0x4da, 0x7, 0x56, 0x2, 0x2, 0x4da, 0x4db, 0x7, 0x4, 
     0x2, 0x2, 0x4db, 0x4dc, 0x5, 0xe4, 0x73, 0x2, 0x4dc, 0x4dd, 0x7, 0x5, 
     0x2, 0x2, 0x4dd, 0x64d, 0x3, 0x2, 0x2, 0x2, 0x4de, 0x4df, 0x7, 0x30, 
@@ -17186,7 +17186,7 @@ SPARQLParser::Initializer::Initializer() {
     0x73, 0x2, 0x4f9, 0x4fa, 0x7, 0x5, 0x2, 0x2, 0x4fa, 0x64d, 0x3, 0x2, 
     0x2, 0x2, 0x4fb, 0x4fc, 0x7, 0x81, 0x2, 0x2, 0x4fc, 0x4fd, 0x7, 0x4, 
     0x2, 0x2, 0x4fd, 0x4fe, 0x5, 0xe4, 0x73, 0x2, 0x4fe, 0x4ff, 0x7, 0x5, 
-    0x2, 0x2, 0x4ff, 0x64d, 0x3, 0x2, 0x2, 0x2, 0x500, 0x501, 0x7, 0x92, 
+    0x2, 0x2, 0x4ff, 0x64d, 0x3, 0x2, 0x2, 0x2, 0x500, 0x501, 0x7, 0x93, 
     0x2, 0x2, 0x501, 0x502, 0x7, 0x4, 0x2, 0x2, 0x502, 0x503, 0x5, 0xe4, 
     0x73, 0x2, 0x503, 0x504, 0x7, 0x5, 0x2, 0x2, 0x504, 0x64d, 0x3, 0x2, 
     0x2, 0x2, 0x505, 0x506, 0x7, 0x63, 0x2, 0x2, 0x506, 0x507, 0x7, 0x4, 
@@ -17227,19 +17227,19 @@ SPARQLParser::Initializer::Initializer() {
     0x2, 0x2, 0x54b, 0x54c, 0x7, 0x2e, 0x2, 0x2, 0x54c, 0x54d, 0x7, 0x4, 
     0x2, 0x2, 0x54d, 0x54e, 0x5, 0xe4, 0x73, 0x2, 0x54e, 0x54f, 0x7, 0x5, 
     0x2, 0x2, 0x54f, 0x64d, 0x3, 0x2, 0x2, 0x2, 0x550, 0x551, 0x7, 0x20, 
-    0x2, 0x2, 0x551, 0x64d, 0x7, 0xaf, 0x2, 0x2, 0x552, 0x553, 0x7, 0x3c, 
-    0x2, 0x2, 0x553, 0x64d, 0x7, 0xaf, 0x2, 0x2, 0x554, 0x555, 0x7, 0x34, 
-    0x2, 0x2, 0x555, 0x64d, 0x7, 0xaf, 0x2, 0x2, 0x556, 0x557, 0x7, 0x93, 
+    0x2, 0x2, 0x551, 0x64d, 0x7, 0xb0, 0x2, 0x2, 0x552, 0x553, 0x7, 0x3c, 
+    0x2, 0x2, 0x553, 0x64d, 0x7, 0xb0, 0x2, 0x2, 0x554, 0x555, 0x7, 0x34, 
+    0x2, 0x2, 0x555, 0x64d, 0x7, 0xb0, 0x2, 0x2, 0x556, 0x557, 0x7, 0x94, 
     0x2, 0x2, 0x557, 0x558, 0x7, 0x4, 0x2, 0x2, 0x558, 0x559, 0x5, 0xe4, 
     0x73, 0x2, 0x559, 0x55a, 0x7, 0x5, 0x2, 0x2, 0x55a, 0x64d, 0x3, 0x2, 
-    0x2, 0x2, 0x55b, 0x55c, 0x7, 0x94, 0x2, 0x2, 0x55c, 0x55d, 0x7, 0x4, 
+    0x2, 0x2, 0x55b, 0x55c, 0x7, 0x95, 0x2, 0x2, 0x55c, 0x55d, 0x7, 0x4, 
     0x2, 0x2, 0x55d, 0x55e, 0x5, 0xe4, 0x73, 0x2, 0x55e, 0x55f, 0x7, 0x5, 
-    0x2, 0x2, 0x55f, 0x64d, 0x3, 0x2, 0x2, 0x2, 0x560, 0x561, 0x7, 0x95, 
+    0x2, 0x2, 0x55f, 0x64d, 0x3, 0x2, 0x2, 0x2, 0x560, 0x561, 0x7, 0x96, 
     0x2, 0x2, 0x561, 0x562, 0x7, 0x4, 0x2, 0x2, 0x562, 0x563, 0x5, 0xe4, 
     0x73, 0x2, 0x563, 0x564, 0x7, 0x5, 0x2, 0x2, 0x564, 0x64d, 0x3, 0x2, 
-    0x2, 0x2, 0x565, 0x566, 0x7, 0x96, 0x2, 0x2, 0x566, 0x567, 0x7, 0x4, 
+    0x2, 0x2, 0x565, 0x566, 0x7, 0x97, 0x2, 0x2, 0x566, 0x567, 0x7, 0x4, 
     0x2, 0x2, 0x567, 0x568, 0x5, 0xe4, 0x73, 0x2, 0x568, 0x569, 0x7, 0x5, 
-    0x2, 0x2, 0x569, 0x64d, 0x3, 0x2, 0x2, 0x2, 0x56a, 0x56b, 0x7, 0x97, 
+    0x2, 0x2, 0x569, 0x64d, 0x3, 0x2, 0x2, 0x2, 0x56a, 0x56b, 0x7, 0x98, 
     0x2, 0x2, 0x56b, 0x56c, 0x7, 0x4, 0x2, 0x2, 0x56c, 0x56d, 0x5, 0xe4, 
     0x73, 0x2, 0x56d, 0x56e, 0x7, 0x5, 0x2, 0x2, 0x56e, 0x64d, 0x3, 0x2, 
     0x2, 0x2, 0x56f, 0x570, 0x7, 0x54, 0x2, 0x2, 0x570, 0x64d, 0x5, 0x96, 
@@ -17349,7 +17349,7 @@ SPARQLParser::Initializer::Initializer() {
     0x2, 0x2, 0x634, 0x635, 0x3, 0x2, 0x2, 0x2, 0x635, 0x636, 0x7, 0xa, 
     0x2, 0x2, 0x636, 0x637, 0x5, 0xfa, 0x7e, 0x2, 0x637, 0x638, 0x7, 0xa, 
     0x2, 0x2, 0x638, 0x639, 0x5, 0x116, 0x8c, 0x2, 0x639, 0x63a, 0x7, 0x5, 
-    0x2, 0x2, 0x63a, 0x64d, 0x3, 0x2, 0x2, 0x2, 0x63b, 0x63c, 0x7, 0xbc, 
+    0x2, 0x2, 0x63a, 0x64d, 0x3, 0x2, 0x2, 0x2, 0x63b, 0x63c, 0x7, 0x8f, 
     0x2, 0x2, 0x63c, 0x63d, 0x7, 0x4, 0x2, 0x2, 0x63d, 0x63e, 0x5, 0xde, 
     0x70, 0x2, 0x63e, 0x63f, 0x7, 0xa, 0x2, 0x2, 0x63f, 0x640, 0x5, 0x128, 
     0x95, 0x2, 0x640, 0x644, 0x7, 0xa, 0x2, 0x2, 0x641, 0x645, 0x5, 0x116, 
@@ -17443,7 +17443,7 @@ SPARQLParser::Initializer::Initializer() {
     0x2, 0x2, 0x6a4, 0x6a6, 0x7, 0x72, 0x2, 0x2, 0x6a5, 0x6a4, 0x3, 0x2, 
     0x2, 0x2, 0x6a5, 0x6a6, 0x3, 0x2, 0x2, 0x2, 0x6a6, 0x6a7, 0x3, 0x2, 
     0x2, 0x2, 0x6a7, 0x6a8, 0x5, 0xe4, 0x73, 0x2, 0x6a8, 0x6a9, 0x7, 0x5, 
-    0x2, 0x2, 0x6a9, 0x6b9, 0x3, 0x2, 0x2, 0x2, 0x6aa, 0x6ab, 0x7, 0x98, 
+    0x2, 0x2, 0x6a9, 0x6b9, 0x3, 0x2, 0x2, 0x2, 0x6aa, 0x6ab, 0x7, 0x99, 
     0x2, 0x2, 0x6ab, 0x6ad, 0x7, 0x4, 0x2, 0x2, 0x6ac, 0x6ae, 0x7, 0x72, 
     0x2, 0x2, 0x6ad, 0x6ac, 0x3, 0x2, 0x2, 0x2, 0x6ad, 0x6ae, 0x3, 0x2, 
     0x2, 0x2, 0x6ae, 0x6af, 0x3, 0x2, 0x2, 0x2, 0x6af, 0x6b4, 0x5, 0xe4, 
@@ -17458,7 +17458,7 @@ SPARQLParser::Initializer::Initializer() {
     0x2, 0x2, 0x6b9, 0x109, 0x3, 0x2, 0x2, 0x2, 0x6ba, 0x6bc, 0x5, 0x12c, 
     0x97, 0x2, 0x6bb, 0x6bd, 0x5, 0x94, 0x4b, 0x2, 0x6bc, 0x6bb, 0x3, 0x2, 
     0x2, 0x2, 0x6bc, 0x6bd, 0x3, 0x2, 0x2, 0x2, 0x6bd, 0x10b, 0x3, 0x2, 
-    0x2, 0x2, 0x6be, 0x6c2, 0x5, 0x12a, 0x96, 0x2, 0x6bf, 0x6c3, 0x7, 0x9f, 
+    0x2, 0x2, 0x6be, 0x6c2, 0x5, 0x12a, 0x96, 0x2, 0x6bf, 0x6c3, 0x7, 0xa0, 
     0x2, 0x2, 0x6c0, 0x6c1, 0x7, 0x1d, 0x2, 0x2, 0x6c1, 0x6c3, 0x5, 0x12c, 
     0x97, 0x2, 0x6c2, 0x6bf, 0x3, 0x2, 0x2, 0x2, 0x6c2, 0x6c0, 0x3, 0x2, 
     0x2, 0x2, 0x6c2, 0x6c3, 0x3, 0x2, 0x2, 0x2, 0x6c3, 0x10d, 0x3, 0x2, 
@@ -17476,18 +17476,18 @@ SPARQLParser::Initializer::Initializer() {
     0x92, 0x2, 0x6d4, 0x6d7, 0x5, 0x124, 0x93, 0x2, 0x6d5, 0x6d7, 0x5, 0x126, 
     0x94, 0x2, 0x6d6, 0x6d3, 0x3, 0x2, 0x2, 0x2, 0x6d6, 0x6d4, 0x3, 0x2, 
     0x2, 0x2, 0x6d6, 0x6d5, 0x3, 0x2, 0x2, 0x2, 0x6d7, 0x115, 0x3, 0x2, 
-    0x2, 0x2, 0x6d8, 0x6d9, 0x7, 0xa0, 0x2, 0x2, 0x6d9, 0x117, 0x3, 0x2, 
-    0x2, 0x2, 0x6da, 0x6db, 0x7, 0xa1, 0x2, 0x2, 0x6db, 0x119, 0x3, 0x2, 
-    0x2, 0x2, 0x6dc, 0x6dd, 0x7, 0xa2, 0x2, 0x2, 0x6dd, 0x11b, 0x3, 0x2, 
-    0x2, 0x2, 0x6de, 0x6df, 0x7, 0xa3, 0x2, 0x2, 0x6df, 0x11d, 0x3, 0x2, 
-    0x2, 0x2, 0x6e0, 0x6e1, 0x7, 0xa4, 0x2, 0x2, 0x6e1, 0x11f, 0x3, 0x2, 
-    0x2, 0x2, 0x6e2, 0x6e3, 0x7, 0xa5, 0x2, 0x2, 0x6e3, 0x121, 0x3, 0x2, 
-    0x2, 0x2, 0x6e4, 0x6e5, 0x7, 0xa6, 0x2, 0x2, 0x6e5, 0x123, 0x3, 0x2, 
-    0x2, 0x2, 0x6e6, 0x6e7, 0x7, 0xa7, 0x2, 0x2, 0x6e7, 0x125, 0x3, 0x2, 
-    0x2, 0x2, 0x6e8, 0x6e9, 0x7, 0xa8, 0x2, 0x2, 0x6e9, 0x127, 0x3, 0x2, 
+    0x2, 0x2, 0x6d8, 0x6d9, 0x7, 0xa1, 0x2, 0x2, 0x6d9, 0x117, 0x3, 0x2, 
+    0x2, 0x2, 0x6da, 0x6db, 0x7, 0xa2, 0x2, 0x2, 0x6db, 0x119, 0x3, 0x2, 
+    0x2, 0x2, 0x6dc, 0x6dd, 0x7, 0xa3, 0x2, 0x2, 0x6dd, 0x11b, 0x3, 0x2, 
+    0x2, 0x2, 0x6de, 0x6df, 0x7, 0xa4, 0x2, 0x2, 0x6df, 0x11d, 0x3, 0x2, 
+    0x2, 0x2, 0x6e0, 0x6e1, 0x7, 0xa5, 0x2, 0x2, 0x6e1, 0x11f, 0x3, 0x2, 
+    0x2, 0x2, 0x6e2, 0x6e3, 0x7, 0xa6, 0x2, 0x2, 0x6e3, 0x121, 0x3, 0x2, 
+    0x2, 0x2, 0x6e4, 0x6e5, 0x7, 0xa7, 0x2, 0x2, 0x6e5, 0x123, 0x3, 0x2, 
+    0x2, 0x2, 0x6e6, 0x6e7, 0x7, 0xa8, 0x2, 0x2, 0x6e7, 0x125, 0x3, 0x2, 
+    0x2, 0x2, 0x6e8, 0x6e9, 0x7, 0xa9, 0x2, 0x2, 0x6e9, 0x127, 0x3, 0x2, 
     0x2, 0x2, 0x6ea, 0x6eb, 0x9, 0x6, 0x2, 0x2, 0x6eb, 0x129, 0x3, 0x2, 
     0x2, 0x2, 0x6ec, 0x6ed, 0x9, 0x7, 0x2, 0x2, 0x6ed, 0x12b, 0x3, 0x2, 
-    0x2, 0x2, 0x6ee, 0x6f1, 0x7, 0x99, 0x2, 0x2, 0x6ef, 0x6f1, 0x5, 0x12e, 
+    0x2, 0x2, 0x6ee, 0x6f1, 0x7, 0x9a, 0x2, 0x2, 0x6ef, 0x6f1, 0x5, 0x12e, 
     0x98, 0x2, 0x6f0, 0x6ee, 0x3, 0x2, 0x2, 0x2, 0x6f0, 0x6ef, 0x3, 0x2, 
     0x2, 0x2, 0x6f1, 0x12d, 0x3, 0x2, 0x2, 0x2, 0x6f2, 0x6f3, 0x9, 0x8, 
     0x2, 0x2, 0x6f3, 0x12f, 0x3, 0x2, 0x2, 0x2, 0x6f4, 0x6f5, 0x9, 0x9, 
