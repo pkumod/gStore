@@ -26,6 +26,7 @@ struct Env{
   shared_ptr<BGPQuery> bgp_query;
   shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches;
   int k;
+  bool any_k;
   // store the non-tree edges to speed up result enumeration
   std::shared_ptr<std::vector<std::map<TYPE_ENTITY_LITERAL_ID,std::set<TYPE_ENTITY_LITERAL_ID> >>> non_tree_edges_lists_;
   std::shared_ptr<map<std::string, double>> coefficients;

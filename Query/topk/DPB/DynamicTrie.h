@@ -8,7 +8,6 @@
 #include "Pool.h"
 
 namespace DPB {
-
 /**
  * The basic unit of the DynamicTrie.
  * If we insert two sequences into the Trie: 0-0-0, 0-1-0:
@@ -37,15 +36,13 @@ class DynamicTrie {
   int depth_;
   int default_k_;
  public:
-  DPB::TrieEntry* newEntry(int k);
+  TrieEntry* newEntry(int k);
   explicit DynamicTrie(int depth,int k );
   ~DynamicTrie();
   void deleteEntry(TrieEntry *trie_entry,int depth);
   TrieEntry* insert(const sequence &seq);
   bool detect(const sequence &seq);
 };
-
-
 
 }
 #endif //TOPK_DPB_DYNAMICTRIE_H_

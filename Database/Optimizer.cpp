@@ -272,6 +272,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   shared_ptr<QueryPlan> query_plan;
   auto strategy = this->ChooseStrategy(bgp_query,&query_info);
   auto distinct = bgp_query->distinct_query;
+  CompressedVector::InitialCombinatorial(2040,10);
   if(strategy == BasicQueryStrategy::Normal)
   {
 
@@ -747,6 +748,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   env->id_caches = id_caches;
   cout<<" Optimizer::ExecutionTopK  env->id_caches "<<  env->id_caches->size()<<endl;
   env->k = query_info.limit_num_;
+  env->any_k = tree_search_plan->HasCycle();
   env->coefficients = var_coefficients;
   env->txn = this->txn_;
   env->ss = make_shared<stringstream>();

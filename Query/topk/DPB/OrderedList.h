@@ -8,6 +8,7 @@
 #include "Pool.h"
 #include "../MinMaxHeap.hpp"
 #include "DynamicTrie.h"
+#include "CompressedVector.h"
 
 /**
  * Structure
@@ -93,16 +94,25 @@ class FQIterator: public OrderedList{
   std::vector<std::shared_ptr<OrderedList>> fr_ow_iterators_;
   //std::vector<std::vector<unsigned int>> seq_list_;
   DPB::ePool e_pool_;
-  DPB::DynamicTrie dynamic_trie_;
+  unique_ptr<DPB::DynamicTrie> dynamic_trie_pointer;
+  unique_ptr<CompressedVector> com_vector_pointer;
   std::vector<NodeOneChildVarPredicatesPtr> types_predicates_;
   TYPE_ENTITY_LITERAL_ID node_id_;
  public:
 
   virtual ~FQIterator(){};
   void AddOneTypePredicate(NodeOneChildVarPredicatesPtr p){this->types_predicates_.push_back(p);}
-  explicit FQIterator(int k,TYPE_ENTITY_LITERAL_ID node_id,int child_type_num,double node_score):
-      node_score_(node_score), dynamic_trie_(child_type_num,k),node_id_(node_id)
-  {   this->fr_ow_iterators_.reserve(child_type_num);};
+  explicit FQIterator(int k,TYPE_ENTITY_LITERAL_ID node_id,
+                      int child_type_num,double node_score,
+                      bool any_k):
+      node_score_(node_score),node_id_(node_id)
+  {
+    if(any_k)
+      this->com_vector_pointer.reset(new CompressedVector(k,child_type_num));
+    else
+      this->dynamic_trie_pointer.reset(new DPB::DynamicTrie(child_type_num,k));
+    this->fr_ow_iterators_.reserve(child_type_num);
+  };
   void TryGetNext(unsigned int k) override;
   TYPE_ENTITY_LITERAL_ID GetNodeID(){return this->node_id_;};
 

@@ -155,7 +155,12 @@ void FQIterator::TryGetNext(unsigned int k) {
     DPB::FqElement e;
     e.seq = DPB::sequence(fr_ow_iterators_.size(), 0);
     e.cost = cost;
-    this->dynamic_trie_.insert(e.seq);
+
+    if(this->dynamic_trie_pointer != nullptr)
+      this->dynamic_trie_pointer->insert(e.seq);
+    else
+      this->com_vector_pointer->Insert(e.seq);
+
     this->queue_.push(e);
 
     this->e_pool_.push_back(e);
@@ -178,7 +183,12 @@ void FQIterator::TryGetNext(unsigned int k) {
   for(unsigned int j=0; j<this->fr_ow_iterators_.size(); j++)
   {
     seq[j] += 1;
-    if(this->dynamic_trie_.detect(seq))
+    bool should_be_inserted;
+    if(this->dynamic_trie_pointer!= nullptr)
+      should_be_inserted= this->dynamic_trie_pointer->detect(seq);
+    else
+      should_be_inserted = this->com_vector_pointer->AllParentsInserted(seq);
+    if(should_be_inserted)
     {
       if(this->NextEPoolElement(k, this->fr_ow_iterators_[j], seq[j]))
       {

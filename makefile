@@ -95,7 +95,7 @@ utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
 			$(objdir)IPBlackList.o  $(objdir)SpinLock.o $(objdir)GraphLock.o $(objdir)WebUrl.o $(objdir)INIParser.o $(objdir)OrderedVector.o
 
-topkobj = $(objdir)DynamicTrie.o $(objdir)OrderedList.o $(objdir)Pool.o $(objdir)TopKUtil.o $(objdir)DPBTopKUtil.o $(objdir)TopKSearchPlan.o
+topkobj = $(objdir)DynamicTrie.o $(objdir)CompressedVector.o  $(objdir)OrderedList.o $(objdir)Pool.o $(objdir)TopKUtil.o $(objdir)DPBTopKUtil.o $(objdir)TopKSearchPlan.o
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o $(objdir)QueryPlan.o\
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
@@ -508,8 +508,11 @@ $(objdir)Pool.o: Query/topk/DPB/Pool.cpp Query/topk/DPB/Pool.h $(objdir)Util.o
 $(objdir)DynamicTrie.o: Query/topk/DPB/DynamicTrie.cpp Query/topk/DPB/DynamicTrie.h $(objdir)Util.o $(objdir)Pool.o
 	$(CC) $(CFLAGS) Query/topk/DPB/DynamicTrie.cpp $(inc) -o $(objdir)DynamicTrie.o $(openmp)
 
+$(objdir)CompressedVector.o: Query/topk/DPB/CompressedVector.cpp Query/topk/DPB/CompressedVector.h $(objdir)Util.o $(objdir)Pool.o
+	$(CC) $(CFLAGS) Query/topk/DPB/CompressedVector.cpp $(inc) -o $(objdir)CompressedVector.o $(openmp)
+
 $(objdir)OrderedList.o: Query/topk/DPB/OrderedList.cpp Query/topk/DPB/OrderedList.h $(objdir)Util.o $(objdir)Pool.o \
-	$(objdir)DynamicTrie.o
+	$(objdir)DynamicTrie.o $(objdir)CompressedVector.o
 	$(CC) $(CFLAGS) Query/topk/DPB/OrderedList.cpp $(inc) -o $(objdir)OrderedList.o $(openmp)
 
 $(objdir)TopKSearchPlan.o: Query/topk/TopKSearchPlan.cpp Query/topk/TopKSearchPlan.h $(objdir)Util.o \

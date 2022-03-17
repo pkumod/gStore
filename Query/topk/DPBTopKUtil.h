@@ -12,9 +12,11 @@
 namespace DPBUtil{
 
 std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<FQIterator>>  AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
-                                                                    std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,double>> node_scores, int k,
-                                                                    vector<std::map<TYPE_ENTITY_LITERAL_ID, std::shared_ptr<FRIterator>>> &descendents_FRs,
-                                                                    std::vector<std::map<TYPE_ENTITY_LITERAL_ID,std::pair<std::shared_ptr<OWIterator>,NodeOneChildVarPredicatesPtr>>>&descendents_OWs);
+                                                                             std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID,double>> node_scores,
+                                                                             int k,
+                                                                             vector<std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<FRIterator>>> &descendents_FRs,
+                                                                             std::vector<std::map<TYPE_ENTITY_LITERAL_ID,std::pair<std::shared_ptr<OWIterator>, NodeOneChildVarPredicatesPtr>>>&descendents_OWs,
+                                                                             bool any_k);
 
 
 std::map<TYPE_ENTITY_LITERAL_ID, // parent id

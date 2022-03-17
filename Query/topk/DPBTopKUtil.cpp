@@ -81,7 +81,7 @@ FRIterator *DPBUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_sea
 
   // assembling all FQ into one FR
   // constructing children' FQs
-  auto child_fqs = AssemblingFrOw(root_candidate, node_score,env->k,descendents_FRs,descendents_OWs);
+  auto child_fqs = AssemblingFrOw(root_candidate, node_score,env->k,descendents_FRs,descendents_OWs,env->any_k);
 
   auto empty_pre = make_shared<OnePointPredicateVec>();
   auto fr = new FRIterator();
@@ -111,7 +111,8 @@ DPBUtil::AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
                              std::map<TYPE_ENTITY_LITERAL_ID, // parent id
                                       std::pair<shared_ptr<OWIterator>, // its OW
                                                 NodeOneChildVarPredicatesPtr>>> // predicate correspond to the OW
-                         &descendents_OWs) {
+                         &descendents_OWs,
+                         bool any_k) {
   auto ow_size = descendents_OWs.size();
   auto fr_size = descendents_FRs.size();
   auto child_type_num =  ow_size+fr_size;
@@ -121,7 +122,7 @@ DPBUtil::AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
     double score=0.0;
     if(node_scores!= nullptr)
       score = (*node_scores)[fq_id];
-    auto fq = make_shared<FQIterator>(k,fq_id,child_type_num,score);
+    auto fq = make_shared<FQIterator>(k,fq_id,child_type_num,score,any_k);
     // assembling fq
     for(decltype(child_type_num) i =0;i<ow_size;i++)
     {
@@ -317,7 +318,7 @@ DPBUtil::GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
   }
 
   // constructing children' FQs
-  auto child_fqs = AssemblingFrOw(child_candidates, node_score,env->k,descendents_FRs,descendents_OWs);
+  auto child_fqs = AssemblingFrOw(child_candidates, node_score,env->k,descendents_FRs,descendents_OWs,env->any_k);
 
   // calculate which parent to be deleted
   for(auto deleted_child_id:deleted_children)
