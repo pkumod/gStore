@@ -1323,8 +1323,8 @@ antlrcpp::Any QueryParser::visitBind(SPARQLParser::BindContext *ctx, \
 		unaryexpression(0)->primaryexpression()->rDFLiteral();
 	if (!rdflCtx)
 		throw runtime_error("[ERROR]	Currently BIND only supports assigning a string to a var.");
-	antlr4::tree::ParseTree *curr = ctx;
-	for (int i = 0; i < 10; i++)
+	antlr4::tree::ParseTree *curr = ctx->expression();
+	for (int i = 0; i < 9; i++)
 	{
 		// Make sure only one children along the way
 		if (curr->children.size() > 1)
