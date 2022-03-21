@@ -6,7 +6,7 @@
 
 #include "Optimizer.h"
 // #define FEED_PLAN
-
+bool RankAfterMatching = false;
 Optimizer::Optimizer(KVstore *kv_store,
                      Statistics *statistics,
                      TYPE_TRIPLE_NUM *pre2num,
@@ -273,7 +273,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   auto strategy = this->ChooseStrategy(bgp_query,&query_info);
   auto distinct = bgp_query->distinct_query;
   CompressedVector::InitialCombinatorial(2040,10);
-  if(strategy == BasicQueryStrategy::Normal)
+  if(strategy == BasicQueryStrategy::Normal || RankAfterMatching)
   {
 
     PlanTree* best_plan_tree;
@@ -324,6 +324,26 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     auto var_pos_mapping = bfs_table.id_pos_map;
 
     long t6 = Util::get_cur_time();
+    if(RankAfterMatching)
+    {
+      // Simulate a ranking process
+      auto k = query_info.limit_num_;
+      vector<TYPE_ENTITY_LITERAL_ID> ranked_vector;
+      auto it = bfs_table.values_->begin();
+      int counter = 0;
+      while(it!= bfs_table.values_->end())
+      {
+        counter ++;
+        if(counter>k)
+          it = bfs_table.values_->erase(it);
+        else
+        {
+          ranked_vector.push_back( (*it)->back());
+          it++;
+        }
+      }
+      std::sort(ranked_vector.begin(),ranked_vector.end());
+    }
     CopyToResult(bgp_query, bfs_table);
 #ifdef OPTIMIZER_DEBUG_INFO
     cout<<"after copy bfs result size "<<bgp_query->get_result_list_pointer()->size()<<endl;

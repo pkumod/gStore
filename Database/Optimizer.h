@@ -59,6 +59,8 @@ struct QueryInfo{
   bool is_distinct_;
   shared_ptr<vector<QueryTree::Order>> ordered_by_expressions_;
 };
+
+extern bool RankAfterMatching;
 /*
  *
  * 还差一个 copyToResult 的操作

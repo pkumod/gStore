@@ -128,6 +128,11 @@ main(int argc, char * argv[])
 				}
 				string msg;
 				shared_ptr<Transaction> ptxn = make_shared<Transaction>(db_folder, 1, 1);
+                string queryMethod = Util::getArgValue(argc, argv, "m", "method");
+                if(queryMethod == "RankAfterMatching" || queryMethod == "ram" || queryMethod == "RAM")
+                  RankAfterMatching = true;
+                else
+                  RankAfterMatching = false;
 				//cout << ptxn << endl;
 				int ret = _db.query(query, _rs, ofp, true, false, nullptr);
 				if (resultfile.empty() == false)
