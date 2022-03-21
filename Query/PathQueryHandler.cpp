@@ -1979,6 +1979,7 @@ vector<pair<pair<int, int>, int>> kHopSubgraph(int uid, int vid, bool directed, 
 // {
 
 // }
+
 std::map<std::string, std::string> PathQueryHandler::dynamicFunction(const std::vector<int> &iri_set, bool directed, int k, const std::vector<int> &pred_set, const std::string& fun_name, const std::string& username)
 {
 	try
@@ -2005,21 +2006,21 @@ std::map<std::string, std::string> PathQueryHandler::dynamicFunction(const std::
 			doc.SetObject();
 			if (!doc.Parse(line.c_str()).HasParseError())
 			{
-				if (doc.HasMember("fun_name"))
+				if (doc.HasMember("funName"))
 				{
-					temp_name = doc["fun_name"].GetString();
+					temp_name = doc["funName"].GetString();
 					if (temp_name == fun_name)
 					{
-						if (doc.HasMember("fun_status"))
-							fun_status = doc["fun_status"].GetString();
+						if (doc.HasMember("funStatus"))
+							fun_status = doc["funStatus"].GetString();
 						if (fun_status != "2")
 							throw runtime_error("function " + fun_name + " not compile yet");
-						if (doc.HasMember("fun_args"))
-							fun_args = doc["fun_args"].GetString();
-						if (doc.HasMember("fun_return"))
-							fun_return = doc["fun_return"].GetString();
-						if (doc.HasMember("last_time"))
-							md5Str = Util::md5(doc["last_time"].GetString());
+						if (doc.HasMember("funArgs"))
+							fun_args = doc["funArgs"].GetString();
+						if (doc.HasMember("funReturn"))
+							fun_return = doc["funReturn"].GetString();
+						if (doc.HasMember("lastTime"))
+							md5Str = Util::md5(doc["lastTime"].GetString());
 						isMatch = true;
 						break;
 					}

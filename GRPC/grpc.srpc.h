@@ -20,6 +20,9 @@ public:
 	virtual void api(CommonRequest *request, CommonResponse *response,
 					srpc::RPCContext *ctx) = 0;
 
+	virtual void shutdown(CommonRequest *request, CommonResponse *response,
+					srpc::RPCContext *ctx) = 0;
+
 public:
 	Service();
 };
@@ -30,6 +33,7 @@ public:
  */
 
 using apiDone = std::function<void (CommonResponse *, srpc::RPCContext *)>;
+using shutdownDone = std::function<void (CommonResponse *, srpc::RPCContext *)>;
 
 class SRPCClient : public srpc::SRPCClient
 {
@@ -38,12 +42,17 @@ public:
 	void api(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx);
 	WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> async_api(const CommonRequest *req);
 
+	void shutdown(const CommonRequest *req, shutdownDone done);
+	void shutdown(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx);
+	WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> async_shutdown(const CommonRequest *req);
+
 public:
 	SRPCClient(const char *host, unsigned short port);
 	SRPCClient(const struct srpc::RPCClientParams *params);
 
 public:
 	srpc::SRPCClientTask *create_api_task(apiDone done);
+	srpc::SRPCClientTask *create_shutdown_task(shutdownDone done);
 };
 
 class SRPCHttpClient : public srpc::SRPCHttpClient
@@ -53,12 +62,17 @@ public:
 	void api(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx);
 	WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> async_api(const CommonRequest *req);
 
+	void shutdown(const CommonRequest *req, shutdownDone done);
+	void shutdown(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx);
+	WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> async_shutdown(const CommonRequest *req);
+
 public:
 	SRPCHttpClient(const char *host, unsigned short port);
 	SRPCHttpClient(const struct srpc::RPCClientParams *params);
 
 public:
 	srpc::SRPCHttpClientTask *create_api_task(apiDone done);
+	srpc::SRPCHttpClientTask *create_shutdown_task(shutdownDone done);
 };
 
 class BRPCClient : public srpc::BRPCClient
@@ -68,12 +82,17 @@ public:
 	void api(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx);
 	WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> async_api(const CommonRequest *req);
 
+	void shutdown(const CommonRequest *req, shutdownDone done);
+	void shutdown(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx);
+	WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> async_shutdown(const CommonRequest *req);
+
 public:
 	BRPCClient(const char *host, unsigned short port);
 	BRPCClient(const struct srpc::RPCClientParams *params);
 
 public:
 	srpc::BRPCClientTask *create_api_task(apiDone done);
+	srpc::BRPCClientTask *create_shutdown_task(shutdownDone done);
 };
 
 class TRPCClient : public srpc::TRPCClient
@@ -83,12 +102,17 @@ public:
 	void api(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx);
 	WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> async_api(const CommonRequest *req);
 
+	void shutdown(const CommonRequest *req, shutdownDone done);
+	void shutdown(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx);
+	WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> async_shutdown(const CommonRequest *req);
+
 public:
 	TRPCClient(const char *host, unsigned short port);
 	TRPCClient(const struct srpc::RPCClientParams *params);
 
 public:
 	srpc::TRPCClientTask *create_api_task(apiDone done);
+	srpc::TRPCClientTask *create_shutdown_task(shutdownDone done);
 };
 
 class TRPCHttpClient : public srpc::TRPCHttpClient
@@ -98,12 +122,17 @@ public:
 	void api(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx);
 	WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> async_api(const CommonRequest *req);
 
+	void shutdown(const CommonRequest *req, shutdownDone done);
+	void shutdown(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx);
+	WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> async_shutdown(const CommonRequest *req);
+
 public:
 	TRPCHttpClient(const char *host, unsigned short port);
 	TRPCHttpClient(const struct srpc::RPCClientParams *params);
 
 public:
 	srpc::TRPCHttpClientTask *create_api_task(apiDone done);
+	srpc::TRPCHttpClientTask *create_shutdown_task(shutdownDone done);
 };
 
 ///// implements detials /////
@@ -113,6 +142,11 @@ inline Service::Service(): srpc::RPCService("grpc")
 	this->srpc::RPCService::add_method("api",
 		[this](srpc::RPCWorker& worker) ->int {
 			return ServiceRPCCallImpl(this, worker, &Service::api);
+		});
+
+	this->srpc::RPCService::add_method("shutdown",
+		[this](srpc::RPCWorker& worker) ->int {
+			return ServiceRPCCallImpl(this, worker, &Service::shutdown);
 		});
 }
 inline SRPCClient::SRPCClient(const char *host, unsigned short port):
@@ -166,9 +200,46 @@ inline WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> SRPCClient::asy
 	return fr;
 }
 
+inline void SRPCClient::shutdown(const CommonRequest *req, shutdownDone done)
+{
+	auto *task = this->create_rpc_client_task("shutdown", std::move(done));
+
+	task->serialize_input(req);
+	task->start();
+}
+
+inline void SRPCClient::shutdown(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx)
+{
+	auto res = this->async_shutdown(req).get();
+
+	if (resp && res.second.success)
+		*resp = std::move(res.first);
+
+	if (sync_ctx)
+		*sync_ctx = std::move(res.second);
+}
+
+inline WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> SRPCClient::async_shutdown(const CommonRequest *req)
+{
+	using RESULT = std::pair<CommonResponse, srpc::RPCSyncContext>;
+	auto *pr = new WFPromise<RESULT>();
+	auto fr = pr->get_future();
+	auto *task = this->create_rpc_client_task<CommonResponse>("shutdown", srpc::RPCAsyncFutureCallback<CommonResponse>);
+
+	task->serialize_input(req);
+	task->user_data = pr;
+	task->start();
+	return fr;
+}
+
 inline srpc::SRPCClientTask *SRPCClient::create_api_task(apiDone done)
 {
 	return this->create_rpc_client_task("api", std::move(done));
+}
+
+inline srpc::SRPCClientTask *SRPCClient::create_shutdown_task(shutdownDone done)
+{
+	return this->create_rpc_client_task("shutdown", std::move(done));
 }
 
 inline SRPCHttpClient::SRPCHttpClient(const char *host, unsigned short port):
@@ -222,9 +293,46 @@ inline WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> SRPCHttpClient:
 	return fr;
 }
 
+inline void SRPCHttpClient::shutdown(const CommonRequest *req, shutdownDone done)
+{
+	auto *task = this->create_rpc_client_task("shutdown", std::move(done));
+
+	task->serialize_input(req);
+	task->start();
+}
+
+inline void SRPCHttpClient::shutdown(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx)
+{
+	auto res = this->async_shutdown(req).get();
+
+	if (resp && res.second.success)
+		*resp = std::move(res.first);
+
+	if (sync_ctx)
+		*sync_ctx = std::move(res.second);
+}
+
+inline WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> SRPCHttpClient::async_shutdown(const CommonRequest *req)
+{
+	using RESULT = std::pair<CommonResponse, srpc::RPCSyncContext>;
+	auto *pr = new WFPromise<RESULT>();
+	auto fr = pr->get_future();
+	auto *task = this->create_rpc_client_task<CommonResponse>("shutdown", srpc::RPCAsyncFutureCallback<CommonResponse>);
+
+	task->serialize_input(req);
+	task->user_data = pr;
+	task->start();
+	return fr;
+}
+
 inline srpc::SRPCHttpClientTask *SRPCHttpClient::create_api_task(apiDone done)
 {
 	return this->create_rpc_client_task("api", std::move(done));
+}
+
+inline srpc::SRPCHttpClientTask *SRPCHttpClient::create_shutdown_task(shutdownDone done)
+{
+	return this->create_rpc_client_task("shutdown", std::move(done));
 }
 
 inline BRPCClient::BRPCClient(const char *host, unsigned short port):
@@ -278,9 +386,46 @@ inline WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> BRPCClient::asy
 	return fr;
 }
 
+inline void BRPCClient::shutdown(const CommonRequest *req, shutdownDone done)
+{
+	auto *task = this->create_rpc_client_task("shutdown", std::move(done));
+
+	task->serialize_input(req);
+	task->start();
+}
+
+inline void BRPCClient::shutdown(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx)
+{
+	auto res = this->async_shutdown(req).get();
+
+	if (resp && res.second.success)
+		*resp = std::move(res.first);
+
+	if (sync_ctx)
+		*sync_ctx = std::move(res.second);
+}
+
+inline WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> BRPCClient::async_shutdown(const CommonRequest *req)
+{
+	using RESULT = std::pair<CommonResponse, srpc::RPCSyncContext>;
+	auto *pr = new WFPromise<RESULT>();
+	auto fr = pr->get_future();
+	auto *task = this->create_rpc_client_task<CommonResponse>("shutdown", srpc::RPCAsyncFutureCallback<CommonResponse>);
+
+	task->serialize_input(req);
+	task->user_data = pr;
+	task->start();
+	return fr;
+}
+
 inline srpc::BRPCClientTask *BRPCClient::create_api_task(apiDone done)
 {
 	return this->create_rpc_client_task("api", std::move(done));
+}
+
+inline srpc::BRPCClientTask *BRPCClient::create_shutdown_task(shutdownDone done)
+{
+	return this->create_rpc_client_task("shutdown", std::move(done));
 }
 
 inline TRPCClient::TRPCClient(const char *host, unsigned short port):
@@ -334,9 +479,46 @@ inline WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> TRPCClient::asy
 	return fr;
 }
 
+inline void TRPCClient::shutdown(const CommonRequest *req, shutdownDone done)
+{
+	auto *task = this->create_rpc_client_task("/grpc/shutdown", std::move(done));
+
+	task->serialize_input(req);
+	task->start();
+}
+
+inline void TRPCClient::shutdown(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx)
+{
+	auto res = this->async_shutdown(req).get();
+
+	if (resp && res.second.success)
+		*resp = std::move(res.first);
+
+	if (sync_ctx)
+		*sync_ctx = std::move(res.second);
+}
+
+inline WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> TRPCClient::async_shutdown(const CommonRequest *req)
+{
+	using RESULT = std::pair<CommonResponse, srpc::RPCSyncContext>;
+	auto *pr = new WFPromise<RESULT>();
+	auto fr = pr->get_future();
+	auto *task = this->create_rpc_client_task<CommonResponse>("/grpc/shutdown", srpc::RPCAsyncFutureCallback<CommonResponse>);
+
+	task->serialize_input(req);
+	task->user_data = pr;
+	task->start();
+	return fr;
+}
+
 inline srpc::TRPCClientTask *TRPCClient::create_api_task(apiDone done)
 {
 	return this->create_rpc_client_task("/grpc/api", std::move(done));
+}
+
+inline srpc::TRPCClientTask *TRPCClient::create_shutdown_task(shutdownDone done)
+{
+	return this->create_rpc_client_task("/grpc/shutdown", std::move(done));
 }
 
 inline TRPCHttpClient::TRPCHttpClient(const char *host, unsigned short port):
@@ -390,9 +572,46 @@ inline WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> TRPCHttpClient:
 	return fr;
 }
 
+inline void TRPCHttpClient::shutdown(const CommonRequest *req, shutdownDone done)
+{
+	auto *task = this->create_rpc_client_task("shutdown", std::move(done));
+
+	task->serialize_input(req);
+	task->start();
+}
+
+inline void TRPCHttpClient::shutdown(const CommonRequest *req, CommonResponse *resp, srpc::RPCSyncContext *sync_ctx)
+{
+	auto res = this->async_shutdown(req).get();
+
+	if (resp && res.second.success)
+		*resp = std::move(res.first);
+
+	if (sync_ctx)
+		*sync_ctx = std::move(res.second);
+}
+
+inline WFFuture<std::pair<CommonResponse, srpc::RPCSyncContext>> TRPCHttpClient::async_shutdown(const CommonRequest *req)
+{
+	using RESULT = std::pair<CommonResponse, srpc::RPCSyncContext>;
+	auto *pr = new WFPromise<RESULT>();
+	auto fr = pr->get_future();
+	auto *task = this->create_rpc_client_task<CommonResponse>("shutdown", srpc::RPCAsyncFutureCallback<CommonResponse>);
+
+	task->serialize_input(req);
+	task->user_data = pr;
+	task->start();
+	return fr;
+}
+
 inline srpc::TRPCHttpClientTask *TRPCHttpClient::create_api_task(apiDone done)
 {
 	return this->create_rpc_client_task("api", std::move(done));
+}
+
+inline srpc::TRPCHttpClientTask *TRPCHttpClient::create_shutdown_task(shutdownDone done)
+{
+	return this->create_rpc_client_task("shutdown", std::move(done));
 }
 
 } // end namespace grpc

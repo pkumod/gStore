@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2022-11-28 09:55:49
- * @LastEditTime: 2022-03-10 20:11:04
+ * @LastEditTime: 2022-03-20 15:11:26
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.h
@@ -22,6 +22,7 @@ public:
     GrpcImpl(int argc, char *argv[]);
     ~GrpcImpl();
     void api(CommonRequest *request, CommonResponse *response, srpc::RPCContext *ctx) override;
+    void shutdown(CommonRequest *request, CommonResponse *response, srpc::RPCContext *ctx) override;
 private:
     APIUtil *apiUtil;
     // for db
@@ -59,11 +60,8 @@ private:
     void ip_manage_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
     void parse_query_result(CommonRequest *&request, CommonResponse *&response,  ResultSet& rs);
     // for personalized function
-    void fun_create_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
-    void fun_retrieve_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
-    void fun_update_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
-    void fun_delete_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
-    void fun_build_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
+    void fun_query_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
+    void fun_cudb_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
     void fun_review_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
     void fun_copy_from_fun_info(struct PFNInfo * target, FunInfo * source);
     void fun_copy_from_pfn_info(FunInfo * target, struct PFNInfo * source);

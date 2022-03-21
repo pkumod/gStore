@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-03-10 20:11:23
+ * @LastEditTime: 2022-03-21 09:43:18
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -12,6 +12,7 @@
 #include "../Database/Database.h"
 #include "../Database/CSRUtil.h"
 #include "../Database/Txn_manager.h"
+#include "../Util/Util.h"
 #include "../Util/IPWhiteList.h"
 #include "../Util/IPBlackList.h"
 
@@ -20,7 +21,8 @@ using namespace rapidjson;
 
 #define ROOT_USERNAME "root"
 #define PFN_HEADER "#include <iostream>\n#include \"../../Database/CSRUtil.h\"\n\nusing namespace std;\n"
-
+#define TRANSACTION_LOG_PATH "./logs/transaction.json"
+#define TRANSACTION_LOG_TEMP_PATH "./logs/transaction_temp.json"
 
 struct DatabaseInfo
 {
@@ -219,7 +221,7 @@ public:
         }
         return unload_db;
     }
-    std::string getrestore(){
+    std::string getRestore(){
         std::string restore_db;
         if(username == ROOT_USERNAME)
         {
@@ -234,7 +236,7 @@ public:
         }
         return restore_db;
     }
-    std::string getbackup(){
+    std::string getBackup(){
         std::string backup_db;
         if(username == ROOT_USERNAME)
         {
@@ -249,7 +251,7 @@ public:
         }
         return backup_db;
     }
-    std::string getexport(){
+    std::string getExport(){
         std::string export_db;
         if(username == ROOT_USERNAME)
         {
@@ -263,10 +265,6 @@ public:
             ++it;
         }
         return export_db;
-    }
-    std::string toJSON()
-    {
-        return "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
     }
 };
 
@@ -338,13 +336,13 @@ public:
     DBQueryLogInfo (string _queryDateTime, string _remoteIP, string _sparql, long _ansNum, string _format, string _fileName, int _statusCode, size_t _queryTime)
     {
         queryDateTime = _queryDateTime;
-        remoteIP = remoteIP;
+        remoteIP = _remoteIP;
         sparql = _sparql;
         ansNum = _ansNum;
         format = _format;
         fileName = _fileName;
         statusCode = _statusCode;
-        queryTime = queryTime;
+        queryTime = _queryTime;
     }
     DBQueryLogInfo(string json_str)
     {
@@ -352,35 +350,35 @@ public:
         doc.SetObject();
         if(!doc.Parse(json_str.c_str()).HasParseError())
         {
-            if (doc.HasMember("QueryDateTime"))
+            if (doc.HasMember("QueryDateTime") && doc["QueryDateTime"].IsString())
             {
                 queryDateTime = doc["QueryDateTime"].GetString();
             } 
-            if (doc.HasMember("RemoteIP"))
+            if (doc.HasMember("RemoteIP") && doc["RemoteIP"].IsString())
             {
                 remoteIP = doc["RemoteIP"].GetString();
             }             
-            if (doc.HasMember("Sparql"))
+            if (doc.HasMember("Sparql") && doc["Sparql"].IsString())
             {
                 sparql = doc["Sparql"].GetString();
             }
-            if (doc.HasMember("AnsNum"))
+            if (doc.HasMember("AnsNum") && doc["AnsNum"].IsInt())
             {
                 ansNum = doc["AnsNum"].GetInt();
             }
-            if (doc.HasMember("Format"))
+            if (doc.HasMember("Format") && doc["Format"].IsString())
             {
                 format = doc["Format"].GetString();
             }                
-            if (doc.HasMember("FileName"))
+            if (doc.HasMember("FileName") && doc["FileName"].IsString())
             {
                 fileName = doc["FileName"].GetString();
             }               
-            if (doc.HasMember("StatusCode"))
+            if (doc.HasMember("StatusCode") && doc["StatusCode"].IsInt())
             {
                 statusCode = doc["StatusCode"].GetInt();
             }               
-            if (doc.HasMember("QueryTime"))
+            if (doc.HasMember("QueryTime") && doc["QueryTime"].IsUint64())
             {
                 queryTime = doc["QueryTime"].GetUint64();
             }
@@ -491,15 +489,15 @@ public:
         doc.SetObject();
         if(!doc.Parse(json_str.c_str()).HasParseError())
         {
-            if (doc.HasMember("ip"))
+            if (doc.HasMember("ip") && doc["ip"].IsString())
                 ip = doc["ip"].GetString();
-            if (doc.HasMember("operation"))
+            if (doc.HasMember("operation") && doc["operation"].IsString())
                 operation = doc["operation"].GetString();
-            if (doc.HasMember("code"))
+            if (doc.HasMember("code") && doc["code"].IsInt())
                 code = doc["code"].GetInt();
-            if (doc.HasMember("msg"))
+            if (doc.HasMember("msg") && doc["msg"].IsString())
                 msg = doc["msg"].GetString();
-            if (doc.HasMember("createtime"))
+            if (doc.HasMember("createtime") && doc["createtime"].IsString())
                 createtime = doc["createtime"].GetString();
         }
     }
@@ -522,14 +520,6 @@ public:
         doc.Accept(writer);
 	    string json_str = strBuf.GetString();
         return json_str;
-    }
-    void toValue(rapidjson::Value &obj, rapidjson::Document::AllocatorType &allocator)
-    {
-		obj.AddMember("ip", rapidjson::StringRef(ip.c_str()), allocator);
-        obj.AddMember("operation", rapidjson::StringRef(operation.c_str()), allocator);
-        obj.AddMember("code", code, allocator);
-        obj.AddMember("msg", rapidjson::StringRef(msg.c_str()), allocator);
-        obj.AddMember("createtime", rapidjson::StringRef(createtime.c_str()), allocator);
     }
 };
 
@@ -577,39 +567,150 @@ public:
     }
 };
 
+struct TransactionLogInfo
+{
+private:
+    std::string db_name;
+    std::string TID;
+    std::string user;
+    std::string state;
+    std::string begin_time;
+    std::string end_time;
+public:
+    TransactionLogInfo() {}
+    TransactionLogInfo(string _db_name, string _TID, string _user, string _state, string _begin_time, string _end_time) 
+    {
+        db_name = _db_name;
+        TID = _TID;
+        user = _user;
+        state = _state;
+        begin_time = _begin_time;
+        end_time = _end_time;
+
+    }
+    TransactionLogInfo(string json_str)
+    {
+        rapidjson::Document doc;
+        doc.SetObject();
+        if(!doc.Parse(json_str.c_str()).HasParseError())
+        {
+            if (doc.HasMember("db_name") && doc["db_name"].IsString())
+                db_name = doc["db_name"].GetString();
+            if (doc.HasMember("TID") && doc["TID"].IsString())
+                TID = doc["TID"].GetString();
+            if (doc.HasMember("user") && doc["user"].IsString())
+                user = doc["user"].GetString();
+            if (doc.HasMember("state") && doc["state"].IsString())
+                state = doc["state"].GetString();
+            if (doc.HasMember("begin_time") && doc["begin_time"].IsString())
+                begin_time = doc["begin_time"].GetString();
+            if (doc.HasMember("end_time") && doc["end_time"].IsString())
+                end_time = doc["end_time"].GetString();
+        }
+    }
+    std::string getDbName() {return db_name;}
+    std::string getTID() {return TID;}
+    std::string getUser() {return user;}
+    std::string getState() {return state;}
+    std::string getBeginTime() {return begin_time;}
+    std::string getEndTime() {return end_time;}
+    void setState(string value) {state = value;}
+    void setEndTime(string value) {end_time = value;}
+    std::string toJSON()
+    {
+        rapidjson::Document doc;
+        doc.SetObject();
+        doc.AddMember("db_name", rapidjson::StringRef(db_name.c_str()), doc.GetAllocator());
+        doc.AddMember("TID", rapidjson::StringRef(TID.c_str()), doc.GetAllocator());
+        doc.AddMember("user", rapidjson::StringRef(user.c_str()), doc.GetAllocator());
+        doc.AddMember("state", rapidjson::StringRef(state.c_str()), doc.GetAllocator());
+        doc.AddMember("begin_time", rapidjson::StringRef(begin_time.c_str()), doc.GetAllocator());
+        doc.AddMember("end_time", rapidjson::StringRef(end_time.c_str()), doc.GetAllocator());
+        rapidjson::StringBuffer strBuf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+        doc.Accept(writer);
+	    string json_str = strBuf.GetString();
+        return json_str;
+    }
+};
+
+struct TransactionLogs
+{
+private:
+    int totalSize;
+    int totalPage;
+    vector<struct TransactionLogInfo> list;
+public:
+    TransactionLogs() 
+    {
+        totalSize = 0;
+        totalPage = 0;
+    }
+    TransactionLogs(int _totalSize, int _totalPage)
+    {
+        totalSize = _totalSize;
+        totalPage = _totalPage;
+    }
+    void setTotalSize(int _totalSize)
+    {
+        totalSize = _totalSize;
+    }
+    void setTotalPage(int _totalPage)
+    {
+        totalPage = _totalPage;
+    }
+    int getTotalSize() 
+    {
+        return totalSize;
+    }
+    int getTotalPage()
+    {
+        return totalPage;
+    }
+    void addTransactionLogInfo(const string & json_str)
+    {
+        TransactionLogInfo item(json_str);
+        list.push_back(item);
+    }
+    vector<struct TransactionLogInfo> getTransactionLogInfoList()
+    {
+        return list;
+    }
+};
+
 struct PFNInfo
 {
 private:
-    std::string funName;
-    std::string funDesc;
-    std::string funArgs;
-    std::string funBody;
-    std::string funSubs;
-    std::string funStatus;
-    std::string funReturn;
-    std::string lastTime;
+    std::string fun_name;
+    std::string fun_desc;
+    std::string fun_args;
+    std::string fun_body;
+    std::string fun_subs;
+    std::string fun_status;
+    std::string fun_return;
+    std::string last_time;
 public:
     PFNInfo() 
     {
-        funName = "";
-        funDesc = "";
-        funArgs = "";
-        funBody = "";
-        funSubs = "";
-        funStatus = "";
-        funReturn = "";
-        lastTime = "";
+        fun_name = "";
+        fun_desc = "";
+        fun_args = "";
+        fun_body = "";
+        fun_subs = "";
+        fun_status = "";
+        fun_return = "";
+        last_time = "";
     };
-    PFNInfo(string _funName, string _funDesc, string _funArgs, string _funBody, string _funSubs,string _funStatus,string _funReturn,string _lastTime)
+    PFNInfo(string _fun_name, string _fun_desc, string _fun_args, string _fun_body, string _fun_subs,string _fun_status,string _fun_return,string _last_time)
     {
-        funName = _funName;
-        funDesc = _funDesc;
-        funArgs = _funArgs;
-        funBody = _funBody;
-        funSubs = _funSubs;
-        funStatus = _funStatus;
-        funReturn = _funReturn;
-        lastTime = _lastTime;
+        fun_name = _fun_name;
+        fun_desc = _fun_desc;
+        fun_args = _fun_args;
+        fun_body = _fun_body;
+        fun_subs = _fun_subs;
+        fun_status = _fun_status;
+        fun_return = _fun_return;
+        last_time = _last_time;
     }
     PFNInfo(string json_str) 
     {
@@ -617,53 +718,53 @@ public:
         doc.SetObject();
         if(!doc.Parse(json_str.c_str()).HasParseError())
         {
-            if (doc.HasMember("fun_name"))
-                funName = doc["fun_name"].GetString();
-            if (doc.HasMember("fun_desc"))
-                funDesc = doc["fun_desc"].GetString();
-            if (doc.HasMember("fun_args"))
-                funArgs = doc["fun_args"].GetString();
-            if (doc.HasMember("fun_body"))
-                funBody = doc["fun_body"].GetString();
-            if (doc.HasMember("fun_subs"))
-                funSubs = doc["fun_subs"].GetString();
-            if (doc.HasMember("fun_status"))
-                funStatus = doc["fun_status"].GetString();
-            if (doc.HasMember("fun_return"))
-                funReturn = doc["fun_return"].GetString();
-            if (doc.HasMember("last_time"))
-                lastTime = doc["last_time"].GetString();
+            if (doc.HasMember("funName") && doc["funName"].IsString())
+                fun_name = doc["funName"].GetString();
+            if (doc.HasMember("funDesc") && doc["funDesc"].IsString())
+                fun_desc = doc["funDesc"].GetString();
+            if (doc.HasMember("funArgs") && doc["funArgs"].IsString())
+                fun_args = doc["funArgs"].GetString();
+            if (doc.HasMember("funBody") && doc["funBody"].IsString())
+                fun_body = doc["funBody"].GetString();
+            if (doc.HasMember("funSubs") && doc["funSubs"].IsString())
+                fun_subs = doc["funSubs"].GetString();
+            if (doc.HasMember("funStatus") && doc["funStatus"].IsString())
+                fun_status = doc["funStatus"].GetString();
+            if (doc.HasMember("funReturn") && doc["funReturn"].IsString())
+                fun_return = doc["funReturn"].GetString();
+            if (doc.HasMember("lastTime") && doc["lastTime"].IsString())
+                last_time = doc["lastTime"].GetString();
             //doc.Clear();
         }
     }
-    std::string getFunName() {return funName;}
-    std::string getFunDesc() {return funDesc;}
-    std::string getFunArgs() {return funArgs;}
-    std::string getFunBody() {return funBody;}
-    std::string getFunSubs() {return funSubs;}
-    std::string getFunStatus() {return funStatus;}
-    std::string getFunReturn() {return funReturn;}
-    std::string getLastTime() {return lastTime;}
-    void setFunName(string value) {funName = value;}
-    void setFunDesc(string value) {funDesc = value;}
-    void setFunArgs(string value) {funArgs = value;}
-    void setFunBody(string value) {funBody = value;}
-    void setFunSubs(string value) {funSubs = value;}
-    void setFunStatus(string value) {funStatus = value;}
-    void setFunReturn(string value) {funReturn = value;}
-    void setLastTime(string value) {lastTime = value;}
+    std::string getFunName() {return fun_name;}
+    std::string getFunDesc() {return fun_desc;}
+    std::string getFunArgs() {return fun_args;}
+    std::string getFunBody() {return fun_body;}
+    std::string getFunSubs() {return fun_subs;}
+    std::string getFunStatus() {return fun_status;}
+    std::string getFunReturn() {return fun_return;}
+    std::string getLastTime() {return last_time;}
+    void setFunName(string value) {fun_name = value;}
+    void setFunDesc(string value) {fun_desc = value;}
+    void setFunArgs(string value) {fun_args = value;}
+    void setFunBody(string value) {fun_body = value;}
+    void setFunSubs(string value) {fun_subs = value;}
+    void setFunStatus(string value) {fun_status = value;}
+    void setFunReturn(string value) {fun_return = value;}
+    void setLastTime(string value) {last_time = value;}
     string toJSON()
     {
         rapidjson::Document doc;
         doc.SetObject();
-        doc.AddMember("fun_name", rapidjson::StringRef(funName.c_str()), doc.GetAllocator());
-        doc.AddMember("fun_desc", rapidjson::StringRef(funDesc.c_str()), doc.GetAllocator());
-        doc.AddMember("fun_args", rapidjson::StringRef(funArgs.c_str()), doc.GetAllocator());
-        doc.AddMember("fun_body", rapidjson::StringRef(funBody.c_str()), doc.GetAllocator());
-        doc.AddMember("fun_subs", rapidjson::StringRef(funSubs.c_str()), doc.GetAllocator());
-        doc.AddMember("fun_status", rapidjson::StringRef(funStatus.c_str()), doc.GetAllocator());
-        doc.AddMember("fun_return", rapidjson::StringRef(funReturn.c_str()), doc.GetAllocator());
-        doc.AddMember("last_time", rapidjson::StringRef(lastTime.c_str()), doc.GetAllocator());
+        doc.AddMember("funName", rapidjson::StringRef(fun_name.c_str()), doc.GetAllocator());
+        doc.AddMember("funDesc", rapidjson::StringRef(fun_desc.c_str()), doc.GetAllocator());
+        doc.AddMember("funArgs", rapidjson::StringRef(fun_args.c_str()), doc.GetAllocator());
+        doc.AddMember("funBody", rapidjson::StringRef(fun_body.c_str()), doc.GetAllocator());
+        doc.AddMember("funSubs", rapidjson::StringRef(fun_subs.c_str()), doc.GetAllocator());
+        doc.AddMember("funStatus", rapidjson::StringRef(fun_status.c_str()), doc.GetAllocator());
+        doc.AddMember("funReturn", rapidjson::StringRef(fun_return.c_str()), doc.GetAllocator());
+        doc.AddMember("lastTime", rapidjson::StringRef(last_time.c_str()), doc.GetAllocator());
         rapidjson::StringBuffer strBuf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
         doc.Accept(writer);
@@ -672,14 +773,14 @@ public:
     }
     void copyFrom(struct PFNInfo &pfn_info)
     {
-        funName = pfn_info.getFunName();
-        funDesc = pfn_info.getFunDesc();
-        funArgs = pfn_info.getFunArgs();
-        funBody = pfn_info.getFunBody();
-        funSubs = pfn_info.getFunSubs();
-        funStatus = pfn_info.getFunStatus();
-        funReturn = pfn_info.getFunReturn();
-        lastTime = pfn_info.getLastTime();
+        fun_name = pfn_info.getFunName();
+        fun_desc = pfn_info.getFunDesc();
+        fun_args = pfn_info.getFunArgs();
+        fun_body = pfn_info.getFunBody();
+        fun_subs = pfn_info.getFunSubs();
+        fun_status = pfn_info.getFunStatus();
+        fun_return = pfn_info.getFunReturn();
+        last_time = pfn_info.getLastTime();
     }
 };
 
@@ -730,7 +831,6 @@ public:
 class APIUtil
 {
 private:
-        
     string system_path = "data/system/system.nt";
     string backup_path = "./backups";
     string DB_path = ".";
@@ -755,8 +855,10 @@ private:
     pthread_rwlock_t already_build_map_lock;
     pthread_rwlock_t txn_m_lock;
     pthread_rwlock_t ips_map_lock;
+    string system_username = "system";
     string system_password;
-    int connection_num = 0;
+    string system_password_path;
+    unsigned int connection_num = 0;
     int blackList = 0;
     int whiteList = 0;
     string ipBlackFile = "ipDeny.config";
@@ -764,8 +866,9 @@ private:
     IPWhiteList* ipWhiteList;
     IPBlackList* ipBlackList;
 
-    std::mutex query_log_lock;
-    std::mutex access_log_lock;
+    pthread_rwlock_t query_log_lock;
+    pthread_rwlock_t access_log_lock;
+    pthread_rwlock_t transactionlog_lock;
 
     bool ip_check(string ip);
     bool ip_error_num_check(string ip);
@@ -776,7 +879,7 @@ private:
 public:
     APIUtil();
     ~APIUtil();
-    int initialize(const std::string db_name, bool load_csr);
+    int initialize(const std::string port, const std::string db_name, bool load_csr);
     bool trywrlock_database_map();
     bool unlock_database_map();
     bool trywrlock_already_build_map();
@@ -809,13 +912,11 @@ public:
     bool refresh_sys_db();
     std::string query_sys_db(const std::string& sparql);
     bool build_db_user_privilege(std::string db_name, std::string username);
-    std::string get_moniter_info(Database* database, DatabaseInfo* dbinfo);
-    //todo
     txn_id_t get_txn_id(string db_name, string user);
     bool insert_txn_managers(Database* current_database, std::string database);
     bool find_txn_managers(std::string db_name);
     bool db_checkpoint(string db_name);
-    string db_checkpoint_all();
+    // string db_checkpoint_all();
     bool delete_from_databases(string db_name);
     bool delete_from_already_build(string db_name);
     //used by drop
@@ -829,7 +930,7 @@ public:
     bool user_add(string username, string password);
     bool user_delete(string username, string password);
     bool user_pwd_alert(string username, string password);
-    string get_user_info();
+    void get_user_info(vector<struct DBUserInfo *> *_users);
     int clear_user_privilege(string username);
     string check_access_ip(string ip);
     bool ip_save(string ip_type, vector<string> ipVector);
@@ -841,6 +942,13 @@ public:
     // for query log
     void get_query_log(const string &date, int &page_no, int &page_size, struct DBQueryLogs *dbQueryLogs);
     void write_query_log(struct DBQueryLogInfo *queryLogInfo);
+    // for transaction log
+    void init_transactionlog();
+	int add_transactionlog(std::string db_name, std::string user, std::string TID,  std::string begin_time, std::string status = "RUNNING",  std::string end_time = "INF");
+	int delete_transactionlog(std::string db_name, std::string TID);
+	int update_transactionlog(std::string db_name, std::string status, std::string end_time);
+	void get_transactionlog(int &page_no, int &page_size, struct TransactionLogs *dbQueryLogs);
+	void abort_transactionlog(long end_time);
     // for personalized function
     void fun_query(const std::string &fun_name, const string &fun_status, const string &username, struct PFNInfos *pfn_infos);
     void fun_create(const std::string &username, struct PFNInfo *pfn_info);
@@ -850,11 +958,10 @@ public:
     void fun_review(const std::string &username, struct PFNInfo *pfn_info);
     // for data get
     string get_system_path();
-    void set_system_path(string sys_path);
     string get_backup_path();
-    void set_backup_path(string bup_path);
     string get_Db_path();
-    void set_Db_path(string db_path);
     unsigned int get_max_output_size();
     string get_root_username();
+    string get_system_username();
+    unsigned int get_connection_num();
 };

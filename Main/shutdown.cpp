@@ -37,13 +37,13 @@ string int2string(int n)
 int main(int argc, char *argv[])
 {
 	string port;
-
-    if (argc < 2)
+	string type;
+	if (argc < 2)
 	{
 		/*cout << "please input the complete command:\t" << endl;
 		cout << "\t bin/gadd -h" << endl;*/
-		//Log.Error("Invalid arguments! Input \"bin/gbuild -h\" for help.");
-		cout<<"Invalid arguments! Input \"bin/shutdown -h\" for help."<<endl;
+		// Log.Error("Invalid arguments! Input \"bin/gbuild -h\" for help.");
+		cout << "Invalid arguments! Input \"bin/shutdown -h\" for help." << endl;
 		return 0;
 	}
 	else if (argc == 2)
@@ -54,42 +54,55 @@ int main(int argc, char *argv[])
 			cout << endl;
 			cout << "Shutdown the ghttp server" << endl;
 			cout << endl;
-			cout << "Usage:\tbin/shutdown -p [port] " << endl;
+			cout << "Usage:\tbin/shutdown -p [port] -t [type]" << endl;
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-p,--port,\t\t the ghttp  server listen port . " << endl;
-	
+			cout << "\t-p,--port,\t\t the ghttp  server listen port. " << endl;
+			cout << "\t-t,--type,\t\t the server type. grpc or ghttp, Default value is grpc." << endl;
+
 			cout << endl;
 			return 0;
 		}
 		else
 		{
-			//cout << "the command is not complete." << endl;
-			cout<<"Invalid arguments! Input \"bin/shutdown -h\" for help."<<endl;
+			// cout << "the command is not complete." << endl;
+			cout << "Invalid arguments! Input \"bin/shutdown -h\" for help." << endl;
 			return 0;
 		}
 	}
 	else
 	{
 		port = Util::getArgValue(argc, argv, "p", "port");
-	
-	fstream ofp;
-	ofp.open("system.db/password" + port + ".txt", ios::in);
-	ofp >> system_password;
-	ofp.close();
-	GstoreConnector gc;
-	string res;
-	int ret;
-	string postdata="{\"username\":\"system\",\"password\":\""+system_password+"\"}";
-	//ret = gc.Get("http://127.0.0.1:" + port + "/shutdown/?username=" + SYSTEM_USERNAME + "&password=" + system_password, res);
-	ret=gc.Post("http://127.0.0.1:" + port + "/shutdown",postdata,res);
-	if(res=="")
-	{
-		res="the Server is stopped successfully!";
-	}
-	cout<<"response:"<<res<<endl;
-	return 0;
+		type = Util::getArgValue(argc, argv, "t", "type");
+		
+
+		fstream ofp;
+		ofp.open("system.db/password" + port + ".txt", ios::in);
+		ofp >> system_password;
+		ofp.close();
+		GstoreConnector gc;
+		string res;
+		int ret;
+		string postdata = "{\"username\":\"system\",\"password\":\"" + system_password + "\"}";
+		// ret = gc.Get("http://127.0.0.1:" + port + "/shutdown/?username=" + SYSTEM_USERNAME + "&password=" + system_password, res);
+		string strUrl = "http://127.0.0.1:" + port;
+		if (type == "ghttp")
+		{
+			strUrl = strUrl + "/shutdown";
+		}
+		else
+		{
+			strUrl = strUrl + "/grpc/shutdown";
+		}
+		ret = gc.Post(strUrl, postdata, res);
+		cout << "post result:" << ret << endl;
+		if (res == "")
+		{
+			res = "the Server is stopped successfully!";
+		}
+		cout << "response: " << res << endl;
+		return 0;
 	}
 
 	// if(argc == 1)

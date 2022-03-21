@@ -1,21 +1,28 @@
 /*
  * @Author: your name
  * @Date: 2022-02-28 10:31:06
- * @LastEditTime: 2022-03-10 20:10:54
+ * @LastEditTime: 2022-03-21 10:46:57
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.cpp
  */
 #include "grpcImpl.h"
+#define TEST_IP ""
 
 GrpcImpl::GrpcImpl(int argc, char *argv[])
 {
     apiUtil = new APIUtil();
     string db_name = "";
+    string port = "";
     db_name = Util::getArgValue(argc, argv, "db", "database");
+    port = Util::getArgValue(argc, argv, "p", "port", "9000");
     bool load_csr = false;
     load_csr = Util::string2int(Util::getArgValue(argc, argv, "c", "csr", "0"));
-    apiUtil->initialize(db_name, load_csr);
+    int ret = apiUtil->initialize(port, db_name, load_csr);
+    if(ret == -1)
+    {
+        _exit(1);
+    }
 }
 
 GrpcImpl::~GrpcImpl()
@@ -123,10 +130,6 @@ void GrpcImpl::api(CommonRequest *request, CommonResponse *response, srpc::RPCCo
     {
         task = WFTaskFactory::create_go_task("batch_remove_task", &GrpcImpl::batch_remove_task, this, request, response, ctx);
     }
-    else if ( operation == "stop")
-    {
-        task = WFTaskFactory::create_go_task("batch_remove_task", &GrpcImpl::shutdown_task, this, request, response, ctx);
-    }
     else if ( operation == "usermanage")
     {
         task = WFTaskFactory::create_go_task("user_manage_task", &GrpcImpl::user_manage_task, this, request, response, ctx);
@@ -155,27 +158,15 @@ void GrpcImpl::api(CommonRequest *request, CommonResponse *response, srpc::RPCCo
     {
         task = WFTaskFactory::create_go_task("ip_manage_task", &GrpcImpl::ip_manage_task, this, request, response, ctx);
     }
-    else if (operation == "fun_create")
+    else if (operation == "funquery")
     {
-        task = WFTaskFactory::create_go_task("fun_create_task", &GrpcImpl::fun_create_task, this, request, response, ctx);
+        task = WFTaskFactory::create_go_task("fun_query_task", &GrpcImpl::fun_query_task, this, request, response, ctx);
     }
-    else if (operation == "fun_query")
+    else if (operation == "funcudb")
     {
-        task = WFTaskFactory::create_go_task("fun_retrieve_task", &GrpcImpl::fun_retrieve_task, this, request, response, ctx);
+        task = WFTaskFactory::create_go_task("fun_cudb_task", &GrpcImpl::fun_cudb_task, this, request, response, ctx);
     }
-    else if (operation == "fun_update")
-    {
-        task = WFTaskFactory::create_go_task("fun_update_task", &GrpcImpl::fun_update_task, this, request, response, ctx);
-    }
-    else if (operation == "fun_delete")
-    {
-        task = WFTaskFactory::create_go_task("fun_delete_task", &GrpcImpl::fun_delete_task, this, request, response, ctx);
-    }
-    else if (operation == "fun_build")
-    {
-        task = WFTaskFactory::create_go_task("fun_build_task", &GrpcImpl::fun_build_task, this, request, response, ctx);
-    }
-    else if (operation == "fun_review")
+    else if (operation == "funreview")
     {
         task = WFTaskFactory::create_go_task("fun_review_task", &GrpcImpl::fun_review_task, this, request, response, ctx);
     }
@@ -187,6 +178,19 @@ void GrpcImpl::api(CommonRequest *request, CommonResponse *response, srpc::RPCCo
         apiUtil->write_access_log(operation, remoteIP, response->statuscode(), response->statusmsg());
     });
     ctx->get_series()->push_back(task);
+}
+
+void GrpcImpl::shutdown(CommonRequest *request, CommonResponse *response, srpc::RPCContext *ctx)
+{
+    string remoteIP = ctx->get_remote_ip();
+    string operation = "shutdown";
+    std::cout << "------------------------ grpc-api ------------------------" << std::endl;
+    std::cout << "seq_id: " << ctx->get_seqid() << std::endl;
+    std::cout << "remote_ip: " <<  remoteIP << std::endl;
+    std::cout << "operation: " << operation << std::endl;
+    std::cout << "request_time: " << Util::get_date_time() << std::endl;
+    std::cout << "----------------------------------------------------------" << std::endl;
+    shutdown_task(request, response, ctx);
 }
 
 void GrpcImpl::build_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
@@ -292,26 +296,25 @@ void GrpcImpl::build_task(CommonRequest *&request, CommonResponse *&response, sr
             response->set_statusmsg(error);
         }
     }
-    catch (...)
+    catch (std::exception &e)
     {
-        string content = "unknow error";
-        std::cout << "build failed:" << content << endl;
+        string content = "Build failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("build failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
 void GrpcImpl::load_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
-    {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
     try
     {
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
         string username = request->username();
         string password = request->password();
         string encryption = request->encryption();
@@ -362,7 +365,7 @@ void GrpcImpl::load_task(CommonRequest *&request, CommonResponse *&response, srp
                     cout<<"when load insert_txn_managers fail"<<endl;
                 }
                 response->set_statuscode(0);
-                response->set_statusmsg("success");
+                response->set_statusmsg("Database loaded successfully.");
             }
             else
             {
@@ -381,40 +384,35 @@ void GrpcImpl::load_task(CommonRequest *&request, CommonResponse *&response, srp
             response->set_statusmsg("the database already load yet.");
         }
     }
-    catch (const std::string &exception_msg)
+    catch (std::exception &e)
     {
-        std::cout << "load failed: " << exception_msg;
+        string content = "Load failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("load failed: " + exception_msg);
-    }
-    catch (const std::runtime_error &e1)
-    {
-        string content = e1.what();
-        std::cout << "load failed:" << content << endl;
-        response->set_statuscode(1005);
-        response->set_statusmsg("load failed: " + content);
-    }
-    catch (...)
-    {
-        string content = "unknow error";
-        std::cout << "load failed:" << content << endl;
-        response->set_statuscode(1005);
-        response->set_statusmsg("load failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
 void GrpcImpl::check_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string success="the grpc server is running...";
+        response->set_statuscode(0);
+        response->set_statusmsg(success);
     }
-    string success="the ghttp server is running...";
-    response->set_statuscode(0);
-    response->set_statusmsg(success);
+    catch (std::exception &e)
+    {
+        string content = "Check failed:" + string(e.what());
+        response->set_statuscode(1005);
+        response->set_statusmsg(content);
+    }
 }
 
 void GrpcImpl::monitor_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
@@ -428,94 +426,69 @@ void GrpcImpl::monitor_task(CommonRequest *&request, CommonResponse *&response, 
             response->set_statusmsg(ipCheckResult);
             return;
         }
-        string error = apiUtil->check_param_value("db_name", request->db_name());
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        string db_name = request->db_name();
+        string error = apiUtil->check_param_value("db_name", db_name);
         if( error.empty() == false)
         {
             response->set_statuscode(1003);
             response->set_statusmsg(error);
             return;
         }
-        if(apiUtil->check_db_exist(request->db_name()) == false)
+        if(apiUtil->check_db_exist(db_name) == false)
         {
-            error = "the database [" + request->db_name() + "] not built yet.";
+            error = "the database [" + db_name + "] not built yet.";
             response->set_statuscode(1004);
             response->set_statusmsg(error);
             return;
         }
-        if(!apiUtil->check_already_load(request->db_name()))
+        Database *current_database = apiUtil->get_database(db_name);
+		if(current_database == NULL)
         {
             error = "Database not load yet.";
             response->set_statuscode(1004);
             response->set_statusmsg(error);
             return;
         }
-        if(apiUtil->trywrlock_databaseinfo(apiUtil->get_databaseinfo(request->db_name())) == false)
+        DatabaseInfo *database_info = apiUtil->get_databaseinfo(db_name);
+		if(apiUtil->tryrdlock_databaseinfo(database_info) == false)
         {
             error = "Unable to monitor due to loss of lock";
             response->set_statuscode(1007);
             response->set_statusmsg(error);
             return;
         }
-        string result = apiUtil->get_moniter_info(apiUtil->get_database(request->db_name()), apiUtil->get_databaseinfo(request->db_name()));
-        apiUtil->unlock_databaseinfo(apiUtil->get_databaseinfo(request->db_name()));
-        rapidjson::Document doc;
-        doc.SetObject();
-        doc.Parse(result.c_str());
-        if (doc.HasParseError())
-        {
-            cout << "parse already build data error: " << doc.GetParseError() << endl;
-            response->set_statuscode(1005);
-            response->set_statusmsg("Get the database infomation error!");
-            return;
-        }
-        Monitor monitor;
-        if (doc.HasMember("database"))
-        {
-            monitor.set_database(doc["database"].GetString());
-        }
-        if (doc.HasMember("creator"))
-        {
-            monitor.set_creator(doc["creator"].GetString());
-        }
-        if (doc.HasMember("built_time"))
-        {
-            monitor.set_built_time(doc["built_time"].GetString());
-        }
-        if (doc.HasMember("triple num"))
-        {
-            monitor.set_triple_num(doc["triple num"].GetString());
-        }
-        if (doc.HasMember("literal num"))
-        {
-            monitor.set_literal_num(doc["literal num"].GetInt());
-        }
-        if (doc.HasMember("subject num"))
-        {
-            monitor.set_subject_num(doc["subject num"].GetInt());
-        }
-        if (doc.HasMember("predicate num"))
-        {
-            monitor.set_predicate_num(doc["predicate num"].GetInt());
-        }
-        if (doc.HasMember("connection num"))
-        {
-            monitor.set_connection_num(doc["connection num"].GetInt());
-        }
-        if (doc.HasMember("entity num"))
-        {
-            monitor.set_entity_num(doc["entity num"].GetInt());
-        }
-        google::protobuf::Any *any = response->add_responsebody();
-        any->PackFrom(monitor);
+        string creator = database_info->getCreator();
+		string time = database_info->getTime();
+		apiUtil->unlock_databaseinfo(database_info);
         response->set_statuscode(0);
         response->set_statusmsg("success");
+        response->set_creator(creator);
+        response->set_database(current_database->getName());
+        response->set_builttime(time);
+        char tripleNumString[128];
+        sprintf(tripleNumString, "%lld", current_database->getTripleNum());
+        response->set_triplenum(tripleNumString);
+        response->set_entitynum(current_database->getEntityNum());
+        response->set_literalnum(current_database->getLiteralNum());
+        response->set_subjectnum(current_database->getSubNum());
+        response->set_predicatenum(current_database->getPreNum());
+        response->set_connectionnum(apiUtil->get_connection_num());
     }
-    catch (...)
+    catch (std::exception &e)
     {
-        string content = "unknow error";
-        std::cout << "moniter failed:" << content << endl;
+        string content = "Moniter failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("moniter failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -528,6 +501,16 @@ void GrpcImpl::unload_task(CommonRequest *&request, CommonResponse *&response, s
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string db_name = request->db_name();
@@ -582,12 +565,11 @@ void GrpcImpl::unload_task(CommonRequest *&request, CommonResponse *&response, s
             return;
         }
     }
-    catch (...)
+    catch (std::exception &e)
     {
-        string content = "unknow error";
-        std::cout << "unload failed:" << content << endl;
+        string content = "Unload failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("unload failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -600,6 +582,16 @@ void GrpcImpl::drop_task(CommonRequest *&request, CommonResponse *&response, srp
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string db_name = request->db_name();
@@ -641,12 +633,20 @@ void GrpcImpl::drop_task(CommonRequest *&request, CommonResponse *&response, srp
             string update = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
             apiUtil->update_sys_db(update);
             string cmd;
-            
-            if (request->is_backup() == "false")
+            string is_back = request->is_backup();
+            if (is_back.empty())
+            {
+                is_back = "true";
+            }
+            if (is_back == "false")
+            {
                 cmd = "rm -r " + db_name + ".db";
-            else if (request->is_backup() == "true")
+            }
+            else if (is_back == "true")
+            {
                 cmd = "mv " + db_name + ".db " + db_name + ".bak";
-            cout<<"delete the file: "<<cmd<<endl;
+            }
+            cout<<"delete the file: "<< cmd << endl;
             system(cmd.c_str());
 
             Util::delete_backuplog(db_name);
@@ -655,12 +655,11 @@ void GrpcImpl::drop_task(CommonRequest *&request, CommonResponse *&response, srp
             response->set_statusmsg(success);
         }
     }
-    catch (...)
+    catch (std::exception &e)
     {
-        string content = "unknow error";
-        std::cout << "drop failed:" << content << endl;
+        string content = "Drop failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("drop failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -675,6 +674,7 @@ void GrpcImpl::show_task(CommonRequest *&request, CommonResponse *&response, srp
             response->set_statusmsg(ipCheckResult);
             return;
         }
+        
         string username = request->username();
         string password = request->password();
         string encryption = request->encryption();
@@ -694,7 +694,7 @@ void GrpcImpl::show_task(CommonRequest *&request, CommonResponse *&response, srp
             DBInfo dbInfo;
             dbInfo.set_database(db_ptr->getName());
             dbInfo.set_creator(db_ptr->getCreator());
-            dbInfo.set_built_time(db_ptr->getTime());
+            dbInfo.set_builttime(db_ptr->getTime());
             dbInfo.set_status(db_ptr->getStatus());
             google::protobuf::Any *any = response->add_responsebody();
             any->PackFrom(dbInfo);
@@ -703,12 +703,11 @@ void GrpcImpl::show_task(CommonRequest *&request, CommonResponse *&response, srp
         response->set_statuscode(0);
         response->set_statusmsg("Get the database list successfully!");
     }
-    catch (...)
+    catch (std::exception &e)
     {
-        string content = "unknow error";
-        std::cout << "show failed:" << content << endl;
+        string content = "Show failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("show failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -721,6 +720,16 @@ void GrpcImpl::backup_task(CommonRequest *&request, CommonResponse *&response, s
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string db_name = request->db_name();
@@ -796,12 +805,11 @@ void GrpcImpl::backup_task(CommonRequest *&request, CommonResponse *&response, s
             response->set_backupfilepath(_path);
         }
     }
-    catch (...)
+    catch (std::exception &e)
     {
-        string content = "unknow error";
-        std::cout << "backup failed:" << content << endl;
+        string content = "Backup failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("backup failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -816,8 +824,17 @@ void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, 
             response->set_statusmsg(ipCheckResult);
             return;
         }
-        string db_name = request->db_name();
         string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        string db_name = request->db_name();
         string error = apiUtil->check_param_value("db_name", db_name);
         if (error.empty() == false)
         {
@@ -849,12 +866,12 @@ void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, 
                 response->set_statusmsg(error);
                 return;
             }
-            if (apiUtil->add_privilege(username, "query", db_name) == 0 || 
-            apiUtil->add_privilege(username, "load", db_name) == 0 || 
-            apiUtil->add_privilege(username, "unload", db_name) == 0 || 
-            apiUtil->add_privilege(username, "backup", db_name) == 0 || 
-            apiUtil->add_privilege(username, "restore", db_name) == 0 || 
-            apiUtil->add_privilege(username, "export", db_name) == 0)
+            if (apiUtil->add_privilege(username, "query", db_name) == 0 ||
+                apiUtil->add_privilege(username, "load", db_name) == 0 ||
+                apiUtil->add_privilege(username, "unload", db_name) == 0 ||
+                apiUtil->add_privilege(username, "backup", db_name) == 0 ||
+                apiUtil->add_privilege(username, "restore", db_name) == 0 ||
+                apiUtil->add_privilege(username, "export", db_name) == 0)
             {
                 string error = "add query or load or unload or backup or restore or export privilege failed.";
                 response->set_statuscode(1006);
@@ -911,12 +928,11 @@ void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, 
             response->set_statusmsg(success);
         }
     }
-    catch (...)
+    catch (std::exception &e)
     {
-        string content = "unknow error";
-        std::cout << "restore failed:" << content << endl;
+        string content = "Restore failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("restore failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -1110,12 +1126,19 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
             
             // record each query operation, including the sparql and the answer number
             // accurate down to microseconds
-            std::string remoteIP = ctx->get_remote_ip();
-            long ansNum = rs.ansNum;
-            int statusCode = response->statuscode();
-            struct DBQueryLogInfo* queryLogInfo = new DBQueryLogInfo(query_start_time, remoteIP, sparql, ansNum, format, filename, statusCode, query_time);
-            apiUtil->write_query_log(queryLogInfo);
-            delete queryLogInfo;
+            std::string remote_ip = ctx->get_remote_ip();
+            if (remote_ip != TEST_IP)
+            {
+                long ans_num = rs.ansNum;
+                int status_code = 0;
+                string file_name = "";
+                if (format.find("file") != string::npos)
+                {
+                    file_name = string(filename.c_str());
+                }
+                struct DBQueryLogInfo queryLogInfo(query_start_time, remote_ip, sparql, ans_num, format, file_name, status_code, query_time);
+                apiUtil->write_query_log(&queryLogInfo);
+            }
         }
         else
         {
@@ -1140,12 +1163,11 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
         apiUtil->unlock_database(db_name);
         Util::formatPrint("query complete!");
     }
-    catch (...)
+    catch (std::exception &e)
     {
-        string content = "unknow error";
-        std::cout << "query failed:" << content << endl;
+        string content = "Query failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("query failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -1158,6 +1180,16 @@ void GrpcImpl::export_task(CommonRequest *&request, CommonResponse *&response, s
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string db_name = request->db_name();
@@ -1184,12 +1216,12 @@ void GrpcImpl::export_task(CommonRequest *&request, CommonResponse *&response, s
         if(db_path[db_path.length()-1] != '/')
         {
             db_path = db_path + "/";
-        }	
-        if(Util::dir_exist(db_path)==false)
+        }
+        if(Util::dir_exist(db_path) == false)
         {
             Util::create_dir(db_path);
         }	
-        db_path = db_path + db_name +"_"+Util::get_timestamp()+ ".nt";
+        db_path = db_path + db_name +"_" + Util::get_timestamp() + ".nt";
         //check if database named [db_name] is already load
         if(!apiUtil->check_already_load(db_name))
         {
@@ -1205,7 +1237,7 @@ void GrpcImpl::export_task(CommonRequest *&request, CommonResponse *&response, s
         ResultSet rs;
         Util::formatPrint("db_path: " + db_path);
         FILE* ofp = fopen(db_path.c_str(), "w");
-        int ret = current_database->query(sparql, rs, ofp, true, true);
+        int ret = current_database->query(sparql, rs, ofp, false, false);
         fflush(ofp);
         fclose(ofp);
         ofp = NULL;
@@ -1217,35 +1249,53 @@ void GrpcImpl::export_task(CommonRequest *&request, CommonResponse *&response, s
         response->set_statuscode(0);
         response->set_statusmsg(success);
         response->set_filepath(db_path);
-        return;
     }
-    catch (...)
+    catch (std::exception &e)
     {
-        string content = "unknow error";
-        std::cout << "export failed:" << content << endl;
+        string content = "Export failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("export failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
 void GrpcImpl::login_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
-    }
-    string success="login successfully.";
-    
-    response->set_statuscode(0);
-    response->set_statusmsg(success);
-    string version = Util::getConfigureValue("version");
-    response->set_coreversion(version);
-    string licensetype=Util::getConfigureValue("licensetype");
-    response->set_licensetype(licensetype);
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if (ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        string success = "login successfully.";
 
+        response->set_statuscode(0);
+        response->set_statusmsg(success);
+        string version = Util::getConfigureValue("version");
+        response->set_coreversion(version);
+        string licensetype = Util::getConfigureValue("licensetype");
+        response->set_licensetype(licensetype);
+        string cur_path = Util::get_cur_path();
+        response->set_rootpath(cur_path);
+    }
+    catch (std::exception &e)
+    {
+        string content = "Login failed:" + string(e.what());
+        response->set_statuscode(1005);
+        response->set_statusmsg(content);
+    }
 }
 
 void GrpcImpl::begin_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
@@ -1257,6 +1307,16 @@ void GrpcImpl::begin_task(CommonRequest *&request, CommonResponse *&response, sr
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string db_name = request->db_name();
@@ -1310,12 +1370,11 @@ void GrpcImpl::begin_task(CommonRequest *&request, CommonResponse *&response, sr
         response->set_statusmsg("transaction begin success");
         response->set_tid(result_tid);
     }
-    catch (...)
+    catch (std::exception &e) 
     {
-        string content = "unknow error";
-        std::cout << "begin failed:" << content << endl;
+        string content = "Transaction begin failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("begin failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -1328,6 +1387,16 @@ void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, s
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string db_name = request->db_name();
@@ -1407,21 +1476,37 @@ void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, s
             }
             else
             {
-                //TODO res = rs.to_JSON() need convert to query result object
-                cout << res <<endl;
-                Value& a = resDoc["head"]["vars"];
+                Value& vars = resDoc["head"]["vars"];
+                Value& link = resDoc["head"]["link"];
                 QueryHeadInfo *head = new QueryHeadInfo();
                 QueryResultInfo *results = new QueryResultInfo();
-                for(int i = 0; i<a.Size(); i++)
+                for(int i = 0; i<vars.Size(); i++)
                 {
                     head->add_vars(resDoc["head"]["vars"][i].GetString());
                 }
-                Value& b = resDoc["results"]["bindings"];
-                for(int i = 0; i<b.Size(); i++)
+                for (size_t i = 0; i < link.Size(); i++)
                 {
-                    results->add_bindings(resDoc["results"]["bindings"][i].GetString());
+                    head->add_link(resDoc["head"]["link"][i].GetString());
                 }
                 
+                Value& bindings = resDoc["results"]["bindings"];
+                for(int i = 0; i<bindings.Size(); i++)
+                {
+                     Value& obj = resDoc["results"]["bindings"][i];
+                     if (obj.IsObject())
+                     {
+                        StringBuffer resBuffer;
+	                    rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+                        obj.Accept(resWriter);
+                        string binding_str = resBuffer.GetString();
+                        cout << "bindings["<< i << "]=" << binding_str << endl;
+                        results->add_bindings(binding_str);
+                     } 
+                     else if (obj.IsString())
+                     {
+                         results->add_bindings(obj.GetString());
+                     }
+                }
                 response->set_statuscode(0);
                 response->set_statusmsg("success");
                 response->set_allocated_head(head);
@@ -1447,12 +1532,11 @@ void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, s
             response->set_statusmsg(success);
         }
     }
-    catch (...)
+    catch (std::exception &e) 
     {
-        string content = "unknow error";
-        std::cout << "tquery failed:" << content << endl;
+        string content = "Transaction query failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("tquery failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -1465,6 +1549,16 @@ void GrpcImpl::commit_task(CommonRequest *&request, CommonResponse *&response, s
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string db_name = request->db_name();
@@ -1534,12 +1628,11 @@ void GrpcImpl::commit_task(CommonRequest *&request, CommonResponse *&response, s
             response->set_statusmsg(success);
         }
     }
-    catch (...)
+    catch (std::exception &e) 
     {
-        string content = "unknow error";
-        std::cout << "commit failed:" << content << endl;
+        string content = "Commit failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("commit failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -1552,6 +1645,16 @@ void GrpcImpl::rollback_task(CommonRequest *&request, CommonResponse *&response,
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string db_name = request->db_name();
@@ -1621,12 +1724,11 @@ void GrpcImpl::rollback_task(CommonRequest *&request, CommonResponse *&response,
             return;
         }
     }
-    catch (...)
+    catch (std::exception &e) 
     {
-        string content = "unknow error";
-        std::cout << "rollback failed:" << content << endl;
+        string content = "Rollback failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("rollback failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -1639,6 +1741,16 @@ void GrpcImpl::checkpoint_task(CommonRequest *&request, CommonResponse *&respons
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string db_name = request->db_name();
@@ -1693,12 +1805,11 @@ void GrpcImpl::checkpoint_task(CommonRequest *&request, CommonResponse *&respons
             }
         }
     }
-    catch (...)
+    catch (std::exception &e) 
     {
-        string content = "unknow error";
-        std::cout << "checkpoint failed:" << content << endl;
+        string content = "Checkpoint failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("checkpoint failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -1713,6 +1824,16 @@ void GrpcImpl::test_connect_task(CommonRequest *&request, CommonResponse *&respo
             response->set_statusmsg(ipCheckResult);
             return;
         }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
         response->set_statuscode(0);
         response->set_statusmsg("success");
         string version = Util::getConfigureValue("version");
@@ -1720,28 +1841,47 @@ void GrpcImpl::test_connect_task(CommonRequest *&request, CommonResponse *&respo
         string licensetype=Util::getConfigureValue("licensetype");
         response->set_licensetype(licensetype);
     }
-    catch (...)
+    catch (std::exception &e) 
     {
-        string content = "unknow error";
-        std::cout << "testConnect failed:" << content << endl;
+        string content = "Test connect failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("testConnect failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
 void GrpcImpl::core_version_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
-    if(ipCheckResult != "")
+    try
     {
-        response->set_statuscode(1101);
-        response->set_statusmsg(ipCheckResult);
-        return;
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        response->set_statuscode(0);
+        response->set_statusmsg("success");
+        string version = Util::getConfigureValue("version");
+        response->set_coreversion(version);
     }
-    response->set_statuscode(0);
-    response->set_statusmsg("success");
-    string version = Util::getConfigureValue("version");
-    response->set_coreversion(version);
+    catch (std::exception &e) 
+    {
+        string content = "Get CoreVersion failed:" + string(e.what());
+        response->set_statuscode(1005);
+        response->set_statusmsg(content);
+    }
+    
 }
 
 void GrpcImpl::batch_insert_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
@@ -1753,6 +1893,16 @@ void GrpcImpl::batch_insert_task(CommonRequest *&request, CommonResponse *&respo
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string db_name = request->db_name();
@@ -1805,17 +1955,16 @@ void GrpcImpl::batch_insert_task(CommonRequest *&request, CommonResponse *&respo
             apiUtil->unlock_database(db_name);
             response->set_statuscode(0);
             response->set_statusmsg("Batch insert data successfully.");
-            response->set_success_num(Util::int2string(success_num));
+            response->set_successnum(Util::int2string(success_num));
             apiUtil->write_access_log("batchInsert",ctx->get_remote_ip(),0,"Batch insert data successfully.");
             return;
         }
     }
-    catch (...)
+    catch (std::exception &e) 
     {
-        string content = "unknow error";
-        std::cout << "batchInsert failed:" << content << endl;
+        string content = "batchInsert failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("batchInsert failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -1828,6 +1977,16 @@ void GrpcImpl::batch_remove_task(CommonRequest *&request, CommonResponse *&respo
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string db_name = request->db_name();
@@ -1880,22 +2039,52 @@ void GrpcImpl::batch_remove_task(CommonRequest *&request, CommonResponse *&respo
             apiUtil->unlock_database(db_name);
             response->set_statuscode(0);
             response->set_statusmsg("Batch remove data successfully.");
-            response->set_success_num(Util::int2string(success_num));
+            response->set_successnum(Util::int2string(success_num));
             apiUtil->write_access_log("batchRemove",ctx->get_remote_ip(),0,"Batch remove data successfully.");
         }
     }
-    catch (...)
+    catch (std::exception &e) 
     {
-        string content = "unknow error";
-        std::cout << "batchRemove failed:" << content << endl;
+        string content = "batchRemove failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("batchRemove failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
 void GrpcImpl::shutdown_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    exit(0);
+    string remote_ip = ctx->get_remote_ip();
+    string ipCheckResult = apiUtil->check_access_ip(remote_ip);
+    if(!ipCheckResult.empty())
+    {
+        response->set_statuscode(1101);
+        response->set_statusmsg(ipCheckResult);
+        return;
+    }
+    string username = request->username();
+    string password = request->password();
+    if (username != apiUtil->get_system_username())
+	{
+		string msg = "You have no rights to stop the server.";
+        response->set_statuscode(1101);
+        response->set_statusmsg(msg);
+		return;
+	}
+    string checkidentityresult = apiUtil->check_server_indentity(password);
+	if (checkidentityresult.empty() == false)
+	{
+        response->set_statuscode(1001);
+        response->set_statusmsg(checkidentityresult);
+		return;
+	}
+	string success = "Server stopped successfully.";
+    response->set_statuscode(0);
+    response->set_statusmsg(success);
+    apiUtil->write_access_log("shutdown", remote_ip, 0, success);
+
+    delete apiUtil;
+
+    _exit(1);
 }
 
 void GrpcImpl::user_manage_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
@@ -1909,40 +2098,50 @@ void GrpcImpl::user_manage_task(CommonRequest *&request, CommonResponse *&respon
             response->set_statusmsg(ipCheckResult);
             return;
         }
-        string type = request->type();
-        string error = "";
         string username = request->username();
         string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        string type = request->type();
+        string msg = "";
+        string op_username = request->op_username();
+        string op_password = request->op_password();
         if(type == "1")//insert user
         {
-            if(username.empty()||password.empty())
+            if(op_username.empty() || op_password.empty())
             {
-                error="the user name and password can not be empty while adding user.";
+                msg = "the user name and password can not be empty while adding user.";
                 response->set_statuscode(1003);
-                response->set_statusmsg(error);
+                response->set_statusmsg(msg);
             }
-            else if(apiUtil->user_add(username,password))
+            else if(apiUtil->user_add(op_username, op_password))
             {
-                error="user add done.";
+                msg = "user add done.";
                 response->set_statuscode(0);
-                response->set_statusmsg(error);
+                response->set_statusmsg(msg);
             }
             else
             {
-                error = "username already existed, add user failed.";
+                msg = "username already existed, add user failed.";
                 response->set_statuscode(1004);
-                response->set_statusmsg(error);
+                response->set_statusmsg(msg);
             }
         }
         else if(type == "2") //delete user
         {
-            if(username == ROOT_USERNAME)
+            if(op_username == apiUtil->get_root_username())
             {
-                error = "you cannot delete root, delete user failed.";
+                msg = "you cannot delete root, delete user failed.";
                 response->set_statuscode(1004);
-                response->set_statusmsg(error);
+                response->set_statusmsg(msg);
             }
-            else if(apiUtil->user_delete(username, password))
+            else if(apiUtil->user_delete(op_username, op_password))
             {
                 response->set_statuscode(0);
                 response->set_statusmsg("delete user done.");
@@ -1955,7 +2154,7 @@ void GrpcImpl::user_manage_task(CommonRequest *&request, CommonResponse *&respon
         }
         else if (type =="3")//alert password
         {
-            if(apiUtil->user_pwd_alert(username, password))
+            if(apiUtil->user_pwd_alert(op_username, op_password))
             {
                 response->set_statuscode(0);
                 response->set_statusmsg("change password done.");
@@ -1972,12 +2171,11 @@ void GrpcImpl::user_manage_task(CommonRequest *&request, CommonResponse *&respon
             response->set_statusmsg("the operation is not support.");
         }
     }
-    catch (...)
+    catch (std::exception &e) 
     {
-        string content = "unknow error";
-        std::cout << "usermanage failed:" << content << endl;
+        string content = "usermanage failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("usermanage failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -1992,63 +2190,50 @@ void GrpcImpl::user_show_task(CommonRequest *&request, CommonResponse *&response
             response->set_statusmsg(ipCheckResult);
             return;
         }
-        string result = apiUtil->get_user_info();
-        if(result != ""){
-            rapidjson::Document doc;
-            doc.SetArray();
-            doc.Parse(result.c_str());
-            size_t len = doc["ResponseBody"].Size();
-            for (size_t i = 0; i < len; i++)
-            {
-
-                UserInfo userInfo;
-                if (doc["ResponseBody"][i].HasMember("username"))
-                    userInfo.set_username(doc["ResponseBody"][i]["username"].GetString());
-
-                if (doc["ResponseBody"][i].HasMember("password"))
-                    userInfo.set_password(doc["ResponseBody"][i]["password"].GetString());
-
-                if (doc["ResponseBody"][i].HasMember("query_privilege"))
-                    userInfo.set_query_privilege(doc["ResponseBody"][i]["query_privilege"].GetString());
-
-                if (doc["ResponseBody"][i].HasMember("update_privilege"))
-                    userInfo.set_update_privilege(doc["ResponseBody"][i]["update_privilege"].GetString());
-                
-                if (doc["ResponseBody"][i].HasMember("load_privilege"))
-                    userInfo.set_load_privilege(doc["ResponseBody"][i]["load_privilege"].GetString());
-                
-                if (doc["ResponseBody"][i].HasMember("unload_privilege"))
-                    userInfo.set_unload_privilege(doc["ResponseBody"][i]["unload_privilege"].GetString());
-                
-                if (doc["ResponseBody"][i].HasMember("backup_privilege"))
-                    userInfo.set_backup_privilege(doc["ResponseBody"][i]["backup_privilege"].GetString());
-
-                if (doc["ResponseBody"][i].HasMember("restore_privilege"))
-                    userInfo.set_restore_privilege(doc["ResponseBody"][i]["restore_privilege"].GetString());
-
-                if (doc["ResponseBody"][i].HasMember("export_privilege"))
-                    userInfo.set_export_privilege(doc["ResponseBody"][i]["export_privilege"].GetString());
-                google::protobuf::Any *any = response->add_responsebody();
-                any->PackFrom(userInfo);
-            }
-            // set response status and message
-            response->set_statuscode(0);
-            response->set_statusmsg("success");
-        }
-        else
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
         {
-            string error = "No Users";
-            response->set_statuscode(0);
-            response->set_statusmsg(error);
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
         }
-        return;
+       vector<struct DBUserInfo *> userList;
+		apiUtil->get_user_info(&userList);
+		if (userList.empty())
+		{
+			response->set_statuscode(0);
+            response->set_statusmsg("No Users");
+            return;
+		}
+        size_t count = userList.size();
+        for (size_t i = 0; i < count; i++)
+        {
+            DBUserInfo * user_info = userList[i];
+            UserInfo userInfo;
+            userInfo.set_username(user_info->getUsernname());
+            userInfo.set_password(user_info->getPassword());
+            userInfo.set_queryprivilege(user_info->getQuery());
+            userInfo.set_updateprivilege(user_info->getUpdate());
+            userInfo.set_loadprivilege(user_info->getLoad());
+            userInfo.set_unloadprivilege(user_info->getUnload());
+            userInfo.set_backupprivilege(user_info->getBackup());
+            userInfo.set_restoreprivilege(user_info->getRestore());
+            userInfo.set_exportprivilege(user_info->getExport());
+            google::protobuf::Any *any = response->add_responsebody();
+            any->PackFrom(userInfo);
+        }
+        // set response status and message
+        response->set_statuscode(0);
+        response->set_statusmsg("success");
     }
-    catch (...)
+    catch  (std::exception &e) 
     {
-        string content = "unknow error";
-        std::cout << "usershow failed:" << content << endl;
+        string content = "usershow failed:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("usershow failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -2063,32 +2248,45 @@ void GrpcImpl::user_privilege_task(CommonRequest *&request, CommonResponse *&res
             response->set_statusmsg(ipCheckResult);
             return;
         }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
         string error ="";
+        string type = request->type();
+        string db_name = request->db_name();
+        string op_username = request->op_username();
         string privilege = request->privileges();
-        error = apiUtil->check_param_value("type", request->type());
+        error = apiUtil->check_param_value("type", type);
         if (error.empty() == false)
         {
             response->set_statuscode(1003);
             response->set_statusmsg(error);
             return;
         }
-        error = apiUtil->check_param_value("username", request->username());
+        error = apiUtil->check_param_value("op_username", op_username);
         if (error.empty() == false)
         {
             response->set_statuscode(1003);
             response->set_statusmsg(error);
             return;
         }
-        if(request->type()!="3")
+        if (type !="3")
         {
-            error = apiUtil->check_param_value("db_name", request->db_name());
+            error = apiUtil->check_param_value("db_name", db_name);
             if (error.empty() == false)
             {
                 response->set_statuscode(1003);
                 response->set_statusmsg(error);
                 return;
             }
-            error = apiUtil->check_param_value("privilege", request->privileges());
+            error = apiUtil->check_param_value("privilege", privilege);
             if (error.empty() == false)
             {
                 response->set_statuscode(1003);
@@ -2096,8 +2294,7 @@ void GrpcImpl::user_privilege_task(CommonRequest *&request, CommonResponse *&res
                 return;
             }
         }
-
-        if (request->username() == ROOT_USERNAME)
+        if (op_username == apiUtil->get_root_username())
         {
             error = "you can't add privilege to root user.";
             response->set_statuscode(1004);
@@ -2105,9 +2302,9 @@ void GrpcImpl::user_privilege_task(CommonRequest *&request, CommonResponse *&res
             return;
         }
         string result = "";
-        if(request->type() == "3")
+        if (type == "3")
         {
-            int resultint = apiUtil->clear_user_privilege(request->username());
+            int resultint = apiUtil->clear_user_privilege(op_username);
             if(resultint == -1)
             {
                 error="the username is not exists or the username is root.";
@@ -2167,9 +2364,9 @@ void GrpcImpl::user_privilege_task(CommonRequest *&request, CommonResponse *&res
                 }
                 if (temp_privilege.empty() == false)
                 {
-                    if (request->type() == "1")
+                    if (type == "1")
                     {
-                        if (apiUtil->add_privilege(request->username(), temp_privilege, request->db_name()) == 0)
+                        if (apiUtil->add_privilege(op_username, temp_privilege, db_name) == 0)
                         {
                             result = result + "add privilege " + temp_privilege + " failed. \r\n";
                         }
@@ -2178,9 +2375,9 @@ void GrpcImpl::user_privilege_task(CommonRequest *&request, CommonResponse *&res
                             result = result + "add privilege " + temp_privilege + " successfully. \r\n";
                         }
                     }
-                    else if (request->type() == "2")
+                    else if (type == "2")
                     {
-                        if (apiUtil->del_privilege(request->username(), temp_privilege, request->db_name()) == 0)
+                        if (apiUtil->del_privilege(op_username, temp_privilege, db_name) == 0)
                         {
                             result = result + "delete privilege " + temp_privilege + " failed. \r\n";
                         }
@@ -2202,12 +2399,11 @@ void GrpcImpl::user_privilege_task(CommonRequest *&request, CommonResponse *&res
             response->set_statusmsg(result);
         }
     }
-    catch (...)
+    catch  (std::exception &e) 
     {
-        string content = "unknow error";
-        std::cout << "userprivilege failed:" << content << endl;
+        string content = "userprivilege fail:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("userprivilege failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -2222,53 +2418,53 @@ void GrpcImpl::txn_log_task(CommonRequest *&request, CommonResponse *&response, 
             response->set_statusmsg(ipCheckResult);
             return;
         }
-        if(request->username() == ROOT_USERNAME)
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
         {
-            string result = Util::get_transactionlog();
-            response->set_statuscode(0);
-            response->set_statusmsg("Get Transaction log success");
-            rapidjson::Document doc;
-            doc.SetArray();
-            doc.Parse(result.c_str());
-            size_t len = doc["list"].Size();
-            for (size_t i = 0; i < len; i++)
-            {
-                TxnLogInfo txnLogInfo;
-                if (doc["list"][i].HasMember("db_name"))
-                    txnLogInfo.set_db_name(doc["list"][i]["db_name"].GetString());
-
-                if (doc["list"][i].HasMember("TID"))
-                    txnLogInfo.set_tid(doc["list"][i]["TID"].GetString());
-                
-                if (doc["list"][i].HasMember("user"))
-                    txnLogInfo.set_user(doc["list"][i]["user"].GetString());
-                
-                if (doc["list"][i].HasMember("begin_time"))
-                    txnLogInfo.set_begin_time(doc["list"][i]["begin_time"].GetString());
-                
-                if (doc["list"][i].HasMember("state"))
-                    txnLogInfo.set_state(doc["list"][i]["state"].GetString());
-                
-                if (doc["list"][i].HasMember("end_time"))
-                    txnLogInfo.set_end_time(doc["list"][i]["end_time"].GetString());
-                
-                google::protobuf::Any *any = response->add_list();
-                any->PackFrom(txnLogInfo);
-            }
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
         }
-        else
+        if(request->username() != apiUtil->get_root_username())
         {
             response->set_statuscode(1003);
             response->set_statusmsg("Root User Only!");
             return;
         }
+        int page_no = request->pageno();
+        int page_size = request->pagesize();
+        struct TransactionLogs transactionLogs;
+        apiUtil->get_transactionlog(page_no, page_size, &transactionLogs);
+        response->set_statuscode(0);
+        response->set_statusmsg("Get transaction log success");
+        response->set_totalsize(transactionLogs.getTotalSize());
+        response->set_totalpage(transactionLogs.getTotalPage());
+        response->set_pageno(request->pageno());
+        response->set_pagesize(request->pagesize());
+        vector<struct TransactionLogInfo> logList = transactionLogs.getTransactionLogInfoList();
+        size_t count = logList.size();
+        for (size_t i = 0; i < count; i++)
+        {
+            struct TransactionLogInfo item = logList[i];
+            TxnLogInfo *logInfo = new TxnLogInfo();
+            logInfo->set_dbname(item.getDbName());
+            logInfo->set_tid(item.getTID());
+            logInfo->set_user(item.getUser());
+            logInfo->set_state(item.getState());
+            logInfo->set_begintime(item.getBeginTime());
+            logInfo->set_endtime(item.getEndTime());
+            google::protobuf::Any *any = response->add_list();
+            any->PackFrom(*logInfo);
+        }
     }
-    catch (...)
+    catch (std::exception &e) 
     {
-        string content = "unknow error";
-        std::cout << "txn_log failed:" << content << endl;
+        string content = "Get transaction log fail:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("txn_log failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -2281,6 +2477,16 @@ void GrpcImpl::query_log_task(CommonRequest *&request, CommonResponse *&response
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string date = request->date();
@@ -2313,8 +2519,7 @@ void GrpcImpl::query_log_task(CommonRequest *&request, CommonResponse *&response
     }
     catch (std::exception &e) 
     {
-        string msg = "Get query log error: " + string(e.what());
-        Util::formatPrint(msg, "ERROR");
+        string msg = "Get query log fail:" + string(e.what());
         response->set_statuscode(1005);
         response->set_statusmsg(msg);
     }
@@ -2329,6 +2534,16 @@ void GrpcImpl::access_log_task(CommonRequest *&request, CommonResponse *&respons
         {
             response->set_statuscode(1101);
             response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
             return;
         }
         string date = request->date();
@@ -2360,8 +2575,7 @@ void GrpcImpl::access_log_task(CommonRequest *&request, CommonResponse *&respons
     }
     catch (std::exception &e) 
     { 
-        string msg = "Get access log error: " + string(e.what());
-        Util::formatPrint(msg, "ERROR");
+        string msg = "Get access log fail:" + string(e.what());
         response->set_statuscode(1005);
         response->set_statusmsg(msg);
     }
@@ -2378,6 +2592,16 @@ void GrpcImpl::ip_manage_task(CommonRequest *&request, CommonResponse *&response
             response->set_statusmsg(ipCheckResult);
             return;
         }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
         if(request->type() == "1")
         {
             string IPtype = apiUtil->ip_enabled_type();
@@ -2387,16 +2611,16 @@ void GrpcImpl::ip_manage_task(CommonRequest *&request, CommonResponse *&response
                 return;
             }
             IPManageInfo* ipManageInfo = new IPManageInfo();
-            ipManageInfo->set_ip_type(IPtype);
+            ipManageInfo->set_iptype(IPtype);
             vector<string>ip_list = apiUtil->ip_list(IPtype);
-            for(int i = 0 ;i<ip_list.size();i++){
-            ipManageInfo->add_ips(ip_list[i]);
+            for(int i = 0 ; i<ip_list.size(); i++)
+            {
+                ipManageInfo->add_ips(ip_list[i]);
             }
-            response->set_statuscode(0);
-            response->set_statusmsg("success");
             google::protobuf::Any *any = response->add_responsebody();
             any->PackFrom(*ipManageInfo);
-            return;
+            response->set_statuscode(0);
+            response->set_statusmsg("success");
         }
         else if ( request->type() == "2")
         {
@@ -2410,9 +2634,9 @@ void GrpcImpl::ip_manage_task(CommonRequest *&request, CommonResponse *&response
             }
             vector<string> ipVector;
             Util::split(ips,",", ipVector);
-            if(request->ip_type() == "1"|| request->ip_type() == "2")
+            if(request->ip_type() == "1" || request->ip_type() == "2")
             {
-                if(apiUtil->ip_save(request->ip_type(),ipVector)==false)
+                if(apiUtil->ip_save(request->ip_type(),ipVector) == false)
                 {
                     if(request->ip_type() == "1")
                     {
@@ -2425,25 +2649,29 @@ void GrpcImpl::ip_manage_task(CommonRequest *&request, CommonResponse *&response
                         response->set_statusmsg("ip_allow_path is not configured, please configure it in the conf.ini file first.");
                     }
                 }
-                
+                else
+                {    
+                    response->set_statuscode(0);
+                    response->set_statusmsg("success");
+                }
             }
             else
             {
                 response->set_statuscode(1003);
                 response->set_statusmsg("ip_type is invalid, please look up the api document.");
-                return;
             }
-            response->set_statuscode(0);
-            response->set_statusmsg("success");
-            return;
+        }
+        else
+        {
+            response->set_statuscode(1003);
+            response->set_statusmsg("type is invalid, please look up the api document.");
         }
     }
-    catch (...)
+    catch (const std::exception &e)
     {
-        string content = "unknow error";
-        std::cout << "ipmanage failed:" << content << endl;
+        string content = "ipmanage fail:" + string(e.what());
         response->set_statuscode(1005);
-        response->set_statusmsg("ipmanage failed: " + content);
+        response->set_statusmsg(content);
     }
 }
 
@@ -2578,46 +2806,17 @@ void GrpcImpl::parse_query_result(CommonRequest *&request, CommonResponse *&resp
     response->set_allocated_results(results);
 }
 
-void GrpcImpl::fun_create_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
+void GrpcImpl::fun_query_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    struct PFNInfo *pfn_info = nullptr;
     try
     {
-        string username = request->username();
-        string password = request->password();
-        string encryption = request->encryption();
-        string check_result = apiUtil->check_indentity(username, password, encryption);
-        if (check_result.empty() == false)
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
         {
-            response->set_statuscode(1001);
-            response->set_statusmsg(check_result);
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
             return;
         }
-        FunInfo fun_info = request->fun_info();
-        pfn_info = new PFNInfo();
-        fun_copy_from_fun_info(pfn_info, &fun_info);
-        apiUtil->fun_create(username, pfn_info);
-        delete pfn_info;
-        response->set_statuscode(0);
-        response->set_statusmsg("success");
-    }
-    catch (const std::exception &e)
-    {
-        if (pfn_info)
-        {
-            delete pfn_info;
-        }
-        string msg = string(e.what());
-        Util::formatPrint(msg,"ERROR");
-        response->set_statuscode(1005);
-        response->set_statusmsg(msg);
-    }
-}
-
-void GrpcImpl::fun_retrieve_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
-{
-    try
-    {
         string username = request->username();
         string password = request->password();
         string encryption = request->encryption();
@@ -2629,9 +2828,9 @@ void GrpcImpl::fun_retrieve_task(CommonRequest *&request, CommonResponse *&respo
             return;
         }
         
-        FunInfo fun_info = request->fun_info();
-        string fun_name = fun_info.fun_name();
-        string fun_status = fun_info.fun_status();
+        FunInfo fun_info = request->funinfo();
+        string fun_name = fun_info.funname();
+        string fun_status = fun_info.funstatus();
         struct PFNInfos *pfn_infos = new PFNInfos();
 
         apiUtil->fun_query(fun_name, fun_status, username, pfn_infos);
@@ -2650,18 +2849,24 @@ void GrpcImpl::fun_retrieve_task(CommonRequest *&request, CommonResponse *&respo
     }
     catch (const std::exception &e)
     {
-        string content = "query fail: " + string(e.what());
-        std::cout << content << '\n';
+        string content = "Fun query fail:" + string(e.what());
         response->set_statuscode(1005);
         response->set_statusmsg(content);
     }
 }
 
-void GrpcImpl::fun_update_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
+void GrpcImpl::fun_cudb_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
-    struct PFNInfo *pfn_info = nullptr;
+    
     try
     {
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
         string username = request->username();
         string password = request->password();
         string encryption = request->encryption();
@@ -2672,103 +2877,98 @@ void GrpcImpl::fun_update_task(CommonRequest *&request, CommonResponse *&respons
             response->set_statusmsg(check_result);
             return;
         }
-        FunInfo fun_info = request->fun_info();
-        pfn_info = new PFNInfo();
-        fun_copy_from_fun_info(pfn_info, &fun_info);
-        apiUtil->fun_update(username, pfn_info);
-        delete pfn_info;
-        response->set_statuscode(0);
-        response->set_statusmsg("success");
-        
-    }
-    catch (const std::exception &e)
-    {
-        if (pfn_info)
+        string type = request->type();
+        FunInfo fun_info = request->funinfo();
+        struct PFNInfo pfn_info;
+        fun_copy_from_fun_info(&pfn_info, &fun_info);
+        if (type == "1")
         {
-            delete pfn_info;
+            request->set_operation("funcreate");
+            try
+            {
+                apiUtil->fun_create(username, &pfn_info);
+                response->set_statuscode(0);
+                response->set_statusmsg("success");
+            }
+            catch(const std::exception& e)
+            {
+                string content = "Fun create fail:" + string(e.what());
+                response->set_statuscode(1005);
+                response->set_statusmsg(content);
+            }
         }
-        string content = string(e.what());
-        Util::formatPrint(content, "ERROR");
-        response->set_statuscode(1005);
-        response->set_statusmsg(content);
-    }
-}
-
-void GrpcImpl::fun_delete_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
-{
-    struct PFNInfo *pfn_info = nullptr;
-    try
-    {
-        string username = request->username();
-        string password = request->password();
-        string encryption = request->encryption();
-        string check_result = apiUtil->check_indentity(username, password, encryption);
-        if (check_result.empty() == false)
+        else if (type == "2")
         {
-            response->set_statuscode(1001);
-            response->set_statusmsg(check_result);
-            return;
+            request->set_operation("funupdate");
+            try
+            {
+                apiUtil->fun_update(username, &pfn_info);
+                response->set_statuscode(0);
+                response->set_statusmsg("success");
+                
+            }
+            catch (const std::exception &e)
+            {
+                string content = "Fun update fail:" + string(e.what());
+                response->set_statuscode(1005);
+                response->set_statusmsg(content);
+            }
         }
-        FunInfo fun_info = request->fun_info();
-        pfn_info = new PFNInfo();
-        fun_copy_from_fun_info(pfn_info, &fun_info);
-        apiUtil->fun_delete(username, pfn_info);
-        delete pfn_info;
-        response->set_statuscode(0);
-        response->set_statusmsg("success");
-    }
-    catch (const std::exception &e)
-    {
-        if (pfn_info)
+        else if (type == "3")
         {
-            delete pfn_info;
+            request->set_operation("fundelete");
+            try
+            {
+                apiUtil->fun_delete(username, &pfn_info);
+                response->set_statuscode(0);
+                response->set_statusmsg("success");
+            }
+            catch (const std::exception &e)
+            {
+                string content = "Fun delete fail:" + string(e.what());
+                response->set_statuscode(1005);
+                response->set_statusmsg(content);
+            }
         }
-        string content = string(e.what());
-        Util::formatPrint(content, "ERROR");
-        response->set_statuscode(1005);
-        response->set_statusmsg(content);
-    }
-}
-
-void GrpcImpl::fun_build_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
-{
-    try
-    {
-        string username = request->username();
-        string password = request->password();
-        string encryption = request->encryption();
-        string check_result = apiUtil->check_indentity(username, password, encryption);
-        if (check_result.empty() == false)
+        else if (type == "4")
         {
-            response->set_statuscode(1001);
-            response->set_statusmsg(check_result);
-            return;
-        }
-        FunInfo fun_info = request->fun_info();
-        string fun_name = fun_info.fun_name();
-        string result = apiUtil->fun_build(username, fun_name);
-        if (result == "")
-        {
-            response->set_statuscode(0);
-            response->set_statusmsg("success");
-            return;
+            request->set_operation("funbuild");
+            try
+            {
+                string fun_name = fun_info.funname();
+                string result = apiUtil->fun_build(username, fun_name);
+                if (result == "")
+                {
+                    response->set_statuscode(0);
+                    response->set_statusmsg("success");
+                }
+                else
+                {
+                    Util::formatPrint("Fun build fail:\n" + result, "ERROR");
+                    response->set_statuscode(1005);
+                    response->set_statusmsg(result);
+                }
+            }
+            catch (const std::exception &e)
+            {
+                string content = "Fun build fail:" + string(e.what());
+                response->set_statuscode(1005);
+                response->set_statusmsg(content);
+            }
         }
         else
         {
-            string content = string(result);
-            Util::formatPrint(content, "ERROR");
-            response->set_statuscode(1005);
-            response->set_statusmsg(content);
-            return;
+            response->set_statuscode(1003);
+            response->set_statusmsg("type is invalid, please look up the api document.");
         }
     }
-    catch (const std::exception &e)
+    catch(const std::exception& e)
     {
-        string content = string(e.what());
-        Util::formatPrint(content, "ERROR");
+        string content = "Fun cudb fail:" + string(e.what());
         response->set_statuscode(1005);
         response->set_statusmsg(content);
     }
+    
 }
 
 void GrpcImpl::fun_review_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
@@ -2776,6 +2976,13 @@ void GrpcImpl::fun_review_task(CommonRequest *&request, CommonResponse *&respons
     struct PFNInfo *pfn_info = nullptr;
     try
     {
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(ipCheckResult != "")
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
         string username = request->username();
         string password = request->password();
         string encryption = request->encryption();
@@ -2788,26 +2995,28 @@ void GrpcImpl::fun_review_task(CommonRequest *&request, CommonResponse *&respons
         }
 
         string content;
-        FunInfo fun_info = request->fun_info();
+        FunInfo fun_info = request->funinfo();
         pfn_info = new PFNInfo();
         fun_copy_from_fun_info(pfn_info, &fun_info);
         apiUtil->fun_review(username, pfn_info);
         content = pfn_info->getFunBody();
         content = Util::urlEncode(content);
-        delete pfn_info;
 
+        if (pfn_info != nullptr)
+        {
+            delete pfn_info;
+        }
         response->set_statuscode(0);
         response->set_statusmsg("success");
         response->set_result(content);
     }
     catch (const std::exception &e)
     {
-        if (pfn_info)
+        if (pfn_info != nullptr)
         {
             delete pfn_info;
         }
-        string content = "review fail: " + string(e.what());
-        Util::formatPrint(content, "ERROR");
+        string content = "Fun review fail:" + string(e.what());
         response->set_statuscode(1005);
         response->set_statusmsg(content);
     }
@@ -2815,26 +3024,26 @@ void GrpcImpl::fun_review_task(CommonRequest *&request, CommonResponse *&respons
 
  void GrpcImpl::fun_copy_from_fun_info(struct PFNInfo * target, FunInfo * source)
  {
-     target->setFunName(source->fun_name());
-     target->setFunArgs(source->fun_args());
-     target->setFunDesc(source->fun_desc());
-     target->setFunBody(source->fun_body());
-     target->setFunSubs(source->fun_subs());
-     target->setFunReturn(source->fun_return());
-     target->setFunStatus(source->fun_status());
-     target->setLastTime(source->last_time());
+     target->setFunName(source->funname());
+     target->setFunArgs(source->funargs());
+     target->setFunDesc(source->fundesc());
+     target->setFunBody(source->funbody());
+     target->setFunSubs(source->funsubs());
+     target->setFunReturn(source->funreturn());
+     target->setFunStatus(source->funstatus());
+     target->setLastTime(source->lasttime());
  }
 
 void GrpcImpl::fun_copy_from_pfn_info(FunInfo * target, struct PFNInfo * source)
 {
-    target->set_fun_name(source->getFunName());
-    target->set_fun_args(source->getFunArgs());
-    target->set_fun_desc(source->getFunDesc());
-    target->set_fun_body(source->getFunBody());
-    target->set_fun_subs(source->getFunSubs());
-    target->set_fun_return(source->getFunReturn());
-    target->set_fun_status(source->getFunStatus());
-    target->set_last_time(source->getLastTime());
+    target->set_funname(source->getFunName());
+    target->set_funargs(source->getFunArgs());
+    target->set_fundesc(source->getFunDesc());
+    target->set_funbody(source->getFunBody());
+    target->set_funsubs(source->getFunSubs());
+    target->set_funreturn(source->getFunReturn());
+    target->set_funstatus(source->getFunStatus());
+    target->set_lasttime(source->getLastTime());
 }
 
 void GrpcImpl::default_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
