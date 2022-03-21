@@ -1,3 +1,4 @@
+
 #include "grpc.srpc.h"
 #include "workflow/WFFacilities.h"
 
@@ -11,6 +12,10 @@ void sig_handler(int signo)
 }
 
 static void api_done(CommonResponse *response, srpc::RPCContext *context)
+{
+}
+
+static void shutdown_done(CommonResponse *response, srpc::RPCContext *context)
 {
 }
 

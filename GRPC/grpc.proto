@@ -38,37 +38,25 @@ message CommonRequest {
     optional string ip_type = 22;
     optional string ips = 23;
     // for personalized function
-    optional FunInfo fun_info = 24;
-};
-
-message Monitor {
-    optional string database = 1;
-    optional string creator = 2;
-    optional string built_time = 3;
-    optional string triple_num = 4;
-    optional int32 entity_num = 5;
-    optional int32 literal_num = 6;
-    optional int32 subject_num = 7;
-    optional int32 predicate_num = 8;
-    optional int32 connection_num = 9;
+    optional FunInfo funInfo = 24;
 };
 
 message UserInfo {
     optional string username = 1;
     optional string password = 2;
-    optional string query_privilege = 3;
-    optional string update_privilege = 4;
-    optional string load_privilege = 5;
-    optional string unload_privilege = 6;
-    optional string backup_privilege = 7;
-    optional string restore_privilege = 8;
-    optional string export_privilege = 9;
+    optional string queryPrivilege = 3;
+    optional string updatePrivilege = 4;
+    optional string loadPrivilege = 5;
+    optional string unloadPrivilege = 6;
+    optional string backupPrivilege = 7;
+    optional string restorePrivilege = 8;
+    optional string exportPrivilege = 9;
 };
 
 message DBInfo {
     optional string database = 1;
     optional string creator = 2;
-    optional string built_time = 3;
+    optional string builtTime = 3;
     optional string status = 4;
 };
 
@@ -82,12 +70,12 @@ message QueryResultInfo {
 };
 
 message TxnLogInfo {
-    optional string db_name = 1;
+    optional string dbName = 1;
     optional string TID = 2;
     optional string user = 3;
-    optional string begin_time = 4;
+    optional string beginTime = 4;
     optional string state = 5;
-    optional string end_time = 6;
+    optional string endTime = 6;
 };
 
 message QueryLogInfo {
@@ -109,20 +97,19 @@ message AccessLogInfo {
 }
 
 message IPManageInfo {
-    optional string ip_type = 1;
+    optional string ipType = 1;
     repeated string ips = 2;
 }
 
 message FunInfo {
-    optional string fun_name = 1;
-    optional string fun_desc = 2;
-    optional string fun_args = 3;
-    optional string fun_body = 4;
-    optional string fun_subs = 5;
-    optional string fun_status = 6;
-    optional string fun_return = 7;
-    optional string last_time = 8;
-    optional string fun_review = 9;
+    optional string funName = 1;
+    optional string funDesc = 2;
+    optional string funArgs = 3;
+    optional string funBody = 4;
+    optional string funSubs = 5;
+    optional string funStatus = 6;
+    optional string funReturn = 7;
+    optional string lastTime = 8;
 }
 
 message CommonResponse {
@@ -147,19 +134,31 @@ message CommonResponse {
     // for getCoreVersion
     optional string CoreVersion = 14;
     optional string licensetype = 15;
+    optional string RootPath = 16;
     // for batch insert and remove
-    optional string success_num = 16;
+    optional string successNum = 17;
     // for queryLog and accessLog
-    optional int32 totalSize = 17;
-    optional int32 totalPage = 18;
-    optional int32 pageNo = 19;
-    optional int32 pageSize = 20;
+    optional int32 totalSize = 18;
+    optional int32 totalPage = 19;
+    optional int32 pageNo = 20;
+    optional int32 pageSize = 21;
     // for backup
-    optional string backupfilepath=21;
+    optional string backupfilepath=22;
     // for personalized function
-    optional string Result = 22;
+    optional string Result = 23;
+    // for monitor
+    optional string database = 24;
+    optional string creator = 25;
+    optional string builtTime = 26;
+    optional string tripleNum = 27;
+    optional int32 entityNum = 28;
+    optional int32 literalNum = 29;
+    optional int32 subjectNum = 30;
+    optional int32 predicateNum = 31;
+    optional int32 connectionNum = 32;
 };
 
 service grpc {
      rpc api(CommonRequest) returns (CommonResponse);
+     rpc shutdown(CommonRequest) returns (CommonResponse);
 };

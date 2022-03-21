@@ -21,11 +21,9 @@ string Util::profile = "init.conf";
 
 map<string, string> Util::global_config;
 pthread_rwlock_t backuplog_lock;
-pthread_rwlock_t transactionlog_lock;
+
 #define BACKUP_PATH "./backups"
 #define BACKUP_LOG_PATH "./backup.json"
-#define TRANSACTION_LOG_PATH "./logs/transaction.json"
-#define TRANSACTION_LOG_TEMP_PATH "./logs/transaction_temp.json"
 #define BACKUP_LOG_TMEP_PATH "./temp.json"
 #define DEFALUT_BACKUP_INTERVAL "600" //hour
 #define DEFALUT_BACKUP_TIMER "600" //hour
@@ -2419,246 +2417,6 @@ Util::stamp2time(int timestamp)
 }
 
 
-void
-Util::init_transactionlog()
-{
-    pthread_rwlock_wrlock(&transactionlog_lock);
-    if (boost::filesystem::exists(TRANSACTION_LOG_PATH)) {
-        cout << "transaction log has been created." << endl;
-        pthread_rwlock_unlock(&transactionlog_lock);
-        return;
-    }
-    FILE* fp = fopen(TRANSACTION_LOG_PATH, "w");
-    fclose(fp);
-    pthread_rwlock_unlock(&transactionlog_lock);
-}
-
-int
-Util::add_transactionlog(std::string db_name, std::string user, std::string TID, std::string begin_time, std::string state , std::string end_time)
-{
-    cout << "this is Util::add_transactionlog" << endl;
-    pthread_rwlock_wrlock(&transactionlog_lock);
-    FILE* fp = fopen(TRANSACTION_LOG_PATH, "a");
-    Document document;
-    document.SetObject();
-    Document::AllocatorType& allocator = document.GetAllocator();
-
-    document.AddMember("db_name", StringRef(db_name.c_str()), allocator);
-    document.AddMember("TID", StringRef(TID.c_str()), allocator);
-    document.AddMember("user", StringRef(user.c_str()), allocator);
-    document.AddMember("begin_time", StringRef(begin_time.c_str()), allocator);
-    document.AddMember("state", StringRef(state.c_str()), allocator);
-    document.AddMember("end_time", StringRef(end_time.c_str()), allocator);
-    StringBuffer buffer;
-    PrettyWriter<StringBuffer> writer(buffer);
-    document.Accept(writer);
-    string rec = buffer.GetString();
-    rec = Util::string_replace(rec, "\n", "");
-    rec = Util::string_replace(rec, "    ", "");
-    rec.push_back('\n');
-    fputs(rec.c_str(), fp);
-
-    fclose(fp);
-    pthread_rwlock_unlock(&transactionlog_lock);
-}
-
-int
-Util::update_transactionlog(std::string TID, std::string state, std::string end_time)
-{
-    pthread_rwlock_wrlock(&transactionlog_lock);
-    FILE* fp = fopen(TRANSACTION_LOG_PATH, "r");
-    FILE* fp1 = fopen(TRANSACTION_LOG_TEMP_PATH, "w");
-    char readBuffer[0xffff];
-    int ret = 0;
-    while (fgets(readBuffer, 1024, fp)) {
-        string rec = readBuffer;
-        StringStream is(readBuffer);
-        Document d;
-        d.ParseStream(is);
-        if (d["TID"].GetString() != TID) {
-            fputs(readBuffer, fp1);
-            continue;
-        }
-        if (d.HasMember("state") && d.HasMember("end_time")) {
-            Value& S = d["state"];
-            S.SetString(state.c_str(), state.length());
-            Value& SS = d["end_time"];
-            SS.SetString(end_time.c_str(), end_time.length());
-            StringBuffer buffer;
-            Writer<StringBuffer> writer(buffer);
-            d.Accept(writer);
-            string line = buffer.GetString();
-            line.push_back('\n');
-            fputs(line.c_str(), fp1);
-        }
-        else {
-            fputs(readBuffer, fp1);
-            cout << "Transaction log corrupted, please initilize it!" << endl;
-            ret = 1;
-        }
-    }
-    fclose(fp);
-    fclose(fp1);
-    string cmd = "rm ";
-    cmd += TRANSACTION_LOG_PATH;
-    system(cmd.c_str());
-    cmd = "mv ";
-    cmd += TRANSACTION_LOG_TEMP_PATH;
-    cmd += ' ';
-    cmd += TRANSACTION_LOG_PATH;
-    system(cmd.c_str());
-    pthread_rwlock_unlock(&transactionlog_lock);
-    return ret;
-}
-
-string 
-Util::get_transactionlog()
-{
-    pthread_rwlock_rdlock(&transactionlog_lock);
-    ifstream in;
-    in.open(TRANSACTION_LOG_PATH, ios::in);
-    Document all;
-    all.SetObject();
-    Value a(kObjectType);
-    Value darray(kArrayType);
-    string line;
-    Document d;
-    bool success = true;
-    while (getline(in, line)) {
-        cout << line << endl;
-        StringStream is(line.c_str());
-        d.ParseStream(is);
-        Value rec(kObjectType);
-        if (d.HasMember("db_name"))
-        {
-            rec.AddMember("db_name", d["db_name"], all.GetAllocator());
-        }
-        else
-        {
-            success = false;
-            darray.SetArray();
-            break;
-        }
-        if (d.HasMember("TID"))
-        {
-            rec.AddMember("TID", d["TID"], all.GetAllocator());
-        }
-        else
-        {
-            success = false;
-            darray.SetArray();
-            break;
-        }
-        if (d.HasMember("user"))
-        {
-            rec.AddMember("user", d["user"], all.GetAllocator());
-        }
-        else
-        {
-            success = false;
-            darray.SetArray();
-            break;
-        }
-        if (d.HasMember("begin_time"))
-        {
-            rec.AddMember("begin_time", d["begin_time"], all.GetAllocator());
-        }
-        else
-        {
-            success = false;
-            darray.SetArray();
-            break;
-        }
-        if (d.HasMember("state"))
-        {
-            rec.AddMember("state", d["state"], all.GetAllocator());
-        }
-        else
-        {
-            success = false;
-            darray.SetArray();
-            break;
-        }
-        if (d.HasMember("end_time"))
-        {
-            rec.AddMember("end_time", d["end_time"], all.GetAllocator());
-        }
-        else
-        {
-            success = false;
-            darray.SetArray();
-            break;
-        }
-        darray.PushBack(rec, all.GetAllocator());
-    }
-    in.close();
-    if (success)
-    {
-          all.AddMember("StatusCode", 0, all.GetAllocator());
-          all.AddMember("StatusMsg", "Get Transaction log success", all.GetAllocator());
-          all.AddMember("list", darray, all.GetAllocator());
-    }
-
-    else
-    {
-         all.AddMember("StatusCode", 1005, all.GetAllocator());
-         all.AddMember("message", "error! Transaction log corrupted", all.GetAllocator());
-
-    }
-
-    StringBuffer buffer;
-    Writer<StringBuffer> writer(buffer);
-    all.Accept(writer);
-    string all_rec = buffer.GetString();
-    pthread_rwlock_unlock(&transactionlog_lock);
-    return all_rec;
-}
-
-void
-Util::abort_transactionlog(long end_time)
-{
-    pthread_rwlock_wrlock(&transactionlog_lock);
-    FILE* fp = fopen(TRANSACTION_LOG_PATH, "r");
-    FILE* fp1 = fopen(TRANSACTION_LOG_TEMP_PATH, "w");
-    char readBuffer[0xffff];
-    int ret = 0;
-    while (fgets(readBuffer, 1024, fp)) {
-        string rec = readBuffer;
-        StringStream is(readBuffer);
-        Document d;
-        d.ParseStream(is);
-        if (d.HasMember("state") && d["state"].GetString() == string("RUNNING")) {
-            Value& S = d["state"];
-            string state = "ROLLBACK";
-            S.SetString(state.c_str(), state.length());
-            Value& SS = d["end_time"];
-            string end_time_s = to_string(end_time);
-            SS.SetString(end_time_s.c_str(), end_time_s.length());
-            StringBuffer buffer;
-            Writer<StringBuffer> writer(buffer);
-            d.Accept(writer);
-            string line = buffer.GetString();
-            line.push_back('\n');
-            fputs(line.c_str(), fp1);
-        }
-        else {
-            fputs(readBuffer, fp1);
-        }
-    }
-    fclose(fp);
-    fclose(fp1);
-    string cmd = "rm ";
-    cmd += TRANSACTION_LOG_PATH;
-    system(cmd.c_str());
-    cmd = "mv ";
-    cmd += TRANSACTION_LOG_TEMP_PATH;
-    cmd += ' ';
-    cmd += TRANSACTION_LOG_PATH;
-    system(cmd.c_str());
-    pthread_rwlock_unlock(&transactionlog_lock);
-}
-
-
 //get all specific file type files in a directory
 vector<string> 
 Util::GetFiles(const char *src_dir, const char *ext)
@@ -2830,4 +2588,20 @@ std::string Util::urlDecode(const std::string& str)
             strTemp += str[i];
     }
     return strTemp;
+}
+
+std::string Util::get_cur_path()
+{
+    char *buffer;
+    if((buffer = getcwd(NULL, 0)) == NULL) 
+    {
+        Util::formatPrint("get cur path error", "ERROR");
+        return "";
+    }
+    else
+    {
+        string cur_path = string(buffer);
+        Util::formatPrint("cur_path: " + cur_path);
+        return cur_path;
+    }
 }

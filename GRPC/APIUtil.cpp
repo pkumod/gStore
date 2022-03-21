@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-03-10 20:11:17
+ * @LastEditTime: 2022-03-21 09:29:42
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -17,6 +17,9 @@ APIUtil::APIUtil()
     pthread_rwlock_init(&already_build_map_lock, NULL);
     pthread_rwlock_init(&txn_m_lock, NULL);
     pthread_rwlock_init(&ips_map_lock, NULL);
+    pthread_rwlock_init(&query_log_lock, NULL);
+    pthread_rwlock_init(&access_log_lock, NULL);
+    pthread_rwlock_init(&transactionlog_lock, NULL);
     ipWhiteList = new IPWhiteList();
     ipBlackList = new IPBlackList();
 }
@@ -62,41 +65,71 @@ APIUtil::~APIUtil()
     pthread_rwlock_destroy(&users_map_lock);
     pthread_rwlock_destroy(&databases_map_lock);
     pthread_rwlock_destroy(&already_build_map_lock);
+    pthread_rwlock_destroy(&query_log_lock);
+    pthread_rwlock_destroy(&access_log_lock);
+    pthread_rwlock_destroy(&transactionlog_lock);
+    delete ipWhiteList;
+    delete ipBlackList;
 
-    string cmd = "rm system.db/password.txt";
-	system(cmd.c_str());
+    string cmd = "rm " + system_password_path;
+    system(cmd.c_str());
+    cmd = "rm system.db/port.txt";
+    system(cmd.c_str());
 }
 
-int APIUtil::initialize(const std::string db_name, bool load_csr)
+int APIUtil::initialize(const std::string port, const std::string db_name, bool load_csr)
 {
     try
     {
         std::cout << "--------APIUtil initialization start--------" << std::endl;
         Util util;
         util.configure_new();
-        APIUtil::system_path = Util::getConfigureValue("system_path");
-        APIUtil::backup_path = Util::getConfigureValue("backup_path");
-        APIUtil::DB_path = Util::getConfigureValue("db_path");
-        APIUtil::root_username = Util::getConfigureValue("root_username");
-        APIUtil::max_output_size = Util::string2int(Util::getConfigureValue("max_output_size"));
-        APIUtil::query_log_path = Util::getConfigureValue("querylog_path");
-        if (Util::dir_exist(APIUtil::query_log_path) == false)
+        system_path = Util::getConfigureValue("system_path");
+        system_path = Util::replace_all(system_path, "\"", "");
+        std::cout << "system_path:\t\t" << system_path << endl;
+        backup_path = Util::getConfigureValue("backup_path");
+        backup_path = Util::replace_all(backup_path, "\"", "");
+        std::cout << "backup_path:\t\t" << backup_path << endl;
+        DB_path = Util::getConfigureValue("db_path");
+        std::cout << "DB_path:\t\t" << DB_path << endl;
+        root_username = Util::getConfigureValue("root_username");
+        root_username = Util::replace_all(root_username, "\"", "");
+        std::cout << "root_username:\t\t" << root_username << endl;
+        system_username = Util::getConfigureValue("system_username");
+        system_username = Util::replace_all(system_username, "\"", "");
+        std::cout << "system_username:\t\t" << system_username << endl;
+        max_output_size = Util::string2int(Util::getConfigureValue("max_output_size"));
+        std::cout << "max_output_size:\t" << max_output_size << endl;
+        query_log_path = Util::getConfigureValue("querylog_path");
+        query_log_path = Util::replace_all(query_log_path, "\"", "");
+        std::cout << "query_log_path:\t\t" << query_log_path << endl;
+        if (Util::dir_exist(query_log_path) == false)
         {
-            Util::create_dir(APIUtil::query_log_path);
+            Util::create_dir(query_log_path);
         }
-        APIUtil::access_log_path = Util::getConfigureValue("accesslog_path");
-        if (Util::dir_exist(APIUtil::access_log_path) == false)
+        access_log_path = Util::getConfigureValue("accesslog_path");
+        access_log_path = Util::replace_all(access_log_path, "\"", "");
+        std::cout << "access_log_path:\t" << access_log_path << endl;
+        if (Util::dir_exist(access_log_path) == false)
         {
-            Util::create_dir(APIUtil::access_log_path);
+            Util::create_dir(access_log_path);
         }
         pfn_file_path = Util::getConfigureValue("pfn_file_path");
+        pfn_file_path = Util::replace_all(pfn_file_path, "\"", "");
+        std::cout << "pfn_file_path:\t\t" << pfn_file_path << endl;
         pfn_lib_path = Util::getConfigureValue("pfn_lib_path");
+        pfn_lib_path = Util::replace_all(pfn_lib_path, "\"", "");
+        std::cout << "pfn_lib_path:\t\t" << pfn_lib_path << endl;
 
         pfn_include_header = PFN_HEADER;
 
         //load ip-list
         ipWhiteFile = Util::getConfigureValue("ip_allow_path");
+        ipWhiteFile = Util::replace_all(ipWhiteFile, "\"", "");
+        std::cout << "ipWhiteFile:\t\t" << ipWhiteFile << endl;
         ipBlackFile = Util::getConfigureValue("ip_deny_path");
+        ipBlackFile = Util::replace_all(ipBlackFile, "\"", "");
+        std::cout << "ipBlackFile:\t\t" << ipBlackFile << endl;
         if (ipWhiteFile.empty())
         {
             whiteList = 0;
@@ -282,13 +315,19 @@ int APIUtil::initialize(const std::string db_name, bool load_csr)
                 pthread_rwlock_unlock(&users_map_lock);
             }
         }
-        Util::init_transactionlog();
+        init_transactionlog();
+        // create system password file
         fstream ofp;
         system_password = Util::int2string(Util::getRandNum());
-        ofp.open("system.db/password.txt", ios::out);
+        system_password_path = "system.db/password" + port + ".txt";
+        ofp.open(system_password_path, ios::out);
         ofp << system_password;
         ofp.close();
-        // TODO load user database
+        // create port file
+        ofp.open("system.db/port.txt", ios::out);
+        ofp << port;
+        ofp.close();
+        // load user database
         if(!db_name.empty())
         {
             string result = check_param_value("db_name",db_name);
@@ -531,22 +570,24 @@ int APIUtil::db_copy(string src_path, string dest_path)
 {
     string sys_cmd;
     string log_info;
-	if(Util::dir_exist(src_path)==false){
-		//check the source path
-		log_info ="Source path error, please check it again!";
+    if (Util::dir_exist(src_path) == false)
+    {
+        // check the source path
+        log_info = "Source path error, please check it again!";
         Util::formatPrint(log_info, "ERROR");
-		return 1;
-	}
-	if(Util::dir_exist(dest_path)==false){
-		//check the destnation path 
-        log_info ="the path: " + dest_path + " is not exist ,system will create it.";
+        return 1;
+    }
+    if (Util::dir_exist(dest_path) == false)
+    {
+        // check the destnation path
+        log_info = "the path: " + dest_path + " is not exist ,system will create it.";
         Util::formatPrint(log_info, "INFO");
-		sys_cmd = "mkdir -p ./" + dest_path;
-		system(sys_cmd.c_str());
-	}
-	sys_cmd = "cp -r " + src_path + ' ' +  dest_path ;
-	system(sys_cmd.c_str());
-    return 0;// success 
+        sys_cmd = "mkdir -p ./" + dest_path;
+        system(sys_cmd.c_str());
+    }
+    sys_cmd = "cp -r " + src_path + ' ' + dest_path;
+    system(sys_cmd.c_str());
+    return 0; // success
 }
 
 bool APIUtil::add_database(const std::string &db_name, Database *&db)
@@ -597,7 +638,7 @@ bool APIUtil::trywrlock_databaseinfo(DatabaseInfo *dbinfo)
 
 bool APIUtil::tryrdlock_databaseinfo(DatabaseInfo* dbinfo)
 {
-    if (pthread_rwlock_rdlock(&(dbinfo->db_lock)) == 0)
+    if (pthread_rwlock_tryrdlock(&(dbinfo->db_lock)) == 0)
     {
         Util::formatPrint("tryrdlock_databaseinfo success");
         return true;
@@ -622,35 +663,6 @@ bool APIUtil::unlock_databaseinfo(DatabaseInfo* dbinfo)
         Util::formatPrint("unlock_databaseinfo unsuccess","ERROR");
         return false;
     }
-}
-        
-
-std::string APIUtil::get_moniter_info(Database* database, DatabaseInfo* dbinfo)
-{
-    string creator = dbinfo->getCreator();
-    string time = dbinfo->getTime();
-    rapidjson::Document doc;
-    doc.SetObject();
-    Document::AllocatorType &allocator = doc.GetAllocator();
-    string name = database->getName();
-    doc.AddMember("database", StringRef(name.c_str()), allocator);
-	doc.AddMember("creator", StringRef(creator.c_str()), allocator);
-	doc.AddMember("built_time", StringRef(time.c_str()), allocator);
-    char tripleNumString[128];
-    sprintf(tripleNumString, "%lld", database->getTripleNum());
-    doc.AddMember("triple num", StringRef(tripleNumString), allocator);
-	doc.AddMember("entity num", database->getEntityNum(), allocator);
-	doc.AddMember("literal num", database->getLiteralNum(), allocator);
-	doc.AddMember("subject num", database->getSubNum(), allocator);
-	doc.AddMember("predicate num", database->getPreNum(), allocator);
-	int conn_num = connection_num / 2;
-	doc.AddMember("connection num", conn_num, allocator);
-
-	StringBuffer resBuffer;
-	rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
-	doc.Accept(resWriter);
-	string resJson = resBuffer.GetString();
-    return resJson;
 }
 
 bool APIUtil::insert_txn_managers(Database* current_database, std::string database)
@@ -702,53 +714,53 @@ bool APIUtil::db_checkpoint(string db_name)
 	return true;
 }
 
-string APIUtil::db_checkpoint_all()
-{
-    pthread_rwlock_rdlock(&databases_map_lock);
-    std::map<std::string, Database *>::iterator iter;
-	string return_msg = "";
-	Util::abort_transactionlog(Util::get_cur_time());
-    for(iter=databases.begin(); iter != databases.end(); iter++)
-	{
-		string database_name = iter->first;
-		if (database_name == "system")
-			continue;
-		//abort all transaction
-		db_checkpoint(database_name);
-		Database *current_database = iter->second;
-		pthread_rwlock_rdlock(&already_build_map_lock);
-		std::map<std::string, struct DatabaseInfo *>::iterator it_already_build = already_build.find(database_name);
-		pthread_rwlock_unlock(&already_build_map_lock);
-		if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
-		{
-			pthread_rwlock_unlock(&databases_map_lock);
-			return_msg = "Unable to checkpoint due to loss of lock";
-            break;
-		}
-		current_database->save();
-		delete current_database;
-		current_database = NULL;
-		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-	}
-    if (return_msg.empty())
-    {
-        system_database->save();
-        delete system_database;
-        system_database = NULL;
-        pthread_rwlock_unlock(&databases_map_lock);
+// string APIUtil::db_checkpoint_all()
+// {
+//     pthread_rwlock_rdlock(&databases_map_lock);
+//     std::map<std::string, Database *>::iterator iter;
+// 	string return_msg = "";
+// 	abort_transactionlog(Util::get_cur_time());
+//     for(iter=databases.begin(); iter != databases.end(); iter++)
+// 	{
+// 		string database_name = iter->first;
+// 		if (database_name == "system")
+// 			continue;
+// 		//abort all transaction
+// 		db_checkpoint(database_name);
+// 		Database *current_database = iter->second;
+// 		pthread_rwlock_rdlock(&already_build_map_lock);
+// 		std::map<std::string, struct DatabaseInfo *>::iterator it_already_build = already_build.find(database_name);
+// 		pthread_rwlock_unlock(&already_build_map_lock);
+// 		if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+// 		{
+// 			pthread_rwlock_unlock(&databases_map_lock);
+// 			return_msg = "Unable to checkpoint due to loss of lock";
+//             break;
+// 		}
+// 		current_database->save();
+// 		delete current_database;
+// 		current_database = NULL;
+// 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+// 	}
+//     if (return_msg.empty())
+//     {
+//         system_database->save();
+//         delete system_database;
+//         system_database = NULL;
+//         pthread_rwlock_unlock(&databases_map_lock);
 
-        pthread_rwlock_rdlock(&already_build_map_lock);
-        std::map<std::string, struct DatabaseInfo *>::iterator it_already_build;
-        for (it_already_build = already_build.begin(); it_already_build != already_build.end(); it_already_build++)
-        {
-            struct DatabaseInfo *temp_db = it_already_build->second;
-            delete temp_db;
-            temp_db = NULL;
-        }
-        pthread_rwlock_unlock(&already_build_map_lock);
-    }
-    return return_msg;
-}
+//         pthread_rwlock_rdlock(&already_build_map_lock);
+//         std::map<std::string, struct DatabaseInfo *>::iterator it_already_build;
+//         for (it_already_build = already_build.begin(); it_already_build != already_build.end(); it_already_build++)
+//         {
+//             struct DatabaseInfo *temp_db = it_already_build->second;
+//             delete temp_db;
+//             temp_db = NULL;
+//         }
+//         pthread_rwlock_unlock(&already_build_map_lock);
+//     }
+//     return return_msg;
+// }
 
 bool APIUtil::delete_from_databases(string db_name)
 {
@@ -796,7 +808,7 @@ shared_ptr<Txn_manager> APIUtil::get_Txn_ptr(string db_name)
 txn_id_t APIUtil::get_txn_id(shared_ptr<Txn_manager> ptr, int level)
 {
     txn_id_t TID = ptr->Begin(static_cast<IsolationLevelType>(level));
-	cout <<"Transcation Id:"<< to_string(TID) << endl;
+	// cout <<"Transcation Id:"<< to_string(TID) << endl;
     return TID;
 }
 
@@ -812,11 +824,11 @@ string APIUtil::begin_process(string db_name, int level , string username)
     shared_ptr<Txn_manager> txn_m = APIUtil::get_Txn_ptr(db_name);
     cerr << "Isolation Level Type:" << level << endl;
 	txn_id_t TID = txn_m->Begin(static_cast<IsolationLevelType>(level));
-	cout <<"Transcation Id:"<< to_string(TID) << endl;
-	cout << to_string(txn_m->Get_Transaction(TID)->GetStartTime()) << endl;
+	// cout <<"Transcation Id:"<< to_string(TID) << endl;
+	// cout << to_string(txn_m->Get_Transaction(TID)->GetStartTime()) << endl;
 	string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
 	string Time_TID = begin_time + " " + to_string(TID);
-	Util::add_transactionlog(db_name, username, Time_TID, begin_time, "RUNNING", "INF");
+	add_transactionlog(db_name, username, Time_TID, begin_time, "RUNNING", "INF");
     if (TID == INVALID_ID)
 	{
 		return result;
@@ -829,14 +841,14 @@ bool APIUtil::commit_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
 {
     string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
     string Time_TID = begin_time + " " + to_string(TID);
-    Util::update_transactionlog(Time_TID, "COMMITED", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
+    update_transactionlog(Time_TID, "COMMITED", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
 }
 
 bool APIUtil::rollback_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
 {
     string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
     string Time_TID = begin_time + " " + to_string(TID);
-    Util::update_transactionlog(Time_TID, "ROLLBACK", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
+    update_transactionlog(Time_TID, "ROLLBACK", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
 }
 
 txn_id_t APIUtil::check_txn_id(string TID_s)
@@ -1025,7 +1037,7 @@ std::string APIUtil::check_server_indentity(const std::string& password)
     string error = "";
 	if(password != system_password)
 	{
-		error = "the password is wrong. please check the system.db/password.txt";
+		error = "the password is wrong. please check the " + system_password_path;
 	}
     return error;
 }
@@ -1573,80 +1585,23 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 	return 0;
 }
 
-string APIUtil::get_user_info()
+void APIUtil::get_user_info(vector<struct DBUserInfo *> *_users)
 {
     pthread_rwlock_tryrdlock(&users_map_lock);
-    string result = "";
     if(!users.empty())
     {
-        rapidjson::Document resDoc;
-        resDoc.SetObject();
-        Document::AllocatorType &allocator = resDoc.GetAllocator();
-        Value json_array(kArrayType);
         std::map<std::string, struct DBUserInfo *>::iterator iter;
         for (iter = users.begin(); iter != users.end(); iter++)
         {
-            Value obj(kObjectType);
-            string username = iter->second->getUsernname();
-            Value _username;
-            _username.SetString(username.c_str(), username.length(), allocator);
-            obj.AddMember("username", _username, allocator);
-
-            string password = iter->second->getPassword();
-            Value _password;
-            _password.SetString(password.c_str(), password.length(), allocator);
-            obj.AddMember("password", _password, allocator);
-
-            string query_db = iter->second->getQuery();
-            Value _query_db;
-            _query_db.SetString(query_db.c_str(), query_db.length(), allocator);
-            obj.AddMember("query_privilege", _query_db, allocator);
-
-            string update_db = iter->second->getUpdate();
-            Value _update_db;
-            _update_db.SetString(update_db.c_str(), update_db.length(), allocator);
-            obj.AddMember("update_privilege", _update_db, allocator);
-
-            string load_db = iter->second->getLoad();
-            Value _load_db;
-            _load_db.SetString(load_db.c_str(), load_db.length(), allocator);
-            obj.AddMember("load_privilege", _load_db, allocator);
-
-            string unload_db = iter->second->getUnload();
-            Value _unload_db;
-            _unload_db.SetString(unload_db.c_str(), unload_db.length(), allocator);
-            obj.AddMember("unload_privilege", _unload_db, allocator);
-
-            string backup_db = iter->second->getbackup();
-            Value _backup_db;
-            _backup_db.SetString(backup_db.c_str(), backup_db.length(), allocator);
-            obj.AddMember("backup_privilege", _backup_db, allocator);
-
-            string restore_db = iter->second->getrestore();
-            Value _restore_db;
-            _restore_db.SetString(restore_db.c_str(), restore_db.length(), allocator);
-            obj.AddMember("restore_privilege", _restore_db, allocator);
-
-            string export_db = iter->second->getexport();
-            Value _export_db;
-            _export_db.SetString(export_db.c_str(), export_db.length(), allocator);
-            obj.AddMember("export_privilege", _export_db, allocator);
-
-            json_array.PushBack(obj, allocator);
+            _users->push_back(iter->second);
         }
-        resDoc.AddMember("ResponseBody", json_array, allocator);
-        StringBuffer resBuffer;
-        PrettyWriter<StringBuffer> resWriter(resBuffer);
-        resDoc.Accept(resWriter);
-        result = resBuffer.GetString();
     }
     pthread_rwlock_unlock(&users_map_lock);
-    return result;
 }
 
 void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, struct DBAccessLogs *dbAccessLogs)
 {
-    access_log_lock.lock();
+    pthread_rwlock_rdlock(&access_log_lock);
     int totalSize = 0;
     int totalPage = 0;
     string accessLog = APIUtil::access_log_path + date + ".log";
@@ -1654,7 +1609,7 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
     {
         ifstream in;
         string line;
-        in.open(accessLog, ios::in);
+        in.open(accessLog.c_str(), ios::in);
         int startLine;
         int endLine;
         if(page_no < 1)
@@ -1676,7 +1631,8 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
         totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
         if (page_no > totalPage)
         {
-            throw runtime_error("page_no more then max_page_no " + totalPage);
+            pthread_rwlock_unlock(&access_log_lock);
+            throw runtime_error("page_no more then max_page_no " + to_string(totalPage));
         }
         startLine = totalSize - page_size*page_no + 1;
         endLine = totalSize - page_size*(page_no - 1) + 1;
@@ -1685,7 +1641,7 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
             startLine = 1;
         }
         // seek to start line;
-        in.open(accessLog, ios::in);
+        in.open(accessLog.c_str(), ios::in);
         int i_temp;
         char buf_temp[1024];
         in.seekg(0,ios::beg);
@@ -1700,6 +1656,7 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
             startLine++;
         }
         in.close();
+        pthread_rwlock_unlock(&access_log_lock);
         size_t count;
         count =  lines.size();			
         // cout<<"access log count : "<<count<<endl;
@@ -1715,7 +1672,6 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
     }
     dbAccessLogs->setTotalSize(totalSize);
     dbAccessLogs->setTotalPage(totalPage);
-    access_log_lock.unlock();
 }
 
 void APIUtil::write_access_log(string operation, string remoteIP, int statusCode, string statusMsg)
@@ -1735,7 +1691,7 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
         return;
     }
     // Another way to locka many: lock(lk1, lk2...)
-    access_log_lock.lock();
+    pthread_rwlock_wrlock(&access_log_lock);
     // build json
     string createTime = Util::get_date_time();
     struct DBAccessLogInfo *dbAccessLogInfo = new DBAccessLogInfo(remoteIP, operation, statusCode, statusMsg, createTime);
@@ -1750,12 +1706,13 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     fclose(ip_logfp);
     // std::cout << "logSize:" << logSize << endl;
     delete dbAccessLogInfo;
-    access_log_lock.unlock();
+    pthread_rwlock_unlock(&access_log_lock);
 }
 
 void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, struct DBQueryLogs *dbQueryLogs)
 {
-    query_log_lock.lock();
+    int rt = pthread_rwlock_rdlock(&query_log_lock);
+    Util::formatPrint("query_log_lock lock:" + to_string(rt));
     int totalSize = 0;
     int totalPage = 0;
     string queryLog = APIUtil::query_log_path + date + ".log";
@@ -1763,7 +1720,7 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
     {
         ifstream in;
         string line;
-        in.open(queryLog, ios::in);
+        in.open(queryLog.c_str(), ios::in);
         int startLine;
         int endLine;
         if(page_no < 1)
@@ -1785,7 +1742,9 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
         totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
         if (page_no > totalPage)
         {
-            throw runtime_error("page_no more then max_page_no " + totalPage);
+            rt = pthread_rwlock_unlock(&query_log_lock);
+            Util::formatPrint("query_log_lock unlock1:" + to_string(rt));
+            throw runtime_error("page_no more then max_page_no " + to_string(totalPage));
         }
         startLine = totalSize - page_size*page_no + 1;
         endLine = totalSize - page_size*(page_no - 1) + 1;
@@ -1794,11 +1753,11 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
             startLine = 1;
         }
         // seek to start line;
-        in.open(queryLog, ios::in);
+        in.open(queryLog.c_str(), ios::in);
         int i_temp;
         char buf_temp[1024];
-        in.seekg(0,ios::beg);
-        for (i_temp = 1;i_temp<startLine;i_temp++)
+        in.seekg(0, ios::beg);
+        for (i_temp = 1; i_temp < startLine; i_temp++)
         {
             in.getline(buf_temp, sizeof(buf_temp));
         }
@@ -1809,6 +1768,8 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
             startLine++;
         }
         in.close();
+        rt = pthread_rwlock_unlock(&query_log_lock);
+        Util::formatPrint("query_log_lock unlock2:" + to_string(rt));
         size_t count;
         count =  lines.size();
         for (size_t i = 0; i < count; i++)
@@ -1823,7 +1784,6 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
     }
     dbQueryLogs->setTotalSize(totalSize);
     dbQueryLogs->setTotalPage(totalPage);
-    query_log_lock.unlock();
 }
 
 void APIUtil::write_query_log(struct DBQueryLogInfo *queryLogInfo)
@@ -1845,7 +1805,7 @@ void APIUtil::write_query_log(struct DBQueryLogInfo *queryLogInfo)
     std::string _info = queryLogInfo->toJSON();
 
     // Another way to locka many: lock(lk1, lk2...)
-    query_log_lock.lock();
+    pthread_rwlock_wrlock(&query_log_lock);
     _info.push_back(',');
     _info.push_back('\n');
     std::fprintf(querylog_fp, "%s", _info.c_str());
@@ -1854,9 +1814,185 @@ void APIUtil::write_query_log(struct DBQueryLogInfo *queryLogInfo)
     // long logSize = ftell(querylog_fp);
     std::fclose(querylog_fp);
     // std::cout << "logSize: " << logSize << std::endl;
-    query_log_lock.unlock();
+    pthread_rwlock_unlock(&query_log_lock);
 }
 
+void APIUtil::init_transactionlog()
+{
+    pthread_rwlock_wrlock(&transactionlog_lock);
+    if (boost::filesystem::exists(TRANSACTION_LOG_PATH)) {
+        Util::formatPrint("transaction log has been created.");
+        pthread_rwlock_unlock(&transactionlog_lock);
+        return;
+    }
+    FILE* fp = fopen(TRANSACTION_LOG_PATH, "w");
+    fclose(fp);
+    pthread_rwlock_unlock(&transactionlog_lock);
+}
+
+int APIUtil::add_transactionlog(std::string db_name, std::string user, std::string TID, std::string begin_time, std::string state , std::string end_time)
+{
+    pthread_rwlock_wrlock(&transactionlog_lock);
+    FILE* fp = fopen(TRANSACTION_LOG_PATH, "a");
+    struct TransactionLogInfo *logInfo = new TransactionLogInfo(db_name, TID, user, state, begin_time, end_time);
+    string rec = logInfo->toJSON();
+    rec.push_back('\n');
+    fputs(rec.c_str(), fp);
+    fclose(fp);
+    delete logInfo;
+    pthread_rwlock_unlock(&transactionlog_lock);
+}
+
+int APIUtil::update_transactionlog(std::string TID, std::string state, std::string end_time)
+{
+    pthread_rwlock_wrlock(&transactionlog_lock);
+    FILE* fp = fopen(TRANSACTION_LOG_PATH, "r");
+    FILE* fp1 = fopen(TRANSACTION_LOG_TEMP_PATH, "w");
+    char readBuffer[0xffff];
+    int ret = 0;
+    struct TransactionLogInfo *logInfo = nullptr;
+    while (fgets(readBuffer, 1024, fp)) {
+        string rec = readBuffer;
+        logInfo = new TransactionLogInfo(rec);
+        if (logInfo->getTID() != TID) {
+            fputs(readBuffer, fp1);
+            delete logInfo;
+            continue;
+        }
+        if (!logInfo->getState().empty() && !logInfo->getEndTime().empty()) {
+            logInfo->setState(state);
+            logInfo->setEndTime(end_time);
+            string line = logInfo->toJSON();
+            line.push_back('\n');
+            fputs(line.c_str(), fp1);
+        }
+        else 
+        {
+            fputs(readBuffer, fp1);
+            Util::formatPrint("Transaction log corrupted, please initilize it!", "ERROR");
+            ret = 1;
+        }
+        delete logInfo;
+    }
+    fclose(fp);
+    fclose(fp1);
+    string cmd = "rm ";
+    cmd += TRANSACTION_LOG_PATH;
+    system(cmd.c_str());
+    cmd = "mv ";
+    cmd += TRANSACTION_LOG_TEMP_PATH;
+    cmd += ' ';
+    cmd += TRANSACTION_LOG_PATH;
+    system(cmd.c_str());
+    pthread_rwlock_unlock(&transactionlog_lock);
+    return ret;
+}
+
+void APIUtil::get_transactionlog(int &page_no, int &page_size, struct TransactionLogs *dbQueryLogs)
+{
+    int totalSize = 0;
+    int totalPage = 0;
+    if (Util::file_exist(TRANSACTION_LOG_PATH))
+    {
+        pthread_rwlock_rdlock(&transactionlog_lock);
+        ifstream in;
+        in.open(TRANSACTION_LOG_PATH, ios::in);
+        string line;
+        int startLine;
+        int endLine;
+        if(page_no < 1)
+        {
+            page_no = 1;
+        }
+        if(page_size < 1)
+        {
+            page_size = 10;
+        }
+        startLine = (page_no - 1)*page_size + 1;
+        endLine = page_no*page_size + 1;
+        //count total
+        while (getline(in, line, '\n'))
+        {
+            totalSize++;
+        }
+        in.close();
+        totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
+        if (page_no > totalPage)
+        {
+            pthread_rwlock_unlock(&transactionlog_lock);
+            throw runtime_error("page_no more then max_page_no " + to_string(totalPage));
+        }
+        startLine = totalSize - page_size*page_no + 1;
+        endLine = totalSize - page_size*(page_no - 1) + 1;
+        if (startLine < 1)
+        {
+            startLine = 1;
+        }
+        // seek to start line;
+        in.open(TRANSACTION_LOG_PATH, ios::in);
+        int i_temp;
+        char buf_temp[1024];
+        in.seekg(0, ios::beg);
+        for (i_temp = 1; i_temp < startLine; i_temp++)
+        {
+            in.getline(buf_temp, sizeof(buf_temp));
+        }
+        vector<std::string> lines;
+        while (startLine < endLine && getline(in, line, '\n')) {
+            lines.push_back(line);
+            startLine++;
+        }
+        in.close();
+        pthread_rwlock_unlock(&transactionlog_lock);
+        size_t count;
+        count =  lines.size();
+        for (size_t i = 0; i < count; i++)
+        {
+            line = lines[count - i - 1];
+            dbQueryLogs->addTransactionLogInfo(line);
+        }
+    }
+    dbQueryLogs->setTotalPage(totalPage);
+    dbQueryLogs->setTotalSize(totalSize);
+}
+
+void APIUtil::abort_transactionlog(long end_time)
+{
+    pthread_rwlock_wrlock(&transactionlog_lock);
+    FILE* fp = fopen(TRANSACTION_LOG_PATH, "r");
+    FILE* fp1 = fopen(TRANSACTION_LOG_TEMP_PATH, "w");
+    char readBuffer[0xffff];
+    int ret = 0;
+    struct TransactionLogInfo *logInfo = nullptr;
+    while (fgets(readBuffer, 1024, fp)) {
+        string rec = readBuffer;
+        logInfo = new TransactionLogInfo(rec);
+        if (logInfo->getState() == "RUNNING") 
+        {
+            logInfo->setState("ROLLBACK");
+            logInfo->setEndTime(to_string(end_time));
+            string line = logInfo->toJSON();
+            line.push_back('\n');
+            fputs(line.c_str(), fp1);
+        }
+        else 
+        {
+            fputs(readBuffer, fp1);
+        }
+        delete logInfo;
+    }
+    fclose(fp);
+    fclose(fp1);
+    string cmd = "rm ";
+    cmd += TRANSACTION_LOG_PATH;
+    system(cmd.c_str());
+    cmd = "mv ";
+    cmd += TRANSACTION_LOG_TEMP_PATH;
+    cmd += ' ';
+    cmd += TRANSACTION_LOG_PATH;
+    system(cmd.c_str());
+    pthread_rwlock_unlock(&transactionlog_lock);
+}
 
 std::string APIUtil::fun_cppcheck(std::string username, struct PFNInfo *fun_info)
 {
@@ -1904,7 +2040,7 @@ void APIUtil::fun_query(const string &fun_name, const string &fun_status, const 
     ifstream in;
     string line;
     string temp_str;
-    in.open(json_file_path, ios::in);
+    in.open(json_file_path.c_str(), ios::in);
     PFNInfo *temp_ptr;
     while (getline(in, line))
     {
@@ -2143,7 +2279,6 @@ std::string APIUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
 
 void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *fun_info, std::string operation)
 {
-    cout << "begin write json file "<<endl;
     string json_file_path = APIUtil::pfn_file_path + username + "/data.json";
     std::string fun_name = fun_info->getFunName(); 
     std::string json_str = fun_info->toJSON();
@@ -2175,13 +2310,12 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         string line;
         string cmd;
         string temp_name;
-        in.open(json_file_path, ios::in);
+        in.open(json_file_path.c_str(), ios::in);
         if (!in.is_open())
         {
             throw runtime_error("open function json file error.");
         }
         PFNInfo *fun_info_tmp;
-        cout << "operation 2 /3 begin get data line " <<endl;
         while (getline(in, line))
         {
             fun_info_tmp = new PFNInfo(line);
@@ -2191,7 +2325,6 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                 if (operation == "2") // update
                 {
                     _buf << json_str << '\n';
-                    cout << json_str <<endl;
                 }
                 else // remove
                 {
@@ -2217,11 +2350,9 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         line = _buf.str();
         string temp_path = APIUtil::pfn_file_path + username + "/temp.json";
         string back_path = APIUtil::pfn_file_path + username + "/back.json";
-        cout << "temp_path" << temp_path <<endl;
         ofstream out(temp_path.c_str());
         if (!out.is_open())
         {
-            cout <<"open function json temp file error." <<endl;
             throw runtime_error("open function json temp file error.");
         }
         out << line;
@@ -2247,30 +2378,25 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
             {
                 cmd = "mv -f " + back_path + " " + json_file_path;
                 system(cmd.c_str());
-                cout << cmd <<endl;
-                cout << "save function info to json file error, status code:"<<endl;
                 throw runtime_error("save function info to json file error, status code:" + status);
             }
         }
         else
         {
-            cout << "save function info to json file error, status code:" <<endl;
             throw runtime_error("save function info to json file error, status code:" + status);
         }
     }
     else
     {
-        cout << "save function info to json file error, no match operation:"<<endl;
         throw runtime_error("save function info to json file error, no match operation:" + operation);
     }
-    cout << "fun_write_json_file success "<<endl;
 }
 
 void APIUtil::fun_parse_from_name(const std::string& username, const std::string& fun_name, struct PFNInfo *fun_info)
 {
     string json_file_path = APIUtil::pfn_file_path + username + "/data.json";
     ifstream in;
-    in.open(json_file_path, ios::in);
+    in.open(json_file_path.c_str(), ios::in);
     if (!in.is_open())
     {
         throw runtime_error("open function json file error.");
@@ -2309,29 +2435,14 @@ string APIUtil::get_system_path()
     return system_path;
 }
 
-void APIUtil::set_system_path(string sys_path)
-{
-    system_path = sys_path;
-}
-
 string APIUtil::get_backup_path()
 {
     return backup_path;
 }
 
-void APIUtil::set_backup_path(string bup_path)
-{
-    backup_path = bup_path;
-}
-
 string APIUtil::get_Db_path()
 {
     return DB_path;
-}
-
-void APIUtil::set_Db_path(string db_path)
-{
-    DB_path = db_path;
 }
 
 unsigned int APIUtil::get_max_output_size()
@@ -2342,4 +2453,14 @@ unsigned int APIUtil::get_max_output_size()
 string APIUtil::get_root_username()
 {
     return root_username;
+}
+
+string APIUtil::get_system_username()
+{
+    return system_username;
+}
+
+unsigned int APIUtil::get_connection_num()
+{
+    return connection_num;
 }

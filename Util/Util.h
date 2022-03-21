@@ -495,13 +495,6 @@ public:
 	static void search_backuplog(std::vector<std::string> &res, std::string parameter, std::string value);
 	static bool has_record_backuplog(std::string db_name);
 
-	static void init_transactionlog();
-	static int add_transactionlog(std::string db_name, std::string user, std::string TID,  std::string begin_time, std::string status = "RUNNING",  std::string end_time = "inf");
-	static int delete_transactionlog(std::string db_name, std::string TID);
-	static int update_transactionlog(std::string db_name, std::string status, std::string end_time);
-	static std::string get_transactionlog();
-	static void abort_transactionlog(long end_time);
-
 	static long int get_timestamp(std::string& line);
 	static std::string stamp2time(int timestamp);
 	static std::vector<std::string> GetFiles(const char *src_dir, const char *ext);
@@ -512,6 +505,7 @@ public:
     static void formatPrint(std::string content, std::string type = "INFO");
     static std::string urlEncode(const std::string& str);
     static std::string urlDecode(const std::string& str);
+    static std::string get_cur_path();
  private:
 	
 private:

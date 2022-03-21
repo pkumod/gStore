@@ -15,12 +15,11 @@ void sig_handler(int signo)
 int initialize(int argc, char *argv[])
 {
 	unsigned short port = 9000;
+	string port_str = "9000";
 	stringstream ss;
 	if (argc < 2)
 	{
-		ss << "Server will use the default port: ";
-		ss << port;
-		Util::formatPrint(ss.str());
+		Util::formatPrint("Server will use the default port: " + port_str);
 	}
 	else if (argc == 2)
 	{
@@ -46,18 +45,14 @@ int initialize(int argc, char *argv[])
 	}
 	else
 	{
-		string port_str = Util::getArgValue(argc, argv, "p", "port", "9000");
+		port_str = Util::getArgValue(argc, argv, "p", "port", "9000");
 		port = atoi(port_str.c_str());
 	}
-	if (Util::checkPort(port, "grpc") == false)
+	// check port.txt exist
+	if (Util::file_exist("system.db/port.txt"))
 	{
-		ss.clear();
-		ss.str("");
-		ss << "Server port ";
-		ss << port;
-		ss << "  has been used.";
-		Util::formatPrint(ss.str(), "ERROR");
-		return 0;
+		Util::formatPrint("Server port " + port_str + " is already in use.", "ERROR");
+		return -1;
 	}
 
 	// APIUtil grpcUtil;
@@ -86,7 +81,8 @@ int main(int argc, char *argv[])
 	srand(time(NULL));
 	while (true)
 	{
-		pid_t fpid = 0;//fork();
+		pid_t fpid = fork();
+		cout << "fpid:" << fpid << endl;
 		if (fpid == 0)
 		{
 			int ret = initialize(argc, argv);
@@ -102,6 +98,11 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
+				if (Util::file_exist("system.db/port.txt"))
+				{
+					string cmd = "rm system.db/port.txt";
+                    system(cmd.c_str());
+				}
 				Util::formatPrint("Stopped abnormally, restarting server...", "WARN");
 			}
 		}
