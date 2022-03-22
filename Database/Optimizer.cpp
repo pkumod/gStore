@@ -399,7 +399,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 			  executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
 	  long t4_ = Util::get_cur_time();
-	  best_plan_tree = plan_generator.get_plan(true);
+	  best_plan_tree = plan_generator.get_plan(false);
 	  long t4 = Util::get_cur_time();
 	  cout << "plan get, used " << (t4 - t4_) + (t3_ - t3) << "ms." << endl;
 	}
