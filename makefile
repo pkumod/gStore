@@ -134,7 +134,7 @@ inc_workflow=-I./tools/workflow-master/_include
 
 #gtest
 
-TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gquery $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gquery $(exedir)gBenchmark $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -170,6 +170,9 @@ $(exedir)gbuild: $(lib_antlr) $(objdir)gbuild.o $(objfile)
 
 $(exedir)gquery: $(lib_antlr) $(objdir)gquery.o $(objfile) 
 	$(CC) $(EXEFLAG) -o $(exedir)gquery $(objdir)gquery.o $(objfile) $(library) $(openmp)
+
+$(exedir)gBenchmark: $(lib_antlr) $(objdir)gBenchmark.o $(objfile)
+	$(CC) $(EXEFLAG) -o $(exedir)gBenchmark $(objdir)gBenchmark.o $(objfile) $(library) $(openmp)
 
 $(exedir)gserver: $(lib_antlr) $(objdir)gserver.o $(objfile) 
 	$(CC) $(EXEFLAG) -o $(exedir)gserver $(objdir)gserver.o $(objfile) $(library) $(openmp)
@@ -244,6 +247,10 @@ $(objdir)gbuild.o: Main/gbuild.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	
 $(objdir)gquery.o: Main/gquery.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) Main/gquery.cpp $(inc) -o $(objdir)gquery.o $(openmp) #-DREADLINE_ON
+	#add -DREADLINE_ON if using readline
+
+$(objdir)gBenchmark.o: Main/gBenchmark.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CC) $(CFLAGS) Main/gBenchmark.cpp $(inc) -o $(objdir)gBenchmark.o $(openmp) #-DREADLINE_ON
 	#add -DREADLINE_ON if using readline
 
 $(objdir)gserver.o: Main/gserver.cpp Server/Server.h Util/Util.h $(lib_antlr)

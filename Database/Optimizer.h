@@ -37,7 +37,7 @@
 #include <random>
 
 //#define FEED_PLAN
-#define OPTIMIZER_DEBUG_INFO
+// #define OPTIMIZER_DEBUG_INFO
 
 using namespace std;
 using TableContent = list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>;
@@ -59,7 +59,7 @@ struct QueryInfo{
   bool is_distinct_;
   shared_ptr<vector<QueryTree::Order>> ordered_by_expressions_;
 };
-
+extern long test_time;
 extern bool RankAfterMatching;
 /*
  *

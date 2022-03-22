@@ -6,6 +6,7 @@
 
 #include "Optimizer.h"
 // #define FEED_PLAN
+long test_time;
 bool RankAfterMatching = false;
 Optimizer::Optimizer(KVstore *kv_store,
                      Statistics *statistics,
@@ -273,14 +274,13 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   auto strategy = this->ChooseStrategy(bgp_query,&query_info);
   auto distinct = bgp_query->distinct_query;
   CompressedVector::InitialCombinatorial(2040,10);
+
   if(strategy == BasicQueryStrategy::Normal || RankAfterMatching)
   {
-
+    long start_time =Util::get_cur_time();
     PlanTree* best_plan_tree;
 	PlanGenerator plan_generator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
 								 limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_, txn_);
-
-    long t1 =Util::get_cur_time();
 
     if(bgp_query->get_triple_num()==1)
       best_plan_tree = plan_generator.get_special_one_triple_plan();
@@ -290,34 +290,34 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
         executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
       long t2 = Util::get_cur_time();
-      cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
+      // cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
       long t3 = Util::get_cur_time();
-      cout << "id_list.size = " << var_candidates_cache->size() << endl;
+      // cout << "id_list.size = " << var_candidates_cache->size() << endl;
 
-	  cout << "limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_ << endl;
+	  // cout << "limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_ << endl;
 
 	  auto second_run_candidates_plan = plan_generator.completecandidate();
 	  long t3_ = Util::get_cur_time();
-	  cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
+	  // cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
 
       for(const auto& constant_generating_step: second_run_candidates_plan)
         executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
 	  long t4_ = Util::get_cur_time();
       best_plan_tree = plan_generator.get_plan(true);
-      long t4 = Util::get_cur_time();
-      cout << "plan get, used " << (t4 - t4_) + (t3_ - t3) << "ms." << endl;
+      // long t4 = Util::get_cur_time();
+      // cout << "plan get, used " << (t4 - t4_) + (t3_ - t3) << "ms." << endl;
     }
 
     best_plan_tree->print(bgp_query.get());
-    cout << "plan print done" << endl;
+    //cout << "plan print done" << endl;
 
     long t_ = Util::get_cur_time();
     auto bfs_result = this->ExecutionBreathFirst(bgp_query,query_info,best_plan_tree->root_node,var_candidates_cache);
 
     // todo: Destructor of PlanGenerator here
     long t5 = Util::get_cur_time();
-    cout << "execution, used " << (t5 - t_) << "ms." << endl;
+ //   cout << "execution, used " << (t5 - t_) << "ms." << endl;
 
     auto bfs_table = get<1>(bfs_result);
     auto pos_var_mapping = bfs_table.pos_id_map;
@@ -326,37 +326,76 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     long t6 = Util::get_cur_time();
     if(RankAfterMatching)
     {
-      // Simulate a ranking process
+      // calculating var coefficient
+      auto first_item = (*query_info.ordered_by_expressions_)[0];
+      auto var_coefficients = TopKUtil::getVarCoefficients(first_item);
+      if(first_item.descending)
+        std::for_each(var_coefficients->begin(),
+                      var_coefficients->end(),
+                      [](decltype(*var_coefficients->begin()) pair_it)
+                      {
+                        pair_it.second = -pair_it.second;
+                      });
+      auto &pos_id = bfs_table.pos_id_map;
+      auto varNum = pos_id->size();
+      vector<double> coefficient_vector(varNum,0.0);
+      for(unsigned int i = 0;i<varNum;i++)
+      {
+        auto var_id = (*pos_id)[i];
+        auto var_string = bgp_query->get_var_name_by_id(var_id);
+        auto co_it = var_coefficients->find(var_string);
+        if(co_it!=var_coefficients->end())
+          coefficient_vector[i] = co_it->second;
+      }
       auto k = query_info.limit_num_;
       vector<TYPE_ENTITY_LITERAL_ID> ranked_vector;
+      struct RankingRecord{
+        double score;
+        std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record_ptr;
+        bool operator<(const RankingRecord& other)const {
+          return this->score < other.score;
+        }
+      };
+      vector<RankingRecord> RankedTable;
       auto it = bfs_table.values_->begin();
-      int counter = 0;
       while(it!= bfs_table.values_->end())
       {
-        counter ++;
-        if(counter>k)
-          it = bfs_table.values_->erase(it);
-        else
-        {
-          ranked_vector.push_back( (*it)->back());
-          it++;
-        }
+        bool invalid_flag = false;
+        RankingRecord new_record;
+        double score = 0;
+        for(int i = 0;i<varNum && !invalid_flag;i++)
+          if(coefficient_vector[i]!=0.0) {
+            auto literal_string = kv_store_->getStringByID((**it)[i]);
+            pair<bool, double> check_result =  Util::checkGetNumericLiteral(literal_string);
+            if(!get<0>(check_result))
+              invalid_flag = true;
+            score += coefficient_vector[i] * get<1>(check_result);
+          }
+
+        new_record.score = score;
+        new_record.record_ptr = std::move(*it);
+        if(!invalid_flag)
+          RankedTable.push_back(new_record);
+        it = bfs_table.values_->erase(it);
       }
-      std::sort(ranked_vector.begin(),ranked_vector.end());
+      std::sort(RankedTable.begin(),RankedTable.end());
+      for(int i = 0;i<k && i<RankedTable.size();i++)
+        bfs_table.values_->push_back(RankedTable[i].record_ptr);
     }
     CopyToResult(bgp_query, bfs_table);
 #ifdef OPTIMIZER_DEBUG_INFO
-    cout<<"after copy bfs result size "<<bgp_query->get_result_list_pointer()->size()<<endl;
+   // cout<<"after copy bfs result size "<<bgp_query->get_result_list_pointer()->size()<<endl;
 #endif
-    long t7 = Util::get_cur_time();
-    cout << "copy to result, used " << (t7 - t6) <<"ms." <<endl;
-    cout << "total execution, used " << (t7 - t1) <<"ms."<<endl;
+    test_time = Util::get_cur_time() - start_time;
+    //cout << "copy to result, used " << (t7 - t6) <<"ms." <<endl;
+    //cout << "total execution, used " << (t7 - t1) <<"ms."<<endl;
   }
   else if(strategy ==BasicQueryStrategy::Special){
     printf("BasicQueryStrategy::Special not supported yet\n");
   }
   else if(strategy == BasicQueryStrategy::TopK)
   {
+    long start = Util::get_cur_time();
 #ifdef TOPK_SUPPORT
     auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
     for (auto &constant_generating_step: *const_candidates) {
@@ -391,6 +430,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
     auto result_table = get<1>(top_k_result);
     CopyToResult(bgp_query, result_table);
 #endif
+    test_time = Util::get_cur_time()-start;
   }
   else if(strategy == BasicQueryStrategy::limitK)
   {
@@ -711,7 +751,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
   auto right_table = get<1>(right_r);
   if(operation_type==StepOperation::JoinType::JoinTable){
 #ifndef OPTIMIZER_DEBUG_INFO
-    return executor_.JoinTable(step_operation->join_table_, left_table, right_table);
+    return executor_.JoinTable(step_operation->join_table_, left_table, right_table,remain_old);
 #endif
 #ifdef OPTIMIZER_DEBUG_INFO
     long t1 = Util::get_cur_time();
@@ -766,7 +806,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   env->limitID_literal = this->limitID_literal_;
   env->bgp_query = bgp_query;
   env->id_caches = id_caches;
-  cout<<" Optimizer::ExecutionTopK  env->id_caches "<<  env->id_caches->size()<<endl;
+  // cout<<" Optimizer::ExecutionTopK  env->id_caches "<<  env->id_caches->size()<<endl;
   env->k = query_info.limit_num_;
   env->any_k = tree_search_plan->HasCycle();
   env->coefficients = var_coefficients;
@@ -871,7 +911,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   for(decltype(result_list->size()) i =0;i<result_list->size();i++)
   {
     auto rec = *it;
-    cout<<" record["<<i<<"]"<<" score:"<<score_list[i];
+    // cout<<" record["<<i<<"]"<<" score:"<<score_list[i];
 
     for(unsigned j =0;j<var_num;j++)
       if(is_predicate_var[(*pos_var_mapping)[j]])
