@@ -38,15 +38,15 @@ int main(int argc, char *argv[])
 {
 	string port;
 	string type;
-	if (argc < 2)
-	{
-		/*cout << "please input the complete command:\t" << endl;
-		cout << "\t bin/gadd -h" << endl;*/
-		// Log.Error("Invalid arguments! Input \"bin/gbuild -h\" for help.");
-		cout << "Invalid arguments! Input \"bin/shutdown -h\" for help." << endl;
-		return 0;
-	}
-	else if (argc == 2)
+	// if (argc < 2)
+	// {
+	// 	/*cout << "please input the complete command:\t" << endl;
+	// 	cout << "\t bin/gadd -h" << endl;*/
+	// 	// Log.Error("Invalid arguments! Input \"bin/gbuild -h\" for help.");
+	// 	cout << "Invalid arguments! Input \"bin/shutdown -h\" for help." << endl;
+	// 	return 0;
+	// }
+	if (argc == 2)
 	{
 		string command = argv[1];
 		if (command == "-h" || command == "--help")
@@ -54,12 +54,12 @@ int main(int argc, char *argv[])
 			cout << endl;
 			cout << "Shutdown the ghttp server" << endl;
 			cout << endl;
-			cout << "Usage:\tbin/shutdown -p [port] -t [type]" << endl;
+			cout << "Usage:\tbin/shutdown -t [type]" << endl;
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-p,--port,\t\t the ghttp  server listen port. " << endl;
-			cout << "\t-t,--type,\t\t the server type. grpc or ghttp, Default value is grpc." << endl;
+			// cout << "\t-p,--port,\t\t the ghttp  server listen port. " << endl;
+			cout << "\t-t,--type,\t\tthe server type. grpc or ghttp, Default value is grpc." << endl;
 
 			cout << endl;
 			return 0;
@@ -73,14 +73,18 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		port = Util::getArgValue(argc, argv, "p", "port");
+		// port = Util::getArgValue(argc, argv, "p", "port");
 		type = Util::getArgValue(argc, argv, "t", "type");
 		
-
 		fstream ofp;
+		ofp.open("system.db/port.txt", ios::in);
+		ofp >> port;
+		ofp.close();
+
 		ofp.open("system.db/password" + port + ".txt", ios::in);
 		ofp >> system_password;
 		ofp.close();
+
 		GstoreConnector gc;
 		string res;
 		int ret;
@@ -95,13 +99,14 @@ int main(int argc, char *argv[])
 		{
 			strUrl = strUrl + "/grpc/shutdown";
 		}
+		// cout << "post url:" << strUrl << '\n' << postdata << endl;
 		ret = gc.Post(strUrl, postdata, res);
-		cout << "post result:" << ret << endl;
+		// cout << "post result:" << ret << endl;
 		if (res == "")
 		{
 			res = "the Server is stopped successfully!";
 		}
-		cout << "response: " << res << endl;
+		cout << "Result: " << res << endl;
 		return 0;
 	}
 

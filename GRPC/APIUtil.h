@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-03-21 09:43:18
+ * @LastEditTime: 2022-03-23 17:29:59
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -20,6 +20,7 @@ using namespace std;
 using namespace rapidjson;
 
 #define ROOT_USERNAME "root"
+#define SYSTEM_DB_NAME "system"
 #define PFN_HEADER "#include <iostream>\n#include \"../../Database/CSRUtil.h\"\n\nusing namespace std;\n"
 #define TRANSACTION_LOG_PATH "./logs/transaction.json"
 #define TRANSACTION_LOG_TEMP_PATH "./logs/transaction_temp.json"
