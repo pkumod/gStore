@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-03-21 09:29:42
+ * @LastEditTime: 2022-03-22 11:56:20
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -827,7 +827,7 @@ string APIUtil::begin_process(string db_name, int level , string username)
 	// cout <<"Transcation Id:"<< to_string(TID) << endl;
 	// cout << to_string(txn_m->Get_Transaction(TID)->GetStartTime()) << endl;
 	string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
-	string Time_TID = begin_time + " " + to_string(TID);
+	string Time_TID = begin_time + "_" + to_string(TID);
 	add_transactionlog(db_name, username, Time_TID, begin_time, "RUNNING", "INF");
     if (TID == INVALID_ID)
 	{
@@ -840,14 +840,14 @@ string APIUtil::begin_process(string db_name, int level , string username)
 bool APIUtil::commit_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
 {
     string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
-    string Time_TID = begin_time + " " + to_string(TID);
+    string Time_TID = begin_time + "_" + to_string(TID);
     update_transactionlog(Time_TID, "COMMITED", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
 }
 
 bool APIUtil::rollback_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
 {
     string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
-    string Time_TID = begin_time + " " + to_string(TID);
+    string Time_TID = begin_time + "_" + to_string(TID);
     update_transactionlog(Time_TID, "ROLLBACK", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
 }
 
@@ -858,9 +858,9 @@ txn_id_t APIUtil::check_txn_id(string TID_s)
 	{
 		TID = strtoull(TID_s.c_str(), NULL, 0);
 	} 
-    else if (TID_s.find(" ") != string::npos)
+    else if (TID_s.find("_") != string::npos)
     {   // case for workbench call commit and rollback: "begin_time tid"
-        int pos = TID_s.find(" ") + 1;
+        int pos = TID_s.find("_") + 1;
         string TID_s_new = TID_s.substr(pos, TID_s.size()-pos);
         if (Util::is_number(TID_s_new))
         {
@@ -1916,40 +1916,43 @@ void APIUtil::get_transactionlog(int &page_no, int &page_size, struct Transactio
             totalSize++;
         }
         in.close();
-        totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
-        if (page_no > totalPage)
+        if (totalSize > 0)
         {
+            totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
+            if (page_no > totalPage)
+            {
+                pthread_rwlock_unlock(&transactionlog_lock);
+                throw runtime_error("page_no more then max_page_no " + to_string(totalPage));
+            }
+            startLine = totalSize - page_size*page_no + 1;
+            endLine = totalSize - page_size*(page_no - 1) + 1;
+            if (startLine < 1)
+            {
+                startLine = 1;
+            }
+            // seek to start line;
+            in.open(TRANSACTION_LOG_PATH, ios::in);
+            int i_temp;
+            char buf_temp[1024];
+            in.seekg(0, ios::beg);
+            for (i_temp = 1; i_temp < startLine; i_temp++)
+            {
+                in.getline(buf_temp, sizeof(buf_temp));
+            }
+            vector<std::string> lines;
+            while (startLine < endLine && getline(in, line, '\n')) {
+                lines.push_back(line);
+                startLine++;
+            }
+            in.close();
             pthread_rwlock_unlock(&transactionlog_lock);
-            throw runtime_error("page_no more then max_page_no " + to_string(totalPage));
-        }
-        startLine = totalSize - page_size*page_no + 1;
-        endLine = totalSize - page_size*(page_no - 1) + 1;
-        if (startLine < 1)
-        {
-            startLine = 1;
-        }
-        // seek to start line;
-        in.open(TRANSACTION_LOG_PATH, ios::in);
-        int i_temp;
-        char buf_temp[1024];
-        in.seekg(0, ios::beg);
-        for (i_temp = 1; i_temp < startLine; i_temp++)
-        {
-            in.getline(buf_temp, sizeof(buf_temp));
-        }
-        vector<std::string> lines;
-        while (startLine < endLine && getline(in, line, '\n')) {
-            lines.push_back(line);
-            startLine++;
-        }
-        in.close();
-        pthread_rwlock_unlock(&transactionlog_lock);
-        size_t count;
-        count =  lines.size();
-        for (size_t i = 0; i < count; i++)
-        {
-            line = lines[count - i - 1];
-            dbQueryLogs->addTransactionLogInfo(line);
+            size_t count;
+            count =  lines.size();
+            for (size_t i = 0; i < count; i++)
+            {
+                line = lines[count - i - 1];
+                dbQueryLogs->addTransactionLogInfo(line);
+            }
         }
     }
     dbQueryLogs->setTotalPage(totalPage);
