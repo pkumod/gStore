@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-03-22 11:56:20
+ * @LastEditTime: 2022-03-23 17:32:06
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -32,7 +32,7 @@ APIUtil::~APIUtil()
     for (iter = databases.begin(); iter != databases.end(); iter++)
     {
         string database_name = iter->first;
-        if (database_name == "system")
+        if (database_name == SYSTEM_DB_NAME)
             continue;
         Database *current_database = iter->second;
         pthread_rwlock_rdlock(&already_build_map_lock);
@@ -163,11 +163,11 @@ int APIUtil::initialize(const std::string port, const std::string db_name, bool 
             Util::formatPrint("Can not find system.db.","ERROR");
             return -1;
         }
-        system_database = new Database("system");
+        system_database = new Database(SYSTEM_DB_NAME);
         
         system_database->load();
         cout << "add system database" << endl;
-        APIUtil::add_database("system", system_database);
+        APIUtil::add_database(SYSTEM_DB_NAME, system_database);
 
         // init already_build db
         ResultSet rs;
@@ -228,8 +228,8 @@ int APIUtil::initialize(const std::string port, const std::string db_name, bool 
                     std::cout << db_name << " already build at " << temp_db->getTime() << endl;
                 }
                 //insert systemdb into already_build
-                // struct DatabaseInfo *system_db = new DatabaseInfo("system");
-                // already_build.insert(pair<std::string, struct DatabaseInfo *>("system", system_db));
+                // struct DatabaseInfo *system_db = new DatabaseInfo(SYSTEM_DB_NAME);
+                // already_build.insert(pair<std::string, struct DatabaseInfo *>(SYSTEM_DB_NAME, system_db));
                 
                 pthread_rwlock_unlock(&already_build_map_lock);
             }
@@ -723,7 +723,7 @@ bool APIUtil::db_checkpoint(string db_name)
 //     for(iter=databases.begin(); iter != databases.end(); iter++)
 // 	{
 // 		string database_name = iter->first;
-// 		if (database_name == "system")
+// 		if (database_name == SYSTEM_DB_NAME)
 // 			continue;
 // 		//abort all transaction
 // 		db_checkpoint(database_name);
@@ -936,7 +936,7 @@ void APIUtil::get_already_builds(vector<struct DatabaseInfo *> &array)
     for (iter = already_build.begin(); iter != already_build.end(); iter++)
     {
         DatabaseInfo *db_info = iter->second;
-        if (db_info->getName() == "system")
+        if (db_info->getName() == SYSTEM_DB_NAME)
         {
             continue;
         }
@@ -1053,7 +1053,7 @@ std::string APIUtil::check_param_value(string paramname, string value)
 	if (paramname == "db_name")
 	{
 		string database = value;
-		if (database == "system")
+		if (database == SYSTEM_DB_NAME)
 		{
 			result = "you can not operate the system database";
 			return result;
@@ -1084,13 +1084,13 @@ bool APIUtil::check_db_exist(const std::string& db_name)
 
 bool APIUtil::add_privilege(const std::string& username, const std::string& type, const std::string& db_name)
 {
-    if(username == "root")
+    if(username == ROOT_USERNAME)
 	{
 		return 1;
 	}
     pthread_rwlock_rdlock(&users_map_lock);
-   std::map<std::string, struct DBUserInfo *>::iterator it = users.find(username);
-	if(it != users.end() && db_name != "system")
+    std::map<std::string, struct DBUserInfo *>::iterator it = users.find(username);
+	if(it != users.end() && db_name != SYSTEM_DB_NAME)
 	{
 		pthread_rwlock_unlock(&users_map_lock);
 		if(type == "query")
@@ -1219,7 +1219,7 @@ bool APIUtil::refresh_sys_db()
 	system_database->save();
 	delete system_database;
 	system_database = NULL;
-	system_database = new Database("system");
+	system_database = new Database(SYSTEM_DB_NAME);
 	bool flag = system_database->load();
 	cout << "system database refresh" << endl;
 	pthread_rwlock_unlock(&databases_map_lock);
@@ -1228,7 +1228,7 @@ bool APIUtil::refresh_sys_db()
 
 std::string APIUtil::query_sys_db(const std::string& sparql)
 {
-    string db_name = "system";
+    string db_name = SYSTEM_DB_NAME;
 	pthread_rwlock_rdlock(&already_build_map_lock);
     std::map<std::string, struct DatabaseInfo *>::iterator it_already_build = already_build.find(db_name);
     pthread_rwlock_unlock(&already_build_map_lock);
@@ -1496,7 +1496,7 @@ bool APIUtil::del_privilege(const std::string& username, const std::string& type
 
 bool APIUtil::check_privilege(const std::string& username, const std::string& type, const std::string& db_name)
 {
-	if(db_name == "system")
+	if(db_name == SYSTEM_DB_NAME)
 		return 0;
 
 	if(username == ROOT_USERNAME)
