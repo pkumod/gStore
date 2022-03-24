@@ -3040,6 +3040,7 @@ class CommonResponse final :
     kCreatorFieldNumber = 25,
     kBuiltTimeFieldNumber = 26,
     kTripleNumFieldNumber = 27,
+    kTypeFieldNumber = 33,
     kHeadFieldNumber = 4,
     kResultsFieldNumber = 5,
     kStatusCodeFieldNumber = 1,
@@ -3379,6 +3380,24 @@ class CommonResponse final :
   std::string* _internal_mutable_triplenum();
   public:
 
+  // optional string type = 33;
+  bool has_type() const;
+  private:
+  bool _internal_has_type() const;
+  public:
+  void clear_type();
+  const std::string& type() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_type(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_type();
+  PROTOBUF_NODISCARD std::string* release_type();
+  void set_allocated_type(std::string* type);
+  private:
+  const std::string& _internal_type() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_type(const std::string& value);
+  std::string* _internal_mutable_type();
+  public:
+
   // optional .QueryHeadInfo head = 4;
   bool has_head() const;
   private:
@@ -3598,6 +3617,7 @@ class CommonResponse final :
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr creator_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr builttime_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr triplenum_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr type_;
   ::QueryHeadInfo* head_;
   ::QueryResultInfo* results_;
   int32_t statuscode_;
@@ -8199,7 +8219,7 @@ inline void FunInfo::set_allocated_lasttime(std::string* lasttime) {
 
 // optional int32 StatusCode = 1;
 inline bool CommonResponse::_internal_has_statuscode() const {
-  bool value = (_has_bits_[0] & 0x00040000u) != 0;
+  bool value = (_has_bits_[0] & 0x00080000u) != 0;
   return value;
 }
 inline bool CommonResponse::has_statuscode() const {
@@ -8207,7 +8227,7 @@ inline bool CommonResponse::has_statuscode() const {
 }
 inline void CommonResponse::clear_statuscode() {
   statuscode_ = 0;
-  _has_bits_[0] &= ~0x00040000u;
+  _has_bits_[0] &= ~0x00080000u;
 }
 inline int32_t CommonResponse::_internal_statuscode() const {
   return statuscode_;
@@ -8217,7 +8237,7 @@ inline int32_t CommonResponse::statuscode() const {
   return _internal_statuscode();
 }
 inline void CommonResponse::_internal_set_statuscode(int32_t value) {
-  _has_bits_[0] |= 0x00040000u;
+  _has_bits_[0] |= 0x00080000u;
   statuscode_ = value;
 }
 inline void CommonResponse::set_statuscode(int32_t value) {
@@ -8333,7 +8353,7 @@ CommonResponse::responsebody() const {
 
 // optional .QueryHeadInfo head = 4;
 inline bool CommonResponse::_internal_has_head() const {
-  bool value = (_has_bits_[0] & 0x00010000u) != 0;
+  bool value = (_has_bits_[0] & 0x00020000u) != 0;
   PROTOBUF_ASSUME(!value || head_ != nullptr);
   return value;
 }
@@ -8342,7 +8362,7 @@ inline bool CommonResponse::has_head() const {
 }
 inline void CommonResponse::clear_head() {
   if (head_ != nullptr) head_->Clear();
-  _has_bits_[0] &= ~0x00010000u;
+  _has_bits_[0] &= ~0x00020000u;
 }
 inline const ::QueryHeadInfo& CommonResponse::_internal_head() const {
   const ::QueryHeadInfo* p = head_;
@@ -8360,14 +8380,14 @@ inline void CommonResponse::unsafe_arena_set_allocated_head(
   }
   head_ = head;
   if (head) {
-    _has_bits_[0] |= 0x00010000u;
+    _has_bits_[0] |= 0x00020000u;
   } else {
-    _has_bits_[0] &= ~0x00010000u;
+    _has_bits_[0] &= ~0x00020000u;
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:CommonResponse.head)
 }
 inline ::QueryHeadInfo* CommonResponse::release_head() {
-  _has_bits_[0] &= ~0x00010000u;
+  _has_bits_[0] &= ~0x00020000u;
   ::QueryHeadInfo* temp = head_;
   head_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
@@ -8383,13 +8403,13 @@ inline ::QueryHeadInfo* CommonResponse::release_head() {
 }
 inline ::QueryHeadInfo* CommonResponse::unsafe_arena_release_head() {
   // @@protoc_insertion_point(field_release:CommonResponse.head)
-  _has_bits_[0] &= ~0x00010000u;
+  _has_bits_[0] &= ~0x00020000u;
   ::QueryHeadInfo* temp = head_;
   head_ = nullptr;
   return temp;
 }
 inline ::QueryHeadInfo* CommonResponse::_internal_mutable_head() {
-  _has_bits_[0] |= 0x00010000u;
+  _has_bits_[0] |= 0x00020000u;
   if (head_ == nullptr) {
     auto* p = CreateMaybeMessage<::QueryHeadInfo>(GetArenaForAllocation());
     head_ = p;
@@ -8413,9 +8433,9 @@ inline void CommonResponse::set_allocated_head(::QueryHeadInfo* head) {
       head = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
           message_arena, head, submessage_arena);
     }
-    _has_bits_[0] |= 0x00010000u;
+    _has_bits_[0] |= 0x00020000u;
   } else {
-    _has_bits_[0] &= ~0x00010000u;
+    _has_bits_[0] &= ~0x00020000u;
   }
   head_ = head;
   // @@protoc_insertion_point(field_set_allocated:CommonResponse.head)
@@ -8423,7 +8443,7 @@ inline void CommonResponse::set_allocated_head(::QueryHeadInfo* head) {
 
 // optional .QueryResultInfo results = 5;
 inline bool CommonResponse::_internal_has_results() const {
-  bool value = (_has_bits_[0] & 0x00020000u) != 0;
+  bool value = (_has_bits_[0] & 0x00040000u) != 0;
   PROTOBUF_ASSUME(!value || results_ != nullptr);
   return value;
 }
@@ -8432,7 +8452,7 @@ inline bool CommonResponse::has_results() const {
 }
 inline void CommonResponse::clear_results() {
   if (results_ != nullptr) results_->Clear();
-  _has_bits_[0] &= ~0x00020000u;
+  _has_bits_[0] &= ~0x00040000u;
 }
 inline const ::QueryResultInfo& CommonResponse::_internal_results() const {
   const ::QueryResultInfo* p = results_;
@@ -8450,14 +8470,14 @@ inline void CommonResponse::unsafe_arena_set_allocated_results(
   }
   results_ = results;
   if (results) {
-    _has_bits_[0] |= 0x00020000u;
+    _has_bits_[0] |= 0x00040000u;
   } else {
-    _has_bits_[0] &= ~0x00020000u;
+    _has_bits_[0] &= ~0x00040000u;
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:CommonResponse.results)
 }
 inline ::QueryResultInfo* CommonResponse::release_results() {
-  _has_bits_[0] &= ~0x00020000u;
+  _has_bits_[0] &= ~0x00040000u;
   ::QueryResultInfo* temp = results_;
   results_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
@@ -8473,13 +8493,13 @@ inline ::QueryResultInfo* CommonResponse::release_results() {
 }
 inline ::QueryResultInfo* CommonResponse::unsafe_arena_release_results() {
   // @@protoc_insertion_point(field_release:CommonResponse.results)
-  _has_bits_[0] &= ~0x00020000u;
+  _has_bits_[0] &= ~0x00040000u;
   ::QueryResultInfo* temp = results_;
   results_ = nullptr;
   return temp;
 }
 inline ::QueryResultInfo* CommonResponse::_internal_mutable_results() {
-  _has_bits_[0] |= 0x00020000u;
+  _has_bits_[0] |= 0x00040000u;
   if (results_ == nullptr) {
     auto* p = CreateMaybeMessage<::QueryResultInfo>(GetArenaForAllocation());
     results_ = p;
@@ -8503,9 +8523,9 @@ inline void CommonResponse::set_allocated_results(::QueryResultInfo* results) {
       results = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
           message_arena, results, submessage_arena);
     }
-    _has_bits_[0] |= 0x00020000u;
+    _has_bits_[0] |= 0x00040000u;
   } else {
-    _has_bits_[0] &= ~0x00020000u;
+    _has_bits_[0] &= ~0x00040000u;
   }
   results_ = results;
   // @@protoc_insertion_point(field_set_allocated:CommonResponse.results)
@@ -8513,7 +8533,7 @@ inline void CommonResponse::set_allocated_results(::QueryResultInfo* results) {
 
 // optional int32 AnsNum = 6;
 inline bool CommonResponse::_internal_has_ansnum() const {
-  bool value = (_has_bits_[0] & 0x00080000u) != 0;
+  bool value = (_has_bits_[0] & 0x00100000u) != 0;
   return value;
 }
 inline bool CommonResponse::has_ansnum() const {
@@ -8521,7 +8541,7 @@ inline bool CommonResponse::has_ansnum() const {
 }
 inline void CommonResponse::clear_ansnum() {
   ansnum_ = 0;
-  _has_bits_[0] &= ~0x00080000u;
+  _has_bits_[0] &= ~0x00100000u;
 }
 inline int32_t CommonResponse::_internal_ansnum() const {
   return ansnum_;
@@ -8531,7 +8551,7 @@ inline int32_t CommonResponse::ansnum() const {
   return _internal_ansnum();
 }
 inline void CommonResponse::_internal_set_ansnum(int32_t value) {
-  _has_bits_[0] |= 0x00080000u;
+  _has_bits_[0] |= 0x00100000u;
   ansnum_ = value;
 }
 inline void CommonResponse::set_ansnum(int32_t value) {
@@ -8541,7 +8561,7 @@ inline void CommonResponse::set_ansnum(int32_t value) {
 
 // optional int32 OutputLimit = 7;
 inline bool CommonResponse::_internal_has_outputlimit() const {
-  bool value = (_has_bits_[0] & 0x00100000u) != 0;
+  bool value = (_has_bits_[0] & 0x00200000u) != 0;
   return value;
 }
 inline bool CommonResponse::has_outputlimit() const {
@@ -8549,7 +8569,7 @@ inline bool CommonResponse::has_outputlimit() const {
 }
 inline void CommonResponse::clear_outputlimit() {
   outputlimit_ = 0;
-  _has_bits_[0] &= ~0x00100000u;
+  _has_bits_[0] &= ~0x00200000u;
 }
 inline int32_t CommonResponse::_internal_outputlimit() const {
   return outputlimit_;
@@ -8559,7 +8579,7 @@ inline int32_t CommonResponse::outputlimit() const {
   return _internal_outputlimit();
 }
 inline void CommonResponse::_internal_set_outputlimit(int32_t value) {
-  _has_bits_[0] |= 0x00100000u;
+  _has_bits_[0] |= 0x00200000u;
   outputlimit_ = value;
 }
 inline void CommonResponse::set_outputlimit(int32_t value) {
@@ -9227,7 +9247,7 @@ inline void CommonResponse::set_allocated_successnum(std::string* successnum) {
 
 // optional int32 totalSize = 18;
 inline bool CommonResponse::_internal_has_totalsize() const {
-  bool value = (_has_bits_[0] & 0x00200000u) != 0;
+  bool value = (_has_bits_[0] & 0x00400000u) != 0;
   return value;
 }
 inline bool CommonResponse::has_totalsize() const {
@@ -9235,7 +9255,7 @@ inline bool CommonResponse::has_totalsize() const {
 }
 inline void CommonResponse::clear_totalsize() {
   totalsize_ = 0;
-  _has_bits_[0] &= ~0x00200000u;
+  _has_bits_[0] &= ~0x00400000u;
 }
 inline int32_t CommonResponse::_internal_totalsize() const {
   return totalsize_;
@@ -9245,7 +9265,7 @@ inline int32_t CommonResponse::totalsize() const {
   return _internal_totalsize();
 }
 inline void CommonResponse::_internal_set_totalsize(int32_t value) {
-  _has_bits_[0] |= 0x00200000u;
+  _has_bits_[0] |= 0x00400000u;
   totalsize_ = value;
 }
 inline void CommonResponse::set_totalsize(int32_t value) {
@@ -9255,7 +9275,7 @@ inline void CommonResponse::set_totalsize(int32_t value) {
 
 // optional int32 totalPage = 19;
 inline bool CommonResponse::_internal_has_totalpage() const {
-  bool value = (_has_bits_[0] & 0x00400000u) != 0;
+  bool value = (_has_bits_[0] & 0x00800000u) != 0;
   return value;
 }
 inline bool CommonResponse::has_totalpage() const {
@@ -9263,7 +9283,7 @@ inline bool CommonResponse::has_totalpage() const {
 }
 inline void CommonResponse::clear_totalpage() {
   totalpage_ = 0;
-  _has_bits_[0] &= ~0x00400000u;
+  _has_bits_[0] &= ~0x00800000u;
 }
 inline int32_t CommonResponse::_internal_totalpage() const {
   return totalpage_;
@@ -9273,7 +9293,7 @@ inline int32_t CommonResponse::totalpage() const {
   return _internal_totalpage();
 }
 inline void CommonResponse::_internal_set_totalpage(int32_t value) {
-  _has_bits_[0] |= 0x00400000u;
+  _has_bits_[0] |= 0x00800000u;
   totalpage_ = value;
 }
 inline void CommonResponse::set_totalpage(int32_t value) {
@@ -9283,7 +9303,7 @@ inline void CommonResponse::set_totalpage(int32_t value) {
 
 // optional int32 pageNo = 20;
 inline bool CommonResponse::_internal_has_pageno() const {
-  bool value = (_has_bits_[0] & 0x00800000u) != 0;
+  bool value = (_has_bits_[0] & 0x01000000u) != 0;
   return value;
 }
 inline bool CommonResponse::has_pageno() const {
@@ -9291,7 +9311,7 @@ inline bool CommonResponse::has_pageno() const {
 }
 inline void CommonResponse::clear_pageno() {
   pageno_ = 0;
-  _has_bits_[0] &= ~0x00800000u;
+  _has_bits_[0] &= ~0x01000000u;
 }
 inline int32_t CommonResponse::_internal_pageno() const {
   return pageno_;
@@ -9301,7 +9321,7 @@ inline int32_t CommonResponse::pageno() const {
   return _internal_pageno();
 }
 inline void CommonResponse::_internal_set_pageno(int32_t value) {
-  _has_bits_[0] |= 0x00800000u;
+  _has_bits_[0] |= 0x01000000u;
   pageno_ = value;
 }
 inline void CommonResponse::set_pageno(int32_t value) {
@@ -9311,7 +9331,7 @@ inline void CommonResponse::set_pageno(int32_t value) {
 
 // optional int32 pageSize = 21;
 inline bool CommonResponse::_internal_has_pagesize() const {
-  bool value = (_has_bits_[0] & 0x01000000u) != 0;
+  bool value = (_has_bits_[0] & 0x02000000u) != 0;
   return value;
 }
 inline bool CommonResponse::has_pagesize() const {
@@ -9319,7 +9339,7 @@ inline bool CommonResponse::has_pagesize() const {
 }
 inline void CommonResponse::clear_pagesize() {
   pagesize_ = 0;
-  _has_bits_[0] &= ~0x01000000u;
+  _has_bits_[0] &= ~0x02000000u;
 }
 inline int32_t CommonResponse::_internal_pagesize() const {
   return pagesize_;
@@ -9329,7 +9349,7 @@ inline int32_t CommonResponse::pagesize() const {
   return _internal_pagesize();
 }
 inline void CommonResponse::_internal_set_pagesize(int32_t value) {
-  _has_bits_[0] |= 0x01000000u;
+  _has_bits_[0] |= 0x02000000u;
   pagesize_ = value;
 }
 inline void CommonResponse::set_pagesize(int32_t value) {
@@ -9753,7 +9773,7 @@ inline void CommonResponse::set_allocated_triplenum(std::string* triplenum) {
 
 // optional int32 entityNum = 28;
 inline bool CommonResponse::_internal_has_entitynum() const {
-  bool value = (_has_bits_[0] & 0x02000000u) != 0;
+  bool value = (_has_bits_[0] & 0x04000000u) != 0;
   return value;
 }
 inline bool CommonResponse::has_entitynum() const {
@@ -9761,7 +9781,7 @@ inline bool CommonResponse::has_entitynum() const {
 }
 inline void CommonResponse::clear_entitynum() {
   entitynum_ = 0;
-  _has_bits_[0] &= ~0x02000000u;
+  _has_bits_[0] &= ~0x04000000u;
 }
 inline int32_t CommonResponse::_internal_entitynum() const {
   return entitynum_;
@@ -9771,7 +9791,7 @@ inline int32_t CommonResponse::entitynum() const {
   return _internal_entitynum();
 }
 inline void CommonResponse::_internal_set_entitynum(int32_t value) {
-  _has_bits_[0] |= 0x02000000u;
+  _has_bits_[0] |= 0x04000000u;
   entitynum_ = value;
 }
 inline void CommonResponse::set_entitynum(int32_t value) {
@@ -9781,7 +9801,7 @@ inline void CommonResponse::set_entitynum(int32_t value) {
 
 // optional int32 literalNum = 29;
 inline bool CommonResponse::_internal_has_literalnum() const {
-  bool value = (_has_bits_[0] & 0x04000000u) != 0;
+  bool value = (_has_bits_[0] & 0x08000000u) != 0;
   return value;
 }
 inline bool CommonResponse::has_literalnum() const {
@@ -9789,7 +9809,7 @@ inline bool CommonResponse::has_literalnum() const {
 }
 inline void CommonResponse::clear_literalnum() {
   literalnum_ = 0;
-  _has_bits_[0] &= ~0x04000000u;
+  _has_bits_[0] &= ~0x08000000u;
 }
 inline int32_t CommonResponse::_internal_literalnum() const {
   return literalnum_;
@@ -9799,7 +9819,7 @@ inline int32_t CommonResponse::literalnum() const {
   return _internal_literalnum();
 }
 inline void CommonResponse::_internal_set_literalnum(int32_t value) {
-  _has_bits_[0] |= 0x04000000u;
+  _has_bits_[0] |= 0x08000000u;
   literalnum_ = value;
 }
 inline void CommonResponse::set_literalnum(int32_t value) {
@@ -9809,7 +9829,7 @@ inline void CommonResponse::set_literalnum(int32_t value) {
 
 // optional int32 subjectNum = 30;
 inline bool CommonResponse::_internal_has_subjectnum() const {
-  bool value = (_has_bits_[0] & 0x08000000u) != 0;
+  bool value = (_has_bits_[0] & 0x10000000u) != 0;
   return value;
 }
 inline bool CommonResponse::has_subjectnum() const {
@@ -9817,7 +9837,7 @@ inline bool CommonResponse::has_subjectnum() const {
 }
 inline void CommonResponse::clear_subjectnum() {
   subjectnum_ = 0;
-  _has_bits_[0] &= ~0x08000000u;
+  _has_bits_[0] &= ~0x10000000u;
 }
 inline int32_t CommonResponse::_internal_subjectnum() const {
   return subjectnum_;
@@ -9827,7 +9847,7 @@ inline int32_t CommonResponse::subjectnum() const {
   return _internal_subjectnum();
 }
 inline void CommonResponse::_internal_set_subjectnum(int32_t value) {
-  _has_bits_[0] |= 0x08000000u;
+  _has_bits_[0] |= 0x10000000u;
   subjectnum_ = value;
 }
 inline void CommonResponse::set_subjectnum(int32_t value) {
@@ -9837,7 +9857,7 @@ inline void CommonResponse::set_subjectnum(int32_t value) {
 
 // optional int32 predicateNum = 31;
 inline bool CommonResponse::_internal_has_predicatenum() const {
-  bool value = (_has_bits_[0] & 0x10000000u) != 0;
+  bool value = (_has_bits_[0] & 0x20000000u) != 0;
   return value;
 }
 inline bool CommonResponse::has_predicatenum() const {
@@ -9845,7 +9865,7 @@ inline bool CommonResponse::has_predicatenum() const {
 }
 inline void CommonResponse::clear_predicatenum() {
   predicatenum_ = 0;
-  _has_bits_[0] &= ~0x10000000u;
+  _has_bits_[0] &= ~0x20000000u;
 }
 inline int32_t CommonResponse::_internal_predicatenum() const {
   return predicatenum_;
@@ -9855,7 +9875,7 @@ inline int32_t CommonResponse::predicatenum() const {
   return _internal_predicatenum();
 }
 inline void CommonResponse::_internal_set_predicatenum(int32_t value) {
-  _has_bits_[0] |= 0x10000000u;
+  _has_bits_[0] |= 0x20000000u;
   predicatenum_ = value;
 }
 inline void CommonResponse::set_predicatenum(int32_t value) {
@@ -9865,7 +9885,7 @@ inline void CommonResponse::set_predicatenum(int32_t value) {
 
 // optional int32 connectionNum = 32;
 inline bool CommonResponse::_internal_has_connectionnum() const {
-  bool value = (_has_bits_[0] & 0x20000000u) != 0;
+  bool value = (_has_bits_[0] & 0x40000000u) != 0;
   return value;
 }
 inline bool CommonResponse::has_connectionnum() const {
@@ -9873,7 +9893,7 @@ inline bool CommonResponse::has_connectionnum() const {
 }
 inline void CommonResponse::clear_connectionnum() {
   connectionnum_ = 0;
-  _has_bits_[0] &= ~0x20000000u;
+  _has_bits_[0] &= ~0x40000000u;
 }
 inline int32_t CommonResponse::_internal_connectionnum() const {
   return connectionnum_;
@@ -9883,12 +9903,81 @@ inline int32_t CommonResponse::connectionnum() const {
   return _internal_connectionnum();
 }
 inline void CommonResponse::_internal_set_connectionnum(int32_t value) {
-  _has_bits_[0] |= 0x20000000u;
+  _has_bits_[0] |= 0x40000000u;
   connectionnum_ = value;
 }
 inline void CommonResponse::set_connectionnum(int32_t value) {
   _internal_set_connectionnum(value);
   // @@protoc_insertion_point(field_set:CommonResponse.connectionNum)
+}
+
+// optional string type = 33;
+inline bool CommonResponse::_internal_has_type() const {
+  bool value = (_has_bits_[0] & 0x00010000u) != 0;
+  return value;
+}
+inline bool CommonResponse::has_type() const {
+  return _internal_has_type();
+}
+inline void CommonResponse::clear_type() {
+  type_.ClearToEmpty();
+  _has_bits_[0] &= ~0x00010000u;
+}
+inline const std::string& CommonResponse::type() const {
+  // @@protoc_insertion_point(field_get:CommonResponse.type)
+  return _internal_type();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void CommonResponse::set_type(ArgT0&& arg0, ArgT... args) {
+ _has_bits_[0] |= 0x00010000u;
+ type_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:CommonResponse.type)
+}
+inline std::string* CommonResponse::mutable_type() {
+  std::string* _s = _internal_mutable_type();
+  // @@protoc_insertion_point(field_mutable:CommonResponse.type)
+  return _s;
+}
+inline const std::string& CommonResponse::_internal_type() const {
+  return type_.Get();
+}
+inline void CommonResponse::_internal_set_type(const std::string& value) {
+  _has_bits_[0] |= 0x00010000u;
+  type_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArenaForAllocation());
+}
+inline std::string* CommonResponse::_internal_mutable_type() {
+  _has_bits_[0] |= 0x00010000u;
+  return type_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArenaForAllocation());
+}
+inline std::string* CommonResponse::release_type() {
+  // @@protoc_insertion_point(field_release:CommonResponse.type)
+  if (!_internal_has_type()) {
+    return nullptr;
+  }
+  _has_bits_[0] &= ~0x00010000u;
+  auto* p = type_.ReleaseNonDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (type_.IsDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited())) {
+    type_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return p;
+}
+inline void CommonResponse::set_allocated_type(std::string* type) {
+  if (type != nullptr) {
+    _has_bits_[0] |= 0x00010000u;
+  } else {
+    _has_bits_[0] &= ~0x00010000u;
+  }
+  type_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), type,
+      GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (type_.IsDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited())) {
+    type_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:CommonResponse.type)
 }
 
 #ifdef __GNUC__
