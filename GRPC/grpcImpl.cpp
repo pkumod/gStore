@@ -1,13 +1,14 @@
 /*
  * @Author: your name
  * @Date: 2022-02-28 10:31:06
- * @LastEditTime: 2022-03-21 10:46:57
+ * @LastEditTime: 2022-03-24 15:30:31
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.cpp
  */
 #include "grpcImpl.h"
 #define TEST_IP ""
+#define HTTP_TYPE "grpc"
 
 GrpcImpl::GrpcImpl(int argc, char *argv[])
 {
@@ -1289,6 +1290,7 @@ void GrpcImpl::login_task(CommonRequest *&request, CommonResponse *&response, sr
         response->set_licensetype(licensetype);
         string cur_path = Util::get_cur_path();
         response->set_rootpath(cur_path);
+        response->set_type(HTTP_TYPE);
     }
     catch (std::exception &e)
     {
@@ -1840,6 +1842,7 @@ void GrpcImpl::test_connect_task(CommonRequest *&request, CommonResponse *&respo
         response->set_coreversion(version);
         string licensetype=Util::getConfigureValue("licensetype");
         response->set_licensetype(licensetype);
+        response->set_type(HTTP_TYPE);
     }
     catch (std::exception &e) 
     {
@@ -1874,6 +1877,7 @@ void GrpcImpl::core_version_task(CommonRequest *&request, CommonResponse *&respo
         response->set_statusmsg("success");
         string version = Util::getConfigureValue("version");
         response->set_coreversion(version);
+        response->set_type(HTTP_TYPE);
     }
     catch (std::exception &e) 
     {

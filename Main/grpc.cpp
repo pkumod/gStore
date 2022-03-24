@@ -67,12 +67,13 @@ int initialize(int argc, char *argv[])
 	server.start(port);
 	ss.clear();
 	ss.str("");
-	ss << "Server port ";
+	ss << "grpc server port ";
 	ss << port;
 	Util::formatPrint(ss.str());
 	wait_group.wait();
 	server.stop();
 	google::protobuf::ShutdownProtobufLibrary();
+	Util::formatPrint("grpc server stoped.");
 	return 0;
 }
 

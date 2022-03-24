@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-03-21 10:28:09
+ * @LastEditTime: 2022-03-24 15:42:57
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -38,6 +38,7 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 
 #define THREAD_NUM 30
 #define TEST_IP ""
+#define HTTP_TYPE "ghttp"
 APIUtil *apiUtil = nullptr;
 //! init the ghttp server
 int initialize(int argc, char *argv[]);
@@ -592,7 +593,7 @@ int initialize(int argc, char *argv[])
 		//handle the Ctrl+C signal
 		signal(SIGINT, signalHandler);
 		//Start server
-		Util::formatPrint("Server port " + to_string(server.config.port));
+		Util::formatPrint("ghttp server port " + to_string(server.config.port));
 		server.start();
 	});
 
@@ -600,7 +601,7 @@ int initialize(int argc, char *argv[])
     this_thread::sleep_for(chrono::seconds(1));
 
     server_thread.join();
-	Util::formatPrint("Server stoped.");
+	Util::formatPrint("ghttp server stoped.");
     return 0;
 }
 
@@ -610,7 +611,7 @@ void signalHandler(int signum)
 	{
 		delete apiUtil;
 	}
-	Util::formatPrint("Server stopped.");
+	Util::formatPrint("ghttp server stopped.");
 	exit(signum);
 }
 
@@ -2055,6 +2056,7 @@ void login_thread_new(const shared_ptr<HttpServer::Request>& request, const shar
 		resDoc.AddMember("licensetype",StringRef(licensetype.c_str()), allocator);
 		string cur_path = Util::get_cur_path();
 		resDoc.AddMember("RootPath", StringRef(cur_path.c_str()), allocator);
+		resDoc.AddMember("type", HTTP_TYPE, allocator);
 		sendResponseMsg(resDoc, operation, request, response);
 	}
 	catch(const std::exception& e)
@@ -2568,6 +2570,7 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Request>& request, const
 		resDoc.AddMember("CoreVersion", StringRef(version.c_str()), allocator);
 		string licensetype=Util::getConfigureValue("licensetype");
 		resDoc.AddMember("licensetype",StringRef(licensetype.c_str()), allocator);
+		resDoc.AddMember("type", HTTP_TYPE, allocator);
 		sendResponseMsg(resDoc, operation, request, response);
 	}
 	catch(const std::exception& e)
@@ -2589,6 +2592,7 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Request>& request, const
 		resDoc.AddMember("StatusMsg", "success", allocator);
 		string version=Util::getConfigureValue("version");
 		resDoc.AddMember("CoreVersion", StringRef(version.c_str()), allocator);
+		resDoc.AddMember("type", HTTP_TYPE, allocator);
 		sendResponseMsg(resDoc, operation, request, response);
 	}
 	catch(const std::exception& e)

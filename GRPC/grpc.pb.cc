@@ -214,6 +214,7 @@ constexpr CommonResponse::CommonResponse(
   , creator_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
   , builttime_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
   , triplenum_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , type_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
   , head_(nullptr)
   , results_(nullptr)
   , statuscode_(0)
@@ -473,13 +474,14 @@ const uint32_t TableStruct_grpc_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   PROTOBUF_FIELD_OFFSET(::CommonResponse, subjectnum_),
   PROTOBUF_FIELD_OFFSET(::CommonResponse, predicatenum_),
   PROTOBUF_FIELD_OFFSET(::CommonResponse, connectionnum_),
-  18,
+  PROTOBUF_FIELD_OFFSET(::CommonResponse, type_),
+  19,
   0,
   ~0u,
-  16,
   17,
-  19,
+  18,
   20,
+  21,
   1,
   2,
   3,
@@ -490,21 +492,22 @@ const uint32_t TableStruct_grpc_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   7,
   8,
   9,
-  21,
   22,
   23,
   24,
+  25,
   10,
   11,
   12,
   13,
   14,
   15,
-  25,
   26,
   27,
   28,
   29,
+  30,
+  16,
 };
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, 30, -1, sizeof(::CommonRequest)},
@@ -517,7 +520,7 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 145, 156, -1, sizeof(::AccessLogInfo)},
   { 161, 169, -1, sizeof(::IPManageInfo)},
   { 171, 185, -1, sizeof(::FunInfo)},
-  { 193, 231, -1, sizeof(::CommonResponse)},
+  { 193, 232, -1, sizeof(::CommonResponse)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -570,7 +573,7 @@ const char descriptor_table_protodef_grpc_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "\030\001 \001(\t\022\017\n\007funDesc\030\002 \001(\t\022\017\n\007funArgs\030\003 \001(\t"
   "\022\017\n\007funBody\030\004 \001(\t\022\017\n\007funSubs\030\005 \001(\t\022\021\n\tfu"
   "nStatus\030\006 \001(\t\022\021\n\tfunReturn\030\007 \001(\t\022\020\n\010last"
-  "Time\030\010 \001(\t\"\264\005\n\016CommonResponse\022\022\n\nStatusC"
+  "Time\030\010 \001(\t\"\302\005\n\016CommonResponse\022\022\n\nStatusC"
   "ode\030\001 \001(\005\022\021\n\tStatusMsg\030\002 \001(\t\022*\n\014Response"
   "Body\030\003 \003(\0132\024.google.protobuf.Any\022\034\n\004head"
   "\030\004 \001(\0132\016.QueryHeadInfo\022!\n\007results\030\005 \001(\0132"
@@ -587,16 +590,17 @@ const char descriptor_table_protodef_grpc_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "\001(\t\022\021\n\tbuiltTime\030\032 \001(\t\022\021\n\ttripleNum\030\033 \001("
   "\t\022\021\n\tentityNum\030\034 \001(\005\022\022\n\nliteralNum\030\035 \001(\005"
   "\022\022\n\nsubjectNum\030\036 \001(\005\022\024\n\014predicateNum\030\037 \001"
-  "(\005\022\025\n\rconnectionNum\030  \001(\0052[\n\004grpc\022&\n\003api"
-  "\022\016.CommonRequest\032\017.CommonResponse\022+\n\010shu"
-  "tdown\022\016.CommonRequest\032\017.CommonResponse"
+  "(\005\022\025\n\rconnectionNum\030  \001(\005\022\014\n\004type\030! \001(\t2"
+  "[\n\004grpc\022&\n\003api\022\016.CommonRequest\032\017.CommonR"
+  "esponse\022+\n\010shutdown\022\016.CommonRequest\032\017.Co"
+  "mmonResponse"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_grpc_2eproto_deps[1] = {
   &::descriptor_table_google_2fprotobuf_2fany_2eproto,
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_grpc_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_grpc_2eproto = {
-  false, false, 2198, descriptor_table_protodef_grpc_2eproto, "grpc.proto", 
+  false, false, 2212, descriptor_table_protodef_grpc_2eproto, "grpc.proto", 
   &descriptor_table_grpc_2eproto_once, descriptor_table_grpc_2eproto_deps, 1, 11,
   schemas, file_default_instances, TableStruct_grpc_2eproto::offsets,
   file_level_metadata_grpc_2eproto, file_level_enum_descriptors_grpc_2eproto, file_level_service_descriptors_grpc_2eproto,
@@ -5936,24 +5940,24 @@ class CommonResponse::_Internal {
  public:
   using HasBits = decltype(std::declval<CommonResponse>()._has_bits_);
   static void set_has_statuscode(HasBits* has_bits) {
-    (*has_bits)[0] |= 262144u;
+    (*has_bits)[0] |= 524288u;
   }
   static void set_has_statusmsg(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
   static const ::QueryHeadInfo& head(const CommonResponse* msg);
   static void set_has_head(HasBits* has_bits) {
-    (*has_bits)[0] |= 65536u;
+    (*has_bits)[0] |= 131072u;
   }
   static const ::QueryResultInfo& results(const CommonResponse* msg);
   static void set_has_results(HasBits* has_bits) {
-    (*has_bits)[0] |= 131072u;
+    (*has_bits)[0] |= 262144u;
   }
   static void set_has_ansnum(HasBits* has_bits) {
-    (*has_bits)[0] |= 524288u;
+    (*has_bits)[0] |= 1048576u;
   }
   static void set_has_outputlimit(HasBits* has_bits) {
-    (*has_bits)[0] |= 1048576u;
+    (*has_bits)[0] |= 2097152u;
   }
   static void set_has_threadid(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
@@ -5983,16 +5987,16 @@ class CommonResponse::_Internal {
     (*has_bits)[0] |= 512u;
   }
   static void set_has_totalsize(HasBits* has_bits) {
-    (*has_bits)[0] |= 2097152u;
-  }
-  static void set_has_totalpage(HasBits* has_bits) {
     (*has_bits)[0] |= 4194304u;
   }
-  static void set_has_pageno(HasBits* has_bits) {
+  static void set_has_totalpage(HasBits* has_bits) {
     (*has_bits)[0] |= 8388608u;
   }
-  static void set_has_pagesize(HasBits* has_bits) {
+  static void set_has_pageno(HasBits* has_bits) {
     (*has_bits)[0] |= 16777216u;
+  }
+  static void set_has_pagesize(HasBits* has_bits) {
+    (*has_bits)[0] |= 33554432u;
   }
   static void set_has_backupfilepath(HasBits* has_bits) {
     (*has_bits)[0] |= 1024u;
@@ -6013,19 +6017,22 @@ class CommonResponse::_Internal {
     (*has_bits)[0] |= 32768u;
   }
   static void set_has_entitynum(HasBits* has_bits) {
-    (*has_bits)[0] |= 33554432u;
-  }
-  static void set_has_literalnum(HasBits* has_bits) {
     (*has_bits)[0] |= 67108864u;
   }
-  static void set_has_subjectnum(HasBits* has_bits) {
+  static void set_has_literalnum(HasBits* has_bits) {
     (*has_bits)[0] |= 134217728u;
   }
-  static void set_has_predicatenum(HasBits* has_bits) {
+  static void set_has_subjectnum(HasBits* has_bits) {
     (*has_bits)[0] |= 268435456u;
   }
-  static void set_has_connectionnum(HasBits* has_bits) {
+  static void set_has_predicatenum(HasBits* has_bits) {
     (*has_bits)[0] |= 536870912u;
+  }
+  static void set_has_connectionnum(HasBits* has_bits) {
+    (*has_bits)[0] |= 1073741824u;
+  }
+  static void set_has_type(HasBits* has_bits) {
+    (*has_bits)[0] |= 65536u;
   }
 };
 
@@ -6188,6 +6195,14 @@ CommonResponse::CommonResponse(const CommonResponse& from)
     triplenum_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_triplenum(), 
       GetArenaForAllocation());
   }
+  type_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    type_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (from._internal_has_type()) {
+    type_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_type(), 
+      GetArenaForAllocation());
+  }
   if (from._internal_has_head()) {
     head_ = new ::QueryHeadInfo(*from.head_);
   } else {
@@ -6269,6 +6284,10 @@ triplenum_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAl
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
   triplenum_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+type_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  type_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
     reinterpret_cast<char*>(&head_) - reinterpret_cast<char*>(this)),
     0, static_cast<size_t>(reinterpret_cast<char*>(&connectionnum_) -
@@ -6300,6 +6319,7 @@ inline void CommonResponse::SharedDtor() {
   creator_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   builttime_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   triplenum_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  type_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (this != internal_default_instance()) delete head_;
   if (this != internal_default_instance()) delete results_;
 }
@@ -6375,25 +6395,28 @@ void CommonResponse::Clear() {
       triplenum_.ClearNonDefaultToEmpty();
     }
   }
-  if (cached_has_bits & 0x00030000u) {
+  if (cached_has_bits & 0x00070000u) {
     if (cached_has_bits & 0x00010000u) {
+      type_.ClearNonDefaultToEmpty();
+    }
+    if (cached_has_bits & 0x00020000u) {
       GOOGLE_DCHECK(head_ != nullptr);
       head_->Clear();
     }
-    if (cached_has_bits & 0x00020000u) {
+    if (cached_has_bits & 0x00040000u) {
       GOOGLE_DCHECK(results_ != nullptr);
       results_->Clear();
     }
   }
-  if (cached_has_bits & 0x00fc0000u) {
+  if (cached_has_bits & 0x00f80000u) {
     ::memset(&statuscode_, 0, static_cast<size_t>(
-        reinterpret_cast<char*>(&pageno_) -
-        reinterpret_cast<char*>(&statuscode_)) + sizeof(pageno_));
+        reinterpret_cast<char*>(&totalpage_) -
+        reinterpret_cast<char*>(&statuscode_)) + sizeof(totalpage_));
   }
-  if (cached_has_bits & 0x3f000000u) {
-    ::memset(&pagesize_, 0, static_cast<size_t>(
+  if (cached_has_bits & 0x7f000000u) {
+    ::memset(&pageno_, 0, static_cast<size_t>(
         reinterpret_cast<char*>(&connectionnum_) -
-        reinterpret_cast<char*>(&pagesize_)) + sizeof(connectionnum_));
+        reinterpret_cast<char*>(&pageno_)) + sizeof(connectionnum_));
   }
   _has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
@@ -6748,6 +6771,18 @@ const char* CommonResponse::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE
         } else
           goto handle_unusual;
         continue;
+      // optional string type = 33;
+      case 33:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_type();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          #ifndef NDEBUG
+          ::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "CommonResponse.type");
+          #endif  // !NDEBUG
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
       default:
         goto handle_unusual;
     }  // switch
@@ -6780,7 +6815,7 @@ uint8_t* CommonResponse::_InternalSerialize(
 
   cached_has_bits = _has_bits_[0];
   // optional int32 StatusCode = 1;
-  if (cached_has_bits & 0x00040000u) {
+  if (cached_has_bits & 0x00080000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(1, this->_internal_statuscode(), target);
   }
@@ -6804,7 +6839,7 @@ uint8_t* CommonResponse::_InternalSerialize(
   }
 
   // optional .QueryHeadInfo head = 4;
-  if (cached_has_bits & 0x00010000u) {
+  if (cached_has_bits & 0x00020000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
@@ -6812,7 +6847,7 @@ uint8_t* CommonResponse::_InternalSerialize(
   }
 
   // optional .QueryResultInfo results = 5;
-  if (cached_has_bits & 0x00020000u) {
+  if (cached_has_bits & 0x00040000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
@@ -6820,13 +6855,13 @@ uint8_t* CommonResponse::_InternalSerialize(
   }
 
   // optional int32 AnsNum = 6;
-  if (cached_has_bits & 0x00080000u) {
+  if (cached_has_bits & 0x00100000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(6, this->_internal_ansnum(), target);
   }
 
   // optional int32 OutputLimit = 7;
-  if (cached_has_bits & 0x00100000u) {
+  if (cached_has_bits & 0x00200000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(7, this->_internal_outputlimit(), target);
   }
@@ -6930,25 +6965,25 @@ uint8_t* CommonResponse::_InternalSerialize(
   }
 
   // optional int32 totalSize = 18;
-  if (cached_has_bits & 0x00200000u) {
+  if (cached_has_bits & 0x00400000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(18, this->_internal_totalsize(), target);
   }
 
   // optional int32 totalPage = 19;
-  if (cached_has_bits & 0x00400000u) {
+  if (cached_has_bits & 0x00800000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(19, this->_internal_totalpage(), target);
   }
 
   // optional int32 pageNo = 20;
-  if (cached_has_bits & 0x00800000u) {
+  if (cached_has_bits & 0x01000000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(20, this->_internal_pageno(), target);
   }
 
   // optional int32 pageSize = 21;
-  if (cached_has_bits & 0x01000000u) {
+  if (cached_has_bits & 0x02000000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(21, this->_internal_pagesize(), target);
   }
@@ -7014,33 +7049,43 @@ uint8_t* CommonResponse::_InternalSerialize(
   }
 
   // optional int32 entityNum = 28;
-  if (cached_has_bits & 0x02000000u) {
+  if (cached_has_bits & 0x04000000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(28, this->_internal_entitynum(), target);
   }
 
   // optional int32 literalNum = 29;
-  if (cached_has_bits & 0x04000000u) {
+  if (cached_has_bits & 0x08000000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(29, this->_internal_literalnum(), target);
   }
 
   // optional int32 subjectNum = 30;
-  if (cached_has_bits & 0x08000000u) {
+  if (cached_has_bits & 0x10000000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(30, this->_internal_subjectnum(), target);
   }
 
   // optional int32 predicateNum = 31;
-  if (cached_has_bits & 0x10000000u) {
+  if (cached_has_bits & 0x20000000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(31, this->_internal_predicatenum(), target);
   }
 
   // optional int32 connectionNum = 32;
-  if (cached_has_bits & 0x20000000u) {
+  if (cached_has_bits & 0x40000000u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(32, this->_internal_connectionnum(), target);
+  }
+
+  // optional string type = 33;
+  if (cached_has_bits & 0x00010000u) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::VerifyUTF8StringNamedField(
+      this->_internal_type().data(), static_cast<int>(this->_internal_type().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::SERIALIZE,
+      "CommonResponse.type");
+    target = stream->WriteStringMaybeAliased(
+        33, this->_internal_type(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -7191,95 +7236,102 @@ size_t CommonResponse::ByteSizeLong() const {
 
   }
   if (cached_has_bits & 0x00ff0000u) {
-    // optional .QueryHeadInfo head = 4;
+    // optional string type = 33;
     if (cached_has_bits & 0x00010000u) {
+      total_size += 2 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+          this->_internal_type());
+    }
+
+    // optional .QueryHeadInfo head = 4;
+    if (cached_has_bits & 0x00020000u) {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
           *head_);
     }
 
     // optional .QueryResultInfo results = 5;
-    if (cached_has_bits & 0x00020000u) {
+    if (cached_has_bits & 0x00040000u) {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
           *results_);
     }
 
     // optional int32 StatusCode = 1;
-    if (cached_has_bits & 0x00040000u) {
+    if (cached_has_bits & 0x00080000u) {
       total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32SizePlusOne(this->_internal_statuscode());
     }
 
     // optional int32 AnsNum = 6;
-    if (cached_has_bits & 0x00080000u) {
+    if (cached_has_bits & 0x00100000u) {
       total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32SizePlusOne(this->_internal_ansnum());
     }
 
     // optional int32 OutputLimit = 7;
-    if (cached_has_bits & 0x00100000u) {
+    if (cached_has_bits & 0x00200000u) {
       total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32SizePlusOne(this->_internal_outputlimit());
     }
 
     // optional int32 totalSize = 18;
-    if (cached_has_bits & 0x00200000u) {
+    if (cached_has_bits & 0x00400000u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
           this->_internal_totalsize());
     }
 
     // optional int32 totalPage = 19;
-    if (cached_has_bits & 0x00400000u) {
+    if (cached_has_bits & 0x00800000u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
           this->_internal_totalpage());
     }
 
+  }
+  if (cached_has_bits & 0x7f000000u) {
     // optional int32 pageNo = 20;
-    if (cached_has_bits & 0x00800000u) {
+    if (cached_has_bits & 0x01000000u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
           this->_internal_pageno());
     }
 
-  }
-  if (cached_has_bits & 0x3f000000u) {
     // optional int32 pageSize = 21;
-    if (cached_has_bits & 0x01000000u) {
+    if (cached_has_bits & 0x02000000u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
           this->_internal_pagesize());
     }
 
     // optional int32 entityNum = 28;
-    if (cached_has_bits & 0x02000000u) {
+    if (cached_has_bits & 0x04000000u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
           this->_internal_entitynum());
     }
 
     // optional int32 literalNum = 29;
-    if (cached_has_bits & 0x04000000u) {
+    if (cached_has_bits & 0x08000000u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
           this->_internal_literalnum());
     }
 
     // optional int32 subjectNum = 30;
-    if (cached_has_bits & 0x08000000u) {
+    if (cached_has_bits & 0x10000000u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
           this->_internal_subjectnum());
     }
 
     // optional int32 predicateNum = 31;
-    if (cached_has_bits & 0x10000000u) {
+    if (cached_has_bits & 0x20000000u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
           this->_internal_predicatenum());
     }
 
     // optional int32 connectionNum = 32;
-    if (cached_has_bits & 0x20000000u) {
+    if (cached_has_bits & 0x40000000u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
           this->_internal_connectionnum());
@@ -7365,48 +7417,51 @@ void CommonResponse::MergeFrom(const CommonResponse& from) {
   }
   if (cached_has_bits & 0x00ff0000u) {
     if (cached_has_bits & 0x00010000u) {
-      _internal_mutable_head()->::QueryHeadInfo::MergeFrom(from._internal_head());
+      _internal_set_type(from._internal_type());
     }
     if (cached_has_bits & 0x00020000u) {
-      _internal_mutable_results()->::QueryResultInfo::MergeFrom(from._internal_results());
+      _internal_mutable_head()->::QueryHeadInfo::MergeFrom(from._internal_head());
     }
     if (cached_has_bits & 0x00040000u) {
-      statuscode_ = from.statuscode_;
+      _internal_mutable_results()->::QueryResultInfo::MergeFrom(from._internal_results());
     }
     if (cached_has_bits & 0x00080000u) {
-      ansnum_ = from.ansnum_;
+      statuscode_ = from.statuscode_;
     }
     if (cached_has_bits & 0x00100000u) {
-      outputlimit_ = from.outputlimit_;
+      ansnum_ = from.ansnum_;
     }
     if (cached_has_bits & 0x00200000u) {
-      totalsize_ = from.totalsize_;
+      outputlimit_ = from.outputlimit_;
     }
     if (cached_has_bits & 0x00400000u) {
-      totalpage_ = from.totalpage_;
+      totalsize_ = from.totalsize_;
     }
     if (cached_has_bits & 0x00800000u) {
-      pageno_ = from.pageno_;
+      totalpage_ = from.totalpage_;
     }
     _has_bits_[0] |= cached_has_bits;
   }
-  if (cached_has_bits & 0x3f000000u) {
+  if (cached_has_bits & 0x7f000000u) {
     if (cached_has_bits & 0x01000000u) {
-      pagesize_ = from.pagesize_;
+      pageno_ = from.pageno_;
     }
     if (cached_has_bits & 0x02000000u) {
-      entitynum_ = from.entitynum_;
+      pagesize_ = from.pagesize_;
     }
     if (cached_has_bits & 0x04000000u) {
-      literalnum_ = from.literalnum_;
+      entitynum_ = from.entitynum_;
     }
     if (cached_has_bits & 0x08000000u) {
-      subjectnum_ = from.subjectnum_;
+      literalnum_ = from.literalnum_;
     }
     if (cached_has_bits & 0x10000000u) {
-      predicatenum_ = from.predicatenum_;
+      subjectnum_ = from.subjectnum_;
     }
     if (cached_has_bits & 0x20000000u) {
+      predicatenum_ = from.predicatenum_;
+    }
+    if (cached_has_bits & 0x40000000u) {
       connectionnum_ = from.connectionnum_;
     }
     _has_bits_[0] |= cached_has_bits;
@@ -7512,6 +7567,11 @@ void CommonResponse::InternalSwap(CommonResponse* other) {
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       &triplenum_, lhs_arena,
       &other->triplenum_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &type_, lhs_arena,
+      &other->type_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(CommonResponse, connectionnum_)

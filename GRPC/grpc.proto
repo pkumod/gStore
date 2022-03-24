@@ -156,6 +156,8 @@ message CommonResponse {
     optional int32 subjectNum = 30;
     optional int32 predicateNum = 31;
     optional int32 connectionNum = 32;
+    // for login
+    optional string type = 33;
 };
 
 service grpc {
