@@ -873,8 +873,9 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
       auto temp_content_ptr = make_shared<TableContent>();
       temp_content_ptr->push_back(record);
       temp_table.values_ = temp_content_ptr;
-      auto filter_result = this->executor_.ANodeEdgesConstraintFilter(non_tree_edge.edge_filter_,temp_table,false);
-      auto filter_result_size = get<1>(filter_result).values_->size();
+      auto filter_result = this->executor_.ANodeEdgesConstraintFilter(non_tree_edge.edge_filter_,temp_table,true);
+      auto interResult = get<1>(filter_result);
+      auto filter_result_size = interResult.values_->size();
       success = filter_result_size != 0;
     }
     if(query_info.is_distinct_)
