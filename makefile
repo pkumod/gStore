@@ -579,10 +579,10 @@ $(objdir)SPARQLLexer.o: Parser/SPARQL/SPARQLLexer.cpp Parser/SPARQL/SPARQLLexer.
 	$(CC)  $(CFLAGS) Parser/SPARQL/SPARQLLexer.cpp $(inc) -o $(objdir)SPARQLLexer.o $(openmp)
 
 $(objdir)TurtleParser.o: Parser/TurtleParser.cpp Parser/TurtleParser.h Parser/Type.h
-	gcc  $(CFLAGS) Parser/TurtleParser.cpp $(inc) -o $(objdir)TurtleParser.o $(openmp)
+	$(CC)  $(CFLAGS) Parser/TurtleParser.cpp $(inc) -o $(objdir)TurtleParser.o $(openmp)
 
 $(objdir)RDFParser.o: Parser/RDFParser.cpp Parser/RDFParser.h $(objdir)TurtleParser.o $(objdir)Triple.o
-	gcc  $(CFLAGS) Parser/RDFParser.cpp $(inc) -o $(objdir)RDFParser.o $(openmp)
+	$(CC)  $(CFLAGS) Parser/RDFParser.cpp $(inc) -o $(objdir)RDFParser.o $(openmp)
 
 $(objdir)QueryParser.o: Parser/QueryParser.cpp Parser/QueryParser.h $(objdir)SPARQLParser.o $(objdir)SPARQLLexer.o $(objdir)QueryTree.o
 	$(CC) $(CFLAGS) Parser/QueryParser.cpp $(inc) -o $(objdir)QueryParser.o $(openmp)
