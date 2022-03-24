@@ -39,48 +39,36 @@ int
 main(int argc, char * argv[])
 {
   Util util;
-  //#endif
-  //Log.init("slog.properties");
-
   Database _db(db_folder);
   _db.load();
   cout << "finish loading" << endl;
 
   for(int query_index = 1;query_index<=queryNum;query_index++)
   {
-    string queryfilename = string_format("%s%d.sql", QueryDir.c_str(),query_index );
-    string resultfile = string_format("%s%d.result.txt", QueryDir.c_str(),query_index );
-
-    string query = Util::getQueryFromFile(QueryDir .c_str());
-
-
+    string queryfilename = string_format("%sq%d.sql", QueryDir.c_str(),query_index );
+    string resultfile = string_format("%sq%d.result.txt", QueryDir.c_str(),query_index );
+    cerr<<"now executor:"<<queryfilename<<endl;
+    string query = Util::getQueryFromFile(queryfilename.c_str());
     FILE *ofp = stdout;
     ofp = fopen(resultfile.c_str(), "w");
 
-    string msg;
-    shared_ptr<Transaction> ptxn = make_shared<Transaction>(db_folder, 1, 1);
     string method_name[2] = {"RankAfterMatching","DPB"};
     for(int mode=0;mode<2;mode++) {
       long time_acc = 0;
       RankAfterMatching = mode==0;
+      cerr<<queryfilename<< " mode["<<method_name[mode]<<"]"<<endl;
       ResultSet rs0;
       int ret0 = _db.query(query, rs0, ofp, true, false, nullptr);
-      for (int test_time = 0; test_time < 10; test_time++) {
-        test_time =0;
+      for (int test_i = 0; test_i < 10; test_i++) {
+        test_time = 0;
         ResultSet _rs;
         int ret = _db.query(query, _rs, ofp, true, false, nullptr);
         time_acc += test_time;
       }
-      cerr<<queryfilename<< " mode["<<method_name[mode]<<"] uses "<< time_acc/10<<" ms."<<endl;
+       cerr<<"uses "<< time_acc*1.0/10<<" ms."<<endl;
     }
-
     fclose(ofp);
     ofp = NULL;
-
   }
-
-
-
-
   return 0;
 }

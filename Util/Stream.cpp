@@ -70,12 +70,12 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
     if(Util::memoryLeft() < size)
     {
         this->inMem = false;
-        fprintf(stderr, "Stream: memory is not enough!\n");
+        fprintf(stdout, "Stream: memory is not enough!\n");
     }
     else
     {
 		this->inMem = true;
-        fprintf(stderr, "Stream: memory is enough!\n");
+        fprintf(stdout, "Stream: memory is enough!\n");
     }
 #ifdef DEBUG_STREAM
     fprintf(stderr, "Stream:after memory check!\n");
