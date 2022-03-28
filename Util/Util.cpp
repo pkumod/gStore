@@ -245,7 +245,8 @@ bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
 {
     string value = parser.GetValue(rootname, keyname);
     if(value.empty()==false)
-    Util::global_config[keyname] = value;
+        Util::global_config[keyname] = value;
+    return true;
 }
 
 string Util::getConfigureValue(string keyname)
@@ -260,7 +261,6 @@ string Util::getConfigureValue(string keyname)
 
 bool Util::configure_new()
 {
-
     INIParser ini_parser;
     ini_parser.ReadINI("conf.ini");
     /*string value=ini_parser.GetValue("ghttp", "max_out_limit");
@@ -295,7 +295,7 @@ bool Util::configure_new()
         cout << it->first << " : " << it->second << endl;
     }
     cout << endl;
-
+    return true;
 }
 
 bool
