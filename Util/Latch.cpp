@@ -39,5 +39,5 @@ bool Latch::tryLockShared()
 bool Latch::unlock()
 // Release the lock
 {
-	pthread_rwlock_unlock(&lock);
+	return pthread_rwlock_unlock(&lock)==0;
 }
