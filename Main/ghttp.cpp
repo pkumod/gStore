@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-03-31 10:55:39
+ * @LastEditTime: 2022-04-01 09:54:34
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2458,12 +2458,12 @@ void txnlog_thread_new(const shared_ptr<HttpServer::Request>& request, const sha
 	string operation = "txnlog";
 	try
 	{
-		if (username != apiUtil->get_root_username())
-		{
-			string error = "Root User Only!";
-			sendResponseMsg(1003, error, operation, request, response);
-			return;
-		}
+		// if (username != apiUtil->get_root_username())
+		// {
+		// 	string error = "Root User Only!";
+		// 	sendResponseMsg(1003, error, operation, request, response);
+		// 	return;
+		// }
 
 		struct TransactionLogs transactionLogs;
 		apiUtil->get_transactionlog(page_no, page_size, &transactionLogs);

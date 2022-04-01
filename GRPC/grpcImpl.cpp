@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2022-02-28 10:31:06
- * @LastEditTime: 2022-04-01 09:36:31
+ * @LastEditTime: 2022-04-01 10:04:41
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.cpp
@@ -326,6 +326,13 @@ void GrpcImpl::load_task(CommonRequest *&request, CommonResponse *&response, srp
             response->set_statusmsg(check_result);
             return;
         }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
         string result = apiUtil->check_param_value("db_name", request->db_name());
         if (result.empty() == false)
         {
@@ -452,6 +459,13 @@ void GrpcImpl::monitor_task(CommonRequest *&request, CommonResponse *&response, 
             response->set_statusmsg(check_result);
             return;
         }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
         string db_name = request->db_name();
         string error = apiUtil->check_param_value("db_name", db_name);
         if( error.empty() == false)
@@ -526,6 +540,13 @@ void GrpcImpl::unload_task(CommonRequest *&request, CommonResponse *&response, s
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -607,6 +628,13 @@ void GrpcImpl::drop_task(CommonRequest *&request, CommonResponse *&response, srp
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -701,6 +729,13 @@ void GrpcImpl::show_task(CommonRequest *&request, CommonResponse *&response, srp
             response->set_statusmsg(check_result);
             return;
         }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
         vector<struct DatabaseInfo *> array;
         apiUtil->get_already_builds(array);
         size_t count = array.size();
@@ -745,6 +780,13 @@ void GrpcImpl::backup_task(CommonRequest *&request, CommonResponse *&response, s
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -847,6 +889,13 @@ void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, 
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -970,6 +1019,13 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -1208,6 +1264,13 @@ void GrpcImpl::export_task(CommonRequest *&request, CommonResponse *&response, s
             response->set_statusmsg(check_result);
             return;
         }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
         string db_name = request->db_name();
         string db_path = request->db_path();
         string error = apiUtil->check_param_value("db_name", db_name);
@@ -1295,6 +1358,13 @@ void GrpcImpl::login_task(CommonRequest *&request, CommonResponse *&response, sr
             response->set_statusmsg(check_result);
             return;
         }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
         string success = "login successfully.";
 
         response->set_statuscode(0);
@@ -1333,6 +1403,13 @@ void GrpcImpl::begin_task(CommonRequest *&request, CommonResponse *&response, sr
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -1413,6 +1490,13 @@ void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, s
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -1578,6 +1662,13 @@ void GrpcImpl::commit_task(CommonRequest *&request, CommonResponse *&response, s
             response->set_statusmsg(check_result);
             return;
         }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
         string db_name = request->db_name();
         string error = apiUtil->check_param_value("db_name", db_name);
         if (error.empty() == false)
@@ -1671,6 +1762,13 @@ void GrpcImpl::rollback_task(CommonRequest *&request, CommonResponse *&response,
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -1770,6 +1868,13 @@ void GrpcImpl::checkpoint_task(CommonRequest *&request, CommonResponse *&respons
             response->set_statusmsg(check_result);
             return;
         }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
         string db_name = request->db_name();
         string error = apiUtil->check_param_value("db_name", db_name);
         if (error.empty() == false)
@@ -1851,6 +1956,13 @@ void GrpcImpl::test_connect_task(CommonRequest *&request, CommonResponse *&respo
             response->set_statusmsg(check_result);
             return;
         }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
         response->set_statuscode(0);
         response->set_statusmsg("success");
         string version = Util::getConfigureValue("version");
@@ -1888,6 +2000,13 @@ void GrpcImpl::core_version_task(CommonRequest *&request, CommonResponse *&respo
             response->set_statusmsg(check_result);
             return;
         }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
         response->set_statuscode(0);
         response->set_statusmsg("success");
         string version = Util::getConfigureValue("version");
@@ -1921,6 +2040,13 @@ void GrpcImpl::batch_insert_task(CommonRequest *&request, CommonResponse *&respo
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -2005,6 +2131,13 @@ void GrpcImpl::batch_remove_task(CommonRequest *&request, CommonResponse *&respo
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -2127,6 +2260,13 @@ void GrpcImpl::user_manage_task(CommonRequest *&request, CommonResponse *&respon
             response->set_statusmsg(check_result);
             return;
         }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
         string type = request->type();
         string msg = "";
         string op_username = request->op_username();
@@ -2219,7 +2359,14 @@ void GrpcImpl::user_show_task(CommonRequest *&request, CommonResponse *&response
             response->set_statusmsg(check_result);
             return;
         }
-       vector<struct DBUserInfo *> userList;
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        vector<struct DBUserInfo *> userList;
 		apiUtil->get_user_info(&userList);
 		if (userList.empty())
 		{
@@ -2274,6 +2421,13 @@ void GrpcImpl::user_privilege_task(CommonRequest *&request, CommonResponse *&res
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -2447,10 +2601,11 @@ void GrpcImpl::txn_log_task(CommonRequest *&request, CommonResponse *&response, 
             response->set_statusmsg(check_result);
             return;
         }
-        if(request->username() != apiUtil->get_root_username())
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
         {
-            response->set_statuscode(1003);
-            response->set_statusmsg("Root User Only!");
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
             return;
         }
         int page_no = request->pageno();
@@ -2505,6 +2660,13 @@ void GrpcImpl::query_log_task(CommonRequest *&request, CommonResponse *&response
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -2565,6 +2727,13 @@ void GrpcImpl::access_log_task(CommonRequest *&request, CommonResponse *&respons
             response->set_statusmsg(check_result);
             return;
         }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
         string date = request->date();
         int page_no = request->pageno();
         int page_size = request->pagesize();
@@ -2618,6 +2787,13 @@ void GrpcImpl::ip_manage_task(CommonRequest *&request, CommonResponse *&response
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -2846,7 +3022,13 @@ void GrpcImpl::fun_query_task(CommonRequest *&request, CommonResponse *&response
             response->set_statusmsg(check_result);
             return;
         }
-        
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
         FunInfo fun_info = request->funinfo();
         string fun_name = fun_info.funname();
         string fun_status = fun_info.funstatus();
@@ -2893,6 +3075,13 @@ void GrpcImpl::fun_cudb_task(CommonRequest *&request, CommonResponse *&response,
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
@@ -3009,6 +3198,13 @@ void GrpcImpl::fun_review_task(CommonRequest *&request, CommonResponse *&respons
         if (check_result.empty() == false)
         {
             response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
             response->set_statusmsg(check_result);
             return;
         }
