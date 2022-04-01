@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-04-01 09:43:02
+ * @LastEditTime: 2022-04-01 14:35:41
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -40,6 +40,7 @@ APIUtil::~APIUtil()
         pthread_rwlock_unlock(&already_build_map_lock);
         if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
         {
+            Util::formatPrint(database_name + " unable to checkpoint due to loss of lock");
             continue;
         }
         current_database->save();
@@ -700,7 +701,7 @@ bool APIUtil::db_checkpoint(string db_name)
     pthread_rwlock_wrlock(&txn_m_lock);
 	if (txn_managers.find(db_name) == txn_managers.end())
 	{
-		string error = "checkpoint error: " + db_name;
+		string error = db_name + " txn checkpoint error!";
         Util::formatPrint(error, "ERROR");
 		pthread_rwlock_unlock(&txn_m_lock);
 		return false;
@@ -710,57 +711,46 @@ bool APIUtil::db_checkpoint(string db_name)
 	pthread_rwlock_unlock(&txn_m_lock);
 	txn_m->abort_all_running();
 	txn_m->Checkpoint();
-    Util::formatPrint("txn_m checkpoint success!");
+    Util::formatPrint(db_name + " txn checkpoint success!");
 	return true;
 }
 
-// string APIUtil::db_checkpoint_all()
-// {
-//     pthread_rwlock_rdlock(&databases_map_lock);
-//     std::map<std::string, Database *>::iterator iter;
-// 	string return_msg = "";
-// 	abort_transactionlog(Util::get_cur_time());
-//     for(iter=databases.begin(); iter != databases.end(); iter++)
-// 	{
-// 		string database_name = iter->first;
-// 		if (database_name == SYSTEM_DB_NAME)
-// 			continue;
-// 		//abort all transaction
-// 		db_checkpoint(database_name);
-// 		Database *current_database = iter->second;
-// 		pthread_rwlock_rdlock(&already_build_map_lock);
-// 		std::map<std::string, struct DatabaseInfo *>::iterator it_already_build = already_build.find(database_name);
-// 		pthread_rwlock_unlock(&already_build_map_lock);
-// 		if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
-// 		{
-// 			pthread_rwlock_unlock(&databases_map_lock);
-// 			return_msg = "Unable to checkpoint due to loss of lock";
-//             break;
-// 		}
-// 		current_database->save();
-// 		delete current_database;
-// 		current_database = NULL;
-// 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-// 	}
-//     if (return_msg.empty())
-//     {
-//         system_database->save();
-//         delete system_database;
-//         system_database = NULL;
-//         pthread_rwlock_unlock(&databases_map_lock);
-
-//         pthread_rwlock_rdlock(&already_build_map_lock);
-//         std::map<std::string, struct DatabaseInfo *>::iterator it_already_build;
-//         for (it_already_build = already_build.begin(); it_already_build != already_build.end(); it_already_build++)
-//         {
-//             struct DatabaseInfo *temp_db = it_already_build->second;
-//             delete temp_db;
-//             temp_db = NULL;
-//         }
-//         pthread_rwlock_unlock(&already_build_map_lock);
-//     }
-//     return return_msg;
-// }
+bool APIUtil::db_checkpoint_all()
+{
+    pthread_rwlock_rdlock(&databases_map_lock);
+    std::map<std::string, Database *>::iterator iter;
+	string return_msg = "";
+	abort_transactionlog(Util::get_cur_time());
+    for(iter=databases.begin(); iter != databases.end(); iter++)
+	{
+		string database_name = iter->first;
+		if (database_name == SYSTEM_DB_NAME)
+			continue;
+		//abort all transaction
+		db_checkpoint(database_name);
+		Database *current_database = iter->second;
+		pthread_rwlock_rdlock(&already_build_map_lock);
+		std::map<std::string, struct DatabaseInfo *>::iterator it_already_build = already_build.find(database_name);
+		pthread_rwlock_unlock(&already_build_map_lock);
+		if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+		{
+			pthread_rwlock_unlock(&databases_map_lock);
+			Util::formatPrint(database_name + " unable to checkpoint due to loss of lock", "ERROR");
+            break;
+		}
+		current_database->save();
+		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+	}
+    if (return_msg.empty())
+    {
+        system_database->save();
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
 
 bool APIUtil::delete_from_databases(string db_name)
 {

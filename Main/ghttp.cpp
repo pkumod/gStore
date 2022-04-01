@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-04-01 09:54:34
+ * @LastEditTime: 2022-04-01 16:07:06
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2354,6 +2354,7 @@ void commit_thread_new(const shared_ptr<HttpServer::Request>& request, const sha
 		else
 		{
 			apiUtil->commit_process(txn_m, TID);
+			apiUtil->db_checkpoint(db_name);
 			string success = "transaction commit success. TID: " + TID_s;
 			sendResponseMsg(0, success, operation, request, response);
 		}
@@ -3768,19 +3769,26 @@ void shutdown_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 		sendResponseMsg(1001, checkidentityresult, operation, request, response);
 		return;
 	}
-	string msg = "Server stopped successfully.";
-	string resJson = CreateJson(0, msg, 0);
-	
-	Util::formatPrint("response result:\n" + resJson);
-	
-	apiUtil->write_access_log(operation, remote_ip, 0, msg);
-	
-	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
-	
-	delete apiUtil;
-
-	// TODO exit synchlized
-	exit(1);
+	bool flag = apiUtil->db_checkpoint_all();
+	if (flag)
+	{
+		string msg = "Server stopped successfully.";
+		string resJson = CreateJson(0, msg, 0);
+		Util::formatPrint("response result:\n" + resJson);
+		apiUtil->write_access_log(operation, remote_ip, 0, msg);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+		delete apiUtil;
+		// TODO exit synchlized
+		exit(1);
+	}
+	else
+	{
+		string msg = "Server stopped failed.";
+		string resJson = CreateJson(1005, msg, 0);
+		Util::formatPrint("response result:\n" + resJson);
+		apiUtil->write_access_log(operation, remote_ip, 1005, msg);
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
+	}
 }
 
 std::string CreateJson(int StatusCode, string StatusMsg, bool body, string ResponseBody)
