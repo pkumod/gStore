@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-03-23 17:32:06
+ * @LastEditTime: 2022-04-01 09:43:02
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -1501,10 +1501,17 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 
 	if(username == ROOT_USERNAME)
 		return 1;
+    if (type == "login" || type == "testConnect" || type == "getCoreVersion" 
+        || type == "funquery" || type == "funcudb" || type == "funreview"
+        || type == "check")
+    {
+        return 1;
+    }
+    
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct DBUserInfo *>::iterator it = users.find(username);
 	//pthread_rwlock_unlock(&users_map_lock);
-	if(type == "query")
+	if(type == "query" || type == "show" || type == "monitor")
 	{
 		pthread_rwlock_rdlock(&(it->second->query_priv_set_lock));
 		if(it->second->query_priv.find(db_name) != it->second->query_priv.end())
@@ -1515,7 +1522,8 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 		}
 		pthread_rwlock_unlock(&(it->second->query_priv_set_lock));
 	}
-	else if(type == "update")
+	else if(type == "update" || type == "batchInsert" || type == "batchRemove" 
+        || type == "begin" || type == "tquery" || type == "commit" || type == "rollback")
 	{
 		pthread_rwlock_rdlock(&(it->second->update_priv_set_lock));
 		if(it->second->update_priv.find(db_name) != it->second->update_priv.end())
