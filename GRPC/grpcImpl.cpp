@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2022-02-28 10:31:06
- * @LastEditTime: 2022-03-24 15:30:31
+ * @LastEditTime: 2022-04-01 09:36:31
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.cpp
@@ -361,12 +361,20 @@ void GrpcImpl::load_task(CommonRequest *&request, CommonResponse *&response, srp
             {
                 apiUtil->add_database(db_name, current_database);
                 //todo insert txn
-                if(apiUtil->insert_txn_managers(apiUtil->get_database(request->db_name()),request->db_name()) == false)
+                if(apiUtil->insert_txn_managers(current_database, request->db_name()) == false)
                 {
                     cout<<"when load insert_txn_managers fail"<<endl;
                 }
                 response->set_statuscode(0);
                 response->set_statusmsg("Database loaded successfully.");
+                if (current_database->csr != NULL)
+                {
+                    response->set_csr("true");
+                }
+                else
+                {
+                    response->set_csr("false");
+                }
             }
             else
             {
@@ -380,9 +388,16 @@ void GrpcImpl::load_task(CommonRequest *&request, CommonResponse *&response, srp
         }
         else
         {
-            
             response->set_statuscode(0);
             response->set_statusmsg("the database already load yet.");
+            if (current_database->csr != NULL)
+            {
+                response->set_csr("true");
+            }
+            else
+            {
+                response->set_csr("false");
+            }
         }
     }
     catch (std::exception &e)

@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-03-24 15:42:57
+ * @LastEditTime: 2022-03-31 10:55:39
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -515,9 +515,9 @@ int initialize(int argc, char *argv[])
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-db,--database[option],\t\t the database name.Default value is empty. Notice that the name can not end with .db" << endl;
-			cout << "\t-p,--port[option],\t\t the listen port. Default value is 9000." << endl;
-			cout << "\t-c,--csr[option],\t\t Enable CSR Struct or not. 0 denote that false, 1 denote that true. Default value is 0." << endl;
+			cout << "\t-db,--database[option],\t\tthe database name.Default value is empty. Notice that the name can not end with .db" << endl;
+			cout << "\t-p,--port[option],\t\tthe listen port. Default value is 9000." << endl;
+			cout << "\t-c,--csr[option],\t\tEnable CSR Struct or not. 0 denote that false, 1 denote that true. Default value is 0." << endl;
 
 			cout << endl;
 			return 0;
@@ -868,11 +868,22 @@ void load_thread_new(const shared_ptr<HttpServer::Request>& request, const share
 			{
 				apiUtil->add_database(db_name, current_database);
 				//todo insert txn
-				if(apiUtil->insert_txn_managers(apiUtil->get_database(db_name), db_name) == false)
+				if(apiUtil->insert_txn_managers(current_database, db_name) == false)
 				{
 					Util::formatPrint("when load insert_txn_managers fail.", "WARN");
 				}
-				sendResponseMsg(0, "database loaded successfully.", operation, request, response);
+				string csr_str = "false";
+				if (current_database->csr != NULL)
+				{
+					csr_str = "true";
+				}
+				rapidjson::Document doc;
+				doc.SetObject();
+				Document::AllocatorType &allocator = doc.GetAllocator();
+				doc.AddMember("StatusCode", 0, allocator);
+				doc.AddMember("StatusMsg", "database loaded successfully.", allocator);
+				doc.AddMember("csr", StringRef(csr_str.c_str()), allocator);
+				sendResponseMsg(doc, operation, request, response);
 			}
 			else 
 			{
@@ -883,9 +894,18 @@ void load_thread_new(const shared_ptr<HttpServer::Request>& request, const share
 		}
 		else
 		{
-			error = "the database already load yet.";
-			sendResponseMsg(0, error, operation, request, response);
-			return;
+			string csr_str = "false";
+			if (current_database->csr != NULL)
+			{
+				csr_str = "true";
+			}
+			rapidjson::Document doc;
+			doc.SetObject();
+			Document::AllocatorType &allocator = doc.GetAllocator();
+			doc.AddMember("StatusCode", 0, allocator);
+			doc.AddMember("StatusMsg", "the database already load yet.", allocator);
+			doc.AddMember("csr", StringRef(csr_str.c_str()), allocator);
+			sendResponseMsg(doc, operation, request, response);
 		}
 	}
 	catch(const std::exception& e)

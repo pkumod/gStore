@@ -158,6 +158,8 @@ message CommonResponse {
     optional int32 connectionNum = 32;
     // for login
     optional string type = 33;
+    // for load
+    optional string csr = 34;
 };
 
 service grpc {
