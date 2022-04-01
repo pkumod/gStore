@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-03-23 17:29:59
+ * @LastEditTime: 2022-04-01 14:36:09
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -917,7 +917,7 @@ public:
     bool insert_txn_managers(Database* current_database, std::string database);
     bool find_txn_managers(std::string db_name);
     bool db_checkpoint(string db_name);
-    // string db_checkpoint_all();
+    bool db_checkpoint_all();
     bool delete_from_databases(string db_name);
     bool delete_from_already_build(string db_name);
     //used by drop

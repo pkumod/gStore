@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2022-02-28 10:31:06
- * @LastEditTime: 2022-04-01 10:04:41
+ * @LastEditTime: 2022-04-01 17:51:42
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.cpp
@@ -1731,6 +1731,7 @@ void GrpcImpl::commit_task(CommonRequest *&request, CommonResponse *&response, s
         else
         {
             apiUtil->commit_process(txn_m, TID);
+			apiUtil->db_checkpoint(db_name);
             string success = "transaction commit success. TID: " + TID_s;
             response->set_statuscode(0);
             response->set_statusmsg(success);
@@ -2229,14 +2230,24 @@ void GrpcImpl::shutdown_task(CommonRequest *&request, CommonResponse *&response,
         response->set_statusmsg(checkidentityresult);
 		return;
 	}
-	string success = "Server stopped successfully.";
-    response->set_statuscode(0);
-    response->set_statusmsg(success);
-    apiUtil->write_access_log("shutdown", remote_ip, 0, success);
+    bool flag = apiUtil->db_checkpoint_all();
+    if (flag)
+    {
+        string msg = "Server stopped successfully.";
+        response->set_statuscode(0);
+        response->set_statusmsg(msg);
+        apiUtil->write_access_log("shutdown", remote_ip, 0, msg);
 
-    delete apiUtil;
-
-    _exit(1);
+        delete apiUtil;
+        _exit(1);
+    }
+    else
+    {
+        string msg = "Server stopped failed.";
+        response->set_statuscode(1005);
+        response->set_statusmsg(msg);
+        apiUtil->write_access_log("shutdown", remote_ip, 1005, msg);
+    }
 }
 
 void GrpcImpl::user_manage_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
@@ -2895,28 +2906,24 @@ void GrpcImpl::parse_query_result(CommonRequest *&request, CommonResponse *&resp
         if (i >= rs.output_offset)
         {
             string *binding = results->add_bindings();
+            // rapidjson::Document doc;
+            // rapidjson::Document::AllocatorType &allocator = doc.GetAllocator(); 
+            // doc.SetObject();
             rapidjson::StringBuffer buffer;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
             writer.StartObject();
             for (int j = 0; j < rs.true_select_var_num; j++)
             {
-                string ans_key, ans_type, ans_str;
+                string ans_key, ans_type, ans_str, data_type;
                 ans_str = rs.answer[i][j];
                 cout << "rs.answer[" << i << "][" << j << "]: " << ans_str << endl;
                 if (ans_str.length() == 0)
                     continue;
                 ans_key = rs.var_name[j].substr(1);
-                writer.Key(ans_key.c_str());
-
-                writer.StartObject();
                 if (ans_str[0] == '<')
                 {
                     ans_type = "uri";
                     ans_str = ans_str.substr(1, ans_str.length() - 2);
-                    writer.Key("type");
-                    writer.String(ans_type.c_str());
-                    writer.Key("value");
-                    writer.String(ans_str.c_str());
                 }
                 else if (ans_str[0] == '"')
                 {
@@ -2925,10 +2932,6 @@ void GrpcImpl::parse_query_result(CommonRequest *&request, CommonResponse *&resp
                         // no has type string
                         ans_type = "literal";
                         ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
-                        writer.Key("type");
-                        writer.String(ans_type.c_str());
-                        writer.Key("value");
-                        writer.String(ans_str.c_str());
                     }
                     else
                     {
@@ -2959,12 +2962,6 @@ void GrpcImpl::parse_query_result(CommonRequest *&request, CommonResponse *&resp
                                 data_type = "http://www.w3.org/2001/XMLSchema#string-complete";
                             }
                             ans_str = ans_str.substr(0, pos + 1);
-                            writer.Key("type");
-                            writer.String(ans_type.c_str());
-                            writer.Key("value");
-                            writer.String(ans_str.c_str());
-                            writer.Key("datatype");
-                            writer.String(data_type.c_str());
                         }
                         else
                         {
@@ -2973,12 +2970,6 @@ void GrpcImpl::parse_query_result(CommonRequest *&request, CommonResponse *&resp
                             int pos = ans_str.find("\"^^<");
                             data_type = "http://www.w3.org/2001/XMLSchema#string-not-complete";
                             ans_str = ans_str.substr(0, pos + 1);
-                            writer.Key("type");
-                            writer.String(ans_type.c_str());
-                            writer.Key("value");
-                            writer.String(ans_str.c_str());
-                            writer.Key("datatype");
-                            writer.String(data_type.c_str());
                         }
                     }
                 }
@@ -2986,14 +2977,33 @@ void GrpcImpl::parse_query_result(CommonRequest *&request, CommonResponse *&resp
                 {
                     ans_type = "unknown";
                     ans_str = "the information is not complete!";
-                    writer.Key("type");
-                    writer.String(ans_type.c_str());
-                    writer.Key("value");
-                    writer.String(ans_str.c_str());
+                }
+                writer.Key(StringRef(ans_key.c_str()));
+                writer.StartObject();
+                writer.Key("type");
+                writer.String(StringRef(ans_type.c_str()));
+                writer.Key("value");
+                writer.String(StringRef(ans_str.c_str()));
+                if (!data_type.empty())
+                {
+                    writer.Key("datatype");
+                    writer.String(StringRef(data_type.c_str()));
                 }
                 writer.EndObject();
+                
+                // rapidjson::Document item;
+                // item.SetObject();
+                // item.AddMember("type", StringRef(ans_type.c_str()), allocator);
+                // item.AddMember("value", StringRef(ans_str.c_str()), allocator);
+                // if (!data_type.empty())
+                // {
+                //     item.AddMember("datatype", StringRef(data_type.c_str()), allocator);
+                // }
+                // doc.AddMember(StringRef(ans_key.c_str()), item, allocator);
             }
             writer.EndObject();
+
+            // doc.Accept(writer);
             (*binding) = buffer.GetString();
         }
     }
