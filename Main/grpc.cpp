@@ -33,7 +33,10 @@ int initialize(int argc, char *argv[])
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-p,--port[option],\t\t the listen port. Default value is 9000." << endl;
+			cout << "\t-db,--database[option],\t\tthe database name.Default value is empty. Notice that the name can not end with .db" << endl;
+			cout << "\t-p,--port[option],\t\tthe listen port. Default value is 9000." << endl;
+			cout << "\t-c,--csr[option],\t\tEnable CSR Struct or not. 0 denote that false, 1 denote that true. Default value is 0." << endl;
+
 			cout << endl;
 			return 0;
 		}
@@ -83,7 +86,7 @@ int main(int argc, char *argv[])
 	while (true)
 	{
 		pid_t fpid = fork();
-		cout << "fpid:" << fpid << endl;
+		// cout << "fpid:" << fpid << endl;
 		if (fpid == 0)
 		{
 			int ret = initialize(argc, argv);
