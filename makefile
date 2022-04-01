@@ -56,7 +56,8 @@ EXEFLAG = -O2 -pthread -std=c++11
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -llog4cplus -Wl,-rpath='/usr/local/lib'
 library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
 #used for parallelsort
-openmp = -fopenmp -march=native
+march = -march=native
+openmp = -fopenmp ${march}
 # library = -ltermcap -lreadline -L./lib -lantlr -lgcov
 def64IO = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE
 # load dynamic lib
