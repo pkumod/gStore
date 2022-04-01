@@ -1339,7 +1339,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					if (!proj[0].path_args.pred_set.empty())
 					{
 						for (auto pred : proj[0].path_args.pred_set)
-							pred_id_set.push_back(kvstore->getIDByPredicate(pred));
+						{
+							TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
+							// cout << "pred_set id:" << pred_id << endl;
+							if (pred_id != INVALID)
+							{
+								pred_id_set.push_back(pred_id);
+							}
+						}
 					}
 					else
 					{
@@ -1537,7 +1544,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					if (!proj[0].path_args.pred_set.empty())
 					{
 						for (auto pred : proj[0].path_args.pred_set)
-							pred_id_set.push_back(kvstore->getIDByPredicate(pred));
+						{
+							TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
+							// cout << "pred_set id:" << pred_id << endl;
+							if (pred_id != INVALID)
+							{
+								pred_id_set.push_back(pred_id);
+							}
+						};
 					}
 					else
 					{
@@ -2358,7 +2372,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						if (!proj[i].path_args.pred_set.empty())
 						{
 							for (auto pred : proj[i].path_args.pred_set)
-								pred_id_set.push_back(kvstore->getIDByPredicate(pred));
+							{
+								TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
+								// cout << "pred_set id:" << pred_id << endl;
+								if (pred_id != INVALID)
+								{
+									pred_id_set.push_back(pred_id);
+								}
+							}
 						}
 						else
 						{
@@ -2504,7 +2525,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						if (!proj[i].path_args.pred_set.empty())
 						{
 							for (auto pred : proj[i].path_args.pred_set)
-								pred_id_set.push_back(kvstore->getIDByPredicate(pred));
+							{
+								TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
+								// cout << "pred_set id:" << pred_id << endl;
+								if (pred_id != INVALID)
+								{
+									pred_id_set.push_back(pred_id);
+								}
+							}
 						}
 						else
 						{
