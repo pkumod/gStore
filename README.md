@@ -115,7 +115,7 @@ New features in version 0.9 include:
 The version is a beta version, you can get it by :
 
 ```
-git clone https://github.com/pkumod/gStore.git
+git clone https://github.com/pkumod/gStore.git --depth=1
 ```
 
 **0.8（Stable）**
@@ -123,7 +123,7 @@ git clone https://github.com/pkumod/gStore.git
 The version is a stable version ,you can get it by 
 
 ```
- git clone -b 0.8 https://github.com/pkumod/gStore.git
+ git clone -b 0.8 https://github.com/pkumod/gStore.git --depth=1
 ```
 
 <!--**You can write your information in [survey](http://59.108.48.38/survey) if you like.**-->
@@ -135,7 +135,7 @@ The version is a stable version ,you can get it by
 ### <font size=5>**Compile from Source** </font>
 This system is really user-friendly and you can pick it up in several minutes. Remember to check your platform where you want to run this system by viewing [System Requirements](docs/DEMAND.md). After all are verified, please get this project's source code. There are several ways to do this:
 
-- (suggested)type `git clone https://github.com/pkumod/gStore.git` in your terminal or use git GUI to acquire it
+- (suggested)type `git clone https://github.com/pkumod/gStore.git --depth=1` in your terminal or use git GUI to acquire it
 
 - download the zip from this repository and extract it
 
