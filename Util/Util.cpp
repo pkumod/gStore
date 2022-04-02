@@ -243,7 +243,7 @@ Util::config_advanced()
 	return true;
 }
 
-bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
+void Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
 {
     string value = parser.GetValue(rootname, keyname);
     if(value.empty()==false)
@@ -260,7 +260,7 @@ string Util::getConfigureValue(string keyname)
 	return "";
 }
 
-bool Util::configure_new()
+void Util::configure_new()
 {
 
     INIParser ini_parser;
