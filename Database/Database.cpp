@@ -1972,7 +1972,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	cout << "Query time used (minus parsing): " << tv_final - tv_parse << "ms." << endl;
 	cout << "Total time used: " << (tv_final - tv_begin) << "ms." << endl;
 	//if (general_evaluation.needOutputAnswer())
-	if(!export_flag)
+	if(export_flag)
 	{
 		if (need_output_answer)
 		{
@@ -1982,7 +1982,6 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 			cout << "There has answer: " << ans_num << endl;
 			cout << "final result is : " << endl;
 			_result_set.output(_fp);
-			fprintf(_fp, "\n");
 			fflush(_fp);       //to empty the output buffer in C (fflush(stdin) not work in GCC)
 		}
 	}
