@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-04-01 16:07:06
+ * @LastEditTime: 2022-04-06 13:25:16
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2029,7 +2029,7 @@ void export_thread_new(const shared_ptr<HttpServer::Request>& request, const sha
 		ResultSet rs;
 		Util::formatPrint("db_path: " + db_path);
 		FILE* ofp = fopen(db_path.c_str(), "w");
-		int ret = current_database->query(sparql, rs, ofp, false, false);
+		int ret = current_database->query(sparql, rs, ofp, false, true);
 		fflush(ofp);
 		fclose(ofp);
 		ofp = NULL;

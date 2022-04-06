@@ -65,7 +65,7 @@ main(int argc, char * argv[])
 		filepath= Util::getArgValue(argc, argv, "f", "file");
 		if (filepath.empty())
 		{
-			filepath = db_name + ".nt";
+			filepath = db_name + "_" + Util::get_timestamp() + ".nt";
 		}
 		else
 		{
@@ -73,7 +73,7 @@ main(int argc, char * argv[])
 				filepath = filepath + "/";
 			if (!boost::filesystem::exists(filepath))
 				boost::filesystem::create_directories(filepath);
-			filepath = filepath + db_name + ".nt";
+			filepath = filepath + db_name  + "_" + Util::get_timestamp() +  ".nt";
 			
 		}
 		cout << "gexport..." << endl;
@@ -85,7 +85,7 @@ main(int argc, char * argv[])
 		ResultSet ask_rs;
 		FILE* ask_ofp = stdout;
 		int ret = system_db.query(sparql, ask_rs, ask_ofp);
-		if (ask_rs.answer[0][0] == "false")
+		if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
 		{
 			cout<<"The database does not exist."<<endl;
 			return 0;
@@ -99,13 +99,14 @@ main(int argc, char * argv[])
 		sparql = "select * where{?x ?y ?z.}";
 		ResultSet _rs;
 		FILE* ofp = fopen(filepath.c_str(), "w");
-		ret = _db.query(sparql, _rs, ofp, true, true);
+		ret = _db.query(sparql, _rs, ofp, false, true);
 		fflush(ofp);
 		fclose(ofp);
 		ofp = NULL;
 		long tv_end = Util::get_cur_time();
 		/*stringstream ss;*/
 		cout << db_name << ".db exported successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+		cout << db_name << ".db export path: " << filepath << endl;
 		//Log.Info(ss.str().c_str());
 		return 0;
 
