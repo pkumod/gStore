@@ -73,6 +73,9 @@ int initialize(int argc, char *argv[])
 	ss << "grpc server port ";
 	ss << port;
 	Util::formatPrint(ss.str());
+	//handle the Ctrl+C signal
+	signal(SIGINT, sig_handler);
+
 	wait_group.wait();
 	server.stop();
 	google::protobuf::ShutdownProtobufLibrary();
