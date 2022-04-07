@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-04-06 13:25:16
+ * @LastEditTime: 2022-04-07 20:11:47
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2354,7 +2354,6 @@ void commit_thread_new(const shared_ptr<HttpServer::Request>& request, const sha
 		else
 		{
 			apiUtil->commit_process(txn_m, TID);
-			apiUtil->db_checkpoint(db_name);
 			string success = "transaction commit success. TID: " + TID_s;
 			sendResponseMsg(0, success, operation, request, response);
 		}
@@ -2558,7 +2557,6 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Request>& request, const
 				error = "Database transaction manager error.";
 				apiUtil->unlock_database(db_name);
 				sendResponseMsg(1004, error, operation, request, response);
-				return;
 			}
 			else
 			{

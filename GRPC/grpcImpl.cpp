@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2022-02-28 10:31:06
- * @LastEditTime: 2022-04-06 09:56:15
+ * @LastEditTime: 2022-04-07 18:07:01
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.cpp
@@ -1731,7 +1731,6 @@ void GrpcImpl::commit_task(CommonRequest *&request, CommonResponse *&response, s
         else
         {
             apiUtil->commit_process(txn_m, TID);
-			apiUtil->db_checkpoint(db_name);
             string success = "transaction commit success. TID: " + TID_s;
             response->set_statuscode(0);
             response->set_statusmsg(success);
@@ -3052,7 +3051,7 @@ void GrpcImpl::fun_query_task(CommonRequest *&request, CommonResponse *&response
         {
             struct PFNInfo item = list[i];
             fun_copy_from_pfn_info(&fun_info, &item);
-            google::protobuf::Any *any = response->add_responsebody();
+            google::protobuf::Any *any = response->add_list();
             any->PackFrom(fun_info);
         }
         response->set_statuscode(0);

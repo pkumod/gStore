@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-04-01 14:35:41
+ * @LastEditTime: 2022-04-07 20:07:15
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -849,7 +849,7 @@ txn_id_t APIUtil::check_txn_id(string TID_s)
 		TID = strtoull(TID_s.c_str(), NULL, 0);
 	} 
     else if (TID_s.find("_") != string::npos)
-    {   // case for workbench call commit and rollback: "begin_time tid"
+    {   // case for workbench call commit and rollback: "begin_time_tid"
         int pos = TID_s.find("_") + 1;
         string TID_s_new = TID_s.substr(pos, TID_s.size()-pos);
         if (Util::is_number(TID_s_new))
@@ -965,7 +965,11 @@ bool APIUtil::trywrlock_database(const std::string &db_name)
     pthread_rwlock_rdlock(&already_build_map_lock);
     std::map<std::string, struct DatabaseInfo *>::iterator iter = already_build.find(db_name);
     pthread_rwlock_unlock(&already_build_map_lock);
-    if (pthread_rwlock_trywrlock(&(iter->second->db_lock)) == 0)
+    if (pthread_rwlock_trywrlock(&(iter->second->db_lock)) != 0)
+    {
+        result = false;
+    } 
+    else
     {
         result = true;
     }
