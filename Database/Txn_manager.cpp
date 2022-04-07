@@ -49,6 +49,7 @@ shared_ptr<Transaction> Txn_manager::get_transaction(txn_id_t TID)
 {
 	table_lock.lockShared();
 	if(txn_table.find(TID) == txn_table.end()) {
+		table_lock.unlock();
 		cerr << "wrong TID" << endl;
 		return nullptr;
 	}
