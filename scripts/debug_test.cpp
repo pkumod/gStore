@@ -62,6 +62,23 @@ void Bug4SItree(Database *_db)
     }
 }
 
+void Bug20220408(Txn_manager &txn_m)
+{
+    string insert = "insert data {<zhangzhe> <name> \"zhangzhe\"}";
+    string remove = "delete data {<zhangzhe> <name> \"zhangzhe\"}";
+    string query  = "select ?x where {<zhangzhe> ?p ?x}";
+    string res;
+    txn_id_t TID = txn_m.Begin();
+    txn_m.Query(TID, remove, res);
+    txn_m.Query(TID, query, res);
+    txn_m.Commit(TID);
+    txn_m.Checkpoint();
+    TID = txn_m.Begin();
+    txn_m.Query(TID, insert, res);
+    txn_m.Query(TID, query, res);
+    txn_m.Commit(TID);
+    txn_m.Checkpoint();
+}
 
 int main(int argc, char* argv[])
 {
@@ -71,5 +88,6 @@ int main(int argc, char* argv[])
 	Database _db(db_folder);
 	_db.load();
 
-    Bug4SItree(&_db);
+    Txn_manager txn_m(&_db, "test");
+    Bug20220408(txn_m);
 }
