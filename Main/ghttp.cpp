@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-04-07 20:11:47
+ * @LastEditTime: 2022-04-08 18:40:50
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -552,7 +552,7 @@ int initialize(int argc, char *argv[])
 		return -1;
 	}
 	// call apiUtil initialized
-	if(apiUtil->initialize(port_str, db_name, loadCSR) == -1)
+	if(apiUtil->initialize("ghttp", port_str, db_name, loadCSR) == -1)
 	{
 		return -1;
 	}
@@ -2242,11 +2242,13 @@ void tquery_thread_new(const shared_ptr<HttpServer::Request>& request, const sha
 		else if(ret == -10)
 		{
 			error = "Transaction query failed due to wrong database status";
+			apiUtil->rollback_process(txn_m, TID);
 			sendResponseMsg(1005, error, operation, request, response);
 		}
 		else if(ret == -99)
 		{
 			error = "Transaction query failed. This transaction is not in running status!";
+			apiUtil->rollback_process(txn_m, TID);
 			sendResponseMsg(1005, error, operation, request, response);
 		}
 		else if(ret == -100)
@@ -2267,6 +2269,7 @@ void tquery_thread_new(const shared_ptr<HttpServer::Request>& request, const sha
 		else if(ret == -20)
 		{
 			error = "Transaction query failed. This transaction is set abort due to conflict!";
+			apiUtil->rollback_process(txn_m, TID);
 			sendResponseMsg(1005, error, operation, request, response);
 		}
 		else if(ret == -101)
@@ -2327,7 +2330,8 @@ void commit_thread_new(const shared_ptr<HttpServer::Request>& request, const sha
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		if(apiUtil->check_already_load(db_name)==false)
+		Database *current_database = apiUtil->get_database(db_name);
+		if(current_database == NULL)
 		{
 			error="Database not load yet.";
 			sendResponseMsg(1004, error, operation, request, response);
@@ -2341,19 +2345,37 @@ void commit_thread_new(const shared_ptr<HttpServer::Request>& request, const sha
 			return;
 		}	
 		int ret = txn_m->Commit(TID);
-		if (ret == 1)
-		{
-			error = "transaction not in running state! commit failed. TID: " + TID_s;
-			sendResponseMsg(1005, error, operation, request, response);
-		}
-		else if (ret == -1)
+		if (ret == -1)
 		{
 			error = "transaction not found, commit failed. TID: " + TID_s;
+			sendResponseMsg(1005, error, operation, request, response);
+		}
+		else if (ret == 1)
+		{
+			error = "transaction not in running state! commit failed. TID: " + TID_s;
+			apiUtil->rollback_process(txn_m, TID);
 			sendResponseMsg(1005, error, operation, request, response);
 		}
 		else
 		{
 			apiUtil->commit_process(txn_m, TID);
+			auto latest_tid = txn_m->find_latest_txn();
+			cout << "latest TID: " << latest_tid <<  endl;
+			if (latest_tid == 0)
+			{
+				Util::formatPrint("this is latest TID, auto checkpoint and save.");
+				txn_m->Checkpoint();
+				Util::formatPrint("transaction checkpoint done.");
+				if (apiUtil->trywrlock_database(db_name))
+				{
+					current_database->save();
+					apiUtil->unlock_database(db_name);
+				}
+				else
+				{
+					Util::formatPrint("the save operation can not been excuted due to loss of lock.", "ERROR");
+				}
+			}
 			string success = "transaction commit success. TID: " + TID_s;
 			sendResponseMsg(0, success, operation, request, response);
 		}
@@ -2537,13 +2559,13 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Request>& request, const
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		if(apiUtil->check_already_load(db_name) == false)
+		Database *current_database = apiUtil->get_database(db_name);
+		if(current_database == NULL)
 		{
 			error = "Database not load yet.";
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		Database *current_database = apiUtil->get_database(db_name);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
 			error = "the operation can not been excuted due to loss of lock.";
