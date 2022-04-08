@@ -7,6 +7,9 @@ using namespace std;
 using namespace rapidjson;
 
 const string BACKUP_PATH = "./backups";
+const string USERNAME = "root";
+const string PASSWORD = "123456";
+
 int get_all_folders(string path, vector<string> &folders)
 {
     DIR *dp = NULL;
@@ -80,6 +83,48 @@ string stamp2time(int timestamp)
     return s;
 }
 
+bool is_number(string s)
+{
+    if (s.empty())
+    {
+        return false;
+    }
+    string::size_type pos = 0;
+    for(; pos < s.size(); pos++){
+        if(!isdigit(s[pos])) return false;
+    }
+    return true;
+}
+
+string gc_getUrl(string _type, string _port)
+{
+    string _url = "";
+    _url.append("http://127.0.0.1:").append(_port);
+    if (_type == "grpc")
+    {
+        _url.append("/grpc/api");
+    }
+    return _url;
+}
+
+int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
+{
+    string strUrl = gc_getUrl(_type, _port);
+    std::string strPost = "{\"operation\": \"check\", \"username\": \"" + USERNAME + "\", \"password\": \"" + PASSWORD + "\"}";
+    int ret = gc.Post(strUrl, strPost, res);
+    // cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
+    return ret;
+}
+
+int gc_unload(GstoreConnector &gc, string _type, string _port, string _db_name, string &res)
+{
+    string strUrl = gc_getUrl(_type, _port);
+    std::string strPost = "{\"operation\": \"unload\", \"db_name\": \"" + _db_name + "\", \"username\": \"" + USERNAME + "\", \"password\": \"" + PASSWORD + "\"}";
+    int ret = gc.Post(strUrl, strPost, res);
+    // cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
+    return ret;
+}
+
 int
 main(int argc, char * argv[])
 {
@@ -94,14 +139,6 @@ main(int argc, char * argv[])
     //     return 0;
     // }
     // ofp.close();
-    ofp.open("./system.db/port.txt", ios::in);
-    int port;
-    ofp >> port;
-    ofp.close();
-    string username = "root";
-    string password = "123456";
-    string IP = "127.0.0.1";
-    GstoreConnector gc(IP, port, username, password);
     string db_name, backup_date, backup_time, restore_time;
     if (argc < 2 || (2 < argc && argc < 7))
 	{
@@ -199,25 +236,70 @@ main(int argc, char * argv[])
         return 0;
     }
 
-    //ghttp check
-    string res = gc.check();
-    cout << "Check result: " << res << endl;
-    Document document;
-    document.SetObject();
-    document.Parse(res.c_str());
-    if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+    // check http server status
+    if (Util::file_exist("system.db/port.txt"))
     {
-        //unload
-        res = gc.unload(db_name);
-        cout << "Unload result: " << res << endl;
-        document.Parse(res.c_str());
-        if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() != 0 && document["StatusCode"].GetInt() != 304)
+        cout << "http server is running!" << endl;
+        string port;
+        string type;
+        string type_port;
+        GstoreConnector gc;
+        ofp.open("./system.db/port.txt", ios::in);
+        ofp >> type_port;
+        ofp.close();
+        if (type_port.find(":") != string::npos)
         {
-            res = document["StatusMsg"].GetString();
-            if (res != "the database not load yet.")
-            {   
-                cout << "Rollback Failed: please unload the database from ghttp" << endl;
-                return 0;
+            std::vector<std::string> res;
+            Util::split(type_port, ":", res);
+            if (res.size() == 2)
+            {
+                type = res[0];
+                port = res[1];
+            } 
+        }
+        else if (is_number(type_port))
+        {
+            port = type_port;
+            string res;
+            gc_check(gc, "ghttp", port, res);
+            Document document;
+            document.SetObject();
+            document.Parse(res.c_str());
+            // ghttp server is running
+            if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+            {
+                type = "ghttp";
+            }
+            else
+            {
+                type = "grpc";
+            }
+        }
+        else
+        {
+            cout << "http server port is invalid: " << type_port << endl;
+            return 0;
+        }
+        string res = ""; 
+        gc_check(gc, type, port, res);
+        Document document;
+        document.SetObject();
+        document.Parse(res.c_str());
+        if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+        {
+            //unload
+            res = "";
+            gc_unload(gc, type, port, db_name, res);
+            cout << "Unload result: " << res << endl;
+            document.Parse(res.c_str());
+            if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() != 0 && document["StatusCode"].GetInt() != 304)
+            {
+                res = document["StatusMsg"].GetString();
+                if (res != "the database not load yet.")
+                {   
+                    cout << "Rollback Failed: please unload the database from ghttp" << endl;
+                    return 0;
+                }
             }
         }
     }
