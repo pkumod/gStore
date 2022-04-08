@@ -5807,7 +5807,7 @@ KVstore::o2values_literal_vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<T
 			if(base_empty == false)
 			{
 				cerr << "delete keys" << endl;
-				assert(false);
+				// assert(false);
 				this->removeKey(this->objID2values, _obj_id);
 			}
 			continue;
