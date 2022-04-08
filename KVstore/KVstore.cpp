@@ -5802,7 +5802,7 @@ KVstore::o2values_literal_vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<T
 		//cout << "_len:                                                 " <<  _len << endl;
 		//for(int i = 0; i < _len / sizeof(unsigned); i++) cout << _tmp[i] << " ";
 		//cout << endl;
-		this->clean_dirty_key(this->objID2values, _obj_id);
+		this->clean_dirty_key(this->objID2values_literal, _obj_id - Util::LITERAL_FIRST_ID);
 		if(_len == 0) {
 			if(base_empty == false)
 			{
