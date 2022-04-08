@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-04-07 20:07:15
+ * @LastEditTime: 2022-04-08 18:35:31
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -78,7 +78,7 @@ APIUtil::~APIUtil()
     system(cmd.c_str());
 }
 
-int APIUtil::initialize(const std::string port, const std::string db_name, bool load_csr)
+int APIUtil::initialize(const std::string server_type, const std::string port, const std::string db_name, bool load_csr)
 {
     try
     {
@@ -326,6 +326,8 @@ int APIUtil::initialize(const std::string port, const std::string db_name, bool 
         ofp.close();
         // create port file
         ofp.open("system.db/port.txt", ios::out);
+        ofp << server_type;
+        ofp << ":";
         ofp << port;
         ofp.close();
         // load user database
