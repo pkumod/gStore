@@ -12,17 +12,20 @@
 using namespace std;
 
 #define SYSTEM_USERNAME "system"
-string system_password;
+const string USERNAME = "root";
+const string PASSWORD = "123456";
 
-bool isNum(char *str)
+bool is_number(string s)
 {
-	for(int i = 0; i < strlen(str); i++)
-	{
-		int tmp = (int)(str[i]);
-		if(tmp < 48 || tmp > 57)
-			return false;
-	}
-	return true;
+    if (s.empty())
+    {
+        return false;
+    }
+    string::size_type pos = 0;
+    for(; pos < s.size(); pos++){
+        if(!isdigit(s[pos])) return false;
+    }
+    return true;
 }
 
 string int2string(int n)
@@ -34,18 +37,28 @@ string int2string(int n)
 	return s;
 }
 
+string gc_getUrl(string _type, string _port)
+{
+    string _url = "";
+    _url.append("http://127.0.0.1:").append(_port);
+    if (_type == "grpc")
+    {
+        _url.append("/grpc");
+    }
+    return _url;
+}
+
+int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
+{
+    string strUrl = gc_getUrl(_type, _port).append("/api");
+    std::string strPost = "{\"operation\": \"check\", \"username\": \"" + USERNAME + "\", \"password\": \"" + PASSWORD + "\"}";
+    int ret = gc.Post(strUrl, strPost, res);
+	// cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
+    return ret;
+}
+
 int main(int argc, char *argv[])
 {
-	string port;
-	string type;
-	// if (argc < 2)
-	// {
-	// 	/*cout << "please input the complete command:\t" << endl;
-	// 	cout << "\t bin/gadd -h" << endl;*/
-	// 	// Log.Error("Invalid arguments! Input \"bin/gbuild -h\" for help.");
-	// 	cout << "Invalid arguments! Input \"bin/shutdown -h\" for help." << endl;
-	// 	return 0;
-	// }
 	if (argc == 2)
 	{
 		string command = argv[1];
@@ -59,8 +72,7 @@ int main(int argc, char *argv[])
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
 			// cout << "\t-p,--port,\t\t the ghttp  server listen port. " << endl;
-			cout << "\t-t,--type,\t\tthe server type. grpc or ghttp, Default value is grpc." << endl;
-
+			// cout << "\t-t,--type,\t\tthe server type. grpc or ghttp, Default value is grpc." << endl;
 			cout << endl;
 			return 0;
 		}
@@ -74,31 +86,82 @@ int main(int argc, char *argv[])
 	else
 	{
 		// port = Util::getArgValue(argc, argv, "p", "port");
-		type = Util::getArgValue(argc, argv, "t", "type");
-		
-		fstream ofp;
-		ofp.open("system.db/port.txt", ios::in);
-		ofp >> port;
-		ofp.close();
-
-		ofp.open("system.db/password" + port + ".txt", ios::in);
-		ofp >> system_password;
-		ofp.close();
+		if (Util::file_exist("system.db/port.txt") == false)
+		{
+			cout << "http server is not running!" << endl;
+			return 0;
+		}
 
 		GstoreConnector gc;
-		string res;
-		int ret;
-		string postdata = "{\"username\":\"system\",\"password\":\"" + system_password + "\"}";
-		// ret = gc.Get("http://127.0.0.1:" + port + "/shutdown/?username=" + SYSTEM_USERNAME + "&password=" + system_password, res);
-		string strUrl = "http://127.0.0.1:" + port;
-		if (type == "ghttp")
+		string port;
+		string type;
+		string system_password;
+
+		string type_port;
+		fstream ofp;
+		ofp.open("system.db/port.txt", ios::in);
+		ofp >> type_port;
+		ofp.close();
+		if (type_port.find(":") != string::npos)
 		{
-			strUrl = strUrl + "/shutdown";
+			std::vector<std::string> res;
+			Util::split(type_port, ":", res);
+			if (res.size() == 2)
+			{
+				type = res[0];
+				port = res[1];
+			} 
+		} 
+		else if (is_number(type_port))
+		{
+			port = type_port;
+			string res = "";
+			gc_check(gc, "ghttp", port, res);
+			rapidjson::Document document;
+			document.SetObject();
+			document.Parse(res.c_str());
+			// ghttp server is running
+			if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+			{
+				type = "ghttp";
+			}
+			else
+			{
+				res = "";
+				gc_check(gc, "grpc", port, res);
+				document.Parse(res.c_str());
+				// grpc server is running
+				if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+				{
+					type = "grpc";
+				} 
+				else
+				{
+					string cmd = "rm system.db/password*.txt";;
+					system(cmd.c_str());
+					cmd = "rm system.db/port.txt";
+					system(cmd.c_str());
+					cout << "http server is not running!" << endl;
+					return 0;
+				}
+			}
 		}
 		else
 		{
-			strUrl = strUrl + "/grpc/shutdown";
+			cout << "http server port is invalid: " << type_port << endl;
+			return 0;
 		}
+		
+		cout << "server type: " << type << ", port: " << port << endl;
+		ofp.open("system.db/password" + port + ".txt", ios::in);
+		ofp >> system_password;
+		ofp.close();
+		
+		string res;
+		int ret;
+		string postdata = "{\"username\":\"system\",\"password\":\"" + system_password + "\"}";
+		string strUrl = gc_getUrl(type, port);
+		strUrl.append("/shutdown");
 		// cout << "post url:" << strUrl << '\n' << postdata << endl;
 		ret = gc.Post(strUrl, postdata, res);
 		// cout << "post result:" << ret << endl;
@@ -109,34 +172,4 @@ int main(int argc, char *argv[])
 		cout << "Result: " << res << endl;
 		return 0;
 	}
-
-	// if(argc == 1)
-	// {
-	// 	cout << "You need to input the server port that you want to stop." << endl;
-	// 	return 0;
-	// }
-	// else if(argc == 2)
-	// {
-	// 	if(isNum(argv[1]))
-	// 		port = argv[1];
-	// 	else
-	// 	{
-	// 		cout << "wrong format of server port" <<endl;
-	// 		return 0;
-	// 	}
-	// }
-	// else
-	// {
-	// 	cout << "The number of parameters is not correct." << endl;
-	// 	return 0;
-	// }
-	// fstream ofp;
-	// ofp.open("system.db/password" + port + ".txt", ios::in);
-	// ofp >> system_password;
-	// ofp.close();
-	// GstoreConnector gc;
-	// string res;
-	// int ret;
-	// ret = gc.Get("http://127.0.0.1:" + port + "/?operation=shutdown&username=" + SYSTEM_USERNAME + "&password=" + system_password, res);
-	// return 0;
 }
