@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-04-01 14:36:09
+ * @LastEditTime: 2022-04-08 10:14:11
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -880,7 +880,7 @@ private:
 public:
     APIUtil();
     ~APIUtil();
-    int initialize(const std::string port, const std::string db_name, bool load_csr);
+    int initialize(const std::string server_type, const std::string port, const std::string db_name, bool load_csr);
     bool trywrlock_database_map();
     bool unlock_database_map();
     bool trywrlock_already_build_map();

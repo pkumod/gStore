@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2022-02-28 10:31:06
- * @LastEditTime: 2022-04-07 18:07:01
+ * @LastEditTime: 2022-04-08 18:39:35
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.cpp
@@ -19,7 +19,7 @@ GrpcImpl::GrpcImpl(int argc, char *argv[])
     port = Util::getArgValue(argc, argv, "p", "port", "9000");
     bool load_csr = false;
     load_csr = Util::string2int(Util::getArgValue(argc, argv, "c", "csr", "0"));
-    int ret = apiUtil->initialize(port, db_name, load_csr);
+    int ret = apiUtil->initialize("grpc", port, db_name, load_csr);
     if(ret == -1)
     {
         _exit(1);
@@ -567,7 +567,7 @@ void GrpcImpl::unload_task(CommonRequest *&request, CommonResponse *&response, s
         }
         if(apiUtil->check_already_load(db_name) == false)
         {
-            error = "Database not load yet.";
+            error = "the database not load yet.";
             response->set_statuscode(1004);
             response->set_statusmsg(error);
             return;
@@ -1554,12 +1554,14 @@ void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, s
         else if(ret == -10)
         {
             error = "Transaction query failed due to wrong database status";
+            apiUtil->rollback_process(txn_m, TID);
             response->set_statuscode(1005);
             response->set_statusmsg(error);
         }
         else if(ret == -99)
         {
             error = "Transaction query failed. This transaction is not in running status!";
+            apiUtil->rollback_process(txn_m, TID);
             response->set_statuscode(1005);
             response->set_statusmsg(error);
         }
@@ -1577,36 +1579,71 @@ void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, s
             }
             else
             {
-                Value& vars = resDoc["head"]["vars"];
-                Value& link = resDoc["head"]["link"];
                 QueryHeadInfo *head = new QueryHeadInfo();
                 QueryResultInfo *results = new QueryResultInfo();
-                for(int i = 0; i<vars.Size(); i++)
+                if (resDoc.HasMember("head") && resDoc["head"].IsObject())
                 {
-                    head->add_vars(resDoc["head"]["vars"][i].GetString());
+                    Value& resHead = resDoc["head"];
+                    if (resHead.HasMember("vars") && resHead["vars"].IsArray())
+                    {
+                        Value& vars = resHead["vars"];
+                        for(int i = 0; i<vars.Size(); i++)
+                        {
+                            head->add_vars(vars[i].GetString());
+                        }
+                    }
+                    if (resHead.HasMember("link") && resHead["link"].IsArray())
+                    {
+                        Value& link = resHead["link"];
+                        for (size_t i = 0; i < link.Size(); i++)
+                        {
+                            head->add_link(link[i].GetString());
+                        }
+                    }
                 }
-                for (size_t i = 0; i < link.Size(); i++)
+                if (resDoc.HasMember("results") && resDoc["results"].IsObject()
+                    && resDoc["results"].HasMember("bindings"))
                 {
-                    head->add_link(resDoc["head"]["link"][i].GetString());
-                }
-                
-                Value& bindings = resDoc["results"]["bindings"];
-                for(int i = 0; i<bindings.Size(); i++)
-                {
-                     Value& obj = resDoc["results"]["bindings"][i];
-                     if (obj.IsObject())
-                     {
+                    Value& bindings = resDoc["results"]["bindings"];
+                    if (bindings.IsArray())
+                    {
+                        for(int i = 0; i<bindings.Size(); i++)
+                        {
+                            Value& obj = bindings[i];
+                            if (obj.IsObject())
+                            {
+                                StringBuffer resBuffer;
+                                rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+                                obj.Accept(resWriter);
+                                string binding_str = resBuffer.GetString();
+                                cout << "bindings["<< i << "]=" << binding_str << endl;
+                                results->add_bindings(binding_str);
+                            } 
+                            else if (obj.IsString())
+                            {
+                                results->add_bindings(obj.GetString());
+                            }
+                            else
+                            {
+                                cout << "bindings["<< i << "] unknown type" << endl;
+                            }
+                        }
+                    } 
+                    else if (bindings.IsObject())
+                    {
                         StringBuffer resBuffer;
-	                    rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
-                        obj.Accept(resWriter);
-                        string binding_str = resBuffer.GetString();
-                        cout << "bindings["<< i << "]=" << binding_str << endl;
-                        results->add_bindings(binding_str);
-                     } 
-                     else if (obj.IsString())
-                     {
-                         results->add_bindings(obj.GetString());
-                     }
+                        rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+                        bindings.Accept(resWriter);
+                        results->add_bindings(resBuffer.GetString());
+                    }
+                    else if (bindings.IsString())
+                    {
+                        results->add_bindings(bindings.GetString());
+                    }
+                    else 
+                    {
+                        Util::formatPrint("Unknown bindings type", "ERROR");
+                    }
                 }
                 response->set_statuscode(0);
                 response->set_statusmsg("success");
@@ -1617,6 +1654,7 @@ void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, s
         else if(ret == -20)
         {
             error = "Transaction query failed. This transaction is set abort due to conflict!";
+            apiUtil->rollback_process(txn_m, TID);
             response->set_statuscode(1005);
             response->set_statusmsg(error);
         }
@@ -1693,7 +1731,8 @@ void GrpcImpl::commit_task(CommonRequest *&request, CommonResponse *&response, s
             response->set_statusmsg(error);
             return;
         }
-        if(apiUtil->check_db_exist(db_name) == false)
+        Database *current_database = apiUtil->get_database(db_name);
+		if(current_database == NULL)
         {
             error = "Database not built yet.";
             response->set_statuscode(1004);
@@ -1716,21 +1755,39 @@ void GrpcImpl::commit_task(CommonRequest *&request, CommonResponse *&response, s
             return;
         }
         int ret = txn_m->Commit(TID);
-        if (ret == 1)
+        if (ret == -1)
         {
-            error = "transaction not in running state! commit failed. TID: " + TID_s;
+            error = "transaction not found, commit failed. TID: " + TID_s;
             response->set_statuscode(1005);
             response->set_statusmsg(error);
         }
-        else if (ret == -1)
+        else if (ret == 1)
         {
-            error = "transaction not found, commit failed. TID: " + TID_s;
+            error = "transaction not in running state! commit failed. TID: " + TID_s;
+            apiUtil->rollback_process(txn_m, TID);
             response->set_statuscode(1005);
             response->set_statusmsg(error);
         }
         else
         {
             apiUtil->commit_process(txn_m, TID);
+            auto latest_tid = txn_m->find_latest_txn();
+			cout << "latest TID: " << latest_tid <<  endl;
+			if (latest_tid == 0)
+			{
+				Util::formatPrint("this is latest TID, auto checkpoint and save.");
+				txn_m->Checkpoint();
+                Util::formatPrint("transaction checkpoint done.");
+				if (apiUtil->trywrlock_database(db_name))
+				{
+					current_database->save();
+					apiUtil->unlock_database(db_name);
+				}
+				else
+				{
+					Util::formatPrint("the save operation can not been excuted due to loss of lock.", "ERROR");
+				}
+			}
             string success = "transaction commit success. TID: " + TID_s;
             response->set_statuscode(0);
             response->set_statusmsg(success);
