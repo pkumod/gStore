@@ -165,6 +165,10 @@ int main(int argc, char *argv[])
 		// cout << "post url:" << strUrl << '\n' << postdata << endl;
 		ret = gc.Post(strUrl, postdata, res);
 		// cout << "post result:" << ret << endl;
+		string cmd = "rm system.db/password*.txt";;
+		system(cmd.c_str());
+		cmd = "rm system.db/port.txt";
+		system(cmd.c_str());
 		if (res == "")
 		{
 			res = "the Server is stopped successfully!";
