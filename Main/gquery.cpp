@@ -122,14 +122,16 @@ main(int argc, char * argv[])
 				string resultfile = Util::getArgValue(argc, argv, "f", "resultfile");
 				ResultSet _rs;
 				FILE *ofp = stdout;
+				bool export_flag = false;
 				if (resultfile.empty() == false)
 				{
 					ofp = fopen(resultfile.c_str(), "w");
+					export_flag = true;
 				}
 				string msg;
 				shared_ptr<Transaction> ptxn = make_shared<Transaction>(db_folder, 1, 1);
 				//cout << ptxn << endl;
-				int ret = _db.query(query, _rs, ofp, true, false, nullptr);
+				int ret = _db.query(query, _rs, ofp, true, export_flag, nullptr);
 				if (resultfile.empty() == false)
 				{
 					fclose(ofp);
