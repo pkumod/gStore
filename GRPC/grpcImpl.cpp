@@ -737,7 +737,7 @@ void GrpcImpl::show_task(CommonRequest *&request, CommonResponse *&response, srp
             return;
         }
         vector<struct DatabaseInfo *> array;
-        apiUtil->get_already_builds(array);
+        apiUtil->get_already_builds(username, array);
         size_t count = array.size();
         for (size_t i = 0; i < count; i++)
         {

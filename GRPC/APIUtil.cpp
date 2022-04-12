@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-04-08 18:35:31
+ * @LastEditTime: 2022-04-12 14:38:28
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -93,9 +93,9 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         std::cout << "backup_path:\t\t" << backup_path << endl;
         DB_path = Util::getConfigureValue("db_path");
         std::cout << "DB_path:\t\t" << DB_path << endl;
-        root_username = Util::getConfigureValue("root_username");
-        root_username = Util::replace_all(root_username, "\"", "");
-        std::cout << "root_username:\t\t" << root_username << endl;
+        // root_username = Util::getConfigureValue("root_username");
+        // root_username = Util::replace_all(root_username, "\"", "");
+        // std::cout << "root_username:\t\t" << root_username << endl;
         system_username = Util::getConfigureValue("system_username");
         system_username = Util::replace_all(system_username, "\"", "");
         std::cout << "system_username:\t\t" << system_username << endl;
@@ -918,7 +918,7 @@ std::string APIUtil::get_already_build(const std::string &db_name)
     }
 }
 
-void APIUtil::get_already_builds(vector<struct DatabaseInfo *> &array)
+void APIUtil::get_already_builds(const std::string& username, vector<struct DatabaseInfo *> &array)
 {
     pthread_rwlock_rdlock(&already_build_map_lock);
     // rapidjson::StringBuffer strBuf;
@@ -932,6 +932,11 @@ void APIUtil::get_already_builds(vector<struct DatabaseInfo *> &array)
         {
             continue;
         }
+        if (username != ROOT_USERNAME && db_info->getName() != username && check_privilege(username, "query", db_info->getName()) == false)
+        {
+            continue;
+        }
+        
         if (APIUtil::check_already_load(db_info->getName()))
         {
             db_info->setStatus("loaded");
@@ -1088,72 +1093,65 @@ bool APIUtil::add_privilege(const std::string& username, const std::string& type
     std::map<std::string, struct DBUserInfo *>::iterator it = users.find(username);
 	if(it != users.end() && db_name != SYSTEM_DB_NAME)
 	{
-		pthread_rwlock_unlock(&users_map_lock);
 		if(type == "query")
 		{
-			pthread_rwlock_wrlock(&(it->second->query_priv_set_lock));
-			it->second->query_priv.insert(db_name);
 			string update = "INSERT DATA {<" + username + "> <has_query_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-				
+			pthread_rwlock_wrlock(&(it->second->query_priv_set_lock));
+			it->second->query_priv.insert(db_name);
 			pthread_rwlock_unlock(&(it->second->query_priv_set_lock));
 
 		}
 		else if(type == "update")
 		{
-			pthread_rwlock_wrlock(&(it->second->update_priv_set_lock));
-			it->second->update_priv.insert(db_name);
 			string update = "INSERT DATA {<" + username + "> <has_update_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-				
+			pthread_rwlock_wrlock(&(it->second->update_priv_set_lock));
+			it->second->update_priv.insert(db_name);
 			pthread_rwlock_unlock(&(it->second->update_priv_set_lock));
 
 		}
 		else if(type == "load")
 		{
-			pthread_rwlock_wrlock(&(it->second->load_priv_set_lock));
-			it->second->load_priv.insert(db_name);
 			string update = "INSERT DATA {<" + username + "> <has_load_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-			
+			pthread_rwlock_wrlock(&(it->second->load_priv_set_lock));
+			it->second->load_priv.insert(db_name);
 			pthread_rwlock_unlock(&(it->second->load_priv_set_lock));
 		}
 		else if(type == "unload")
 		{
-			pthread_rwlock_wrlock(&(it->second->unload_priv_set_lock));
-			it->second->unload_priv.insert(db_name);
 			string update = "INSERT DATA {<" + username + "> <has_unload_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-			
+			pthread_rwlock_wrlock(&(it->second->unload_priv_set_lock));
+			it->second->unload_priv.insert(db_name);
 			pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
 		}
 		else if(type == "restore")
 		{
-			pthread_rwlock_wrlock(&(it->second->restore_priv_set_lock));
-			it->second->restore_priv.insert(db_name);
 			string update = "INSERT DATA {<" + username + "> <has_restore_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-
+			pthread_rwlock_wrlock(&(it->second->restore_priv_set_lock));
+			it->second->restore_priv.insert(db_name);
 			pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
 		}
 		else if(type == "backup")
 		{
-			pthread_rwlock_wrlock(&(it->second->backup_priv_set_lock));
-			it->second->backup_priv.insert(db_name);
 			string update = "INSERT DATA {<" + username + "> <has_backup_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-
+			pthread_rwlock_wrlock(&(it->second->backup_priv_set_lock));
+			it->second->backup_priv.insert(db_name);
 			pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
 		}
 		else if(type == "export")
 		{
-			pthread_rwlock_wrlock(&(it->second->export_priv_set_lock));
-			it->second->export_priv.insert(db_name);
 			string update = "INSERT DATA {<" + username + "> <has_export_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-
+			pthread_rwlock_wrlock(&(it->second->export_priv_set_lock));
+			it->second->export_priv.insert(db_name);
 			pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
 		}
+        pthread_rwlock_unlock(&users_map_lock);
 		return 1;
 	}
 	else
@@ -1287,7 +1285,7 @@ bool APIUtil::build_db_user_privilege(std::string db_name, std::string username)
 
 bool APIUtil::user_add(string username, string password)
 {
-    pthread_rwlock_trywrlock(&users_map_lock);
+    pthread_rwlock_wrlock(&users_map_lock);
     bool result = false;
     if(users.find(username) == users.end())
     {
@@ -1304,7 +1302,7 @@ bool APIUtil::user_add(string username, string password)
 
 bool APIUtil::user_delete(string username, string password)
 {
-    pthread_rwlock_trywrlock(&users_map_lock);
+    pthread_rwlock_wrlock(&users_map_lock);
     bool result = false;
     if(users.find(username) != users.end())
     {
@@ -1319,10 +1317,10 @@ bool APIUtil::user_delete(string username, string password)
 
 bool APIUtil::user_pwd_alert(string username, string password)
 {
-    pthread_rwlock_trywrlock(&users_map_lock);
+    pthread_rwlock_wrlock(&users_map_lock);
     bool result = false;
     std::map<std::string, struct DBUserInfo *>::iterator iter;
-			iter = users.find(username);
+    iter = users.find(username);
     if(iter != users.end())
     {
         iter->second->setPassword(password);
@@ -1338,55 +1336,61 @@ bool APIUtil::user_pwd_alert(string username, string password)
 
 int APIUtil::clear_user_privilege(string username)
 {
-    pthread_rwlock_tryrdlock(&users_map_lock);
+    if (username == ROOT_USERNAME)
+	{
+		return 0;
+	}
+    pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct DBUserInfo *>::iterator it = users.find(username);
 	string update="";
-	if(it != users.end() && username != ROOT_USERNAME)
+	if(it != users.end())
 	{
-		pthread_rwlock_unlock(&users_map_lock);
 		update = "DELETE where {<" + username + "> <has_query_priv> ?x.}";
-		pthread_rwlock_trywrlock(&(it->second->query_priv_set_lock));
+		update_sys_db(update);
+		pthread_rwlock_wrlock(&(it->second->query_priv_set_lock));
 		it->second->query_priv.clear();
 		pthread_rwlock_unlock(&(it->second->query_priv_set_lock));
 				
-		
-		update_sys_db(update);
 		update = "DELETE where {<" + username + "> <has_load_priv> ?x.}";
 		update_sys_db(update);
-		pthread_rwlock_trywrlock(&(it->second->load_priv_set_lock));
+		pthread_rwlock_wrlock(&(it->second->load_priv_set_lock));
 		it->second->load_priv.clear();
 		pthread_rwlock_unlock(&(it->second->load_priv_set_lock));
-		update = "DELETE where {<" + username + "> <has_unload_priv> ?x.}";
+		
+        update = "DELETE where {<" + username + "> <has_unload_priv> ?x.}";
 		update_sys_db(update);
-		pthread_rwlock_trywrlock(&(it->second->unload_priv_set_lock));
+		pthread_rwlock_wrlock(&(it->second->unload_priv_set_lock));
 		it->second->unload_priv.clear();
 		pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
-		update = "DELETE where {<" + username + "> <has_update_priv> ?x.}";
+		
+        update = "DELETE where {<" + username + "> <has_update_priv> ?x.}";
 		update_sys_db(update);	
-		pthread_rwlock_trywrlock(&(it->second->update_priv_set_lock));
+		pthread_rwlock_wrlock(&(it->second->update_priv_set_lock));
 		it->second->update_priv.clear();
 		pthread_rwlock_unlock(&(it->second->update_priv_set_lock));
-		update = "DELETE where {<" + username + "> <has_backup_priv> ?x.}";
+		
+        update = "DELETE where {<" + username + "> <has_backup_priv> ?x.}";
 		update_sys_db(update);
-		pthread_rwlock_trywrlock(&(it->second->backup_priv_set_lock));
+		pthread_rwlock_wrlock(&(it->second->backup_priv_set_lock));
 		it->second->backup_priv.clear();
 		pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
-		update = "DELETE where {<" + username + "> <has_restore_priv> ?x.}";
+		
+        update = "DELETE where {<" + username + "> <has_restore_priv> ?x.}";
 		update_sys_db(update);
-		pthread_rwlock_trywrlock(&(it->second->restore_priv_set_lock));
+		pthread_rwlock_wrlock(&(it->second->restore_priv_set_lock));
 		it->second->restore_priv.clear();
 		pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
-		update = "DELETE where {<" + username + "> <has_export_priv> ?x.}";
+		
+        update = "DELETE where {<" + username + "> <has_export_priv> ?x.}";
 		update_sys_db(update);
-		pthread_rwlock_trywrlock(&(it->second->export_priv_set_lock));
+		pthread_rwlock_wrlock(&(it->second->export_priv_set_lock));
 		it->second->export_priv.clear();
 		pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
-		refresh_sys_db();
+		
+        refresh_sys_db();
 	
 		pthread_rwlock_unlock(&users_map_lock);
 		return 1;
-
-	    	
 	}
 	else
 	{
@@ -1395,99 +1399,84 @@ int APIUtil::clear_user_privilege(string username)
 	}
 }
 
-// ifstream APIUtil::Seek_to_line(ifstream & in, int line)
-// {
-//     int i;
-// 	char buf[1024];
-// 	in.seekg(0, ios::beg);
-// 	for(i=1; i< line; i++)
-// 	{
-// 		in.getline(buf, sizeof(buf));
-// 	}
-// 	return in;
-// }
-
 bool APIUtil::del_privilege(const std::string& username, const std::string& type, const std::string& db_name)
 {
-    pthread_rwlock_tryrdlock(&users_map_lock);
+    if (username == ROOT_USERNAME)
+	{
+		return 0;
+	}
+    pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct DBUserInfo *>::iterator it = users.find(username);
-	if(it != users.end() && username != ROOT_USERNAME)
+    int del_result = 0;
+	if(it != users.end())
 	{
 		pthread_rwlock_unlock(&users_map_lock);
 		if(type == "query" && it->second->query_priv.find(db_name) != it->second->query_priv.end())
 		{
-			pthread_rwlock_trywrlock(&(it->second->query_priv_set_lock));
-			it->second->query_priv.erase(db_name);
 			string update = "DELETE DATA {<" + username + "> <has_query_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-			
+			pthread_rwlock_wrlock(&(it->second->query_priv_set_lock));
+			it->second->query_priv.erase(db_name);
 			pthread_rwlock_unlock(&(it->second->query_priv_set_lock));
-			return 1;
+			del_result = 1;
 		}
 		else if(type == "update" && it->second->update_priv.find(db_name) != it->second->update_priv.end())
 		{
-			pthread_rwlock_trywrlock(&(it->second->update_priv_set_lock));
-			it->second->update_priv.erase(db_name);
 			string update = "DELETE DATA {<" + username + "> <has_update_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-			
+			pthread_rwlock_wrlock(&(it->second->update_priv_set_lock));
+			it->second->update_priv.erase(db_name);
 			pthread_rwlock_unlock(&(it->second->update_priv_set_lock));
-			return 1;
+			del_result = 1;
 		}
-
 		else if(type == "load" && it->second->load_priv.find(db_name) != it->second->load_priv.end())
 		{
-			pthread_rwlock_trywrlock(&(it->second->load_priv_set_lock));
-			it->second->load_priv.erase(db_name);
 			string update = "DELETE DATA {<" + username + "> <has_load_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-			
+			pthread_rwlock_wrlock(&(it->second->load_priv_set_lock));
+			it->second->load_priv.erase(db_name);
 			pthread_rwlock_unlock(&(it->second->load_priv_set_lock));
-			return 1;
+			del_result = 1;
 		}
 		else if(type == "unload" && it->second->unload_priv.find(db_name) != it->second->unload_priv.end())
 		{
-			pthread_rwlock_trywrlock(&(it->second->unload_priv_set_lock));
-			it->second->unload_priv.erase(db_name);
 			string update = "DELETE DATA {<" + username + "> <has_load_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-			
+			pthread_rwlock_wrlock(&(it->second->unload_priv_set_lock));
+			it->second->unload_priv.erase(db_name);
 			pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
-			return 1;
+			del_result = 1;
 		}
 		else if(type == "backup" && it->second->backup_priv.find(db_name) != it->second->backup_priv.end())
 		{
-			pthread_rwlock_trywrlock(&(it->second->backup_priv_set_lock));
-			it->second->backup_priv.erase(db_name);
 			string update = "DELETE DATA {<" + username + "> <has_backup_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-			
+			pthread_rwlock_wrlock(&(it->second->backup_priv_set_lock));
+			it->second->backup_priv.erase(db_name);
 			pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
-			return 1;
+			del_result = 1;
 		}
 		else if(type == "restore" && it->second->restore_priv.find(db_name) != it->second->restore_priv.end())
 		{
-			pthread_rwlock_trywrlock(&(it->second->restore_priv_set_lock));
-			it->second->restore_priv.erase(db_name);
 			string update = "DELETE DATA {<" + username + "> <has_restore_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-			
+			pthread_rwlock_wrlock(&(it->second->restore_priv_set_lock));
+			it->second->restore_priv.erase(db_name);
 			pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
-			return 1;
+			del_result = 1;
 		}
 		else if(type == "export" && it->second->export_priv.find(db_name) != it->second->export_priv.end())
 		{
-			pthread_rwlock_trywrlock(&(it->second->export_priv_set_lock));
-			it->second->export_priv.erase(db_name);
 			string update = "DELETE DATA {<" + username + "> <has_export_priv> <" + db_name + ">.}";
 			update_sys_db(update);
-			
+			pthread_rwlock_wrlock(&(it->second->export_priv_set_lock));
+			it->second->export_priv.erase(db_name);
 			pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
-			return 1;
+			del_result = 1;
 		}
 	}
-	pthread_rwlock_unlock(&users_map_lock);
-	return 0;
+    pthread_rwlock_unlock(&users_map_lock);
+    return del_result;
 }
 
 bool APIUtil::check_privilege(const std::string& username, const std::string& type, const std::string& db_name)
@@ -1497,24 +1486,23 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 
 	if(username == ROOT_USERNAME)
 		return 1;
+
     if (type == "login" || type == "testConnect" || type == "getCoreVersion" 
         || type == "funquery" || type == "funcudb" || type == "funreview"
-        || type == "check")
+        || type == "check" || type == "show")
     {
         return 1;
     }
     
 	pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, struct DBUserInfo *>::iterator it = users.find(username);
-	//pthread_rwlock_unlock(&users_map_lock);
-	if(type == "query" || type == "show" || type == "monitor")
+	int check_result = 0;
+	if(type == "query" || type == "monitor")
 	{
 		pthread_rwlock_rdlock(&(it->second->query_priv_set_lock));
 		if(it->second->query_priv.find(db_name) != it->second->query_priv.end())
 		{
-			pthread_rwlock_unlock(&(it->second->query_priv_set_lock));
-			pthread_rwlock_unlock(&users_map_lock);	
-			return 1;
+			check_result = 1;
 		}
 		pthread_rwlock_unlock(&(it->second->query_priv_set_lock));
 	}
@@ -1524,9 +1512,7 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 		pthread_rwlock_rdlock(&(it->second->update_priv_set_lock));
 		if(it->second->update_priv.find(db_name) != it->second->update_priv.end())
 		{
-			pthread_rwlock_unlock(&(it->second->update_priv_set_lock));
-			pthread_rwlock_unlock(&users_map_lock);	
-			return 1;
+			check_result = 1;
 		}
 		pthread_rwlock_unlock(&(it->second->update_priv_set_lock));
 	}
@@ -1535,9 +1521,7 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 		pthread_rwlock_rdlock(&(it->second->load_priv_set_lock));
 		if(it->second->load_priv.find(db_name) != it->second->load_priv.end())
 		{
-			pthread_rwlock_unlock(&(it->second->load_priv_set_lock));
-			pthread_rwlock_unlock(&users_map_lock);
-			return 1;
+			check_result = 1;
 		}
 		pthread_rwlock_unlock(&(it->second->load_priv_set_lock));
 	}
@@ -1546,9 +1530,7 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 		pthread_rwlock_rdlock(&(it->second->unload_priv_set_lock));
 		if(it->second->unload_priv.find(db_name) != it->second->unload_priv.end())
 		{
-			pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
-			pthread_rwlock_unlock(&users_map_lock);
-			return 1;
+			check_result = 1;
 		}
 		pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
 	}
@@ -1557,9 +1539,7 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 		pthread_rwlock_rdlock(&(it->second->restore_priv_set_lock));
 		if(it->second->restore_priv.find(db_name) != it->second->restore_priv.end())
 		{
-			pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
-			pthread_rwlock_unlock(&users_map_lock);
-			return 1;
+			check_result = 1;
 		}
 		pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
 	}
@@ -1568,9 +1548,7 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 		pthread_rwlock_rdlock(&(it->second->backup_priv_set_lock));
 		if(it->second->backup_priv.find(db_name) != it->second->backup_priv.end())
 		{
-			pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
-			pthread_rwlock_unlock(&users_map_lock);
-			return 1;
+			check_result = 1;
 		}
 		pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
 	}
@@ -1579,19 +1557,18 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 		pthread_rwlock_rdlock(&(it->second->export_priv_set_lock));
 		if(it->second->export_priv.find(db_name) != it->second->export_priv.end())
 		{
-			pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
-			pthread_rwlock_unlock(&users_map_lock);
-			return 1;
+			check_result = 1;
 		}
 		pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
 	}
+	cout << "check [" << username << "] [" << db_name << "] ["<< type << "] privilege: " <<check_result<<endl;
 	pthread_rwlock_unlock(&users_map_lock);
-	return 0;
+	return check_result;
 }
 
 void APIUtil::get_user_info(vector<struct DBUserInfo *> *_users)
 {
-    pthread_rwlock_tryrdlock(&users_map_lock);
+    pthread_rwlock_rdlock(&users_map_lock);
     if(!users.empty())
     {
         std::map<std::string, struct DBUserInfo *>::iterator iter;
@@ -1698,7 +1675,11 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     pthread_rwlock_wrlock(&access_log_lock);
     // build json
     string createTime = Util::get_date_time();
-    struct DBAccessLogInfo *dbAccessLogInfo = new DBAccessLogInfo(remoteIP, operation, statusCode, statusMsg, createTime);
+    string status_msg = string(statusMsg.c_str());
+    status_msg = Util::string_replace(status_msg, "\r\n", "");
+	status_msg = Util::string_replace(status_msg, "\n", "");
+    status_msg = Util::string_replace(status_msg, "    ", "");
+    struct DBAccessLogInfo *dbAccessLogInfo = new DBAccessLogInfo(remoteIP, operation, statusCode, status_msg, createTime);
     
     string _info = dbAccessLogInfo->toJSON();
     _info.push_back(',');
@@ -2459,7 +2440,7 @@ unsigned int APIUtil::get_max_output_size()
 
 string APIUtil::get_root_username()
 {
-    return root_username;
+    return ROOT_USERNAME;
 }
 
 string APIUtil::get_system_username()

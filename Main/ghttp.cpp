@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-04-08 18:40:50
+ * @LastEditTime: 2022-04-12 15:57:59
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -81,7 +81,7 @@ void unload_thread_new(const shared_ptr<HttpServer::Request>& request, const sha
 
 void drop_thread_new(const shared_ptr<HttpServer::Request>& request, const shared_ptr<HttpServer::Response>& response, string db_name,string is_backup);
 
-void show_thread_new(const shared_ptr<HttpServer::Request>& request, const shared_ptr<HttpServer::Response>& response);
+void show_thread_new(const shared_ptr<HttpServer::Request>& request, const shared_ptr<HttpServer::Response>& response,string username);
 
 void userManager_thread_new(const shared_ptr<HttpServer::Request>& request, const shared_ptr<HttpServer::Response>& response,string username,string password,string type);
 
@@ -1123,7 +1123,7 @@ void drop_thread_new(const shared_ptr<HttpServer::Request>& request, const share
  * @param {const shared_ptr<HttpServer::Response>} &response
  * @return {*}
  */
-void show_thread_new(const shared_ptr<HttpServer::Request>& request, const shared_ptr<HttpServer::Response> &response)
+void show_thread_new(const shared_ptr<HttpServer::Request>& request, const shared_ptr<HttpServer::Response> &response,string username)
 {
 	string ip = getRemoteIp(request);
 	string operation = "show";
@@ -1134,7 +1134,7 @@ void show_thread_new(const shared_ptr<HttpServer::Request>& request, const share
 		str_stream << "[";
 		
 		vector<struct DatabaseInfo *> array;
-		apiUtil->get_already_builds(array);
+		apiUtil->get_already_builds(username, array);
 		rapidjson::Document resDoc;
 		resDoc.SetObject();
 		Document::AllocatorType &allocator = resDoc.GetAllocator();
@@ -1152,7 +1152,6 @@ void show_thread_new(const shared_ptr<HttpServer::Request>& request, const share
 		}
 		str_stream << "]";
 		Document jsonArray;
-		jsonArray.SetArray();
 		jsonArray.SetArray();
 		line = str_stream.str();
 		jsonArray.Parse(line.c_str());
@@ -1203,7 +1202,6 @@ void userManager_thread_new(const shared_ptr<HttpServer::Request>& request, cons
 		}
 		else if(type=="2") //delete user
 		{
-			string error;
 			if(username == apiUtil->get_root_username())
 			{
 				error = "you cannot delete root, delete user failed.";
@@ -1263,31 +1261,32 @@ void showuser_thread_new(const shared_ptr<HttpServer::Request>& request, const s
 			sendResponseMsg(0, "No Users", operation, request, response);
 			return;
 		}
-		rapidjson::Document resDoc;
-		rapidjson::Document arrayDoc;
-		resDoc.SetObject();
-		arrayDoc.SetArray();
-		rapidjson::Document::AllocatorType &allocator = resDoc.GetAllocator();
 		size_t count = userList.size();
+		stringstream str_stream;
+		str_stream << "[";
+		string line;
 		for (size_t i = 0; i < count; i++)
 		{
-			struct DBUserInfo *user_info = userList[i];
-			rapidjson::Document obj;
-			obj.SetObject();
-			obj.AddMember("username", StringRef(user_info->getUsernname().c_str()), allocator);
-			obj.AddMember("password", StringRef(user_info->getPassword().c_str()), allocator);
-			obj.AddMember("query_privilege", StringRef(user_info->getQuery().c_str()), allocator);
-			obj.AddMember("update_privilege", StringRef(user_info->getUpdate().c_str()), allocator);
-			obj.AddMember("load_privilege", StringRef(user_info->getLoad().c_str()), allocator);
-			obj.AddMember("unload_privilege", StringRef(user_info->getUnload().c_str()), allocator);
-			obj.AddMember("backup_privilege", StringRef(user_info->getBackup().c_str()), allocator);
-			obj.AddMember("restore_privilege", StringRef(user_info->getRestore().c_str()), allocator);
-			obj.AddMember("export_privilege", StringRef(user_info->getExport().c_str()), allocator);
-			arrayDoc.PushBack(obj, allocator);
+			if (i > 0)
+			{
+				str_stream << ",";
+			}
+			line = userList[i]->toJSON();
+			// cout<< "user[" << i << "]: " << line << endl;
+			str_stream << line;
 		}
+		str_stream << "]";
+		Document jsonArray;
+		jsonArray.SetArray();
+		line = str_stream.str();
+		jsonArray.Parse(line.c_str());
+
+		rapidjson::Document resDoc;
+		rapidjson::Document::AllocatorType &allocator = resDoc.GetAllocator();
+		resDoc.SetObject();
 		resDoc.AddMember("StatusCode", 0, allocator);
 		resDoc.AddMember("StatusMsg", "success", allocator);
-		resDoc.AddMember("ResponseBody", arrayDoc, allocator);
+		resDoc.AddMember("ResponseBody", jsonArray, allocator);
 		sendResponseMsg(resDoc, operation, request, response);
 	}
 	catch(const std::exception& e)
@@ -1307,23 +1306,23 @@ void showuser_thread_new(const shared_ptr<HttpServer::Request>& request, const s
  * @param {string} db_name: the opration database
  * @return {*}
  */
-void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request>& request, const shared_ptr<HttpServer::Response> &response, string username,
+void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string username,
 									string privilege, string type, string db_name)
 {
 	string error = "";
 	string operation = "userprivilegemanage";
 	try
 	{
-		error = apiUtil->check_param_value("type",type);
+		error = apiUtil->check_param_value("type", type);
 		if (error.empty() == false)
 		{
-			sendResponseMsg(1003, error ,operation, request, response);
+			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		error = apiUtil->check_param_value("username",username);
+		error = apiUtil->check_param_value("username", username);
 		if (error.empty() == false)
 		{
-			sendResponseMsg(1003, error ,operation, request, response);
+			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
 		if (type != "3")
@@ -1331,37 +1330,37 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request>& reque
 			error = apiUtil->check_param_value("db_name", db_name);
 			if (error.empty() == false)
 			{
-				sendResponseMsg(1003, error ,operation, request, response);
+				sendResponseMsg(1003, error, operation, request, response);
 				return;
 			}
 			error = apiUtil->check_param_value("privilege", privilege);
 			if (error.empty() == false)
 			{
-				sendResponseMsg(1003, error ,operation, request, response);
+				sendResponseMsg(1003, error, operation, request, response);
 				return;
 			}
 		}
 		if (username == apiUtil->get_root_username())
 		{
 			string error = "you can't add privilege to root user.";
-			sendResponseMsg(1004, error ,operation, request, response);
+			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		string result="";
-		if(type == "3")
+		string result = "";
+		if (type == "3")
 		{
-			//clear the user all privileges
-		int resultint= apiUtil->clear_user_privilege(username);
-		if(resultint==-1)
-		{
-			error="the username is not exists or the username is root.";
-			sendResponseMsg(1004, error ,operation, request, response);
-		}
-		else 
-		{
-			result="clear the all privileges for the user successfully!";
-			sendResponseMsg(0 , result ,operation, request, response);
-		}
+			// clear the user all privileges
+			int resultint = apiUtil->clear_user_privilege(username);
+			if (resultint == -1)
+			{
+				error = "the username is not exists or the username is root.";
+				sendResponseMsg(1004, error, operation, request, response);
+			}
+			else
+			{
+				result = "clear the all privileges for the user successfully!";
+				sendResponseMsg(0, result, operation, request, response);
+			}
 		}
 		else
 		{
@@ -1435,15 +1434,15 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request>& reque
 					else
 					{
 						result = "the operation type is not support.";
-						sendResponseMsg(1003, result ,operation, request, response);
+						sendResponseMsg(1003, result, operation, request, response);
 						return;
 					}
 				}
 			}
-			sendResponseMsg(0, result ,operation, request, response);
+			sendResponseMsg(0, result, operation, request, response);
 		}
 	}
-	catch(const std::exception& e)
+	catch (const std::exception &e)
 	{
 		string error = "User privilege manage fail:" + string(e.what());
 		sendResponseMsg(1005, error, operation, request, response);
@@ -3003,7 +3002,7 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
 	//show all databases
 	else if(operation=="show")
 	{
-        show_thread_new(request, response);
+        show_thread_new(request, response, username);
 	}
 	//manage the user list
 	else if (operation == "usermanage")
