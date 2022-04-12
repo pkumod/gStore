@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-04-08 10:14:11
+ * @LastEditTime: 2022-04-12 16:00:01
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -266,6 +266,24 @@ public:
             ++it;
         }
         return export_db;
+    }
+    std::string toJSON() {
+        rapidjson::Document doc;
+        doc.SetObject();
+        doc.AddMember("username", StringRef(this->getUsernname().c_str()), doc.GetAllocator());
+        doc.AddMember("password", StringRef(this->getPassword().c_str()), doc.GetAllocator());
+        doc.AddMember("query_privilege", StringRef(this->getQuery().c_str()), doc.GetAllocator());
+        doc.AddMember("update_privilege", StringRef(this->getUpdate().c_str()), doc.GetAllocator());
+        doc.AddMember("load_privilege", StringRef(this->getLoad().c_str()), doc.GetAllocator());
+        doc.AddMember("unload_privilege", StringRef(this->getUnload().c_str()), doc.GetAllocator());
+        doc.AddMember("backup_privilege", StringRef(this->getBackup().c_str()), doc.GetAllocator());
+        doc.AddMember("restore_privilege", StringRef(this->getRestore().c_str()), doc.GetAllocator());
+        doc.AddMember("export_privilege", StringRef(this->getExport().c_str()), doc.GetAllocator());
+        rapidjson::StringBuffer strBuf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+        doc.Accept(writer);
+	    string json_str = strBuf.GetString();
+        return json_str;
     }
 };
 
@@ -835,7 +853,6 @@ private:
     string system_path = "data/system/system.nt";
     string backup_path = "./backups";
     string DB_path = ".";
-    string root_username = "root";
     unsigned int max_output_size = 10000000;
     string query_log_path = "querylog_path";
     string access_log_path = "accesslog_path";
@@ -897,7 +914,7 @@ public:
     shared_ptr<Txn_manager> get_Txn_ptr(string db_name);
     bool add_already_build(const std::string& db_name, const std::string& creator, const std::string& build_time, bool try_lock);
     std::string get_already_build(const std::string& db_name);
-    void get_already_builds(vector<struct DatabaseInfo *> &array);
+    void get_already_builds(const std::string& username, vector<struct DatabaseInfo *> &array);
     bool check_already_build(const std::string& db_name);
     bool trywrlock_database(const std::string& db_name);
     bool rdlock_database(const std::string& db_name);
