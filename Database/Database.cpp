@@ -1972,8 +1972,8 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	cout << "Query time used (minus parsing): " << tv_final - tv_parse << "ms." << endl;
 	cout << "Total time used: " << (tv_final - tv_begin) << "ms." << endl;
 	//if (general_evaluation.needOutputAnswer())
-	if(export_flag)
-	{
+	// if(export_flag)
+	// {
 		if (need_output_answer)
 		{
 			long long ans_num = max((long long)_result_set.ansNum - _result_set.output_offset, 0LL);
@@ -1984,7 +1984,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 			_result_set.output(_fp);
 			fflush(_fp);       //to empty the output buffer in C (fflush(stdin) not work in GCC)
 		}
-	}
+	// }
 
 #ifdef DEBUG
 	cout<<"query success_num: "<<success_num<<endl;
