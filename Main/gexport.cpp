@@ -91,23 +91,34 @@ main(int argc, char * argv[])
 			return 0;
 		}
 		long tv_begin = Util::get_cur_time();
+
 		cout<<"start exporting the database......"<<endl;
 		Database _db(db_name);
 		_db.load();
 		cout<<"finish loading"<<endl;
 
-		sparql = "select * where{?x ?y ?z.}";
-		ResultSet _rs;
+		// sparql = "select * where{?x ?y ?z.}";
+		// ResultSet _rs;
+		// FILE* ofp = fopen(filepath.c_str(), "w");
+		// ret = _db.query(sparql, _rs, ofp, false, true);
+		// fflush(ofp);
+		// fclose(ofp);
+		// ofp = NULL;
+		// long tv_end = Util::get_cur_time();
+		// /*stringstream ss;*/
+		// cout << db_name << ".db exported successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+		// cout << db_name << ".db export path: " << filepath << endl;
+		// //Log.Info(ss.str().c_str());
+
 		FILE* ofp = fopen(filepath.c_str(), "w");
-		ret = _db.query(sparql, _rs, ofp, false, true);
+		_db.export_db(ofp);
 		fflush(ofp);
 		fclose(ofp);
 		ofp = NULL;
 		long tv_end = Util::get_cur_time();
-		/*stringstream ss;*/
 		cout << db_name << ".db exported successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 		cout << db_name << ".db export path: " << filepath << endl;
-		//Log.Info(ss.str().c_str());
+
 		return 0;
 
 		
