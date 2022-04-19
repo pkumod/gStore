@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-04-19 10:44:06
+ * @LastEditTime: 2022-04-19 17:24:50
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2046,20 +2046,17 @@ void export_thread_new(const shared_ptr<HttpServer::Request>& request, const sha
 		}
 		db_path = db_path + db_name +"_"+Util::get_timestamp()+ ".nt";
 		//check if database named [db_name] is already load
-		if(!apiUtil->check_already_load(db_name))
+		Database *current_database = apiUtil->get_database(db_name);
+		if(current_database == NULL)
 		{
 			string error = "Database not load yet.";
 			sendResponseMsg(1004, error ,operation, request, response);
 			return;
 		}
-		Database *current_database = apiUtil->get_database(db_name);
 		apiUtil->rdlock_database(db_name);//lock database
-
-		string sparql = "select * where {?x ?y ?z.} ";
-		ResultSet rs;
-		Util::formatPrint("db_path: " + db_path);
+		Util::formatPrint("export_path: " + db_path);
 		FILE* ofp = fopen(db_path.c_str(), "w");
-		int ret = current_database->query(sparql, rs, ofp, false, true);
+		current_database->export_db(ofp);
 		fflush(ofp);
 		fclose(ofp);
 		ofp = NULL;

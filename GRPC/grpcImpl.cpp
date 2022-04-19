@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2022-02-28 10:31:06
- * @LastEditTime: 2022-04-19 10:33:00
+ * @LastEditTime: 2022-04-19 17:15:57
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.cpp
@@ -1317,28 +1317,24 @@ void GrpcImpl::export_task(CommonRequest *&request, CommonResponse *&response, s
         }	
         db_path = db_path + db_name +"_" + Util::get_timestamp() + ".nt";
         //check if database named [db_name] is already load
-        if(!apiUtil->check_already_load(db_name))
+        Database *current_database = apiUtil->get_database(db_name);
+        if(current_database == NULL)
         {
             error = "Database not load yet.";
             response->set_statuscode(1004);
             response->set_statusmsg(error);
             return;
         }
-        Database *current_database = apiUtil->get_database(db_name);
         apiUtil->rdlock_database(db_name);//lock database
-
-        string sparql = "select * where {?x ?y ?z.} ";
-        ResultSet rs;
-        Util::formatPrint("db_path: " + db_path);
+        Util::formatPrint("export_path: " + db_path);
         FILE* ofp = fopen(db_path.c_str(), "w");
-        int ret = current_database->query(sparql, rs, ofp, false, true);
+        current_database->export_db(ofp);
         fflush(ofp);
         fclose(ofp);
         ofp = NULL;
         current_database = NULL;
-
-        string success = "Export the database successfully.";
         apiUtil->unlock_database(db_name);//unlock database
+        string success = "Export the database successfully.";
         
         response->set_statuscode(0);
         response->set_statusmsg(success);
