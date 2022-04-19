@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-04-12 14:38:28
+ * @LastEditTime: 2022-04-19 09:43:39
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -245,6 +245,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         if (ret_val == -100)
         {
             std::string json_str = rs.to_JSON();
+            cout << json_str << endl;
             doc.Parse(json_str.c_str());
             if (!doc.HasParseError())
             {
@@ -1489,7 +1490,7 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 
     if (type == "login" || type == "testConnect" || type == "getCoreVersion" 
         || type == "funquery" || type == "funcudb" || type == "funreview"
-        || type == "check" || type == "show")
+        || type == "check" || type == "show" || type == "userpassword")
     {
         return 1;
     }

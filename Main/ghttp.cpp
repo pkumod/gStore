@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-04-12 15:57:59
+ * @LastEditTime: 2022-04-19 10:44:06
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -89,6 +89,8 @@ void showuser_thread_new(const shared_ptr<HttpServer::Request>& request, const s
 
 void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request>& request, const shared_ptr<HttpServer::Response>& response,string username,string privilege,
 string type,string db_name);
+
+void userPassword_thread_new(const shared_ptr<HttpServer::Request>& request, const shared_ptr<HttpServer::Response>& response,string username,string password);
 
 void backup_thread_new(const shared_ptr<HttpServer::Request>& request, const shared_ptr<HttpServer::Response>& response,string db_name,string backup_path);
 
@@ -1450,6 +1452,37 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 }
 
 /**
+ * @description change user password
+ * 
+ * @param request 
+ * @param response 
+ * @param username 
+ * @param password 
+ */
+void userPassword_thread_new(const shared_ptr<HttpServer::Request>& request, const shared_ptr<HttpServer::Response>& response,string username,string password)
+{
+	string error="";
+	string operation = "userpassword";
+	try
+	{
+		if(apiUtil->user_pwd_alert(username, password))
+		{
+			sendResponseMsg(0, "change password done. ", operation, request, response);
+		}
+		else
+		{
+			error = "username not exist, change password failed.";
+			sendResponseMsg(1004, error, operation, request, response);
+		}
+	}
+	catch(const std::exception& e)
+	{
+		string error = "User manager fail:" + string(e.what());
+		sendResponseMsg(1005, error, operation, request, response);
+	}
+}
+
+/**
  * @description: backup a database 
  * @Author:liwenjie
  * @param {const} shared_ptr
@@ -1822,7 +1855,7 @@ string update_flag,string log_prefix,string username)
 				{
 					Util::formatPrint("result parse error:\n" + success, "ERROR");
 					error = "parse error";
-					string filename2 ="error_"+thread_id+"_"+Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
+					string filename2 ="error_" + filename;
 					string localname2 = "./query_result/" + filename2;
 					outfile.open(localname2);
 					outfile << success;
@@ -1892,18 +1925,16 @@ string update_flag,string log_prefix,string username)
 				outfile.open(localname);
 				outfile << success;
 				outfile.close();
-				success = rs.to_JSON();
-				//delete &rs;
+
 				Document resDoc;
-				Document::AllocatorType &allocator = resDoc.GetAllocator();
-				
+				Document::AllocatorType &allocator = resDoc.GetAllocator();		
 				/* code */
 				resDoc.Parse(success.c_str());
 				if(resDoc.HasParseError())
 				{
 					Util::formatPrint("result parse error:\n" + success, "ERROR");
 					error = "parse error";
-					string filename2 ="error_"+thread_id+"_"+Util::getTimeString2()+"_"+Util::int2string(Util::getRandNum())+".txt";
+					string filename2 ="error_" + filename;
 					string localname2 = "./query_result/" + filename2;
 					outfile.open(localname2);
 					outfile << success;
@@ -3084,6 +3115,33 @@ const shared_ptr<HttpServer::Request>& request, string request_type)
 			return;
 		}
 		userPrivilegeManage_thread_new(request, response, op_username, privileges, type, db_name);
+	}
+	// change user password
+	else if (operation == "userpassword")
+	{
+		string op_password = "";
+		try
+		{
+			if (request_type == "GET") 
+			{
+				op_password = WebUrl::CutParam(url, "op_password");
+				op_password = UrlDecode(op_password);
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("op_password") && document["op_password"].IsString())
+				{
+					op_password = document["op_password"].GetString();
+				}
+			}
+		}
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		userPassword_thread_new(request, response, username, op_password);
 	}
 	//backup a database
 	else if (operation == "backup")

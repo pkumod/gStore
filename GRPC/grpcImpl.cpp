@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2022-02-28 10:31:06
- * @LastEditTime: 2022-04-08 18:39:35
+ * @LastEditTime: 2022-04-19 10:33:00
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.cpp
@@ -45,6 +45,7 @@ void GrpcImpl::api(CommonRequest *request, CommonResponse *response, srpc::RPCCo
     std::cout << "remote_ip: " <<  remoteIP << std::endl;
     std::cout << "operation: " << operation << std::endl;
     std::cout << "request_time: " << Util::get_date_time() << std::endl;
+    std::cout << "post content: " << request->ShortDebugString() << std::endl;
     std::cout << "----------------------------------------------------------" << std::endl;
 
     if (operation == "show")
@@ -143,6 +144,10 @@ void GrpcImpl::api(CommonRequest *request, CommonResponse *response, srpc::RPCCo
     {
         task = WFTaskFactory::create_go_task("user_privilege_task", &GrpcImpl::user_privilege_task, this, request, response, ctx);
     }
+    else if ( operation == "userpassword")
+    {
+        task = WFTaskFactory::create_go_task("user_password_task", &GrpcImpl::user_password_task, this, request, response, ctx);
+    }
     else if ( operation == "txnlog")
     {
         task = WFTaskFactory::create_go_task("txn_log_task", &GrpcImpl::txn_log_task, this, request, response, ctx);
@@ -176,6 +181,15 @@ void GrpcImpl::api(CommonRequest *request, CommonResponse *response, srpc::RPCCo
         task = WFTaskFactory::create_go_task("default_task", &GrpcImpl::default_task, this, request, response, ctx);
     }
     task->set_callback([&](WFGoTask *task) {
+        string resJson = response->ShortDebugString();
+        if (response->statuscode() == 0)
+        {
+            Util::formatPrint("response result:\n" + resJson);
+        }
+        else
+        {
+            Util::formatPrint("response result:\n" + resJson, "ERROR");
+        }
         apiUtil->write_access_log(operation, remoteIP, response->statuscode(), response->statusmsg());
     });
     ctx->get_series()->push_back(task);
@@ -190,6 +204,7 @@ void GrpcImpl::shutdown(CommonRequest *request, CommonResponse *response, srpc::
     std::cout << "remote_ip: " <<  remoteIP << std::endl;
     std::cout << "operation: " << operation << std::endl;
     std::cout << "request_time: " << Util::get_date_time() << std::endl;
+    std::cout << "post content:" << request->ShortDebugString() << std::endl;
     std::cout << "----------------------------------------------------------" << std::endl;
     shutdown_task(request, response, ctx);
 }
@@ -2293,7 +2308,7 @@ void GrpcImpl::shutdown_task(CommonRequest *&request, CommonResponse *&response,
         response->set_statuscode(0);
         response->set_statusmsg(msg);
         apiUtil->write_access_log("shutdown", remote_ip, 0, msg);
-
+        Util::formatPrint(msg);
         delete apiUtil;
         _exit(1);
     }
@@ -2642,6 +2657,55 @@ void GrpcImpl::user_privilege_task(CommonRequest *&request, CommonResponse *&res
     catch  (std::exception &e) 
     {
         string content = "userprivilege fail:" + string(e.what());
+        response->set_statuscode(1005);
+        response->set_statusmsg(content);
+    }
+}
+
+void GrpcImpl::user_password_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
+{
+    try
+    {
+        string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+        if(!ipCheckResult.empty())
+        {
+            response->set_statuscode(1101);
+            response->set_statusmsg(ipCheckResult);
+            return;
+        }
+        string username = request->username();
+        string password = request->password();
+        string encryption = request->encryption();
+        string check_result = apiUtil->check_indentity(username, password, encryption);
+        if (check_result.empty() == false)
+        {
+            response->set_statuscode(1001);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+        {
+            check_result = "You have no " + request->operation() + " privilege, operation failed";
+            response->set_statuscode(1002);
+            response->set_statusmsg(check_result);
+            return;
+        }
+        string op_password = request->op_password();
+        
+        if(apiUtil->user_pwd_alert(username, op_password))
+        {
+            response->set_statuscode(0);
+            response->set_statusmsg("change password done.");
+        }
+        else
+        {
+            response->set_statuscode(1004);
+            response->set_statusmsg("username not exist, change password failed.");
+        }
+    }
+    catch (std::exception &e) 
+    {
+        string content = "change password failed:" + string(e.what());
         response->set_statuscode(1005);
         response->set_statusmsg(content);
     }

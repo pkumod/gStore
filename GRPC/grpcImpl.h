@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2022-11-28 09:55:49
- * @LastEditTime: 2022-03-20 15:11:26
+ * @LastEditTime: 2022-04-18 15:22:37
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.h
@@ -52,6 +52,7 @@ private:
     void user_manage_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
     void user_show_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
     void user_privilege_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
+    void user_password_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
     // for db log
     void txn_log_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
     void query_log_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx);
