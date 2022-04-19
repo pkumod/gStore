@@ -11,9 +11,8 @@
 
 using namespace std;
 
-#define SYSTEM_USERNAME "system"
+const string SYSTEM_USERNAME = "system";
 const string USERNAME = "root";
-const string PASSWORD = "123456";
 
 bool is_number(string s)
 {
@@ -51,7 +50,7 @@ string gc_getUrl(string _type, string _port)
 int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
 {
     string strUrl = gc_getUrl(_type, _port).append("/api");
-    std::string strPost = "{\"operation\": \"check\", \"username\": \"" + USERNAME + "\", \"password\": \"" + PASSWORD + "\"}";
+    std::string strPost = "{\"operation\": \"check\", \"username\": \"" + USERNAME + "\", \"password\": \"\"}";
     int ret = gc.Post(strUrl, strPost, res);
 	// cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
     return ret;
@@ -159,7 +158,7 @@ int main(int argc, char *argv[])
 		
 		string res;
 		int ret;
-		string postdata = "{\"username\":\"system\",\"password\":\"" + system_password + "\"}";
+		string postdata = "{\"username\":\""+SYSTEM_USERNAME+"\",\"password\":\"" + system_password + "\"}";
 		string strUrl = gc_getUrl(type, port);
 		strUrl.append("/shutdown");
 		// cout << "post url:" << strUrl << '\n' << postdata << endl;
