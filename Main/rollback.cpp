@@ -8,7 +8,6 @@ using namespace rapidjson;
 
 const string BACKUP_PATH = "./backups";
 const string USERNAME = "root";
-const string PASSWORD = "123456";
 
 int get_all_folders(string path, vector<string> &folders)
 {
@@ -110,16 +109,16 @@ string gc_getUrl(string _type, string _port)
 int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
 {
     string strUrl = gc_getUrl(_type, _port);
-    std::string strPost = "{\"operation\": \"check\", \"username\": \"" + USERNAME + "\", \"password\": \"" + PASSWORD + "\"}";
+    std::string strPost = "{\"operation\": \"check\", \"username\": \"" + USERNAME + "\", \"password\": \"\"}";
     int ret = gc.Post(strUrl, strPost, res);
     // cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
     return ret;
 }
 
-int gc_unload(GstoreConnector &gc, string _type, string _port, string _db_name, string &res)
+int gc_unload(GstoreConnector &gc, string _type, string _port, string _pwd, string _db_name, string &res)
 {
     string strUrl = gc_getUrl(_type, _port);
-    std::string strPost = "{\"operation\": \"unload\", \"db_name\": \"" + _db_name + "\", \"username\": \"" + USERNAME + "\", \"password\": \"" + PASSWORD + "\"}";
+    std::string strPost = "{\"operation\": \"unload\", \"db_name\": \"" + _db_name + "\", \"username\": \"" + USERNAME + "\", \"password\": \"" + _pwd + "\"}";
     int ret = gc.Post(strUrl, strPost, res);
     // cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
     return ret;
@@ -280,16 +279,27 @@ main(int argc, char * argv[])
             cout << "http server port is invalid: " << type_port << endl;
             return 0;
         }
-        string res = ""; 
+        string res = "";
         gc_check(gc, type, port, res);
         Document document;
         document.SetObject();
         document.Parse(res.c_str());
         if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
         {
+            Database system_db("system");
+            system_db.load();
+            string root_pwd = "";
+            string query_sparql = "select ?x where{<"+USERNAME+"> <has_password> ?x.}";
+            ResultSet query_rs;
+            FILE* query_ofp = stdout;
+            system_db.query(query_sparql, query_rs, query_ofp);
+            root_pwd = query_rs.answer[0][0];
+            root_pwd = Util::replace_all(root_pwd, "\"", "");
+            // cout << "root_pwd: " << root_pwd << endl;
+            system_db.unload();
             //unload
             res = "";
-            gc_unload(gc, type, port, db_name, res);
+            gc_unload(gc, type, port, root_pwd, db_name, res);
             cout << "Unload result: " << res << endl;
             document.Parse(res.c_str());
             if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() != 0 && document["StatusCode"].GetInt() != 304)
