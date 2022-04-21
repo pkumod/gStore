@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-04-19 09:43:39
+ * @LastEditTime: 2022-04-21 15:20:03
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -2173,7 +2173,8 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
     string logFile = APIUtil::pfn_file_path + username + "/error.out";
     string cmd = "rm -f " + targetFile;
     system(cmd.c_str());
-    cmd = "g++ -std=c++11 -fPIC -shared -I./Database -lgcsr -lgcsrutil -Llib -o" + targetFile + " " + sourceFile + " 2>" + logFile;
+    string libaray = "lib/libgpathqueryhandler.so lib/libgcsr.so";
+    cmd = "g++ -std=c++11 -fPIC " + sourceFile + " -shared -o " + targetFile + " " + libaray + " 2>" + logFile;
     int status;
     status = system(cmd.c_str());
     string error_msg = "";
@@ -2252,11 +2253,11 @@ std::string APIUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
     cout << "fun_args "<<fun_args <<endl;
     if (fun_args == "1") // int uid, int vid, bool directed, vector<int> pred_set
     {
-        _buf << "(std::vector<int> iri_set, bool directed, std::vector<int> pred_set, CSRUtil* csrUtil)\n";
+        _buf << "(std::vector<int> iri_set, bool directed, std::vector<int> pred_set, PathQueryHandler* queryUtil)\n";
     }
     else if (fun_args == "2") // int uid, int vid, bool directed, int k, vector<int> pred_set
     {
-        _buf << "(std::vector<int> iri_set, bool directed, int k, std::vector<int> pred_set, CSRUtil* csrUtil)\n";
+        _buf << "(std::vector<int> iri_set, bool directed, int k, std::vector<int> pred_set, PathQueryHandler* queryUtil)\n";
     }
     else
     {

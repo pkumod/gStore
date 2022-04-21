@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-04-12 16:00:01
+ * @LastEditTime: 2022-04-20 17:31:15
  * @LastEditors: Please set LastEditors
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -10,7 +10,6 @@
 #include <stdio.h>
 
 #include "../Database/Database.h"
-#include "../Database/CSRUtil.h"
 #include "../Database/Txn_manager.h"
 #include "../Util/Util.h"
 #include "../Util/IPWhiteList.h"
@@ -21,7 +20,7 @@ using namespace rapidjson;
 
 #define ROOT_USERNAME "root"
 #define SYSTEM_DB_NAME "system"
-#define PFN_HEADER "#include <iostream>\n#include \"../../Database/CSRUtil.h\"\n\nusing namespace std;\n"
+#define PFN_HEADER "#include <iostream>\n#include \"../../Query/PathQueryHandler.h\"\n\nusing namespace std;\n"
 #define TRANSACTION_LOG_PATH "./logs/transaction.json"
 #define TRANSACTION_LOG_TEMP_PATH "./logs/transaction_temp.json"
 

@@ -117,7 +117,7 @@ serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Socket.o
 grpcobj = $(objdir)grpcImpl.o $(objdir)grpc.pb.o ${objdir}APIUtil.o
 
 databaseobj = $(objdir)Statistics.o $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o \
- $(objdir)CSR.o $(objdir)CSRUtil.o $(objdir)Txn_manager.o $(objdir)TableOperator.o $(objdir)PlanTree.o  \
+ $(objdir)CSR.o $(objdir)Txn_manager.o $(objdir)TableOperator.o $(objdir)PlanTree.o  \
  $(objdir)PlanGenerator.o $(objdir)Executor.o $(objdir)Optimizer.o $(objdir)ResultTrigger.o
 
 trieobj = $(objdir)Trie.o $(objdir)TrieNode.o
@@ -430,9 +430,9 @@ $(objdir)Strategy.o: Database/Strategy.cpp Database/Strategy.h $(objdir)SPARQLqu
 	$(objdir)Triple.o $(objdir)IDList.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Util.o $(objdir)Join.o $(objdir)Transaction.o
 	$(CC) $(CFLAGS) Database/Strategy.cpp $(inc) -o $(objdir)Strategy.o $(openmp)
 
-$(objdir)CSR.o: Database/CSR.cpp Database/CSR.h $(objdir)Util.o
+$(objdir)CSR.o: Database/CSR.cpp Database/CSR.h
 	$(CC) $(CFLAGS) Database/CSR.cpp $(inc) -o $(objdir)CSR.o $(openmp)
-	$(CC) -std=c++11 -fPIC -shared Database/CSR.cpp -o /lib64/libgcsr.so -lgutil
+	$(CC) -std=c++11 -fPIC -shared Database/CSR.cpp -o lib/libgcsr.so
 
 $(objdir)TableOperator.o: Database/TableOperator.cpp Database/TableOperator.h $(objdir)Util.o $(objdir)BasicQuery.o
 	$(CC) $(CFLAGS) Database/TableOperator.cpp $(inc) -o $(objdir)TableOperator.o $(openmp)
@@ -462,9 +462,6 @@ $(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h $(objdir)Util.
 $(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(objdir)Util.o $(objdir)Transaction.o $(objdir)Database.o
 	$(CC) $(CFLAGS) Database/Txn_manager.cpp $(inc) -o $(objdir)Txn_manager.o $(openmp)
 
-$(objdir)CSRUtil.o: Database/CSRUtil.cpp Database/CSRUtil.h $(objdir)CSR.o $(objdir)Util.o
-	$(CC) $(CFLAGS) Database/CSRUtil.cpp $(inc) -o $(objdir)CSRUtil.o $(openmp)
-	$(CC) -std=c++11 -fPIC -shared Database/CSRUtil.cpp -o /lib64/libgcsrutil.so -lgcsr
 #objects in Database/ end
 
 
@@ -499,8 +496,9 @@ $(objdir)QueryCache.o: Query/QueryCache.cpp Query/QueryCache.h $(objdir)Util.o $
 	$(objdir)TempResult.o $(objdir)Varset.o
 	$(CC) $(CFLAGS) Query/QueryCache.cpp $(inc) -o $(objdir)QueryCache.o $(openmp)
 
-$(objdir)PathQueryHandler.o: Query/PathQueryHandler.cpp Query/PathQueryHandler.h $(objdir)Util.o $(objdir)CSR.o $(objdir)CSRUtil.o
+$(objdir)PathQueryHandler.o: Query/PathQueryHandler.cpp Query/PathQueryHandler.h $(objdir)CSR.o
 	$(CC) $(CFLAGS) Query/PathQueryHandler.cpp $(inc) -o $(objdir)PathQueryHandler.o $(openmp) ${ldl}
+	$(CC) -std=c++11 -fPIC -shared Query/PathQueryHandler.cpp -o lib/libgpathqueryhandler.so lib/libgcsr.so
 
 $(objdir)BGPQuery.o: Query/BGPQuery.cpp Query/BGPQuery.h $(objdir)BasicQuery.o  $(objdir)Util.o \
     $(objdir)Triple.o $(objdir)KVstore.o
@@ -561,7 +559,6 @@ $(objdir)Signature.o: Signature/Signature.cpp Signature/Signature.h
 
 $(objdir)Util.o:  Util/Util.cpp Util/Util.h
 	$(CC) $(CFLAGS) Util/Util.cpp -o $(objdir)Util.o $(openmp)
-	$(CC) -std=c++11 -fPIC -shared Util/Util.cpp -o /lib64/libgutil.so -I./tools/rapidjson
 
 $(objdir)WebUrl.o:  Util/WebUrl.cpp Util/WebUrl.h
 	$(CC) $(CFLAGS) Util/WebUrl.cpp -o $(objdir)WebUrl.o $(openmp)
@@ -696,7 +693,7 @@ $(objdir)Server.o: Server/Server.cpp Server/Server.h $(objdir)Socket.o $(objdir)
 
 #objects in GRPC/ begin
 
-$(objdir)APIUtil.o: GRPC/APIUtil.cpp GRPC/APIUtil.h Database/Database.h Database/CSRUtil.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
+$(objdir)APIUtil.o: GRPC/APIUtil.cpp GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
 	$(CC) $(CFLAGS) GRPC/APIUtil.cpp $(inc) -o $(objdir)APIUtil.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
 $(objdir)grpc.pb.o: GRPC/grpc.pb.cc GRPC/grpc.pb.h $(lib_antlr) $(lib_workflow)
@@ -765,7 +762,7 @@ clean:
 	#rm -rf .project .cproject .settings   just for eclipse
 	rm -rf logs/*.log
 	rm -rf *.out   # gmon.out for gprof with -pg
-	rm -rf /lib64/libgcsr.so /lib64/libgcsrutil.so /lib64/libgutil.so
+	rm -rf lib/libgcsr.so lib/libgpathqueryhandler.so
 
 
 dist: clean

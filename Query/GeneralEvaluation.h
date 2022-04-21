@@ -27,6 +27,7 @@
 #include "TempResult.h"
 #include "QueryCache.h"
 #include "ResultSet.h"
+#include <dlfcn.h>
 #include "PathQueryHandler.h"
 
 class GeneralEvaluation
@@ -109,6 +110,7 @@ class GeneralEvaluation
 		void joinBasicQueryResult(SPARQLquery& sparql_query, TempResultSet *new_result, TempResultSet *sub_result, vector<vector<string> >& encode_varset, \
 			vector<vector<QueryTree::GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep=0);
 		void getAllPattern(const QueryTree::GroupPattern &group_pattern, vector<QueryTree::GroupPattern::Pattern> &vp);
+		std::map<std::string, std::string> dynamicFunction(const std::vector<int> &iri_set, bool directed, int k, const std::vector<int> &pred_set, const std::string& fun_name, const std::string& username);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H
