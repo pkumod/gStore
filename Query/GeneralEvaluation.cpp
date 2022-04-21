@@ -1585,7 +1585,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						<< endl;
 
 					stringstream ss;
-					std::map<std::string, std::string> rt = pqHandler->dynamicFunction(iri_id_set, directed, hopConstraint, pred_id_set, fun_name, ret_result.getUsername());
+					std::map<std::string, std::string> rt = dynamicFunction(iri_id_set, directed, hopConstraint, pred_id_set, fun_name, ret_result.getUsername());
 					std::map<std::string, std::string>::iterator iter = rt.find("return_type");
 					string str = rt.find("return_value")->second;
 					ss << "\"";
@@ -2422,7 +2422,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								vector<int> iri_id_set;
 								iri_id_set.push_back(uid);
 								iri_id_set.push_back(vid);
-								std::map<std::string, std::string> rt = pqHandler->dynamicFunction(iri_id_set, directed, hopConstraint, pred_id_set, fun_name, ret_result.getUsername());
+								std::map<std::string, std::string> rt = dynamicFunction(iri_id_set, directed, hopConstraint, pred_id_set, fun_name, ret_result.getUsername());
 								std::map<std::string, std::string>::iterator iter = rt.find("return_type");
 								string str = rt.find("return_value")->second;
 								if (iter != rt.end() && iter->second == "path")
@@ -3436,3 +3436,149 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResu
 	printf("11111\n");
 }
 
+
+std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std::vector<int> &iri_set, bool directed, int k, const std::vector<int> &pred_set, const std::string& fun_name, const std::string& username)
+{
+	try
+	{
+		std::map<std::string, std::string> returnMap;
+		// check funInfo from json file.
+		string pfn_file_path = Util::getConfigureValue("pfn_file_path");
+        pfn_file_path = Util::replace_all(pfn_file_path, "\"", "");
+		if (pfn_file_path[pfn_file_path.length()-1] != '/')
+		{
+			pfn_file_path.append("/");
+		}
+        string pfn_lib_path = Util::getConfigureValue("pfn_lib_path");
+        pfn_lib_path = Util::replace_all(pfn_lib_path, "\"", "");
+		if (pfn_lib_path[pfn_lib_path.length()-1] != '/')
+		{
+			pfn_lib_path.append("/");
+		}
+		string json_file_path = pfn_file_path + username + "/data.json";
+		cout << "open json file: " << json_file_path << endl;
+		ifstream in;
+		in.open(json_file_path, ios::in);
+		if (!in.is_open())
+		{
+			throw runtime_error("open function json file error.");
+		}
+		string line;
+		bool isMatch;
+		string temp_name, md5Str;
+		string fun_args, fun_status, fun_return;
+		isMatch = false;
+		fun_return = "";
+		while (getline(in, line))
+		{
+			rapidjson::Document doc;
+			doc.SetObject();
+			if (!doc.Parse(line.c_str()).HasParseError())
+			{
+				if (doc.HasMember("funName"))
+				{
+					temp_name = doc["funName"].GetString();
+					if (temp_name == fun_name)
+					{
+						if (doc.HasMember("funStatus"))
+							fun_status = doc["funStatus"].GetString();
+						if (fun_status != "2")
+							throw runtime_error("function " + fun_name + " not compile yet");
+						if (doc.HasMember("funArgs"))
+							fun_args = doc["funArgs"].GetString();
+						if (doc.HasMember("funReturn"))
+							fun_return = doc["funReturn"].GetString();
+						if (doc.HasMember("lastTime"))
+						{
+							md5Str = doc["lastTime"].GetString();
+							md5Str = Util::md5(md5Str);
+						}
+						isMatch = true;
+						break;
+					}
+				}
+			}
+		}
+		in.close();
+		if (!isMatch)
+		{
+			throw runtime_error("function '" + fun_name + "' not exists");
+		}
+		// check funInfo end
+		string error_msg;
+		string fileName, soFile;
+		fileName = fun_name;
+		std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::tolower);
+		soFile = pfn_lib_path + username + "/lib" + fileName + md5Str + ".so";
+		void *handle;
+		string result;
+		std::cout << "================================================\nopening " << soFile << endl;
+		handle = dlopen(soFile.c_str(), RTLD_LAZY);
+		if (!handle)
+		{
+			error_msg = "load so file error:" + string(dlerror());
+			throw runtime_error(error_msg);
+		}
+		char *error;
+		if (fun_args == "1")
+		{
+			std::cout << "begin 1 for " << fun_name << endl;
+			// int uid, int vid, bool directed, vector<int> pred_set, CSR * _csr
+			typedef string (*personalized_fun)(vector<int>, bool, vector<int>, PathQueryHandler *);
+			personalized_fun p_fun;
+			p_fun = (personalized_fun)dlsym(handle, fun_name.c_str());
+			if ((error = dlerror()) != NULL)
+			{
+				error_msg = "cannot load symbol '" + fun_name + "': " + string(error);
+				dlclose(handle);
+				throw runtime_error(error_msg);
+			}
+			// call function
+			result = p_fun(iri_set, directed, pred_set, pqHandler);
+			std::cout << "end with: " << result << endl;
+			std::cout<< "================================================\n";
+			dlclose(handle);
+			returnMap.insert(pair<std::string, std::string>("return_type", fun_return));
+			returnMap.insert(pair<std::string, std::string>("return_value", result));
+			return returnMap;
+		}
+		else if (fun_args == "2")
+		{
+			std::cout << "begin 2 for " << fun_name << endl;
+			// int uid, int vid, bool directed, int k, vector<int> pred_set
+			typedef string (*personalized_fun)(vector<int>, bool, int, vector<int>, PathQueryHandler *);
+			personalized_fun p_fun;
+			p_fun = (personalized_fun)dlsym(handle, fun_name.c_str());
+			if ((error = dlerror()) != NULL)
+			{
+				error_msg = "cannot load symbol '" + fun_name + "': " + string(error);
+				dlclose(handle);
+				throw runtime_error(error_msg);
+			}
+			// call function
+			result = p_fun(iri_set, directed, k, pred_set, pqHandler);
+			std::cout << "end with: " << result << endl;
+			cout<< "================================================\n";
+			dlclose(handle);
+			returnMap.insert(pair<std::string, std::string>("return_type", fun_return));
+			returnMap.insert(pair<std::string, std::string>("return_value", result));
+			return returnMap;
+		}
+		else
+		{
+			throw runtime_error("unkown function argment type '" + fun_args + "'");
+		}
+	}
+	catch (const std::exception &e)
+    {
+		string content = "run personalized function fail: " + string(e.what());
+        std::cout << content << endl;
+		throw runtime_error(content);
+    }
+	catch (...)
+	{
+		string content = "run personalized function fail: unknow error";
+		std::cout << content << endl;
+		throw runtime_error(content);
+	}
+}
