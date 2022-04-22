@@ -33,18 +33,16 @@
 
 # WARN: maybe difficult to install ccache in some systems
 #CXX = ccache g++
-CXX = /usr/local/bin/g++
-CC = /usr/local/bin/gcc
+CXX = g++
+CC = gcc
 
 #the optimazition level of gcc/g++
 #http://blog.csdn.net/hit_090420216/article/details/44900215
 #NOTICE: -O2 is recommended, while -O3(add loop-unroll and inline-function) is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-# CFLAGS = -c -Wall -O2 -pthread -std=c++11
-# EXEFLAG = -O2 -pthread -std=c++11
-CFLAGS = -c -Wall -O0 -g -pthread -std=c++11
-EXEFLAG = -O0 -g -pthread -std=c++11
+CFLAGS = -c -Wall -O2 -pthread -std=c++11
+EXEFLAG = -O2 -pthread -std=c++11
 #-coverage for debugging
 # CFLAGS = -c -Wall -pthread -g3 -std=c++11  -gdwarf-2
 # EXEFLAG = -pthread -g3 -std=c++11 -gdwarf-2
@@ -700,8 +698,8 @@ $(objdir)Server.o: Server/Server.cpp Server/Server.h $(objdir)Socket.o $(objdir)
 $(objdir)APIUtil.o: GRPC/APIUtil.cpp GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
 	$(CXX) $(CFLAGS) GRPC/APIUtil.cpp $(inc) -o $(objdir)APIUtil.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
-$(objdir)grpc.pb.o: GRPC/grpc.pb.CXX GRPC/grpc.pb.h $(lib_antlr) $(lib_workflow)
-	$(CXX) $(CFLAGS) GRPC/grpc.pb.CXX $(inc) -o $(objdir)grpc.pb.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
+$(objdir)grpc.pb.o: GRPC/grpc.pb.cc GRPC/grpc.pb.h $(lib_antlr) $(lib_workflow)
+	$(CXX) $(CFLAGS) GRPC/grpc.pb.cc $(inc) -o $(objdir)grpc.pb.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
 $(objdir)grpcImpl.o: GRPC/grpcImpl.cpp GRPC/grpcImpl.h GRPC/grpc.srpc.h GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr) $(lib_workflow)
 	$(CXX) $(CFLAGS) GRPC/grpcImpl.cpp $(inc) -o $(objdir)grpcImpl.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
