@@ -84,12 +84,13 @@ class QueryTree
 						Element(const std::string &_value):value(_value){}
 				};
 				Element subject, predicate, object;
+				bool kleene;	// Denote if the predicate is a Kleene closure
 				Varset varset, subject_object_varset;
 				int blockid;
 
 				Pattern():blockid(-1){}
-				Pattern(const Element _subject, const Element _predicate, const Element _object):
-					subject(_subject), predicate(_predicate), object(_object), blockid(-1){}
+				Pattern(const Element _subject, const Element _predicate, const Element _object, bool _kleene=false):
+					subject(_subject), predicate(_predicate), object(_object), kleene(_kleene), blockid(-1){}
 
 				bool operator < (const Pattern &x) const
 				{

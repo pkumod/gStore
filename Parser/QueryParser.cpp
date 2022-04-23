@@ -1363,6 +1363,7 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 	QueryTree::GroupPattern &group_pattern)
 {
 	string subject, predicate, object;
+	bool kleene = false;
 
 	subject = ctx->varOrTerm()->getText();
 	replacePrefix(subject);
@@ -1372,8 +1373,38 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 	int numChild = propertyListpathNotEmpty->verbpathOrSimple().size();
 	for (int i = 0; i < numChild; i++)
 	{
+		// TODO: for property path, store additional information in Triple
+		// verbpathOrSimple : verbpath | verbSimple ;
+		// verbSimple : var ;
+		// verbpath : path ;
+		// path : pathAlternative ;
+		// pathAlternative : pathSequence ( '|' pathSequence )* ;
+		// pathSequence : pathEltOrInverse ( '/' pathEltOrInverse )* ;
+		// pathElt : pathPrimary pathMod? ;
+		// pathEltOrInverse : pathElt | '^' pathElt ;
+		// pathMod : '?' | '*' | '+' ;
+		// pathPrimary : iri | 'a' | '!' pathNegatedPropertySet | '(' path ')' ;
+		kleene = false;
 		auto verbpathOrSimple = propertyListpathNotEmpty->verbpathOrSimple(i);
-		predicate = verbpathOrSimple->getText();
+		if (verbpathOrSimple->verbpath())
+		{
+			auto pathMod = verbpathOrSimple->verbpath()->path()->pathAlternative()->pathSequence(0) \
+				->pathEltOrInverse(0)->pathElt()->pathMod();
+			auto pathPrimary = verbpathOrSimple->verbpath()->path()->pathAlternative()->pathSequence(0) \
+				->pathEltOrInverse(0)->pathElt()->pathPrimary();
+			if (pathMod && pathMod->getText() == "*" && (pathPrimary->iri() || pathPrimary->getText() == "a"))
+			{
+				kleene = true;
+				predicate = pathPrimary->getText();
+				// cout << "kleene true, predicate = " << predicate << endl;
+			}
+			else if (pathMod && pathMod->getText() != "*" || pathPrimary->pathNegatedPropertySet() || pathPrimary->path())
+				throw runtime_error("[ERROR]	Only support iri* as property path.");
+			else
+				predicate = verbpathOrSimple->getText();
+		}
+		else
+			predicate = verbpathOrSimple->getText();
 		if (predicate == "a")
 			predicate = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>";
 		replacePrefix(predicate);
@@ -1393,7 +1424,7 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 				else
 					object = getTextWithRange(objectpath);
 				replacePrefix(object);
-				addTriple(subject, predicate, object, group_pattern);
+				addTriple(subject, predicate, object, kleene, group_pattern);
 			}
 		}
 		else
@@ -1412,7 +1443,7 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 				else
 					object = getTextWithRange(object_ptr);
 				replacePrefix(object);
-				addTriple(subject, predicate, object, group_pattern);
+				addTriple(subject, predicate, object, kleene, group_pattern);
 			}
 		}
 	}
@@ -1430,13 +1461,13 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 	@param object object string.
 	@param group_pattern a group graph pattern.
 */
-void QueryParser::addTriple(string subject, string predicate, string object, \
+void QueryParser::addTriple(string subject, string predicate, string object, bool kleene, \
 	QueryTree::GroupPattern &group_pattern)
 {
 	// Add one pattern
 	group_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(QueryTree::GroupPattern::Pattern::Element(subject), \
 		QueryTree::GroupPattern::Pattern::Element(predicate), \
-		QueryTree::GroupPattern::Pattern::Element(object)));
+		QueryTree::GroupPattern::Pattern::Element(object), kleene));
 
 	// Scope of filter
 	for (int j = (int)group_pattern.sub_group_pattern.size() - 1; j > 0; j--)
@@ -1696,9 +1727,9 @@ antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubj
 			if (query_tree_ptr->getUpdateType() == QueryTree::Delete_Data
 				|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Where
 				|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Clause)
-				addTriple(subject, predicate, object, group_pattern_delete);
+				addTriple(subject, predicate, object, false, group_pattern_delete);
 			else
-				addTriple(subject, predicate, object, group_pattern_insert);
+				addTriple(subject, predicate, object, false, group_pattern_insert);
 		}
 	}
 

@@ -75,7 +75,7 @@ public:
 	void buildFilterTree(antlr4::tree::ParseTree *root, \
 		QueryTree::GroupPattern::FilterTree::FilterTreeNode::FilterTreeChild *currChild, \
 		QueryTree::GroupPattern::FilterTree::FilterTreeNode &filter, std::string tp);
-	void addTriple(std::string subject, std::string predicate, std::string object, \
+	void addTriple(std::string subject, std::string predicate, std::string object, bool kleene, \
 		QueryTree::GroupPattern &group_pattern);
 	void replacePrefix(std::string &str);
 	std::string getNumeric(SPARQLParser::NumericLiteralContext *ctx);

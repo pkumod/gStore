@@ -8,6 +8,7 @@
 #include <sstream>
 #include <algorithm>
 #include <assert.h>
+#include <unordered_set>
 
 #ifndef _QUERY_PATH_H
 #define _QUERY_PATH_H
@@ -373,6 +374,8 @@ public:
 
     std::vector<std::pair<std::pair<int, int>, int>> kHopSubgraph(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	
+    std::vector<int> BFS(int uid, bool directed, const std::vector<int> &pred_set, bool forward=true);
+    
 	std::string getPathString(std::vector<int> &path_set);
 private:
     // Helper functions for SSPPR

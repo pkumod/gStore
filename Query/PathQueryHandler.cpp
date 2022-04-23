@@ -1995,3 +1995,76 @@ std::string PathQueryHandler::getPathString(std::vector<int> &path_set)
 	}
     return ss.str();
 }
+
+vector<int> PathQueryHandler::BFS(int uid, bool directed, const vector<int> &pred_set, bool forward)
+{
+	vector<int> ret;
+	unordered_set<int> ret_set;
+	ret.push_back(uid);
+	ret_set.insert(uid);
+	size_t curr = 0;
+	while (curr < ret.size())
+	{
+		if (!directed)
+		{
+			for (int pred : pred_set)
+			{
+				int inSz = getInSize(ret[curr], pred), inNei;
+				for (int i = 0; i < inSz; i++)
+				{
+					inNei = getInVertID(ret[curr], pred, i);
+					if (ret_set.find(inNei) == ret_set.end())
+					{
+						ret.push_back(inNei);
+						ret_set.insert(inNei);
+					}
+				}
+				int outSz = getOutSize(ret[curr], pred), outNei;
+				for (int i = 0; i < outSz; i++)
+				{
+					outNei = getOutVertID(ret[curr], pred, i);
+					if (ret_set.find(outNei) == ret_set.end())
+					{
+						ret.push_back(outNei);
+						ret_set.insert(outNei);
+					}
+				}
+			}
+		}
+		else if (forward)
+		{
+			for (int pred : pred_set)
+			{
+				int outSz = getOutSize(ret[curr], pred), outNei;
+				for (int i = 0; i < outSz; i++)
+				{
+					outNei = getOutVertID(ret[curr], pred, i);
+					if (ret_set.find(outNei) == ret_set.end())
+					{
+						ret.push_back(outNei);
+						ret_set.insert(outNei);
+					}
+				}
+			}
+		}
+		else
+		{
+			for (int pred : pred_set)
+			{
+				int inSz = getInSize(ret[curr], pred), inNei;
+				for (int i = 0; i < inSz; i++)
+				{
+					inNei = getInVertID(ret[curr], pred, i);
+					if (ret_set.find(inNei) == ret_set.end())
+					{
+						ret.push_back(inNei);
+						ret_set.insert(inNei);
+					}
+				}
+			}
+		}
+		curr++;
+	}
+	
+	return ret;
+}
