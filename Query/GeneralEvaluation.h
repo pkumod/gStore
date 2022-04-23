@@ -54,6 +54,8 @@ class GeneralEvaluation
 		TYPE_ENTITY_LITERAL_ID limitID_literal;
 		TYPE_ENTITY_LITERAL_ID limitID_entity;
 		shared_ptr<Transaction> txn;
+
+		shared_ptr<BGPQuery> bgp_query_total;
     public:
     	FILE* fp;
     	bool export_flag;
@@ -70,6 +72,8 @@ class GeneralEvaluation
 		QueryTree& getQueryTree();
 
 		bool doQuery();
+
+		void addAllTriples(const QueryTree::GroupPattern &group_pattern);
 
 		void setStringIndexPointer(StringIndex* _tmpsi);
 		
@@ -111,6 +115,8 @@ class GeneralEvaluation
 			vector<vector<QueryTree::GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep=0);
 		void getAllPattern(const QueryTree::GroupPattern &group_pattern, vector<QueryTree::GroupPattern::Pattern> &vp);
 		std::map<std::string, std::string> dynamicFunction(const std::vector<int> &iri_set, bool directed, int k, const std::vector<int> &pred_set, const std::string& fun_name, const std::string& username);
+
+		void kleeneClosure(TempResultSet *temp, TempResult *tr, const string &subject, const string &predicate, const string &object);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H

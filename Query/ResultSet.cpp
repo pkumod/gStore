@@ -388,7 +388,8 @@ ResultSet::output(FILE* _fp)
 				{
 					fprintf(_fp, "\t%s", Util::node2string(this->answer[i][j].c_str()).c_str());
 				}
-				fprintf(_fp, ".\n");
+				// fprintf(_fp, ".\n");
+				fprintf(_fp, "\n");
 			}
 		}
 	}
