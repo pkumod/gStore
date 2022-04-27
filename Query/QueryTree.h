@@ -192,8 +192,10 @@ class QueryTree
 		{
 			public:
 				Bind(){}
-				Bind(const std::string &_str, const std::string &_var):str(_str), var(_var){}
-				std::string str, var;
+				Bind(const std::string &_var):var(_var){}
+				// std::string str, var;
+				CompTreeNode bindExpr;
+				std::string var;
 				Varset varset;
 		};
 

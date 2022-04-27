@@ -1317,27 +1317,14 @@ void QueryParser::buildFilterTree(antlr4::tree::ParseTree *root, \
 antlrcpp::Any QueryParser::visitBind(SPARQLParser::BindContext *ctx, \
 	QueryTree::GroupPattern &group_pattern)
 {
-	SPARQLParser::RDFLiteralContext *rdflCtx = ctx->expression()->conditionalOrexpression()-> \
-		conditionalAndexpression(0)->valueLogical(0)->relationalexpression()-> \
-		numericexpression(0)->additiveexpression()->multiplicativeexpression(0)-> \
-		unaryexpression(0)->primaryexpression()->rDFLiteral();
-	if (!rdflCtx)
-		throw runtime_error("[ERROR]	Currently BIND only supports assigning a string to a var.");
-	antlr4::tree::ParseTree *curr = ctx->expression();
-	for (int i = 0; i < 9; i++)
-	{
-		// Make sure only one children along the way
-		if (curr->children.size() > 1)
-			throw runtime_error("[ERROR]	Currently BIND only supports assigning a string to a var.");
-		curr = curr->children[0];
-	}
-
-	string str, var;
-	str = rdflCtx->string()->getText();
+	string var;
 	var = ctx->var()->getText();
 
 	group_pattern.addOneBind();
-	group_pattern.getLastBind() = QueryTree::GroupPattern::Bind(str, var);
+	group_pattern.getLastBind().var = var;
+	buildCompTree(ctx->expression()->conditionalOrexpression(), -1, group_pattern.getLastBind().bindExpr);
+
+	// TODO: check that the query var has not appeared previously
 
 	return antlrcpp::Any();
 }
