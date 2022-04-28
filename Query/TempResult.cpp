@@ -1752,21 +1752,11 @@ void TempResult::doBind(const QueryTree::GroupPattern::Bind &bind, KVstore *kvst
 {
 	Varset this_varset = this->getAllVarset();
 	int this_id_cols = this->id_varset.getVarsetSize();
-	// this->str_varset.addVar(bind.var);
-	this->id_varset.addVar(bind.var);
+	this->str_varset.addVar(bind.var);
 	for (int i = 0; i < (int)this->result.size(); i++)
 	{
 		EvalMultitypeValue ret_femv = doComp(bind.bindExpr, this->result[i], this_id_cols, stringindex, this_varset, entity_literal_varset);
-		// this->result[i].str.push_back(ret_femv.getRep());
-		unsigned *v = new unsigned[this_id_cols + 1];
-		if (result[i].id)
-		{
-			memcpy(v, result[i].id, sizeof(unsigned) * this_id_cols);
-			delete []result[i].id;
-		}
-		v[this_id_cols] = kvstore->getIDByString(ret_femv.getRep());
-		result[i].id = v;
-		result[i].sz++;
+		this->result[i].str.push_back(ret_femv.getRep());
 	}
 	return;
 }
