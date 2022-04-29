@@ -726,8 +726,8 @@ pre:
 	#cd tools;unzip -o workflow-master.zip;cd workflow-master;make;
 	#cd tools;unzip -o srpc.zip; cd srpc;make;make install;
 	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
-	# cd tools/srpc; make; sudo make install;
-	# cd tools/srpc/workflow; make; sudo make install; cp _lib/libworkflow.a ../../../lib/;
+	cd tools/srpc; make; sudo make install;
+	cd tools/srpc/workflow; make; sudo make install; cp _lib/libworkflow.a ../../../lib/;
 
 
 $(api_cpp):
