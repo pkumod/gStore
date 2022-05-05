@@ -1365,6 +1365,17 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			vector<string> order_vars = query_tree.getOrderByVarset().vars;
 			for (string var : order_vars)
 			{
+				bool already_exist = false;
+				for (auto p : proj)
+				{
+					if (p.var == var)
+					{
+						already_exist = true;
+						break;
+					}
+				}
+				if (already_exist)
+					continue;
 				QueryTree::ProjectionVar proj_var;
 				proj_var.aggregate_type = QueryTree::ProjectionVar::None_type;
 				proj_var.var = var;
