@@ -447,7 +447,9 @@ EvalMultitypeValue
 		return ret_femv;
 	}
 
-	if (this->isSimpleLiteral() && x.isSimpleLiteral())
+	// TODO: isSimpleLiteral seems not robust
+	// if (this->isSimpleLiteral() && x.isSimpleLiteral())
+	if (this->datatype == literal && x.datatype == literal)
 	{
 		ret_femv.bool_value = (this->str_value < x.str_value);
 
