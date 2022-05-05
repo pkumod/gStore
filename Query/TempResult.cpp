@@ -1698,6 +1698,21 @@ TempResult::doComp(const QueryTree::CompTreeNode &root, ResultPair &row, int id_
 
 		return ret_femv;
 	}
+	else if (root.oprt == "IF")
+	{
+		EvalMultitypeValue x, y, z;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (x.datatype == EvalMultitypeValue::xsd_boolean && x.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::error_value \
+			|| x.datatype != EvalMultitypeValue::xsd_boolean)
+			return ret_femv;
+		if (x.datatype == EvalMultitypeValue::xsd_boolean && x.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+			ret_femv = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		else
+			ret_femv = doComp(root.children[2], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		
+		return ret_femv;
+	}
 
 	return ret_femv;
 }
@@ -1746,6 +1761,19 @@ void TempResult::doFilter(const QueryTree::CompTreeNode &filter, TempResult &r, 
 			}
 		}
 	}
+}
+
+void TempResult::doBind(const QueryTree::GroupPattern::Bind &bind, KVstore *kvstore, StringIndex *stringindex, Varset &entity_literal_varset)
+{
+	Varset this_varset = this->getAllVarset();
+	int this_id_cols = this->id_varset.getVarsetSize();
+	this->str_varset.addVar(bind.var);
+	for (int i = 0; i < (int)this->result.size(); i++)
+	{
+		EvalMultitypeValue ret_femv = doComp(bind.bindExpr, this->result[i], this_id_cols, stringindex, this_varset, entity_literal_varset);
+		this->result[i].str.push_back(ret_femv.getRep());
+	}
+	return;
 }
 
 void TempResult::print(int no)
@@ -1981,6 +2009,23 @@ void TempResultSet::doFilter(const QueryTree::CompTreeNode &filter, TempResultSe
 
 	long tv_end = Util::get_cur_time();
 	printf("after doFilter, used %ld ms.\n", tv_end - tv_begin);
+}
+
+void TempResultSet::doBind(const QueryTree::GroupPattern::Bind &bind, KVstore *kvstore, StringIndex *stringindex, Varset &entity_literal_varset)
+{
+	long tv_begin = Util::get_cur_time();
+
+	if (this->results.size() == 0)
+	{
+		this->results.push_back(TempResult());
+		this->results.back().result.push_back(TempResult::ResultPair());
+	}
+	
+	for (int i = 0; i < (int)this->results.size(); i++)
+		this->results[i].doBind(bind, kvstore, stringindex, entity_literal_varset);
+
+	long tv_end = Util::get_cur_time();
+	printf("after doBind, used %ld ms.\n", tv_end - tv_begin);
 }
 
 void TempResultSet::doProjection1(Varset &proj, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)

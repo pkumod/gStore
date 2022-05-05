@@ -376,6 +376,14 @@ ResultSet::output(FILE* _fp)
 			fprintf(_fp, "[empty result]\n");
 			return;
 		}
+
+		fprintf(_fp, "%s", this->var_name[0].c_str());
+		for(int i = 1; i < this->true_select_var_num; i++)
+		{
+			fprintf(_fp, "\t%s", this->var_name[i].c_str());
+		}
+		fprintf(_fp, "\n");
+		
 		for(long long i = (!this->useStream ? this->output_offset : 0LL); i < this->ansNum; i++)
 		{
 			if (this->output_limit != -1 && i == this->output_offset + this->output_limit)

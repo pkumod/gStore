@@ -642,7 +642,10 @@ void QueryTree::GroupPattern::print(int dep)
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Bind_type)
 		{
 			for (int t = 0; t <= dep; t++)	printf("\t");
-			printf("BIND(%s\tAS\t%s)", this->sub_group_pattern[i].bind.str.c_str(), this->sub_group_pattern[i].bind.var.c_str());
+			printf("BIND(");
+			this->sub_group_pattern[i].bind.bindExpr.print(dep + 1);
+			printf("AS\t%s)", this->sub_group_pattern[i].bind.var.c_str());
+			// printf("BIND(%s\tAS\t%s)", this->sub_group_pattern[i].bind.str.c_str(), this->sub_group_pattern[i].bind.var.c_str());
 			printf("\n");
 		}
 
@@ -994,6 +997,15 @@ bool QueryTree::checkWellDesigned()
 			|| proj.aggregate_type == ProjectionVar::kHopReachable_type
 			|| proj.aggregate_type == ProjectionVar::kHopEnumerate_type
 			|| proj.aggregate_type == ProjectionVar::CompTree_type)
+		{
+			check_condition = false;
+			break;
+		}
+	}
+	// BIND must respect original order
+	for (size_t i = 0; i < group_pattern.sub_group_pattern.size(); i++)
+	{
+		if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Bind_type)
 		{
 			check_condition = false;
 			break;

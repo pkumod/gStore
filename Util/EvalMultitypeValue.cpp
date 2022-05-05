@@ -1052,3 +1052,35 @@ string EvalMultitypeValue::getStrContent()
 
 	return "";
 }
+
+string EvalMultitypeValue::getRep()
+{
+	string ret;
+	if (datatype == EvalMultitypeValue::rdf_term || datatype == EvalMultitypeValue::iri)
+		ret = term_value;
+	else if (datatype == EvalMultitypeValue::xsd_string || datatype == EvalMultitypeValue::literal)
+		ret = str_value;
+	else if (datatype == EvalMultitypeValue::xsd_boolean)
+	{
+		if (bool_value.getValue() == 0 || bool_value.getValue() == 2)
+			ret = "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+		else
+			ret = "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+	}
+	else if (datatype == EvalMultitypeValue::xsd_integer)
+		ret = "\"" + to_string(int_value) + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+	else if (datatype == EvalMultitypeValue::xsd_decimal)
+		ret = "\"" + to_string(flt_value) + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
+	else if (datatype == EvalMultitypeValue::xsd_float)
+		ret = "\"" + to_string(flt_value) + "\"^^<http://www.w3.org/2001/XMLSchema#float>";
+	else if (datatype == EvalMultitypeValue::xsd_double)
+		ret = "\"" + to_string(dbl_value) + + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
+	else if (datatype == EvalMultitypeValue::xsd_datetime)
+	{
+		ret = "\"" + to_string(dt_value.date[0]) + "-" + to_string(dt_value.date[1]) + "-" + \
+			to_string(dt_value.date[2]) + "T" + to_string(dt_value.date[3]) + ":" + \
+			to_string(dt_value.date[4]) + ":" + to_string(dt_value.date[5]) + \
+			"\"^^<http://www.w3.org/2001/XMLSchema#dateTime>";
+	}
+	return ret;
+}
