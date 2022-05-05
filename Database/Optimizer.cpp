@@ -38,6 +38,8 @@ BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query
   else
   {
     if(query_info->ordered_by_expressions_->size()) {
+      if(query_info->ordered_by_expressions_->size()>1 || (*query_info->ordered_by_expressions_)[0].comp_tree_root.children.size()>0)
+        return BasicQueryStrategy::Normal;
       auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,this->statistics,
                                                      (*query_info->ordered_by_expressions_)[0],nullptr);
       if(search_plan->SuggestTopK())
@@ -262,7 +264,11 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
   return MergeBasicQuery(sparql_query);
 }
 
-tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryInfo query_info) {
+/**
+ * Query a BGP.
+ * @return a tuple of <if success, if ranked>
+ */
+tuple<bool,bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryInfo query_info) {
 
 #ifdef TOPK_DEBUG_INFO
   std::cout<<"Optimizer:: limit used:"<<query_info.limit_<<std::endl;
@@ -273,6 +279,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   shared_ptr<QueryPlan> query_plan;
   auto strategy = this->ChooseStrategy(bgp_query,&query_info);
   auto distinct = bgp_query->distinct_query;
+  bool ranked = false;
   CompressedVector::InitialCombinatorial(2040,10);
 
   if(strategy == BasicQueryStrategy::Normal || RankAfterMatching)
@@ -395,6 +402,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   }
   else if(strategy == BasicQueryStrategy::TopK)
   {
+    ranked = true;
     long start = Util::get_cur_time();
 #ifdef TOPK_SUPPORT
     auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
@@ -496,8 +504,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 
     printf("BasicQueryStrategy::Special not supported yet\n");
   }
-  return tuple<bool, shared_ptr<IntermediateResult>>();
-
+  return make_tuple<bool,bool>(true,std::move(ranked));
 }
 
 tuple<bool, shared_ptr<IntermediateResult>> Optimizer::MergeBasicQuery(SPARQLquery &sparql_query) {
