@@ -27,16 +27,12 @@ BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query
   if (!query_info->limit_)
   {
   	return BasicQueryStrategy::Normal;
-    // if(bgp_query->get_triple_num()!=1)
-    //   return BasicQueryStrategy::Normal;
-    // else if(bgp_query->get_total_var_num() != 3)
-    //   return BasicQueryStrategy::Normal;
-    // else
-    //   return BasicQueryStrategy::Special;
   }
   else
   {
-    if(query_info->ordered_by_expressions_->size()) {
+    if(query_info->ordered_by_expressions_->size() == 1) {
+      if((*query_info->ordered_by_expressions_)[0].comp_tree_root.children.empty())
+        return BasicQueryStrategy::Normal;
       auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,this->statistics,
                                                      (*query_info->ordered_by_expressions_)[0],nullptr);
       if(search_plan->SuggestTopK())
@@ -261,12 +257,19 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
   return MergeBasicQuery(sparql_query);
 }
 
-tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryInfo query_info) {
+/**
+ * Query over bgp_query
+ * @param bgp_query
+ * @param query_info , information of limit number and order by expression
+ * @return <if success, if the result ranked>
+ */
+tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryInfo query_info) {
 
 #ifdef TOPK_DEBUG_INFO
   std::cout<<"Optimizer:: limit used:"<<query_info.limit_<<std::endl;
   std::cout<<"Optimizer::DoQuery limit num:"<<query_info.limit_num_<<std::endl;
 #endif
+  bool ranked = false;
   auto var_candidates_cache = bgp_query->get_all_candidates();
   // auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
   shared_ptr<QueryPlan> query_plan;
@@ -336,6 +339,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
   }
   else if(strategy == BasicQueryStrategy::TopK)
   {
+    ranked = true;
 #ifdef TOPK_SUPPORT
     auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
     for (auto &constant_generating_step: *const_candidates) {
@@ -435,7 +439,7 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 
     printf("BasicQueryStrategy::Special not supported yet\n");
   }
-  return tuple<bool, shared_ptr<IntermediateResult>>();
+  return make_tuple<bool, bool>(true,std::move(ranked));
 
 }
 
