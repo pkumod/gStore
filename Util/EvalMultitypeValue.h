@@ -101,6 +101,7 @@ class EvalMultitypeValue
 		bool argCompatible(EvalMultitypeValue &x);	// Check argument compatibility
 													// (for string funcs that takes two arguments)
 		std::string getStrContent();	// Return string content of literal/xsd_string
+		std::string getRep();	// Get the full representation (with suffix)
 };
 
 #endif //_UTIL_EVALMULTITYPEVALUE_H

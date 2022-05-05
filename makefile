@@ -137,8 +137,8 @@ inc_workflow=-I./tools/srpc/workflow/_include/workflow
 
 #gtest
 
-# TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gquery $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback $(exedir)grpc
-TARGET = $(exedir)gbuild $(exedir)gdrop $(exedir)gquery $(exedir)ginit
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gquery $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback $(exedir)grpc
+# TARGET = $(exedir)gbuild $(exedir)gdrop $(exedir)gquery $(exedir)ginit
 
 all: $(TARGET)
 	@echo "Compilation ends successfully!"
@@ -726,8 +726,8 @@ pre:
 	#cd tools;unzip -o workflow-master.zip;cd workflow-master;make;
 	#cd tools;unzip -o srpc.zip; cd srpc;make;make install;
 	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
-	# cd tools/srpc; make; sudo make install;
-	# cd tools/srpc/workflow; make; sudo make install; cp _lib/libworkflow.a ../../../lib/;
+	cd tools/srpc; make; sudo make install;
+	cd tools/srpc/workflow; make; sudo make install; cp _lib/libworkflow.a ../../../lib/;
 
 
 $(api_cpp):
