@@ -26,7 +26,7 @@ public:
 	/// Try to lock shared
 	bool tryLockShared();
 	/// Release the lock. Returns true if the lock seems to be free now (hint only)
-	bool unlock();
+	void unlock();
 };
 
 #endif
