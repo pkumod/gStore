@@ -371,7 +371,10 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				proj_var.aggregate_type = QueryTree::ProjectionVar::Avg_type;
 			else if (tmp == "SUM")
 				proj_var.aggregate_type = QueryTree::ProjectionVar::Sum_type;
-			proj_var.aggregate_var = aggCtx->expression()->getText();	// Error would have been dealt with
+			if (aggCtx->expression())
+				proj_var.aggregate_var = aggCtx->expression()->getText();	// Error would have been dealt with
+			else
+				proj_var.aggregate_var = "*";
 			tmp = aggCtx->children[2]->getText();
 			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
 			proj_var.distinct = aggCtx->children[2]->children.size() == 0 && tmp == "DISTINCT";
