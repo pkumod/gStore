@@ -809,8 +809,9 @@ PlanTree::PlanTree(unsigned node_1_id, unsigned node_2_id, BGPQuery *bgpquery){
 
 		for(unsigned index = 1; index < linked_edge_pre_const_vec.size(); ++index){
 
-			shared_ptr<vector<EdgeInfo>> edge_check_edge_vec;
-			shared_ptr<vector<EdgeConstantInfo>> edge_check_edge_const_vec;
+			shared_ptr<vector<EdgeInfo>> edge_check_edge_vec = make_shared<vector<EdgeInfo>>();
+			shared_ptr<vector<EdgeConstantInfo>> edge_check_edge_const_vec = make_shared<vector<EdgeConstantInfo>>();
+
 			unsigned edge_check_index = var1_descrip->so_edge_index_[linked_edge_pre_const_vec[index]];
 			edge_check_edge_vec->emplace_back(bgpquery->s_id_[edge_check_index], bgpquery->p_id_[edge_check_index], bgpquery->o_id_[edge_check_index],
 											  JoinMethod::sp2o);
