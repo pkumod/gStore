@@ -45,6 +45,7 @@ class GeneralEvaluation
 		PathQueryHandler *pqHandler;
 		CSR *csr;
         Statistics *statistics;
+		bool ranked;
 
 		TYPE_TRIPLE_NUM *pre2num;
 		TYPE_TRIPLE_NUM *pre2sub;
