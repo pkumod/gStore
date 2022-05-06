@@ -40,6 +40,8 @@ BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query
       else
         return BasicQueryStrategy::Normal;
     }
+    else if (query_info->ordered_by_expressions_->size() > 1)
+      return BasicQueryStrategy::Normal;
     else {
       if (bgp_query->get_triple_num() == 1)
         return BasicQueryStrategy::Normal;

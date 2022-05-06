@@ -119,7 +119,7 @@ GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, Statistics *_statistics,
 	TYPE_ENTITY_LITERAL_ID _limitID_entity, CSR *_csr, shared_ptr<Transaction> _txn):
 	kvstore(_kvstore), statistics(_statistics), stringindex(_stringindex), query_cache(_query_cache), pre2num(_pre2num), \
 	pre2sub(_pre2sub), pre2obj(_pre2obj), triples_num(_triples_num), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), \
-	limitID_entity(_limitID_entity), temp_result(NULL), fp(NULL), export_flag(false), csr(_csr), txn(_txn)
+	limitID_entity(_limitID_entity), temp_result(NULL), fp(NULL), export_flag(false), csr(_csr), txn(_txn), ranked(false)
 {
 	if (csr)
 		pqHandler = new PathQueryHandler(csr);
@@ -619,7 +619,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					bgp_query_vec[j]->print(kvstore);
 					if (!encode_constant_exist[j])
 						continue;	// If any constant in this BGP does not exist, do not need to DoQuery
-					this->optimizer_->DoQuery(bgp_query_vec[j],query_info);
+					ranked = get<1>(this->optimizer_->DoQuery(bgp_query_vec[j],query_info));
 				}
 				#endif
 
@@ -875,7 +875,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						bgp_query_vec[l]->print(kvstore);
 						if (!encode_constant_exist[l])
 							continue;
-						this->optimizer_->DoQuery(bgp_query_vec[l],query_info);
+						ranked = get<1>(this->optimizer_->DoQuery(bgp_query_vec[l],query_info));
 					}
 					#endif
 
@@ -2531,7 +2531,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		{
 			vector <unsigned> keys;
 			vector <bool> desc;
-			if (!(query_tree.getSingleBGP() && query_tree.getLimit() != -1))
+			if (!(query_tree.getSingleBGP() && query_tree.getLimit() != -1 && ranked))
 			{
 				// Else, ORDER BY will already have been processed at the BGP level
 				for (int i = 0; i < (int)this->query_tree.getOrderVarVector().size(); i++)
