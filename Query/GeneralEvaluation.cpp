@@ -413,7 +413,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			// Set a special result (indicates true/false) 
 			TempResultSet *result = new TempResultSet();
 			(*result).results.push_back(TempResult());
-			(*result).results[0].result.push_back(TempResult::ResultPair());
+			(*result).results[0].result.emplace_back();
 			if (exist)
 				(*result).results[0].result[0].str.push_back("true");
 			else
@@ -494,7 +494,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 		{
-			TempResultSet *temp = new TempResultSet();
+			TempResultSet *sub_result = new TempResultSet();
 			
 			QueryInfo query_info;
 			query_info.limit_ = false;
@@ -521,7 +521,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				{
 					tr = new TempResult();
 					tr->id_varset = Varset(vector<string>(1, group_pattern.sub_group_pattern[i].pattern.subject.value));
-					tr->result.push_back(TempResult::ResultPair());
+					tr->result.emplace_back();
 					tr->result.back().id = new unsigned[1];
 					tr->result.back().id[0] = kvstore->getIDByString(group_pattern.sub_group_pattern[i].pattern.subject.value);
 					tr->result.back().sz = 1;
@@ -531,7 +531,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				{
 					tr = new TempResult();
 					tr->id_varset = Varset(vector<string>(1, group_pattern.sub_group_pattern[i].pattern.object.value));
-					tr->result.push_back(TempResult::ResultPair());
+					tr->result.emplace_back();
 					tr->result.back().id = new unsigned[1];
 					tr->result.back().id[0] = kvstore->getIDByString(group_pattern.sub_group_pattern[i].pattern.object.value);
 					tr->result.back().sz = 1;
@@ -541,23 +541,23 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					tr = &(result->results[0]);
 
 				// BFS from the subjects / objects to find results
-				kleeneClosure(temp, tr, group_pattern.sub_group_pattern[i].pattern.subject.value, \
+				kleeneClosure(sub_result, tr, group_pattern.sub_group_pattern[i].pattern.subject.value, \
 					group_pattern.sub_group_pattern[i].pattern.predicate.value, group_pattern.sub_group_pattern[i].pattern.object.value);
 				
 				// TODO: cache result
 				if (result->results.empty())
 				{
 					delete result;
-					result = temp;
+					result = sub_result;
 				}
 				else
 				{
 					TempResultSet *new_result = new TempResultSet();
-					result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+					result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
-					temp->release();
+					sub_result->release();
 					result->release();
-					delete temp;
+					delete sub_result;
 					delete result;
 
 					result = new_result;
@@ -583,7 +583,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				if (i + 1 == (int)group_pattern.sub_group_pattern.size() ||
 					(group_pattern.sub_group_pattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Pattern_type && group_pattern.sub_group_pattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Union_type))
 				{
-					// Reach the end of this BGP, start merging
+					// Start merging (may be multiple BGPs here)
 					SPARQLquery sparql_query;
 					#ifdef TEST_BGPQUERY
 					vector<shared_ptr<BGPQuery>> bgp_query_vec;
@@ -686,10 +686,12 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					long tv_handle = Util::get_cur_time();
 					printf("during Handle, used %ld ms.\n", tv_handle - tv_encode);
 
-					//collect and join the result of each BasicQuery
+					//collect and join the result of each BGP
 					// for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
 					for (size_t j = 0; j < bgp_query_vec.size(); j++)
 					{
+						TempResultSet *temp = new TempResultSet();
+						
 						temp->results.push_back(TempResult());
 
 						temp->results[0].id_varset = Varset(encode_varset[j]);
@@ -705,10 +707,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						temp->results[0].result.reserve(basicquery_result_num);
 						for (int k = 0; k < basicquery_result_num; k++)
 						{
-							unsigned *v = new unsigned[varnum];
-							memcpy(v, basicquery_result[k], sizeof(int) * varnum);
-							temp->results[0].result.push_back(TempResult::ResultPair());
-							temp->results[0].result.back().id = v;
+							temp->results[0].result.emplace_back();
+							temp->results[0].result.back().id = new unsigned[varnum];
+							memcpy(temp->results[0].result.back().id, basicquery_result[k], sizeof(int) * varnum);
 							temp->results[0].result.back().sz = varnum;
 						}
 
@@ -725,28 +726,46 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
 						}
 
-						if (result->results.empty())
+						if (sub_result->results.empty())
 						{
-							delete result;
-							result = temp;
+							delete sub_result;
+							sub_result = temp;
 						}
 						else
 						{
 							TempResultSet *new_result = new TempResultSet();
-							result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+							sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 							temp->release();
-							result->release();
+							sub_result->release();
 							delete temp;
-							delete result;
+							delete sub_result;
 
-							result = new_result;
+							sub_result = new_result;
 						}
 					}
 					
 					// printf("Pattern_type result: \n");
 					// result->print();
 				}
+			}
+
+			if (result->results.empty())
+			{
+				delete result;
+				result = sub_result;
+			}
+			else
+			{
+				TempResultSet *new_result = new TempResultSet();
+				result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+
+				sub_result->release();
+				result->release();
+				delete sub_result;
+				delete result;
+
+				result = new_result;
 			}
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
@@ -964,7 +983,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						{
 							unsigned *v = new unsigned[varnum];
 							memcpy(v, basicquery_result[k], sizeof(unsigned) * varnum);
-							temp->results[0].result.push_back(TempResult::ResultPair());
+							temp->results[0].result.emplace_back();
 							temp->results[0].result.back().id = v;
 							temp->results[0].result.back().sz = varnum;
 						}
@@ -1017,7 +1036,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							{
 								tr = new TempResult();
 								tr->id_varset = Varset(vector<string>(1, triple_pattern.sub_group_pattern[l].pattern.subject.value));
-								tr->result.push_back(TempResult::ResultPair());
+								tr->result.emplace_back();
 								tr->result.back().id = new unsigned[1];
 								tr->result.back().id[0] = kvstore->getIDByString(triple_pattern.sub_group_pattern[l].pattern.subject.value);
 								tr->result.back().sz = 1;
@@ -1027,7 +1046,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							{
 								tr = new TempResult();
 								tr->id_varset = Varset(vector<string>(1, triple_pattern.sub_group_pattern[l].pattern.object.value));
-								tr->result.push_back(TempResult::ResultPair());
+								tr->result.emplace_back();
 								tr->result.back().id = new unsigned[1];
 								tr->result.back().id[0] = kvstore->getIDByString(triple_pattern.sub_group_pattern[l].pattern.object.value);
 								tr->result.back().sz = 1;
@@ -1453,7 +1472,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				// Non-aggregate functions, no var (all constant) in arg list
 				// TODO: handle CONTAINS and custom functions
 
-				new_result0.result.push_back(TempResult::ResultPair());
+				new_result0.result.emplace_back();
 				new_result0.result.back().id = new unsigned[new_result0_id_cols];
 				new_result0.result.back().sz = new_result0_id_cols;
 				new_result0.result.back().str.resize(new_result0_str_cols);
@@ -1798,7 +1817,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				else
 					end = result0.findRightBounder(group2temp, result0.result[begin], result0_id_cols, group2temp);
 
-				new_result0.result.push_back(TempResult::ResultPair());
+				new_result0.result.emplace_back();
 				new_result0.result.back().id = new unsigned[new_result0_id_cols];
 				new_result0.result.back().sz = new_result0_id_cols;
 				new_result0.result.back().str.resize(new_result0_str_cols);
@@ -2294,7 +2313,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset).term_value;
 							if (j < end)
 							{
-								new_result0.result.push_back(TempResult::ResultPair());
+								new_result0.result.emplace_back();
 								new_result0.result.back().id = new unsigned[new_result0_id_cols];
 								new_result0.result.back().sz = new_result0_id_cols;
 								new_result0.result.back().str.resize(new_result0_str_cols);
@@ -2389,7 +2408,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 								if (j < end)
 								{
-									new_result0.result.push_back(TempResult::ResultPair());
+									new_result0.result.emplace_back();
 									new_result0.result.back().id = new unsigned[new_result0_id_cols];
 									new_result0.result.back().sz = new_result0_id_cols;
 									new_result0.result.back().str.resize(new_result0_str_cols);
@@ -3533,7 +3552,7 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResu
 		{
 			unsigned *v = new unsigned[varnum];
 			memcpy(v, basicquery_result[k], sizeof(int) * varnum);
-			temp->results[0].result.push_back(TempResult::ResultPair());
+			temp->results[0].result.emplace_back();
 			temp->results[0].result.back().id = v;
 			temp->results[0].result.back().sz = varnum;
 		}
@@ -3774,7 +3793,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 				vector<int>(1, kvstore->getIDByPredicate(predicate)), false);
 			for (int sid : reach)
 			{
-				temp->results[0].result.push_back(TempResult::ResultPair());
+				temp->results[0].result.emplace_back();
 				temp->results[0].result.back().id = new unsigned[1];
 				temp->results[0].result.back().id[0] = sid;
 				temp->results[0].result.back().sz = 1;
@@ -3792,7 +3811,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 				vector<int>(1, kvstore->getIDByPredicate(predicate)), true);
 			for (int tid : reach)
 			{
-				temp->results[0].result.push_back(TempResult::ResultPair());
+				temp->results[0].result.emplace_back();
 				temp->results[0].result.back().id = new unsigned[1];
 				temp->results[0].result.back().id[0] = tid;
 				temp->results[0].result.back().sz = 1;
@@ -3828,7 +3847,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 					vector<int>(1, kvstore->getIDByPredicate(predicate)), true);
 				for (int tid : reach)
 				{
-					temp->results[0].result.push_back(TempResult::ResultPair());
+					temp->results[0].result.emplace_back();
 					temp->results[0].result.back().id = new unsigned[2];
 					temp->results[0].result.back().id[0] = sid;
 					temp->results[0].result.back().id[1] = tid;
@@ -3845,7 +3864,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 					vector<int>(1, kvstore->getIDByPredicate(predicate)), false);
 				for (int sid : reach)
 				{
-					temp->results[0].result.push_back(TempResult::ResultPair());
+					temp->results[0].result.emplace_back();
 					temp->results[0].result.back().id = new unsigned[2];
 					temp->results[0].result.back().id[0] = sid;
 					temp->results[0].result.back().id[1] = tid;
