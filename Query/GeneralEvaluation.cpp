@@ -1666,7 +1666,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							break;
 					}
 					ss << "]}\"";
-					cout << "paths length:" << uid_ls.size() * vid_ls.size() << endl;
+					cout << "max #paths:" << uid_ls.size() * vid_ls.size() << endl;
 					if (proj[0].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
 					{
 						if (exist)
@@ -2850,7 +2850,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								break;
 						}
 						ss << "]}\"";
-						cout << "paths length:" << uid_ls.size() * vid_ls.size() << endl;
+						cout << "max #paths:" << uid_ls.size() * vid_ls.size() << endl;
 						if (proj[i].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
 						{
 							if (exist)
