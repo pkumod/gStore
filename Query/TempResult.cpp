@@ -1546,6 +1546,34 @@ TempResult::doComp(const QueryTree::CompTreeNode &root, ResultPair &row, int id_
 		else
 			return ret_femv;
 	}
+	else if (root.oprt == "HOURS")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (x.datatype == EvalMultitypeValue::xsd_datetime)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
+			ret_femv.int_value = x.dt_value.date[3];
+			return ret_femv;
+		}
+		else
+			return ret_femv;
+	}
+	else if (root.oprt == "MINUTES")
+	{
+		EvalMultitypeValue x;
+
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		if (x.datatype == EvalMultitypeValue::xsd_datetime)
+		{
+			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
+			ret_femv.int_value = x.dt_value.date[4];
+			return ret_femv;
+		}
+		else
+			return ret_femv;
+	}
 	else if (root.oprt == "UCASE" || root.oprt == "LCASE")
 	{
 		EvalMultitypeValue x;
