@@ -336,7 +336,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		conditionalAndexpression(0)->valueLogical(0)->relationalexpression()-> \
 		numericexpression(0)->additiveexpression()->multiplicativeexpression(0)-> \
 		unaryexpression(0)->primaryexpression();
-	SPARQLParser::BuiltInCallContext *bicCtx;
+	SPARQLParser::BuiltInCallContext *bicCtx = NULL;
 	if (prmCtx)
 		bicCtx = prmCtx->builtInCall();
 	if (bicCtx)
@@ -356,7 +356,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		{
 			string tmp = aggCtx->children[0]->getText();
 			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-			if (tmp != "COUNT" && tmp != "MIN" && tmp != "MAX" && tmp != "AVG" && tmp != "SUM")
+			if (tmp != "COUNT" && tmp != "MIN" && tmp != "MAX" && tmp != "AVG" && tmp != "SUM" && tmp != "GROUP_CONCAT")
 				throw runtime_error("[ERROR] The supported aggregate function now is COUNT, MIN, MAX, AVG, SUM only");
 
 			query_tree_ptr->addProjectionVar();
@@ -371,6 +371,29 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				proj_var.aggregate_type = QueryTree::ProjectionVar::Avg_type;
 			else if (tmp == "SUM")
 				proj_var.aggregate_type = QueryTree::ProjectionVar::Sum_type;
+			else if (tmp == "GROUP_CONCAT")
+			{
+				proj_var.aggregate_type = QueryTree::ProjectionVar::Groupconcat_type;
+				if (aggCtx->string())
+					proj_var.separator = aggCtx->string()->getText();
+				if (proj_var.separator[0] == '\'')
+				{
+					if (proj_var.separator.length() > 6 && proj_var.separator[1] == '\'' && proj_var.separator[2] == '\'')
+						proj_var.separator = proj_var.separator.substr(3, proj_var.separator.length() - 6);
+					else
+						proj_var.separator = proj_var.separator.substr(1, proj_var.separator.length() - 2);
+				}
+				else if (proj_var.separator[0] == '\"')
+				{
+					if (proj_var.separator.length() > 6 && proj_var.separator[1] == '\"' && proj_var.separator[2] == '\"')
+						proj_var.separator = proj_var.separator.substr(3, proj_var.separator.length() - 6);
+					else
+						proj_var.separator = proj_var.separator.substr(1, proj_var.separator.length() - 2);
+				}
+				else
+					proj_var.separator = " ";
+			}
+			// TODO: can only handle aggregates on var for now
 			if (aggCtx->expression())
 				proj_var.aggregate_var = aggCtx->expression()->getText();	// Error would have been dealt with
 			else

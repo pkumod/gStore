@@ -1463,6 +1463,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				proj[0].aggregate_type != QueryTree::ProjectionVar::None_type && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::CompTree_type && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::Count_type && \
+				proj[0].aggregate_type != QueryTree::ProjectionVar::Groupconcat_type && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::Sum_type && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::Avg_type && \
 				proj[0].aggregate_type != QueryTree::ProjectionVar::Min_type && \
@@ -1838,11 +1839,13 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
 						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type
 						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type
-						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type
+						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
 					{
 						int count = 0;
 						bool numeric = false, datetime = false, succ = true;
 						EvalMultitypeValue numeric_sum, numeric_min, numeric_max, datetime_min, datetime_max, tmp, res;
+						string groupconcat;
 						numeric_sum.datatype = EvalMultitypeValue::xsd_integer;
 						numeric_sum.int_value = 0;
 						numeric_min.datatype = EvalMultitypeValue::xsd_integer;
@@ -1906,6 +1909,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												|| proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
 												|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
 												count_set.insert(tmp.term_value);
+											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+												count_set.insert(tmp.str_value);
 											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
 											{
 												if (numeric)
@@ -1951,6 +1956,22 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 											numeric_sum = numeric_sum + tmp;
 										}
+									}
+									else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+									{
+										for (string elem : count_set)
+										{
+											size_t bIdx = elem.find('\"'), eIdx = elem.rfind('\"');
+											if (bIdx == string::npos || eIdx == string::npos || bIdx == eIdx)
+												continue;
+											if (groupconcat.empty())
+												groupconcat += "\"";
+											else
+												groupconcat += proj[i].separator;
+											groupconcat += elem.substr(bIdx + 1, eIdx - bIdx - 1);
+										}
+										if (!groupconcat.empty())
+											groupconcat += "\"";
 									}
 									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
 									{
@@ -2006,6 +2027,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 											if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
 												count_set.insert(result0.result[j].str[proj2temp[i] - result0_id_cols]);
+											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+												count_set.insert(tmp.str_value);
 											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
 											{
 												if (numeric)
@@ -2053,6 +2076,22 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 											numeric_sum = numeric_sum + tmp;
 										}
+									}
+									else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+									{
+										for (string elem : count_set)
+										{
+											size_t bIdx = elem.find('\"'), eIdx = elem.rfind('\"');
+											if (bIdx == string::npos || eIdx == string::npos || bIdx == eIdx)
+												continue;
+											if (groupconcat.empty())
+												groupconcat += "\"";
+											else
+												groupconcat += proj[i].separator;
+											groupconcat += elem.substr(bIdx + 1, eIdx - bIdx - 1);
+										}
+										if (!groupconcat.empty())
+											groupconcat += "\"";
 									}
 									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
 									{
@@ -2115,6 +2154,17 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												numeric_sum = numeric_sum + tmp;
 												cout << "numeric_sum.term_value = " << numeric_sum.term_value << endl;
 											}
+											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+											{
+												size_t bIdx = tmp.str_value.find('\"'), eIdx = tmp.str_value.rfind('\"');
+												if (bIdx == string::npos || eIdx == string::npos || bIdx == eIdx)
+													continue;
+												if (groupconcat.empty())
+													groupconcat += "\"";
+												else
+													groupconcat += proj[i].separator;
+												groupconcat += tmp.str_value.substr(bIdx + 1, eIdx - bIdx - 1);
+											}
 											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
 											{
 												if (numeric)
@@ -2149,7 +2199,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											count++;
 										}
 									}
-									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+										groupconcat += "\"";
+									else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
 									{
 										tmp.term_value = "\"" + to_string(count) + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
 										tmp.deduceTypeValue();
@@ -2206,6 +2258,17 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												numeric_sum = numeric_sum + tmp;
 												cout << "numeric_sum.term_value = " << numeric_sum.term_value << endl;
 											}
+											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+											{
+												size_t bIdx = tmp.str_value.find('\"'), eIdx = tmp.str_value.rfind('\"');
+												if (bIdx == string::npos || eIdx == string::npos || bIdx == eIdx)
+													continue;
+												if (groupconcat.empty())
+													groupconcat += "\"";
+												else
+													groupconcat += proj[i].separator;
+												groupconcat += tmp.str_value.substr(bIdx + 1, eIdx - bIdx - 1);
+											}
 											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
 											{
 												if (numeric)
@@ -2240,8 +2303,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											count++;
 										}
 									}
-
-									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+										groupconcat += "\"";
+									else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
 									{
 										tmp.term_value = "\"" + to_string(count) + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
 										tmp.deduceTypeValue();
@@ -2300,7 +2364,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						else 	// Failed
 							ss << "";
 
-						ss >> new_result0.result.back().str[proj2new[i] - new_result0_id_cols];
+						if (groupconcat.empty())
+							ss >> new_result0.result.back().str[proj2new[i] - new_result0_id_cols];
+						else
+							new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = groupconcat;
 					}
 					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::CompTree_type)
 					{
