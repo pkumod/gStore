@@ -102,6 +102,7 @@ Util util;
 		//cout << "finish insert data" << endl;
 		
 		cout << "after insert,used " << (tv_end - tv_begin) << " ms"<<endl;
+		_db.save();
 	
 		/*stringstream ss;
 		ss << "after insert,used " << (tv_end - tv_begin) << " ms";
