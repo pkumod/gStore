@@ -134,6 +134,8 @@ void TempResult::sort(int l, int r, const vector<int> &this_pos)
 	if (r <= l)
 		return;
 	int i = l, j = r + 1;
+	swap(this->result[l].id, this->result[(l + r) / 2].id);
+	swap(this->result[l].str, this->result[(l + r) / 2].str);
 	ResultPair &m = this->result[l];
 
 	int this_id_cols = this->id_varset.getVarsetSize();
