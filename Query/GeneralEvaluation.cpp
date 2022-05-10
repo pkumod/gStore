@@ -738,25 +738,25 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					
 					// printf("Pattern_type result: \n");
 					// result->print();
+
+					if (result->results.empty())
+					{
+						delete result;
+						result = sub_result;
+					}
+					else
+					{
+						TempResultSet *new_result = new TempResultSet();
+						result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+
+						sub_result->release();
+						result->release();
+						delete sub_result;
+						delete result;
+
+						result = new_result;
+					}
 				}
-			}
-
-			if (result->results.empty())
-			{
-				delete result;
-				result = sub_result;
-			}
-			else
-			{
-				TempResultSet *new_result = new TempResultSet();
-				result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
-
-				sub_result->release();
-				result->release();
-				delete sub_result;
-				delete result;
-
-				result = new_result;
 			}
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
