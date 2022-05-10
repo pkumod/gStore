@@ -99,6 +99,7 @@ main(int argc, char * argv[])
 		_db.batch_remove(filename, false, nullptr);
 		long tv_end = Util::get_cur_time();
 		cout << "after remove, used " << (tv_end - tv_begin) << " ms" << endl;
+		_db.save();
 	}
 
 	return 0;
