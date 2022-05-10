@@ -515,34 +515,13 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			{
 				// PathQueryHandler function arguments are vertex IDs
 				// Use `tr` to store BFS starting vertices
-				TempResult *tr;
-				// <s> <p>* ?o
-				if (group_pattern.sub_group_pattern[i].pattern.subject.value[0] != '?')
-				{
-					tr = new TempResult();
-					tr->id_varset = Varset(vector<string>(1, group_pattern.sub_group_pattern[i].pattern.subject.value));
-					tr->result.emplace_back();
-					tr->result.back().id = new unsigned[1];
-					tr->result.back().id[0] = kvstore->getIDByString(group_pattern.sub_group_pattern[i].pattern.subject.value);
-					tr->result.back().sz = 1;
-				}
-				// ?s <p>* <o>
-				else if (group_pattern.sub_group_pattern[i].pattern.object.value[0] != '?')
-				{
-					tr = new TempResult();
-					tr->id_varset = Varset(vector<string>(1, group_pattern.sub_group_pattern[i].pattern.object.value));
-					tr->result.emplace_back();
-					tr->result.back().id = new unsigned[1];
-					tr->result.back().id[0] = kvstore->getIDByString(group_pattern.sub_group_pattern[i].pattern.object.value);
-					tr->result.back().sz = 1;
-				}
-				// ?s <p>* ?o
-				else
+				TempResult *tr = NULL;
+				if (result->results.size() > 0 && result->results[0].result.size() > 0)
 					tr = &(result->results[0]);
 
 				// BFS from the subjects / objects to find results
 				kleeneClosure(sub_result, tr, group_pattern.sub_group_pattern[i].pattern.subject.value, \
-					group_pattern.sub_group_pattern[i].pattern.predicate.value, group_pattern.sub_group_pattern[i].pattern.object.value);
+					group_pattern.sub_group_pattern[i].pattern.predicate.value, group_pattern.sub_group_pattern[i].pattern.object.value, dep);
 				
 				// TODO: cache result
 				if (result->results.empty())
@@ -575,7 +554,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					{
 						// Does not merge triples with predicate as iri*
 						if (group_pattern.sub_group_pattern[i].pattern.subject_object_varset.hasCommonVar(group_pattern.sub_group_pattern[j].pattern.subject_object_varset) \
-							&& !group_pattern.sub_group_pattern[i].pattern.kleene)
+							&& !group_pattern.sub_group_pattern[j].pattern.kleene)
 							group_pattern.mergePatternBlockID(i, j);
 					}
 				}
@@ -595,7 +574,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					auto order_var_vec = query_tree.getOrderVarVector();
 
 					for (int j = st; j <= i; j++)
-						if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+						if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
+							&& !group_pattern.sub_group_pattern[j].pattern.kleene)
 						{
 							if (!group_pattern.sub_group_pattern[j].pattern.varset.empty())
 							{
@@ -1028,39 +1008,13 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						{
 							TempResultSet *temp = new TempResultSet();
 
-							// PathQueryHandler function arguments are vertex IDs
-							// Use `tr` to store BFS starting vertices
 							TempResult *tr = NULL;
-							// <s> <p>* ?o
-							if (triple_pattern.sub_group_pattern[l].pattern.subject.value[0] != '?')
-							{
-								tr = new TempResult();
-								tr->id_varset = Varset(vector<string>(1, triple_pattern.sub_group_pattern[l].pattern.subject.value));
-								tr->result.emplace_back();
-								tr->result.back().id = new unsigned[1];
-								tr->result.back().id[0] = kvstore->getIDByString(triple_pattern.sub_group_pattern[l].pattern.subject.value);
-								tr->result.back().sz = 1;
-							}
-							// ?s <p>* <o>
-							else if (triple_pattern.sub_group_pattern[l].pattern.object.value[0] != '?')
-							{
-								tr = new TempResult();
-								tr->id_varset = Varset(vector<string>(1, triple_pattern.sub_group_pattern[l].pattern.object.value));
-								tr->result.emplace_back();
-								tr->result.back().id = new unsigned[1];
-								tr->result.back().id[0] = kvstore->getIDByString(triple_pattern.sub_group_pattern[l].pattern.object.value);
-								tr->result.back().sz = 1;
-							}
-							// ?s <p>* ?o
-							else
-							{
-								if (sub_result->results.size() > 0)
-									tr = &(sub_result->results[0]);
-							}
+							if (sub_result->results.size() > 0 && sub_result->results[0].result.size() > 0)
+								tr = &(sub_result->results[0]);
 
 							// BFS from the subjects / objects to find results
 							kleeneClosure(temp, tr, triple_pattern.sub_group_pattern[l].pattern.subject.value, \
-								triple_pattern.sub_group_pattern[l].pattern.predicate.value, triple_pattern.sub_group_pattern[l].pattern.object.value);
+								triple_pattern.sub_group_pattern[l].pattern.predicate.value, triple_pattern.sub_group_pattern[l].pattern.object.value, dep);
 							
 							// TODO: cache result
 							if (sub_result->results.empty())
@@ -3839,14 +3793,50 @@ void GeneralEvaluation::addAllTriples(const QueryTree::GroupPattern &group_patte
 // Input: tr; Output: temp
 // Assume space has been alloc'ed for temp
 void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
-	const string &subject, const string &predicate, const string &object)
+	const string &subject, const string &predicate, const string &object, int dep)
 {
 	cout << "kleeneClosure, subject = " << subject << ", predicate = " << predicate << ", object = " << object << endl;
-	if (!tr)
+	// TempResult *tr = NULL;	// Use `tr` to store BFS starting vertices
+	// <s> <p>* ?o
+	if (!tr || tr->result.size() == 0)
+	{
+		if (subject[0] != '?')
+		{
+			tr = new TempResult();
+			tr->id_varset = Varset(vector<string>(1, subject));
+			tr->result.emplace_back();
+			tr->result.back().id = new unsigned[1];
+			tr->result.back().id[0] = kvstore->getIDByString(subject);
+			tr->result.back().sz = 1;
+		}
+		// ?s <p>* <o>
+		else if (object[0] != '?')
+		{
+			tr = new TempResult();
+			tr->id_varset = Varset(vector<string>(1, object));
+			tr->result.emplace_back();
+			tr->result.back().id = new unsigned[1];
+			tr->result.back().id[0] = kvstore->getIDByString(object);
+			tr->result.back().sz = 1;
+		}
+		// ?s <p>* ?o
+		else if (dep > 0)
+		{
+			int curDep = dep - 1;
+			while (curDep >= 0 && (!this->rewriting_evaluation_stack[curDep].result || \
+				this->rewriting_evaluation_stack[curDep].result->results[0].result.size() == 0))
+				curDep--;
+			if (curDep >= 0)
+				tr = &(this->rewriting_evaluation_stack[curDep].result->results[0]);
+		}
+	}
+	
+	if (!tr || tr->result.size() == 0)
 	{
 		cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause." << endl;
 		return;
 	}
+	
 	temp->results.push_back(TempResult());
 	// TODO: May invoke BFS multiple times for the same subject when no DISTINCT
 	if (subject[0] != '?')
