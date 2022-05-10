@@ -647,6 +647,17 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					long tv_encode = Util::get_cur_time();
 					printf("during Encode, used %ld ms.\n", tv_encode - tv_begin);
 
+					if (dep > 0)
+					{
+						#ifndef TEST_BGPQUERY
+						fillCandList(sparql_query, dep, encode_varset);
+						#else
+						fillCandList(bgp_query_vec, dep, encode_varset);
+						#endif
+					}
+					long tv_fillcand = Util::get_cur_time();
+					printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
+
 					#ifndef TEST_BGPQUERY
 					this->optimizer_->DoQuery(sparql_query,query_info);
 					#else
@@ -1188,6 +1199,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
 			this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].optional;
 			this->rewriting_evaluation_stack.back().result = NULL;
+			this->rewriting_evaluation_stack[dep].result = result;	// For FillCand
 			TempResultSet *temp = queryEvaluation(dep + 1);
 			{
 				TempResultSet *new_result = new TempResultSet();
