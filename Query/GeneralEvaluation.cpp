@@ -1393,7 +1393,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				else if (proj[i].aggregate_var != "*")
 					proj2temp[i] = Varset(proj[i].aggregate_var).mapTo(result0.getAllVarset())[0];
 
-			vector<int> proj2new = this->query_tree.getProjectionVarset().mapTo(new_result0.getAllVarset());
+			// vector<int> proj2new = this->query_tree.getProjectionVarset().mapTo(new_result0.getAllVarset());
+			vector<int> proj2new((int)proj.size(), -1);
+			for (int i = 0; i < (int)proj.size(); i++)
+				proj2new[i] = Varset(proj[i].var).mapTo(new_result0.getAllVarset())[0];
 
 			int result0_size = (int)result0.result.size();
 			vector<int> group2temp;
