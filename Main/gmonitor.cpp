@@ -90,7 +90,7 @@ int main(int argc, char * argv[])
 				string p = _rs.answer[i][0];
 				string o = _rs.answer[i][1];
 				if (p == "<built_by>")
-					creator = o.substr(1, o.length() - 2);
+					creator = o.substr(1, o.length() - 2); //why?
 				else if (p == "<built_time>")
 					built_time = o;
 			}

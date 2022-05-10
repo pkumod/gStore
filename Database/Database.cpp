@@ -2195,7 +2195,7 @@ bool
 Database::saveDBInfoFile()
 {
 	FILE* filePtr = fopen(this->getDBInfoFile().c_str(), "wb");
-
+    cout<<" save the db info file "<<endl;
 	if (filePtr == NULL)
 	{
 		cout << "error, can not create db info file. @Database::saveDBInfoFile" << endl;
