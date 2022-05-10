@@ -1003,9 +1003,12 @@ bool QueryTree::checkWellDesigned()
 		}
 	}
 	// BIND must respect original order
+	// Kleene closure respects order for pruning (not guaranteed to be optimal)
 	for (size_t i = 0; i < group_pattern.sub_group_pattern.size(); i++)
 	{
-		if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Bind_type)
+		if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Bind_type \
+		|| (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Pattern_type \
+			&& group_pattern.sub_group_pattern[i].pattern.kleene))
 		{
 			check_condition = false;
 			break;
