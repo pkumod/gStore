@@ -603,8 +603,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 										);
 
 									bool success = false;
-									if (this->query_cache != NULL)
-										success = checkBasicQueryCache(basic_query, result, occur);
+									// if (this->query_cache != NULL)
+									// 	success = checkBasicQueryCache(basic_query, result, occur);
 									//// If query cache not hit, save the current BGP to sparql_query for later processing ////
 									//// QUESTION: Is basic_query_handle a redundant variable? ////
 									if (!success)
@@ -710,7 +710,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							int time = tv_handle - tv_begin;
 
 							long tv_bftry = Util::get_cur_time();
-							bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
+							// bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
+							bool success = false;
 							if (success)	printf("QueryCache cached\n");
 							else			printf("QueryCache didn't cache\n");
 							long tv_aftry = Util::get_cur_time();
@@ -858,8 +859,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 	        				this->strategy.export_flag = this->export_flag;
 	        			}
 								bool success = false;
-								if (this->query_cache != NULL && dep == 0)
-									success = checkBasicQueryCache(basic_query, sub_result, useful);
+								// if (this->query_cache != NULL && dep == 0)
+								// 	success = checkBasicQueryCache(basic_query, sub_result, useful);
 								//// If query cache not hit, save the current BGP to sparql_query for later processing ////
 								//// QUESTION: Is basic_query_handle a redundant variable? ////
 								if (!success)
@@ -987,7 +988,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							int time = tv_handle - tv_begin;
 
 							long tv_bftry = Util::get_cur_time();
-							bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
+							// bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
+							bool success = false;
 							if (success)	printf("QueryCache cached\n");
 							else			printf("QueryCache didn't cache\n");
 							long tv_aftry = Util::get_cur_time();
@@ -3596,7 +3598,8 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResu
 			int time = tv_handle - tv_begin;
 
 			long tv_bftry = Util::get_cur_time();
-			bool success = this->query_cache->tryCaching(basic_query_handle[j], temp->results[0], time);
+			// bool success = this->query_cache->tryCaching(basic_query_handle[j], temp->results[0], time);
+			bool success = false;
 			if (success)	printf("QueryCache cached\n");
 			else			printf("QueryCache didn't cache\n");
 			long tv_aftry = Util::get_cur_time();
