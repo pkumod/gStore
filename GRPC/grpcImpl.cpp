@@ -935,7 +935,7 @@ void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, 
             return;
         }
         string database = db_name;
-        Util::formatPrint("restore database:" + database);
+        Util::formatPrint("restore database: " + database);
         //@ check database build?
         if( apiUtil->check_already_build(db_name) == false){
             string error = "Database not built yet. Rebuild Now";
@@ -973,7 +973,7 @@ void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, 
         struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
         if(apiUtil->trywrlock_databaseinfo(db_info) == false)
         {
-            error = "the operation can not been excuted due to loss of lock.";
+            error = "Unable to restore due to loss of lock";
             response->set_statuscode(1007);
             response->set_statusmsg(error);
             return;
@@ -989,20 +989,18 @@ void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, 
 
         if (ret == 1)
         {
-            string error = "Failed to restore the database. Backup Path Error";
+            string error = "Failed to restore the database. Backup path error";
             apiUtil->unlock_databaseinfo(db_info);
-            response->set_statuscode(1007);
+            response->set_statuscode(1005);
             response->set_statusmsg(error);
         }
         else
         {
             //TODO update the in system.db
             path = Util::get_folder_name(path, db_name);
-            sys_cmd = "cp -r " + path + " " + db_name + ".db";
+            sys_cmd = "mv " + path + " " + db_name + ".db";
             system(sys_cmd.c_str());
-            
             apiUtil->unlock_databaseinfo(db_info);
-
             string success = "Database " + db_name + " restore successfully.";
             response->set_statuscode(0);
             response->set_statusmsg(success);
