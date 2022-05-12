@@ -1157,18 +1157,19 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
         string localname = "./query_result/" + filename;
         if (ret)
         {
-            cout << thread_id << ":search query returned successfully." << endl;
-            if (rs.ansNum > apiUtil->get_max_output_size())
+            cout << thread_id << ": search query returned successfully." << endl;
+            long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
+			long rs_outputlimit = (long)rs.output_limit;
+			if (rs_outputlimit != -1)
+				rs_ansNum = min(rs_ansNum, rs_outputlimit);
+            if (rs_ansNum > apiUtil->get_max_output_size())
             {
-                if (rs.output_limit == -1 || rs.output_limit > apiUtil->get_max_output_size())
+                if (rs_outputlimit == -1 || rs_outputlimit > apiUtil->get_max_output_size())
                 {
-                    rs.output_limit = apiUtil->get_max_output_size();
+                    rs_outputlimit = apiUtil->get_max_output_size();
                 }
             }
             std::string query_time_s = Util::int2string(query_time);
-            std::string ans_num_s = Util::int2string(rs.ansNum);
-            std::string log_info = "queryTime: " + query_time_s + ", ansNum: " + ans_num_s;
-            Util::formatPrint(log_info);
             ofstream outfile;
             std::string json_result = rs.to_JSON();
             if (format == "json")
@@ -1204,8 +1205,8 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
             }
             response->set_statuscode(0);
             response->set_statusmsg("success");
-            response->set_ansnum(rs.ansNum);
-            response->set_outputlimit(rs.output_limit);
+            response->set_ansnum(rs_ansNum);
+            response->set_outputlimit(rs_outputlimit);
             response->set_querytime(query_time_s);
             response->set_threadid(thread_id);
             
@@ -1214,14 +1215,13 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
             std::string remote_ip = ctx->get_remote_ip();
             if (remote_ip != TEST_IP)
             {
-                long ans_num = rs.ansNum;
                 int status_code = 0;
                 string file_name = "";
                 if (format.find("file") != string::npos)
                 {
                     file_name = string(filename.c_str());
                 }
-                struct DBQueryLogInfo queryLogInfo(query_start_time, remote_ip, sparql, ans_num, format, file_name, status_code, query_time);
+                struct DBQueryLogInfo queryLogInfo(query_start_time, remote_ip, sparql, rs_ansNum, format, file_name, status_code, query_time);
                 apiUtil->write_query_log(&queryLogInfo);
             }
         }

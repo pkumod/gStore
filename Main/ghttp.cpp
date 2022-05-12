@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-04-19 17:24:50
+ * @LastEditTime: 2022-04-22 11:40:36
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -1626,7 +1626,7 @@ void restore_thread_new(const shared_ptr<HttpServer::Request>& request, const sh
 			apiUtil->add_privilege(username, "export", db_name) == 0)
 			{
 				error = "add query or load or unload or backup or restore or export privilege failed.";
-				sendResponseMsg(1005, error ,operation, request, response);
+				sendResponseMsg(1006, error ,operation, request, response);
 				return;
 			}
 			if(apiUtil->build_db_user_privilege(db_name, username))
@@ -1815,31 +1815,33 @@ string update_flag,string log_prefix,string username)
 			//accurate down to microseconds
 			//filter the IP from the test server
 			string remote_ip = getRemoteIp(request);
+			long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
+			long rs_outputlimit = (long)rs.output_limit;
+			if (rs_outputlimit != -1)
+				rs_ansNum = min(rs_ansNum, rs_outputlimit);
 			if (remote_ip != TEST_IP)
 			{
-				long ans_num = rs.ansNum;
 				int status_code = 0;
 				string file_name = "";
 				if (format.find("file") != string::npos)
 				{
 					file_name = string(filename.c_str());
 				}
-				struct DBQueryLogInfo queryLogInfo(query_start_time, remote_ip, sparql, ans_num, format, file_name, status_code, query_time);
+				struct DBQueryLogInfo queryLogInfo(query_start_time, remote_ip, sparql, rs_ansNum, format, file_name, status_code, query_time);
 				apiUtil->write_query_log(&queryLogInfo);
 			}
 
 			//to void someone downloading all the data file by sparql query on purpose and to protect the data
 			//if the ansNum too large, for example, larger than 100000, we limit the return ans.
-			if (rs.ansNum > apiUtil->get_max_output_size())
+			if (rs_ansNum > apiUtil->get_max_output_size())
 			{
-				if (rs.output_limit == -1 || rs.output_limit > apiUtil->get_max_output_size())
+				if (rs_outputlimit == -1 || rs_outputlimit > apiUtil->get_max_output_size())
 				{
-					rs.output_limit = apiUtil->get_max_output_size();
+					rs_outputlimit = apiUtil->get_max_output_size();
 				}
 			}
 			string query_time_s = Util::int2string(query_time);
-			int rs_ansNum = rs.ansNum;
-			int rs_outputlimit = rs.output_limit;
+			
 			ofstream outfile;
 			string ans = "";
 			string success = rs.to_JSON();
