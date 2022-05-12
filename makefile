@@ -73,8 +73,6 @@ testdir = scripts/
 
 lib_antlr = lib/libantlr4-runtime.a
 
-lib_workflow = lib/libworkflow.a
-
 #includ_workflow=tools/workflow-master/_include/
 
 api_cpp = api/http/cpp/lib/libgstoreconnector.a
@@ -127,7 +125,6 @@ objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj)
 		  $(utilobj) $(signatureobj) $(queryobj) $(trieobj)
 	 
 inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
-inc_workflow=-I./tools/srpc/workflow/_include/workflow
 #-I./usr/local/include/boost/
 
 
@@ -187,8 +184,8 @@ $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/
 #$(exedir)gapiserver: $(lib_antlr) $(lib_workflow) $(objdir)gapiserver.o  $(objfile)
 #	$(CXX) $(EXEFLAG) -o $(exedir)gapiserver $(objdir)gapiserver.o $(objfile) $(library) $(openmp)
 
-$(exedir)grpc: $(lib_antlr) $(lib_workflow) $(objdir)grpc.o $(grpcobj) $(objfile)
-	$(CXX) $(EXEFLAG) -o $(exedir)grpc $(objdir)grpc.o ${grpcobj} $(objfile) $(library) $(inc) $(inc_workflow) -lsrpc -DUSE_BOOST_REGEX $(openmp) ${ldl}
+$(exedir)grpc: $(lib_antlr) $(objdir)grpc.o $(grpcobj) $(objfile)
+	$(CXX) $(EXEFLAG) -o $(exedir)grpc $(objdir)grpc.o ${grpcobj} $(objfile) $(library) $(inc) -lsrpc -DUSE_BOOST_REGEX $(openmp) ${ldl}
 
 $(exedir)gbackup: $(lib_antlr) $(objdir)gbackup.o $(objfile)
 	$(CXX) $(EXEFLAG) -o $(exedir)gbackup $(objdir)gbackup.o $(objfile) $(library) $(openmp) ${ldl}
@@ -262,8 +259,8 @@ $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp D
 #$(objdir)gapiserver.o: Main/gapiserver.cpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/Util_New.h Util/IPWhiteList.h Util/IPBlackList.h Util/WebUrl.h  $(lib_antlr) $(lib_workflow)
 #	$(CXX) $(CFLAGS) Main/gapiserver.cpp $(inc) $(inc_workflow) -o $(objdir)gapiserver.o $(openmp)
 
-$(objdir)grpc.o: Main/grpc.cpp GRPC/grpc.pb.h GRPC/grpc.srpc.h GRPC/grpcImpl.h GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr) $(lib_workflow)
-	$(CXX) $(CFLAGS) Main/grpc.cpp $(inc) $(inc_workflow) -o $(objdir)grpc.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
+$(objdir)grpc.o: Main/grpc.cpp GRPC/grpc.pb.h GRPC/grpc.srpc.h GRPC/grpcImpl.h GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
+	$(CXX) $(CFLAGS) Main/grpc.cpp $(inc) -o $(objdir)grpc.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
 $(objdir)gbackup.o: Main/gbackup.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gbackup.cpp $(inc) -o $(objdir)gbackup.o $(openmp)
@@ -698,10 +695,10 @@ $(objdir)Server.o: Server/Server.cpp Server/Server.h $(objdir)Socket.o $(objdir)
 $(objdir)APIUtil.o: GRPC/APIUtil.cpp GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
 	$(CXX) $(CFLAGS) GRPC/APIUtil.cpp $(inc) -o $(objdir)APIUtil.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
-$(objdir)grpc.pb.o: GRPC/grpc.pb.cc GRPC/grpc.pb.h $(lib_antlr) $(lib_workflow)
+$(objdir)grpc.pb.o: GRPC/grpc.pb.cc GRPC/grpc.pb.h $(lib_antlr)
 	$(CXX) $(CFLAGS) GRPC/grpc.pb.cc $(inc) -o $(objdir)grpc.pb.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
-$(objdir)grpcImpl.o: GRPC/grpcImpl.cpp GRPC/grpcImpl.h GRPC/grpc.srpc.h GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr) $(lib_workflow)
+$(objdir)grpcImpl.o: GRPC/grpcImpl.cpp GRPC/grpcImpl.h GRPC/grpc.srpc.h GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
 	$(CXX) $(CFLAGS) GRPC/grpcImpl.cpp $(inc) -o $(objdir)grpcImpl.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
 #objects in GRPC/ end
@@ -717,18 +714,10 @@ $(objdir)grpcImpl.o: GRPC/grpcImpl.cpp GRPC/grpcImpl.h GRPC/grpc.srpc.h GRPC/API
 pre:
 	rm -rf tools/rapidjson/
 	rm -rf tools/antlr4-cpp-runtime-4/
-	rm -rf tools/srpc
 	cd tools; tar -xzvf rapidjson.tar.gz;
 	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
-	cd tools; unzip srpc.zip;
 	# cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;sudo make install;
-	# cd ../../;
-	#cd tools;unzip -o workflow-master.zip;cd workflow-master;make;
-	#cd tools;unzip -o srpc.zip; cd srpc;make;make install;
 	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
-	cd tools/srpc; make; sudo make install;
-	cd tools/srpc/workflow; make; sudo make install; cp _lib/libworkflow.a ../../../lib/;
-
 
 $(api_cpp):
 	$(MAKE) -C api/http/cpp/src
