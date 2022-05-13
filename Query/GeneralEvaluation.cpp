@@ -1758,8 +1758,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								iri_dst = dst_str;
 							}
-							ss << "{\"src\":\"" <<iri_src << "\",\"dst\":\""<< iri_dst << "\",\"value\":"
-								<< value_str << "}";
+							ss << "{\"src\":\"" <<iri_src << "\",\"dst\":\""<< iri_dst << "\",\"value\":\""
+								<< value_str << "\"}";
 						}
 						ss << "]";
 					}
@@ -2698,8 +2698,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										{
 											iri_dst = dst_str;
 										}
-										ss << "{\"src\":\"" <<iri_src << "\",\"dst\":\""<< iri_dst << "\",\"value\":"
-											<< value_str << "}";
+										ss << "{\"src\":\"" <<iri_src << "\",\"dst\":\""<< iri_dst << "\",\"value\":\""
+											<< value_str << "\"}";
 									}
 									ss << "]";
 								}
