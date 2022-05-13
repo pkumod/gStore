@@ -1717,9 +1717,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					stringstream ss;
 					std::map<std::string, std::string> rt = dynamicFunction(iri_id_set, directed, hopConstraint, pred_id_set, fun_name, ret_result.getUsername());
 					std::map<std::string, std::string>::iterator iter = rt.find("return_type");
+					string rt_type = rt.find("return_type")->second;
 					string str = rt.find("return_value")->second;
 					ss << "\"";
-					if (iter != rt.end() && iter->second == "path" && iri_id_set.size() == 2)
+					if (rt_type == "path" && iri_id_set.size() == 2)
 					{
 						vector<string> path_str;
 						vector<int> path_int;
@@ -1730,6 +1731,37 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							path_int.push_back(Util::string2int(path_str[i]));
 						}
 						pathVec2JSON(iri_id_set[0], iri_id_set[1], path_int, ss);
+					}
+					else if (rt_type == "kvalue") 
+					{
+						// str is JSONArray sting: [{vid1:value1},{vid2:value2}...]
+						rapidjson::Document doc;
+						doc.IsArray();
+						doc.Parse(str.c_str());
+						string iri_src = kvstore->getStringByID(iri_id_set[0]);
+						ss << "[";
+						for (size_t i = 0; i < doc.Size(); i++)
+						{
+							if (i > 0) 
+							{
+								ss << ",";
+							}
+							rapidjson::Value obj = doc[i].GetObject();
+							string dst_str = obj.HasMember("dst") ? obj["dst"].GetString(): "unkown";
+							string value_str = obj.HasMember("value") ? obj["value"].GetString() : "";
+							string iri_dst = "";
+							if (Util::is_number(dst_str))
+							{
+								iri_dst = kvstore->getStringByID(Util::string2int(dst_str));
+							} 
+							else
+							{
+								iri_dst = dst_str;
+							}
+							ss << "{\"src\":\"" <<iri_src << "\",\"dst\":\""<< iri_dst << "\",\"value\":"
+								<< value_str << "}";
+						}
+						ss << "]";
 					}
 					else
 					{
@@ -2619,9 +2651,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								iri_id_set.push_back(uid);
 								iri_id_set.push_back(vid);
 								std::map<std::string, std::string> rt = dynamicFunction(iri_id_set, directed, hopConstraint, pred_id_set, fun_name, ret_result.getUsername());
-								std::map<std::string, std::string>::iterator iter = rt.find("return_type");
+								string rt_type = rt.find("return_type")->second;
 								string str = rt.find("return_value")->second;
-								if (iter != rt.end() && iter->second == "path")
+								if (rt_type == "path")
 								{
 									vector<string> path_str;
 									vector<int> path_int;
@@ -2639,6 +2671,37 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											notFirstOutput = 1;
 										pathVec2JSON(uid, vid, path_int, ss);
 									}
+								}
+								else if (rt_type == "kvalue") 
+								{
+									// str is JSONArray sting: [{vid1:value1},{vid2:value2}...]
+									rapidjson::Document doc;
+									doc.IsArray();
+									doc.Parse(str.c_str());
+									string iri_src = kvstore->getStringByID(iri_id_set[0]);
+									ss << "[";
+									for (size_t i = 0; i < doc.Size(); i++)
+									{
+										if (i > 0) 
+										{
+											ss << ",";
+										}
+										rapidjson::Value obj = doc[i].GetObject();
+										string dst_str = obj.HasMember("dst") ? obj["dst"].GetString(): "unkown";
+										string value_str = obj.HasMember("value") ? obj["value"].GetString() : "";
+										string iri_dst = "";
+										if (Util::is_number(dst_str))
+										{
+											iri_dst = kvstore->getStringByID(Util::string2int(dst_str));
+										} 
+										else
+										{
+											iri_dst = dst_str;
+										}
+										ss << "{\"src\":\"" <<iri_src << "\",\"dst\":\""<< iri_dst << "\",\"value\":"
+											<< value_str << "}";
+									}
+									ss << "]";
 								}
 								else
 								{
@@ -3736,6 +3799,7 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 			// call function
 			result = p_fun(iri_set, directed, pred_set, pqHandler);
 			std::cout << "end with: " << result << endl;
+			std::cout << "return type: " << fun_return << endl;
 			std::cout<< "================================================\n";
 			dlclose(handle);
 			returnMap.insert(pair<std::string, std::string>("return_type", fun_return));
@@ -3758,6 +3822,7 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 			// call function
 			result = p_fun(iri_set, directed, k, pred_set, pqHandler);
 			std::cout << "end with: " << result << endl;
+			std::cout << "return type: " << fun_return << endl;
 			cout<< "================================================\n";
 			dlclose(handle);
 			returnMap.insert(pair<std::string, std::string>("return_type", fun_return));
