@@ -2235,8 +2235,16 @@ std::string APIUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
 {
     const string fun_name = fun_info->getFunName();
     const string fun_args = fun_info->getFunArgs();
-    const string fun_body = Util::urlDecode(fun_info->getFunBody());
     const string fun_subs = Util::urlDecode(fun_info->getFunSubs());
+    string fun_body = Util::urlDecode(fun_info->getFunBody());
+    char *fun_body_o = (char *)calloc(fun_body.length() + 1, sizeof(char));
+    if(fun_body_o != NULL) 
+    {
+        Util::a_trim(fun_body_o, fun_body.c_str());
+        if(fun_body_o && strlen(fun_body_o) > 0)
+            fun_body = string(fun_body_o);
+        xfree(fun_body_o);
+    }
     stringstream _buf;
     if (has_header)
     {
@@ -2263,7 +2271,17 @@ std::string APIUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
     {
         throw std::runtime_error("the fun_args " + fun_args + " not match: {\"1\", \"2\"}");
     }
+    bool add_brace = false;
+    if (fun_body[0] != '{')
+    {
+        _buf << "{\n";
+        add_brace = true;
+    }
     _buf << fun_body;
+    if (add_brace)
+    {
+        _buf << "\n}";
+    }
     return _buf.str();
 }
 

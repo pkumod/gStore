@@ -61,8 +61,9 @@ class EvalMultitypeValue
 				EffectiveBooleanValue operator >= (const DateTime &x);
 		};
 
+		// Treating xsd_long as xsd_integer doesn't work. 8-byte assign to 4-byte causes memory problems
 		enum DataType {rdf_term, iri, literal, xsd_string,
-			xsd_boolean, xsd_integer, xsd_decimal, xsd_float, xsd_double,
+			xsd_boolean, xsd_integer, xsd_decimal, xsd_float, xsd_long, xsd_double,
 			xsd_datetime};
 
 		DataType datatype;
@@ -72,9 +73,11 @@ class EvalMultitypeValue
 		int int_value;
 		float flt_value;	// xsd_decimal and xsd_float
 		double dbl_value;
+		long long long_value;
 		DateTime dt_value;
 
 		bool isSimpleLiteral();
+		void convert2Type(EvalMultitypeValue::DataType to_type);
 		void getSameNumericType (EvalMultitypeValue &x);
 		EvalMultitypeValue operator !();
 		EvalMultitypeValue operator || (EvalMultitypeValue &x);
