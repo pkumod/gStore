@@ -935,7 +935,7 @@ void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, 
             return;
         }
         string database = db_name;
-        Util::formatPrint("restore database:" + database);
+        Util::formatPrint("restore database: " + database);
         //@ check database build?
         if( apiUtil->check_already_build(db_name) == false){
             string error = "Database not built yet. Rebuild Now";
@@ -973,7 +973,7 @@ void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, 
         struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
         if(apiUtil->trywrlock_databaseinfo(db_info) == false)
         {
-            error = "the operation can not been excuted due to loss of lock.";
+            error = "Unable to restore due to loss of lock";
             response->set_statuscode(1007);
             response->set_statusmsg(error);
             return;
@@ -989,20 +989,18 @@ void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, 
 
         if (ret == 1)
         {
-            string error = "Failed to restore the database. Backup Path Error";
+            string error = "Failed to restore the database. Backup path error";
             apiUtil->unlock_databaseinfo(db_info);
-            response->set_statuscode(1007);
+            response->set_statuscode(1005);
             response->set_statusmsg(error);
         }
         else
         {
             //TODO update the in system.db
             path = Util::get_folder_name(path, db_name);
-            sys_cmd = "cp -r " + path + " " + db_name + ".db";
+            sys_cmd = "mv " + path + " " + db_name + ".db";
             system(sys_cmd.c_str());
-            
             apiUtil->unlock_databaseinfo(db_info);
-
             string success = "Database " + db_name + " restore successfully.";
             response->set_statuscode(0);
             response->set_statusmsg(success);
@@ -1159,18 +1157,19 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
         string localname = "./query_result/" + filename;
         if (ret)
         {
-            cout << thread_id << ":search query returned successfully." << endl;
-            if (rs.ansNum > apiUtil->get_max_output_size())
+            cout << thread_id << ": search query returned successfully." << endl;
+            long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
+			long rs_outputlimit = (long)rs.output_limit;
+			if (rs_outputlimit != -1)
+				rs_ansNum = min(rs_ansNum, rs_outputlimit);
+            if (rs_ansNum > apiUtil->get_max_output_size())
             {
-                if (rs.output_limit == -1 || rs.output_limit > apiUtil->get_max_output_size())
+                if (rs_outputlimit == -1 || rs_outputlimit > apiUtil->get_max_output_size())
                 {
-                    rs.output_limit = apiUtil->get_max_output_size();
+                    rs_outputlimit = apiUtil->get_max_output_size();
                 }
             }
             std::string query_time_s = Util::int2string(query_time);
-            std::string ans_num_s = Util::int2string(rs.ansNum);
-            std::string log_info = "queryTime: " + query_time_s + ", ansNum: " + ans_num_s;
-            Util::formatPrint(log_info);
             ofstream outfile;
             std::string json_result = rs.to_JSON();
             if (format == "json")
@@ -1206,8 +1205,8 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
             }
             response->set_statuscode(0);
             response->set_statusmsg("success");
-            response->set_ansnum(rs.ansNum);
-            response->set_outputlimit(rs.output_limit);
+            response->set_ansnum(rs_ansNum);
+            response->set_outputlimit(rs_outputlimit);
             response->set_querytime(query_time_s);
             response->set_threadid(thread_id);
             
@@ -1216,14 +1215,13 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
             std::string remote_ip = ctx->get_remote_ip();
             if (remote_ip != TEST_IP)
             {
-                long ans_num = rs.ansNum;
                 int status_code = 0;
                 string file_name = "";
                 if (format.find("file") != string::npos)
                 {
                     file_name = string(filename.c_str());
                 }
-                struct DBQueryLogInfo queryLogInfo(query_start_time, remote_ip, sparql, ans_num, format, file_name, status_code, query_time);
+                struct DBQueryLogInfo queryLogInfo(query_start_time, remote_ip, sparql, rs_ansNum, format, file_name, status_code, query_time);
                 apiUtil->write_query_log(&queryLogInfo);
             }
         }
