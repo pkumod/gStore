@@ -2729,6 +2729,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request>& request, cons
 		{
 			string success = "Batch insert data successfully.";
 			unsigned success_num= current_database->batch_insert(file, false, nullptr);
+			current_database->save();
 			apiUtil->unlock_database(db_name);
 			
 			Document resDoc;
@@ -2802,6 +2803,7 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request>& request, cons
 		{
 			string success = "Batch remove data successfully.";
 			unsigned success_num=current_database->batch_remove(file,false,nullptr);
+			current_database->save();
 			apiUtil->unlock_database(db_name);
 
 			Document resDoc;
