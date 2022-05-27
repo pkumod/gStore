@@ -240,9 +240,6 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
   IntermediateResult result_table;
 
   long t1 = Util::get_cur_time();
-  if(records_a->empty() || records_b->empty())
-    return make_tuple(false,result_table);
-
   auto new_position_id_mapping = make_shared<PositionValue>();
 
   auto join_nodes = join_plan->public_variables_;
