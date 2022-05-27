@@ -2195,7 +2195,7 @@ bool
 Database::saveDBInfoFile()
 {
 	FILE* filePtr = fopen(this->getDBInfoFile().c_str(), "wb");
-    cout<<" save the db info file "<<endl;
+    //cout<<" save the db info file "<<endl;
 	if (filePtr == NULL)
 	{
 		cout << "error, can not create db info file. @Database::saveDBInfoFile" << endl;
@@ -5265,6 +5265,7 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 	unsigned update_num_s = 0;
 	unsigned update_num_p = 0;
 	unsigned update_num_o = 0;
+	unsigned update_num_subject=0;
 
 	if (!_is_restore) {
 		write_update_log(_triples, _triple_num, 1, txn);
@@ -5278,6 +5279,7 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 		if (_sub_id == INVALID_ENTITY_LITERAL_ID)
 		{
 			_sub_id = this->allocEntityID();
+			update_num_subject=update_num_subject+1;
 			(this->kvstore)->setIDByEntity(_triple.subject, _sub_id);
 			(this->kvstore)->setEntityByID(_sub_id, _triple.subject);
 			vertices.push_back(_sub_id);
@@ -5316,7 +5318,7 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 				vertices.push_back(_obj_id);
 			}
 		}
-
+       
 		id_tuples[i].subid = _sub_id;
 		id_tuples[i].preid = _pre_id;
 		id_tuples[i].objid = _obj_id;
@@ -5364,10 +5366,18 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 	pre_t.join();
 	obj_t.join();
 
-	//cout << update_num_s << " " << update_num_p << " " << update_num_o << endl;
+	unsigned update_num_triple=update_num_s;
+	if(update_num_triple<update_num_p)
+	update_num_triple=update_num_p;
+	if(update_num_triple<update_num_o)
+	update_num_triple=update_num_o;
+
+	cout <<"update_num_triple:"<<update_num_triple<<",update_num_s:"<< update_num_s << ",update_num_p:" << update_num_p << ",update_num_o:" << update_num_o << endl;
 	assert(update_num_o == update_num_p);
 	assert(update_num_s == update_num_o);
 
+    this->triples_num=this->triples_num+update_num_triple;
+	this->sub_num=this->sub_num+update_num_subject;
 	this->stringindex->SetTrie(kvstore->getTrie());
 	//update string index
 	this->stringindex->change(vertices, *this->kvstore, true);
