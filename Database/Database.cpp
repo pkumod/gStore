@@ -5526,7 +5526,7 @@ Database::batch_remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 				predicates.push_back(_pre_id);
 			}
 		}
-        this->triples_num=this->triples_num+update_num_triple;
+        this->triples_num=this->triples_num-update_num_triple;
 		this->stringindex->SetTrie(kvstore->getTrie());
 		//update string index
 		this->stringindex->disable(vertices, true);
