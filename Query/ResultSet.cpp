@@ -26,7 +26,7 @@ ResultSet::ResultSet()
 
 ResultSet::~ResultSet()
 {
-	cout<<"call the delete function for ResultSet"<<endl;
+	//cout<<"call the delete function for ResultSet"<<endl;
 	delete[] this->var_name;
 	if (!this->useStream)
 	{
