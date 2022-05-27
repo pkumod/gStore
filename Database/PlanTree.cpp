@@ -1095,7 +1095,7 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 		print_tree_node(node->left_node, bgpquery);
 	if(node->right_node != nullptr)
 		print_tree_node(node->right_node, bgpquery);
-
+    if(!node->left_node && !node->right_node) cout << "leaf node ";
 	auto stepoperation = node->node;
 	cout << "join type: " << stepoperation->JoinTypeToString(stepoperation->join_type_);
 	cout << (stepoperation->distinct_ ? " distinct" : " not distinct") << endl;
